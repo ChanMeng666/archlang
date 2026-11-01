@@ -11,10 +11,13 @@
  * - The byte-identity law for the default summary is `describe-facts.test.ts` (every opt-in fact).
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
+import { cmdDescribe } from "../src/cli/commands-analyze.js";
+import { parseArgs } from "../src/cli/io.js";
 import { type ClearanceFacts, describe, lint } from "../src/index.js";
 import { EXAMPLE_FILES, EXAMPLES_WORLD } from "./d4-oracle.js";
 
@@ -125,6 +128,29 @@ suite("describe --facts clearances: low units", () => {
     expect(shortRows(c).W_FURNITURE_OVER_WINDOW).toBe(
       lint(src).filter((d) => d.code === "W_FURNITURE_OVER_WINDOW").length,
     );
+  });
+
+  it("the human line counts them only when there are some", () => {
+    const line = (src: string): string => {
+      const file = join(mkdtempSync(join(tmpdir(), "low-units-")), "p.arch");
+      writeFileSync(file, src);
+      let out = "";
+      const write = process.stdout.write.bind(process.stdout);
+      process.stdout.write = ((chunk: string): boolean => {
+        out += chunk;
+        return true;
+      }) as typeof process.stdout.write;
+      try {
+        cmdDescribe(parseArgs([file, "--facts", "clearances"]));
+      } finally {
+        process.stdout.write = write;
+      }
+      return out.split("\n").find((l) => l.startsWith("clearances:")) ?? "";
+    };
+    expect(line(living(" sill 0", SOFA))).toContain(
+      "0 tall unit(s), 1 low unit(s) against a floor-length window, 0 hob(s),",
+    );
+    expect(line(living("", SOFA))).toContain("0 tall unit(s), 0 hob(s),");
   });
 
   it("the key is absent when no piece stands against one, so the rest of the corpus reads as it did", () => {

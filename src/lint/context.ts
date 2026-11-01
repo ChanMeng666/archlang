@@ -72,6 +72,9 @@ export interface BuildingContext {
   /** The storeys a person can reach from outside, shafts counted: `verticalReach`'s `reachable`,
    *  what `describe().vertical.reachable_levels` lists. Absent on a single-storey plan. */
   reachableLevels?: ReadonlySet<number>;
+  /** The shafts that carried someone to THIS storey, in the order they did (`VerticalReach.landed`):
+   *  a shaft that stops here and is not in it reaches nobody. Absent on a single-storey plan. */
+  landedShafts?: ReadonlySet<string>;
   /** The building's shafts ({@link verticalConnections}). Absent on a single-storey plan. */
   connections?: readonly VerticalConnection[];
 }

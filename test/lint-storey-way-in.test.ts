@@ -123,6 +123,66 @@ describe("W_NO_ENTRANCE says which storey and what is missing there", () => {
     );
   });
 
+  describe("two shafts, both landing on no room", () => {
+    // `y` stands in the sealed store below and comes first in the source; `x` stands in the hall and
+    // is the one that reaches level 2.
+    const lower = `    ${shell("s1", 8000, 6000)}
+    wall id=p partition thickness 100 { (4000,0) (4000,6000) }
+    room id=h at (0,0) size 4000x6000 label "Hall" uses hall
+    room id=st at (4000,0) size 4000x6000 label "Store" uses storage
+    door id=d on s1 at 2000 width 900
+    stair id=y at (5500,3200) size 1000x2400 dir up
+    stair id=x at (1500,3200) size 1000x2400 dir up`;
+    const top = (room: string): string => `    ${shell("s2", 8000, 6000)}
+    room id=b at (0,0) size 8000x3000 label "Bedroom" uses bedroom
+    ${room}
+    stair id=y at (5500,3200) size 1000x2400 dir down
+    stair id=x at (1500,3200) size 1000x2400 dir down`;
+
+    it("the hint names the shaft that reached the storey, not the first that stops on it", () => {
+      const [d, ...rest] = of(building(lower, top("")));
+      expect(rest).toEqual([]);
+      expect(d?.message).toContain("the stair that reaches it lands on no room here");
+      expect(d?.hints?.[0]).toContain("Land stair `x` on a room's floor");
+    });
+    it("the hint at its word: a room under `x` cures the storey, a room under `y` does not", () => {
+      expect(of(building(lower, top(`room id=nook at (0,3000) size 4000x3000 label "Nook"`)))).toEqual([]);
+      const [d] = of(building(lower, top(`room id=nook at (4000,3000) size 4000x3000 label "Nook"`)));
+      expect(d?.hints?.[0]).toContain("Land stair `x` on a room's floor");
+    });
+    it("alone, the shaft from the sealed room is dead, and is told as dead", () => {
+      const src = building(lower, top("")).replaceAll(/\n\s+stair id=x[^\n]*/g, "");
+      expect(of(src)[0]?.message).toContain("stands in a room nobody can walk to on level 1");
+    });
+  });
+
+  it("several dead shafts are counted, and the hint takes the one that can be mended", () => {
+    const src = building(
+      deadGround(false),
+      wideUpper("stair id=t at (1000,600) size 1000x2800 dir up\n    stair id=s at (5000,600) size 1000x2800 dir down"),
+      wideUpper("stair id=t at (1000,600) size 1000x2800 dir down", "s3"),
+    );
+    const [two, three] = of(src);
+    expect(two?.level).toBe(2);
+    expect(two?.message).toBe(
+      "Level 2 has no exterior door or opening of its own, and none of the 2 stairs, elevators or escalators that stop here leads from a room a person can walk to.",
+    );
+    expect(two?.hints?.[0]).toContain("On level 1, stair `s` stands in room `st`");
+    expect(three?.message).toContain("and the stair that stops here joins it only to storeys with no way in either");
+    // The hint at its word: the store's door carries both storeys.
+    expect(
+      of(
+        building(
+          deadGround(true),
+          wideUpper(
+            "stair id=t at (1000,600) size 1000x2800 dir up\n    stair id=s at (5000,600) size 1000x2800 dir down",
+          ),
+          wideUpper("stair id=t at (1000,600) size 1000x2800 dir down", "s3"),
+        ),
+      ),
+    ).toEqual([]);
+  });
+
   it("a dead shaft: it starts in a room nobody can walk to, on the storey that has the door", () => {
     const src = building(deadGround(false), wideUpper("stair id=s at (5000,600) size 1000x2800 dir down"));
     expect(describePlan(src).vertical?.reachable_levels).toEqual([1]);

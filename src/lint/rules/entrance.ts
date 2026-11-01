@@ -69,27 +69,42 @@ function storeyGap(ctx: LintContext, level: number): Gap {
   const own = `Level ${level} has no exterior door or opening of its own`;
   const here = (building.connections ?? []).filter((c) => c.levels.includes(level));
   const stopOn = (c: VerticalConnection): VerticalStop => c.stops.find((s) => s.level === level)!;
-  const landing = reachable.has(level) ? here.find((c) => landsOnNoRoom(stopOn(c))) : undefined;
-  if (landing !== undefined) {
+  // The first shaft that carried someone here, not the first that stops here: only that one's
+  // landing cures the storey. One that stands in a sealed room below rides in on it, because a stop
+  // in no room is active once its storey is reachable, and it is not what reached the storey.
+  const landing = [...(building.landedShafts ?? [])]
+    .map((id) => here.find((c) => c.id === id))
+    .find((c) => c !== undefined && landsOnNoRoom(stopOn(c)));
+  if (reachable.has(level) && landing !== undefined) {
     const word = kindWord(landing.kind);
     return {
       message: `${own}, and the ${word} that reaches it lands on no room here, so there is no floor to step off onto.`,
       hint: `Land ${word} \`${landing.id}\` on a room's floor on this storey, or add a room under it. Or: ${ADD_DOOR}`,
     };
   }
-  const dead = here[0];
-  if (dead !== undefined) {
+  if (here.length > 0) {
+    // The hint takes the shaft with a stop on a storey that has a way in: that is the one to mend.
+    const stopElsewhere = (c: VerticalConnection): VerticalStop | undefined =>
+      c.stops.find((s) => s.level !== level && reachable.has(s.level));
+    const dead = here.find((c) => stopElsewhere(c) !== undefined) ?? here[0]!;
     const word = kindWord(dead.kind);
-    const other = dead.stops.find((s) => s.level !== level && reachable.has(s.level));
+    const other = stopElsewhere(dead);
+    const several = `${own}, and none of the ${here.length} stairs, elevators or escalators that stop here leads from a room a person can walk to.`;
     if (other === undefined) {
       return {
-        message: `${own}, and the ${word} that stops here joins it only to storeys with no way in either.`,
+        message:
+          here.length > 1
+            ? several
+            : `${own}, and the ${word} that stops here joins it only to storeys with no way in either.`,
         hint: `${capFirst(word)} \`${dead.id}\` stops on levels ${dead.levels.join(", ")}: join one of them to a storey with a way in. Or: ${ADD_DOOR}`,
       };
     }
     const room = roomToward(other, other.level < level ? "above" : "below");
     return {
-      message: `${own}, and the ${word} that stops here stands in a room nobody can walk to on level ${other.level}.`,
+      message:
+        here.length > 1
+          ? several
+          : `${own}, and the ${word} that stops here stands in a room nobody can walk to on level ${other.level}.`,
       hint: `On level ${other.level}, ${word} \`${dead.id}\` stands in room \`${room}\`: give that room a door from a room with a way in, or move the ${word} into one. Or: ${ADD_DOOR}`,
     };
   }

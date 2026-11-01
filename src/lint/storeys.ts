@@ -110,6 +110,7 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
       ...(l === levels[0] ? { lowestStorey: true as const } : {}),
       shaftNeighbours: neighbours.find((x) => x.level === l.level)!.m,
       reachableLevels: reach.reachable,
+      landedShafts: reach.landed?.get(l.level) ?? new Set<string>(),
       connections,
     });
   }
