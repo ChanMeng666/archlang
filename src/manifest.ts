@@ -441,7 +441,7 @@ const COMMANDS: ManifestCommand[] = [
         flag: "--out",
         alias: "-o",
         arg: "<dir>",
-        description: "output DIRECTORY for every rendered file (default: alongside each input)",
+        description: "output DIRECTORY for every rendered file, created if missing (default: alongside each input)",
       },
       FMT_FLAG,
       { flag: "--jobs", alias: "-j", arg: "<n>", description: "max concurrent renders (default: CPU count)" },

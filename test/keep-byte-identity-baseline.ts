@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: `centreline_at` on `between` openings moves describe() alone (issue #401), on 18127701 plus fix/j5-opening-host; with the field off every row held, and no evaluation-step count moved
+ * Taken: `W_SWING_OBSTRUCTED`'s hints name no `<wall>` on a derived wall (#401 residue), lint text only, on cd8420b2 plus fix/j6-residue; no evaluation-step count moved
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1468,7 +1468,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/2-house.arch",
-    "124d5e4ccd24507fc95885c28a35092510aeb9ef2ad8f76e7933083f58fa8878",
+    "ba0f773ce018e6236959c6ab533545cb70aa54238119276323f010c3d624d023",
     3793,
   ],
   [
@@ -1483,7 +1483,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/5-townhouse.arch",
-    "cb422e3d921b586b0c8a4049bfbecf1b746a1bb8d7767bb3b10b00d60ee41d9d",
+    "23605839ff53c279b2082bfa69aa87eda7c2b2da7b408e8f4c87bc5967aa89de",
     5000,
   ],
   [
@@ -1528,7 +1528,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch",
-    "39f3f7a0941c15a63a15f7e1dfc8b81564f68553610dc678c8413321dfea03e1",
+    "fea5e96c2360ab93a5597f8ee0b54bfcba3acf8ab6dbd10ed2bb7c3057afe78c",
     4709,
   ],
   [
@@ -1543,7 +1543,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch",
-    "c5db347f6d4d87a9c1c318acddfc409a00cf28ceeefb1acb6575b6a1eb3757d8",
+    "d2054fa5d57b6190ff0748a09507dcda79e2ee9e7d143328ebb905f2be95eccf",
     4470,
   ],
   [
