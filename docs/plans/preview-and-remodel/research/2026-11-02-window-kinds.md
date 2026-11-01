@@ -77,9 +77,9 @@ Each has the alternative rejected and what would reverse it.
    column holds `sliding` today, so it widens only for a longer word, from the closed vocabulary.
 10. **The legend gains a row per kind drawn**, its swatch the real symbol, for the five window kinds and
     `glazed_sliding`. Older door kinds have no row and stay that way (byte law).
-11. **No `examples/` file.** `packages/archlang-3d` lists door kinds in `src/scene3d/validate.ts:120`, and this
-    card does not touch that package, so an example would break its corpus. A docs fence and a test fixture
-    carry the form. The fixture stands in `test/fixtures/window-kinds/`: six corpus tables read `test/fixtures`
+11. **No `examples/` file.** A gallery plan would move every corpus table and the 3D package's counts for a
+    form a docs fence shows as well. A docs fence and a test fixture carry the form. *Reverse if* the gallery
+    wants a terrace door. The fixture stands in `test/fixtures/window-kinds/`: six corpus tables read `test/fixtures`
     flat and pin every plan there, and none of them is about this form.
 
 ## 4. Consequences by surface
@@ -96,7 +96,7 @@ Each has the alternative rejected and what would reverse it.
 | Other door rules | `W_LEAF_TOO_WIDE` silent (no swinging leaf); `W_BALCONY_NO_DOOR` satisfied; garage rules read `door garage` only; entrance candidate, not a street-side `hinged` pick, as `sliding`; exit approach takes the larger depth, as `sliding` |
 | Draw budget | A kinded window costs 11, a plain one still 6; a glazed door fits the door's 5 |
 | Takeoff | Unchanged: windows by width, doors by kind. Residue |
-| `packages/archlang-3d` | No source change. Window kinds pass through. Its closed `DoorKind` union, validator and schema refuse the new door kind: `V-SCH-01` fails at run time and `typecheck:all` fails at `src/scene3d/build.ts:168`. Reported, not fixed |
+| `packages/archlang-3d` | Window kinds pass through. Its closed `DoorKind` union, validator and schema gain the word, ruled by the main session: without it `V-SCH-01` fails and `typecheck:all` fails at `src/scene3d/build.ts:168`. No 3D feature: `glazed_sliding` builds `sliding`'s closed panel. Published 0.1.1 refuses it (`check` and `build` exit 2, `view --replay` still writes); the package needs a version bump at the release |
 
 ## 5. The byte law
 
