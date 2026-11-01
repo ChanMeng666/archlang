@@ -1926,7 +1926,7 @@ strip right at (0,0) gap 100 { room size }   # error: no extent
 
 *error* — `swing inward` or `swing outward` on a wall with no single inside.
 
-**Cause.** `swing inward|outward` is relative to the building: `inward` opens the leaf towards the one face of the host wall that has floor (probed one wall thickness off each face, against every room's own shape), `outward` away from it. A wall between two rooms (or one free-standing inside a room) has floor on both faces, a garden wall has it on neither, and a door with no host wall has no faces at all, so neither word picks a side, and guessing one would put the leaf where the author did not mean it. The door falls back to its default swing.
+**Cause.** `swing inward|outward` is relative to the building: `inward` opens the leaf towards the one face of the host wall that has floor (probed one wall thickness off each face, against every room's own shape), `outward` away from it. A wall between two rooms (or one free-standing inside a room) has floor on both faces, a garden wall has it on neither, and a door with no host wall has no faces at all, so neither word picks a side, and guessing one would put the leaf where the author did not mean it. The door falls back to its default swing. A door whose placement was refused is not told this as well: the refusal is the report.
 
 **Fix.** Name the room the leaf opens into with `swing into <room>`, or write the wall-relative `swing in|out` (`in` is the right-hand side of the wall's drawn direction on the page, `out` the left).
 

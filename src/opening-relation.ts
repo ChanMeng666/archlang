@@ -32,7 +32,7 @@
 
 import type { AttachPos, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import { chargeSteps, closest } from "./expr.js";
+import { chargeSteps } from "./expr.js";
 import type { Expr } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import type { OpeningRelation, RWall } from "./ir.js";
@@ -369,9 +369,9 @@ function pairRoom(room: WallsPairRoom, ctx: RelationCtx, what: string): PairRoom
   const reword = (d: Diagnostic): Diagnostic => {
     const table = ctx.datums?.table;
     if (d.code === "E_UNKNOWN_REF") {
-      const near = table ? closest(room.id, [...table.rooms.keys(), ...table.refused.keys()]) : null;
-      const { hints: _datumHint, ...rest } = d;
-      return { ...rest, message: unseen, ...(near ? { hints: [`did you mean "${near}"?`] } : {}) };
+      // The reader's near miss, already paid for, as the room it suggests: the `.top` is this read's.
+      const hints = d.hints?.map((h) => h.replace(/\.top"\?$/, '"?'));
+      return { ...d, message: unseen, ...(hints ? { hints } : {}) };
     }
     if (d.code === "E_DATUM_UNPLACED") {
       const why =

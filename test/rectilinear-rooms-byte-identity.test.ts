@@ -172,7 +172,7 @@ const BASELINE: [string, string][] = [
   ["874344a801971326859871db55b47877705079a16b852fe5aa0d75e1899b0e9a", "inline:clauses"],
   ["38cc9a4086d56351eeaedd9b8a088ac60c3e04bc0865089d50ed929f813216b9", "inline:door-beside-excepted-L"], // H10: +15 ring scan, +8 overlap; `centreline_at`, see ./byte-identity-baseline.ts
   ["03cb65e691bdcc7bec6e8382a8528924e6e470e3e98817a380d653b299862347", "inline:door-positions"], // `centreline_at`, see ./byte-identity-baseline.ts; `W_SWING_OBSTRUCTED`'s hints name no `<wall>` on a derived wall (#401 residue): lint text only
-  ["5a6eddc0789efa520617e1bc4cf6899e286e5206640250912c1dc6d4c6709c44", "inline:door-refusals"], // refused as it was: `E_UNKNOWN_REF` and `E_DATUM_UNPLACED` now name the room the line wrote, not `.top` (#401 residue)
+  ["28e9a77964e2f33f02ac570119ef9f757c67399da8753bb4a931bcbed513e027", "inline:door-refusals"], // refused as it was, in the same steps: `E_UNKNOWN_REF` and `E_DATUM_UNPLACED` now name the room the line wrote, not `.top` (#401 residue)
 ];
 
 suite("rectilinear rooms: the byte-identity law", () => {

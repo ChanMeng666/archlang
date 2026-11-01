@@ -5,8 +5,8 @@
  * id to name (ADR 0028 §3). A relational door is told its own clause and a hand-placed one its
  * point, and each statement a hint quotes is pasted back into its plan.
  *
- * `W_SWING_ROOM_NOT_ADJACENT` followed every refused placement: a door with no wall has no side
- * to read, and the refusal is the report. A door that simply has no wall keeps the warning.
+ * `W_SWING_ROOM_NOT_ADJACENT` and `E_SWING_SIDE` followed every refused placement: a door with no
+ * wall has no side to read, and the refusal is the report. A door that simply has no wall keeps both.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -95,6 +95,33 @@ suite("W_SWING_ROOM_NOT_ADJACENT: never on top of a refusal", () => {
     ["no such wall", "door id=d on nowall at 500 width 800 swing into a", "E_ATTACH_WALL_REF"],
   ])("%s: the refusal alone", (_name, door, code) => {
     expect(codes(plan(`${ROOMS}${W}  ${door}\n`))).toEqual([code]);
+  });
+
+  it.each([
+    ["a nib", "door id=d between a and b at 100 from start width 800 swing outward", "E_OPENING_NIB"],
+    ["an unknown room", "door id=d between nosuch and b at center width 800 swing inward", "E_UNKNOWN_REF"],
+    ["no such wall", "door id=d on nowall at 500 width 800 swing inward", "E_ATTACH_WALL_REF"],
+  ])("`swing inward|outward` on %s: the refusal alone, no E_SWING_SIDE", (_name, door, code) => {
+    expect(codes(plan(`${ROOMS}${W}  ${door}\n`))).toEqual([code]);
+  });
+
+  it("the plan of four refused doors gives four refusals, and the resolved door none", () => {
+    const src = plan(
+      `${ROOMS}${W}  door id=d between nosuch and b at center width 800 swing inward\n  door id=e between a and b at 100 from start width 800 swing outward\n  door id=f on nowall at 500 width 800 swing inward\n  door id=g on a.right at 500 from start width 800 swing into a\n  door id=h between a and b at center width 800 hinge near start swing into a\n`,
+    );
+    expect(codes(src).sort()).toEqual([
+      "E_ATTACH_WALL_REF",
+      "E_OPENING_NIB",
+      "E_OPENING_NO_SHARED_WALL",
+      "E_UNKNOWN_REF",
+    ]);
+  });
+
+  it("a door that resolves still hears E_SWING_SIDE, and one with no wall by position too", () => {
+    expect(codes(plan(`${ROOMS}${W}  door id=d between a and b at center width 800 swing inward\n`))).toEqual([
+      "E_SWING_SIDE",
+    ]);
+    expect(codes(plan(`${ROOMS}  door id=d at (4000,1500) width 800 swing inward\n`))).toContain("E_SWING_SIDE");
   });
 
   it("a door that resolves and names a room off its wall keeps the warning", () => {

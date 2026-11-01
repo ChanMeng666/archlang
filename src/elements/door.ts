@@ -514,9 +514,10 @@ export const door: ElementDef = {
       n.swingInto && lead?.host !== null ? swingInto(n.swingInto, at, host, ctx.rooms, ctx, id, n.span) : undefined;
     // `swing inward|outward` sits at the same derived tier as `swing into`: a measurement of where
     // the floor is, resolved to the wall-relative word it means. Not on a kind that takes no
-    // `swing` (that is `E_DOOR_KIND_CLAUSE` above, and a second error would only repeat it).
+    // `swing` (that is `E_DOOR_KIND_CLAUSE` above, and a second error would only repeat it), nor
+    // on a refused placement, for the same reason `swing into` is not.
     const buildingSwing =
-      n.swingBuilding && allowed.swing
+      n.swingBuilding && allowed.swing && lead?.host !== null
         ? swingBuilding(n.swingBuilding, at, host, ctx.rooms, ctx, id, n.swingBuildingSpan ?? n.span)
         : undefined;
     // A `garage` panel projects overhead into the BUILDING, so its face is derived from the

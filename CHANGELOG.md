@@ -26,7 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A `door` or `opening` `between` a room the plan does not have, or one that could not be placed, now says so about the name you wrote. It reported a datum, `nosuch.top`, that the line did not contain.
 - `archlang batch -o <dir>` creates the directory, however deep, where it failed every file with a raw `ENOENT`. A plan that does not compile creates nothing.
 - `W_SWING_OBSTRUCTED`'s hints no longer tell a door on a wall derived by `walls from rooms` to write `on <wall>`, since such a wall has no id. A door placed by rooms is told its own clause, and one placed by a point is told `at (x,y)`.
-- `W_SWING_ROOM_NOT_ADJACENT` no longer follows a door whose placement was already refused. A door that resolves and names a room off its wall still gets it.
+- `W_SWING_ROOM_NOT_ADJACENT` and `E_SWING_SIDE` no longer follow a door whose placement was already refused. A door that resolves still gets them.
 
 ### Changed
 
