@@ -83,8 +83,10 @@ window id=e on liv.right at corner liv.top width 1200
    a window with two hosts. *Reverse if:* authors keep writing one leg and the refusal does not
    teach them, or a schedule must carry one mark for the pair.
 2. **A leg alone is refused,** on the leg, with the missing statement in the hint. Half a corner
-   would be a window running into the side of a wall. A leg refused at the corner does not leave
-   its partner reporting it missing: it was written, and its own error is the one to read.
+   would be a window running into the side of a wall. A leg refused at this corner does not leave
+   its partner reporting it missing: it was written, and its own error is the one to read. Only that
+   leg: one refused at another corner says nothing about this one. They are matched by the two
+   edges each names, the other way round, compass words read as their frame words.
 3. **`width` runs to the outer corner, and a leg's centre comes from that.** So `at ± width/2` is
    still the span, and every reader of `at` and `width` (the cut, the schedule, the dimension chains,
    the 3D adapter) is right with nothing new to learn. *Alternative:* `width` from the centreline
@@ -100,7 +102,12 @@ window id=e on liv.right at corner liv.top width 1200
 5. **The drawing mitres.** Each leg's cover, wall-face lines, panes and sill stop on the line from
    the inner corner to the outer corner, so the two legs meet there and neither paints over the other.
    With walls of different thickness the line is not at 45°, and the two legs' lines still meet
-   vertex to vertex. Nothing is added at the corner: no mark, no mullion.
+   vertex to vertex. Nothing is added at the corner: no mark, no mullion. The cover overhangs the
+   faces by a pen, so on a leg barely wider than the other wall the mitre can reach the free jamb
+   inside that overhang, and past it the cover would turn inside out. There the cover stops, with
+   three vertices. *Alternative:* refuse below a margin. A pen is the sheet's and the resolver
+   cannot see it, so no margin holds on every sheet: 1:500 asks more than any leg a plan would call
+   narrow. *Reverse if:* the window on a leg that narrow should be refused for its own sake.
 6. **The position is not snapped.** A leg's end is a wall face, which is not on the grid, and
    snapping the centre would open the corner again. `open between` derives its opening off the faces
    the same way. *Alternative:* refuse an off-grid centre: every 250 mm wall with a 1800 mm leg would

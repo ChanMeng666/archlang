@@ -562,7 +562,7 @@ function positionOnRun(
     case "percent":
       ctx.diag(
         datumDiag(
-          `${what} is placed \`at ${posText(pos)}\`, which names no datum: along a ${runWord} write \`at <mm> from start|end\`, \`at <mm> from <room>.<edge>\`, \`at axis <label>\` or \`at center\``,
+          `${what} is placed \`at ${posText(pos)}\`, which names no datum: along ${runWord === "edge" ? "an" : "a"} ${runWord} write \`at <mm> from start|end\`, \`at <mm> from <room>.<edge>\`, \`at axis <label>\` or \`at center\``,
           posSpan,
         ),
       );

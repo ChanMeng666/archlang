@@ -13,6 +13,7 @@ import { parseOpeningHeights, resolveOpeningHeights, WINDOW_HEAD, WINDOW_SILL } 
 import { chargeSteps } from "../expr.js";
 import { sameSeg } from "../opening-junctions.js";
 import { cornerBlock } from "../opening-relation.js";
+import { COMPASS_DATUM_ALIASES, splitDatum } from "../room-datums.js";
 
 /**
  * How far apart the two glass lines are, as a fraction of the host wall's thickness: 50 mm
@@ -65,13 +66,22 @@ function exteriorNormal(
  * on the other wall, ends on that line, so the two meet vertex to vertex and neither paints over
  * the other, whatever the two thicknesses are. Read from the shape: the corner, and the way the
  * other wall leaves it. Null for a window that stands at no corner.
+ *
+ * Past the free jamb that line has nothing to meet: a window barely wider than the other wall is
+ * thick reaches it within the cover's pen of overhang. `pinched` says an `off` is that far, and
+ * `cap` is where the line and the jamb meet. A pen is the sheet's, so the resolver cannot refuse it.
  */
 function cornerMitre(
   wn: RWindow,
   seg: WallSegment,
   d: Point,
   n: Point,
-): { at: (off: number) => Point; atEnd: boolean } | null {
+): {
+  at: (off: number) => Point;
+  atEnd: boolean;
+  pinched: (off: number) => boolean;
+  cap: (off: number) => number;
+} | null {
   const corner = wn._corner;
   if (!corner) return null;
   const { at: c, other } = corner;
@@ -83,7 +93,20 @@ function cornerMitre(
   const side = away.x * n.x + away.y * n.y;
   const share = other.thickness / seg.thickness;
   const toCorner = atEnd ? d : mul(d, -1);
-  return { at: (off) => add(add(c, mul(toCorner, -off * side * share)), mul(away, off * side)), atEnd };
+  const jamb = (wn.width - other.thickness / 2) / share;
+  const pinched = (off: number): boolean => off * side >= jamb;
+  return {
+    at: (off) => add(add(c, mul(toCorner, -off * side * share)), mul(away, off * side)),
+    atEnd,
+    pinched,
+    cap: (off) => (pinched(off) ? side * jamb : off),
+  };
+}
+
+/** An edge as a corner compares it: `a.north` is `a.top` where a compass word may stand for it. */
+function edgeKey(name: string): string {
+  const d = splitDatum(name);
+  return d ? `${d.room}.${COMPASS_DATUM_ALIASES[d.word] ?? d.word}` : name;
 }
 
 /**
@@ -93,7 +116,9 @@ function cornerMitre(
  * them, so the two must share theirs. What the two windows share is reported once, on the later.
  */
 function settleCorner(w: RWindow, own: readonly ResolvedElement[], diag: (d: Diagnostic) => void): void {
-  chargeSteps(own.length + 1);
+  // At most five passes over the group, on any one path: the peers, then the refused legs or their
+  // partner, each window's place, and the columns. Charged whole, before the first.
+  chargeSteps(5 * own.length + 1);
   const corner = w._corner!;
   const refuse = (message: string, hints?: string[]): void =>
     diag({
@@ -109,8 +134,17 @@ function settleCorner(w: RWindow, own: readonly ResolvedElement[], diag: (d: Dia
   );
   const named = w._relation?.at?.replace(/^corner /, "") ?? "<room>.<edge>";
   if (peers.length === 0) {
-    // A window refused at its corner was written: its own error is the one to read.
-    if (own.some((e) => e.kind === "window" && e._cornerRefused)) return;
+    // The window on the other wall was written if it was refused at this corner: its own error is
+    // the one to read. A leg refused at any other corner says nothing about this one.
+    const [mine, theirs] = [edgeKey(w._relation?.edge ?? ""), edgeKey(named)];
+    const written = own.some(
+      (e) =>
+        e.kind === "window" &&
+        e._cornerRefused !== undefined &&
+        edgeKey(e._cornerRefused.on) === theirs &&
+        edgeKey(e._cornerRefused.to) === mine,
+    );
+    if (written) return;
     refuse(
       "runs to a corner alone: no window runs to it along the other wall, so it would end in the side of that wall",
       [`Add \`window on ${named} at corner ${w._relation?.edge ?? "<room>.<edge>"} width <mm>\`.`],
@@ -203,6 +237,7 @@ export const windowEl: ElementDef = {
       ...(n.sill !== undefined ? { _sillAuthored: true as const } : {}),
     });
     const lead = resolveOpeningLead(n, "window", width, ctx, `Window "${id}"`);
+    const written = n.attach?.pos.kind === "corner" ? { on: n.attach.wall, to: n.attach.pos.edge } : undefined;
     if (lead) {
       const { at, host, relation, corner } = lead;
       return {
@@ -215,7 +250,7 @@ export const windowEl: ElementDef = {
         span: n.span,
         ...(relation ? { _placement: "relational" as const, _relation: relation } : {}),
         ...(corner ? { _corner: corner } : {}),
-        ...(n.attach?.pos.kind === "corner" && !corner ? { _cornerRefused: true as const } : {}),
+        ...(written && !corner ? { _cornerRefused: written } : {}),
       };
     }
     const at = ctx.snapPt(ctx.evalPt(n.at!));
@@ -283,10 +318,13 @@ export const windowEl: ElementDef = {
       mitre && !mitre.atEnd ? mitre.at(off) : add(jA, mul(n, off)),
       mitre?.atEnd ? mitre.at(off) : add(jB, mul(n, off)),
     ];
-    const [c0, c1] = across(he);
-    const [c3, c2] = across(-he);
+    // The cover overhangs by a pen. Past the point where the mitre meets the free jamb it would turn
+    // itself inside out, so there it stops, and its jamb and its mitre share that one vertex.
+    const [c0, c1] = across(mitre ? mitre.cap(he) : he);
+    const [c3, c2] = across(mitre ? mitre.cap(-he) : -he);
+    const pts = [c0, ...(mitre?.pinched(he) ? [] : [c1]), ...(mitre?.pinched(-he) ? [] : [c2]), c3];
     const nodes: SceneNode[] = [];
-    nodes.push({ layer: "windows", prim: { t: "polygon", pts: [c0, c1, c2, c3] }, paint: { fill: theme.opening } });
+    nodes.push({ layer: "windows", prim: { t: "polygon", pts }, paint: { fill: theme.opening } });
     for (const off of [h, -h]) {
       const [a, b] = across(off);
       nodes.push({

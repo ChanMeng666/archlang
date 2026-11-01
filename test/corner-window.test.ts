@@ -23,8 +23,10 @@ import {
 } from "../src/index.js";
 import { windowEl } from "../src/elements/window.js";
 import type { RWindow } from "../src/ir.js";
+import { clearResolveCache, evaluationSteps, resolveAll } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
+import { NULL_WORLD } from "../src/world.js";
 import type { Point } from "../src/ast.js";
 import type { SceneNode } from "../src/scene.js";
 import {
@@ -198,6 +200,55 @@ describe("a window round a corner: the mitre", () => {
     expect(pts.filter((p) => p.x === 6140 && p.y === -140)).toHaveLength(2);
     // The top leg runs from 4300, and its horn stands 40 past that jamb.
     expect(pts.map((p) => p.x)).toContain(4260);
+  });
+
+  describe("a leg barely wider than the other wall", () => {
+    const leg = (width: number, head = ""): string =>
+      `plan "t" {\n  units mm\n  grid 10\n${head}${[ROOM, DERIVED, DOOR].join("\n")}\n  window id=n on a.top at corner a.right width ${width}\n${LEG_E}\n}\n`;
+    const covers = (src: string): Point[][] =>
+      windowsOf(src).flatMap((x) => (x.prim.t === "polygon" && x.paint.fill !== "none" ? [x.prim.pts] : []));
+    /** Every turn of the ring one way, and none straight: a simple convex ring. */
+    const convex = (pts: readonly Point[]): boolean => {
+      const turns = pts.map((p, i) => {
+        const [q, r] = [pts[(i + 1) % pts.length]!, pts[(i + 2) % pts.length]!];
+        return (q.x - p.x) * (r.y - q.y) - (q.y - p.y) * (r.x - q.x);
+      });
+      return turns.every((t) => t > 0) || turns.every((t) => t < 0);
+    };
+    const SHEETS = ["", "  paper A3 landscape\n  scale 1:50\n", "  paper A4 landscape\n  scale 1:500\n"];
+
+    it.each(SHEETS.flatMap((h) => [210, 220, 250, 300].map((w) => [h, w] as const)))(
+      "the cover is a simple ring on any sheet: %j width %d",
+      (head, width) => {
+        const src = leg(width, head);
+        expect(errors(src)).toEqual([]);
+        for (const c of covers(src)) expect(convex(c), JSON.stringify(c)).toBe(true);
+      },
+    );
+
+    it("the cover stops where the mitre meets the jamb, and draws no less of the rest", () => {
+      const [pinched] = covers(leg(210));
+      expect(pinched).toHaveLength(3);
+      // The jamb is at 5890, and the mitre reaches it 110 inside the centreline.
+      expect(pinched).toContainEqual({ x: 5890, y: 110 });
+      expect(ends(windowsOf(leg(210))).get(at(5900, 100))).toBe(2);
+      expect(covers(CORNER).map((c) => c.length)).toEqual([4, 4]);
+    });
+
+    it("on walls of two thicknesses the vertex is still the mitre's", () => {
+      const src = plan(ROOM, UNEVEN, DOOR, `  window id=n on a.top at corner a.right width 210`, LEG_E).replace(
+        "grid 50",
+        "grid 10",
+      );
+      expect(errors(src)).toEqual([]);
+      const [c] = windowsOf(src).filter((x) => x.prim.t === "polygon" && x.paint.fill !== "none");
+      expect(convex(c!.prim.t === "polygon" ? c!.prim.pts : [])).toBe(true);
+    });
+
+    it.each(D4_TEST_ELEMENTS.map((g) => [g.name, g] as const))("the frame carries it × %s", (_n, g) => {
+      const body = UNEVEN_BODY.replace("corner a.right width 1800", "corner a.right width 210");
+      expect(witnessViolations(body, g, { fixedSheet: true, grid: 10 })).toEqual([]);
+    });
   });
 
   it("draws what it costs: six primitives a leg", () => {
@@ -510,6 +561,29 @@ describe("a window round a corner: what is refused", () => {
     expect(only!.message).not.toContain("alone");
   });
 
+  it("a leg refused at another corner does not hide a lone leg at this one", () => {
+    const src = plan(ROOM, DERIVED, DOOR, LEG_N, `  window id=z on a.bottom at corner a.left width 150`);
+    const said = compile(src).diagnostics.map((d) => d.message);
+    expect(said).toHaveLength(2);
+    expect(said.join()).toContain('Window "n" runs to a corner alone');
+    expect(said.join()).toContain('Window "z" cannot run to a corner there');
+  });
+
+  it("a leg refused on this wall is not the other wall's window", () => {
+    const src = plan(ROOM, DERIVED, LEG_N, `  window id=m on a.top at corner a.right width 150`);
+    expect(
+      compile(src)
+        .diagnostics.map((d) => d.message)
+        .join(),
+    ).toContain('Window "n" runs to a corner alone');
+  });
+
+  it("the refused leg is known by its edges, in the compass words too", () => {
+    const src = plan(ROOM, DERIVED, `  window id=n on a.north at corner a.east width 150`, LEG_E);
+    expect(compile(src).diagnostics).toHaveLength(1);
+    expect(compile(src).diagnostics[0]!.message).toContain('Window "n"');
+  });
+
   it("the message of a compile error may name the wall, and says what stands there", () => {
     const src = plan(ROOM, RING, `  wall id=z partition thickness 100 { (6000,0) (9000,0) }`, LEG_N, LEG_E);
     expect(compile(src).diagnostics[0]!.message).toContain('wall "z" stands at the corner too');
@@ -616,11 +690,37 @@ describe("the count is charged", () => {
     expect(errors(src)).toEqual([]);
   });
 
+  it("a leg is charged five passes over its group, and a plain window none", () => {
+    const steps = (...lines: string[]): number => {
+      clearResolveCache();
+      const src = plan(ROOM, DERIVED, DOOR, ...lines);
+      return evaluationSteps(resolveAll(parse(src, BUILTIN_REGISTRY).plan!, BUILTIN_REGISTRY, NULL_WORLD));
+    };
+    const columns = Array.from({ length: 100 }, (_, i) => `  column at (${i * 100},9000) size 50x50`);
+    const cost = (...legs: string[]): number => steps(...legs, ...columns) - steps(...legs);
+    expect(cost(LEG_N, LEG_E) - cost()).toBe(2 * 5 * columns.length);
+    expect(cost(`  window id=m on a.top at 1500 from a.right width 900`) - cost()).toBe(0);
+  });
+
   it("thousands of windows at one corner stop at the meter, never in a hang or a throw", () => {
     const src = plan(ROOM, DERIVED, `  for i in 0..6000 {\n    window on a.top at corner a.right width 1800\n  }`);
     const got = errors(src);
     expect(got.length).toBeGreaterThan(0);
     expect(new Set(got).has("E_WINDOW_CORNER") || new Set(got).has("E_STEP_LIMIT")).toBe(true);
+  });
+});
+
+describe("the refusal of a plain length on a room's edge", () => {
+  it("reads as English on an edge and on a shared edge", () => {
+    const edge = plan(ROOM, DERIVED, `  window id=w on a.top at 1500 width 900`);
+    expect(compile(edge).diagnostics[0]!.message).toContain("along an edge write");
+    const shared = plan(
+      ROOM,
+      `  room id=b right-of a size 3000x5000`,
+      DERIVED,
+      `  opening id=o between a and b at 1500 width 900`,
+    );
+    expect(compile(shared).diagnostics[0]!.message).toContain("along a shared edge write");
   });
 });
 
@@ -655,7 +755,11 @@ describe("`open between` takes no position", () => {
 
   it.each([
     ["a plain length reads from the start", "open between a and b at 1500 width 2000", "at 1500 from start width 2000"],
-    ["a percentage names nothing `between` reads", "open between a and b at 40% width 2000", "at <mm> from start width 2000"],
+    [
+      "a percentage names nothing `between` reads",
+      "open between a and b at 40% width 2000",
+      "at <mm> from start width 2000",
+    ],
     ["a corner is no place for it", "open between a and b at corner a.top width 2000", "at <mm> from start width 2000"],
   ])("%s", (_name, clause, tail) => {
     const src = plan(ROOM, BESIDE, walls(clause));

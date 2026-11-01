@@ -539,9 +539,10 @@ export interface RWindow extends RBase {
   /** Present only on a window placed `at corner`. Internal: the drawing, `lint()` and `describe()`
    *  read it, and it never reaches the Scene. */
   _corner?: WindowCorner;
-  /** Written `at corner` and refused there, so the window on the other wall is not alone: it was
-   *  written, and its own error says what is wrong with it. Internal. */
-  _cornerRefused?: true;
+  /** Written `at corner` and refused there, as written: `on` the one edge, to the `to` edge. The
+   *  window that names those two the other way round is not alone: this one was written, and its
+   *  own error says what is wrong with it. Internal. */
+  _cornerRefused?: { on: string; to: string };
   /** Bottom of the glazing above this storey's floor, in mm — always resolved,
    *  the authored `sill` or {@link import("./datum.js").WINDOW_SILL}. */
   sill: number;
