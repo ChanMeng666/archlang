@@ -526,7 +526,7 @@ const BASELINE: [string, string][] = [
   ["examples/bungalow.arch", "cda041e6004160bf8b826158202f931b3b6457c88f8edd7dc147282163c1c283"], // PS2.11e, see header
   ["examples/classroom-block.arch", "809f674a9d48b528c5e9850768c92afe5d826c22783f1a18df610d8a88adb4f6"], // added with the example, re-measured for net area, see header; PS2.11e, see header
   ["examples/clinic.arch", "af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5"],
-  ["examples/corner-cafe.arch", "199a01c5d9fcbe38de99e8a87109a800428eee868b171404e81e2dfbb51a57ce"], // added with the example, re-measured for net area, see header
+  ["examples/corner-cafe.arch", "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
   ["examples/courtyard-house.arch", "e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce"], // re-measured for PS2.4, see header; PS2.11e, see header
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: "Utility" reads `utility` (`byte-identity-baseline.ts`).
   ["examples/furnished-flat.arch", "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a"], // PS2.11e, see header
@@ -615,7 +615,7 @@ const BASELINE: [string, string][] = [
   // PS2.18 (`lint()` only: the kitchenette's daylight warning declines); see header.
   ["eval/goldens/office.arch", "1a973564c08433ff368642c0bcba6a0e6d0429e15ab299a1a21cccb21cf3ef5d"],
   ["eval/goldens/open-plan-loft.arch", "63b2581c909426a3bc1cda32ae6e2f18ab6b55c054d15ab50cd8854139438440"],
-  ["eval/goldens/reception-suite.arch", "e235b1cd39e2d8578565ef458cb5e2eeb7651db89d72539ddb787508dd1bd21f"], // #367, see test/byte-identity-baseline.ts
+  ["eval/goldens/reception-suite.arch", "01663fc8203faf2e216377fa033d309e5c1c6ea9744deaf2e33cd19c1663c338"], // #367, see test/byte-identity-baseline.ts
   ["eval/goldens/relational-studio.arch", "e4eec5ae0421fb401d506e00aeb8caa6f00af6523a88975a5249840c60d0400b"],
   ["eval/goldens/scripting-units.arch", "4278fd060523d0683d10698e5b664ca08c18f1bdef0bc6c5e3502d40cb928396"],
   ["eval/goldens/sized-bedrooms.arch", "d89893bae1e7569300d69f5984e7ef04a959c0fa72081758a247d81d50f959c8"],
@@ -637,7 +637,7 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.faithful.arch",
-    "665e411682051815f2d7bec2cb4679016475d8ab2d1ef99066c0ef01c950c56d", // #367, see test/byte-identity-baseline.ts
+    "5ccd03f6a015998dca8b0ab09ef969bc8e664e0eab6d62cb2ae48139e115b9c1", // #367, see test/byte-identity-baseline.ts
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.laundered.arch",

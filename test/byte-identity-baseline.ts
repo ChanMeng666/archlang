@@ -1638,8 +1638,10 @@
  * so nothing else moved; the same holds of the block-stair and rectilinear tables, whose payload
  * adds the Scene, the overlay and the steps (the steps did not move). The rows, plan by plan:
  * `corner-cafe`, the one example: "Lobby" reads 3.0 em in Helvetica Bold, not 2.5, which at 3.5 mm
- * stands over the wall beside it. It goes to 3 mm, 10 mm lower; only the name and its figure move. The
- * lint estimate was wrong, then the renderer.
+ * puts its L in the swing of the door beside it, as it stood in Roboto too. It goes to 3 mm, its y 10
+ * mm lower; only the name and its figure move (both PNG diffs box that label). Its `lint()` is
+ * byte-identical: the report it would have raised is what the pass cleared. The lint estimate was
+ * wrong, then the renderer.
  * `chain30`, `star30`: a 90 m plan with no `paper`, labels 2.7 m tall on 3 m rooms. Every room still
  * reports; the labels are 1.5 m tall and wrapped, and the renderer was what was wrong.
  * `wall-between-around` `frames`: the same, 70 m across with no `paper`; every report stands.
@@ -1653,6 +1655,9 @@
  * clear in both; its report goes. The renderer was wrong.
  * `test/defect-corpus/annotation-collisions/label-over-bed` and `label-over-wc` draw clear now, so
  * each pins its label where the room's centre put it, and stays the defect it was written for.
+ * `test/taste-corpus/r14-living-off-to-one-side` (both twins) pinned "Bedroom 2" against the east
+ * wall, which the wider reading reports; the pin is gone, the label pass places it, and no taste
+ * digest moved.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -1663,7 +1668,7 @@ export const BASELINE: [string, string][] = [
   ["bungalow", "da38a67297389f39edef0d3cf88e2e0312bbff399fd5cc93d7a2c925d2a28508"], // PS2.11e, see header
   ["classroom-block", "3444d2acee4491e79da70ddfad114c6554b8de16978eb62f1e6eee28e50b3ba4"], // added with the example, re-measured for net area, see header; PS2.11e, see header
   ["clinic", "001315cc32a148ebaa69504d7e1b94f7dd36ddec87f767da3038e0aba89f8daa"],
-  ["corner-cafe", "ffc726d834d983a61dc85c47d495f11d43a7b80b6aa0363da5d37b1aa263c770"], // added with the example, re-measured for net area, see header
+  ["corner-cafe", "9ce42561a8976b3a60da3266aadc1a9f7fb6035f2dffc6346bcd497b85f579d7"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
   ["courtyard-house", "3984a002996a4d4aba0c1bdd462474f710a87ecc50848093435573f4bd4d6c2e"], // re-measured for PS2.4, see header; PS2.11e, see header
   ["furnished-flat", "52b8bee1afff224fca393b2fd77bf7a4720009b91d0a625da434648220a5eb87"], // PS2.11e, see header
   ["gallery-l", "9c21788039e6844add835cfa386e822c5f093475d8d5b4ff7cccc40551f8233f"], // PS2.10 dim fixed, see header; PS2.11e, see header
