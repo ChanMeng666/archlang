@@ -1,10 +1,10 @@
 {
-  "taken": "feat/s2-block-stair-lint f99e6819d15afa83ee414e07dbe7d4232a3d3363, after core 1.44 to 1.49 and the block stair: the sum reached the budget on core growth, 18.5 kB of it in panels; no 3D marker in either chunk",
+  "taken": "feat/j11-stairs-s4 a9828739a9381cf4e3ce3a65c2eb2e71e8c89572, after core 1.51.0 label fit, L sides, window kinds and the corner window: the sum went 20,021 B over the last baseline on core growth, 19.7 kB of it in panels; no 3D marker in either chunk",
   "how": "npm ci && npm run build && npm run playground:build:only on that commit; for each chunk dist/index.html loads at startup (its module <script src> and every <link rel=modulepreload>), the byte length of node:zlib gzipSync(file) at the default level, keyed by the file name without its content hash (for reading only: the gate sums them)",
   "growthBudget": 20000,
   "growthBudgetWhy": "card A8: the 3D chunk is ~150,500 B gzip, so +20,000 B over the sum trips on a leak of an eighth of it, while ordinary core growth (A5's own PR: +299 B over both) takes dozens of PRs to reach it; see preview3d.spec.ts",
   "gzip": {
-    "index": 192536,
-    "panels": 390792
+    "index": 192815,
+    "panels": 410534
   }
 }
