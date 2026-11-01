@@ -79,7 +79,8 @@ const LATIN1_NAMES =
 function helveticaBold(): Map<string, number> | null {
   let file: string;
   try {
-    file = join(dirname(createRequire(__filename).resolve("pdfkit/package.json")), "js", "data", "Helvetica-Bold.afm");
+    // pdfkit's `exports` hides its `package.json`, so walk from the main entry, which sits in `js/`.
+    file = join(dirname(createRequire(__filename).resolve("pdfkit")), "data", "Helvetica-Bold.afm");
   } catch {
     return null;
   }

@@ -151,6 +151,24 @@ describe("what fits, or is not the pass's to touch, stays", () => {
     expect(drawn(src).texts).toEqual(off(() => drawn(src).texts));
   });
 
+  it("stands at the room's centre when that is clear, whatever a hair of the floor's edge reads", () => {
+    // The floor's edge read a hair below nothing at the anchor, and a 1 mm edit flipped the label
+    // 450 mm sideways: 3000 wide landed at x 1050, 3001 at x 1500.5.
+    const strip = (w: number) => `plan "s" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  room id=a at (0,0) size ${w}x520 label "Corridor" uses hall
+  room id=b at (0,520) size ${w}x3000 label "Living" uses living
+  walls from rooms exterior 200 partition 100
+  door on b.bottom at center width 900 swing into b
+}`;
+    for (const w of [2990, 2999, 3000, 3001]) {
+      const [name] = drawn(strip(w), "a").texts;
+      expect(name!.at.x).toBe(w / 2);
+    }
+  });
+
   it("takes the first height that clears, not the smallest", () => {
     // 1400 mm of clear floor. The name draws 9.6 em: 1683 mm at 3.5 mm, 1442 at 3, 1202 at 2.5.
     const [name, area] = drawn(room('label "Mmmmmmmmmmm"', "1500x3000")).texts;
@@ -377,6 +395,84 @@ describe("over the corpus", () => {
     expect(moved.sort()).toEqual([...MOVED].sort());
     expect(labels).toBeGreaterThan(300);
     expect(shrunk).toBeGreaterThan(30);
+  }, 300_000);
+});
+
+/** The `room` statements of a source reversed in place, every other line where it stood; null for a
+ *  plan whose rooms are not all placed absolutely, on one storey. */
+function roomsReversed(src: string): string | null {
+  const lines = src.split("\n");
+  if (lines.some((l) => /^\s*(level|component|place)\b/.test(l))) return null;
+  const rooms = lines.flatMap((l, i) => (/^\s*room\b/.test(l) ? [i] : []));
+  if (rooms.length < 2) return null;
+  if (
+    rooms.some(
+      (i) => !/\bat \(|\bcircle\b|\bpolygon\b/.test(lines[i]!) || /\b(right-of|left-of|above|below)\b/.test(lines[i]!),
+    )
+  )
+    return null;
+  const out = [...lines];
+  rooms.forEach((i, k) => {
+    out[i] = lines[rooms[rooms.length - 1 - k]!]!;
+  });
+  return out.join("\n");
+}
+
+/** Every room's drawn texts, whatever order they were drawn in. */
+function textsOf(src: string, world: World): string[] {
+  const out: string[] = [];
+  for (const texts of labelsOf(src, world).values()) out.push(...texts.map((t) => JSON.stringify(t)));
+  return out.sort();
+}
+
+describe("the order of the source", () => {
+  const row = (id: string, x: number, name: string) =>
+    `  room id=${id} at (${x},0) size 1200x900 label "${name}" uses storage\n`;
+  const rooms = [
+    row("a", 0, "储藏室储藏室储藏"),
+    row("b", 1200, "Αποθήκη Αποθήκη"),
+    row("g", 2400, "Abstell raum tabs"),
+    row("h", 3600, "Abstell  raum  double"),
+    row("j", 4800, "Abstell- raum"),
+  ];
+  const plan = (order: readonly string[]) =>
+    `plan "o" {\n  units mm\n  paper A3 landscape\n  scale 1:50\n${order.join("")}  walls from rooms exterior 200 partition 100\n}\n`;
+
+  it("draws the same texts whichever way the rooms are written", () => {
+    const first = textsOf(plan(rooms), NULL_WORLD);
+    const [a, b, c, d, e] = rooms as [string, string, string, string, string];
+    for (const order of [
+      [b, a, c, d, e],
+      [e, d, c, b, a],
+      [c, e, a, d, b],
+    ]) {
+      expect(textsOf(plan(order), NULL_WORLD)).toEqual(first);
+    }
+  });
+
+  it("holds over the corpus: where the passes before it agree, this one does", () => {
+    let held = 0;
+    let acted = 0;
+    let before = 0;
+    for (const { name, src, world } of corpus()) {
+      const other = roomsReversed(src);
+      if (other === null) continue;
+      // `relocateLabels` visits in element order: where its result differs, the order is its own.
+      const a = off(() => textsOf(src, world));
+      const b = off(() => textsOf(other, world));
+      if (JSON.stringify(a) !== JSON.stringify(b)) {
+        before++;
+        continue;
+      }
+      const after = textsOf(src, world);
+      expect(textsOf(other, world), name).toEqual(after);
+      held++;
+      if (JSON.stringify(after) !== JSON.stringify(a)) acted++;
+    }
+    expect(held).toBeGreaterThan(100);
+    expect(acted).toBeGreaterThan(2);
+    // Few, or the comparison above is excusing what it is meant to hold.
+    expect(before).toBeLessThan(10);
   }, 300_000);
 });
 

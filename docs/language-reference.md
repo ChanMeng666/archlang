@@ -1298,7 +1298,8 @@ label that fits does not change at all.
 A label that clears at no height is drawn in the form that leaves the least of it buried, and
 `W_ANNOTATION_OVERLAP` reports it; one wholly on a piece keeps its size, since a smaller name is
 no less on it. No leader line is drawn. A `label … at (x,y)` pin keeps its size, as it keeps its
-place, and an `outdoor` surface's label and the figure of a room with no name do not shrink.
+place, and an `outdoor` surface's label and the figure of a room with no name do not shrink. Text
+is never mirrored, so a mirrored `place` may choose a different form or height from its twin.
 
 Width is an estimate covering two faces, character by character, taking the wider of Roboto (what
 the PNG and the PDF draw) and Helvetica Bold (what `Helvetica, Arial` at a name's weight reaches in a

@@ -78,6 +78,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   fractions of the footprint land on `x.xxxx5`). Remedy: `.claude/rules/glyphs.md`; why: ADR 0023.
 - **Changing the default `furnitureStroke`/`furnitureFill` turns group 1 of
   `test/fixture-byte-identity.test.ts` red** — always a bug (ADR 0023, decision 6).
+- **`vitest -u -t "<name>"` on a snapshot file deletes every snapshot the filter skipped** as obsolete
+  (`snapshot.test.ts` lost its multi-level plans this way). Run `-u` unfiltered and read the diff.
 - **`vitest -u` on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
   the file, group 1 included.** Scope it: `-u -t "re-blessed when redrawn"`, then confirm group 1
   is untouched in the diff.

@@ -1,4 +1,4 @@
-/**
+/**  for (const m of marks) if (m.kind === "text" && misfits.some((f) => f.gi === m.owner)) m.stale = true;
  * A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after
  * `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the
  * drawing's label size (#367).
@@ -44,10 +44,19 @@
  * hyphenated. The full size is tried for wrapped forms too: `wrapLabels` asks for clearance from
  * the walls at the generous width, and leaves `Abstell- raum` on one line for want of 1.25 mm.
  *
+ * Which labels do not fit is read first, from the fabric alone. A label that does not fit then
+ * claims no floor until its turn comes, so a neighbour never dodges a box that is about to shrink,
+ * and the turns go by the room's anchor, so the result of this pass does not depend on the order of
+ * the source. (`relocateLabels` before it visits in element order, and two labels it moves can
+ * still settle differently for that.)
+ *
  * When no height clears it, the form that leaves the least of the label buried is drawn, and an
  * exact tie keeps the larger height, so a label wholly on a symbol keeps its size. What is left is
  * `W_ANNOTATION_OVERLAP`'s to report: it reads this Scene. A label is never moved further off its
  * floor than it stands.
+ *
+ * Text is never mirrored, so a mirrored `place` can choose a different form or place from its twin:
+ * the lattice and the words are not symmetric the way the rooms are.
  *
  * A pinned `label … at (x,y)` is the author's decision and an `outdoor` surface's label is not
  * reported by the rule, so neither shrinks, and neither does a room with no name.
@@ -57,7 +66,9 @@
  * Outside the evaluator, so the step meter is not charged. The work is a count over the whole plan,
  * {@link MAX_FIT_WORK}, shared out by storey ({@link fitWork}): one unit per mark visited, one per
  * vertex clipped or read off a ring. Past it the pass stops where it stands and the labels after
- * it keep their size: a count, so that is the same on every machine, and the rule reports them.
+ * it keep their size: a count, so that is the same on every machine. The rule reports those labels
+ * unless its own count (`MAX_ANNOTATION_WORK`) stands down first, as it does on a pile of symbols,
+ * and then it files `annotation-budget` instead of a report for each.
  * A label too big for its room's whole extent costs a handful of reads, not a search.
  */
 
@@ -371,7 +382,8 @@ export function fitLabels(
   /** The share of a text off its floor; null once the count is spent. */
   const offFloor = (t: TextBoxes, ring: readonly Point[]): number | null => {
     work += ring.length;
-    return work > budget ? null : rectAreaOutside(t.ink, ring) / (t.ink.w * t.ink.h);
+    // Clamped: the clip's rounding can read a text wholly on its floor a hair below nothing.
+    return work > budget ? null : Math.max(0, rectAreaOutside(t.ink, ring) / (t.ink.w * t.ink.h));
   };
   /** What a text stands on, for the label of group `owner`; null once the count is spent. */
   const read = (t: TextBoxes, off: number, owner: number, clearance: number): Reading | null => {
@@ -420,7 +432,12 @@ export function fitLabels(
   };
 
   const heights = labelHeights(sizes);
-  for (let gi = 0; gi < groups.length; gi++) {
+  const clearanceNow = sizes.roomFont * CLEARANCE;
+
+  // Which labels do not fit reads the fabric alone, never another label, so it is the same in any
+  // order.
+  const misfits: Misfit[] = [];
+  for (let gi = 0; gi < groups.length && work <= budget; gi++) {
     const g = groups[gi]!;
     if (!g.wrap || g.fixed) continue;
     const texts: number[] = [];
@@ -429,23 +446,33 @@ export function fitLabels(
       if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
     }
     if (texts.length !== 2) continue;
-    const nameNode = nodes[texts[0]!]!;
-    const areaNode = nodes[texts[1]!]!;
-    const name = nameNode.prim;
-    const area = areaNode.prim;
+    const name = nodes[texts[0]!]!.prim;
+    const area = nodes[texts[1]!]!.prim;
     if (name.t !== "text" || area.t !== "text" || name.rotate !== undefined) continue;
 
     const nameBoxesNow = boxesOf(name, name.at);
     const areaBoxesNow = boxesOf(area, area.at);
     const nameOffNow = offFloor(nameBoxesNow, g.ring);
     const areaOffNow = offFloor(areaBoxesNow, g.ring);
-    if (nameOffNow === null || areaOffNow === null) return;
-    const clearanceNow = sizes.roomFont * CLEARANCE;
+    if (nameOffNow === null || areaOffNow === null) break;
     const nameNow = read(nameBoxesNow, nameOffNow, gi, clearanceNow);
     const areaNow = read(areaBoxesNow, areaOffNow, gi, clearanceNow);
-    if (!nameNow || !areaNow) return;
-    if (nameNow.fabric <= COLLIDE_MIN && areaNow.fabric <= COLLIDE_MIN) continue;
+    if (!nameNow || !areaNow) break;
+    if (nameNow.fabric > COLLIDE_MIN || areaNow.fabric > COLLIDE_MIN) {
+      misfits.push({ gi, nameAt: texts[0]!, areaAt: texts[1]!, name, area, buried: nameNow.total + areaNow.total });
+    }
+  }
 
+  // A label that may yet shrink or move claims no floor: a neighbour must not dodge a box about to
+  // go. Each takes its place in an order read off the plan, never the source's.
+
+  misfits.sort((a, b) => placeOrder(a, b, groups));
+
+  for (const misfit of misfits) {
+    const { gi, name, area } = misfit;
+    const g = groups[gi]!;
+    const nameNode = nodes[misfit.nameAt]!;
+    const areaNode = nodes[misfit.areaAt]!;
     const bb = polygonBounds(g.ring);
     const diag = Math.max(1, Math.hypot(bb.w, bb.h));
     const here = { x: name.at.x, y: name.at.y + sizes.roomFont * LABEL_NAME_RISE };
@@ -463,7 +490,7 @@ export function fitLabels(
     let roomy: Form | undefined;
     let clear: Form | undefined;
     let leastBuried: Form | undefined;
-    let least = nameNow.total + areaNow.total;
+    let least = misfit.buried;
     search: for (let hi = 0; hi < heights.length; hi++) {
       const h = heights[hi]!;
       const pitch = h.name * LABEL_LINE_PITCH;
@@ -494,6 +521,10 @@ export function fitLabels(
         let best: { p: Point; tier: number; total: number } | undefined;
         let bestScore = Infinity;
         for (const p of tooBig ? [g.anchor, here] : places) {
+          // The anchor scores no distance at all and places run outward: past the best score
+          // nothing further can win, and a tie stays with the nearer place.
+          const distance = (Math.hypot(p.x - g.anchor.x, p.y - g.anchor.y) / diag) * W_DISTANCE;
+          if (distance >= bestScore) break;
           const nameHere = moved(nameBoxes, nameAt(p));
           const areaHere = moved(areaBoxes, areaAt(p));
           const nameOff = offFloor(nameHere, g.ring);
@@ -504,19 +535,13 @@ export function fitLabels(
           const a = read(areaHere, areaOff, gi, clearance);
           if (!n || !a) break search;
           const total = n.total + a.total;
-          // Nothing near it at all: the nearest such place is the place, as `places` runs outward.
-          if (total === 0) {
-            best = { p, tier: 0, total };
-            break;
-          }
           const tier =
             Math.max(n.roomy, n.text, a.roomy, a.text) <= COLLIDE_MIN
               ? 0
               : Math.max(n.fabric, n.text, a.fabric, a.text) <= COLLIDE_MIN
                 ? 1
                 : 2;
-          const score =
-            tier * W_TIER + total * W_BURIED + (Math.hypot(p.x - g.anchor.x, p.y - g.anchor.y) / diag) * W_DISTANCE;
+          const score = tier * W_TIER + total * W_BURIED + distance;
           if (score < bestScore) {
             bestScore = score;
             best = { p, tier, total };
@@ -538,19 +563,39 @@ export function fitLabels(
 
     const chosen = roomy ?? clear ?? leastBuried;
     if (chosen) {
-      nodes[texts[0]!] = { ...nameNode, prim: chosen.name };
-      nodes[texts[1]!] = { ...areaNode, prim: chosen.area };
-      grid.forEach(boxOf(unionOf(primBBox(name)!, primBBox(area)!)), (m) => {
-        if (m.owner === gi) m.stale = true;
-      });
-      for (const prim of [chosen.name, chosen.area]) {
-        const box = primBBox(prim)!;
-        grid.insert(boxOf(box), { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 });
-      }
+      nodes[misfit.nameAt] = { ...nameNode, prim: chosen.name };
+      nodes[misfit.areaAt] = { ...areaNode, prim: chosen.area };
+    }
+    // Where it landed, even if that is where it stood, is now a place the next label must leave.
+    for (const prim of chosen ? [chosen.name, chosen.area] : [name, area]) {
+      const box = primBBox(prim)!;
+      grid.insert(boxOf(box), { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 });
     }
     if (work > budget) return;
   }
 }
+
+/** A label that does not fit, as the passes before this one left it. */
+interface Misfit {
+  /** Its group's index. */
+  gi: number;
+  /** Where its two texts stand in the node list. */
+  nameAt: number;
+  areaAt: number;
+  name: TextPrim;
+  area: TextPrim;
+  /** How much of it is buried now: a form must leave less. */
+  buried: number;
+}
+
+/** A place in the plan, then the words: the same two labels in the same order, whatever the source. */
+function placeOrder(a: Misfit, b: Misfit, groups: readonly LabelGroup[]): number {
+  const pa = groups[a.gi]!.anchor;
+  const pb = groups[b.gi]!.anchor;
+  return pa.y - pb.y || pa.x - pb.x || text(a.name.value, b.name.value) || text(a.area.value, b.area.value);
+}
+
+const text = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 
 /** The rect grown by `d` on every side. */
 function grown(b: BBox, d: number): BBox {
