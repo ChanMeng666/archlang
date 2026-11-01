@@ -1,0 +1,15 @@
+# A closed house whose north wall carries on past the corner and turns down the plot as a boundary
+# wall: the stretch past the corner stands on no room, though the same wall stands on two before it.
+plan "Boundary wall" {
+  units mm
+  grid 50
+  wall id=north exterior thickness 200 { (0,0) (12000,0) (12000,6000) }
+  wall id=rest exterior thickness 200 { (8000,0) (8000,5000) (0,5000) (0,0) }
+  wall id=p partition thickness 100 { (4000,0) (4000,5000) }
+  room id=a at (0,0) size 4000x5000 label "Living" uses living
+  room id=b at (4000,0) size 4000x5000 label "Bedroom" uses bedroom
+  door id=d_entry at (2000,5000) width 900 wall rest
+  door at (4000,2500) width 800 wall p
+  window at (2000,0) width 1500 wall north
+  window at (6000,0) width 1500 wall north
+}
