@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.50.0] - 2026-11-01
+
 ### Added
 
 - A quarter-turn or half-turn `stair` (issue #362): `stair id=s dir up width 1000 { flight at
