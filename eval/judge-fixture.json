@@ -964,7 +964,7 @@
     {
       "id": "l-shaped-flat",
       "valid": true,
-      "lintWarnings": 5,
+      "lintWarnings": 4,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],
@@ -1372,7 +1372,7 @@
     {
       "id": "reception-suite",
       "valid": true,
-      "lintWarnings": 8,
+      "lintWarnings": 7,
       "physicalWarnings": 0,
       "semanticPass": true,
       "failures": [],

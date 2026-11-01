@@ -2576,8 +2576,8 @@ exports[`golden SVG snapshots > renders corner-cafe.arch deterministically 1`] =
 <g id="A-ANNO-TEXT" inkscape:groupmode="layer" inkscape:label="A-ANNO-TEXT">
 <text x="3150" y="4930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Dining</text>
 <text x="3150" y="5315" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">90.0 m²</text>
-<text x="10300" y="9330" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Lobby</text>
-<text x="10300" y="9715" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">6.0 m²</text>
+<text x="10300" y="9340" font-size="300" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Lobby</text>
+<text x="10300" y="9670" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">6.0 m²</text>
 <text x="11595" y="8430" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">WC</text>
 <text x="11595" y="8815" font-size="250" fill="#7a7a7a" text-anchor="middle" dominant-baseline="central">5.1 m²</text>
 <text x="12000" y="1930" font-size="350" fill="#222222" text-anchor="middle" dominant-baseline="central" font-weight="600">Kitchen</text>

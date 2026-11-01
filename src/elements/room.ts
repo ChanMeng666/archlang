@@ -34,6 +34,7 @@ import {
   polygonLabelPoint,
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
+import { LABEL_AREA_DROP, LABEL_NAME_RISE } from "../text-layout.js";
 
 const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(REL_DIR_LIST);
 const REL_ALIGN_SET: ReadonlySet<string> = new Set<RelAlign>(REL_ALIGNS);
@@ -462,7 +463,7 @@ export const room: ElementDef = {
         layer: "labels",
         prim: {
           t: "text",
-          at: { x: cx, y: cy - sizes.roomFont * 0.2 },
+          at: { x: cx, y: cy - sizes.roomFont * LABEL_NAME_RISE },
           value: r.label,
           size: sizes.roomFont,
           anchor: "middle",
@@ -476,7 +477,7 @@ export const room: ElementDef = {
       layer: "labels",
       prim: {
         t: "text",
-        at: { x: cx, y: cy + (r.label ? sizes.roomFont * 0.9 : 0) },
+        at: { x: cx, y: cy + (r.label ? sizes.roomFont * LABEL_AREA_DROP : 0) },
         value: `${areaM2} m²`,
         size: sizes.areaFont,
         anchor: "middle",

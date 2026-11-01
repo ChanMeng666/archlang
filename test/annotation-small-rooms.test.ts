@@ -5,6 +5,10 @@
  *
  * The two plans are the issue's, byte for byte in everything but the one clause each twin changes.
  * The drawing a test reads is the Scene the compiler draws, never a position worked out here.
+ *
+ * Since `fitLabels` (`src/label-fit.ts`) those plans draw clear, so what the rule reads is held
+ * here with the label pinned where the room's centre put it (a pin keeps its size), or with a name
+ * too long to fit at any height: {@link LONG}.
  */
 
 import { describe as suite, expect, it } from "vitest";
@@ -16,13 +20,18 @@ import { toScene } from "../src/scene-build.js";
 const OVERLAP = "W_ANNOTATION_OVERLAP";
 const of = (src: string) => lint(src).filter((d) => d.code === OVERLAP);
 
-const issue = (name: string, door = "door between wc and abst", size = "1200x900") => `plan "labels in small rooms" {
+const issue = (
+  name: string,
+  door = "door between wc and abst",
+  size = "1200x900",
+  pin = "",
+) => `plan "labels in small rooms" {
   units mm
   paper A4 landscape
   scale 1:50
   room id=flur at (0,0) size 3000x1400 label "Flur" uses hall
   room id=wc right-of flur size 1000x1400 label "WC" uses wc
-  room id=abst below wc align left size ${size} label "${name}" uses storage
+  room id=abst below wc align left size ${size} label "${name}"${pin} uses storage
   walls from rooms exterior 200 partition 100
   door on flur.bottom at 800 from start width 900 swing into flur
   door between flur and wc at center width 800 swing into wc
@@ -31,6 +40,15 @@ const issue = (name: string, door = "door between wc and abst", size = "1200x900
 
 /** The issue's clean twin: the store's door slides, and the store is deep enough for its label. */
 const SLIDING = "door sliding between wc and abst";
+
+/** The room's centre, where the issue's label stood before it could shrink. */
+const AT_CENTRE = " at (3600,1985)";
+
+/** A pinned twin of the issue's plan. */
+const pinned = (name: string) => issue(name, undefined, undefined, AT_CENTRE);
+
+/** A name that does not fit a 1200 mm room at the smallest height. */
+const LONG = "Hauswirtschaftsraumundabstellkammer";
 
 /** One room on A4 at 1:50, plus `extra`. */
 const room = (label: string, extra = "", size = "4000x3000") => `plan "r" {
@@ -52,7 +70,7 @@ function drawn(src: string, id: string) {
 
 suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () => {
   it("reports the issue's store: the swing runs through the name, the wall under the area figure", () => {
-    const [d, ...rest] = of(issue("Abstellraum"));
+    const [d, ...rest] = of(pinned("Abstellraum"));
     expect(rest).toEqual([]);
     expect(d!.message).toBe(
       'The name "Abstellraum" and the area figure (1.1 m²) are printed over a wall and the swing of the door between "WC" and "Abstellraum", so the label and what is under it overprint each other on the drawing.',
@@ -65,12 +83,12 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
   });
 
   it("reports the name the label pass used to walk out of the building, and its wide twin is clean", () => {
-    expect(of(issue("Abstell- raum"))[0]!.message).toContain("are printed over a wall and the swing of");
+    expect(of(pinned("Abstell- raum"))[0]!.message).toContain("are printed over a wall and the swing of");
     expect(of(issue("Abstell- raum", SLIDING, "1800x1300"))).toEqual([]);
   });
 
   it("says a name wider than its floor runs out of the room", () => {
-    const [d] = of(room('label "Hauswirtschaftsraum"', "", "1200x2000"));
+    const [d] = of(room(`label "${LONG}"`, "", "1200x2000"));
     expect(d!.message).toContain("is printed over a wall and runs out of the room");
   });
 
@@ -130,6 +148,20 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
       expect(compile(src).diagnostics.map((d) => d.code)).toContain("W_ROOM_LABEL_OUTSIDE");
       expect(of(src)).toEqual([]);
     }
+  });
+
+  it("reads a round room's floor as the circle: a pin in the sliver past the 48-gon is on it", () => {
+    // 2000 mm radius: the 48-gon's edge stands 4.3 mm inside the circle halfway round each facet.
+    const θ = (3.75 * Math.PI) / 180;
+    const at = `(${(2000 + 1997 * Math.cos(θ)).toFixed(0)},${(2000 + 1997 * Math.sin(θ)).toFixed(0)})`;
+    const src = `plan "c" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  room id=r circle at (2000,2000) radius 2000 label "Round" at ${at} uses bedroom
+}`;
+    expect(compile(src).diagnostics.map((d) => d.code)).not.toContain("W_ROOM_LABEL_OUTSIDE");
+    expect(of(src).map((d) => d.message)).toEqual([expect.stringContaining("run out of the room")]);
   });
 
   it('reads `label ""` as no name, as the drawing does', () => {
@@ -213,11 +245,11 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
   it("says what is true of the case: the name, the figure, a pin, an unnamed room", () => {
     const hint = (src: string) => of(src)[0]!.hints![0]!;
     // The name over the wall: shortening it helps, and nothing promises it wraps.
-    const name = hint(room('label "Hauswirtschaftsraum"', "", "1200x2000"));
+    const name = hint(room(`label "${LONG}"`, "", "1200x2000"));
     expect(name).toContain("Shorten the name");
     expect(name).not.toContain("wrap");
     // Only the area figure on the wall: the name is not the trouble.
-    const figure = hint(issue("Abstellraum"));
+    const figure = hint(room('label "WC"', "", "350x2000"));
     expect(figure).toContain("Widen the room");
     expect(figure).not.toContain("Shorten");
     // Pinned, the name over the wall.
@@ -247,11 +279,12 @@ suite("W_ANNOTATION_OVERLAP — a room label against the room it stands in", () 
 suite("the label pass moves a label only onto its own floor", () => {
   it("keeps the issue's spaced name on its floor (it walked out through the wall to x 4080)", () => {
     const [name] = drawn(issue("Abstell- raum"), "abst");
-    expect(name!.at.x).toBe(3600);
+    // Its wider line, "Abstell-", at the height it is drawn: 330 mm, inside the room's x 3000 to 4200.
+    expect(name!.at.x).toBeLessThanOrEqual(4200 - 330 / 2);
   });
 
   it("lets a name wider than its room slide along it, off a piece, no further off the floor", () => {
-    const src = room('label "Hauswirtschaftsraum"', "furniture table at (600,3000) size 800x800", "1200x6000");
+    const src = room(`label "${LONG}"`, "furniture table at (600,3000) size 800x800", "1200x6000");
     const [name] = drawn(src, "r");
     // Bare, the name stands at the room's centre on the table; it moves down the room, across it not at all.
     expect(Math.abs(name!.at.x - 600)).toBeLessThanOrEqual(180);
@@ -279,12 +312,13 @@ suite("the label pass moves a label only onto its own floor", () => {
   });
 
   it("never costs a plan a symbol report: past the fabric count that test alone stands down", () => {
-    // A storey whose every label touches a wall, its poche one loop round the whole building.
+    // A storey whose every label touches a wall, its poche one loop round the whole building. They
+    // are pinned, or they would shrink clear of the wall.
     const grid = (n: number) => {
       let s = 'plan "g" {\n  units mm\n  paper A0 landscape\n  scale 1:200\n';
       for (let y = 0; y < n; y++)
         for (let x = 0; x < n; x++)
-          s += `  room id=r${x}_${y} at (${x * 1500},${y * 1500}) size 1500x1500 label "Room"${x + y === 0 ? " at (750,750)" : ""} uses bedroom\n`;
+          s += `  room id=r${x}_${y} at (${x * 1500},${y * 1500}) size 1500x1500 label "Room" at (${x === 0 && y === 0 ? 750 : x * 1500 + 100},${y * 1500 + 750}) uses bedroom\n`;
       s += "  walls from rooms exterior 200 partition 100\n";
       for (let y = 0; y < n; y++)
         for (let x = 0; x + 1 < n; x++) s += `  door between r${x}_${y} and r${x + 1}_${y} at center width 700\n`;
@@ -295,7 +329,9 @@ suite("the label pass moves a label only onto its own floor", () => {
       (f.skipped ?? []).some((s) => s.reason === "annotation-budget"),
     );
     expect(skipped).toBe(true);
-    expect(of(src).map((d) => d.message)).toEqual([expect.stringContaining("printed over the bed")]);
+    const reports = of(src).map((d) => d.message);
+    expect(reports.length).toBeGreaterThan(0);
+    for (const m of reports) expect(m).toContain("printed over the bed");
   }, 60_000);
 
   it("charges a label clear of every wall nothing for the poche", () => {

@@ -18,6 +18,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   `geometry.ts` (a `double` door's two, built with `doorSwing`'s geometry), shared by
   `door.render()` and every swing measure — keep them on that one helper. `doorSwing` alone
   returns null for a `double`, so a new caller of it skips double doors silently.
+- **A Scene node names its element only under `annotate`.** A pass that reads `elementKind` to decide
+  the drawing draws one thing for `compile()` and another for `lint()`, which passes `annotate`. Record
+  the node range while lowering instead (`ElementNodes`, `src/label-fit.ts`).
 - **`E_DRAWING_LIMIT` exists only in `compile()`, and only when no other error is present**
   (`src/pipeline.ts`). `describe()`/`lint()` never report it, and a catalogue fence wrapped as a
   fragment shows only `E_PARSE`. `toScene(resolve(ast).ir)` bypasses the drawing budget; `compile()`
@@ -75,6 +78,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   fractions of the footprint land on `x.xxxx5`). Remedy: `.claude/rules/glyphs.md`; why: ADR 0023.
 - **Changing the default `furnitureStroke`/`furnitureFill` turns group 1 of
   `test/fixture-byte-identity.test.ts` red** — always a bug (ADR 0023, decision 6).
+- **`vitest -u -t "<name>"` on a snapshot file deletes every snapshot the filter skipped** as obsolete
+  (`snapshot.test.ts` lost its multi-level plans this way). Run `-u` unfiltered and read the diff.
 - **`vitest -u` on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
   the file, group 1 included.** Scope it: `-u -t "re-blessed when redrawn"`, then confirm group 1
   is untouched in the diff.

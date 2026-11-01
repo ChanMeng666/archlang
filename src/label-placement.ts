@@ -25,11 +25,12 @@
  * {@link COLLIDE_MIN} of its own area buried in an obstacle or an already-placed label.
  * A plan whose labels are clear is not searched at all and its bytes are unchanged,
  * which is the property every drawing shipped before this pass relies on. And it never moves
- * further off its own floor than its anchor stands, read at the width drawn ({@link INK_EM}): a
+ * further off its own floor than its anchor stands, read at the width drawn (`inkWidth`): a
  * name wider than its room may slide along the room, off a piece, and cannot walk out through a
  * wall, which a flat {@link W_OUTSIDE} let the search trade for less overlap (#367). A room's label
- * left over something is `W_ANNOTATION_OVERLAP`'s to report; that rule reads rooms only, so an
- * `outdoor` surface's label is not reported.
+ * this pass cannot clear goes to `fitLabels` (`src/label-fit.ts`), which runs next and may shrink
+ * it; what is left over something after that is `W_ANNOTATION_OVERLAP`'s to report. That rule
+ * reads rooms only, so an `outdoor` surface's label is not reported.
  *
  * ### Determinism
  *
@@ -62,8 +63,8 @@ import { ROOF_LAYER } from "./elements/roof.js";
 import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
 import type { ResolvedPlan } from "./ir.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
-import { EM_PER_CHAR, INK_EM, textWidth } from "./text-metrics.js";
-import { balancedLines, fewestLines, LABEL_LINE_PITCH, textExtent } from "./text-layout.js";
+import { textWidth } from "./text-metrics.js";
+import { balancedLines, fewestLines, inkExtent, LABEL_LINE_PITCH, textExtent } from "./text-layout.js";
 
 /**
  * One labelled area and the node range it contributed to the Scene. `toScene` records it
@@ -128,7 +129,7 @@ const W_OBSTACLE = 250;
 /** Score weight per unit of area-fraction buried in an already-placed room label. */
 const W_PLACED = 10_000;
 /** How far a candidate may be preferred away from the anchor (planscript's `·4`). */
-const W_DISTANCE = 4;
+export const W_DISTANCE = 4;
 
 /** Bounding box of a point set (empty → null). */
 function bboxOfPoints(pts: readonly Point[]): BBox | null {
@@ -158,9 +159,8 @@ function unionBBox(a: BBox, b: BBox): BBox {
   return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
 }
 
-/** The rect narrowed about its centre from the width estimate to the width drawn. */
-function inkOf(b: BBox): BBox {
-  const w = (b.w * INK_EM) / EM_PER_CHAR;
+/** The rect taken about its centre from the width estimate to `w`, the width drawn. */
+function inkOf(b: BBox, w: number): BBox {
   return { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h };
 }
 
@@ -170,7 +170,7 @@ function shiftBBox(b: BBox, dx: number, dy: number): BBox {
 }
 
 /** Overlapping area of two axis-aligned rects (mm²; 0 when disjoint). */
-function overlapArea(a: BBox, b: BBox): number {
+export function overlapArea(a: BBox, b: BBox): number {
   return overlap1d(a.x, a.x + a.w, b.x, b.x + b.w) * overlap1d(a.y, a.y + a.h, b.y, b.y + b.h);
 }
 
@@ -487,7 +487,7 @@ const centredIn = (r: [number, number] | null, x: number, w: number): boolean =>
   r !== null && x - w / 2 >= r[0] && x + w / 2 <= r[1];
 
 /** How many line counts past the fewest the wrap step tries before it keeps one line. */
-const WRAP_TRIES = 3;
+export const WRAP_TRIES = 3;
 
 /**
  * Wrap a room's name onto several lines when it does not fit its room on one and a
@@ -569,6 +569,29 @@ export function wrapLabels(
 }
 
 /**
+ * What a label stands on rather than collides with: the floor and the walls, whose unioned
+ * region boxes the whole building (the caller measures walls by {@link wallBands}), a roof and
+ * the ground. A roof outline is the same trap as the wall region: its bounding box is the whole
+ * building plus the eaves, so treating it as an obstacle would bury every label in the plan at
+ * once and set the relocation pass loose on all of them. It is also nothing a label collides
+ * WITH: an overhang is drawn above the plane the names are written on.
+ *
+ * The same argument, for the same reason, for the ground. A `fence` node's bounding box is its
+ * whole run, often the entire site, and a balcony's rail ticks sit outside the building; neither
+ * is something a room name can collide with. The surfaces themselves ride the `floor` pass; the
+ * last test catches the rails and the fences, which ride `furniture`.
+ *
+ * Note what is NOT skipped: an `outdoor` LABEL, which rides `labels` like a room's. Two names
+ * printed on top of each other is exactly the collision this pass exists for, so a room label
+ * does move off a terrace's name.
+ */
+export function underLabels(n: SceneNode): boolean {
+  if (n.layer === "floor" || n.layer === "wallFill" || n.layer === "wallFace") return true;
+  if (n.layerName === ROOF_LAYER) return true;
+  return n.layer !== "labels" && n.layerName !== undefined && OUTDOOR_LAYERS.includes(n.layerName);
+}
+
+/**
  * Move each labelled area's name + area text off whatever is drawn under it.
  *
  * Mutates `nodes` in place (replacing, never editing, the text nodes it moves), which is
@@ -602,24 +625,7 @@ export function relocateLabels(
   for (let i = 0; i < nodes.length; i++) {
     if (own.has(i)) continue;
     const n = nodes[i]!;
-    if (n.layer === "floor" || n.layer === "wallFill" || n.layer === "wallFace") continue;
-    // A roof outline is the same trap as the unioned wall region above: its bounding box
-    // is the whole building plus the eaves, so treating it as an obstacle would bury every
-    // label in the plan at once and set the relocation pass loose on all of them. It is
-    // also nothing a label collides WITH — an overhang is drawn above the plane the names
-    // are written on.
-    if (n.layerName === ROOF_LAYER) continue;
-    // The same argument, for the same reason, for the ground. A `fence` node's
-    // bounding box is its whole run — often the entire site — and a balcony's rail ticks
-    // sit outside the building; neither is something a room name can collide with, and
-    // treating either as an obstacle would set the relocation pass loose on every label
-    // in the plan. The surfaces themselves ride the `floor` pass and are already skipped
-    // above; this catches the rails and the fences, which ride `furniture`.
-    //
-    // Note what is NOT skipped: an `outdoor` LABEL, which rides `labels` like a room's.
-    // Two names printed on top of each other is exactly the collision this pass exists
-    // for, so a room label does move off a terrace's name.
-    if (n.layer !== "labels" && n.layerName !== undefined && OUTDOOR_LAYERS.includes(n.layerName)) continue;
+    if (underLabels(n)) continue;
     const b = primBBox(n.prim);
     if (b) obstacleList.push(inflate(b, clear));
   }
@@ -697,15 +703,21 @@ export function relocateLabels(
     let best = anchor;
     let bestScore = score(anchor, 0, 1);
     // How far off its floor the label already stands, the most a place may be. The slack is for
-    // the clip's own rounding: two places the same distance off must read as equal.
-    const inkRect = inkOf(rect0);
+    // the clip's own rounding: two places the same distance off must read as equal. Every text
+    // of a group is centred on one line, so the widest text is the block's width.
+    let inkW = 0;
+    for (const i of texts) {
+      const prim = nodes[i]!.prim;
+      if (prim.t === "text") inkW = Math.max(inkW, inkExtent(prim).w);
+    }
+    const inkRect = inkOf(rect0, inkW);
     const offFloor = rectAreaOutside(inkRect, ring) + inkRect.w * inkRect.h * 1e-9;
     let k = 2;
     for (const fy of FRACTIONS) {
       for (const fx of FRACTIONS) {
         const p: Point = { x: bb.x + bb.w * fx, y: bb.y + bb.h * fy };
         const slot = k++;
-        if (!pointInPolygon(p.x, p.y, ring) || rectAreaOutside(inkOf(rectAt(p)), ring) > offFloor) continue;
+        if (!pointInPolygon(p.x, p.y, ring) || rectAreaOutside(inkOf(rectAt(p), inkW), ring) > offFloor) continue;
         const s = score(p, 1 + (Math.hypot(p.x - anchor.x, p.y - anchor.y) / diag) * W_DISTANCE, slot);
         if (s < bestScore) {
           bestScore = s;

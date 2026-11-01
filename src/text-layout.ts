@@ -8,15 +8,21 @@
  *
  * Widths are the one shared estimate, {@link textWidth}: every line of a name is drawn at the
  * same font size, so comparing widths is comparing lengths, and the breaker works in
- * character counts.
+ * character counts. {@link inkExtent} is the same box at the width the text draws.
  */
 
 import type { Point } from "./ast.js";
 import type { ScenePrim } from "./scene.js";
-import { EM_PER_CHAR, textWidth } from "./text-metrics.js";
+import { EM_PER_CHAR, inkWidth, textWidth } from "./text-metrics.js";
 
 /** Line pitch of a wrapped name, in multiples of its font size (a conventional 1.2 leading). */
 export const LABEL_LINE_PITCH = 1.2;
+
+/** How far a room's name stands above its anchor, in multiples of the name's size. */
+export const LABEL_NAME_RISE = 0.2;
+
+/** How far a room's area figure stands below its anchor, in multiples of the name's size. */
+export const LABEL_AREA_DROP = 0.9;
 
 /** One unit a name may be broken between: `[start, end)` into the name. */
 interface Unit {
@@ -154,4 +160,11 @@ export function textExtent(prim: Extract<ScenePrim, { t: "text" }>): { w: number
   let w = 0;
   for (const line of block.lines) w = Math.max(w, textWidth(line, prim.size));
   return { w, h: prim.size + (block.lines.length - 1) * block.pitch };
+}
+
+/** {@link textExtent} at the width the text draws ({@link inkWidth}), not the generous estimate. */
+export function inkExtent(prim: Extract<ScenePrim, { t: "text" }>): { w: number; h: number } {
+  let w = 0;
+  for (const line of textLines(prim)) w = Math.max(w, inkWidth(line.value, prim.size));
+  return { w, h: textExtent(prim).h };
 }

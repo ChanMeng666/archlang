@@ -22,6 +22,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | One L-shaped room in `walls from rooms` | 1.49.0 | [L-shaped rooms](#l-shaped-rooms) |
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
 | `arch finish` on a plan with storeys | next release | [Furnishing every storey](#furnishing-every-storey) |
+| Labels that shrink to fit a small room | unreleased | [Labels in small rooms](#labels-in-small-rooms) |
 
 ## Quantities and takeoff
 
@@ -243,7 +244,7 @@ note: Plan JSON carries no paper; this export leaves out `paper A4 landscape` (t
 - `W_FURNITURE_ON_STAIR`: a piece on a flight, or on the landing it owes. `arch finish` no longer places one there.
 - `W_ANNOTATION_OVERLAP` now also reports a room's name or area figure over a wall or a door's swing, or running
   off its floor. The label pass no longer walks a name out of its room; a name too wide for its room stays
-  there and is reported. The drawing neither shrinks a label nor draws a leader to it.
+  there and is reported. The drawing did not yet shrink a label: see [Labels in small rooms](#labels-in-small-rooms).
 
 ## Gaps that used to pass quietly
 
@@ -307,3 +308,23 @@ It draws as one stair, with one label, one walking line and one break line. `W_S
 ```
 
 The same room id on two levels is two rooms, so `in liv` means the room of the block it is written in, and each entry of `changes` and `unresolved` carries its `level`. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. A room of a placed component stays empty and is named; furnish the component, or write `furniture … in u1.bed` yourself. A one-storey plan gets the same bytes as before, so `finish` can still write a piece on a `void`, a lift or an escalator there.
+
+## Labels in small rooms
+
+A room's label that does not fit now shrinks. If its name or area figure would lie over a wall, a door's swing or a fixture, or run off the floor, the label is drawn at the first height that clears: 3, 2.5 or 2 mm on the sheet, wrapped at a space where that helps, at the clear place nearest the room's centre. A label that fits does not change.
+
+```arch
+plan "A small store" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  room id=wc at (0,0) size 1000x1400 label "WC" uses wc
+  room id=store below wc align left size 1200x900 label "Abstellraum" uses storage
+  walls from rooms exterior 200 partition 100
+  door between wc and store at center width 600 swing into store
+}
+```
+
+"Abstellraum" comes out at 2 mm, beside the door's swing. Write `Abstell- raum` and it breaks at the space; a word is never split on its own. A pinned `label … at (x,y)` keeps its size. A label that clears at no height is reported by `W_ANNOTATION_OVERLAP`, and no leader line is drawn. 2 mm is the size of furniture labels, the smallest lettering the sheet draws, and it is this drawing's own rule, no standard's minimum. Without `paper`, the steps end at that drawing's furniture-label size.
+
+Widths are now read character by character, in place of one figure for every letter: the wider of Roboto, which the PNG and the PDF draw, and Helvetica Bold, which a browser reaches for an SVG's room name. `WC` reads 0.83 of its size per character and "Utility" 0.4, so `W_ANNOTATION_OVERLAP` can report a name it used to pass, and drop one it used to report. This is an estimate covering those two faces, not a promise for every font.

@@ -84,7 +84,7 @@ const BASELINE: [string, string][] = [
   ["312d17f25ef87de1b03b11ab09383648ec0a85c38a1f4ecf569e54014387b8fd", "examples/bungalow.arch"], // H10: +6 ring scan, +0 overlap
   ["843f1de2ff7da325a3211c0c95d6c4211d47108cc15be61b8364fbc3f2955886", "examples/classroom-block.arch"],
   ["add2574d8abfc894d4d3880bbc97a485bee142c9ef90c16df3e5a491747a4858", "examples/clinic.arch"],
-  ["74b06965f559d70538ab6b8091206a6d7c21228ed57909bbb11a1394132e622a", "examples/corner-cafe.arch"],
+  ["0c5f2a884df8dd9e94a4304efc09c531fc6199a24284a43f4ef2c1e9481eef9a", "examples/corner-cafe.arch"], // #367, see test/byte-identity-baseline.ts
   ["411fd77e07ded87ca0555dae3f1abb713057a7b63b5e86e712e3a05e2d4fb02a", "examples/courtyard-house.arch"], // H10: +34 ring scan, +0 overlap
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["4090de73163a56b3319477311f2a1d38126aa4861359e38193f897b364e58ef5", "examples/gallery-l.arch"], // H10: +21 ring scan, +8 overlap
@@ -114,7 +114,7 @@ const BASELINE: [string, string][] = [
   ["f220acec3a66201d974fd3475459a35d52efe4689fc4f76784ccfae1ddc1b92d", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts; `W_SWING_OBSTRUCTED`'s hints name no `<wall>` on a derived wall (#401 residue): the accessibility lint's text alone, same steps
   ["33437c49c3e35fcf638c3e37456e0ab9382c91a95aeb46b0d1814905aae8ad0a", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap
   ["2fe38a4ad849ebb8a3192c7cea724d729f659fed022b9a1740b8b96a0e1db1f9", "test/fixtures/axes-grid.arch"],
-  ["acd6528394a79d385a1e02c64e9646a656daecb22eaeda68fcd8d0a814428aa8", "test/fixtures/chain30.arch"],
+  ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
   ["c08051d0ac804cb6ddbc6d6a073934ce248aab2951f1b3bcbb05e242ec1f4c22", "test/fixtures/dense-bays.arch"],
   ["b9215930403c72e737b6486d949354fc8162cf96ec5d53897edfab5f21835e4f", "test/fixtures/diff-a.arch"],
   ["cc20d6821e47c1a45a5c0b94d86a15eda2e2e684a66c096c06ef8071b21bf20b", "test/fixtures/diff-b.arch"],
@@ -125,7 +125,7 @@ const BASELINE: [string, string][] = [
   ["bfe79454671a15f63522c0a770453a819328df15f90b01154d028f5161350046", "test/fixtures/lock-window-moved.arch"],
   ["ff686ab3285ac3d6f30af9607a711627f6f864825a15fef562f19c28700b2753", "test/fixtures/off-path-bypass.arch"],
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
-  ["fce50b915b34c243f9cbcf3f8dbdc47b3f2006973098b3d9ab3339dff541cb0d", "test/fixtures/star30.arch"],
+  ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
   ["09ac060ad6731b56e40a23bf9b43938ec0c2aa82d38066050eff243c1b86728a", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap
   ["3d10dfea39abccb9a292527e7a5c85adaaf04b944de920f9ad3d9690187bcb68", "test/fixtures/zones-levels.arch"],
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],

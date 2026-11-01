@@ -526,7 +526,7 @@ const BASELINE: [string, string][] = [
   ["examples/bungalow.arch", "cda041e6004160bf8b826158202f931b3b6457c88f8edd7dc147282163c1c283"], // PS2.11e, see header
   ["examples/classroom-block.arch", "809f674a9d48b528c5e9850768c92afe5d826c22783f1a18df610d8a88adb4f6"], // added with the example, re-measured for net area, see header; PS2.11e, see header
   ["examples/clinic.arch", "af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5"],
-  ["examples/corner-cafe.arch", "199a01c5d9fcbe38de99e8a87109a800428eee868b171404e81e2dfbb51a57ce"], // added with the example, re-measured for net area, see header
+  ["examples/corner-cafe.arch", "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
   ["examples/courtyard-house.arch", "e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce"], // re-measured for PS2.4, see header; PS2.11e, see header
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: "Utility" reads `utility` (`byte-identity-baseline.ts`).
   ["examples/furnished-flat.arch", "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a"], // PS2.11e, see header
@@ -576,7 +576,7 @@ const BASELINE: [string, string][] = [
   ["examples/lib/fixtures.arch", "57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310"],
   ["examples/lib/furniture.arch", "adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b"],
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
-  ["test/fixtures/chain30.arch", "9ba4940dd0056ea94b3ff99e95a9288b8130a485aa2a3e7e97c9c6cc32b797d9"], // new fixture, see header
+  ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
   ["test/fixtures/diff-a.arch", "33a377ed414748c1262bdfbd057d657f8dda607ff77be9d944d2daa5feb12b2a"], // re-measured for PS2.4, see header
   ["test/fixtures/diff-b.arch", "1d4aaebab314c77742fc16d68c8925aa629ae42e1253a2167e240a2f25849ab1"],
@@ -587,7 +587,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/lock-window-moved.arch", "5178ac32070a056b37462b4169b3fbdbbb0ee9a94ca05221cc0c64cedf89dd99"], // new fixture (B1), see header
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"], // new fixture, see header; PS2.11e, see header
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
-  ["test/fixtures/star30.arch", "93ffc93f0294e7eb2fed6e9db698f85e25e8f9f7a49d93a8de0d6028da05135b"], // new fixture, see header
+  ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
   ["test/fixtures/storeys-eaves-overflow.arch", "e29b5e34735306051eeea8215d258873db2935ed3c7ebaf575a4b7af5cb89a6d"], // new fixture (PS2.77), see header
   ["test/fixtures/zones-levels.arch", "05693d9ec59a2c27dcf9c35c5b8d8d5a63969ee0931499b97305433324cb978f"], // re-measured for PS2.4, see header
   ["test/fixtures/zones-wings.arch", "392675a2abd9bc82b094fc768190979fabf814b22dbb8d4fbaf7de410570c35a"], // re-measured for PS2.4, see header
@@ -610,12 +610,12 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/core-and-shell.arch", "b84aa455bcdbe9aafcece0fe148b8b0e74bb0e80bc82341b0e08c76b582e7bfc"], // PS2.11e, see header
   ["eval/goldens/dims-auto-cottage.arch", "81802174915f42a6ccc439d4e39874269621418e877926a862edb47ff890fd15"], // PS2.11e, see header
   ["eval/goldens/galley-kitchen.arch", "34aeb2569136729162f1a17662cb84f988ce243a208e3cb9c83cdc7ab6989979"], // PS2.11e, see header
-  ["eval/goldens/l-shaped-flat.arch", "a98fde0d72db97ad3033d0b02344a655b5a882fd330f4e756dfcc35860cd5931"],
+  ["eval/goldens/l-shaped-flat.arch", "432dd9f0381d4dae484cb2bbcc1a3985abefc72d41a1944b5e228e0f3229652f"], // #367, see test/byte-identity-baseline.ts
   // Re-measured 2026-10-20 for PS2.19 (`describe()` only: "Open Office" reads `office`) and again for
   // PS2.18 (`lint()` only: the kitchenette's daylight warning declines); see header.
   ["eval/goldens/office.arch", "1a973564c08433ff368642c0bcba6a0e6d0429e15ab299a1a21cccb21cf3ef5d"],
   ["eval/goldens/open-plan-loft.arch", "63b2581c909426a3bc1cda32ae6e2f18ab6b55c054d15ab50cd8854139438440"],
-  ["eval/goldens/reception-suite.arch", "a7e7e954b7892c3cbef6842a7d18591ba1d492ee9d61d42161b2e35232170756"],
+  ["eval/goldens/reception-suite.arch", "01663fc8203faf2e216377fa033d309e5c1c6ea9744deaf2e33cd19c1663c338"], // #367, see test/byte-identity-baseline.ts
   ["eval/goldens/relational-studio.arch", "e4eec5ae0421fb401d506e00aeb8caa6f00af6523a88975a5249840c60d0400b"],
   ["eval/goldens/scripting-units.arch", "4278fd060523d0683d10698e5b664ca08c18f1bdef0bc6c5e3502d40cb928396"],
   ["eval/goldens/sized-bedrooms.arch", "d89893bae1e7569300d69f5984e7ef04a959c0fa72081758a247d81d50f959c8"],
@@ -637,7 +637,7 @@ const BASELINE: [string, string][] = [
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.faithful.arch",
-    "6c80e1b1facf425095acf8ca109a43d0b31338aaf344f067c6a26bc12cfb0af5",
+    "5ccd03f6a015998dca8b0ab09ef969bc8e664e0eab6d62cb2ae48139e115b9c1", // #367, see test/byte-identity-baseline.ts
   ],
   [
     "eval/fidelity-plans/min-bedroom-flat.laundered.arch",
