@@ -216,5 +216,6 @@ you observed. Do NOT push anything — this command only verifies.
   but the listing's skills pin the CLI to the version in their ZIP, so they stay on it until a new
   ZIP is published. After a release that changes the skills or the language: in the primary
   checkout, `npm run build:openai-plugin`, then "Create draft from ZIP" in the portal; an agent may
-  upload it. Wait for the scans, then the owner submits (six attestations) and publishes. Steps in
+  upload it. An update between core releases keeps the CLI pin and names a higher plugin version,
+  `npm run build:openai-plugin -- --plugin-version=<version>`. Wait for the scans, then the owner submits (six attestations) and publishes. Steps in
   `docs/integrations.md`.

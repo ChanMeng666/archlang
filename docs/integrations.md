@@ -119,13 +119,23 @@ opens the written ZIP again and checks the entry list and both rewritten files;
    reviewer-accessible) and "Release notes". The video on file is the owner's unlisted narrated
    command-line demo; its URL stays out of this repository. Submit and attest to the policies:
    the draft locks ("In review", "Cancel review" replaces Submit, review information is read-only).
-5. After approval the owner chooses when to publish. The portal does not accept `.app.json` references
+5. An update between core releases needs a new `version`, but its skills must still name a CLI
+   that is on npm: `npm run build:openai-plugin -- --plugin-version=<version>` sets `plugin.json`
+   and the ZIP's name and leaves the pin at the core's version. The next core release then takes a
+   higher version than any plugin version already used.
+6. After approval the owner chooses when to publish. The portal does not accept `.app.json` references
    or lifecycle hooks; the ZIP has neither. A later change to the listing or the skills needs a new ZIP
    with a new `version`, uploaded as a new version; a change to the hosted server's tools is picked up
    by the portal's scans. The hosted server's tools show "Not live" until the plugin is published.
    Until then the portal's MCP card also reads "Endpoint unavailable", which clears on publish, so
    it says nothing about the server. Non-blocking findings (a skill "could create a security risk")
    do not block submission but may be raised in review.
+
+The hosted tools are all ChatGPT can count on. Its sandbox has Node and npm but no route to the
+npm registry (checked 2026-11-01 on a free account: `Could not resolve host: registry.npmjs.org`),
+so no skill can reach the CLI there, and the hosted server has no PDF or PNG renderer. Each starter
+prompt must therefore finish on the hosted tools alone, and `archlang-export` hands PDF, PNG and DXF
+to the Playground through the `link` tool.
 
 ### Awesome Copilot (GitHub Copilot CLI marketplace)
 

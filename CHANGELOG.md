@@ -7,7 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `archlang compile plan.arch -o plan.pdf` with no `-f` now writes a PDF. It wrote SVG bytes under the `.pdf` name and reported success, and the same held for `.png`, `.dxf`, `.txt` and `.json`. `-f` still wins, and an unknown extension still means SVG.
+- The Playground's PDF of a plan with a `paper` statement is now that paper's size, so its scale holds. It was a page of the raster's pixel size, about 1.4 m wide.
+
 ### Changed
+
+- The `archlang-export` skill says what to do where the CLI cannot run: stop after the first failure, then use the MCP tools and the Playground. In ChatGPT's sandbox `npx` cannot reach npm.
+- The OpenAI listing's third starter prompt asks for an A3 sheet and a PDF download link, which the hosted tools can deliver. `build:openai-plugin` takes `--plugin-version=<version>`, so a listing update does not need a core release.
 
 - The MCP `compile` tool's title is "Compile a floor plan to a drawing". The longer title listed output formats, and the OpenAI plugin directory's scan flagged it as unclear. The tool's name, description and behaviour are unchanged.
 

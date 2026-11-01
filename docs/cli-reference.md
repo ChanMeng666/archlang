@@ -58,7 +58,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG, or to Plan JSON
 | Flag | Does |
 | --- | --- |
 | `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
-| `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default svg); json writes the Plan JSON that --from-json reads |
+| `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads |
 | `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
@@ -114,7 +114,7 @@ render many .arch files in one call, concurrently
 | Flag | Does |
 | --- | --- |
 | `--out, -o <dir>` | output DIRECTORY for every rendered file (default: alongside each input) |
-| `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default svg); json writes the Plan JSON that --from-json reads |
+| `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads |
 | `--jobs, -j <n>` | max concurrent renders (default: CPU count) |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
@@ -240,7 +240,7 @@ recompile on save (interactive)
 | Flag | Does |
 | --- | --- |
 | `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
-| `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default svg); json writes the Plan JSON that --from-json reads |
+| `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads |
 | `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |

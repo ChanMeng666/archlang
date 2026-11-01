@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_RASTER_EDGE, rasterSize } from "../src/raster-export.js";
+import { MAX_RASTER_EDGE, paperSizeMm, rasterSize } from "../src/raster-export.js";
 
 const svgWith = (vb: string) => `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"><g/></svg>`;
 
@@ -79,5 +79,17 @@ describe("rasterSize", () => {
     const s = rasterSize(`<svg width="10" height="10" viewBox="0 0 2000 1000" xmlns="x"></svg>`);
     expect(s.vbW).toBe(2000);
     expect(s.vbH).toBe(1000);
+  });
+});
+
+describe("paperSizeMm", () => {
+  it("reads the sheet from the root element only", () => {
+    const svg = `<svg width="420mm" height="297mm" viewBox="0 0 42000 29700"><rect width="9mm" height="9mm"/></svg>`;
+    expect(paperSizeMm(svg)).toEqual({ width: 420, height: 297 });
+  });
+
+  it("gives a plan with no paper no physical size", () => {
+    expect(paperSizeMm(svgWith("0 0 400 300"))).toBeNull();
+    expect(paperSizeMm(`<svg width="800" height="600"><rect width="9mm" height="9mm"/></svg>`)).toBeNull();
   });
 });

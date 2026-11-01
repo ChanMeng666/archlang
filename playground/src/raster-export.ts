@@ -55,6 +55,17 @@ export function rasterSize(svg: string): RasterSize {
   return { vbW, vbH, scale, width: Math.max(1, Math.round(vbW * scale)), height: Math.max(1, Math.round(vbH * scale)) };
 }
 
+/**
+ * The sheet a plan with a `paper` statement declares, in mm, read from the root `<svg>`'s
+ * `width`/`height`. `null` for a plan with no paper: it has no physical size.
+ */
+export function paperSizeMm(svg: string): { width: number; height: number } | null {
+  const root = svg.match(/<svg\b[^>]*>/)?.[0] ?? "";
+  const w = root.match(/\swidth="([\d.]+)mm"/);
+  const h = root.match(/\sheight="([\d.]+)mm"/);
+  return w && h ? { width: parseFloat(w[1]), height: parseFloat(h[1]) } : null;
+}
+
 /** Rasterize the current SVG to a canvas, scaled to fit within MAX_RASTER_EDGE. */
 export function svgToCanvas(svg: string): Promise<HTMLCanvasElement> {
   const { vbW, vbH, width: W, height: H } = rasterSize(svg);

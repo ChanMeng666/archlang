@@ -5,12 +5,15 @@
  *   npm run build:openai-plugin     # → dist-openai/archlang-plugin-<core version>.zip
  *   npm run prove:openai-plugin     # re-open that ZIP and check it (or name one: -- path.zip)
  *
+ * `-- --plugin-version=<version>` names the listing's version when it updates between core
+ * releases: the directory needs a new version, and the skills must still pin a CLI that is on npm.
+ *
  * The ZIP holds, at its root, the portable "Agent Plugins" layout the directory reads
  * (https://developers.openai.com/plugins/build/plugins): `plugin.json` with the listing under
  * `extensions["com.openai"]`, `mcp.json`, `skills/` and `assets/icon.png`. It differs from the
  * folder in three ways, all on purpose:
- *   - `plugin.json` gains `"version"` (the core's, root `package.json`), which final submission
- *     requires and every update must change; the repository's manifest names no version.
+ *   - `plugin.json` gains `"version"` (the core's, root `package.json`, unless named), which final
+ *     submission requires and every update must change; the repository's manifest names no version.
  *   - `mcp.json` declares the hosted server (Streamable HTTP, no sign-in), because a public
  *     submission takes a remote HTTPS server and excludes a local one; the repository's keeps the
  *     local `npx` server that Copilot CLI and Cursor start (PNG, offline use).
@@ -93,7 +96,10 @@ function assertFolderInSync(): void {
 }
 
 /** The ZIP's entries: name → bytes. */
-export function openaiPluginFiles(version = coreVersion()): Array<{ name: string; data: Buffer }> {
+export function openaiPluginFiles(
+  version = coreVersion(),
+  cliVersion = coreVersion(),
+): Array<{ name: string; data: Buffer }> {
   assertFolderInSync();
   return [
     { name: "plugin.json", data: Buffer.from(withVersion(portableManifest(), version), "utf8") },
@@ -101,13 +107,13 @@ export function openaiPluginFiles(version = coreVersion()): Array<{ name: string
     { name: "assets/icon.png", data: bytes(PLUGIN_ICON) },
     ...skillFiles().map((f) => ({
       name: f,
-      data: Buffer.from(pinSkill(bytes(`${PLUGIN_ROOT}/${f}`).toString("utf8"), version), "utf8"),
+      data: Buffer.from(pinSkill(bytes(`${PLUGIN_ROOT}/${f}`).toString("utf8"), cliVersion), "utf8"),
     })),
   ];
 }
 
-export function buildOpenaiZip(version = coreVersion()): Buffer {
-  return zipFiles(openaiPluginFiles(version));
+export function buildOpenaiZip(version = coreVersion(), cliVersion = coreVersion()): Buffer {
+  return zipFiles(openaiPluginFiles(version, cliVersion));
 }
 
 /**
@@ -146,7 +152,11 @@ export function readZip(zip: Buffer): Map<string, Buffer> {
  * The proof: the entry list is exactly the four kinds of file the directory reads, and the two
  * files the ZIP rewrites say what they must. Throws on the first mismatch.
  */
-export function checkOpenaiZip(entries: Map<string, Buffer>, version = coreVersion()): void {
+export function checkOpenaiZip(
+  entries: Map<string, Buffer>,
+  version = coreVersion(),
+  cliVersion = coreVersion(),
+): void {
   const fail = (msg: string): never => {
     throw new Error(`prove-openai-plugin: ${msg}`);
   };
@@ -175,26 +185,39 @@ export function checkOpenaiZip(entries: Map<string, Buffer>, version = coreVersi
   if (!entries.get("assets/icon.png")!.equals(bytes(ICON_SOURCE))) fail("assets/icon.png is not the plugin icon");
   for (const f of skillFiles()) {
     const skill = entries.get(f)!.toString("utf8");
-    if (skill !== pinSkill(bytes(f).toString("utf8"), version))
+    if (skill !== pinSkill(bytes(f).toString("utf8"), cliVersion))
       fail(`${f} differs from its source skills/ file by more than the pinned CLI version`);
-    if (!skill.includes(`@chanmeng666/archlang@${version}`)) fail(`${f} names no pinned CLI`);
+    if (!skill.includes(`@chanmeng666/archlang@${cliVersion}`)) fail(`${f} names no pinned CLI`);
   }
 }
 
+/** The listing's version: `--plugin-version=<version>`, higher than the core's, or the core's. */
+export function pluginVersion(argv: string[], core: string): string {
+  const named = argv.find((a) => a.startsWith("--plugin-version="))?.slice("--plugin-version=".length);
+  if (named === undefined) return core;
+  const parts = (v: string) => v.split(".").map(Number);
+  if (!/^\d+\.\d+\.\d+$/.test(named)) throw new Error(`build-openai-plugin: bad --plugin-version "${named}"`);
+  const [a, b] = [parts(named), parts(core)];
+  const i = a.findIndex((n, at) => n !== b[at]);
+  if (i < 0 || a[i]! < b[i]!) throw new Error(`build-openai-plugin: --plugin-version ${named} is not above ${core}`);
+  return named;
+}
+
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  const version = coreVersion();
+  const cliVersion = coreVersion();
+  const version = pluginVersion(process.argv.slice(2), cliVersion);
   const prove = process.argv.includes("--prove");
   const named = process.argv.slice(2).find((a) => !a.startsWith("--"));
   const path = named ? resolve(named) : join(ROOT, OUT_DIR, zipName(version));
   if (!prove) {
     mkdirSync(dirname(path), { recursive: true });
-    writeFileSync(path, buildOpenaiZip(version));
+    writeFileSync(path, buildOpenaiZip(version, cliVersion));
   }
   const entries = readZip(readFileSync(path));
-  checkOpenaiZip(entries, version);
+  checkOpenaiZip(entries, version, cliVersion);
   for (const [name, data] of [...entries].sort(([a], [b]) => (a < b ? -1 : 1)))
     process.stdout.write(`${String(data.length).padStart(8)}  ${name}\n`);
   process.stdout.write(
-    `${prove ? "prove" : "build"}-openai-plugin: ${relative(ROOT, path)} (${readFileSync(path).length} bytes, ${entries.size} entries, version ${version}) OK\n`,
+    `${prove ? "prove" : "build"}-openai-plugin: ${relative(ROOT, path)} (${readFileSync(path).length} bytes, ${entries.size} entries, version ${version}, CLI ${cliVersion}) OK\n`,
   );
 }

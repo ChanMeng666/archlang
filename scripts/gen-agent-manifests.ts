@@ -140,7 +140,7 @@ function openaiInterface() {
     defaultPrompt: [
       "Design a two-bedroom flat of about 75 m² as an ArchLang plan and check it against the brief.",
       "Make the bedroom in plan.arch 1 m wider and show me what changed.",
-      "Export plan.arch as a PDF on A3 and list the files written.",
+      "Put plan.arch on an A3 sheet and give me a link to download it as a PDF.",
     ],
     composerIcon: icon,
     logo: icon,
