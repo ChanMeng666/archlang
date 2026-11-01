@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: #367 on the merge of origin/main 1974d928: a room label that does not fit shrinks, and W_ANNOTATION_OVERLAP reads widths as the wider of Roboto and Helvetica Bold, so the SVG and that rule's rows move; steps moved only where a fixture's source lost or gained a pin
+ * Taken: #367 on 5f2fc47a, main at e45da925: a room label that does not fit shrinks, read as the wider of Roboto and Helvetica Bold, so the SVG and W_ANNOTATION_OVERLAP's rows move; steps moved only where a fixture's source lost or gained a pin
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1528,7 +1528,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch",
-    "6dc196254ffcc34c64f408354e80fbae4800d1586c64b516290305191aa2c4f3",
+    "fd0cb836541f62c89a2d74bf8712c14836ea2f9fc4538e7bed5fa03a7ce6b648",
     4709,
   ],
   [
