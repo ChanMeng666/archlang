@@ -19,9 +19,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `W_NO_ENTRANCE` on a storey of a building that has a way in on another storey says which storey and what is missing there: no stair joins it to another storey, its stair stops on no other storey, the stair lands on no room there, or the stair starts in a room nobody can walk to. It said "the plan has no exterior door" although another storey had one. A plan of one storey and a building with no way in at all keep that sentence, and which storeys warn has not changed.
 - `W_BALCONY_NO_DOOR` no longer accepts a window that the plan says stops above the floor: a window with an authored `sill` above 0 is not a way onto a balcony. `sill 0` still counts, and so does a window with no `sill` clause, because its 900 mm is only the default.
 - `W_FURNITURE_OVER_WINDOW` also reports a low piece standing against a `sill 0` window, on the wall's face. `describe --facts clearances` lists those pieces under `low_units`, and a plan with no such piece has no such key.
+- `window on liv.top` now resolves on an edge that is part exterior, part partition, when the whole window lands on one exterior wall. So do `door on` and `opening on`. The position still counts along the whole room edge, and `center` is still that edge's middle. A span that crosses two walls or lands on a partition stays `E_OPENING_HOST_AMBIGUOUS`, and its hint now quotes the nearest position on each exterior wall, where one exists. An edge with no exterior wall standing on it is `E_OPENING_NO_SHARED_WALL`, whether it carries one wall or several.
 
 ### Changed
 
+- `describe --json` reports where a `between` door or cased opening landed, as `centreline_at`: the centre of its span on the wall's centreline, in plan millimetres. A `from start` there counts from the shared run, which the source alone does not show. Other doors and windows are unchanged.
 - The `archlang-export` skill says what to do where the CLI cannot run: stop after the first failure, then use the MCP tools and the Playground. In ChatGPT's sandbox `npx` cannot reach npm.
 - The OpenAI listing's third starter prompt asks for an A3 sheet and a PDF download link, which the hosted tools can deliver. `build:openai-plugin` takes `--plugin-version=<version>`, so a listing update does not need a core release.
 

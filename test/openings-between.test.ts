@@ -7,8 +7,9 @@
  *  - the same datum positions on the existing `on <wall> at …` form;
  *  - the twins (swap-back law): a relational opening draws byte for byte as the same opening
  *    hand-placed on the same host, lints byte for byte as it whenever no hint moves it (a move
- *    hint quotes the relation, by design), and describes the same but for its `relation` and
- *    its `relational` placement; a hosted datum offset equals its absolute twin in all three;
+ *    hint quotes the relation, by design), and describes the same but for its `relation`, its
+ *    `relational` placement and a `between` opening's `centreline_at`, which restates where it
+ *    stands; a hosted datum offset equals its absolute twin in all three;
  *  - every refusal on its clause: E_OPENING_DATUM, E_OPENING_NO_SHARED_WALL,
  *    E_OPENING_HOST_AMBIGUOUS, E_OPENING_NIB (refused, never slid, naming the nearest legal
  *    position), E_WALL_BETWEEN_NOT_ADJACENT, E_WALL_BETWEEN_OPEN;
@@ -42,7 +43,10 @@ const plain = (src: string): unknown => {
     freedom: { openings: Record<string, number>; elements: Array<{ placement: string }> };
   };
   for (const k of ["doors", "windows", "openings"]) {
-    for (const row of (d[k] as Array<Record<string, unknown>>) ?? []) delete row.relation;
+    for (const row of (d[k] as Array<Record<string, unknown>>) ?? []) {
+      delete row.relation;
+      delete row.centreline_at;
+    }
   }
   const f = d.freedom;
   for (const e of f.elements) if (e.placement === "relational") e.placement = "TWIN";
