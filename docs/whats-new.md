@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.47
+# What's new in 1.44 to 1.50
 
-The features that arrived in 1.44.0 to 1.47.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.50.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -18,6 +18,9 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Briefs checked over every storey | 1.47.0 | [Intent across storeys](#intent-across-storeys) |
 | Plan JSON says what it dropped | 1.47.0 | [What Plan JSON leaves out](#what-plan-json-leaves-out) |
 | Slits, furniture on stairs, labels on walls | 1.47.0 | [More lint reports](#more-lint-reports) |
+| Open shells named, empty rooms named | 1.48.0 | [Gaps that used to pass quietly](#gaps-that-used-to-pass-quietly) |
+| One L-shaped room in `walls from rooms` | 1.49.0 | [L-shaped rooms](#l-shaped-rooms) |
+| Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
 
 ## Quantities and takeoff
 
@@ -238,3 +241,50 @@ note: Plan JSON carries no paper; this export leaves out `paper A4 landscape` (t
 - `W_ANNOTATION_OVERLAP` now also reports a room's name or area figure over a wall or a door's swing, or running
   off its floor. The label pass no longer walks a name out of its room; a name too wide for its room stays
   there and is reported. The drawing neither shrinks a label nor draws a leader to it.
+
+## Gaps that used to pass quietly
+
+Four things that gave no report before 1.48.0:
+
+- `W_EXTERIOR_RING_OPEN` names exterior walls that do not close: "their ends stop 1000 mm apart on the line x 0, y 0–1000, centreline to centreline".
+- `arch finish` lists every room it leaves empty in `unresolved`, such as a hall or a room whose use it cannot read. These notes carry `scope: "outside-table"`, so a caller can tell them from a refusal.
+- A hyphen in an id, a `,` between uses and a `;` at a line end each carry a hint saying what to write.
+- `dropped` also reaches `batch -f json` and the MCP `compile` tool.
+
+## L-shaped rooms
+
+A `room polygon` whose edges are all horizontal or vertical works in `walls from rooms` (1.49.0). It stays one room, with one stamp and one area, and the walls come from its outline.
+
+```arch
+plan "L-shaped living room" {
+  units mm
+  room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Living" uses living
+  room id=bed at (3000,3000) size 3000x3000 label "Bedroom" uses bedroom
+  room id=bath at (6000,0) size 2000x6000 label "Bath" uses bath
+  walls from rooms exterior 200 partition 100
+  door between liv and bed at 1500 from bed.top width 800 swing into bed
+}
+```
+
+`liv` and `bed` share two edges here, so `door between` has to say which: `at center` is refused, and the message quotes the forms that work. `open between` on such a pair is refused too. A polygon with a slanted edge and a circle room stay outside `walls from rooms`, and `right-of`, anchored furniture and datums such as `liv.top` still refuse a polygon.
+
+## Turning stairs
+
+A `stair` can be one block of flights and landings (1.50.0). Pieces are in climbing order, and each flight runs from what it touches.
+
+```arch
+plan "Quarter-turn stair" {
+  units mm
+  height 2750
+  room id=hall at (0,0) size 3800x3800 label "Stair hall" uses hall
+  walls from rooms exterior 200 partition 100
+  door on hall.bottom at 800 from start width 900 swing inward
+  stair id=s dir up width 1000 {
+    flight at (2700,1630) size 1000x1530
+    landing at (2700,630) size 1000x1000
+    flight at (1170,630) size 1530x1000
+  }
+}
+```
+
+It draws as one stair, with one label, one walking line and one break line. `W_STAIR_TOO_STEEP` reads the block as one climb, with a landing replacing one going, and `describe --json` lists `flights`, `landings` and `turn`. Write the same block on two storeys and it is one shaft. `examples/turning-stair.arch` is a worked house. Winders are not in the language; draw a landing, and lint reads the stair strictly.

@@ -149,8 +149,8 @@ plan "Room graph" {
 }
 ```
 
-- **Let the rooms make the walls.** When the rooms are rectangles that tile the floor (write a
-  corridor as a room), `walls from rooms exterior 200 partition 100` derives the shell on their outline
+- **Let the rooms make the walls.** When the rooms are rectangles, or polygons with only horizontal and
+  vertical edges, that tile the floor (write a corridor as a room), `walls from rooms exterior 200 partition 100` derives the shell on their outline
   and a partition on every shared edge, so no wall can go missing. Host openings by the rooms:
   `door between living and bed at 800 from end width 800` (a door must say where: `center`,
   `<mm> from start|end|<room>.<edge>`, `axis <n>`, offsets to the centre), `window on bed.top

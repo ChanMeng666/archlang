@@ -15,7 +15,7 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 `marketing/content/posts/2026-10-30-tier-a-replay-posts-final.md`; media on the owner's machine in
 `D:\.claude-scratch\2026-10-29\tier-a-posts\`. Posting stays the owner's unless they ask again.
 
-**Released:** core 1.50.0, MCP shim 0.2.33, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20). VS Code extension 0.37.0 is live; 0.38.0 is built and waits for the owner's upload. Wave 7 is done: `research/2026-11-01-as-built.md`.
+**Released:** core 1.50.0, MCP shim 0.2.33, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20). VS Code extension 0.38.0 is live on the Marketplace. Wave 7 is done: `research/2026-11-01-as-built.md`.
 
 **Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance; ArchLang continues at low cost. No new language programme opens until the Show HN and N10 reads. The question to the user is deferred by the owner.
 
