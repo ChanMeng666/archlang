@@ -40,8 +40,8 @@
  * configuration defeated the joinery) is `inconsistent`.
  *
  * **Where it runs.** `describe()` (its storey summary; `validateIntent` reads it there), and
- * `lint()` through {@link openExteriorRuns}, the same tree read for the loops that add nothing. It
- * is never computed inside `compile()`: the accessible-SVG caption (`compile(…, { accessible:
+ * `lint()` through {@link exteriorRuns}, the same tree read for what the figure does not add
+ * (`src/analyze/open-shell.ts`). It is never computed inside `compile()`: the accessible-SVG caption (`compile(…, { accessible:
  * true })` → `captionForPlan` → the storey summary, `src/scene-build.ts`) passes
  * `withGrossArea = false`, because the caption reads only the plan name, the rooms, the
  * centreline total and the entrances. So `compile()`'s step and drawing budgets need no charge
@@ -109,9 +109,21 @@ interface ExteriorTree {
   edges: number;
 }
 
+/**
+ * One storey's tree, kept for the two readers of one `ir.walls`: `describe()` asks for the figure and
+ * for what it leaves out, and the joinery need not run twice. That array is never written after resolve.
+ */
+const TREES = new WeakMap<readonly RWall[], ExteriorTree | "too-much-work" | null>();
+
+/** {@link buildExteriorTree}, once per storey's walls. */
+function exteriorTree(walls: readonly RWall[]): ExteriorTree | "too-much-work" | null {
+  if (!TREES.has(walls)) TREES.set(walls, buildExteriorTree(walls));
+  return TREES.get(walls) ?? null;
+}
+
 /** The exterior outline as a tree (see the module header): `null` when the storey has no exterior
  *  band at all, `"too-much-work"` past a cap. */
-function exteriorTree(walls: readonly RWall[]): ExteriorTree | "too-much-work" | null {
+function buildExteriorTree(walls: readonly RWall[]): ExteriorTree | "too-much-work" | null {
   const shell = walls.filter((w) => w.category === "exterior" && w.thickness > 0);
   if (shell.length === 0) return null;
   // Charged before the joinery, with the walled-face rules' own counts.
@@ -194,29 +206,38 @@ function wallBodyPoint(w: RWall): Point | null {
   return s.arc ? arcPointAt(s.arc, 0.5) : { x: (s.a.x + s.b.x) / 2, y: (s.a.y + s.b.y) / 2 };
 }
 
+/** The storey's exterior walls by the building they form, and the closed rings among them. */
+export interface ExteriorRuns {
+  /** One entry per outermost loop, as the walls that form it, in wall order. A wall standing free
+   *  inside a ring reads as that loop's too: {@link ExteriorRuns.inRing} is what sets it apart. */
+  runs: Array<{ walls: RWall[]; closes: boolean }>;
+  /** Is `p` on floor a ring encloses, a courtyard included? */
+  inRing(p: Point): boolean;
+  /** The edges of the holes: what one {@link ExteriorRuns.inRing} costs at most. */
+  holeEdges: number;
+}
+
 /**
- * The exterior runs that close nothing, on {@link grossInternalArea}'s own reading: each outermost
- * loop with no hole (the branch that adds nothing to the figure), as the walls that form it, in
- * wall order. A closed ring with a garden wall built off it is not here, its loop has a hole; nor
- * is a run standing free inside a building, its loop is not outermost. `"too-much-work"` past a
- * cap, charged before the work. `W_EXTERIOR_RING_OPEN` judges which of these is a shell.
+ * The exterior walls on {@link grossInternalArea}'s own reading: each outermost loop as the walls
+ * that form it, and whether it holds a hole, so whether any of it adds to the figure. A storey of
+ * closed walls alone has no end to read, and gets nothing. `"too-much-work"` past a cap, charged
+ * before the work. `src/analyze/open-shell.ts` judges which walls of these are a shell left open.
  */
-export function openExteriorRuns(walls: readonly RWall[]): RWall[][] | "too-much-work" {
+export function exteriorRuns(walls: readonly RWall[]): ExteriorRuns | "too-much-work" {
   const tree = exteriorTree(walls);
-  if (tree === null) return [];
+  const none: ExteriorRuns = { runs: [], inRing: () => false, holeEdges: 0 };
+  if (tree === null) return none;
   if (tree === "too-much-work") return tree;
   const { shell, outline, signed, boxes, parent, children, edges } = tree;
-  const open = outline.flatMap((_, i) =>
-    parent[i] === -1 && signed[i]! > 0 && !children[i]!.some((c) => signed[c]! < 0) ? [i] : [],
-  );
-  if (open.length === 0) return [];
+  const outer = outline.flatMap((_, i) => (parent[i] === -1 && signed[i]! > 0 ? [i] : []));
+  if (outer.length === 0 || shell.every((w) => w.closed)) return none;
   // Charged before the walk: a wall is tested against each loop until one holds it.
   if (shell.length * edges > MAX_GROSS_AREA_TESTS) return "too-much-work";
-  const runs = new Map<number, RWall[]>(open.map((i) => [i, []]));
+  const runs = new Map<number, RWall[]>(outer.map((i) => [i, []]));
   for (const w of shell) {
     const p = wallBodyPoint(w);
     if (!p) continue;
-    for (const i of open) {
+    for (const i of outer) {
       const b = boxes[i]!;
       if (p.x < b.minX || p.x > b.maxX || p.y < b.minY || p.y > b.maxY) continue;
       if (loopWinding(outline[i]!, p) === 0) continue;
@@ -224,5 +245,16 @@ export function openExteriorRuns(walls: readonly RWall[]): RWall[][] | "too-much
       break;
     }
   }
-  return [...runs.values()].filter((run) => run.length > 0);
+  const holes = outline.flatMap((_, i) => (signed[i]! < 0 ? [i] : []));
+  return {
+    runs: outer
+      .filter((i) => runs.get(i)!.length > 0)
+      .map((i) => ({ walls: runs.get(i)!, closes: children[i]!.some((c) => signed[c]! < 0) })),
+    inRing: (p) =>
+      holes.some((i) => {
+        const b = boxes[i]!;
+        return p.x >= b.minX && p.x <= b.maxX && p.y >= b.minY && p.y <= b.maxY && loopWinding(outline[i]!, p) !== 0;
+      }),
+    holeEdges: holes.reduce((n, i) => n + outline[i]!.length, 0),
+  };
 }

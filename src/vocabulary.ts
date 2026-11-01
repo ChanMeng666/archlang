@@ -372,6 +372,20 @@ export function matchesLivingDining(text: string): boolean {
 }
 
 /**
+ * Words that name floor open to the sky. {@link FALLBACK_USE_VOCABULARY} leaves these out on
+ * purpose, so a room labelled one has no use; this says what it is for the one reader that must tell
+ * it from a room with no use at all: exterior walls round a terrace are a parapet, not a shell left
+ * open (`src/analyze/open-shell.ts`). No {@link UseKind} comes of it.
+ */
+const PREPARED_OPEN_AIR = prepareEntry({
+  canonical: ["terrace", "balcony", "patio", "deck", "veranda", "verandah", "courtyard", "yard", "garden"],
+  aliases: [],
+});
+
+/** Does this label name floor open to the sky? */
+export const namesOpenAir = (text: string): boolean => matchPrepared(tokensOf(text), PREPARED_OPEN_AIR) !== null;
+
+/**
  * Words that read a room's label as part of a building people do not live in (plan-soundness
  * PS2.18). Read by `dwellingReading` (`src/analyze/dwelling.ts`) alone, never by
  * {@link classifyLabelUses}: they give no {@link UseKind}, so no room's `uses` and nothing

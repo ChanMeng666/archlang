@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `W_EXTERIOR_RING_OPEN` no longer goes silent when a closed porch or garage is built off an open shell (issue #346): the gap is named as it would be without the annex. It now reads each wall's free end, so a fin off an open run no longer pairs with the shell's end, and a wall lower than the storey or a room labelled as open to the sky (a roof terrace's parapet) is no longer read as a shell. A garden or boundary wall stays silent, also where it carries a shell's own line past a closed corner.
+- `describe` says what the gross internal area leaves out: `totals.gross_internal_area_leaves_out` lists the rooms no exterior ring encloses when an open shell stands beside or off the ring that closes, and `gross_internal_area_all_levels_leaves_out` does the same for the building's figure. Both keys appear on those storeys and plans alone; every other summary is unchanged.
 - `archlang compile plan.arch -o plan.pdf` with no `-f` now writes a PDF. It wrote SVG bytes under the `.pdf` name and reported success, and the same held for `.png`, `.dxf`, `.txt` and `.json`. `-f` still wins, and an unknown extension still means SVG.
 - The Playground's PDF of a plan with a `paper` statement is now that paper's size, so its scale holds. It was a page of the raster's pixel size, about 1.4 m wide.
 
