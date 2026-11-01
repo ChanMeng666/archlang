@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: #367 on 5f2fc47a, main at e45da925: a room label that does not fit shrinks, read as the wider of Roboto and Helvetica Bold, so the SVG and W_ANNOTATION_OVERLAP's rows move; steps moved only where a fixture's source lost or gained a pin
+ * Taken: #367 on the commit above, main at e45da925: a room label that does not fit shrinks, read as the wider of Roboto and Helvetica Bold, and a place ranks off the lattice, so the SVG and W_ANNOTATION_OVERLAP's rows move; steps moved only where a fixture's source lost or gained a pin
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
