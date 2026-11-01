@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `archlang compile plan.arch -o plan.pdf` with no `-f` now writes a PDF. It wrote SVG bytes under the `.pdf` name and reported success, and the same held for `.png`, `.dxf`, `.txt` and `.json`. `-f` still wins, and an unknown extension still means SVG.
 - The Playground's PDF of a plan with a `paper` statement is now that paper's size, so its scale holds. It was a page of the raster's pixel size, about 1.4 m wide.
 
+### Added
+
+- The Playground has a Takeoff tab (issue #346): wall lengths by category, centreline and face, each room's perimeters and net area, and door and window counts, read from `describe --facts quantities` for the storey on screen. Waste is a box you fill in, blank unless you do, and the CSV is the whole plan in the bytes `archlang takeoff --format csv` writes. The core exports the writer as `takeoffCsv`, and `MAX_WASTE_PCT`.
+
 ### Changed
 
 - The `archlang-export` skill says what to do where the CLI cannot run: stop after the first failure, then use the MCP tools and the Playground. In ChatGPT's sandbox `npx` cannot reach npm.

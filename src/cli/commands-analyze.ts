@@ -47,6 +47,7 @@ import type {
   NextItem,
 } from "../index.js";
 import { keepResultsOf } from "../ir.js";
+import { cell, takeoffCsv, takeoffStoreys } from "../analyze/takeoff.js";
 import { MAX_WASTE_PCT } from "../describe.js";
 import type { QuantityFacts } from "../index.js";
 import { diagnosticsSummary, validateSummary } from "./summary.js";
@@ -464,49 +465,6 @@ function factLines(s: SceneSummary): string[] {
 /** The formats `takeoff --format` writes. */
 const TAKEOFF_FORMATS = ["csv", "md"] as const;
 
-/** One figure of a takeoff: the long form both formats are written from. */
-interface TakeoffRow {
-  level: number | undefined;
-  section: "walls" | "rooms" | "floor" | "doors" | "windows";
-  item: string;
-  width_mm?: number;
-  field: string;
-  value: number | string;
-}
-
-/** Every figure of one storey's block, in the block's own order and with its own field names. */
-function takeoffRows(q: QuantityFacts, level: number | undefined): TakeoffRow[] {
-  const rows: TakeoffRow[] = [];
-  const add = (section: TakeoffRow["section"], item: string, obj: object, skip: readonly string[], width?: number) => {
-    for (const [field, value] of Object.entries(obj)) {
-      if (skip.includes(field) || (typeof value !== "number" && typeof value !== "string")) continue;
-      rows.push({ level, section, item, ...(width !== undefined ? { width_mm: width } : {}), field, value });
-    }
-  };
-  for (const w of q.walls) add("walls", w.category, w, ["category"]);
-  if (q.faces_omitted) add("walls", "*", { faces_omitted: q.faces_omitted }, []);
-  for (const r of q.rooms) add("rooms", r.id, r, ["id"]);
-  const { floor_area_net_m2, waste_pct, floor_area_with_waste_m2 } = q;
-  add("floor", "storey", { floor_area_net_m2, waste_pct, floor_area_with_waste_m2 }, []);
-  for (const d of q.doors) add("doors", d.kind, { count: d.count }, [], d.width_mm);
-  for (const w of q.windows) add("windows", "window", { count: w.count }, [], w.width_mm);
-  return rows;
-}
-
-const cell = (v: number | string | undefined): string => (v === undefined ? "" : typeof v === "number" ? fmt2(v) : v);
-
-/** RFC 4180: quote a field holding a comma, a quote or a line break. */
-const csvField = (s: string): string => (/[",\r\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s);
-
-function takeoffCsv(rows: readonly TakeoffRow[]): string {
-  const lines = ["level,section,item,width_mm,field,value"];
-  for (const r of rows)
-    lines.push(
-      [cell(r.level), r.section, r.item, cell(r.width_mm), r.field, cell(r.value)].map((s) => csvField(s)).join(","),
-    );
-  return `${lines.join("\n")}\n`;
-}
-
 /** A Markdown table: the header row from `cols`, one row per object, `|` escaped. */
 function mdTable(cols: readonly string[], rows: ReadonlyArray<Record<string, number | string | undefined>>): string[] {
   // Backslashes first, so a `\` in a value can never turn the escape of a following `|` into a
@@ -583,10 +541,7 @@ export function cmdTakeoff(args: Args): number {
       }
       return EXIT.USER;
     }
-    // A multi-storey plan is taken off storey by storey; the top-level block repeats the lowest.
-    const storeys = s.levels
-      ? s.levels.map((l) => ({ level: l.level, name: l.name, q: l.quantities! }))
-      : [{ level: undefined, name: undefined, q: s.quantities }];
+    const storeys = takeoffStoreys(s);
     if (args.json) {
       emitJson({
         ok: true,
@@ -605,7 +560,7 @@ export function cmdTakeoff(args: Args): number {
         diagnostics: s.diagnostics.map((d) => diagnosticToJson(source, d)),
       });
     } else if (format === "csv") {
-      process.stdout.write(takeoffCsv(storeys.flatMap((st) => takeoffRows(st.q, st.level))));
+      process.stdout.write(takeoffCsv(s));
     } else {
       process.stdout.write(
         takeoffMd(

@@ -86,7 +86,10 @@ export { describe } from "./describe.js";
 // per-storey key, and that failure is silent — it reports the wrong floor's facts).
 export { describeLevel, PER_STOREY_OPTIONAL_KEYS } from "./describe.js";
 // The opt-in derived facts `describe(src, { facts })` can add (`symmetry`, `syntax`).
-export { DESCRIBE_FACTS } from "./describe.js";
+export { DESCRIBE_FACTS, MAX_WASTE_PCT } from "./describe.js";
+// The CSV `arch takeoff --format csv` writes, from a summary read with the `quantities` fact, so
+// the Playground's Takeoff tab exports the same bytes.
+export { takeoffCsv } from "./analyze/takeoff.js";
 // An instance's rigid map as one canonical D4 value: `mirror y` and `rotate 180 mirror x`
 // describe differently (the summary echoes the spelling) and compare equal here.
 export { instanceTransform } from "./describe.js";
