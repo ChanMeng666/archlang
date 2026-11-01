@@ -813,7 +813,14 @@ class Parser {
       );
     }
     if ((subject as ScheduleSubject) === "openings") plan.openingSchedule = true;
-    else plan.schedule = "rooms";
+    else {
+      plan.schedule = "rooms";
+      // `net` rides on `rooms` only. It cannot start a statement, so a following line is never eaten.
+      if (this.isType("ident") && this.peek().value === "net") {
+        this.next();
+        plan.scheduleNet = true;
+      }
+    }
   }
 
   /**

@@ -1507,6 +1507,12 @@ export interface PlanNode {
    */
   schedule?: "rooms";
   /**
+   * `schedule rooms net` — the room stamp prints the schedule's NET AREA figure (suffixed
+   * `net`) instead of the centreline area. Only ever set together with {@link PlanNode.schedule};
+   * absent unless written, so an existing drawing is byte-identical.
+   */
+  scheduleNet?: boolean;
+  /**
    * `schedule openings` — tag every door (`D01`…) and window (`W01`…) beside it and draw
    * the DOOR & WINDOW SCHEDULE table in the sheet's bottom band. Presentation only; absent
    * unless the plan opts in, so an existing drawing is byte-identical.

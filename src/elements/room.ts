@@ -456,6 +456,11 @@ export const room: ElementDef = {
       : r.poly
         ? (polygonArea(r.poly) / 1_000_000).toFixed(1)
         : ((r.size.w / 1000) * (r.size.h / 1000)).toFixed(1);
+    // `schedule rooms net`: the schedule's own net figure (two decimals, as it is tabulated),
+    // read to one decimal and named, so a reader cannot take it for the centreline area. A room
+    // with no net figure keeps the centreline stamp, unsuffixed.
+    const net = ctx.netAreaOf?.(r.id);
+    const stamp = net !== undefined ? `${net.toFixed(1)} m² net` : `${areaM2} m²`;
     // The name, then the area figure: `wrapLabels` (`src/label-placement.ts`) reads a
     // room's two text nodes in this order when the name is too wide for one line.
     if (r.label) {
@@ -478,7 +483,7 @@ export const room: ElementDef = {
       prim: {
         t: "text",
         at: { x: cx, y: cy + (r.label ? sizes.roomFont * LABEL_AREA_DROP : 0) },
-        value: `${areaM2} m²`,
+        value: stamp,
         size: sizes.areaFont,
         anchor: "middle",
         baseline: "central",
