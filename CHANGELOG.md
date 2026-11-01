@@ -7,8 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `archlang finish` furnishes a plan with `level` blocks (issue #364). Each storey gets what the same rooms would get in a one-storey plan, written inside its own block, so `in <room>` means that storey's room when an id repeats on another level. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. `changes` and `unresolved` entries of such a plan carry `level`. A one-storey plan gets the same bytes as before.
+
 ### Fixed
 
+- The `finish` note on a room of a placed component no longer says a plan body cannot name it: `furniture … in u1.bed` works, and the note says so.
 - `archlang compile plan.arch -o plan.pdf` with no `-f` now writes a PDF. It wrote SVG bytes under the `.pdf` name and reported success, and the same held for `.png`, `.dxf`, `.txt` and `.json`. `-f` still wins, and an unknown extension still means SVG.
 - The Playground's PDF of a plan with a `paper` statement is now that paper's size, so its scale holds. It was a page of the raster's pixel size, about 1.4 m wide.
 

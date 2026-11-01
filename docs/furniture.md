@@ -617,8 +617,16 @@ written; a room that no set fits stays empty, with the reason.
   diagnostic it did not have. Otherwise the next position is tried. When a required piece has no
   position, the room is left empty and named in `unresolved` with the code that blocked it. An
   optional piece that does not fit is left out.
-- **Scope.** Rectangular rooms of single-storey plans. A polygon room, and a plan with `level`
-  blocks, are reported in `unresolved` and left as they are.
+- **Scope.** Rectangular rooms. A polygon room is reported in `unresolved` and left as it is. A room
+  of a placed component is reported too: furnish the component, or write the piece yourself where
+  the instance is placed, `furniture rug in u1.bed anchor center size 800x600 rotate 0`.
+- **Storeys.** A plan with `level` blocks is furnished storey by storey, as a single-storey plan
+  would be. Each storey's statements go inside its own block, so `in <room>` and `against wall <id>`
+  mean that storey's room and wall when the same id stands on another level. A piece keeps off a
+  shaft's flights and landings, a flight that passes through the floor from the storey above or
+  below, the storey's own `void`s and its lifts and escalators. A `void` on another storey takes no
+  floor here. "Never worse" is judged storey by storey: no storey may gain a diagnostic, whatever
+  another storey lost. `changes` and `unresolved` entries carry the `level`.
 
 ## Furniture-aware lint rules
 

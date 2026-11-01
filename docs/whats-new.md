@@ -21,6 +21,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Open shells named, empty rooms named | 1.48.0 | [Gaps that used to pass quietly](#gaps-that-used-to-pass-quietly) |
 | One L-shaped room in `walls from rooms` | 1.49.0 | [L-shaped rooms](#l-shaped-rooms) |
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
+| `arch finish` on a plan with storeys | next release | [Furnishing every storey](#furnishing-every-storey) |
 
 ## Quantities and takeoff
 
@@ -288,3 +289,19 @@ plan "Quarter-turn stair" {
 ```
 
 It draws as one stair, with one label, one walking line and one break line. `W_STAIR_TOO_STEEP` reads the block as one climb, with a landing replacing one going, and `describe --json` lists `flights`, `landings` and `turn`. Write the same block on two storeys and it is one shaft. `examples/turning-stair.arch` is a worked house. Winders are not in the language; draw a landing, and lint reads the stair strictly.
+
+## Furnishing every storey
+
+`arch finish` used to report a plan with `level` blocks and leave it empty. In the next release it furnishes each storey as it would furnish a one-storey plan, and it writes each storey's pieces inside that storey's own block:
+
+```diff
+   level 0 "Ground" {
+     room id=liv at (0,0) size 5000x4000 label "Living" uses living
+     walls from rooms exterior 300 partition 100
+     door on liv.bottom at 2500 from start width 1000 swing into liv
+     window on liv.top width 2000
++    furniture sofa in liv anchor right flush size 900x2000 rotate 90
+   }
+```
+
+The same room id on two levels is two rooms, so `in liv` means the room of the block it is written in, and each entry of `changes` and `unresolved` carries its `level`. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. A room of a placed component stays empty and is named; furnish the component, or write `furniture … in u1.bed` yourself. A one-storey plan gets the same bytes as before.

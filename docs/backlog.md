@@ -1607,12 +1607,13 @@ Re-run: `plan "A<TAB>B"` through `arch fmt` prints `"A\tB"`, which reads back as
 
 ### M.22 · `finish` furnish stage: what it leaves alone — `todo` (limits, not defects)
 
-`src/furnish.ts` furnishes single-storey plans, rectangular rooms with an authored `id=` of
-their own, and only a room that holds no furniture. Each of these is reported in `unresolved`
-and left as it is:
+`src/furnish.ts` furnishes rectangular rooms with an authored `id=` of their own, on every storey,
+and only a room that holds no furniture. Each of these is reported in `unresolved` and left as it
+is:
 
-- polygon and circular rooms, and any plan with `level` storeys;
-- rooms inside a component instance (no statement in the plan body can name them);
+- polygon and circular rooms;
+- rooms inside a component instance (a plan body can name them, `in u1.bed`, but the stage writes
+  nothing for one; a single-storey plan's bytes and a storey's must agree if that changes);
 - rooms over `MAX_ROOM_AREA_M2`;
 - a room that already holds any furniture (fill-only: it is never topped up);
 - relational rooms with no fixed `at`.
