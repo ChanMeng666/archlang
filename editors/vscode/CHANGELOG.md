@@ -14,6 +14,14 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.38.0] - 2026-11-01
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.50.0`** (quarter-turn and half-turn stairs: a `stair` block of
+  `flight` and `landing` pieces, with completion and highlighting inside it).
+
+
 ## [0.37.0] - 2026-11-01
 
 ### Changed
