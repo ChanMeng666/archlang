@@ -823,7 +823,12 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
           plan.walls,
         )
       : null;
-  const netById = ir.scheduleNet && scheduleData ? new Map(scheduleData.rows.map((r) => [r.id, r.net_area_m2])) : null;
+  // A room whose net figure equals its centreline figure had nothing deducted (no wall on or in
+  // it): ` net` would claim a deduction that did not happen, so it keeps the bare stamp.
+  const netById =
+    ir.scheduleNet && scheduleData
+      ? new Map(scheduleData.rows.map((r) => [r.id, r.net_area_m2 === r.area_m2 ? undefined : r.net_area_m2]))
+      : null;
   const baseCtx: RenderCtx = {
     theme,
     sizes,

@@ -972,7 +972,12 @@ function droppedFromPlan(ir: ResolvedPlan): PlanJsonDropped[] {
   if (ir.sheet) rows.push({ clause: "paper", count: 1, text: `paper ${ir.sheet.size} ${ir.sheet.orientation}` });
   if (ir.axes && ir.axes.length > 0) rows.push({ clause: "axes", count: ir.axes.length });
   if (ir.siteBoundary) rows.push({ clause: "site boundary", count: 1 });
-  if (ir.schedule) rows.push({ clause: "schedule rooms", count: 1 });
+  if (ir.schedule)
+    rows.push({
+      clause: "schedule rooms",
+      count: 1,
+      ...(ir.scheduleNet ? { text: "schedule rooms net" } : {}),
+    });
   if (ir.openingSchedule) rows.push({ clause: "schedule openings", count: 1 });
   if (ir.legend) rows.push({ clause: "legend", count: 1 });
   if (ir.notes && ir.notes.length > 0) rows.push({ clause: "notes", count: ir.notes.length });

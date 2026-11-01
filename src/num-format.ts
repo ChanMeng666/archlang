@@ -66,6 +66,15 @@ export function makeNumFmt(scale: number, zeroNonFinite = false): (n: number) =>
   };
 }
 
+/**
+ * A figure given to two decimals, to ONE decimal, a tie rounding up: 9.45 → "9.5", 9.95 → "10.0". Done in
+ * integer hundredths, so the binary value of the double (`(9.45).toFixed(1)` is "9.4") cannot decide it.
+ */
+export function fmtTenthsOf2dp(n: number): string {
+  const tenths = Math.floor((Math.round(n * 100) + 5) / 10);
+  return `${Math.floor(tenths / 10)}.${tenths % 10}`;
+}
+
 /** 0 dp — whole millimetres, where a lint rule compares the value it prints. */
 export const fmt0 = makeNumFmt(1);
 /** 2 dp — Scene labels and SVG coordinates. */

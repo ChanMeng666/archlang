@@ -346,4 +346,4 @@ plan "Net stamp" {
 }
 ```
 
-The figure is the NET AREA column's, which is `describe()`'s `rooms[].net_area_m2`: one calculation, read twice. A room the schedule cannot measure shows `-` there and keeps its centreline stamp without `net`. Without the word nothing changes. The longer stamp is fitted like any label, so it can shrink in a narrow room. This is a drawing choice, no standard's rule.
+The figure is the NET AREA column's, which is `describe()`'s `rooms[].net_area_m2`: one calculation, read twice. A room the schedule cannot measure shows `-` there and keeps its centreline stamp without `net`, and so does a room no wall touches. Without the word nothing changes. The longer stamp is fitted like any label, so it can shrink in a narrow room. This is a drawing choice, no standard's rule.

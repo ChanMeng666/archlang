@@ -16,7 +16,7 @@ Without the word nothing changes, byte for byte.
 | 2 | The stamp reads the schedule's own rows (`roomSchedule`, the memoised `net_area_m2`); no second calculation | calling `roomNetAreaMm2` from the room element | never: a second calculation is how two figures drift |
 | 3 | The stamp says ` net`; the default stamp stays bare | an unlabelled swap, or a legend line | a reader tests show the suffix is noise; the legend then names it |
 | 4 | A room with no net figure keeps its centreline stamp, unsuffixed | printing nothing, or printing the gross as if net | the rule below ever changes to refuse |
-| 5 | The room element learns the figure through an optional `RenderCtx.areaStamp`; it stays ignorant of walls | giving `room.ts` the walls | an element needs the whole storey for another reason |
+| 5 | The room element learns the figure through an optional `RenderCtx.netAreaOf`; it stays ignorant of walls | giving `room.ts` the walls | an element needs the whole storey for another reason |
 | 6 | The figure is the schedule's 2-decimal value formatted to one decimal | formatting the unrounded mm² | the schedule's own rounding changes; the stamp must follow it, never lead |
 
 ## 2. When there is no net figure
@@ -25,6 +25,17 @@ Without the word nothing changes, byte for byte.
 would cost more than `MAX_NET_PROBE_WORK`, or when the integral leaves `[0, gross]`. Such a room keeps `12.0 m²` and
 no suffix, so a sheet that mixes the two is readable: a stamp saying `net` is net, one that does not is the
 centreline figure. The schedule shows `-` for the same room.
+
+Added after red-team round 1:
+
+* A room whose net figure equals its centreline figure had nothing deducted (no wall on or in it), so ` net` would claim
+  a deduction that did not happen: it keeps the bare stamp, like a room with no figure. Reverse if a sheet of mixed
+  stamps proves harder to read than a uniform suffix.
+* The one-decimal figure is rounded from the schedule's two-decimal value in integer hundredths (`fmtTenthsOf2dp`, in
+  `src/num-format.ts`), a tie up: 9.45 prints `9.5`, as the table's 9.45 reads. `toFixed(1)` printed `9.4`. The
+  centreline stamp keeps `toFixed(1)` and does not move.
+* `net` is taken after `rooms` only when no `(` follows it, so a next-line macro call `net()` still parses.
+* Plan JSON's dropped row for `schedule rooms` carries `text: "schedule rooms net"` when the word is written.
 
 ## 3. Shapes, units, fit
 
@@ -45,5 +56,5 @@ centreline figure. The schedule shows `-` for the same room.
 ## 5. Byte law
 
 A plan that does not write `schedule rooms net` is unchanged in SVG, `describe()`, `lint()` and `compile().diagnostics`.
-Pinned by `test/net-stamp-byte-identity.test.ts` against a `git archive` baseline of `90cee401`, with a fixture that uses
+Pinned by `test/net-area-stamp.test.ts` against a `git archive` baseline of `90cee401`, with a fixture that uses
 the form.

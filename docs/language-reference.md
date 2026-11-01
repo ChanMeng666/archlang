@@ -2691,7 +2691,7 @@ The keyword takes a subject — `rooms` or `openings` — and an unknown one is 
 with a did-you-mean, never a silently ignored word. The two subjects compose: write both
 and both tables draw.
 
-**`schedule rooms net`** also changes the room stamp. Each room is stamped with the NET AREA column's figure, to one decimal, followed by `net`: `10.4 m² net`. It is the figure `describe()` reports as `rooms[].net_area_m2`, read from the same rows as the table, so the stamp and the table cannot disagree. A room with no net figure (the table shows `-`) keeps its centreline stamp, with no `net`. Without the word the stamp is the centreline area, as before. `net` belongs to `rooms` only. `describe()` does not change; the longer stamp is placed and shrunk like any label, and `W_ANNOTATION_OVERLAP` reports one that cannot be cleared.
+**`schedule rooms net`** also changes the room stamp. Each room is stamped with the NET AREA column's figure, to one decimal, followed by `net`: `10.4 m² net`. It is the figure `describe()` reports as `rooms[].net_area_m2`, read from the same rows as the table, so the stamp and the table cannot disagree. A room with no net figure (the table shows `-`) keeps its centreline stamp, with no `net`, and so does a room no wall touches (nothing was deducted, so `net` would claim too much). The one decimal is rounded from the table's two, a tie up: 9.45 stamps `9.5`. Without the word the stamp is the centreline area, as before. `net` belongs to `rooms` only. `describe()` does not change; the longer stamp is placed and shrunk like any label, and `W_ANNOTATION_OVERLAP` reports one that cannot be cleared.
 
 ```arch
 plan "Net stamp" {

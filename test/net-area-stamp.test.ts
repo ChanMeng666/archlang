@@ -11,12 +11,13 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { room } from "../src/elements/room.js";
-import { compile, describe as describePlan, format, lint } from "../src/index.js";
+import { compile, describe as describePlan, format, lint, planToJson } from "../src/index.js";
+import { fmtTenthsOf2dp } from "../src/num-format.js";
 import type { RRoom } from "../src/ir.js";
 import { renderSizes } from "../src/sheet.js";
 import { DEFAULT_THEME } from "../src/theme.js";
 import { allStoreysDigestWithDiagnostics } from "./byte-identity-digest.js";
-import { NET, NO_SCHEDULE, SHAPES_NET, SHAPES_TWIN, TWIN } from "./net-area-stamp-fixtures.js";
+import { MACRO, NET, NO_SCHEDULE, NO_WALLS, ROUND, SHAPES_NET, SHAPES_TWIN, TWIN } from "./net-area-stamp-fixtures.js";
 
 const api = { compile, describe: describePlan, lint };
 
@@ -36,6 +37,13 @@ suite("schedule rooms net: the byte law", () => {
     );
     expect(allStoreysDigestWithDiagnostics(api, SHAPES_TWIN)).toBe(
       "ccd9f3ad5eef76bd6f726ab9f5e8f102ebb7df250b0fe79e4c792f614ff08600",
+    );
+  });
+
+  it("a macro call named net on the line after the schedule still parses (pin taken at e338eeac)", () => {
+    expect(compile(MACRO, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(allStoreysDigestWithDiagnostics(api, MACRO)).toBe(
+      "d5666dc1a73feab167da3505a729144bcce9e23a13cfd5fa9417f50af3c91fc6",
     );
   });
 
@@ -73,7 +81,9 @@ suite("schedule rooms net: the stamp", () => {
     const printed = stamps(compile(SHAPES_NET).svg);
     for (const r of rooms) {
       expect(r.net_area_m2).toBeDefined();
-      expect(printed).toContain(`${r.net_area_m2!.toFixed(1)} m² net`);
+      expect(printed).toContain(
+        r.net_area_m2 === r.area_m2 ? `${r.area_m2.toFixed(1)} m²` : `${fmtTenthsOf2dp(r.net_area_m2!)} m² net`,
+      );
     }
   });
 
@@ -109,8 +119,26 @@ suite("schedule rooms net: the stamp", () => {
       Number(new RegExp(`font-size="([\\d.]+)"[^>]*>${text}</text>`).exec(svg)![1]);
     const plain = compile(hall("schedule rooms"), { noCache: true });
     const net = compile(hall("schedule rooms net"), { noCache: true });
-    expect(size(net.svg, "1.9 m² net")).toBeLessThan(size(plain.svg, "2.4 m²"));
+    expect(size(net.svg, "2.0 m² net")).toBeLessThan(size(plain.svg, "2.4 m²"));
     expect(lint(hall("schedule rooms net")).filter((d) => d.code === "W_ANNOTATION_OVERLAP")).toEqual([]);
+  });
+});
+
+suite("schedule rooms net: what the stamp claims", () => {
+  it("rounds the table's two decimals half up: 9.45 stamps 9.5, and the centreline stamp keeps toFixed", () => {
+    expect(describePlan(ROUND).rooms[0]!.net_area_m2).toBe(9.45);
+    expect(stamps(compile(ROUND).svg)[0]).toBe("9.5 m² net");
+    expect([9.45, 9.95, 0.04, 10.36, 12].map(fmtTenthsOf2dp)).toEqual(["9.5", "10.0", "0.0", "10.4", "12.0"]);
+    expect(stamps(compile(ROUND.replace("schedule rooms net", "schedule rooms")).svg)[0]).toBe("11.4 m²");
+  });
+
+  it("a room nothing was deducted from keeps the bare stamp", () => {
+    expect(stamps(compile(NO_WALLS).svg).slice(0, 2)).toEqual(["12.0 m²", "12.0 m²"]);
+  });
+
+  it("Plan JSON says it left the word out", () => {
+    expect(planToJson(NET).dropped).toContainEqual({ clause: "schedule rooms", count: 1, text: "schedule rooms net" });
+    expect(planToJson(TWIN).dropped).toContainEqual({ clause: "schedule rooms", count: 1 });
   });
 });
 

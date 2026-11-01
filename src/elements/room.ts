@@ -34,6 +34,7 @@ import {
   polygonLabelPoint,
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
+import { fmtTenthsOf2dp } from "../num-format.js";
 import { LABEL_AREA_DROP, LABEL_NAME_RISE } from "../text-layout.js";
 
 const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(REL_DIR_LIST);
@@ -460,7 +461,7 @@ export const room: ElementDef = {
     // read to one decimal and named, so a reader cannot take it for the centreline area. A room
     // with no net figure keeps the centreline stamp, unsuffixed.
     const net = ctx.netAreaOf?.(r.id);
-    const stamp = net !== undefined ? `${net.toFixed(1)} m² net` : `${areaM2} m²`;
+    const stamp = net !== undefined ? `${fmtTenthsOf2dp(net)} m² net` : `${areaM2} m²`;
     // The name, then the area figure: `wrapLabels` (`src/label-placement.ts`) reads a
     // room's two text nodes in this order when the name is too wide for one line.
     if (r.label) {
