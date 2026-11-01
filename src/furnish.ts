@@ -12,15 +12,21 @@
  * use requires, the missing words are named in `unresolved`. Whether a piece is in a room is
  * read off the room's shape, never its bounding box. A room whose use is unknown, or has no
  * row in the table, gets no piece and is named in `unresolved` ({@link roomsByFill}). A polygon
- * room and a multi-storey plan are reported there too and left as they are: `anchor` needs a
- * rectangle, and a position is never derived from a bounding box.
+ * room is reported there too and left as it is: `anchor` needs a rectangle, and a position is never
+ * derived from a bounding box.
+ *
+ * **Every storey.** A plan of `level` blocks is furnished storey by storey, each as a single-storey
+ * plan would be, with its statements inside its own block ({@link blockOf}). Each storey is read
+ * with the building it stands in, as `lint()` reads it ({@link storeysOf}), so a shaft's arriving
+ * head counts; the flights of the storeys either side ({@link flightsThrough}), its own voids and
+ * its lifts and escalators ({@link floorGaps}) are floor no piece stands on.
  *
  * **Never worse, per room.** A room's pieces are kept only when the plan with them compiles
  * and raises no diagnostic code (compile + lint under the default ruleset and under every
- * named profile, as multisets) and no hard furniture conflict it did not have before that
- * room. Otherwise the next candidate is tried; when a required piece cannot be placed its
- * use is left out whole, and a room with no use left is left empty. Both are reported. The one
- * code the gate does not count is `W_ROOM_MISSING_DEFINING`, which every partial state of a
+ * named profile, as multisets, over the plan and on each storey) and no hard furniture conflict
+ * it did not have before that room. Otherwise the next candidate is tried; when a required piece
+ * cannot be placed its use is left out whole, and a room with no use left is left empty. Both are
+ * reported. The one code the gate does not count is `W_ROOM_MISSING_DEFINING`, which every partial state of a
  * room raises; a use is judged on its finished pieces instead. A defining piece the stage's own
  * candidates cannot place is tried once more with the lint's placement search (the statement the
  * rule's hint quotes); a use whose defining piece neither places is left out whole, and reported.
@@ -32,7 +38,7 @@
  * costs one check, and at most {@link MAX_SET_CHECKS_PER_ROOM} are checked.
  */
 
-import type { FurnitureAnchor, PlanNode, Point, UseKind } from "./ast.js";
+import type { FurnitureAnchor, LevelNode, PlanNode, Point, Statement, UseKind, VerticalDir } from "./ast.js";
 import { type AnalyzeOptions, ROOM_CONTAINMENT_SLACK_MM, resolvePlan, roomAreaMm2, roomUses } from "./analyze.js";
 import type { Span } from "./diagnostics.js";
 import { Data } from "./fix-apply.js";
@@ -49,7 +55,7 @@ import { FURNISH_TABLE, type FurnishItem, familyOf, servedBy } from "./furnish-t
 import { doorLeaves, normal, sectorIntersectsRect, segmentsOfWall, sub, unit, type WallSegment } from "./geometry.js";
 import { distToPolygonEdge, pointInPolygon, polygonsOverlap, rectRing } from "./geometry/polygon.js";
 import { type BBox, DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "./geometry/rect.js";
-import type { RDoor, RFurniture, ROpening, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
+import type { RDoor, RFurniture, ROpening, ResolvedLevel, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
 import { lex } from "./lexer.js";
 import { ADVISORY_CODE_PROFILES, DEFAULT_RULESET, LINT_CODE_LAYERS, LINT_PROFILES } from "./lint.js";
 import {
@@ -60,14 +66,16 @@ import {
   type WcWorldSource,
   wcWorld,
 } from "./lint/clearance-measure.js";
-import { buildLintContext } from "./lint/context.js";
+import { type BuildingContext, buildLintContext } from "./lint/context.js";
 import { definingItems, pasteSet, useNoun } from "./lint/defining.js";
 import { type ExitApproachStrip, exitApproachStrips } from "./lint/rules/doors.js";
 import { stairZones, storeyStairs } from "./lint/rules/stairs.js";
+import { lintStoreys } from "./lint/storeys.js";
 import { fmtSource } from "./num-format.js";
 import { parse } from "./parser.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
 import { sourceConflicts } from "./repair.js";
+import { isVertical, piecesOf, verticalsOf } from "./vertical.js";
 
 // ---------------------------------------------------------------------------
 // the table
@@ -189,6 +197,12 @@ export interface FurnishCodes {
   codes: ReadonlyMap<string, number>;
   /** lint's codes under each named profile that differs from the default. */
   profiles?: ReadonlyMap<string, ReadonlyMap<string, number>>;
+  /**
+   * The same codes again per storey, keyed `<ruleset>|<level>`: every diagnostic that names a
+   * level. A plan of several is judged storey by storey, so one storey's improvement never pays
+   * for another's new warning. A single-storey plan has no such diagnostic, and no entry.
+   */
+  storeys?: ReadonlyMap<string, ReadonlyMap<string, number>>;
 }
 
 /**
@@ -209,8 +223,8 @@ export const NOT_GATED_DRAFTING: ReadonlySet<string> = new Set(
     .map(([code]) => code),
 );
 
-/** The codes `after` has more of than `before`, under the default ruleset or any profile —
- *  {@link NOT_GATED_DRAFTING} aside. */
+/** The codes `after` has more of than `before`, under the default ruleset or any profile, over the
+ *  whole plan or on any one storey — {@link NOT_GATED_DRAFTING} aside. */
 export function gainedCodes(before: FurnishCodes, after: FurnishCodes): string[] {
   const out = new Set<string>();
   const more = (was: ReadonlyMap<string, number> | undefined, now: ReadonlyMap<string, number>): void => {
@@ -218,6 +232,7 @@ export function gainedCodes(before: FurnishCodes, after: FurnishCodes): string[]
   };
   more(before.codes, after.codes);
   for (const [profile, now] of after.profiles ?? []) more(before.profiles?.get(profile), now);
+  for (const [storey, now] of after.storeys ?? []) more(before.storeys?.get(storey), now);
   return [...out].sort();
 }
 
@@ -226,8 +241,8 @@ export interface FurnishStageResult extends FinishResult {
   checks: number;
   /** The rooms looked at, for the bound. */
   rooms: number;
-  /** Where the furniture was inserted in `source`, or null when nothing was. */
-  insert: { at: number; text: string } | null;
+  /** Where the furniture was inserted in `source`: one run per storey that gained any. */
+  inserts: Array<{ at: number; text: string }>;
 }
 
 /** The lint code behind each kind of hard conflict `sourceConflicts` keys. */
@@ -256,7 +271,7 @@ export function furnishStage(
     changed: false,
     checks,
     rooms,
-    insert: null,
+    inserts: [],
   });
   const registry = env.plugins?.length ? createRegistry(env.plugins) : BUILTIN_REGISTRY;
   let before = codesOf(source);
@@ -267,11 +282,27 @@ export function furnishStage(
       { stage: "furnish", reason: "the plan does not compile — fix its errors first; nothing was changed" },
     ]);
 
+  const storeys = storeysOf(resolved.ir, resolved.levels);
+  /** The storey of a room on a plan of several: ids repeat between levels, so an id alone is not a room. */
+  const levelOf = new Map<RRoom, number>();
+  for (const st of storeys)
+    if (st.level !== undefined)
+      for (const e of st.ir.elements) if (e.kind === "room") levelOf.set(e as RRoom, st.level);
+  /** A room's id as a note quotes it, with its storey on a plan of several. */
+  const said = (room: RRoom): string => {
+    const level = levelOf.get(room);
+    return level === undefined ? `"${room.id}"` : `"${room.id}" (level ${level})`;
+  };
+  /** Where a statement that names a room can be written: its storey's block on a plan of several. */
+  const bodyOf = (room: RRoom): string => (levelOf.has(room) ? "its `level` block" : "the plan body");
+
   const unresolved: FinishNote[] = [];
   const note = (room: RRoom, reason: string, codes?: string[], scope?: FinishNote["scope"]): void => {
+    const level = levelOf.get(room);
     unresolved.push({
       stage: "furnish",
       room: room.id,
+      ...(level !== undefined ? { level } : {}),
       reason,
       ...(codes && codes.length > 0 ? { codes } : {}),
       ...(scope ? { scope } : {}),
@@ -281,36 +312,34 @@ export function furnishStage(
 
   const code = (words: readonly string[]): string => words.map((c) => `\`${c}\``).join(", ");
   /** How a note names a room: its authored id, or its label when it has none. */
-  const nameOf = (room: RRoom, level?: number): string => {
+  const nameOf = (room: RRoom): string => {
+    const level = levelOf.get(room);
     const name = room._idAuthored === true ? `"${room.id}"` : `the room "${room.label ?? room.id}"`;
     return level === undefined ? name : `${name} (level ${level})`;
   };
-  /** A multi-storey plan's note ends by saying no storey is furnished. */
-  const storeys = (reason: string, level?: number): string =>
-    level === undefined ? reason : `${reason}, and the furnish stage handles single-storey plans only`;
 
   /**
    * A room that holds some furniture is never topped up (ADR 0025, decision 2): what it
    * lacks is reported. These notes follow the stage's own, in room order.
    */
-  const partly = (r: Reported, level?: number): void => {
+  const partly = (r: Reported): void => {
     const { room } = r;
-    const where = nameOf(room, level);
+    const where = nameOf(room);
     const what =
       "strayed" in r
         ? `holds no piece on its floor — ${code(r.strayed)} ${r.strayed.length === 1 ? "is" : "are"} declared \`in ${room.id}\` but ${r.strayed.length === 1 ? "stands" : "stand"} outside it (\`W_FIXTURE_WRONG_ROOM\`)`
         : `holds furniture but not every piece its use requires — ${r.missing
             .map((m) => `${m.use}: ${code(m.categories)}`)
             .join("; ")} missing`;
-    // A room of a placed component is told to furnish the component, whatever its size: no
-    // statement in the plan body can name it, so that is the advice that applies first.
+    // A room of a placed component gets the advice for a placed room, whatever its size: the
+    // stage writes nothing for one, so that is the advice that applies first.
     const reason =
       room._instance !== undefined
-        ? `${where} ${what}; it belongs to a placed component instance — furnish the component instead`
+        ? `${where} ${what}; ${instanceAdvice(room, bodyOf(room))}`
         : roomAreaMm2(room) / 1e6 > MAX_ROOM_AREA_M2
           ? `${where} ${what}; it is larger than ${MAX_ROOM_AREA_M2} m², which the furnish table does not cover; finish fills only empty dwelling rooms`
           : `${where} ${what}; finish fills only empty rooms`;
-    note(room, storeys(reason, level));
+    note(room, reason);
   };
 
   /**
@@ -319,68 +348,41 @@ export function furnishStage(
    * empty (ADR 0025 §3, amended 2026-10-31). `scope` marks the note as asking nothing of the
    * author. The last of the furnish stage's notes, in room order.
    */
-  const unlisted = (room: RRoom, level?: number): void => {
+  const unlisted = (room: RRoom): void => {
     const uses = [...roomUses(room)];
     const why =
       uses.length === 0
         ? `neither \`uses\` nor its label or id names a use; give it \`uses\` with one of ${code(Object.keys(FURNISH_TABLE))} if finish should furnish it`
         : `${uses.length === 1 ? `its use ${code(uses)} has` : `its uses ${code(uses)} have`} no row there; add furniture yourself only if it should hold some`;
-    const reason = `${nameOf(room, level)} is outside the furnish table and was left empty — ${why}`;
-    note(room, storeys(reason, level), undefined, "outside-table");
+    const reason = `${nameOf(room)} is outside the furnish table and was left empty — ${why}`;
+    note(room, reason, undefined, "outside-table");
   };
 
-  if (resolved.levels.length > 0) {
-    const partial: Array<[Reported, number]> = [];
-    const outside: Array<[RRoom, number]> = [];
-    for (const l of resolved.levels) {
-      const fill = roomsByFill(l.ir);
-      for (const p of fill.reported) partial.push([p, l.level]);
-      for (const room of fill.unlisted) outside.push([room, l.level]);
-      for (const room of fill.empty)
-        note(
-          room,
-          `"${room.id}" (level ${l.level}) was not furnished — the furnish stage handles single-storey plans only`,
-        );
-    }
-    for (const [p, level] of partial) partly(p, level);
-    for (const [room, level] of outside) unlisted(room, level);
-    return none(unresolved);
-  }
-
-  const ir = resolved.ir;
-  const { empty: todo, reported: partial, unlisted: outside } = roomsByFill(ir);
+  const fills = storeys.map((st) => roomsByFill(st.ir));
+  const rooms = fills.reduce((n, f) => n + f.empty.length, 0);
   /**
    * Every note of the stage: its own, the partly furnished rooms, then the rooms outside the
-   * table. Called once, at the return.
+   * table, each in storey and room order. Called once, at the return.
    */
   const reported = (): FinishNote[] => {
-    for (const p of partial) partly(p);
-    for (const room of outside) unlisted(room);
+    for (const f of fills) for (const p of f.reported) partly(p);
+    for (const f of fills) for (const room of f.unlisted) unlisted(room);
     return unresolved;
   };
-  if (todo.length === 0) return none(reported());
-  const where = insertionPoint(source, plan);
-  const walls = ir.walls;
-  const segs = walls.flatMap((w) => segmentsOfWall(w));
-  const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
-  const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
-  const passages = [...doors, ...openings];
-  /** The walls and doorways a WC's sides are measured against, as `W_WC_SIDE_CLEARANCE` reads them. */
-  const wcSrc: WcWorldSource = { wallSegs: segs, doors, openings };
-  const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
-  /** The exterior exits' clear floor, as `W_EXIT_APPROACH_BLOCKED` measures it (PS2.69). */
-  const lintCtx = buildLintContext(ir, DEFAULT_RULESET);
-  const exits = EXIT_MM ? exitApproachStrips(lintCtx, EXIT_MM.push, EXIT_MM.pull) : [];
-  /** The flights and landings no piece stands on, as `W_FURNITURE_ON_STAIR` measures them (#364). */
-  const stairs = stairZones(storeyStairs(lintCtx) ?? { stairs: [], left: 0 }).map((z) => z.rect);
-  const ids = new Map<string, number>();
-  for (const e of ir.elements) if (e.kind === "room") ids.set(e.id, (ids.get(e.id) ?? 0) + 1);
+  if (rooms === 0) return none(reported());
 
-  const lines: string[] = [];
+  /** One block's statements: one run per storey, each inside that storey's own block. */
+  type Run = Insertion & { lines: string[] };
+  const runs: Run[] = [];
+  let run!: Run;
   const changes: FinishChange[] = [];
+  /** The plan with every run written so far; `extra` joins the run of the storey in hand. */
   const render = (extra: readonly string[]): string => {
     const data = new Data(source);
-    data.replaceRange(where.at, where.at, where.wrap([...lines, ...extra]));
+    for (const r of runs) {
+      const lines = r === run ? [...r.lines, ...extra] : r.lines;
+      if (lines.length > 0) data.replaceRange(r.at, r.at, r.wrap(lines));
+    }
     return data.render();
   };
   let conflicts = new Set(sourceConflicts(source, env).conflicts.keys());
@@ -401,278 +403,368 @@ export function furnishStage(
     const out = render(texts);
     before = codesOf(out);
     conflicts = new Set(sourceConflicts(out, env).conflicts.keys());
-    lines.push(...texts);
+    run.lines.push(...texts);
+    const level = levelOf.get(room);
     for (const text of texts)
       changes.push({
         stage: "furnish",
         kind: "added",
         statement: "furniture",
         text,
-        span: { start: where.at, end: where.at },
+        span: { start: run.at, end: run.at },
         room: room.id,
-        reason: `"${room.id}" (${uses.join(", ")}) held no furniture`,
+        ...(level !== undefined ? { level } : {}),
+        reason: `"${room.id}" (${uses.join(", ")}${level !== undefined ? `, level ${level}` : ""}) held no furniture`,
       });
   };
 
-  for (const room of todo) {
-    const uses = usesOf(room);
-    if (room.poly || room.circle) {
-      note(
-        room,
-        `"${room.id}" is a ${room.circle ? "circular" : "polygon"} room — the furnish stage places furniture in rectangular rooms only, and never derives a position from a bounding box`,
-      );
-      continue;
-    }
-    if (room._idAuthored !== true || room._instance !== undefined || !IDENT.test(room.id) || ids.get(room.id) !== 1) {
-      note(
-        room,
-        room._instance !== undefined
-          ? `"${room.id}" belongs to a placed component instance, so no statement in the plan body can name it — furnish the component instead`
-          : `the room "${room.label ?? room.id}" has no \`id=\` of its own to place furniture \`in\` — give it one`,
-      );
-      continue;
-    }
-    if ((room.size.w * room.size.h) / 1e6 > MAX_ROOM_AREA_M2) {
-      note(
-        room,
-        `"${room.id}" is larger than ${MAX_ROOM_AREA_M2} m² — the furnish table describes dwelling rooms, so the room was left as it is`,
-      );
-      continue;
-    }
-    let groups = groupsFor(uses);
-    const relational = room._placement === "relational";
-    if (relational) {
-      // `in <room> anchor` needs a room with authored `at` coordinates (E_PLACE_REF);
-      // `against wall` does not. Decided here, before any compile check.
-      const anchored = groups.flatMap((g) => g.items).find((i) => i.required && i.place !== "wall");
-      if (anchored) {
+  for (const [i, st] of storeys.entries()) {
+    const todo = fills[i]!.empty;
+    if (todo.length === 0) continue;
+    run = { ...blockOf(source, plan, st.level), lines: [] };
+    runs.push(run);
+    const ir = st.ir;
+    const walls = ir.walls;
+    const segs = walls.flatMap((w) => segmentsOfWall(w));
+    const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
+    const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
+    const passages = [...doors, ...openings];
+    /** The walls and doorways a WC's sides are measured against, as `W_WC_SIDE_CLEARANCE` reads them. */
+    const wcSrc: WcWorldSource = { wallSegs: segs, doors, openings };
+    const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
+    const lintCtx = buildLintContext(ir, DEFAULT_RULESET, st.building);
+    /** The exterior exits' clear floor, as `W_EXIT_APPROACH_BLOCKED` measures it (PS2.69). */
+    const exits = EXIT_MM ? exitApproachStrips(lintCtx, EXIT_MM.push, EXIT_MM.pull) : [];
+    /**
+     * The flights and landings no piece stands on, as `W_FURNITURE_ON_STAIR` measures them (#364):
+     * a shaft's stop is read with its neighbours (`st.building`), so the head of a flight arriving
+     * from below is here. Then the flights of the storeys either side, which pass through this floor.
+     */
+    const stairs = [
+      ...stairZones(storeyStairs(lintCtx) ?? { stairs: [], left: 0 }).map((z) => z.rect),
+      ...flightsThrough(storeys, i),
+    ];
+    const gaps = floorGaps(st);
+    const ids = new Map<string, number>();
+    for (const e of ir.elements) if (e.kind === "room") ids.set(e.id, (ids.get(e.id) ?? 0) + 1);
+
+    for (const room of todo) {
+      const uses = usesOf(room);
+      if (room.poly || room.circle) {
         note(
           room,
-          `"${room.id}" was not furnished — a relational room has no fixed \`at\` to anchor in, and its \`${anchored.category}\` is placed \`in <room> anchor\`; give the room \`at (x,y)\` coordinates`,
+          `${said(room)} is a ${room.circle ? "circular" : "polygon"} room — the furnish stage places furniture in rectangular rooms only, and never derives a position from a bounding box`,
         );
         continue;
       }
-      groups = groups.map((g) => ({
-        use: g.use,
-        items: g.items.filter((i) => i.place === "wall"),
-      }));
-    }
-    const site = new Site(
-      room,
-      walls,
-      segs,
-      passages,
-      doors,
-      exits.filter((x) => x.room === room.id),
-      stairs,
-      windows,
-      !relational,
-    );
-    let budget = MAX_PIECE_CHECKS_PER_ROOM;
-    /**
-     * A wet room the piece-by-piece run is about to leave empty: try its pieces as whole sets
-     * ({@link wetSet}) before saying so, and keep the first set the gate accepts. Only a room
-     * that would otherwise stay empty reaches this, so every room the stage furnished before
-     * keeps exactly the pieces it had (PS2.45).
-     */
-    const together = (): boolean => {
-      if (!uses.every((u) => u === "bath" || u === "wc")) return false;
-      const set = wetSet(site, groups, wcSrc, (texts) => refusal(render(texts)) === null);
-      if (set === null) return false;
-      accept(room, uses, set);
-      return true;
-    };
-    const nowhere = (item: FurnishItem): string =>
-      site.walled === 0 && item.place !== "centre"
-        ? `"${room.id}" has no wall behind any of its edges to stand the required \`${item.category}\` against`
-        : `no position for the ${item.category === "counter" ? `worktop (\`counter\`, ${(item.sizes ?? []).map(([a]) => a).join(", ")} mm along)` : `required \`${item.category}\``} in "${room.id}" clears its walls, its doors${site.nearStair ? ", its stair" : ""} and the pieces before it${
-            site.named === 0 && item.place === "wall"
-              ? `, and no wall behind it has an \`id=\` of its own for \`against wall\` to name`
-              : ""
-          }`;
-    /** The uses left out of a room that was furnished: each is reported, never scattered. */
-    const leftOut = (dropped: readonly Dropped[]): void => {
-      for (const d of dropped)
+      if (room._idAuthored !== true || room._instance !== undefined || !IDENT.test(room.id) || ids.get(room.id) !== 1) {
         note(
           room,
-          d.codes
-            ? `the ${d.use} pieces were left out of "${room.id}" — they would raise ${d.codes.join(", ")}, which the plan does not have now (the required \`${d.item.category}\` has no position that avoids it)`
-            : `the ${d.use} pieces were left out of "${room.id}" — ${nowhere(d.item)}`,
-          d.codes ?? undefined,
+          room._instance !== undefined
+            ? `${said(room)} was not furnished — ${instanceAdvice(room, bodyOf(room))}`
+            : `the room "${room.label ?? room.id}"${levelOf.has(room) ? ` (level ${levelOf.get(room)})` : ""} has no \`id=\` of its own to place furniture \`in\` — give it one`,
         );
-    };
-
-    /**
-     * Accept `placed`, judging each use it furnishes by the pieces that define it
-     * (`definingItems`, the reading `W_ROOM_MISSING_DEFINING` lints). The gate does not count
-     * that code (see {@link JUDGED_BY_PIECES}); it is judged here, per use, on the finished
-     * set. A defining piece the stage's candidates have no position for is tried with the lint's
-     * own placement search ({@link hinted}); a use whose defining piece neither search places is
-     * left out whole, and what remains is checked once more before it is kept.
-     */
-    /**
-     * One defining piece placed by the lint's own search (`pasteSet`, the statement the
-     * `W_ROOM_MISSING_DEFINING` hint quotes), measured on the plan with `placed` written, and
-     * kept only when the gate accepts it. A statement in the `at (x,y)` form (a relational room)
-     * is not taken: the stage never writes one. One resolve and one compile check, charged to
-     * the room's budget.
-     */
-    const hinted = (room: RRoom, placed: Placed[], use: UseKind, item: FurnishItem): Placed | null => {
-      if (budget === 0) return null;
-      const src = render(placed.map((p) => p.text));
-      const ir = resolvePlan(src, env).ir;
-      const here = ir?.elements.find((e): e is RRoom => e.kind === "room" && e.id === room.id);
-      if (!ir || !here) return null;
-      const paste = pasteSet(buildLintContext(ir, DEFAULT_RULESET), here, [item]);
-      const text = "stmts" in paste ? paste.stmts[0] : undefined;
-      if (text === undefined || text.includes(" at (")) return null;
-      budget--;
-      if (refusal(render([...placed.map((p) => p.text), text])) !== null) return null;
-      // Only `text` and `use` are read from here on (accept, and the next settle question);
-      // the geometry fields describe no candidate of the stage's own and are left empty.
-      return {
-        item,
-        use,
-        text,
-        rect: { x: 0, y: 0, w: 0, h: 0 },
-        strip: null,
-        edge: null,
-        middle: false,
-        against: false,
-        lo: 0,
-        hi: 0,
-        depth: 0,
-      };
-    };
-
-    const settle = (room: RRoom, uses: UseKind[], placed: Placed[], leftOutNotes: () => void): void => {
-      const families = new Set(placed.flatMap((p) => servedBy(p.text.split(" ")[1] ?? "")));
-      const holds = (i: FurnishItem): boolean => [i.category, ...(i.or ?? [])].some((w) => families.has(familyOf(w)));
-      const lacking: Array<{ use: UseKind; item: FurnishItem }> = [];
-      // A defining piece the stage did not place: its own candidates (corners and wall middles,
-      // beside the run it already placed) had no position the gate accepts, or its bounded tries
-      // never reached one. Ask the lint's placement search, the one the rule's hint quotes,
-      // before giving the use up: a use is never written without the piece that defines it,
-      // so `finish` raises no W_ROOM_MISSING_DEFINING on a use it furnished.
-      for (const use of [...new Set(placed.map((p) => p.use))])
-        for (const item of definingItems(use))
-          if (!holds(item)) {
-            const extra = hinted(room, placed, use, item);
-            if (extra) placed = [...placed, extra];
-            else lacking.push({ use, item });
-          }
-      if (lacking.length === 0) {
-        accept(room, uses, placed);
-        leftOutNotes();
-        return;
+        continue;
       }
-      const out = new Set(lacking.map((l) => l.use));
-      const remaining = placed.filter((p) => !out.has(p.use));
-      const words = (i: FurnishItem): string => [i.category, ...(i.or ?? [])].map((w) => `\`${w}\``).join(" or ");
-      const why = (l: { use: UseKind; item: FurnishItem }): string =>
-        `furnish found no position for its ${words(l.item)}, the piece that defines a ${useNoun(l.use)} (\`${JUDGED_BY_PIECES}\`)`;
-      let keep = remaining.length > 0 && budget > 0;
-      if (keep) {
-        budget--;
-        keep = refusal(render(remaining.map((p) => p.text))) === null;
+      if ((room.size.w * room.size.h) / 1e6 > MAX_ROOM_AREA_M2) {
+        note(
+          room,
+          `${said(room)} is larger than ${MAX_ROOM_AREA_M2} m² — the furnish table describes dwelling rooms, so the room was left as it is`,
+        );
+        continue;
       }
-      if (!keep) {
-        if (together()) return;
-        note(room, `"${room.id}" was left empty — ${lacking.map(why).join("; ")}`, [JUDGED_BY_PIECES]);
-        return;
-      }
-      accept(room, uses, remaining);
-      leftOutNotes();
-      for (const l of lacking)
-        note(room, `the ${l.use} pieces were left out of "${room.id}" — ${why(l)}`, [JUDGED_BY_PIECES]);
-    };
-
-    // First proposal: use by use, the first candidate of every piece that clears the room's
-    // geometry. A use whose required piece has no position is left out whole.
-    const first: Placed[] = [];
-    const absent: Dropped[] = [];
-    for (const g of groups) {
-      const mine: Placed[] = [];
-      let missing: FurnishItem | null = null;
-      for (const [i, item] of g.items.entries()) {
-        const [c] = site.candidates(item, g.use, [...first, ...mine], followers(g.items, i));
-        if (c) mine.push(c);
-        else if (item.required) {
-          missing = item;
-          break;
+      let groups = groupsFor(uses);
+      const relational = room._placement === "relational";
+      if (relational) {
+        // `in <room> anchor` needs a room with authored `at` coordinates (E_PLACE_REF);
+        // `against wall` does not. Decided here, before any compile check.
+        const anchored = groups.flatMap((g) => g.items).find((i) => i.required && i.place !== "wall");
+        if (anchored) {
+          note(
+            room,
+            `${said(room)} was not furnished — a relational room has no fixed \`at\` to anchor in, and its \`${anchored.category}\` is placed \`in <room> anchor\`; give the room \`at (x,y)\` coordinates`,
+          );
+          continue;
         }
+        groups = groups.map((g) => ({
+          use: g.use,
+          items: g.items.filter((i) => i.place === "wall"),
+        }));
       }
-      if (missing) absent.push({ use: g.use, item: missing, codes: null });
-      else first.push(...mine);
-    }
-    if (first.length === 0) {
-      if (together()) continue;
-      if (absent[0]) note(room, `${nowhere(absent[0].item)} — the room was left empty`);
-      continue;
-    }
-    budget--;
-    let blocking = refusal(render(first.map((p) => p.text)));
-    if (blocking === null) {
-      settle(room, uses, first, () => leftOut(absent));
-      continue;
-    }
+      const site = new Site(
+        room,
+        walls,
+        segs,
+        passages,
+        doors,
+        exits.filter((x) => x.room === room.id),
+        stairs,
+        gaps,
+        windows,
+        !relational,
+      );
+      let budget = MAX_PIECE_CHECKS_PER_ROOM;
+      /**
+       * A wet room the piece-by-piece run is about to leave empty: try its pieces as whole sets
+       * ({@link wetSet}) before saying so, and keep the first set the gate accepts. Only a room
+       * that would otherwise stay empty reaches this, so every room the stage furnished before
+       * keeps exactly the pieces it had (PS2.45).
+       */
+      const together = (): boolean => {
+        if (!uses.every((u) => u === "bath" || u === "wc")) return false;
+        const set = wetSet(site, groups, wcSrc, (texts) => refusal(render(texts)) === null);
+        if (set === null) return false;
+        accept(room, uses, set);
+        return true;
+      };
+      const nowhere = (item: FurnishItem): string =>
+        site.walled === 0 && item.place !== "centre"
+          ? `${said(room)} has no wall behind any of its edges to stand the required \`${item.category}\` against`
+          : `no position for the ${item.category === "counter" ? `worktop (\`counter\`, ${(item.sizes ?? []).map(([a]) => a).join(", ")} mm along)` : `required \`${item.category}\``} in ${said(room)} clears its walls, its doors${site.nearStair ? ", its stair" : ""}${site.nearGap ? ", the voids and shafts on its floor" : ""} and the pieces before it${
+              site.named === 0 && item.place === "wall"
+                ? `, and no wall behind it has an \`id=\` of its own for \`against wall\` to name`
+                : ""
+            }`;
+      /** The uses left out of a room that was furnished: each is reported, never scattered. */
+      const leftOut = (dropped: readonly Dropped[]): void => {
+        for (const d of dropped)
+          note(
+            room,
+            d.codes
+              ? `the ${d.use} pieces were left out of ${said(room)} — they would raise ${d.codes.join(", ")}, which the plan does not have now (the required \`${d.item.category}\` has no position that avoids it)`
+              : `the ${d.use} pieces were left out of ${said(room)} — ${nowhere(d.item)}`,
+            d.codes ?? undefined,
+          );
+      };
 
-    // Refused: place the pieces one at a time, each kept only when the plan stays no worse.
-    // A use whose required piece is refused is left out whole.
-    const kept: Placed[] = [];
-    const dropped: Dropped[] = [];
-    for (const g of groups) {
-      const mine: Placed[] = [];
-      let failed: FurnishItem | null = null;
-      let why: string[] | null = null;
-      for (const [i, item] of g.items.entries()) {
-        let ok = false;
-        let tries = MAX_CHECKS_PER_PIECE;
-        for (const c of site.candidates(item, g.use, [...kept, ...mine], followers(g.items, i))) {
-          if (tries === 0 || budget === 0) break;
-          tries--;
+      /**
+       * Accept `placed`, judging each use it furnishes by the pieces that define it
+       * (`definingItems`, the reading `W_ROOM_MISSING_DEFINING` lints). The gate does not count
+       * that code (see {@link JUDGED_BY_PIECES}); it is judged here, per use, on the finished
+       * set. A defining piece the stage's candidates have no position for is tried with the lint's
+       * own placement search ({@link hinted}); a use whose defining piece neither search places is
+       * left out whole, and what remains is checked once more before it is kept.
+       */
+      /**
+       * One defining piece placed by the lint's own search (`pasteSet`, the statement the
+       * `W_ROOM_MISSING_DEFINING` hint quotes), measured on the plan with `placed` written, and
+       * kept only when the gate accepts it. A statement in the `at (x,y)` form (a relational room)
+       * is not taken: the stage never writes one. One resolve and one compile check, charged to
+       * the room's budget.
+       */
+      const hinted = (room: RRoom, placed: Placed[], use: UseKind, item: FurnishItem): Placed | null => {
+        if (budget === 0) return null;
+        const src = render(placed.map((p) => p.text));
+        const now = resolvePlan(src, env);
+        const ir = st.level === undefined ? now.ir : now.levels.find((l) => l.level === st.level)?.ir;
+        const here = ir?.elements.find((e): e is RRoom => e.kind === "room" && e.id === room.id);
+        if (!ir || !here) return null;
+        const paste = pasteSet(buildLintContext(ir, DEFAULT_RULESET, st.building), here, [item]);
+        const text = "stmts" in paste ? paste.stmts[0] : undefined;
+        if (text === undefined || text.includes(" at (")) return null;
+        budget--;
+        if (refusal(render([...placed.map((p) => p.text), text])) !== null) return null;
+        // Only `text` and `use` are read from here on (accept, and the next settle question);
+        // the geometry fields describe no candidate of the stage's own and are left empty.
+        return {
+          item,
+          use,
+          text,
+          rect: { x: 0, y: 0, w: 0, h: 0 },
+          strip: null,
+          edge: null,
+          middle: false,
+          against: false,
+          lo: 0,
+          hi: 0,
+          depth: 0,
+        };
+      };
+
+      const settle = (room: RRoom, uses: UseKind[], placed: Placed[], leftOutNotes: () => void): void => {
+        const families = new Set(placed.flatMap((p) => servedBy(p.text.split(" ")[1] ?? "")));
+        const holds = (i: FurnishItem): boolean => [i.category, ...(i.or ?? [])].some((w) => families.has(familyOf(w)));
+        const lacking: Array<{ use: UseKind; item: FurnishItem }> = [];
+        // A defining piece the stage did not place: its own candidates (corners and wall middles,
+        // beside the run it already placed) had no position the gate accepts, or its bounded tries
+        // never reached one. Ask the lint's placement search, the one the rule's hint quotes,
+        // before giving the use up: a use is never written without the piece that defines it,
+        // so `finish` raises no W_ROOM_MISSING_DEFINING on a use it furnished.
+        for (const use of [...new Set(placed.map((p) => p.use))])
+          for (const item of definingItems(use))
+            if (!holds(item)) {
+              const extra = hinted(room, placed, use, item);
+              if (extra) placed = [...placed, extra];
+              else lacking.push({ use, item });
+            }
+        if (lacking.length === 0) {
+          accept(room, uses, placed);
+          leftOutNotes();
+          return;
+        }
+        const out = new Set(lacking.map((l) => l.use));
+        const remaining = placed.filter((p) => !out.has(p.use));
+        const words = (i: FurnishItem): string => [i.category, ...(i.or ?? [])].map((w) => `\`${w}\``).join(" or ");
+        const why = (l: { use: UseKind; item: FurnishItem }): string =>
+          `furnish found no position for its ${words(l.item)}, the piece that defines a ${useNoun(l.use)} (\`${JUDGED_BY_PIECES}\`)`;
+        let keep = remaining.length > 0 && budget > 0;
+        if (keep) {
           budget--;
-          const refused = refusal(render([...kept, ...mine, c].map((p) => p.text)));
-          if (refused === null) {
-            mine.push(c);
-            ok = true;
+          keep = refusal(render(remaining.map((p) => p.text))) === null;
+        }
+        if (!keep) {
+          if (together()) return;
+          note(room, `${said(room)} was left empty — ${lacking.map(why).join("; ")}`, [JUDGED_BY_PIECES]);
+          return;
+        }
+        accept(room, uses, remaining);
+        leftOutNotes();
+        for (const l of lacking)
+          note(room, `the ${l.use} pieces were left out of ${said(room)} — ${why(l)}`, [JUDGED_BY_PIECES]);
+      };
+
+      // First proposal: use by use, the first candidate of every piece that clears the room's
+      // geometry. A use whose required piece has no position is left out whole.
+      const first: Placed[] = [];
+      const absent: Dropped[] = [];
+      for (const g of groups) {
+        const mine: Placed[] = [];
+        let missing: FurnishItem | null = null;
+        for (const [i, item] of g.items.entries()) {
+          const [c] = site.candidates(item, g.use, [...first, ...mine], followers(g.items, i));
+          if (c) mine.push(c);
+          else if (item.required) {
+            missing = item;
             break;
           }
-          why = refused;
-          blocking = refused;
         }
-        if (!ok && item.required) {
-          failed = item;
-          break;
-        }
+        if (missing) absent.push({ use: g.use, item: missing, codes: null });
+        else first.push(...mine);
       }
-      if (failed) dropped.push({ use: g.use, item: failed, codes: why });
-      else kept.push(...mine);
+      if (first.length === 0) {
+        if (together()) continue;
+        if (absent[0]) note(room, `${nowhere(absent[0].item)} — the room was left empty`);
+        continue;
+      }
+      budget--;
+      let blocking = refusal(render(first.map((p) => p.text)));
+      if (blocking === null) {
+        settle(room, uses, first, () => leftOut(absent));
+        continue;
+      }
+
+      // Refused: place the pieces one at a time, each kept only when the plan stays no worse.
+      // A use whose required piece is refused is left out whole.
+      const kept: Placed[] = [];
+      const dropped: Dropped[] = [];
+      for (const g of groups) {
+        const mine: Placed[] = [];
+        let failed: FurnishItem | null = null;
+        let why: string[] | null = null;
+        for (const [i, item] of g.items.entries()) {
+          let ok = false;
+          let tries = MAX_CHECKS_PER_PIECE;
+          for (const c of site.candidates(item, g.use, [...kept, ...mine], followers(g.items, i))) {
+            if (tries === 0 || budget === 0) break;
+            tries--;
+            budget--;
+            const refused = refusal(render([...kept, ...mine, c].map((p) => p.text)));
+            if (refused === null) {
+              mine.push(c);
+              ok = true;
+              break;
+            }
+            why = refused;
+            blocking = refused;
+          }
+          if (!ok && item.required) {
+            failed = item;
+            break;
+          }
+        }
+        if (failed) dropped.push({ use: g.use, item: failed, codes: why });
+        else kept.push(...mine);
+      }
+      if (kept.length === 0) {
+        if (together()) continue;
+        const failed = dropped[0]?.item;
+        note(
+          room,
+          `furnishing ${said(room)} would raise ${blocking.join(", ")}, which the plan does not have now${failed ? ` (the required \`${failed.category}\` has no position that avoids it)` : ""} — the room was left empty`,
+          blocking,
+        );
+        continue;
+      }
+      settle(room, uses, kept, () => leftOut(dropped));
     }
-    if (kept.length === 0) {
-      if (together()) continue;
-      const failed = dropped[0]?.item;
-      note(
-        room,
-        `furnishing "${room.id}" would raise ${blocking.join(", ")}, which the plan does not have now${failed ? ` (the required \`${failed.category}\` has no position that avoids it)` : ""} — the room was left empty`,
-        blocking,
-      );
-      continue;
-    }
-    settle(room, uses, kept, () => leftOut(dropped));
   }
 
-  if (lines.length === 0) return none(reported(), checks, todo.length);
-  const text = where.wrap(lines);
+  const written = runs.filter((r) => r.lines.length > 0);
+  if (written.length === 0) return none(reported(), checks, rooms);
   return {
     source: render([]),
     changes,
     unresolved: reported(),
     changed: true,
     checks,
-    rooms: todo.length,
-    insert: { at: where.at, text },
+    rooms,
+    inserts: written.map((r) => ({ at: r.at, text: r.wrap(r.lines) })),
   };
+}
+
+/**
+ * Why a room of a placed component stays empty, and what the author can do. Its statement lives in
+ * the component, so it is one room in every instance; a piece for this instance alone is written
+ * where the instance is placed, naming the room by its dotted id, which a plan body resolves as it
+ * resolves any room (`test/finish-furnish.test.ts` pastes this advice). The stage writes neither:
+ * which of the two the author means is the author's decision.
+ */
+const instanceAdvice = (room: RRoom, body: string): string =>
+  `it belongs to a placed component instance, which finish leaves to you: furnish the component, or write \`furniture … in ${room.id}\` in ${body}`;
+
+/** One storey the stage furnishes: on a plan of several, with the building it stands in. */
+interface Storey {
+  ir: ResolvedPlan;
+  /** Its level number; absent on a single-storey plan. */
+  level?: number;
+  /** What `lint()` reads this storey with; absent on a single-storey plan, which reads none. */
+  building?: BuildingContext;
+}
+
+/** The storeys of a resolved plan, as `lint()` reads them; a single-storey plan is its own one. */
+function storeysOf(ir: ResolvedPlan, levels: readonly ResolvedLevel[]): Storey[] {
+  if (levels.length === 0) return [{ ir }];
+  return lintStoreys(ir, levels, DEFAULT_RULESET.tolMm).map((st) => ({
+    ir: st.ir,
+    level: st.level!,
+    ...(st.building ? { building: st.building } : {}),
+  }));
+}
+
+/**
+ * The flights of the storeys either side that pass through storey `i`'s floor, each by the pieces
+ * it stands on: one rising from below arrives through this floor, one coming down from above lands
+ * on it. A shaft whose stop here matches is already in this storey's stair zones; these hold the
+ * rest, an id with no stop here (`W_STAIR_UNMATCHED`) and a stop that stands elsewhere.
+ */
+function flightsThrough(storeys: readonly Storey[], i: number): BBox[] {
+  const going = (st: Storey | undefined, dir: VerticalDir): BBox[] =>
+    (st ? verticalsOf(st.ir) : []).flatMap((v) => (v.kind !== "elevator" && v.dir === dir ? piecesOf(v) : []));
+  return [...going(storeys[i - 1], "up"), ...going(storeys[i + 1], "down")];
+}
+
+/**
+ * Floor a storey of a multi-storey plan has no use of: its own `void`s, each a hole in THIS storey's
+ * plate (one on the storey above is headroom here, one below is that storey's floor), and its lifts
+ * and escalators. No rule reports a piece on them, so the gate cannot keep it off; a position is
+ * refused here. A single-storey plan has none of this, and what it writes does not move.
+ */
+function floorGaps(st: Storey): BBox[] {
+  if (st.level === undefined) return [];
+  return st.ir.elements.flatMap((e): BBox[] => {
+    if (e.kind === "void") return [{ x: e.at.x, y: e.at.y, w: e.size.w, h: e.size.h }];
+    return isVertical(e) && e.kind !== "stair" ? piecesOf(e) : [];
+  });
 }
 
 /** A use left out of a room: the required piece that had no position, and the codes that refused it. */
@@ -988,6 +1080,8 @@ class Site {
   readonly named: number;
   /** Does a flight or a landing claim some of this room's floor? */
   readonly nearStair: boolean;
+  /** Does a void or a shaft take some of this room's floor? */
+  readonly nearGap: boolean;
 
   constructor(
     private readonly room: RRoom,
@@ -999,6 +1093,8 @@ class Site {
     private readonly exits: readonly ExitApproachStrip[],
     /** The flights and landings on this storey. */
     private readonly stairs: readonly BBox[],
+    /** The rest of this storey's floor no piece stands on ({@link floorGaps}). */
+    private readonly gaps: readonly BBox[],
     windows: readonly RWindow[],
     /** Can a piece be written `in <room> anchor`? Not in a relational room. */
     private readonly anchors: boolean,
@@ -1027,6 +1123,7 @@ class Site {
       h: this.clear.y1 - this.clear.y0,
     };
     this.nearStair = stairs.some((z) => rectsOverlap(z, floor));
+    this.nearGap = gaps.some((z) => rectsOverlap(z, floor));
     const onEdge = (p: { x: number; y: number }, edge: RectEdge): number | null => {
       const horizontal = edge === "top" || edge === "bottom";
       const fixed = edge === "top" ? rect.y : edge === "bottom" ? y1 : edge === "left" ? rect.x : x1;
@@ -1331,8 +1428,8 @@ class Site {
     const inside = (r: BBox): boolean =>
       r.x >= c.x0 - EPS && r.y >= c.y0 - EPS && r.x + r.w <= c.x1 + EPS && r.y + r.h <= c.y1 + EPS;
     if (p.rect.w <= 0 || p.rect.h <= 0 || !inside(p.rect) || (p.strip && !inside(p.strip))) return false;
-    if (this.stairs.some((z) => rectsOverlap(z, p.rect) || (p.strip !== null && rectsOverlap(z, p.strip))))
-      return false;
+    const taken = (z: BBox): boolean => rectsOverlap(z, p.rect) || (p.strip !== null && rectsOverlap(z, p.strip));
+    if (this.stairs.some(taken) || this.gaps.some(taken)) return false;
     const behind = p.item.place === "front" ? placed[placed.length - 1] : undefined;
     for (const q of placed) {
       if (rectsOverlap(p.rect, q.rect)) return false;
@@ -1389,14 +1486,35 @@ const BLANK_OR_COMMENT = /^[ \t]*(#.*)?$/;
 /** The statements furniture is written after, when the plan body has no furniture of its own. */
 const SHELL_KINDS: ReadonlySet<string> = new Set(["room", "wall", "door", "window", "opening"]);
 
+/** Where a storey's statements go, and how they are laid out there. */
+interface Insertion {
+  at: number;
+  wrap: (lines: readonly string[]) => string;
+}
+
 /**
- * Where the new statements go, and how they are laid out there: after the last `furniture`
- * statement of the plan body itself, else after its last room, wall, door, window or
- * opening — never inside a `for`, an `if`, a `zone`, a `level` or a component body. When
- * that statement does not end its line, they go before the plan's closing brace instead.
- * A wrong guess does not compile, and the never-worse check then refuses the room.
+ * The block a storey's statements go in: the plan body, or on a plan of several the storey's own
+ * `level` block, whatever order the file writes them in. Written there, `in <room>` and
+ * `against wall <id>` mean this storey's room and wall: ids are unique within a level, and the same
+ * id on another level is another room.
  */
-function insertionPoint(source: string, plan: PlanNode): { at: number; wrap: (lines: readonly string[]) => string } {
+function blockOf(source: string, plan: PlanNode, level: number | undefined): Insertion {
+  if (level === undefined) return insertionPoint(source, plan.body, plan.bodyStart!);
+  const node = plan.body.find((s): s is LevelNode => s.kind === "level" && s.level === level)!;
+  const header = node.span!.start;
+  // The block opens at the first brace of the statement: its header holds a name and a number.
+  const open = lex(source).tokens.find((t) => t.type === "lcurly" && t.start >= header)!;
+  return insertionPoint(source, node.body, open.end);
+}
+
+/**
+ * Where the new statements go in the block `body` of a brace ending at `bodyStart`, and how they are
+ * laid out there: after the last `furniture` statement of the block itself, else after its last
+ * room, wall, door, window or opening — never inside a `for`, an `if`, a `zone` or a component
+ * body. When that statement does not end its line, they go before the block's closing brace
+ * instead. A wrong guess does not compile, and the never-worse check then refuses the room.
+ */
+function insertionPoint(source: string, body: readonly Statement[], bodyStart: number): Insertion {
   const eol = source.includes("\r\n") ? "\r\n" : "\n";
   const lineStart = (at: number): number => source.lastIndexOf("\n", at - 1) + 1;
   const lineEnd = (at: number): number => {
@@ -1406,7 +1524,7 @@ function insertionPoint(source: string, plan: PlanNode): { at: number; wrap: (li
   };
   const last = (kinds: (kind: string) => boolean): Span | null => {
     let best: Span | null = null;
-    for (const s of plan.body) {
+    for (const s of body) {
       const span = (s as { span?: Span }).span;
       if (span && kinds(s.kind) && (!best || span.end > best.end)) best = span;
     }
@@ -1418,9 +1536,9 @@ function insertionPoint(source: string, plan: PlanNode): { at: number; wrap: (li
     const indent = BLANK.test(lead) ? lead : "  ";
     return { at: lineEnd(after.end), wrap: (lines) => lines.map((l) => `${eol}${indent}${l}`).join("") };
   }
-  // Before the closing brace of the plan: the last `}` the lexer reads at depth 0 of the body.
+  // Before the closing brace of the block: the last `}` the lexer reads at depth 0 of the body.
   const toks = lex(source).tokens;
-  const open = toks.findIndex((t) => t.type === "lcurly" && t.end === plan.bodyStart);
+  const open = toks.findIndex((t) => t.type === "lcurly" && t.end === bodyStart);
   let depth = 0;
   let close = source.length;
   for (const t of toks.slice(open + 1)) {
@@ -1430,7 +1548,7 @@ function insertionPoint(source: string, plan: PlanNode): { at: number; wrap: (li
       break;
     }
   }
-  const outer = /^[ \t]*/.exec(source.slice(lineStart(plan.bodyStart!)))![0];
+  const outer = /^[ \t]*/.exec(source.slice(lineStart(bodyStart)))![0];
   const indent = `${outer}  `;
   if (BLANK.test(source.slice(lineStart(close), close)) && lineStart(close) > 0) {
     const at = lineStart(close);

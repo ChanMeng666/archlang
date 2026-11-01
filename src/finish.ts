@@ -23,8 +23,8 @@
  *
  *   1. **Fixpoint** — `finish(finish(s).source).source === finish(s).source`.
  *   2. **Never worse** — the result has no compile error and no diagnostic code (compile +
- *      lint under every profile, as a multiset) the input did not have, and no new hard
- *      furniture conflict. A statement that would break this is left out and reported in
+ *      lint under every profile, as a multiset, on each storey as well as over the plan) the
+ *      input did not have, and no new hard furniture conflict. A statement that would break this is left out and reported in
  *      `unresolved`; the sheet stage writes the rest (see {@link sheetStage}).
  *   3. **A sheet finish chose fits** — whenever `paper` or `scale` was written the result
  *      raises neither `W_SCALE_OVERFLOW` nor `W_DRAWING_OVERFLOW`.
@@ -97,6 +97,8 @@ export interface FinishChange {
   reason: string;
   /** The room a `furniture` statement was written for (the `furnish` stage only). */
   room?: string;
+  /** The storey of {@link room} on a plan of several: the same id on two levels is two rooms. */
+  level?: number;
 }
 
 export interface FinishNote {
@@ -109,6 +111,8 @@ export interface FinishNote {
    * lacks a piece its use requires (named in `reason`; never topped up).
    */
   room?: string;
+  /** The storey of {@link room} on a plan of several: the same id on two levels is two rooms. */
+  level?: number;
   /** The diagnostic codes furnishing that room, or writing that sheet statement, would have raised. */
   codes?: string[];
   /**
@@ -202,7 +206,7 @@ export function finish(source: string, opts: FinishOptions = {}): FinishResult {
       changes: r.changes,
       unresolved: r.unresolved,
       changed: r.changed,
-      ops: r.insert ? [[r.insert.at, r.insert.at, r.insert.text]] : [],
+      ops: r.inserts.map(({ at, text }) => [at, at, text] as const),
     };
   };
 
@@ -288,16 +292,26 @@ export function codesOf(source: string, env: AnalyzeOptions, memo: CodesMemo): C
   const hit = memo.get(source);
   if (hit) return hit;
   const compiled = compileUncached(source, env);
-  const count = (diags: ReadonlyArray<{ code?: string }>): Map<string, number> => {
+  const storeys = new Map<string, Map<string, number>>();
+  /** The codes of `diags` as a multiset, and each storey's, under `ruleset`. */
+  const count = (diags: ReadonlyArray<{ code?: string; level?: number }>, ruleset = ""): Map<string, number> => {
     const m = new Map<string, number>();
-    for (const d of diags) m.set(d.code ?? "", (m.get(d.code ?? "") ?? 0) + 1);
+    for (const d of diags) {
+      m.set(d.code ?? "", (m.get(d.code ?? "") ?? 0) + 1);
+      if (d.level === undefined) continue;
+      const key = `${ruleset}|${d.level}`;
+      const s = storeys.get(key) ?? new Map<string, number>();
+      storeys.set(key, s);
+      s.set(d.code ?? "", (s.get(d.code ?? "") ?? 0) + 1);
+    }
     return m;
   };
   const codes = count([...compiled.diagnostics, ...lint(source, env)]);
   const errors = compiled.diagnostics.some((d) => d.severity === "error");
   const profiles = new Map<string, Map<string, number>>();
-  if (!errors) for (const profile of STRICTER_PROFILES) profiles.set(profile, count(lint(source, { ...env, profile })));
-  const out: Codes = { errors, codes, profiles };
+  if (!errors)
+    for (const profile of STRICTER_PROFILES) profiles.set(profile, count(lint(source, { ...env, profile }), profile));
+  const out: Codes = { errors, codes, profiles, ...(storeys.size > 0 ? { storeys } : {}) };
   memo.set(source, out);
   return out;
 }
