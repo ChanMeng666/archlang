@@ -579,6 +579,37 @@ suite("`describe --json` and the schedule", () => {
   });
 });
 
+suite("`schedule rooms net`", () => {
+  const SHEET = "  schedule rooms net\n  schedule openings\n  legend\n";
+  const KINDS = `${ROOM}  window tilt_turn on r.top at 1500 from start width 1500 hinge left
+  window fixed on r.top at 4500 from start width 1500
+  door glazed_sliding on r.bottom at center width 2400 slide right
+`;
+  const TWIN = `${ROOM}  window on r.top at 1500 from start width 1500
+  window on r.top at 4500 from start width 1500
+  door sliding on r.bottom at center width 2400 slide right
+`;
+  const stamps = (src: string): string[] =>
+    compile(src, { noCache: true })
+      .scene!.nodes.filter((n) => n.layer === "labels")
+      .flatMap((n) => (n.prim.t === "text" ? [n.prim.value] : []));
+
+  it("the stamp and the schedule read the walls: a kind moves neither", () => {
+    expect(compile(plan(KINDS, SHEET), { noCache: true }).errors).toEqual([]);
+    expect(stamps(plan(KINDS, SHEET)).join(" ")).toContain("net");
+    expect(stamps(plan(KINDS, SHEET))).toEqual(stamps(plan(TWIN, SHEET)));
+    expect(describePlan(plan(KINDS, SHEET)).schedule).toEqual(describePlan(plan(TWIN, SHEET)).schedule);
+  });
+
+  it("a kind's marks stay out of the stamp's way, net or not: the label lands where the twin's does", () => {
+    const labels = (src: string) =>
+      compile(src, { noCache: true })
+        .scene!.nodes.filter((n) => n.layer === "labels")
+        .map((n) => n.prim);
+    expect(labels(plan(KINDS, SHEET))).toEqual(labels(plan(TWIN, SHEET)));
+  });
+});
+
 suite("the legend", () => {
   const rowsOf = (src: string): string[] => {
     const nodes = compile(src, { noCache: true }).scene!.nodes;

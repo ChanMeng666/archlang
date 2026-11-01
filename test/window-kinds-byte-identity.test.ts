@@ -4,7 +4,7 @@
  * A plan that writes neither form resolves, draws, describes and lints exactly as before, down to
  * its Scene and the steps its resolution spends, in the accessibility profile and on the circulation
  * overlay too. Each digest is {@link stairLawDigest}, the widest law body the repository has
- * (`test/block-stair-law.ts`), **measured against `src/` at `ecedd364`** (`main` before the forms),
+ * (`test/block-stair-law.ts`), **measured against `src/` at `c46cbc81`** (`main` before the forms),
  * that tree extracted by `git archive`, the body and the rows imported from this branch and handed
  * that tree's compiler. The rows are every plan the block-stair law pins, then
  * {@link WINDOW_INLINE_ROWS}: plain windows and the older door kinds on each path the forms fork from.
@@ -76,7 +76,7 @@ function kindsIn(src: string): { windows: string[]; glazed: boolean } {
   };
 }
 
-/** Measured at `ecedd364` (see the header): `[digest, row]`. */
+/** Measured at `c46cbc81` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["e33e9923337208c91bf7093a0fa63040f132db455f3e3e85d584740a18a8f611", "examples/accessible.arch"],
   ["164d5d3f4955ae6a2ea4b3c117bc7b9d6f024ca0f68d52b9f708f77a3ee982b4", "examples/aquarium.arch"],
