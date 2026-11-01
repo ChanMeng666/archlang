@@ -372,6 +372,49 @@ export function matchesLivingDining(text: string): boolean {
 }
 
 /**
+ * Words that name a place outdoors with no enclosure of its own, so a wall round it has no gap to
+ * leave. {@link FALLBACK_USE_VOCABULARY} leaves the balcony and the terrace out on purpose, so a room
+ * labelled one has no use; this says what it is for the one reader that must tell it from a room with
+ * no use at all: exterior walls round a terrace are a parapet, not a shell left open
+ * (`src/analyze/open-shell.ts`). No {@link UseKind} comes of it.
+ *
+ * "Loggia" and "carport" are here: each is open on a side by design, so that side is no gap. "Porch"
+ * is not: a porch is closed as often as open (a closed porch is the annex this reading exists for),
+ * so it answers as a room does. English only, as the rest of this vocabulary is.
+ */
+const PREPARED_OPEN_AIR = prepareEntry({
+  canonical: [
+    "terrace",
+    "balcony",
+    "patio",
+    "deck",
+    "veranda",
+    "verandah",
+    "courtyard",
+    "forecourt",
+    "yard",
+    "backyard",
+    "garden",
+    "lawn",
+    "pool",
+    "driveway",
+    "loggia",
+    "carport",
+  ],
+  aliases: [],
+});
+
+/**
+ * Does this label name a place outdoors? Read off its last word, a spaced number apart ("Yard 2"): an
+ * English head noun comes last, so "Roof terrace" is a terrace and "Garden shed" is a shed.
+ */
+export function namesOpenAir(text: string): boolean {
+  const head = tokensOf(text).filter((t) => !/^[0-9]+$/.test(t));
+  const last = head[head.length - 1];
+  return last !== undefined && matchPrepared([last], PREPARED_OPEN_AIR) !== null;
+}
+
+/**
  * Words that read a room's label as part of a building people do not live in (plan-soundness
  * PS2.18). Read by `dwellingReading` (`src/analyze/dwelling.ts`) alone, never by
  * {@link classifyLabelUses}: they give no {@link UseKind}, so no room's `uses` and nothing

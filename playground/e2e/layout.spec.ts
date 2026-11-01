@@ -180,9 +180,9 @@ test.describe("phone layout", () => {
         await page.locator(`.mview[data-mview=${view}]`).tap();
         expect(await horizontalOverflow(page), `overflow in ${view} at ${width}px`).toBeLessThanOrEqual(0);
       }
-      // The output pane's strip: five tabs and the storey switcher (a two-storey plan), each
+      // The output pane's strip: six tabs and the storey switcher (a two-storey plan), each
       // inside the strip's content box (its side gutters kept), and the strip does not scroll
-      // sideways. At 360 px the five tabs once ran 6 px into the right gutter.
+      // sideways. At 360 px five tabs once ran 6 px into the right gutter.
       await page.locator(".mview[data-mview=plan]").tap();
       await expect(page.locator("#storeys")).toBeVisible();
       const strip = await page.locator(".pane h2:has(.tabs)").evaluate((h) => {

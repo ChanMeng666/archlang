@@ -87,14 +87,16 @@ const mobileViews = mountMobileViews(
   document.getElementById("mviewCount")!,
 );
 
-// ---- output tabs (Preview · Describe · Lint · Intent · 3D preview) ----
+// ---- output tabs (Preview · Describe · Lint · Intent · Takeoff · 3D preview) ----
 const preview3dEl = document.getElementById("preview3d")!;
+const takeoffEl = document.getElementById("takeoff")!;
 const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
 const views: Record<string, HTMLElement> = {
   preview,
   describe: describeEl,
   lint: lintEl,
   intent: intentEl,
+  takeoff: takeoffEl,
   preview3d: preview3dEl,
 };
 for (const tab of tabs) {
@@ -365,6 +367,8 @@ function render(source: string, refit = false) {
     levelSwitch.set(pages, shownLevel());
   }
   updateAnalysis(source, ok);
+  // Like the 3D preview, the takeoff follows the editor and the storey only while its tab is open.
+  if (takeoff && takeoffEl.classList.contains("active")) void takeoff.then((p) => p?.update(source, activeLevel));
   lastDiagRows = renderDiagnostics(errorsEl, diagnostics ?? [], source);
   mobileViews.setProblemCount(lastDiagRows.length);
   // Keep an already-run intent verdict live as the source changes (but don't run it
@@ -411,6 +415,21 @@ document.getElementById("tab-preview3d")?.addEventListener("click", () => {
   );
   const source = currentSource();
   void preview3d.then((p) => p?.show(source, selectedLevel, drawnFor(source)));
+});
+
+// ---- Takeoff: the core's quantities, in a panel whose code loads on the tab's first open ----
+let takeoff: Promise<import("./takeoff-panel.js").TakeoffPanel | undefined> | undefined;
+document.getElementById("tab-takeoff")?.addEventListener("click", () => {
+  takeoff ??= import("./takeoff-panel.js").then(
+    (m) => m.mountTakeoff(takeoffEl, { flash }),
+    (err: unknown) => {
+      takeoff = undefined; // a failed chunk load is retried on the next open
+      takeoffEl.textContent = `The takeoff did not load: ${(err as { message?: string })?.message ?? err}`;
+      return undefined;
+    },
+  );
+  const source = currentSource();
+  void takeoff.then((p) => p?.update(source, activeLevel));
 });
 
 let debounce: ReturnType<typeof setTimeout>;
