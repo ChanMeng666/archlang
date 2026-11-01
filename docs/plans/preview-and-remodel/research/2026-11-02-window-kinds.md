@@ -96,7 +96,7 @@ Each has the alternative rejected and what would reverse it.
 | Other door rules | `W_LEAF_TOO_WIDE` silent (no swinging leaf); `W_BALCONY_NO_DOOR` satisfied; garage rules read `door garage` only; entrance candidate, not a street-side `hinged` pick, as `sliding`; exit approach takes the larger depth, as `sliding` |
 | Draw budget | A kinded window costs 11, a plain one still 6; a glazed door fits the door's 5 |
 | Takeoff | Unchanged: windows by width, doors by kind. Residue |
-| `packages/archlang-3d` | No source change; its validator refuses the new door kind. Reported, not fixed |
+| `packages/archlang-3d` | No source change. Window kinds pass through. Its closed `DoorKind` union, validator and schema refuse the new door kind: `V-SCH-01` fails at run time and `typecheck:all` fails at `src/scene3d/build.ts:168`. Reported, not fixed |
 
 ## 5. The byte law
 
@@ -106,3 +106,8 @@ steps. Baseline from `git archive` of `1974d928`, the law's own body, a plant fi
 every form so the new path is shown reached. `test/window-kinds-byte-identity.test.ts` pins it. The kind's path
 is reached only from the word: `drawCost`, `render`, `describe`, the schedule and Plan JSON read a field that is
 absent otherwise.
+
+One thing does move on a plan that writes neither form, and it is not a form's path: `E_DOOR_KIND_CLAUSE`'s hint
+lists the kinds that take a clause, derived from `DOOR_KIND_CLAUSES`, so a plan already refused for `slide` or
+`open` on a door now reads `glazed_sliding` in that list too. It stays derived: leaving the new kind out to keep
+the bytes would make the hint false by omission.
