@@ -190,11 +190,7 @@ its byte-identity law.
 
 ### H7 · Room in `spec.llm.md` — `done` · PR #396 · merge `3d4817d3` · record: `research/2026-11-01-as-built.md` § H7
 
-### H8 · ArchCanvas on 1.48 — `todo` · after 1.48.0 · 0.5 day · model: opus · in the ArchCanvas repository
-
-Classify `W_FURNITURE_ON_STAIR`, `W_WALL_END_SHORT` and H1's code; `checkPredicates` now reads `levels[]`, so
-`mergeLevelSummaries` patches of top-level fields are ignored; refresh the stale comment at
-`src/lib/agent/intent.ts:702-720`; add a tripwire for each.
+### H8 · ArchCanvas on 1.48 — `done` · archcanvas PR #275 · record: `research/2026-11-01-as-built.md` § Batches 2 and 3
 
 ### H9 · Residue of the H cards — `todo` · after Show HN · 1–2 days · model: opus
 
@@ -203,21 +199,17 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 - **`W_EXTERIOR_RING_OPEN`:** silent when a closed annex (porch, garage) is built off an open shell, where `describe` then reports the annex's area with no omission reason: this one needs a different reading, and a test pins today's silence. A jog at a free end loses the span figure; a roof-terrace parapet in `exterior` fires; a fin off an open run can pair with a shell end; two open shells facing each other pair across the street.
 - **Open boundaries:** the free-end nib is measured to a face that is not drawn; a narrowed continuation counts as carried on however thin; `W_CONNECTOR_AMBIGUOUS`'s straddle threshold moved from 250 to 200 mm past the line; `W_DOOR_NEAR_CORNER` calls a free end a corner; an authored wall left at a crossing keeps its cap; narrowing the nib scan to ends a boundary reaches moves 11 K1 rows instead of 19.
 - **`finish`:** the note on an instance room (`u1.hall`) and the older row-room note disagree on whether a plan body can name it.
+- **Rooms and doors:** `door between` on an unknown or unplaced room still names `nosuch.top`; `W_SWING_ROOM_NOT_ADJACENT` follows every relational refusal; `W_SWING_OBSTRUCTED`'s hint says `on <wall>` on a derived wall; `skills/archlang/SKILL.md` says rooms are rectangles.
+- **Stairs:** a straight stair whose head stands in another room than its centre under-reads what a block reads (`steps_off`), so a level can read reachable through a sealed stop; `keep stacked` passes two different blocks with one box; `W_NO_ENTRANCE` says the plan has no exterior door on an upper storey the shaft does not land in; a shaft that mismatches hides its real short-head warnings until it matches.
+- **Budgets:** the `polygonLabelPoint` fallback at render, `sharedRuns` in lint, `surfaceNames` and `standsIn` run unmetered; an overlap crossing inside a placed instance reports without the place frame.
 - **`batch -o`:** an output folder that does not exist fails each file with a raw `ENOENT`.
 - **Stair `bounds()` (D27):** the break line overshoots the flight by 6 % of its width, 60 mm on a 1000 mm flight, past what `bounds()` declares, on every stair. This breaks the rule that `bounds()` covers every coordinate drawn; `test/block-stair.test.ts` pins it. Fix `bounds()`, never the ink, keep `drawCost` plus `bounds().length` an upper bound, and sweep `bbox`, the viewBox and `sheet.ts`.
 
-### L1, L2 · L-shaped rooms, walls and doors — `todo` · after H7 · 2.5 days · model: opus
+### H10 · A polygon room's ring and overlap passes are charged — `done` · PR #407 · merge `3b7f8fef` · record: `research/2026-11-01-as-built.md` § Batches 2 and 3
 
-`research/2026-10-31-g10-l-shaped-rooms.md` §10, with the rulings of D24. L1 and L2 share release 1.49.0.
-`check:3d` gates L1. L3 and L4 stay closed until the user answers.
+### L1, L2 · L-shaped rooms, walls and doors — `done` · PRs #400, #409 · merges `1e29c3af`, `7c57c6fb` · record: `research/2026-11-01-as-built.md` § Batches 2 and 3
 
-### S1–S3 · Turning stairs — `todo` · after L2 · 4 days · model: opus
-
-`research/2026-10-31-g10-turning-stairs.md` §10, with the rulings of D24. S1–S3 share release 1.50.0; S4 is out of this round
-(D26). No prototype exists, so S1 opens with a probe. S1 also checks the positional
-pairing at `src/circulation.ts:1301`, lists a verdict per reader of `v.size` in the PR, and runs a block-stair
-fixture through `check:3d`: if the package draws it wrong, fix the package or refuse by name. If S1–S3 are not
-all in by 2026-11-24, none ships before Show HN.
+### S1–S3 · Turning stairs — `done` · PRs #411, #412, #414 · merges `a23a87fd`, `7e4823b3`, `d4b3faa8` · record: `research/2026-11-01-as-built.md` § Batches 2 and 3
 
 ### Wave 6 (after the N10 read): G7 repair-convergence replay (the review rings of iteration N fading
 into N+1; needs `fix`/`repair` to emit a trace, design spike first), D1, A6, archlang-3d M2+, Tier B.

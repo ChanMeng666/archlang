@@ -1,4 +1,4 @@
-# Preview-and-remodel programme: handoff (state as of 2026-11-01, after core 1.48.0 and archlang-3d 0.1.1)
+# Preview-and-remodel programme: handoff (state as of 2026-11-01, after core 1.50.0 and archlang-3d 0.1.1)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
@@ -15,9 +15,9 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 `marketing/content/posts/2026-10-30-tier-a-replay-posts-final.md`; media on the owner's machine in
 `D:\.claude-scratch\2026-10-29\tier-a-posts\`. Posting stays the owner's unless they ask again.
 
-**Released:** core 1.48.0, MCP shim 0.2.31, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20); VS Code extension 0.36.0, uploaded by the owner on 2026-11-01. Cards H0–H7 are done (`research/2026-11-01-as-built.md`); L1 is merged, and L2 and H10 share release 1.49.0.
+**Released:** core 1.50.0, MCP shim 0.2.33, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20). VS Code extension 0.37.0 is live; 0.38.0 is built and waits for the owner's upload. Wave 7 is done: `research/2026-11-01-as-built.md`.
 
-**Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance; ArchLang continues at low cost. Wave 7 runs through S3, S4 is out, and nothing new opens until the Show HN and N10 reads. The question to the user is deferred by the owner.
+**Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance; ArchLang continues at low cost. No new language programme opens until the Show HN and N10 reads. The question to the user is deferred by the owner.
 
 **A real user:** Daniel Damm (X, GitHub bobsch-io) draws German houses with an agent and filed #362–#370.
 Thread: growth `discovery/interviews/2026-10-30-daniel-damm-x-thread.md`. Also needs IFC: not close, never
@@ -36,12 +36,10 @@ promise it.
 
 ## 3. Next items, in order
 
-1. **Wave 7, the `cards.md` L and S cards, in that order (D23).** It does not wait for N10. The G10 designs'
-   open questions are answered in D24. New language forms freeze on 2026-11-24 until Show HN has run.
-2. **ArchCanvas bump, card H8,** after 1.48.0: it replaces the old bump-to-1.47 item.
-3. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
+1. **Nothing new in the language until Show HN (2026-12-01) and the N10 read.** Bug fixes only.
+2. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
    Wave 7 releases fall inside the window; the growth `data/agent-reach.csv` notes date each one.
-4. **G11,** whatever Wave 7 did not take, after Show HN.
+3. **G11 and H9,** the residue, after Show HN. H9 holds D27, the stair `bounds()` gap.
 
 A new npm package goes: `prove:pack` with no browser, first version by hand, register, dispatch within 48 hours.
 Registering first is impossible, because npm needs the package to exist.
