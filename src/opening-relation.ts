@@ -47,9 +47,12 @@ import {
   standingJunctionSpans,
 } from "./opening-junctions.js";
 import type { DatumTable, RoomDatums } from "./room-datums.js";
-import { COMPASS_DATUM_ALIASES, splitDatum } from "./room-datums.js";
+import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "./room-datums.js";
 import {
+  type EdgeLine,
+  extremeRuns,
   pickAt,
+  rectilinear,
   ringParts,
   type RunLine,
   type RunPick,
@@ -57,21 +60,13 @@ import {
   runPicks,
   runText,
   sharedRuns,
+  type SideWord,
   type TileRoom,
 } from "./room-tiling.js";
 import { attachPosStr } from "./statement-print.js";
 import { openBoundaryPhraseOf, wallPhraseOf } from "./wall-ref.js";
 
-/** The four edge words, and the line each lies on. */
-type EdgeWord = "top" | "bottom" | "left" | "right";
-
-/** A straight axis-aligned line `x = c` (`vertical`) or `y = c`, with an extent on it. */
-export interface EdgeLine {
-  vertical: boolean;
-  c: number;
-  lo: number;
-  hi: number;
-}
+export type { EdgeLine } from "./room-tiling.js";
 
 /** What the resolver lends a relational opening: the group's frozen datum table, and a read
  *  of a dotted datum name through the group's own reader (its refusals included). */
@@ -99,13 +94,6 @@ export interface RelationCtx {
 }
 
 type Kind = "door" | "window" | "opening";
-
-const EDGE_OF: Record<EdgeWord, (r: RoomDatums) => EdgeLine> = {
-  top: (r) => ({ vertical: false, c: r.top, lo: r.left, hi: r.right }),
-  bottom: (r) => ({ vertical: false, c: r.bottom, lo: r.left, hi: r.right }),
-  left: (r) => ({ vertical: true, c: r.left, lo: r.top, hi: r.bottom }),
-  right: (r) => ({ vertical: true, c: r.right, lo: r.top, hi: r.bottom }),
-};
 
 /** The position as written, for `describe()` and Plan JSON: `800 from end`, `center`;
  *  `undefined` when none is written. The one printer `arch fmt` uses. */
@@ -160,8 +148,16 @@ export function relationalClause(
   const edgeLine = (datum: string): EdgeLine | undefined => {
     const d = splitDatum(datum);
     const word = d ? (COMPASS_DATUM_ALIASES[d.word] ?? d.word) : undefined;
-    const l = d ? lines(d.room) : undefined;
-    return l && word && word in EDGE_OF ? EDGE_OF[word as EdgeWord](l) : undefined;
+    if (!d || !word || word === "cx" || word === "cy") return undefined;
+    const side = word as SideWord;
+    const l = lines(d.room);
+    if (l) {
+      const vertical = side === "left" || side === "right";
+      return { vertical, c: l[side], lo: vertical ? l.top : l.left, hi: vertical ? l.bottom : l.right };
+    }
+    const ring = rooms.find((x) => x.id === d.room)?.poly;
+    const runs = ring && rectilinear(ring) ? extremeRuns(ring, side) : [];
+    return runs.length === 1 ? runs[0] : undefined;
   };
   let run: Run | undefined;
   if (r.between) {
@@ -216,7 +212,7 @@ function readEdge(
     );
     return undefined;
   }
-  const word = (COMPASS_DATUM_ALIASES[d.word] ?? d.word) as EdgeWord | "cx" | "cy";
+  const word = (COMPASS_DATUM_ALIASES[d.word] ?? d.word) as SideWord | "cx" | "cy";
   if (word === "cx" || word === "cy") {
     ctx.diag(
       datumDiag(
@@ -226,8 +222,7 @@ function readEdge(
     );
     return undefined;
   }
-  const lines = access.table.rooms.get(d.room)!;
-  return EDGE_OF[word](lines);
+  return edgeOfRoom(access.table, d.room, word);
 }
 
 const datumDiag = (message: string, span: Span | undefined): Diagnostic => ({
@@ -363,11 +358,25 @@ function pairRoom(room: WallsPairRoom, ctx: RelationCtx, what: string): PairRoom
   if (ring === null) return undefined;
   if (ring !== undefined) return { ring };
   // The refusals a datum read gives (`E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE`, `E_DATUM_UNPLACED`),
-  // through the group's own reader, on the room's name. A shape it refuses is said in this line's
-  // words: the `.top` it reads to get there is no word the author wrote.
+  // through the group's own reader, on the room's name. Each is said in this line's words: the
+  // `.top` it reads to get there is no word the author wrote.
+  const unseen = `${what} names "${room.id}", which is not a room this plan or component can see`;
   const reword = (d: Diagnostic): Diagnostic => {
+    const table = ctx.datums?.table;
+    if (d.code === "E_UNKNOWN_REF") {
+      // The reader's near miss, already paid for, as the room it suggests: the `.top` is this read's.
+      const hints = d.hints?.map((h) => h.replace(/\.top"\?$/, '"?'));
+      return { ...d, message: unseen, ...(hints ? { hints } : {}) };
+    }
+    if (d.code === "E_DATUM_UNPLACED") {
+      const why =
+        table?.refused.get(room.id) === "degenerate"
+          ? "a room with no positive size"
+          : "a room that could not be placed (its own error says why)";
+      return { ...d, message: `${what} names "${room.id}", ${why}` };
+    }
     if (d.code !== "E_ROOM_NOT_RECTANGLE") return d;
-    const circle = ctx.datums?.table.refused.get(room.id) === "circle";
+    const circle = table?.refused.get(room.id) === "circle";
     const shape = circle ? "a circle room" : "a polygon room with an edge that is neither horizontal nor vertical";
     return {
       ...d,
@@ -379,12 +388,7 @@ function pairRoom(room: WallsPairRoom, ctx: RelationCtx, what: string): PairRoom
   if (v === null) return undefined;
   const lines = ctx.datums?.table.rooms.get(room.id);
   if (lines === undefined) {
-    ctx.diag({
-      severity: "error",
-      message: `${what} names "${room.id}", which is not a room this plan or component can see`,
-      code: "E_UNKNOWN_REF",
-      span: room.span,
-    });
+    ctx.diag({ severity: "error", message: unseen, code: "E_UNKNOWN_REF", span: room.span });
   }
   return lines;
 }
@@ -413,9 +417,9 @@ const rectOf = (r: RoomDatums): NonNullable<TileRoom["rect"]> => ({ x0: r.left, 
 const tileOf = (id: string, r: PairRoom): TileRoom =>
   "ring" in r ? { id, parts: ringParts(r.ring)! } : { id, rect: rectOf(r) };
 
-/** A room of a pair as {@link runPicks} reads it: only a rectangle has edge words. */
+/** A room of a pair as {@link runPicks} reads it: a rectangle's edges, or a polygon's sides. */
 const edgesOf = (id: string, r: PairRoom): TileRoom =>
-  "ring" in r ? { id, shape: "polygon" } : { id, rect: rectOf(r) };
+  "ring" in r ? { id, shape: "polygon", ring: r.ring } : { id, rect: rectOf(r) };
 
 /** Does `p` lie on the run? Exactly: an opening's centre was put on its run's line. */
 const standsOn = (p: Point, r: Run): boolean => {

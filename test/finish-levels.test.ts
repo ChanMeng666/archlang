@@ -497,8 +497,8 @@ suite("finish on `level` blocks — what each storey holds", () => {
     furniture rug in c anchor center size 800x600 rotate 0
   }
   level 1 {
-    wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) close }
-    room id=l polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Bedroom" uses bedroom
+    wall id=w1 exterior thickness 200 { (0,0) (6000,0) (3000,5000) close }
+    room id=l polygon (0,0) (6000,0) (3000,5000) label "Bedroom" uses bedroom
   }
   level 2 {
     wall id=w2 exterior thickness 200 { (0,0) (4000,0) (4000,4000) (0,4000) close }

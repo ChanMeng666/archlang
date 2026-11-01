@@ -11,9 +11,11 @@
  * **Fill only.** A room that holds any furniture is not touched; when it lacks a piece its
  * use requires, the missing words are named in `unresolved`. Whether a piece is in a room is
  * read off the room's shape, never its bounding box. A room whose use is unknown, or has no
- * row in the table, gets no piece and is named in `unresolved` ({@link roomsByFill}). A polygon
- * room is reported there too and left as it is: `anchor` needs a rectangle, and a position is never
- * derived from a bounding box.
+ * row in the table, gets no piece and is named in `unresolved` ({@link roomsByFill}). A circle, or a
+ * polygon with a slanted edge, is reported there too and left as it is: a position is never derived
+ * from a bounding box. A rectilinear polygon is furnished through the same two forms, so only where
+ * they can say: on the ring's extreme runs and its corners, the positions `anchor` resolves
+ * (the design: the G10 addendum of 2026-11-02). A notch edge has no word, and takes no piece.
  *
  * **Every storey.** A plan of `level` blocks is furnished storey by storey, each as a single-storey
  * plan would be, with its statements inside its own block ({@link blockOf}). Each storey is read
@@ -44,6 +46,8 @@ import type { Span } from "./diagnostics.js";
 import { Data } from "./fix-apply.js";
 import type { FinishChange, FinishNote, FinishResult } from "./finish.js";
 import {
+  anchoredAt,
+  anchorRuns,
   backingWallForRoomEdge,
   FIXTURE_WALL_TOL_MM,
   innerFaceOfRoomEdge,
@@ -75,6 +79,7 @@ import { fmtSource } from "./num-format.js";
 import { parse } from "./parser.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
 import { sourceConflicts } from "./repair.js";
+import { type EdgeLine, extremeRuns, rectilinear, rectInRing, ringParts, runRect } from "./room-tiling.js";
 import { isVertical, piecesOf, verticalsOf } from "./vertical.js";
 
 // ---------------------------------------------------------------------------
@@ -450,10 +455,10 @@ export function furnishStage(
 
     for (const room of todo) {
       const uses = usesOf(room);
-      if (room.poly || room.circle) {
+      if (room.circle || (room.poly && !rectilinear(room.poly))) {
         note(
           room,
-          `${said(room)} is a ${room.circle ? "circular" : "polygon"} room — the furnish stage places furniture in rectangular rooms only, and never derives a position from a bounding box`,
+          `${said(room)} is a ${room.circle ? "circular" : "polygon"} room — the furnish stage places furniture in rectangular and rectilinear rooms only, and never derives a position from a bounding box`,
         );
         continue;
       }
@@ -466,7 +471,7 @@ export function furnishStage(
         );
         continue;
       }
-      if ((room.size.w * room.size.h) / 1e6 > MAX_ROOM_AREA_M2) {
+      if ((room.poly ? roomAreaMm2(room) : room.size.w * room.size.h) / 1e6 > MAX_ROOM_AREA_M2) {
         note(
           room,
           `${said(room)} is larger than ${MAX_ROOM_AREA_M2} m² — the furnish table describes dwelling rooms, so the room was left as it is`,
@@ -1069,11 +1074,24 @@ interface Edge {
   doors: number;
 }
 
-/** A rectangular room, read once: its clear rectangle, its four edges and what is on them. */
+/**
+ * A room, read once: its clear rectangle, its four edges and what is on them. Of a rectilinear
+ * polygon its four edges are its extreme runs, the sides the language can name, and a side of several
+ * runs carries no piece. Its clear floor is the ring less the wall bands that touch it, and a piece
+ * stands where `anchoredAt`, the compiler's own arithmetic, says.
+ */
 class Site {
   private readonly clear: { x0: number; y0: number; x1: number; y1: number };
   private readonly edges: Edge[];
   private readonly all: Edge[];
+  /** The room's floor as rectangles: its one clear rectangle, or a ring's parts. */
+  private readonly floors: readonly BBox[];
+  /** A polygon's ring; absent on a rectangle, whose path reads none of the members below. */
+  private readonly ring: readonly Point[] | undefined;
+  /** The bands of the straight walls of the storey, which a piece on a polygon's floor keeps off. */
+  private readonly bands: readonly BBox[];
+  /** The inner face of the wall behind a polygon's run, as `flush` resolves it. */
+  private readonly faceOf: (run: EdgeLine, edge: RectEdge) => number | null;
   /** How many of the four edges have a wall behind them. */
   readonly walled: number;
   /** How many of those walls a statement can name: an authored `id=` no other wall shares. */
@@ -1102,11 +1120,34 @@ class Site {
     const rect: BBox = { x: room.at.x, y: room.at.y, w: room.size.w, h: room.size.h };
     const x1 = rect.x + rect.w;
     const y1 = rect.y + rect.h;
+    const ring = room.poly;
+    this.ring = ring;
+    // A polygon reads what the compiler reads: the walls that stand, along each run of its own.
+    const scanned = ring ? walls.filter((w) => w.status !== "demolish") : walls;
+    const scannedSegs = ring ? scanned.flatMap((w) => segmentsOfWall(w)) : segs;
+    this.faceOf = (run, edge) => innerFaceOfRoomEdge(runRect(run), edge, scanned, FIXTURE_WALL_TOL_MM, scannedSegs);
+    this.bands = ring ? scannedSegs.flatMap(wallBand) : [];
+    const sides: Readonly<Record<RectEdge, EdgeLine[]>> | null = ring
+      ? {
+          top: extremeRuns(ring, "top"),
+          bottom: extremeRuns(ring, "bottom"),
+          left: extremeRuns(ring, "left"),
+          right: extremeRuns(ring, "right"),
+        }
+      : null;
+    /** What an edge is scanned as: the rectangle, a polygon's one run, or nothing for several. */
+    const scanOf = (edge: RectEdge): BBox | null => {
+      const runs = sides?.[edge];
+      if (!runs) return rect;
+      return runs.length === 1 ? runRect(runs[0]!) : null;
+    };
     // The floor starts at the innermost face of the walls on an edge — the plane `flush`
     // measures from — and a piece is backed by the wall that covers most of the edge.
     const backing = (edge: RectEdge): { seg: WallSegment; face: number } | null => {
-      const seg = backingWallForRoomEdge(rect, edge, walls, FIXTURE_WALL_TOL_MM, segs);
-      const face = innerFaceOfRoomEdge(rect, edge, walls, FIXTURE_WALL_TOL_MM, segs);
+      const scan = scanOf(edge);
+      if (scan === null) return null;
+      const seg = backingWallForRoomEdge(scan, edge, scanned, FIXTURE_WALL_TOL_MM, scannedSegs);
+      const face = innerFaceOfRoomEdge(scan, edge, scanned, FIXTURE_WALL_TOL_MM, scannedSegs);
       return seg && face !== null ? { seg, face } : null;
     };
     const back = { top: backing("top"), right: backing("right"), bottom: backing("bottom"), left: backing("left") };
@@ -1122,18 +1163,31 @@ class Site {
       w: this.clear.x1 - this.clear.x0,
       h: this.clear.y1 - this.clear.y0,
     };
-    this.nearStair = stairs.some((z) => rectsOverlap(z, floor));
-    this.nearGap = gaps.some((z) => rectsOverlap(z, floor));
+    this.floors = ring
+      ? (ringParts(ring) ?? []).map((p) => ({ x: p.x0, y: p.y0, w: p.x1 - p.x0, h: p.y1 - p.y0 }))
+      : [floor];
+    this.nearStair = stairs.some((z) => this.floors.some((f) => rectsOverlap(z, f)));
+    this.nearGap = gaps.some((z) => this.floors.some((f) => rectsOverlap(z, f)));
     const onEdge = (p: { x: number; y: number }, edge: RectEdge): number | null => {
       const horizontal = edge === "top" || edge === "bottom";
       const fixed = edge === "top" ? rect.y : edge === "bottom" ? y1 : edge === "left" ? rect.x : x1;
-      const [off, along, lo, hi] = horizontal ? [p.y - fixed, p.x, rect.x, x1] : [p.x - fixed, p.y, rect.y, y1];
+      const runs = sides?.[edge];
+      const [off, along, lo, hi] = runs
+        ? [horizontal ? p.y - fixed : p.x - fixed, horizontal ? p.x : p.y, runs[0]!.lo, runs[runs.length - 1]!.hi]
+        : horizontal
+          ? [p.y - fixed, p.x, rect.x, x1]
+          : [p.x - fixed, p.y, rect.y, y1];
       return Math.abs(off) <= ON_EDGE_MM && along >= lo - EPS && along <= hi + EPS ? along : null;
     };
     const all = EDGES.map((edge): Edge => {
       const horizontal = edge === "top" || edge === "bottom";
       const seg = back[edge]?.seg ?? null;
-      const [lo, hi] = horizontal ? [this.clear.x0, this.clear.x1] : [this.clear.y0, this.clear.y1];
+      const run = sides?.[edge].length === 1 ? sides[edge][0] : undefined;
+      const [lo, hi] = run
+        ? clearRun(run, ring!, this.faceOf)
+        : horizontal
+          ? [this.clear.x0, this.clear.x1]
+          : [this.clear.y0, this.clear.y1];
       const [a, b] = seg ? (horizontal ? [seg.a.x, seg.b.x] : [seg.a.y, seg.b.y]) : [lo, hi];
       const spans = (els: ReadonlyArray<{ at: { x: number; y: number }; width: number }>): Array<[number, number]> =>
         els.flatMap((el): Array<[number, number]> => {
@@ -1149,7 +1203,7 @@ class Site {
         hi,
         segLo: Math.max(lo, Math.min(a, b)),
         segHi: Math.min(hi, Math.max(a, b)),
-        mid: horizontal ? rect.x + rect.w / 2 : rect.y + rect.h / 2,
+        mid: run ? (run.lo + run.hi) / 2 : horizontal ? rect.x + rect.w / 2 : rect.y + rect.h / 2,
         windows: spans(windows),
         doors: spans(passages).length,
       };
@@ -1266,13 +1320,11 @@ class Site {
    */
   abutting(item: FurnishItem, use: UseKind, placed: readonly Placed[]): Placed[] {
     if (item.place !== "wall") return [];
-    const c = this.clear;
-    const floor: BBox = { x: c.x0, y: c.y0, w: c.x1 - c.x0, h: c.y1 - c.y0 };
     const ends: BBox[] = [
       ...placed.flatMap((q) => (q.strip ? [q.rect, q.strip] : [q.rect])),
       ...this.passages.flatMap((d) => {
         const r = doorLandingRect(d, LANDING_MM);
-        return r && rectsOverlap(r, floor) ? [r] : [];
+        return r && this.floors.some((f) => rectsOverlap(r, f)) ? [r] : [];
       }),
       ...this.exits.map((x) => x.strip),
     ];
@@ -1358,6 +1410,21 @@ class Site {
     depth: number,
     inset: number,
   ): Unowned | null {
+    const rect = this.ring ? this.onRing(e, slot, along, depth, inset) : this.onClear(e, slot, along, depth, inset);
+    if (rect === null) return null;
+    const start = e.horizontal ? rect.x : rect.y;
+    const faces = DETAIL[category]?.faces === true;
+    const text = [
+      `furniture ${category} in ${this.room.id} anchor ${ANCHORS[e.edge][slot]} flush`,
+      ...(inset > 0 ? [`inset ${fmtSource(inset)}`] : []),
+      `size ${fmtSource(rect.w)}x${fmtSource(rect.h)}`,
+      `rotate ${rotateForBackEdge(faces ? OPPOSITE[e.edge] : e.edge)}`,
+    ].join(" ");
+    return this.piece(item, category, text, rect, e.edge, slot === 1, false, start, along, inset + depth);
+  }
+
+  /** Where `anchor <that slot of e> flush` puts a piece in a rectangular room. */
+  private onClear(e: Edge, slot: 0 | 1 | 2, along: number, depth: number, inset: number): BBox {
     const start = slot === 0 ? e.lo : slot === 2 ? e.hi - along : e.mid - along / 2;
     const face =
       e.edge === "top"
@@ -1369,19 +1436,25 @@ class Site {
             : this.clear.x1;
     const inward = e.edge === "top" || e.edge === "left" ? 1 : -1;
     const near = inward > 0 ? face + inset : face - inset - depth;
-    const rect = this.rectAt(e, start, near, along, depth);
-    const faces = DETAIL[category]?.faces === true;
-    const text = [
-      `furniture ${category} in ${this.room.id} anchor ${ANCHORS[e.edge][slot]} flush`,
-      ...(inset > 0 ? [`inset ${fmtSource(inset)}`] : []),
-      `size ${fmtSource(rect.w)}x${fmtSource(rect.h)}`,
-      `rotate ${rotateForBackEdge(faces ? OPPOSITE[e.edge] : e.edge)}`,
-    ].join(" ");
-    return this.piece(item, category, text, rect, e.edge, slot === 1, false, start, along, inset + depth);
+    return this.rectAt(e, start, near, along, depth);
   }
 
-  /** `in <room> anchor center`: the long side along the room's long side unless `turned`. */
-  private centred(item: FurnishItem, category: string, along: number, depth: number, turned: boolean): Unowned {
+  /**
+   * Where `anchor <that slot of e> flush` puts a piece on a polygon: the footprint the compiler
+   * resolves, by its own arithmetic, or null when no such anchor stands on the ring (a corner in
+   * the notch of an L). The inset is the anchor's, on both its edges.
+   */
+  private onRing(e: Edge, slot: 0 | 1 | 2, along: number, depth: number, inset: number): BBox | null {
+    const runs = anchorRuns(this.ring!, ANCHORS[e.edge][slot] as Exclude<FurnitureAnchor, "center">);
+    if (typeof runs === "string") return null;
+    const [w, h] = e.horizontal ? [along, depth] : [depth, along];
+    return { ...anchoredAt(runs, w, h, inset, (edge) => this.faceOf(runs[edge]!, edge)), w, h };
+  }
+
+  /** `in <room> anchor center`: the long side along the room's long side unless `turned`. Null on
+   *  a polygon, where the middle of the outline may not be floor and no anchor reads it. */
+  private centred(item: FurnishItem, category: string, along: number, depth: number, turned: boolean): Unowned | null {
+    if (this.ring) return null;
     const [w, h] = turned ? [depth, along] : [along, depth];
     const r = this.room;
     const rect: BBox = { x: r.at.x + r.size.w / 2 - w / 2, y: r.at.y + r.size.h / 2 - h / 2, w, h };
@@ -1425,8 +1498,11 @@ class Site {
    *  asks is left with every piece placed (counting a rug, which the rule does not: stricter). */
   private fits(p: Placed, placed: readonly Placed[]): boolean {
     const c = this.clear;
+    const { ring, bands } = this;
     const inside = (r: BBox): boolean =>
-      r.x >= c.x0 - EPS && r.y >= c.y0 - EPS && r.x + r.w <= c.x1 + EPS && r.y + r.h <= c.y1 + EPS;
+      ring
+        ? rectInRing(r, ring) && !bands.some((b) => rectsOverlap(b, r))
+        : r.x >= c.x0 - EPS && r.y >= c.y0 - EPS && r.x + r.w <= c.x1 + EPS && r.y + r.h <= c.y1 + EPS;
     if (p.rect.w <= 0 || p.rect.h <= 0 || !inside(p.rect) || (p.strip && !inside(p.strip))) return false;
     const taken = (z: BBox): boolean => rectsOverlap(z, p.rect) || (p.strip !== null && rectsOverlap(z, p.strip));
     if (this.stairs.some(taken) || this.gaps.some(taken)) return false;
@@ -1450,6 +1526,38 @@ class Site {
     }
     return true;
   }
+}
+
+/** The band of a straight axis-aligned wall segment, as a rectangle; none for any other. */
+function wallBand(s: WallSegment): BBox[] {
+  if (s.arc) return [];
+  const half = s.thickness / 2;
+  if (s.a.y === s.b.y)
+    return [{ x: Math.min(s.a.x, s.b.x), y: s.a.y - half, w: Math.abs(s.b.x - s.a.x), h: s.thickness }];
+  if (s.a.x === s.b.x)
+    return [{ x: s.a.x - half, y: Math.min(s.a.y, s.b.y), w: s.thickness, h: Math.abs(s.b.y - s.a.y) }];
+  return [];
+}
+
+/**
+ * An extreme run of a ring, cut back to the faces of the walls at its ends. The ring turns inward
+ * at each end ({@link extremeRuns}), so the wall on that turn is what a piece along the run stops at.
+ */
+function clearRun(
+  run: EdgeLine,
+  ring: readonly Point[],
+  faceOf: (r: EdgeLine, edge: RectEdge) => number | null,
+): [number, number] {
+  const cut = (v: number, edge: RectEdge): number => {
+    const [x, y] = run.vertical ? [run.c, v] : [v, run.c];
+    const i = ring.findIndex((p) => p.x === x && p.y === y);
+    const near = [ring[(i + ring.length - 1) % ring.length]!, ring[(i + 1) % ring.length]!];
+    const turn = near.find((q) => (run.vertical ? q.y === y && q.x !== x : q.x === x && q.y !== y));
+    if (!turn) return v;
+    const [p0, p1] = run.vertical ? [x, turn.x] : [y, turn.y];
+    return faceOf({ vertical: !run.vertical, c: v, lo: Math.min(p0, p1), hi: Math.max(p0, p1) }, edge) ?? v;
+  };
+  return run.vertical ? [cut(run.lo, "top"), cut(run.hi, "bottom")] : [cut(run.lo, "left"), cut(run.hi, "right")];
 }
 
 /** How a statement in the plan body can name the wall behind `seg`, or null when it cannot. */

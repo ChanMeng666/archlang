@@ -460,8 +460,8 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
 
   it("a piece counts for a room by its footprint on the room's shape, never the room's bounding box", () => {
     // The bed stands in the square room that fills the notch of the L, without `in`. The L's
-    // bounding box covers it; the L's floor does not. So the L holds nothing (and is reported
-    // as a polygon room), and the square room holds its bed (no note).
+    // bounding box covers it; the L's floor does not. So the L holds nothing (and is furnished,
+    // on its own sides), and the square room holds its bed (no note).
     const src = `plan "Notch" {
   units mm
   wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
@@ -475,8 +475,8 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
 `;
     expect(errorsOf(src)).toEqual([]);
     const r = finish(src, { only: "furnish" });
-    expect(r.unresolved.map((u) => u.room)).toEqual(["l"]);
-    expect(r.unresolved[0]!.reason).toContain("polygon room");
+    expect(new Set(r.changes.map((c) => c.room))).toEqual(new Set(["l"]));
+    expect(r.unresolved).toEqual([]);
     expect(partly(r)).toEqual([]);
   });
 
@@ -607,7 +607,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["35c8741f367876f8ad1f7c2111485959f1151cb54da5c015d8bcdc9aea130682", "corner-cafe"], // first measurement with the example; PS2.9 source edit; PS2.17 source edit (a worktop), see above
         ["18fff217420fb03b50b94cbc85bcc6f5d386c74ec21318a98095a080fe04dfc4", "courtyard-house"], // PS2.4 source edit, see above; PS2.11e source edit, see above
         ["45ee887cf4b527976f42af04bbc8deafaa17070747b37acd6bf1d02efef0e79f", "furnished-flat"], // PS2.11e source edit, see above
-        ["4fbdbd1393c6f40f72202e35fff46b5a1ee9463daadb8774ccc946f7714fb642", "gallery-l"], // PS2.10 source edit (byte-identity-baseline.ts); PS2.11e source edit, see above
+        ["62ef4254bd247c67c3bb03919d4c60ff01e5f42f68e7bbe4b63052831b23c228", "gallery-l"], // PS2.10, PS2.11e source edits; the fit-out comment corrected, same length: the old comment gives 4fbdbd13, the row before it
         // Re-measured 2026-10-18 (plan-soundness PS2.6): the example's SOURCE changed, one door
         // re-hosted (`d_gar` onto the kitchen, +3 bytes), and `source` is part of this digest. The
         // pre-edit source still gives the previous row; see ./byte-identity-baseline.ts.
@@ -768,11 +768,11 @@ suite("furnish law — pure insertion: every authored byte and comment survives,
 });
 
 suite("furnish law — scope: rectangular rooms", () => {
-  it("a polygon room is reported and left empty; its bounding box is never used", () => {
-    const src = `plan "L" {
+  it("a slanted polygon room is reported and left empty; its bounding box is never used", () => {
+    const src = `plan "T" {
   units mm
-  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) close }
-  room id=r polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Bedroom" uses bedroom
+  wall id=w exterior thickness 200 { (0,0) (6000,0) (3000,5000) close }
+  room id=r polygon (0,0) (6000,0) (3000,5000) label "Bedroom" uses bedroom
   door id=d on w at 10% width 900 swing in
 }
 `;
@@ -935,10 +935,10 @@ suite("furnish law — named: a room left empty is in `unresolved`, whatever lef
   });
 
   it("only a room's own scope note carries `scope`: a refusal, a sheet note and a compile error never do", () => {
-    const polygon = `plan "L" {
+    const polygon = `plan "T" {
   units mm
-  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) close }
-  room id=r polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Bedroom" uses bedroom
+  wall id=w exterior thickness 200 { (0,0) (6000,0) (3000,5000) close }
+  room id=r polygon (0,0) (6000,0) (3000,5000) label "Bedroom" uses bedroom
   door id=d on w at 10% width 900 swing in
 }
 `;

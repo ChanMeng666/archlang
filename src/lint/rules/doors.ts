@@ -121,6 +121,10 @@ export const swingObstructed: LintRule = {
       // mirrored instance's plan-space swing is the opposite of its source clause.
       const g = frameOf(d);
       const writtenSwing = g !== null && det(g) < 0 ? (d.swing === "in" ? "out" : "in") : d.swing;
+      // A derived host has no id to write (ADR 0028 §3): a relational door keeps its own words.
+      const derived = d.host !== null && isDerivedWall(ir.walls, d.host);
+      const place = d._relation ? relationText(d._relation) : derived ? "at (x,y)" : "on <wall> at <pos>";
+      const placeWidth = d._relation ? mm(d.width) : "<mm>";
       out.push({
         severity: "warning",
         code: "W_SWING_OBSTRUCTED",
@@ -131,7 +135,7 @@ export const swingObstructed: LintRule = {
             ? []
             : [`Hang the leaf on the other jamb — \`hinge ${flipped}\`${flipClears ? " (this clears it)" : ""}.`]),
           `Open it to the other side of the wall — \`swing ${writtenSwing === "in" ? "out" : "in"}\`.`,
-          `Move the door along its wall (\`on <wall> at <pos>\`), or the obstruction — \`${CLI_NAME} repair\` computes the smallest clearing shift.`,
+          `Move the door along its wall (${d._relation ? "the position in " : ""}\`${place}\`), or the obstruction — \`${CLI_NAME} repair\` computes the smallest clearing shift.`,
           // Only a width strictly under the door's own, recomputed and proved clear, is
           // quoted; with no such width (not even 1 mm) the hint is left out.
           ...(narrowTo === null
@@ -143,7 +147,7 @@ export const swingObstructed: LintRule = {
               ]),
           // The remedy is named by the property that solves THIS warning (a panel that sweeps nothing)
           // and by statements the author can paste, not as a vague suggestion.
-          "Or hang no swinging leaf at all — a `sliding`, `pocket` or `barn` door sweeps nothing, so this warning cannot apply to it (`door pocket on <wall> at <pos> width <mm>`).",
+          `Or hang no swinging leaf at all — a \`sliding\`, \`pocket\` or \`barn\` door sweeps nothing, so this warning cannot apply to it (\`door pocket ${place} width ${placeWidth}\`).`,
           "If no leaf is wanted here, make it a leafless `opening` instead.",
           // The other door is named in the message by the rooms it joins; two doors between the
           // same rooms are told apart here, by id.

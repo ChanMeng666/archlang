@@ -3,15 +3,16 @@
 #   over the WC symbol; reduced, at 1:100 so the label keeps its size)
 # expect: W_ANNOTATION_OVERLAP
 # status: done
-# fact: the 350 mm "Bathroom" label is centred at (1000,1555) in the SVG, about 1540 mm wide at 0.55 em per character
-#   (x 230-1770, y 1380-1730); the wc spans x 1200-1900, y 1100-1500: about 570 x 120 mm of the label lies on it
+# fact: the 350 mm "Bathroom" label is centred at (1000,1580) in the SVG, about 1540 mm wide at 0.55 em per character
+#   (x 230-1770, y 1405-1755); the wc spans x 1200-1900, y 1100-1500: about 570 x 95 mm of the label lies on it. The
+#   label is pinned where the room's centre put it: unpinned, the drawing now shrinks it clear
 plan "Room label over the WC" {
   units mm
   grid 50
   paper A4 landscape
   scale 1:100
   wall id=shell exterior thickness 200 { (0,0) (2000,0) (2000,2500) (0,2500) close }
-  room id=r_bath at (0,0) size 2000x2500 label "Bathroom" uses bath
+  room id=r_bath at (0,0) size 2000x2500 label "Bathroom" at (1000,1650) uses bath
   door id=d_bath at (600,2500) width 800 wall shell swing in
   window at (1000,0) width 800 wall shell
   furniture bathtub against wall shell segment 0 offset 1000 in r_bath

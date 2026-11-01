@@ -1,4 +1,4 @@
-# Preview-and-remodel programme: handoff (state as of 2026-11-01, after core 1.50.0 and archlang-3d 0.1.1)
+# Preview-and-remodel programme: handoff (state as of 2026-11-02, batch 1 of the J round merged)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
@@ -40,7 +40,7 @@ promise it.
 
 ## 3. Next items, in order
 
-1. **The open issues, by value (D29).** New forms are allowed; the week before Show HN (2026-12-01) is for stabilising.
+1. **The owner's round of 2026-11-02 (D30), cards J1–J15 in `cards.md`.** Batch 1 is merged and goes out as 1.51.0 (`research/2026-11-02-as-built.md`). J7 and J8 are built, red-teamed and held on their branches until that release. From 2026-11-24 `main` takes bug fixes only until Show HN (2026-12-01) has run.
 2. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
    Wave 7 releases fall inside the window; the growth `data/agent-reach.csv` notes date each one.
 3. **G11 and H9,** the residue, after Show HN. H9 holds D27, the stair `bounds()` gap.

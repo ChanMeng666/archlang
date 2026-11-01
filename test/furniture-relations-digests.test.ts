@@ -22,7 +22,7 @@ const DIGESTS: [string, string][] = [
   // from the wall's centreline, on the old datum's edge); SVG, `describe()` and diagnostics unchanged.
   // PS2.69: `lint()` gains one `W_EXIT_APPROACH_BLOCKED`, its sofa 400 mm inside the living room's
   // 900 mm exterior door over 250 mm of it (under the 914 mm clear floor); nothing else moved.
-  ["relations", "76867265b191aafa31e398047506f540afbd8f89e3c2fad6a975f5b3909310fb"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["relations", "dceaf3d1ab9d5673336daf87ef82a26251488d581f7a2ec07c3edc1e4c30f58b"], // `centreline_at`, see ./byte-identity-baseline.ts; `W_SWING_OBSTRUCTED`'s hints name no `<wall>` on a derived wall (#401 residue): lint text only
   ["frames", "f38055441cc4a51350efc6a36c271dd3491562ecf699a4903cc7d8cba8fad46b"], // PS2.29: message text only, same code, same span
   ["seats", "bf2afb0a1c3785c20dc7c239291f038b69ead0812807c58edd7c6c07fe7a9d3e"], // seat hint reworded (red team round 1),; `centreline_at`, see ./byte-identity-baseline.ts
   ["refused", "77a135b355d61ee48ed2f265c7dbb99da75edcb9ab381ead6c615e4cf8facd39"],

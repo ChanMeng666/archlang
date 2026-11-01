@@ -280,8 +280,8 @@ suite("E_DATUM_NAME: a dotted path that is also an element inside an instance", 
 });
 
 suite("rooms that expose no datum", () => {
-  it("E_ROOM_NOT_RECTANGLE for a polygon and a circle room", () => {
-    const src = wrap(`  room id=L polygon (0,0) (6000,0) (6000,4000) (0,4000)
+  it("E_ROOM_NOT_RECTANGLE for a slanted polygon and a circle room", () => {
+    const src = wrap(`  room id=L polygon (0,0) (6000,0) (3000,4000)
   room id=C circle at (9000,2000) radius 1000
   wall interior thickness 100 { (L.left, 0) (C.cx, 4000) }`);
     expect(refused(src, "E_ROOM_NOT_RECTANGLE")).toEqual(["L.left", "C.cx"]);

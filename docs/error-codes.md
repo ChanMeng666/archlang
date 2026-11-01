@@ -104,7 +104,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_OUT_OF_RANGE`](#e_out_of_range) | error | A coordinate, length or drawing setting is outside the modelling range. |
 | [`E_PARSE`](#e_parse) | error | The source could not be read: its SHAPE is wrong. |
 | [`E_PARTITION_TOO_SHORT`](#e_partition_too_short) | error | `walls from rooms`, or a `wall … between`, meets a shared edge shorter than the wall's thickness. |
-| [`E_PLACE_POLY`](#e_place_poly) | error | A rectangle-only placement clause aimed at a polygon room. |
+| [`E_PLACE_POLY`](#e_place_poly) | error | A placement clause aimed at a polygon room that has no one edge or corner to stand on. |
 | [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or unplaced room. |
 | [`E_PNG_DEPENDENCY`](#e_png_dependency) | error | PNG/PDF export needs an optional dependency that is not installed. |
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
@@ -122,7 +122,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOMS_OVERLAP`](#e_rooms_overlap) | error | `walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap. |
 | [`E_ROOM_ALIGN`](#e_room_align) | error | Unknown relational alignment edge. |
 | [`E_ROOM_ALIGN_AXIS`](#e_room_align_axis) | error | Relational alignment edge belongs to the other axis. |
-| [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge. |
+| [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum meets a circle, a slanted polygon, a polygon side of several runs or a polygon's centre; a `wall … between`/`wall … around` meets a polygon or circle room; or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge. |
 | [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
@@ -405,7 +405,7 @@ wall interior thickness 100 { (0, west.top) (3000, west.top) }   # error: `west.
 
 *error* — A room-edge datum names a room that has no position or no size.
 
-**Cause.** A datum reads the room's placed rectangle. A relationally placed room that could not be placed (its own `E_LAYOUT_*` error says why) has no position, and a room of zero or negative size has no edge to read.
+**Cause.** A datum reads the room's placed rectangle, and so does an opening placed `between` two rooms. A relationally placed room that could not be placed (its own `E_LAYOUT_*` error says why) has no position, and a room of zero or negative size has no edge to read.
 
 **Fix.** Fix the named room's placement or size first; the datum then reads it.
 
@@ -1313,7 +1313,7 @@ door between a and b width 800   # error: a door needs a position
 
 **Cause.** `door|opening … between A and B` stands in the one wall body on the pair's shared edge run (ADR 0028 §5). Two authored halves, or an authored span beside a derived remainder (the `~2` pieces coexistence leaves), give more than one, and the compiler does not choose between them (ADR 0005). `… on <room>.<edge>` stands in one exterior wall body on that edge. An edge can carry several, part exterior and part partition, or exterior either side of a narrower neighbouring room: the position, measured along the whole room edge, says where the opening lands, and it stands in an exterior body when its whole span lies on that body and on no other wall. With an exterior body on the edge, a span that crosses from one body to the next, stands on a partition, stands on no body, or lies on two walls at once is refused here; with none it is `E_OPENING_NO_SHARED_WALL`. A `status demolish` wall still takes up the span it lies on, but it is no exterior body. A polygon room wrapped round its neighbour shares several edges with it, and only `at <mm> from <room>.<edge>`, with an edge that meets one of them at an end, picks one: `at center`, `from start|end`, `at axis <label>` or no position would be a choice the author did not write. `open between A and B` derives one opening on one edge, so such a pair has no single answer there either (ADR 0028 §3). The span points at the clause.
 
-**Fix.** On a room's edge with several walls: write the position the hint quotes for the exterior wall you mean, where it quotes one. On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean (two polygons have no edge words). On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
+**Fix.** On a room's edge with several walls: write the position the hint quotes for the exterior wall you mean, where it quotes one. On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
 
 ```arch static
 room id=a at (0,0) size 4000x3000
@@ -1467,15 +1467,15 @@ wall partition thickness 100 between a and b   # error: the same run
 
 ## E_PLACE_POLY
 
-*error* — A rectangle-only placement clause aimed at a polygon room.
+*error* — A placement clause aimed at a polygon room that has no one edge or corner to stand on.
 
-**Cause.** Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's four RECTANGLE edges. A `room polygon` has no such edges, and its bounding box is not its floor — an anchor could land the piece in a notch that is outside the room — so the compiler refuses instead of guessing (ADR 0005).
+**Cause.** Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's edges. A polygon whose every edge is horizontal or vertical has them: a side is the ring's run on its outermost line, a corner anchor is a vertex of the ring on two such lines, and a side anchor centres on the run. The rest is refused, because a bounding box is not a floor and the compiler does not guess (ADR 0005): a circle or a slanted polygon, a side that is several runs (the prongs of a U), a corner in a notch, `centered` or `anchor center` (the middle of the outline may not be floor), and a footprint that would leave the ring.
 
-**Fix.** Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.
+**Fix.** Name a side with one run or a corner that is a vertex of the ring, or give the room or the fixture explicit `at (x,y)` coordinates (a fixture may add `rotate`).
 
 ```arch static
 room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)
-furniture wc in L anchor bottom-left   # error: L is a polygon room
+furniture wc in L anchor bottom-right size 400x700   # error: that corner is in the L's notch
 ```
 
 ## E_PLACE_REF
@@ -1697,15 +1697,15 @@ room id=b right-of a align right size 3000x3000   # error: `right` is horizontal
 
 ## E_ROOM_NOT_RECTANGLE
 
-*error* — A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge.
+*error* — A room-edge datum meets a circle, a slanted polygon, a polygon side of several runs or a polygon's centre; a `wall … between`/`wall … around` meets a polygon or circle room; or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge.
 
-**Cause.** Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room, the same condition relational placement refuses with `E_PLACE_POLY`, and the pairwise `wall … between`/`wall … around` derive their walls from those same edges. A `room polygon` or `room circle` has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §4). `walls from rooms` and `door|opening … between` read the ring as well, so a rectilinear polygon (every edge horizontal or vertical) is legal there; a circle, or a polygon with any other edge, shares no edge run, and is refused the same way (§3, §5). For a pairwise wall or a `between` the span points at the room's name.
+**Cause.** Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room. A rectilinear polygon (every edge horizontal or vertical) has edges too: `top`, `bottom`, `left` and `right` are the ring's run on its outermost line, one run or a refusal (the prongs of a U do not say which), and `cx`, `cy` are refused, since the middle of the outline may not be floor. The pairwise `wall … between`/`wall … around` derive their walls from a rectangle's edges. A circle or a slanted polygon has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §4). `walls from rooms` and `door|opening … between` read the ring as well, so a rectilinear polygon is legal there; a circle, or a polygon with any other edge, shares no edge run, and is refused the same way (§3, §5). For a pairwise wall or a `between` the span points at the room's name.
 
-**Fix.** Write the coordinate as a number, or read the datum of a rectangular room. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.
+**Fix.** Write the coordinate as a number, or read a side the room has. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.
 
 ```arch static
-room id=L polygon (0,0) (6000,0) (6000,4000) (0,4000)
-wall interior thickness 100 { (L.left, 0) (L.left, 4000) }   # error: L is a polygon room
+room id=T polygon (0,0) (6000,0) (3000,4000)
+wall interior thickness 100 { (T.left, 0) (T.left, 4000) }   # error: T has a slanted edge
 ```
 
 ## E_ROOM_POLY_DEGENERATE
@@ -1927,7 +1927,7 @@ strip right at (0,0) gap 100 { room size }   # error: no extent
 
 *error* — `swing inward` or `swing outward` on a wall with no single inside.
 
-**Cause.** `swing inward|outward` is relative to the building: `inward` opens the leaf towards the one face of the host wall that has floor (probed one wall thickness off each face, against every room's own shape), `outward` away from it. A wall between two rooms (or one free-standing inside a room) has floor on both faces, a garden wall has it on neither, and a door with no host wall has no faces at all, so neither word picks a side, and guessing one would put the leaf where the author did not mean it. The door falls back to its default swing.
+**Cause.** `swing inward|outward` is relative to the building: `inward` opens the leaf towards the one face of the host wall that has floor (probed one wall thickness off each face, against every room's own shape), `outward` away from it. A wall between two rooms (or one free-standing inside a room) has floor on both faces, a garden wall has it on neither, and a door with no host wall has no faces at all, so neither word picks a side, and guessing one would put the leaf where the author did not mean it. The door falls back to its default swing. A door whose placement was refused is not told this as well: the refusal is the report.
 
 **Fix.** Name the room the leaf opens into with `swing into <room>`, or write the wall-relative `swing in|out` (`in` is the right-hand side of the wall's drawn direction on the page, `out` the left).
 
@@ -1978,7 +1978,7 @@ let x = frobnicate(2)   # error
 
 *error* — Unknown reference.
 
-**Cause.** An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) names a room the plan (or, inside a `place`d component, the component) does not have.
+**Cause.** An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have.
 
 **Fix.** Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot).
 
@@ -2203,9 +2203,9 @@ room at (0,0) size 2000x1500 label "Powder"   # warning: WC inferred from the al
 
 *warning* — A label or a `dims auto` number is printed over a symbol, a wall, a door swing or another label, or a label runs off its room.
 
-**Cause.** Read off the drawing itself, after the label placer has moved every room label it could: a room's name or area figure lies over a furniture, fixture or stair symbol, over a wall or over the area a door's leaf sweeps, or runs off its own floor; or a number `dims auto` writes (a wall-thickness figure, an `R` or `φ` call-out, a chain figure) lies over such a symbol or over a room's name or area figure. "Over" means the text's box (its estimated width at its drawn size, turned with it) shares more than 2 % of its area with one of the symbol's drawn shapes, the same threshold at which the label placer moves a label; against a wall, a swing or the floor's edge the box is taken at the width the text draws on average (0.5 of its size per character, not the generous 0.62), since a label stands right up to them in any small room. The placer never moves a label further off its floor than it started, so a name too wide for its room may slide along the room but not out of it, and is reported here (an `outdoor` surface's label is not: this reads rooms only). A label pinned off its room is `W_ROOM_LABEL_OUTSIDE`'s report, and a wall or swing under it is not repeated here; a rug is floor finish and does not count. Drafting only: `describe()`, Plan JSON and the drawing are unchanged by it. A `dims auto` number lettered on a room floor is not itself a fault: the thickness figure is written beside its wall on the side with floor, and the `R` and `φ` call-outs inside the curve they measure, by convention.
+**Cause.** Read off the drawing itself, after the label placer has moved every room label it could and shrunk what still did not fit: a room's name or area figure lies over a furniture, fixture or stair symbol, over a wall or over the area a door's leaf sweeps, or runs off its own floor; or a number `dims auto` writes (a wall-thickness figure, an `R` or `φ` call-out, a chain figure) lies over such a symbol or over a room's name or area figure. "Over" means the text's box (its estimated width at its drawn size, turned with it) shares more than 2 % of its area with one of the symbol's drawn shapes, the same threshold at which the label placer moves a label; against a wall, a swing or the floor's edge the box is taken at the width the text can draw, character by character, the wider of Roboto and Helvetica Bold (an estimate covering those two faces, not a promise for every font), not the generous 0.62 of its size per character, since a label stands right up to them in any small room. The placer never moves a label further off its floor than it started, so a name too wide for its room may slide along the room but not out of it. A room's label that does not fit is drawn smaller, down to the furniture-label size (2 mm on a sheet), and wrapped at a space where that helps; one that still does not fit is reported here (an `outdoor` surface's label is not: this reads rooms only, and it neither shrinks nor wraps). A label pinned off its room is `W_ROOM_LABEL_OUTSIDE`'s report, and a wall or swing under it is not repeated here; a rug is floor finish and does not count. Drafting only: `describe()`, Plan JSON and the drawing are unchanged by it. A `dims auto` number lettered on a room floor is not itself a fault: the thickness figure is written beside its wall on the side with floor, and the `R` and `φ` call-outs inside the curve they measure, by convention.
 
-**Fix.** For a room label: give it a clear point with `label "…" at (x,y)`, move the pinned point if it already has one, or move the piece or the door; a name too wide for its room needs a shorter name or a wider room (a name with a space wraps onto two lines only where both lines and the area figure then fit), since the drawing neither shrinks a label nor draws a leader to it. For a `dims auto` number: move the piece or the pinned label clear of it; a wall-thickness figure is lettered on the longest straight wall of its thickness at a run no crossing wall, opening, piece of furniture or stair stands on, so moving the piece off that wall frees one, or use `dims auto rooms` and state the thickness with a hand `dim`. There is no machine-applicable fix: where the label or the piece should go is a drafting decision with no unique answer.
+**Fix.** For a room label: give it a clear point with `label "…" at (x,y)`, move the pinned point if it already has one, or move the piece or the door; a name reported at the smallest height needs a shorter name or a wider room, since the drawing does not draw a leader to it. A pinned label keeps its size. For a `dims auto` number: move the piece or the pinned label clear of it; a wall-thickness figure is lettered on the longest straight wall of its thickness at a run no crossing wall, opening, piece of furniture or stair stands on, so moving the piece off that wall frees one, or use `dims auto rooms` and state the thickness with a hand `dim`. There is no machine-applicable fix: where the label or the piece should go is a drafting decision with no unique answer.
 
 ```arch static
 paper A4 landscape
@@ -3007,7 +3007,7 @@ furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom agai
 
 **Cause.** A room labelled as a bathroom or kitchen contains no plumbing/kitchen fixture (WC, basin, shower, sink, counter…), so it is drawn as an empty box.
 
-**Fix.** Place a fixture inside the room; the categories are built in, so nothing needs importing. A bathroom or WC takes a `wc`, `basin`, `shower` or `bathtub` (e.g. `furniture wc in bath anchor top flush size 400x700`); a kitchen takes a `kitchen_sink`, `counter`, `stove` or `fridge` (e.g. `furniture kitchen_sink in kitchen anchor top flush size 800x600`). A bare `sink` counts for either. A `polygon` or `circle` room cannot take `anchor`: place the piece `at (x,y)` with `in <roomId>` instead. The hint quotes the pieces that make the room what it is, checked together: a `bathtub` or `shower` for a bathroom, a `wc` for a WC, a sink and a hob for a kitchen, and the defining piece of any other use the room has. One fixture alone would leave a furnished room still missing its defining piece, which `W_ROOM_MISSING_DEFINING` reports.
+**Fix.** Place a fixture inside the room; the categories are built in, so nothing needs importing. A bathroom or WC takes a `wc`, `basin`, `shower` or `bathtub` (e.g. `furniture wc in bath anchor top flush size 400x700`); a kitchen takes a `kitchen_sink`, `counter`, `stove` or `fridge` (e.g. `furniture kitchen_sink in kitchen anchor top flush size 800x600`). A bare `sink` counts for either. A `circle` or slanted `polygon` room cannot take `anchor`: place the piece `at (x,y)` with `in <roomId>` instead. The hint quotes the pieces that make the room what it is, checked together: a `bathtub` or `shower` for a bathroom, a `wc` for a WC, a sink and a hob for a kitchen, and the defining piece of any other use the room has. One fixture alone would leave a furnished room still missing its defining piece, which `W_ROOM_MISSING_DEFINING` reports.
 
 ```arch static
 room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside
@@ -3248,11 +3248,12 @@ stair id=s at (4900,2700) size 2200x1000 dir down
 
 *warning* — `swing into <room>` names a room the door does not border.
 
-**Cause.** A door's `swing into <room>` points the leaf toward a room, but that room does not share the door's host wall (its box does not touch the wall within tolerance), so which side it means is undefined.
+**Cause.** A door's `swing into <room>` points the leaf toward a room, but that room does not share the door's host wall (its box does not touch the wall within tolerance), so which side it means is undefined. A door whose placement was refused is not told this as well: the refusal is the report.
 
 **Fix.** Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.
 
 ```arch static
+wall id=w1 partition thickness 100 { (0,0) (4000,0) }
 door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 ```
 

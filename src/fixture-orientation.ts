@@ -21,11 +21,12 @@
  * without a cycle through the registry.
  */
 
-import type { FurnitureAnchor } from "./ast.js";
+import type { FurnitureAnchor, Point } from "./ast.js";
 import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentsOfWall } from "./geometry.js";
 import { type BBox, mergedLength, overlap1d } from "./geometry/rect.js";
 import { BACK_EDGE_DEG, backEdgeOfDeg, degOfBackEdge } from "./algebra/d4.js";
+import { type EdgeLine, extremeRuns, runsText } from "./room-tiling.js";
 
 /** An edge of an axis-aligned rectangle. `top` is −y (north); +y is down (SVG). */
 export type RectEdge = "top" | "bottom" | "left" | "right";
@@ -110,6 +111,63 @@ export const ANCHOR_BACK_EDGES: Readonly<Record<FurnitureAnchor, readonly RectEd
   bottom: ["bottom"],
   "bottom-right": ["bottom", "right"],
 });
+
+/** The runs of a rectilinear ring an anchor stands on, one per anchored edge. */
+export type AnchorRuns = Partial<Record<RectEdge, EdgeLine>>;
+
+/**
+ * Where an anchor stands on a rectilinear ring, or why it stands nowhere. A corner anchor is legal
+ * when that corner of the ring's extreme lines is a vertex of the ring: both its edges then lie on
+ * those lines, and each side's run is the one ending there, so a U keeps its corners although a side
+ * of it is two runs. A side anchor needs that side to be one run. `center` reads the outline's
+ * middle, which may not be floor, and is refused. Never a box: the corner of an L in its notch is
+ * no corner of the room.
+ */
+export function anchorRuns(ring: readonly Point[], a: Exclude<FurnitureAnchor, "center">): AnchorRuns | string {
+  const edges = ANCHOR_BACK_EDGES[a];
+  if (edges.length === 1) {
+    const edge = edges[0]!;
+    const runs = extremeRuns(ring, edge);
+    if (runs.length === 1) return { [edge]: runs[0]! };
+    return `its ${edge} side is ${runs.length} separate runs (${runsText(runs)}), which does not say which`;
+  }
+  const [ey, ex] = edges as readonly [RectEdge, RectEdge];
+  const across = extremeRuns(ring, ey);
+  const down = extremeRuns(ring, ex);
+  const cx = down[0]?.c;
+  const cy = across[0]?.c;
+  const flat = across.find((r) => r.lo === cx || r.hi === cx);
+  const tall = down.find((r) => r.lo === cy || r.hi === cy);
+  if (!flat || !tall) return `its ${a} corner is not a vertex of its outline`;
+  return { [ey]: flat, [ex]: tall };
+}
+
+/**
+ * The top-left corner of a `w`×`h` piece anchored on those runs: the same arithmetic as a
+ * rectangle's, with each run's line for the rectangle's edge and a side anchor centred on its run.
+ * `face` is the wall's inner face behind an edge, or null to measure from the line.
+ */
+export function anchoredAt(
+  runs: AnchorRuns,
+  w: number,
+  h: number,
+  inset: number,
+  face: (edge: RectEdge) => number | null,
+): Point {
+  const { top, bottom, left, right } = runs;
+  const mid = (r: EdgeLine, size: number): number => (r.lo + r.hi) / 2 - size / 2;
+  const x = left
+    ? (face("left") ?? left.c) + inset
+    : right
+      ? (face("right") ?? right.c) - w - inset
+      : mid((top ?? bottom)!, w);
+  const y = top
+    ? (face("top") ?? top.c) + inset
+    : bottom
+      ? (face("bottom") ?? bottom.c) - h - inset
+      : mid((left ?? right)!, h);
+  return { x, y };
+}
 
 /** Geometry of one rectangle edge as a 1-D run on a fixed orthogonal line. */
 function edgeRun(rect: BBox, edge: RectEdge): { axis: "h" | "v"; fixed: number; lo: number; hi: number } {

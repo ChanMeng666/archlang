@@ -73,8 +73,8 @@ source (.arch)
   `lint/rules/footprint.ts` `W_FOOTPRINT_TRANSPOSED`; `lint/clearance-measure.ts` the shape measures
   both read, shared with the placement check `lint/fixture-paste.ts` quotes positions through
 - `room-tiling.ts` the exact derivation behind `walls from rooms` (rectangular and rectilinear rooms
-  in, rings and partitions out, or a refusal; `ringParts` cuts a polygon into rectangles of one owner, and
-  `runPicks` and `pickAt` say which shared run a position selects); `wall-relation.ts` the pairwise forms `wall … between|around`, on the
+  in, rings and partitions out, or a refusal; `ringParts` cuts a polygon into rectangles of one owner, `extremeRuns` is what
+  a side of one means, and `runPicks` and `pickAt` say which shared run a position selects); `wall-relation.ts` the pairwise forms `wall … between|around`, on the
   same sweep; `opening-junctions.ts` where other walls meet a host wall, shared by
   `W_OPENING_AT_JUNCTION` and `E_OPENING_NIB`
 - `impact.ts` `impact(before, after)`: what changed, what stayed and what broke between two sources,
@@ -136,8 +136,10 @@ source (.arch)
 - `sheet.ts`, `axes.ts`, `sheet-tables.ts` paper, axis grid, margin tables;
   `opening-schedule.ts` the `schedule openings` tags (placed off the host wall's faces) and rows
 - `label-placement.ts` wraps a room name too wide for its room, then moves room labels off
-  obstacles, after walls and dims · `text-metrics.ts` the single text-width estimate ·
-  `text-layout.ts` the name line breaker and where each line of a text is drawn (every backend)
+  obstacles, after walls and dims · `label-fit.ts` then shrinks what still does not fit, by the
+  test `W_ANNOTATION_OVERLAP` reads · `text-metrics.ts` the shared `textWidth` estimate and
+  `inkWidth`, the bundled face's advances · `text-layout.ts` the name line breaker and where each
+  line of a text is drawn (every backend)
 - `frame.ts` the `place` transform (signed-permutation matrix, no trig); each element carries
   itself across through `ElementDef.transform` (a `TransformCtx` facade), and a plugin kind
   without one is refused inside a `place` (`E_INSTANCE_NO_TRANSFORM`), never thrown

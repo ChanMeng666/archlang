@@ -41,6 +41,8 @@ import { rectRing } from "./geometry/polygon.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
 import type { LabelGroup } from "./label-placement.js";
+import type { ElementNodes } from "./label-fit.js";
+import { fitLabels } from "./label-fit.js";
 import { relocateLabels, wrapLabels } from "./label-placement.js";
 import { legendEntries, roomSchedule, sheetTableNodes } from "./sheet-tables.js";
 import { openingRows, openingTagNodes } from "./opening-schedule.js";
@@ -823,6 +825,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // drawn exactly like a room's and want the same treatment, and the pass is written
   // against a ring + an anchor rather than against either element type.
   const labelGroups: LabelGroup[] = [];
+  const drawnElements: ElementNodes[] = [];
   // Annotate-only lookups, built once. `roomLabels` answers "which room is this piece of
   // furniture in, and what is that room called" without a second scan per element;
   // `primaried` enforces the ONE-primary-per-id law across the whole scene rather than
@@ -878,6 +881,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     } else {
       for (const pushed of rendered) nodes.push(pushed);
     }
+    drawnElements.push({ el, from: groupStart, to: nodes.length });
     // Pushed in ELEMENT order, so a plan with no ground produces exactly the group list
     // (and therefore the bytes) it would with no ground support at all.
     if (el.kind === "room") {
@@ -992,8 +996,13 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // First, a room name too wide for its room on one line is wrapped onto several, when a
   // wrapped form fits (`wrapLabels`) — so the relocation below moves, and steers every later
   // label around, the block as it is actually drawn. A name that fits is not touched.
+  //
+  // Then a room's label the two could not clear shrinks (`fitLabels`), which changes the
+  // lettering of that label alone, so it is measured after every other label has landed. It
+  // reads the storey after the demolition, as `W_ANNOTATION_OVERLAP` does.
   wrapLabels(nodes, labelGroups, ir, sizes);
   relocateLabels(nodes, labelGroups, ir, sizes);
+  fitLabels(nodes, labelGroups, drawnElements, plan, sizes);
 
   // Opt-in sheet tables (`schedule rooms` / `legend`) — derived closed-form from the plan
   // (see `sheet-tables.ts`). Computed before chrome layout because the table heights are

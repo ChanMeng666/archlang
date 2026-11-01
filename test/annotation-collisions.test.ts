@@ -80,8 +80,9 @@ const titled = (project: string, levels = false) => `plan "t" {
 }`;
 
 suite("W_ANNOTATION_OVERLAP — a room label over a symbol", () => {
-  it("fires once for a name the placer could not clear off the bed, naming the room and the piece", () => {
-    const ds = of(bedroom("furniture bed at (1650,900) size 1500x2000"), OVERLAP);
+  it("fires once for a name left on the bed, naming the room and the piece", () => {
+    // The bed fills the floor, so neither a place nor a smaller height clears the name.
+    const ds = of(bedroom("furniture bed at (150,150) size 2950x2700"), OVERLAP);
     expect(ds).toHaveLength(1);
     expect(ds[0]!.message).toContain('The name "Bedroom 4"');
     expect(ds[0]!.message).toContain("the bed");
