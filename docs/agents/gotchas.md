@@ -5,6 +5,14 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 
 ## Core
 
+- **A correct count can be the wrong charge.** Steps are calibrated to the evaluator, about 7 M a second
+  (`src/expr.ts`). The first `polygonsOverlap` charge counted operations exactly and refused 100 round
+  rooms after 0.19 s of real work, because a `room circle` is a 48-gon. Scale a charge to the budget's
+  unit (`RING_READS_PER_STEP`) and measure an honest plan near the limit, not only a hostile one.
+- **A hint must quote the position the plan resolves.** `placeOnRun` snaps to the grid, so a quoted midpoint
+  can land elsewhere silently. Quote through `pickAt`, and test by pasting the hint.
+- **An oracle on an exact lattice cannot see float noise.** Coordinates built from `k·scale` make `cross3`
+  exact, so a rewrite that changes an answer on near-collinear edges passes. Add trig or jittered rings.
 - **Door `hinge left/right` is relative to the wall's traversal direction**, not the screen, so it
   flips with the order of a wall's points. Each leaf's sector comes from `doorLeaves` in
   `geometry.ts` (a `double` door's two, built with `doorSwing`'s geometry), shared by
@@ -76,6 +84,19 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 
 ## PRs & CI
 
+- **A branch cut before a release merges its `[Unreleased]` entry into the released section, with no
+  conflict.** After merging `main`, check `git diff origin/main -- CHANGELOG.md` shows only added lines
+  under `[Unreleased]`. If not, take main's file and insert the branch's lines; bullets have no blank
+  line between them, so cut an entry on the next `- ` as well.
+- **A change to the step meter moves every law that digests steps**: K1,
+  `test/rectilinear-rooms-byte-identity.test.ts`, `test/block-stair-byte-identity.test.ts`. Re-take each by
+  its own route, and show that putting the old count back reproduces the pinned digest.
+- **A new example moves more than the example tables**: the corpus counts in `packages/archlang-3d`
+  (`e2e/glb.e2e.ts`, `e2e/replay.e2e.ts`, `test/adapter-corpus.test.ts`, `test/mesh.test.ts`) and the digest
+  rows naming it. `npm run check` does not run the e2e half: run `check:3d`.
+- **The playground's startup budget is a sum, not a per-PR limit**: ordinary core growth reaches it
+  eventually. Confirm no 3D marker is in the chunks, then re-take `playground/e2e/startup-chunks.baseline.json`
+  with the reason in the commit. The budget stays.
 - **A PR whose branch conflicts with `main` gets no CI run** (GitHub cannot build the merge ref).
   A PR sitting with no checks is in conflict: resolve first, then CI starts.
 - **`gh pr checks <n> --watch --fail-fast` has exited early on the informational Benchmark job.**
@@ -161,6 +182,15 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 
 ## Tooling & process
 
+- **The `alg-*` executors do not push**; the main session pushes and opens the PR, and writes the body if
+  the executor did not. A worktree branch can track `origin/main`, so push with an explicit
+  `HEAD:<branch>`.
+- **The session scratchpad is shared by parallel executors**: give each its own subfolder in the brief. A
+  reviewer's `scratchpad/` left inside a worktree fails `npm run check` on lint, and must not be staged.
+- **In the Bash tool `/tmp` is not the `/tmp` Node resolves** (`D:\tmp` here): pass scratch paths through an
+  environment variable or use the session scratchpad.
+- **A worktree locked by the running session refuses `git worktree remove`**, even with `--force`. Leave
+  it for the session's end rather than removing it with `-f -f`.
 - **`npx vitest run --maxWorkers=N` errors in this repo unless `--minWorkers=1` is also given.**
 - **Under heavy machine load the visual, sheet and roof tests can time out.** Rerun the file alone
   before suspecting the code.
@@ -191,7 +221,7 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   an agent branch's tip with `git rev-parse` before merging it.
 - **A literal NUL byte in a source file makes git and ripgrep treat it as binary** (the diff shows
   `Bin`, search skips the file). Write `\u0000`.
-- **`check:drift` reads the committed tree**, so a release bump fails it until the bump is committed.
+- **`check:drift` reads the committed or staged tree**, so a release bump fails it until the bump is committed.
 - **A new `.gitleaksignore` fingerprint on a live file needs a rule in `test/opaque-literal-guard.test.ts`.**
 - **gitleaks `generic-api-key` flags SHA-256 digest tables keyed by a name containing a key-ish word**
   (e.g. `accessible`). Allowlist the exact fingerprint per `.gitleaksignore`'s header and hold the

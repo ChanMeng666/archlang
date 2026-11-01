@@ -70,6 +70,12 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   past it an element is `E_OUT_OF_RANGE`. Do not widen it to suit an input.
 - **Budgets are counts, never time, and every input returns a diagnostic**, never a hang or a throw
   (`E_STEP_LIMIT`, `E_DRAWING_LIMIT`). Never replace one with a wall-clock timeout.
+- **Ring work is charged** (`polygonSelfIntersects`, `polygonsOverlap`): the owner reopened M.19 on a
+  376 s measurement. The label-placement residual stays kept.
+- **No structural attribute on walls and no load-bearing check** (D25): cross-storey wall checks go
+  through `keep stacked`, geometry only.
+- **Parked until a second ask** (D23, D24): `right-of` and anchors on a polygon, edge names, winders,
+  `shape` shortcuts, an `entry` clause, a German profile, `locale`.
 - **A `lint()` diagnostic's `message` names things the way a person would** (rooms by label, doors
   by the rooms they join, walls by kind and the line they run on) and never quotes an element id;
   ids live only in `hint`. A consumer may show `message` to someone who never sees the source,
@@ -130,3 +136,6 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   browser or CLI when the owner has asked for that listing; the final submit of anything that
   accepts terms, and Cloudflare dashboard edits, are the owner's (`docs/seo.md` section 8).
 - **Distribution first**: ArchLang exists for distribution and credibility; revenue is secondary.
+- **ArchCanvas is in maintenance** (D26, the day-90 verdict) and stays on its pinned core (D28): its prompts
+  inject `spec.llm.md` verbatim, so a core bump changes what the model writes, and only a paid run can price
+  that. A new language form is not a reason to bump it.
