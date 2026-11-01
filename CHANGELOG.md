@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.51.0] - 2026-11-02
+
 ### Added
 
 - `schedule rooms net` stamps each room with its net area (issue #402). The stamp reads the schedule's NET AREA figure, the one `describe()` reports as `net_area_m2`, to one decimal, followed by `net`: `10.4 m² net`. A room the schedule cannot measure keeps its centreline stamp. Without the word every plan draws as before. `describe()` does not change; the longer stamp is fitted like any label.
