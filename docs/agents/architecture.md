@@ -63,11 +63,18 @@ source (.arch)
   diagnostics and never inside them
 - `lint/rules/stairs.ts` stair safety: a swing over a flight, a missing landing, a side entry, a
   void where a flight arrives, a flight too steep for its storey (read through `doorLeaves`)
+- `elements/stair.ts` a straight flight or a block of flights and landings: `piecesOf`, `flightsOf` and
+  `isBlockStair` are the one path for readers; `vertical.ts` `boardedFlight` and `arrivalOn` say where a stop
+  is boarded and stepped off, and `describe` gives `steps_off` when those are two rooms; `sameBlock` is the
+  shaft rule's test. Only the id joins two stops, never geometry
+- `geometry/polygon.ts` the ring tests, charged in `RING_READS_PER_STEP`; `polygonsOverlapCost` is the same
+  count for a pass outside the meter (`lint/rules/outdoor.ts`)
 - `lint/rules/clearances.ts` WC side clearance and a tall unit in front of a window;
   `lint/rules/footprint.ts` `W_FOOTPRINT_TRANSPOSED`; `lint/clearance-measure.ts` the shape measures
   both read, shared with the placement check `lint/fixture-paste.ts` quotes positions through
 - `room-tiling.ts` the exact derivation behind `walls from rooms` (rectangular and rectilinear rooms
-  in, rings and partitions out, or a refusal); `wall-relation.ts` the pairwise forms `wall … between|around`, on the
+  in, rings and partitions out, or a refusal; `ringParts` cuts a polygon into rectangles of one owner, and
+  `runPicks` and `pickAt` say which shared run a position selects); `wall-relation.ts` the pairwise forms `wall … between|around`, on the
   same sweep; `opening-junctions.ts` where other walls meet a host wall, shared by
   `W_OPENING_AT_JUNCTION` and `E_OPENING_NIB`
 - `impact.ts` `impact(before, after)`: what changed, what stayed and what broke between two sources,

@@ -85,6 +85,8 @@ Each links to a short section with an example, on [archlang.uk/whats-new](https:
 - [Intent across storeys](https://archlang.uk/whats-new#intent-across-storeys): `archlang validate plan.arch --intent intent.json`
 - [What Plan JSON leaves out](https://archlang.uk/whats-new#what-plan-json-leaves-out): `archlang compile plan.arch -f json`
 - [More lint reports](https://archlang.uk/whats-new#more-lint-reports): `W_WALL_END_SHORT`, `W_FURNITURE_ON_STAIR`
+- [L-shaped rooms](https://archlang.uk/whats-new#l-shaped-rooms): a rectilinear `room polygon` in `walls from rooms`
+- [Turning stairs](https://archlang.uk/whats-new#turning-stairs): `stair id=s dir up width 1000 { flight … landing … flight … }`
 
 ## For your agent
 

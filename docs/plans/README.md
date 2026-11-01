@@ -4,12 +4,12 @@ Multi-session plans. Each folder is self-contained: a `README.md` with the decis
 work, dated evidence, and (where the programme is running) a `handoff.md` that is the resume point.
 A plan small enough for one page is a single file here.
 
-| Folder | What | Status (2026-10-27) |
+| Folder | What | Status (2026-11-01) |
 |---|---|---|
 | `plan-soundness/` | Professional rules and taste for AI-written plans: validity lint, relation-first forms, the change model, the taste layer | open; §7 rows 1–5 and 3a met, row 6 closed in part (PS4.6 remains), row 7 parked; start at `plan-soundness/handoff.md` |
 | `ci-throughput.md` | Options to shorten the PR cycle (auto-merge, concurrency, path filters, coverage off the PR path, merge queue, changelog fragments, PR legs and shards) | A–D and G live; E, F open, the owner decides |
 | `archlang-3d/` | The owner's 3D plan (ADR 0030/0031 drafts) | owner's; not part of plan-soundness |
-| `preview-and-remodel/` | The programme that built the 3D preview and the G cards; `handoff.md` is the resume point | waves 0–3 and 5 done; 3D on npm at 0.x (D20); wave 4 and wave 6 wait for the N10 read on 2026-11-27 |
+| `preview-and-remodel/` | The 3D preview, the G cards and Wave 7 (what the German-houses user reported); `handoff.md` is the resume point | waves 0–3, 5 and 7 done; waves 4 and 6 wait for the N10 read |
 
 The backlog (`docs/backlog.md`) points here for programme work; `docs/adr/` holds the decisions that
 outlive a programme.

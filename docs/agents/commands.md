@@ -121,7 +121,7 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
 the pinned issue; its report is an
 artifact), `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
 detects a stale deploy), and `report` (the single writer of the pinned issue; a fully green night comments on it and closes it). `deploy.yml` deploys
-both sites on every push to `main`; `release.yml` publishes on a `v*` tag; `publish-openvsx.yml` (manual) publishes the VS Code
+both sites on every push to `main`; `release.yml` publishes on a `v*` tag; `publish-openvsx.yml` (manual, dispatched by the agent after each Marketplace upload) publishes the VS Code
 extension to Open VSX. The `eval-*.yml`
 workflows are manual and owner-only — never dispatch `eval-l2.yml`.
 
