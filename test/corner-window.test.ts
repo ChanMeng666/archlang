@@ -653,6 +653,18 @@ describe("`open between` takes no position", () => {
     expect(quoted(src)).toBe(statement);
   });
 
+  it.each([
+    ["a plain length reads from the start", "open between a and b at 1500 width 2000", "at 1500 from start width 2000"],
+    ["a percentage names nothing `between` reads", "open between a and b at 40% width 2000", "at <mm> from start width 2000"],
+    ["a corner is no place for it", "open between a and b at corner a.top width 2000", "at <mm> from start width 2000"],
+  ])("%s", (_name, clause, tail) => {
+    const src = plan(ROOM, BESIDE, walls(clause));
+    expect(quoted(src)).toBe(`opening between a and b ${tail}`);
+    const fixed = plan(ROOM, BESIDE, DERIVED, `  ${quoted(src).replace("<mm>", "1500")}`);
+    expect(errors(fixed)).toEqual([]);
+    expect(describePlan(fixed).openings[0]!.centreline_at).toEqual({ x: 6000, y: 1500 });
+  });
+
   it("pasted, what it quotes compiles and stands where it said", () => {
     const src = plan(ROOM, BESIDE, walls("open id=o between a and b at 1500 from start width 2000"));
     const fixed = plan(ROOM, BESIDE, DERIVED, `  ${quoted(src)}`);

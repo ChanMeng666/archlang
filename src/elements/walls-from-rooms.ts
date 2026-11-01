@@ -424,8 +424,16 @@ function parsePair(ctx: ParseCtx): WallsPairClause {
       eatWidth();
       const name = id ? `id=${id.id} ` : "";
       const wide = width === undefined ? "<mm>" : exprToSource(width);
+      // What the statement it quotes can stand on: a plain length reads from the run's start, as
+      // on a wall, and a percentage or a corner names nothing `between` can read.
+      const said =
+        pos.kind === "mm"
+          ? `${attachPosStr(pos)} from start`
+          : pos.kind === "percent" || pos.kind === "corner"
+            ? "<mm> from start"
+            : attachPosStr(pos);
       ctx.fail(
-        `\`open between\` takes no position: it voids the boundary across its clear span, or a \`width\` centred on it. For an opening placed along a wall that stays, remove the clause and write \`opening ${name}between ${a.id} and ${b.id} at ${attachPosStr(pos)} width ${wide}\` after the statement`,
+        `\`open between\` takes no position: it voids the boundary across its clear span, or a \`width\` centred on it. For an opening placed along a wall that stays, remove the clause and write \`opening ${name}between ${a.id} and ${b.id} at ${said} width ${wide}\` after the statement`,
         at,
       );
     };
