@@ -5,8 +5,9 @@
  *
  * Every figure is read through the measure the rule itself calls, on a context built as `lint()`
  * builds it ({@link lintStoreys}, {@link buildLintContext}, the default ruleset): a WC's sides
- * ({@link measureWcSides}, `W_WC_SIDE_CLEARANCE`), a tall unit's and a hob's cover of a window
- * ({@link windowCover}, {@link hobWindowCover}, `W_FURNITURE_OVER_WINDOW`, `W_HOB_UNDER_WINDOW`),
+ * ({@link measureWcSides}, `W_WC_SIDE_CLEARANCE`), a tall unit's, a low unit's and a hob's cover of
+ * a window ({@link windowCover}, {@link lowUnitCover}, {@link hobWindowCover},
+ * `W_FURNITURE_OVER_WINDOW`, `W_HOB_UNDER_WINDOW`),
  * a hob's nearest tall unit ({@link hobSideGap}, `W_HOB_FRIDGE_GAP`), a doorway's approach
  * ({@link blockedApproach}, {@link openingBlock}, `W_DOORWAY_BLOCKED`) and clear width (the access
  * graph's edge, `W_PATH_TOO_NARROW`), and a stair's landings and run ({@link storeyStairs},
@@ -26,8 +27,11 @@ import {
   hobSideGap,
   hobWindowCover,
   isCookingSurface,
+  isFloorLength,
+  isLowUnit,
   isServiceCounter,
   isWc,
+  lowUnitCover,
   measureWcSides,
   roomOf,
   wcWorld,
@@ -84,6 +88,9 @@ export interface TallUnitFact {
   room?: string;
   windows: WindowCoverFact[];
 }
+
+/** A low unit against a floor-length window, as `W_FURNITURE_OVER_WINDOW` measured it. */
+export type LowUnitFact = TallUnitFact;
 
 /** A window a cooking surface covers, and whether it stands against that window's host. */
 export interface HobWindowFact extends WindowCoverFact {
@@ -160,6 +167,9 @@ export interface StairFact {
 export interface ClearanceFacts {
   wcs: WcFact[];
   tall_units: TallUnitFact[];
+  /** The pieces standing against a floor-length window. Present only when there is one, so a plan
+   *  with no such window reads as it always did. */
+  low_units?: LowUnitFact[];
   hobs: HobFact[];
   doorways: DoorwayFact[];
   stairs: StairFact[] | null;
@@ -223,6 +233,20 @@ function tallUnitFacts(ctx: LintContext): TallUnitFact[] {
       return c === null ? [] : [coverFact(b.w, c)];
     }),
   }));
+}
+
+function lowUnitFacts(ctx: LintContext): LowUnitFact[] {
+  const bands = windowBands(ctx.windows.filter(isFloorLength));
+  if (bands.length === 0) return [];
+  const tol = ctx.rules.fixtureWallTolMm;
+  return ctx.furniture.flatMap((f) => {
+    if (!isLowUnit(f.category)) return [];
+    const windows = bands.flatMap((b) => {
+      const c = lowUnitCover(b, rectOf(f), tol);
+      return c === null ? [] : [coverFact(b.w, c)];
+    });
+    return windows.length === 0 ? [] : [{ id: f.id, category: f.category, ...roomKey(f, ctx), windows }];
+  });
 }
 
 function hobFacts(ctx: LintContext): HobFact[] {
@@ -328,9 +352,11 @@ function stairFacts(ctx: LintContext): StairFact[] | null {
 
 /** One storey's clearance measures, on its lint context. */
 function storeyClearances(ctx: LintContext): ClearanceFacts {
+  const low = lowUnitFacts(ctx);
   return {
     wcs: wcFacts(ctx),
     tall_units: tallUnitFacts(ctx),
+    ...(low.length > 0 ? { low_units: low } : {}),
     hobs: hobFacts(ctx),
     doorways: doorwayFacts(ctx),
     stairs: stairFacts(ctx),

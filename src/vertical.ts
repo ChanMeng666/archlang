@@ -446,6 +446,13 @@ export interface VerticalReach {
   reachable: Set<number>;
   /** Per level: room ids you can arrive in by coming up/down a shaft. Source order. */
   arrivalRooms: Map<number, string[]>;
+  /**
+   * Per level: the ids of the shafts that carried someone to a stop on it, in the order they did.
+   * The first is the one that reached the storey; a later one may be riding on it (a stop in no
+   * room is active once its storey is reachable, so a shaft that stands in a sealed room below
+   * joins in after another has reached the storey).
+   */
+  landed?: Map<number, ReadonlySet<string>>;
 }
 
 /**
@@ -489,8 +496,15 @@ export function verticalReach(
   grounded: (level: number) => boolean,
   roomReach?: StoreyRoomReach,
 ): VerticalReach {
-  const { reachable, arrivalRooms } = reachOver(levels, verticalConnections(levels), grounded, roomReach);
-  return { reachable, arrivalRooms };
+  const { reachable, arrivalRooms, landed } = reachOver(levels, verticalConnections(levels), grounded, roomReach);
+  return { reachable, arrivalRooms, ...(landed ? { landed } : {}) };
+}
+
+/** Note that shaft `id` carried someone to a stop on `level`. */
+function noteLanded(landed: Map<number, Set<string>>, level: number, id: string): void {
+  const ids = landed.get(level);
+  if (ids) ids.add(id);
+  else landed.set(level, new Set([id]));
 }
 
 /** {@link VerticalReach}, plus whether a stop is ACTIVE at the fixpoint for the stop on side
@@ -516,6 +530,7 @@ function reachOver(
   const reachable = new Set<number>();
   for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
   const arrivalRooms = new Map<number, string[]>();
+  const landed = new Map<number, Set<string>>();
 
   for (let pass = 0; pass < levels.length + 1; pass++) {
     let grew = false;
@@ -523,6 +538,7 @@ function reachOver(
       const anyReachable = c.levels.some((n) => reachable.has(n));
       if (!anyReachable) continue;
       for (const stop of c.stops) {
+        noteLanded(landed, stop.level, c.id);
         if (!reachable.has(stop.level)) {
           reachable.add(stop.level);
           grew = true;
@@ -539,7 +555,7 @@ function reachOver(
     }
     if (!grew) break;
   }
-  return { reachable, arrivalRooms, active: (stop) => reachable.has(stop.level) };
+  return { reachable, arrivalRooms, landed, active: (stop) => reachable.has(stop.level) };
 }
 
 /**
@@ -570,6 +586,7 @@ function roomAwareReach(
   const reachable = new Set<number>();
   for (const l of levels) if (grounded(l.level)) reachable.add(l.level);
   const arrivalRooms = new Map<number, string[]>();
+  const landed = new Map<number, Set<string>>();
   // Rooms live shafts land in, on EVERY storey (grounded ones relay too).
   const seedRooms = new Map<number, string[]>();
   // `roomReach` answers, invalidated whenever a storey's seeds grow.
@@ -589,8 +606,9 @@ function roomAwareReach(
     const room = roomToward(stop, toward);
     return room === null || liveOn(stop.level).has(room);
   };
-  /** A person arrives on `stop`, in `room` if it stands in one; whether that grew anything. */
-  const land = (stop: VerticalStop, room: string | null): boolean => {
+  /** A person arrives on `stop` by shaft `id`, in `room` if it stands in one; whether that grew anything. */
+  const land = (id: string, stop: VerticalStop, room: string | null): boolean => {
+    noteLanded(landed, stop.level, id);
     let grew = false;
     if (!reachable.has(stop.level)) {
       reachable.add(stop.level);
@@ -621,17 +639,17 @@ function roomAwareReach(
         for (const [i, stop] of c.stops.entries()) {
           const next = c.stops[i + 1];
           if (!next) break;
-          if (active(stop, "above") && land(next, roomToward(next, "below"))) grew = true;
-          if (active(next, "below") && land(stop, roomToward(stop, "above"))) grew = true;
+          if (active(stop, "above") && land(c.id, next, roomToward(next, "below"))) grew = true;
+          if (active(next, "below") && land(c.id, stop, roomToward(stop, "above"))) grew = true;
         }
         continue;
       }
       if (!c.stops.some((s) => active(s, "above"))) continue;
-      for (const stop of c.stops) if (land(stop, stop.room)) grew = true;
+      for (const stop of c.stops) if (land(c.id, stop, stop.room)) grew = true;
     }
     if (!grew) break;
   }
-  return { reachable, arrivalRooms, active };
+  return { reachable, arrivalRooms, landed, active };
 }
 
 /**

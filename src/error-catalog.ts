@@ -582,7 +582,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_BALCONY_NO_DOOR: W(
     "W_BALCONY_NO_DOOR",
     "A balcony with no way onto it.",
-    "An `outdoor balcony` has no `door` and no `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony.",
+    "An `outdoor balcony` has no `door` and no way through a `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony: `sill 0` counts, and so does a window with no `sill` clause, whose 900 mm is only the default. A window whose authored `sill` is above 0 stops above the floor and does not count; the message then gives the sill.",
     "Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.",
     "outdoor balcony at (2000,7200) size 4000x1600   # warning: no opening within reach",
   ),
@@ -1230,7 +1230,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_NO_ENTRANCE: W(
     "W_NO_ENTRANCE",
     "The plan has no exterior door.",
-    "The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered. On a multi-storey plan it is judged per storey: a storey with no exterior door of its own is entered by a `stair`/`elevator`/`escalator` shared with a reachable storey, but only when the room the run stands in there is itself reachable — a stair in a door-less store leads nowhere, and the storey it serves gets this warning.",
+    "The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered. On a multi-storey plan it is judged per storey: a storey with no exterior door of its own is entered by a `stair`/`elevator`/`escalator` shared with a reachable storey, but only when the room the run stands in there is itself reachable — a stair in a door-less store leads nowhere, and the storey it serves gets this warning — and it lands on a room's floor on the storey. When another storey has a way in, the message says which storey this is and what is missing there, and the hint gives the shaft's id: no shaft joins it to another storey, its run stops on no other storey, the shaft lands on no room there, or the shaft starts in a room nobody can walk to. A storey the shaft does land on, in a room, does not warn.",
     "Add a `door` on an `exterior` wall.",
     "wall exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }   # lint: no way in",
   ),
@@ -1348,8 +1348,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   W_FURNITURE_OVER_WINDOW: W(
     "W_FURNITURE_OVER_WINDOW",
-    "A tall unit stands in front of a window.",
-    "A tall unit (a fridge, wardrobe, bookcase or locker: the catalogue's `tall` families) has a footprint that overlaps a window's span on its straight host wall, within the ruleset's `fixtureWallTolMm` (300 mm) of the wall's centreline on either side: it stands against the wall, across the glass, blocking the window's light and view. Measured from the drawn footprint and the window's span, never from bounding boxes. A window whose sill is at or above 2100 mm (a door head) is a high window over full-height storage and is not judged; a window on a curved wall is not measured (a `curved-window-host` coverage skip).",
+    "A tall unit stands in front of a window, or a low piece against a floor-length one.",
+    "A tall unit (a fridge, wardrobe, bookcase or locker: the catalogue's `tall` families) has a footprint that overlaps a window's span on its straight host wall, within the ruleset's `fixtureWallTolMm` (300 mm) of the wall's centreline on either side: it stands against the wall, across the glass, blocking the window's light and view. Measured from the drawn footprint and the window's span, never from bounding boxes. A window whose sill is at or above 2100 mm (a door head) is a high window over full-height storage and is not judged; a window on a curved wall is not measured (a `curved-window-host` coverage skip). A window with `sill 0` has no sill to stand a low unit under, so any other piece at the cut plane warns too when it overlaps that span and stands on the wall's face (not a rug or an overhead piece, and not a cooking surface, which is `W_HOB_UNDER_WINDOW`'s). A window with no `sill` clause takes the 900 mm default and is not read this way.",
     "Slide the unit along the wall clear of the window's span (the hint gives the shorter slide), move the window, or stand a unit no higher than the sill there instead: a worktop, a chest of drawers or a washer goes under a window, a fridge or a wardrobe beside it.",
     "wall id=w exterior thickness 200 { (0,0) (4000,0) }\nwindow at (2000,0) width 1200 wall w\nfurniture fridge at (1700,100) size 600x650   # lint: in front of 600 mm of the window",
   ),

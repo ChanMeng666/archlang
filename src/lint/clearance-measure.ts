@@ -360,6 +360,27 @@ export function hobWindowCover(band: WindowBand, r: BBox, tol: number): WindowCo
   return hobNearHost(band, r) <= band.w.host!.thickness / 2 + WALL_COLLISION_SLACK_MM ? cover : null;
 }
 
+/** Does this window reach the floor? `sill 0` can only be authored: the default is 900 mm. */
+export const isFloorLength = (w: RWindow): boolean => w.sill === 0;
+
+/**
+ * A piece the floor-length arm of `W_FURNITURE_OVER_WINDOW` reads. The catalogue holds no heights
+ * and this needs none: nothing stands lower than a sill at the floor, so every piece at the cut
+ * plane counts whatever its height. Not a rug or an overhead piece ({@link cutPlaneLayer}), neither
+ * of which stands in front of the glass; not a tall unit, read against every window; not a cooking
+ * surface, which `W_HOB_UNDER_WINDOW` reports under the same window.
+ */
+export const isLowUnit = (category: string): boolean =>
+  cutPlaneLayer(category) === "body" && !isTallUnit(category) && !isCookingSurface(category);
+
+/**
+ * Does low unit `r` stand against a floor-length window? As for a cooking surface
+ * ({@link hobWindowCover}): in front of the span and on the host's face. A piece that only reaches
+ * into the band stands near the glass, not against it: a chair at a café table, a bed on a return
+ * wall.
+ */
+export const lowUnitCover = hobWindowCover;
+
 /** How far footprint `r`'s side nearest the window's host stands from the host's centreline
  *  (0 when the footprint straddles it): the distance {@link hobWindowCover} judges. */
 export function hobNearHost(band: WindowBand, r: BBox): number {
@@ -417,6 +438,9 @@ export function clearancesClear(
   }
   if (isCookingSurface(category)) {
     if (windowBands(ctx.windows).some((b) => hobWindowCover(b, fr, tol) !== null)) return false;
+  }
+  if (isLowUnit(category)) {
+    if (windowBands(ctx.windows.filter(isFloorLength)).some((b) => lowUnitCover(b, fr, tol) !== null)) return false;
   }
   // The hob-to-fridge gap (PS2.11e), both ways: a hob with a tall unit inside its landing, and a
   // tall unit standing inside a hob's.
