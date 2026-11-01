@@ -577,16 +577,18 @@ suite("budgets", () => {
     expect(stepsOf(src)).toBeLessThan(500_000);
   });
 
-  it("a hostile plan stops at the meter, with a diagnostic", () => {
-    const ring = staircase(1500);
-    const src = plan(
-      `  room id=a polygon ${ring}\n  for i in 0..3000 {\n    for j in 0..3000 {\n      let v = a.left\n    }\n  }\n  wall id=w exterior thickness 200 { (0,0) (100,0) }`,
-    );
+  it("a hostile plan stops at the meter, at the read, where its twin that reads nothing does not", () => {
+    const body = (term: string): string => {
+      const e = Array.from({ length: 50 }, () => term).join(" + ");
+      return plan(
+        `  room id=a polygon ${staircase(400)}\n  for i in 0..2000 {\n    wall interior thickness 100 { (${e},i) (${e},i + 10) }\n  }`,
+      );
+    };
     const t0 = performance.now();
-    const out = compile(src, { noCache: true });
-    expect(out.diagnostics.map((d) => d.code)).toContain("E_STEP_LIMIT");
+    expect(compile(body("a.left"), { noCache: true }).diagnostics.map((d) => d.code)).toContain("E_STEP_LIMIT");
     expect(performance.now() - t0).toBeLessThan(30_000);
-  }, 60_000);
+    expect(compile(body("0"), { noCache: true }).diagnostics.map((d) => d.code)).not.toContain("E_STEP_LIMIT");
+  }, 120_000);
 });
 
 suite("finish on an L", () => {
