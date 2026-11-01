@@ -2463,7 +2463,8 @@ Two advisory rules:
 room's floor — double-counted by anything adding the two totals; a surface merely *abutting*
 the house does not trip it) and
 [`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door) (a balcony with no door **or
-window** within a wall thickness of any edge).
+window** within a wall thickness of any edge; a window whose authored `sill` is above 0 does not
+count, one with no `sill` clause does).
 
 Refusals: [`E_OUTDOOR_SIZE`](error-codes.md#e_outdoor_size),
 [`E_OUTDOOR_POLY_DEGENERATE`](error-codes.md#e_outdoor_poly_degenerate) (which also covers
@@ -3026,7 +3027,10 @@ Both trail every clause the statement already had, and `sill` precedes `head`:
 
 Only a window takes a `sill`. A door and a cased opening start at the floor, so a clause that
 could only ever be written `sill 0` is not in the language. On a window, `sill 0` *is* legal
-and means a floor-length window — it is the one height that may be zero.
+and means a floor-length window — it is the one height that may be zero. Heights draw nothing, but
+two lint rules read this one:
+[`W_BALCONY_NO_DOOR`](error-codes.md#w_balcony_no_door) and
+[`W_FURNITURE_OVER_WINDOW`](error-codes.md#w_furniture_over_window).
 
 ### Elevation, and why it accumulates
 

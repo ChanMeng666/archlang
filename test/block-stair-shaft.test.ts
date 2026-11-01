@@ -594,6 +594,10 @@ ${stairBlock(L, "up")}`;
         );
         expect(stopOf(src)).toEqual({ level: 2, dir: "up", room: "a", steps_off: { below: null } });
         expect(describePlan(src).vertical!.reachable_levels).toEqual([1, 2]);
+        // `a` holds a flight, and nobody steps off into it: the storey is told why.
+        expect(of(src, "W_NO_ENTRANCE").map((d) => d.message)).toEqual([
+          "Level 2 has no exterior door or opening of its own, and the stair that reaches it lands on no room here, so there is no floor to step off onto.",
+        ]);
       });
 
       it("the boarded end in none: a person still arrives, in the room the far end stands in", () => {

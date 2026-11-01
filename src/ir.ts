@@ -529,6 +529,9 @@ export interface RWindow extends RBase {
   /** Bottom of the glazing above this storey's floor, in mm — always resolved,
    *  the authored `sill` or {@link import("./datum.js").WINDOW_SILL}. */
   sill: number;
+  /** The statement wrote a `sill` clause, so {@link RWindow.sill} is the plan's word and not the
+   *  default: `W_BALCONY_NO_DOOR` takes a window at it. Internal: never reaches the Scene. */
+  _sillAuthored?: true;
   /** Top of the glazing, in mm — the authored `head` or
    *  {@link import("./datum.js").WINDOW_HEAD}. Always above {@link RWindow.sill}. */
   head: number;

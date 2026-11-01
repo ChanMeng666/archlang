@@ -6,7 +6,7 @@
  */
 
 import type { Point } from "../../ast.js";
-import type { ROutdoor, RRoom } from "../../ir.js";
+import type { ROutdoor, RRoom, RWindow } from "../../ir.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { MAX_EVAL_STEPS } from "../../expr.js";
 import { rectCorners } from "../../geometry.js";
@@ -19,6 +19,7 @@ import {
   rectRing,
 } from "../../geometry/polygon.js";
 import type { LintContext, LintRule } from "../context.js";
+import { mm } from "../measure.js";
 import { capFirst } from "../../naming.js";
 
 /** The ring a surface actually occupies — its own polygon, or its rectangle. */
@@ -201,6 +202,11 @@ export const outdoorOverlapsRoom: LintRule = {
  * the slab edge and up to half a thickness outside it. A `window` counts as well as a
  * `door`, because a French window IS the way onto a balcony and refusing to see one would
  * make the rule fire on correct drawings.
+ *
+ * Unless the plan says otherwise ({@link stopsAboveFloor}): a window whose `sill` is authored above
+ * the floor cannot be walked through. A window with no `sill` clause keeps counting. Its 900 mm is
+ * the datum's default, heights are opt-in and nearly every plan writes none, so the rule would
+ * otherwise fire on every plan that means a French window and never had to say so.
  */
 export const balconyNoDoor: LintRule = {
   name: "balcony-no-door",
@@ -213,26 +219,54 @@ export const balconyNoDoor: LintRule = {
     const balconies = ctx.ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor" && e.surface === "balcony");
     if (balconies.length === 0) return out;
     const reach = ctx.ir.walls.length > 0 ? Math.max(...ctx.ir.walls.map((w) => w.thickness)) : 250;
-    const openings: Point[] = [...ctx.doors, ...ctx.windows].map((d) => ({ ...d.at }));
-    const unserved: ROutdoor[] = [];
+    const unserved: Array<{ b: ROutdoor; sealed: RWindow[] }> = [];
     for (const b of balconies) {
       const ring = ringOf(b);
       if (!ring) continue;
-      const served = openings.some((p) => pointInPolygon(p.x, p.y, ring) || distToPolygonEdge(p, ring) <= reach);
-      if (!served) unserved.push(b);
+      const near = (p: Point): boolean => pointInPolygon(p.x, p.y, ring) || distToPolygonEdge(p, ring) <= reach;
+      if (ctx.doors.some((d) => near(d.at))) continue;
+      const windows = ctx.windows.filter((w) => near(w.at));
+      if (windows.some((w) => !stopsAboveFloor(w))) continue;
+      unserved.push({ b, sealed: windows });
     }
-    const names = surfaceNames(ctx, unserved, reach);
-    for (const b of unserved) {
+    const names = surfaceNames(
+      ctx,
+      unserved.map((u) => u.b),
+      reach,
+    );
+    for (const { b, sealed } of unserved) {
       out.push({
         severity: "warning",
         message:
-          `${capFirst(names.get(b)!)} has no door or window within ${reach} mm of any of its edges, so there is ` +
-          `no way onto it. Add a door (or a full-height window) on the wall it hangs off.`,
+          sealed.length === 0
+            ? `${capFirst(names.get(b)!)} has no door or window within ${reach} mm of any of its edges, so there is ` +
+              `no way onto it. Add a door (or a full-height window) on the wall it hangs off.`
+            : `${capFirst(names.get(b)!)} has no door within ${reach} mm of any of its edges, and ${sillPhrase(sealed)}, ` +
+              `so there is no way onto it. Add a door, or bring the window down to the floor.`,
         code: "W_BALCONY_NO_DOOR",
         ...ctx.at(b),
-        hints: [`The balcony is \`${b.id}\`.`],
+        hints: [
+          sealed.length === 0
+            ? `The balcony is \`${b.id}\`.`
+            : `The balcony is \`${b.id}\`. Add a \`door\` on the wall it hangs off, or write \`sill 0\` on ${sealed.map(windowRef).join(" or ")}.`,
+        ],
       });
     }
     return out;
   },
 };
+
+/** The plan says this window's glass stops above the floor: a `sill` above 0 that it wrote itself. */
+const stopsAboveFloor = (w: RWindow): boolean => w._sillAuthored === true && w.sill > 0;
+
+/** The windows beside a balcony in a message: the one, or the lowest of them. */
+function sillPhrase(windows: readonly RWindow[]): string {
+  const lowest = mm(windows.reduce((least, w) => Math.min(least, w.sill), Infinity));
+  return windows.length === 1
+    ? `the window there has its sill at ${lowest} mm`
+    : `the lowest of the ${windows.length} windows there has its sill at ${lowest} mm`;
+}
+
+/** A window in a hint: its id when the author wrote one, else its width. */
+const windowRef = (w: RWindow): string =>
+  w._idAuthored === true ? `window \`${w.id}\`` : `the ${mm(w.width)} mm window`;

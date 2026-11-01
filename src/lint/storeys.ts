@@ -109,6 +109,8 @@ export function buildingContexts(levels: readonly ResolvedLevel[], tolMm: number
       // Levels arrive ascending, so the first is the lowest.
       ...(l === levels[0] ? { lowestStorey: true as const } : {}),
       shaftNeighbours: neighbours.find((x) => x.level === l.level)!.m,
+      reachableLevels: reach.reachable,
+      connections,
     });
   }
   return out;

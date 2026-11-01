@@ -11,7 +11,7 @@ import { entranceInputs, mainEntranceOf, walkAccessGraph, walkWays } from "../an
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, RWindow, ResolvedPlan } from "../ir.js";
-import { type ArrivingRun, type RVertical, verticalsOf } from "../vertical.js";
+import { type ArrivingRun, type RVertical, type VerticalConnection, verticalsOf } from "../vertical.js";
 import type { DwellingReading } from "../analyze/dwelling.js";
 import type { EnclosureBudgetCap, LintFamily, LintSkipReason } from "./coverage.js";
 import { makeNaming, type NameableRoom, type Naming, nameableOf } from "../naming.js";
@@ -69,6 +69,11 @@ export interface BuildingContext {
    * storey). Absent on a single-storey plan; an id with no other stop has no entry.
    */
   shaftNeighbours?: ReadonlyMap<string, ShaftNeighbours>;
+  /** The storeys a person can reach from outside, shafts counted: `verticalReach`'s `reachable`,
+   *  what `describe().vertical.reachable_levels` lists. Absent on a single-storey plan. */
+  reachableLevels?: ReadonlySet<number>;
+  /** The building's shafts ({@link verticalConnections}). Absent on a single-storey plan. */
+  connections?: readonly VerticalConnection[];
 }
 
 /** One neighbouring stop of a shaft: the storey and the run as drawn there. */

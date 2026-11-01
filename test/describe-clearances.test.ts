@@ -72,7 +72,7 @@ function archFiles(dir: string): string[] {
 /** How many of a storey's facet rows read short, per code: the warnings the rule should raise. */
 function shortRows(c: ClearanceFacts): Record<string, number> {
   const wcShort = c.wcs.filter((w) => w.sides?.some((s) => s.by !== null && s.centreline_mm < w.need_mm)).length;
-  const over = c.tall_units.reduce((n, t) => n + t.windows.length, 0);
+  const over = [...c.tall_units, ...(c.low_units ?? [])].reduce((n, t) => n + t.windows.length, 0);
   const under = c.hobs.reduce((n, h) => n + h.windows.filter((w) => w.under).length, 0);
   const gap = c.hobs.filter((h) => h.tall_unit_gap !== null).length;
   const blocked = c.doorways.filter(
@@ -99,6 +99,39 @@ const CORPUS: Record<string, { src: string; world?: typeof EXAMPLES_WORLD }> = {
     archFiles(PLANS).map((f) => [relative(ROOT, join(PLANS, f)), { src: readFileSync(join(PLANS, f), "utf8") }]),
   ),
 };
+
+suite("describe --facts clearances: low units", () => {
+  const living = (sill: string, piece: string): string => `plan "Living" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,3000) (0,3000) close }
+  room id=r_l at (0,0) size 6000x3000 label "Living" uses living
+  door id=d_in at (5000,3000) width 900 wall shell
+  window id=win at (3000,0) width 2000 wall shell${sill}
+  ${piece}
+}`;
+  const SOFA = "furniture id=sofa sofa at (2200,100) size 1200x800";
+
+  it("a piece against a floor-length window is a row, and agrees with lint()", () => {
+    const src = living(" sill 0", SOFA);
+    const c = describe(src, { facts: ["clearances"] }).clearances!;
+    expect(c.low_units).toEqual([
+      {
+        id: "sofa",
+        category: "sofa",
+        room: "r_l",
+        windows: [{ window: "win", window_width_mm: 2000, covered_mm: 1200, across_mm: 200 }],
+      },
+    ]);
+    expect(shortRows(c).W_FURNITURE_OVER_WINDOW).toBe(
+      lint(src).filter((d) => d.code === "W_FURNITURE_OVER_WINDOW").length,
+    );
+  });
+
+  it("the key is absent when no piece stands against one, so the rest of the corpus reads as it did", () => {
+    expect(describe(living("", SOFA), { facts: ["clearances"] }).clearances).not.toHaveProperty("low_units");
+    expect(describe(living(" sill 0", ""), { facts: ["clearances"] }).clearances).not.toHaveProperty("low_units");
+  });
+});
 
 suite("describe --facts clearances agrees with lint() (PS2.72)", () => {
   it("the corpus is read", () => {
