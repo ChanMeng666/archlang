@@ -631,6 +631,13 @@ function clipToRect(poly: readonly Point[], r: BBox): Point[] {
   return pts;
 }
 
+/** Does this clipped convex polygon cover any floor, or is it a line along a rectangle's edge? */
+function hasArea(ps: readonly Point[]): boolean {
+  const xs = ps.map((p) => p.x);
+  const ys = ps.map((p) => p.y);
+  return Math.max(...xs) - Math.min(...xs) > VERTEX_EPS && Math.max(...ys) - Math.min(...ys) > VERTEX_EPS;
+}
+
 /** A wall's straight body as quads, with each leaf-less cased opening's span cut out (a doorway
  *  with no leaf is passable; a door's closed leaf stands in the wall, so it stays). A curved wall
  *  is not here: a landing it stands near is not judged (`curved-landing-wall`). */
@@ -698,6 +705,8 @@ function landingBlock(
   const consider = (poly: readonly Point[], what: LandingBlock["what"]): void => {
     const clipped = clipToRect(poly, probe);
     if (clipped.length < 3) return;
+    // A touch is not an overlap: a wall whose face is the landing's edge stands beside it, not in it.
+    if (l.end === "turn" && !hasArea(clipped)) return;
     let d = Infinity;
     for (const p of clipped) d = Math.min(d, pastEdge(r, l.edge, p));
     d = Math.max(0, d);

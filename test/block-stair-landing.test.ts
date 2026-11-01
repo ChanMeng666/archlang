@@ -245,6 +245,25 @@ ${stairBlock(CLEAR_L)}
     expect(turns(placed)).toEqual([{ end: "turn", need_mm: 1000, clear_mm: 800, by: { kind: "wall", id: "u.p" } }]);
   });
 
+  it("a wall that only touches the landing stands beside it, not in it", () => {
+    // The last flight runs north through the wall at y 0, whose face at y 100 is the landing's north
+    // edge. The landing is 1000 mm clear, from the wall's side, and nothing is short.
+    const through: BlockStair = {
+      name: "through the wall",
+      width: 1000,
+      pieces: [
+        [1500, 1100, 1000, 1000],
+        [1500, 100, 1000, 1000],
+        [1500, -900, 1000, 1000],
+      ],
+      tails: ["bottom", "bottom"],
+    };
+    expect(turns(planOf(through))).toEqual([{ end: "turn", need_mm: 1000, clear_mm: 1000, by: null }]);
+    // One millimetre into the landing is in it.
+    const into = hallPlan(`${stairBlock(CLEAR_L)}\n    wall id=p partition thickness 100 { (2300,2051) (3700,2051) }`);
+    expect(turns(into)[0]).toMatchObject({ by: { kind: "wall", id: "p" } });
+  });
+
   it("a cased opening in the wall is no wall", () => {
     const src = hallPlan(
       `${stairBlock(CLEAR_L)}\n${wall("")}\n    opening id=o at (3000,1250) width 800 wall p`,
