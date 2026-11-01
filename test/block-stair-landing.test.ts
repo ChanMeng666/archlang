@@ -245,6 +245,16 @@ ${stairBlock(CLEAR_L)}
     expect(turns(placed)).toEqual([{ end: "turn", need_mm: 1000, clear_mm: 800, by: { kind: "wall", id: "u.p" } }]);
   });
 
+  it("a wall drawn on the landing's edge is half in it", () => {
+    // Its centreline on the landing's north edge, y 1100: the body reaches y 1150, so 950 of 1000.
+    const src = hallPlan(`${stairBlock(CLEAR_L)}\n    wall id=p partition thickness 100 { (2300,1100) (3700,1100) }`);
+    expect(turns(src)).toEqual([{ end: "turn", need_mm: 1000, clear_mm: 950, by: { kind: "wall", id: "p" } }]);
+    expect(of(src, NO_LANDING)[0]!.message).toContain("(50 mm short)");
+    // Its face on that edge, the centreline at y 1050, leaves the landing whole.
+    const face = hallPlan(`${stairBlock(CLEAR_L)}\n    wall id=p partition thickness 100 { (2300,1050) (3700,1050) }`);
+    expect(turns(face)).toEqual([{ end: "turn", need_mm: 1000, clear_mm: 1000, by: null }]);
+  });
+
   it("a wall that only touches the landing stands beside it, not in it", () => {
     // The last flight runs north through the wall at y 0, whose face at y 100 is the landing's north
     // edge. The landing is 1000 mm clear, from the wall's side, and nothing is short.
@@ -342,6 +352,13 @@ describe("a shaft reports a landing once", () => {
   it("a block coming down over another block is read: nothing else read that landing", () => {
     const other = stairBlock(inLine(1000), "up");
     expect(levels(building(hallBody(other), upperBody(down)))).toEqual([2]);
+  });
+
+  it("a stop coming down with no block below still reads the landing's own length", () => {
+    const wall = "    wall id=p partition thickness 100 { (2300,1250) (3700,1250) }";
+    // The wall is not read, and the landing's 400 mm is.
+    const src = hallPlan(`${stairBlock(short, "down")}\n${wall}`);
+    expect(turns(src)).toEqual([{ end: "turn", need_mm: 1000, clear_mm: 400, by: { kind: "landing-end" } }]);
   });
 
   it("a stop coming down reads no wall: its walls stand above its floor, and the landing below", () => {
