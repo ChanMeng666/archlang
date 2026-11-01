@@ -314,7 +314,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_DATUM_UNPLACED: E(
     "E_DATUM_UNPLACED",
     "A room-edge datum names a room that has no position or no size.",
-    "A datum reads the room's placed rectangle. A relationally placed room that could not be placed (its own `E_LAYOUT_*` error says why) has no position, and a room of zero or negative size has no edge to read.",
+    "A datum reads the room's placed rectangle, and so does an opening placed `between` two rooms. A relationally placed room that could not be placed (its own `E_LAYOUT_*` error says why) has no position, and a room of zero or negative size has no edge to read.",
     "Fix the named room's placement or size first; the datum then reads it.",
     "room id=a right-of ghost size 3000x3000\nwall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # error: a could not be placed",
   ),
@@ -974,7 +974,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_UNKNOWN_REF: E(
     "E_UNKNOWN_REF",
     "Unknown reference.",
-    "An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) names a room the plan (or, inside a `place`d component, the component) does not have.",
+    "An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have.",
     "Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot).",
     "let x = y + 1   # error if `y` is undefined",
   ),
@@ -1129,9 +1129,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_SWING_ROOM_NOT_ADJACENT: W(
     "W_SWING_ROOM_NOT_ADJACENT",
     "`swing into <room>` names a room the door does not border.",
-    "A door's `swing into <room>` points the leaf toward a room, but that room does not share the door's host wall (its box does not touch the wall within tolerance), so which side it means is undefined.",
+    "A door's `swing into <room>` points the leaf toward a room, but that room does not share the door's host wall (its box does not touch the wall within tolerance), so which side it means is undefined. A door whose placement was refused is not told this as well: the refusal is the report.",
     "Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.",
-    "door on w1 at 50% width 800 swing into faraway   # warning: not on this wall",
+    "wall id=w1 partition thickness 100 { (0,0) (4000,0) }\ndoor on w1 at 50% width 800 swing into faraway   # warning: not on this wall",
   ),
   W_DOOR_OFF_WALL: W(
     "W_DOOR_OFF_WALL",

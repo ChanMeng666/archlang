@@ -404,7 +404,7 @@ wall interior thickness 100 { (0, west.top) (3000, west.top) }   # error: `west.
 
 *error* — A room-edge datum names a room that has no position or no size.
 
-**Cause.** A datum reads the room's placed rectangle. A relationally placed room that could not be placed (its own `E_LAYOUT_*` error says why) has no position, and a room of zero or negative size has no edge to read.
+**Cause.** A datum reads the room's placed rectangle, and so does an opening placed `between` two rooms. A relationally placed room that could not be placed (its own `E_LAYOUT_*` error says why) has no position, and a room of zero or negative size has no edge to read.
 
 **Fix.** Fix the named room's placement or size first; the datum then reads it.
 
@@ -1977,7 +1977,7 @@ let x = frobnicate(2)   # error
 
 *error* — Unknown reference.
 
-**Cause.** An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) names a room the plan (or, inside a `place`d component, the component) does not have.
+**Cause.** An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have.
 
 **Fix.** Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot).
 
@@ -3235,11 +3235,12 @@ stair id=s at (4900,2700) size 2200x1000 dir down
 
 *warning* — `swing into <room>` names a room the door does not border.
 
-**Cause.** A door's `swing into <room>` points the leaf toward a room, but that room does not share the door's host wall (its box does not touch the wall within tolerance), so which side it means is undefined.
+**Cause.** A door's `swing into <room>` points the leaf toward a room, but that room does not share the door's host wall (its box does not touch the wall within tolerance), so which side it means is undefined. A door whose placement was refused is not told this as well: the refusal is the report.
 
 **Fix.** Point `swing into` at a room the door actually opens onto, or use explicit `swing in|out`. The door falls back to its default swing.
 
 ```arch static
+wall id=w1 partition thickness 100 { (0,0) (4000,0) }
 door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 ```
 

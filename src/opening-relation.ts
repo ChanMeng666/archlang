@@ -32,7 +32,7 @@
 
 import type { AttachPos, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import { chargeSteps } from "./expr.js";
+import { chargeSteps, closest } from "./expr.js";
 import type { Expr } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import type { OpeningRelation, RWall } from "./ir.js";
@@ -363,11 +363,25 @@ function pairRoom(room: WallsPairRoom, ctx: RelationCtx, what: string): PairRoom
   if (ring === null) return undefined;
   if (ring !== undefined) return { ring };
   // The refusals a datum read gives (`E_UNKNOWN_REF`, `E_ROOM_NOT_RECTANGLE`, `E_DATUM_UNPLACED`),
-  // through the group's own reader, on the room's name. A shape it refuses is said in this line's
-  // words: the `.top` it reads to get there is no word the author wrote.
+  // through the group's own reader, on the room's name. Each is said in this line's words: the
+  // `.top` it reads to get there is no word the author wrote.
+  const unseen = `${what} names "${room.id}", which is not a room this plan or component can see`;
   const reword = (d: Diagnostic): Diagnostic => {
+    const table = ctx.datums?.table;
+    if (d.code === "E_UNKNOWN_REF") {
+      const near = table ? closest(room.id, [...table.rooms.keys(), ...table.refused.keys()]) : null;
+      const { hints: _datumHint, ...rest } = d;
+      return { ...rest, message: unseen, ...(near ? { hints: [`did you mean "${near}"?`] } : {}) };
+    }
+    if (d.code === "E_DATUM_UNPLACED") {
+      const why =
+        table?.refused.get(room.id) === "degenerate"
+          ? "a room with no positive size"
+          : "a room that could not be placed (its own error says why)";
+      return { ...d, message: `${what} names "${room.id}", ${why}` };
+    }
     if (d.code !== "E_ROOM_NOT_RECTANGLE") return d;
-    const circle = ctx.datums?.table.refused.get(room.id) === "circle";
+    const circle = table?.refused.get(room.id) === "circle";
     const shape = circle ? "a circle room" : "a polygon room with an edge that is neither horizontal nor vertical";
     return {
       ...d,
@@ -379,12 +393,7 @@ function pairRoom(room: WallsPairRoom, ctx: RelationCtx, what: string): PairRoom
   if (v === null) return undefined;
   const lines = ctx.datums?.table.rooms.get(room.id);
   if (lines === undefined) {
-    ctx.diag({
-      severity: "error",
-      message: `${what} names "${room.id}", which is not a room this plan or component can see`,
-      code: "E_UNKNOWN_REF",
-      span: room.span,
-    });
+    ctx.diag({ severity: "error", message: unseen, code: "E_UNKNOWN_REF", span: room.span });
   }
   return lines;
 }

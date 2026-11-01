@@ -508,7 +508,10 @@ export const door: ElementDef = {
     // Precedence: explicit attribute > derived (`near`/`into`) > `set door(...)` > hard default.
     const hingeNear = n.hingeNear ? (n.hingeNear === "start" ? "left" : "right") : undefined;
     const hinge = n.hinge ?? hingeNear ?? enumDefault(ctx.defaults, "hinge", DOOR_ENUMS.hinge) ?? "left";
-    const intoSwing = n.swingInto ? swingInto(n.swingInto, at, host, ctx.rooms, ctx, id, n.span) : undefined;
+    // A refused placement (`lead.host` null, always after an error) has no wall to read a side
+    // of, and that error is the whole story. A door with no host by position still hears this.
+    const intoSwing =
+      n.swingInto && lead?.host !== null ? swingInto(n.swingInto, at, host, ctx.rooms, ctx, id, n.span) : undefined;
     // `swing inward|outward` sits at the same derived tier as `swing into`: a measurement of where
     // the floor is, resolved to the wall-relative word it means. Not on a kind that takes no
     // `swing` (that is `E_DOOR_KIND_CLAUSE` above, and a second error would only repeat it).
