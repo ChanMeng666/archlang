@@ -114,7 +114,7 @@ const BASELINE: [string, string][] = [
   ["d8b506619a166424c02abe8949627728e376eb1b9e1733d2570338b801b16cfa", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap
   ["33437c49c3e35fcf638c3e37456e0ab9382c91a95aeb46b0d1814905aae8ad0a", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap
   ["2fe38a4ad849ebb8a3192c7cea724d729f659fed022b9a1740b8b96a0e1db1f9", "test/fixtures/axes-grid.arch"],
-  ["acd6528394a79d385a1e02c64e9646a656daecb22eaeda68fcd8d0a814428aa8", "test/fixtures/chain30.arch"],
+  ["15196d3a72c32961e8116f15523b6e0d339b838dcb5f703bcd32bb1cae43a075", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
   ["c08051d0ac804cb6ddbc6d6a073934ce248aab2951f1b3bcbb05e242ec1f4c22", "test/fixtures/dense-bays.arch"],
   ["b9215930403c72e737b6486d949354fc8162cf96ec5d53897edfab5f21835e4f", "test/fixtures/diff-a.arch"],
   ["cc20d6821e47c1a45a5c0b94d86a15eda2e2e684a66c096c06ef8071b21bf20b", "test/fixtures/diff-b.arch"],
@@ -125,7 +125,7 @@ const BASELINE: [string, string][] = [
   ["bfe79454671a15f63522c0a770453a819328df15f90b01154d028f5161350046", "test/fixtures/lock-window-moved.arch"],
   ["ff686ab3285ac3d6f30af9607a711627f6f864825a15fef562f19c28700b2753", "test/fixtures/off-path-bypass.arch"],
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
-  ["fce50b915b34c243f9cbcf3f8dbdc47b3f2006973098b3d9ab3339dff541cb0d", "test/fixtures/star30.arch"],
+  ["005579d368b08135529347108360fe8c9b5044b460713f234f3a2620b0cfaf97", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
   ["09ac060ad6731b56e40a23bf9b43938ec0c2aa82d38066050eff243c1b86728a", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap
   ["3d10dfea39abccb9a292527e7a5c85adaaf04b944de920f9ad3d9690187bcb68", "test/fixtures/zones-levels.arch"],
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],

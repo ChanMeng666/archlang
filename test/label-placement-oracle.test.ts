@@ -25,7 +25,9 @@
  * without a wrapped name replays exactly as before, and the wrapped ones are counted
  * (`Reach.wrapped`) so the comparison is shown to cover them. A second edit (#367): a lattice point
  * further off the label's floor than its anchor stands is no candidate. That rule changes which
- * places are searched, in both forms alike; the sums this file compares are untouched by it.
+ * places are searched, in both forms alike; the sums this file compares are untouched by it. A
+ * third edit: that width is read through `inkExtent` for each label rather than as one ratio of
+ * the box, because the estimate behind it went per character. It too is input, not the search.
  */
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
@@ -45,8 +47,7 @@ import type { ResolvedPlan } from "../src/ir.js";
 import { BoxSums, CLEARANCE, COLLIDE_MIN, FRACTIONS, type LabelGroup, relocateLabels } from "../src/label-placement.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, SceneNode, ScenePrim } from "../src/scene.js";
-import { textExtent } from "../src/text-layout.js";
-import { EM_PER_CHAR, INK_EM } from "../src/text-metrics.js";
+import { inkExtent, textExtent } from "../src/text-layout.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
 
@@ -338,10 +339,12 @@ function relocateLabelsBefore(
     for (const fy of FRACTIONS) {
       for (const fx of FRACTIONS) {
         const p: Point = { x: bb.x + bb.w * fx, y: bb.y + bb.h * fy };
-        const inkOf = (b: BBox): BBox => {
-          const w = (b.w * INK_EM) / EM_PER_CHAR;
-          return { x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h };
-        };
+        let w = 0;
+        for (const i of texts) {
+          const prim = nodes[i]!.prim;
+          if (prim.t === "text") w = Math.max(w, inkExtent(prim).w);
+        }
+        const inkOf = (b: BBox): BBox => ({ x: b.x + (b.w - w) / 2, y: b.y, w, h: b.h });
         const start = inkOf(rect0);
         const limit = rectAreaOutside(start, ring) + start.w * start.h * 1e-9;
         const shifted = shiftBBox(rect0, p.x - anchor.x, p.y - anchor.y);

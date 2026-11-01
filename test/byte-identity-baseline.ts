@@ -1603,6 +1603,26 @@
  * floor. `reception-suite` gains one and its "Kitchenette" stays on the room's axis (x 9600 to 9000,
  * same y; it stood across the wall); `min-bedroom-flat.faithful`'s "Bathroom" (9090,739) to
  * (9300,3139), off the floor before, clear now.
+ *
+ * #367 re-measured again, when a label that does not fit began to shrink (`fitLabels`,
+ * `src/label-fit.ts`) and `inkWidth` replaced the flat 0.5 em. Swap-back proof, with these tables'
+ * own digest body: the new `describe()`, `compile().diagnostics` and every lint code but the
+ * drafting two, with the old SVGs and the old drafting lint put back, reproduce every old digest,
+ * so nothing else moved; the same holds of the block-stair and rectilinear tables, whose payload
+ * adds the Scene, the overlay and the steps (the steps did not move). No example moved. The rows,
+ * plan by plan:
+ * `chain30`, `star30`: a 90 m plan with no `paper`, labels 2.7 m tall on 3 m rooms. Every room still
+ * reports; the labels are 1.5 m tall and wrapped, and the renderer was what was wrong.
+ * `wall-between-around` `frames`: the same, 70 m across with no `paper`; every report stands.
+ * `l-shaped-flat`: "Bathroom" stood on the basin, and goes from 276 to 156.4 mm, the drawing's
+ * furniture size, clear of it; its report goes. The renderer was wrong.
+ * `min-bedroom-flat.faithful`: "Bathroom" draws 0.55 em, 1346 mm across 1250 mm of clear floor, so
+ * it ran through both walls, unreported at the flat 0.5 em. It goes from 306 to 261.8 mm at the
+ * room's centre, clear. The lint estimate was wrong, then the renderer.
+ * `reception-suite`: `lint()` only, no SVG byte. "Kitchenette" draws 0.46 em, not 0.5: 1856 mm in
+ * 1900 mm of clear floor, so it stands on no wall and its report goes. The lint estimate was wrong.
+ * `test/defect-corpus/annotation-collisions/label-over-bed` and `label-over-wc` draw clear now, so
+ * each pins its label where the room's centre put it, and stays the defect it was written for.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

@@ -1,5 +1,6 @@
 /**
- * The one closed-form text-width estimate in the tree.
+ * The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and
+ * {@link inkWidth}, the bundled face's own advances, for a test a label stands right up against.
  *
  * ArchLang's renderers are zero-dependency and isomorphic: there is **no font loader and
  * no text-measurement API** anywhere in `src/`, and there never will be — measuring a font
@@ -26,12 +27,79 @@
 export const EM_PER_CHAR = 0.62;
 
 /**
- * The mean advance the bundled face actually draws per character (0.50 over the room names of the
- * examples, the goldens and the taste corpus; 0.36 for "Utility", 0.77 for "WC"). For a test that
- * reports a name over a wall or off its floor, or refuses it a place: at {@link EM_PER_CHAR} a
- * name with clear floor on both sides reads as buried in both walls.
+ * Advance widths of the bundled face, in {@link ROBOTO_UNITS_PER_EM}ths of its size, code point
+ * by code point: U+0020 to U+007E, then U+00A0 to U+00FF. Read from the `hmtx` table of
+ * `assets/fonts/Roboto-Regular.ttf` (Version 2.001047), which is the face the PNG and the PDF draw;
+ * `test/text-metrics.test.ts` reads that file and holds every entry to it.
+ *
+ * Per character, because that is what the face shows: `i` and `l` advance 0.24 em, `m` 0.88, `W`
+ * 0.89, the capitals average 0.63 against 0.50 for the small letters, and a name's mean runs from
+ * 0.36 ("Utility") to 0.77 ("WC").
+ *
+ * An SVG opened in a browser is drawn by the host's font, not this one: `Helvetica, Arial` at a
+ * name's weight 600 reaches the bold, about 7 % wider than these figures (Adobe's Helvetica-Bold
+ * metrics give "Bathroom" 0.59 em a character, this table 0.55), and a theme can name any family.
+ * No table can know what a viewer has installed, so this one states the font the compiler ships.
  */
-export const INK_EM = 0.5;
+const ROBOTO_ASCII: readonly number[] = [
+  507, 527, 655, 1261, 1150, 1500, 1273, 357, 700, 712, 882, 1161, 402, 565, 539, 844, 1150, 1150, 1150, 1150, 1150,
+  1150, 1150, 1150, 1150, 1150, 496, 433, 1041, 1124, 1070, 967, 1839, 1336, 1275, 1333, 1343, 1164, 1132, 1395, 1460,
+  557, 1130, 1284, 1102, 1788, 1460, 1408, 1292, 1408, 1261, 1215, 1222, 1328, 1303, 1817, 1284, 1230, 1226, 543, 840,
+  543, 856, 924, 633, 1114, 1149, 1072, 1155, 1085, 711, 1149, 1128, 497, 489, 1038, 497, 1795, 1130, 1168, 1149, 1164,
+  693, 1056, 669, 1129, 992, 1539, 1015, 969, 1015, 693, 499, 693, 1393,
+];
+const ROBOTO_LATIN1: readonly number[] = [
+  507, 499, 1120, 1190, 1460, 1075, 491, 1256, 856, 1609, 915, 961, 1134, 565, 1610, 938, 765, 1094, 751, 751, 642,
+  1160, 1001, 534, 507, 751, 931, 960, 1500, 1589, 1593, 969, 1336, 1336, 1336, 1336, 1336, 1336, 1914, 1333, 1164,
+  1164, 1164, 1164, 557, 557, 557, 557, 1373, 1460, 1408, 1408, 1408, 1408, 1408, 1092, 1408, 1328, 1328, 1328, 1328,
+  1230, 1210, 1218, 1114, 1114, 1114, 1114, 1114, 1114, 1729, 1072, 1085, 1085, 1085, 1085, 506, 506, 506, 506, 1200,
+  1130, 1168, 1168, 1168, 1168, 1168, 1169, 1160, 1129, 1129, 1129, 1129, 969, 1180, 969,
+];
+
+/** Roboto's design units to the em (its `head` table). */
+const ROBOTO_UNITS_PER_EM = 2048;
+
+/**
+ * The width a text draws, in the units of `fontSize`: the sum of the bundled face's advances
+ * ({@link ROBOTO_ASCII}, {@link ROBOTO_LATIN1}), kerning left out, which only narrows a line. A CJK
+ * character is one em: the CJK face is square (`packages/font-cjk`: Han and kana 1000 of 1000
+ * units, Hangul 920) and Roboto has none. Any other character is outside the table and takes
+ * {@link EM_PER_CHAR}, about what Roboto gives Greek (0.57 on average) and Cyrillic (0.63).
+ *
+ * For a test that reports a name over a wall or off its floor, refuses it a place or shrinks it:
+ * there {@link textWidth}'s slack reads a name with clear floor on both sides as buried in both
+ * walls, while its one constant reads "WC" narrower than it draws.
+ */
+export function inkWidth(text: string, fontSize: number): number {
+  let units = 0;
+  for (const ch of text) {
+    const c = ch.codePointAt(0)!;
+    if (c >= 0x20 && c <= 0x7e) units += ROBOTO_ASCII[c - 0x20]!;
+    else if (c >= 0xa0 && c <= 0xff) units += ROBOTO_LATIN1[c - 0xa0]!;
+    else if (isCjkCodePoint(c)) units += ROBOTO_UNITS_PER_EM;
+    else units += ROBOTO_UNITS_PER_EM * EM_PER_CHAR;
+  }
+  return (units * fontSize) / ROBOTO_UNITS_PER_EM;
+}
+
+/** Is `cp` a character the CJK package is the answer for (Han, kana, Hangul, CJK
+ *  punctuation, fullwidth forms)? Words the warning for a MISSING package, and tells
+ *  `inkWidth` (`src/text-metrics.ts`) a square character from a Latin one. */
+export function isCjkCodePoint(cp: number): boolean {
+  return (
+    (cp >= 0x1100 && cp <= 0x11ff) || // Hangul Jamo
+    (cp >= 0x2e80 && cp <= 0x2fdf) || // CJK radicals, Kangxi radicals
+    (cp >= 0x3000 && cp <= 0x33ff) || // CJK punctuation, kana, bopomofo, compat jamo, enclosed, compat
+    (cp >= 0x3400 && cp <= 0x4dbf) || // Extension A
+    (cp >= 0x4e00 && cp <= 0x9fff) || // Unified ideographs
+    (cp >= 0xa960 && cp <= 0xa97f) || // Hangul Jamo Extended-A
+    (cp >= 0xac00 && cp <= 0xd7ff) || // Hangul syllables + Jamo Extended-B
+    (cp >= 0xf900 && cp <= 0xfaff) || // Compatibility ideographs
+    (cp >= 0xfe30 && cp <= 0xfe4f) || // CJK compatibility forms
+    (cp >= 0xff00 && cp <= 0xffef) || // Half/fullwidth forms
+    (cp >= 0x20000 && cp <= 0x3ffff) // Supplementary ideographic planes
+  );
+}
 
 /** Estimated drawn width of `text` at `fontSize`, in the same units as `fontSize`. */
 export function textWidth(text: string, fontSize: number): number {

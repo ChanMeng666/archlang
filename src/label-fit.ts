@@ -1,0 +1,517 @@
+/**
+ * A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after
+ * `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the
+ * drawing's label size (#367).
+ *
+ * ### What "does not fit" means
+ *
+ * What `W_ANNOTATION_OVERLAP` reads: the name or the area figure stands more than
+ * {@link COLLIDE_MIN} of its own box over a wall, over the area a door's leaf sweeps or off its
+ * own floor, at the width it draws ({@link inkExtent}); or over a furniture, fixture or stair
+ * symbol's drawn shapes, at the rule's generous width ({@link textExtent}). A label that passes is
+ * not touched, so a plan with nothing to report keeps its bytes; `test/label-fit.test.ts` holds
+ * that over the corpus. A rug is floor finish and a piece's own label is text, not ink, as they
+ * are to the rule.
+ *
+ * Walls are read here as their bands, not the poché the rule clips: a band is a box, so it costs
+ * no clip, and it differs from the poché only across an opening's gap and at a mitre's tip.
+ *
+ * ### The heights
+ *
+ * {@link labelHeights}: from the room-name size down to the furniture-label size in equal steps,
+ * 3.5, 3, 2.5 and 2 mm on a sheet. The floor is `SHEET_MM.furnLabel`: the smallest lettering the
+ * sheet already draws, so a shrunk name is never set smaller than the text on a piece beside it,
+ * and it is the 2.0 mm the issue asked for. It is this drawing's own rule, no standard's minimum.
+ *
+ * A height on the sheet needs a sheet. With `paper` the denominator is always known, written or
+ * chosen to fit, and `sizes` already holds `sheet mm × denominator`. Without `paper` there is no
+ * millimetre of lettering to speak of: `sizes` are fractions of the drawing's reference dimension,
+ * and the same two rungs of that table bound the steps, so the name stops where that drawing
+ * letters its furniture.
+ *
+ * Fixed steps rather than the exact size that would just fit: a sheet carries a handful of text
+ * heights, and a small edit to a room must not change its lettering unless it crosses a step.
+ *
+ * ### The search
+ *
+ * At each height, largest first, the name's wrapped forms and then its one line are tried at the
+ * places `relocateLabels` tries, nearest the room's anchor first; the first clear place of the
+ * first clear form wins. A wrapped form comes first because a name that reached this pass did not
+ * fit on one line. Breaking stays {@link balancedLines}'s: only at a space, by a count of
+ * characters, so the same name breaks the same way on every run and no word is ever split or
+ * hyphenated. The full size is tried for wrapped forms too: `wrapLabels` asks for clearance from
+ * the walls at the generous width, and leaves `Abstell- raum` on one line for want of 1.25 mm.
+ *
+ * When no height clears it, the form that leaves the least of the label buried is drawn, and an
+ * exact tie keeps the larger height, so a label wholly on a symbol keeps its size. What is left is
+ * `W_ANNOTATION_OVERLAP`'s to report: it reads this Scene. A label is never moved further off its
+ * floor than it stands.
+ *
+ * A pinned `label … at (x,y)` is the author's decision and an `outdoor` surface's label is not
+ * reported by the rule, so neither shrinks, and neither does a room with no name.
+ *
+ * ### Bounds
+ *
+ * Outside the evaluator, so the step meter is not charged. The work is a count,
+ * {@link FIT_WORK_PER_NODE} per node of the storey's Scene: one unit per mark visited, one per
+ * vertex clipped or read off a ring. Past it the pass stops where it stands and the labels after
+ * it keep their size: a count, so that is the same on every machine, and the rule reports them.
+ * A label too big for its room's whole extent costs a handful of reads, not a search.
+ */
+
+import type { Point } from "./ast.js";
+import { doorLeaves, type DoorSwing } from "./geometry.js";
+import { GridIndex, type GridBox } from "./geometry/grid-index.js";
+import { clippedArea, pointInPolygon, polygonBounds, rectAreaOutside, rectRing } from "./geometry/polygon.js";
+import type { BBox } from "./geometry/rect.js";
+import type { RDoor, ResolvedElement, ResolvedPlan, RFurniture } from "./ir.js";
+import { isUnderlay } from "./fixtures-catalog.js";
+import {
+  COLLIDE_MIN,
+  FRACTIONS,
+  type LabelGroup,
+  meanExtent,
+  overlapArea,
+  primBBox,
+  underLabels,
+  W_DISTANCE,
+  WRAP_TRIES,
+  wallBands,
+} from "./label-placement.js";
+import type { RenderSizes, SceneNode, ScenePrim } from "./scene.js";
+import {
+  balancedLines,
+  inkExtent,
+  LABEL_AREA_DROP,
+  LABEL_LINE_PITCH,
+  LABEL_NAME_RISE,
+  textExtent,
+} from "./text-layout.js";
+import { isVertical } from "./vertical.js";
+
+type TextPrim = Extract<ScenePrim, { t: "text" }>;
+
+/** Chords per curved path edge or circle quarter: enough that a WC bowl's area is within a
+ *  percent of the true curve, which is far inside the 2 % trigger. */
+const ARC_STEPS = 8;
+
+/** Steps from the room-name size down to the furniture-label size. */
+const HEIGHT_STEPS = 3;
+
+/**
+ * The counted work the pass may do per node of the storey's Scene: marks visited plus vertices
+ * clipped. Per node so that the count across a plan's storeys is held by the drawing budget
+ * (`MAX_DRAW_UNITS`), however many storeys share it; a flat that needs a dozen labels searched
+ * spends well under this.
+ */
+export const FIT_WORK_PER_NODE = 500;
+
+/** Score weight per unit of a label buried, against the distance preference (`W_DISTANCE`). */
+const W_BURIED = 250;
+
+/** Kinds whose drawn shapes are symbols a number or a name must not sit on. */
+export const isSymbolElement = (el: ResolvedElement): boolean =>
+  (el.kind === "furniture" && !isUnderlay((el as RFurniture).category)) || isVertical(el);
+
+/**
+ * The heights a label steps through, largest first: the drawing's own name and area sizes, then
+ * the steps down to the furniture-label size. The area figure stays at its size until the name
+ * reaches it, and no further: it never stands larger than the name.
+ */
+export function labelHeights(sizes: RenderSizes): { name: number; area: number }[] {
+  const { roomFont, furnFont, areaFont } = sizes;
+  const out = [{ name: roomFont, area: areaFont }];
+  for (let i = 1; i <= HEIGHT_STEPS; i++) {
+    const name = i === HEIGHT_STEPS ? furnFont : roomFont - ((roomFont - furnFont) * i) / HEIGHT_STEPS;
+    out.push({ name, area: Math.min(areaFont, name) });
+  }
+  return out;
+}
+
+/** The quarter-disc a door leaf sweeps, hinge first, its arc walked in {@link ARC_STEPS} chords. */
+export function sectorOf(s: DoorSwing): Point[] {
+  const a0 = Math.atan2(s.farJamb.y - s.hinge.y, s.farJamb.x - s.hinge.x);
+  let d = Math.atan2(s.leafEnd.y - s.hinge.y, s.leafEnd.x - s.hinge.x) - a0;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d < -Math.PI) d += 2 * Math.PI;
+  const ring: Point[] = [s.hinge];
+  for (let i = 0; i <= ARC_STEPS; i++) {
+    const a = a0 + (d * i) / ARC_STEPS;
+    ring.push({ x: s.hinge.x + s.radius * Math.cos(a), y: s.hinge.y + s.radius * Math.sin(a) });
+  }
+  return ring;
+}
+
+/** The closed shapes a drawn primitive covers; none for a stroke, a text or a hatch. */
+export function shapesOf(prim: ScenePrim): Point[][] {
+  switch (prim.t) {
+    case "polygon":
+      return prim.pts.length >= 3 ? [prim.pts] : [];
+    case "region":
+      return prim.loops.filter((l) => l.length >= 3);
+    case "circle": {
+      const n = 4 * ARC_STEPS;
+      const ring: Point[] = [];
+      for (let i = 0; i < n; i++) {
+        const a = (2 * Math.PI * i) / n;
+        ring.push({ x: prim.center.x + prim.r * Math.cos(a), y: prim.center.y + prim.r * Math.sin(a) });
+      }
+      return [ring];
+    }
+    case "path":
+      return prim.loops
+        .map((lp) => {
+          const ring: Point[] = [lp.start];
+          let from = lp.start;
+          for (const e of lp.edges) {
+            if (e.t === "arc") {
+              // A path arc is a MINOR arc by the primitive's contract: walk the short way round.
+              const a0 = Math.atan2(from.y - e.center.y, from.x - e.center.x);
+              let d = Math.atan2(e.to.y - e.center.y, e.to.x - e.center.x) - a0;
+              while (d > Math.PI) d -= 2 * Math.PI;
+              while (d < -Math.PI) d += 2 * Math.PI;
+              for (let i = 1; i < ARC_STEPS; i++) {
+                const a = a0 + (d * i) / ARC_STEPS;
+                ring.push({ x: e.center.x + e.r * Math.cos(a), y: e.center.y + e.r * Math.sin(a) });
+              }
+            }
+            ring.push(e.to);
+            from = e.to;
+          }
+          return ring;
+        })
+        .filter((r) => r.length >= 3);
+    default:
+      return [];
+  }
+}
+
+/** One thing on the sheet a label is measured against. */
+interface Mark {
+  /** A `swing` or `symbol` counts by the largest of its `shapes`, the others by their box. */
+  kind: "wall" | "swing" | "symbol" | "text";
+  box: BBox;
+  shapes: Point[][];
+  /** The group whose label this is, or -1. */
+  owner: number;
+  /** A label's box from before that label was shrunk. */
+  stale: boolean;
+  /** The last read that visited it (the grid returns an item once per cell). */
+  seen: number;
+}
+
+/** What one text stands on, each as a fraction of its box. */
+interface Reading {
+  /** Off the room's own floor. */
+  off: number;
+  /** The largest of the wall, swing, symbol and floor shares: what the rule reports on. */
+  fabric: number;
+  /** Over other text: another label, a `dims auto` number, a tag. */
+  text: number;
+  /** All of it added up, for ranking. */
+  total: number;
+}
+
+/** A text's box twice, as the rule reads it: {@link inkExtent} for the walls, swings and floor,
+ *  the generous {@link textExtent} for a symbol. */
+interface TextBoxes {
+  ink: BBox;
+  estimate: BBox;
+}
+
+const boxOf = (b: BBox): GridBox => ({ minX: b.x, minY: b.y, maxX: b.x + b.w, maxY: b.y + b.h });
+
+const centred = ({ w, h }: { w: number; h: number }, at: Point): BBox => ({
+  x: at.x - w / 2,
+  y: at.y - h / 2,
+  w,
+  h,
+});
+
+/** Where a text's boxes stand with its anchor at `at` (a room's text is never turned). */
+function boxesOf(prim: TextPrim, at: Point): TextBoxes {
+  return { ink: centred(inkExtent(prim), at), estimate: centred(textExtent(prim), at) };
+}
+
+const shifted = (b: BBox, at: Point): BBox => ({ x: at.x + b.x, y: at.y + b.y, w: b.w, h: b.h });
+
+const moved = (t: TextBoxes, at: Point): TextBoxes => ({ ink: shifted(t.ink, at), estimate: shifted(t.estimate, at) });
+
+/** One element's nodes in the Scene's node list. `toScene` records them while it lowers the
+ *  elements: a node names its element only under `annotate`, and the drawing must not depend on that. */
+export interface ElementNodes {
+  el: ResolvedElement;
+  from: number;
+  to: number;
+}
+
+/** Every drawn thing the labels are read against. */
+function marksOf(
+  nodes: readonly SceneNode[],
+  groups: readonly LabelGroup[],
+  drawn: readonly ElementNodes[],
+  plan: ResolvedPlan,
+): Mark[] {
+  const mark = (kind: Mark["kind"], box: BBox, shapes: Point[][] = [], owner = -1): Mark => ({
+    kind,
+    box,
+    shapes,
+    owner,
+    stale: false,
+    seen: 0,
+  });
+  const marks = wallBands(plan, 0).map((b) => mark("wall", b));
+  for (const el of plan.elements) {
+    if (el.kind !== "door") continue;
+    for (const leaf of doorLeaves(el as RDoor)) {
+      const ring = sectorOf(leaf);
+      marks.push(mark("swing", extentOf([ring]), [ring]));
+    }
+  }
+  // Nodes measured some other way, or not at all, so not by their box below.
+  const measured = new Uint8Array(nodes.length);
+  for (let g = 0; g < groups.length; g++) {
+    for (let i = groups[g]!.from; i < groups[g]!.to; i++) {
+      measured[i] = 1;
+      const n = nodes[i]!;
+      const b = n.layer === "labels" && n.prim.t === "text" ? primBBox(n.prim) : null;
+      if (b) marks.push(mark("text", b, [], g));
+    }
+  }
+  for (const { el, from, to } of drawn) {
+    if (el.kind === "door" || el.kind === "furniture") measured.fill(1, from, to);
+    if (!isSymbolElement(el)) continue;
+    measured.fill(1, from, to);
+    const shapes: Point[][] = [];
+    for (let i = from; i < to; i++) shapes.push(...shapesOf(nodes[i]!.prim));
+    if (shapes.length > 0) marks.push(mark("symbol", extentOf(shapes), shapes));
+  }
+  for (let i = 0; i < nodes.length; i++) {
+    if (measured[i] || underLabels(nodes[i]!)) continue;
+    const b = primBBox(nodes[i]!.prim);
+    if (b) marks.push(mark("text", b));
+  }
+  return marks;
+}
+
+/** The joint extent of some rings. */
+function extentOf(shapes: readonly Point[][]): BBox {
+  let minX = Infinity;
+  let minY = Infinity;
+  let maxX = -Infinity;
+  let maxY = -Infinity;
+  for (const sh of shapes) {
+    for (const p of sh) {
+      minX = Math.min(minX, p.x);
+      minY = Math.min(minY, p.y);
+      maxX = Math.max(maxX, p.x);
+      maxY = Math.max(maxY, p.y);
+    }
+  }
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+
+/**
+ * The candidates a label tries, nearest its anchor first: the anchor, where it stands now, and
+ * the relocation's lattice. Equal distances keep that order (the sort is stable).
+ */
+function placesFor(g: LabelGroup, here: Point): Point[] {
+  const bb = polygonBounds(g.ring);
+  const out = [g.anchor];
+  if (here.x !== g.anchor.x || here.y !== g.anchor.y) out.push(here);
+  for (const fy of FRACTIONS) {
+    for (const fx of FRACTIONS) {
+      const p = { x: bb.x + bb.w * fx, y: bb.y + bb.h * fy };
+      if (pointInPolygon(p.x, p.y, g.ring)) out.push(p);
+    }
+  }
+  const far = (p: Point): number => Math.hypot(p.x - g.anchor.x, p.y - g.anchor.y);
+  return out
+    .map((p) => ({ p, d: far(p) }))
+    .sort((a, b) => a.d - b.d)
+    .map((e) => e.p);
+}
+
+/**
+ * Shrink, or wrap and shrink, each room's label that does not fit: see the header. Replaces the
+ * text nodes it changes, as `relocateLabels` does; a label that fits is left alone.
+ */
+export function fitLabels(
+  nodes: SceneNode[],
+  groups: readonly LabelGroup[],
+  drawn: readonly ElementNodes[],
+  plan: ResolvedPlan,
+  sizes: RenderSizes,
+): void {
+  if (!groups.some((g) => g.wrap && !g.fixed)) return;
+  const marks = marksOf(nodes, groups, drawn, plan);
+  const grid = new GridIndex<Mark>(meanExtent(marks.map((m) => m.box)));
+  for (const m of marks) grid.insert(boxOf(m.box), m);
+
+  const budget = FIT_WORK_PER_NODE * nodes.length;
+  let work = 0;
+  let stamp = 0;
+  /** The share of a text off its floor; null once the count is spent. */
+  const offFloor = (t: TextBoxes, ring: readonly Point[]): number | null => {
+    work += ring.length;
+    return work > budget ? null : rectAreaOutside(t.ink, ring) / (t.ink.w * t.ink.h);
+  };
+  /** What a text stands on, for the label of group `owner`; null once the count is spent. */
+  const read = (t: TextBoxes, off: number, owner: number): Reading | null => {
+    const inkArea = t.ink.w * t.ink.h;
+    const estimateArea = t.estimate.w * t.estimate.h;
+    const inkRing = rectRing(t.ink);
+    const estimateRing = rectRing(t.estimate);
+    const seen = ++stamp;
+    let walls = 0;
+    let text = 0;
+    let worst = off;
+    let total = off;
+    grid.forEach(boxOf(unionOf(t.ink, t.estimate)), (m) => {
+      if (m.seen === seen) return;
+      m.seen = seen;
+      work++;
+      if (m.stale || m.owner === owner) return;
+      if (m.kind === "wall") walls += overlapArea(t.ink, m.box) / inkArea;
+      else if (m.kind === "text") text += overlapArea(t.ink, m.box) / inkArea;
+      else {
+        const symbol = m.kind === "symbol";
+        if (!(overlapArea(symbol ? t.estimate : t.ink, m.box) > 0)) return;
+        let best = 0;
+        for (const sh of m.shapes) {
+          work += sh.length;
+          if (work > budget) return;
+          best = Math.max(best, clippedArea(sh, symbol ? estimateRing : inkRing));
+        }
+        const share = best / (symbol ? estimateArea : inkArea);
+        worst = Math.max(worst, share);
+        total += share;
+      }
+    });
+    if (work > budget) return null;
+    return { off, fabric: Math.max(worst, walls), text, total: total + walls + text };
+  };
+
+  const heights = labelHeights(sizes);
+  for (let gi = 0; gi < groups.length; gi++) {
+    const g = groups[gi]!;
+    if (!g.wrap || g.fixed) continue;
+    const texts: number[] = [];
+    for (let i = g.from; i < g.to; i++) {
+      const n = nodes[i]!;
+      if (n.layer === "labels" && n.prim.t === "text") texts.push(i);
+    }
+    if (texts.length !== 2) continue;
+    const nameNode = nodes[texts[0]!]!;
+    const areaNode = nodes[texts[1]!]!;
+    const name = nameNode.prim;
+    const area = areaNode.prim;
+    if (name.t !== "text" || area.t !== "text" || name.rotate !== undefined) continue;
+
+    const nameBoxesNow = boxesOf(name, name.at);
+    const areaBoxesNow = boxesOf(area, area.at);
+    const nameOffNow = offFloor(nameBoxesNow, g.ring);
+    const areaOffNow = offFloor(areaBoxesNow, g.ring);
+    if (nameOffNow === null || areaOffNow === null) return;
+    const nameNow = read(nameBoxesNow, nameOffNow, gi);
+    const areaNow = read(areaBoxesNow, areaOffNow, gi);
+    if (!nameNow || !areaNow) return;
+    if (nameNow.fabric <= COLLIDE_MIN && areaNow.fabric <= COLLIDE_MIN) continue;
+
+    const bb = polygonBounds(g.ring);
+    const diag = Math.max(1, Math.hypot(bb.w, bb.h));
+    const here = { x: name.at.x, y: name.at.y + sizes.roomFont * LABEL_NAME_RISE };
+    const places = placesFor(g, here);
+    const { block: _drawnLines, ...oneLine } = name;
+    const wrapped: string[][] = [];
+    for (let n = 2; n < 2 + WRAP_TRIES; n++) {
+      const lines = balancedLines(name.value, n);
+      if (!lines) break;
+      wrapped.push(lines);
+    }
+
+    let chosen: { name: TextPrim; area: TextPrim } | undefined;
+    let least = nameNow.total + areaNow.total;
+    search: for (let hi = 0; hi < heights.length; hi++) {
+      const h = heights[hi]!;
+      const pitch = h.name * LABEL_LINE_PITCH;
+      for (const lines of hi > 0 ? [...wrapped, null] : wrapped) {
+        work += name.value.length;
+        const mid = lines ? (lines.length - 1) / 2 : 0;
+        const namePrim: TextPrim = {
+          ...oneLine,
+          size: h.name,
+          ...(lines ? { block: { lines, pitch } } : {}),
+        };
+        const areaPrim: TextPrim = { ...area, size: h.area };
+        const nameAt = (p: Point): Point => ({ x: p.x, y: p.y - h.name * LABEL_NAME_RISE });
+        const areaAt = (p: Point): Point => ({ x: p.x, y: p.y + h.name * LABEL_AREA_DROP + mid * pitch });
+        const nameBoxes = boxesOf(namePrim, { x: 0, y: 0 });
+        const areaBoxes = boxesOf(areaPrim, { x: 0, y: 0 });
+        // Wider or taller than the room's whole extent: it can stand clear nowhere. Only the
+        // smallest height is worth drawing then, and only where the label stands.
+        const tooBig = [nameBoxes.ink, areaBoxes.ink].some((b) => b.w > bb.w || b.h > bb.h);
+        if (tooBig && hi < heights.length - 1) continue;
+        // Never further off the floor than the label stands now.
+        const startName = offFloor(moved(nameBoxes, nameAt(here)), g.ring);
+        const startArea = offFloor(moved(areaBoxes, areaAt(here)), g.ring);
+        if (startName === null || startArea === null) break search;
+        const capName = Math.max(COLLIDE_MIN, startName) + 1e-9;
+        const capArea = Math.max(COLLIDE_MIN, startArea) + 1e-9;
+        let best: { p: Point; clear: boolean; total: number } | undefined;
+        let bestScore = Infinity;
+        for (const p of tooBig ? [g.anchor, here] : places) {
+          const nameHere = moved(nameBoxes, nameAt(p));
+          const areaHere = moved(areaBoxes, areaAt(p));
+          const nameOff = offFloor(nameHere, g.ring);
+          const areaOff = offFloor(areaHere, g.ring);
+          if (nameOff === null || areaOff === null) break search;
+          if (nameOff > capName || areaOff > capArea) continue;
+          const n = read(nameHere, nameOff, gi);
+          const a = read(areaHere, areaOff, gi);
+          if (!n || !a) break search;
+          const total = n.total + a.total;
+          // The nearest clear place is the place: `places` runs outward.
+          if (Math.max(n.fabric, n.text, a.fabric, a.text) <= COLLIDE_MIN) {
+            best = { p, clear: true, total };
+            break;
+          }
+          const score = total * W_BURIED + (Math.hypot(p.x - g.anchor.x, p.y - g.anchor.y) / diag) * W_DISTANCE;
+          if (score < bestScore) {
+            bestScore = score;
+            best = { p, clear: false, total };
+          }
+        }
+        if (!best) continue;
+        if (best.clear || best.total < least) {
+          least = best.total;
+          chosen = {
+            name: { ...namePrim, at: nameAt(best.p) },
+            area: { ...areaPrim, at: areaAt(best.p) },
+          };
+          if (best.clear) break search;
+        }
+      }
+    }
+
+    if (chosen) {
+      nodes[texts[0]!] = { ...nameNode, prim: chosen.name };
+      nodes[texts[1]!] = { ...areaNode, prim: chosen.area };
+      grid.forEach(boxOf(unionOf(primBBox(name)!, primBBox(area)!)), (m) => {
+        if (m.owner === gi) m.stale = true;
+      });
+      for (const prim of [chosen.name, chosen.area]) {
+        const box = primBBox(prim)!;
+        grid.insert(boxOf(box), { kind: "text", box, shapes: [], owner: gi, stale: false, seen: 0 });
+      }
+    }
+    if (work > budget) return;
+  }
+}
+
+/** The smallest rect containing both. */
+function unionOf(a: BBox, b: BBox): BBox {
+  const x = Math.min(a.x, b.x);
+  const y = Math.min(a.y, b.y);
+  return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
+}
