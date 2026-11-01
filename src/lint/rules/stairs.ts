@@ -374,7 +374,7 @@ export function storeyStairs(ctx: LintContext): StoreyStairs | null {
         const { runs, level } = l.turn!;
         const clear = Math.min(need, runs);
         if (curved(beyond(l.rect, l.edge, clear, l.width))) return "curved";
-        const reaching = bodies.filter((b) => (heights.get(b.seg.wallId) ?? 0) > level);
+        const reaching = bodies.filter((b) => (heights.get(b.seg.wallId) ?? Number.POSITIVE_INFINITY) > level);
         const wall = landingBlock(l, clear, ctx, reaching, []);
         if (wall !== null) return wall;
         return clear + VERTEX_EPS < need ? { depth: clear, what: { landingEnds: true } } : null;

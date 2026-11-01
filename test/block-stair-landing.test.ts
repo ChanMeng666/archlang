@@ -221,6 +221,30 @@ describe("what stands in a landing", () => {
     expect(of(withWall(""), NO_LANDING).length).toBe(1);
   });
 
+  it("a wall `walls from rooms` derives is a wall, and so is one a `place` renamed", () => {
+    // A room edge at y 1250, so the same 800 mm as a wall written there.
+    const derived = `plan "D" {
+  units mm
+  room id=a at (0,0) size 6000x1250 uses hall
+  room id=b at (0,1250) size 6000x4750 uses hall
+  walls from rooms exterior 200 partition 100
+${stairBlock(CLEAR_L)}
+}
+`;
+    expect(turns(derived)).toEqual([{ end: "turn", need_mm: 1000, clear_mm: 800, by: { kind: "wall", id: "a|b" } }]);
+    const placed = `plan "P" {
+  units mm
+  component c() {
+    room id=r at (0,0) size 6000x6000 uses hall
+${wall("")}
+${stairBlock(CLEAR_L)}
+  }
+  place c() as u at (0,0)
+}
+`;
+    expect(turns(placed)).toEqual([{ end: "turn", need_mm: 1000, clear_mm: 800, by: { kind: "wall", id: "u.p" } }]);
+  });
+
   it("a cased opening in the wall is no wall", () => {
     const src = hallPlan(
       `${stairBlock(CLEAR_L)}\n${wall("")}\n    opening id=o at (3000,1250) width 800 wall p`,
@@ -328,12 +352,22 @@ describe("under the eight frames of D4", () => {
     ],
   ];
 
+  /** What each case must read in the identity frame, or two frames could agree on reading nothing. */
+  const READS: Record<string, { clear_mm: number; by: string }> = {
+    "a short landing in line": { clear_mm: 400, by: "landing-end" },
+    "coming down": { clear_mm: 400, by: "landing-end" },
+    "a half-turn": { clear_mm: 500, by: "landing-end" },
+    "a wall across one leg": { clear_mm: 800, by: "wall" },
+    "a wall across the other": { clear_mm: 850, by: "wall" },
+  };
+
   for (const [name, run] of CASES) {
     it(`${name} measures the same`, () => {
       for (const g of D4_ELEMENTS) {
         const { p0, gP } = witnessPair(hallBody(run), g, { fixedSheet: true });
         expect(facts(gP)).toEqual(facts(p0));
-        expect(turns(p0).length).toBe(1);
+        const [row] = turns(gP);
+        expect({ clear_mm: row!.clear_mm, by: row!.by!.kind }).toEqual(READS[name]);
       }
     });
   }
