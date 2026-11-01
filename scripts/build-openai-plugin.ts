@@ -8,12 +8,15 @@
  * The ZIP holds, at its root, the portable "Agent Plugins" layout the directory reads
  * (https://developers.openai.com/plugins/build/plugins): `plugin.json` with the listing under
  * `extensions["com.openai"]`, `mcp.json`, `skills/` and `assets/icon.png`. It differs from the
- * folder in exactly two files, both on purpose:
+ * folder in three ways, all on purpose:
  *   - `plugin.json` gains `"version"` (the core's, root `package.json`), which final submission
  *     requires and every update must change; the repository's manifest names no version.
  *   - `mcp.json` declares the hosted server (Streamable HTTP, no sign-in), because a public
  *     submission takes a remote HTTPS server and excludes a local one; the repository's keeps the
  *     local `npx` server that Copilot CLI and Cursor start (PNG, offline use).
+ *   - each skill's install commands name the core's version, because the directory's scan flags an
+ *     unpinned package as a mutable source, and a reviewed skill should run the CLI it was written
+ *     for; the repository's skills name no version.
  * `.claude-plugin/`, `.cursor-plugin/` and `rules/` are other hosts' files and stay out.
  *
  * The folder must be in sync with its generators first (`npm run gen:all`); a stale folder is
@@ -69,6 +72,14 @@ function withVersion(manifestText: string, version: string): string {
   return `${JSON.stringify(out, null, 2)}\n`;
 }
 
+/** A command that installs or runs the core CLI, with no version named. */
+const UNPINNED_CLI = /\b(npx -y|npm i -g) @chanmeng666\/archlang(?![\w@-])/g;
+
+/** A skill as the ZIP carries it: its CLI install commands pinned to `version`. */
+export function pinSkill(skill: string, version: string): string {
+  return skill.replace(UNPINNED_CLI, `$1 @chanmeng666/archlang@${version}`);
+}
+
 /** Refuse a plugin folder that is not what the generators write (run `npm run gen:all`). */
 function assertFolderInSync(): void {
   const stale: string[] = [];
@@ -88,7 +99,10 @@ export function openaiPluginFiles(version = coreVersion()): Array<{ name: string
     { name: "plugin.json", data: Buffer.from(withVersion(portableManifest(), version), "utf8") },
     { name: "mcp.json", data: Buffer.from(hostedMcpManifest(), "utf8") },
     { name: "assets/icon.png", data: bytes(PLUGIN_ICON) },
-    ...skillFiles().map((f) => ({ name: f, data: bytes(`${PLUGIN_ROOT}/${f}`) })),
+    ...skillFiles().map((f) => ({
+      name: f,
+      data: Buffer.from(pinSkill(bytes(`${PLUGIN_ROOT}/${f}`).toString("utf8"), version), "utf8"),
+    })),
   ];
 }
 
@@ -159,8 +173,12 @@ export function checkOpenaiZip(entries: Map<string, Buffer>, version = coreVersi
   if (server.type !== "streamable-http" || !String(server.url).startsWith("https://") || "headers" in server)
     fail(`mcp.json server ${JSON.stringify(server)} is not a header-free HTTPS Streamable HTTP server`);
   if (!entries.get("assets/icon.png")!.equals(bytes(ICON_SOURCE))) fail("assets/icon.png is not the plugin icon");
-  for (const f of skillFiles())
-    if (!entries.get(f)!.equals(bytes(f))) fail(`${f} differs from its source skills/ file`);
+  for (const f of skillFiles()) {
+    const skill = entries.get(f)!.toString("utf8");
+    if (skill !== pinSkill(bytes(f).toString("utf8"), version))
+      fail(`${f} differs from its source skills/ file by more than the pinned CLI version`);
+    if (!skill.includes(`@chanmeng666/archlang@${version}`)) fail(`${f} names no pinned CLI`);
+  }
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
