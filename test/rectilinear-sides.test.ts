@@ -231,6 +231,15 @@ suite("the datums of a polygon", () => {
     expect(d!.message).toContain("is 2 separate runs (y 0, x 0–2000 and x 4000–6000)");
   });
 
+  it("a ring its room refused says so, on a datum as on a reference", () => {
+    const src = plan(
+      "  room id=liv polygon (0,0) (6000,0) (6000,6000) (2000,6000) (2000,2000) (4000,2000) (4000,8000) (0,8000)\n  column id=c at (liv.top, 0) size 300x300",
+    );
+    expect(codes(src)).toContain("E_ROOM_POLY_SELF_INTERSECT");
+    const d = errors(src).find((x) => x.code === "E_ROOM_NOT_RECTANGLE");
+    expect(d!.message).toBe('The outline of "liv" was refused (see its own error), so `liv.top` names no edge');
+  });
+
   it("a slanted polygon's wording says what does expose them", () => {
     const [d] = errors(
       plan("  room id=p polygon (0,0) (4000,0) (2000,3000)\n  wall id=w exterior thickness 200 { (p.left,0) (100,0) }"),
@@ -525,6 +534,20 @@ suite("the whole of it, through `place` and `import`", () => {
     const { json } = planToJson(SIDES_PLAN);
     const back = planJsonToArch(json);
     expect(compile(back.source!, { noCache: true }).svg).toBe(compile(SIDES_PLAN, { noCache: true }).svg);
+  });
+
+  it("the issue's plan as filed: the door is the one refusal, and the fix it quotes compiles", () => {
+    const door = "door between liv and bed at center width 800 swing into bed";
+    const filed = plan(
+      `  room id=liv polygon ${L_RING} label "Living" uses living\n  room id=bed at (3000,3000) size 3000x3000 label "Bedroom" uses bedroom\n  room id=bath right-of liv size 2000x3000 label "Bath" uses bath\n  walls from rooms exterior 200 partition 100\n  ${door}\n  furniture sofa in liv anchor bottom-left flush size 2000x900`,
+    );
+    const refused = errors(filed);
+    expect(refused.map((d) => d.code)).toEqual(["E_OPENING_HOST_AMBIGUOUS"]);
+    expect(refused[0]!.hints).toHaveLength(2);
+    for (const hint of refused[0]!.hints!) {
+      const quoted = /`between liv and bed at ([^`]+)`/.exec(hint)![1]!;
+      expect(errors(filed.replace("at center", `at ${quoted}`)), hint).toEqual([]);
+    }
   });
 
   it("the plan with every form compiles clean of errors, with the positions it says", () => {

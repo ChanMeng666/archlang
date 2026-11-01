@@ -300,6 +300,12 @@ export function tableReader(table: DatumTable, opts: TableReaderOpts): DatumRead
         message: `The ${word} side of polygon room "${d.room}" is ${runs.length} separate runs (${runsText(runs)}), so \`${name}\` does not say which`,
       });
     }
+    if (ring === null) {
+      return refuse({
+        code: "E_ROOM_NOT_RECTANGLE",
+        message: `The outline of "${d.room}" was refused (see its own error), so \`${name}\` names no edge`,
+      });
+    }
     if (why === "polygon" || why === "circle") {
       return refuse({
         code: "E_ROOM_NOT_RECTANGLE",

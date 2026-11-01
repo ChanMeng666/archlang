@@ -288,7 +288,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A placement clause aimed at a polygon room that has no one edge or corner to stand on.",
     "Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's edges. A polygon whose every edge is horizontal or vertical has them: a side is the ring's run on its outermost line, a corner anchor is a vertex of the ring on two such lines, and a side anchor centres on the run. The rest is refused, because a bounding box is not a floor and the compiler does not guess (ADR 0005): a circle or a slanted polygon, a side that is several runs (the prongs of a U), a corner in a notch, `centered` or `anchor center` (the middle of the outline may not be floor), and a footprint that would leave the ring.",
     "Name a side with one run or a corner that is a vertex of the ring, or give the room or the fixture explicit `at (x,y)` coordinates (a fixture may add `rotate`).",
-    "room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)\nfurniture wc in L anchor bottom-right   # error: that corner is in the L's notch",
+    "room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)\nfurniture wc in L anchor bottom-right size 400x700   # error: that corner is in the L's notch",
   ),
   E_DATUM_BEFORE_ROOMS: E(
     "E_DATUM_BEFORE_ROOMS",

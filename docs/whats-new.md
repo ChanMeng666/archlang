@@ -276,8 +276,8 @@ plan "L-shaped room, placed by its sides" {
   units mm
   room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Living" uses living
   room id=bed at (3000,3000) size 3000x3000 label "Bedroom" uses bedroom
-  room id=bath right-of liv align bottom size 2000x1500 label "Bath" uses bath
-  room id=store at (6000,0) size 2000x1500 label "Store" uses storage
+  room id=bath right-of liv align bottom size 3200x1800 label "Bath" uses bath
+  room id=store at (6000,0) size 3200x1200 label "Store" uses storage
   walls from rooms exterior 200 partition 100
   window on liv.top width 1500
   window on bed.bottom width 1200

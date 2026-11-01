@@ -967,7 +967,7 @@ function placeAgainstEdge(
     return err(
       `is placed \`against ${name}\`, an edge of "${d.room}", but written \`in ${inRoom}\`: the edge already names the room`,
     );
-  // A polygon's side is its one extreme run, read through the same accessor as a rectangle's.
+  // The read above took this side as one run or refused, so the accessor finds that same run.
   const { c, lo, hi } = edgeOfRoom(access.table, d.room, edge)!;
   const horiz = edge === "top" || edge === "bottom";
   const len = hi - lo;

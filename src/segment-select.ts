@@ -196,6 +196,7 @@ export function selectSegment(sel: SegmentSelect, wall: RWall, ref: string, ctx:
       sel.span,
     );
   }
+  // The read above took this side as one run or refused, so the accessor finds that same run.
   const { vertical, c, lo, hi } = edgeOfRoom(access.table, d.room, word as SideWord)!;
   chargeSteps(segs.length + 1);
   const matches: number[] = [];

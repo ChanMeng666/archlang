@@ -1474,7 +1474,7 @@ wall partition thickness 100 between a and b   # error: the same run
 
 ```arch static
 room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)
-furniture wc in L anchor bottom-right   # error: that corner is in the L's notch
+furniture wc in L anchor bottom-right size 400x700   # error: that corner is in the L's notch
 ```
 
 ## E_PLACE_REF
