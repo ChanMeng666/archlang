@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The MCP `compile` tool's title is "Compile a floor plan to a drawing". The longer title listed output formats, and the OpenAI plugin directory's scan flagged it as unclear. The tool's name, description and behaviour are unchanged.
+
 ## [1.50.0] - 2026-11-01
 
 ### Added
