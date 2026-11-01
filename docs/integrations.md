@@ -125,8 +125,10 @@ opens the written ZIP again and checks the entry list and both rewritten files;
    higher version than any plugin version already used.
 6. After approval the owner chooses when to publish. The portal does not accept `.app.json` references
    or lifecycle hooks; the ZIP has neither. A later change to the listing or the skills needs a new ZIP
-   with a new `version`, uploaded as a new version; a change to the hosted server's tools is picked up
-   by the portal's scans. The hosted server's tools show "Not live" until the plugin is published.
+   with a new `version`, uploaded as a new version. A change to the hosted server's tools takes
+   effect when ChatGPT calls them, but the portal and ChatGPT's tool card keep the definition cached
+   at review: on 2026-11-01 it was 18 days old, Rescan and Reconnect were disabled, and a new draft
+   did not refresh it. The hosted server's tools show "Not live" until the plugin is published.
    Until then the portal's MCP card also reads "Endpoint unavailable", which clears on publish, so
    it says nothing about the server. Non-blocking findings (a skill "could create a security risk")
    do not block submission but may be raised in review.
