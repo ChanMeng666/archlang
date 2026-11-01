@@ -350,7 +350,8 @@ function rules(): [string, string][] {
     ["dims-mode", `"overall" | "rooms" | "walls" | "all"`],
     // Sheet tables: `schedule <subject>` (subjects injected from SCHEDULE_SUBJECTS, the
     // parser's own closed list) and the bare `legend` flag.
-    ["schedule-stmt", `"schedule" rws schedule-subject`],
+    // `net` rides on `rooms` only; the grammar over-accepts it after `openings` (the parser refuses).
+    ["schedule-stmt", `"schedule" rws schedule-subject ( rws "net" )?`],
     ["schedule-subject", litAlt(SCHEDULE_SUBJECTS)],
     ["legend-stmt", `"legend"`],
     // `notes "…" ["…" …]` — one or more note strings for the sheet's NOTES table.

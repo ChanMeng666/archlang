@@ -23,6 +23,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
 | `arch finish` on a plan with storeys | 1.51.0 | [Furnishing every storey](#furnishing-every-storey) |
 | Labels that shrink to fit a small room | 1.51.0 | [Labels in small rooms](#labels-in-small-rooms) |
+| Net area in the room stamp | unreleased | [Net area in the stamp](#net-area-in-the-stamp) |
 
 ## Quantities and takeoff
 
@@ -352,3 +353,21 @@ plan "A small store" {
 "Abstellraum" comes out at 2 mm, beside the door's swing. Write `Abstell- raum` and it breaks at the space; a word is never split on its own. A pinned `label … at (x,y)` keeps its size. A label that clears at no height is reported by `W_ANNOTATION_OVERLAP`, and no leader line is drawn. 2 mm is the size of furniture labels, the smallest lettering the sheet draws, and it is this drawing's own rule, no standard's minimum. Without `paper`, the steps end at that drawing's furniture-label size.
 
 Widths are now read character by character, in place of one figure for every letter: the wider of Roboto, which the PNG and the PDF draw, and Helvetica Bold, which a browser reaches for an SVG's room name. `WC` reads 0.83 of its size per character and "Utility" 0.4, so `W_ANNOTATION_OVERLAP` can report a name it used to pass, and drop one it used to report. This is an estimate covering those two faces, not a promise for every font.
+
+## Net area in the stamp
+
+The room stamp shows the centreline area, and the schedule lists both that and the net area. Write `schedule rooms net` and the stamp shows the net figure, named: `10.4 m² net`.
+
+```arch
+plan "Net stamp" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  schedule rooms net
+  room id=living at (0,0) size 3000x4000 label "Living"
+  room id=bed at (3000,0) size 3000x4000 label "Bed"
+  walls from rooms exterior 300 partition 100
+}
+```
+
+The figure is the NET AREA column's, which is `describe()`'s `rooms[].net_area_m2`: one calculation, read twice. A room the schedule cannot measure shows `-` there and keeps its centreline stamp without `net`, and so does a room no wall touches. Without the word nothing changes. The longer stamp is fitted like any label, so it can shrink in a narrow room. This is a drawing choice, no standard's rule.

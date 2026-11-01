@@ -172,6 +172,13 @@ export interface RenderCtx {
    * nothing that depends on the answer.
    */
   floorAt?(p: Point): boolean;
+  /**
+   * `schedule rooms net`: the area figure a room's stamp prints, as the room schedule's NET AREA
+   * column holds it (m², two decimals), or `undefined` for a room with no net figure. Absent
+   * (every plan without the word) means the stamp is the centreline area, as it always was.
+   * Optional because this interface is append-only.
+   */
+  netAreaOf?(id: string): number | undefined;
 }
 
 /**

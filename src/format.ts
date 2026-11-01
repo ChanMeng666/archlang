@@ -286,7 +286,7 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // have to remember.
   if (plan.site) settings.push(siteDoc(plan.site));
   if (plan.autoDims) settings.push(`dims auto ${plan.autoDims}`);
-  if (plan.schedule) settings.push(`schedule ${plan.schedule}`);
+  if (plan.schedule) settings.push(`schedule ${plan.schedule}${plan.scheduleNet ? " net" : ""}`);
   if (plan.openingSchedule) settings.push("schedule openings");
   if (plan.legend) settings.push("legend");
   // One `notes` line per note, in source order — repeated statements append, so this is a

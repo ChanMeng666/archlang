@@ -228,6 +228,8 @@ export const KEYWORDS = {
     "rooms",
     "openings",
     "all",
+    // `schedule rooms net`: the stamp reads the schedule's net area.
+    "net",
     "cw",
     "ccw",
     "major",
