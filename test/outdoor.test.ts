@@ -614,6 +614,71 @@ describe("outdoor — W_BALCONY_NO_DOOR", () => {
     expect(codesOf(src)).not.toContain("W_BALCONY_NO_DOOR");
   });
 
+  describe("a window the plan says stops above the floor", () => {
+    // The window is 800 mm into the south facade's span, in front of the balcony.
+    const withWindow = (clauses: string, extra = ""): string =>
+      plan(
+        `${BOX}\n${ROOM}\n  window id=win on w1 at 75% width 1600${clauses}\n${extra}\n  outdoor id=bal balcony at (0,5000) size 4000x1600`,
+      );
+    const of = (src: string) => lint(src).filter((d) => d.code === "W_BALCONY_NO_DOOR");
+
+    it("no `sill` clause counts: the 900 mm is the default, and the plan has not said", () => {
+      expect(of(withWindow(""))).toEqual([]);
+      expect(of(withWindow(" head 2400"))).toEqual([]);
+    });
+
+    it("`sill 0` counts: it is a floor-length window", () => {
+      expect(of(withWindow(" sill 0"))).toEqual([]);
+      expect(of(withWindow(" sill 0 head 2400"))).toEqual([]);
+    });
+
+    it("an authored sill above the floor does not, even at the default's own 900", () => {
+      for (const [clause, at] of [
+        [" sill 900", "900"],
+        [" sill 1", "1"],
+        [" sill 300 head 2400", "300"],
+      ] as const) {
+        const [d, ...rest] = of(withWindow(clause));
+        expect(rest).toEqual([]);
+        expect(d?.message).toBe(
+          `The balcony off "Hall" has no door within 200 mm of any of its edges, and the window there has its sill at ${at} mm, so there is no way onto it. Add a door, or bring the window down to the floor.`,
+        );
+        expect(d?.hints).toEqual([
+          "The balcony is `bal`. Add a `door` on the wall it hangs off, or write `sill 0` on window `win`.",
+        ]);
+      }
+    });
+
+    it("the hint at its word: `sill 0`, or a door, clears it", () => {
+      expect(of(withWindow(" sill 0"))).toEqual([]);
+      expect(of(withWindow(" sill 900", "  door id=d on w1 at 70% width 800"))).toEqual([]);
+    });
+
+    it("one window that reaches the floor is enough, and a door beside a high window still serves", () => {
+      expect(of(withWindow(" sill 900", "  window id=low on w1 at 70% width 800 sill 0"))).toEqual([]);
+      expect(of(withWindow(" sill 900", "  door id=d on w1 at 70% width 800"))).toEqual([]);
+    });
+
+    it("two high windows: the lowest is given, and an unnamed window is named by its width", () => {
+      const src = withWindow(" sill 1200", "  window on w1 at 70% width 800 sill 900");
+      const [d] = of(src);
+      expect(d?.message).toContain("the lowest of the 2 windows there has its sill at 900 mm");
+      expect(d?.hints?.[0]).toContain("write `sill 0` on window `win` or the 800 mm window");
+    });
+
+    it("the sill survives `place`: an authored one stays authored in an instance", () => {
+      const src = plan(`  component bay() {
+    wall id=w exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }
+    room id=r at (0,0) size 8000x5000 label "Hall" uses living
+    window id=win on w at 75% width 1600 sill 900
+    outdoor id=bal balcony at (0,5000) size 4000x1600
+  }
+  place bay() as a at (0,0) rotate 90`);
+      expect(of(src)).toHaveLength(1);
+      expect(of(src)[0]?.message).toContain("has its sill at 900 mm");
+    });
+  });
+
   it("cannot fire on any other kind", () => {
     for (const k of OUTDOOR_KINDS.filter((x) => x !== "balcony")) {
       expect(codesOf(plan(`${BOX}\n${ROOM}\n  outdoor ${k} at (0,9000) size 4000x1600`)), k).not.toContain(

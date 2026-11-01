@@ -16,6 +16,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `finish` note on a room of a placed component no longer says a plan body cannot name it: `furniture … in u1.bed` works, and the note says so.
 - `archlang compile plan.arch -o plan.pdf` with no `-f` now writes a PDF. It wrote SVG bytes under the `.pdf` name and reported success, and the same held for `.png`, `.dxf`, `.txt` and `.json`. `-f` still wins, and an unknown extension still means SVG.
 - The Playground's PDF of a plan with a `paper` statement is now that paper's size, so its scale holds. It was a page of the raster's pixel size, about 1.4 m wide.
+- `W_NO_ENTRANCE` on a storey of a building that has a way in on another storey says which storey and what is missing there: no stair joins it to another storey, its stair stops on no other storey, the stair lands on no room there, or the stair starts in a room nobody can walk to. It said "the plan has no exterior door" although another storey had one. A plan of one storey and a building with no way in at all keep that sentence, and which storeys warn has not changed.
+- `W_BALCONY_NO_DOOR` no longer accepts a window that the plan says stops above the floor: a window with an authored `sill` above 0 is not a way onto a balcony. `sill 0` still counts, and so does a window with no `sill` clause, because its 900 mm is only the default.
+- `W_FURNITURE_OVER_WINDOW` also reports a low piece standing against a `sill 0` window, on the wall's face. `describe --facts clearances` lists those pieces under `low_units`, and a plan with no such piece has no such key.
 
 ### Changed
 

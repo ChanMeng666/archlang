@@ -682,7 +682,9 @@ Two lint rules read that, per storey:
 
 - **`W_NO_ENTRANCE`** stands down on a storey with an arrival room. Before v1.21 an upper
   floor had to invent a balcony door to lint clean; `examples/two-storey.arch` no longer
-  does.
+  does. On a storey with no arrival room, when another storey has a way in, its message says
+  which storey and why: no shaft joins it to another storey, its run stops on no other storey,
+  the shaft lands on no room there, or the shaft starts in a room nobody can walk to.
 - **`W_ROOM_UNREACHABLE`** treats each arrival room as joined to `exterior`, so the same
   BFS answers the same question one floor up.
 
@@ -1037,6 +1039,7 @@ the key is absent. Lengths are whole millimetres, rounded as the messages round 
 |-----|------|---------------------|
 | `wcs[]` | `W_WC_SIDE_CLEARANCE` | `need_mm`; per side, `centreline_mm` to what stands there and `by` (a piece, wall or swing; `null`: clear to the figure); `sides: null` with `unmeasured` (`wide`, `curved-wall`) when the rule does not measure the pan |
 | `tall_units[]` | `W_FURNITURE_OVER_WINDOW` | per window the unit stands in front of: `covered_mm` along the span, `across_mm` into the band |
+| `low_units[]` | `W_FURNITURE_OVER_WINDOW` | the pieces standing against a `sill 0` window, with the same rows as `tall_units[]`; the key is absent when there are none |
 | `hobs[]` | `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP` | per window band it reaches: `covered_mm`, `across_mm`, `off_face_mm` (its side nearest the host, past the wall's face) and `under` (the rule's reading); `tall_unit_gap`, the nearest tall unit inside a side's landing |
 | `doorways[]` | `W_DOORWAY_BLOCKED`, `W_PATH_TOO_NARROW` | `width_mm`, `clear_width_mm` (the access graph's), `approach` (`need_mm`, `blocked_by` with the depth left from the wall's face); a cased opening wider than a doorway adds `stretch` (the longest clear stretch, against 1200 mm); `approach: null` with `unmeasured` (`garage`, `host`) when it is not read |
 | `stairs[]` | `W_STAIR_NO_LANDING`, `W_STAIR_TOO_STEEP` | `run_mm`, `min_run_mm` (on a `dir up` flight of a plan that authors heights; on a block stair whose flights cannot hold the goings whole, their run once lengthened to hold them), and per landing this storey owes, `need_mm`, `clear_mm` and `by` (a wall, a void or `no-floor`); `null` past the stair rules' work budget |
@@ -1263,7 +1266,10 @@ square to the centreline over the pan's depth; a mirror above it, a rug under it
 swing do not count. `W_FURNITURE_OVER_WINDOW` fires when a tall unit (a fridge, wardrobe,
 bookcase or locker) stands against a window's wall across part of its span, on either side of
 the wall; a window whose sill is at or above 2100 mm is a high window over the unit and is not
-judged. Both give the measured figure and a slide that clears it in the hint, and neither offers a
+judged. Against a `sill 0` window it reads every other piece at the cut plane too, when it stands
+on the wall's face: nothing stands lower than a sill at the floor, so no height is needed, and a
+window with no `sill` clause takes the 900 mm default and is not read this way. Both rules give the
+measured figure and a slide that clears it in the hint, and neither offers a
 machine fix.
 
 `W_ACCESSIBLE_WC_SIDE_WALL` reads the other end of the same band, in a room whose label says

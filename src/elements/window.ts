@@ -104,8 +104,12 @@ export const windowEl: ElementDef = {
         ...fixesFrom(openingWidthFix("window", n)),
       });
     }
-    const heights = (host: ReturnType<typeof ctx.hostSegment>): { sill: number; head: number } =>
-      resolveOpeningHeights(ctx, `Window "${id}"`, n, { sill: WINDOW_SILL, head: WINDOW_HEAD }, host, n.span);
+    const heights = (
+      host: ReturnType<typeof ctx.hostSegment>,
+    ): { sill: number; head: number; _sillAuthored?: true } => ({
+      ...resolveOpeningHeights(ctx, `Window "${id}"`, n, { sill: WINDOW_SILL, head: WINDOW_HEAD }, host, n.span),
+      ...(n.sill !== undefined ? { _sillAuthored: true as const } : {}),
+    });
     const lead = resolveOpeningLead(n, "window", width, ctx, `Window "${id}"`);
     if (lead) {
       const { at, host, relation } = lead;

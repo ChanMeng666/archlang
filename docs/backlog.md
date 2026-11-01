@@ -637,15 +637,16 @@ make each re-measure cheap enough to raise the budget.
 
 Left open by routing "which side of this wall has floor" through `wallFaceProbes`
 (`src/geometry.ts`) and giving `roomOfVertical` the room's shape. Neither was in that change's scope.
-Both closed their SHAPE half in W5a; P.1's message half is still `todo`.
+Both closed their SHAPE half in W5a; P.1's message half closed with #404.
 
-### P.1 · A shaft landing on no room says its storey has no way in — `todo` (the shape half is done)
+### P.1 · A shaft landing on no room says its storey has no way in — closed: the shape half by W5a, the message by #404
 
 **Landed (W5a): `roomOfVertical` asks the room's shape, not its bounding box.** A stair or lift
 standing in a concave room's notch, or in a circle's bounding-box corner, is no longer claimed by
 that room — `test/vertical-room-shape.test.ts`.
 
-**Still open: the message.** `verticalReach` (`src/vertical.ts`) counts the storey reachable
+**Landed (#404): the message.** `W_NO_ENTRANCE` now names the storey and says why no shaft makes up
+for its door; what follows is the case as it was found. `verticalReach` (`src/vertical.ts`) counts the storey reachable
 (`describe().vertical.reachable_levels` lists it) but records an arrival room only for a stop whose
 `room` is non-null, and `no-entrance` (`src/lint/rules/entrance.ts`) stands down only for an arrival
 room. A stair landing in an L's unroomed notch therefore gets `W_NO_ENTRANCE` ("there is no way into

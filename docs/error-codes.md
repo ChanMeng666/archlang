@@ -190,7 +190,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FOOTPRINT_TRANSPOSED`](#w_footprint_transposed) | warning | A piece is drawn turned a quarter: its long side is on the wrong axis. |
 | [`W_FURNITURE_ON_STAIR`](#w_furniture_on_stair) | warning | Furniture stands on a stair or on the landing it owes. |
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
-| [`W_FURNITURE_OVER_WINDOW`](#w_furniture_over_window) | warning | A tall unit stands in front of a window. |
+| [`W_FURNITURE_OVER_WINDOW`](#w_furniture_over_window) | warning | A tall unit stands in front of a window, or a low piece against a floor-length one. |
 | [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
 | [`W_FURN_CLEARANCE`](#w_furn_clearance) | warning | A fixture's use-space is blocked. |
 | [`W_FURN_CLEAR_FRONT`](#w_furn_clear_front) | warning | A declared `clear front` is not free. |
@@ -2205,7 +2205,7 @@ furniture bed at (1650,900) size 1500x2000   # lint: the pinned name is printed 
 
 *warning* — A balcony with no way onto it.
 
-**Cause.** An `outdoor balcony` has no `door` and no `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony.
+**Cause.** An `outdoor balcony` has no `door` and no way through a `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony: `sill 0` counts, and so does a window with no `sill` clause, whose 900 mm is only the default. A window whose authored `sill` is above 0 stops above the floor and does not count; the message then gives the sill.
 
 **Fix.** Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.
 
@@ -2583,9 +2583,9 @@ furniture bed  at (1000,500) size 1500x2000   # lint: overlaps the sofa
 
 ## W_FURNITURE_OVER_WINDOW
 
-*warning* — A tall unit stands in front of a window.
+*warning* — A tall unit stands in front of a window, or a low piece against a floor-length one.
 
-**Cause.** A tall unit (a fridge, wardrobe, bookcase or locker: the catalogue's `tall` families) has a footprint that overlaps a window's span on its straight host wall, within the ruleset's `fixtureWallTolMm` (300 mm) of the wall's centreline on either side: it stands against the wall, across the glass, blocking the window's light and view. Measured from the drawn footprint and the window's span, never from bounding boxes. A window whose sill is at or above 2100 mm (a door head) is a high window over full-height storage and is not judged; a window on a curved wall is not measured (a `curved-window-host` coverage skip).
+**Cause.** A tall unit (a fridge, wardrobe, bookcase or locker: the catalogue's `tall` families) has a footprint that overlaps a window's span on its straight host wall, within the ruleset's `fixtureWallTolMm` (300 mm) of the wall's centreline on either side: it stands against the wall, across the glass, blocking the window's light and view. Measured from the drawn footprint and the window's span, never from bounding boxes. A window whose sill is at or above 2100 mm (a door head) is a high window over full-height storage and is not judged; a window on a curved wall is not measured (a `curved-window-host` coverage skip). A window with `sill 0` has no sill to stand a low unit under, so any other piece at the cut plane warns too when it overlaps that span and stands on the wall's face (not a rug or an overhead piece, and not a cooking surface, which is `W_HOB_UNDER_WINDOW`'s). A window with no `sill` clause takes the 900 mm default and is not read this way.
 
 **Fix.** Slide the unit along the wall clear of the window's span (the hint gives the shorter slide), move the window, or stand a unit no higher than the sill there instead: a worktop, a chest of drawers or a washer goes under a window, a fridge or a wardrobe beside it.
 
@@ -2799,7 +2799,7 @@ door at (4000,0) width 2400 wall w   # lint: one 2400 mm leaf; `door double … 
 
 *warning* — The plan has no exterior door.
 
-**Cause.** The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered. On a multi-storey plan it is judged per storey: a storey with no exterior door of its own is entered by a `stair`/`elevator`/`escalator` shared with a reachable storey, but only when the room the run stands in there is itself reachable — a stair in a door-less store leads nowhere, and the storey it serves gets this warning.
+**Cause.** The plan has rooms and an exterior wall but no door hosted on an exterior wall, so the building cannot be entered. On a multi-storey plan it is judged per storey: a storey with no exterior door of its own is entered by a `stair`/`elevator`/`escalator` shared with a reachable storey, but only when the room the run stands in there is itself reachable — a stair in a door-less store leads nowhere, and the storey it serves gets this warning — and it lands on a room's floor on the storey. When another storey has a way in, the message says which storey this is and what is missing there, and the hint gives the shaft's id: no shaft joins it to another storey, its run stops on no other storey, the shaft lands on no room there, or the shaft starts in a room nobody can walk to. A storey the shaft does land on, in a room, does not warn.
 
 **Fix.** Add a `door` on an `exterior` wall.
 
