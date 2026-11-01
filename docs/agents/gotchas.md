@@ -18,6 +18,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   `geometry.ts` (a `double` door's two, built with `doorSwing`'s geometry), shared by
   `door.render()` and every swing measure — keep them on that one helper. `doorSwing` alone
   returns null for a `double`, so a new caller of it skips double doors silently.
+- **A Scene node names its element only under `annotate`.** A pass that reads `elementKind` to decide
+  the drawing draws one thing for `compile()` and another for `lint()`, which passes `annotate`. Record
+  the node range while lowering instead (`ElementNodes`, `src/label-fit.ts`).
 - **`E_DRAWING_LIMIT` exists only in `compile()`, and only when no other error is present**
   (`src/pipeline.ts`). `describe()`/`lint()` never report it, and a catalogue fence wrapped as a
   fragment shows only `E_PARSE`. `toScene(resolve(ast).ir)` bypasses the drawing budget; `compile()`

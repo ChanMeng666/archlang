@@ -21,6 +21,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Open shells named, empty rooms named | 1.48.0 | [Gaps that used to pass quietly](#gaps-that-used-to-pass-quietly) |
 | One L-shaped room in `walls from rooms` | 1.49.0 | [L-shaped rooms](#l-shaped-rooms) |
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
+| Labels that shrink to fit a small room | unreleased | [Labels in small rooms](#labels-in-small-rooms) |
 
 ## Quantities and takeoff
 
@@ -240,7 +241,7 @@ note: Plan JSON carries no paper; this export leaves out `paper A4 landscape` (t
 - `W_FURNITURE_ON_STAIR`: a piece on a flight, or on the landing it owes. `arch finish` no longer places one there.
 - `W_ANNOTATION_OVERLAP` now also reports a room's name or area figure over a wall or a door's swing, or running
   off its floor. The label pass no longer walks a name out of its room; a name too wide for its room stays
-  there and is reported. The drawing neither shrinks a label nor draws a leader to it.
+  there and is reported. The drawing did not yet shrink a label: see [Labels in small rooms](#labels-in-small-rooms).
 
 ## Gaps that used to pass quietly
 
@@ -288,3 +289,23 @@ plan "Quarter-turn stair" {
 ```
 
 It draws as one stair, with one label, one walking line and one break line. `W_STAIR_TOO_STEEP` reads the block as one climb, with a landing replacing one going, and `describe --json` lists `flights`, `landings` and `turn`. Write the same block on two storeys and it is one shaft. `examples/turning-stair.arch` is a worked house. Winders are not in the language; draw a landing, and lint reads the stair strictly.
+
+## Labels in small rooms
+
+A room's label that does not fit now shrinks. If its name or area figure would lie over a wall, a door's swing or a fixture, or run off the floor, the label is drawn at the first height that clears: 3, 2.5 or 2 mm on the sheet, wrapped at a space where that helps, at the clear place nearest the room's centre. A label that fits does not change.
+
+```arch
+plan "A small store" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  room id=wc at (0,0) size 1000x1400 label "WC" uses wc
+  room id=store below wc align left size 1200x900 label "Abstellraum" uses storage
+  walls from rooms exterior 200 partition 100
+  door between wc and store at center width 600 swing into store
+}
+```
+
+"Abstellraum" comes out at 2 mm, beside the door's swing. Write `Abstell- raum` and it breaks at the space; a word is never split on its own. A pinned `label … at (x,y)` keeps its size. A label that clears at no height is reported by `W_ANNOTATION_OVERLAP`, and no leader line is drawn. 2 mm is the size of furniture labels, the smallest lettering the sheet draws, and it is this drawing's own rule, no standard's minimum. Without `paper`, the steps end at that drawing's furniture-label size.
+
+Widths now come from the bundled face, character by character, in place of one figure for every letter. `WC` draws 0.77 of its size per character and "Utility" 0.36, so `W_ANNOTATION_OVERLAP` can report a name it used to pass, and drop one it used to report.
