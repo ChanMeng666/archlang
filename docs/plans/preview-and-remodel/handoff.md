@@ -17,7 +17,7 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 
 **Released:** core 1.50.0, MCP shim 0.2.33, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20). VS Code extension 0.38.0 is live on the Marketplace. Wave 7 is done: `research/2026-11-01-as-built.md`.
 
-**Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance; ArchLang continues at low cost. No new language programme opens until the Show HN and N10 reads. The question to the user is deferred by the owner.
+**Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance. ArchLang keeps being built on its merit (D29), which replaces the line that nothing new opens before the reads. The question to the user is deferred by the owner.
 
 ArchCanvas stays on core 1.48 (D28); the bump to 1.50 is a draft PR there.
 
@@ -38,7 +38,7 @@ promise it.
 
 ## 3. Next items, in order
 
-1. **Nothing new in the language until Show HN (2026-12-01) and the N10 read.** Bug fixes only.
+1. **The open issues, by value (D29).** New forms are allowed; the week before Show HN (2026-12-01) is for stabilising.
 2. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
    Wave 7 releases fall inside the window; the growth `data/agent-reach.csv` notes date each one.
 3. **G11 and H9,** the residue, after Show HN. H9 holds D27, the stair `bounds()` gap.
