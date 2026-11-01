@@ -1024,6 +1024,12 @@ export interface ResolvedPlan {
    */
   _heightsAuthored: boolean;
   /**
+   * How many storeys the plan has, when it has more than one: what a per-plan count is divided
+   * by, since each storey is drawn on its own (`fitWork`, `src/label-fit.ts`). Internal: never
+   * serialized into the Scene/SVG/exports.
+   */
+  _storeyCount?: number;
+  /**
    * Every `while` statement that ran at least one iteration in THIS resolve, keyed by
    * {@link whileSpanKey} (its own span, qualified by the file it was written in).
    *
@@ -3522,6 +3528,7 @@ function resolveBody(
     storeyHeight,
     elevation: extras.elevation ?? 0,
     _heightsAuthored: extras.heightsAuthored ?? plansAuthorHeights(ast),
+    ...((extras.storeyCount ?? 1) > 1 ? { _storeyCount: extras.storeyCount } : {}),
     _executedWhileSpans: executedWhiles,
     // A `status demolish` wall (B3a) is drawn but stands in no analysis: `elements`/`walls` are
     // the plan after the demolition and `drawn` the plan as drawn. No such wall, no `drawn` key

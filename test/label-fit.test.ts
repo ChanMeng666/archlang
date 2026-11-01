@@ -13,7 +13,7 @@ import { resolvePlan } from "../src/analyze.js";
 import { toDxf } from "../src/export/dxf.js";
 import { compile, lint } from "../src/index.js";
 import type { ResolvedPlan } from "../src/ir.js";
-import { FIT_WORK_PER_NODE, labelHeights } from "../src/label-fit.js";
+import { fitWork, labelHeights, MAX_FIT_WORK } from "../src/label-fit.js";
 import { extractArchBlocks } from "../src/markdown.js";
 import type { RenderSizes, ScenePrim } from "../src/scene.js";
 import { toScene } from "../src/scene-build.js";
@@ -304,6 +304,7 @@ function corpus(): { name: string; src: string; world: World }[] {
     "eval/goldens",
     "eval/fidelity-plans",
     "eval/faults",
+    "docs/plans",
   ]) {
     for (const p of walk(join(ROOT, d), arch)) {
       out.push({ name: nameOf(p), src: readFileSync(p, "utf8"), world: worldFor(dirname(p)) });
@@ -321,9 +322,9 @@ function corpus(): { name: string; src: string; world: World }[] {
 /** A room's texts on every storey of a plan, keyed by storey and id. */
 function labelsOf(src: string, world: World): Map<string, Text[]> {
   const out = new Map<string, Text[]>();
-  const { ir } = resolvePlan(src, { world });
+  const { ir, levels } = resolvePlan(src, { world });
   if (!ir) return out;
-  const storeys: ResolvedPlan[] = ir.levels?.length ? ir.levels.map((l) => l.ir) : [ir];
+  const storeys: ResolvedPlan[] = levels.length > 0 ? levels.map((l) => l.ir) : [ir];
   storeys.forEach((plan, k) => {
     for (const n of toScene(plan, { annotate: true }).nodes) {
       if (n.elementKind !== "room" || n.prim.t !== "text") continue;
@@ -356,8 +357,9 @@ describe("over the corpus", () => {
       labels += after.size;
       const changed = [...after.keys()].filter((k) => JSON.stringify(after.get(k)) !== JSON.stringify(before.get(k)));
       if (changed.length === 0) continue;
-      // The section on this very behaviour has the one fence written to shrink.
-      if (!name.startsWith("docs/whats-new.md")) moved.push(name);
+      // The section on this very behaviour has the one fence written to shrink, and the plans an
+      // audit keeps under `docs/plans/` are held to the law below without being named.
+      if (!name.startsWith("docs/")) moved.push(name);
       const reports = off(() => of(src, world)).map((d) => d.message);
       for (const k of changed) {
         shrunk++;
@@ -400,16 +402,29 @@ describe("the count", () => {
   }, 60_000);
 
   it("stops at the count on a hostile pile: the labels after it keep their size, the same every run", () => {
-    expect(FIT_WORK_PER_NODE).toBeGreaterThan(0);
-    let s = 'plan "c" {\n  units mm\n  paper A0 landscape\n  scale 1:500\n';
-    for (let y = 0; y < 35; y++)
-      for (let x = 0; x < 35; x++)
-        s += `  room id=r${x}_${y} circle at (${x * 1000 + 500},${y * 1000 + 500}) radius 480 label "Hauswirtschaftsraum Abstell ${x}" uses storage\n`;
+    // A room a label can stand clear in nowhere: a narrow hall of beds, every label searched to the end.
+    let s = 'plan "c" {\n  units mm\n  paper A0 landscape\n  scale 1:100\n';
+    for (let i = 0; i < 1500; i++) {
+      s += `  room id=r${i} at (${(i % 40) * 3000},${Math.floor(i / 40) * 3000}) size 2900x2900 label "Room ${i}" uses bedroom\n`;
+    }
+    for (let i = 0; i < 1500; i++) {
+      s += `  furniture bed at (${(i % 40) * 3000 + 100},${Math.floor(i / 40) * 3000 + 100}) size 2700x1300\n`;
+      s += `  furniture bed at (${(i % 40) * 3000 + 100},${Math.floor(i / 40) * 3000 + 1500}) size 2700x1300\n`;
+    }
     const src = `${s}}\n`;
     const first = compile(src, { noCache: true });
     const sizes = [...first.svg.matchAll(/font-size="(\d+)"[^>]*font-weight="600"/g)].map((m) => m[1]);
-    expect(sizes).toContain("1000");
-    expect(sizes).toContain("1750");
+    expect(sizes.length).toBe(1500);
+    expect(sizes.at(-1)).toBe("350");
+    expect(sizes[0]).not.toBe("350");
     expect(compile(src, { noCache: true }).svg).toBe(first.svg);
   }, 120_000);
+
+  it("shares the count between storeys, so a plan of many levels cannot multiply it", () => {
+    const level = (n: number): string =>
+      `  level ${n} {\n    room id=r${n} at (0,0) size 3000x3000 label "Room" uses bedroom\n  }\n`;
+    const { levels } = resolvePlan(`plan "s" {\n  units mm\n${level(1)}${level(2)}${level(3)}}\n`);
+    expect(levels.map((l) => fitWork(l.ir))).toEqual([MAX_FIT_WORK / 3, MAX_FIT_WORK / 3, MAX_FIT_WORK / 3]);
+    expect(fitWork(resolvePlan(room('label "Room"')).ir!)).toBe(MAX_FIT_WORK);
+  });
 });

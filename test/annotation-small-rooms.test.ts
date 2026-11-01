@@ -312,12 +312,13 @@ suite("the label pass moves a label only onto its own floor", () => {
   });
 
   it("never costs a plan a symbol report: past the fabric count that test alone stands down", () => {
-    // A storey whose every label touches a wall, its poche one loop round the whole building.
+    // A storey whose every label touches a wall, its poche one loop round the whole building. They
+    // are pinned, or they would shrink clear of the wall.
     const grid = (n: number) => {
       let s = 'plan "g" {\n  units mm\n  paper A0 landscape\n  scale 1:200\n';
       for (let y = 0; y < n; y++)
         for (let x = 0; x < n; x++)
-          s += `  room id=r${x}_${y} at (${x * 1500},${y * 1500}) size 1500x1500 label "Room"${x + y === 0 ? " at (750,750)" : ""} uses bedroom\n`;
+          s += `  room id=r${x}_${y} at (${x * 1500},${y * 1500}) size 1500x1500 label "Room" at (${x === 0 && y === 0 ? 750 : x * 1500 + 100},${y * 1500 + 750}) uses bedroom\n`;
       s += "  walls from rooms exterior 200 partition 100\n";
       for (let y = 0; y < n; y++)
         for (let x = 0; x + 1 < n; x++) s += `  door between r${x}_${y} and r${x + 1}_${y} at center width 700\n`;
@@ -328,7 +329,9 @@ suite("the label pass moves a label only onto its own floor", () => {
       (f.skipped ?? []).some((s) => s.reason === "annotation-budget"),
     );
     expect(skipped).toBe(true);
-    expect(of(src).map((d) => d.message)).toEqual([expect.stringContaining("printed over the bed")]);
+    const reports = of(src).map((d) => d.message);
+    expect(reports.length).toBeGreaterThan(0);
+    for (const m of reports) expect(m).toContain("printed over the bed");
   }, 60_000);
 
   it("charges a label clear of every wall nothing for the poche", () => {

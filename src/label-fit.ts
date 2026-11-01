@@ -10,7 +10,7 @@
  * own floor, at the width it draws ({@link inkExtent}); or over a furniture, fixture or stair
  * symbol's drawn shapes, at the rule's generous width ({@link textExtent}). A label that passes is
  * not touched, so a plan with nothing to report keeps its bytes; `test/label-fit.test.ts` holds
- * that over the corpus. A rug is floor finish and a piece's own label is text, not ink, as they
+ * that over the corpus and the plans the soundness audits wrote. A rug is floor finish and a piece's own label is text, not ink, as they
  * are to the rule.
  *
  * Walls are read here as their bands, not the poché the rule clips: a band is a box, so it costs
@@ -35,8 +35,10 @@
  * ### The search
  *
  * At each height, largest first, the name's wrapped forms and then its one line are tried at the
- * places `relocateLabels` tries, nearest the room's anchor first; the first clear place of the
- * first clear form wins. A wrapped form comes first because a name that reached this pass did not
+ * places `relocateLabels` tries, nearest the room's anchor first; the first form with a clear place
+ * wins, at its best place. A form that also keeps `relocateLabels`' clearance from the walls at the
+ * height tried beats one that does not, so a label that shrinks does not end up touching one. A
+ * wrapped form comes first because a name that reached this pass did not
  * fit on one line. Breaking stays {@link balancedLines}'s: only at a space, by a count of
  * characters, so the same name breaks the same way on every run and no word is ever split or
  * hyphenated. The full size is tried for wrapped forms too: `wrapLabels` asks for clearance from
@@ -52,8 +54,8 @@
  *
  * ### Bounds
  *
- * Outside the evaluator, so the step meter is not charged. The work is a count,
- * {@link FIT_WORK_PER_NODE} per node of the storey's Scene: one unit per mark visited, one per
+ * Outside the evaluator, so the step meter is not charged. The work is a count over the whole plan,
+ * {@link MAX_FIT_WORK}, shared out by storey ({@link fitWork}): one unit per mark visited, one per
  * vertex clipped or read off a ring. Past it the pass stops where it stands and the labels after
  * it keep their size: a count, so that is the same on every machine, and the rule reports them.
  * A label too big for its room's whole extent costs a handful of reads, not a search.
@@ -67,6 +69,7 @@ import type { BBox } from "./geometry/rect.js";
 import type { RDoor, ResolvedElement, ResolvedPlan, RFurniture } from "./ir.js";
 import { isUnderlay } from "./fixtures-catalog.js";
 import {
+  CLEARANCE,
   COLLIDE_MIN,
   FRACTIONS,
   type LabelGroup,
@@ -99,15 +102,21 @@ const ARC_STEPS = 8;
 const HEIGHT_STEPS = 3;
 
 /**
- * The counted work the pass may do per node of the storey's Scene: marks visited plus vertices
- * clipped. Per node so that the count across a plan's storeys is held by the drawing budget
- * (`MAX_DRAW_UNITS`), however many storeys share it; a flat that needs a dozen labels searched
- * spends well under this.
+ * The counted work of the pass over a whole plan: marks visited plus vertices clipped or read off
+ * a ring, about 0.7 s at the worst measured (a pile of symbols, every label searched to the end).
+ * A flat that has a dozen labels to search spends well under one per cent of it.
  */
-export const FIT_WORK_PER_NODE = 500;
+export const MAX_FIT_WORK = 8_000_000;
+
+/** A storey's share of {@link MAX_FIT_WORK}. Each storey is drawn on its own, so a count per
+ *  storey would multiply with the `level` blocks a plan can write; a share cannot. */
+export const fitWork = (plan: ResolvedPlan): number => MAX_FIT_WORK / (plan._storeyCount ?? 1);
 
 /** Score weight per unit of a label buried, against the distance preference (`W_DISTANCE`). */
 const W_BURIED = 250;
+
+/** Score between the tiers of a place: past any score a place of the tier before can reach. */
+const W_TIER = 1_000_000;
 
 /** Kinds whose drawn shapes are symbols a number or a name must not sit on. */
 export const isSymbolElement = (el: ResolvedElement): boolean =>
@@ -206,10 +215,18 @@ interface Reading {
   off: number;
   /** The largest of the wall, swing, symbol and floor shares: what the rule reports on. */
   fabric: number;
+  /** {@link fabric} with the walls read at the clearance a place should keep. */
+  roomy: number;
   /** Over other text: another label, a `dims auto` number, a tag. */
   text: number;
-  /** All of it added up, for ranking. */
+  /** All of it added up, for ranking, with the walls read at the clearance a place should keep. */
   total: number;
+}
+
+/** A way of drawing a label: its two texts, sized, broken and placed. */
+interface Form {
+  name: TextPrim;
+  area: TextPrim;
 }
 
 /** A text's box twice, as the rule reads it: {@link inkExtent} for the walls, swings and floor,
@@ -348,7 +365,7 @@ export function fitLabels(
   const grid = new GridIndex<Mark>(meanExtent(marks.map((m) => m.box)));
   for (const m of marks) grid.insert(boxOf(m.box), m);
 
-  const budget = FIT_WORK_PER_NODE * nodes.length;
+  const budget = fitWork(plan);
   let work = 0;
   let stamp = 0;
   /** The share of a text off its floor; null once the count is spent. */
@@ -357,23 +374,27 @@ export function fitLabels(
     return work > budget ? null : rectAreaOutside(t.ink, ring) / (t.ink.w * t.ink.h);
   };
   /** What a text stands on, for the label of group `owner`; null once the count is spent. */
-  const read = (t: TextBoxes, off: number, owner: number): Reading | null => {
+  const read = (t: TextBoxes, off: number, owner: number, clearance: number): Reading | null => {
     const inkArea = t.ink.w * t.ink.h;
     const estimateArea = t.estimate.w * t.estimate.h;
     const inkRing = rectRing(t.ink);
     const estimateRing = rectRing(t.estimate);
     const seen = ++stamp;
+    const roomy = grown(t.ink, clearance);
     let walls = 0;
+    let nearWalls = 0;
     let text = 0;
     let worst = off;
     let total = off;
-    grid.forEach(boxOf(unionOf(t.ink, t.estimate)), (m) => {
+    grid.forEach(boxOf(unionOf(roomy, t.estimate)), (m) => {
       if (m.seen === seen) return;
       m.seen = seen;
       work++;
       if (m.stale || m.owner === owner) return;
-      if (m.kind === "wall") walls += overlapArea(t.ink, m.box) / inkArea;
-      else if (m.kind === "text") text += overlapArea(t.ink, m.box) / inkArea;
+      if (m.kind === "wall") {
+        walls += overlapArea(t.ink, m.box) / inkArea;
+        nearWalls += overlapArea(roomy, m.box) / inkArea;
+      } else if (m.kind === "text") text += overlapArea(t.ink, m.box) / inkArea;
       else {
         const symbol = m.kind === "symbol";
         if (!(overlapArea(symbol ? t.estimate : t.ink, m.box) > 0)) return;
@@ -389,7 +410,13 @@ export function fitLabels(
       }
     });
     if (work > budget) return null;
-    return { off, fabric: Math.max(worst, walls), text, total: total + walls + text };
+    return {
+      off,
+      fabric: Math.max(worst, walls),
+      roomy: Math.max(worst, nearWalls),
+      text,
+      total: total + nearWalls + text,
+    };
   };
 
   const heights = labelHeights(sizes);
@@ -413,8 +440,9 @@ export function fitLabels(
     const nameOffNow = offFloor(nameBoxesNow, g.ring);
     const areaOffNow = offFloor(areaBoxesNow, g.ring);
     if (nameOffNow === null || areaOffNow === null) return;
-    const nameNow = read(nameBoxesNow, nameOffNow, gi);
-    const areaNow = read(areaBoxesNow, areaOffNow, gi);
+    const clearanceNow = sizes.roomFont * CLEARANCE;
+    const nameNow = read(nameBoxesNow, nameOffNow, gi, clearanceNow);
+    const areaNow = read(areaBoxesNow, areaOffNow, gi, clearanceNow);
     if (!nameNow || !areaNow) return;
     if (nameNow.fabric <= COLLIDE_MIN && areaNow.fabric <= COLLIDE_MIN) continue;
 
@@ -430,7 +458,11 @@ export function fitLabels(
       wrapped.push(lines);
     }
 
-    let chosen: { name: TextPrim; area: TextPrim } | undefined;
+    // The first form that keeps its clearance from the walls wins outright. Failing that, the
+    // first that is merely clear, then whichever leaves the least of the label buried.
+    let roomy: Form | undefined;
+    let clear: Form | undefined;
+    let leastBuried: Form | undefined;
     let least = nameNow.total + areaNow.total;
     search: for (let hi = 0; hi < heights.length; hi++) {
       const h = heights[hi]!;
@@ -458,7 +490,8 @@ export function fitLabels(
         if (startName === null || startArea === null) break search;
         const capName = Math.max(COLLIDE_MIN, startName) + 1e-9;
         const capArea = Math.max(COLLIDE_MIN, startArea) + 1e-9;
-        let best: { p: Point; clear: boolean; total: number } | undefined;
+        const clearance = h.name * CLEARANCE;
+        let best: { p: Point; tier: number; total: number } | undefined;
         let bestScore = Infinity;
         for (const p of tooBig ? [g.anchor, here] : places) {
           const nameHere = moved(nameBoxes, nameAt(p));
@@ -467,33 +500,43 @@ export function fitLabels(
           const areaOff = offFloor(areaHere, g.ring);
           if (nameOff === null || areaOff === null) break search;
           if (nameOff > capName || areaOff > capArea) continue;
-          const n = read(nameHere, nameOff, gi);
-          const a = read(areaHere, areaOff, gi);
+          const n = read(nameHere, nameOff, gi, clearance);
+          const a = read(areaHere, areaOff, gi, clearance);
           if (!n || !a) break search;
           const total = n.total + a.total;
-          // The nearest clear place is the place: `places` runs outward.
-          if (Math.max(n.fabric, n.text, a.fabric, a.text) <= COLLIDE_MIN) {
-            best = { p, clear: true, total };
+          // Nothing near it at all: the nearest such place is the place, as `places` runs outward.
+          if (total === 0) {
+            best = { p, tier: 0, total };
             break;
           }
-          const score = total * W_BURIED + (Math.hypot(p.x - g.anchor.x, p.y - g.anchor.y) / diag) * W_DISTANCE;
+          const tier =
+            Math.max(n.roomy, n.text, a.roomy, a.text) <= COLLIDE_MIN
+              ? 0
+              : Math.max(n.fabric, n.text, a.fabric, a.text) <= COLLIDE_MIN
+                ? 1
+                : 2;
+          const score =
+            tier * W_TIER + total * W_BURIED + (Math.hypot(p.x - g.anchor.x, p.y - g.anchor.y) / diag) * W_DISTANCE;
           if (score < bestScore) {
             bestScore = score;
-            best = { p, clear: false, total };
+            best = { p, tier, total };
           }
         }
         if (!best) continue;
-        if (best.clear || best.total < least) {
+        const form = { name: { ...namePrim, at: nameAt(best.p) }, area: { ...areaPrim, at: areaAt(best.p) } };
+        if (best.tier === 0) {
+          roomy = form;
+          break search;
+        }
+        if (best.tier === 1) clear ??= form;
+        else if (best.total < least) {
           least = best.total;
-          chosen = {
-            name: { ...namePrim, at: nameAt(best.p) },
-            area: { ...areaPrim, at: areaAt(best.p) },
-          };
-          if (best.clear) break search;
+          leastBuried = form;
         }
       }
     }
 
+    const chosen = roomy ?? clear ?? leastBuried;
     if (chosen) {
       nodes[texts[0]!] = { ...nameNode, prim: chosen.name };
       nodes[texts[1]!] = { ...areaNode, prim: chosen.area };
@@ -507,6 +550,11 @@ export function fitLabels(
     }
     if (work > budget) return;
   }
+}
+
+/** The rect grown by `d` on every side. */
+function grown(b: BBox, d: number): BBox {
+  return { x: b.x - d, y: b.y - d, w: b.w + 2 * d, h: b.h + 2 * d };
 }
 
 /** The smallest rect containing both. */
