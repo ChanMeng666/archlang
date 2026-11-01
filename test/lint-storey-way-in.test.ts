@@ -183,6 +183,23 @@ describe("W_NO_ENTRANCE says which storey and what is missing there", () => {
     ).toEqual([]);
   });
 
+  it("the hint skips a shaft that only joins cut-off storeys, even when it comes first", () => {
+    // `u` is met first, in the sealed cellar; `s` stands in the store of the storey with the door.
+    const src = building(
+      `    ${shell("s0", 8000)}
+    room id=c at (0,0) size 8000x4000 label "Cellar" uses storage
+    stair id=u at (1000,600) size 1000x2800 dir up`,
+      deadGround(false),
+      wideUpper(
+        "stair id=u at (1000,600) size 1000x2800 dir down\n    stair id=s at (5000,600) size 1000x2800 dir down",
+        "s3",
+      ),
+    );
+    const top = of(src).find((d) => d.level === 3);
+    expect(top?.message).toContain("none of the 2 stairs, elevators or escalators that stop here");
+    expect(top?.hints?.[0]).toContain("On level 2, stair `s` stands in room `st`");
+  });
+
   it("a dead shaft: it starts in a room nobody can walk to, on the storey that has the door", () => {
     const src = building(deadGround(false), wideUpper("stair id=s at (5000,600) size 1000x2800 dir down"));
     expect(describePlan(src).vertical?.reachable_levels).toEqual([1]);
