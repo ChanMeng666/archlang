@@ -3,12 +3,16 @@
 import type { Point, WindowNode } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { SceneNode } from "../scene.js";
-import type { RWindow } from "../ir.js";
+import type { ResolvedElement, RWindow } from "../ir.js";
+import type { Diagnostic } from "../diagnostics.js";
 import { add, mul, nearestWallNote, normal, segmentDirAt, wallFaceProbes } from "../geometry.js";
 import type { WallSegment } from "../geometry.js";
 import { parseAttachTarget, resolveOpeningLead } from "../attach.js";
 import { fixesFrom, offWallFix, openingWidthFix } from "../fix-producers.js";
 import { parseOpeningHeights, resolveOpeningHeights, WINDOW_HEAD, WINDOW_SILL } from "../datum.js";
+import { chargeSteps } from "../expr.js";
+import { sameSeg } from "../opening-junctions.js";
+import { cornerBlock } from "../opening-relation.js";
 
 /**
  * How far apart the two glass lines are, as a fraction of the host wall's thickness: 50 mm
@@ -53,6 +57,94 @@ function exteriorNormal(
   const onPlus = floorAt(plus);
   if (onPlus === floorAt(minus)) return null;
   return onPlus ? mul(n, -1) : n;
+}
+
+/**
+ * Where a window run to a corner stops, at `off` across its wall along `n`: the point on the line
+ * from the two walls' inner corner to their outer one. Every line of the window, and of the window
+ * on the other wall, ends on that line, so the two meet vertex to vertex and neither paints over
+ * the other, whatever the two thicknesses are. Read from the shape: the corner, and the way the
+ * other wall leaves it. Null for a window that stands at no corner.
+ */
+function cornerMitre(
+  wn: RWindow,
+  seg: WallSegment,
+  d: Point,
+  n: Point,
+): { at: (off: number) => Point; atEnd: boolean } | null {
+  const corner = wn._corner;
+  if (!corner) return null;
+  const { at: c, other } = corner;
+  const far = other.a.x === c.x && other.a.y === c.y ? other.b : other.a;
+  const length = Math.hypot(far.x - c.x, far.y - c.y);
+  const away = { x: (far.x - c.x) / length, y: (far.y - c.y) / length };
+  const atEnd = (c.x - wn.at.x) * d.x + (c.y - wn.at.y) * d.y > 0;
+  // `off` along `n` is that far along `away`, up to a sign, and the same share of the other wall.
+  const side = away.x * n.x + away.y * n.y;
+  const share = other.thickness / seg.thickness;
+  const toCorner = atEnd ? d : mul(d, -1);
+  return { at: (off) => add(add(c, mul(toCorner, -off * side * share)), mul(away, off * side)), atEnd };
+}
+
+/**
+ * A window run to a corner, once its group has resolved: it needs the window on the other wall, and
+ * the two must make one corner. A second leg on one wall, or none on the other, leaves a window
+ * running into the side of a wall. Different heights leave wall at the corner above or below one of
+ * them, so the two must share theirs. What the two windows share is reported once, on the later.
+ */
+function settleCorner(w: RWindow, own: readonly ResolvedElement[], diag: (d: Diagnostic) => void): void {
+  chargeSteps(own.length + 1);
+  const corner = w._corner!;
+  const refuse = (message: string, hints?: string[]): void =>
+    diag({
+      severity: "error",
+      message: `Window "${w.id}" ${message}`,
+      code: "E_WINDOW_CORNER",
+      ...(w.span ? { span: w.span } : {}),
+      ...(hints ? { hints } : {}),
+    });
+  const peers = own.filter(
+    (e): e is RWindow =>
+      e !== w && e.kind === "window" && e._corner?.at.x === corner.at.x && e._corner.at.y === corner.at.y,
+  );
+  const named = w._relation?.at?.replace(/^corner /, "") ?? "<room>.<edge>";
+  if (peers.length === 0) {
+    // A window refused at its corner was written: its own error is the one to read.
+    if (own.some((e) => e.kind === "window" && e._cornerRefused)) return;
+    refuse(
+      "runs to a corner alone: no window runs to it along the other wall, so it would end in the side of that wall",
+      [`Add \`window on ${named} at corner ${w._relation?.edge ?? "<room>.<edge>"} width <mm>\`.`],
+    );
+    return;
+  }
+  const partner = peers.find((p) => p.host !== null && sameSeg(p.host, corner.other));
+  if (partner === undefined || peers.length > 1) {
+    refuse(`is one of ${peers.length + 1} windows at one corner: a corner takes one window on each of its two walls`);
+    return;
+  }
+  corner.with = partner.id;
+  if (own.indexOf(partner) > own.indexOf(w)) return;
+  if (partner.sill !== w.sill || partner.head !== w.head) {
+    refuse(`and "${partner.id}" meet at a corner with different heights: they must share their \`sill\` and \`head\``, [
+      "Give both windows the same `sill` and `head`, or take one off the corner.",
+    ]);
+    return;
+  }
+  const box = w.host ? cornerBlock(corner.at, w.host, corner.other) : null;
+  const column = own.find(
+    (e) =>
+      box !== null &&
+      e.kind === "column" &&
+      e.at.x < box.x1 &&
+      box.x0 < e.at.x + e.size.w &&
+      e.at.y < box.y1 &&
+      box.y0 < e.at.y + e.size.h,
+  );
+  if (column) {
+    refuse(`and "${partner.id}" meet at a corner where column "${column.id}" stands`, [
+      "Move the column, or take the windows off the corner.",
+    ]);
+  }
 }
 
 export const windowEl: ElementDef = {
@@ -112,7 +204,7 @@ export const windowEl: ElementDef = {
     });
     const lead = resolveOpeningLead(n, "window", width, ctx, `Window "${id}"`);
     if (lead) {
-      const { at, host, relation } = lead;
+      const { at, host, relation, corner } = lead;
       return {
         kind: "window",
         id,
@@ -122,6 +214,8 @@ export const windowEl: ElementDef = {
         ...heights(host),
         span: n.span,
         ...(relation ? { _placement: "relational" as const, _relation: relation } : {}),
+        ...(corner ? { _corner: corner } : {}),
+        ...(n.attach?.pos.kind === "corner" && !corner ? { _cornerRefused: true as const } : {}),
       };
     }
     const at = ctx.snapPt(ctx.evalPt(n.at!));
@@ -140,6 +234,12 @@ export const windowEl: ElementDef = {
     return { kind: "window", id, at, width, host, ...heights(host), span: n.span };
   },
 
+  /** A window run to a corner, once the group has resolved ({@link settleCorner}). */
+  settle(resolved, own, diag): void {
+    const w = resolved as RWindow;
+    if (w._corner) settleCorner(w, own, diag);
+  },
+
   // Empty on purpose: the sill stands only 0.2t proud of the wall face, which the page margin
   // already absorbs, and widening the bounds would move every page viewBox and sheet fit.
   bounds: () => [],
@@ -148,13 +248,15 @@ export const windowEl: ElementDef = {
    * faces at t/2 and the sill nose at t/2 + `SILL_PROJECTION`·t off the centreline, the
    * horns `SILL_HORN`·t past each jamb — so the modelling-range check covers every drawn
    * coordinate. `along + across` bounds any drawn point's offset from `at` on each axis at
-   * any wall angle. (The cover's pen-width overhang is a pen, held by `checkDrawnSizes`.)
+   * any wall angle. A window run to a corner has no horn there, and its sill's nose runs out by
+   * the other wall's thickness instead, so `along` reads the thicker of the two. (The cover's
+   * pen-width overhang is a pen, held by `checkDrawnSizes`.)
    */
   measures(resolved): number[] {
     const w = resolved as RWindow;
     const t = w.host?.thickness ?? 0;
     const across = t / 2 + SILL_PROJECTION * t;
-    const along = w.width / 2 + SILL_HORN * t;
+    const along = w.width / 2 + SILL_HORN * Math.max(t, w._corner?.other.thickness ?? 0);
     const r = along + across;
     return [w.at.x, w.at.y, w.width, across, along, w.at.x - r, w.at.x + r, w.at.y - r, w.at.y + r];
   },
@@ -173,29 +275,33 @@ export const windowEl: ElementDef = {
     const h = seg.thickness / 2;
     const he = h + sizes.wallStroke;
     const hw = wn.width / 2;
-    const cover: Point[] = [
-      add(add(wn.at, mul(d, -hw)), mul(n, he)),
-      add(add(wn.at, mul(d, hw)), mul(n, he)),
-      add(add(wn.at, mul(d, hw)), mul(n, -he)),
-      add(add(wn.at, mul(d, -hw)), mul(n, -he)),
-    ];
-    const nodes: SceneNode[] = [];
-    nodes.push({ layer: "windows", prim: { t: "polygon", pts: cover }, paint: { fill: theme.opening } });
     const jA = add(wn.at, mul(d, -hw));
     const jB = add(wn.at, mul(d, hw));
+    const mitre = cornerMitre(wn, seg, d, n);
+    // A line `off` across the wall, from jamb to jamb, or to the mitre at a corner.
+    const across = (off: number): [Point, Point] => [
+      mitre && !mitre.atEnd ? mitre.at(off) : add(jA, mul(n, off)),
+      mitre?.atEnd ? mitre.at(off) : add(jB, mul(n, off)),
+    ];
+    const [c0, c1] = across(he);
+    const [c3, c2] = across(-he);
+    const nodes: SceneNode[] = [];
+    nodes.push({ layer: "windows", prim: { t: "polygon", pts: [c0, c1, c2, c3] }, paint: { fill: theme.opening } });
     for (const off of [h, -h]) {
+      const [a, b] = across(off);
       nodes.push({
         layer: "windows",
-        prim: { t: "line", a: add(jA, mul(n, off)), b: add(jB, mul(n, off)) },
+        prim: { t: "line", a, b },
         paint: { stroke: theme.wallStroke, width: sizes.thin },
       });
     }
     // Double glazing: two panes centred on the wall, `GLAZING_GAP` of its thickness apart.
     const g = (GLAZING_GAP * seg.thickness) / 2;
     for (const off of [g, -g]) {
+      const [a, b] = across(off);
       nodes.push({
         layer: "windows",
-        prim: { t: "line", a: add(jA, mul(n, off)), b: add(jB, mul(n, off)) },
+        prim: { t: "line", a, b },
         paint: { stroke: theme.windowPane, width: sizes.thin },
       });
     }
@@ -205,16 +311,16 @@ export const windowEl: ElementDef = {
       const t = seg.thickness;
       const a = add(jA, mul(d, -SILL_HORN * t));
       const b = add(jB, mul(d, SILL_HORN * t));
+      // `depth` off the centreline on the outside: past the jamb by the horn, or on the mitre.
+      const toward = out.x * n.x + out.y * n.y;
+      const atA = (depth: number): Point =>
+        mitre && !mitre.atEnd ? mitre.at(toward * depth) : add(a, mul(out, depth));
+      const atB = (depth: number): Point => (mitre?.atEnd ? mitre.at(toward * depth) : add(b, mul(out, depth)));
       nodes.push({
         layer: "windows",
         prim: {
           t: "polygon",
-          pts: [
-            add(a, mul(out, h)),
-            add(a, mul(out, h + SILL_PROJECTION * t)),
-            add(b, mul(out, h + SILL_PROJECTION * t)),
-            add(b, mul(out, h)),
-          ],
+          pts: [atA(h), atA(h + SILL_PROJECTION * t), atB(h + SILL_PROJECTION * t), atB(h)],
         },
         paint: { fill: "none", stroke: theme.wallStroke, width: sizes.thin },
       });
@@ -225,6 +331,21 @@ export const windowEl: ElementDef = {
   transform(resolved, t: TransformCtx): RWindow {
     const el = resolved as RWindow;
     const { id } = t;
-    return { ...el, id, at: t.point(el.at), host: el.host ? t.segment(el.host) : null };
+    const corner = el._corner;
+    return {
+      ...el,
+      id,
+      at: t.point(el.at),
+      host: el.host ? t.segment(el.host) : null,
+      ...(corner
+        ? {
+            _corner: {
+              at: t.point(corner.at),
+              other: t.segment(corner.other),
+              ...(corner.with !== undefined ? { with: t.nsId(corner.with) } : {}),
+            },
+          }
+        : {}),
+    };
   },
 };

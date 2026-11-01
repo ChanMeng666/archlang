@@ -83,7 +83,8 @@ window id=e on liv.right at corner liv.top width 1200
    a window with two hosts. *Reverse if:* authors keep writing one leg and the refusal does not
    teach them, or a schedule must carry one mark for the pair.
 2. **A leg alone is refused,** on the leg, with the missing statement in the hint. Half a corner
-   would be a window running into the side of a wall.
+   would be a window running into the side of a wall. A leg refused at the corner does not leave
+   its partner reporting it missing: it was written, and its own error is the one to read.
 3. **`width` runs to the outer corner, and a leg's centre comes from that.** So `at ± width/2` is
    still the span, and every reader of `at` and `width` (the cut, the schedule, the dimension chains,
    the 3D adapter) is right with nothing new to learn. *Alternative:* `width` from the centreline
@@ -122,9 +123,10 @@ window id=e on liv.right at corner liv.top width 1200
 8. **A leg names the other wall, not only the point.** `_corner` carries the corner, the meeting
    segment and the partner's id through `place` (`frame.ts`, `t.point`, `t.segment`, `t.nsId`), so
    `W_OPENING_AT_JUNCTION` is excused that one wall and no other.
-9. **`corner` is a contextual word**, read as the form only when a dotted room edge follows it.
-   `corner <room>.<edge>` was never a legal expression, so `let corner = 900` and `at corner width
-   900` read as they did. `corner` is in no `STATEMENT_STARTS`, and `room id=corner` is fine.
+9. **`corner` is a contextual word**, read as the form only when a dotted name follows it. A
+   binding followed by a dotted name was never a legal expression, so `let corner = 900` and
+   `at corner width 900` read as they did. `corner` is in no `STATEMENT_STARTS`, and `room
+   id=corner` is fine.
 10. **The absolute form is left alone.** `at (x,y)` windows keep `W_OPENING_AT_JUNCTION`, and that
     warning's hints do not move: changing them would move `lint()` on plans not using the form.
 
@@ -158,7 +160,7 @@ A plan that does not write `at corner` compiles, describes and lints byte for by
 diagnostics and steps included, and a plan that writes `open` keeps its bytes. The two hold by
 construction:
 
-- the parser's new branches are reached only on `corner <room>.<edge>` and on `at` after an `open`
+- the parser's new branches are reached only on `corner <dotted name>` and on `at` after an `open`
   clause, both parse errors before;
 - every new read is behind `_corner`, and `settle` returns at once on a window without it, charging
   nothing. `render` builds a plain window's nodes from the same expressions.

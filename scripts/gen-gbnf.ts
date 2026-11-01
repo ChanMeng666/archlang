@@ -549,7 +549,10 @@ function rules(): [string, string][] {
      * ADR 0028 §5's datum positions join it: `axis <label>` (a number or a letter label) and
      * `<expr> from start|end|<room>.<edge>`, both of which `parseAttachPos` reads.
      */
-    ["attach-pos", `"center" | "axis" rws axis-label | attach-expr ws "%" | attach-expr ( rws "from" rws ref )?`],
+    [
+      "attach-pos",
+      `"center" | "axis" rws axis-label | "corner" rws ref | attach-expr ws "%" | attach-expr ( rws "from" rws ref )?`,
+    ],
     ["axis-label", `[0-9]+ | ident`],
     /*
      * Two shapes, because the trailing `in <roomId>` is available to only one of them.

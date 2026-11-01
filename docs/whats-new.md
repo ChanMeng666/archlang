@@ -23,6 +23,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
 | `arch finish` on a plan with storeys | next release | [Furnishing every storey](#furnishing-every-storey) |
 | Labels that shrink to fit a small room | unreleased | [Labels in small rooms](#labels-in-small-rooms) |
+| A window round a corner, with no wall left at it | unreleased | [Corner windows](#corner-windows) |
 
 ## Quantities and takeoff
 
@@ -328,3 +329,23 @@ plan "A small store" {
 "Abstellraum" comes out at 2 mm, beside the door's swing. Write `Abstell- raum` and it breaks at the space; a word is never split on its own. A pinned `label … at (x,y)` keeps its size. A label that clears at no height is reported by `W_ANNOTATION_OVERLAP`, and no leader line is drawn. 2 mm is the size of furniture labels, the smallest lettering the sheet draws, and it is this drawing's own rule, no standard's minimum. Without `paper`, the steps end at that drawing's furniture-label size.
 
 Widths are now read character by character, in place of one figure for every letter: the wider of Roboto, which the PNG and the PDF draw, and Helvetica Bold, which a browser reaches for an SVG's room name. `WC` reads 0.83 of its size per character and "Utility" 0.4, so `W_ANNOTATION_OVERLAP` can report a name it used to pass, and drop one it used to report. This is an estimate covering those two faces, not a promise for every font.
+
+## Corner windows
+
+Two windows can now meet at a corner with no wall left between them. Write one on each wall, each placed `at corner` and naming the edge the other stands on:
+
+```arch
+plan "A corner window" {
+  units mm
+  grid 50
+  room id=living at (0,0) size 5000x4000 label "Living" uses living
+  walls from rooms exterior 200 partition 100
+  door id=entry on living.left at 2000 from start width 900 swing into living
+  window id=n on living.top at corner living.right width 1800
+  window id=e on living.right at corner living.top width 1200
+}
+```
+
+`width` runs to the outer corner. The glass, the wall faces and the sills mitre at the corner. They stay two windows, each with its own wall, `facing` and schedule row, and `describe --json` gives each the other's id in `corner_with`. What is not a true corner of two exterior walls is refused with `E_WINDOW_CORNER`, and a window with no partner is refused with the missing statement in the hint.
+
+`open between` stays centred. An `at` on it now says so and quotes the `opening between` statement to write instead, which draws the same hole at the position you asked for and keeps the wall on either side of it.

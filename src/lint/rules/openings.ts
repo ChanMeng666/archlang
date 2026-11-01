@@ -537,7 +537,10 @@ export const openingAtJunction: LintRule = {
     const jsOf = junctionLookup(ctx);
     for (const o of all) {
       const js = jsOf(o);
-      const mine = junctionsFor(ctx, o, js);
+      // A window run to a corner ends on that wall's outer face: the corner is what it says, and
+      // only that one wall is excused.
+      const corner = o.el.kind === "window" ? o.el._corner : undefined;
+      const mine = junctionsFor(ctx, o, js).filter((j) => !corner || !sameSeg(j.wall, corner.other));
       if (mine.length === 0) continue;
       const need = nibNeed(ctx, o.seg);
       // A cased opening whose jamb lands FLUSH on a meeting wall's face uses that face as its
@@ -627,7 +630,9 @@ export const openingAtJunction: LintRule = {
         ...ctx.at(o.el),
         message: `${cap(name)} ${allFree ? "stands at a free end of its wall" : "meets a wall junction"} — ${distinct(facts).join("; ")}. ${reason}`,
         hints: [
-          ...moveHints(ctx, o, all, js, `the ${KIND_WORD[o.el.kind]}`),
+          ...(corner
+            ? ["A window run to a corner stays at it: make it narrower, or move the wall that meets it."]
+            : moveHints(ctx, o, all, js, `the ${KIND_WORD[o.el.kind]}`)),
           ...(accept ? [accept] : []),
           idHint(ctx, o.el),
         ],

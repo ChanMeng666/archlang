@@ -75,6 +75,8 @@ export function attachPosStr(pos: OpeningAttach["pos"]): string {
       return "center";
     case "axis":
       return `axis ${pos.label}`;
+    case "corner":
+      return `corner ${pos.edge}`;
     case "from":
       return `${exprStr(pos.value)} from ${"word" in pos.from ? pos.from.word : pos.from.datum}`;
     default: {

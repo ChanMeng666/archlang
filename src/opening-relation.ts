@@ -28,14 +28,19 @@
  * or runs past the end of its run or its host, is refused with `E_OPENING_NIB` naming the
  * nearest legal position. An `open between` boundary voided over its whole clear span is no
  * meeting wall ({@link standingJunctionSpans}). Steps are charged before every scan.
+ *
+ * `window on <room>.<edge> at corner <room>.<edge>` ({@link placeCorner}) runs a window out to a
+ * corner of the two walls. Its span ends on the other wall's outer face, so `at ± width / 2` is
+ * still the span, and with the window on that wall the two ordinary cuts cover the block the walls
+ * make there. What is not a true corner of two walls refuses (`E_WINDOW_CORNER`).
  */
 
 import type { AttachPos, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { chargeSteps } from "./expr.js";
 import type { Expr } from "./expr.js";
-import { segmentsOfWall, type WallSegment } from "./geometry.js";
-import type { OpeningRelation, RWall } from "./ir.js";
+import { distPointToWallSegment, segmentsOfWall, type WallSegment } from "./geometry.js";
+import type { OpeningRelation, RWall, WindowCorner } from "./ir.js";
 import { fmt3 as numStr } from "./num-format.js";
 import {
   atFreeEnd,
@@ -44,6 +49,7 @@ import {
   JUNCTION_NIB_DEFAULTS,
   type JunctionSpan,
   openBoundaryIds,
+  sameSeg,
   standingJunctionSpans,
 } from "./opening-junctions.js";
 import type { DatumTable, RoomDatums } from "./room-datums.js";
@@ -577,6 +583,9 @@ function positionOnRun(
       }
       return { c: line.c, anchor: start };
     }
+    case "corner":
+      ctx.diag(cornerDiag(`${what} is placed \`at corner\`, and only a window turns a corner`, posSpan));
+      return undefined;
     case "from": {
       const v = ctx.eval(pos.value);
       if (!Number.isFinite(v)) {
@@ -692,6 +701,7 @@ export interface Placed {
   at: Point;
   host: WallSegment;
   relation: OpeningRelation;
+  corner?: WindowCorner;
 }
 
 /**
@@ -741,6 +751,7 @@ export function placeOnEdge(
   const edge = readEdge(attach.wall, span, ctx, what);
   if (!edge) return null;
   const run: Run = { vertical: edge.vertical, c: edge.c, r0: edge.lo, r1: edge.hi };
+  if (attach.pos.kind === "corner") return placeCorner(attach, attach.pos, run, kind, width, ctx, what);
   return placeOnRun(
     run,
     attach.pos,
@@ -851,18 +862,8 @@ function placeOnRun(
     const alone = legal === undefined || bodies.length === 1 || bodiesUnder(bodies, legal, width, run).length === 1;
     // Nor is a position in a demolished wall legal: it hosts nothing, wherever the span stands.
     const gone = hostWall?.status === "demolish";
-    const boundaryPhrase = (s: WallSegment): string => {
-      const w = wallOfSeg(ctx.walls, s);
-      return w ? openBoundaryPhraseOf(w) : `wall "${s.wallId}"`;
-    };
-    const name = (j: JunctionSpan): string => (j.boundary ? boundaryPhrase(j.wall) : phrase(j.wall));
-    const measure = fault.atBoundary ? "that edge" : "a meeting wall's face";
-    ctx.diag({
-      severity: "error",
-      message: `${what} is refused, not moved: ${fault.say(name)}. A jamb needs at least ${numStr(need)} mm of wall to ${measure} (the larger of ${numStr(JUNCTION_NIB_DEFAULTS.minJunctionNibMm)} mm and half the ${numStr(host.thickness)} mm wall)`,
-      code: "E_OPENING_NIB",
-      span,
-      hints: [
+    ctx.diag(
+      nibRefusal(fault, host, need, what, span, ctx, [
         gone
           ? DEMOLISHED_HINT
           : !alone
@@ -870,12 +871,231 @@ function placeOnRun(
             : legal === undefined
               ? `No position along the ${runWord} \`${where}\` names fits a ${numStr(width)} mm opening with its nibs: narrow it, or move a wall that meets the ${runWord}.`
               : `The nearest legal position is \`${where} at ${legalText(placed.anchor, legal, run)}\` (centre at ${alongText(run, legal)}).`,
-      ],
-    });
+      ]),
+    );
     return null;
   }
   return { at, host, relation };
 }
+
+/** `E_OPENING_NIB` for a span {@link nibFault} found wanting. */
+function nibRefusal(
+  fault: NonNullable<ReturnType<typeof nibFault>>,
+  host: WallSegment,
+  need: number,
+  what: string,
+  span: Span,
+  ctx: RelationCtx,
+  hints: string[],
+): Diagnostic {
+  const phrase = (s: WallSegment): string => {
+    const w = wallOfSeg(ctx.walls, s);
+    return w ? wallPhraseOf(w) : `wall "${s.wallId}"`;
+  };
+  const boundaryPhrase = (s: WallSegment): string => {
+    const w = wallOfSeg(ctx.walls, s);
+    return w ? openBoundaryPhraseOf(w) : `wall "${s.wallId}"`;
+  };
+  const name = (j: JunctionSpan): string => (j.boundary ? boundaryPhrase(j.wall) : phrase(j.wall));
+  const measure = fault.atBoundary ? "that edge" : "a meeting wall's face";
+  return {
+    severity: "error",
+    message: `${what} is refused, not moved: ${fault.say(name)}. A jamb needs at least ${numStr(need)} mm of wall to ${measure} (the larger of ${numStr(JUNCTION_NIB_DEFAULTS.minJunctionNibMm)} mm and half the ${numStr(host.thickness)} mm wall)`,
+    code: "E_OPENING_NIB",
+    span,
+    hints,
+  };
+}
+
+const cornerDiag = (message: string, span: Span | undefined, hints?: string[]): Diagnostic => ({
+  severity: "error",
+  message,
+  code: "E_WINDOW_CORNER",
+  ...(span ? { span } : {}),
+  ...(hints ? { hints } : {}),
+});
+
+/** `on <wall> at corner …` was written: a corner is named by rooms' edges. */
+export function cornerOnWall(wall: string, what: string, span: Span | undefined): Diagnostic {
+  return cornerDiag(`${what} is placed \`on ${wall} at corner\`, but a corner is read from a room's edges`, span, [
+    "Write `window on <room>.<edge> at corner <room>.<edge>`, naming the two edges of the room that meet there.",
+  ]);
+}
+
+/** The plan-axis box the two walls make at their corner: each wall's thickness across it. */
+export function cornerBlock(
+  at: Point,
+  host: WallSegment,
+  other: WallSegment,
+): { x0: number; y0: number; x1: number; y1: number } {
+  const [hx, hy] =
+    host.a.y === host.b.y ? [other.thickness / 2, host.thickness / 2] : [host.thickness / 2, other.thickness / 2];
+  return { x0: at.x - hx, y0: at.y - hy, x1: at.x + hx, y1: at.y + hy };
+}
+
+/** Does a wall's band reach into `box`, by more than touching it? An axis-aligned wall exactly,
+ *  its square caps included; any other by the disc round the box, which errs towards refusing. */
+function standsInBlock(s: WallSegment, box: ReturnType<typeof cornerBlock>): boolean {
+  const h = s.thickness / 2;
+  if (!s.arc && (s.a.x === s.b.x || s.a.y === s.b.y)) {
+    return (
+      Math.min(s.a.x, s.b.x) - h < box.x1 &&
+      box.x0 < Math.max(s.a.x, s.b.x) + h &&
+      Math.min(s.a.y, s.b.y) - h < box.y1 &&
+      box.y0 < Math.max(s.a.y, s.b.y) + h
+    );
+  }
+  const middle = { x: (box.x0 + box.x1) / 2, y: (box.y0 + box.y1) / 2 };
+  return distPointToWallSegment(middle, s) < h + Math.hypot(box.x1 - box.x0, box.y1 - box.y0) / 2;
+}
+
+/**
+ * The widest window that fits, run to the corner at `outer`: what the run or the nearest meeting
+ * wall's nib leaves, on the plan's grid, and only when that passes the same check a placement gets.
+ * `undefined` when none clears the other wall's inner face. Charged before the scan.
+ */
+function widestLeg(
+  outer: number,
+  corner: "r0" | "r1",
+  fit: HostFit,
+  js: readonly JunctionSpan[],
+  other: WallSegment,
+  grid: number,
+  run: Run,
+): number | undefined {
+  chargeSteps(2 * js.length + 1);
+  const sign = corner === "r1" ? 1 : -1;
+  const free =
+    corner === "r1"
+      ? Math.max(fit.R0, ...js.map((j) => j.hi + fit.need))
+      : Math.min(fit.R1, ...js.map((j) => j.lo - fit.need));
+  const room = sign * (outer - free);
+  const width = grid > 0 ? Math.floor(room / grid) * grid : room;
+  if (!(width > other.thickness)) return undefined;
+  const [lo, hi] = corner === "r1" ? [fit.R0, outer] : [outer, fit.R1];
+  return nibFault(outer - (sign * width) / 2, width, lo, hi, js, fit.need, false, run) ? undefined : width;
+}
+
+/**
+ * Place `window … on <room>.<edge> at corner <room>.<edge>`: `null` after a diagnostic.
+ *
+ * The two edges name a corner of the room, and it must be a true corner of two walls: on each edge
+ * one exterior wall that stays, ENDING exactly there, with no third wall in the block the two make.
+ * `width` runs from the free jamb to the other wall's outer face, so the centre comes from that
+ * face and is not snapped: snapping it would open the corner again. The free jamb keeps the rule of
+ * every relational opening. Whether the window on the other wall is written is settled when the
+ * group has resolved (`windowEl.settle`).
+ */
+function placeCorner(
+  attach: OpeningAttach,
+  pos: Extract<AttachPos, { kind: "corner" }>,
+  run: Run,
+  kind: Kind,
+  width: number,
+  ctx: RelationCtx,
+  what: string,
+): Placed | null {
+  const span = attach.span ?? pos.span;
+  const refuse = (message: string, hints?: string[]): null => {
+    ctx.diag(cornerDiag(`${what} cannot run to a corner there: ${message}`, span, hints));
+    return null;
+  };
+  if (kind !== "window") {
+    ctx.diag(cornerDiag(`${what} is placed \`at corner\`, and only a window turns a corner`, span));
+    return null;
+  }
+  if (!(width > 0)) return null; // Refused already, as a width.
+  const roomOf = (name: string): string | undefined => splitDatum(name)?.room;
+  const edge = readEdge(pos.edge, pos.span, ctx, what);
+  if (!edge) return null;
+  const room = roomOf(attach.wall);
+  if (roomOf(pos.edge) !== room) {
+    return refuse(`\`${pos.edge}\` is an edge of another room, and a corner is named by two edges of one room`, [
+      `Name the edge of "${room}" that meets \`${attach.wall}\` at the corner: \`at corner ${room}.<edge>\`.`,
+    ]);
+  }
+  const end = runEndMet(edge, run);
+  if (end === undefined) {
+    return refuse(`\`${pos.edge}\` does not meet \`${attach.wall}\` at an end of it, so the two make no corner`, [
+      `Name an edge of "${room}" that crosses \`${attach.wall}\` at one of its ends.`,
+    ]);
+  }
+  const along = run[end];
+  const corner: Point = run.vertical ? { x: run.c, y: along } : { x: along, y: run.c };
+  const across: Run = { vertical: edge.vertical, c: edge.c, r0: edge.lo, r1: edge.hi };
+  const bodies = bodiesOn(run, ctx.walls);
+  const facing = bodiesOn(across, ctx.walls);
+  chargeSteps((bodies.length + facing.length) * ctx.walls.length);
+  const endsThere = (p: Point): boolean => p.x === corner.x && p.y === corner.y;
+  /** The one wall on `list` ending at the corner, or why there is none. */
+  const wallOn = (list: readonly WallSegment[], name: string, line: Run): WallSegment | string => {
+    const ending = list.filter((s) => endsThere(s.a) || endsThere(s.b));
+    if (ending.length === 0) {
+      const at = line.vertical ? corner.y : corner.x;
+      const passes = list.some((s) => {
+        const [lo, hi] = extent(s, line.vertical);
+        return lo < at && at < hi;
+      });
+      return passes ? `the wall on \`${name}\` runs on past the corner` : `no wall on \`${name}\` reaches the corner`;
+    }
+    if (ending.length > 1) return `${ending.length} walls on \`${name}\` end at the corner`;
+    const s = ending[0]!;
+    const w = wallOfSeg(ctx.walls, s);
+    if (s.category !== "exterior") return `the wall on \`${name}\` there is a ${s.category}`;
+    return w?.status === "demolish" ? `the wall on \`${name}\` there is marked \`status demolish\`` : s;
+  };
+  const host = wallOn(bodies, attach.wall, run);
+  if (typeof host === "string") return refuse(host, [CORNER_HINT]);
+  const other = wallOn(facing, pos.edge, across);
+  if (typeof other === "string") return refuse(other, [CORNER_HINT]);
+  if (!(width > other.thickness)) {
+    return refuse(
+      `its ${numStr(width)} mm would end inside the ${numStr(other.thickness)} mm wall on \`${pos.edge}\`: \`width\` runs from the free jamb to that wall's outer face`,
+      [`Make it wider than ${numStr(other.thickness)} mm.`],
+    );
+  }
+  const walls = meetingWalls(ctx);
+  chargeSteps(walls.segs.length + 1);
+  const box = cornerBlock(corner, host, other);
+  const third = walls.segs.find(
+    (s) => !sameSeg(s, host) && !sameSeg(s, other) && s.thickness > 0 && standsInBlock(s, box),
+  );
+  if (third) {
+    const w = wallOfSeg(ctx.walls, third);
+    return refuse(`${w ? wallPhraseOf(w) : `wall "${third.wallId}"`} stands at the corner too`, [CORNER_HINT]);
+  }
+  const fit = hostFit(host, run, walls);
+  const js = fit.js.filter((j) => !sameSeg(j.wall, other));
+  const sign = end === "r1" ? 1 : -1;
+  const outer = along + (sign * other.thickness) / 2;
+  const c = outer - (sign * width) / 2;
+  const under = bodiesUnder(bodies, c, width, run);
+  if (under.length > 1) return refuse(`${under.length} walls lie on its span`, [ONE_WALL_HINT]);
+  chargeSteps(2 * js.length + 1);
+  const [lo, hi] = end === "r1" ? [fit.R0, outer] : [outer, fit.R1];
+  const fault = nibFault(c, width, lo, hi, js, fit.need, false, run);
+  if (fault) {
+    const widest = widestLeg(outer, end, fit, js, other, ctx.grid, run);
+    ctx.diag(
+      nibRefusal(fault, host, fit.need, what, span, ctx, [
+        widest === undefined
+          ? `No width fits between that corner and the walls that meet \`${attach.wall}\`: move a wall, or take the window off the corner.`
+          : `The widest window that fits is \`on ${attach.wall} at corner ${pos.edge} width ${numStr(widest)}\`.`,
+      ]),
+    );
+    return null;
+  }
+  return {
+    at: run.vertical ? { x: run.c, y: c } : { x: c, y: run.c },
+    host,
+    relation: relationOf({ edge: attach }),
+    corner: { at: corner, other },
+  };
+}
+
+/** The advice for a corner that is not one of two walls alone. */
+const CORNER_HINT =
+  "A window runs to a corner where two exterior walls end and nothing else stands: place it `at <mm> from <room>.<edge>` clear of the junction, or change the walls.";
 
 /** The advice for a run that carries two walls where no position can tell them apart. */
 const ONE_WALL_HINT =

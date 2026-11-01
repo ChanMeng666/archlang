@@ -522,6 +522,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Remove the opening (it goes with the wall), host it on a wall that stays, or keep the wall: `status existing` (or no `status` at all).",
     "wall id=p partition thickness 100 status demolish { (4000,0) (4000,5000) }\n  door id=d on p at 50% width 800   # error: the wall is being demolished",
   ),
+  E_WINDOW_CORNER: E(
+    "E_WINDOW_CORNER",
+    "A window placed `at corner` does not stand at a true corner of two walls.",
+    "`window on <room>.<edge> at corner <room>.<edge>` runs a window to the corner the two edges make, with a window on each of the two walls, and no wall left at the corner between them. So it is refused where that is not what the plan says: on a door or a cased opening; on `on <wall>`, since a corner is read from a room's edges; on two edges that do not meet at an end, or belong to different rooms; where either edge has no exterior wall that stays and ends exactly on the corner (a wall running on past it, a partition, a demolished wall); where a third wall or a column stands at the corner; on a window no wider than the other wall is thick; with no window at the corner on the other wall, or more than one; and on two windows with different `sill` or `head`. Refused, never approximated: taking away the wall at a corner is a statement about the corner.",
+    "Write the other window (the hint quotes it), name two edges of one room that meet at an end, or stand the window clear of the corner with `at <mm> from <room>.<edge>`.",
+    "room id=r at (0,0) size 4000x3000\n  walls from rooms exterior 200 partition 100\n  window id=n on r.top at corner r.right width 1500   # error: no window on r.right",
+  ),
   // ---- ground surfaces, fences and the lot line ------------------------
   E_OUTDOOR_SIZE: E(
     "E_OUTDOOR_SIZE",

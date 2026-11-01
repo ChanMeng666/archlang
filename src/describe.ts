@@ -308,6 +308,9 @@ export interface WindowSummary {
    * relational opening, so every other payload is byte-identical.
    */
   relation?: string;
+  /** The window on the other wall of a corner, on a window placed `at corner`. Each row keeps its
+   *  own wall, `width` and `facing`: a window faces one way. */
+  corner_with?: string;
   /**
    * **True compass** direction the window's wall faces (the outward normal of its host
    * wall segment), read against the plan's declared `north`.
@@ -1561,6 +1564,7 @@ function summarize(
       room,
       width: w.width,
       ...(w._relation ? { relation: relationText(w._relation) } : {}),
+      ...(w._corner?.with !== undefined ? { corner_with: w._corner.with } : {}),
       facing: toCompass(facingPage, northTurns),
       ...(northTurns !== 0 ? { facingPage } : {}),
       ...(heights ? { sill: w.sill, head: w.head } : {}),
