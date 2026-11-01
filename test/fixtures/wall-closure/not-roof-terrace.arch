@@ -1,0 +1,12 @@
+# The same parapet with no height of its own, round a room whose label says it is open to the sky.
+plan "Roof terrace" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+  wall id=parapet exterior thickness 100 { (6000,0) (10000,0) (10000,5000) (7000,5000) }
+  room id=a at (0,0) size 6000x5000 label "Upper room" uses living
+  room id=t at (6000,0) size 4000x5000 label "Roof terrace"
+  door id=d_out at (6000,2500) width 900 wall shell
+  door id=d_entry at (3000,5000) width 900 wall shell
+  window at (3000,0) width 1500 wall shell
+}

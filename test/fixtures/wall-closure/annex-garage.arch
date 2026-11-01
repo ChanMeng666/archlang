@@ -1,0 +1,15 @@
+# The same defect with the shell in two walls and a garage for the annex: the north side is open
+# for 1500 mm, and the garage's ring is the one enclosure on the storey.
+plan "Open shell, closed garage" {
+  units mm
+  grid 50
+  wall id=west exterior thickness 200 { (2500,0) (0,0) (0,5000) (8000,5000) }
+  wall id=east exterior thickness 200 { (4000,0) (8000,0) (8000,5000) }
+  wall id=garage exterior thickness 200 { (8000,500) (13300,500) (13300,4500) (8000,4500) }
+  room id=a at (0,0) size 8000x5000 label "Living" uses living
+  room id=g at (8000,500) size 5300x4000 label "Garage" uses garage
+  door id=d_entry at (4000,5000) width 900 wall west
+  door id=d_car garage at (13300,2500) width 2400 wall garage
+  door at (8000,2500) width 900 wall east
+  window at (6000,0) width 1500 wall east
+}
