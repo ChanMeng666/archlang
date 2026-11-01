@@ -211,5 +211,26 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 
 ### S1–S3 · Turning stairs — `done` · PRs #411, #412, #414 · merges `a23a87fd`, `7e4823b3`, `d4b3faa8` · record: `research/2026-11-01-as-built.md` § Batches 2 and 3
 
+## J · The owner's round of 2026-11-02 (D30)
+
+### J1–J6 · Batch 1: fixes for 1.51.0 — `done` · PRs #429, #431, #428, #433, #430, #432 · merges `067c4aaf`, `e45da925`, `c23ef18a`, `a4072531`, `1974d928`, `9120cb3e` · record: `research/2026-11-02-as-built.md`
+
+### J7–J11 · Batch 2: common forms for 1.52.0 — `doing`
+
+L3, L4 and `finish` on an L; #369 window kinds and the glazed door; #402 net area in the stamp; #401 point 2 and corner windows; S4.
+
+### J12–J15 · Batch 3: interchange and languages for 1.53.0 — `todo` · after Show HN unless the first two finish early
+
+#366 and #343; #403; #405; #345 and D27.
+
+### J16 · Residue of batch 1 — `todo` · one PR per group; none blocks a release
+
+- **Doors and openings:** five sibling `on <wall>` hints in `src/lint/rules/doors.ts` (296, 323, 359, 421, 1089) on a derived wall; `door between <instance>` reads `E_DATUM_NAME` when a component holds an element named `top`; the span rule on a `between` run beside an authored wall; `at … from bed.left` on a mixed edge is `E_OPENING_DATUM`; a demolished wall left on the line of its replacement still refuses; the single-wall `E_OPENING_NO_SHARED_WALL` hint tells a window to use `between`, a parse error; `, in pieces` attaches to the wrong name in the several-walls message.
+- **CLI:** `compile -o` into a missing directory is a raw `ENOENT`; `batch -o` overwrites on a repeated basename, silently.
+- **Lint:** `W_BALCONY_NO_DOOR` ignores a cased `opening`; the tall arm's slide hint can cross a corner or leave the room, and the low arm's slide can pass where the wall has turned away; `W_SWING_OBSTRUCTED` can read "0 mm short"; Plan JSON writes `sill` for every window under the heights gate, so a round trip makes a default window look authored once `outdoor` is projected.
+- **Open shell:** a jog at a free end loses the span; two open shells facing each other pair across a street; a gap ending exactly at partition ends is reported with one end or none; a parapet closing back on the ring makes the figure `exterior-ring-subdivided`; `validateIntent` binds to a partial figure with no notice of `leaves_out`.
+- **`finish`:** a single-storey `void` is not read; a piece on a `void`, lift or escalator has no lint; single-storey non-residential landings read the inert context; time grows faster than storeys, so measure each candidate on its own storey; dotted furnishing of a placed component.
+- **Labels:** `relocateLabels` is not order-free, so a plan can differ with its rooms reversed (`docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch`); identical anchors and texts fall back to element order; `placesFor` and `marksOf` run before the count; `wrapLabels` still judges at 0.62 em while `fitLabels` catches what it misses; an unnamed room's area figure does not shrink; Greek and Cyrillic in a browser's bold run wider than the flat 0.62 em; a mirrored `place` may choose a different form, since text is never mirrored.
+
 ### Wave 6 (after the N10 read): G7 repair-convergence replay (the review rings of iteration N fading
 into N+1; needs `fix`/`repair` to emit a trace, design spike first), D1, A6, archlang-3d M2+, Tier B.

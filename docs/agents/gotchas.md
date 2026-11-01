@@ -115,6 +115,14 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **`actions/setup-node` takes the runner's tool cache, which lags a Node security release by
   days**; every setup-node step carries `check-latest: true`, so a new one must too (the job log
   prints `Attempting to download` when it bites).
+- **Select hashing tests by transitive import closure, not by a grep of `*.test.ts`.** `test/block-stair-byte-identity.test.ts`
+  hashes through `test/block-stair-law.ts`, so a word search misses it, and only that law hashes the accessibility profile:
+  a hint change went red in CI alone (#432). `packages/archlang-3d` and `packages/mcp-worker` hold hashing tests too.
+- **Two PRs that both move digest tables can each be green and red together**: required checks are not
+  up-to-date-with-`main`. Merge the first, merge `main` into the second, re-take, then pin it.
+- **A guard that skips when a dependency is absent can be dead with the dependency present.** A test resolving
+  `pdfkit/package.json` hit `ERR_PACKAGE_PATH_NOT_EXPORTED`, took the "absent" branch everywhere, and passed locally while
+  never reading the file (#433). Run such a test with `CI=true` before trusting it.
 - **Parallel PRs conflict on the records** (`CHANGELOG.md` `[Unreleased]`, a programme's
   `handoff.md` and `cards.md`) after nearly every merge. Resolve by keeping both entries; counts in
   those records are recounted only at a stage end, never per PR.
