@@ -82,8 +82,8 @@ scale denominator to land in plan millimetres:
 
 | Annotation | Sheet size |
 |-----------|------------|
-| Room name | 3.5 mm |
-| Room area, dimension text | 2.5 mm |
+| Room name | 3.5 mm, down to 2 mm where it does not fit |
+| Room area, dimension text | 2.5 mm (a room's area figure steps down with its name, from 2.5 mm) |
 | Furniture / fixture label | 2 mm |
 | Cut wall outline (the heavy pen) | 0.5 mm |
 | Dimensions, glazing, chrome (the thin pen) | 0.18 mm |
@@ -1277,13 +1277,34 @@ clause as under `at`. A pin off the room's own floor is advisory
 on one line at the drawing's label size, and it does fit broken onto several, it is drawn on
 several: the fewest lines that fit, as evenly balanced as possible, broken only at spaces.
 A separator word such as the `/` of `"Living / Kitchen"` stays on the line before the break
-(`Living /` · `Kitchen`); a word is never split, hyphenated, abbreviated, shrunk or turned.
+(`Living /` · `Kitchen`); a word is never split, hyphenated, abbreviated or turned.
 The area figure stays directly under the last line, and a `label … at (x,y)` pin still places
-the block. A name that fits on one line is drawn exactly as before, and one that fits neither
-way — a single word wider than its room — stays on one line. Only the drawing wraps: the name
-in `describe()`, `lint()`, diagnostics, the room schedule and `annotate`'s `data-arch-label`
-is the one-line string you wrote. Fit is judged at the label size, so a name that wraps on a
-display drawing may fit on one line on a sheet, whose text is smaller.
+the block. A name that fits on one line is drawn exactly as before. Only the drawing wraps: the
+name in `describe()`, `lint()`, diagnostics, the room schedule and `annotate`'s
+`data-arch-label` is the one-line string you wrote. Fit is judged at the label size, so a name
+that wraps on a display drawing may fit on one line on a sheet, whose text is smaller.
+
+**A label that still does not fit shrinks.** A room's label stands clear when neither its name
+nor its area figure lies over a wall, a door's swing or a furniture, fixture or stair symbol, or
+runs off its floor: what [`W_ANNOTATION_OVERLAP`](error-codes.md) reads. One that does not is
+drawn at the first height that clears it, 3, 2.5 or 2 mm on the sheet, wrapped at a space where
+that helps, at the clear place nearest the room's centre. 2 mm is the furniture-label size, the
+smallest lettering the sheet draws; the choice is this drawing's own, no standard's minimum.
+Without `paper` there is no sheet height to speak of, and the steps run from that drawing's
+room-name size down to its furniture-label size. The area figure stays at its size until the
+name reaches it and then goes down with the name, so it never stands larger than the name. A
+label that fits does not change at all.
+
+A label that clears at no height is drawn in the form that leaves the least of it buried, and
+`W_ANNOTATION_OVERLAP` reports it; one wholly on a piece keeps its size, since a smaller name is
+no less on it. No leader line is drawn. A `label … at (x,y)` pin keeps its size, as it keeps its
+place, and an `outdoor` surface's label and the figure of a room with no name do not shrink. Text
+is never mirrored, so a mirrored `place` may choose a different form or height from its twin.
+
+Width is an estimate covering two faces, character by character, taking the wider of Roboto (what
+the PNG and the PDF draw) and Helvetica Bold (what `Helvetica, Arial` at a name's weight reaches in a
+browser; Arial Bold has the same widths). It is no promise for every font: a host with neither, or a
+theme that names another family, can draw a name wider than this reads.
 
 **Room purpose — `uses` (v1.3).** Tag a room with one or more space kinds so the
 analysis layer knows what it *is* without guessing from the label:

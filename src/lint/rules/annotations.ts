@@ -15,9 +15,9 @@
  * The positions are the drawn ones, from the code that draws them, never re-derived:
  *
  *  - the room labels where the Scene put them, AFTER `wrapLabels` and `relocateLabels` moved
- *    them off whatever they could (`toScene`, `src/label-placement.ts`). A label the placer
- *    could clear is never reported; one it could not, or one the author pinned with
- *    `label … at (x,y)`, is;
+ *    them off whatever they could and `fitLabels` shrank what still did not fit (`toScene`,
+ *    `src/label-placement.ts`, `src/label-fit.ts`). A label the placer could clear is never
+ *    reported; one it could not, or one the author pinned with `label … at (x,y)`, is;
  *  - the `dims auto` numbers from {@link autoDimensions} (the list `toScene` renders) placed by
  *    {@link dimTextPrim} (the arithmetic `dim.render` letters them with), at the Scene's own
  *    `sizes`;
@@ -35,8 +35,9 @@
  * `W_DIM_OVERLAP` measure with. There is no font, canvas or Node API anywhere in it. The walls, the
  * swings and the floor's edge are the exception: a label sits right up to them on every plan with
  * a small room, and that estimate's slack read a name with clear floor on both sides as buried in
- * both walls (`two-bed-min-area`'s "Bathroom"), so those three use {@link INK_EM}, the width the
- * bundled face draws on average.
+ * both walls (`two-bed-min-area`'s "Bathroom"), so those three use {@link inkExtent}, the width the
+ * text can draw in the PNG's Roboto or a browser's Helvetica Bold, character by character.
+ * `fitLabels` reads the same two widths.
  *
  * ## What "over" means
  *
@@ -91,7 +92,7 @@
 
 import type { Point } from "../../ast.js";
 import type { Diagnostic } from "../../diagnostics.js";
-import { doorLeaves, rectCorners, type DoorSwing } from "../../geometry.js";
+import { doorLeaves, rectCorners } from "../../geometry.js";
 import type { RDim, RDoor, ResolvedElement, ResolvedPlan, RFurniture, RRoom } from "../../ir.js";
 import type { ScenePrim } from "../../scene.js";
 import { BUILTIN_RUNTIME } from "../../registry.js";
@@ -99,12 +100,11 @@ import { autoDimensions, toScene } from "../../scene-build.js";
 import { dimTextPrim } from "../../elements/dim.js";
 import { titleBlockMetrics, titleRows } from "../../chrome-layout.js";
 import { drawBudgetDiagnostic } from "../../draw-budget.js";
+import { isSymbolElement, sectorOf, shapesOf } from "../../label-fit.js";
 import { COLLIDE_MIN, meanExtent, wallBands } from "../../label-placement.js";
-import { textExtent } from "../../text-layout.js";
-import { EM_PER_CHAR, INK_EM, textWidth } from "../../text-metrics.js";
+import { inkExtent, textExtent } from "../../text-layout.js";
+import { EM_PER_CHAR, textWidth } from "../../text-metrics.js";
 import { fmt2 as fmtMm } from "../../num-format.js";
-import { isUnderlay } from "../../fixtures-catalog.js";
-import { isVertical } from "../../vertical.js";
 import { pointInRoomBox, roomBox } from "../../analyze.js";
 import { GridIndex } from "../../geometry/grid-index.js";
 import { clippedArea, clippedSigned, pointInPolygon } from "../../geometry/polygon.js";
@@ -113,20 +113,12 @@ import type { LintContext, LintRule } from "../context.js";
 
 type TextPrim = Extract<ScenePrim, { t: "text" }>;
 
-/** Chords per curved path edge or circle quarter: enough that a WC bowl's area is within a
- *  percent of the true curve, which is far inside the 2 % trigger. */
-const ARC_STEPS = 8;
-
 /**
  * The counted collision budget per storey: pair comparisons plus clipped vertices. A furnished
  * flat spends a few thousand; the largest shipped plan under fifty thousand. A million keeps the
  * worst case to tens of milliseconds while no real building comes near it.
  */
 export const MAX_ANNOTATION_WORK = 1_000_000;
-
-/** Kinds whose drawn shapes are symbols a number or a name must not sit on. */
-const isSymbolElement = (el: ResolvedElement): boolean =>
-  (el.kind === "furniture" && !isUnderlay((el as RFurniture).category)) || isVertical(el);
 
 /** One drawn symbol: its element, its closed shapes, and their joint extent. */
 interface SymbolInk {
@@ -187,7 +179,7 @@ export const annotationOverlap: LintRule = {
         // `room.render` draws the name first (only when the room has one), then the area figure.
         const isName = !!room.label && !named.has(room);
         named.add(room);
-        labels.push({ room, prim: n.prim, text: textBox(n.prim), ink: textBox(n.prim, INK_EM / EM_PER_CHAR), isName });
+        labels.push({ room, prim: n.prim, text: textBox(n.prim), ink: textBox(n.prim, inkExtent(n.prim).w), isName });
         continue;
       }
       const el = byId.get(n.elementId);
@@ -386,7 +378,7 @@ export const annotationOverlap: LintRule = {
               ? tight || e.doors.length > 0
                 ? `${movable.length > 0 ? `Move ${byId} clear of the figure, enlarge the room` : "Enlarge the room"}, or name it and give its label a clear point with \`label "…" at (x,y)\` if the floor has one.`
                 : `Move ${byId} off the middle of the floor, or name the room and give its label a clear point with \`label "…" at (x,y)\`.`
-              : `The label placer found no clear part of the floor of ${roomRef(ctx, room)} big enough for the label. ${
+              : `The label placer did not find a clear place for the label on the floor of ${roomRef(ctx, room)}, down to its smallest lettering. ${
                   e.nameTight
                     ? `Shorten the name or widen the room, or give it a clear point with ${clearPoint} if the floor has one`
                     : tight
@@ -557,9 +549,14 @@ function wallReach(ir: ResolvedPlan, walls: readonly (readonly Point[][])[]): Gr
 /** A door with the id an agent edits it by, for a hint. */
 const doorWithId = (d: RDoor): string => (idAuthored(d) ? `the door (\`${d.id}\`)` : "the door");
 
-/** Is `p` on `room`'s floor? */
+/** Is `p` on `room`'s floor? A round room's floor is its circle, as `W_ROOM_LABEL_OUTSIDE` reads
+ *  it, never the 48-gon: a pin in the sliver between them is on the floor. */
 const pointInRoomFloor = (p: Point, room: RRoom): boolean =>
-  room.poly ? pointInPolygon(p.x, p.y, room.poly) : pointInRoomBox(p, roomBox(room));
+  room.circle
+    ? Math.hypot(p.x - room.circle.c.x, p.y - room.circle.c.y) <= room.circle.r
+    : room.poly
+      ? pointInPolygon(p.x, p.y, room.poly)
+      : pointInRoomBox(p, roomBox(room));
 
 /** "a", "a and b", "a, b and c" — first-hit order, duplicates dropped. */
 function listOf(words: readonly string[]): string {
@@ -572,9 +569,9 @@ const orList = (words: readonly string[]): string =>
   words.length <= 1 ? (words[0] ?? "") : `${words.slice(0, -1).join(", ")}, or ${words[words.length - 1]}`;
 
 /** The turned rectangle a text occupies on the sheet, about its anchor. */
-function textBox(prim: TextPrim, widthScale = 1): Text {
+function textBox(prim: TextPrim, width?: number): Text {
   const extent = textExtent(prim);
-  const w = extent.w * widthScale;
+  const w = width ?? extent.w;
   const h = extent.h;
   const th = ((prim.rotate ?? 0) * Math.PI) / 180;
   const u = { x: Math.cos(th), y: Math.sin(th) };
@@ -586,64 +583,6 @@ function textBox(prim: TextPrim, widthScale = 1): Text {
   const box = emptyBox();
   for (const p of rect) grow(box, p);
   return { rect, box, area: w * h };
-}
-
-/** The quarter-disc a door leaf sweeps, hinge first, its arc walked in {@link ARC_STEPS} chords. */
-function sectorOf(s: DoorSwing): Point[] {
-  const a0 = Math.atan2(s.farJamb.y - s.hinge.y, s.farJamb.x - s.hinge.x);
-  let d = Math.atan2(s.leafEnd.y - s.hinge.y, s.leafEnd.x - s.hinge.x) - a0;
-  while (d > Math.PI) d -= 2 * Math.PI;
-  while (d < -Math.PI) d += 2 * Math.PI;
-  const ring: Point[] = [s.hinge];
-  for (let i = 0; i <= ARC_STEPS; i++) {
-    const a = a0 + (d * i) / ARC_STEPS;
-    ring.push({ x: s.hinge.x + s.radius * Math.cos(a), y: s.hinge.y + s.radius * Math.sin(a) });
-  }
-  return ring;
-}
-
-/** The closed shapes a drawn primitive covers; none for a stroke, a text or a hatch. */
-function shapesOf(prim: ScenePrim): Point[][] {
-  switch (prim.t) {
-    case "polygon":
-      return prim.pts.length >= 3 ? [prim.pts] : [];
-    case "region":
-      return prim.loops.filter((l) => l.length >= 3);
-    case "circle": {
-      const n = 4 * ARC_STEPS;
-      const ring: Point[] = [];
-      for (let i = 0; i < n; i++) {
-        const a = (2 * Math.PI * i) / n;
-        ring.push({ x: prim.center.x + prim.r * Math.cos(a), y: prim.center.y + prim.r * Math.sin(a) });
-      }
-      return [ring];
-    }
-    case "path":
-      return prim.loops
-        .map((lp) => {
-          const ring: Point[] = [lp.start];
-          let from = lp.start;
-          for (const e of lp.edges) {
-            if (e.t === "arc") {
-              // A path arc is a MINOR arc by the primitive's contract: walk the short way round.
-              const a0 = Math.atan2(from.y - e.center.y, from.x - e.center.x);
-              let d = Math.atan2(e.to.y - e.center.y, e.to.x - e.center.x) - a0;
-              while (d > Math.PI) d -= 2 * Math.PI;
-              while (d < -Math.PI) d += 2 * Math.PI;
-              for (let i = 1; i < ARC_STEPS; i++) {
-                const a = a0 + (d * i) / ARC_STEPS;
-                ring.push({ x: e.center.x + e.r * Math.cos(a), y: e.center.y + e.r * Math.sin(a) });
-              }
-            }
-            ring.push(e.to);
-            from = e.to;
-          }
-          return ring;
-        })
-        .filter((r) => r.length >= 3);
-    default:
-      return [];
-  }
 }
 
 const emptyBox = (): Box => ({ minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity });

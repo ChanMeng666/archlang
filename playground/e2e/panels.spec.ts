@@ -14,6 +14,7 @@ test.describe("output tabs", () => {
       ["#tab-describe", "#describe"],
       ["#tab-lint", "#lint"],
       ["#tab-intent", "#intent"],
+      ["#tab-takeoff", "#takeoff"],
       ["#tab-preview", "#preview"],
     ] as const) {
       await page.locator(tab).click();

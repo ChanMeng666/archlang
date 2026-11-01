@@ -2,15 +2,16 @@
 # origin: evidence.md section 1 row 10; repro/family-apartment.arch Bedroom 4 (label over furniture, reduced, at 1:100 so the label keeps its size); audits/showcase-and-examples.md BE2
 # expect: W_ANNOTATION_OVERLAP
 # status: done
-# fact: the 350 mm "Bedroom 4" label is centred at (1137.5, 2330), about 1730 mm wide at 0.55 em per
-#   character (x 270-2000), and the bed spans x 1650-3150, y 900-2900: about 350 x 350 mm of the label lies on the bed
+# fact: the 350 mm "Bedroom 4" label is centred at (1150, 2330), about 1730 mm wide at 0.55 em per
+#   character (x 285-2015), and the bed spans x 1650-3150, y 900-2900: about 365 x 350 mm of the label lies on the bed.
+#   The label is pinned where the room's centre put it: unpinned, the drawing now shrinks it clear
 plan "Room label over the bed" {
   units mm
   grid 50
   paper A4 landscape
   scale 1:100
   wall id=shell exterior thickness 200 { (0,0) (3250,0) (3250,3000) (0,3000) close }
-  room id=r_bed4 at (0,0) size 3250x3000 label "Bedroom 4" uses bedroom
+  room id=r_bed4 at (0,0) size 3250x3000 label "Bedroom 4" at (1150,2400) uses bedroom
   door at (0,1500) width 800 wall shell hinge left swing in
   window at (3250,1000) width 1600 wall shell
   furniture bed at (1650,900) size 1500x2000

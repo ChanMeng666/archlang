@@ -17,6 +17,39 @@ function run(args: string[]): { status: number | null; stdout: string; stderr: s
 }
 
 describe("CLI — batch", () => {
+  it("-o creates a directory that does not exist, however deep", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-batch-"));
+    const dir = join(root, "not", "yet", "here");
+    const r = run(["batch", "examples/studio.arch", "examples/two-bed.arch", "-o", dir, "--json"]);
+    expect(r.status).toBe(0);
+    const j = JSON.parse(r.stdout);
+    expect(j.results.map((x: { output: string }) => x.output)).toEqual([
+      join(dir, "studio.svg"),
+      join(dir, "two-bed.svg"),
+    ]);
+    for (const res of j.results) expect(existsSync(res.output)).toBe(true);
+  }, 60000);
+
+  it("a plan that does not compile leaves no directory behind", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-batch-"));
+    const bad = join(root, "bad.arch");
+    writeFileSync(bad, 'plan "x" { units mm\n  room id=a at (0,0) size 0x0\n  nonsense\n}\n');
+    const dir = join(root, "out");
+    const r = run(["batch", bad, "-o", dir, "--json"]);
+    expect(r.status).toBe(2);
+    expect(existsSync(dir)).toBe(false);
+  }, 60000);
+
+  it("a file where the directory should be is one clear error, with the IO exit code", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-batch-"));
+    const dir = join(root, "taken");
+    writeFileSync(dir, "a file\n");
+    const r = run(["batch", "examples/studio.arch", "-o", dir]);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain(`cannot create the output directory ${dir}`);
+    expect(r.stderr.trim().split("\n")).toHaveLength(1);
+  }, 60000);
+
   it("renders many files in one call: array JSON, both outputs written, exit 0", () => {
     const dir = mkdtempSync(join(tmpdir(), "arch-batch-"));
     const r = run(["batch", "examples/studio.arch", "examples/two-bed.arch", "-f", "svg", "-o", dir, "--json"]);

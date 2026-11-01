@@ -38,6 +38,7 @@ import type { FenceStyle, OutdoorKind, PlanNode, Point, RailSide, VerticalDir } 
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { grossInternalArea, type GrossAreaReason } from "./analyze/gross-area.js";
+import { openShells } from "./analyze/open-shell.js";
 import { type DoorKind, WALL_STATUSES, type WallStatus } from "./grammar/tokens.js";
 import type { Diagnostic } from "./diagnostics.js";
 import {
@@ -936,6 +937,18 @@ export interface SceneSummary {
      */
     gross_internal_area_omitted?: GrossAreaReason;
     /**
+     * What {@link gross_internal_area_m2} leaves out, present only when it does: the ids of the
+     * rooms with floor outside every exterior ring, in source order, on a storey where a ring closes
+     * and an open shell stands beside it or off it (`W_EXTERIOR_RING_OPEN`'s reading,
+     * `src/analyze/open-shell.ts`), so the figure is a closed porch's or one building's, not the
+     * storey's. A room a ring covers in part is listed, and the figure holds the covered part: the
+     * list names what is short, not how much. A room whose label says it is open to the sky is not
+     * listed. Absent on every other
+     * storey, a closed building's and one with no figure alike, and absent past that reading's
+     * counted cap. A second key, so the figure and {@link gross_internal_area_omitted} stay exactly one of two.
+     */
+    gross_internal_area_leaves_out?: string[];
+    /**
      * The BUILDING's gross internal area in m², 2 dp: the sum of every storey's
      * {@link gross_internal_area_m2} (each already rounded, the way `floor_area_m2` is summed),
      * equal to it on a single-storey plan. Top-level `totals` only: never inside `levels[i]`,
@@ -951,6 +964,12 @@ export interface SceneSummary {
      * blocks), and that storey's {@link gross_internal_area_omitted} reason.
      */
     gross_internal_area_all_levels_omitted?: { level?: number; reason: GrossAreaReason };
+    /**
+     * What {@link gross_internal_area_all_levels_m2} leaves out, present only when it does: each
+     * storey with a {@link gross_internal_area_leaves_out}, lowest first, by its `level` number
+     * (absent on a plan with no `level` blocks). Top-level `totals` only, as that figure is.
+     */
+    gross_internal_area_all_levels_leaves_out?: Array<{ level?: number; rooms: string[] }>;
     /**
      * Sum of the rooms' {@link RoomSummary.net_area_m2}, rounded to 2 decimals — summed from
      * the same rounded per-room figures, the way `floor_area_m2` is, so the total and the
@@ -1670,6 +1689,16 @@ function summarize(
   // Skipped on the accessible-caption path (`captionForPlan`, inside `compile()`): the caption
   // never reads it, so `compile()` does none of this unbudgeted work.
   const gia = withGrossArea ? grossInternalArea(ir.walls) : null;
+  // Past its counted cap this says nothing: the figure stands, and no list is guessed at.
+  const shells = gia?.ok
+    ? openShells({
+        walls: ir.walls,
+        segs: segs(),
+        rooms: roomEls,
+        rects: roomRects,
+      })
+    : null;
+  const leavesOut = shells && !("refused" in shells) ? shells.rooms.map((r) => r.id) : [];
   const totals = {
     rooms: rooms.length,
     doors: doors.length,
@@ -1682,6 +1711,7 @@ function summarize(
       : gia.ok
         ? { gross_internal_area_m2: r2(gia.mm2 / 1_000_000) }
         : { gross_internal_area_omitted: gia.reason }),
+    ...(leavesOut.length > 0 ? { gross_internal_area_leaves_out: leavesOut } : {}),
     // Never a sum over a subset: one omitted room omits the total.
     ...(rooms.every((r) => r.net_area_m2 !== undefined)
       ? { net_floor_area_m2: r2(rooms.reduce((s, r) => s + (r.net_area_m2 ?? 0), 0)) }
@@ -2122,6 +2152,11 @@ function withAllLevelsGrossArea(
 ): SceneSummary["totals"] {
   const storeys = perLevel ? perLevel.map((l) => ({ level: l.level, t: l.totals })) : [{ level: undefined, t: totals }];
   const missing = storeys.find((s) => s.t.gross_internal_area_m2 === undefined);
+  const left = storeys.flatMap((s) =>
+    s.t.gross_internal_area_leaves_out
+      ? [{ ...(s.level !== undefined ? { level: s.level } : {}), rooms: s.t.gross_internal_area_leaves_out }]
+      : [],
+  );
   const building = missing
     ? {
         gross_internal_area_all_levels_omitted: {
@@ -2129,7 +2164,10 @@ function withAllLevelsGrossArea(
           reason: missing.t.gross_internal_area_omitted ?? ("no-closed-exterior-ring" as const),
         },
       }
-    : { gross_internal_area_all_levels_m2: r2(storeys.reduce((n, s) => n + (s.t.gross_internal_area_m2 ?? 0), 0)) };
+    : {
+        gross_internal_area_all_levels_m2: r2(storeys.reduce((n, s) => n + (s.t.gross_internal_area_m2 ?? 0), 0)),
+        ...(left.length > 0 ? { gross_internal_area_all_levels_leaves_out: left } : {}),
+      };
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(totals)) {
     out[k] = v;

@@ -424,12 +424,15 @@ describe("the downstream witnesses", () => {
     expect(scene!.sizes.roomFont).toBeCloseTo(379.8, 6);
     expect(drawnNames(svg).map((n) => n.lines)).toEqual([
       // "Accessible" alone is 10 × 0.62 × 379.8 = 2355 mm by the shared estimate, wider than
-      // the 2225 mm clear: no wrapped form fits, so the overflowing line is left as it was.
-      ["Accessible WC"],
+      // the 2225 mm clear, so `wrapLabels` leaves the line. It draws 4.85 em, 1842 mm: `fitLabels`
+      // reads that width, and the wrapped form it finds is the fit `docs/backlog.md` L.2 said
+      // only a real font's widths could reach.
+      ["Accessible", "WC"],
       // 1974 mm-class: 2119 mm in a room 2050 mm clear, which no position clears.
       ["Bedroom", "3"],
-      // "Sleeping" alone (1884 mm) is wider than the 1800 mm alcove.
-      ["Sleeping Alcove"],
+      // "Sleeping" alone (1884 mm by the estimate) is wider than the 1800 mm alcove; it draws
+      // 3.98 em, 1512 mm, and `fitLabels` wraps it the same way.
+      ["Sleeping", "Alcove"],
       ["Living / Kitchen"],
     ]);
   });
@@ -507,7 +510,7 @@ describe("the backends agree on a wrapped name", () => {
   it("SVG: the tspans are the scene's lines at the scene's positions", () => {
     const { scene, tspans } = drawn();
     expect(tspans.map((l) => l.value)).toEqual(["Bedroom", "3"]);
-    const prim = scene!.nodes.map((n) => n.prim).find((p): p is Text => p.t === "text" && p.block !== undefined)!;
+    const prim = scene!.nodes.map((n) => n.prim).find((p): p is Text => p.t === "text" && p.value === "Bedroom 3")!;
     expect(tspans).toEqual(textLines(prim).map((l) => ({ value: l.value, x: l.at.x, y: l.at.y })));
   });
 

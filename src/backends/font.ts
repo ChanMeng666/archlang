@@ -24,6 +24,10 @@
  * cli.ts". The Node path only runs when a Node-only backend actually renders.
  */
 
+import { isCjkCodePoint } from "../text-metrics.js";
+
+export { isCjkCodePoint };
+
 /** The bundled font's family name — pinned as resvg's default and used as the
  *  pdfkit registration alias. */
 export const BUNDLED_FONT_FAMILY = "Roboto";
@@ -265,24 +269,6 @@ export function fontCoverage(path: string): Promise<Coverage> {
 
 // ---------------------------------------------------------------------------
 // Choosing a face for a string, and reporting what no face can draw.
-
-/** Is `cp` a character the CJK package is the answer for (Han, kana, Hangul, CJK
- *  punctuation, fullwidth forms)? Used only to word the warning for a MISSING package. */
-export function isCjkCodePoint(cp: number): boolean {
-  return (
-    (cp >= 0x1100 && cp <= 0x11ff) || // Hangul Jamo
-    (cp >= 0x2e80 && cp <= 0x2fdf) || // CJK radicals, Kangxi radicals
-    (cp >= 0x3000 && cp <= 0x33ff) || // CJK punctuation, kana, bopomofo, compat jamo, enclosed, compat
-    (cp >= 0x3400 && cp <= 0x4dbf) || // Extension A
-    (cp >= 0x4e00 && cp <= 0x9fff) || // Unified ideographs
-    (cp >= 0xa960 && cp <= 0xa97f) || // Hangul Jamo Extended-A
-    (cp >= 0xac00 && cp <= 0xd7ff) || // Hangul syllables + Jamo Extended-B
-    (cp >= 0xf900 && cp <= 0xfaff) || // Compatibility ideographs
-    (cp >= 0xfe30 && cp <= 0xfe4f) || // CJK compatibility forms
-    (cp >= 0xff00 && cp <= 0xffef) || // Half/fullwidth forms
-    (cp >= 0x20000 && cp <= 0x3ffff) // Supplementary ideographic planes
-  );
-}
 
 /** What a text run could not be drawn with — collected across a whole render. */
 export interface MissingGlyphs {

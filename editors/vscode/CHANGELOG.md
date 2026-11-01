@@ -14,6 +14,13 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.39.0] - 2026-11-02
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.51.0`** (room labels that shrink to fit, the width of a label read per
+  character, and lint reports that name the storey). No language form changed.
+
 ## [0.38.0] - 2026-11-01
 
 ### Changed

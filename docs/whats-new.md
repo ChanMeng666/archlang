@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.50
+# What's new in 1.44 to 1.51
 
-The features that arrived in 1.44.0 to 1.50.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.51.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -21,7 +21,8 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Open shells named, empty rooms named | 1.48.0 | [Gaps that used to pass quietly](#gaps-that-used-to-pass-quietly) |
 | One L-shaped room in `walls from rooms` | 1.49.0 | [L-shaped rooms](#l-shaped-rooms) |
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
-| `arch finish` on a plan with storeys | next release | [Furnishing every storey](#furnishing-every-storey) |
+| `arch finish` on a plan with storeys | 1.51.0 | [Furnishing every storey](#furnishing-every-storey) |
+| Labels that shrink to fit a small room | 1.51.0 | [Labels in small rooms](#labels-in-small-rooms) |
 
 ## Quantities and takeoff
 
@@ -30,7 +31,9 @@ net area, the storey's net floor area, and door and window counts by width. Each
 convention in its name (`length_centreline_mm` against `length_face_mm`, `area_net_m2`), so a number
 read from a spreadsheet says what it measures. `--format` picks `csv` (one figure per row) or `md`
 (tables, the default); `--waste <pct>` adds a floor area with the allowance you chose, and no
-allowance is ever assumed. The same figures are `describe --facts quantities`.
+allowance is ever assumed. The same figures are `describe --facts quantities`, and the Playground's
+Takeoff tab shows them for the storey on screen, with a box for your waste percentage that starts
+blank and a CSV of the whole plan in the same bytes as `--format csv`.
 
 ```bash
 archlang takeoff cabin.arch --format csv --waste 10
@@ -241,7 +244,7 @@ note: Plan JSON carries no paper; this export leaves out `paper A4 landscape` (t
 - `W_FURNITURE_ON_STAIR`: a piece on a flight, or on the landing it owes. `arch finish` no longer places one there.
 - `W_ANNOTATION_OVERLAP` now also reports a room's name or area figure over a wall or a door's swing, or running
   off its floor. The label pass no longer walks a name out of its room; a name too wide for its room stays
-  there and is reported. The drawing neither shrinks a label nor draws a leader to it.
+  there and is reported. The drawing did not yet shrink a label: see [Labels in small rooms](#labels-in-small-rooms).
 
 ## Gaps that used to pass quietly
 
@@ -316,7 +319,7 @@ It draws as one stair, with one label, one walking line and one break line. `W_S
 
 ## Furnishing every storey
 
-`arch finish` used to report a plan with `level` blocks and leave it empty. In the next release it furnishes each storey by the rules of a one-storey plan, and it writes each storey's pieces inside that storey's own block:
+`arch finish` used to report a plan with `level` blocks and leave it empty. Since 1.51.0 it furnishes each storey by the rules of a one-storey plan, and it writes each storey's pieces inside that storey's own block:
 
 ```diff
    level 0 "Ground" {
@@ -329,3 +332,23 @@ It draws as one stair, with one label, one walking line and one break line. `W_S
 ```
 
 The same room id on two levels is two rooms, so `in liv` means the room of the block it is written in, and each entry of `changes` and `unresolved` carries its `level`. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. A room of a placed component stays empty and is named; furnish the component, or write `furniture … in u1.bed` yourself. A one-storey plan gets the same bytes as before, so `finish` can still write a piece on a `void`, a lift or an escalator there.
+
+## Labels in small rooms
+
+A room's label that does not fit now shrinks. If its name or area figure would lie over a wall, a door's swing or a fixture, or run off the floor, the label is drawn at the first height that clears: 3, 2.5 or 2 mm on the sheet, wrapped at a space where that helps, at the clear place nearest the room's centre. A label that fits does not change.
+
+```arch
+plan "A small store" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  room id=wc at (0,0) size 1000x1400 label "WC" uses wc
+  room id=store below wc align left size 1200x900 label "Abstellraum" uses storage
+  walls from rooms exterior 200 partition 100
+  door between wc and store at center width 600 swing into store
+}
+```
+
+"Abstellraum" comes out at 2 mm, beside the door's swing. Write `Abstell- raum` and it breaks at the space; a word is never split on its own. A pinned `label … at (x,y)` keeps its size. A label that clears at no height is reported by `W_ANNOTATION_OVERLAP`, and no leader line is drawn. 2 mm is the size of furniture labels, the smallest lettering the sheet draws, and it is this drawing's own rule, no standard's minimum. Without `paper`, the steps end at that drawing's furniture-label size.
+
+Widths are now read character by character, in place of one figure for every letter: the wider of Roboto, which the PNG and the PDF draw, and Helvetica Bold, which a browser reaches for an SVG's room name. `WC` reads 0.83 of its size per character and "Utility" 0.4, so `W_ANNOTATION_OVERLAP` can report a name it used to pass, and drop one it used to report. This is an estimate covering those two faces, not a promise for every font.

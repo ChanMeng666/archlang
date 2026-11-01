@@ -1942,19 +1942,27 @@ and generated plans.
 
 ### L.2 · What still overflows, by design — `declared`
 
-- **A single word wider than its room** (or a name none of whose wrapped forms fits): drawn on
-  one line as before, since stacking it would not make it fit. That includes the downstream
-  "Accessible WC" witness at ≈380 mm text in a 2225 mm clear room: "Accessible" alone is
-  2355 mm by the estimate (10 × 0.62 em), so it stays one line. The estimate is deliberately
-  generous; a real-font measure would fit it, and is out of reach without shipping a font.
-- **The area figure never wraps.** It is a number and its unit, which no break should split.
-  It is drawn under the name and overflows a room narrower than itself (≈7 characters at
-  0.73 of the name's size, about 1.2 m on a display drawing). A wrapped name never pushes it
-  into a wall it did not touch before.
-- **Fit is judged on the row through the label's anchor**, so a name that would fit one line
-  in a wider part of a polygon room may still wrap; and at most three line counts (the fewest
-  and the next two) are tried, which bounds the work on any input.
-- **An `outdoor` surface's name does not wrap**; only a room's does.
+Since #367 a room's label that does not fit is drawn smaller (`fitLabels`, `src/label-fit.ts`),
+down to the furniture-label size, wrapped at a space where that helps, on a table of the wider of
+Roboto's and Helvetica Bold's advances (`inkWidth`, `src/text-metrics.ts`). What is left:
+
+- **A name wider than its room at the smallest height**: drawn there, and reported by
+  `W_ANNOTATION_OVERLAP`. No leader line, and no word is ever split: `Abstellraum` does not become
+  `Abstell-` · `raum` unless the author writes the space.
+- **`wrapLabels` still judges at the generous estimate**, so the "Accessible WC" witness stays on
+  one line through that step and is wrapped by `fitLabels` instead, which reads the width drawn.
+- **The area figure never wraps.** It is a number and its unit, which no break should split. It
+  goes down with the name, and past that overflows a room narrower than itself.
+- **Fit is judged on the row through the label's anchor** by `wrapLabels`, so a name that would fit
+  one line in a wider part of a polygon room may still wrap; and at most three line counts (the
+  fewest and the next two) are tried, which bounds the work on any input.
+- **The places tried are a lattice of the room's box** (`FRACTIONS`), so an L can have a clear
+  place none of them hits. `W_ANNOTATION_OVERLAP`'s hint says the placer did not find one, no more.
+- **An `outdoor` surface's name, a pinned label and the figure of a room with no name do not
+  shrink**, and an `outdoor` name does not wrap; only a room's does.
+- **The widths cover two faces, not every font.** A host with neither Helvetica nor Arial, or a
+  theme that names another family, can draw a name wider than `inkWidth` reads. Outside the tables
+  (past Latin-1, not CJK) a character takes the flat 0.62 em.
 
 ## A11y of the compiled drawing (found downstream, 2026-09-13)
 

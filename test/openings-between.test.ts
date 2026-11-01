@@ -309,6 +309,31 @@ suite("refusals, each spanned on its clause", () => {
     one(poly, "E_ROOM_NOT_RECTANGLE", "p");
   });
 
+  it("a room `between` cannot read is said in the words of the line, never as a datum it did not write", () => {
+    const unknown = one(P("  door id=d between a and nosuch at center width 800\n"), "E_UNKNOWN_REF", "nosuch");
+    expect(unknown.message).toBe('Door "d" names "nosuch", which is not a room this plan or component can see');
+    expect(unknown.hints).toBeUndefined();
+    // A near miss still gets its suggestion, as the room, and the suggestion resolves.
+    const typo = one(P("  opening id=o between a and bb at center width 800\n"), "E_UNKNOWN_REF", "bb");
+    expect(typo.message).toBe('Opening "o" names "bb", which is not a room this plan or component can see');
+    expect(typo.hints).toEqual(['did you mean "b"?']);
+    expect(errors(P("  opening id=o between a and b at center width 800\n"))).toEqual([]);
+    const unplaced = plan(
+      `  room id=a at (0,0) size 4000x5000\n  room id=b right-of ghost size 4000x5000\n${WALLS}  door id=d between a and b at center width 800\n`,
+    );
+    const [d] = errors(unplaced).filter((x) => x.code === "E_DATUM_UNPLACED");
+    expect(d!.message).toBe('Door "d" names "b", a room that could not be placed (its own error says why)');
+    const flat = plan(`${ROOMS}  room id=z at (8000,0) size 0x5000\n  door id=d between b and z at center width 800\n`);
+    const [f] = errors(flat).filter((x) => x.code === "E_DATUM_UNPLACED");
+    expect(f!.message).toBe('Door "d" names "z", a room with no positive size');
+    for (const x of [unknown, typo, d!, f!]) expect(`${x.message} ${x.hints ?? ""}`).not.toMatch(/\.top/);
+  });
+
+  it("a datum the author did write keeps its own words", () => {
+    const d = one(P("  door id=d between a and b at 600 from nosuch.top width 800\n"), "E_UNKNOWN_REF", "nosuch.top");
+    expect(d.message).toContain("`nosuch.top`");
+  });
+
   it("E_WALL_BETWEEN_NOT_ADJACENT: no shared run, or one room twice", () => {
     const three = plan(
       `${ROOMS}  room id=c at (8000,0) size 2000x5000\n${WALLS}  door id=d between a and c at center width 800\n`,
