@@ -331,7 +331,7 @@ export function legendEntries(
     if (windows.has(k)) out.push({ kind: "opening", key: k, name: `${k} window`, windowKind: k });
   }
   if (openings.some((o) => o.doorKind === "glazed_sliding")) {
-    out.push({ kind: "opening", key: "glazed_sliding", name: "glazed_sliding" });
+    out.push({ kind: "opening", key: "glazed_sliding", name: "glazed_sliding door" });
   }
   return out;
 }
@@ -475,7 +475,18 @@ const charsIn = (colFrac: number): number => Math.max(1, Math.floor((colFrac - F
  */
 function typeColumn(rows: readonly OpeningRow[]): number {
   const longest = rows.reduce((n, r) => Math.max(n, r.type.length), 0);
-  return longest <= COL_TYPE_CHARS ? COL_TYPE : FONT + longest * textWidth("x", FONT);
+  return longest <= COL_TYPE_CHARS ? COL_TYPE : wordsColumn(longest);
+}
+
+/** The column a word of `chars` characters fills, with one font of padding: {@link charsIn} undone. */
+const wordsColumn = (chars: number): number => FONT + chars * textWidth("x", FONT);
+
+/** The LEGEND's name column. An opening row's name comes from the closed kind vocabulary, so it
+ *  may widen the column, as a long TYPE word does; no other row's does, so a legend with none
+ *  keeps its width. */
+function legendNameColumn(entries: readonly LegendEntry[]): number {
+  const longest = entries.reduce((n, e) => (e.kind === "opening" ? Math.max(n, e.name.length) : n), 0);
+  return Math.max(LEGEND_NAME, wordsColumn(longest));
 }
 
 /** Characters per NOTES line, and per ROOM(S) cell. */
@@ -791,7 +802,7 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
   let legend: LegendTableBox | null = null;
   if (legendRows) {
     const swatchW = refDim * LEGEND_SWATCH;
-    const w = swatchW + refDim * LEGEND_NAME;
+    const w = swatchW + refDim * legendNameColumn(legendRows);
     const h = tableRowsHeight(refDim, legendRowCount(legendRows.length));
     legend = {
       x0: x,

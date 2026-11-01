@@ -38,8 +38,8 @@ const SILL_HORN = 0.2;
 /**
  * The hinge mark, as fractions of the wall thickness: a chevron with its point on the hinged jamb
  * and its arms `HINGE_MARK_REACH` along the wall, `HINGE_MARK_SPREAD` off the centreline each way
- * (midway between the glazing and the wall face). Never more than half the way to the centre,
- * so two hinge marks and a tilt mark stay apart on a narrow window.
+ * (three quarters of the way to the wall face). Neither is more than half the half-width, so two
+ * hinge marks and a tilt mark stay apart on a narrow window, and a thick wall draws no fan.
  */
 const HINGE_MARK_REACH = 0.75;
 const HINGE_MARK_SPREAD = 0.375;
@@ -47,7 +47,7 @@ const HINGE_MARK_SPREAD = 0.375;
  *  half-width. */
 const TILT_MARK_RADIUS = 0.2;
 /** The sliding mark's half-length, a fraction of the wall thickness, at most this share of the
- *  half-width, and its heads' length and half-width. */
+ *  half-width, and its heads' length and half-width, the second never more than the first. */
 const SLIDE_MARK_REACH = 1.5;
 const SLIDE_MARK_SHARE = 0.6;
 const SLIDE_HEAD_LENGTH = 0.3;
@@ -82,7 +82,7 @@ function kindMarks(wn: RWindow, d: Point, n: Point, t: number, theme: Theme, siz
   });
   if (kind === "casement" || kind === "tilt_turn") {
     const reach = Math.min(HINGE_MARK_REACH * t, hw / 2);
-    const spread = HINGE_MARK_SPREAD * t;
+    const spread = Math.min(HINGE_MARK_SPREAD * t, hw / 2);
     const sides = wn.hinge ? [wn.hinge === "left" ? -1 : 1] : [-1, 1];
     for (const s of sides) {
       const jamb = add(wn.at, mul(d, s * hw));
@@ -109,7 +109,7 @@ function kindMarks(wn: RWindow, d: Point, n: Point, t: number, theme: Theme, siz
     ] as const) {
       nodes.push({
         layer: "windows",
-        prim: { t: "polygon", pts: arrowHead(tip, along, head, SLIDE_HEAD_SPREAD * t) },
+        prim: { t: "polygon", pts: arrowHead(tip, along, head, Math.min(SLIDE_HEAD_SPREAD * t, head)) },
         paint: { fill: theme.windowPane, stroke: theme.windowPane, width: sizes.thin },
       });
     }
@@ -182,6 +182,10 @@ export const windowEl: ElementDef = {
       doc: "Hinged jamb of a casement or tilt_turn window, relative to wall direction.",
     },
   ],
+
+  setRefuses: {
+    hinge: "`set` cannot supply a window's `hinge`: a side is stated on the window itself, or left unstated",
+  },
 
   parse(ctx: ParseCtx): WindowNode {
     const kw = ctx.eatKeyword("window");

@@ -27,7 +27,7 @@ Contents:
 
 ArchLang is a tiny declarative language that compiles a `.arch` source file into a professional
 floor-plan drawing (SVG/PNG/PDF/DXF). It is built for AI agents: deterministic (same source →
-identical output) and self-correcting (every error carries a machine code and
+identical output), pure (no runtime/IO), and self-correcting (every error carries a machine code and
 a `fix`). This page is everything you need to author it.
 
 ## The 7 rules that matter
@@ -180,9 +180,9 @@ The flags that matter (the verb list above covers the rest):
 ```bash
 arch compile plan.arch -o out.svg --json  # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan
 arch validate plan.arch --strict --json  # --strict fails on warnings too
-arch fix plan.arch --dry-run --json  # preview/apply the machine-applicable diagnostics[].fixes
+arch fix plan.arch --dry-run --json  # preview/apply diagnostics[].fixes
 arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
-arch score plan.arch --brief brief.json --json  # satisfied/total — measures, never gates
+arch score plan.arch --brief brief.json --json  # measures, never gates
 arch score plan.arch --taste generic --json  # a reviewer's taste report, 0–1, never gates
 arch impact new.arch --against old.arch --lock a,b
 ```

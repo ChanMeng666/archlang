@@ -178,6 +178,18 @@ suite("`hinge`: authored or absent, never defaulted", () => {
     expect(errorsOf(withWindow("window casement on r.top width 1500 hinge near start"))).toEqual(["E_PARSE"]);
   });
 
+  it("`set window(hinge: …)` is refused at the key, and any other key still parses", () => {
+    const refused = compile(plan(`  set window(hinge: left)\n${ROOM}  window casement on r.top width 1500\n`), {
+      noCache: true,
+    });
+    expect(refused.errors.map((e) => e.message)).toEqual([
+      "`set` cannot supply a window's `hinge`: a side is stated on the window itself, or left unstated",
+    ]);
+    const other = plan(`  set window(sill: 900)\n${ROOM}  window casement on r.top width 1500\n`);
+    expect(compile(other, { noCache: true }).errors).toEqual([]);
+    expect(errorsOf(plan(`  set door(hinge: right)\n${ROOM}`))).toEqual([]);
+  });
+
   it("no `set` supplies a side: a door's default does not reach a window", () => {
     const bare = windowNodes(withWindow("window casement on r.top width 1500"));
     const set = windowNodes(plan(`  set door(hinge: "right")\n${ROOM}  window casement on r.top width 1500\n`));
@@ -383,6 +395,23 @@ suite("what each kind draws", () => {
     }
   });
 
+  it("a thick wall draws no fan: a mark's spread is capped by the half-width, as its reach is", () => {
+    const thick = (w: string): string =>
+      plan(`  wall id=t exterior thickness 1500 { (0,0) (6000,0) }\n  ${w} at (3000,0) width 300 wall t\n`);
+    const offWall = (n: SceneNode): number => Math.max(...pointsOf(n).map((p) => Math.abs(p.y)));
+    const marks = (w: string): SceneNode[] =>
+      windowNodes(thick(w)).filter((n) => n.lineWeight === "extraThin" || n.paint.fill === n.paint.stroke);
+    for (const n of marks("window casement")) expect(offWall(n)).toBeLessThanOrEqual(75);
+    for (const n of marks("window sliding")) expect(offWall(n)).toBeLessThanOrEqual(0.3 * 150);
+    const arrow = doorNodes(
+      thick("door glazed_sliding").replace(" at (3000,0) width 300 wall t", " at (3000,0) width 400 wall t"),
+    )
+      .filter((n) => n.prim.t === "polygon" && n.paint.fill === n.paint.stroke)
+      .flatMap(pointsOf);
+    const ys = arrow.map((p) => p.y);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeLessThanOrEqual(2 * 55); // a quarter of the 220 mm panel
+  });
+
   it("marks follow a curved wall's tangent, as the glazing does", () => {
     const src = plan(`  wall id=w exterior thickness 200 { (0,0) arc (8000,0) radius 6000 }
   window casement on w at 50% width 1200 hinge left
@@ -505,9 +534,23 @@ suite("the legend", () => {
 `,
       "  legend\n",
     );
-    expect(rowsOf(src)).toEqual(["poche", "sofa", "casement window", "tilt window", "glazed_sliding"]);
+    expect(rowsOf(src)).toEqual(["poche", "sofa", "casement window", "tilt window", "glazed_sliding door"]);
     expect(rowsOf(plan(`${ROOM}  window on r.top width 800\n`, "  legend\n"))).toEqual(["poche"]);
     expect(rowsOf(plan(`${ROOM}  door sliding on r.bottom at center width 2400\n`, "  legend\n"))).toEqual(["poche"]);
+  });
+
+  it("the name column holds its longest row, and a legend without one keeps its width", () => {
+    const widthOf = (body: string): number => {
+      const nodes = compile(plan(`${ROOM}${body}`, "  legend\n"), { noCache: true }).scene!.nodes;
+      const frame = nodes
+        .slice(nodes.findIndex((n) => n.prim.t === "text" && n.prim.value === "LEGEND") - 1)
+        .find((n) => n.prim.t === "polygon");
+      const xs = frame!.prim.t === "polygon" ? frame!.prim.pts.map((p) => p.x) : [];
+      return Math.max(...xs) - Math.min(...xs);
+    };
+    const plain = widthOf("");
+    expect(widthOf("  window tilt_turn on r.top width 800\n")).toBe(plain);
+    expect(widthOf("  door glazed_sliding on r.bottom at center width 2400\n")).toBeGreaterThan(plain);
   });
 
   it("the sheet fit counts those rows, on the drawing it is measured on", () => {
@@ -736,6 +779,21 @@ suite("Plan JSON", () => {
           compile(src, { noCache: true }).svg,
         );
       }
+    }
+  });
+
+  it("a `hinge` on a window with no kind that takes it is refused, not dropped", () => {
+    for (const [kind, id] of [
+      [undefined, "w"],
+      ["fixed", "w"],
+    ] as const) {
+      const json = structuredClone(planToJson(withWindow("window id=w on r.top width 1500")).json as PlanJson);
+      const row = json.openings!.find((o) => o.id === id)!;
+      row.hinge = "left";
+      if (kind) row.window_kind = kind;
+      const { source, diagnostics } = planFromJson(json);
+      expect(source, kind).toBeUndefined();
+      expect(diagnostics.map((d) => d.message).join(" "), kind).toContain("`casement` or `tilt_turn`");
     }
   });
 

@@ -80,6 +80,7 @@ import {
   enumList,
   TITLE_FIELDS,
   WALL_STATUSES,
+  WINDOW_KIND_HINGED,
   WINDOW_KINDS,
 } from "./grammar/tokens.js";
 import { parse } from "./parser.js";
@@ -1594,6 +1595,10 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
     val.err(`${path}/window_kind`, `expected ${enumList(WINDOW_KINDS)}`);
   if (o.window_kind !== undefined && o.kind !== "window")
     val.err(`${path}/window_kind`, "only a window has a `window_kind` — a door has a `door_kind`");
+  // Refused here, or a side the payload states would fall away with no word: the emitter prints it
+  // only beside a kind, and the resolver refuses it on a kind that does not hang on a jamb.
+  if (o.kind === "window" && o.hinge !== undefined && !WINDOW_KIND_HINGED[o.window_kind as WindowKind])
+    val.err(`${path}/hinge`, "only a `casement` or `tilt_turn` window has a `hinge`: give it that `window_kind`");
   if (o.open !== undefined && !(isNum(o.open) && o.open >= 0 && o.open <= 1))
     val.err(`${path}/open`, "expected a number in [0,1]");
   // The vertical datum. `sill` may be exactly 0 (a floor-length window); `head`
@@ -1852,8 +1857,8 @@ function emitOpening(o: OpeningJson): string {
     if (o.slide) line += ` slide ${o.slide}`;
     if (o.open !== undefined) line += ` open ${num(o.open)}`;
   }
-  // A window's `hinge` is read beside its kind: on a window with none it was never a clause.
-  if (o.kind === "window" && o.window_kind && o.hinge) line += ` hinge ${o.hinge}`;
+  // The validator above holds a window's `hinge` to a kind that takes it.
+  if (o.kind === "window" && o.hinge) line += ` hinge ${o.hinge}`;
   // The vertical clauses trail every other one, in `sill` then `head` order — the
   // grammar's, so the emitted line re-parses. `sill` is a window's alone; the validator
   // above refuses it anywhere else, so this needs no second check.

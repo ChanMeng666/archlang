@@ -1780,14 +1780,17 @@ A `glazed_sliding` door is a terrace or patio door. It takes the `slide` and `op
 the sliding family, and it counts as a door in the access graph, the schedule and `describe`.
 `slide` says which way the moving panel goes; left out, it is `left`, as for every sliding kind.
 A person passes through the one panel that moves, so [`W_DOOR_CLEARANCE`](error-codes.md#w_door_clearance)
-and the route width read half the door's `width`, as they do for a `double` door.
+and the route width read **half** the door's `width`, the nominal share of one panel of two, as they
+read one leaf of a `double` door.
 
 **What `width` means.** On every kind, `width` is the **structural opening**: the gap cut through
 the wall from jamb to jamb, along the wall's line. It is the figure `describe --json` reports. It
-is not the moving leaf and not the clear glass. A `sliding` or `glazed_sliding` panel is 55% of
-`width`, so the two overlap by 10% when closed, and a panel pushed fully open leaves 45% of `width`
-to walk through. ArchLang models no frame, so it has no clear-glass figure. A window's `width` is
-the same gap.
+is not the moving leaf and not the clear glass. A `sliding` or `glazed_sliding` panel is drawn at
+55% of `width`, so the two overlap by 10% when closed, and on the drawing a panel pushed fully open
+leaves 45% of `width`. Lint does not read that 45%. It reads a nominal figure, as it does for any
+door: half the `width` for `glazed_sliding`, and the whole `width` for `sliding`, which it has always
+read that way. ArchLang models no frame, so it has no clear-glass figure. A window's `width` is the
+same gap.
 
 **Other clauses are refused, not ignored.** `hinge` is hinged-only (a `double` door has a
 leaf on each jamb, so there is no side to choose) and `slide`/`open` are sliding-family-only; the wrong pairing is

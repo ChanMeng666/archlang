@@ -85,7 +85,8 @@ const PANEL_PROJECTION_DEPTH = 0.5;
 const PANEL_PROJECTION_MAX_MM = 1200;
 
 /** The slide arrow on a `glazed_sliding` door's moving panel, as fractions of the wall thickness:
- *  its half-length (at most half the panel) and its head's length. Its head is as wide as the panel. */
+ *  its half-length (at most half the panel) and its head's length. Its head is as wide as the panel,
+ *  and never wider than it is long. */
 const SLIDE_MARK_REACH = 1.5;
 const SLIDE_HEAD_LENGTH = 0.5;
 
@@ -202,13 +203,14 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
       const reach = Math.min(SLIDE_MARK_REACH * t, pl / 4);
       const way = mul(d, sd);
       const tip = add(movingC, mul(way, reach));
+      const head = Math.min(SLIDE_HEAD_LENGTH * t, reach);
       return [
         glass(fixedC),
         glass(movingC),
         rule(add(movingC, mul(way, -reach)), tip),
         {
           layer: "doors",
-          prim: { t: "polygon", pts: arrowHead(tip, way, Math.min(SLIDE_HEAD_LENGTH * t, reach), pt / 2) },
+          prim: { t: "polygon", pts: arrowHead(tip, way, head, Math.min(pt / 2, head)) },
           paint: { fill: theme.doorLeaf, stroke: theme.doorLeaf, width: sizes.thin * 1.3 },
         },
       ];
