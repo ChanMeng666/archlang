@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: #367 on 418e9900: a label that does not fit shrinks and W_ANNOTATION_OVERLAP measures from the font, so the SVG and drafting lint of chain30, star30 and the two label plans move; steps do not
+ * Taken: #367 on 078c2e6b: a room label that does not fit shrinks and W_ANNOTATION_OVERLAP reads widths from the font, so the SVG and that rule's rows move on 31 plans (the audit plans under docs/plans, l-shaped-flat, reception-suite lint only, and the annotation-collisions cases); nothing else moved, and only the two defect cases whose source gained a pin changed their steps
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -1333,7 +1333,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/1-apartment.arch",
-    "cbfb3dab92fa09fe67593949102b9472076ae6bc5e149f2b3a47c9abffe900f3",
+    "47b724154f2cf2238ac0a09744a604692d8c5134dd9c51b51a9c8c7b30c1d297",
     849,
   ],
   [
@@ -1348,7 +1348,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch",
-    "b2f9f67b5a546f2bf76be766c54e757a4aa8793146091dee83d3247eb42a8917",
+    "8798e902604b194d71a32b58b923749f3a8fe2d78b234c15fefcaab840ffdcec",
     4532,
   ],
   [
@@ -1393,7 +1393,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/5-townhouse.arch",
-    "c5badb418acc5ea24dbf4fcf309d679bf1f674a8fcd3751dcfbfc9254d463a33",
+    "3b378728f48c99af70f4b9f04eb8e582505ee3e32b5f1028feec36858e4d1c85",
     5460,
   ],
   [
@@ -1508,7 +1508,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/4-cafe.arch",
-    "629e7659a1b6daa154bcdd6626c298fcf9a7e54c1459d67993111abd7d960d57",
+    "76897fcccc63722f543e62d4d36020c7b986745e742518c16d17d0d3ab00a505",
     1408,
   ],
   [
@@ -1528,7 +1528,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch",
-    "2cef183be03647814a72517fde0cda73178f510b66691fc2b6021c01396f45e7",
+    "3a484bd565287ce4b308449a523b9cbfc356243885fc23808b1576b8a3c0d50a",
     4709,
   ],
   [
@@ -1543,7 +1543,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch",
-    "d8e8f3bf284223a848ef8757ea683156709e406a60867278548b493366ce3c4c",
+    "acbadc726d592d31fa41f0b388f5ee8adcd3ac106c8baa53cd61a312f01d3942",
     4470,
   ],
   [
@@ -1613,7 +1613,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "docs/plans/plan-soundness/repro/family-apartment.arch",
-    "1ac58fa36de1a74a90e1f4594462e850e1abfe8cc31d2a24323e9b8015024ff6",
+    "644443f73b68d9422b06f4c3561d048ac2c7a2e075469ad661140f72429e58bb",
     769,
   ],
   [

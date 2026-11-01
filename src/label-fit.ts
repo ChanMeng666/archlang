@@ -103,7 +103,7 @@ const HEIGHT_STEPS = 3;
 
 /**
  * The counted work of the pass over a whole plan: marks visited plus vertices clipped or read off
- * a ring, about 0.7 s at the worst measured (a pile of symbols, every label searched to the end).
+ * a ring, under a second at the worst measured (a pile of symbols, every label searched to the end).
  * A flat that has a dozen labels to search spends well under one per cent of it.
  */
 export const MAX_FIT_WORK = 8_000_000;
