@@ -298,6 +298,15 @@ const POSITIVE: Snippet[] = [
   },
   {
     keyword: "window",
+    note: "a kind leads, after any `id=`; `hinge` on the kinds that hang on a jamb, before the heights",
+    src: plan(
+      `${BOX}\n  window id=win1 fixed on w1 at 20% width 1200\n  window tilt on w1 at 40% width 900 sill 900\n` +
+        `  window casement on w1 at 60% width 900 hinge left\n  window tilt_turn on w1 at 70% width 900 hinge right sill 900\n` +
+        `  window sliding at (6000,0) width 1000 wall w1`,
+    ),
+  },
+  {
+    keyword: "window",
     // `sill 0` is in here on purpose: it is the one height the language lets be zero, and
     // a range check written `> 0` for every clause alike would refuse a floor-length
     // window.

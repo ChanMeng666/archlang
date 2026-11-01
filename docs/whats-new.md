@@ -22,6 +22,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | One L-shaped room in `walls from rooms` | 1.49.0 | [L-shaped rooms](#l-shaped-rooms) |
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
 | `arch finish` on a plan with storeys | next release | [Furnishing every storey](#furnishing-every-storey) |
+| Window kinds and a glazed terrace door | next release | [Window kinds](#window-kinds) |
 
 ## Quantities and takeoff
 
@@ -289,6 +290,36 @@ plan "Quarter-turn stair" {
 ```
 
 It draws as one stair, with one label, one walking line and one break line. `W_STAIR_TOO_STEEP` reads the block as one climb, with a landing replacing one going, and `describe --json` lists `flights`, `landings` and `turn`. Write the same block on two storeys and it is one shaft. `examples/turning-stair.arch` is a worked house. Winders are not in the language; draw a landing, and lint reads the stair strictly.
+
+## Window kinds
+
+A `window` can say what kind it is, and a wide terrace door can be glass. Neither was possible on a
+plan: every window drew alike, and `door sliding` drew thin interior panels.
+
+```arch
+plan "Window kinds" {
+  units mm
+  schedule openings
+  legend
+  room id=a at (0,0) size 6000x4000 label "Living" uses living
+  walls from rooms exterior 300 partition 100
+  door on a.left at center width 1000 swing into a
+  window tilt_turn on a.top at 1500 from start width 1500 hinge left sill 900
+  window fixed on a.top at 4500 from start width 1500 sill 900
+  door glazed_sliding on a.bottom at center width 2400 slide right
+}
+```
+
+The window words are `fixed`, `casement`, `tilt`, `tilt_turn` and `sliding`. Each draws a small sign
+inside the wall, and the word reaches `describe --json`, the schedule's TYPE column, the legend and
+Plan JSON. `hinge left|right` belongs to `casement` and `tilt_turn`. Leave it out when you do not know
+the side: the sign then stands on both jambs, and the drawing claims no hand. A window with no kind
+word is unchanged.
+
+`door glazed_sliding` draws one fixed and one moving panel in glass, with a slide arrow. It counts as
+a door everywhere a door counts, and a person passes through the panel that moves, so the checks read
+half its `width`. On a door, `width` is the structural opening, jamb to jamb in the wall: see
+[Door](language-reference.md#door).
 
 ## Furnishing every storey
 

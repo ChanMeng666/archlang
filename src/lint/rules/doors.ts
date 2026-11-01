@@ -485,6 +485,16 @@ export const doorClearance: LintRule = {
       // A `double` door is passed through one leaf (ADA 2010 404.2.3), so its leaf is judged.
       const leaf = activeLeafWidth(d);
       if (leaf >= rules.minDoorWidthMm) continue;
+      if (d.doorKind === "glazed_sliding") {
+        out.push({
+          severity: "warning",
+          code: "W_DOOR_CLEARANCE",
+          ...at(d),
+          message: `Door is a glazed sliding door that leaves ${mm(leaf)} mm to walk through (under the ${rules.minDoorWidthMm} mm minimum nominal width): one panel of two moves.`,
+          hints: [`Widen it to at least ${mm(2 * rules.minDoorWidthMm)} mm, two ${rules.minDoorWidthMm} mm panels.`],
+        });
+        continue;
+      }
       if (d.doorKind === "double") {
         out.push({
           severity: "warning",
@@ -901,9 +911,9 @@ function clipToBox(
  * 1010.1.1, "The maximum width of a swinging door leaf shall be 48 inches (1219 mm) nominal",
  * larger doors being, its commentary says, difficult to handle and not typically fire tested
  * [S]. A wide doorway is a `double` door, a sliding, folding or pocket door, or a cased opening,
- * and the hint offers them with the width each needs. A `sliding`, `barn`, `bifold`, `pocket` or
- * `garage` door has no swinging leaf and is never judged. No fix: which kind the doorway
- * becomes is a design decision.
+ * and the hint offers them with the width each needs. A `sliding`, `glazed_sliding`, `barn`,
+ * `bifold`, `pocket` or `garage` door has no swinging leaf and is never judged. No fix: which kind
+ * the doorway becomes is a design decision.
  */
 export const leafTooWide: LintRule = {
   name: "leaf-too-wide",

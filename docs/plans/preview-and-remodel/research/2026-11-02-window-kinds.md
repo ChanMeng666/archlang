@@ -66,7 +66,7 @@ Each has the alternative rejected and what would reverse it.
    prefers the issue's word: the rename is one table entry.
 7. **It passes through one panel.** `leavesOf` and `activeLeafWidth` read a `glazed_sliding` door as they read a
    `double`: half its width, which is what `W_DOOR_CLEARANCE`, `W_PATH_TOO_NARROW` and the access graph's
-   clear width see. A 1500 mm door passes 750 mm and warns. *Rejected:* `sliding`'s reading of the whole width,
+   clear width see. A 1200 mm door passes 600 mm and warns. *Rejected:* `sliding`'s reading of the whole width,
    which would call that door passable. `door sliding` keeps its reading (byte law); that gap is residue.
    *Reverse if* a third panel count is added.
 8. **`fixed` and `tilt` are no way onto a balcony.** `W_BALCONY_NO_DOOR` counts a window with no `sill` as a
@@ -78,8 +78,9 @@ Each has the alternative rejected and what would reverse it.
 10. **The legend gains a row per kind drawn**, its swatch the real symbol, for the five window kinds and
     `glazed_sliding`. Older door kinds have no row and stay that way (byte law).
 11. **No `examples/` file.** `packages/archlang-3d` lists door kinds in `src/scene3d/validate.ts:120`, and this
-    card does not touch that package, so an example would break its corpus. A test fixture and a docs fence
-    carry the form.
+    card does not touch that package, so an example would break its corpus. A docs fence and a test fixture
+    carry the form. The fixture stands in `test/fixtures/window-kinds/`: six corpus tables read `test/fixtures`
+    flat and pin every plan there, and none of them is about this form.
 
 ## 4. Consequences by surface
 

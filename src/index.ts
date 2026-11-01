@@ -127,6 +127,7 @@ export type {
   RoomSummary,
   DoorSummary,
   DoorKind,
+  WindowKind,
   WindowSummary,
   OpeningSummary,
   HeightFacts,

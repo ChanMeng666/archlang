@@ -43,6 +43,8 @@
  *   projection, a `barn` door's top-hung track and a `bifold`'s head track (both above the
  *   cut), and a `pocket`'s cavity (inside the wall). A dash is never decoration: a hinged
  *   door's swing at floor level is drawn solid for the same reason.
+ * - **Glass is the window's**: a `glazed_sliding` panel is a leaf drawn as two glass lines closed
+ *   at their ends, in the window's pane ink, `GLAZING_GAP` of the wall apart.
  *
  * Every dashed node draws with {@link dashedPattern} and sets `lineType: "dashed"` AND the
  * matching `paint.dash`, because the SVG serializer follows the name, the PDF serializer the
@@ -56,7 +58,8 @@ import type { RenderSizes } from "../scene.js";
 import type { RDoor } from "../ir.js";
 import { add, mul, normal, sub } from "../geometry.js";
 import { weightWidth } from "../scene.js";
-import { dashedPattern } from "./glyph-lib.js";
+import { arrowHead, dashedPattern } from "./glyph-lib.js";
+import { GLAZING_GAP } from "./window.js";
 
 /** What {@link renderDoorPanels} needs from the render context and the host geometry. */
 export interface PanelCtx {
@@ -81,12 +84,28 @@ export interface PanelCtx {
 const PANEL_PROJECTION_DEPTH = 0.5;
 const PANEL_PROJECTION_MAX_MM = 1200;
 
+/** The slide arrow on a `glazed_sliding` door's moving panel, as fractions of the wall thickness:
+ *  its half-length (at most half the panel) and its head's length. Its head is as wide as the panel. */
+const SLIDE_MARK_REACH = 1.5;
+const SLIDE_HEAD_LENGTH = 0.5;
+
 /** An oriented rectangle as a closed polygon: centre, unit long axis, half-extents. */
 function orientedRect(c: Point, along: Point, halfLen: number, halfThick: number): Point[] {
   const across = normal(along);
   const a = mul(along, halfLen);
   const b = mul(across, halfThick);
   return [add(sub(c, a), mul(b, -1)), add(add(c, a), mul(b, -1)), add(add(c, a), b), add(sub(c, a), b)];
+}
+
+/** A `glazed_sliding` door's symbol in a legend swatch, on a wall as deep as the box. */
+export function doorSwatch(
+  box: { x: number; y: number; w: number; h: number },
+  theme: Theme,
+  sizes: RenderSizes,
+): SceneNode[] {
+  const at = { x: box.x + box.w / 2, y: box.y + box.h / 2 };
+  const dr = { at, width: box.w, doorKind: "glazed_sliding", slide: "right" } as RDoor;
+  return renderDoorPanels(dr, { theme, sizes, dir: { x: 1, y: 0 }, thickness: box.h });
 }
 
 /**
@@ -142,27 +161,56 @@ export function renderDoorPanels(dr: RDoor, ctx: PanelCtx): SceneNode[] {
     lineType: "dashed",
   });
 
+  // Two bypass panels on two tracks. Each is a little longer than half the opening so they
+  // overlap when closed; the moving one is the panel on the far side from the slide direction,
+  // and it travels toward (and finally behind) the fixed one.
+  const bypass = (pt: number): { pl: number; off: number; fixedC: Point; movingC: Point } => {
+    const pl = hw + 0.05 * w; // panel length — the 0.1w overlap when closed
+    const off = pt / 2 + 0.05 * t; // each track's offset from the centreline (0.1t clear between)
+    const travel = w - pl;
+    // Which track the fixed panel runs on: `slide` times the LEFT normal `n`, a handed
+    // product. A reflection reverses `n` against the carried traversal but not `slide`, so
+    // a mirrored door (`_mirror`) takes the other track, which is its mirror image.
+    const track = dr._mirror ? -sd : sd;
+    const fixedC = add(add(dr.at, mul(d, sd * (hw - pl / 2))), mul(n, off * track));
+    const movingRest = add(add(dr.at, mul(d, -sd * (hw - pl / 2))), mul(n, -off * track));
+    return { pl, off, fixedC, movingC: add(movingRest, mul(d, sd * travel * open)) };
+  };
+
   switch (kind) {
-    // Two bypass panels on two tracks. Each is a little longer than half the opening
-    // so they overlap when closed; the moving one is the panel on the far side from
-    // the slide direction, and it travels toward (and finally behind) the fixed one.
     case "sliding": {
-      const pl = hw + 0.05 * w; // panel length — the 0.1w overlap when closed
       const pt = 0.2 * t; // panel thickness
-      const off = pt / 2 + 0.05 * t; // each track's offset from the centreline (0.1t clear between)
-      const travel = w - pl;
-      // Which track the fixed panel runs on: `slide` times the LEFT normal `n`, a handed
-      // product. A reflection reverses `n` against the carried traversal but not `slide`, so
-      // a mirrored door (`_mirror`) takes the other track, which is its mirror image.
-      const track = dr._mirror ? -sd : sd;
-      const fixedC = add(add(dr.at, mul(d, sd * (hw - pl / 2))), mul(n, off * track));
-      const movingRest = add(add(dr.at, mul(d, -sd * (hw - pl / 2))), mul(n, -off * track));
-      const movingC = add(movingRest, mul(d, sd * travel * open));
+      const { pl, off, fixedC, movingC } = bypass(pt);
       return [
         guide(add(add(dr.at, mul(d, -hw)), mul(n, off)), add(add(dr.at, mul(d, hw)), mul(n, off))),
         guide(add(add(dr.at, mul(d, -hw)), mul(n, -off)), add(add(dr.at, mul(d, hw)), mul(n, -off))),
         leaf(orientedRect(fixedC, d, pl / 2, pt / 2)),
         leaf(orientedRect(movingC, d, pl / 2, pt / 2)),
+      ];
+    }
+    // The same two panels, in glass: each as thick as a window's glazing and drawn in its ink,
+    // at a leaf's pen, because a panel is a leaf. An arrow on the moving panel says which way it
+    // goes, so the symbol reads on a sheet with no colour too.
+    case "glazed_sliding": {
+      const pt = GLAZING_GAP * t;
+      const { pl, fixedC, movingC } = bypass(pt);
+      const glass = (c: Point): SceneNode => ({
+        layer: "doors",
+        prim: { t: "polygon", pts: orientedRect(c, d, pl / 2, pt / 2) },
+        paint: { fill: theme.opening, stroke: theme.windowPane, width: sizes.thin * 1.3 },
+      });
+      const reach = Math.min(SLIDE_MARK_REACH * t, pl / 4);
+      const way = mul(d, sd);
+      const tip = add(movingC, mul(way, reach));
+      return [
+        glass(fixedC),
+        glass(movingC),
+        rule(add(movingC, mul(way, -reach)), tip),
+        {
+          layer: "doors",
+          prim: { t: "polygon", pts: arrowHead(tip, way, Math.min(SLIDE_HEAD_LENGTH * t, reach), pt / 2) },
+          paint: { fill: theme.doorLeaf, stroke: theme.doorLeaf, width: sizes.thin * 1.3 },
+        },
       ];
     }
     // A surface-slider: the leaf hangs OUTSIDE the wall on the `swing` face from a track

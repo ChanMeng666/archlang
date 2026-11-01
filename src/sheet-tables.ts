@@ -36,7 +36,10 @@ import type { BandWall } from "./geometry/band.js";
 import type { HatchSpec } from "./hatches.js";
 import { groundSwatchFrame, hatchesUsed, patternId } from "./hatches.js";
 import type { ROutdoor, RFurniture, RRoom } from "./ir.js";
+import { WINDOW_KINDS, type WindowKind } from "./grammar/tokens.js";
 import { groundMaterialsUsed } from "./elements/outdoor.js";
+import { doorSwatch } from "./elements/door-panels.js";
+import { windowSwatch } from "./elements/window.js";
 import { weightWidth } from "./scene.js";
 import type { RenderSizes, SceneNode } from "./scene.js";
 import type { Theme } from "./theme.js";
@@ -254,9 +257,10 @@ function groupRoomsByZone(
 /** One LEGEND line: a drawn swatch plus what it means. */
 export interface LegendEntry {
   /** `material` draws the wall hatch pattern; `fixture` draws the fixture plan symbol;
-   *  `demolished` draws a dashed wall outline (a `status demolish` wall, as the plan draws it). */
-  kind: "material" | "fixture" | "demolished";
-  /** Stable identity (the hatch pattern id, the fixture category, or `demolish`). */
+   *  `demolished` draws a dashed wall outline (a `status demolish` wall, as the plan draws it);
+   *  `opening` draws a window kind's or a `glazed_sliding` door's own symbol. */
+  kind: "material" | "fixture" | "demolished" | "opening";
+  /** Stable identity (the hatch pattern id, the fixture category, `demolish`, or the kind word). */
   key: string;
   /** The printed name. */
   name: string;
@@ -264,6 +268,8 @@ export interface LegendEntry {
   hatch?: HatchSpec;
   /** The fixture category whose glyph fills the swatch (`fixture` entries only). */
   category?: string;
+  /** The window kind whose symbol fills the swatch; absent on the door's row (`opening` entries). */
+  windowKind?: WindowKind;
 }
 
 /** A hatch spec's printed name: the material, qualified only when it is not the default
@@ -300,11 +306,16 @@ function hatchName(h: HatchSpec): string {
  *    keeps its legend. `hatches` are then the STANDING walls' (a demolished wall draws no
  *    poché). A `status new` wall draws as any wall, so it adds no row: a row whose swatch
  *    the drawing cannot tell from an existing wall's would claim a distinction it does not make.
+ * 4. **Opening kinds** — one row per window kind present, in {@link WINDOW_KINDS} order, then one
+ *    for a `glazed_sliding` door, each with its own symbol: those marks say nothing to a reader
+ *    who has no row for them. A plan that writes none has no such row, and the older door kinds
+ *    have none, which keeps their legends where they are.
  */
 export function legendEntries(
   hatches: readonly HatchSpec[],
   furniture: readonly RFurniture[],
   demolished = false,
+  openings: readonly { kind: string; windowKind?: string; doorKind?: string }[] = [],
 ): LegendEntry[] {
   const out: LegendEntry[] = [];
   for (const h of hatches) {
@@ -314,6 +325,13 @@ export function legendEntries(
   const present = new Set(furniture.map((f) => f.category));
   for (const cat of FIXTURE_CATEGORIES) {
     if (present.has(cat) && hasFixtureGlyph(cat)) out.push({ kind: "fixture", key: cat, name: cat, category: cat });
+  }
+  const windows = new Set(openings.map((o) => o.windowKind));
+  for (const k of WINDOW_KINDS) {
+    if (windows.has(k)) out.push({ kind: "opening", key: k, name: `${k} window`, windowKind: k });
+  }
+  if (openings.some((o) => o.doorKind === "glazed_sliding")) {
+    out.push({ kind: "opening", key: "glazed_sliding", name: "glazed_sliding" });
   }
   return out;
 }
@@ -434,6 +452,8 @@ const COL_TAG = 0.055;
 const COL_ROOMS = 0.3;
 const COL_WIDTH = 0.07;
 const COL_TYPE = 0.08;
+/** The longest word that column has held: `sliding`. A longer one widens it, below. */
+const COL_TYPE_CHARS = 7;
 const COL_HAND = 0.06;
 /** NOTES: the number column and the text column, both FIXED; a note wraps to the column. */
 const NOTES_NO = 0.035;
@@ -447,6 +467,16 @@ const NOTES_TEXT = 0.7;
  * resolver's sheet fit and the drawing budget count wrapped NOTES lines with no drawing.
  */
 const charsIn = (colFrac: number): number => Math.max(1, Math.floor((colFrac - FONT) / textWidth("x", FONT)));
+
+/**
+ * The DOOR & WINDOW SCHEDULE's TYPE column. Fixed, as every column of that table is, unless a
+ * row's word would run into HAND. Those words are the closed kind vocabulary, never authored
+ * text, so the table stays bounded, and a table of the older words keeps its width.
+ */
+function typeColumn(rows: readonly OpeningRow[]): number {
+  const longest = rows.reduce((n, r) => Math.max(n, r.type.length), 0);
+  return longest <= COL_TYPE_CHARS ? COL_TYPE : FONT + longest * textWidth("x", FONT);
+}
 
 /** Characters per NOTES line, and per ROOM(S) cell. */
 export const NOTE_LINE_CHARS = charsIn(NOTES_TEXT);
@@ -655,7 +685,7 @@ export function planTableRows(input: {
    * of the band, so the fit rule must reserve it.
    */
   openingSchedule?: boolean | undefined;
-  elements?: readonly { kind: string }[];
+  elements?: readonly { kind: string; windowKind?: string; doorKind?: string }[];
   /** The plan's `notes`, which draw a table in the same band. */
   notes?: readonly string[] | undefined;
 }): number {
@@ -668,6 +698,7 @@ export function planTableRows(input: {
         hatchesUsed(standing, groundMaterialsUsed(input.outdoor ?? [])),
         input.furniture,
         standing.length < input.walls.length,
+        input.elements,
       )
     : null;
   const openings = input.openingSchedule ? openingRowCount(openingCount(input.elements ?? [])) : 0;
@@ -736,7 +767,7 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
       { heading: "TAG", w: refDim * COL_TAG, align: "middle" },
       { heading: "ROOM(S)", w: refDim * COL_ROOMS, align: "start" },
       { heading: "WIDTH", w: refDim * COL_WIDTH, align: "end" },
-      { heading: "TYPE", w: refDim * COL_TYPE, align: "start" },
+      { heading: "TYPE", w: refDim * typeColumn(openingData), align: "start" },
       { heading: "HAND", w: refDim * COL_HAND, align: "start" },
     ];
     const w = cols.reduce((s, c) => s + c.w, 0);
@@ -1107,6 +1138,10 @@ function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: S
       const glyph = fixtureGlyph(e.category, box, theme, sizes);
       if (glyph) out.push(...glyph.map((n) => ({ ...n, layer: "annotations" as const })));
       else d.frame(box.x, box.y, box.w, box.h);
+    } else if (e.kind === "opening") {
+      // As a fixture's: the drawing's own symbol, re-tagged onto the annotation pass.
+      const glyph = e.windowKind ? windowSwatch(e.windowKind, box, theme, sizes) : doorSwatch(box, theme, sizes);
+      out.push(...glyph.map((n) => ({ ...n, layer: "annotations" as const })));
     } else if (e.kind === "demolished") {
       // A wall drawn as the plan draws a demolished one: its outline in the wall pen, dashed,
       // with no poché (`toScene`'s second `lowerWallSet` call).

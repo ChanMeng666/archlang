@@ -41,6 +41,7 @@ import type {
   DoorSwingBuilding,
   DoorSwingDir,
   WallStatus,
+  WindowKind,
 } from "./grammar/tokens.js";
 import { moduleBindings } from "./import.js";
 import { placeRelational } from "./layout.js";
@@ -519,6 +520,15 @@ export interface RWindow extends RBase {
   at: Point;
   width: number;
   host: WallSegment | null;
+  /** The window's kind, present ONLY when written, so a kind-free window carries no field and
+   *  every downstream payload is byte-identical. */
+  windowKind?: WindowKind;
+  /**
+   * The hinged jamb, relative to the host wall's traversal direction as a door's is, so it rides
+   * a `place` frame with the carried segment. Present ONLY when written, on a kind that takes it:
+   * absent means the source does not say, and the symbol then states no hand.
+   */
+  hinge?: DoorHinge;
   /** The author wrote this window's `id=` (set only then). Read by `W_HOB_UNDER_WINDOW`'s hint,
    *  which quotes an id only when the author wrote one. Internal. */
   _idAuthored?: true;

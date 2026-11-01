@@ -284,7 +284,7 @@ not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_E
 ### Pick the door KIND before you widen the room
 
 A door has a kind — `hinged` (the default) · `sliding` · `barn` · `bifold` · `pocket` · `garage` ·
-`double` — and it changes what the checks can say, not just the drawing. **Only `hinged` and `double`
+`double` · `glazed_sliding` (a glass terrace door) — and it changes what the checks can say, not just the drawing. **Only `hinged` and `double`
 (two leaves, one per jamb) sweep arcs**, so `W_SWING_OBSTRUCTED` cannot apply to any of the others.
 A hinged leaf over 1219 mm raises `W_LEAF_TOO_WIDE`: a wide doorway is a `double` door.
 
@@ -299,6 +299,10 @@ That makes the kind a legitimate answer to a diagnostic, and often the *right* o
   hinged-only, `slide`/`open` are sliding-family-only, and `garage` takes no clause at all — which
   side it parks on is derived from which face has floor. A kind other than `hinged` or `double` on an
   `arc` wall also refuses (`E_DOOR_KIND_CURVED`).
+
+A window has a kind too, when the source says so: `fixed` · `casement` · `tilt` · `tilt_turn` ·
+`sliding`. It shows in `describe`, the schedule and the legend. `hinge` goes on `casement` and
+`tilt_turn` only, and only when the side is known: never guess one.
 
 `archlang spec` has the full grammar; `examples/bungalow.arch` is the worked plan.
 

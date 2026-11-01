@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**149 errors** · **91 warnings**
+**150 errors** · **91 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -157,6 +157,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WALL_ID_RESERVED`](#e_wall_id_reserved) | error | An authored wall takes the id the derived exterior ring has in this plan or component. |
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
+| [`E_WINDOW_KIND_CLAUSE`](#e_window_kind_clause) | error | That clause is not available on this kind of window. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
 | [`W_ACCESSIBLE_WC_SIDE_WALL`](#w_accessible_wc_side_wall) | warning | An accessible WC's pan stands too far from every side wall. |
 | [`W_ALIAS_MATCH`](#w_alias_match) | warning | A room's use was inferred from an indirect alias, not stated. |
@@ -453,7 +454,7 @@ let x = sqrt(-1)   # error
 
 *error* — That clause is not available on this kind of door.
 
-**Cause.** A `door` statement carries a clause its kind has no meaning for: `hinge` on any of the sliding family (`sliding`/`barn`/`bifold`/`pocket` — nothing is hinged to a jamb) or on a `double` door (a leaf hangs on each jamb, so there is no side to choose), `swing` on a `sliding` or `pocket` door (the panel stays in the plane of the wall, or inside it), or `slide`/`open` on a `hinged` or `double` door (nothing travels along the wall). ArchLang refuses rather than draws the statement as if the clause were absent — silently ignoring a written clause is the silent-error design this project rules out (the v1.23 precedent: rectangle-only clauses REFUSE a polygon room rather than approximate it).
+**Cause.** A `door` statement carries a clause its kind has no meaning for: `hinge` on any of the sliding family (`sliding`/`glazed_sliding`/`barn`/`bifold`/`pocket` — nothing is hinged to a jamb) or on a `double` door (a leaf hangs on each jamb, so there is no side to choose), `swing` on a `sliding`, `glazed_sliding` or `pocket` door (the panel stays in the plane of the wall, or inside it), or `slide`/`open` on a `hinged` or `double` door (nothing travels along the wall). ArchLang refuses rather than draws the statement as if the clause were absent — silently ignoring a written clause is the silent-error design this project rules out (the v1.23 precedent: rectangle-only clauses REFUSE a polygon room rather than approximate it).
 
 **Fix.** Delete the clause (the machine-applicable fix does exactly that), or change the door's kind to one the clause belongs to. `swing` on a `barn` or `bifold` door is legal and means which FACE of the wall the panel hangs on or folds toward — it is not a leaf arc.
 
@@ -465,7 +466,7 @@ door pocket on w1 at 50% width 900 hinge left   # error: a pocket door has no hi
 
 *error* — A sliding-family or garage door cannot sit on a curved wall.
 
-**Cause.** The panel of a `sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), and so do a `double` door's two (both from the tangent at the doorway's centre), so only the sliding family and `garage` are refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
+**Cause.** The panel of a `sliding`, `glazed_sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), and so do a `double` door's two (both from the tangent at the doorway's centre), so only the sliding family and `garage` are refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
 
 **Fix.** Use a `hinged` door on the curve (the default — delete the kind word), or move the door onto one of the wall's straight runs.
 
@@ -2148,6 +2149,18 @@ let i = 0
 while i < 1 { let y = i }   # error: i never changes
 ```
 
+## E_WINDOW_KIND_CLAUSE
+
+*error* — That clause is not available on this kind of window.
+
+**Cause.** A `window` statement carries `hinge` on a window that hangs on no jamb: a window with no kind, or a `fixed`, `tilt` or `sliding` one. Only `casement` and `tilt_turn` take it. ArchLang refuses rather than draws the statement as if the clause were absent, as it does for a door (`E_DOOR_KIND_CLAUSE`).
+
+**Fix.** Delete the clause (the machine-applicable fix does exactly that), or change the window's kind to `casement` or `tilt_turn`.
+
+```arch static
+window fixed on w1 at 50% width 1500 hinge left   # error: a fixed window has no hinge
+```
+
 ## E_WINDOW_WIDTH
 
 *error* — Window must have a positive width.
@@ -2205,7 +2218,7 @@ furniture bed at (1650,900) size 1500x2000   # lint: the pinned name is printed 
 
 *warning* — A balcony with no way onto it.
 
-**Cause.** An `outdoor balcony` has no `door` and no way through a `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony: `sill 0` counts, and so does a window with no `sill` clause, whose 900 mm is only the default. A window whose authored `sill` is above 0 stops above the floor and does not count; the message then gives the sill.
+**Cause.** An `outdoor balcony` has no `door` and no way through a `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony: `sill 0` counts, and so does a window with no `sill` clause, whose 900 mm is only the default. A window whose authored `sill` is above 0 stops above the floor and does not count; the message then gives the sill. A `fixed` or `tilt` window does not count whatever its sill: nobody walks through it.
 
 **Fix.** Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.
 
@@ -2371,7 +2384,7 @@ furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
 
 *warning* — Door is narrower than the minimum clear width.
 
-**Cause.** A door's width is below the configured minimum passable width (default 700 mm). A `double` door is judged by one leaf, half its width: a person passes through one active leaf (ADA 2010 Standards 404.2.3), so `double width 1000` is judged as a 500 mm door.
+**Cause.** A door's width is below the configured minimum passable width (default 700 mm). A `double` door is judged by one leaf, half its width: a person passes through one active leaf (ADA 2010 Standards 404.2.3), so `double width 1000` is judged as a 500 mm door. A `glazed_sliding` door is judged the same way: one panel of two moves.
 
 **Fix.** Widen the door to at least the minimum clear width.
 
@@ -2727,7 +2740,7 @@ furniture fridge at (2300,100) size 600x650   # lint: 100 mm from the hob, 200 m
 
 *warning* — A hob stands under a window.
 
-**Cause.** A cooking surface (`stove`, `hob`, `cooktop`) stands against a window's wall across part of its span, on either side of the wall: its footprint overlaps, with positive area, the window's span within `fixtureWallTolMm` (300 mm) of the wall's centreline, the band `W_FURNITURE_OVER_WINDOW` reads for a tall unit. A curtain or blind then hangs over the flames, and opening the window means reaching across the burners: the NKBA Kitchen Planning Guidelines (guideline 20, cooking surface safety) say not to locate the cooking surface under an operable window. ArchLang does not model whether a window opens, so every window is judged; one whose sill is at or above 2100 mm is out of reach and is not, and one on a curved wall is not measured. Every plan is read, a café's kitchen as a dwelling's.
+**Cause.** A cooking surface (`stove`, `hob`, `cooktop`) stands against a window's wall across part of its span, on either side of the wall: its footprint overlaps, with positive area, the window's span within `fixtureWallTolMm` (300 mm) of the wall's centreline, the band `W_FURNITURE_OVER_WINDOW` reads for a tall unit. A curtain or blind then hangs over the flames, and opening the window means reaching across the burners: the NKBA Kitchen Planning Guidelines (guideline 20, cooking surface safety) say not to locate the cooking surface under an operable window. Every window is judged, whatever its kind, because a curtain hangs in front of a pane that does not open too; one whose sill is at or above 2100 mm is out of reach and is not, and one on a curved wall is not measured. Every plan is read, a café's kitchen as a dwelling's.
 
 **Fix.** Slide the hob along its wall past the window's nearer end (the hint gives the distance) and stand the sink or a worktop under the window, or move the window. There is no machine-applicable fix: which one moves is the author's choice.
 
@@ -2786,7 +2799,7 @@ door id=bed_door at (3000,650) width 800 wall mid swing into bed
 
 *warning* — A swinging door leaf is wider than a door is made.
 
-**Cause.** A hinged `door` (no kind, or `hinged`) is one leaf its full `width` wide, and a `double` door two, each half the width. A leaf wider than `maxHingedLeafMm` (1219 mm by default: the International Building Code's 48 in nominal maximum for a swinging leaf, in its 2018 and earlier editions) is heavier and wider than a door is hung and swung. A 2400 mm opening written as one hinged leaf is the usual case: it draws a 2.4 m quarter-circle across the room. A `sliding`, `barn`, `bifold`, `pocket` or `garage` door has no swinging leaf and is never judged. Set `maxHingedLeafMm: null` to turn it off.
+**Cause.** A hinged `door` (no kind, or `hinged`) is one leaf its full `width` wide, and a `double` door two, each half the width. A leaf wider than `maxHingedLeafMm` (1219 mm by default: the International Building Code's 48 in nominal maximum for a swinging leaf, in its 2018 and earlier editions) is heavier and wider than a door is hung and swung. A 2400 mm opening written as one hinged leaf is the usual case: it draws a 2.4 m quarter-circle across the room. A `sliding`, `glazed_sliding`, `barn`, `bifold`, `pocket` or `garage` door has no swinging leaf and is never judged. Set `maxHingedLeafMm: null` to turn it off.
 
 **Fix.** Make it a pair of leaves, `door double … width <mm>` (each leaf half the width; narrow a double door wider than twice the figure too), or narrow it, or make it a `sliding` or `bifold` door, or a cased `opening` if it needs no door. There is no machine-applicable fix: which the doorway becomes is a design decision.
 

@@ -540,7 +540,7 @@
               "left",
               "right"
             ],
-            "description": "Door hinge side relative to the wall direction."
+            "description": "Hinge side relative to the wall direction: a door's, or a `casement` or `tilt_turn` window's when one was written."
           },
           "swing": {
             "enum": [
@@ -564,9 +564,20 @@
               "bifold",
               "pocket",
               "garage",
-              "double"
+              "double",
+              "glazed_sliding"
             ],
             "description": "Door kind (default `hinged`, in which case this is omitted). A non-hinged kind has no swing arc; `hinge` is not accepted on one."
+          },
+          "window_kind": {
+            "enum": [
+              "fixed",
+              "casement",
+              "tilt",
+              "tilt_turn",
+              "sliding"
+            ],
+            "description": "Window only. The kind word as written; omitted on a window with none."
           },
           "slide": {
             "enum": [

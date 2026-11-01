@@ -90,7 +90,9 @@ suite("door enums — one source, six call sites", () => {
     expect(copyLines('          swing: { enum: ["in", "out"] },')).toHaveLength(1);
     expect(copyLines("  door … [hinge left|right] …")).toHaveLength(1);
     expect(
-      copyLines('  doorKind?: "hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double";'),
+      copyLines(
+        '  doorKind?: "hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double" | "glazed_sliding";',
+      ),
     ).toHaveLength(1);
     expect(copyLines('  slide?: "left" | "right";')).toHaveLength(1);
     // …and stays quiet on the other enums that happen to share members.
@@ -111,7 +113,7 @@ suite("door enums — one source, six call sites", () => {
 suite("door enums — the generators fail loudly, not silently", () => {
   const body = (): [string, string][] => [
     ["door-stmt", `"door" rws id-opt ( door-kind rws )? ( opening-placement | opening-between ) door-clauses`],
-    ["door-kind", `"hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double"`],
+    ["door-kind", `"hinged" | "sliding" | "barn" | "bifold" | "pocket" | "garage" | "double" | "glazed_sliding"`],
     // A SEQUENCE of optionals in the parser's own clause order, not a `( clause )*`
     // set: `door … swing in hinge left` is a parse error, so a grammar that offered
     // the clauses as an unordered repeat would emit forms the language has never had.
@@ -198,7 +200,7 @@ suite("door enums — the generators fail loudly, not silently", () => {
 
   it("gen-llm-spec throws when the door line stops rendering a clause", () => {
     const line =
-      "door … [hinged|sliding|barn|bifold|pocket|garage|double] [hinge left|right|near start|near end] [swing in|out|inward|outward|into <roomId>] [slide left|right]";
+      "door … [hinged|sliding|barn|bifold|pocket|garage|double|glazed_sliding] [hinge left|right|near start|near end] [swing in|out|inward|outward|into <roomId>] [slide left|right]";
     expect(() => assertDoorEnumsRendered(line, DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS)).not.toThrow();
     expect(() =>
       assertDoorEnumsRendered(line, { ...DOOR_ENUMS, latch: ["left", "right"] }, DOOR_HINGE_NEAR, DOOR_KINDS),

@@ -748,7 +748,8 @@ suite("doors — the drawing language", () => {
   });
 
   it("dashes only what is above the cut plane or hidden — and always by NAME", () => {
-    // hinged and double: the swings are at floor level. sliding: the panels and tracks are visible.
+    // hinged and double: the swings are at floor level. sliding, glazed_sliding: the panels and
+    // tracks are visible.
     // barn: the top-hung track. bifold: the head track. pocket: the two cavity lines inside
     // the wall. garage: the overhead projection.
     const expected: Record<string, number> = {
@@ -759,6 +760,7 @@ suite("doors — the drawing language", () => {
       pocket: 2,
       garage: 1,
       double: 0,
+      glazed_sliding: 0,
     };
     for (const k of DOOR_KINDS) {
       const { nodes, sizes } = nodesOf(plan(`door id=d ${k} on mid at 50% width 900`));

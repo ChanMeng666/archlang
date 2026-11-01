@@ -232,7 +232,7 @@ const narrowRemedies = (min: number, doors: readonly AccessEdge[] | null, ctx: L
     : [
         ...doors.map(
           (e) =>
-            `Widen ${openingClauseById(ctx.ir.elements, e.doorId) ? `the opening ${openingClauseById(ctx.ir.elements, e.doorId)} derives (give it a \`width\`)` : `${e.kind} "${e.doorId}"`} to \`width ${mm(clearingWidth(e, ctx))}\` (now ${mm(e.nominalWidth)}${edgeLeaves(e, ctx) === 2 ? `; a double door, so each leaf is ${mm(clearingWidth(e, ctx) / 2)}: a person passes through one` : ""})${doors.length > 1 ? "" : `, which lets the walk clear the ${mm(min)} mm minimum`}.`,
+            `Widen ${openingClauseById(ctx.ir.elements, e.doorId) ? `the opening ${openingClauseById(ctx.ir.elements, e.doorId)} derives (give it a \`width\`)` : `${e.kind} "${e.doorId}"`} to \`width ${mm(clearingWidth(e, ctx))}\` (now ${mm(e.nominalWidth)}${edgeLeaves(e, ctx) === 2 ? `; ${pairOf(e, ctx).name}, so each ${pairOf(e, ctx).leaf} is ${mm(clearingWidth(e, ctx) / 2)}: a person passes through one` : ""})${doors.length > 1 ? "" : `, which lets the walk clear the ${mm(min)} mm minimum`}.`,
         ),
         // A set is what was measured; that it needs every member is not claimed.
         ...(doors.length > 1 ? [`With these widened together the walk clears the ${mm(min)} mm minimum.`] : []),
@@ -553,12 +553,19 @@ const widenedClear = (e: AccessEdge, wider: ReadonlyMap<string, number>, ctx: Li
     ? e.estimatedClearWidth + (wider.get(e.doorId)! - e.nominalWidth) / edgeLeaves(e, ctx)
     : e.estimatedClearWidth;
 
-/** How many leaves share a connector's width ({@link leavesOf}): 2 for a `double` door. */
+/** How many leaves share a connector's width ({@link leavesOf}): 2 for a `double` or
+ *  `glazed_sliding` door. */
 const edgeLeaves = (e: AccessEdge, ctx: LintContext): number => {
   if (e.kind !== "door") return 1;
   const d = ctx.doors.find((x) => x.id === e.doorId);
   return d ? leavesOf(d) : 1;
 };
+
+/** What a door whose width two leaves share is called, and what each of them is. */
+const pairOf = (e: AccessEdge, ctx: LintContext): { name: string; leaf: string } =>
+  ctx.doors.find((x) => x.id === e.doorId)?.doorKind === "glazed_sliding"
+    ? { name: "a glazed sliding door", leaf: "panel" }
+    : { name: "a double door", leaf: "leaf" };
 
 /**
  * The widest door-only way to `roomId` that USES a widened door of `set` — an upper bound on
@@ -645,8 +652,9 @@ function connectorPhrase(e: AccessEdge, ctx: LintContext, view: View): string {
     return hit ? ctx.nameOf(hit.r) : "another room";
   };
   // A `double` door is passed through one leaf, so the phrase says so (its clear width is a leaf's).
-  const what = edgeLeaves(e, ctx) === 2 ? "double door" : e.kind;
-  const leaf = edgeLeaves(e, ctx) === 2 ? " (one of its two leaves)" : "";
+  const pair = edgeLeaves(e, ctx) === 2 ? pairOf(e, ctx) : null;
+  const what = pair ? pair.name.replace(/^a /, "") : e.kind;
+  const leaf = pair ? ` (one of its two ${pair.leaf === "leaf" ? "leaves" : "panels"})` : "";
   if (e.exterior) {
     const inside = e.between[0] === EXTERIOR_NODE ? e.between[1] : e.between[0];
     return `the ${what} from outside into ${name(inside)}${leaf}`;
