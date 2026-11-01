@@ -39,8 +39,10 @@
   `release.yml` runs them, last and best-effort, so a broken bundle shows as a yellow step on a
   green release.
 - `build:openai-plugin` writes the OpenAI directory ZIP to the gitignored `dist-openai/` from the
-  generated `plugins/archlang/` (adds the version, swaps in the hosted server's `mcp.json`) and checks
-  what it wrote; `prove:openai-plugin` re-checks a ZIP. Neither is in CI; the owner uploads by hand.
+  generated `plugins/archlang/` (adds the version, swaps in the hosted server's `mcp.json`, pins the
+  skills' CLI) and checks what it wrote; `prove:openai-plugin` re-checks a ZIP. `--plugin-version=<v>`
+  moves the listing's version and leaves the pin on the core. Neither is in CI; an agent may upload
+  the draft, and the owner submits and publishes (`docs/integrations.md`).
 - `gen:font-cjk` needs Python + fonttools + network and sits outside the drift gate.
 - `npm run dev` is `tsup --watch`, not a web server (`playground:dev` / `docs:dev` are the sites).
 

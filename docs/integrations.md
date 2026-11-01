@@ -14,7 +14,7 @@ covered in [`overview.md`](overview.md) and is not repeated here.
 
 | Host | Plugin files (under `plugins/archlang/`) | Copy-in files |
 |---|---|---|
-| Codex and ChatGPT | a ZIP built from `plugin.json`, `skills/`, `assets/icon.png` (below) | none |
+| Codex and ChatGPT | a ZIP built from `plugin.json`, `mcp.json`, `skills/`, `assets/icon.png` (below) | none |
 | GitHub Copilot (CLI) | `plugin.json`, `mcp.json`, `skills/` | `integrations/copilot/*` |
 | Cursor | `.cursor-plugin/plugin.json`, `mcp.json`, `skills/`, `rules/archlang.mdc` | none |
 | Any Agent Plugins client | `plugin.json`, `mcp.json`, `skills/` | none |
@@ -49,8 +49,8 @@ server `https://mcp.archlang.uk/mcp` (below).
 
 ## How a user installs them
 
-- **Codex / ChatGPT:** once the plugin is in the directory, open the Plugins tab and search for
-  ArchLang. Without the directory, copy the folders you want from `plugins/archlang/skills/` into the
+- **Codex / ChatGPT:** open the Plugins tab and search for ArchLang
+  (<https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970>). Without the directory, copy the folders you want from `plugins/archlang/skills/` into the
   project's `.agents/skills/` (or `~/.agents/skills/` for every project).
 - **GitHub Copilot:** once the plugin is in Awesome Copilot, `copilot plugin install archlang@awesome-copilot`.
   Without it, copy the skill folders into the project's `.github/skills/`, and optionally
@@ -75,7 +75,7 @@ server `https://mcp.archlang.uk/mcp` (below).
 The policy is stated once, in [`seo.md`](seo.md) section 8: an agent may drive a submission form or
 publish step through the owner's logged-in browser or CLI when the owner has asked for that listing.
 The owner personally does account creation, logins, 2FA/OTP, API-token and secret creation,
-acceptance of terms and attestations, native file pickers (the OpenAI portal's ZIP upload is one),
+acceptance of terms and attestations, native file pickers,
 and the final submit of anything that accepts terms. Live status per host is the table in
 `seo.md`; the steps below are the recipes.
 
@@ -102,7 +102,8 @@ opens the written ZIP again and checks the entry list and both rewritten files;
 1. Sign in at <https://platform.openai.com/plugins> with an organization-owner account (or a member with
    Apps Management Write) and complete the individual or business verification in organization settings.
 2. In the PRIMARY checkout, on the release's commit, run `npm run build:openai-plugin`; upload
-   `dist-openai/archlang-plugin-<version>.zip`.
+   `dist-openai/archlang-plugin-<version>.zip`. "Create draft from ZIP" has a file input, which an
+   agent can fill through Claude in Chrome's `file_upload`, so this upload needs no native picker.
 3. Choose **Upload new or existing plugin**, then the **With MCP** path (the hosted server is remote
    HTTPS), and upload the ZIP as a NEW plugin draft: OpenAI does not support adding an MCP server to
    an existing skills-only plugin (<https://developers.openai.com/plugins/deploy/submission>), so do
@@ -137,7 +138,9 @@ The hosted tools are all ChatGPT can count on. Its sandbox has Node and npm but 
 npm registry (checked 2026-11-01 on a free account: `Could not resolve host: registry.npmjs.org`),
 so no skill can reach the CLI there, and the hosted server has no PDF or PNG renderer. Each starter
 prompt must therefore finish on the hosted tools alone, and `archlang-export` hands PDF, PNG and DXF
-to the Playground through the `link` tool.
+to the Playground through the `link` tool. Live tests so far ran in one account, whose chats had
+already saved a `plan.arch`, so the prompts that name that file are unverified for a user with
+none (O.12 in `backlog.md`), and Codex is untested (O.13).
 
 ### Awesome Copilot (GitHub Copilot CLI marketplace)
 

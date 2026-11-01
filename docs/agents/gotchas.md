@@ -102,6 +102,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **`gh pr checks <n> --watch --fail-fast` has exited early on the informational Benchmark job.**
   Watch without `--fail-fast`, then read every conclusion with
   `gh api repos/<owner>/<repo>/commits/<sha>/check-runs`.
+- **`gh pr checks <n> --watch` right after `gh pr create` can return before the checks register**, and
+  the merge is then refused by branch policy. Before merging, confirm `mergeStateStatus` is `CLEAN`.
 - **`gh pr merge --match-head-commit` needs the full 40-character SHA**; a short one fails the
   merge, and a branch delete `;`-chained after it then closes the PR unmerged. Auto-merge deletes
   the branch on merge: never delete it by hand (procedure: `commands.md` § Merging a PR).
@@ -182,6 +184,10 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 
 ## Tooling & process
 
+- **Claude in Chrome's screenshot can time out on platform.openai.com and after a Playground PDF
+  download** ("renderer may be frozen"). The page still works: read and drive it with
+  `javascript_tool`. A long `#z=` link cannot be retyped by hand; a truncated hash silently shows
+  the default example, so check the editor's first line.
 - **The `alg-*` executors do not push**; the main session pushes and opens the PR, and writes the body if
   the executor did not. A worktree branch can track `origin/main`, so push with an explicit
   `HEAD:<branch>`.
