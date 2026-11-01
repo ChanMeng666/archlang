@@ -431,11 +431,12 @@ suite("a pair that shares several runs", () => {
     expect(codes(around)).toEqual(["E_ROOM_NOT_RECTANGLE"]);
   });
 
-  it("what is not built yet still refuses: a datum, `right-of`, an anchor", () => {
+  it("what a polygon lacks still refuses: a centre, a corner in its notch (its sides: `rectilinear-sides`)", () => {
     const body = `${LIV_BED}${STATEMENT}\n`;
-    expect(codes(plan(`${body}  window on liv.left width 1000`))).toEqual(["E_ROOM_NOT_RECTANGLE"]);
-    expect(codes(plan(`${LIV}\n  room id=x right-of liv size 2000x3000\n${STATEMENT}`))).toContain("E_PLACE_POLY");
-    expect(codes(plan(`${body}  furniture sofa in liv anchor bottom-left flush size 2000x900`))).toEqual([
+    expect(codes(plan(`${body}  wall id=c interior thickness 100 { (liv.cx,0) (100,0) }`))).toEqual([
+      "E_ROOM_NOT_RECTANGLE",
+    ]);
+    expect(codes(plan(`${body}  furniture sofa in liv anchor bottom-right flush size 2000x900`))).toEqual([
       "E_PLACE_POLY",
     ]);
   });
@@ -936,6 +937,8 @@ const DIGESTS: [string, string][] = [
   ["0f051e46f0c99c26ef0c0c3509426d96ea8d84f64fcc95d035c29a45a44f88b9", "doors-both-runs"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["4fcb697a9ca1bba1bcbcb0dbf13b8408a036eac7d7cf11a3b49f893f60858533", "door-u"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["7f8fd6e2ab3e0d3e05cc6654f5d18fa1d28e16e19b612f82d05d3aa42240d957", "door-one-run"], // `centreline_at`, see ./byte-identity-baseline.ts
+  ["39215ac149ddd3cb84ca0b8211d54b2d5385e2b51bcb319636a9966f2e8ad82d", "sides"],
+  ["816e177d627645e2ff64163379bdb0133a75b7310563d4ce92edcf3412a10dc4", "issue-whole"],
   ["46f0683fb76364297815f3e2830e4d9814db366bcecb577be04eec9c0f59f351", "doors-placed"], // `centreline_at`, see ./byte-identity-baseline.ts
 ];
 

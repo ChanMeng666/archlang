@@ -104,7 +104,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_OUT_OF_RANGE`](#e_out_of_range) | error | A coordinate, length or drawing setting is outside the modelling range. |
 | [`E_PARSE`](#e_parse) | error | The source could not be read: its SHAPE is wrong. |
 | [`E_PARTITION_TOO_SHORT`](#e_partition_too_short) | error | `walls from rooms`, or a `wall … between`, meets a shared edge shorter than the wall's thickness. |
-| [`E_PLACE_POLY`](#e_place_poly) | error | A rectangle-only placement clause aimed at a polygon room. |
+| [`E_PLACE_POLY`](#e_place_poly) | error | A placement clause aimed at a polygon room that has no one edge or corner to stand on. |
 | [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or unplaced room. |
 | [`E_PNG_DEPENDENCY`](#e_png_dependency) | error | PNG/PDF export needs an optional dependency that is not installed. |
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
@@ -122,7 +122,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOMS_OVERLAP`](#e_rooms_overlap) | error | `walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap. |
 | [`E_ROOM_ALIGN`](#e_room_align) | error | Unknown relational alignment edge. |
 | [`E_ROOM_ALIGN_AXIS`](#e_room_align_axis) | error | Relational alignment edge belongs to the other axis. |
-| [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge. |
+| [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum meets a circle, a slanted polygon, a polygon side of several runs or a polygon's centre; a `wall … between`/`wall … around` meets a polygon or circle room; or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge. |
 | [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
@@ -1312,7 +1312,7 @@ door between a and b width 800   # error: a door needs a position
 
 **Cause.** `door|opening … between A and B` stands in the one wall body on the pair's shared edge run (ADR 0028 §5). Two authored halves, or an authored span beside a derived remainder (the `~2` pieces coexistence leaves), give more than one, and the compiler does not choose between them (ADR 0005). `… on <room>.<edge>` stands in one exterior wall body on that edge. An edge can carry several, part exterior and part partition, or exterior either side of a narrower neighbouring room: the position, measured along the whole room edge, says where the opening lands, and it stands in an exterior body when its whole span lies on that body and on no other wall. With an exterior body on the edge, a span that crosses from one body to the next, stands on a partition, stands on no body, or lies on two walls at once is refused here; with none it is `E_OPENING_NO_SHARED_WALL`. A `status demolish` wall still takes up the span it lies on, but it is no exterior body. A polygon room wrapped round its neighbour shares several edges with it, and only `at <mm> from <room>.<edge>`, with an edge that meets one of them at an end, picks one: `at center`, `from start|end`, `at axis <label>` or no position would be a choice the author did not write. `open between A and B` derives one opening on one edge, so such a pair has no single answer there either (ADR 0028 §3). The span points at the clause.
 
-**Fix.** On a room's edge with several walls: write the position the hint quotes for the exterior wall you mean, where it quotes one. On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean (two polygons have no edge words). On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
+**Fix.** On a room's edge with several walls: write the position the hint quotes for the exterior wall you mean, where it quotes one. On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
 
 ```arch static
 room id=a at (0,0) size 4000x3000
@@ -1466,15 +1466,15 @@ wall partition thickness 100 between a and b   # error: the same run
 
 ## E_PLACE_POLY
 
-*error* — A rectangle-only placement clause aimed at a polygon room.
+*error* — A placement clause aimed at a polygon room that has no one edge or corner to stand on.
 
-**Cause.** Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's four RECTANGLE edges. A `room polygon` has no such edges, and its bounding box is not its floor — an anchor could land the piece in a notch that is outside the room — so the compiler refuses instead of guessing (ADR 0005).
+**Cause.** Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's edges. A polygon whose every edge is horizontal or vertical has them: a side is the ring's run on its outermost line, a corner anchor is a vertex of the ring on two such lines, and a side anchor centres on the run. The rest is refused, because a bounding box is not a floor and the compiler does not guess (ADR 0005): a circle or a slanted polygon, a side that is several runs (the prongs of a U), a corner in a notch, `centered` or `anchor center` (the middle of the outline may not be floor), and a footprint that would leave the ring.
 
-**Fix.** Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.
+**Fix.** Name a side with one run or a corner that is a vertex of the ring, or give the room or the fixture explicit `at (x,y)` coordinates (a fixture may add `rotate`).
 
 ```arch static
 room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)
-furniture wc in L anchor bottom-left   # error: L is a polygon room
+furniture wc in L anchor bottom-right size 400x700   # error: that corner is in the L's notch
 ```
 
 ## E_PLACE_REF
@@ -1696,15 +1696,15 @@ room id=b right-of a align right size 3000x3000   # error: `right` is horizontal
 
 ## E_ROOM_NOT_RECTANGLE
 
-*error* — A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge.
+*error* — A room-edge datum meets a circle, a slanted polygon, a polygon side of several runs or a polygon's centre; a `wall … between`/`wall … around` meets a polygon or circle room; or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge.
 
-**Cause.** Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room, the same condition relational placement refuses with `E_PLACE_POLY`, and the pairwise `wall … between`/`wall … around` derive their walls from those same edges. A `room polygon` or `room circle` has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §4). `walls from rooms` and `door|opening … between` read the ring as well, so a rectilinear polygon (every edge horizontal or vertical) is legal there; a circle, or a polygon with any other edge, shares no edge run, and is refused the same way (§3, §5). For a pairwise wall or a `between` the span points at the room's name.
+**Cause.** Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room. A rectilinear polygon (every edge horizontal or vertical) has edges too: `top`, `bottom`, `left` and `right` are the ring's run on its outermost line, one run or a refusal (the prongs of a U do not say which), and `cx`, `cy` are refused, since the middle of the outline may not be floor. The pairwise `wall … between`/`wall … around` derive their walls from a rectangle's edges. A circle or a slanted polygon has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §4). `walls from rooms` and `door|opening … between` read the ring as well, so a rectilinear polygon is legal there; a circle, or a polygon with any other edge, shares no edge run, and is refused the same way (§3, §5). For a pairwise wall or a `between` the span points at the room's name.
 
-**Fix.** Write the coordinate as a number, or read the datum of a rectangular room. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.
+**Fix.** Write the coordinate as a number, or read a side the room has. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.
 
 ```arch static
-room id=L polygon (0,0) (6000,0) (6000,4000) (0,4000)
-wall interior thickness 100 { (L.left, 0) (L.left, 4000) }   # error: L is a polygon room
+room id=T polygon (0,0) (6000,0) (3000,4000)
+wall interior thickness 100 { (T.left, 0) (T.left, 4000) }   # error: T has a slanted edge
 ```
 
 ## E_ROOM_POLY_DEGENERATE
@@ -2994,7 +2994,7 @@ furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom agai
 
 **Cause.** A room labelled as a bathroom or kitchen contains no plumbing/kitchen fixture (WC, basin, shower, sink, counter…), so it is drawn as an empty box.
 
-**Fix.** Place a fixture inside the room; the categories are built in, so nothing needs importing. A bathroom or WC takes a `wc`, `basin`, `shower` or `bathtub` (e.g. `furniture wc in bath anchor top flush size 400x700`); a kitchen takes a `kitchen_sink`, `counter`, `stove` or `fridge` (e.g. `furniture kitchen_sink in kitchen anchor top flush size 800x600`). A bare `sink` counts for either. A `polygon` or `circle` room cannot take `anchor`: place the piece `at (x,y)` with `in <roomId>` instead. The hint quotes the pieces that make the room what it is, checked together: a `bathtub` or `shower` for a bathroom, a `wc` for a WC, a sink and a hob for a kitchen, and the defining piece of any other use the room has. One fixture alone would leave a furnished room still missing its defining piece, which `W_ROOM_MISSING_DEFINING` reports.
+**Fix.** Place a fixture inside the room; the categories are built in, so nothing needs importing. A bathroom or WC takes a `wc`, `basin`, `shower` or `bathtub` (e.g. `furniture wc in bath anchor top flush size 400x700`); a kitchen takes a `kitchen_sink`, `counter`, `stove` or `fridge` (e.g. `furniture kitchen_sink in kitchen anchor top flush size 800x600`). A bare `sink` counts for either. A `circle` or slanted `polygon` room cannot take `anchor`: place the piece `at (x,y)` with `in <roomId>` instead. The hint quotes the pieces that make the room what it is, checked together: a `bathtub` or `shower` for a bathroom, a `wc` for a WC, a sink and a hob for a kitchen, and the defining piece of any other use the room has. One fixture alone would leave a furnished room still missing its defining piece, which `W_ROOM_MISSING_DEFINING` reports.
 
 ```arch static
 room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside

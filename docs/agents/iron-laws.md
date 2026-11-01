@@ -74,7 +74,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   376 s measurement. The label-placement residual stays kept.
 - **No structural attribute on walls and no load-bearing check** (D25): cross-storey wall checks go
   through `keep stacked`, geometry only.
-- **Not built yet, and open on their merit** (D29): `right-of` and anchors on a polygon, edge names, winders,
+- **Not built yet, and open on their merit** (D29): names for a polygon's notch edges, winders,
   `shape` shortcuts, an `entry` clause, `locale`. A German profile stays out until its rules are read from
   the source, as the other profiles were.
 - **A `lint()` diagnostic's `message` names things the way a person would** (rooms by label, doors

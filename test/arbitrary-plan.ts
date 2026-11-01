@@ -483,9 +483,9 @@ export function renderPlan(spec: PlanSpec, opts: RenderOptions = {}): string {
     );
   }
   if (a.relational) {
-    // The reference is an annex-local RECTANGLE: a rectangle-only clause refuses a
-    // polygon room outright (`E_PLACE_POLY`), which is correct behaviour to respect,
-    // not to generate.
+    // The reference is an annex-local RECTANGLE: relational placement refuses a slanted
+    // polygon, or a side of several runs (`E_PLACE_POLY`), which is correct behaviour to
+    // respect, not to generate.
     annexLines.push(`  room id=r_base at (${mm(ax)},${mm(16000)}) size 3000x2500`);
     // The alignment edge is drawn from the direction's OWN cross axis, so
     // `E_ROOM_ALIGN_AXIS` cannot fire however the table is reordered or extended.

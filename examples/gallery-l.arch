@@ -44,8 +44,8 @@ plan "Gallery L" {
   window id=north_light on exterior at 20% width 3000
 
   # ---- fit-out ----------------------------------------------------------------
-  # Polygon rooms refuse the anchor forms (E_PLACE_POLY — a nine-point anchor
-  # needs a rectangle), so every piece here is an absolute `at`, kept clear of the
+  # An L takes an anchor on a side (E_PLACE_POLY in a notch — never the box),
+  # but none of these stands there, so each is an absolute `at`, kept clear of the
   # L's missing quadrant (x 6000-12000, y 8000-14000 is the lobby's, not the
   # gallery's) and of the two doors' swing quarter-discs.
   furniture bench at (2000,2000)   size 1800x500 in gallery

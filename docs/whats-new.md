@@ -271,7 +271,31 @@ plan "L-shaped living room" {
 }
 ```
 
-`liv` and `bed` share two edges here, so `door between` has to say which: `at center` is refused, and the message quotes the forms that work. `open between` on such a pair is refused too. A polygon with a slanted edge and a circle room stay outside `walls from rooms`, and `right-of`, anchored furniture and datums such as `liv.top` still refuse a polygon.
+`liv` and `bed` share two edges here, so `door between` has to say which: `at center` is refused, and the message quotes the forms that work. `open between` on such a pair is refused too. A polygon with a slanted edge and a circle room stay outside `walls from rooms`.
+
+Such a polygon also has sides now. Each is the outline's run on its outermost line, so the rooms-first forms read the shape and never its bounding box:
+
+```arch
+plan "L-shaped room, placed by its sides" {
+  units mm
+  room id=liv polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) label "Living" uses living
+  room id=bed at (3000,3000) size 3000x3000 label "Bedroom" uses bedroom
+  room id=bath right-of liv align bottom size 3200x1800 label "Bath" uses bath
+  room id=store at (6000,0) size 3200x1200 label "Store" uses storage
+  walls from rooms exterior 200 partition 100
+  window on liv.top width 1500
+  window on bed.bottom width 1200
+  door on liv.left at 900 from liv.top width 1000 swing inward
+  door between liv and bed at 1500 from bed.top width 800 swing into bed
+  door between liv and bath at center width 800 swing into bath
+  door between liv and store at center width 800 swing into store
+  furniture sofa in liv anchor left flush size 900x2000
+  furniture bookshelf in liv anchor bottom flush size 1200x300
+  furniture shower in bath anchor right flush size 900x900
+}
+```
+
+`right-of liv` stands on the run at x 6000, y 0–3000, and `align bottom` keeps the bath on it rather than floating past the notch at y 6000. A corner anchor needs a vertex of the outline there, so `anchor bottom-right` is refused: that corner is the notch. A side anchor centres on the run. A side with two runs, like the prongs of a U, `liv.cx` and `centered` are refused, and so is a piece that would leave the floor. `finish` now furnishes such a room on the same terms: a piece stands only where those forms can say. A notch edge has no word yet, so nothing is proposed against it.
 
 ## Turning stairs
 

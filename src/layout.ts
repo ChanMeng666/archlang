@@ -7,8 +7,11 @@
  * optimizer: each room's position is a closed-form function of its reference
  * room's resolved box, resolved via a topological pass. References form a DAG;
  * a cycle is a user error (`E_LAYOUT_CYCLE`, members only), an unknown reference is
- * `E_LAYOUT_REF`, a polygon reference `E_PLACE_POLY`, and a room that merely depends on
- * one of those (directly, along a chain, or into a cycle) `E_LAYOUT_UNPLACED`.
+ * `E_LAYOUT_REF`, a reference with no one run on that side `E_PLACE_POLY`, and a room that
+ * merely depends on one of those (directly, along a chain, or into a cycle) `E_LAYOUT_UNPLACED`.
+ *
+ * A rectilinear polygon is a reference through the ring's extreme run on that side, never its
+ * box: the run's line is where the room stands, and its ends are what `align` reads.
  *
  * Determinism: rooms are processed in declaration order within each pass, and
  * computed coordinates are grid-snapped exactly like absolute ones, so the same
@@ -20,6 +23,7 @@ import type { Point } from "./ast.js";
 import type { Diagnostic } from "./diagnostics.js";
 import { rectLabelOutsideDiag } from "./elements/room.js";
 import type { RelConstraint, RRoom } from "./ir.js";
+import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from "./room-tiling.js";
 
 /** A room that definitely carries a relational constraint. */
 type RelRoom = RRoom & { _rel: RelConstraint };
@@ -68,6 +72,49 @@ function place(room: RelRoom, ref: RRoom, snapPt: (p: Point) => Point): void {
       break;
   }
   room.at = snapPt({ x, y });
+}
+
+/** The side of a reference a relational clause reads. */
+const SIDE_OF: Readonly<Record<RelConstraint["dir"], SideWord>> = {
+  "right-of": "right",
+  "left-of": "left",
+  below: "bottom",
+  above: "top",
+};
+
+/**
+ * `place` against one run of a polygon reference: the closed form of `place`, with the run for the
+ * rectangle's side. The rectangle's arithmetic above stays as it is, operand for operand.
+ */
+function placeOnRun(room: RelRoom, run: EdgeLine, snapPt: (p: Point) => Point): void {
+  const { dir, gap } = room._rel;
+  const cross = (own: number, axis: "v" | "h"): number =>
+    alignOffset(run.lo, run.hi - run.lo, own, room._rel.align, axis);
+  const at = {
+    "right-of": { x: run.c + gap, y: cross(room.size.h, "v") },
+    "left-of": { x: run.c - room.size.w - gap, y: cross(room.size.h, "v") },
+    below: { x: cross(room.size.w, "h"), y: run.c + gap },
+    above: { x: cross(room.size.w, "h"), y: run.c - room.size.h - gap },
+  };
+  room.at = snapPt(at[dir]);
+}
+
+/**
+ * The run of a polygon reference a relational clause stands on, or why it has none. Only an outline
+ * with every edge horizontal or vertical has sides at all, and a side of several runs does not
+ * say which: both are an error naming the way out, never a guess (ADR 0005).
+ */
+function referenceRun(room: RelRoom, ref: RRoom & { poly: Point[] }): EdgeLine | string {
+  const { dir, ref: id } = room._rel;
+  const head = `Room "${room.id}" is placed \`${dir} ${id}\`, but`;
+  const instead = "Place this room with `at (x,y)` instead.";
+  if (ref._ringRefused) return `${head} the outline of "${id}" was refused (see its own error). ${instead}`;
+  if (ref.circle || !rectilinear(ref.poly))
+    return `${head} "${id}" is ${ref.circle ? "a circle room" : "a polygon room with an edge neither horizontal nor vertical"} — relational placement needs a rectangular or rectilinear reference. ${instead}`;
+  const side = SIDE_OF[dir];
+  const runs = extremeRuns(ref.poly, side);
+  if (runs.length === 1) return runs[0]!;
+  return `${head} the ${side} side of "${id}" is ${runs.length} separate runs (${runsText(runs)}), which does not say which. ${instead}`;
 }
 
 /**
@@ -130,24 +177,19 @@ export function placeRelational(
         continue;
       }
       if (isResolved(r._rel.ref)) {
-        // A relational clause is closed-form arithmetic on the REFERENCE's rectangle
-        // ("its right edge, its top edge"). A polygon room has no such edges, and
-        // silently using its bounding box would put the room against an edge the
-        // reference does not have — so this is an error naming the way out, never a
-        // guess (ADR 0005).
-        if (ref.poly) {
-          pending.set(r.id, {
-            severity: "error",
-            message: `Room "${r.id}" is placed \`${r._rel.dir} ${r._rel.ref}\`, but "${r._rel.ref}" is a polygon room — relational placement needs a rectangular reference. Place this room with \`at (x,y)\` instead.`,
-            code: "E_PLACE_POLY",
-            span: r._rel.span,
-          });
+        // A relational clause is closed-form arithmetic on the REFERENCE's side ("its right
+        // edge, its top edge"). A polygon's side is the ring's extreme run. Silently using its
+        // bounding box would put the room against an edge the reference does not have.
+        const run = ref.poly ? referenceRun(r, ref as RRoom & { poly: Point[] }) : undefined;
+        if (typeof run === "string") {
+          pending.set(r.id, { severity: "error", message: run, code: "E_PLACE_POLY", span: r._rel.span });
           unresolved.delete(r.id);
           failed.add(r.id);
           changed = true;
           continue;
         }
-        place(r, ref, snapPt);
+        if (run) placeOnRun(r, run, snapPt);
+        else place(r, ref, snapPt);
         // `label … at (x,y)` is an absolute plan coordinate, so whether it lands on this
         // room's floor is only answerable once the floor has one — which is HERE, and
         // nowhere earlier: at resolve the room's `at` was still the (0,0) placeholder,
