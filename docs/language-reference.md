@@ -1233,7 +1233,9 @@ plan "An L round a room" {
 **Facts.** `describe --json` reports such an opening's `placement` as `relational` in
 `freedom` (with an `openings.relational` count, present only when there is one) and its
 placement as written in a `relation` field of its `doors[]`/`windows[]`/`openings[]` row
-(`"between living and bed at 800 from end"`), never the internal name of its host. A lint hint
+(`"between living and bed at 800 from end"`), never the internal name of its host. A `between`
+door or cased opening also reports `centreline_at`, where it landed: the centre of its span on the
+host wall's centreline, in plan millimetres, the point `door at (x,y)` would name. A lint hint
 that moves it quotes the same form, measured from the anchor the author wrote (`from end`, or
 an edge through an end of the run; otherwise from the start). Plan JSON exports it as written
 (`relation: { between | edge, at }`) beside its resolved `x`/`y`, except one placed

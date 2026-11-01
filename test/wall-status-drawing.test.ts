@@ -249,6 +249,7 @@ suite("examples/remodel.arch", () => {
 
   // Pinned when the example was written (B3b). A move is a finding to explain, never a re-pin.
   // #367 moved svg and dxf: "Utility" is pinned clear of the swing; describe() and lint() held.
+  // #401 moved describe alone: its `between` doors report `centreline_at`, see ./byte-identity-baseline.ts.
   it("pins its SVG, DXF, describe() and lint()", () => {
     const r = compile(REMODEL, { noCache: true });
     expect({
@@ -263,6 +264,6 @@ suite("examples/remodel.arch", () => {
 const PINS = {
   svg: "70df86ff2b4e794170d764ff3234c0dff105267c8afa7fbcca28f1fc3ea31467",
   dxf: "837b1718cf545ba44a7a7486a78ad071a8359d8686a6dd0dfdaeb47bb059c116",
-  describe: "ad7b4177c363a950d16088f56cb94864ff783809d6d24c3d848cea894440fd5e",
+  describe: "d266e4f67487415b5a0573f128ca19e5ef84661e69c63ff7be52509e9af418dd",
   lint: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
 };

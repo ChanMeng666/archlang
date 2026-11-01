@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `describe --json` reports where a `between` door or cased opening landed, as `centreline_at`: the centre of its span on the wall's centreline, in plan millimetres. A `from start` there counts from the shared run, which the source alone does not show. Other doors and windows are unchanged.
 - The `archlang-export` skill says what to do where the CLI cannot run: stop after the first failure, then use the MCP tools and the Playground. In ChatGPT's sandbox `npx` cannot reach npm.
 - The OpenAI listing's third starter prompt asks for an A3 sheet and a PDF download link, which the hosted tools can deliver. `build:openai-plugin` takes `--plugin-version=<version>`, so a listing update does not need a core release.
 
