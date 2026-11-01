@@ -7,7 +7,8 @@
  * `issue` and `issue-tiled` are the issue's first and second plans. Both drop the door and the
  * anchored sofa, and `issue` places the bath at (6000,0) for its `right-of liv` (card L3); the ring
  * and the rooms are the issue's own. `doors-both-runs` onward are card L2's: `door|opening between`
- * on a polygon (`test/rectilinear-doors.test.ts`).
+ * on a polygon (`test/rectilinear-doors.test.ts`). `sides` and `issue-whole` are cards L3 and L4's:
+ * a polygon's sides (`test/rectilinear-sides.test.ts`).
  */
 
 const plan = (title: string, body: string): string => `plan "${title}" {\n  units mm\n${body}\n}\n`;
@@ -44,6 +45,26 @@ export const ISSUE_PLAN = plan(
   "L-shaped living room",
   `${LIV}\n${BED}\n  room id=bath at (6000,0) size 2000x3000 label "Bath" uses bath\n${STATEMENT}`,
 );
+
+/** Every form that reads a polygon's side, in a body a component can hold. */
+export const SIDES_BODY = `${LIV}
+${BED}
+  room id=bath right-of liv align bottom size 2000x1500 label "Bath" uses bath
+  room id=store at (6000,0) size 2000x1500 label "Store" uses storage
+${STATEMENT}
+  window id=w on liv.top width 1500
+  door id=e on liv.left at 900 from liv.top width 1000 swing inward
+  door id=d between liv and bed at 1500 from liv.bottom width 800 swing into bed
+  door id=b between liv and bath at center width 800 swing into bath
+  door id=s between liv and store at center width 800 swing into store
+  furniture id=f sofa in liv anchor left flush size 900x2000
+  furniture id=l lamp in liv anchor top-right flush inset 100 size 400x400
+  furniture id=k bookshelf against liv.bottom offset 1500 size 1200x300
+  furniture id=t stool in bed anchor top flush size 400x400
+  column id=c at (liv.left + 300, liv.bottom - 700) size 300x300`;
+
+/** Every form that reads a polygon's side. */
+export const SIDES_PLAN = plan("An L by its sides", SIDES_BODY);
 
 export const RECTILINEAR_PLANS: [string, string][] = [
   ["issue", ISSUE_PLAN],
@@ -127,6 +148,15 @@ export const RECTILINEAR_PLANS: [string, string][] = [
     plan(
       "Every position on one run",
       `${LIV}\n${BED}\n  room id=din at (6000,0) size 3000x3000 label "Dining" uses dining\n${STATEMENT}\n  door id=d1 between liv and din at 700 from start width 800 swing into din\n  door id=d2 between din and liv at 700 from end width 800 hinge right swing into din\n  opening id=o1 between liv and din at 1500 from din.top width 300`,
+    ),
+  ],
+  ["sides", SIDES_PLAN],
+  [
+    // The issue's first plan, every line as filed but the door, which has to say which run.
+    "issue-whole",
+    plan(
+      "L-shaped living room",
+      `${LIV}\n${BED}\n  room id=bath right-of liv size 2000x3000 label "Bath" uses bath\n${STATEMENT}\n  door between liv and bed at 1500 from bed.top width 800 swing into bed\n  furniture sofa in liv anchor bottom-left flush size 2000x900`,
     ),
   ],
   [

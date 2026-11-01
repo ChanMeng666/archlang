@@ -68,6 +68,7 @@
 
 import type { Point } from "./ast.js";
 import { chargeSteps } from "./expr.js";
+import { RING_READS_PER_STEP } from "./geometry/polygon.js";
 import { fmt3 as numStr } from "./num-format.js";
 
 /** An axis-aligned rectangle `[x0, x1] × [y0, y1]`. */
@@ -87,6 +88,8 @@ export interface TileRoom {
   rect?: TileRect;
   parts?: readonly TileRect[];
   shape?: "polygon" | "circle";
+  /** A polygon's ring, for the words {@link runPicks} may quote when no rectangle picks a run. */
+  ring?: readonly Point[];
 }
 
 /** An `outdoor` surface or a `void` of the group: a rectangle or a ring. */
@@ -217,8 +220,8 @@ export interface RunLine {
 /** One run of a pair, and what picks it. */
 export interface RunPick {
   run: RunLine;
-  /** `bed.top`: an edge of the pair's rectangles that meets this run at an end and no other run.
-   *  Absent when none does: two polygons, or an edge meeting two runs at once. */
+  /** `bed.top`: an edge of the pair that meets this run at an end and no other run. Absent when
+   *  none does: an edge meeting two runs at once, or a run only a polygon's notch reaches. */
   from?: string;
   /** The end of the run `from` meets, which an offset from it is measured from. */
   end?: "r0" | "r1";
@@ -274,27 +277,34 @@ export function runEndMet(
 
 /**
  * What picks each of a pair's runs: the first edge of the pair's rectangles, in the order
- * top, bottom, left, right, that meets this run and no other. Charged before it reads them.
+ * top, bottom, left, right, that meets this run and no other; failing a rectangle, a polygon's
+ * side with one run, in the same order. Charged before it reads them.
  */
 export function runPicks(pair: readonly TileRoom[], runs: readonly RunLine[]): RunPick[] {
   chargeSteps(8 * runs.length + 1);
   const picks: RunPick[] = runs.map((run) => ({ run }));
+  const offer = (id: string, word: string, edge: EdgeLine): void => {
+    const met = picks.filter((p) => runEndMet(edge, p.run) !== undefined);
+    const pick = met.length === 1 ? met[0]! : undefined;
+    if (pick && pick.from === undefined) {
+      pick.from = `${id}.${word}`;
+      pick.end = runEndMet(edge, pick.run);
+    }
+  };
   for (const room of pair) {
     const r = room.rect;
     if (!r) continue;
-    const edges = [
-      { word: "top", vertical: false, c: r.y0, lo: r.x0, hi: r.x1 },
-      { word: "bottom", vertical: false, c: r.y1, lo: r.x0, hi: r.x1 },
-      { word: "left", vertical: true, c: r.x0, lo: r.y0, hi: r.y1 },
-      { word: "right", vertical: true, c: r.x1, lo: r.y0, hi: r.y1 },
-    ];
-    for (const edge of edges) {
-      const met = picks.filter((p) => runEndMet(edge, p.run) !== undefined);
-      const pick = met.length === 1 ? met[0]! : undefined;
-      if (pick && pick.from === undefined) {
-        pick.from = `${room.id}.${edge.word}`;
-        pick.end = runEndMet(edge, pick.run);
-      }
+    offer(room.id, "top", { vertical: false, c: r.y0, lo: r.x0, hi: r.x1 });
+    offer(room.id, "bottom", { vertical: false, c: r.y1, lo: r.x0, hi: r.x1 });
+    offer(room.id, "left", { vertical: true, c: r.x0, lo: r.y0, hi: r.y1 });
+    offer(room.id, "right", { vertical: true, c: r.x1, lo: r.y0, hi: r.y1 });
+  }
+  if (picks.every((p) => p.from !== undefined)) return picks;
+  for (const room of pair) {
+    if (!room.ring) continue;
+    for (const word of ["top", "bottom", "left", "right"] as const) {
+      const sides = extremeRuns(room.ring, word);
+      if (sides.length === 1) offer(room.id, word, sides[0]!);
     }
   }
   return picks;
@@ -957,6 +967,98 @@ export const rectilinear = (ring: readonly Point[]): boolean =>
     const q = ring[(i + 1) % ring.length]!;
     return p.x === q.x || p.y === q.y;
   });
+
+/** A straight axis-aligned line `x = c` (`vertical`) or `y = c`, with an extent on it. */
+export interface EdgeLine {
+  vertical: boolean;
+  c: number;
+  lo: number;
+  hi: number;
+}
+
+/** The sides of a shape, as the language's edge words name them. */
+export type SideWord = "top" | "bottom" | "left" | "right";
+
+/**
+ * The runs of a rectilinear ring on one of its four extreme lines, in order along the line, each
+ * edge the ring has there merged across a redundant vertex. This is what a side of a polygon
+ * means: one run names it, and several (the prongs of a U) name nothing, so a reader refuses. An
+ * end of such a run is always a convex corner, since the ring cannot cross an extreme line.
+ *
+ * Charged here, at the read, so a ring nothing reads this way costs nothing.
+ */
+export function extremeRuns(ring: readonly Point[], side: SideWord): EdgeLine[] {
+  chargeSteps(Math.ceil(ring.length / RING_READS_PER_STEP));
+  const vertical = side === "left" || side === "right";
+  const at = (p: Point): number => (vertical ? p.x : p.y);
+  const along = (p: Point): number => (vertical ? p.y : p.x);
+  let c = at(ring[0]!);
+  for (const p of ring) c = side === "top" || side === "left" ? Math.min(c, at(p)) : Math.max(c, at(p));
+  const found: Array<[number, number]> = [];
+  ring.forEach((p, i) => {
+    const q = ring[(i + 1) % ring.length]!;
+    if (at(p) !== c || at(q) !== c || along(p) === along(q)) return;
+    found.push([Math.min(along(p), along(q)), Math.max(along(p), along(q))]);
+  });
+  found.sort((u, v) => u[0] - v[0]);
+  const runs: EdgeLine[] = [];
+  for (const [lo, hi] of found) {
+    const last = runs[runs.length - 1];
+    if (last && last.hi === lo) last.hi = hi;
+    else runs.push({ vertical, c, lo, hi });
+  }
+  return runs;
+}
+
+/** `x 6000, y 0–2000 and y 4000–6000`: the runs on one extreme line, as a reader looks them up. */
+export function runsText(runs: readonly EdgeLine[]): string {
+  const first = runs[0];
+  if (!first) return "no edge lies on that line";
+  const [line, along] = first.vertical ? ["x", "y"] : ["y", "x"];
+  const spans = runs.map((r) => `${along} ${numStr(r.lo)}–${numStr(r.hi)}`);
+  return `${line} ${numStr(first.c)}, ${spans.join(" and ")}`;
+}
+
+/**
+ * A run as the degenerate rectangle whose edge it is: the shape the wall scans read
+ * (`backingWallForRoomEdge`, `innerFaceOfRoomEdge`), which take an edge of a rectangle. Reading the
+ * run, not the box, is the point: all four edge words of it land on the same line.
+ */
+export const runRect = (r: EdgeLine): { x: number; y: number; w: number; h: number } =>
+  r.vertical ? { x: r.c, y: r.lo, w: 0, h: r.hi - r.lo } : { x: r.lo, y: r.c, w: r.hi - r.lo, h: 0 };
+
+/** Float dust: what a sum of two lengths may land past a ring's line and still touch it. */
+const RING_DUST_MM = 1e-6;
+
+/**
+ * Does the rectangle lie on the floor of a rectilinear ring? No edge of the ring passes through
+ * its interior, which then lies wholly in or wholly out, and its centre, on no edge, says which.
+ * A rectangle's own edge may lie on the ring. Exact but for {@link RING_DUST_MM}. Charged here.
+ */
+export function rectInRing(rect: { x: number; y: number; w: number; h: number }, ring: readonly Point[]): boolean {
+  chargeSteps(Math.ceil(ring.length / RING_READS_PER_STEP));
+  const [x0, x1, y0, y1] = [rect.x, rect.x + rect.w, rect.y, rect.y + rect.h];
+  for (let i = 0; i < ring.length; i++) {
+    const a = ring[i]!;
+    const b = ring[(i + 1) % ring.length]!;
+    if (a.x === b.x) {
+      if (
+        a.x > x0 + RING_DUST_MM &&
+        a.x < x1 - RING_DUST_MM &&
+        Math.max(a.y, b.y) > y0 + RING_DUST_MM &&
+        Math.min(a.y, b.y) < y1 - RING_DUST_MM
+      )
+        return false;
+    } else if (
+      a.y > y0 + RING_DUST_MM &&
+      a.y < y1 - RING_DUST_MM &&
+      Math.max(a.x, b.x) > x0 + RING_DUST_MM &&
+      Math.min(a.x, b.x) < x1 - RING_DUST_MM
+    )
+      return false;
+  }
+  return inRing((x0 + x1) / 2, (y0 + y1) / 2, ring);
+}
 
 /**
  * A rectilinear ring as interior-disjoint rectangles of its floor, or `undefined` for a ring with

@@ -172,6 +172,13 @@ export interface RenderCtx {
    * nothing that depends on the answer.
    */
   floorAt?(p: Point): boolean;
+  /**
+   * `schedule rooms net`: the area figure a room's stamp prints, as the room schedule's NET AREA
+   * column holds it (m², two decimals), or `undefined` for a room with no net figure. Absent
+   * (every plan without the word) means the stamp is the centreline area, as it always was.
+   * Optional because this interface is append-only.
+   */
+  netAreaOf?(id: string): number | undefined;
 }
 
 /**
@@ -274,6 +281,9 @@ export interface ElementDef {
   /** Parameter schema — one source for the LSP (hover/completion/signature) and
    *  the docs. Optional so third-party plugins need not provide it. */
   params?: readonly ParamDoc[];
+  /** Keys `set <kind>(…)` refuses, each with why: a fact only the element's own statement may
+   *  state. Every other key parses, whether or not anything reads it. */
+  setRefuses?: Readonly<Record<string, string>>;
   /** One-line summary of what the element draws (for hover). */
   doc?: string;
   /**

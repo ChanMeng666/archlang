@@ -141,6 +141,12 @@ as it is. A polygon room is not approximated by its bounding box or by a rectang
 it: a derived position comes from the shape. A room with no `id=` of its own, or one inside a
 placed component instance, is reported too, because no statement in the plan body can name it.
 
+> *Amended 2026-11-02 (`docs/plans/preview-and-remodel/research/2026-11-02-l-rooms-extreme-runs-and-finish.md`):*
+> a polygon whose every edge is horizontal or vertical is furnished, through the same two forms, so
+> only on what they can say: its outermost runs and the corners that are vertices of the ring. No
+> rectangle is inscribed in it and no `at (x,y)` is written. A circle or a slanted polygon stays as
+> this decision says.
+
 A room placed relationally (`right-of`, `below`, …) has no fixed `at` to anchor in:
 `in <room> anchor` is `E_PLACE_REF` there. `against wall` does work, so such a room is
 furnished when every required piece of its uses is a wall fixture (a kitchen, a bathroom, a
@@ -220,8 +226,8 @@ leaves the room empty and says why.
 - An agent gets a furnished, sheeted drawing from one command, after lint is clean.
 - The pieces are conventional, not designed. An author who wants a different arrangement edits
   the statements or furnishes the room first; a furnished room is never revisited.
-- A polygon room gets no furniture from this stage, and neither does a room of a placed component.
-  Both are reported. (Until 2026-11-02 a multi-storey plan got none either.)
+- A circle or a slanted polygon gets no furniture from this stage, and neither does a room of a placed
+  component. Both are reported. (Until 2026-11-02 a multi-storey plan got none either.)
 - A relational room gets wall fixtures only, and none when its use needs an anchored piece.
 - The table is public data. Adding a use or a piece is an edit to `FURNISH_TABLE` and to the
   table in `docs/furniture.md`, which a test compares.

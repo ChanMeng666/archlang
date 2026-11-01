@@ -24,10 +24,13 @@ import type { Point, WallsFromRoomsNode, WallsPairClause, WallsPairRoom } from "
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { DerivedWallRow, ROpening, ROutdoor, RRoom, RVoid, RWall, RWallsFromRooms } from "../ir.js";
+import { parseAttachPos } from "../attach.js";
+import { exprToSource } from "../expr-source.js";
 import { DEFAULT_MATERIAL } from "../hatches.js";
 import { segmentsOfWall } from "../geometry.js";
 import { fmt3 as numStr } from "../num-format.js";
 import { JUNCTION_NIB_DEFAULTS } from "../opening-junctions.js";
+import { attachPosStr } from "../statement-print.js";
 import {
   deriveWallsFromRooms,
   rectilinear,
@@ -408,10 +411,35 @@ function parsePair(ctx: ParseCtx): WallsPairClause {
   const span = (): { start: number; end: number } => ({ start: first.start, end: ctx.peek(-1).end });
   if (open) {
     let width: Expr | undefined;
-    if (ctx.isKeyword("width")) {
+    const eatWidth = (): void => {
+      if (width !== undefined || !ctx.isKeyword("width")) return;
       ctx.next();
       width = ctx.parseExpr();
-    }
+    };
+    /** `open … at …`: what the author wants exists, as a statement. It quotes their own words. */
+    const positioned = (): void => {
+      if (!ctx.isKeyword("at")) return;
+      const at = ctx.next();
+      const { pos } = parseAttachPos(ctx);
+      eatWidth();
+      const name = id ? `id=${id.id} ` : "";
+      const wide = width === undefined ? "<mm>" : exprToSource(width);
+      // What the statement it quotes can stand on: a plain length reads from the run's start, as
+      // on a wall, and a percentage or a corner names nothing `between` can read.
+      const said =
+        pos.kind === "mm"
+          ? `${attachPosStr(pos)} from start`
+          : pos.kind === "percent" || pos.kind === "corner"
+            ? "<mm> from start"
+            : attachPosStr(pos);
+      ctx.fail(
+        `\`open between\` takes no position: it voids the boundary across its clear span, or a \`width\` centred on it. For an opening placed along a wall that stays, remove the clause and write \`opening ${name}between ${a.id} and ${b.id} at ${said} width ${wide}\` after the statement`,
+        at,
+      );
+    };
+    positioned();
+    eatWidth();
+    positioned();
     return { kind: "open", ...(id ? { id } : {}), a, b, ...(width ? { width } : {}), span: span() };
   }
   ctx.eatKeyword("thickness");
@@ -520,7 +548,7 @@ function tileRoom(r: RRoom): TileRoom {
   if (r.circle) return { id: r.id, shape: "circle" };
   if (!r.poly) return { id: r.id, rect: { x0: r.at.x, y0: r.at.y, x1: r.at.x + r.size.w, y1: r.at.y + r.size.h } };
   const parts = ringParts(r.poly);
-  return parts ? { id: r.id, parts } : { id: r.id, shape: "polygon" };
+  return parts ? { id: r.id, parts, ring: r.poly } : { id: r.id, shape: "polygon" };
 }
 
 function coverOfVoid(v: RVoid): TileCover {

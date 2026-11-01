@@ -1,0 +1,25 @@
+# Windows run round a corner: one on each wall, with no wall left at the corner between them.
+plan "Corner windows" {
+  units mm
+  grid 50
+  paper A3 landscape
+  dims auto all
+  schedule openings
+  component wing() {
+    room id=r at (0,0) size 3000x3000 label "Study" uses office
+    walls from rooms exterior 300 partition 100
+    door id=d on r.left at 1500 from start width 900 swing into r
+    window id=n on r.top at corner r.right width 1500
+    window id=e on r.right at corner r.top width 1000
+  }
+  room id=liv at (0,0) size 6000x5000 label "Living" uses living
+  room id=bed right-of liv size 3000x5000 label "Bedroom" uses bedroom
+  walls from rooms exterior 200 partition 100
+  door id=entry on liv.bottom at 1500 from start width 900 swing into liv
+  door id=inner between liv and bed at center width 800 swing into bed
+  window id=nw on liv.top at corner liv.left width 1800
+  window id=wn on liv.left at corner liv.top width 1200
+  window id=ne on bed.top at corner bed.right width 1500 sill 300 head 2400
+  window id=en on bed.right at corner bed.top width 1500 sill 300 head 2400
+  place wing() as w at (15000,0) rotate 90 mirror x
+}

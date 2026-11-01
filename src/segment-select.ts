@@ -29,7 +29,8 @@ import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import type { RWall } from "./ir.js";
 import type { DatumAccess } from "./opening-relation.js";
 import type { ParseCtx } from "./registry.js";
-import { COMPASS_DATUM_ALIASES, splitDatum } from "./room-datums.js";
+import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "./room-datums.js";
+import type { SideWord } from "./room-tiling.js";
 
 /** The four compass words a selector takes, in the order the reference lists them. */
 export const SEGMENT_COMPASS_WORDS = ["north", "south", "east", "west"] as const;
@@ -195,11 +196,8 @@ export function selectSegment(sel: SegmentSelect, wall: RWall, ref: string, ctx:
       sel.span,
     );
   }
-  const r = access.table.rooms.get(d.room)!;
-  const vertical = word === "left" || word === "right";
-  const c = word === "top" ? r.top : word === "bottom" ? r.bottom : word === "left" ? r.left : r.right;
-  const lo = vertical ? r.top : r.left;
-  const hi = vertical ? r.bottom : r.right;
+  // The read above took this side as one run or refused, so the accessor finds that same run.
+  const { vertical, c, lo, hi } = edgeOfRoom(access.table, d.room, word as SideWord)!;
   chargeSteps(segs.length + 1);
   const matches: number[] = [];
   const straight: number[] = [];

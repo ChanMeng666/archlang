@@ -146,6 +146,17 @@ export interface GlyphCtx {
 /** The `stroke-dasharray`, in mm, that `lineType: "dashed"` resolves to on the SVG ramp. */
 export const dashedPattern = (sizes: RenderSizes): [number, number] => [sizes.thin * 6, sizes.thin * 4];
 
+/** An arrow head as a closed triangle: its `tip`, and the two corners `length` back along the unit
+ *  `along` and `spread` either side of it. Built by exact reflection across `along`, so a symmetric
+ *  arrow stays symmetric. */
+export function arrowHead(tip: Point, along: Point, length: number, spread: number): Point[] {
+  const bx = tip.x - along.x * length;
+  const by = tip.y - along.y * length;
+  const ax = -along.y * spread;
+  const ay = along.x * spread;
+  return [tip, { x: bx + ax, y: by + ay }, { x: bx - ax, y: by - ay }];
+}
+
 /**
  * The symbol-ink mix, as an exact fraction `[p, q]`: the ink is `furnitureStroke` moved
  * `p/q` of the way toward `wallStroke`, per channel.

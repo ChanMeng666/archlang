@@ -320,11 +320,15 @@ suite("polygon rooms", () => {
     ]);
   });
 
-  it("an L's own edge has no word: it stays E_ROOM_NOT_RECTANGLE", () => {
-    const src = plan(
+  it("an L's side is its run; a slanted polygon's edge has no word, and stays E_ROOM_NOT_RECTANGLE", () => {
+    const ell = plan(
       `  room id=ell polygon (0,0) (6000,0) (6000,3000) (3000,3000) (3000,6000) (0,6000) uses living\n${W}  window id=w on ell.top at 1500 from start width 1200\n`,
     );
-    expect(codes(src)).toEqual(["E_ROOM_NOT_RECTANGLE"]);
+    expect(codes(ell)).toEqual([]);
+    const slanted = plan(
+      `  room id=tri polygon (0,0) (6000,0) (3000,5000) uses living\n  wall id=w exterior thickness 200 { (0,0) (6000,0) (3000,5000) close }\n  window id=x on tri.top at 1500 from start width 1200\n`,
+    );
+    expect(codes(slanted)).toEqual(["E_ROOM_NOT_RECTANGLE"]);
   });
 });
 

@@ -88,7 +88,7 @@ export interface OpeningRow {
   rooms: string;
   /** Nominal width in mm, through {@link fmt2}. */
   width: string;
-  /** A door's kind (`hinged` when none was written); `window` for a window. */
+  /** A door's kind (`hinged` when none was written); a window's, or `window` when none was. */
   type: string;
   /** A hinged door's hand (`left`/`right`, see {@link doorHand}); `-` otherwise. */
   hand: string;
@@ -174,7 +174,7 @@ export function openingRows(elements: readonly ResolvedElement[]): OpeningRow[] 
       id: w.id,
       rooms: named(between),
       width: fmt2(w.width),
-      type: "window",
+      type: w.windowKind ?? "window",
       hand: "-",
     });
   });
@@ -203,7 +203,7 @@ function tagFrame(text: string, fs: number): { r: number; hw: number; hh: number
  *   it on the `slide` side). Past each face it reaches only as far as it DRAWS: a hinged leaf,
  *   a bifold or a garage projection its own width on the face it opens into; a barn panel a
  *   wall thickness there; a window its sill nose on the face with no floor; everything else —
- *   the passage itself, a sliding or pocket panel inside the wall, a cased opening — stops
+ *   the passage itself, a sliding, glazed or pocket panel inside the wall, a cased opening — stops
  *   half a stand-off past the face, so a tag standing off that face beside it is clear;
  * - a straight **wall segment**: its centreline band, half its thickness each side — the
  *   poché a tag must not sit in (a perpendicular wall at a jamb, a party wall);
@@ -424,7 +424,8 @@ function tagCandidates(o: RDoor | RWindow, boxes: readonly RoomBox[], ext: (u: P
   // projection — all on the `swing` face, as `door.render` draws them), if any. Prefer a
   // floor face it leaves free, then the floor face it occupies, then the free face.
   const kind = o.doorKind ?? "hinged";
-  const occupied: 1 | -1 | 0 = kind === "sliding" || kind === "pocket" ? 0 : o.swing === "in" ? 1 : -1;
+  const inWall = kind === "sliding" || kind === "pocket" || kind === "glazed_sliding";
+  const occupied: 1 | -1 | 0 = inWall ? 0 : o.swing === "in" ? 1 : -1;
   let side: 1 | -1;
   if (occupied === 0) side = floorSide;
   else {

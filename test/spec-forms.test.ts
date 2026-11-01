@@ -300,6 +300,15 @@ const POSITIVE: Snippet[] = [
   },
   {
     keyword: "window",
+    note: "a kind leads, after any `id=`; `hinge` on the kinds that hang on a jamb, before the heights",
+    src: plan(
+      `${BOX}\n  window id=win1 fixed on w1 at 20% width 1200\n  window tilt on w1 at 40% width 900 sill 900\n` +
+        `  window casement on w1 at 60% width 900 hinge left\n  window tilt_turn on w1 at 70% width 900 hinge right sill 900\n` +
+        `  window sliding at (6000,0) width 1000 wall w1`,
+    ),
+  },
+  {
+    keyword: "window",
     // `sill 0` is in here on purpose: it is the one height the language lets be zero, and
     // a range check written `> 0` for every clause alike would refuse a floor-length
     // window.
@@ -750,10 +759,8 @@ const NEGATIVE: Negative[] = [
   {
     code: "E_PLACE_POLY",
     channel: "compile",
-    note: "a rectangle-only clause REFUSES a polygon room rather than approximating it",
-    src: plan(
-      `  room id=p polygon (0,0) (4000,0) (4000,4000) (2000,4000) (2000,2000) (0,2000)\n  room id=q right-of p size 3000x3000`,
-    ),
+    note: "relational placement REFUSES a slanted polygon rather than approximating it",
+    src: plan(`  room id=p polygon (0,0) (4000,0) (2000,3000)\n  room id=q right-of p size 3000x3000`),
   },
   {
     code: "E_DATUM_BEFORE_ROOMS",
@@ -772,9 +779,9 @@ const NEGATIVE: Negative[] = [
   {
     code: "E_ROOM_NOT_RECTANGLE",
     channel: "compile",
-    note: "a polygon room exposes no datum",
+    note: "a slanted polygon room exposes no datum",
     src: plan(
-      `  room id=p polygon (0,0) (4000,0) (4000,4000) (0,4000)\n  wall interior thickness 100 { (p.left, 0) (0, 4000) }`,
+      `  room id=p polygon (0,0) (4000,0) (2000,3000)\n  wall interior thickness 100 { (p.left, 0) (0, 4000) }`,
     ),
   },
   {

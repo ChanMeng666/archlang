@@ -16,15 +16,8 @@ import { add, doorLeaves, mul, nearestWallNote, normal, segmentDirAt, sub, unit,
 import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import type { DoorClauseName, DoorKind, DoorSwingDir } from "../grammar/tokens.js";
 import type { DoorSwingBuilding } from "../grammar/tokens.js";
-import {
-  DOOR_ENUMS,
-  DOOR_HINGE_NEAR,
-  DOOR_KIND_CLAUSES,
-  DOOR_KINDS,
-  DOOR_SWING_BUILDING,
-  enumList,
-} from "../grammar/tokens.js";
-import { parseAttachTarget, resolveOpeningLead } from "../attach.js";
+import { DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KIND_CLAUSES, DOOR_KINDS, DOOR_SWING_BUILDING } from "../grammar/tokens.js";
+import { eatEnumValue, parseAttachTarget, resolveOpeningLead } from "../attach.js";
 import {
   doorKindClauseFix,
   doorOpenRangeFix,
@@ -35,20 +28,6 @@ import {
 } from "../fix-producers.js";
 import { renderDoorPanels } from "./door-panels.js";
 import { DOOR_HEAD, parseOpeningHeights, resolveOpeningHeights } from "../datum.js";
-
-/**
- * Read the next ident and check it against a closed value set from
- * {@link DOOR_ENUMS} / {@link DOOR_HINGE_NEAR}. The allowed values and the message
- * that lists them both come from the table, so the check can never allow one thing
- * and the diagnostic name another. `ctx.fail` returns `never`, which narrows the
- * result to the member type.
- */
-function eatEnumValue<T extends string>(ctx: ParseCtx, allowed: readonly T[], what: string, orForm?: string): T {
-  const v = ctx.eatIdent().value;
-  if (!(allowed as readonly string[]).includes(v))
-    ctx.fail(`Expected ${what} ${enumList(allowed)}${orForm ? ` or ${orForm}` : ""} but found "${v}"`);
-  return v as T;
-}
 
 /** Read an enum override from the active `set` defaults, if valid. */
 function enumDefault<T extends string>(
@@ -574,10 +553,17 @@ export const door: ElementDef = {
   },
 
   bounds: () => [],
-  /** Its centre and width: a door adds nothing to the bounds, but it is still geometry. */
+  /**
+   * Its centre and width: a door adds nothing to the bounds, but it is still geometry. A
+   * `glazed_sliding` door draws jamb to jamb inside the wall's thickness, so it adds how far that
+   * reaches, as `window.measures` does.
+   */
   measures(resolved): number[] {
     const d = resolved as RDoor;
-    return [d.at.x, d.at.y, d.width];
+    if (d.doorKind !== "glazed_sliding") return [d.at.x, d.at.y, d.width];
+    const across = (d.host?.thickness ?? 0) / 2;
+    const r = d.width / 2 + across;
+    return [d.at.x, d.at.y, d.width, across, d.at.x - r, d.at.x + r, d.at.y - r, d.at.y + r];
   },
 
   /**
@@ -585,7 +571,7 @@ export const door: ElementDef = {
    * far jamb, minor-arc orientation) is computed **once**, by `doorSwing` — every backend
    * (SVG, DXF, PDF) serializes the same `arc` primitive rather than re-deriving it.
    */
-  /** At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf slab and its swing arc (two of each for a `double` door), or at most four panel strokes for a sliding, barn, bifold, pocket or garage door. */
+  /** At most 5 primitives (the drawing budget, `MAX_DRAW_UNITS`): the opening cover, then a leaf slab and its swing arc (two of each for a `double` door), or at most four panel strokes for a sliding, barn, bifold, pocket, garage or glazed sliding door. */
   drawCost: () => 5,
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
@@ -663,7 +649,8 @@ export const door: ElementDef = {
   /**
    * The frame's action on a door (`frame.ts`'s `transformElement` calls this). A reflection
    * flips `swing` (measured off the wall normal) and records `_mirror` (XORed, as a fixture's
-   * is), which a `sliding` door's track choice reads; `hinge` and `slide` ride the traversal.
+   * is), which the track choice of a `sliding` or `glazed_sliding` door reads; `hinge` and
+   * `slide` ride the traversal.
    */
   transform(resolved, t: TransformCtx): RDoor {
     const el = resolved as RDoor;

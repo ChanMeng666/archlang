@@ -41,6 +41,7 @@ import type {
   DoorSwingBuilding,
   DoorSwingDir,
   WallStatus,
+  WindowKind,
 } from "./grammar/tokens.js";
 import { moduleBindings } from "./import.js";
 import { placeRelational } from "./layout.js";
@@ -514,11 +515,30 @@ export interface RDoor extends RBase {
    */
   head: number;
 }
+/** A window run out to a corner of two walls (`at corner <room>.<edge>`): its span ends on the
+ *  other wall's outer face, so with the window on that wall no wall stands at the corner. */
+export interface WindowCorner {
+  /** Where the two centrelines meet. */
+  at: Point;
+  /** The other wall's segment, which ends at {@link WindowCorner.at}. */
+  other: WallSegment;
+  /** The window on that wall, once the group has settled (`windowEl.settle`). */
+  with?: string;
+}
 export interface RWindow extends RBase {
   kind: "window";
   at: Point;
   width: number;
   host: WallSegment | null;
+  /** The window's kind, present ONLY when written, so a kind-free window carries no field and
+   *  every downstream payload is byte-identical. */
+  windowKind?: WindowKind;
+  /**
+   * The hinged jamb, relative to the host wall's traversal direction as a door's is, so it rides
+   * a `place` frame with the carried segment. Present ONLY when written, on a kind that takes it:
+   * absent means the source does not say, and the symbol then states no hand.
+   */
+  hinge?: DoorHinge;
   /** The author wrote this window's `id=` (set only then). Read by `W_HOB_UNDER_WINDOW`'s hint,
    *  which quotes an id only when the author wrote one. Internal. */
   _idAuthored?: true;
@@ -526,6 +546,13 @@ export interface RWindow extends RBase {
   _placement?: OpeningPlacement;
   /** See {@link RDoor._relation}. */
   _relation?: OpeningRelation;
+  /** Present only on a window placed `at corner`. Internal: the drawing, `lint()` and `describe()`
+   *  read it, and it never reaches the Scene. */
+  _corner?: WindowCorner;
+  /** Written `at corner` and refused there, as written: `on` the one edge, to the `to` edge. The
+   *  window that names those two the other way round is not alone: this one was written, and its
+   *  own error says what is wrong with it. Internal. */
+  _cornerRefused?: { on: string; to: string };
   /** Bottom of the glazing above this storey's floor, in mm — always resolved,
    *  the authored `sill` or {@link import("./datum.js").WINDOW_SILL}. */
   sill: number;
@@ -964,6 +991,8 @@ export interface ResolvedPlan {
    * copied straight from the AST, never derived, and absent unless the plan opts in.
    */
   schedule?: "rooms";
+  /** `schedule rooms net` — the room stamp reads the schedule's net area. Copied from the AST. */
+  scheduleNet?: boolean;
   /** `schedule openings` — draw the door/window tags and the DOOR & WINDOW SCHEDULE.
    *  Presentation only, copied from the AST, absent unless the plan opts in. */
   openingSchedule?: boolean;
@@ -3509,6 +3538,7 @@ function resolveBody(
     // Sheet-table opt-ins: presentation flags carried through untouched. Spread so an
     // opted-out plan has no key at all and the IR stays byte-identical to before.
     ...(ast.schedule ? { schedule: ast.schedule } : {}),
+    ...(ast.scheduleNet ? { scheduleNet: true } : {}),
     ...(ast.openingSchedule ? { openingSchedule: true } : {}),
     ...(ast.legend ? { legend: true } : {}),
     ...(ast.notes && ast.notes.length > 0 ? { notes: ast.notes } : {}),

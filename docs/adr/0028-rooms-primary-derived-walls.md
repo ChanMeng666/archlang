@@ -96,6 +96,10 @@ grid axis names already in the language. Datums are read wherever a coordinate i
 - A `polygon` or `circle` room exposes no datum in this version (`E_ROOM_NOT_RECTANGLE`, the same
   condition relational placement refuses with `E_PLACE_POLY`). A rectilinear polygon may gain named
   edges later; the honest extension is §8 question 4 of the plan.
+  *Amended 2026-11-02:* a rectilinear polygon's `top|bottom|left|right` are the ring's run on that
+  outermost line, one run or a refusal, and `right-of` reads the same run. Its centre stays refused
+  and a notch edge has no word
+  (`docs/plans/preview-and-remodel/research/2026-11-02-l-rooms-extreme-runs-and-finish.md`).
 
 ### 3. The headline form: `walls from rooms` (D5)
 
@@ -152,6 +156,15 @@ closed at these three. If a fourth is needed in practice (a party-wall category,
 per-edge material), D5's reversal condition applies and the pairwise forms of §4 become the headline.
 Party walls between dwellings are the dwelling declaration's business (plan card PS2.14), not a
 clause here.
+
+*Amended 2026-11-02 (issue #401):* `open between` takes no position. A position means something
+only on a span narrower than the clear span, where a wall stands along the rest of the line, and
+that is what `opening between <A> and <B> at <pos> width <mm>` already is: measured on one pair over
+one span the two draw and lint byte for byte alike, and `describe()` differs only in the `opening`
+row's `relation` and `centreline_at` and in `freedom`. Neither merges the rooms or moves an area. A
+position on the clause would be a second spelling with two things worse: no `E_OPENING_NIB`, and a
+pair closed to a second door. So this is not the fourth clause the reversal condition is about; the
+clause list stays closed, and `open … at` is a parse error quoting the `opening` to write.
 
 **Preconditions, decided exactly on the resolved integer coordinates, each a refusal naming the
 rooms (ADR 0005):**
@@ -369,6 +382,17 @@ with a meeting wall face; `compile()` reads no lint profile, so a profile that c
 numbers does not change the refusal. The relational form turns the warning into a refusal because
 the author asked for a derived position and the compiler must not choose a different one (ADR 0004,
 ADR 0005).
+
+*Amended 2026-11-02 (issue #401):* two windows, one on each wall, can run to a corner of the two
+walls, with no wall left there: `window on <room>.<edge> at corner <room>.<edge>`, written twice.
+`width` runs from the free jamb to the other wall's outer face, so `at ± width / 2` stays the span,
+and the centre comes from that face and is not snapped, as `open between`'s does not. The nib is
+kept at the free jamb. No joinery changes (ADR 0018): the two are ordinary `openingCut`s, and together
+they cover the block the walls make at the corner. They stay two windows, because a window has one
+host and faces one way, so the drawing mitres them and `describe()` gains `corner_with`. Anything
+that is not a true corner of two walls is `E_WINDOW_CORNER`, and a window alone at its corner too:
+half a corner ends in the side of a wall. Decisions and what each surface says:
+`docs/plans/preview-and-remodel/research/2026-11-02-open-corner.md`.
 
 ### 5a. Furniture against a room edge
 

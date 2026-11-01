@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**149 errors** · **91 warnings**
+**151 errors** · **91 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -104,7 +104,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_OUT_OF_RANGE`](#e_out_of_range) | error | A coordinate, length or drawing setting is outside the modelling range. |
 | [`E_PARSE`](#e_parse) | error | The source could not be read: its SHAPE is wrong. |
 | [`E_PARTITION_TOO_SHORT`](#e_partition_too_short) | error | `walls from rooms`, or a `wall … between`, meets a shared edge shorter than the wall's thickness. |
-| [`E_PLACE_POLY`](#e_place_poly) | error | A rectangle-only placement clause aimed at a polygon room. |
+| [`E_PLACE_POLY`](#e_place_poly) | error | A placement clause aimed at a polygon room that has no one edge or corner to stand on. |
 | [`E_PLACE_REF`](#e_place_ref) | error | Furniture placed in an unknown or unplaced room. |
 | [`E_PNG_DEPENDENCY`](#e_png_dependency) | error | PNG/PDF export needs an optional dependency that is not installed. |
 | [`E_RANGE_LIMIT`](#e_range_limit) | error | Range too large. |
@@ -122,7 +122,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOMS_OVERLAP`](#e_rooms_overlap) | error | `walls from rooms`, a `wall … between`/`wall … around`, or a door or opening `between` a polygon and a room, meets two rooms that overlap. |
 | [`E_ROOM_ALIGN`](#e_room_align) | error | Unknown relational alignment edge. |
 | [`E_ROOM_ALIGN_AXIS`](#e_room_align_axis) | error | Relational alignment edge belongs to the other axis. |
-| [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge. |
+| [`E_ROOM_NOT_RECTANGLE`](#e_room_not_rectangle) | error | A room-edge datum meets a circle, a slanted polygon, a polygon side of several runs or a polygon's centre; a `wall … between`/`wall … around` meets a polygon or circle room; or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge. |
 | [`E_ROOM_POLY_DEGENERATE`](#e_room_poly_degenerate) | error | Polygon room has fewer than three effective vertices. |
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
@@ -157,6 +157,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_WALL_ID_RESERVED`](#e_wall_id_reserved) | error | An authored wall takes the id the derived exterior ring has in this plan or component. |
 | [`E_WALL_THICKNESS`](#e_wall_thickness) | error | Wall must have a positive thickness. |
 | [`E_WHILE_LIMIT`](#e_while_limit) | error | `while` exceeded its iteration cap. |
+| [`E_WINDOW_CORNER`](#e_window_corner) | error | A window placed `at corner` does not stand at a true corner of two walls. |
+| [`E_WINDOW_KIND_CLAUSE`](#e_window_kind_clause) | error | That clause is not available on this kind of window. |
 | [`E_WINDOW_WIDTH`](#e_window_width) | error | Window must have a positive width. |
 | [`W_ACCESSIBLE_WC_SIDE_WALL`](#w_accessible_wc_side_wall) | warning | An accessible WC's pan stands too far from every side wall. |
 | [`W_ALIAS_MATCH`](#w_alias_match) | warning | A room's use was inferred from an indirect alias, not stated. |
@@ -453,7 +455,7 @@ let x = sqrt(-1)   # error
 
 *error* — That clause is not available on this kind of door.
 
-**Cause.** A `door` statement carries a clause its kind has no meaning for: `hinge` on any of the sliding family (`sliding`/`barn`/`bifold`/`pocket` — nothing is hinged to a jamb) or on a `double` door (a leaf hangs on each jamb, so there is no side to choose), `swing` on a `sliding` or `pocket` door (the panel stays in the plane of the wall, or inside it), or `slide`/`open` on a `hinged` or `double` door (nothing travels along the wall). ArchLang refuses rather than draws the statement as if the clause were absent — silently ignoring a written clause is the silent-error design this project rules out (the v1.23 precedent: rectangle-only clauses REFUSE a polygon room rather than approximate it).
+**Cause.** A `door` statement carries a clause its kind has no meaning for: `hinge` on any of the sliding family (`sliding`/`glazed_sliding`/`barn`/`bifold`/`pocket` — nothing is hinged to a jamb) or on a `double` door (a leaf hangs on each jamb, so there is no side to choose), `swing` on a `sliding`, `glazed_sliding` or `pocket` door (the panel stays in the plane of the wall, or inside it), or `slide`/`open` on a `hinged` or `double` door (nothing travels along the wall). ArchLang refuses rather than draws the statement as if the clause were absent — silently ignoring a written clause is the silent-error design this project rules out (the v1.23 precedent: rectangle-only clauses REFUSE a polygon room rather than approximate it).
 
 **Fix.** Delete the clause (the machine-applicable fix does exactly that), or change the door's kind to one the clause belongs to. `swing` on a `barn` or `bifold` door is legal and means which FACE of the wall the panel hangs on or folds toward — it is not a leaf arc.
 
@@ -465,7 +467,7 @@ door pocket on w1 at 50% width 900 hinge left   # error: a pocket door has no hi
 
 *error* — A sliding-family or garage door cannot sit on a curved wall.
 
-**Cause.** The panel of a `sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), and so do a `double` door's two (both from the tangent at the doorway's centre), so only the sliding family and `garage` are refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
+**Cause.** The panel of a `sliding`, `glazed_sliding`, `barn`, `bifold` or `pocket` door is a straight rectangle running along a straight track, and its pocket/track geometry is straight by construction — none of that survives on a wall whose hosting edge is an `arc`. A hinged leaf does survive (its swing is taken from the tangent at the doorway), and so do a `double` door's two (both from the tangent at the doorway's centre), so only the sliding family and `garage` are refused. Refusing is deliberate: drawing a straight panel across a curved reveal would be a wrong drawing with no diagnostic.
 
 **Fix.** Use a `hinged` door on the curve (the default — delete the kind word), or move the door onto one of the wall's straight runs.
 
@@ -1312,7 +1314,7 @@ door between a and b width 800   # error: a door needs a position
 
 **Cause.** `door|opening … between A and B` stands in the one wall body on the pair's shared edge run (ADR 0028 §5). Two authored halves, or an authored span beside a derived remainder (the `~2` pieces coexistence leaves), give more than one, and the compiler does not choose between them (ADR 0005). `… on <room>.<edge>` stands in one exterior wall body on that edge. An edge can carry several, part exterior and part partition, or exterior either side of a narrower neighbouring room: the position, measured along the whole room edge, says where the opening lands, and it stands in an exterior body when its whole span lies on that body and on no other wall. With an exterior body on the edge, a span that crosses from one body to the next, stands on a partition, stands on no body, or lies on two walls at once is refused here; with none it is `E_OPENING_NO_SHARED_WALL`. A `status demolish` wall still takes up the span it lies on, but it is no exterior body. A polygon room wrapped round its neighbour shares several edges with it, and only `at <mm> from <room>.<edge>`, with an edge that meets one of them at an end, picks one: `at center`, `from start|end`, `at axis <label>` or no position would be a choice the author did not write. `open between A and B` derives one opening on one edge, so such a pair has no single answer there either (ADR 0028 §3). The span points at the clause.
 
-**Fix.** On a room's edge with several walls: write the position the hint quotes for the exterior wall you mean, where it quotes one. On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean (two polygons have no edge words). On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
+**Fix.** On a room's edge with several walls: write the position the hint quotes for the exterior wall you mean, where it quotes one. On a run with more than one wall: make it one wall (drop the authored wall lying on the derived line, or join the halves), or place the opening `on <wall> at …` on the wall you mean. On a pair that shares several edges: write the position the hint quotes, `at <mm> from <room>.<edge>`, or `at (x,y)` where no room edge picks the one you mean. On an `open between` clause: write the two rooms as one room if no boundary should stand between them, or remove the clause and write the statement the hint quotes, `opening id=o between A and B at <mm> from B.<edge> width <mm>`, or `opening at (x,y) width <mm>` where no room edge picks it (a derived wall has no id to name).
 
 ```arch static
 room id=a at (0,0) size 4000x3000
@@ -1466,15 +1468,15 @@ wall partition thickness 100 between a and b   # error: the same run
 
 ## E_PLACE_POLY
 
-*error* — A rectangle-only placement clause aimed at a polygon room.
+*error* — A placement clause aimed at a polygon room that has no one edge or corner to stand on.
 
-**Cause.** Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's four RECTANGLE edges. A `room polygon` has no such edges, and its bounding box is not its floor — an anchor could land the piece in a notch that is outside the room — so the compiler refuses instead of guessing (ADR 0005).
+**Cause.** Relational room placement (`right-of`/`left-of`/`below`/`above`) and room-relative furniture placement (`in <room> centered|anchor …`) are closed-form arithmetic on a room's edges. A polygon whose every edge is horizontal or vertical has them: a side is the ring's run on its outermost line, a corner anchor is a vertex of the ring on two such lines, and a side anchor centres on the run. The rest is refused, because a bounding box is not a floor and the compiler does not guess (ADR 0005): a circle or a slanted polygon, a side that is several runs (the prongs of a U), a corner in a notch, `centered` or `anchor center` (the middle of the outline may not be floor), and a footprint that would leave the ring.
 
-**Fix.** Place the room or the fixture with explicit `at (x,y)` coordinates (a fixture may add `rotate`), or make the referenced room rectangular.
+**Fix.** Name a side with one run or a corner that is a vertex of the ring, or give the room or the fixture explicit `at (x,y)` coordinates (a fixture may add `rotate`).
 
 ```arch static
 room id=L polygon (0,0) (6000,0) (6000,4000) (3000,4000) (3000,6000) (0,6000)
-furniture wc in L anchor bottom-left   # error: L is a polygon room
+furniture wc in L anchor bottom-right size 400x700   # error: that corner is in the L's notch
 ```
 
 ## E_PLACE_REF
@@ -1696,15 +1698,15 @@ room id=b right-of a align right size 3000x3000   # error: `right` is horizontal
 
 ## E_ROOM_NOT_RECTANGLE
 
-*error* — A room-edge datum or a `wall … between`/`wall … around` meets a polygon or circle room, or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge.
+*error* — A room-edge datum meets a circle, a slanted polygon, a polygon side of several runs or a polygon's centre; a `wall … between`/`wall … around` meets a polygon or circle room; or `walls from rooms` or a door or opening placed `between` two rooms meets a circle or a polygon with a slanted edge.
 
-**Cause.** Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room, the same condition relational placement refuses with `E_PLACE_POLY`, and the pairwise `wall … between`/`wall … around` derive their walls from those same edges. A `room polygon` or `room circle` has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §4). `walls from rooms` and `door|opening … between` read the ring as well, so a rectilinear polygon (every edge horizontal or vertical) is legal there; a circle, or a polygon with any other edge, shares no edge run, and is refused the same way (§3, §5). For a pairwise wall or a `between` the span points at the room's name.
+**Cause.** Datums (`top`, `bottom`, `left`, `right`, `cx`, `cy`) are the four edges and the centre of a RECTANGULAR room. A rectilinear polygon (every edge horizontal or vertical) has edges too: `top`, `bottom`, `left` and `right` are the ring's run on its outermost line, one run or a refusal (the prongs of a U do not say which), and `cx`, `cy` are refused, since the middle of the outline may not be floor. The pairwise `wall … between`/`wall … around` derive their walls from a rectangle's edges. A circle or a slanted polygon has no such edges, and its bounding box is not its floor, so the compiler refuses instead of guessing (ADR 0028 §2, §4). `walls from rooms` and `door|opening … between` read the ring as well, so a rectilinear polygon is legal there; a circle, or a polygon with any other edge, shares no edge run, and is refused the same way (§3, §5). For a pairwise wall or a `between` the span points at the room's name.
 
-**Fix.** Write the coordinate as a number, or read the datum of a rectangular room. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.
+**Fix.** Write the coordinate as a number, or read a side the room has. For `walls from rooms`, leave the room out with `{ except <room> }` and draw its walls by hand, or make its edges horizontal and vertical; for a pairwise wall, type its points; for a door or opening, place it `on <wall> at …` or `at (x,y)`.
 
 ```arch static
-room id=L polygon (0,0) (6000,0) (6000,4000) (0,4000)
-wall interior thickness 100 { (L.left, 0) (L.left, 4000) }   # error: L is a polygon room
+room id=T polygon (0,0) (6000,0) (3000,4000)
+wall interior thickness 100 { (T.left, 0) (T.left, 4000) }   # error: T has a slanted edge
 ```
 
 ## E_ROOM_POLY_DEGENERATE
@@ -2148,6 +2150,32 @@ let i = 0
 while i < 1 { let y = i }   # error: i never changes
 ```
 
+## E_WINDOW_CORNER
+
+*error* — A window placed `at corner` does not stand at a true corner of two walls.
+
+**Cause.** `window on <room>.<edge> at corner <room>.<edge>` runs a window to the corner the two edges make, with a window on each of the two walls, and no wall left at the corner between them. So it is refused where that is not what the plan says: on a door or a cased opening; on `on <wall>`, since a corner is read from a room's edges; on two edges that do not meet at an end, or belong to different rooms; where either edge has no exterior wall that stays and ends exactly on the corner (a wall running on past it, a partition, a demolished wall); where a third wall or a column stands at the corner; on a window no wider than the other wall is thick; with no window at the corner on the other wall, or more than one; on two windows with different `sill` or `head`; and on a `hinge` naming the corner end, since a hinge needs a jamb and no wall is left there. A polygon's side words name its outermost runs, which meet only at convex corners, so a re-entrant corner cannot be named. Refused, never approximated: taking away the wall at a corner is a statement about the corner.
+
+**Fix.** Write the other window (the hint quotes it), name two edges of one room that meet at an end, or stand the window clear of the corner with `at <mm> from <room>.<edge>`.
+
+```arch static
+room id=r at (0,0) size 4000x3000
+  walls from rooms exterior 200 partition 100
+  window id=n on r.top at corner r.right width 1500   # error: no window on r.right
+```
+
+## E_WINDOW_KIND_CLAUSE
+
+*error* — That clause is not available on this kind of window.
+
+**Cause.** A `window` statement carries `hinge` on a window that hangs on no jamb: a window with no kind, or a `fixed`, `tilt` or `sliding` one. Only `casement` and `tilt_turn` take it. ArchLang refuses rather than draws the statement as if the clause were absent, as it does for a door (`E_DOOR_KIND_CLAUSE`).
+
+**Fix.** Delete the clause (the machine-applicable fix does exactly that), or change the window's kind to `casement` or `tilt_turn`.
+
+```arch static
+window fixed on w1 at 50% width 1500 hinge left   # error: a fixed window has no hinge
+```
+
 ## E_WINDOW_WIDTH
 
 *error* — Window must have a positive width.
@@ -2205,7 +2233,7 @@ furniture bed at (1650,900) size 1500x2000   # lint: the pinned name is printed 
 
 *warning* — A balcony with no way onto it.
 
-**Cause.** An `outdoor balcony` has no `door` and no way through a `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony: `sill 0` counts, and so does a window with no `sill` clause, whose 900 mm is only the default. A window whose authored `sill` is above 0 stops above the floor and does not count; the message then gives the sill.
+**Cause.** An `outdoor balcony` has no `door` and no way through a `window` within one wall thickness of any of its edges, so the drawing shows a slab that cannot be reached. A window counts as well as a door, because a full-height window is a normal way onto a balcony: `sill 0` counts, and so does a window with no `sill` clause, whose 900 mm is only the default. A window whose authored `sill` is above 0 stops above the floor and does not count; the message then gives the sill. A `fixed` or `tilt` window does not count whatever its sill: nobody walks through it.
 
 **Fix.** Add a door (or a full-height window) on the wall the balcony hangs off — the usual fix — or move the balcony to the facade that already has one.
 
@@ -2371,7 +2399,7 @@ furniture wc at (5800,3050) size 700x400   # lint: WC blocks the doorway
 
 *warning* — Door is narrower than the minimum clear width.
 
-**Cause.** A door's width is below the configured minimum passable width (default 700 mm). A `double` door is judged by one leaf, half its width: a person passes through one active leaf (ADA 2010 Standards 404.2.3), so `double width 1000` is judged as a 500 mm door.
+**Cause.** A door's width is below the configured minimum passable width (default 700 mm). A `double` door is judged by one leaf, half its width: a person passes through one active leaf (ADA 2010 Standards 404.2.3), so `double width 1000` is judged as a 500 mm door. A `glazed_sliding` door is judged the same way: one panel of two moves.
 
 **Fix.** Widen the door to at least the minimum clear width.
 
@@ -2727,7 +2755,7 @@ furniture fridge at (2300,100) size 600x650   # lint: 100 mm from the hob, 200 m
 
 *warning* — A hob stands under a window.
 
-**Cause.** A cooking surface (`stove`, `hob`, `cooktop`) stands against a window's wall across part of its span, on either side of the wall: its footprint overlaps, with positive area, the window's span within `fixtureWallTolMm` (300 mm) of the wall's centreline, the band `W_FURNITURE_OVER_WINDOW` reads for a tall unit. A curtain or blind then hangs over the flames, and opening the window means reaching across the burners: the NKBA Kitchen Planning Guidelines (guideline 20, cooking surface safety) say not to locate the cooking surface under an operable window. ArchLang does not model whether a window opens, so every window is judged; one whose sill is at or above 2100 mm is out of reach and is not, and one on a curved wall is not measured. Every plan is read, a café's kitchen as a dwelling's.
+**Cause.** A cooking surface (`stove`, `hob`, `cooktop`) stands against a window's wall across part of its span, on either side of the wall: its footprint overlaps, with positive area, the window's span within `fixtureWallTolMm` (300 mm) of the wall's centreline, the band `W_FURNITURE_OVER_WINDOW` reads for a tall unit. A curtain or blind then hangs over the flames, and opening the window means reaching across the burners: the NKBA Kitchen Planning Guidelines (guideline 20, cooking surface safety) say not to locate the cooking surface under an operable window. Every window is judged, whatever its kind, because a curtain hangs in front of a pane that does not open too; one whose sill is at or above 2100 mm is out of reach and is not, and one on a curved wall is not measured. Every plan is read, a café's kitchen as a dwelling's.
 
 **Fix.** Slide the hob along its wall past the window's nearer end (the hint gives the distance) and stand the sink or a worktop under the window, or move the window. There is no machine-applicable fix: which one moves is the author's choice.
 
@@ -2786,7 +2814,7 @@ door id=bed_door at (3000,650) width 800 wall mid swing into bed
 
 *warning* — A swinging door leaf is wider than a door is made.
 
-**Cause.** A hinged `door` (no kind, or `hinged`) is one leaf its full `width` wide, and a `double` door two, each half the width. A leaf wider than `maxHingedLeafMm` (1219 mm by default: the International Building Code's 48 in nominal maximum for a swinging leaf, in its 2018 and earlier editions) is heavier and wider than a door is hung and swung. A 2400 mm opening written as one hinged leaf is the usual case: it draws a 2.4 m quarter-circle across the room. A `sliding`, `barn`, `bifold`, `pocket` or `garage` door has no swinging leaf and is never judged. Set `maxHingedLeafMm: null` to turn it off.
+**Cause.** A hinged `door` (no kind, or `hinged`) is one leaf its full `width` wide, and a `double` door two, each half the width. A leaf wider than `maxHingedLeafMm` (1219 mm by default: the International Building Code's 48 in nominal maximum for a swinging leaf, in its 2018 and earlier editions) is heavier and wider than a door is hung and swung. A 2400 mm opening written as one hinged leaf is the usual case: it draws a 2.4 m quarter-circle across the room. A `sliding`, `glazed_sliding`, `barn`, `bifold`, `pocket` or `garage` door has no swinging leaf and is never judged. Set `maxHingedLeafMm: null` to turn it off.
 
 **Fix.** Make it a pair of leaves, `door double … width <mm>` (each leaf half the width; narrow a double door wider than twice the figure too), or narrow it, or make it a `sliding` or `bifold` door, or a cased `opening` if it needs no door. There is no machine-applicable fix: which the doorway becomes is a design decision.
 
@@ -2994,7 +3022,7 @@ furniture shower at (5000,3000) size 2000x2000   # lint: fills the bathroom agai
 
 **Cause.** A room labelled as a bathroom or kitchen contains no plumbing/kitchen fixture (WC, basin, shower, sink, counter…), so it is drawn as an empty box.
 
-**Fix.** Place a fixture inside the room; the categories are built in, so nothing needs importing. A bathroom or WC takes a `wc`, `basin`, `shower` or `bathtub` (e.g. `furniture wc in bath anchor top flush size 400x700`); a kitchen takes a `kitchen_sink`, `counter`, `stove` or `fridge` (e.g. `furniture kitchen_sink in kitchen anchor top flush size 800x600`). A bare `sink` counts for either. A `polygon` or `circle` room cannot take `anchor`: place the piece `at (x,y)` with `in <roomId>` instead. The hint quotes the pieces that make the room what it is, checked together: a `bathtub` or `shower` for a bathroom, a `wc` for a WC, a sink and a hob for a kitchen, and the defining piece of any other use the room has. One fixture alone would leave a furnished room still missing its defining piece, which `W_ROOM_MISSING_DEFINING` reports.
+**Fix.** Place a fixture inside the room; the categories are built in, so nothing needs importing. A bathroom or WC takes a `wc`, `basin`, `shower` or `bathtub` (e.g. `furniture wc in bath anchor top flush size 400x700`); a kitchen takes a `kitchen_sink`, `counter`, `stove` or `fridge` (e.g. `furniture kitchen_sink in kitchen anchor top flush size 800x600`). A bare `sink` counts for either. A `circle` or slanted `polygon` room cannot take `anchor`: place the piece `at (x,y)` with `in <roomId>` instead. The hint quotes the pieces that make the room what it is, checked together: a `bathtub` or `shower` for a bathroom, a `wc` for a WC, a sink and a hob for a kitchen, and the defining piece of any other use the room has. One fixture alone would leave a furnished room still missing its defining piece, which `W_ROOM_MISSING_DEFINING` reports.
 
 ```arch static
 room at (4000,4000) size 3000x2000 label "Bath"   # lint: no fixtures inside

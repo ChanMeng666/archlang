@@ -75,6 +75,8 @@ export function attachPosStr(pos: OpeningAttach["pos"]): string {
       return "center";
     case "axis":
       return `axis ${pos.label}`;
+    case "corner":
+      return `corner ${pos.edge}`;
     case "from":
       return `${exprStr(pos.value)} from ${"word" in pos.from ? pos.from.word : pos.from.datum}`;
     default: {
@@ -232,7 +234,7 @@ export function statementText(s: LeafStatement): Doc {
       return `door ${id}${doorKind}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${hinge}${swing}${slide}${open}${heightsStr(s)}`;
     }
     case "window":
-      return `window ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${heightsStr(s)}`;
+      return `window ${id}${s.windowKind ? `${s.windowKind} ` : ""}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${s.hinge ? ` hinge ${s.hinge}` : ""}${heightsStr(s)}`;
     case "opening":
       return `opening ${id}${openingLead(s)} width ${exprStr(s.width)}${s.wall ? ` wall ${s.wall}` : ""}${heightsStr(s)}`;
     case "furniture": {
