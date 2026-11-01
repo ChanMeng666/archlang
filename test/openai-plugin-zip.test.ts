@@ -2,8 +2,8 @@
  * The OpenAI plugin directory ZIP (`npm run build:openai-plugin`). The archive itself is a
  * gitignored build product, so what is pinned here is the builder: the ZIP it would write is
  * opened again and read entry by entry, and must hold exactly the portable layout the directory
- * reads, differing from the generated folder `plugins/archlang/` in the two files it rewrites on
- * purpose (`plugin.json` gains the version, `mcp.json` names the hosted server). The same check
+ * reads, differing from the generated folder `plugins/archlang/` only on purpose (`plugin.json`
+ * gains the version, `mcp.json` names the hosted server, the skills pin the CLI). The same check
  * (`checkOpenaiZip`) runs on the written file in `build:openai-plugin` and `prove:openai-plugin`;
  * this suite also asserts the contents directly, so the check cannot pass by being lenient.
  */
@@ -16,6 +16,7 @@ import {
   checkOpenaiZip,
   coreVersion,
   openaiPluginFiles,
+  pinSkill,
   readZip,
   zipName,
 } from "../scripts/build-openai-plugin.js";
@@ -41,7 +42,7 @@ describe("OpenAI plugin ZIP", () => {
     expect(skillNames.length).toBeGreaterThan(1);
     for (const n of skillNames) {
       expect(n).toMatch(/^skills\/[a-z0-9-]+\/SKILL\.md$/);
-      expect(entries.get(n)!.equals(read(n)), n).toBe(true);
+      expect(entries.get(n)!.toString("utf8"), n).toBe(pinSkill(read(n).toString("utf8"), version));
     }
     for (const n of names) {
       expect(n).not.toMatch(/\\|^\.|\/\./);
@@ -70,6 +71,21 @@ describe("OpenAI plugin ZIP", () => {
     expect(readJson("plugins/archlang/mcp.json").mcpServers.archlang.type).toBe("stdio");
   });
 
+  it("every skill pins the CLI to the core version, and the repository's skills name none", () => {
+    const skillNames = [...entries.keys()].filter((n) => n.startsWith("skills/"));
+    for (const n of skillNames) {
+      const skill = entries.get(n)!.toString("utf8");
+      expect(skill, n).not.toMatch(/(npx -y|npm i -g) @chanmeng666\/archlang(?![\w@-])/);
+      expect(skill, n).toContain(`npx -y @chanmeng666/archlang@${version}`);
+      expect(read(n).toString("utf8"), n).not.toContain(`@chanmeng666/archlang@${version}`);
+    }
+    // a sibling package and a prose mention stay as written
+    expect(pinSkill("npx -y @chanmeng666/archlang-mcp, the @chanmeng666/archlang package", "9.9.9")).toBe(
+      "npx -y @chanmeng666/archlang-mcp, the @chanmeng666/archlang package",
+    );
+    expect(pinSkill("`npx -y @chanmeng666/archlang spec`", "9.9.9")).toBe("`npx -y @chanmeng666/archlang@9.9.9 spec`");
+  });
+
   it("passes the builder's own check, which fails on a tampered archive", () => {
     expect(() => checkOpenaiZip(entries)).not.toThrow();
     const files = openaiPluginFiles();
@@ -90,6 +106,11 @@ describe("OpenAI plugin ZIP", () => {
         tamper((fs) => fs.map((x) => (x.name === "plugin.json" ? { ...x, data: read(PORTABLE_MANIFEST) } : x))),
       ),
     ).toThrow(/version/);
+    // a skill as the repository holds it, with the CLI unpinned
+    const skill = [...entries.keys()].find((n) => n.startsWith("skills/"))!;
+    expect(() =>
+      checkOpenaiZip(tamper((fs) => fs.map((x) => (x.name === skill ? { ...x, data: read(skill) } : x)))),
+    ).toThrow(/pinned CLI/);
   });
 
   it("is deterministic", () => {

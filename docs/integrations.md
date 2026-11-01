@@ -93,7 +93,9 @@ and refuses a folder that is out of step with its generators. At the archive roo
 `"version"` set to the core's version (final submission requires a semantic version and an update must
 change it; the repository's `plugin.json` has none), `mcp.json` declaring the hosted server
 (`type: "streamable-http"`, `url: "https://mcp.archlang.uk/mcp"`, no headers, no sign-in),
-`assets/icon.png` and `skills/`. `.claude-plugin/`, `.cursor-plugin/` and `rules/` stay out. It then
+`assets/icon.png` and `skills/`, whose `npx -y` and `npm i -g` commands name the core's version (the
+directory's scan flags an unpinned package as a mutable source, and a finding left open may lead to
+rejection). `.claude-plugin/`, `.cursor-plugin/` and `rules/` stay out. It then
 opens the written ZIP again and checks the entry list and both rewritten files;
 `npm run prove:openai-plugin` repeats that check on an existing ZIP.
 
