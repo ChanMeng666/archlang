@@ -1,4 +1,4 @@
-/**  for (const m of marks) if (m.kind === "text" && misfits.some((f) => f.gi === m.owner)) m.stale = true;
+/**
  * A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after
  * `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the
  * drawing's label size (#367).
@@ -465,7 +465,8 @@ export function fitLabels(
 
   // A label that may yet shrink or move claims no floor: a neighbour must not dodge a box about to
   // go. Each takes its place in an order read off the plan, never the source's.
-
+  const moving = new Set(misfits.map((f) => f.gi));
+  for (const m of marks) if (m.kind === "text" && moving.has(m.owner)) m.stale = true;
   misfits.sort((a, b) => placeOrder(a, b, groups));
 
   for (const misfit of misfits) {
