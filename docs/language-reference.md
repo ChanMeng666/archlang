@@ -1295,9 +1295,10 @@ A label that clears at no height is drawn in the form that leaves the least of i
 no less on it. No leader line is drawn. A `label … at (x,y)` pin keeps its size, as it keeps its
 place, and an `outdoor` surface's label and the figure of a room with no name do not shrink.
 
-Width is read from the bundled face, Roboto, character by character: that is what the PNG and the
-PDF draw. A browser draws an SVG in the host's font, and `Helvetica, Arial` at a name's weight runs
-about 7 % wider, so a name that only just fits on the sheet can stand closer to its walls on screen.
+Width is an estimate covering two faces, character by character, taking the wider of Roboto (what
+the PNG and the PDF draw) and Helvetica Bold (what `Helvetica, Arial` at a name's weight reaches in a
+browser; Arial Bold has the same widths). It is no promise for every font: a host with neither, or a
+theme that names another family, can draw a name wider than this reads.
 
 **Room purpose — `uses` (v1.3).** Tag a room with one or more space kinds so the
 analysis layer knows what it *is* without guessing from the label:

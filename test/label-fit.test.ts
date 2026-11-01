@@ -342,6 +342,8 @@ function labelsOf(src: string, world: World): Map<string, Text[]> {
 const MOVED = [
   "eval/fidelity-plans/min-bedroom-flat.faithful.arch",
   "eval/goldens/l-shaped-flat.arch",
+  "eval/goldens/reception-suite.arch",
+  "examples/corner-cafe.arch",
   "test/fixtures/chain30.arch",
   "test/fixtures/star30.arch",
 ];

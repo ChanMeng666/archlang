@@ -1941,8 +1941,8 @@ and generated plans.
 ### L.2 · What still overflows, by design — `declared`
 
 Since #367 a room's label that does not fit is drawn smaller (`fitLabels`, `src/label-fit.ts`),
-down to the furniture-label size, wrapped at a space where that helps, on a table of the bundled
-face's advances (`inkWidth`, `src/text-metrics.ts`). What is left:
+down to the furniture-label size, wrapped at a space where that helps, on a table of the wider of
+Roboto's and Helvetica Bold's advances (`inkWidth`, `src/text-metrics.ts`). What is left:
 
 - **A name wider than its room at the smallest height**: drawn there, and reported by
   `W_ANNOTATION_OVERLAP`. No leader line, and no word is ever split: `Abstellraum` does not become
@@ -1958,8 +1958,9 @@ face's advances (`inkWidth`, `src/text-metrics.ts`). What is left:
   place none of them hits. `W_ANNOTATION_OVERLAP`'s hint says the placer did not find one, no more.
 - **An `outdoor` surface's name, a pinned label and the figure of a room with no name do not
   shrink**, and an `outdoor` name does not wrap; only a room's does.
-- **The widths are Roboto's.** A browser draws an SVG in the host's font: `Helvetica, Arial` at a
-  name's weight 600 reaches the bold, about 7 % wider.
+- **The widths cover two faces, not every font.** A host with neither Helvetica nor Arial, or a
+  theme that names another family, can draw a name wider than `inkWidth` reads. Outside the tables
+  (past Latin-1, not CJK) a character takes the flat 0.62 em.
 
 ## A11y of the compiled drawing (found downstream, 2026-09-13)
 

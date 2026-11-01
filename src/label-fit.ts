@@ -7,7 +7,7 @@
  *
  * What `W_ANNOTATION_OVERLAP` reads: the name or the area figure stands more than
  * {@link COLLIDE_MIN} of its own box over a wall, over the area a door's leaf sweeps or off its
- * own floor, at the width it draws ({@link inkExtent}); or over a furniture, fixture or stair
+ * own floor, at the width it can draw ({@link inkExtent}); or over a furniture, fixture or stair
  * symbol's drawn shapes, at the rule's generous width ({@link textExtent}). A label that passes is
  * not touched, so a plan with nothing to report keeps its bytes; `test/label-fit.test.ts` holds
  * that over the corpus and the plans the soundness audits wrote. A rug is floor finish and a piece's own label is text, not ink, as they

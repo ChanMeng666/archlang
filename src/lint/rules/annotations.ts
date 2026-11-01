@@ -36,7 +36,8 @@
  * swings and the floor's edge are the exception: a label sits right up to them on every plan with
  * a small room, and that estimate's slack read a name with clear floor on both sides as buried in
  * both walls (`two-bed-min-area`'s "Bathroom"), so those three use {@link inkExtent}, the width the
- * bundled face draws, character by character. `fitLabels` reads the same two widths.
+ * text can draw in the PNG's Roboto or a browser's Helvetica Bold, character by character.
+ * `fitLabels` reads the same two widths.
  *
  * ## What "over" means
  *

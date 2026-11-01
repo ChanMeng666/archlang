@@ -1,6 +1,7 @@
 /**
  * The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and
- * {@link inkWidth}, the bundled face's own advances, for a test a label stands right up against.
+ * {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands
+ * right up against.
  *
  * ArchLang's renderers are zero-dependency and isomorphic: there is **no font loader and
  * no text-measurement API** anywhere in `src/`, and there never will be — measuring a font
@@ -27,19 +28,21 @@
 export const EM_PER_CHAR = 0.62;
 
 /**
- * Advance widths of the bundled face, in {@link ROBOTO_UNITS_PER_EM}ths of its size, code point
- * by code point: U+0020 to U+007E, then U+00A0 to U+00FF. Read from the `hmtx` table of
- * `assets/fonts/Roboto-Regular.ttf` (Version 2.001047), which is the face the PNG and the PDF draw;
- * `test/text-metrics.test.ts` reads that file and holds every entry to it.
+ * Advance widths of the two faces a room's name is drawn in, code point by code point: U+0020 to
+ * U+007E, then U+00A0 to U+00FF. {@link inkWidth} takes the wider of the two for each character.
  *
- * Per character, because that is what the face shows: `i` and `l` advance 0.24 em, `m` 0.88, `W`
- * 0.89, the capitals average 0.63 against 0.50 for the small letters, and a name's mean runs from
- * 0.36 ("Utility") to 0.77 ("WC").
+ * Roboto Regular, in 2048ths of the em: the `hmtx` table of `assets/fonts/Roboto-Regular.ttf`
+ * (Version 2.001047), the face the PNG and the PDF draw. Helvetica-Bold, in 1000ths: Adobe's Core 14
+ * metrics (`Helvetica-Bold.afm`, 1997, as pdfkit ships them); Arial Bold shares the figures. That
+ * is what an SVG draws in a browser: `Helvetica, Arial` at a name's weight 600 reaches the bold, and
+ * the SVG is what most people read a plan in. `test/text-metrics.test.ts` reads the font file and
+ * the AFM and holds every entry of these tables to them. Neither file is read at compile time.
  *
- * An SVG opened in a browser is drawn by the host's font, not this one: `Helvetica, Arial` at a
- * name's weight 600 reaches the bold, about 7 % wider than these figures (Adobe's Helvetica-Bold
- * metrics give "Bathroom" 0.59 em a character, this table 0.55), and a theme can name any family.
- * No table can know what a viewer has installed, so this one states the font the compiler ships.
+ * Per character, because that is what the faces show: in Roboto `i` and `l` advance 0.24 em, `m`
+ * 0.88, `W` 0.89, and a name's mean runs from 0.36 ("Utility") to 0.77 ("WC").
+ *
+ * An estimate that covers those two faces, not a promise for every font: a host with neither
+ * Helvetica nor Arial substitutes its own, and a theme can name any family.
  */
 const ROBOTO_ASCII: readonly number[] = [
   507, 527, 655, 1261, 1150, 1500, 1273, 357, 700, 712, 882, 1161, 402, 565, 539, 844, 1150, 1150, 1150, 1150, 1150,
@@ -56,15 +59,38 @@ const ROBOTO_LATIN1: readonly number[] = [
   1130, 1168, 1168, 1168, 1168, 1168, 1169, 1160, 1129, 1129, 1129, 1129, 969, 1180, 969,
 ];
 
-/** Roboto's design units to the em (its `head` table). */
-const ROBOTO_UNITS_PER_EM = 2048;
+const HELVETICA_BOLD_ASCII: readonly number[] = [
+  278, 333, 474, 556, 556, 889, 722, 238, 333, 333, 389, 584, 278, 333, 278, 278, 556, 556, 556, 556, 556, 556, 556,
+  556, 556, 556, 333, 333, 584, 584, 584, 611, 975, 722, 722, 722, 722, 667, 611, 778, 722, 278, 556, 722, 611, 833,
+  722, 778, 667, 778, 722, 667, 611, 722, 667, 944, 667, 667, 611, 333, 278, 333, 584, 556, 333, 556, 611, 556, 611,
+  556, 333, 611, 611, 278, 278, 556, 278, 889, 611, 611, 611, 611, 389, 556, 333, 611, 556, 778, 556, 556, 500, 389,
+  280, 389, 584,
+];
+const HELVETICA_BOLD_LATIN1: readonly number[] = [
+  278, 333, 556, 556, 556, 556, 280, 556, 333, 737, 370, 556, 584, 333, 737, 333, 400, 584, 333, 333, 333, 611, 556,
+  278, 333, 333, 365, 556, 834, 834, 834, 611, 722, 722, 722, 722, 722, 722, 1000, 722, 667, 667, 667, 667, 278, 278,
+  278, 278, 722, 722, 778, 778, 778, 778, 778, 584, 778, 722, 722, 722, 722, 667, 667, 611, 556, 556, 556, 556, 556,
+  556, 889, 556, 556, 556, 556, 556, 278, 278, 278, 278, 611, 611, 611, 611, 611, 611, 611, 584, 611, 611, 611, 611,
+  611, 556, 611, 556,
+];
 
 /**
- * The width a text draws, in the units of `fontSize`: the sum of the bundled face's advances
- * ({@link ROBOTO_ASCII}, {@link ROBOTO_LATIN1}), kerning left out, which only narrows a line. A CJK
- * character is one em: the CJK face is square (`packages/font-cjk`: Han and kana 1000 of 1000
- * units, Hangul 920) and Roboto has none. Any other character is outside the table and takes
- * {@link EM_PER_CHAR}, about what Roboto gives Greek (0.57 on average) and Cyrillic (0.63).
+ * The units {@link inkWidth} sums, to the em: the least common multiple of Roboto's 2048 and Adobe's
+ * 1000, so the two faces compare and add up in whole numbers.
+ */
+const UNITS_PER_EM = 256_000;
+
+/** The wider of a character's two advances, in {@link UNITS_PER_EM}ths. */
+const wider = (roboto: number, helveticaBold: number): number => Math.max(roboto * 125, helveticaBold * 256);
+
+/**
+ * The width a text can draw, in the units of `fontSize`: the sum, character by character, of the
+ * wider of the two faces' advances ({@link ROBOTO_ASCII}, {@link HELVETICA_BOLD_ASCII} and their
+ * Latin-1 rows), kerning left out, which only narrows a line. One figure for the name and the area
+ * figure alike: a digit is 0.56 em in both faces. A CJK character is one em: the CJK face is square
+ * (`packages/font-cjk`: Han and kana 1000 of 1000 units, Hangul 920) and neither table has it. Any
+ * other character takes {@link EM_PER_CHAR}, about what Roboto gives Greek (0.57 on average) and
+ * Cyrillic (0.63).
  *
  * For a test that reports a name over a wall or off its floor, refuses it a place or shrinks it:
  * there {@link textWidth}'s slack reads a name with clear floor on both sides as buried in both
@@ -74,12 +100,12 @@ export function inkWidth(text: string, fontSize: number): number {
   let units = 0;
   for (const ch of text) {
     const c = ch.codePointAt(0)!;
-    if (c >= 0x20 && c <= 0x7e) units += ROBOTO_ASCII[c - 0x20]!;
-    else if (c >= 0xa0 && c <= 0xff) units += ROBOTO_LATIN1[c - 0xa0]!;
-    else if (isCjkCodePoint(c)) units += ROBOTO_UNITS_PER_EM;
-    else units += ROBOTO_UNITS_PER_EM * EM_PER_CHAR;
+    if (c >= 0x20 && c <= 0x7e) units += wider(ROBOTO_ASCII[c - 0x20]!, HELVETICA_BOLD_ASCII[c - 0x20]!);
+    else if (c >= 0xa0 && c <= 0xff) units += wider(ROBOTO_LATIN1[c - 0xa0]!, HELVETICA_BOLD_LATIN1[c - 0xa0]!);
+    else if (isCjkCodePoint(c)) units += UNITS_PER_EM;
+    else units += UNITS_PER_EM * EM_PER_CHAR;
   }
-  return (units * fontSize) / ROBOTO_UNITS_PER_EM;
+  return (units * fontSize) / UNITS_PER_EM;
 }
 
 /** Is `cp` a character the CJK package is the answer for (Han, kana, Hangul, CJK
