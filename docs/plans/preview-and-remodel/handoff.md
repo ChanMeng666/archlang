@@ -15,13 +15,13 @@ signal moved at 4 signups or 1 first frame a week. n is tiny. Posts 2–4 are re
 `marketing/content/posts/2026-10-30-tier-a-replay-posts-final.md`; media on the owner's machine in
 `D:\.claude-scratch\2026-10-29\tier-a-posts\`. Posting stays the owner's unless they ask again.
 
-**Released:** core 1.50.0, MCP shim 0.2.33, `@chanmeng666/archlang-3d` 0.1.1 with provenance (D20). VS Code extension 0.38.0 is live on the Marketplace. Wave 7 is done: `research/2026-11-01-as-built.md`.
+**Released:** core 1.53.0, MCP shim 0.2.36 and `@chanmeng666/archlang-3d` 0.1.2 with provenance (D20). VS Code extension 0.41.0 is on the Marketplace and Open VSX. The J round is done: `research/2026-11-02-as-built.md`.
 
 **Day 90 is read as STOP on the consumer product (D26):** ArchCanvas is in maintenance. ArchLang keeps being built on its merit (D29), which replaces the line that nothing new opens before the reads. The question to the user is deferred by the owner.
 
-ArchCanvas stays on core 1.48 (D28); the bump to 1.50 is a draft PR there.
+ArchCanvas stays on core 1.48 (D28); the draft bump PR there is not to be merged.
 
-**OpenAI plugin directory:** ArchLang is live at 1.50.1 (`docs/seo.md` section 8). `main` is ahead of npm by the `compile -o` format fix and the Playground's paper-sized PDF, which is already deployed. The next core release must version above 1.50.1, and the listing's open items are O.11 to O.15 in `docs/backlog.md`.
+**OpenAI plugin directory:** ArchLang is live at 1.50.1 (`docs/seo.md` section 8), so its skills pin an older CLI than npm's 1.53.0. A new ZIP is the owner's submit; the listing's open items are O.11 to O.14 in `docs/backlog.md`.
 
 **A real user:** Daniel Damm (X, GitHub bobsch-io) draws German houses with an agent and filed #362–#370.
 Thread: growth `discovery/interviews/2026-10-30-daniel-damm-x-thread.md`. Also needs IFC: not close, never
@@ -40,10 +40,10 @@ promise it.
 
 ## 3. Next items, in order
 
-1. **The owner's round of 2026-11-02 (D30), cards J1–J15 in `cards.md`.** All three batches are out as 1.51.0, 1.52.0 and 1.53.0 (`research/2026-11-02-as-built.md`); the residue is J16 to J18 in `cards.md`. From 2026-11-24 `main` takes bug fixes only until Show HN (2026-12-01) has run.
+1. **Residue J16–J18 in `cards.md`, then the drawing-set programme (`docs/plans/drawing-set/`), DS0 first.** `spec.llm.md` stands within about 30 units of its cap, so no language form can land before DS1 pays for it. From 2026-11-24 `main` takes bug fixes only until Show HN (2026-12-01) has run.
 2. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
    Wave 7 releases fall inside the window; the growth `data/agent-reach.csv` notes date each one.
-3. **G11 and H9,** the residue, after Show HN. H9 holds D27, the stair `bounds()` gap.
+3. **G11 and H9,** the older residue. D27 closed with J15.
 
 A new npm package goes: `prove:pack` with no browser, first version by hand, register, dispatch within 48 hours.
 Registering first is impossible, because npm needs the package to exist.
