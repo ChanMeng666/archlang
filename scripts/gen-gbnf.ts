@@ -72,6 +72,7 @@ import {
   OUTDOOR_KINDS,
   RAIL_EDGES,
 } from "../src/ast.js";
+import { FLOOR_MATERIALS } from "../src/hatches.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 import { EDGE_WORDS } from "../src/room-datums.js";
 import { SEGMENT_COMPASS_WORDS } from "../src/segment-select.js";
@@ -483,7 +484,7 @@ function rules(): [string, string][] {
     ["arc-dir", `"cw" | "ccw"`],
     // Two shapes: the rectangle (`at`/relational + `size`) and the explicit RING
     // (`polygon` + >=3 points, no `size`). Both take the same trailing clauses.
-    ["room-stmt", `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )?`],
+    ["room-stmt", `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )? ( ws room-floor )?`],
     ["room-rect", `room-pos ws "size" ws dims`],
     // THREE vertices minimum, not two — `parseRoom` fails outright below three
     // ("A polygon room needs at least three vertices"), and a two-point ring is
@@ -494,6 +495,7 @@ function rules(): [string, string][] {
     ["rel-dir", `"right-of" | "left-of" | "below" | "above"`],
     ["room-label", `"label" ws string ( ws "at" ws point )?`],
     ["room-uses", `"uses" rws use-kind ( rws use-kind )*`],
+    ["room-floor", `"floor" rws ( ${FLOOR_MATERIALS.map((m) => `"${m}"`).join(" | ")} )`],
     ["use-kind", useKind],
     // The KIND word leads, after any `id=` — the shipped `room polygon` / `room circle`
     // / `dim faces` shape. Its alternation is INJECTED from `DOOR_KINDS`, guarded above.

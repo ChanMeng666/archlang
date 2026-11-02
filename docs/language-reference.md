@@ -59,7 +59,7 @@ plan "My Home" {
 | `axes { x at … y at … }` | The plan's **positioning axes** (定位轴线) — declared structural datum lines, drawn dash-dot with a labelled bubble and used as the ticks of the middle dimension chain. See [Positioning axes](#positioning-axes-定位轴线). | none |
 | `schedule rooms` | Draw the **ROOM SCHEDULE** table in the sheet's bottom band — number, name and area per room, closed by a total. Rows are derived from the rooms, never authored. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `schedule openings` | Tag every door (`D01`…) and window (`W01`…) beside it and draw the **DOOR & WINDOW SCHEDULE** — tag, room(s), width, kind and a hinged door's hand. Derived; composes with `schedule rooms`. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
-| `legend` | Draw the **LEGEND** table beside the schedule — one row per wall hatch material and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
+| `legend` | Draw the **LEGEND** table beside the schedule — one row per hatch (wall, ground or room `floor`) and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `notes "…" ["…" …]` | The sheet's general **NOTES**, drawn as a numbered table in the same band. Repeated statements append. See [Sheet tables](#sheet-tables--room-schedule--legend). | none |
 | `sheet text { … }` | The sheet's fixed **words** and the **decimal mark** of its drawn numbers, as the plan writes them. See [Sheet text](#sheet-text). | none |
 | `height <mm>` | The building's default **floor-to-floor** storey height. The vertical datum: it draws nothing at all, because a floor plan is a horizontal cut. A `level` may override it and a `wall` may override that. See [Heights (the datum layer)](#heights-the-datum-layer). | `3000` |
@@ -1297,15 +1297,47 @@ it always did, so each draws, describes and lints byte for byte as its `on <wall
 ### Room
 
 ```
-room [id=<id>] at (x,y) size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…]
-room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…]
-room [id=<id>] polygon (x,y) (x,y) (x,y) … [label "<text>" [at (x,y)]] [uses <kind>…]
-room [id=<id>] circle at (cx,cy) radius <mm> [label "<text>" [at (x,y)]] [uses <kind>…]
+room [id=<id>] at (x,y) size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…] [floor <pattern>]
+room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…] [floor <pattern>]
+room [id=<id>] polygon (x,y) (x,y) (x,y) … [label "<text>" [at (x,y)]] [uses <kind>…] [floor <pattern>]
+room [id=<id>] circle at (cx,cy) radius <mm> [label "<text>" [at (x,y)]] [uses <kind>…] [floor <pattern>]
 ```
 
 A rectangle — or [any simple polygon](#polygonal-rooms-v1-23), or a
 [circle](#circular-rooms-v1-24). The compiler prints the `label` and the **computed area**
 (m²). Rooms describe space; walls are drawn separately.
+
+**`floor` draws a finish.** `floor tile`, `floor paving`, `floor deck` or `floor concrete` lays a
+hatch over the room, on its own ring, under everything else in it:
+
+```arch
+plan "Finishes" {
+  units mm
+  paper A4
+  scale 1:50
+  legend
+  room id=bath at (0,0) size 2400x3000 label "Bath" uses bath floor tile
+  room id=living right-of bath size 4000x3000 label "Living" uses living floor deck
+  walls from rooms exterior 200 partition 100
+}
+```
+
+| Word | Draws |
+|---|---|
+| `tile` | A small square grid |
+| `paving` | A large square grid, the same slabs an `outdoor paving` draws |
+| `deck` | Boards with staggered joints |
+| `concrete` | A fine speckle |
+
+It is a pattern and not a colour: it follows the `theme`, stays legible under `mono`, reaches DXF as
+a real `HATCH` and earns one [`legend`](#sheet-tables--room-schedule--legend) row per word, which
+`sheet text` can rename (`deck "Parkett"`). It runs with the sheet, so boards do not turn with a
+`place`, as a wall's hatch does not. `tile` and `concrete` paint no background here, so a tiled room
+does not take a wall's tint. In a PDF, which has no pattern fills, a floor is a flat tint, as an
+`outdoor` surface is.
+
+A floor is a drawing fact: `describe()` and `lint()` read the plan as if it were not there, and Plan
+JSON lists it in `dropped`. An unknown word is `W_UNKNOWN_MATERIAL` and draws no pattern.
 
 **Where the name goes.** By default at the room's own centre — the rectangle's, the
 circle's, or [a polygon's area centroid](#polygonal-rooms-v1-23) — and a name that would

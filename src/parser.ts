@@ -52,6 +52,7 @@ import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
 import type { ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
+import { parseFloorClause } from "./elements/room.js";
 import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
@@ -1891,6 +1892,7 @@ class Parser {
       if (uses.length === 0) this.fail(`Expected one or more room uses (${USE_KINDS.join("|")}) after "uses"`);
       child.uses = uses;
     }
+    parseFloorClause(this.ctx, child);
     child.span = this.spanFrom(start);
     return child;
   }

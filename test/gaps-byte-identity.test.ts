@@ -74,7 +74,7 @@ const writesAForm = (src: string): boolean => {
   if (!plan) return false;
   // A parse tree holds no `mirror` key but a piece's: a `place`'s axis is the string, never `true`.
   const tree = JSON.stringify([plan.body, [...plan.components.values()]]);
-  return plan.hide !== undefined || tree.includes('"mirror":true');
+  return plan.hide !== undefined || tree.includes('"mirror":true') || tree.includes('"floor":{');
 };
 
 const WITH = (form: string): string =>
@@ -294,6 +294,7 @@ suite("hidden, mirror and floor: the byte-identity law", () => {
     expect(writesAForm(WITH("scale hidden"))).toBe(true);
     expect(writesAForm(WITH("title hidden"))).toBe(true);
     expect(writesAForm(WITH("furniture sofa_l at (0,0) size 2600x1600 mirror"))).toBe(true);
+    expect(writesAForm(WITH("room id=b at (0,0) size 1000x1000 floor tile"))).toBe(true);
   });
 
   it("the digest can fail: each form on a row moves it", () => {
@@ -301,6 +302,10 @@ suite("hidden, mirror and floor: the byte-identity law", () => {
     expect(stairLawDigest(API, WITH("north up hidden"), undefined)).not.toBe(base);
     expect(stairLawDigest(API, WITH("scale hidden"), undefined)).not.toBe(base);
     expect(stairLawDigest(API, WITH("title hidden"), undefined)).not.toBe(base);
+    const room = "room id=b at (5000,0) size 1000x1000";
+    expect(stairLawDigest(API, WITH(`${room} floor tile`), undefined)).not.toBe(
+      stairLawDigest(API, WITH(room), undefined),
+    );
     const piece = "furniture sofa_l at (0,0) size 2600x1600";
     expect(stairLawDigest(API, WITH(`${piece} mirror`), undefined)).not.toBe(
       stairLawDigest(API, WITH(piece), undefined),

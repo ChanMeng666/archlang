@@ -130,7 +130,7 @@ function stripRoomStr(r: StripRoomChild): string {
   }
   const label = r.label ? ` label ${exprStr(r.label)}` : "";
   const uses = r.uses?.length ? ` uses ${r.uses.join(" ")}` : "";
-  return `room ${id}size ${size}${label}${uses}`;
+  return `room ${id}size ${size}${label}${uses}${r.floor ? ` floor ${r.floor.word}` : ""}`;
 }
 
 /** A room's relational placement clause: `DIR ref [align E] [gap n]`.
@@ -213,7 +213,7 @@ export function statementText(s: LeafStatement): Doc {
           ? `circle at ${ptStr(s.circle.c)} radius ${exprStr(s.circle.r)}`
           : `${s.at ? `at ${ptStr(s.at)}` : relStr(s.rel!)} size ${sizeStr(s.size!)}`;
       const label = s.label ? ` label ${exprStr(s.label)}${s.labelAt ? ` at ${ptStr(s.labelAt)}` : ""}` : "";
-      return `room ${id}${shape}${label}${s.uses?.length ? ` uses ${s.uses.join(" ")}` : ""}`;
+      return `room ${id}${shape}${label}${s.uses?.length ? ` uses ${s.uses.join(" ")}` : ""}${s.floor ? ` floor ${s.floor.word}` : ""}`;
     }
     case "door": {
       // The KIND word leads the placement (`door id=d pocket on w1 …`) and the

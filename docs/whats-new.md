@@ -29,6 +29,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | The sheet's words and decimal mark, as a plan writes them | unreleased | [Sheet text](#sheet-text) |
 | A detail with no north arrow, scale bar or title box | unreleased | [Hidden sheet marks](#hidden-sheet-marks) |
 | One piece of furniture, mirrored | unreleased | [One mirrored piece](#one-mirrored-piece) |
+| A floor finish on a room | unreleased | [Room floors](#room-floors) |
 
 ## Quantities and takeoff
 
@@ -518,3 +519,21 @@ plan "Two sofas" {
 ```
 
 A handed symbol flips, and a symbol with no hand keeps its exact bytes. The word takes no axis: `mirror x` belongs to `place`, which reflects a whole instance. See [Furniture](language-reference.md#furniture).
+
+## Room floors
+
+`floor` lays a hatch over a room: `tile`, `paving`, `deck` or `concrete`. Each word earns a `legend` row and reaches DXF as a real `HATCH`:
+
+```arch
+plan "Finishes" {
+  units mm
+  paper A4
+  scale 1:50
+  legend
+  room id=bath at (0,0) size 2400x3000 label "Bath" uses bath floor tile
+  room id=living right-of bath size 4000x3000 label "Living" uses living floor deck
+  walls from rooms exterior 200 partition 100
+}
+```
+
+It is a drawing fact: `describe()` and `lint()` read the plan as if it were not there. It is a pattern and not a colour, so it follows the `theme`. See [Room](language-reference.md#room).

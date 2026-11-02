@@ -910,6 +910,7 @@ export type PlanJsonDroppedClause =
   | "poche hatch"
   | "circle"
   | "label at"
+  | "floor"
   | (typeof UNPROJECTED_KINDS)[number]
   | "zone"
   | "level"
@@ -971,6 +972,8 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
   add("circle", circles.length, circles);
   const anchored = rooms.filter((r) => r.labelAt !== undefined).map((r) => r.id);
   add("label at", anchored.length, anchored);
+  const floored = rooms.filter((r) => r.floor !== undefined).map((r) => r.id);
+  add("floor", floored.length, floored);
   for (const kind of UNPROJECTED_KINDS) {
     const ids = elements.filter((e) => e.kind === kind).map((e) => e.id);
     add(kind, ids.length, ids);

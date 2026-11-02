@@ -109,6 +109,7 @@ const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, str
   "poche hatch": ["hatch scale or angle on `poche` walls", "wall's hatch setting", "walls' hatch settings"],
   circle: ["circular rooms", "circular room", "circular rooms"],
   "label at": ["room label positions", "`label … at` position", "`label … at` positions"],
+  floor: ["room floors", "room `floor`", "room `floor`s"],
   stair: ["stairs", "stair", "stairs"],
   elevator: ["elevators", "elevator", "elevators"],
   escalator: ["escalators", "escalator", "escalators"],

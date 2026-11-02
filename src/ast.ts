@@ -318,8 +318,16 @@ export interface RoomRel {
   span?: Span;
 }
 
+/** `floor <pattern>` on a room, the word as written: resolve holds it to the patterns. */
+export interface FloorClause {
+  word: string;
+  span: Span;
+}
+
 export interface RoomNode extends NodeBase {
   kind: "room";
+  /** `floor tile`: a hatch over the room's floor. A drawing fact. */
+  floor?: FloorClause;
   /** Absolute top-left corner. Mutually exclusive with {@link RoomNode.rel} and
    *  {@link RoomNode.polygon}; exactly one of the three is present. The absolute path
    *  is the default and is unchanged. */
@@ -954,6 +962,8 @@ export interface FenceNode extends NodeBase {
  *  when the child omits it. Expanded into an ordinary absolute {@link RoomNode}
  *  during resolve. */
 export interface StripRoomChild {
+  /** `floor <pattern>`, carried to the room the strip expands to. */
+  floor?: FloorClause;
   id: string;
   /** Main-axis extent (width for a right/left strip, height for a down/up strip). */
   main: Expr;

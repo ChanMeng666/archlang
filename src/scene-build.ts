@@ -26,7 +26,7 @@ import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import { add, mul, normal, segmentsOfWall, sub, unit } from "./geometry.js";
 import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
 import type { Point } from "./ast.js";
-import { hatchesUsed } from "./hatches.js";
+import { floorMaterialsUsed, hatchesUsed } from "./hatches.js";
 import { attachSceneWalls, lowerWallSet } from "./wall-lowering.js";
 import type { FacadeOpening, SideGeom } from "./facade.js";
 import { SIDES, cleanTicks, facadeAt, facadeOpenings, measureExtent, openingsBySide, sideGeoms } from "./facade.js";
@@ -965,7 +965,11 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   const standing = ir.drawn ? plan.walls : ir.walls;
   const demolished = ir.drawn ? ir.walls.filter((w) => w.status === "demolish") : [];
   const wallHatches = hatchesUsed(standing);
-  const hatches = hatchesUsed(standing, groundMaterialsUsed(outdoorEls));
+  const hatches = hatchesUsed(
+    standing,
+    groundMaterialsUsed(outdoorEls),
+    floorMaterialsUsed(ir.elements.filter((e): e is RRoom => e.kind === "room")),
+  );
   for (const pushed of lowerWallSet(demolished, [], ctxFor("wall"), "dashed")) {
     nodes.push({ ...pushed, layer: "wallFill" });
   }

@@ -1184,9 +1184,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   W_UNKNOWN_MATERIAL: W(
     "W_UNKNOWN_MATERIAL",
-    "Unknown wall material; using the default hatch.",
-    "A wall `material` name is not one of the known hatches.",
-    "Use a known material (e.g. brick, concrete, insulation, tile) or omit it.",
+    "Unknown wall material or room floor; the wall takes the default hatch, the room none.",
+    "A wall `material` name, or a room `floor` word, is not one of the known hatches.",
+    "Use a known word (for a wall e.g. brick, concrete, insulation, tile; for a floor tile, paving, deck, concrete) or omit it.",
     "wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning",
   ),
   W_UNKNOWN_STYLE_KEY: W(

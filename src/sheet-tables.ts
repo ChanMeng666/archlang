@@ -36,7 +36,7 @@ import type { Point } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { BandWall } from "./geometry/band.js";
 import type { HatchSpec } from "./hatches.js";
-import { groundSwatchFrame, hatchesUsed, patternId } from "./hatches.js";
+import { floorMaterialsUsed, groundSwatchFrame, hatchesUsed, hatchId } from "./hatches.js";
 import type { ROutdoor, RFurniture, RRoom } from "./ir.js";
 import { WINDOW_KINDS, type WindowKind } from "./grammar/tokens.js";
 import { groundMaterialsUsed } from "./elements/outdoor.js";
@@ -326,7 +326,7 @@ export function legendEntries(
 ): LegendEntry[] {
   const out: LegendEntry[] = [];
   for (const h of hatches) {
-    out.push({ kind: "material", key: patternId(h.material, h.scale, h.angle), name: hatchName(h, text), hatch: h });
+    out.push({ kind: "material", key: hatchId(h), name: hatchName(h, text), hatch: h });
   }
   if (demolished) out.push({ kind: "demolished", key: "demolish", name: text.word("demolished") });
   const present = new Set(furniture.map((f) => f.category));
@@ -724,7 +724,7 @@ export function planTableRows(input: {
   const schedule = input.schedule === "rooms" ? roomSchedule(input.rooms, input.zones, standing) : null;
   const legend = input.legend
     ? legendEntries(
-        hatchesUsed(standing, groundMaterialsUsed(input.outdoor ?? [])),
+        hatchesUsed(standing, groundMaterialsUsed(input.outdoor ?? []), floorMaterialsUsed(input.rooms)),
         input.furniture,
         standing.length < input.walls.length,
         input.elements,
@@ -1218,7 +1218,7 @@ function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: S
           angle: hp.angle,
           ...(frame ? { origin: frame.origin, zoom: frame.zoom } : {}),
         },
-        paint: { fill: `url(#${patternId(hp.material, hp.scale, hp.angle)})`, fillRule: "nonzero" },
+        paint: { fill: `url(#${hatchId(hp)})`, fillRule: "nonzero" },
       });
       d.frame(box.x, box.y, box.w, box.h);
     } else if (e.kind === "fixture" && e.category) {

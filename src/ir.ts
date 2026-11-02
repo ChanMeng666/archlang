@@ -99,7 +99,7 @@ import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
 import { drawingBounds, paperMm, renderSizes, resolveSheetSpec, scaleDenominator, usablePlanMm } from "./sheet.js";
-import { hatchOf, hatchTileMm } from "./hatches.js";
+import { type FloorMaterial, hatchOf, hatchTileMm } from "./hatches.js";
 import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeights, STOREY_HEIGHT } from "./datum.js";
 import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
@@ -399,6 +399,8 @@ export type FurnitureAuthored =
 
 export interface RRoom extends RBase {
   kind: "room";
+  /** `floor <pattern>`, read only by the drawing and the legend. Never reaches `describe()` or `lint()`. */
+  floor?: FloorMaterial;
   /** Top-left of the room. For a {@link RRoom.poly} room this is the ring's BOUNDING
    *  BOX corner, so a rect-shaped consumer still reads a truthful extent. */
   at: Point;
@@ -1919,6 +1921,7 @@ function stripRooms(strip: StripNode, evalIn: (e: Expr) => Value, diag: (d: Diag
       size: { w: numE(w), h: numE(h) },
       ...(child.label !== undefined ? { label: child.label } : {}),
       ...(child.uses ? { uses: child.uses } : {}),
+      ...(child.floor ? { floor: child.floor } : {}),
       line: child.line,
       span: child.span,
     });

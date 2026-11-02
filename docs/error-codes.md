@@ -244,7 +244,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SWING_OVER_STAIR`](#w_swing_over_stair) | warning | A door's swing sweeps a stair or the landing at its end. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
 | [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value, or a `sheet text` caption with its value, is wider than its row. |
-| [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
+| [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material or room floor; the wall takes the default hatch, the room none. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
 | [`W_WALL_END_SHORT`](#w_wall_end_short) | warning | A wall stops a few millimetres short of the wall it runs toward. |
@@ -3305,11 +3305,11 @@ title {
 
 ## W_UNKNOWN_MATERIAL
 
-*warning* — Unknown wall material; using the default hatch.
+*warning* — Unknown wall material or room floor; the wall takes the default hatch, the room none.
 
-**Cause.** A wall `material` name is not one of the known hatches.
+**Cause.** A wall `material` name, or a room `floor` word, is not one of the known hatches.
 
-**Fix.** Use a known material (e.g. brick, concrete, insulation, tile) or omit it.
+**Fix.** Use a known word (for a wall e.g. brick, concrete, insulation, tile; for a floor tile, paving, deck, concrete) or omit it.
 
 ```arch static
 wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning
