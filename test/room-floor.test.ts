@@ -47,11 +47,21 @@ const FORMS: readonly [string, string][] = [
 const withFloor = (body: string, floor: string): string => plan(body.replaceAll("{f}", floor));
 const noSpans = (x: unknown): unknown => JSON.parse(JSON.stringify(x, (k, v) => (k === "span" ? undefined : v)));
 
-/** Take the room's pattern and its hatch out of an SVG, leaving what the plain plan drew. */
-const withoutFloors = (svg: string): string =>
-  svg
-    .replace(/<pattern id="hatch-[a-z]+(-floor)?"[\s\S]*?<\/pattern>/g, "")
-    .replace(/<path [^>]*fill="url\(#hatch-[a-z]+(-floor)?\)"[^>]*\/>\n/g, "");
+/** One `<pattern>` of a drawing, found by its id: `""` when it has none. */
+const patternOf = (svg: string, id: string): string => {
+  const at = svg.indexOf(`<pattern id="${id}"`);
+  return at < 0 ? "" : svg.slice(at, svg.indexOf("</pattern>", at));
+};
+
+/** A `deck` floor's pattern and hatch taken out of an SVG, leaving what the plain plan drew. Each hatch is a line. */
+const withoutFloors = (svg: string): string => {
+  const pattern = patternOf(svg, "hatch-deck");
+  const defs = pattern ? svg.replace(`${pattern}</pattern>`, "") : svg;
+  return defs
+    .split("\n")
+    .filter((l) => !l.includes('"url(#hatch-deck)"'))
+    .join("\n");
+};
 
 suite("a floor is a drawing fact", () => {
   it.each(FORMS)("%s: describe() and lint() read as the plan without it", (_, body) => {
@@ -115,12 +125,12 @@ suite("the pattern", () => {
     const wall = `wall id=w exterior thickness 200 material tile { (0,0) (4000,0) (4000,3000) (0,3000) close }`;
     const svg = compile(plan(`room id=a at (0,0) size 4000x3000 floor tile\n  ${wall}`)).svg;
     const defs = svg.slice(svg.indexOf("<defs>"), svg.indexOf("</defs>"));
-    const floor = defs.match(/<pattern id="hatch-tile-floor"[\s\S]*?<\/pattern>/)?.[0] ?? "";
-    const own = defs.match(/<pattern id="hatch-tile"[\s\S]*?<\/pattern>/)?.[0] ?? "";
+    const floor = patternOf(defs, "hatch-tile-floor");
+    const own = patternOf(defs, "hatch-tile");
     expect(floor).toContain('fill="none"');
     expect(floor).not.toContain(DEFAULT_THEME.pocheBase);
     expect(own).toContain(DEFAULT_THEME.pocheBase);
-    expect(own).toBe(compile(plan(wall)).svg.match(/<pattern id="hatch-tile"[\s\S]*?<\/pattern>/)?.[0]);
+    expect(own).toBe(patternOf(compile(plan(wall)).svg, "hatch-tile"));
   });
 
   it("every word is a pattern the scene defines, with no dangling reference", () => {

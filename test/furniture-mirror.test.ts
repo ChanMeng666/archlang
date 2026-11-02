@@ -250,6 +250,33 @@ suite("Plan JSON carries the clause", () => {
     expect(planToJson(src).json?.furniture?.[0]?.mirror).toBe(true);
   });
 
+  it("a piece a reflecting `place` flattened stays E_JSON_MIRROR, in the shape of `hillside-villa`", () => {
+    // A component with a handed piece and a door, placed twice, the second mirrored. The document has no
+    // `components`, so the piece comes back as `en_m.sofa`, an id no source can declare.
+    const src = `plan "Pair" {
+  units mm
+  component suite() {
+    wall id=w exterior thickness 200 { (0,0) (3000,0) (3000,3000) (0,3000) close }
+    room id=r at (0,0) size 3000x3000 label "Suite" uses bath
+    furniture id=sofa desk at (300,300) size 1400x700 in r
+  }
+  place suite() as en at (0,0)
+  place suite() as en_m at (7000,0) mirror x
+}
+`;
+    const { json } = planToJson(src);
+    const mirrored = json?.furniture?.filter((f) => f.mirror === true) ?? [];
+    expect(mirrored.map((f) => f.id)).toEqual(["en_m.sofa"]);
+    const back = planJsonToArch(json);
+    expect(back.source).toBeUndefined();
+    const codes = back.diagnostics.map((d) => d.code);
+    expect(codes).toContain("E_JSON_MIRROR");
+    expect(codes).not.toContain("E_DOTTED_DECL");
+    // A hand-written payload's plain id is no flattened instance.
+    const own = planToJson(plan("furniture id=p desk at (500,500) size 1400x700 mirror")).json;
+    expect(planJsonToArch(own).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+  });
+
   it("refuses anything but a boolean", () => {
     const { json } = planToJson(plan("furniture desk at (500,500) size 1400x700"));
     const bad = { ...json, furniture: [{ ...json?.furniture?.[0], mirror: "x" }] };

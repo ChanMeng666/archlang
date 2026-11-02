@@ -20,17 +20,24 @@ const svg = (src: string): string => {
   return out.svg;
 };
 
-/** The arrow's group, and the bar's, as the backend writes them. */
-const ARROW = /<g><polygon points="[^"]*" fill="[^"]*" transform="rotate\([^)]*\)"\/><text[^>]*>N<\/text><\/g>\n/;
-const BAR =
-  /<g><rect [^>]*\/><rect [^>]*\/><text[^>]*text-anchor="start"[^>]*>0<\/text><text[^>]*>[^<]*<\/text><\/g>\n/;
+/** The arrow's group and the bar's: the backend writes each as one line of the SVG. */
+type Mark = (line: string) => boolean;
+const ARROW: Mark = (l) => l.startsWith("<g><polygon ") && l.includes('transform="rotate(') && l.includes(">N</text>");
+const BAR: Mark = (l) =>
+  l.startsWith("<g><rect ") && l.includes('text-anchor="start" dominant-baseline="central">0</text>');
+const draws = (svgText: string, mark: Mark): boolean => svgText.split("\n").some(mark);
+const without = (svgText: string, mark: Mark): string =>
+  svgText
+    .split("\n")
+    .filter((l) => !mark(l))
+    .join("\n");
 
 suite("north … hidden", () => {
   it("drops the arrow and nothing else", () => {
     const plain = svg(plan("north up"));
-    expect(plain).toMatch(ARROW);
-    expect(svg(plan("north up hidden"))).toBe(plain.replace(ARROW, ""));
-    expect(svg(plan("north hidden"))).toBe(plain.replace(ARROW, ""));
+    expect(draws(plain, ARROW)).toBe(true);
+    expect(svg(plan("north up hidden"))).toBe(without(plain, ARROW));
+    expect(svg(plan("north hidden"))).toBe(without(plain, ARROW));
   });
 
   it("keeps the bearing every fact is read from", () => {
@@ -53,16 +60,16 @@ suite("scale … hidden", () => {
   it("drops the bar and frees its band, and the title row stays", () => {
     const shown = compile(plan('scale 1:50\n  title { project "P" }'));
     const hidden = compile(plan('scale 1:50 hidden\n  title { project "P" }'));
-    expect(shown.svg).toMatch(BAR);
-    expect(hidden.svg).not.toMatch(BAR);
+    expect(draws(shown.svg, BAR)).toBe(true);
+    expect(draws(hidden.svg, BAR)).toBe(false);
     expect(hidden.scene?.chrome?.titleBlock?.rows.map((r) => r.k)).toEqual(["PROJECT", "SCALE"]);
     expect(hidden.scene?.scale).toBe("1:50");
   });
 
   it("alone hides the bar a plan with no scale draws", () => {
     const plain = svg(plan("north up"));
-    expect(plain).toMatch(BAR);
-    expect(svg(plan("scale hidden"))).not.toMatch(BAR);
+    expect(draws(plain, BAR)).toBe(true);
+    expect(draws(svg(plan("scale hidden")), BAR)).toBe(false);
   });
 
   it("leaves the operative scale of a sheet where it was", () => {

@@ -1609,7 +1609,8 @@ function validateWallsFromRooms(w: unknown, path: string, val: Validator): void 
 /**
  * `mirror: true` on a door or a dimension is a reflecting `place` frame's reflection, and a frame
  * is the only thing source can say it with: emitting the element would silently lose it. Refused
- * (`E_JSON_MIRROR`) rather than dropped. A piece of furniture has a `mirror` clause, so it is printed.
+ * (`E_JSON_MIRROR`) rather than dropped. A piece of furniture has a `mirror` clause, so it is printed,
+ * unless its dotted id says a `place` was flattened (`validateFurniture`).
  */
 function refuseMirror(mirror: unknown, path: string, what: string, own: string, val: Validator): void {
   if (mirror !== undefined && typeof mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
@@ -1746,8 +1747,16 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
     if (f[k] !== undefined && !(isNum(f[k]) && (f[k] as number) > 0))
       val.err(`${path}/${k}`, "expected a positive number");
   if (f.rotate !== undefined && !isNum(f.rotate)) val.err(`${path}/rotate`, "expected a number");
-  // Printed as the piece's own `mirror` clause, which is the bit a reflecting `place` sets.
+  // Printed as the piece's own `mirror` clause, the bit a reflecting `place` sets. A dotted id is a
+  // piece flattened out of a `place`: source cannot declare it, and only that `place` states the
+  // reflection, so it is refused here with its door's code rather than reach the parser.
   if (f.mirror !== undefined && typeof f.mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
+  if (f.mirror === true && isStr(f.id) && f.id.includes("."))
+    val.diags.push({
+      severity: "error",
+      message: `plan JSON ${path}/mirror: a fixture reflected by a \`place\` frame cannot be written as source — "${f.id}" is an instance's piece, flattened, and only its \`place … mirror x|y\` states the reflection`,
+      code: "E_JSON_MIRROR",
+    });
   if (f.side !== undefined && f.side !== "left" && f.side !== "right")
     val.err(`${path}/side`, 'expected "left" or "right"');
   // The anchor accept-list is DERIVED from the parser's own `FURNITURE_ANCHORS`, never
@@ -2060,7 +2069,7 @@ export function planJsonToArch(json: unknown): { source?: string; diagnostics: D
  *
  * Not supported (documented): scripting (`let`/`for`/`if`/`component`) and `import`, but for a
  * placed component that derives its walls (`components`/`instances`); and a
- * `mirror: true` door or dimension, which only a `place` frame can state (`E_JSON_MIRROR`).
+ * `mirror: true` door, dimension or dotted-id piece, which only a `place` frame can state (`E_JSON_MIRROR`).
  */
 export function planFromJson(json: unknown): { ast?: PlanNode; source?: string; diagnostics: Diagnostic[] } {
   const { source, diagnostics } = planJsonToArch(json);
@@ -2644,7 +2653,7 @@ export const PLAN_JSON_SCHEMA = {
           mirror: {
             type: "boolean",
             description:
-              "True on a fixture that writes `mirror` and on every fixture inside a reflecting `place` frame, the two composed: it records the reflection, not the glyph's handedness, so a symmetric symbol carries it too (a handed one is drawn as its mirror image). Absent otherwise. `planFromJson` prints it as the `mirror` clause.",
+              "True on a fixture that writes `mirror` and on every fixture inside a reflecting `place` frame, the two composed: it records the reflection, not the glyph's handedness, so a symmetric symbol carries it too (a handed one is drawn as its mirror image). Absent otherwise. `planFromJson` prints it as the `mirror` clause, and refuses it with E_JSON_MIRROR on a dotted id, a flattened instance's piece.",
           },
           centered: { type: "boolean", description: "Room-relative placement: centre inside `room`." },
           anchor: {

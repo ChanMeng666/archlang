@@ -68,8 +68,12 @@ pattern, as a wall's unknown word keeps its default. The PDF has no pattern fill
 solid `pocheBase` tint, as a ground surface already is.
 
 **D8. Plan JSON reads `mirror: true` on a piece.** The flag was output-only because source could not
-state it (`E_JSON_MIRROR`). Now it can, so `planFromJson` prints the clause for furniture and keeps
-refusing doors and dimensions. A placed piece's document round-trips to the same drawing.
+state it (`E_JSON_MIRROR`). Now it can, so `planFromJson` prints the clause for a piece the document
+holds as written, and keeps refusing doors and dimensions. A piece with a dotted id came flattened out
+of a `place`: it stays `E_JSON_MIRROR`, because source cannot declare the id, the `place` that states
+the reflection is gone from the document, and printing the clause only moves the refusal to
+`E_DOTTED_DECL` at the parser. Rejected: renaming the id so it parses, which would lose the instance.
+Reverse-if: `planFromJson` learns to accept a namespaced id.
 
 **D9. `paper auto` is left, against the card's fourth form.** ADR 0005 and ADR 0024 settle it: ADR 0024
 says a `paper auto` setting would put the choice back inside `compile()`, the source saying "some
