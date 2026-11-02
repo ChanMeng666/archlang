@@ -10,6 +10,7 @@ A plan small enough for one page is a single file here.
 | `ci-throughput.md` | Options to shorten the PR cycle (auto-merge, concurrency, path filters, coverage off the PR path, merge queue, changelog fragments, PR legs and shards) | A–D and G live; E, F open, the owner decides |
 | `archlang-3d/` | The owner's 3D plan (ADR 0030/0031 drafts) | owner's; not part of plan-soundness |
 | `preview-and-remodel/` | The 3D preview, the G cards and Wave 7 (what the German-houses user reported); `handoff.md` is the resume point | waves 0–3, 5 and 7 done; waves 4 and 6 wait for the N10 read |
+| `drawing-set/` | The scheme-stage drawing set: indicators, site, sections and elevations, analysis diagrams, a sheet pack; `handoff.md` is the resume point | planned 2026-11-02, nothing started |
 
 The backlog (`docs/backlog.md`) points here for programme work; `docs/adr/` holds the decisions that
 outlive a programme.

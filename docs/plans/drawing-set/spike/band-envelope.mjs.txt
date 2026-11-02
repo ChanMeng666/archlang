@@ -1,0 +1,311 @@
+// THROWAWAY research probe, not product code. Reads the repo's built packages; writes only to OUT.
+// Hypothesis under test: every Mesh3D shell is a vertical prism, so an axis-aligned section or
+// elevation reduces to one 1D nearest-surface envelope per height band, labelled cells, and lines
+// where labels change. Checked against an independent ray cast over the raw mesh TRIANGLES.
+import { readFileSync, readdirSync, mkdirSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { join, dirname } from "node:path";
+import { pathToFileURL } from "node:url";
+
+const REFINE = true;
+const ROOT = process.cwd(); // run from the repository root, after npm run build
+const OUT = process.env.SPIKE_OUT ?? "spike-out"; // never commit this folder
+mkdirSync(OUT, { recursive: true });
+const A = await import(pathToFileURL(`${ROOT}/packages/archlang-3d/dist/index.js`).href);
+
+// ---- recover prisms from triangles (the mesh keeps no polygon)
+function shellToPrism(s) {
+  const P = s.positions, I = s.indices;
+  const h = (i) => P[3 * i + 1];
+  let z0 = Infinity, z1 = -Infinity;
+  for (let i = 0; i < P.length / 3; i++) { z0 = Math.min(z0, h(i)); z1 = Math.max(z1, h(i)); }
+  const key = (i) => `${P[3 * i]},${P[3 * i + 2]}`;
+  const planCollinear = (a, b, c) => {
+    const [ax, ay, bx, by, cx, cy] = [P[3 * a], P[3 * a + 2], P[3 * b], P[3 * b + 2], P[3 * c], P[3 * c + 2]];
+    return (bx - ax) * (cy - ay) - (by - ay) * (cx - ax) === 0;
+  };
+  const top = new Map(), bot = new Map();
+  let bad = 0;
+  const addEdge = (m, a, b) => {
+    const [ka, kb] = [key(a), key(b)];
+    const rev = `${kb}|${ka}`;
+    if (m.has(rev)) { const n = m.get(rev) - 1; if (n) m.set(rev, n); else m.delete(rev); }
+    else m.set(`${ka}|${kb}`, (m.get(`${ka}|${kb}`) ?? 0) + 1);
+  };
+  for (let t = 0; t < I.length; t += 3) {
+    const [a, b, c] = [I[t], I[t + 1], I[t + 2]];
+    const flat = h(a) === h(b) && h(b) === h(c);
+    if (flat && h(a) === z1) { addEdge(top, a, b); addEdge(top, b, c); addEdge(top, c, a); }
+    else if (flat && h(a) === z0) { addEdge(bot, a, c); addEdge(bot, c, b); addEdge(bot, b, a); }
+    else if (!planCollinear(a, b, c)) bad++;
+  }
+  const same = top.size === bot.size && [...top.keys()].every((k) => bot.has(k));
+  const segs = [...top.keys()].map((k) => { const [a, b] = k.split("|"); return [...a.split(",").map(Number), ...b.split(",").map(Number)]; });
+  return { z0, z1, segs, isPrism: bad === 0 && same };
+}
+
+// ---- plan → view frame. Plan y points DOWN, so screen-right of a view (dx,dy) is (-dy, dx).
+const frame = (dx, dy, c) => (x, y) => [-dy * x + dx * y, dx * x + dy * y - c];
+
+function render(prisms, view) {
+  const f = frame(view.dx, view.dy, view.c);
+  const zs = [...new Set(prisms.flatMap((p) => [p.z0, p.z1]))].sort((a, b) => a - b);
+  const bands = [];
+  let overlap = 0, crossings = 0, cells = 0;
+  for (let k = 0; k + 1 < zs.length; k++) {
+    const [lo, hi] = [zs[k], zs[k + 1]];
+    const active = prisms.filter((p) => p.z0 <= lo && p.z1 >= hi);
+    const segs = [];
+    const cuts = [];
+    for (const p of active) {
+      const xs = [];
+      for (const [x0, y0, x1, y1] of p.segs) {
+        let [u0, d0] = f(x0, y0), [u1, d1] = f(x1, y1);
+        if (view.section && (d0 < 0) !== (d1 < 0)) xs.push(Math.round(u0 + ((u1 - u0) * (0 - d0)) / (d1 - d0)));
+        if (u0 === u1) continue; // edge-on to the view: it occludes nothing
+        if (view.section) {
+          if (d0 < 0 && d1 < 0) continue;
+          const t = d0 === d1 ? 0 : (0 - d0) / (d1 - d0);
+          if (d0 < 0) { u0 = Math.round(u0 + (u1 - u0) * t); d0 = 0; }
+          if (d1 < 0) { u1 = Math.round(u0 + (u1 - u0) * ((0 - d0) / (d1 - d0))); d1 = 0; }
+          if (u0 === u1) continue;
+        }
+        const flip = u0 > u1;
+        segs.push(flip ? [u1, d1, u0, d0, p] : [u0, d0, u1, d1, p]);
+      }
+      xs.sort((a, b) => a - b);
+      for (let i = 0; i + 1 < xs.length; i += 2) if (xs[i] < xs[i + 1]) cuts.push([xs[i], xs[i + 1], p]);
+    }
+    const depthAt = (s, u) => s[1] + ((s[3] - s[1]) * (u - s[0])) / (s[2] - s[0]);
+    let us = [...new Set([...segs.flatMap((s) => [s[0], s[2]]), ...cuts.flatMap((c) => [c[0], c[1]])])].sort((a, b) => a - b);
+    let n, best, lab, idx;
+    for (let pass = 0; ; pass++) {
+      n = Math.max(0, us.length - 1);
+      best = new Float64Array(n).fill(Infinity); lab = new Array(n).fill(null);
+      const bl = new Float64Array(n).fill(Infinity), br = new Float64Array(n).fill(Infinity), sl = new Array(n).fill(null), sr = new Array(n).fill(null);
+      idx = new Map(us.map((u, i) => [u, i]));
+      for (const s of segs) {
+        for (let i = idx.get(s[0]); i < idx.get(s[2]); i++) {
+          const mid = (us[i] + us[i + 1]) / 2, d = depthAt(s, mid);
+          if (d < best[i]) { best[i] = d; lab[i] = { s, d }; }
+          const dl = depthAt(s, us[i]), dr = depthAt(s, us[i + 1]);
+          if (dl < bl[i]) { bl[i] = dl; sl[i] = s; }
+          if (dr < br[i]) { br[i] = dr; sr[i] = s; }
+        }
+      }
+      const add = new Set();
+      for (let i = 0; i < n; i++) {
+        const m = lab[i]?.s;
+        if (!m) continue;
+        for (const [o, u, b] of [[sl[i], us[i], bl[i]], [sr[i], us[i + 1], br[i]]]) {
+          if (!o || o === m || depthAt(m, u) - b < 1) continue; // under 1 um is a shared end, not a crossing
+          const f = (x) => depthAt(m, x) - depthAt(o, x);
+          const [a, c] = [f(us[i]), f(us[i + 1])];
+          if (a * c < 0) { crossings++; const x = Math.round(us[i] + ((us[i + 1] - us[i]) * a) / (a - c)); if (x > us[i] && x < us[i + 1]) add.add(x); }
+        }
+      }
+      if (!REFINE || add.size === 0 || pass > 6) break;
+      us = [...new Set([...us, ...add])].sort((a, b) => a - b);
+    }
+    const planeKey = (s) => {
+      const [du, dd] = [s[2] - s[0], s[3] - s[1]];
+      if (dd === 0) return `P${s[1]}`;
+      const g = gcd(Math.abs(du), Math.abs(dd));
+      return `O${du / g},${dd / g},${(dd / g) * s[0] - (du / g) * s[1]}`;
+    };
+    const cover = new Int32Array(n);
+    for (const [a, b] of cuts) for (let i = idx.get(a); i < idx.get(b); i++) cover[i]++;
+    const labels = new Array(n);
+    for (let i = 0; i < n; i++) {
+      if (cover[i] > 1) overlap += ((us[i + 1] - us[i]) * (hi - lo)) / 1e6; // mm²
+      labels[i] = cover[i] > 0 ? "CUT" : lab[i] ? planeKey(lab[i].s) : "";
+    }
+    cells += n;
+    bands.push({ lo, hi, us, labels, depth: best, seg: lab });
+  }
+  // lines = label changes. b = cut boundary; s = silhouette (cell against empty); f = depth step.
+  const lines = [];
+  const emit = (cls, a, b, c, e) => lines.push([cls, a, b, c, e]);
+  const cls = (p, q, d) => {
+    if (p === q) return null;
+    if (p === "CUT" || q === "CUT") return "cut";
+    if (p === "" || q === "") return "sil";
+    return d > 3e6 ? "far" : "near";
+  };
+  for (const b of bands) {
+    for (let i = 0; i <= b.labels.length; i++) {
+      const [p, q] = [b.labels[i - 1] ?? "", b.labels[i] ?? ""];
+      const d = Math.min(b.depth[i - 1] ?? Infinity, b.depth[i] ?? Infinity);
+      const c = cls(p, q, d);
+      if (c) emit(c, b.us[i], b.lo, b.us[i], b.hi);
+    }
+  }
+  const walk = (a, b, z) => {
+    const us = [...new Set([...(a?.us ?? []), ...(b?.us ?? [])])].sort((x, y) => x - y);
+    const at = (r, u) => {
+      if (!r) return ["", Infinity];
+      let lo = 0, hi = r.us.length - 1;
+      if (hi < 1 || u < r.us[0] || u >= r.us[hi]) return ["", Infinity];
+      while (hi - lo > 1) { const m = (lo + hi) >> 1; if (r.us[m] <= u) lo = m; else hi = m; }
+      return [r.labels[lo], r.depth[lo]];
+    };
+    for (let i = 0; i + 1 < us.length; i++) {
+      const [p, dp] = at(a, us[i]), [q, dq] = at(b, us[i]);
+      const c = cls(p, q, Math.min(dp, dq));
+      if (c) emit(c, us[i], z, us[i + 1], z);
+    }
+  };
+  for (let k = 0; k <= bands.length; k++) walk(bands[k - 1], bands[k], bands[k]?.lo ?? bands[k - 1].hi);
+  // merge collinear pieces, then order by integers only
+  const order = (a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) || a[2] - b[2] || a[4] - b[4] || a[1] - b[1] || a[3] - b[3];
+  lines.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0) || (a[1] === a[3]) - (b[1] === b[3]) || (a[1] === a[3] ? a[1] - b[1] || a[2] - b[2] : a[2] - b[2] || a[1] - b[1]));
+  const merged = [];
+  for (const l of lines) {
+    const m = merged[merged.length - 1];
+    if (m && m[0] === l[0]) {
+      if (m[2] === m[4] && l[2] === l[4] && m[2] === l[2] && m[3] === l[1]) { m[3] = l[3]; continue; }
+      if (m[1] === m[3] && l[1] === l[3] && m[1] === l[1] && m[4] === l[2]) { m[4] = l[4]; continue; }
+    }
+    merged.push([...l]);
+  }
+  merged.sort(order);
+  return { bands, lines: merged, overlap, crossings, cells, zs };
+}
+const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+
+// ---- SVG
+function svg(r, name) {
+  const U = 1000; // mm
+  const ws = { cut: 0.7, sil: 0.49, near: 0.35, far: 0.18 };
+  const us = r.lines.flatMap((l) => [l[1], l[3]]), zs = r.lines.flatMap((l) => [l[2], l[4]]);
+  const [x0, x1, z0, z1] = [Math.min(...us), Math.max(...us), Math.min(...zs), Math.max(...zs)];
+  const X = (u) => (u - x0) / U / 50, Y = (z) => (z1 - z) / U / 50;
+  const cells = [];
+  for (const b of r.bands) for (let i = 0; i < b.labels.length; i++) if (b.labels[i] === "CUT") cells.push(`M${X(b.us[i])} ${Y(b.hi)}H${X(b.us[i + 1])}V${Y(b.lo)}H${X(b.us[i])}Z`);
+  const groups = Object.keys(ws).map((c) => `<g class="${c}" stroke-width="${ws[c]}">${r.lines.filter((l) => l[0] === c).map((l) => `<path d="M${X(l[1])} ${Y(l[2])}L${X(l[3])} ${Y(l[4])}"/>`).join("")}</g>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-10 -10 ${X(x1) + 20} ${Y(z0) + 20}" width="${X(x1) + 20}mm" height="${Y(z0) + 20}mm"><title>${name}</title><rect x="-10" y="-10" width="100%" height="100%" fill="white"/><path d="${cells.join("")}" fill="#555"/><g fill="none" stroke="black" stroke-linecap="square">${groups.join("")}</g></svg>`;
+}
+
+// ---- independent oracle: rays against raw mesh triangles, jittered off every grid line
+function oracle(tris, view, r, n, rng) {
+  const f = frame(view.dx, view.dy, view.c);
+  const us = r.lines.flatMap((l) => [l[1], l[3]]);
+  if (!us.length) return { n: 0, bad: 0 };
+  const [u0, u1, z0, z1] = [Math.min(...us), Math.max(...us), r.zs[0], r.zs[r.zs.length - 1]];
+  let bad = 0, done = 0;
+  const ex = [];
+  for (let i = 0; i < n; i++) {
+    const [u, z] = [u0 + (u1 - u0) * rng(), z0 + (z1 - z0) * rng()];
+    // nearest hit with d >= 0 (section) and solid parity at d = 0, shell by shell
+    let near = Infinity, inside = false;
+    for (const sh of tris) {
+      if (z < sh.z0 || z > sh.z1) continue;
+      let par = 0;
+      for (const t of sh.t) {
+        const a = f(t[0], t[2]), b = f(t[3], t[5]), c = f(t[6], t[8]);
+        const [Az, Bz, Cz] = [t[1], t[4], t[7]];
+        const den = (b[0] - a[0]) * (Cz - Az) - (c[0] - a[0]) * (Bz - Az);
+        if (den === 0) continue;
+        const w1 = ((u - a[0]) * (Cz - Az) - (c[0] - a[0]) * (z - Az)) / den;
+        const w2 = ((b[0] - a[0]) * (z - Az) - (u - a[0]) * (Bz - Az)) / den;
+        if (w1 < 0 || w2 < 0 || w1 + w2 > 1) continue;
+        const d = a[1] + w1 * (b[1] - a[1]) + w2 * (c[1] - a[1]);
+        if (view.section) { if (d >= 0) { par++; if (d < near) near = d; } }
+        else if (d < near) near = d;
+      }
+      if (view.section && par % 2 === 1) inside = true;
+    }
+    const band = r.bands.find((b) => z >= b.lo && z < b.hi);
+    let got = "", gd = Infinity;
+    if (band && u >= band.us[0] && u < band.us[band.us.length - 1]) {
+      let k = 0; while (band.us[k + 1] <= u) k++;
+      got = band.labels[k]; gd = band.depth[k];
+      if (got !== "CUT" && got !== "") {
+        // cell mid depth is exact for a face perpendicular to the view; oblique cells may vary, allow slope
+      }
+    }
+    done++;
+    const want = inside ? "CUT" : near === Infinity ? "" : "HIT";
+    const have = got === "CUT" ? "CUT" : got === "" ? "" : "HIT";
+    let exactD = gd;
+    if (band && have === "HIT") { let k = 0; while (band.us[k + 1] <= u) k++; const w = band.seg[k]?.s; if (w) exactD = w[1] + ((w[3] - w[1]) * (u - w[0])) / (w[2] - w[0]); }
+    const depthOk = want !== "HIT" || have !== "HIT" || Math.abs(near - exactD) <= 2;
+    if (!depthOk) maxDepthErr.v = Math.max(maxDepthErr.v, Math.abs(near - exactD));
+    if (want !== have || !depthOk) { bad++; if (ex.length < 2) ex.push({ u: Math.round(u), z: Math.round(z), want, have, near: Math.round(near), gd: Math.round(gd) }); }
+  }
+  return { n: done, bad, ex };
+}
+
+const maxDepthErr = { v: 0 };
+const mulberry = (a) => () => { a |= 0; a = (a + 0x6d2b79f5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const sha = (s) => createHash("sha256").update(s).digest("hex").slice(0, 16);
+
+const REFINE_UNUSED = 0;
+const SKIP_KINDS = new Set(["floor"]); // a 5 mm finish is 0.1 mm on paper at 1:50: never a separate outline
+const rows = [];
+let nonPrism = 0, shellsTotal = 0, orN = 0, orBad = 0, detFail = 0;
+const exDir = `${ROOT}/examples`;
+const ORACLE = Number(process.argv[2] ?? 150);
+for (const file of readdirSync(exDir).filter((f) => f.endsWith(".arch")).sort()) {
+  const path = join(exDir, file);
+  const world = { read: (p) => { try { return readFileSync(p.startsWith("/") || /^[A-Za-z]:/.test(p) ? p : join(dirname(path), p), "utf8"); } catch { return undefined; } } };
+  let res;
+  try { res = A.adaptPlan(readFileSync(path, "utf8"), { world, coreVersion: "probe" }); } catch (e) { rows.push({ file, error: String(e.message).slice(0, 60) }); continue; }
+  if (!res.ok) { rows.push({ file, refused: res.refusal.code }); continue; }
+  const mesh = A.buildMesh(res.scene);
+  const prisms = [], tris = [];
+  let segs = 0, oblique = 0, badHere = 0;
+  for (const nd of mesh.nodes) {
+    if (nd.extras?.status === "demolish" || SKIP_KINDS.has(nd.kind)) continue;
+    for (const s of nd.shells) {
+      shellsTotal++;
+      const p = shellToPrism(s);
+      if (!p.isPrism) { nonPrism++; badHere++; }
+      p.key = nd.key;
+      prisms.push(p);
+      segs += p.segs.length;
+      for (const q of p.segs) if (q[0] !== q[2] && q[1] !== q[3]) oblique++;
+      const t = [];
+      for (let i = 0; i < s.indices.length; i += 3) {
+        const ix = [s.indices[i], s.indices[i + 1], s.indices[i + 2]];
+        t.push(ix.flatMap((v) => [s.positions[3 * v], s.positions[3 * v + 1], s.positions[3 * v + 2]]));
+      }
+      tris.push({ z0: p.z0, z1: p.z1, t });
+    }
+  }
+  const xs = prisms.flatMap((p) => p.segs.flatMap((q) => [q[0], q[2]]));
+  const ys = prisms.flatMap((p) => p.segs.flatMap((q) => [q[1], q[3]]));
+  const [cx, cy] = [Math.round((Math.min(...xs) + Math.max(...xs)) / 2), Math.round((Math.min(...ys) + Math.max(...ys)) / 2)];
+  const views = {
+    secY: { dx: 0, dy: -1, c: -cy, section: true },
+    secX: { dx: 1, dy: 0, c: cx, section: true },
+    eleS: { dx: 0, dy: -1, c: 0 },
+    eleE: { dx: -1, dy: 0, c: 0 },
+    eleN: { dx: 0, dy: 1, c: 0 },
+    eleW: { dx: 1, dy: 0, c: 0 },
+  };
+  const rng = mulberry(file.length * 7919 + 13);
+  let lines = 0, cells = 0, overlap = 0, crossings = 0, ms = 0, bands = 0;
+  for (const [vn, v] of Object.entries(views)) {
+    const t0 = performance.now();
+    const r = render(prisms, v);
+    ms += performance.now() - t0;
+    lines += r.lines.length; cells += r.cells; crossings += r.crossings; bands = r.bands.length;
+    if (v.section) overlap += r.overlap;
+    const a = svg(r, `${file} ${vn}`);
+    const shuffled = [...prisms].sort(() => rng() - 0.5).map((p) => ({ ...p, segs: [...p.segs].reverse() }));
+    const b = svg(render(shuffled, v), `${file} ${vn}`);
+    if (sha(a) !== sha(b)) detFail++;
+    if (["two-storey.arch", "hillside-villa.arch", "aquarium.arch", "courtyard-house.arch"].includes(file)) writeFileSync(`${OUT}/${file}.${vn}.svg`, a);
+    if (ORACLE > 0 && (segs < 6000)) {
+      const o = oracle(tris, v, r, ORACLE, rng);
+      orN += o.n; orBad += o.bad;
+      if (o.bad) { for (const e of o.ex) console.log("MM", file, vn, JSON.stringify(e)); }
+    }
+  }
+  rows.push({ file, nodes: mesh.nodes.length, shells: tris.length, tri: tris.reduce((s, x) => s + x.t.length, 0), segs, oblique, bands, cells, lines, crossings, overlapM2: +(overlap / 1e6).toFixed(2), ms: +ms.toFixed(1), nonPrism: badHere });
+}
+writeFileSync(`${OUT}/rows.json`, JSON.stringify(rows, null, 1));
+if (process.argv[3]) console.table(rows.filter((r) => !r.error && !r.refused).map(({ file, ...r }) => ({ file: file.replace(".arch", "").slice(0, 18), ...r })));
+console.log("refused/error", rows.filter((r) => r.error || r.refused).map((r) => `${r.file}:${r.error ?? r.refused}`));
+console.log({ REFINE, maxDepthErrUm: Math.round(maxDepthErr.v), crossingsTotal: rows.reduce((t, r) => t + (r.crossings ?? 0), 0), msTotal: Math.round(rows.reduce((t, r) => t + (r.ms ?? 0), 0)), msMax: Math.max(...rows.map((r) => r.ms ?? 0)), linesTotal: rows.reduce((t, r) => t + (r.lines ?? 0), 0), shellsTotal, nonPrism, detFail, oracleSamples: orN, oracleMismatch: orBad, example: rows.ex });
