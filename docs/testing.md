@@ -15,6 +15,7 @@ say what it enforces; this file does not inventory them.
 | `npm run typecheck:all` | the only typecheck of `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and the workspaces. `npm run build` first |
 | `npm run docs:build` | the only thing that compiles the VitePress site |
 | `npm run e2e:playground` / `e2e:docs` | Playwright against the BUILT site: `npm run build && npm run playground:build:only` (or `docs:build:only`) first |
+| `npm run check:dxf` | the DXF through ezdxf, an independent reader (`e2e/dxf_check.py`, `scripts/check-dxf.ts`): blocks and dimensions exploded back to the flat file. Skips loudly with no reader, fails under `CI`. Set `ARCHLANG_DXF_PYTHON` to a Python with `e2e/requirements.txt` installed |
 | `npm run eval:ci` / `eval:fidelity` | offline eval gates; separate corpora, never compared. `eval:ci` fails only on a regression against `eval/judge-fixture.json`, never because a golden recorded as failing still fails |
 | `npm run test:coverage` | report-only v8 coverage over `src/`; no thresholds, nothing fails on a number. Runs nightly (`nightly.yml` `coverage`), not on PRs |
 

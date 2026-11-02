@@ -406,10 +406,14 @@ function scenesOf(src: string): AnyScene[] {
   return r.pages ? r.pages.map((p) => p.scene) : [r.scene!];
 }
 
-/** The same Scene as a hand-built one would be: no `walls`, so every node exports as itself. */
+/**
+ * The same Scene as a hand-built one would be: no `walls`, so every node exports as itself. Its
+ * `parts` are kept: they are non-enumerable, a spread leaves them behind, and this file compares
+ * walls, so the doors and furniture stay blocks on both sides.
+ */
 function plain(scene: AnyScene): AnyScene {
   const { walls: _walls, ...rest } = scene;
-  return rest;
+  return Object.defineProperty(rest, "parts", { value: scene.parts });
 }
 
 const EXAMPLES = readdirSync(join(__dirname, "..", "examples"))

@@ -3695,6 +3695,19 @@ the drawing shows there. Each layer holds its walls' share of the joined outline
 shows. No line is moved or added, but a face line is cut in two where it passes from one
 layer's wall to the other's.
 
+**DXF blocks and dimensions.** Each door, window and catalogued fixture is a `BLOCK` with one
+`INSERT`, on its AIA layer, and the entities inside keep theirs. Elements that draw the same shape
+share one definition, named by what they are: `DOOR-HINGED-900`, `WINDOW-FIXED-1500`,
+`FURN-SOFA-2000X900`, with `-2` for a second shape under a name (the same door hinged the other way, a
+sill on the other face). A door or a window stands in the frame of its wall and a turned fixture about
+the middle of its footprint, so one door on four walls is one block with four `INSERT`s. On a wall at
+another angle or a curved one the block is drawn as the plan has it. Every `dim` and `dims auto` figure
+is a rotated `DIMENSION` that measures along its own line, with an anonymous `*D` block holding what the
+drawing drew, and its own `R`, `φ` or `text` as an override. A cased `opening` and an uncatalogued
+`furniture` word stay plain entities. Exploding the file gives the same entities as a flat export, and
+the check is [ezdxf](https://ezdxf.mozman.at/), an independent reader, run in CI. The file has no
+handles or OBJECTS section, which a stricter reader may ask for: test it in the CAD program you use.
+
 The **TXT** backend draws the plan as an ASCII/Unicode grid — no image, no binary, no
 dependency. It exists so a text-only agent (or a terminal) can *see* the layout at a
 glance; tune it with `--cols <n>` and `--charset unicode|ascii`.

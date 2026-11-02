@@ -2290,7 +2290,9 @@ from a single piece. ADR 0025 decision 2 (fill only empty rooms) still applies.
 **Gate:** on a bare kitchen, `arch finish --dry-run --json` lists the run and the result is
 lint-clean; byte-identity laws gain a row per example whose `finish` output moves. **Size:** M.
 
-### U.13 · The DXF is geometry only, beyond units and layers — `todo`
+### U.13 · The DXF is geometry only, beyond units and layers — `done`
+
+Doors, windows and catalogued furniture are blocks with one `INSERT` each, dimensions are `DIMENSION` entities, and `npm run check:dxf` reads the file through ezdxf (`research/2026-11-02-interchange.md` in `docs/plans/preview-and-remodel/`). What stays open: a cased `opening` is flat, `dim radius` is a linear dimension with its `R` text, and the file has no handles or OBJECTS section.
 
 **Observed (audit, "What ArchLang lacks").** The DXF has LINE, ARC and TEXT and no DIMENSION
 entities, blocks or hatches, so a CAD user gets no editable dimension and no door block.

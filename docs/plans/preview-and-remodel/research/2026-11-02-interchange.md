@@ -48,6 +48,18 @@ written, so the scale is fitted again and `summary.sheet.scale_auto` comes back 
 **`dropped` shrinks**: `arc` and `paper` leave `PlanJsonDroppedClause`. `circle` stays: a circular
 room is still a 48-gon, and it is not in this card.
 
+**And gains one row, `column order`.** Taking `paper` off the report uncovered `museum.arch`: it was
+reported only for its paper, and it does not come back byte for byte. Its columns stand before its
+furniture, the document lists them after, and both draw on one pass, so the same shapes come back in
+another order (the SVG's `A-COLS` group moves past `A-FURN`). Nothing was lost that a reader of the
+plan would call a fact, but a silent difference is what #366 is about, and the suite's law that the
+report speaks exactly when a plan does not come back would have turned false.
+
+- *Alternative:* an exception in the test. It keeps the format smaller and leaves the difference
+  unsaid. Reverse if a real plan's report grows noisy with this row.
+- *Alternative:* a row order in the document. It costs a key on every payload that has both, for a
+  draw order. Reverse if a consumer needs one.
+
 **What does not change.** A plan with no arc and no paper writes the same bytes on the CLI, `batch`
 and MCP: every new key is conditional. An old document loads: both members are optional.
 
@@ -112,18 +124,26 @@ rotated dimension measures. Written `text` goes in group 1; with none the reader
 measure. `dim radius` and `dim diameter` are written this way too, with their `R`/`φ` text, the
 measured line being the radius or the diameter: a radial type is residue.
 
+The sizes a reader lays a dimension out by are written twice, in a `DIMSTYLE` row and in `$DIMTXT`,
+`$DIMTSZ`, `$DIMEXO` and `$DIMDEC`: LibreCAD redraws a dimension from its points, reads the header
+and not the row, and drew each number 2.5 mm high without it. A file with no dimension writes
+neither, so a plan with none keeps a shorter header.
+
 **The budget.** Blocks read the nodes `compile()` already allowed. A block holds no block, no `INSERT`
 carries an array, and each element costs a constant number of records beyond the entities it drew,
 so the file stays linear in what `MAX_DRAW_UNITS` bounds and exploding it gives the flat drawing back.
 
 **Honest claim.** The check is ezdxf, an independent reader. No CAD program is promised unless one
 opened the file; the writer has never carried handles or an OBJECTS section, and this card adds
-neither.
+neither. By hand on the card's day, LibreCAD's `dxf2pdf` console mode opened plans with blocks and
+dimensions and drew them; that is one reading, not a gate, so the docs do not lean on it. AutoCAD was
+not tried.
 
 **The reader test** is `e2e/dxf_check.py`, run `-I` by `npm run check:dxf`, in the `Workspace builds`
 job so it gates. With no reader it fails under `CI` and prints a skip locally (`docs/testing.md` §4).
-It explodes every `INSERT` and `DIMENSION` and compares the result with the flat file, and it first
-proves it can fail on a file with one `INSERT` removed.
+It explodes every `INSERT` and `DIMENSION` and compares the result with the flat file, reads the
+counts from `describe()` so it cannot agree with itself, and first proves it can fail, by name, on a
+file with one `INSERT` removed and on one with a block a millimetre off.
 
 ## 5. Byte law
 
@@ -135,5 +155,11 @@ a Scene stripped of `parts` equals `main`'s DXF. Plan JSON moves only where a pl
 
 - `schemas/plan.schema.json`: `paper`, the wall point's `arc`; descriptions of `scale` and the root.
 - `dropped`, the CLI notes, the language reference's table, `CANNOT_ROUND_TRIP`.
-- MCP: `compile` returns `dropped` as before, with fewer rows; no prose changes.
-- Spec: one short clause, paid by a provable cut.
+- MCP: `compile` returns `dropped` as before, with other rows. The tool's description still names
+  "the sheet" and "curves" among what the document does not carry, true of tables and circular rooms
+  and no longer of `paper` or an arc. Its rewording needs a shim version bump, so it is left for the
+  release.
+- Spec: `-f txt = zero-dep ASCII plan, dxf = blocks` (14 units), paid by the opening line's
+  `(SVG/PNG/PDF/DXF)` (18 units), which the CLI block states again.
+- A consumer of the DXF that read doors as flat lines now reads an `INSERT`. `toDxf({ ...scene })` is
+  the flat file.

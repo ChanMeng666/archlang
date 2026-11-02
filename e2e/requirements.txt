@@ -1,0 +1,2 @@
+# The independent DXF reader of `npm run check:dxf`. A test tool, never a dependency of the core.
+ezdxf==1.4.5

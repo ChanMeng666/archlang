@@ -3,7 +3,7 @@
 # ArchLang in one prompt
 
 ArchLang is a tiny declarative language that compiles a `.arch` source file into a professional
-floor-plan drawing (SVG/PNG/PDF/DXF). It is built for AI agents: deterministic (same source →
+floor-plan drawing. It is built for AI agents: deterministic (same source →
 identical output), pure (no runtime/IO), and self-correcting (every error carries a machine code and
 a `fix`). This page is everything you need to author it.
 
@@ -155,7 +155,7 @@ arch explain  # look up an error code (cause / fix / example)
 The flags that matter (the verb list above covers the rest):
 
 ```bash
-arch compile plan.arch -o out.svg --json  # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan
+arch compile plan.arch -o out.svg --json  # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan, dxf = blocks
 arch validate plan.arch --strict --json  # ship-gate: --strict fails on warnings too
 arch fix plan.arch --dry-run --json  # preview/apply diagnostics[].fixes
 arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
