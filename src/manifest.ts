@@ -265,7 +265,7 @@ const LEVEL_FLAG: ManifestFlag = {
   flag: "--level",
   arg: "<n>",
   description:
-    "render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one <stem>.L<level>.<ext> file per level; {level} in -o names each storey's file",
+    "render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one <stem>.L<level>.<ext> file per level; {level} in -o names each storey's file (no `level` blocks: exit 3)",
 };
 
 const INSTALL_FLAG: ManifestFlag = {

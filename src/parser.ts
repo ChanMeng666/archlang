@@ -464,7 +464,7 @@ class Parser {
             break;
           case "title": {
             // `title hidden = 3` was an error, and stays the error `parseTitle` reports.
-            if (this.isKeyword("hidden", 1) && !this.isTrailer(this.peek(2))) {
+            if (this.isKeyword("hidden", 1) && this.peek(1).line === t.line && !this.isTrailer(this.peek(2))) {
               this.next();
               this.eatHidden(plan, "title");
               break;
@@ -759,8 +759,8 @@ class Parser {
   }
 
   /**
-   * A trailing `hidden`: the mark goes, the fact stays. Read only where the clause can stand, and
-   * never when `=` or `(` follows, so a statement that starts with the word stays that statement.
+   * A trailing `hidden`: the mark goes, the fact stays. Read only where the clause can stand, on its
+   * statement's line, and never when `=` or `(` follows: a statement that starts with the word stays one.
    */
   private eatHidden(plan: PlanNode, mark: keyof ChromeHide): boolean {
     if (!this.isTrailingWord("hidden")) return false;
@@ -771,7 +771,7 @@ class Parser {
 
   /** The word as a clause: not the first token of an assignment or a macro call. */
   private isTrailingWord(word: string): boolean {
-    return this.isKeyword(word) && !this.isTrailer(this.peek(1));
+    return this.isKeyword(word) && this.peek().line === this.peek(-1).line && !this.isTrailer(this.peek(1));
   }
 
   private isTrailer(t: Token): boolean {

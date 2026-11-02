@@ -1333,11 +1333,12 @@ It is a pattern and not a colour: it follows the `theme`, stays legible under `m
 a real `HATCH` and earns one [`legend`](#sheet-tables--room-schedule--legend) row per word, which
 `sheet text` can rename (`deck "Parkett"`). It runs with the sheet, so boards do not turn with a
 `place`, as a wall's hatch does not. `tile` and `concrete` paint no background here, so a tiled room
-does not take a wall's tint. In a PDF, which has no pattern fills, a floor is a flat tint, as an
+does not take a wall's tint, and their legend row reads `tile floor`, apart from a wall's `tile`. In a PDF, which has no pattern fills, a floor is a flat tint, as an
 `outdoor` surface is.
 
 A floor is a drawing fact: `describe()` and `lint()` read the plan as if it were not there, and Plan
-JSON lists it in `dropped`. An unknown word is `W_UNKNOWN_MATERIAL` and draws no pattern.
+JSON lists it in `dropped`. A word that is not one of the four draws no pattern and raises
+`W_UNKNOWN_MATERIAL`, a compile warning that `describe --json` and `validate` report and `lint()` does not.
 
 **Where the name goes.** By default at the room's own centre — the rectangle's, the
 circle's, or [a polygon's area centroid](#polygonal-rooms-v1-23) — and a name that would
@@ -2804,8 +2805,9 @@ plan "Bath detail" {
 Each is free of the others. A band with nothing left in it is not reserved, so a hidden scale bar
 and title block give their height back to the drawing: the fit, the auto-chosen scale and
 `W_SCALE_OVERFLOW` all read the sheet as drawn, and `W_TITLE_OVERFLOW` does not judge a block that
-is not drawn. `describe()` is unchanged, Plan JSON lists the word in `dropped`, and `archlang finish`
-adds no title to a plan that says `title hidden`. The three are plan-level and apply to every page
+is not drawn. `describe()` reads the same but for the sheet: where a freed band lets the auto scale fit
+finer, or a plan fit at a written scale, `scale`, `sheet.scale_denominator` and `sheet.fits` say so.
+Plan JSON lists the word in `dropped`, and `archlang finish` adds no title to a plan that says `title hidden`. The three are plan-level and apply to every page
 of a plan with `level` blocks.
 
 ### Positioning axes (定位轴线)
@@ -3102,7 +3104,7 @@ authored window kind or `glazed_sliding` stands alone in the legend, where the E
 | `subtotal` `total` `no_zone` | `SUBTOTAL` `TOTAL` `(no zone)` | Its closing rows, and the heading over rooms in no `zone` |
 | `opening_schedule` `tag` `rooms` `width` `type` `hand` | `DOOR & WINDOW SCHEDULE` `TAG` `ROOM(S)` `WIDTH` `TYPE` `HAND` | The door and window schedule's caption and headings |
 | `left` `right` `exterior` `window` | `left` `right` `exterior` `window` | Its cells: a hand, the outside, a window with no kind |
-| `legend` `demolished` `notes` | `LEGEND` `demolished` `NOTES` | The legend's and the notes' captions, and the row of a demolished wall |
+| `legend` `demolished` `floor` `notes` | `LEGEND` `demolished` `floor` `NOTES` | The legend's and the notes' captions, the row of a demolished wall, and the word after a `tile` or `concrete` floor's row |
 | `net` `up` `down` `north` | `net` `UP` `DN` `N` | In the drawing: the net stamp's word, a stair's or escalator's word, the north arrow's letter |
 
 The door and window tags (`D01`, `W01`), the axis bubbles and `m²` are handles and units, and have
@@ -3373,7 +3375,7 @@ a level-unaware consumer still gets a complete drawing. On the CLI:
 archlang compile house.arch                          # writes house.L1.svg, house.L2.svg …
 archlang compile house.arch -o house.svg --json      # …and reports outputs[] + pages[]
 archlang compile house.arch --json                   # check only: WRITES NOTHING (no -o), reports written:false
-archlang compile house.arch -o "storey-{level}.svg"  # {level} names each file: storey-1.svg, storey-2.svg …
+archlang compile house.arch -o "storey-{level}.svg"  # {level} names each file: storey-1.svg, storey-2.svg … (a plan with no `level` blocks refuses it)
 archlang compile house.arch --level 2 -o upper.svg   # just that storey, to the plain target
 archlang compile house.arch --level 1 -o -           # `-o -` streams ONE drawing, so it needs --level
 archlang describe house.arch --json                  # top-level facts = lowest storey, plus levels[]

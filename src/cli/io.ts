@@ -262,6 +262,11 @@ export function parseArgs(argv: string[], command?: ManifestCommand): Args {
       if (spec.kind === "boolean") bag[spec.key] = true;
       else {
         const raw = eq > 0 ? a.slice(eq + 1) : argv[++i];
+        // `--level=` and `--level ""`: `Number("")` is 0, which would write storey 0 unasked.
+        if (spec.kind === "number" && raw?.trim() === "") {
+          res.unknownFlags = [...(res.unknownFlags ?? []), `${name}=`];
+          continue;
+        }
         // A per-command string flag with no value after it is "", never undefined: the command
         // can then refuse it (`context --level` must not fall back to printing the full bundle).
         bag[spec.key] = spec.kind === "number" ? Number(raw) : spec === base ? raw : (raw ?? "");

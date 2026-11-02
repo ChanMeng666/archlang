@@ -60,7 +60,7 @@ the tint of something else on a print. Reverse-if: `theme` grows per-room tints.
 **D6. A floor pattern paints no background.** A wall material paints `pocheBase` first, which would
 give a tiled room the tint of a wall. A floor spec is bare (`HatchSpec.bare`), under its own pattern id,
 so `wall … material tile` keeps its exact bytes beside `floor tile`, and two legend rows name the two
-drawings. The ground patterns have no background already.
+drawings (`tile`, `tile floor`). The ground patterns have no background already.
 
 **D7. A floor is a drawing fact.** It joins neither `describe()` nor `lint()`, and Plan JSON lists it in
 `dropped`, as it does `legend` and `theme`. An unknown word is `W_UNKNOWN_MATERIAL` and draws no
@@ -83,7 +83,7 @@ ADR 0024.
 |---|---|---|---|
 | SVG, PNG, PDF | Mark absent, bands freed | Symbol reflected | Hatch over the floor (PDF: solid tint) |
 | DXF, ASCII | No chrome drawn today, unchanged | Symbol reflected | DXF `HATCH`; ASCII unchanged |
-| `describe()` | Unchanged | `hand` in `--facts symmetry` follows the piece | Unchanged |
+| `describe()` | Moves only in `scale` and `sheet`, where a freed band lets the auto scale fit finer or a plan fit | `hand` in `--facts symmetry` follows the piece | Unchanged |
 | `lint()` | `W_TITLE_OVERFLOW` silent on a hidden box | Unchanged | Unchanged |
 | Plan JSON | Listed in `dropped` | Round-trips | Listed in `dropped` |
 | Fit rule and `legend` | Bands freed | Unchanged | One legend row per material |
@@ -98,5 +98,5 @@ the block-stair rows plus inline rows that use the words `hidden`, `mirror` and 
 plan that already said `mirror = 2` or `floor(2.5)` keeps its meaning. Measured from a `git archive` of
 `cac37af4`. `test/fixtures/gaps/gaps.arch` uses all three forms, and the premise tests hold it to them.
 
-Every new word is read only where a clause can stand and only when no `=` or `(` follows it, so a
+Every new word is read only where a clause can stand, on that statement's line, and only when no `=` or `(` follows it, so a
 statement that starts with the word on the next line parses as it always did.

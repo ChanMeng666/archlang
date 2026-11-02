@@ -138,6 +138,12 @@ suite("the band a hidden mark leaves is free", () => {
     const none = plan('paper A4\n  scale hidden\n  title { project "P" }\n  title hidden', roomOf(tall));
     expect(denom(shown)).toBe(100);
     expect(denom(none)).toBe(50);
+    // That is the one way `describe()` moves: its scale and its sheet, and nothing else.
+    const rest = (src: string): unknown => {
+      const { scale: _s, sheet: _h, ...others } = describe(src) as unknown as Record<string, unknown>;
+      return others;
+    };
+    expect(rest(none)).toEqual(rest(shown));
   });
 
   it("a hidden bar does not hold the title box up on a sheet's corner", () => {
@@ -169,6 +175,14 @@ suite("the word in the grammar", () => {
   it("leaves `title` before an assignment the error it was", () => {
     const out = compile(plan("let hidden = 1\n  title hidden = 3"));
     expect(out.diagnostics.find((d) => d.code === "E_PARSE")).toBeDefined();
+  });
+
+  it("stands on its statement's line: on the next one it is the refused statement it was", () => {
+    const src = plan("north up\n  hidden");
+    expect(compile(src).diagnostics.find((d) => d.code === "E_PARSE")?.message).toContain('"hidden"');
+    expect(compile(plan("scale 1:50\n  hidden")).diagnostics.some((d) => d.code === "E_PARSE")).toBe(true);
+    expect(compile(plan("title\n  hidden")).diagnostics.some((d) => d.code === "E_PARSE")).toBe(true);
+    expect(parse(plan("north up\n  hidden")).plan?.hide).toBeUndefined();
   });
 
   it("is refused in a storey, as every plan-level setting is", () => {

@@ -183,6 +183,11 @@ suite("the clause in the grammar", () => {
     expect(out.diagnostics.find((d) => d.code === "E_PARSE")?.message).toContain("takes no axis");
   });
 
+  it("stands on the piece's line: on the next one it is the refused statement it was", () => {
+    const out = compile(plan("furniture sofa_l at (500,500) size 2600x1600\n  mirror"));
+    expect(out.diagnostics.find((d) => d.code === "E_PARSE")?.message).toContain('"mirror"');
+  });
+
   it("leaves `x` on the next line a statement", () => {
     const src = `plan "M" {\n  units mm\n  let x = 1\n  ${shell}\n  furniture sofa_l at (500,500) size 2600x1600 mirror\n  x = 2\n}\n`;
     expect(compile(src).errors).toEqual([]);

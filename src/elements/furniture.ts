@@ -57,9 +57,9 @@ const COUNT_SIZES: RenderSizes = {
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
-/** `mirror` as a clause: a statement that starts with the word (`mirror = 2`, `mirror()`) stays one. */
+/** `mirror` as a clause, on the piece's line: a statement that starts with the word (`mirror = 2`, `mirror()`) stays one. */
 function isMirrorClause(ctx: ParseCtx): boolean {
-  if (!ctx.isKeyword("mirror")) return false;
+  if (!ctx.isKeyword("mirror") || ctx.peek().line !== ctx.peek(-1).line) return false;
   const after = ctx.peek(1).type;
   return after !== "equals" && after !== "lparen";
 }

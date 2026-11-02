@@ -61,7 +61,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG, or to Plan JSON
 | --- | --- |
 | `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
 | `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads |
-| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level; {level} in -o names each storey's file |
+| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level; {level} in -o names each storey's file (no `level` blocks: exit 3) |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
@@ -246,7 +246,7 @@ recompile on save (interactive)
 | --- | --- |
 | `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
 | `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads |
-| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level; {level} in -o names each storey's file |
+| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level; {level} in -o names each storey's file (no `level` blocks: exit 3) |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |

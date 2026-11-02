@@ -51,6 +51,17 @@ suite("`--flag=value`", () => {
     expect(parseArgs(["--nope=1"], compileCommand).unknownFlags).toEqual(["--nope=1"]);
   });
 
+  it("an empty value on a number flag is a usage error, in either spelling, and no storey 0", () => {
+    for (const argv of [["--level="], ["--level", ""], ["--level= "], ["--width="]]) {
+      const a = parseArgs(["p.arch", ...argv], compileCommand);
+      expect(a.level, argv.join(" ")).toBeUndefined();
+      expect(a.unknownFlags?.length, argv.join(" ")).toBe(1);
+    }
+    const { dir, plan } = scratch();
+    expect(run(["compile", plan, "--level=", "-o", join(dir, "one.svg")])).toBe(3);
+    expect(readdirSync(dir)).toEqual(["house.arch"]);
+  });
+
   it("is usable on the command line", () => {
     const { dir, plan } = scratch();
     expect(run(["compile", plan, "--level=1", `--out=${join(dir, "one.svg")}`])).toBe(0);
@@ -80,6 +91,14 @@ suite("`{level}` in `-o`", () => {
     const { dir, plan } = scratch();
     expect(run(["compile", plan, "--level", "2", "-o", join(dir, "s{level}.svg")])).toBe(0);
     expect(readdirSync(dir).sort()).toEqual(["house.arch", "s2.svg"]);
+  });
+
+  it("is refused on a plan with no storey, and writes nothing", () => {
+    const { dir } = scratch();
+    const one = join(dir, "one.arch");
+    copyFileSync("examples/studio.arch", one);
+    expect(run(["compile", one, "-o", join(dir, "s{level}.svg")])).toBe(3);
+    expect(readdirSync(dir).sort()).toEqual(["house.arch", "one.arch"]);
   });
 
   it("a plain target with `--level` stays the plain target", () => {

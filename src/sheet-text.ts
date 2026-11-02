@@ -56,6 +56,7 @@ export const SHEET_WORDS = {
   window: "window",
   legend: "LEGEND",
   demolished: "demolished",
+  floor: "floor",
   notes: "NOTES",
   net: "net",
   up: "UP",

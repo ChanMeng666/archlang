@@ -20,7 +20,9 @@ suite("the overlap says the grid can be the cause", () => {
   it("on the issue's plan, whose rooms touch in the source", () => {
     const d = overlap(ISSUE);
     expect(d?.hints).toHaveLength(1);
-    expect(d?.hints?.[0]).toContain("`grid 5` rounds every coordinate and size on its own");
+    expect(d?.hints?.[0]).toContain(
+      "This overlap may be the grid's: `grid 5` rounds every coordinate and size on its own",
+    );
   });
 
   it("keeps the message, and quotes no id", () => {

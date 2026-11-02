@@ -503,7 +503,7 @@ plan "Stair detail" {
 }
 ```
 
-`scale 1:20 hidden` is still the operative scale and `north 30 hidden` keeps its bearing for every compass fact. A band with nothing left in it is not reserved, so the drawing gets the room back. See [Hiding the sheet marks](language-reference.md#hiding-the-sheet-marks).
+`scale 1:20 hidden` is still the operative scale and `north 30 hidden` keeps its bearing for every compass fact. A band with nothing left in it is not reserved, so the drawing gets the room back, and that is the one way `describe()` moves: `sheet.scale_denominator` follows where the auto scale now fits finer. See [Hiding the sheet marks](language-reference.md#hiding-the-sheet-marks).
 
 ## One mirrored piece
 

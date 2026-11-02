@@ -4469,7 +4469,7 @@ function withinOneStep(a: RRoom, b: RRoom, grid: number): boolean {
 
 /** Why rooms that touch in the source can overlap on the sheet: each number rounds on its own. */
 const gridOverlapHint = (grid: number): string =>
-  `\`grid ${fmt3(grid)}\` rounds every coordinate and size on its own, so rooms that touch in the source can overlap by one step. Write them on the grid, or place the second with \`right-of\` or \`below\`.`;
+  `This overlap may be the grid's: \`grid ${fmt3(grid)}\` rounds every coordinate and size on its own, so rooms that touch in the source can overlap by one step. Write them on the grid, or place the second with \`right-of\` or \`below\`.`;
 
 /** How many overlapping room pairs `W_ROOM_OVERLAP` lists before it only counts. 1000 identical
  *  rooms are 499,500 pairs; a list that long is noise and an unbounded allocation. */

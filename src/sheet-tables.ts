@@ -276,9 +276,10 @@ export interface LegendEntry {
 }
 
 /** A hatch spec's printed name: the material, qualified only when it is not the default
- *  scale/angle (so two specs of one material never collapse to the same label). */
+ *  scale/angle or is a floor's (so two specs of one material never collapse to the same label). */
 function hatchName(h: HatchSpec, text: SheetText): string {
   let s = text.word(h.material);
+  if (h.bare) s += ` ${text.word("floor")}`;
   if (h.scale !== 1) s += ` x${text.num(fmt2(h.scale))}`;
   if (h.angle !== 0) s += ` @${text.num(fmt2(h.angle))}°`;
   return s;

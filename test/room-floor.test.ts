@@ -146,10 +146,17 @@ suite("the sheet and the exports", () => {
     const body = `room id=a at (0,0) size 2000x2000 label "A" floor tile\n  room id=b at (2000,0) size 2000x2000 label "B" floor deck\n  room id=c at (4000,0) size 2000x2000 label "C" floor deck`;
     const legend = (src: string) => compile(src).scene!.chrome!.tables?.legend?.entries.map((e) => e.name);
     const rows = legend(plan(`paper A4\n  legend\n  ${body}`));
-    expect(rows).toEqual(expect.arrayContaining(["deck", "tile"]));
-    expect(rows?.filter((r) => r === "deck")).toHaveLength(1);
+    expect(rows).toEqual(["deck", "tile floor"]);
     // The rows the page draws are the rows `resolve()` reserved, or the page outgrows its paper.
     expect(compile(plan(`paper A4\n  legend\n  ${body}`)).scene!.sheet?.grown).toBe(false);
+  });
+
+  it("a floor's row reads apart from a wall's of the one word, and `sheet text` writes the word", () => {
+    const wall = "wall id=w exterior thickness 200 material tile { (0,0) (4000,0) (4000,3000) (0,3000) close }";
+    const body = `legend\n  room id=a at (0,0) size 4000x3000 floor tile\n  ${wall}`;
+    const names = (src: string) => compile(src).scene!.chrome!.tables?.legend?.entries.map((e) => e.name);
+    expect(names(plan(body))).toEqual(["tile", "tile floor"]);
+    expect(names(plan(`sheet text { floor "Boden" tile "Fliese" }\n  ${body}`))).toEqual(["Fliese", "Fliese Boden"]);
   });
 
   it("reaches DXF as a real HATCH, on the room's ring", () => {

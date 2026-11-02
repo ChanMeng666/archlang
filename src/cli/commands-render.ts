@@ -201,6 +201,12 @@ export async function cmdCompile(args: Args): Promise<number> {
 
   // `--json` with no `-o` asked for no file — see {@link jsonNamesNoFile}.
   const noWrite = jsonNamesNoFile(args);
+  // A plan past the multi-storey branch above with no `--level` draws one drawing, of no storey.
+  if (args.level === undefined && args.o?.includes("{level}"))
+    return usageErrorFor(
+      "compile",
+      "`{level}` in -o names a storey's file, and this compile writes one drawing of no storey (no `level` blocks, or --view): name the file",
+    );
   const out = args.o ?? defaultOut(input, format);
   // `--level 2 -o plan-{level}.svg`: the one storey still fills in the word; the plain target stays plain.
   const target = args.level !== undefined && out.includes("{level}") ? storeyTarget(out, args.level) : out;
