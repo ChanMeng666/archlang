@@ -61,6 +61,8 @@ import {
 } from "../scripts/gen-llm-spec.js";
 import { AUTO_DIMS_MODES, AXIS_ALIGNS, FURNITURE_ANCHORS, OUTDOOR_KINDS, REL_ALIGNS } from "../src/ast.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
+import { resolvePlan } from "../src/analyze.js";
+import { travelVector, verticalsOf } from "../src/vertical.js";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
@@ -418,6 +420,11 @@ const POSITIVE: Snippet[] = [
     note: "plan-level accessible description",
     src: plan(`  accDescr "A one-room studio."\n  room id=r1 at (0,0) size 4000x3000`),
   },
+  {
+    keyword: "sheet",
+    note: "the sheet's words, by key, and its decimal mark",
+    src: plan(`  sheet text { decimal "," total "SUMME" }\n  room id=r1 at (0,0) size 4000x3000`),
+  },
 
   ...AUTO_DIMS_MODES.map((m) => ({
     // Keyed `dims`, not `dim`: the mode set is the plan SETTING's, and printing it on the
@@ -648,7 +655,8 @@ const POSITIVE: Snippet[] = [
       keep("equal depth of rooms, advisory", "keep equal depth a b advisory"),
       keep("offset of an opening from a datum, hard spelled", "keep offset d from b.top 2500 hard"),
       keep("min clear of a room", "keep min clear b 3800"),
-      keep("on axis <label> <wall>", "keep on axis 2 p"),
+      keep("on axis <label> <wall|column>, a wall", "keep on axis 2 p"),
+      keep("on axis <label> <wall|column>, a column", "column id=c at (3800,2000) size 400x400\n  keep on axis 2 c"),
       keep("fixed <d> at <mm>, the axis datum", "keep fixed axis 2 at 4000"),
       {
         keyword: "keep",
@@ -1397,6 +1405,21 @@ describe("spec.llm.md — the gate is not vacuous", () => {
 });
 
 describe("spec.llm.md — the stair line's entry sentence (issue #370)", () => {
+  it("the arrow's direction is the one the run has: N/W up, S/E down, portrait and landscape", () => {
+    const stairLine = specText()
+      .split("\n")
+      .find((l) => l.startsWith("stair "));
+    expect(stairLine).toContain("(arrow points N/W), `dir down` at the opposite end (arrow S/E).");
+    const travel = (size: string, dir: string) => {
+      const { ir } = resolvePlan(plan(`  stair id=s at (0,0) size ${size} dir ${dir}`));
+      return travelVector(verticalsOf(ir!)[0]!);
+    };
+    expect(travel("1000x3000", "up")).toEqual({ x: 0, y: -1 }); // north
+    expect(travel("3000x1000", "up")).toEqual({ x: -1, y: 0 }); // west
+    expect(travel("1000x3000", "down")).toEqual({ x: 0, y: 1 }); // south
+    expect(travel("3000x1000", "down")).toEqual({ x: 1, y: 0 }); // east
+  });
+
   /** A hall with a flight pressed against one wall, so the landing lint names the end it blames. */
   const pressed = (size: string, hall: string, placeAt: string, mirror: "x" | "y"): string =>
     plan(

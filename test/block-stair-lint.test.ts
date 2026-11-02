@@ -225,13 +225,11 @@ describe("the block-stair skip stays true", () => {
     }
   });
 
-  it("what is read in part goes on filing", () => {
+  it("a block that matches is read whole: its landings are measured, its high end passed under", () => {
     const src = planOf(ENOUGH, "up", HEIGHT);
-    // The landing between the flights is not measured, and a door beside a rising block is read
-    // against all of it.
-    expect(filedBy(src, "stair-no-landing")).toEqual([0]);
-    expect(filedBy(src, "swing-over-stair")).toEqual([0]);
-    expect(filedBy(src, "stair-side-entry")).toEqual([0]);
+    expect(filedBy(src, "stair-no-landing")).toEqual([]);
+    expect(filedBy(src, "swing-over-stair")).toEqual([]);
+    expect(filedBy(src, "stair-side-entry")).toEqual([]);
   });
 });
 
@@ -513,7 +511,9 @@ describe("a stair's own pieces stand in its landings, as they do in the walking 
     expect(d!.message).toContain("(700 mm short)");
     expect(d!.message).not.toContain("wall");
     const facts = describePlan(src, { facts: ["clearances"] }).clearances!.stairs![0]!;
-    expect(facts.landings).toEqual([{ end: "foot", need_mm: 1000, clear_mm: 300, by: { kind: "own-piece" } }]);
+    expect(facts.landings[0]).toEqual({ end: "foot", need_mm: 1000, clear_mm: 300, by: { kind: "own-piece" } });
+    // Then its three landings, each a square as long as the flight is wide.
+    expect(facts.landings.slice(1)).toEqual(Array(3).fill({ end: "turn", need_mm: 1000, clear_mm: 1000, by: null }));
   });
 
   it("past the landing's depth it does not", () => {
@@ -562,7 +562,9 @@ ${planBody(s, "down", false)}
     const wall = "    wall id=p partition thickness 100 { (500,5000) (2500,5000) }";
     const block = hallPlan(`${stairBlock(STRAIGHT_LANDING)}\n${wall}`);
     const flight = hallPlan(`    stair id=s at (1000,600) size 1000x3800 dir up\n${wall}`);
-    const landings = (src: string) => describePlan(src, { facts: ["clearances"] }).clearances!.stairs![0]!.landings;
+    // A `turn` row is the landing between the flights, which a straight flight has none of.
+    const landings = (src: string) =>
+      describePlan(src, { facts: ["clearances"] }).clearances!.stairs![0]!.landings.filter((l) => l.end !== "turn");
     expect(landings(block)).toEqual(landings(flight));
     expect(landings(block)[0]).toMatchObject({ end: "foot", clear_mm: 550, by: { kind: "wall", id: "p" } });
     const above = (run: string): string =>
@@ -581,8 +583,9 @@ ${door ? "    door id=d at (5000,6000) width 900 wall shell\n" : ""}${stairBlock
 }
 
 describe("a block stair's own pieces are charged to the storey's stair budget", () => {
-  // One storey, so each `dir up` stair owes one landing. Its work is n × (wall pieces + 1 room + 1),
-  // and a block of three pieces adds 2 per landing for its two other pieces.
+  // One storey, so each `dir up` stair owes one landing. Its work is n × (wall pieces + 1 room + 1).
+  // A block of three pieces owes that three times, its foot and the two legs of its landing, and adds
+  // 2 for the two other pieces its foot reads: 3(p + 2) + 2 for p wall pieces.
   const n = 1000;
   const perLanding = MAX_STAIR_WORK / n;
   const place = (i: number): [number, number] => [500 + (i % 40) * 3000, 500 + Math.floor(i / 40) * 3000];
@@ -616,9 +619,11 @@ describe("a block stair's own pieces are charged to the storey's stair budget", 
     expect(refused(block, perLanding - 2)).toBe(true);
   });
 
-  it("two wall pieces fewer pay for each block's two other pieces, and no more", { timeout: 60_000 }, () => {
-    expect(refused(block, perLanding - 4)).toBe(false);
-    expect(refused(block, perLanding - 3)).toBe(true);
+  it("a block pays for its foot, its two legs and its two other pieces, and no more", { timeout: 60_000 }, () => {
+    // 3(664 + 2) + 2 is exactly the 2000 each of the thousand stairs has; 3(665 + 2) + 2 is 2003.
+    expect(perLanding).toBe(2000);
+    expect(refused(block, 664)).toBe(false);
+    expect(refused(block, 665)).toBe(true);
   });
 });
 

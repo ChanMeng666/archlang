@@ -103,8 +103,8 @@ import { drawBudgetDiagnostic } from "../../draw-budget.js";
 import { isSymbolElement, sectorOf, shapesOf } from "../../label-fit.js";
 import { COLLIDE_MIN, meanExtent, wallBands } from "../../label-placement.js";
 import { inkExtent, textExtent } from "../../text-layout.js";
-import { EM_PER_CHAR, textWidth } from "../../text-metrics.js";
-import { fmt2 as fmtMm } from "../../num-format.js";
+import { EM_PER_CHAR, inkWidth, textWidth } from "../../text-metrics.js";
+import { PLAIN_SHEET_TEXT, sheetText } from "../../sheet-text.js";
 import { pointInRoomBox, roomBox } from "../../analyze.js";
 import { GridIndex } from "../../geometry/grid-index.js";
 import { clippedArea, clippedSigned, pointInPolygon } from "../../geometry/polygon.js";
@@ -196,9 +196,17 @@ export const annotationOverlap: LintRule = {
         for (const p of sh) grow(s.box, p);
       }
     }
+    // What the sheet draws decides what collides; a message quotes it in English all the same.
+    const wording = sheetText(ctx.ir.sheetText?.entries);
+    const plainArea = (drawn: string): string => {
+      if (wording === PLAIN_SHEET_TEXT) return drawn;
+      const end = drawn.indexOf(" m²");
+      const stamp = `${wording.plain(drawn.slice(0, end))} m²`;
+      return drawn.length > end + " m²".length ? `${stamp} ${PLAIN_SHEET_TEXT.word("net")}` : stamp;
+    };
     // The `dims auto` numbers, as drawn.
     const numbers = autoDimensions(ir, scene.sizes, registry).map((dm) => {
-      const prim = dimTextPrim(dm, scene.sizes, fmtMm);
+      const prim = dimTextPrim(dm, scene.sizes, wording.mm);
       return { dm, prim, text: textBox(prim) };
     });
 
@@ -286,7 +294,7 @@ export const annotationOverlap: LintRule = {
         perRoom.set(l.room, e);
       }
       if (l.isName) e.name = true;
-      else e.area = l.prim.value;
+      else e.area = plainArea(l.prim.value);
       return e;
     };
     for (const l of labels) {
@@ -324,7 +332,7 @@ export const annotationOverlap: LintRule = {
       for (const s of syms) if (over(nb.text, s.shapes, s.box)) hits.push(s.el);
       for (const l of labels) if (over(nb.text, [l.text.rect], l.text.box)) onLabels.push(l);
       if (hits.length + onLabels.length > 0)
-        perNumber.push({ dm: nb.dm, value: nb.prim.value, at: nb.prim.at, hits, over: onLabels });
+        perNumber.push({ dm: nb.dm, value: wording.plain(nb.prim.value), at: nb.prim.at, hits, over: onLabels });
     }
     if (spent) {
       ctx.skip("annotation-budget");
@@ -399,7 +407,9 @@ export const annotationOverlap: LintRule = {
       const things = listOf([
         ...nb.hits.map(symbolWord),
         ...nb.over.map((l) =>
-          l.isName ? `the name "${l.prim.value}"` : `the area figure (${l.prim.value}) of ${ctx.nameOf(l.room)}`,
+          l.isName
+            ? `the name "${l.prim.value}"`
+            : `the area figure (${plainArea(l.prim.value)}) of ${ctx.nameOf(l.room)}`,
         ),
       ]);
       const pinnedLabel = nb.over.find((l) => l.room.labelAt !== undefined);
@@ -450,6 +460,12 @@ export const annotationOverlap: LintRule = {
  * room to spare. Only the authored rows are judged: the stamped `SCALE` and `LEVEL` rows carry no
  * span to report at. Reported once per plan: on the lowest storey of a multi-storey plan, whose
  * pages repeat the same rows.
+ *
+ * A caption the plan's `sheet text` writes is no longer the short word the sum above leaves out, so a
+ * row with one is judged as drawn: caption and value together, on the faces' advances, against the row.
+ * Every row has that caption's span to report at, the stamped two included. The message names the row
+ * by its English caption, as every lint message stays English. A value over its row is that row's one
+ * report: past the row on its own, the value is what needs shortening, whatever the caption writes.
  */
 export const titleOverflow: LintRule = {
   name: "title-overflow",
@@ -459,33 +475,54 @@ export const titleOverflow: LintRule = {
   codes: ["W_TITLE_OVERFLOW"],
   check(ctx: LintContext): Diagnostic[] {
     const title = ctx.ir.title;
-    if (!title) return [];
+    const block = ctx.ir.sheetText;
+    if (!title && !block) return [];
     if (ctx.building.multiStorey && !ctx.building.lowestStorey) return [];
     // Ratios only: every length below is a multiple of the reference dimension, so 1 serves.
     const { w, fs, pad } = titleBlockMetrics(1);
     const room = w - 2 * pad;
     const holds = Math.floor(room / (fs * EM_PER_CHAR));
     const out: Diagnostic[] = [];
-    for (const row of titleRows({ ...title }, undefined)) {
-      const width = textWidth(row.v, fs);
-      if (!(width > room)) continue;
-      const outside = width > w - pad;
+    /** The rows, by English caption, whose value is already reported. */
+    const overflowing = new Set<string>();
+    if (title)
+      for (const row of titleRows({ ...title }, undefined)) {
+        const width = textWidth(row.v, fs);
+        if (!(width > room)) continue;
+        const outside = width > w - pad;
+        overflowing.add(row.k);
+        out.push({
+          severity: "warning",
+          code: "W_TITLE_OVERFLOW",
+          ...ctx.at(title),
+          message: `The title block's ${row.k} value is ${row.v.length} characters, wider than its row, which holds about ${holds} at the size the value is drawn: it prints over the ${row.k} caption${outside ? " and runs out of the block's frame" : ""}.`,
+          hints: [
+            `Shorten "${row.v}" to ${holds} characters or fewer — the title block neither wraps nor shrinks a value — and move the rest to a \`notes "…"\` line.`,
+          ],
+        });
+      }
+    if (!block) return out;
+    const { level, levelName, scale } = ctx.ir;
+    const stamp = level !== undefined ? { level, ...(levelName !== undefined ? { name: levelName } : {}) } : undefined;
+    const english = titleRows(title, scale, stamp);
+    titleRows(title, scale, stamp, sheetText(block.entries)).forEach((row, i) => {
+      const caption = english[i]!.k;
+      if (row.k === caption || overflowing.has(caption)) return;
+      if (!(inkWidth(row.k, fs * 0.8) + inkWidth(row.v, fs) > room)) return;
       out.push({
         severity: "warning",
         code: "W_TITLE_OVERFLOW",
-        ...ctx.at(title),
-        message: `The title block's ${row.k} value is ${row.v.length} characters, wider than its row, which holds about ${holds} at the size the value is drawn: it prints over the ${row.k} caption${outside ? " and runs out of the block's frame" : ""}.`,
-        hints: [
-          `Shorten "${row.v}" to ${holds} characters or fewer — the title block neither wraps nor shrinks a value — and move the rest to a \`notes "…"\` line.`,
-        ],
+        ...ctx.at(block),
+        message: `The title block's ${caption} row is narrower than the caption \`sheet text\` writes for it and its value together: the two print over each other.`,
+        hints: ["Shorten the caption or the value: the title block neither wraps nor shrinks either."],
       });
-    }
+    });
     return out;
   },
 };
 
 /** Which call-out a `dims auto` number is. A chain span is the only one with an offset; the
- *  thickness figure is digits (`fmtMm`), the curve call-outs start with their symbol. */
+ *  thickness figure is digits, the curve call-outs start with their symbol. */
 function callOutKind(dm: RDim): "thickness" | "radius" | "diameter" | "chain" {
   if (dm.offset !== 0) return "chain";
   const t = dm.text ?? "";

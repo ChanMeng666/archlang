@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.51
+# What's new in 1.44 to 1.52
 
-The features that arrived in 1.44.0 to 1.51.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.52.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -23,9 +23,10 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
 | `arch finish` on a plan with storeys | 1.51.0 | [Furnishing every storey](#furnishing-every-storey) |
 | Labels that shrink to fit a small room | 1.51.0 | [Labels in small rooms](#labels-in-small-rooms) |
-| Net area in the room stamp | unreleased | [Net area in the stamp](#net-area-in-the-stamp) |
-| Window kinds and a glazed terrace door | unreleased | [Window kinds](#window-kinds) |
-| A window round a corner, with no wall left at it | unreleased | [Corner windows](#corner-windows) |
+| Net area in the room stamp | 1.52.0 | [Net area in the stamp](#net-area-in-the-stamp) |
+| Window kinds and a glazed terrace door | 1.52.0 | [Window kinds](#window-kinds) |
+| A window round a corner, with no wall left at it | 1.52.0 | [Corner windows](#corner-windows) |
+| The sheet's words and decimal mark, as a plan writes them | unreleased | [Sheet text](#sheet-text) |
 
 ## Quantities and takeoff
 
@@ -259,6 +260,37 @@ Four things that gave no report before 1.48.0:
 - A hyphen in an id, a `,` between uses and a `;` at a line end each carry a hint saying what to write.
 - `dropped` also reaches `batch -f json` and the MCP `compile` tool.
 
+## One grid for every storey
+
+`axes` declared once serves every storey, and a wall, a column or a room can now stand on it by
+label. `axis.3` and `axis.B` read an axis as a coordinate; `keep on axis` holds a wall on it, and
+now a column, read at its centre.
+
+```arch
+plan "One grid" {
+  units mm
+  axes { x at 0, 6000, 12000 y at 0, 5000 }
+  level 1 {
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    column id=c at (axis.3 - 200, axis.B - 200) size 400x400
+    keep on axis 2 g2
+    keep on axis 3 c
+    keep on axis B c
+  }
+  level 2 {
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    column id=c at (axis.3 - 150, axis.B - 200) size 400x400
+    keep on axis 3 c   # warning: that column is 50 mm right of the axis
+  }
+}
+```
+
+A label the plan does not declare is `E_UNKNOWN_REF`. A `let`, a `place … at` and a component
+argument are read before the axes exist, so they share a `let` with the `axes` block instead; a
+component keeps its own coordinates, and `keep on axis 2 wing.c` on the storey checks it after it is
+placed. `W_AXES_DIFFER` warns if a `let` inside a `level` turns the one block into two grids.
+See [Positioning axes](language-reference.md#positioning-axes-定位轴线).
+
 ## L-shaped rooms
 
 A `room polygon` whose edges are all horizontal or vertical works in `walls from rooms` (1.49.0). It stays one room, with one stamp and one area, and the walls come from its outline.
@@ -424,3 +456,30 @@ plan "A corner window" {
 `width` runs to the outer corner. The glass, the wall faces and the sills mitre at the corner. They stay two windows, each with its own wall, `facing` and schedule row, and `describe --json` gives each the other's id in `corner_with`. What is not a true corner of two exterior walls is refused with `E_WINDOW_CORNER`, and a window with no partner is refused with the missing statement in the hint.
 
 `open between` stays centred. An `at` on it now says so and quotes the `opening between` statement to write instead, which draws the same hole at the position you asked for and keeps the wall on either side of it.
+
+## Sheet text
+
+Every fixed word on a sheet was English, and every number had a decimal point. `sheet text` replaces them, so a plan can go to a buyer who reads German:
+
+```arch
+plan "Haus" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  sheet text {
+    decimal ","
+    room_schedule "RAUMBUCH"
+    net_area "NETTOFLÄCHE (m²)"
+    total "SUMME"
+    net "netto"
+  }
+  schedule rooms net
+  room id=wohnen at (0,0) size 3000x4000 label "Wohnen"
+  room id=bad at (3000,0) size 3000x4000 label "Bad"
+  walls from rooms exterior 300 partition 100
+}
+```
+
+A key you leave out keeps its English word. The stamp above reads `10,4 m² netto`. ArchLang ships no translations and there is no `locale`: the words are yours, and whether they are right is yours to check. The [language reference](language-reference.md#sheet-text) lists every key and has a German starting point, which no German drafter has reviewed.
+
+Only drawn text changes. `describe()`, Plan JSON and every coordinate keep their numbers, a `lint()` message stays English, and a number inside a string you wrote keeps its point. Nothing is read from the machine: the same source draws the same bytes everywhere. Without the block a plan draws what it drew before.

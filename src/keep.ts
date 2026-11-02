@@ -35,7 +35,7 @@ import { chargeSteps, closest, stepSite } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import { arcExtremes } from "./geometry/arc.js";
 import { pointInPolygon } from "./geometry/polygon.js";
-import type { RRoom, ResolvedElement, ResolvedPlan, RWall } from "./ir.js";
+import type { RColumn, RRoom, ResolvedElement, ResolvedPlan, RWall } from "./ir.js";
 import {
   capFirst,
   makeNaming,
@@ -46,7 +46,7 @@ import {
   wallRunPhrase,
 } from "./naming.js";
 import { fmt3, fmtHalfLattice, MODEL_RANGE_MM } from "./num-format.js";
-import { COMPASS_DATUM_ALIASES, type DatumWord } from "./room-datums.js";
+import { axisRead, COMPASS_DATUM_ALIASES, type DatumWord } from "./room-datums.js";
 import { keepFormText, keepRefText } from "./statement-print.js";
 import { boardedFlight, isVertical } from "./vertical.js";
 import { classifyLabelUses } from "./vocabulary.js";
@@ -555,6 +555,7 @@ function lookup(ix: StoreyIndex, ctx: KeepStoreyCtx, id: string, text: string): 
     };
   }
   if (!el) {
+    const label = axisRead(id);
     const hint = closest(
       id,
       [...ix.byId.keys()].filter((k) => ctx.authored(k)),
@@ -562,7 +563,10 @@ function lookup(ix: StoreyIndex, ctx: KeepStoreyCtx, id: string, text: string): 
     return {
       code: "E_KEEP_TARGET",
       message: "This keep names something that is not an authored id on this storey",
-      hint: `\`${id}\` in \`${text}\` names no element here${hint ? ` (did you mean \`${hint}\`?)` : ""}`,
+      hint:
+        label !== undefined
+          ? `\`${id}\` in \`${text}\` is how an expression reads an axis: a keep writes \`axis ${label}\``
+          : `\`${id}\` in \`${text}\` names no element here${hint ? ` (did you mean \`${hint}\`?)` : ""}`,
     };
   }
   if (!ctx.authored(id)) {
@@ -730,6 +734,29 @@ function readLine(ix: StoreyIndex, ctx: KeepStoreyCtx, ref: KeepRef, text: strin
     phrase: ref.segment !== undefined ? `segment ${fmt3(ref.segment)} of ${phrase}` : phrase,
     that: `that ${wallNoun(s)}`,
     text: written,
+  };
+}
+
+/**
+ * What `on axis` holds on an axis that runs `vertical` or not: a wall's line, or a column's centre
+ * across the axis. A column has no line of its own, so this form alone reads one, and two keeps
+ * hold it on a crossing.
+ */
+function readHeld(ix: StoreyIndex, ctx: KeepStoreyCtx, ref: KeepRef, vertical: boolean, text: string): Line | Refusal {
+  const el = ref.t === "el" && ref.segment === undefined ? ix.byId.get(ref.id) : undefined;
+  if (el?.kind !== "column" || ref.t !== "el") return readLine(ix, ctx, ref, text);
+  const found = lookup(ix, ctx, ref.id, text);
+  if (isRefusal(found)) return found;
+  const c = el as RColumn;
+  const v = vertical ? c.at.x + c.size.w / 2 : c.at.y + c.size.h / 2;
+  return {
+    vertical,
+    h: halfOfCentre(v),
+    raw: v,
+    centre: true,
+    phrase: `the column ${ix.naming.placeAt(c.at)}`,
+    that: "that column",
+    text: keepRefText(ref),
   };
 }
 
@@ -906,20 +933,23 @@ function measureAlign(
       return {
         code: "E_KEEP_MEASURE",
         message: "`keep on axis` names a positioning axis first",
-        hint: `write \`keep on axis <label> <wall>\` (\`${text}\`)`,
+        hint: `write \`keep on axis <label> <wall|column>\` (\`${text}\`)`,
       };
     }
     if (node.wall.t !== "el") {
       return {
         code: "E_KEEP_MEASURE",
-        message: "`keep on axis` holds a wall on the axis: name the wall",
-        hint: `\`${keepRefText(node.wall)}\` in \`${text}\` is not a wall`,
+        message: "`keep on axis` holds a wall or a column on the axis: name it",
+        hint: `\`${keepRefText(node.wall)}\` in \`${text}\` is neither a wall nor a column`,
       };
     }
   }
   const lines: Line[] = [];
   for (const ref of refs) {
-    const l = readLine(ix, ctx, ref, text);
+    const l =
+      node.form === "on-axis" && ref === node.wall
+        ? readHeld(ix, ctx, ref, lines[0]!.vertical, text)
+        : readLine(ix, ctx, ref, text);
     if (isRefusal(l)) return l;
     lines.push(l);
   }

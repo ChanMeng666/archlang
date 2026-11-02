@@ -19,6 +19,7 @@ import type { Frame } from "./frame.js";
 import type { Arc } from "./geometry/arc.js";
 import type { Side } from "./algebra/d4.js";
 import type { DatumAccess } from "./opening-relation.js";
+import type { SheetText } from "./sheet-text.js";
 import { BUILTIN_DEFS } from "./elements/defs.js";
 
 // The layer ordering + Scene types now live in `scene.ts` (the backend-neutral
@@ -179,6 +180,12 @@ export interface RenderCtx {
    * Optional because this interface is append-only.
    */
   netAreaOf?(id: string): number | undefined;
+  /**
+   * The plan's `sheet text`: the words and the decimal mark an element's drawn text takes. Absent
+   * (a hand-built context) means the English, as `fmt` above carries the mark for a measured
+   * length. Optional because this interface is append-only.
+   */
+  text?: SheetText;
 }
 
 /**

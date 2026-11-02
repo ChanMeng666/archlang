@@ -61,6 +61,7 @@ plan "My Home" {
 | `schedule openings` | Tag every door (`D01`…) and window (`W01`…) beside it and draw the **DOOR & WINDOW SCHEDULE** — tag, room(s), width, kind and a hinged door's hand. Derived; composes with `schedule rooms`. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `legend` | Draw the **LEGEND** table beside the schedule — one row per wall hatch material and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `notes "…" ["…" …]` | The sheet's general **NOTES**, drawn as a numbered table in the same band. Repeated statements append. See [Sheet tables](#sheet-tables--room-schedule--legend). | none |
+| `sheet text { … }` | The sheet's fixed **words** and the **decimal mark** of its drawn numbers, as the plan writes them. See [Sheet text](#sheet-text). | none |
 | `height <mm>` | The building's default **floor-to-floor** storey height. The vertical datum: it draws nothing at all, because a floor plan is a horizontal cut. A `level` may override it and a `wall` may override that. See [Heights (the datum layer)](#heights-the-datum-layer). | `3000` |
 
 ### Paper and scale (the sheet)
@@ -1436,6 +1437,8 @@ a component argument, a plan setting (`height`, `axes`, the site boundary) and a
 `at`/`size` or relational clause are evaluated earlier, and a datum there reports
 `E_DATUM_BEFORE_ROOMS`; write the datum in the statement that uses it. A function body has no
 room of its own, so `let f() = hall.top` refuses when called; pass the edge in: `f(hall.top)`.
+A positioning axis reads as a datum too, `axis.3`, and is known earlier: see
+[Standing on an axis](#positioning-axes-定位轴线).
 
 - **Compass words.** `north|south|east|west` alias `top|bottom|right|left` only in the root of
   a plan whose `north` is `up` (the default). Inside a `place`d component, or with any other
@@ -2305,15 +2308,26 @@ floor above. So at 2750 mm, under the default limits, one landing needs 11 going
 2420 mm of flights, not the 2640 mm of a straight flight
 ([`W_STAIR_TOO_STEEP`](error-codes.md#w_stair_too_steep)). The flights must also hold those goings
 whole, because every going of a stair is the same: 1210 + 1210 mm is 2420 mm and holds 5 + 5, one
-short, and the warning says so. Lint measures the foot, the head, and the head a flight from below
-arrives at, which is the lower stop's last flight's. Where a block's stops do not match, the
-mismatch is the report ([`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch)):
-that head is not read, and each stop stands as what it says, a stop that comes down as a stairwell
-and one that rises as a stair rising from its floor. Lint does not measure the landings between
-the flights, and on a storey a block rises from with no flight arriving it reads every piece
-whole, with nothing passed under; the coverage report says `block-stair` wherever any of this is
-only part of the answer. That is arithmetic on what the plan says, not a statement that a stair
-complies with anything.
+short, and the warning says so.
+
+Lint measures the foot, the head, the head a flight from below arrives at, which is the lower stop's
+last flight's, and each **landing between the flights**, which must run the flight's `width` along
+each flight that meets it ([`W_STAIR_NO_LANDING`](error-codes.md#w_stair_no_landing), at least
+1200 mm in a building other than a dwelling). It is read along each flight in turn, never as the
+length of the walking line, on the stop the climb starts from, so a shaft reports it once. At a
+corner the landing cannot be shorter than `width`, because each flight meets it whole, so only a
+wall across it or that 1200 mm can report there. On a storey a block rises from, the climb spreads
+over the flights with the landings level, so its high end is passed under as a flight's is, and a
+landing with less than 2 m beneath it stands in the way whole.
+
+Where a block's stops do not match, the mismatch is the report
+([`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch)): that head is not read,
+each stop stands as what it says, a stop that comes down as a stairwell and one that rises as a
+stair rising from its floor, and the coverage report says `block-stair`.
+
+There is no winder form. Draw the turn as a landing, and lint reads the run strictly, with fewer
+goings than the stair has. All of this is arithmetic on what the plan says, not a statement that a
+stair complies with anything.
 
 **What it does to circulation.** The footprint obstructs the
 [navigation grid](analysis.md#circulation--how-a-person-walks-the-plan) exactly like a piece
@@ -2760,8 +2774,53 @@ inserting an axis in the middle renumbers everything after it:
   boundaries. The chain stays outside the building at the same offset; only the ticks
   move.
 - `describe()` reports them as facts (`axes.x` / `axes.y`, in label order — see
-  [Analysis](analysis.md)). They are presentation + datum metadata: no axis becomes an
-  element, gets an id, or can be referenced by a door/room clause.
+  [Analysis](analysis.md)). No axis becomes an element or gets an id.
+
+**One grid for every storey.** On a plan with `level` blocks the one `axes` block serves
+every storey. There is no per-storey grid, and `axes` inside a `level` is a parse error. A
+`let` written inside a `level` does reach the block, because each storey evaluates it, so
+two storeys could come out on two grids:
+[`W_AXES_DIFFER`](error-codes.md#w_axes_differ) says so, once, at the block.
+
+**Standing on an axis.** `axis.3` and `axis.B` read an axis by its label, as a coordinate
+in plan millimetres, the position the axis is drawn at. They are datums, like `hall.top`:
+
+```arch
+plan "Two floors on one grid" {
+  units mm
+  axes { x at 0, 6000, 12000 y at 0, 5000 }
+  level 1 {
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    column id=c at (axis.3 - 200, axis.B - 200) size 400x400
+    keep on axis 2 g2
+    keep on axis 3 c
+    keep on axis B c
+  }
+  level 2 {
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    column id=c at (axis.3 - 200, axis.B - 200) size 400x400
+    keep on axis 2 g2
+    keep on axis 3 c
+    keep on axis B c
+  }
+}
+```
+
+- Any statement of the plan or a storey may read one: a room's `at` and `size`, a wall's
+  points, a column, furniture, a dimension. A label the plan does not declare is
+  [`E_UNKNOWN_REF`](error-codes.md#e_unknown_ref), at the datum.
+- A `let`, a loop bound, a condition, a `place … at`, a `strip … at`, a component argument and a
+  plan setting are read before the axes exist, because the axes read the plan's `let`s:
+  [`E_DATUM_BEFORE_ROOMS`](error-codes.md#e_datum_before_rooms). Share a `let` with the `axes`
+  block there, as in `let BAY = 6000` with `x at 0, BAY, 2 * BAY`.
+- A statement inside a `place`d component is refused too: its coordinates are its own frame's,
+  and the same component must draw the same at every placement. What crosses a frame is the
+  check: `keep on axis 2 wing.c`, written on the storey, reads the placed column in plan
+  coordinates under any turn or mirror.
+- `at axis.2` on an opening stands on the axis, the same as `at axis 2`. `from` and `%` measure
+  along the wall, so `at axis.2 from end` is refused. Arithmetic on it, `at axis.2 + 500`, is a
+  number like any other: that many millimetres along the wall from its start, and the number is
+  a plan coordinate, so it lands on the axis only on a wall that starts at 0.
 
 ### Sheet tables — room schedule & legend
 
@@ -2856,8 +2915,9 @@ every wrapped line. Past 200 wrapped lines the plan is refused with `E_DRAWING_L
   each swatch the real symbol. The other door kinds have no row.
 
 Nothing is listed that is not drawn, and a category that renders as a plain labelled
-rectangle gets no row (there is no symbol to explain). There is nothing to configure —
-which is the point: the legend cannot drift from the drawing.
+rectangle gets no row (there is no symbol to explain). There is nothing to configure beyond
+its words ([`sheet text`](#sheet-text)) — which is the point:
+the legend cannot drift from the drawing.
 
 The tables sit side by side in one row — room schedule, door & window schedule, legend,
 notes — and the sheet fit reserves the tallest. All of them, and the tags, are ordinary
@@ -2868,6 +2928,129 @@ system, so the tables scale with the sheet. `describe()` reports the room schedu
 `schedule[]` (see [Analysis](analysis.md)); `legend`, `schedule openings` and `notes` are
 pure rendering and add no field — every fact they show is already in `describe()`
 (`furniture`, `doors`, `windows`) or the source.
+
+### Sheet text
+
+```
+sheet text {
+  decimal ","
+  <key> "<word>"
+  …
+}
+```
+
+Every fixed word on a sheet is English, and every number has a decimal point. `sheet text` replaces
+them, so a plan can be handed to someone who reads another language. A key you do not write keeps
+its English word, so a table can be as short as the words a plan draws. A plan with no `sheet text`
+draws exactly what it drew before.
+
+ArchLang ships no translations. There is no `locale` setting: the words are yours, and the compiler
+never reads a language from the machine it runs on, so one source draws the same bytes everywhere.
+
+The block below is a German starting point, written by this project and not reviewed by a German
+drafter. It covers the fixed words of a plain sheet. Read it before a buyer does.
+
+```arch
+plan "Haus" {
+  units mm
+  paper A3
+  dims auto rooms
+  sheet text {
+    decimal ","
+    project "PROJEKT"
+    drawn_by "GEZEICHNET"
+    date "DATUM"
+    number "ZEICHNUNGS-NR."
+    revision "INDEX"
+    scale "MASSSTAB"
+    level "GESCHOSS"
+    room_schedule "RAUMBUCH"
+    no "NR."
+    name "RAUM"
+    area "FLÄCHE BIS WANDACHSE (m²)"
+    net_area "NETTOFLÄCHE (m²)"
+    subtotal "ZWISCHENSUMME"
+    total "SUMME"
+    no_zone "(ohne Zone)"
+    opening_schedule "TÜREN UND FENSTER"
+    tag "POS."
+    rooms "RAUM"
+    width "BREITE"
+    type "ART"
+    hand "ANSCHLAG"
+    left "links"
+    right "rechts"
+    exterior "außen"
+    window "Fenster"
+    legend "LEGENDE"
+    demolished "Abbruch"
+    notes "HINWEISE"
+    net "netto"
+    up "HOCH"
+    down "AB"
+    hinged "Drehtür"
+    poche "Wand"
+  }
+  title { project "Haus am See" date "2026-11-02" }
+  schedule rooms net
+  schedule openings
+  legend
+  room id=wohnen at (0,0) size 4500x4000 label "Wohnen"
+  room id=bad right-of wohnen size 2500x4000 label "Bad"
+  walls from rooms exterior 300 partition 100
+  door on wohnen.bottom at center width 1000 swing into wohnen
+  door between wohnen and bad at center width 800 swing into bad
+  window on wohnen.top width 1500
+}
+```
+
+**The keys.** A door kind (`hinged`, `glazed_sliding`), a window kind (`casement`), a wall or ground
+material (`brick`, `grass`) and a fixture category (`sofa`, `bed`) are each their own key, in the
+spelling the language uses, and replace that word in the door and window schedule and the legend. An
+authored window kind or `glazed_sliding` stands alone in the legend, where the English reads
+`casement window`: German compounds, so a word and a word would be wrong. The other keys:
+
+| Keys | The English they replace | Where |
+|---|---|---|
+| `project` `drawn_by` `date` `number` `revision` | `PROJECT` `DRAWN BY` `DATE` `DRAWING NO.` `REVISION` | Title block captions |
+| `scale` `level` | `SCALE` `LEVEL` | Title block captions the sheet stamps itself |
+| `room_schedule` `no` `name` `area` `net_area` | `ROOM SCHEDULE` `NO.` `NAME` `AREA (CENTRELINE, m²)` `NET AREA (m²)` | The room schedule's caption and headings |
+| `subtotal` `total` `no_zone` | `SUBTOTAL` `TOTAL` `(no zone)` | Its closing rows, and the heading over rooms in no `zone` |
+| `opening_schedule` `tag` `rooms` `width` `type` `hand` | `DOOR & WINDOW SCHEDULE` `TAG` `ROOM(S)` `WIDTH` `TYPE` `HAND` | The door and window schedule's caption and headings |
+| `left` `right` `exterior` `window` | `left` `right` `exterior` `window` | Its cells: a hand, the outside, a window with no kind |
+| `legend` `demolished` `notes` | `LEGEND` `demolished` `NOTES` | The legend's and the notes' captions, and the row of a demolished wall |
+| `net` `up` `down` `north` | `net` `UP` `DN` `N` | In the drawing: the net stamp's word, a stair's or escalator's word, the north arrow's letter |
+
+The door and window tags (`D01`, `W01`), the axis bubbles and `m²` are handles and units, and have
+no key. What you wrote yourself, such as a room's `label`, a `notes` line or a title value, is
+already in your language and is never changed.
+
+**`decimal ","`** prints every drawn number with a comma: the room and `outdoor` stamps, every cell of
+the room schedule, dimension numbers and the `R` and `φ` call-outs, the door and window schedule's
+widths, a scale or angle in a legend row (`Mauerwerk x1,5`), the scale bar (`0,5 m`) and the `SCALE` row
+(`1:12,5`). `decimal "."` is the default. A number you wrote inside a string is yours, so
+`dim … text "1.5 m"` and `notes "Stand 1.5"` keep their point.
+
+**What it never reaches.** `describe()` does not read the block and its numbers keep their point, as
+do Plan JSON and every coordinate. `lint()` messages stay English. A DXF's numeric fields keep their
+point; its `TEXT` entities are drawn text, so they carry the comma as the SVG does. The accessible
+`<title>` and `<desc>`, the CLI's messages and the review sheet stay English, and the deprecated `--view`
+draws no sheet. Plan JSON has no field for the block: an export reports it in `dropped`, the words
+counted under `sheet text` and the mark on a `decimal mark` row of its own.
+
+**Fit.** A table column widens for a word you wrote, so a longer word is not clipped, and the page
+grows with it as it does for any table. The title block has a fixed width: a caption and value that
+no longer fit their row raise [`W_TITLE_OVERFLOW`](error-codes.md). A longer word in a stamp is placed and
+shrunk like a longer room name, and `W_ANNOTATION_OVERLAP` reads it as it is drawn.
+
+**Refused**, each as `E_PARSE`: an unknown key (with a did-you-mean), a key written twice, a second
+block, an empty word, a block with no entry, a line break or other control character,
+more than 40 UTF-16 units (6 for `north`, `up` and `down`, which sit in a fixed spot), and a `decimal`
+that is not `","` or `"."`.
+
+A module's `sheet text` is not imported, as a module's `title` is not: settings come from the root
+plan. It is a plan-level statement, written once, outside any `level`, `component` or block; inside
+one it is refused, and says so.
 
 ## Keep — declared invariants, checked and never solved
 
@@ -2880,7 +3063,7 @@ keep align <d> <d> [<d> …]                  # one line: every residual v(dᵢ)
 keep equal width|depth <t> <t> [<t> …]      # one extent: m(tᵢ) − m(t₁) is 0
 keep offset <x> from <d> <mm>               # (v(x) − v(d)) − mm is 0
 keep min clear <room> <mm>                  # clear span − mm ≥ 0
-keep on axis <label> <wall>                 # v(wall) − v(axis) is 0
+keep on axis <label> <wall|column>          # v(wall) − v(axis) is 0; a column at its centre
 keep stacked <id> on levels <n> <n> [<n> …] # the footprint's four edges, storey against storey
 keep fixed <d> at <mm>                      # v(d) − mm is 0
 ```
@@ -2899,7 +3082,8 @@ earlier element is named, and a keep is the statement that must survive edits.
 
 **What each form measures.**
 - `align` and `on axis`: the datums' positions; the reported residual is the largest, at that
-  target (`+` = right of / below the first).
+  target (`+` = right of / below the first). A column has no line of its own, so `on axis` reads
+  it at its centre across the axis, and two keeps hold it on a crossing; no other form reads one.
 - `equal`: a rectangular room's width (x extent) or depth (y extent), or an opening's width.
 - `offset`: `<x>` is a datum parallel to `<d>`, an opening read at its centre, or a piece of
   furniture read at its footprint's centre, on `<d>`'s normal axis.

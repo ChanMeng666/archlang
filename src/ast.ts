@@ -19,6 +19,7 @@ import type { Span } from "./diagnostics.js";
 import type { Comment } from "./lexer.js";
 import type { Expr } from "./expr.js";
 import type { PaperSpec } from "./sheet.js";
+import type { SheetTextEntry } from "./sheet-text.js";
 import type { Theme } from "./theme.js";
 
 export interface Point {
@@ -1374,6 +1375,13 @@ export interface TitleNode {
   span?: Span;
 }
 
+/** A `sheet text { … }` block: its entries, in written order (`src/sheet-text.ts`). */
+export interface SheetTextNode {
+  entries: readonly SheetTextEntry[];
+  line: number;
+  span: Span;
+}
+
 /**
  * `axes { x at <expr>, … y at <expr>, … }` — the plan's **positioning axes**
  * (定位轴线, GB/T 50001): author-declared structural datum lines the whole drawing
@@ -1538,6 +1546,12 @@ export interface PlanNode {
    * unless authored.
    */
   notes?: string[];
+  /**
+   * `sheet text { … }` — the words the sheet draws and the decimal mark of its numbers, as the
+   * plan writes them (`src/sheet-text.ts`). Presentation only, never read by `describe()`; absent
+   * unless authored, so an existing drawing is byte-identical.
+   */
+  sheetText?: SheetTextNode;
   title?: TitleNode;
   /** Explicit accessible title (`accTitle "…"`) — overrides the plan name in the
    *  accessible-SVG `<title>` (`compile(src, { accessible: true })`). Metadata only. */

@@ -70,12 +70,10 @@ export type LintSkipReason =
   /** Every door to the outside opens onto a balcony or terrace, which the privacy rules do not
    *  count as a way in (the access graph and the walk do). */
   | "balcony-only-entrance"
-  /** A stair drawn as flights and landings, which the rule reads in part: the landings between its
-   *  flights are not measured, every piece stands whole with nothing passed under on a storey it
-   *  rises from with no flight arriving, the head of the flight from below is not read where the
-   *  stops of its shaft do not match (either stop, a straight flight beside a block included), or a
-   *  caller's ruleset leaves `W_STAIR_TOO_STEEP` more riser counts to try than it tries
-   *  (`MAX_RISER_TRIES`, `src/lint/rules/stairs.ts`). */
+  /** A stair drawn as flights and landings, which the rule reads in part: the head of the flight
+   *  from below is not read where the stops of its shaft do not match (either stop, a straight flight
+   *  beside a block included), or a caller's ruleset leaves `W_STAIR_TOO_STEEP` more riser counts to
+   *  try than it tries (`MAX_RISER_TRIES`, `src/lint/rules/stairs.ts`). */
   | "block-stair"
   /** The door's host wall is angled or curved, which the rule does not measure. */
   | "unsupported-host-geometry"

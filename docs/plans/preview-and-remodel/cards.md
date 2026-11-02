@@ -215,11 +215,9 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 
 ### J1–J6 · Batch 1: fixes for 1.51.0 — `done` · PRs #429, #431, #428, #433, #430, #432 · merges `067c4aaf`, `e45da925`, `c23ef18a`, `a4072531`, `1974d928`, `9120cb3e` · record: `research/2026-11-02-as-built.md`
 
-### J7–J11 · Batch 2: common forms for 1.52.0 — `doing`
+### J7–J11 · Batch 2: common forms for 1.52.0 — `done` · PRs #436, #438, #437, #439, #440 · merges `ecedd364`, `129b7dda`, `c46cbc81`, `3f3060a3`, `8533fd5c` · record: `research/2026-11-02-as-built.md`
 
-L3, L4 and `finish` on an L; #369 window kinds and the glazed door; #402 net area in the stamp; #401 point 2 and corner windows; S4.
-
-### J12–J15 · Batch 3: interchange and languages for 1.53.0 — `todo` · after Show HN unless the first two finish early
+### J12–J15 · Batch 3: interchange and languages for 1.53.0 — `doing` · the first two batches finished early
 
 #366 and #343; #403; #405; #345 and D27.
 
@@ -231,6 +229,14 @@ L3, L4 and `finish` on an L; #369 window kinds and the glazed door; #402 net are
 - **Open shell:** a jog at a free end loses the span; two open shells facing each other pair across a street; a gap ending exactly at partition ends is reported with one end or none; a parapet closing back on the ring makes the figure `exterior-ring-subdivided`; `validateIntent` binds to a partial figure with no notice of `leaves_out`.
 - **`finish`:** a single-storey `void` is not read; a piece on a `void`, lift or escalator has no lint; single-storey non-residential landings read the inert context; time grows faster than storeys, so measure each candidate on its own storey; dotted furnishing of a placed component.
 - **Labels:** `relocateLabels` is not order-free, so a plan can differ with its rooms reversed (`docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch`); identical anchors and texts fall back to element order; `placesFor` and `marksOf` run before the count; `wrapLabels` still judges at 0.62 em while `fitLabels` catches what it misses; an unnamed room's area figure does not shrink; Greek and Cyrillic in a browser's bold run wider than the flat 0.62 em; a mirrored `place` may choose a different form, since text is never mirrored.
+
+### J17 · Residue of batch 2 — `todo` · one PR per group; none blocks a release
+
+- **L rooms:** `keep fixed liv.left`, `facing` an L and `wall … between|around` an L stay refused; `W_FIXTURE_BACK_TO_ROOM` is silent in a polygon; the `W_ROOM_MISSING_DEFINING` hint quotes `at` on a polygon; `finish` leaves a kitchen in an L empty when no named wall runs beside the stove; L5, the mask tracer.
+- **Kinds:** `door sliding` reads its whole `width` while the drawing passes 45 %; `takeoff` counts windows by width alone; `arch diff` reports no kind change; `hinge` and `slide` read along the wall, invisible on a `walls from rooms` edge; the reserved `no-operable-window-data` reason; unknown `set` keys parse silently.
+- **Net stamp:** `schedule openings net` gives a generic parse error; no diagnostic for a sheet mixing net and centreline stamps.
+- **Corner windows:** a sum of window widths counts the corner twice; a refused `walls from rooms` cascades into `E_WINDOW_CORNER`; 3D legs' prisms overlap and panes cross at the corner; `at (x,y)` corner windows still draw the pier.
+- **Stairs:** a column in a landing and a wall across a long landing are unread; a wall along a leg reads "0 mm behind the bottom step"; foot and head messages outside a dwelling say "as long as the flight is wide needs 1200 mm"; `W_STAIR_NO_LANDING`'s `fix` does not name a landing; `reachesTheForm` cannot see a block inside a `component`; `docs/testing.md` §5 lists no CLI JSON payload.
 
 ### Wave 6 (after the N10 read): G7 repair-convergence replay (the review rings of iteration N fading
 into N+1; needs `fix`/`repair` to emit a trace, design spike first), D1, A6, archlang-3d M2+, Tier B.

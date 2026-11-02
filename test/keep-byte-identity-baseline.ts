@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: On the merge of main 1.51.0 into feat/j7-l-rooms: W_ROOM_NO_FIXTURE's catalogue fix says a circle or slanted polygon cannot take an anchor, and validate's next carries it. With the old sentence back K1 passed main's table, 22 of 22.
+ * Taken: On the merge of main 1.52.0 into feat/j13-sheet-text: W_TITLE_OVERFLOW's catalogue fix now covers the caption a sheet text block writes, and validate's next carries it. With the old sentence back K1 passed main's table, 22 of 22.
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -383,7 +383,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/annotation-collisions/title-overflow.arch",
-    "abaf2244c1679cec1dd95906f13044c4715401b86a4e9959e64a7da236e12066",
+    "bfbea73aa17e5125b36e7a13274b6dc8ec1d81d4a73b5de2c60da950e5d0d85d",
     67,
   ],
   [

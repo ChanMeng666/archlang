@@ -25,12 +25,12 @@
 import type { Point } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import { fmt3 } from "../num-format.js";
+import { PLAIN_SHEET_TEXT, type SheetText } from "../sheet-text.js";
 import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
 import type { RElevator, REscalator, RStair, RStairPiece } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import {
-  dirLabel,
   flightsOf,
   isBlockStair,
   type RBlockStair,
@@ -203,11 +203,16 @@ function footprint(v: RStairPiece, layerName: string, theme: Theme, sizes: Rende
  * footprint's cross extent the flight band is centred in the footprint and the remainder
  * is left as an un-drawn return/void. A block stair draws {@link blockStairGlyph}.
  */
-export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNode[] {
-  if (isBlockStair(s)) return blockStairGlyph(s, theme, sizes);
+export function stairGlyph(
+  s: RStair,
+  theme: Theme,
+  sizes: RenderSizes,
+  text: SheetText = PLAIN_SHEET_TEXT,
+): SceneNode[] {
+  if (isBlockStair(s)) return blockStairGlyph(s, theme, sizes, text);
   const f = runFrame(s, s.width);
   const nodes = flightSymbol(s, f, "full", theme, sizes);
-  nodes.push(...arrow(f, dirLabel(s.dir), STAIR_LAYER, theme, sizes));
+  nodes.push(...arrow(f, text.word(s.dir), STAIR_LAYER, theme, sizes));
   return nodes;
 }
 
@@ -218,19 +223,15 @@ export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNo
  */
 type FlightCut = "none" | "full" | "shallow";
 
-/** One flight's footprint, treads and band edges, and its break line. */
-function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, sizes: RenderSizes): SceneNode[] {
-  const layer = STAIR_LAYER;
-  const stroke: Paint = { stroke: theme.furnitureStroke, width: sizes.thin, fill: "none" };
-  const nodes: SceneNode[] = [footprint(s, layer, theme, sizes)];
-
-  const n = treadCount(f.length);
-  const step = f.length / n;
+/**
+ * A flight's break line: two parallel diagonals crossing the flight at mid-run, each rising by
+ * half the flight width over the crossing (a ~26° cut) and separated along the run by one going,
+ * and `band`, how far either side of mid-run the treads are omitted, as a drawn break omits them.
+ * One path for the ink and for `bounds()`, because the diagonals reach past the flight's edges.
+ */
+function breakLine(s: RStair, f: RunFrame, cut: FlightCut): { diagonals: [Point, Point][]; band: number } {
+  const step = f.length / treadCount(f.length);
   const half = f.width / 2;
-
-  // Break line: two parallel diagonals crossing the flight at mid-run, each rising by
-  // half the flight width over the crossing (a ~26° cut) and separated along the run by
-  // one going. Treads inside the cut band are omitted, as a drawn break omits them.
   const mid = f.length / 2;
   // Along-run rise of one diagonal across the full width.
   const rise = cut === "shallow" ? Math.min(half, f.length / 4) : half;
@@ -243,11 +244,36 @@ function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, size
   const lo = -half - over;
   const hi = half + over;
   const [c0, c1] = s._mirror ? [hi, lo] : [lo, hi];
-  if (cut !== "none") {
-    for (const off of [-gap / 2, gap / 2]) {
-      nodes.push(line(f.at(mid + off - rise / 2, c0), f.at(mid + off + rise / 2, c1), layer, stroke));
-    }
-  }
+  const diagonals =
+    cut === "none"
+      ? []
+      : [-gap / 2, gap / 2].map((off): [Point, Point] => [
+          f.at(mid + off - rise / 2, c0),
+          f.at(mid + off + rise / 2, c1),
+        ]);
+  return { diagonals, band };
+}
+
+/** Where a stair's break line ends: the one part of its ink past its pieces, for `bounds()`. */
+export function breakLineEnds(s: RStair): Point[] {
+  if (!isBlockStair(s)) return breakLine(s, runFrame(s, s.width), "full").diagonals.flat();
+  const f = flightsOf(s)[cutFlight(s)]!;
+  return breakLine(f, runFrame(f, s.width), "shallow").diagonals.flat();
+}
+
+/** One flight's footprint, treads and band edges, and its break line. */
+function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, sizes: RenderSizes): SceneNode[] {
+  const layer = STAIR_LAYER;
+  const stroke: Paint = { stroke: theme.furnitureStroke, width: sizes.thin, fill: "none" };
+  const nodes: SceneNode[] = [footprint(s, layer, theme, sizes)];
+
+  const n = treadCount(f.length);
+  const step = f.length / n;
+  const half = f.width / 2;
+  const mid = f.length / 2;
+
+  const { diagonals, band } = breakLine(s, f, cut);
+  for (const [a, b] of diagonals) nodes.push(line(a, b, layer, stroke));
 
   for (let i = 1; i < n; i++) {
     const a = i * step;
@@ -336,7 +362,7 @@ export function cutFlight(s: RBlockStair): number {
  * The walking line is several `line` primitives, never one long path: a label is kept off each
  * primitive's box (`src/label-placement.ts`), and a turning line's box holds the floor it turns round.
  */
-function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes): SceneNode[] {
+function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes, text: SheetText): SceneNode[] {
   const layer = STAIR_LAYER;
   const climb = flightsOf(s);
   const cut = cutFlight(s);
@@ -374,7 +400,7 @@ function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes): Scen
   const barb = Math.min(last.width * 0.28, head * 0.25);
   nodes.push(line(last.at(head, 0), last.at(head - barb, barb * 0.6), layer, ink));
   nodes.push(line(last.at(head, 0), last.at(head - barb, -barb * 0.6), layer, ink));
-  nodes.push(runWord(first, step, dirLabel(s.dir), layer, theme, sizes));
+  nodes.push(runWord(first, step, text.word(s.dir), layer, theme, sizes));
   return nodes;
 }
 
@@ -392,7 +418,12 @@ export function elevatorGlyph(e: RElevator, theme: Theme, sizes: RenderSizes): S
 }
 
 /** The escalator symbol: parallel chevrons pointing the way of travel, plus the arrow. */
-export function escalatorGlyph(e: REscalator, theme: Theme, sizes: RenderSizes): SceneNode[] {
+export function escalatorGlyph(
+  e: REscalator,
+  theme: Theme,
+  sizes: RenderSizes,
+  text: SheetText = PLAIN_SHEET_TEXT,
+): SceneNode[] {
   const cross = runAxis(e) === "y" ? e.size.w : e.size.h;
   const f = runFrame(e, cross);
   const layer = STAIR_LAYER;
@@ -410,6 +441,6 @@ export function escalatorGlyph(e: REscalator, theme: Theme, sizes: RenderSizes):
     nodes.push(line(f.at(a, half), f.at(a + apex, 0), layer, stroke));
   }
 
-  nodes.push(...arrow(f, dirLabel(e.dir), layer, theme, sizes));
+  nodes.push(...arrow(f, text.word(e.dir), layer, theme, sizes));
   return nodes;
 }

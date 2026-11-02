@@ -191,6 +191,7 @@ describe("the stage ladder and the per-rule table", () => {
       W_IMPORT_EMPTY_FILE: "brief",
       W_WHILE_DEPRECATED: "brief",
       W_REASSIGN_DEPRECATED: "brief",
+      W_AXES_DIFFER: "brief",
       W_KEEP_VIOLATED: "brief",
       W_ROOM_OVERLAP: "rooms",
       W_DOOR_OFF_WALL: "openings",

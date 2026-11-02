@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**151 errors** · **91 warnings**
+**151 errors** · **92 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -163,6 +163,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ACCESSIBLE_WC_SIDE_WALL`](#w_accessible_wc_side_wall) | warning | An accessible WC's pan stands too far from every side wall. |
 | [`W_ALIAS_MATCH`](#w_alias_match) | warning | A room's use was inferred from an indirect alias, not stated. |
 | [`W_ANNOTATION_OVERLAP`](#w_annotation_overlap) | warning | A label or a `dims auto` number is printed over a symbol, a wall, a door swing or another label, or a label runs off its room. |
+| [`W_AXES_DIFFER`](#w_axes_differ) | warning | The plan's one `axes` block comes out as different grids on two storeys. |
 | [`W_BALCONY_NO_DOOR`](#w_balcony_no_door) | warning | A balcony with no way onto it. |
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
@@ -235,14 +236,14 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SEAT_FACING_AWAY`](#w_seat_facing_away) | warning | A chair at a table faces away from it. |
 | [`W_SHAFT_FOOTPRINT_MISMATCH`](#w_shaft_footprint_mismatch) | warning | A shaft's runs on two neighbouring storeys do not stand over each other. |
 | [`W_STAIR_HEAD_VOID`](#w_stair_head_void) | warning | A void opens on the landing at the head of a flight. |
-| [`W_STAIR_NO_LANDING`](#w_stair_no_landing) | warning | A flight has no landing at its foot or head. |
+| [`W_STAIR_NO_LANDING`](#w_stair_no_landing) | warning | A flight has no landing at its foot or head, or a landing between two flights is too short. |
 | [`W_STAIR_SIDE_ENTRY`](#w_stair_side_entry) | warning | A doorway opens onto the side of a flight. |
 | [`W_STAIR_TOO_STEEP`](#w_stair_too_steep) | warning | A stair is too short to climb its storey. |
 | [`W_STAIR_UNMATCHED`](#w_stair_unmatched) | warning | A run of vertical circulation appears on only one storey. |
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
 | [`W_SWING_OVER_STAIR`](#w_swing_over_stair) | warning | A door's swing sweeps a stair or the landing at its end. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
-| [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value is wider than its row. |
+| [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value, or a `sheet text` caption with its value, is wider than its row. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
@@ -365,7 +366,7 @@ column at (0,0) size 0x300   # error: width is 0
 
 *error* — A room-edge datum is read before any room is placed.
 
-**Cause.** A datum (`hall.top`, `hall.cx`, …) reads the frozen table of placed rooms, which exists only once every room of the group is placed (ADR 0028 §1). A `let` is evaluated once, when the plan expands, as are loop bounds, conditions, `set`, `place` and component arguments, and the plan settings (`height`, `axes`, the site boundary); a room's own `at`/`size` and relational placement run while the rooms are being placed. None of them can read a datum. Nor can the body of a user function (`let f() = hall.top`): it has no room of its own, so the edge is passed as an argument (`f(hall.top)`), which the caller evaluates.
+**Cause.** A datum (`hall.top`, `hall.cx`, …) reads the frozen table of placed rooms, which exists only once every room of the group is placed (ADR 0028 §1). A `let` is evaluated once, when the plan expands, as are loop bounds, conditions, `set`, `place` and component arguments, and the plan settings (`height`, `axes`, the site boundary); a room's own `at`/`size` and relational placement run while the rooms are being placed. None of them can read a datum. A positioning axis (`axis.3`) is known once the plan has expanded, so a room's `at` and `size` can read one; what expands first cannot, because the axes read the plan's `let`s. Nor can the body of a user function (`let f() = hall.top`): it has no room of its own, so the edge is passed as an argument (`f(hall.top)`), which the caller evaluates.
 
 **Fix.** Write the datum in the statement that uses it (a wall point, an opening or furniture position, a dimension), or give the room numbers or a relational placement (`right-of|left-of|above|below`) instead of another room's edge.
 
@@ -1088,7 +1089,7 @@ plan "K" {
 
 *error* — The keep's measure is not defined for what it names.
 
-**Cause.** A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).
+**Cause.** A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a column anywhere but `on axis`, which reads it at its centre; a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).
 
 **Fix.** Name what the measure reads: a rectangular room's `left`/`right`/`top`/`bottom`/`cx`/`cy`, `axis <label>`, a straight wall or `<wall> segment <n>`; compare widths of openings with `keep equal width`.
 
@@ -1979,9 +1980,9 @@ let x = frobnicate(2)   # error
 
 *error* — Unknown reference.
 
-**Cause.** An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have.
+**Cause.** An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have, or `axis.3` names a positioning axis the plan does not declare. A placed component reads no axis: its coordinates are its own frame's.
 
-**Fix.** Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot).
+**Fix.** Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot; for an axis, the label the plan's `axes` give it).
 
 ```arch static
 let x = y + 1   # error if `y` is undefined
@@ -2227,6 +2228,22 @@ paper A4 landscape
 scale 1:100
 room id=bed at (0,0) size 3250x3000 label "Bedroom 4" at (2400,1900) uses bedroom
 furniture bed at (1650,900) size 1500x2000   # lint: the pinned name is printed over the bed
+```
+
+## W_AXES_DIFFER
+
+*warning* — The plan's one `axes` block comes out as different grids on two storeys.
+
+**Cause.** A multi-storey plan declares `axes` once, outside the levels, and each storey evaluates the block against its own bindings. A `let` written inside a `level` is one of them, so the same label stands at another position on that storey, and `keep on axis` holds there against that storey's own axis. The drawing shows both grids; the storeys just do not share one.
+
+**Fix.** Move the `let` the block reads to the plan, so every storey reads one value. There is no per-storey grid: a storey that really is set out differently is a different plan.
+
+```arch static
+plan "G" {
+  axes { x at 0, BAY }
+  level 1 { let BAY = 6000 }
+  level 2 { let BAY = 7000 }   # warning: axis 2 stands at two positions
+}
 ```
 
 ## W_BALCONY_NO_DOOR
@@ -2586,7 +2603,7 @@ furniture sofa_l at (500,500) size 900x2400   # lint: a sofa_l is 2600 wide and 
 
 *warning* — Furniture stands on a stair or on the landing it owes.
 
-**Cause.** A piece's footprint overlaps the part of a `stair` a person cannot stand under, or the landing beyond the end the flight is entered from on this storey: as wide as the flight, as deep as the flight is wide (at least 1200 mm in a building other than a dwelling), and only as deep as the floor stands clear, as `W_STAIR_NO_LANDING` measures it. Approved Document K (2013) 1.21b keeps a landing clear of permanent obstructions. On a storey the flight rises from, that part is the run with less than 2 m of headroom, read against the storey height (3000 mm when the plan authors none), so a wardrobe under the high end of a flight is not reported. A stairwell, where a flight comes down or arrives from below, is a hole: all of its footprint is read. `finish` keeps off the whole footprint either way. On the landing a rug, which is walked on, and a wall cabinet, which hangs above it, are not. A landing a curved wall stands near is not judged, and an `elevator` or `escalator` is not read.
+**Cause.** A piece's footprint overlaps the part of a `stair` a person cannot stand under, or the landing beyond the end the flight is entered from on this storey: as wide as the flight, as deep as the flight is wide (at least 1200 mm in a building other than a dwelling), and only as deep as the floor stands clear, as `W_STAIR_NO_LANDING` measures it. Approved Document K (2013) 1.21b keeps a landing clear of permanent obstructions. On a storey the flight rises from, that part is the run with less than 2 m of headroom, read against the storey height (3000 mm when the plan authors none), so a wardrobe under the high end of a flight is not reported. A block stair rises over its flights alone, so a landing with less than 2 m beneath it is read whole. A stairwell, where a flight comes down or arrives from below, is a hole: all of its footprint is read. `finish` keeps off the whole footprint either way. On the landing a rug, which is walked on, and a wall cabinet, which hangs above it, are not. A landing a curved wall stands near is not judged, and an `elevator` or `escalator` is not read.
 
 **Fix.** Move or resize the piece so it clears the span the hint quotes, or move the stair. There is no machine-applicable fix: where the piece goes instead is a design decision.
 
@@ -3181,9 +3198,9 @@ level 2 "First" {
 
 ## W_STAIR_NO_LANDING
 
-*warning* — A flight has no landing at its foot or head.
+*warning* — A flight has no landing at its foot or head, or a landing between two flights is too short.
 
-**Cause.** Beyond the end a flight is entered from on this storey (its foot where it goes `up`, its head where it comes `down`, and the head of a flight from below that continues upward), a wall stands, a `void` opens (at a foot), or the floor ends, nearer than the landing the flight needs: as long as the flight is wide (Approved Document K (2013) 1.20, "At the top and bottom of every flight, provide landings the width and length at least as great as the smallest width of the flight"; at least 1200 mm in a building other than a dwelling, 1.23a). The depth is measured across the middle half of the flight's width, from the wall's drawn body (a cased opening is passable and cut out; a door's closed leaf is not), so a wall drawn along the flight's flank is not read as standing across its end. A person stepping off walks into the wall, or must turn on the last step. A curved wall is not measured. On a block stair the foot is the first flight's and the head the last's; another part of the same stair standing past that end cuts the landing short, as it does for the walking grid, and the landings between its flights are not measured.
+**Cause.** Beyond the end a flight is entered from on this storey (its foot where it goes `up`, its head where it comes `down`, and the head of a flight from below that continues upward), a wall stands, a `void` opens (at a foot), or the floor ends, nearer than the landing the flight needs: as long as the flight is wide (Approved Document K (2013) 1.20, "At the top and bottom of every flight, provide landings the width and length at least as great as the smallest width of the flight"; at least 1200 mm in a building other than a dwelling, 1.23a). The depth is measured across the middle half of the flight's width, from the wall's drawn body (a cased opening is passable and cut out; a door's closed leaf is not), so a wall drawn along the flight's flank is not read as standing across its end. A person stepping off walks into the wall, or must turn on the last step. A curved wall is not measured. On a block stair the foot is the first flight's and the head the last's, and another part of the same stair standing past that end cuts the landing short, as it does for the walking grid. A landing between its flights must run that length along each flight that meets it, from that flight's step, because a flight is stepped off straight ahead: the walking line is read leg by leg, never as its whole length, which a half-turn landing 500 mm deep would pass. Each flight meets its landing along its whole `width` (`E_STAIR_PIECES`), so a landing at a corner is never shorter than that: there only a wall across it, or the 1200 mm of a building other than a dwelling, reports. A wall counts only on a stop the flights rise from, as far up as it stands, because the landing stands above that floor, and one drawn on the landing's edge is half in it. A `dir down` stop with no matching block below reads the landing's own length and no wall, because its walls stand above its floor and the landing below it. A `void` or the lack of a room under a landing does not count. Such a landing is read on the stop its flights climb from, so a shaft reports it once; lengthen it, with the flights moved so they still touch it.
 
 **Fix.** Move the stair, shorten it, or move the wall until the quoted depth stands clear beyond the end. There is no machine-applicable fix: moving a stair moves the rooms around it.
 
@@ -3196,7 +3213,7 @@ stair id=s at (500,200) size 900x2350 dir up   # lint: the partition stands 400 
 
 *warning* — A doorway opens onto the side of a flight.
 
-**Cause.** A door or cased opening in a wall along a `stair`'s flight, beside it with less than a doorway's width (`minDoorWidthMm`, or its own width if narrower) past either end, stands nearer to the flight than the ruleset's least clear path width (`minPathClearWidthMm`, 700 mm): stepping through, a person meets the flight's side partway up its rise, with no landing to turn on. A flight is entered at its foot or head, from a landing (Approved Document K (2013) 1.20). Measured from the wall's face to the footprint's side. Only the part of a rising flight under 2 m of rise is beside a person (AD K 1.11's headroom), read against the storey's `height`, or 3000 mm when the plan authors none, a default that can only quiet the rule. A doorway past either end of the flight is the landing rules' question, not this one's.
+**Cause.** A door or cased opening in a wall along a `stair`'s flight, beside it with less than a doorway's width (`minDoorWidthMm`, or its own width if narrower) past either end, stands nearer to the flight than the ruleset's least clear path width (`minPathClearWidthMm`, 700 mm): stepping through, a person meets the flight's side partway up its rise, with no landing to turn on. A flight is entered at its foot or head, from a landing (Approved Document K (2013) 1.20). Measured from the wall's face to the footprint's side. Only the part of a rising flight under 2 m of rise is beside a person (AD K 1.11's headroom), read against the storey's `height`, or 3000 mm when the plan authors none, a default that can only quiet the rule. A block stair rises over its flights alone, its landings level, each flight read on its own, and a landing has no side to enter by. A doorway past either end of the flight is the landing rules' question, not this one's.
 
 **Fix.** Move the doorway along its wall past the foot or head of the flight, or move the stair so at least the quoted width stands between them. There is no machine-applicable fix.
 
@@ -3248,7 +3265,7 @@ door at (4000,1500) width 900 swing in   # lint: leaf sweeps onto the bed
 
 *warning* — A door's swing sweeps a stair or the landing at its end.
 
-**Cause.** A hinged door's quarter-disc (the one the drawing shows) overlaps a `stair`'s footprint, or the landing a flight is stepped off onto at its head, or, at its foot, the 400 mm Approved Document K (2013) 1.24 and Diagram 1.8 ask a dwelling's door to leave clear across the flight's width (in a building other than a dwelling, 1.23b, the whole foot landing). A person stepping off the flight walks into the leaf, or the leaf strikes someone on the treads. The landing is the square beyond the end as wide as the flight and as deep as it is wide (AD K 1.20; at least 1200 mm long outside a dwelling, 1.23a). On a storey where the flight goes `up` its foot is here; where it comes `down`, its head; a storey a flight from below arrives on and continues up from owes both. On a storey the flight rises from, only the part of the footprint lower than the door's head counts (the treads climb the storey height over the run, so a leaf swings under the high end); that height is the storey's `height`, or 3000 mm when the plan authors none, a default that can only quiet the rule. A touch is not an overlap.
+**Cause.** A hinged door's quarter-disc (the one the drawing shows) overlaps a `stair`'s footprint, or the landing a flight is stepped off onto at its head, or, at its foot, the 400 mm Approved Document K (2013) 1.24 and Diagram 1.8 ask a dwelling's door to leave clear across the flight's width (in a building other than a dwelling, 1.23b, the whole foot landing). A person stepping off the flight walks into the leaf, or the leaf strikes someone on the treads. The landing is the square beyond the end as wide as the flight and as deep as it is wide (AD K 1.20; at least 1200 mm long outside a dwelling, 1.23a). On a storey where the flight goes `up` its foot is here; where it comes `down`, its head; a storey a flight from below arrives on and continues up from owes both. On a storey the flight rises from, only the part of the footprint lower than the door's head counts (the treads climb the storey height over the run, so a leaf swings under the high end); that height is the storey's `height`, or 3000 mm when the plan authors none, a default that can only quiet the rule. A block stair rises over its flights alone, its landings level, and its pieces are read one by one, so the floor it wraps round is floor. A touch is not an overlap.
 
 **Fix.** Open the door to the other side of its wall (flip its `swing`) or hang it on the other jamb (flip its `hinge`); the hint says when either clears the stair. Otherwise move the door or the stair, or use a `sliding` or `pocket` door, which sweeps nothing. There is no machine-applicable fix: which way a door opens is a design decision.
 
@@ -3274,11 +3291,11 @@ door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 
 ## W_TITLE_OVERFLOW
 
-*warning* — A title-block value is wider than its row.
+*warning* — A title-block value, or a `sheet text` caption with its value, is wider than its row.
 
-**Cause.** The title block is drawn at a fixed fraction of the drawing's size, each row its caption at the left and its value right-aligned at the right, and it neither wraps nor shrinks a value. This value's estimated width at the size it is drawn (characters × size × 0.62, the one width model the drawing uses) is more than the row holds between its two side pads, so it starts left of its own caption and prints over it, and past the block's frame when it is longer still. Both widths scale with the drawing, so the limit is a character count (about 25) on every sheet and at every scale. Only the authored `title { … }` rows are judged; on a multi-storey plan it is reported once.
+**Cause.** The title block is drawn at a fixed fraction of the drawing's size, each row its caption at the left and its value right-aligned at the right, and it neither wraps nor shrinks a value. This value's estimated width at the size it is drawn (characters × size × 0.62, the one width model the drawing uses) is more than the row holds between its two side pads, so it starts left of its own caption and prints over it, and past the block's frame when it is longer still. Both widths scale with the drawing, so the limit is a character count (about 25) on every sheet and at every scale. Only the authored `title { … }` rows are judged; on a multi-storey plan it is reported once. A caption the plan writes in `sheet text` is judged with its value, on every row, as it is drawn, and the warning sits on the block.
 
-**Fix.** Shorten the value to the number of characters the warning quotes and move the rest to a `notes "…"` line. There is no machine-applicable fix: what to cut is the author's wording.
+**Fix.** Shorten the value to the number of characters the warning quotes and move the rest to a `notes "…"` line. When the warning names the caption `sheet text` writes, shorten that caption or the value until the two fit their row. There is no machine-applicable fix: what to cut is the author's wording.
 
 ```arch static
 title {

@@ -29,7 +29,7 @@ import type { RStair, RStairFlight, RStairPiece } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { fmt3 } from "../num-format.js";
 import { flightAxis, flightsOf, isBlockStair, piecesOf, tailEdge } from "../vertical.js";
-import { runTooLong, runTreads, stairGlyph } from "./vertical-glyphs.js";
+import { breakLineEnds, runTooLong, runTreads, stairGlyph } from "./vertical-glyphs.js";
 
 /** Parse the mandatory `dir up|down` clause shared by `stair` and `escalator`. */
 export function parseVerticalDir(ctx: ParseCtx, keyword: string): VerticalDir {
@@ -361,9 +361,10 @@ export const stair: ElementDef = {
     return { kind: "stair", id, at, size, dir: n.dir, width, span: n.span };
   },
 
+  /** Every piece's corners, and where the break line ends, which is past its flight's edges. */
   bounds(resolved): Point[] {
     const s = resolved as RStair;
-    return piecesOf(s).flatMap((r) => rectCorners(r.x, r.y, r.w, r.h));
+    return [...piecesOf(s).flatMap((r) => rectCorners(r.x, r.y, r.w, r.h)), ...breakLineEnds(s)];
   },
 
   /** A block's lengths: every coordinate is a corner in `bounds()`, and a length is not. */
@@ -373,7 +374,7 @@ export const stair: ElementDef = {
   },
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
-    return stairGlyph(resolved as RStair, ctx.theme, ctx.sizes);
+    return stairGlyph(resolved as RStair, ctx.theme, ctx.sizes, ctx.text);
   },
   /** At most one tread line per division plus eight (`stairGlyph`: the footprint, the two
    *  break lines, the two band edges and the four-stroke arrow), for the drawing budget. A block

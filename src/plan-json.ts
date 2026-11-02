@@ -99,6 +99,7 @@ import {
 } from "./analyze.js";
 import { roomToward, verticalConnections } from "./vertical.js";
 import { SEGMENT_SELECT_RE } from "./segment-select.js";
+import { SHEET_DECIMAL_KEY } from "./sheet-text.js";
 import { DEFAULT_MATERIAL } from "./hatches.js";
 import { openRunsOf } from "./analyze.js";
 import type { Arc } from "./geometry/arc.js";
@@ -974,6 +975,8 @@ export type PlanJsonDroppedClause =
   | "schedule openings"
   | "legend"
   | "notes"
+  | "sheet text"
+  | "decimal mark"
   | "theme"
   | "style"
   | "accTitle"
@@ -1043,6 +1046,12 @@ function droppedFromPlan(ir: ResolvedPlan): PlanJsonDropped[] {
   if (ir.openingSchedule) rows.push({ clause: "schedule openings", count: 1 });
   if (ir.legend) rows.push({ clause: "legend", count: 1 });
   if (ir.notes && ir.notes.length > 0) rows.push({ clause: "notes", count: ir.notes.length });
+  // `decimal` sets a mark and is no word of the sheet, so it is said on a row of its own.
+  const wording = ir.sheetText?.entries ?? [];
+  const words = wording.filter((e) => e.key !== SHEET_DECIMAL_KEY).length;
+  if (words > 0) rows.push({ clause: "sheet text", count: words });
+  const mark = wording.find((e) => e.key === SHEET_DECIMAL_KEY);
+  if (mark) rows.push({ clause: "decimal mark", count: 1, text: `decimal ${JSON.stringify(mark.value)}` });
   const themed = ir.themeBase !== undefined || ir.themeFrom !== undefined || Object.keys(ir.theme ?? {}).length > 0;
   if (themed) rows.push({ clause: "theme", count: 1 });
   const styled = Object.entries(ir.styles ?? {}).filter(([, over]) => Object.keys(over).length > 0);
