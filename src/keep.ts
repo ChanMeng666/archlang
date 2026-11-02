@@ -35,7 +35,7 @@ import { chargeSteps, closest, stepSite } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import { arcExtremes } from "./geometry/arc.js";
 import { pointInPolygon } from "./geometry/polygon.js";
-import type { RRoom, ResolvedElement, ResolvedPlan, RWall } from "./ir.js";
+import type { RColumn, RRoom, ResolvedElement, ResolvedPlan, RWall } from "./ir.js";
 import {
   capFirst,
   makeNaming,
@@ -733,6 +733,29 @@ function readLine(ix: StoreyIndex, ctx: KeepStoreyCtx, ref: KeepRef, text: strin
   };
 }
 
+/**
+ * What `on axis` holds on an axis that runs `vertical` or not: a wall's line, or a column's centre
+ * across the axis. A column has no line of its own, so this form alone reads one, and two keeps
+ * hold it on a crossing.
+ */
+function readHeld(ix: StoreyIndex, ctx: KeepStoreyCtx, ref: KeepRef, vertical: boolean, text: string): Line | Refusal {
+  const el = ref.t === "el" && ref.segment === undefined ? ix.byId.get(ref.id) : undefined;
+  if (el?.kind !== "column" || ref.t !== "el") return readLine(ix, ctx, ref, text);
+  const found = lookup(ix, ctx, ref.id, text);
+  if (isRefusal(found)) return found;
+  const c = el as RColumn;
+  const v = vertical ? c.at.x + c.size.w / 2 : c.at.y + c.size.h / 2;
+  return {
+    vertical,
+    h: halfOfCentre(v),
+    raw: v,
+    centre: true,
+    phrase: `the column ${ix.naming.placeAt(c.at)}`,
+    that: "that column",
+    text: keepRefText(ref),
+  };
+}
+
 /** A point a keep reads an element at (`offset`'s `<x>`): an opening's centre, a piece's centre. */
 function readPoint(
   ix: StoreyIndex,
@@ -912,14 +935,17 @@ function measureAlign(
     if (node.wall.t !== "el") {
       return {
         code: "E_KEEP_MEASURE",
-        message: "`keep on axis` holds a wall on the axis: name the wall",
+        message: "`keep on axis` holds a wall or a column on the axis: name it",
         hint: `\`${keepRefText(node.wall)}\` in \`${text}\` is not a wall`,
       };
     }
   }
   const lines: Line[] = [];
   for (const ref of refs) {
-    const l = readLine(ix, ctx, ref, text);
+    const l =
+      node.form === "on-axis" && ref === node.wall
+        ? readHeld(ix, ctx, ref, lines[0]!.vertical, text)
+        : readLine(ix, ctx, ref, text);
     if (isRefusal(l)) return l;
     lines.push(l);
   }

@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**151 errors** · **91 warnings**
+**151 errors** · **92 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -163,6 +163,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_ACCESSIBLE_WC_SIDE_WALL`](#w_accessible_wc_side_wall) | warning | An accessible WC's pan stands too far from every side wall. |
 | [`W_ALIAS_MATCH`](#w_alias_match) | warning | A room's use was inferred from an indirect alias, not stated. |
 | [`W_ANNOTATION_OVERLAP`](#w_annotation_overlap) | warning | A label or a `dims auto` number is printed over a symbol, a wall, a door swing or another label, or a label runs off its room. |
+| [`W_AXES_DIFFER`](#w_axes_differ) | warning | The plan's one `axes` block comes out as different grids on two storeys. |
 | [`W_BALCONY_NO_DOOR`](#w_balcony_no_door) | warning | A balcony with no way onto it. |
 | [`W_BATH_VIA_BEDROOM`](#w_bath_via_bedroom) | warning | Bathroom is reachable only through a bedroom. |
 | [`W_BEDROOM_NO_WINDOW`](#w_bedroom_no_window) | warning | Bedroom has no window. |
@@ -365,7 +366,7 @@ column at (0,0) size 0x300   # error: width is 0
 
 *error* — A room-edge datum is read before any room is placed.
 
-**Cause.** A datum (`hall.top`, `hall.cx`, …) reads the frozen table of placed rooms, which exists only once every room of the group is placed (ADR 0028 §1). A `let` is evaluated once, when the plan expands, as are loop bounds, conditions, `set`, `place` and component arguments, and the plan settings (`height`, `axes`, the site boundary); a room's own `at`/`size` and relational placement run while the rooms are being placed. None of them can read a datum. Nor can the body of a user function (`let f() = hall.top`): it has no room of its own, so the edge is passed as an argument (`f(hall.top)`), which the caller evaluates.
+**Cause.** A datum (`hall.top`, `hall.cx`, …) reads the frozen table of placed rooms, which exists only once every room of the group is placed (ADR 0028 §1). A `let` is evaluated once, when the plan expands, as are loop bounds, conditions, `set`, `place` and component arguments, and the plan settings (`height`, `axes`, the site boundary); a room's own `at`/`size` and relational placement run while the rooms are being placed. None of them can read a datum. A positioning axis (`axis.3`) is known once the plan has expanded, so a room's `at` and `size` can read one; what expands first cannot, because the axes read the plan's `let`s. Nor can the body of a user function (`let f() = hall.top`): it has no room of its own, so the edge is passed as an argument (`f(hall.top)`), which the caller evaluates.
 
 **Fix.** Write the datum in the statement that uses it (a wall point, an opening or furniture position, a dimension), or give the room numbers or a relational placement (`right-of|left-of|above|below`) instead of another room's edge.
 
@@ -1088,7 +1089,7 @@ plan "K" {
 
 *error* — The keep's measure is not defined for what it names.
 
-**Cause.** A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).
+**Cause.** A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a column anywhere but `on axis`, which reads it at its centre; a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).
 
 **Fix.** Name what the measure reads: a rectangular room's `left`/`right`/`top`/`bottom`/`cx`/`cy`, `axis <label>`, a straight wall or `<wall> segment <n>`; compare widths of openings with `keep equal width`.
 
@@ -1979,9 +1980,9 @@ let x = frobnicate(2)   # error
 
 *error* — Unknown reference.
 
-**Cause.** An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have.
+**Cause.** An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have, or `axis.3` names a positioning axis the plan does not declare. A placed component reads no axis: its coordinates are its own frame's.
 
-**Fix.** Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot).
+**Fix.** Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot; for an axis, the label the plan's `axes` give it).
 
 ```arch static
 let x = y + 1   # error if `y` is undefined
@@ -2227,6 +2228,22 @@ paper A4 landscape
 scale 1:100
 room id=bed at (0,0) size 3250x3000 label "Bedroom 4" at (2400,1900) uses bedroom
 furniture bed at (1650,900) size 1500x2000   # lint: the pinned name is printed over the bed
+```
+
+## W_AXES_DIFFER
+
+*warning* — The plan's one `axes` block comes out as different grids on two storeys.
+
+**Cause.** A multi-storey plan declares `axes` once, outside the levels, and each storey evaluates the block against its own bindings. A `let` written inside a `level` is one of them, so the same label stands at another position on that storey, and `keep on axis` holds there against that storey's own axis. The drawing shows both grids; the storeys just do not share one.
+
+**Fix.** Move the `let` the block reads to the plan, so every storey reads one value. There is no per-storey grid: a storey that really is set out differently is a different plan.
+
+```arch static
+plan "G" {
+  axes { x at 0, BAY }
+  level 1 { let BAY = 6000 }
+  level 2 { let BAY = 7000 }   # warning: axis 2 stands at two positions
+}
 ```
 
 ## W_BALCONY_NO_DOOR

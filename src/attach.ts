@@ -21,7 +21,7 @@ import type { WallLike, WallSegment } from "./geometry.js";
 import { segmentLength, segmentPointAlong, segmentsOfWall } from "./geometry.js";
 import type { OpeningRelation, WindowCorner } from "./ir.js";
 import { enumList } from "./grammar/tokens.js";
-import { EDGE_WORDS } from "./room-datums.js";
+import { axisRead, EDGE_WORDS } from "./room-datums.js";
 import { fmt3 as numStr } from "./num-format.js";
 import { cornerOnWall, hostedDatumDistance, placeBetween, placeOnEdge, type RelationCtx } from "./opening-relation.js";
 
@@ -116,7 +116,16 @@ export function parseAttachPos(ctx: ParseCtx): { pos: AttachPos; end: number } {
         : { datum: t.value, span: { start: t.start, end: t.end } };
     return { pos: { kind: "from", value, from }, end: t.end };
   }
-  return { pos: { kind: "mm", value }, end: ctx.peek(-1).end };
+  const end = ctx.peek(-1).end;
+  // `at axis.2` alone stands on the axis, as `at axis 2` does. Read as a number it would be
+  // that many mm along the wall from its start, and land somewhere else without a word.
+  if (value.t === "ref") {
+    const label = axisRead(value.name);
+    if (label !== undefined) {
+      return { pos: { kind: "axis", label, span: value.span ?? { start: end, end } }, end };
+    }
+  }
+  return { pos: { kind: "mm", value }, end };
 }
 
 /** Is `name` written as a room edge (`r.top`, `west.main.left`)? Only such an `on` target may

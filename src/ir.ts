@@ -2369,6 +2369,8 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       const pen = lineWeightOutOfRange(levels, lw, ast.lineWeightSpan, registry);
       if (pen) planWide.push(pen);
     }
+    const grid = axesDiffer(levels, ast);
+    if (grid) planWide.push(grid);
   }
 
   return {
@@ -2383,6 +2385,30 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       ...planWide,
     ],
     levels,
+  };
+}
+
+/**
+ * `W_AXES_DIFFER`, when the one `axes` block came out as two grids. Each storey evaluates it, and
+ * a `let` inside a `level` is in that storey's bindings, so `keep on axis` could hold on both
+ * storeys with the walls apart. Uncharged: the comparison reads what evaluating the block paid for,
+ * and a plan that writes no `axes` does none of it.
+ */
+function axesDiffer(levels: readonly ResolvedLevel[], ast: PlanNode): Diagnostic | undefined {
+  if (!ast.axes) return undefined;
+  const first = levels[0]!;
+  const a = first.ir.axes ?? [];
+  const other = levels.find((l) => {
+    const b = l.ir.axes ?? [];
+    return b.length !== a.length || b.some((x, i) => x.axis !== a[i]!.axis || x.pos !== a[i]!.pos);
+  });
+  if (!other) return undefined;
+  return {
+    severity: "warning",
+    code: "W_AXES_DIFFER",
+    message: `The plan's \`axes\` come out differently on level ${fmt3(other.level)} and on level ${fmt3(first.level)}, so the storeys do not share one grid`,
+    ...(ast.axes.span ? { span: ast.axes.span } : {}),
+    hints: ["a `let` inside a `level` reaches the block: move it to the plan, so every storey reads one value"],
   };
 }
 
@@ -2941,6 +2967,7 @@ function resolveBody(
         : `the plan's \`north\` is \`${north}\``;
     let ids: Set<string> | undefined;
     return {
+      instance: grp.frame !== undefined,
       compassAliases: grp.frame === undefined && north === "up",
       compassWhy,
       instanceIds: () => {
@@ -3143,7 +3170,8 @@ function resolveBody(
     let table: DatumTable;
     try {
       // The room pass reads no datum: the table it would read does not exist yet.
-      withDatumReader(beforeRoomsReader("rooms"), () => {
+      const axisScope = { axes: axes ?? [], instance: grp.frame !== undefined };
+      withDatumReader(beforeRoomsReader("rooms", axisScope), () => {
         if (roomKind >= 0) resolveKind(roomKind);
         activeEntry = undefined;
         placeRelational(relational.rooms(), snapPt, (d, room) => {

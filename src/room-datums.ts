@@ -17,10 +17,15 @@
  * (`hall.top`, ADR 0028 §2) through the readers below, which the resolver installs on the
  * evaluator (`withDatumReader`, `src/expr.ts`) for the phase it is in. Building it is new
  * work, so it is charged to the step meter before it allocates.
+ *
+ * The same readers answer a positioning axis by its label (`axis.3`, `axis.B`, {@link axisRead}).
+ * The axes are evaluated before the root group's rooms, so unlike an edge an axis also reads in
+ * the room pass. They read every plan-level `let`, so like an edge it never reads at expansion;
+ * and an instance sees none, because a component's coordinates are its own frame's (ADR 0016 §3).
  */
 
 import type { Point } from "./ast.js";
-import type { Diagnostic } from "./diagnostics.js";
+import type { Diagnostic, Span } from "./diagnostics.js";
 import { chargeSteps, closest, type DatumReader, type Value } from "./expr.js";
 import type { RAxis, RRoom } from "./ir.js";
 import { type EdgeLine, extremeRuns, rectilinear, runsText, type SideWord } from "./room-tiling.js";
@@ -176,7 +181,51 @@ export function splitDatum(name: string): { room: string; word: string } | undef
   return { room: name.slice(0, dot), word };
 }
 
+/**
+ * The label a dotted name reads a positioning axis by (`axis.3` is `3`, `axis.AB` is `AB`), or
+ * `undefined`. A label is digits or capitals (`numberAxes`), never a datum word, so this cannot
+ * be a room named `axis`, and `axis.top` stays that room's edge.
+ */
+export function axisRead(name: string): string | undefined {
+  return /^axis\.(?:[0-9]+|[A-Z]+)$/.test(name) ? name.slice(5) : undefined;
+}
+
 const NUM0: Value = { t: "num", v: 0 };
+
+/** The axes a statement can read: the plan's in the root group, none in a placed instance. */
+export interface AxisScope {
+  readonly axes: readonly DatumAxis[];
+  readonly instance: boolean;
+}
+
+/** Read one axis, or refuse at the datum. One step per axis, as `at axis <label>` pays. */
+function readAxis(
+  scope: AxisScope,
+  label: string,
+  name: string,
+  span: Span | undefined,
+  onError: (d: Diagnostic) => void,
+): Value {
+  chargeSteps(1 + scope.axes.length);
+  const a = scope.axes.find((x) => x.label === label);
+  if (a) return { t: "num", v: a.pos };
+  const near = closest(
+    label,
+    scope.axes.map((x) => x.label),
+  );
+  onError({
+    severity: "error",
+    message: scope.instance
+      ? `\`${name}\` is read inside a placed component, whose coordinates are its own frame's; share a \`let\` with the \`axes\` block, and hold the result with \`keep on axis\` from the storey`
+      : scope.axes.length > 0
+        ? `No positioning axis is labelled "${label}" in \`${name}\``
+        : `\`${name}\` reads a positioning axis, and this plan declares none`,
+    code: "E_UNKNOWN_REF",
+    ...(span ? { span } : {}),
+    ...(near ? { hints: [`did you mean \`axis.${near}\`?`] } : {}),
+  });
+  return NUM0;
+}
 
 /** Where a datum is read when no table exists yet. */
 export type DatumPhase = "expand" | "rooms";
@@ -186,17 +235,23 @@ export type DatumPhase = "expand" | "rooms";
  * `E_DATUM_BEFORE_ROOMS` at the datum. `expand` is the plan's expansion (a `let`, a loop
  * bound, a condition, a `place`, a `set`, a component argument) and its plan settings
  * (`height`, `axes`, the site boundary); `rooms` is a group's room pass (a room's own
- * position or size, relational placement).
+ * position or size, relational placement). A positioning axis is known in the room pass, so
+ * there it reads through `axisScope`; at expansion it is not, because the axes read what the
+ * expansion binds.
  */
-export function beforeRoomsReader(phase: DatumPhase): DatumReader {
+export function beforeRoomsReader(phase: DatumPhase, axisScope?: AxisScope): DatumReader {
   return (name, span, onError) => {
-    if (splitDatum(name) === undefined) return undefined;
+    const label = axisRead(name);
+    if (label !== undefined && axisScope) return readAxis(axisScope, label, name, span, onError);
+    if (label === undefined && splitDatum(name) === undefined) return undefined;
     onError({
       severity: "error",
       message:
-        phase === "expand"
-          ? `\`${name}\` is read when the plan expands (a \`let\`, a loop or condition, a \`place\`, a \`set\`, a component argument or a plan setting), before any room is placed; write the datum in the statement that uses it`
-          : `\`${name}\` is read while the rooms are being placed, before any room's edges are known; give this room numbers or a relational placement (\`right-of|left-of|above|below\`) instead`,
+        label !== undefined
+          ? `\`${name}\` is read when the plan expands (a \`let\`, a loop or condition, a \`place\`, a \`set\`, a component argument or a plan setting), before the axes are evaluated, because they read the plan's \`let\`s; share a \`let\` with the \`axes\` block, or write the datum in the statement that uses it`
+          : phase === "expand"
+            ? `\`${name}\` is read when the plan expands (a \`let\`, a loop or condition, a \`place\`, a \`set\`, a component argument or a plan setting), before any room is placed; write the datum in the statement that uses it`
+            : `\`${name}\` is read while the rooms are being placed, before any room's edges are known; give this room numbers or a relational placement (\`right-of|left-of|above|below\`) instead`,
       code: "E_DATUM_BEFORE_ROOMS",
       ...(span ? { span } : {}),
     });
@@ -212,8 +267,7 @@ export function beforeRoomsReader(phase: DatumPhase): DatumReader {
  */
 export function functionBodyReader(fn: string): DatumReader {
   return (name, span, onError) => {
-    const d = splitDatum(name);
-    if (d === undefined) return undefined;
+    if (axisRead(name) === undefined && splitDatum(name) === undefined) return undefined;
     onError({
       severity: "error",
       message: `\`${name}\` is read inside the body of \`${fn}\`, which has no room of its own; pass the edge as an argument: \`${fn}(${name})\``,
@@ -226,6 +280,8 @@ export function functionBodyReader(fn: string): DatumReader {
 
 /** What a group's table reader needs beside the table. */
 export interface TableReaderOpts {
+  /** This group is a placed instance, so it reads no positioning axis. */
+  readonly instance: boolean;
   /** Compass words alias the frame words: the root group of a plan whose `north` is `up`. */
   readonly compassAliases: boolean;
   /** Why compass words are refused here, when they are (quoted in the message). */
@@ -251,7 +307,10 @@ export interface TableReaderOpts {
  * A read is one table lookup, paid by the evaluation step of the name itself.
  */
 export function tableReader(table: DatumTable, opts: TableReaderOpts): DatumReader {
+  const scope: AxisScope = { axes: table.axes, instance: opts.instance };
   return (name, span, onError) => {
+    const label = axisRead(name);
+    if (label !== undefined) return readAxis(scope, label, name, span, onError);
     const d = splitDatum(name);
     if (d === undefined) return undefined;
     const refuse = ({ code, message }: { code: string; message: string }, hint?: string): Value => {

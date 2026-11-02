@@ -61,7 +61,7 @@ be that many millimetres along the wall from its start, and land somewhere else 
 | Where | What happens | Why |
 |---|---|---|
 | A room's `at` and `size`, a wall, a column, furniture, a dimension: any statement of the plan or a storey | Reads | The axes are evaluated before the root group's rooms, so unlike `hall.top` it also reads in the room pass |
-| A `let`, a loop bound, a condition, a `place … at`, a component argument, a plan setting | `E_DATUM_BEFORE_ROOMS`, naming the shared `let` as the route | The axes read every plan-level `let`, wherever it sits, so they exist only after the expansion those statements are part of |
+| A `let`, a loop bound, a condition, a `place … at`, a `strip … at`, a component argument, a plan setting | `E_DATUM_BEFORE_ROOMS`, naming the shared `let` as the route | The axes read every plan-level `let`, wherever it sits, so they exist only after the expansion those statements are part of |
 | The body of a user function | `E_DATUM_BEFORE_ROOMS` | As `hall.top`: pass it as an argument, from a statement |
 | A statement inside a `place`d component | `E_UNKNOWN_REF`, saying why | An instance resolves in its own frame and never reaches out (ADR 0016 §3) |
 | A legacy bare call of a component | Reads | It is a macro: its statements stand in the plan |
@@ -127,8 +127,9 @@ structure, and `column` stays what it is, a drawn rectangle.
 A plan that reads no axis by `axis.<label>`, holds no column with `keep on axis` and draws no two grids
 resolves, draws, describes and lints exactly as before, on every payload including steps.
 `test/shared-grid-byte-identity.test.ts` pins it; `test/fixtures/shared-grid/shared-grid.arch` writes
-the form. The one sanctioned move is the wording of two refusals a plan only reaches by writing the
-form: `keep on axis 2 c`, now valid, and `axis.3` in an expression, which was `E_PARSE`.
+the form. The sanctioned moves are refusals, and no plan of the corpus reaches one: `keep on axis 2 c`
+and `axis.3` in an expression (`E_PARSE`, or `Unknown name` for `axis.B`) are the form itself, and
+`keep on axis 2 r.left` keeps its code and now says "a wall or a column".
 
 ## 5. Left as it stands
 

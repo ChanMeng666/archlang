@@ -648,7 +648,8 @@ const POSITIVE: Snippet[] = [
       keep("equal depth of rooms, advisory", "keep equal depth a b advisory"),
       keep("offset of an opening from a datum, hard spelled", "keep offset d from b.top 2500 hard"),
       keep("min clear of a room", "keep min clear b 3800"),
-      keep("on axis <label> <wall>", "keep on axis 2 p"),
+      keep("on axis <label> <wall|column>, a wall", "keep on axis 2 p"),
+      keep("on axis <label> <wall|column>, a column", "column id=c at (3800,2000) size 400x400\n  keep on axis 2 c"),
       keep("fixed <d> at <mm>, the axis datum", "keep fixed axis 2 at 4000"),
       {
         keyword: "keep",

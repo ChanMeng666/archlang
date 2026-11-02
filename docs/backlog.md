@@ -2994,7 +2994,7 @@ flag, not a step.
   ring's whole analysis layer — effective-vertex count, self-intersection, centroid, adjacency,
   occupancy and nav grids, the `dims auto` vertex chain — is written on literal vertices and must
   learn arcs. Build it on its own merits, not to honour a version number.
-- **P2-4** addressable structural grid · **P2-5** measured-vs-drawn edge separation ·
+- **P2-5** measured-vs-drawn edge separation ·
   **P2-6** multi-flight stairs — each needs its own design pass.
 - **Deferred from the axonometric view (P3-3, shipped)**, by name: the roof (there is no pitch
   datum, only an eaves outline — approximating one is the move `roof` itself refuses), furniture,

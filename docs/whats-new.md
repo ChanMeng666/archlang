@@ -258,6 +258,37 @@ Four things that gave no report before 1.48.0:
 - A hyphen in an id, a `,` between uses and a `;` at a line end each carry a hint saying what to write.
 - `dropped` also reaches `batch -f json` and the MCP `compile` tool.
 
+## One grid for every storey
+
+`axes` declared once serves every storey, and a wall, a column or a room can now stand on it by
+label. `axis.3` and `axis.B` read an axis as a coordinate; `keep on axis` holds a wall on it, and
+now a column, read at its centre.
+
+```arch
+plan "One grid" {
+  units mm
+  axes { x at 0, 6000, 12000 y at 0, 5000 }
+  level 1 {
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    column id=c at (axis.3 - 200, axis.B - 200) size 400x400
+    keep on axis 2 g2
+    keep on axis 3 c
+    keep on axis B c
+  }
+  level 2 {
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    column id=c at (axis.3 - 150, axis.B - 200) size 400x400
+    keep on axis 3 c   # warning: that column is 50 mm right of the axis
+  }
+}
+```
+
+A label the plan does not declare is `E_UNKNOWN_REF`. A `let`, a `place … at` and a component
+argument are read before the axes exist, so they share a `let` with the `axes` block instead; a
+component keeps its own coordinates, and `keep on axis 2 wing.c` on the storey checks it after it is
+placed. `W_AXES_DIFFER` warns if a `let` inside a `level` turns the one block into two grids.
+See [Positioning axes](language-reference.md#positioning-axes-定位轴线).
+
 ## L-shaped rooms
 
 A `room polygon` whose edges are all horizontal or vertical works in `walls from rooms` (1.49.0). It stays one room, with one stamp and one area, and the walls come from its outline.
