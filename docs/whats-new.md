@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.52
+# What's new in 1.44 to 1.53
 
-The features that arrived in 1.44.0 to 1.52.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.53.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -26,10 +26,10 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Net area in the room stamp | 1.52.0 | [Net area in the stamp](#net-area-in-the-stamp) |
 | Window kinds and a glazed terrace door | 1.52.0 | [Window kinds](#window-kinds) |
 | A window round a corner, with no wall left at it | 1.52.0 | [Corner windows](#corner-windows) |
-| The sheet's words and decimal mark, as a plan writes them | unreleased | [Sheet text](#sheet-text) |
-| A detail with no north arrow, scale bar or title box | unreleased | [Hidden sheet marks](#hidden-sheet-marks) |
-| One piece of furniture, mirrored | unreleased | [One mirrored piece](#one-mirrored-piece) |
-| A floor finish on a room | unreleased | [Room floors](#room-floors) |
+| The sheet's words and decimal mark, as a plan writes them | 1.53.0 | [Sheet text](#sheet-text) |
+| A detail with no north arrow, scale bar or title box | 1.53.0 | [Hidden sheet marks](#hidden-sheet-marks) |
+| One piece of furniture, mirrored | 1.53.0 | [One mirrored piece](#one-mirrored-piece) |
+| A floor finish on a room | 1.53.0 | [Room floors](#room-floors) |
 
 ## Quantities and takeoff
 
@@ -239,7 +239,7 @@ plan "Bow" {
 note: Plan JSON carries no legends; this export leaves out 1 legend (the .arch source still holds it)
 ```
 
-A wall's `arc` and the `paper` now travel (unreleased): the arc on the point it arrives at, `{ "x": 0, "y": 4000,
+A wall's `arc` and the `paper` now travel (1.53.0): the arc on the point it arrives at, `{ "x": 0, "y": 4000,
 "arc": { "radius": 4000, "dir": "cw" } }`, and the sheet beside `scale`, `{ "size": "A4", "orientation": "landscape"
 }`, so neither is reported and a plan that has nothing else to lose comes back byte for byte.
 

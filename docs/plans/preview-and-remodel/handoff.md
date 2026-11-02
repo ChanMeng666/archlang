@@ -1,4 +1,4 @@
-# Preview-and-remodel programme: handoff (state as of 2026-11-02, batches 1 and 2 of the J round released)
+# Preview-and-remodel programme: handoff (state as of 2026-11-02, the J round released)
 
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
@@ -40,7 +40,7 @@ promise it.
 
 ## 3. Next items, in order
 
-1. **The owner's round of 2026-11-02 (D30), cards J1–J15 in `cards.md`.** Batches 1 and 2 are out as 1.51.0 and 1.52.0 (`research/2026-11-02-as-built.md`). J12, J13 and J15 are in progress on their branches; J14 is next. From 2026-11-24 `main` takes bug fixes only until Show HN (2026-12-01) has run.
+1. **The owner's round of 2026-11-02 (D30), cards J1–J15 in `cards.md`.** All three batches are out as 1.51.0, 1.52.0 and 1.53.0 (`research/2026-11-02-as-built.md`); the residue is J16 to J18 in `cards.md`. From 2026-11-24 `main` takes bug fixes only until Show HN (2026-12-01) has run.
 2. **The N10 read, on or after 2026-11-27.** Wave 4 and wave 6 wait for it. G6 closes then if no sample arrived (D22).
    Wave 7 releases fall inside the window; the growth `data/agent-reach.csv` notes date each one.
 3. **G11 and H9,** the residue, after Show HN. H9 holds D27, the stair `bounds()` gap.
@@ -51,6 +51,7 @@ Registering first is impossible, because npm needs the package to exist.
 ## 4. How a card is run
 
 - Never wait idly on CI: pin, then start the next item that does not depend on it (owner, 2026-10-31).
+- One executor and one heavy command at a time (the owner's laptop froze on 2026-11-02): two vitest workers, no local full suite, CI is the gate.
 - The main session plans, reviews and dispatches; one executor subagent per card in an isolated
   worktree branched from `main` (not from another card's branch), with its own `npm ci` (never a
   junctioned `node_modules`); the executor runs the card's gates and the touched tests; the

@@ -194,7 +194,7 @@ you observed. Do NOT push anything — this command only verifies.
      `dist/core.mjs` (the core is bundled there once, not in `dist/server.js`). Search it with a literal matcher, never a regex.
   3. Upload the HIGHEST un-uploaded `.vsix` (`.vsix` files are gitignored and several can pile up).
   4. The gallery lags an upload by minutes; a disagreeing probe means wait and re-probe.
-  5. Then dispatch `publish-openvsx.yml` and check `https://open-vsx.org/api/ChanMeng/archlang`: nothing else
+  5. Then dispatch `publish-openvsx.yml` on the tag, `gh workflow run publish-openvsx.yml --ref v<core version>`, never `main`, because it builds the ref it runs on, and check `https://open-vsx.org/api/ChanMeng/archlang`: nothing else
      keeps Open VSX current, and it skips a version it already has.
 - **MCPB bundle / Smithery (human step; no credential in CI).** `release.yml` builds
   `archlang-mcp-<mcp version>.mcpb` (`npm run build:mcpb`, proven with `npm run prove:mcpb`) and attaches
