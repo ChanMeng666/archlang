@@ -582,6 +582,11 @@ export type FurniturePlace =
   | { mode: "anchor"; anchor: FurnitureAnchor; inset?: Expr; flush?: boolean; flushSpan?: Span };
 
 export interface FurnitureNode extends NodeBase {
+  /**
+   * `mirror`: the symbol's left and right swap, in its own frame and before its quarter-turn, so
+   * its back stays where `rotate`, `facing` or `against` put it. The same bit a reflecting `place` sets.
+   */
+  mirror?: true;
   kind: "furniture";
   /** Free-form category, e.g. "bed" or "sofa". */
   category: string;

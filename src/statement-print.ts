@@ -250,7 +250,7 @@ export function statementText(s: LeafStatement): Doc {
       // the `clear` zones in their canonical order, then the trailing `in`.
       const facing = s.facing ? ` facing ${s.facing.target}` : "";
       const clear = `${s.clear?.front !== undefined ? ` clear front ${exprStr(s.clear.front)}` : ""}${s.clear?.sides !== undefined ? ` clear sides ${exprStr(s.clear.sides)}` : ""}`;
-      return `furniture ${id}${s.category} ${pos}${s.size ? ` size ${sizeStr(s.size)}` : ""}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.rotate ? ` rotate ${exprStr(s.rotate)}` : ""}${facing}${clear}${roomTail}`;
+      return `furniture ${id}${s.category} ${pos}${s.size ? ` size ${sizeStr(s.size)}` : ""}${s.label ? ` label ${exprStr(s.label)}` : ""}${s.rotate ? ` rotate ${exprStr(s.rotate)}` : ""}${facing}${s.mirror ? " mirror" : ""}${clear}${roomTail}`;
     }
     case "strip": {
       const horiz = s.dir === "right" || s.dir === "left";

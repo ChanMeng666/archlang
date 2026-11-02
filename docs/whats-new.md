@@ -28,6 +28,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | A window round a corner, with no wall left at it | 1.52.0 | [Corner windows](#corner-windows) |
 | The sheet's words and decimal mark, as a plan writes them | unreleased | [Sheet text](#sheet-text) |
 | A detail with no north arrow, scale bar or title box | unreleased | [Hidden sheet marks](#hidden-sheet-marks) |
+| One piece of furniture, mirrored | unreleased | [One mirrored piece](#one-mirrored-piece) |
 
 ## Quantities and takeoff
 
@@ -501,3 +502,19 @@ plan "Stair detail" {
 ```
 
 `scale 1:20 hidden` is still the operative scale and `north 30 hidden` keeps its bearing for every compass fact. A band with nothing left in it is not reserved, so the drawing gets the room back. See [Hiding the sheet marks](language-reference.md#hiding-the-sheet-marks).
+
+## One mirrored piece
+
+Mirroring a sofa used to take a `component` and a `place … mirror x`, which lost the room it stood in. `mirror` on the statement swaps one piece's left and right, and its back stays put:
+
+```arch
+plan "Two sofas" {
+  units mm
+  room id=a at (0,0) size 6000x4000 uses living
+  walls from rooms exterior 300 partition 100
+  furniture sofa_l in a anchor top-left flush size 2600x1800
+  furniture sofa_l in a anchor top-right flush size 2600x1800 mirror
+}
+```
+
+A handed symbol flips, and a symbol with no hand keeps its exact bytes. The word takes no axis: `mirror x` belongs to `place`, which reflects a whole instance. See [Furniture](language-reference.md#furniture).

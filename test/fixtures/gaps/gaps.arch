@@ -14,4 +14,5 @@ plan "Bath detail" {
   walls from rooms exterior 200 partition 100
   door between bath and hall at 1100 from start width 800 swing into bath
   window on bath.top width 900 sill 1200
+  furniture sofa_l in hall anchor top-right flush size 1200x1000 mirror
 }

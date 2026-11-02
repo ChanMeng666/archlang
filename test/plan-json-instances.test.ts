@@ -354,7 +354,7 @@ suite("PS3.9 — validating `components` and `instances` on input", () => {
     expect(arch(p)).toBe(arch(json(TWINS)));
   });
 
-  it("a body row's `mirror: true` is still refused (only a `place` frame can reflect)", () => {
+  it("a body row's `mirror: true` prints as the piece's own clause", () => {
     const p = payload();
     const body = (
       p.components as Array<{
@@ -362,7 +362,9 @@ suite("PS3.9 — validating `components` and `instances` on input", () => {
       }>
     )[0]!.body;
     body.furniture[0]!.mirror = true;
-    expect(planJsonToArch(p).diagnostics.map((d) => d.code)).toContain("E_JSON_MIRROR");
+    const back = planJsonToArch(p);
+    expect(back.diagnostics.map((d) => d.code)).not.toContain("E_JSON_MIRROR");
+    expect(back.source).toContain(" mirror");
   });
 
   it("still refuses the scripting keys it cannot carry", () => {

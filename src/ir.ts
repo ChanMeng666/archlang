@@ -625,13 +625,14 @@ export interface RFurniture extends RBase {
    *  Internal; never reaches the Scene, `describe()` or Plan JSON. */
   _sizeSwap?: { span: Span; text: string };
   /**
-   * This piece's instance frame REFLECTS (`place … mirror`), so its drawn symbol is the
-   * mirror image of the one the catalogue draws. Set by `frame.ts`'s `transformElement`
-   * — the one place a handed rule is flipped — and read by `furniture.render()`, which
+   * This piece is reflected, by its own `mirror` or an instance frame's (`place … mirror`), so its
+   * drawn symbol is the mirror image of the one the catalogue draws. Set by `furniture.resolve()`,
+   * XOR-composed by its `transform`, and read by `furniture.render()`, which
    * reflects the glyph about its own vertical centre line before applying the derived
    * quarter-turn. A symbol with a vertical mirror axis is unaffected at every footprint,
    * because the reflection is DERIVED from the drawing rather than declared per family
-   * (see `elements/glyph-chirality.ts`). Internal; never reaches `describe()` or Plan JSON.
+   * (see `elements/glyph-chirality.ts`). `describe()` reads it only as a symmetry fact's `hand`;
+   * Plan JSON carries it as `mirror`.
    */
   _mirror?: true;
   /** `against <room>.<edge>` as written (`against r_bed.left offset 1500`, ADR 0029 §2), for

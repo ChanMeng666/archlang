@@ -589,9 +589,8 @@ describe("plan-json — schema object", () => {
  * handed — the reflection as `mirror: true` (the IR's `_mirror`). The quarter-turn alone
  * cannot say it: `M · R(l) = R(m − l) · Fx`, and the `Fx` is the part `rotate` drops.
  *
- * The way back is REFUSED, not approximated: source has no per-furniture `mirror` (only a
- * `place … mirror x|y` frame can reflect a symbol), so `planJsonToArch` answers a
- * `mirror: true` piece with `E_JSON_MIRROR` rather than emitting the unmirrored symbol.
+ * The way back prints the piece's own `mirror` clause, the same bit (issue #405). A door or a
+ * dimension has no such clause, and `E_JSON_MIRROR` still answers those (the next block).
  *
  * The second test is still a TRIPWIRE, armed on purpose: a plan containing `place` does
  * not round-trip at all (`planFromJson` refuses a namespaced id with `E_DOTTED_DECL`).
@@ -650,23 +649,16 @@ describe("plan-json — G.10: a frame's reflection is projected", () => {
     expect(y?.mirror).toBe(true);
     expect(y).toEqual(x180);
 
-    // The way back is refused, never approximated: source has no per-furniture `mirror`.
+    // The way back prints the piece's own clause.
     const back = planJsonToArch({ ...planToJson(placed(" mirror x")).json, furniture: [b] });
-    expect(back.source).toBeUndefined();
-    const refusal = back.diagnostics.find((d) => d.code === "E_JSON_MIRROR");
-    expect(refusal?.severity).toBe("error");
-    expect(refusal?.message).toContain("/furniture/0/mirror");
-    // `mirror: false` is the absent key spelled out, and is accepted.
-    expect(
-      planJsonToArch({ ...planToJson(placed("")).json, furniture: [{ ...a, mirror: false }] }).diagnostics.map(
-        (d) => d.code,
-      ),
-    ).not.toContain("E_JSON_MIRROR");
+    expect(back.diagnostics.map((d) => d.code)).not.toContain("E_JSON_MIRROR");
+    expect(back.source).toContain("size 1400x700 mirror");
+    // `mirror: false` is the absent key spelled out, and prints nothing.
+    const spelled = planJsonToArch({ ...planToJson(placed("")).json, furniture: [{ ...a, mirror: false }] });
+    expect(spelled.source).not.toContain("mirror");
   });
 
   it("is MASKED because a `place`d plan cannot round-trip at all (E_DOTTED_DECL)", () => {
-    // The unmirrored placement: a mirrored one is now refused earlier, by `E_JSON_MIRROR`,
-    // before the parser that raises `E_DOTTED_DECL` ever runs — which would mask this pin.
     const payload = planToJson(placed("")).json;
     if (!payload) throw new Error("expected the plan to project");
     const back = planFromJson(payload);
@@ -674,8 +666,7 @@ describe("plan-json — G.10: a frame's reflection is projected", () => {
     expect(codes).toContain("E_DOTTED_DECL");
 
     // WHEN THIS FAILS: someone taught `planFromJson` to accept a namespaced id. A placed
-    // plan then round-trips — except its mirrored fixtures, which `E_JSON_MIRROR` still
-    // refuses because source has no per-furniture `mirror` to receive them.
+    // plan then round-trips, its mirrored fixtures by their `mirror` clause.
   });
 });
 

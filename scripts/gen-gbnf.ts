@@ -609,7 +609,7 @@ function rules(): [string, string][] {
     // text), then the two `clear` zones — the shared tail, in the parser's order.
     [
       "furn-tail",
-      `( ws "size" ws dims )? ( ws "label" ws string )? ( ws "rotate" ws expr | ws "facing" rws ref )? ( ws "clear" rws "front" ws expr )? ( ws "clear" rws "sides" ws expr )?`,
+      `( ws "size" ws dims )? ( ws "label" ws string )? ( ws "rotate" ws expr | ws "facing" rws ref )? ( ws "mirror" )? ( ws "clear" rws "front" ws expr )? ( ws "clear" rws "sides" ws expr )?`,
     ],
     [
       "dim-stmt",

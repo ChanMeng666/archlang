@@ -69,7 +69,13 @@ const ROWS = [...stairLawRows(ROOT), ...SHEET_INLINE_ROWS, ...GAPS_INLINE_ROWS];
 const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeWorld(dir) : undefined);
 
 /** Does a source write any of the forms? Read off the parse. */
-const writesAForm = (src: string): boolean => parse(src, BUILTIN_REGISTRY).plan?.hide !== undefined;
+const writesAForm = (src: string): boolean => {
+  const plan = parse(src, BUILTIN_REGISTRY).plan;
+  if (!plan) return false;
+  // A parse tree holds no `mirror` key but a piece's: a `place`'s axis is the string, never `true`.
+  const tree = JSON.stringify([plan.body, [...plan.components.values()]]);
+  return plan.hide !== undefined || tree.includes('"mirror":true');
+};
 
 const WITH = (form: string): string =>
   `plan "T" {\n  units mm\n  ${form}\n  room id=a at (0,0) size 4000x3000 label "A"\n  title { project "P" }\n}\n`;
@@ -287,6 +293,7 @@ suite("hidden, mirror and floor: the byte-identity law", () => {
     expect(writesAForm(WITH("north hidden"))).toBe(true);
     expect(writesAForm(WITH("scale hidden"))).toBe(true);
     expect(writesAForm(WITH("title hidden"))).toBe(true);
+    expect(writesAForm(WITH("furniture sofa_l at (0,0) size 2600x1600 mirror"))).toBe(true);
   });
 
   it("the digest can fail: each form on a row moves it", () => {
@@ -294,6 +301,10 @@ suite("hidden, mirror and floor: the byte-identity law", () => {
     expect(stairLawDigest(API, WITH("north up hidden"), undefined)).not.toBe(base);
     expect(stairLawDigest(API, WITH("scale hidden"), undefined)).not.toBe(base);
     expect(stairLawDigest(API, WITH("title hidden"), undefined)).not.toBe(base);
+    const piece = "furniture sofa_l at (0,0) size 2600x1600";
+    expect(stairLawDigest(API, WITH(`${piece} mirror`), undefined)).not.toBe(
+      stairLawDigest(API, WITH(piece), undefined),
+    );
   });
 
   it.each(BASELINE)("%s %s", (digest, name) => {

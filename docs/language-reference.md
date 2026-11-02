@@ -2012,7 +2012,7 @@ furniture <kind> [id=<id>] against wall <ref> [segment <n>|<selector>] [offset <
 furniture <kind> [id=<id>] in <room> centered [size <w>x<h>] [label …] [rotate …]
 furniture <kind> [id=<id>] in <room> anchor <a> [flush] [inset <mm>] [size <w>x<h>] [label …] [rotate …]
 furniture <kind> [id=<id>] against <room>.<edge> [offset <mm>] [size <along>x<depth>] [label …]
-… [rotate 0|90|180|270 | facing <id>] [clear front <mm>] [clear sides <mm>] [in <room>]
+… [rotate 0|90|180|270 | facing <id>] [mirror] [clear front <mm>] [clear sides <mm>] [in <room>]
 ```
 
 A piece of furniture or a built-in fixture. Every **catalogued** kind draws a real
@@ -2022,6 +2022,27 @@ rail and hangers — and ignores any `label`. Any other kind falls back to a sch
 symbol for. The catalogue is `archlang manifest --json`'s `fixtureCategories`, and every
 kind is documented with its symbol, footprint and facing in
 [Furniture & Fixtures](furniture.md).
+
+**`mirror` swaps one piece's left and right.** A `sofa_l` drawn with its chaise on the left comes
+out with it on the right, and the piece's back stays where `rotate`, `facing`, `against` or an
+`anchor` put it:
+
+```arch
+plan "Two sofas" {
+  units mm
+  room id=a at (0,0) size 6000x4000 uses living
+  walls from rooms exterior 300 partition 100
+  furniture sofa_l in a anchor top-left flush size 2600x1800
+  furniture sofa_l in a anchor top-right flush size 2600x1800 mirror
+}
+```
+
+The word takes no axis, because it works in the symbol's own frame: with `rotate 90`, a page axis
+would turn the back too. It sits among `rotate` and `facing`, in either order, and reads the same
+bit a reflecting `place` does, so a mirrored piece inside a `place … mirror` draws the plain
+symbol. A symbol with a vertical mirror axis has no left and right to swap and keeps its exact
+bytes, so a plain `table` does not change. `describe()` and `lint()` do not move, except the `hand`
+in `--facts symmetry`. Plan JSON carries it as `mirror: true`.
 
 A piece can be placed three ways: absolutely with `at (x,y)` (optionally turned with
 `rotate`), snapped **`against wall <ref>`** so its back sits on the wall and its

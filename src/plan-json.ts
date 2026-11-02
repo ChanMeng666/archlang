@@ -418,7 +418,7 @@ export interface FurnitureJson extends InstanceMark {
   /** `true` on every fixture inside a reflecting `place` frame — the FRAME's reflection,
    *  which the quarter-turn `rotate` cannot carry, not the glyph's handedness, so a
    *  symmetric symbol carries it too. Absent otherwise; `planJsonToArch` refuses it
-   *  (`E_JSON_MIRROR`), since source has no per-furniture `mirror`. */
+   *  as the `mirror` clause. */
   mirror?: boolean;
   /** Room-relative placement: centre the fixture inside `room`. */
   centered?: boolean;
@@ -1514,9 +1514,9 @@ function validateWallsFromRooms(w: unknown, path: string, val: Validator): void 
 }
 
 /**
- * `mirror: true` is a reflecting `place` frame's reflection, and a frame is the only thing
- * source can say it with: emitting the element would silently lose it. Refused (`E_JSON_MIRROR`)
- * rather than dropped — the one rule furniture, doors and dimensions all follow.
+ * `mirror: true` on a door or a dimension is a reflecting `place` frame's reflection, and a frame
+ * is the only thing source can say it with: emitting the element would silently lose it. Refused
+ * (`E_JSON_MIRROR`) rather than dropped. A piece of furniture has a `mirror` clause, so it is printed.
  */
 function refuseMirror(mirror: unknown, path: string, what: string, own: string, val: Validator): void {
   if (mirror !== undefined && typeof mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
@@ -1653,8 +1653,8 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
     if (f[k] !== undefined && !(isNum(f[k]) && (f[k] as number) > 0))
       val.err(`${path}/${k}`, "expected a positive number");
   if (f.rotate !== undefined && !isNum(f.rotate)) val.err(`${path}/rotate`, "expected a number");
-  // A handed symbol would draw unmirrored if the flag were dropped: refused, not dropped.
-  refuseMirror(f.mirror, path, "a fixture reflected by a `place` frame", "per-furniture", val);
+  // Printed as the piece's own `mirror` clause, which is the bit a reflecting `place` sets.
+  if (f.mirror !== undefined && typeof f.mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
   if (f.side !== undefined && f.side !== "left" && f.side !== "right")
     val.err(`${path}/side`, 'expected "left" or "right"');
   // The anchor accept-list is DERIVED from the parser's own `FURNITURE_ANCHORS`, never
@@ -1926,6 +1926,7 @@ function emitFurniture(f: FurnitureJson): string {
   if (f.label !== undefined) line += ` label ${q(f.label)}`;
   if (typeof f.facing === "string") line += ` facing ${f.facing}`;
   else if (typeof f.rotate === "number" && !f.against_wall && !f.against_edge) line += ` rotate ${num(f.rotate)}`;
+  if (f.mirror === true) line += " mirror";
   if (typeof f.clear_front === "number") line += ` clear front ${num(f.clear_front)}`;
   if (typeof f.clear_sides === "number") line += ` clear sides ${num(f.clear_sides)}`;
   // The trailing `in <room>` is what an `against wall` piece with no explicit `side`
@@ -1956,7 +1957,7 @@ export function planJsonToArch(json: unknown): { source?: string; diagnostics: D
  *
  * Not supported (documented): scripting (`let`/`for`/`if`/`component`) and `import`, but for a
  * placed component that derives its walls (`components`/`instances`); and a
- * `mirror: true` fixture, which only a `place` frame can state (`E_JSON_MIRROR`).
+ * `mirror: true` door or dimension, which only a `place` frame can state (`E_JSON_MIRROR`).
  */
 export function planFromJson(json: unknown): { ast?: PlanNode; source?: string; diagnostics: Diagnostic[] } {
   const { source, diagnostics } = planJsonToArch(json);
@@ -2500,7 +2501,7 @@ export const PLAN_JSON_SCHEMA = {
           mirror: {
             type: "boolean",
             description:
-              "True on every fixture inside a reflecting `place` frame: it records the frame's reflection, not the glyph's handedness, so a symmetric symbol carries it too (a handed one is drawn as its mirror image). Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
+              "True on a fixture that writes `mirror` and on every fixture inside a reflecting `place` frame, the two composed: it records the reflection, not the glyph's handedness, so a symmetric symbol carries it too (a handed one is drawn as its mirror image). Absent otherwise. `planFromJson` prints it as the `mirror` clause.",
           },
           centered: { type: "boolean", description: "Room-relative placement: centre inside `room`." },
           anchor: {
