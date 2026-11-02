@@ -418,6 +418,11 @@ const POSITIVE: Snippet[] = [
     note: "plan-level accessible description",
     src: plan(`  accDescr "A one-room studio."\n  room id=r1 at (0,0) size 4000x3000`),
   },
+  {
+    keyword: "sheet",
+    note: "the sheet's words, by key, and its decimal mark",
+    src: plan(`  sheet text { decimal "," total "SUMME" }\n  room id=r1 at (0,0) size 4000x3000`),
+  },
 
   ...AUTO_DIMS_MODES.map((m) => ({
     // Keyed `dims`, not `dim`: the mode set is the plan SETTING's, and printing it on the

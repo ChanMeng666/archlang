@@ -27,7 +27,9 @@
  * paper/scale-driven `sizes` flows through unchanged, and numbers route through
  * {@link fmt2}. Text is drawn in ASCII + `m²` only — the PNG backend rasterizes with a
  * bundled Roboto that carries no CJK, the same portability constraint that keeps the axis
- * bubbles off `①`/`Ⓐ`.
+ * bubbles off `①`/`Ⓐ` — unless the plan's `sheet text` writes its own words
+ * (`src/sheet-text.ts`). Those reach the drawing here, in layout and lowering, never in
+ * {@link roomSchedule}, which `describe()` also reads: the rows stay the plan's facts.
  */
 
 import type { Point } from "./ast.js";
@@ -48,7 +50,8 @@ import { fmt2 } from "./num-format.js";
 import { roomAreaMm2 } from "./analyze.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { openingCount, type OpeningRow } from "./opening-schedule.js";
-import { textWidth } from "./text-metrics.js";
+import { PLAIN_SHEET_TEXT, type SheetText } from "./sheet-text.js";
+import { inkWidth, textWidth } from "./text-metrics.js";
 
 /** Round to 2 decimals, deterministically — the same rounding `describe()` applies. */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
@@ -274,10 +277,10 @@ export interface LegendEntry {
 
 /** A hatch spec's printed name: the material, qualified only when it is not the default
  *  scale/angle (so two specs of one material never collapse to the same label). */
-function hatchName(h: HatchSpec): string {
-  let s = h.material;
-  if (h.scale !== 1) s += ` x${fmt2(h.scale)}`;
-  if (h.angle !== 0) s += ` @${fmt2(h.angle)}°`;
+function hatchName(h: HatchSpec, text: SheetText): string {
+  let s = text.word(h.material);
+  if (h.scale !== 1) s += ` x${text.num(fmt2(h.scale))}`;
+  if (h.angle !== 0) s += ` @${text.num(fmt2(h.angle))}°`;
   return s;
 }
 
@@ -310,28 +313,37 @@ function hatchName(h: HatchSpec): string {
  *    for a `glazed_sliding` door, each with its own symbol: those marks say nothing to a reader
  *    who has no row for them. A plan that writes none has no such row, and the older door kinds
  *    have none, which keeps their legends where they are.
+ *
+ * `text` words each row. An opening row with an authored kind is that word alone: German compounds,
+ * so a word + ` window` would be wrong, and the row's swatch already shows which it is.
  */
 export function legendEntries(
   hatches: readonly HatchSpec[],
   furniture: readonly RFurniture[],
   demolished = false,
   openings: readonly { kind: string; windowKind?: string; doorKind?: string }[] = [],
+  text: SheetText = PLAIN_SHEET_TEXT,
 ): LegendEntry[] {
   const out: LegendEntry[] = [];
   for (const h of hatches) {
-    out.push({ kind: "material", key: patternId(h.material, h.scale, h.angle), name: hatchName(h), hatch: h });
+    out.push({ kind: "material", key: patternId(h.material, h.scale, h.angle), name: hatchName(h, text), hatch: h });
   }
-  if (demolished) out.push({ kind: "demolished", key: "demolish", name: "demolished" });
+  if (demolished) out.push({ kind: "demolished", key: "demolish", name: text.word("demolished") });
   const present = new Set(furniture.map((f) => f.category));
   for (const cat of FIXTURE_CATEGORIES) {
-    if (present.has(cat) && hasFixtureGlyph(cat)) out.push({ kind: "fixture", key: cat, name: cat, category: cat });
+    if (present.has(cat) && hasFixtureGlyph(cat)) {
+      out.push({ kind: "fixture", key: cat, name: text.word(cat), category: cat });
+    }
   }
   const windows = new Set(openings.map((o) => o.windowKind));
   for (const k of WINDOW_KINDS) {
-    if (windows.has(k)) out.push({ kind: "opening", key: k, name: `${k} window`, windowKind: k });
+    if (windows.has(k)) {
+      out.push({ kind: "opening", key: k, name: text.has(k) ? text.word(k) : `${k} window`, windowKind: k });
+    }
   }
   if (openings.some((o) => o.doorKind === "glazed_sliding")) {
-    out.push({ kind: "opening", key: "glazed_sliding", name: "glazed_sliding door" });
+    const name = text.has("glazed_sliding") ? text.word("glazed_sliding") : "glazed_sliding door";
+    out.push({ kind: "opening", key: "glazed_sliding", name });
   }
   return out;
 }
@@ -421,6 +433,8 @@ export interface SheetTablesInput {
   openings?: readonly OpeningRow[] | null;
   /** The plan's `notes`, when it wrote any. */
   notes?: readonly string[] | null;
+  /** The plan's `sheet text`, absent for the English. */
+  text?: SheetText;
 }
 
 /** Table metrics as fractions of the drawing's reference dimension (see `RenderSizes`). */
@@ -488,6 +502,10 @@ function legendNameColumn(entries: readonly LegendEntry[]): number {
   const longest = entries.reduce((n, e) => (e.kind === "opening" ? Math.max(n, e.name.length) : n), 0);
   return Math.max(LEGEND_NAME, wordsColumn(longest));
 }
+
+/** The `sheet text` key that words a legend row. */
+const legendKey = (e: LegendEntry): string =>
+  e.kind === "demolished" ? "demolished" : e.kind === "material" ? e.hatch!.material : e.key;
 
 /** Characters per NOTES line, and per ROOM(S) cell. */
 export const NOTE_LINE_CHARS = charsIn(NOTES_TEXT);
@@ -729,20 +747,41 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
   const openingData = input.openings ?? null;
   const notesData = input.notes && input.notes.length > 0 ? input.notes : null;
   if (!sched && !legendRows && !openingData && !notesData) return null;
+  const text = input.text ?? PLAIN_SHEET_TEXT;
 
   const rowH = refDim * ROW_H;
   const fs = refDim * FONT;
+  /**
+   * `w`, widened to hold each of `keys`, with one font of padding: only ever for a word the plan
+   * wrote, so a default table keeps its float operations and its bytes. By the faces' advances, at the
+   * body font, because a column of capitals runs wider than the estimate. {@link MAX_SHEET_WORD} bounds it.
+   */
+  const holds = (w: number, keys: readonly string[]): number =>
+    keys.reduce((n, k) => (text.has(k) ? Math.max(n, inkWidth(text.word(k), fs) + fs) : n), w);
+  /** The last column, widened so a table's merged caption stays inside its frame (authored only). */
+  const captionHeld = (cols: TableColumn[], key: string): void => {
+    if (!text.has(key)) return;
+    const others = cols.slice(0, -1).reduce((s, c) => s + c.w, 0);
+    const last = cols[cols.length - 1]!;
+    last.w = Math.max(last.w, inkWidth(text.word(key), fs) + fs - others);
+  };
   let x = b.minX;
   let bottom = top;
 
   let schedule: ScheduleTableBox | null = null;
   if (sched) {
     const cols: TableColumn[] = [
-      { heading: "NO.", w: refDim * COL_NO, align: "middle" },
-      { heading: "NAME", w: refDim * COL_NAME, align: "start" },
-      { heading: "AREA (CENTRELINE, m²)", w: refDim * COL_AREA, align: "end" },
-      { heading: "NET AREA (m²)", w: refDim * COL_NET, align: "end" },
+      { heading: text.word("no"), w: holds(refDim * COL_NO, ["no"]), align: "middle" },
+      // The merged SUBTOTAL, TOTAL and zone rows read over NO. and NAME, and clear AREA here.
+      {
+        heading: text.word("name"),
+        w: holds(refDim * COL_NAME, ["name", "subtotal", "total", "no_zone"]),
+        align: "start",
+      },
+      { heading: text.word("area"), w: holds(refDim * COL_AREA, ["area"]), align: "end" },
+      { heading: text.word("net_area"), w: holds(refDim * COL_NET, ["net_area"]), align: "end" },
     ];
+    captionHeld(cols, "room_schedule");
     const w = cols.reduce((s, c) => s + c.w, 0);
     // Rows: caption + column headings + one per room + the TOTAL that closes the table.
     // Each zone group adds two more: its heading and its subtotal (none when unzoned, so
@@ -759,7 +798,7 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
       // The padding the three-column table had (2% of NO. + NAME + the old AREA width), in
       // the same float order, so the NO. and NAME cells keep their place (see PAD_AREA_W).
       pad: [refDim * COL_NO, refDim * COL_NAME, refDim * PAD_AREA_W].reduce((s, c) => s + c, 0) * 0.02,
-      caption: "ROOM SCHEDULE",
+      caption: text.word("room_schedule"),
       cols,
       rows: sched.rows,
       total_m2: sched.total_m2,
@@ -775,12 +814,17 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
   let openings: OpeningTableBox | undefined;
   if (openingData) {
     const cols: TableColumn[] = [
-      { heading: "TAG", w: refDim * COL_TAG, align: "middle" },
-      { heading: "ROOM(S)", w: refDim * COL_ROOMS, align: "start" },
-      { heading: "WIDTH", w: refDim * COL_WIDTH, align: "end" },
-      { heading: "TYPE", w: refDim * typeColumn(openingData), align: "start" },
-      { heading: "HAND", w: refDim * COL_HAND, align: "start" },
+      { heading: text.word("tag"), w: holds(refDim * COL_TAG, ["tag"]), align: "middle" },
+      { heading: text.word("rooms"), w: holds(refDim * COL_ROOMS, ["rooms"]), align: "start" },
+      { heading: text.word("width"), w: holds(refDim * COL_WIDTH, ["width"]), align: "end" },
+      {
+        heading: text.word("type"),
+        w: holds(refDim * typeColumn(openingData), ["type", ...openingData.map((r) => r.type)]),
+        align: "start",
+      },
+      { heading: text.word("hand"), w: holds(refDim * COL_HAND, ["hand", "left", "right"]), align: "start" },
     ];
+    captionHeld(cols, "opening_schedule");
     const w = cols.reduce((s, c) => s + c.w, 0);
     const h = tableRowsHeight(refDim, openingRowCount(openingData.length));
     openings = {
@@ -791,9 +835,15 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
       rowH,
       fs,
       pad: w * 0.02,
-      caption: "DOOR & WINDOW SCHEDULE",
+      caption: text.word("opening_schedule"),
       cols,
-      rows: openingData.map((r) => ({ ...r, rooms: clip(r.rooms, ROOMS_CELL_CHARS) })),
+      rows: openingData.map((r) => ({
+        ...r,
+        rooms: clip(r.rooms, ROOMS_CELL_CHARS),
+        width: text.num(r.width),
+        type: text.word(r.type),
+        hand: text.word(r.hand),
+      })),
     };
     x += w + refDim * TABLE_GAP;
     bottom = Math.max(bottom, top + h);
@@ -802,7 +852,11 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
   let legend: LegendTableBox | null = null;
   if (legendRows) {
     const swatchW = refDim * LEGEND_SWATCH;
-    const w = swatchW + refDim * legendNameColumn(legendRows);
+    const nameW = legendRows.reduce(
+      (n, e) => (text.has(legendKey(e)) ? Math.max(n, inkWidth(e.name, fs) + fs) : n),
+      holds(refDim * legendNameColumn(legendRows), ["legend"]),
+    );
+    const w = swatchW + nameW;
     const h = tableRowsHeight(refDim, legendRowCount(legendRows.length));
     legend = {
       x0: x,
@@ -812,7 +866,7 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
       rowH,
       fs,
       pad: w * 0.02,
-      caption: "LEGEND",
+      caption: text.word("legend"),
       entries: [...legendRows],
       swatchW,
     };
@@ -833,7 +887,7 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
     const noW = refDim * NOTES_NO;
     const w = noW + refDim * NOTES_TEXT;
     const h = tableRowsHeight(refDim, 1 + lines.length);
-    notes = { x0: x, y0: top, w, h, rowH, fs, pad: w * 0.02, caption: "NOTES", noW, lines };
+    notes = { x0: x, y0: top, w, h, rowH, fs, pad: w * 0.02, caption: text.word("notes"), noW, lines };
     x += w;
     bottom = Math.max(bottom, top + h);
   }
@@ -944,7 +998,10 @@ const BOLD = 600;
  * omitted net area (see `analyze/net-area.ts`) draws `-`, the table's ASCII "no value"
  * (the DOOR & WINDOW SCHEDULE's HAND column uses the same mark).
  */
-const areaCell = (m2: number | undefined): string => (m2 === undefined ? "-" : m2.toFixed(2));
+const cellOf =
+  (text: SheetText) =>
+  (m2: number | undefined): string =>
+    m2 === undefined ? "-" : text.num(m2.toFixed(2));
 
 /**
  * Left edge of the schedule's column `i`: `x0` plus the widths up to and including `i`, less
@@ -962,11 +1019,12 @@ const colLeft = (t: ScheduleTableBox, i: number): number =>
  * plan byte-identical); with groups it delegates to {@link groupedScheduleNodes}, whose
  * merged heading rows need column rules segmented per block rather than run full height.
  */
-function scheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, out: SceneNode[]): void {
+function scheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, text: SheetText, out: SceneNode[]): void {
   if (t.groups.length > 0) {
-    groupedScheduleNodes(t, theme, sizes, out);
+    groupedScheduleNodes(t, theme, sizes, text, out);
     return;
   }
+  const areaCell = cellOf(text);
   const d = drawer(theme, sizes, out);
   const { x0, y0, w, h, rowH, fs, pad } = t;
   d.frame(x0, y0, w, h);
@@ -1006,7 +1064,7 @@ function scheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, ou
   // AREA and NET AREA. The same numbers as `describe().totals.floor_area_m2` and
   // `.net_floor_area_m2`.
   d.rule({ x: x0, y: totalTop }, { x: x0 + w, y: totalTop });
-  d.text({ x: x0 + pad, y: totalTop + rowH / 2 }, "TOTAL", fs, "start", { weight: BOLD });
+  d.text({ x: x0 + pad, y: totalTop + rowH / 2 }, text.word("total"), fs, "start", { weight: BOLD });
   const totals = [t.total_m2, t.net_total_m2];
   totals.forEach((m2, k) => {
     const col = t.cols[AREA_COL + k]!;
@@ -1029,8 +1087,15 @@ function scheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, ou
  * Column rules are drawn per data block rather than full height, so no merged cell (the
  * caption, a group heading, a subtotal label) is ever cut in half.
  */
-function groupedScheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSizes, out: SceneNode[]): void {
+function groupedScheduleNodes(
+  t: ScheduleTableBox,
+  theme: Theme,
+  sizes: RenderSizes,
+  text: SheetText,
+  out: SceneNode[],
+): void {
   const d = drawer(theme, sizes, out);
+  const areaCell = cellOf(text);
   const { x0, y0, w, h, rowH, fs, pad } = t;
   d.frame(x0, y0, w, h);
 
@@ -1060,7 +1125,8 @@ function groupedScheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSi
   let firstRow = 0;
   for (const g of t.groups) {
     if (row > 2) d.rule({ x: x0, y: rowTop(row) }, { x: x0 + w, y: rowTop(row) });
-    d.text({ x: x0 + pad, y: rowMid(row) }, g.name, fs, "start", { weight: BOLD, muted: true });
+    const heading = g.path === undefined ? text.word("no_zone") : g.name;
+    d.text({ x: x0 + pad, y: rowMid(row) }, heading, fs, "start", { weight: BOLD, muted: true });
     row++;
 
     const dataTop = rowTop(row);
@@ -1087,7 +1153,7 @@ function groupedScheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSi
     });
 
     d.rule({ x: x0, y: dataBottom }, { x: x0 + w, y: dataBottom }, true);
-    d.text({ x: x0 + pad, y: rowMid(row) }, "SUBTOTAL", fs, "start", { weight: BOLD, muted: true });
+    d.text({ x: x0 + pad, y: rowMid(row) }, text.word("subtotal"), fs, "start", { weight: BOLD, muted: true });
     d.text({ x: areaX, y: rowMid(row) }, areaCell(g.subtotal_m2), fs, areaCol.align, { weight: BOLD, muted: true });
     d.text({ x: netX, y: rowMid(row) }, areaCell(g.net_subtotal_m2), fs, netCol.align, { weight: BOLD, muted: true });
     row++;
@@ -1097,7 +1163,7 @@ function groupedScheduleNodes(t: ScheduleTableBox, theme: Theme, sizes: RenderSi
   // `.net_floor_area_m2`, and the sums of the subtotals above them.
   const totalTop = y0 + h - rowH;
   d.rule({ x: x0, y: totalTop }, { x: x0 + w, y: totalTop });
-  d.text({ x: x0 + pad, y: totalTop + rowH / 2 }, "TOTAL", fs, "start", { weight: BOLD });
+  d.text({ x: x0 + pad, y: totalTop + rowH / 2 }, text.word("total"), fs, "start", { weight: BOLD });
   d.text({ x: areaX, y: totalTop + rowH / 2 }, areaCell(t.total_m2), fs, areaCol.align, { weight: BOLD });
   d.text({ x: netX, y: totalTop + rowH / 2 }, areaCell(t.net_total_m2), fs, netCol.align, { weight: BOLD });
 }
@@ -1220,9 +1286,14 @@ function notesNodes(t: NotesTableBox, theme: Theme, sizes: RenderSizes, out: Sce
  * so a table always reads on top). Every backend that walks `RENDER_PASSES` gets them for
  * free; nothing is emitted when no table is present. Emitted left to right, as laid out.
  */
-export function sheetTableNodes(t: SheetTables, theme: Theme, sizes: RenderSizes): SceneNode[] {
+export function sheetTableNodes(
+  t: SheetTables,
+  theme: Theme,
+  sizes: RenderSizes,
+  text: SheetText = PLAIN_SHEET_TEXT,
+): SceneNode[] {
   const out: SceneNode[] = [];
-  if (t.schedule) scheduleNodes(t.schedule, theme, sizes, out);
+  if (t.schedule) scheduleNodes(t.schedule, theme, sizes, text, out);
   if (t.openings) openingTableNodes(t.openings, theme, sizes, out);
   if (t.legend) legendNodes(t.legend, theme, sizes, out);
   if (t.notes) notesNodes(t.notes, theme, sizes, out);

@@ -49,7 +49,8 @@
  * (`test/opening-tags-corpus.test.ts`) pins each such tag.
  *
  * Text is ASCII (`D01`, `hinged`, `left`, a dash for "none"), so the PNG backend's bundled
- * font draws all of it; numbers print through {@link fmt2}.
+ * font draws all of it, unless the plan's `sheet text` writes its own words, which the table lays
+ * out; numbers print through {@link fmt2}.
  */
 
 import type { Point } from "./ast.js";
@@ -75,8 +76,10 @@ import { ROOF_LAYER } from "./elements/roof.js";
 import { OUTDOOR_LAYERS } from "./elements/outdoor.js";
 import { SILL_PROJECTION } from "./elements/window.js";
 import { fmt2 } from "./num-format.js";
+import { PLAIN_SHEET_TEXT, type SheetText } from "./sheet-text.js";
 
-/** One DOOR & WINDOW SCHEDULE line. Every cell is the string drawn. */
+/** One DOOR & WINDOW SCHEDULE line. Every cell is the string drawn, in English; `sheet-tables.ts`
+ *  words `width`, `type` and `hand` for a plan with `sheet text`, as it lays them out. */
 export interface OpeningRow {
   /** `D01…` / `W01…` — the tag drawn beside the opening. */
   tag: string;
@@ -146,13 +149,15 @@ function floorIndex(p: Point, boxes: readonly RoomBox[]): number {
 }
 
 /** Derive the schedule rows for one storey: doors first, then windows, each in element order. */
-export function openingRows(elements: readonly ResolvedElement[]): OpeningRow[] {
+export function openingRows(elements: readonly ResolvedElement[], text: SheetText = PLAIN_SHEET_TEXT): OpeningRow[] {
   const { doors, windows } = taggable(elements);
   const rooms = elements.filter((e): e is RRoom => e.kind === "room");
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
   const nameOf = new Map(rooms.map((r) => [r.id, r.label ?? r.id]));
   const named = (ids: readonly string[]): string =>
-    ids.length === 0 ? "-" : ids.map((id) => nameOf.get(id) ?? id).join(" / ");
+    ids.length === 0
+      ? "-"
+      : ids.map((id) => nameOf.get(id) ?? (id === EXTERIOR_NODE ? text.word("exterior") : id)).join(" / ");
   const rows: OpeningRow[] = doors.map((d, i) => ({
     tag: tagOf("D", i, doors.length),
     kind: "door",

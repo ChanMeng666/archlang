@@ -135,6 +135,8 @@ source (.arch)
   stair/elevator/escalator semantics and the shaft graph · `datum.ts` heights
 - `sheet.ts`, `axes.ts`, `sheet-tables.ts` paper, axis grid, margin tables;
   `opening-schedule.ts` the `schedule openings` tags (placed off the host wall's faces) and rows
+- `sheet-text.ts` `sheet text { … }`: the fixed words of a sheet by key (`SHEET_WORDS`), the plan's replacements and
+  its decimal mark (`num-format.ts` `drawnDecimal`), read by `toScene` alone; `PLAIN_SHEET_TEXT` is a plan with none
 - `label-placement.ts` wraps a room name too wide for its room, then moves room labels off
   obstacles, after walls and dims · `label-fit.ts` then shrinks what still does not fit, by the
   test `W_ANNOTATION_OVERLAP` reads · `text-metrics.ts` the shared `textWidth` estimate and

@@ -64,7 +64,7 @@ export const escalator: ElementDef = {
   },
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
-    return escalatorGlyph(resolved as REscalator, ctx.theme, ctx.sizes);
+    return escalatorGlyph(resolved as REscalator, ctx.theme, ctx.sizes, ctx.text);
   },
   /** Two chevron strokes per tread division plus three (`escalatorGlyph`: the footprint and
    *  the four-stroke arrow, less the one division that draws no chevron), for the drawing budget. */

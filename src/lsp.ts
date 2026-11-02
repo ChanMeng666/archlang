@@ -44,6 +44,7 @@ const SETTING_KW: Record<string, string> = {
   axes: "Positioning axes (定位轴线): `axes { x at 0, 6000  y at 0, 8000 }`. Labels ①/Ⓐ are derived from position.",
   accTitle: "Accessible title for the `--accessible` SVG `<title>` (overrides the plan name).",
   accDescr: "Accessible description for the `--accessible` SVG `<desc>` (overrides the derived caption).",
+  sheet: 'The sheet\'s fixed words, by key, and its decimal mark: `sheet text { decimal "," total "SUMME" }`.',
   theme: 'Theme: a named base, `{ key: value }` overrides, or `from "#color"`.',
   style: "Per-element-kind style overrides (`style room { fill … }`).",
   let: "Bind a value or define a value-function: `let NAME = …` / `let f(a) = …`.",

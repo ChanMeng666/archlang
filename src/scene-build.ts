@@ -55,6 +55,7 @@ import type { Theme } from "./theme.js";
 
 /** Deterministic mm formatter for computed label text (round 2dp, strip zeros, no -0). */
 import { fmt2 as fmtMm } from "./num-format.js";
+import { PLAIN_SHEET_TEXT, sheetText } from "./sheet-text.js";
 
 /** Drawing bounds: each element contributes points via its registry `bounds`. */
 function planBounds(ir: ResolvedPlan, registry: Registry): Bounds {
@@ -145,6 +146,7 @@ export function autoDimCount(ir: ResolvedPlan): number {
  * curve emits nothing here.
  */
 function synthCurveDims(ir: ResolvedPlan, dims: RDim[]): void {
+  const { mm } = sheetText(ir.sheetText?.entries);
   const seen = new Set<string>();
   for (const w of ir.walls) {
     for (const s of segmentsOfWall(w)) {
@@ -152,14 +154,14 @@ function synthCurveDims(ir: ResolvedPlan, dims: RDim[]): void {
       const key = `${fmtMm(s.arc.center.x)}|${fmtMm(s.arc.center.y)}|${fmtMm(s.arc.r)}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      dims.push(mkDim(s.arc.center, arcPointAt(s.arc, 0.5), 0, radiusText(s.arc.r, fmtMm)));
+      dims.push(mkDim(s.arc.center, arcPointAt(s.arc, 0.5), 0, radiusText(s.arc.r, mm)));
     }
   }
   for (const el of ir.elements) {
     if (el.kind !== "room") continue;
     const c = (el as RRoom).circle;
     if (!c || !(c.r > 0)) continue;
-    dims.push(mkDim({ x: c.c.x - c.r, y: c.c.y }, { x: c.c.x + c.r, y: c.c.y }, 0, diameterText(c.r, fmtMm)));
+    dims.push(mkDim({ x: c.c.x - c.r, y: c.c.y }, { x: c.c.x + c.r, y: c.c.y }, 0, diameterText(c.r, mm)));
   }
 }
 
@@ -667,7 +669,7 @@ function synthWallDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[], regis
     // How far off the centreline the number reaches, and how tall it is — the same two
     // numbers `outsideStations` places it with, so the clear run asked for is the clear
     // run actually used.
-    const text = fmtMm(rep.t);
+    const text = sheetText(ir.sheetText?.entries).mm(rep.t);
     const reach = rep.t / 2 + DIM_TEXT_GAP * sizes.dimFont + textWidth(text, sizes.dimFont);
     // The endpoints keep their historical order (which is what fixes the number's reading
     // direction); the SIDE the number is written on is `calloutFrom`, so a flip moves the
@@ -765,6 +767,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // exactly once per produced theme (no double-escaping), and `opts.theme` is the
   // last layer in BOTH paths so it always wins — even over a per-element style.
   const { preStyle, theme } = planTheme(ir, opts, runtime);
+  const wording = sheetText(ir.sheetText?.entries);
 
   // Per-element styled themes (`style <kind> { … }`), each sanitized once. Absent
   // styles → every element reuses `theme` (identity) → byte-identical output.
@@ -833,10 +836,11 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     theme,
     sizes,
     bounds: b,
-    fmt: fmtMm,
+    fmt: wording.mm,
     openingsVoided: true,
     floorAt,
     ...(netById ? { netAreaOf: (id: string) => netById.get(id) } : {}),
+    ...(wording !== PLAIN_SHEET_TEXT ? { text: wording } : {}),
   };
   const ctxFor = (kind: string): RenderCtx => {
     const st = styledByKind.get(kind);
@@ -1040,6 +1044,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
         ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
         demolished.length > 0,
         ir.elements,
+        wording,
       )
     : null;
 
@@ -1055,8 +1060,9 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     scale: ir.scale,
     schedule: scheduleData,
     legend: legendData,
-    ...(ir.openingSchedule ? { openings: openingRows(ir.elements) } : {}),
+    ...(ir.openingSchedule ? { openings: openingRows(ir.elements, wording) } : {}),
     ...(ir.notes ? { notes: ir.notes } : {}),
+    ...(wording !== PLAIN_SHEET_TEXT ? { text: wording } : {}),
     // Multi-storey: stamp the page with its storey, so a drawing SET is readable (a plan
     // with no `level` block passes nothing and its chrome is byte-identical).
     ...(ir.level !== undefined
@@ -1093,7 +1099,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // geometry each backend still redraws). Lowered AFTER any sheet re-anchoring above, so
   // they are drawn wherever the final chrome layout put them; like the overlays below,
   // they are outside the dimension reach and shift nothing.
-  if (chrome.tables) for (const pushed of sheetTableNodes(chrome.tables, theme, sizes)) nodes.push(pushed);
+  if (chrome.tables) for (const pushed of sheetTableNodes(chrome.tables, theme, sizes, wording)) nodes.push(pushed);
 
   // Opt-in diagnostic overlays (ADR 0008): appended AFTER all nodes and after chrome
   // layout, so the default Scene (no overlays) is byte-identical and the overlay never
@@ -1111,6 +1117,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     theme,
     sizes,
     north: ir.north,
+    ...(wording.has("north") ? { northLabel: wording.word("north") } : {}),
     scale: ir.scale,
     title: ir.title,
     name: ir.name,

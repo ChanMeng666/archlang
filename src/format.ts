@@ -10,7 +10,17 @@
  * format(x)`).
  */
 
-import type { AxesNode, ComponentDef, ImportNode, PlanNode, SiteNode, StairNode, Statement, TitleNode } from "./ast.js";
+import type {
+  AxesNode,
+  ComponentDef,
+  ImportNode,
+  PlanNode,
+  SheetTextNode,
+  SiteNode,
+  StairNode,
+  Statement,
+  TitleNode,
+} from "./ast.js";
 import { TITLE_FIELD_KEY } from "./ast.js";
 import { TITLE_FIELDS } from "./grammar/tokens.js";
 import type { Comment } from "./lexer.js";
@@ -140,6 +150,18 @@ function titleDoc(title: TitleNode): Doc {
   }
   if (fields.length === 0) return "title { }";
   return concat(["title {", indent(concat([hardline, join(hardline, fields)])), hardline, "}"]);
+}
+
+/** `sheet text { … }`: one entry a line, in written order, with the comments between them. */
+function sheetTextDoc(block: SheetTextNode, comments: readonly Comment[], source: string): Doc {
+  const { start, end } = block.span;
+  const slots = block.entries.map(
+    (e): Slot => ({ start: e.span.start, end: e.span.end, block: false, doc: `${e.key} "${escapeStr(e.value)}"` }),
+  );
+  const inside = comments.filter((c) => c.span.start > start && c.span.start < end);
+  const lines = weaveSlots(slots, inside, source);
+  if (lines.length === 0) return "sheet text { }";
+  return concat(["sheet text {", indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
 
 /** `axes { x at … y at … }` — one row per direction, only the rows that exist.
@@ -320,6 +342,10 @@ export function formatPlan(plan: PlanNode, source: string): string {
     slots.push({ start: plan.title.span.start, end: plan.title.span.end, block: true, doc: titleDoc(plan.title) });
   if (plan.axes?.span)
     slots.push({ start: plan.axes.span.start, end: plan.axes.span.end, block: true, doc: axesDoc(plan.axes) });
+  if (plan.sheetText) {
+    const { start, end } = plan.sheetText.span;
+    slots.push({ start, end, block: true, doc: sheetTextDoc(plan.sheetText, comments, source) });
+  }
   slots.sort((a, b) => a.start - b.start);
 
   const bodyStart = plan.bodyStart ?? 0;

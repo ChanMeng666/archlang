@@ -26,6 +26,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Net area in the room stamp | unreleased | [Net area in the stamp](#net-area-in-the-stamp) |
 | Window kinds and a glazed terrace door | unreleased | [Window kinds](#window-kinds) |
 | A window round a corner, with no wall left at it | unreleased | [Corner windows](#corner-windows) |
+| The sheet's words and decimal mark, as a plan writes them | unreleased | [Sheet text](#sheet-text) |
 
 ## Quantities and takeoff
 
@@ -423,3 +424,30 @@ plan "A corner window" {
 `width` runs to the outer corner. The glass, the wall faces and the sills mitre at the corner. They stay two windows, each with its own wall, `facing` and schedule row, and `describe --json` gives each the other's id in `corner_with`. What is not a true corner of two exterior walls is refused with `E_WINDOW_CORNER`, and a window with no partner is refused with the missing statement in the hint.
 
 `open between` stays centred. An `at` on it now says so and quotes the `opening between` statement to write instead, which draws the same hole at the position you asked for and keeps the wall on either side of it.
+
+## Sheet text
+
+Every fixed word on a sheet was English, and every number had a decimal point. `sheet text` replaces them, so a plan can go to a buyer who reads German:
+
+```arch
+plan "Haus" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  sheet text {
+    decimal ","
+    room_schedule "RAUMBUCH"
+    net_area "NETTOFLÄCHE (m²)"
+    total "SUMME"
+    net "netto"
+  }
+  schedule rooms net
+  room id=wohnen at (0,0) size 3000x4000 label "Wohnen"
+  room id=bad at (3000,0) size 3000x4000 label "Bad"
+  walls from rooms exterior 300 partition 100
+}
+```
+
+A key you leave out keeps its English word. The stamp above reads `10,4 m² netto`. ArchLang ships no translations and there is no `locale`: the words are yours, and whether they are right is yours to check. The [language reference](language-reference.md#sheet-text) lists every key and has a German starting point, which no German drafter has reviewed.
+
+Only drawn text changes. `describe()`, Plan JSON and every coordinate keep their numbers, a `lint()` message stays English, and a number inside a string you wrote keeps its point. Nothing is read from the machine: the same source draws the same bytes everywhere. Without the block a plan draws what it drew before.

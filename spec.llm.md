@@ -5,7 +5,7 @@
 ArchLang is a tiny declarative language that compiles a `.arch` source file into a professional
 floor-plan drawing (SVG/PNG/PDF/DXF). It is built for AI agents: deterministic (same source →
 identical output), pure (no runtime/IO), and self-correcting (every error carries a machine code and
-a `fix`). This page is everything you need to author it.
+a `fix`).
 
 ## The 7 rules that matter
 
@@ -56,6 +56,7 @@ plan "Title" {
   accTitle "…"   # OPTIONAL a11y name → SVG <title> under `compile --accessible`
   accDescr "…"   # …and description → <desc>, replacing the derived caption. Both plan-level only (E_ACC_PLACEMENT)
   height 3000   # OPTIONAL storey floor-to-floor — the VERTICAL DATUM, and it DRAWS NOTHING (a plan is a horizontal cut). Overridden per storey (`level <n> height`) then per wall (`wall … height`); mm, never grid-snapped, E_HEIGHT_RANGE outside 0–100000, and an opening's `head` above its wall is E_OPENING_ABOVE_WALL. Defaults: 3000 storey, 2100 door head, 900/2100 window sill/head. `describe --json` reports `heights` (storey_height/elevation/per-wall) + `head`/`sill` on the openings, but ONLY if the source wrote one of these clauses somewhere; `arch manifest`'s `datum` has the defaults either way
+  sheet text { decimal "," total "SUMME" }   # OPTIONAL drawn words (keys: reference); not describe/lint
   # … elements and scripting …
   title { project "…" drawn_by "…" date "…" number "…" revision "…" }
 }
@@ -183,7 +184,7 @@ space beats routing a bath through a bedroom — then re-`repair`. Full recipe:
 | --- | --- |
 | Hand-summing room offsets | Lay the row with `strip`. |
 | Furniture floated at a guessed `at`, or an `inset` hand-computed from a wall thickness | Place it `in <room> anchor <9-point> [flush] [inset]` or `against wall <id>` — closed-form, never names a thickness. |
-| String math without interpolation | Use `"{expr}"`, e.g. `label "{round(W / 1000)} m"`. Only the built-ins above and your own `let f(…)` are callable — `aream2` is NOT built in. |
+| String math without interpolation | Rule 5. Only the built-ins above and your own `let f(…)` are callable — `aream2` is NOT built in. |
 
 ## Worked examples
 

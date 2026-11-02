@@ -75,6 +75,20 @@ export function fmtTenthsOf2dp(n: number): string {
   return `${Math.floor(tenths / 10)}.${tenths % 10}`;
 }
 
+/**
+ * The decimal mark a DRAWN number is printed with: `.` unless the plan's `sheet text` says `decimal ","`.
+ * It comes from the source, never from the host: no `Intl`, no `toLocaleString`.
+ */
+export type DecimalMark = "." | ",";
+
+/**
+ * A number already printed by the formatter its site always used, with the plan's decimal mark. The one
+ * place a comma enters a number, and only drawn text comes here: `describe()`, `lint()`, Plan JSON and
+ * every coordinate keep their point. `.` returns its argument, so a plan with no mark keeps its bytes.
+ */
+export const drawnDecimal = (printed: string, mark: DecimalMark): string =>
+  mark === "." ? printed : printed.replace(/\./g, mark);
+
 /** 0 dp — whole millimetres, where a lint rule compares the value it prints. */
 export const fmt0 = makeNumFmt(1);
 /** 2 dp — Scene labels and SVG coordinates. */

@@ -919,6 +919,7 @@ export type PlanJsonDroppedClause =
   | "schedule openings"
   | "legend"
   | "notes"
+  | "sheet text"
   | "theme"
   | "style"
   | "accTitle"
@@ -991,6 +992,7 @@ function droppedFromPlan(ir: ResolvedPlan): PlanJsonDropped[] {
   if (ir.openingSchedule) rows.push({ clause: "schedule openings", count: 1 });
   if (ir.legend) rows.push({ clause: "legend", count: 1 });
   if (ir.notes && ir.notes.length > 0) rows.push({ clause: "notes", count: ir.notes.length });
+  if (ir.sheetText) rows.push({ clause: "sheet text", count: ir.sheetText.entries.length });
   const themed = ir.themeBase !== undefined || ir.themeFrom !== undefined || Object.keys(ir.theme ?? {}).length > 0;
   if (themed) rows.push({ clause: "theme", count: 1 });
   const styled = Object.entries(ir.styles ?? {}).filter(([, over]) => Object.keys(over).length > 0);

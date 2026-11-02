@@ -57,6 +57,8 @@ import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "./sheet.js";
+import type { SheetTextNode } from "./ast.js";
+import { isSheetTextKey, MAX_SHEET_WORD, type SheetTextEntry, sheetTextKeys, sheetTextRefusal } from "./sheet-text.js";
 import { checkWhileDeprecation } from "./while-deprecation.js";
 
 export interface ParseOutcome {
@@ -182,6 +184,8 @@ class Parser {
   }
 
   // The token list always ends with EOF, so the clamped index is present.
+  private sheetKeyHinted = false;
+
   private peek(o = 0): Token {
     return this.toks[Math.min(this.pos + o, this.toks.length - 1)]!;
   }
@@ -410,6 +414,12 @@ class Parser {
       const start = t.start;
       try {
         if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
+        // `sheet` is contextual, never a `STATEMENT_STARTS` word: `room id=sheet` keeps parsing, and a
+        // macro call `sheet()` falls through to the body statements.
+        if (t.value === "sheet" && this.peek(1).value === "text" && this.peek(2).type === "lcurly") {
+          plan.sheetText = this.parseSheetText(plan, start);
+          continue;
+        }
         switch (t.value) {
           case "units":
             this.parseUnitsSetting(plan, t);
@@ -835,6 +845,41 @@ class Parser {
     const notes = [this.eatString()];
     while (this.isType("string")) notes.push(this.eatString());
     plan.notes = [...(plan.notes ?? []), ...notes];
+  }
+
+  /**
+   * `sheet text { <key> "…" … }` — the words the sheet draws, in the plan's own language
+   * (`src/sheet-text.ts`). One block, each key once, every string checked here: a mistyped key
+   * or a second value would otherwise leave an English word on the sheet with no report.
+   */
+  private parseSheetText(plan: PlanNode, start: number): SheetTextNode {
+    const kw = this.peek();
+    if (plan.sheetText) this.fail("`sheet text` is written twice: a plan has one", kw);
+    this.next();
+    this.next();
+    this.eat("lcurly");
+    const entries: SheetTextEntry[] = [];
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      const k = this.peek();
+      if (k.type !== "ident") this.fail(`Expected a sheet text key but found ${describe(k)}`, k);
+      if (!isSheetTextKey(k.value)) {
+        // One hint a parse, on a word a key's length: this search reads every key, and no step meter
+        // runs here, so a source of a million bad keys must not pay for a million searches.
+        const near = !this.sheetKeyHinted && k.value.length <= MAX_SHEET_WORD;
+        const hint = near ? closest(k.value, [...sheetTextKeys()]) : null;
+        this.sheetKeyHinted = true;
+        this.fail(`Unknown sheet text key "${k.value}"${hint ? ` — did you mean "${hint}"?` : ""}`, k);
+      }
+      if (entries.some((e) => e.key === k.value)) this.fail(`\`${k.value}\` is written twice in \`sheet text\``, k);
+      this.next();
+      const v = this.peek();
+      const value = this.eatString();
+      const refused = sheetTextRefusal(k.value, value);
+      if (refused) this.fail(refused, v);
+      entries.push({ key: k.value, value, span: { start: k.start, end: v.end } });
+    }
+    this.eat("rcurly");
+    return { entries, line: kw.line, span: this.spanFrom(start) };
   }
 
   /**

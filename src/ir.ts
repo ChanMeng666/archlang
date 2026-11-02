@@ -29,6 +29,7 @@ import type {
   SiteNode,
   Statement,
   StripNode,
+  SheetTextNode,
   TitleNode,
   UseKind,
   VerticalDir,
@@ -1000,6 +1001,8 @@ export interface ResolvedPlan {
   legend?: boolean;
   /** `notes "…"` — the sheet's general notes, in source order. Presentation only. */
   notes?: string[];
+  /** `sheet text { … }` — the sheet's wording, read by the drawing alone. Copied from the AST. */
+  sheetText?: SheetTextNode;
   title?: TitleNode;
   /** Explicit accessible title (`accTitle "…"`), overriding the plan name in the
    *  accessible-SVG `<title>`. Metadata only — never affects default output. */
@@ -3542,6 +3545,7 @@ function resolveBody(
     ...(ast.openingSchedule ? { openingSchedule: true } : {}),
     ...(ast.legend ? { legend: true } : {}),
     ...(ast.notes && ast.notes.length > 0 ? { notes: ast.notes } : {}),
+    ...(ast.sheetText ? { sheetText: ast.sheetText } : {}),
     // Declared wing/department grouping — metadata only, absent when the plan
     // declares no `zone`, so an existing IR is byte-identical.
     ...(zoneFrame.declared.size > 0 ? { zones: [...zoneFrame.declared.values()] } : {}),
