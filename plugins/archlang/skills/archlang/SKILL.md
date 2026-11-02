@@ -108,7 +108,7 @@ owns that name, so the shell runs the wrong program.
    and why, never silently skipped. `changed: false` with a non-empty `unresolved` means *you* edit
    the source.
 10. **Finish the drawing:** once lint is clean, run `archlang finish plan.arch --dry-run --json`, then
-   without `--dry-run` to apply. It first furnishes each rectangular room that holds no furniture,
+   without `--dry-run` to apply. It first furnishes each rectangular or L-shaped room that holds no furniture,
    by the room's use (on every storey; a furnished room is never touched — a partly furnished one is
    named in `unresolved` with the categories it lacks, not topped up), then adds the sheet
    statements the plan lacks — `paper`, `scale`, `dims auto`, `title`, `schedule rooms`,
@@ -282,6 +282,9 @@ not make. When lint reports `W_ROOM_UNREACHABLE`, `W_ROOM_DISCONNECTED`, `W_NO_E
 > `archlang fix` (it rewrites it to the attachment form) rather than adding a new one.
 
 ### Pick the door KIND before you widen the room
+
+A window has a kind too: `fixed` · `casement` · `tilt` · `tilt_turn` · `sliding`. Left out, it draws as a plain window. Only
+`casement` and `tilt_turn` take `hinge left|right`. `fixed` and `tilt` are no way onto a balcony.
 
 A door has a kind — `hinged` (the default) · `sliding` · `barn` · `bifold` · `pocket` · `garage` ·
 `double` · `glazed_sliding` (a glass terrace door) — and it changes what the checks can say, not just the drawing. **Only `hinged` and `double`
