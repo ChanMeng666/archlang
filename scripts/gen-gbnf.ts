@@ -484,7 +484,10 @@ function rules(): [string, string][] {
     ["arc-dir", `"cw" | "ccw"`],
     // Two shapes: the rectangle (`at`/relational + `size`) and the explicit RING
     // (`polygon` + >=3 points, no `size`). Both take the same trailing clauses.
-    ["room-stmt", `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )? ( ws room-floor )?`],
+    [
+      "room-stmt",
+      `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )? ( ws room-floor )?`,
+    ],
     ["room-rect", `room-pos ws "size" ws dims`],
     // THREE vertices minimum, not two — `parseRoom` fails outright below three
     // ("A polygon room needs at least three vertices"), and a two-point ring is
