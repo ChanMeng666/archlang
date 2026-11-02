@@ -225,22 +225,23 @@ archlang validate house.arch --intent intent.json
 ## What Plan JSON leaves out
 
 `compile -f json` says what the format could not carry (1.47.0): one `note:` on stderr per clause, `dropped` in
-the `--json` envelope and on `planToJson()`. The exit code and the document are unchanged, and the format
-gained no field, so an arc edge is still written as its straight chord.
+the `--json` envelope and on `planToJson()`. The exit code and the document are unchanged.
 
 ```arch
 plan "Bow" {
   units mm
-  paper A4 landscape
-  scale 1:50
+  legend
   wall id=w exterior thickness 300 { (0,0) (6000,0) (6000,4000) arc (0,4000) radius 4000 cw (0,0) close }
 }
 ```
 
 ```text
-note: Plan JSON carries no arcs; this export writes 1 arc edge as a straight chord, on wall w (the .arch source still holds it)
-note: Plan JSON carries no paper; this export leaves out `paper A4 landscape` (the .arch source still holds it)
+note: Plan JSON carries no legends; this export leaves out 1 legend (the .arch source still holds it)
 ```
+
+A wall's `arc` and the `paper` now travel (unreleased): the arc on the point it arrives at, `{ "x": 0, "y": 4000,
+"arc": { "radius": 4000, "dir": "cw" } }`, and the sheet beside `scale`, `{ "size": "A4", "orientation": "landscape"
+}`, so neither is reported and a plan that has nothing else to lose comes back byte for byte.
 
 ## More lint reports
 

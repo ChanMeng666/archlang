@@ -32,7 +32,38 @@
     "scale": {
       "type": "string",
       "pattern": "^\\d+:\\d+$",
-      "description": "Drawing scale, e.g. \"1:50\". Annotation only in Plan JSON — the operative-scale form needs a `paper` sheet, which is authored in .arch (see the language reference)."
+      "description": "Drawing scale, e.g. \"1:50\". Annotation only without `paper`; with it, the operative scale of the sheet."
+    },
+    "paper": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "size"
+      ],
+      "description": "`paper <size> <orientation>`: the sheet the drawing is issued on. Omit it for no sheet.",
+      "properties": {
+        "size": {
+          "enum": [
+            "A4",
+            "A3",
+            "A2",
+            "A1",
+            "A0"
+          ],
+          "description": "ISO paper size."
+        },
+        "orientation": {
+          "enum": [
+            "landscape",
+            "portrait"
+          ],
+          "description": "Defaults to `landscape`."
+        },
+        "scale_auto": {
+          "type": "boolean",
+          "description": "The plan wrote no `scale`, so the sheet fitted one. `scale` then reports that fit and is ignored on input, which fits again."
+        }
+      }
     },
     "north": {
       "description": "North orientation: a cardinal keyword or an explicit bearing in degrees.",
@@ -407,6 +438,32 @@
                 "y": {
                   "type": "number",
                   "description": "Y coordinate in millimetres (+y DOWN, screen convention)."
+                },
+                "arc": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "radius"
+                  ],
+                  "description": "`arc (x,y) radius R [cw|ccw] [major]`: the edge ARRIVING at this point is a circular arc, and x/y are its end, so ignoring this key leaves the chord. Not on a wall's first point.",
+                  "properties": {
+                    "radius": {
+                      "type": "number",
+                      "exclusiveMinimum": 0,
+                      "description": "Radius in millimetres."
+                    },
+                    "dir": {
+                      "enum": [
+                        "cw",
+                        "ccw"
+                      ],
+                      "description": "Which way round, as the reader sees it on the sheet. Defaults to `ccw`."
+                    },
+                    "major": {
+                      "type": "boolean",
+                      "description": "Take the long way round. Omitted when false."
+                    }
+                  }
                 }
               }
             }

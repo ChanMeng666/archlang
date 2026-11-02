@@ -282,17 +282,17 @@ clause, so after a round trip `describe().freedom` reports it absolute instead o
 **The CLI round-trip and its gap list.** `archlang compile -f json` writes the Plan JSON that
 `compile --from-json` reads back, and `test/cli-plan-json-roundtrip.test.ts` holds every example
 to byte-identical SVG, equal `describe()` facts (bar `freedom`, which flattens to absolute by
-design) and equal `lint()` codes through that pipe, except exactly these 22 (the list is `CANNOT_ROUND_TRIP`
-in `test/plan-json-gaps.ts`, minus `imports.arch`, which the CLI's file World flattens):
+design) and equal `lint()` codes through that pipe, except exactly the list `CANNOT_ROUND_TRIP`
+in `test/plan-json-gaps.ts`, minus `imports.arch`, which the CLI's file World flattens:
 
 - refused with `E_JSON_MIRROR` (a reflecting `place`): `clinic`, `museum-wings`, `terrace-row`, and
   `hillside-villa`'s level 2;
 - storeys (each storey projects alone and draws differently from its sheet): `two-storey`,
   `townhouse`, `garden-house`, `hillside-villa`;
-- the sheet layer (`paper`, `schedule`, `legend`, `zone`): `furnished-flat`, `museum`,
-  `museum-wing`, `transit-hall`;
+- the sheet layer (`schedule`, `legend`, `zone`): `furnished-flat`, `transit-hall`;
+- `column` written before `furniture`: `museum`, the same shapes in another order;
 - the style layer (`theme`, `style`): `themed`, `gallery-l`, `materials`;
-- curves (`arc`, `room circle`): `aquarium`, `hexagon-pavilion`, `library`;
+- curves (`room circle`; a wall's `arc` travels): `aquarium`, `hexagon-pavilion`, `library`;
 - `roof`: `tiny-house`, `bungalow`, `courtyard-house`, `two-bed`;
 - accessibility metadata (`accTitle`, `accDescr`): `accessible` — the default SVG survives, so
   only the `describe()` comparison sees it.
@@ -2290,7 +2290,9 @@ from a single piece. ADR 0025 decision 2 (fill only empty rooms) still applies.
 **Gate:** on a bare kitchen, `arch finish --dry-run --json` lists the run and the result is
 lint-clean; byte-identity laws gain a row per example whose `finish` output moves. **Size:** M.
 
-### U.13 · The DXF is geometry only, beyond units and layers — `todo`
+### U.13 · The DXF is geometry only, beyond units and layers — `done`
+
+Doors, windows and catalogued furniture are blocks with one `INSERT` each, dimensions are `DIMENSION` entities, and `npm run check:dxf` reads the file through ezdxf (`research/2026-11-02-interchange.md` in `docs/plans/preview-and-remodel/`). What stays open: a cased `opening` is flat, `dim radius` is a linear dimension with its `R` text, and the file has no handles or OBJECTS section.
 
 **Observed (audit, "What ArchLang lacks").** The DXF has LINE, ARC and TEXT and no DIMENSION
 entities, blocks or hatches, so a CAD user gets no editable dimension and no door block.

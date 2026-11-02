@@ -371,6 +371,16 @@ jobs:
         if: env.FULL_CI == 'true'
         run: npm run check:test-wiring
 
+      # The DXF through an independent reader (backlog U.13). ezdxf is a test tool, in a virtualenv
+      # because `python -I` ignores the user site. With no reader the check fails under CI, so this
+      # step cannot pass without having read anything.
+      - name: DXF read back by ezdxf
+        if: env.FULL_CI == 'true'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/dxf-reader"
+          "$RUNNER_TEMP/dxf-reader/bin/pip" install --quiet -r e2e/requirements.txt
+          ARCHLANG_DXF_PYTHON="$RUNNER_TEMP/dxf-reader/bin/python" npm run check:dxf
+
       # (appended by later workstreams)
 
   windows:

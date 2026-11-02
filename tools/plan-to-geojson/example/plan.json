@@ -1,0 +1,136 @@
+{
+  "version": 1,
+  "plan": "Bay studio",
+  "units": "mm",
+  "scale": "1:50",
+  "paper": {
+    "size": "A3",
+    "orientation": "landscape"
+  },
+  "room_count": 1,
+  "total_area": 24,
+  "room_types": [
+    "LivingRoom"
+  ],
+  "rooms": [
+    {
+      "id": "studio",
+      "label": "Studio",
+      "room_type": "LivingRoom",
+      "uses": [
+        "living"
+      ],
+      "x": 0,
+      "y": 0,
+      "width": 6000,
+      "height": 4000,
+      "area": 24,
+      "floor_polygon": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 6000,
+          "y": 0
+        },
+        {
+          "x": 6000,
+          "y": 4000
+        },
+        {
+          "x": 0,
+          "y": 4000
+        }
+      ]
+    }
+  ],
+  "walls": [
+    {
+      "id": "ext",
+      "category": "exterior",
+      "points": [
+        {
+          "x": 0,
+          "y": 0
+        },
+        {
+          "x": 6000,
+          "y": 0
+        },
+        {
+          "x": 6000,
+          "y": 4000,
+          "arc": {
+            "radius": 2500,
+            "dir": "cw"
+          }
+        },
+        {
+          "x": 0,
+          "y": 4000
+        }
+      ],
+      "thickness": 200,
+      "closed": true
+    }
+  ],
+  "openings": [
+    {
+      "kind": "door",
+      "id": "entry",
+      "x": 1136.4760900080619,
+      "y": 4000,
+      "width": 900,
+      "wall": "exterior",
+      "hinge": "left",
+      "swing": "in"
+    },
+    {
+      "kind": "window",
+      "id": "south",
+      "x": 2000,
+      "y": 0,
+      "width": 1500,
+      "wall": "exterior"
+    }
+  ],
+  "furniture": [
+    {
+      "category": "sofa",
+      "id": "sofa",
+      "x": 2500,
+      "y": 200,
+      "width": 2000,
+      "height": 800
+    },
+    {
+      "category": "dining_table",
+      "id": "table",
+      "x": 3000,
+      "y": 2600,
+      "width": 1200,
+      "height": 800
+    }
+  ],
+  "columns": [
+    {
+      "id": "post",
+      "x": 5300,
+      "y": 1900,
+      "width": 200,
+      "height": 200
+    }
+  ],
+  "edges": [
+    {
+      "from": "exterior",
+      "to": "studio",
+      "via": "door",
+      "type": "front"
+    }
+  ],
+  "input_graph": {
+    "studio": []
+  }
+}

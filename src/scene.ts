@@ -437,6 +437,50 @@ export interface Scene {
    * Absent on a hand-built Scene, whose wall nodes then export exactly as before.
    */
   walls?: readonly SceneWall[];
+  /**
+   * Which runs of {@link nodes} are one door, window, catalogued fixture or dimension, so the DXF
+   * can write them as a `BLOCK` and an `INSERT`, or a `DIMENSION`. **Export metadata, never drawn**,
+   * and non-enumerable: it is not part of the Scene as data, so `JSON.stringify(scene)` does not
+   * show it, and a copy of a Scene does not carry it and exports flat. `toScene` sets it as a lazy
+   * getter (`attachSceneParts`, `src/scene-build.ts`): a compile that never exports DXF never
+   * computes it. The runs are in node order and never overlap.
+   */
+  parts?: readonly ScenePart[];
+}
+
+/** A dimension's tick, as a fraction of {@link RenderSizes.refDim}: half its length along the slant. */
+export const DIM_TICK = 0.012;
+
+/** A turn by a whole number of quarters, counter-clockwise as the sheet reads. */
+export type CadTurn = 0 | 90 | 180 | 270;
+
+/**
+ * What an element is to a CAD file ({@link Scene.parts}), which its own module declares
+ * (`ElementDef.cadPart`). A `block` is a shape stood at a point: `name` is the stem of its block
+ * name, and `turn` takes the block's own frame to the plan. An element whose frame is not a
+ * quarter-turn has `turn` 0, and its block is simply drawn as the plan has it.
+ */
+export type CadPart =
+  | { t: "block"; name: string; at: Point; turn: CadTurn }
+  /**
+   * A rotated linear dimension: the extent of `a`–`b` along `angle` (degrees, counter-clockwise as
+   * the sheet reads), on the line through `line`. `text` is what a plan wrote or a call-out derived;
+   * without it the number is the measure.
+   */
+  | { t: "dimension"; a: Point; b: Point; line: Point; angle: number; text?: string };
+
+/** A {@link CadPart} and the run of {@link Scene.nodes} it drew, `from` up to but not including `to`. */
+export type ScenePart = CadPart & { from: number; to: number };
+
+/**
+ * The turn that takes a block's own +x onto `dir`, a unit vector in plan coordinates (y down), or 0
+ * when `dir` is not along an axis. Tested exactly: a wall at any other angle is not a quarter-turn,
+ * and a float rotation would have the exploded block disagree with the drawing.
+ */
+export function cadTurnOf(dir: Point): CadTurn {
+  if (dir.y === 0) return dir.x > 0 ? 0 : 180;
+  if (dir.x === 0) return dir.y > 0 ? 270 : 90;
+  return 0;
 }
 
 /**

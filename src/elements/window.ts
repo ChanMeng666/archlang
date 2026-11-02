@@ -5,7 +5,7 @@
 
 import type { Point, WindowNode } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import type { SceneNode } from "../scene.js";
+import type { CadPart, SceneNode } from "../scene.js";
 import type { ResolvedElement, RWindow } from "../ir.js";
 import type { Diagnostic } from "../diagnostics.js";
 import type { RenderSizes } from "../scene.js";
@@ -20,7 +20,7 @@ import { DOOR_ENUMS, WINDOW_KIND_HINGED, WINDOW_KINDS, type WindowKind } from ".
 import { sameSeg } from "../opening-junctions.js";
 import { cornerBlock } from "../opening-relation.js";
 import { COMPASS_DATUM_ALIASES, splitDatum } from "../room-datums.js";
-import { weightWidth } from "../scene.js";
+import { cadTurnOf, weightWidth } from "../scene.js";
 import { arrowHead } from "./glyph-lib.js";
 
 /**
@@ -562,6 +562,13 @@ export const windowEl: ElementDef = {
       nodes.push(...kindMarks(wn, at, half, free, d, n, seg.thickness, theme, sizes));
     }
     return nodes;
+  },
+  /** A block at the window's centre, in the frame of its wall, one for each drawing of it. */
+  cadPart(resolved): CadPart | undefined {
+    const wn = resolved as RWindow;
+    if (!wn.host) return undefined;
+    const name = `WINDOW-${wn.windowKind ? `${wn.windowKind}-` : ""}${wn.width}`;
+    return { t: "block", name, at: wn.at, turn: cadTurnOf(segmentDirAt(wn.host, wn.at)) };
   },
   /** The frame's action on a window (`frame.ts`'s `transformElement` calls this). `hinge` rides the
    *  traversal with the carried segment, as a door's does, and the marks are symmetric across the

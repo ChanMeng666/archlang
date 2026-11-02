@@ -21,7 +21,7 @@ import {
 } from "./ir.js";
 import type { RenderCtx, Registry, Runtime } from "./registry.js";
 import { BUILTIN_RUNTIME } from "./registry.js";
-import type { RenderSizes, Scene, SceneNode, SceneSheet } from "./scene.js";
+import type { RenderSizes, Scene, SceneNode, ScenePart, SceneSheet } from "./scene.js";
 import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import { add, mul, normal, segmentsOfWall, sub, unit } from "./geometry.js";
 import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
@@ -856,6 +856,9 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // against a ring + an anchor rather than against either element type.
   const labelGroups: LabelGroup[] = [];
   const drawnElements: ElementNodes[] = [];
+  // The `dims auto` chains, kept apart: `drawnElements` is what the label fit reads, and a chain is
+  // no element of the plan. Read only by `attachSceneParts`.
+  const autoDims: ElementNodes[] = [];
   // Annotate-only lookups, built once. `roomLabels` answers "which room is this piece of
   // furniture in, and what is that room called" without a second scan per element;
   // `primaried` enforces the ONE-primary-per-id law across the whole scene rather than
@@ -983,8 +986,11 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     const dimDef = registry.byKind.get("dim");
     if (dimDef) {
       const dimCtx = ctxFor("dim");
-      for (const dm of synthDims(ir, sizes, runtime.registry))
+      for (const dm of synthDims(ir, sizes, runtime.registry)) {
+        const from = nodes.length;
         for (const pushed of dimDef.render(dm, dimCtx)) nodes.push(pushed);
+        autoDims.push({ el: dm, from, to: nodes.length });
+      }
     }
   }
 
@@ -1142,7 +1148,33 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // above was handed, in its order (the standing walls, then the demolished ones), projected
   // lazily. No backend draws it.
   attachSceneWalls(scene, demolished.length > 0 ? [...standing, ...demolished] : ir.walls);
+  attachSceneParts(scene, drawnElements, autoDims, registry);
   return scene;
+}
+
+/**
+ * {@link Scene.parts}, projected lazily from the node ranges the drawing already recorded, and
+ * non-enumerable, so the Scene as data is the Scene it always was. No element's nodes are touched:
+ * a part only says which of them belong together.
+ */
+function attachSceneParts(
+  scene: Scene,
+  drawn: readonly ElementNodes[],
+  autoDims: readonly ElementNodes[],
+  registry: Registry,
+): void {
+  let parts: ScenePart[] | undefined;
+  Object.defineProperty(scene, "parts", {
+    enumerable: false,
+    configurable: true,
+    get(): ScenePart[] {
+      parts ??= [...drawn, ...autoDims].flatMap(({ el, from, to }) => {
+        const part = to > from ? registry.byKind.get(el.kind)?.cadPart?.(el) : undefined;
+        return part ? [{ ...part, from, to }] : [];
+      });
+      return parts;
+    },
+  });
 }
 
 /** The text nodes of every room label pinned with `label "…" at (x,y)` — the names the label pass never moves. */

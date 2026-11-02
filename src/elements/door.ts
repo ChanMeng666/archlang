@@ -7,11 +7,11 @@
 import type { DoorNode, Point } from "../ast.js";
 import type { Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import type { SceneNode } from "../scene.js";
+import type { CadPart, SceneNode } from "../scene.js";
 import type { RDoor, RRoom } from "../ir.js";
 import type { Value } from "../expr.js";
 import type { DoorSwing, WallSegment } from "../geometry.js";
-import { weightWidth } from "../scene.js";
+import { cadTurnOf, weightWidth } from "../scene.js";
 import { add, doorLeaves, mul, nearestWallNote, normal, segmentDirAt, sub, unit, wallFaceProbes } from "../geometry.js";
 import { pointInPolygon, pointOnPolygonEdge } from "../geometry/polygon.js";
 import type { DoorClauseName, DoorKind, DoorSwingDir } from "../grammar/tokens.js";
@@ -645,6 +645,13 @@ export const door: ElementDef = {
       });
     }
     return nodes;
+  },
+  /** A block at the door's centre, in the frame of its wall. Each kind is a door, `glazed_sliding` too. */
+  cadPart(resolved): CadPart | undefined {
+    const dr = resolved as RDoor;
+    if (!dr.host) return undefined;
+    const name = `DOOR-${dr.doorKind ?? "hinged"}-${dr.width}`;
+    return { t: "block", name, at: dr.at, turn: cadTurnOf(segmentDirAt(dr.host, dr.at)) };
   },
   /**
    * The frame's action on a door (`frame.ts`'s `transformElement` calls this). A reflection

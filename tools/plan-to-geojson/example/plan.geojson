@@ -1,0 +1,275 @@
+{
+  "type": "FeatureCollection",
+  "name": "Bay studio",
+  "units": "m",
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              0,
+              0
+            ],
+            [
+              0,
+              -4
+            ],
+            [
+              6,
+              -4
+            ],
+            [
+              6,
+              0
+            ],
+            [
+              0,
+              0
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "layer": "room",
+        "id": "studio",
+        "label": "Studio",
+        "room_type": "LivingRoom",
+        "uses": [
+          "living"
+        ],
+        "area_m2": 24
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "LineString",
+        "coordinates": [
+          [
+            0,
+            0
+          ],
+          [
+            6,
+            0
+          ],
+          [
+            6.235199,
+            -0.200254
+          ],
+          [
+            6.443906,
+            -0.427985
+          ],
+          [
+            6.622935,
+            -0.679717
+          ],
+          [
+            6.769553,
+            -0.951606
+          ],
+          [
+            6.881521,
+            -1.2395
+          ],
+          [
+            6.957129,
+            -1.539006
+          ],
+          [
+            6.995224,
+            -1.845549
+          ],
+          [
+            6.995224,
+            -2.154451
+          ],
+          [
+            6.957129,
+            -2.460994
+          ],
+          [
+            6.881521,
+            -2.7605
+          ],
+          [
+            6.769553,
+            -3.048394
+          ],
+          [
+            6.622935,
+            -3.320283
+          ],
+          [
+            6.443906,
+            -3.572015
+          ],
+          [
+            6.235199,
+            -3.799746
+          ],
+          [
+            6,
+            -4
+          ],
+          [
+            0,
+            -4
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      },
+      "properties": {
+        "layer": "wall",
+        "id": "ext",
+        "category": "exterior",
+        "thickness_mm": 200
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          1.136476,
+          -4
+        ]
+      },
+      "properties": {
+        "layer": "opening",
+        "id": "entry",
+        "kind": "door",
+        "width_mm": 900,
+        "wall": "exterior"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2,
+          0
+        ]
+      },
+      "properties": {
+        "layer": "opening",
+        "id": "south",
+        "kind": "window",
+        "width_mm": 1500,
+        "wall": "exterior"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              2.5,
+              -0.2
+            ],
+            [
+              2.5,
+              -1
+            ],
+            [
+              4.5,
+              -1
+            ],
+            [
+              4.5,
+              -0.2
+            ],
+            [
+              2.5,
+              -0.2
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "layer": "furniture",
+        "id": "sofa",
+        "category": "sofa"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              3,
+              -2.6
+            ],
+            [
+              3,
+              -3.4
+            ],
+            [
+              4.2,
+              -3.4
+            ],
+            [
+              4.2,
+              -2.6
+            ],
+            [
+              3,
+              -2.6
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "layer": "furniture",
+        "id": "table",
+        "category": "dining_table"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              5.3,
+              -1.9
+            ],
+            [
+              5.3,
+              -2.1
+            ],
+            [
+              5.5,
+              -2.1
+            ],
+            [
+              5.5,
+              -1.9
+            ],
+            [
+              5.3,
+              -1.9
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "layer": "column",
+        "id": "post"
+      }
+    }
+  ]
+}

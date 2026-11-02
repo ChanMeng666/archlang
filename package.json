@@ -94,6 +94,7 @@
     "digest:engines": "tsx scripts/engine-digests.ts",
     "check:test-wiring": "node scripts/check-test-wiring.mjs",
     "check:3d": "npm -w packages/archlang-3d run e2e",
+    "check:dxf": "tsx scripts/check-dxf.ts",
     "lint:ci": "biome ci .",
     "eval": "tsx eval/run.ts",
     "eval:ci": "tsx eval/run.ts",

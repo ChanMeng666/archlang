@@ -28,6 +28,7 @@
  */
 
 import type {
+  ArcDirWord,
   AutoDimsMode,
   CompassWord,
   ElementKind,
@@ -39,6 +40,7 @@ import type {
   UseKind,
 } from "./ast.js";
 import {
+  ARC_DIRS,
   AUTO_DIMS_MODES,
   COMPASS_DIRECTIONS,
   FURNITURE_ANCHORS,
@@ -100,6 +102,8 @@ import { SEGMENT_SELECT_RE } from "./segment-select.js";
 import { SHEET_DECIMAL_KEY } from "./sheet-text.js";
 import { DEFAULT_MATERIAL } from "./hatches.js";
 import { openRunsOf } from "./analyze.js";
+import type { Arc } from "./geometry/arc.js";
+import { PAPER_ORIENTATIONS, PAPER_SIZES, type PaperOrientation, type PaperSize, type ResolvedSheet } from "./sheet.js";
 
 // ---------------------------------------------------------------------------
 // Room-type mapping (uses ⇄ RPLAN-style room_type) — ONE source of truth.
@@ -237,6 +241,36 @@ export interface PointJson {
   y: number;
 }
 
+/** `arc (x,y) radius R [cw|ccw] [major]`, on the point the edge arrives at: {@link WallPointJson}. */
+export interface WallArcJson {
+  radius: number;
+  /** As the reader sees it on the sheet. Absent means `ccw`, as in `.arch`; output always writes it. */
+  dir?: ArcDirWord;
+  /** The long way round. Written only when true. */
+  major?: boolean;
+}
+
+/**
+ * A wall vertex. `arc` says the edge ARRIVING here is curved, so a wall's first point cannot carry
+ * one. `x`/`y` stay the edge's end, so a reader that ignores `arc` sees the chord. Absent on every
+ * straight edge, so a straight wall's payload is unchanged.
+ */
+export interface WallPointJson extends PointJson {
+  arc?: WallArcJson;
+}
+
+/** `paper <size> <orientation>`: the sheet, beside the effective `scale`. */
+export interface PaperJson {
+  size: PaperSize;
+  /** Absent on input means `landscape`, as in `.arch`; output always writes it. */
+  orientation?: PaperOrientation;
+  /**
+   * The plan wrote no `scale`, so the sheet fitted one. The document's `scale` is then that fit, and
+   * on input it is not written back, so the way back fits again and stays auto-fitted.
+   */
+  scale_auto?: boolean;
+}
+
 /**
  * The marker on a FLATTENED row of a payload that carries `components`/`instances` (PS3.9):
  * the `place`d instance the row was born inside. Such a row is the instance's element in plan
@@ -290,7 +324,7 @@ export interface WallJson extends InstanceMark {
   id?: string;
   /** Free-form category (e.g. `exterior`, `partition`); also a door/window host ref. */
   category?: string;
-  points: PointJson[];
+  points: WallPointJson[];
   thickness?: number;
   /**
    * How tall the wall stands, in mm (v1.35, the vertical datum layer) — a VERTICAL
@@ -514,7 +548,10 @@ export interface PlanJson {
   plan: string;
   units: "mm";
   grid?: number;
+  /** The effective scale: as written, or the one the sheet fitted ({@link PaperJson.scale_auto}). */
   scale?: string;
+  /** The sheet. Emitted only when the plan declares `paper`, so every other payload is unchanged. */
+  paper?: PaperJson;
   north?: "up" | "down" | "left" | "right" | { deg: number };
   /**
    * `site { street … [hemisphere …] }` — the building's relation to its street. Emitted
@@ -591,6 +628,20 @@ function rectPolygon(x: number, y: number, w: number, h: number): PointJson[] {
     { x: x + w, y: y + h },
     { x, y: y + h },
   ];
+}
+
+/**
+ * A solved arc as the `.arch` clause that re-solves it, read off the arc, never the AST: an arc
+ * carried through a reflecting `place` has turned the other way. `sweep > 0` is clockwise on the
+ * sheet (`geometry/arc.ts`), and past half a turn is `major`.
+ */
+function arcJson(a: Arc): WallArcJson {
+  return { radius: a.r, dir: a.sweep > 0 ? "cw" : "ccw", ...(Math.abs(a.sweep) > Math.PI ? { major: true } : {}) };
+}
+
+/** The sheet as {@link PaperJson}. */
+function paperJson(s: ResolvedSheet): PaperJson {
+  return { size: s.size, orientation: s.orientation, ...(s.auto ? { scale_auto: true } : {}) };
 }
 
 /**
@@ -692,7 +743,11 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
     .map((w: RWall) => ({
       id: w.id,
       category: w.category,
-      points: w.points.map((p) => ({ x: p.x, y: p.y })),
+      // `arcs[k]` is the edge from point k to point k+1: the point it arrives at carries it.
+      points: w.points.map((p, i) => {
+        const arc = i > 0 ? w.arcs?.[i - 1] : undefined;
+        return arc ? { x: p.x, y: p.y, arc: arcJson(arc) } : { x: p.x, y: p.y };
+      }),
       thickness: w.thickness,
       ...(heights ? { height: w.height } : {}),
       ...(w.status !== undefined ? { status: w.status } : {}),
@@ -844,6 +899,7 @@ export function resolvedToJson(ir: ResolvedPlan, tol: number = DEFAULT_TOL, carr
     units: "mm",
     ...(ir.grid > 0 ? { grid: ir.grid } : {}),
     ...(ir.scale !== undefined ? { scale: ir.scale } : {}),
+    ...(ir.sheet ? { paper: paperJson(ir.sheet) } : {}),
     ...(northIsDefault(ir.north) ? {} : { north: ir.north }),
     // Emitted only when declared, so every payload a pre-site plan produced is unchanged.
     ...(ir.site ? { site: { street: ir.site.street, hemisphere: ir.site.hemisphere } } : {}),
@@ -901,20 +957,19 @@ export const UNPROJECTED_KINDS = [
 ] as const satisfies readonly ElementKind[];
 
 /**
- * A clause of a plan that its Plan JSON does not carry, spelled as the language spells it. `arc`
- * and `circle` are the two that change shape: the document keeps the chord and the 48-gon.
+ * A clause of a plan that its Plan JSON does not carry, spelled as the language spells it. `circle`
+ * is the one that changes shape: the document keeps the 48-gon.
  */
 export type PlanJsonDroppedClause =
   | "keep"
-  | "arc"
   | "poche hatch"
   | "circle"
   | "label at"
   | "floor"
+  | "column order"
   | (typeof UNPROJECTED_KINDS)[number]
   | "zone"
   | "level"
-  | "paper"
   | "axes"
   | "site boundary"
   | "schedule rooms"
@@ -932,11 +987,11 @@ export type PlanJsonDroppedClause =
 /** One line of what a Plan JSON export left out (see {@link planToJson}). */
 export interface PlanJsonDropped {
   clause: PlanJsonDroppedClause;
-  /** How many: arc edges, axes, notes, the elements of a kind. */
+  /** How many: axes, notes, the elements of a kind. */
   count: number;
-  /** Who carries it, each once: the walls with an arc, the elements of a kind, the zones. */
+  /** Who carries it, each once: the elements of a kind, the zones. */
   ids?: string[];
-  /** The clause as the source means it (`paper A4 landscape`, `level 1 "Ground floor"`). */
+  /** The clause as the source means it (`level 1 "Ground floor"`, `schedule rooms net`). */
   text?: string;
   /** The storey it sits on, on a multi-storey plan; absent on a plan-wide clause, and on every
    *  row of a single-storey plan. */
@@ -950,15 +1005,8 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
   const add = (clause: PlanJsonDroppedClause, count: number, ids: string[]): void => {
     if (count > 0) rows.push({ clause, count, ids: [...new Set(ids)], ...on });
   };
-  // The walls and elements `resolvedToJson` lists: a demolished wall is exported, so its arc
-  // flattens as well; a derived wall is not, and has none.
+  // The walls and elements `resolvedToJson` lists, a demolished wall among them.
   const { walls, elements } = drawnView(storey);
-  const curved = walls.filter((w) => w._derived === undefined && w.arcs?.some((a) => a !== undefined));
-  add(
-    "arc",
-    curved.reduce((n, w) => n + w.arcs!.filter((a) => a !== undefined).length, 0),
-    curved.map((w) => w.id),
-  );
   // `material_scale`/`material_angle` are written only beside a `material`, and the default
   // material writes none, so `material poche scale 2` is the one hatch that does not travel.
   const hatched = walls
@@ -974,6 +1022,11 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
   add("label at", anchored.length, anchored);
   const floored = rooms.filter((r) => r.floor !== undefined).map((r) => r.id);
   add("floor", floored.length, floored);
+  // The document holds furniture and columns in two arrays, furniture first, and they draw on one
+  // pass, so a column written before a piece comes back after it: the same shapes, in another order.
+  const lastPiece = elements.map((e) => e.kind).lastIndexOf("furniture");
+  const early = elements.filter((e, i) => e.kind === "column" && i < lastPiece).map((e) => e.id);
+  add("column order", early.length, early);
   for (const kind of UNPROJECTED_KINDS) {
     const ids = elements.filter((e) => e.kind === kind).map((e) => e.id);
     add(kind, ids.length, ids);
@@ -986,7 +1039,6 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
 /** The plan-wide clauses, which every storey's document leaves out alike. */
 function droppedFromPlan(ir: ResolvedPlan): PlanJsonDropped[] {
   const rows: PlanJsonDropped[] = [];
-  if (ir.sheet) rows.push({ clause: "paper", count: 1, text: `paper ${ir.sheet.size} ${ir.sheet.orientation}` });
   if (ir.axes && ir.axes.length > 0) rows.push({ clause: "axes", count: ir.axes.length });
   if (ir.siteBoundary) rows.push({ clause: "site boundary", count: 1 });
   if (ir.schedule)
@@ -1247,6 +1299,7 @@ function validatePlanJson(json: unknown, val: Validator): PlanJson | null {
   if (!isStr(json.plan) && json.plan !== undefined) val.err("/plan", "expected a string");
 
   if (json.site !== undefined) validateSite(json.site, "/site", val);
+  if (json.paper !== undefined) validatePaper(json.paper, "/paper", val);
 
   // Accept-list DERIVED from the parser's own `AUTO_DIMS_MODES`, never retyped — the same
   // law the `uses` enum learned when a thirteenth use kind made `planToJson` emit a
@@ -1397,6 +1450,40 @@ function validateSite(s: unknown, path: string, val: Validator): void {
     val.err(`${path}/hemisphere`, `expected one of ${HEMISPHERES.join(", ")}`);
 }
 
+/** `paper`: a size and an orientation from the parser's own tables, and the auto-fit flag. */
+function validatePaper(p: unknown, path: string, val: Validator): void {
+  if (!isObj(p)) {
+    val.err(path, "expected an object");
+    return;
+  }
+  for (const k of Object.keys(p))
+    if (k !== "size" && k !== "orientation" && k !== "scale_auto") val.err(`${path}/${k}`, "unknown key");
+  if (!(isStr(p.size) && (PAPER_SIZES as readonly string[]).includes(p.size)))
+    val.err(`${path}/size`, `expected ${enumList(PAPER_SIZES)}`);
+  if (
+    p.orientation !== undefined &&
+    !(isStr(p.orientation) && (PAPER_ORIENTATIONS as readonly string[]).includes(p.orientation))
+  )
+    val.err(`${path}/orientation`, `expected ${enumList(PAPER_ORIENTATIONS)}`);
+  if (p.scale_auto !== undefined && typeof p.scale_auto !== "boolean")
+    val.err(`${path}/scale_auto`, "expected a boolean");
+}
+
+/** A wall point's `arc`: a positive radius and the two optional words of the `.arch` clause. */
+function validateWallArc(a: unknown, path: string, first: boolean, val: Validator): void {
+  if (first) val.err(path, "the first point of a wall has no edge arriving at it to curve");
+  if (!isObj(a)) {
+    val.err(path, "expected an object with a numeric radius");
+    return;
+  }
+  for (const k of Object.keys(a))
+    if (k !== "radius" && k !== "dir" && k !== "major") val.err(`${path}/${k}`, "unknown key");
+  if (!(isNum(a.radius) && a.radius > 0)) val.err(`${path}/radius`, "expected a number greater than 0");
+  if (a.dir !== undefined && !(isStr(a.dir) && (ARC_DIRS as readonly string[]).includes(a.dir)))
+    val.err(`${path}/dir`, `expected ${enumList(ARC_DIRS)}`);
+  if (a.major !== undefined && typeof a.major !== "boolean") val.err(`${path}/major`, "expected a boolean");
+}
+
 function validateRoom(r: unknown, path: string, val: Validator): void {
   if (!isObj(r)) {
     val.err(path, "expected an object");
@@ -1437,7 +1524,10 @@ function validateWall(w: unknown, path: string, val: Validator): void {
     val.err(`${path}/points`, "expected an array of points");
   } else {
     if (w.points.length < 2) val.err(`${path}/points`, "a wall needs at least two points");
-    w.points.forEach((p, i) => void reqPoint(p, `${path}/points/${i}`, val));
+    w.points.forEach((p, i) => {
+      reqPoint(p, `${path}/points/${i}`, val);
+      if (isObj(p) && p.arc !== undefined) validateWallArc(p.arc, `${path}/points/${i}/arc`, i === 0, val);
+    });
   }
   if (w.thickness !== undefined && !isNum(w.thickness)) val.err(`${path}/thickness`, "expected a number");
   if (w.category !== undefined && !isStr(w.category)) val.err(`${path}/category`, "expected a string");
@@ -1730,7 +1820,10 @@ function emitArch(p: PlanJson): string {
   L.push(`plan ${q(p.plan ?? "")} {`);
   L.push(`  units mm`);
   if (typeof p.grid === "number" && p.grid > 0) L.push(`  grid ${num(p.grid)}`);
-  if (typeof p.scale === "string" && /^\d+:\d+$/.test(p.scale)) L.push(`  scale ${p.scale}`);
+  // The sheet, and then the scale unless the sheet fitted it: writing a fitted scale back would
+  // turn an auto-fitted plan into an authored one.
+  if (p.paper) L.push(`  paper ${p.paper.size} ${p.paper.orientation ?? "landscape"}`);
+  if (typeof p.scale === "string" && /^\d+:\d+$/.test(p.scale) && !p.paper?.scale_auto) L.push(`  scale ${p.scale}`);
   if (p.north !== undefined && !(p.north === "up")) {
     L.push(`  north ${typeof p.north === "string" ? p.north : num(p.north.deg)}`);
   }
@@ -1798,7 +1891,7 @@ function emitRows(p: PlanBodyJson, L: string[]): void {
     if (typeof w.height === "number") parts.push(`height ${num(w.height)}`);
     // Then `status` (B3a), the grammar's own order.
     if (typeof w.status === "string") parts.push(`status ${w.status}`);
-    const pts = (w.points ?? []).map((pt) => `(${num(pt.x)},${num(pt.y)})`).join(" ");
+    const pts = (w.points ?? []).map(wallPoint).join(" ");
     parts.push(`{ ${pts}${w.closed ? " close" : ""} }`);
     L.push(parts.join(" "));
   }
@@ -1847,6 +1940,13 @@ function emitRows(p: PlanBodyJson, L: string[]): void {
     if (d.text !== undefined) line += ` text ${q(d.text)}`;
     L.push(line);
   }
+}
+
+/** A wall vertex as source: a point, or the `arc` clause of the edge arriving at it. */
+function wallPoint(pt: WallPointJson): string {
+  const at = `(${num(pt.x)},${num(pt.y)})`;
+  if (!pt.arc) return at;
+  return `arc ${at} radius ${num(pt.arc.radius)}${pt.arc.dir ? ` ${pt.arc.dir}` : ""}${pt.arc.major ? " major" : ""}`;
 }
 
 /** The `uses` tags to emit for a room: explicit `uses` win; else derive from `room_type`. */
@@ -2168,6 +2268,31 @@ const POINT_SCHEMA = {
   },
 } as const;
 
+/** A wall vertex: {@link POINT_SCHEMA} plus the `arc` of the edge arriving at it. */
+const WALL_POINT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["x", "y"],
+  properties: {
+    ...POINT_SCHEMA.properties,
+    arc: {
+      type: "object",
+      additionalProperties: false,
+      required: ["radius"],
+      description:
+        "`arc (x,y) radius R [cw|ccw] [major]`: the edge ARRIVING at this point is a circular arc, and x/y are its end, so ignoring this key leaves the chord. Not on a wall's first point.",
+      properties: {
+        radius: { type: "number", exclusiveMinimum: 0, description: "Radius in millimetres." },
+        dir: {
+          enum: [...ARC_DIRS],
+          description: "Which way round, as the reader sees it on the sheet. Defaults to `ccw`.",
+        },
+        major: { type: "boolean", description: "Take the long way round. Omitted when false." },
+      },
+    },
+  },
+} as const;
+
 /** {@link InstanceMark}: the `instance` key every row schema accepts. */
 const INSTANCE_MARKER = {
   type: "string",
@@ -2198,7 +2323,22 @@ export const PLAN_JSON_SCHEMA = {
       type: "string",
       pattern: "^\\d+:\\d+$",
       description:
-        'Drawing scale, e.g. "1:50". Annotation only in Plan JSON — the operative-scale form needs a `paper` sheet, which is authored in .arch (see the language reference).',
+        'Drawing scale, e.g. "1:50". Annotation only without `paper`; with it, the operative scale of the sheet.',
+    },
+    paper: {
+      type: "object",
+      additionalProperties: false,
+      required: ["size"],
+      description: "`paper <size> <orientation>`: the sheet the drawing is issued on. Omit it for no sheet.",
+      properties: {
+        size: { enum: [...PAPER_SIZES], description: "ISO paper size." },
+        orientation: { enum: [...PAPER_ORIENTATIONS], description: "Defaults to `landscape`." },
+        scale_auto: {
+          type: "boolean",
+          description:
+            "The plan wrote no `scale`, so the sheet fitted one. `scale` then reports that fit and is ignored on input, which fits again.",
+        },
+      },
     },
     north: {
       description: "North orientation: a cardinal keyword or an explicit bearing in degrees.",
@@ -2357,7 +2497,7 @@ export const PLAN_JSON_SCHEMA = {
             type: "string",
             description: 'Free-form category, e.g. "exterior" or "partition"; also a host reference.',
           },
-          points: { type: "array", minItems: 2, description: "Polyline vertices in order.", items: POINT_SCHEMA },
+          points: { type: "array", minItems: 2, description: "Polyline vertices in order.", items: WALL_POINT_SCHEMA },
           thickness: { type: "number", description: "Wall thickness in millimetres." },
           height: {
             type: "number",

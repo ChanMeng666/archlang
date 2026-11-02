@@ -1,0 +1,7 @@
+# The independent DXF reader of `npm run check:dxf`, and all it installs, pinned so CI reads with one
+# reader. Taken from `pip freeze` in a clean virtualenv. A test tool, never a dependency of the core.
+ezdxf==1.4.5
+fonttools==4.68.0
+numpy==2.5.4
+pyparsing==3.3.3
+typing_extensions==4.16.0

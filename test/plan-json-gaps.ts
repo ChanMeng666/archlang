@@ -5,19 +5,19 @@
  * written once.
  */
 export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp }> = {
-  // --- the sheet layer: `paper`/`axes`/`schedule`/`legend` have no JSON field ------
-  "furnished-flat.arch": { because: "sheet layer — `paper` + `schedule`", proof: /^\s*paper\b/m },
-  "museum-wing.arch": { because: "sheet layer — `paper`", proof: /^\s*paper\b/m },
-  "museum.arch": { because: "sheet layer — `paper`", proof: /^\s*paper\b/m },
+  // --- the sheet layer: `axes`/`schedule`/`legend`/`notes` have no JSON field -----
+  "furnished-flat.arch": { because: "sheet layer — `schedule`", proof: /^\s*schedule\b/m },
+  // Its order alone: its `column`s stand before its `furniture`, and the document lists them after.
+  "museum.arch": { because: "`column` before `furniture`: `dropped` says `column order`", proof: /^\s*column\b/m },
   "sheet-notes.arch": {
-    because: "sheet layer — `paper` + `schedule` + `notes` (the title block's `number`/`revision` DO round-trip)",
-    proof: /^\s*paper\b/m,
+    because: "sheet layer — `schedule` + `notes` (the title block's `number`/`revision` DO round-trip)",
+    proof: /^\s*notes\b/m,
   },
   "practice-office.arch": {
-    because: "sheet layer — `paper` + `schedule` + `notes`; and `zone`",
-    proof: /^\s*paper\b/m,
+    because: "sheet layer — `schedule` + `notes`; and `zone`",
+    proof: /^\s*notes\b/m,
   },
-  "corner-cafe.arch": { because: "sheet layer — `paper` + `schedule` + `legend`; and `zone`", proof: /^\s*paper\b/m },
+  "corner-cafe.arch": { because: "sheet layer — `schedule` + `legend`; and `zone`", proof: /^\s*legend\b/m },
   // Its walls' `status` DOES round-trip; what is lost is the sheet layer, `north` and a room's
   // `label … at`.
   "remodel.arch": {
@@ -25,29 +25,29 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     proof: /^\s*legend\b/m,
   },
   "classroom-block.arch": {
-    because: "sheet layer — `paper` + `schedule` + `notes`; and `zone`",
-    proof: /^\s*paper\b/m,
+    because: "sheet layer — `schedule` + `notes`; and `zone`",
+    proof: /^\s*notes\b/m,
   },
   // --- the style layer: `theme`/`style` select paint, which the JSON does not carry -
   "themed.arch": { because: "style layer — `theme`", proof: /^\s*theme\b/m },
-  "gallery-l.arch": { because: "style layer — `theme`; and the sheet layer — `paper`", proof: /^\s*theme\b/m },
+  "gallery-l.arch": { because: "style layer — `theme`; and a room's `label … at`", proof: /^\s*theme\b/m },
   "materials.arch": {
-    because: "style layer — `style <kind> { … }`; and `paper`/`schedule`/`legend`",
+    because: "style layer — `style <kind> { … }`; and `schedule`/`legend`",
     proof: /^\s*style\b/m,
   },
-  // --- curved geometry: `WallJson.points` is straight-edged; there is no `circle` ---
+  // --- curved geometry: a wall `arc` travels; there is no `circle` ----------------
   "aquarium.arch": {
-    because: "curved geometry — wall `arc` + `room circle`; and the sheet layer",
-    proof: /\barc\s*\(/,
+    because: "curved geometry — `room circle`; and the sheet layer",
+    proof: /\bcircle\b/,
   },
-  "hexagon-pavilion.arch": { because: "curved geometry — wall `arc` + `room circle`", proof: /\barc\s*\(/ },
+  "hexagon-pavilion.arch": { because: "curved geometry — `room circle`", proof: /\bcircle\b/ },
   "library.arch": {
-    because: "curved geometry — wall `arc`; and the sheet layer, `zone`, `stair`/`elevator`",
-    proof: /\barc\s*\(/,
+    because: "curved geometry — `room circle`; and the sheet layer, `zone`, `stair`/`elevator`",
+    proof: /\bcircle\b/,
   },
   // --- drawing-only and ground elements: no JSON element kind ----------------------
   "tiny-house.arch": { because: "`roof` is deliberately absent from the projection", proof: /^\s*roof\b/m },
-  "bungalow.arch": { because: "`roof`; and the sheet layer — `paper` + `schedule`", proof: /^\s*roof\b/m },
+  "bungalow.arch": { because: "`roof`; and the sheet layer — `schedule`", proof: /^\s*roof\b/m },
   "courtyard-house.arch": { because: "`roof`; and the sheet layer + `zone`", proof: /^\s*roof\b/m },
   // --- storeys and composition -----------------------------------------------------
   "two-storey.arch": {
@@ -55,12 +55,12 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     proof: /^\s*level\b/m,
   },
   "townhouse.arch": {
-    because: "`level` — each storey projects alone and draws differently from its sheet; also `roof`/`stair`/`paper`",
+    because: "`level` — each storey projects alone and draws differently from its sheet; also `roof`/`stair`",
     proof: /^\s*level\b/m,
   },
   // Plan JSON has no stair, of either form: `dropped` reports this one (#366).
   "turning-stair.arch": {
-    because: "`level` — each storey projects alone and draws differently from its sheet; also `roof`/`stair`/`paper`",
+    because: "`level` — each storey projects alone and draws differently from its sheet; also `roof`/`stair`",
     proof: /^\s*level\b/m,
   },
   "garden-house.arch": {
@@ -68,7 +68,7 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     proof: /^\s*level\b/m,
   },
   "hillside-villa.arch": {
-    because: "`level`, `place`, `roof`/`void`, `arc` and the sheet layer",
+    because: "`level`, `place`, `roof`/`void` and the sheet layer",
     proof: /^\s*level\b/m,
   },
   "terrace-row.arch": {

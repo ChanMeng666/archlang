@@ -7,7 +7,8 @@ import { DIM_REFS } from "../ast.js";
 import type { Expr } from "../expr.js";
 import { standingWalls } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import type { SceneNode } from "../scene.js";
+import type { CadPart, SceneNode } from "../scene.js";
+import { DIM_TICK } from "../scene.js";
 import type { RDim } from "../ir.js";
 import { add, length, mul, normal, projectToWallFace, segmentsOfWall, sub, unit } from "../geometry.js";
 import { arcPointAt, diameterText, radiusText } from "../geometry/arc.js";
@@ -356,7 +357,7 @@ export const dim: ElementDef = {
     const off = mul(n, dm.offset);
     const p1 = add(dm.from, off);
     const p2 = add(dm.to, off);
-    const tick = sizes.refDim * 0.012;
+    const tick = sizes.refDim * DIM_TICK;
     const thinPaint = { stroke: theme.dim, width: sizes.thin };
     const nodes: SceneNode[] = [];
     // Extension (witness) lines (lighter), then the dimension line. A zero offset
@@ -389,6 +390,25 @@ export const dim: ElementDef = {
     }
     nodes.push({ layer: "dims", prim: dimTextPrim(dm, sizes, fmt), paint: { fill: theme.dim } });
     return nodes;
+  },
+  /**
+   * A rotated dimension, which measures along the line it stands on: a `dims auto` chain's witness
+   * lines start on a stepped facade, and what it reports is the run along its baseline. A dimension
+   * of nothing has no direction, so it stays flat.
+   */
+  cadPart(resolved): CadPart | undefined {
+    const dm = resolved as RDim;
+    const run = sub(dm.to, dm.from);
+    if (!(length(run) > 0)) return undefined;
+    const angle = (Math.atan2(-run.y, run.x) * 180) / Math.PI;
+    return {
+      t: "dimension",
+      a: dm.witness?.from ?? dm.from,
+      b: dm.witness?.to ?? dm.to,
+      line: add(dm.to, mul(normal(unit(run)), dm.offset)),
+      angle: angle < 0 ? angle + 360 : angle,
+      ...(dm.text !== undefined ? { text: dm.text } : {}),
+    };
   },
   /** The frame's action on a dimension (`frame.ts`'s `transformElement` calls this). */
   transform(resolved, t: TransformCtx): RDim {

@@ -250,11 +250,14 @@ suite("examples/remodel.arch", () => {
   // Pinned when the example was written (B3b). A move is a finding to explain, never a re-pin.
   // #367 moved svg and dxf: "Utility" is pinned clear of the swing; describe() and lint() held.
   // #401 moved describe alone: its `between` doors report `centreline_at`, see ./byte-identity-baseline.ts.
+  // Backlog U.13 moved dxf alone, on purpose: its doors, windows and furniture became blocks, and
+  // `dxfFlat`, the same Scene written with no blocks, is the digest `dxf` held before (837b1718…).
   it("pins its SVG, DXF, describe() and lint()", () => {
     const r = compile(REMODEL, { noCache: true });
     expect({
       svg: sha(r.svg),
       dxf: sha(toDxf(r.scene!)),
+      dxfFlat: sha(toDxf({ ...r.scene! })),
       describe: sha(JSON.stringify(describePlan(REMODEL))),
       lint: sha(JSON.stringify(lint(REMODEL))),
     }).toEqual(PINS);
@@ -263,7 +266,8 @@ suite("examples/remodel.arch", () => {
 
 const PINS = {
   svg: "70df86ff2b4e794170d764ff3234c0dff105267c8afa7fbcca28f1fc3ea31467",
-  dxf: "837b1718cf545ba44a7a7486a78ad071a8359d8686a6dd0dfdaeb47bb059c116",
+  dxf: "e2aeaa844dedd25197674db84cc41b10725b30e7fd62933374eeb58dc0942c01",
+  dxfFlat: "837b1718cf545ba44a7a7486a78ad071a8359d8686a6dd0dfdaeb47bb059c116",
   describe: "d266e4f67487415b5a0573f128ca19e5ef84661e69c63ff7be52509e9af418dd",
   lint: "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
 };

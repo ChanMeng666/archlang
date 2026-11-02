@@ -227,6 +227,8 @@ export type {
   PlanJsonDroppedClause,
   RoomJson,
   WallJson,
+  WallArcJson,
+  WallPointJson,
   WallsFromRoomsJson,
   OpeningJson,
   OpeningOnJson,
@@ -234,6 +236,7 @@ export type {
   DimJson,
   ColumnJson,
   TitleJson,
+  PaperJson,
   PointJson,
   EdgeJson,
   RoomType,
@@ -517,8 +520,11 @@ export {
 } from "./site.js";
 export type { CompassLetter, SiteFacts, SymbolicFacing } from "./site.js";
 export type {
+  CadPart,
+  CadTurn,
   Scene,
   SceneNode,
+  ScenePart,
   ScenePrim,
   // `path` is the curved generalisation of `region`; a consumer that switches on
   // `prim.t` needs both of its member types to name the branch it is handling.
