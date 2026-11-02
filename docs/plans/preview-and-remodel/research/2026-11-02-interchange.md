@@ -26,8 +26,12 @@ point that leads a wall cannot carry one. Omitting `dir` means `ccw`, as in `.ar
   and a reader who walks `points` has to join two arrays to learn what an edge is. Reverse if a
   consumer shows that a member on a point breaks it.
 - A point's `x`/`y` stay the arc's end, so a reader who ignores `arc` still sees the chord, what it
-  saw before. `additionalProperties: false` on the wall point lets a strict validator of an old
-  schema refuse a curved document, and that is the honest result: it cannot read that wall.
+  saw before.
+- **An older core reads a curved or papered document silently, as the chord with no sheet.** Its
+  `reqPoint` ignores extra keys and it has no `paper` case, so `--from-json` there exits 0 and prints
+  no note. Only a strict validator of the old schema refuses the document. `version` stays 1: the
+  format is additive, and a bump would refuse every document on every old core to warn about these
+  two keys. The changelog and the language reference say so.
 
 **`dir` and `major` are read off the resolved arc**, never the AST: a flattened row of a `place`d
 instance has been carried through a frame, and a reflection flips the sense. The sign of `sweep` is
@@ -65,7 +69,7 @@ and MCP: every new key is conditional. An old document loads: both members are o
 
 ## 3. The converter seam
 
-A recipe, not a plugin API: a page section in `docs/integrations.md` and one worked tool in
+A recipe, not a plugin API: a section of the language reference, under Output formats, and one worked tool in
 `tools/plan-to-geojson/`, labelled experimental as the mask recipe is (D18). It reads the document,
 needs no package, and writes GeoJSON.
 
@@ -120,8 +124,9 @@ drawing disagree with the Scene.
 **A dimension is a `DIMENSION` (rotated linear, type 0) with an anonymous `*D<n>` block** holding
 the very entities the flat file drew, in plan coordinates. Rotated, not aligned, because a `dims auto`
 chain measures along a baseline while its witness lines start on a stepped facade, which is what a
-rotated dimension measures. Written `text` goes in group 1; with none the reader shows its own
-measure. `dim radius` and `dim diameter` are written this way too, with their `R`/`φ` text, the
+rotated dimension measures. Written `text` goes in group 1, and so does a figure that is not whole:
+the style redraws whole millimetres, which is right for nearly every figure and would turn 12345.68
+into 12346. With neither, the reader shows its own measure, so a whole figure follows a stretch in CAD. `dim radius` and `dim diameter` are written this way too, with their `R`/`φ` text, the
 measured line being the radius or the diameter: a radial type is residue.
 
 The sizes a reader lays a dimension out by are written twice, in a `DIMSTYLE` row and in `$DIMTXT`,

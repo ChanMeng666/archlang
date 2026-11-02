@@ -426,6 +426,17 @@ suite("a dimension", () => {
     expect(dxf.split("\n").length % 2).toBe(1);
   });
 
+  it("a figure that is not whole is written out, since the style redraws whole millimetres", () => {
+    const fractional = dims(dxfOf(plan(`${W}\n  dim (0,0)->(12345.68,0)`)))[0]!;
+    expect(str(fractional, 1)).toBe("12345.68");
+    expect(blocks(dxfOf(plan(`${W}\n  dim (0,0)->(12345.68,0)`))).get("*D1")?.ents.at(-1)?.pairs).toContainEqual([
+      1,
+      "12345.68",
+    ]);
+    // A whole figure stays the reader's own measure, so it follows a stretch in CAD.
+    expect(str(dims(dxfOf(plan(`${W}\n  dim (0,0)->(12345,0)`)))[0]!, 1)).toBeUndefined();
+  });
+
   it('an empty text is no number: "" in the file would mean the measure', () => {
     expect(str(dims(dxfOf(plan(`${W}\n  dim (0,0)->(4000,0) text ""`)))[0]!, 1)).toBe(" ");
   });
@@ -524,7 +535,11 @@ suite("the wiring", () => {
     const builds = ci.slice(ci.indexOf("  builds:\n"), ci.indexOf("  windows:\n"));
     expect(builds).toContain("npm run check:dxf");
     expect(builds).toContain("e2e/requirements.txt");
-    expect(readFileSync("e2e/requirements.txt", "utf8")).toMatch(/^ezdxf==\d+\.\d+\.\d+$/m);
+    const pins = readFileSync("e2e/requirements.txt", "utf8")
+      .split("\n")
+      .filter((l) => l !== "" && !l.startsWith("#"));
+    expect(pins.map((l) => l.split("==")[0])).toContain("ezdxf");
+    for (const pin of pins) expect(pin).toMatch(/^[\w-]+==\d+(\.\d+)+$/);
   });
 
   it("the core takes no dependency on it", () => {

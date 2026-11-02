@@ -117,6 +117,9 @@ def check(row, fails):
             measure = float(e.get_measurement())
             if abs(measure - float(drawn[0])) > 0.51:
                 fails.append(f"{name}: {e.dxf.geometry} measures {measure}, the drawing prints {drawn[0]}")
+        elif written.strip() != "" and len(drawn) == 1 and written != drawn[0]:
+            # A written figure is the figure the drawing prints, in whatever hand the sheet uses.
+            fails.append(f"{name}: {e.dxf.geometry} says {written}, the drawing prints {drawn[0]}")
     got = flat_entities(row["dxf"])
     want = flat_entities(row["flat"])
     if len(got) != len(want):

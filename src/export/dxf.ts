@@ -636,7 +636,11 @@ function writePart(b: DxfBuilder, blocks: BlockTable, part: ScenePart, nodes: re
   for (const node of nodes) emit(body, node);
   const number = nodes.find((n) => n.prim.t === "text")?.prim;
   const textAt = number?.t === "text" ? number.at : part.line;
-  b.dimension(layer, blocks.dimension(layer, body.toString()), part, textAt, DIM_STYLE);
+  // `$DIMDEC` 0 redraws whole millimetres, so a figure that is not whole is written out, or a reader
+  // that lays the dimension out again would show 12346 where the drawing prints 12345.68.
+  const fractional = part.text === undefined && number?.t === "text" && !/^\d+$/.test(number.value);
+  const said = fractional ? { ...part, text: number.value } : part;
+  b.dimension(layer, blocks.dimension(layer, body.toString()), said, textAt, DIM_STYLE);
 }
 
 /** A `path` loop (or an open run) edge by edge, from its start: a LINE or a native ARC each. */

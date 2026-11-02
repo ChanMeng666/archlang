@@ -2982,6 +2982,10 @@ carries it), `text` (the clause in words) and `level` (the storey that holds it;
 only that storey's rows and the plan-wide ones are reported; keeps are plan-wide, so every
 storey's keeps are reported on each `--level` export).
 
+A wall's `arc` and the `paper` are carried, and a document still says `version: 1`: the format only
+grows. A core older than the one that added them reads such a document without a word, as the chord
+and with no sheet, because it ignores keys it does not know.
+
 | `clause` | What leaves |
 |---|---|
 | `keep` | every `keep` |
@@ -3703,7 +3707,8 @@ sill on the other face). A door or a window stands in the frame of its wall and 
 the middle of its footprint, so one door on four walls is one block with four `INSERT`s. On a wall at
 another angle or a curved one the block is drawn as the plan has it. Every `dim` and `dims auto` figure
 is a rotated `DIMENSION` that measures along its own line, with an anonymous `*D` block holding what the
-drawing drew, and its own `R`, `φ` or `text` as an override. A cased `opening` and an uncatalogued
+drawing drew. Its `R`, `φ` or `text` is an override, and so is a figure that is not a whole number of
+millimetres; any other figure is the reader's own measure. A cased `opening` and an uncatalogued
 `furniture` word stay plain entities. Exploding the file gives the same entities as a flat export, and
 the check is [ezdxf](https://ezdxf.mozman.at/), an independent reader, run in CI. The file has no
 handles or OBJECTS section, which a stricter reader may ask for: test it in the CAD program you use.

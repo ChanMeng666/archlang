@@ -17,6 +17,10 @@ archlang compile example/plan.arch -f json -o example/plan.json
 node plan_to_geojson.mjs example/plan.json example/plan.geojson
 ```
 
+The script trusts the document it reads. It skips a wall or a ring with too few points to be GeoJSON,
+and validates nothing else, so a hand-written document goes through `archlang compile --from-json`
+first: that is what checks it.
+
 The files in `example/` are generated: after changing the script or the plan, regenerate them with
 those two commands rather than editing them. `test/tools-plan-to-geojson.test.ts` holds the script to
 them, and to the core's own arc and area figures.

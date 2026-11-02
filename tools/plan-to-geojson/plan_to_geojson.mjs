@@ -14,10 +14,14 @@ function signedArea(ring) {
   return sum;
 }
 
-/** A closed ring of positions, counter-clockwise as RFC 7946 §3.1.6 asks of an exterior ring. */
+/**
+ * A closed ring of positions, counter-clockwise as RFC 7946 §3.1.6 asks of an exterior ring. The
+ * document's rings are open, but one a person wrote may already end where it starts.
+ */
 function exteriorRing(points) {
   const ring = points.map(position);
-  ring.push(ring[0]);
+  const closed = ring.length > 1 && ring[0].every((v, i) => v === ring[ring.length - 1][i]);
+  if (ring.length > 0 && !closed) ring.push(ring[0]);
   return signedArea(ring) < 0 ? ring.reverse() : ring;
 }
 
@@ -60,13 +64,13 @@ export function flattenArc(a, b, { radius, dir = "ccw", major = false }) {
 /** A wall's centreline as a list of points: `arc` says the edge arriving at a point is curved. */
 function wallLine(wall) {
   const out = [];
-  wall.points.forEach((p, i) => {
-    if (p.arc) out.push(...flattenArc(wall.points[i - 1], p, p.arc));
+  (wall.points ?? []).forEach((p, i) => {
+    if (p.arc && i > 0) out.push(...flattenArc(wall.points[i - 1], p, p.arc));
     out.push(p);
   });
   const first = out[0];
   const last = out[out.length - 1];
-  if (wall.closed && (first.x !== last.x || first.y !== last.y)) out.push(first);
+  if (wall.closed && out.length > 1 && (first.x !== last.x || first.y !== last.y)) out.push(first);
   return out;
 }
 
@@ -84,20 +88,25 @@ export function planToGeoJson(plan) {
   if (plan.version !== undefined && plan.version !== 1) throw new Error(`Plan JSON version ${plan.version} is not 1`);
   const features = [];
   for (const r of plan.rooms ?? []) {
-    const ring = r.floor_polygon ?? r.polygon ?? rectangle(r.x, r.y, r.width, r.height);
+    const geometry = polygon(r.floor_polygon ?? r.polygon ?? rectangle(r.x, r.y, r.width, r.height));
+    // RFC 7946 §3.1.6: a ring has at least four positions, so fewer is no polygon.
+    if (geometry.coordinates[0].length < 4) continue;
     features.push(
       feature(
         "room",
-        polygon(ring),
+        geometry,
         present({ id: r.id, label: r.label, room_type: r.room_type, uses: r.uses, area_m2: r.area }),
       ),
     );
   }
   for (const w of plan.walls ?? []) {
+    const line = wallLine(w);
+    // RFC 7946 §3.1.4: a LineString has two positions or more, so one point is no wall.
+    if (line.length < 2) continue;
     features.push(
       feature(
         "wall",
-        { type: "LineString", coordinates: wallLine(w).map(position) },
+        { type: "LineString", coordinates: line.map(position) },
         present({ id: w.id, category: w.category, thickness_mm: w.thickness, status: w.status }),
       ),
     );

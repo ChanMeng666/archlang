@@ -163,6 +163,47 @@ suite("a document it was not written from", () => {
     expect(out.features.filter((f) => f.properties.layer === "wall")).toEqual([]);
   });
 
+  it("a ring that already closes is not closed twice, in either direction", () => {
+    const pts = [
+      { x: 0, y: 0 },
+      { x: 4000, y: 0 },
+      { x: 4000, y: 3000 },
+      { x: 0, y: 0 },
+    ];
+    for (const polygon of [pts, [...pts].reverse()]) {
+      const out = toGeoJson({ plan: "p", rooms: [{ id: "a", polygon }], walls: [], openings: [], furniture: [] });
+      const ring = (out.features[0]!.geometry.coordinates as Position[][])[0]!;
+      expect(ring).toHaveLength(4);
+      expect(shoelace(ring)).toBeCloseTo(6, 9);
+    }
+  });
+
+  it("a ring or a wall too short to be GeoJSON is left out", () => {
+    const out = toGeoJson({
+      plan: "p",
+      rooms: [{ id: "a", polygon: [{ x: 0, y: 0 }] }, { id: "b", polygon: [] }],
+      walls: [
+        { id: "one", points: [{ x: 0, y: 0 }], closed: true },
+        { id: "none", points: [] },
+      ],
+      openings: [],
+      furniture: [],
+    });
+    expect(out.features).toEqual([]);
+  });
+
+  it("an arc on a wall's first point has no edge to curve, and is read as the point", () => {
+    const points = [
+      { x: 0, y: 0, arc: { radius: 500 } },
+      { x: 1000, y: 0 },
+    ];
+    const out = toGeoJson({ plan: "p", rooms: [], walls: [{ id: "w", points }], openings: [], furniture: [] });
+    expect(positions(out.features[0]!.geometry)).toEqual([
+      [0, 0],
+      [1, 0],
+    ]);
+  });
+
   it("refuses a version it does not know, rather than guess", () => {
     expect(() => toGeoJson({ version: 2, plan: "p", rooms: [] })).toThrow(/version 2/);
   });
