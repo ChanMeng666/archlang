@@ -137,3 +137,50 @@ and `axis.3` in an expression (`E_PARSE`, or `Unknown name` for `axis.B`) are th
   check, and the core says "A wall has no rectangular footprint to stack". `keep on axis` on each
   storey does that job for a wall on the grid; a wall off the grid has no check.
 - **`keep stacked` refuses a column**, though a column has `at` and `size`.
+
+## 6. The stair's `bounds()` (D27)
+
+**The gap, reproduced.** The break line's diagonals overshoot the flight's edges by 6 % of its width,
+and `bounds()` stopped at the footprint: on `stair at (500,500) size 1000x3000` the ink ran x 440 to
+1560 and `bounds()` 500 to 1500. `test/block-stair.test.ts` pinned it.
+
+**The fix.** `bounds()` adds the four ends of the break line, read from the one path the ink is drawn
+from (`breakLine`, moved out of `flightSymbol` with its float order intact), so the two cannot part.
+A block adds the four ends of its one cut flight. Never the ink: every plan that did not move is the
+proof, and those that did move only by the extent.
+
+**What reads `bounds()`, each checked.**
+
+| Reader | What it does now |
+|---|---|
+| `drawingBounds` (`sheet.ts`), so the viewBox and `renderSizes` | Holds the ink. Where the stair is the outermost thing the drawing grows, and without `paper` its reference dimension can grow with it, which is every annotation size on that page: the moved plans' SVG moves whole, geometry unchanged |
+| `sheetExtents` `drawn` (`ir.ts`) | The same reach, for `W_DRAWING_OVERFLOW` and the sheet fit. No corpus plan changes its fit |
+| `checkNumberDomain` (`ir.ts`) | **It is a range check**, D27's second reverse-if, and it says "every point an element draws to". It was short by the overshoot; now a stair whose break line alone passes `MODEL_RANGE_MM` is `E_OUT_OF_RANGE`. That closes a hole in the law and moves no corpus row |
+| `draw-budget.ts` | Four units more per stair. `drawCost` plus `bounds().length` was an upper bound and stays one |
+| `scene-build.ts` dimension stations | Reads `bounds()` as what a number must not sit on, and the break line is ink, so it now blocks that too. No corpus row moved by this alone: every moved page's extent moved |
+
+`describe().bbox` and `bbox_outer` read walls and rooms, never `bounds()`, so **no `describe()` moved**,
+and neither did `lint()`, the accessibility lint, `compile().diagnostics` or the steps. So the sanction
+to move `describe()` was not needed, and K1 was not re-taken: it passes as it stood.
+
+**What moved**, over the sweep's 24,896 rows: 28, on the SVG, the Scene and the overlay alone. One is a
+corpus file, `test/fixtures/zones-levels.arch`, whose stair, 2600 mm wide, stands in no wall: its
+drawing grows 156 mm on the right. The other 27 are plans inline in tests, 23 with no wall at all and
+4 whose stair stands past the walls or wider than they cover. No example, no docs fence, no golden.
+
+Every moved page's extent moved, by 6 % of a flight's width on each side the stair is outermost. The
+small ones are the partial cases: 8 mm where an 1800 mm flight stands against a 200 mm wall, 108 mm
+past the centreline and 100 mm of wall to cover it. So D27's "a stair against a wall stays inside the
+wall band" holds up to a flight of 1666 mm on that wall, not past it.
+
+**The pinned digests.** One row moved in ten tables: `zones-levels` in `block-stair`, `corner-window`,
+`window-kinds`, `shared-grid` (`stairLawDigest`), `rectilinear-rooms` (`lawDigest`), `double-door`,
+`import-module-lets`, `open-crossing`, `wall-status` and `while` (`allStoreysDigestWithDiagnostics`).
+Each body, run on the head with the base's SVG, Scene and overlay put back, reproduces the old digest,
+so only the drawing moved; the reason stands beside each value.
+
+- *Alternative:* add the overshoot to the footprint as a rectangle, four corners either way. Rejected:
+  it computes the reach a second time, where the ends are already known.
+- *Alternative:* trim the ink to the footprint. D27 ruled that out: it moves every stair in every golden.
+- *Reverse if:* a plan's stair is meant to sit on the sheet's margin to the millimetre, and the 6 % reach
+  changes a fit an author chose.

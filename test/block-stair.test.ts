@@ -438,7 +438,7 @@ describe("the drawing", () => {
     }
   });
 
-  it("every line stands inside the bounds but the break line's two diagonals", () => {
+  it("every line stands inside the bounds, the break line's two diagonals included (D27)", () => {
     for (const s of BLOCK_STAIRS) {
       for (const dir of ["up", "down"] as const) {
         const src = planOf(s, dir);
@@ -446,9 +446,8 @@ describe("the drawing", () => {
         const xs = pts.map((p) => p.x);
         const ys = pts.map((p) => p.y);
         const lines = linesOf(inkOf(src));
-        const cut = cutOf(lines);
-        expect(cut.length).toBe(2);
-        for (const l of lines.filter((x) => !cut.includes(x))) {
+        expect(cutOf(lines).length).toBe(2);
+        for (const l of lines) {
           for (const p of [l.a, l.b]) {
             expect(p.x).toBeGreaterThanOrEqual(Math.min(...xs));
             expect(p.x).toBeLessThanOrEqual(Math.max(...xs));
@@ -486,16 +485,27 @@ describe("the drawing", () => {
     }
   });
 
-  it("so `bounds()` is 60 mm short of the ink on a 1000 mm flight at the box's edge, as a straight stair's is", () => {
+  it("so `bounds()` reaches 60 mm past the box on a 1000 mm flight at its edge, as a straight stair's does", () => {
+    // Fixed on purpose (D27): this pinned the gap, `bounds()` stopping at the box while the ink
+    // went on. The ink is the same, and `bounds()` now says so.
+    const stairBounds = (src: string): number[] =>
+      BUILTIN_REGISTRY.byKind
+        .get("stair")!
+        .bounds(verticalsOf(resolvePlan(src).ir!)[0]!)
+        .map((p) => p.x);
     // The quarter-turn's first flight stands on the box's east edge, x 2500.
-    const xs = cutOf(linesOf(inkOf(planOf(L_STAIR)))).flatMap((l) => [l.a.x, l.b.x]);
+    const block = planOf(L_STAIR);
+    const xs = cutOf(linesOf(inkOf(block))).flatMap((l) => [l.a.x, l.b.x]);
     expect(Math.max(...xs)).toBeCloseTo(2560, 6);
+    expect(Math.max(...stairBounds(block))).toBe(Math.max(...xs));
     const straight = hallPlan("    stair id=s at (500,500) size 1000x3000 dir up");
     const nodes = linesOf(inkOf(straight));
     const slanted = nodes.filter((l) => l.a.x !== l.b.x && l.a.y !== l.b.y && Math.abs(l.a.x - l.b.x) > 1000);
     const ends = slanted.flatMap((l) => [l.a.x, l.b.x]);
     expect(Math.min(...ends)).toBeCloseTo(440, 6);
     expect(Math.max(...ends)).toBeCloseTo(1560, 6);
+    expect(Math.min(...stairBounds(straight))).toBe(Math.min(...ends));
+    expect(Math.max(...stairBounds(straight))).toBe(Math.max(...ends));
   });
 });
 

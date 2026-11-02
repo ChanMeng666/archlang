@@ -130,7 +130,9 @@ const BASELINE: [string, string][] = [
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
   ["09ac060ad6731b56e40a23bf9b43938ec0c2aa82d38066050eff243c1b86728a", "test/fixtures/storeys-eaves-overflow.arch"],
-  ["3d10dfea39abccb9a292527e7a5c85adaaf04b944de920f9ad3d9690187bcb68", "test/fixtures/zones-levels.arch"],
+  // was 3d10dfea. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
+  // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
+  ["f003e58744492a4b562ef28436484454401495ad76df042d14c468d3c0533243", "test/fixtures/zones-levels.arch"],
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
   ["edc62a570b76ff9877ab4515a7a83826cc91bf70328a315fe62f42ff17f3a843", "test/walls-from-rooms/relational.arch"],
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "test/walls-from-rooms/studio.arch"],
