@@ -74,7 +74,10 @@ pure, and the same plan prints the same bytes on every host.
 * PDF and PNG: both gather their fonts from the drawn strings (`pdf.ts`'s recording pass, `svgTexts`), so an authored word in CJK
   reaches the optional face as a room name does.
 * DXF: tables and stamps are Scene text, so they carry over. DXF draws no title block today, and that does not change.
-* Formatter: prints the block, in written order; a fixed point.
+* Parser: no step meter runs while parsing, and a did-you-mean reads every key, so a parse pays for one, on a word of a key's
+  length. The key table is built once.
+* Formatter: prints the block, in written order, with the comments between entries; a fixed point.
+* `arch finish`: adds its statements among the plan's settings, outside the block.
 * `import`: as `title`, a module's `sheet text` is not brought in. Components are. A shared table is a copy for now.
 * Grammars: `sheet` joins the highlighted words; the GBNF gains the statement.
 

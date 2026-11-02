@@ -9,7 +9,16 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
-import { compile, describe as describePlan, format, lint, planToJson, toDxf, type Scene } from "../src/index.js";
+import {
+  compile,
+  describe as describePlan,
+  finish,
+  format,
+  lint,
+  planToJson,
+  toDxf,
+  type Scene,
+} from "../src/index.js";
 import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
 import { GROUND_MATERIALS, KNOWN_MATERIALS } from "../src/hatches.js";
@@ -152,6 +161,25 @@ suite("sheet text: the refusals", () => {
     expect(errors.map((e) => e.message.includes("did you mean"))).toEqual([true, false, false]);
     const huge = "z".repeat(MAX_SHEET_WORD + 1);
     expect(parseErrors(inPlan(block(`${huge} "A"`)))[0]!.message).not.toContain("did you mean");
+  });
+
+  it("a bad entry costs one error: the block is skipped whole and the plan reads on", () => {
+    for (const entries of [
+      ['totl "A"', 'total "B"'],
+      ['total "A"', 'totl "B"', 'name "C"'],
+      ['total ""', 'name "C"'],
+    ]) {
+      const src = inPlan(
+        `${block(...entries)}\n  room id=r at (0,0) size 2000x2000 label "After"\n  room id=s at (2000,0) size 0x0`,
+      );
+      const o = compile(src, { noCache: true });
+      expect(parseErrors(src), entries.join()).toHaveLength(1);
+      // The statement after the block was read: its own error is reported, not swallowed.
+      expect(
+        o.diagnostics.some((d) => d.code !== "E_PARSE" && d.severity === "error"),
+        entries.join(),
+      ).toBe(true);
+    }
   });
 
   it("a second block is refused, not merged", () => {
@@ -433,6 +461,21 @@ ${head}
     const long = stampOf(plan(block('net "NETTOFLÄCHE INNEN"')));
     expect(long.value).toContain("NETTOFLÄCHE INNEN");
     expect(long.size).toBeLessThan(plain.size);
+  });
+});
+
+suite("sheet text: arch finish", () => {
+  it("adds its statements outside the block and keeps every word", () => {
+    const bare = FIXTURE.replace(/ {2}title \{.*\n/, "")
+      .replace("  schedule rooms net\n", "")
+      .replace("  legend\n", "")
+      .replace("  scale 1:12.5\n", "");
+    const { source } = finish(bare);
+    const open = source.indexOf("sheet text {");
+    const body = source.slice(open, source.indexOf("\n  }", open));
+    expect(body).toBe(bare.slice(bare.indexOf("sheet text {"), bare.indexOf("\n  }", bare.indexOf("sheet text {"))));
+    expect(source).toContain("schedule rooms");
+    expect(compile(source, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   });
 });
 
