@@ -65,6 +65,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   test is the tightest constraint on that example: deflate output differs by zlib implementation (pako
   and zlib-ng measure 26–35 characters longer than Node/Chromium; the test is skipped on Node 18), so
   trim comments, never plan content.
+- **A spec cut is provable only if the same fact remains in the file, after every parallel branch has merged.** Three cuts in one round removed facts called duplicates, and two branches cutting the same sentence's copies left none (#438, #439). Grep the file for the fact after each merge.
+- **A same-length edit to an example still moves its permalink** (`test/readme-permalink.test.ts`): hashes read the text, not the geometry. Regenerate with `scripts/gen-permalink.mjs`.
 - **`spec.llm.md` is capped below 30,000 UTF-16 units** (`test/llm-spec-drift.test.ts`) with little
   headroom, so new spec text must be paid for by cuts elsewhere in the file.
 
