@@ -507,22 +507,38 @@ describe("compile tool", () => {
 
   it('format:"json" reports what Plan JSON leaves out as `dropped`, absent when nothing was (#366)', async () => {
     const client = await connect();
+    const LOSSY = `plan "a legend" {
+  units mm
+  legend
+  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+}`;
+    const want = planToJson(LOSSY).dropped;
+    expect(want?.length).toBeGreaterThan(0);
+    const out = await call(client, "compile", { source: LOSSY, format: "json" });
+    expect(out.ok).toBe(true);
+    expect(out.dropped).toEqual(want);
+    expect(out.output).toEqual(planToJson(LOSSY).json);
+    const control = await call(client, "compile", { source: TWO_ROOMS, format: "json" });
+    expect("dropped" in control).toBe(false);
+    const svg = await call(client, "compile", { source: LOSSY });
+    expect("dropped" in svg).toBe(false);
+  });
+
+  it('format:"json" carries an arc and the paper, and has nothing to report for them', async () => {
+    const client = await connect();
     const ARC = `plan "arc round trip" {
   units mm
   paper A4 landscape
   scale 1:50
   wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) arc (0,4000) radius 4000 cw (0,0) close }
 }`;
-    const want = planToJson(ARC).dropped;
-    expect(want?.length).toBeGreaterThan(0);
     const out = await call(client, "compile", { source: ARC, format: "json" });
     expect(out.ok).toBe(true);
-    expect(out.dropped).toEqual(want);
+    expect("dropped" in out).toBe(false);
     expect(out.output).toEqual(planToJson(ARC).json);
-    const control = await call(client, "compile", { source: TWO_ROOMS, format: "json" });
-    expect("dropped" in control).toBe(false);
-    const svg = await call(client, "compile", { source: ARC });
-    expect("dropped" in svg).toBe(false);
+    const doc = out.output as { paper: unknown; walls: Array<{ points: unknown[] }> };
+    expect(doc.paper).toEqual({ size: "A4", orientation: "landscape" });
+    expect(doc.walls[0]?.points[3]).toEqual({ x: 0, y: 4000, arc: { radius: 4000, dir: "cw" } });
   });
 
   it('format:"json" projects every storey into `pages[]`, and `level` picks one', async () => {

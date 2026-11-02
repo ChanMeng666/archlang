@@ -11,7 +11,7 @@ import type {
 import { FURNITURE_ANCHORS } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
-import type { RenderSizes, SceneNode } from "../scene.js";
+import type { CadPart, CadTurn, RenderSizes, SceneNode } from "../scene.js";
 import type { FurnitureAuthored, ResolvedElement, RFurniture, RRoom, RWall } from "../ir.js";
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length, type WallSegment } from "../geometry.js";
 import type { BBox } from "../geometry/rect.js";
@@ -520,6 +520,20 @@ export const furniture: ElementDef = {
       }
     }
     return deg === 0 ? nodes : nodes.map((n) => rotateNode(n, { x: cx, y: cy }, deg));
+  },
+  /**
+   * A catalogued symbol is a block at the middle of its footprint, which a quarter-turn keeps, in
+   * the frame it was drawn in. `rotate` turns clockwise on the sheet. An uncatalogued word draws
+   * its own label in a box, so it stays flat.
+   */
+  cadPart(resolved): CadPart | undefined {
+    const f = resolved as RFurniture;
+    if (fixtureSpec(f.category) === null) return undefined;
+    const deg = f.rotate ?? 0;
+    const swap = deg === 90 || deg === 270;
+    const name = `FURN-${f.category}-${swap ? f.size.h : f.size.w}x${swap ? f.size.w : f.size.h}`;
+    const at = { x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 };
+    return { t: "block", name, at, turn: ((360 - deg) % 360) as CadTurn };
   },
   /** The frame's action on a piece of furniture (`frame.ts`'s `transformElement` calls this). */
   transform(resolved, t: TransformCtx): RFurniture {

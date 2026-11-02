@@ -14,7 +14,7 @@ import type { Bounds, WallSegment } from "./geometry.js";
 import type { Theme } from "./theme.js";
 import type { GeometryBackend } from "./geometry/backend.js";
 import type { HatchDef } from "./hatches.js";
-import type { RenderPass, RenderSizes, Paint, ScenePrim, SceneNode, Scene } from "./scene.js";
+import type { CadPart, RenderPass, RenderSizes, Paint, ScenePrim, SceneNode, Scene } from "./scene.js";
 import type { Frame } from "./frame.js";
 import type { Arc } from "./geometry/arc.js";
 import type { Side } from "./algebra/d4.js";
@@ -285,6 +285,12 @@ export interface ElementDef {
   drawCost?(resolved: ResolvedElement): number;
   /** Emit positioned drawing primitives for this element (the Scene IR). */
   render(resolved: ResolvedElement, ctx: RenderCtx): SceneNode[];
+  /**
+   * What this element is to a CAD file ({@link Scene.parts}): a block, or a dimension. It only says
+   * how the nodes {@link render} drew are grouped, and adds none. Optional: without it, or when it
+   * returns `undefined`, the element's nodes are written as flat entities.
+   */
+  cadPart?(resolved: ResolvedElement): CadPart | undefined;
   /** Parameter schema — one source for the LSP (hover/completion/signature) and
    *  the docs. Optional so third-party plugins need not provide it. */
   params?: readonly ParamDoc[];

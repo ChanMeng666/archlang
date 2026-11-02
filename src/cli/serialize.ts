@@ -105,10 +105,14 @@ const planJsonText = (json: PlanJson): string => `${JSON.stringify(json, null, 2
 
 /** The note's words for one dropped clause: what the format lacks, the thing counted, its plural. */
 const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, string, string]> = {
-  arc: ["arcs", "arc edge", "arc edges"],
   "poche hatch": ["hatch scale or angle on `poche` walls", "wall's hatch setting", "walls' hatch settings"],
   circle: ["circular rooms", "circular room", "circular rooms"],
   "label at": ["room label positions", "`label … at` position", "`label … at` positions"],
+  "column order": [
+    "order between columns and furniture",
+    "column written before furniture",
+    "columns written before furniture",
+  ],
   stair: ["stairs", "stair", "stairs"],
   elevator: ["elevators", "elevator", "elevators"],
   escalator: ["escalators", "escalator", "escalators"],
@@ -118,7 +122,6 @@ const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, str
   fence: ["fences", "fence", "fences"],
   zone: ["zones", "zone", "zones"],
   level: ["level numbers or names", "level", "levels"],
-  paper: ["paper", "paper", "papers"],
   axes: ["axes", "axis", "axes"],
   "site boundary": ["site boundaries", "site boundary", "site boundaries"],
   "schedule rooms": ["schedules", "`schedule rooms` statement", "`schedule rooms` statements"],
@@ -154,11 +157,9 @@ function droppedNotes(rows: PlanJsonDropped[]): string[] {
     const counted = `${fmt3(count)} ${count === 1 ? one : many}`;
     const named = ids.length > 0 ? `: ${idList(ids)}` : "";
     const told =
-      clause === "arc"
-        ? `writes ${counted} as ${count === 1 ? "a straight chord" : "straight chords"}, on ${ids.length === 1 ? "wall" : "walls"} ${idList(ids)}`
-        : clause === "circle"
-          ? `writes ${counted} as ${count === 1 ? "a 48-sided polygon" : "48-sided polygons"}${named}`
-          : `leaves out ${texts.length > 0 ? texts.join(", ") : `${counted}${named}`}`;
+      clause === "circle"
+        ? `writes ${counted} as ${count === 1 ? "a 48-sided polygon" : "48-sided polygons"}${named}`
+        : `leaves out ${texts.length > 0 ? texts.join(", ") : `${counted}${named}`}`;
     return [
       `note: Plan JSON carries no ${lacks}; this export ${told} (the .arch source still holds ${count === 1 ? "it" : "them"})`,
     ];

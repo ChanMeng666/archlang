@@ -23,11 +23,18 @@
  * face; a CAD user still wants exterior and interior walls on separate layers. So the wall
  * nodes are re-filed (never redrawn) through {@link classifyWallSet} — see
  * {@link wallRefiling}.
+ *
+ * Doors, windows, catalogued fixtures and dimensions go through {@link Scene.parts}: the nodes an
+ * element drew become a `BLOCK` with one `INSERT`, or a `DIMENSION` with its own anonymous block.
+ * The entities are the ones a flat file holds, written in the block's frame; nothing is redrawn. A
+ * block holds no block and no `INSERT` is an array, so the file stays linear in what the drawing
+ * budget bounds, and exploding it gives the flat drawing back. A Scene with no `parts` (hand-built,
+ * copied, or an axonometric view) writes that flat file, byte for byte what it always wrote.
  */
 
 import type { Point } from "../ast.js";
-import type { LineType, PathLoop, Scene, SceneNode, SceneWall } from "../scene.js";
-import { layerOf } from "../scene.js";
+import type { LineType, PathLoop, CadTurn, Scene, SceneNode, ScenePart, SceneWall } from "../scene.js";
+import { DIM_TICK, layerOf } from "../scene.js";
 import { VIEW_LAYER_NAMES } from "../view/paint.js";
 import { minorArcDegrees } from "../geometry.js";
 import { dxfPatternName, isSolidFill } from "../hatches.js";
@@ -71,10 +78,50 @@ function dxfLineType(t: LineType | undefined): string | undefined {
   }
 }
 
+/** A block's own frame: where it stands in the plan, and the turn that stands it there. */
+interface BlockFrame {
+  at: Point;
+  turn: CadTurn;
+}
+
+/** An angle in the file's degrees, into a frame turned by `turn`. */
+const intoFrame = (deg: number, turn: CadTurn): number => (((deg - turn) % 360) + 360) % 360;
+
 class DxfBuilder {
   private out: string[] = [];
-  /** Every layer an entity has referenced, so the LAYER table can declare the conditional ones. */
-  readonly used = new Set<string>();
+
+  /**
+   * @param used Every layer an entity has referenced, so the LAYER table can declare the
+   *   conditional ones. A block's entities add to the file's one set.
+   * @param frame The block these entities are written into, when they are not plan coordinates.
+   */
+  constructor(
+    readonly used: Set<string> = new Set<string>(),
+    private readonly frame?: BlockFrame,
+  ) {}
+
+  /** A plan point as the file has it: y up and, in a block, in the block's frame. The turn is exact. */
+  private xy(p: Point): Point {
+    const f = this.frame;
+    if (!f) return { x: p.x, y: -p.y };
+    const dx = p.x - f.at.x;
+    const dy = f.at.y - p.y;
+    switch (f.turn) {
+      case 0:
+        return { x: dx, y: dy };
+      case 90:
+        return { x: dy, y: -dx };
+      case 180:
+        return { x: -dx, y: -dy };
+      case 270:
+        return { x: -dy, y: dx };
+    }
+  }
+
+  /** An angle in the file's degrees, read from the frame the entities are written in. */
+  private deg(a: number): number {
+    return this.frame ? intoFrame(a, this.frame.turn) : a;
+  }
 
   /** group-code / value pair. */
   pair(code: number, value: string | number): void {
@@ -89,29 +136,66 @@ class DxfBuilder {
     if (ltype) this.pair(6, ltype);
   }
 
+  /** A point as a pair of group codes, `code` and `code + 10`. */
+  private point(code: number, p: Point): void {
+    const q = this.xy(p);
+    this.pair(code, num(q.x));
+    this.pair(code + 10, num(q.y));
+  }
+
   line(layer: string, a: Point, b: Point, ltype?: string): void {
     this.begin("LINE", layer, ltype);
-    this.pair(10, num(a.x));
-    this.pair(20, num(-a.y));
-    this.pair(11, num(b.x));
-    this.pair(21, num(-b.y));
+    this.point(10, a);
+    this.point(11, b);
   }
 
   arc(layer: string, center: Point, radius: number, startDeg: number, endDeg: number, ltype?: string): void {
     this.begin("ARC", layer, ltype);
-    this.pair(10, num(center.x));
-    this.pair(20, num(-center.y));
+    this.point(10, center);
     this.pair(40, num(radius));
-    this.pair(50, num(startDeg));
-    this.pair(51, num(endDeg));
+    this.pair(50, num(this.deg(startDeg)));
+    this.pair(51, num(this.deg(endDeg)));
   }
 
   /** A native CIRCLE entity (an axis bubble), so CAD sees a circle, not two arcs. */
   circle(layer: string, center: Point, radius: number, ltype?: string): void {
     this.begin("CIRCLE", layer, ltype);
-    this.pair(10, num(center.x));
-    this.pair(20, num(-center.y));
+    this.point(10, center);
     this.pair(40, num(radius));
+  }
+
+  /** One reference to a block, standing at `at`, turned by `turn`. */
+  insert(layer: string, name: string, at: Point, turn: CadTurn): void {
+    this.begin("INSERT", layer);
+    this.pair(2, name);
+    this.point(10, at);
+    if (turn !== 0) this.pair(50, turn);
+  }
+
+  /**
+   * A rotated linear DIMENSION (type 0). 160 is the type plus bit 32, the block is this dimension's
+   * own, and bit 128, the number stands where the drawing put it, so a reader that shows the block
+   * and a reader that lays the dimension out again agree on where the number is. `block` holds what
+   * the drawing drew. With no `text`, group 1 stays absent and a reader shows its own measure; an
+   * empty text is a single space, the format's way to say no number, since "" means the measure.
+   */
+  dimension(layer: string, block: string, part: Dimension, textAt: Point, style: string): void {
+    this.used.add(layer);
+    this.pair(0, "DIMENSION");
+    this.pair(100, "AcDbEntity");
+    this.pair(8, layer);
+    this.pair(100, "AcDbDimension");
+    this.pair(2, block);
+    this.point(10, part.line);
+    this.point(11, textAt);
+    this.pair(70, 160);
+    if (part.text !== undefined) this.pair(1, dxfUnicode(plainText(part.text)) || " ");
+    this.pair(3, style);
+    this.pair(100, "AcDbAlignedDimension");
+    this.point(13, part.a);
+    this.point(14, part.b);
+    this.pair(50, num(part.angle));
+    this.pair(100, "AcDbRotatedDimension");
   }
 
   /**
@@ -132,8 +216,7 @@ class DxfBuilder {
     ltype?: string,
   ): void {
     this.begin("TEXT", layer, ltype);
-    this.pair(10, num(at.x));
-    this.pair(20, num(-at.y));
+    this.point(10, at);
     // A DXF text height is the height of a CAPITAL letter, an SVG/PDF font size the em; a
     // TEXT given the font size draws about 1.4x larger than the PDF and overruns the room
     // or column the layout fitted it to.
@@ -143,11 +226,10 @@ class DxfBuilder {
     // terminal (ESC). `plainText` blanks every one of them — for a newline that is
     // exactly the space this line has always substituted, so output is unchanged.
     this.pair(1, dxfUnicode(plainText(value)));
-    const angle = align.rotate ? ((-align.rotate % 360) + 360) % 360 : 0;
+    const angle = this.deg(align.rotate ? ((-align.rotate % 360) + 360) % 360 : 0);
     if (angle) this.pair(50, num(angle));
     this.pair(72, align.anchor === "start" ? 0 : align.anchor === "middle" ? 1 : 2);
-    this.pair(11, num(at.x));
-    this.pair(21, num(-at.y));
+    this.point(11, at);
     this.pair(73, 2);
   }
 
@@ -185,16 +267,13 @@ class DxfBuilder {
       this.pair(72, 0); // no bulge
       this.pair(73, 1); // closed
       this.pair(93, loop.length); // vertex count
-      for (const p of loop) {
-        this.pair(10, num(p.x));
-        this.pair(20, num(-p.y));
-      }
+      for (const p of loop) this.point(10, p);
       this.pair(97, 0); // source boundary objects
     }
     this.pair(75, 0); // hatch style: normal (odd parity)
     this.pair(76, 1); // pattern type: predefined
     if (!solid) {
-      this.pair(52, num(angle)); // pattern angle (deg)
+      this.pair(52, num(this.deg(angle))); // pattern angle (deg)
       this.pair(41, num(scale)); // pattern scale
       this.pair(77, 0); // not doubled
       this.pair(78, 0); // pattern definition lines (predefined → resolved by name)
@@ -332,7 +411,18 @@ function layerRows(used: ReadonlySet<string>): { name: string; color: number }[]
   return [...(used.has(PLAIN_WALL_LAYER.name) ? [PLAIN_WALL_LAYER] : []), extr!, intr!, ...remodel, ...rest, ...extra];
 }
 
-function header(layers: readonly { name: string; color: number }[]): string {
+/** The dimension style every `DIMENSION` names, written only on a file that holds one. */
+const DIM_STYLE = "ARCHLANG";
+
+/** The extra table rows {@link BlockTable} needs, or none: a file with no part writes no such table. */
+interface BlockTables {
+  /** Every block the file defines, the two the format reserves among them. */
+  names: readonly string[];
+  /** The {@link DIM_STYLE} row, when a `DIMENSION` needs one. */
+  dimStyle?: { text: number; tick: number };
+}
+
+function header(layers: readonly { name: string; color: number }[], blocks?: BlockTables): string {
   const h: string[] = [];
   const p = (c: number, v: string | number) => h.push(String(c), String(v));
   // Minimal HEADER declaring AutoCAD 2000 (AC1015) — the HATCH entity needs > R12.
@@ -349,6 +439,20 @@ function header(layers: readonly { name: string; color: number }[]): string {
   p(70, 4);
   p(9, "$MEASUREMENT");
   p(70, 1);
+  // The same sizes as the style's row. A reader that lays a dimension out again may take them
+  // from here and not from the table: LibreCAD does, and drew each number 2.5 mm high without them.
+  if (blocks?.dimStyle) {
+    p(9, "$DIMSTYLE");
+    p(2, DIM_STYLE);
+    p(9, "$DIMTXT");
+    p(40, num(blocks.dimStyle.text));
+    p(9, "$DIMTSZ");
+    p(40, num(blocks.dimStyle.tick));
+    p(9, "$DIMEXO");
+    p(40, 0);
+    p(9, "$DIMDEC");
+    p(70, 0);
+  }
   p(0, "ENDSEC");
   p(0, "SECTION");
   p(2, "TABLES");
@@ -398,8 +502,145 @@ function header(layers: readonly { name: string; color: number }[]): string {
   p(3, "arial.ttf");
   p(4, "");
   p(0, "ENDTAB");
+  if (blocks?.dimStyle) {
+    // Sizes a reader lays a dimension out by, should it redraw one: the number and the tick the
+    // drawing uses, a tick and not an arrow (a `DIMTSZ` above 0), no gap at the witness lines and
+    // whole millimetres.
+    p(0, "TABLE");
+    p(2, "DIMSTYLE");
+    p(70, 1);
+    p(0, "DIMSTYLE");
+    p(2, DIM_STYLE);
+    p(70, 0);
+    p(140, num(blocks.dimStyle.text));
+    p(142, num(blocks.dimStyle.tick));
+    p(42, 0);
+    p(271, 0);
+    p(0, "ENDTAB");
+  }
+  if (blocks) {
+    p(0, "TABLE");
+    p(2, "BLOCK_RECORD");
+    p(70, blocks.names.length);
+    for (const name of blocks.names) {
+      p(0, "BLOCK_RECORD");
+      p(2, name);
+    }
+    p(0, "ENDTAB");
+  }
   p(0, "ENDSEC");
   return h.join("\n") + "\n";
+}
+
+/** A {@link ScenePart} that is a dimension. */
+type Dimension = Extract<ScenePart, { t: "dimension" }>;
+
+/** A block name from an element's stem: plain characters, in the one case a CAD table compares in. */
+const blockName = (stem: string): string =>
+  stem
+    .toUpperCase()
+    .replaceAll(".", "P")
+    .replace(/[^A-Z0-9_-]/g, "_");
+
+/**
+ * The file's blocks, in the order they are first used. A named block is defined once per drawn
+ * shape: two elements whose entities read the same in their own frames share it. A second shape
+ * under one stem takes `-2`, `-3`, by first use. A dimension's block is its own.
+ */
+class BlockTable {
+  private readonly defs: { name: string; layer: string; flags: number; body: string }[] = [];
+  private readonly nameOf = new Map<string, string>();
+  private readonly shapes = new Map<string, number>();
+  private dims = 0;
+
+  /** The name of the block holding `body`, defining it if this is its first use. */
+  named(stem: string, layer: string, body: string): string {
+    const base = blockName(stem);
+    const key = `${base}\n${layer}\n${body}`;
+    const known = this.nameOf.get(key);
+    if (known !== undefined) return known;
+    const shape = (this.shapes.get(base) ?? 0) + 1;
+    this.shapes.set(base, shape);
+    const name = shape === 1 ? base : `${base}-${shape}`;
+    this.nameOf.set(key, name);
+    this.defs.push({ name, layer, flags: 0, body });
+    return name;
+  }
+
+  /** A new anonymous block (flag 1) for one dimension, `*D1`, `*D2`, … */
+  dimension(layer: string, body: string): string {
+    const name = `*D${++this.dims}`;
+    this.defs.push({ name, layer, flags: 1, body });
+    return name;
+  }
+
+  /** The two blocks the format reserves, then ours. */
+  private all(): { name: string; layer: string; flags: number; body: string }[] {
+    const reserved = (name: string) => ({ name, layer: AIA_LAYERS[0]!.name, flags: 0, body: "" });
+    return [reserved("*Model_Space"), reserved("*Paper_Space"), ...this.defs];
+  }
+
+  get empty(): boolean {
+    return this.defs.length === 0;
+  }
+
+  get hasDimension(): boolean {
+    return this.dims > 0;
+  }
+
+  get names(): string[] {
+    return this.all().map((d) => d.name);
+  }
+
+  /** The `BLOCKS` section. Each block's base point is its origin. */
+  section(): string {
+    const b = new DxfBuilder();
+    b.pair(0, "SECTION");
+    b.pair(2, "BLOCKS");
+    const out = [b.toString()];
+    for (const d of this.all()) {
+      const head = new DxfBuilder();
+      head.pair(0, "BLOCK");
+      head.pair(8, d.layer);
+      head.pair(2, d.name);
+      head.pair(70, d.flags);
+      head.pair(10, 0);
+      head.pair(20, 0);
+      head.pair(30, 0);
+      head.pair(3, d.name);
+      const tail = new DxfBuilder();
+      tail.pair(0, "ENDBLK");
+      tail.pair(8, d.layer);
+      out.push(head.toString(), d.body, tail.toString());
+    }
+    const end = new DxfBuilder();
+    end.pair(0, "ENDSEC");
+    out.push(end.toString());
+    return out.join("");
+  }
+}
+
+/**
+ * One element's nodes: entities in a block with one `INSERT` here, or a `DIMENSION`. Its layer is
+ * the layer of the first thing it drew; the entities keep their own.
+ */
+function writePart(b: DxfBuilder, blocks: BlockTable, part: ScenePart, nodes: readonly SceneNode[]): void {
+  const layer = layerOf(nodes[0]!);
+  if (part.t === "block") {
+    const body = new DxfBuilder(b.used, { at: part.at, turn: part.turn });
+    for (const node of nodes) emit(body, node);
+    b.insert(layer, blocks.named(part.name, layer, body.toString()), part.at, part.turn);
+    return;
+  }
+  const body = new DxfBuilder(b.used);
+  for (const node of nodes) emit(body, node);
+  const number = nodes.find((n) => n.prim.t === "text")?.prim;
+  const textAt = number?.t === "text" ? number.at : part.line;
+  // `$DIMDEC` 0 redraws whole millimetres, so a figure that is not whole is written out, or a reader
+  // that lays the dimension out again would show 12346 where the drawing prints 12345.68.
+  const fractional = part.text === undefined && number?.t === "text" && !/^\d+$/.test(number.value);
+  const said = fractional ? { ...part, text: number.value } : part;
+  b.dimension(layer, blocks.dimension(layer, body.toString()), said, textAt, DIM_STYLE);
 }
 
 /** A `path` loop (or an open run) edge by edge, from its start: a LINE or a native ARC each. */
@@ -548,15 +789,32 @@ function emit(b: DxfBuilder, node: SceneNode): void {
 export function toDxf(scene: Scene): string {
   const b = new DxfBuilder();
   const refiled = wallRefiling(scene);
+  const blocks = new BlockTable();
+  const partAt = new Map((scene.parts ?? []).map((p) => [p.from, p]));
   b.pair(0, "SECTION");
   b.pair(2, "ENTITIES");
-  for (const node of scene.nodes) {
+  for (let i = 0; i < scene.nodes.length; i++) {
+    const part = partAt.get(i);
+    if (part) {
+      writePart(b, blocks, part, scene.nodes.slice(part.from, part.to));
+      i = part.to - 1;
+      continue;
+    }
+    const node = scene.nodes[i]!;
     const write = refiled.get(node);
     if (write) write(b);
     else emit(b, node);
   }
   b.pair(0, "ENDSEC");
   // The header is built after the entities so the LAYER table can declare exactly the
-  // conditional layers they referenced.
-  return header(layerRows(b.used)) + b.toString() + "0\nEOF\n";
+  // conditional layers they referenced, and the tables exactly the blocks they made.
+  const tables: BlockTables | undefined = blocks.empty
+    ? undefined
+    : {
+        names: blocks.names,
+        ...(blocks.hasDimension
+          ? { dimStyle: { text: scene.sizes.dimFont * CAP_HEIGHT, tick: scene.sizes.refDim * DIM_TICK } }
+          : {}),
+      };
+  return header(layerRows(b.used), tables) + (tables ? blocks.section() : "") + b.toString() + "0\nEOF\n";
 }
