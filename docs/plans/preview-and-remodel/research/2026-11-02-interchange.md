@@ -170,5 +170,5 @@ a Scene stripped of `parts` equals `main`'s DXF. Plan JSON moves only where a pl
   `(SVG/PNG/PDF/DXF)` (18 units), which the CLI block states again.
 - A consumer of the DXF that read doors as flat lines now reads an `INSERT`. `toDxf({ ...scene })` is
   the flat file.
-- The playground: the writer adds 1,534 B gzip to its startup chunks, which takes the sum 301 B past
-  the growth budget. No 3D marker is in them, so the baseline is re-taken and the budget stays.
+- The playground: the writer adds about 1.5 kB gzip to its startup chunks. Main re-took the baseline
+  while this branch was open, so the sum stays inside the growth budget and the baseline is main's.
