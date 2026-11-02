@@ -551,6 +551,12 @@ function lexImpl(src: string): LexResult {
         value += advance(); // "."
         while (i < src.length && isIdentPart(peek())) value += advance();
       }
+      // `axis.3` is one word too, though `.3` would lex as a number: an `x` axis's label is
+      // digits. `axis` beside a number with no space between them was never a legal expression.
+      if (value === "axis" && peek() === "." && isDigit(peek(1))) {
+        value += advance(); // "."
+        while (isDigit(peek())) value += advance();
+      }
       push("ident", value, startLine, startCol, startIdx);
       continue;
     }

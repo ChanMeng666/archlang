@@ -10,7 +10,7 @@
  *   element; every room whose datum (`r.top|bottom|left|right|cx|cy`, or a compass alias) one
  *   of its expressions or `from <room>.<edge>` reads; and an AUTHORED host or backing wall
  *   (an opening's host, an `against wall` piece's wall, the ring a `roof … overhang` follows).
- * - `axes`: the positioning-axis labels it is placed at (`at axis <label>`, ADR 0028 §5),
+ * - `axes`: the positioning-axis labels it is placed at (`at axis <label>`, ADR 0028 §5, or `axis.3`),
  *   sorted. Always present, empty when it reads none, like `on` and `params`.
  * - `hostWallId`: the wall it is hosted on or backed onto, authored or derived.
  * - `params`: the bound names its expressions read (a `let`, a module `let`, a component or
@@ -54,7 +54,7 @@ import { exprChildren, statementBodies, statementReads } from "../cursor.js";
 import type { Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { RFurniture, ResolvedElement, ResolvedPlan, RRoof, RRoom, RWall, RWallsFromRooms } from "../ir.js";
-import { splitDatum } from "../room-datums.js";
+import { axisRead, splitDatum } from "../room-datums.js";
 import { type ContactFact, contactIndex } from "./contacts.js";
 import type { KeepFact } from "./keep-facts.js";
 
@@ -66,7 +66,7 @@ export interface DependsEntry {
   on: string[];
   /** Bound names its expressions read, sorted, no repeats. */
   params: string[];
-  /** Positioning-axis labels it is placed at (`at axis <label>`), sorted; empty when none. */
+  /** Positioning-axis labels it is placed at (`at axis <label>`, `axis.3`), sorted; empty when none. */
   axes: string[];
   /** The wall it is hosted on (a door, window or cased opening, as `access.edges[].hostWallId`)
    *  or backed onto (an `against wall` piece, a roof following a ring), authored or derived:
@@ -158,11 +158,13 @@ export function indexStatements(plan: PlanNode): StatementIndex {
 
 /** The names an expression reads (minus those its own function literals bind), and the rooms
  *  of the datums it reads. */
-function walkExprs(exprs: readonly Expr[], names: Set<string>, ids: Set<string>): void {
+function walkExprs(exprs: readonly Expr[], names: Set<string>, ids: Set<string>, axes?: Set<string>): void {
   const go = (e: Expr, bound: ReadonlySet<string>): void => {
     if (e.t === "ref") {
+      const axis = axisRead(e.name);
       const d = e.name.includes(".") ? splitDatum(e.name) : undefined;
-      if (d) ids.add(d.room);
+      if (axis !== undefined) axes?.add(axis);
+      else if (d) ids.add(d.room);
       else if (!bound.has(e.name)) names.add(e.name);
     } else if (e.t === "call" && !BUILTINS.has(e.callee) && !bound.has(e.callee)) names.add(e.callee);
     const inner = e.t === "fnlit" ? new Set([...bound, ...e.params]) : bound;
@@ -189,7 +191,7 @@ function readsOf(s: Statement): Reads {
   const names = new Set<string>();
   const ids = new Set<string>();
   const axes = new Set<string>();
-  walkExprs(statementReads(s), names, ids);
+  walkExprs(statementReads(s), names, ids, axes);
   switch (s.kind) {
     case "room":
       if (s.rel) ids.add(s.rel.ref);

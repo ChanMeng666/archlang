@@ -293,7 +293,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_DATUM_BEFORE_ROOMS: E(
     "E_DATUM_BEFORE_ROOMS",
     "A room-edge datum is read before any room is placed.",
-    "A datum (`hall.top`, `hall.cx`, …) reads the frozen table of placed rooms, which exists only once every room of the group is placed (ADR 0028 §1). A `let` is evaluated once, when the plan expands, as are loop bounds, conditions, `set`, `place` and component arguments, and the plan settings (`height`, `axes`, the site boundary); a room's own `at`/`size` and relational placement run while the rooms are being placed. None of them can read a datum. Nor can the body of a user function (`let f() = hall.top`): it has no room of its own, so the edge is passed as an argument (`f(hall.top)`), which the caller evaluates.",
+    "A datum (`hall.top`, `hall.cx`, …) reads the frozen table of placed rooms, which exists only once every room of the group is placed (ADR 0028 §1). A `let` is evaluated once, when the plan expands, as are loop bounds, conditions, `set`, `place` and component arguments, and the plan settings (`height`, `axes`, the site boundary); a room's own `at`/`size` and relational placement run while the rooms are being placed. None of them can read a datum. A positioning axis (`axis.3`) is known once the plan has expanded, so a room's `at` and `size` can read one; what expands first cannot, because the axes read the plan's `let`s. Nor can the body of a user function (`let f() = hall.top`): it has no room of its own, so the edge is passed as an argument (`f(hall.top)`), which the caller evaluates.",
     "Write the datum in the statement that uses it (a wall point, an opening or furniture position, a dimension), or give the room numbers or a relational placement (`right-of|left-of|above|below`) instead of another room's edge.",
     "room id=hall at (0,0) size 4000x3000\nlet x = hall.right   # error: read when the plan expands",
   ),
@@ -764,7 +764,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_KEEP_MEASURE: E(
     "E_KEEP_MEASURE",
     "The keep's measure is not defined for what it names.",
-    "A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).",
+    "A `keep` names something its measure cannot read: an edge, centre, width, depth, clear span or footprint of a `polygon` or `circle` room; datums of two orientations in one `align`, `offset` or `on axis` (a vertical line and a horizontal one); a column anywhere but `on axis`, which reads it at its centre; a wall that is not one straight segment (an arc, an oblique run, or a wall of several segments without `segment <n>`); the depth of an opening; an `offset` measured from something that is not a datum; a bare room where a line is needed. The keep is refused rather than approximated (ADR 0033).",
     "Name what the measure reads: a rectangular room's `left`/`right`/`top`/`bottom`/`cx`/`cy`, `axis <label>`, a straight wall or `<wall> segment <n>`; compare widths of openings with `keep equal width`.",
     'plan "K" {\n  units mm\n  room id=a polygon (0,0) (3000,0) (0,3000)\n  keep fixed a.left at 0   # error: a polygon room has no left edge\n}',
   ),
@@ -981,8 +981,8 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_UNKNOWN_REF: E(
     "E_UNKNOWN_REF",
     "Unknown reference.",
-    "An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have.",
-    "Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot).",
+    "An expression references a name that is not bound in scope, or a room-edge datum (`hall.top`) or an opening's `between` names a room the plan (or, inside a `place`d component, the component) does not have, or `axis.3` names a positioning axis the plan does not declare. A placed component reads no axis: its coordinates are its own frame's.",
+    "Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot; for an axis, the label the plan's `axes` give it).",
     "let x = y + 1   # error if `y` is undefined",
   ),
   E_WALL_THICKNESS: E(
@@ -1520,6 +1520,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "A `stair` going `up` climbs its storey's floor-to-floor `height`, and its run (a straight flight's long side, or the sum of a block stair's flights) is shorter than the least run that climb needs: the fewest risers no higher than `stairMaxRiseMm`, and one going fewer, each at least `stairMinGoingMm` (and, under a pitch cap, the riser over `stairMaxPitchRatio`). A block stair owes one going fewer again per landing, because a flight ends on its landing as the top flight ends on the floor above, and its flights must hold those goings whole: a flight's remainder is no use to the next, so 1210 + 1210 mm sums to the 2420 mm that 11 goings of 220 mm need and holds 5 + 5. Under a pitch cap each riser count is tried while the going still shrinks. The default, 220 mm risers and 220 mm goings with no pitch cap, is the most generous of the figures read (Approved Document K (2013) Table 1.1, private stair): a flight that fails it fails every code cited. `uk-residential-advisory` adds AD K's 42° pitch, `us-residential-advisory` IRC R311.7.5's 7¾ in riser and 10 in tread, `cn-residential-advisory` GB 50096-2011 5.7.4's 0.20 m riser and 0.22 m tread. Judged only where the plan authors a height (`describe().heights`); otherwise the coverage report says the stair checks skipped it. Judged on the storey the flight climbs from.",
     "Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run, correct the storey `height` if it is wrong, or draw one block stair, `stair dir up width 1000 { flight … landing … flight … }`, where a landing replaces one going. Splitting the climb into separate stairs does not clear the warning: each is still judged against the whole storey. There is no machine-applicable fix: a longer flight moves the rooms around it.",
     "height 2800\nstair id=s at (200,200) size 1000x2000 dir up   # lint: 13 risers and 12 goings of 220 mm need a 2640 mm run",
+  ),
+  W_AXES_DIFFER: W(
+    "W_AXES_DIFFER",
+    "The plan's one `axes` block comes out as different grids on two storeys.",
+    "A multi-storey plan declares `axes` once, outside the levels, and each storey evaluates the block against its own bindings. A `let` written inside a `level` is one of them, so the same label stands at another position on that storey, and `keep on axis` holds there against that storey's own axis. The drawing shows both grids; the storeys just do not share one.",
+    "Move the `let` the block reads to the plan, so every storey reads one value. There is no per-storey grid: a storey that really is set out differently is a different plan.",
+    'plan "G" {\n  axes { x at 0, BAY }\n  level 1 { let BAY = 6000 }\n  level 2 { let BAY = 7000 }   # warning: axis 2 stands at two positions\n}',
   ),
   W_SHAFT_FOOTPRINT_MISMATCH: W(
     "W_SHAFT_FOOTPRINT_MISMATCH",

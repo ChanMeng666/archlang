@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A wall, a column or a room can stand on the plan's `axes` by label (issue #345). `axis.3` and `axis.B` read a positioning axis as a coordinate in any statement of a plan or a storey: `wall { (axis.2, axis.A) (axis.2, axis.B) }`. One `axes` block serves every storey, and a label the plan does not declare is `E_UNKNOWN_REF`. A placed component keeps its own coordinates, so `axis.3` is refused inside one, and in a `let`, a `place … at` or a component argument, which are read before the axes exist: share a `let` with the `axes` block there.
+- `keep on axis` holds a column as well as a wall, read at the column's centre: `keep on axis 3 c` and `keep on axis B c` hold it on a crossing, also through a `place` when written from the storey (`keep on axis 2 wing.c`).
+- `W_AXES_DIFFER` warns when one `axes` block comes out as two grids, which a `let` inside a `level` can do without a word.
+
+### Fixed
+
+- A stair's drawn extent now includes its break line, which reaches 6 % of the flight's width past each side. The ink is the same. A stair that is the outermost thing on its page widens the drawing by that much, so the page frames it and its annotation sizes follow; a stair whose reach a wall covers changes nothing. `W_DRAWING_OVERFLOW` can newly fire on a plan whose stair sat within 6 % of a flight's width of the sheet fit. `describe()` and `lint()` do not move.
+
+### Changed
+
+- A stair whose break line alone passes the modelling range is now `E_OUT_OF_RANGE`, a behaviour change: a plan whose footprint stood inside the range with its break line outside it compiled before and is refused now.
+
 ## [1.52.0] - 2026-11-02
 
 ### Added

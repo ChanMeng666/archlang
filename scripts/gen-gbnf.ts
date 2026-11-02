@@ -736,8 +736,9 @@ function rules(): [string, string][] {
     ["ident", `[a-zA-Z_] [a-zA-Z0-9_]*`],
     // A REFERENCE to an element, which may be namespaced by a `place`d instance
     // (`west.perimeter`). Declarations keep the undotted `ident` — a dotted name in a
-    // declaration position is `E_DOTTED_DECL`, and the grammar must not invite one.
-    ["ref", `ident ( "." ident )*`],
+    // declaration position is `E_DOTTED_DECL`, and the grammar must not invite one. `axis.3` is
+    // the one dotted word a digit continues (`lexImpl`): a positioning axis read by its label.
+    ["ref", `"axis." digits | ident ( "." ident )*`],
     ["string", `"\\"" str-char* "\\""`],
     ["str-char", `str-plain | str-esc | interp`],
     ["str-plain", `[^"\\\\{}\\n]`],

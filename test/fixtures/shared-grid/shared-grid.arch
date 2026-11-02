@@ -1,0 +1,39 @@
+# Two storeys on one grid: every wall, column and room below stands on the plan's axes by label,
+# and a placed wing is checked on them after its frame has carried it. It is in a folder of its own
+# because the corpus tables read test/fixtures flat, and each pins a plan that does not use the form.
+plan "One grid" {
+  units mm
+  grid 50
+  let BAY = 6000
+  axes { x at 0, BAY, 2 * BAY y at 0, 5000 }
+
+  component wing() {
+    wall id=spine partition thickness 200 { (0,0) (5000,0) }
+    column id=post at (-200,-200) size 400x400
+  }
+
+  level 1 "Ground" {
+    room id=hall at (axis.1, axis.B) size BAY x 5000 label "Hall" uses hall
+    wall id=ring exterior thickness 200 { (axis.1, axis.B) (axis.3, axis.B) (axis.3, axis.A) (axis.1, axis.A) close }
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    door id=entry at (axis.2 - 1500, axis.A) width 900 wall ring swing inward
+    opening id=through on g2 at 2500 from start width 900
+    column id=c at (axis.3 - 200, axis.B - 200) size 400x400
+    room id=shop at (axis.2, axis.B) size BAY x 5000 label "Shop" uses office
+    keep on axis 2 g2
+    keep on axis 3 c
+    keep on axis B c
+  }
+
+  level 2 "First" {
+    room id=hall at (axis.1, axis.B) size BAY x 5000 label "Hall" uses hall
+    wall id=ring exterior thickness 200 { (axis.1, axis.B) (axis.3, axis.B) (axis.3, axis.A) (axis.1, axis.A) close }
+    place wing() as w at (BAY, 0) rotate 90
+    column id=c at (axis.3 - 200, axis.B - 200) size 400x400
+    keep on axis 2 w.spine
+    keep on axis 2 w.post
+    keep on axis B w.post
+    keep on axis 3 c
+    keep on axis B c
+  }
+}
