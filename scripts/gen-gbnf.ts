@@ -341,13 +341,13 @@ function rules(): [string, string][] {
     ["paper-stmt", `"paper" rws paper-size ( rws paper-orientation )?`],
     ["paper-size", paperSize],
     ["paper-orientation", paperOrientation],
-    ["scale-stmt", `"scale" rws number ws ":" ws number`],
+    ["scale-stmt", `"scale" ( rws number ws ":" ws number )? ( rws "hidden" )?`],
     // The vertical datum's plan-level setting (v1.35). A full `expr`, not a bare `number`,
     // because the parser reads one — a plan writes `let h = 3200` once and `height h`
     // everywhere, and a grammar that offered only a literal would forbid the form the
     // language accepts.
     ["height-stmt", `"height" rws expr`],
-    ["north-stmt", `"north" rws north-dir`],
+    ["north-stmt", `"north" ( rws north-dir )? ( rws "hidden" )?`],
     ["north-dir", `"up" | "down" | "left" | "right" | number`],
     // `site { street … [hemisphere …] }` — both value sets INJECTED from the closed
     // vocabularies the parser itself checks against (`src/ast.ts`), never retyped: a
@@ -379,7 +379,7 @@ function rules(): [string, string][] {
     ["acc-stmt", `( "accTitle" | "accDescr" ) rws string`],
 
     // ---- title / theme / style ------------------------------------------
-    ["title-stmt", `"title" ws "{" ws ( title-field ws )* "}"`],
+    ["title-stmt", `"title" ws "{" ws ( title-field ws )* "}" | "title" rws "hidden"`],
     ["title-field", `( ${litAlt(TITLE_FIELDS)} ) rws string`],
     // Positioning axes (定位轴线): one row per direction, each a comma-separated
     // expression list. Rows may repeat and appear in either order (the parser appends).

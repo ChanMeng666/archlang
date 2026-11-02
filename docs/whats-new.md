@@ -27,6 +27,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Window kinds and a glazed terrace door | 1.52.0 | [Window kinds](#window-kinds) |
 | A window round a corner, with no wall left at it | 1.52.0 | [Corner windows](#corner-windows) |
 | The sheet's words and decimal mark, as a plan writes them | unreleased | [Sheet text](#sheet-text) |
+| A detail with no north arrow, scale bar or title box | unreleased | [Hidden sheet marks](#hidden-sheet-marks) |
 
 ## Quantities and takeoff
 
@@ -482,3 +483,21 @@ plan "Haus" {
 A key you leave out keeps its English word. The stamp above reads `10,4 m² netto`. ArchLang ships no translations and there is no `locale`: the words are yours, and whether they are right is yours to check. The [language reference](language-reference.md#sheet-text) lists every key and has a German starting point, which no German drafter has reviewed.
 
 Only drawn text changes. `describe()`, Plan JSON and every coordinate keep their numbers, a `lint()` message stays English, and a number inside a string you wrote keeps its point. Nothing is read from the machine: the same source draws the same bytes everywhere. Without the block a plan draws what it drew before.
+
+## Hidden sheet marks
+
+Every plan drew a north arrow and a scale bar, which a stair detail has no use for. A trailing `hidden` takes a mark off the sheet and leaves its fact alone:
+
+```arch
+plan "Stair detail" {
+  units mm
+  paper A4
+  scale 1:20 hidden
+  north hidden
+  title hidden
+  room id=hall at (0,0) size 3000x2200 label "Hall" uses hall
+  walls from rooms exterior 200 partition 100
+}
+```
+
+`scale 1:20 hidden` is still the operative scale and `north 30 hidden` keeps its bearing for every compass fact. A band with nothing left in it is not reserved, so the drawing gets the room back. See [Hiding the sheet marks](language-reference.md#hiding-the-sheet-marks).

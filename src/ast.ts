@@ -1468,6 +1468,16 @@ export interface SiteNode {
   span?: Span;
 }
 
+/**
+ * Which marks of a sheet a plan does not draw. The fact stays: a hidden north keeps its bearing and a
+ * hidden scale stays operative. Each key is present only when written.
+ */
+export interface ChromeHide {
+  north?: true;
+  scale?: true;
+  title?: true;
+}
+
 export interface PlanNode {
   name: string;
   /** Only "mm" is supported. */
@@ -1505,6 +1515,8 @@ export interface PlanNode {
   /** Byte span of the `height` statement, for `E_HEIGHT_RANGE`. */
   heightSpan?: Span;
   north: NorthDir;
+  /** The sheet marks the plan hides (`north … hidden`, `scale … hidden`, `title hidden`). Absent unless written. */
+  hide?: ChromeHide;
   /**
    * `site { street … [hemisphere …] }` — the building's relation to its street, and the
    * hemisphere the derived direction names are read in. Absent unless the plan declares

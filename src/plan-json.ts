@@ -919,6 +919,7 @@ export type PlanJsonDroppedClause =
   | "schedule rooms"
   | "schedule openings"
   | "legend"
+  | "hidden"
   | "notes"
   | "sheet text"
   | "decimal mark"
@@ -993,6 +994,8 @@ function droppedFromPlan(ir: ResolvedPlan): PlanJsonDropped[] {
     });
   if (ir.openingSchedule) rows.push({ clause: "schedule openings", count: 1 });
   if (ir.legend) rows.push({ clause: "legend", count: 1 });
+  const marks = Object.keys(ir.hide ?? {});
+  if (marks.length > 0) rows.push({ clause: "hidden", count: marks.length, ids: marks });
   if (ir.notes && ir.notes.length > 0) rows.push({ clause: "notes", count: ir.notes.length });
   // `decimal` sets a mark and is no word of the sheet, so it is said on a row of its own.
   const wording = ir.sheetText?.entries ?? [];

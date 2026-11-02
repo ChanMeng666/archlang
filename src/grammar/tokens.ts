@@ -259,6 +259,8 @@ export const KEYWORDS = {
     "A0",
     "landscape",
     "portrait",
+    // `north … hidden`, `scale … hidden`, `title hidden`: a value that trails three settings.
+    "hidden",
     "living",
     "kitchen",
     "dining",

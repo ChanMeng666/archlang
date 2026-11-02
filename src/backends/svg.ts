@@ -357,8 +357,8 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   // issuable — which an illustrative view must never do. `Scene.view` is set only by
   // `toIso`, so every plan drawing takes the branch it always has.
   if (!scene.view) {
-    out.push(northArrow(scene.north, b, margin, refDim, THEME, scene.northLabel ?? "N"));
-    out.push(scaleBar(chrome.scaleBar, thin, THEME));
+    if (!scene.northHidden) out.push(northArrow(scene.north, b, margin, refDim, THEME, scene.northLabel ?? "N"));
+    if (!chrome.scaleBar.hidden) out.push(scaleBar(chrome.scaleBar, thin, THEME));
     const tb = titleBlock(chrome.titleBlock, thin, THEME);
     if (tb) out.push(tb);
   }

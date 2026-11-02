@@ -1064,6 +1064,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     ...(ir.openingSchedule ? { openings: openingRows(ir.elements, wording) } : {}),
     ...(ir.notes ? { notes: ir.notes } : {}),
     ...(wording !== PLAIN_SHEET_TEXT ? { text: wording } : {}),
+    ...(ir.hide ? { hide: ir.hide } : {}),
     // Multi-storey: stamp the page with its storey, so a drawing SET is readable (a plan
     // with no `level` block passes nothing and its chrome is byte-identical).
     ...(ir.level !== undefined
@@ -1119,6 +1120,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     sizes,
     north: ir.north,
     ...(wording.has("north") ? { northLabel: wording.word("north") } : {}),
+    ...(ir.hide?.north ? { northHidden: true as const } : {}),
     scale: ir.scale,
     title: ir.title,
     name: ir.name,

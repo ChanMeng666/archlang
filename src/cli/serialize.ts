@@ -124,6 +124,7 @@ const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, str
   "schedule rooms": ["schedules", "`schedule rooms` statement", "`schedule rooms` statements"],
   "schedule openings": ["schedules", "`schedule openings` statement", "`schedule openings` statements"],
   legend: ["legends", "legend", "legends"],
+  hidden: ["hidden sheet marks", "`hidden` mark", "`hidden` marks"],
   notes: ["sheet notes", "sheet note", "sheet notes"],
   "sheet text": ["sheet words", "sheet word", "sheet words"],
   "decimal mark": ["decimal marks", "decimal mark", "decimal marks"],

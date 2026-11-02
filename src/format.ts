@@ -286,7 +286,10 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // it reads as the sheet declaration the scale hangs off. Orientation is always
   // emitted — the default is a real choice a reader should not have to remember.
   if (plan.paper) settings.push(`paper ${plan.paper.size} ${plan.paper.orientation}`);
-  if (plan.scale) settings.push(`scale ${plan.scale}`);
+  const hide = plan.hide;
+  const hidden = (mark: keyof NonNullable<typeof hide>): string => (hide?.[mark] ? " hidden" : "");
+  if (plan.scale) settings.push(`scale ${plan.scale}${hidden("scale")}`);
+  else if (hide?.scale) settings.push("scale hidden");
   // The plan-level storey height reads as a rider on the sheet settings — it is
   // the drawing's other dimension — so it sits after `scale` and before `north`. Emitted
   // only when authored: a plan with no `height` must format back to a plan with no
@@ -300,7 +303,7 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // block and the `site` lot line. A plan-level `let` is therefore in scope regardless of
   // source order, before and after formatting alike.
   if (plan.height !== undefined) settings.push(`height ${exprStr(plan.height)}`);
-  settings.push(`north ${northStr(plan.north)}`);
+  settings.push(`north ${northStr(plan.north)}${hidden("north")}`);
   // `site` reads as a rider on the north declaration — it is the other half of "which way
   // does this building point" — so it sits immediately after it. `hemisphere` is always
   // emitted, like `paper`'s orientation: the default is a real choice a reader should not
@@ -310,6 +313,7 @@ export function formatPlan(plan: PlanNode, source: string): string {
   if (plan.schedule) settings.push(`schedule ${plan.schedule}${plan.scheduleNet ? " net" : ""}`);
   if (plan.openingSchedule) settings.push("schedule openings");
   if (plan.legend) settings.push("legend");
+  if (hide?.title) settings.push("title hidden");
   // One `notes` line per note, in source order — repeated statements append, so this is a
   // fixed point whether the author wrote one statement or several.
   for (const n of plan.notes ?? []) settings.push(`notes "${escapeStr(n)}"`);

@@ -421,7 +421,7 @@ export function sheetStage(
   const project = stringLiteral(plan.name);
   const want: Extras = {
     dims: plan.autoDims === undefined && !handDims,
-    title: plan.title === undefined && name !== "" && project !== null,
+    title: plan.title === undefined && !plan.hide?.title && name !== "" && project !== null,
     schedule: plan.schedule === undefined && hasRooms,
     // A legend's caption is one row; a table of nothing but its caption is not added.
     legend: plan.legend !== true && tableRows(m, false, true) > 1,
@@ -432,14 +432,14 @@ export function sheetStage(
       statement: "dims",
       reason: "the plan has hand-written `dim` lines, so `dims auto` was not added — add it yourself if you want both",
     });
-  if (plan.title === undefined && name === "")
+  if (plan.title === undefined && !plan.hide?.title && name === "")
     unresolved.push({
       stage: "sheet",
       statement: "title",
       reason: "the plan has no name to put in a title block — name the plan, or write the `title` yourself",
     });
 
-  if (plan.title === undefined && name !== "" && project === null)
+  if (plan.title === undefined && !plan.hide?.title && name !== "" && project === null)
     unresolved.push({
       stage: "sheet",
       statement: "title",
@@ -460,7 +460,8 @@ export function sheetStage(
     const input = {
       autoDims: has.dims || add.dims,
       // The same placeholder scale `resolve()` passes: a sheet always carries a SCALE row.
-      titleRows: titleRows(title, "1:1", m.multiStorey ? { level: 0 } : undefined).length,
+      titleRows: plan.hide?.title ? 0 : titleRows(title, "1:1", m.multiStorey ? { level: 0 } : undefined).length,
+      ...(plan.hide?.scale ? { scaleBarHidden: true } : {}),
       tableRows: tableRows(m, has.schedule || add.schedule, has.legend || add.legend),
     };
     // `drawn` contains `building`; both are asked so the two warnings are both ruled out.

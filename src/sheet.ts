@@ -205,6 +205,8 @@ export interface SheetFitInput {
   autoDims: boolean;
   /** How many rows the title block will carry (0 = none drawn). */
   titleRows: number;
+  /** `scale … hidden`: no scale bar in the bottom band. */
+  scaleBarHidden?: boolean;
   /**
    * How many rows the MARGIN-TABLE band will carry — the taller of the `schedule rooms`
    * and `legend` tables, `0` when the plan opted into neither. Counted by
@@ -235,11 +237,13 @@ export function usablePlanMm(
   widthMm: number,
   heightMm: number,
   denom: number,
-  input: Pick<SheetFitInput, "autoDims" | "titleRows" | "tableRows">,
+  input: Pick<SheetFitInput, "autoDims" | "titleRows" | "tableRows" | "scaleBarHidden">,
 ): { w: number; h: number } {
   const band = input.autoDims ? DIM_BAND_MM : 0;
   const side = SHEET_MM.margin + band;
-  const chrome = chromeBandDepth(SHEET_MM.ref, input.titleRows) + tableBandDepth(SHEET_MM.ref, input.tableRows);
+  const chrome =
+    chromeBandDepth(SHEET_MM.ref, input.titleRows, input.scaleBarHidden) +
+    tableBandDepth(SHEET_MM.ref, input.tableRows);
   return {
     w: Math.max(0, (widthMm - 2 * side) * denom),
     h: Math.max(0, (heightMm - 2 * side - chrome) * denom),

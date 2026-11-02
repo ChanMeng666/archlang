@@ -127,7 +127,7 @@ import {
   type StackedStorey,
   violationOf,
 } from "./keep.js";
-import type { KeepNode } from "./ast.js";
+import type { ChromeHide, KeepNode } from "./ast.js";
 import { keepFormText } from "./statement-print.js";
 
 export interface RBase {
@@ -961,6 +961,8 @@ export interface ResolvedPlan {
    */
   sheet?: ResolvedSheet;
   north: NorthDir;
+  /** The sheet marks the plan hides. Absent unless written, and read only by the sheet. */
+  hide?: ChromeHide;
   /**
    * `site { street … [hemisphere …] }` — carried through untouched from the AST, absent
    * when the plan declares none (so an existing IR, its Scene and its bytes are
@@ -2272,7 +2274,8 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       autoDims: ast.autoDims !== undefined,
       // Every page carries the same rows (the LEVEL row included), so the band the fit
       // reserves is level-independent; a placeholder scale keeps it denominator-independent.
-      titleRows: titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
+      titleRows: ast.hide?.title ? 0 : titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
+      ...(ast.hide?.scale ? { scaleBarHidden: true } : {}),
       tableRows,
     };
     sheet = resolveSheetSpec(ast.paper, scaleInRange(ast, shared), fit, { w: dw, h: dh });
@@ -3571,6 +3574,7 @@ function resolveBody(
     scale: sheet ? `1:${fmtDenom(sheet.denom)}` : ast.scale,
     ...(sheet ? { sheet } : {}),
     north: ast.north,
+    ...(ast.hide ? { hide: ast.hide } : {}),
     // Absent unless declared, so the IR of a plan with no `site` is byte-identical.
     ...(ast.site ? { site: ast.site } : {}),
     ...(siteBoundary ? { siteBoundary } : {}),
@@ -3708,7 +3712,8 @@ function resolveSheet(
   const fit: SheetFitInput = {
     extent,
     autoDims: ast.autoDims !== undefined,
-    titleRows: titleRows(ast.title, "1:1").length,
+    titleRows: ast.hide?.title ? 0 : titleRows(ast.title, "1:1").length,
+    ...(ast.hide?.scale ? { scaleBarHidden: true } : {}),
     // The margin tables occupy a second band below the chrome, and it has to be reserved
     // here or the page can be issued taller than the paper it declares. Counted from the
     // same derivation `toScene()` draws them with (`planTableRows`), never re-derived.
