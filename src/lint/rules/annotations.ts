@@ -104,7 +104,7 @@ import { isSymbolElement, sectorOf, shapesOf } from "../../label-fit.js";
 import { COLLIDE_MIN, meanExtent, wallBands } from "../../label-placement.js";
 import { inkExtent, textExtent } from "../../text-layout.js";
 import { EM_PER_CHAR, inkWidth, textWidth } from "../../text-metrics.js";
-import { sheetText } from "../../sheet-text.js";
+import { PLAIN_SHEET_TEXT, sheetText } from "../../sheet-text.js";
 import { pointInRoomBox, roomBox } from "../../analyze.js";
 import { GridIndex } from "../../geometry/grid-index.js";
 import { clippedArea, clippedSigned, pointInPolygon } from "../../geometry/polygon.js";
@@ -196,9 +196,17 @@ export const annotationOverlap: LintRule = {
         for (const p of sh) grow(s.box, p);
       }
     }
+    // What the sheet draws decides what collides; a message quotes it in English all the same.
+    const wording = sheetText(ctx.ir.sheetText?.entries);
+    const plainArea = (drawn: string): string => {
+      if (wording === PLAIN_SHEET_TEXT) return drawn;
+      const end = drawn.indexOf(" m²");
+      const stamp = `${wording.plain(drawn.slice(0, end))} m²`;
+      return drawn.length > end + " m²".length ? `${stamp} ${PLAIN_SHEET_TEXT.word("net")}` : stamp;
+    };
     // The `dims auto` numbers, as drawn.
     const numbers = autoDimensions(ir, scene.sizes, registry).map((dm) => {
-      const prim = dimTextPrim(dm, scene.sizes, sheetText(ctx.ir.sheetText?.entries).mm);
+      const prim = dimTextPrim(dm, scene.sizes, wording.mm);
       return { dm, prim, text: textBox(prim) };
     });
 
@@ -286,7 +294,7 @@ export const annotationOverlap: LintRule = {
         perRoom.set(l.room, e);
       }
       if (l.isName) e.name = true;
-      else e.area = l.prim.value;
+      else e.area = plainArea(l.prim.value);
       return e;
     };
     for (const l of labels) {
@@ -324,7 +332,7 @@ export const annotationOverlap: LintRule = {
       for (const s of syms) if (over(nb.text, s.shapes, s.box)) hits.push(s.el);
       for (const l of labels) if (over(nb.text, [l.text.rect], l.text.box)) onLabels.push(l);
       if (hits.length + onLabels.length > 0)
-        perNumber.push({ dm: nb.dm, value: nb.prim.value, at: nb.prim.at, hits, over: onLabels });
+        perNumber.push({ dm: nb.dm, value: wording.plain(nb.prim.value), at: nb.prim.at, hits, over: onLabels });
     }
     if (spent) {
       ctx.skip("annotation-budget");
@@ -399,7 +407,9 @@ export const annotationOverlap: LintRule = {
       const things = listOf([
         ...nb.hits.map(symbolWord),
         ...nb.over.map((l) =>
-          l.isName ? `the name "${l.prim.value}"` : `the area figure (${l.prim.value}) of ${ctx.nameOf(l.room)}`,
+          l.isName
+            ? `the name "${l.prim.value}"`
+            : `the area figure (${plainArea(l.prim.value)}) of ${ctx.nameOf(l.room)}`,
         ),
       ]);
       const pinnedLabel = nb.over.find((l) => l.room.labelAt !== undefined);

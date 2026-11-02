@@ -89,6 +89,13 @@ export type DecimalMark = "." | ",";
 export const drawnDecimal = (printed: string, mark: DecimalMark): string =>
   mark === "." ? printed : printed.replace(/\./g, mark);
 
+/**
+ * {@link drawnDecimal} undone, for a lint message that quotes a figure the sheet drew. Exact on a drawn
+ * number, which holds no mark but its own. `.` returns its argument.
+ */
+export const plainDecimal = (drawn: string, mark: DecimalMark): string =>
+  mark === "." ? drawn : drawn.replace(/,/g, ".");
+
 /** 0 dp — whole millimetres, where a lint rule compares the value it prints. */
 export const fmt0 = makeNumFmt(1);
 /** 2 dp — Scene labels and SVG coordinates. */

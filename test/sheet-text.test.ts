@@ -22,7 +22,7 @@ import {
 import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
 import { GROUND_MATERIALS, KNOWN_MATERIALS } from "../src/hatches.js";
-import { fmt2, drawnDecimal } from "../src/num-format.js";
+import { fmt2, drawnDecimal, plainDecimal } from "../src/num-format.js";
 import { MAX_SHEET_WORD, PLAIN_SHEET_TEXT, SHEET_WORDS, sheetText, sheetTextKeys } from "../src/sheet-text.js";
 import { inkWidth } from "../src/text-metrics.js";
 import { everyWord } from "./sheet-text-plans.js";
@@ -46,8 +46,15 @@ function emptied(src: string): string {
   return (o.pages ? o.pages.map((p) => p.svg) : [o.svg]).join("\n").replace(/(<text\b[^>]*>)[^<]*</g, "$1<");
 }
 
+const withoutBlock = (src: string): string => src.replace(/ {2}sheet text \{[\s\S]*?\n {2}\}\n/, "");
 /** The fixture with its block taken out: the same plan, in English, with a decimal point. */
-const TWIN = FIXTURE.replace(/ {2}sheet text \{[\s\S]*?\n {2}\}\n/, "");
+const TWIN = withoutBlock(FIXTURE);
+/** The fixture with its stair elsewhere. It keeps clear of the label and the doors as written. */
+const stairAt = (placed: string): string => {
+  const stair = "stair at (5000,200) size 800x2400 dir up";
+  if (!FIXTURE.includes(stair)) throw new Error("the fixture's stair moved");
+  return FIXTURE.replace(stair, `stair ${placed} dir up`);
+};
 const parseErrors = (src: string) => compile(src, { noCache: true }).diagnostics.filter((d) => d.code === "E_PARSE");
 const inPlan = (body: string): string => `plan "T" {\n  units mm\n${body}\n}\n`;
 
@@ -315,6 +322,71 @@ suite("sheet text: what it never reaches", () => {
   it("lint messages stay English, and every code holds on this plan", () => {
     const strip = (src: string) => lint(src).map(({ span: _span, fixes: _fixes, ...d }) => d);
     expect(JSON.stringify(strip(FIXTURE))).toBe(JSON.stringify(strip(TWIN)));
+    // The fixture lints clean, so that line compares nothing. With its stair in the doors' way this
+    // plan has warnings to compare, and none of them reads the sheet.
+    const warned = stairAt("at (3500,500) size 1000x2400");
+    expect(
+      strip(warned)
+        .map((d) => d.code)
+        .sort(),
+    ).toEqual(["W_STAIR_NO_LANDING", "W_STAIR_SIDE_ENTRY", "W_SWING_OVER_STAIR"]);
+    expect(JSON.stringify(strip(warned))).toBe(JSON.stringify(strip(withoutBlock(warned))));
+  });
+
+  // What the sheet draws decides what collides, and may change a verdict: that is the rule reading
+  // the drawing. What it says stays English, so these read the message and not the twin's.
+  it("an overprint no fit clears quotes the area stamp in English", () => {
+    const filled = stairAt("at (3200,200) size 2600x3600"); // nothing clears a stair that fills the floor
+    expect(drawn(filled)).toContain("10,4 m² netto");
+    const [d] = lint(filled).filter((x) => x.code === "W_ANNOTATION_OVERLAP");
+    expect(d?.message).toContain("the area figure (10.4 m² net)");
+    expect(d?.message).not.toMatch(/\d,\d|netto/);
+  });
+
+  // The number lands on the figure, so one message quotes both the `dims auto` value and the stamp.
+  const pavilion = (entries: string) => `plan "p" {
+  units mm
+  paper A4 landscape
+  scale 1:50
+  dims auto overall
+  sheet text {
+${entries}
+  }
+  schedule rooms net
+  wall id=drum exterior thickness 200 {
+    (6001,3000)
+    arc (0,3000) radius 3000.5
+    arc (6001,3000) radius 3000.5
+  }
+  room id=r_pav circle at (3000.5,3000) radius 3000.5 label "Pavilion" at (3000,1025) uses living
+  door on drum at 75% width 900
+  window on drum at 25% width 1200
+}`;
+
+  it.each([
+    ["the mark and the word", '    decimal ","\n    net "netto"', "R3000,5", "26,4 m² netto"],
+    ["the mark alone", '    decimal ","', "R3000,5", "26,4 m² net"],
+    ["the word alone", '    net "netto"', "R3000.5", "26.4 m² netto"],
+    ["a word with a comma in it", '    decimal ","\n    net "o. Wände, 1,5"', "R3000,5", "26,4 m² o. Wände, 1,5"],
+    ["a word that reads as the unit", '    decimal ","\n    net "m²"', "R3000,5", "26,4 m² m²"],
+  ])("a `dims auto` number over the stamp quotes both in English: %s", (_, entries, number, stamp) => {
+    const src = pavilion(entries);
+    expect(drawn(src)).toEqual(expect.arrayContaining([number, stamp]));
+    expect(
+      lint(src)
+        .filter((x) => x.code === "W_ANNOTATION_OVERLAP")
+        .map((x) => x.message),
+    ).toEqual([
+      'The radius call-out R3000.5 that `dims auto overall` draws from the arc\'s centre is printed over the area figure (26.4 m² net) of "Pavilion", so the two overprint each other on the drawing.',
+    ]);
+  });
+
+  it("a number the sheet drew comes back as it was printed", () => {
+    for (const n of [0, 0.5, 1, 10.4, 300, 3000.5, 12345.67]) {
+      const printed = fmt2(n);
+      expect(plainDecimal(drawnDecimal(printed, ","), ",")).toBe(printed);
+      expect(plainDecimal(printed, ".")).toBe(printed);
+    }
   });
 
   it("compile().diagnostics hold", () => {

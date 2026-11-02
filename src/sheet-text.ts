@@ -18,7 +18,7 @@ import type { Span } from "./diagnostics.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "./grammar/tokens.js";
 import { FIXTURE_CATEGORIES } from "./elements/fixtures-glyphs.js";
 import { GROUND_MATERIALS, KNOWN_MATERIALS } from "./hatches.js";
-import { type DecimalMark, drawnDecimal, fmt2 } from "./num-format.js";
+import { type DecimalMark, drawnDecimal, fmt2, plainDecimal } from "./num-format.js";
 import { plainText } from "./text-safe.js";
 
 /**
@@ -92,7 +92,10 @@ export const sheetTextKeys = (): readonly string[] => [
 let keySet: ReadonlySet<string> | undefined;
 
 /** May a `sheet text` block write this key? */
-export const isSheetTextKey = (key: string): boolean => (keySet ??= new Set(sheetTextKeys())).has(key);
+export const isSheetTextKey = (key: string): boolean => {
+  keySet ??= new Set(sheetTextKeys());
+  return keySet.has(key);
+};
 
 /** One `key "value"` line of a `sheet text` block. */
 export interface SheetTextEntry {
@@ -127,6 +130,8 @@ export interface SheetText {
   num(printed: string): string;
   /** A length in mm, as a drawn dimension prints it: `fmt2`, with the plan's decimal mark. */
   mm(n: number): string;
+  /** A number this sheet drew, with the decimal point again: lint messages stay English. */
+  plain(drawn: string): string;
 }
 
 const ENGLISH: ReadonlyMap<string, string> = new Map(Object.entries(SHEET_WORDS));
@@ -137,6 +142,7 @@ export const PLAIN_SHEET_TEXT: SheetText = {
   has: () => false,
   num: (printed) => printed,
   mm: fmt2,
+  plain: (drawn) => drawn,
 };
 
 /** The wording a plan's `sheet text` entries ask for. */
@@ -150,5 +156,6 @@ export function sheetText(entries: readonly SheetTextEntry[] | undefined): Sheet
     has: (key) => written.has(key),
     num,
     mm: (n) => num(fmt2(n)),
+    plain: (drawn) => plainDecimal(drawn, mark),
   };
 }

@@ -53,6 +53,6 @@ plan "Haus" {
   door id=d2 at (3000.5,2000) width 800 wall partition hinge left swing in
   window casement at (0,1500) width 1200 wall exterior
   furniture sofa at (500,500) size 2000x800
-  stair at (3500,500) size 1000x2400 dir up
+  stair at (5000,200) size 800x2400 dir up
   outdoor lawn at (0,4500) size 3000x1200 label "Wiese"
 }
