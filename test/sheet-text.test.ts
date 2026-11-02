@@ -36,7 +36,8 @@ function drawn(src: string): string[] {
   expect(o.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   const svgs = o.pages ? o.pages.map((p) => p.svg) : [o.svg];
   return svgs.flatMap((svg) =>
-    [...svg.matchAll(/<text\b[^>]*>([^<]*)</g)].map((m) => m[1]!.replaceAll("&amp;", "&").replaceAll("&lt;", "<")),
+    // `&amp;` goes last: first, it would turn an authored `&lt;` into a `<` that no one wrote.
+    [...svg.matchAll(/<text\b[^>]*>([^<]*)</g)].map((m) => m[1]!.replaceAll("&lt;", "<").replaceAll("&amp;", "&")),
   );
 }
 
@@ -738,6 +739,10 @@ suite("sheet text: the words are text, never markup", () => {
       expect(bad.filter((t) => ["a", "i", "q"].includes(t!))).toEqual([]);
       expect(p.svg).toContain("&lt;&amp;&gt;");
     }
+  });
+
+  it("a word that reads as an entity is drawn as written, and comes back as written", () => {
+    expect(drawn(everyWord(block('total "&lt;"')))).toContain("&lt;");
   });
 });
 
