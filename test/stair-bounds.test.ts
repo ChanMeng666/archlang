@@ -156,6 +156,17 @@ describe("what reads `bounds()`", () => {
     expect(compile(past, { noCache: true }).diagnostics.map((d) => d.code)).toContain("E_OUT_OF_RANGE");
   });
 
+  it("the sheet fit reads the reach: `W_DRAWING_OVERFLOW` fires 60 mm sooner on a 1000 mm flight", () => {
+    const sheet = (x: number): string =>
+      `plan "t" {\n  units mm\n  paper a4 landscape\n  scale 1:100\n  room id=r at (0,0) size 10000x8000\n  stair id=s at (${x},0) size 1000x3000 dir up\n}\n`;
+    const warns = (x: number): boolean =>
+      compile(sheet(x), { noCache: true }).diagnostics.some((d) => d.code === "W_DRAWING_OVERFLOW");
+    // The boundary was 25700 before the extent held the break line.
+    expect(warns(25640)).toBe(false);
+    expect(warns(25641)).toBe(true);
+    expect(warns(25700)).toBe(true);
+  });
+
   it("the drawing budget still holds an upper bound", () => {
     for (const stair of [STRAIGHT, NARROW, BLOCK]) {
       const src = plan(`  ${stair}`);

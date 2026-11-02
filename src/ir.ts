@@ -2395,7 +2395,17 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
  * and a plan that writes no `axes` does none of it.
  */
 function axesDiffer(levels: readonly ResolvedLevel[], ast: PlanNode): Diagnostic | undefined {
+  const block = ast.axes?.span;
   if (!ast.axes) return undefined;
+  // A storey whose block failed has reported that, and what it left is no grid to compare.
+  const failed = (d: Diagnostic): boolean =>
+    d.severity === "error" &&
+    block !== undefined &&
+    d.file === undefined &&
+    d.span !== undefined &&
+    d.span.start >= block.start &&
+    d.span.end <= block.end;
+  if (levels.some((l) => l.diagnostics.some(failed))) return undefined;
   const first = levels[0]!;
   const a = first.ir.axes ?? [];
   const other = levels.find((l) => {

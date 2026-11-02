@@ -26,7 +26,7 @@ const errors = (src: string): Diagnostic[] => diags(src).filter((d) => d.severit
 const quoted = (src: string, d: Diagnostic): string => src.slice(d.span!.start, d.span!.end);
 const doorAt = (src: string): unknown => {
   const res = resolveAll(parse(src, BUILTIN_REGISTRY).plan!, BUILTIN_REGISTRY);
-  return (res.ir.elements.find((e) => e.kind === "door") as { at: unknown }).at;
+  return (res.ir.elements.find((e) => e.kind === "door") as { at: unknown } | undefined)?.at;
 };
 const wallPoints = (src: string): unknown => {
   const res = resolveAll(parse(src, BUILTIN_REGISTRY).plan!, BUILTIN_REGISTRY);
@@ -129,6 +129,24 @@ suite("a read that cannot be answered is a diagnostic", () => {
     expect(d!.hints?.[0]).toMatch(/^did you mean `axis\.\d`\?$/);
   });
 
+  it("a label in lower case, when the capital is one: the near miss, at the datum", () => {
+    const wall = plan(AXES, `  wall id=w partition thickness 200 { (0, axis.b) (6000, axis.b) }`);
+    const [d] = errors(wall);
+    expect(d).toMatchObject({ code: "E_UNKNOWN_REF", hints: ["did you mean `axis.B`?"] });
+    expect(d!.message).toContain("a label is in capitals");
+    expect(quoted(wall, d!)).toBe("axis.b");
+    // In the room pass too.
+    const room = plan(AXES, `  room id=r at (0, axis.b) size 3000x3000`);
+    expect(errors(room)[0]).toMatchObject({ code: "E_UNKNOWN_REF", hints: ["did you mean `axis.B`?"] });
+  });
+
+  it("no such capital is an ordinary unknown name, and a room's edge stays an edge", () => {
+    const src = plan(AXES, `  column at (axis.q, 0) size 400x400`);
+    expect(errors(src)[0]!.message).toBe('Unknown name "axis.q"');
+    const room = plan(AXES, `  room id=axis at (500,0) size 3000x3000`, `  column at (axis.left, 0) size 400x400`);
+    expect(errors(room)).toEqual([]);
+  });
+
   it("a plan with no axes", () => {
     const [d] = errors(plan(WALL));
     expect(d).toMatchObject({ code: "E_UNKNOWN_REF" });
@@ -214,6 +232,37 @@ suite("`at axis.2` on an opening stands on the axis", () => {
     expect(codes(src)).toContain("E_OPENING_DATUM");
   });
 
+  it.each([
+    ["from end", "axis.2 from end"],
+    ["from start", "axis.2 from start"],
+    ["from a room edge", "axis.2 from r.left"],
+    ["a percentage", "axis.2%"],
+    ["in brackets", "(axis.2) from end"],
+  ])("%s can only be a distance along the wall, so it is refused, with the words `from axis` has", (_n, pos) => {
+    const src = plan(
+      `  axes { x at 0, 3000 }`,
+      `  wall id=w exterior thickness 200 { (1000,0) (9000,0) }`,
+      `  room id=r at (1000,0) size 8000x3000`,
+      `  door id=d on w at ${pos} width 900`,
+    );
+    const [d] = errors(src);
+    expect(d).toMatchObject({ code: "E_PARSE" });
+    expect(d!.message).toBe(
+      "An offset is measured `from start`, `from end` or `from <room>.<edge>`; to stand on an axis write `at axis <label>`",
+    );
+    expect(doorAt(src)).toBeUndefined();
+  });
+
+  it("the same refusal on `between`, and a number or a plain name `from end` still reads", () => {
+    const rooms = `  room id=a at (0,0) size 3000x3000\n  room id=b right-of a size 3000x3000`;
+    const walls = `  walls from rooms exterior 200 partition 100`;
+    const at = (pos: string): string =>
+      plan(`  axes { y at 0, 1500 }`, `  let p = 900`, rooms, walls, `  door id=d between a and b at ${pos} width 800`);
+    expect(codes(at("axis.A from start"))).toContain("E_PARSE");
+    expect(codes(at("900 from start"))).not.toContain("E_PARSE");
+    expect(codes(at("p from start"))).not.toContain("E_PARSE");
+  });
+
   it("arithmetic on it stays a number along the wall", () => {
     const src = plan(
       `  axes { x at 0, 3000 }`,
@@ -257,6 +306,21 @@ suite("`keep on axis` holds a column", () => {
   it("an auto id is refused, as for any keep", () => {
     const src = plan(AXES, `  column at (5800,4800) size 400x400`, `  keep on axis 2 column_1`);
     expect(codes(src)).toContain("E_KEEP_TARGET");
+  });
+
+  it("what `on axis` cannot hold names both things it can", () => {
+    const [d] = kept(`room id=r at (0,0) size 3000x3000`, `keep on axis 2 r.left`);
+    expect(d).toMatchObject({ code: "E_KEEP_MEASURE" });
+    expect(d!.message).toContain("a wall or a column");
+    expect(d!.hints?.join(" ")).toContain("neither a wall nor a column");
+  });
+
+  it("`axis.2` in a keep says how a keep writes it", () => {
+    const [d] = kept(COLUMN, `keep fixed axis.2 at 6000`);
+    expect(d).toMatchObject({ code: "E_KEEP_TARGET" });
+    expect(d!.hints?.join(" ")).toContain("a keep writes `axis 2`");
+    const [e] = kept(COLUMN, `keep align axis.B axis 1`);
+    expect(e!.hints?.join(" ")).toContain("a keep writes `axis B`");
   });
 
   it("no other form reads a column, and `segment` on one is refused", () => {
@@ -340,6 +404,26 @@ suite("one grid: W_AXES_DIFFER", () => {
         ),
       ),
     ).not.toContain("W_AXES_DIFFER");
+  });
+
+  it("a storey whose block failed has said so, and is no second grid", () => {
+    const src = plan(
+      `  axes { x at 0, BAY }`,
+      `  level 1 {\n    let BAY = 6000\n    wall partition thickness 100 { (0,0) (1000,0) }\n  }`,
+      `  level 2 {\n    wall partition thickness 100 { (0,0) (1000,0) }\n  }`,
+    );
+    expect(codes(src)).toContain("E_UNKNOWN_REF");
+    expect(codes(src)).not.toContain("W_AXES_DIFFER");
+  });
+
+  it("three grids are one warning", () => {
+    const three = plan(
+      `  axes { x at 0, BAY }`,
+      ...[6000, 7000, 8000].map(
+        (b, i) => `  level ${i + 1} {\n    let BAY = ${b}\n    wall partition thickness 100 { (0,0) (1000,0) }\n  }`,
+      ),
+    );
+    expect(codes(three).filter((c) => c === "W_AXES_DIFFER").length).toBe(1);
   });
 
   it("a count that differs is two grids too", () => {

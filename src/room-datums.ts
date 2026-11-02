@@ -227,6 +227,30 @@ function readAxis(
   return NUM0;
 }
 
+/**
+ * `axis.b`, when `axis.B` is a label of this scope: a near miss, refused with the label it missed.
+ * Anything else lowercase stays an ordinary unknown name, and `axis.top` stays a room's edge.
+ */
+function nearAxis(
+  scope: AxisScope,
+  name: string,
+  span: Span | undefined,
+  onError: (d: Diagnostic) => void,
+): Value | undefined {
+  if (!/^axis\.[a-z]+$/.test(name) || splitDatum(name) !== undefined) return undefined;
+  chargeSteps(1 + scope.axes.length);
+  const label = name.slice(5).toUpperCase();
+  if (!scope.axes.some((x) => x.label === label)) return undefined;
+  onError({
+    severity: "error",
+    message: `No positioning axis is labelled "${name.slice(5)}" in \`${name}\`: a label is in capitals`,
+    code: "E_UNKNOWN_REF",
+    ...(span ? { span } : {}),
+    hints: [`did you mean \`axis.${label}\`?`],
+  });
+  return NUM0;
+}
+
 /** Where a datum is read when no table exists yet. */
 export type DatumPhase = "expand" | "rooms";
 
@@ -243,7 +267,9 @@ export function beforeRoomsReader(phase: DatumPhase, axisScope?: AxisScope): Dat
   return (name, span, onError) => {
     const label = axisRead(name);
     if (label !== undefined && axisScope) return readAxis(axisScope, label, name, span, onError);
-    if (label === undefined && splitDatum(name) === undefined) return undefined;
+    if (label === undefined && splitDatum(name) === undefined) {
+      return axisScope ? nearAxis(axisScope, name, span, onError) : undefined;
+    }
     onError({
       severity: "error",
       message:
@@ -312,7 +338,7 @@ export function tableReader(table: DatumTable, opts: TableReaderOpts): DatumRead
     const label = axisRead(name);
     if (label !== undefined) return readAxis(scope, label, name, span, onError);
     const d = splitDatum(name);
-    if (d === undefined) return undefined;
+    if (d === undefined) return nearAxis(scope, name, span, onError);
     const refuse = ({ code, message }: { code: string; message: string }, hint?: string): Value => {
       const out: Diagnostic = {
         severity: "error",

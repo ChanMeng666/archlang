@@ -76,6 +76,9 @@ export function eatEnumValue<T extends string>(ctx: ParseCtx, allowed: readonly 
  * word only with a dotted name after it: a binding of that name followed by a dotted name was
  * never legal, so `at corner width 900` reads as it always did.
  */
+const OFFSET_NOT_AXIS =
+  "An offset is measured `from start`, `from end` or `from <room>.<edge>`; to stand on an axis write `at axis <label>`";
+
 export function parseAttachPos(ctx: ParseCtx): { pos: AttachPos; end: number } {
   if (ctx.isKeyword("center")) {
     const c = ctx.next();
@@ -98,17 +101,18 @@ export function parseAttachPos(ctx: ParseCtx): { pos: AttachPos; end: number } {
     }
   }
   const value = ctx.parseExpr({ noModulo: true });
+  // `at axis.2` alone stands on the axis, as `at axis 2` does. Read as a number it would be that
+  // many mm along the wall from its start, and land somewhere else without a word; `from` and `%`
+  // can only mean that, so they are refused, as `from axis` is.
+  const label = value.t === "ref" ? axisRead(value.name) : undefined;
+  if (label !== undefined && (ctx.isType("percent") || ctx.isKeyword("from"))) ctx.fail(OFFSET_NOT_AXIS);
   if (ctx.isType("percent")) {
     const pct = ctx.next();
     return { pos: { kind: "percent", value }, end: pct.end };
   }
   if (ctx.isKeyword("from")) {
     ctx.next();
-    if (ctx.isKeyword("axis")) {
-      ctx.fail(
-        "An offset is measured `from start`, `from end` or `from <room>.<edge>`; to stand on an axis write `at axis <label>`",
-      );
-    }
+    if (ctx.isKeyword("axis")) ctx.fail(OFFSET_NOT_AXIS);
     const t = ctx.eatIdent();
     const from: AttachFrom =
       t.value === "start" || t.value === "end"
@@ -117,13 +121,8 @@ export function parseAttachPos(ctx: ParseCtx): { pos: AttachPos; end: number } {
     return { pos: { kind: "from", value, from }, end: t.end };
   }
   const end = ctx.peek(-1).end;
-  // `at axis.2` alone stands on the axis, as `at axis 2` does. Read as a number it would be
-  // that many mm along the wall from its start, and land somewhere else without a word.
-  if (value.t === "ref") {
-    const label = axisRead(value.name);
-    if (label !== undefined) {
-      return { pos: { kind: "axis", label, span: value.span ?? { start: end, end } }, end };
-    }
+  if (value.t === "ref" && label !== undefined) {
+    return { pos: { kind: "axis", label, span: value.span ?? { start: end, end } }, end };
   }
   return { pos: { kind: "mm", value }, end };
 }

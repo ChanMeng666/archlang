@@ -54,7 +54,10 @@ after `axis.` as well, for that word alone. `axis` beside a number with no space
 never a legal expression.
 
 **`at axis.2` on an opening stands on the axis**, the same as `at axis 2`. Read as a number it would
-be that many millimetres along the wall from its start, and land somewhere else without a word.
+be that many millimetres along the wall from its start, and land somewhere else without a word. So
+`at axis.2 from end` and `at axis.2%`, which can only mean a distance, are `E_PARSE`, with the words
+`from axis` already has. Arithmetic, `at axis.2 + 500`, stays a number, and the reference says what
+that number is.
 
 ### Where it reads, and where it is refused
 
@@ -118,7 +121,7 @@ structure, and `column` stays what it is, a drawn rectangle.
 | `describe --facts depends` | An element reading `axis.3` lists it under `axes`, as `at axis 3` does, and not under `params` |
 | `impact` | Follows from that row: move an axis and the element reading it is `changed`, with `via: axis` |
 | Plan JSON | Coordinates are exported resolved, so the read does not survive the round trip, as `at axis` does not |
-| `format` | A dotted reference prints as written |
+| `format` | A dotted reference prints as written, but for the one the parse turns into a position: `at axis.2` prints as `at axis 2`, the same position |
 | GBNF | `ref` admits `axis.3` |
 | Steps | One per axis per read, charged before the search, as `at axis` pays. A plan that reads none pays nothing |
 
@@ -154,8 +157,8 @@ proof, and those that did move only by the extent.
 | Reader | What it does now |
 |---|---|
 | `drawingBounds` (`sheet.ts`), so the viewBox and `renderSizes` | Holds the ink. Where the stair is the outermost thing the drawing grows, and without `paper` its reference dimension can grow with it, which is every annotation size on that page: the moved plans' SVG moves whole, geometry unchanged |
-| `sheetExtents` `drawn` (`ir.ts`) | The same reach, for `W_DRAWING_OVERFLOW` and the sheet fit. No corpus plan changes its fit |
-| `checkNumberDomain` (`ir.ts`) | **It is a range check**, D27's second reverse-if, and it says "every point an element draws to". It was short by the overshoot; now a stair whose break line alone passes `MODEL_RANGE_MM` is `E_OUT_OF_RANGE`. That closes a hole in the law and moves no corpus row |
+| `sheetExtents` `drawn` (`ir.ts`) | The same reach, for `W_DRAWING_OVERFLOW` and the sheet fit. No corpus plan changes its fit, but a plan whose stair sat within 6 % of a flight's width of the fit can newly warn |
+| `checkNumberDomain` (`ir.ts`) | **It is a range check**, D27's second reverse-if, and it says "every point an element draws to". It was short by the overshoot; now a stair whose break line alone passes `MODEL_RANGE_MM` is `E_OUT_OF_RANGE`. That closes a hole in the law and moves no corpus row, but it is a behaviour change: such a plan compiled before |
 | `draw-budget.ts` | Four units more per stair. `drawCost` plus `bounds().length` was an upper bound and stays one |
 | `scene-build.ts` dimension stations | Reads `bounds()` as what a number must not sit on, and the break line is ink, so it now blocks that too. No corpus row moved by this alone: every moved page's extent moved |
 

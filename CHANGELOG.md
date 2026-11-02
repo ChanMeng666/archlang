@@ -23,7 +23,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `open between … at …` says what to write (issue #401). `open between` stays centred, and the parse error now quotes the `opening between` statement that places the opening, with your position and width.
 - `W_BALCONY_NO_DOOR` no longer accepts a `fixed` or `tilt` window as a way onto a balcony, whatever its sill.
-- A stair's drawn extent now includes its break line, which reaches 6 % of the flight's width past each side. The ink is the same. A stair that is the outermost thing on its page widens the drawing by that much, so the page frames it and its annotation sizes follow; a stair whose reach a wall covers changes nothing. `describe()` and `lint()` do not move. A stair whose break line alone passes the modelling range is now `E_OUT_OF_RANGE`.
+- A stair's drawn extent now includes its break line, which reaches 6 % of the flight's width past each side. The ink is the same. A stair that is the outermost thing on its page widens the drawing by that much, so the page frames it and its annotation sizes follow; a stair whose reach a wall covers changes nothing. `W_DRAWING_OVERFLOW` can newly fire on a plan whose stair sat within 6 % of a flight's width of the sheet fit. `describe()` and `lint()` do not move.
+
+### Changed
+
+- A stair whose break line alone passes the modelling range is now `E_OUT_OF_RANGE`, a behaviour change: a plan whose footprint stood inside the range with its break line outside it compiled before and is refused now.
 
 ## [1.51.0] - 2026-11-02
 

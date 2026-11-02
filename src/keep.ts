@@ -46,7 +46,7 @@ import {
   wallRunPhrase,
 } from "./naming.js";
 import { fmt3, fmtHalfLattice, MODEL_RANGE_MM } from "./num-format.js";
-import { COMPASS_DATUM_ALIASES, type DatumWord } from "./room-datums.js";
+import { axisRead, COMPASS_DATUM_ALIASES, type DatumWord } from "./room-datums.js";
 import { keepFormText, keepRefText } from "./statement-print.js";
 import { boardedFlight, isVertical } from "./vertical.js";
 import { classifyLabelUses } from "./vocabulary.js";
@@ -555,6 +555,7 @@ function lookup(ix: StoreyIndex, ctx: KeepStoreyCtx, id: string, text: string): 
     };
   }
   if (!el) {
+    const label = axisRead(id);
     const hint = closest(
       id,
       [...ix.byId.keys()].filter((k) => ctx.authored(k)),
@@ -562,7 +563,10 @@ function lookup(ix: StoreyIndex, ctx: KeepStoreyCtx, id: string, text: string): 
     return {
       code: "E_KEEP_TARGET",
       message: "This keep names something that is not an authored id on this storey",
-      hint: `\`${id}\` in \`${text}\` names no element here${hint ? ` (did you mean \`${hint}\`?)` : ""}`,
+      hint:
+        label !== undefined
+          ? `\`${id}\` in \`${text}\` is how an expression reads an axis: a keep writes \`axis ${label}\``
+          : `\`${id}\` in \`${text}\` names no element here${hint ? ` (did you mean \`${hint}\`?)` : ""}`,
     };
   }
   if (!ctx.authored(id)) {
@@ -929,14 +933,14 @@ function measureAlign(
       return {
         code: "E_KEEP_MEASURE",
         message: "`keep on axis` names a positioning axis first",
-        hint: `write \`keep on axis <label> <wall>\` (\`${text}\`)`,
+        hint: `write \`keep on axis <label> <wall|column>\` (\`${text}\`)`,
       };
     }
     if (node.wall.t !== "el") {
       return {
         code: "E_KEEP_MEASURE",
         message: "`keep on axis` holds a wall or a column on the axis: name it",
-        hint: `\`${keepRefText(node.wall)}\` in \`${text}\` is not a wall`,
+        hint: `\`${keepRefText(node.wall)}\` in \`${text}\` is neither a wall nor a column`,
       };
     }
   }

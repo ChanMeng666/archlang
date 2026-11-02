@@ -2805,9 +2805,10 @@ plan "Two floors on one grid" {
   and the same component must draw the same at every placement. What crosses a frame is the
   check: `keep on axis 2 wing.c`, written on the storey, reads the placed column in plan
   coordinates under any turn or mirror.
-- `at axis.2` on an opening stands on the axis, the same as `at axis 2`. In any other position
-  along a wall, such as `offset axis.2`, it is a number like any other, and that number is a
-  plan coordinate, not a distance along the wall.
+- `at axis.2` on an opening stands on the axis, the same as `at axis 2`. `from` and `%` measure
+  along the wall, so `at axis.2 from end` is refused. Arithmetic on it, `at axis.2 + 500`, is a
+  number like any other: that many millimetres along the wall from its start, and the number is
+  a plan coordinate, so it lands on the axis only on a wall that starts at 0.
 
 ### Sheet tables — room schedule & legend
 
