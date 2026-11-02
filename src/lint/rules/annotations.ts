@@ -476,7 +476,7 @@ export const titleOverflow: LintRule = {
   check(ctx: LintContext): Diagnostic[] {
     const title = ctx.ir.title;
     const block = ctx.ir.sheetText;
-    if (!title && !block) return [];
+    if (ctx.ir.hide?.title || (!title && !block)) return [];
     if (ctx.building.multiStorey && !ctx.building.lowestStorey) return [];
     // Ratios only: every length below is a multiple of the reference dimension, so 1 serves.
     const { w, fs, pad } = titleBlockMetrics(1);

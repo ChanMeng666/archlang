@@ -371,7 +371,7 @@ function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
   const thin = sizes.thin;
 
   // North arrow (triangle rotated by bearing; "N" stays upright).
-  {
+  if (!scene.northHidden) {
     const r = refDim * 0.045;
     const cx = b.maxX - r;
     const cy = b.minY - margin * 0.55;
@@ -403,7 +403,7 @@ function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
     });
 
   // Scale bar (two-segment alternating bar + end labels).
-  {
+  if (!chrome.scaleBar.hidden) {
     const { x0, y0, barLen, hgt, fs } = chrome.scaleBar;
     const label = scaleBarLabel(chrome.scaleBar);
     const half = barLen / 2;

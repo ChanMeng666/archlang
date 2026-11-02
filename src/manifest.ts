@@ -265,7 +265,7 @@ const LEVEL_FLAG: ManifestFlag = {
   flag: "--level",
   arg: "<n>",
   description:
-    "render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one <stem>.L<level>.<ext> file per level",
+    "render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one <stem>.L<level>.<ext> file per level; {level} in -o names each storey's file (no `level` blocks: exit 3)",
 };
 
 const INSTALL_FLAG: ManifestFlag = {
@@ -422,6 +422,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "archlang compile house.arch -o house.svg --json",
         note: "a multi-storey plan writes one sheet per level (house.L1.svg, house.L2.svg …) and reports outputs[]",
+      },
+      {
+        cmd: 'archlang compile house.arch -o "storey-{level}.svg"',
+        note: "name each storey's file yourself: storey-1.svg, storey-2.svg …",
       },
       {
         cmd: "archlang compile house.arch --level 2 -o upper.svg",

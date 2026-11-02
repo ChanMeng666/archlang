@@ -1,0 +1,18 @@
+# The #405 forms together: a detail with no north arrow, scale bar or title box. It stands in a
+# folder of its own because the corpus tables read test/fixtures flat and pin plans that do not use
+# the forms.
+plan "Bath detail" {
+  units mm
+  paper A4
+  scale 1:20 hidden
+  north 30 hidden
+  title { project "Bath detail" number "D-4" }
+  title hidden
+  legend
+  room id=bath at (0,0) size 3000x2200 label "Bath" uses bath floor tile
+  room id=hall right-of bath size 1500x2200 label "Hall" uses hall floor deck
+  walls from rooms exterior 200 partition 100
+  door between bath and hall at 1100 from start width 800 swing into bath
+  window on bath.top width 900 sill 1200
+  furniture sofa_l in hall anchor top-right flush size 1200x1000 mirror
+}

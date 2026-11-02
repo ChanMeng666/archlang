@@ -11,7 +11,7 @@
  * stays in each backend.
  */
 
-import type { Point, TitleNode } from "./ast.js";
+import type { ChromeHide, Point, TitleNode } from "./ast.js";
 import type { Bounds } from "./geometry.js";
 import type { SceneNode } from "./scene.js";
 import type { LegendEntry, RoomSchedule, SheetTables } from "./sheet-tables.js";
@@ -69,6 +69,8 @@ export interface ScaleBarBox {
   fs: number;
   /** The length's words with the plan's decimal mark. Absent with no `sheet text`, as it always was. */
   label?: string;
+  /** `scale … hidden`: laid out for no one. Backends draw nothing and the band keeps no room for it. */
+  hidden?: true;
 }
 
 /** The words at the end of the scale bar. */
@@ -130,6 +132,8 @@ export interface ChromeInput {
   level?: LevelStamp;
   /** The plan's `sheet text`. Absent means the English, as for a plan that writes none. */
   text?: SheetText;
+  /** The marks the plan hides. */
+  hide?: ChromeHide;
 }
 
 /**
@@ -243,9 +247,10 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
   };
   const text = input.text ?? PLAIN_SHEET_TEXT;
   if (text !== PLAIN_SHEET_TEXT) scaleBar.label = text.num(scaleBarLabel(scaleBar));
-  const scaleBottom = bandTop + sHgt + sFs * SCALEBAR_LABEL_F;
+  if (input.hide?.scale) scaleBar.hidden = true;
+  const scaleBottom = input.hide?.scale ? bandTop : bandTop + sHgt + sFs * SCALEBAR_LABEL_F;
 
-  const rows = titleRows(input.title, input.scale, input.level, text);
+  const rows = input.hide?.title ? [] : titleRows(input.title, input.scale, input.level, text);
   let titleBlock: TitleBlockBox | null = null;
   let titleBottom = bandTop;
   if (rows.length > 0) {
@@ -294,11 +299,12 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
  * rows will be drawn: a gap above, the taller of the scale bar and the title block,
  * and a gap below. Derived from the same fractions {@link layoutChrome} lays the
  * chrome out with, so the sheet fit test (`src/sheet.ts`) reserves exactly the band
- * that gets drawn instead of guessing at it.
+ * that gets drawn instead of guessing at it. With nothing drawn in it there is no band.
  */
-export function chromeBandDepth(refDim: number, titleRowCount: number): number {
+export function chromeBandDepth(refDim: number, titleRowCount: number, scaleBarHidden = false): number {
+  if (scaleBarHidden && titleRowCount === 0) return 0;
   const gap = refDim * GAP_F;
-  const scaleBar = refDim * SCALEBAR_HGT_F + refDim * SCALEBAR_FS_F * SCALEBAR_LABEL_F;
+  const scaleBar = scaleBarHidden ? 0 : refDim * SCALEBAR_HGT_F + refDim * SCALEBAR_FS_F * SCALEBAR_LABEL_F;
   const titleBlock = refDim * TITLE_ROW_F * titleRowCount;
   return gap + Math.max(scaleBar, titleBlock) + gap;
 }
@@ -347,7 +353,8 @@ export function anchorChromeToSheet(
   refDim: number,
 ): ChromeLayout {
   const gap = refDim * GAP_F;
-  const bandH = Math.max(chrome.scaleBar.hgt + chrome.scaleBar.fs * SCALEBAR_LABEL_F, chrome.titleBlock?.h ?? 0);
+  const barH = chrome.scaleBar.hidden ? 0 : chrome.scaleBar.hgt + chrome.scaleBar.fs * SCALEBAR_LABEL_F;
+  const bandH = Math.max(barH, chrome.titleBlock?.h ?? 0);
   const bandTop = page.y + page.h - margin - bandH;
   const t = chrome.tables;
   // The table row sits a gap above the band; its top is what must clear the drawing.

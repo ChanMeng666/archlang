@@ -61,10 +61,12 @@ const inPlan = (body: string): string => `plan "T" {\n  units mm\n${body}\n}\n`;
 
 suite("sheet text: the keys", () => {
   it("every fixed word draws: a key that drew nothing would be a promise the sheet breaks", () => {
-    const english = drawn(everyWord(""));
+    // `floor` is the one word no row of `everyWord` reaches: that plan is pinned by two byte laws.
+    const every = (head: string): string => everyWord(head).replace('label "Living"', 'label "Living" floor tile');
+    const english = drawn(every(""));
     for (const [key, word] of Object.entries(SHEET_WORDS)) {
       const sentinel = "Q@Q";
-      const texts = drawn(everyWord(block(`${key} "${sentinel}"`)));
+      const texts = drawn(every(block(`${key} "${sentinel}"`)));
       expect(
         texts.some((t) => t.includes(sentinel)),
         key,

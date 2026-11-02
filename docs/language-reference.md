@@ -52,14 +52,14 @@ plan "My Home" {
 | `units mm` | Measurement unit (only `mm` in v0.1). | `mm` |
 | `grid <n>` | Snap module in mm. All *built* coordinates round to the nearest multiple (a `dim`'s endpoints do not — a dimension measures, it is not built). `0` disables. | `0` |
 | `paper A4\|A3\|A2\|A1\|A0 [landscape\|portrait]` | The sheet the drawing is issued on. Declaring it makes `scale` **operative** — every annotation size becomes a fixed number of millimetres on that sheet (see [Paper and scale](#paper-and-scale-the-sheet)). Orientation defaults to `landscape`. | none |
-| `scale 1:50` | Drawing scale. On its own, annotation only (a title-block row). **With `paper`, it is the operative scale** every size derives from; omit it and the sheet auto-fits one. | none |
-| `north up\|down\|left\|right\|<deg>` | North direction — where compass north points on the page. Draws the north arrow, and orients the **compass facing** [`describe()` reports for every window](analysis.md#describe--the-semantic-summary) (and therefore what an intent `windows.facing` assertion means): with `north right`, a window on the page's right edge faces `N`. A `<deg>` bearing (clockwise from the top of the page) snaps to the nearest cardinal for that facing — an exact 45° tie rounds clockwise — while the arrow is drawn at the exact bearing. | `up` |
+| `scale 1:50 [hidden]` | Drawing scale. On its own, annotation only (a title-block row). **With `paper`, it is the operative scale** every size derives from; omit it and the sheet auto-fits one. `hidden` draws no scale bar: see [Hiding the sheet marks](#hiding-the-sheet-marks). | none |
+| `north up\|down\|left\|right\|<deg> [hidden]` | North direction — where compass north points on the page. Draws the north arrow, and orients the **compass facing** [`describe()` reports for every window](analysis.md#describe--the-semantic-summary) (and therefore what an intent `windows.facing` assertion means): with `north right`, a window on the page's right edge faces `N`. A `<deg>` bearing (clockwise from the top of the page) snaps to the nearest cardinal for that facing — an exact 45° tie rounds clockwise — while the arrow is drawn at the exact bearing. `hidden` draws no arrow and keeps the bearing: see [Hiding the sheet marks](#hiding-the-sheet-marks). | `up` |
 | `site { street north\|south\|east\|west [hemisphere north\|south] }` | Where the building sits relative to its **street**, so a brief can name a direction instead of a letter. Draws nothing and moves nothing: it gives five directions a name (`street`, `back`, `equator_side`, `sunrise_side`, `sunset_side`) that `describe()`, `lint` and an intent's `windows.facing` can all use. See [Site and orientation](#site-and-orientation). | none |
 | `dims auto [overall\|rooms\|walls\|all]` | Auto-draw dimension **chains** without hand-placing each `dim`, in the GB/T 50104 exterior convention — every chain outside the building, measured from the outer wall faces (see [Automatic dimension chains](#automatic-dimension-chains)): `overall` (one outer-face-to-outer-face span per dimensioned facade), `rooms` (the room/partition axis chain), `walls` (one deduped thickness call-out per distinct wall thickness), or `all` (the openings chain + the axis chain + the overall span, and the default when no scope is given). | off |
 | `axes { x at … y at … }` | The plan's **positioning axes** (定位轴线) — declared structural datum lines, drawn dash-dot with a labelled bubble and used as the ticks of the middle dimension chain. See [Positioning axes](#positioning-axes-定位轴线). | none |
 | `schedule rooms` | Draw the **ROOM SCHEDULE** table in the sheet's bottom band — number, name and area per room, closed by a total. Rows are derived from the rooms, never authored. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `schedule openings` | Tag every door (`D01`…) and window (`W01`…) beside it and draw the **DOOR & WINDOW SCHEDULE** — tag, room(s), width, kind and a hinged door's hand. Derived; composes with `schedule rooms`. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
-| `legend` | Draw the **LEGEND** table beside the schedule — one row per wall hatch material and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
+| `legend` | Draw the **LEGEND** table beside the schedule — one row per hatch (wall, ground or room `floor`) and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `notes "…" ["…" …]` | The sheet's general **NOTES**, drawn as a numbered table in the same band. Repeated statements append. See [Sheet tables](#sheet-tables--room-schedule--legend). | none |
 | `sheet text { … }` | The sheet's fixed **words** and the **decimal mark** of its drawn numbers, as the plan writes them. See [Sheet text](#sheet-text). | none |
 | `height <mm>` | The building's default **floor-to-floor** storey height. The vertical datum: it draws nothing at all, because a floor plan is a horizontal cut. A `level` may override it and a `wall` may override that. See [Heights (the datum layer)](#heights-the-datum-layer). | `3000` |
@@ -1297,15 +1297,48 @@ it always did, so each draws, describes and lints byte for byte as its `on <wall
 ### Room
 
 ```
-room [id=<id>] at (x,y) size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…]
-room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…]
-room [id=<id>] polygon (x,y) (x,y) (x,y) … [label "<text>" [at (x,y)]] [uses <kind>…]
-room [id=<id>] circle at (cx,cy) radius <mm> [label "<text>" [at (x,y)]] [uses <kind>…]
+room [id=<id>] at (x,y) size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…] [floor <pattern>]
+room [id=<id>] <right-of|left-of|below|above> <ref> [align <edge>] [gap <mm>] size <w>x<h> [label "<text>" [at (x,y)]] [uses <kind>…] [floor <pattern>]
+room [id=<id>] polygon (x,y) (x,y) (x,y) … [label "<text>" [at (x,y)]] [uses <kind>…] [floor <pattern>]
+room [id=<id>] circle at (cx,cy) radius <mm> [label "<text>" [at (x,y)]] [uses <kind>…] [floor <pattern>]
 ```
 
 A rectangle — or [any simple polygon](#polygonal-rooms-v1-23), or a
 [circle](#circular-rooms-v1-24). The compiler prints the `label` and the **computed area**
 (m²). Rooms describe space; walls are drawn separately.
+
+**`floor` draws a finish.** `floor tile`, `floor paving`, `floor deck` or `floor concrete` lays a
+hatch over the room, on its own ring, under everything else in it:
+
+```arch
+plan "Finishes" {
+  units mm
+  paper A4
+  scale 1:50
+  legend
+  room id=bath at (0,0) size 2400x3000 label "Bath" uses bath floor tile
+  room id=living right-of bath size 4000x3000 label "Living" uses living floor deck
+  walls from rooms exterior 200 partition 100
+}
+```
+
+| Word | Draws |
+|---|---|
+| `tile` | A small square grid |
+| `paving` | A large square grid, the same slabs an `outdoor paving` draws |
+| `deck` | Boards with staggered joints |
+| `concrete` | A fine speckle |
+
+It is a pattern and not a colour: it follows the `theme`, stays legible under `mono`, reaches DXF as
+a real `HATCH` and earns one [`legend`](#sheet-tables--room-schedule--legend) row per word, which
+`sheet text` can rename (`deck "Parkett"`). It runs with the sheet, so boards do not turn with a
+`place`, as a wall's hatch does not. `tile` and `concrete` paint no background here, so a tiled room
+does not take a wall's tint, and their legend row reads `tile floor`, apart from a wall's `tile`. In a PDF, which has no pattern fills, a floor is a flat tint, as an
+`outdoor` surface is.
+
+A floor is a drawing fact: `describe()` and `lint()` read the plan as if it were not there, and Plan
+JSON lists it in `dropped`. A word that is not one of the four draws no pattern and raises
+`W_UNKNOWN_MATERIAL`, a compile warning that `describe --json` and `validate` report and `lint()` does not.
 
 **Where the name goes.** By default at the room's own centre — the rectangle's, the
 circle's, or [a polygon's area centroid](#polygonal-rooms-v1-23) — and a name that would
@@ -2012,7 +2045,7 @@ furniture <kind> [id=<id>] against wall <ref> [segment <n>|<selector>] [offset <
 furniture <kind> [id=<id>] in <room> centered [size <w>x<h>] [label …] [rotate …]
 furniture <kind> [id=<id>] in <room> anchor <a> [flush] [inset <mm>] [size <w>x<h>] [label …] [rotate …]
 furniture <kind> [id=<id>] against <room>.<edge> [offset <mm>] [size <along>x<depth>] [label …]
-… [rotate 0|90|180|270 | facing <id>] [clear front <mm>] [clear sides <mm>] [in <room>]
+… [rotate 0|90|180|270 | facing <id>] [mirror] [clear front <mm>] [clear sides <mm>] [in <room>]
 ```
 
 A piece of furniture or a built-in fixture. Every **catalogued** kind draws a real
@@ -2022,6 +2055,27 @@ rail and hangers — and ignores any `label`. Any other kind falls back to a sch
 symbol for. The catalogue is `archlang manifest --json`'s `fixtureCategories`, and every
 kind is documented with its symbol, footprint and facing in
 [Furniture & Fixtures](furniture.md).
+
+**`mirror` swaps one piece's left and right.** A `sofa_l` drawn with its chaise on the left comes
+out with it on the right, and the piece's back stays where `rotate`, `facing`, `against` or an
+`anchor` put it:
+
+```arch
+plan "Two sofas" {
+  units mm
+  room id=a at (0,0) size 6000x4000 uses living
+  walls from rooms exterior 300 partition 100
+  furniture sofa_l in a anchor top-left flush size 2600x1800
+  furniture sofa_l in a anchor top-right flush size 2600x1800 mirror
+}
+```
+
+The word takes no axis, because it works in the symbol's own frame: with `rotate 90`, a page axis
+would turn the back too. It sits among `rotate` and `facing`, in either order, and reads the same
+bit a reflecting `place` does, so a mirrored piece inside a `place … mirror` draws the plain
+symbol. A symbol with a vertical mirror axis has no left and right to swap and keeps its exact
+bytes, so a plain `table` does not change. `describe()` and `lint()` do not move, except the `hand`
+in `--facts symmetry`. Plan JSON carries it as `mirror: true`.
 
 A piece can be placed three ways: absolutely with `at (x,y)` (optionally turned with
 `rotate`), snapped **`against wall <ref>`** so its back sits on the wall and its
@@ -2724,6 +2778,38 @@ optional and draws one row only when written; `number` and `revision` draw `DRAW
 and `REVISION` rows after `DATE`. They draw only — `describe()` does not report them —
 and Plan JSON carries them in `title` like the other three.
 
+#### Hiding the sheet marks
+
+A detail often wants none of the sheet's marks, and a plan with nothing authored still draws a
+north arrow and a scale bar. A trailing `hidden` takes one mark off the sheet and leaves its fact
+alone:
+
+```arch
+plan "Bath detail" {
+  units mm
+  paper A4
+  scale 1:20 hidden
+  north 30 hidden
+  title hidden
+  room id=bath at (0,0) size 3000x2200 label "Bath" uses bath
+  walls from rooms exterior 200 partition 100
+}
+```
+
+| Written | What goes | What stays |
+|---|---|---|
+| `north hidden`, `north 30 hidden` | The north arrow | The bearing, and every compass fact read from it |
+| `scale hidden`, `scale 1:20 hidden` | The scale bar | The operative scale, and the title block's `SCALE` row |
+| `title hidden` | The whole title block, stamped `SCALE` and `LEVEL` rows included | A `title { … }` block, which stays in the source |
+
+Each is free of the others. A band with nothing left in it is not reserved, so a hidden scale bar
+and title block give their height back to the drawing: the fit, the auto-chosen scale and
+`W_SCALE_OVERFLOW` all read the sheet as drawn, and `W_TITLE_OVERFLOW` does not judge a block that
+is not drawn. `describe()` reads the same but for the sheet: where a freed band lets the auto scale fit
+finer, or a plan fit at a written scale, `scale`, `sheet.scale_denominator` and `sheet.fits` say so.
+Plan JSON lists the word in `dropped`, and `archlang finish` adds no title to a plan that says `title hidden`. The three are plan-level and apply to every page
+of a plan with `level` blocks.
+
 ### Positioning axes (定位轴线)
 
 ```
@@ -3018,7 +3104,7 @@ authored window kind or `glazed_sliding` stands alone in the legend, where the E
 | `subtotal` `total` `no_zone` | `SUBTOTAL` `TOTAL` `(no zone)` | Its closing rows, and the heading over rooms in no `zone` |
 | `opening_schedule` `tag` `rooms` `width` `type` `hand` | `DOOR & WINDOW SCHEDULE` `TAG` `ROOM(S)` `WIDTH` `TYPE` `HAND` | The door and window schedule's caption and headings |
 | `left` `right` `exterior` `window` | `left` `right` `exterior` `window` | Its cells: a hand, the outside, a window with no kind |
-| `legend` `demolished` `notes` | `LEGEND` `demolished` `NOTES` | The legend's and the notes' captions, and the row of a demolished wall |
+| `legend` `demolished` `floor` `notes` | `LEGEND` `demolished` `floor` `NOTES` | The legend's and the notes' captions, the row of a demolished wall, and the word after a `tile` or `concrete` floor's row |
 | `net` `up` `down` `north` | `net` `UP` `DN` `N` | In the drawing: the net stamp's word, a stair's or escalator's word, the north arrow's letter |
 
 The door and window tags (`D01`, `W01`), the axis bubbles and `m²` are handles and units, and have
@@ -3289,6 +3375,7 @@ a level-unaware consumer still gets a complete drawing. On the CLI:
 archlang compile house.arch                          # writes house.L1.svg, house.L2.svg …
 archlang compile house.arch -o house.svg --json      # …and reports outputs[] + pages[]
 archlang compile house.arch --json                   # check only: WRITES NOTHING (no -o), reports written:false
+archlang compile house.arch -o "storey-{level}.svg"  # {level} names each file: storey-1.svg, storey-2.svg … (a plan with no `level` blocks refuses it)
 archlang compile house.arch --level 2 -o upper.svg   # just that storey, to the plain target
 archlang compile house.arch --level 1 -o -           # `-o -` streams ONE drawing, so it needs --level
 archlang describe house.arch --json                  # top-level facts = lowest storey, plus levels[]

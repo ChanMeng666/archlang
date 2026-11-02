@@ -8,7 +8,7 @@
  *  `circle` form adds an exact centre+radius, a tessellated ring for the grid
  *  layer, and that same derived bounding box. */
 
-import type { ExprPoint, Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
+import type { ExprPoint, FloorClause, Point, RelAlign, RelDir, RoomNode, UseKind } from "../ast.js";
 import {
   AXIS_ALIGNS,
   REL_ALIGNS,
@@ -36,6 +36,7 @@ import {
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
 import { fmtTenthsOf2dp } from "../num-format.js";
+import { FLOOR_MATERIALS, floorHatch, hatchId, isFloorMaterial } from "../hatches.js";
 import { LABEL_AREA_DROP, LABEL_NAME_RISE } from "../text-layout.js";
 
 const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(REL_DIR_LIST);
@@ -131,6 +132,7 @@ function parseTail(ctx: ParseCtx, node: RoomNode): void {
       node.labelAtSpan = { start: kw.start, end: ctx.peek(-1).end };
     }
   }
+  parseFloorClause(ctx, node);
   // Optional `uses <kind> [<kind> …]` — explicit room classification. Greedily
   // consume contiguous valid use-kind identifiers (they never collide with a
   // following statement keyword), requiring at least one.
@@ -148,6 +150,35 @@ function parseTail(ctx: ParseCtx, node: RoomNode): void {
     }
     node.uses = uses;
   }
+  parseFloorClause(ctx, node);
+}
+
+/**
+ * `floor <pattern>`, after `uses` or before it. The word and its value stand on one line, so a
+ * statement that starts with the word (`floor = 2`, `floor()`, `floor` alone) stays that statement.
+ */
+export function parseFloorClause(ctx: ParseCtx, node: { floor?: FloorClause }): void {
+  if (node.floor !== undefined || !ctx.isKeyword("floor")) return;
+  const value = ctx.peek(1);
+  if (value.type !== "ident" || value.line !== ctx.peek().line) return;
+  ctx.next();
+  ctx.next();
+  node.floor = { word: value.value, span: { start: value.start, end: value.end } };
+}
+
+/** A room's `floor` word held to the patterns; another is `W_UNKNOWN_MATERIAL` and draws none. */
+function floorOf(n: RoomNode, ctx: ResolveCtx): Pick<RRoom, "floor"> {
+  if (n.floor === undefined) return {};
+  if (isFloorMaterial(n.floor.word)) return { floor: n.floor.word };
+  const hint = closest(n.floor.word, [...FLOOR_MATERIALS]);
+  ctx.diag({
+    severity: "warning",
+    message: `Unknown floor "${n.floor.word}" (known: ${FLOOR_MATERIALS.join(", ")}); drawing no pattern`,
+    code: "W_UNKNOWN_MATERIAL",
+    span: n.floor.span,
+    ...(hint ? { hints: [`Did you mean "${hint}"?`] } : {}),
+  });
+  return {};
 }
 
 export const room: ElementDef = {
@@ -321,6 +352,7 @@ export const room: ElementDef = {
         ...(labelAt ? { labelAt, _labelAtSpan: n.labelAtSpan } : {}),
         label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
         ...(n.uses ? { uses: n.uses } : {}),
+        ...floorOf(n, ctx),
         span: n.span,
       };
       // The floor is known right here, so the advisory is raised at resolve like the
@@ -402,6 +434,7 @@ export const room: ElementDef = {
       ...(labelAt ? { labelAt, _labelAtSpan: n.labelAtSpan } : {}),
       label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
       ...(n.uses ? { uses: n.uses } : {}),
+      ...floorOf(n, ctx),
       span: n.span,
       _rel: { dir: rel.dir, ref: rel.ref, align: rel.align, gap, span: n.span },
     };
@@ -419,8 +452,8 @@ export const room: ElementDef = {
     return r.labelAt ? [r.labelAt.x, r.labelAt.y] : [];
   },
 
-  /** At most 3 primitives (the drawing budget, `MAX_DRAW_UNITS`): its floor (a polygon or a true circle), its name and its area. */
-  drawCost: () => 3,
+  /** At most 4 primitives (the drawing budget, `MAX_DRAW_UNITS`): its floor (a polygon or a true circle), its `floor` hatch, its name and its area. */
+  drawCost: (resolved) => ((resolved as RRoom).floor ? 4 : 3),
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
     const r = resolved as RRoom;
@@ -438,6 +471,18 @@ export const room: ElementDef = {
     } else {
       const c = r.poly ?? rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
       nodes.push({ layer: "floor", prim: { t: "polygon", pts: c }, paint: { fill: theme.roomFill } });
+    }
+    // `floor <pattern>`: over the tint, from the room's own ring (a circle's 48-gon, which its
+    // walls cover). A drawing fact: no measure reads it. The paint carries the pattern reference,
+    // as `wall-lowering.ts` and the ground's do.
+    if (r.floor) {
+      const spec = floorHatch(r.floor);
+      const ring = r.poly ?? rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
+      nodes.push({
+        layer: "floor",
+        prim: { t: "hatch", region: [ring.map((p) => ({ ...p }))], material: spec.material, scale: 1, angle: 0 },
+        paint: { fill: `url(#${hatchId(spec)})`, fillRule: "nonzero" },
+      });
     }
 
     // Label/area anchor: the room centre for a rectangle, the circle's centre, the area
@@ -563,6 +608,7 @@ function resolveCircle(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
     ...(labelAt ? { labelAt } : {}),
     label,
     ...(n.uses ? { uses: n.uses } : {}),
+    ...floorOf(n, ctx),
     span: n.span,
   };
 }
@@ -615,6 +661,7 @@ function resolvePolygon(n: RoomNode, id: string, ctx: ResolveCtx): RRoom {
     ...(labelAt ? { labelAt } : {}),
     label,
     ...(n.uses ? { uses: n.uses } : {}),
+    ...floorOf(n, ctx),
     span: n.span,
   };
 }

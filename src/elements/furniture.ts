@@ -57,6 +57,13 @@ const COUNT_SIZES: RenderSizes = {
 
 const ANCHOR_SET: ReadonlySet<string> = new Set<FurnitureAnchor>(FURNITURE_ANCHORS);
 
+/** `mirror` as a clause, on the piece's line: a statement that starts with the word (`mirror = 2`, `mirror()`) stays one. */
+function isMirrorClause(ctx: ParseCtx): boolean {
+  if (!ctx.isKeyword("mirror") || ctx.peek().line !== ctx.peek(-1).line) return false;
+  const after = ctx.peek(1).type;
+  return after !== "equals" && after !== "lparen";
+}
+
 /** Consume an optional `flush` modifier, recording its own byte span (so the
  *  "flush on a centred piece" diagnostic can point at the word, not the statement).
  *  Returns a spreadable partial so an absent `flush` adds no keys at all. */
@@ -189,9 +196,19 @@ export const furniture: ElementDef = {
     // so an orientation fix can rewrite the clause; see FurnitureNode.rotateSpan.
     const rotateAt = ctx.peek(-1).end;
     // `rotate` and `facing` (ADR 0029 §3) both state the turn. Either order parses, and the
-    // pair parses too, so resolve can refuse it with a span (`E_FACING_CONFLICT`).
-    for (let k = 0; k < 2; k++) {
-      if (node.rotate === undefined && ctx.isKeyword("rotate")) {
+    // pair parses too, so resolve can refuse it with a span (`E_FACING_CONFLICT`). `mirror` stands
+    // among them in any order: it says nothing about the turn.
+    for (let k = 0; k < 3; k++) {
+      if (node.mirror === undefined && isMirrorClause(ctx)) {
+        const m = ctx.next();
+        node.mirror = true;
+        const axis = ctx.peek();
+        if ((ctx.isKeyword("x") || ctx.isKeyword("y")) && axis.line === m.line && ctx.peek(1).type !== "equals")
+          ctx.fail(
+            `\`mirror\` on a piece takes no axis: it swaps the piece's left and right and its back stays. \`place … mirror x|y\` reflects a whole instance`,
+            axis,
+          );
+      } else if (node.rotate === undefined && ctx.isKeyword("rotate")) {
         const rotKw = ctx.next();
         node.rotate = ctx.parseExpr();
         node.rotateSpan = { start: rotKw.start, end: ctx.peek(-1).end };
@@ -425,6 +442,7 @@ export const furniture: ElementDef = {
       size,
       label: n.label !== undefined ? ctx.evalStr(n.label) : undefined,
       ...(rotate ? { rotate } : {}),
+      ...(n.mirror ? { _mirror: true as const } : {}),
       ...(n.place?.flush ? { flush: true } : {}),
       ...(roomOut ? { room: roomOut } : {}),
       ...(authored ? { _authored: authored } : {}),
@@ -489,8 +507,8 @@ export const furniture: ElementDef = {
     // (`furniture hammock …`) falls back to the labelled rectangle below, which is now the
     // ONLY path that renders a furniture `label` at all.
     let nodes = fixtureGlyph(f.category, rect, theme, sizes);
-    // A REFLECTED instance (`place … mirror`) draws the symbol's mirror image, about the
-    // footprint's own vertical centre line and BEFORE the quarter-turn — the two together
+    // A REFLECTED piece (its own `mirror`, or `place … mirror`) draws the symbol's mirror image,
+    // about the footprint's own vertical centre line and BEFORE the quarter-turn — the two together
     // are the exact factorisation of the frame (`elements/glyph-chirality.ts`). A symbol
     // with a vertical mirror axis is returned untouched, so a mirrored `table` keeps its
     // exact bytes; the fallback rectangle below is symmetric and its label is centred, so
@@ -568,10 +586,9 @@ export const furniture: ElementDef = {
     // frame. Which axis the author wrote does not survive the factorisation and must
     // not: `mirror x` and `mirror y` differ only in the quarter-turn.
     //
-    // XORed rather than assigned, so a nested reflection composes back to the identity.
-    // Today `transformElement` is applied once per element with the FULLY COMPOSED
-    // frame, so `el._mirror` is always absent and this reads as an assignment; it is
-    // written as the group law because that is what makes it true either way.
+    // XORed rather than assigned: `transformElement` is applied once per element with the
+    // FULLY COMPOSED frame, and `el._mirror` is the piece's own `mirror`, so a mirrored piece in a
+    // reflecting `place` composes back to the plain symbol.
     if (reflected !== (el._mirror === true)) out._mirror = true;
     else delete out._mirror;
     if (el.room !== undefined) out.room = t.nsId(el.room);

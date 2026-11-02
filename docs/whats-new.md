@@ -27,6 +27,9 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Window kinds and a glazed terrace door | 1.52.0 | [Window kinds](#window-kinds) |
 | A window round a corner, with no wall left at it | 1.52.0 | [Corner windows](#corner-windows) |
 | The sheet's words and decimal mark, as a plan writes them | unreleased | [Sheet text](#sheet-text) |
+| A detail with no north arrow, scale bar or title box | unreleased | [Hidden sheet marks](#hidden-sheet-marks) |
+| One piece of furniture, mirrored | unreleased | [One mirrored piece](#one-mirrored-piece) |
+| A floor finish on a room | unreleased | [Room floors](#room-floors) |
 
 ## Quantities and takeoff
 
@@ -483,3 +486,55 @@ plan "Haus" {
 A key you leave out keeps its English word. The stamp above reads `10,4 m² netto`. ArchLang ships no translations and there is no `locale`: the words are yours, and whether they are right is yours to check. The [language reference](language-reference.md#sheet-text) lists every key and has a German starting point, which no German drafter has reviewed.
 
 Only drawn text changes. `describe()`, Plan JSON and every coordinate keep their numbers, a `lint()` message stays English, and a number inside a string you wrote keeps its point. Nothing is read from the machine: the same source draws the same bytes everywhere. Without the block a plan draws what it drew before.
+
+## Hidden sheet marks
+
+Every plan drew a north arrow and a scale bar, which a stair detail has no use for. A trailing `hidden` takes a mark off the sheet and leaves its fact alone:
+
+```arch
+plan "Stair detail" {
+  units mm
+  paper A4
+  scale 1:20 hidden
+  north hidden
+  title hidden
+  room id=hall at (0,0) size 3000x2200 label "Hall" uses hall
+  walls from rooms exterior 200 partition 100
+}
+```
+
+`scale 1:20 hidden` is still the operative scale and `north 30 hidden` keeps its bearing for every compass fact. A band with nothing left in it is not reserved, so the drawing gets the room back, and that is the one way `describe()` moves: `sheet.scale_denominator` follows where the auto scale now fits finer. See [Hiding the sheet marks](language-reference.md#hiding-the-sheet-marks).
+
+## One mirrored piece
+
+Mirroring a sofa used to take a `component` and a `place … mirror x`, which lost the room it stood in. `mirror` on the statement swaps one piece's left and right, and its back stays put:
+
+```arch
+plan "Two sofas" {
+  units mm
+  room id=a at (0,0) size 6000x4000 uses living
+  walls from rooms exterior 300 partition 100
+  furniture sofa_l in a anchor top-left flush size 2600x1800
+  furniture sofa_l in a anchor top-right flush size 2600x1800 mirror
+}
+```
+
+A handed symbol flips, and a symbol with no hand keeps its exact bytes. The word takes no axis: `mirror x` belongs to `place`, which reflects a whole instance. See [Furniture](language-reference.md#furniture).
+
+## Room floors
+
+`floor` lays a hatch over a room: `tile`, `paving`, `deck` or `concrete`. Each word earns a `legend` row and reaches DXF as a real `HATCH`:
+
+```arch
+plan "Finishes" {
+  units mm
+  paper A4
+  scale 1:50
+  legend
+  room id=bath at (0,0) size 2400x3000 label "Bath" uses bath floor tile
+  room id=living right-of bath size 4000x3000 label "Living" uses living floor deck
+  walls from rooms exterior 200 partition 100
+}
+```
+
+It is a drawing fact: `describe()` and `lint()` read the plan as if it were not there. It is a pattern and not a colour, so it follows the `theme`. See [Room](language-reference.md#room).

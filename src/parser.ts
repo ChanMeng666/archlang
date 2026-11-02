@@ -52,12 +52,13 @@ import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
 import type { ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
+import { parseFloorClause } from "./elements/room.js";
 import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
 import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "./sheet.js";
-import type { SheetTextNode } from "./ast.js";
+import type { ChromeHide, SheetTextNode } from "./ast.js";
 import { isSheetTextKey, MAX_SHEET_WORD, type SheetTextEntry, sheetTextKeys, sheetTextRefusal } from "./sheet-text.js";
 import { checkWhileDeprecation } from "./while-deprecation.js";
 
@@ -451,7 +452,9 @@ class Parser {
             break;
           case "north":
             this.next();
+            if (this.eatHidden(plan, "north")) break;
             plan.north = this.parseNorth();
+            this.eatHidden(plan, "north");
             break;
           case "site":
             this.parseSiteSetting(plan, t);
@@ -460,6 +463,12 @@ class Parser {
             this.parseDimsSetting(plan, t);
             break;
           case "title": {
+            // `title hidden = 3` was an error, and stays the error `parseTitle` reports.
+            if (this.isKeyword("hidden", 1) && this.peek(1).line === t.line && !this.isTrailer(this.peek(2))) {
+              this.next();
+              this.eatHidden(plan, "title");
+              break;
+            }
             const n = this.parseTitle();
             n.span = this.spanFrom(start);
             plan.title = n;
@@ -749,8 +758,29 @@ class Parser {
     plan.heightSpan = this.spanFrom(t.start);
   }
 
+  /**
+   * A trailing `hidden`: the mark goes, the fact stays. Read only where the clause can stand, on its
+   * statement's line, and never when `=` or `(` follows: a statement that starts with the word stays one.
+   */
+  private eatHidden(plan: PlanNode, mark: keyof ChromeHide): boolean {
+    if (!this.isTrailingWord("hidden")) return false;
+    this.next();
+    plan.hide = { ...plan.hide, [mark]: true };
+    return true;
+  }
+
+  /** The word as a clause: not the first token of an assignment or a macro call. */
+  private isTrailingWord(word: string): boolean {
+    return this.isKeyword(word) && this.peek().line === this.peek(-1).line && !this.isTrailer(this.peek(1));
+  }
+
+  private isTrailer(t: Token): boolean {
+    return t.type === "equals" || t.type === "lparen";
+  }
+
   private parseScaleSetting(plan: PlanNode, t: Token): void {
     this.next();
+    if (this.eatHidden(plan, "scale")) return;
     const a = this.eatNumber();
     this.eat("colon");
     const b = this.eatNumber();
@@ -759,6 +789,7 @@ class Parser {
     // silently dropped) and `arch fmt` could not re-parse.
     plan.scale = `${plainDigits(a)}:${plainDigits(b)}`;
     plan.scaleSpan = this.spanFrom(t.start);
+    this.eatHidden(plan, "scale");
   }
 
   /**
@@ -1862,6 +1893,7 @@ class Parser {
       if (uses.length === 0) this.fail(`Expected one or more room uses (${USE_KINDS.join("|")}) after "uses"`);
       child.uses = uses;
     }
+    parseFloorClause(this.ctx, child);
     child.span = this.spanFrom(start);
     return child;
   }

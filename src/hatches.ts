@@ -63,11 +63,23 @@ export const GROUND_MATERIALS = ["grass", "planting", "paving", "deck", "gravel"
 /** One ground-surface hatch material. */
 export type GroundMaterial = (typeof GROUND_MATERIALS)[number];
 
+/**
+ * The patterns `room … floor` takes, from both lists above. A pattern and not a colour: it is
+ * monochrome and theme-driven, reaches DXF as a `HATCH` and has a legend row. The words of
+ * {@link KNOWN_MATERIALS} here are drawn with no base ({@link HatchSpec.bare}), so a tiled room
+ * does not take the tint of a wall; a ground pattern paints no base anyway.
+ */
+export const FLOOR_MATERIALS = ["tile", "paving", "deck", "concrete"] as const;
+/** One `room … floor` pattern. */
+export type FloorMaterial = (typeof FLOOR_MATERIALS)[number];
+
 /** A concrete hatch request: which pattern, scaled and rotated how. */
 export interface HatchSpec {
   material: string;
   scale: number;
   angle: number;
+  /** A floor's: the wall pattern of this name, drawn with no base. Absent on every other spec. */
+  bare?: true;
 }
 
 /**
@@ -82,6 +94,24 @@ export function patternId(material: string, scale = 1, angle = 0): string {
   return `${base}-s${tag(scale)}-a${tag(angle)}`;
 }
 
+/** The `<pattern>` id a spec is drawn with: a bare spec's differs, so a wall of one name keeps its own. */
+export function hatchId(h: HatchSpec): string {
+  const id = patternId(h.material, h.scale, h.angle);
+  return h.bare ? `${id}-floor` : id;
+}
+
+/** The hatch spec a room's `floor` fills with. */
+export function floorHatch(material: FloorMaterial): HatchSpec {
+  return { material, scale: 1, angle: 0, ...(isKnownMaterial(material) ? { bare: true as const } : {}) };
+}
+
+/** The distinct `floor` patterns of a set of rooms, in first-appearance order. */
+export function floorMaterialsUsed(rooms: readonly { floor?: FloorMaterial }[]): FloorMaterial[] {
+  const out: FloorMaterial[] = [];
+  for (const r of rooms) if (r.floor !== undefined && !out.includes(r.floor)) out.push(r.floor);
+  return out;
+}
+
 /** The hatch spec a wall fills with (material + scale + angle). */
 export function hatchOf(w: { material: string; hatchScale: number; hatchAngle: number }): HatchSpec {
   return { material: w.material, scale: w.hatchScale, angle: w.hatchAngle };
@@ -89,7 +119,7 @@ export function hatchOf(w: { material: string; hatchScale: number; hatchAngle: n
 
 /** Stable grouping key for a hatch spec (walls sharing it union together). */
 export function hatchKey(h: HatchSpec): string {
-  return `${h.material}|${h.scale}|${h.angle}`;
+  return `${h.material}|${h.scale}|${h.angle}${h.bare ? "|floor" : ""}`;
 }
 
 /**
@@ -103,6 +133,7 @@ export function hatchKey(h: HatchSpec): string {
 export function hatchesUsed(
   walls: readonly { material: string; hatchScale: number; hatchAngle: number }[],
   ground: readonly string[] = [],
+  floors: readonly FloorMaterial[] = [],
 ): HatchSpec[] {
   const seen = new Map<string, HatchSpec>();
   for (const w of walls) {
@@ -116,6 +147,11 @@ export function hatchesUsed(
   // every plan with no `outdoor`) produce a byte-identical list: same entries, same sort key.
   for (const material of ground) {
     const h: HatchSpec = { material, scale: 1, angle: 0 };
+    const k = hatchKey(h);
+    if (!seen.has(k)) seen.set(k, h);
+  }
+  for (const material of floors) {
+    const h = floorHatch(material);
     const k = hatchKey(h);
     if (!seen.has(k)) seen.set(k, h);
   }
@@ -516,6 +552,11 @@ const META: Record<string, HatchMeta> = {
   },
 };
 
+/** Is `name` one of the patterns a room's `floor` takes? */
+export function isFloorMaterial(name: string): name is FloorMaterial {
+  return (FLOOR_MATERIALS as readonly string[]).includes(name);
+}
+
 /** Is `name` one of the ground materials an `outdoor` surface fills with? */
 export function isGroundMaterial(name: string): name is GroundMaterial {
   return (GROUND_MATERIALS as readonly string[]).includes(name);
@@ -538,8 +579,8 @@ export function isSolidFill(material: string): boolean {
 /** Render the `<pattern>` markup for a hatch spec (material assumed known). */
 export function hatchPattern(spec: HatchSpec, base: Omit<HatchCtx, "scale" | "angle">): string {
   const meta = META[spec.material]!;
-  const id = patternId(spec.material, spec.scale, spec.angle);
-  return meta.build(id, { ...base, scale: spec.scale, angle: spec.angle });
+  const ctx = { ...base, scale: spec.scale, angle: spec.angle };
+  return meta.build(hatchId(spec), spec.bare ? { ...ctx, base: "none" } : ctx);
 }
 
 /**

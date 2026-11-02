@@ -318,8 +318,16 @@ export interface RoomRel {
   span?: Span;
 }
 
+/** `floor <pattern>` on a room, the word as written: resolve holds it to the patterns. */
+export interface FloorClause {
+  word: string;
+  span: Span;
+}
+
 export interface RoomNode extends NodeBase {
   kind: "room";
+  /** `floor tile`: a hatch over the room's floor. A drawing fact. */
+  floor?: FloorClause;
   /** Absolute top-left corner. Mutually exclusive with {@link RoomNode.rel} and
    *  {@link RoomNode.polygon}; exactly one of the three is present. The absolute path
    *  is the default and is unchanged. */
@@ -582,6 +590,11 @@ export type FurniturePlace =
   | { mode: "anchor"; anchor: FurnitureAnchor; inset?: Expr; flush?: boolean; flushSpan?: Span };
 
 export interface FurnitureNode extends NodeBase {
+  /**
+   * `mirror`: the symbol's left and right swap, in its own frame and before its quarter-turn, so
+   * its back stays where `rotate`, `facing` or `against` put it. The same bit a reflecting `place` sets.
+   */
+  mirror?: true;
   kind: "furniture";
   /** Free-form category, e.g. "bed" or "sofa". */
   category: string;
@@ -949,6 +962,8 @@ export interface FenceNode extends NodeBase {
  *  when the child omits it. Expanded into an ordinary absolute {@link RoomNode}
  *  during resolve. */
 export interface StripRoomChild {
+  /** `floor <pattern>`, carried to the room the strip expands to. */
+  floor?: FloorClause;
   id: string;
   /** Main-axis extent (width for a right/left strip, height for a down/up strip). */
   main: Expr;
@@ -1468,6 +1483,16 @@ export interface SiteNode {
   span?: Span;
 }
 
+/**
+ * Which marks of a sheet a plan does not draw. The fact stays: a hidden north keeps its bearing and a
+ * hidden scale stays operative. Each key is present only when written.
+ */
+export interface ChromeHide {
+  north?: true;
+  scale?: true;
+  title?: true;
+}
+
 export interface PlanNode {
   name: string;
   /** Only "mm" is supported. */
@@ -1505,6 +1530,8 @@ export interface PlanNode {
   /** Byte span of the `height` statement, for `E_HEIGHT_RANGE`. */
   heightSpan?: Span;
   north: NorthDir;
+  /** The sheet marks the plan hides (`north … hidden`, `scale … hidden`, `title hidden`). Absent unless written. */
+  hide?: ChromeHide;
   /**
    * `site { street … [hemisphere …] }` — the building's relation to its street, and the
    * hemisphere the derived direction names are read in. Absent unless the plan declares

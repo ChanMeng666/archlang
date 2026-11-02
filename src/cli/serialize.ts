@@ -108,6 +108,7 @@ const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, str
   "poche hatch": ["hatch scale or angle on `poche` walls", "wall's hatch setting", "walls' hatch settings"],
   circle: ["circular rooms", "circular room", "circular rooms"],
   "label at": ["room label positions", "`label … at` position", "`label … at` positions"],
+  floor: ["room floors", "room `floor`", "room `floor`s"],
   "column order": [
     "order between columns and furniture",
     "column written before furniture",
@@ -127,6 +128,7 @@ const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, str
   "schedule rooms": ["schedules", "`schedule rooms` statement", "`schedule rooms` statements"],
   "schedule openings": ["schedules", "`schedule openings` statement", "`schedule openings` statements"],
   legend: ["legends", "legend", "legends"],
+  hidden: ["hidden sheet marks", "`hidden` mark", "`hidden` marks"],
   notes: ["sheet notes", "sheet note", "sheet notes"],
   "sheet text": ["sheet words", "sheet word", "sheet words"],
   "decimal mark": ["decimal marks", "decimal mark", "decimal marks"],

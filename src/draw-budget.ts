@@ -40,7 +40,7 @@ import {
 import { openingCount, TAG_PRIMITIVES } from "./opening-schedule.js";
 import { siteBoundaryNodes } from "./site.js";
 import { netAreaWorkUnits } from "./analyze/net-area.js";
-import { hatchesUsed } from "./hatches.js";
+import { floorMaterialsUsed, hatchesUsed } from "./hatches.js";
 import { groundMaterialsUsed } from "./elements/outdoor.js";
 import { DEFAULT_THEME } from "./theme.js";
 import { renderSizes } from "./sheet.js";
@@ -126,7 +126,11 @@ export function storeyPassUnits(plan: ResolvedPlan, registry: Registry): number 
     // `toScene`'s inputs (B3b): the standing walls' materials, and the `demolished` row.
     const standing = ir.walls.filter((w) => w.status !== "demolish");
     const entries = legendEntries(
-      hatchesUsed(standing, groundMaterialsUsed(outdoors)),
+      hatchesUsed(
+        standing,
+        groundMaterialsUsed(outdoors),
+        floorMaterialsUsed(ir.elements.filter((e): e is RRoom => e.kind === "room")),
+      ),
       furniture,
       standing.length < ir.walls.length,
       ir.elements,

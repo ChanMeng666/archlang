@@ -121,6 +121,9 @@ export const KEYWORDS = {
     "align",
     "gap",
     "uses",
+    // `room … floor tile`: leads a clause of the `room` line. Its values are in `enum` below or
+    // are the hatch words. `floor(x)`, the built-in, reads the same word in an expression.
+    "floor",
     "rotate",
     "against",
     "segment",
@@ -259,6 +262,8 @@ export const KEYWORDS = {
     "A0",
     "landscape",
     "portrait",
+    // `north … hidden`, `scale … hidden`, `title hidden`: a value that trails three settings.
+    "hidden",
     "living",
     "kitchen",
     "dining",

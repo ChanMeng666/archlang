@@ -72,6 +72,7 @@ import {
   OUTDOOR_KINDS,
   RAIL_EDGES,
 } from "../src/ast.js";
+import { FLOOR_MATERIALS } from "../src/hatches.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
 import { EDGE_WORDS } from "../src/room-datums.js";
 import { SEGMENT_COMPASS_WORDS } from "../src/segment-select.js";
@@ -341,13 +342,13 @@ function rules(): [string, string][] {
     ["paper-stmt", `"paper" rws paper-size ( rws paper-orientation )?`],
     ["paper-size", paperSize],
     ["paper-orientation", paperOrientation],
-    ["scale-stmt", `"scale" rws number ws ":" ws number`],
+    ["scale-stmt", `"scale" rws ( number ws ":" ws number ( rws "hidden" )? | "hidden" )`],
     // The vertical datum's plan-level setting (v1.35). A full `expr`, not a bare `number`,
     // because the parser reads one — a plan writes `let h = 3200` once and `height h`
     // everywhere, and a grammar that offered only a literal would forbid the form the
     // language accepts.
     ["height-stmt", `"height" rws expr`],
-    ["north-stmt", `"north" rws north-dir`],
+    ["north-stmt", `"north" rws ( north-dir ( rws "hidden" )? | "hidden" )`],
     ["north-dir", `"up" | "down" | "left" | "right" | number`],
     // `site { street … [hemisphere …] }` — both value sets INJECTED from the closed
     // vocabularies the parser itself checks against (`src/ast.ts`), never retyped: a
@@ -379,7 +380,7 @@ function rules(): [string, string][] {
     ["acc-stmt", `( "accTitle" | "accDescr" ) rws string`],
 
     // ---- title / theme / style ------------------------------------------
-    ["title-stmt", `"title" ws "{" ws ( title-field ws )* "}"`],
+    ["title-stmt", `"title" ws "{" ws ( title-field ws )* "}" | "title" rws "hidden"`],
     ["title-field", `( ${litAlt(TITLE_FIELDS)} ) rws string`],
     // Positioning axes (定位轴线): one row per direction, each a comma-separated
     // expression list. Rows may repeat and appear in either order (the parser appends).
@@ -483,7 +484,10 @@ function rules(): [string, string][] {
     ["arc-dir", `"cw" | "ccw"`],
     // Two shapes: the rectangle (`at`/relational + `size`) and the explicit RING
     // (`polygon` + >=3 points, no `size`). Both take the same trailing clauses.
-    ["room-stmt", `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )?`],
+    [
+      "room-stmt",
+      `"room" rws id-opt ( room-rect | room-poly | room-circle ) ( ws room-label )? ( ws room-uses )? ( ws room-floor )?`,
+    ],
     ["room-rect", `room-pos ws "size" ws dims`],
     // THREE vertices minimum, not two — `parseRoom` fails outright below three
     // ("A polygon room needs at least three vertices"), and a two-point ring is
@@ -494,6 +498,7 @@ function rules(): [string, string][] {
     ["rel-dir", `"right-of" | "left-of" | "below" | "above"`],
     ["room-label", `"label" ws string ( ws "at" ws point )?`],
     ["room-uses", `"uses" rws use-kind ( rws use-kind )*`],
+    ["room-floor", `"floor" rws ( ${FLOOR_MATERIALS.map((m) => `"${m}"`).join(" | ")} )`],
     ["use-kind", useKind],
     // The KIND word leads, after any `id=` — the shipped `room polygon` / `room circle`
     // / `dim faces` shape. Its alternation is INJECTED from `DOOR_KINDS`, guarded above.
@@ -609,7 +614,7 @@ function rules(): [string, string][] {
     // text), then the two `clear` zones — the shared tail, in the parser's order.
     [
       "furn-tail",
-      `( ws "size" ws dims )? ( ws "label" ws string )? ( ws "rotate" ws expr | ws "facing" rws ref )? ( ws "clear" rws "front" ws expr )? ( ws "clear" rws "sides" ws expr )?`,
+      `( ws "size" ws dims )? ( ws "label" ws string )? ( ws "rotate" ws expr | ws "facing" rws ref )? ( ws "mirror" )? ( ws "clear" rws "front" ws expr )? ( ws "clear" rws "sides" ws expr )?`,
     ],
     [
       "dim-stmt",

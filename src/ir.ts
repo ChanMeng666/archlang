@@ -99,7 +99,7 @@ import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
 import { drawingBounds, paperMm, renderSizes, resolveSheetSpec, scaleDenominator, usablePlanMm } from "./sheet.js";
-import { hatchOf, hatchTileMm } from "./hatches.js";
+import { type FloorMaterial, hatchOf, hatchTileMm } from "./hatches.js";
 import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeights, STOREY_HEIGHT } from "./datum.js";
 import { planTableRows } from "./sheet-tables.js";
 import type { GridBox } from "./geometry/grid-index.js";
@@ -127,7 +127,7 @@ import {
   type StackedStorey,
   violationOf,
 } from "./keep.js";
-import type { KeepNode } from "./ast.js";
+import type { ChromeHide, KeepNode } from "./ast.js";
 import { keepFormText } from "./statement-print.js";
 
 export interface RBase {
@@ -399,6 +399,8 @@ export type FurnitureAuthored =
 
 export interface RRoom extends RBase {
   kind: "room";
+  /** `floor <pattern>`, read only by the drawing and the legend. Never reaches `describe()` or `lint()`. */
+  floor?: FloorMaterial;
   /** Top-left of the room. For a {@link RRoom.poly} room this is the ring's BOUNDING
    *  BOX corner, so a rect-shaped consumer still reads a truthful extent. */
   at: Point;
@@ -625,13 +627,14 @@ export interface RFurniture extends RBase {
    *  Internal; never reaches the Scene, `describe()` or Plan JSON. */
   _sizeSwap?: { span: Span; text: string };
   /**
-   * This piece's instance frame REFLECTS (`place … mirror`), so its drawn symbol is the
-   * mirror image of the one the catalogue draws. Set by `frame.ts`'s `transformElement`
-   * — the one place a handed rule is flipped — and read by `furniture.render()`, which
+   * This piece is reflected, by its own `mirror` or an instance frame's (`place … mirror`), so its
+   * drawn symbol is the mirror image of the one the catalogue draws. Set by `furniture.resolve()`,
+   * XOR-composed by its `transform`, and read by `furniture.render()`, which
    * reflects the glyph about its own vertical centre line before applying the derived
    * quarter-turn. A symbol with a vertical mirror axis is unaffected at every footprint,
    * because the reflection is DERIVED from the drawing rather than declared per family
-   * (see `elements/glyph-chirality.ts`). Internal; never reaches `describe()` or Plan JSON.
+   * (see `elements/glyph-chirality.ts`). `describe()` reads it only as a symmetry fact's `hand`;
+   * Plan JSON carries it as `mirror`.
    */
   _mirror?: true;
   /** `against <room>.<edge>` as written (`against r_bed.left offset 1500`, ADR 0029 §2), for
@@ -961,6 +964,8 @@ export interface ResolvedPlan {
    */
   sheet?: ResolvedSheet;
   north: NorthDir;
+  /** The sheet marks the plan hides. Absent unless written, and read only by the sheet. */
+  hide?: ChromeHide;
   /**
    * `site { street … [hemisphere …] }` — carried through untouched from the AST, absent
    * when the plan declares none (so an existing IR, its Scene and its bytes are
@@ -1916,6 +1921,7 @@ function stripRooms(strip: StripNode, evalIn: (e: Expr) => Value, diag: (d: Diag
       size: { w: numE(w), h: numE(h) },
       ...(child.label !== undefined ? { label: child.label } : {}),
       ...(child.uses ? { uses: child.uses } : {}),
+      ...(child.floor ? { floor: child.floor } : {}),
       line: child.line,
       span: child.span,
     });
@@ -2272,7 +2278,8 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       autoDims: ast.autoDims !== undefined,
       // Every page carries the same rows (the LEVEL row included), so the band the fit
       // reserves is level-independent; a placeholder scale keeps it denominator-independent.
-      titleRows: titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
+      titleRows: ast.hide?.title ? 0 : titleRows(ast.title, "1:1", stampOf(blocks[0]!)).length,
+      ...(ast.hide?.scale ? { scaleBarHidden: true } : {}),
       tableRows,
     };
     sheet = resolveSheetSpec(ast.paper, scaleInRange(ast, shared), fit, { w: dw, h: dh });
@@ -3487,7 +3494,7 @@ function resolveBody(
   //    second error); the overlap check reads only what was kept.
   checkPlanDrawable(resolvedElements, diagnostics);
   const siteBeforeOverlaps = currentStepSite();
-  checkRoomOverlaps(elements, diagnostics, (extras?.storeyCount ?? 1) > 1 ? extras?.level?.level : undefined);
+  checkRoomOverlaps(elements, diagnostics, (extras?.storeyCount ?? 1) > 1 ? extras?.level?.level : undefined, ast.grid);
   stepSite(siteBeforeOverlaps?.span, siteBeforeOverlaps?.file, siteBeforeOverlaps?.frame);
   checkFurnitureRooms(resolvedElements, diagnostics);
 
@@ -3571,6 +3578,7 @@ function resolveBody(
     scale: sheet ? `1:${fmtDenom(sheet.denom)}` : ast.scale,
     ...(sheet ? { sheet } : {}),
     north: ast.north,
+    ...(ast.hide ? { hide: ast.hide } : {}),
     // Absent unless declared, so the IR of a plan with no `site` is byte-identical.
     ...(ast.site ? { site: ast.site } : {}),
     ...(siteBoundary ? { siteBoundary } : {}),
@@ -3708,7 +3716,8 @@ function resolveSheet(
   const fit: SheetFitInput = {
     extent,
     autoDims: ast.autoDims !== undefined,
-    titleRows: titleRows(ast.title, "1:1").length,
+    titleRows: ast.hide?.title ? 0 : titleRows(ast.title, "1:1").length,
+    ...(ast.hide?.scale ? { scaleBarHidden: true } : {}),
     // The margin tables occupy a second band below the chrome, and it has to be reserved
     // here or the page can be issued taller than the paper it declares. Counted from the
     // same derivation `toScene()` draws them with (`planTableRows`), never re-derived.
@@ -4450,6 +4459,18 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
   }
 }
 
+/** Do two rectangles overlap by no more than one grid step? Rounding can only make such an overlap. */
+function withinOneStep(a: RRoom, b: RRoom, grid: number): boolean {
+  if (grid <= 0 || a.poly || b.poly) return false;
+  const across = Math.min(a.at.x + a.size.w, b.at.x + b.size.w) - Math.max(a.at.x, b.at.x);
+  const down = Math.min(a.at.y + a.size.h, b.at.y + b.size.h) - Math.max(a.at.y, b.at.y);
+  return Math.min(across, down) <= grid;
+}
+
+/** Why rooms that touch in the source can overlap on the sheet: each number rounds on its own. */
+const gridOverlapHint = (grid: number): string =>
+  `This overlap may be the grid's: \`grid ${fmt3(grid)}\` rounds every coordinate and size on its own, so rooms that touch in the source can overlap by one step. Write them on the grid, or place the second with \`right-of\` or \`below\`.`;
+
 /** How many overlapping room pairs `W_ROOM_OVERLAP` lists before it only counts. 1000 identical
  *  rooms are 499,500 pairs; a list that long is noise and an unbounded allocation. */
 export const MAX_OVERLAP_PAIRS_LISTED = 200;
@@ -4470,7 +4491,12 @@ export const MAX_OVERLAP_PAIRS_LISTED = 200;
  *  stays quadratic is what the answer is made of: n DISTINCT polygon rooms that all share a
  *  cell are n² distinct exact tests, each charged to the step meter by `polygonsOverlap`, with
  *  the pair it is testing as the step site. Rooms reaching this check are finite (`checkNumberDomain` drops the rest first). */
-export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[], level?: number): void {
+export function checkRoomOverlaps(
+  elements: ResolvedElement[],
+  diagnostics: Diagnostic[],
+  level?: number,
+  grid = 0,
+): void {
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.
   const rooms = elements.filter((e): e is RRoom => e.kind === "room" && !e._unplaced);
@@ -4559,6 +4585,7 @@ export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diag
       message: overlapText(r1, r2),
       code: "W_ROOM_OVERLAP",
       span: r2.span,
+      ...(withinOneStep(r1, r2, grid) ? { hints: [gridOverlapHint(grid)] } : {}),
     });
   };
 

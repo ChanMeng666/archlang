@@ -376,6 +376,8 @@ export interface Scene {
   north: NorthDir;
   /** The north arrow's word, when the plan's `sheet text` writes one; else `N`. */
   northLabel?: string;
+  /** `north … hidden`: no arrow is drawn. The other two marks live on {@link Scene.chrome}. */
+  northHidden?: true;
   scale?: string;
   title?: TitleNode;
   /**

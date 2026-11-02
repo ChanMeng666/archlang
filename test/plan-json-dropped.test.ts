@@ -47,6 +47,7 @@ const ONE_LINE: Array<[Exclude<PlanJsonDroppedClause, "keep" | "level">, string]
   ["schedule rooms", "schedule rooms"],
   ["schedule openings", "schedule openings"],
   ["legend", "legend"],
+  ["hidden", "north hidden"],
   ["notes", 'notes "one" "two"'],
   ["sheet text", 'sheet text { total "SUMME" }'],
   ["decimal mark", 'sheet text { decimal "," }'],

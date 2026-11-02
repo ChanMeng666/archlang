@@ -73,7 +73,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_INTENT_UNREACHABLE`](#e_intent_unreachable) | error | A room cannot be reached from the entrance through modeled doors. |
 | [`E_JSON_DERIVED_IN_INSTANCE`](#e_json_derived_in_instance) | error | Plan JSON cannot carry a `place`d component that derives its walls in this plan. |
 | [`E_JSON_KIND`](#e_json_kind) | error | Unknown element kind in plan JSON. |
-| [`E_JSON_MIRROR`](#e_json_mirror) | error | Plan JSON furniture, door or dimension is `mirror: true`, which `.arch` source cannot state. |
+| [`E_JSON_MIRROR`](#e_json_mirror) | error | Plan JSON door, dimension or flattened instance's piece is `mirror: true`, which `.arch` source cannot state. |
 | [`E_JSON_SCHEMA`](#e_json_schema) | error | Plan JSON does not match the schema. |
 | [`E_KEEP_LIMIT`](#e_keep_limit) | error | Too many keeps, or too many targets in one keep. |
 | [`E_KEEP_MEASURE`](#e_keep_measure) | error | The keep's measure is not defined for what it names. |
@@ -244,7 +244,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SWING_OVER_STAIR`](#w_swing_over_stair) | warning | A door's swing sweeps a stair or the landing at its end. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
 | [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value, or a `sheet text` caption with its value, is wider than its row. |
-| [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
+| [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material or room floor; the wall takes the default hatch, the room none. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
 | [`W_WALL_END_SHORT`](#w_wall_end_short) | warning | A wall stops a few millimetres short of the wall it runs toward. |
@@ -1047,14 +1047,14 @@ place outer() as o at (0,0)   # compile -f json: error, instance "o.i" (nested)
 
 ## E_JSON_MIRROR
 
-*error* — Plan JSON furniture, door or dimension is `mirror: true`, which `.arch` source cannot state.
+*error* — Plan JSON door, dimension or flattened instance's piece is `mirror: true`, which `.arch` source cannot state.
 
-**Cause.** `planToJson` reports `mirror: true` on EVERY fixture, door and dimension inside a reflecting `place` (`mirror x|y`, or a nested composition that reflects) — the flag records the FRAME's reflection, not the glyph's handedness, so a symmetric symbol that draws the same either way carries it too. A `place` frame is the only thing that can reflect anything — the grammar has no per-furniture, per-door or per-dimension `mirror` — so converting that payload back to source would lose the reflection (a handed family such as `desk` or `sofa_l` would draw unmirrored, a sliding door would take the other track, a zero-offset dimension's number would read on the other side), and it is refused instead.
+**Cause.** `planToJson` reports `mirror: true` on EVERY door and dimension inside a reflecting `place` (`mirror x|y`, or a nested composition that reflects): the flag records the FRAME's reflection. A piece of furniture has a `mirror` clause, so its flag is printed back as that clause, unless its dotted id says the document flattened an instance: source cannot declare that id, and only the `place` states the reflection. A door or a dimension has no clause, so a `place` frame is the only thing that can reflect one, and converting that payload back to source would lose the reflection (a sliding door would take the other track, a zero-offset dimension's number would read on the other side). It is refused instead.
 
 **Fix.** Keep the instance in `.arch` source (the `place … mirror x|y` that produced it), or drop `mirror` from the element if the unreflected drawing is what you want.
 
 ```arch static
-{ "furniture": [ { "category": "desk", "x": 0, "y": 0, "width": 1400, "height": 700, "mirror": true } ] }   # error at /furniture/0/mirror
+{ "openings": [ { "kind": "door", "x": 0, "y": 0, "width": 900, "mirror": true } ] }   # error at /openings/0/mirror
 ```
 
 ## E_JSON_SCHEMA
@@ -3305,11 +3305,11 @@ title {
 
 ## W_UNKNOWN_MATERIAL
 
-*warning* — Unknown wall material; using the default hatch.
+*warning* — Unknown wall material or room floor; the wall takes the default hatch, the room none.
 
-**Cause.** A wall `material` name is not one of the known hatches.
+**Cause.** A wall `material` name, or a room `floor` word, is not one of the known hatches.
 
-**Fix.** Use a known material (e.g. brick, concrete, insulation, tile) or omit it.
+**Fix.** Use a known word (for a wall e.g. brick, concrete, insulation, tile; for a floor tile, paving, deck, concrete) or omit it.
 
 ```arch static
 wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning

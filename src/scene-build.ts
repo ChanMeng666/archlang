@@ -26,7 +26,7 @@ import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import { add, mul, normal, segmentsOfWall, sub, unit } from "./geometry.js";
 import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
 import type { Point } from "./ast.js";
-import { hatchesUsed } from "./hatches.js";
+import { floorMaterialsUsed, hatchesUsed } from "./hatches.js";
 import { attachSceneWalls, lowerWallSet } from "./wall-lowering.js";
 import type { FacadeOpening, SideGeom } from "./facade.js";
 import { SIDES, cleanTicks, facadeAt, facadeOpenings, measureExtent, openingsBySide, sideGeoms } from "./facade.js";
@@ -968,7 +968,11 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   const standing = ir.drawn ? plan.walls : ir.walls;
   const demolished = ir.drawn ? ir.walls.filter((w) => w.status === "demolish") : [];
   const wallHatches = hatchesUsed(standing);
-  const hatches = hatchesUsed(standing, groundMaterialsUsed(outdoorEls));
+  const hatches = hatchesUsed(
+    standing,
+    groundMaterialsUsed(outdoorEls),
+    floorMaterialsUsed(ir.elements.filter((e): e is RRoom => e.kind === "room")),
+  );
   for (const pushed of lowerWallSet(demolished, [], ctxFor("wall"), "dashed")) {
     nodes.push({ ...pushed, layer: "wallFill" });
   }
@@ -1070,6 +1074,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     ...(ir.openingSchedule ? { openings: openingRows(ir.elements, wording) } : {}),
     ...(ir.notes ? { notes: ir.notes } : {}),
     ...(wording !== PLAIN_SHEET_TEXT ? { text: wording } : {}),
+    ...(ir.hide ? { hide: ir.hide } : {}),
     // Multi-storey: stamp the page with its storey, so a drawing SET is readable (a plan
     // with no `level` block passes nothing and its chrome is byte-identical).
     ...(ir.level !== undefined
@@ -1125,6 +1130,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     sizes,
     north: ir.north,
     ...(wording.has("north") ? { northLabel: wording.word("north") } : {}),
+    ...(ir.hide?.north ? { northHidden: true as const } : {}),
     scale: ir.scale,
     title: ir.title,
     name: ir.name,
