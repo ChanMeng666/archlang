@@ -14,6 +14,13 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.40.0] - 2026-11-02
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.52.0`** (window kinds, `door glazed_sliding`, `at corner` windows,
+  `schedule rooms net`, and the sides of an L-shaped room, with completion and highlighting for the new words).
+
 ## [0.39.0] - 2026-11-02
 
 ### Changed

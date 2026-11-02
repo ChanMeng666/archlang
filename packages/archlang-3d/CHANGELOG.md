@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.1.2] - 2026-11-02
+
 ### Fixed
 
 - A `door glazed_sliding` from the core no longer fails the scene check. It builds the closed panel a

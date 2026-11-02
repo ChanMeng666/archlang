@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.51
+# What's new in 1.44 to 1.52
 
-The features that arrived in 1.44.0 to 1.51.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.52.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -23,9 +23,9 @@ Every command and code name below is the one `archlang <command> --help` and the
 | Quarter-turn and half-turn stairs | 1.50.0 | [Turning stairs](#turning-stairs) |
 | `arch finish` on a plan with storeys | 1.51.0 | [Furnishing every storey](#furnishing-every-storey) |
 | Labels that shrink to fit a small room | 1.51.0 | [Labels in small rooms](#labels-in-small-rooms) |
-| Net area in the room stamp | unreleased | [Net area in the stamp](#net-area-in-the-stamp) |
-| Window kinds and a glazed terrace door | unreleased | [Window kinds](#window-kinds) |
-| A window round a corner, with no wall left at it | unreleased | [Corner windows](#corner-windows) |
+| Net area in the room stamp | 1.52.0 | [Net area in the stamp](#net-area-in-the-stamp) |
+| Window kinds and a glazed terrace door | 1.52.0 | [Window kinds](#window-kinds) |
+| A window round a corner, with no wall left at it | 1.52.0 | [Corner windows](#corner-windows) |
 
 ## Quantities and takeoff
 

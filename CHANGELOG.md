@@ -7,8 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.52.0] - 2026-11-02
+
 ### Added
 
+- `schedule rooms net` stamps each room with its net area (issue #402). The stamp reads the schedule's NET AREA figure, the one `describe()` reports as `net_area_m2`, to one decimal, followed by `net`: `10.4 m² net`. A room the schedule cannot measure, or that no wall touches, keeps its centreline stamp. The one decimal rounds the table's two, a tie up (9.45 reads 9.5). Without the word every plan draws as before. `describe()` does not change; the longer stamp is fitted like any label.
 - A window can run round a corner (issue #401). `window on r.top at corner r.right width 1800` and `window on r.right at corner r.top width 1200` meet at the corner with no wall left between them: the walls' corner goes with the two cuts, and the glass, wall faces and sills mitre. `width` runs to the outer corner. They stay two windows, each with its own wall, `facing` and schedule row, and `describe --json` adds `corner_with`. What is not a true corner of two exterior walls is refused (`E_WINDOW_CORNER`).
 - An L-shaped room now has sides (issue #363). On a `room polygon` whose edges are all horizontal or vertical, `right-of` and the other relational clauses, `liv.top` and the other edge datums, `window on liv.left`, `against liv.left` and `in liv anchor …` read the outline's run on that side, never the bounding box. `align` reads that run's ends. A corner anchor needs a vertex of the outline there. Refused, with the runs named: a side of two runs (the prongs of a U), a corner in the notch, `centered`, `liv.cx`, and a piece that would leave the floor.
 - `archlang finish` furnishes an L-shaped room (issue #370). A piece stands only where those forms can say, on the outermost runs and the corners of the outline, and the never-worse check decides as before. A notch edge takes no piece. A circle or a slanted polygon is still reported and left as it is.
@@ -27,7 +30,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `schedule rooms net` stamps each room with its net area (issue #402). The stamp reads the schedule's NET AREA figure, the one `describe()` reports as `net_area_m2`, to one decimal, followed by `net`: `10.4 m² net`. A room the schedule cannot measure, or that no wall touches, keeps its centreline stamp. The one decimal rounds the table's two, a tie up (9.45 reads 9.5). Without the word every plan draws as before. `describe()` does not change; the longer stamp is fitted like any label.
 - `archlang finish` furnishes a plan with `level` blocks (issue #364). Each storey is furnished by the rules of a one-storey plan, written inside its own block, so `in <room>` means that storey's room when an id repeats on another level. A piece keeps off a shaft's flights and landings, a flight that passes through the floor from the storey above or below, the storey's own `void`s and its lifts and escalators. "Never worse" is judged per storey: a new warning on one storey is refused even when another storey improved. `changes` and `unresolved` entries of such a plan carry `level`. A one-storey plan gets the same bytes as before, so `finish` can still write a piece on a `void`, a lift or an escalator there. Each gate check compiles and lints the whole building, so `finish` time grows faster than the storey count.
 - The Playground has a Takeoff tab (issue #346): wall lengths by category, centreline and face, each room's perimeters and net area, and door and window counts, read from `describe --facts quantities` for the storey on screen. Waste is a box you fill in, blank unless you do, and the CSV is the whole plan in the bytes `archlang takeoff --format csv` writes. The core exports the writer as `takeoffCsv`, and `MAX_WASTE_PCT`.
 
