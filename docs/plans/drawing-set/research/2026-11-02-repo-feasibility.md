@@ -174,7 +174,7 @@ building [id=<name>] from <importAlias> at (x,y) [angle <deg>] [label "…"]    
 | 最大高度 | 无汇总。每层 `heights.storey_height`、`elevation` | `src/describe.ts:404-420` |
 | 停车位 | 无。`car` 是 fixture（`src/elements/fixtures-glyphs.ts:168`），`garage` 是 use | — |
 | 工程量 | `describe --facts quantities`、`arch takeoff`：单层墙/房/门窗，无楼栋级 | `src/analyze/quantities.ts` |
-| 图上表格 | `schedule rooms|openings` | `src/ast.ts:1400`，`src/sheet-tables.ts` |
+| 图上表格 | `schedule rooms\|openings` | `src/ast.ts:1400`，`src/sheet-tables.ts` |
 
 ### C.2 两个陷阱
 
@@ -231,7 +231,7 @@ building [id=<name>] from <importAlias> at (x,y) [angle <deg>] [label "…"]    
 | | `outdoor … polygon` 加 `arc` | `track` fixture |
 |---|---|---|
 | 单模块规则 | 扩展现有 `src/elements/outdoor.ts`，不新增元素 | 加 `FIXTURE_FAMILIES` 行 + `CATALOG` |
-| 任意角度 | 可以，弦端点自写 | **不行**：`rotate 0|90|180|270`（spec 第 81 行） |
+| 任意角度 | 可以，弦端点自写 | **不行**：`rotate 0\|90\|180\|270`（spec 第 81 行） |
 | 面积 | 精确，`loopArea`（`src/geometry/band.ts:264-271`） | 无，fixture 不算面积 |
 | 尺寸 | 真实毫米 | `glyphs.md`：每个量是 footprint 的分数，真实车道宽 1,220 mm 表达不了 |
 | 标签 | 有 | "a drawn symbol ignores its `label`"（AGENTS.md） |

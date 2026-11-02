@@ -362,7 +362,7 @@ two-storey 剖面、villa 剖面已能看出双层高空间、悬挑屋面、楼
 | 梁 | 无 | grep `beam` 在 Scene3D/mesh 无 | 剖面无梁 | 账本说明，不造 |
 | 基础 | 无 | grep `foundation/footing` 无 | 首层底只有 200 板 | 画到板底加折断线 |
 | **地坪线** | 无室外标高概念；`Outdoor` 无 z | `types.ts:140-146` | **硬缺口**：无 ±0.000 外的室外地坪 | 加 `meta.groundZ` 默认 0，入账本 |
-| 轴线 | 核心 `ResolvedPlan.axes` 有，Scene3D 无 | `src/ir.ts:956`；`packages/archlang-3d/src` 精确 grep `RAxis|.axes` 无 | 无 bubble | Scene3D additive，`RAxis` 已有 `label` |
+| 轴线 | 核心 `ResolvedPlan.axes` 有，Scene3D 无 | `src/ir.ts:956`；`packages/archlang-3d/src` 精确 grep `RAxis\|.axes` 无 | 无 bubble | Scene3D additive，`RAxis` 已有 `label` |
 | 楼层名 | **有** `Level.name` | `types.ts:164-169` | 够 | — |
 | 楼层标高 | **有** `elevation`、`storeyHeight` | `types.ts:168-169` | 够 | — |
 | 室外与栏杆 | 有数据但 Mesh 未建 | `build.ts:30` | 立面缺阳台栏杆 | 属 M4 |
