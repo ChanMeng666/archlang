@@ -3278,7 +3278,7 @@ door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 
 **Cause.** The title block is drawn at a fixed fraction of the drawing's size, each row its caption at the left and its value right-aligned at the right, and it neither wraps nor shrinks a value. This value's estimated width at the size it is drawn (characters × size × 0.62, the one width model the drawing uses) is more than the row holds between its two side pads, so it starts left of its own caption and prints over it, and past the block's frame when it is longer still. Both widths scale with the drawing, so the limit is a character count (about 25) on every sheet and at every scale. Only the authored `title { … }` rows are judged; on a multi-storey plan it is reported once. A caption the plan writes in `sheet text` is judged with its value, on every row, as it is drawn, and the warning sits on the block.
 
-**Fix.** Shorten the value to the number of characters the warning quotes and move the rest to a `notes "…"` line. There is no machine-applicable fix: what to cut is the author's wording.
+**Fix.** Shorten the value to the number of characters the warning quotes and move the rest to a `notes "…"` line. When the warning names the caption `sheet text` writes, shorten that caption or the value until the two fit their row. There is no machine-applicable fix: what to cut is the author's wording.
 
 ```arch static
 title {

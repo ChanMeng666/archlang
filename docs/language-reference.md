@@ -61,7 +61,7 @@ plan "My Home" {
 | `schedule openings` | Tag every door (`D01`…) and window (`W01`…) beside it and draw the **DOOR & WINDOW SCHEDULE** — tag, room(s), width, kind and a hinged door's hand. Derived; composes with `schedule rooms`. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `legend` | Draw the **LEGEND** table beside the schedule — one row per wall hatch material and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `notes "…" ["…" …]` | The sheet's general **NOTES**, drawn as a numbered table in the same band. Repeated statements append. See [Sheet tables](#sheet-tables--room-schedule--legend). | none |
-| `sheet text { … }` | The sheet's fixed **words** and the **decimal mark** of its drawn numbers, as the plan writes them. See [Sheet text](#sheet-text). |
+| `sheet text { … }` | The sheet's fixed **words** and the **decimal mark** of its drawn numbers, as the plan writes them. See [Sheet text](#sheet-text). | none |
 | `height <mm>` | The building's default **floor-to-floor** storey height. The vertical datum: it draws nothing at all, because a floor plan is a horizontal cut. A `level` may override it and a `wall` may override that. See [Heights (the datum layer)](#heights-the-datum-layer). | `3000` |
 
 ### Paper and scale (the sheet)
@@ -2977,20 +2977,22 @@ widths, a scale or angle in a legend row (`Mauerwerk x1,5`), the scale bar (`0,5
 do Plan JSON and every coordinate. `lint()` messages stay English. A DXF's numeric fields keep their
 point; its `TEXT` entities are drawn text, so they carry the comma as the SVG does. The accessible
 `<title>` and `<desc>`, the CLI's messages and the review sheet stay English, and the deprecated `--view`
-draws no sheet. Plan JSON has no field for the block: an export reports it in `dropped`, counted by
-entry.
+draws no sheet. Plan JSON has no field for the block: an export reports it in `dropped`, the words
+counted under `sheet text` and the mark on a `decimal mark` row of its own.
 
 **Fit.** A table column widens for a word you wrote, so a longer word is not clipped, and the page
 grows with it as it does for any table. The title block has a fixed width: a caption and value that
 no longer fit their row raise [`W_TITLE_OVERFLOW`](error-codes.md). A longer word in a stamp is placed and
 shrunk like a longer room name, and `W_ANNOTATION_OVERLAP` reads it as it is drawn.
 
-**Refused**, each as `E_PARSE` at the entry: an unknown key (with a did-you-mean), a key written twice, a
-second block, an empty word, a line break or other control character, more than 40 UTF-16 units (6 for
-`north`, `up` and `down`, which sit in a fixed spot), and a `decimal` that is not `","` or `"."`.
+**Refused**, each as `E_PARSE`: an unknown key (with a did-you-mean), a key written twice, a second
+block, an empty word, a block with no entry, a line break or other control character,
+more than 40 UTF-16 units (6 for `north`, `up` and `down`, which sit in a fixed spot), and a `decimal`
+that is not `","` or `"."`.
 
 A module's `sheet text` is not imported, as a module's `title` is not: settings come from the root
-plan. It is a plan-level statement, written once, outside any `level`.
+plan. It is a plan-level statement, written once, outside any `level`, `component` or block; inside
+one it is refused, and says so.
 
 ## Keep — declared invariants, checked and never solved
 

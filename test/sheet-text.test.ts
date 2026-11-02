@@ -150,6 +150,8 @@ suite("sheet text: the refusals", () => {
     ["a mark that is no mark", 'decimal ";"', /`decimal` is "," or "."/],
     ["a number for a word", "total 5", /Expected string/],
     ["no key", '"SUMME"', /Expected a sheet text key/],
+    ["no entry", "", /`sheet text` writes nothing/],
+    ["only a comment", "# later", /`sheet text` writes nothing/],
   ];
   it.each(cases)("%s", (_name, entry, message) => {
     const errors = parseErrors(inPlan(block(entry)));
@@ -175,6 +177,7 @@ suite("sheet text: the refusals", () => {
       ['totl "A"', 'total "B"'],
       ['total "A"', 'totl "B"', 'name "C"'],
       ['total ""', 'name "C"'],
+      [],
     ]) {
       const src = inPlan(
         `${block(...entries)}\n  room id=r at (0,0) size 2000x2000 label "After"\n  room id=s at (2000,0) size 0x0`,
@@ -195,8 +198,42 @@ suite("sheet text: the refusals", () => {
     expect(errors[0]!.message).toMatch(/written twice: a plan has one/);
   });
 
-  it("it is a plan-level form, not a body statement", () => {
-    expect(parseErrors(inPlan(`  level 1 {\n${block('total "A"')}\n  }`))).not.toEqual([]);
+  const AFTER = '  room id=r at (0,0) size 2000x2000 label "After"\n  room id=s at (2000,0) size 0x0';
+  // `legend` and `scale` are statement words too: read as statements they would cost more errors.
+  const NESTED = block('legend "L"', 'scale "M"');
+  it.each([
+    ["a level", `  level 1 {\n${NESTED}\n${AFTER}\n  }`],
+    ["a component", `  component k() {\n${NESTED}\n${AFTER}\n  }\n  k()`],
+    ["an if", `  if 1 > 0 {\n${NESTED}\n${AFTER}\n  }`],
+    ["a for", `  for i in [1] {\n${NESTED}\n${AFTER}\n  }`],
+    ["a zone", `  zone z "Z" {\n${NESTED}\n${AFTER}\n  }`],
+  ])("inside %s it says it is plan-level, over the whole block, and the body reads on", (_where, body) => {
+    const src = inPlan(body);
+    const errors = parseErrors(src);
+    expect(errors.map((e) => e.message)).toEqual([
+      "`sheet text` is a plan-level statement: write it once, outside any `level`, `component` or block",
+    ]);
+    const span = errors[0]!.span!;
+    expect(src.slice(span.start, span.end)).toBe(NESTED.trimStart());
+    // The statement after the block was read: its own error is reported, not swallowed.
+    expect(
+      compile(src, { noCache: true }).diagnostics.some((d) => d.code !== "E_PARSE" && d.severity === "error"),
+    ).toBe(true);
+  });
+
+  it("the near misses in a body keep their old words: only `sheet text {` is the form", () => {
+    for (const near of ['sheet text "x"', 'sheet words { total "T" }', 'sheet "text" { total "T" }']) {
+      const errors = parseErrors(inPlan(`  level 1 {\n  ${near}\n  }`));
+      expect(
+        errors.map((e) => e.message),
+        near,
+      ).toEqual(['Unknown statement "sheet"']);
+    }
+  });
+
+  it('a string is not the word `text`: the form is not read off `sheet "text" {`', () => {
+    const errors = parseErrors(inPlan('  sheet "text" { total "T" }'));
+    expect(errors.map((e) => e.message)).toEqual(['Unknown statement "sheet"']);
   });
 });
 
@@ -400,8 +437,22 @@ ${entries}
     const b = planToJson(FIXTURE);
     expect(JSON.stringify(b.json)).toBe(JSON.stringify(a.json));
     const row = (b.dropped ?? []).find((r) => r.clause === "sheet text");
-    expect(row?.count).toBe(FIXTURE.match(/^ {4}[a-z_]+ "/gm)!.length);
-    expect((a.dropped ?? []).some((r) => r.clause === "sheet text")).toBe(false);
+    const entries = FIXTURE.match(/^ {4}[a-z_]+ "/gm)!;
+    expect(entries).toContain('    decimal "');
+    expect(row?.count).toBe(entries.length - 1);
+    expect((b.dropped ?? []).find((r) => r.clause === "decimal mark")).toEqual({
+      clause: "decimal mark",
+      count: 1,
+      text: 'decimal ","',
+    });
+    expect((a.dropped ?? []).some((r) => r.clause === "sheet text" || r.clause === "decimal mark")).toBe(false);
+  });
+
+  it("`decimal` is no sheet word: alone, no words are reported; without it, no mark", () => {
+    const of = (entry: string) =>
+      (planToJson(inPlan(`${block(entry)}\n  room id=a at (0,0) size 2000x2000`)).dropped ?? []).map((r) => r.clause);
+    expect(of('decimal ","')).toEqual(["decimal mark"]);
+    expect(of('total "SUMME"')).toEqual(["sheet text"]);
   });
 
   it("no module reads a locale from the host: nothing in src/ asks `Intl` or `toLocale*`", () => {
@@ -448,6 +499,63 @@ suite("sheet text: the layout holds the words", () => {
     expect(t.openings!.cols[3]!.w).toBeGreaterThan(inkWidth("Drehflügeltür", fs));
     expect(t.openings!.cols[4]!.w).toBeGreaterThan(inkWidth("rechtsseitig", fs));
     expect(t.legend!.w - t.legend!.swatchW).toBeGreaterThan(inkWidth("Sitzgruppe mit Hocker und Tisch", fs));
+  });
+
+  suite("the plan's word for the outside, in a ROOM(S) cell", () => {
+    const WORD = "Aussenbereich des Grundstuecks";
+    const NAME = "Wohnzimmer mit offener Kueche und Essplatz";
+    const opening = (head: string, label = "Bad"): string =>
+      inPlan(`  schedule openings
+${head}
+  wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=a at (0,0) size 4000x3000 label "${label}"
+  door at (2000,3000) width 900 wall exterior`);
+    const interior = (head: string): string =>
+      inPlan(`  schedule openings
+${head}
+  wall id=w exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  wall id=p partition thickness 100 { (2000,0) (2000,3000) }
+  room id=a at (0,0) size 2000x3000 label "${"W".repeat(MAX_SHEET_WORD)}"
+  room id=b at (2000,0) size 2000x3000 label "B"
+  door at (2000,1500) width 800 wall p`);
+
+    it("is whole, and its column holds the cell", () => {
+      const t = tables(opening(block(`exterior "${WORD}"`))).openings!;
+      const cell = `${WORD} / Bad`;
+      expect(t.rows[0]!.rooms).toBe(cell);
+      expect(t.cols[1]!.w).toBeGreaterThan(tables(opening("")).openings!.cols[1]!.w);
+      expect(inkWidth(cell, t.fs)).toBeLessThan(t.cols[1]!.w - t.fs / 2);
+      expect(drawn(opening(block(`exterior "${WORD}"`)))).toContain(cell);
+    });
+
+    it("is whole at the longest it may be, in CJK too", () => {
+      const word = "外".repeat(MAX_SHEET_WORD);
+      const t = tables(opening(block(`exterior "${word}"`))).openings!;
+      expect(t.rows[0]!.rooms).toBe(`${word} / Bad`);
+      expect(inkWidth(t.rows[0]!.rooms, t.fs)).toBeLessThan(t.cols[1]!.w);
+    });
+
+    it("leaves the room beside it the characters it had in English", () => {
+      const english = tables(opening("", NAME)).openings!.rows[0]!.rooms;
+      expect(english).toMatch(/^exterior \/ .*\.\.\.$/);
+      const cell = tables(opening(block(`exterior "${WORD}"`), NAME)).openings!.rows[0]!.rooms;
+      expect(cell).toBe(english.replace("exterior", WORD));
+    });
+
+    it("a word no longer than the English keeps the clip", () => {
+      const english = tables(opening("", NAME)).openings!.rows[0]!.rooms;
+      const cell = tables(opening(block('exterior "außen"'), NAME)).openings!.rows[0]!.rooms;
+      expect(cell.length).toBe(english.length);
+    });
+
+    it("a row that reads no authored word moves nothing, though the block writes one", () => {
+      const a = tables(interior("")).openings!;
+      const b = tables(interior(block(`exterior "${WORD}"`))).openings!;
+      expect(b.rows[0]!.rooms).toBe(a.rows[0]!.rooms);
+      expect(b.cols[1]!.w).toBe(a.cols[1]!.w);
+      // The premise: this cell is wide enough to widen the column, if a row of no word could.
+      expect(inkWidth(a.rows[0]!.rooms, a.fs) + a.fs).toBeGreaterThan(a.cols[1]!.w);
+    });
   });
 
   it("the longest word a table caption may hold stays inside its frame, in CJK too", () => {
@@ -510,6 +618,24 @@ ${head}
     const src = plan(block('drawn_by "VON"')).replace('drawn_by "Chan Meng"', `drawn_by "${value}"`);
     expect(overflow(src).some((d) => d.message.includes("is 40 characters"))).toBe(true);
   });
+
+  it.each([
+    ["a short caption", "VON"],
+    ["a caption that overflows too", LONG],
+  ])("a value over its row is that row's one report, with %s", (_name, caption) => {
+    const value = "x".repeat(40);
+    const src = plan(block(`drawn_by "${caption}"`)).replace('drawn_by "Chan Meng"', `drawn_by "${value}"`);
+    expect(overflow(src).map((d) => d.message)).toEqual([expect.stringContaining("value is 40 characters")]);
+  });
+
+  it("one row's value does not excuse another row's caption", () => {
+    const value = "x".repeat(40);
+    const src = plan(block(`drawn_by "${LONG}"`)).replace('project "P"', `project "${value}"`);
+    expect(overflow(src).map((d) => d.message)).toEqual([
+      expect.stringContaining("PROJECT value is 40 characters"),
+      expect.stringContaining("DRAWN BY row is narrower"),
+    ]);
+  });
 });
 
 suite("sheet text: W_ANNOTATION_OVERLAP and the label passes read the drawn stamp", () => {
@@ -567,18 +693,22 @@ suite("sheet text: arch fmt", () => {
     expect(format(once)).toBe(once);
   });
 
-  it("keeps an empty block, and a block of comments", () => {
-    expect(format(inPlan("  sheet text { }"))).toContain("sheet text { }");
-    expect(format(inPlan("  sheet text {\n    # later\n  }"))).toContain("# later");
-    expect(drawn(inPlan(`  sheet text { }\n  room id=a at (0,0) size 2000x2000`))).toEqual(
-      drawn(inPlan("  room id=a at (0,0) size 2000x2000")),
-    );
+  it("leaves a refused block as written, as it does any source that does not parse", () => {
+    for (const src of [inPlan("  sheet text { }"), inPlan("  sheet text {\n    # later\n  }")]) {
+      expect(format(src)).toBe(src);
+    }
   });
 });
 
 suite("sheet text: the language reference", () => {
   const reference = readFileSync("docs/language-reference.md", "utf8");
   const section = reference.slice(reference.indexOf("### Sheet text"), reference.indexOf("## Keep — declared"));
+
+  it("its row among the settings has all three columns", () => {
+    const row = reference.split("\n").find((l) => l.startsWith("| `sheet text { … }` |"))!;
+    expect(row.split(" | ").length).toBe(3);
+    expect(row.endsWith(" | none |")).toBe(true);
+  });
 
   it("lists every key and the English it replaces, and the cap it quotes", () => {
     const rows = section.split("\n").filter((l) => l.startsWith("| `"));

@@ -98,13 +98,16 @@ ${SHELL}  room id=sheet at (6000,0) size sheet x 2000
   room id=d circle at (3000,1500) radius 750.5 label "Round"`,
     ),
   },
-  // The block's near misses: every one was a parse error, and each keeps its words.
-  ...["sheet", "sheet text", 'sheet text "x"', 'sheet words { total "T" }'].map((line, i) => ({
-    name: `inline:sheet-near-miss-${i}`,
-    src: plan(`${SHELL}  ${line}`),
+  // The block's near misses: every one was a parse error, and each keeps its words. The block itself
+  // inside a `level` is no near miss: it writes the form, and its refusal is `test/sheet-text.test.ts`'s.
+  ...["sheet", "sheet text", 'sheet text "x"', 'sheet words { total "T" }', 'sheet "text" { total "T" }'].map(
+    (line, i) => ({
+      name: `inline:sheet-near-miss-${i}`,
+      src: plan(`${SHELL}  ${line}`),
+    }),
+  ),
+  ...['sheet text "x"', 'sheet words { total "T" }', 'sheet "text" { total "T" }'].map((line, i) => ({
+    name: `inline:sheet-near-miss-in-a-level-${i}`,
+    src: plan(`  level 1 {\n${SHELL}  ${line}\n  }`),
   })),
-  {
-    name: "inline:sheet-in-a-level",
-    src: plan(`  level 1 {\n${SHELL}  sheet text { total "T" }\n  }`),
-  },
 ];

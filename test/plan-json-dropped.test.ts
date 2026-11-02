@@ -54,6 +54,8 @@ const ONE_LINE: Array<[Exclude<PlanJsonDroppedClause, "keep" | "level" | "arc">,
   ["schedule openings", "schedule openings"],
   ["legend", "legend"],
   ["notes", 'notes "one" "two"'],
+  ["sheet text", 'sheet text { total "SUMME" }'],
+  ["decimal mark", 'sheet text { decimal "," }'],
   ["theme", "theme blueprint"],
   ["style", 'style wall { stroke: "#111111" }'],
   ["accTitle", 'accTitle "Title"'],
@@ -124,6 +126,14 @@ describe("every clause is reported on the plan that has it, and alone", () => {
     expect(rendered.notes?.[0]).toMatch(
       /^note: Plan JSON carries no .+; this export .+ \(the \.arch source still holds (it|them)\)$/,
     );
+  });
+
+  it("counts a `sheet text`'s words and says its decimal mark apart", async () => {
+    const source = planWith('sheet text { decimal "," total "SUMME" name "RAUM" }');
+    expect((await renderArtifact(source, "json", ARGS, ".", "all")).notes).toEqual([
+      "note: Plan JSON carries no sheet words; this export leaves out 2 sheet words (the .arch source still holds them)",
+      'note: Plan JSON carries no decimal marks; this export leaves out `decimal ","` (the .arch source still holds it)',
+    ]);
   });
 
   it("counts what the plan has, and says it or them to match", async () => {

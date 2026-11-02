@@ -160,7 +160,6 @@ function sheetTextDoc(block: SheetTextNode, comments: readonly Comment[], source
   );
   const inside = comments.filter((c) => c.span.start > start && c.span.start < end);
   const lines = weaveSlots(slots, inside, source);
-  if (lines.length === 0) return "sheet text { }";
   return concat(["sheet text {", indent(concat([hardline, join(hardline, lines)])), hardline, "}"]);
 }
 

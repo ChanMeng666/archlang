@@ -414,9 +414,7 @@ class Parser {
       const start = t.start;
       try {
         if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
-        // `sheet` is contextual, never a `STATEMENT_STARTS` word: `room id=sheet` keeps parsing, and a
-        // macro call `sheet()` falls through to the body statements.
-        if (t.value === "sheet" && this.peek(1).value === "text" && this.peek(2).type === "lcurly") {
+        if (this.atSheetText()) {
           plan.sheetText = this.parseSheetText(plan, start);
           continue;
         }
@@ -848,9 +846,25 @@ class Parser {
   }
 
   /**
+   * Does `sheet text {` start here? `sheet` is contextual, never a `STATEMENT_STARTS` word: `room
+   * id=sheet` keeps parsing, and a macro call `sheet()` falls through to the body statements.
+   */
+  private atSheetText(): boolean {
+    const [kw, text] = [this.peek(), this.peek(1)];
+    return (
+      kw.type === "ident" &&
+      kw.value === "sheet" &&
+      text.type === "ident" &&
+      text.value === "text" &&
+      this.peek(2).type === "lcurly"
+    );
+  }
+
+  /**
    * `sheet text { <key> "…" … }` — the words the sheet draws, in the plan's own language
    * (`src/sheet-text.ts`). One block, each key once, every string checked here: a mistyped key
-   * or a second value would otherwise leave an English word on the sheet with no report.
+   * or a second value would otherwise leave an English word on the sheet with no report, and a
+   * block with no entry says nothing, which is a slip and not a sheet.
    */
   private parseSheetText(plan: PlanNode, start: number): SheetTextNode {
     const kw = this.peek();
@@ -879,6 +893,7 @@ class Parser {
       entries.push({ key: k.value, value, span: { start: k.start, end: v.end } });
     }
     this.eat("rcurly");
+    if (entries.length === 0) this.fail("`sheet text` writes nothing: give it a key, or leave the block out", kw);
     return { entries, line: kw.line, span: this.spanFrom(start) };
   }
 
@@ -1468,6 +1483,16 @@ class Parser {
       if (this.isType("string")) this.next();
       const msg = `"${t.value}" is only allowed at plan level, not inside a block or component`;
       this.diagnostics.push({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
+      return { kind: "error", id: "", line: t.line, message: msg };
+    }
+    // `sheet text` words the whole sheet, so it is plan-level only. Reaching here means one appeared
+    // inside a `level`, a component or a control-flow block: consumed to its `}` without reading its
+    // entries, because a key such as `legend` would otherwise read as a statement of its own.
+    if (this.atSheetText()) {
+      while (!this.isType("rcurly") && !this.isType("eof")) this.next();
+      if (this.isType("rcurly")) this.next();
+      const msg = "`sheet text` is a plan-level statement: write it once, outside any `level`, `component` or block";
+      this.diagnostics.push({ severity: "error", message: msg, code: "E_PARSE", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     // `level` partitions the WHOLE plan into storeys, so it is a plan-level block only.

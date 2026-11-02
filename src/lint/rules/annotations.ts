@@ -464,7 +464,8 @@ export const annotationOverlap: LintRule = {
  * A caption the plan's `sheet text` writes is no longer the short word the sum above leaves out, so a
  * row with one is judged as drawn: caption and value together, on the faces' advances, against the row.
  * Every row has that caption's span to report at, the stamped two included. The message names the row
- * by its English caption, as every lint message stays English.
+ * by its English caption, as every lint message stays English. A value over its row is that row's one
+ * report: past the row on its own, the value is what needs shortening, whatever the caption writes.
  */
 export const titleOverflow: LintRule = {
   name: "title-overflow",
@@ -482,11 +483,14 @@ export const titleOverflow: LintRule = {
     const room = w - 2 * pad;
     const holds = Math.floor(room / (fs * EM_PER_CHAR));
     const out: Diagnostic[] = [];
+    /** The rows, by English caption, whose value is already reported. */
+    const overflowing = new Set<string>();
     if (title)
       for (const row of titleRows({ ...title }, undefined)) {
         const width = textWidth(row.v, fs);
         if (!(width > room)) continue;
         const outside = width > w - pad;
+        overflowing.add(row.k);
         out.push({
           severity: "warning",
           code: "W_TITLE_OVERFLOW",
@@ -503,7 +507,8 @@ export const titleOverflow: LintRule = {
     const english = titleRows(title, scale, stamp);
     titleRows(title, scale, stamp, sheetText(block.entries)).forEach((row, i) => {
       const caption = english[i]!.k;
-      if (row.k === caption || !(inkWidth(row.k, fs * 0.8) + inkWidth(row.v, fs) > room)) return;
+      if (row.k === caption || overflowing.has(caption)) return;
+      if (!(inkWidth(row.k, fs * 0.8) + inkWidth(row.v, fs) > room)) return;
       out.push({
         severity: "warning",
         code: "W_TITLE_OVERFLOW",

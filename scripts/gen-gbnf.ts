@@ -375,7 +375,7 @@ function rules(): [string, string][] {
     ["notes-stmt", `"notes" ( rws string )+`],
     // `sheet text { <key> "…" … }`: the keys are a closed table of the parser's (`sheetTextKeys`), too
     // long for a grammar a model is constrained by, so an unknown one is left to the parser's refusal.
-    ["sheet-text-stmt", `"sheet" rws "text" ws "{" ws ( ident rws string ws )* "}"`],
+    ["sheet-text-stmt", `"sheet" rws "text" ws "{" ws ( ident rws string ws )+ "}"`],
     ["acc-stmt", `( "accTitle" | "accDescr" ) rws string`],
 
     // ---- title / theme / style ------------------------------------------

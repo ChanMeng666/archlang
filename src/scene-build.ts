@@ -664,12 +664,13 @@ function synthWallDims(ir: ResolvedPlan, sizes: RenderSizes, dims: RDim[], regis
   }
   const rooms = ir.elements.filter((el): el is RRoom => el.kind === "room").map(roomBox);
   const openings = repByThickness.size > 0 ? facadeOpenings(ir) : [];
+  const { mm } = sheetText(ir.sheetText?.entries);
   for (const t of [...repByThickness.keys()].sort((a, c) => a - c)) {
     const rep = repByThickness.get(t)!;
     // How far off the centreline the number reaches, and how tall it is — the same two
     // numbers `outsideStations` places it with, so the clear run asked for is the clear
     // run actually used.
-    const text = sheetText(ir.sheetText?.entries).mm(rep.t);
+    const text = mm(rep.t);
     const reach = rep.t / 2 + DIM_TEXT_GAP * sizes.dimFont + textWidth(text, sizes.dimFont);
     // The endpoints keep their historical order (which is what fixes the number's reading
     // direction); the SIDE the number is written on is `calloutFrom`, so a flip moves the

@@ -126,6 +126,7 @@ const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, str
   legend: ["legends", "legend", "legends"],
   notes: ["sheet notes", "sheet note", "sheet notes"],
   "sheet text": ["sheet words", "sheet word", "sheet words"],
+  "decimal mark": ["decimal marks", "decimal mark", "decimal marks"],
   theme: ["themes", "theme", "themes"],
   style: ["styles", "`style` block", "`style` blocks"],
   accTitle: ["accessible titles", "`accTitle`", "`accTitle`s"],

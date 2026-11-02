@@ -813,9 +813,21 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
   // schedules read together. Absent → `x` is untouched, so the legend lands where it always did.
   let openings: OpeningTableBox | undefined;
   if (openingData) {
+    // The plan's word for the outside is never cut, as a heading is not: a row gains what the word
+    // gained on the English, so the room beside it keeps the characters it had, and the column holds
+    // the cell. A row that reads no authored word keeps its clip and leaves the column alone.
+    const outside = text.word("exterior");
+    const gained = Math.max(0, outside.length - PLAIN_SHEET_TEXT.word("exterior").length);
+    const roomCells = openingData.map((r) =>
+      clip(r.rooms, ROOMS_CELL_CHARS + gained * (r.rooms.split(outside).length - 1)),
+    );
+    const roomsW = roomCells.reduce(
+      (n, c) => (text.has("exterior") && c.includes(outside) ? Math.max(n, inkWidth(c, fs) + fs) : n),
+      holds(refDim * COL_ROOMS, ["rooms"]),
+    );
     const cols: TableColumn[] = [
       { heading: text.word("tag"), w: holds(refDim * COL_TAG, ["tag"]), align: "middle" },
-      { heading: text.word("rooms"), w: holds(refDim * COL_ROOMS, ["rooms"]), align: "start" },
+      { heading: text.word("rooms"), w: roomsW, align: "start" },
       { heading: text.word("width"), w: holds(refDim * COL_WIDTH, ["width"]), align: "end" },
       {
         heading: text.word("type"),
@@ -837,9 +849,9 @@ export function layoutSheetTables(input: SheetTablesInput): SheetTables | null {
       pad: w * 0.02,
       caption: text.word("opening_schedule"),
       cols,
-      rows: openingData.map((r) => ({
+      rows: openingData.map((r, i) => ({
         ...r,
-        rooms: clip(r.rooms, ROOMS_CELL_CHARS),
+        rooms: roomCells[i]!,
         width: text.num(r.width),
         type: text.word(r.type),
         hand: text.word(r.hand),

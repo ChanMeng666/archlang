@@ -17,7 +17,9 @@
  * each site held as a literal, whose `num` is the identity and whose `mm` is `fmt2` itself. No optional
  * field joins the Scene, the chrome or the render context unless the block is written, and a column
  * reads `Math.max` only for a word the plan wrote, so no float operation moves. Nothing is evaluated, so no
- * step is charged. No row's parse error moves: `sheet` is read only when `text {` follows it.
+ * step is charged. No row's parse error moves: `sheet` is read only when the word `text` and `{` follow
+ * it. The block itself inside a `level` writes the form, so it is no row here; its refusal is pinned in
+ * `test/sheet-text.test.ts`. Its near misses in a `level` are, and they measure the digest it did.
  *
  * `test/fixtures/sheet-text/sheet-text.arch` writes the form. It stands in a folder of its own because
  * the corpus tables read `test/fixtures` flat and each pins a plan that does not use it, and the premise
@@ -243,7 +245,10 @@ const BASELINE: [string, string][] = [
   ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-1"],
   ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-2"],
   ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-3"],
-  ["03f61da770c3d28fd642e62610d82438f2bfbb55131890a4401e2ff058960e63", "inline:sheet-in-a-level"],
+  ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-4"],
+  ["03f61da770c3d28fd642e62610d82438f2bfbb55131890a4401e2ff058960e63", "inline:sheet-near-miss-in-a-level-0"],
+  ["03f61da770c3d28fd642e62610d82438f2bfbb55131890a4401e2ff058960e63", "inline:sheet-near-miss-in-a-level-1"],
+  ["03f61da770c3d28fd642e62610d82438f2bfbb55131890a4401e2ff058960e63", "inline:sheet-near-miss-in-a-level-2"],
 ];
 
 suite("sheet text: the byte-identity law", () => {
