@@ -374,6 +374,8 @@ export interface Scene {
   theme: Theme;
   sizes: RenderSizes;
   north: NorthDir;
+  /** The north arrow's word, when the plan's `sheet text` writes one; else `N`. */
+  northLabel?: string;
   scale?: string;
   title?: TitleNode;
   /**

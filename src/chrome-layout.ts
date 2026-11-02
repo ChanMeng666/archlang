@@ -17,6 +17,7 @@ import type { SceneNode } from "./scene.js";
 import type { LegendEntry, RoomSchedule, SheetTables } from "./sheet-tables.js";
 import { layoutSheetTables, tableRowsHeight, translateSheetTables } from "./sheet-tables.js";
 import type { OpeningRow } from "./opening-schedule.js";
+import { PLAIN_SHEET_TEXT, type SheetText } from "./sheet-text.js";
 
 /**
  * Chrome geometry as fractions of the drawing's reference dimension. Named (rather
@@ -66,7 +67,12 @@ export interface ScaleBarBox {
   barLen: number;
   hgt: number;
   fs: number;
+  /** The length's words with the plan's decimal mark. Absent with no `sheet text`, as it always was. */
+  label?: string;
 }
+
+/** The words at the end of the scale bar. */
+export const scaleBarLabel = (s: ScaleBarBox): string => s.label ?? `${s.barLen / 1000} m`;
 
 export interface TitleBlockBox {
   x0: number;
@@ -122,6 +128,8 @@ export interface ChromeInput {
   notes?: readonly string[] | null;
   /** Which storey this page draws, for a multi-storey plan (see {@link titleRows}). */
   level?: LevelStamp;
+  /** The plan's `sheet text`. Absent means the English, as for a plan that writes none. */
+  text?: SheetText;
 }
 
 /**
@@ -142,16 +150,24 @@ export interface LevelStamp {
  * row still gets a title block. A single-storey plan passes no stamp, so its rows — and
  * therefore its bytes — are exactly as before.
  */
-export function titleRows(title: TitleNode | undefined, scale: string | undefined, level?: LevelStamp): TitleRow[] {
+export function titleRows(
+  title: TitleNode | undefined,
+  scale: string | undefined,
+  level?: LevelStamp,
+  text: SheetText = PLAIN_SHEET_TEXT,
+): TitleRow[] {
   const rows: TitleRow[] = [];
-  if (title?.project) rows.push({ k: "PROJECT", v: title.project });
-  if (title?.drawnBy) rows.push({ k: "DRAWN BY", v: title.drawnBy });
-  if (title?.date) rows.push({ k: "DATE", v: title.date });
+  if (title?.project) rows.push({ k: text.word("project"), v: title.project });
+  if (title?.drawnBy) rows.push({ k: text.word("drawn_by"), v: title.drawnBy });
+  if (title?.date) rows.push({ k: text.word("date"), v: title.date });
   // The drawing's identity on a set: its number and revision, each a row only when written.
-  if (title?.number) rows.push({ k: "DRAWING NO.", v: title.number });
-  if (title?.revision) rows.push({ k: "REVISION", v: title.revision });
-  if (scale) rows.push({ k: "SCALE", v: scale });
-  if (level) rows.push({ k: "LEVEL", v: level.name ? `${level.level} — ${level.name}` : String(level.level) });
+  if (title?.number) rows.push({ k: text.word("number"), v: title.number });
+  if (title?.revision) rows.push({ k: text.word("revision"), v: title.revision });
+  if (scale) rows.push({ k: text.word("scale"), v: text.num(scale) });
+  if (level) {
+    const stamp = text.num(String(level.level));
+    rows.push({ k: text.word("level"), v: level.name ? `${stamp} — ${level.name}` : stamp });
+  }
   return rows;
 }
 
@@ -225,9 +241,11 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
     hgt: sHgt,
     fs: sFs,
   };
+  const text = input.text ?? PLAIN_SHEET_TEXT;
+  if (text !== PLAIN_SHEET_TEXT) scaleBar.label = text.num(scaleBarLabel(scaleBar));
   const scaleBottom = bandTop + sHgt + sFs * SCALEBAR_LABEL_F;
 
-  const rows = titleRows(input.title, input.scale, input.level);
+  const rows = titleRows(input.title, input.scale, input.level, text);
   let titleBlock: TitleBlockBox | null = null;
   let titleBottom = bandTop;
   if (rows.length > 0) {
@@ -259,6 +277,7 @@ export function layoutChrome(input: ChromeInput): ChromeLayout {
     legend: input.legend ?? null,
     openings: input.openings ?? null,
     notes: input.notes ?? null,
+    text,
   });
 
   const margin: PageMargins = {

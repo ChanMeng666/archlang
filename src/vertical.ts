@@ -234,11 +234,6 @@ export function stairTurns(v: RBlockStair): { landings: StairTurn[]; whole: Stai
   };
 }
 
-/** The text a run's arrow carries on the storey it is drawn on. */
-export function dirLabel(dir: VerticalDir): "UP" | "DN" {
-  return dir === "up" ? "UP" : "DN";
-}
-
 /**
  * One obstacle the nav grid must respect: the footprint, plus the edges outside which
  * the body-radius halo is **not** applied (so the approach in front of the entry stays

@@ -374,7 +374,7 @@ export const stair: ElementDef = {
   },
 
   render(resolved, ctx: RenderCtx): SceneNode[] {
-    return stairGlyph(resolved as RStair, ctx.theme, ctx.sizes);
+    return stairGlyph(resolved as RStair, ctx.theme, ctx.sizes, ctx.text);
   },
   /** At most one tread line per division plus eight (`stairGlyph`: the footprint, the two
    *  break lines, the two band edges and the four-stroke arrow), for the drawing budget. A block

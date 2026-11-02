@@ -243,7 +243,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SWING_OBSTRUCTED`](#w_swing_obstructed) | warning | Door swing is obstructed. |
 | [`W_SWING_OVER_STAIR`](#w_swing_over_stair) | warning | A door's swing sweeps a stair or the landing at its end. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
-| [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value is wider than its row. |
+| [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value, or a `sheet text` caption with its value, is wider than its row. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material; using the default hatch. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
@@ -3291,11 +3291,11 @@ door on w1 at 50% width 800 swing into faraway   # warning: not on this wall
 
 ## W_TITLE_OVERFLOW
 
-*warning* — A title-block value is wider than its row.
+*warning* — A title-block value, or a `sheet text` caption with its value, is wider than its row.
 
-**Cause.** The title block is drawn at a fixed fraction of the drawing's size, each row its caption at the left and its value right-aligned at the right, and it neither wraps nor shrinks a value. This value's estimated width at the size it is drawn (characters × size × 0.62, the one width model the drawing uses) is more than the row holds between its two side pads, so it starts left of its own caption and prints over it, and past the block's frame when it is longer still. Both widths scale with the drawing, so the limit is a character count (about 25) on every sheet and at every scale. Only the authored `title { … }` rows are judged; on a multi-storey plan it is reported once.
+**Cause.** The title block is drawn at a fixed fraction of the drawing's size, each row its caption at the left and its value right-aligned at the right, and it neither wraps nor shrinks a value. This value's estimated width at the size it is drawn (characters × size × 0.62, the one width model the drawing uses) is more than the row holds between its two side pads, so it starts left of its own caption and prints over it, and past the block's frame when it is longer still. Both widths scale with the drawing, so the limit is a character count (about 25) on every sheet and at every scale. Only the authored `title { … }` rows are judged; on a multi-storey plan it is reported once. A caption the plan writes in `sheet text` is judged with its value, on every row, as it is drawn, and the warning sits on the block.
 
-**Fix.** Shorten the value to the number of characters the warning quotes and move the rest to a `notes "…"` line. There is no machine-applicable fix: what to cut is the author's wording.
+**Fix.** Shorten the value to the number of characters the warning quotes and move the rest to a `notes "…"` line. When the warning names the caption `sheet text` writes, shorten that caption or the value until the two fit their row. There is no machine-applicable fix: what to cut is the author's wording.
 
 ```arch static
 title {

@@ -190,6 +190,9 @@ export const KEYWORDS = {
     // `wall … status existing|demolish|new` and `walls from rooms … status <s>` (preview-and-remodel
     // B3a): leads the clause; its values (`WALL_STATUSES`) are in `enum`.
     "status",
+    // `sheet text { … }`: read only when `text {` follows it, so never a `STATEMENT_STARTS` word and
+    // not a `control` one: `room id=sheet` keeps parsing. `text` is already here.
+    "sheet",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [

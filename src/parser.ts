@@ -57,6 +57,8 @@ import type { KeepGrade, KeepNode, KeepRef } from "./ast.js";
 import { splitDatum } from "./room-datums.js";
 import type { PaperOrientation, PaperSize } from "./sheet.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "./sheet.js";
+import type { SheetTextNode } from "./ast.js";
+import { isSheetTextKey, MAX_SHEET_WORD, type SheetTextEntry, sheetTextKeys, sheetTextRefusal } from "./sheet-text.js";
 import { checkWhileDeprecation } from "./while-deprecation.js";
 
 export interface ParseOutcome {
@@ -182,6 +184,8 @@ class Parser {
   }
 
   // The token list always ends with EOF, so the clamped index is present.
+  private sheetKeyHinted = false;
+
   private peek(o = 0): Token {
     return this.toks[Math.min(this.pos + o, this.toks.length - 1)]!;
   }
@@ -410,6 +414,10 @@ class Parser {
       const start = t.start;
       try {
         if (t.type !== "ident") this.fail(`Expected a statement but found ${describe(t)}`);
+        if (this.atSheetText()) {
+          plan.sheetText = this.parseSheetText(plan, start);
+          continue;
+        }
         switch (t.value) {
           case "units":
             this.parseUnitsSetting(plan, t);
@@ -835,6 +843,58 @@ class Parser {
     const notes = [this.eatString()];
     while (this.isType("string")) notes.push(this.eatString());
     plan.notes = [...(plan.notes ?? []), ...notes];
+  }
+
+  /**
+   * Does `sheet text {` start here? `sheet` is contextual, never a `STATEMENT_STARTS` word: `room
+   * id=sheet` keeps parsing, and a macro call `sheet()` falls through to the body statements.
+   */
+  private atSheetText(): boolean {
+    const [kw, text] = [this.peek(), this.peek(1)];
+    return (
+      kw.type === "ident" &&
+      kw.value === "sheet" &&
+      text.type === "ident" &&
+      text.value === "text" &&
+      this.peek(2).type === "lcurly"
+    );
+  }
+
+  /**
+   * `sheet text { <key> "…" … }` — the words the sheet draws, in the plan's own language
+   * (`src/sheet-text.ts`). One block, each key once, every string checked here: a mistyped key
+   * or a second value would otherwise leave an English word on the sheet with no report, and a
+   * block with no entry says nothing, which is a slip and not a sheet.
+   */
+  private parseSheetText(plan: PlanNode, start: number): SheetTextNode {
+    const kw = this.peek();
+    if (plan.sheetText) this.fail("`sheet text` is written twice: a plan has one", kw);
+    this.next();
+    this.next();
+    this.eat("lcurly");
+    const entries: SheetTextEntry[] = [];
+    while (!this.isType("rcurly") && !this.isType("eof")) {
+      const k = this.peek();
+      if (k.type !== "ident") this.fail(`Expected a sheet text key but found ${describe(k)}`, k);
+      if (!isSheetTextKey(k.value)) {
+        // One hint a parse, on a word a key's length: this search reads every key, and no step meter
+        // runs here, so a source of a million bad keys must not pay for a million searches.
+        const near = !this.sheetKeyHinted && k.value.length <= MAX_SHEET_WORD;
+        const hint = near ? closest(k.value, [...sheetTextKeys()]) : null;
+        this.sheetKeyHinted = true;
+        this.fail(`Unknown sheet text key "${k.value}"${hint ? ` — did you mean "${hint}"?` : ""}`, k);
+      }
+      if (entries.some((e) => e.key === k.value)) this.fail(`\`${k.value}\` is written twice in \`sheet text\``, k);
+      this.next();
+      const v = this.peek();
+      const value = this.eatString();
+      const refused = sheetTextRefusal(k.value, value);
+      if (refused) this.fail(refused, v);
+      entries.push({ key: k.value, value, span: { start: k.start, end: v.end } });
+    }
+    this.eat("rcurly");
+    if (entries.length === 0) this.fail("`sheet text` writes nothing: give it a key, or leave the block out", kw);
+    return { entries, line: kw.line, span: this.spanFrom(start) };
   }
 
   /**
@@ -1423,6 +1483,16 @@ class Parser {
       if (this.isType("string")) this.next();
       const msg = `"${t.value}" is only allowed at plan level, not inside a block or component`;
       this.diagnostics.push({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
+      return { kind: "error", id: "", line: t.line, message: msg };
+    }
+    // `sheet text` words the whole sheet, so it is plan-level only. Reaching here means one appeared
+    // inside a `level`, a component or a control-flow block: consumed to its `}` without reading its
+    // entries, because a key such as `legend` would otherwise read as a statement of its own.
+    if (this.atSheetText()) {
+      while (!this.isType("rcurly") && !this.isType("eof")) this.next();
+      if (this.isType("rcurly")) this.next();
+      const msg = "`sheet text` is a plan-level statement: write it once, outside any `level`, `component` or block";
+      this.diagnostics.push({ severity: "error", message: msg, code: "E_PARSE", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     // `level` partitions the WHOLE plan into storeys, so it is a plan-level block only.

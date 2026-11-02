@@ -1,0 +1,58 @@
+# `sheet text`: a sheet in German, with a comma for the decimal mark. It stands in a folder of its own
+# because the corpus tables read test/fixtures flat and pin plans that do not use the form. The German
+# is a test string, not a reviewed translation.
+plan "Haus" {
+  units mm
+  dims auto all
+  scale 1:12.5
+  sheet text {
+    decimal ","
+    # Das Schriftfeld
+    project "PROJEKT"
+    drawn_by "GEZEICHNET"
+    number "ZEICHNUNGS-NR."
+    scale "MASSSTAB"
+    room_schedule "RAUMBUCH"
+    name "RAUM"
+    area "FLÄCHE BIS ACHSE (m²)"
+    net_area "NETTOFLÄCHE (m²)"
+    subtotal "ZWISCHENSUMME"
+    total "SUMME"
+    no_zone "(ohne Zone)"
+    opening_schedule "TÜREN UND FENSTER"
+    tag "POS."
+    rooms "RAUM"
+    width "BREITE"
+    type "ART"
+    hand "ANSCHLAG"
+    left "links"
+    exterior "außen"
+    legend "LEGENDE"
+    notes "HINWEISE"
+    net "netto"
+    up "HOCH"
+    hinged "Drehtür"
+    casement "Drehflügel"
+    brick "Mauerwerk"
+    poche "Wand"
+    grass "Rasen"
+    sofa "Sofa"
+  }
+  title { project "Haus" drawn_by "CM" date "2026-11-02" number "A-1" }
+  schedule rooms net
+  schedule openings
+  legend
+  notes "Nur zur Abstimmung, Stand 1.5"
+  wall id=sh exterior thickness 300 material brick scale 1.5 { (0,0) (6000.5,0) (6000.5,4000) (0,4000) close }
+  wall id=pa partition thickness 100 { (3000.5,0) (3000.5,4000) }
+  zone oben "Oben" {
+    room id=a at (0,0) size 3000.5x4000 label "Wohnen"
+  }
+  room id=b at (3000.5,0) size 3000x4000 label "Bad"
+  door id=d1 at (4500,4000) width 900.5 wall exterior hinge left swing in
+  door id=d2 at (3000.5,2000) width 800 wall partition hinge left swing in
+  window casement at (0,1500) width 1200 wall exterior
+  furniture sofa at (500,500) size 2000x800
+  stair at (5000,200) size 800x2400 dir up
+  outdoor lawn at (0,4500) size 3000x1200 label "Wiese"
+}

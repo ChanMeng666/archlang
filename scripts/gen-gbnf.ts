@@ -334,7 +334,7 @@ function rules(): [string, string][] {
     // ---- plan settings ---------------------------------------------------
     [
       "setting",
-      `units-stmt | grid-stmt | paper-stmt | scale-stmt | height-stmt | north-stmt | site-stmt | dims-stmt | schedule-stmt | legend-stmt | notes-stmt`,
+      `units-stmt | grid-stmt | paper-stmt | scale-stmt | height-stmt | north-stmt | site-stmt | dims-stmt | schedule-stmt | legend-stmt | notes-stmt | sheet-text-stmt`,
     ],
     ["units-stmt", `"units" rws "mm"`],
     ["grid-stmt", `"grid" rws number`],
@@ -373,6 +373,9 @@ function rules(): [string, string][] {
     ["legend-stmt", `"legend"`],
     // `notes "…" ["…" …]` — one or more note strings for the sheet's NOTES table.
     ["notes-stmt", `"notes" ( rws string )+`],
+    // `sheet text { <key> "…" … }`: the keys are a closed table of the parser's (`sheetTextKeys`), too
+    // long for a grammar a model is constrained by, so an unknown one is left to the parser's refusal.
+    ["sheet-text-stmt", `"sheet" rws "text" ws "{" ws ( ident rws string ws )+ "}"`],
     ["acc-stmt", `( "accTitle" | "accDescr" ) rws string`],
 
     // ---- title / theme / style ------------------------------------------

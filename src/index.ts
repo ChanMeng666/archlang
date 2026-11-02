@@ -607,6 +607,7 @@ export type {
   HatchPlugin,
   HatchMetaInput,
 } from "./registry.js";
+export type { SheetText, SheetTextEntry } from "./sheet-text.js";
 // World seam: the compiler's window onto its environment (import reads,
 // `now`). Pass `compile(src, { world })`; default is a pure no-op World.
 export { NULL_WORLD, makeVirtualWorld } from "./world.js";

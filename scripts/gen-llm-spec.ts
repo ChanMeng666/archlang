@@ -212,6 +212,7 @@ export const SETTING_GRAMMAR: Record<string, string> = {
   dims: `dims auto all   # OPTIONAL auto-dimensioning instead of hand \`dim\` lines: ${AUTO_DIMS_MODES.join("|")}`,
   accTitle: `accTitle "…"   # OPTIONAL a11y name → SVG <title> under \`compile --accessible\``,
   accDescr: `accDescr "…"   # …and description → <desc>, replacing the derived caption. Both plan-level only (E_ACC_PLACEMENT)`,
+  sheet: `sheet text { decimal "," total "SUMME" }   # OPTIONAL drawn words (keys: reference); not describe/lint`,
 };
 
 /**
@@ -694,7 +695,7 @@ export function renderLlmSpec(examples: Record<string, string>): string {
 ArchLang is a tiny declarative language that compiles a \`.arch\` source file into a professional
 floor-plan drawing (SVG/PNG/PDF/DXF). It is built for AI agents: deterministic (same source →
 identical output), pure (no runtime/IO), and self-correcting (every error carries a machine code and
-a \`fix\`). This page is everything you need to author it.
+a \`fix\`).
 
 ## The 7 rules that matter
 
@@ -799,7 +800,7 @@ space beats routing a bath through a bedroom — then re-\`repair\`. Full recipe
 | --- | --- |
 | Hand-summing room offsets | Lay the row with \`strip\`. |
 | Furniture floated at a guessed \`at\`, or an \`inset\` hand-computed from a wall thickness | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never names a thickness. |
-| String math without interpolation | Use \`"{expr}"\`, e.g. \`label "{round(W / 1000)} m"\`. Only the built-ins above and your own \`let f(…)\` are callable — \`aream2\` is NOT built in. |
+| String math without interpolation | Rule 5. Only the built-ins above and your own \`let f(…)\` are callable — \`aream2\` is NOT built in. |
 
 ## Worked examples
 

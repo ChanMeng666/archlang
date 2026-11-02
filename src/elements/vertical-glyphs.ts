@@ -25,12 +25,12 @@
 import type { Point } from "../ast.js";
 import type { Diagnostic, Span } from "../diagnostics.js";
 import { fmt3 } from "../num-format.js";
+import { PLAIN_SHEET_TEXT, type SheetText } from "../sheet-text.js";
 import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
 import type { RElevator, REscalator, RStair, RStairPiece } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import {
-  dirLabel,
   flightsOf,
   isBlockStair,
   type RBlockStair,
@@ -203,11 +203,16 @@ function footprint(v: RStairPiece, layerName: string, theme: Theme, sizes: Rende
  * footprint's cross extent the flight band is centred in the footprint and the remainder
  * is left as an un-drawn return/void. A block stair draws {@link blockStairGlyph}.
  */
-export function stairGlyph(s: RStair, theme: Theme, sizes: RenderSizes): SceneNode[] {
-  if (isBlockStair(s)) return blockStairGlyph(s, theme, sizes);
+export function stairGlyph(
+  s: RStair,
+  theme: Theme,
+  sizes: RenderSizes,
+  text: SheetText = PLAIN_SHEET_TEXT,
+): SceneNode[] {
+  if (isBlockStair(s)) return blockStairGlyph(s, theme, sizes, text);
   const f = runFrame(s, s.width);
   const nodes = flightSymbol(s, f, "full", theme, sizes);
-  nodes.push(...arrow(f, dirLabel(s.dir), STAIR_LAYER, theme, sizes));
+  nodes.push(...arrow(f, text.word(s.dir), STAIR_LAYER, theme, sizes));
   return nodes;
 }
 
@@ -357,7 +362,7 @@ export function cutFlight(s: RBlockStair): number {
  * The walking line is several `line` primitives, never one long path: a label is kept off each
  * primitive's box (`src/label-placement.ts`), and a turning line's box holds the floor it turns round.
  */
-function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes): SceneNode[] {
+function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes, text: SheetText): SceneNode[] {
   const layer = STAIR_LAYER;
   const climb = flightsOf(s);
   const cut = cutFlight(s);
@@ -395,7 +400,7 @@ function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes): Scen
   const barb = Math.min(last.width * 0.28, head * 0.25);
   nodes.push(line(last.at(head, 0), last.at(head - barb, barb * 0.6), layer, ink));
   nodes.push(line(last.at(head, 0), last.at(head - barb, -barb * 0.6), layer, ink));
-  nodes.push(runWord(first, step, dirLabel(s.dir), layer, theme, sizes));
+  nodes.push(runWord(first, step, text.word(s.dir), layer, theme, sizes));
   return nodes;
 }
 
@@ -413,7 +418,12 @@ export function elevatorGlyph(e: RElevator, theme: Theme, sizes: RenderSizes): S
 }
 
 /** The escalator symbol: parallel chevrons pointing the way of travel, plus the arrow. */
-export function escalatorGlyph(e: REscalator, theme: Theme, sizes: RenderSizes): SceneNode[] {
+export function escalatorGlyph(
+  e: REscalator,
+  theme: Theme,
+  sizes: RenderSizes,
+  text: SheetText = PLAIN_SHEET_TEXT,
+): SceneNode[] {
   const cross = runAxis(e) === "y" ? e.size.w : e.size.h;
   const f = runFrame(e, cross);
   const layer = STAIR_LAYER;
@@ -431,6 +441,6 @@ export function escalatorGlyph(e: REscalator, theme: Theme, sizes: RenderSizes):
     nodes.push(line(f.at(a, half), f.at(a + apex, 0), layer, stroke));
   }
 
-  nodes.push(...arrow(f, dirLabel(e.dir), layer, theme, sizes));
+  nodes.push(...arrow(f, text.word(e.dir), layer, theme, sizes));
   return nodes;
 }

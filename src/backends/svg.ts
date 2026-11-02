@@ -16,7 +16,7 @@ import { RENDER_PASSES, layerOf, weightWidth } from "../scene.js";
 import type { Bounds } from "../geometry.js";
 import { hatchPattern } from "../hatches.js";
 import type { Theme } from "../theme.js";
-import { layoutChrome, type ScaleBarBox, type TitleBlockBox } from "../chrome-layout.js";
+import { layoutChrome, type ScaleBarBox, scaleBarLabel, type TitleBlockBox } from "../chrome-layout.js";
 
 /** Round to 2 decimals and strip trailing zeros — keeps output stable & compact. */
 import { fmt2 as fmt } from "../num-format.js";
@@ -357,7 +357,7 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   // issuable — which an illustrative view must never do. `Scene.view` is set only by
   // `toIso`, so every plan drawing takes the branch it always has.
   if (!scene.view) {
-    out.push(northArrow(scene.north, b, margin, refDim, THEME));
+    out.push(northArrow(scene.north, b, margin, refDim, THEME, scene.northLabel ?? "N"));
     out.push(scaleBar(chrome.scaleBar, thin, THEME));
     const tb = titleBlock(chrome.titleBlock, thin, THEME);
     if (tb) out.push(tb);
@@ -367,7 +367,7 @@ export function renderSvg(scene: Scene, opts: CompileOptions = {}): string {
   return out.join("\n");
 }
 
-function northArrow(north: NorthDir, b: Bounds, margin: number, refDim: number, THEME: Theme): string {
+function northArrow(north: NorthDir, b: Bounds, margin: number, refDim: number, THEME: Theme, word: string): string {
   const r = refDim * 0.045;
   const cx = b.maxX - r;
   const cy = b.minY - margin * 0.55;
@@ -385,7 +385,7 @@ function northArrow(north: NorthDir, b: Bounds, margin: number, refDim: number, 
   return (
     `<g>` +
     `<polygon points="${tri}" fill="${THEME.annotation}" transform="rotate(${fmt(deg)} ${fmt(cx)} ${fmt(cy)})"/>` +
-    `<text x="${fmt(lx)}" y="${fmt(ly)}" font-size="${fmt(fs)}" fill="${THEME.annotation}" text-anchor="middle" dominant-baseline="central">N</text>` +
+    `<text x="${fmt(lx)}" y="${fmt(ly)}" font-size="${fmt(fs)}" fill="${THEME.annotation}" text-anchor="middle" dominant-baseline="central">${xml(word)}</text>` +
     `</g>`
   );
 }
@@ -405,7 +405,7 @@ function scaleBar(s: ScaleBarBox, thin: number, THEME: Theme): string {
     `<text x="${fmt(x0)}" y="${fmt(y0 + hgt + fs)}" font-size="${fmt(fs)}" fill="${THEME.annotation}" text-anchor="start" dominant-baseline="central">0</text>`,
   );
   parts.push(
-    `<text x="${fmt(x0 + barLen)}" y="${fmt(y0 + hgt + fs)}" font-size="${fmt(fs)}" fill="${THEME.annotation}" text-anchor="middle" dominant-baseline="central">${barLen / 1000} m</text>`,
+    `<text x="${fmt(x0 + barLen)}" y="${fmt(y0 + hgt + fs)}" font-size="${fmt(fs)}" fill="${THEME.annotation}" text-anchor="middle" dominant-baseline="central">${scaleBarLabel(s)}</text>`,
   );
   return `<g>${parts.join("")}</g>`;
 }

@@ -61,6 +61,7 @@ plan "My Home" {
 | `schedule openings` | Tag every door (`D01`…) and window (`W01`…) beside it and draw the **DOOR & WINDOW SCHEDULE** — tag, room(s), width, kind and a hinged door's hand. Derived; composes with `schedule rooms`. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `legend` | Draw the **LEGEND** table beside the schedule — one row per wall hatch material and per fixture symbol the drawing actually uses, each with a real swatch. Fully derived; nothing to configure. See [Sheet tables](#sheet-tables--room-schedule--legend). | off |
 | `notes "…" ["…" …]` | The sheet's general **NOTES**, drawn as a numbered table in the same band. Repeated statements append. See [Sheet tables](#sheet-tables--room-schedule--legend). | none |
+| `sheet text { … }` | The sheet's fixed **words** and the **decimal mark** of its drawn numbers, as the plan writes them. See [Sheet text](#sheet-text). | none |
 | `height <mm>` | The building's default **floor-to-floor** storey height. The vertical datum: it draws nothing at all, because a floor plan is a horizontal cut. A `level` may override it and a `wall` may override that. See [Heights (the datum layer)](#heights-the-datum-layer). | `3000` |
 
 ### Paper and scale (the sheet)
@@ -2914,8 +2915,9 @@ every wrapped line. Past 200 wrapped lines the plan is refused with `E_DRAWING_L
   each swatch the real symbol. The other door kinds have no row.
 
 Nothing is listed that is not drawn, and a category that renders as a plain labelled
-rectangle gets no row (there is no symbol to explain). There is nothing to configure —
-which is the point: the legend cannot drift from the drawing.
+rectangle gets no row (there is no symbol to explain). There is nothing to configure beyond
+its words ([`sheet text`](#sheet-text)) — which is the point:
+the legend cannot drift from the drawing.
 
 The tables sit side by side in one row — room schedule, door & window schedule, legend,
 notes — and the sheet fit reserves the tallest. All of them, and the tags, are ordinary
@@ -2926,6 +2928,129 @@ system, so the tables scale with the sheet. `describe()` reports the room schedu
 `schedule[]` (see [Analysis](analysis.md)); `legend`, `schedule openings` and `notes` are
 pure rendering and add no field — every fact they show is already in `describe()`
 (`furniture`, `doors`, `windows`) or the source.
+
+### Sheet text
+
+```
+sheet text {
+  decimal ","
+  <key> "<word>"
+  …
+}
+```
+
+Every fixed word on a sheet is English, and every number has a decimal point. `sheet text` replaces
+them, so a plan can be handed to someone who reads another language. A key you do not write keeps
+its English word, so a table can be as short as the words a plan draws. A plan with no `sheet text`
+draws exactly what it drew before.
+
+ArchLang ships no translations. There is no `locale` setting: the words are yours, and the compiler
+never reads a language from the machine it runs on, so one source draws the same bytes everywhere.
+
+The block below is a German starting point, written by this project and not reviewed by a German
+drafter. It covers the fixed words of a plain sheet. Read it before a buyer does.
+
+```arch
+plan "Haus" {
+  units mm
+  paper A3
+  dims auto rooms
+  sheet text {
+    decimal ","
+    project "PROJEKT"
+    drawn_by "GEZEICHNET"
+    date "DATUM"
+    number "ZEICHNUNGS-NR."
+    revision "INDEX"
+    scale "MASSSTAB"
+    level "GESCHOSS"
+    room_schedule "RAUMBUCH"
+    no "NR."
+    name "RAUM"
+    area "FLÄCHE BIS WANDACHSE (m²)"
+    net_area "NETTOFLÄCHE (m²)"
+    subtotal "ZWISCHENSUMME"
+    total "SUMME"
+    no_zone "(ohne Zone)"
+    opening_schedule "TÜREN UND FENSTER"
+    tag "POS."
+    rooms "RAUM"
+    width "BREITE"
+    type "ART"
+    hand "ANSCHLAG"
+    left "links"
+    right "rechts"
+    exterior "außen"
+    window "Fenster"
+    legend "LEGENDE"
+    demolished "Abbruch"
+    notes "HINWEISE"
+    net "netto"
+    up "HOCH"
+    down "AB"
+    hinged "Drehtür"
+    poche "Wand"
+  }
+  title { project "Haus am See" date "2026-11-02" }
+  schedule rooms net
+  schedule openings
+  legend
+  room id=wohnen at (0,0) size 4500x4000 label "Wohnen"
+  room id=bad right-of wohnen size 2500x4000 label "Bad"
+  walls from rooms exterior 300 partition 100
+  door on wohnen.bottom at center width 1000 swing into wohnen
+  door between wohnen and bad at center width 800 swing into bad
+  window on wohnen.top width 1500
+}
+```
+
+**The keys.** A door kind (`hinged`, `glazed_sliding`), a window kind (`casement`), a wall or ground
+material (`brick`, `grass`) and a fixture category (`sofa`, `bed`) are each their own key, in the
+spelling the language uses, and replace that word in the door and window schedule and the legend. An
+authored window kind or `glazed_sliding` stands alone in the legend, where the English reads
+`casement window`: German compounds, so a word and a word would be wrong. The other keys:
+
+| Keys | The English they replace | Where |
+|---|---|---|
+| `project` `drawn_by` `date` `number` `revision` | `PROJECT` `DRAWN BY` `DATE` `DRAWING NO.` `REVISION` | Title block captions |
+| `scale` `level` | `SCALE` `LEVEL` | Title block captions the sheet stamps itself |
+| `room_schedule` `no` `name` `area` `net_area` | `ROOM SCHEDULE` `NO.` `NAME` `AREA (CENTRELINE, m²)` `NET AREA (m²)` | The room schedule's caption and headings |
+| `subtotal` `total` `no_zone` | `SUBTOTAL` `TOTAL` `(no zone)` | Its closing rows, and the heading over rooms in no `zone` |
+| `opening_schedule` `tag` `rooms` `width` `type` `hand` | `DOOR & WINDOW SCHEDULE` `TAG` `ROOM(S)` `WIDTH` `TYPE` `HAND` | The door and window schedule's caption and headings |
+| `left` `right` `exterior` `window` | `left` `right` `exterior` `window` | Its cells: a hand, the outside, a window with no kind |
+| `legend` `demolished` `notes` | `LEGEND` `demolished` `NOTES` | The legend's and the notes' captions, and the row of a demolished wall |
+| `net` `up` `down` `north` | `net` `UP` `DN` `N` | In the drawing: the net stamp's word, a stair's or escalator's word, the north arrow's letter |
+
+The door and window tags (`D01`, `W01`), the axis bubbles and `m²` are handles and units, and have
+no key. What you wrote yourself, such as a room's `label`, a `notes` line or a title value, is
+already in your language and is never changed.
+
+**`decimal ","`** prints every drawn number with a comma: the room and `outdoor` stamps, every cell of
+the room schedule, dimension numbers and the `R` and `φ` call-outs, the door and window schedule's
+widths, a scale or angle in a legend row (`Mauerwerk x1,5`), the scale bar (`0,5 m`) and the `SCALE` row
+(`1:12,5`). `decimal "."` is the default. A number you wrote inside a string is yours, so
+`dim … text "1.5 m"` and `notes "Stand 1.5"` keep their point.
+
+**What it never reaches.** `describe()` does not read the block and its numbers keep their point, as
+do Plan JSON and every coordinate. `lint()` messages stay English. A DXF's numeric fields keep their
+point; its `TEXT` entities are drawn text, so they carry the comma as the SVG does. The accessible
+`<title>` and `<desc>`, the CLI's messages and the review sheet stay English, and the deprecated `--view`
+draws no sheet. Plan JSON has no field for the block: an export reports it in `dropped`, the words
+counted under `sheet text` and the mark on a `decimal mark` row of its own.
+
+**Fit.** A table column widens for a word you wrote, so a longer word is not clipped, and the page
+grows with it as it does for any table. The title block has a fixed width: a caption and value that
+no longer fit their row raise [`W_TITLE_OVERFLOW`](error-codes.md). A longer word in a stamp is placed and
+shrunk like a longer room name, and `W_ANNOTATION_OVERLAP` reads it as it is drawn.
+
+**Refused**, each as `E_PARSE`: an unknown key (with a did-you-mean), a key written twice, a second
+block, an empty word, a block with no entry, a line break or other control character,
+more than 40 UTF-16 units (6 for `north`, `up` and `down`, which sit in a fixed spot), and a `decimal`
+that is not `","` or `"."`.
+
+A module's `sheet text` is not imported, as a module's `title` is not: settings come from the root
+plan. It is a plan-level statement, written once, outside any `level`, `component` or block; inside
+one it is refused, and says so.
 
 ## Keep — declared invariants, checked and never solved
 

@@ -60,6 +60,7 @@
 import type { ExprPoint, OutdoorKind, OutdoorNode, Point, RailEdge, RailSide } from "../ast.js";
 import { OUTDOOR_KINDS, RAIL_EDGES, RAIL_SIDES } from "../ast.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
+import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { ROutdoor, RWall } from "../ir.js";
@@ -531,7 +532,7 @@ export const outdoor: ElementDef = {
         prim: {
           t: "text",
           at: { x: c.x, y: c.y + sizes.furnFont * 0.9 },
-          value: `${areaM2} m²`,
+          value: `${(ctx.text ?? PLAIN_SHEET_TEXT).num(areaM2)} m²`,
           size: sizes.furnFont * 0.85,
           anchor: "middle",
           baseline: "central",

@@ -20,6 +20,7 @@ import {
 import type { Diagnostic, Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, RenderCtx, ResolveCtx, TransformCtx } from "../registry.js";
+import { PLAIN_SHEET_TEXT } from "../sheet-text.js";
 import type { SceneNode } from "../scene.js";
 import type { RRoom } from "../ir.js";
 import { rectCorners } from "../geometry.js";
@@ -461,7 +462,9 @@ export const room: ElementDef = {
     // read to one decimal and named, so a reader cannot take it for the centreline area. A room
     // with no net figure keeps the centreline stamp, unsuffixed.
     const net = ctx.netAreaOf?.(r.id);
-    const stamp = net !== undefined ? `${fmtTenthsOf2dp(net)} m² net` : `${areaM2} m²`;
+    const text = ctx.text ?? PLAIN_SHEET_TEXT;
+    const stamp =
+      net !== undefined ? `${text.num(fmtTenthsOf2dp(net))} m² ${text.word("net")}` : `${text.num(areaM2)} m²`;
     // The name, then the area figure: `wrapLabels` (`src/label-placement.ts`) reads a
     // room's two text nodes in this order when the name is too wide for one line.
     if (r.label) {

@@ -45,7 +45,7 @@ import type { Point } from "../ast.js";
 import type { Paint, PathLoop, Scene, SceneNode } from "../scene.js";
 import { RENDER_PASSES } from "../scene.js";
 import type { Theme } from "../theme.js";
-import { layoutChrome, type TitleRow } from "../chrome-layout.js";
+import { layoutChrome, scaleBarLabel, type TitleRow } from "../chrome-layout.js";
 import { plainText } from "../text-safe.js";
 import { textLines } from "../text-layout.js";
 import { northBearingDeg } from "../algebra/d4.js";
@@ -386,7 +386,7 @@ function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
     const rad = (deg * Math.PI) / 180;
     const lx = cx + Math.sin(rad) * (r + fs * 0.8);
     const ly = cy - Math.cos(rad) * (r + fs * 0.8);
-    drawText(doc, ctx, { x: lx, y: ly }, "N", fs, "middle", undefined, theme.annotation);
+    drawText(doc, ctx, { x: lx, y: ly }, scene.northLabel ?? "N", fs, "middle", undefined, theme.annotation);
   }
 
   // Scale bar + title block come from the shared chrome layout (placed below the
@@ -405,21 +405,13 @@ function drawChrome(doc: any, scene: Scene, ctx: TextCtx): void {
   // Scale bar (two-segment alternating bar + end labels).
   {
     const { x0, y0, barLen, hgt, fs } = chrome.scaleBar;
+    const label = scaleBarLabel(chrome.scaleBar);
     const half = barLen / 2;
     doc.rect(x0, y0, half, hgt).fill(theme.annotation);
     doc.lineWidth(thin).undash();
     doc.rect(x0 + half, y0, half, hgt).stroke(theme.annotation);
     drawText(doc, ctx, { x: x0, y: y0 + hgt + fs }, "0", fs, "start", undefined, theme.annotation);
-    drawText(
-      doc,
-      ctx,
-      { x: x0 + barLen, y: y0 + hgt + fs },
-      `${barLen / 1000} m`,
-      fs,
-      "middle",
-      undefined,
-      theme.annotation,
-    );
+    drawText(doc, ctx, { x: x0 + barLen, y: y0 + hgt + fs }, label, fs, "middle", undefined, theme.annotation);
   }
 
   // Title block (framed metadata rows).
