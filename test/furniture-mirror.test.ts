@@ -13,7 +13,7 @@
  */
 
 import { describe as suite, expect, it } from "vitest";
-import { compile, describe, format, lint, planJsonToArch, planToJson } from "../src/index.js";
+import { compile, describe, format, lint, planJsonToArch, planToJson, toDxf } from "../src/index.js";
 import { CANONICAL_FIXTURES, fixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
 import { mapSceneNode } from "../src/elements/glyph-lib.js";
@@ -208,6 +208,21 @@ suite("the clause in the grammar", () => {
       );
     expect(body("")).not.toHaveProperty("mirror");
     expect(body(" mirror")).toHaveProperty("mirror", true);
+  });
+});
+
+suite("the clause in a CAD file", () => {
+  it("draws another shape, so it is a block of its own beside the plain one", () => {
+    const pair = (clause: string): string =>
+      toDxf(
+        compile(
+          plan(
+            `furniture sofa_l at (200,200) size 2600x1600\n  furniture sofa_l at (200,3000) size 2600x1600${clause}`,
+          ),
+        ).scene!,
+      );
+    expect(pair("")).not.toContain("FURN-SOFA_L-2600X1600-2");
+    expect(pair(" mirror")).toContain("FURN-SOFA_L-2600X1600-2");
   });
 });
 
