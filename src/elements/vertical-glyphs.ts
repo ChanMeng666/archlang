@@ -223,19 +223,15 @@ export function stairGlyph(
  */
 type FlightCut = "none" | "full" | "shallow";
 
-/** One flight's footprint, treads and band edges, and its break line. */
-function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, sizes: RenderSizes): SceneNode[] {
-  const layer = STAIR_LAYER;
-  const stroke: Paint = { stroke: theme.furnitureStroke, width: sizes.thin, fill: "none" };
-  const nodes: SceneNode[] = [footprint(s, layer, theme, sizes)];
-
-  const n = treadCount(f.length);
-  const step = f.length / n;
+/**
+ * A flight's break line: two parallel diagonals crossing the flight at mid-run, each rising by
+ * half the flight width over the crossing (a ~26° cut) and separated along the run by one going,
+ * and `band`, how far either side of mid-run the treads are omitted, as a drawn break omits them.
+ * One path for the ink and for `bounds()`, because the diagonals reach past the flight's edges.
+ */
+function breakLine(s: RStair, f: RunFrame, cut: FlightCut): { diagonals: [Point, Point][]; band: number } {
+  const step = f.length / treadCount(f.length);
   const half = f.width / 2;
-
-  // Break line: two parallel diagonals crossing the flight at mid-run, each rising by
-  // half the flight width over the crossing (a ~26° cut) and separated along the run by
-  // one going. Treads inside the cut band are omitted, as a drawn break omits them.
   const mid = f.length / 2;
   // Along-run rise of one diagonal across the full width.
   const rise = cut === "shallow" ? Math.min(half, f.length / 4) : half;
@@ -248,11 +244,36 @@ function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, size
   const lo = -half - over;
   const hi = half + over;
   const [c0, c1] = s._mirror ? [hi, lo] : [lo, hi];
-  if (cut !== "none") {
-    for (const off of [-gap / 2, gap / 2]) {
-      nodes.push(line(f.at(mid + off - rise / 2, c0), f.at(mid + off + rise / 2, c1), layer, stroke));
-    }
-  }
+  const diagonals =
+    cut === "none"
+      ? []
+      : [-gap / 2, gap / 2].map((off): [Point, Point] => [
+          f.at(mid + off - rise / 2, c0),
+          f.at(mid + off + rise / 2, c1),
+        ]);
+  return { diagonals, band };
+}
+
+/** Where a stair's break line ends: the one part of its ink past its pieces, for `bounds()`. */
+export function breakLineEnds(s: RStair): Point[] {
+  if (!isBlockStair(s)) return breakLine(s, runFrame(s, s.width), "full").diagonals.flat();
+  const f = flightsOf(s)[cutFlight(s)]!;
+  return breakLine(f, runFrame(f, s.width), "shallow").diagonals.flat();
+}
+
+/** One flight's footprint, treads and band edges, and its break line. */
+function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, sizes: RenderSizes): SceneNode[] {
+  const layer = STAIR_LAYER;
+  const stroke: Paint = { stroke: theme.furnitureStroke, width: sizes.thin, fill: "none" };
+  const nodes: SceneNode[] = [footprint(s, layer, theme, sizes)];
+
+  const n = treadCount(f.length);
+  const step = f.length / n;
+  const half = f.width / 2;
+  const mid = f.length / 2;
+
+  const { diagonals, band } = breakLine(s, f, cut);
+  for (const [a, b] of diagonals) nodes.push(line(a, b, layer, stroke));
 
   for (let i = 1; i < n; i++) {
     const a = i * step;

@@ -138,16 +138,27 @@ export interface DoorwayFact {
   stretch?: { clear_mm: number; need_mm: number; pieces: string[] };
 }
 
-/** One end of a flight this storey owes a landing, as `W_STAIR_NO_LANDING` measured it. */
+/**
+ * One end of a flight this storey owes a landing, or a landing between a block stair's flights
+ * (`turn`), as `W_STAIR_NO_LANDING` measured it. Ends come first, then one `turn` per landing in
+ * climbing order, for its shorter leg, on the stop the climb is read on: not on a stop coming down
+ * to which the same block rises from below.
+ */
 export interface LandingFact {
-  end: "foot" | "head";
+  end: "foot" | "head" | "turn";
   need_mm: number;
   /** How deep the floor stands clear past the step, up to the figure (`null`: not measured,
    *  a curved wall near it). */
   clear_mm: number | null;
-  /** What cuts it short: a wall, a void, no floor, or another piece of the same block stair;
-   *  `null` when clear to the figure. */
-  by: { kind: "wall"; id: string } | { kind: "void"; id: string } | { kind: "no-floor" } | { kind: "own-piece" } | null;
+  /** What cuts it short: a wall, a void, no floor, another piece of the same block stair, or the
+   *  landing's own far edge; `null` when clear to the figure. */
+  by:
+    | { kind: "wall"; id: string }
+    | { kind: "void"; id: string }
+    | { kind: "no-floor" }
+    | { kind: "own-piece" }
+    | { kind: "landing-end" }
+    | null;
 }
 
 /** A stair: its run against the storey it climbs, and its landings. */
@@ -343,7 +354,9 @@ function stairFacts(ctx: LintContext): StairFact[] | null {
               ? { kind: "void", id: b.what.void.id }
               : "ownPiece" in b.what
                 ? { kind: "own-piece" }
-                : { kind: "wall", id: b.what.wall.wallId };
+                : "landingEnds" in b.what
+                  ? { kind: "landing-end" }
+                  : { kind: "wall", id: b.what.wall.wallId };
         return { end: l.end, need_mm, clear_mm: have(b.depth), by };
       }),
     };

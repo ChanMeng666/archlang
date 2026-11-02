@@ -1437,6 +1437,8 @@ a component argument, a plan setting (`height`, `axes`, the site boundary) and a
 `at`/`size` or relational clause are evaluated earlier, and a datum there reports
 `E_DATUM_BEFORE_ROOMS`; write the datum in the statement that uses it. A function body has no
 room of its own, so `let f() = hall.top` refuses when called; pass the edge in: `f(hall.top)`.
+A positioning axis reads as a datum too, `axis.3`, and is known earlier: see
+[Standing on an axis](#positioning-axes-定位轴线).
 
 - **Compass words.** `north|south|east|west` alias `top|bottom|right|left` only in the root of
   a plan whose `north` is `up` (the default). Inside a `place`d component, or with any other
@@ -2306,15 +2308,26 @@ floor above. So at 2750 mm, under the default limits, one landing needs 11 going
 2420 mm of flights, not the 2640 mm of a straight flight
 ([`W_STAIR_TOO_STEEP`](error-codes.md#w_stair_too_steep)). The flights must also hold those goings
 whole, because every going of a stair is the same: 1210 + 1210 mm is 2420 mm and holds 5 + 5, one
-short, and the warning says so. Lint measures the foot, the head, and the head a flight from below
-arrives at, which is the lower stop's last flight's. Where a block's stops do not match, the
-mismatch is the report ([`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch)):
-that head is not read, and each stop stands as what it says, a stop that comes down as a stairwell
-and one that rises as a stair rising from its floor. Lint does not measure the landings between
-the flights, and on a storey a block rises from with no flight arriving it reads every piece
-whole, with nothing passed under; the coverage report says `block-stair` wherever any of this is
-only part of the answer. That is arithmetic on what the plan says, not a statement that a stair
-complies with anything.
+short, and the warning says so.
+
+Lint measures the foot, the head, the head a flight from below arrives at, which is the lower stop's
+last flight's, and each **landing between the flights**, which must run the flight's `width` along
+each flight that meets it ([`W_STAIR_NO_LANDING`](error-codes.md#w_stair_no_landing), at least
+1200 mm in a building other than a dwelling). It is read along each flight in turn, never as the
+length of the walking line, on the stop the climb starts from, so a shaft reports it once. At a
+corner the landing cannot be shorter than `width`, because each flight meets it whole, so only a
+wall across it or that 1200 mm can report there. On a storey a block rises from, the climb spreads
+over the flights with the landings level, so its high end is passed under as a flight's is, and a
+landing with less than 2 m beneath it stands in the way whole.
+
+Where a block's stops do not match, the mismatch is the report
+([`W_SHAFT_FOOTPRINT_MISMATCH`](error-codes.md#w_shaft_footprint_mismatch)): that head is not read,
+each stop stands as what it says, a stop that comes down as a stairwell and one that rises as a
+stair rising from its floor, and the coverage report says `block-stair`.
+
+There is no winder form. Draw the turn as a landing, and lint reads the run strictly, with fewer
+goings than the stair has. All of this is arithmetic on what the plan says, not a statement that a
+stair complies with anything.
 
 **What it does to circulation.** The footprint obstructs the
 [navigation grid](analysis.md#circulation--how-a-person-walks-the-plan) exactly like a piece
@@ -2761,8 +2774,53 @@ inserting an axis in the middle renumbers everything after it:
   boundaries. The chain stays outside the building at the same offset; only the ticks
   move.
 - `describe()` reports them as facts (`axes.x` / `axes.y`, in label order — see
-  [Analysis](analysis.md)). They are presentation + datum metadata: no axis becomes an
-  element, gets an id, or can be referenced by a door/room clause.
+  [Analysis](analysis.md)). No axis becomes an element or gets an id.
+
+**One grid for every storey.** On a plan with `level` blocks the one `axes` block serves
+every storey. There is no per-storey grid, and `axes` inside a `level` is a parse error. A
+`let` written inside a `level` does reach the block, because each storey evaluates it, so
+two storeys could come out on two grids:
+[`W_AXES_DIFFER`](error-codes.md#w_axes_differ) says so, once, at the block.
+
+**Standing on an axis.** `axis.3` and `axis.B` read an axis by its label, as a coordinate
+in plan millimetres, the position the axis is drawn at. They are datums, like `hall.top`:
+
+```arch
+plan "Two floors on one grid" {
+  units mm
+  axes { x at 0, 6000, 12000 y at 0, 5000 }
+  level 1 {
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    column id=c at (axis.3 - 200, axis.B - 200) size 400x400
+    keep on axis 2 g2
+    keep on axis 3 c
+    keep on axis B c
+  }
+  level 2 {
+    wall id=g2 partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }
+    column id=c at (axis.3 - 200, axis.B - 200) size 400x400
+    keep on axis 2 g2
+    keep on axis 3 c
+    keep on axis B c
+  }
+}
+```
+
+- Any statement of the plan or a storey may read one: a room's `at` and `size`, a wall's
+  points, a column, furniture, a dimension. A label the plan does not declare is
+  [`E_UNKNOWN_REF`](error-codes.md#e_unknown_ref), at the datum.
+- A `let`, a loop bound, a condition, a `place … at`, a `strip … at`, a component argument and a
+  plan setting are read before the axes exist, because the axes read the plan's `let`s:
+  [`E_DATUM_BEFORE_ROOMS`](error-codes.md#e_datum_before_rooms). Share a `let` with the `axes`
+  block there, as in `let BAY = 6000` with `x at 0, BAY, 2 * BAY`.
+- A statement inside a `place`d component is refused too: its coordinates are its own frame's,
+  and the same component must draw the same at every placement. What crosses a frame is the
+  check: `keep on axis 2 wing.c`, written on the storey, reads the placed column in plan
+  coordinates under any turn or mirror.
+- `at axis.2` on an opening stands on the axis, the same as `at axis 2`. `from` and `%` measure
+  along the wall, so `at axis.2 from end` is refused. Arithmetic on it, `at axis.2 + 500`, is a
+  number like any other: that many millimetres along the wall from its start, and the number is
+  a plan coordinate, so it lands on the axis only on a wall that starts at 0.
 
 ### Sheet tables — room schedule & legend
 
@@ -3005,7 +3063,7 @@ keep align <d> <d> [<d> …]                  # one line: every residual v(dᵢ)
 keep equal width|depth <t> <t> [<t> …]      # one extent: m(tᵢ) − m(t₁) is 0
 keep offset <x> from <d> <mm>               # (v(x) − v(d)) − mm is 0
 keep min clear <room> <mm>                  # clear span − mm ≥ 0
-keep on axis <label> <wall>                 # v(wall) − v(axis) is 0
+keep on axis <label> <wall|column>          # v(wall) − v(axis) is 0; a column at its centre
 keep stacked <id> on levels <n> <n> [<n> …] # the footprint's four edges, storey against storey
 keep fixed <d> at <mm>                      # v(d) − mm is 0
 ```
@@ -3024,7 +3082,8 @@ earlier element is named, and a keep is the statement that must survive edits.
 
 **What each form measures.**
 - `align` and `on axis`: the datums' positions; the reported residual is the largest, at that
-  target (`+` = right of / below the first).
+  target (`+` = right of / below the first). A column has no line of its own, so `on axis` reads
+  it at its centre across the axis, and two keeps hold it on a crossing; no other form reads one.
 - `equal`: a rectangular room's width (x extent) or depth (y extent), or an opening's width.
 - `offset`: `<x>` is a datum parallel to `<d>`, an opening read at its centre, or a piece of
   furniture read at its footprint's centre, on `<d>`'s normal axis.

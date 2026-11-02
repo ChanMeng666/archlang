@@ -71,6 +71,8 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
   W_IMPORT_EMPTY_FILE: "brief",
   W_WHILE_DEPRECATED: "brief",
   W_REASSIGN_DEPRECATED: "brief",
+  // The plan's own `axes`, which belong to the brief.
+  W_AXES_DIFFER: "brief",
   // Rooms laid on top of each other.
   W_ROOM_OVERLAP: "rooms",
   // An opening that did not land on its wall, or a swing naming a room it does not border.
