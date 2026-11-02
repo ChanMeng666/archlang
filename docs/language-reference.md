@@ -2985,14 +2985,13 @@ storey's keeps are reported on each `--level` export).
 | `clause` | What leaves |
 |---|---|
 | `keep` | every `keep` |
-| `arc` | a wall's arc edge: the document keeps its straight chord, so the outline changes |
 | `poche hatch` | `scale` or `angle` on a wall of the default `poche` material |
 | `circle` | a circular room: the document keeps its 48-sided polygon |
 | `label at` | a room's `label … at` position |
+| `column order` | a `column` written before a `furniture`: the document lists them after, so the same shapes draw in another order |
 | `stair`, `elevator`, `escalator`, `roof`, `void`, `outdoor`, `fence` | the whole element |
 | `zone` | a `zone` block (its contents are exported) |
 | `level` | a storey's number and name: each storey is its own document |
-| `paper` | the sheet (the effective `scale` stays) |
 | `axes`, `site boundary`, `schedule rooms`, `schedule openings`, `legend`, `notes` | the statement |
 | `theme`, `style` | paint |
 | `accTitle`, `accDescr` | the accessible title and description |

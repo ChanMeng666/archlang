@@ -282,17 +282,17 @@ clause, so after a round trip `describe().freedom` reports it absolute instead o
 **The CLI round-trip and its gap list.** `archlang compile -f json` writes the Plan JSON that
 `compile --from-json` reads back, and `test/cli-plan-json-roundtrip.test.ts` holds every example
 to byte-identical SVG, equal `describe()` facts (bar `freedom`, which flattens to absolute by
-design) and equal `lint()` codes through that pipe, except exactly these 22 (the list is `CANNOT_ROUND_TRIP`
-in `test/plan-json-gaps.ts`, minus `imports.arch`, which the CLI's file World flattens):
+design) and equal `lint()` codes through that pipe, except exactly the list `CANNOT_ROUND_TRIP`
+in `test/plan-json-gaps.ts`, minus `imports.arch`, which the CLI's file World flattens:
 
 - refused with `E_JSON_MIRROR` (a reflecting `place`): `clinic`, `museum-wings`, `terrace-row`, and
   `hillside-villa`'s level 2;
 - storeys (each storey projects alone and draws differently from its sheet): `two-storey`,
   `townhouse`, `garden-house`, `hillside-villa`;
-- the sheet layer (`paper`, `schedule`, `legend`, `zone`): `furnished-flat`, `museum`,
-  `museum-wing`, `transit-hall`;
+- the sheet layer (`schedule`, `legend`, `zone`): `furnished-flat`, `transit-hall`;
+- `column` written before `furniture`: `museum`, the same shapes in another order;
 - the style layer (`theme`, `style`): `themed`, `gallery-l`, `materials`;
-- curves (`arc`, `room circle`): `aquarium`, `hexagon-pavilion`, `library`;
+- curves (`room circle`; a wall's `arc` travels): `aquarium`, `hexagon-pavilion`, `library`;
 - `roof`: `tiny-house`, `bungalow`, `courtyard-house`, `two-bed`;
 - accessibility metadata (`accTitle`, `accDescr`): `accessible` — the default SVG survives, so
   only the `describe()` comparison sees it.
