@@ -22,6 +22,7 @@ import { compile, describe, type Scene, toDxf } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
 import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
+import { everyWord } from "../test/sheet-text-plans.js";
 
 const CHECK = "e2e/dxf_check.py";
 
@@ -117,7 +118,15 @@ function main(): number {
       .filter((f) => f.endsWith(".arch"))
       .sort()
       .map((f) => ({ name: f, src: readFileSync(join("examples", f), "utf8") }));
-    for (const { name, src } of [...plans, { name: "every-kind", src: everyKind() }]) {
+    // What the examples may not hold: every door and window kind, a corner window, and a sheet with a
+    // decimal comma, which belongs in a TEXT and a DIMENSION's text and never in a number.
+    const cases = [
+      { name: "every-kind", src: everyKind() },
+      { name: "corner-window", src: readFileSync("test/fixtures/corner-window/corner-window.arch", "utf8") },
+      { name: "window-kinds", src: readFileSync("test/fixtures/window-kinds/window-kinds.arch", "utf8") },
+      { name: "decimal-comma", src: everyWord('  sheet text { decimal "," }') },
+    ];
+    for (const { name, src } of [...plans, ...cases]) {
       const c = compile(src, { noCache: true, world });
       const errors = c.diagnostics.filter((d) => d.severity === "error");
       if (errors.length > 0) throw new Error(`${name}: ${errors[0]?.code} ${errors[0]?.message}`);

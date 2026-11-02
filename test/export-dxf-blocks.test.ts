@@ -5,6 +5,7 @@ import { compile, describe, type Scene, toDxf } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
 import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
+import { everyWord } from "./sheet-text-plans.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 
 /**
@@ -429,12 +430,31 @@ suite("a dimension", () => {
   it("a figure that is not whole is written out, since the style redraws whole millimetres", () => {
     const fractional = dims(dxfOf(plan(`${W}\n  dim (0,0)->(12345.68,0)`)))[0]!;
     expect(str(fractional, 1)).toBe("12345.68");
-    expect(blocks(dxfOf(plan(`${W}\n  dim (0,0)->(12345.68,0)`))).get("*D1")?.ents.at(-1)?.pairs).toContainEqual([
-      1,
-      "12345.68",
-    ]);
+    expect(
+      blocks(dxfOf(plan(`${W}\n  dim (0,0)->(12345.68,0)`)))
+        .get("*D1")
+        ?.ents.at(-1)?.pairs,
+    ).toContainEqual([1, "12345.68"]);
     // A whole figure stays the reader's own measure, so it follows a stretch in CAD.
     expect(str(dims(dxfOf(plan(`${W}\n  dim (0,0)->(12345,0)`)))[0]!, 1)).toBeUndefined();
+  });
+
+  it("a decimal comma stands in text, and never in a number the file carries", () => {
+    const pages = compile(everyWord('  sheet text { decimal "," }'), { noCache: true }).pages!;
+    let written = 0;
+    for (const { scene } of pages) {
+      const dxf = toDxf(scene);
+      for (const d of dims(dxf)) if (str(d, 1)?.includes(",")) written++;
+      for (const [code, value] of pairs(dxf)) {
+        // Group 1 is text, 2, 3, 6, 7, 8 and 9 are names, 100 a subclass and 0 an entity type.
+        if ([0, 1, 2, 3, 4, 6, 7, 8, 9, 100].includes(code)) continue;
+        expect(value, `group ${code}`).toMatch(/^-?\d+(\.\d+)?$/);
+      }
+    }
+    expect(written).toBeGreaterThan(0);
+    // And the same plan with a point writes the same geometry: only the text differs.
+    const plain = compile(everyWord('  sheet text { decimal "." }'), { noCache: true }).pages!;
+    expect(dims(toDxf(plain[0]!.scene)).length).toBe(dims(toDxf(pages[0]!.scene)).length);
   });
 
   it('an empty text is no number: "" in the file would mean the measure', () => {

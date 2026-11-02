@@ -181,7 +181,10 @@ suite("a document it was not written from", () => {
   it("a ring or a wall too short to be GeoJSON is left out", () => {
     const out = toGeoJson({
       plan: "p",
-      rooms: [{ id: "a", polygon: [{ x: 0, y: 0 }] }, { id: "b", polygon: [] }],
+      rooms: [
+        { id: "a", polygon: [{ x: 0, y: 0 }] },
+        { id: "b", polygon: [] },
+      ],
       walls: [
         { id: "one", points: [{ x: 0, y: 0 }], closed: true },
         { id: "none", points: [] },

@@ -126,7 +126,9 @@ the very entities the flat file drew, in plan coordinates. Rotated, not aligned,
 chain measures along a baseline while its witness lines start on a stepped facade, which is what a
 rotated dimension measures. Written `text` goes in group 1, and so does a figure that is not whole:
 the style redraws whole millimetres, which is right for nearly every figure and would turn 12345.68
-into 12346. With neither, the reader shows its own measure, so a whole figure follows a stretch in CAD. `dim radius` and `dim diameter` are written this way too, with their `R`/`φ` text, the
+into 12346. With neither, the reader shows its own measure, so a whole figure follows a stretch in CAD.
+A decimal comma from `sheet text` is a figure that is not whole, so it stays in group 1 and in the
+block's TEXT, and never reaches a numeric group. `dim radius` and `dim diameter` are written this way too, with their `R`/`φ` text, the
 measured line being the radius or the diameter: a radial type is residue.
 
 The sizes a reader lays a dimension out by are written twice, in a `DIMSTYLE` row and in `$DIMTXT`,
