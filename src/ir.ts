@@ -3494,7 +3494,7 @@ function resolveBody(
   //    second error); the overlap check reads only what was kept.
   checkPlanDrawable(resolvedElements, diagnostics);
   const siteBeforeOverlaps = currentStepSite();
-  checkRoomOverlaps(elements, diagnostics, (extras?.storeyCount ?? 1) > 1 ? extras?.level?.level : undefined);
+  checkRoomOverlaps(elements, diagnostics, (extras?.storeyCount ?? 1) > 1 ? extras?.level?.level : undefined, ast.grid);
   stepSite(siteBeforeOverlaps?.span, siteBeforeOverlaps?.file, siteBeforeOverlaps?.frame);
   checkFurnitureRooms(resolvedElements, diagnostics);
 
@@ -4459,6 +4459,18 @@ function checkPlanDrawable(elements: ResolvedElement[], diagnostics: Diagnostic[
   }
 }
 
+/** Do two rectangles overlap by no more than one grid step? Rounding can only make such an overlap. */
+function withinOneStep(a: RRoom, b: RRoom, grid: number): boolean {
+  if (grid <= 0 || a.poly || b.poly) return false;
+  const across = Math.min(a.at.x + a.size.w, b.at.x + b.size.w) - Math.max(a.at.x, b.at.x);
+  const down = Math.min(a.at.y + a.size.h, b.at.y + b.size.h) - Math.max(a.at.y, b.at.y);
+  return Math.min(across, down) <= grid;
+}
+
+/** Why rooms that touch in the source can overlap on the sheet: each number rounds on its own. */
+const gridOverlapHint = (grid: number): string =>
+  `\`grid ${fmt3(grid)}\` rounds every coordinate and size on its own, so rooms that touch in the source can overlap by one step. Write them on the grid, or place the second with \`right-of\` or \`below\`.`;
+
 /** How many overlapping room pairs `W_ROOM_OVERLAP` lists before it only counts. 1000 identical
  *  rooms are 499,500 pairs; a list that long is noise and an unbounded allocation. */
 export const MAX_OVERLAP_PAIRS_LISTED = 200;
@@ -4479,7 +4491,12 @@ export const MAX_OVERLAP_PAIRS_LISTED = 200;
  *  stays quadratic is what the answer is made of: n DISTINCT polygon rooms that all share a
  *  cell are n² distinct exact tests, each charged to the step meter by `polygonsOverlap`, with
  *  the pair it is testing as the step site. Rooms reaching this check are finite (`checkNumberDomain` drops the rest first). */
-export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diagnostic[], level?: number): void {
+export function checkRoomOverlaps(
+  elements: ResolvedElement[],
+  diagnostics: Diagnostic[],
+  level?: number,
+  grid = 0,
+): void {
   // A room left unplaced carries a (0,0) placeholder, not geometry: testing it would
   // report phantom overlaps (quadratic in a chain) on top of the layout error.
   const rooms = elements.filter((e): e is RRoom => e.kind === "room" && !e._unplaced);
@@ -4568,6 +4585,7 @@ export function checkRoomOverlaps(elements: ResolvedElement[], diagnostics: Diag
       message: overlapText(r1, r2),
       code: "W_ROOM_OVERLAP",
       span: r2.span,
+      ...(withinOneStep(r1, r2, grid) ? { hints: [gridOverlapHint(grid)] } : {}),
     });
   };
 

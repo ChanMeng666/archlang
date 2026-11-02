@@ -18,6 +18,8 @@ archlang manifest --json                 # this page, as data
 `arch` is installed as an alias of `archlang`, but on Linux, macOS and Git Bash coreutils owns
 that name, so this page never uses it.
 
+A flag that takes a value takes it either way: `--level 2` or `--level=2`.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -59,7 +61,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG, or to Plan JSON
 | --- | --- |
 | `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
 | `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads |
-| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level |
+| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level; {level} in -o names each storey's file |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
@@ -97,6 +99,9 @@ $ archlang compile plan.arch -f png -o plan.png --install --json
 
 # a multi-storey plan writes one sheet per level (house.L1.svg, house.L2.svg …) and reports outputs[]
 $ archlang compile house.arch -o house.svg --json
+
+# name each storey's file yourself: storey-1.svg, storey-2.svg …
+$ archlang compile house.arch -o "storey-{level}.svg"
 
 # render just the upper storey of a multi-storey plan to one file
 $ archlang compile house.arch --level 2 -o upper.svg
@@ -241,7 +246,7 @@ recompile on save (interactive)
 | --- | --- |
 | `--out, -o <file\|->` | output file, or '-' for stdout (default: the input path with the format's extension) |
 | `--format, -f <svg\|dxf\|txt\|json\|pdf\|png>` | output format (default: the -o extension, else svg); json writes the Plan JSON that --from-json reads |
-| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level |
+| `--level <n>` | render only this storey of a multi-storey plan (level blocks) to the plain -o target, instead of one &lt;stem&gt;.L&lt;level&gt;.&lt;ext&gt; file per level; {level} in -o names each storey's file |
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |

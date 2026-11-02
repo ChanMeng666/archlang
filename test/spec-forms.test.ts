@@ -215,6 +215,7 @@ const POSITIVE: Snippet[] = [
     ),
   },
   { keyword: "room", note: "circular floor", src: plan(`  room id=c circle at (5000,5000) radius 3000`) },
+  { keyword: "room", note: "a floor finish", src: plan(`  room id=c at (0,0) size 4000x3000 uses bath floor tile`) },
   {
     keyword: "room",
     note: "rule 1 — the metric unit suffixes fold to mm (4m, 3.5m, 40cm, 20mm)",
@@ -362,6 +363,7 @@ const POSITIVE: Snippet[] = [
     note: "`flush` on an anchored edge measures from the wall's inner FACE",
     src: plan(`${BOX}\n${ROOM}\n  furniture id=f1 counter in r1 anchor bottom flush inset 100 size 1200x600`),
   },
+  { keyword: "furniture", note: "one piece mirrored", src: plan(`  furniture sofa_l at (0,0) size 2600x1600 mirror`) },
   {
     keyword: "furniture",
     note: "the relations (ADR 0029): `against <room>.<edge>`, `facing <id>`, `clear front|sides`",

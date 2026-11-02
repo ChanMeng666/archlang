@@ -2804,7 +2804,7 @@ plan "Bath detail" {
 Each is free of the others. A band with nothing left in it is not reserved, so a hidden scale bar
 and title block give their height back to the drawing: the fit, the auto-chosen scale and
 `W_SCALE_OVERFLOW` all read the sheet as drawn, and `W_TITLE_OVERFLOW` does not judge a block that
-is not drawn. `describe()` is unchanged, Plan JSON lists the word in `dropped`, and `arch finish`
+is not drawn. `describe()` is unchanged, Plan JSON lists the word in `dropped`, and `archlang finish`
 adds no title to a plan that says `title hidden`. The three are plan-level and apply to every page
 of a plan with `level` blocks.
 
@@ -3370,6 +3370,7 @@ a level-unaware consumer still gets a complete drawing. On the CLI:
 archlang compile house.arch                          # writes house.L1.svg, house.L2.svg …
 archlang compile house.arch -o house.svg --json      # …and reports outputs[] + pages[]
 archlang compile house.arch --json                   # check only: WRITES NOTHING (no -o), reports written:false
+archlang compile house.arch -o "storey-{level}.svg"  # {level} names each file: storey-1.svg, storey-2.svg …
 archlang compile house.arch --level 2 -o upper.svg   # just that storey, to the plain target
 archlang compile house.arch --level 1 -o -           # `-o -` streams ONE drawing, so it needs --level
 archlang describe house.arch --json                  # top-level facts = lowest storey, plus levels[]

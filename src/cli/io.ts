@@ -252,12 +252,16 @@ export function parseArgs(argv: string[], command?: ManifestCommand): Args {
       res.help = true;
       continue;
     }
-    const base = FLAG_KEYS[a];
+    // `--flag=value` is `--flag value`, for a flag that takes one: `--level=-1`. A word that was a
+    // positional stays one, and a boolean flag has no value to give, so it stays an unknown flag.
+    const eq = a.startsWith("--") ? a.indexOf("=") : -1;
+    const name = eq > 0 ? a.slice(0, eq) : a;
+    const base = FLAG_KEYS[name];
     const spec = base && command ? (base.perCommand?.[command.name] ?? base) : base;
-    if (spec && (!allowed || allowed.has(a))) {
+    if (spec && (!allowed || allowed.has(name)) && !(eq > 0 && spec.kind === "boolean")) {
       if (spec.kind === "boolean") bag[spec.key] = true;
       else {
-        const raw = argv[++i];
+        const raw = eq > 0 ? a.slice(eq + 1) : argv[++i];
         // A per-command string flag with no value after it is "", never undefined: the command
         // can then refuse it (`context --level` must not fall back to printing the full bundle).
         bag[spec.key] = spec.kind === "number" ? Number(raw) : spec === base ? raw : (raw ?? "");
@@ -376,6 +380,18 @@ export function levelTarget(target: string, level: number): string {
   // No extension (or the only dot is in a directory name) → just append the suffix.
   if (i <= slash) return `${target}.L${level}`;
   return `${target.slice(0, i)}.L${level}${target.slice(i)}`;
+}
+
+/** A `-o` target that names its storey by itself: `{level}` stands for the number. */
+const LEVEL_TOKEN = "{level}";
+
+/**
+ * Where one storey lands: `{level}` in the target is the storey's number, and a target without it
+ * takes the {@link levelTarget} suffix. Kept apart from `levelTarget`, which the playground's file
+ * name is held in lockstep with: a browser download has no target to carry the word.
+ */
+export function storeyTarget(target: string, level: number): string {
+  return target.includes(LEVEL_TOKEN) ? target.replaceAll(LEVEL_TOKEN, String(level)) : levelTarget(target, level);
 }
 
 /**

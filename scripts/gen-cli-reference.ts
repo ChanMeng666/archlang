@@ -96,6 +96,8 @@ export function renderCliReference(): string {
     `\`arch\` is installed as an alias of \`${CLI_NAME}\`, but on Linux, macOS and Git Bash coreutils owns`,
     "that name, so this page never uses it.",
     "",
+    "A flag that takes a value takes it either way: `--level 2` or `--level=2`.",
+    "",
     "## Exit codes",
     "",
     "| Code | Meaning |",
