@@ -1,0 +1,13 @@
+# The worked example of tools/plan-to-geojson: a studio with a bowed east wall.
+plan "Bay studio" {
+  units mm
+  paper A3 landscape
+  scale 1:50
+  wall id=ext exterior thickness 200 { (0,0) (6000,0) arc (6000,4000) radius 2500 cw (0,4000) close }
+  room id=studio at (0,0) size 6000x4000 label "Studio" uses living
+  door id=entry on ext at 15500 width 900 hinge left swing in
+  window id=south on ext at 2000 width 1500
+  furniture id=sofa sofa at (2500,200) size 2000x800
+  furniture id=table dining_table at (3000,2600) size 1200x800
+  column id=post at (5300,1900) size 200x200
+}

@@ -3713,6 +3713,44 @@ To read that surface rather than parse it: `archlang help` lists every command,
 [CLI reference](https://archlang.uk/cli) are both rendered from the
 manifest, so none of the three can disagree.
 
+### Convert Plan JSON to another format (experimental)
+
+Plan JSON is the way out for a format ArchLang does not write. There is no plugin interface and
+the core takes on no dependency: a converter is a short script of your own that reads the document
+and writes the file. `tools/plan-to-geojson/` in the repository is one complete example, a recipe
+outside the npm package, with its worked example beside it.
+
+```sh
+archlang compile plan.arch -f json -o plan.json
+node tools/plan-to-geojson/plan_to_geojson.mjs plan.json plan.geojson
+```
+
+What a converter has to know, in the order it comes up:
+
+- **What is not in the document.** `compile -f json` prints a `note:` per clause it left out and
+  `--json` lists them in `dropped`, and a converter inherits that list. A plan with `level` blocks
+  writes one document per storey.
+- **The shape.** `schemas/plan.schema.json` describes it (`version: 1`). It is additive, so ignore a
+  key you do not know. Coordinates are millimetres, origin top-left, `y` down. Keys marked
+  output-only (`area`, `floor_polygon`, `edges`, …) are there to be read.
+- **A curved edge.** A wall point with an `arc` member says the edge arriving at it is an arc:
+  `radius`, `dir` (`cw` or `ccw` as the sheet reads, default `ccw`) and `major`, the same words as
+  the `.arch` clause. `x`/`y` stay its end, so ignoring `arc` leaves the chord. The script shows how to
+  find the centre and flatten it.
+- **Derived walls.** Under `walls from rooms` the document holds the statement, `walls_from_rooms`,
+  and not the walls. Read them from `describe --json`'s `derived_walls`.
+
+The example writes **GeoJSON** ([RFC 7946](https://www.rfc-editor.org/rfc/rfc7946)) because it is a
+real format with a short specification and wide support in GIS and web-map tools, and it is itself
+JSON, so the script is about the mapping and not a file format. Rooms, furniture and columns become
+polygons, walls lines, openings points. Its two awkward rules are ones any target can bring: the
+plan's `y` runs down, and GeoJSON has no curve, so an arc is flattened to one chord per 7.5°.
+
+Its limits are stated rather than hidden. Coordinates are local metres, because a plan has no place
+on Earth, and RFC 7946 §4 allows that only by agreement between the parties: a tool that assumes
+longitude and latitude will read them as degrees. A wall is its centreline, not its band, because
+the joined wall outline is not in the document. An opening is its centre.
+
 ### Diagnostics
 
 The compiler never throws on bad source: it recovers from syntax errors and
