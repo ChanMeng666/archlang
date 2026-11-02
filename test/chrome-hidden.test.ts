@@ -166,6 +166,11 @@ suite("the word in the grammar", () => {
     expect(parse(once).plan?.hide).toEqual({ scale: true, north: true });
   });
 
+  it("leaves `title` before an assignment the error it was", () => {
+    const out = compile(plan("let hidden = 1\n  title hidden = 3"));
+    expect(out.diagnostics.find((d) => d.code === "E_PARSE")).toBeDefined();
+  });
+
   it("is refused in a storey, as every plan-level setting is", () => {
     const src = `plan "T" {\n  units mm\n  level 1 {\n    north hidden\n    room id=a at (0,0) size 1000x1000\n  }\n}\n`;
     expect(compile(src).errors.length).toBeGreaterThan(0);

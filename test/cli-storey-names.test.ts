@@ -12,14 +12,12 @@ import { describe as suite, expect, it } from "vitest";
 import { levelTarget, parseArgs, storeyTarget } from "../src/cli/io.js";
 import { buildManifest } from "../src/manifest.js";
 
-const compileCommand = buildManifest().commands.find((c) => c.name === "compile")!;
-const contextCommand = buildManifest().commands.find((c) => c.name === "context")!;
+const commands = buildManifest("0.0.0").commands;
+const compileCommand = commands.find((c) => c.name === "compile")!;
+const contextCommand = commands.find((c) => c.name === "context")!;
 
-const run = (args: string[], cwd: string): { status: number | null; stderr: string } => {
-  const cli = join(process.cwd(), "src/cli.ts");
-  const r = spawnSync(process.execPath, ["--import", "tsx", cli, ...args], { encoding: "utf8", cwd: process.cwd() });
-  return { status: r.status, stderr: r.stderr + (cwd ? "" : "") };
-};
+const run = (args: string[]): number | null =>
+  spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], { encoding: "utf8" }).status;
 
 function scratch(): { dir: string; plan: string } {
   const dir = mkdtempSync(join(tmpdir(), "archlang-storeys-"));
@@ -55,8 +53,7 @@ suite("`--flag=value`", () => {
 
   it("is usable on the command line", () => {
     const { dir, plan } = scratch();
-    const r = run(["compile", plan, "--level=1", `--out=${join(dir, "one.svg")}`], dir);
-    expect(r.status).toBe(0);
+    expect(run(["compile", plan, "--level=1", `--out=${join(dir, "one.svg")}`])).toBe(0);
     expect(readdirSync(dir)).toContain("one.svg");
   });
 });
@@ -75,19 +72,19 @@ suite("`{level}` in `-o`", () => {
 
   it("writes one file a storey", () => {
     const { dir, plan } = scratch();
-    expect(run(["compile", plan, "-o", join(dir, "storey-{level}.svg")], dir).status).toBe(0);
+    expect(run(["compile", plan, "-o", join(dir, "storey-{level}.svg")])).toBe(0);
     expect(readdirSync(dir).sort()).toEqual(["house.arch", "storey-1.svg", "storey-2.svg"]);
   });
 
   it("fills in the one storey `--level` picks", () => {
     const { dir, plan } = scratch();
-    expect(run(["compile", plan, "--level", "2", "-o", join(dir, "s{level}.svg")], dir).status).toBe(0);
+    expect(run(["compile", plan, "--level", "2", "-o", join(dir, "s{level}.svg")])).toBe(0);
     expect(readdirSync(dir).sort()).toEqual(["house.arch", "s2.svg"]);
   });
 
   it("a plain target with `--level` stays the plain target", () => {
     const { dir, plan } = scratch();
-    expect(run(["compile", plan, "--level", "2", "-o", join(dir, "upper.svg")], dir).status).toBe(0);
+    expect(run(["compile", plan, "--level", "2", "-o", join(dir, "upper.svg")])).toBe(0);
     expect(readdirSync(dir).sort()).toEqual(["house.arch", "upper.svg"]);
   });
 });

@@ -463,7 +463,8 @@ class Parser {
             this.parseDimsSetting(plan, t);
             break;
           case "title": {
-            if (this.isKeyword("hidden", 1)) {
+            // `title hidden = 3` was an error, and stays the error `parseTitle` reports.
+            if (this.isKeyword("hidden", 1) && !this.isTrailer(this.peek(2))) {
               this.next();
               this.eatHidden(plan, "title");
               break;

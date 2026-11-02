@@ -342,13 +342,13 @@ function rules(): [string, string][] {
     ["paper-stmt", `"paper" rws paper-size ( rws paper-orientation )?`],
     ["paper-size", paperSize],
     ["paper-orientation", paperOrientation],
-    ["scale-stmt", `"scale" ( rws number ws ":" ws number )? ( rws "hidden" )?`],
+    ["scale-stmt", `"scale" rws ( number ws ":" ws number ( rws "hidden" )? | "hidden" )`],
     // The vertical datum's plan-level setting (v1.35). A full `expr`, not a bare `number`,
     // because the parser reads one — a plan writes `let h = 3200` once and `height h`
     // everywhere, and a grammar that offered only a literal would forbid the form the
     // language accepts.
     ["height-stmt", `"height" rws expr`],
-    ["north-stmt", `"north" ( rws north-dir )? ( rws "hidden" )?`],
+    ["north-stmt", `"north" rws ( north-dir ( rws "hidden" )? | "hidden" )`],
     ["north-dir", `"up" | "down" | "left" | "right" | number`],
     // `site { street … [hemisphere …] }` — both value sets INJECTED from the closed
     // vocabularies the parser itself checks against (`src/ast.ts`), never retyped: a

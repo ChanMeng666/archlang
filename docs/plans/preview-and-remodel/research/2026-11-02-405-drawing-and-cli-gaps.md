@@ -73,8 +73,8 @@ refusing doors and dimensions. A placed piece's document round-trips to the same
 
 **D9. `paper auto` is left, against the card's fourth form.** ADR 0005 and ADR 0024 settle it: ADR 0024
 says a `paper auto` setting would put the choice back inside `compile()`, the source saying "some
-sheet" and the drawing showing a particular one. Scale fitting inside `compile()` is the older
-exception, and the ADR names it as the reason not to add a second one. Reverse-if: the owner amends
+sheet" and the drawing showing a particular one. Scale fitting inside `compile()` is older than that
+ADR, which does not reopen it and is no precedent for a second choice. Reverse-if: the owner amends
 ADR 0024.
 
 ## Consequences by surface
