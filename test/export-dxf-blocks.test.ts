@@ -200,11 +200,12 @@ suite("over the corpus", () => {
     .filter((f) => f.endsWith(".arch"))
     .sort();
 
-  const pagesOf = (src: string): Array<{ scene: Scene; facts: ReturnType<typeof describe> }> => {
+  type Counted = Pick<ReturnType<typeof describe>, "doors" | "windows" | "furniture">;
+  const pagesOf = (src: string): Array<{ scene: Scene; facts: Counted }> => {
     const c = compile(src, { noCache: true, world });
     const facts = describe(src, { world });
     return c.pages
-      ? c.pages.map((p, i) => ({ scene: p.scene, facts: facts.levels![i] as ReturnType<typeof describe> }))
+      ? c.pages.map((p, i) => ({ scene: p.scene, facts: facts.levels![i]! }))
       : [{ scene: c.scene!, facts }];
   };
 
