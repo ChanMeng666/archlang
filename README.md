@@ -71,7 +71,7 @@ flowchart LR
     V -->|yes| O([SVG · DXF · PDF · PNG])
 ```
 
-## New in 1.44 to 1.47
+## New in 1.44 to 1.53
 
 Each links to a short section with an example, on [archlang.uk/whats-new](https://archlang.uk/whats-new).
 
@@ -87,6 +87,15 @@ Each links to a short section with an example, on [archlang.uk/whats-new](https:
 - [More lint reports](https://archlang.uk/whats-new#more-lint-reports): `W_WALL_END_SHORT`, `W_FURNITURE_ON_STAIR`
 - [L-shaped rooms](https://archlang.uk/whats-new#l-shaped-rooms): a rectilinear `room polygon` in `walls from rooms`
 - [Turning stairs](https://archlang.uk/whats-new#turning-stairs): `stair id=s dir up width 1000 { flight … landing … flight … }`
+- [Window kinds](https://archlang.uk/whats-new#window-kinds): `window fixed|casement|tilt|tilt_turn|sliding`, `door glazed_sliding`
+- [Corner windows](https://archlang.uk/whats-new#corner-windows): `window on r.top at corner r.right width 1800`
+- [Furnishing every storey](https://archlang.uk/whats-new#furnishing-every-storey): `archlang finish` on a plan with `level` blocks
+- [Labels in small rooms](https://archlang.uk/whats-new#labels-in-small-rooms): a name that does not fit shrinks
+- [Net area in the stamp](https://archlang.uk/whats-new#net-area-in-the-stamp): `schedule rooms net`
+- [Sheet text](https://archlang.uk/whats-new#sheet-text): `sheet text { total "SUMME" decimal "," }`
+- [Hidden sheet marks](https://archlang.uk/whats-new#hidden-sheet-marks): `north hidden`, `scale hidden`, `title hidden`
+- [One mirrored piece](https://archlang.uk/whats-new#one-mirrored-piece): `furniture … mirror`
+- [Room floors](https://archlang.uk/whats-new#room-floors): `room … floor tile|paving|deck|concrete`
 
 ## For your agent
 
