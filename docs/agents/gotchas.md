@@ -67,6 +67,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   trim comments, never plan content.
 - **A spec cut is provable only if the same fact remains in the file, after every parallel branch has merged.** Three cuts in one round removed facts called duplicates, and two branches cutting the same sentence's copies left none (#438, #439). Grep the file for the fact after each merge.
 - **A same-length edit to an example still moves its permalink** (`test/readme-permalink.test.ts`): hashes read the text, not the geometry. Regenerate with `scripts/gen-permalink.mjs`.
+- **`publish-openvsx.yml` builds the ref it is dispatched on**, and a version cannot be withdrawn: dispatch the tag, `--ref v<version>`, or code merged after the release ships under the released number.
+- **A local run that skipped the full suite reports green on what it ran**: on a low-load round the corpus guards and CodeQL fire only in CI, so read a PR's checks before starting the next card.
 - **`spec.llm.md` is capped below 30,000 UTF-16 units** (`test/llm-spec-drift.test.ts`) with little
   headroom, so new spec text must be paid for by cuts elsewhere in the file.
 

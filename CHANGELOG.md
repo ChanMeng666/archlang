@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.53.0] - 2026-11-02
+
 ### Added
 
 - `{level}` in `-o` names each storey's file: `archlang compile house.arch -o "storey-{level}.svg"` writes `storey-1.svg`, `storey-2.svg` (issue #405). Without the word a plan writes `<stem>.L<level>.<ext>` as before, and a plan with no `level` blocks refuses it.

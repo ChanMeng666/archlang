@@ -14,6 +14,13 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.41.0] - 2026-11-02
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.53.0`** (`sheet text`, `axis.3` datums, `hidden`, `mirror` on a piece and
+  `floor` on a room, with completion and highlighting for the new words).
+
 ## [0.40.0] - 2026-11-02
 
 ### Changed

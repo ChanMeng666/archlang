@@ -217,9 +217,7 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 
 ### J7–J11 · Batch 2: common forms for 1.52.0 — `done` · PRs #436, #438, #437, #439, #440 · merges `ecedd364`, `129b7dda`, `c46cbc81`, `3f3060a3`, `8533fd5c` · record: `research/2026-11-02-as-built.md`
 
-### J12–J15 · Batch 3: interchange and languages for 1.53.0 — `doing` · the first two batches finished early
-
-#366 and #343; #403; #405; #345 and D27.
+### J12–J15 · Batch 3: interchange and languages for 1.53.0 — `done` · PRs #446, #445, #447, #444 · merges `18254724`, `cac37af4`, `cb254d85`, `db3b136c` · record: `research/2026-11-02-as-built.md`
 
 ### J16 · Residue of batch 1 — `todo` · one PR per group; none blocks a release
 
@@ -237,6 +235,14 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 - **Net stamp:** `schedule openings net` gives a generic parse error; no diagnostic for a sheet mixing net and centreline stamps.
 - **Corner windows:** a sum of window widths counts the corner twice; a refused `walls from rooms` cascades into `E_WINDOW_CORNER`; 3D legs' prisms overlap and panes cross at the corner; `at (x,y)` corner windows still draw the pier.
 - **Stairs:** a column in a landing and a wall across a long landing are unread; a wall along a leg reads "0 mm behind the bottom step"; foot and head messages outside a dwelling say "as long as the flight is wide needs 1200 mm"; `W_STAIR_NO_LANDING`'s `fix` does not name a landing; `reachesTheForm` cannot see a block inside a `component`; `docs/testing.md` §5 lists no CLI JSON payload.
+
+### J18 · Residue of batch 3 — `todo` · one PR per group; none blocks a release
+
+- **Interchange:** `dim radius` and `dim diameter` as radial DIMENSION types; a cased `opening` and an uncatalogued fixture as blocks; a dimension `text` holding `<>` or a backslash reads as markup in a CAD reader; `src/lint/rules/dims.ts` keeps its own tick; handles and an OBJECTS section for a stricter reader; a room labelled "Hall" flips `uses` to `entry` across a Plan JSON round trip; a piece's `hidden` or `floor` is not in `impact` or `diffPlans`, unchecked.
+- **Sheet text:** `W_ANNOTATION_OVERLAP` can differ from an English twin's verdict, by design; a table key for each new word as it ships.
+- **Grid:** `keep stacked` refuses a wall, against D25, and a column, one word in `STACKED_KINDS`; GBNF accepts `at axis.2 from …`; `at axis.2 + 500` lands silently off the axis on a wall not starting at 0; the word "structural" in old text (`src/axes.ts`, the reference, `column`'s doc string).
+- **Gaps:** `hidden` is plan-wide, so one storey cannot hide alone; `finish --only sheet` on `scale hidden` writes a second `scale` line; a floor pattern does not turn under a `place`; PDF floors are a flat tint; a narrower `finish` route that adds only the sheet.
+- **Left on #405:** L-shaped voids with a railing, `fence` and `outdoor` heights, `b/h` labels, a glass balustrade, a roof window, a bath with tub and shower from `finish`.
 
 ### Wave 6 (after the N10 read): G7 repair-convergence replay (the review rings of iteration N fading
 into N+1; needs `fix`/`repair` to emit a trace, design spike first), D1, A6, archlang-3d M2+, Tier B.
