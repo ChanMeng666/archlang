@@ -56,10 +56,11 @@ export function themeLawDigest(api: ThemeLawApi, src: string, world: World | und
   return sha256(perThemeDigests(api, src, world).join(","));
 }
 
-/** The first 101 fixture families — every family that existed when the law was measured. The
- *  family table is append-only (its order is the legend's), so a family added later never enters
- *  this row; it is passed in so the row is built from the table, never retyped. */
-export const MEASURED_FAMILIES = 101;
+/** The first 83 canonical fixture families — every family that existed when the law was measured
+ *  (101 catalogued words with their aliases). The family table is append-only (its order is the
+ *  legend's), so a family added later never enters this row; the list is passed in so the row is
+ *  built from the table, never retyped. */
+export const MEASURED_FAMILIES = 83;
 
 const plan = (body: string): string => `plan "T" {\n  units mm\n${body}\n}\n`;
 
@@ -70,6 +71,10 @@ const plan = (body: string): string => `plan "T" {\n  units mm\n${body}\n}\n`;
  * uncatalogued word (the labelled-rectangle fallback, a group-1 permanent pin elsewhere).
  */
 export function inlineRows(canonicalFamilies: readonly string[]): ThemeLawRow[] {
+  // A shorter table would quietly shrink the row and move its digest for the wrong reason.
+  if (canonicalFamilies.length < MEASURED_FAMILIES) {
+    throw new Error(`theme law: ${canonicalFamilies.length} families, the row was measured over ${MEASURED_FAMILIES}`);
+  }
   const fams = canonicalFamilies.slice(0, MEASURED_FAMILIES);
   const cols = 12;
   const pieces = fams.map((f, i) => {

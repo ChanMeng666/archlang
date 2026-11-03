@@ -471,9 +471,11 @@ export function sanitizeTheme(theme: Theme): Theme {
     if (typeof v === "string") (out as unknown as Record<string, unknown>)[k] = xmlText(v);
   }
   // The tints are colours like any other (a registered theme or `CompileOptions.theme` can carry
-  // them), so they are escaped the same way; only a theme that has them gets the key.
-  const tints = out.materialTints;
-  if (tints !== undefined) {
+  // them), so they are escaped the same way; only a theme that has them gets the key. A
+  // non-object (`null` from an untyped caller) is no tint table at all, and is dropped.
+  const tints: unknown = out.materialTints;
+  if (typeof tints !== "object" || tints === null) delete out.materialTints;
+  else {
     const clean: Partial<Record<FixtureMaterial, string>> = {};
     for (const [m, c] of Object.entries(tints) as [FixtureMaterial, unknown][]) {
       if (typeof c === "string") clean[m] = xmlText(c);

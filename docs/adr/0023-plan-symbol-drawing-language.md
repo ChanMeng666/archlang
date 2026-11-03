@@ -111,17 +111,21 @@ for the default**.
   material is a property of the FAMILY (`FIXTURE_FAMILY_MATERIALS`, beside `FIXTURE_FAMILIES` in
   `src/elements/fixtures-glyphs.ts`; a sofa is fabric, a counter stone), never read from a label
   and never a language keyword. A family names a primary material (the body a plan looks down
-  on) and, where it reads better, a secondary one for the inner part its symbol fills apart from
-  the body (a sofa's cushions, a sink's bowl, a car's glass). The same table is exported for
+  on) and, where it reads better, a secondary one for a second part, which the glyph names
+  (a sofa's cushions, a sink's bowl, a car's glass). The same table is exported for
   `packages/archlang-3d`, so a piece's 2D tint and 3D material cannot disagree.
 - **How it is drawn.** The theme carries `materialTints` (one fill per material). A glyph's
   `body` and `basin` and its `fillFor(material, untinted)` read them through `GlyphCtx`; with no
   tints each returns exactly the fill it returned before, so no other theme's bytes can move
   (`test/rendered-theme.test.ts` sweeps every example under the default and the four earlier
-  themes against digests measured on `main`). Planting keeps `theme.lawn` and a rug stays
-  unfilled outside `rendered`; inside it, foliage and wool tint them (a rug still paints under
-  the furniture that stands on it, `renderOrder`). An overhead piece drawn dashed above the cut
-  plane (an upper cabinet, a range hood, a pergola) stays unfilled, so the piece below it shows.
+  themes against digests measured on `main`). Planting keeps `theme.lawn` outside `rendered`;
+  inside it a canopy takes the `foliage` tint, so there the `lawn` key reaches the lawn surfaces
+  and no longer a tree, shrub, hedge or plant. A rug stays unfilled under every theme, `rendered`
+  included: it is moved ahead of the furniture (`renderOrder`), but not ahead of what the same
+  pass draws before the first piece (a column, a stair, a void, a fence), nor of the datum axes
+  on the pass below, and the Scene has no translucent fill, so any tint would hide them. An
+  overhead piece drawn dashed above the cut plane (an upper cabinet, a range hood, a pergola)
+  stays unfilled too, so the piece below it shows.
 - **What does not change.** Decisions 1 to 6 hold: tints are fills, never strokes; outline and
   detail tones are unchanged (the outline ink is still the derived symbol ink, decision 6), and
   the outline ink keeps at least 3:1 contrast on every tint, measured. No shadow, no hatch on a

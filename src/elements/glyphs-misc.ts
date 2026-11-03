@@ -690,7 +690,7 @@ export function drawTreadmill(r: Rect, g: GlyphCtx): SceneNode[] {
   g.path(roundedRectPath(con, s * 0.04), g.body, "extraThin");
   g.path(
     roundedRectPath({ x: con.x + con.w * 0.14, y: con.y + con.h * 0.22, w: con.w * 0.72, h: con.h * 0.5 }, s * 0.015),
-    g.basin,
+    g.blank,
     "extraThin",
   );
   const deckTop = r.y + r.h * 0.21;

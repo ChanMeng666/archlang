@@ -431,6 +431,12 @@ export function drawTvUnit(r: Rect, g: GlyphCtx): SceneNode[] {
  * seating that stands on it and competes with every outline in the room. In the detail pen and
  * tone it reads as what it is — a floor finish — and the furniture drawn over it stays on top.
  *
+ * It stays unfilled under the `rendered` theme too, although its family names `wool`. Moving it
+ * ahead of the furniture keeps it under the sofa, but not under what the same pass draws before
+ * the first piece of furniture (a column, a stair, a void, a fence), and not under the datum
+ * axes, which sit on a pass below the whole furniture pass. With no translucent fill in the Scene
+ * any tint would hide them, so the rug keeps its lines and nothing else.
+ *
  * The fringe hangs off the two SHORT ends — the ends of the rug's own long axis, whichever that
  * is on the page, so a runner authored 2400x800 and one authored 800x2400 are the same drawing
  * turned. A SQUARE rug has no long axis, so it is fringed on all four ends: that is what keeps
@@ -459,7 +465,7 @@ export function drawRug(r: Rect, g: GlyphCtx): SceneNode[] {
   const fx = sides ? fringe : 0;
   const fy = ends ? fringe : 0;
   const body: Rect = { x: r.x + fx, y: r.y + fy, w: r.w - 2 * fx, h: r.h - 2 * fy };
-  g.poly(rectPoly(body), g.fillFor(g.material?.primary, "none"), "extraThin");
+  g.poly(rectPoly(body), "none", "extraThin");
   g.poly(rectPoly(insetRect(body, 0.08)), "none", "extraThin");
 
   const ticks = clampCount(s / (long * 0.05), 3, square ? 10 : 16);

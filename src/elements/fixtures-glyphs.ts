@@ -282,8 +282,9 @@ export function canonicalFixture(category: string): string | undefined {
 /**
  * The materials a fixture family can be made of: the closed vocabulary the `rendered` theme tints
  * by (`Theme.materialTints`) and `packages/archlang-3d` shades by. It is that package's material
- * slots (`MATERIAL_SLOTS`, `packages/archlang-3d/src/materials.ts`) without `body`, its untagged
- * default, so a family's material names the same thing in 2D and 3D (visual-assets V-D2).
+ * slots (`MATERIAL_SLOTS` in `packages/archlang-3d/src/materials.ts`) without `body`, its untagged
+ * default, so a family's material names the same thing in 2D and 3D (visual-assets V-D2);
+ * `test/material-vocabulary.test.ts` holds the two lists equal.
  */
 export const FIXTURE_MATERIALS = [
   "wood",
@@ -309,29 +310,37 @@ export const FIXTURE_MATERIALS = [
 export type FixtureMaterial = (typeof FIXTURE_MATERIALS)[number];
 
 /**
- * What a fixture family is made of, as the plan sees it from above.
+ * What a fixture family is made of: a PAIR of materials (one {@link FixtureMaterial} each).
  *
  * `primary` is the material of the symbol's body — the top a plan looks down on (a counter's
  * worktop, a bed's covers, a sofa's upholstery). `secondary`, where a family has one, is the
- * material of the inner part its symbol fills apart from the body (a sofa's cushions, a sink's
- * bowl, a hot tub's water, a car's glass); without one, that inner part keeps the theme's white.
- * A glyph reads both through its `GlyphCtx` (`body`, `basin`, `fillFor`), never from here.
+ * material of a second part (a sofa's cushions, a sink's bowl, a hot tub's water, a car's glass,
+ * a bunk bed's mattress, a bicycle's tyres). The glyph decides which of its parts that is: most
+ * fill their inner part with `GlyphCtx.basin`, which takes the secondary tint; a glyph whose
+ * inner part is something else names it with `blank` or `fillFor`. A glyph reads both through its
+ * `GlyphCtx`, never from here.
  */
-export interface FamilyMaterial {
+export interface FamilyMaterials {
   readonly primary: FixtureMaterial;
   readonly secondary?: FixtureMaterial;
 }
 
-const M = (primary: FixtureMaterial, secondary?: FixtureMaterial): FamilyMaterial =>
-  secondary === undefined ? { primary } : { primary, secondary };
+/** A frozen copy of `rows` on a null prototype: only its own keys read as entries. */
+function frozenTable<T>(rows: Record<string, T>): Readonly<Record<string, T>> {
+  return Object.freeze(Object.assign(Object.create(null) as Record<string, T>, rows));
+}
+
+const M = (primary: FixtureMaterial, secondary?: FixtureMaterial): FamilyMaterials =>
+  Object.freeze(secondary === undefined ? { primary } : { primary, secondary });
 
 /**
  * Every canonical family's material (visual-assets V-D2): a property of the FAMILY, never read
  * from a `label`, never a language keyword. An alias resolves through its family
- * ({@link fixtureMaterial}). Exported so the 3D package reads this table instead of retyping it;
- * `test/rendered-theme.test.ts` holds its keys equal to {@link CANONICAL_FIXTURES}.
+ * ({@link familyMaterials}). Exported so the 3D package reads this table instead of retyping it;
+ * `test/rendered-theme.test.ts` holds its keys equal to {@link CANONICAL_FIXTURES}. Frozen, on a
+ * null prototype, so a consumer can neither edit it nor read an inherited key off it.
  */
-export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterial>> = {
+export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterials>> = frozenTable({
   // ---- bath ----
   wc: M("ceramic"),
   basin: M("ceramic"),
@@ -368,7 +377,7 @@ export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterial>> 
   island: M("stone"),
   upper_cabinet: M("paint"),
   washer: M("appliance", "glass"),
-  dryer: M("appliance", "glass"),
+  dryer: M("appliance"),
   // ---- misc ----
   plant: M("foliage"),
   car: M("paint", "glass"),
@@ -386,7 +395,7 @@ export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterial>> 
   outdoor_table: M("wood"),
   outdoor_chair: M("wood", "cushion"),
   umbrella: M("fabric"),
-  bicycle: M("metal"),
+  bicycle: M("metal", "rubber"),
   motorcycle: M("metal", "rubber"),
   hot_tub: M("wood", "water"),
   swing: M("wood"),
@@ -395,7 +404,7 @@ export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterial>> 
   mailbox: M("metal"),
   ev_charger: M("appliance", "screen"),
   pergola: M("wood"),
-  sandpit: M("wood", "stone"),
+  sandpit: M("wood", "soil"),
   fire_pit: M("stone"),
   shed: M("wood"),
   clothesline: M("metal"),
@@ -427,11 +436,11 @@ export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterial>> 
   locker: M("metal"),
   pool_table: M("wood_dark", "fabric"),
   treadmill: M("appliance", "rubber"),
-};
+});
 
-/** The material of `category`'s family (an alias resolves through its family), or `undefined`
+/** The materials of `category`'s family (an alias resolves through its family), or `undefined`
  *  for a word that is not catalogued. */
-export function fixtureMaterial(category: string): FamilyMaterial | undefined {
+export function familyMaterials(category: string): FamilyMaterials | undefined {
   const family = FAMILY_OF.get(category);
   return family === undefined ? undefined : FIXTURE_FAMILY_MATERIALS[family];
 }
@@ -441,7 +450,7 @@ export function fixtureMaterial(category: string): FamilyMaterial | undefined {
  * `null` if the category has no special symbol (the caller draws a labelled rectangle).
  */
 export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: RenderSizes): SceneNode[] | null {
-  const g: GlyphCtx = glyphCtx(theme, sizes, fixtureMaterial(category));
+  const g: GlyphCtx = glyphCtx(theme, sizes, familyMaterials(category));
   switch (category) {
     // ---- bath ----
     case "wc":

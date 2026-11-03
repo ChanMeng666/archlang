@@ -31,7 +31,7 @@ import {
   type FixtureMaterial,
   canonicalFixture,
   fixtureGlyph,
-  fixtureMaterial,
+  familyMaterials,
 } from "../src/elements/fixtures-glyphs.js";
 import { glyphCtx, parseHexColor, symbolInk } from "../src/elements/glyph-lib.js";
 import type { SceneNode } from "../src/scene.js";
@@ -40,6 +40,7 @@ import type { World } from "../src/world.js";
 import { ROOT } from "./rectilinear-rooms-law.js";
 import {
   LEGACY_THEMES,
+  MEASURED_FAMILIES,
   perThemeDigests,
   type ThemeLawApi,
   themeLawDigest,
@@ -105,6 +106,10 @@ suite("rendered theme — byte-identity law over the earlier themes", () => {
     expect(DEFAULT_THEME.materialTints).toBeUndefined();
   });
 
+  it("the every-family rows are measured over a family table at least as long as the one measured", () => {
+    expect(CANONICAL_FIXTURES.length).toBeGreaterThanOrEqual(MEASURED_FAMILIES);
+  });
+
   it("the table pins every row the law reads, in order", () => {
     expect(BASELINE.map(([, name]) => name)).toEqual(ROWS.map((r) => r.name));
   });
@@ -168,11 +173,11 @@ suite("rendered theme — the family→material table", () => {
 
   it("every alias resolves through its family; an uncatalogued word has none", () => {
     for (const word of FIXTURE_CATEGORIES) {
-      expect(fixtureMaterial(word), word).toBe(FIXTURE_FAMILY_MATERIALS[canonicalFixture(word)!]);
+      expect(familyMaterials(word), word).toBe(FIXTURE_FAMILY_MATERIALS[canonicalFixture(word)!]);
     }
-    expect(fixtureMaterial("tub")).toBe(FIXTURE_FAMILY_MATERIALS.bathtub);
+    expect(familyMaterials("tub")).toBe(FIXTURE_FAMILY_MATERIALS.bathtub);
     for (const w of ["widget", "__proto__", "constructor", "toString", ""])
-      expect(fixtureMaterial(w), w).toBeUndefined();
+      expect(familyMaterials(w), w).toBeUndefined();
   });
 
   it("every named material is in the closed vocabulary", () => {
@@ -186,7 +191,19 @@ suite("rendered theme — the family→material table", () => {
   it("is exported from the package root as the table itself (additive)", () => {
     expect(core.FIXTURE_FAMILY_MATERIALS).toBe(FIXTURE_FAMILY_MATERIALS);
     expect(core.FIXTURE_MATERIALS).toBe(FIXTURE_MATERIALS);
-    expect(core.fixtureMaterial).toBe(fixtureMaterial);
+    expect(core.familyMaterials).toBe(familyMaterials);
+  });
+
+  it("is frozen on a null prototype: no inherited key reads as a family, nothing can be edited", () => {
+    expect(Object.getPrototypeOf(FIXTURE_FAMILY_MATERIALS)).toBeNull();
+    expect(Object.isFrozen(FIXTURE_FAMILY_MATERIALS)).toBe(true);
+    for (const m of Object.values(FIXTURE_FAMILY_MATERIALS)) expect(Object.isFrozen(m)).toBe(true);
+    for (const k of ["constructor", "toString", "hasOwnProperty"]) {
+      expect((FIXTURE_FAMILY_MATERIALS as Record<string, unknown>)[k], k).toBeUndefined();
+    }
+    expect(() => {
+      (FIXTURE_FAMILY_MATERIALS as Record<string, unknown>).sofa = { primary: "glass" };
+    }).toThrow();
   });
 
   it("`rendered` tints every material", () => {
@@ -224,7 +241,7 @@ suite("rendered theme — fills only, and the line work still leads", () => {
     const { sizes } = sceneOf();
     for (const t of [DEFAULT_THEME, ...LEGACY_THEMES.map((n) => mergeTheme(THEMES[n]))]) {
       for (const c of CANONICAL_FIXTURES) {
-        const g = glyphCtx(t, sizes, fixtureMaterial(c));
+        const g = glyphCtx(t, sizes, familyMaterials(c));
         expect(g.body).toBe(t.furnitureFill);
         expect(g.basin).toBe(t.opening);
         for (const m of FIXTURE_MATERIALS) {
@@ -235,9 +252,11 @@ suite("rendered theme — fills only, and the line work still leads", () => {
     }
   });
 
-  /** Families with no filled body in ANY theme: each is drawn as an outline over what stands
-   *  beneath it (ADR 0023 d4: dashed above the cut plane), so a tint would hide the piece below. */
-  const UNFILLED: string[] = ["upper_cabinet", "pergola", "range_hood"];
+  /** Families that stay unfilled under every theme. The three overhead pieces are dashed above the
+   *  cut plane (ADR 0023 d4), so a tint would hide the piece below; the rug is an underlay that
+   *  would hide what the furniture pass draws before it and the datum axes on the pass below (see
+   *  the rug case in the next suite). Listed in family order. */
+  const UNFILLED: string[] = ["upper_cabinet", "rug", "pergola", "range_hood"];
 
   /** Every node with its fill blanked, so two drawings can be compared for all but their fills. */
   const shape = (nodes: SceneNode[]): string =>
@@ -254,7 +273,7 @@ suite("rendered theme — fills only, and the line work still leads", () => {
       const a = fixtureGlyph(c, r, rendered, sizes)!;
       const b = fixtureGlyph(c, r, untinted, sizes)!;
       expect(shape(a), c).toBe(shape(b));
-      const m = fixtureMaterial(c)!;
+      const m = familyMaterials(c)!;
       const allowed = new Set([tints[m.primary], ...(m.secondary ? [tints[m.secondary]] : [])]);
       let tinted = 0;
       a.forEach((n, i) => {
@@ -270,11 +289,124 @@ suite("rendered theme — fills only, and the line work still leads", () => {
     expect(bare).toEqual(UNFILLED);
   });
 
+  it("each part takes the material it is made of (bunk bed, crib, shower, appliances, tyres)", () => {
+    const { sizes } = sceneOf();
+    const fills = (c: string): (string | undefined)[] => {
+      const fp = defaultFootprint(c);
+      return fixtureGlyph(c, { x: 0, y: 0, w: fp?.along ?? 1000, h: fp?.depth ?? 600 }, rendered, sizes)!.map(
+        (n) => n.paint.fill,
+      );
+    };
+    const blank = rendered.opening;
+    // Bunk bed: frame and headboard wood, the mattress linen, the pillow white, the ladder wood.
+    expect(fills("bunk_bed").slice(0, 4)).toEqual([tints.wood, tints.wood, tints.linen, blank]);
+    expect(fills("bunk_bed")).toContain(tints.wood);
+    // Crib: frame wood, mattress linen, blanket linen, its turned-down band white.
+    expect(fills("crib").slice(0, 4)).toEqual([tints.wood, tints.linen, tints.linen, blank]);
+    // Shower: tray and tray floor both ceramic; its glass is the screen, which the plan does not fill.
+    expect(fills("shower").slice(0, 2)).toEqual([tints.ceramic, tints.ceramic]);
+    expect(fills("shower")).not.toContain(tints.glass);
+    // An appliance's control strip is white, never the door glass; a treadmill's console likewise.
+    for (const c of ["washer", "dryer", "dishwasher"]) expect(fills(c), c).toContain(blank);
+    expect(fills("dryer")).not.toContain(tints.glass);
+    expect(fills("treadmill")).toContain(blank);
+    // Tyres are rubber; the frame or body metal.
+    for (const c of ["bicycle", "motorcycle"]) expect(fills(c).slice(0, 2), c).toEqual([tints.rubber, tints.rubber]);
+    expect(fills("sandpit")).toContain(tints.soil);
+  });
+
+  it("a non-object `materialTints` (null from an untyped caller) is no tints, never a throw", () => {
+    const src = `plan "N" {\n  units mm\n  room id=r at (0,0) size 4000x3000\n  furniture sofa at (300,300) size 2200x900 in r\n}\n`;
+    for (const bad of [null, "wood", 7]) {
+      const theme = { ...THEMES.rendered, materialTints: bad } as unknown as Partial<Theme>;
+      const out = compile(src, { noCache: true, theme });
+      expect(
+        out.diagnostics.filter((d) => d.severity === "error"),
+        String(bad),
+      ).toEqual([]);
+      const sofa = out.scene!.nodes.find((n) => n.layer === "furniture")!;
+      expect(sofa.paint.fill, String(bad)).toBe(THEMES.rendered!.furnitureFill);
+      expect("materialTints" in sanitizeTheme(mergeTheme(theme))).toBe(false);
+    }
+    // A glyph surface handed a raw null table directly reads it as none too.
+    const g = glyphCtx(
+      { ...rendered, materialTints: null } as unknown as Theme,
+      sceneOf().sizes,
+      familyMaterials("sofa"),
+    );
+    expect(g.body).toBe(rendered.furnitureFill);
+    expect(g.basin).toBe(rendered.opening);
+  });
+
   it("the tints are escaped like every theme colour", () => {
     const t = sanitizeTheme(mergeTheme({ materialTints: { wood: '#fff"/><x' } }));
     expect(t.materialTints!.wood).toBe("#fff&quot;/&gt;&lt;x");
     // A theme without tints gets no key at all.
     expect("materialTints" in sanitizeTheme(mergeTheme(THEMES.presentation))).toBe(false);
+  });
+});
+
+suite("rendered theme — the rug hides nothing", () => {
+  /** The probe from review: a column written BEFORE the rug, both on the furniture pass. */
+  const PROBE = `plan "R" {
+  units mm
+  theme rendered
+  axes {
+    x at 4200
+  }
+  room id=r at (0,0) size 8000x6000
+  column at (4000,3000) size 400x400
+  furniture rug at (2500,2000) size 3000x2000 in r
+  furniture sofa at (500,500) size 2200x900 in r
+}
+`;
+  type Box = { x0: number; y0: number; x1: number; y1: number };
+  const boxOf = (n: SceneNode): Box | null => {
+    const p = n.prim;
+    const pts =
+      p.t === "polygon"
+        ? p.pts
+        : p.t === "path"
+          ? p.loops.flatMap((l) => [l.start, ...l.edges.map((e) => e.to)])
+          : p.t === "circle"
+            ? [
+                { x: p.center.x - p.r, y: p.center.y - p.r },
+                { x: p.center.x + p.r, y: p.center.y + p.r },
+              ]
+            : null;
+    if (!pts || pts.length === 0) return null;
+    const xs = pts.map((q) => q.x);
+    const ys = pts.map((q) => q.y);
+    return { x0: Math.min(...xs), y0: Math.min(...ys), x1: Math.max(...xs), y1: Math.max(...ys) };
+  };
+  const covers = (b: Box, x: number, y: number): boolean => b.x0 <= x && x <= b.x1 && b.y0 <= y && y <= b.y1;
+
+  it("draws the column, and no filled node drawn after it covers it", () => {
+    const scene = compile(PROBE, { noCache: true }).scene!;
+    expect(compile(PROBE, { noCache: true }).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    const furn = scene.nodes.filter((n) => n.layer === "furniture");
+    const col = furn.findIndex((n) => {
+      const b = boxOf(n);
+      return b !== null && n.paint.fill !== "none" && covers(b, 4200, 3200) && b.x1 - b.x0 <= 400.0001;
+    });
+    expect(col, "the column is drawn").toBeGreaterThanOrEqual(0);
+    for (const n of furn.slice(col + 1)) {
+      const b = boxOf(n);
+      if (b === null || n.paint.fill === undefined || n.paint.fill === "none") continue;
+      expect(covers(b, 4200, 3200), `a ${n.prim.t} filled ${n.paint.fill} covers the column`).toBe(false);
+    }
+  });
+
+  it("leaves the datum axis on the pass below visible through the rug: no furniture fill covers it", () => {
+    const scene = compile(PROBE, { noCache: true }).scene!;
+    expect(scene.nodes.some((n) => n.layer === "axes")).toBe(true);
+    // The axis runs along x = 4200 through the rug at y = 2500; nothing filled on the furniture
+    // pass may cover that point (the column stands at y 3000–3400, clear of it).
+    for (const n of scene.nodes.filter((m) => m.layer === "furniture")) {
+      const b = boxOf(n);
+      if (b === null || n.paint.fill === undefined || n.paint.fill === "none") continue;
+      expect(covers(b, 4200, 2500), `a ${n.prim.t} filled ${n.paint.fill} covers the axis`).toBe(false);
+    }
   });
 });
 

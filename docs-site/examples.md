@@ -22,8 +22,8 @@ Two things worth knowing before you start. A plan written as
 drawing per storey**, and a live widget shows **page 1** — the lowest storey, which is
 what `compile().svg` returns; the whole set is in `compile().pages`, and
 `archlang describe --level 2 --json` reads a specific floor. And the playground's **theme
-selector restyles any plan** — blueprint, dark, mono, presentation — without touching a
-line of its source, because a theme changes inks and hatches, never geometry.
+selector restyles any plan** — blueprint, dark, mono, presentation, rendered — without touching a
+line of its source, because a theme changes inks, fills and hatches, never geometry.
 
 ## The whole language on one sheet
 

@@ -23,7 +23,10 @@
  *   case: it is ABOVE the cut plane, so it is dashed and unfilled for the reason
  *   `upper_cabinet` is — the terrace under it has to read through. The pieces that stand ON
  *   the ground (a shed, a barbecue, a bin) carry `g.body` as every indoor symbol does, and
- *   the soft or inner surfaces (a seat, a sand field, a tub's water) the white `g.basin`.
+ *   the soft or inner surfaces (a seat, a sand field, a tub's water) `g.basin` — `theme.opening`,
+ *   or under `rendered` the family's secondary tint. Under `rendered` the planting canopies take
+ *   the `foliage` tint, so the theme's `lawn` key no longer reaches a tree, shrub, hedge or plant
+ *   there; it still fills the lawn surfaces.
  *
  * The line language is the indoor one: an OUTLINE in the `thin` pen and the derived symbol
  * ink, DETAIL (bars, joints, springs, slats) in `extraThin`; curves are true arcs (`path`),
@@ -532,8 +535,8 @@ export function drawUmbrella(r: Rect, g: GlyphCtx): SceneNode[] {
 export function drawBicycle(r: Rect, g: GlyphCtx): SceneNode[] {
   const { long: L, short: S } = axes(r);
   const tyre = Math.min(S * 0.05, L * 0.03);
-  g.path(pill(axisRect(r, L * 0.03, L * 0.41, -tyre, tyre)), g.body);
-  g.path(pill(axisRect(r, L * 0.59, L * 0.97, -tyre, tyre)), g.body);
+  g.path(pill(axisRect(r, L * 0.03, L * 0.41, -tyre, tyre)), g.fillFor(g.material?.secondary));
+  g.path(pill(axisRect(r, L * 0.59, L * 0.97, -tyre, tyre)), g.fillFor(g.material?.secondary));
   g.seg(axisPt(r, L * 0.33, 0), axisPt(r, L * 0.7, 0));
   g.path(axisOval(r, L * 0.3, 0, L * 0.065, Math.min(S * 0.12, L * 0.042)), g.body);
   g.path(pill(axisRect(r, L * 0.685, L * 0.715, -S * 0.44, S * 0.44)), g.body);
@@ -562,8 +565,8 @@ export function drawBicycle(r: Rect, g: GlyphCtx): SceneNode[] {
  */
 export function drawMotorcycle(r: Rect, g: GlyphCtx): SceneNode[] {
   const { horizontal, long: L, short: S } = axes(r);
-  g.path(pill(axisRect(r, L * 0.02, L * 0.32, -S * 0.11, S * 0.11)), g.body);
-  g.path(pill(axisRect(r, L * 0.7, L * 0.98, -S * 0.08, S * 0.08)), g.body);
+  g.path(pill(axisRect(r, L * 0.02, L * 0.32, -S * 0.11, S * 0.11)), g.fillFor(g.material?.secondary));
+  g.path(pill(axisRect(r, L * 0.7, L * 0.98, -S * 0.08, S * 0.08)), g.fillFor(g.material?.secondary));
   // The body: narrow at the tail, widening over the seat to the tank, narrowing again to the
   // headstock — one closed outline of gentle bulges, clockwise in the machine's own frame (and
   // so mirrored on the page for a machine stood on end, which flips the bulges' sign).
@@ -582,7 +585,7 @@ export function drawMotorcycle(r: Rect, g: GlyphCtx): SceneNode[] {
   for (let i = 0; i < ring.length; i++) edges.push(...bulgeArc(ring[i]!, ring[(i + 1) % ring.length]!, out * sags[i]!));
   g.path({ start: ring[0]!, edges }, g.body);
   const seat = axisRect(r, L * 0.22, L * 0.48, -S * 0.13, S * 0.13);
-  g.path(roundedRectPath(seat, shortSide(seat) * 0.4), g.basin, "extraThin");
+  g.path(roundedRectPath(seat, shortSide(seat) * 0.4), g.blank, "extraThin");
   g.path(axisOval(r, L * 0.63, 0, L * 0.06, S * 0.1), "none", "extraThin");
   g.path(pill(axisRect(r, L * 0.745, L * 0.77, -S * 0.42, S * 0.42)), g.body);
   for (const b of [-1, 1]) g.dot(axisPt(r, L * 0.73, b * S * 0.4), Math.min(S * 0.06, L * 0.025));
