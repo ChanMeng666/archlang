@@ -709,7 +709,7 @@ sent to a server (the source rides in the compressed `#z=` hash, so the page is 
 ```
 
 The playground's **Embed** button generates the snippet. Optional params: `editable=1` (show a
-compact editor that re-renders as you type) and `theme=blueprint|dark|mono|presentation`.
+compact editor that re-renders as you type) and `theme=blueprint|dark|mono|presentation|rendered`.
 
 > **Not on GitHub, though.** GitHub's markdown sanitizer strips `<iframe>` — it renders as escaped
 > text, the same way `<script>` does — so a README (here or anywhere on github.com) *cannot* host a

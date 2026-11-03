@@ -61,6 +61,7 @@ import type { Point } from "../ast.js";
 import type { LineWeight, PathEdge, PathLoop, RenderSizes, SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { Theme } from "../theme.js";
+import type { FamilyMaterials, FixtureMaterial } from "./fixtures-glyphs.js";
 
 /** An axis-aligned footprint in plan millimetres: top-left corner plus extents. */
 export interface Rect {
@@ -98,10 +99,36 @@ export interface GlyphCtx {
    * `wallStroke`) — the colour every `thin` stroke is drawn in.
    */
   readonly ink: string;
-  /** The solid body fill of a piece of furniture (`theme.furnitureFill`). */
+  /**
+   * The solid body fill of a piece of furniture: `theme.furnitureFill`, or — on a theme with
+   * `materialTints` (`rendered`) — the tint of the family's primary material.
+   */
   readonly body: string;
-  /** The white interior of a bowl, tray, cushion or pillow (`theme.opening`). */
+  /**
+   * The inner fill of a bowl, tray, cushion or pillow: `theme.opening` (white on the light
+   * themes), or — on a theme with `materialTints`, for a family that names a secondary material —
+   * that material's tint. A glyph whose inner part is NOT its secondary material fills it with
+   * {@link blank} or {@link fillFor} instead.
+   */
   readonly basin: string;
+  /**
+   * The theme's untinted interior, `theme.opening`, whatever the family is made of: a pillow, a
+   * turned-down sheet, an appliance's control panel. Equal to {@link basin} on a theme without
+   * tints, so a part moved from `basin` to `blank` keeps its bytes there.
+   */
+  readonly blank: string;
+  /** The family's materials ({@link import("./fixtures-glyphs.js").familyMaterials}), if the
+   *  symbol was drawn for a catalogued word. */
+  readonly material: FamilyMaterials | undefined;
+
+  /**
+   * The fill for a part made of `material`: its tint when the theme has `materialTints` and names
+   * one, otherwise `untinted` (default {@link body}) — exactly the fill the part had before tints
+   * existed, so a theme without tints draws the same bytes. For a part a glyph fills with
+   * something other than its body or basin (planting's `theme.lawn`; a bunk bed's mattress, drawn
+   * in the body pen but made of the secondary material).
+   */
+  fillFor(material: FixtureMaterial | undefined, untinted?: string): string;
 
   /**
    * The colour a stroke of `weight` is drawn in: `thin` → {@link ink} (outline), `extraThin`
@@ -205,13 +232,28 @@ export function symbolInk(furnitureStroke: string, wallStroke: string): string {
   return `#${hex(0)}${hex(1)}${hex(2)}`;
 }
 
-/** Build the drawing surface for one fixture symbol. */
-export function glyphCtx(theme: Theme, sizes: RenderSizes): GlyphCtx {
+/**
+ * Build the drawing surface for one fixture symbol. `material` is the family's
+ * ({@link import("./fixtures-glyphs.js").familyMaterials}); it changes a fill only on a theme with
+ * `materialTints`, so on every other theme the surface is the one it always was.
+ */
+export function glyphCtx(theme: Theme, sizes: RenderSizes, material?: FamilyMaterials): GlyphCtx {
   const nodes: SceneNode[] = [];
   const stroke = theme.furnitureStroke;
   const ink = symbolInk(theme.furnitureStroke, theme.wallStroke);
   const tone = (w: GlyphWeight): string => (w === "thin" ? ink : stroke);
   const width = (w: GlyphWeight): number => weightWidth(w, sizes);
+  // A tint table is an object or nothing: `CompileOptions.theme` is typed but not checked at run
+  // time, so a `null` (or a stray string) there must read as "no tints", never throw.
+  const raw: unknown = theme.materialTints;
+  const tints =
+    typeof raw === "object" && raw !== null ? (raw as Partial<Record<FixtureMaterial, unknown>>) : undefined;
+  const tint = (m: FixtureMaterial | undefined, untinted: string): string => {
+    if (tints === undefined || m === undefined || !Object.hasOwn(tints, m)) return untinted;
+    const c = tints[m];
+    return typeof c === "string" ? c : untinted;
+  };
+  const body = tint(material?.primary, theme.furnitureFill);
 
   return {
     theme,
@@ -219,8 +261,11 @@ export function glyphCtx(theme: Theme, sizes: RenderSizes): GlyphCtx {
     nodes,
     stroke,
     ink,
-    body: theme.furnitureFill,
-    basin: theme.opening,
+    body,
+    basin: tint(material?.secondary, theme.opening),
+    blank: theme.opening,
+    material,
+    fillFor: (m, untinted = body) => tint(m, untinted),
     tone,
 
     poly(pts, fill, weight = "thin") {

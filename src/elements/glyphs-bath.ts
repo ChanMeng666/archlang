@@ -8,8 +8,9 @@
  * `roundedRectPath`) wherever the real thing is round: a bowl is a four-centre oval and a tub's
  * foot end is an arc, not a 24-gon. The vocabulary, in the order a bathroom reads it:
  *
- * - **A hard carcass is `g.body`; a bowl, a tray floor or a seat is `g.basin`** (white). A drawn
- *   piece therefore reads from its lines alone in `mono`, where every tint is white.
+ * - **A hard carcass is `g.body`; a bowl, a tray floor or a seat is `g.basin`** (`theme.opening`,
+ *   white on the light themes, a ceramic or glass tint under `rendered`). A drawn piece therefore
+ *   reads from its lines alone in `mono`, where every fill is white.
  * - **Real closed-form geometry, every measure a fraction of the host footprint, no absolute
  *   millimetre anywhere.** That is what lets one symbol read at legend-swatch size and at 1:50
  *   on an A1 sheet without a second size tier.
@@ -156,7 +157,9 @@ export function drawShower(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = shortSide(r);
   g.path(roundedRectPath(r, s * 0.04), g.body);
   const floor = insetRect(r, 0.06);
-  g.path(roundedRectPath(floor, s * 0.02), g.basin, "extraThin");
+  // The tray floor is the tray's own ceramic; the family's glass is its screen, which a plan at the
+  // cut does not fill.
+  g.path(roundedRectPath(floor, s * 0.02), g.fillFor(g.material?.primary, g.basin), "extraThin");
 
   const ringR = s * 0.055;
   // Each fall runs from just inside a floor corner to the waste's ring, along the diagonal.
@@ -310,8 +313,8 @@ export function drawUrinal(r: Rect, g: GlyphCtx): SceneNode[] {
  * mirror keeps the rhythm a short one has and a legend swatch still gets three. The ticks all lean
  * the same way, which is why the symbol is handed: a mirrored `place` mirrors them.
  *
- * The glass is filled `g.basin` (white) rather than `g.body`, so the mirror reads as a void in
- * the wall run instead of as another cabinet stuck to it.
+ * The glass is filled `g.basin` (`theme.opening`; the glass tint under `rendered`) rather than
+ * `g.body`, so the mirror reads as a void in the wall run instead of as another cabinet stuck to it.
  *
  * The tick half-length is capped at half a pitch as well as at 45% of the depth, and that cap is
  * what makes containment hold rather than nearly hold: a half-length keyed to `min(w, h)` alone
@@ -321,7 +324,7 @@ export function drawUrinal(r: Rect, g: GlyphCtx): SceneNode[] {
  * Prim count: `1 + ticks`, 6 at the catalogued 900 x 50.
  */
 export function drawMirror(r: Rect, g: GlyphCtx): SceneNode[] {
-  g.poly(rectPoly(r), g.basin);
+  g.poly(rectPoly(r), g.fillFor(g.material?.primary, g.basin));
   const n = clamp(Math.round(r.w / (4 * r.h)), 3, 12);
   const pitch = r.w / n;
   const d = Math.min(r.h * 0.45, pitch * 0.25);

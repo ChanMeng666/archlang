@@ -44,7 +44,7 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
 - Ground-material work never re-frames or restyles a wall material's hatch.
 - Look at it: `npm run cli -- compile <plan> -f png -s 3 -o <scratch>/x.png`, crop to the symbol,
   and compare on a `paper` plan at `scale 1:50` and `scale 1:100` and under each `theme`
-  (`blueprint`, `mono`, `dark`, `presentation` and the default).
+  (`blueprint`, `mono`, `dark`, `presentation`, `rendered` and the default).
 - A redraw moves SVG only: over the corpus `describe()`, `lint()` and diagnostics stay
   byte-identical (the symmetry-fact exception: ADR 0023, decision 7). The goldens
   it moves and how to update them: `docs/testing.md` §2–3. Never `-u` group 1 of
