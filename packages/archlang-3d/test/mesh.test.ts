@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { describeLevel, describe as describePlan } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, type Mesh3D, prism, T0_MOUNT_MM } from "../src/index.js";
+import { adaptPlan, buildMesh, type Mesh3D, prism } from "../src/index.js";
 import { openEdges, signedVolume as volume } from "../src/node.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
 import { inside, type V3 } from "./probe.js";
@@ -182,18 +182,19 @@ describe("Mesh3D on the shipped corpus", () => {
   it("V-FUR-01: every piece declared in a room stands over a floor of its storey", () => {
     const outside: string[] = [];
     let inRoom = 0;
-    for (const { n, mesh } of corpus) {
+    for (const { n, r, mesh } of corpus) {
       for (const f of mesh.nodes.filter((x) => x.kind === "furniture")) {
         // Every part of the piece (a T0 piece is several; their box is the footprint).
         const all = f.shells.flatMap((s) => s.positions);
         const xs = all.filter((_, i) => i % 3 === 0);
         const zs = all.filter((_, i) => i % 3 === 2);
-        const ys = all.filter((_, i) => i % 3 === 1);
-        // Probed just under the floor finish: under its lowest point, less a wall-hung piece's mount.
-        const mount = T0_MOUNT_MM[String(f.extras.asset).replace(/^t0:/, "")] ?? 0;
+        // Probed half-way through the storey's 5 mm floor finish, under the piece's plan centre:
+        // read off the storey, not the piece, so a wall-hung piece (whose lowest point is its own
+        // underside) is probed at its floor too.
+        const elevation = r.scene.levels.find((lv) => lv.level === f.level)?.elevation ?? Number.NaN;
         const c: V3 = [
           (Math.min(...xs) + Math.max(...xs)) / 2,
-          Math.min(...ys) - mount * 1000 - 2500,
+          elevation + 2500,
           (Math.min(...zs) + Math.max(...zs)) / 2,
         ];
         const floors = mesh.nodes.filter((x) => x.kind === "floor" && x.level === f.level);
@@ -248,8 +249,10 @@ describe("Mesh3D on the shipped corpus", () => {
       "floor-finish-5",
       "window-frame-40x60",
       // Cards V5 and V6 built every family `FURNITURE_HEIGHT_MM` names, so on the corpus a piece is
-      // a T0 height or a grey box's default; `furniture-height-family` is left to a T0 family at a
-      // turn that is not a quarter turn (`finish.test.ts`), which no `.arch` plan can write.
+      // a T0 height or a grey box's default. `furniture-height-family` is left to a listed family's
+      // T0 piece built as a grey box at a turn that is not a quarter turn (`finish.test.ts`), which
+      // no `.arch` plan can write. A handed piece whose reflection is unknown is a grey box too
+      // (`furniture-handed-mirror-unknown`); no handed family is listed, so it takes the default.
       "furniture-height-t0",
       "furniture-height-greybox",
       "furniture-mount-default",
@@ -351,5 +354,11 @@ describe("Mesh3D determinism and budget", () => {
  * slot (`Shell.slot`), and the ledger gains one `furniture-material-default` entry per T0 category.
  * Every other node and every other ledger entry is byte-identical (the Mesh3D with its furniture
  * nodes and furniture ledger entries removed hashes to bed284ba… before and after).
+ *
+ * Moved by visual-assets cards V5/V6, red-team round 1 S3 on PR #461 (was b2f9b86c…): the stove's
+ * oven door is an `appliance` part with a dark `screen` window (the core's `stove` material is
+ * `appliance`, V-D2), so its node gains a shell and `material(stove)` gains `appliance`. Nothing
+ * else moved: with that one stove edit undone, the rest of the round (V5/V6 families, mounts,
+ * door caps, ledger rules laneway never fires) hashes to b2f9b86c… exactly.
  */
-const LANEWAY_MESH_SHA256 = "b2f9b86c3a459641de0420ce0d24b88d607da09038f25e098b7097e135eccfcb";
+const LANEWAY_MESH_SHA256 = "0867ddc0ae10f676f19274bbc343e70779e5d8210dbbeaf5f7cf3abcac05c62c";

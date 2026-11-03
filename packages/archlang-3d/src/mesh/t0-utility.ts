@@ -9,7 +9,7 @@
  * hand. Three families hang on the wall at a ledgered height (`mountMm`): the wall cabinet, the hood
  * and the urinal.
  */
-import { cabinet, clamp, P, type Part, pair, span, type T0Family } from "./t0-kit.js";
+import { cabinet, clamp, MAX_DOORS, P, type Part, pair, span, type T0Family } from "./t0-kit.js";
 
 /** A bar handle across the front, centred, `half` either side, at height `y`. */
 const bar = (half: number, z0: number, z1: number, y: number): Part =>
@@ -85,7 +85,7 @@ export const T0_UTILITY: Readonly<Record<string, T0Family>> = {
   oven: {
     names: ["oven"],
     heightMm: 910,
-    materials: ["metal", "appliance", "screen", "rubber"],
+    materials: ["metal", "glass", "appliance", "screen", "rubber"],
     gen(W, D) {
       const [hw, hd] = [W / 2, D / 2];
       // `drawOven`: a range (a hob on top) when the footprint is 1.6 times wider than deep.
@@ -109,7 +109,9 @@ export const T0_UTILITY: Readonly<Record<string, T0Family>> = {
         P("screen", -Math.min(80, W * 0.12), Math.min(80, W * 0.12), hd - 6, hd - 2, 810, 850, { radius: 3 }),
         ...pair(P("metal", -W * 0.32 - 18, -W * 0.32 + 18, hd - 6, hd, 812, 848, { axis: "z", round: true })),
         P("appliance", -hw + 4, hw - 4, hd - 24, hd - 6, 90, 760, { axis: "z", radius: 8 }),
-        P("screen", -hw + W * 0.12, hw - W * 0.12, hd - 6, hd - 2, 200, 620, { axis: "z", radius: 12 }),
+        // The door window: the dark oven behind a glass pane (the core gives an oven glass).
+        P("screen", -hw + W * 0.12, hw - W * 0.12, hd - 6, hd - 4, 200, 620, { axis: "z", radius: 12 }),
+        P("glass", -hw + W * 0.12 - 6, hw - W * 0.12 + 6, hd - 4, hd - 1, 194, 626, { axis: "z", radius: 14 }),
         bar(Math.min(W * 0.34, 260), hd - 6, hd, 712),
         P("appliance", -hw, hw, -hd, -hd + clamp(D * 0.06, 15, 40), 900, 910, { radius: 4 }),
         ...(range ? [P("screen", -hw + 20, hw - 20, -hd + 45, hd - 30, 900, 904, { radius: 10 }), ...rings] : []),
@@ -142,7 +144,7 @@ export const T0_UTILITY: Readonly<Record<string, T0Family>> = {
       // cabinets face the work side at the back. The hob or bowl the core draws at one end is that
       // drawing's handed detail, left out.
       const ov = D * 0.24;
-      const doors = span(Math.max(1, Math.round(W / 600)), hw - 2, 4);
+      const doors = span(clamp(Math.round(W / 600), 1, MAX_DOORS), hw - 2, 4);
       return [
         P("rubber", -hw + 40, hw - 40, -hd + 70, hd - ov - 40, 0, 100),
         P("paint", -hw, hw, -hd + 30, hd - ov, 100, 870),
@@ -165,7 +167,7 @@ export const T0_UTILITY: Readonly<Record<string, T0Family>> = {
       const [hw, hd] = [W / 2, D / 2];
       // Hung with its underside at 1400 mm; the pulls at the doors' bottom edge, where a hand
       // reaches up to them.
-      const doors = span(Math.max(1, Math.round(W / 600)), hw - 2, 4);
+      const doors = span(clamp(Math.round(W / 600), 1, MAX_DOORS), hw - 2, 4);
       return [
         P("paint", -hw, hw, -hd, hd - 20, 1400, 2100),
         ...doors.map(([a, b]) => P("paint", a, b, hd - 20, hd - 4, 1404, 2096)),
@@ -319,7 +321,7 @@ export const T0_UTILITY: Readonly<Record<string, T0Family>> = {
   microwave: {
     names: ["microwave"],
     heightMm: 1200,
-    materials: ["wood", "metal", "appliance", "screen"],
+    materials: ["wood", "metal", "glass", "appliance", "screen"],
     gen(W, D) {
       const [hw, hd] = [W / 2, D / 2];
       // A microwave is set at worktop height: on a small cart of its own, so a piece the plan
@@ -334,7 +336,8 @@ export const T0_UTILITY: Readonly<Record<string, T0Family>> = {
         P("wood", -hw, hw, -hd, hd, 880, 900, { radius: 6 }),
         P("appliance", -hw + 10, hw - 10, -hd + 20, hd - 20, 900, 1200, { radius: 8 }),
         P("appliance", -hw + 16, hw - 16, hd - 20, hd - 6, 912, 1188, { axis: "z", radius: 8 }),
-        P("screen", -hw + W * 0.14, hw - W * 0.14, hd - 6, hd - 2, 960, 1120, { axis: "z", radius: 10 }),
+        P("screen", -hw + W * 0.14, hw - W * 0.14, hd - 6, hd - 4, 960, 1120, { axis: "z", radius: 10 }),
+        P("glass", -hw + W * 0.14 - 5, hw - W * 0.14 + 5, hd - 4, hd - 1, 955, 1125, { axis: "z", radius: 12 }),
         P("screen", -Math.min(W * 0.15, 70), Math.min(W * 0.15, 70), hd - 6, hd - 2, 1140, 1170, { radius: 3 }),
         bar(Math.min(W * 0.25, 120), hd - 6, hd, 934),
       ];

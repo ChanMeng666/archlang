@@ -12,9 +12,11 @@
  * piece; the model follows it: a handed piece the plan reflects carries `Furniture.mirror` and is
  * built as the reflection (`t0Shells`), so the model never shows the other hand from the drawing.
  *
- * A wall-hung family (`T0_MOUNT_MM`: a wall cabinet, a hood, a mirror, a television, a urinal)
- * hangs at a ledgered height instead of standing on the floor: the core marks such a piece only
- * by drawing it dashed and exports no height, so the mount is this package's labelled default.
+ * A wall-hung family hangs at a ledgered height instead of standing on the floor, by its underside
+ * (`T0_MOUNT_MM`: a wall cabinet, a hood, a mirror, a urinal) or by its top (`T0_HUNG_FROM_TOP`: a
+ * television, whose underside each piece's size sets and the ledger records per piece): the core
+ * marks such a piece only by drawing it dashed and exports no height, so the mount is this
+ * package's labelled default.
  *
  * A part is a prism over a SECTION: a box, the ellipse inscribed in it (`round`), a box with
  * rounded corners (`radius`, quarter arcs from the exact 16-gon table) or an explicit polygon
@@ -103,10 +105,19 @@ export const T0_HEIGHT_MM: Readonly<Record<string, number>> = {
  * The underside of each wall-hung family (mm above the floor finish; the ledger's
  * `furniture-mount-default`): a wall cabinet's 1400 mm (card V6), a hood 700 mm over a 900 mm hob,
  * a mirror over a basin, a urinal's rim height less its bowl. Nothing of the piece is drawn below
- * it and the piece is never carried down to the floor. A television hangs from a fixed top and its
- * panel is 16:9 from its width, so its entry is the lowest its widest panel reaches.
+ * it and the piece is never carried down to the floor.
  */
 export const T0_MOUNT_MM: Readonly<Record<string, number>> = batchTable((f) => f.mountMm);
+
+/**
+ * The families hung by their TOP at their `T0_HEIGHT_MM` (a television: its panel 16:9 from its
+ * width, at most 760 mm tall), so each piece's underside depends on its size: the mesh builder
+ * ledgers the piece's own (`furniture-mount-from-top`), never one figure for the family.
+ */
+export const T0_HUNG_FROM_TOP: ReadonlySet<string> = new Set(Object.keys(batchTable((f) => f.hungFromTop)));
+
+/** Whether a family hangs on the wall (by its underside or by its top) rather than standing. */
+export const isHung = (family: string): boolean => family in T0_MOUNT_MM || T0_HUNG_FROM_TOP.has(family);
 
 /** The handed families (`T0Family.handed`): built reflected when the plan reflects the piece. */
 export const T0_HANDED: ReadonlySet<string> = new Set(Object.keys(batchTable((f) => f.handed)));
@@ -128,7 +139,7 @@ export const T0_MATERIALS: Readonly<Record<string, readonly Exclude<MaterialSlot
   fridge: ["metal", "appliance", "rubber"],
   counter: ["stone", "metal", "paint", "rubber"],
   kitchen_sink: ["stone", "metal", "paint", "rubber"],
-  stove: ["stone", "metal", "screen", "paint", "rubber"],
+  stove: ["stone", "metal", "appliance", "screen", "paint", "rubber"],
   shower: ["ceramic", "metal", "glass"],
   wc: ["ceramic", "metal", "water"],
   basin: ["wood", "ceramic", "metal"],
@@ -273,7 +284,10 @@ const GENERATORS: Readonly<Record<string, (W: number, D: number) => Part[]>> = {
     const bar = Math.min(W * 0.32, 220);
     return [
       ...cabinet(W, D, { fronts: false }),
-      P("screen", -hw + 30, hw - 30, hd - 40, hd - 22, 160, 760, { radius: 10 }),
+      // The built-under oven: an appliance door (the core's `stove` is `appliance`, V-D2) with its
+      // dark window.
+      P("appliance", -hw + 30, hw - 30, hd - 40, hd - 22, 160, 760, { radius: 10 }),
+      P("screen", -hw + W * 0.15, hw - W * 0.15, hd - 22, hd - 18, 300, 640, { axis: "z", radius: 10 }),
       P("metal", -bar, bar, hd - 22, hd - 4, 790, 808, { axis: "x", round: true }),
       P("screen", -hw + 30, hw - 30, -hd + 30, hd - 50, 900, 906, { radius: 12 }),
       ...rings,
@@ -500,7 +514,7 @@ export function t0LocalParts(family: string, W: number, D: number): Part[] | nul
   // A piece always stands on the floor: when the parts that reach it were left out (a plinth with
   // no room), the lowest parts kept are carried down to it. A wall-hung piece hangs instead.
   const lowest = Math.min(...out.map((p) => p.y0));
-  if (mount === undefined && lowest > 0) for (const p of out) if (p.y0 === lowest) p.y0 = 0;
+  if (!isHung(family) && lowest > 0) for (const p of out) if (p.y0 === lowest) p.y0 = 0;
   return out;
 }
 

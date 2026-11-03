@@ -50,6 +50,12 @@ export interface T0Family {
   names: readonly string[];
   heightMm: number;
   mountMm?: number;
+  /**
+   * Hung by its TOP at `heightMm`, its underside a function of its size (a television: a 16:9
+   * panel from its width). Nothing is carried down to the floor; the mesh builder ledgers each
+   * piece's own underside, never one figure for the family.
+   */
+  hungFromTop?: true;
   materials: readonly Exclude<MaterialSlot, "body">[];
   /**
    * The piece is NOT its own mirror image across its width (an L-sofa's return, a chaise's one
@@ -62,6 +68,9 @@ export interface T0Family {
 }
 
 export const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
+
+/** The most doors a run is divided into, as the core caps a symbol's divisions (bounded output). */
+export const MAX_DOORS = 64;
 
 /** A part on the box `x0..x1` × `z0..z1` × `y0..y1` in slot `mat`, with any further fields. */
 export const P = (
@@ -158,7 +167,8 @@ export function cabinet(
     P("stone", -hw, hw, -hd, hd, top, 900, opts.hole ? { holes: opts.hole } : {}),
   ];
   if (opts.fronts === false) return out;
-  const n = Math.max(1, Math.round(W / 600));
+  // One door per 600 mm, at most 64, as the core caps a run's divisions.
+  const n = clamp(Math.round(W / 600), 1, MAX_DOORS);
   for (const [a, b] of span(n, hw - 2, 4)) {
     out.push(P("paint", a, b, hd - 40, fz, 106, top - 8));
     const pw = Math.min((b - a) * 0.45, 160) / 2;

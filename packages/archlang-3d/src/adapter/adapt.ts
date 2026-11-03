@@ -63,7 +63,7 @@ const hasHanded = (storeys: readonly Storey[]): boolean =>
  * when the core cannot project the plan or its pages do not match the storeys. Called only for a
  * plan that holds a handed piece, so every other plan is resolved once, as before.
  */
-function mirroredIds(source: string, world: World | undefined, n: number): Array<ReadonlySet<string> | null> {
+export function mirroredIds(source: string, world: World | undefined, n: number): Array<ReadonlySet<string> | null> {
   const unknown = Array.from({ length: n }, (): ReadonlySet<string> | null => null);
   const planToJson = (core as Partial<typeof core>).planToJson;
   if (typeof planToJson !== "function") return unknown;

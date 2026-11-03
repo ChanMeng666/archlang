@@ -657,7 +657,7 @@ export const T0_LIVING: Readonly<Record<string, T0Family>> = {
   tv: {
     names: ["tv"],
     heightMm: 1700,
-    mountMm: 940,
+    hungFromTop: true,
     materials: ["metal", "screen", "rubber"],
     gen(W, D) {
       const [hw, hd, H] = [W / 2, D / 2, 1700];

@@ -25,6 +25,7 @@ export {
   T0_FAMILIES,
   T0_HANDED,
   T0_HEIGHT_MM,
+  T0_HUNG_FROM_TOP,
   T0_MATERIALS,
   T0_MOUNT_MM,
   t0LocalParts,

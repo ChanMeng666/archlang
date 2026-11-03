@@ -31,7 +31,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   extruded up or sideways, each in a material slot; the twelve laneway families there, the
   living/bedroom/office batch in `t0-living.ts`, kitchen/bath/utility in `t0-utility.ts`, the
   shared part kit in `t0-kit.ts`) and grey boxes for the rest, a hidden flat roof; `earcut` (ISC)
-  for caps. A wall-hung family hangs at a ledgered mount (`T0_MOUNT_MM`); a handed one (`T0_HANDED`:
+  for caps. A wall-hung family hangs at a ledgered mount (`T0_MOUNT_MM`; a television by its
+  top, `T0_HUNG_FROM_TOP`); a handed one (`T0_HANDED`:
   L-sofa, chaise, grand piano) is built reflected when the core's Plan JSON says the plan reflects
   it (`Furniture.mirror`, read by `adaptPlan` through `planToJson`).
 - `src/materials.ts`: the material slots and the ONE palette the GLB writer and the viewer both
