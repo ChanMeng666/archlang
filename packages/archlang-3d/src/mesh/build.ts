@@ -24,16 +24,16 @@
  *   edge on the open radius and lie inside the one sector (not a misalignment);
  * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3), every part kept
  *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`);
- * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the twelve families it
- *   covers, each part's shell carrying its material slot (`materials.ts`), else a grey box on the
- *   floor finish, its height a per-family default;
+ * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the families it covers
+ *   (on the floor finish, or hung at its family's mount), each part's shell carrying its material
+ *   slot (`materials.ts`), else a grey box on the floor finish, its height a per-family default;
  * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3).
  * Stairs, outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
  */
 import type { Assumption, Level, Polygon, Pt, Scene3D } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { type Rect, rectMinus, slabRegion } from "./slab.js";
-import { T0_HEIGHT_MM, T0_MATERIALS, t0Shells } from "./t0.js";
+import { isHung, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
 const MM = 1000;
@@ -49,6 +49,11 @@ export const FURNITURE_DEFAULT_MM = 750;
 /**
  * Grey-box heights (mm) by catalogue family: rounded typical heights, drafting defaults, not
  * measurements of any product. A family not listed stands {@link FURNITURE_DEFAULT_MM} high.
+ *
+ * Every family listed here now has a T0 generator (cards V3, V5, V6), so the table is read only
+ * when a T0 piece is built as a grey box after all: at a turn that is not a quarter turn (a
+ * hand-made Scene3D; the core turns furniture by quarter turns only). It stays for that, and
+ * because it is a public export of this package (removing it would break a consumer).
  */
 export const FURNITURE_HEIGHT_MM: Readonly<Record<string, number>> = {
   bed: 500,
@@ -482,6 +487,8 @@ function levelNodes(
   });
 
   const floorTop = e + FLOOR_FINISH_MM * MM;
+  // The storey's tallest wall: the roof's height, and the line a hung piece is checked against.
+  const tallest = lv.walls.reduce((m, w) => Math.max(m, w.height), 0) || lv.storeyHeight;
   lv.furniture.forEach((f, i) => {
     const parts = t0Shells(f, floorTop);
     const family = parts ? f.asset.slice("t0:".length) : undefined;
@@ -499,6 +506,18 @@ function levelNodes(
             ? "furniture-height-family"
             : "furniture-height-greybox",
       });
+      // A wall-hung family's underside (visual-assets V5, V6): the core exports no height, so the
+      // mount is this package's labelled default.
+      const mount = family ? T0_MOUNT_MM[family] : undefined;
+      if (mount !== undefined) {
+        ledger.push({
+          kind: "furniture",
+          field: `mount_mm(${f.category})`,
+          value: mount,
+          provenance: "default",
+          rule: "furniture-mount-default",
+        });
+      }
       // Its parts' materials (visual-assets V1): a property of the family, never of a label.
       const slots = family ? T0_MATERIALS[family] : undefined;
       if (slots?.length) {
@@ -523,6 +542,33 @@ function levelNodes(
         rule: "furniture-t0-not-quarter-turn",
       });
     }
+    if (parts && family && isHung(family)) {
+      // A piece hung by its top (a television) has an underside of its own size: ledgered per
+      // piece, as built, never one figure for the family.
+      if (T0_HUNG_FROM_TOP.has(family)) {
+        const low = Math.min(...parts.shells.flatMap((s) => (s ? s.positions.filter((_, k) => k % 3 === 1) : [])));
+        ledger.push({
+          kind: "furniture",
+          id: f.id,
+          field: "mount_mm",
+          value: (low - floorTop) / MM,
+          provenance: "default",
+          rule: "furniture-mount-from-top",
+        });
+      }
+      // Hung at its default above walls that stop lower (a low or a short storey): drawn where the
+      // default puts it, and said so.
+      if (floorTop + h * MM > e + tallest) {
+        ledger.push({
+          kind: "furniture",
+          id: f.id,
+          field: "top_mm",
+          value: h,
+          provenance: "default",
+          rule: "furniture-hung-above-walls",
+        });
+      }
+    }
     const [cx, cy] = f.centre;
     const box = rect(cx - f.size.w / 2, cy - f.size.d / 2, cx + f.size.w / 2, cy + f.size.d / 2);
     // A T0 part built without a hole (degenerate, or touching its outline) is ledgered by `node`.
@@ -533,10 +579,10 @@ function levelNodes(
       yaw_deg: f.yawDeg,
       asset,
       ...(f.room ? { room: f.room } : {}),
+      ...(parts && f.mirror ? { mirror: true } : {}),
     });
   });
 
-  const tallest = lv.walls.reduce((m, w) => Math.max(m, w.height), 0) || lv.storeyHeight;
   const roofZ = [e + tallest, e + tallest + ROOF_MM * MM] as const;
   lv.roofs.forEach((r, i) => {
     node("roof", r.id, i, [prism({ outer: r.ring }, ...roofZ)], { form: r.form });

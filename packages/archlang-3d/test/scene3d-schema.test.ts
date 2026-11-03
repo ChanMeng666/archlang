@@ -57,6 +57,9 @@ describe("Scene3D v0: the schema and the validator agree", () => {
     ["a missing required field", set((s) => Reflect.deleteProperty(s.levels[0].walls[0], "height")), true],
     ["a wrong version", set((s) => Object.assign(s, { version: 1 })), true],
     ["an empty id", set((s) => Object.assign(s.levels[0].walls[0], { id: "" })), true],
+    // `mirror` is recorded only as `true` (cards V5/V6): never a string, never `false`.
+    ["a non-boolean mirror", set((s) => Object.assign(s.levels[0].furniture[0], { mirror: "yes" })), true],
+    ["a false mirror", set((s) => Object.assign(s.levels[0].furniture[0], { mirror: false })), true],
     // What a JSON Schema cannot state, the validator still catches.
     [
       "an opening hosted by no wall",

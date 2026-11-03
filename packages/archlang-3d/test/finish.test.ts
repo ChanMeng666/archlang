@@ -62,14 +62,15 @@ describe("T0 parametric furniture (plan §4.4)", () => {
   const laneway = built(example("laneway-house.arch"));
   const pieces = laneway.mesh.nodes.filter((n) => n.kind === "furniture");
 
-  it("builds laneway-house's twelve pieces from the twelve T0 families, one node each", () => {
+  it("builds laneway-house's twelve pieces from the twelve V3 T0 families, one node each", () => {
     expect(pieces.length).toBe(12);
     const families = new Set(pieces.map((p) => String(p.extras.asset)));
-    expect([...families].sort()).toEqual(
-      Object.keys(T0_FAMILIES)
-        .map((f) => `t0:${f}`)
-        .sort(),
-    );
+    // The families card A2b built for laneway (V3 refined them); V5–V7 add families laneway does
+    // not use, so its pins stand.
+    const v3 = ["bed", "sofa", "table", "rug", "wardrobe", "fridge", "counter", "kitchen_sink", "stove"];
+    const lanewayFamilies = [...v3, "shower", "wc", "basin"];
+    for (const f of lanewayFamilies) expect(T0_FAMILIES, f).toHaveProperty(f);
+    expect([...families].sort()).toEqual(lanewayFamilies.map((f) => `t0:${f}`).sort());
     for (const p of pieces) if (p.extras.category !== "rug") expect(p.shells.length, p.id).toBeGreaterThan(1);
   });
 
@@ -144,7 +145,8 @@ describe("T0 parametric furniture (plan §4.4)", () => {
   });
 
   it("leaves a family without a generator a grey box", () => {
-    const m = built(plan('room id=r at (0,0) size 6000x4000 label "R" furniture desk at (1000,1000) size 1200x600'));
+    // A word outside the catalogue (a desk was the example until card V5 built one).
+    const m = built(plan('room id=r at (0,0) size 6000x4000 label "R" furniture lectern at (1000,1000) size 1200x600'));
     const desk = m.mesh.nodes.find((x) => x.kind === "furniture") as MeshNode;
     expect(desk.extras.asset).toBe("greybox");
     expect(desk.shells.length).toBe(1);

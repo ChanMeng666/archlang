@@ -128,7 +128,7 @@ const LEVEL_COLLECTIONS: Record<string, Check> = {
   furniture: array(
     object(
       { id, source, category: string, centre: pt, size: sized("w", "d"), yawDeg: integer, asset: string },
-      { room: string },
+      { room: string, mirror: oneOf(true) },
     ),
   ),
   stairs: array(object({ id, source, box, dir: oneOf("up", "down"), width: integer })),

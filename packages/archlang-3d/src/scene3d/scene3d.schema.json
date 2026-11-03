@@ -447,6 +447,10 @@
         "asset": {
           "type": "string",
           "description": "What the mesh builds it with: t0:<family> (a parametric generator) or greybox."
+        },
+        "mirror": {
+          "const": true,
+          "description": "Reflected across its own width (the core's Plan JSON mirror); recorded only on a handed asset."
         }
       }
     },
