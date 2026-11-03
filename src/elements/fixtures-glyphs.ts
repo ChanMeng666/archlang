@@ -505,7 +505,7 @@ export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterials>>
   slide: M("paint", "metal"),
   bollard: M("metal"),
   bike_rack: M("metal"),
-  raised_bed: M("wood", "soil"),
+  raised_bed: M("wood", "foliage"),
   whiteboard: M("paint", "metal"),
   printer: M("appliance", "screen"),
   server_rack: M("metal"),

@@ -102,14 +102,17 @@ const BASELINE: [string, string][] = [
   ["79b5ba0efe233640ad18646b6ee13070309315ef6240feb73d46b4ad55299e72", "inline:near-words"],
 ];
 
-/** Every `.arch` and Markdown file under `dir` (recursively), skipping dependencies and builds. */
+/** The source kinds a plan can ship in: a plan file, a Markdown fence, or a string in code or data. */
+const SOURCE_EXT = /\.(arch|md|ts|tsx|js|mjs|json|vue)$/;
+
+/** Every source file under `dir` (recursively), skipping dependencies, builds and generated sites. */
 function shippedSources(dir: string): string[] {
   const out: string[] = [];
   for (const name of readdirSync(dir)) {
-    if (name === "node_modules" || name === "dist" || name.startsWith(".")) continue;
+    if (name === "node_modules" || name === "dist" || name === "public" || name.startsWith(".")) continue;
     const p = join(dir, name);
     if (statSync(p).isDirectory()) out.push(...shippedSources(p));
-    else if (name.endsWith(".arch") || name.endsWith(".md")) out.push(p);
+    else if (SOURCE_EXT.test(name)) out.push(p);
   }
   return out;
 }
@@ -127,16 +130,37 @@ suite("visual-assets families — byte-identity law", () => {
   });
 
   it("no shipped plan names a new word, so the law's corpus is a corpus that did not change", () => {
-    const words = new RegExp(`\\bfurniture\\s+(${NEW_WORDS.join("|")})\\b`);
+    // `furniture <word>` and `furniture id=<x> <word>` (the only two places a category stands),
+    // in every plan file, Markdown fence and code or data string the repository ships plans in.
+    const words = new RegExp(`\\bfurniture\\s+(?:id=(?:"[^"]*"|\\S+)\\s+)?(${NEW_WORDS.join("|")})\\b`);
+    expect(words.test("furniture id=lamp1 floor_lamp at (0,0)"), "the guard sees the id= form").toBe(true);
+    expect(words.test("furniture palm at (0,0)"), "the guard sees the bare form").toBe(true);
     const users: string[] = [];
-    for (const dir of ["examples", "docs", "test/fixtures", "eval", "dataset", "skills"]) {
+    const dirs = [
+      "examples",
+      "docs",
+      "test/fixtures",
+      "test/recovery-corpus",
+      "eval",
+      "dataset",
+      "skills",
+      "playground/src",
+      "docs-site",
+      "packages",
+      "editors/vscode/src",
+    ];
+    for (const dir of dirs) {
       for (const f of shippedSources(join(ROOT, dir))) {
-        // The plans under `docs/plans/` describe work; they are not compiled.
-        if (relative(ROOT, f).replace(/\\/g, "/").startsWith("docs/plans/")) continue;
-        if (words.test(readFileSync(f, "utf8"))) users.push(relative(ROOT, f));
+        const rel = relative(ROOT, f).replace(/\\/g, "/");
+        // The plans under `docs/plans/` describe work; they are not compiled. A package's tests
+        // build their own scenes and are not shipped plans.
+        if (rel.startsWith("docs/plans/") || /^packages\/[^/]+\/test\//.test(rel)) continue;
+        if (words.test(readFileSync(f, "utf8"))) users.push(rel);
       }
     }
-    for (const f of ["README.md", "spec.llm.md"]) if (words.test(readFileSync(join(ROOT, f), "utf8"))) users.push(f);
+    for (const f of ["README.md", "spec.llm.md", "llms-full.txt"]) {
+      if (words.test(readFileSync(join(ROOT, f), "utf8"))) users.push(f);
+    }
     expect(users).toEqual([]);
   });
 

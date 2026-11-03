@@ -688,8 +688,8 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 159 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 159 KB of it (spec = the language, 30 KB; workflow = the agent loop, 32 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 66 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 158 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 158 KB of it (spec = the language, 30 KB; workflow = the agent loop, 32 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 66 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -701,7 +701,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (66 KB) — read one section instead of paying for the whole 159 KB bundle
+# just the diagnostic catalog (66 KB) — read one section instead of paying for the whole 158 KB bundle
 $ archlang context --section errors
 ```
 

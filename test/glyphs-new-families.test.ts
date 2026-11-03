@@ -428,7 +428,8 @@ describe("V8 families — under `rendered`, each part takes its own material", (
     expect(fills("palm").at(-1)).toBe(tints.bark);
     expect(fills("flower_bed")[0]).toBe(tints.soil);
     expect(fills("flower_bed")).toContain(tints.foliage);
-    expect(fills("raised_bed").slice(0, 2)).toEqual([tints.wood, tints.soil]);
+    expect(fills("raised_bed").slice(0, 2)).toEqual([tints.wood, blank]);
+    expect(fills("raised_bed").at(-1)).toBe(tints.foliage);
   });
 
   it("the soft goods, the beds and the equipment", () => {

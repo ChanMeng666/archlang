@@ -126,7 +126,7 @@ const row4: Sheet[] = [
     tag: "Fixtures",
     title: "Symbols, not labelled boxes",
     body:
-      "A WC with a cistern and a seat, a bed with a headboard and pillows, a washer told from a dryer by the chords across its drum — 39 pieces across 38 of the 83 catalogued families, in 7 rooms and 90.72 m². A drawn symbol ignores its label, so every word on this plan comes from a room; most pieces carry no size either, because against wall takes the catalogued footprint and derives the rotation from the wall. A fixture category is a catalogue row, never a keyword.",
+      "A WC with a cistern and a seat, a bed with a headboard and pillows, a washer told from a dryer by the chords across its drum — 39 pieces across 38 of the 103 catalogued families, in 7 rooms and 90.72 m². A drawn symbol ignores its label, so every word on this plan comes from a room; most pieces carry no size either, because against wall takes the catalogued footprint and derives the rotation from the wall. A fixture category is a catalogue row, never a keyword.",
     example: "furnished-flat",
   },
   {

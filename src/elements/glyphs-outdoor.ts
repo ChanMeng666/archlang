@@ -1133,7 +1133,7 @@ export function drawPicnicTable(r: Rect, g: GlyphCtx): SceneNode[] {
 
 /**
  * A playground slide: the CHUTE (the outline) with its bed, the platform at its head with a guard
- * post each side, and the ladder up to the platform.
+ * rail along each side, and the ladder up to the platform.
  *
  * Drawn head-on-top, this module's back convention: the ladder is at the top edge and the chute
  * runs down to the exit at the bottom, where its end is rounded off into the run-out lip. That is
@@ -1156,7 +1156,7 @@ export function drawSlide(r: Rect, g: GlyphCtx): SceneNode[] {
     "extraThin",
   );
   g.path(roundedRectPath({ x: x(0.1), y: y(0.13), w: r.w * 0.8, h: r.h * 0.14 }, r.w * 0.03), g.body);
-  for (const f of [0.1, 0.9]) g.seg({ x: x(f), y: y(0.16) }, { x: x(f), y: y(0.24) }, "extraThin");
+  for (const f of [0.16, 0.84]) g.seg({ x: x(f), y: y(0.16) }, { x: x(f), y: y(0.24) }, "extraThin");
   for (const f of [0.24, 0.76]) g.seg({ x: x(f), y: y(0) }, { x: x(f), y: y(0.13) }, "extraThin");
   for (const f of [0.03, 0.065, 0.1]) g.seg({ x: x(0.24), y: y(f) }, { x: x(0.76), y: y(f) }, "extraThin");
   return g.nodes;
@@ -1215,10 +1215,11 @@ export function drawBikeRack(r: Rect, g: GlyphCtx): SceneNode[] {
  * two rows of seedlings along its own long axis.
  *
  * The frame band and the corner posts are what tell a raised bed from a `sandpit` (corner seats)
- * and a `flower_bed` (a low edging round flowers): it is a built box of boards. The soil takes the
- * family's secondary material (`basin`: soil), the frame its primary (wood), and the seedlings are
- * small four-leaf crosses filled with the lawn tint, in two rows at one per 0.3 short sides of
- * soil, clamped to `[2, 8]` a row. Symmetric construction, so no hand; a run, so neither
+ * and a `flower_bed` (a low edging round flowers): it is a built box of boards. The frame takes the
+ * family's primary material (wood) and the seedlings its secondary (`foliage`, filled like planting:
+ * the lawn tint outside `rendered`); the soil is the untinted interior (`blank`), since a family
+ * names two materials and the planting is what a raised bed is for. The seedlings are small
+ * four-leaf crosses in two rows at one per 0.3 short sides of soil, clamped to `[2, 8]` a row. Symmetric construction, so no hand; a run, so neither
  * `symmetric` nor `directional`.
  *
  * Prim count: `6 + 2 x per row`, i.e. 18 at the catalogued 2400 x 1200.
@@ -1227,7 +1228,7 @@ export function drawRaisedBed(r: Rect, g: GlyphCtx): SceneNode[] {
   const s = Math.max(0, shortSide(r));
   g.path(roundedRectPath(r, s * 0.02), g.body);
   const soil = insetRect(r, 0.1);
-  g.path(roundedRectPath(soil, s * 0.01), g.basin, "extraThin");
+  g.path(roundedRectPath(soil, s * 0.01), g.blank, "extraThin");
   const k = s * 0.1;
   for (const [px, py] of [
     [r.x, r.y],
@@ -1246,7 +1247,7 @@ export function drawRaisedBed(r: Rect, g: GlyphCtx): SceneNode[] {
     for (const b of [-S * 0.18, S * 0.18]) {
       g.path(
         scallopPath(axisPt(r, a, b), 4, rho * 0.3, () => rho),
-        g.theme.lawn,
+        g.fillFor(g.material?.secondary, g.theme.lawn),
         "extraThin",
       );
     }

@@ -312,7 +312,7 @@ twin. So a reflecting instance frame hands the glyph its own chirality instead, 
 mirror image. Turn it with `rotate` where a quarter-turn is what you want; reach for
 `place … mirror` when you want the mirror-image piece.
 
-**Handedness is DERIVED from the drawing, not declared per family.** Sixteen of the 83
+**Handedness is DERIVED from the drawing, not declared per family.** Sixteen of the 103
 shipped families have no vertical mirror axis (`bed`, `desk`, `bathtub`, `island`, `washer`,
 `microwave`, `mirror`, `chaise`, `reception_desk`, `piano`, `sofa_l`,
 `bicycle`, `motorcycle`, `mailbox`, `ev_charger`, `double_bed`) at their catalogued

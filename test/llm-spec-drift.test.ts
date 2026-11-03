@@ -79,13 +79,6 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // `## Keyword reference` enum bullet now lists only the value words no code span or fence
     // shows (derived), the CLI/settings blocks lost their alignment padding, and a few
     // sentences that restated another line were folded into it.
-    //
-    // Raised 30,000 → 30,400 by the visual-assets families (card V8): `main` rendered 29,981
-    // characters, and the tranche's sixteen new footprinted families lengthen the furniture
-    // line's interpolated list by exactly 165 (30,146), with no other line moved. A search for
-    // repeated seven-word runs found no duplication left to cut, and dropping a family from the
-    // list would leave an agent writing `size` it does not need; the 254-character margin keeps
-    // the cap a price on prose, not a veto on the next example edit.
-    expect(spec.length).toBeLessThan(30_400);
+    expect(spec.length).toBeLessThan(30_000);
   });
 });
