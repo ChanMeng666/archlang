@@ -1,14 +1,17 @@
 /**
- * T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3, V5,
- * V6): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's
+ * T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3,
+ * V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's
  * footprint. The twelve families laneway-house uses are here; the living, bedroom, dining and
- * office batch is `t0-living.ts` (V5), the kitchen, bath and utility batch `t0-utility.ts` (V6);
- * every other family stays a grey box.
+ * office batch is `t0-living.ts` (V5), the kitchen, bath and utility batch `t0-utility.ts` (V6),
+ * the site (planting, garden, vehicles, terrace, the small standing objects) `t0-outdoor.ts` and
+ * the office and commercial pieces `t0-office.ts` (V7). Every catalogued family is built; a word
+ * outside the catalogue stays a grey box.
  *
  * Every generator is mirror-symmetric across its own width, so a mirrored piece (`mirror`,
  * `place … mirror`) needs no mirrored mesh and nothing gains handedness (`test/t0.test.ts` holds
  * it) — except the few `handed` families whose shape cannot be (`T0_HANDED`: an L-sofa, a chaise,
- * a grand piano). The core draws those handed as well, and reflects the drawing of a mirrored
+ * a grand piano, a reception desk; a bicycle and a motorcycle where they lie along their width,
+ * `handedAt`). The core draws those handed as well, and reflects the drawing of a mirrored
  * piece; the model follows it: a handed piece the plan reflects carries `Furniture.mirror` and is
  * built as the reflection (`t0Shells`), so the model never shows the other hand from the drawing.
  *
@@ -33,15 +36,28 @@
 import type { MaterialSlot } from "../materials.js";
 import type { Furniture, Pt } from "../scene3d/types.js";
 import { degenerateHoles, prism } from "./extrude.js";
-import { cabinet, clamp, P, type Part, pair, type SectionShape, span, type T0Family, upholstered } from "./t0-kit.js";
+import {
+  cabinet,
+  clamp,
+  MAX_DOORS,
+  P,
+  type Part,
+  pair,
+  type SectionShape,
+  span,
+  type T0Family,
+  upholstered,
+} from "./t0-kit.js";
 import { T0_LIVING } from "./t0-living.js";
+import { T0_OFFICE } from "./t0-office.js";
+import { T0_OUTDOOR } from "./t0-outdoor.js";
 import { T0_UTILITY } from "./t0-utility.js";
 import type { Shell } from "./types.js";
 
 export type { Part, SectionShape } from "./t0-kit.js";
 
-/** The batch families (V5, V6), each declared once with all its facts (`T0Family`). */
-const BATCHES: Readonly<Record<string, T0Family>> = { ...T0_LIVING, ...T0_UTILITY };
+/** The batch families (V5–V7), each declared once with all its facts (`T0Family`). */
+const BATCHES: Readonly<Record<string, T0Family>> = { ...T0_LIVING, ...T0_UTILITY, ...T0_OUTDOOR, ...T0_OFFICE };
 
 /** One fact of every batch family that has it, as a table keyed by family. */
 const batchTable = <T>(pick: (f: T0Family) => T | undefined): Record<string, T> =>
@@ -121,6 +137,16 @@ export const isHung = (family: string): boolean => family in T0_MOUNT_MM || T0_H
 
 /** The handed families (`T0Family.handed`): built reflected when the plan reflects the piece. */
 export const T0_HANDED: ReadonlySet<string> = new Set(Object.keys(batchTable((f) => f.handed)));
+
+/**
+ * Whether a piece of `family`, `W` × `D` mm in its own frame, is handed: always for an L-sofa or
+ * a reception desk, only along its width for a bicycle or a motorcycle (the core reads both off
+ * their long axis), never for a symmetric family.
+ */
+export function handedAt(family: string, W: number, D: number): boolean {
+  const h = BATCHES[family]?.handed;
+  return h === true || (typeof h === "function" && h(W, D));
+}
 
 /** Whether an asset (`t0:<family>`) is a handed family's, so a reflection of it matters. */
 export const isHandedAsset = (asset: string): boolean => asset.startsWith("t0:") && T0_HANDED.has(asset.slice(3));
@@ -214,7 +240,8 @@ const GENERATORS: Readonly<Record<string, (W: number, D: number) => Part[]>> = {
   },
   wardrobe(W, D) {
     const [hw, hd] = [W / 2, D / 2];
-    const n = 2 * Math.max(1, Math.round(W / 1000));
+    // A door pair per metre, at most 64 doors, as the core caps a run's divisions (red-team N7).
+    const n = 2 * clamp(Math.round(W / 1000), 1, MAX_DOORS / 2);
     const doors = span(n, hw - 8, 4);
     const fz = hd - 12;
     return [
@@ -394,7 +421,12 @@ export function sectionRing(u0: number, u1: number, v0: number, v1: number, shap
     // A generator's own constant, never user input: a point off the box is a programming error.
     if (shape.profile.some(([fu, fv]) => !(fu >= 0 && fu <= 1 && fv >= 0 && fv <= 1)))
       throw new RangeError("a T0 profile point lies outside [0, 1]²");
-    pts = shape.profile.map(([fu, fv]) => [u0 + fu * (u1 - u0), v0 + fv * (v1 - v0)]);
+    // About the box's centre, not from its low corner (red-team S2, PR #463): a point and its
+    // mirror partner (`1 − fu` in the mirrored box) are then exact negatives before rounding, so a
+    // half-micrometre tie rounds them apart never; the box's own sides are its exact ends.
+    const at = (f: number, a: number, b: number, c: number): number =>
+      f === 0 ? a : f === 1 ? b : c + (f - 0.5) * (b - a);
+    pts = shape.profile.map(([fu, fv]) => [at(fu, u0, u1, cu), at(fv, v0, v1, cv)]);
   } else if (shape.round) {
     pts = C16.map((c, k) => [cu + ru * c, cv + rv * (S16[k] as number)]);
   } else if (shape.radius && shape.radius > 0) {

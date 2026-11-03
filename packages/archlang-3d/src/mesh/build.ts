@@ -584,6 +584,17 @@ function levelNodes(
           rule: "furniture-hung-above-walls",
         });
       }
+    } else if (parts && family && floorTop + h * MM > e + tallest) {
+      // A standing piece whose default height is above its storey's walls (a tree in the garden,
+      // visual-assets V7): built at that height, never clipped to the walls, and said so.
+      ledger.push({
+        kind: "furniture",
+        id: f.id,
+        field: "top_mm",
+        value: h,
+        provenance: "default",
+        rule: "furniture-above-walls",
+      });
     }
     const [cx, cy] = f.centre;
     const box = rect(cx - f.size.w / 2, cy - f.size.d / 2, cx + f.size.w / 2, cy + f.size.d / 2);

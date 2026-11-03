@@ -34,6 +34,17 @@
   `window:glass`, translucent) instead of one `window` material. New exports: `KIND_PALETTE`,
   `FINISH_PALETTE`, `FLOOR_FINISHES`, `FLOOR_FINISH_RULES`, `floorFinish`, `finishColour`,
   `WALL_CAP_SRGB`, and `bodyMaterialName` from `./node`.
+- Every catalogued furniture word is built as a T0 piece; none is a grey box any more. Only a word
+  outside the core's catalogue still stands as one. New pieces include planting (trees, a conifer,
+  shrubs, a hedge, a palm, flower and raised beds), garden and play furniture, vehicles (a car, a
+  bicycle, a motorcycle), the small site objects, and office, care and gym pieces. A towel rail
+  hangs with its underside at 200 mm and a whiteboard at 900 mm (`furniture-mount-default`).
+- `T0_HANDED` now also holds `reception_desk`, `bicycle` and `motorcycle`. A bicycle or a
+  motorcycle is handed only laid along its width, as the core draws it; the new export
+  `handedAt(family, W, D)` says whether a piece is handed at its size. A piece that is symmetric at
+  its size is never greyed when the plan's reflection is unknown.
+- A standing piece taller than its storey's walls (a tree in a garden) is built at its default
+  height and ledgered (`furniture-above-walls`), never clipped.
 
 ### Removed
 

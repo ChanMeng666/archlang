@@ -11,7 +11,19 @@
  * core's drawing is handed only by a detail (the bed's turned sheet, the desk's pedestal), the
  * model keeps the symmetric part of it and leaves the detail out, so it never gains a hand.
  */
-import { BACK_CUSHION, clamp, P, type Part, pair, span, type T0Family, upholstered } from "./t0-kit.js";
+import {
+  BACK_CUSHION,
+  clamp,
+  dome,
+  HEMI,
+  MOUND,
+  P,
+  type Part,
+  pair,
+  span,
+  type T0Family,
+  upholstered,
+} from "./t0-kit.js";
 
 /** Intervals `[a, b]` of `n` equal pieces from `from` to `to`, `gap` apart (not centred on 0). */
 function run(from: number, to: number, n: number, gap: number): Array<[number, number]> {
@@ -729,6 +741,116 @@ export const T0_LIVING: Readonly<Record<string, T0Family>> = {
       return [
         P("metal", -hw, hw, -hd, zg, 1100, 1900, { axis: "z", radius: rad }),
         P("glass", -hw + e, hw - e, zg, hd, 1100 + e, 1900 - e, { axis: "z", radius: Math.max(1, rad - e) }),
+      ];
+    },
+  },
+  floor_lamp: {
+    names: ["floor_lamp"],
+    heightMm: 1650,
+    materials: ["fabric", "metal"],
+    gen(W, D) {
+      const [rx, rz] = [W / 2, D / 2];
+      const p = clamp(Math.min(W, D) * 0.025, 6, 14);
+      // `drawFloorLamp`: the drum shade over everything, open at the top where the light is, its
+      // spider fitting (four struts to a finial) across the opening; the pole and base under it.
+      const top = { x0: -rx * 0.92, x1: rx * 0.92, z0: -rz * 0.92, z1: rz * 0.92, round: true };
+      return [
+        P("metal", -rx * 0.62, rx * 0.62, -rz * 0.62, rz * 0.62, 0, 22, { round: true }),
+        P("metal", -p, p, -p, p, 22, 1600, { round: true }),
+        P("fabric", -rx, rx, -rz, rz, 1330, 1650, { round: true, holes: [top] }),
+        P("metal", -rx * 0.92, rx * 0.92, -4, 4, 1612, 1620, { axis: "x", round: true }),
+        P("metal", -4, 4, -rz * 0.92, rz * 0.92, 1612, 1620, { axis: "z", round: true }),
+        P("metal", -rx * 0.13, rx * 0.13, -rz * 0.13, rz * 0.13, 1606, 1630, { round: true }),
+      ];
+    },
+  },
+  side_table: {
+    names: ["side_table", "end_table"],
+    heightMm: 550,
+    materials: ["wood"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawSideTable`: a top with eased corners and, under it, the lower shelf, here carried
+      // between the four legs.
+      const leg = clamp(s * 0.06, 15, 40);
+      const li = s * 0.06;
+      return [
+        ...[-hd + li, hd - li - leg].flatMap((z) =>
+          pair(P("wood", -hw + li, -hw + li + leg, z, z + leg, 0, 525, { radius: leg * 0.3 })),
+        ),
+        P("wood", -hw + li + 4, hw - li - 4, -hd + li + 4, hd - li - 4, 150, 170, { radius: s * 0.03 }),
+        P("wood", -hw, hw, -hd, hd, 525, 550, { radius: s * 0.08 }),
+      ];
+    },
+  },
+  console_table: {
+    names: ["console_table"],
+    heightMm: 800,
+    materials: ["wood", "wood_dark"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawConsoleTable`: a long shallow top, the back rail along the wall edge, the stretcher
+      // shelf under the top (0.12–0.88 of the length, 0.36–0.78 of the depth), slender legs.
+      const leg = clamp(s * 0.08, 15, 40);
+      const li = s * 0.04;
+      return [
+        ...[-hd + li, hd - li - leg].flatMap((z) =>
+          pair(P("wood_dark", -hw + li, -hw + li + leg, z, z + leg, 0, 775, { radius: leg * 0.3 })),
+        ),
+        P("wood_dark", -hw + li + leg, hw - li - leg, -hd + li, -hd + li + 20, 680, 775),
+        P("wood", -hw + W * 0.12, hw - W * 0.12, -hd + D * 0.36, -hd + D * 0.78, 160, 180, { radius: 6 }),
+        P("wood_dark", -hw + li + leg, hw - li - leg, -6, 6, 150, 160),
+        P("wood", -hw, hw, -hd, hd, 775, 800, { radius: s * 0.04 }),
+      ];
+    },
+  },
+  ottoman: {
+    names: ["ottoman", "pouf", "footstool"],
+    heightMm: 450,
+    materials: ["fabric", "cushion"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawOttoman`: an upholstered block with eased corners, its padded top inset from the welt,
+      // and the tufting: `2 x side / short side` buttons each way, `[2, 6]`, centred by
+      // construction (the numerator negates exactly for a button's mirror partner).
+      const t = s * 0.09;
+      const [tw, td] = [W - 2 * t, D - 2 * t];
+      const nx = clamp(Math.round((2 * W) / s), 2, 6);
+      const nz = clamp(Math.round((2 * D) / s), 2, 6);
+      const b = clamp(s * 0.025, 4, 14);
+      const buttons: Part[] = [];
+      for (let i = 0; i < nx; i++) {
+        for (let j = 0; j < nz; j++) {
+          const ox = (tw * 0.8 * (2 * i + 1 - nx)) / (2 * nx);
+          const oz = (td * 0.8 * (2 * j + 1 - nz)) / (2 * nz);
+          buttons.push(P("fabric", ox - b, ox + b, oz - b, oz + b, 430, 450, { round: true }));
+        }
+      }
+      return [
+        P("fabric", -hw + 20, hw - 20, -hd + 20, hd - 20, 0, 40, { radius: Math.max(1, s * 0.16 - 20) }),
+        P("fabric", -hw, hw, -hd, hd, 40, 400, { radius: s * 0.16 }),
+        P("cushion", -hw + t * 0.5, hw - t * 0.5, -hd + t * 0.5, hd - t * 0.5, 400, 440, { radius: s * 0.12 }),
+        ...buttons,
+      ];
+    },
+  },
+  bean_bag: {
+    names: ["bean_bag"],
+    heightMm: 750,
+    materials: ["fabric", "cushion"],
+    gen(W, D) {
+      const [rx, rz] = [W / 2, D / 2];
+      // `drawBeanBag`: a soft, nearly round sack, the raised back at the top edge (−z) as a
+      // mound, and the hollow a body sits in in front of it.
+      const zb = -rz + D * 0.28;
+      const zs = -rz + D * 0.6;
+      return [
+        ...dome("fabric", 0, 0, rx, rz, 0, 400, MOUND),
+        ...dome("fabric", 0, zb, rx * 0.76, D * 0.24, 280, 750, HEMI),
+        P("cushion", -rx * 0.42, rx * 0.42, zs - D * 0.15, zs + D * 0.15, 372, 410, { round: true }),
       ];
     },
   },

@@ -30,11 +30,15 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   T0 parametric furniture (`t0.ts`: parts over a box, ellipse, rounded or profiled section,
   extruded up or sideways, each in a material slot; the twelve laneway families there, the
   living/bedroom/office batch in `t0-living.ts`, kitchen/bath/utility in `t0-utility.ts`, the
-  shared part kit in `t0-kit.ts`) and grey boxes for the rest, a hidden flat roof; `earcut` (ISC)
-  for caps. A wall-hung family hangs at a ledgered mount (`T0_MOUNT_MM`; a television by its
-  top, `T0_HUNG_FROM_TOP`); a handed one (`T0_HANDED`:
-  L-sofa, chaise, grand piano) is built reflected when the core's Plan JSON says the plan reflects
-  it (`Furniture.mirror`, read by `adaptPlan` through `planToJson`).
+  site (planting, garden, vehicles, terrace, small standing objects) in `t0-outdoor.ts`, office
+  and commercial in `t0-office.ts`, the shared part kit in `t0-kit.ts`: every catalogued family)
+  and a grey box for a word outside the catalogue, a hidden flat roof; `earcut` (ISC) for caps.
+  A wall-hung family hangs at a ledgered mount (`T0_MOUNT_MM`; a television by its top,
+  `T0_HUNG_FROM_TOP`); a piece taller than its storey's walls (a tree) is built at its default
+  height and ledgered (`furniture-above-walls`, `furniture-hung-above-walls`); a handed one
+  (`T0_HANDED`: L-sofa, chaise, grand piano, reception desk; a bicycle or a motorcycle laid along
+  its width, `handedAt`) is built reflected when the core's Plan JSON says the plan reflects it
+  (`Furniture.mirror`, read by `adaptPlan` through `planToJson`).
 - `src/materials.ts`: the material slots and the ONE palette the GLB writer and the viewer both
   read (a T0 piece stays one node; one primitive or mesh per slot), the building's kind colours
   (`KIND_PALETTE`) and the floor finishes (`FINISH_PALETTE`; a room's from its `uses`,

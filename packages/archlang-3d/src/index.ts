@@ -20,6 +20,7 @@ export type { CutSector } from "./mesh/extrude.js";
 export { rectsOf, slabRegion } from "./mesh/slab.js";
 export {
   assetFor,
+  handedAt,
   partShell,
   sectionRing,
   T0_FAMILIES,
