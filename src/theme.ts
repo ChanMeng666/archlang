@@ -7,6 +7,7 @@
  */
 
 import { xmlText } from "./text-safe.js";
+import type { FixtureMaterial } from "./elements/fixtures-glyphs.js";
 
 export interface Theme {
   bg: string;
@@ -44,6 +45,19 @@ export interface Theme {
   lineWeight: number;
   /** SVG `font-family`. */
   font: string;
+  /**
+   * A soft fill per material, which a fixture symbol paints its body (and, where its family names
+   * a secondary material, its inner part) with in place of `furnitureFill`/`opening`
+   * (`GlyphCtx.fillFor`, `src/elements/glyph-lib.ts`; the family table is
+   * `FIXTURE_FAMILY_MATERIALS`, `src/elements/fixtures-glyphs.ts`).
+   *
+   * Only the `rendered` theme has it (ADR 0023, the 2026-11-04 amendment): every other theme,
+   * and the default, leaves it absent, so their symbols draw exactly as before. It is not a
+   * directive key (`theme { … }` cannot set it); a layer that sets `furnitureFill` without it —
+   * `theme rendered { furniture … }`, `style furniture { fill … }` — drops it, so an author's
+   * one furniture colour still wins ({@link mergeTheme}).
+   */
+  materialTints?: Readonly<Partial<Record<FixtureMaterial, string>>>;
 }
 
 export const DEFAULT_THEME: Theme = {
@@ -204,6 +218,53 @@ export const THEMES: Record<string, Partial<Theme>> = {
     outdoorStroke: "#a2947c",
     font: "Georgia, 'Times New Roman', serif",
     lineWeight: 1.1,
+  },
+  // A presentation board: `presentation`'s warm paper, in the default's clean sans, with every
+  // fixture symbol filled in a soft tint of what it is made of (`materialTints`; ADR 0023, the
+  // 2026-11-04 amendment). The tints are pale and desaturated on purpose — the line work still
+  // leads, and the symbol ink keeps at least 3:1 on every one (`test/rendered-theme.test.ts`).
+  rendered: {
+    bg: "#faf8f4",
+    wallStroke: "#2b2b2b",
+    pocheBase: "#e6ded1",
+    pocheHatch: "#b9a98f",
+    roomFill: "#fffefb",
+    roomLabel: "#2b2b2b",
+    areaLabel: "#8a7f70",
+    furnitureStroke: "#a89a80",
+    furnitureFill: "#f3ece0",
+    furnitureLabel: "#9a8d78",
+    opening: "#faf8f4",
+    doorLeaf: "#6b5d49",
+    windowPane: "#7fa8c9",
+    dim: "#3c6b8a",
+    annotation: "#3a3a3a",
+    annotationMuted: "#9a8d78",
+    column: "#5a5044",
+    lawn: "#e9eedf",
+    water: "#dde9ee",
+    paving: "#f0ebe3",
+    outdoorStroke: "#a2947c",
+    materialTints: {
+      wood: "#ead9c0",
+      wood_dark: "#dfcdb6",
+      fabric: "#dedad3",
+      cushion: "#ece8e1",
+      linen: "#f2ebdf",
+      wool: "#efe7da",
+      ceramic: "#f8f7f4",
+      stone: "#e6e3dd",
+      metal: "#e1e4e5",
+      glass: "#e3eef1",
+      appliance: "#ebebe8",
+      screen: "#d9dce0",
+      paint: "#e2e6dc",
+      rubber: "#e2e0dc",
+      foliage: "#d4ddc4",
+      bark: "#dccfbd",
+      soil: "#ddd1c0",
+      water: "#d5e6ed",
+    },
   },
 };
 
@@ -371,7 +432,15 @@ export function isNumericThemeKey(key: keyof Theme): boolean {
   return key === "lineWeight";
 }
 
-/** Shallow-merge theme layers (later overrides earlier); ignores undefined. */
+/**
+ * Shallow-merge theme layers (later overrides earlier); ignores undefined.
+ *
+ * One rule beyond "later wins": a layer that sets `furnitureFill` and not `materialTints` drops
+ * the tints an earlier layer brought. The tints are the theme's own furniture fills, so an
+ * author's single furniture colour (`theme rendered { furniture … }`, `style furniture { fill … }`,
+ * a `CompileOptions.theme` naming another base) replaces them rather than losing to them. A
+ * theme without tints has nothing to drop, so for it this is the plain merge it always was.
+ */
 export function mergeTheme(...layers: (Partial<Theme> | undefined)[]): Theme {
   const out: Theme = { ...DEFAULT_THEME };
   for (const layer of layers) {
@@ -380,6 +449,7 @@ export function mergeTheme(...layers: (Partial<Theme> | undefined)[]): Theme {
       const v = layer[k];
       if (v !== undefined) (out as unknown as Record<string, unknown>)[k] = v;
     }
+    if (layer.furnitureFill !== undefined && layer.materialTints === undefined) delete out.materialTints;
   }
   return out;
 }
@@ -399,6 +469,18 @@ export function sanitizeTheme(theme: Theme): Theme {
   for (const k of Object.keys(out) as (keyof Theme)[]) {
     const v = out[k];
     if (typeof v === "string") (out as unknown as Record<string, unknown>)[k] = xmlText(v);
+  }
+  // The tints are colours like any other (a registered theme or `CompileOptions.theme` can carry
+  // them), so they are escaped the same way; only a theme that has them gets the key. A
+  // non-object (`null` from an untyped caller) is no tint table at all, and is dropped.
+  const tints: unknown = out.materialTints;
+  if (typeof tints !== "object" || tints === null) delete out.materialTints;
+  else {
+    const clean: Partial<Record<FixtureMaterial, string>> = {};
+    for (const [m, c] of Object.entries(tints) as [FixtureMaterial, unknown][]) {
+      if (typeof c === "string") clean[m] = xmlText(c);
+    }
+    out.materialTints = clean;
   }
   return out;
 }

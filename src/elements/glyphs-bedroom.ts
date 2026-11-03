@@ -277,11 +277,11 @@ export function drawBunkBed(r: Rect, g: GlyphCtx): SceneNode[] {
   g.path(roundedRectPath({ x: r.x, y: r.y, w: r.w, h: r.h * 0.045 }, [rad, rad, 0, 0]), g.body);
   // The lower mattress and its pillow, at the head.
   const mat: Rect = { x: r.x + s * 0.085, y: r.y + r.h * 0.1, w: r.w - 2 * s * 0.085, h: r.h * 0.7 };
-  g.path(roundedRectPath(mat, s * 0.04), g.body, "extraThin");
+  g.path(roundedRectPath(mat, s * 0.04), g.fillFor(g.material?.secondary), "extraThin");
   const pillowH = r.h * 0.1;
   g.path(
     roundedRectPath({ x: r.x + r.w * 0.2, y: r.y + r.h * 0.12, w: r.w * 0.6, h: pillowH }, pillowH * 0.3),
-    g.basin,
+    g.blank,
     "extraThin",
   );
   // The upper deck, above the cut: dashed, a rail's width inside the frame, stopping clear of the ladder.
@@ -289,7 +289,7 @@ export function drawBunkBed(r: Rect, g: GlyphCtx): SceneNode[] {
   dashedPath(g, roundedRectPath(upper, s * 0.03), "none");
   // The ladder: two rails and three rungs across the foot end, inside the footprint.
   const ladder: Rect = { x: r.x + r.w * 0.3, y: r.y + r.h * 0.855, w: r.w * 0.4, h: r.h * 0.11 };
-  g.path(roundedRectPath(ladder, s * 0.01), g.basin, "extraThin");
+  g.path(roundedRectPath(ladder, s * 0.01), g.fillFor(g.material?.primary, g.basin), "extraThin");
   for (const f of [0.25, 0.5, 0.75]) {
     const y = ladder.y + ladder.h * f;
     g.seg({ x: ladder.x, y }, { x: ladder.x + ladder.w, y }, "extraThin");
@@ -321,8 +321,8 @@ export function drawCrib(r: Rect, g: GlyphCtx): SceneNode[] {
   // The blanket, a gap in from the mattress's sides and foot, with its turned-down head band.
   const gap = s * 0.03;
   const blanket: Rect = { x: mat.x + gap, y: mat.y + mat.h * 0.36, w: mat.w - 2 * gap, h: mat.h * 0.64 - gap };
-  g.path(roundedRectPath(blanket, s * 0.02), g.body, "extraThin");
-  g.path(roundedRectPath({ ...blanket, h: blanket.h * 0.16 }, [s * 0.02, s * 0.02, 0, 0]), g.basin, "extraThin");
+  g.path(roundedRectPath(blanket, s * 0.02), g.fillFor(g.material?.secondary), "extraThin");
+  g.path(roundedRectPath({ ...blanket, h: blanket.h * 0.16 }, [s * 0.02, s * 0.02, 0, 0]), g.blank, "extraThin");
   const horizontal = r.w >= r.h;
   const long = horizontal ? r.w : r.h;
   const bars = clamp(Math.round((long / Math.max(1e-9, Math.min(r.w, r.h))) * 2.5), 3, 7);

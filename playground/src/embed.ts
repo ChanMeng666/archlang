@@ -6,7 +6,7 @@
  *
  * Hash params (after the `#z=…`/`#src=…` token, `&`-joined):
  *   editable=1    show a compact editor pane + live re-render on input
- *   theme=<key>   force a named render theme (blueprint | dark | mono | presentation)
+ *   theme=<key>   force a named render theme (blueprint | dark | mono | presentation | rendered)
  */
 import { compile } from "archlang";
 import { embedCompileOptions, hashParam, isEditable, renderDecision } from "./embed-params.js";

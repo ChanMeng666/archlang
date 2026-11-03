@@ -1,6 +1,6 @@
 # 23. The plan-symbol drawing language
 
-- **Status:** Accepted
+- **Status:** Accepted — amended 2026-11-04 (material tints in the `rendered` theme only, below)
 - **Date:** 2026-10
 - **Scope:** how every fixture symbol, door, window, fence, balcony rail and vertical-circulation
   glyph is drawn: pens, tones, curves, dashes and what a redraw may move. No language syntax
@@ -98,3 +98,42 @@ where one exists (`glyphs-living`, `glyphs-outdoor`, and `plant`/`meeting_table`
 - Redraws are held by the handedness survey and grid, the D4 sweeps and the containment checks,
   not by eye alone; the working checklist is `.claude/rules/glyphs.md`.
 - Open items found during the redraw are in `docs/backlog.md`, section D.
+
+## Amendment (2026-11-04): material tints in the `rendered` theme only
+
+**Decision of the owner, 2026-11-04** (visual-assets programme, decision V-D1): plans should be
+able to look like a presentation board, and the owner chose that option explicitly. So one new
+named theme, `rendered`, fills fixture symbols with soft material tints, and the rejection of
+tints above ("Floor-material tints under furniture or rooms") **stands for every other theme and
+for the default**.
+
+- **What a tint names.** Not a material the source never named, which was the objection: the
+  material is a property of the FAMILY (`FIXTURE_FAMILY_MATERIALS`, beside `FIXTURE_FAMILIES` in
+  `src/elements/fixtures-glyphs.ts`; a sofa is fabric, a counter stone), never read from a label
+  and never a language keyword. A family names a primary material (the body a plan looks down
+  on) and, where it reads better, a secondary one for a second part, which the glyph names
+  (a sofa's cushions, a sink's bowl, a car's glass). The same table is exported for
+  `packages/archlang-3d`, so a piece's 2D tint and 3D material cannot disagree.
+- **How it is drawn.** The theme carries `materialTints` (one fill per material). A glyph's
+  `body` and `basin` and its `fillFor(material, untinted)` read them through `GlyphCtx`; with no
+  tints each returns exactly the fill it returned before, so no other theme's bytes can move
+  (`test/rendered-theme.test.ts` sweeps every example under the default and the four earlier
+  themes against digests measured on `main`). Planting keeps `theme.lawn` outside `rendered`;
+  inside it a canopy takes the `foliage` tint, so there the `lawn` key reaches the lawn surfaces
+  and no longer a tree, shrub, hedge or plant. A rug stays unfilled under every theme, `rendered`
+  included: it is moved ahead of the furniture (`renderOrder`), but not ahead of what the same
+  pass draws before the first piece (a column, a stair, a void, a fence), nor of the datum axes
+  on the pass below, and the Scene has no translucent fill, so any tint would hide them. An
+  overhead piece drawn dashed above the cut plane (an upper cabinet, a range hood, a pergola)
+  stays unfilled too, so the piece below it shows.
+- **What does not change.** Decisions 1 to 6 hold: tints are fills, never strokes; outline and
+  detail tones are unchanged (the outline ink is still the derived symbol ink, decision 6), and
+  the outline ink keeps at least 3:1 contrast on every tint, measured. No shadow, no hatch on a
+  symbol, no new theme directive key: `theme rendered { furniture: … }` and
+  `style furniture { fill: … }` replace the tints with the author's one colour. A theme is
+  drawing only: `describe()`, `lint()` and diagnostics are the same under `rendered` as under
+  the default.
+- **Why only one theme.** The ground textures that name a material compete with any fill, and a
+  construction or line print reads best untinted; a board for a client is the one place colour
+  helps. Keeping tints in one opt-in theme keeps every existing drawing, golden and example
+  byte-identical.

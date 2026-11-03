@@ -113,7 +113,7 @@ keep (align <d>… | equal width|depth <id>… | offset <d|id> from <d> <mm> | m
 - `set <element>(attr: value)` — scoped default for following elements (e.g. `set door(swing: out)`).
 - Arrays: `[a, b, c]`, indexed `arr[i]`. Operators: `+ - * / %`, `== != < > <= >=`, `&& ||`. Comments: `# …`.
 - `import "lib/x.arch": name` and `component name(args) { … }` for reuse.
-- `theme blueprint|mono|dark|presentation` — a named palette base. `theme [<name>] { key: value }` overrides single keys, `theme from "#rrggbb"` derives the whole palette from one colour, and `style <kind> { key: value }` does the same per element kind (any but `opening`, `walls`). An unknown key WARNS and is dropped (`W_UNKNOWN_THEME_KEY`/`W_UNKNOWN_STYLE_KEY`).
+- `theme blueprint|mono|dark|presentation|rendered` — a named palette base. `theme [<name>] { key: value }` overrides single keys, `theme from "#rrggbb"` derives the whole palette from one colour, and `style <kind> { key: value }` does the same per element kind (any but `opening`, `walls`). An unknown key WARNS and is dropped (`W_UNKNOWN_THEME_KEY`/`W_UNKNOWN_STYLE_KEY`).
 
 ## Keyword reference
 

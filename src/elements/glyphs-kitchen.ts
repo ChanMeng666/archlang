@@ -7,8 +7,9 @@
  * - **A pen hierarchy that is also a tone hierarchy.** The OUTLINE of a piece is `thin` (drawn
  *   in the derived symbol ink); anything *inside* it — a worktop edge, a burner, a drain, a
  *   groove, a handle's seat — is `extraThin` (drawn in the lighter detail tone). A hard carcass
- *   is `g.body`; a sunk or glazed surface — a bowl, an oven window, a control strip — is
- *   `g.basin` (white).
+ *   is `g.body`; a sunk or glazed surface — a bowl, an oven window — is `g.basin`
+ *   (`theme.opening`, or the family's secondary tint under `rendered`), and a control strip is
+ *   `g.blank`, the untinted `theme.opening` on every theme.
  * - **Round things are round.** A burner, a knob and a drain is a true `circle`; a bowl, a
  *   drum and a door window is a `roundedRectPath` or a circle, never a tessellated polygon.
  *   Every backend already serializes `circle` and `path` natively.
@@ -482,7 +483,7 @@ export function drawUpperCabinet(r: Rect, g: GlyphCtx): SceneNode[] {
 function controlStrip(g: GlyphCtx, r: Rect): Rect {
   const s = shortSide(r);
   const strip: Rect = { x: r.x + s * 0.07, y: r.y + s * 0.07, w: r.w - s * 0.14, h: r.h * 0.14 };
-  g.path(roundedRectPath(strip, s * 0.02), g.basin, "extraThin");
+  g.path(roundedRectPath(strip, s * 0.02), g.blank, "extraThin");
   return strip;
 }
 
