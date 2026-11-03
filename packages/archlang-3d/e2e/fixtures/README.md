@@ -22,9 +22,9 @@ byte-identical: every `stage:brief` … `stage:openings` frame of both plans, tw
 `stage:fixtures`, and all seven of laneway-house's (`stage:brief` … `stage:fixtures`, `tilted`,
 `end`: measured, its stove changes no pixel of them at 480 × 270, though its Mesh3D and GLB pins
 moved). The V5/V6 families themselves moved nothing here (neither plan draws one).
-`taken` lists Windows alone: the hashes changed, so the Linux entry must be confirmed by CI's
-`check-3d` job (ubuntu-latest x64, the same Chromium build) rendering the same 17 hashes before it
-is added back, as after A2b, A9 and V1–V3.
+CI's `check-3d` job (ubuntu-latest x64, the same Chromium build; GitHub Actions run 41667703279)
+then rendered the same 17 hashes, byte for byte, and failed only because Linux was not listed; the
+Linux entry was added back with the hashes unchanged.
 
 Re-taken by visual-assets cards V1–V3 (2026-11-04) on Windows 11 x64 with the same Chromium build
 and command: the twelve T0 furniture generators were refined (rounded and sideways parts, more

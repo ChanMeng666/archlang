@@ -4,12 +4,14 @@
       "platform": "win32",
       "arch": "x64",
       "chromium": "156.0.8078.4"
+    },
+    {
+      "platform": "linux",
+      "arch": "x64",
+      "chromium": "156.0.8078.4"
     }
   ],
-  "size": [
-    480,
-    270
-  ],
+  "size": [480, 270],
   "plans": {
     "laneway-house.arch": {
       "stage:brief": "5ec31203f4c37e910277894cf491fa3b5963e286086fee734447f7040d554e02",
