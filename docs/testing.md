@@ -10,7 +10,8 @@ say what it enforces; this file does not inventory them.
 
 | Command | Notes |
 |---|---|
-| `npm run check` | typecheck (`src/` only) + Biome + `check:test-wiring` + `npm test`. The floor |
+| `npm run check:quick` | the local pre-push check: Biome, the typecheck the changes need, `check:drift` and the nearest tests (by import distance, `--max` 20) for the files the branch changed. Under a minute; not merge evidence |
+| `npm run check` | typecheck (`src/` only) + Biome + `check:test-wiring` + `npm test`. CI's floor; not run locally |
 | `npm run check:drift` | every generator re-run and byte-compared. Separate from `check`; its own CI gate |
 | `npm run typecheck:all` | the only typecheck of `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and the workspaces. `npm run build` first |
 | `npm run docs:build` | the only thing that compiles the VitePress site |
@@ -19,8 +20,8 @@ say what it enforces; this file does not inventory them.
 | `npm run eval:ci` / `eval:fidelity` | offline eval gates; separate corpora, never compared. `eval:ci` fails only on a regression against `eval/judge-fixture.json`, never because a golden recorded as failing still fails |
 | `npm run test:coverage` | report-only v8 coverage over `src/`; no thresholds, nothing fails on a number. Runs nightly (`nightly.yml` `coverage`), not on PRs |
 
-Minimum: `check` + `check:drift`. Add `typecheck:all` for anything outside `src/` (including
-`test/`), `docs:build` for `docs/*.md`, and the matching E2E for `playground/` or `docs-site/`.
+Locally: `check:quick`, plus `docs:build` for `docs/*.md`; then push. CI runs `check`, `check:drift`,
+`typecheck:all`, every platform and the E2E, and the PR's CI green is the only merge evidence.
 
 **PR** (`ci.yml`, `codeql.yml`) and **nightly** (`nightly.yml`): the job map is in
 [`docs/agents/commands.md`](agents/commands.md). Red in nightly's `e2e-prod` means production is

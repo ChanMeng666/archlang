@@ -186,8 +186,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **An executor's targeted test subset misses corpus-wide guards.** On 2026-10-28 five PRs went red
   only under the full suite: the taste-digest table, the fixture corpus tables (import-module-lets,
   while and double-door byte identity, rooms-tiling-probe), the per-storey key list (`cli-levels`),
-  and `context-size`'s hand-written catalogue size. Run the full `npm run check` on every branch
-  before pinning its auto-merge.
+  and `context-size`'s hand-written catalogue size. Read the PR's full CI (`gh pr checks`) before pinning its auto-merge;
+  a `check:quick` pass is never merge evidence, and the full suite runs in CI, not locally.
 - **`spec.llm.md` has a 30,000-unit cap.** Two PRs that each fit can overflow
   together after merging: re-measure after every merge and pay with a provable-duplicate cut.
 - **A branch cut before a release merges its CHANGELOG entry into the new version's section.**

@@ -1,18 +1,23 @@
 ---
-description: Run the full local verification loop (check + drift)
+description: Verify a change — check:quick locally, then the PR's CI as the full gate
 ---
 
 # Verify loop
 
-The single command to prove a change is sound before proposing it. Run the two aggregate
-scripts and report a pass/fail table.
+Prove a change is sound before proposing it. The full suite never runs on this machine (owner's
+rule): `npm run check:quick` catches the cheap mistakes in under a minute, then the push lets GitHub
+CI run `check`, every platform, e2e and 3D. Only the PR's CI green is merge evidence; a quick pass
+is not (a targeted subset misses the corpus-wide guards, `docs/agents/gotchas.md`).
 
 ## Steps
 
-1. **`npm run check`** — typecheck (`noUncheckedIndexedAccess` on) + `biome check` + the full
-   vitest suite. All three must be green.
+1. **`npm run check:quick`** — Biome on the changed files, the typecheck the changes need (the dev
+   config for `test/` and `scripts/`, each changed workspace's own), `check:drift`, and the nearest
+   tests by import distance (`--max`, default 20; it prints what it cut). `--list` shows the plan,
+   `--fix` lets Biome write its fixes. After pushing, read the PR's checks (`gh pr checks <n>`) and
+   fix any red from CI's log, never by re-running the whole suite locally.
 
-2. **`npm run check:drift`** — runs every generator and fails if any generated artifact differs
+2. **Drift** (inside step 1; alone: `npm run check:drift`) — runs every generator and fails if any generated artifact differs
    from its committed form.
    - If a drift step fails, run the matching `npm run gen:*` (or `npm run gen:all`) to regenerate
      the artifact **from its source**, then re-run `npm run check:drift`.
@@ -25,8 +30,8 @@ scripts and report a pass/fail table.
    - If you touched the CLI, expect `docs/cli-reference.md` to move — it is generated from
      `src/manifest.ts`. **Read that diff**; it is the one artifact a CLI change always rewrites.
 
-3. **`npm run typecheck:all`** — REQUIRED whenever the change touched anything outside `src/` +
-   `test/`; skippable (and worth skipping, it is slow) when it did not. Step 1's `typecheck` only
+3. **`npm run typecheck:all`** — CI runs it (`builds` job); `check:quick` already typechecks what
+   changed, so run it locally only to chase a CI typecheck failure. Step 1's `typecheck` only
    covers `src`; this adds the root dev config (`test`, `eval`, `dataset`, `scripts`, `bench`) plus
    the playground, docs-site (vue-tsc), MCP shim and VS Code extension. CI runs it in the `builds`
    job.
@@ -34,7 +39,8 @@ scripts and report a pass/fail table.
      ROOT test imported that module into the strict root program. Fix it in the shared module —
      never by relaxing the root option (`docs/agents/gotchas.md` → (Typecheck)).
 
-4. **Conditional gates — run the ones the diff earns:**
+4. **Conditional gates — CI runs all of these; run one locally only when the diff earns it AND
+   you need the answer before pushing:**
    - touched `docs/*.md` or `docs-site/` ⇒ **`npm run docs:build`** (the core suite never compiles
      the site).
    - touched `playground/` ⇒ `npm run build && npm run playground:build:only && npm run

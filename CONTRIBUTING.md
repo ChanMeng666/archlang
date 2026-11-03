@@ -49,7 +49,10 @@ npm run build
 # The whole vitest suite: test/, playground/test/, packages/*/test/, editors/vscode/test/
 npm test
 
-# Pre-push gate: typecheck + lint + test in one shot
+# Quick pre-push check on the files you changed (under a minute; CI runs the rest)
+npm run check:quick
+
+# The full gate CI runs: typecheck + lint + test in one shot (about 14 min on a laptop)
 npm run check
 ```
 
@@ -59,10 +62,12 @@ the core itself still supports Node 18.
 
 ## Quality gates
 
-**Before you open a PR**, run these locally — they are the same checks CI enforces:
+**Before you open a PR**, `npm run check:quick` is enough: CI runs every check below on the PR, and a
+PR merges only on green CI. Run a full gate locally only to chase a CI failure:
 
 | Command | Covers | Run it when |
 |---------|--------|-------------|
+| `npm run check:quick` | Biome, typecheck, drift and the nearest tests, for the files you changed | before every push |
 | `npm run check` | typecheck + Biome + the full test suite | always |
 | `npm run check:drift` | every generator re-run and byte-compared against its artifact | always — **`npm run check` does NOT include it** |
 | `npm run typecheck:all` | the four workspaces too (playground, docs-site via vue-tsc, MCP shim, VS Code extension) | you touched anything outside `src/` + `test/` |
