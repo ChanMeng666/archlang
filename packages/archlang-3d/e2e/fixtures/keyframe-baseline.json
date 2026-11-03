@@ -1,17 +1,15 @@
 {
   "taken": [
     {
-      "platform": "linux",
-      "arch": "x64",
-      "chromium": "156.0.8078.4"
-    },
-    {
       "platform": "win32",
       "arch": "x64",
       "chromium": "156.0.8078.4"
     }
   ],
-  "size": [480, 270],
+  "size": [
+    480,
+    270
+  ],
   "plans": {
     "laneway-house.arch": {
       "stage:brief": "5ec31203f4c37e910277894cf491fa3b5963e286086fee734447f7040d554e02",
@@ -28,11 +26,11 @@
       "stage:walls": "7fb84e8848bea8eedf0a975c3769e27c5d946803c6adc1fe8f5c0f892dfbe4a8",
       "stage:openings": "e7f1b4949681132fd40440a75ff73efd8be2fe116e82ff27a83c1914687adc5a",
       "stage:fixtures": "6e1887d66d940e745eb95cf3b2e734c385496583c7acc944e6850f535fb8f6d3",
-      "stop:1": "50ceaaac7b2d26a47702ace63e2aae9010afbd6c5c922d4a5ffd71afc66815ef",
-      "tilted": "56dcaece6ba66e08ac722b6008f520dd0aa3012e8a8f3d8c2cafc4c11a6e1bd6",
-      "storey:2": "6c1431809914a43919b2601f99cb5fbff901f7810fe09615ee73af62ad27c140",
-      "stop:2": "7944b5892ece7d4b7ea568156966384aac18fc0e4d479d3dc5c717b26abc25cb",
-      "end": "7944b5892ece7d4b7ea568156966384aac18fc0e4d479d3dc5c717b26abc25cb"
+      "stop:1": "691309021b3b0cb9b5fcbafb77de7ccb5d78f016a1b6baf6f201d928b834a10e",
+      "tilted": "8959ae48c6028067fdf72d022bdae43ed87ef823f8608322e85f4e951b86724c",
+      "storey:2": "78ca724f3b72538ee9762b2ac774fed640fd828850390dc4e2b2eefbe4558f33",
+      "stop:2": "a037c1f1bfd41e6ce5f162ae666ab8d1301437db5677e6107a3279960572d321",
+      "end": "a037c1f1bfd41e6ce5f162ae666ab8d1301437db5677e6107a3279960572d321"
     }
   }
 }
