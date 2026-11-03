@@ -49,7 +49,11 @@ function expectSound(s: Shell | null, p: Part, what: string): asserts s is Shell
     s.positions.every((v) => Number.isInteger(v)),
     `${what}: integer µm`,
   ).toBe(true);
-  const um = (v: number) => (v < 0 ? -Math.round(-v * 1000) : Math.round(v * 1000));
+  const um = (v: number) => (v < 0 ? -Math.round(-v * 1000) : Math.round(v * 1000)) || 0;
+  expect(
+    s.positions.some((v) => Object.is(v, -0)),
+    `${what}: no −0`,
+  ).toBe(false);
   expect(extents(s), `${what}: extents`).toEqual([
     [um(p.x0), um(p.x1)],
     [um(p.y0), um(p.y1)],
@@ -102,6 +106,46 @@ describe("V2 shape primitives", () => {
     expect(rr.length).toBe(20);
   });
 
+  it("builds nothing for an empty or inverted box, and no ring for an inverted section", () => {
+    expect(partShell({ ...box, x0: 500, x1: -300 })).toBeNull();
+    expect(partShell({ ...box, y0: 400, y1: 400 })).toBeNull();
+    expect(partShell({ ...box, z0: 250, z1: -200, axis: "x", radius: 30 })).toBeNull();
+    expect(sectionRing(10, 0, 0, 10, { radius: 5 })).toEqual([]);
+    expect(sectionRing(0, 10, 10, 10)).toEqual([]);
+  });
+
+  it("builds a part whole when a hole is inverted or touches its outline, and counts the holes left out", () => {
+    const n = { holes: 0 };
+    const inverted = { ...box, holes: [{ x0: 100, x1: -100, z0: -50, z1: 50 }] };
+    expectSound(partShell(inverted, n), inverted, "inverted hole");
+    expect(n.holes).toBe(1);
+    const touching = {
+      ...box,
+      holes: [
+        { x0: -300, x1: 0, z0: -50, z1: 50 },
+        { x0: 100, x1: 200, z0: -50, z1: 50 },
+      ],
+    };
+    expectSound(partShell(touching, n), touching, "touching hole");
+    expect(n.holes).toBe(3);
+    const ok = { ...box, holes: [{ x0: -100, x1: 100, z0: -50, z1: 50 }] };
+    expectSound(partShell(ok, n), ok, "a hole that fits");
+    expect(n.holes).toBe(3);
+  });
+
+  it("refuses holes on a sideways part and a profile point off its box, as programming errors", () => {
+    expect(() => partShell({ ...box, axis: "x", holes: [{ x0: 0, x1: 10, z0: 0, z1: 10 }] })).toThrow(/sideways/);
+    expect(() =>
+      sectionRing(0, 1, 0, 1, {
+        profile: [
+          [0, 0],
+          [1.2, 0],
+          [0, 1],
+        ],
+      }),
+    ).toThrow(RangeError);
+  });
+
   it("carries the part's slot on its shell, and none for body", () => {
     expect(partShell({ ...box, mat: "wood" })?.slot).toBe("wood");
     expect(partShell({ ...box, mat: "body" })).not.toHaveProperty("slot");
@@ -131,11 +175,13 @@ describe("V3 generators", () => {
         const parts = t0LocalParts(family, W, D) ?? [];
         expect(parts.length, what).toBeGreaterThan(1);
         expect(parts.length, `${what}: a modest part count`).toBeLessThanOrEqual(24);
+        const dropped = { holes: 0 };
         const shells = parts.map((p, i) => {
-          const s = partShell(p);
+          const s = partShell(p, dropped);
           expectSound(s, p, `${what} part ${i}`);
           return s;
         });
+        expect(dropped.holes, `${what}: holes left out`).toBe(0);
         const all = shells.map(extents);
         const lo = (k: number) => Math.min(...all.map((e) => e[k]?.[0] as number));
         const hi = (k: number) => Math.max(...all.map((e) => e[k]?.[1] as number));
@@ -152,6 +198,40 @@ describe("V3 generators", () => {
         expect(mirrored, `${what}: mirror-symmetric`).toEqual(own);
         const slots = MATERIAL_SLOTS.filter((m) => shells.some((s) => (s.slot ?? "body") === m));
         expect(slots, `${what}: slots`).toEqual(T0_MATERIALS[family]);
+      }
+    });
+  }
+
+  // Small and thin pieces (red-team round 1, PR #459): down to 50 mm, and long slivers both ways.
+  const small: Array<[number, number]> = [];
+  for (const W of [50, 80, 100, 150, 200, 250, 300])
+    for (const D of [50, 80, 100, 150, 200, 250, 300]) small.push([W, D]);
+  small.push([2000, 100], [100, 2000], [3000, 60], [60, 3000], [2000, 140], [600, 140], [600, 150], [100, 800]);
+  for (const family of Object.keys(T0_FAMILIES)) {
+    it(`${family}, small and thin: every part closed or left out, inside the footprint and its height, symmetric`, () => {
+      for (const [W, D] of small) {
+        const what = `${family} ${W}x${D}`;
+        const parts = t0LocalParts(family, W, D) ?? [];
+        expect(parts.length, what).toBeGreaterThan(0);
+        const dropped = { holes: 0 };
+        // A part with no room is left out by the generator; every part it keeps builds a sound shell.
+        const shells = parts.map((p, i) => {
+          const s = partShell(p, dropped);
+          expectSound(s, p, `${what} part ${i}`);
+          return s;
+        });
+        const all = shells.map(extents);
+        const lo = (k: number) => Math.min(...all.map((e) => e[k]?.[0] as number));
+        const hi = (k: number) => Math.max(...all.map((e) => e[k]?.[1] as number));
+        expect(lo(0), `${what}: x`).toBeGreaterThanOrEqual(-W * 500);
+        expect(hi(0), `${what}: x`).toBeLessThanOrEqual(W * 500);
+        expect(lo(2), `${what}: z`).toBeGreaterThanOrEqual(-D * 500);
+        expect(hi(2), `${what}: z`).toBeLessThanOrEqual(D * 500);
+        expect(lo(1), `${what}: on the floor`).toBe(0);
+        expect(hi(1), `${what}: height`).toBeLessThanOrEqual((T0_HEIGHT_MM[family] as number) * 1000);
+        const own = shells.map((s) => sig(s, false)).sort();
+        expect(shells.map((s) => sig(s, true)).sort(), `${what}: mirror-symmetric`).toEqual(own);
+        for (const s of shells) expect(T0_MATERIALS[family], what).toContain(s.slot);
       }
     });
   }

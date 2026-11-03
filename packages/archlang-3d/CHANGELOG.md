@@ -15,9 +15,17 @@
   rings; a shower with a glass screen and a head; a WC and a basin with rounded ceramics. A kitchen
   sink, basin and shower are now ledgered taller (1160, 990 and 2000 mm: tap and screen), a rug lower
   (12 mm).
-- `t0Parts` and `PlacedPart` are replaced by `t0Shells`, `t0LocalParts`, `partShell` and
-  `sectionRing`; a part can have rounded corners (`radius`), lie on its side (`axis`) or follow a
-  polygon (`profile`).
+- A part can have rounded corners (`radius`), lie on its side (`axis`) or follow a polygon
+  (`profile`). New exports: `t0Shells`, `t0LocalParts`, `partShell`, `sectionRing`, `T0_MATERIALS` and
+  the palette (`PALETTE`, `MATERIAL_SLOTS`, `slotColour`, `slotGroups`, `linearRgb`).
+- A small or thin piece keeps every part inside its footprint and its ledgered height; a detail with
+  no room is left out, and a hole a part is built without is ledgered (`hole-degenerate`).
+
+### Removed
+
+- **Breaking:** `t0Parts` and its `PlacedPart` type are gone. Use `t0Shells(furniture, floor)`, which
+  returns the placed shells (with their material slots) and the count of holes left out, or
+  `t0LocalParts(family, W, D)` for the parts in the piece's own frame.
 
 ## [0.1.2] - 2026-11-02
 

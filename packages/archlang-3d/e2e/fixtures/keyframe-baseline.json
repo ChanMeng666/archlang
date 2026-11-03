@@ -1,6 +1,11 @@
 {
   "taken": [
     {
+      "platform": "linux",
+      "arch": "x64",
+      "chromium": "156.0.8078.4"
+    },
+    {
       "platform": "win32",
       "arch": "x64",
       "chromium": "156.0.8078.4"

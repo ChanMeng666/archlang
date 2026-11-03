@@ -147,12 +147,24 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
     const key = n.part ? `${n.kind}:${n.part}` : n.kind;
     const g = new Group();
     g.position.y = base + (n.lift ?? 0);
-    /** One three.js mesh (and its edges) over `indices`, in `colour`; `glass` is translucent and edgeless. */
-    const add = (attr: BufferAttribute, indices: number[], colour: string, glass: boolean, opacity: number) => {
+    /**
+     * One three.js mesh (and its edges) over `indices`, in `colour`; `glass` is translucent and
+     * edgeless. `normals: false` skips the vertex normals: every material here is flat-shaded, whose
+     * fragment normal three.js takes from screen-space derivatives (`FLAT_SHADED`), so they are
+     * never read; a slotted node's meshes share one position buffer and need none.
+     */
+    const add = (
+      attr: BufferAttribute,
+      indices: number[],
+      colour: string,
+      glass: boolean,
+      opacity: number,
+      normals: boolean,
+    ) => {
       const geo = new BufferGeometry();
       geo.setAttribute("position", attr);
       geo.setIndex(indices);
-      geo.computeVertexNormals();
+      if (normals) geo.computeVertexNormals();
       // A demolished wall (B3a) is a ghost: translucent, writing no depth, never read as structure.
       const ghost = key === "wall:demolish";
       const mat = new MeshLambertMaterial({
@@ -184,14 +196,15 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
       for (const { slot, count } of n.groups) {
         const run = n.indices.slice(at, at + count);
         at += count;
-        if (slot === "body") add(attr, run, theme.colors[key] ?? furniture, false, 1);
+        if (slot === "body") add(attr, run, theme.colors[key] ?? furniture, false, 1, false);
         else {
           const { alpha } = PALETTE[slot];
-          add(attr, run, slotColour(slot, p.theme, furniture), alpha < 1, alpha);
+          add(attr, run, slotColour(slot, p.theme, furniture), alpha < 1, alpha, false);
         }
       }
     } else {
-      add(attr, n.indices, theme.colors[key] ?? furniture, key === "window:glass", 0.45);
+      // Every other node exactly as before the slots (normals computed, though never read).
+      add(attr, n.indices, theme.colors[key] ?? furniture, key === "window:glass", 0.45, true);
     }
     g.visible = false;
     scene.add(g);

@@ -19,7 +19,7 @@
  */
 import type { MaterialSlot } from "../materials.js";
 import type { Furniture, Pt } from "../scene3d/types.js";
-import { prism } from "./extrude.js";
+import { degenerateHoles, prism } from "./extrude.js";
 import type { Shell } from "./types.js";
 
 /** A section's shape inside its box: a box, the inscribed ellipse, rounded corners, or a polygon. */
@@ -30,7 +30,8 @@ export interface SectionShape {
   radius?: number;
   /**
    * An explicit polygon, each point a FRACTION of the box ([0, 1] on each axis, from its low
-   * corner): a chaise's curve, a leaning cushion. It should touch all four sides of the box.
+   * corner; a point outside throws): a chaise's curve, a leaning cushion. It should touch all four
+   * sides of the box. It overrides `round` and `radius`.
    */
   profile?: ReadonlyArray<readonly [number, number]>;
 }
@@ -51,7 +52,7 @@ export interface Part extends SectionShape {
   mat?: MaterialSlot;
   /** Extruded sideways: along the width (`x`: a bolster, a rail) or the depth (`z`: an arm). */
   axis?: "x" | "z";
-  /** Holes through a vertical part's plan section (a worktop around its sink). */
+  /** Holes through a vertical part's plan section (a worktop around its sink); a sideways part with holes throws. */
   holes?: Array<SectionShape & { x0: number; x1: number; z0: number; z1: number }>;
 }
 
@@ -153,16 +154,20 @@ const pair = (p: Part): Part[] => [p, { ...p, x0: -p.x1, x1: -p.x0 }];
 
 /**
  * Plinth, carcass with its fronts and pulls, and worktop: the kitchen run's body (900 mm worktop,
- * 100 mm recessed plinth). `hole` cuts the worktop (a sink); `fronts: false` leaves the front
- * to the caller (an oven door).
+ * 100 mm recessed plinth). `hole` cuts the worktop (a sink); `carcassTop` stops the carcass lower
+ * (under a sink's bowl); `fronts: false` leaves the front to the caller (an oven door).
  */
-function cabinet(W: number, D: number, opts: { hole?: Part["holes"]; fronts?: boolean } = {}): Part[] {
+function cabinet(
+  W: number,
+  D: number,
+  opts: { hole?: Part["holes"]; carcassTop?: number; fronts?: boolean } = {},
+): Part[] {
   const [hw, hd] = [W / 2, D / 2];
   const top = 870;
   const fz = hd - 22;
   const out: Part[] = [
     P("rubber", -hw, hw, -hd, hd - 70, 0, 100),
-    P("paint", -hw, hw, -hd, hd - 40, 100, top),
+    P("paint", -hw, hw, -hd, hd - 40, 100, opts.carcassTop ?? top),
     P("stone", -hw, hw, -hd, hd, top, 900, opts.hole ? { holes: opts.hole } : {}),
   ];
   if (opts.fronts === false) return out;
@@ -253,17 +258,22 @@ const GENERATORS: Readonly<Record<string, (W: number, D: number) => Part[]>> = {
       pair(P("wood", -hw + ins, -hw + ins + leg, z, z + leg, 0, under, { radius: leg * 0.3 })),
     );
     const a = ins + 8;
-    return [
-      P("wood", -hw, hw, -hd, hd, under, 750, { radius: clamp(s * 0.02, 4, 20) }),
-      ...legs,
-      P("wood", -hw + a, hw - a, -hd + a, hd - a, 640, under, {
-        holes: [{ x0: -hw + a + 20, x1: hw - a - 20, z0: -hd + a + 20, z1: hd - a - 20 }],
-      }),
-    ];
+    // The apron is a 20 mm frame under the top; a table too small to frame an opening has none.
+    const apron =
+      hw - a - 20 >= 10 && hd - a - 20 >= 10
+        ? [
+            P("wood", -hw + a, hw - a, -hd + a, hd - a, 640, under, {
+              holes: [{ x0: -hw + a + 20, x1: hw - a - 20, z0: -hd + a + 20, z1: hd - a - 20 }],
+            }),
+          ]
+        : [];
+    return [P("wood", -hw, hw, -hd, hd, under, 750, { radius: clamp(s * 0.02, 4, 20) }), ...legs, ...apron];
   },
   rug(W, D) {
     const [hw, hd] = [W / 2, D / 2];
     const b = clamp(Math.min(W, D) * 0.04, 30, 110);
+    // A rug too narrow for its bound edge is the field alone, the whole footprint.
+    if (hw - b < 10 || hd - b < 10) return [P("wool", -hw, hw, -hd, hd, 0, 10)];
     return [
       P("wool", -hw + 15, hw - 15, -hd + 15, hd - 15, 0, 10),
       P("fabric", -hw, hw, -hd, hd, 0, 12, {
@@ -307,16 +317,18 @@ const GENERATORS: Readonly<Record<string, (W: number, D: number) => Part[]>> = {
     const iz0 = -hd + clamp(D * 0.25, 60, 160);
     // At least 60 mm of stone in front, so the liner (10 mm wider) stays inside the carcass collar.
     const iz1 = hd - clamp(D * 0.15, 60, 100);
+    // A unit with no room for a bowl (its opening under 20 mm, or the liner outside the carcass) is
+    // a plain counter: never an inverted cut.
+    if (ix - 15 < 10 || iz1 - iz0 - 30 < 20 || ix + 10 >= hw || iz1 + 10 >= hd - 40 || iz0 - 10 <= -hd)
+      return cabinet(W, D);
     const r = clamp(Math.min(ix, (iz1 - iz0) / 2) * 0.15, 5, 40);
     const hole = { x0: -ix, x1: ix, z0: iz0, z1: iz1, radius: r };
     // The bowl: a steel liner a little wider than the cut (hidden in the stone) whose own opening is
     // 15 mm inside it, a visible rim; its floor sits 180 mm down.
     const liner = { x0: -ix - 10, x1: ix + 10, z0: iz0 - 10, z1: iz1 + 10, radius: r + 10 };
     const lip = { x0: -ix + 15, x1: ix - 15, z0: iz0 + 15, z1: iz1 - 15, radius: Math.max(1, r - 15) };
-    const parts = cabinet(W, D, { hole: [hole] });
     // Under the sink the carcass stops at the bowl's floor and a collar carries the worktop around it.
-    const carcass = parts[1] as Part;
-    carcass.y1 = 700;
+    const parts = cabinet(W, D, { hole: [hole], carcassTop: 700 });
     const zc = (-hd + iz0) / 2;
     return [
       ...parts,
@@ -354,9 +366,19 @@ const GENERATORS: Readonly<Record<string, (W: number, D: number) => Part[]>> = {
     const zh = -hd + 20;
     return [
       P("ceramic", -hw, hw, -hd, hd, 0, 30),
-      P("ceramic", -hw, hw, -hd, hd, 30, 60, {
-        holes: [{ x0: -hw + rim, x1: hw - rim, z0: -hd + rim, z1: hd - rim }],
-      }),
+      // The tray's rim; a tray too small to leave a basin inside it is one solid slab.
+      P(
+        "ceramic",
+        -hw,
+        hw,
+        -hd,
+        hd,
+        30,
+        60,
+        hw - rim >= 10 && hd - rim >= 10
+          ? { holes: [{ x0: -hw + rim, x1: hw - rim, z0: -hd + rim, z1: hd - rim }] }
+          : {},
+      ),
       P("metal", -40, 40, -40, 40, 30, 34, { round: true }),
       P("glass", -hw + 10, hw - 10, hd - 10, hd, 60, 1980),
       P("metal", -hw, hw, hd - 20, hd, 1980, 2000, { axis: "x", radius: 6 }),
@@ -417,23 +439,32 @@ const C16 = [
 ];
 const S16 = C16.map((_, k) => C16[(k + 12) % 16] as number);
 
-/** Millimetres → whole micrometres, rounded symmetrically about 0 (so a mirrored part rounds to its mirror). */
-const um = (v: number): number => (v < 0 ? -Math.round(-v * 1000) : Math.round(v * 1000));
+/**
+ * Millimetres → whole micrometres, rounded symmetrically about 0 (so a mirrored part rounds to its
+ * mirror), and never −0 (whose float32 bytes in the GLB differ from 0's).
+ */
+const um = (v: number): number => (v < 0 ? -Math.round(-v * 1000) : Math.round(v * 1000)) || 0;
 
 /**
  * A section's ring in whole micrometres: the box `u0..u1` × `v0..v1` (mm) as a box, the ellipse
  * inscribed in it, a box with rounded corners (four quarter arcs, five points each, from the
- * 16-gon table) or an explicit polygon in fractions of the box. No repeated points.
+ * 16-gon table) or an explicit polygon in fractions of the box (`profile` wins over `round` and
+ * `radius`). No repeated points. An empty or inverted box (`u0 ≥ u1` or `v0 ≥ v1`) has no ring:
+ * `[]`, which the extruder treats as degenerate (a hole it leaves out, an outer it refuses).
  */
 export function sectionRing(u0: number, u1: number, v0: number, v1: number, shape: SectionShape = {}): Pt[] {
+  if (!(u0 < u1 && v0 < v1)) return [];
   const [cu, cv, ru, rv] = [(u0 + u1) / 2, (v0 + v1) / 2, (u1 - u0) / 2, (v1 - v0) / 2];
   let pts: Array<[number, number]>;
   if (shape.profile) {
+    // A generator's own constant, never user input: a point off the box is a programming error.
+    if (shape.profile.some(([fu, fv]) => !(fu >= 0 && fu <= 1 && fv >= 0 && fv <= 1)))
+      throw new RangeError("a T0 profile point lies outside [0, 1]²");
     pts = shape.profile.map(([fu, fv]) => [u0 + fu * (u1 - u0), v0 + fv * (v1 - v0)]);
   } else if (shape.round) {
     pts = C16.map((c, k) => [cu + ru * c, cv + rv * (S16[k] as number)]);
   } else if (shape.radius && shape.radius > 0) {
-    const r = Math.min(shape.radius, ru, rv);
+    const r = Math.max(0, Math.min(shape.radius, ru, rv));
     // Quarter q spans k = 4q … 4q + 4 about its corner's centre, counter-clockwise from +u.
     const centres: Array<[number, number]> = [
       [u1 - r, v1 - r],
@@ -467,23 +498,32 @@ export function sectionRing(u0: number, u1: number, v0: number, v1: number, shap
 
 /**
  * One part's closed, outward-wound shell in local micrometres (x width, y up from the floor
- * finish, z front), carrying its slot unless `body`; `null` if the section is degenerate.
+ * finish, z front), carrying its slot unless `body`; `null` if its box is empty or inverted, or
+ * its section is degenerate.
+ *
+ * Holes never open a shell: a degenerate hole is left out, and holes that touch the outline or
+ * each other are all left out (the part is built whole); either way their count is added to
+ * `dropped.holes`, so the mesh builder ledgers them (`hole-degenerate`), never silently.
  *
  * The extruder builds every prism upright (plan ring, heights up). A sideways part is that prism
  * with its axes relabelled: `x` maps (u, h, v) → (h, v, u), a cyclic permutation, so the winding
  * stays outward; `z` maps (u, h, v) → (u, v, h), a swap, so each triangle is turned back over.
  */
-export function partShell(p: Part): Shell | null {
+export function partShell(p: Part, dropped?: { holes: number }): Shell | null {
+  if (p.axis && p.holes?.length) throw new Error("a sideways T0 part takes no holes");
+  if (!(um(p.x0) < um(p.x1) && um(p.y0) < um(p.y1) && um(p.z0) < um(p.z1))) return null;
   let s: Shell | null;
   if (!p.axis) {
-    s = prism(
-      {
-        outer: sectionRing(p.x0, p.x1, p.z0, p.z1, p),
-        ...(p.holes?.length ? { holes: p.holes.map((h) => sectionRing(h.x0, h.x1, h.z0, h.z1, h)) } : {}),
-      },
-      um(p.y0),
-      um(p.y1),
-    );
+    const outer = sectionRing(p.x0, p.x1, p.z0, p.z1, p);
+    const holes = (p.holes ?? []).map((h) => sectionRing(h.x0, h.x1, h.z0, h.z1, h));
+    const poly = { outer, ...(holes.length ? { holes } : {}) };
+    s = prism(poly, um(p.y0), um(p.y1));
+    if (s) {
+      if (dropped) dropped.holes += degenerateHoles(poly);
+    } else if (holes.length) {
+      s = prism({ outer }, um(p.y0), um(p.y1));
+      if (s && dropped) dropped.holes += holes.length;
+    }
   } else {
     const x = p.axis === "x";
     const ring = x ? sectionRing(p.z0, p.z1, p.y0, p.y1, p) : sectionRing(p.x0, p.x1, p.y0, p.y1, p);
@@ -510,10 +550,37 @@ export function partShell(p: Part): Shell | null {
   return s;
 }
 
-/** A family's parts for a piece `W` × `D` mm (local frame), or `null` for a family without a generator. */
+/** A part thinner than this (mm) on any axis is left out: a detail the footprint has no room for. */
+const MIN_PART_MM = 1;
+
+/**
+ * A family's parts for a piece `W` × `D` mm (local frame), or `null` for a family without a
+ * generator. Every part is clipped to the footprint and to the family's ledgered height, so no ink
+ * leaves either on a small or thin piece, and a part the clip leaves thinner than `MIN_PART_MM`
+ * is left out. The clip is symmetric about x = 0, so a mirror-symmetric generator stays so.
+ */
 export function t0LocalParts(family: string, W: number, D: number): Part[] | null {
   const gen = GENERATORS[family];
-  return gen ? gen(W, D) : null;
+  if (!gen) return null;
+  const [hw, hd, H] = [W / 2, D / 2, T0_HEIGHT_MM[family] ?? 0];
+  const out: Part[] = [];
+  for (const p of gen(W, D)) {
+    const q: Part = {
+      ...p,
+      x0: Math.max(p.x0, -hw),
+      x1: Math.min(p.x1, hw),
+      z0: Math.max(p.z0, -hd),
+      z1: Math.min(p.z1, hd),
+      y0: Math.max(p.y0, 0),
+      y1: Math.min(p.y1, H),
+    };
+    if (q.x1 - q.x0 >= MIN_PART_MM && q.z1 - q.z0 >= MIN_PART_MM && q.y1 - q.y0 >= MIN_PART_MM) out.push(q);
+  }
+  // A piece always stands on the floor: when the parts that reach it were left out (a plinth with
+  // no room), the lowest parts kept are carried down to it.
+  const lowest = Math.min(...out.map((p) => p.y0));
+  if (lowest > 0) for (const p of out) if (p.y0 === lowest) p.y0 = 0;
+  return out;
 }
 
 /** A quarter turn's (cos, sin), exact; `null` for any other angle. */
@@ -523,14 +590,15 @@ function quarter(rotateDeg: number): [number, number] | null {
 }
 
 /**
- * `f`'s T0 shells, placed in plan micrometres with the floor finish at `floor` (µm): `null` when
- * its asset is not T0 or its turn is not a quarter turn (the grey box stands instead); a `null`
- * entry is a part whose section was degenerate (the mesh builder ledgers it). The plan's `rotate`
+ * `f`'s T0 shells, placed in plan micrometres with the floor finish at `floor` (µm), and how many
+ * holes they were built without (`partShell`; the mesh builder ledgers them): `null` when its
+ * asset is not T0 or its turn is not a quarter turn (the grey box stands instead); a `null` shell
+ * is a part whose section was degenerate (the mesh builder ledgers it too). The plan's `rotate`
  * (clockwise on the page, y down) maps local (x, z) to plan (x cos r − z sin r, x sin r + z cos r)
  * about the footprint's centre, a proper rotation, so every shell stays outward-wound; at a quarter
  * turn the piece's own width runs along plan y (`Furniture.size` is the turned box).
  */
-export function t0Shells(f: Furniture, floor: number): Array<Shell | null> | null {
+export function t0Shells(f: Furniture, floor: number): { shells: Array<Shell | null>; holesDropped: number } | null {
   const family = f.asset.startsWith("t0:") ? f.asset.slice(3) : undefined;
   const cs = quarter(-f.yawDeg);
   const turned = cs !== null && cs[1] !== 0;
@@ -541,8 +609,9 @@ export function t0Shells(f: Furniture, floor: number): Array<Shell | null> | nul
   if (!parts || !cs) return null;
   const [c, s] = cs;
   const [cx, cy] = f.centre;
-  return parts.map((p) => {
-    const local = partShell(p);
+  const dropped = { holes: 0 };
+  const shells = parts.map((p) => {
+    const local = partShell(p, dropped);
     if (!local) return null;
     const positions: number[] = [];
     for (let i = 0; i < local.positions.length; i += 3) {
@@ -555,4 +624,5 @@ export function t0Shells(f: Furniture, floor: number): Array<Shell | null> | nul
     }
     return { positions, indices: local.indices, ...(local.slot ? { slot: local.slot } : {}) };
   });
+  return { shells, holesDropped: dropped.holes };
 }

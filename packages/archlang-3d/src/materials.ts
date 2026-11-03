@@ -91,7 +91,9 @@ export function linearRgb(hex: string): [number, number, number] {
 /**
  * A slot's viewer colour under a replay theme: the palette itself on the light theme; on the dark
  * (blueprint) theme, 60% of the way from the palette to the theme's furniture colour, so materials
- * stay told apart without leaving the theme. Integer arithmetic, so every engine agrees.
+ * stay told apart without leaving the theme. Each channel is one float multiply-add of 0–255
+ * integers, rounded to a whole channel value: basic IEEE-754 operations, correctly rounded in
+ * every engine, so every engine agrees.
  */
 export function slotColour(slot: Exclude<MaterialSlot, "body">, theme: "light" | "dark", furniture: string): string {
   const own = PALETTE[slot].srgb;

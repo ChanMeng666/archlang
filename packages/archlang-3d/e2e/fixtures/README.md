@@ -20,9 +20,9 @@ detail) and each part is drawn in its material slot's colour from the shared pal
 moved (laneway-house `stage:fixtures`, `tilted`, `end`; two-storey `stage:fixtures`, `stop:1`,
 `tilted`, `storey:2`, `stop:2`, `end`), the same nine A2b moved; every `stage:brief` …
 `stage:openings` frame of both plans is byte-identical (a run before the re-take listed exactly
-those nine as mismatched). `taken` lists Windows only: the Linux entry is to be added back by CI's
-`check-3d` job (ubuntu-latest x64, the same Chromium build), with the hashes unchanged, once it
-renders them byte for byte, as A2b and A9 did; it is not a required check.
+those nine as mismatched). CI's `check-3d` job (ubuntu-latest x64, the same Chromium build;
+GitHub Actions run 41650864669) then rendered the same 17 hashes, byte for byte, and failed only
+because Linux was not listed; the Linux entry was added back with the hashes unchanged.
 
 Re-taken by card A9 (2026-10-29) on Windows 11 x64 with the same Chromium build and command: the
 end camera of a one-storey view moved from 30° to 45° (`endElevation`, `camera.ts`), so exactly

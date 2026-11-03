@@ -235,7 +235,8 @@ function levelNodes(
   const e = lv.elevation;
   const out: MeshNode[] = [];
   /**
-   * Degenerate holes `extrude` left out of the shells built since the last `node` call. Every
+   * Degenerate holes `extrude` left out of the shells built since the last `node` call (and the
+   * holes a T0 part was built without, `t0Shells`: degenerate, or touching its outline). Every
    * shell below is built in the arguments of (or just before) the `node` call it belongs to, so
    * `node` reads and resets this count for its own shells.
    */
@@ -524,7 +525,9 @@ function levelNodes(
     }
     const [cx, cy] = f.centre;
     const box = rect(cx - f.size.w / 2, cy - f.size.d / 2, cx + f.size.w / 2, cy + f.size.d / 2);
-    const shells = parts ?? [prism(box, floorTop, floorTop + h * MM)];
+    // A T0 part built without a hole (degenerate, or touching its outline) is ledgered by `node`.
+    if (parts) holesLeftOut += parts.holesDropped;
+    const shells = parts ? parts.shells : [prism(box, floorTop, floorTop + h * MM)];
     node("furniture", f.id, i, shells, {
       category: f.category,
       yaw_deg: f.yawDeg,
