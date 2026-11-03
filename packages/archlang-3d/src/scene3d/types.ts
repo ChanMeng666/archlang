@@ -120,6 +120,13 @@ export interface Furniture {
   yawDeg: number;
   /** What the mesh builds it with: `t0:<family>` (a parametric generator) or `greybox`. */
   asset: string;
+  /**
+   * The piece is reflected across its own width (its `mirror`, or a reflecting `place`), as the
+   * core's Plan JSON says (`planToJson`'s `mirror`, a public field). Recorded only on a piece whose
+   * asset is handed (`T0_HANDED`): a mirror-symmetric asset is its own reflection, so the fact
+   * would change nothing there and is not read. Absent when the piece is not reflected.
+   */
+  mirror?: true;
 }
 
 export interface Box {

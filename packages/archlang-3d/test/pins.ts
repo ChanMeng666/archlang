@@ -21,5 +21,10 @@ export const PIN_GENERATOR = "archlang-3d 0.0.0";
  * `fixture:<slot>` from the shared palette (`src/materials.ts`). A node without slotted shells is
  * written as before: laneway's GLB with its furniture nodes removed hashes to 5d21c0d4… before and
  * after. 47 264 → 110 528 bytes.
+ *
+ * Moved by visual-assets cards V5/V6, red-team round 1 S3 on PR #461 (was d0c91a31…) with the
+ * Mesh3D alone: the stove's oven door is now an `appliance` part with a dark `screen` window (the
+ * core's `stove` material, V-D2), so its node gains an `appliance` primitive. With that stove edit
+ * undone the GLB hashes to d0c91a31… exactly; the writer is unchanged.
  */
-export const LANEWAY_GLB_SHA256 = "d0c91a31ab017fc81ae8f102f02006e89943593d88177de47a6ef87e6323a83b";
+export const LANEWAY_GLB_SHA256 = "0b9343780817e08540a01a3d8063947c44d8915ae46b7fc0181d403dcc2f3fd7";
