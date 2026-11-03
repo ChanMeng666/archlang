@@ -434,44 +434,12 @@ const LASTMOD: Readonly<Record<string, string>> = (() => {
   }
 })();
 
-/** One question and its answer, as plain text, from a page's `## FAQ` section. */
-type Faq = { readonly question: string; readonly answer: string };
-
-/** Inline markdown -> the plain text a JSON-LD answer carries: links keep their text, marks go. */
-function plainInline(md: string): string {
-  return md
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-    .replace(/[`*]/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * The questions under a page's `## FAQ` heading: each `### <question>` and the prose up to the
- * next heading. Read from the page's own markdown, so the structured data can never say anything
- * the visible FAQ does not. A page without that section has none, and emits no FAQPage.
- */
-function faqOf(relativePath: string): Faq[] {
-  let src: string;
-  try {
-    src = readFileSync(fileURLToPath(new URL(`../${relativePath}`, import.meta.url)), "utf8").replace(/\r\n/g, "\n");
-  } catch {
-    return [];
-  }
-  const section = /^## FAQ\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(src)?.[1];
-  if (!section) return [];
-  return [...section.matchAll(/^### (.+)\n([\s\S]*?)(?=^### |(?![\s\S]))/gm)]
-    .map((m) => ({ question: plainInline(m[1]!), answer: plainInline(m[2]!) }))
-    .filter((f) => f.question && f.answer);
-}
-
 /** JSON-LD for one route, as the `<script type="application/ld+json">` body. */
 function structuredData(
   route: string,
   url: string,
   title: string,
   description: string,
-  faq: readonly Faq[] = [],
 ): string {
   const person = {
     "@type": "Person",
@@ -551,23 +519,6 @@ function structuredData(
                 : [{ "@type": "ListItem", position: 2, name: title, item: url }]),
             ],
           },
-          // A page with a `## FAQ` section: its questions, verbatim from the visible text.
-          ...(faq.length > 0
-            ? [
-                {
-                  "@type": "FAQPage",
-                  "@id": `${url}#faq`,
-                  url,
-                  inLanguage: "en-GB",
-                  isPartOf: { "@id": `${SITE_ORIGIN}/#website` },
-                  mainEntity: faq.map((f) => ({
-                    "@type": "Question",
-                    name: f.question,
-                    acceptedAnswer: { "@type": "Answer", text: f.answer },
-                  })),
-                },
-              ]
-            : []),
         ];
   // `</script>` can never appear in these values today, but a JSON-LD body is raw
   // innerHTML — escape the one character that could ever close the tag early.
@@ -661,7 +612,7 @@ export default defineConfig({
     head.push([
       "script",
       { type: "application/ld+json" },
-      structuredData(route, url, meta.title, description, faqOf(pageData.relativePath)),
+      structuredData(route, url, meta.title, description),
     ]);
     return head;
   },
