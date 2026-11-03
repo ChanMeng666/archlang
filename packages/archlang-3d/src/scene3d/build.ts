@@ -26,7 +26,7 @@ import {
   type RWindow,
 } from "@chanmeng666/archlang";
 import { circleRing, DEFAULT_CURVE_TOL_MM, tessellateLoops } from "../curves.js";
-import { assetFor, isHandedAsset } from "../mesh/t0.js";
+import { assetFor, handedAt, isHandedAsset } from "../mesh/t0.js";
 import { um, umPoint } from "../units.js";
 import { type Point, wallOwnership } from "../walls/ownership.js";
 import { FLOOR_OVERLAP_MIN_UM2, floorLifts, floorOverlaps, overlapArea } from "./overlap.js";
@@ -110,7 +110,12 @@ function floorOf(r: RRoom, tol: number): Floor {
 function furnitureOf(f: RFurniture, mirrored: ReadonlySet<string> | null, ledger: Assumption[]): Furniture {
   const rotate = f.rotate ?? 0;
   let asset = assetFor(f.category);
-  const handed = isHandedAsset(asset);
+  // Handed at THIS piece's size (its own width and depth: the plan box turned back), so a bicycle
+  // stood along its depth, symmetric there, is never greyed for want of its reflection (red-team
+  // N3, PR #463).
+  const turned = Math.abs(rotate % 180) === 90;
+  const [w, d] = turned ? [f.size.h, f.size.w] : [f.size.w, f.size.h];
+  const handed = isHandedAsset(asset) && handedAt(asset.slice("t0:".length), w, d);
   if (handed && mirrored === null) {
     asset = "greybox";
     ledger.push({

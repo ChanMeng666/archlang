@@ -1,11 +1,12 @@
 /**
- * T0 furniture, visual-assets cards V1–V3, V5, V6: the shape primitives (V2) one by one — every
+ * T0 furniture, visual-assets cards V1–V3, V5–V7: the shape primitives (V2) one by one — every
  * shell closed, outward-wound, integer micrometres, its extents the box asked for — then every
  * generator over a sweep of sizes: fitted exactly to its footprint, as tall as its ledgered
- * height (a wall-hung one from its mount), mirror-symmetric across its width unless its family is
- * handed (then built reflected when the plan reflects it), its material slots its family's row
- * (V1). Then the catalogue's names: every word of a built family's core row is registered, and
- * every family of the batches is built. The palette both renderers read is checked last.
+ * height (a wall-hung one from its mount), mirror-symmetric across its width unless the piece is
+ * handed at that size (then built reflected when the plan reflects it), its material slots its
+ * family's row (V1). Then the catalogue's names: every word of a built family's core row is
+ * registered, every family of the batches is built, and since V7 no catalogued family is a grey
+ * box. The palette both renderers read is checked last.
  */
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -18,6 +19,7 @@ import {
   assetFor,
   buildMesh,
   type Furniture,
+  handedAt,
   linearRgb,
   MATERIAL_SLOTS,
   PALETTE,
@@ -186,11 +188,12 @@ describe("V3 generators", () => {
   };
 
   for (const family of Object.keys(T0_FAMILIES)) {
-    const handed = T0_HANDED.has(family);
     const mount = T0_MOUNT_MM[family];
-    it(`${family}: every part sound, fitted to the footprint, ${T0_HEIGHT_MM[family]} mm tall${mount ? ` from ${mount} mm` : ""}, ${handed ? "handed" : "symmetric"}, its slots`, () => {
+    it(`${family}: every part sound, fitted to the footprint, ${T0_HEIGHT_MM[family]} mm tall${mount ? ` from ${mount} mm` : ""}, ${T0_HANDED.has(family) ? "handed" : "symmetric"}, its slots`, () => {
       for (const [W, D] of sizes) {
         const what = `${family} ${W}x${D}`;
+        // A bicycle is handed laid along its width and symmetric stood along its depth (V7).
+        const handed = handedAt(family, W, D);
         const parts = t0LocalParts(family, W, D) ?? [];
         expect(parts.length, what).toBeGreaterThan(1);
         expect(parts.length, `${what}: a modest part count`).toBeLessThanOrEqual(24);
@@ -227,14 +230,17 @@ describe("V3 generators", () => {
     });
   }
 
-  it("hangs the wall cabinet, the hood, the mirror and the urinal by their underside at every size", () => {
-    for (const family of ["upper_cabinet", "range_hood", "mirror", "urinal"]) {
+  it("hangs the wall cabinet, the hood, the mirror, the urinal, the towel rail and the whiteboard by their underside at every size", () => {
+    for (const family of ["upper_cabinet", "range_hood", "mirror", "urinal", "towel_rail", "whiteboard"]) {
       for (const [W, D] of sizes) {
         const ys = (t0LocalParts(family, W, D) ?? []).map((p) => p.y0);
         expect(Math.min(...ys), `${family} ${W}x${D}`).toBe(T0_MOUNT_MM[family]);
       }
     }
     expect(T0_MOUNT_MM.upper_cabinet).toBe(1400); // card V6
+    // The core's two new `wallMounted` families (PR #462): a ladder rail 200 mm off the floor, a
+    // board hung from 900 mm (`drawWhiteboard`: "from about 900 mm to about 2000 mm").
+    expect([T0_MOUNT_MM.towel_rail, T0_MOUNT_MM.whiteboard]).toEqual([200, 900]);
   });
 
   it("hangs a television by its top, 16:9 from its width, at most 760 mm tall", () => {
@@ -278,6 +284,21 @@ describe("V3 generators", () => {
     expect(a.map((x) => [x.id, x.value])).toEqual([["upper_cabinet_1", 2100]]);
   });
 
+  it("builds a tree at its default height above its storey's walls, ledgered, never clipped (card V7)", () => {
+    const r = adaptPlan(
+      `plan "t" { units mm grid 50 wall id=w exterior thickness 200 height 2700 { (0,0) (6000,0) (6000,4000) (0,4000) close } room id=r at (0,0) size 6000x4000 label "R" furniture tree at (8000,1000) size 2400x2400 furniture shrub at (8000,4000) size 900x900 furniture wardrobe at (1000,100) size 1200x600 }`,
+      { world: WORLD },
+    );
+    if (!r.ok) throw new Error(r.refusal.code);
+    const mesh = buildMesh(r.scene);
+    const above = mesh.assumptions.filter((a) => a.rule === "furniture-above-walls");
+    // The tree (5000 mm) rises over the 2700 mm walls; the shrub and the wardrobe do not.
+    expect(above.map((a) => [a.id, a.field, a.value])).toEqual([["tree_1", "top_mm", T0_HEIGHT_MM.tree]]);
+    const node = mesh.nodes.find((n) => n.id === "tree_1");
+    const top = Math.max(...(node?.shells ?? []).flatMap((s) => s.positions.filter((_, k) => k % 3 === 1)));
+    expect(top - (r.scene.levels[0]?.elevation ?? 0) - 5000).toBe((T0_HEIGHT_MM.tree as number) * 1000);
+  });
+
   // Small and thin pieces (red-team round 1, PR #459): down to 50 mm, and long slivers both ways.
   const small: Array<[number, number]> = [];
   for (const W of [50, 80, 100, 150, 200, 250, 300])
@@ -308,11 +329,41 @@ describe("V3 generators", () => {
         else if (mount === undefined) expect(lo(1), `${what}: on the floor`).toBe(0);
         else expect(lo(1), `${what}: hung`).toBeGreaterThanOrEqual(mount * 1000);
         expect(hi(1), `${what}: height`).toBeLessThanOrEqual((T0_HEIGHT_MM[family] as number) * 1000);
-        if (!T0_HANDED.has(family)) {
+        if (!handedAt(family, W, D)) {
           const own = shells.map((s) => sig(s, false)).sort();
           expect(shells.map((s) => sig(s, true)).sort(), `${what}: mirror-symmetric`).toEqual(own);
         }
         for (const s of shells) expect(T0_MATERIALS[family], what).toContain(s.slot);
+      }
+    });
+  }
+
+  // Red-team S2/S3, PR #463: mirror symmetry held only at whole-millimetre sizes; a profile point
+  // (from its box's low corner) and its partner could round apart at a half-micrometre tie (a
+  // boulder 593.2 x 1034, a picnic table 182.2 x 1264.6, a swing 949.4 x 1028.8; the urinal's bowl
+  // at 600 x 306). Points are now placed about the box's centre. A fixed list of one- and
+  // two-decimal sizes, with the reported ones, every family symmetric wherever it is not handed.
+  const decimal: Array<[number, number]> = [
+    [593.2, 1034],
+    [182.2, 1264.6],
+    [1264.6, 182.2],
+    [123.4, 567.8],
+    [949.4, 1028.8],
+    [600, 306],
+    [307, 600],
+    [600, 318],
+    ...Array.from({ length: 44 }, (_, k): [number, number] => [
+      Number((87.3 + 41.7 * k).toFixed(1)),
+      Number((1264.6 - 23.45 * k).toFixed(2)),
+    ]),
+  ];
+  for (const family of Object.keys(T0_FAMILIES)) {
+    it(`${family}: mirror-symmetric at one- and two-decimal sizes wherever it is not handed (red-team S2)`, () => {
+      for (const [W, D] of decimal) {
+        if (handedAt(family, W, D)) continue;
+        const shells = (t0LocalParts(family, W, D) ?? []).map((p) => partShell(p)).filter((s): s is Shell => !!s);
+        const own = shells.map((s) => sig(s, false)).sort();
+        expect(shells.map((s) => sig(s, true)).sort(), `${family} ${W}x${D}`).toEqual(own);
       }
     });
   }
@@ -396,6 +447,7 @@ describe("V5, V6: the catalogue's names", () => {
       "bed",
       "sofa",
       "table",
+      "dining_table",
       "rug",
       "wardrobe",
       "fridge",
@@ -450,6 +502,61 @@ describe("V5, V6: the catalogue's names", () => {
       "microwave",
       "bar_counter",
     ],
+    V7: [
+      "plant",
+      "tree",
+      "conifer",
+      "shrub",
+      "hedge",
+      "car",
+      "bicycle",
+      "motorcycle",
+      "bbq",
+      "outdoor_table",
+      "outdoor_chair",
+      "umbrella",
+      "sun_lounger",
+      "hot_tub",
+      "swing",
+      "trampoline",
+      "bin",
+      "mailbox",
+      "ev_charger",
+      "pergola",
+      "sandpit",
+      "fire_pit",
+      "shed",
+      "clothesline",
+      "meeting_table",
+      "reception_desk",
+      "filing_cabinet",
+      "locker",
+      "pool_table",
+      "treadmill",
+    ],
+    // The twenty new core families (PR #462), built in the same card (V-D6).
+    V8: [
+      "floor_lamp",
+      "side_table",
+      "console_table",
+      "ottoman",
+      "bean_bag",
+      "pantry",
+      "towel_rail",
+      "palm",
+      "flower_bed",
+      "boulder",
+      "picnic_table",
+      "slide",
+      "bollard",
+      "bike_rack",
+      "raised_bed",
+      "whiteboard",
+      "printer",
+      "server_rack",
+      "hospital_bed",
+      "workstation",
+    ],
   };
   for (const [card, families] of Object.entries(BATCHES)) {
     it(`builds every family of ${card}, and every alias of each, from a T0 generator`, () => {
@@ -460,6 +567,21 @@ describe("V5, V6: the catalogue's names", () => {
       }
     });
   }
+
+  // V7 built the last catalogued families (the twenty new ones of PR #462 with them): a word the
+  // core can draw is never a grey box, and a new family ships its generator with it (V-D6). The
+  // cards' lists are the whole catalogue, and every word of it, alias or canonical, is built.
+  it("builds every catalogued family: no word of the core's table is a grey box", () => {
+    expect(rows.flat().filter((w) => assetFor(w) === "greybox")).toEqual([]);
+    expect(Object.values(BATCHES).flat().sort()).toEqual(rows.map((r) => r[0]).sort());
+    // Every canonical family of the core's public material table has a generator.
+    expect(Object.keys(familyTable()).filter((f) => assetFor(f) === "greybox")).toEqual([]);
+    // And every word the core's public manifest lists (`buildManifest().fixtureCategories`, the
+    // flattened family table) — red-team N6.
+    const words = core.buildManifest("test").fixtureCategories;
+    expect(words.length).toBe(rows.flat().length);
+    expect(words.filter((w) => assetFor(w) === "greybox")).toEqual([]);
+  });
 });
 
 describe("V5: a handed family is built as the plan draws it", () => {
@@ -489,7 +611,52 @@ describe("V5: a handed family is built as the plan draws it", () => {
       .sort();
 
   it("lists exactly the families the core draws handed in their shape", () => {
-    expect([...T0_HANDED].sort()).toEqual(["chaise", "piano", "sofa_l"]);
+    // `test/glyph-chirality.test.ts`'s survey also finds the mailbox, the charge point (and the
+    // bed, the desk …) handed: by a detail (a flag, a plug), which the model leaves out (V5–V7).
+    expect([...T0_HANDED].sort()).toEqual(["bicycle", "chaise", "motorcycle", "piano", "reception_desk", "sofa_l"]);
+  });
+
+  // A bicycle and a motorcycle are read off their own long axis (`axisPt`, glyphs-outdoor.ts):
+  // laid along the width the front (the handlebar, the front wheel) is at the RIGHT, +x; stood
+  // along the depth the front is at +z and the drawing is symmetric across the width (V7).
+  for (const family of ["bicycle", "motorcycle"]) {
+    it(`${family}: the front is at +x laid along the width, and nothing is handed stood along the depth (\`draw${family === "bicycle" ? "Bicycle" : "Motorcycle"}\`, glyphs-outdoor.ts)`, () => {
+      for (const [W, D] of [
+        [1800, 600],
+        [2200, 900],
+        [600, 600],
+      ] as const) {
+        expect(handedAt(family, W, D), `${W}x${D}`).toBe(true);
+        const parts = t0LocalParts(family, W, D) ?? [];
+        // The handlebar: the widest part across, high up.
+        const bar = parts.filter((p) => p.y0 >= 990).reduce((a, b) => (b.z1 - b.z0 > a.z1 - a.z0 ? b : a));
+        expect((bar.x0 + bar.x1) / 2, `${W}x${D}: bar at the front, +x`).toBeGreaterThan(0);
+      }
+      for (const [W, D] of [
+        [600, 1800],
+        [900, 2200],
+      ] as const) {
+        expect(handedAt(family, W, D), `${W}x${D}`).toBe(false);
+        const parts = t0LocalParts(family, W, D) ?? [];
+        const bar = parts.filter((p) => p.y0 >= 990).reduce((a, b) => (b.x1 - b.x0 > a.x1 - a.x0 ? b : a));
+        expect((bar.z0 + bar.z1) / 2, `${W}x${D}: bar at the front, +z`).toBeGreaterThan(0);
+      }
+    });
+  }
+
+  it("reception_desk: the return is on the LEFT and the staff chair in the open front-right quadrant (`drawReceptionDesk`, glyphs-misc.ts: the return at `x0`, the chair at 0.62 of the width)", () => {
+    for (const [W, D] of sizesOf) {
+      const parts = t0LocalParts("reception_desk", W, D) ?? [];
+      const runZ = -D / 2 + D * 0.42;
+      // Everything raised along the outer faces (the fascia, the ledge) that reaches in front of
+      // the back run: the return's.
+      const front = parts.filter((p) => p.y0 >= 770 && p.z1 > runZ + 1 && (p.mat === "wood" || p.mat === "stone"));
+      expect(front.length, `${W}x${D}`).toBeGreaterThan(0);
+      for (const p of front) expect(p.x1, `${W}x${D}: the return at the left`).toBeLessThan(0);
+      const seat = parts.find((p) => p.mat === "fabric" && p.y0 === 430);
+      expect(((seat?.x0 ?? 0) + (seat?.x1 ?? 0)) / 2, `${W}x${D}: chair right of centre`).toBeGreaterThan(0);
+      expect(((seat?.z0 ?? 0) + (seat?.z1 ?? 0)) / 2, `${W}x${D}: chair in front of the run`).toBeGreaterThan(runZ);
+    }
   });
 
   // Each handed generator's own hand IS the core drawing's hand (red-team S4, PR #461): local +x is
@@ -568,7 +735,7 @@ describe("V5: a handed family is built as the plan draws it", () => {
     expect(mirroredIds(one, WORLD, 2)).toEqual([null, null]);
   });
 
-  for (const family of ["sofa_l", "chaise", "piano"]) {
+  for (const family of ["sofa_l", "chaise", "piano", "reception_desk", "bicycle", "motorcycle"]) {
     it(`${family}: a reflected piece is the plain one reflected across its own width, at every quarter turn`, () => {
       for (const [w, d] of [
         [2600, 1600],
@@ -584,7 +751,9 @@ describe("V5: a handed family is built as the plan draws it", () => {
           const axis = rotate % 180 === 0 ? 0 : 2;
           const what = `${family} ${w}x${d} rotate ${rotate}`;
           expect(cloud(flipped), what).toEqual(cloud(plain, axis));
-          expect(cloud(flipped), `${what}: handed`).not.toEqual(cloud(plain));
+          // A bicycle stood along its depth is its own reflection: the plan's reflection changes nothing.
+          if (handedAt(family, w, d)) expect(cloud(flipped), `${what}: handed`).not.toEqual(cloud(plain));
+          else expect(cloud(flipped), `${what}: symmetric here`).toEqual(cloud(plain));
           for (const s of flipped) {
             expect(s, what).not.toBeNull();
             if (!s) continue;
@@ -640,6 +809,95 @@ describe("V5: a handed family is built as the plan draws it", () => {
     );
     const known = buildScene3D([{ level: 1, ir: res.ir }], { coreVersion: "x", mirrored: [new Set()] });
     expect(known.levels[0]?.furniture[0]?.asset).toBe("t0:piano");
+  });
+
+  // Red-team N3, PR #463: only a piece handed at ITS size needs its reflection. A bicycle laid
+  // along its width is greyed when that is unknown; one stood along its depth is symmetric there
+  // and is built. `size` is the plan box: turned a quarter, a 600 x 1800 box is a piece 1800 wide
+  // in its own frame (handed), an 1800 x 600 one a piece stood on end (symmetric).
+  it("greys a bicycle for an unknown reflection only where it is handed at its own size", async () => {
+    const { buildScene3D } = await import("../src/scene3d/build.js");
+    const { resolvePlan } = await import("@chanmeng666/archlang");
+    const res = resolvePlan(
+      plan(
+        "furniture bicycle at (500,500) size 1800x600 furniture bicycle at (500,2000) size 600x1800 furniture bicycle at (3000,2000) size 600x1800 rotate 90 furniture bicycle at (3000,4500) size 1800x600 rotate 90",
+      ),
+      {},
+    );
+    if (!res.ir) throw new Error("no ir");
+    const sc = buildScene3D([{ level: 1, ir: res.ir }], { coreVersion: "x" });
+    expect(sc.levels[0]?.furniture.map((f) => [f.id, f.asset])).toEqual([
+      ["bicycle_1", "greybox"],
+      ["bicycle_2", "t0:bicycle"],
+      ["bicycle_3", "greybox"],
+      ["bicycle_4", "t0:bicycle"],
+    ]);
+    expect(sc.meta.assumptions.filter((a) => a.rule === "furniture-handed-mirror-unknown").map((a) => a.id)).toEqual([
+      "bicycle_1",
+      "bicycle_3",
+    ]);
+  });
+});
+
+// Red-team S1, PR #463: the seat counts are the core's own expressions on the UNROUNDED band, so
+// at a .5 tie (outdoor_table 363 x 220: 3 a side in the drawing) the model rounds the same way.
+// The core's formulas, from the glyphs they draw (glyphs-outdoor.ts `drawOutdoorTable`,
+// glyphs-misc.ts `drawMeetingTable` and `drawWorkstation`).
+describe("seat counts agree with the core's drawing at every tie size (red-team S1)", () => {
+  const cl = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
+  const CORE: Record<
+    string,
+    {
+      per: (W: number, D: number, band: number) => number;
+      total: (W: number, D: number, n: number) => number;
+      frac: number;
+      max: number;
+    }
+  > = {
+    outdoor_table: {
+      frac: 0.22,
+      max: 4,
+      per: (W, D, band) => (W >= D ? W - 2 * band : D - 2 * band) / (2.2 * band),
+      total: (W, D, n) => (Math.abs(W - D) <= 0.2 * Math.max(W, D) ? 4 : 2 * n + 2),
+    },
+    meeting_table: {
+      frac: 0.22,
+      max: 6,
+      per: (W, D, band) => (W >= D ? W - 2 * band : D - 2 * band) / (2.2 * band),
+      total: (_W, _D, n) => 2 * n + 2,
+    },
+    workstation: {
+      frac: 0.26,
+      max: 4,
+      per: (W, D, band) => (W >= D ? W : D) / (2.2 * band),
+      total: (_W, _D, n) => 2 * n,
+    },
+  };
+  /** The chairs a piece is built with: the parts that reach the chairs' 820 mm back. */
+  const chairs = (family: string, W: number, D: number): number =>
+    (t0LocalParts(family, W, D) ?? []).filter(
+      (p) => p.y1 === 820 && p.mat === (family === "outdoor_table" ? "wood" : "fabric"),
+    ).length;
+  for (const [family, c] of Object.entries(CORE)) {
+    it(`${family}: the model's chairs are the drawing's at every size where the band's rounding would tip the count`, () => {
+      const ties: Array<[number, number]> = [];
+      for (let W = 150; W <= 2400; W++) {
+        for (let D = 150; D <= 2400; D += 1) {
+          const band = Math.min(W, D) * c.frac;
+          const snapped = Math.round(band * 64) / 64;
+          if (Math.round(c.per(W, D, band)) !== Math.round(c.per(W, D, snapped))) ties.push([W, D]);
+        }
+      }
+      // The sweep finds the sizes the red team reported (e.g. 363 x 220 for the patio table).
+      expect(ties.length, family).toBeGreaterThan(0);
+      for (const [W, D] of ties.slice(0, 400)) {
+        const n = cl(Math.round(c.per(W, D, Math.min(W, D) * c.frac)), 1, c.max);
+        expect(chairs(family, W, D), `${family} ${W}x${D}`).toBe(c.total(W, D, n));
+      }
+    });
+  }
+  it("outdoor_table 363 x 220 seats three a side, as the core draws it", () => {
+    expect(chairs("outdoor_table", 363, 220)).toBe(2 * 3 + 2);
   });
 });
 
