@@ -186,8 +186,8 @@ artifact. Or load `https://archlang.uk/arch-plan.js` and write
 
 ## Also
 
-- The same functions are exported from the library — `compile`, `describe`, `lint`, `validate`,
-  `score`, `repair`, `applyFixes`, `suggestTopology`, `renderAscii` and more:
+- The same functions are exported from the library — `compile`, `describe`, `lint`,
+  `validateIntent`, `taste`, `repair`, `applyFixes`, `suggestTopology`, `renderAscii` and more:
   `import { compile, describe, lint } from "@chanmeng666/archlang"`. See
   [the JavaScript library](/javascript).
 - These power the live preview, **Describe**, **Lint** and **Intent** tabs in the
