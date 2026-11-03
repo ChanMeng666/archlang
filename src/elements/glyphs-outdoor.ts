@@ -160,7 +160,7 @@ export function drawTree(r: Rect, g: GlyphCtx): SceneNode[] {
   const rad = Math.max(0, shortSide(r) * 0.48);
   g.path(
     scallopPath(c, 16, rad * 0.82, (j) => (j % 2 === 0 ? rad : rad * 0.9)),
-    g.theme.lawn,
+    g.fillFor(g.material?.primary, g.theme.lawn),
   );
   for (let k = 0; k < 8; k++) {
     const b = k * 45;
@@ -192,7 +192,7 @@ export function drawTree(r: Rect, g: GlyphCtx): SceneNode[] {
 export function drawConifer(r: Rect, g: GlyphCtx): SceneNode[] {
   const c = centerOf(r);
   const rad = Math.max(0, shortSide(r) * 0.48);
-  g.poly(starPoly(c, 16, rad, rad * 0.6), g.theme.lawn);
+  g.poly(starPoly(c, 16, rad, rad * 0.6), g.fillFor(g.material?.primary, g.theme.lawn));
   for (let k = 0; k < 8; k++) g.seg(polar(c, rad * 0.1, k * 45), polar(c, rad * 0.78, k * 45), "extraThin");
   g.dot(c, rad * 0.05, undefined, "thin");
   return g.nodes;
@@ -219,7 +219,7 @@ export function drawShrub(r: Rect, g: GlyphCtx): SceneNode[] {
   const rad = Math.max(0, shortSide(r) * 0.48);
   g.path(
     scallopPath(c, 8, rad * 0.78, () => rad),
-    g.theme.lawn,
+    g.fillFor(g.material?.primary, g.theme.lawn),
   );
   g.path(
     scallopPath(c, 8, rad * 0.5, () => rad * 0.62),
@@ -278,7 +278,7 @@ export function drawHedge(r: Rect, g: GlyphCtx): SceneNode[] {
   to(axisPt(r, L - h, h), h);
   for (let i = n - 1; i >= 0; i--) to(axisPt(r, h + pitch * i, h), lobe);
   to(start, h);
-  g.path({ start, edges }, g.theme.lawn);
+  g.path({ start, edges }, g.fillFor(g.material?.primary, g.theme.lawn));
   g.seg(axisPt(r, h, 0), axisPt(r, L - h, 0), "extraThin", true);
   return g.nodes;
 }
@@ -493,9 +493,10 @@ export function drawOutdoorChair(r: Rect, g: GlyphCtx): SceneNode[] {
  *
  * The canopy is an octagon whose eight panels SAG slightly between the ribs — each edge a
  * shallow inward arc, which is how stretched fabric reads in plan and what tells it from a
- * straight-edged table or a `plant`. White (fabric is a soft surface), outline pen; the eight
- * ribs from the pole to the tips are detail; the pole an outline-ink disc. The tips sit on the
- * axes and diagonals, so the symbol is quarter-turn and mirror invariant.
+ * straight-edged table or a `plant`. White (fabric is a soft surface; its fabric tint under
+ * `rendered`), outline pen; the eight ribs from the pole to the tips are detail; the pole an
+ * outline-ink disc. The tips sit on the axes and diagonals, so the symbol is quarter-turn and
+ * mirror invariant.
  *
  * Prim count: 10.
  */
@@ -506,7 +507,7 @@ export function drawUmbrella(r: Rect, g: GlyphCtx): SceneNode[] {
   for (let i = 0; i < 8; i++) tips.push(polar(c, rad, i * 45));
   const edges: PathEdge[] = [];
   for (let i = 0; i < 8; i++) edges.push(...bulgeArc(tips[i]!, tips[(i + 1) % 8]!, -rad * 0.05));
-  g.path({ start: tips[0]!, edges }, g.basin);
+  g.path({ start: tips[0]!, edges }, g.fillFor(g.material?.primary, g.basin));
   for (const t of tips) g.seg(c, t, "extraThin");
   g.dot(c, rad * 0.05, undefined, "thin");
   return g.nodes;

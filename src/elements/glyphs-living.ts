@@ -459,7 +459,7 @@ export function drawRug(r: Rect, g: GlyphCtx): SceneNode[] {
   const fx = sides ? fringe : 0;
   const fy = ends ? fringe : 0;
   const body: Rect = { x: r.x + fx, y: r.y + fy, w: r.w - 2 * fx, h: r.h - 2 * fy };
-  g.poly(rectPoly(body), "none", "extraThin");
+  g.poly(rectPoly(body), g.fillFor(g.material?.primary, "none"), "extraThin");
   g.poly(rectPoly(insetRect(body, 0.08)), "none", "extraThin");
 
   const ticks = clampCount(s / (long * 0.05), 3, square ? 10 : 16);

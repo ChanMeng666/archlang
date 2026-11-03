@@ -235,7 +235,7 @@ export function drawPlant(r: Rect, g: GlyphCtx): SceneNode[] {
   const rad = Math.max(0, shortSide(r) * 0.48);
   g.path(
     scallopPath(c, 8, rad * 0.78, (j) => (j % 2 === 0 ? rad : rad * 0.88)),
-    g.theme.lawn,
+    g.fillFor(g.material?.primary, g.theme.lawn),
   );
   g.ring(c, rad * 0.42, "extraThin");
   for (let i = 0; i < 8; i++) g.seg(polar(c, rad * 0.42, i * 45), polar(c, rad * 0.7, i * 45), "extraThin");

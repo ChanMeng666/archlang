@@ -321,7 +321,7 @@ export function drawUrinal(r: Rect, g: GlyphCtx): SceneNode[] {
  * Prim count: `1 + ticks`, 6 at the catalogued 900 x 50.
  */
 export function drawMirror(r: Rect, g: GlyphCtx): SceneNode[] {
-  g.poly(rectPoly(r), g.basin);
+  g.poly(rectPoly(r), g.fillFor(g.material?.primary, g.basin));
   const n = clamp(Math.round(r.w / (4 * r.h)), 3, 12);
   const pitch = r.w / n;
   const d = Math.min(r.h * 0.45, pitch * 0.25);

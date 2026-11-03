@@ -3613,6 +3613,38 @@ compile(src, { theme: { wallStroke: "#0000ff", lineWeight: 0.5 } });
 
 See [`examples/themed.arch`](../examples/themed.arch).
 
+### Named themes
+
+`theme <name>` starts from a built-in palette, and a block after the name overrides single keys
+of it (`theme blueprint { wall: "#ffffff" }`):
+
+| Name | Look |
+|---|---|
+| `blueprint` | white linework on cyanotype blue |
+| `mono` | pure black on white, for line prints |
+| `dark` | a dark screen palette |
+| `presentation` | warm paper and a serif face, for slides and client decks |
+| `rendered` | a presentation board: warm paper, a clean sans face, and every fixture symbol filled with a soft tint of what it is made of |
+
+Under `rendered` a symbol's body takes the tint of its family's material and its inner part (a
+sofa's cushions, a sink's bowl, a hot tub's water, a car's glass) the tint of a second material
+where the family has one: wood, fabric, linen, wool, ceramic, stone, metal, glass, an appliance's
+enamel, paint, rubber, foliage, water. The material is a fact about the family (`sofa` is fabric
+whatever its label), so the same table can drive a 3D model; it is exported as
+`FIXTURE_FAMILY_MATERIALS`. The tints are pale on purpose: the outlines still lead, at 3:1 or more
+on every tint. Overriding the furniture fill (`theme rendered { furniture: "#eeeeee" }` or
+`style furniture { fill: … }`) replaces the tints with that one colour. A theme draws only:
+`describe()` and `lint()` are the same under every theme.
+
+```arch static
+plan "Flat" {
+  theme rendered
+  paper A3 landscape
+  scale 1:50
+  # … rooms, walls, furniture …
+}
+```
+
 ## Analysis: `describe` & `lint`
 
 ArchLang doesn't just draw a plan — it can **read it back as facts**. Two pure

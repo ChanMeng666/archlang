@@ -622,6 +622,11 @@ export type { World } from "./world.js";
 // one-colour poché derivation. THEMES are the built-in named bases.
 export { THEMES, DEFAULT_THEME, mergeTheme, derivePoche, hexToHsl, hslToHex } from "./theme.js";
 export type { Theme, StyleMap } from "./theme.js";
+// What each fixture family is made of (visual-assets V-D2): the one table the `rendered`
+// theme's `materialTints` fill by and `@chanmeng666/archlang-3d` can shade by, so the two
+// cannot disagree. Additive: no existing export moved (`test/rendered-theme.test.ts`).
+export { FIXTURE_FAMILY_MATERIALS, FIXTURE_MATERIALS, fixtureMaterial } from "./elements/fixtures-glyphs.js";
+export type { FamilyMaterial, FixtureMaterial } from "./elements/fixtures-glyphs.js";
 // Config sanitization: denylist for untrusted .arch config; trusted
 // CompileOptions skip it. `fnv1a` keys the per-stage memo caches.
 export { sanitizeConfig, isDisallowedConfigValue } from "./sanitize.js";
