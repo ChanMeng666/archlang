@@ -702,3 +702,180 @@ export function drawTreadmill(r: Rect, g: GlyphCtx): SceneNode[] {
   g.path(roundedRectPath(belt, Math.min(belt.w, belt.h) / 2), g.basin, "extraThin");
   return g.nodes;
 }
+
+// ---------------------------------------------------------------------------
+// ── the visual-assets tranche (V8): the office's equipment ──
+//
+// Four families appended at the foot of the file, for the reason they are appended to
+// `FIXTURE_FAMILIES`: that table's order is the LEGEND's order. Each is its own mirror image.
+
+/**
+ * The whiteboard: the board against the wall, the frame's end caps, and the pen tray along its
+ * foot with the groove in it.
+ *
+ * Wall-mounted, and drawn SOLID like the `tv` rather than dashed like the `mirror`: a whiteboard
+ * hangs from about 900 mm to about 2000 mm, so the cut plane passes through it, and nothing stands
+ * under it that a dashed outline would have to reveal. The board is the outline, against the
+ * BACK (top) edge, which is the orientation the catalog's `directional` and `wallMounted` rest on;
+ * the tray and the caps take the family's secondary material (`basin`: the metal frame).
+ *
+ * Prim count: 5.
+ */
+export function drawWhiteboard(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  const board: Rect = { x: r.x, y: r.y, w: r.w, h: r.h * 0.45 };
+  g.path(roundedRectPath(board, s * 0.06), g.body);
+  const cap = r.w * 0.012;
+  for (const x of [r.x, r.x + r.w - cap]) {
+    g.poly(rectPoly({ x, y: r.y, w: cap, h: board.h }), g.basin, "extraThin");
+  }
+  const tray: Rect = { x: r.x + r.w * 0.04, y: r.y + r.h * 0.5, w: r.w * 0.92, h: r.h * 0.46 };
+  g.path(roundedRectPath(tray, Math.min(tray.w, tray.h) * 0.4), g.basin, "extraThin");
+  const gy = tray.y + tray.h / 2;
+  g.seg({ x: tray.x + tray.w * 0.03, y: gy }, { x: tray.x + tray.w * 0.97, y: gy }, "extraThin");
+  return g.nodes;
+}
+
+/**
+ * The printer (a copier): the machine, the scanner lid with its hinge line at the back, the paper
+ * exit across the front of the lid, and the control panel at the front with its display.
+ *
+ * A floor-standing copier is approached from the front, where its panel is, so the panel on the
+ * FRONT (bottom) edge is the orientation claim the catalog's `directional` rests on; it is centred,
+ * so the machine has no hand. The panel is the untinted interior (`blank`), its display the
+ * family's secondary material (`basin`: screen).
+ *
+ * Prim count: 6.
+ */
+export function drawPrinter(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.05), g.body);
+  const lid: Rect = { x: r.x + r.w * 0.07, y: r.y + r.h * 0.06, w: r.w * 0.86, h: r.h * 0.6 };
+  g.path(roundedRectPath(lid, s * 0.025), g.body, "extraThin");
+  const hy = lid.y + lid.h * 0.1;
+  g.seg({ x: lid.x, y: hy }, { x: lid.x + lid.w, y: hy }, "extraThin");
+  const ey = r.y + r.h * 0.72;
+  g.seg({ x: lid.x, y: ey }, { x: lid.x + lid.w, y: ey }, "extraThin");
+  const panel: Rect = { x: r.x + r.w * 0.2, y: r.y + r.h * 0.78, w: r.w * 0.6, h: r.h * 0.15 };
+  g.path(roundedRectPath(panel, Math.min(panel.w, panel.h) * 0.25), g.blank, "extraThin");
+  const disp: Rect = { x: r.x + r.w * 0.36, y: panel.y + panel.h * 0.2, w: r.w * 0.28, h: panel.h * 0.6 };
+  g.path(roundedRectPath(disp, Math.min(disp.w, disp.h) * 0.15), g.basin, "extraThin");
+  return g.nodes;
+}
+
+/**
+ * The server rack: a run of cabinets, each with its rear and front door lines, its pair of
+ * mounting rails HIDDEN behind the doors (dashed), and a handle on its front door.
+ *
+ * A rack row is a repeat, so the cabinet count is derived from the aspect — one 0.6-depth cabinet
+ * at a time, a 600 x 1000 rack and a 1200 x 1000 pair — clamped to `[1, 8]`. The rails are dashed
+ * because they are inside a closed cabinet, which is the one thing besides "above the cut plane" a
+ * dash means here. The handle is on the FRONT (bottom) door, centred on its cabinet: a rack is
+ * worked from the front (the cold aisle), which is the catalog's `directional`.
+ *
+ * Prim count: `2 + 4 x cabinets`, i.e. 6 at the catalogued 600 x 1000.
+ */
+export function drawServerRack(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.01), g.body);
+  const frontY = r.y + r.h * 0.93;
+  const rearY = r.y + r.h * 0.07;
+  g.seg({ x: r.x, y: rearY }, { x: r.x + r.w, y: rearY }, "extraThin");
+  g.seg({ x: r.x, y: frontY }, { x: r.x + r.w, y: frontY }, "extraThin");
+  const racks = clampCount(r.w / (r.h * 0.6), 1, 8);
+  for (let i = 1; i < racks; i++) {
+    const x = r.x + (r.w * i) / racks;
+    g.seg({ x, y: r.y }, { x, y: r.y + r.h }, "extraThin");
+  }
+  const bay = r.w / racks;
+  for (let i = 0; i < racks; i++) {
+    const cx = r.x + bay * (i + 0.5);
+    for (const f of [-0.36, 0.36]) {
+      g.seg({ x: cx + bay * f, y: rearY }, { x: cx + bay * f, y: frontY }, "extraThin", true);
+    }
+    g.seg({ x: cx - bay * 0.14, y: r.y + r.h * 0.965 }, { x: cx + bay * 0.14, y: r.y + r.h * 0.965 }, "extraThin");
+  }
+  return g.nodes;
+}
+
+/** The chair-zone band of a workstation pod, as a fraction of the footprint's short side. */
+const POD_BAND = 0.26;
+/** The fraction of a pod chair's depth tucked under the desk. */
+const POD_TUCK = 0.3;
+
+/**
+ * The workstation (a desk pod): two rows of desks back to back with the privacy screen between
+ * them, the desk splits, a monitor on each desk facing its user, and the chairs tucked under the
+ * desks in the chair band each side.
+ *
+ * The meeting table's construction, turned to work: the footprint is the whole pod, chairs
+ * included (a band `0.26` of the short side on each long side — a desk chair pulled out), and the chairs are the pilot dining
+ * chairs placed by their offsets from the pod's centre, so counterpart chairs are built from the
+ * very same numbers. Desks per side: one per 2.2 chair bands of run, clamped to `[1, 4]`. The screen
+ * runs the long axis and takes the family's secondary material (`basin`: fabric), as the chair
+ * seats do; the monitors are the untinted interior (`blank`).
+ *
+ * A pod is worked from both long sides, so it is neither `directional` nor `symmetric` (its ends
+ * have no chairs); it is its own mirror image.
+ *
+ * Prim count: `8 x desks per side`, i.e. 16 for a two-a-side pod.
+ */
+export function drawWorkstation(r: Rect, g: GlyphCtx): SceneNode[] {
+  const band = shortSide(r) * POD_BAND;
+  const horizontal = r.w >= r.h;
+  const top: Rect = horizontal
+    ? { x: r.x, y: r.y + band, w: r.w, h: r.h - 2 * band }
+    : { x: r.x + band, y: r.y, w: r.w - 2 * band, h: r.h };
+  const st = Math.max(0, shortSide(top));
+  g.path(roundedRectPath(top, st * 0.02), g.body);
+  const C = centerOf(r);
+  const runLen = horizontal ? top.w : top.h;
+  const depth = horizontal ? top.h : top.w;
+  const scr = depth * 0.025;
+  g.path(
+    roundedRectPath(
+      horizontal
+        ? { x: top.x + runLen * 0.01, y: C.y - scr, w: runLen * 0.98, h: 2 * scr }
+        : { x: C.x - scr, y: top.y + runLen * 0.01, w: 2 * scr, h: runLen * 0.98 },
+      scr,
+    ),
+    g.basin,
+    "extraThin",
+  );
+  const perSide = clampCount(runLen / (2.2 * band), 1, 4);
+  const along = (i: number): number => (runLen * (2 * i + 1 - perSide)) / (2 * perSide);
+  const at = (u: number, v: number): Point => (horizontal ? { x: C.x + u, y: C.y + v } : { x: C.x + v, y: C.y + u });
+  for (let i = 1; i < perSide; i++) {
+    const u = (runLen * (2 * i - perSide)) / (2 * perSide);
+    for (const sgn of [-1, 1]) g.seg(at(u, sgn * scr), at(u, sgn * (depth / 2)), "extraThin");
+  }
+  const mw = (runLen / perSide) * 0.38;
+  const mh = depth * 0.04;
+  const off = scr + depth * 0.06;
+  for (let i = 0; i < perSide; i++) {
+    const u = along(i);
+    for (const sgn of [-1, 1]) {
+      const m = at(u, sgn * (off + mh / 2));
+      const half = horizontal ? { x: mw / 2, y: mh / 2 } : { x: mh / 2, y: mw / 2 };
+      g.path(
+        roundedRectPath({ x: m.x - half.x, y: m.y - half.y, w: 2 * half.x, h: 2 * half.y }, mh * 0.35),
+        g.blank,
+        "extraThin",
+      );
+    }
+  }
+  const cw = band * 0.9;
+  const vis = band * (1 - POD_TUCK);
+  const out = depth / 2 + vis / 2;
+  for (let i = 0; i < perSide; i++) {
+    const u = along(i);
+    if (horizontal) {
+      chairAt(g, C, { x: u, y: -out }, "top", cw, vis, POD_TUCK);
+      chairAt(g, C, { x: u, y: out }, "bottom", cw, vis, POD_TUCK);
+    } else {
+      chairAt(g, C, { x: -out, y: u }, "left", cw, vis, POD_TUCK);
+      chairAt(g, C, { x: out, y: u }, "right", cw, vis, POD_TUCK);
+    }
+  }
+  return g.nodes;
+}

@@ -407,3 +407,53 @@ export function drawVanity(r: Rect, g: GlyphCtx): SceneNode[] {
   g.ring(stool, rad * 0.55, "extraThin");
   return g.nodes;
 }
+
+// ---------------------------------------------------------------------------
+// ── the visual-assets tranche (V8) ──
+
+/**
+ * The hospital bed: the frame, a panel across the head and the foot, the four SPLIT SIDE RAILS
+ * (a head and a foot rail each side), the mattress, the joints of its articulated deck, and the
+ * pillow at the head.
+ *
+ * What tells it from a `bed` is what a care plan is drawn for: the rails along both sides, the
+ * foot panel (a domestic bed has a headboard only), and the deck sections — back rest, seat, knee
+ * and foot — that the mattress folds on. It is made rather than turned down, so it carries no
+ * folded corner: symmetric about its long axis, unlike the domestic bed. The head is the TOP edge,
+ * the module's back-on-top convention, so the catalog's `directional` derives a turn that puts
+ * the head panel against the wall. The mattress takes the family's secondary material (`basin`:
+ * linen) and the pillow the untinted interior (`blank`).
+ *
+ * Prim count: 12.
+ */
+export function drawHospitalBed(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  const rad = s * 0.04;
+  g.path(roundedRectPath(r, rad), g.body);
+  const panel = r.h * 0.045;
+  g.path(roundedRectPath({ x: r.x, y: r.y, w: r.w, h: panel }, [rad, rad, 0, 0]), g.body, "extraThin");
+  g.path(roundedRectPath({ x: r.x, y: r.y + r.h - panel, w: r.w, h: panel }, [0, 0, rad, rad]), g.body, "extraThin");
+  // The split side rails, in the band between the mattress and the frame's long edges.
+  const railW = r.w * 0.05;
+  for (const x of [r.x + r.w * 0.015, r.x + r.w * 0.935]) {
+    for (const [y0, y1] of [
+      [0.1, 0.46],
+      [0.54, 0.86],
+    ] as const) {
+      g.path(roundedRectPath({ x, y: r.y + r.h * y0, w: railW, h: r.h * (y1 - y0) }, railW / 2), g.body, "extraThin");
+    }
+  }
+  const mat: Rect = { x: r.x + r.w * 0.09, y: r.y + r.h * 0.06, w: r.w * 0.82, h: r.h * 0.88 };
+  g.path(roundedRectPath(mat, s * 0.05), g.basin, "extraThin");
+  for (const f of [0.38, 0.55, 0.72]) {
+    const y = r.y + r.h * f;
+    g.seg({ x: mat.x, y }, { x: mat.x + mat.w, y }, "extraThin");
+  }
+  const ph = r.h * 0.12;
+  g.path(
+    roundedRectPath({ x: r.x + r.w * 0.22, y: r.y + r.h * 0.09, w: r.w * 0.56, h: ph }, ph * 0.3),
+    g.blank,
+    "extraThin",
+  );
+  return g.nodes;
+}

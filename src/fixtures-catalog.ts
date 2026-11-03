@@ -160,7 +160,8 @@ export interface FixtureSpec {
    *
    * The catalogue holds no heights, so the set is stated family by family rather than read off a
    * number: the fridge (a fridge-freezer stands about 1800–2000 mm), the wardrobe (built to the
-   * door head), the bookcase (`bookshelf`, `bookcase`) and the locker (a full-height bank).
+   * door head), the bookcase (`bookshelf`, `bookcase`), the locker (a full-height bank), the
+   * pantry (a larder cupboard, drawn with the tall-unit cross) and the server rack (a 42U cabinet).
    * Deliberately NOT tall: the bare word `shelf`, though it shares the bookshelf's symbol (low open
    * shelving under a sill is ordinary, and the word says nothing of height); the dresser and
    * chest of drawers, the filing cabinet (a two- or four-drawer unit often
@@ -186,8 +187,8 @@ export interface FixtureSpec {
    * `W_FIXTURE_FLOATING` leaves it alone when it stands free). Read only by
    * `W_FIXTURE_BACK_TO_ROOM` (plan-soundness PS2.50), which declines a piece standing side-on or
    * end-on to a wall, a layout for a bed or a wardrobe, but not for one of these: a radiator, a
-   * fireplace, a TV or an EV charger touching a wall with its end is the wrong way round. Set on
-   * exactly those four families.
+   * fireplace, a TV, an EV charger, a towel rail or a whiteboard touching a wall with its end is the
+   * wrong way round. Set on exactly those six families.
    */
   wallMounted?: boolean;
 }
@@ -715,6 +716,117 @@ const CATALOG: Readonly<Record<string, FixtureSpec>> = Object.freeze({
     clearanceMm: 900,
     footprint: { along: 800, depth: 1800 },
   },
+
+  // -------------------------------------------------------------------------
+  // ── the visual-assets tranche (V8) ──
+  //
+  // Twenty families for the everyday objects a plan had no word for. The rules the tranches above
+  // settled are kept, and three choices are worth naming.
+  //
+  // ## Not one of them is `requiresWall`, and none carries a `clearanceMm`
+  //
+  // The flag means services, and none of these needs a pipe or hangs off the fabric by
+  // definition: a whiteboard can stand on a mobile frame and a towel rail be fed from the floor,
+  // as a radiator is. Both are `wallMounted` instead, joining the radiator, the fireplace, the TV
+  // and the EV charger: their backs mount on a wall whenever they touch one, so side-on to a wall
+  // is the wrong way round. No frontal clearance is claimed for any of the twenty: a printer, a
+  // slide's run-out and a rack's cold aisle each have a real use-space, but none has a figure this
+  // catalogue can defend without a standard behind it, and a guessed number would warn on plans
+  // that are fine.
+  //
+  // ## `directional` where the symbol earns it; `symmetric` where it is drawn D4-invariant
+  //
+  // The console table's back rail, the pantry's doors, the towel rail's and the whiteboard's
+  // brackets, the slide's ladder, the printer's panel, the rack's front door and the hospital
+  // bed's head panel each say which way the piece faces. The floor lamp, the side table, the
+  // ottoman, the palm and the bollard are drawn to map onto themselves under every quarter-turn
+  // and mirror (on a square for the two built from rectangles), so they are `symmetric`. The
+  // runs — a flower bed, a raised bed, a bike rack — and the pieces approached from two sides
+  // (a picnic table, a desk pod) are neither, as the hedge and the outdoor table are; the bean
+  // bag is seating, arranged rather than installed, as the sofa is.
+  //
+  // ## The pantry is `tall`; the server rack is not `fixedAspect`
+  //
+  // A larder cupboard and a rack stand to about a door head, so both block a window's glass
+  // (`W_FURNITURE_OVER_WINDOW`). A rack ROW is written as one wide piece (two cabinets are
+  // 1200 x 1000), so a rack is sold in both shapes and never `fixedAspect`.
+
+  // Living.
+  floor_lamp: { requiresWall: false, symmetric: true, footprint: { along: 450, depth: 450 } },
+  side_table: { requiresWall: false, symmetric: true, footprint: { along: 500, depth: 500 } },
+  end_table: { requiresWall: false, symmetric: true, footprint: { along: 500, depth: 500 } },
+  // fixedAspect: a console is a long, shallow table against a wall, always far wider than deep.
+  console_table: { requiresWall: false, fixedAspect: true, directional: true, footprint: { along: 1200, depth: 350 } },
+  ottoman: { requiresWall: false, symmetric: true, footprint: { along: 600, depth: 600 } },
+  pouf: { requiresWall: false, symmetric: true, footprint: { along: 600, depth: 600 } },
+  footstool: { requiresWall: false, symmetric: true, footprint: { along: 600, depth: 600 } },
+  bean_bag: { requiresWall: false },
+
+  // Kitchen & bath.
+  pantry: { requiresWall: false, directional: true, tall: true, footprint: { along: 600, depth: 600 } },
+  tall_cabinet: { requiresWall: false, directional: true, tall: true, footprint: { along: 600, depth: 600 } },
+  larder: { requiresWall: false, directional: true, tall: true, footprint: { along: 600, depth: 600 } },
+  // fixedAspect: a ladder rail is one plane of bars along its wall, always far wider than deep.
+  towel_rail: {
+    requiresWall: false,
+    fixedAspect: true,
+    directional: true,
+    wallMounted: true,
+    footprint: { along: 500, depth: 120 },
+  },
+  towel_radiator: {
+    requiresWall: false,
+    fixedAspect: true,
+    directional: true,
+    wallMounted: true,
+    footprint: { along: 500, depth: 120 },
+  },
+
+  // Outdoor: planting, then the play and street furniture.
+  palm: { requiresWall: false, symmetric: true },
+  palm_tree: { requiresWall: false, symmetric: true },
+  flower_bed: { requiresWall: false, footprint: { along: 2000, depth: 800 } },
+  planting_bed: { requiresWall: false, footprint: { along: 2000, depth: 800 } },
+  boulder: { requiresWall: false },
+  rock: { requiresWall: false },
+  picnic_table: { requiresWall: false, footprint: { along: 1800, depth: 1500 } },
+  // fixedAspect: a chute you slide down: always longer than wide.
+  slide: { requiresWall: false, fixedAspect: true, directional: true, footprint: { along: 800, depth: 3000 } },
+  playground_slide: {
+    requiresWall: false,
+    fixedAspect: true,
+    directional: true,
+    footprint: { along: 800, depth: 3000 },
+  },
+  bollard: { requiresWall: false, symmetric: true, footprint: { along: 200, depth: 200 } },
+  bike_rack: { requiresWall: false, footprint: { along: 2000, depth: 800 } },
+  cycle_stand: { requiresWall: false, footprint: { along: 2000, depth: 800 } },
+  raised_bed: { requiresWall: false, footprint: { along: 2400, depth: 1200 } },
+  vegetable_bed: { requiresWall: false, footprint: { along: 2400, depth: 1200 } },
+
+  // Office & care.
+  // fixedAspect: a board is a thin band along its wall, always far wider than deep.
+  whiteboard: {
+    requiresWall: false,
+    fixedAspect: true,
+    directional: true,
+    wallMounted: true,
+    footprint: { along: 1800, depth: 100 },
+  },
+  printer: { requiresWall: false, directional: true, footprint: { along: 600, depth: 650 } },
+  copier: { requiresWall: false, directional: true, footprint: { along: 600, depth: 650 } },
+  server_rack: { requiresWall: false, directional: true, tall: true, footprint: { along: 600, depth: 1000 } },
+  // fixedAspect: a bed, longer than wide; `serves: "bed"`, as a double bed does.
+  hospital_bed: {
+    requiresWall: false,
+    fixedAspect: true,
+    directional: true,
+    footprint: { along: 1000, depth: 2200 },
+    serves: "bed",
+  },
+  // `serves: "desk"`, as the reception desk does: an office furnished with a pod has its desks.
+  workstation: { requiresWall: false, serves: "desk" },
+  desk_pod: { requiresWall: false, serves: "desk" },
 });
 
 /** All catalogued categories (aliases included), in declaration order. */

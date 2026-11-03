@@ -119,8 +119,8 @@ furniture wardrobe against bed.right clear front 600
 
 ## The symbol catalogue
 
-Eighty-three families, a hundred and twenty-nine names with the aliases, and **every one of
-them draws**.
+A hundred and three families, a hundred and sixty-three names with the aliases, and **every one
+of them draws**.
 The tables below are grouped by the room the pieces belong to.
 
 Three columns need a word of explanation:
@@ -153,6 +153,7 @@ Three columns need a word of explanation:
 | `bidet` | an oval bowl with its rim, a small tap deck standing on the bowl's rear edge with its tap and jet, and the waste — a `wc` with no cistern | 400 × 700 | derived | ✓ |
 | `urinal` | a **U** bowl run to the wall face — square at the back, a semicircle at the front — with its rim, the flush plate across its back and the waste | 400 × 350 | derived | ✓ |
 | `mirror` | the glass, with a run of 45° reflection ticks across it — one per four depths of length, three to twelve | 900 × 50 | derived | ✓ |
+| `towel_rail` · `towel_radiator` | the rail seen from above as one tube between a **stile** at each end, the two wall brackets, and a **towel** hung over the middle | 500 × 120 | derived | |
 
 The tub is deliberately **uneven** — a deep deck at the tap end, a shallow rim at the foot, and
 a well that is nearly square at one end and round at the other — so the drawing says which end
@@ -191,6 +192,7 @@ not, because a mirror over a console table does not make a room a bathroom.
 | `range_hood` | the hood outline with a fan ring, four blade radials and a hub ring, drawn **entirely dashed** | 900 × 500 | derived | ✓ |
 | `microwave` | carcass, the door frame and its glass window over the left three-quarters, and the keypad strip with three buttons on the right | 500 × 400 | derived | |
 | `bar_counter` | the worktop over the back of the footprint, the overhang line, and **1.2 stool seats per counter-depth of run**, one to eight | 1800 × 600 | derived | |
+| `pantry` · `tall_cabinet` · `larder` | carcass, the door-front line, a door per 0.9 depths of width (one to four) with a centred pull, and the **tall-unit cross** — two diagonals over the carcass, the drafting mark for joinery that rises to the ceiling | 600 × 600 | derived | |
 
 `washer` and `dryer` are the same box at the same size and stand side by side in most
 utility rooms, so they are drawn to differ by *shape*: a glyph carries no text, so a
@@ -234,8 +236,9 @@ cabinet's door line and splits run edge to edge, a hood's fan is a ring about th
 | `crib` · `cot` | carcass, the mattress inside it with its blanket and turned-down band, and the **rail bars down both long faces** | 700 × 1300 | derived | |
 | `dresser` · `chest_of_drawers` | carcass and, on the room side, a row of **drawer fronts** (one per 0.8 depths of width) each with its pull | 1200 × 500 | derived | |
 | `vanity` · `dressing_table` | top, the mirror band **dashed** across the wall side, a drawer pedestal with its pull at each end, and the stool between them | 1200 × 500 | derived | |
+| `hospital_bed` | the frame with a panel across the **head and the foot**, four **split side rails**, the mattress with the joints of its articulated deck, and the pillow — made, so no folded corner | 1000 × 2200 | derived | |
 
-None of these carries `requiresWall` — a bed needs no pipe — but all eight are
+None of these carries `requiresWall` — a bed needs no pipe — but all nine are
 **directional**, because the symbol has a back worth turning toward a wall. That is what
 lets `anchor top` derive `rotate 0` for a bed and put its headboard where you meant it.
 
@@ -268,6 +271,11 @@ pen.
 | `coat_rack` | a round base, the pole, and four hook arms on the diagonals, each ending in a knob | 400 × 400 | symmetric | |
 | `shoe_cabinet` | slim carcass, the door splits, and a long **finger-pull** along the front of each door | 800 × 300 | derived | |
 | `sofa_l` · `corner_sofa` | the `sofa` construction round an L: the back run along the rear edge, the return down the **left**, a **square corner seat**, an arm at each free end, and the fourth quadrant left as open floor | 2600 × 1600 | free | |
+| `floor_lamp` | seen from above as the parasol is: the **shade**, its open top with the light in it, and the spider fitting — a finial on four struts to the rim | 450 × 450 | symmetric | |
+| `side_table` · `end_table` | a hard top with eased corners, its bevel, and the lower **shelf dashed** under it (hidden by the top) | 500 × 500 | symmetric | |
+| `console_table` | a long shallow top, its bevel, the **back rail** along the wall edge, and the stretcher shelf **dashed** under the top | 1200 × 350 | derived | |
+| `ottoman` · `pouf` · `footstool` | an upholstered block, its padded top, and the **tufting** — a grid of buttons, two by two on a square and more along a long one | 600 × 600 | symmetric | |
+| `bean_bag` | a soft, nearly round sack, the raised **back as a crescent**, and the hollow a body sits in | — | free | |
 | `rug` · `carpet` | a woven body with a border band inside it and a fringe off each short end (all four on a square rug) — unfilled, and the **only symbol drawn entirely in the detail pen** | — | symmetric | |
 | `piano` · `grand_piano` | a **grand**: the keyboard across the back, the straight bass side down the right, a round tail, the concave bent side and the treble shoulder (tangent arcs throughout) with the lid line inside; a bench in front of the keys when the footprint is at least 1.3 widths deep | — | free | |
 
@@ -346,6 +354,10 @@ which is how it goes on a drawing anyway.
 | `locker` | a run of narrow doors at a clamped count, the door-front line near the front face, and a pull on each door | 1200 × 450 | derived | |
 | `pool_table` | the rail, the cushion band inside it, the cloth, and **six pockets** — four at the corners, two on the long rails | 2500 × 1400 | symmetric | |
 | `treadmill` | frame, the console at the wall end with its display, the two side platforms, and the belt between them as a stadium | 800 × 1800 | derived | |
+| `whiteboard` | the board on the wall edge, the frame's end caps, and the **pen tray** along its foot — solid, not dashed: the cut plane passes through it, as through a `tv` | 1800 × 100 | derived | |
+| `printer` · `copier` | the machine, the scanner lid with its hinge line at the back, the paper exit, and the **control panel** with its display at the front | 600 × 650 | derived | |
+| `server_rack` | a run of cabinets (one per 0.6 depths of width, one to eight), each with its rear and front door lines, its two mounting rails **dashed** behind the doors, and a handle on the front | 600 × 1000 | derived | |
+| `workstation` · `desk_pod` | two rows of desks **back to back** with the privacy screen between them, the desk splits, a monitor on each desk, and the `dining_table` chairs tucked under them — one to four a side | — | free | |
 
 A `sun_lounger` is aimed at the sun, and ArchLang has no sun model — the `site` layer names an
 aspect, not a daylight measurement — so nothing here derives which way it points and nothing
@@ -367,11 +379,12 @@ like every other symbol's depth, so `rotate 90` parks it across a garage.
 
 ### Outdoor
 
-Twenty-one families for what a site plan draws once the drawing leaves the building. They
+Twenty-nine families for what a site plan draws once the drawing leaves the building. They
 live in their own module (`src/elements/glyphs-outdoor.ts`), drawn in the indoor symbols' line
 language (outline in the symbol ink, detail in the fine pen, true curves), and follow one rule
 the indoor tables do not: **planting is a canopy that masks the ground** — the tree, the
-conifer, the shrub and the hedge are each one closed outline **filled with the lawn tint**, so
+conifer, the shrub, the hedge and the palm are each one closed outline **filled with the lawn
+tint**, so
 the ground hatch under them is painted out and the crown reads as one mass.
 
 | Kind (and aliases) | Symbol | Footprint | Facing | Wall |
@@ -397,6 +410,14 @@ the ground hatch under them is painted out and the crown reads as one mass.
 | `fire_pit` | the stone surround with its joints, the fire bowl, four logs and the embers | — | symmetric | |
 | `shed` · `garden_shed` | the walls with a pair of doors swung in from the front, the floor, and a **dashed** roof ridge | 2400 × 1800 | derived | |
 | `clothesline` · `washing_line` | a T-post at each end of the run with four lines strung between the arms | — | free | |
+| `palm` · `palm_tree` | a crown of eight long pointed **fronds**, one closed outline in the lawn tint, each with its midrib and two pairs of leaflets, round the trunk | — | symmetric | |
+| `flower_bed` · `planting_bed` | the bed with its edging, and two rows of six-petal **flowers** in the lawn tint along its own long axis | 2000 × 800 | free | |
+| `boulder` · `rock` | a faceted outline with a broad base, and the three ridges that run from its crown | — | free | |
+| `picnic_table` | the top with its board joints, a **bench along each long side**, and the end frames crossing between them | 1800 × 1500 | free | |
+| `slide` · `playground_slide` | the **chute** with its bed and its rounded run-out lip, the platform at its head, and the ladder up to it | 800 × 3000 | derived | |
+| `bollard` | the post from above: its body, the cap's chamfer ring and its centre | 200 × 200 | symmetric | |
+| `bike_rack` · `cycle_stand` | a row of Sheffield **hoops** across the run, one per short side of run (one to ten), each with a base plate at both feet | 2000 × 800 | free | |
+| `raised_bed` · `vegetable_bed` | the timber frame with a **post in each corner**, the soil, and two rows of seedlings along its long axis | 2400 × 1200 | free | |
 
 **Nothing out here carries `requiresWall`, and that is a decision.** The flag means services —
 supply, waste, venting, or hanging off a wall by definition — and
@@ -421,9 +442,10 @@ rule `upper_cabinet` follows indoors and the one `roof` and `void` ship: the `pe
 and rafters (its posts are cut, so they are solid), the `shed`'s roof ridge, and the `hedge`'s
 stem line under its foliage.
 
-The five `directional` kinds (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`) are the ones you
-would write `against wall` or `anchor` about, and with the `hedge` (a run, 2000 × 600) they are
-the six that carry a footprint — so `furniture shed against wall fence` needs no `size`.
+The six `directional` kinds (`bbq`, `bin`, `mailbox`, `ev_charger`, `shed`, `slide`) are the ones
+you would write `against wall` or `anchor` about, and they carry a footprint, as do the runs
+(`hedge`, `flower_bed`, `raised_bed`, `bike_rack`), the `picnic_table` and the `bollard` — so
+`furniture shed against wall fence` needs no `size`.
 `outdoor_chair` is deliberately **free**, for the reason every other seat in the catalogue is:
 seating is arranged, not installed.
 
