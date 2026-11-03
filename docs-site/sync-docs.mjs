@@ -70,6 +70,11 @@ const SITE_PAGES = [
   ["docs-site/embed.md", "embed.md"],
   ["docs-site/privacy.md", "privacy.md"],
   ["docs-site/terms.md", "terms.md"],
+  ["docs-site/floor-plans-as-code.md", "floor-plans-as-code.md"],
+  ["docs-site/floor-plan-dsl.md", "floor-plan-dsl.md"],
+  ["docs-site/mcp.md", "mcp.md"],
+  ["docs-site/javascript.md", "javascript.md"],
+  ["docs-site/vs-mermaid.md", "vs-mermaid.md"],
 ];
 
 /**

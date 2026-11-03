@@ -40,6 +40,11 @@ const DOCS = [
   "docs-site/index.md",
   "docs-site/examples.md",
   "docs-site/gallery.md",
+  "docs-site/floor-plans-as-code.md",
+  "docs-site/floor-plan-dsl.md",
+  "docs-site/mcp.md",
+  "docs-site/javascript.md",
+  "docs-site/vs-mermaid.md",
   "docs/analysis.md",
   "docs/axonometric.md",
   "docs/language-reference.md",
@@ -136,6 +141,11 @@ describe("agent-facing docs never tell an agent to run a bare `arch` or a prompt
     "docs-site/index.md",
     "docs-site/examples.md",
     "docs-site/gallery.md",
+    "docs-site/floor-plans-as-code.md",
+    "docs-site/floor-plan-dsl.md",
+    "docs-site/mcp.md",
+    "docs-site/javascript.md",
+    "docs-site/vs-mermaid.md",
     // The reference pages the docs site syncs from `docs/` (the generated spec is exempt: it keeps
     // `arch <cmd>` under its one alias line).
     "docs/language-reference.md",

@@ -75,6 +75,9 @@ import { compile } from "@chanmeng666/archlang";
 const { svg, diagnostics, scene } = compile(source);
 ```
 
+[The JavaScript library](/javascript) shows the rest of the API and how to generate plans from
+your own parameters.
+
 ## Where to next
 
 - The full [language reference](/reference) covers every element, value, and
@@ -87,3 +90,6 @@ const { svg, diagnostics, scene } = compile(source);
   graph, and the soundness rules — the channel an AI agent uses to verify a plan.
 - The [error catalog](/errors) documents every diagnostic with a cause and a fix.
 - [Examples](/examples) shows complete plans and their rendered output.
+- [The MCP server](/mcp) connects ArchLang to Claude, Cursor, VS Code and other MCP hosts.
+- [ArchLang vs Mermaid](/vs-mermaid) compares the two text-diagram languages and says when to
+  use which.
