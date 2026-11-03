@@ -27,7 +27,15 @@ export { stripAt } from "./replay/strip.js";
 export type { ReplayFacts, StripItem } from "./replay/strip.js";
 export { renderReplay, SWIFTSHADER_ARGS } from "./replay/video.js";
 export type { KeyFrame, VideoOptions, VideoReport } from "./replay/video.js";
-export { GLB_GENERATOR, glbNodeName, levelNodeName, nodeExtras, readGlbNodes, writeGlb } from "./glb/write.js";
+export {
+  bodyMaterialName,
+  GLB_GENERATOR,
+  glbNodeName,
+  levelNodeName,
+  nodeExtras,
+  readGlbNodes,
+  writeGlb,
+} from "./glb/write.js";
 export type { GlbNode } from "./glb/write.js";
 export {
   checkGlb,

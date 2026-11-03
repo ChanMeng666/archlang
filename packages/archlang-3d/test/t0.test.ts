@@ -17,7 +17,10 @@ import {
   adaptPlan,
   assetFor,
   buildMesh,
+  FINISH_PALETTE,
+  finishColour,
   type Furniture,
+  KIND_PALETTE,
   linearRgb,
   MATERIAL_SLOTS,
   PALETTE,
@@ -666,6 +669,29 @@ describe("V1 palette", () => {
     expect(slotColour("wood", "light", "#3f6a8f")).toBe(PALETTE.wood.srgb);
     expect(slotColour("wood", "dark", "#000000")).toMatch(/^#[0-9a-f]{6}$/);
     expect(slotColour("linen", "dark", "#3f6a8f")).not.toBe(PALETTE.linen.srgb);
+  });
+
+  it("gives the building and its floor finishes their own colours, apart from each other (V9)", () => {
+    const all = { ...KIND_PALETTE, ...FINISH_PALETTE, ...PALETTE };
+    for (const [k, m] of Object.entries(all)) {
+      expect(m.srgb, k).toMatch(/^#[0-9a-f]{6}$/);
+      expect(m.alpha, k).toBeGreaterThan(0);
+      expect(m.alpha, k).toBeLessThanOrEqual(1);
+    }
+    // Walls, floors, slab, doors, frames and glass each read apart from one another.
+    const building = [
+      KIND_PALETTE.wall,
+      KIND_PALETTE.slab,
+      KIND_PALETTE.door,
+      KIND_PALETTE["window:frame"],
+      KIND_PALETTE["window:glass"],
+      ...Object.values(FINISH_PALETTE),
+    ].map((m) => m.srgb);
+    expect(new Set(building).size).toBe(building.length);
+    expect(KIND_PALETTE["window:glass"].alpha).toBeLessThan(1);
+    expect(KIND_PALETTE["wall:demolish"].alpha).toBeLessThan(1);
+    expect(finishColour("timber", "light", "#000000")).toBe(FINISH_PALETTE.timber.srgb);
+    expect(finishColour("timber", "dark", "#1b3248")).not.toBe(FINISH_PALETTE.timber.srgb);
   });
 
   it("groups a node's shells by slot in palette order, body first", () => {

@@ -36,7 +36,9 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   L-sofa, chaise, grand piano) is built reflected when the core's Plan JSON says the plan reflects
   it (`Furniture.mirror`, read by `adaptPlan` through `planToJson`).
 - `src/materials.ts`: the material slots and the ONE palette the GLB writer and the viewer both
-  read (a T0 piece stays one node; one primitive or mesh per slot).
+  read (a T0 piece stays one node; one primitive or mesh per slot), the building's kind colours
+  (`KIND_PALETTE`) and the floor finishes (`FINISH_PALETTE`; a room's from its `uses`,
+  `floorFinish`, ledgered `floor-finish-default`).
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure),
   `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js 0.186.1,
   `mountReplay(canvas, payload)` → `seek`/`frameHash`), `viewer.ts` (the HTML's host:

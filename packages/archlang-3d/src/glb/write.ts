@@ -4,9 +4,10 @@
  * node per Mesh3D node, named `<kind>:<id>[:<part>]` (its Mesh3D key without the `L<n>/` prefix, so
  * the global key `L<n>/<name>` IS the Mesh3D key), carrying the node's facts in
  * `extras.archlang`. Each node's shells are one triangle primitive in metres (the µm integers ÷ 10⁶,
- * float32), in glTF axes already (X plan x, Y up, Z plan y). One plain material per kind; a T0
- * piece's node keeps its one node and name but writes one primitive per material slot, material
- * `fixture:<slot>` from the palette the viewer reads too (`materials.ts`, visual-assets V1).
+ * float32), in glTF axes already (X plan x, Y up, Z plan y). One material per kind, a floor's per
+ * finish and a window's frame and glass apart (`bodyMaterialName`, visual-assets V9); a T0 piece's
+ * node keeps its one node and name but writes one primitive per material slot, material
+ * `fixture:<slot>`; every colour from the palette the viewer reads too (`materials.ts`).
  *
  * Deterministic (V-DET-01): nodes in the Mesh3D's canonical order, object keys in a fixed order,
  * `asset.generator` a fixed string with no time. glTF has no "hidden" flag a validator accepts
@@ -17,28 +18,41 @@
  * write path), which the browser bundle's scan forbids (`test/browser-safety.test.ts`).
  */
 import { Document, Logger, WebIO } from "@gltf-transform/core";
-import { linearRgb, type MaterialSlot, PALETTE, slotGroups } from "../materials.js";
-import type { Mesh3D, MeshNode, NodeKind } from "../mesh/types.js";
+import {
+  FINISH_PALETTE,
+  FLOOR_FINISHES,
+  type FloorFinish,
+  KIND_PALETTE,
+  type KindMaterial,
+  linearRgb,
+  type MaterialSlot,
+  PALETTE,
+  type SlotMaterial,
+  slotGroups,
+} from "../materials.js";
+import type { Mesh3D, MeshNode } from "../mesh/types.js";
 import { ARCHLANG_3D_VERSION } from "../scene3d/build.js";
 
 /** `asset.generator`: the package and its version, never a time (plan §3.7). */
 export const GLB_GENERATOR = `archlang-3d ${ARCHLANG_3D_VERSION}`;
 
-/** Plain base colours (linear RGBA) per kind: a neutral massing palette, not a rendering. */
-const COLOUR: Record<NodeKind, [number, number, number, number]> = {
-  slab: [0.55, 0.55, 0.55, 1],
-  floor: [0.8, 0.75, 0.66, 1],
-  column: [0.7, 0.7, 0.7, 1],
-  wall: [0.92, 0.91, 0.88, 1],
-  door: [0.55, 0.4, 0.28, 1],
-  window: [0.6, 0.75, 0.85, 1],
-  opening: [0.6, 0.6, 0.6, 1],
-  furniture: [0.62, 0.64, 0.66, 1],
-  roof: [0.45, 0.42, 0.4, 1],
-};
+/**
+ * The material a node's untagged (`body`) shells are written in (visual-assets V9): a floor's finish
+ * (`floor:<finish>`, from `extras.finish`), a window's frame or glass, a demolished wall's ghost
+ * (`wall:demolish`, B3a), else its kind. Each reads the one palette the viewer reads (`materials.ts`).
+ */
+export function bodyMaterialName(n: MeshNode): string {
+  if (n.kind === "floor") return `floor:${FLOOR_FINISHES.find((f) => f === n.extras.finish) ?? "neutral"}`;
+  if (n.kind === "wall" && n.part === "demolish") return "wall:demolish";
+  if (n.kind === "window" && (n.part === "glass" || n.part === "frame")) return `window:${n.part}`;
+  return n.kind;
+}
 
-/** A demolished wall's ghost (B3a): its own translucent material, `wall:demolish`. */
-const DEMOLISH_COLOUR: [number, number, number, number] = [0.78, 0.33, 0.24, 0.3];
+/** The palette entry behind a {@link bodyMaterialName}. */
+function bodyMaterial(name: string): SlotMaterial {
+  if (name.startsWith("floor:")) return FINISH_PALETTE[name.slice("floor:".length) as FloorFinish];
+  return KIND_PALETTE[name as KindMaterial] ?? KIND_PALETTE.furniture;
+}
 
 /** The glTF node name of a Mesh3D node: its key without the storey prefix (plan §3.6). */
 export const glbNodeName = (n: MeshNode): string => n.key.slice(n.key.indexOf("/") + 1);
@@ -75,16 +89,16 @@ export async function writeGlb(mesh: Mesh3D, opts: { generator?: string } = {}):
 
   const materials = new Map<string, ReturnType<Document["createMaterial"]>>();
   const material = (n: MeshNode) => {
-    const ghost = n.kind === "wall" && n.part === "demolish";
-    const key = ghost ? "wall:demolish" : n.kind;
+    const key = bodyMaterialName(n);
     let m = materials.get(key);
     if (!m) {
+      const p = bodyMaterial(key);
       m = doc
         .createMaterial(key)
-        .setBaseColorFactor(ghost ? DEMOLISH_COLOUR : COLOUR[n.kind])
-        .setMetallicFactor(0)
-        .setRoughnessFactor(1);
-      if (ghost) m.setAlphaMode("BLEND");
+        .setBaseColorFactor([...linearRgb(p.srgb), p.alpha])
+        .setMetallicFactor(p.metallic)
+        .setRoughnessFactor(p.roughness);
+      if (p.alpha < 1) m.setAlphaMode("BLEND");
       materials.set(key, m);
     }
     return m;

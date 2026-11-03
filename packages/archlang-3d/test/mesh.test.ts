@@ -247,6 +247,7 @@ describe("Mesh3D on the shipped corpus", () => {
       "slab-default-200",
       "door-pose-closed",
       "floor-finish-5",
+      "floor-finish-default",
       "window-frame-40x60",
       // Cards V5 and V6 built every family `FURNITURE_HEIGHT_MM` names, so on the corpus a piece is
       // a T0 height or a grey box's default. `furniture-height-family` is left to a listed family's
@@ -360,5 +361,11 @@ describe("Mesh3D determinism and budget", () => {
  * `appliance`, V-D2), so its node gains a shell and `material(stove)` gains `appliance`. Nothing
  * else moved: with that one stove edit undone, the rest of the round (V5/V6 families, mounts,
  * door caps, ledger rules laneway never fires) hashes to b2f9b86c… exactly.
+ *
+ * Moved by visual-assets card V9 (was 0867ddc0…): each floor is laid in the finish its `uses` give
+ * it (`floorFinish`, `materials.ts`), so each floor node gains `extras.finish` and the ledger one
+ * `floor-finish-default` entry per floor (laneway: r_live timber, r_bath tile, r_bed timber). No
+ * shell moved: with those three extras and three entries removed, the Mesh3D hashes to 0867ddc0…
+ * exactly.
  */
-const LANEWAY_MESH_SHA256 = "0867ddc0ae10f676f19274bbc343e70779e5d8210dbbeaf5f7cf3abcac05c62c";
+const LANEWAY_MESH_SHA256 = "602c89c65a6d3402b2c9286b016a8fee91e0526f2a575485950bf8c9f94afdb6";

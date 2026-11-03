@@ -7,7 +7,8 @@
  * Per storey, at its elevation `e` (µm):
  * - slab: the rooms ∪ the storey's wall outline, less its voids, [e − 200 mm, e] (Q6, `slab.ts`);
  * - floor: each room, a 5 mm finish [e, e + 5 mm], a void inside it as a hole; a room overlapping
- *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`);
+ *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`); laid in the finish its
+ *   `uses` give it (`floorFinish`, `extras.finish`, ledgered `floor-finish-default`);
  * - column: its box, [e, e + storey height];
  * - wall: its body pieces [e, e + h]; under each cut a sill [e, e + sill], over it a lintel
  *   [e + head, e + h] (§4.1 step 2; a cased opening's head at the wall top makes no lintel). The
@@ -30,6 +31,7 @@
  * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3).
  * Stairs, outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
  */
+import { floorFinish } from "../materials.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { type Rect, rectMinus, slabRegion } from "./slab.js";
@@ -315,12 +317,26 @@ function levelNodes(
       ? [f.polygon]
       : lessVoids(f.polygon.outer, lv.voids, `floor:${f.id}`, ledger);
     const z0 = e + (f.lift ?? 0);
+    // Its finish from its declared uses (visual-assets V9): a drafting default, ledgered per floor.
+    const finish = floorFinish(f.uses);
+    ledger.push({
+      kind: "floor",
+      id: f.id,
+      field: "finish",
+      value: finish,
+      provenance: "default",
+      rule: "floor-finish-default",
+    });
     node(
       "floor",
       f.id,
       i,
       pieces.map((p) => prism(p, z0, z0 + FLOOR_FINISH_MM * MM)),
-      { ...(f.uses?.length ? { uses: f.uses.join(" ") } : {}), ...(f.lift ? { lift_mm: f.lift / MM } : {}) },
+      {
+        ...(f.uses?.length ? { uses: f.uses.join(" ") } : {}),
+        ...(f.lift ? { lift_mm: f.lift / MM } : {}),
+        finish,
+      },
     );
   });
 

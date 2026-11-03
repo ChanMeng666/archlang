@@ -26,5 +26,14 @@ export const PIN_GENERATOR = "archlang-3d 0.0.0";
  * Mesh3D alone: the stove's oven door is now an `appliance` part with a dark `screen` window (the
  * core's `stove` material, V-D2), so its node gains an `appliance` primitive. With that stove edit
  * undone the GLB hashes to d0c91a31… exactly; the writer is unchanged.
+ *
+ * Moved by visual-assets card V9 (was 0b934378…) with the Mesh3D (each floor's `extras.finish`)
+ * and the writer: every building material reads the one palette the viewer reads
+ * (`KIND_PALETTE`, `FINISH_PALETTE`, `materials.ts`) instead of the writer's own massing colours,
+ * a floor is written in `floor:<finish>` (laneway: `floor:timber`, `floor:tile`) and a window's
+ * frame and glass in `window:frame` and `window:glass` (translucent, as the viewer draws it)
+ * instead of one `window`. The binary chunk (every vertex and index) is byte-identical; only the
+ * JSON's materials, the primitives' material indices and the three floor nodes' extras moved.
+ * 111 908 → 112 436 bytes.
  */
-export const LANEWAY_GLB_SHA256 = "0b9343780817e08540a01a3d8063947c44d8915ae46b7fc0181d403dcc2f3fd7";
+export const LANEWAY_GLB_SHA256 = "fe9df0cb0589599c359f4b3c9c8625cd1baf34a35b1ffa40388475c7f56e0eb5";

@@ -58,7 +58,7 @@ const m = (srgb: string, roughness: number, metallic = 0, alpha = 1): SlotMateri
  * brushed steel, a sage-grey kitchen and muted greens outdoors.
  */
 export const PALETTE: Readonly<Record<Exclude<MaterialSlot, "body">, SlotMaterial>> = {
-  wood: m("#c9a57a", 0.75),
+  wood: m("#c6a785", 0.75),
   wood_dark: m("#7b5b44", 0.7),
   fabric: m("#968f85", 0.95),
   cushion: m("#bfb7ab", 0.95),
@@ -77,6 +77,66 @@ export const PALETTE: Readonly<Record<Exclude<MaterialSlot, "body">, SlotMateria
   soil: m("#5f4b3b", 1),
   water: m("#a3c6d0", 0.1, 0, 0.7),
 };
+
+/**
+ * The building's own materials (visual-assets V9), by Mesh3D kind, and `<kind>:<part>` where a
+ * part differs (a window's frame and glass, a demolished wall's ghost): the light replay's colours
+ * and, through `linearRgb`, the GLB's. Soft daylight on a refined model: warm-white walls on a
+ * warm-grey concrete slab, oak doors, slim dark-bronze window frames, pale glass. A floor takes its
+ * finish's colour (`FINISH_PALETTE`), never a kind colour.
+ */
+export const KIND_PALETTE = {
+  slab: m("#bdb6ab", 0.9),
+  column: m("#e6e1d8", 0.85),
+  wall: m("#f2f0eb", 0.9),
+  door: m("#c2a27e", 0.7),
+  "window:frame": m("#55534f", 0.5),
+  "window:glass": m("#bcd6e0", 0.05, 0, 0.4),
+  opening: m("#e6e1d8", 0.85),
+  furniture: m("#d6cec1", 0.9),
+  roof: m("#9c958a", 0.9),
+  "wall:demolish": m("#c8553d", 0.9, 0, 0.3),
+} as const satisfies Readonly<Record<string, SlotMaterial>>;
+
+export type KindMaterial = keyof typeof KIND_PALETTE;
+
+/**
+ * The replay's colour for a wall's cut top (its cap, the faces at its full height): the poché of a
+ * plan, read as the section through a model whose roof is lifted off. A display convention of the
+ * viewer, not a material: the GLB has no cap.
+ */
+export const WALL_CAP_SRGB = "#8f877d";
+
+/** The floor finishes a room's floor is laid in (visual-assets V9): colour only, no texture. */
+export const FLOOR_FINISHES = ["timber", "tile", "neutral"] as const;
+export type FloorFinish = (typeof FLOOR_FINISHES)[number];
+
+/** Light oak boards, pale stone tile, and the neutral finish a room whose use is unknown keeps. */
+export const FINISH_PALETTE: Readonly<Record<FloorFinish, SlotMaterial>> = {
+  timber: m("#cdb596", 0.6),
+  tile: m("#e3e1db", 0.35),
+  neutral: m("#e8e2d7", 0.9),
+};
+
+/**
+ * A room's floor finish from its declared `uses` (the core's use kinds, read off the plan by
+ * `adaptPlan`), first rule that names one of them: a wet room is tiled whatever else it is (`bath
+ * wc`, `utility wc`); a room lived in, slept or worked in, or walked through is timber (an open
+ * `living kitchen` keeps its boards); a kitchen or an entry on its own is tiled; anything else (a
+ * garage, a store, a room without `uses`) keeps the neutral finish. A drafting default, ledgered per
+ * floor as `floor-finish-default` (ADR 0030 decision 5); never read from a label.
+ */
+export const FLOOR_FINISH_RULES: ReadonlyArray<readonly [FloorFinish, readonly string[]]> = [
+  ["tile", ["bath", "wc", "utility"]],
+  ["timber", ["living", "dining", "bedroom", "office", "hall", "circulation"]],
+  ["tile", ["kitchen", "entry"]],
+];
+
+/** The finish {@link FLOOR_FINISH_RULES} gives a room with these `uses`. */
+export function floorFinish(uses: readonly string[] | undefined): FloorFinish {
+  for (const [finish, kinds] of FLOOR_FINISH_RULES) if (uses?.some((u) => kinds.includes(u))) return finish;
+  return "neutral";
+}
 
 /** sRGB `#rrggbb` → linear RGB, each channel rounded to 4 decimals (glTF base colours are linear). */
 export function linearRgb(hex: string): [number, number, number] {
@@ -101,6 +161,23 @@ export function slotColour(slot: Exclude<MaterialSlot, "body">, theme: "light" |
   const mix = (i: number): string => {
     const a = Number.parseInt(own.slice(i, i + 2), 16);
     const b = Number.parseInt(furniture.slice(i, i + 2), 16);
+    return Math.round(a * 0.4 + b * 0.6)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${mix(1)}${mix(3)}${mix(5)}`;
+}
+
+/**
+ * A floor finish's viewer colour under a replay theme: the finish itself on the light theme; on the
+ * dark one, 60% of the way to the theme's floor colour (the same arithmetic as `slotColour`).
+ */
+export function finishColour(finish: FloorFinish, theme: "light" | "dark", floor: string): string {
+  const own = FINISH_PALETTE[finish].srgb;
+  if (theme === "light") return own;
+  const mix = (i: number): string => {
+    const a = Number.parseInt(own.slice(i, i + 2), 16);
+    const b = Number.parseInt(floor.slice(i, i + 2), 16);
     return Math.round(a * 0.4 + b * 0.6)
       .toString(16)
       .padStart(2, "0");
