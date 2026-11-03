@@ -14,25 +14,25 @@
   "size": [480, 270],
   "plans": {
     "laneway-house.arch": {
-      "stage:brief": "5ec31203f4c37e910277894cf491fa3b5963e286086fee734447f7040d554e02",
-      "stage:rooms": "5fa9c2262556ca4ff35b00e7299bc4b8997ad06f96b85f84d7e98d2349a0cfad",
-      "stage:walls": "226de8337694ff42788a1e09ffaa112269c68c1826715ccf0af0990c96db056a",
-      "stage:openings": "b69c6417134f0bd340432c211ac78094174a84fd9e3b8528d657b6da0c460fb2",
-      "stage:fixtures": "9b19c4e5e70c111fe68f3b5ad31396e2086d052e6c9c8bf4546753b8112a4fb5",
-      "tilted": "20dc9ca1df06c6808b22adb0fa582c9cd60791d04d1dffacbdb817e24bb24a06",
-      "end": "0eeb2d7187bae0a9935f5e8d50ce606192882e11ff476f205f4ed1614411c9ea"
+      "stage:brief": "53319b3d5d0d7fa01eb5fbcb8837b1d6efdffa3c16d079a7f0d29f37fdb84538",
+      "stage:rooms": "884694b7e28f28ee7048fe302b42ba7ff402230ca5339a4a30fe45b4bb467658",
+      "stage:walls": "8b624649456b8e964cc7a7097acfcb31f6ba25d6515c678c81d786f2a6cba6ce",
+      "stage:openings": "7ff8995dd7f9d8b5040f3a243bd92cfbfb6f3b3c43bd3c857246c60308eaf2e4",
+      "stage:fixtures": "06853432e730c2f72c1ea413a47a756c4e1c86bb8c42c554a29cad64c36cf180",
+      "tilted": "df6661dfd766d093a87f1e08e865f30058851f77cfca960f6ee42a0f1ef836ba",
+      "end": "c4517a8e2bce335633de4f251254ea078818732bbd544c9f3687b5a2d83513f8"
     },
     "two-storey.arch": {
-      "stage:brief": "d569e5eaec80a35b9ffb7edb32ce6863892d5b7726337e364bce642e4e0584f4",
-      "stage:rooms": "c33ac44dd55f10b21fe19747e0f519493c16092ef0f6e14b4719f1104881c1f9",
-      "stage:walls": "7fb84e8848bea8eedf0a975c3769e27c5d946803c6adc1fe8f5c0f892dfbe4a8",
-      "stage:openings": "e7f1b4949681132fd40440a75ff73efd8be2fe116e82ff27a83c1914687adc5a",
-      "stage:fixtures": "6e1887d66d940e745eb95cf3b2e734c385496583c7acc944e6850f535fb8f6d3",
-      "stop:1": "691309021b3b0cb9b5fcbafb77de7ccb5d78f016a1b6baf6f201d928b834a10e",
-      "tilted": "8959ae48c6028067fdf72d022bdae43ed87ef823f8608322e85f4e951b86724c",
-      "storey:2": "78ca724f3b72538ee9762b2ac774fed640fd828850390dc4e2b2eefbe4558f33",
-      "stop:2": "a037c1f1bfd41e6ce5f162ae666ab8d1301437db5677e6107a3279960572d321",
-      "end": "a037c1f1bfd41e6ce5f162ae666ab8d1301437db5677e6107a3279960572d321"
+      "stage:brief": "81f9acfd0706792f84121b5261bece104e63aa7d319a70295bbb12a2f74043eb",
+      "stage:rooms": "6f88461365f13026acbddb5a4630e3c1aa06f61a4d720e26e839fff0f6cf6d17",
+      "stage:walls": "164f78b8ac488eb7d95eb14aa6b70180316330c1f8ee19d7a6f48387836b2805",
+      "stage:openings": "c5e33ae931bada6dedc22a5e36be4091df0c7fb10fe2bcaf4df37da6050ec81e",
+      "stage:fixtures": "a985007323e6ede22a4f0d5c8ed9033c43ba0b51d997f02f0cd2d66146af99d5",
+      "stop:1": "58b2de1f9217e07bac8e96813226ad63f437e2507dd0f3660f52ec997892b0df",
+      "tilted": "827be4d20b2f4fb607047ae5217689eb88ac0a50e88f3d195689bf4bbdfb8123",
+      "storey:2": "d96412c2c87ace30e33197fcf1b32f0335f4da84a5e6152b3d058599479ffd28",
+      "stop:2": "7a2c8d1126f3c1d86338439fe66940f01bdc8652113b5f7780f9374d7481b771",
+      "end": "7a2c8d1126f3c1d86338439fe66940f01bdc8652113b5f7780f9374d7481b771"
     }
   }
 }

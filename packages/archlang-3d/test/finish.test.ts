@@ -2,12 +2,17 @@
  * The mesh finish (card A2b), one block per item the card names: T0 parametric furniture (plan
  * §4.4), V-GEO-05 `W3D_FLOOR_OVERLAP` with its 0.5 mm lift, window parts kept inside their cut on a
  * curved host, wall bodies meeting their sills and lintels vertex to vertex, the slab as rooms ∪
- * wall outline less voids, and a demolished wall (B3a) drawn from `ir.drawn` as a ghost.
+ * wall outline less voids, and a demolished wall (B3a) drawn from `ir.drawn` as a ghost; and each
+ * floor's finish by its room's `uses` (visual-assets V9).
  */
 import { describe, expect, it } from "vitest";
 import {
   adaptPlan,
   buildMesh,
+  FINISH_PALETTE,
+  FLOOR_FINISH_RULES,
+  FLOOR_FINISHES,
+  floorFinish,
   type Mesh3D,
   type MeshNode,
   type Pt,
@@ -545,5 +550,61 @@ describe("a demolished wall (B3a), from ir.drawn", () => {
   it("adds nothing to a plan that demolishes nothing (no `demolished` key)", () => {
     for (const { n, scene } of corpus.filter((c) => c.n !== "remodel.arch"))
       for (const lv of scene.levels) expect("demolished" in lv, n).toBe(false);
+  });
+});
+
+describe("floor finish by room use (visual-assets V9)", () => {
+  it("tiles a wet room whatever else it is, boards a lived-in one, tiles a lone kitchen, else neutral", () => {
+    expect(floorFinish(["bath"])).toBe("tile");
+    expect(floorFinish(["utility", "wc"])).toBe("tile");
+    expect(floorFinish(["living", "bath"])).toBe("tile");
+    expect(floorFinish(["living", "kitchen"])).toBe("timber");
+    expect(floorFinish(["hall", "entry", "circulation"])).toBe("timber");
+    expect(floorFinish(["kitchen"])).toBe("tile");
+    expect(floorFinish(["entry"])).toBe("tile");
+    expect(floorFinish(["garage"])).toBe("neutral");
+    expect(floorFinish(["storage"])).toBe("neutral");
+    expect(floorFinish([])).toBe("neutral");
+    expect(floorFinish(undefined)).toBe("neutral");
+    // Every finish a rule names is a palette finish, and every finish has a colour.
+    for (const [f] of FLOOR_FINISH_RULES) expect(FLOOR_FINISHES).toContain(f);
+    expect(Object.keys(FINISH_PALETTE).sort()).toEqual([...FLOOR_FINISHES].sort());
+    expect(new Set(Object.values(FINISH_PALETTE).map((m) => m.srgb)).size).toBe(FLOOR_FINISHES.length);
+  });
+
+  it("lays every floor of the corpus in its uses' finish, in extras and once in the ledger (ADR 0030 d5)", () => {
+    let floors = 0;
+    for (const { n, scene, mesh } of corpus) {
+      const entries = mesh.assumptions.filter((a) => a.rule === "floor-finish-default");
+      for (const lv of scene.levels) {
+        for (const f of lv.floors) {
+          const want = floorFinish(f.uses);
+          const nodes = mesh.nodes.filter((x) => x.kind === "floor" && x.id === f.id && x.level === lv.level);
+          for (const nd of nodes) expect(nd.extras.finish, `${n} ${nd.key}`).toBe(want);
+          const mine = entries.filter((a) => a.id === f.id && a.value === want);
+          expect(mine.length, `${n} ${f.id}`).toBeGreaterThanOrEqual(1);
+          expect(mine[0], `${n} ${f.id}`).toMatchObject({ kind: "floor", field: "finish", provenance: "default" });
+          floors++;
+        }
+      }
+      // One entry per floor of the scene, no more.
+      expect(entries.length, n).toBe(scene.levels.reduce((k, lv) => k + lv.floors.length, 0));
+    }
+    expect(floors).toBeGreaterThan(50);
+  });
+
+  it("reads the flagship's rooms as an architect would floor them", () => {
+    const m = built(example("furnished-flat.arch")).mesh;
+    const finish = Object.fromEntries(m.nodes.filter((x) => x.kind === "floor").map((x) => [x.id, x.extras.finish]));
+    // Each from the room's `uses` in the source; `r_util` declares none, so it keeps the neutral finish.
+    expect(finish).toEqual({
+      r_live: "timber",
+      r_kitchen: "tile",
+      r_util: "neutral",
+      r_hall: "timber",
+      r_bed1: "timber",
+      r_bed2: "timber",
+      r_bath: "tile",
+    });
   });
 });

@@ -9,9 +9,20 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { compile } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, linearRgb, PALETTE, slotGroups } from "../src/index.js";
+import {
+  adaptPlan,
+  buildMesh,
+  FINISH_PALETTE,
+  type FloorFinish,
+  KIND_PALETTE,
+  type KindMaterial,
+  linearRgb,
+  PALETTE,
+  slotGroups,
+} from "../src/index.js";
 import { WebIO } from "@gltf-transform/core";
 import {
+  bodyMaterialName,
   checkNaming,
   GLB_GENERATOR,
   glbJson,
@@ -111,7 +122,7 @@ describe("GLB from Mesh3D", () => {
       expect(node.length, n.key).toBe(1);
       const names = (json.meshes[node[0]?.mesh ?? -1]?.primitives ?? []).map((p) => json.materials[p.material]?.name);
       const groups = slotGroups(n.shells);
-      expect(names, n.key).toEqual(groups.map((g) => (g.slot === "body" ? n.kind : `fixture:${g.slot}`)));
+      expect(names, n.key).toEqual(groups.map((g) => (g.slot === "body" ? bodyMaterialName(n) : `fixture:${g.slot}`)));
       // The viewer's meshes for the node: the same slots in the same order, or one mesh when unslotted.
       const v = viewer.get(n.key);
       if (n.shells.some((s) => s.slot)) {
@@ -134,6 +145,34 @@ describe("GLB from Mesh3D", () => {
       expect(m.alphaMode === "BLEND", m.name).toBe(p.alpha < 1);
     }
     expect(json.materials.some((m) => m.name === "fixture:glass" && m.alphaMode === "BLEND")).toBe(true);
+  });
+
+  it("writes the building's materials from the palette the viewer reads: a floor per finish, a window's frame and glass apart (V9)", async () => {
+    const { src, mesh } = meshOf("laneway-house.arch");
+    const json = JSON.parse(glbJson(await writeGlb(mesh))) as {
+      materials: Array<{
+        name: string;
+        alphaMode?: string;
+        pbrMetallicRoughness?: { baseColorFactor?: number[]; metallicFactor?: number; roughnessFactor?: number };
+      }>;
+    };
+    const building = json.materials.filter((m) => !m.name.startsWith("fixture:"));
+    expect(building.map((m) => m.name).sort()).toEqual(
+      ["door", "floor:tile", "floor:timber", "roof", "slab", "wall", "window:frame", "window:glass"].sort(),
+    );
+    for (const m of building) {
+      const p = m.name.startsWith("floor:")
+        ? FINISH_PALETTE[m.name.slice("floor:".length) as FloorFinish]
+        : KIND_PALETTE[m.name as KindMaterial];
+      expect(m.pbrMetallicRoughness?.baseColorFactor, m.name).toEqual([...linearRgb(p.srgb), p.alpha]);
+      expect(m.pbrMetallicRoughness?.roughnessFactor ?? 1, m.name).toBe(p.roughness);
+      expect(m.alphaMode === "BLEND", m.name).toBe(p.alpha < 1);
+    }
+    // The viewer draws each floor in the finish the GLB writes it in.
+    const viewer = replayPayload(mesh, { title: "l", svg: compile(src, { world: WORLD }).svg }).nodes;
+    for (const n of mesh.nodes.filter((x) => x.kind === "floor")) {
+      expect(bodyMaterialName(n), n.key).toBe(`floor:${viewer.find((v) => v.key === n.key)?.finish}`);
+    }
   });
 
   it("V-GLTF-02 fails a GLB that lacks a Mesh3D node", async () => {

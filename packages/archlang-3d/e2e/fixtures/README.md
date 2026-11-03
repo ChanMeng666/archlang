@@ -13,6 +13,21 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-taken by visual-assets card V9 (2026-11-04, viewer polish) on Windows 11 x64 with the same
+Chromium build and command: the replay is lit and coloured anew, so every one of the 17 frames
+moved, by design: a hemisphere light (warm-white sky over a warm-grey ground), one fixed key and a
+soft fill replace the ambient light and the single sun, under three.js's neutral tone mapping; the
+building's colours are the shared palette (`KIND_PALETTE`, `src/materials.ts`, which the GLB now
+reads too: slab, walls, doors, window frames and glass); each floor is laid in its room's finish
+(`FINISH_PALETTE`: timber, tile, neutral, by `uses`); a wall's cut top is drawn in the cap colour;
+and every face is pushed back by a polygon offset so the outlines no longer stipple. The background
+is unchanged (`#f7f5f0`). `stage:brief` (the slab alone) moves with the lights and the slab colour,
+every later frame with all of the above. The geometry did not move: laneway's GLB binary chunk is
+byte-identical and its Mesh3D differs only by each floor's `extras.finish` and ledger entry
+(`test/mesh.test.ts`, `test/pins.ts`). CI's `check-3d` job (ubuntu-latest x64, the same
+Chromium build; GitHub Actions run 41684705914) then rendered the same 17 hashes, byte for byte,
+and failed only because Linux was not listed; the Linux entry was added back with the hashes unchanged.
+
 Re-taken by visual-assets cards V5/V6 (2026-11-04, PR #461, red-team round 1 S3) on Windows 11 x64
 with the same Chromium build and command: the stove's oven door is now an `appliance` part with a
 dark `screen` window (it was one `screen` part), so the 3D stove carries the core's `stove`

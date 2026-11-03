@@ -3,7 +3,7 @@
  * for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D
  * preview tab builds it in the browser (card A5) and mounts it with `mountReplay`.
  */
-import { type MaterialSlot, slotGroups } from "../materials.js";
+import { type FloorFinish, FLOOR_FINISHES, type MaterialSlot, slotGroups } from "../materials.js";
 import type { Mesh3D } from "../mesh/types.js";
 import { endElevation } from "./camera.js";
 import type { ReplayFacts } from "./strip.js";
@@ -24,6 +24,8 @@ export interface ReplayNode {
    * without a slotted shell, which is then drawn exactly as before.
    */
   groups?: Array<{ slot: MaterialSlot; count: number }>;
+  /** A floor's finish (visual-assets V9, `extras.finish`), drawn in its colour; absent on every other node. */
+  finish?: FloorFinish;
 }
 
 export interface ReplayPayload {
@@ -107,6 +109,7 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
           runs.push({ slot: g.slot, count: indices.length - start });
         }
         const lift = lifts.get(n.level) ?? 0;
+        const finish = FLOOR_FINISHES.find((f) => f === n.extras.finish);
         return {
           key: n.key,
           kind: n.kind,
@@ -115,6 +118,7 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
           positions,
           indices,
           ...(slotted ? { groups: runs } : {}),
+          ...(n.kind === "floor" && finish ? { finish } : {}),
         };
       }),
     events: timeline(mesh),

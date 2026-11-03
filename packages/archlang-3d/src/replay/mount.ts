@@ -7,17 +7,18 @@
  * a frame.
  */
 import {
-  AmbientLight,
   BufferAttribute,
   BufferGeometry,
   Color,
   DirectionalLight,
   EdgesGeometry,
   Group,
+  HemisphereLight,
   LineBasicMaterial,
   LineSegments,
   Mesh,
   MeshLambertMaterial,
+  NeutralToneMapping,
   OrthographicCamera,
   PerspectiveCamera,
   Scene,
@@ -34,7 +35,7 @@ import {
   frameCamera,
   START_FOV,
 } from "./camera.js";
-import { PALETTE, slotColour } from "../materials.js";
+import { finishColour, KIND_PALETTE, PALETTE, slotColour, WALL_CAP_SRGB } from "../materials.js";
 import type { ReplayPayload } from "./payload.js";
 import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
@@ -54,26 +55,22 @@ export interface ReplayHandle {
   dispose: () => void;
 }
 
+/**
+ * The replay's themes. The light theme's building colours ARE the shared palette (`KIND_PALETTE`,
+ * `FINISH_PALETTE`, `materials.ts`), the GLB's too; the dark (blueprint) theme is the viewer's own.
+ * `edge` is the outline every solid but the slab carries, `cap` a wall's cut top.
+ */
 const THEMES = {
   light: {
     background: "#f7f5f0",
-    edge: "#5b5650",
-    colors: {
-      slab: "#cfc8bc",
-      floor: "#ece5d8",
-      column: "#bdb5a8",
-      wall: "#f4f1eb",
-      roof: "#9c958a",
-      door: "#b48a5c",
-      "window:frame": "#e9e6e0",
-      "window:glass": "#a9c7d8",
-      "wall:demolish": "#c8553d",
-      furniture: "#d9d1c3",
-    } as Record<string, string>,
+    edge: "#8f877c",
+    cap: WALL_CAP_SRGB,
+    colors: Object.fromEntries(Object.entries(KIND_PALETTE).map(([k, v]) => [k, v.srgb])) as Record<string, string>,
   },
   dark: {
     background: "#0f2235",
     edge: "#cfe3f5",
+    cap: "#cfe3f5",
     colors: {
       slab: "#20384f",
       floor: "#1b3248",
@@ -87,6 +84,25 @@ const THEMES = {
       furniture: "#3f6a8f",
     } as Record<string, string>,
   },
+} as const;
+
+/**
+ * The replay's lights (visual-assets V9): directions are world vectors (X plan x, Y up, Z plan y)
+ * toward the light; the end camera looks from azimuth −32° (`END_AZIMUTH`), so the key, from the
+ * west and a little south, lights one of the two wall faces it sees and leaves the other in the
+ * sky's half-light. No shadow maps: on SwiftShader a 2048² PCF map for the key cost ~55% more per
+ * frame (1600 × 900, measured for V9), over the card's ~30% budget.
+ */
+const LIGHT = {
+  sky: 0xf8fbff,
+  ground: 0xd9d2c7,
+  hemi: 2.4,
+  keyColour: 0xfffaf2,
+  key: 2.7,
+  keyFrom: [-1, 1.25, 0.3] as [number, number, number],
+  fillColour: 0xe4ecf5,
+  fill: 0.5,
+  fillFrom: [0.7, 0.5, -0.6] as [number, number, number],
 } as const;
 
 /**
@@ -118,12 +134,19 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
   const renderer = new WebGLRenderer({ canvas: gl, antialias: false, preserveDrawingBuffer: true });
   renderer.setPixelRatio(1);
   renderer.setSize(W, H, false);
+  // Neutral tone mapping rolls a sunlit white off softly instead of clipping it to flat paper.
+  renderer.toneMapping = NeutralToneMapping;
   const scene = new Scene();
   scene.background = new Color(theme.background);
-  scene.add(new AmbientLight(0xffffff, 1.6));
-  const sun = new DirectionalLight(0xffffff, 1.4);
-  sun.position.set(-0.6, 1.4, 0.9);
-  scene.add(sun);
+  // Soft daylight, fixed in the world (the replay is a function of t alone): a warm sky over a
+  // warm-grey ground, one key from high on the camera's left, a cool fill from the far side.
+  scene.add(new HemisphereLight(LIGHT.sky, LIGHT.ground, LIGHT.hemi));
+  const key = new DirectionalLight(LIGHT.keyColour, LIGHT.key);
+  key.position.set(...LIGHT.keyFrom);
+  scene.add(key);
+  const fill = new DirectionalLight(LIGHT.fillColour, LIGHT.fill);
+  fill.position.set(...LIGHT.fillFrom);
+  scene.add(fill);
 
   // Nodes in millimetres. Each node rises about its own base (its lowest point).
   const nodes = new Map<string, { g: Group; flat: number }>();
@@ -160,6 +183,7 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
       glass: boolean,
       opacity: number,
       normals: boolean,
+      edged = true,
     ) => {
       const geo = new BufferGeometry();
       geo.setAttribute("position", attr);
@@ -167,21 +191,24 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
       if (normals) geo.computeVertexNormals();
       // A demolished wall (B3a) is a ghost: translucent, writing no depth, never read as structure.
       const ghost = key === "wall:demolish";
+      const flatLaid = n.kind === "floor" || n.kind === "slab";
       const mat = new MeshLambertMaterial({
         color: new Color(colour),
         transparent: glass || ghost,
         opacity: glass ? opacity : ghost ? 0.3 : 1,
         depthWrite: !ghost,
         flatShading: true,
-        // The floor finish sits a few millimetres under every footprint: pushed back in depth, so a
-        // flat footprint never fights it in perspective.
-        polygonOffset: n.kind === "floor" || n.kind === "slab",
+        // Every face is pushed back a little, so the outline drawn on it wins the depth test
+        // cleanly instead of stippling into a dashed line. The floor finish sits a few millimetres
+        // under every footprint: pushed back further, so a flat footprint never fights it in
+        // perspective.
+        polygonOffset: true,
         polygonOffsetFactor: 1,
-        polygonOffsetUnits: 4,
+        polygonOffsetUnits: flatLaid ? 4 : 1,
       });
       owned.push(geo, mat);
       g.add(new Mesh(geo, mat));
-      if (n.kind !== "slab" && !glass) {
+      if (n.kind !== "slab" && !glass && edged) {
         const edges = new EdgesGeometry(geo, 30);
         const line = new LineBasicMaterial({ color: new Color(theme.edge) });
         owned.push(edges, line);
@@ -202,9 +229,26 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
           add(attr, run, slotColour(slot, p.theme, furniture), alpha < 1, alpha, false);
         }
       }
+    } else if (n.finish) {
+      // A floor in its finish (visual-assets V9): timber, tile or the neutral one.
+      add(attr, n.indices, finishColour(n.finish, p.theme, THEMES.dark.colors.floor as string), false, 1, true);
+    } else if (key === "wall") {
+      // A standing wall: its faces at full height (its cut top, the triangles whose three corners
+      // all lie there) drawn apart in the cap colour, edgeless (the body's outline already rims it).
+      // The same division as `topY`'s, so the comparison is exact.
+      const atTop = (v: number) => (n.positions[v * 3 + 1] as number) / 1000 === topY;
+      const cap: number[] = [];
+      const body: number[] = [];
+      for (let i = 0; i < n.indices.length; i += 3) {
+        const tri = n.indices.slice(i, i + 3);
+        (tri.every(atTop) ? cap : body).push(...tri);
+      }
+      add(attr, body, theme.colors.wall ?? furniture, false, 1, true);
+      if (cap.length) add(attr, cap, theme.cap, false, 1, true, false);
     } else {
       // Every other node exactly as before the slots (normals computed, though never read).
-      add(attr, n.indices, theme.colors[key] ?? furniture, key === "window:glass", 0.45, true);
+      const glass = key === "window:glass";
+      add(attr, n.indices, theme.colors[key] ?? furniture, glass, glass ? KIND_PALETTE["window:glass"].alpha : 1, true);
     }
     g.visible = false;
     scene.add(g);

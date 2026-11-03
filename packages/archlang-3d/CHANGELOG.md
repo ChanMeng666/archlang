@@ -20,6 +20,20 @@
   the palette (`PALETTE`, `MATERIAL_SLOTS`, `slotColour`, `slotGroups`, `linearRgb`).
 - A small or thin piece keeps every part inside its footprint and its ledgered height; a detail with
   no room is left out, and a hole a part is built without is ledgered (`hole-degenerate`).
+- The replay is lit as a model in soft daylight: a sky-and-ground light, one fixed key light and a
+  soft fill (no shadow maps; still a pure function of `t`), so a wall's two visible faces read apart.
+  Walls are a warm white with their cut tops drawn darker, doors oak, window frames slim and dark,
+  glass pale and translucent; outlines are steady instead of stippled.
+- Each floor is laid in a finish from its room's `uses`: timber for living, dining, bedroom, office,
+  hall and circulation; pale tile for a bath, WC or utility room (whatever else it is) and for a
+  kitchen or entry on its own; a neutral finish otherwise. Colour only. The floor node carries it
+  (`extras.finish`), the ledger records it per floor (`floor-finish-default`), and the GLB writes it
+  as `floor:timber`, `floor:tile` or `floor:neutral`.
+- The GLB's building materials now come from the same palette as the replay (`KIND_PALETTE`,
+  `FINISH_PALETTE`), and a window's frame and glass are written apart (`window:frame`, and
+  `window:glass`, translucent) instead of one `window` material. New exports: `KIND_PALETTE`,
+  `FINISH_PALETTE`, `FLOOR_FINISHES`, `FLOOR_FINISH_RULES`, `floorFinish`, `finishColour`,
+  `WALL_CAP_SRGB`, and `bodyMaterialName` from `./node`.
 - Every catalogued furniture word is built as a T0 piece; none is a grey box any more. Only a word
   outside the core's catalogue still stands as one. New pieces include planting (trees, a conifer,
   shrubs, a hedge, a palm, flower and raised beds), garden and play furniture, vehicles (a car, a

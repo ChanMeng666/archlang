@@ -33,8 +33,21 @@ export {
   t0Shells,
 } from "./mesh/t0.js";
 export type { Part, SectionShape } from "./mesh/t0.js";
-export { linearRgb, MATERIAL_SLOTS, PALETTE, slotColour, slotGroups } from "./materials.js";
-export type { MaterialSlot, SlotMaterial } from "./materials.js";
+export {
+  FINISH_PALETTE,
+  FLOOR_FINISH_RULES,
+  FLOOR_FINISHES,
+  finishColour,
+  floorFinish,
+  KIND_PALETTE,
+  linearRgb,
+  MATERIAL_SLOTS,
+  PALETTE,
+  slotColour,
+  slotGroups,
+  WALL_CAP_SRGB,
+} from "./materials.js";
+export type { FloorFinish, KindMaterial, MaterialSlot, SlotMaterial } from "./materials.js";
 export { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, floorLifts, floorOverlaps, overlapArea } from "./scene3d/overlap.js";
 export type { FloorOverlap } from "./scene3d/overlap.js";
 export type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./mesh/types.js";
