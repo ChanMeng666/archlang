@@ -26,7 +26,7 @@ import {
   type RWindow,
 } from "@chanmeng666/archlang";
 import { circleRing, DEFAULT_CURVE_TOL_MM, tessellateLoops } from "../curves.js";
-import { assetFor } from "../mesh/t0.js";
+import { assetFor, isHandedAsset } from "../mesh/t0.js";
 import { um, umPoint } from "../units.js";
 import { type Point, wallOwnership } from "../walls/ownership.js";
 import { FLOOR_OVERLAP_MIN_UM2, floorLifts, floorOverlaps, overlapArea } from "./overlap.js";
@@ -64,6 +64,12 @@ export interface BuildOptions {
   coreVersion: string;
   /** Largest sagitta (mm) of an arc's chords; default {@link DEFAULT_CURVE_TOL_MM}. */
   curveTolMm?: number;
+  /**
+   * Per storey (in `storeys` order), the ids of the furniture the plan reflects, or `null` where
+   * that is unknown; read only for a handed asset (`T0_HANDED`). Omitted: unknown everywhere, so a
+   * handed piece stands as a grey box. `adaptPlan` fills it from the core's Plan JSON.
+   */
+  mirrored?: ReadonlyArray<ReadonlySet<string> | null>;
 }
 
 const ring = (r: readonly Point[]): Ring3 => r.map(umPoint);
@@ -95,8 +101,27 @@ function floorOf(r: RRoom, tol: number): Floor {
   return { id: r.id, source: source(r), polygon: polygon(outer), ...(r.uses?.length ? { uses: [...r.uses] } : {}) };
 }
 
-function furnitureOf(f: RFurniture): Furniture {
+/**
+ * A piece of furniture. A handed asset (`T0_HANDED`) needs the plan's reflection of the piece: it
+ * carries `mirror` when `mirrored` (this storey's reflected ids, from the core's Plan JSON) holds
+ * it, and when that fact is unknown (`null`: the core could not project the plan) it stands as a
+ * grey box, ledgered, rather than show a hand the drawing may not.
+ */
+function furnitureOf(f: RFurniture, mirrored: ReadonlySet<string> | null, ledger: Assumption[]): Furniture {
   const rotate = f.rotate ?? 0;
+  let asset = assetFor(f.category);
+  const handed = isHandedAsset(asset);
+  if (handed && mirrored === null) {
+    asset = "greybox";
+    ledger.push({
+      kind: "furniture",
+      id: f.id,
+      field: "asset",
+      value: "greybox",
+      provenance: "default",
+      rule: "furniture-handed-mirror-unknown",
+    });
+  }
   return {
     id: f.id,
     source: source(f),
@@ -105,7 +130,8 @@ function furnitureOf(f: RFurniture): Furniture {
     centre: umPoint({ x: f.at.x + f.size.w / 2, y: f.at.y + f.size.h / 2 }),
     size: { w: um(f.size.w), d: um(f.size.h) },
     yawDeg: rotate === 0 ? 0 : -rotate,
-    asset: assetFor(f.category),
+    asset,
+    ...(handed && mirrored?.has(f.id) ? { mirror: true as const } : {}),
   };
 }
 
@@ -256,7 +282,7 @@ function jambsOf(at: Point, width: number, host: RDoor["host"]): [Pt, Pt] {
   return s ? [umPoint(s.hinge), umPoint(s.farJamb)] : [umPoint(at), umPoint(at)];
 }
 
-function levelOf(s: Storey, ledger: Assumption[], tol: number): Level {
+function levelOf(s: Storey, ledger: Assumption[], tol: number, mirrored: ReadonlySet<string> | null): Level {
   const { ir } = s;
   const els = ir.elements;
   const byId = new Map(els.map((e) => [e.id, e] as const));
@@ -328,7 +354,7 @@ function levelOf(s: Storey, ledger: Assumption[], tol: number): Level {
     walls,
     ...(demolished.length > 0 ? { demolished } : {}),
     openings,
-    furniture: of("furniture").map(furnitureOf),
+    furniture: of("furniture").map((f) => furnitureOf(f, mirrored, ledger)),
     stairs: of("stair").map(stairOf),
     voids: of("void").map(box),
     columns: of("column").map(box),
@@ -353,7 +379,7 @@ export function buildScene3D(storeys: readonly Storey[], opts: BuildOptions): Sc
       rule: "curve-tol",
     },
   ];
-  const levels = storeys.map((s) => levelOf(s, ledger, tol));
+  const levels = storeys.map((s, i) => levelOf(s, ledger, tol, opts.mirrored?.[i] ?? null));
   return {
     version: 0,
     kind: "scene3d",

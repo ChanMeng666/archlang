@@ -24,16 +24,16 @@
  *   edge on the open radius and lie inside the one sector (not a misalignment);
  * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3), every part kept
  *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`);
- * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the twelve families it
- *   covers, each part's shell carrying its material slot (`materials.ts`), else a grey box on the
- *   floor finish, its height a per-family default;
+ * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the families it covers
+ *   (on the floor finish, or hung at its family's mount), each part's shell carrying its material
+ *   slot (`materials.ts`), else a grey box on the floor finish, its height a per-family default;
  * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3).
  * Stairs, outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
  */
 import type { Assumption, Level, Polygon, Pt, Scene3D } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { type Rect, rectMinus, slabRegion } from "./slab.js";
-import { T0_HEIGHT_MM, T0_MATERIALS, t0Shells } from "./t0.js";
+import { T0_HEIGHT_MM, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
 const MM = 1000;
@@ -499,6 +499,18 @@ function levelNodes(
             ? "furniture-height-family"
             : "furniture-height-greybox",
       });
+      // A wall-hung family's underside (visual-assets V5, V6): the core exports no height, so the
+      // mount is this package's labelled default.
+      const mount = family ? T0_MOUNT_MM[family] : undefined;
+      if (mount !== undefined) {
+        ledger.push({
+          kind: "furniture",
+          field: `mount_mm(${f.category})`,
+          value: mount,
+          provenance: "default",
+          rule: "furniture-mount-default",
+        });
+      }
       // Its parts' materials (visual-assets V1): a property of the family, never of a label.
       const slots = family ? T0_MATERIALS[family] : undefined;
       if (slots?.length) {
@@ -533,6 +545,7 @@ function levelNodes(
       yaw_deg: f.yawDeg,
       asset,
       ...(f.room ? { room: f.room } : {}),
+      ...(parts && f.mirror ? { mirror: true } : {}),
     });
   });
 

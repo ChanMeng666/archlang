@@ -23,8 +23,10 @@ export {
   partShell,
   sectionRing,
   T0_FAMILIES,
+  T0_HANDED,
   T0_HEIGHT_MM,
   T0_MATERIALS,
+  T0_MOUNT_MM,
   t0LocalParts,
   t0Shells,
 } from "./mesh/t0.js";

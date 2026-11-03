@@ -21,6 +21,8 @@ const REQUIRED_VALUES = [
   "hatchKey",
   "hatchOf",
   "makeVirtualWorld",
+  // A handed piece's reflection (`mirror`), cards V5/V6: read from Plan JSON, never `_mirror`.
+  "planToJson",
 ];
 
 const walk = (d: string): string[] =>

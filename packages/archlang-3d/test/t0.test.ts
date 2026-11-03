@@ -1,12 +1,21 @@
 /**
- * T0 furniture, visual-assets cards V1–V3: the shape primitives (V2) one by one — every shell
- * closed, outward-wound, integer micrometres, its extents the box asked for — then every
+ * T0 furniture, visual-assets cards V1–V3, V5, V6: the shape primitives (V2) one by one — every
+ * shell closed, outward-wound, integer micrometres, its extents the box asked for — then every
  * generator over a sweep of sizes: fitted exactly to its footprint, as tall as its ledgered
- * height, mirror-symmetric across its width, its material slots its family's row (V1). The
- * palette both renderers read is checked last.
+ * height (a wall-hung one from its mount), mirror-symmetric across its width unless its family is
+ * handed (then built reflected when the plan reflects it), its material slots its family's row
+ * (V1). Then the catalogue's names: every word of a built family's core row is registered, and
+ * every family of the batches is built. The palette both renderers read is checked last.
  */
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
+  adaptPlan,
+  assetFor,
+  buildMesh,
+  type Furniture,
   linearRgb,
   MATERIAL_SLOTS,
   PALETTE,
@@ -17,11 +26,16 @@ import {
   slotColour,
   slotGroups,
   T0_FAMILIES,
+  T0_HANDED,
   T0_HEIGHT_MM,
   T0_MATERIALS,
+  T0_MOUNT_MM,
   t0LocalParts,
+  t0Shells,
+  validateScene3D,
 } from "../src/index.js";
 import { openEdges, signedVolume } from "../src/node.js";
+import { WORLD } from "./corpus.js";
 
 /** [min, max] of a shell's x, y and z, µm. */
 function extents(s: Shell): [[number, number], [number, number], [number, number]] {
@@ -169,7 +183,9 @@ describe("V3 generators", () => {
   };
 
   for (const family of Object.keys(T0_FAMILIES)) {
-    it(`${family}: every part sound, fitted to the footprint, ${T0_HEIGHT_MM[family]} mm tall, symmetric, its slots`, () => {
+    const handed = T0_HANDED.has(family);
+    const mount = T0_MOUNT_MM[family];
+    it(`${family}: every part sound, fitted to the footprint, ${T0_HEIGHT_MM[family]} mm tall${mount ? ` from ${mount} mm` : ""}, ${handed ? "handed" : "symmetric"}, its slots`, () => {
       for (const [W, D] of sizes) {
         const what = `${family} ${W}x${D}`;
         const parts = t0LocalParts(family, W, D) ?? [];
@@ -185,22 +201,45 @@ describe("V3 generators", () => {
         const all = shells.map(extents);
         const lo = (k: number) => Math.min(...all.map((e) => e[k]?.[0] as number));
         const hi = (k: number) => Math.max(...all.map((e) => e[k]?.[1] as number));
-        expect([lo(0), hi(0), lo(1), hi(1), lo(2), hi(2)], `${what}: box`).toEqual([
+        expect([lo(0), hi(0), hi(1), lo(2), hi(2)], `${what}: box`).toEqual([
           -W * 500,
           W * 500,
-          0,
           (T0_HEIGHT_MM[family] as number) * 1000,
           -D * 500,
           D * 500,
         ]);
+        // A standing piece stands on the floor; a wall-hung one draws nothing below its mount.
+        if (mount === undefined) expect(lo(1), `${what}: on the floor`).toBe(0);
+        else expect(lo(1), `${what}: hung`).toBeGreaterThanOrEqual(mount * 1000);
         const own = shells.map((s) => sig(s, false)).sort();
         const mirrored = shells.map((s) => sig(s, true)).sort();
-        expect(mirrored, `${what}: mirror-symmetric`).toEqual(own);
+        // A handed family really is handed (else the flag would be vacuous): see "handed" below.
+        if (handed) expect(mirrored, `${what}: handed`).not.toEqual(own);
+        else expect(mirrored, `${what}: mirror-symmetric`).toEqual(own);
         const slots = MATERIAL_SLOTS.filter((m) => shells.some((s) => (s.slot ?? "body") === m));
         expect(slots, `${what}: slots`).toEqual(T0_MATERIALS[family]);
       }
     });
   }
+
+  it("hangs the wall cabinet, the hood, the mirror and the urinal by their underside at every size", () => {
+    for (const family of ["upper_cabinet", "range_hood", "mirror", "urinal"]) {
+      for (const [W, D] of sizes) {
+        const ys = (t0LocalParts(family, W, D) ?? []).map((p) => p.y0);
+        expect(Math.min(...ys), `${family} ${W}x${D}`).toBe(T0_MOUNT_MM[family]);
+      }
+    }
+    expect(T0_MOUNT_MM.upper_cabinet).toBe(1400); // card V6
+  });
+
+  it("hangs a television by its top, 16:9 from its width, its widest panel at its mount", () => {
+    for (const W of [700, 1000, 1200, 1351, 1352, 1600, 2400]) {
+      const ys = (t0LocalParts("tv", W, 80) ?? []).map((p) => p.y0);
+      const ph = Math.min(W * 0.5625, 760);
+      expect(Math.min(...ys), `tv ${W}`).toBeCloseTo((T0_HEIGHT_MM.tv as number) - ph, 9);
+    }
+    expect((T0_HEIGHT_MM.tv as number) - 760).toBe(T0_MOUNT_MM.tv);
+  });
 
   // Small and thin pieces (red-team round 1, PR #459): down to 50 mm, and long slivers both ways.
   const small: Array<[number, number]> = [];
@@ -227,17 +266,235 @@ describe("V3 generators", () => {
         expect(hi(0), `${what}: x`).toBeLessThanOrEqual(W * 500);
         expect(lo(2), `${what}: z`).toBeGreaterThanOrEqual(-D * 500);
         expect(hi(2), `${what}: z`).toBeLessThanOrEqual(D * 500);
-        expect(lo(1), `${what}: on the floor`).toBe(0);
+        const mount = T0_MOUNT_MM[family];
+        if (mount === undefined) expect(lo(1), `${what}: on the floor`).toBe(0);
+        else expect(lo(1), `${what}: hung`).toBeGreaterThanOrEqual(mount * 1000);
         expect(hi(1), `${what}: height`).toBeLessThanOrEqual((T0_HEIGHT_MM[family] as number) * 1000);
-        const own = shells.map((s) => sig(s, false)).sort();
-        expect(shells.map((s) => sig(s, true)).sort(), `${what}: mirror-symmetric`).toEqual(own);
+        if (!T0_HANDED.has(family)) {
+          const own = shells.map((s) => sig(s, false)).sort();
+          expect(shells.map((s) => sig(s, true)).sort(), `${what}: mirror-symmetric`).toEqual(own);
+        }
         for (const s of shells) expect(T0_MATERIALS[family], what).toContain(s.slot);
       }
     });
   }
 
-  it("has no generator for a family outside T0, which stays a grey box", () => {
-    expect(t0LocalParts("desk", 1200, 600)).toBeNull();
+  it("has no generator for a word outside the catalogue, which stays a grey box", () => {
+    expect(t0LocalParts("lectern", 1200, 600)).toBeNull();
+    expect(assetFor("lectern")).toBe("greybox");
+  });
+});
+
+describe("V5, V6: the catalogue's names", () => {
+  // The core's family rows, read from its source (the table is not exported): `["sofa_l",
+  // "corner_sofa"]`, one per family, every alias of the family on its row.
+  const src = readFileSync(
+    join(dirname(fileURLToPath(import.meta.url)), "../../../src/elements/fixtures-glyphs.ts"),
+    "utf8",
+  );
+  const table = src.slice(
+    src.indexOf("const FIXTURE_FAMILIES"),
+    src.indexOf("\n];", src.indexOf("const FIXTURE_FAMILIES")),
+  );
+  const rows = [...table.matchAll(/^\s*\[("[a-z0-9_]+"(?:,\s*"[a-z0-9_]+")*)\],/gm)].map((m) =>
+    [...(m[1] as string).matchAll(/"([a-z0-9_]+)"/g)].map((w) => w[1] as string),
+  );
+  const builtBy = (word: string): string | undefined => {
+    const a = assetFor(word);
+    return a === "greybox" ? undefined : a;
+  };
+
+  it("reads the core's table", () => {
+    expect(rows.length).toBeGreaterThanOrEqual(83);
+    expect(rows).toContainEqual(["sofa_l", "corner_sofa"]);
+    expect(rows).toContainEqual(["bathtub", "tub", "bath"]);
+  });
+
+  it("registers every word of a built family's row, all to one generator, and no word the catalogue lacks", () => {
+    for (const row of rows) {
+      const assets = new Set(row.map(builtBy));
+      if (!row.some((w) => builtBy(w))) continue;
+      expect([...assets], row.join(",")).toHaveLength(1);
+      expect(assets.has(undefined), row.join(",")).toBe(false);
+    }
+    const words = new Set(rows.flat());
+    for (const names of Object.values(T0_FAMILIES)) for (const n of names) expect(words.has(n), n).toBe(true);
+  });
+
+  // The cards' lists (docs/plans/visual-assets/cards.md): no grey box for a family of these batches.
+  const BATCHES: Record<string, string[]> = {
+    V3: [
+      "bed",
+      "sofa",
+      "table",
+      "rug",
+      "wardrobe",
+      "fridge",
+      "counter",
+      "kitchen_sink",
+      "stove",
+      "shower",
+      "wc",
+      "basin",
+    ],
+    V5: [
+      "double_bed",
+      "nightstand",
+      "armchair",
+      "coffee_table",
+      "tv_unit",
+      "chair",
+      "stool",
+      "bench",
+      "desk",
+      "office_chair",
+      "bookshelf",
+      "sofa_l",
+      "piano",
+      "bunk_bed",
+      "crib",
+      "dresser",
+      "vanity",
+      "fireplace",
+      "radiator",
+      "sideboard",
+      "loveseat",
+      "chaise",
+      "tv",
+      "coat_rack",
+      "shoe_cabinet",
+      "mirror",
+    ],
+    V6: [
+      "bathtub",
+      "oven",
+      "dishwasher",
+      "island",
+      "upper_cabinet",
+      "washer",
+      "dryer",
+      "bidet",
+      "urinal",
+      "laundry_sink",
+      "water_heater",
+      "range_hood",
+      "microwave",
+      "bar_counter",
+    ],
+  };
+  for (const [card, families] of Object.entries(BATCHES)) {
+    it(`builds every family of ${card}, and every alias of each, from a T0 generator`, () => {
+      for (const f of families) {
+        const row = rows.find((r) => r[0] === f);
+        expect(row, f).toBeDefined();
+        for (const w of row ?? []) expect(assetFor(w), w).toMatch(/^t0:/);
+      }
+    });
+  }
+});
+
+describe("V5: a handed family is built as the plan draws it", () => {
+  /** A piece at the origin, `w` × `d` mm on the plan, turned `rotate`, reflected or not. */
+  const piece = (family: string, w: number, d: number, rotate: number, mirror: boolean): Furniture => ({
+    id: "p",
+    source: { kind: "furniture", id: "p" },
+    category: family,
+    centre: [0, 0],
+    size: { w: w * 1000, d: d * 1000 },
+    yawDeg: rotate === 0 ? 0 : -rotate,
+    asset: `t0:${family}`,
+    ...(mirror ? { mirror: true as const } : {}),
+  });
+  /** Every vertex of the built piece in plan (x, up, y), optionally reflected across plan x or y. */
+  const cloud = (shells: Array<Shell | null>, flip?: 0 | 2): string[] =>
+    shells
+      .flatMap((s) => {
+        const out: string[] = [];
+        for (let i = 0; s && i < s.positions.length; i += 3) {
+          const p = [s.positions[i], s.positions[i + 1], s.positions[i + 2]] as number[];
+          if (flip !== undefined) p[flip] = -(p[flip] as number) || 0;
+          out.push(`${s.slot}|${p.join(",")}`);
+        }
+        return out;
+      })
+      .sort();
+
+  it("lists exactly the families the core draws handed in their shape", () => {
+    expect([...T0_HANDED].sort()).toEqual(["chaise", "piano", "sofa_l"]);
+  });
+
+  for (const family of ["sofa_l", "chaise", "piano"]) {
+    it(`${family}: a reflected piece is the plain one reflected across its own width, at every quarter turn`, () => {
+      for (const [w, d] of [
+        [2600, 1600],
+        [1600, 800],
+        [1400, 1400],
+        [1200, 2000],
+      ] as const) {
+        for (const rotate of [0, 90, 180, 270]) {
+          const [pw, pd] = rotate % 180 === 0 ? [w, d] : [d, w];
+          const plain = t0Shells(piece(family, pw, pd, rotate, false), 0)?.shells ?? [];
+          const flipped = t0Shells(piece(family, pw, pd, rotate, true), 0)?.shells ?? [];
+          // The piece's width runs along plan x unturned, along plan y at a quarter turn.
+          const axis = rotate % 180 === 0 ? 0 : 2;
+          const what = `${family} ${w}x${d} rotate ${rotate}`;
+          expect(cloud(flipped), what).toEqual(cloud(plain, axis));
+          expect(cloud(flipped), `${what}: handed`).not.toEqual(cloud(plain));
+          for (const s of flipped) {
+            expect(s, what).not.toBeNull();
+            if (!s) continue;
+            expect(openEdges(s), `${what}: closed`).toBe(0);
+            expect(signedVolume(s), `${what}: outward`).toBeGreaterThan(0);
+          }
+        }
+      }
+    });
+  }
+
+  const plan = (body: string) =>
+    `plan "t" { units mm grid 50 wall id=w exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close } room id=r at (0,0) size 8000x6000 label "R" ${body} }`;
+  const scene = (body: string) => {
+    const r = adaptPlan(plan(body), { world: WORLD });
+    if (!r.ok) throw new Error(r.refusal.code);
+    expect(validateScene3D(r.scene)).toEqual([]);
+    return r.scene;
+  };
+
+  it("reads a piece's reflection from the core's Plan JSON: its own `mirror` and a reflecting `place`", () => {
+    const own = scene(
+      "furniture sofa_l at (500,500) size 2600x1600 mirror furniture sofa_l at (500,3500) size 2600x1600",
+    );
+    expect(own.levels[0]?.furniture.map((f) => [f.id, f.mirror ?? false])).toEqual([
+      ["sofa_l_1", true],
+      ["sofa_l_2", false],
+    ]);
+    const placed = scene(
+      "component c() { furniture chaise at (0,0) size 1600x800 furniture bed at (0,1000) size 1500x2000 } place c() as a at (500,500) place c() as b at (4000,500) mirror x",
+    );
+    expect(placed.levels[0]?.furniture.map((f) => [f.id, f.mirror ?? false])).toEqual([
+      ["a.chaise_1", false],
+      ["a.bed_2", false],
+      ["b.chaise_1", true],
+      // A symmetric asset is its own reflection: the fact is not recorded on it.
+      ["b.bed_2", false],
+    ]);
+    const mesh = buildMesh(placed);
+    expect(mesh.nodes.find((n) => n.id === "b.chaise_1")?.extras.mirror).toBe(true);
+    expect(mesh.nodes.find((n) => n.id === "a.chaise_1")?.extras).not.toHaveProperty("mirror");
+  });
+
+  it("stands a handed piece as a grey box, ledgered, when the reflection is unknown", async () => {
+    const { buildScene3D } = await import("../src/scene3d/build.js");
+    const { resolvePlan } = await import("@chanmeng666/archlang");
+    const res = resolvePlan(plan("furniture piano at (500,500) size 1400x1400"), {});
+    if (!res.ir) throw new Error("no ir");
+    const sc = buildScene3D([{ level: 1, ir: res.ir }], { coreVersion: "x" });
+    expect(sc.levels[0]?.furniture[0]?.asset).toBe("greybox");
+    expect(sc.meta.assumptions).toContainEqual(
+      expect.objectContaining({ id: "piano_1", rule: "furniture-handed-mirror-unknown", value: "greybox" }),
+    );
+    const known = buildScene3D([{ level: 1, ir: res.ir }], { coreVersion: "x", mirrored: [new Set()] });
+    expect(known.levels[0]?.furniture[0]?.asset).toBe("t0:piano");
   });
 });
 

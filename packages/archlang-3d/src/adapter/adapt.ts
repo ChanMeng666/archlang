@@ -6,6 +6,7 @@
  */
 import * as core from "@chanmeng666/archlang";
 import type { Diagnostic, World } from "@chanmeng666/archlang";
+import { assetFor, isHandedAsset } from "../mesh/t0.js";
 import { buildScene3D, type Storey } from "../scene3d/build.js";
 import { type MixedHeightJoint, mixedHeightJoints, wallOwnership } from "../walls/ownership.js";
 import { type FloorOverlap, floorOverlaps } from "../scene3d/overlap.js";
@@ -51,6 +52,27 @@ export interface AdaptOptions {
  */
 export const MIN_CORE = "1.45.0";
 
+/** Whether any storey holds a piece of a handed T0 family, whose reflection the model must know. */
+const hasHanded = (storeys: readonly Storey[]): boolean =>
+  storeys.some((s) => s.ir.elements.some((e) => e.kind === "furniture" && isHandedAsset(assetFor(e.category))));
+
+/**
+ * Per storey, the ids of the furniture the plan reflects (its own `mirror`, or a reflecting
+ * `place`), read from the core's Plan JSON — `planToJson`'s `mirror` is a public field, where the
+ * resolved IR's `_mirror` is outside the core's promise (ADR 0031). Each storey `null` (unknown)
+ * when the core cannot project the plan or its pages do not match the storeys. Called only for a
+ * plan that holds a handed piece, so every other plan is resolved once, as before.
+ */
+function mirroredIds(source: string, world: World | undefined, n: number): Array<ReadonlySet<string> | null> {
+  const unknown = Array.from({ length: n }, (): ReadonlySet<string> | null => null);
+  const planToJson = (core as Partial<typeof core>).planToJson;
+  if (typeof planToJson !== "function") return unknown;
+  const r = planToJson(source, world ? { world } : {});
+  const pages = r.pages ? r.pages.map((p) => p.json) : r.json ? [r.json] : [];
+  if (pages.length !== n) return unknown;
+  return pages.map((j) => new Set(j.furniture.flatMap((f) => (f.mirror === true && f.id !== undefined ? [f.id] : []))));
+}
+
 export function adaptPlan(source: string, opts: AdaptOptions = {}): AdaptResult {
   // Feature-detect the export instead of failing with a TypeError on a published core that
   // predates ADR 0031 (its downstream contract, item 3).
@@ -91,6 +113,7 @@ export function adaptPlan(source: string, opts: AdaptOptions = {}): AdaptResult 
   const scene = buildScene3D(storeys, {
     coreVersion: opts.coreVersion ?? "unknown",
     ...(opts.curveTolMm !== undefined ? { curveTolMm: opts.curveTolMm } : {}),
+    ...(hasHanded(storeys) ? { mirrored: mirroredIds(source, opts.world, storeys.length) } : {}),
   });
   return {
     ok: true,

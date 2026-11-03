@@ -10,7 +10,7 @@
 import { createHash } from "node:crypto";
 import { describeLevel, describe as describePlan } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, type Mesh3D, prism } from "../src/index.js";
+import { adaptPlan, buildMesh, type Mesh3D, prism, T0_MOUNT_MM } from "../src/index.js";
 import { openEdges, signedVolume as volume } from "../src/node.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
 import { inside, type V3 } from "./probe.js";
@@ -189,9 +189,11 @@ describe("Mesh3D on the shipped corpus", () => {
         const xs = all.filter((_, i) => i % 3 === 0);
         const zs = all.filter((_, i) => i % 3 === 2);
         const ys = all.filter((_, i) => i % 3 === 1);
+        // Probed just under the floor finish: under its lowest point, less a wall-hung piece's mount.
+        const mount = T0_MOUNT_MM[String(f.extras.asset).replace(/^t0:/, "")] ?? 0;
         const c: V3 = [
           (Math.min(...xs) + Math.max(...xs)) / 2,
-          Math.min(...ys) - 2500,
+          Math.min(...ys) - mount * 1000 - 2500,
           (Math.min(...zs) + Math.max(...zs)) / 2,
         ];
         const floors = mesh.nodes.filter((x) => x.kind === "floor" && x.level === f.level);
@@ -245,7 +247,13 @@ describe("Mesh3D on the shipped corpus", () => {
       "door-pose-closed",
       "floor-finish-5",
       "window-frame-40x60",
-      "furniture-height-family",
+      // Cards V5 and V6 built every family `FURNITURE_HEIGHT_MM` names, so on the corpus a piece is
+      // a T0 height or a grey box's default; `furniture-height-family` is left to a T0 family at a
+      // turn that is not a quarter turn (`finish.test.ts`), which no `.arch` plan can write.
+      "furniture-height-t0",
+      "furniture-height-greybox",
+      "furniture-mount-default",
+      "furniture-material-default",
     ]) {
       expect(rules.has(r), r).toBe(true);
     }
