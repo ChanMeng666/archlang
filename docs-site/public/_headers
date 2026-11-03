@@ -103,6 +103,21 @@
 /terms.md
   Content-Type: text/markdown; charset=utf-8
 
+/floor-plans-as-code.md
+  Content-Type: text/markdown; charset=utf-8
+
+/floor-plan-dsl.md
+  Content-Type: text/markdown; charset=utf-8
+
+/mcp.md
+  Content-Type: text/markdown; charset=utf-8
+
+/javascript.md
+  Content-Type: text/markdown; charset=utf-8
+
+/vs-mermaid.md
+  Content-Type: text/markdown; charset=utf-8
+
 # END GENERATED
 
 # The GBNF grammar has an extension no static host knows: Cloudflare sends no

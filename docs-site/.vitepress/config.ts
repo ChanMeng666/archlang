@@ -69,6 +69,8 @@ const SITE_ORIGIN = "https://archlang.uk";
 const OG_IMAGE = `${SITE_ORIGIN}/brand/archlang-og.png`;
 const REPO_URL = "https://github.com/ChanMeng666/archlang";
 const MIT_LICENSE = "https://opensource.org/licenses/MIT";
+const NPM_URL = "https://www.npmjs.com/package/@chanmeng666/archlang";
+const SKILLS_URL = "https://skills.sh/ChanMeng666/archlang";
 /** Author and publisher of everything on this host. A person, not an organisation. */
 const AUTHOR = { name: "Chan Meng", url: "https://github.com/ChanMeng666" };
 
@@ -184,6 +186,31 @@ const PAGE_META = [
     "/spec",
     "The language in one page",
     "The whole ArchLang language on one page, written for an AI agent's system prompt: the rules that matter, every statement form, and a compilable worked example.",
+  ],
+  [
+    "/floor-plans-as-code",
+    "Floor plans as code: text to floor plan",
+    "Write floor plans as code with ArchLang: a plain-text .arch file compiles to an SVG, DXF or PDF drawing, and the same text gives the same drawing every time.",
+  ],
+  [
+    "/floor-plan-dsl",
+    "A floor plan DSL and programming language",
+    "ArchLang is a floor plan DSL: a small declarative language for rooms, walls, doors and windows in millimetres, with loops and variables that expand at compile time.",
+  ],
+  [
+    "/mcp",
+    "Floor plan MCP server for AI agents",
+    "Connect an AI agent to the ArchLang floor plan MCP server, locally from npm or hosted at mcp.archlang.uk, to write, compile and check floor plans as text.",
+  ],
+  [
+    "/javascript",
+    "Parametric floor plan JavaScript library",
+    "ArchLang is a parametric floor plan library for JavaScript: install it from npm, generate .arch source from your own parameters, and compile it to SVG or DXF.",
+  ],
+  [
+    "/vs-mermaid",
+    "Mermaid for floor plans? ArchLang vs Mermaid",
+    "Mermaid has no floor plan diagram type. ArchLang is a separate text language for floor plans, and this page compares the two and says when to use each one.",
   ],
   [
     "/adr/",
@@ -407,8 +434,45 @@ const LASTMOD: Readonly<Record<string, string>> = (() => {
   }
 })();
 
+/** One question and its answer, as plain text, from a page's `## FAQ` section. */
+type Faq = { readonly question: string; readonly answer: string };
+
+/** Inline markdown -> the plain text a JSON-LD answer carries: links keep their text, marks go. */
+function plainInline(md: string): string {
+  return md
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[`*]/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * The questions under a page's `## FAQ` heading: each `### <question>` and the prose up to the
+ * next heading. Read from the page's own markdown, so the structured data can never say anything
+ * the visible FAQ does not. A page without that section has none, and emits no FAQPage.
+ */
+function faqOf(relativePath: string): Faq[] {
+  let src: string;
+  try {
+    src = readFileSync(fileURLToPath(new URL(`../${relativePath}`, import.meta.url)), "utf8").replace(/\r\n/g, "\n");
+  } catch {
+    return [];
+  }
+  const section = /^## FAQ\n([\s\S]*?)(?=^## |(?![\s\S]))/m.exec(src)?.[1];
+  if (!section) return [];
+  return [...section.matchAll(/^### (.+)\n([\s\S]*?)(?=^### |(?![\s\S]))/gm)]
+    .map((m) => ({ question: plainInline(m[1]!), answer: plainInline(m[2]!) }))
+    .filter((f) => f.question && f.answer);
+}
+
 /** JSON-LD for one route, as the `<script type="application/ld+json">` body. */
-function structuredData(route: string, url: string, title: string, description: string): string {
+function structuredData(
+  route: string,
+  url: string,
+  title: string,
+  description: string,
+  faq: readonly Faq[] = [],
+): string {
   const person = {
     "@type": "Person",
     "@id": `${SITE_ORIGIN}/#author`,
@@ -439,6 +503,8 @@ function structuredData(route: string, url: string, title: string, description: 
             url: `${SITE_ORIGIN}/`,
             description,
             license: MIT_LICENSE,
+            // The same software at its other canonical homes: source, package registry, skills.
+            sameAs: [REPO_URL, NPM_URL, SKILLS_URL],
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
             author: { "@id": `${SITE_ORIGIN}/#author` },
             publisher: { "@id": `${SITE_ORIGIN}/#author` },
@@ -485,6 +551,23 @@ function structuredData(route: string, url: string, title: string, description: 
                 : [{ "@type": "ListItem", position: 2, name: title, item: url }]),
             ],
           },
+          // A page with a `## FAQ` section: its questions, verbatim from the visible text.
+          ...(faq.length > 0
+            ? [
+                {
+                  "@type": "FAQPage",
+                  "@id": `${url}#faq`,
+                  url,
+                  inLanguage: "en-GB",
+                  isPartOf: { "@id": `${SITE_ORIGIN}/#website` },
+                  mainEntity: faq.map((f) => ({
+                    "@type": "Question",
+                    name: f.question,
+                    acceptedAnswer: { "@type": "Answer", text: f.answer },
+                  })),
+                },
+              ]
+            : []),
         ];
   // `</script>` can never appear in these values today, but a JSON-LD body is raw
   // innerHTML — escape the one character that could ever close the tag early.
@@ -547,7 +630,7 @@ export default defineConfig({
   // This hook runs once per page at BUILD time and an exception here fails the build
   // with no page context — so the lookup falls back to the site defaults (return [])
   // rather than throwing on a route the table does not know.
-  transformHead({ page, title, description }): HeadConfig[] {
+  transformHead({ page, pageData, title, description }): HeadConfig[] {
     const route = routeOf(page);
     const meta = PAGE_META_BY_ROUTE.get(route);
     if (!meta) return [];
@@ -575,7 +658,11 @@ export default defineConfig({
     // The structured headline is the page's own name, without the " — ArchLang" the
     // <title> carries: a breadcrumb crumb reading "Language reference — ArchLang"
     // inside a trail that already starts at ArchLang says the brand twice.
-    head.push(["script", { type: "application/ld+json" }, structuredData(route, url, meta.title, description)]);
+    head.push([
+      "script",
+      { type: "application/ld+json" },
+      structuredData(route, url, meta.title, description, faqOf(pageData.relativePath)),
+    ]);
     return head;
   },
   // Could be built into a subdir under any static host; "./" keeps asset URLs
@@ -709,8 +796,10 @@ export default defineConfig({
         text: "AI Agents",
         items: [
           { text: "Use it from an agent", link: "/agents" },
+          { text: "MCP server", link: "/mcp" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
+          { text: "JavaScript library", link: "/javascript" },
           { text: "Import from a mask (experimental)", link: "/import" },
           { text: "One-page spec", link: "/spec" },
           { text: "CLI reference", link: "/cli" },
@@ -735,6 +824,9 @@ export default defineConfig({
         text: "Introduction",
         items: [
           { text: "What is ArchLang?", link: "/guide" },
+          { text: "Floor plans as code", link: "/floor-plans-as-code" },
+          { text: "A floor plan DSL", link: "/floor-plan-dsl" },
+          { text: "ArchLang vs Mermaid", link: "/vs-mermaid" },
           { text: "Examples gallery", link: "/examples" },
           { text: "Showcase", link: "/showcase" },
         ],
@@ -743,8 +835,10 @@ export default defineConfig({
         text: "For AI agents",
         items: [
           { text: "Use it from an agent", link: "/agents" },
+          { text: "MCP server", link: "/mcp" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
+          { text: "JavaScript library", link: "/javascript" },
           { text: "Import from a mask (experimental)", link: "/import" },
           { text: "One-page spec", link: "/spec" },
         ],

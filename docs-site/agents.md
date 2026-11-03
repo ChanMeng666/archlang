@@ -11,8 +11,9 @@ it matches intent without ever looking at an image** — token-cheap and in any 
 > *cannot* run a shell command needs a way to reach ArchLang at all, so an optional stdio shim —
 > **[`@chanmeng666/archlang-mcp`](https://www.npmjs.com/package/@chanmeng666/archlang-mcp)**, listed
 > on the MCP registry — wraps the same pure library functions. It is a discoverability channel, not
-> a replacement; the core stays zero-dependency. See
-> [ADR 0012](/adr/0012-mcp-shim-discoverability).
+> a replacement; the core stays zero-dependency. A hosted copy answers at
+> `https://mcp.archlang.uk/mcp`. Setup for each host is on [the MCP server page](/mcp); the
+> reasoning is [ADR 0012](/adr/0012-mcp-shim-discoverability).
 
 ## Install into your coding agent
 
@@ -187,7 +188,8 @@ artifact. Or load `https://archlang.uk/arch-plan.js` and write
 
 - The same functions are exported from the library — `compile`, `describe`, `lint`, `validate`,
   `score`, `repair`, `applyFixes`, `suggestTopology`, `renderAscii` and more:
-  `import { compile, describe, lint } from "@chanmeng666/archlang"`.
+  `import { compile, describe, lint } from "@chanmeng666/archlang"`. See
+  [the JavaScript library](/javascript).
 - These power the live preview, **Describe**, **Lint** and **Intent** tabs in the
   [playground](https://playground.archlang.uk).
 - See [`SKILL.md`](https://github.com/chanmeng666/archlang/blob/main/skills/archlang/SKILL.md) and
