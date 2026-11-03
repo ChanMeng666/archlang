@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- A `rendered` theme (`theme rendered`, or `CompileOptions.theme`): the presentation palette in the default sans font, with every fixture symbol filled in a soft tint of its family's material (wood, linen, ceramic, stone, foliage, water …). Every other theme draws byte-identically; ADR 0023 is amended for this theme alone. Rugs stay unfilled under it, so nothing drawn before them is hidden.
+- `FIXTURE_FAMILY_MATERIALS`, `FIXTURE_MATERIALS`, `familyMaterials()` and their types: each catalogued family's primary (and optional secondary) material, frozen; the 3D package's material slots are pinned to the same vocabulary.
 - Twenty fixture families, each with a drawn symbol, a catalogue row and a material for the `rendered` theme: `floor_lamp`, `side_table` (`end_table`), `console_table`, `ottoman` (`pouf`, `footstool`), `bean_bag`, `pantry` (`tall_cabinet`, `larder`), `towel_rail` (`towel_radiator`), `palm` (`palm_tree`), `flower_bed` (`planting_bed`), `boulder` (`rock`), `picnic_table`, `slide` (`playground_slide`), `bollard`, `bike_rack` (`cycle_stand`), `raised_bed` (`vegetable_bed`), `whiteboard`, `printer` (`copier`), `server_rack`, `hospital_bed` and `workstation` (`desk_pod`). They are appended to the legend order, so a plan that names none of them draws, describes and lints exactly as before. In 3D they are boxes until their generators land.
 
 ### Changed
