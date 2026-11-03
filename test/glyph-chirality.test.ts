@@ -438,6 +438,29 @@ const HANDED_ON_MAIN: Readonly<Record<string, string>> = {
   locker: "... ... ... ... ... ... ...",
   pool_table: "... ... ... ... ... ... ...",
   treadmill: "... ... ... ... ... ... ...",
+  // The visual-assets tranche (V8): these families did not exist on `main`, so their rows were
+  // measured on the branch that added them, with the same survey and key, and every cell is
+  // symmetric. They pin the new symbols as unhanded: the rule below then holds them there.
+  floor_lamp: "... ... ... ... ... ... ...",
+  side_table: "... ... ... ... ... ... ...",
+  console_table: "... ... ... ... ... ... ...",
+  ottoman: "... ... ... ... ... ... ...",
+  bean_bag: "... ... ... ... ... ... ...",
+  pantry: "... ... ... ... ... ... ...",
+  towel_rail: "... ... ... ... ... ... ...",
+  palm: "... ... ... ... ... ... ...",
+  flower_bed: "... ... ... ... ... ... ...",
+  boulder: "... ... ... ... ... ... ...",
+  picnic_table: "... ... ... ... ... ... ...",
+  slide: "... ... ... ... ... ... ...",
+  bollard: "... ... ... ... ... ... ...",
+  bike_rack: "... ... ... ... ... ... ...",
+  raised_bed: "... ... ... ... ... ... ...",
+  whiteboard: "... ... ... ... ... ... ...",
+  printer: "... ... ... ... ... ... ...",
+  server_rack: "... ... ... ... ... ... ...",
+  hospital_bed: "... ... ... ... ... ... ...",
+  workstation: "... ... ... ... ... ... ...",
 };
 
 /**

@@ -57,6 +57,7 @@ import {
   bulgeArc,
   centerOf,
   clamp,
+  clampCount,
   dashedPoly,
   insetRect,
   insetRectSides,
@@ -954,5 +955,302 @@ export function drawClothesline(r: Rect, g: GlyphCtx): SceneNode[] {
   g.nodes.push(mirroredTwin(g.nodes[g.nodes.length - 1]!, r, axes(r).horizontal));
   for (const a of [0.05, 0.95]) g.dot(axisPt(r, L * a, 0), post, undefined, "thin");
   for (const b of [-0.3, -0.1, 0.1, 0.3]) g.seg(axisPt(r, L * 0.05, S * b), axisPt(r, L * 0.95, S * b), "extraThin");
+  return g.nodes;
+}
+
+// ---------------------------------------------------------------------------
+// ── the visual-assets tranche (V8): planting, the play and street furniture ──
+//
+// Eight families appended at the foot of the file, for the reason they are appended to
+// `FIXTURE_FAMILIES`: that table's order is the LEGEND's order. The module's two conventions hold:
+// planting is a filled canopy that masks the ground (the palm's crown, a flower bed's flowers),
+// and the pieces that stand ON the ground carry `g.body`. None of them is `requiresWall`.
+
+/** The number of fronds in a palm's crown: a multiple of four, so the crown has the square's symmetry. */
+const PALM_FRONDS = 8;
+
+/** A palm frond's leaflet pairs: where each leaves the rib, where it ends (fractions of the crown
+ *  radius) and how far off the rib's bearing it ends, in degrees. Every end lies inside its frond. */
+const PALM_LEAFLETS: readonly (readonly [number, number, number])[] = [
+  [0.36, 0.52, 8],
+  [0.58, 0.74, 5.5],
+];
+
+/**
+ * A palm: a crown of eight long pointed FRONDS, each with its midrib and a pair of leaflet
+ * strokes, round the trunk.
+ *
+ * - **Crown** (outline pen, filled like every planting canopy: the lawn tint, or `foliage` under
+ *   `rendered`): ONE closed path that runs out along a convex edge to each frond's tip and back to
+ *   a cusp near the trunk before the next — eight lens-shaped leaves on the D4 bearings with deep
+ *   notches between them. Pointed fronds with deep notches against the tree's sixteen round lobes
+ *   and the conifer's sixteen short teeth is the difference a reader is entitled to.
+ * - **Midribs and leaflets** (detail pen): a rib from the trunk to near each tip, and two pairs of
+ *   leaflet strokes splaying off it toward the tip, so the frond reads as feathered.
+ * - **Trunk**: a disc in the outline pen, filled with the ink as the tree's is (or `bark` under
+ *   `rendered`).
+ *
+ * Every mark is on the eight D4 bearings or symmetric about them, so the drawing maps onto itself
+ * under every quarter-turn and mirror at any aspect — the catalog's `symmetric: true`.
+ *
+ * Prim count: 42.
+ */
+export function drawPalm(r: Rect, g: GlyphCtx): SceneNode[] {
+  const c = centerOf(r);
+  const rad = Math.max(0, shortSide(r) * 0.47);
+  const step = 360 / PALM_FRONDS;
+  const cuspAt = (j: number): Point => polar(c, rad * 0.2, (j - 0.5) * step);
+  const tipAt = (j: number): Point => polar(c, rad, j * step);
+  const start = cuspAt(0);
+  const edges: PathEdge[] = [];
+  const sag = rad * 0.075;
+  for (let j = 0; j < PALM_FRONDS; j++) {
+    edges.push(...bulgeArc(cuspAt(j), tipAt(j), sag));
+    edges.push(...bulgeArc(tipAt(j), j === PALM_FRONDS - 1 ? start : cuspAt(j + 1), sag));
+  }
+  g.path({ start, edges }, g.fillFor(g.material?.primary, g.theme.lawn));
+  for (let j = 0; j < PALM_FRONDS; j++) {
+    const b = j * step;
+    g.seg(polar(c, rad * 0.1, b), polar(c, rad * 0.88, b), "extraThin");
+    // Two pairs of leaflets, each splaying from the rib toward the tip: the inner pair wider.
+    for (const [from, to, spread] of PALM_LEAFLETS) {
+      const base = polar(c, rad * from, b);
+      for (const t of [-1, 1]) g.seg(base, polar(c, rad * to, b + t * spread), "extraThin");
+    }
+  }
+  g.dot(c, rad * 0.07, g.fillFor(g.material?.secondary, g.ink), "thin");
+  return g.nodes;
+}
+
+/**
+ * A flower bed (a planting bed): the bed with its edging, and two rows of flowers along its own
+ * long axis.
+ *
+ * - **Bed** (outline pen, `g.body`: the family's soil): eased corners, and the edging's inner face
+ *   a twentieth of the short side in (detail pen).
+ * - **Flowers**: six-petal rosettes (a `scallopPath`, filled like planting: the lawn tint, or
+ *   `foliage` under `rendered`) each with a centre dot, in two rows along the long axis at one per
+ *   half a short side, clamped to `[2, 8]` a row. Read off the footprint's own long axis, as the
+ *   hedge is, so a bed turned a quarter draws the same bed.
+ *
+ * Six petals rather than the shrub's eight lobes, so a flower never reads as a bush; each rosette
+ * is symmetric about both axes through its centre and the rows are placed symmetrically, so the
+ * bed has no hand. A run, like the hedge: neither `symmetric` nor `directional`.
+ *
+ * Prim count: `2 + 4 x per row`, i.e. 22 at the catalogued 2000 x 800.
+ */
+export function drawFlowerBed(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.14), g.body);
+  g.path(roundedRectPath(insetRect(r, 0.05), s * 0.1), "none", "extraThin");
+  const { long: L, short: S } = axes(r);
+  const n = clampCount((2 * L) / S, 2, 8);
+  const rho = Math.max(0, Math.min(S * 0.19, (L / n) * 0.42));
+  const fill = g.fillFor(g.material?.secondary, g.theme.lawn);
+  for (let i = 0; i < n; i++) {
+    const a = L / 2 + (L * (2 * i + 1 - n)) / (2 * n);
+    for (const b of [-S * 0.22, S * 0.22]) {
+      const p = axisPt(r, a, b);
+      g.path(
+        scallopPath(p, 6, rho * 0.5, () => rho),
+        fill,
+        "extraThin",
+      );
+      g.dot(p, rho * 0.2);
+    }
+  }
+  return g.nodes;
+}
+
+/**
+ * A boulder (a rock): a faceted outline and the three ridges that run from its crown — one back to
+ * the top corner, two down to the shoulders of its broad base.
+ *
+ * The outline is eleven straight facets at fractions of the footprint, mirrored about its centre
+ * line, so the stone has no hand; it is not `symmetric`, though: it has a broad base and a
+ * narrower crown, so a quarter-turn changes the drawing. Ridges rather than a closed top facet,
+ * which read as a cut gem, and no shading, which would give the drawing a direction (ADR 0023).
+ *
+ * Prim count: 4.
+ */
+export function drawBoulder(r: Rect, g: GlyphCtx): SceneNode[] {
+  const cx = r.x + r.w / 2;
+  const cy = r.y + r.h / 2;
+  const P = (u: number, v: number): Point => ({ x: cx + r.w * u, y: cy + r.h * v });
+  g.poly(
+    [
+      P(0, -0.47),
+      P(0.21, -0.43),
+      P(0.38, -0.29),
+      P(0.48, -0.03),
+      P(0.41, 0.29),
+      P(0.17, 0.47),
+      P(-0.17, 0.47),
+      P(-0.41, 0.29),
+      P(-0.48, -0.03),
+      P(-0.38, -0.29),
+      P(-0.21, -0.43),
+    ],
+    g.body,
+  );
+  const crown = P(0, -0.1);
+  g.seg(crown, P(0, -0.47), "extraThin");
+  g.seg(crown, P(-0.41, 0.29), "extraThin");
+  g.seg(crown, P(0.41, 0.29), "extraThin");
+  return g.nodes;
+}
+
+/**
+ * A picnic table: the top with its board joints, a bench along each long side, and the two end
+ * frames crossing under the top from bench to bench.
+ *
+ * Read off the footprint's own long axis (the benches run with the top), so a table turned a
+ * quarter draws the same table. The end frames are the A-frames a picnic table stands on; the
+ * part of each that shows is between the top and a bench. It is approached from both long sides,
+ * so it is neither `directional` nor `symmetric` (its ends have no benches).
+ *
+ * Prim count: 9.
+ */
+export function drawPicnicTable(r: Rect, g: GlyphCtx): SceneNode[] {
+  const { long: L, short: S } = axes(r);
+  const rad = S * 0.03;
+  g.path(roundedRectPath(axisRect(r, L * 0.03, L * 0.97, -S * 0.22, S * 0.22), rad), g.body);
+  for (const b of [-S / 15, S / 15]) {
+    g.seg(axisPt(r, L * 0.03, b), axisPt(r, L * 0.97, b), "extraThin");
+  }
+  for (const [b0, b1] of [
+    [-S * 0.48, -S * 0.31],
+    [S * 0.31, S * 0.48],
+  ] as const) {
+    g.path(roundedRectPath(axisRect(r, L * 0.07, L * 0.93, b0, b1), rad), g.body);
+  }
+  for (const a of [L * 0.13, L * 0.87]) {
+    g.seg(axisPt(r, a, -S * 0.31), axisPt(r, a, -S * 0.22), "extraThin");
+    g.seg(axisPt(r, a, S * 0.22), axisPt(r, a, S * 0.31), "extraThin");
+  }
+  return g.nodes;
+}
+
+/**
+ * A playground slide: the CHUTE (the outline) with its bed, the platform at its head with a guard
+ * rail along each side, and the ladder up to the platform.
+ *
+ * Drawn head-on-top, this module's back convention: the ladder is at the top edge and the chute
+ * runs down to the exit at the bottom, where its end is rounded off into the run-out lip. That is
+ * the orientation the catalog's `directional` rests on — the exit is the end that needs free
+ * ground in front of it. The chute bed takes the family's secondary material (`basin`: metal),
+ * the frame its primary (painted). Three rungs, a fixed count: a play slide's ladder is short.
+ * Symmetric about its centre line, so it has no hand.
+ *
+ * Prim count: 10.
+ */
+export function drawSlide(r: Rect, g: GlyphCtx): SceneNode[] {
+  const x = (f: number): number => r.x + r.w * f;
+  const y = (f: number): number => r.y + r.h * f;
+  const cw = r.w * 0.56;
+  const lip = Math.max(0, Math.min(cw, r.h * 0.7) * 0.5);
+  g.path(roundedRectPath({ x: x(0.22), y: y(0.24), w: cw, h: r.h * 0.74 }, [0, 0, lip, lip]), g.body);
+  g.path(
+    roundedRectPath({ x: x(0.3), y: y(0.3), w: r.w * 0.4, h: r.h * 0.64 }, [0, 0, lip * 0.7, lip * 0.7]),
+    g.basin,
+    "extraThin",
+  );
+  g.path(roundedRectPath({ x: x(0.1), y: y(0.13), w: r.w * 0.8, h: r.h * 0.14 }, r.w * 0.03), g.body);
+  for (const f of [0.16, 0.84]) g.seg({ x: x(f), y: y(0.16) }, { x: x(f), y: y(0.24) }, "extraThin");
+  for (const f of [0.24, 0.76]) g.seg({ x: x(f), y: y(0) }, { x: x(f), y: y(0.13) }, "extraThin");
+  for (const f of [0.03, 0.065, 0.1]) g.seg({ x: x(0.24), y: y(f) }, { x: x(0.76), y: y(f) }, "extraThin");
+  return g.nodes;
+}
+
+/**
+ * A bollard: the post seen from above — its body, the cap's chamfer ring, and the cap's centre.
+ * Three circles about the centre, so it is D4-invariant at any aspect (the catalog's
+ * `symmetric: true`).
+ *
+ * Prim count: 3.
+ */
+export function drawBollard(r: Rect, g: GlyphCtx): SceneNode[] {
+  const c = centerOf(r);
+  const rad = Math.max(0, shortSide(r) * 0.46);
+  g.dot(c, rad, g.body, "thin");
+  g.ring(c, rad * 0.64, "extraThin");
+  g.dot(c, rad * 0.16);
+  return g.nodes;
+}
+
+/**
+ * A bike rack (a cycle stand): a row of Sheffield hoops, each the tube seen from above — a
+ * stadium across the run — with a base plate at each foot.
+ *
+ * The hoops run ACROSS the footprint's long axis, one per short side of run, clamped to `[1, 10]`:
+ * a bicycle parks along a hoop, so the hoops are what say which way the bikes stand. Each hoop is
+ * placed by its offset from the centre of the run and built with an exact width, so its mirror
+ * partner has the same edges and the rack has no hand. A run, read off its own long axis.
+ *
+ * Prim count: `3 x hoops`, i.e. 9 at the catalogued 2000 x 800.
+ */
+export function drawBikeRack(r: Rect, g: GlyphCtx): SceneNode[] {
+  const { long: L, short: S } = axes(r);
+  const n = clampCount(L / S, 1, 10);
+  const half = Math.max(0, Math.min(S * 0.045, L / (4 * n)));
+  const plate = Math.max(0, Math.min(S * 0.07, L / (2.5 * n)));
+  const reach = S * 0.42;
+  for (let i = 0; i < n; i++) {
+    const a = L / 2 + (L * (2 * i + 1 - n)) / (2 * n);
+    g.path(pill(axisRect(r, a - half, a + half, -reach, reach)), g.body);
+    for (const b of [-reach, reach]) {
+      const p = axisPt(r, a, b);
+      g.path(
+        roundedRectPath({ x: p.x - plate, y: p.y - plate, w: 2 * plate, h: 2 * plate }, plate * 0.3),
+        g.body,
+        "extraThin",
+      );
+    }
+  }
+  return g.nodes;
+}
+
+/**
+ * A raised bed (a vegetable bed): the timber frame, the soil inside it, a post in each corner, and
+ * two rows of seedlings along its own long axis.
+ *
+ * The frame band and the corner posts are what tell a raised bed from a `sandpit` (corner seats)
+ * and a `flower_bed` (a low edging round flowers): it is a built box of boards. The frame takes the
+ * family's primary material (wood) and the seedlings its secondary (`foliage`, filled like planting:
+ * the lawn tint outside `rendered`); the soil is the untinted interior (`blank`), since a family
+ * names two materials and the planting is what a raised bed is for. The seedlings are small
+ * four-leaf crosses in two rows at one per 0.3 short sides of soil, clamped to `[2, 8]` a row. Symmetric construction, so no hand; a run, so neither
+ * `symmetric` nor `directional`.
+ *
+ * Prim count: `6 + 2 x per row`, i.e. 18 at the catalogued 2400 x 1200.
+ */
+export function drawRaisedBed(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = Math.max(0, shortSide(r));
+  g.path(roundedRectPath(r, s * 0.02), g.body);
+  const soil = insetRect(r, 0.1);
+  g.path(roundedRectPath(soil, s * 0.01), g.blank, "extraThin");
+  const k = s * 0.1;
+  for (const [px, py] of [
+    [r.x, r.y],
+    [r.x + r.w - k, r.y],
+    [r.x + r.w - k, r.y + r.h - k],
+    [r.x, r.y + r.h - k],
+  ] as const) {
+    g.poly(rectPoly({ x: px, y: py, w: k, h: k }), g.body, "extraThin");
+  }
+  const { long: L, short: S } = axes(r);
+  const run = L - 2 * k;
+  const n = clampCount(run / (S * 0.3), 2, 8);
+  const rho = Math.max(0, Math.min(S * 0.11, (run / n) * 0.4));
+  for (let i = 0; i < n; i++) {
+    const a = L / 2 + (run * (2 * i + 1 - n)) / (2 * n);
+    for (const b of [-S * 0.18, S * 0.18]) {
+      g.path(
+        scallopPath(axisPt(r, a, b), 4, rho * 0.3, () => rho),
+        g.fillFor(g.material?.secondary, g.theme.lawn),
+        "extraThin",
+      );
+    }
+  }
   return g.nodes;
 }

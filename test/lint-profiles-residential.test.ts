@@ -152,6 +152,13 @@ describe("single or double: read from the bed, never the label (ADR 0005)", () =
     expect(found(cnRoom(`${bed(900)}\n  furniture bed at (1500,100) size 900x2000`), CN)).toEqual([dbl]);
   });
 
+  it("a hospital_bed is one bedspace: a single at its 1000 mm frame, two make a twin (visual-assets V8)", () => {
+    const hb = (x: number): string => `furniture hospital_bed at (${x},100) size 1000x2200`;
+    expect(found(cnRoom(hb(100)), CN)).toEqual([]);
+    expect(skipsOf(cnRoom(hb(100)), CN)).not.toContain("no-bed");
+    expect(found(cnRoom(`${hb(100)}\n  ${hb(1600)}`), CN)).toEqual([dbl]);
+  });
+
   it("the label says nothing: a 'Double Bedroom' with a single bed is a single", () => {
     expect(found(cnRoom(bed(900), "Double Bedroom"), CN)).toEqual([]);
   });

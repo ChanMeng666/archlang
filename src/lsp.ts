@@ -292,7 +292,7 @@ export function hover(source: string, offset: number, registry: Registry = BUILT
  * named vocabulary rather than an expression, an id or a keyword — the parser reads it with a
  * bare `ctx.eatIdent()`, so no `let`, loop variable or component is usable there. That cuts
  * both ways, and both halves are the point: the whole-language item list {@link completion}
- * otherwise returns is noise in this position, and offering the 129 category words
+ * otherwise returns is noise in this position, and offering every category word
  * UNCONDITIONALLY would flood every other completion in the language and make the feature
  * worse than nothing.
  *

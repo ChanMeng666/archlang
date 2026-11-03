@@ -89,7 +89,7 @@ describe("T5.3 — completion", () => {
 //     rather than from the detector — the only shape of expectation that can catch the detector
 //     and its test being wrong together.
 //
-// A one-directional test would pass if the 129 words were simply added everywhere, which is
+// A one-directional test would pass if every fixture word were simply added everywhere, which is
 // exactly the change that would make the feature worse than nothing.
 // ---------------------------------------------------------------------------
 

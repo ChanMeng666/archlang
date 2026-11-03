@@ -201,8 +201,9 @@ const USE_WIDTH_NOUN: Partial<Record<UseKind, string>> = {
 
 /** The pieces that count as a bedspace for the single/double reading. A `bunk_bed`, `crib` or
  *  `cot` is not read: a bunk's two bedspaces share one single-bed footprint, and a cot is no
- *  adult's bed. */
-const BED_CATEGORIES: ReadonlySet<string> = new Set(["bed", "double_bed"]);
+ *  adult's bed. A `hospital_bed` is one adult's bedspace (a single at its 1000 mm frame, under
+ *  the double's width). */
+const BED_CATEGORIES: ReadonlySet<string> = new Set(["bed", "double_bed", "hospital_bed"]);
 
 /** How a bedroom reads from its beds: `double` (sleeps two), `single`, or `no-bed`. */
 export type BedReading = "single" | "double" | "no-bed";

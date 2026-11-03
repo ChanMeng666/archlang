@@ -267,7 +267,8 @@ describe("W_FURNITURE_OVER_WINDOW: a low piece against a `sill 0` window", () =>
     expect(of(living("furniture chair at (2500,100) size 450x450"), WIN)).toHaveLength(1);
   });
   it("an uncatalogued piece counts: nothing stands lower than a sill at the floor", () => {
-    expect(of(living("furniture ottoman at (2500,100) size 600x600"), WIN)).toHaveLength(1);
+    // `ottoman` was the uncatalogued word here until the visual-assets tranche catalogued it.
+    expect(of(living("furniture trunk at (2500,100) size 600x600"), WIN)).toHaveLength(1);
   });
   it("a hob against it is one finding, `W_HOB_UNDER_WINDOW`'s", () => {
     const src = living("furniture stove at (2500,100) size 600x600");

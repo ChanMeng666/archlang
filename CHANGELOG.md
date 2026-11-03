@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Twenty fixture families, each with a drawn symbol, a catalogue row and a material for the `rendered` theme: `floor_lamp`, `side_table` (`end_table`), `console_table`, `ottoman` (`pouf`, `footstool`), `bean_bag`, `pantry` (`tall_cabinet`, `larder`), `towel_rail` (`towel_radiator`), `palm` (`palm_tree`), `flower_bed` (`planting_bed`), `boulder` (`rock`), `picnic_table`, `slide` (`playground_slide`), `bollard`, `bike_rack` (`cycle_stand`), `raised_bed` (`vegetable_bed`), `whiteboard`, `printer` (`copier`), `server_rack`, `hospital_bed` and `workstation` (`desk_pod`). They are appended to the legend order, so a plan that names none of them draws, describes and lints exactly as before. In 3D they are boxes until their generators land.
+
+### Changed
+
+- The thirty-four words above were free words before, drawn as a labelled rectangle and judged by no fixture rule. A plan that already used one of them now gets the family's behaviour:
+  - It draws the symbol, and a drawn symbol ignores its `label`, so `furniture rock … label "Rock"` no longer prints the word.
+  - `facing` on a symmetric family (`floor_lamp`, `side_table`, `end_table`, `ottoman`, `pouf`, `footstool`, `palm`, `palm_tree`, `bollard`) is refused with `E_FACING_SYMMETRIC`.
+  - The families with a front (`console_table`, `pantry`, `towel_rail`, `slide`, `whiteboard`, `printer`, `server_rack`, `hospital_bed` and their aliases) take a derived `rotate` under `anchor` and can raise `W_FIXTURE_BACK_TO_ROOM`; `console_table`, `towel_rail`, `slide`, `whiteboard` and `hospital_bed` can raise `W_FOOTPRINT_TRANSPOSED`.
+  - `pantry` and `server_rack` are tall units, so they raise `W_FURNITURE_OVER_WINDOW` in front of a window.
+  - A `hospital_bed` does a bed's job and a `workstation` a desk's (`W_ROOM_MISSING_DEFINING`, `archlang finish`), a `hospital_bed` is a bedspace in a bedroom's single/double reading, and a chair at a `workstation` or a `picnic_table` is read by `W_SEAT_FACING_AWAY`.
+  - Sixteen of the families have a catalogued footprint, so `against` may omit `size` for them.
+- The causes of `W_FIXTURE_BACK_TO_ROOM`, `W_FURNITURE_OVER_WINDOW` and `W_FOOTPRINT_TRANSPOSED` (`archlang explain`, the error-code reference) now list the families the rule reads from the catalogue's own flags, so the lists cannot fall behind it.
+
 ## [1.53.0] - 2026-11-02
 
 ### Added
