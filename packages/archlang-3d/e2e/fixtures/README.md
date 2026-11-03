@@ -24,9 +24,9 @@ and every face is pushed back by a polygon offset so the outlines no longer stip
 is unchanged (`#f7f5f0`). `stage:brief` (the slab alone) moves with the lights and the slab colour,
 every later frame with all of the above. The geometry did not move: laneway's GLB binary chunk is
 byte-identical and its Mesh3D differs only by each floor's `extras.finish` and ledger entry
-(`test/mesh.test.ts`, `test/pins.ts`). Linux pending: CI's `check-3d` job (ubuntu-latest x64, the
-same Chromium build) must render the same 17 hashes before the Linux entry is added back to
-`taken`, the hashes unchanged.
+(`test/mesh.test.ts`, `test/pins.ts`). CI's `check-3d` job (ubuntu-latest x64, the same
+Chromium build; GitHub Actions run 41684705914) then rendered the same 17 hashes, byte for byte,
+and failed only because Linux was not listed; the Linux entry was added back with the hashes unchanged.
 
 Re-taken by visual-assets cards V5/V6 (2026-11-04, PR #461, red-team round 1 S3) on Windows 11 x64
 with the same Chromium build and command: the stove's oven door is now an `appliance` part with a
