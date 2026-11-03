@@ -15,7 +15,7 @@
 import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { allStoreysDiagnosticsPayload, type CompilerApi } from "./byte-identity-payload.js";
+import { allStoreysDiagnosticsPayload, type CompilerApi, type DigestOptions } from "./byte-identity-payload.js";
 import type { Theme } from "../src/theme.js";
 import type { World } from "../src/world.js";
 
@@ -46,7 +46,7 @@ export function perThemeDigests(api: ThemeLawApi, src: string, world: World | un
     if (!theme) throw new Error(`theme law: no built-in theme "${name}"`);
     // `DigestOptions` is the world alone; the theme rides the same options object to `compile()`,
     // `describe()` and `lint()`, which is exactly what a caller passing a theme does.
-    out.push(sha256(allStoreysDiagnosticsPayload(api, src, { ...w, theme } as typeof w)));
+    out.push(sha256(allStoreysDiagnosticsPayload(api, src, { ...w, theme } as unknown as DigestOptions)));
   }
   return out;
 }
