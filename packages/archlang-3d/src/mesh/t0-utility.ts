@@ -370,4 +370,51 @@ export const T0_UTILITY: Readonly<Record<string, T0Family>> = {
       ];
     },
   },
+  pantry: {
+    names: ["pantry", "tall_cabinet", "larder"],
+    heightMm: 2100,
+    materials: ["metal", "paint"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawPantry`: full-height joinery, the door band across the front, one door per 0.9
+      // depths of width, `[1, 4]`, a pull centred on each.
+      const doors = span(clamp(Math.round(W / (D * 0.9)), 1, 4), hw - 2, 4);
+      return [
+        P("paint", -hw + 20, hw - 20, -hd, hd - 70, 0, 100),
+        P("paint", -hw, hw, -hd, hd - 22, 100, 2100),
+        ...doors.map(([a, b]) => P("paint", a, b, hd - 22, hd - 6, 106, 2094, { radius: 3 })),
+        ...doors.map(([a, b]) => {
+          const pw = Math.min((b - a) * 0.16, 90);
+          const c = (a + b) / 2;
+          return P("metal", c - pw, c + pw, hd - 6, hd, 1040, 1056, { axis: "x", round: true });
+        }),
+      ];
+    },
+  },
+  towel_rail: {
+    names: ["towel_rail", "towel_radiator"],
+    heightMm: 1400,
+    mountMm: 200,
+    materials: ["linen", "metal"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawTowelRail`: a heated ladder rail hung 200 mm off the floor: a stile at each end, the
+      // bars between them in one plane 0.6 of the depth from the wall, the brackets back to the
+      // wall, and a towel hung over the middle (0.3–0.7 of the width).
+      const st = clamp(Math.min(D * 0.22, W * 0.08) * 0.6, 5, 25);
+      const zc = -hd + D * 0.6;
+      const rr = clamp(D * 0.09, 4, 14);
+      const rungs = Array.from({ length: 10 }, (_, k) => 260 + k * 120);
+      return [
+        ...pair(P("metal", -hw, -hw + 2 * st, zc - st, zc + st, 200, 1400, { round: true })),
+        ...rungs.map((y) =>
+          P("metal", -hw + st, hw - st, zc - rr, zc + rr, y - rr, y + rr, { axis: "x", round: true }),
+        ),
+        ...[300, 1300].flatMap((y) =>
+          pair(P("metal", -hw + st - 6, -hw + st + 6, -hd, zc, y - 6, y + 6, { axis: "z", round: true })),
+        ),
+        P("linen", -W * 0.2, W * 0.2, -hd + D * 0.2, hd, 560, 1140, { radius: 8 }),
+      ];
+    },
+  },
 };

@@ -230,14 +230,17 @@ describe("V3 generators", () => {
     });
   }
 
-  it("hangs the wall cabinet, the hood, the mirror and the urinal by their underside at every size", () => {
-    for (const family of ["upper_cabinet", "range_hood", "mirror", "urinal"]) {
+  it("hangs the wall cabinet, the hood, the mirror, the urinal, the towel rail and the whiteboard by their underside at every size", () => {
+    for (const family of ["upper_cabinet", "range_hood", "mirror", "urinal", "towel_rail", "whiteboard"]) {
       for (const [W, D] of sizes) {
         const ys = (t0LocalParts(family, W, D) ?? []).map((p) => p.y0);
         expect(Math.min(...ys), `${family} ${W}x${D}`).toBe(T0_MOUNT_MM[family]);
       }
     }
     expect(T0_MOUNT_MM.upper_cabinet).toBe(1400); // card V6
+    // The core's two new `wallMounted` families (PR #462): a ladder rail 200 mm off the floor, a
+    // board hung from 900 mm (`drawWhiteboard`: "from about 900 mm to about 2000 mm").
+    expect([T0_MOUNT_MM.towel_rail, T0_MOUNT_MM.whiteboard]).toEqual([200, 900]);
   });
 
   it("hangs a television by its top, 16:9 from its width, at most 760 mm tall", () => {
@@ -501,6 +504,29 @@ describe("V5, V6: the catalogue's names", () => {
       "pool_table",
       "treadmill",
     ],
+    // The twenty new core families (PR #462), built in the same card (V-D6).
+    V8: [
+      "floor_lamp",
+      "side_table",
+      "console_table",
+      "ottoman",
+      "bean_bag",
+      "pantry",
+      "towel_rail",
+      "palm",
+      "flower_bed",
+      "boulder",
+      "picnic_table",
+      "slide",
+      "bollard",
+      "bike_rack",
+      "raised_bed",
+      "whiteboard",
+      "printer",
+      "server_rack",
+      "hospital_bed",
+      "workstation",
+    ],
   };
   for (const [card, families] of Object.entries(BATCHES)) {
     it(`builds every family of ${card}, and every alias of each, from a T0 generator`, () => {
@@ -512,11 +538,14 @@ describe("V5, V6: the catalogue's names", () => {
     });
   }
 
-  // V7 built the last catalogued families: a family the core can draw is never a grey box (and a
-  // new family ships its generator with it, V-D6). The cards' lists are the whole catalogue.
-  it("builds every catalogued family: no row of the core's table is a grey box", () => {
-    expect(rows.filter((r) => assetFor(r[0] as string) === "greybox").map((r) => r[0])).toEqual([]);
+  // V7 built the last catalogued families (the twenty new ones of PR #462 with them): a word the
+  // core can draw is never a grey box, and a new family ships its generator with it (V-D6). The
+  // cards' lists are the whole catalogue, and every word of it, alias or canonical, is built.
+  it("builds every catalogued family: no word of the core's table is a grey box", () => {
+    expect(rows.flat().filter((w) => assetFor(w) === "greybox")).toEqual([]);
     expect(Object.values(BATCHES).flat().sort()).toEqual(rows.map((r) => r[0]).sort());
+    // Every canonical family of the core's public material table has a generator.
+    expect(Object.keys(familyTable()).filter((f) => assetFor(f) === "greybox")).toEqual([]);
   });
 });
 

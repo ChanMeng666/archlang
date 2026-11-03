@@ -22,11 +22,15 @@ import type { MaterialSlot } from "../materials.js";
 import {
   type ChairBack,
   clamp,
+  type DomeTable,
+  dome,
+  MOUND,
   P,
   type Part,
   pair,
   SIDE_CHAIR,
   sideways,
+  snap64,
   span,
   type T0Family,
   tableSeats,
@@ -45,15 +49,6 @@ function tiers(mat: MaterialSlot, rx: number, rz: number, y0: number, y1: number
   );
 }
 
-/**
- * A dome as round tiers, each `[top of the tier as a fraction of the height, its radius as a
- * fraction of the half-extents]`. The tables below slice an ellipsoid at equal steps of latitude
- * (15°), so the tiers thin out toward the top and the dome rounds over instead of stepping like a
- * cake; the radii are cos(mid-latitude), the widest scaled to 1, written out (no engine's
- * `Math.cos` reaches a coordinate).
- */
-type DomeTable = ReadonlyArray<readonly [number, number]>;
-
 /** A crown: the ellipsoid from 60° below its equator to its top (a tree, a potted plant). */
 const CROWN: DomeTable = [
   [0.085, 0.614],
@@ -68,44 +63,12 @@ const CROWN: DomeTable = [
   [1, 0.132],
 ];
 
-/** A mound sitting on the ground: the ellipsoid from 30° below its equator (a shrub). */
-const MOUND: DomeTable = [
-  [0.161, 0.932],
-  [0.333, 1],
-  [0.506, 1],
-  [0.667, 0.932],
-  [0.805, 0.8],
-  [0.911, 0.614],
-  [0.977, 0.386],
-  [1, 0.132],
-];
-
 /** A shrub's side lobe: a coarse mound. */
 const LOBE: DomeTable = [
   [0.45, 1],
   [0.78, 0.8],
   [1, 0.45],
 ];
-
-/** The dome `table` from `y0` to `y1` over the half-extents `rx`, `rz`, centred on (`cx`, `cz`). */
-function dome(
-  mat: MaterialSlot,
-  cx: number,
-  cz: number,
-  rx: number,
-  rz: number,
-  y0: number,
-  y1: number,
-  table: DomeTable,
-): Part[] {
-  let lo = y0;
-  return table.map(([t, f], k) => {
-    const hi = k === table.length - 1 ? y1 : y0 + (y1 - y0) * t;
-    const p = P(mat, cx - rx * f, cx + rx * f, cz - rz * f, cz + rz * f, lo, hi, { round: true });
-    lo = hi;
-    return p;
-  });
-}
 
 /**
  * A piece read off its own LONG axis, as the core reads a bicycle, a swing, a washing line
@@ -175,6 +138,42 @@ function tube(
     ymax > ymin ? (y - ymin) / (ymax - ymin) : 0,
   ]);
   return fr.part(mat, amin, amax, -b, b, Math.max(0, ymin), ymax, { profile }, "across");
+}
+
+/**
+ * The tiers of a planted clump for a row of `n`: a three-tier dome while the row is at most
+ * `three` long, two tiers up to `two`, one beyond, so a bed's part count stays bounded.
+ */
+function clumpTable(n: number, three: number, two: number): DomeTable {
+  if (n <= three) return LOBE;
+  if (n <= two)
+    return [
+      [0.6, 1],
+      [1, 0.6],
+    ];
+  return [[1, 1]];
+}
+
+/**
+ * A pair of planted clumps (a flower, a seedling) at `a` along the long axis, `b` either side of
+ * its centre line, `rho` in radius: the dome `table` from `y0` to `y1`, twinned exactly across.
+ */
+function clump(
+  fr: ReturnType<typeof longFrame>,
+  a: number,
+  b: number,
+  rho: number,
+  y0: number,
+  y1: number,
+  table: DomeTable,
+): Part[] {
+  let lo = y0;
+  return table.flatMap(([t, f], k) => {
+    const hi = k === table.length - 1 ? y1 : y0 + (y1 - y0) * t;
+    const p = fr.part("foliage", a - rho * f, a + rho * f, b - rho * f, b + rho * f, lo, hi, { round: true });
+    lo = hi;
+    return fr.sides(p);
+  });
 }
 
 /** A wheel in the side view: the tyre, the rim proud of it, the hub proud of both (radius `r`). */
@@ -408,7 +407,7 @@ export const T0_OUTDOOR: Readonly<Record<string, T0Family>> = {
     gen(W, D) {
       const [hw, hd] = [W / 2, D / 2];
       const s = Math.min(W, D);
-      const band = s * 0.22;
+      const band = snap64(s * 0.22);
       const [tx, tz] = [hw - band, hd - band];
       // `drawOutdoorTable`: round (a round top, one chair a side) when the sides differ by a fifth
       // or less, else a long top with a chair per 2.2 bands a side, `[1, 4]`, and one each end;
@@ -826,7 +825,7 @@ export const T0_OUTDOOR: Readonly<Record<string, T0Family>> = {
       // flag the core draws on the right is that drawing's handed detail, left out (no hand
       // gained): the box is centred.
       const p = clamp(Math.min(W, D) * 0.12, 15, 45);
-      const bx = W * 0.34;
+      const bx = snap64(W * 0.34);
       const [z0, z1] = [-hd + D * 0.14, hd - D * 0.12];
       const k = clamp(Math.min(W, D) * 0.04, 4, 14);
       return [
@@ -998,4 +997,282 @@ export const T0_OUTDOOR: Readonly<Record<string, T0Family>> = {
       ];
     },
   },
+
+  // ── planting, play and street furniture added with the new families ──
+  palm: {
+    names: ["palm", "palm_tree"],
+    heightMm: 5000,
+    materials: ["foliage", "bark"],
+    gen(W, D) {
+      const [rx, rz] = [W / 2, D / 2];
+      const rt = clamp(Math.min(W, D) * 0.05, 40, 180);
+      // `drawPalm`: eight pointed fronds on the D4 bearings round the trunk. The crown is four
+      // star layers, each eight-pointed and smaller going up, the second and fourth turned half a
+      // frond (22.5°), so the fronds read as drooping in tiers; a ringed trunk under it.
+      const layer = (f: number, y0: number, y1: number, turned: boolean): Part =>
+        P("foliage", -rx * f, rx * f, -rz * f, rz * f, y0, y1, { profile: turned ? STAR_TURNED : STAR });
+      const trunk = Array.from({ length: 6 }, (_, k) => {
+        const f = k % 2 === 0 ? 1 : 0.86;
+        return P("bark", -rt * f, rt * f, -rt * f, rt * f, 280 + k * 690, 280 + (k + 1) * 690, { round: true });
+      });
+      return [
+        P("bark", -rt * 1.35, rt * 1.35, -rt * 1.35, rt * 1.35, 0, 280, { round: true }),
+        ...trunk,
+        layer(1, 4300, 4380, false),
+        layer(0.84, 4380, 4500, true),
+        layer(0.62, 4500, 4640, false),
+        layer(0.4, 4640, 4790, true),
+        P("foliage", -rx * 0.14, rx * 0.14, -rz * 0.14, rz * 0.14, 4790, 5000, { round: true }),
+      ];
+    },
+  },
+  flower_bed: {
+    names: ["flower_bed", "planting_bed"],
+    heightMm: 360,
+    materials: ["stone", "foliage", "soil"],
+    gen(W, D) {
+      const fr = longFrame(W, D);
+      const { L, S } = fr;
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawFlowerBed`: the bed with its edging a twentieth of the short side in, and two rows of
+      // flowers along its long axis at ±0.22 of the width, one per half a short side, `[2, 8]` a
+      // row. Each a low domed clump, in as many tiers as keep the bed's part count bounded.
+      const e = s * 0.05;
+      const inner = { x0: -hw + e, x1: hw - e, z0: -hd + e, z1: hd - e, radius: s * 0.1 };
+      const n = clamp(Math.round((2 * L) / S), 2, 8);
+      const rho = Math.min(S * 0.19, (L / n) * 0.42);
+      const plants = Array.from({ length: n }, (_, i) => (L * (2 * i + 1 - n)) / (2 * n)).flatMap((a) =>
+        clump(fr, a, S * 0.22, rho, 100, 360, clumpTable(n, 3, 5)),
+      );
+      return [
+        P("stone", -hw, hw, -hd, hd, 0, 160, { radius: s * 0.14, holes: [inner] }),
+        P("soil", inner.x0 - 10, inner.x1 + 10, inner.z0 - 10, inner.z1 + 10, 0, 120, { radius: inner.radius + 10 }),
+        ...plants,
+      ];
+    },
+  },
+  boulder: {
+    names: ["boulder", "rock"],
+    heightMm: 600,
+    materials: ["stone"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawBoulder`: the faceted outline, broad at its base, its crown toward the back. Six
+      // tiers of the same facets, rounding over like a mound, each smaller and drawn a little toward the crown. A smaller
+      // tier's half-width is held to 1/64 mm, so each facet point (a multiple of 1/64 of the box)
+      // is exact and lands on its mirror partner even at a micrometre rounding tie.
+      const tier = (f: number, y0: number, y1: number): Part => {
+        const cz = -D * 0.08 * (1 - f);
+        const a = f === 1 ? hw : snap64(hw * f);
+        return P("stone", -a, a, cz - hd * f, cz + hd * f, y0, y1, { profile: BOULDER });
+      };
+      return [
+        tier(1, 0, 160),
+        tier(0.96, 160, 300),
+        tier(0.86, 300, 410),
+        tier(0.7, 410, 500),
+        tier(0.5, 500, 565),
+        tier(0.26, 565, 600),
+      ];
+    },
+  },
+  picnic_table: {
+    names: ["picnic_table"],
+    heightMm: 750,
+    materials: ["wood"],
+    gen(W, D) {
+      const { L, S, part, ends, sides } = longFrame(W, D);
+      // `drawPicnicTable`, read off its long axis: the top (three boards) over the middle 0.44 of
+      // the width, a bench along each long side (0.31–0.48), the two A-frames at 0.13 and 0.87 of
+      // the run crossing under it from bench to bench.
+      const t = clamp(S * 0.03, 20, 60);
+      const a = L * 0.37;
+      return [
+        ...span(3, S * 0.22, clamp(S * 0.008, 2, 10)).map(([b0, b1]) =>
+          part("wood", -L / 2, L / 2, b0, b1, 720, 750, { radius: 4 }),
+        ),
+        ...sides(part("wood", -L * 0.45, L * 0.45, S * 0.31, S * 0.48, 420, 450, { radius: 4 })),
+        ...ends(part("wood", a - t / 2, a + t / 2, -S / 2, S / 2, 0, 720, { profile: PICNIC_FRAME }, "along")),
+        ...ends(part("wood", a - t / 2, a + t / 2, -S * 0.48, S * 0.48, 380, 420)),
+      ];
+    },
+  },
+  slide: {
+    names: ["slide", "playground_slide"],
+    heightMm: 1750,
+    materials: ["metal", "paint"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawSlide`: the ladder at the head (the top edge, −z), the platform with a guard rail
+      // each side, the chute running down to the exit with its run-out lip.
+      const [p0, p1] = [-hd + D * 0.13, -hd + D * 0.27];
+      const zc = (y: number): number => -hd + D * 0.13 * (0.15 + (0.7 * y) / 1200);
+      return [
+        ...pair(P("paint", -W * 0.27, -W * 0.27 + 40, -hd, p0, 0, 1200, { axis: "x", profile: LADDER })),
+        ...[300, 600, 900].map((y) =>
+          P("metal", -W * 0.27, W * 0.27, zc(y) - 14, zc(y) + 14, y - 14, y + 14, { axis: "x", round: true }),
+        ),
+        P("paint", -hw, hw, p0, p1, 1150, 1200, { radius: 6 }),
+        ...[p0, p1 - 40].flatMap((z) => pair(P("paint", -hw + 20, -hw + 60, z, z + 40, 0, 1150))),
+        ...pair(P("paint", -hw, -hw + 30, p0, p1, 1200, 1750, { radius: 6 })),
+        P("metal", -W * 0.2, W * 0.2, -hd + D * 0.24, hd, 0, 1260, { axis: "x", profile: CHUTE }),
+        ...pair(P("paint", -W * 0.28, -W * 0.2, -hd + D * 0.24, hd, 0, 1380, { axis: "x", profile: CHUTE })),
+      ];
+    },
+  },
+  bollard: {
+    names: ["bollard"],
+    heightMm: 900,
+    materials: ["metal", "rubber"],
+    gen(W, D) {
+      const [rx, rz] = [W / 2, D / 2];
+      // `drawBollard`: the post, the cap's chamfer ring, the cap; a reflective band near the top.
+      const at = (f: number, y0: number, y1: number, mat: "metal" | "rubber" = "metal"): Part =>
+        P(mat, -rx * f, rx * f, -rz * f, rz * f, y0, y1, { round: true });
+      return [at(0.92, 0, 760), at(1, 600, 660, "rubber"), at(0.8, 760, 840), at(0.64, 840, 880), at(0.3, 880, 900)];
+    },
+  },
+  bike_rack: {
+    names: ["bike_rack", "cycle_stand"],
+    heightMm: 800,
+    materials: ["metal"],
+    gen(W, D) {
+      const { L, S, part, sides } = longFrame(W, D);
+      // `drawBikeRack`: a row of Sheffield hoops ACROSS the long axis, one per short side of run,
+      // `[1, 10]`, each an inverted U 0.84 of the width, on two ground rails along the run.
+      const n = clamp(Math.round(L / S), 1, 10);
+      const half = Math.min(S * 0.045, L / (4 * n));
+      const reach = S * 0.42;
+      const tu = Math.min(0.2, (2 * half) / (2 * reach));
+      const tv = Math.min(0.2, (2 * half) / 800);
+      const hoop: ReadonlyArray<readonly [number, number]> = [
+        [0, 0],
+        [tu, 0],
+        [tu, 0.86 - tv],
+        [tu + 0.1, 1 - tv],
+        [1 - tu - 0.1, 1 - tv],
+        [1 - tu, 0.86 - tv],
+        [1 - tu, 0],
+        [1, 0],
+        [1, 0.86],
+        [0.9, 1],
+        [0.1, 1],
+        [0, 0.86],
+      ];
+      const hoops = Array.from({ length: n }, (_, i) => (L * (2 * i + 1 - n)) / (2 * n)).map((a) =>
+        part("metal", a - half, a + half, -reach, reach, 12, 800, { profile: hoop }, "along"),
+      );
+      return [...hoops, ...sides(part("metal", -L / 2, L / 2, S * 0.36, S / 2, 0, 12, { radius: 4 }))];
+    },
+  },
+  raised_bed: {
+    names: ["raised_bed", "vegetable_bed"],
+    heightMm: 500,
+    materials: ["wood", "foliage", "soil"],
+    gen(W, D) {
+      const fr = longFrame(W, D);
+      const { L, S } = fr;
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawRaisedBed`: the timber frame, the soil a tenth of the short side in, a post in each
+      // corner, two rows of seedlings at ±0.18 of the width, one per 0.3 short sides, `[2, 8]`.
+      const k = s * 0.1;
+      const soil = { x0: -hw + k, x1: hw - k, z0: -hd + k, z1: hd - k, radius: s * 0.01 };
+      const run = L - 2 * k;
+      const n = clamp(Math.round(run / (S * 0.3)), 2, 8);
+      const rho = Math.min(S * 0.11, (run / n) * 0.4);
+      const seedlings = Array.from({ length: n }, (_, i) => (run * (2 * i + 1 - n)) / (2 * n)).flatMap((a) =>
+        clump(fr, a, S * 0.18, rho, 400, 490, clumpTable(n, 2, 4)),
+      );
+      return [
+        P("wood", -hw, hw, -hd, hd, 0, 450, { radius: s * 0.02, holes: [soil] }),
+        ...[-hd, hd - k].flatMap((z) => pair(P("wood", -hw, -hw + k, z, z + k, 0, 500))),
+        P("soil", soil.x0 - 10, soil.x1 + 10, soil.z0 - 10, soil.z1 + 10, 0, 420, { radius: soil.radius + 10 }),
+        ...seedlings,
+      ];
+    },
+  },
 };
+
+/** 16 directions at k × 22.5°: (cos, sin), written out (no engine's `Math.cos` reaches a coordinate). */
+const DIR16: ReadonlyArray<readonly [number, number]> = [
+  [1, 0],
+  [0.9238795325112867, 0.3826834323650898],
+  [Math.SQRT1_2, Math.SQRT1_2],
+  [0.3826834323650898, 0.9238795325112867],
+  [0, 1],
+  [-0.3826834323650898, 0.9238795325112867],
+  [-Math.SQRT1_2, Math.SQRT1_2],
+  [-0.9238795325112867, 0.3826834323650898],
+  [-1, 0],
+  [-0.9238795325112867, -0.3826834323650898],
+  [-Math.SQRT1_2, -Math.SQRT1_2],
+  [-0.3826834323650898, -0.9238795325112867],
+  [0, -1],
+  [0.3826834323650898, -0.9238795325112867],
+  [Math.SQRT1_2, -Math.SQRT1_2],
+  [0.9238795325112867, -0.3826834323650898],
+];
+
+/**
+ * An eight-pointed star in its box: tips on the axes and diagonals (or turned 22.5°), notches at
+ * 0.28 of a tip, stretched so its tips touch every side of the box (as a profile must).
+ */
+const starOf = (turned: boolean): ReadonlyArray<readonly [number, number]> => {
+  const pts = DIR16.map(([c, s], k): [number, number] => {
+    const r = (k % 2 === 0) !== turned ? 1 : 0.28;
+    return [r * c, r * s];
+  });
+  const m = Math.max(...pts.map(([u]) => u));
+  return pts.map(([u, v]): readonly [number, number] => [0.5 + (0.5 * u) / m, 0.5 + (0.5 * v) / m]);
+};
+const STAR = starOf(false);
+const STAR_TURNED = starOf(true);
+
+/** `drawBoulder`'s eleven facets, in its box (the drawing's, stretched to touch every side). */
+const BOULDER: ReadonlyArray<readonly [number, number]> = [
+  [0.5, 0],
+  [46 / 64, 0.04255],
+  [57 / 64, 0.19149],
+  [1, 0.46809],
+  [59 / 64, 0.80851],
+  [43 / 64, 1],
+  [21 / 64, 1],
+  [5 / 64, 0.80851],
+  [0, 0.46809],
+  [7 / 64, 0.19149],
+  [18 / 64, 0.04255],
+];
+
+/** A picnic table's A-frame in its end view (u across, v up), multiples of 1/64. */
+const PICNIC_FRAME: ReadonlyArray<readonly [number, number]> = [
+  [0, 0],
+  [4 / 64, 0],
+  [20 / 64, 58 / 64],
+  [44 / 64, 58 / 64],
+  [60 / 64, 0],
+  [1, 0],
+  [46 / 64, 1],
+  [18 / 64, 1],
+];
+
+/** A slide's ladder stile in its side view (u from the foot back, v up): leaning to the platform. */
+const LADDER: ReadonlyArray<readonly [number, number]> = [
+  [0, 0],
+  [0.3, 0],
+  [1, 1],
+  [0.7, 1],
+];
+
+/** A slide's chute in its side view (u from the platform to the exit, v up): the run-out lip on a foot. */
+const CHUTE: ReadonlyArray<readonly [number, number]> = [
+  [0, 0.9],
+  [0, 1],
+  [0.78, 0.24],
+  [1, 0.2],
+  [1, 0],
+  [0.95, 0],
+  [0.95, 0.13],
+  [0.76, 0.17],
+];

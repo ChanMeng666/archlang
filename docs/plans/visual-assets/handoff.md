@@ -11,5 +11,5 @@ The resume point. Update it when a card lands.
 | V5 T0 living/bedroom/office | done | #461 |
 | V6 T0 kitchen/bath/utility | done | #461 |
 | V7 T0 outdoor/vehicles/commercial | in review | `feat/t0-outdoor-families` |
-| V8 twenty new families | 2D in progress | |
+| V8 twenty new families | 2D done, 3D in review with V7 | #462, `feat/t0-outdoor-families` |
 | V9 viewer polish | waits V3 | |

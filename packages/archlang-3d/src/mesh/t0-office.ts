@@ -16,6 +16,7 @@ import {
   pair,
   SIDE_CHAIR,
   sideways,
+  snap64,
   span,
   type T0Family,
   tableSeats,
@@ -67,7 +68,7 @@ export const T0_OFFICE: Readonly<Record<string, T0Family>> = {
     gen(W, D) {
       const [hw, hd] = [W / 2, D / 2];
       const s = Math.min(W, D);
-      const band = s * 0.22;
+      const band = snap64(s * 0.22);
       const [tx, tz] = [hw - band, hd - band];
       // `drawMeetingTable`: an eased boardroom top inside a chair band, the dining chairs round it,
       // `[1, 6]` along each long side and one at each end, on two pedestals down the long axis.
@@ -254,6 +255,168 @@ export const T0_OFFICE: Readonly<Record<string, T0Family>> = {
             round: true,
           }),
         ),
+      ];
+    },
+  },
+
+  // ── office and care pieces added with the new families ──
+  whiteboard: {
+    names: ["whiteboard"],
+    heightMm: 2000,
+    mountMm: 900,
+    materials: ["metal", "paint"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawWhiteboard`: hung from 900 mm to 2000 mm, the board against the wall (0.45 of the
+      // depth), the frame's end caps and top rail, the pen tray along its foot.
+      const zb = -hd + D * 0.45;
+      const cap = Math.max(W * 0.012, 6);
+      return [
+        P("paint", -hw + cap, hw - cap, -hd, zb, 940, 1985, { axis: "z", radius: 4 }),
+        ...pair(P("metal", -hw, -hw + cap, -hd, zb + 4, 935, 2000)),
+        P("metal", -hw + cap, hw - cap, -hd, zb + 2, 1985, 2000),
+        P("metal", -hw + W * 0.04, hw - W * 0.04, -hd, hd, 900, 940, { radius: 8 }),
+      ];
+    },
+  },
+  printer: {
+    names: ["printer", "copier"],
+    heightMm: 1150,
+    materials: ["metal", "appliance", "screen", "rubber"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawPrinter`: a floor-standing copier: the paper trays in its base, the scanner lid over
+      // the back 0.6 of the depth, the paper exit across the front, the control panel at the front
+      // with its display, centred (no hand); on castors.
+      const c = clamp(s * 0.06, 15, 45);
+      const casters = [-hd + 30, hd - 30 - c].flatMap((z) =>
+        pair(P("rubber", -hw + 30, -hw + 30 + c, z, z + c, 0, 70, { round: true })),
+      );
+      const trays: Array<[number, number]> = [
+        [90, 350],
+        [362, 622],
+      ];
+      return [
+        ...casters,
+        P("appliance", -hw, hw, -hd, hd - 16, 70, 1050, { radius: s * 0.05 }),
+        ...trays.map(([y0, y1]) => P("appliance", -hw + 10, hw - 10, hd - 16, hd - 6, y0, y1, { radius: 4 })),
+        ...trays.map(([, y1]) => P("metal", -W * 0.2, W * 0.2, hd - 6, hd, y1 - 50, y1 - 36, { axis: "x", radius: 6 })),
+        P("screen", -W * 0.4, W * 0.4, hd - 16, hd - 12, 930, 990, { radius: 4 }),
+        P("appliance", -hw + W * 0.07, hw - W * 0.07, -hd + D * 0.06, -hd + D * 0.66, 1050, 1110, {
+          radius: s * 0.025,
+        }),
+        P("appliance", -W * 0.3, W * 0.3, hd - D * 0.22, hd - D * 0.07, 1050, 1130, { radius: 8 }),
+        P("screen", -W * 0.14, W * 0.14, hd - D * 0.19, hd - D * 0.1, 1130, 1150, { radius: 4 }),
+      ];
+    },
+  },
+  server_rack: {
+    names: ["server_rack"],
+    heightMm: 2000,
+    materials: ["metal", "screen", "rubber"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      // `drawServerRack`: a run of cabinets, one per 0.6 depths of width, `[1, 8]`, each with its
+      // (perforated, dark) front door and a handle centred on it; worked from the front.
+      const bays = span(clamp(Math.round(W / (D * 0.6)), 1, 8), hw - 2, 4);
+      return [
+        P("rubber", -hw + 20, hw - 20, -hd + 20, hd - 40, 0, 60),
+        P("metal", -hw, hw, -hd, hd - 20, 60, 2000, { radius: 3 }),
+        ...bays.map(([a, b]) => P("screen", a, b, hd - 20, hd - 6, 80, 1980, { radius: 3 })),
+        ...bays.map(([a, b]) => {
+          const [c, h] = [(a + b) / 2, (b - a) * 0.14];
+          return P("metal", c - h, c + h, hd - 6, hd, 1000, 1016, { axis: "x", round: true });
+        }),
+      ];
+    },
+  },
+  hospital_bed: {
+    names: ["hospital_bed"],
+    heightMm: 1000,
+    materials: ["linen", "metal", "paint", "rubber"],
+    gen(W, D) {
+      const [hw, hd] = [W / 2, D / 2];
+      const s = Math.min(W, D);
+      // `drawHospitalBed`: the head at the top edge (−z): a panel across the head and the foot,
+      // the four split side rails, the mattress on its deck, the pillow; on a lifting chassis and
+      // castors.
+      const c = clamp(s * 0.05, 15, 50);
+      const casters = [-hd + D * 0.08, hd - D * 0.08 - c].flatMap((z) =>
+        pair(P("rubber", -hw + W * 0.1, -hw + W * 0.1 + c, z, z + c, 0, 120, { round: true })),
+      );
+      const rails = [
+        [0.1, 0.46],
+        [0.54, 0.86],
+      ].flatMap(([f0, f1]) =>
+        pair(
+          P("metal", -hw + W * 0.015, -hw + W * 0.065, -hd + D * (f0 as number), -hd + D * (f1 as number), 520, 860, {
+            axis: "x",
+            radius: 12,
+          }),
+        ),
+      );
+      return [
+        ...casters,
+        P("metal", -hw + W * 0.12, hw - W * 0.12, -hd + D * 0.1, hd - D * 0.1, 120, 380, { radius: 20 }),
+        P("metal", -hw + W * 0.07, hw - W * 0.07, -hd + D * 0.05, hd - D * 0.05, 380, 450, { radius: s * 0.04 }),
+        P("paint", -hw, hw, -hd, -hd + D * 0.045, 300, 1000, { axis: "z", radius: 20 }),
+        P("paint", -hw, hw, hd - D * 0.045, hd, 300, 820, { axis: "z", radius: 20 }),
+        P("linen", -hw + W * 0.09, hw - W * 0.09, -hd + D * 0.06, hd - D * 0.06, 450, 600, { radius: s * 0.05 }),
+        P("linen", -W * 0.28, W * 0.28, -hd + D * 0.09, -hd + D * 0.21, 600, 680, { axis: "x", radius: 30 }),
+        ...rails,
+      ];
+    },
+  },
+  workstation: {
+    names: ["workstation", "desk_pod"],
+    heightMm: 1200,
+    materials: ["wood", "fabric", "screen"],
+    gen(W, D) {
+      const s = Math.min(W, D);
+      // `drawWorkstation`, read off its long axis: two rows of desks back to back with the
+      // privacy screen between them, a monitor on each desk facing its user, a chair band 0.26 of
+      // the short side each side, one desk per 2.2 bands a side, `[1, 4]`.
+      const band = snap64(s * 0.26);
+      const horizontal = W >= D;
+      const run = horizontal ? W : D;
+      const depth = (horizontal ? D : W) - 2 * band;
+      const n = clamp(Math.round(run / (2.2 * band)), 1, 4);
+      const scr = Math.max(depth * 0.025, 8);
+      const box = (u0: number, u1: number, v0: number, v1: number) =>
+        horizontal ? { x0: u0, x1: u1, z0: v0, z1: v1 } : { x0: v0, x1: v1, z0: u0, z1: u1 };
+      const at = (mat: "wood" | "fabric" | "screen", b: ReturnType<typeof box>, y0: number, y1: number, more = {}) =>
+        P(mat, b.x0, b.x1, b.z0, b.z1, y0, y1, more);
+      const off = scr + depth * 0.06;
+      const mh = Math.max(depth * 0.04, 12);
+      const mw = (run / n) * 0.38;
+      const cw = snap64(band * 0.9);
+      const desks = Array.from({ length: n }, (_, i) => (run * (2 * i + 1 - n)) / (2 * n)).flatMap((u) =>
+        [-1, 1].flatMap((sgn) => {
+          const v = sgn * (off + mh / 2);
+          const side: ChairBack = horizontal ? (sgn < 0 ? "-z" : "+z") : sgn < 0 ? "-x" : "+x";
+          const chair =
+            sgn < 0
+              ? box(u - cw / 2, u + cw / 2, -depth / 2 - band, -depth / 2)
+              : box(u - cw / 2, u + cw / 2, depth / 2, depth / 2 + band);
+          return [
+            at("screen", box(u - mw / 2, u + mw / 2, v - mh / 2, v + mh / 2), 745, 1080, { radius: 4 }),
+            sideways("fabric", chair, 0, 820, side, SIDE_CHAIR),
+          ];
+        }),
+      );
+      const leg = box(-run / 2 + 10, -run / 2 + 40, -depth / 2 + 20, depth / 2 - 20);
+      const legs = horizontal
+        ? pair(at("wood", leg, 0, 720))
+        : [
+            at("wood", leg, 0, 720),
+            at("wood", box(run / 2 - 40, run / 2 - 10, -depth / 2 + 20, depth / 2 - 20), 0, 720),
+          ];
+      return [
+        at("wood", box(-run / 2, run / 2, -depth / 2, depth / 2), 720, 745, { radius: 6 }),
+        ...legs,
+        at("fabric", box(-run * 0.49, run * 0.49, -scr, scr), 745, 1200, { radius: scr }),
+        ...desks,
       ];
     },
   },

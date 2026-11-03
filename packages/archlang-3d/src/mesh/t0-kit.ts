@@ -74,6 +74,13 @@ export interface T0Family {
 
 export const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.min(hi, x));
 
+/**
+ * `v` held to 1/64 mm: a box measure under a profile whose points are multiples of 1/64 of the box
+ * (a chair's side view, a mailbox's tunnel), so every point is exact and lands on its mirror
+ * partner's negation even at a micrometre rounding tie.
+ */
+export const snap64 = (v: number): number => Math.round(v * 64) / 64;
+
 /** The most doors a run is divided into, as the core caps a symbol's divisions (bounded output). */
 export const MAX_DOORS = 64;
 
@@ -211,8 +218,8 @@ export function tableSeats(
   chair: (box: { x0: number; x1: number; z0: number; z1: number }, back: ChairBack) => Part[],
 ): Part[] {
   const [hw, hd] = [W / 2, D / 2];
-  const band = Math.min(W, D) * 0.22;
-  const cw = band * 0.9;
+  const band = snap64(Math.min(W, D) * 0.22);
+  const cw = snap64(band * 0.9);
   const out: Part[] = [];
   const zSide = (x: number): void => {
     out.push(...chair({ x0: x - cw / 2, x1: x + cw / 2, z0: -hd, z1: -hd + band }, "-z"));
@@ -238,6 +245,57 @@ export function tableSeats(
   if (horizontal) xSide(0);
   else zSide(0);
   return out;
+}
+
+/**
+ * A dome as round tiers, each `[top of the tier as a fraction of the height, its radius as a
+ * fraction of the half-extents]`. The tables (`t0-outdoor.ts`) slice an ellipsoid at equal steps of latitude
+ * (15°), so the tiers thin out toward the top and the dome rounds over instead of stepping like a
+ * cake; the radii are cos(mid-latitude), the widest scaled to 1, written out (no engine's
+ * `Math.cos` reaches a coordinate).
+ */
+export type DomeTable = ReadonlyArray<readonly [number, number]>;
+
+/** A mound sitting on the ground: the ellipsoid from 30° below its equator (a shrub). */
+export const MOUND: DomeTable = [
+  [0.161, 0.932],
+  [0.333, 1],
+  [0.506, 1],
+  [0.667, 0.932],
+  [0.805, 0.8],
+  [0.911, 0.614],
+  [0.977, 0.386],
+  [1, 0.132],
+];
+
+/** A hemisphere: the ellipsoid from its equator to its top (a bean bag's raised back). */
+export const HEMI: DomeTable = [
+  [0.259, 1],
+  [0.5, 0.932],
+  [Math.SQRT1_2, 0.8],
+  [0.866, 0.614],
+  [0.966, 0.386],
+  [1, 0.132],
+];
+
+/** The dome `table` from `y0` to `y1` over the half-extents `rx`, `rz`, centred on (`cx`, `cz`). */
+export function dome(
+  mat: MaterialSlot,
+  cx: number,
+  cz: number,
+  rx: number,
+  rz: number,
+  y0: number,
+  y1: number,
+  table: DomeTable,
+): Part[] {
+  let lo = y0;
+  return table.map(([t, f], k) => {
+    const hi = k === table.length - 1 ? y1 : y0 + (y1 - y0) * t;
+    const p = P(mat, cx - rx * f, cx + rx * f, cz - rz * f, cz + rz * f, lo, hi, { round: true });
+    lo = hi;
+    return p;
+  });
 }
 
 /**
