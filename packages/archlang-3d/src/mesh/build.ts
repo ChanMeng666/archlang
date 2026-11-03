@@ -25,14 +25,15 @@
  * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3), every part kept
  *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`);
  * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the twelve families it
- *   covers, else a grey box on the floor finish, its height a per-family default;
+ *   covers, each part's shell carrying its material slot (`materials.ts`), else a grey box on the
+ *   floor finish, its height a per-family default;
  * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3).
  * Stairs, outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
  */
 import type { Assumption, Level, Polygon, Pt, Scene3D } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { type Rect, rectMinus, slabRegion } from "./slab.js";
-import { T0_HEIGHT_MM, t0Parts } from "./t0.js";
+import { T0_HEIGHT_MM, T0_MATERIALS, t0Shells } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
 const MM = 1000;
@@ -481,7 +482,7 @@ function levelNodes(
 
   const floorTop = e + FLOOR_FINISH_MM * MM;
   lv.furniture.forEach((f, i) => {
-    const parts = t0Parts(f);
+    const parts = t0Shells(f, floorTop);
     const family = parts ? f.asset.slice("t0:".length) : undefined;
     const h = family ? (T0_HEIGHT_MM[family] ?? 0) : (FURNITURE_HEIGHT_MM[f.category] ?? FURNITURE_DEFAULT_MM);
     if (!defaulted.has(f.category)) {
@@ -497,6 +498,17 @@ function levelNodes(
             ? "furniture-height-family"
             : "furniture-height-greybox",
       });
+      // Its parts' materials (visual-assets V1): a property of the family, never of a label.
+      const slots = family ? T0_MATERIALS[family] : undefined;
+      if (slots?.length) {
+        ledger.push({
+          kind: "furniture",
+          field: `material(${f.category})`,
+          value: [...slots],
+          provenance: "default",
+          rule: "furniture-material-default",
+        });
+      }
     }
     const asset = parts ? f.asset : "greybox";
     if (f.asset !== asset) {
@@ -512,9 +524,7 @@ function levelNodes(
     }
     const [cx, cy] = f.centre;
     const box = rect(cx - f.size.w / 2, cy - f.size.d / 2, cx + f.size.w / 2, cy + f.size.d / 2);
-    const shells = parts
-      ? parts.map((p) => prism(p.polygon, floorTop + p.y0, floorTop + p.y1))
-      : [prism(box, floorTop, floorTop + h * MM)];
+    const shells = parts ?? [prism(box, floorTop, floorTop + h * MM)];
     node("furniture", f.id, i, shells, {
       category: f.category,
       yaw_deg: f.yawDeg,

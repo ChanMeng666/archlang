@@ -337,5 +337,11 @@ describe("Mesh3D determinism and budget", () => {
  * Moved by card A2b (was 7d05de61…): the twelve pieces are T0 parametric furniture instead of grey
  * boxes (their shells and `extras.asset`), and the five walls with openings split their bodies'
  * vertical edges at each sill and head (more vertices, the same solid); no other node changed.
+ *
+ * Moved by visual-assets cards V1–V3 (was 92c99f93…): the twelve T0 pieces are rebuilt from the
+ * refined generators (rounded and sideways parts, more detail) and each shell carries its material
+ * slot (`Shell.slot`), and the ledger gains one `furniture-material-default` entry per T0 category.
+ * Every other node and every other ledger entry is byte-identical (the Mesh3D with its furniture
+ * nodes and furniture ledger entries removed hashes to bed284ba… before and after).
  */
-const LANEWAY_MESH_SHA256 = "92c99f930eaa185ccfd3d2e2a9d4515ec6bebcd29e450ece17827b839bc05185";
+const LANEWAY_MESH_SHA256 = "b2f9b86c3a459641de0420ce0d24b88d607da09038f25e098b7097e135eccfcb";

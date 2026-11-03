@@ -27,8 +27,11 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
 - `src/mesh/`: Mesh3D — slab (rooms ∪ wall outline less voids, `slab.ts`), floors, columns, walls
   (body + sill + lintel per opening, meeting vertex to vertex), demolished walls as translucent
   ghosts (`wall:<id>:demolish`), closed door leaves, window frame and glass kept inside the cut,
-  T0 parametric furniture for twelve families (`t0.ts`) and grey boxes for the rest, a hidden flat
-  roof; `earcut` (ISC) for caps.
+  T0 parametric furniture for twelve families (`t0.ts`: parts over a box, ellipse, rounded or
+  profiled section, extruded up or sideways, each in a material slot) and grey boxes for the rest,
+  a hidden flat roof; `earcut` (ISC) for caps.
+- `src/materials.ts`: the material slots and the ONE palette the GLB writer and the viewer both
+  read (a T0 piece stays one node; one primitive or mesh per slot).
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure),
   `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js 0.186.1,
   `mountReplay(canvas, payload)` → `seek`/`frameHash`), `viewer.ts` (the HTML's host:

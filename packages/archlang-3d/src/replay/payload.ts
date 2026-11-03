@@ -3,6 +3,7 @@
  * for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D
  * preview tab builds it in the browser (card A5) and mounts it with `mountReplay`.
  */
+import { type MaterialSlot, slotGroups } from "../materials.js";
 import type { Mesh3D } from "../mesh/types.js";
 import { endElevation } from "./camera.js";
 import type { ReplayFacts } from "./strip.js";
@@ -17,6 +18,12 @@ export interface ReplayNode {
   /** Flat `[x, y, z, …]` in micrometres, exporters' axes (X plan x, Y up, Z plan y). */
   positions: number[];
   indices: number[];
+  /**
+   * A T0 piece's material slots (visual-assets V1): consecutive runs of `indices`, in order, each
+   * drawn in its slot's colour (`materials.ts`; `body` is the kind's own). Absent on every node
+   * without a slotted shell, which is then drawn exactly as before.
+   */
+  groups?: Array<{ slot: MaterialSlot; count: number }>;
 }
 
 export interface ReplayPayload {
@@ -86,10 +93,18 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
       .map((n) => {
         const positions: number[] = [];
         const indices: number[] = [];
-        for (const s of n.shells) {
-          const base = positions.length / 3;
-          positions.push(...s.positions);
-          for (const i of s.indices) indices.push(base + i);
+        const slotted = n.shells.some((s) => s.slot !== undefined);
+        // A slotted node's shells go slot by slot (the GLB's primitive order), one index run each.
+        const groups = slotted ? slotGroups(n.shells) : [{ slot: "body" as const, shells: n.shells }];
+        const runs: Array<{ slot: MaterialSlot; count: number }> = [];
+        for (const g of groups) {
+          const start = indices.length;
+          for (const s of g.shells) {
+            const base = positions.length / 3;
+            positions.push(...s.positions);
+            for (const i of s.indices) indices.push(base + i);
+          }
+          runs.push({ slot: g.slot, count: indices.length - start });
         }
         const lift = lifts.get(n.level) ?? 0;
         return {
@@ -99,6 +114,7 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
           ...(lift !== 0 ? { lift } : {}),
           positions,
           indices,
+          ...(slotted ? { groups: runs } : {}),
         };
       }),
     events: timeline(mesh),

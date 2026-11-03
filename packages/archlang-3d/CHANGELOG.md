@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The twelve T0 furniture pieces are drawn in materials instead of one colour per kind: oak, linen,
+  wool, upholstery, ceramic, stone, brushed steel, glass and more, from one palette that the GLB and
+  the replay both read. Each piece is still one node under its key (`furniture:<id>`); in the GLB it
+  holds one primitive per material, named `fixture:<slot>`. The ledger records each family's
+  materials (`furniture-material-default`).
+- The pieces are more detailed: a bed with legs, a mattress, a duvet with its sheet turned down,
+  pillows and a throw; a sofa with rolled arms and separate seat and back cushions; kitchen units with
+  fronts, pulls and a stone worktop, a steel sink with its tap, an oven door and a hob with burner
+  rings; a shower with a glass screen and a head; a WC and a basin with rounded ceramics. A kitchen
+  sink, basin and shower are now ledgered taller (1160, 990 and 2000 mm: tap and screen), a rug lower
+  (12 mm).
+- `t0Parts` and `PlacedPart` are replaced by `t0Shells`, `t0LocalParts`, `partShell` and
+  `sectionRing`; a part can have rounded corners (`radius`), lie on its side (`axis`) or follow a
+  polygon (`profile`).
+
 ## [0.1.2] - 2026-11-02
 
 ### Fixed

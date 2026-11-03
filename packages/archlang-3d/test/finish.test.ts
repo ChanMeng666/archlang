@@ -5,7 +5,7 @@
  * wall outline less voids, and a demolished wall (B3a) drawn from `ir.drawn` as a ghost.
  */
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh, type Mesh3D, type MeshNode, type Pt, T0_FAMILIES } from "../src/index.js";
+import { adaptPlan, buildMesh, type Mesh3D, type MeshNode, type Pt, T0_FAMILIES, T0_MATERIALS } from "../src/index.js";
 import { openEdges, signedVolume } from "../src/node.js";
 import { EXAMPLES_LIST, STRESS_PLANS, WORLD } from "./corpus.js";
 import { inside } from "./probe.js";
@@ -118,11 +118,30 @@ describe("T0 parametric furniture (plan §4.4)", () => {
     expect(tallest(wc)[1]).toBeLessThan(m.scene.levels[0]?.furniture[0]?.centre[1] ?? 0);
   });
 
+  it("ledgers each T0 category's material slots once, as a family default (ADR 0030 decision 5)", () => {
+    const entries = laneway.mesh.assumptions.filter((a) => a.rule === "furniture-material-default");
+    const cats = laneway.scene.levels.flatMap((lv) => lv.furniture.map((f) => [f.category, f.asset] as const));
+    expect(entries.map((a) => a.field).sort()).toEqual([...new Set(cats.map(([c]) => `material(${c})`))].sort());
+    for (const [c, asset] of cats) {
+      const e = entries.find((a) => a.field === `material(${c})`);
+      expect(e, c).toMatchObject({ kind: "furniture", provenance: "default" });
+      expect(e?.value, c).toEqual(T0_MATERIALS[asset.slice("t0:".length)]);
+    }
+    // Every slotted shell names a slot of its family's row.
+    for (const p of pieces) {
+      const row = T0_MATERIALS[String(p.extras.asset).slice("t0:".length)] ?? [];
+      for (const s of p.shells) expect(row, p.id).toContain(s.slot);
+    }
+  });
+
   it("leaves a family without a generator a grey box", () => {
     const m = built(plan('room id=r at (0,0) size 6000x4000 label "R" furniture desk at (1000,1000) size 1200x600'));
     const desk = m.mesh.nodes.find((x) => x.kind === "furniture") as MeshNode;
     expect(desk.extras.asset).toBe("greybox");
     expect(desk.shells.length).toBe(1);
+    // A grey box names no material slot (the kind's own colour) and ledgers none.
+    expect(desk.shells[0]).not.toHaveProperty("slot");
+    expect(m.mesh.assumptions.some((a) => a.rule === "furniture-material-default")).toBe(false);
   });
 
   // The core only turns furniture by quarter turns, but `buildMesh` reads a Scene3D, whose schema
