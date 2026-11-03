@@ -36,7 +36,18 @@
 import type { MaterialSlot } from "../materials.js";
 import type { Furniture, Pt } from "../scene3d/types.js";
 import { degenerateHoles, prism } from "./extrude.js";
-import { cabinet, clamp, P, type Part, pair, type SectionShape, span, type T0Family, upholstered } from "./t0-kit.js";
+import {
+  cabinet,
+  clamp,
+  MAX_DOORS,
+  P,
+  type Part,
+  pair,
+  type SectionShape,
+  span,
+  type T0Family,
+  upholstered,
+} from "./t0-kit.js";
 import { T0_LIVING } from "./t0-living.js";
 import { T0_OFFICE } from "./t0-office.js";
 import { T0_OUTDOOR } from "./t0-outdoor.js";
@@ -229,7 +240,8 @@ const GENERATORS: Readonly<Record<string, (W: number, D: number) => Part[]>> = {
   },
   wardrobe(W, D) {
     const [hw, hd] = [W / 2, D / 2];
-    const n = 2 * Math.max(1, Math.round(W / 1000));
+    // A door pair per metre, at most 64 doors, as the core caps a run's divisions (red-team N7).
+    const n = 2 * clamp(Math.round(W / 1000), 1, MAX_DOORS / 2);
     const doors = span(n, hw - 8, 4);
     const fz = hd - 12;
     return [
@@ -409,7 +421,12 @@ export function sectionRing(u0: number, u1: number, v0: number, v1: number, shap
     // A generator's own constant, never user input: a point off the box is a programming error.
     if (shape.profile.some(([fu, fv]) => !(fu >= 0 && fu <= 1 && fv >= 0 && fv <= 1)))
       throw new RangeError("a T0 profile point lies outside [0, 1]²");
-    pts = shape.profile.map(([fu, fv]) => [u0 + fu * (u1 - u0), v0 + fv * (v1 - v0)]);
+    // About the box's centre, not from its low corner (red-team S2, PR #463): a point and its
+    // mirror partner (`1 − fu` in the mirrored box) are then exact negatives before rounding, so a
+    // half-micrometre tie rounds them apart never; the box's own sides are its exact ends.
+    const at = (f: number, a: number, b: number, c: number): number =>
+      f === 0 ? a : f === 1 ? b : c + (f - 0.5) * (b - a);
+    pts = shape.profile.map(([fu, fv]) => [at(fu, u0, u1, cu), at(fv, v0, v1, cv)]);
   } else if (shape.round) {
     pts = C16.map((c, k) => [cu + ru * c, cv + rv * (S16[k] as number)]);
   } else if (shape.radius && shape.radius > 0) {

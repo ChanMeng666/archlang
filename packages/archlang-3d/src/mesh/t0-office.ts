@@ -74,7 +74,11 @@ export const T0_OFFICE: Readonly<Record<string, T0Family>> = {
       // `[1, 6]` along each long side and one at each end, on two pedestals down the long axis.
       const horizontal = W >= D;
       const run = horizontal ? 2 * tx : 2 * tz;
-      const perSide = clamp(Math.round(run / (2.2 * band)), 1, 6);
+      // The count is the core's own expression on the unrounded band (`drawMeetingTable`:
+      // `clampCount(runLen / (CHAIR_PITCH * band), 1, 6)`, the top `r.w - 2 * band` long), so a .5
+      // tie rounds the same way in the drawing and the model (red-team S1); positions are snapped.
+      const cb = s * 0.22;
+      const perSide = clamp(Math.round((horizontal ? W - 2 * cb : D - 2 * cb) / (2.2 * cb)), 1, 6);
       const c = clamp(s * 0.03, 12, 45);
       const o = run * 0.3;
       const f = Math.min(tx, tz) * 0.6;
@@ -381,7 +385,9 @@ export const T0_OFFICE: Readonly<Record<string, T0Family>> = {
       const horizontal = W >= D;
       const run = horizontal ? W : D;
       const depth = (horizontal ? D : W) - 2 * band;
-      const n = clamp(Math.round(run / (2.2 * band)), 1, 4);
+      // The count is the core's own expression on the unrounded band (`drawWorkstation`:
+      // `clampCount(runLen / (2.2 * band), 1, 4)`), so the drawing and the model agree at a .5 tie.
+      const n = clamp(Math.round(run / (2.2 * (s * 0.26))), 1, 4);
       const scr = Math.max(depth * 0.025, 8);
       const box = (u0: number, u1: number, v0: number, v1: number) =>
         horizontal ? { x0: u0, x1: u1, z0: v0, z1: v1 } : { x0: v0, x1: v1, z0: u0, z1: u1 };

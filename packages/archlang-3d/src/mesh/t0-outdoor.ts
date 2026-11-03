@@ -451,8 +451,11 @@ export const T0_OUTDOOR: Readonly<Record<string, T0Family>> = {
           : [-1, 1].map((k) =>
               P("wood", -tx + 20, tx - 20, k < 0 ? -tz * 0.8 : tz * 0.8 - t, k < 0 ? -tz * 0.8 + t : tz * 0.8, 0, 710),
             );
-      const run = W >= D ? 2 * tx : 2 * tz;
-      const perSide = clamp(Math.round(run / (2.2 * band)), 1, 4);
+      // The count is the core's own expression on the unrounded band (`drawOutdoorTable`: the top
+      // `r.w - 2 * band` long, `round(runLen / (PATIO_PITCH * band))`), so a .5 tie rounds the
+      // same way in the drawing and the model (red-team S1, PR #463); only positions are snapped.
+      const cb = s * 0.22;
+      const perSide = clamp(Math.round((W >= D ? W - 2 * cb : D - 2 * cb) / (2.2 * cb)), 1, 4);
       const chair = (b: { x0: number; x1: number; z0: number; z1: number }, back: ChairBack): Part[] => {
         // The seat's cushion over the frame's seat, front 6/64 and back 6/64 in.
         const depthAlong = back === "-z" || back === "+z";
@@ -1058,23 +1061,25 @@ export const T0_OUTDOOR: Readonly<Record<string, T0Family>> = {
     materials: ["stone"],
     gen(W, D) {
       const [hw, hd] = [W / 2, D / 2];
-      // `drawBoulder`: the faceted outline, broad at its base, its crown toward the back. Six
-      // tiers of the same facets, rounding over like a mound, each smaller and drawn a little toward the crown. A smaller
-      // tier's half-width is held to 1/64 mm, so each facet point (a multiple of 1/64 of the box)
-      // is exact and lands on its mirror partner even at a micrometre rounding tie.
-      const tier = (f: number, y0: number, y1: number): Part => {
-        const cz = -D * 0.08 * (1 - f);
-        const a = f === 1 ? hw : snap64(hw * f);
-        return P("stone", -a, a, cz - hd * f, cz + hd * f, y0, y1, { profile: BOULDER });
+      // `drawBoulder`: the faceted outline, broad at its base, its crown toward the back. A natural
+      // stone rather than a stepped dome: a main mass, faceted, its crown set back, and a lower
+      // irregular lump at each front shoulder, the right one the left one's reflection (its
+      // facets flipped end for end), so the stone is irregular and still has no hand.
+      const mass = (f: number, y0: number, y1: number): Part => {
+        const z1 = hd - D * 0.2;
+        const cz = (-hd + z1) / 2 - D * 0.1 * (1 - f);
+        const h = (z1 + hd) / 2;
+        return P("stone", -W * 0.36 * f, W * 0.36 * f, cz - h * f, cz + h * f, y0, y1, { profile: BOULDER });
       };
-      return [
-        tier(1, 0, 160),
-        tier(0.96, 160, 300),
-        tier(0.86, 300, 410),
-        tier(0.7, 410, 500),
-        tier(0.5, 500, 565),
-        tier(0.26, 565, 600),
-      ];
+      const lump = (f: number, y0: number, y1: number): Part[] => {
+        const [cx, cz, a, h] = [-hw + W * 0.24, hd - D * 0.34, W * 0.24, D * 0.34];
+        const p = P("stone", cx - a * f, cx + a * f, cz - h * f, cz + h * f, y0, y1, { profile: ROCK });
+        return [
+          p,
+          { ...p, x0: -p.x1, x1: -p.x0, profile: ROCK.map(([u, v]): readonly [number, number] => [1 - u, v]) },
+        ];
+      };
+      return [mass(1, 0, 260), mass(0.8, 260, 450), mass(0.5, 450, 600), ...lump(1, 0, 210), ...lump(0.7, 210, 330)];
     },
   },
   picnic_table: {
@@ -1243,6 +1248,19 @@ const BOULDER: ReadonlyArray<readonly [number, number]> = [
   [0, 0.46809],
   [7 / 64, 0.19149],
   [18 / 64, 0.04255],
+];
+
+/** An irregular stone lump in plan (multiples of 1/64, so its reflection is exact). */
+const ROCK: ReadonlyArray<readonly [number, number]> = [
+  [20 / 64, 0],
+  [44 / 64, 4 / 64],
+  [60 / 64, 18 / 64],
+  [1, 38 / 64],
+  [54 / 64, 58 / 64],
+  [34 / 64, 1],
+  [12 / 64, 60 / 64],
+  [0, 40 / 64],
+  [4 / 64, 16 / 64],
 ];
 
 /** A picnic table's A-frame in its end view (u across, v up), multiples of 1/64. */

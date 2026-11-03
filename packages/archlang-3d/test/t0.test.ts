@@ -338,6 +338,36 @@ describe("V3 generators", () => {
     });
   }
 
+  // Red-team S2/S3, PR #463: mirror symmetry held only at whole-millimetre sizes; a profile point
+  // (from its box's low corner) and its partner could round apart at a half-micrometre tie (a
+  // boulder 593.2 x 1034, a picnic table 182.2 x 1264.6, a swing 949.4 x 1028.8; the urinal's bowl
+  // at 600 x 306). Points are now placed about the box's centre. A fixed list of one- and
+  // two-decimal sizes, with the reported ones, every family symmetric wherever it is not handed.
+  const decimal: Array<[number, number]> = [
+    [593.2, 1034],
+    [182.2, 1264.6],
+    [1264.6, 182.2],
+    [123.4, 567.8],
+    [949.4, 1028.8],
+    [600, 306],
+    [307, 600],
+    [600, 318],
+    ...Array.from({ length: 44 }, (_, k): [number, number] => [
+      Number((87.3 + 41.7 * k).toFixed(1)),
+      Number((1264.6 - 23.45 * k).toFixed(2)),
+    ]),
+  ];
+  for (const family of Object.keys(T0_FAMILIES)) {
+    it(`${family}: mirror-symmetric at one- and two-decimal sizes wherever it is not handed (red-team S2)`, () => {
+      for (const [W, D] of decimal) {
+        if (handedAt(family, W, D)) continue;
+        const shells = (t0LocalParts(family, W, D) ?? []).map((p) => partShell(p)).filter((s): s is Shell => !!s);
+        const own = shells.map((s) => sig(s, false)).sort();
+        expect(shells.map((s) => sig(s, true)).sort(), `${family} ${W}x${D}`).toEqual(own);
+      }
+    });
+  }
+
   it("has no generator for a word outside the catalogue, which stays a grey box", () => {
     expect(t0LocalParts("lectern", 1200, 600)).toBeNull();
     expect(assetFor("lectern")).toBe("greybox");
@@ -546,6 +576,11 @@ describe("V5, V6: the catalogue's names", () => {
     expect(Object.values(BATCHES).flat().sort()).toEqual(rows.map((r) => r[0]).sort());
     // Every canonical family of the core's public material table has a generator.
     expect(Object.keys(familyTable()).filter((f) => assetFor(f) === "greybox")).toEqual([]);
+    // And every word the core's public manifest lists (`buildManifest().fixtureCategories`, the
+    // flattened family table) — red-team N6.
+    const words = core.buildManifest("test").fixtureCategories;
+    expect(words.length).toBe(rows.flat().length);
+    expect(words.filter((w) => assetFor(w) === "greybox")).toEqual([]);
   });
 });
 
@@ -774,6 +809,95 @@ describe("V5: a handed family is built as the plan draws it", () => {
     );
     const known = buildScene3D([{ level: 1, ir: res.ir }], { coreVersion: "x", mirrored: [new Set()] });
     expect(known.levels[0]?.furniture[0]?.asset).toBe("t0:piano");
+  });
+
+  // Red-team N3, PR #463: only a piece handed at ITS size needs its reflection. A bicycle laid
+  // along its width is greyed when that is unknown; one stood along its depth is symmetric there
+  // and is built. `size` is the plan box: turned a quarter, a 600 x 1800 box is a piece 1800 wide
+  // in its own frame (handed), an 1800 x 600 one a piece stood on end (symmetric).
+  it("greys a bicycle for an unknown reflection only where it is handed at its own size", async () => {
+    const { buildScene3D } = await import("../src/scene3d/build.js");
+    const { resolvePlan } = await import("@chanmeng666/archlang");
+    const res = resolvePlan(
+      plan(
+        "furniture bicycle at (500,500) size 1800x600 furniture bicycle at (500,2000) size 600x1800 furniture bicycle at (3000,2000) size 600x1800 rotate 90 furniture bicycle at (3000,4500) size 1800x600 rotate 90",
+      ),
+      {},
+    );
+    if (!res.ir) throw new Error("no ir");
+    const sc = buildScene3D([{ level: 1, ir: res.ir }], { coreVersion: "x" });
+    expect(sc.levels[0]?.furniture.map((f) => [f.id, f.asset])).toEqual([
+      ["bicycle_1", "greybox"],
+      ["bicycle_2", "t0:bicycle"],
+      ["bicycle_3", "greybox"],
+      ["bicycle_4", "t0:bicycle"],
+    ]);
+    expect(sc.meta.assumptions.filter((a) => a.rule === "furniture-handed-mirror-unknown").map((a) => a.id)).toEqual([
+      "bicycle_1",
+      "bicycle_3",
+    ]);
+  });
+});
+
+// Red-team S1, PR #463: the seat counts are the core's own expressions on the UNROUNDED band, so
+// at a .5 tie (outdoor_table 363 x 220: 3 a side in the drawing) the model rounds the same way.
+// The core's formulas, from the glyphs they draw (glyphs-outdoor.ts `drawOutdoorTable`,
+// glyphs-misc.ts `drawMeetingTable` and `drawWorkstation`).
+describe("seat counts agree with the core's drawing at every tie size (red-team S1)", () => {
+  const cl = (x: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, x));
+  const CORE: Record<
+    string,
+    {
+      per: (W: number, D: number, band: number) => number;
+      total: (W: number, D: number, n: number) => number;
+      frac: number;
+      max: number;
+    }
+  > = {
+    outdoor_table: {
+      frac: 0.22,
+      max: 4,
+      per: (W, D, band) => (W >= D ? W - 2 * band : D - 2 * band) / (2.2 * band),
+      total: (W, D, n) => (Math.abs(W - D) <= 0.2 * Math.max(W, D) ? 4 : 2 * n + 2),
+    },
+    meeting_table: {
+      frac: 0.22,
+      max: 6,
+      per: (W, D, band) => (W >= D ? W - 2 * band : D - 2 * band) / (2.2 * band),
+      total: (_W, _D, n) => 2 * n + 2,
+    },
+    workstation: {
+      frac: 0.26,
+      max: 4,
+      per: (W, D, band) => (W >= D ? W : D) / (2.2 * band),
+      total: (_W, _D, n) => 2 * n,
+    },
+  };
+  /** The chairs a piece is built with: the parts that reach the chairs' 820 mm back. */
+  const chairs = (family: string, W: number, D: number): number =>
+    (t0LocalParts(family, W, D) ?? []).filter(
+      (p) => p.y1 === 820 && p.mat === (family === "outdoor_table" ? "wood" : "fabric"),
+    ).length;
+  for (const [family, c] of Object.entries(CORE)) {
+    it(`${family}: the model's chairs are the drawing's at every size where the band's rounding would tip the count`, () => {
+      const ties: Array<[number, number]> = [];
+      for (let W = 150; W <= 2400; W++) {
+        for (let D = 150; D <= 2400; D += 1) {
+          const band = Math.min(W, D) * c.frac;
+          const snapped = Math.round(band * 64) / 64;
+          if (Math.round(c.per(W, D, band)) !== Math.round(c.per(W, D, snapped))) ties.push([W, D]);
+        }
+      }
+      // The sweep finds the sizes the red team reported (e.g. 363 x 220 for the patio table).
+      expect(ties.length, family).toBeGreaterThan(0);
+      for (const [W, D] of ties.slice(0, 400)) {
+        const n = cl(Math.round(c.per(W, D, Math.min(W, D) * c.frac)), 1, c.max);
+        expect(chairs(family, W, D), `${family} ${W}x${D}`).toBe(c.total(W, D, n));
+      }
+    });
+  }
+  it("outdoor_table 363 x 220 seats three a side, as the core draws it", () => {
+    expect(chairs("outdoor_table", 363, 220)).toBe(2 * 3 + 2);
   });
 });
 
