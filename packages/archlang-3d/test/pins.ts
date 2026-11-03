@@ -15,5 +15,11 @@ export const PIN_GENERATOR = "archlang-3d 0.0.0";
  *
  * Moved by card A2b (was bef25c7b…) with the Mesh3D alone: T0 furniture and the split wall bodies.
  * The writer's one change (a `wall:demolish` material) writes nothing for a plan without one.
+ *
+ * Moved by visual-assets cards V1–V3 (was 4bcbf8e0…) with the Mesh3D (the refined T0 furniture)
+ * and the writer: a T0 piece's node now holds one primitive per material slot, material
+ * `fixture:<slot>` from the shared palette (`src/materials.ts`). A node without slotted shells is
+ * written as before: laneway's GLB with its furniture nodes removed hashes to 5d21c0d4… before and
+ * after. 47 264 → 110 528 bytes.
  */
-export const LANEWAY_GLB_SHA256 = "4bcbf8e076e792ab259c4c516398bb259f9b890d26d219f6cf665ce82883b090";
+export const LANEWAY_GLB_SHA256 = "d0c91a31ab017fc81ae8f102f02006e89943593d88177de47a6ef87e6323a83b";

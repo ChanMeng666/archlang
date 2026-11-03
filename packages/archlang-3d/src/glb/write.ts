@@ -4,7 +4,9 @@
  * node per Mesh3D node, named `<kind>:<id>[:<part>]` (its Mesh3D key without the `L<n>/` prefix, so
  * the global key `L<n>/<name>` IS the Mesh3D key), carrying the node's facts in
  * `extras.archlang`. Each node's shells are one triangle primitive in metres (the µm integers ÷ 10⁶,
- * float32), in glTF axes already (X plan x, Y up, Z plan y). One plain material per kind.
+ * float32), in glTF axes already (X plan x, Y up, Z plan y). One plain material per kind; a T0
+ * piece's node keeps its one node and name but writes one primitive per material slot, material
+ * `fixture:<slot>` from the palette the viewer reads too (`materials.ts`, visual-assets V1).
  *
  * Deterministic (V-DET-01): nodes in the Mesh3D's canonical order, object keys in a fixed order,
  * `asset.generator` a fixed string with no time. glTF has no "hidden" flag a validator accepts
@@ -15,6 +17,7 @@
  * write path), which the browser bundle's scan forbids (`test/browser-safety.test.ts`).
  */
 import { Document, Logger, WebIO } from "@gltf-transform/core";
+import { linearRgb, type MaterialSlot, PALETTE, slotGroups } from "../materials.js";
 import type { Mesh3D, MeshNode, NodeKind } from "../mesh/types.js";
 import { ARCHLANG_3D_VERSION } from "../scene3d/build.js";
 
@@ -86,6 +89,22 @@ export async function writeGlb(mesh: Mesh3D, opts: { generator?: string } = {}):
     }
     return m;
   };
+  /** A T0 part's slot (visual-assets V1): `fixture:<slot>`, from the one palette the viewer reads. */
+  const slotMaterial = (slot: Exclude<MaterialSlot, "body">) => {
+    const key = `fixture:${slot}`;
+    let m = materials.get(key);
+    if (!m) {
+      const p = PALETTE[slot];
+      m = doc
+        .createMaterial(key)
+        .setBaseColorFactor([...linearRgb(p.srgb), p.alpha])
+        .setMetallicFactor(p.metallic)
+        .setRoughnessFactor(p.roughness);
+      if (p.alpha < 1) m.setAlphaMode("BLEND");
+      materials.set(key, m);
+    }
+    return m;
+  };
 
   const levels = new Map<number, ReturnType<Document["createNode"]>>();
   for (const n of mesh.nodes) {
@@ -95,25 +114,31 @@ export async function writeGlb(mesh: Mesh3D, opts: { generator?: string } = {}):
       scene.addChild(group);
       levels.set(n.level, group);
     }
-    const positions: number[] = [];
-    const indices: number[] = [];
-    for (const s of n.shells) {
-      const base = positions.length / 3;
-      for (const v of s.positions) positions.push(v / 1e6);
-      for (const i of s.indices) indices.push(base + i);
-    }
-    const count = positions.length / 3;
-    const pos = doc.createAccessor().setType("VEC3").setArray(new Float32Array(positions)).setBuffer(buffer);
-    const idx = doc
-      .createAccessor()
-      .setType("SCALAR")
-      .setArray(count > 0xffff ? new Uint32Array(indices) : new Uint16Array(indices))
-      .setBuffer(buffer);
-    const prim = doc.createPrimitive().setAttribute("POSITION", pos).setIndices(idx).setMaterial(material(n));
     const name = glbNodeName(n);
+    const gmesh = doc.createMesh(name);
+    // One primitive per material slot, `body` (the kind's material) first; a node without slotted
+    // shells (everything but a T0 piece) is one primitive, as before.
+    for (const g of slotGroups(n.shells)) {
+      const positions: number[] = [];
+      const indices: number[] = [];
+      for (const s of g.shells) {
+        const base = positions.length / 3;
+        for (const v of s.positions) positions.push(v / 1e6);
+        for (const i of s.indices) indices.push(base + i);
+      }
+      const count = positions.length / 3;
+      const pos = doc.createAccessor().setType("VEC3").setArray(new Float32Array(positions)).setBuffer(buffer);
+      const idx = doc
+        .createAccessor()
+        .setType("SCALAR")
+        .setArray(count > 0xffff ? new Uint32Array(indices) : new Uint16Array(indices))
+        .setBuffer(buffer);
+      const mat = g.slot === "body" ? material(n) : slotMaterial(g.slot);
+      gmesh.addPrimitive(doc.createPrimitive().setAttribute("POSITION", pos).setIndices(idx).setMaterial(mat));
+    }
     const node = doc
       .createNode(name)
-      .setMesh(doc.createMesh(name).addPrimitive(prim))
+      .setMesh(gmesh)
       .setExtras({ archlang: nodeExtras(n) });
     group.addChild(node);
   }

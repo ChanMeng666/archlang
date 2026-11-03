@@ -18,8 +18,19 @@ export type { DoorPose, MeshOptions } from "./mesh/build.js";
 export { clipToConvex, cutSector, insideCut, prism, sectorBand, slab2d } from "./mesh/extrude.js";
 export type { CutSector } from "./mesh/extrude.js";
 export { rectsOf, slabRegion } from "./mesh/slab.js";
-export { assetFor, T0_FAMILIES, T0_HEIGHT_MM, t0Parts } from "./mesh/t0.js";
-export type { Part, PlacedPart } from "./mesh/t0.js";
+export {
+  assetFor,
+  partShell,
+  sectionRing,
+  T0_FAMILIES,
+  T0_HEIGHT_MM,
+  T0_MATERIALS,
+  t0LocalParts,
+  t0Shells,
+} from "./mesh/t0.js";
+export type { Part, SectionShape } from "./mesh/t0.js";
+export { linearRgb, MATERIAL_SLOTS, PALETTE, slotColour, slotGroups } from "./materials.js";
+export type { MaterialSlot, SlotMaterial } from "./materials.js";
 export { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, floorLifts, floorOverlaps, overlapArea } from "./scene3d/overlap.js";
 export type { FloorOverlap } from "./scene3d/overlap.js";
 export type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./mesh/types.js";

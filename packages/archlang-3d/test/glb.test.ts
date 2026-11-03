@@ -9,9 +9,18 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { compile } from "@chanmeng666/archlang";
 import { describe, expect, it } from "vitest";
-import { adaptPlan, buildMesh } from "../src/index.js";
+import { adaptPlan, buildMesh, linearRgb, PALETTE, slotGroups } from "../src/index.js";
 import { WebIO } from "@gltf-transform/core";
-import { checkNaming, GLB_GENERATOR, glbJson, glbLeaks, readGlbNodes, replayPayload, writeGlb } from "../src/node.js";
+import {
+  checkNaming,
+  GLB_GENERATOR,
+  glbJson,
+  glbLeaks,
+  glbNodeName,
+  readGlbNodes,
+  replayPayload,
+  writeGlb,
+} from "../src/node.js";
 import { LANEWAY_GLB_SHA256, PIN_GENERATOR } from "./pins.js";
 import { EXAMPLES_LIST, WORLD } from "./corpus.js";
 
@@ -84,6 +93,47 @@ describe("GLB from Mesh3D", () => {
     expect(mat).toMatchObject({ name: "wall:demolish", alphaMode: "BLEND" });
     const standing = json.nodes.find((n) => n.name === "wall:shell");
     expect(json.materials[json.meshes[standing?.mesh ?? -1]?.primitives[0]?.material ?? -1]?.name).toBe("wall");
+  });
+
+  it("writes a T0 piece as ONE node with a primitive per material slot, in the order the viewer draws them", async () => {
+    const { src, mesh } = meshOf("laneway-house.arch");
+    const json = JSON.parse(glbJson(await writeGlb(mesh))) as {
+      nodes: Array<{ name: string; mesh?: number }>;
+      meshes: Array<{ primitives: Array<{ material: number }> }>;
+      materials: Array<{ name: string; alphaMode?: string; pbrMetallicRoughness?: { baseColorFactor?: number[] } }>;
+    };
+    const viewer = new Map(
+      replayPayload(mesh, { title: "l", svg: compile(src, { world: WORLD }).svg }).nodes.map((n) => [n.key, n]),
+    );
+    let slotted = 0;
+    for (const n of mesh.nodes) {
+      const node = json.nodes.filter((x) => x.name === glbNodeName(n));
+      expect(node.length, n.key).toBe(1);
+      const names = (json.meshes[node[0]?.mesh ?? -1]?.primitives ?? []).map((p) => json.materials[p.material]?.name);
+      const groups = slotGroups(n.shells);
+      expect(names, n.key).toEqual(groups.map((g) => (g.slot === "body" ? n.kind : `fixture:${g.slot}`)));
+      // The viewer's meshes for the node: the same slots in the same order, or one mesh when unslotted.
+      const v = viewer.get(n.key);
+      if (n.shells.some((s) => s.slot)) {
+        slotted++;
+        expect(
+          v?.groups?.map((g) => g.slot),
+          n.key,
+        ).toEqual(groups.map((g) => g.slot));
+        expect(
+          v?.groups?.reduce((a, g) => a + g.count, 0),
+          n.key,
+        ).toBe(v?.indices.length);
+      } else if (v) expect(v.groups, n.key).toBeUndefined();
+    }
+    expect(slotted).toBe(12);
+    // Every slot material reads the one palette; glass is translucent.
+    for (const m of json.materials.filter((x) => x.name.startsWith("fixture:"))) {
+      const p = PALETTE[m.name.slice("fixture:".length) as keyof typeof PALETTE];
+      expect(m.pbrMetallicRoughness?.baseColorFactor, m.name).toEqual([...linearRgb(p.srgb), p.alpha]);
+      expect(m.alphaMode === "BLEND", m.name).toBe(p.alpha < 1);
+    }
+    expect(json.materials.some((m) => m.name === "fixture:glass" && m.alphaMode === "BLEND")).toBe(true);
   });
 
   it("V-GLTF-02 fails a GLB that lacks a Mesh3D node", async () => {

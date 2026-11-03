@@ -8,6 +8,7 @@
  * integer number of micrometres. Triangles wind counter-clockwise seen from outside (outward
  * normals), and every shell is closed.
  */
+import type { MaterialSlot } from "../materials.js";
 import type { Assumption } from "../scene3d/types.js";
 
 /** The authoring stage a node belongs to (the replay's order, decision D3). */
@@ -17,6 +18,8 @@ export type Stage = "brief" | "rooms" | "walls" | "openings" | "fixtures" | "dra
 export interface Shell {
   positions: number[];
   indices: number[];
+  /** A T0 part's material slot (`materials.ts`); absent = `body`, the node kind's own colour. */
+  slot?: Exclude<MaterialSlot, "body">;
 }
 
 export type NodeKind = "slab" | "floor" | "column" | "wall" | "door" | "window" | "opening" | "furniture" | "roof";

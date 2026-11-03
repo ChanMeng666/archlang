@@ -34,6 +34,7 @@ import {
   frameCamera,
   START_FOV,
 } from "./camera.js";
+import { PALETTE, slotColour } from "../materials.js";
 import type { ReplayPayload } from "./payload.js";
 import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
@@ -103,6 +104,7 @@ const FOOTPRINT_MM = 12;
  */
 export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HTMLElement): ReplayHandle {
   const theme = THEMES[p.theme];
+  const furniture = theme.colors.furniture as string;
   const W = p.width;
   const H = p.height;
 
@@ -142,35 +144,67 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
       pos[i + 1] = y - base;
       pos[i + 2] = z;
     }
-    const geo = new BufferGeometry();
-    geo.setAttribute("position", new BufferAttribute(pos, 3));
-    geo.setIndex(n.indices);
-    geo.computeVertexNormals();
     const key = n.part ? `${n.kind}:${n.part}` : n.kind;
-    const glass = key === "window:glass";
-    // A demolished wall (B3a) is a ghost: translucent, writing no depth, never read as structure.
-    const ghost = key === "wall:demolish";
-    const mat = new MeshLambertMaterial({
-      color: new Color(theme.colors[key] ?? theme.colors.furniture),
-      transparent: glass || ghost,
-      opacity: glass ? 0.45 : ghost ? 0.3 : 1,
-      depthWrite: !ghost,
-      flatShading: true,
-      // The floor finish sits a few millimetres under every footprint: pushed back in depth, so a
-      // flat footprint never fights it in perspective.
-      polygonOffset: n.kind === "floor" || n.kind === "slab",
-      polygonOffsetFactor: 1,
-      polygonOffsetUnits: 4,
-    });
-    owned.push(geo, mat);
     const g = new Group();
     g.position.y = base + (n.lift ?? 0);
-    g.add(new Mesh(geo, mat));
-    if (n.kind !== "slab" && !glass) {
-      const edges = new EdgesGeometry(geo, 30);
-      const line = new LineBasicMaterial({ color: new Color(theme.edge) });
-      owned.push(edges, line);
-      g.add(new LineSegments(edges, line));
+    /**
+     * One three.js mesh (and its edges) over `indices`, in `colour`; `glass` is translucent and
+     * edgeless. `normals: false` skips the vertex normals: every material here is flat-shaded, whose
+     * fragment normal three.js takes from screen-space derivatives (`FLAT_SHADED`), so they are
+     * never read; a slotted node's meshes share one position buffer and need none.
+     */
+    const add = (
+      attr: BufferAttribute,
+      indices: number[],
+      colour: string,
+      glass: boolean,
+      opacity: number,
+      normals: boolean,
+    ) => {
+      const geo = new BufferGeometry();
+      geo.setAttribute("position", attr);
+      geo.setIndex(indices);
+      if (normals) geo.computeVertexNormals();
+      // A demolished wall (B3a) is a ghost: translucent, writing no depth, never read as structure.
+      const ghost = key === "wall:demolish";
+      const mat = new MeshLambertMaterial({
+        color: new Color(colour),
+        transparent: glass || ghost,
+        opacity: glass ? opacity : ghost ? 0.3 : 1,
+        depthWrite: !ghost,
+        flatShading: true,
+        // The floor finish sits a few millimetres under every footprint: pushed back in depth, so a
+        // flat footprint never fights it in perspective.
+        polygonOffset: n.kind === "floor" || n.kind === "slab",
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 4,
+      });
+      owned.push(geo, mat);
+      g.add(new Mesh(geo, mat));
+      if (n.kind !== "slab" && !glass) {
+        const edges = new EdgesGeometry(geo, 30);
+        const line = new LineBasicMaterial({ color: new Color(theme.edge) });
+        owned.push(edges, line);
+        g.add(new LineSegments(edges, line));
+      }
+    };
+    const attr = new BufferAttribute(pos, 3);
+    if (n.groups) {
+      // A T0 piece (visual-assets V1): one mesh per material slot, coloured from the one palette
+      // the GLB writer reads too; `body` keeps the kind's own colour.
+      let at = 0;
+      for (const { slot, count } of n.groups) {
+        const run = n.indices.slice(at, at + count);
+        at += count;
+        if (slot === "body") add(attr, run, theme.colors[key] ?? furniture, false, 1, false);
+        else {
+          const { alpha } = PALETTE[slot];
+          add(attr, run, slotColour(slot, p.theme, furniture), alpha < 1, alpha, false);
+        }
+      }
+    } else {
+      // Every other node exactly as before the slots (normals computed, though never read).
+      add(attr, n.indices, theme.colors[key] ?? furniture, key === "window:glass", 0.45, true);
     }
     g.visible = false;
     scene.add(g);
