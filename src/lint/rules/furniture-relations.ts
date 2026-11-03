@@ -103,6 +103,9 @@ const TABLES: ReadonlySet<string> = new Set([
   "outdoor_table",
   "desk",
   "reception_desk",
+  // The visual-assets tranche (V8): a desk pod is desks, and a picnic table is sat at.
+  "workstation",
+  "picnic_table",
 ]);
 
 /** The larger of the two axis gaps between two rectangles (0 when they overlap on both). */

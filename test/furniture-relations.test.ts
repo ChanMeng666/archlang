@@ -426,6 +426,20 @@ suite("W_SEAT_FACING_AWAY (PS2.11, undeclared)", () => {
     );
     expect(ds[0]!.hints![0]).not.toContain("table_1");
   });
+  it("a picnic table and a desk pod are tables a chair is sat at (visual-assets V8)", () => {
+    for (const table of ["id=t picnic_table", "id=t workstation", "id=t desk_pod"]) {
+      const away = lint(cafe("(2225,2400) size 450x450", table)).filter((d) => d.code === "W_SEAT_FACING_AWAY");
+      expect(away, table).toHaveLength(1);
+      expect(
+        lint(cafe("(2225,2400) size 450x450 facing t", table)).map((d) => d.code),
+        table,
+      ).not.toContain("W_SEAT_FACING_AWAY");
+    }
+    // A word that is not a table still is not one.
+    expect(lint(cafe("(2225,2400) size 450x450", "id=t ottoman")).map((d) => d.code)).not.toContain(
+      "W_SEAT_FACING_AWAY",
+    );
+  });
   it("a chair beyond the reach is not at the table", () => {
     expect(lint(cafe("(2225,3100) size 450x450")).map((d) => d.code)).not.toContain("W_SEAT_FACING_AWAY");
   });

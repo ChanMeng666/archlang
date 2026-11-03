@@ -52,6 +52,7 @@ import type { GlyphCtx, GlyphWeight, Rect } from "./glyph-lib.js";
 import {
   centerOf,
   clamp,
+  clampCount,
   dashedPattern,
   dashedPoly,
   insetRect,
@@ -749,6 +750,44 @@ export function drawBarCounter(r: Rect, g: GlyphCtx): SceneNode[] {
   const cy = r.y + r.h - s * 0.2;
   for (let k = 0; k < stools; k++) {
     g.dot({ x: r.x + (r.w * (k + 0.5)) / stools, y: cy }, seat, g.basin, "thin");
+  }
+  return g.nodes;
+}
+
+// ---------------------------------------------------------------------------
+// ── the visual-assets tranche (V8) ──
+
+/**
+ * The pantry (a tall cabinet, a larder): the carcass, the door-front line near the front face, the
+ * door splits through the door band, a pull on each door, and the TALL-UNIT CROSS — two diagonals
+ * over the carcass behind the doors.
+ *
+ * The cross is the drafting convention for a unit that rises through the cut plane to the ceiling
+ * (full-height joinery is drawn crossed so it cannot be read as a worktop run), and it is what
+ * tells a pantry from a `wardrobe` (a hanging rail) and a `sideboard` (a low carcass). It is
+ * solid, not dashed: the cupboard is cut by the plane, not above it. Square-cornered, as tall
+ * joinery is. The door count is one per 0.9 depths of width, clamped to `[1, 4]`, so a 600 mm
+ * larder is one door and a 1200 mm run two; each pull is centred on its door, which keeps the
+ * symbol its own mirror image.
+ *
+ * Prim count: `3 + 2 x doors`, i.e. 5 at the catalogued 600 x 600.
+ */
+export function drawPantry(r: Rect, g: GlyphCtx): SceneNode[] {
+  g.poly(rectPoly(r), g.body);
+  const frontY = r.y + r.h * 0.88;
+  g.seg({ x: r.x, y: frontY }, { x: r.x + r.w, y: frontY }, "extraThin");
+  g.seg({ x: r.x, y: r.y }, { x: r.x + r.w, y: frontY }, "extraThin");
+  g.seg({ x: r.x + r.w, y: r.y }, { x: r.x, y: frontY }, "extraThin");
+  const doors = clampCount(r.w / (r.h * 0.9), 1, 4);
+  for (let i = 1; i < doors; i++) {
+    const x = r.x + (r.w * i) / doors;
+    g.seg({ x, y: frontY }, { x, y: r.y + r.h }, "extraThin");
+  }
+  const pullY = r.y + r.h * 0.94;
+  const half = (r.w / doors) * 0.16;
+  for (let i = 0; i < doors; i++) {
+    const cx = r.x + (r.w * (i + 0.5)) / doors;
+    g.seg({ x: cx - half, y: pullY }, { x: cx + half, y: pullY }, "extraThin");
   }
   return g.nodes;
 }

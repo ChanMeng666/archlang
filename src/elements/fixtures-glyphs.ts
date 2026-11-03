@@ -25,7 +25,16 @@ import type { Theme } from "../theme.js";
 import { DEFAULT_THEME } from "../theme.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
 import { glyphCtx } from "./glyph-lib.js";
-import { drawBasin, drawBathtub, drawBidet, drawMirror, drawShower, drawUrinal, drawWc } from "./glyphs-bath.js";
+import {
+  drawBasin,
+  drawBathtub,
+  drawBidet,
+  drawMirror,
+  drawShower,
+  drawTowelRail,
+  drawUrinal,
+  drawWc,
+} from "./glyphs-bath.js";
 import {
   drawBarCounter,
   drawCounter,
@@ -37,6 +46,7 @@ import {
   drawLaundrySink,
   drawMicrowave,
   drawOven,
+  drawPantry,
   drawRangeHood,
   drawStove,
   drawUpperCabinet,
@@ -49,24 +59,30 @@ import {
   drawCrib,
   drawDoubleBed,
   drawDresser,
+  drawHospitalBed,
   drawNightstand,
   drawVanity,
   drawWardrobe,
 } from "./glyphs-bedroom.js";
 import {
   drawArmchair,
+  drawBeanBag,
   drawBench,
   drawChair,
   drawChaise,
   drawCoatRack,
   drawCoffeeTable,
+  drawConsoleTable,
   drawDiningTable,
   drawFireplace,
+  drawFloorLamp,
   drawLoveseat,
+  drawOttoman,
   drawPiano,
   drawRadiator,
   drawRug,
   drawShoeCabinet,
+  drawSideTable,
   drawSideboard,
   drawSofa,
   drawSofaL,
@@ -85,28 +101,40 @@ import {
   drawOfficeChair,
   drawPlant,
   drawPoolTable,
+  drawPrinter,
   drawReceptionDesk,
+  drawServerRack,
   drawSunLounger,
   drawTreadmill,
+  drawWhiteboard,
+  drawWorkstation,
 } from "./glyphs-misc.js";
 import {
   drawBbq,
   drawBicycle,
+  drawBikeRack,
   drawBin,
+  drawBollard,
+  drawBoulder,
   drawClothesline,
   drawConifer,
   drawEvCharger,
   drawFirePit,
+  drawFlowerBed,
   drawHedge,
   drawHotTub,
   drawMailbox,
   drawMotorcycle,
   drawOutdoorChair,
   drawOutdoorTable,
+  drawPalm,
   drawPergola,
+  drawPicnicTable,
+  drawRaisedBed,
   drawSandpit,
   drawShed,
   drawShrub,
+  drawSlide,
   drawSwing,
   drawTrampoline,
   drawTree,
@@ -237,6 +265,32 @@ const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
   ["locker"],
   ["pool_table"],
   ["treadmill"],
+  // ── the visual-assets tranche (V8) ──
+  // Twenty families appended, at the END again, because this table's order IS the legend's
+  // order. Living, kitchen, bath, outdoor (planting, then play and street furniture), office,
+  // care — the order the domain modules hold them in. `rack` is deliberately not an alias of
+  // `server_rack`: a coat rack, a bike rack and a wine rack are racks too, so the bare word names
+  // no one piece.
+  ["floor_lamp"],
+  ["side_table", "end_table"],
+  ["console_table"],
+  ["ottoman", "pouf", "footstool"],
+  ["bean_bag"],
+  ["pantry", "tall_cabinet", "larder"],
+  ["towel_rail", "towel_radiator"],
+  ["palm", "palm_tree"],
+  ["flower_bed", "planting_bed"],
+  ["boulder", "rock"],
+  ["picnic_table"],
+  ["slide", "playground_slide"],
+  ["bollard"],
+  ["bike_rack", "cycle_stand"],
+  ["raised_bed", "vegetable_bed"],
+  ["whiteboard"],
+  ["printer", "copier"],
+  ["server_rack"],
+  ["hospital_bed"],
+  ["workstation", "desk_pod"],
 ];
 
 /**
@@ -436,6 +490,27 @@ export const FIXTURE_FAMILY_MATERIALS: Readonly<Record<string, FamilyMaterials>>
   locker: M("metal"),
   pool_table: M("wood_dark", "fabric"),
   treadmill: M("appliance", "rubber"),
+  // ── the visual-assets tranche (V8) ──
+  floor_lamp: M("fabric", "metal"),
+  side_table: M("wood"),
+  console_table: M("wood"),
+  ottoman: M("fabric", "cushion"),
+  bean_bag: M("fabric", "cushion"),
+  pantry: M("paint"),
+  towel_rail: M("metal"),
+  palm: M("foliage", "bark"),
+  flower_bed: M("soil", "foliage"),
+  boulder: M("stone"),
+  picnic_table: M("wood"),
+  slide: M("paint", "metal"),
+  bollard: M("metal"),
+  bike_rack: M("metal"),
+  raised_bed: M("wood", "foliage"),
+  whiteboard: M("paint", "metal"),
+  printer: M("appliance", "screen"),
+  server_rack: M("metal"),
+  hospital_bed: M("metal", "linen"),
+  workstation: M("wood", "fabric"),
 });
 
 /** The materials of `category`'s family (an alias resolves through its family), or `undefined`
@@ -676,6 +751,61 @@ export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: Ren
       return drawPoolTable(r, g);
     case "treadmill":
       return drawTreadmill(r, g);
+    // ── the visual-assets tranche (V8) ──
+    case "floor_lamp":
+      return drawFloorLamp(r, g);
+    case "side_table":
+    case "end_table":
+      return drawSideTable(r, g);
+    case "console_table":
+      return drawConsoleTable(r, g);
+    case "ottoman":
+    case "pouf":
+    case "footstool":
+      return drawOttoman(r, g);
+    case "bean_bag":
+      return drawBeanBag(r, g);
+    case "pantry":
+    case "tall_cabinet":
+    case "larder":
+      return drawPantry(r, g);
+    case "towel_rail":
+    case "towel_radiator":
+      return drawTowelRail(r, g);
+    case "palm":
+    case "palm_tree":
+      return drawPalm(r, g);
+    case "flower_bed":
+    case "planting_bed":
+      return drawFlowerBed(r, g);
+    case "boulder":
+    case "rock":
+      return drawBoulder(r, g);
+    case "picnic_table":
+      return drawPicnicTable(r, g);
+    case "slide":
+    case "playground_slide":
+      return drawSlide(r, g);
+    case "bollard":
+      return drawBollard(r, g);
+    case "bike_rack":
+    case "cycle_stand":
+      return drawBikeRack(r, g);
+    case "raised_bed":
+    case "vegetable_bed":
+      return drawRaisedBed(r, g);
+    case "whiteboard":
+      return drawWhiteboard(r, g);
+    case "printer":
+    case "copier":
+      return drawPrinter(r, g);
+    case "server_rack":
+      return drawServerRack(r, g);
+    case "hospital_bed":
+      return drawHospitalBed(r, g);
+    case "workstation":
+    case "desk_pod":
+      return drawWorkstation(r, g);
     default:
       return null;
   }

@@ -335,3 +335,40 @@ export function drawMirror(r: Rect, g: GlyphCtx): SceneNode[] {
   }
   return g.nodes;
 }
+
+// ---------------------------------------------------------------------------
+// ── the visual-assets tranche (V8) ──
+
+/**
+ * The towel rail (a towel radiator): the rail seen from above, a stile at each end, the two wall
+ * brackets running back to the wall, and a towel hung over the middle of the rail.
+ *
+ * A heated ladder rail's bars are stacked in one plane, so from above they are ONE bar between
+ * the two stiles; that bar is the outline, a stadium (both ends round, a tube). The stiles are
+ * discs at its ends, and the brackets stand on the BACK (top) edge, which is the orientation
+ * claim the catalog's `directional` and `wallMounted` rest on. The towel is what makes it a towel
+ * rail rather than a `radiator` at a glance: a soft band hanging both sides of the bar, filled
+ * with the untinted interior (`blank`), drawn after the bar because it hangs over it. Solid, not
+ * dashed: a towel rail stands from the skirting to about shoulder height, so the cut plane passes
+ * through it, as it passes through the radiator.
+ *
+ * Prim count: 6.
+ */
+export function drawTowelRail(r: Rect, g: GlyphCtx): SceneNode[] {
+  const barY = r.y + r.h * 0.6;
+  const stile = Math.max(0, Math.min(r.h * 0.22, r.w * 0.08));
+  const bar = Math.max(0, r.h * 0.09);
+  const x0 = r.x + stile;
+  const x1 = r.x + r.w - stile;
+  g.path(roundedRectPath({ x: x0, y: barY - bar, w: x1 - x0, h: 2 * bar }, bar), g.body);
+  for (const x of [x0, x1]) {
+    g.seg({ x, y: r.y }, { x, y: barY - stile }, "extraThin");
+    g.dot({ x, y: barY }, stile, g.body, "thin");
+  }
+  g.path(
+    roundedRectPath({ x: r.x + r.w * 0.3, y: r.y + r.h * 0.28, w: r.w * 0.4, h: r.h * 0.64 }, r.h * 0.08),
+    g.blank,
+    "extraThin",
+  );
+  return g.nodes;
+}

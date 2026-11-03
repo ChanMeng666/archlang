@@ -75,12 +75,15 @@ import type { Point } from "../ast.js";
 import type { PathEdge, PathLoop, SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
 import {
+  bulgeArc,
   centerOf,
   chairAt,
   clamp,
   clampCount,
+  dashedPoly,
   insetRect,
   insetRectXY,
+  ovalPath,
   rectPoly,
   roundedRectPath,
   shortSide,
@@ -1080,5 +1083,151 @@ export function drawCoatRack(r: Rect, g: GlyphCtx): SceneNode[] {
 export function drawShoeCabinet(r: Rect, g: GlyphCtx): SceneNode[] {
   g.poly(rectPoly(r), g.body);
   cabinetFront(r, g, clampCount(r.w / r.h, 2, 4), 0.5, 0.82);
+  return g.nodes;
+}
+
+// ---------------------------------------------------------------------------
+// ── the visual-assets tranche (V8): the living room's small pieces ──
+//
+// Five families appended at the foot of the file for the reason they are appended to
+// `FIXTURE_FAMILIES`: that table's order is the LEGEND's order. Each is drawn in this module's
+// language — outline in the `thin` pen, detail in `extraThin`, every measure a fraction of the
+// footprint — and none of them has a hand: each is its own mirror image at every footprint.
+
+/**
+ * The floor lamp, seen from above the way the parasol is: the SHADE (the outline), the open top
+ * of the shade with the light in it, and the spider fitting — a finial on four struts out to the
+ * shade's top rim.
+ *
+ * The shade is the piece a plan sees; the base disc and the pole stand under it and are inside its
+ * circle, so they add nothing. The top opening is filled with the untinted interior (`blank`),
+ * which is where the light is; the finial takes the family's secondary material (`basin`: metal).
+ * Every mark is a circle about the centre or a strut on one of the four diagonals, each built
+ * from one `SQRT1_2` offset with its signs flipped — so the drawing is exact under every
+ * quarter-turn and mirror at ANY aspect, which is the catalog's `symmetric: true`.
+ *
+ * Prim count: 7.
+ */
+export function drawFloorLamp(r: Rect, g: GlyphCtx): SceneNode[] {
+  const c = centerOf(r);
+  const rad = Math.max(0, shortSide(r) * 0.48);
+  g.dot(c, rad, g.body, "thin");
+  const top = rad * 0.64;
+  g.dot(c, top, g.blank, "extraThin");
+  const hub = rad * 0.13;
+  const d0 = hub * Math.SQRT1_2;
+  const d1 = top * Math.SQRT1_2;
+  for (const [sx, sy] of [
+    [1, 1],
+    [-1, 1],
+    [-1, -1],
+    [1, -1],
+  ] as const) {
+    g.seg({ x: c.x + sx * d0, y: c.y + sy * d0 }, { x: c.x + sx * d1, y: c.y + sy * d1 }, "extraThin");
+  }
+  g.dot(c, hub, g.basin, "extraThin");
+  return g.nodes;
+}
+
+/**
+ * The side table (an end table): a hard top with softly eased corners, its edge bevel, and the
+ * lower SHELF hidden under the top — dashed, because it is under the top, which is the one thing
+ * a dash means in this drawing (the desk's pedestal is dashed for the same reason).
+ *
+ * The hidden shelf is what tells it from a `table` (top and bevel) and a `coffee_table` (a white
+ * glass panel in the top) at a glance; a side table is the small piece with the second surface
+ * under it. Three concentric rectangles, so it is D4-invariant on a square — the catalog's
+ * `symmetric: true`.
+ *
+ * Prim count: 3.
+ */
+export function drawSideTable(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.08), g.body);
+  g.path(roundedRectPath(insetRect(r, 0.06), s * 0.05), "none", "extraThin");
+  dashedPoly(g, rectPoly(insetRect(r, 0.2)), "none", "extraThin");
+  return g.nodes;
+}
+
+/**
+ * The console table: a long, shallow top with its edge bevel, the BACK RAIL (the apron along the
+ * edge that stands against the wall), and the stretcher shelf hidden under the top, dashed.
+ *
+ * The rail at a fifth of the depth from the back is the orientation claim the catalog's
+ * `directional` rests on: a console is set with its back to a wall in a hall, and the rail says
+ * which edge that is, as the desk's modesty panel does.
+ *
+ * Prim count: 4.
+ */
+export function drawConsoleTable(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.04), g.body);
+  const top = insetRect(r, 0.08);
+  g.path(roundedRectPath(top, s * 0.03), "none", "extraThin");
+  const railY = r.y + r.h * 0.22;
+  g.seg({ x: top.x, y: railY }, { x: top.x + top.w, y: railY }, "extraThin");
+  dashedPoly(
+    g,
+    rectPoly({ x: r.x + r.w * 0.12, y: r.y + r.h * 0.36, w: r.w * 0.76, h: r.h * 0.42 }),
+    "none",
+    "extraThin",
+  );
+  return g.nodes;
+}
+
+/**
+ * The ottoman (a pouf, a footstool): an upholstered block with well-eased corners, its padded top
+ * inset from the welt, and the TUFTING — a grid of buttons on the top.
+ *
+ * The buttons are the symbol: a square ottoman carries two by two, a long one more along its
+ * length (`2 x side / short side` on each axis, clamped to `[2, 6]`, so the short axis always has
+ * two and the grid holds at most twelve). Each button sits at an offset from the centre whose
+ * numerator negates exactly for its mirror partner, so the grid is its own reflection and, on a
+ * square, its own quarter-turn — the catalog's `symmetric: true`. The top takes the family's
+ * secondary material (`basin`: cushion).
+ *
+ * Prim count: `2 + buttons`, i.e. 6 on a square.
+ */
+export function drawOttoman(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.16), g.body);
+  const top = insetRect(r, 0.09);
+  g.path(roundedRectPath(top, s * 0.1), g.basin, "extraThin");
+  const nx = clampCount((2 * r.w) / s, 2, 6);
+  const ny = clampCount((2 * r.h) / s, 2, 6);
+  const c = centerOf(r);
+  const pitchX = top.w * 0.8;
+  const pitchY = top.h * 0.8;
+  const button = Math.max(0, s * 0.025);
+  for (let i = 0; i < nx; i++) {
+    for (let j = 0; j < ny; j++) {
+      const ox = (pitchX * (2 * i + 1 - nx)) / (2 * nx);
+      const oy = (pitchY * (2 * j + 1 - ny)) / (2 * ny);
+      g.dot({ x: c.x + ox, y: c.y + oy }, button);
+    }
+  }
+  return g.nodes;
+}
+
+/**
+ * The bean bag: a soft, nearly round sack, the raised BACK at the top as a crescent, and the
+ * hollow a body sits in as an oval in front of it.
+ *
+ * The back is a crescent of two minor arcs between one pair of tips (the office chair's backrest
+ * construction), so it reads as a mound rather than a line; the seat hollow takes the family's
+ * secondary material (`basin`: cushion). Seating, so it is arranged rather than installed and the
+ * catalog gives it neither `directional` nor a footprint, as it gives a `sofa` neither — but it is
+ * built symmetric about its centre line, so it has no hand.
+ *
+ * Prim count: 3.
+ */
+export function drawBeanBag(r: Rect, g: GlyphCtx): SceneNode[] {
+  const s = shortSide(r);
+  g.path(roundedRectPath(r, s * 0.46), g.body);
+  const tipY = r.y + r.h * 0.42;
+  const a: Point = { x: r.x + r.w * 0.12, y: tipY };
+  const b: Point = { x: r.x + r.w * 0.88, y: tipY };
+  g.path({ start: a, edges: [...bulgeArc(a, b, r.h * 0.3), ...bulgeArc(b, a, -r.h * 0.13)] }, g.body, "extraThin");
+  g.path(ovalPath(r.x + r.w / 2, r.y + r.h * 0.64, r.w * 0.27, r.h * 0.2), g.basin, "extraThin");
   return g.nodes;
 }
