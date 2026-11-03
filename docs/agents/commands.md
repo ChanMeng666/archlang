@@ -4,6 +4,10 @@
 
 ## Non-obvious scripts
 
+- `npm run check:quick` (`scripts/check-quick.mjs`) is the local pre-push check: Biome on the
+  changed files, the typecheck they need, `check:drift` (skipped when only tests changed) and the
+  nearest tests by import distance, capped at `--max` (20) with the cut printed. The base is the merge
+  base with `origin/main` (`--base`); `--list` prints the plan. The full suite runs in CI, never locally.
 - `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`. Its `typecheck` covers
   `src/` only; `npm run typecheck:all` adds `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and
   the four workspaces. Run `npm run build` first: without `dist/` the playground resolves the bare

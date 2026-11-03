@@ -75,8 +75,8 @@ you observed. Do NOT push anything — this command only verifies.
 4. **`package.json` `repository.url` owner is byte-exact `ChanMeng666`** (provenance fails with E422
    otherwise).
 
-5. **Gates green.** `npm run check`, `npm run check:drift`, `npm run typecheck:all`,
-   `npm run docs:build`, and the PR gates on GitHub for the release PR. A green PR says nothing about
+5. **Gates green.** `npm run check:quick` and `npm run docs:build` locally; `check`, `check:drift`
+   and `typecheck:all` are the release PR's CI gates on GitHub (never the full suite locally). A green PR says nothing about
    Node 18, Node 20 or Windows: those legs report green without running on a PR, and only `main`'s
    runs prove them. Before merging the release PR, read both, for the commit it branches from:
 

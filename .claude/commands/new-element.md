@@ -37,7 +37,7 @@ goes through `src/elements/defs.ts`.
    grammars, GBNF, and schemas must pick them up. (Regeneration is source-driven; never hand-edit
    the generated artifacts — see `/regen`.)
 
-7. **Run `/verify-loop`** — `npm run check` + `npm run check:drift` must be green.
+7. **Run `/verify-loop`** — `npm run check:quick` green locally, then the PR's CI green.
 
 ## Remember
 
