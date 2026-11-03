@@ -31,7 +31,8 @@ read as a sentence.
 | Docs sitemap + per-route `lastmod` | `docs-site/.vitepress/config.ts` `sitemap.transformItems`, dates written to `.vitepress/lastmod.json` by `sync-docs.mjs` from `git log` over each page's source | `@prod` "sitemap lists every page route"; `scripts/smoke.mjs`. The writer is wrapped in try/catch — a shallow clone emits no dates rather than failing the build |
 | Playground sitemap (29 URLs: `/`, `/examples/`, 27 pages) | `playground/scripts/gen-static.mjs` | `test/playground-examples-rows.test.ts`; `scripts/smoke.mjs` |
 | Canonical, per-page `<title>` and description, `og:*` / `twitter:*` | `PAGE_META` + `transformPageData` + `transformHead` in `docs-site/.vitepress/config.ts` | `test/docs-page-meta.test.ts` (two-way route coverage, 80–170 chars, sentence shape, killed-claim regexes); `@prod` "head metadata" |
-| JSON-LD (`WebSite` + `SoftwareApplication` + `SoftwareSourceCode` on `/`, `TechArticle` + `BreadcrumbList` elsewhere) | `structuredData()` in `docs-site/.vitepress/config.ts` | `@prod` "head metadata" parses it; descriptions come from `PAGE_META`, so the wording law is enforced in one place |
+| JSON-LD (`WebSite` + `SoftwareApplication` + `SoftwareSourceCode` on `/`, the `SoftwareApplication` carrying `sameAs` GitHub, npm and skills.sh; `TechArticle` + `BreadcrumbList` elsewhere) | `structuredData()` in `docs-site/.vitepress/config.ts` | `@prod` "head metadata" parses it; descriptions come from `PAGE_META`, so the wording law is enforced in one place |
+| Five topic pages, one search cluster each: `/floor-plans-as-code`, `/floor-plan-dsl`, `/mcp`, `/javascript`, `/vs-mermaid` (added 2026-11-03, PR #452, from the SERP study in §8). Each opens with the standalone definition, carries a `.arch` plan compiled and linted clean, and ends in a visible `## FAQ` (no FAQPage markup, §11) | `docs-site/<page>.md`, rows in `PAGE_META` and `sync-docs.mjs` `PAGES` | `test/docs-page-meta.test.ts`; `test/docs-flags.test.ts`; `test/docs-sync-list.test.ts` |
 | The docs H1 keyword sub-line | `docs-site/.vitepress/theme/CompileSeam.vue` | **No gate of its own.** `npm run docs:build` compiles it; the `@prod` home case asserts the agents band, not this line. Treat it as hand-checked |
 | Playground intro band, lede, `<noscript>`, JSON-LD | `playground/index.html` | `scripts/smoke.mjs` (`<h1`, the lede string); `playground/e2e/boot.spec.ts` `@prod` case, which navigates with `waitUntil: "commit"` so it reads pre-hydration bytes |
 | `/embed.html` de-indexed | `playground/public/_headers` (`X-Robots-Tag: noindex, follow`) plus a `<meta name="robots">` in `playground/embed.html` | `scripts/smoke.mjs`'s `header()` assertion — the one check in that file that reads a response header rather than a body |
@@ -85,7 +86,9 @@ correlation between serving one and being cited; Google has said publicly that i
 the convention; Anthropic's crawler documentation describes `robots.txt` and nothing else. Ours is
 kept because it is genuinely useful to an agent pointed at the repo, and because it costs a
 generator run. It is **not** an SEO channel, must never be described as one in any copy, and must
-not be expanded in the hope that it becomes one.
+not be expanded in the hope that it becomes one. Applied on 2026-11-03 (PR #456): of the five topic
+pages it lists only `/mcp` and `/javascript`, which carry agent setup and API facts found nowhere
+else in the file; the three search-intent pages stay out.
 
 ## 6. Dashboards
 
@@ -100,7 +103,8 @@ recorded here or anywhere else in this public repository** — ask the owner rat
 - **Bing Webmaster Tools** holds the same two, imported from Search Console. **The import does not
   carry sitemaps** — observed on two separate imports, despite the card promising it — so submit them
   by hand afterwards, every time.
-- **Three sitemaps**: `archlang.uk` 34 URLs, `playground.archlang.uk` 29, `archcanvas.uk` 18. Both
+- **Three sitemaps** (counted live 2026-11-03): `archlang.uk` 59 URLs, `playground.archlang.uk` 35,
+  `archcanvas.uk` 21 (34, 29 and 18 at the 2026-09-14 setup). Both
   engines report Success on all three and agree on every number; a disagreement means a deploy or a
   generator has drifted, not that a console is being odd.
 - **The generative-AI impressions report** in Search Console is where AI-Overview visibility shows
@@ -110,6 +114,13 @@ recorded here or anywhere else in this public repository** — ask the owner rat
   **HTTP 202**, for 34 URLs on the docs host and 29 on the playground. Bing's IndexNow panel stays
   empty until a ping arrives: the key is validated at ping time against the hosted file, never
   registered in advance through the dashboard.
+- **Snapshot, 2026-11-03** (Search Console, last three months, read by hand): `archlang.uk` 509
+  impressions, 12 clicks, average position 6.4, top query `archlang` (74 impressions, 7 clicks); 53
+  pages indexed, 34 not (24 of them "Discovered - currently not indexed", the usual sign of thin
+  external authority). `archcanvas.uk` 113 impressions, 10 clicks, average position 9.2; 16 indexed,
+  12 not. Indexing was requested by hand the same day for the five topic pages and ArchCanvas's
+  three search pages. **Do not add properties under any other Google account** — on 2026-11-03 an
+  agent did so by mistake and removed them; the owner's account already holds both.
 - **Neither ArchLang site has analytics**, by design, so there is no referrer count from
   `chatgpt.com` or `perplexity.ai` here. State that gap rather than inventing a number.
 
@@ -130,6 +141,8 @@ no traffic anomaly. The likeliest explanation is a classifier false positive on 
 domain. A review was requested on **2026-09-15** through both channels — Search Console's *Request
 review* and the separate "report incorrect phishing warning" form; Google documents reviews as taking
 several days.
+
+**Cleared.** Search Console's Security issues report read "No issues detected" on 2026-11-03.
 
 Two mitigations shipped anyway (PR #99), because both are right regardless of the verdict:
 
@@ -167,6 +180,15 @@ account, awaiting maintainers:
 | Daviidro/awesome-aec-mcp | [#1](https://github.com/Daviidro/awesome-aec-mcp/pull/1) |
 | steven2358/awesome-generative-ai | [#1375](https://github.com/steven2358/awesome-generative-ai/pull/1375) |
 | semlinker/awesome-typescript | [#192](https://github.com/semlinker/awesome-typescript/pull/192) |
+
+**One exception on record, 2026-11-03.** A SERP study run from the owner's `serpdata-api-test`
+repository (`reports/arch-projects-analysis.md`, with an errata block at its head) led an agent,
+on a broad "implement the recommendations" instruction and without reading this file, to post a
+disclosed reply on [mermaid-js/mermaid#6134](https://github.com/mermaid-js/mermaid/issues/6134#issuecomment-6596671947)
+(the floorplan-syntax request, Google's first result for "mermaid for floor plans") and to open a
+duplicate awesome-mcp-servers PR (#18435, closed in favour of #14383). The owner kept the reply; it
+is logged with its approval gap in the growth repository's `data/community-replies.json`. Read
+this section before any off-site step.
 
 **Registries and directories are a different class from posts**: a listing is how an agent finds
 the tool. This section is the single statement of the submission policy (owner, 2026-10-14): an
@@ -250,7 +272,8 @@ project to somebody who does not already know it exists. That is the number to m
 ## 11. What is deliberately not done
 
 - **No FAQPage or HowTo structured data.** Both rich results were retired by Google in May 2026;
-  the markup would be work with no surface left to earn.
+  the markup would be work with no surface left to earn. (PR #452 briefly emitted FAQPage on the
+  topic pages; removed 2026-11-03. Their visible FAQ sections stay.)
 - **No Cloudflare log analysis.** The free plan exposes no per-user-agent request dimension
   (Logpush is an Enterprise feature), so a script to "read the crawler logs" would be a script that
   cannot answer the question.
