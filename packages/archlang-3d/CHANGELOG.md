@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-04
+
 ### Changed
 
 - The twelve T0 furniture pieces are drawn in materials instead of one colour per kind: oak, linen,
