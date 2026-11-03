@@ -1,14 +1,17 @@
 /**
- * T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3, V5,
- * V6): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's
+ * T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3,
+ * V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's
  * footprint. The twelve families laneway-house uses are here; the living, bedroom, dining and
- * office batch is `t0-living.ts` (V5), the kitchen, bath and utility batch `t0-utility.ts` (V6);
- * every other family stays a grey box.
+ * office batch is `t0-living.ts` (V5), the kitchen, bath and utility batch `t0-utility.ts` (V6),
+ * the site (planting, garden, vehicles, terrace, the small standing objects) `t0-outdoor.ts` and
+ * the office and commercial pieces `t0-office.ts` (V7). Every catalogued family is built; a word
+ * outside the catalogue stays a grey box.
  *
  * Every generator is mirror-symmetric across its own width, so a mirrored piece (`mirror`,
  * `place … mirror`) needs no mirrored mesh and nothing gains handedness (`test/t0.test.ts` holds
  * it) — except the few `handed` families whose shape cannot be (`T0_HANDED`: an L-sofa, a chaise,
- * a grand piano). The core draws those handed as well, and reflects the drawing of a mirrored
+ * a grand piano, a reception desk; a bicycle and a motorcycle where they lie along their width,
+ * `handedAt`). The core draws those handed as well, and reflects the drawing of a mirrored
  * piece; the model follows it: a handed piece the plan reflects carries `Furniture.mirror` and is
  * built as the reflection (`t0Shells`), so the model never shows the other hand from the drawing.
  *
@@ -35,13 +38,15 @@ import type { Furniture, Pt } from "../scene3d/types.js";
 import { degenerateHoles, prism } from "./extrude.js";
 import { cabinet, clamp, P, type Part, pair, type SectionShape, span, type T0Family, upholstered } from "./t0-kit.js";
 import { T0_LIVING } from "./t0-living.js";
+import { T0_OFFICE } from "./t0-office.js";
+import { T0_OUTDOOR } from "./t0-outdoor.js";
 import { T0_UTILITY } from "./t0-utility.js";
 import type { Shell } from "./types.js";
 
 export type { Part, SectionShape } from "./t0-kit.js";
 
-/** The batch families (V5, V6), each declared once with all its facts (`T0Family`). */
-const BATCHES: Readonly<Record<string, T0Family>> = { ...T0_LIVING, ...T0_UTILITY };
+/** The batch families (V5–V7), each declared once with all its facts (`T0Family`). */
+const BATCHES: Readonly<Record<string, T0Family>> = { ...T0_LIVING, ...T0_UTILITY, ...T0_OUTDOOR, ...T0_OFFICE };
 
 /** One fact of every batch family that has it, as a table keyed by family. */
 const batchTable = <T>(pick: (f: T0Family) => T | undefined): Record<string, T> =>
@@ -121,6 +126,16 @@ export const isHung = (family: string): boolean => family in T0_MOUNT_MM || T0_H
 
 /** The handed families (`T0Family.handed`): built reflected when the plan reflects the piece. */
 export const T0_HANDED: ReadonlySet<string> = new Set(Object.keys(batchTable((f) => f.handed)));
+
+/**
+ * Whether a piece of `family`, `W` × `D` mm in its own frame, is handed: always for an L-sofa or
+ * a reception desk, only along its width for a bicycle or a motorcycle (the core reads both off
+ * their long axis), never for a symmetric family.
+ */
+export function handedAt(family: string, W: number, D: number): boolean {
+  const h = BATCHES[family]?.handed;
+  return h === true || (typeof h === "function" && h(W, D));
+}
 
 /** Whether an asset (`t0:<family>`) is a handed family's, so a reflection of it matters. */
 export const isHandedAsset = (asset: string): boolean => asset.startsWith("t0:") && T0_HANDED.has(asset.slice(3));

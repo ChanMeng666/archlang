@@ -62,8 +62,13 @@ export interface T0Family {
    * arm, a grand piano's bent side). The core draws each of these families handed too, so the
    * model gains no hand the drawing lacks; a reflected piece (its own `mirror`, or a reflecting
    * `place`) is built reflected (`Furniture.mirror`).
+   *
+   * A function says at which sizes the piece is handed, for a family the core reads off its own
+   * long axis (`axisPt`, glyphs-outdoor.ts): a bicycle laid along its width has its front at the
+   * right, one stood along its depth is symmetric across its width (card V7). At every other size
+   * the generator is mirror-symmetric, so a reflection of it changes nothing.
    */
-  handed?: true;
+  handed?: true | ((W: number, D: number) => boolean);
   gen: (W: number, D: number) => Part[];
 }
 
@@ -147,6 +152,93 @@ export const BACK_CUSHION: ReadonlyArray<readonly [number, number]> = [
   [0.35, 1],
   [0, 0.9],
 ];
+
+/**
+ * A chair seen side-on (V7), fractions of its box, multiples of 1/64 (so a mirrored chair's points
+ * land on its partner's): u from its back (0) to its front (1), v from the floor (0) to its top
+ * (1): the back post rising from the floor, the seat at 29/64–34/64 of the height, the front leg.
+ * Extruded across the chair's width it is a sled-base chair: the two leg panels, the seat, the back.
+ */
+export const SIDE_CHAIR: ReadonlyArray<readonly [number, number]> = [
+  [0, 0],
+  [6 / 64, 0],
+  [6 / 64, 29 / 64],
+  [58 / 64, 29 / 64],
+  [58 / 64, 0],
+  [1, 0],
+  [1, 34 / 64],
+  [6 / 64, 34 / 64],
+  [6 / 64, 1],
+  [0, 1],
+];
+
+/** Where a chair's back is: toward −z (it faces +z), +z, −x or +x. */
+export type ChairBack = "-z" | "+z" | "-x" | "+x";
+
+/**
+ * The side-view polygon `profile` (u from the back) set in the box `x0..x1` × `z0..z1` × `y0..y1`
+ * with its back toward `back`: extruded across the chair's own width (`axis`), the profile flipped
+ * end for end when the back is on the box's high side. A chair at `-x` and one at `+x` built on
+ * mirrored boxes are each other's reflection.
+ */
+export function sideways(
+  mat: MaterialSlot,
+  box: { x0: number; x1: number; z0: number; z1: number },
+  y0: number,
+  y1: number,
+  back: ChairBack,
+  profile: ReadonlyArray<readonly [number, number]>,
+): Part {
+  const flip = back === "+z" || back === "+x";
+  return P(mat, box.x0, box.x1, box.z0, box.z1, y0, y1, {
+    axis: back === "-z" || back === "+z" ? "x" : "z",
+    profile: flip ? profile.map(([u, v]): readonly [number, number] => [1 - u, v]) : profile,
+  });
+}
+
+/**
+ * The seats round a patio or meeting table (`drawOutdoorTable`, `drawMeetingTable`): the declared
+ * footprint is the whole seating zone, the top inset a chair band (0.22 of the short side), a
+ * chair 0.9 of the band wide in the band, its front at the top's edge. A round top seats one a
+ * side; a long one `perSide` along each long side (centred by construction, so the row is its own
+ * mirror image) and one at each end. `chair` builds one chair in its box, back toward `back`.
+ */
+export function tableSeats(
+  W: number,
+  D: number,
+  round: boolean,
+  perSide: number,
+  chair: (box: { x0: number; x1: number; z0: number; z1: number }, back: ChairBack) => Part[],
+): Part[] {
+  const [hw, hd] = [W / 2, D / 2];
+  const band = Math.min(W, D) * 0.22;
+  const cw = band * 0.9;
+  const out: Part[] = [];
+  const zSide = (x: number): void => {
+    out.push(...chair({ x0: x - cw / 2, x1: x + cw / 2, z0: -hd, z1: -hd + band }, "-z"));
+    out.push(...chair({ x0: x - cw / 2, x1: x + cw / 2, z0: hd - band, z1: hd }, "+z"));
+  };
+  const xSide = (z: number): void => {
+    out.push(...chair({ x0: -hw, x1: -hw + band, z0: z - cw / 2, z1: z + cw / 2 }, "-x"));
+    out.push(...chair({ x0: hw - band, x1: hw, z0: z - cw / 2, z1: z + cw / 2 }, "+x"));
+  };
+  if (round) {
+    zSide(0);
+    xSide(0);
+    return out;
+  }
+  const horizontal = W >= D;
+  const run = horizontal ? W - 2 * band : D - 2 * band;
+  for (let i = 0; i < perSide; i++) {
+    // `(2i + 1 − n)` negates exactly for the partner `n − 1 − i`: the row is symmetric.
+    const c = (run * (2 * i + 1 - perSide)) / (2 * perSide);
+    if (horizontal) zSide(c);
+    else xSide(c);
+  }
+  if (horizontal) xSide(0);
+  else zSide(0);
+  return out;
+}
 
 /**
  * Plinth, carcass with its fronts and pulls, and worktop: the kitchen run's body (900 mm worktop,
