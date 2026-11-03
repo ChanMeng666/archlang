@@ -435,12 +435,7 @@ const LASTMOD: Readonly<Record<string, string>> = (() => {
 })();
 
 /** JSON-LD for one route, as the `<script type="application/ld+json">` body. */
-function structuredData(
-  route: string,
-  url: string,
-  title: string,
-  description: string,
-): string {
+function structuredData(route: string, url: string, title: string, description: string): string {
   const person = {
     "@type": "Person",
     "@id": `${SITE_ORIGIN}/#author`,
@@ -581,7 +576,7 @@ export default defineConfig({
   // This hook runs once per page at BUILD time and an exception here fails the build
   // with no page context — so the lookup falls back to the site defaults (return [])
   // rather than throwing on a route the table does not know.
-  transformHead({ page, pageData, title, description }): HeadConfig[] {
+  transformHead({ page, title, description }): HeadConfig[] {
     const route = routeOf(page);
     const meta = PAGE_META_BY_ROUTE.get(route);
     if (!meta) return [];
@@ -609,11 +604,7 @@ export default defineConfig({
     // The structured headline is the page's own name, without the " — ArchLang" the
     // <title> carries: a breadcrumb crumb reading "Language reference — ArchLang"
     // inside a trail that already starts at ArchLang says the brand twice.
-    head.push([
-      "script",
-      { type: "application/ld+json" },
-      structuredData(route, url, meta.title, description),
-    ]);
+    head.push(["script", { type: "application/ld+json" }, structuredData(route, url, meta.title, description)]);
     return head;
   },
   // Could be built into a subdir under any static host; "./" keeps asset URLs
