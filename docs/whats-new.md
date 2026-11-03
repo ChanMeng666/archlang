@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.53
+# What's new in 1.44 to 1.54
 
-The features that arrived in 1.44.0 to 1.53.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.54.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -30,6 +30,8 @@ Every command and code name below is the one `archlang <command> --help` and the
 | A detail with no north arrow, scale bar or title box | 1.53.0 | [Hidden sheet marks](#hidden-sheet-marks) |
 | One piece of furniture, mirrored | 1.53.0 | [One mirrored piece](#one-mirrored-piece) |
 | A floor finish on a room | 1.53.0 | [Room floors](#room-floors) |
+| Furniture filled in its material | 1.54.0 | [The rendered theme](#the-rendered-theme) |
+| Twenty more furniture families | 1.54.0 | [More furniture](#more-furniture) |
 
 ## Quantities and takeoff
 
@@ -538,3 +540,52 @@ plan "Finishes" {
 ```
 
 It is a drawing fact: `describe()` and `lint()` read the plan as if it were not there. It is a pattern and not a colour, so it follows the `theme`. See [Room](language-reference.md#room).
+
+## The rendered theme
+
+`theme rendered` draws the presentation palette and fills every furniture symbol in a soft tint of its material: oak for a side table, linen for a sofa, ceramic for a bath, steel for a towel rail. Every other theme still draws each symbol as an outline, byte for byte as before:
+
+```arch
+plan "Rendered" {
+  units mm
+  theme rendered
+  room id=living at (0,0) size 5000x4000 label "Living" uses living
+  room id=bath right-of living size 2400x4000 label "Bath" uses bath
+  walls from rooms exterior 200 partition 100
+  door id=front on living.bottom at 1000 from start width 900 swing into living
+  door between living and bath at 2600 from start width 800 swing into bath
+  window on living.top width 1500
+  furniture sofa in living anchor top flush size 2200x900
+  furniture rug at (1500,1500) size 2000x1400 in living
+  furniture coffee_table at (2000,1900) size 1000x600 in living
+  furniture side_table in living anchor top-left flush size 500x500
+  furniture floor_lamp in living anchor top-right flush size 400x400
+  furniture bathtub in bath anchor top flush size 1700x750
+  furniture towel_rail in bath anchor right flush size 100x600
+}
+```
+
+A rug stays unfilled, so nothing drawn under it is hidden. The tint is a drawing fact: `describe()` and `lint()` do not change. Each family's material is exported as `FIXTURE_FAMILY_MATERIALS` and `familyMaterials()`.
+
+## More furniture
+
+Twenty families joined the catalogue, each with its own symbol: `floor_lamp`, `side_table`, `console_table`, `ottoman`, `bean_bag`, `pantry`, `towel_rail`, `palm`, `flower_bed`, `boulder`, `picnic_table`, `slide`, `bollard`, `bike_rack`, `raised_bed`, `whiteboard`, `printer`, `server_rack`, `hospital_bed` and `workstation`, plus aliases such as `pouf`, `rock` and `copier`:
+
+```arch
+plan "Garden" {
+  units mm
+  theme rendered
+  room id=house at (0,0) size 6000x4000 label "House" uses living
+  walls from rooms exterior 200 partition 100
+  door id=front on house.bottom at center width 900 swing into house
+  window on house.top width 1500
+  furniture palm at (500,5000) size 1500x1500
+  furniture flower_bed at (2500,5000) size 3000x800
+  furniture raised_bed at (6800,4600) size 1200x2400
+  furniture picnic_table at (2500,6400) size 1800x1600
+  furniture boulder at (500,7200) size 900x700
+  furniture bike_rack at (6800,7400) size 2000x600
+}
+```
+
+These words used to be free words drawn as a labelled box. A plan that already used one now gets the family's rules: the symbol replaces the label, and `facing`, `anchor` and the fixture warnings treat it as they treat any other catalogued piece. The [changelog](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md) lists each change.

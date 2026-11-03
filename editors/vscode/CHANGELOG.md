@@ -14,6 +14,13 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.42.0] - 2026-11-04
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.54.0`** (the `rendered` theme and twenty new furniture
+  families, which completion now offers).
+
 ## [0.41.0] - 2026-11-02
 
 ### Changed
