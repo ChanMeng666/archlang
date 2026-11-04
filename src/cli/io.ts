@@ -5,7 +5,7 @@
  * and real time are allowed here — and across `src/cli/` — the one place they are.
  */
 
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { resolve as resolvePath, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest, ERROR_CATALOG } from "../index.js";
@@ -569,6 +569,34 @@ export function stdoutJsonConflict(command: string): number {
     command,
     "`-o -` (stream to stdout) conflicts with --json (the JSON envelope owns stdout) — drop --json or give `-o <file>`",
   );
+}
+
+/**
+ * Create the directory an output file goes in, as `batch -o <dir>` always has, so a
+ * `-o some/new/dir/x.svg` writes instead of failing with a raw `ENOENT`. Called only
+ * once there is something to write, so a plan that does not compile leaves no empty
+ * directory behind. Returns the one-line reason when the directory cannot exist (a file
+ * already stands on its path), the same wording `batch` reports.
+ */
+export function ensureOutputDir(target: string): string | undefined {
+  const dir = dirname(resolvePath(target));
+  try {
+    mkdirSync(dir, { recursive: true });
+  } catch (e) {
+    return `cannot create the output directory ${dir}: ${(e as Error).message}`;
+  }
+  return undefined;
+}
+
+/**
+ * Write a `-o` output file, creating its directory first ({@link ensureOutputDir}).
+ * Throws an `Error` whose message is the one line to report; every caller already
+ * turns a write failure into {@link ioError}.
+ */
+export function writeOutput(target: string, data: string | Uint8Array): void {
+  const why = ensureOutputDir(target);
+  if (why !== undefined) throw new Error(why);
+  writeFileSync(resolvePath(target), data);
 }
 
 export function ioError(msg: string, json?: boolean, extra?: Record<string, unknown>): number {

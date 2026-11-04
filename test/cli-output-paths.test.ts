@@ -1,0 +1,153 @@
+/**
+ * Where `-o` writes (checker-reach CR2 group A).
+ *
+ * `batch -o <dir>` has always created a missing directory (`test/cli-batch.test.ts`); every
+ * other `-o <file>` writer failed with a raw `ENOENT` instead. They now behave like `batch`:
+ * the parent directory is created, and a path that cannot be one is one clear IO error.
+ * `batch -o` used to write two inputs that share a file name onto one output, the second
+ * silently replacing the first; that is now a usage error before anything is written.
+ */
+import { spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+
+function run(args: string[]): { status: number | null; stdout: string; stderr: string } {
+  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
+    encoding: "utf8",
+    cwd: process.cwd(),
+  });
+  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+}
+
+const PLAN = 'plan "P" { units mm room at (0,0) size 3000x3000 label "R" }\n';
+
+describe("-o <file> creates its directory, as batch -o does", () => {
+  it("compile writes into a directory that does not exist, however deep", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const out = join(root, "not", "yet", "x.svg");
+    const r = run(["compile", "examples/studio.arch", "-o", out, "--json"]);
+    expect(r.stderr).not.toContain("ENOENT");
+    expect(r.status).toBe(0);
+    expect(JSON.parse(r.stdout).output).toBe(out);
+    expect(readFileSync(out, "utf8").startsWith("<svg")).toBe(true);
+  }, 60000);
+
+  it("compile of a multi-storey plan writes every storey into the new directory", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const dir = join(root, "sheets");
+    const r = run(["compile", "examples/townhouse.arch", "-o", join(dir, "t.svg"), "--json"]);
+    expect(r.status).toBe(0);
+    const outputs: string[] = JSON.parse(r.stdout).outputs;
+    expect(outputs.length).toBeGreaterThan(1);
+    for (const o of outputs) expect(existsSync(o)).toBe(true);
+    expect(readdirSync(dir).length).toBe(outputs.length);
+  }, 60000);
+
+  it("compile --error-svg writes its error card into a new directory and keeps exit 2", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const bad = join(root, "bad.arch");
+    writeFileSync(bad, 'plan "B" { units mm room at (0,0) size 0x3000 }\n');
+    const out = join(root, "cards", "bad.svg");
+    const r = run(["compile", bad, "--error-svg", "-o", out]);
+    expect(r.status).toBe(2);
+    expect(existsSync(out)).toBe(true);
+  }, 60000);
+
+  it("a plan that does not compile leaves no directory behind", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const bad = join(root, "bad.arch");
+    writeFileSync(bad, 'plan "B" { units mm room at (0,0) size 0x3000 }\n');
+    const r = run(["compile", bad, "-o", join(root, "out", "bad.svg")]);
+    expect(r.status).toBe(2);
+    expect(existsSync(join(root, "out"))).toBe(false);
+  }, 60000);
+
+  it("a file where the directory should be is one clear IO error (exit 1), never a raw errno line", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const taken = join(root, "taken");
+    writeFileSync(taken, "a file\n");
+    const r = run(["compile", "examples/studio.arch", "-o", join(taken, "x.svg")]);
+    expect(r.status).toBe(1);
+    expect(r.stderr).toContain(`cannot create the output directory ${taken}`);
+    expect(r.stderr.trim().split("\n")).toHaveLength(1);
+  }, 60000);
+
+  it("repair, fix and finish -o write into a new directory", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const src = join(root, "p.arch");
+    writeFileSync(src, PLAN);
+    for (const cmd of ["repair", "fix", "finish"]) {
+      const out = join(root, cmd, "deep", "p.arch");
+      const r = run([cmd, src, "-o", out]);
+      expect(r.stderr, cmd).not.toContain("ENOENT");
+      expect(r.status, cmd).toBe(0);
+      expect(existsSync(out), cmd).toBe(true);
+    }
+  }, 120000);
+
+  it("md -o writes the rewritten Markdown and its images into a new directory", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const md = join(root, "doc.md");
+    writeFileSync(md, "# Doc\n\n```arch\n" + PLAN + "```\n");
+    const out = join(root, "site", "doc.md");
+    const r = run(["md", md, "-o", out, "--json"]);
+    expect(r.status).toBe(0);
+    expect(existsSync(out)).toBe(true);
+    expect(existsSync(join(root, "site", "doc-1.svg"))).toBe(true);
+  }, 60000);
+
+  it("new -o writes the starter into a new directory", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const out = join(root, "plans", "start.arch");
+    const r = run(["new", "-o", out]);
+    expect(r.status).toBe(0);
+    expect(existsSync(out)).toBe(true);
+  }, 60000);
+});
+
+describe("batch -o never writes two inputs onto one file", () => {
+  it("two inputs with the same file name are a usage error, and nothing is written", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-batch-clash-"));
+    for (const d of ["a", "b"]) {
+      mkdirSync(join(root, d));
+      writeFileSync(join(root, d, "plan.arch"), PLAN);
+    }
+    const out = join(root, "out");
+    const r = run(["batch", join(root, "a", "plan.arch"), join(root, "b", "plan.arch"), "-o", out]);
+    expect(r.status).toBe(3);
+    expect(r.stderr).toContain(join(root, "a", "plan.arch"));
+    expect(r.stderr).toContain(join(root, "b", "plan.arch"));
+    expect(r.stderr).toContain(join(out, "plan.svg"));
+    expect(existsSync(out)).toBe(false);
+  }, 60000);
+
+  it("names that differ only by case clash too (one file on a case-insensitive filesystem)", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-batch-clash-"));
+    mkdirSync(join(root, "a"));
+    mkdirSync(join(root, "b"));
+    writeFileSync(join(root, "a", "Plan.arch"), PLAN);
+    writeFileSync(join(root, "b", "plan.arch"), PLAN);
+    const out = join(root, "out");
+    const r = run(["batch", join(root, "a", "Plan.arch"), join(root, "b", "plan.arch"), "-o", out]);
+    expect(r.status).toBe(3);
+    expect(existsSync(out)).toBe(false);
+  }, 60000);
+
+  it("the same input given twice is refused the same way, with or without -o", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-batch-clash-"));
+    const p = join(root, "p.arch");
+    writeFileSync(p, PLAN);
+    const r = run(["batch", p, p]);
+    expect(r.status).toBe(3);
+    expect(existsSync(join(root, "p.svg"))).toBe(false);
+  }, 60000);
+
+  it("the control: distinct names in one directory still render", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-batch-clash-"));
+    const r = run(["batch", "examples/studio.arch", "examples/two-bed.arch", "-o", join(root, "out"), "--json"]);
+    expect(r.status).toBe(0);
+    expect(JSON.parse(r.stdout).results).toHaveLength(2);
+  }, 60000);
+});

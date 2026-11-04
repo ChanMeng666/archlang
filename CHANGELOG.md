@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- `-o some/new/dir/plan.svg` (on `compile`, `watch`, `preview`, `md`, `repair`, `fix`, `finish` and `new`) creates the missing directory, as `batch -o <dir>` always has, instead of failing with a raw `ENOENT`; a path that cannot be a directory is one `cannot create the output directory` error (exit 1).
+- `batch` refuses (exit 3, before writing anything) two inputs that would write one output file, such as `a/plan.arch` and `b/plan.arch` under one `-o`, or one input given twice; the second used to replace the first silently. Names that differ only by case count as one file.
+
 ## [1.54.0] - 2026-11-04
 
 ### Added
