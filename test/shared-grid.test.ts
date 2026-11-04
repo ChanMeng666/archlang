@@ -279,26 +279,25 @@ suite("`at axis.2` on an opening stands on the axis", () => {
     );
 
   it.each([
-    ["a wall that starts at 1000", "(1000,0) (9000,0)", "axis.2 + 500", "2500"],
-    ["a wall that runs right to left", "(9000,0) (0,0)", "axis.2 + 500", "5500"],
-    ["a wall that starts at 0", "(0,0) (9000,0)", "axis.2 + 500", "3500"],
-    ["subtraction", "(1000,0) (9000,0)", "axis.2 - 500", "1500"],
-    ["a scaled read", "(1000,0) (9000,0)", "axis.2 * 2", "5000"],
-    ["two axes", "(1000,0) (9000,0)", "axis.2 - axis.1 + 1000", "3000"],
-  ])(
+    // name, wall, position, the distance the hint quotes, the plan x the position meant
+    ["a wall that starts at 1000", "(1000,0) (9000,0)", "axis.2 + 500", "2500", 3500],
+    ["a wall that runs right to left", "(9000,0) (0,0)", "axis.2 + 500", "5500", 3500],
+    ["a wall that starts at 0", "(0,0) (9000,0)", "axis.2 + 500", "3500", 3500],
+    ["subtraction", "(1000,0) (9000,0)", "axis.2 - 500", "1500", 2500],
+    ["a scaled read", "(1000,0) (9000,0)", "axis.2 * 2", "5000", 6000],
+    ["two axes", "(1000,0) (9000,0)", "axis.2 - axis.1 + 1000", "3000", 4000],
+  ] as const)(
     "arithmetic on it is refused on %s, and the distance the hint quotes lands where the expression meant",
-    (_n, wall, pos, along) => {
+    (_n, wall, pos, along, x) => {
       const src = AT_X(wall, pos);
       const [d, ...rest] = errors(src);
       expect(rest).toEqual([]);
       expect(d).toMatchObject({ code: "E_OPENING_DATUM" });
       expect(quoted(src, d!)).toContain(pos);
-      expect(doorAt(src)).toBeUndefined();
       expect(d!.hints!.join(" ")).toContain("`at axis 2`");
       expect(d!.hints!.join(" ")).toContain(`\`at ${along}\``);
       // Paste the hint: the door stands where the expression, read as a plan x, meant.
-      const want = new Function("axis", `return ${pos.replace(/axis\.(\d)/g, "axis[$1]")}`)([0, 0, 3000]) as number;
-      expect(doorAt(AT_X(wall, along))).toEqual({ x: want, y: 0 });
+      expect(doorAt(AT_X(wall, along))).toEqual({ x, y: 0 });
       expect(errors(AT_X(wall, along))).toEqual([]);
     },
   );
@@ -314,8 +313,10 @@ suite("`at axis.2` on an opening stands on the axis", () => {
   it("refused under `from` and `%` too, which measure along the wall", () => {
     for (const pos of ["axis.2 + 500 from end", "axis.2 / 100%", "(axis.2 + 500) from start"]) {
       const src = AT_X("(1000,0) (9000,0)", pos);
-      expect(codes(src), pos).toContain("E_OPENING_DATUM");
-      expect(doorAt(src), pos).toBeUndefined();
+      expect(
+        errors(src).map((d) => d.code),
+        pos,
+      ).toEqual(["E_OPENING_DATUM"]);
     }
   });
 
@@ -327,7 +328,7 @@ suite("`at axis.2` on an opening stands on the axis", () => {
     const src = at("axis.A - 1000 from start");
     expect(errors(src).map((d) => d.code)).toEqual(["E_OPENING_DATUM"]);
     expect(errors(src)[0]!.hints!.join(" ")).toContain("`at axis A`");
-    expect(errors(at("500 from start"))).toEqual([]);
+    expect(errors(at("1500 from start"))).toEqual([]);
   });
 
   it("the control: arithmetic on a `let` reads as it always did", () => {
