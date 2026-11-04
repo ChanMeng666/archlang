@@ -11,7 +11,8 @@ Closed programme research (audits, studies, spikes) lives in the private sibling
 | `ci-throughput.md` | Options to shorten the PR cycle (auto-merge, concurrency, path filters, coverage off the PR path, merge queue, changelog fragments, PR legs and shards) | A–D and G live; E, F open, the owner decides |
 | `archlang-3d/` | The owner's 3D plan (ADR 0030/0031 drafts) | owner's; not part of plan-soundness |
 | `preview-and-remodel/` | The 3D preview, the G cards and Wave 7 (what the German-houses user reported); `handoff.md` is the resume point | waves 0–3, 5 and 7 done; waves 4 and 6 wait for the N10 read |
-| `drawing-set/` | The scheme-stage drawing set: indicators, site, sections and elevations, analysis diagrams, a sheet pack; `handoff.md` is the resume point | planned 2026-11-02, nothing started |
+| `checker-reach/` | Check plans from any tool: OpenPlan3D/OAS import, revision guard, public check suite, language-spec version, short share links on the playground Worker, a free-orbit 3D preview; `handoff.md` is the resume point | planned 2026-11-05; runs before drawing-set waves 1–2 (CR-D1) |
+| `drawing-set/` | The scheme-stage drawing set: indicators, site, sections and elevations, analysis diagrams, a sheet pack; `handoff.md` is the resume point | planned 2026-11-02; DS1/DS2 run as checker-reach CR1/CR2b, DS3–DS9 after Show HN (CR-D1) |
 | `visual-assets/` | Richer 3D furniture (material slots, shapes, a T0 generator for every family), an opt-in `rendered` 2D theme, twenty new families; `handoff.md` is the resume point | done and released 2026-11-04 (#459–#466); residue in `handoff.md` and backlog VA |
 
 The backlog (`docs/backlog.md`) points here for programme work; `docs/adr/` holds the decisions that
