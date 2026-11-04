@@ -3,8 +3,9 @@
  *
  * A `void` is a hole in THIS storey's floor (a stairwell, an atrium, a double-height room): one on
  * the storey above is headroom here, one below is that storey's floor. A lift's shaft and an
- * escalator's footprint are floor no one stands on either. Stairs are not here: their flights and
- * landings are `W_FURNITURE_ON_STAIR`'s, read with headroom (`stairs.ts`).
+ * escalator's footprint are floor no one stands on either. A stair is not a gap here: its flights
+ * and landings are `W_FURNITURE_ON_STAIR`'s, read with headroom (`stairs.ts`). A `void` drawn over a
+ * stair is still one, so a drawn stairwell can raise both codes.
  *
  * {@link floorGapsOf} is the one definition: `finish`'s furnish stage keeps every piece off the
  * same rectangles (`floorGaps`, `src/furnish.ts`), so it never proposes a position this rule
@@ -43,49 +44,15 @@ const WHAT: Readonly<Record<FloorGap["of"]["kind"], { noun: string; of: string }
 };
 
 /**
- * Is `r` covered by the union of `covers`, but for slivers 1 mm or less across (the tolerance of
- * `rectsOverlap`)? Exact on the grid the rectangles' own edges cut `r` into: every cell wider and
- * taller than 1 mm must have its centre in some cover. Deterministic, and at most (2k + 1)² cells
- * for k covers.
- */
-export function coveredBy(r: BBox, covers: readonly BBox[]): boolean {
-  const x1 = r.x + r.w;
-  const y1 = r.y + r.h;
-  const cut = (lo: number, hi: number, at: number[]): number[] =>
-    [...new Set([lo, hi, ...at.filter((v) => v > lo && v < hi)])].sort((a, b) => a - b);
-  const xs = cut(
-    r.x,
-    x1,
-    covers.flatMap((c) => [c.x, c.x + c.w]),
-  );
-  const ys = cut(
-    r.y,
-    y1,
-    covers.flatMap((c) => [c.y, c.y + c.h]),
-  );
-  for (let i = 0; i + 1 < xs.length; i++) {
-    for (let j = 0; j + 1 < ys.length; j++) {
-      const w = xs[i + 1]! - xs[i]!;
-      const h = ys[j + 1]! - ys[j]!;
-      if (w <= 1 || h <= 1) continue;
-      const cx = xs[i]! + w / 2;
-      const cy = ys[j]! + h / 2;
-      if (!covers.some((c) => cx > c.x && cx < c.x + c.w && cy > c.y && cy < c.y + c.h)) return false;
-    }
-  }
-  return true;
-}
-
-/**
  * `W_FURNITURE_ON_VOID`: a piece standing on a void, a lift shaft or an escalator of its own
  * storey. Whatever stands there is read, a rug as much as a wardrobe, as the stair rule reads a
  * stairwell: a hole has nothing to walk or stand on. One warning per piece and gap element, at the
  * first of its rectangles the piece covers by more than 1 mm both ways (`rectsOverlap`).
  *
- * A stair is `W_FURNITURE_ON_STAIR`'s. A stairwell is usually drawn as a `stair` and a `void` on one
- * rectangle, so where the part of the void a piece covers lies wholly on the storey's stairs
- * ({@link coveredBy} their pieces), this rule yields to that one; a piece reaching past the stair
- * onto the rest of the void is still reported here.
+ * A `void` is read whatever else stands on it. A stairwell drawn as a `stair` and a `void` on one
+ * rectangle can therefore raise this code beside `W_FURNITURE_ON_STAIR`: the stair rule reads only
+ * what its headroom, landing and budget rules let it, and a yield here would lose the warning from
+ * both (red-team round 2 of CR2d).
  */
 export const furnitureOnVoid: LintRule = {
   name: "furniture-on-void",
@@ -97,7 +64,6 @@ export const furnitureOnVoid: LintRule = {
     if (ctx.furniture.length === 0) return [];
     const gaps = floorGapsOf(ctx.ir.elements);
     if (gaps.length === 0) return [];
-    const stairs = ctx.ir.elements.flatMap((e) => (isVertical(e) && e.kind === "stair" ? piecesOf(e) : []));
     const lv = (ctx.building.storeyCount ?? 1) > 1 && ctx.ir.level !== undefined ? ` on level ${ctx.ir.level}` : "";
     const out: Diagnostic[] = [];
     for (const piece of ctx.furniture) {
@@ -107,17 +73,6 @@ export const furnitureOnVoid: LintRule = {
         if (seen.has(g.of) || !rectsOverlap(foot, g.rect)) continue;
         seen.add(g.of);
         const r = g.rect;
-        if (g.of.kind === "void" && stairs.length > 0) {
-          const x0 = Math.max(foot.x, r.x);
-          const y0 = Math.max(foot.y, r.y);
-          const on = {
-            x: x0,
-            y: y0,
-            w: Math.min(foot.x + foot.w, r.x + r.w) - x0,
-            h: Math.min(foot.y + foot.h, r.y + r.h) - y0,
-          };
-          if (coveredBy(on, stairs)) continue;
-        }
         const centre = { x: r.x + r.w / 2, y: r.y + r.h / 2 };
         const room = ctx.rooms.find((x) => {
           const b = ctx.roomRects.get(x.id);

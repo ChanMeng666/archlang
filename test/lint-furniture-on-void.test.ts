@@ -102,18 +102,70 @@ suite("W_FURNITURE_ON_VOID", () => {
       ],
     );
 
-  it("yields to W_FURNITURE_ON_STAIR on a stairwell drawn as a stair and a void on one rectangle", () => {
+  it("a drawn stairwell (a stair and a void on one rectangle) reads the void too, beside the stair rule", () => {
     for (const piece of [
       `furniture id=t table at (3200,1500) size 600x600`, // wholly on the well
       `furniture id=t table at (3700,1500) size 600x600`, // half on it, half on the floor beside it
     ]) {
       const src = WELL(piece);
       expect(of(src, "W_FURNITURE_ON_STAIR"), piece).toHaveLength(1);
-      expect(of(src), piece).toEqual([]);
+      expect(of(src), piece).toHaveLength(1);
     }
   });
 
-  it("the controls: a void with no stair still fires, and so does the part of a larger void past the stair", () => {
+  /**
+   * Red-team round 2 (CR2d): a yield to the stair rule on the stair's whole footprint lost these
+   * from both rules, because the stair rule reads only part of it (the low part of a flight rising
+   * from this storey, a mid landing only for a body-layer piece). Each must raise this code.
+   */
+  it.each([
+    [
+      "a table under the high end of a `dir up` flight drawn over a void",
+      `plan "t" {
+  units mm
+  grid 50
+  room id=liv at (0,0) size 6000x5000 label "Living"
+  stair id=s1 at (3000,500) size 1000x3000 dir up
+  void id=v at (3000,500) size 1000x3000
+  furniture id=t table at (3200,700) size 600x600
+}
+`,
+    ],
+    [
+      "a rug on a block stair's mid landing drawn over a void",
+      `plan "t" {
+  units mm
+  grid 50
+  room id=liv at (0,0) size 8000x6000 label "Living"
+  stair id=s1 dir up width 1000 { flight at (3000,3000) size 1000x2000 landing at (3000,2000) size 2000x1000 flight at (4000,3000) size 1000x2000 }
+  void id=v at (3000,2000) size 2000x3000
+  furniture id=r rug at (3200,2100) size 600x600
+}
+`,
+    ],
+    [
+      "a 2 mm overlap with a void a 1 mm narrower stair stands in",
+      `plan "t" {
+  units mm
+  grid 1
+  level 1 {
+    room id=g at (0,0) size 6000x5000 label "Hall"
+    stair id=s1 at (3001,500) size 999x3000 dir up
+  }
+  level 2 {
+    room id=u at (0,0) size 6000x5000 label "Landing"
+    stair id=s1 at (3001,500) size 999x3000 dir down
+    void id=v at (3000,500) size 1000x3000
+    furniture id=t table at (2402,1500) size 600x600
+  }
+}
+`,
+    ],
+  ])("%s raises it", (_n, src) => {
+    expect(of(src)).toHaveLength(1);
+  });
+
+  it("the controls: a void with no stair fires, and so does a larger void, beside or away from the flight", () => {
     const piece = `furniture id=t table at (3200,1500) size 600x600`;
     expect(of(WELL(piece, { stair: false }))).toHaveLength(1);
     // An atrium wider than the flight: a table straddling the flight's side reaches the open void.
