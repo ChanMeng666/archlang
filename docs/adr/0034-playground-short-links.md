@@ -143,8 +143,10 @@ The store is read before the cache, so a removed plan's card stops at once.
   written as a loop, near the element budget, in about 2.3 s, its SVG 1.7 M characters. A compiled
   SVG over 2 M characters is not rasterised. Cache misses are rate-limited per address
   (`RATE_PREVIEW`, 120 a minute, `namespace_id` 2604).
-- **The static card instead** (`/brand/archlang-og.png`): for a plan that draws nothing (it has an
-  error), one over the SVG cap, or an address over its rate (that one uncached).
+- **The static card instead** (`/brand/archlang-og.png`), never cached under the plan's key: for a
+  plan that draws nothing (it has an error) or one over the SVG cap, served for a day; for an
+  address over its rate, or a renderer fault, `no-store`. A card request never answers 500 for a
+  render: a failed wasm initialisation is retried on the next request, not remembered.
 - **Size:** the Worker uploads as about 4 MiB, 1.6 MiB gzip (the core, the resvg `.wasm`, the font),
   inside the platform's 10 MiB compressed limit.
 - **Known gap:** text the bundled face lacks (CJK) draws as empty boxes. The CJK face is an 11 MB

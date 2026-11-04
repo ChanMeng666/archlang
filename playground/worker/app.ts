@@ -307,9 +307,11 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
 
   /**
    * `GET /s/<id>.png`: the plan's card. The image is a function of the stored plan and this
-   * Worker's code, so it is rendered once per edge location and kept in its cache, `immutable`. A plan that
-   * draws nothing (an error) or too much ({@link PREVIEW_SVG_CAP}) gets the static card, also
-   * cached; an address over its rate of cache misses gets the static card uncached.
+   * Worker's code, so it is rendered once per edge location and kept in its cache, `immutable`.
+   * Only a rendered card is cached under the plan's key. The static card stands in, never cached
+   * under that key: for a plan that draws nothing (an error) or too much ({@link PREVIEW_SVG_CAP})
+   * it is served for a day; for an address over its rate of cache misses, or a renderer fault, it
+   * is `no-store`, so the next request renders.
    */
   async function image(req: Request, id: string, env: Env, ctx?: ExecutionContext): Promise<Response> {
     // The store first, the cache second: a plan removed on request stops showing at once, even
@@ -331,17 +333,20 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
         ? core.compile(source, { noCache: true }).svg
         : "";
     const card = svg.length > 0 && svg.length <= PREVIEW_SVG_CAP ? previewSvg(svg, hit.meta?.t ?? DEFAULT_TITLE) : null;
-    let res: Response;
-    if (card && preview.rasterize) {
-      const png = await preview.rasterize(card);
-      res = new Response(png as Uint8Array<ArrayBuffer>, {
-        status: 200,
-        headers: { ...BASE_HEADERS, "content-type": "image/png", "cache-control": IMMUTABLE },
-      });
-    } else {
-      res = await fallbackImage(new Request(req.url), env, IMMUTABLE);
+    if (!card || !preview.rasterize) return fallbackImage(req, env, "public, max-age=86400");
+    let png: Uint8Array;
+    try {
+      png = await preview.rasterize(card);
+    } catch (e) {
+      // Never a 500 for a card: the static one, uncached, and the error's name in the log.
+      console.error(`share worker: card render failed (${(e as Error)?.name ?? "unknown"})`);
+      return fallbackImage(req, env, "no-store");
     }
-    if (preview.cache && res.status === 200) {
+    const res = new Response(png as Uint8Array<ArrayBuffer>, {
+      status: 200,
+      headers: { ...BASE_HEADERS, "content-type": "image/png", "cache-control": IMMUTABLE },
+    });
+    if (preview.cache) {
       const put = preview.cache.put(key, res.clone());
       if (ctx) ctx.waitUntil(put);
       else await put;

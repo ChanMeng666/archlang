@@ -513,7 +513,15 @@ async function shortLinkChecks() {
         if (bytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") throw new Error("not a PNG (bad signature)");
         const [w, h] = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
         if (w !== 1200 || h !== 630) throw new Error(`the PNG is ${w}x${h}, expected 1200x630`);
-        return [`${bytes.length} B, ${w}x${h}`];
+        // The static card is also a 1200x630 PNG: only its bytes tell the plan's card from the
+        // stand-in the Worker serves when it cannot draw one.
+        // (Read as bytes: fetchOk reads a body as text, which would mangle a PNG.)
+        const og = await fetch(`${base}/brand/archlang-og.png`, { headers: { "user-agent": "archlang-smoke/1" } });
+        if (og.status !== 200) throw new Error(`/brand/archlang-og.png: HTTP ${og.status}`);
+        const fallback = Buffer.from(await og.arrayBuffer());
+        if (bytes.equals(fallback))
+          throw new Error("the card is the static /brand/archlang-og.png, not the plan's drawing");
+        return [`${bytes.length} B, ${w}x${h}, not the static card`];
       },
     },
   ];

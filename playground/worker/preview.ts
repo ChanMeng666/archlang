@@ -78,7 +78,9 @@ export interface ResvgWasm {
 
 /**
  * A rasteriser over resvg-wasm: the module is initialised once per isolate (a second `initWasm`
- * throws), the font is the only face, and every call frees what it allocated in the wasm heap.
+ * throws), the font is the only face, and every call frees what it allocated in the wasm heap. A
+ * FAILED initialisation is forgotten, so the next call tries again: remembered, it would fail every
+ * card for the isolate's life.
  */
 export function resvgRasterizer(
   resvg: ResvgWasm,
@@ -87,7 +89,10 @@ export function resvgRasterizer(
 ): Rasterize {
   let ready: Promise<void> | undefined;
   return async (svg) => {
-    ready ??= resvg.initWasm(wasm);
+    ready ??= resvg.initWasm(wasm).catch((e: unknown) => {
+      ready = undefined;
+      throw e;
+    });
     await ready;
     const r = new resvg.Resvg(svg, {
       fitTo: { mode: "original" },

@@ -12,7 +12,7 @@ import { compile, diagnosticToJson, inputTooLarge, rateLimited } from "archlang"
 import { describe, expect, it } from "vitest";
 import { encodePlanHash } from "../../src/cli/share-codec.mjs";
 import { FALLBACK_IMAGE, makeShareWorker, type PreviewDeps } from "../worker/app.js";
-import { PREVIEW_HEIGHT, PREVIEW_WIDTH, previewSvg, resvgRasterizer } from "../worker/preview.js";
+import { PREVIEW_HEIGHT, PREVIEW_WIDTH, previewSvg, type ResvgWasm, resvgRasterizer } from "../worker/preview.js";
 import type { Env, ShareMeta } from "../worker/types.js";
 import { supportsDeflateRaw } from "./helpers.js";
 
@@ -138,18 +138,70 @@ describe.skipIf(!supportsDeflateRaw)("/s/<id>.png", () => {
     expect((await get()).status).toBe(404);
   });
 
-  it("is the static card for a plan that draws nothing, and for a host with no renderer", async () => {
+  it("is the static card for a plan that draws nothing, and for a host with no renderer, never cached under its key", async () => {
     const broken = `plan "B" {\n  units mm\n  wall exterior thickness 150 { (0,0) arc (4000,0) radius 100 }\n}`;
-    for (const [deps, source] of [
-      [{ rasterize }, broken],
-      [{}, read("examples/studio.arch")],
+    for (const [rasterizer, source] of [
+      [rasterize, broken],
+      [undefined, read("examples/studio.arch")],
     ] as const) {
-      const { get } = await shareAndFetch(deps, source);
+      const cache = fakeCache();
+      const { get } = await shareAndFetch({ rasterize: rasterizer, cache: cache.cache }, source);
       const res = await get();
       expect(res.status).toBe(200);
       expect(res.headers.get("content-type")).toBe("image/png");
+      expect(res.headers.get("cache-control")).toBe("public, max-age=86400");
       expect(Buffer.from(await res.arrayBuffer()).equals(OG)).toBe(true);
+      expect(cache.puts()).toBe(0);
     }
+  });
+
+  it("is the static card, no-store and uncached, when the renderer throws; the next request renders", async () => {
+    const cache = fakeCache();
+    let calls = 0;
+    const flaky = async (svg: string) => {
+      calls++;
+      if (calls === 1) throw new Error("wasm trap");
+      return rasterize(svg);
+    };
+    const errors: unknown[] = [];
+    const orig = console.error;
+    console.error = (...a: unknown[]) => errors.push(a);
+    try {
+      const { get } = await shareAndFetch({ rasterize: flaky, cache: cache.cache }, read("examples/studio.arch"));
+      const first = await get();
+      expect(first.status).toBe(200);
+      expect(first.headers.get("cache-control")).toBe("no-store");
+      expect(Buffer.from(await first.arrayBuffer()).equals(OG)).toBe(true);
+      expect(cache.puts()).toBe(0);
+      const second = await get();
+      expect(second.headers.get("cache-control")).toBe("public, max-age=31536000, immutable");
+      expect(Buffer.from(await second.arrayBuffer()).equals(OG)).toBe(false);
+      expect(cache.puts()).toBe(1);
+    } finally {
+      console.error = orig;
+    }
+    expect(JSON.stringify(errors)).toContain("card render failed (Error)");
+  });
+
+  it("forgets a failed wasm initialisation, so the next card tries again", async () => {
+    let inits = 0;
+    const fake: ResvgWasm = {
+      initWasm: async () => {
+        inits++;
+        if (inits === 1) throw new Error("init failed");
+      },
+      Resvg: class {
+        render() {
+          return { asPng: () => new Uint8Array([1, 2, 3]), free() {} };
+        }
+        free() {}
+      } as unknown as ResvgWasm["Resvg"],
+    };
+    const raster = resvgRasterizer(fake, new Uint8Array(0), FONT);
+    await expect(raster("<svg/>")).rejects.toThrow("init failed");
+    expect(Array.from(await raster("<svg/>"))).toEqual([1, 2, 3]);
+    expect(Array.from(await raster("<svg/>"))).toEqual([1, 2, 3]);
+    expect(inits).toBe(2); // once failed, once succeeded, then remembered
   });
 
   it("is the static card, uncached, for an address over its rate of renders", async () => {
