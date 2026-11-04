@@ -121,7 +121,7 @@ keep (align <d>… | equal width|depth <id>… | offset <d|id> from <d> <mm> | m
 ## CLI loop
 
 Every command takes `--json` (structured result on **stdout**, human messages on **stderr**) and
-reads source from a file or stdin (`-`). Exit codes: `0` ok · `1` internal / IO error · `2` user-source error (deterministic — fix it, don't blindly retry) · `3` bad usage.
+reads source from a file or stdin (`-`). Exit codes: `0` ok · `1` internal / IO error · `2` user-source error (deterministic — fix it, don't blindly retry) · `3` bad usage · `4` stale source (E_STALE_SOURCE): the file is not the revision --expected-hash names; re-read it.
 In a shell, every `arch` in this spec means `archlang` (or `npx -y @chanmeng666/archlang`): coreutils owns `arch` on Linux, macOS and Git Bash.
 
 ```text

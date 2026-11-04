@@ -921,6 +921,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Wait a minute and retry, or compile locally, where there is no limit: `npx -y @chanmeng666/archlang compile plan.arch`, or the stdio MCP server `npx -y @chanmeng666/archlang-mcp`.",
     "tools/call compile { … }   # one call past the per-minute limit from one address: error on the hosted MCP server",
   ),
+  E_STALE_SOURCE: E(
+    "E_STALE_SOURCE",
+    "The file is not the revision `--expected-hash` names.",
+    "A command that rewrites a `.arch` file (`fix`, `finish`, `repair`, `fmt --write`, `reroll --write`) was given `--expected-hash <sha256>`, and the SHA-256 of the input file's bytes (a BOM and CRLF line ends are part of them) is another value: someone changed the file after you read it. The command checks the hash before it computes anything and refuses then; it reads the file again just before it writes and refuses if the bytes changed while it ran. Nothing is written either way. The second check narrows the race with another writer; it is not a lock. Raised by the CLI (exit 4), never by `compile()`.",
+    "Re-read the file, re-apply your edit to what is there now, and pass the new hash: the `source_hash` a `--json` run of the command reports (or the `written_hash` of your own last write).",
+    "archlang fix plan.arch --expected-hash 9f86d081884c…   # error: plan.arch changed since that hash was taken, exit 4",
+  ),
   E_STEP_LIMIT: E(
     "E_STEP_LIMIT",
     "Evaluation did more work than any plan needs.",

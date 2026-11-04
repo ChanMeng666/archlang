@@ -40,13 +40,13 @@ import {
   hasErrors,
   ioError,
   makeNodeWorld,
-  readInput,
   writeOutput,
   usageError,
   usageErrorFor,
   withSource,
 } from "./io.js";
 import { closest } from "../expr.js";
+import { readGuarded, sha256Hex, withGuardedSource } from "./source-hash.js";
 
 // ---------------------------------------------------------------------------
 // ast / complete
@@ -102,16 +102,33 @@ export function cmdComplete(args: Args): number {
 // fmt / repair / fix / suggest
 // ---------------------------------------------------------------------------
 
+/**
+ * `fmt` — print the canonical formatting, or with `--write` rewrite the input in place.
+ * `--expected-hash` guards that rewrite (`src/cli/source-hash.ts`); `--json` reports
+ * `source_hash`, and `written_hash` when bytes were written.
+ */
 export function cmdFmt(args: Args): number {
-  return withSource(args, (source, input) => {
+  return withGuardedSource(args, "fmt", (read, input) => {
+    const { source } = read;
     const formatted = format(source);
     const changed = formatted !== source;
     if (args.write && input !== "-") {
-      if (changed) writeFileSync(resolvePath(input), formatted, "utf8");
-      if (args.json) emitJson({ ok: true, changed, output: resolvePath(input) });
+      if (changed) {
+        const stop = read.recheck();
+        if (stop !== undefined) return stop;
+        writeFileSync(resolvePath(input), formatted, "utf8");
+      }
+      if (args.json)
+        emitJson({
+          ok: true,
+          changed,
+          output: resolvePath(input),
+          source_hash: read.hash,
+          ...(changed ? { written_hash: sha256Hex(formatted) } : {}),
+        });
       else if (!args.quiet) process.stdout.write(`✓ ${input} formatted${changed ? "" : " (no changes)"}\n`);
     } else if (args.json) {
-      emitJson({ ok: true, changed, formatted });
+      emitJson({ ok: true, changed, formatted, source_hash: read.hash });
     } else {
       process.stdout.write(formatted);
     }
@@ -125,14 +142,24 @@ export function cmdFmt(args: Args): number {
  * Writes corrected source to `-o <file>` (or stdout); the change log goes to stderr.
  */
 export function cmdRepair(args: Args): number {
-  return withSource(args, (source, input) => {
+  return withGuardedSource(args, "repair", (read, input) => {
+    const { source } = read;
     const r = repair(source);
     if (args.json) {
-      emitJson({ ok: true, changed: r.changed, changes: r.changes, unresolved: r.unresolved, source: r.source });
+      emitJson({
+        ok: true,
+        changed: r.changed,
+        changes: r.changes,
+        unresolved: r.unresolved,
+        source: r.source,
+        source_hash: read.hash,
+      });
       return EXIT.OK;
     }
     const target = args.o;
     if (target && target !== "-") {
+      const stop = read.recheck();
+      if (stop !== undefined) return stop;
       try {
         writeOutput(target, r.source);
       } catch (e) {
@@ -190,12 +217,9 @@ export function cmdRepair(args: Args): number {
 export async function cmdFix(args: Args): Promise<number> {
   const input = args._[0];
   if (!input) return usageError("fix needs an input file (use a path or `-` for stdin)");
-  let source: string;
-  try {
-    source = readInput(input);
-  } catch {
-    return ioError(`cannot read ${input}`, args.json);
-  }
+  const read = readGuarded(args, "fix", input);
+  if ("code" in read) return read.code;
+  const { source } = read;
 
   const world = makeNodeWorld(baseDirOf(input));
   const maxApplicability = args.unsafe ? ("maybe-incorrect" as const) : ("machine-applicable" as const);
@@ -302,6 +326,13 @@ export async function cmdFix(args: Args): Promise<number> {
     ? unifiedDiff(source, current, `a/${input === "-" ? "stdin" : input}`, `b/${target === "-" ? "stdout" : target}`)
     : "";
 
+  // `--expected-hash`: the input must still be the bytes this result was computed from,
+  // checked again just before the first byte (the `.bak` included) is written.
+  if (wrote && target !== "-") {
+    const stop = read.recheck();
+    if (stop !== undefined) return stop;
+  }
+
   // `--backup`: preserve what is about to be clobbered. Only a real file that already
   // exists has anything to lose, so `-o new-file.arch` and stdout write no `.bak`.
   let backup: string | undefined;
@@ -332,6 +363,9 @@ export async function cmdFix(args: Args): Promise<number> {
     const out: Record<string, unknown> = { ok, passes, applied, skipped, unresolved, wrote, target };
     if (backup) out.backup = backup;
     if (diff) out.diff = diff;
+    // The revision handles (`src/cli/source-hash.ts`): what was read, and what landed in the target.
+    out.source_hash = read.hash;
+    if (wrote && target !== "-") out.written_hash = sha256Hex(current);
     emitJson(out);
   } else {
     if (target === "-" && !args.dryRun) process.stdout.write(current);
@@ -388,12 +422,9 @@ export function cmdFinish(args: Args): number {
       );
     only = stage;
   }
-  let source: string;
-  try {
-    source = readInput(input);
-  } catch {
-    return ioError(`cannot read ${input}`, args.json);
-  }
+  const read = readGuarded(args, "finish", input);
+  if ("code" in read) return read.code;
+  const { source } = read;
 
   const world = makeNodeWorld(baseDirOf(input));
   const errors = compile(source, { noCache: true, world }).diagnostics.filter((d) => d.severity === "error");
@@ -405,6 +436,12 @@ export function cmdFinish(args: Args): number {
   const diff = r.changed
     ? unifiedDiff(source, r.source, `a/${input === "-" ? "stdin" : input}`, `b/${target === "-" ? "stdout" : target}`)
     : "";
+
+  // `--expected-hash`: re-checked just before the first byte (the `.bak` included) is written.
+  if (wrote && target !== "-") {
+    const stop = read.recheck();
+    if (stop !== undefined) return stop;
+  }
 
   // `--backup`: only a real file that already exists has anything to lose.
   let backup: string | undefined;
@@ -442,6 +479,8 @@ export function cmdFinish(args: Args): number {
     if (backup) out.backup = backup;
     if (diff) out.diff = diff;
     out.source = r.source;
+    out.source_hash = read.hash;
+    if (wrote && target !== "-") out.written_hash = sha256Hex(r.source);
     emitJson(out);
   } else {
     if (!ok) emitDiagnosticsHuman(source, errors, args.quiet);
@@ -493,7 +532,8 @@ function compiledPages(source: string, world: ReturnType<typeof makeNodeWorld>):
  * preview would add nothing to).
  */
 export function cmdReroll(args: Args): number {
-  return withSource(args, (source, input) => {
+  return withGuardedSource(args, "reroll", (read, input) => {
+    const { source } = read;
     // The fs World, like `compile` gets — so a plan with `import`s can still
     // be proven (the proof obligation resolves the same modules `compile`
     // would).
@@ -521,6 +561,8 @@ export function cmdReroll(args: Args): number {
           beforePages.every((svg, i) => svg === afterPages![i]));
 
       if (changed && verified) {
+        const stop = read.recheck();
+        if (stop !== undefined) return stop;
         try {
           writeFileSync(resolvePath(input), report.output, "utf8");
         } catch (e) {
@@ -536,6 +578,8 @@ export function cmdReroll(args: Args): number {
           target: resolvePath(input),
           applied: verified ? report.applied.length : 0,
           skipped: report.skipped.length,
+          source_hash: read.hash,
+          ...(wrote ? { written_hash: sha256Hex(report.output) } : {}),
         });
       } else if (!args.quiet) {
         if (!verified) process.stderr.write("  ⚠ combined result failed re-verification — nothing written\n");
@@ -549,7 +593,7 @@ export function cmdReroll(args: Args): number {
     }
 
     if (args.json) {
-      emitJson({ ok: true, suggestions });
+      emitJson({ ok: true, suggestions, source_hash: read.hash });
     } else if (!args.quiet) {
       if (suggestions.length === 0) process.stdout.write("no reroll suggestions\n");
       for (const s of suggestions) {

@@ -70,6 +70,8 @@ const IMPACT =
   "raised by `applyLetOverride()` (`arch impact --set`) before anything compiles, never by compile()/lint(); the example is executed in test/impact.test.ts";
 const LOCK =
   "raised by `impact()` with a lock (`arch impact --against old.arch --lock <id,…>`) on two versions of a plan, never by compile()/lint(); pinned in test/lock.test.ts";
+const STALE =
+  "raised by the CLI's write-back guard (`--expected-hash`, `src/cli/source-hash.ts`) on a file's bytes, never by compile()/lint(); pinned in test/cli-expected-hash.test.ts";
 const FRAGMENT =
   "a one-line fragment: the code needs a building around it (a wall to be off, rooms to be unreachable between, a sheet to overflow), and the whole-plan spatial rules are owned by test/lint.test.ts";
 
@@ -111,6 +113,7 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
   ["E_SET_OVERRIDE", IMPACT],
   ["E_LOCKED_ELEMENT_CHANGED", LOCK],
   ["E_LOCK_UNNAMED", LOCK],
+  ["E_STALE_SOURCE", STALE],
 
   ["E_PNG_DEPENDENCY", DEP],
   ["E_INPUT_TOO_LARGE", HOSTED],
