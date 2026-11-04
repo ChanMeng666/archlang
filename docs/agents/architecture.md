@@ -41,7 +41,9 @@ source (.arch)
 - **Zero runtime dependencies.** Heavy/native deps are `optionalDependencies`, lazily `import()`ed
   with `/* webpackIgnore: true */ /* @vite-ignore */` so downstream bundlers don't resolve them.
 - **Coordinates are millimetres**, origin top-left, +x right, +y down. Colours, weights and fonts
-  live in `src/theme.ts`.
+  live in `src/theme.ts`. Only the `rendered` theme fills symbols, each in a tint of its family's
+  material (`materialTints` over `FIXTURE_FAMILY_MATERIALS`, ADR 0023 as amended); every other
+  theme draws outlines only, and its bytes never move with the tints.
 - **Opt-in output leaves the default byte-identical** (`annotate`, `accessible`, `--error-svg`,
   heights, `--view`); never emit annotation unconditionally.
 - **Heights draw nothing** (`src/datum.ts`): `describe()` and Plan JSON report them only when the
@@ -207,7 +209,8 @@ lockfile. `docs-site/sync-docs.mjs` copies `docs/*.md` + root artifacts into the
 `packages/archlang-3d` (separate package, ADRs 0030/0031) reads a resolved plan through the core's public
 seam: `src/adapter` + `src/scene3d` (plan → Scene3D, plan-aligned, integer µm; `src/walls` the
 wall ownership, H1) → `src/mesh` (Mesh3D: closed shells,
-canonical order) → `src/replay` (`timeline.ts` pure in `t`; `camera.ts` the fitted framing;
+canonical order; every catalogued furniture family is a T0 generator in `t0*.ts`, each part in a
+material slot from `src/materials.ts`, the one palette the GLB and the viewer share) → `src/replay` (`timeline.ts` pure in `t`; `camera.ts` the fitted framing;
 `mount.ts` the renderer, shared by the single-file HTML and the playground's lazy "3D preview" tab
 through `./browser`; `video.ts` Playwright + ffmpeg) and `src/glb` + `src/check` (the GLB and its
 checks). `src/cli` is `archlang3d view|build|check|manifest|schema|doctor`. Laws:

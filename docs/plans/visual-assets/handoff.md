@@ -1,6 +1,7 @@
 # Visual assets: handoff
 
-The resume point. The programme's nine cards landed on 2026-11-04; what is left is the residue below.
+The resume point. The programme's nine cards landed on 2026-11-04 and were released the same day;
+what is left is the residue below, also filed as backlog VA.1–VA.5.
 
 | Card | State | PR |
 |---|---|---|
@@ -20,12 +21,13 @@ rendered-theme law, 41 rows); 103 families, twenty of them new, each drawn, buil
 
 ## Release
 
-Nothing is released. The core (`rendered`, twenty families, `FIXTURE_FAMILY_MATERIALS`) and
-`@chanmeng666/archlang-3d` (material slots, every family built, the viewer's light and finishes,
-the removed `t0Parts`/`PlacedPart`, so a minor bump at 0.x) both carry `[Unreleased]` entries.
-Releases are the owner's.
+Released by #466 and the `v1.54.0` tag: the core (`rendered`, twenty families,
+`FIXTURE_FAMILY_MATERIALS`) and `@chanmeng666/archlang-3d` (material slots, every family built, the
+viewer's light and finishes, the removed `t0Parts`/`PlacedPart`: a minor bump at 0.x), with the MCP
+shim and the VS Code extension re-pinned. `npm view` and `gh release view` say which versions; the
+notes are in each package's `CHANGELOG.md`.
 
-## Residue (not started)
+## Residue (not started; backlog VA.1–VA.5)
 
 - The bean bag reads stepped in 3D (stacked rounded tiers); a smoother profile would read softer.
 - Outdoor ground surfaces (lawn, paving, deck) are not built in 3D, so they get no finish.
