@@ -20,15 +20,12 @@
  * and the balcony's railing is the same arithmetic in the same order, moved into `railRun`. Nothing
  * new is evaluated, so no step is charged.
  *
- * `test/fixtures/void-rail/void-rail.arch` writes the forms. It stands in a folder of its own because
- * the corpus tables read `test/fixtures` flat and each pins a plan that does not use them, and the
- * premise test below holds it to them.
+ * {@link VOID_FIXTURE} writes the forms. It is inline, not a file, because several corpus tables walk
+ * `test/fixtures` and pin its counts, and the premise test below holds it to them.
  *
  * A digest moving is a finding to explain before it is a diff to re-measure.
  */
 
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -41,7 +38,7 @@ import { type StairLawApi, stairLawDigest, stairLawRows } from "./block-stair-la
 import { GAPS_INLINE_ROWS } from "./gaps-plans.js";
 import { ROOT } from "./rectilinear-rooms-law.js";
 import { SHEET_INLINE_ROWS } from "./sheet-text-plans.js";
-import { VOID_INLINE_ROWS } from "./void-rail-plans.js";
+import { VOID_FIXTURE, VOID_INLINE_ROWS } from "./void-rail-plans.js";
 
 const stepsOf = (src: string, world: World | undefined): number => {
   clearResolveCache();
@@ -63,7 +60,6 @@ const API: StairLawApi = {
   },
 };
 
-const FIXTURE = "test/fixtures/void-rail/void-rail.arch";
 const ROWS = [...stairLawRows(ROOT), ...SHEET_INLINE_ROWS, ...GAPS_INLINE_ROWS, ...VOID_INLINE_ROWS];
 const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeWorld(dir) : undefined);
 
@@ -301,7 +297,7 @@ suite("void polygon and rail: the byte-identity law", () => {
   });
 
   it("the premise can fail: the same check sees the fixture write the forms", () => {
-    expect(writesAForm(readFileSync(join(ROOT, FIXTURE), "utf8"))).toBe(true);
+    expect(writesAForm(VOID_FIXTURE)).toBe(true);
     expect(writesAForm(WITH(`void id=w polygon ${L}`))).toBe(true);
     expect(writesAForm(WITH("void id=w at (1000,1000) size 2000x1000 rail top"))).toBe(true);
     expect(writesAForm(WITH(`component c() {\n    void id=w polygon ${L} rail all\n  }`))).toBe(true);
