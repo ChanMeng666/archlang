@@ -2,6 +2,22 @@
 
 ## [Unreleased]
 
+### Added
+
+- The replay's view turns freely: drag to rotate, scroll or pinch to zoom, right-drag or two fingers
+  to pan, and on the focused view the arrow keys rotate and + / − zoom (three.js's own
+  `OrbitControls`, inlined from the pinned three.js; no damping under reduced motion). The camera
+  stays above the ground and zooms within limits taken from the building's fitted framing. Grabbing
+  the view pauses the playback.
+- Preset views: Iso (the replay's end view, exactly), Top, the four elevations from the plan's edges
+  (N, E, S, W) and Reset, and, for a plan of several storeys, buttons that hide the storeys above a
+  chosen one. The single-file replay HTML carries them; for a page of your own,
+  `mountReplay(canvas, payload, strip, { interactive: true })` returns `view` and `viewToolbar(view)`
+  builds the buttons (`./browser`). The presets are plain maths in `.`: `presetCamera`,
+  `distanceLimits`, `targetBounds`, `pivotAbove`, `ELEVATION_RANGE`, `ZOOM`.
+- Nothing changes for a replay nobody touches: `__seek(t)` still draws the replay's own frame at `t`,
+  and the exported frames and the video are the same.
+
 ## [0.2.0] - 2026-11-04
 
 ### Changed

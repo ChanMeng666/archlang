@@ -84,6 +84,12 @@ canvas{max-width:100%;height:auto;display:block}
 #archlang-replay-strip[hidden]{display:none}
 input[type=range]{width:min(720px,90vw)}
 p{margin:0;font-size:12px;opacity:.8}
+canvas:focus-visible{outline:2px solid ${fg};outline-offset:2px}
+.archlang-views{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:6px;max-width:min(720px,90vw)}
+.archlang-views button{font:inherit;font-size:13px;padding:2px 10px;border:1px solid ${fg};border-radius:4px;background:transparent;color:${fg};cursor:pointer}
+.archlang-views button[aria-pressed=true]{background:${fg};color:${bg}}
+.archlang-views-storeys{display:inline-flex;align-items:center;gap:4px;margin-left:8px}
+.archlang-views-hint{flex-basis:100%;text-align:center;font-size:12px;opacity:.8}
 </style>
 </head>
 <body>
@@ -94,6 +100,7 @@ p{margin:0;font-size:12px;opacity:.8}
   }
 </div>
 <input id="archlang-replay-t" type="range" min="0" max="1" step="0.001" value="0" aria-label="Replay position">
+<div id="archlang-replay-views"></div>
 <p>${escapeHtml(PREVIEW_LABEL)}</p>
 </main>
 <script type="application/json" id="archlang-replay-payload">${json}</script>

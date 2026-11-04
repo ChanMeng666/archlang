@@ -77,14 +77,22 @@ export {
   cameraStops,
   corners,
   coverage,
+  distanceLimits,
   drawingFrame,
+  ELEVATION_AZIMUTH,
+  ELEVATION_RANGE,
   END_AZIMUTH,
   END_FOV,
   endElevation,
   FILL,
   fitEndCamera,
   frameCamera,
+  pivotAbove,
+  PRESET_NAMES,
+  presetCamera,
   projectBox,
   START_FOV,
+  targetBounds,
+  ZOOM,
 } from "./replay/camera.js";
-export type { Box, EndCamera, FrameCamera, Orbit, Vec3 } from "./replay/camera.js";
+export type { Box, EndCamera, FrameCamera, Orbit, PresetName, Vec3, ViewScene } from "./replay/camera.js";
