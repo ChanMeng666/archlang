@@ -273,6 +273,21 @@ agents: deterministic, self-correcting (errors carry a machine code, a prose `fi
 **machine-applicable** fix `archlang fix` can apply), and verifiable without ever looking at an image
 (`archlang describe`).
 
+## What ArchLang can do
+
+- Compile `.arch` to SVG, DXF, TXT, PDF, PNG or Plan JSON; it never reads images, so a plan from a photo is written by you.
+- `validate --strict` and `lint` check soundness (doors on walls, reachability, clearances) and give a fix per finding.
+- `describe` reports rooms, areas and adjacency; `takeoff` reports quantities as csv or md.
+- `fix`, `repair` and `finish` rewrite the source; each takes `--dry-run` to preview first.
+- `--expected-hash <source_hash>` on those refuses a stale file (exit 4).
+- `impact --against old.arch --lock <ids>` exits 2 when a locked element moved: edit in place, never redraw.
+- `impact --set NAME=value` shows what one top-level `let` would move.
+- `keep` lines in the plan hold a relation through every edit and report a residual.
+- `level` blocks give storeys; `axes` gives one grid; `keep stacked` aligns shafts.
+- `validate --intent` checks a plan against a brief; `score` measures it.
+- Plan JSON in (`compile --from-json`) and out (`-f json`).
+- `link` prints a playground URL; `preview` renders a PNG.
+
 ## Setup (zero-install)
 
 The CLI runs straight from npm — no clone, no build:
@@ -827,7 +842,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 161 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 161 KB of it (spec = the language, 30 KB; workflow = the agent loop, 32 KB; cli = every command, 30 KB; errors = the diagnostic catalog, 67 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 162 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 162 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 30 KB; errors = the diagnostic catalog, 67 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch

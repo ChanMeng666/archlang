@@ -71,6 +71,16 @@ flowchart LR
     V -->|yes| O([SVG · DXF · PDF · PNG])
 ```
 
+## Change one room without moving the others
+
+Name the elements you want to keep with an `id=`, then ask the compiler whether an edit touched them. It exits 2 if one moved:
+
+```bash
+npx -y @chanmeng666/archlang impact new.arch --against old.arch --lock r_main,d_front,w_main
+```
+
+A worked example is on [archlang.uk/edit-one-room](https://archlang.uk/edit-one-room). Starting from a photo or PDF? ArchLang does not read images, but your own assistant can: [archlang.uk/from-an-image](https://archlang.uk/from-an-image).
+
 ## Recently added
 
 Each links to a short section with an example, on [archlang.uk/whats-new](https://archlang.uk/whats-new), which also lists the version that brought it.
