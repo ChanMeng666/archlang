@@ -353,7 +353,10 @@ function tableRows(m: Measured, schedule: boolean, legend: boolean): number {
         walls: ir.walls,
         furniture: ir.elements.filter((e): e is RFurniture => e.kind === "furniture"),
         outdoor: ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor"),
+        // Authored tables the drawing will carry in the same band, counted as `resolve()` counts them.
+        openingSchedule: ir.openingSchedule,
         elements: ir.elements,
+        notes: ir.notes,
       }),
     );
   return rows;

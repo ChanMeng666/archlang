@@ -731,3 +731,21 @@ suite("finish — the title's project is the plan's name, exactly", () => {
       expect(finish(r.source).source).toBe(r.source);
     });
 });
+
+suite("finish — the sheet is fitted on the NOTES and DOOR & WINDOW SCHEDULE rows it will draw", () => {
+  // sheet-notes.arch with its `paper`/`scale`/`notes` lines removed, then `n` notes written back.
+  const withNotes = (n: number): string => {
+    const base = srcOf("sheet-notes")
+      .split("\n")
+      .filter((l) => !/^\s*(paper|scale|notes)\b/.test(l))
+      .join("\n");
+    const notes = Array.from({ length: n }, (_, i) => `  notes "Note number ${i} text"`).join("\n");
+    return base.replace(/(plan "[^"]*" \{\n)/, `$1${notes}\n`);
+  };
+
+  it("a plan whose notes make the band deep still gets a sheet, and it fits", () => {
+    const r = finish(withNotes(18), { world, only: "sheet" });
+    expect(wroteSheet(r), JSON.stringify(r.unresolved)).toBe(true);
+    expect(overflows(r.source)).toEqual([]);
+  });
+});
