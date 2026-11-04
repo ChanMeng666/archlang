@@ -45,8 +45,8 @@ export const KEEP_WEAK_LAW_ROOTS = [
   "eval/goldens",
   "test/defect-corpus",
   "test/taste-corpus",
-  "docs/plans/plan-soundness/audits/first-contact-plans",
-  "docs/plans/plan-soundness/repro",
+  "test/plans/plan-soundness/audits/first-contact-plans",
+  "test/plans/plan-soundness/repro",
 ] as const;
 
 /** Every `.arch` file under {@link KEEP_WEAK_LAW_ROOTS} (`examples/` top level only: `examples/lib`

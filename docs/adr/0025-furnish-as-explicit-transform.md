@@ -141,7 +141,7 @@ as it is. A polygon room is not approximated by its bounding box or by a rectang
 it: a derived position comes from the shape. A room with no `id=` of its own, or one inside a
 placed component instance, is reported too, because no statement in the plan body can name it.
 
-> *Amended 2026-11-02 (`docs/plans/preview-and-remodel/research/2026-11-02-l-rooms-extreme-runs-and-finish.md`):*
+> *Amended 2026-11-02 (`archlang-lab/plans/preview-and-remodel/research/2026-11-02-l-rooms-extreme-runs-and-finish.md`):*
 > a polygon whose every edge is horizontal or vertical is furnished, through the same two forms, so
 > only on what they can say: its outermost runs and the corners that are vertices of the ring. No
 > rectangle is inscribed in it and no `at (x,y)` is written. A circle or a slanted polygon stays as

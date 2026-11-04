@@ -2,10 +2,10 @@
 
 - **Status:** Accepted 2026-10-26 with the PR that builds the statement and its law (plan-soundness
   card PS4.3a, PR #272; `docs/plans/plan-soundness/README.md` §6 and §7 row 6). Design record:
-  `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`; as built:
-  `docs/plans/plan-soundness/research/2026-10-26-ps43a-as-built.md`. Decision 6 (the `--facts depends`
+  `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`; as built:
+  `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43a-as-built.md`. Decision 6 (the `--facts depends`
   rows and `arch impact`'s keeps) and PS4.11's Plan JSON note are built by PS4.3b.
-- **Built:** PS4.3a PR #272, PS4.3b PR #275 (`docs/plans/plan-soundness/research/2026-10-26-ps43b-as-built.md`).
+- **Built:** PS4.3a PR #272, PS4.3b PR #275 (`archlang-lab/plans/plan-soundness/research/2026-10-26-ps43b-as-built.md`).
 - **Date:** 2026-10
 - **Relates to:** [ADR 0004](0004-relational-placement-not-optimizer.md) and
   [ADR 0006](0006-solver-as-explicit-transform.md) (no solver inside `compile()`; a solver is an
@@ -35,7 +35,7 @@ ladder (the brief's numbers, then the lot, party walls, structural axes, shafts,
 on down to annotations) is enforced by hosting and by `arch impact`'s report, and the third
 mechanism it names, a declaration, does not exist.
 
-The widening drill shows the cost (`docs/plans/plan-soundness/repro/widen-before.arch`, `archlang
+The widening drill shows the cost (`test/plans/plan-soundness/repro/widen-before.arch`, `archlang
 impact … --set AW=4500`). The living room grows by 500 mm, the bedroom placed `right-of` it moves
 with it, and the partition between them, written at fixed coordinates, stays where it was. The
 report lists three lint symptoms on the bedroom (no wall between the rooms, no door, floor outside

@@ -1,5 +1,9 @@
 # archlang-3d：从平面图到 3D 模型与渲染图
 
+> **Moved:** `spike/`, `research/` and `core-pr/` now live in the private sibling repository, at
+> `archlang-lab/plans/archlang-3d/`. The stress plans `spike/stress/*.arch` are test fixtures in this
+> repository, at `test/plans/archlang-3d/spike/stress/`.
+
 **Status:** Proposed（v0.6）· **Date:** 2026-10 · **Owner:** ChanMeng666
 **Delivered so far:** the replay, the GLB and the CLI are on npm as `@chanmeng666/archlang-3d` 0.x (2026-10-31). The current state is `../preview-and-remodel/handoff.md`.
 
@@ -14,14 +18,14 @@
 | [`development-plan.md`](development-plan.md) | **主文档**：背景/目标/非目标、输入契约与缺口分析、架构、算法、资产库、渲染、CLI/Agent 接口、QA、里程碑与前两周逐日任务、第一周开工清单、风险与决策记录、需要核心仓库配合的事项、附录（Scene3D schema、CLI 帮助、参考资料、未核实清单）|
 | [`adr-draft-0030-3d-as-downstream-package.md`](adr-draft-0030-3d-as-downstream-package.md) | ADR 草案（英文，沿用 `docs/adr/` 格式）：3D 是下游包；`archlang-3d` 消费已解析 IR；核心只做加性导出 |
 | [`adr-draft-0031-core-exports-for-downstream-3d.md`](adr-draft-0031-core-exports-for-downstream-3d.md) | **v0.6 新增** ADR 草案（英文正文 + 中文导语，Proposed）：核心从包入口导出 `resolvePlan`、`joinWallSet`、`loopsToPolygons`、`doorSwing` 与签名可达的 14 个类型、C2 的 8 个元素类型名（C1/C2，所有者 Q10/Q11/Q18 已接受）；**`resolvePlan` 稳定性等级的建议**（公共、只增不删、窄承诺；决定权在核心维护者）与证据；下游契约（导出面快照测试、SemVer、版本偏移）；备选与未核实项 |
-| [`core-pr/c1-c2-exports.md`](core-pr/c1-c2-exports.md) | **v0.6 新增** 核心 PR 草案（只有文字）：可直接粘贴的英文 PR 正文（按核心 PR 模板）+ 中文"提 PR 前清单"（核对最新 `main`、闭包重推导命令、改动文件、CHANGELOG 条目、契约测试要点、验收命令与预期、已知风险）。**PR 与 ADR 0031 都需所有者手动提交** |
-| [`research/`](research/00-deep-dive-ranking.md) | **v0.4 深挖研究（结论已由 v0.5 的决定采纳）**：[`00`](research/00-deep-dive-ranking.md) 排序与依据；[`01`](research/01-core-contract-and-input-channel.md) 核心契约与输入通道；[`02`](research/02-wall-geometry.md) 墙体几何；[`03`](research/03-ifc-output.md) IFC；[`04`](research/04-vertical-and-roof.md) 楼梯与屋顶；[`05`](research/05-rendering-and-materials.md) 渲染与材质；[`06`](research/06-assets-and-fixtures.md) 家具与资产；[`07`](research/07-agent-loop-and-engineering.md) Agent 闭环与工程化。每份含问题定义、证据（实测/读码/待核实分开标）、方案比较、推荐、未验证项、对里程碑/人天/Q 编号/核心的影响 |
-| [`spike/`](spike/README.md) | M0 最小验证与 v0.4 深挖实验：Python 原型（Plan JSON → GLB）、校验脚本、IR 覆盖探针；TypeScript 实验（导出闭包、每墙所有权、IFC、家具覆盖、楼梯与直骨架、耗时）；合成压力平面；结果与复现步骤；v0.6 新增导出面/闭包/Plan JSON 缺口/`resolvePlan` 探针脚本 |
+| `core-pr/c1-c2-exports.md` (`archlang-lab/plans/archlang-3d/core-pr/c1-c2-exports.md`) | **v0.6 新增** 核心 PR 草案（只有文字）：可直接粘贴的英文 PR 正文（按核心 PR 模板）+ 中文"提 PR 前清单"（核对最新 `main`、闭包重推导命令、改动文件、CHANGELOG 条目、契约测试要点、验收命令与预期、已知风险）。**PR 与 ADR 0031 都需所有者手动提交** |
+| `research/` (`archlang-lab/plans/archlang-3d/research/00-deep-dive-ranking.md`) | **v0.4 深挖研究（结论已由 v0.5 的决定采纳）**：`00` (`archlang-lab/plans/archlang-3d/research/00-deep-dive-ranking.md`) 排序与依据；`01` (`archlang-lab/plans/archlang-3d/research/01-core-contract-and-input-channel.md`) 核心契约与输入通道；`02` (`archlang-lab/plans/archlang-3d/research/02-wall-geometry.md`) 墙体几何；`03` (`archlang-lab/plans/archlang-3d/research/03-ifc-output.md`) IFC；`04` (`archlang-lab/plans/archlang-3d/research/04-vertical-and-roof.md`) 楼梯与屋顶；`05` (`archlang-lab/plans/archlang-3d/research/05-rendering-and-materials.md`) 渲染与材质；`06` (`archlang-lab/plans/archlang-3d/research/06-assets-and-fixtures.md`) 家具与资产；`07` (`archlang-lab/plans/archlang-3d/research/07-agent-loop-and-engineering.md`) Agent 闭环与工程化。每份含问题定义、证据（实测/读码/待核实分开标）、方案比较、推荐、未验证项、对里程碑/人天/Q 编号/核心的影响 |
+| `spike/` (`archlang-lab/plans/archlang-3d/spike/README.md`) | M0 最小验证与 v0.4 深挖实验：Python 原型（Plan JSON → GLB）、校验脚本、IR 覆盖探针；TypeScript 实验（导出闭包、每墙所有权、IFC、家具覆盖、楼梯与直骨架、耗时）；合成压力平面；结果与复现步骤；v0.6 新增导出面/闭包/Plan JSON 缺口/`resolvePlan` 探针脚本 |
 
 ## 怎么读
 
 1. **5 分钟**：`development-plan.md` 开头的 TL;DR、§0.3 的决策状态与 §3.1 的管线图。
-2. **要质疑结论**：§2.4（spike 实测）、[`research/`](research/00-deep-dive-ranking.md)（v0.4 的证据与排序依据）、§10（风险、问题与决策记录：每个问题有推荐答案与决定状态）。
+2. **要质疑结论**：§2.4（spike 实测）、`research/` (`archlang-lab/plans/archlang-3d/research/00-deep-dive-ranking.md`)（v0.4 的证据与排序依据）、§10（风险、问题与决策记录：每个问题有推荐答案与决定状态）。
 3. **要动手**：§9（里程碑、验收、**前两周逐日任务**）与 §7（CLI/接口）。
 4. **要核对事实**：附录 H 汇总了所有标"待核实"的事项；附录 D 是真实参考链接。
 
@@ -43,7 +47,7 @@
 
 ## 与现有文档的关系
 
-- 核心导出（C1/C2）：[ADR 0031 草案](adr-draft-0031-core-exports-for-downstream-3d.md)、[核心 PR 草案](core-pr/c1-c2-exports.md)。
+- 核心导出（C1/C2）：[ADR 0031 草案](adr-draft-0031-core-exports-for-downstream-3d.md)、核心 PR 草案 (`archlang-lab/plans/archlang-3d/core-pr/c1-c2-exports.md`)。
 - 上游约束：[ADR 0021](../../adr/0021-plan-first-view-deprecated.md)、[ADR 0018](../../adr/0018-zero-dep-wall-joinery.md)、[ADR 0005](../../adr/0005-no-invisible-architect.md)、[ADR 0015](../../adr/0015-cli-as-agent-interface.md)；backlog **P3-2**（IFC）见 [`docs/backlog.md`](../../backlog.md)。
 - 输入契约：[`schemas/plan.schema.json`](../../../schemas/plan.schema.json)、[`docs/language-reference.md`](../../language-reference.md)（Levels、Heights、Roof、Void、Stair）、[`docs/furniture.md`](../../furniture.md)。
 - 同级方案：[`plan-soundness`](../plan-soundness/README.md)（本计划的格式与"先证据后决策"的做法参照它）。

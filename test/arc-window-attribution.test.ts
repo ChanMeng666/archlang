@@ -71,7 +71,7 @@ describe("PS0.12 — a window on an arc edge is attributed from the shape", () =
   });
 
   it("a bay whose chord two rooms share goes to the room in front of the window's centre", () => {
-    const s = describePlan(read("docs/plans/plan-soundness/repro/gallery-bench-pinch.arch"));
+    const s = describePlan(read("test/plans/plan-soundness/repro/gallery-bench-pinch.arch"));
     expect(s.windows.find((w) => w.id === "win_cafe")!.room).toBe("r_cafe");
     expect(s.windows.find((w) => w.id === "win_n2")!.room).toBe("r_g2");
   });

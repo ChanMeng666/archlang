@@ -18,7 +18,7 @@ import { describe as describePlan, lint, lintWithCoverage } from "../src/index.j
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 const read = (rel: string) => readFileSync(join(root, rel), "utf8");
-const FIRST_CONTACT = "docs/plans/plan-soundness/audits/first-contact-plans";
+const FIRST_CONTACT = "test/plans/plan-soundness/audits/first-contact-plans";
 
 const narrow = (src: string) => lint(src).filter((d) => d.code === "W_PATH_TOO_NARROW");
 

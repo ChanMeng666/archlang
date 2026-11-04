@@ -15,7 +15,7 @@ import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { applyLetOverride, ERROR_CATALOG, impact, MAX_WHY_DEPTH, type ImpactReport } from "../src/index.js";
 
-const REPRO = "docs/plans/plan-soundness/repro";
+const REPRO = "test/plans/plan-soundness/repro";
 const read = (p: string): string => readFileSync(p, "utf8");
 const plan = (body: string): string => `plan "t" {\n  units mm\n  grid 50\n${body}\n}\n`;
 

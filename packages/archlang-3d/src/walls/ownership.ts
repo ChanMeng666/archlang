@@ -4,7 +4,7 @@
  * face; with one face per wall the partition IS the ownership, so the 3D package never derives a
  * second footprint (ADR 0018, ADR 0031).
  *
- * Two rules from the spike (`docs/plans/archlang-3d/research/02-wall-geometry.md`):
+ * Two rules from the spike (`archlang-lab/plans/archlang-3d/research/02-wall-geometry.md`):
  *  1. one solid per CONNECTED PIECE: a wall can own several pieces (a thinner wall split by a
  *     thicker one), and two pieces touching at a point are separate solids;
  *  2. an opening's cut is removed from EVERY piece it covers, not only its host's.

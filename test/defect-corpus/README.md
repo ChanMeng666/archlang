@@ -8,7 +8,7 @@ differs only in the fix and must not raise that code, so a rule that fires every
 
 This is **not eval data**. Nothing here feeds `eval/` or `dataset/`, and the holdout rules in
 `.claude/rules/eval-dataset.md` do not apply to it. Every plan was written for this folder from the
-coordinates in `docs/plans/plan-soundness/audits/`, `evidence.md` and `repro/`, and from measurement
+coordinates in `archlang-lab/plans/plan-soundness/audits/`, `evidence.md` and `repro/`, and from measurement
 with the CLI. No source from outside this repository is copied in. The `repro/` files that were reduced
 here stay where they are.
 
@@ -21,7 +21,7 @@ continues the previous value. The block ends at the first line that does not sta
 | Key | Defect case | Clean twin |
 |---|---|---|
 | `class` | the folder name | the folder name |
-| `origin` | where the defect was found (paths relative to `docs/plans/plan-soundness/`) | where the fix comes from |
+| `origin` | where the defect was found (paths relative to `docs/plans/plan-soundness/`; its `audits/` and `research/` now live in the private sibling `archlang-lab/plans/plan-soundness/`, the first-contact plans in `test/plans/plan-soundness/audits/first-contact-plans/`) | where the fix comes from |
 | `expect` | the one `W_*` code that must report the defect | `none` |
 | `status` | `todo` while no rule emits the code, `done` once lint reports it | absent |
 | `twin-of` | absent | the case's file name without `.arch` |

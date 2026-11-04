@@ -1038,7 +1038,7 @@ export function exitApproachStrips(ctx: LintContext, push: number, pull: number)
  *
  * Depth: 914 mm by default, the 36 in landing the International Residential Code R311.3 asks on
  * each side of an exterior door, over the door's width (recorded SECOND-HAND, a state's copy of
- * the code text, `docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md`; the ICC
+ * the code text, `archlang-lab/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md`; the ICC
  * viewer was not readable). Under `accessibility-advisory` the 2010 ADA Standards' Table
  * 404.2.4.1 front approach: 1220 mm on the push side (the door swings out, away from the inside)
  * and 1525 mm on the pull side (it swings in) ({@link LintRuleset.exitApproachPullMm}); a door

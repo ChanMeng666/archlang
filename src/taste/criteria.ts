@@ -1,6 +1,6 @@
 /**
  * The eleven taste criteria of PS5.1 (R3, R6, R7, R9, R11, R12, R14, R15, R16, R17, R18), as
- * defined in `docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3. Each reads
+ * defined in `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3. Each reads
  * `describe()` facts (what an agent sees) and, where `describe()` rounds or omits, the resolved
  * IR: window sizes and heights (R7), room rings at full precision (R6, R9, R16, R17, R18), door
  * positions and hosts (R16), wall centrelines (R17), furniture footprints (R6). None reads an id

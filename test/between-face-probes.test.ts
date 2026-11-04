@@ -10,7 +10,7 @@ import type { RDoor, RRoom } from "../src/ir.js";
  * floor holds the probe, from the shape, and only a room the point touches — not off which
  * room edges its centre point touches alone. The centre-point answer handed an exterior
  * door centred on a T-junction (or within the 200 mm tolerance of a partition's end) to
- * the two rooms inside, so the plan had no entrance (`docs/plans/plan-soundness/repro/
+ * the two rooms inside, so the plan had no entrance (`test/plans/plan-soundness/repro/
  * door-on-tee.arch`, backlog C.4). `straddles` records every room a face's clear span
  * covers when that is more than one: the partition runs into the opening.
  */

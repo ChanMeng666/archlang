@@ -211,7 +211,7 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
   });
 
   it("--strict refuses a build with a warning: E3D_STRICT, exit 2, ok false, nothing written", async () => {
-    const s11 = join(REPO, "docs/plans/archlang-3d/spike/stress/s11-mixed-thick-low.arch");
+    const s11 = join(REPO, "test/plans/archlang-3d/spike/stress/s11-mixed-thick-low.arch");
     const out = join(tmp, "s11.glb");
     const lax = await cli(["build", s11, "-o", out, "--json"]);
     expect(lax.code, lax.err).toBe(0);

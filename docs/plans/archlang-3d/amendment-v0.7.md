@@ -1,5 +1,9 @@
 # archlang-3d 计划修订 v0.7（2026-10-28）：回放查看器先行，曝光分级
 
+> **Moved:** `spike/`, `research/` and `core-pr/` now live in the private sibling repository, at
+> `archlang-lab/plans/archlang-3d/`. The stress plans `spike/stress/*.arch` are test fixtures in this
+> repository, at `test/plans/archlang-3d/spike/stress/`.
+
 **Status:** Proposed（所有者 2026-10-27/28 口头委托；未改核心、未开工）· **基线：** `main@8829a8bb`
 （v0.6 的基线 `1a1efd9` 之后 350 个提交）· **上位文档：** `../preview-and-remodel/README.md`（本修订的
 卡片、波次与决定 D1–D13 在那里；本文件只记录对 v0.6 的改动）。

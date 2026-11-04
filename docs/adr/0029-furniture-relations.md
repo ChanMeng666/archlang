@@ -18,7 +18,7 @@
 
 ## Context
 
-The first-contact audit (`docs/plans/plan-soundness/audits/2026-10-18-first-contact.md`) gave six
+The first-contact audit (`archlang-lab/plans/plan-soundness/audits/2026-10-18-first-contact.md`) gave six
 cold AI-written plans to the compiler. None held a single `rotate` clause; 27 of the 51 chairs at
 a table faced away from it, all 3 sofas with a TV faced elsewhere, and a reception desk faced away
 from the entrance. Lint said nothing, because nothing in the source said what the piece was for.
@@ -27,7 +27,7 @@ depth axis, which draws a one-seat sofa two metres deep.
 
 ADR 0017 decided that seating is arranged, not installed, so the compiler must not derive a turn
 for a sofa or a chair: it "would assert a fact the plan never stated". The research behind this
-card (`docs/plans/plan-soundness/research/2026-10-18-furniture-and-multistorey.md` §A) found that
+card (`archlang-lab/plans/plan-soundness/research/2026-10-18-furniture-and-multistorey.md` §A) found that
 every comparable system gives a piece a canonical front and derives its turn from a relation to a
 target, and that the LLM-era systems (Holodeck, LayoutVLM, I-Design, Infinigen) all make facing a
 soft cost or a search. ArchLang's turn set has four members, so the relation can be closed form.

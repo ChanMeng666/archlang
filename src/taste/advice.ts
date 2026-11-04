@@ -9,7 +9,7 @@ import type { TasteSubscore, TasteVerified } from "./report.js";
 
 export interface TasteAdviceRow {
   /** The criterion id, `R<n>` as numbered in
-   *  `docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3. */
+   *  `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3. */
   id: string;
   name: string;
   subscore: TasteSubscore;

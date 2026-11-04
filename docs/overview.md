@@ -147,8 +147,8 @@ The compiler is **pure TypeScript with zero runtime dependencies** and is isomor
 runs in Node and in the browser, which is why the [playground](https://playground.archlang.uk)
 is fully client-side.
 
-> ArchLang is the floor-plan engine behind [ArchCanvas](https://github.com/archcanvas/archcanvas),
-> an AI design agent — but it stands alone and is useful in any app or script.
+> [ArchCanvas](https://github.com/archcanvas/archcanvas) is a hosted app built on ArchLang; ArchLang
+> stands alone and is useful in any app or script.
 
 ## 💡 Why it is different
 
@@ -727,6 +727,7 @@ compact editor that re-renders as you type) and `theme=blueprint|dark|mono|prese
 - **[Language Reference](../docs/language-reference.md)** · **[Error catalog](../docs/error-codes.md)** · **[The intent contract](../docs/intent.md)** · **[ADRs](../docs/adr)**
 - **[AGENTS.md](../AGENTS.md)** — orientation for AI agents working *in* this repo.
 - **[Release notes](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md)** — every version, including what changes for code that embeds or parses the output. Installed, they are at `node_modules/@chanmeng666/archlang/CHANGELOG.md`; each tag's section is also its [GitHub Release](https://github.com/ChanMeng666/archlang/releases).
+- **Research** — engineering write-up: *Reproducible Is Not Correct: Reflexive Gates and the Self-Descriptions We Ship to Language Models* — preprint on Zenodo (not peer-reviewed), DOI [10.5281/zenodo.22958002](https://doi.org/10.5281/zenodo.22958002).
 
 ## 🤝 Contributing
 

@@ -48,7 +48,7 @@
  * claims no floor until its turn comes, so a neighbour never dodges a box that is about to shrink,
  * and the turns go by the room's anchor. So this pass is order-free GIVEN what `relocateLabels` left,
  * and that pass is not: it visits in element order, and the rooms of
- * `docs/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch`, written the other way
+ * `test/plans/plan-soundness/audits/first-contact-plans/6-clinic.arch`, written the other way
  * round, settle differently before this pass sees them. A place is ranked off the lattice, never by a
  * measured distance, so an edit too small to matter cannot flip a label across its room.
  *

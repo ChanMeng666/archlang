@@ -1,5 +1,9 @@
 # Plan-soundness programme: handoff (state as of 2026-10-27, `main@64848c69`)
 
+> **Moved:** this programme's `research/`, `audits/` and `evidence.md` now live in the private sibling
+> repository, at `archlang-lab/plans/plan-soundness/`. The `.arch` plans of `audits/first-contact-plans/`
+> and `repro/` (with its README) are test fixtures in this repository, at `test/plans/plan-soundness/`.
+
 This page is the resume point for a new session. It says where the programme stands, what is open,
 in which order, and how the work is run. It is re-written at every stage end; the dated history is
 in `research/` and `audits/`. Decisions are in `README.md` §3 (D1–D27); cards are in `cards.md`.

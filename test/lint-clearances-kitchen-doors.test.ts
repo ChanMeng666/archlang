@@ -451,7 +451,7 @@ suite("W_DOORWAY_BLOCKED leaves a vehicle door out (PS2.65)", () => {
   });
 
   it("the 2026-10-18 first-contact house's garage door and its car are silent under the a11y profile", () => {
-    const src = readFileSync(join(ROOT, "docs/plans/plan-soundness/audits/first-contact-plans/2-house.arch"), "utf8");
+    const src = readFileSync(join(ROOT, "test/plans/plan-soundness/audits/first-contact-plans/2-house.arch"), "utf8");
     expect(src).toContain("door id=d_garage garage on w_s at 1700 width 2400");
     expect(of(src, DB, { profile: "accessibility-advisory" })).toEqual([]);
   });
@@ -553,7 +553,7 @@ suite("one datum for a doorway's approach: the wall's face (PS2.54)", () => {
 
 // ─── The first-contact audits' rows ──────────────────────────────────────────────────────
 
-const PLANS = "docs/plans/plan-soundness/audits/first-contact-plans";
+const PLANS = "test/plans/plan-soundness/audits/first-contact-plans";
 const worldAt = (dir: string): World => ({
   read: (p) => {
     try {
@@ -708,7 +708,7 @@ suite("W_EXIT_APPROACH_BLOCKED: furniture in the clear floor inside an exterior 
 
   it("the row-6 clinic's waiting sofa warns; the defect corpus's clean twin is silent in every profile", () => {
     const clinic = readFileSync(
-      join(ROOT, "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch"),
+      join(ROOT, "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch"),
       "utf8",
     );
     for (const opts of [{}, A11Y])

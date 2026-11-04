@@ -13,7 +13,7 @@ import { pathToFileURL } from "node:url";
 const root = path.resolve(process.argv[2] ?? ".");
 const outFile = process.argv[3];
 // A file URL, not a bare path: `import("D:\…")` reads the drive letter as a URL scheme on Windows
-// (the spike's original fails there; `docs/plans/archlang-3d/spike/src/planjson_gap.mts` is kept as run).
+// (the spike's original fails there; `archlang-lab/plans/archlang-3d/spike/src/planjson_gap.mts` is kept as run).
 const src = (p: string) => import(pathToFileURL(path.join(root, "src", p)).href);
 const { resolvePlan } = await src("analyze.ts");
 const { planToJson } = await src("plan-json.ts");

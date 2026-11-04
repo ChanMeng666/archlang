@@ -1,5 +1,8 @@
 # Preview-and-remodel programme: a checked 3D preview, and the renovation wedge
 
+> **Moved:** this programme's `research/` now lives in the private sibling repository, at
+> `archlang-lab/plans/preview-and-remodel/research/`.
+
 **Status:** open. Planned 2026-10-28 against `main@8829a8bb` (core 1.43.1 on npm, `[Unreleased]`
 carries the authoring stages). The owner asked for a complete plan that later sessions implement
 card by card. Cards are in `cards.md`; the resume point is `handoff.md`.

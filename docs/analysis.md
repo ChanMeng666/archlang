@@ -1156,7 +1156,7 @@ Every element is named as `describe()` names it; a wall `walls from rooms` deriv
 rooms (`the partition between "a" and "b"`), an `open between` opening by its clause, never by an
 internal name. Chains stop at 32 steps (`truncated: true`) and never revisit a node.
 
-For the widening drill (`docs/plans/plan-soundness/repro/widen-before.arch`, `let AW` 4000 → 4500):
+For the widening drill (`test/plans/plan-soundness/repro/widen-before.arch`, `let AW` 4000 → 4500):
 
 ```text
 AW: 4000 → 4500

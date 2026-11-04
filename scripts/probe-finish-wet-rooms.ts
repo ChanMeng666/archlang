@@ -2,7 +2,7 @@
  * The wet-room sweep of plan-soundness card PS2.45 — MEASURES `finish`'s furnish stage, changes
  * nothing.
  *
- * The probe set the PS2.11a red team swept (`docs/plans/plan-soundness/research/
+ * The probe set the PS2.11a red team swept (`archlang-lab/plans/plan-soundness/research/
  * 2026-10-25-ps211ab-as-built.md` § `finish` sweep: 918 rooms; bath, wc, ensuite; 1.2–3.6 m; door
  * in or out) was never checked in, so it is reconstructed here from those parameters: one room
  * on its own, inside a 200 mm exterior wall, `w` × `h` on the wall centrelines with `w` 1200 to

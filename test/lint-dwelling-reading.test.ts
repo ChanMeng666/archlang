@@ -18,7 +18,7 @@ import { STRICTER_PROFILES, stricterProfileNames } from "../src/finish.js";
  */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const FIRST_CONTACT = join(ROOT, "docs", "plans", "plan-soundness", "audits", "first-contact-plans");
+const FIRST_CONTACT = join(ROOT, "test", "plans", "plan-soundness", "audits", "first-contact-plans");
 const read = (...p: string[]): string => readFileSync(join(...p), "utf8");
 const codes = (src: string, profile?: string): string[] =>
   lint(src, profile ? { profile } : {}).map((d) => d.code ?? "");
@@ -245,13 +245,13 @@ describe("the non-dwelling reason", () => {
         encoding: "utf8",
       });
     for (const f of ["4-cafe.arch", "6-clinic.arch"]) {
-      const r = cli(`docs/plans/plan-soundness/audits/first-contact-plans/${f}`);
+      const r = cli(`test/plans/plan-soundness/audits/first-contact-plans/${f}`);
       const out = JSON.parse(r.stdout) as { coverage: LintCoverage };
       expect(skipsOf(out.coverage, "privacy"), f).toContain("non-dwelling");
       // The diagnostics never carry it: lint messages name no reason id.
       expect(r.stdout.split('"coverage"')[0], f).not.toContain("non-dwelling");
     }
-    const house = JSON.parse(cli("docs/plans/plan-soundness/audits/first-contact-plans/2-house.arch").stdout) as {
+    const house = JSON.parse(cli("test/plans/plan-soundness/audits/first-contact-plans/2-house.arch").stdout) as {
       coverage: LintCoverage;
     };
     expect(JSON.stringify(house.coverage)).not.toContain("non-dwelling");

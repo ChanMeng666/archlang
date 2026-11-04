@@ -20,7 +20,7 @@
 
 No wall in the corpus is derived from anything: every wall is a list of typed points, because no
 other form exists (`describe().freedom` has no wall family to count; the figure "walls 100 %
-absolute" in `docs/plans/plan-soundness/evidence.md` §4 is that observation, not a measured field).
+absolute" in `archlang-lab/plans/plan-soundness/evidence.md` §4 is that observation, not a measured field).
 The audits behind the plan-soundness programme found that the three most frequent defect classes in
 AI-written plans are all *writable by omission* in that style:
 
@@ -99,7 +99,7 @@ grid axis names already in the language. Datums are read wherever a coordinate i
   *Amended 2026-11-02:* a rectilinear polygon's `top|bottom|left|right` are the ring's run on that
   outermost line, one run or a refusal, and `right-of` reads the same run. Its centre stays refused
   and a notch edge has no word
-  (`docs/plans/preview-and-remodel/research/2026-11-02-l-rooms-extreme-runs-and-finish.md`).
+  (`archlang-lab/plans/preview-and-remodel/research/2026-11-02-l-rooms-extreme-runs-and-finish.md`).
 
 ### 3. The headline form: `walls from rooms` (D5)
 
@@ -392,7 +392,7 @@ they cover the block the walls make at the corner. They stay two windows, becaus
 host and faces one way, so the drawing mitres them and `describe()` gains `corner_with`. Anything
 that is not a true corner of two walls is `E_WINDOW_CORNER`, and a window alone at its corner too:
 half a corner ends in the side of a wall. Decisions and what each surface says:
-`docs/plans/preview-and-remodel/research/2026-11-02-open-corner.md`.
+`archlang-lab/plans/preview-and-remodel/research/2026-11-02-open-corner.md`.
 
 ### 5a. Furniture against a room edge
 

@@ -1,5 +1,9 @@
 # Plan-soundness cards
 
+> **Moved:** this programme's `research/`, `audits/` and `evidence.md` now live in the private sibling
+> repository, at `archlang-lab/plans/plan-soundness/`. The `.arch` plans of `audits/first-contact-plans/`
+> and `repro/` (with its README) are test fixtures in this repository, at `test/plans/plan-soundness/`.
+
 The card tables and card texts of `README.md` §6, moved here on 2026-10-25 (D16) with the same
 ids and status words. The README keeps the programme (§1–§5), the order (§7) and the rules for
 this file (§8): pick the first `todo` card whose dependencies are done; a card that lands is cut to

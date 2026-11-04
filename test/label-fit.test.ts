@@ -347,7 +347,7 @@ function corpus(): { name: string; src: string; world: World }[] {
     "eval/goldens",
     "eval/fidelity-plans",
     "eval/faults",
-    "docs/plans",
+    "test/plans",
   ]) {
     for (const p of walk(join(ROOT, d), arch)) {
       out.push({ name: nameOf(p), src: readFileSync(p, "utf8"), world: worldFor(dirname(p)) });
@@ -403,8 +403,8 @@ describe("over the corpus", () => {
       const changed = [...after.keys()].filter((k) => JSON.stringify(after.get(k)) !== JSON.stringify(before.get(k)));
       if (changed.length === 0) continue;
       // The section on this very behaviour has the one fence written to shrink, and the plans an
-      // audit keeps under `docs/plans/` are held to the law below without being named.
-      if (!name.startsWith("docs/")) moved.push(name);
+      // audit kept (now `test/plans/`) are held to the law below without being named.
+      if (!name.startsWith("docs/") && !name.startsWith("test/plans/")) moved.push(name);
       const reports = off(() => of(src, world)).map((d) => d.message);
       for (const k of changed) {
         shrunk++;

@@ -5,7 +5,7 @@
  * patio or balcony door used to hide a route blocked from the front door: on the first-contact
  * audit's townhouse a sofa across the hall-to-living opening left Living and the kitchen
  * reachable only through the garden, and lint was silent until the patio door was turned into a
- * window (`docs/plans/plan-soundness/audits/2026-10-18-first-contact.md` T2; A2 is the same mask
+ * window (`archlang-lab/plans/plan-soundness/audits/2026-10-18-first-contact.md` T2; A2 is the same mask
  * through a balcony door). This module names the front door as a fact, and says which ways in a
  * walk is judged from. It is the one place a storey's ways in are classified: the circulation
  * rules and the privacy rules (`src/lint/rules/privacy.ts`) both read it.

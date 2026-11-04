@@ -1089,7 +1089,7 @@
  * `W_CONNECTOR_AMBIGUOUS`). The rules changed `lint()` only: swept over every
  * `examples/**` and `test/**` plan before (a `git archive` of `da9b47b`) and after, no SVG,
  * `describe()` or `compile().diagnostics` moved. They fired on six examples, each a real defect
- * the plan-soundness audit had recorded (`docs/plans/plan-soundness/audits/showcase-and-examples.md`
+ * the plan-soundness audit had recorded (`archlang-lab/plans/plan-soundness/audits/showcase-and-examples.md`
  * X3, X10, X19, X26), and each example was fixed with an edit of the same byte length, so no
  * span moved and every example now lints EXACTLY as before. Case (2)'s sibling, then: the example
  * source changed, its drawing and `describe()` moved with it, and `lint()` did not. Hashing the
@@ -1474,7 +1474,7 @@
  * `compile().diagnostics` are byte-identical. `tiny-house`'s bed comment was rewritten (comment
  * only, above no diagnostic): the new compiler over the old and new source gives the same
  * payload. A sweep of every `.arch` file in the repository against `origin/main` moved only these
- * two among the pinned plans (and, outside these tables, `docs/plans/…/repro/family-apartment`
+ * two among the pinned plans (and, outside these tables, `test/plans/…/repro/family-apartment`
  * and `…/first-contact-plans/6-clinic`; see the PS2.50 as-built note).
  *
  * ## EVERY row re-measured, once: new totals key (PS4.4)

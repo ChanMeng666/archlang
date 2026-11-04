@@ -27,7 +27,7 @@ checks" without saying anything of a score, a cap or a second channel. Putting t
 would move the lint output of the whole corpus every time a threshold is tuned, and turn a
 cultural preference into a warning an agent is told to clear.
 
-The design record is `docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md`. It
+The design record is `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md`. It
 measured that the defect corpus's clean twins are not lint-clean (28 of 70 still warn), so the
 cap alone cannot separate good from bad plans, and that three starting criteria (R3, R7, R14)
 already separate the corpus's circulation and daylight pairs.
@@ -98,7 +98,7 @@ already separate the corpus's circulation and daylight pairs.
   fallback as lint's `labelOf`). It is fixed with lint's under plan-soundness card PS2.29
   (id-free messages).
 - **Measured at acceptance (2026-10-25,
-  `docs/plans/plan-soundness/audits/2026-10-25-first-contact-rerun-row5.md`).** On the corpus the
+  `archlang-lab/plans/plan-soundness/audits/2026-10-25-first-contact-rerun-row5.md`).** On the corpus the
   score separates as the separation law requires: 41 pairs, 37 ordered, 0 tied, 0 reversed (the
   ledger is empty), 4 unjudged. Its reach on first-contact defects is small and orthogonal to the
   audits: `score --taste generic` names 0 of the 57 defects of the 2026-10-18 plans, 3 of the 48
@@ -113,7 +113,7 @@ already separate the corpus's circulation and daylight pairs.
   taste stays an author tool only if arm A shows calls, and otherwise is re-scoped as a reviewer's
   tool.
 - **Measured 2026-10-26** (D15's two arms,
-  `docs/plans/plan-soundness/audits/2026-10-26-first-contact-rerun-d15.md`). Twelve cold authors
+  `archlang-lab/plans/plan-soundness/audits/2026-10-26-first-contact-rerun-d15.md`). Twelve cold authors
   wrote the six briefs, six under each role text, from a spec that names `validate --json` and
   `score --taste generic` in its self-correction loop. Arm A (the pre-#250 role) made 0 `score
   --taste` and 0 `validate` calls in 65 CLI calls (27 `compile`, 37 `lint`, 1 `describe`). Arm B

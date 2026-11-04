@@ -1,6 +1,6 @@
 /**
  * `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness
- * PS4.3, design `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`).
+ * PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`).
  *
  * A keep is a control statement. It is expanded with the body it sits in ({@link expandKeep}: its
  * values evaluated on the step meter, its placement and caps checked), then measured once, after
