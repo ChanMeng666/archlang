@@ -13,6 +13,9 @@ axonometric.md
 intent.md
 errors.md
 import.md
+from-an-image.md
+edit-one-room.md
+common-mistakes.md
 whats-new.md
 spec.md
 adr/0*.md
@@ -55,6 +58,9 @@ public/axonometric.md
 public/intent.md
 public/errors.md
 public/import.md
+public/from-an-image.md
+public/edit-one-room.md
+public/common-mistakes.md
 public/whats-new.md
 public/spec.md
 
