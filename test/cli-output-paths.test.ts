@@ -22,6 +22,16 @@ function run(args: string[]): { status: number | null; stdout: string; stderr: s
 }
 
 const PLAN = 'plan "P" { units mm room at (0,0) size 3000x3000 label "R" }\n';
+// A door floating off its wall (W_DOOR_OFF_WALL): one machine-applicable fix, so `fix` writes
+// (the plan `test/cli-fix-backup.test.ts` uses); `repair` and `finish` write whatever they get.
+const FIXABLE = `plan "P" {
+  units mm
+  grid 50
+  wall id=w1 exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
+  room id=r at (0,0) size 5000x4000 label "Room"
+  door id=d at (2500,9000) width 900 wall exterior
+}
+`;
 
 describe("-o <file> creates its directory, as batch -o does", () => {
   it("compile writes into a directory that does not exist, however deep", () => {
@@ -77,7 +87,7 @@ describe("-o <file> creates its directory, as batch -o does", () => {
   it("repair, fix and finish -o write into a new directory", () => {
     const root = mkdtempSync(join(tmpdir(), "arch-out-"));
     const src = join(root, "p.arch");
-    writeFileSync(src, PLAN);
+    writeFileSync(src, FIXABLE);
     for (const cmd of ["repair", "fix", "finish"]) {
       const out = join(root, cmd, "deep", "p.arch");
       const r = run([cmd, src, "-o", out]);
