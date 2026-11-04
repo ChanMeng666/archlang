@@ -16,9 +16,39 @@
  * meter (`src/expr.ts`) before the work it pays for.
  */
 
+/*!
+ * Portions of this file are adapted from OpenPlan3D (https://github.com/laanlabs/openPlan3D),
+ * commit 98f9cb467e4045c6abc5d9880ada1f03dff50c68, which carries this licence:
+ *
+ * MIT License
+ *
+ * Copyright (c) 2026 theLodgeStudio
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 import type { Diagnostic } from "../diagnostics.js";
 import { chargeSteps } from "../expr.js";
+import { MAX_IMPORT_LEVELS } from "./limits.js";
 import { roomPlanCatalogId } from "./openplan3d-catalog.js";
+
+export { MAX_IMPORT_LEVELS };
 
 export interface Pt {
   x: number;
@@ -223,6 +253,16 @@ export const MAX_FORMAT_ERRORS = 100;
 const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 const finite = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 
+/** A file of more storeys than {@link MAX_IMPORT_LEVELS} is refused before any is built. */
+function tooManyStoreys(n: number): Diagnostic {
+  return {
+    severity: "error",
+    code: "E_IMPORT_LIMIT",
+    message: `The OpenPlan3D file has ${n} storeys, more than the ${MAX_IMPORT_LEVELS} one import writes; nothing was written`,
+    hints: ["Split the plan into several files, a few storeys each, and import them one by one."],
+  };
+}
+
 /** OpenPlan3D's `isRoomPlanJson`: which of the two formats a parsed document is. */
 export function detectFormat(data: unknown): OpenPlan3dFormat {
   if (!isRecord(data)) return "web";
@@ -255,7 +295,16 @@ class Refusals {
   }
 }
 
-/** The keys of `rec` this importer does not read, each recorded with `reason(key)`. */
+/**
+ * `table[key]` for a key that came from the input, or undefined. A plain object lookup would
+ * answer `constructor`, `toString` or `__proto__` with `Object.prototype`'s members, so every
+ * table this importer reads by an input string goes through here (own properties only).
+ */
+export function own<T>(table: Readonly<Record<string, T>>, key: string): T | undefined {
+  return Object.hasOwn(table, key) ? table[key] : undefined;
+}
+
+/** The keys of `rec` this importer does not read, each recorded with its reason. */
 function leftover(
   ledger: Ledger,
   rec: Record<string, unknown>,
@@ -267,7 +316,7 @@ function leftover(
   chargeSteps(keys.length);
   for (const k of keys) {
     if (read.includes(k)) continue;
-    ledger.field(`${where}.${k}`, reasons[k] ?? "not read by the importer");
+    ledger.field(`${where}.${k}`, own(reasons, k) ?? "not read by the importer");
   }
 }
 
@@ -395,6 +444,7 @@ export function readWebProject(
     return { model: null, diagnostics: r.diagnostics };
   }
   if (floorsRaw.length === 0) fail("floors", "must contain at least one floor");
+  if (floorsRaw.length > MAX_IMPORT_LEVELS) return { model: null, diagnostics: [tooManyStoreys(floorsRaw.length)] };
   leftover(ledger, data, "project", ["name", "floors"], PROJECT_REASONS);
 
   const floorIds = new Set<string>();
@@ -836,7 +886,7 @@ const SECTION_NAMES: Readonly<Record<string, string>> = {
 };
 
 /** `mapSectionLabel`. */
-export const sectionName = (label: string): string => SECTION_NAMES[label] ?? label;
+export const sectionName = (label: string): string => own(SECTION_NAMES, label) ?? label;
 
 const HANDOFF_TOP_REASONS: Record<string, string> = {
   openplanPrepared: "format marker",
@@ -1013,11 +1063,35 @@ export function readHandoff(
   const storyOf = (item: Record<string, unknown>): number => (typeof item.story === "number" ? item.story : 0);
   const recs = (key: string): Record<string, unknown>[] =>
     Array.isArray(data[key]) ? (data[key] as Record<string, unknown>[]) : [];
-  const indices = new Set<number>();
-  for (const key of [...LISTS, "sections"]) for (const it of recs(key)) indices.add(storyOf(it));
-  for (const s of recs("stories")) indices.add(s.index as number);
-  if (indices.size === 0) indices.add(0);
-  const sorted = [...indices].sort((a, b) => a - b);
+  // One pass puts every item in its storey's bucket (paid for item by item), so building a
+  // storey reads only its own items, never every list once per storey.
+  const buckets = new Map<number, Map<string, Record<string, unknown>[]>>();
+  const bucket = (index: number): Map<string, Record<string, unknown>[]> => {
+    let b = buckets.get(index);
+    if (!b) {
+      chargeSteps(1);
+      b = new Map();
+      buckets.set(index, b);
+    }
+    return b;
+  };
+  for (const key of [...LISTS, "sections"]) {
+    const items = recs(key);
+    chargeSteps(items.length);
+    for (const it of items) {
+      const b = bucket(storyOf(it));
+      const list = b.get(key);
+      if (list) list.push(it);
+      else b.set(key, [it]);
+    }
+  }
+  for (const s of recs("stories")) bucket(s.index as number);
+  if (buckets.size === 0) bucket(0);
+  if (buckets.size > MAX_IMPORT_LEVELS) return { model: null, diagnostics: [tooManyStoreys(buckets.size)] };
+  const sorted = [...buckets.keys()].sort((a, b) => a - b);
+  const of = (index: number, key: string): Record<string, unknown>[] => buckets.get(index)?.get(key) ?? [];
+  const openingIds = new Set(recs("openings").map((o) => o.identifier));
+  const sourceWalls = new Map(recs("walls").map((w) => [w.identifier, w] as const));
   // Every listed storey becomes a level (an empty one included), so each is carried.
   const stories = recs("stories").length;
   ledger.seen("stories", stories);
@@ -1032,7 +1106,7 @@ export function readHandoff(
 
   const floors: OFloor[] = [];
   for (const index of sorted) {
-    const of = (key: string) => recs(key).filter((it) => storyOf(it) === index);
+    chargeSteps(1);
     const floor: OFloor = {
       id: `story-${index}`,
       path: `stories[index=${index}]`,
@@ -1048,7 +1122,7 @@ export function readHandoff(
       columns: [],
       furniture: [],
     };
-    const rpWalls = of("walls");
+    const rpWalls = of(index, "walls");
     const wallById = new Map<string, OWall>();
     for (const rw of rpWalls) {
       chargeSteps(1);
@@ -1082,8 +1156,7 @@ export function readHandoff(
       wallById.set(id, wall);
       handoffLeftover(ledger, rw, "walls[]");
     }
-    const openingIds = new Set(recs("openings").map((o) => o.identifier));
-    for (const rd of [...of("doors"), ...of("openings")]) {
+    for (const rd of [...of(index, "doors"), ...of(index, "openings")]) {
       chargeSteps(1);
       const kind = openingIds.has(rd.identifier) ? "openings" : "doors";
       const id = rd.identifier as string;
@@ -1122,7 +1195,7 @@ export function readHandoff(
       });
       handoffLeftover(ledger, rd, `${kind}[]`, ["style", "hingeLeft", "opensInward"]);
     }
-    for (const rw of of("windows")) {
+    for (const rw of of(index, "windows")) {
       chargeSteps(1);
       const id = rw.identifier as string;
       const p = pathOf.get(rw)!;
@@ -1134,7 +1207,7 @@ export function readHandoff(
       }
       const dims = rw.dimensions as number[];
       const t = rw.transform as number[];
-      const source = rpWalls.find((w) => w.identifier === rw.parentIdentifier)!;
+      const source = sourceWalls.get(rw.parentIdentifier)!;
       const st = source.transform as number[];
       const sd = source.dimensions as number[];
       const floorY = st[13]! - sd[1]! / 2;
@@ -1152,7 +1225,7 @@ export function readHandoff(
       });
       handoffLeftover(ledger, rw, "windows[]", ["style", "sillHeight"]);
     }
-    for (const ro of of("objects")) {
+    for (const ro of of(index, "objects")) {
       chargeSteps(1);
       const id = ro.identifier as string;
       const p = pathOf.get(ro)!;
@@ -1178,7 +1251,7 @@ export function readHandoff(
       });
       handoffLeftover(ledger, ro, "objects[]", [], "an object's height is not modelled");
     }
-    for (const s of of("sections")) {
+    for (const s of of(index, "sections")) {
       chargeSteps(1);
       const c = s.center as number[];
       floor.sections.push({

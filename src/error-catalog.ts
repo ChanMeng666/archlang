@@ -7,6 +7,7 @@
  */
 
 import { CANONICAL_FIXTURES } from "./elements/fixtures-glyphs.js";
+import { MAX_IMPORT_LEVELS } from "./import/limits.js";
 import { fixtureSpec } from "./fixtures-catalog.js";
 
 /**
@@ -644,7 +645,9 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_IMPORT_LIMIT: E(
     "E_IMPORT_LIMIT",
     "A file given to `arch import` needs more work to convert than any plan does.",
-    "Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens.",
+    "Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens. A file of more than " +
+      String(MAX_IMPORT_LEVELS) +
+      " storeys is refused the same way before any storey is built: each storey is a whole drawing.",
     "Split the plan into several files, a floor or a wing each, and import them one by one.",
     "archlang import --from openplan3d huge.json   # error: one floor with 100,000 walls",
   ),
@@ -1163,7 +1166,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_IMPORT_DROPPED: W(
     "W_IMPORT_DROPPED",
     "Part of an imported plan has no ArchLang form and was left out.",
-    "`arch import --from openplan3d` writes what ArchLang can say (walls, rooms, doors, windows, openings, straight stairs, square columns, furniture with a matching fixture family, storeys) and leaves out the rest: finishes and textures, notes and prices, text and dimension annotations, round columns, turning or spiral stairs, furniture turned off a quarter turn or with no family, a wall's slope. Each left-out entity is listed in the report's `dropped`, each left-out field in its `fields`, with the reason, and each kind and reason gives one warning. Nothing is left out without one.",
+    "`arch import --from openplan3d` writes what ArchLang can say (walls, rooms, doors, windows, openings, straight stairs, square columns, furniture with a matching fixture family, storeys) and leaves out the rest: finishes and textures, notes and prices, text and dimension annotations, round columns, turning or spiral stairs, furniture turned off a quarter turn or with no family, a wall's slope. Each left-out entity is listed in the report's `dropped`, each left-out field in its `fields`, with the reason, and each kind and reason gives one warning. Fields whose loss changes nothing on a plan (project and capture metadata, editor settings, format markers, a room's stored area) are listed in the report only, with no warning. Nothing is left out without a report entry.",
     "Read the report (`--json`). Add what matters by hand in the `.arch` file (a `furniture` piece, a `dim`, a stair), or accept the loss: none of these changes the walls, rooms and openings the checks read.",
     "archlang import --from openplan3d plan.json   # warning: 3 textAnnotations not imported: free text on the plan is not modelled",
   ),

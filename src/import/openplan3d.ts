@@ -13,11 +13,19 @@
  * the nearest 0.001 mm with halves away from zero. Nothing else is rounded or snapped.
  *
  * Pure, synchronous and deterministic: no I/O, clock, randomness or trigonometry; numbers print
- * through `src/num-format.ts`; every coordinate and length is held to `MODEL_RANGE_MM`
- * (`E_OUT_OF_RANGE`); the work is charged to the evaluation step meter and stops with
- * `E_IMPORT_LIMIT` past it. A file OpenPlan3D's own validators refuse gives `E_IMPORT_FORMAT`
- * diagnostics with their path and reason. Nothing is dropped without a report entry, and every
- * dropped entity or field also gives a `W_IMPORT_DROPPED` warning. It never throws on its input.
+ * through `src/num-format.ts`. Range: every input coordinate and length (wall ends, curve points,
+ * thicknesses, opening widths and heights, a stair's, column's or piece's centre with its extent,
+ * section centres, floor elevations) is held to `MODEL_RANGE_MM` before anything is built, and
+ * every number written into the source is checked again as it is printed; either gives
+ * `E_OUT_OF_RANGE` and no source. Compile's own number-domain check stays the backstop for what
+ * it derives from them. The work is charged to the evaluation step meter and stops with
+ * `E_IMPORT_LIMIT` past it, as does a file of more than `MAX_IMPORT_LEVELS` storeys. A file
+ * OpenPlan3D's own validators refuse gives `E_IMPORT_FORMAT` diagnostics with their path and
+ * reason. Nothing is dropped without a report entry: every dropped entity and every dropped field
+ * is in the report, and each gives a `W_IMPORT_DROPPED` warning, except fields whose loss changes
+ * nothing on a plan (project and capture metadata, editor settings, format markers, a room's
+ * stored area: {@link QUIET_REASONS}), which are listed in the report without a warning. It never
+ * throws on its input.
  */
 
 import type { Diagnostic } from "../diagnostics.js";
@@ -39,6 +47,7 @@ import {
   readHandoff,
   readWebProject,
   quarterOfDegrees,
+  own,
   sectionName,
 } from "./openplan3d-model.js";
 import { detectFloorRooms, matchRecords, matchSections, wallSpans } from "./openplan3d-rooms.js";
@@ -128,7 +137,16 @@ function mmOf(cm: number): number {
   return r / 1000;
 }
 const inRange = (mm: number): boolean => Number.isFinite(mm) && Math.abs(mm) <= MODEL_RANGE_MM;
-const num = (mm: number): string => fmtSource(Object.is(mm, -0) ? 0 : mm);
+/**
+ * The numbers written past the modelling range in the conversion running now (set by `convert`).
+ * The input values are checked first (`rangeErrors`); this catches a position derived from them
+ * (a corner from a centre and a size, a distance along a wall) as it is printed.
+ */
+let writtenOutOfRange: number[] | null = null;
+const num = (mm: number): string => {
+  if (!inRange(mm) && writtenOutOfRange !== null && writtenOutOfRange.length < 10) writtenOutOfRange.push(mm);
+  return fmtSource(Object.is(mm, -0) ? 0 : mm);
+};
 const pt = (p: Pt): string => `(${num(p.x)},${num(p.y)})`;
 /** The largest height a clause may name (`E_HEIGHT_RANGE` past it), mm. */
 const MAX_HEIGHT_MM = 100_000;
@@ -217,6 +235,25 @@ const WINDOW_WORD: Readonly<Record<string, string>> = {
 };
 
 function convert(json: unknown, options: OpenPlan3dImportOptions): OpenPlan3dImportResult {
+  writtenOutOfRange = [];
+  try {
+    const r = convertBody(json, options);
+    const bad = writtenOutOfRange;
+    if (r.source === undefined || bad.length === 0) return r;
+    return {
+      ok: false,
+      diagnostics: bad.map((mm) => ({
+        severity: "error" as const,
+        code: "E_OUT_OF_RANGE",
+        message: `A position derived from the file comes to ${String(mm)} mm, past the modelling range of ±${MODEL_RANGE_MM} mm; nothing was written`,
+      })),
+    };
+  } finally {
+    writtenOutOfRange = null;
+  }
+}
+
+function convertBody(json: unknown, options: OpenPlan3dImportOptions): OpenPlan3dImportResult {
   const format = options.format ?? detectFormat(json);
   const ledger = new Ledger();
   const read = format === "web" ? readWebProject(json, ledger) : readHandoff(json, ledger, options.name);
@@ -572,7 +609,7 @@ function emitFloor(
       fromId = rec.id;
       floorOpening = rec.floorOpening;
       if (rec.use !== undefined) {
-        if (Object.hasOwn(USE_OF, rec.use)) use = USE_OF[rec.use];
+        if (own(USE_OF, rec.use) !== undefined) use = own(USE_OF, rec.use);
         else ledger.field(list("rooms[].details.roomType"), `the room type "${rec.use}" has no ArchLang use`);
       }
       if (rec.category === "garage" || rec.category === "utility") use ??= rec.category;
@@ -584,7 +621,7 @@ function emitFloor(
       const s = floor.sections[si]!;
       shown.add(s);
       label = s.displayName ?? sectionName(s.label);
-      if (Object.hasOwn(USE_OF, s.label)) use = USE_OF[s.label];
+      if (own(USE_OF, s.label) !== undefined) use = own(USE_OF, s.label);
     }
     const rect = rectOf(ring);
     if (floorOpening) {
@@ -682,7 +719,7 @@ function emitFloor(
       );
     }
     out.push(
-      `door id=${id} ${DOOR_WORD[d.type]}on ${host.id} at ${num(at)} width ${num(width)}${clauses}${headClause}`,
+      `door id=${id} ${own(DOOR_WORD, d.type) ?? ""}on ${host.id} at ${num(at)} width ${num(width)}${clauses}${headClause}`,
     );
     ledger.mapped(d.kind);
   }
@@ -702,7 +739,7 @@ function emitFloor(
     if (head <= MAX_HEIGHT_MM && sill < head) heights = ` sill ${num(sill)} head ${num(head)}`;
     else ledger.field(list("windows[].sillHeight/height"), "a window head above 100 m is not one ArchLang can hold");
     out.push(
-      `window id=${id} ${WINDOW_WORD[w.type]}on ${host.id} at ${num(runAt(host, w.position))} width ${num(mmOf(w.width))}${heights}`,
+      `window id=${id} ${own(WINDOW_WORD, w.type) ?? ""}on ${host.id} at ${num(runAt(host, w.position))} width ${num(mmOf(w.width))}${heights}`,
     );
     ledger.mapped("windows");
   }
@@ -791,7 +828,7 @@ function emitFloor(
       ledger.drop(p.kind, p.id, p.path, `the category "${p.category}" is no OpenPlan3D catalogue item`);
       continue;
     }
-    const family = Object.hasOwn(OPENPLAN3D_TO_FAMILY, p.catalogId) ? OPENPLAN3D_TO_FAMILY[p.catalogId] : undefined;
+    const family = own(OPENPLAN3D_TO_FAMILY, p.catalogId);
     if (family === undefined) {
       ledger.drop(p.kind, p.id, p.path, `"${p.category}" has no ArchLang fixture family`);
       continue;
@@ -805,7 +842,7 @@ function emitFloor(
       );
       continue;
     }
-    const size = OPENPLAN3D_CATALOG_SIZES[p.catalogId]!;
+    const size = own(OPENPLAN3D_CATALOG_SIZES, p.catalogId)!;
     const w = mmOf((p.width ?? size[0]) * Math.abs(p.scaleX));
     const d = mmOf((p.depth ?? size[1]) * Math.abs(p.scaleY));
     if (!(w > 0 && d > 0)) {

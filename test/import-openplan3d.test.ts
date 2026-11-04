@@ -77,8 +77,18 @@ describe("OpenPlan3D samples", () => {
         dropped += c.dropped;
       }
       expect(report.dropped.length).toBe(dropped);
-      for (const d of report.dropped) expect(d.reason.length).toBeGreaterThan(0);
-      for (const fld of report.fields) expect(fld.count).toBeGreaterThan(0);
+      for (const d of report.dropped) {
+        expect(typeof d.reason).toBe("string");
+        expect(d.reason.length).toBeGreaterThan(0);
+      }
+      for (const fld of report.fields) {
+        expect(fld.count).toBeGreaterThan(0);
+        expect(typeof fld.reason, fld.field).toBe("string");
+        expect(fld.reason.length, fld.field).toBeGreaterThan(0);
+      }
+      // A warning for every dropped kind and every dropped field that is not report-only.
+      const warned = r.diagnostics.filter((d) => d.code === "W_IMPORT_DROPPED").map((d) => d.message);
+      for (const d of report.dropped) expect(warned.some((m) => m.endsWith(`: ${d.reason}`))).toBe(true);
       // Each input array is counted whole.
       const doc = read(f) as Record<string, unknown>;
       const total = (key: string) =>
@@ -110,6 +120,20 @@ describe("OpenPlan3D samples", () => {
     const native = openPlan3dToArch(read("handoff-plan.json"));
     expect(native.ok).toBe(false);
     expect(native.diagnostics.every((d) => d.code === "E_IMPORT_FORMAT")).toBe(true);
+  });
+
+  it("warns of what it leaves out, and lists report-only fields without a warning", () => {
+    const r = openPlan3dToArch(read("two-room-web-project.json"));
+    const warned = r.diagnostics.filter((d) => d.code === "W_IMPORT_DROPPED").map((d) => d.message);
+    expect(warned).toEqual([
+      "`floors[].rooms[].floorTexture` not imported on 2 records: a finish (colour or texture): ArchLang draws no finishes",
+      "`floors[].walls[].color` not imported on 5 records: a finish (colour or texture): ArchLang draws no finishes",
+    ]);
+    // The stored room area and the project metadata are in the report, with no warning.
+    const fields = r.report!.fields.map((f) => f.field);
+    expect(fields).toContain("floors[].rooms[].area");
+    expect(fields).toContain("project.createdAt");
+    expect(warned.some((m) => m.includes("rooms[].area") || m.includes("createdAt"))).toBe(false);
   });
 
   it("reads both files of OpenPlan3D's two-room example as the same plan", () => {
@@ -489,5 +513,110 @@ describe("malformed and hostile input returns diagnostics, never a throw", () =>
       thickness: -1,
     }));
     expect(codes(web({ walls })).length).toBe(100);
+  });
+
+  /** A prepared interchange room, 4 × 3 m (hand-written from SKILL.md §4's wall transform). */
+  const roomWalls = [
+    ["north", 1, 0, 2, 0, 4],
+    ["east", 0, 1, 4, 1.5, 3],
+    ["south", -1, 0, 2, 3, 4],
+    ["west", 0, -1, 0, 1.5, 3],
+  ].map(([identifier, dx, dz, cx, cz, len]) => ({
+    identifier,
+    dimensions: [len, 2.5, 0.1],
+    transform: [dx, 0, dz, 0, 0, 1, 0, 0, -(dz as number), 0, dx, 0, cx, 1.25, cz, 1],
+  }));
+  const PROTO = ["constructor", "toString", "__proto__", "hasOwnProperty", "valueOf", "isPrototypeOf"];
+
+  it("prototype names as section labels are labels, never Object.prototype's members", () => {
+    for (const label of PROTO) {
+      const r = openPlan3dToArch({
+        openplanPrepared: true,
+        openplanHandoffVersion: 1,
+        walls: roomWalls,
+        sections: [{ center: [2, 0, 1.5], label }],
+      });
+      const src = sourceOf(r);
+      expect(src, label).toContain(`label "${label}"`);
+      expect(errorsOf(src), label).toEqual([]);
+    }
+  });
+
+  it("prototype names as record keys and as ids", () => {
+    // JSON text, so `__proto__` is an own key as JSON.parse makes it, not a prototype.
+    const keys = PROTO.map((k) => `"${k}": 1`).join(", ");
+    const doc = JSON.parse(`{
+      "id": "proto", "name": "Proto", ${keys},
+      "floors": [{ "id": "g", ${keys},
+        "walls": [
+          { "id": "constructor", "start": {"x":0,"y":0}, "end": {"x":400,"y":0}, "thickness": 10, ${keys} },
+          { "id": "toString", "start": {"x":400,"y":0}, "end": {"x":400,"y":300}, "thickness": 10 },
+          { "id": "__proto__", "start": {"x":400,"y":300}, "end": {"x":0,"y":300}, "thickness": 10 },
+          { "id": "valueOf", "start": {"x":0,"y":300}, "end": {"x":0,"y":0}, "thickness": 10 }
+        ],
+        "doors": [{ "id": "hasOwnProperty", "wallId": "constructor", "position": 0.5, "width": 80, ${keys} }],
+        "furniture": [{ "id": "isPrototypeOf", "catalogId": "constructor", "position": {"x":100,"y":100}, ${keys} }],
+        "rooms": [{ "id": "propertyIsEnumerable", "name": "toString",
+          "walls": ["constructor", "toString", "__proto__", "valueOf"],
+          "details": { "roomType": "constructor", ${keys} }, ${keys} }]
+      }]
+    }`);
+    const r = openPlan3dToArch(doc);
+    const src = sourceOf(r);
+    expect(errorsOf(src)).toEqual([]);
+    expect(src).toContain('label "toString"');
+    expect(src).toContain("wall id=__proto__ ");
+    for (const f of r.report!.fields) expect(typeof f.reason, f.field).toBe("string");
+    for (const d of r.diagnostics) expect(d.message).not.toContain("native code");
+    expect(r.report!.fields).toContainEqual({
+      field: "floors[].walls[].constructor",
+      count: 1,
+      reason: "not read by the importer",
+    });
+    expect(r.report!.dropped).toContainEqual(
+      expect.objectContaining({
+        kind: "furniture",
+        id: "isPrototypeOf",
+        reason: '"constructor" has no ArchLang fixture family',
+      }),
+    );
+  });
+
+  it("more storeys than an import writes are refused before any is built", () => {
+    const walls = Array.from({ length: 100_000 }, (_, i) => ({
+      identifier: `w${i}`,
+      story: i % 20_000,
+      dimensions: [1, 2.5, 0.1],
+      transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, i % 7, 1.25, 0, 1],
+    }));
+    const r = openPlan3dToArch({ openplanPrepared: true, openplanHandoffVersion: 1, walls });
+    expect(r.diagnostics.map((d) => d.code)).toEqual(["E_IMPORT_LIMIT"]);
+    expect(r.diagnostics[0]!.message).toContain("20000 storeys");
+    const floors = Array.from({ length: 201 }, (_, i) => ({ id: `f${i}`, level: i, walls: [] }));
+    expect(codes({ id: "p", floors })).toEqual(["E_IMPORT_LIMIT"]);
+  });
+
+  it("as many storeys as an import writes, with many items each, stays on the step budget", () => {
+    const walls = Array.from({ length: 100_000 }, (_, i) => ({
+      identifier: `w${i}`,
+      story: i % 200,
+      dimensions: [1, 2.5, 0.1],
+      transform: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, i % 7, 1.25, 0, 1],
+    }));
+    const r = openPlan3dToArch({ openplanPrepared: true, openplanHandoffVersion: 1, walls });
+    // 500 walls a storey cost their pairwise room search: either it fits or it is refused, by count.
+    expect(r.ok || r.diagnostics.map((d) => d.code).join() === "E_IMPORT_LIMIT").toBe(true);
+  });
+
+  it("a position derived from in-range values but past the range is refused as it is written", () => {
+    const r = openPlan3dToArch(
+      web({
+        walls: [{ id: "long", start: { x: -3_000_000, y: 0 }, end: { x: 3_000_000, y: 0 }, thickness: 10 }],
+        doors: [{ id: "d", wallId: "long", position: 0.9, width: 80 }],
+      }),
+    );
+    expect(r.ok).toBe(false);
+    expect(r.source).toBeUndefined();
+    expect(r.diagnostics.map((d) => d.code)).toEqual(["E_OUT_OF_RANGE"]);
   });
 });

@@ -818,7 +818,7 @@ archlang import --from openplan3d plan.json   # error: Invalid project: floors[0
 
 *error* — A file given to `arch import` needs more work to convert than any plan does.
 
-**Cause.** Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens.
+**Cause.** Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens. A file of more than 200 storeys is refused the same way before any storey is built: each storey is a whole drawing.
 
 **Fix.** Split the plan into several files, a floor or a wing each, and import them one by one.
 
@@ -2841,7 +2841,7 @@ furniture stove at (1700,100) size 600x600   # lint: under 600 mm of the window
 
 *warning* — Part of an imported plan has no ArchLang form and was left out.
 
-**Cause.** `arch import --from openplan3d` writes what ArchLang can say (walls, rooms, doors, windows, openings, straight stairs, square columns, furniture with a matching fixture family, storeys) and leaves out the rest: finishes and textures, notes and prices, text and dimension annotations, round columns, turning or spiral stairs, furniture turned off a quarter turn or with no family, a wall's slope. Each left-out entity is listed in the report's `dropped`, each left-out field in its `fields`, with the reason, and each kind and reason gives one warning. Nothing is left out without one.
+**Cause.** `arch import --from openplan3d` writes what ArchLang can say (walls, rooms, doors, windows, openings, straight stairs, square columns, furniture with a matching fixture family, storeys) and leaves out the rest: finishes and textures, notes and prices, text and dimension annotations, round columns, turning or spiral stairs, furniture turned off a quarter turn or with no family, a wall's slope. Each left-out entity is listed in the report's `dropped`, each left-out field in its `fields`, with the reason, and each kind and reason gives one warning. Fields whose loss changes nothing on a plan (project and capture metadata, editor settings, format markers, a room's stored area) are listed in the report only, with no warning. Nothing is left out without a report entry.
 
 **Fix.** Read the report (`--json`). Add what matters by hand in the `.arch` file (a `furniture` piece, a `dim`, a stair), or accept the loss: none of these changes the walls, rooms and openings the checks read.
 
