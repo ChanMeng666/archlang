@@ -129,7 +129,7 @@ const PAGE_META = [
   ],
   [
     "/common-mistakes",
-    "Common mistakes when writing ArchLang",
+    "Common mistakes when writing a plan",
     "The diagnostics an AI agent meets most often when writing ArchLang, what each means and how to fix it, from doors off a wall to stale edits and lock errors.",
   ],
   [
