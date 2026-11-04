@@ -50,6 +50,19 @@ This skill is a workflow, not a language reference. Run `archlang spec` for the 
    is missing. If it reports that the drawing no longer fits the authored `paper` or `scale`,
    `archlang finish plan.arch --reissue` may replace those two statements and nothing else.
 
+## When another agent may edit the same file
+
+Pass the file's current revision as `--expected-hash <hash>`, as in
+`archlang fix plan.arch --expected-hash <hash> --json`. The `--json` result of each command that
+rewrites the file (`fix`, `finish`, `repair -o plan.arch`, `fmt --write`) says which hash that is:
+`source_hash` is the file as the command read it, and `written_hash` the file once the command has
+written it. A result that hands you rewritten text instead (`repair --json`, a `--dry-run`, or the
+MCP `repair`, `fix` and `finish` tools) gives `output_hash`, the file's revision once you write that
+text to it unchanged. `archlang fmt plan.arch --json` reports `source_hash` without writing. If the
+file changed since, the command writes nothing and exits `4` with `E_STALE_SOURCE`: read the file
+again, redo your edit on what is there now, and use the new hash. This narrows the window for a
+clash; it is not a lock.
+
 ## Report to the user
 
 - The statements you changed, as a short diff.

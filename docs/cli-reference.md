@@ -28,6 +28,7 @@ A flag that takes a value takes it either way: `--level 2` or `--level=2`.
 | `1` | internal / IO error |
 | `2` | user-source error (deterministic — fix it, don't blindly retry) |
 | `3` | bad usage |
+| `4` | stale source: the file is not the revision --expected-hash names (re-read it, redo the edit) |
 
 ## Output formats
 
@@ -480,6 +481,7 @@ canonical formatting
 | Flag | Does |
 | --- | --- |
 | `--write` | format the file in place |
+| `--expected-hash <sha256>` | refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -502,6 +504,7 @@ explicit source-to-source corrector (furniture out of walls) + change log
 | Flag | Does |
 | --- | --- |
 | `--out, -o <file\|->` | output file for the corrected source, or '-' for stdout (default: stdout) |
+| `--expected-hash <sha256>` | refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -528,6 +531,7 @@ apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fi
 | `--dry-run` | compute the result but do not write it (the diff preview still prints) |
 | `--backup` | before rewriting a file in place, save the original bytes to &lt;file&gt;.bak |
 | `--force` | keep a pass even if it raises the error count |
+| `--expected-hash <sha256>` | refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -545,6 +549,9 @@ $ archlang fix plan.arch --backup --json
 
 # also apply the maybe-incorrect fixes, leaving the input untouched
 $ archlang fix plan.arch -o fixed.arch --unsafe --json
+
+# rewrite in place only if plan.arch is still the bytes an earlier --json run reported as `source_hash`; else exit 4, E_STALE_SOURCE, nothing written
+$ archlang fix plan.arch --expected-hash <source_hash> --json
 ```
 
 ### `archlang finish`
@@ -560,6 +567,7 @@ furnish the rooms that hold no furniture, then add the sheet statements a plan l
 | `--reissue` | allow `paper` and `scale` (nothing else) to be replaced when the drawing does not fit the authored sheet |
 | `--dry-run` | compute the result but do not write it (the diff preview still prints) |
 | `--backup` | before rewriting a file in place, save the original bytes to &lt;file&gt;.bak |
+| `--expected-hash <sha256>` | refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -588,6 +596,7 @@ offer a proven-equivalent `for` loop for a repeated statement run
 | Flag | Does |
 | --- | --- |
 | `--write` | apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes nothing, and every suggestion is already proven byte-for-byte before it is offered) |
+| `--expected-hash <sha256>` | refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -688,8 +697,8 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 158 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 158 KB of it (spec = the language, 29 KB; workflow = the agent loop, 32 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 67 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 160 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 160 KB of it (spec = the language, 30 KB; workflow = the agent loop, 32 KB; cli = every command, 30 KB; errors = the diagnostic catalog, 67 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -701,7 +710,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (67 KB) — read one section instead of paying for the whole 158 KB bundle
+# just the diagnostic catalog (67 KB) — read one section instead of paying for the whole 160 KB bundle
 $ archlang context --section errors
 ```
 

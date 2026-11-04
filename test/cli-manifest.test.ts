@@ -70,6 +70,8 @@ describe("manifest — content", () => {
       "--reissue",
       "--dry-run",
       "--backup",
+      // The revision guard every in-place writer takes (`--expected-hash`, `E_STALE_SOURCE`).
+      "--expected-hash",
       "--json",
       "--quiet",
     ]);
@@ -79,7 +81,7 @@ describe("manifest — content", () => {
     for (const stage of FINISH_STAGES_AVAILABLE) expect(only.description).toContain(stage);
     // The write flags are `fix`'s, word for word: one mutation boundary, one description.
     const fix = m.commands.find((c) => c.name === "fix")!;
-    for (const flag of ["--dry-run", "--backup"])
+    for (const flag of ["--dry-run", "--backup", "--expected-hash"])
       expect(finish.flags.find((f) => f.flag === flag)).toEqual(fix.flags.find((f) => f.flag === flag));
   });
 

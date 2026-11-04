@@ -7,7 +7,7 @@ paths:
 
 # Working on the `arch` CLI
 
-- Exit codes: `0` ok · `2` user-source error · `1` IO/internal · `3` bad usage. An undeclared flag or
+- Exit codes: `0` ok · `2` user-source error · `1` IO/internal · `3` bad usage · `4` stale source (`--expected-hash`). An undeclared flag or
   unknown verb exits 3 with a did-you-mean — never swallowed as a filename.
 - Help is rendered from `src/manifest.ts`; each command declares its exact flags and at least one
   `examples[]` entry, and a drift test pins the manifest against `FLAG_KEYS` (`src/cli/io.ts`).

@@ -22,8 +22,9 @@ export const FORMAT_LIST = `${EXPORT_FORMATS.slice(0, -1)
   .map((f) => f.id)
   .join(", ")}, or ${EXPORT_FORMATS[EXPORT_FORMATS.length - 1]!.id}`;
 
-/** Deterministic exit codes (documented in `--help`). */
-export const EXIT = { OK: 0, INTERNAL: 1, USER: 2, USAGE: 3 } as const;
+/** Deterministic exit codes (documented in `--help`). `STALE` is the write-back guard's refusal
+ *  (`--expected-hash`, `E_STALE_SOURCE`; `src/cli/source-hash.ts`). */
+export const EXIT = { OK: 0, INTERNAL: 1, USER: 2, USAGE: 3, STALE: 4 } as const;
 
 /**
  * The one non-exit-code a command may return: "I have installed a handle and the
@@ -95,6 +96,8 @@ export interface Args {
   only?: string;
   /** `--reissue`: (finish) allow `paper`/`scale` to be replaced when the drawing does not fit them. */
   reissue?: boolean;
+  /** `--expected-hash <sha256>`: (fix/finish/repair/fmt/reroll) refuse unless the input's bytes hash to this. */
+  expectedHash?: string;
   /** `--from-json`: (compile) read the input as Plan JSON (RPLAN shape), not `.arch`. */
   fromJson?: boolean;
   /** `--graph <file>`: (validate) also check adjacency against an intended graph. */
@@ -202,6 +205,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--stage": { key: "stage", kind: "string" },
   "--only": { key: "only", kind: "string" },
   "--reissue": { key: "reissue", kind: "boolean" },
+  "--expected-hash": { key: "expectedHash", kind: "string" },
   "--from-json": { key: "fromJson", kind: "boolean" },
   "--feedback": { key: "feedback", kind: "boolean" },
   "--ascii": { key: "ascii", kind: "boolean" },

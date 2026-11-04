@@ -221,8 +221,22 @@ describe("arch finish — a plan with `level` blocks", () => {
     expect(r.status).toBe(0);
     expect(readFileSync(file, "utf8")).toBe(LEVELS);
     const out = JSON.parse(r.stdout);
+    // `source_hash` (the input as read) and `output_hash` (the returned `source`) are the declared
+    // revision fields of `--expected-hash` (card CR5, src/cli/source-hash.ts); a dry run writes
+    // nothing, so there is no `written_hash`.
     expect(Object.keys(out).sort()).toEqual(
-      ["changed", "changes", "diff", "ok", "source", "target", "unresolved", "wrote"].sort(),
+      [
+        "changed",
+        "changes",
+        "diff",
+        "ok",
+        "output_hash",
+        "source",
+        "source_hash",
+        "target",
+        "unresolved",
+        "wrote",
+      ].sort(),
     );
     expect(out.ok).toBe(true);
     expect(out.changed).toBe(true);
