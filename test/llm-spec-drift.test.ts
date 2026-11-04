@@ -69,9 +69,9 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // behaviours that are invisible in the output or refused rather than approximated. The
     // `furniture` line's size-optional list INTERPOLATES every catalogued footprint from
     // `CANONICAL_FIXTURES`, so each new fixture family with a footprint costs ~10 characters
-    // on its own. The next real lever is the `door` line, the longest in the document at over
-    // 1,600 characters, whose per-kind clause prose a machine-readable table would carry
-    // better than a sentence.
+    // on its own, and that list makes it the longest line in the document. The next real lever
+    // is the `door` line, the second longest, whose per-kind clause prose a machine-readable
+    // table would carry better than a sentence.
     //
     // The cap is asserted on the in-memory render, in UTF-16 code units, so neither a CRLF
     // checkout nor multi-byte characters count against it. Headroom came from trimming
