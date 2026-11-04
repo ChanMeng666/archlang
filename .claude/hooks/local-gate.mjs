@@ -31,20 +31,25 @@ const DIR_CHANGE = /(?:^|&&|;|\|\||\||\()\s*(?:cd|chdir|Set-Location|sl|Push-Loc
 /**
  * The directory a command runs in: its leading `cd`/`Set-Location`/`sl`/`Push-Location`/`pushd`,
  * else `npm --prefix`, else cwd. Null when that cannot be told from the text: more than one
- * directory change, `||`, a `cd` together with `--prefix`, or more than one `--prefix`.
+ * directory change, `||` before the heavy call, a `cd` together with `--prefix`, or more than one
+ * `--prefix`. Counting reads `bare` (quotes stripped), so a commit message never counts;
+ * `heavyAt` is where the heavy call starts in `bare`.
  */
-export function targetDir(command, cwd) {
+export function targetDir(command, cwd, bare = command, heavyAt = Number.POSITIVE_INFINITY) {
   const lead =
     /^\s*(?:cd|Set-Location|sl|Push-Location|pushd)\s+(?:-(?:Literal)?Path\s+)?(["']?)([^"'&;|\r\n]+?)\1\s*(?:&&|;|$)/i.exec(
       command,
     );
-  const prefixes = [...command.matchAll(/--prefix[=\s]+(["']?)([^"'\s&;|]+)\1/g)];
-  const changes = command.match(DIR_CHANGE)?.length ?? 0;
-  if (changes > 1 || /\|\|/.test(command) || prefixes.length > 1 || (changes > 0 && prefixes.length > 0)) return null;
+  const prefixes = [...bare.matchAll(/--prefix[=\s]+(\S+)/g)];
+  const changes = bare.match(DIR_CHANGE)?.length ?? 0;
+  const orAt = bare.indexOf("||");
+  const orFirst = orAt !== -1 && orAt < heavyAt;
+  if (changes > 1 || orFirst || prefixes.length > 1 || (changes > 0 && prefixes.length > 0)) return null;
   if (changes === 1 && !lead) return null;
   // `--prefix` moves only the npm call that carries it, so it decides only a single-call command.
-  if (prefixes.length === 1 && (command.match(/\b(?:npm|npx|vitest)\b/g)?.length ?? 0) > 1) return null;
-  const raw = lead?.[2] ?? prefixes[0]?.[2];
+  if (prefixes.length === 1 && (bare.match(/\b(?:npm|npx|vitest)\b/g)?.length ?? 0) > 1) return null;
+  const prefixRaw = prefixes.length === 1 ? /--prefix[=\s]+(["']?)([^"'\s&;|]+)\1/.exec(command)?.[2] : undefined;
+  const raw = lead?.[2] ?? prefixRaw;
   return raw ? resolve(cwd, nativePath(raw.trim())) : cwd;
 }
 
@@ -67,7 +72,8 @@ export function verdict(command, cwd, hookRepo) {
   const bare = command.replace(/<<-?\s*['"]?\w+['"]?[\s\S]*$/, "").replace(/"(?:\\.|[^"\\])*"|'[^']*'/g, '""');
   const hit = HEAVY.find(([re]) => re.test(bare));
   if (!hit) return null;
-  const dir = targetDir(command, cwd);
+  const heavyAt = Math.min(...HEAVY.map(([re]) => bare.search(re)).filter((i) => i >= 0));
+  const dir = targetDir(command, cwd, bare, heavyAt);
   const here = dir === null ? null : repoId(dir);
   // Another repository runs under its own rules. An ambiguous command, a directory outside any
   // repository, or one that cannot be read is treated as this one: the gate fails closed.

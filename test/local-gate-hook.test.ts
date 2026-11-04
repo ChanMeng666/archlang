@@ -63,6 +63,12 @@ describe(".claude/hooks/local-gate.mjs", () => {
     expect(check(`npm --prefix ${other} run x && npm test`)).toBe("npm test");
   });
 
+  it("does not count directory changes or || inside quotes, or || after the heavy call", () => {
+    expect(check(`cd ${other} && npm test || echo failed`)).toBeNull();
+    expect(check(`cd ${other} && git commit -m "fix; cd later" && npm test`)).toBeNull();
+    expect(check(`cd ${other} && git log --format="a||b" && npm test`)).toBeNull();
+  });
+
   it("reads PowerShell's location aliases", () => {
     expect(check(`Push-Location "${other}"; npm test`)).toBeNull();
     expect(check(`sl "${other}"; npm test`)).toBeNull();
