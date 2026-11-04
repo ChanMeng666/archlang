@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { planLinks } from "../../src/cli/link.js";
 import { decodePlanHash } from "../../src/cli/share-codec.mjs";
-import { waitForPlan, watchStatus } from "./fixtures.js";
+import { chooseLink, waitForPlan, watchStatus } from "./fixtures.js";
 
 /**
  * `archlang link` opens the plan it was minted from.
@@ -12,7 +12,7 @@ import { waitForPlan, watchStatus } from "./fixtures.js";
  * playground itself would write. The link is minted HERE, at test time, by the same function
  * the CLI and the MCP `link` tool call, from the real `examples/studio.arch`.
  *
- * The editor's text is read back through Copy link: it re-encodes the editor's whole document
+ * The editor's text is read back through Copy full link: it re-encodes the editor's whole document
  * (a CodeMirror view only renders the lines on screen, so `.cm-content`'s text is not the
  * document), and decoding that copy must give the example byte for byte.
  */
@@ -31,7 +31,7 @@ test.describe("archlang link", () => {
     await expect(page.locator(".pz-stage svg")).toContainText("Studio");
 
     const status = await watchStatus(page);
-    await page.locator("#copyLink").click();
+    await chooseLink(page, "full");
     await status.expectFlash("Link copied");
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     const hash = new URL(copied).hash;

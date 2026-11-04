@@ -22,7 +22,9 @@ consumes the built core (`../dist/index.js`). Deployed at
 - **Embed:** an **Embed** button builds an `<iframe>` snippet pointing at the
   chrome-less viewer page (`embed.html`), which reads a plan from the `#z=` hash.
 - **Persistence & sharing:** autosaved draft + named **snapshot history** in
-  `localStorage`; a **compressed permalink** (`#z=` deflate-raw, still reads legacy `#src=`).
+  `localStorage`; a **compressed permalink** (`#z=` deflate-raw, still reads legacy `#src=`), and
+  on request a **short link** (`/s/<id>`, the plan stored on the server; ADR 0034) that opens the
+  same permalink. `embed.html` reads `#s=<id>` too.
 - **Export:** **copy** SVG/PNG to the clipboard, or **download** SVG / PNG / DXF / PDF.
   Exports strip the `data-span` annotations, so downloaded files stay clean.
 - **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive —
@@ -53,11 +55,21 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `embed.ts` / `viewer.ts` | the chrome-less `embed.html` page and its viewer runtime |
 | `facts-strip.ts` / `describe-panel.ts` / `lint-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels |
 | `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher (`main[data-mview]`) |
-| `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`) |
+| `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`); asks the Worker for a short link and reads `#s=<id>` |
 | `raster-export.ts` | copy/download SVG · PNG · DXF · PDF |
 | `snapshots.ts` / `storage.ts` | named snapshot history UI + defensive `localStorage` helpers |
 | `examples.ts`, `escape.ts` | example plans, HTML-escape helper |
 | `styles/*.css` | the shell's styles, split by concern: `tokens.css` (the shared "Compile Boundary" brand tokens, byte-identical with the docs site), `chrome.css` (the cool light source-world header + the compile-seam divider), `editor.css`, `panels.css` (sheet-world output panels), `embed.css` (the chrome-less viewer) |
+
+## The Worker (`worker/`)
+
+The site is static assets plus one script, `worker/index.ts` (`main` in `wrangler.jsonc`), which
+runs only for `/s/*` and `/api/*` (`assets.run_worker_first`): short links, stored in Workers KV
+(`worker/app.ts`, `worker/share-core.ts`), and their 1200×630 card images, `/s/<id>.png`
+(`worker/preview.ts`: the plan's `compile()` SVG rasterised by `@resvg/resvg-wasm` with the core's
+Roboto; ADR 0034, `docs/hosting-and-domains.md`). wrangler
+bundles it at deploy, against the built core. Locally: `wrangler dev --local` from this directory
+after `npm run playground:build`; never `wrangler deploy` (CI deploys).
 
 ## Run
 

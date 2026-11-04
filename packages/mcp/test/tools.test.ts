@@ -10,8 +10,11 @@
  *
  * Read as a contract: these assertions are what an MCP host is entitled to see.
  */
-import { readFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PLAN_JSON_SCHEMA, PNG_PREVIEW_WIDTH, planToJson } from "@chanmeng666/archlang";
 import { PNG_MAX_WIDTH, PNG_MIN_WIDTH } from "../src/png.js";
@@ -19,6 +22,7 @@ import { decodePlanHash, PLAYGROUND_ORIGIN, planLinks } from "@chanmeng666/archl
 import { describe, expect, it } from "vitest";
 import pkg from "../package.json" with { type: "json" };
 import { loadPlanLinks } from "../src/server.js";
+import { sha256Hex } from "../src/tools.js";
 import {
   call,
   CLEAN,
@@ -42,6 +46,9 @@ const HAS_RESVG = await import("@resvg/resvg-js").then(
   () => true,
   () => false,
 );
+
+/** SHA-256 of a string's UTF-8 bytes, by Node's own hash (not the shim's). */
+const sha256 = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
 
 /** A shipped plan that renders thousands of pixels wide at native size. */
 const STUDIO = readFileSync(resolve(dirname(fileURLToPath(import.meta.url)), "../../../examples/studio.arch"), "utf8");
@@ -687,7 +694,9 @@ describe("link tool", () => {
   it("returns the playground and embed URLs, both carrying the plan in the fragment", async () => {
     const client = await connect();
     const out = await call(client, "link", { source: CLEAN });
-    expect(Object.keys(out)).toEqual(["ok", "playground", "embed", "bytes"]);
+    // `source_hash` (card CR5) is appended to every result of a call that passed `source`; the
+    // URLs themselves still carry nothing but the plan.
+    expect(Object.keys(out)).toEqual(["ok", "playground", "embed", "bytes", "source_hash"]);
     expect(out.ok).toBe(true);
     const playground = new URL(out.playground as string);
     const embed = new URL(out.embed as string);
@@ -706,14 +715,18 @@ describe("link tool", () => {
 
   it("mints the same bytes as `archlang link` (one encoder)", async () => {
     const client = await connect();
-    expect(await call(client, "link", { source: TWO_STOREY })).toEqual({ ok: true, ...planLinks(TWO_STOREY) });
+    expect(await call(client, "link", { source: TWO_STOREY })).toEqual({
+      ok: true,
+      ...planLinks(TWO_STOREY),
+      source_hash: sha256(TWO_STOREY),
+    });
   });
 
   it("still links a plan that does not compile, and says so: ok:false with the error count", async () => {
     const client = await connect();
     const broken = 'plan "X" {\n  romo at (0,0)\n}\n';
     const out = await call(client, "link", { source: broken });
-    expect(out).toEqual({ ok: false, errors: 1, ...planLinks(broken) });
+    expect(out).toEqual({ ok: false, errors: 1, ...planLinks(broken), source_hash: sha256(broken) });
     expect(decodePlanHash(payloadOf(out.embed))).toBe(broken);
   });
 
@@ -745,4 +758,131 @@ describe("link tool", () => {
     // The real import resolves (here: the source tree, through the test alias).
     expect("planLinks" in (await loadPlanLinks())).toBe(true);
   });
+});
+
+// ---------------------------------------------------------------------------
+// source_hash (card CR5)
+// ---------------------------------------------------------------------------
+
+const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
+
+describe("source_hash", () => {
+  it("every tool that takes `source` returns it, appended last, on success and on refusal", async () => {
+    const client = await connect();
+    const h = sha256(CLEAN);
+    const calls: Array<[string, Record<string, unknown>]> = [
+      ["compile", { source: CLEAN }],
+      ["compile", { source: CLEAN, format: "txt" }],
+      ["compile", { source: CLEAN, width: 100 }], // refused: width is png-only
+      ["compile", { source: CLEAN, level: 7 }], // refused: no such level
+      ["describe", { source: CLEAN }],
+      ["lint", { source: CLEAN }],
+      ["validate", { source: CLEAN, strict: true }],
+      ["validate", { source: CLEAN, intent: { rooms: "many" } }], // a malformed intent
+      ["score", { source: CLEAN, brief: {} }],
+      ["repair", { source: CLEAN }],
+      ["fix", { source: CLEAN }],
+      ["finish", { source: CLEAN }],
+      ["suggest", { source: CLEAN }],
+      ["complete", { source: CLEAN, at: 0 }],
+      ["link", { source: CLEAN }],
+    ];
+    for (const [name, args] of calls) {
+      const out = await call(client, name, args);
+      expect(out.source_hash, name).toBe(h);
+      // A result that returns a rewritten `source` also ends with its `output_hash`.
+      const tail = typeof out.source === "string" ? ["source_hash", "output_hash"] : ["source_hash"];
+      expect(Object.keys(out).slice(-tail.length), name).toEqual(tail);
+    }
+    // The calls above cover every tool whose input schema takes `source`, derived from the server.
+    const { tools } = await client.listTools();
+    const takesSource = tools
+      .filter((t) => Object.hasOwn((t.inputSchema.properties as object | undefined) ?? {}, "source"))
+      .map((t) => t.name);
+    expect([...new Set(calls.map(([n]) => n))].sort()).toEqual(takesSource.sort());
+  });
+
+  it("repair, fix and finish add output_hash: the returned text's hash, which the CLI reads back once it is written", async () => {
+    const client = await connect();
+    const dir = mkdtempSync(join(tmpdir(), "mcp-out-hash-"));
+    try {
+      for (const [name, source] of [
+        ["repair", FURNITURE_IN_WALL],
+        ["fix", OFF_WALL],
+        ["finish", CLEAN],
+      ] as const) {
+        const out = await call(client, name, { source });
+        expect(out.source, name).not.toBe(source); // each one really rewrites its fixture
+        expect(out.source_hash, name).toBe(sha256(source)); // still the INPUT
+        expect(out.output_hash, name).toBe(sha256(out.source as string));
+        // The chain: write the returned `source` to a file; the CLI's revision of that file is
+        // `output_hash`, the value to pass to `--expected-hash` next.
+        const file = join(dir, `${name}.arch`);
+        writeFileSync(file, out.source as string, "utf8");
+        const cli = spawnSync(
+          process.execPath,
+          ["--import", "tsx", join(REPO, "src", "cli.ts"), "fmt", file, "--json"],
+          { cwd: REPO, encoding: "utf8" },
+        );
+        expect(cli.status, cli.stderr).toBe(0);
+        expect(JSON.parse(cli.stdout).source_hash, name).toBe(out.output_hash);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 30000);
+
+  it("is absent when the call passed no `source` (compile from plan_json)", async () => {
+    const client = await connect();
+    const out = await call(client, "compile", { plan_json: planToJson(TWO_ROOMS).json });
+    expect(out.ok).toBe(true);
+    expect("source_hash" in out).toBe(false);
+  });
+
+  it("adds one key and changes nothing else: the text is the old payload plus one line", async () => {
+    const client = await connect();
+    const res = (await client.callTool({ name: "describe", arguments: { source: STUDIO } })) as {
+      content: Array<{ text: string }>;
+    };
+    const text = res.content[0]!.text;
+    const { source_hash, ...rest } = JSON.parse(text) as Record<string, unknown>;
+    expect(source_hash).toBe(sha256(STUDIO));
+    const before = JSON.stringify(rest, null, 2);
+    expect(text).toBe(`${before.slice(0, -2)},\n  "source_hash": "${sha256(STUDIO)}"\n}`);
+  });
+
+  it("equals the CLI's source_hash for the same bytes: LF, CRLF and a UTF-8 BOM", async () => {
+    const client = await connect();
+    const dir = mkdtempSync(join(tmpdir(), "mcp-hash-"));
+    try {
+      const crlf = CLEAN.replaceAll("\n", "\r\n");
+      const variants: Record<string, Buffer> = {
+        lf: Buffer.from(CLEAN, "utf8"),
+        crlf: Buffer.from(crlf, "utf8"),
+        bom: Buffer.concat([Buffer.from([0xef, 0xbb, 0xbf]), Buffer.from(crlf, "utf8")]),
+      };
+      const seen = new Set<string>();
+      for (const [name, bytes] of Object.entries(variants)) {
+        const file = join(dir, `${name}.arch`);
+        writeFileSync(file, bytes);
+        const cli = spawnSync(
+          process.execPath,
+          ["--import", "tsx", join(REPO, "src", "cli.ts"), "fmt", file, "--json"],
+          { cwd: REPO, encoding: "utf8" },
+        );
+        expect(cli.status, cli.stderr).toBe(0);
+        const cliHash = JSON.parse(cli.stdout).source_hash as string;
+        expect(cliHash, name).toBe(createHash("sha256").update(bytes).digest("hex"));
+        // What a host sends is the file's text: its bytes decoded as UTF-8, a BOM kept as U+FEFF.
+        const text = bytes.toString("utf8");
+        expect((await call(client, "describe", { source: text })).source_hash, name).toBe(cliHash);
+        expect(await sha256Hex(text), name).toBe(cliHash);
+        seen.add(cliHash);
+      }
+      // The line ends and the BOM are part of what is hashed: three variants, three hashes.
+      expect(seen.size).toBe(3);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 30000);
 });

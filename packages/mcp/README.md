@@ -42,6 +42,13 @@ and to that loop's order.
 
 Every tool takes ArchLang `source` (a `plan "…" { … }` string) and returns
 structured JSON. `compile` also accepts `plan_json` (the Plan-JSON / RPLAN shape).
+Every result of a call that passed `source` ends with `source_hash`, the SHA-256 (hex) of that
+input's UTF-8 bytes; `repair`, `fix` and `finish`, which return a rewritten `source`, add
+`output_hash`, the SHA-256 of exactly that returned text. The tools write no files. The hashes are
+for the CLI's `--expected-hash`, which refuses to rewrite a file whose bytes no longer hash to the
+value given (`E_STALE_SOURCE`): write the returned `source` to the file, then pass its
+`output_hash`. For a file that is valid UTF-8 and holds the text unchanged (a BOM and CRLF line
+ends included) the MCP hash and the CLI's agree.
 
 | Tool | What it does |
 |------|--------------|

@@ -1,10 +1,12 @@
 name: Deploy (Cloudflare)
 
-# Both public sites are static assets served by a Worker with NO script, in the
-# Cloudflare account that also holds the archlang.uk zone. `main` is absent from
-# each wrangler.jsonc on purpose: with no code to invoke, every request is a
-# static-asset request — free, unmetered, and exempt from the Workers free-plan
-# request cap.
+# Both public sites are static assets served by a Worker, in the Cloudflare
+# account that also holds the archlang.uk zone. The docs Worker has NO script
+# (ADR 0019): with no code to invoke, every request is a static-asset request,
+# free and unmetered. The playground Worker has one script, and it runs FIRST
+# only for the paths its `assets.run_worker_first` lists (`/s/*`, `/api/*`:
+# short links, ADR 0034); every other path is still a static-asset request.
+# wrangler bundles that script itself, against the core `npm run build` wrote.
 #
 # We deploy from CI rather than from Cloudflare's Git integration because the
 # build is a monorepo build: `npm run docs:build` / `npm run playground:build`
@@ -13,8 +15,10 @@ name: Deploy (Cloudflare)
 # deploy that produced it.
 #
 # Two repository secrets are required:
-#   CLOUDFLARE_API_TOKEN   — Workers Scripts:Edit + Workers Routes:Edit on the
-#                            account, DNS:Edit + Zone:Read on the archlang.uk zone.
+#   CLOUDFLARE_API_TOKEN   — Workers Scripts:Edit + Workers Routes:Edit + Workers
+#                            KV Storage:Edit on the account (the playground binds
+#                            the `archlang-share` namespace), DNS:Edit + Zone:Read
+#                            on the archlang.uk zone.
 #                            Create at https://dash.cloudflare.com/profile/api-tokens
 #   CLOUDFLARE_ACCOUNT_ID  — the account the Workers live in (not a secret value,
 #                            kept as one so the workflow reads the same way).
@@ -82,8 +86,9 @@ jobs:
         run: npm run ${{ matrix.build }}
 
       - name: Install Wrangler
-        # pinned for reproducibility in a token-bearing job; bump deliberately
-        run: npm i -g wrangler@4.108.0
+        # pinned for reproducibility in a token-bearing job; bump deliberately, to a
+        # version at least 14 days old that npm does not mark deprecated
+        run: npm i -g wrangler@4.151.3
 
       # Uploads the asset directory named by ${{ matrix.dir }}/wrangler.jsonc and
       # attaches/keeps its custom domain. Idempotent: an unchanged asset set
@@ -116,10 +121,10 @@ jobs:
         run: node scripts/indexnow.mjs --site ${{ matrix.name }} --base ${{ matrix.url }}
 
   # ---------------------------------------------------------------------------
-  # The THIRD Worker, and the only one with a script: the hosted MCP server
+  # The THIRD Worker, and the only one that is all script: the hosted MCP server
   # (packages/mcp-worker, docs/adr/0026-hosted-mcp-worker.md). It is a separate job,
-  # not a row of the matrix above, so the two static-asset site Workers keep their
-  # job exactly as it was — no `main`, no conditional steps, no IndexNow for an API.
+  # not a row of the matrix above, so the two site Workers keep their job exactly as
+  # it was — no conditional steps, no IndexNow for an API.
   #
   # It deploys only when something it bundles changed: its own package, the MCP tool
   # set, the core it compiles with, or the resources it serves. A manual run always
@@ -184,7 +189,7 @@ jobs:
       - name: Install Wrangler
         if: steps.changed.outputs.run == 'true'
         # pinned for reproducibility in a token-bearing job; the same pin as the sites
-        run: npm i -g wrangler@4.108.0
+        run: npm i -g wrangler@4.151.3
 
       - name: Deploy to Cloudflare (workers.dev)
         id: deploy

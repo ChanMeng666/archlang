@@ -54,9 +54,11 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   `archlang-docs`/`archlang-playground` are not URLs — never rename them. The DNS records are
   proxied (a Workers custom domain must be). Bot Fight Mode, Email Obfuscation, Rocket Loader and
   Browser Integrity Check stay OFF, or the smoke test and the nightly byte-equality probe break.
-  Neither Worker has a `main` script.
-- **`archlang-mcp` (`packages/mcp-worker`, ADR 0026) is the third Worker and the only scripted
-  ArchLang one** (the Cloudflare account also holds an unrelated scripted Worker, `sunostats`, which
+  *Ratified by the owner in words, 2026-11-05 (CR-D3):* the docs Worker has no `main` script. The playground's has one that runs only for the paths its
+  `assets.run_worker_first` array lists (`/s/*`, `/api/*`: short links, ADR 0034, plan decision
+  CR-D3); every static path behaves byte for byte as it did with no script.
+- **`archlang-mcp` (`packages/mcp-worker`, ADR 0026) is the third Worker and the only ArchLang one
+  that is all script** (the Cloudflare account also holds an unrelated scripted Worker, `sunostats`, which
   shares the Workers Paid caps): its own deploy job, served at `mcp.archlang.uk`; DNS and the
   Workers plan are owner-only. A site never gains a `main` to share its work.
 - **The hosted MCP spend bound is three things**: `limits.cpu_ms`, the account's USD 10 billing
