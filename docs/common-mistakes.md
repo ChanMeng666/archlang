@@ -9,7 +9,7 @@ in `--json` output, and `archlang fix plan.arch --dry-run` previews the machine-
 
 | Mistake | What you see | Fix |
 |---|---|---|
-| Positioning a door by absolute coordinates | `W_DOOR_OFF_WALL`: the door does not lie on any wall | Host it by relation: `door between a and b …` or `door on <room>.<edge> …`. `archlang fix` rewrites it to `door on <wall> at N%`; check where it lands. |
+| Positioning a door by absolute coordinates | `W_DOOR_OFF_WALL`: the door does not lie on any wall | Host it by relation: `door between a and b …` or `door on <room>.<edge> …`. When the nearest wall is an authored wall with an id, `archlang fix` rewrites it to `door on <wall> at N%`; check where it lands. A wall made by `walls from rooms` gets no machine fix: host the door by rooms. |
 | Hosting an opening on a room edge with no wall there | `E_OPENING_NO_SHARED_WALL` | Add `walls from rooms`, or draw the wall. Rooms alone draw no walls. |
 | An opening too close to a wall junction | `E_OPENING_NIB`: refused, not moved | Narrow it, move it along the shared edge, or move the wall that meets the run. |
 | Furniture `against wall … offset N` past the end of the wall | `E_FURN_AGAINST`: offset is outside the segment run | Keep the offset inside the run the message quotes, or place by room: `in <room> anchor … flush`. |

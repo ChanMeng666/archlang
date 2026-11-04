@@ -36,6 +36,8 @@ Changed (7):
 Held (3):
   ...
 Broke (0): none
+Healed (0): none
+Unchanged diagnostics: 0
 Locked (2): none changed
 ```
 
@@ -58,8 +60,8 @@ Locked (3): 1 changed, 0 refused
 ```
 
 The exit code is `2`. A lock reports an element that moved, resized, was re-hosted, changed its
-swing or kind, vanished or appeared; a relabel is not a change. With `--against` each report carries
-the position in both files.
+swing or kind, vanished or appeared; a relabel is not a change. Each report carries the element's position before
+and after; with `--against`, in both files.
 
 ## Compare two files
 

@@ -57,7 +57,7 @@ That part is yours: the confirmed lengths in step 3 and a side-by-side look at t
 ## A worked example
 
 A photo of a hand-drawn sketch, 540 px wide, with a front door leaf 90 px wide. The assistant's
-output is below. It compiles, and `archlang lint` reports nothing on it.
+output is below. It compiles, and `archlang lint` reports no warning on it.
 
 ```arch
 # Traced from a photo of a hand sketch. Scale anchor: the front door leaf measured 90 px
