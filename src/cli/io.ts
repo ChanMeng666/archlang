@@ -5,8 +5,8 @@
  * and real time are allowed here — and across `src/cli/` — the one place they are.
  */
 
-import { readFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { resolve as resolvePath, dirname } from "node:path";
+import { readFileSync, existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
+import { resolve as resolvePath, dirname, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest, ERROR_CATALOG } from "../index.js";
 import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag, ViewName } from "../index.js";
@@ -571,20 +571,41 @@ export function stdoutJsonConflict(command: string): number {
   );
 }
 
+/** Does `target` end in a path separator (`dir/`, and `dir\` on Windows)? Resolving it drops the
+ *  separator, so `-o dir/` would write a FILE named `dir`. */
+export function endsInSeparator(target: string): boolean {
+  return target.endsWith("/") || (sep === "\\" && target.endsWith("\\"));
+}
+
+/** The one line for an output file path that names a directory, by its trailing separator. */
+export const separatorRefusal = (target: string): string =>
+  `cannot write ${target}: it ends in a path separator, so it names a directory, and -o names a file`;
+
 /**
  * Create the directory an output file goes in, as `batch -o <dir>` always has, so a
  * `-o some/new/dir/x.svg` writes instead of failing with a raw `ENOENT`. Called only
  * once there is something to write, so a plan that does not compile leaves no empty
- * directory behind. Returns the one-line reason when the directory cannot exist (a file
- * already stands on its path), the same wording `batch` reports.
+ * directory behind. Returns the one-line reason when the file cannot be written there: the
+ * path ends in a separator (checked before anything is created), the directory cannot exist
+ * (a file already stands on its path, the same wording `batch` reports), or a directory
+ * already stands where the file would go (a raw `EISDIR` otherwise).
  */
 export function ensureOutputDir(target: string): string | undefined {
-  const dir = dirname(resolvePath(target));
+  if (endsInSeparator(target)) return separatorRefusal(target);
+  const path = resolvePath(target);
+  const dir = dirname(path);
   try {
     mkdirSync(dir, { recursive: true });
   } catch (e) {
     return `cannot create the output directory ${dir}: ${(e as Error).message}`;
   }
+  let isDir = false;
+  try {
+    isDir = statSync(path).isDirectory();
+  } catch {
+    // nothing stands there yet: the usual case
+  }
+  if (isDir) return `cannot write ${path}: it is a directory, and the output is a file — name a file inside it`;
   return undefined;
 }
 

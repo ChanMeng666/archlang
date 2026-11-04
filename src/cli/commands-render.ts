@@ -29,6 +29,7 @@ import {
   defaultOut,
   emitDiagnosticsHuman,
   emitJson,
+  endsInSeparator,
   hasErrors,
   ioError,
   storeyTarget,
@@ -38,6 +39,7 @@ import {
   writeOutput,
   refuseJsonDrawingFlags,
   resolveView,
+  separatorRefusal,
   sourceFromJson,
   stdoutJsonConflict,
   stdoutMultiPage,
@@ -113,6 +115,10 @@ export async function cmdCompile(args: Args): Promise<number> {
   // Checked before any read: two writers for one stdout is a usage error, not a silent
   // redirect to `out.svg` (see `stdoutJsonConflict`).
   if (args.json && args.o === "-") return stdoutJsonConflict("compile");
+  // `-o dir/` names a directory; a multi-storey compile would otherwise derive `dir/.L1.svg`-style
+  // names from it, so it is refused here, before anything is read or written.
+  if (args.o !== undefined && args.o !== "-" && endsInSeparator(args.o))
+    return ioError(separatorRefusal(args.o), args.json, { format });
 
   let source: string;
   try {
@@ -845,6 +851,8 @@ export async function cmdMd(args: Args): Promise<number> {
   // Output target: default `<name>.out.md` (`-o -` streams it, and cannot be combined
   // with `--json` — rejected above).
   const target = args.o ?? (input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md");
+  // Resolving drops a trailing separator, so `-o dir/` is refused before any image is written.
+  if (target !== "-" && endsInSeparator(target)) return ioError(separatorRefusal(target), args.json);
   const outAbs = target === "-" ? resolvePath("out.md") : resolvePath(target);
   const outDir = dirname(outAbs);
   const outBase = basename(outAbs).replace(/\.[^.]+$/, "");

@@ -117,6 +117,54 @@ describe("-o <file> creates its directory, as batch -o does", () => {
   }, 60000);
 });
 
+describe("-o names a file: a directory there, or a trailing separator, is one clear line", () => {
+  it("compile -o <an existing directory> is an IO error (exit 1) that says so, never a raw EISDIR", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const r = run(["compile", "examples/studio.arch", "-o", root]);
+    expect(r.status).toBe(1);
+    expect(r.stderr).not.toContain("EISDIR");
+    expect(r.stderr).toContain(`cannot write ${root}: it is a directory`);
+    expect(r.stderr.trim().split("\n")).toHaveLength(1);
+  }, 60000);
+
+  it("batch: a directory where an output file would go is that input's IO error, never a raw EISDIR", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-batch-"));
+    mkdirSync(join(root, "out", "studio.svg"), { recursive: true });
+    const r = run(["batch", "examples/studio.arch", "-o", join(root, "out")]);
+    expect(r.status).toBe(1);
+    expect(r.stderr).not.toContain("EISDIR");
+    expect(r.stderr).toContain(`cannot write ${join(root, "out", "studio.svg")}: it is a directory`);
+    expect(r.stderr.trim().split("\n")).toHaveLength(1);
+  }, 60000);
+
+  it("-o dir/ is refused (exit 1) and writes nothing, where it used to write a FILE named dir", () => {
+    const root = mkdtempSync(join(tmpdir(), "arch-out-"));
+    const src = join(root, "p.arch");
+    writeFileSync(src, FIXABLE);
+    const md = join(root, "doc.md");
+    writeFileSync(md, "# Doc\n\n```arch\n" + PLAN + "```\n");
+    const cases: string[][] = [
+      ["compile", "examples/studio.arch"],
+      ["compile", "examples/townhouse.arch"], // multi-storey: would derive `<dir>/.L1`-style names
+      ["fix", src],
+      ["md", md],
+    ];
+    for (const [cmd, input] of cases) {
+      const out = `${join(root, `${cmd}-out`)}/`;
+      const r = run([cmd!, input!, "-o", out]);
+      expect(r.status, `${cmd} ${input}`).toBe(1);
+      expect(r.stderr, `${cmd} ${input}`).toContain(
+        "ends in a path separator, so it names a directory, and -o names a file",
+      );
+      expect(existsSync(join(root, `${cmd}-out`)), `${cmd} ${input}`).toBe(false);
+    }
+    // batch's -o IS a directory: a trailing separator there is fine.
+    const b = run(["batch", "examples/studio.arch", "-o", `${join(root, "batch-out")}/`]);
+    expect(b.status).toBe(0);
+    expect(existsSync(join(root, "batch-out", "studio.svg"))).toBe(true);
+  }, 120000);
+});
+
 describe("batch -o never writes two inputs onto one file", () => {
   it("two inputs with the same file name are a usage error, and nothing is written", () => {
     const root = mkdtempSync(join(tmpdir(), "arch-batch-clash-"));
