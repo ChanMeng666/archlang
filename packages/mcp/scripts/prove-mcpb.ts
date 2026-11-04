@@ -13,7 +13,6 @@
 import { spawn, spawnSync } from "node:child_process";
 import { mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { isDeepStrictEqual } from "node:util";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PNG_NOT_IN_BUNDLE } from "../src/png.js";
@@ -22,10 +21,10 @@ import { MCPB_CLI_VERSION } from "./build-mcpb.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const OUT_ROOT = resolve(HERE, "..", "..", "..", "dist-mcpb");
 
-/** Every built bundle (the Claude Desktop one and the Smithery variant) unless one is named. */
+/** The built bundle (the Claude Desktop extension) unless one is named. */
 function defaultBundles(): string[] {
   const found = readdirSync(OUT_ROOT).filter((f) => f.endsWith(".mcpb"));
-  if (found.length !== 2) throw new Error(`prove-mcpb: expected two .mcpb in ${OUT_ROOT}, found ${found.length}`);
+  if (found.length !== 1) throw new Error(`prove-mcpb: expected one .mcpb in ${OUT_ROOT}, found ${found.length}`);
   return found.map((f) => join(OUT_ROOT, f));
 }
 
@@ -94,13 +93,6 @@ async function prove(bundle: string): Promise<void> {
     console.log("tools/list:", names.join(", "));
     const declared: string[] = manifest.tools.map((t: { name: string }) => t.name);
     if (JSON.stringify(names) !== JSON.stringify(declared)) fail("manifest tools != served tools");
-    if (bundle.endsWith(".smithery.mcpb")) {
-      for (const [i, t] of tools.entries()) {
-        const declaredSchema = manifest.tools[i].inputSchema;
-        if (!isDeepStrictEqual(declaredSchema, t.inputSchema)) fail(`${t.name}: inputSchema != served`);
-      }
-      console.log("manifest inputSchema == served inputSchema for every tool");
-    }
 
     const src = 'plan "T" {\n  units mm\n  room id=r1 at (0,0) size 4000x3000 label "Room"\n}\n';
     const call = await rpc("tools/call", { name: "compile", arguments: { source: src } });

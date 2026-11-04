@@ -205,7 +205,7 @@ the 429s). An agent never passes a CAPTCHA or pays. State on
 |---|---|---|
 | Official MCP registry (`io.github.ChanMeng666/archlang-mcp`) | live, latest 0.2.25 | `release.yml` on a `v*` tag |
 | [Context7](https://context7.com/chanmeng666/archlang) | live | parsed from the public repository |
-| [Smithery](https://smithery.ai/servers/chanmeng-dev/archlang) | live, re-published from the 0.2.25 `.smithery.mcpb` Release asset (status SUCCESS, `https://archlang--chanmeng-dev.run.tools`) | a manual re-publish per shim version (`/release-check`) |
+| Smithery | gone: acquired by Arcade, publishing and its MCP proxy closed on 2026-10-31; the `chanmeng-dev/archlang` page is a 404 (checked 2026-11-04) and the `.smithery.mcpb` variant is retired | — |
 | Claude plugin directory (claude.ai) | submitted by the owner, in review | reads `plugins/archlang/`; the push-updates webhook it offered is not set up |
 | mcpservers.org | live, approved 2026-10-10 | — |
 | [Glama](https://glama.ai/mcp/servers/ChanMeng666/archlang) | listed and claimed; builds from the Dockerfile set in its admin (installs `@chanmeng666/archlang-mcp`, runs `archlang-mcp` behind `mcp-proxy`), release 0.1.0 passed on 2026-10-25 and was rated A (TDQS 4.3/5 over 11 tools, maintenance A) | Glama's Auto-Release on each GitHub release; the badge is on #14383 (backlog O.1) |
