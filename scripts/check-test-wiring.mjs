@@ -21,7 +21,7 @@
  *
  *   1. The globs are EXTRACTED from vitest.config.ts, never retyped. A guard
  *      carrying its own copy of the include list is the stale-template failure mode
- *      CLAUDE.md warns about — it would keep validating against yesterday's config
+ *      AGENTS.md warns about — it would keep validating against yesterday's config
  *      forever, and would go on passing on the very day someone narrowed the real
  *      one. If the extraction fails, this script exits 1 rather than falling back
  *      to a built-in list: a guard that cannot read its source of truth must be

@@ -15,6 +15,14 @@ npm run docs:build    # after any docs/*.md edit
 npm run gen:all       # every gen:* generator
 ```
 
+## How to work
+
+- Prove a change through the CLI (`arch compile|describe|lint --json`), not by eyeballing SVG.
+- Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. `check`, drift,
+  `typecheck:all`, vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
+  blocks them (`.claude/hooks/local-gate.mjs`). Executor briefs list only the local gate.
+- Commit or push only when asked. Merge by risk tier (`docs/agents/commands.md` § Merging a PR).
+
 ## Hard rules
 
 - `compile()` is pure, sync, deterministic: no I/O, time, randomness or Node APIs in `src/` outside
@@ -59,5 +67,5 @@ npm run gen:all       # every gen:* generator
 A root `.ignore` hides CHANGELOG, generated files and goldens from ripgrep; name the path to search them.
 Authoring `.arch` (not contributing): `spec.llm.md`, `skills/archlang/SKILL.md`.
 
-Conventional Commits. `AGENTS.md` + `CLAUDE.md` ≤ 5,000 bytes together (`wc -c`); detail goes in
-`docs/agents/`.
+Conventional Commits. This is the only root instruction file; `CLAUDE.md` just imports it;
+path-scoped rules go in `.claude/rules/`. Together ≤ 5,000 bytes (`wc -c`); detail goes in `docs/agents/`.
