@@ -28,6 +28,16 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
   SHA-256 (the GLB's with a fixed generator, `test/pins.ts`, so a version bump never moves it), laneway's event table, and the key-frame pixel baseline
   (`e2e/fixtures/README.md`: text-free frames only; `UPDATE_KEYFRAMES` adds an environment, never
   rewrites a mismatch). A change to the default path (closed doors, combined view) must leave them.
+- Furniture is T0 (`src/mesh/t0*.ts`; map in `DEVELOPMENT.md`): every catalogued family has a
+  generator (`test/t0.test.ts` fails on a grey box for a catalogued word), fitted exactly to the
+  footprint, quarter turns only, integer µm. A generator is mirror-symmetric unless the core draws the
+  family handed (`T0_HANDED`, `handedAt`); a family handed only by a detail (taps, a plug) is built
+  without the detail. Every default (height, mount, material, finish) is ledgered. Material slots
+  equal `["body", ...FIXTURE_MATERIALS]` from the core (`test/material-vocabulary.test.ts`): a new
+  material lands in the core's table first.
+- A local `UPDATE_KEYFRAMES` re-take rewrites `e2e/fixtures/keyframe-baseline.json` without the Linux
+  environment entry and in a layout Biome rejects: compare CI's printed hashes, add the Linux entry
+  back, `biome format` the file, and cite the run in `e2e/fixtures/README.md`.
 - `npm run check:3d` runs the heavy tests (Chromium through `playwright-core`, ffmpeg, glTF-Validator);
   CI runs it on Linux as `3D package (check:3d)`, not a required check. `playwright-core` is imported
   lazily (CI's Node 18 leg runs the light tests).

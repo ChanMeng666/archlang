@@ -147,6 +147,10 @@ you observed. Do NOT push anything — this command only verifies.
 - **MCP registry race.** The registry step can 404 on a version npm has published but not yet made
   visible. Both npm publishes have already succeeded; run `gh run rerun <id> --failed`. Never delete
   the retry loop (`docs/backlog.md` 4.7).
+- **Sigstore 409 on a provenance publish.** `npm error code TLOG_CREATE_ENTRY_ERROR … (409) an
+  equivalent entry already exists in the transparency log` fails a publish job without publishing
+  (seen on `publish-archlang-3d` at v1.54.0). Nothing is broken: `gh run rerun <id> --failed` publishes
+  it with provenance; then wait out the npm visibility race below before checking `npm view`.
 - **npm visibility race.** npm shows a just-published version only about 3 minutes after `npm publish`
   returns. The shim's core-exports check waits `VIEW_ATTEMPTS` x `VIEW_INTERVAL_MS`
   (`packages/mcp/scripts/check-core-exports.ts`, 8 minutes) for it; if it still trips, nothing is

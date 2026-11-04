@@ -14,9 +14,9 @@ then report the diff and the gate output to me and STOP for approval. Do not com
 push, do not start a second item in the same tick.
 ```
 
-**Floor gate for every item:** `npm run check` + `npm run check:drift`; add `npm run typecheck:all`
-for anything outside `src/`+`test/`, `npm run docs:build` for any `docs/*.md` edit, and
-`npm run e2e:playground` / `e2e:docs` for site changes. Items list only what they add on top.
+**Floor gate for every item:** `npm run check:quick` locally (plus `npm run docs:build` for any
+`docs/*.md` edit), then the PR's CI green: `check`, `check:drift`, `typecheck:all` and the E2E run
+there, never on the owner's machine (`docs/agents/iron-laws.md`). Items list only what they add on top.
 
 **Merge protocol** (a clean auto-merge is not evidence of correctness — one branch once *moved* a
 function another had *modified*, and taking "theirs" would have silently reverted the fix with a
@@ -1580,13 +1580,6 @@ characters, and the spec had 13 left. The duplication the test's rules name firs
 (no language fact removed, token sets compared); the cap is unchanged. Re-measured through the
 test's own `renderLlmSpec(exampleSources())`: 28,843, headroom 1,157.
 
-### M.18 · `vitest --maxWorkers=2` alone fails on this repo — `todo` (docs)
-
-The memory-saving rerun a busy machine needs, `npx vitest run --maxWorkers=2`, stops with an
-unhandled error before any test runs; adding `--minWorkers=1` runs it (re-run on
-`test/eval-stats.test.ts`: 5 passed). Worth one line in `docs/testing.md` so an agent told to
-"rerun with `--maxWorkers=2`" does not read the error as a test failure.
-
 ### M.20 · Intent concept `dining-room` is not a table key, so a room labelled "Dining" misses it — `todo` (needs an owner-approved `SYNONYMS_VERSION` bump)
 
 `CONCEPTS` (`src/intent-concepts.ts`) has `dining` but no `dining-room`, so `dining-room` is an
@@ -2485,18 +2478,6 @@ settings were set to install `@chanmeng666/archlang-mcp` and run `archlang-mcp` 
 (its auto-generated build had run the CLI, not the MCP server), release 0.1.0 built and was rated A.
 The score badge is on the entry in #14383 and the maintainer was told there. Left: the merge.
 
-### O.2 · The release workflow's bundle step has never run on a tag — `done`
-
-`release.yml` ends with `build:mcpb`, `prove:mcpb` and `gh release upload dist-mcpb/*.mcpb`, under
-`continue-on-error`. It was merged after the last tag, so it has run only locally. At the next tag,
-open the run rather than trusting its colour — a failure there is a yellow step on a green run — and
-confirm the GitHub Release carries both `archlang-mcp-<version>.mcpb` and the `.smithery.mcpb`
-variant. Then re-publish the variant to Smithery (`/release-check`); nothing does that
-automatically.
-
-**Done:** the v1.43.0 Release carries both `.mcpb` files, and the Smithery listing was re-published from
-the `.smithery.mcpb` asset.
-
 ### O.3 · How the Claude plugin directory learns of a new version is unverified — `todo`
 
 The plugin was submitted from `plugins/archlang/` on 2026-10-10 and is in review. The directory
@@ -2582,12 +2563,41 @@ The "mcp abuse guard" rule (100 requests per 10 s per IP, then a 10 s block) cou
 ChatGPT's calls may share addresses. This is inferred, not observed. **Gate:** the owner reads the
 rule's WAF records in the Cloudflare dashboard, which an agent cannot open.
 
-### O.15 · The next core release must version above the OpenAI listing — `todo` (owner: release)
+### O.16 · Arcade, which absorbed Smithery, may be a new listing — `todo` (assess first)
 
-The listing is at 1.50.1 with its skills pinning CLI 1.50.0, while npm's core is 1.50.0, so a core
-release of exactly 1.50.1 would build a ZIP the directory refuses as unchanged. `[Unreleased]` in
-`CHANGELOG.md` holds the `compile -o plan.pdf` fix, which reaches users only with that release.
-**Gate:** the release takes a higher version, or `build:openai-plugin -- --plugin-version` does.
+Smithery was acquired by Arcade (arcade.dev) and closed its MCP proxy and publishing on 2026-10-31;
+our Smithery listing is gone and the release path no longer builds for it (#468). Arcade's catalogue
+lists MCP servers (Context7, Exa). Unknown: whether it takes third-party stdio servers, by what
+submission, and on what terms. **Gate:** a short note in `docs/seo.md` § 8 saying yes (with the steps)
+or no (with the reason); a submission itself is the owner's.
+
+## Visual-assets residue (from `docs/plans/visual-assets/handoff.md`, 2026-11-04)
+
+### VA.1 · The bean bag reads stepped in 3D — `todo`
+
+`bean_bag` is built from stacked rounded tiers, so its silhouette steps. A smoother profiled section
+(`profile` in `src/mesh/t0.ts`) would read softer. **Gate:** `t0.test.ts` green; laneway pins unmoved.
+
+### VA.2 · Outdoor ground surfaces get no 3D finish — `todo`
+
+Lawn, paving and deck areas are not built in 3D, so a garden is bare ground in the replay and the GLB.
+**Gate:** a ledgered default per surface; pins move only with the reason recorded.
+
+### VA.3 · A room with no `uses` keeps the neutral floor — `todo` (decision: read the label?)
+
+`floorFinish` reads `uses` only; the label is deliberately not read. Decide whether a label should
+ever pick a finish before building anything.
+
+### VA.4 · The CLI has no `--theme` flag — `todo`
+
+`rendered` is reached only by `theme rendered` in the source or `CompileOptions.theme`. A flag is a
+manifest row (`src/manifest.ts`) and regenerates `docs/cli-reference.md`. **Gate:** the default output
+byte-identical without the flag.
+
+### VA.5 · Shadows in the replay — `todo` (measure first)
+
+Shadow maps cost +55% SwiftShader frame time when measured (V9) and were left out. Revisit only with
+a cheaper technique (baked contact shadows) and a frame-time budget.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 

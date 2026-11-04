@@ -69,6 +69,10 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **A same-length edit to an example still moves its permalink** (`test/readme-permalink.test.ts`): hashes read the text, not the geometry. Regenerate with `scripts/gen-permalink.mjs`.
 - **`publish-openvsx.yml` builds the ref it is dispatched on**, and a version cannot be withdrawn: dispatch the tag, `--ref v<version>`, or code merged after the release ships under the released number.
 - **A local run that skipped the full suite reports green on what it ran**: on a low-load round the corpus guards and CodeQL fire only in CI, so read a PR's checks before starting the next card.
+- **A docs example may not name a new fixture family.** `test/new-families-byte-identity.test.ts` scans
+  every shipped plan, Markdown fences in `docs/` included, for `furniture <new word>`: the byte-identity
+  law's corpus must not change. Show new families in prose, and examples with existing families.
+  `check:quick` cannot see this guard (it scans directories, never names the file); CI does.
 - **`spec.llm.md` is capped below 30,000 UTF-16 units** (`test/llm-spec-drift.test.ts`) with little
   headroom, so new spec text must be paid for by cuts elsewhere in the file.
 
