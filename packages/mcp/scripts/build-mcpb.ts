@@ -1,6 +1,6 @@
 /**
  * Build the ArchLang MCP server as an MCPB bundle (`.mcpb`) — the one-click Claude
- * Desktop extension AND the artifact Smithery publishes for local stdio servers.
+ * Desktop extension (Smithery, which once listed it too, closed its publishing on 2026-10-31).
  *
  *   npm run build:mcpb          # → dist-mcpb/archlang-mcp-<version>.mcpb
  *
@@ -18,8 +18,8 @@
  * only here and in CI, and a pinned npx keeps the lockfile and the install small.
  */
 import { spawnSync } from "node:child_process";
-import { copyFileSync, mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { copyFileSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { deflateRawSync } from "node:zlib";
 import { PNG_NOT_IN_BUNDLE } from "../src/png.js";
@@ -90,12 +90,7 @@ function parseAuthor(a: string): { name: string; email?: string; url?: string } 
  * The manifest, as a pure function of the package metadata, `server.json` and the
  * server's real tool list. Key order is fixed, so the output is byte-stable.
  */
-export function buildManifest(
-  pkg: PackageMeta,
-  serverJson: ServerJsonMeta,
-  tools: McpbTool[],
-  opts: { inputSchemas?: boolean } = {},
-) {
+export function buildManifest(pkg: PackageMeta, serverJson: ServerJsonMeta, tools: McpbTool[]) {
   const author = parseAuthor(pkg.author);
   if (serverJson.websiteUrl) author.url = serverJson.websiteUrl;
   return {
@@ -119,8 +114,6 @@ export function buildManifest(
     tools: tools.map((t) => ({
       name: t.name,
       description: oneLine(t.description ?? t.name),
-      // Smithery's API requires each tool to carry an `inputSchema`; `mcpb validate` rejects the key.
-      ...(opts.inputSchemas ? { inputSchema: t.inputSchema ?? { type: "object" } } : {}),
     })),
     keywords: pkg.keywords ?? [],
     license: pkg.license,
@@ -143,8 +136,8 @@ const crc32 = (b: Buffer): number => {
 
 /**
  * A minimal, dependency-free zip writer (deflate, fixed 2020-01-01 timestamp, sorted
- * entries, so the bytes are a pure function of the contents). Used for the Smithery
- * variant, which `mcpb pack` cannot produce because it validates the manifest strictly.
+ * entries, so the bytes are a pure function of the contents). Used by the OpenAI plugin ZIP
+ * (`scripts/build-openai-plugin.ts`).
  */
 export function zipFiles(files: Array<{ name: string; data: Buffer }>): Buffer {
   const DOS_DATE = ((2020 - 1980) << 9) | (1 << 5) | 1;
@@ -189,13 +182,6 @@ export function zipFiles(files: Array<{ name: string; data: Buffer }>): Buffer {
   end.writeUInt32LE(dir.length, 12);
   end.writeUInt32LE(offset, 16);
   return Buffer.concat([...parts, dir, end]);
-}
-
-/** Every file under `root`, as forward-slash relative names. */
-function walk(root: string, dir = root): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory() ? walk(root, join(dir, e.name)) : [relative(root, join(dir, e.name)).split(/[\\/]/).join("/")],
-  );
 }
 
 /** The resource copy list, extracted from `copy-resources.mjs` (the one place it is written). */
@@ -283,15 +269,6 @@ async function main(): Promise<void> {
     });
     if (r.status !== 0) throw new Error(`mcpb ${args[0]} failed (exit ${r.status})`);
   }
-  // The Smithery variant: same files, but the manifest's tools carry `inputSchema`.
-  const smithery = join(OUT_ROOT, `archlang-mcp-${pkg.version}.smithery.mcpb`);
-  const variant = buildManifest(pkg, serverJson, tools, { inputSchemas: true });
-  const entries = walk(stage)
-    .filter((n) => n !== "manifest.json")
-    .map((n) => ({ name: n, data: readFileSync(join(stage, n)) }));
-  entries.push({ name: "manifest.json", data: Buffer.from(`${JSON.stringify(variant, null, 2)}\n`) });
-  writeFileSync(smithery, zipFiles(entries));
-  console.log(`build-mcpb: ${smithery} (${statSync(smithery).size} bytes)`);
   console.log(`build-mcpb: ${out} (${statSync(out).size} bytes, ${tools.length} tools)`);
 }
 

@@ -71,21 +71,13 @@ describe("MCPB manifest generator", () => {
     );
   });
 
-  it("the strict manifest has no inputSchema; the Smithery variant carries the server's, per tool", async () => {
+  it("the manifest has no inputSchema (`mcpb validate` rejects the key), one entry per served tool", async () => {
     const client = await connect();
     const { tools } = await client.listTools();
     const live = tools.map((t) => ({ name: t.name, description: t.description, inputSchema: t.inputSchema }));
     const strict = buildManifest(pkg, serverJson, live);
+    expect(strict.tools.map((t) => t.name)).toEqual(tools.map((t) => t.name));
     for (const t of strict.tools) expect("inputSchema" in t).toBe(false);
-    const variant = buildManifest(pkg, serverJson, live, { inputSchemas: true });
-    expect(variant.tools.length).toBe(tools.length);
-    variant.tools.forEach((t, i) => {
-      const schema = (t as { inputSchema?: unknown }).inputSchema;
-      expect(typeof schema).toBe("object");
-      expect(schema).toEqual(tools[i]?.inputSchema);
-    });
-    // Everything but the tools' schemas is identical.
-    expect({ ...variant, tools: 0 }).toEqual({ ...strict, tools: 0 });
   });
 
   it("zipFiles writes a readable archive (entries inflate back, deterministic)", () => {
