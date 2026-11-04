@@ -18,6 +18,14 @@ If you need help with ArchLang, here are the available channels:
 This is an open-source project maintained on a volunteer basis. We do our best to respond, but
 cannot guarantee response times. Please be patient and respectful.
 
+## Removing a Shared Plan
+
+A playground **short link** (`https://playground.archlang.uk/s/<id>`) stores its plan on the
+server. To have one removed, [open an issue](https://github.com/chanmeng666/archlang/issues) with the
+link, or email **chanmeng.dev@gmail.com** if the plan should not be named in public. The owner
+deletes it; the short link then answers "not found", and nothing else changes. A full link (`#z=`)
+is stored nowhere, so there is nothing to remove.
+
 ## Security Issues
 
 For security-related concerns, **do not open a public issue**. Follow the process in

@@ -11,8 +11,18 @@ these sites, the hosted endpoint at `mcp.archlang.uk` and the ArchLang plugins.
 
 The documentation site and the playground are static pages served by Cloudflare. We set no
 cookies, run no accounts or sign-in, and load no analytics or tracking script. The playground
-compiles your plan in your browser; a share link keeps the plan after the `#`, which a browser
+compiles your plan in your browser; a full share link keeps the plan after the `#`, which a browser
 never sends to a server.
+
+## Short links
+
+The playground's **Copy short link** is the one thing on these sites that stores a plan. Only when
+you choose it, your browser sends the plan to `playground.archlang.uk`, which keeps it under a
+short id made from the plan's own contents, so anyone with the link can open it. We store the plan
+text and its title, with no IP address, account, cookie or expiry date. The sender's IP address is
+used transiently as a rate-limit key and not stored by us. For each short link created or opened we
+count the event, the id and the day in Cloudflare Analytics Engine, which keeps them for three
+months. The full link, **Copy full link**, sends nothing.
 
 ## The hosted MCP endpoint
 
@@ -34,6 +44,7 @@ edge like any URL.
 - A cached `/svg/` drawing is stored under a versioned path with `max-age=31536000` (one year). The
   unversioned `/svg/` path tells clients to reuse a drawing for 300 seconds and revalidate with an
   `ETag`. We cannot list or delete individual entries; Cloudflare may evict them sooner.
+- A short link's plan is kept until someone asks for it to be removed (see below).
 - The aggregate counts in Cloudflare Analytics Engine are the request method, the tool name and, for
   a refused request, the reason. They hold no plan text and no address. Cloudflare keeps them for
   three months.
@@ -41,9 +52,11 @@ edge like any URL.
 ## Sharing and your choices
 
 We do not sell data, share it with advertisers, or send it to anyone except Cloudflare, which hosts
-the service and processes IP addresses under its own privacy policy. Because we keep no plan text,
-account or log, there is nothing to access, correct or delete on our side. To avoid the edge cache,
-use the playground or the local tools, which send nothing.
+the service and processes IP addresses under its own privacy policy. We keep no account or log; the
+one plan text we keep is a plan you made a short link for. To have one removed, open an issue with
+the link, or email chanmeng.dev@gmail.com if the plan should not be named in public; once it is
+deleted the short link stops working. To avoid the edge cache, use the playground or the local
+tools, which send nothing.
 
 ## Local tools
 

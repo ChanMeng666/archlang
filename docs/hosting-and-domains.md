@@ -22,13 +22,36 @@ are exactly what they were. Nothing downstream of a URL moved: no JSON Schema `$
 `sitemap.hostname`, no README `#z=` permalink, no hard-coded origin. It was a host move, not a URL
 move — which is why the "Changing a public URL in code" section below did **not** apply to it.
 
-### Neither site runs any code
+### The docs site runs no code; the playground runs it for two prefixes
 
-Each `wrangler.jsonc` deliberately has **no `main`**. With no script to invoke, every request is a
-static-asset request: Cloudflare bills those at zero, they are unmetered, and they do not count
-against the Workers free plan's 100,000-requests/day cap. Adding a `main` script — even a trivial
-one — would opt both sites into that cap. Don't, unless the feature is worth it and the change is
-deliberate.
+`docs-site/wrangler.jsonc` deliberately has **no `main`**. With no script to invoke, every request
+is a static-asset request: Cloudflare bills those at zero and they are unmetered.
+
+`playground/wrangler.jsonc` has one script, `playground/worker/`, for short links
+([ADR 0034](adr/0034-playground-short-links.md), amending ADR 0019). It runs first **only** for the
+paths `assets.run_worker_first` lists, `["/s/*", "/api/*"]`; every other path is still a static
+asset request, unmetered, byte for byte as before. A path the asset layer finds no file for reaches
+the script, which hands it straight back through the `ASSETS` binding, so a 404 is still the asset
+layer's own (with its `_headers`). `playground/test/share-worker.test.ts` holds the list to those
+two entries.
+
+| Route | Answers |
+|-------|---------|
+| `POST /api/share` | body: a `#z=` payload (≤ 64 KiB, inflating to ≤ 64 KiB, a plan the parser accepts) → `{ id, url }`; refusals are JSON with a stable `error.code` |
+| `GET /api/share/<id>` | `{ id, z }`, `immutable` (what `embed.html#s=<id>` reads) |
+| `GET /s/<id>` | HTML: Open Graph/Twitter card metadata, then `location.replace("/#z=<payload>")`; `max-age=86400`, `noindex` |
+| `GET /s/<unknown>` | a 404 HTML page linking to the playground |
+
+| Binding | What |
+|---------|------|
+| `ASSETS` | the asset layer itself (the fallback above) |
+| `SHARE` | KV namespace `archlang-share`: `s:<id>` → the payload, metadata `{ v, h, t }`; no TTL, no address |
+| `RATE_SHARE` | rate limit, `namespace_id` 2603: 30 creates per address per 60 s (best-effort abuse guard) |
+| `SHARE_ANALYTICS` | Analytics Engine dataset `archlang_share`: one point per create and resolve, `[event, id, day]` |
+
+Workers Logs are on with invocation logs off: the script logs an internal error's name and nothing
+else, and invocation logs would record request metadata. A removal request is answered with
+`wrangler kv key delete --namespace-id <id> "s:<id>"` (owner only).
 
 Sizes, measured at the migration: docs-site builds to 235 files / 14 MB (largest single file,
 `examples.html`, at 2.25 MiB); the playground to 70 files / 2.7 MB. Cloudflare's free-tier ceilings
@@ -40,8 +63,8 @@ docs site's `examples.html` is the file to watch if the example gallery keeps gr
 `packages/mcp-worker` deploys a third Worker, **`archlang-mcp`**, and it is the one Worker here with
 a `main` script ([ADR 0026](adr/0026-hosted-mcp-worker.md)). It does not share anything with the
 two sites: its own `wrangler.jsonc`, its own job in `deploy.yml` (`deploy-mcp`), its own smoke
-site (`node scripts/smoke.mjs --site mcp --base <url>`). The sites keep no `main`; their job did not
-change when this one was added.
+site (`node scripts/smoke.mjs --site mcp --base <url>`). The sites' job did not change when this one
+was added.
 
 | Route | Answers |
 |-------|---------|
@@ -273,10 +296,12 @@ Three things about it that are load-bearing:
   (the core must be built before either site; `docs-site/sync-docs.mjs` hard-exits without
   `dist/`), and the smoke check belongs welded to the deploy that produced it. See
   [ADR 0019](adr/0019-cloudflare-workers-hosting.md).
-- **`wrangler` is version-pinned** (`4.108.0`) in a token-bearing job. Bump it deliberately.
+- **`wrangler` is version-pinned** in `deploy.yml`, a token-bearing job. Bump it deliberately, to a
+  version at least 14 days old that npm does not mark deprecated (`npm view wrangler@<v> deprecated`).
 
 Two repository secrets are required: `CLOUDFLARE_API_TOKEN` (Workers Scripts:Edit + Workers
-Routes:Edit on the account, DNS:Edit + Zone:Read on the zone) and `CLOUDFLARE_ACCOUNT_ID`.
+Routes:Edit + Workers KV Storage:Edit on the account, DNS:Edit + Zone:Read on the zone) and
+`CLOUDFLARE_ACCOUNT_ID`.
 
 ### `_headers` and `_redirects`, and why each rule exists
 
@@ -362,7 +387,8 @@ The rest of the rules:
 
   `not_found_handling: "none"` is explicit because the absence is the decision: there is no
   `404.html` here, and this is **not** a single-page application. `index.html` and `embed.html` are
-  two real entries and all state lives in the `#z=` hash, which never reaches the server.
+  two real entries and all state lives in the `#z=` hash, which never reaches the server (a short
+  link's `/s/<id>` is answered by the script, which only names a `#z=` link).
   `"single-page-application"` would answer every mistyped path with a 200 and the editor shell,
   turning a 404 into a false success.
 

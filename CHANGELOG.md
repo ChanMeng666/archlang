@@ -10,15 +10,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Arithmetic on a positioning axis in an opening's position (`door … on w at axis.2 + 500`, and under `from` or `%`, or `between … at axis.A - 1000 from start`) is refused with `E_OPENING_DATUM`. It used to be a plain distance along the wall from its start, so it stood off the axis on any wall that does not start at 0, without a word. The hint gives `at axis 2`, and the distance along this wall that reaches the plan coordinate the expression meant (`at 2500` on a wall from `(1000,0)` with axis 2 at x = 3000). The bare `at axis.2` still stands on the axis.
+
 ### Added
 
+- Playground short links. The Share cell's `Link ▾` offers **Copy short link**, `https://playground.archlang.uk/s/<id>`, beside **Copy full link**, the `#z=` link as before; the note between them says a short link stores the plan on archlang.uk's server and the full link does not. The id is content-addressed (the same plan always gets the same link), `/s/<id>` carries link-preview card metadata and then opens the editor on the full link, and `embed.html#s=<id>` draws a stored plan. If a short link cannot be made, the full link is copied and the status line says so. The playground Worker runs a script for `/s/*` and `/api/*` only; every other path is served as before (ADR 0034).
 - `W_FURNITURE_ON_VOID`: a piece standing on a `void` of its own storey, a lift shaft or an escalator, where there is no floor (a `void` on the storey above is headroom and is not read; a stair stays `W_FURNITURE_ON_STAIR`'s).
 
 ### Fixed
 
 - `arch finish` on a single-storey plan no longer stands furniture on a `void`, a lift or an escalator; it already kept off them on each storey of a plan with `level` blocks. No shipped example's or test plan's `finish` output moves.
-### Fixed
-
 - `arch finish` counts the rows of the NOTES table and the DOOR & WINDOW SCHEDULE when it picks a sheet. It fitted the band on the room schedule and legend alone, so a plan that already wrote `notes` or `schedule openings` could be fitted on a band shorter than the one drawn; finish's own overflow check then refused the sheet and added no `paper` or `scale`. It now picks the smallest sheet that holds the real band.
 - `-o some/new/dir/plan.svg` (on `compile`, `watch`, `preview`, `md`, `repair`, `fix`, `finish` and `new`) creates the missing directory, as `batch -o <dir>` always has, instead of failing with a raw `ENOENT`; a path that cannot be a directory is one `cannot create the output directory` error (exit 1). An `-o` that names an existing directory (also a directory where a `batch` output file would go) is one `it is a directory` error instead of a raw `EISDIR`, and `-o dir/`, which used to write a file named `dir`, is refused because `-o` names a file (exit 1; `batch -o dir/` is still a directory).
 - `batch` refuses (exit 3, before writing anything) two inputs that would write one output file, such as `a/plan.arch` and `b/plan.arch` under one `-o`, or one input given twice; the second used to replace the first silently. Names that differ only by case count as one file.
