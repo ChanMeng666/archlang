@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - `W_FURNITURE_ON_VOID`: a piece standing on a `void` of its own storey, a lift shaft or an escalator, where there is no floor (a `void` on the storey above is headroom and is not read; a stair stays `W_FURNITURE_ON_STAIR`'s).
+- `archlang import --from openplan3d <file.json>` and the library function `openPlan3dToArch()`: an OpenPlan3D web project (centimetres) or prepared RoomPlan interchange file (metres) becomes `.arch` source, so `lint`, `validate` and `compile` run on it. Walls, rooms (found as OpenPlan3D finds them, from closed wall loops), doors with their hand and swing, windows with sill and head, openings, straight stairs, square columns, furniture with an ArchLang fixture family, and floors as `level` blocks are carried over; everything else is listed in the `--json` report with a reason and gives `W_IMPORT_DROPPED`. A file OpenPlan3D's validators refuse gives `E_IMPORT_FORMAT`, one too large to convert `E_IMPORT_LIMIT`. `docs/import.md` § Check an OpenPlan3D plan.
 
 ### Fixed
 

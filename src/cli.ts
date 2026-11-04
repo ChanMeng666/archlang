@@ -26,6 +26,7 @@
  *   new       scaffold a starter .arch
  *   explain   look up an error code
  *   link      print a playground URL that opens the plan
+ *   import    convert an OpenPlan3D plan (JSON) to .arch source + a report
  *
  * This file is the argument-parse + dispatch entry point; the commands themselves
  * (and their shared IO/render helpers) live in `src/cli/`. Node APIs and real time
@@ -60,6 +61,7 @@ import {
 } from "./cli/commands-author.js";
 import { cmdContext, cmdExplain, cmdManifest, cmdNew, cmdSpec } from "./cli/commands-meta.js";
 import { cmdLink } from "./cli/commands-share.js";
+import { cmdImport } from "./cli/commands-import.js";
 
 /**
  * Help is no longer a hand-written string: `renderTopHelp`/`renderCommandHelp`
@@ -213,6 +215,8 @@ async function main(): Promise<void> {
       return finish(cmdNew(args));
     case "explain":
       return finish(cmdExplain(args));
+    case "import":
+      return finish(cmdImport(args));
     case "link":
       return finish(cmdLink(args));
     default:

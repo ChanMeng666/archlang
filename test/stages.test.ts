@@ -190,6 +190,7 @@ describe("the stage ladder and the per-rule table", () => {
     expect({ ...COMPILE_WARNING_STAGES }).toEqual({
       W_EMPTY_PLAN: "brief",
       W_IMPORT_EMPTY_FILE: "brief",
+      W_IMPORT_DROPPED: "brief",
       W_WHILE_DEPRECATED: "brief",
       W_REASSIGN_DEPRECATED: "brief",
       W_AXES_DIFFER: "brief",

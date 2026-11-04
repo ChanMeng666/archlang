@@ -97,6 +97,8 @@ export interface Args {
   reissue?: boolean;
   /** `--from-json`: (compile) read the input as Plan JSON (RPLAN shape), not `.arch`. */
   fromJson?: boolean;
+  /** `--from <format>`: (import) the foreign format of the input file (`openplan3d`). */
+  from?: string;
   /** `--graph <file>`: (validate) also check adjacency against an intended graph. */
   graph?: string;
   /** `--intent <file>`: (validate) also check the plan against a brief's intent JSON. */
@@ -203,6 +205,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--only": { key: "only", kind: "string" },
   "--reissue": { key: "reissue", kind: "boolean" },
   "--from-json": { key: "fromJson", kind: "boolean" },
+  "--from": { key: "from", kind: "string" },
   "--feedback": { key: "feedback", kind: "boolean" },
   "--ascii": { key: "ascii", kind: "boolean" },
   "--review": { key: "review", kind: "boolean" },

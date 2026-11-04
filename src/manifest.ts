@@ -1074,6 +1074,42 @@ const COMMANDS: ManifestCommand[] = [
     ],
   },
   {
+    name: "import",
+    summary: "convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out",
+    flags: [
+      {
+        flag: "--from",
+        arg: "<openplan3d>",
+        description: "the format of the input file (required); openplan3d is the one there is",
+      },
+      {
+        flag: "--format",
+        arg: "<web|handoff>",
+        description:
+          "read the file as an OpenPlan3D web project (centimetres) or prepared RoomPlan interchange file (metres) instead of detecting which, as OpenPlan3D does",
+      },
+      {
+        ...OUT_FLAG,
+        description: "output file for the .arch source, or '-' for stdout (default: stdout)",
+      },
+      JSON_FLAG,
+      QUIET_FLAG,
+    ],
+    input: "<file.json|->",
+    output:
+      "the .arch source (stdout or -o); warnings on stderr. With --json: { ok, format, counts, rooms, dropped, fields, notes, ids, diagnostics }, plus `source` when there is no -o",
+    examples: [
+      {
+        cmd: "archlang import --from openplan3d plan.openplan.json -o plan.arch",
+        note: "convert an OpenPlan3D export, then `archlang lint plan.arch` checks it",
+      },
+      {
+        cmd: "archlang import --from openplan3d scan-openplan3d.json --json",
+        note: "the source plus a report: per-kind counts, every dropped entity and field with its reason",
+      },
+    ],
+  },
+  {
     name: "explain",
     summary: "look up an error code (cause / fix / example)",
     flags: [JSON_FLAG],

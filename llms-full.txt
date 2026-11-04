@@ -172,6 +172,7 @@ arch manifest  # this document: the whole CLI API as structured data
 arch spec  # print the one-prompt language spec (spec.llm.md)
 arch context  # print the full bundled agent context (spec + workflow + CLI + errors)
 arch new  # scaffold a starter .arch
+arch import  # convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out
 arch explain  # look up an error code (cause / fix / example)
 ```
 
@@ -642,6 +643,7 @@ archlang manifest --json                   # the whole CLI API as data: commands
 archlang compile plan.arch -o out.svg --json   # render (also -f dxf|txt|json|pdf|png)
 archlang compile plan.arch -f txt          # zero-dependency ASCII text plan on stdout
 archlang compile plan.json --from-json -o out.svg   # compile structured Plan JSON (see /plan.schema.json)
+archlang import --from openplan3d plan.openplan.json -o plan.arch --json   # an OpenPlan3D JSON plan as .arch + a report of what it left out; then lint it
 echo '<source>' | archlang compile - -o - -f svg    # compile stdin → SVG on stdout
 archlang fix plan.arch --dry-run --json    # preview the machine-applicable fixes as a unified diff (drop --dry-run to apply; --backup keeps <file>.bak)
 archlang suggest plan.arch --json          # advisory door/window statements: unreachable room / no entrance / bath-via-bedroom / windowless bedroom
@@ -827,13 +829,18 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 158 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 158 KB of it (spec = the language, 29 KB; workflow = the agent loop, 32 KB; cli = every command, 29 KB; errors = the diagnostic catalog, 67 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 160 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 160 KB of it (spec = the language, 30 KB; workflow = the agent loop, 32 KB; cli = every command, 30 KB; errors = the diagnostic catalog, 67 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
   - input: none → output: starter source
   - flags: `--out|-o <file|->` output file — refuses to overwrite an existing one without --force (default: stdout) · `--force` overwrite an existing file · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang new --json` — get the starter plan as a `template` string, writing nothing
+
+**`archlang import`** — convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out
+  - input: <file.json|-> → output: the .arch source (stdout or -o); warnings on stderr. With --json: { ok, format, counts, rooms, dropped, fields, notes, ids, diagnostics }, plus `source` when there is no -o
+  - flags: `--from <openplan3d>` the format of the input file (required); openplan3d is the one there is · `--format <web|handoff>` read the file as an OpenPlan3D web project (centimetres) or prepared RoomPlan interchange file (metres) instead of detecting which, as OpenPlan3D does · `--out|-o <file|->` output file for the .arch source, or '-' for stdout (default: stdout) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - example: `archlang import --from openplan3d plan.openplan.json -o plan.arch` — convert an OpenPlan3D export, then `archlang lint plan.arch` checks it
 
 **`archlang explain`** — look up an error code (cause / fix / example)
   - input: <CODE> → output: catalog entry
@@ -845,7 +852,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**151 errors** (abort rendering) · **93 warnings** (advisory; `validate --strict` fails on them too).
+**153 errors** (abort rendering) · **94 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -893,6 +900,8 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_IMPORT_BAD_SPEC` — Malformed import spec. **Fix:** Use a relative path ("lib/x.arch") or a namespaced spec ("@scope/name:1.0.0").
 - `E_IMPORT_CONFLICT` — Imported name conflicts with an existing component. **Fix:** Rename with `as`, or remove the duplicate.
 - `E_IMPORT_CYCLE` — Cyclic import. **Fix:** Break the cycle so module dependencies form a tree.
+- `E_IMPORT_FORMAT` — A file given to `arch import` is not a valid plan in the format it was read as. **Fix:** Fix the field the message names (its path is the JSON path in the file), or re-export the plan from OpenPlan3D. A file read as the wrong format can be forced with `--format web` or `--format handoff`.
+- `E_IMPORT_LIMIT` — A file given to `arch import` needs more work to convert than any plan does. **Fix:** Split the plan into several files, a floor or a wing each, and import them one by one.
 - `E_IMPORT_NOT_EXPORTED` — Imported name is not exported by the module. **Fix:** Import a name the module actually defines (check its `component`s).
 - `E_IMPORT_NOT_FOUND` — Import path could not be resolved. **Fix:** Check the path (relative to the importing file) and that the file exists.
 - `E_IMPORT_PARSE` — Imported module has a parse error. **Fix:** Fix the syntax error in the imported module.
@@ -1049,6 +1058,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_HATCH_SCALE` — Hatch scale must be positive; using 1. **Fix:** Use a positive `scale`.
 - `W_HOB_FRIDGE_GAP` — A fridge or other tall unit stands too close beside a hob. **Fix:** Move the hob or the tall unit apart by the shortfall the warning quotes and stand a worktop between them, or stand the tall unit at the far end of the run. There is no machine-applicable fix.
 - `W_HOB_UNDER_WINDOW` — A hob stands under a window. **Fix:** Slide the hob along its wall past the window's nearer end (the hint gives the distance) and stand the sink or a worktop under the window, or move the window. There is no machine-applicable fix: which one moves is the author's choice.
+- `W_IMPORT_DROPPED` — Part of an imported plan has no ArchLang form and was left out. **Fix:** Read the report (`--json`). Add what matters by hand in the `.arch` file (a `furniture` piece, a `dim`, a stair), or accept the loss: none of these changes the walls, rooms and openings the checks read.
 - `W_IMPORT_EMPTY_FILE` — Whole-file import binds an empty component. **Fix:** Draw in the module's plan body, or import one of its named components with `import "<file>": <name>`.
 - `W_KEEP_VIOLATED` — A hard keep does not hold. **Fix:** Edit the source so the keep holds (move what it names, or derive it from the rooms so it follows them), or remove the keep if the relation no longer applies. There is no machine fix: which side follows is a design decision.
 - `W_LEAF_ACROSS_DOORWAY` — A door's open leaf parks across another doorway's approach. **Fix:** Hang the leaf on its other jamb (flip its `hinge`; the hint says when that clears the doorway), open it to the other side of its wall (flip its `swing`), move either door along its wall until the open leaf stands at least the approach depth clear of the doorway's face or beside it, or make it a `sliding` or `pocket` door. There is no machine-applicable fix: which door moves or turns is a design decision.
