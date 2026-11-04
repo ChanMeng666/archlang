@@ -11,8 +11,9 @@ import { fileURLToPath } from "node:url";
 
 const HEAVY = [
   [/(?:^|[;&|(]|\bnpx|\bpnpm|\byarn|\bbunx|\.bin[\\/])\s*vitest\b/, "vitest"],
-  [/\bnpm\s+(?:run\s+)?test\b/, "npm test"],
-  [/\bnpm\s+run\s+check(?![\w:-])/, "npm run check"],
+  // `(?:--prefix…\s+)?`: `npm --prefix <dir> test` is the same call.
+  [/\bnpm\s+(?:--prefix[=\s]+\S+\s+)?(?:run\s+)?test\b/, "npm test"],
+  [/\bnpm\s+(?:--prefix[=\s]+\S+\s+)?run\s+check(?![\w:-])/, "npm run check"],
   [/\bcheck:drift\b/, "check:drift (check:quick runs it)"],
   [/\btypecheck:all\b/, "typecheck:all"],
   [/\bcheck:3d\b/, "check:3d"],
@@ -25,14 +26,25 @@ function nativePath(p) {
   return process.platform === "win32" && m ? `${m[1].toUpperCase()}:${m[2] ?? "/"}` : p;
 }
 
-/** The directory a command runs in: its leading `cd`/`Set-Location`/`pushd`, else `npm --prefix`, else cwd. */
+const DIR_CHANGE = /(?:^|&&|;|\|\||\||\()\s*(?:cd|chdir|Set-Location|sl|Push-Location|pushd|Pop-Location|popd)\b/gi;
+
+/**
+ * The directory a command runs in: its leading `cd`/`Set-Location`/`sl`/`Push-Location`/`pushd`,
+ * else `npm --prefix`, else cwd. Null when that cannot be told from the text: more than one
+ * directory change, `||`, a `cd` together with `--prefix`, or more than one `--prefix`.
+ */
 export function targetDir(command, cwd) {
   const lead =
-    /^\s*(?:cd|Set-Location|pushd)\s+(?:-(?:Literal)?Path\s+)?(["']?)([^"'&;|\r\n]+?)\1\s*(?:&&|;|\|\||$)/i.exec(
+    /^\s*(?:cd|Set-Location|sl|Push-Location|pushd)\s+(?:-(?:Literal)?Path\s+)?(["']?)([^"'&;|\r\n]+?)\1\s*(?:&&|;|$)/i.exec(
       command,
     );
-  const prefix = /\bnpm\s+(?:[^&;|]*\s)?--prefix[=\s]+(["']?)([^"'\s&;|]+)\1/.exec(command);
-  const raw = lead?.[2] ?? prefix?.[2];
+  const prefixes = [...command.matchAll(/--prefix[=\s]+(["']?)([^"'\s&;|]+)\1/g)];
+  const changes = command.match(DIR_CHANGE)?.length ?? 0;
+  if (changes > 1 || /\|\|/.test(command) || prefixes.length > 1 || (changes > 0 && prefixes.length > 0)) return null;
+  if (changes === 1 && !lead) return null;
+  // `--prefix` moves only the npm call that carries it, so it decides only a single-call command.
+  if (prefixes.length === 1 && (command.match(/\b(?:npm|npx|vitest)\b/g)?.length ?? 0) > 1) return null;
+  const raw = lead?.[2] ?? prefixes[0]?.[2];
   return raw ? resolve(cwd, nativePath(raw.trim())) : cwd;
 }
 
@@ -55,9 +67,10 @@ export function verdict(command, cwd, hookRepo) {
   const bare = command.replace(/<<-?\s*['"]?\w+['"]?[\s\S]*$/, "").replace(/"(?:\\.|[^"\\])*"|'[^']*'/g, '""');
   const hit = HEAVY.find(([re]) => re.test(bare));
   if (!hit) return null;
-  const here = repoId(targetDir(command, cwd));
-  // Another repository runs under its own rules. A directory outside any repository, or one that
-  // cannot be read, is treated as this one: the gate fails closed.
+  const dir = targetDir(command, cwd);
+  const here = dir === null ? null : repoId(dir);
+  // Another repository runs under its own rules. An ambiguous command, a directory outside any
+  // repository, or one that cannot be read is treated as this one: the gate fails closed.
   if (here !== null && here !== repoId(hookRepo)) return null;
   return hit[1];
 }

@@ -52,7 +52,19 @@ describe(".claude/hooks/local-gate.mjs", () => {
     expect(verdict("npm test", otherWorktree, other)).toBe("npm test");
   });
 
-  it("fails closed when the target directory cannot be read", () => {
+  it("fails closed when the target directory cannot be read or told", () => {
     expect(check(`cd ${join(scratch, "missing")} && npm run check`)).toBe("npm run check");
+    expect(check(`cd ${other} && cd ${here} && npm test`)).toBe("npm test");
+    expect(check(`cd ${other} && cd - && npm test`)).toBe("npm test");
+    expect(check(`pushd ${other}; popd; npm test`)).toBe("npm test");
+    expect(check(`cd ${other} || npm test`)).toBe("npm test");
+    expect(check(`cd ${other} && npm --prefix ${here} test`)).toBe("npm test");
+    expect(check(`npm --prefix ${other} run x && npm --prefix ${here} test`)).toBe("npm test");
+    expect(check(`npm --prefix ${other} run x && npm test`)).toBe("npm test");
+  });
+
+  it("reads PowerShell's location aliases", () => {
+    expect(check(`Push-Location "${other}"; npm test`)).toBeNull();
+    expect(check(`sl "${other}"; npm test`)).toBeNull();
   });
 });
