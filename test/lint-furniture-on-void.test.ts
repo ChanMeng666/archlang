@@ -84,6 +84,50 @@ suite("W_FURNITURE_ON_VOID", () => {
     const on = of(LEVELS([], [hole, piece]));
     expect(on).toHaveLength(1);
     expect(on[0]!.level).toBe(2);
+    // On a plan of several storeys the message says which, as the stair rule's does.
+    expect(on[0]!.message).toContain('stands on a void in "Landing" on level 2:');
+    expect(of(plan(ROOM, VOID, `  furniture id=s sofa at (1000,500) size 2000x900`))[0]!.message).not.toContain(
+      "on level",
+    );
+  });
+
+  /** A stairwell drawn the usual way: the flight coming down on level 2, and a void on its rectangle. */
+  const WELL = (piece: string, opts: { stair?: boolean; hole?: string } = {}): string =>
+    LEVELS(
+      [`stair id=s1 at (3000,500) size 1000x3000 dir up`],
+      [
+        ...(opts.stair === false ? [] : [`stair id=s1 at (3000,500) size 1000x3000 dir down`]),
+        opts.hole ?? `void id=v at (3000,500) size 1000x3000`,
+        piece,
+      ],
+    );
+
+  it("yields to W_FURNITURE_ON_STAIR on a stairwell drawn as a stair and a void on one rectangle", () => {
+    for (const piece of [
+      `furniture id=t table at (3200,1500) size 600x600`, // wholly on the well
+      `furniture id=t table at (3700,1500) size 600x600`, // half on it, half on the floor beside it
+    ]) {
+      const src = WELL(piece);
+      expect(of(src, "W_FURNITURE_ON_STAIR"), piece).toHaveLength(1);
+      expect(of(src), piece).toEqual([]);
+    }
+  });
+
+  it("the controls: a void with no stair still fires, and so does the part of a larger void past the stair", () => {
+    const piece = `furniture id=t table at (3200,1500) size 600x600`;
+    expect(of(WELL(piece, { stair: false }))).toHaveLength(1);
+    // An atrium wider than the flight: a table straddling the flight's side reaches the open void.
+    const atrium = WELL(`furniture id=t table at (3700,1500) size 600x600`, {
+      hole: `void id=v at (3000,500) size 2500x3000`,
+    });
+    expect(of(atrium, "W_FURNITURE_ON_STAIR")).toHaveLength(1);
+    expect(of(atrium)).toHaveLength(1);
+    // A table on the atrium away from the flight is the void rule's alone.
+    const away = WELL(`furniture id=t table at (4600,1500) size 600x600`, {
+      hole: `void id=v at (3000,500) size 2500x3000`,
+    });
+    expect(of(away, "W_FURNITURE_ON_STAIR")).toEqual([]);
+    expect(of(away)).toHaveLength(1);
   });
 
   it("reads a lift shaft and an escalator, and names them as such", () => {

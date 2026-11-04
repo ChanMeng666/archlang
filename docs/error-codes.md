@@ -2618,7 +2618,7 @@ furniture sofa at (2500,1000) size 900x2000 rotate 90   # lint: stands on the fl
 
 *warning* — Furniture stands on a void, a lift shaft or an escalator.
 
-**Cause.** A piece's footprint covers more than 1 mm both ways of a `void` of its own storey (a hole in that floor: a stairwell, an atrium, a double-height room), an `elevator`'s shaft or an `escalator`'s footprint. There is no floor there to stand on, so whatever stands there is read, a rug as much as a wardrobe. A `void` on the storey above is headroom, not a hole in this floor, and is not read; a `stair` is `W_FURNITURE_ON_STAIR`'s. `finish` keeps every piece off the same rectangles. One warning per piece and void or shaft.
+**Cause.** A piece's footprint covers more than 1 mm both ways of a `void` of its own storey (a hole in that floor: a stairwell, an atrium, a double-height room), an `elevator`'s shaft or an `escalator`'s footprint. There is no floor there to stand on, so whatever stands there is read, a rug as much as a wardrobe. A `void` on the storey above is headroom, not a hole in this floor, and is not read; a `stair` is `W_FURNITURE_ON_STAIR`'s, so where the part of a void a piece covers lies wholly on the storey's stairs (a stairwell drawn as a `stair` and a `void` on one rectangle) this code yields to that one. `finish` keeps every piece off the same rectangles. One warning per piece and void or shaft.
 
 **Fix.** Move or resize the piece so it clears the span the hint quotes, or move the void, lift or escalator. There is no machine-applicable fix: where the piece goes instead is a design decision.
 
