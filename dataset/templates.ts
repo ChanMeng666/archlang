@@ -11,7 +11,7 @@
  * The layouts are modelled on the shape of `eval/faults/*.arch` and the shipped goldens
  * (a single exterior wall loop, rooms, doors on walls, windows, a movable furniture
  * piece), but the labels/dimensions/geometry are independent — nothing here is copied
- * from the private holdout corpus.
+ * from the eval corpus.
  *
  * Imports only the pure core surface (`../src/index.js`). No I/O, no clock, no
  * entropy-seeded randomness.
@@ -174,7 +174,7 @@ export function isStrictClean(source: string): boolean {
 }
 
 // ---------------------------------------------------------------------------
-// Label / naming pools (hand-written; independent of the holdout corpus).
+// Label / naming pools (hand-written; independent of the eval corpus).
 // ---------------------------------------------------------------------------
 
 const STUDIO_NAMES = ["Compact Studio", "City Studio", "Garden Studio", "Loft Studio", "Corner Studio"];

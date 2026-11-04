@@ -13,7 +13,7 @@ import { recordTrajectory } from "../dataset/trajectory.js";
  * Permanent CI guard for the repair-trajectory / authoring dataset generator.
  * Four groups:
  *   a. LEAKAGE — the contamination iron law: a freshly generated small corpus must share
- *      no holdout brief/golden text or structure (the private holdout must stay private).
+ *      no holdout brief/golden text or structure (the dataset stays disjoint from the eval corpus).
  *   b. CANARY — every row carries the canary field AND a first-line source comment.
  *   c. DETERMINISM — same seed ⇒ byte-identical JSONL, and no clock/entropy API is used
  *      anywhere under dataset/ (a source scan, in the style of the drift tests).
@@ -47,15 +47,15 @@ function grams8(text: string): Set<string> {
   return out;
 }
 
-/** The holdout prompts + goldens, read directly for the leakage assertions. */
+/** The eval prompts + goldens, read directly for the leakage assertions. */
 const corpus: { id: string; prompt: string; golden: string }[] = JSON.parse(
   readFileSync(resolve(__dirname, "..", "eval", "corpus.json"), "utf8"),
 );
 
 /**
- * The FIDELITY holdout — `eval/corpus-fidelity.json` and its committed
- * reference plans. These briefs are holdout material on exactly the same terms as the 26:
- * private forever, never published, and the public dataset must stay disjoint from them
+ * The FIDELITY corpus — `eval/corpus-fidelity.json` and its committed
+ * reference plans. These briefs are on exactly the same terms as the 26: a public
+ * regression fixture, not a holdout, and the public dataset must stay disjoint from them
  * too. Without this they would be an **unguarded leak channel**, because the enforcement
  * arm (`dataset/dedup.ts`'s `loadHoldout`) reads only `eval/corpus.json`.
  *
@@ -116,7 +116,7 @@ vdescribe("dataset generator — the corpus is non-empty", () => {
   });
 });
 
-vdescribe("a. leakage — the private holdout stays private (contamination iron law)", () => {
+vdescribe("a. leakage — the dataset stays disjoint from the eval corpus (contamination iron law)", () => {
   const allTexts = [
     ...repairRows.map((r) => ({ id: r.id, brief: "", source: r.fixed_source as string })),
     ...repairRows.map((r) => ({ id: r.id, brief: "", source: r.broken_source as string })),
@@ -158,8 +158,8 @@ vdescribe("a. leakage — the private holdout stays private (contamination iron 
     }
   });
 
-  // The same two checks against the FIDELITY holdout (P0-3). Kept as separate cases so a
-  // failure names which holdout was hit — the two corpora have different remedies.
+  // The same two checks against the FIDELITY corpus (P0-3). Kept as separate cases so a
+  // failure names which corpus was hit — the two corpora have different remedies.
   it("every authoring brief is below the reject threshold against the fidelity briefs", () => {
     for (const r of authoringRows) {
       expect(textReject(r.brief as string, fidelityHoldout).reject, `authoring brief ${r.id} too similar`).toBe(false);

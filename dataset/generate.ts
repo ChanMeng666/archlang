@@ -4,7 +4,7 @@
  * Fully deterministic from `--seed`: no network, no clock, no entropy randomness. Every row
  * is self-verifying at generation time (broken source raises its fault; healed source is
  * strict-clean and idempotent; authoring intent validates), passes the dual dedup against
- * the private holdout, and carries the canary twice (a row field AND a first-line source
+ * the eval corpus, and carries the canary twice (a row field AND a first-line source
  * comment). A candidate that fails any gate is REJECTED and counted in the report — never
  * silently emitted or truncated.
  *

@@ -49,8 +49,8 @@
 # The fingerprint lines at the bottom are unaffected: a fingerprint is not a hex run in a
 # scannable context, and they are what actually does the work.
 #
-# WHY THIS FILE HAD TO EXIST RATHER THAN THE FINDINGS BEING DELETED: `paper/` moved to the
-# private repository ChanMeng666/archlang-paper on 2026-08-26, so the file is gone from the
+# WHY THIS FILE HAD TO EXIST RATHER THAN THE FINDINGS BEING DELETED: `paper/` moved to a
+# separate repository on 2026-08-26, so the file is gone from the
 # working tree — but gitleaks scans the FULL HISTORY, and history is not being rewritten for
 # three public SHAs. Left alone, the nightly secret scan fails every night forever, which
 # does not protect anything; it trains every reader to ignore a security gate, so the next

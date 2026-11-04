@@ -170,14 +170,15 @@ this dataset.
 
 ## Contamination defense
 
-The 26-brief evaluation corpus and its goldens are a **private holdout** and are never published.
-This public corpus is generated independently and **double-deduplicated** against that holdout:
+The 26-brief evaluation corpus and its goldens are a public regression fixture in the main
+repository, not a holdout. This corpus is generated independently and **double-deduplicated**
+against it:
 
 - **Text:** a candidate brief is rejected if its normalized token-set Jaccard similarity with any
-  holdout prompt is ≥ 0.5, or if it shares any 8-word n-gram with one.
+  evaluation prompt is ≥ 0.5, or if it shares any 8-word n-gram with one.
 - **Structure:** a candidate plan is rejected if its `describe()` fingerprint (normalized room-label
   multiset with areas rounded to 0.5 m², the interior-door adjacency edge set, and the room count)
-  exactly or near-matches any holdout golden.
+  exactly or near-matches any evaluation golden.
 
 A CI test in the main repository (`test/dataset.test.ts`) enforces this permanently.
 
@@ -214,7 +215,7 @@ docs site's `/llms-full.txt`.
   furniture-through-wall, blocked-doorway, and a combined case) — mirroring the repository's own
   fault-injection gate.
 - **Narrow distribution by design.** Not a survey of real floor plans, and not a benchmark.
-- **Not the evaluation set.** It is generated to be provably disjoint from the private holdout.
+- **Not the evaluation set.** It is generated to be provably disjoint from the evaluation corpus.
 - **Sizes.** Approximately 1,200 `repair` rows and 400 `authoring` rows; exact counts, per-family
   and per-fault-class breakdowns, and rejection tallies are in the accompanying `report.json`.
 

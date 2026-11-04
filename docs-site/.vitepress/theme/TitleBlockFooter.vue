@@ -1,7 +1,7 @@
 <script setup lang="ts">
 // The site footer IS a drawing's title block: a hairline-ruled grid of labelled
 // cells (PROJECT / DRAWN BY / LICENSE / ISSUED / SHEET) plus an ECOSYSTEM cell of
-// family links. Rendered via the layout-bottom slot. Lives in the SHEET world, so
+// related links. Rendered via the layout-bottom slot. Lives in the SHEET world, so
 // it reads on paper through the shared tokens.
 //
 // LAYOUT NB: the layout-bottom slot puts this at the .Layout ROOT, a SIBLING of
@@ -27,8 +27,7 @@ const ECOSYSTEM = [
         <div>
           <p class="tblock__name"><b>Arch</b>Lang</p>
           <p class="tblock__blurb">
-            A small declarative language that compiles to professional SVG floor plans — the open
-            foundation the ArchCanvas design agent is built on.
+            A small declarative language that compiles to professional SVG floor plans.
           </p>
         </div>
       </div>

@@ -44,7 +44,7 @@ npm run gen:all       # every gen:* generator
   body, run both branches' fixtures together.
 - Releases are tokenless OIDC (`v*` tag); never an npm token, never automate npmjs account/2FA.
   Pushing `main` deploys the sites. Before a tag: `/release-check`.
-- Eval: T3 live run declined forever; `eval:live` is paid, owner-only; holdout never published;
+- Eval: T3 live run declined forever; `eval:live` is paid, owner-only; the eval corpus is a public fixture, never a holdout;
   dataset canary never regenerated.
 - Sites are light-only (no dark mode); `brand/archlang-logo-master.svg` is byte-sacred.
 - No secrets in this public repo. Versions come from npm/tags/`gh release`, never a doc; release

@@ -95,17 +95,17 @@ else in the file; the three search-intent pages stay out.
 Both consoles belong to the owner. **No account address, property id or verification token is
 recorded here or anywhere else in this public repository** — ask the owner rather than re-verifying.
 
-- **Google Search Console** holds two **Domain** properties, `archlang.uk` (verified 2026-09-14) and
-  `archcanvas.uk` (2026-09-15), both by DNS TXT. A Domain property covers every subdomain, so
+- **Google Search Console** holds the `archlang.uk` **Domain** property (verified 2026-09-14) by DNS
+  TXT. A Domain property covers every subdomain, so
   `playground.archlang.uk` needs none of its own — which is why TXT beat the meta tag: no repository
   change, one property for both hosts. Decline the one-click Cloudflare verification Google offers;
   it grants write access to the whole DNS account, and the manual path proves the same thing.
-- **Bing Webmaster Tools** holds the same two, imported from Search Console. **The import does not
+- **Bing Webmaster Tools** holds the same property, imported from Search Console. **The import does not
   carry sitemaps** — observed on two separate imports, despite the card promising it — so submit them
   by hand afterwards, every time.
-- **Three sitemaps** (counted live 2026-11-03): `archlang.uk` 59 URLs, `playground.archlang.uk` 35,
-  `archcanvas.uk` 21 (34, 29 and 18 at the 2026-09-14 setup). Both
-  engines report Success on all three and agree on every number; a disagreement means a deploy or a
+- **Two sitemaps** (counted live 2026-11-03): `archlang.uk` 59 URLs, `playground.archlang.uk` 35
+  (34 and 29 at the 2026-09-14 setup). Both
+  engines report Success on both and agree on every number; a disagreement means a deploy or a
   generator has drifted, not that a console is being odd.
 - **The generative-AI impressions report** in Search Console is where AI-Overview visibility shows
   up, worldwide since 2026-08-31. Export it by hand, monthly, for three months before automating.
@@ -117,10 +117,9 @@ recorded here or anywhere else in this public repository** — ask the owner rat
 - **Snapshot, 2026-11-03** (Search Console, last three months, read by hand): `archlang.uk` 509
   impressions, 12 clicks, average position 6.4, top query `archlang` (74 impressions, 7 clicks); 53
   pages indexed, 34 not (24 of them "Discovered - currently not indexed", the usual sign of thin
-  external authority). `archcanvas.uk` 113 impressions, 10 clicks, average position 9.2; 16 indexed,
-  12 not. Indexing was requested by hand the same day for the five topic pages and ArchCanvas's
-  three search pages. **Do not add properties under any other Google account** — on 2026-11-03 an
-  agent did so by mistake and removed them; the owner's account already holds both.
+  external authority). Indexing was requested by hand the same day for the five topic pages.
+  **Do not add properties under any other Google account** — on 2026-11-03 an agent did so by
+  mistake and removed them; the owner's account already holds them.
 - **Neither ArchLang site has analytics**, by design, so there is no referrer count from
   `chatgpt.com` or `perplexity.ai` here. State that gap rather than inventing a number.
 
@@ -131,7 +130,7 @@ one issue, **no sample URLs** (the field reads `N/A`), no first-detected date, m
 and **no Chrome interstitial** at any point — a meaningful negative, because Google's own Safe
 Browsing test page *was* blocked in the same profile. The transparency report gave the same verdict
 for every path under the apex, the shape of a host-level classification rather than a page detection;
-`www`, the playground host and `archcanvas.uk` carried nothing.
+`www` and the playground host carried nothing.
 
 The audit found nothing to fix: across every published docs page, zero forms, zero inputs, zero
 iframes, zero cross-origin scripts, no ads, no downloads, no login, and no `eval` / `atob` /

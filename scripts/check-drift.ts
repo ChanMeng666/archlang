@@ -42,8 +42,7 @@ const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = 
   { script: "gen:plan-schema", artifacts: ["schemas/plan.schema.json"] },
   { script: "gen:intent-schema", artifacts: ["schemas/intent.schema.json"] },
   // NOTE: `gen:paper-facts` used to be here, gating `paper/facts.{json,tex}`. The papers
-  // moved to the private `archlang-paper` repository on 2026-08-26 (they are a
-  // double-anonymous submission and were sitting in a public, named repo). The gate went
+  // moved to a separate repository on 2026-08-26. The gate went
   // WITH them — it is `scripts/check-drift.mjs` there, run first by that repo's
   // `paper:check`, and it still derives every count from this repo's own tables through a
   // sibling checkout. Dropping the gate in the move would have been the exact defect those

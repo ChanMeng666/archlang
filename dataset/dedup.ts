@@ -1,5 +1,5 @@
 /**
- * Dual deduplication against the private holdout corpus (the 26 briefs + goldens in
+ * Dual deduplication against the eval corpus (the 26 briefs + goldens in
  * `eval/`) — the enforcement arm of the contamination iron law. Used BOTH as a
  * generation-time filter (rejections counted into the report, never silent) and by the
  * permanent CI guard `test/dataset.test.ts`.

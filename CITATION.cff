@@ -8,10 +8,7 @@
 # they move when a release moves. Update them in the release checklist (CONTRIBUTING.md),
 # not by regeneration.
 #
-# The papers that cite this software live in the PRIVATE repository
-# `ChanMeng666/archlang-paper` (extracted from this repo's `paper/` on 2026-08-26; it must
-# stay private until acceptance, since one target is a double-anonymous submission). The
-# deposit sequence referenced below is `ZENODO.md` at that repository's root.
+# The papers that cite this software moved to a separate repository on 2026-08-26.
 cff-version: 1.2.0
 message: "If you use ArchLang in academic work, please cite it as below."
 title: ArchLang
@@ -47,8 +44,7 @@ keywords:
   - program repair
   - SVG
 # The concept DOI resolves to the latest version and is the one to cite. The version
-# DOI names the archive-1.36.0 release. The preprint is a separate Zenodo record
-# (10.5281/zenodo.22958002) and is not an identifier of this software.
+# DOI names the archive-1.36.0 release.
 identifiers:
   - description: The concept DOI for all archived versions of ArchLang
     type: doi

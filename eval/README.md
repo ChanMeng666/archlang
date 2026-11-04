@@ -92,9 +92,9 @@ be weakened; it was absent by construction, so `validateIntent` **passes** the l
 only the fidelity check catches it. Two corpus entries are marked `intentBlind` and assert exactly
 that, so the blindness is a test, not a claim.
 
-> **Contamination.** `corpus-fidelity.json` and `fidelity-plans/` are holdout material on the same
-> terms as the 26 briefs — private forever, never published. `test/dataset.test.ts` enforces
-> disjointness for both corpora. `dataset/dedup.ts`'s `loadHoldout` is deliberately *not* extended:
+> **Contamination.** `corpus-fidelity.json` and `fidelity-plans/` are on the same terms as the 26
+> briefs: a public regression fixture, not a holdout. `test/dataset.test.ts` keeps the dataset
+> generator disjoint from both corpora. `dataset/dedup.ts`'s `loadHoldout` is deliberately *not* extended:
 > it decides what the generator rejects, and widening it would change the bytes a given seed
 > reproduces, breaking the published dataset's seed-`20260712` reproducibility claim.
 
@@ -236,15 +236,14 @@ as failing (D25). `eval:ci` compares every golden with that fixture and exits 1 
 against it; it never requires all to pass. Adding a brief = brief-derivable expectations + a golden
 that passes them + a rubric row.
 
-> **Contamination warning (roadmap T5 iron law).** These briefs and goldens are a **private
-> holdout**, and they stay private **forever**. **Never publish them.** The public dataset now
-> **exists** — HF `ChanMeng666/archlang-repair-trajectories`, generated independently by the
-> `dataset/` generator (which imports only `../src/index.js`, never `eval/`) and
-> double-deduplicated against this holdout (text Jaccard + 8-gram, and a structural `describe()`
-> fingerprint). `test/dataset.test.ts` enforces that disjointness **permanently, in CI**. That
-> enforcement does not relax the rule: this corpus is never published regardless — the moment it
-> leaks into a public set, the holdout is burned and no honest number can ever be reported against
-> it again.
+> **Contamination warning (roadmap T5 iron law).** These briefs and goldens are a **public
+> regression fixture, not a holdout**: they have been in this public repository since 2026-06-27,
+> so no number measured against them may be called held-out. The public dataset — HF
+> `ChanMeng666/archlang-repair-trajectories` — is generated independently by the `dataset/`
+> generator (which imports only `../src/index.js`, never `eval/`) and double-deduplicated against
+> this corpus (text Jaccard + 8-gram, and a structural `describe()` fingerprint).
+> `test/dataset.test.ts` enforces that disjointness **permanently, in CI**, so the dataset generator
+> stays disjoint from the fixture the eval measures with.
 
 ## The fault-injection / L1 gate (`faults/`, `l1.ts`, `test/fault-injection.test.ts`)
 
