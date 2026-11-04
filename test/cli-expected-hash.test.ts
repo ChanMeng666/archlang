@@ -113,10 +113,25 @@ afterEach(() => {
 });
 
 describe("--expected-hash: a stale read refuses before anything is computed or written", () => {
+  // The refusal comes from the READ, not from the re-check before writing (which would catch a
+  // stale hash too, but only after computing): the command never reaches the re-check.
+  let reached = 0;
+  beforeEach(() => {
+    reached = 0;
+    writeGuardSeam.beforeRecheck = () => {
+      reached++;
+    };
+  });
+  afterEach(() => {
+    expect(reached, "the refusal came from the re-check, not the read").toBe(0);
+  });
+
   it("fix: exit 4, E_STALE_SOURCE naming both hashes, file bytes and mtime unchanged, no contents printed", async () => {
     const r = await inProcess(fix, [file, "--expected-hash", STALE, "--backup"]);
     expect(r.code).toBe(4);
     expect(r.stderr).toContain("error[E_STALE_SOURCE]");
+    expect(r.stderr).toContain("is not the revision --expected-hash names");
+    expect(r.stderr).toContain("nothing was computed or written");
     expect(r.stderr).toContain(STALE.slice(0, 12));
     expect(r.stderr).toContain(sha(OFF_WALL).slice(0, 12));
     expect(r.stderr).toContain("= fix: Re-read the file");
