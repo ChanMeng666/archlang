@@ -346,7 +346,7 @@ export type WallStatus = (typeof WALL_STATUSES)[number];
  * validator and the Plan JSON schema (`src/plan-json.ts`), and — the dangerous two —
  * `scripts/gen-gbnf.ts`'s door productions and `scripts/gen-llm-spec.ts`'s door
  * grammar line, where a retyped literal reproduces the same *wrong* text forever
- * while `check:drift` stays green (the hazard CLAUDE.md names, and the one that
+ * while `check:drift` stays green (the hazard AGENTS.md names, and the one that
  * shipped a GBNF grammar which could not decode `polygon`/`arc`). Everything reads
  * this table now, both generators carry a guard that throws when a clause here has
  * no rendering, and `test/door-enums.test.ts` fails if a seventh copy appears.
