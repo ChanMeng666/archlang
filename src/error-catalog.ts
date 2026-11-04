@@ -637,14 +637,14 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   ),
   E_IMPORT_FORMAT: E(
     "E_IMPORT_FORMAT",
-    "A file given to `arch import` is not a valid plan in the format it was read as.",
-    "`arch import --from openplan3d` (`openPlan3dToArch()`) checks the JSON the way OpenPlan3D's own validators do (`readProject` for a web project in centimetres, `validateRoomPlan` for a prepared RoomPlan interchange file in metres) before converting anything, and reports each problem with OpenPlan3D's path and reason: a missing `id`, `floors` or `walls` array, a door on a wall of another floor, a `position` outside 0–1, a zero thickness or width, an unknown `type`, a repeated id, a transform that is not 16 finite numbers. A file OpenPlan3D would refuse is refused here too, and nothing is written. It is not raised by `compile()`: the input is JSON, not `.arch` source.",
+    "A file given to `archlang import` is not a valid plan in the format it was read as.",
+    "`archlang import --from openplan3d` (`openPlan3dToArch()`) checks the JSON the way OpenPlan3D's own validators do (`readProject` for a web project in centimetres, `validateRoomPlan` for a prepared RoomPlan interchange file in metres) before converting anything, and reports each problem with OpenPlan3D's path and reason: a missing `id`, `floors` or `walls` array, a door on a wall of another floor, a `position` outside 0–1, a zero thickness or width, an unknown `type`, a repeated id, a transform that is not 16 finite numbers. A file OpenPlan3D would refuse is refused here too, and nothing is written. It is not raised by `compile()`: the input is JSON, not `.arch` source.",
     "Fix the field the message names (its path is the JSON path in the file), or re-export the plan from OpenPlan3D. A file read as the wrong format can be forced with `--format web` or `--format handoff`.",
     "archlang import --from openplan3d plan.json   # error: Invalid project: floors[0].doors[1].wallId must refer to a wall on the same floor.",
   ),
   E_IMPORT_LIMIT: E(
     "E_IMPORT_LIMIT",
-    "A file given to `arch import` needs more work to convert than any plan does.",
+    "A file given to `archlang import` needs more work to convert than any plan does.",
     "Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens. A file of more than " +
       String(MAX_IMPORT_LEVELS) +
       " storeys is refused the same way before any storey is built: each storey is a whole drawing.",
@@ -1166,7 +1166,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   W_IMPORT_DROPPED: W(
     "W_IMPORT_DROPPED",
     "Part of an imported plan has no ArchLang form and was left out.",
-    "`arch import --from openplan3d` writes what ArchLang can say (walls, rooms, doors, windows, openings, straight stairs, square columns, furniture with a matching fixture family, storeys) and leaves out the rest: finishes and textures, notes and prices, text and dimension annotations, round columns, turning or spiral stairs, furniture turned off a quarter turn or with no family, a wall's slope. Each left-out entity is listed in the report's `dropped`, each left-out field in its `fields`, with the reason, and each kind and reason gives one warning. Fields whose loss changes nothing on a plan (project and capture metadata, editor settings, format markers, a room's stored area) are listed in the report only, with no warning. Nothing is left out without a report entry.",
+    "`archlang import --from openplan3d` writes what ArchLang can say (walls, rooms, doors, windows, openings, straight stairs, square columns, furniture with a matching fixture family, storeys) and leaves out the rest: finishes and textures, notes and prices, text and dimension annotations, round columns, turning or spiral stairs, furniture turned off a quarter turn or with no family, a wall's slope. Each left-out entity is listed in the report's `dropped`, each left-out field in its `fields`, with the reason, and each kind and reason gives one warning. Fields whose loss changes nothing on a plan (project and capture metadata, editor settings, format markers, a room's stored area) are listed in the report only, with no warning. Nothing is left out without a report entry.",
     "Read the report (`--json`). Add what matters by hand in the `.arch` file (a `furniture` piece, a `dim`, a stair), or accept the loss: none of these changes the walls, rooms and openings the checks read.",
     "archlang import --from openplan3d plan.json   # warning: 3 textAnnotations not imported: free text on the plan is not modelled",
   ),

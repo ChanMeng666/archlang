@@ -900,8 +900,8 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_IMPORT_BAD_SPEC` — Malformed import spec. **Fix:** Use a relative path ("lib/x.arch") or a namespaced spec ("@scope/name:1.0.0").
 - `E_IMPORT_CONFLICT` — Imported name conflicts with an existing component. **Fix:** Rename with `as`, or remove the duplicate.
 - `E_IMPORT_CYCLE` — Cyclic import. **Fix:** Break the cycle so module dependencies form a tree.
-- `E_IMPORT_FORMAT` — A file given to `arch import` is not a valid plan in the format it was read as. **Fix:** Fix the field the message names (its path is the JSON path in the file), or re-export the plan from OpenPlan3D. A file read as the wrong format can be forced with `--format web` or `--format handoff`.
-- `E_IMPORT_LIMIT` — A file given to `arch import` needs more work to convert than any plan does. **Fix:** Split the plan into several files, a floor or a wing each, and import them one by one.
+- `E_IMPORT_FORMAT` — A file given to `archlang import` is not a valid plan in the format it was read as. **Fix:** Fix the field the message names (its path is the JSON path in the file), or re-export the plan from OpenPlan3D. A file read as the wrong format can be forced with `--format web` or `--format handoff`.
+- `E_IMPORT_LIMIT` — A file given to `archlang import` needs more work to convert than any plan does. **Fix:** Split the plan into several files, a floor or a wing each, and import them one by one.
 - `E_IMPORT_NOT_EXPORTED` — Imported name is not exported by the module. **Fix:** Import a name the module actually defines (check its `component`s).
 - `E_IMPORT_NOT_FOUND` — Import path could not be resolved. **Fix:** Check the path (relative to the importing file) and that the file exists.
 - `E_IMPORT_PARSE` — Imported module has a parse error. **Fix:** Fix the syntax error in the imported module.
