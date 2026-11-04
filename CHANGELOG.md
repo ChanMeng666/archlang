@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `arch finish` counts the rows of the NOTES table and the DOOR & WINDOW SCHEDULE when it picks a sheet. It fitted the band on the room schedule and legend alone, so a plan that already wrote `notes` or `schedule openings` could be fitted on a band shorter than the one drawn; finish's own overflow check then refused the sheet and added no `paper` or `scale`. It now picks the smallest sheet that holds the real band.
 - A Plan JSON round trip (`-f json`, then `--from-json` or `planFromJson`) keeps a room's uses when they come from its label. `label "Hall"` used to come back as `label "Hall" uses entry`, because hall, circulation and entry share the `room_type` `Entrance` (likewise `Laundry` became `uses storage`, `WC` became `uses bath`, `Garage` became `uses storage`, and `Kitchen / Dining` lost `dining`). When the label already reads as the room's `room_type`, the way back now writes no `uses` and the label carries it, as the source did. An authored `uses`, and a `room_type` the label does not read as, are unchanged.
 
 ## [1.54.0] - 2026-11-04
