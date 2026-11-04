@@ -41,6 +41,7 @@ import {
   ioError,
   makeNodeWorld,
   readInput,
+  writeOutput,
   usageError,
   usageErrorFor,
   withSource,
@@ -132,7 +133,11 @@ export function cmdRepair(args: Args): number {
     }
     const target = args.o;
     if (target && target !== "-") {
-      writeFileSync(resolvePath(target), r.source, "utf8");
+      try {
+        writeOutput(target, r.source);
+      } catch (e) {
+        return ioError((e as Error).message, args.json);
+      }
       if (!args.quiet)
         process.stderr.write(
           `✓ ${input} → ${target} (${r.changes.length} change${r.changes.length === 1 ? "" : "s"})\n`,
@@ -314,7 +319,7 @@ export async function cmdFix(args: Args): Promise<number> {
 
   if (wrote && target !== "-") {
     try {
-      writeFileSync(resolvePath(target), current, "utf8");
+      writeOutput(target, current);
     } catch (e) {
       return ioError((e as Error).message, args.json);
     }
@@ -416,7 +421,7 @@ export function cmdFinish(args: Args): number {
   }
   if (wrote && target !== "-") {
     try {
-      writeFileSync(resolvePath(target), r.source, "utf8");
+      writeOutput(target, r.source);
     } catch (e) {
       return ioError((e as Error).message, args.json);
     }

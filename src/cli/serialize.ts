@@ -6,8 +6,8 @@
  * behavior unchanged).
  */
 
-import { mkdirSync, writeFileSync, existsSync } from "node:fs";
-import { dirname, resolve as resolvePath } from "node:path";
+import { writeFileSync, existsSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
 import { spawnSync } from "node:child_process";
 import {
   compile,
@@ -23,7 +23,17 @@ import {
 } from "../index.js";
 import type { Diagnostic, PlanJson, PlanJsonDropped, PlanJsonDroppedClause, Scene, ViewName, World } from "../index.js";
 import { fmt3 } from "../num-format.js";
-import { type Args, type Format, EXIT, asciiCharset, baseDirOf, hasErrors, makeNodeWorld, readInput } from "./io.js";
+import {
+  type Args,
+  type Format,
+  EXIT,
+  asciiCharset,
+  baseDirOf,
+  ensureOutputDir,
+  hasErrors,
+  makeNodeWorld,
+  readInput,
+} from "./io.js";
 
 /** Pick the package manager from the environment (lockfiles / npm_config_user_agent). */
 function detectPackageManager(): string {
@@ -399,13 +409,8 @@ export async function compileToFile(input: string, format: Format, args: Args, t
     return { input, ok: false, format, error: r.error, errorCode: r.errorCode, diagnostics: r.diagnostics, source };
   }
   // Only now, so a plan that does not compile leaves no empty directory behind.
-  const dir = dirname(resolvePath(targetPath));
-  try {
-    mkdirSync(dir, { recursive: true });
-  } catch (e) {
-    const error = `cannot create the output directory ${dir}: ${(e as Error).message}`;
-    return { input, ok: false, format, error, diagnostics: r.diagnostics, source };
-  }
+  const error = ensureOutputDir(targetPath);
+  if (error !== undefined) return { input, ok: false, format, error, diagnostics: r.diagnostics, source };
   try {
     writeFileSync(resolvePath(targetPath), r.bytes);
   } catch (e) {

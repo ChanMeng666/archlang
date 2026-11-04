@@ -5,14 +5,14 @@
  * out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged).
  */
 
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import { buildManifest, ERROR_CATALOG, explain } from "../index.js";
 // The zero-dep levenshtein behind every "did you mean" hint the CLI prints.
 import { closest } from "../expr.js";
 import { CLI_NAME } from "../manifest.js";
 import { CONTEXT_LEVELS, leadExampleFromSpec, renderStarter } from "./context-starter.js";
-import { type Args, EXIT, HERE, VERSION, emitJson, ioError, usageError } from "./io.js";
+import { type Args, EXIT, HERE, VERSION, emitJson, ioError, usageError, writeOutput } from "./io.js";
 
 /** `manifest` — the whole CLI API surface as one structured document for agents. */
 export function cmdManifest(args: Args): number {
@@ -54,7 +54,11 @@ export function cmdNew(args: Args): number {
     if (existsSync(target) && !args.force) {
       return ioError(`${args.o} already exists (use --force to overwrite)`, args.json);
     }
-    writeFileSync(target, STARTER, "utf8");
+    try {
+      writeOutput(target, STARTER);
+    } catch (e) {
+      return ioError((e as Error).message, args.json);
+    }
     if (args.json) emitJson({ ok: true, output: target });
     else if (!args.quiet) process.stdout.write(`✓ wrote starter plan to ${args.o}\n`);
     return EXIT.OK;
