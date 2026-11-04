@@ -1958,11 +1958,25 @@ function wallPoint(pt: WallPointJson): string {
   return `arc ${at} radius ${num(pt.arc.radius)}${pt.arc.dir ? ` ${pt.arc.dir}` : ""}${pt.arc.major ? " major" : ""}`;
 }
 
-/** The `uses` tags to emit for a room: explicit `uses` win; else derive from `room_type`. */
+/**
+ * The `uses` tags to emit for a room: explicit `uses` win; else none when the label
+ * already reads as the `room_type`; else derive from `room_type`.
+ *
+ * {@link planToJson} writes `uses` only when the source authored it, so a room whose use
+ * came from its label ("Hall" → `hall`) arrives with a `room_type` alone. Several uses share
+ * one `room_type` (hall/circulation/entry → `Entrance`, wc/bath → `Bathroom`), so turning it
+ * into its primary use would rewrite `label "Hall"` as `uses entry`: another room for
+ * `describe()` and every rule that reads uses. When the label (or, as {@link roomUses} reads,
+ * the id) already maps to this `room_type`, the regenerated source writes no `uses` and the
+ * label says it again, exactly as the source did. A label that reads as nothing, or as a
+ * different `room_type`, still takes `room_type`'s use: `room_type` is the authority there.
+ */
 function usesForRoom(r: RoomJson): UseKind[] {
   if (r.uses && r.uses.length > 0) return r.uses;
-  if (r.room_type) return usesForRoomType(r.room_type);
-  return [];
+  if (!r.room_type) return [];
+  const fromLabel = roomUses({ id: r.id ?? "", ...(r.label !== undefined ? { label: r.label } : {}) });
+  if (fromLabel.size > 0 && roomTypeForUses(fromLabel) === r.room_type) return [];
+  return usesForRoomType(r.room_type);
 }
 
 function emitOpening(o: OpeningJson): string {
