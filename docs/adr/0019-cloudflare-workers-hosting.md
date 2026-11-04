@@ -1,6 +1,8 @@
 # 19. Both public sites on Cloudflare Workers static assets, deployed from CI
 
-- **Status:** Accepted
+- **Status:** Accepted; amended by [ADR 0034](0034-playground-short-links.md) (2026-11): the
+  playground Worker may have a `main` script, run only for the paths its
+  `assets.run_worker_first` array lists; the docs Worker stays script-less.
 - **Date:** 2026-09
 - **Scope:** site hosting only. No core, language, or public-API change; no public URL change.
 
@@ -52,6 +54,11 @@ Pages is the product whose name suggests it. It was rejected on three counts.
   against those two.
 
 ### Why there is no `main` script
+
+*Amended by [ADR 0034](0034-playground-short-links.md): the account is now on Workers Paid, and
+`assets.run_worker_first` takes a route list, so the playground Worker runs a script for `/s/*` and
+`/api/*` only, with every static path unchanged. The reasoning below still binds the docs Worker
+and every path outside that list.*
 
 With no script to invoke, **every request is a static-asset request**: free, unmetered,
 and exempt from the Workers free plan's 100,000-requests/day cap. Adding a `main` — even
@@ -192,7 +199,8 @@ site has a page per route; the other has two pages and a fragment.
 ## Deferred, by name
 
 - **A `main` script for anything.** Redirects, headers and routing are all expressible in
-  `wrangler.jsonc` + `_headers` today. The moment one is not, the cap above is the price.
+  `wrangler.jsonc` + `_headers` today. The moment one is not, the cap above is the price. (Taken
+  up for short links, behind a route list: [ADR 0034](0034-playground-short-links.md).)
 - **Moving the `www` redirect into the repository.** It cannot be a `_redirects` entry
   (path-only matching). It *could* become a Terraform/API-scripted zone config; that is a
   bigger commitment to infrastructure-as-code than one redirect justifies.

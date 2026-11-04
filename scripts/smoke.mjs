@@ -338,7 +338,7 @@ const inlineFont = () => async (body, _res, ctx) => {
   ctx.notes.push(`font ${m[1]}`);
 };
 
-function playgroundChecks() {
+async function playgroundChecks() {
   return [
     // Markers are the app's mount points in playground/index.html + embed.html.
     // The `<h1` and lede assertions cover the crawlable intro band: a crawler runs no
@@ -406,6 +406,124 @@ function playgroundChecks() {
       entryScript(),
     ),
     route("/brand/archlang-icon-plum.svg", isSvg()),
+    ...(await shortLinkChecks()),
+  ];
+}
+
+// ---------------------------------------------------------------------------
+// The playground's ONE script (ADR 0034): short links. Every check above is a static path and
+// must pass byte for byte as it did before the script existed; these four are the script's own.
+// ---------------------------------------------------------------------------
+
+/** An id no plan has (a 62^-8 chance otherwise), for the 404. Fetched once: a 404 is the answer. */
+const UNKNOWN_SHARE_ID = "00000000";
+
+async function shortLinkChecks() {
+  const { encodePlanHash } = await import("../src/cli/share-codec.mjs");
+  // The smallest complete plan. Its KV key stays behind (one plan, one key, forever: a re-run
+  // finds the same id and writes nothing).
+  const plan = readFileSync(join(ROOT, "examples", "one-room.arch"), "utf8");
+  const payload = encodePlanHash(plan);
+  let created;
+  return [
+    {
+      name: `/s/${UNKNOWN_SHARE_ID} (404, html)`,
+      run: async (base) => {
+        let res;
+        for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+          try {
+            res = await fetch(`${base}/s/${UNKNOWN_SHARE_ID}`, { headers: { "user-agent": "archlang-smoke/1" } });
+            break;
+          } catch (e) {
+            if (attempt === ATTEMPTS) throw new Error(`network error: ${e.message}`);
+            await sleep(RETRY_MS);
+          }
+        }
+        const body = await res.text();
+        const ct = res.headers.get("content-type") ?? "";
+        if (res.status !== 404) throw new Error(`HTTP ${res.status}, expected 404`);
+        if (!ct.includes("text/html")) throw new Error(`the 404 is "${ct}", expected text/html`);
+        if (!body.includes('href="/"')) throw new Error("the 404 page has no link to the playground");
+        return [`404 ${ct}`];
+      },
+    },
+    {
+      name: "POST /api/share (examples/one-room.arch)",
+      run: async (base) => {
+        const { res, body } = await fetchOk(`${base}/api/share`, {
+          method: "POST",
+          headers: { "content-type": "text/plain;charset=utf-8" },
+          body: payload,
+        });
+        contentType("application/json")(body, res);
+        const out = JSON.parse(body);
+        if (!/^[0-9A-Za-z]{8,43}$/.test(String(out.id))) throw new Error(`id is ${JSON.stringify(out.id)}`);
+        // The origin is the request's: the deployed host. A local `wrangler dev` reports the route's
+        // custom domain over http (`http://playground.archlang.uk`), not --base, so only the path is held.
+        if (new URL(out.url).pathname !== `/s/${out.id}`) throw new Error(`url is ${JSON.stringify(out.url)}`);
+        created = out.id;
+        return [`id ${out.id}`];
+      },
+    },
+    {
+      // What a link preview reads: a crawler's user agent, no script run.
+      name: "GET /s/<that id> as Twitterbot (card metadata, then /#z=)",
+      run: async (base) => {
+        if (!created) throw new Error("no id: the create check failed");
+        const { res, body } = await fetchOk(`${base}/s/${created}`, { headers: { "user-agent": "Twitterbot/1.0" } });
+        contentType("text/html")(body, res);
+        for (const need of [
+          // The plan's own name, read from the file rather than retyped.
+          `<meta property="og:title" content="${/^plan "([^"]+)"/m.exec(plan)[1]}">`,
+          '<meta name="twitter:card" content="summary_large_image">',
+          '<link rel="canonical" href="',
+          `/s/${created}">`,
+          '<meta property="og:image" content="',
+          `location.replace("/#z=`,
+        ]) {
+          if (!body.includes(need)) throw new Error(`the page lacks ${JSON.stringify(need)}`);
+        }
+        const { body: api } = await fetchOk(`${base}/api/share/${created}`);
+        const { z } = JSON.parse(api);
+        const { decodePlanHash } = await import("../src/cli/share-codec.mjs");
+        if (decodePlanHash(z) !== plan) throw new Error("/api/share/<id> does not decode to the plan that was sent");
+        return ["card metadata present; the stored payload decodes to the plan"];
+      },
+    },
+    {
+      // The card a link preview shows: a real PNG of the card's size, cacheable forever.
+      name: "GET /s/<that id>.png (1200x630 PNG, immutable)",
+      run: async (base) => {
+        if (!created) throw new Error("no id: the create check failed");
+        let res;
+        let bytes;
+        for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+          try {
+            res = await fetch(`${base}/s/${created}.png`, { headers: { "user-agent": "archlang-smoke/1" } });
+            bytes = Buffer.from(await res.arrayBuffer());
+            if (res.status === 200) break;
+          } catch (e) {
+            if (attempt === ATTEMPTS) throw new Error(`network error: ${e.message}`);
+          }
+          if (attempt < ATTEMPTS) await sleep(RETRY_MS);
+        }
+        if (res.status !== 200) throw new Error(`HTTP ${res.status}`);
+        contentType("image/png")("", res);
+        header("cache-control", "immutable")("", res);
+        if (bytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") throw new Error("not a PNG (bad signature)");
+        const [w, h] = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
+        if (w !== 1200 || h !== 630) throw new Error(`the PNG is ${w}x${h}, expected 1200x630`);
+        // The static card is also a 1200x630 PNG: only its bytes tell the plan's card from the
+        // stand-in the Worker serves when it cannot draw one.
+        // (Read as bytes: fetchOk reads a body as text, which would mangle a PNG.)
+        const og = await fetch(`${base}/brand/archlang-og.png`, { headers: { "user-agent": "archlang-smoke/1" } });
+        if (og.status !== 200) throw new Error(`/brand/archlang-og.png: HTTP ${og.status}`);
+        const fallback = Buffer.from(await og.arrayBuffer());
+        if (bytes.equals(fallback))
+          throw new Error("the card is the static /brand/archlang-og.png, not the plan's drawing");
+        return [`${bytes.length} B, ${w}x${h}, not the static card`];
+      },
+    },
   ];
 }
 

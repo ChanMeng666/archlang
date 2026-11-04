@@ -75,6 +75,16 @@ export async function setEditorSource(page: Page, src: string): Promise<void> {
   await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 10_000 }).toBe(src);
 }
 
+/**
+ * Choose one of the two links in the header's "Copy link" disclosure (ADR 0034): `full` is the
+ * `#z=` link (`#copyLink`, no server), `short` the stored `/s/<id>` link (`#copyShortLink`).
+ */
+export async function chooseLink(page: Page, which: "full" | "short"): Promise<void> {
+  const menu = page.locator("#shareMenu");
+  if ((await menu.getAttribute("open")) === null) await menu.locator("summary").click();
+  await page.locator(which === "full" ? "#copyLink" : "#copyShortLink").click();
+}
+
 /** The page-side globals `watchStatus` installs. */
 interface StatusLogWindow extends Window {
   __archlangStatusLog?: string[];

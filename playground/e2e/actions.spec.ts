@@ -1,7 +1,7 @@
 import { expect, type Download, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { srcFromHash } from "../src/share.js";
-import { AUTOSAVE_KEY, SIMPLE_PLAN, setEditorSource, waitForPlan, watchStatus } from "./fixtures.js";
+import { AUTOSAVE_KEY, chooseLink, SIMPLE_PLAN, setEditorSource, waitForPlan, watchStatus } from "./fixtures.js";
 
 /** Sloppy but valid — `format()` must rewrite it, which is what makes the test honest. */
 const UNFORMATTED = `plan "E2E" {
@@ -368,13 +368,13 @@ test.describe("header actions", () => {
     }
   });
 
-  test("Copy link puts a #z= permalink in the URL and on the clipboard", async ({ page }) => {
+  test("Copy full link puts a #z= permalink in the URL and on the clipboard", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
-    await page.locator("#copyLink").click();
+    await chooseLink(page, "full");
     await status.expectFlash("Link copied");
     await expect.poll(() => page.evaluate(() => window.location.hash)).toMatch(/^#z=/);
 
@@ -439,7 +439,7 @@ test.describe("header actions", () => {
     expect(md).not.toContain("embed.html");
     // The link target is the very URL Copy link would copy (same origin, same hash).
     const target = md.slice(md.indexOf("](") + 2, -1);
-    await page.locator("#copyLink").click();
+    await chooseLink(page, "full");
     await status.expectFlash("Link copied");
     expect(target).toBe(await page.evaluate(() => navigator.clipboard.readText()));
   });

@@ -885,3 +885,8 @@ main {
   outline: 2px solid var(--plum-deep);
   outline-offset: 1px;
 }
+/* "Copy link": the same panel, holding the note and two buttons (short, full). */
+.tb-share .tb-ai-panel {
+  gap: 6px;
+  width: min(260px, calc(100vw - 32px));
+}

@@ -66,6 +66,75 @@ export async function encodeSrc(src: string): Promise<string> {
   return `#src=${bytesToB64url(utf8)}`;
 }
 
+// ---------------------------------------------------------------------------
+// Short links (ADR 0034). A short link NAMES a `#z=` link: the plan is stored on this site's
+// server only when the user asks for one, and `/s/<id>` always lands on the full form, which
+// keeps working with no server at all.
+
+/** How long a short-link request may take before the full link is used instead. */
+export const SHORT_LINK_TIMEOUT_MS = 5000;
+
+const SHARE_ID = /^[0-9A-Za-z]{8,43}$/;
+
+/**
+ * Ask this site's server for a short link to the plan in `hash` (a `#z=` fragment). Resolves to
+ * the `/s/<id>` URL, or null on any failure (no `#z=`, offline, refused, slow, a host with no
+ * server such as `vite preview`) so the caller falls back to the full link.
+ */
+export async function createShortLink(
+  hash: string,
+  origin: string = location.origin,
+  timeoutMs: number = SHORT_LINK_TIMEOUT_MS,
+): Promise<string | null> {
+  const z = hash.match(/^#z=([A-Za-z0-9_-]+)$/);
+  if (!z) return null;
+  const abort = new AbortController();
+  const timer = setTimeout(() => abort.abort(), timeoutMs);
+  try {
+    const res = await fetch(`${origin}/api/share`, {
+      method: "POST",
+      headers: { "content-type": "text/plain;charset=utf-8" },
+      body: z[1],
+      signal: abort.signal,
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { id?: unknown };
+    return typeof body.id === "string" && SHARE_ID.test(body.id) ? `${origin}/s/${body.id}` : null;
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** The short-link id in a hash (`#s=<id>`, also after other `&`-joined params), or null. */
+export function shareIdFromHash(hash: string): string | null {
+  const m = hash.match(/[#&]s=([^&]*)/);
+  return m && SHARE_ID.test(m[1]!) ? m[1]! : null;
+}
+
+/**
+ * The plan source a hash carries: `#z=`/`#src=` read in place, or `#s=<id>` fetched from this
+ * site's server (`GET /api/share/<id>`). Null when there is none or it cannot be read.
+ */
+export async function sharedSource(
+  hash: string = location.hash,
+  origin: string = location.origin,
+): Promise<string | null> {
+  const inline = await srcFromHash(hash);
+  if (inline !== null) return inline;
+  const id = shareIdFromHash(hash);
+  if (!id) return null;
+  try {
+    const res = await fetch(`${origin}/api/share/${id}`);
+    if (!res.ok) return null;
+    const { z } = (await res.json()) as { z?: unknown };
+    return typeof z === "string" && /^[A-Za-z0-9_-]+$/.test(z) ? srcFromHash(`#z=${z}`) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Rewrite the browser's URL hash to carry `src` (replaceState — one entry, no
  *  history spam on every keystroke). */
 export async function updateHash(src: string): Promise<void> {
