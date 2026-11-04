@@ -111,12 +111,15 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
 `main`, which is the first run of Node 18, Node 20 and Windows (§ CI).
 
 0. Tier the change by what it touches, not who wrote it: `node scripts/risk-tier.mjs` (highest path
-   wins; an unclassified path is medium). **Low** (prose only): merge once CI is green. **Medium**
-   (code, tests, examples, tooling, dependencies, README): also one independent review in a fresh
-   context, given the diff and `REVIEW.md`, not the author's conclusion; two rounds at most.
-   **High** (CI and release workflows, `.claude/settings.json` and hooks, AGENTS/CLAUDE/REVIEW and
-   iron laws, frozen artifacts, `server.json`): also the owner's approval in words; an agent never
-   merges it. An agent's review never counts as the owner's approval.
+   wins; renames count both paths; a path no rule names is medium). **Low** (internal prose:
+   `docs/plans`, `docs/agents`, `.claude` rules/commands/agents, contributor docs): merge once CI is
+   green. **Medium** (code, tests, examples, tooling, published and public text incl. docs pages,
+   ADRs, READMEs, `CHANGELOG.md`): also one independent review in a fresh context, given the diff and
+   `REVIEW.md`, not the author's conclusion; two rounds at most. **High** (the review policy itself,
+   workflows, root `package.json`, `vitest.config.ts`, `scripts/check-*`, baselines,
+   `.gitleaksignore`, `.claude/settings.json` and hooks, owner rules, frozen artifacts, manifests,
+   deploy config): also the owner's approval in words; an agent never merges it. An agent's review
+   never counts as the owner's approval.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
 2. `gh pr merge <n> --auto --merge --match-head-commit <full 40-character sha>`: GitHub merges (a merge
    commit; a squash or rebase re-creates allowlisted gitleaks lines) once the seven required checks

@@ -6,9 +6,12 @@ intent and its evidence, not every line. Cite file and line for each finding.
 
 ## What failure looks like here
 
-- **Compiler output stops being a function of the source.** Time, randomness, I/O, environment or a
-  Node API in `src/` outside `src/cli.ts`+`src/cli/`; a number formatted outside `src/num-format.ts`;
-  a mutated parse-stage `PlanNode`.
+- **Compiler output stops being a function of the source.** Time, randomness, I/O or a Node API in
+  `src/` outside `src/cli.ts`+`src/cli/`; an environment read other than through the `World` seam; a
+  number formatted outside `src/num-format.ts`; a mutated parse-stage `PlanNode`; a runtime dependency
+  added to the core, or `packages/archlang-3d` imported by it.
+- **An element added outside the pattern**: a switch instead of one `src/elements/` module registered
+  in `defs.ts`; a new language form without its byte-identity law pinned by a test; a height that draws.
 - **A golden, digest or baseline moved without a byte-level reason.** Any change under
   `test/__goldens__/`, `test/__snapshots__/`, a digest table or a lockstep pin must be explained in the
   PR. A re-bless that makes a suite green is the bug.
@@ -20,9 +23,10 @@ intent and its evidence, not every line. Cite file and line for each finding.
 - **A user-source error thrown instead of returned** as a catalogued `Diagnostic`.
 - **A generated file edited by hand**, or a generator template that retypes a fact instead of deriving it.
 - **CI or a check got weaker.** A skipped or deleted assertion, a narrowed test glob, a relaxed
-  workflow, a lowered budget or cap. Blocker unless the owner approved it.
-- **A public claim the code does not back** (README, docs, `spec.llm.md`): "first", "only", traction
-  numbers, 3D wording beyond "3D preview".
+  workflow, a lowered budget or cap, a widened `.gitleaksignore`. Blocker unless the owner approved it.
+- **A secret, a dark-mode site style, or a changed byte** in `brand/archlang-logo-master.svg`.
+- **A public claim the code does not back** (README, docs, `spec.llm.md`, a package README):
+  "first", "only", traction numbers, or 3D wording beyond "3D preview" (`.claude/rules/archlang-3d.md`).
 
 ## Not findings
 
