@@ -16,6 +16,7 @@ import type { DwellingReading } from "../analyze/dwelling.js";
 import type { EnclosureBudgetCap, LintFamily, LintSkipReason } from "./coverage.js";
 import { makeNaming, type NameableRoom, type Naming, nameableOf } from "../naming.js";
 import type { LintRuleset } from "./ruleset.js";
+import { voidPieces } from "../elements/void.js";
 import type { AuthoringStage } from "../stages.js";
 
 /**
@@ -108,8 +109,8 @@ export interface LintContext {
   furniture: RFurniture[];
   /** Vertical-circulation runs on this storey, in source order. */
   verticals: RVertical[];
-  /** Floor voids on this storey — circulation obstacles, in source order. No rule
-   *  keys off them directly; they reach the nav grid through `circulation-facts.ts`. */
+  /** Floor voids on this storey — circulation obstacles, in source order, each as the
+   *  rectangles its hole is made of (`voidPieces`: a `polygon` void is several, sharing its id). */
   voids: RVoid[];
   /** The multi-storey facts this storey's rules read; inert for a single-storey plan. */
   building: BuildingContext;
@@ -329,7 +330,7 @@ export function buildLintContext(
     openings,
     furniture,
     verticals: verticalsOf(ir),
-    voids: ir.elements.filter((e): e is RVoid => e.kind === "void"),
+    voids: ir.elements.filter((e): e is RVoid => e.kind === "void").flatMap(voidPieces),
     building,
     connectors: [...doors, ...openings],
     openRuns,

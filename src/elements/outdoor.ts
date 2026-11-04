@@ -76,6 +76,7 @@ import {
 import { closest, standingWalls } from "../expr.js";
 import { patternId } from "../hatches.js";
 import { SIDE_NORMAL } from "../algebra/d4.js";
+import { MAX_RAIL_POSTS, railRun } from "./glyph-lib.js";
 
 /**
  * CAD layers. Three, not one, because a CAD user freezes by trade: planting is the
@@ -221,8 +222,8 @@ function deriveRail(at: Point, size: { w: number; h: number }, walls: readonly R
   return out;
 }
 
-/** Expand an authored `rail` word list to the concrete side set it means. */
-function railSides(words: readonly RailEdge[]): RailSide[] {
+/** Expand an authored `rail` word list to the concrete side set it means (a `void`'s too). */
+export function railSides(words: readonly RailEdge[]): RailSide[] {
   if (words.includes("none")) return [];
   if (words.includes("all")) return [...RAIL_SIDES];
   // Canonical order, not source order, so `rail right top` and `rail top right` produce
@@ -566,31 +567,14 @@ export const outdoor: ElementDef = {
 };
 
 /**
- * A railing on one edge: two thin parallel lines (the balustrade) with post ticks across
- * them at a derived pitch.
- *
- * The pitch is a nominal 1200 mm clamped so a short edge still gets at least two posts
- * and a long one does not turn into a comb — derived from the edge's own length, never
- * from the drawing's, so two balconies of the same size rail identically wherever they
- * sit on the sheet.
+ * A railing on one side of the balcony: {@link railRun}, the balustrade just INSIDE the slab
+ * edge, which is where a railing is built.
  */
-/** The most post divisions one railed edge is drawn with (`railNodes` draws one more tick). */
-const MAX_RAIL_POSTS = 24;
-
 function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): SceneNode[] {
   const { theme, sizes } = ctx;
   const [a, b] = edgeEndpoints(o.at, o.size, side);
-  const len = Math.hypot(b.x - a.x, b.y - a.y);
-  if (len <= 0) return [];
-  const ux = (b.x - a.x) / len;
-  const uy = (b.y - a.y) / len;
   const n = SIDE_NORMAL[side];
-  // The balustrade sits just INSIDE the slab edge, which is where a railing is built.
   const depth = railDepth(o, side, sizes.thin);
-  const off = (d: number): [Point, Point] => [
-    { x: a.x - n.x * d, y: a.y - n.y * d },
-    { x: b.x - n.x * d, y: b.y - n.y * d },
-  ];
   // Where the next side round a corner is railed too, the inner rail stops on THAT rail's line
   // rather than running on to the slab edge, so two railed sides meet in a clean corner instead
   // of crossing in a small square. (Its own `depth` is the neighbour's offset: the corner is
@@ -599,11 +583,6 @@ function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): 
   const rails = o.rail ?? [];
   const from = rails.includes(before) ? railDepth(o, before, sizes.thin) : 0;
   const to = rails.includes(after) ? railDepth(o, after, sizes.thin) : 0;
-  const [i0, i1] = off(depth);
-  const inner: [Point, Point] = [
-    { x: i0.x + ux * from, y: i0.y + uy * from },
-    { x: i1.x - ux * to, y: i1.y - uy * to },
-  ];
   const width = weightWidth("extraThin", sizes);
   const line = (p: [Point, Point]): SceneNode => ({
     layer: "furniture",
@@ -612,16 +591,7 @@ function railNodes(o: ROutdoor, side: RailSide, ctx: RenderCtx, layer: string): 
     lineWeight: "extraThin",
     paint: { fill: "none", stroke: theme.outdoorStroke, width },
   });
-  const nodes: SceneNode[] = [line(off(0)), line(from === 0 && to === 0 ? [i0, i1] : inner)];
-
-  const posts = Math.max(2, Math.min(MAX_RAIL_POSTS, Math.round(len / 1200)));
-  for (let i = 0; i <= posts; i++) {
-    const t = (len * i) / posts;
-    const p0 = { x: a.x + ux * t, y: a.y + uy * t };
-    const p1 = { x: p0.x - n.x * depth, y: p0.y - n.y * depth };
-    nodes.push(line([p0, p1]));
-  }
-  return nodes;
+  return railRun(a, b, n, depth, from, to, line);
 }
 
 /** How far inside the slab edge a side's inner rail runs: an eighth of the side, at most six pens. */

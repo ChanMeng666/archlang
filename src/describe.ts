@@ -36,6 +36,7 @@ import type {
 } from "./ir.js";
 import type { FenceStyle, OutdoorKind, PlanNode, Point, RailSide, VerticalDir } from "./ast.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
+import { voidPieces } from "./elements/void.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { grossInternalArea, type GrossAreaReason } from "./analyze/gross-area.js";
 import { openShells } from "./analyze/open-shell.js";
@@ -523,13 +524,23 @@ export interface StairLandingSummary {
  *
  * The room's own `area_m2` is NOT reduced by the void — see `src/elements/void.ts` for
  * why — so a consumer that needs the net floor of a double-height space subtracts
- * `size.w × size.h` here from the room named by {@link VoidSummary.room}.
+ * `size.w × size.h` here (`area_m2` on a `polygon` void) from the room named by
+ * {@link VoidSummary.room}.
  */
 export interface VoidSummary {
   id: string;
-  /** Top-left of the opening, in mm. */
+  /** Top-left of the opening, in mm; on a `polygon` void, of its ring's bounding box. */
   at: Point;
+  /** The extent; on a `polygon` void the ring's bounding box, an index and never the hole's
+   *  area (that is {@link VoidSummary.area_m2}). */
   size: { w: number; h: number };
+  /** The `polygon` spelling only: the ring, as resolved. */
+  polygon?: Point[];
+  /** The `polygon` spelling only: the hole's area in m², 2 dp, by the exact shoelace. */
+  area_m2?: number;
+  /** Present only when written: the rectangle's railed sides, or the ring's railed edge
+   *  numbers (edge n runs from point n to n+1). `[]` is `rail none`. */
+  rail?: RailSide[] | number[];
   /**
    * The room whose FLOOR contains the opening's centre — the poly-aware containment test,
    * never the room's bounding box, so a void inside a courtyard plan's notch is reported
@@ -1619,10 +1630,22 @@ function summarize(
   // A void's owning room is the room whose FLOOR holds the opening's CENTRE — through the
   // poly-aware `pointInRoomBox`, never the bounding box. The box is the wrong datum for a
   // concave room (its notch is inside the box and outside the floor).
+  // A `polygon` void is asked at the centre of its largest piece (the first on a tie): a point
+  // of the hole itself, where the centre of its box can lie outside an L.
   const voids: VoidSummary[] = voidEls.map((v) => {
-    const centre = { x: v.at.x + v.size.w / 2, y: v.at.y + v.size.h / 2 };
+    const probe = v.parts
+      ? voidPieces(v).reduce((best, p) => (p.size.w * p.size.h > best.size.w * best.size.h ? p : best))
+      : v;
+    const centre = { x: probe.at.x + probe.size.w / 2, y: probe.at.y + probe.size.h / 2 };
     const owner = roomEls.find((r) => pointInRoomBox(centre, roomRects.get(r.id)!));
-    return { id: v.id, at: { ...v.at }, size: { ...v.size }, room: owner ? owner.id : null };
+    return {
+      id: v.id,
+      at: { ...v.at },
+      size: { ...v.size },
+      room: owner ? owner.id : null,
+      ...(v.poly ? { polygon: v.poly.map((p) => ({ ...p })), area_m2: r2(polygonArea(v.poly) / 1_000_000) } : {}),
+      ...(v.rail ? { rail: [...v.rail] } : v.railEdges ? { rail: [...v.railEdges] } : {}),
+    };
   });
 
   // Ground surfaces. The area is the EXACT shoelace for a ring and w x h for a
@@ -1669,7 +1692,7 @@ function summarize(
     tol,
     undefined,
     verticalEls,
-    voidEls,
+    voidEls.flatMap(voidPieces),
     arrivals,
   );
 

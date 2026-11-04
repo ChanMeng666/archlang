@@ -99,6 +99,7 @@ import type { ComponentDef, FurnitureAnchor, FurnitureNode, FurniturePlace, Plan
 import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import { openRunsOf } from "./analyze.js";
+import { voidPieces } from "./elements/void.js";
 
 /** Intrusion (mm) past which a piece counts as colliding with a wall — mirrors lint. */
 const SLACK_MM = 30;
@@ -1606,7 +1607,7 @@ function repairStorey(
       DEFAULT_TOL,
       undefined,
       verticalsOf(ir),
-      ir.elements.filter((e): e is RVoid => e.kind === "void"),
+      ir.elements.filter((e): e is RVoid => e.kind === "void").flatMap(voidPieces),
       arrivals,
     );
   };

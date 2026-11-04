@@ -35,7 +35,7 @@ import { chargeSteps, closest, stepSite } from "./expr.js";
 import { segmentsOfWall, type WallSegment } from "./geometry.js";
 import { arcExtremes } from "./geometry/arc.js";
 import { pointInPolygon } from "./geometry/polygon.js";
-import type { RColumn, RRoom, ResolvedElement, ResolvedPlan, RWall } from "./ir.js";
+import type { RColumn, RRoom, RVoid, ResolvedElement, ResolvedPlan, RWall } from "./ir.js";
 import {
   capFirst,
   makeNaming,
@@ -1683,12 +1683,18 @@ export function evaluateStacked(
         failed = true;
         break;
       }
-      if (!STACKED_KINDS.has(el.kind) || (el.kind === "room" && ((el as RRoom).circle || (el as RRoom).poly))) {
+      if (
+        !STACKED_KINDS.has(el.kind) ||
+        (el.kind === "room" && ((el as RRoom).circle || (el as RRoom).poly)) ||
+        (el.kind === "void" && (el as RVoid).poly)
+      ) {
         refuse(
           { code: "E_KEEP_MEASURE" },
           el.kind === "room"
             ? `A ${(el as RRoom).circle ? "circle" : "polygon"} room has no rectangular footprint to stack`
-            : `A ${el.kind} has no rectangular footprint to stack: name a rectangular room, a stair, a lift, an escalator or a void`,
+            : el.kind === "void"
+              ? "A polygon void has no rectangular footprint to stack"
+              : `A ${el.kind} has no rectangular footprint to stack: name a rectangular room, a stair, a lift, an escalator or a void`,
           `\`${target.id}\` in \`${text}\` on level ${fmt3(lv)}`,
         );
         failed = true;

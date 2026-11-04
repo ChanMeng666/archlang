@@ -173,6 +173,54 @@ export interface GlyphCtx {
 /** The `stroke-dasharray`, in mm, that `lineType: "dashed"` resolves to on the SVG ramp. */
 export const dashedPattern = (sizes: RenderSizes): [number, number] => [sizes.thin * 6, sizes.thin * 4];
 
+/** The most post divisions one railed edge is drawn with ({@link railRun} draws one more tick). */
+export const MAX_RAIL_POSTS = 24;
+
+/**
+ * A railing along one edge `a`→`b`: two thin parallel lines (the balustrade) with post ticks across
+ * them at a derived pitch. `n` is the edge's outward unit normal; the inner line runs `depth`
+ * against it. `from`/`to` move the inner line's ends along the edge (positive shortens it, so two
+ * railed edges meet in a clean corner instead of crossing; negative lengthens it, round a reflex
+ * corner). Shared by a `balcony` and a railed `void` (moved verbatim from `outdoor.ts`).
+ *
+ * The pitch is a nominal 1200 mm clamped so a short edge still gets at least two posts and a long
+ * one does not turn into a comb — derived from the edge's own length, never from the drawing's,
+ * so two railings of the same size draw identically wherever they sit on the sheet.
+ */
+export function railRun(
+  a: Point,
+  b: Point,
+  n: Readonly<Point>,
+  depth: number,
+  from: number,
+  to: number,
+  line: (p: [Point, Point]) => SceneNode,
+): SceneNode[] {
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  if (len <= 0) return [];
+  const ux = (b.x - a.x) / len;
+  const uy = (b.y - a.y) / len;
+  const off = (d: number): [Point, Point] => [
+    { x: a.x - n.x * d, y: a.y - n.y * d },
+    { x: b.x - n.x * d, y: b.y - n.y * d },
+  ];
+  const [i0, i1] = off(depth);
+  const inner: [Point, Point] = [
+    { x: i0.x + ux * from, y: i0.y + uy * from },
+    { x: i1.x - ux * to, y: i1.y - uy * to },
+  ];
+  const nodes: SceneNode[] = [line(off(0)), line(from === 0 && to === 0 ? [i0, i1] : inner)];
+
+  const posts = Math.max(2, Math.min(MAX_RAIL_POSTS, Math.round(len / 1200)));
+  for (let i = 0; i <= posts; i++) {
+    const t = (len * i) / posts;
+    const p0 = { x: a.x + ux * t, y: a.y + uy * t };
+    const p1 = { x: p0.x - n.x * depth, y: p0.y - n.y * depth };
+    nodes.push(line([p0, p1]));
+  }
+  return nodes;
+}
+
 /** An arrow head as a closed triangle: its `tip`, and the two corners `length` back along the unit
  *  `along` and `spread` either side of it. Built by exact reflection across `along`, so a symmetric
  *  arrow stays symmetric. */

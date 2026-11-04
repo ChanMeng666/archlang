@@ -361,7 +361,11 @@ function levelOf(s: Storey, ledger: Assumption[], tol: number, mirrored: Readonl
     openings,
     furniture: of("furniture").map((f) => furnitureOf(f, mirrored, ledger)),
     stairs: of("stair").map(stairOf),
-    voids: of("void").map(box),
+    // A core `void … polygon` (an L) carries the rectangles its hole is made of (`parts`): each is
+    // one box, ids `<id>#<k>` (unique per collection), `source` still naming the void.
+    voids: of("void").flatMap((v) =>
+      v.parts ? v.parts.map((p, k) => ({ ...box({ ...v, at: p.at, size: p.size }), id: `${v.id}#${k}` })) : [box(v)],
+    ),
     columns: of("column").map(box),
     outdoor: of("outdoor").map(outdoorOf),
     fences: of("fence").map(fenceOf),

@@ -819,8 +819,19 @@ export interface RRoof extends RBase {
  *  convention), never its centre. */
 export interface RVoid extends RBase {
   kind: "void";
+  /** Top-left; on the `polygon` spelling, of the ring's bounding box (an index, never a datum:
+   *  a reader of the hole reads {@link RVoid.parts} through `voidPieces`). */
   at: Point;
   size: { w: number; h: number };
+  /** The `polygon` spelling: the authored ring, snapped. Absent on the rectangle. */
+  poly?: Point[];
+  /** The `polygon` spelling: the rectangles the ring is made of (`ringParts`), cut once at
+   *  resolve. Every reader of the floor hole reads these, never the box. */
+  parts?: { at: Point; size: { w: number; h: number } }[];
+  /** The rectangle's railed sides (`rail top left`), canonical order. Absent = no railing. */
+  rail?: RailSide[];
+  /** The ring's railed edges (`rail 0 3`): edge `n` runs from point `n` to `n+1`. Ascending. */
+  railEdges?: number[];
 }
 
 /**

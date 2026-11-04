@@ -165,8 +165,11 @@ const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind
     for (const p of s.polygon ?? []) pt(out, p);
   },
   void: (s, out) => {
+    // Exactly one of the two spellings is present; the `rail` edges are words and literal
+    // edge numbers, not expressions.
     pt(out, s.at);
-    out.push(s.size.w, s.size.h);
+    if (s.size) out.push(s.size.w, s.size.h);
+    for (const p of s.polygon ?? []) pt(out, p);
   },
   outdoor: (s, out) => {
     // Exactly one of the two spellings is present. `surface` and the `rail` edges are
