@@ -39,10 +39,10 @@ const web = (floor: Record<string, unknown>) => ({
 });
 /** A 400 × 300 cm room, its top wall drawn left to right and its bottom wall right to left. */
 const BOX = [
-  { id: "top", start: { x: 0, y: 0 }, end: { x: 400, y: 0 }, thickness: 10 },
-  { id: "right", start: { x: 400, y: 0 }, end: { x: 400, y: 300 }, thickness: 10 },
-  { id: "bottom", start: { x: 400, y: 300 }, end: { x: 0, y: 300 }, thickness: 10 },
-  { id: "left", start: { x: 0, y: 300 }, end: { x: 0, y: 0 }, thickness: 10 },
+  { id: "top-wall", start: { x: 0, y: 0 }, end: { x: 400, y: 0 }, thickness: 10 },
+  { id: "right-wall", start: { x: 400, y: 0 }, end: { x: 400, y: 300 }, thickness: 10 },
+  { id: "bottom-wall", start: { x: 400, y: 300 }, end: { x: 0, y: 300 }, thickness: 10 },
+  { id: "left-wall", start: { x: 0, y: 300 }, end: { x: 0, y: 0 }, thickness: 10 },
 ];
 const wallOf = (id: string) => BOX.find((w) => w.id === id)!;
 
@@ -143,12 +143,17 @@ describe("OpenPlan3D samples", () => {
     // Elevations -350, 0 and 425.5 cm: the storey heights are their differences.
     expect(r.report!.levels).toEqual([
       { level: -1, name: "Basement", height_mm: 3500 },
-      { level: 0, name: "Ground Floor", height_mm: 4255 },
-      { level: 1, name: "Upper Floor" },
+      { level: 0, name: "Ground", height_mm: 4255 },
+      { level: 1, name: "Upper" },
     ]);
-    // An interchange file's storeys (0 and 2 here) each become a level, OpenPlan3D's 300 cm apart.
+    // An interchange file's listed storeys (0, 2 and an empty 3 here) each become a level, OpenPlan3D's
+    // `level × 300` cm apart.
     const h = openPlan3dToArch(read("handoff-roomplan.json"));
-    expect(h.report!.levels.map((l) => l.level)).toEqual([0, 1, 2]);
+    expect(h.report!.levels).toEqual([
+      { level: 0, name: "Entry", height_mm: 6000 },
+      { level: 2, name: "Loft", height_mm: 3000 },
+      { level: 3, name: "Future Floor" },
+    ]);
   });
 });
 
@@ -240,7 +245,7 @@ const close = (a: { x: number; y: number }, b: { x: number; y: number }) =>
   Math.abs(a.x - b.x) < 1e-6 && Math.abs(a.y - b.y) < 1e-6;
 
 describe("door hand and swing, as OpenPlan3D draws them", () => {
-  for (const wallId of ["top", "bottom", "right"]) {
+  for (const wallId of ["top-wall", "bottom-wall", "right-wall"]) {
     for (const left of [true, false]) {
       for (const flip of [false, true]) {
         it(`single door on the ${wallId} wall, swingDirection ${left ? "left" : "right"}, flipSide ${flip}`, () => {
@@ -292,19 +297,19 @@ describe("door hand and swing, as OpenPlan3D draws them", () => {
   it("maps the other kinds to their ArchLang words", () => {
     const kinds = ["sliding", "pocket", "bifold", "garage", "opening", "french"].map((type, i) => ({
       id: `d${i}`,
-      wallId: "top",
+      wallId: "top-wall",
       position: 0.15 + i * 0.14,
       width: 40,
       type,
       swingDirection: "left",
     }));
     const src = sourceOf(openPlan3dToArch(web({ walls: BOX, doors: kinds })));
-    expect(src).toContain("door id=d0 sliding on top at 600 width 400 head 2100");
-    expect(src).toContain("door id=d1 pocket on top at 1160 width 400 slide right head 2100");
-    expect(src).toContain("door id=d2 bifold on top at 1720 width 400 swing in head 2100");
-    expect(src).toContain("door id=d3 garage on top at 2280 width 400 head 2100");
-    expect(src).toContain("opening id=d4 on top at 2840 width 400 head 2100");
-    expect(src).toContain("door id=d5 double on top at 3400 width 400 swing in head 2100");
+    expect(src).toContain("door id=d0 sliding on top_wall at 600 width 400 head 2100");
+    expect(src).toContain("door id=d1 pocket on top_wall at 1160 width 400 slide right head 2100");
+    expect(src).toContain("door id=d2 bifold on top_wall at 1720 width 400 swing in head 2100");
+    expect(src).toContain("door id=d3 garage on top_wall at 2280 width 400 head 2100");
+    expect(src).toContain("opening id=d4 on top_wall at 2840 width 400 head 2100");
+    expect(src).toContain("door id=d5 double on top_wall at 3400 width 400 swing in head 2100");
     expect(errorsOf(src)).toEqual([]);
   });
 });
@@ -376,14 +381,19 @@ describe("rooms, walls and metadata", () => {
       web({
         walls: BOX,
         rooms: [
-          { id: "r1", name: "Kitchen", walls: ["top", "right", "bottom", "left"], details: { roomType: "kitchen" } },
-          { id: "r2", name: "Ghost", walls: ["top"] },
+          {
+            id: "r1",
+            name: "Kitchen",
+            walls: ["top-wall", "right-wall", "bottom-wall", "left-wall"],
+            details: { roomType: "kitchen" },
+          },
+          { id: "r2", name: "Ghost", walls: ["top-wall"] },
         ],
       }),
     );
     const src = sourceOf(r);
     expect(src).toContain('room id=r1 at (0, 0) size 4000x3000 label "Kitchen" uses kitchen');
-    expect(src).toContain("wall id=top exterior");
+    expect(src).toContain("wall id=top_wall exterior");
     expect(r.report!.counts.rooms).toEqual({ in: 2, mapped: 1, dropped: 1 });
     expect(r.report!.dropped[0]).toMatchObject({ kind: "rooms", id: "r2" });
   });
@@ -408,7 +418,10 @@ describe("rooms, walls and metadata", () => {
   it("keeps a label's braces and quotes literal", () => {
     const src = sourceOf(
       openPlan3dToArch(
-        web({ walls: BOX, rooms: [{ id: "r", name: 'Den {x} "a"', walls: ["top", "right", "bottom", "left"] }] }),
+        web({
+          walls: BOX,
+          rooms: [{ id: "r", name: 'Den {x} "a"', walls: ["top-wall", "right-wall", "bottom-wall", "left-wall"] }],
+        }),
       ),
     );
     expect(errorsOf(src)).toEqual([]);
@@ -450,7 +463,7 @@ describe("malformed and hostile input returns diagnostics, never a throw", () =>
   it("deep nesting where an object is expected", () => {
     let deep: unknown = {};
     for (let i = 0; i < 100_000; i++) deep = { x: deep };
-    const r = openPlan3dToArch(web({ walls: BOX, rooms: [{ id: "r", walls: ["top"], details: deep }] }));
+    const r = openPlan3dToArch(web({ walls: BOX, rooms: [{ id: "r", walls: ["top-wall"], details: deep }] }));
     expect(r.ok).toBe(true);
     const r2 = openPlan3dToArch(web({ walls: [{ id: "a", start: deep, end: { x: 1, y: 0 }, thickness: 1 }] }));
     expect(r2.ok).toBe(false);
