@@ -642,16 +642,16 @@ written; a room that no set fits stays empty, with the reason.
 - **Scope.** Rectangular rooms, and polygons whose every edge is horizontal or vertical: in those a piece stands only where an anchor or a named wall can say, on the outermost runs and the corners that are vertices of the ring, never against a notch edge. A circle or a slanted polygon is reported in `unresolved` and left as it is. A room
   of a placed component is reported too: furnish the component, or write the piece yourself where
   the instance is placed, `furniture rug in u1.bed anchor center size 800x600 rotate 0`.
+- **Voids, lifts and escalators.** A piece keeps off the storey's own `void`s, lift shafts and
+  escalators, on a single-storey plan as on each storey of a plan with `level` blocks, and
+  [`W_FURNITURE_ON_VOID`](error-codes.md#w_furniture_on_void) reports a piece that stands on one. A
+  `void` on another storey takes no floor here.
 - **Storeys.** A plan with `level` blocks is furnished storey by storey, by the rules of a
-  single-storey plan with one addition, below. Each storey's statements go inside its own block, so
-  `in <room>` and `against wall <id>` mean that storey's room and wall when the same id stands on
-  another level. A piece keeps off a shaft's flights and landings, a flight that passes through the
-  floor from the storey above or below, and, the addition, the storey's own `void`s and its lifts
-  and escalators. A `void` on another storey takes no floor here. A single-storey plan does not get
-  the addition: its output stays as it was, so `finish` can still write a piece on a `void`, a lift
-  or an escalator there, and no lint rule reports it. "Never worse" is judged storey by storey: no
-  storey may gain a diagnostic, whatever another storey lost. `changes` and `unresolved` entries
-  carry the `level`.
+  single-storey plan. Each storey's statements go inside its own block, so `in <room>` and
+  `against wall <id>` mean that storey's room and wall when the same id stands on another level. A
+  piece keeps off a shaft's flights and landings, and a flight that passes through the floor from
+  the storey above or below. "Never worse" is judged storey by storey: no storey may gain a
+  diagnostic, whatever another storey lost. `changes` and `unresolved` entries carry the `level`.
 - **Time.** Each check of the "never worse" gate compiles and lints the whole building, so `finish`
   takes longer as storeys are added, and it grows faster than the storey count. As one measurement,
   not a promise: `--only furnish` on the same floor of seven furnished rooms and a hall took about
@@ -672,6 +672,7 @@ furniture and fixture rules (each documented in the [error catalog](error-codes.
 | `W_ROOM_NO_FIXTURE` | a bath / WC / kitchen room with none of the relevant fixtures |
 | `W_SWING_OBSTRUCTED` | a door leaf or swing arc sweeping onto a fixture |
 | `W_FURN_CLEAR_FRONT` / `W_FURN_CLEAR_SIDES` | a declared `clear front` / `clear sides` depth with a solid piece, a wall body or a door swing inside it |
+| `W_FURNITURE_ON_VOID` | a piece, a rug as much as a wardrobe, standing on a `void` of its own storey, a lift shaft or an escalator: there is no floor there |
 | `W_SEAT_FACING_AWAY` | a chair, office chair or outdoor chair within 600 mm of a table or desk whose front faces away from every one of them (`seatTableReachMm`) |
 | `W_FOOTPRINT_TRANSPOSED` | a piece of a family that comes in one shape (bed, bunk bed, crib, bath, WC, bidet, `sofa_l`, loveseat, bar counter, TV, mirror, treadmill) whose symbol frame has its long side where the catalogue footprint has its short one, by at least 5:4, so it draws turned a quarter: `sofa_l … size 900x2400` with no `rotate`. A family sold in both shapes (wardrobe, filing cabinet, locker, sink) is not judged |
 

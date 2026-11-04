@@ -263,12 +263,111 @@ suite("`at axis.2` on an opening stands on the axis", () => {
     expect(codes(at("p from start"))).not.toContain("E_PARSE");
   });
 
-  it("arithmetic on it stays a number along the wall", () => {
+  /**
+   * CR2 group C (decision CR-D5): `at axis.2 + 500` used to be a plain number, that many mm along
+   * the wall from its start, so it landed on the axis only on a wall starting at 0 and an author
+   * reading "500 mm past axis 2" got another position without a word. An axis is a plan
+   * coordinate and a position along a wall is a distance, so arithmetic on an axis is refused
+   * there, and the hint gives both spellings: `at axis 2`, and the distance that reaches the
+   * plan coordinate the expression meant.
+   */
+  const AT_X = (wall: string, pos: string): string =>
+    plan(
+      `  axes { x at 0, 3000 }`,
+      `  wall id=w exterior thickness 200 { ${wall} }`,
+      `  door id=d on w at ${pos} width 900`,
+    );
+
+  it.each([
+    // name, wall, position, the distance the hint quotes, the plan x the position meant
+    ["a wall that starts at 1000", "(1000,0) (9000,0)", "axis.2 + 500", "2500", 3500],
+    ["a wall that runs right to left", "(9000,0) (0,0)", "axis.2 + 500", "5500", 3500],
+    ["a wall that starts at 0", "(0,0) (9000,0)", "axis.2 + 500", "3500", 3500],
+    ["subtraction", "(1000,0) (9000,0)", "axis.2 - 500", "1500", 2500],
+    ["a scaled read", "(1000,0) (9000,0)", "axis.2 * 2", "5000", 6000],
+    ["two axes", "(1000,0) (9000,0)", "axis.2 - axis.1 + 1000", "3000", 4000],
+  ] as const)(
+    "arithmetic on it is refused on %s, and the distance the hint quotes lands where the expression meant",
+    (_n, wall, pos, along, x) => {
+      const src = AT_X(wall, pos);
+      const [d, ...rest] = errors(src);
+      expect(rest).toEqual([]);
+      expect(d).toMatchObject({ code: "E_OPENING_DATUM" });
+      expect(quoted(src, d!)).toContain(pos);
+      expect(d!.hints!.join(" ")).toContain("`at axis 2`");
+      expect(d!.hints!.join(" ")).toContain(`\`at ${along}\``);
+      // Paste the hint: the door stands where the expression, read as a plan x, meant.
+      expect(doorAt(AT_X(wall, along))).toEqual({ x, y: 0 });
+      expect(errors(AT_X(wall, along))).toEqual([]);
+    },
+  );
+
+  it("no distance is quoted when the plan coordinate is off the wall, and the refusal stands", () => {
+    const src = AT_X("(1000,0) (9000,0)", "axis.2 + 7000");
+    const [d] = errors(src);
+    expect(d).toMatchObject({ code: "E_OPENING_DATUM" });
+    expect(d!.hints!.join(" ")).toContain("`at axis 2`");
+    expect(d!.hints!.join(" ")).not.toMatch(/`at \d/);
+  });
+
+  it("an undeclared axis in the arithmetic is the evaluator's one error, with no hint naming it", () => {
+    for (const pos of ["axis.9 + 1", "axis.9 + 1 from end"]) {
+      const src = AT_X("(1000,0) (9000,0)", pos);
+      const es = errors(src);
+      expect(
+        es.map((d) => d.code),
+        pos,
+      ).toEqual(["E_UNKNOWN_REF"]);
+      expect(es[0]!.message, pos).toContain('No positioning axis is labelled "9"');
+      expect(JSON.stringify(es), pos).not.toContain("`at axis 9`");
+    }
+    // `between … from`, the relational route, the same way.
+    const rooms = `  room id=a at (0,0) size 3000x3000\n  room id=b right-of a size 3000x3000`;
+    const walls = `  walls from rooms exterior 200 partition 100`;
+    const src = plan(
+      `  axes { y at 0, 1500 }`,
+      rooms,
+      walls,
+      `  door id=d between a and b at axis.Q - 1000 from start width 800`,
+    );
+    expect(errors(src).map((d) => d.code)).toEqual(["E_UNKNOWN_REF"]);
+    // A declared axis beside an undeclared one: both errors stand, and the hint names the declared one.
+    const mixed = errors(AT_X("(1000,0) (9000,0)", "axis.2 + axis.9"));
+    expect(mixed.map((d) => d.code).sort()).toEqual(["E_OPENING_DATUM", "E_UNKNOWN_REF"]);
+    const datum = mixed.find((d) => d.code === "E_OPENING_DATUM")!;
+    expect(datum.hints!.join(" ")).toContain("`at axis 2`");
+    expect(datum.hints!.join(" ")).not.toContain("axis 9");
+  });
+
+  it("refused under `from` and `%` too, which measure along the wall", () => {
+    for (const pos of ["axis.2 + 500 from end", "axis.2 / 100%", "(axis.2 + 500) from start"]) {
+      const src = AT_X("(1000,0) (9000,0)", pos);
+      expect(
+        errors(src).map((d) => d.code),
+        pos,
+      ).toEqual(["E_OPENING_DATUM"]);
+    }
+  });
+
+  it("refused on `between` under `from` (a plain number there already names no datum)", () => {
+    const rooms = `  room id=a at (0,0) size 3000x3000\n  room id=b right-of a size 3000x3000`;
+    const walls = `  walls from rooms exterior 200 partition 100`;
+    const at = (pos: string): string =>
+      plan(`  axes { y at 0, 1500 }`, rooms, walls, `  door id=d between a and b at ${pos} width 800`);
+    const src = at("axis.A - 1000 from start");
+    expect(errors(src).map((d) => d.code)).toEqual(["E_OPENING_DATUM"]);
+    expect(errors(src)[0]!.hints!.join(" ")).toContain("`at axis A`");
+    expect(errors(at("1500 from start"))).toEqual([]);
+  });
+
+  it("the control: arithmetic on a `let` reads as it always did", () => {
     const src = plan(
       `  axes { x at 0, 3000 }`,
-      `  wall id=w exterior thickness 200 { (0,0) (9000,0) }`,
-      `  door id=d on w at axis.2 + 500 width 900`,
+      `  let p = 2000`,
+      `  wall id=w exterior thickness 200 { (1000,0) (9000,0) }`,
+      `  door id=d on w at p + 500 width 900`,
     );
+    expect(errors(src)).toEqual([]);
     expect(doorAt(src)).toEqual({ x: 3500, y: 0 });
   });
 });

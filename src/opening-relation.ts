@@ -37,6 +37,7 @@
 
 import type { AttachPos, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
+import { exprChildren } from "./cursor.js";
 import { chargeSteps } from "./expr.js";
 import type { Expr } from "./expr.js";
 import { distPointToWallSegment, segmentsOfWall, type WallSegment } from "./geometry.js";
@@ -53,7 +54,7 @@ import {
   standingJunctionSpans,
 } from "./opening-junctions.js";
 import type { DatumTable, RoomDatums } from "./room-datums.js";
-import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "./room-datums.js";
+import { axisRead, COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "./room-datums.js";
 import {
   type EdgeLine,
   extremeRuns,
@@ -231,11 +232,12 @@ function readEdge(
   return edgeOfRoom(access.table, d.room, word);
 }
 
-const datumDiag = (message: string, span: Span | undefined): Diagnostic => ({
+const datumDiag = (message: string, span: Span | undefined, hints?: string[]): Diagnostic => ({
   severity: "error",
   message,
   code: "E_OPENING_DATUM",
   ...(span ? { span } : {}),
+  ...(hints ? { hints } : {}),
 });
 
 // ---- hosted datum positions (`on <wall> at …`) ------------------------------------------
@@ -345,6 +347,111 @@ function axisLine(
     return undefined;
   }
   return { vertical: a.axis === "x", c: a.pos };
+}
+
+// ---- arithmetic on an axis (`at axis.2 + 500`, CR-D5) -----------------------------------
+
+/**
+ * The positioning-axis labels an opening's position expression reads (`axis.2 + 500` reads
+ * `2`), in source order, each once. The bare `at axis.2` never reaches here: the parser turns
+ * it into `at axis 2`. Uncharged on purpose: the walk visits the nodes the evaluation of the
+ * same expression has just paid for, and charging it would move the step count of every plan
+ * that writes an expression position.
+ */
+export function axisLabelsRead(e: Expr): string[] {
+  const out: string[] = [];
+  const go = (x: Expr): void => {
+    if (x.t === "ref") {
+      const label = axisRead(x.name);
+      if (label !== undefined && !out.includes(label)) out.push(label);
+    }
+    for (const c of exprChildren(x)) go(c);
+  };
+  go(e);
+  return out;
+}
+
+/**
+ * The refusal of arithmetic on an axis in an opening's position (decision CR-D5). An axis is a
+ * plan coordinate and a position along a wall is a distance along it, so `at axis.2 + 500` used
+ * to land 3500 mm from the wall's start: on the axis only on a wall that starts at 0, and
+ * somewhere else without a word on any other. `along` is the distance that reaches the plan
+ * coordinate the expression meant, when one is known; the hint quotes it.
+ */
+export function axisArithmeticDiag(
+  what: string,
+  pos: AttachPos,
+  labels: readonly string[],
+  span: Span | undefined,
+  along?: { wall: string; vertical: boolean; c: number; d: number },
+): Diagnostic {
+  const first = labels[0]!;
+  const reach = along
+    ? `; for the point on \`${along.wall}\` where ${along.vertical ? "x" : "y"} = ${numStr(along.c)}, write \`at ${numStr(along.d)}\` (mm from the wall's start)`
+    : "; for a point off the axis, measure it from an end of the run: `at <mm> from start|end`";
+  return datumDiag(
+    `${what} is placed \`at ${attachPosStr(pos)}\`, arithmetic on \`axis.${first}\`: an axis is a plan coordinate, but a position along a wall is a distance along it, so the result lands on the axis only by chance`,
+    span,
+    [`To stand on the axis, write \`at axis ${first}\`${reach}.`],
+  );
+}
+
+/**
+ * The run distance at which an axis line `line` crosses a hosted wall's straight run, when it
+ * crosses it at exactly one point; `undefined` otherwise (a curved run, a run along the line,
+ * none or several crossings). The arithmetic of {@link hostedDatumDistance}, step for step,
+ * without its diagnostics: only a hint reads it.
+ */
+export function axisCrossingDistance(
+  line: { vertical: boolean; c: number },
+  segs: readonly WallSegment[],
+  segLen: (s: WallSegment) => number,
+): number | undefined {
+  chargeSteps(segs.length + 1);
+  const hits: Array<{ p: Point; dist: number }> = [];
+  let acc = 0;
+  for (const s of segs) {
+    const len = segLen(s);
+    if (s.arc) return undefined;
+    const ka = line.vertical ? s.a.x : s.a.y;
+    const kb = line.vertical ? s.b.x : s.b.y;
+    if (ka === line.c && kb === line.c) return undefined;
+    if (Math.min(ka, kb) <= line.c && line.c <= Math.max(ka, kb)) {
+      const t = (line.c - ka) / (kb - ka);
+      const p = t === 0 ? s.a : t === 1 ? s.b : { x: s.a.x + t * (s.b.x - s.a.x), y: s.a.y + t * (s.b.y - s.a.y) };
+      if (!hits.some((h) => h.p.x === p.x && h.p.y === p.y)) hits.push({ p, dist: acc + t * len });
+    }
+    acc += len;
+  }
+  return hits.length === 1 ? hits[0]!.dist : undefined;
+}
+
+/**
+ * The labels of `labels` this scope declares, in order. An undeclared one (`axis.9` on a grid of
+ * two) is already `E_UNKNOWN_REF` at the datum, from the evaluator; when none is declared the
+ * arithmetic refusal is not added on top, so one mistake is one error and no hint names a label
+ * the plan does not have. One step per label and axis, as `at axis` pays.
+ */
+export function declaredAxes(labels: readonly string[], ctx: RelationCtx | undefined): string[] {
+  const axes = ctx?.datums?.table.axes ?? [];
+  chargeSteps(1 + labels.length * axes.length);
+  return labels.filter((l) => axes.some((a) => a.label === l));
+}
+
+/** The axis family every label belongs to (`vertical` for `x` axes), or `undefined` when they
+ *  mix families or one is not declared. One step per label and axis, as `at axis` pays. */
+export function axisFamily(labels: readonly string[], ctx: RelationCtx): boolean | undefined {
+  const axes = ctx.datums?.table.axes ?? [];
+  chargeSteps(1 + labels.length * axes.length);
+  let vertical: boolean | undefined;
+  for (const l of labels) {
+    const a = axes.find((x) => x.label === l);
+    if (!a) return undefined;
+    const v = a.axis === "x";
+    if (vertical !== undefined && v !== vertical) return undefined;
+    vertical = v;
+  }
+  return vertical;
 }
 
 // ---- relational placement (`between`, `on <room>.<edge>`) ------------------------------
@@ -583,6 +690,13 @@ function positionOnRun(
       return undefined;
     case "from": {
       const v = ctx.eval(pos.value);
+      const axes = axisLabelsRead(pos.value);
+      if (axes.length > 0) {
+        // Only the declared labels: an undeclared one is the evaluator's E_UNKNOWN_REF already.
+        const known = declaredAxes(axes, ctx);
+        if (known.length > 0) ctx.diag(axisArithmeticDiag(what, pos, known, posSpan));
+        return undefined;
+      }
       if (!Number.isFinite(v)) {
         ctx.diag(datumDiag(`${what}'s offset is not a finite number (got ${v})`, posSpan));
         return undefined;
