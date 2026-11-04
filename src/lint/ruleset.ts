@@ -103,7 +103,7 @@ export interface LintRuleset {
    *
    * **Source.** 100 mm is the low end of the trade practice (100-150 mm) for the return a
    * frame and architrave or a lining need beside a jamb, recorded with its source in
-   * `docs/plans/plan-soundness/research/associativity.md` (the door-nib row, BuildHub
+   * `archlang-lab/plans/plan-soundness/research/associativity.md` (the door-nib row, BuildHub
    * "architrave offset") and `research/prior-art.md` (T5: an opening's span stays clear of
    * wall junctions by at least a nib).
    */
@@ -117,7 +117,7 @@ export interface LintRuleset {
    * the corner's CENTRELINE point; the meeting wall's face stands half its thickness short of
    * that point, so for two walls of one thickness the same requirement read at the face is
    * half the thickness. The plan-soundness audit proposed the same `max(100, H.thickness/2)`
-   * at the face (`docs/plans/plan-soundness/audits/showcase-and-examples.md`, proposed check
+   * at the face (`archlang-lab/plans/plan-soundness/audits/showcase-and-examples.md`, proposed check
    * 1) and found no false positive on its corpus.
    *
    * **Measured against the plan's first reading, a full thickness (ratio 1.0).** The PS2.1
@@ -132,7 +132,7 @@ export interface LintRuleset {
    * The thinnest pier of wall that may separate two openings on one run — a mullion.
    * `W_OPENING_OVERLAP` fires when two openings' along-run spans intersect, or leave less
    * than this between them. Default 100: the mullion width the plan-soundness audit used
-   * (`docs/plans/plan-soundness/audits/archcanvas-public-examples.md`, proposed check 1),
+   * (`archlang-lab/plans/plan-soundness/audits/archcanvas-public-examples.md`, proposed check 1),
    * the same 100 mm as {@link minJunctionNibMm}'s first limb, since either side of the pier
    * has a frame to carry.
    */
@@ -161,7 +161,7 @@ export interface LintRuleset {
    * whole mm; the door warns when the fixture is nearer than this. Default 1500.
    *
    * **Why 1500.** It is the clear width GB 50096-2011 5.3.5 gives a kitchen with one row of
-   * fixtures (at least 1.50 m, cited as advice; `docs/plans/plan-soundness/research/
+   * fixtures (at least 1.50 m, cited as advice; `archlang-lab/plans/plan-soundness/research/
    * design-taste.md` R23): the band a kitchen run needs in front of it. A door inside that band
    * opens into the kitchen itself; one beyond it opens into the living or dining end of the
    * room, which the taste layer grades and no rule warns.
@@ -212,7 +212,7 @@ export interface LintRuleset {
    *  - `storage`, `utility`, `hall`, `circulation`, `entry` exempt: the standard sets no area
    *    for a store, a laundry or a lobby, and a cupboard is a room. A passage is judged by its
    *    width (`W_PATH_TOO_NARROW`), never its area.
-   * Clauses as read in `docs/plans/plan-soundness/research/prior-art.md` §3.1 (full text
+   * Clauses as read in `archlang-lab/plans/plan-soundness/research/prior-art.md` §3.1 (full text
    * extracted), applied as advice, never as compliance (ADR 0005).
    *
    * Merged PER USE ({@link resolveRuleset}): a profile or a caller that sets `{ wc: 1.5 }` changes
@@ -317,7 +317,7 @@ export interface LintRuleset {
    * gives for an accessible-and-adaptable dwelling's WC centreline to the adjacent wall (M4(2);
    * read in the gov.uk PDF, "all dimensions are minimum except where noted" [V]; it superseded
    * Lifetime Homes criterion 10's same 400–500), between the US code minimum of 15 in (381 mm, IRC P2705.1)
-   * and the NKBA's recommended 18 in (457 mm) [S] (`docs/plans/plan-soundness/research/
+   * and the NKBA's recommended 18 in (457 mm) [S] (`archlang-lab/plans/plan-soundness/research/
    * prior-art.md` §3.3, `design-taste.md` R10). The `us`, `uk` and accessibility profiles set
    * their own figures; `cn` keeps this one, since GB 50096-2011 gives none.
    */
@@ -399,7 +399,7 @@ export interface LintRuleset {
    * Council, *Parking guidance for new developments* (2022) §8 Table 9, a car parking space 5.0
    * × 2.8 m [V]; Monmouthshire County Council, *SPG Domestic Garages* (2013) ¶21, a car port's
    * roof at least 5.0 m long [V]. A garage shallower than a bay cannot hold a car at all
-   * (`docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md` § PS2.70).
+   * (`archlang-lab/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md` § PS2.70).
    */
   garageDepthMm: number | null;
   /**
@@ -413,7 +413,7 @@ export interface LintRuleset {
    * of each exterior door", not less than the door's width and "not less than 36 inches (914 mm)
    * measured in the direction of travel" (2012 and 2021 text, read verbatim in two independent
    * state copies [S], Indiana DHS and Montana DLI's 2021 IRC means-of-egress training: the ICC
-   * viewer was not readable, `docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md`
+   * viewer was not readable, `archlang-lab/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md`
    * § PS2.69; ratified under plan-soundness D27). Its exception, an exterior balcony under 60 sq ft
    * reached only through a door, matches the rule's skip of every `outdoor balcony` door. The
    * International Building Code's 1010.1.6 asks 1118 mm outside dwellings; not applied.
@@ -434,7 +434,7 @@ export interface LintRuleset {
    * single 90 × 190, small double 120 × 190, double 135 × 190): Which?, *UK mattress sizes: bed and
    * mattress size guide* (8 May 2026), table "Standard UK bed and mattress sizes" [M: a consumer
    * magazine, not a standard]. A mattress size, so the drawn frame of a real bed is at least that
-   * (`docs/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md` § PS2.67).
+   * (`archlang-lab/plans/plan-soundness/research/2026-10-27-ps267-271-sources.md` § PS2.67).
    */
   bedMinLengthMm: number | null;
   /**
@@ -458,7 +458,7 @@ export interface LintRuleset {
 
 /**
  * A bed wider than this (mm, its footprint's shorter side) sleeps two: a double. The lead's
- * ruling for plan-soundness PS5.2 (`docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md`
+ * ruling for plan-soundness PS5.2 (`archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md`
  * §5): a single bed is 900–1000 mm wide and a small double from about 1200 mm, so 1200 separates
  * them. Read only by the double-bedroom thresholds, which no default sets.
  */
@@ -558,7 +558,7 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
   /**
    * Room sizes and passage widths read from China's residential design code, as ADVICE (ADR
    * 0005: the name is not the standard's, and passing is not compliance). Source: GB 50096-2011
-   * 住宅设计规范, full text read (`docs/plans/plan-soundness/research/prior-art.md` §3.1) [V].
+   * 住宅设计规范, full text read (`archlang-lab/plans/plan-soundness/research/prior-art.md` §3.1) [V].
    * Areas are net floor (使用面积, the clauses' measure; {@link LintRuleset.roomAreaMeasure}), and
    * widths are clear, between wall faces (净宽). GB 50096-2011 gives no WC side clearance, so R10
    * keeps the default {@link LintRuleset.wcSideClearanceMm}; and no number for R37 (escape window).
@@ -651,7 +651,7 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
  * sources are not lost (plan-soundness PS5.2, 2026-10-24). Nothing reads them: R10's front
  * clearance and R37 (PS2.16's escape-window rule) each move their numbers into the profile as
  * ruleset fields when their rule lands, as R10's side clearance did (`wcSideClearanceMm`,
- * PS2.11a). Design: `docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §5.
+ * PS2.11a). Design: `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §5.
  */
 export const DEFERRED_PROFILE_NUMBERS = Object.freeze({
   /** R10, `us`: 21 in (533 mm) clear in front of a WC (IRC R307.1) [S, `prior-art.md` §3.3; clause

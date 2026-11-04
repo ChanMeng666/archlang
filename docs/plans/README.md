@@ -3,6 +3,7 @@
 Multi-session plans. Each folder is self-contained: a `README.md` with the decisions and the order of
 work, dated evidence, and (where the programme is running) a `handoff.md` that is the resume point.
 A plan small enough for one page is a single file here.
+Closed programme research (audits, studies, spikes) lives in the private sibling repository `archlang-lab`.
 
 | Folder | What | Status (2026-11-01) |
 |---|---|---|

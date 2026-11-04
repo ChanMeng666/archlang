@@ -1,6 +1,6 @@
 /**
  * A block stair's landings between its flights, and a rising block read to the height asked (issue
- * #362, card S4, `docs/plans/preview-and-remodel/research/2026-11-02-j11-stairs-s4.md`).
+ * #362, card S4, `archlang-lab/plans/preview-and-remodel/research/2026-11-02-j11-stairs-s4.md`).
  *
  * A landing is read leg by leg, along each flight that meets it. At a corner `E_STAIR_PIECES` holds
  * both legs at `width` already. The rise spreads over the flights, landings level, so the high end of

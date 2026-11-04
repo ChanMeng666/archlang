@@ -1,6 +1,6 @@
 /**
  * The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice
- * (plan-soundness PS5.1b; design `docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md`
+ * (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md`
  * §3 R9, R18).
  *
  * The rectangle is read from the SHAPE: the convex hull of the ring, then rotating calipers over

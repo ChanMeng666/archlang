@@ -52,3 +52,17 @@ identifiers:
   - description: The archived snapshot of ArchLang 1.36.0 (main, 2026-09-25)
     type: doi
     value: "10.5281/zenodo.22950937"
+# Work about ArchLang. A preprint on Zenodo, not peer-reviewed.
+references:
+  - type: article
+    title: "Reproducible Is Not Correct: Reflexive Gates and the Self-Descriptions We Ship to Language Models"
+    authors:
+      - family-names: Meng
+        given-names: Chan
+        orcid: "https://orcid.org/0009-0002-1446-778X"
+    year: 2026
+    status: preprint
+    publisher:
+      name: Zenodo
+    doi: "10.5281/zenodo.22958002"
+    url: "https://doi.org/10.5281/zenodo.22958002"

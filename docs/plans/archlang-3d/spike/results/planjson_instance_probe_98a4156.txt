@@ -1,9 +1,0 @@
-{
-  "irWalls": 7,
-  "irDerivedWalls": 6,
-  "planJsonOk": false,
-  "diagnostics": [
-    "error:E_JSON_DERIVED_IN_INSTANCE"
-  ],
-  "keys": []
-}

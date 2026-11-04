@@ -1,6 +1,6 @@
 /**
  * H1, ported from the archlang-3d spike (`spike/src/h1_wall_ownership.mts`, `h1_prism_check.mts`;
- * evidence in `docs/plans/archlang-3d/research/02-wall-geometry.md`): the core's joinery hands back
+ * evidence in `archlang-lab/plans/archlang-3d/research/02-wall-geometry.md`): the core's joinery hands back
  * one owned region per wall, the regions tile the joined solid, a wall may own several connected
  * pieces, every opening's cut lands on a piece, and a mixed-height joint is reported where the
  * lower wall owns it.

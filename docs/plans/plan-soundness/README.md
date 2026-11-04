@@ -1,5 +1,9 @@
 # Plan-soundness programme: professional rules and taste for ArchLang
 
+> **Moved:** this programme's `research/`, `audits/` and `evidence.md` now live in the private sibling
+> repository, at `archlang-lab/plans/plan-soundness/`. The `.arch` plans of `audits/first-contact-plans/`
+> and `repro/` (with its README) are test fixtures in this repository, at `test/plans/plan-soundness/`.
+
 **Status:** open. Planned 2026-10-18 against `main@98bd30b` (v1.43.1). The owner delegated the four
 programme decisions (§3) and asked for this document to drive implementation in later sessions.
 

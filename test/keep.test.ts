@@ -1,6 +1,6 @@
 /**
  * `keep` (ADR 0033; plan-soundness PS4.3a; design
- * `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`): the worked widening
+ * `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`): the worked widening
  * drill of design §9 reproduced through the CLI, each form's holds ⇔ residual rule and sign on
  * hand-built cases (the lattice edge, grid snapping R5, lattice rounding R6, `min clear` spanning
  * R18), the parsing rules (R14), the printer round trip, Plan JSON's drop, the budget (R11, R13),

@@ -1,5 +1,8 @@
 # Preview-and-remodel programme: handoff (state as of 2026-11-02, the J round released)
 
+> **Moved:** this programme's `research/` now lives in the private sibling repository, at
+> `archlang-lab/plans/preview-and-remodel/research/`.
+
 The resume point for a new session. Re-written at every wave end; dated history goes to `research/`.
 
 ## 1. Where the programme stands

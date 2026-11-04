@@ -41,7 +41,7 @@ function archUnder(dir: string): { name: string; src: string }[] {
 const CORPUS = [
   ...SHIPPED_EXAMPLES.map((rel) => ({ name: `examples/${rel}`, src: EXAMPLE_FILES[rel]! })),
   ...archUnder("eval/goldens"),
-  ...archUnder("docs/plans/plan-soundness/audits/first-contact-plans"),
+  ...archUnder("test/plans/plan-soundness/audits/first-contact-plans"),
   ...archUnder("test/defect-corpus"),
   ...archUnder("test/taste-corpus"),
   ...archUnder("test/fixtures"),

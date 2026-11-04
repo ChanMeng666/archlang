@@ -242,7 +242,7 @@
  *     is measured (it was `null`) and the caption names the entrance. `lint()` withdraws
  *     `W_NO_ENTRANCE`, its only diagnostic, and gains nothing.
  *     Two surfaces no digest here pins move with it, on this row and on
- *     `docs/plans/plan-soundness/repro/door-on-tee.arch` (no row): Plan JSON (`compile -f json`),
+ *     `test/plans/plan-soundness/repro/door-on-tee.arch` (no row): Plan JSON (`compile -f json`),
  *     whose edge for that door goes from `living`→`bath`, `interior` to `exterior`→`living`,
  *     `front`; and `lint()` under `accessibility-advisory`, which gains `W_PATH_TOO_NARROW` twice
  *     (one walk per room, 840 and 740 mm clear against the 900 mm minimum) now that a route exists.

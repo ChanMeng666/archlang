@@ -39,7 +39,7 @@ function setImpact(src: string, name: string, value: string): ImpactReport {
 const heldLines = (r: ImpactReport): string[] => r.summary.filter((l) => / stayed at /.test(l));
 
 suite("PS4.5 — the widening drill: the shell and p are held", () => {
-  const before = readFileSync("docs/plans/plan-soundness/repro/widen-before.arch", "utf8");
+  const before = readFileSync("test/plans/plan-soundness/repro/widen-before.arch", "utf8");
 
   it("records the walls' contacts (and nothing else's)", () => {
     const withContacts = rows(before).filter((e) => e.contacts);
@@ -68,7 +68,7 @@ suite("PS4.5 — the widening drill: the shell and p are held", () => {
   });
 
   it("read backwards (after → before) the same walls are not held: they never lay on the moved edges", () => {
-    const after = readFileSync("docs/plans/plan-soundness/repro/widen-after.arch", "utf8");
+    const after = readFileSync("test/plans/plan-soundness/repro/widen-after.arch", "utf8");
     // On the after side p (x 4000) lies inside a; the shell's x 8000 is inside b. Contacts are
     // read on the before side, so narrowing back reports neither.
     expect(impact(after, before).held).toEqual([]);

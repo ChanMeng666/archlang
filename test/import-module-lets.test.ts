@@ -391,7 +391,7 @@ suite("a module `let` that fails reports as it does in the module", () => {
  *     is measured (it was `null`) and the caption names the entrance. `lint()` withdraws
  *     `W_NO_ENTRANCE`, its only diagnostic, and gains nothing.
  *     Two surfaces no digest here pins move with it, on this row and on
- *     `docs/plans/plan-soundness/repro/door-on-tee.arch` (no row): Plan JSON (`compile -f json`),
+ *     `test/plans/plan-soundness/repro/door-on-tee.arch` (no row): Plan JSON (`compile -f json`),
  *     whose edge for that door goes from `living`→`bath`, `interior` to `exterior`→`living`,
  *     `front`; and `lint()` under `accessibility-advisory`, which gains `W_PATH_TOO_NARROW` twice
  *     (one walk per room, 840 and 740 mm clear against the 900 mm minimum) now that a route exists.
@@ -477,7 +477,7 @@ suite("a module `let` that fails reports as it does in the module", () => {
  * statements again (sink, stove and worktop) where the first commit's hint said "make room
  * first"; `lint()` only, and the first commit's `lint()` put back reproduces each of its rows.
  * The same size fallback reaches every defining piece with more than one size: a bed's hint
- * now tries 1500 then 900 mm (`docs/plans/plan-soundness/repro/family-apartment.arch`'s "no
+ * now tries 1500 then 900 mm (`test/plans/plan-soundness/repro/family-apartment.arch`'s "no
  * bed" quotes `bed … size 900x2000`; not a row here). Review round 2: a hint's set is linted
  * with its pieces standing and is not quoted if it would raise any other finding, and a corner
  * worktop the resolver would not turn quotes its `rotate`; `two-bed-min-area.laundered`'s kitchen

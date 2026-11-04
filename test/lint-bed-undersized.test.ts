@@ -74,7 +74,7 @@ suite("W_BED_UNDERSIZED (PS2.67)", () => {
 
   it("the row-6 clinic warns on each of its three 1500 × 700 couches drawn as `bed`", () => {
     const src = readFileSync(
-      "docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch",
+      "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/6-clinic.arch",
       "utf8",
     );
     const ds = lint(src).filter((d) => d.code === B);

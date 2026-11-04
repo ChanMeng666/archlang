@@ -40,7 +40,7 @@ import { runValidate, withoutStageKeys } from "./validate-json-run.js";
  */
 
 /**
- * Each lint code's stage, as decided in `docs/plans/plan-soundness/research/2026-10-26-ps71-as-built.md`.
+ * Each lint code's stage, as decided in `archlang-lab/plans/plan-soundness/research/2026-10-26-ps71-as-built.md`.
  * A new rule adds its codes here: the row is the decision, reviewed with the rule.
  */
 const DECIDED: Record<AuthoringStage, string[]> = {

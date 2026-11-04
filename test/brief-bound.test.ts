@@ -13,8 +13,8 @@ import { describe as suite, expect, it } from "vitest";
 import { applyLetOverride, describe, type Intent, intentFromJson, validateIntent } from "../src/index.js";
 import { GROSS_AREA_REASONS, grossInternalArea } from "../src/analyze/gross-area.js";
 
-const FC = "docs/plans/plan-soundness/audits/first-contact-plans";
-const REPRO = "docs/plans/plan-soundness/repro";
+const FC = "test/plans/plan-soundness/audits/first-contact-plans";
+const REPRO = "test/plans/plan-soundness/repro";
 const read = (p: string): string => readFileSync(p, "utf8");
 const totals = (src: string) => describe(src).totals;
 

@@ -22,7 +22,7 @@ import { type ClearanceFacts, describe, lint } from "../src/index.js";
 import { EXAMPLE_FILES, EXAMPLES_WORLD } from "./d4-oracle.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const PLANS = join(ROOT, "docs/plans/plan-soundness/audits/first-contact-plans");
+const PLANS = join(ROOT, "test/plans/plan-soundness/audits/first-contact-plans");
 
 const clearances = (path: string): ClearanceFacts => {
   const s = describe(readFileSync(join(PLANS, path), "utf8"), { facts: ["clearances"] });

@@ -76,7 +76,7 @@ const OPEN_PLAN: ReadonlySet<string> = new Set(["kitchen", "dining", "living"]);
 /**
  * Fixed pieces that close a boundary they stand across — a servery counter, a bar, a kitchen
  * island (the first-contact café's counter in the gap to its seating,
- * `docs/plans/plan-soundness/audits/2026-10-18-first-contact.md` C-plan). Free furniture
+ * `archlang-lab/plans/plan-soundness/audits/2026-10-18-first-contact.md` C-plan). Free furniture
  * (a table, a sofa) does not: it moves.
  */
 const BOUNDARY_FIXTURES: ReadonlySet<string> = new Set(["counter", "bar_counter", "island"]);

@@ -1,5 +1,5 @@
 /**
- * PS4.3b (ADR 0033; design `docs/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`
+ * PS4.3b (ADR 0033; design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`
  * §5, §6, §9, R15, R16; card PS4.11): `arch impact`'s `keeps` section, `describe --facts
  * depends`' `depends.keeps[]`, and Plan JSON's note on the keeps it drops.
  *

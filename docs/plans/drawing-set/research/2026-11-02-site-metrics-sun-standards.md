@@ -233,7 +233,7 @@ building Dorm     = "dorm.arch"            storeys 1..16 { 1 = "dorm-ground.arch
 ### 5.1 现状（repo 事实）
 
 - `LINT_PROFILES` 在 `src/lint/ruleset.ts:530`，已有 `residential-basic`、`accessibility-advisory`、`cn-residential-advisory`（`:566`）、`uk-…`（`:597`）、`us-…`（`:627`）；`ADVISORY_CODE_PROFILES` 在 `:689-693`；`DEFERRED_PROFILE_NUMBERS` 在 `:656`（收纳「有来源但规则尚未存在」的数）。
-- 来源标注规范：每个数字行内注释 `GB 50096-2011 5.2.1: … [V]` 或 `[S, 来源]`；`:560-565` 的块注释写明「ADVICE，名称不是标准的，通过不等于合规（ADR 0005）」、全文已读（`docs/plans/plan-soundness/research/prior-art.md` §3.1）、净面积度量 `roomAreaMeasure`。IRC 因只有二手而全部标 `[S]`（`:619-626`）。`docs/backlog.md:78-79`：「A German profile stays out until its rules are read from the source」。
+- 来源标注规范：每个数字行内注释 `GB 50096-2011 5.2.1: … [V]` 或 `[S, 来源]`；`:560-565` 的块注释写明「ADVICE，名称不是标准的，通过不等于合规（ADR 0005）」、全文已读（`archlang-lab/plans/plan-soundness/research/prior-art.md` §3.1）、净面积度量 `roomAreaMeasure`。IRC 因只有二手而全部标 `[S]`（`:619-626`）。`docs/backlog.md:78-79`：「A German profile stays out until its rules are read from the source」。
 - `src/vocabulary.ts`（416 行）含 `UseKind` 与「Deliberately absent: balcony and terrace」（`:216-217`）；除 `classroom`（`:403`）外**没有 dormitory/gym 等用途词**（`grep -i school|dorm|classroom|gym` 仅命中 `:381` 注释与 `:403`）。新增 `cn-school-advisory` 前需先扩 `UseKind`。
 
 ### 5.2 可进 `cn-school-advisory`（若 owner 愿意；全部为「advisory，非合规」）

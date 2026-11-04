@@ -10,7 +10,7 @@
  *     moved, resized or re-thickened; a wall placed by relation that moved with its rooms is
  *     listed as following them.
  *
- * The two drills of `docs/plans/plan-soundness/repro/README.md` are pinned in full below, every
+ * The two drills of `test/plans/plan-soundness/repro/README.md` are pinned in full below, every
  * line explained.
  */
 
@@ -336,14 +336,14 @@ suite("PS0.4 defect 3: the wall section", () => {
 });
 
 // ---------------------------------------------------------------------------
-// The drills (`docs/plans/plan-soundness/repro/README.md`), pinned in full.
+// The drills (`test/plans/plan-soundness/repro/README.md`), pinned in full.
 // ---------------------------------------------------------------------------
 
 suite("PS0.4 drills", () => {
   it("widen-before.arch → widen-after.arch (`let AW` 4000 → 4500)", () => {
     const d = diffPlans(
-      read("docs/plans/plan-soundness/repro/widen-before.arch"),
-      read("docs/plans/plan-soundness/repro/widen-after.arch"),
+      read("test/plans/plan-soundness/repro/widen-before.arch"),
+      read("test/plans/plan-soundness/repro/widen-after.arch"),
     );
     expect(d.ok).toBe(true);
     // Living (`a`, `size AW x 5000`) grows 500 mm on its right edge: a true resize, 20 → 22.5 m².

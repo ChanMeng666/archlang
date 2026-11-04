@@ -368,7 +368,7 @@ suite("W_GARAGE_TOO_NARROW — the depth finding (PS2.70)", () => {
     const { readFileSync } = await import("node:fs");
     const read = (f: string) => readFileSync(new URL(`../${f}`, import.meta.url), "utf8");
     const house = depthFinding(
-      read("docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/2-house.arch"),
+      read("test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/2-house.arch"),
     );
     expect(house?.message).toContain("3000 mm deep from its vehicle door");
     expect(house?.message).not.toContain(`"garage"`);

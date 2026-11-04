@@ -273,7 +273,7 @@ const PINNED_ROWS: Record<string, [number, number, number, string]> = {
   "test/defect-corpus": [188, 9, 9, "0/0/0/9"], // H1: +2 corpus files (exterior-ring-open pair), both tile; PS2.70 (PR #307), PS2.74, PS2.69 (PR #308), PS2.67, B6: +2 corpus files each; G5: +4 corpus files (wall-end-short pairs); G9: +4 (furniture-on-flight, furniture-on-landing pairs) (garage-too-shallow, accessible-wc-pan-far, exit-approach-blocked, bed-undersized, garage-door-undersized pairs), all tile
   "test/recovery-corpus": [9, 0, 0, "0/0/0/0"],
   "test/fixtures": [33, 0, 0, "0/0/0/0"], // #405: +1 fixture (gaps/, a folder the probe walks), it tiles; sheet text: +1 fixture (sheet-text/, a folder the probe walks), it tiles; #345: +1 fixture of two storeys (shared-grid/, a folder the probe walks), both tile; #401: +1 fixture (corner-window/, a folder the probe walks), it tiles; #369: +1 fixture (window-kinds/, a folder the probe walks), it tiles; PS2.77: +1 fixture (storeys-eaves-overflow, two storeys), both tile; B1: +3 fixtures (lock-before, lock-partition-moved, lock-window-moved), all tile; #346: +8 fixtures (wall-closure/annex-* and not-*), all tile
-  "docs/plans/plan-soundness/repro": [6, 0, 0, "0/0/0/0"],
+  "test/plans/plan-soundness/repro": [6, 0, 0, "0/0/0/0"],
   "eval/goldens": [25, 0, 0, "0/0/0/0"],
   "eval/fidelity-plans": [9, 0, 0, "0/0/0/0"],
   "eval/faults": [6, 0, 0, "0/0/0/0"],

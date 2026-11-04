@@ -55,7 +55,7 @@ export const CORPUS_DIRS = [
   "test/defect-corpus", // audit defects and their clean twins, each a whole plan
   "test/recovery-corpus", // whole plans the recovery tests start from
   "test/fixtures", // whole-plan fixtures
-  "docs/plans/plan-soundness/repro", // the plan-soundness reproductions (incl. the widening drill)
+  "test/plans/plan-soundness/repro", // the plan-soundness reproductions (incl. the widening drill)
   "eval/goldens", // the eval golden plans
   "eval/fidelity-plans", // the eval fidelity plans
   "eval/faults", // seeded lint faults: still whole plans, so their rooms count
@@ -70,7 +70,7 @@ export const CORPUS_DIRS = [
  * AI-written plans from an audit (the research note's caveat names them as the check that a new
  * author also writes tilings), outside the corpus list the Acceptance names.
  */
-export const INFO_DIRS = ["docs/plans/plan-soundness/audits/first-contact-plans"] as const;
+export const INFO_DIRS = ["test/plans/plan-soundness/audits/first-contact-plans"] as const;
 
 /** Paths under a corpus directory that are not plans, with the reason (reported). */
 export const CORPUS_SKIPS: Record<string, string> = {

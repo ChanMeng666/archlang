@@ -1,7 +1,7 @@
 /**
  * **`sheet text { … }`** — the words a sheet draws, and the decimal mark of its numbers, as the plan
  * writes them (issue #403). The design and what was rejected:
- * `docs/plans/preview-and-remodel/research/2026-11-02-sheet-text.md`.
+ * `archlang-lab/plans/preview-and-remodel/research/2026-11-02-sheet-text.md`.
  *
  * Authored, never shipped: the core holds no translation, only the English words a sheet has always
  * drawn ({@link SHEET_WORDS}). A key the plan does not write keeps its English word, so a plan with no

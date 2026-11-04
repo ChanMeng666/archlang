@@ -1,7 +1,7 @@
 # Taste corpus
 
 Set C of the taste separation law (`test/taste-separation.test.ts`; ADR 0032; design
-`docs/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §4). Each case is a pair of
+`archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §4). Each case is a pair of
 plans that both lint clean and differ in ONE taste fact read by one criterion. The weaker plan is
 `<case>.arch` and the better one `<case>.good.arch`. The law asserts both twins lint clean, and
 that the better twin scores strictly higher on its criterion and on the total.

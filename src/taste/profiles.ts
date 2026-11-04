@@ -20,7 +20,7 @@ export const TASTE_PROFILES: Readonly<Record<string, TasteProfile>> = Object.fre
   },
   "cn-residential-advisory": {
     // GB 50096-2011 7.1.5: a window-to-floor area ratio of at least 1/7 for bedrooms, living
-    // rooms and kitchens [V, `docs/plans/plan-soundness/research/prior-art.md` §3.1].
+    // rooms and kitchens [V, `archlang-lab/plans/plan-soundness/research/prior-art.md` §3.1].
     daylightTarget: { num: 1n, den: 7n },
   },
   "uk-residential-advisory": {

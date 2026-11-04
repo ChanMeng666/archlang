@@ -13,7 +13,7 @@
  * The set is every plan of `examples/` and `test/fixtures/` that writes no `double` door and whose
  * payload the same PR left byte-identical: 23 of the 40 (28 examples and 12 fixtures) that write
  * none. The other 17 moved for the PR's lint rules, not for the kind, each named in
- * `docs/plans/plan-soundness/research/2026-10-26-ps211e-as-built.md`: 15 examples were edited to
+ * `archlang-lab/plans/plan-soundness/research/2026-10-26-ps211e-as-built.md`: 15 examples were edited to
  * clear `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP` (`garden-house` and `terrace-row` at exactly
  * 300 mm, inside the cited 305), `W_LEAF_TOO_WIDE` (`transit-hall` by becoming a `sliding` door)
  * or `W_DOORWAY_BLOCKED` read from the wall's face (PS2.54); `examples/relational.arch` was too,

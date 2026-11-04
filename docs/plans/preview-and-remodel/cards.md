@@ -1,5 +1,8 @@
 # Preview-and-remodel cards
 
+> **Moved:** this programme's `research/` now lives in the private sibling repository, at
+> `archlang-lab/plans/preview-and-remodel/research/`.
+
 Rules (same as `../plan-soundness/cards.md`): pick the first `todo` card whose dependencies are done
 and whose wave is open (`README.md` §4). Status words: `todo`, `doing`, `done` (cut to id, title,
 status, PR, commit; the as-built note goes verbatim to a dated `research/` record in this folder),
@@ -226,7 +229,7 @@ What the red-team rounds of #392–#398 left, each with its reproduction in the 
 - **Lint:** `W_BALCONY_NO_DOOR` ignores a cased `opening`; the tall arm's slide hint can cross a corner or leave the room, and the low arm's slide can pass where the wall has turned away; `W_SWING_OBSTRUCTED` can read "0 mm short"; Plan JSON writes `sill` for every window under the heights gate, so a round trip makes a default window look authored once `outdoor` is projected.
 - **Open shell:** a jog at a free end loses the span; two open shells facing each other pair across a street; a gap ending exactly at partition ends is reported with one end or none; a parapet closing back on the ring makes the figure `exterior-ring-subdivided`; `validateIntent` binds to a partial figure with no notice of `leaves_out`.
 - **`finish`:** a single-storey `void` is not read; a piece on a `void`, lift or escalator has no lint; single-storey non-residential landings read the inert context; time grows faster than storeys, so measure each candidate on its own storey; dotted furnishing of a placed component.
-- **Labels:** `relocateLabels` is not order-free, so a plan can differ with its rooms reversed (`docs/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch`); identical anchors and texts fall back to element order; `placesFor` and `marksOf` run before the count; `wrapLabels` still judges at 0.62 em while `fitLabels` catches what it misses; an unnamed room's area figure does not shrink; Greek and Cyrillic in a browser's bold run wider than the flat 0.62 em; a mirrored `place` may choose a different form, since text is never mirrored.
+- **Labels:** `relocateLabels` is not order-free, so a plan can differ with its rooms reversed (`test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/6-clinic.arch`); identical anchors and texts fall back to element order; `placesFor` and `marksOf` run before the count; `wrapLabels` still judges at 0.62 em while `fitLabels` catches what it misses; an unnamed room's area figure does not shrink; Greek and Cyrillic in a browser's bold run wider than the flat 0.62 em; a mirrored `place` may choose a different form, since text is never mirrored.
 
 ### J17 · Residue of batch 2 — `todo` · one PR per group; none blocks a release
 
