@@ -41,6 +41,7 @@ import {
   type PresetName,
   presetCamera,
   START_FOV,
+  takenLens,
   targetBounds,
   type Vec3,
   type ViewScene,
@@ -100,8 +101,13 @@ export interface ViewControl {
   readonly shown: number;
   readonly camera: CameraHolder;
   state: () => ViewState;
-  /** Take over a state from an earlier mount (an edit rebuilt the replay); draws nothing. */
+  /**
+   * Take over a state from an earlier mount (an edit rebuilt the replay); draws nothing. A held view
+   * (a preset, the user's orbit) is taken as a preset is: `onTake`.
+   */
   restore: (s: ViewState) => void;
+  /** Hear when `camera` or `shown` changes (a drag, a preset, a seek, a restore); returns the unsubscribe. */
+  onChange: (fn: () => void) => () => void;
 }
 
 export interface MountOptions {
@@ -110,7 +116,10 @@ export interface MountOptions {
    * on the focused canvas (three.js's `OrbitControls`). Off by default.
    */
   interactive?: boolean;
-  /** The user took the camera (a drag, the wheel, a key): a host that is playing pauses. */
+  /**
+   * The user took the view (the first movement of a drag, the wheel or a key, a preset, a restored
+   * held view): a host that is playing pauses, or its next `seek` hands the camera back.
+   */
   onTake?: () => void;
 }
 
@@ -416,6 +425,13 @@ export function mountReplay(
   let halt = (): void => {};
   /** Take the free camera's listeners off the canvas. */
   let unhook = (): void => {};
+  /** After a replay frame: re-aim an orbit whose press is down but has not moved yet. */
+  let primeAgain = (): void => {};
+  /** Who hears that the holder or the storeys shown changed (`view.onChange`: the toolbar). */
+  const listeners = new Set<() => void>();
+  const notify = (): void => {
+    for (const fn of listeners) fn();
+  };
 
   /** Draw replay time `t` from whoever holds the camera. */
   function draw(t: number): void {
@@ -464,8 +480,10 @@ export function mountReplay(
     if (holder !== "replay") {
       halt();
       holder = "replay";
+      notify();
     }
     draw(t);
+    primeAgain();
   }
 
   async function frameHash(): Promise<string> {
@@ -493,6 +511,7 @@ export function mountReplay(
     c.maxPolarAngle = rad(90 - ELEVATION_RANGE.min);
     const bounds = targetBounds(box);
     c.cursor.set(...bounds.centre);
+    const tabIndex0 = out.getAttribute("tabindex");
     out.tabIndex = 0;
 
     let loop = 0;
@@ -522,10 +541,11 @@ export function mountReplay(
     };
 
     /**
-     * Hand the camera to the orbit from `position` toward `target` through lens `fov`, turning about
-     * a pivot on that line of sight no lower than the building (`pivotAbove`).
+     * Line the orbit up from `position` toward `target` through lens `fov`, turning about a pivot on
+     * that line of sight no lower than the building (`pivotAbove`). Draws nothing and leaves the
+     * holder: the frame on the canvas stays until the orbit actually moves.
      */
-    const adopt = (position: Vec3, target: Vec3, fov: number): void => {
+    const aim = (position: Vec3, target: Vec3, fov: number): void => {
       persp.fov = fov;
       persp.up.set(0, 1, 0);
       persp.position.set(...position);
@@ -537,26 +557,48 @@ export function mountReplay(
       c.maxDistance = Math.max(lim.max, dist);
       c.maxTargetRadius = Math.max(bounds.radius, c.target.distanceTo(c.cursor));
       c.enableDamping = !reduced();
-      holder = "free";
     };
-    /** The user takes the camera from whoever holds it, where it is now. */
-    const take = (): void => {
+    /**
+     * Line the orbit up with the frame showing: a preset as it is; a replay frame through the end
+     * lens with its aim and framing (`takenLens`), so a take in the top-down phase turns a top view at
+     * the end lens, not the near-orthographic 1.5° one.
+     */
+    const prime = (): void => {
       if (holder === "free") return;
-      const f = holder === "replay" ? frameCamera(stateAt(p.events, tNow), fits, frameView) : presetOf(holder);
-      adopt(cameraPosition(f.target, f.dist, f), f.target, f.fov);
+      const f =
+        holder === "replay" ? takenLens(frameCamera(stateAt(p.events, tNow), fits, frameView)) : presetOf(holder);
+      aim(cameraPosition(f.target, f.dist, f), f.target, f.fov);
+    };
+    /** The view is the user's now: the host pauses (`onTake`) and the toolbar hears of it. */
+    const own = (): void => {
+      if (holder === "free") return;
+      holder = "free";
       opts.onTake?.();
+      notify();
+      kick();
+    };
+    /** A press is down but nothing has moved yet: the replay's frames may still change under it. */
+    let armed = false;
+    primeAgain = () => {
+      if (armed) prime();
     };
 
+    // A press only lines the orbit up; the first real movement (`change`) takes the view, so a
+    // plain click on the canvas changes nothing.
     c.addEventListener("start", () => {
-      take();
+      prime();
+      armed = true;
       dragging = true;
-      kick();
     });
     c.addEventListener("end", () => {
+      armed = false;
       dragging = false;
     });
     c.addEventListener("change", () => {
-      if (!quiet && !disposed && holder === "free") draw(tNow);
+      if (quiet || disposed) return;
+      armed = false;
+      own();
+      draw(tNow);
     });
     const turn = rad(KEY_TURN_DEG);
     // Arrow keys turn the view, + and − dolly (= and _ are the same keys unshifted and shifted).
@@ -574,7 +616,8 @@ export function mountReplay(
       const act = keys.get(e.key);
       if (!act || disposed || e.ctrlKey || e.metaKey || e.altKey) return;
       e.preventDefault();
-      take();
+      // The move's own `change` takes the view (a key at a limit moves nothing and takes nothing).
+      prime();
       act();
       kick();
     };
@@ -583,6 +626,9 @@ export function mountReplay(
     unhook = () => {
       out.removeEventListener("keydown", onKey);
       c.dispose();
+      if (tabIndex0 === null) out.removeAttribute("tabindex");
+      else out.setAttribute("tabindex", tabIndex0);
+      listeners.clear();
     };
 
     const clampStoreys = (k: number): number => Math.min(storeys, Math.max(1, Math.round(k)));
@@ -591,10 +637,14 @@ export function mountReplay(
       at: (t) => {
         if (!disposed) draw(t);
       },
+      // A preset takes the view as a drag does: the host pauses, or its next frame would hand the
+      // camera straight back to the replay.
       preset: (name) => {
         if (disposed) return;
         halt();
         holder = name;
+        opts.onTake?.();
+        notify();
         draw(tNow);
       },
       reset: () => {
@@ -602,12 +652,19 @@ export function mountReplay(
         halt();
         holder = "replay";
         shown = storeys;
+        notify();
         draw(tNow);
       },
       storeys,
       showStoreys: (k) => {
+        if (disposed) return;
         shown = clampStoreys(k);
-        if (!disposed) draw(tNow);
+        notify();
+        draw(tNow);
+      },
+      onChange: (fn) => {
+        listeners.add(fn);
+        return () => listeners.delete(fn);
       },
       get shown() {
         return shown;
@@ -629,8 +686,11 @@ export function mountReplay(
         if (disposed) return;
         halt();
         shown = s.storeys === "all" ? storeys : clampStoreys(s.storeys);
-        if (s.camera === "free") adopt(s.position, s.target, s.fov);
-        else holder = s.camera;
+        if (s.camera === "free") aim(s.position, s.target, s.fov);
+        holder = s.camera;
+        // A view the user held stays held: the host pauses, as for a drag or a preset.
+        if (holder !== "replay") opts.onTake?.();
+        notify();
       },
     };
   }

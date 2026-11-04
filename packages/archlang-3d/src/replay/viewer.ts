@@ -4,7 +4,7 @@
  * `window.__seek(t)` renders the frame at `t` synchronously and `window.__frameHash()` hashes the
  * composed frame (plan §6.5). The playback loop only chooses which `t` to show next; no clock or
  * random source reaches a frame. The view can be turned freely (card CR4: `interactive`, the
- * toolbar from `view-dom.ts`); a drag pauses the playback.
+ * toolbar from `view-dom.ts`); a drag or a preset pauses the playback.
  */
 import { mountReplay, type ReplayPayload } from "./mount.js";
 import { viewToolbar } from "./view-dom.js";
@@ -29,7 +29,8 @@ function start(): void {
   const p = payload();
   const out = document.getElementById("archlang-replay") as HTMLCanvasElement;
   const strip = document.getElementById("archlang-replay-strip") ?? undefined;
-  // Grabbing the view (card CR4) pauses the playback; `__seek` still draws the replay's own frame.
+  // Taking the view (card CR4: a drag, a key, a preset) pauses the playback; `__seek` still draws
+  // the replay's own frame.
   let frame = 0;
   const pause = () => {
     if (frame) cancelAnimationFrame(frame);

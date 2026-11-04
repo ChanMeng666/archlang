@@ -20,6 +20,13 @@ export const PRESET_LABELS: ReadonlyArray<readonly [PresetName, string, string]>
 export const VIEW_HINT =
   "Drag to turn, right-drag to pan, scroll to zoom; on the focused view, arrow keys turn and + / − zoom.";
 
+/**
+ * What an interactive replay canvas says it is, after its title (it is `role="application"`: it
+ * takes keys, so it is not an image).
+ */
+export const VIEW_CONTROLS_LABEL =
+  "an interactive 3D view: drag or use the arrow keys to turn it, scroll or + and − to zoom";
+
 export interface ToolbarOptions {
   /** A class for every button (the host's own button style). */
   buttonClass?: string;
@@ -42,18 +49,21 @@ export function viewToolbar(view: ViewControl, opts: ToolbarOptions = {}): HTMLE
     b.addEventListener("click", onClick);
     return b;
   };
+  const presetButtons: Array<[PresetName, HTMLButtonElement]> = [];
   const storeyButtons: HTMLButtonElement[] = [];
-  const pressStoreys = (): void => {
+  /** `aria-pressed` follows the view: the preset holding the camera (none for the replay's or a drag's), the storeys shown. */
+  const press = (): void => {
+    for (const [name, b] of presetButtons) b.setAttribute("aria-pressed", String(view.camera === name));
     for (const [i, b] of storeyButtons.entries()) b.setAttribute("aria-pressed", String(i + 1 === view.shown));
   };
 
-  for (const [name, text, label] of PRESET_LABELS) bar.append(button(text, label, () => view.preset(name)));
-  bar.append(
-    button("Reset", "Reset the view: the replay's own camera, every storey shown", () => {
-      view.reset();
-      pressStoreys();
-    }),
-  );
+  for (const [name, text, label] of PRESET_LABELS) {
+    const b = button(text, label, () => view.preset(name));
+    b.dataset.preset = name;
+    presetButtons.push([name, b]);
+    bar.append(b);
+  }
+  bar.append(button("Reset", "Reset the view: the replay's own camera, every storey shown", () => view.reset()));
 
   if (view.storeys > 1) {
     const group = document.createElement("span");
@@ -66,18 +76,18 @@ export function viewToolbar(view: ViewControl, opts: ToolbarOptions = {}): HTMLE
       const b = button(
         all ? "All" : k === 1 ? "1" : `1–${k}`,
         all ? "Show every storey" : `Show storeys 1 to ${k}, hide the ones above`,
-        () => {
-          view.showStoreys(k);
-          pressStoreys();
-        },
+        () => view.showStoreys(k),
       );
       b.dataset.storeys = String(k);
       storeyButtons.push(b);
       group.append(b);
     }
     bar.append(group);
-    pressStoreys();
   }
+  // The view tells the toolbar (a drag, a seek, a restore after an edit); the mount drops its
+  // listeners when it is disposed.
+  view.onChange(press);
+  press();
 
   const hint = document.createElement("span");
   hint.className = "archlang-views-hint";

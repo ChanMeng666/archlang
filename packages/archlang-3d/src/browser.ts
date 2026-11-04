@@ -16,7 +16,7 @@ export type {
   ViewControl,
   ViewState,
 } from "./replay/mount.js";
-export { PRESET_LABELS, VIEW_HINT, viewToolbar } from "./replay/view-dom.js";
+export { PRESET_LABELS, VIEW_CONTROLS_LABEL, VIEW_HINT, viewToolbar } from "./replay/view-dom.js";
 export type { ToolbarOptions } from "./replay/view-dom.js";
 export { stripAt } from "./replay/strip.js";
 export { paintStrip } from "./replay/strip-dom.js";

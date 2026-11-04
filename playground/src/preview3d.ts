@@ -26,6 +26,7 @@ import {
   PREVIEW_LABEL,
   type ReplayHandle,
   replayPayload,
+  VIEW_CONTROLS_LABEL,
   type ViewState,
   viewToolbar,
 } from "@chanmeng666/archlang-3d/browser";
@@ -77,7 +78,8 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   stage.className = "p3d-stage";
   const canvas = document.createElement("canvas");
   canvas.className = "p3d-canvas";
-  canvas.setAttribute("role", "img");
+  // It takes the pointer and keys (the free camera, card CR4), so it is an application, not an image.
+  canvas.setAttribute("role", "application");
   const strip = document.createElement("div");
   strip.className = "p3d-strip";
   strip.setAttribute("role", "group");
@@ -190,7 +192,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       const which = index < 0 ? (levels.length > 1 ? "all storeys" : "") : `storey L${level}`;
       canvas.setAttribute(
         "aria-label",
-        `${payload.title}${which ? ` (${which})` : ""}: the plan drawing itself in its authoring order, then rising`,
+        `${payload.title}${which ? ` (${which})` : ""}: the plan drawing itself in its authoring order, then rising; ${VIEW_CONTROLS_LABEL}`,
       );
     } catch (e) {
       refuse((e as { message?: string })?.message ?? String(e));

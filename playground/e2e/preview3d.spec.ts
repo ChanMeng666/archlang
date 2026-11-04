@@ -237,6 +237,12 @@ test.describe("3D preview tab: the free camera", () => {
     await expect(page.locator('#preview3d input[type="range"]')).toHaveValue("1");
     const end = await hashAt(page, 1);
     const button = (name: string | RegExp) => page.locator("#preview3d").getByRole("button", { name });
+    const camera = () => page.evaluate(() => (window as Viewed).__preview3d?.view?.camera);
+
+    // A plain click (no movement) takes nothing: the frame and the holder stay (red-team round 1).
+    await page.locator("#preview3d canvas").click();
+    expect(await camera(), "a click is not a drag").toBe("replay");
+    expect(await current(page)).toBe(end);
 
     await drag(page, 160, 40);
     const dragged = await current(page);
@@ -244,8 +250,13 @@ test.describe("3D preview tab: the free camera", () => {
     expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("free");
     await button("Iso view: the replay's end view").click();
     expect(await current(page), "Iso is the end camera, pixel for pixel").toBe(end);
+    await expect(button("Iso view: the replay's end view")).toHaveAttribute("aria-pressed", "true");
 
     await drag(page, -120, -30);
+    await expect(button("Iso view: the replay's end view"), "a drag leaves the preset").toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
     expect(await current(page)).not.toBe(end);
     await button(/^Reset the view/).click();
     expect(await current(page), "Reset is the replay's own end frame").toBe(end);
@@ -317,6 +328,49 @@ test.describe("3D preview tab: the free camera", () => {
       () => (window as Viewed & { __before?: unknown }).__before !== (window as Viewed).__preview3d,
     );
     expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("top");
+    const top = page.locator("#preview3d").getByRole("button", { name: /^Top view/ });
+    await expect(top, "the toolbar shows the restored view").toHaveAttribute("aria-pressed", "true");
+    // The tab redraws the edited plan from the kept view once its drawing is ready (`drawAt`, queued
+    // on `ready` before this wait): that frame is the edited plan's own Top view.
+    await page.evaluate(async () => {
+      await (window as Viewed).__preview3d?.ready;
+    });
+    const kept = await current(page);
+    await top.click();
+    expect(await current(page), "the kept view is a fresh Top of the edited plan").toBe(kept);
+    // And not merely the plan's end frame.
+    expect(kept).not.toBe(await hashAt(page, 1));
+  });
+});
+
+/**
+ * A preset takes the view as a drag does (red-team round 1): pressed while the replay plays, it pauses
+ * the playback and holds, instead of lasting one frame. Autoplay on, no reduced motion.
+ */
+test.describe("3D preview tab: a preset during playback", () => {
+  test("pauses the playback and holds the preset", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await open3d(page);
+    const scrub = page.locator('#preview3d input[type="range"]');
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
+    const top = page.locator("#preview3d").getByRole("button", { name: /^Top view/ });
+    await top.click();
+    const parked = Number(await scrub.inputValue());
+    expect(parked, "still playing when pressed").toBeLessThan(1);
+    const held = await current(page);
+    // Several animation frames later: the same frame, the same t, the same holder.
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.waitForTimeout(150);
+      expect(await current(page), `frame ${i}`).toBe(held);
+    }
+    expect(Number(await scrub.inputValue()), "the playback paused").toBe(parked);
+    expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("top");
+    await expect(top).toHaveAttribute("aria-pressed", "true");
+    // A fresh press, now that the playback is paused, draws the same frame.
+    await top.click();
+    expect(await current(page)).toBe(held);
   });
 });
 
@@ -329,8 +383,11 @@ test.describe("3D preview tab: grabbing the view", () => {
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
     const box = await page.locator("#preview3d canvas").boundingBox();
     if (!box) throw new Error("no canvas");
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+    await page.mouse.move(x, y);
     await page.mouse.down();
+    // The first movement takes the view (a press alone does not).
+    await page.mouse.move(x + 60, y + 10, { steps: 4 });
     const parked = Number(await scrub.inputValue());
     expect(parked, "still playing when grabbed").toBeLessThan(1);
     await page.waitForTimeout(600);

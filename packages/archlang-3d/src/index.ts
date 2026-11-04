@@ -92,6 +92,7 @@ export {
   presetCamera,
   projectBox,
   START_FOV,
+  takenLens,
   targetBounds,
   ZOOM,
 } from "./replay/camera.js";

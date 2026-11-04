@@ -11,6 +11,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Mesh3D } from "../mesh/types.js";
 import { PREVIEW_LABEL, type ReplayOptions, replayPayload } from "./payload.js";
+import { VIEW_CONTROLS_LABEL } from "./view-dom.js";
 
 export { PREVIEW_LABEL, replayPayload, viewBoxOf } from "./payload.js";
 export type { ReplayOptions } from "./payload.js";
@@ -95,7 +96,7 @@ canvas:focus-visible{outline:2px solid ${fg};outline-offset:2px}
 <body>
 <main>
 <div id="archlang-replay-stage" style="width:${payload.width}px">
-<canvas id="archlang-replay" role="img" aria-label="${escapeHtml(`${opts.title}: the plan drawing itself in its authoring order, then rising`)}"></canvas>${
+<canvas id="archlang-replay" role="application" aria-label="${escapeHtml(`${opts.title}: the plan drawing itself in its authoring order, then rising; ${VIEW_CONTROLS_LABEL}`)}"></canvas>${
     payload.facts ? `\n<div id="archlang-replay-strip" role="group" aria-label="Plan facts" hidden></div>` : ""
   }
 </div>

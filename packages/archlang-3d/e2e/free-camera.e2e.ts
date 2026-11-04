@@ -17,7 +17,7 @@ import { replayHtml } from "../src/node.js";
 import { SWIFTSHADER_ARGS } from "../src/replay/swiftshader.js";
 import { EXAMPLES_LIST, WORLD } from "../test/corpus.js";
 
-async function htmlOf(name: string): Promise<string> {
+async function htmlOf(name: string, autoplay = false): Promise<string> {
   const src = EXAMPLES_LIST.find(([n]) => n === name)?.[1] ?? "";
   const r = adaptPlan(src, { world: WORLD });
   if (!r.ok) throw new Error(`${name}: ${r.refusal.code}`);
@@ -27,6 +27,7 @@ async function htmlOf(name: string): Promise<string> {
     width: 480,
     height: 270,
   });
+  if (autoplay) return html;
   // Every frame is chosen here: the page must not play on its own.
   return html.replace(
     '<script type="application/json"',
@@ -52,6 +53,10 @@ describe("the replay HTML's free camera (card CR4)", () => {
       });
       const now = () => page.evaluate(() => window.__frameHash());
       const button = (name: string | RegExp) => page.getByRole("button", { name });
+
+      // A plain click takes nothing.
+      await page.locator("#archlang-replay").click();
+      expect(await now(), "a click is not a drag").toBe(end);
 
       await button(/^Top view/).click();
       const top = await now();
@@ -84,6 +89,38 @@ describe("the replay HTML's free camera (card CR4)", () => {
         return window.__frameHash();
       });
       expect(seeked).toBe(end);
+    } finally {
+      await browser.close();
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("a preset pressed while the replay plays pauses it and holds (red-team round 1)", async () => {
+    const dir = mkdtempSync(join(tmpdir(), "archlang3d-orbit-"));
+    const { chromium } = await import("playwright-core");
+    const browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
+    try {
+      const file = join(dir, "replay.html");
+      writeFileSync(file, await htmlOf("laneway-house.arch", true));
+      const page = await browser.newPage({ viewport: { width: 640, height: 480 }, deviceScaleFactor: 1 });
+      await page.goto(pathToFileURL(file).href);
+      await page.evaluate(() => window.__ready);
+      const scrub = page.locator("#archlang-replay-t");
+      await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 20_000 }).toBeGreaterThan(0.05);
+      const top = page.getByRole("button", { name: /^Top view/ });
+      await top.click();
+      const parked = Number(await scrub.inputValue());
+      expect(parked).toBeLessThan(1);
+      const now = () => page.evaluate(() => window.__frameHash());
+      const held = await now();
+      for (let i = 0; i < 3; i++) {
+        await page.waitForTimeout(200);
+        expect(await now(), `frame ${i}`).toBe(held);
+      }
+      expect(Number(await scrub.inputValue()), "the playback paused").toBe(parked);
+      expect(await top.getAttribute("aria-pressed")).toBe("true");
+      await top.click();
+      expect(await now(), "a fresh press after the pause").toBe(held);
     } finally {
       await browser.close();
       rmSync(dir, { recursive: true, force: true });

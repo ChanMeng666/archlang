@@ -336,6 +336,18 @@ export function presetCamera(name: PresetName, v: ViewScene): FrameCamera {
 }
 
 /**
+ * The camera the orbit takes from a replay frame: the frame's aim and bearing, and its framing at the
+ * target (the view height there), through the end lens. So a take in the top-down phase (a 1.5°,
+ * near-orthographic lens under the core's drawing) turns a top view at the end lens over the same
+ * area, and a take mid-dolly keeps what the frame showed. A frame already at the end lens (the end
+ * frame, every stop) is returned as it is.
+ */
+export function takenLens(f: FrameCamera): FrameCamera {
+  if (f.fov === END_FOV) return f;
+  return { ...f, fov: END_FOV, dist: (f.dist * Math.tan(rad(f.fov) / 2)) / Math.tan(rad(END_FOV) / 2) };
+}
+
+/**
  * How far the free camera may dolly, as multiples of the whole building's fitted distance (the
  * last stop): in until an eighth of the building's span fills the frame (a corner, one room), out
  * until it stands at a third of its fitted size.

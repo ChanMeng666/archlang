@@ -31,6 +31,7 @@ import {
   projectBox,
   stateAt,
   storeysOf,
+  takenLens,
   targetBounds,
   type Vec3,
   type ViewScene,
@@ -198,6 +199,38 @@ describe("free camera presets (card CR4)", () => {
         expect(Math.abs(q.x), n).toBeLessThanOrEqual(0.95);
         expect(Math.abs(q.y), n).toBeLessThanOrEqual(0.95);
       }
+  });
+});
+
+describe("taking the camera from the replay (card CR4, red-team round 1)", () => {
+  const height = (f: FrameCamera) => 2 * f.dist * Math.tan((f.fov * Math.PI) / 360);
+
+  it("keeps the frame's aim and its framing at the target, through the end lens", () => {
+    for (const { name, v } of ALL)
+      for (const t of [0, 0.2, 0.45, 0.6, 0.7, 0.9]) {
+        const f = frameCamera(stateAt(v.events, t), v.fits, v.frame);
+        const taken = takenLens(f);
+        expect(taken.fov, `${name} ${t}`).toBe(END_FOV);
+        expect(taken.target, `${name} ${t}`).toEqual(f.target);
+        expect([taken.elevation, taken.azimuth], `${name} ${t}`).toEqual([f.elevation, f.azimuth]);
+        expect(height(taken) / height(f), `${name} ${t}`).toBeCloseTo(1, 9);
+      }
+  });
+
+  it("a top-down frame becomes a top view at the end lens, not the 1.5° near-orthographic one", () => {
+    const { v } = ALL[0] as { v: ViewScene };
+    const f = frameCamera(stateAt(v.events, 0), v.fits, v.frame);
+    expect(f.fov).toBeLessThan(2);
+    expect(f.elevation).toBe(90);
+    expect(takenLens(f).fov).toBe(END_FOV);
+    expect(takenLens(f).elevation).toBe(90);
+  });
+
+  it("a frame already at the end lens is taken as it is (the end frame, so a take at the end moves nothing)", () => {
+    for (const { name, v } of ALL) {
+      const end = frameCamera(stateAt(v.events, 1), v.fits, v.frame);
+      expect(takenLens(end), name).toBe(end);
+    }
   });
 });
 
