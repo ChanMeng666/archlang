@@ -47,6 +47,9 @@ const PAGES = [
   ["docs/intent.md", "intent.md"],
   ["docs/error-codes.md", "errors.md"],
   ["docs/import.md", "import.md"],
+  ["docs/from-an-image.md", "from-an-image.md"],
+  ["docs/edit-one-room.md", "edit-one-room.md"],
+  ["docs/common-mistakes.md", "common-mistakes.md"],
   ["docs/whats-new.md", "whats-new.md"],
   ["spec.llm.md", "spec.md"],
 ];

@@ -14,6 +14,9 @@ is a path into ArchLang that keeps the image work outside the compiler:
 This is **experimental**: the tool is a recipe in the repository, not part of the npm package, and
 its output is a starting point that you edit, not a finished plan.
 
+For a photo, scan or PDF that is not a mask, see [Draw a plan from an image or PDF](from-an-image.md):
+your own assistant reads the image and writes `.arch`, and ArchLang checks what it wrote.
+
 A PDF floor plan has to be rasterised and segmented first, by you or your model; nothing here reads a
 PDF or a photo.
 
