@@ -274,6 +274,56 @@ ${" ".repeat(SOURCE_CAP_BYTES - 13)}
   });
 });
 
+describe.skipIf(!supportsDeflateRaw)("short links: only the playground itself may create one", () => {
+  const code = async (res: Response) => ((await res.json()) as { error: { code: string } }).error.code;
+  const z = encodePlanHash(STUDIO);
+
+  it("refuses a browser POST from another site: a foreign Origin, or a Sec-Fetch-Site that is not same-origin", async () => {
+    const refused: Record<string, string>[] = [
+      { origin: "https://evil.example" },
+      { origin: "null" },
+      { origin: "http://playground.archlang.uk" }, // another scheme is another origin
+      { "sec-fetch-site": "cross-site" },
+      { "sec-fetch-site": "same-site" },
+      { origin: ORIGIN, "sec-fetch-site": "cross-site" },
+    ];
+    for (const headers of refused) {
+      const { env, kv, points } = fakeEnv();
+      const res = await worker.fetch(post(z, { "content-type": "text/plain;charset=utf-8", ...headers }), env);
+      expect(res.status, JSON.stringify(headers)).toBe(403);
+      expect(await code(res)).toBe("cross_origin");
+      expect(kv.puts()).toBe(0);
+      expect(points.map((p) => p.blobs!.slice(0, 2))).toEqual([["refused", "cross-origin"]]);
+    }
+  });
+
+  it("refuses before the rate limiter is asked, so another site cannot spend a visitor's quota", async () => {
+    let asked = 0;
+    const limit = async () => {
+      asked++;
+      return { success: true };
+    };
+    const { env } = fakeEnv({ RATE_SHARE: { limit } });
+    expect((await worker.fetch(post(z, { origin: "https://evil.example" }), env)).status).toBe(403);
+    expect(asked).toBe(0);
+  });
+
+  it("accepts the playground's own request, and a request with neither header (a server, curl, the smoke test)", async () => {
+    const accepted: Record<string, string>[] = [
+      {},
+      { origin: ORIGIN },
+      { "sec-fetch-site": "same-origin" },
+      { origin: ORIGIN, "sec-fetch-site": "same-origin" },
+      { "sec-fetch-site": "none" },
+    ];
+    for (const headers of accepted) {
+      const { env } = fakeEnv();
+      const res = await worker.fetch(post(z, headers), env);
+      expect(res.status, JSON.stringify(headers)).toBe(200);
+    }
+  });
+});
+
 describe.skipIf(!supportsDeflateRaw)("short links: resolving", () => {
   it("GET /s/<id> is the card page, then on to /#z=<payload>, and the editor reads the source back", async () => {
     const { env, kv } = fakeEnv();
@@ -296,12 +346,33 @@ describe.skipIf(!supportsDeflateRaw)("short links: resolving", () => {
     expect(await decodePayload(payload)).toBe(STUDIO);
   });
 
-  it("HEAD answers the same headers with no body", async () => {
-    const { env } = fakeEnv();
+  it("HEAD answers the same headers with no body, and is not counted as an open", async () => {
+    const { env, points } = fakeEnv();
     const { body } = await share(env, STUDIO);
     const res = await worker.fetch(get(`/s/${body.id}`, "HEAD"), env);
     expect(res.status).toBe(200);
     expect(await res.text()).toBe("");
+    expect((await worker.fetch(get(`/api/share/${body.id}`, "HEAD"), env)).status).toBe(200);
+    expect(points.map((p) => p.indexes![0])).toEqual(["create"]);
+  });
+
+  it("a query on /s/<id> is a 301 to the canonical path, counted as nothing", async () => {
+    const { env, points } = fakeEnv();
+    const { body } = await share(env, STUDIO);
+    for (const q of ["?utm_source=x", "?", "?a=1&b=2"]) {
+      const res = await worker.fetch(get(`/s/${body.id}${q}`), env);
+      // `?` alone is no search to the URL parser: it is the canonical page.
+      if (q === "?") {
+        expect(res.status).toBe(200);
+        continue;
+      }
+      expect(res.status, q).toBe(301);
+      expect(res.headers.get("location")).toBe(`/s/${body.id}`);
+      expect(await res.text()).toBe("");
+    }
+    expect(points.map((p) => p.indexes![0])).toEqual(["create", "resolve"]);
+    // Unknown ids redirect too: the query never reaches the store.
+    expect((await worker.fetch(get("/s/zzzzzzzz?x=1"), env)).status).toBe(301);
   });
 
   it("GET /api/share/<id> is the payload as JSON, cacheable forever, readable cross-origin", async () => {

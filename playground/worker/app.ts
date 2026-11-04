@@ -37,6 +37,7 @@ export type Core = Pick<typeof Archlang, "compile" | "diagnosticToJson" | "input
 
 /** The stable `error.code` values a JSON refusal carries. */
 export type ShareErrorCode =
+  | "cross_origin"
   | "payload_too_large"
   | "source_too_large"
   | "bad_payload"
@@ -97,6 +98,20 @@ function html(status: number, body: string, cache: string, method: string): Resp
  * (ADR 0034, privacy).
  */
 const addressOf = (req: Request): string => req.headers.get("cf-connecting-ip") ?? "unknown";
+
+/**
+ * Is this request from another site? A browser sends `Origin` on every POST and `Sec-Fetch-Site`
+ * on every request; the playground's own fetch is same-origin. The client posts `text/plain`, a
+ * CORS "simple" request, so no preflight stops another page from making its visitors' browsers
+ * store plans (and spreading the per-address rate across them): the Worker refuses it here. A
+ * request with neither header (a server, `curl`, the smoke test) is not a browser's, and passes.
+ */
+export function crossSite(req: Request): boolean {
+  const origin = req.headers.get("origin");
+  if (origin !== null && origin !== new URL(req.url).origin) return true;
+  const site = req.headers.get("sec-fetch-site");
+  return site !== null && site !== "same-origin" && site !== "none";
+}
 
 /** `true` when the limiter (absent in a test or a bare local run) lets this address through. */
 async function allowed(env: Env, req: Request): Promise<boolean> {
@@ -169,6 +184,10 @@ export function makeShareWorker(core: Core) {
    * with a wall error is exactly what someone shares to ask for help.
    */
   async function create(req: Request, env: Env): Promise<Response> {
+    if (crossSite(req)) {
+      count(env, "refused", "cross-origin");
+      return refuse(403, "cross_origin", "short links are made from the playground itself, not from another site");
+    }
     if (!(await allowed(env, req))) {
       count(env, "refused", "rate");
       const d = core.rateLimited("share", SHARE_PER_PERIOD, RATE_PERIOD_SECONDS);
@@ -207,8 +226,11 @@ export function makeShareWorker(core: Core) {
     const hash = await sourceHash(source);
     const meta: ShareMeta = { v: 1, h: hash, t: planTitle(result.ast?.name) };
     // The shortest free prefix: an id already holding THIS plan is reused (one plan, one link),
-    // one holding another plan is passed over for a longer prefix. Never overwritten: a short
-    // link, once given out, names one plan forever.
+    // one holding another plan is passed over for a longer prefix. Never overwritten by this
+    // code: a short link, once given out, names one plan. KV is eventually consistent, so two
+    // DIFFERENT plans sharing an 8-character prefix and created within its propagation window
+    // (about 60 s) at two locations could both see the key free; the chance for a given pair is
+    // about 2^-47 (ADR 0034).
     for (let n = ID_MIN; n <= ID_MAX; n++) {
       const id = hash.slice(0, n);
       const { value, metadata } = await env.SHARE.getWithMetadata<ShareMeta>(shareKey(id));
@@ -224,10 +246,10 @@ export function makeShareWorker(core: Core) {
   }
 
   /** `GET /api/share/<id>`: the payload, for `embed.html#s=<id>`. */
-  async function payloadOf(id: string, env: Env): Promise<Response> {
+  async function payloadOf(req: Request, id: string, env: Env): Promise<Response> {
     const hit = await lookup(env, id);
     if (!hit) return refuse(404, "not_found", "no plan is stored under this id");
-    count(env, "resolve-json", id);
+    if (req.method === "GET") count(env, "resolve-json", id);
     return json(200, { id, z: hit.payload }, { "cache-control": IMMUTABLE, "access-control-allow-origin": "*" });
   }
 
@@ -235,7 +257,8 @@ export function makeShareWorker(core: Core) {
   async function page(req: Request, id: string, env: Env): Promise<Response> {
     const hit = await lookup(env, id);
     if (!hit) return html(404, notFoundHtml(), "public, max-age=60", req.method);
-    count(env, "resolve", id);
+    // A crawler's HEAD before its GET is not an open.
+    if (req.method === "GET") count(env, "resolve", id);
     const origin = new URL(req.url).origin;
     const body = sharePageHtml({
       origin,
@@ -250,7 +273,7 @@ export function makeShareWorker(core: Core) {
   }
 
   async function route(req: Request, env: Env): Promise<Response> {
-    const { pathname } = new URL(req.url);
+    const { pathname, search } = new URL(req.url);
     const read = req.method === "GET" || req.method === "HEAD";
     if (pathname === "/api/share") {
       if (req.method !== "POST")
@@ -259,11 +282,19 @@ export function makeShareWorker(core: Core) {
     }
     if (pathname.startsWith("/api/share/")) {
       if (!read) return refuse(405, "method_not_allowed", "GET only", { headers: { allow: "GET, HEAD" } });
-      return payloadOf(pathname.slice("/api/share/".length), env);
+      return payloadOf(req, pathname.slice("/api/share/".length), env);
     }
     if (pathname.startsWith("/api/")) return refuse(404, "not_found", "no such endpoint");
     if (pathname.startsWith("/s/")) {
       if (!read) return refuse(405, "method_not_allowed", "GET only", { headers: { allow: "GET, HEAD" } });
+      // One URL per share: a query (a tracker's `?utm_…`, a cache-buster) goes to the canonical
+      // path, so it is neither a second page to cache nor a second count.
+      if (search !== "") {
+        return new Response(null, {
+          status: 301,
+          headers: { ...BASE_HEADERS, location: pathname, "cache-control": "public, max-age=86400" },
+        });
+      }
       return page(req, pathname.slice("/s/".length), env);
     }
     // Not one of ours: the asset layer found no file for it (or it is a listed prefix we do not
