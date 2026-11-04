@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Playground short links. The Share cell's `Link ▾` offers **Copy short link**, `https://playground.archlang.uk/s/<id>`, beside **Copy full link**, the `#z=` link as before; the note between them says a short link stores the plan on archlang.uk's server and the full link does not. The id is content-addressed (the same plan always gets the same link), `/s/<id>` carries link-preview card metadata and then opens the editor on the full link, and `embed.html#s=<id>` draws a stored plan. If a short link cannot be made, the full link is copied and the status line says so. The playground Worker runs a script for `/s/*` and `/api/*` only; every other path is served as before (ADR 0034).
+
 ### Fixed
 
 - `arch finish` counts the rows of the NOTES table and the DOOR & WINDOW SCHEDULE when it picks a sheet. It fitted the band on the room schedule and legend alone, so a plan that already wrote `notes` or `schedule openings` could be fitted on a band shorter than the one drawn; finish's own overflow check then refused the sheet and added no `paper` or `scale`. It now picks the smallest sheet that holds the real band.

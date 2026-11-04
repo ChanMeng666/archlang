@@ -382,6 +382,11 @@ const PAGE_META = [
     "ADR 33 — keep invariants",
     "A keep declares what must stay: the compiler measures it, reports a signed residual in mm and never moves anything; a broken hard keep fails --strict.",
   ],
+  [
+    "/adr/0034-playground-short-links",
+    "ADR 34 — playground short links",
+    "A short link stores a plan when the user asks for one, under a content-addressed id; the playground runs a script for /s/ and /api/ alone, static paths unchanged.",
+  ],
 ] as const;
 
 type PageMeta = { readonly title: string; readonly description: string };

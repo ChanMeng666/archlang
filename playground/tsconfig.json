@@ -29,7 +29,8 @@
   // they were previously invisible to every typecheck in the repo. `e2e/` is NOT
   // here: the Playwright specs run in Node (`node:fs/promises`, `Buffer`) under a
   // different lib/types set, so they get their own `tsconfig.e2e.json`, which the
-  // workspace `typecheck` script runs straight after this one.
-  "include": ["src", "test"],
+  // workspace `typecheck` script runs straight after this one. `worker/` is the short-link
+  // Worker (ADR 0034): Web-standard APIs only, which the DOM lib already types.
+  "include": ["src", "test", "worker"],
   "exclude": ["node_modules", "dist", "e2e"]
 }

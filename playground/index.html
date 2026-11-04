@@ -151,7 +151,17 @@
       <div class="tb-cell">
         <span class="tb-label">Share</span>
         <div class="tb-controls">
-          <button id="copyLink">Copy link</button>
+          <!-- Two links (ADR 0034). The short one is stored on this site's server, and only when
+               it is chosen here; the full one carries the plan after the #, which no browser
+               sends to a server. The note says so next to the two buttons. -->
+          <details class="tb-ai tb-share" id="shareMenu">
+            <summary>Link ▾</summary>
+            <div class="tb-ai-panel">
+              <p id="shareNote" class="tb-ai-note">A short link stores this plan on archlang.uk's server; the full link does not.</p>
+              <button id="copyShortLink" type="button" class="tb-primary" aria-describedby="shareNote">Copy short link</button>
+              <button id="copyLink" type="button" aria-describedby="shareNote">Copy full link</button>
+            </div>
+          </details>
           <button id="copyLlm" title="Copy a paste-ready prompt (source + facts + diagnostics) for an AI assistant">Copy for LLM</button>
           <button id="embed" title="Copy an iframe snippet to embed this plan">Embed</button>
           <a class="tb-link" id="agentsLink" href="https://archlang.uk/agents" target="_blank" rel="noopener" title="Use ArchLang from an agent: CLI, MCP server, skill, llms.txt">Agents</a>

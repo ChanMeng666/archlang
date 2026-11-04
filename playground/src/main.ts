@@ -524,6 +524,8 @@ async function init() {
       repairBtn,
       repairPanel,
       embedBtn,
+      shareMenu: document.getElementById("shareMenu") as HTMLDetailsElement | null,
+      copyShortLinkBtn: document.getElementById("copyShortLink"),
       copyLinkBtn,
       copyLlmBtn,
       savedBtn,

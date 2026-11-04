@@ -1,0 +1,285 @@
+/**
+ * The playground Worker's request handler (ADR 0034). It runs ONLY for the paths
+ * `assets.run_worker_first` lists in `playground/wrangler.jsonc` (`/s/*`, `/api/*`), plus any
+ * request the asset layer finds no file for, which it hands straight back to the asset layer
+ * (`env.ASSETS`) so a 404 is the asset layer's own. Every other path is served as a static asset
+ * without this code running.
+ *
+ *   POST /api/share        body: a `#z=` payload → `{ id, url }`, the plan stored in KV
+ *   GET  /api/share/<id>   → `{ id, z }` (embed.html's `#s=<id>`)
+ *   GET  /s/<id>           → a small HTML page: the card metadata, then on to `/#z=<payload>`
+ *
+ * The core is passed in rather than imported, so the same handler runs bundled by wrangler
+ * (`worker/index.ts`), against the core's source under vitest, and against the built core in a
+ * Playwright route (`playground/e2e/short-link.spec.ts`).
+ */
+import type * as Archlang from "archlang";
+import {
+  DEFAULT_TITLE,
+  decodePayload,
+  ID_MAX,
+  ID_MIN,
+  isShareId,
+  notFoundHtml,
+  PAYLOAD_CAP_CHARS,
+  planTitle,
+  RATE_PERIOD_SECONDS,
+  SHARE_PER_PERIOD,
+  SOURCE_CAP_BYTES,
+  shareKey,
+  sharePageHtml,
+  sourceHash,
+} from "./share-core.js";
+import type { Env, ExecutionContext, ShareMeta } from "./types.js";
+
+/** The core functions the handler calls. */
+export type Core = Pick<typeof Archlang, "compile" | "diagnosticToJson" | "inputTooLarge" | "rateLimited">;
+
+/** The stable `error.code` values a JSON refusal carries. */
+export type ShareErrorCode =
+  | "payload_too_large"
+  | "source_too_large"
+  | "bad_payload"
+  | "not_a_plan"
+  | "rate_limited"
+  | "not_found"
+  | "method_not_allowed"
+  | "unavailable";
+
+/** The static image `/s/<id>` names as its card until a per-plan preview exists. */
+export const FALLBACK_IMAGE = { path: "/brand/archlang-og.png", width: 1200, height: 630 } as const;
+
+/** The parse-stage and budget refusals that make a payload "not a plan" (see {@link create}). */
+const NOT_A_PLAN = new Set(["E_PARSE", "E_STEP_LIMIT"]);
+
+/** Every response this Worker writes carries these, as `public/_headers`' `/*` rule does for assets. */
+const BASE_HEADERS = {
+  "strict-transport-security": "max-age=63072000",
+  "x-content-type-options": "nosniff",
+} as const;
+
+const IMMUTABLE = "public, max-age=31536000, immutable";
+
+function json(status: number, body: unknown, extra: Record<string, string> = {}): Response {
+  return new Response(`${JSON.stringify(body)}\n`, {
+    status,
+    headers: { ...BASE_HEADERS, "content-type": "application/json; charset=utf-8", ...extra },
+  });
+}
+
+function refuse(
+  status: number,
+  code: ShareErrorCode,
+  message: string,
+  extra: { diagnostic?: unknown; headers?: Record<string, string> } = {},
+): Response {
+  return json(
+    status,
+    { error: { code, message, ...(extra.diagnostic ? { diagnostic: extra.diagnostic } : {}) } },
+    { "cache-control": "no-store", ...extra.headers },
+  );
+}
+
+function html(status: number, body: string, cache: string, method: string): Response {
+  return new Response(method === "HEAD" ? null : body, {
+    status,
+    headers: {
+      ...BASE_HEADERS,
+      "content-type": "text/html; charset=utf-8",
+      "cache-control": cache,
+      "x-robots-tag": "noindex",
+    },
+  });
+}
+
+/**
+ * The caller's address, for the rate limiter only: it is never stored, logged or counted
+ * (ADR 0034, privacy).
+ */
+const addressOf = (req: Request): string => req.headers.get("cf-connecting-ip") ?? "unknown";
+
+/** `true` when the limiter (absent in a test or a bare local run) lets this address through. */
+async function allowed(env: Env, req: Request): Promise<boolean> {
+  if (!env.RATE_SHARE) return true;
+  try {
+    return (await env.RATE_SHARE.limit({ key: addressOf(req) })).success;
+  } catch {
+    return true; // a limiter fault never takes sharing down
+  }
+}
+
+/** The events counted: one data point each, holding the event, the id and the UTC day. */
+export type ShareEvent = "create" | "resolve" | "resolve-json" | "refused";
+
+function count(env: Env, event: ShareEvent, idOrReason: string): void {
+  try {
+    env.SHARE_ANALYTICS?.writeDataPoint({
+      blobs: [event, idOrReason, new Date().toISOString().slice(0, 10)],
+      indexes: [event],
+    });
+  } catch {
+    /* telemetry never fails a request */
+  }
+}
+
+/**
+ * Read a request body as text, refusing past `cap` characters without buffering the rest. The
+ * body is ASCII when valid, so bytes and characters agree; anything else fails validation later.
+ */
+async function readCapped(req: Request, cap: number): Promise<string | null> {
+  const declared = Number(req.headers.get("content-length") ?? "0");
+  if (declared > cap) return null;
+  if (!req.body) return "";
+  const reader = req.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let total = 0;
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    total += value.byteLength;
+    if (total > cap) {
+      await reader.cancel().catch(() => {});
+      return null;
+    }
+    chunks.push(value);
+  }
+  const all = new Uint8Array(total);
+  let at = 0;
+  for (const c of chunks) {
+    all.set(c, at);
+    at += c.byteLength;
+  }
+  return new TextDecoder().decode(all);
+}
+
+/** A stored share: its payload and metadata, or null. */
+async function lookup(env: Env, id: string): Promise<{ payload: string; meta: ShareMeta | null } | null> {
+  if (!env.SHARE || !isShareId(id)) return null;
+  const { value, metadata } = await env.SHARE.getWithMetadata<ShareMeta>(shareKey(id));
+  return value === null ? null : { payload: value, meta: metadata };
+}
+
+/** Build the handler over a core. */
+export function makeShareWorker(core: Core) {
+  /**
+   * `POST /api/share`. The payload must decode, inflate to UTF-8 within the source cap, and be a
+   * plan the core reads: `compile()` is the core's public route to its parser, and a plan that
+   * fails to parse (`E_PARSE`) or runs out of steps (`E_STEP_LIMIT`) is refused, so the store
+   * holds plans and not arbitrary text. Any other diagnostic is the plan's own business: a plan
+   * with a wall error is exactly what someone shares to ask for help.
+   */
+  async function create(req: Request, env: Env): Promise<Response> {
+    if (!(await allowed(env, req))) {
+      count(env, "refused", "rate");
+      const d = core.rateLimited("share", SHARE_PER_PERIOD, RATE_PERIOD_SECONDS);
+      return refuse(429, "rate_limited", d.message, {
+        diagnostic: core.diagnosticToJson("", d),
+        headers: { "retry-after": String(RATE_PERIOD_SECONDS) },
+      });
+    }
+    const body = await readCapped(req, PAYLOAD_CAP_CHARS);
+    if (body === null) {
+      count(env, "refused", "payload-size");
+      const d = core.inputTooLarge(PAYLOAD_CAP_CHARS + 1, PAYLOAD_CAP_CHARS, "share payload", false)!;
+      return refuse(413, "payload_too_large", d.message, { diagnostic: core.diagnosticToJson("", d) });
+    }
+    const payload = body.trim();
+    const source = await decodePayload(payload, SOURCE_CAP_BYTES);
+    if (source === "bad_payload") {
+      count(env, "refused", "payload");
+      return refuse(400, "bad_payload", "the body is not a #z= payload: base64url of deflate-raw UTF-8 plan source");
+    }
+    if (source === "source_too_large") {
+      count(env, "refused", "source-size");
+      const d = core.inputTooLarge(SOURCE_CAP_BYTES + 1, SOURCE_CAP_BYTES, "plan source", false)!;
+      return refuse(413, "source_too_large", d.message, { diagnostic: core.diagnosticToJson("", d) });
+    }
+    const result = core.compile(source, { noCache: true });
+    const fault = result.diagnostics.find((d) => d.severity === "error" && NOT_A_PLAN.has(d.code ?? ""));
+    if (fault) {
+      count(env, "refused", "not-a-plan");
+      return refuse(422, "not_a_plan", "the payload is not an ArchLang plan the parser accepts", {
+        diagnostic: core.diagnosticToJson(source, fault),
+      });
+    }
+    if (!env.SHARE) return refuse(503, "unavailable", "short links are not configured on this host");
+
+    const hash = await sourceHash(source);
+    const meta: ShareMeta = { v: 1, h: hash, t: planTitle(result.ast?.name) };
+    // The shortest free prefix: an id already holding THIS plan is reused (one plan, one link),
+    // one holding another plan is passed over for a longer prefix. Never overwritten: a short
+    // link, once given out, names one plan forever.
+    for (let n = ID_MIN; n <= ID_MAX; n++) {
+      const id = hash.slice(0, n);
+      const { value, metadata } = await env.SHARE.getWithMetadata<ShareMeta>(shareKey(id));
+      if (value === null) {
+        await env.SHARE.put(shareKey(id), payload, { metadata: meta });
+      } else if (metadata?.h !== hash) {
+        continue;
+      }
+      count(env, "create", id);
+      return json(200, { id, url: `${new URL(req.url).origin}/s/${id}` }, { "cache-control": "no-store" });
+    }
+    return refuse(503, "unavailable", "no free id for this plan");
+  }
+
+  /** `GET /api/share/<id>`: the payload, for `embed.html#s=<id>`. */
+  async function payloadOf(id: string, env: Env): Promise<Response> {
+    const hit = await lookup(env, id);
+    if (!hit) return refuse(404, "not_found", "no plan is stored under this id");
+    count(env, "resolve-json", id);
+    return json(200, { id, z: hit.payload }, { "cache-control": IMMUTABLE, "access-control-allow-origin": "*" });
+  }
+
+  /** `GET /s/<id>`: the card page. */
+  async function page(req: Request, id: string, env: Env): Promise<Response> {
+    const hit = await lookup(env, id);
+    if (!hit) return html(404, notFoundHtml(), "public, max-age=60", req.method);
+    count(env, "resolve", id);
+    const origin = new URL(req.url).origin;
+    const body = sharePageHtml({
+      origin,
+      id,
+      payload: hit.payload,
+      title: hit.meta?.t ?? DEFAULT_TITLE,
+      image: { url: `${origin}${FALLBACK_IMAGE.path}`, width: FALLBACK_IMAGE.width, height: FALLBACK_IMAGE.height },
+    });
+    // A day, not a year: the plan behind an id never changes, but this page's template can
+    // (its card image does when the per-plan preview lands), and a crawler re-reads it anyway.
+    return html(200, body, "public, max-age=86400", req.method);
+  }
+
+  async function route(req: Request, env: Env): Promise<Response> {
+    const { pathname } = new URL(req.url);
+    const read = req.method === "GET" || req.method === "HEAD";
+    if (pathname === "/api/share") {
+      if (req.method !== "POST")
+        return refuse(405, "method_not_allowed", "POST a #z= payload", { headers: { allow: "POST" } });
+      return create(req, env);
+    }
+    if (pathname.startsWith("/api/share/")) {
+      if (!read) return refuse(405, "method_not_allowed", "GET only", { headers: { allow: "GET, HEAD" } });
+      return payloadOf(pathname.slice("/api/share/".length), env);
+    }
+    if (pathname.startsWith("/api/")) return refuse(404, "not_found", "no such endpoint");
+    if (pathname.startsWith("/s/")) {
+      if (!read) return refuse(405, "method_not_allowed", "GET only", { headers: { allow: "GET, HEAD" } });
+      return page(req, pathname.slice("/s/".length), env);
+    }
+    // Not one of ours: the asset layer found no file for it (or it is a listed prefix we do not
+    // serve). Hand it back so the answer is the asset layer's own, byte for byte.
+    return env.ASSETS.fetch(req);
+  }
+
+  return {
+    async fetch(req: Request, env: Env, _ctx?: ExecutionContext): Promise<Response> {
+      try {
+        return await route(req, env);
+      } catch (e) {
+        // Never a stack, and never the plan: the error's name only.
+        console.error(`share worker: internal error (${(e as Error)?.name ?? "unknown"})`);
+        return refuse(500, "unavailable", "internal error");
+      }
+    },
+  };
+}
