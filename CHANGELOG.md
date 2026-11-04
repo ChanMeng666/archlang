@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Arithmetic on a positioning axis in an opening's position (`door … on w at axis.2 + 500`, and under `from` or `%`, or `between … at axis.A - 1000 from start`) is refused with `E_OPENING_DATUM`. It used to be a plain distance along the wall from its start, so it stood off the axis on any wall that does not start at 0, without a word. The hint gives `at axis 2`, and the distance along this wall that reaches the plan coordinate the expression meant (`at 2500` on a wall from `(1000,0)` with axis 2 at x = 3000). The bare `at axis.2` still stands on the axis.
+
 ## [1.54.0] - 2026-11-04
 
 ### Added
