@@ -103,7 +103,11 @@ suite("void polygon", () => {
   it("goes through a place frame as the same void written in place", () => {
     const placed = `plan "P" {\n  units mm\n  room id=r at (0,0) size 8000x8000 uses hall\n  component c() {\n    void id=v polygon (0,0) (3000,0) (3000,1000) (1000,1000) (1000,3000) (0,3000) rail 1 2 3\n  }\n  place c() as w at (4000,4000) mirror x\n}\n`;
     const direct = `plan "P" {\n  units mm\n  room id=r at (0,0) size 8000x8000 uses hall\n  void id=v polygon (4000,4000) (1000,4000) (1000,5000) (3000,5000) (3000,7000) (4000,7000) rail 1 2 3\n}\n`;
-    const layer = (s: string, id: string): string => s.match(new RegExp(`<g id="${id}"[\\s\\S]*?</g>`))?.[0] ?? "";
+    const layer = (s: string, id: string): string => {
+      const open = s.indexOf(`<g id="${id}"`);
+      const end = open < 0 ? -1 : s.indexOf("</g>", open);
+      return end < 0 ? "" : s.slice(open, end + "</g>".length);
+    };
     const a = compile(placed, { noCache: true }).svg;
     const b = compile(direct, { noCache: true }).svg;
     expect(layer(a, "A-FLOR-OVHD")).toBe(layer(b, "A-FLOR-OVHD"));
