@@ -17,7 +17,7 @@ const plan = (body: string): string =>
 const errors = (src: string): string[] =>
   compile(src, { noCache: true })
     .diagnostics.filter((d) => d.severity === "error")
-    .map((d) => d.code);
+    .map((d) => d.code ?? "");
 
 /** The `<line>`s of one SVG layer group, each as its four numbers. */
 const linesOn = (svg: string, layer: string): number[][] => {
