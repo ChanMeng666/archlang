@@ -2904,9 +2904,13 @@ plan "Two floors on one grid" {
   check: `keep on axis 2 wing.c`, written on the storey, reads the placed column in plan
   coordinates under any turn or mirror.
 - `at axis.2` on an opening stands on the axis, the same as `at axis 2`. `from` and `%` measure
-  along the wall, so `at axis.2 from end` is refused. Arithmetic on it, `at axis.2 + 500`, is a
-  number like any other: that many millimetres along the wall from its start, and the number is
-  a plan coordinate, so it lands on the axis only on a wall that starts at 0.
+  along the wall, so `at axis.2 from end` is refused. So is arithmetic on an axis there,
+  `at axis.2 + 500` (and under `from` or `%`):
+  [`E_OPENING_DATUM`](error-codes.md#e_opening_datum). An axis is a plan coordinate and a
+  position along a wall is a distance along it, so the sum would land on the axis only on a
+  wall that starts at 0. The hint gives `at axis 2`, and, on a wall the coordinate crosses
+  once, the distance that reaches it: on a wall from `(1000,0)`, `at axis.2 + 500` with
+  axis 2 at x = 3000 is `at 2500`.
 
 ### Sheet tables — room schedule & legend
 

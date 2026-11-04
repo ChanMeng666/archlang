@@ -23,7 +23,18 @@ import type { OpeningRelation, WindowCorner } from "./ir.js";
 import { enumList } from "./grammar/tokens.js";
 import { axisRead, EDGE_WORDS } from "./room-datums.js";
 import { fmt3 as numStr } from "./num-format.js";
-import { cornerOnWall, hostedDatumDistance, placeBetween, placeOnEdge, type RelationCtx } from "./opening-relation.js";
+import {
+  axisArithmeticDiag,
+  axisCrossingDistance,
+  axisFamily,
+  axisLabelsRead,
+  cornerOnWall,
+  declaredAxes,
+  hostedDatumDistance,
+  placeBetween,
+  placeOnEdge,
+  type RelationCtx,
+} from "./opening-relation.js";
 
 /**
  * The fix for `E_ATTACH_POS_RANGE`: clamp the out-of-range attach position to the
@@ -288,6 +299,21 @@ export function resolveAttachment(
   // One evaluation, shared by both value kinds. `center` carries no expression.
   const value = "value" in p ? p.value : undefined;
   const raw = value === undefined ? 0 : evalNum(value);
+  // Arithmetic on an axis (`at axis.2 + 500`) adds a plan coordinate to a distance along the
+  // wall: refused, with the distance that reaches the coordinate it meant (decision CR-D5).
+  const axes = value === undefined ? [] : axisLabelsRead(value);
+  if (axes.length > 0) {
+    // Only the declared labels: an undeclared one is the evaluator's E_UNKNOWN_REF already, so a
+    // position reading no declared axis adds no second error, and no hint names a missing label.
+    // `axisFamily` is undefined unless every label is declared, so a mixed read quotes no distance.
+    const known = declaredAxes(axes, rel);
+    if (known.length === 0) return null;
+    const vertical = p.kind === "mm" && Number.isFinite(raw) && rel ? axisFamily(axes, rel) : undefined;
+    const d = vertical === undefined ? undefined : axisCrossingDistance({ vertical, c: raw }, segs, segmentLength);
+    const along = vertical !== undefined && d !== undefined ? { wall: attach.wall, vertical, c: raw, d } : undefined;
+    diag(axisArithmeticDiag(what, p, known, attach.span, along));
+    return null;
+  }
   if (p.kind !== "center" && !Number.isFinite(raw)) {
     diag({
       severity: "error",
