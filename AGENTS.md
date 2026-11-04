@@ -67,5 +67,5 @@ npm run gen:all       # every gen:* generator
 A root `.ignore` hides CHANGELOG, generated files and goldens from ripgrep; name the path to search them.
 Authoring `.arch` (not contributing): `spec.llm.md`, `skills/archlang/SKILL.md`.
 
-Conventional Commits. The only root instruction file: `CLAUDE.md` just imports it; path-scoped
-rules go in `.claude/rules/`. Together ≤ 5,000 bytes (`wc -c`); detail goes in `docs/agents/`.
+Conventional Commits. This is the only root instruction file; `CLAUDE.md` just imports it;
+path-scoped rules go in `.claude/rules/`. Together ≤ 5,000 bytes (`wc -c`); detail goes in `docs/agents/`.
