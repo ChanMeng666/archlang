@@ -39,8 +39,8 @@ work; `cards.md` holds the cards, `handoff.md` the resume point.
 5. **V8** new families (2D symbol + catalog row + 3D generator + `rendered` material).
 6. **V9** viewer polish: light, palette, floor finishes by room use.
 
-One executor at a time (owner, 2026-11-03: one heavy process); executors run typecheck and the
-touched tests, CI is the full gate; a PR merges on green CI and a reviewed diff, at most two
+One executor at a time (owner, 2026-11-03: one heavy process); executors run the local gate
+(`check:quick`), CI is the full gate; a PR merges on green CI and a reviewed diff, at most two
 red-team rounds. Releases (core, archlang-3d) stay owner-only and are not part of any card.
 
 ## Success

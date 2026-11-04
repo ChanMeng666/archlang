@@ -546,10 +546,9 @@ warned element ringed and numbered, the access graph, close-ups of flagged openi
   them kept in memory files only, so they live here now):** the coordinating session plans,
   reviews and dispatches; executors on other models and effort levels do the work in worktrees
   branched from `main`, and the mix is deliberate (sonnet for mechanical edits and docs, haiku for
-  gate runs, opus for rule design and red team), stated in the stage report. Executors run build,
-  typecheck, the touched tests and the digest suites locally, plus `typecheck:all` when `test/`
-  changes and `check:drift` when a generator input changes; the `CLAUDE.md` floor (`check` +
-  `check:drift`) is met by CI, which is the full gate; editing an example touches every corpus-wide
+  gate runs, opus for rule design and red team), stated in the stage report. Executors run only
+  the local gate (`check:quick`, plus `docs:build` for docs; `AGENTS.md` § How to work); the
+  touched tests, digest suites, `typecheck:all` and `check:drift` run in CI, which is the full gate; editing an example touches every corpus-wide
   suite (see `handoff.md` § Brief template). At most two red-team
   rounds per PR; residue becomes cards; repo tests are never removed to go green. PRs merge on green
   CI plus a reviewed diff, pinned to the reviewed commit. Every completion claim is checked against

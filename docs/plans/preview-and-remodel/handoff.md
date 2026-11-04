@@ -57,10 +57,9 @@ Registering first is impossible, because npm needs the package to exist.
 - One executor and one heavy command at a time (the owner's laptop froze on 2026-11-02): two vitest workers, no local full suite, CI is the gate.
 - The main session plans, reviews and dispatches; one executor subagent per card in an isolated
   worktree branched from `main` (not from another card's branch), with its own `npm ci` (never a
-  junctioned `node_modules`); the executor runs the card's gates and the touched tests; the
-  coordinator merges `main` into the branch and runs the FULL `npm run check` (plus `check:drift`,
-  `typecheck:all`, and `check:3d` / the playground chain where touched) on that head before pinning
-  the merge; verify every completion claim with raw `git`/`gh`/`npm` output, not the summary.
+  junctioned `node_modules`); the executor runs the local gate (`check:quick`, + `docs:build`
+  for docs) and pushes; CI runs `check`, drift, `typecheck:all`, `check:3d` and the playground chain,
+  and the PR merges by risk tier (`docs/agents/commands.md` § Merging a PR); verify every completion claim with raw `git`/`gh`/`npm` output, not the summary.
 - One independent red-team round per PR (at most two); its should-fix items are fixed in the PR,
   the rest becomes a card, never a scope creep.
 - A landed card is cut to its `done` line in `cards.md`; its as-built note (what was built, what the
