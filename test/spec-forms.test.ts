@@ -567,6 +567,18 @@ const POSITIVE: Snippet[] = [
     note: "at + size, top-left",
     src: plan(`${ROOM}\n  void id=well at (2000,1500) size 2000x2000`),
   },
+  {
+    keyword: "void",
+    note: "the ring, horizontal and vertical edges only (an L), railed by edge number",
+    src: plan(
+      `${ROOM}\n  void id=well polygon (1000,1000) (4000,1000) (4000,2000) (2000,2000) (2000,4000) (1000,4000) rail 1 2 3`,
+    ),
+  },
+  {
+    keyword: "void",
+    note: "a rectangle railed by side",
+    src: plan(`${ROOM}\n  void id=well at (2000,1500) size 2000x2000 rail top left`),
+  },
   // --- outdoor ---------------------------------------------------------------
   {
     keyword: "outdoor",
@@ -1003,6 +1015,20 @@ const NEGATIVE: Negative[] = [
     channel: "compile",
     note: "a hole with no extent is not a hole",
     src: plan(`${ROOM}\n  void at (2000,1500) size 0x2000`),
+  },
+  {
+    code: "E_VOID_POLY",
+    channel: "compile",
+    note: "a slanted edge: every reader of the hole is written on rectangles",
+    src: plan(`${ROOM}\n  void polygon (1000,1000) (4000,1000) (3000,3000) (1000,3000)`),
+  },
+  {
+    code: "E_VOID_RAIL",
+    channel: "compile",
+    note: "a ring's edges are numbered, not named",
+    src: plan(
+      `${ROOM}\n  void polygon (1000,1000) (4000,1000) (4000,2000) (2000,2000) (2000,4000) (1000,4000) rail top`,
+    ),
   },
   // --- the vertical datum: all three refusals it names ------------------------
   {
