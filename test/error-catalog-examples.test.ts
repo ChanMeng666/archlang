@@ -229,7 +229,8 @@ suite("error catalog — every example that can raise its code does", () => {
     // `validateIntent()` raises them on the intent channel; each is raised in
     // test/brief-bound.test.ts. E_LOCKED_ELEMENT_CHANGED and E_LOCK_UNNAMED took it to 57: the
     // lock compares two versions of a plan, so no single snippet can raise either; both are
-    // raised in test/lock.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(57);
+    // raised in test/lock.test.ts. E_STALE_SOURCE took it to 58: the CLI's `--expected-hash` guard
+    // raises it on a file's bytes before anything compiles; raised in test/cli-expected-hash.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(58);
   });
 });

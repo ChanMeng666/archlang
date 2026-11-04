@@ -144,7 +144,7 @@ keep (align <d>… | equal width|depth <id>… | offset <d|id> from <d> <mm> | m
 ## CLI loop
 
 Every command takes `--json` (structured result on **stdout**, human messages on **stderr**) and
-reads source from a file or stdin (`-`). Exit codes: `0` ok · `1` internal / IO error · `2` user-source error (deterministic — fix it, don't blindly retry) · `3` bad usage · `4` stale source (E_STALE_SOURCE): the file is not the revision --expected-hash names; re-read it.
+reads source from a file or stdin (`-`). Exit codes: `0` ok · `1` internal / IO error · `2` user-source error (deterministic — fix it, don't blindly retry) · `3` bad usage · `4` stale source: the file is not the revision --expected-hash names (re-read it, redo the edit).
 In a shell, every `arch` in this spec means `archlang` (or `npx -y @chanmeng666/archlang`): coreutils owns `arch` on Linux, macOS and Git Bash.
 
 ```text
@@ -617,7 +617,7 @@ facts into context just to filter them yourself.
   *unfiltered* set, so reading less can never turn a failing plan green. A filtered result carries
   `filtered: true` + `total_diagnostics`.
 - **`archlang context --section spec|workflow|cli|errors`** prints one section of the bundle
-  instead of all of it (about 145 KB in all) — `errors` for the diagnostic catalog, `cli` for the
+  instead of all of it (about 160 KB in all) — `errors` for the diagnostic catalog, `cli` for the
   command reference.
 - **`archlang fix --dry-run`** prints the exact unified diff it would write (to stderr; `--json` also
   carries it as `diff`) and touches nothing. When you do apply in place, **`--backup`** keeps the
@@ -707,7 +707,7 @@ Every command takes `--json` (structured result on stdout, messages on stderr) a
 from a file or stdin (`-`). This CLI is the primary agent interface; an optional stdio MCP shim
 (`@chanmeng666/archlang-mcp`) wraps the same library functions for MCP-native hosts.
 
-**Exit codes:** `0` ok · `1` internal / IO error · `2` user-source error (deterministic — fix it, don't blindly retry) · `3` bad usage · `4` stale source (E_STALE_SOURCE): the file is not the revision --expected-hash names; re-read it
+**Exit codes:** `0` ok · `1` internal / IO error · `2` user-source error (deterministic — fix it, don't blindly retry) · `3` bad usage · `4` stale source: the file is not the revision --expected-hash names (re-read it, redo the edit)
 
 **Global flags:** `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
 

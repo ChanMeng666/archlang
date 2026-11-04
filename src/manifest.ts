@@ -1119,7 +1119,7 @@ export function buildManifest(version: string): Manifest {
       "2": "user-source error (deterministic — fix it, don't blindly retry)",
       "1": "internal / IO error",
       "3": "bad usage",
-      "4": "stale source (E_STALE_SOURCE): the file is not the revision --expected-hash names; re-read it",
+      "4": "stale source: the file is not the revision --expected-hash names (re-read it, redo the edit)",
     },
     globalFlags: [JSON_FLAG, QUIET_FLAG],
     commands: COMMANDS,

@@ -253,31 +253,42 @@ describe("--expected-hash: a change made while the command computed is caught, n
 
   it("fix, finish, fmt --write, repair -o and reroll --write re-read the input just before writing", async () => {
     const cases: Array<[Runner, string[], string]> = [
-      [fix, [file, "--backup"], OFF_WALL],
-      [finish, [file], OFF_WALL],
-      [fmt, [file, "--write"], OFF_WALL],
+      [fix, [file, "--backup", "--json"], OFF_WALL],
+      [finish, [file, "--json"], OFF_WALL],
+      [fmt, [file, "--write", "--json"], OFF_WALL],
+      // `repair --json` never writes (it returns `source`), so its write is the human-mode one.
       [repair, [file, "-o", file], OFF_WALL],
-      [reroll, [file, "--write"], FLAT_ROW],
+      [reroll, [file, "--write", "--json"], FLAT_ROW],
     ];
     for (const [run, argv, start] of cases) {
       seed(start);
       // The other writer lands at the last moment the guard can see it: after the result is
       // computed, before the re-read.
+      let fired = 0;
       writeGuardSeam.beforeRecheck = (path) => {
+        fired++;
         expect(path).toBe(file);
         writeFileSync(path, THEIRS);
       };
-      const r = await inProcess(run, [...argv, "--expected-hash", sha(start), "--json"]);
+      const json = argv.includes("--json");
+      const r = await inProcess(run, [...argv, "--expected-hash", sha(start)]);
       writeGuardSeam.beforeRecheck = undefined;
+      expect(fired, argv.join(" ")).toBe(1);
       expect(r.code, argv.join(" ")).toBe(4);
-      const j = JSON.parse(r.stdout);
-      expect(j).toMatchObject({
-        code: "E_STALE_SOURCE",
-        expected_hash: sha(start),
-        actual_hash: sha(THEIRS),
-        source_hash: sha(start),
-      });
-      expect(j.error).toContain("changed while the command ran");
+      if (json) {
+        const j = JSON.parse(r.stdout);
+        expect(j).toMatchObject({
+          code: "E_STALE_SOURCE",
+          expected_hash: sha(start),
+          actual_hash: sha(THEIRS),
+          source_hash: sha(start),
+        });
+        expect(j.error).toContain("changed while the command ran");
+      } else {
+        expect(r.stderr).toContain("error[E_STALE_SOURCE]");
+        expect(r.stderr).toContain("changed while the command ran");
+        expect(r.stderr).toContain(sha(THEIRS).slice(0, 12));
+      }
       // Their edit survives, byte for byte, and no backup of it was taken.
       expect(readFileSync(file, "utf8")).toBe(THEIRS);
       expect(existsSync(`${file}.bak`)).toBe(false);

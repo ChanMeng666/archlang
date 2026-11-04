@@ -28,7 +28,7 @@ A flag that takes a value takes it either way: `--level 2` or `--level=2`.
 | `1` | internal / IO error |
 | `2` | user-source error (deterministic — fix it, don't blindly retry) |
 | `3` | bad usage |
-| `4` | stale source (E_STALE_SOURCE): the file is not the revision --expected-hash names; re-read it |
+| `4` | stale source: the file is not the revision --expected-hash names (re-read it, redo the edit) |
 
 ## Output formats
 
