@@ -21,6 +21,9 @@
     "@chanmeng666/archlang-font-cjk": "./worker/optional-stub.ts"
   },
   "minify": true,
+  // The card renderer's font, the core's bundled face, imported as bytes (worker/index.ts). A
+  // `.wasm` import needs no rule: wrangler compiles it to a WebAssembly.Module by default.
+  "rules": [{ "type": "Data", "globs": ["**/*.ttf"], "fallthrough": false }],
 
   "workers_dev": false,
 
@@ -62,10 +65,13 @@
   // The namespace id names a namespace in the account; it is not a secret.
   "kv_namespaces": [{ "binding": "SHARE", "id": "1a147498742b4bd4b4579175085ef9a0" }],
 
-  // Per-address abuse guard on POST /api/share, keyed on CF-Connecting-IP (never stored or
-  // logged); held to SHARE_PER_PERIOD in worker/share-core.ts by test. Its own namespace:
-  // 2601 and 2602 are the MCP Worker's.
-  "ratelimits": [{ "name": "RATE_SHARE", "namespace_id": "2603", "simple": { "limit": 30, "period": 60 } }],
+  // Per-address abuse guards, keyed on CF-Connecting-IP (never stored or logged): POST
+  // /api/share, and /s/<id>.png cache misses (a hit renders nothing). Held to SHARE_PER_PERIOD
+  // and PREVIEW_PER_PERIOD by test. Their own namespaces: 2601 and 2602 are the MCP Worker's.
+  "ratelimits": [
+    { "name": "RATE_SHARE", "namespace_id": "2603", "simple": { "limit": 30, "period": 60 } },
+    { "name": "RATE_PREVIEW", "namespace_id": "2604", "simple": { "limit": 120, "period": 60 } }
+  ],
 
   // One data point per create and per resolve: the event, the id and the UTC day.
   "analytics_engine_datasets": [{ "binding": "SHARE_ANALYTICS", "dataset": "archlang_share" }],
