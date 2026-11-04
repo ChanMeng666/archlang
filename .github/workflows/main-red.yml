@@ -1,0 +1,59 @@
+name: Main red alarm
+
+# Post-merge detection. Branch protection does not require a PR to be up to date with main, so two
+# PRs that are green alone can still break main together. CI re-runs on every push to main; this
+# turns a red run there into one pinned issue, and closes it on the next green run.
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  alarm:
+    if: github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Open, update or close the main-red issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const marker = '<!-- archlang-main-red -->';
+            const { owner, repo } = context.repo;
+            const wr = context.payload.workflow_run;
+            const sha = wr.head_sha.slice(0, 8);
+            const open = (
+              await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'open', per_page: 100 })
+            ).find((i) => !i.pull_request && (i.body ?? '').includes(marker));
+
+            if (wr.conclusion === 'success') {
+              if (!open) return core.info('main is green; nothing open');
+              await github.rest.issues.createComment({
+                owner, repo, issue_number: open.number,
+                body: `main is green again at ${sha} (${wr.html_url}).`,
+              });
+              await github.rest.issues.update({
+                owner, repo, issue_number: open.number, state: 'closed', state_reason: 'completed',
+              });
+              return core.info(`main green; closed #${open.number}`);
+            }
+            if (wr.conclusion !== 'failure') return core.info(`CI on main: ${wr.conclusion}; no action`);
+
+            const line = `- ${sha} "${wr.head_commit?.message?.split('\n')[0] ?? ''}": ${wr.html_url}`;
+            if (open) {
+              await github.rest.issues.createComment({ owner, repo, issue_number: open.number, body: `Still red:\n${line}` });
+              return core.info(`main still red; commented on #${open.number}`);
+            }
+            const created = await github.rest.issues.create({
+              owner, repo,
+              title: 'main is red after a merge',
+              body: `${marker}\nCI failed on a push to main. Fix forward (or revert the merge) before the next merge.\n\n${line}`,
+            });
+            core.info(`main red; opened #${created.data.number}`);
