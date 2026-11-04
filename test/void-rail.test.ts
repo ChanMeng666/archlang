@@ -19,9 +19,19 @@ const errors = (src: string): string[] =>
     .diagnostics.filter((d) => d.severity === "error")
     .map((d) => d.code ?? "");
 
+/** The body of one SVG layer group, up to its first `</g>`, by plain string search (no regex over
+ *  the SVG: a backtracking pattern there is a CodeQL polynomial-ReDoS finding). */
+const layerBody = (svg: string, layer: string): string => {
+  const open = svg.indexOf(`<g id="${layer}"`);
+  if (open < 0) return "";
+  const start = svg.indexOf(">", open) + 1;
+  const end = svg.indexOf("</g>", start);
+  return end < 0 ? "" : svg.slice(start, end);
+};
+
 /** The `<line>`s of one SVG layer group, each as its four numbers. */
 const linesOn = (svg: string, layer: string): number[][] => {
-  const g = svg.match(new RegExp(`<g id="${layer}"[^>]*>([\\s\\S]*?)</g>`))?.[1] ?? "";
+  const g = layerBody(svg, layer);
   return [...g.matchAll(/<line x1="([-\d.]+)" y1="([-\d.]+)" x2="([-\d.]+)" y2="([-\d.]+)"/g)].map((m) =>
     m.slice(1, 5).map(Number),
   );
@@ -30,7 +40,8 @@ const linesOn = (svg: string, layer: string): number[][] => {
 suite("void polygon", () => {
   it("draws one outline and each piece's two diagonals, inside the ring", () => {
     const svg = compile(plan(`  void id=w polygon ${L}`), { noCache: true }).svg;
-    const g = svg.match(/<g id="A-FLOR-OVHD"[^>]*>([\s\S]*?)<\/g>/)![1]!;
+    const g = layerBody(svg, "A-FLOR-OVHD");
+    expect(g).not.toBe("");
     expect(g.match(/<polygon /g)).toHaveLength(1);
     expect(g).toContain('points="1000,1000 4000,1000 4000,2000 2000,2000 2000,4000 1000,4000"');
     // Two pieces (y 1000–2000 the full width, y 2000–4000 the leg), crossed each.
