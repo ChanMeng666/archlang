@@ -98,8 +98,8 @@ you observed. Do NOT push anything — this command only verifies.
    ```bash
    npm run build && npm run mcp:build:only
    node packages/mcp/scripts/check-dist-resources.mjs
-   npm run vscode:build:only && npx vitest run editors/vscode
-   npx vitest run packages/mcp/test/lockstep.test.ts
+   npm run vscode:build:only && npx vitest run editors/vscode  #allow-local-heavy release gate
+   npx vitest run packages/mcp/test/lockstep.test.ts  #allow-local-heavy release gate
    ```
 
    When `packages/archlang-3d`'s version is new, also (the job runs the same; `--dir` is a new,
@@ -107,7 +107,7 @@ you observed. Do NOT push anything — this command only verifies.
 
    ```bash
    npm -w packages/archlang-3d run notices && git diff --exit-code packages/archlang-3d/THIRD_PARTY_NOTICES
-   npm run check:3d
+   npm run check:3d  #allow-local-heavy release gate
    npm -w packages/archlang-3d run prove:pack -- --dir <empty dir>
    npm -w packages/archlang-3d run prove:pack -- --dir <another> --core <the peer floor>
    ```

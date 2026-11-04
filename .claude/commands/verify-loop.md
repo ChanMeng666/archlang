@@ -30,8 +30,8 @@ is not (a targeted subset misses the corpus-wide guards, `docs/agents/gotchas.md
    - If you touched the CLI, expect `docs/cli-reference.md` to move — it is generated from
      `src/manifest.ts`. **Read that diff**; it is the one artifact a CLI change always rewrites.
 
-3. **`npm run typecheck:all`** — CI runs it (`builds` job); `check:quick` already typechecks what
-   changed, so run it locally only to chase a CI typecheck failure. Step 1's `typecheck` only
+3. **`npm run typecheck:all`** — CI only (`builds` job; the local-gate hook blocks it); `check:quick` already typechecks what
+   changed. Chase a CI typecheck failure from the CI log. Step 1's `typecheck` only
    covers `src`; this adds the root dev config (`test`, `eval`, `dataset`, `scripts`, `bench`) plus
    the playground, docs-site (vue-tsc), MCP shim and VS Code extension. CI runs it in the `builds`
    job.
@@ -39,8 +39,8 @@ is not (a targeted subset misses the corpus-wide guards, `docs/agents/gotchas.md
      ROOT test imported that module into the strict root program. Fix it in the shared module —
      never by relaxing the root option (`docs/agents/gotchas.md` → (Typecheck)).
 
-4. **Conditional gates — CI runs all of these; run one locally only when the diff earns it AND
-   you need the answer before pushing:**
+4. **Conditional gates — CI runs all of these. Locally only `docs:build`; the rest are blocked by
+   `.claude/hooks/local-gate.mjs` unless the command carries `#allow-local-heavy` and a reason:**
    - touched `docs/*.md` or `docs-site/` ⇒ **`npm run docs:build`** (the core suite never compiles
      the site).
    - touched `playground/` ⇒ `npm run build && npm run playground:build:only && npm run
