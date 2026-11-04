@@ -14,6 +14,8 @@
 
 ## 3. 接下来，按序
 
+> **2026-11-05 CR-D1（所有者批准）：** DS3–DS9 推到 Show HN 之后按证据重排；DS1、DS2 改由 `../checker-reach/` 的 CR1、CR2b 承担。冻结前的排期以 `../checker-reach/handoff.md` 为准。
+
 1. DS0 确认记录。
 2. DS1 削 spec。它解锁所有语言卡。
 3. DS2 修 N.1。
