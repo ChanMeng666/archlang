@@ -54,7 +54,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   `archlang-docs`/`archlang-playground` are not URLs — never rename them. The DNS records are
   proxied (a Workers custom domain must be). Bot Fight Mode, Email Obfuscation, Rocket Loader and
   Browser Integrity Check stay OFF, or the smoke test and the nightly byte-equality probe break.
-  *Awaiting ratification (CR-D3, 2026-11-05):* the docs Worker has no `main` script. The playground's has one that runs only for the paths its
+  *Ratified by the owner in words, 2026-11-05 (CR-D3):* the docs Worker has no `main` script. The playground's has one that runs only for the paths its
   `assets.run_worker_first` array lists (`/s/*`, `/api/*`: short links, ADR 0034, plan decision
   CR-D3); every static path behaves byte for byte as it did with no script.
 - **`archlang-mcp` (`packages/mcp-worker`, ADR 0026) is the third Worker and the only ArchLang one
