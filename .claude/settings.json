@@ -22,6 +22,20 @@
       "Bash(git push --tags*)",
       "Bash(git push origin --tags*)",
       "Bash(git push origin refs/tags/*)"
+    ],
+    "deny": [
+      "Bash(git push origin main:*)",
+      "Bash(git push origin HEAD:main:*)",
+      "Bash(git -C * push origin main*)",
+      "Bash(git -C * push origin HEAD:main*)",
+      "Bash(git push --force:*)",
+      "Bash(git push -f:*)",
+      "Bash(git -C * push --force*)",
+      "Bash(git -C * push -f*)",
+      "PowerShell(git push origin main*)",
+      "PowerShell(git push origin HEAD:main*)",
+      "PowerShell(git push --force*)",
+      "PowerShell(git push -f*)"
     ]
   },
   "hooks": {
