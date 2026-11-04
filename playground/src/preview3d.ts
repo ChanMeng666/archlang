@@ -14,10 +14,22 @@
  *
  * The core's drawing is the editor's own compile when `main.ts` hands it over (`Drawn`), so an edit
  * with this tab open compiles once, not twice; `adaptPlan`'s resolve is the package's own.
+ *
+ * The view turns freely (card CR4): the package's free camera (`interactive`) and its toolbar
+ * (presets, Reset, storeys shown). Grabbing the view pauses the playback; scrubbing or Replay hands
+ * the camera back to the replay; an edit keeps the view the user left.
  */
 import { compile } from "archlang";
 import { adaptPlan, buildMesh, replayFacts, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
-import { mountReplay, PREVIEW_LABEL, type ReplayHandle, replayPayload } from "@chanmeng666/archlang-3d/browser";
+import {
+  mountReplay,
+  PREVIEW_LABEL,
+  type ReplayHandle,
+  replayPayload,
+  VIEW_CONTROLS_LABEL,
+  type ViewState,
+  viewToolbar,
+} from "@chanmeng666/archlang-3d/browser";
 
 /** The canvas's drawing size (CSS scales it to the pane); 16:9 like the replay HTML. */
 const WIDTH = 960;
@@ -66,7 +78,8 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   stage.className = "p3d-stage";
   const canvas = document.createElement("canvas");
   canvas.className = "p3d-canvas";
-  canvas.setAttribute("role", "img");
+  // It takes the pointer and keys (the free camera, card CR4), so it is an application, not an image.
+  canvas.setAttribute("role", "application");
   const strip = document.createElement("div");
   strip.className = "p3d-strip";
   strip.setAttribute("role", "group");
@@ -89,12 +102,16 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   scrub.setAttribute("aria-label", "Replay position");
   controls.append(play, scrub);
 
+  // The free camera's toolbar (card CR4), rebuilt with each replay.
+  const views = document.createElement("div");
+  views.className = "p3d-views";
+
   const message = document.createElement("p");
   message.className = "p3d-message";
   message.setAttribute("role", "status");
   message.hidden = true;
 
-  host.append(label, stage, controls, message);
+  host.append(label, stage, controls, views, message);
 
   let handle: ReplayHandle | undefined;
   /** What the mounted replay (or the refusal showing) was built from. */
@@ -116,13 +133,17 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     window.__preview3d = undefined;
     stage.hidden = true;
     controls.hidden = true;
+    views.hidden = true;
     message.hidden = false;
     message.textContent = `No 3D preview: ${text}`;
     delete host.dataset.view;
   };
 
-  /** Build the replay of `source` at `level`; false when it was refused (the message is showing). */
-  const build = (source: string, level: number | null, key: string, given?: Drawn): boolean => {
+  /**
+   * Build the replay of `source` at `level`; false when it was refused (the message is showing).
+   * `keep`, the view of the replay it replaces (an edit), is carried over.
+   */
+  const build = (source: string, level: number | null, key: string, given?: Drawn, keep?: ViewState): boolean => {
     built = key;
     generation += 1;
     let next: ReplayHandle;
@@ -161,11 +182,17 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       });
       stop();
       handle?.dispose();
-      next = mountReplay(canvas, payload, strip);
+      // Grabbing the view pauses the playback.
+      next = mountReplay(canvas, payload, strip, { interactive: true, onTake: stop });
+      if (keep) next.view?.restore(keep);
+      views.replaceChildren(
+        ...(next.view ? [viewToolbar(next.view, { buttonClass: "repair-btn", hintId: "p3d-hint" })] : []),
+      );
+      canvas.setAttribute("aria-describedby", "p3d-hint");
       const which = index < 0 ? (levels.length > 1 ? "all storeys" : "") : `storey L${level}`;
       canvas.setAttribute(
         "aria-label",
-        `${payload.title}${which ? ` (${which})` : ""}: the plan drawing itself in its authoring order, then rising`,
+        `${payload.title}${which ? ` (${which})` : ""}: the plan drawing itself in its authoring order, then rising; ${VIEW_CONTROLS_LABEL}`,
       );
     } catch (e) {
       refuse((e as { message?: string })?.message ?? String(e));
@@ -176,6 +203,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     host.dataset.view = view;
     stage.hidden = false;
     controls.hidden = false;
+    views.hidden = false;
     message.hidden = true;
     return true;
   };
@@ -208,11 +236,16 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     });
   };
 
-  /** Redraw at `t` once the drawing is ready (no playback). */
+  /** Redraw at `t` once the drawing is ready (no playback), from the camera that holds the view. */
   const drawAt = (t: number) => {
     const h = handle;
     const mine = generation;
-    void h?.ready.then(() => mine === generation && seek(t));
+    void h?.ready.then(() => {
+      if (mine !== generation) return;
+      if (h.view) h.view.at(t);
+      else h.seek(t);
+      scrub.value = String(t);
+    });
   };
 
   play.addEventListener("click", () => playFrom(0));
@@ -241,7 +274,9 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       if (key === built) return;
       const t = Number(scrub.value);
       const playing = frame !== 0;
-      if (!build(source, level, key, drawn)) return;
+      // An edit keeps the view the user left; another storey starts from the replay's own.
+      const sameStorey = built?.startsWith(keyOf("", level)) === true;
+      if (!build(source, level, key, drawn, sameStorey ? handle?.view?.state() : undefined)) return;
       if (playing) playFrom(t);
       else drawAt(t);
     },

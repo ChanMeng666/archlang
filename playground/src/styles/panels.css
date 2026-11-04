@@ -1121,8 +1121,37 @@
   font-size: 12.5px;
   color: var(--ink);
 }
+/* The free camera (card CR4): the canvas takes keys when focused; the toolbar's presets and storeys. */
+.p3d-canvas:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.p3d-views .archlang-views {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.p3d-views .archlang-views-storeys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.p3d-views button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.p3d-views .archlang-views-hint {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
 [hidden].p3d-stage,
 [hidden].p3d-controls,
+[hidden].p3d-views,
 [hidden].p3d-message {
   display: none;
 }

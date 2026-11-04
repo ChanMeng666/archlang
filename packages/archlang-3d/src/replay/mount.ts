@@ -25,15 +25,26 @@ import {
   Vector3,
   WebGLRenderer,
 } from "three";
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import {
   boxOfNodes,
   cameraPosition,
   cameraStops,
+  distanceLimits,
   drawingFrame,
+  ELEVATION_RANGE,
   END_AZIMUTH,
   END_FOV,
+  type FrameCamera,
   frameCamera,
+  pivotAbove,
+  type PresetName,
+  presetCamera,
   START_FOV,
+  takenLens,
+  targetBounds,
+  type Vec3,
+  type ViewScene,
 } from "./camera.js";
 import { finishColour, KIND_PALETTE, PALETTE, slotColour, WALL_CAP_SRGB } from "../materials.js";
 import type { ReplayPayload } from "./payload.js";
@@ -53,7 +64,68 @@ export interface ReplayHandle {
   ready: Promise<void>;
   /** Release the WebGL context and the GPU buffers. The handle draws nothing afterwards. */
   dispose: () => void;
+  /** The camera the user moves (card CR4); present when mounted with `interactive: true`. */
+  view?: ViewControl;
 }
+
+export type { PresetName } from "./camera.js";
+
+/** Who holds the camera: the replay, a preset, or the user's own orbit. */
+export type CameraHolder = "replay" | PresetName | "free";
+
+/** A view to carry over to a new mount of an edited plan (`ViewControl.state`, `restore`). */
+export type ViewState =
+  | { camera: "replay" | PresetName; storeys: Shown }
+  | { camera: "free"; position: Vec3; target: Vec3; fov: number; storeys: Shown };
+/** The storeys shown: 1…n, or every one (so an edit that adds a storey shows it too). */
+type Shown = number | "all";
+
+/**
+ * The free camera (card CR4, decision CR-D2), browser side. `seek(t)` still draws the replay's own
+ * frame at `t` and hands a taken camera back to the replay; `at(t)` draws `t` from whatever camera
+ * holds the view. The storeys shown persist across both. Nothing here reaches the default path: a
+ * handle nobody touches draws exactly the frames it drew before.
+ */
+export interface ViewControl {
+  /** Draw replay time `t` (clamped) from the current camera, without handing it back. */
+  at: (t: number) => void;
+  /** Draw the current `t` from a preset camera (`presetCamera`); `iso` is the end camera exactly. */
+  preset: (name: PresetName) => void;
+  /** The replay's own camera and every storey: at t = 1 the end frame, byte for byte. */
+  reset: () => void;
+  /** How many storeys the replay has (1: nothing to hide). */
+  readonly storeys: number;
+  /** Show storeys 1…`upTo` (1-based, clamped) and hide those above; the camera stays. */
+  showStoreys: (upTo: number) => void;
+  /** How many storeys are shown, from the lowest. */
+  readonly shown: number;
+  readonly camera: CameraHolder;
+  state: () => ViewState;
+  /**
+   * Take over a state from an earlier mount (an edit rebuilt the replay); draws nothing. A held view
+   * (a preset, the user's orbit) is taken as a preset is: `onTake`.
+   */
+  restore: (s: ViewState) => void;
+  /** Hear when `camera` or `shown` changes (a drag, a preset, a seek, a restore); returns the unsubscribe. */
+  onChange: (fn: () => void) => () => void;
+}
+
+export interface MountOptions {
+  /**
+   * Drag to turn, wheel or pinch to zoom, right-drag or two fingers to pan, arrow keys and + / −
+   * on the focused canvas (three.js's `OrbitControls`). Off by default.
+   */
+  interactive?: boolean;
+  /**
+   * The user took the view (the first movement of a drag, the wheel or a key, a preset, a restored
+   * held view): a host that is playing pauses, or its next `seek` hands the camera back.
+   */
+  onTake?: () => void;
+}
+
+/** One arrow-key press turns the view this far (degrees); one + or − dollies by this factor. */
+const KEY_TURN_DEG = 5;
+const KEY_DOLLY = 0.9;
 
 /**
  * The replay's themes. The light theme's building colours ARE the shared palette (`KIND_PALETTE`,
@@ -116,9 +188,15 @@ const FOOTPRINT_MM = 12;
  * Mount the replay `p` on `out`: sizes the canvas to `p.width`×`p.height` and draws nothing yet.
  * `strip`, an element the host lays over the canvas, receives the metrics strip (card G4) as DOM
  * text at every `seek`; it is never drawn into the canvas, so `frameHash` is the same with and
- * without it.
+ * without it. `opts.interactive` adds the free camera (`handle.view`, card CR4); until someone
+ * drags, scrolls, presses a key or calls `view`, every frame is the one it is without it.
  */
-export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HTMLElement): ReplayHandle {
+export function mountReplay(
+  out: HTMLCanvasElement,
+  p: ReplayPayload,
+  strip?: HTMLElement,
+  opts: MountOptions = {},
+): ReplayHandle {
   const theme = THEMES[p.theme];
   const furniture = theme.colors.furniture as string;
   const W = p.width;
@@ -295,36 +373,98 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
 
   let disposed = false;
 
-  function seek(t: number): void {
-    if (disposed) return;
+  const frameView = { cx, cz, oh, elevation: p.elevation };
+  // Each node's storey, 0-based from the lowest (the combined view's events carry it; one storey: 0).
+  const storeyOf = new Map(p.events.map((e) => [e.key, e.storey ?? 0] as const));
+  const storeys = Math.max(1, ...p.events.filter((e) => !e.hidden).map((e) => (e.storey ?? 0) + 1));
+  /** Storeys 1…shown are drawn; all of them unless the viewer hid some (`view.showStoreys`). */
+  let shown = storeys;
+  /** Who holds the camera; "replay" unless the viewer took it (`view`). */
+  let holder: CameraHolder = "replay";
+  /** The replay time last drawn. */
+  let tNow = 0;
+  const halfDiagonal = size.length() / 2;
+  /**
+   * The clip radius round a target the replay never aims at (a preset, the user's orbit): every
+   * point drawn lies within half the box's diagonal of its centre. The replay's own `radius` when
+   * that is wider, as it is for the end camera's target (`reach` covers it), so a preset that is the
+   * end camera draws the end frame's own near and far planes.
+   */
+  const reachFrom = (target: Vector3): number => Math.max(radius, mid.distanceTo(target) + halfDiagonal);
+
+  /** Aim the perspective camera from `f`, its near and far planes `r` either side of the target. */
+  function place(f: FrameCamera, r: number): void {
+    const { fov, dist, elevation, azimuth } = f;
+    const target = new Vector3(...f.target);
+    const el = rad(elevation);
+    persp.fov = fov;
+    // Near and far hug the scene, so depth precision is spent where the building is.
+    persp.near = Math.max(10, dist - r);
+    persp.far = dist + r;
+    persp.updateProjectionMatrix();
+    persp.up.set(0, 0, -1);
+    if (el < rad(89.99)) persp.up.set(0, 1, 0);
+    persp.position.set(...cameraPosition([target.x, target.y, target.z], dist, { elevation, azimuth }));
+    persp.lookAt(target);
+  }
+
+  // The presets (`presetCamera`), each a pure function of the scene, worked out when first asked for.
+  const viewScene: ViewScene = { events: p.events, fits, frame: frameView, box: boxOfNodes(p.nodes), aspect };
+  const presets = new Map<PresetName, FrameCamera>();
+  const presetOf = (name: PresetName): FrameCamera => {
+    const known = presets.get(name);
+    if (known) return known;
+    const f = presetCamera(name, viewScene);
+    presets.set(name, f);
+    return f;
+  };
+
+  /** The orbit controls, when interactive; the user's camera while `holder` is "free". */
+  let controls: OrbitControls | undefined;
+  /** Stop the orbit's motion (its damping), so a camera set from outside holds still. */
+  let halt = (): void => {};
+  /** Take the free camera's listeners off the canvas. */
+  let unhook = (): void => {};
+  /** After a replay frame: re-aim an orbit whose press is down but has not moved yet. */
+  let primeAgain = (): void => {};
+  /** Who hears that the holder or the storeys shown changed (`view.onChange`: the toolbar). */
+  const listeners = new Set<() => void>();
+  const notify = (): void => {
+    for (const fn of listeners) fn();
+  };
+
+  /** Draw replay time `t` from whoever holds the camera. */
+  function draw(t: number): void {
+    tNow = t;
     if (strip && p.facts) paintStrip(strip, stripAt(p.facts, p.events, Math.min(1, Math.max(0, t))));
     const s = stateAt(p.events, t);
     for (const [key, { g, flat }] of nodes) {
       const st = s.nodes.get(key);
-      g.visible = st?.visible === true;
+      g.visible = st?.visible === true && (storeyOf.get(key) ?? 0) < shown;
       g.scale.y = Math.max(flat, st?.rise ?? 0);
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
-    if (s.tilt > 0 || s.dolly > 0) {
-      const f = frameCamera(s, fits, { cx, cz, oh, elevation: p.elevation });
-      const { fov, dist, elevation, azimuth } = f;
-      const target = new Vector3(...f.target);
-      const el = rad(elevation);
-      persp.fov = fov;
-      // Near and far hug the scene, so depth precision is spent where the building is.
-      persp.near = Math.max(10, dist - radius);
-      persp.far = dist + radius;
+    if (holder === "free" && controls) {
+      // The orbit placed and aimed the camera; the clip range follows its target.
+      const dist = persp.position.distanceTo(controls.target);
+      const r = reachFrom(controls.target);
+      persp.near = Math.max(10, dist - r);
+      persp.far = dist + r;
       persp.updateProjectionMatrix();
-      persp.up.set(0, 0, -1);
-      if (el < rad(89.99)) persp.up.set(0, 1, 0);
-      persp.position.set(...cameraPosition([target.x, target.y, target.z], dist, { elevation, azimuth }));
-      persp.lookAt(target);
+      cam = persp;
+    } else if (holder !== "replay" && holder !== "free") {
+      const f = presetOf(holder);
+      place(f, reachFrom(new Vector3(...f.target)));
+      cam = persp;
+    } else if (s.tilt > 0 || s.dolly > 0) {
+      place(frameCamera(s, fits, frameView), radius);
       cam = persp;
     }
     renderer.render(scene, cam);
     ctx.globalAlpha = 1;
     ctx.drawImage(gl, 0, 0);
-    if (s.svg > 0 && img.complete && img.naturalWidth > 0) {
+    // The core's drawing is laid over the replay's own camera only (it matches the top-down frame).
+    if (holder === "replay" && s.svg > 0 && img.complete && img.naturalWidth > 0) {
       const k = Math.min(W / vw, H / vh);
       const dw = vw * k;
       const dh = vh * k;
@@ -334,19 +474,236 @@ export function mountReplay(out: HTMLCanvasElement, p: ReplayPayload, strip?: HT
     }
   }
 
+  /** The replay's own frame at `t`: a camera the viewer took goes back to the replay. */
+  function seek(t: number): void {
+    if (disposed) return;
+    if (holder !== "replay") {
+      halt();
+      holder = "replay";
+      notify();
+    }
+    draw(t);
+    primeAgain();
+  }
+
   async function frameHash(): Promise<string> {
     const data = ctx.getImageData(0, 0, W, H).data;
     const digest = await crypto.subtle.digest("SHA-256", data);
     return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, "0")).join("");
   }
 
+  const view = opts.interactive ? interact() : undefined;
+
+  /**
+   * The free camera (card CR4): three.js's own `OrbitControls` on the canvas the host shows. Built
+   * with damping off and changing nothing the replay's frames read: every replay frame sets the
+   * camera's lens, planes, up, position and aim itself (`place`), so the controls' first `update()`
+   * (in their constructor) is overwritten before anything is drawn.
+   */
+  function interact(): ViewControl {
+    const c = new OrbitControls(persp, out);
+    controls = c;
+    c.enableDamping = false;
+    // Pan across the ground, not the screen: the target keeps its height, so with the polar limit
+    // the camera never drops below it.
+    c.screenSpacePanning = false;
+    c.minPolarAngle = rad(90 - ELEVATION_RANGE.max);
+    c.maxPolarAngle = rad(90 - ELEVATION_RANGE.min);
+    const bounds = targetBounds(box);
+    c.cursor.set(...bounds.centre);
+    const tabIndex0 = out.getAttribute("tabindex");
+    out.tabIndex = 0;
+
+    let loop = 0;
+    let dragging = false;
+    /** Set while `halt` flushes the orbit: its `change` must not draw. */
+    let quiet = false;
+    const reduced = (): boolean => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+    // Damping eases the orbit out over the next animation frames (a frame count, never a clock).
+    const settle = (): void => {
+      loop = 0;
+      if (disposed || holder !== "free") return;
+      if (c.update() || dragging) loop = requestAnimationFrame(settle);
+    };
+    const kick = (): void => {
+      if (c.enableDamping && !loop) loop = requestAnimationFrame(settle);
+    };
+    halt = () => {
+      if (loop) cancelAnimationFrame(loop);
+      loop = 0;
+      dragging = false;
+      if (!c.enableDamping) return;
+      // An undamped update applies and clears what the damping still owes.
+      quiet = true;
+      c.enableDamping = false;
+      c.update();
+      quiet = false;
+    };
+
+    /**
+     * Line the orbit up from `position` toward `target` through lens `fov`, turning about a pivot on
+     * that line of sight no lower than the building (`pivotAbove`). Draws nothing and leaves the
+     * holder: the frame on the canvas stays until the orbit actually moves.
+     */
+    const aim = (position: Vec3, target: Vec3, fov: number): void => {
+      persp.fov = fov;
+      persp.up.set(0, 1, 0);
+      persp.position.set(...position);
+      c.target.set(...pivotAbove(position, target, viewScene.box.lo[1]));
+      persp.lookAt(c.target);
+      const dist = persp.position.distanceTo(c.target);
+      const lim = distanceLimits(fits, fov);
+      c.minDistance = Math.min(lim.min, dist);
+      c.maxDistance = Math.max(lim.max, dist);
+      c.maxTargetRadius = Math.max(bounds.radius, c.target.distanceTo(c.cursor));
+      c.enableDamping = !reduced();
+    };
+    /**
+     * Line the orbit up with the frame showing: a preset as it is; a replay frame through the end
+     * lens with its aim and framing (`takenLens`), so a take in the top-down phase turns a top view at
+     * the end lens, not the near-orthographic 1.5° one.
+     */
+    const prime = (): void => {
+      if (holder === "free") return;
+      const f =
+        holder === "replay" ? takenLens(frameCamera(stateAt(p.events, tNow), fits, frameView)) : presetOf(holder);
+      aim(cameraPosition(f.target, f.dist, f), f.target, f.fov);
+    };
+    /** The view is the user's now: the host pauses (`onTake`) and the toolbar hears of it. */
+    const own = (): void => {
+      if (holder === "free") return;
+      holder = "free";
+      opts.onTake?.();
+      notify();
+      kick();
+    };
+    /** A press is down but nothing has moved yet: the replay's frames may still change under it. */
+    let armed = false;
+    primeAgain = () => {
+      if (armed) prime();
+    };
+
+    // A press only lines the orbit up; the first real movement (`change`) takes the view, so a
+    // plain click on the canvas changes nothing.
+    c.addEventListener("start", () => {
+      prime();
+      armed = true;
+      dragging = true;
+    });
+    c.addEventListener("end", () => {
+      armed = false;
+      dragging = false;
+    });
+    c.addEventListener("change", () => {
+      if (quiet || disposed) return;
+      armed = false;
+      own();
+      draw(tNow);
+    });
+    const turn = rad(KEY_TURN_DEG);
+    // Arrow keys turn the view, + and − dolly (= and _ are the same keys unshifted and shifted).
+    const keys = new Map<string, () => void>([
+      ["ArrowLeft", () => c.rotateLeft(turn)],
+      ["ArrowRight", () => c.rotateLeft(-turn)],
+      ["ArrowUp", () => c.rotateUp(turn)],
+      ["ArrowDown", () => c.rotateUp(-turn)],
+      ["+", () => c.dollyIn(KEY_DOLLY)],
+      ["=", () => c.dollyIn(KEY_DOLLY)],
+      ["-", () => c.dollyOut(KEY_DOLLY)],
+      ["_", () => c.dollyOut(KEY_DOLLY)],
+    ]);
+    const onKey = (e: KeyboardEvent): void => {
+      const act = keys.get(e.key);
+      if (!act || disposed || e.ctrlKey || e.metaKey || e.altKey) return;
+      e.preventDefault();
+      // The move's own `change` takes the view (a key at a limit moves nothing and takes nothing).
+      prime();
+      act();
+      kick();
+    };
+    out.addEventListener("keydown", onKey);
+    // A host reuses its canvas for the next mount (the playground does): leave it as it was.
+    unhook = () => {
+      out.removeEventListener("keydown", onKey);
+      c.dispose();
+      if (tabIndex0 === null) out.removeAttribute("tabindex");
+      else out.setAttribute("tabindex", tabIndex0);
+      listeners.clear();
+    };
+
+    const clampStoreys = (k: number): number => Math.min(storeys, Math.max(1, Math.round(k)));
+    const shownState = (): Shown => (shown === storeys ? "all" : shown);
+    return {
+      at: (t) => {
+        if (!disposed) draw(t);
+      },
+      // A preset takes the view as a drag does: the host pauses, or its next frame would hand the
+      // camera straight back to the replay.
+      preset: (name) => {
+        if (disposed) return;
+        halt();
+        holder = name;
+        opts.onTake?.();
+        notify();
+        draw(tNow);
+      },
+      reset: () => {
+        if (disposed) return;
+        halt();
+        holder = "replay";
+        shown = storeys;
+        notify();
+        draw(tNow);
+      },
+      storeys,
+      showStoreys: (k) => {
+        if (disposed) return;
+        shown = clampStoreys(k);
+        notify();
+        draw(tNow);
+      },
+      onChange: (fn) => {
+        listeners.add(fn);
+        return () => listeners.delete(fn);
+      },
+      get shown() {
+        return shown;
+      },
+      get camera() {
+        return holder;
+      },
+      state: () =>
+        holder === "free"
+          ? {
+              camera: "free",
+              position: persp.position.toArray() as Vec3,
+              target: c.target.toArray() as Vec3,
+              fov: persp.fov,
+              storeys: shownState(),
+            }
+          : { camera: holder, storeys: shownState() },
+      restore: (s) => {
+        if (disposed) return;
+        halt();
+        shown = s.storeys === "all" ? storeys : clampStoreys(s.storeys);
+        if (s.camera === "free") aim(s.position, s.target, s.fov);
+        holder = s.camera;
+        // A view the user held stays held: the host pauses, as for a drag or a preset.
+        if (holder !== "replay") opts.onTake?.();
+        notify();
+      },
+    };
+  }
+
   function dispose(): void {
     if (disposed) return;
+    halt();
     disposed = true;
+    unhook();
     for (const o of owned) o.dispose();
     renderer.dispose();
     renderer.forceContextLoss();
   }
 
-  return { seek, frameHash, ready, dispose };
+  return { seek, frameHash, ready, dispose, ...(view ? { view } : {}) };
 }
