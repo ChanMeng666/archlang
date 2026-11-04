@@ -123,7 +123,11 @@ suite("void rail", () => {
     }
     // The top rail's outer line is the edge itself; nothing rails the right or bottom edge.
     expect(rails[0]).toEqual([1000, 1000, 4000, 1000]);
-    expect(rails.some(([x1, , x2]) => x1 === 4000 && x2 === 4000)).toBe(false);
+    // (A post tick at the top rail's end stands on x = 4000 too, so the test is a line ALONG an edge.)
+    const along = (r: number[], x: number): boolean => r[0] === x && r[2] === x && Math.abs(r[3]! - r[1]!) > 500;
+    expect(rails.some((r) => along(r, 1000))).toBe(true);
+    expect(rails.some((r) => along(r, 4000))).toBe(false);
+    expect(rails.some((r) => r[1] === 2000 && r[3] === 2000 && Math.abs(r[2]! - r[0]!) > 500)).toBe(false);
     expect(describe(plan("  void id=w at (1000,1000) size 3000x1000 rail left top")).voids![0]!.rail).toEqual([
       "top",
       "left",
