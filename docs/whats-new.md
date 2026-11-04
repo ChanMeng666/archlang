@@ -32,6 +32,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | A floor finish on a room | 1.53.0 | [Room floors](#room-floors) |
 | Furniture filled in its material | 1.54.0 | [The rendered theme](#the-rendered-theme) |
 | Twenty more furniture families | 1.54.0 | [More furniture](#more-furniture) |
+| An L-shaped void with a railing | unreleased | [Railed voids](#railed-voids) |
 
 ## Quantities and takeoff
 
@@ -572,3 +573,19 @@ A rug stays unfilled, so nothing drawn under it is hidden. The tint is a drawing
 Twenty families joined the catalogue, each with its own symbol: `floor_lamp`, `side_table`, `console_table`, `ottoman`, `bean_bag`, `pantry`, `towel_rail`, `palm`, `flower_bed`, `boulder`, `picnic_table`, `slide`, `bollard`, `bike_rack`, `raised_bed`, `whiteboard`, `printer`, `server_rack`, `hospital_bed` and `workstation`, plus aliases such as `pouf`, `rock` and `copier`. Each takes `furniture <word> … size WxD` like any other piece, and the [fixture catalogue](language-reference.md#furniture) gives the footprints.
 
 These words used to be free words drawn as a labelled box. A plan that already used one now gets the family's rules: the symbol replaces the label, and `facing`, `anchor` and the fixture warnings treat it as they treat any other catalogued piece. The [changelog](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md) lists each change.
+
+## Railed voids
+
+A stair well or a gallery that is not a rectangle used to take two rectangle voids and a site `fence` standing in for the railing. `void … polygon` takes the ring, whose edges run only horizontally and vertically, and `rail` draws the railing on the edges it names. On a ring the edges are numbered: edge `n` runs from point `n` to point `n+1`, counted from 0. Here the stair arrives across edge 4, and edges 0 and 5 stand on the walls:
+
+```arch
+plan "Railed well" {
+  units mm
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+  room id=landing at (0,0) size 6000x5000 label "Landing" uses circulation
+  door id=d on shell at 14000 width 900
+  void id=well polygon (100,100) (3100,100) (3100,1100) (1100,1100) (1100,4100) (100,4100) rail 1 2 3
+}
+```
+
+A rectangle names its sides instead, as a balcony does: `void at (5000,2000) size 2000x3000 rail top left`. The outline is one dashed line with a cross in each rectangle of the hole, and the walk, the stair checks and `finish` read the hole as those rectangles. The railing is a drawing: it has no height, and a void with no `rail` draws none. See [Void](language-reference.md#void--a-hole-in-the-floor-v1-29).

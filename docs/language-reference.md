@@ -2508,7 +2508,8 @@ plan "Bungalow" {
 ### Void — a hole in the floor (v1.29)
 
 ```
-void [id=<id>] at (x,y) size <w>x<h>
+void [id=<id>] at (x,y) size <w>x<h> [rail top|bottom|left|right|all|none …]
+void [id=<id>] polygon (x,y) (x,y) (x,y) (x,y) … [rail all|none|<n> …]
 ```
 
 A stair well, a double-height living room, an atrium: the part of this storey's floor plate
@@ -2530,10 +2531,29 @@ Three behaviours that are invisible from the syntax:
   the notch of a U-shaped `room polygon` is inside that room's box and outside its floor, and
   is reported as belonging to no room (`"room": null`).
 
-Rectangle-only in v1; a non-positive extent is
-[`E_VOID_SIZE`](error-codes.md#e_void_size). A polygonal void is deferred by name — every
-consumer here (the nav grid, the room attribution, the `place` transform) is written on a
-rectangle. Inside a `component` it is allowed and transforms exactly, like a `column`.
+A non-positive extent is [`E_VOID_SIZE`](error-codes.md#e_void_size). Inside a `component` it
+is allowed and transforms exactly, like a `column`.
+
+**An L-shaped void** is a `polygon`: an implicitly closed ring whose every edge is horizontal or
+vertical (an L, a U, a notch). It draws one dashed outline, and the two diagonals of each
+rectangle it is made of, so no cross runs outside the hole. Everything that reads a void (the
+walking grid, the stair and furniture checks, `walls from rooms`, `finish`) reads those
+rectangles, never the ring's bounding box. `describe --json` adds the ring as `polygon` and its
+exact `area_m2`. A slanted edge, a crossing ring or fewer than four corners is
+[`E_VOID_POLY`](error-codes.md#e_void_poly): split a slanted hole into rectangle voids.
+`keep stacked` refuses a polygon void, as it refuses a polygon room.
+
+**A railing** is `rail`, and only where it is written: a void with no `rail` has none. A
+rectangle names its sides, as an [`outdoor balcony`](#outdoor--ground-outside-the-building-v1-31)
+does. A polygon numbers its edges: edge `n` runs from point `n` to point `n+1`, counted from 0
+like a wall's `segment <n>` (the last edge closes the ring). Numbers, not side words, because an
+L has two edges facing the same way. Leave out the edge a stair arrives across and the edges
+that stand on a wall. Each railed edge draws the balcony's railing symbol (two thin lines with
+posts) on the hole's side of the slab edge, on the `A-FLOR-HRAL` CAD layer, and `describe --json`
+reports `rail`. A side word on a ring, a number on a rectangle, or a number that is not one of
+the ring's edges is [`E_VOID_RAIL`](error-codes.md#e_void_rail). The railing draws a plan symbol
+only: it has no height, makes no structural or guarding claim, and does not change the walk (a
+void lifts its walking halo on every edge either way).
 
 ```arch
 plan "Landing" {
@@ -2545,6 +2565,22 @@ plan "Landing" {
   door id=d on shell at 3000 width 900
 
   void id=gallery at (600,600) size 1800x2400
+}
+```
+
+An upper landing over an L-shaped stair well: the well's foot, edge 4, is where the stair
+arrives and is left open; edges 0 and 5 stand on the walls.
+
+```arch
+plan "Railed well" {
+  units mm
+  north up
+
+  wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,5000) (0,5000) close }
+  room id=landing at (0,0) size 6000x5000 label "Landing" uses circulation
+  door id=d on shell at 14000 width 900
+
+  void id=well polygon (100,100) (3100,100) (3100,1100) (1100,1100) (1100,4100) (100,4100) rail 1 2 3
 }
 ```
 
