@@ -128,7 +128,7 @@ export function cmdFmt(args: Args): number {
         });
       else if (!args.quiet) process.stdout.write(`✓ ${input} formatted${changed ? "" : " (no changes)"}\n`);
     } else if (args.json) {
-      emitJson({ ok: true, changed, formatted, source_hash: read.hash });
+      emitJson({ ok: true, changed, formatted, source_hash: read.hash, output_hash: sha256Hex(formatted) });
     } else {
       process.stdout.write(formatted);
     }
@@ -153,6 +153,7 @@ export function cmdRepair(args: Args): number {
         unresolved: r.unresolved,
         source: r.source,
         source_hash: read.hash,
+        output_hash: sha256Hex(r.source),
       });
       return EXIT.OK;
     }
@@ -366,6 +367,8 @@ export async function cmdFix(args: Args): Promise<number> {
     // The revision handles (`src/cli/source-hash.ts`): what was read, and what landed in the target.
     out.source_hash = read.hash;
     if (wrote && target !== "-") out.written_hash = sha256Hex(current);
+    // The fixed text's own revision (what `diff` produces): `written_hash` when it was written here.
+    out.output_hash = sha256Hex(current);
     emitJson(out);
   } else {
     if (target === "-" && !args.dryRun) process.stdout.write(current);
@@ -481,6 +484,8 @@ export function cmdFinish(args: Args): number {
     out.source = r.source;
     out.source_hash = read.hash;
     if (wrote && target !== "-") out.written_hash = sha256Hex(r.source);
+    // `source`'s own revision, for a caller that writes it: `written_hash` when it was written here.
+    out.output_hash = sha256Hex(r.source);
     emitJson(out);
   } else {
     if (!ok) emitDiagnosticsHuman(source, errors, args.quiet);

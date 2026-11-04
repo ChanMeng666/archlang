@@ -8,7 +8,13 @@
  *
  *  - every one of these commands reports `source_hash`, the SHA-256 (lowercase hex) of the exact
  *    bytes it read, and after a file write `written_hash`, the SHA-256 of the bytes it wrote, in
- *    its `--json` result, so a caller can chain calls without hashing anything itself;
+ *    its `--json` result, so a caller can chain calls without hashing anything itself. A result
+ *    that carries the rewritten text (`source` of `finish`/`repair`, `formatted` of `fmt`, and the
+ *    text `fix`'s `diff` produces) also reports `output_hash`, the SHA-256 of that text's UTF-8:
+ *    the revision the file has once the caller writes it there (equal to `written_hash` when the
+ *    command wrote it itself);
+ *  - `--expected-hash` names a revision of a FILE, so it needs a path: with stdin (`-`) there is
+ *    nothing to re-read before a write, and it is refused as bad usage (exit 3);
  *  - with `--expected-hash <hex>` the command refuses, with `E_STALE_SOURCE` and exit 4, when the
  *    bytes it read do not hash to that value, before it computes or writes anything (`--dry-run`
  *    and `-o <other file>` included: a stale read is stale wherever the result goes);
@@ -98,14 +104,24 @@ function staleSource(
 /**
  * Read `input` (a path, or `-` for stdin) for an in-place writer, hash its bytes, and apply
  * `--expected-hash` when it was given. Returns the source, or `{ code }` to exit with: a malformed
- * hash is bad usage (exit 3, before anything is read), an unreadable input is an IO error (exit 1,
- * the message `withSource` gives), and a mismatch is `E_STALE_SOURCE` (exit 4).
+ * hash, or one given with stdin input, is bad usage (exit 3, before anything is read), an
+ * unreadable input is an IO error (exit 1, the message `withSource` gives), and a mismatch is
+ * `E_STALE_SOURCE` (exit 4).
  */
 export function readGuarded(args: Args, command: string, input: string): GuardedSource | { code: number } {
   let expected: string | undefined;
   // `--expected-hash` with no value after it parses to an own `undefined`; refusing it keeps a
   // guard the caller asked for from silently not running.
   if (args.expectedHash !== undefined || Object.hasOwn(args, "expectedHash")) {
+    // A hash of stdin's bytes says nothing about the file `-o` then overwrites, and stdin cannot be
+    // read again before the write: the guard would look like it ran and guard nothing.
+    if (input === "-")
+      return {
+        code: usageErrorFor(
+          command,
+          "--expected-hash guards a file read and rewritten by path, and stdin (`-`) is not one — pass the file's path instead",
+        ),
+      };
     const raw = args.expectedHash ?? "";
     if (!HEX64.test(raw))
       return {

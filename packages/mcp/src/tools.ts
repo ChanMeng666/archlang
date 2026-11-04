@@ -118,14 +118,19 @@ export async function sha256Hex(text: string): Promise<string> {
 type ToolResult = { content: Array<{ type: string; text?: string }> };
 
 /**
- * `result` with `source_hash` appended as the last key of its JSON payload (the first text block).
- * Additive: every other key, and its position, is as the handler wrote it.
+ * `result` with `source_hash` (the INPUT `source`'s hash) appended to its JSON payload (the first
+ * text block), and after it `output_hash` when the payload carries a rewritten `source` (`repair`,
+ * `fix`, `finish`): the SHA-256 of exactly that returned text's UTF-8, which is the revision a file
+ * has once the caller writes that text to it, so the hash to pass to the CLI's `--expected-hash`
+ * next. Additive: every other key, and its position, is as the handler wrote it.
  */
-function withHashField<R extends ToolResult>(result: R, hash: string): R {
+async function withHashFields<R extends ToolResult>(result: R, input: string): Promise<R> {
   const i = result.content.findIndex((c) => c.type === "text" && typeof c.text === "string");
   if (i < 0) return result;
-  const block = result.content[i]!;
-  const text = JSON.stringify({ ...JSON.parse(block.text!), source_hash: hash }, null, 2);
+  const payload = JSON.parse(result.content[i]!.text!) as Record<string, unknown>;
+  const fields: Record<string, string> = { source_hash: await sha256Hex(input) };
+  if (typeof payload.source === "string") fields.output_hash = await sha256Hex(payload.source);
+  const text = JSON.stringify({ ...payload, ...fields }, null, 2);
   return { ...result, content: result.content.map((c, j) => (j === i ? { ...c, text } : c)) };
 }
 
@@ -134,7 +139,7 @@ const hashingSource =
   <A extends { source?: string }, R extends ToolResult>(handler: (a: A) => Promise<R>) =>
   async (a: A): Promise<R> => {
     const result = await handler(a);
-    return typeof a.source === "string" ? withHashField(result, await sha256Hex(a.source)) : result;
+    return typeof a.source === "string" ? withHashFields(result, a.source) : result;
   };
 
 const errorCount = (ds: Diagnostic[]): number => ds.filter((d) => d.severity === "error").length;

@@ -790,7 +790,9 @@ describe("source_hash", () => {
     for (const [name, args] of calls) {
       const out = await call(client, name, args);
       expect(out.source_hash, name).toBe(h);
-      expect(Object.keys(out).at(-1), name).toBe("source_hash");
+      // A result that returns a rewritten `source` also ends with its `output_hash`.
+      const tail = typeof out.source === "string" ? ["source_hash", "output_hash"] : ["source_hash"];
+      expect(Object.keys(out).slice(-tail.length), name).toEqual(tail);
     }
     // The calls above cover every tool whose input schema takes `source`, derived from the server.
     const { tools } = await client.listTools();
@@ -799,6 +801,36 @@ describe("source_hash", () => {
       .map((t) => t.name);
     expect([...new Set(calls.map(([n]) => n))].sort()).toEqual(takesSource.sort());
   });
+
+  it("repair, fix and finish add output_hash: the returned text's hash, which the CLI reads back once it is written", async () => {
+    const client = await connect();
+    const dir = mkdtempSync(join(tmpdir(), "mcp-out-hash-"));
+    try {
+      for (const [name, source] of [
+        ["repair", FURNITURE_IN_WALL],
+        ["fix", OFF_WALL],
+        ["finish", CLEAN],
+      ] as const) {
+        const out = await call(client, name, { source });
+        expect(out.source, name).not.toBe(source); // each one really rewrites its fixture
+        expect(out.source_hash, name).toBe(sha256(source)); // still the INPUT
+        expect(out.output_hash, name).toBe(sha256(out.source as string));
+        // The chain: write the returned `source` to a file; the CLI's revision of that file is
+        // `output_hash`, the value to pass to `--expected-hash` next.
+        const file = join(dir, `${name}.arch`);
+        writeFileSync(file, out.source as string, "utf8");
+        const cli = spawnSync(
+          process.execPath,
+          ["--import", "tsx", join(REPO, "src", "cli.ts"), "fmt", file, "--json"],
+          { cwd: REPO, encoding: "utf8" },
+        );
+        expect(cli.status, cli.stderr).toBe(0);
+        expect(JSON.parse(cli.stdout).source_hash, name).toBe(out.output_hash);
+      }
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 30000);
 
   it("is absent when the call passed no `source` (compile from plan_json)", async () => {
     const client = await connect();

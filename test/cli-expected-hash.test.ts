@@ -21,14 +21,15 @@ import { buildManifest, format } from "../src/index.js";
 
 const sha = (b: string | Uint8Array): string => createHash("sha256").update(b).digest("hex");
 
-// A door floating off the wall: `fix` and `finish` rewrite it, `fmt` reformats it (the extra
-// spaces), and `repair -o` always writes its result.
+// A door floating off the wall and a sofa through it: `fix` and `finish` rewrite it, `fmt`
+// reformats it (the extra spaces), `repair` moves the sofa, and `repair -o` always writes.
 const OFF_WALL = `plan "P" {
   units mm
   grid 50
   wall id=w1 exterior thickness 200 { (0,0) (5000,0) (5000,4000) (0,4000) close }
   room id=r at (0,0)   size 5000x4000 label "Room"
   door id=d at (2500,9000) width 900 wall exterior
+  furniture sofa at (-100,1000) size 1800x800
 }`;
 
 // Three runs `reroll --write` folds into loops (test/reroll.test.ts's FLAT_ROW).
@@ -203,6 +204,24 @@ describe("--expected-hash: a stale read refuses before anything is computed or w
     }
     untouched(OFF_WALL);
   });
+
+  it("stdin input is bad usage (exit 3): a hash of stdin guards nothing about the -o file it overwrites", async () => {
+    // The refusal comes before anything is read: an in-process read of fd 0 would block the test.
+    const target = join(dir, "target.arch");
+    writeFileSync(target, "precious");
+    for (const [run, extra] of [
+      [fix, ["-o", target]],
+      [finish, ["-o", target]],
+      [repair, ["-o", target]],
+      [fmt, ["--write"]],
+      [reroll, ["--write"]],
+    ] as const) {
+      const r = await inProcess(run, ["-", ...extra, "--expected-hash", sha(OFF_WALL)]);
+      expect(r.code).toBe(3);
+      expect(r.stderr).toContain("--expected-hash guards a file read and rewritten by path");
+    }
+    expect(readFileSync(target, "utf8")).toBe("precious");
+  });
 });
 
 describe("--expected-hash: a matching read writes, and reports the revisions", () => {
@@ -248,6 +267,39 @@ describe("--expected-hash: a matching read writes, and reports the revisions", (
     expect(f.wrote).toBe(true);
     expect(f.source_hash).toBe(h);
     expect(f.written_hash).toBe(sha(readFileSync(file)));
+  });
+
+  it("output_hash is the hash of the rewritten text a result carries; written_hash equals it when the command wrote it", async () => {
+    // A result that hands back text: `output_hash` is that text's hash, NOT the input's, and is the
+    // file's revision once the caller writes the text there.
+    const texts: Array<[Runner, string[], (j: Record<string, string>) => string]> = [
+      [finish, [file, "--dry-run", "--json"], (j) => j.source!],
+      [repair, [file, "--json"], (j) => j.source!],
+      [fmt, [file, "--json"], (j) => j.formatted!],
+    ];
+    for (const [run, argv, text] of texts) {
+      const j = JSON.parse((await inProcess(run, argv)).stdout) as Record<string, string>;
+      expect(j.source_hash, argv.join(" ")).toBe(sha(OFF_WALL));
+      expect(j.output_hash, argv.join(" ")).toBe(sha(text(j)));
+      expect(j.output_hash, argv.join(" ")).not.toBe(j.source_hash);
+      // Write the returned text as an agent would, and the CLI reads that revision back.
+      writeFileSync(join(dir, "mine.arch"), text(j));
+      const back = JSON.parse((await inProcess(fmt, [join(dir, "mine.arch"), "--json"])).stdout);
+      expect(back.source_hash, argv.join(" ")).toBe(j.output_hash);
+    }
+    untouched(OFF_WALL);
+    // `fix --dry-run` carries its result as a diff; `output_hash` is the text that diff produces,
+    // so a real run writes exactly that revision.
+    const dry = JSON.parse((await inProcess(fix, [file, "--dry-run", "--json"])).stdout);
+    expect(dry.output_hash).not.toBe(dry.source_hash);
+    for (const run of [fix, finish]) {
+      seed(OFF_WALL);
+      const j = JSON.parse((await inProcess(run, [file, "--json"])).stdout);
+      expect(j.wrote).toBe(true);
+      expect(j.written_hash).toBe(sha(readFileSync(file)));
+      expect(j.output_hash).toBe(j.written_hash);
+      if (run === fix) expect(j.output_hash).toBe(dry.output_hash);
+    }
   });
 
   it("the hash is of the file's exact bytes: a BOM and CRLF line ends are part of it", async () => {
