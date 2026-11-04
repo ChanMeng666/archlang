@@ -458,7 +458,8 @@ async function shortLinkChecks() {
         contentType("application/json")(body, res);
         const out = JSON.parse(body);
         if (!/^[0-9A-Za-z]{8,43}$/.test(String(out.id))) throw new Error(`id is ${JSON.stringify(out.id)}`);
-        // The origin is the request's own: the deployed host, or what a local `wrangler dev` reports.
+        // The origin is the request's: the deployed host. A local `wrangler dev` reports the route's
+        // custom domain over http (`http://playground.archlang.uk`), not --base, so only the path is held.
         if (new URL(out.url).pathname !== `/s/${out.id}`) throw new Error(`url is ${JSON.stringify(out.url)}`);
         created = out.id;
         return [`id ${out.id}`];

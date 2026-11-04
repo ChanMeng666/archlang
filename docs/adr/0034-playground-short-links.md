@@ -47,7 +47,10 @@ other request is served by the asset layer as before.
    the `_headers` it carried before. `/embed.html` stays a literal 200, `/` stays the `_redirects`
    rewrite, and a mistyped path stays a bare 404. Measured on `wrangler dev` before and after: 34
    requests over 26 static paths (GET, HEAD and POST; 200s, 404s and 405s) gave the same status,
-   headers and body SHA-256; a deliberately broken fallback changed 14 of them.
+   headers and body SHA-256; a deliberately broken fallback changed 14 of them. Re-run it after any
+   change to the Worker or its config (a manual tool, not CI; it needs a built playground):
+   `node scripts/playground-static-sweep.mjs` compares `origin/main`'s config against the working
+   tree's over the same `playground/dist`, and `--base <ref>` picks another base.
 2. **The docs Worker stays script-less.** Its routing (`drop-trailing-slash`, VitePress's 404) has
    no request a script would serve.
 3. **A site script is allowed only behind an explicit route list.** `run_worker_first: true` would
@@ -66,14 +69,22 @@ The id is the first 8 characters of base62(SHA-256(the plan's UTF-8 source)), ab
 - **One plan, one link.** Sharing a plan again finds its id and writes nothing.
 - **Collisions lengthen the id.** If `s:<id>` holds a different plan (the record's metadata carries
   the full hash), the next character is added, and so on to all 43; the first free or matching
-  prefix wins. Deterministic for a given store, and nothing stored is ever overwritten, so a
-  short link, once given out, names one plan forever.
+  prefix wins. Deterministic for a given store, and the code never overwrites a key, so a short
+  link, once given out, names one plan. One window remains: KV is eventually consistent (about
+  60 s), so two different plans that share an 8-character prefix, created within that window at two
+  edge locations, could both find the key free and the later write would win. For a given pair of
+  plans the chance of sharing the prefix is about 2^-47.
 - **No sequence.** Ids cannot be enumerated, and they carry no time or count.
 
 ### What `POST /api/share` accepts
 
 The body is exactly what the playground's `encodeSrc` writes after `#z=`. Refused, each with a
-JSON body carrying a stable `error.code` and never a stack: a body over 64 KiB
+JSON body carrying a stable `error.code` and never a stack: a browser request from another site
+(`cross_origin`, 403: an `Origin` other than the request's own, or a `Sec-Fetch-Site` other than
+`same-origin` or `none`; the client posts `text/plain`, a CORS simple request with no preflight, so
+without this any page could make its visitors' browsers store plans and spread the per-address
+rate across them; a request with neither header, from a server or the smoke test, passes); a body
+over 64 KiB
 (`payload_too_large`, read no further); not base64url, not raw deflate or not UTF-8
 (`bad_payload`); inflating past 64 KiB, the hosted MCP Worker's source cap (`source_too_large`, inflation stops at the cap, so a
 deflate bomb costs nothing); text the parser does not accept (`not_a_plan`, with the `E_PARSE` or
@@ -103,11 +114,16 @@ to ask for help.
 - **Counting:** Analytics Engine dataset `archlang_share`, one data point per create and per
   resolve: `blobs: [event, id, day]`, the event from a fixed list (`create`, `resolve`,
   `resolve-json`, `refused`, the last with a reason in place of the id). It answers "are short
-  links opened at all", the plan's first click data.
+  links opened at all", the plan's first click data. A `HEAD` is not counted (a crawler's probe
+  before its GET), and `/s/<id>?<anything>` answers 301 to `/s/<id>`, so a tracker's query is
+  neither a second page nor a second count.
 - **Logs:** Workers Logs on, invocation logs off. The script logs only an internal error's name,
   never a plan, and invocation logs would record each request's metadata.
 - **Caching:** `/api/share/<id>` is `immutable` (the plan behind an id never changes). `/s/<id>`
   is cached for a day, not a year: the plan does not change, but the page's template can.
+- **Origins in links:** `url`, `og:url` and the canonical link name the request's origin. Deployed
+  that is `https://playground.archlang.uk`; under `wrangler dev` the Worker sees the route's custom
+  domain over http, `http://playground.archlang.uk`, not the local address.
 
 ### The card image
 

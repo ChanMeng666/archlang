@@ -155,7 +155,10 @@ export function escapeHtml(s: string): string {
 
 /** What `/s/<id>` needs to describe its plan to a crawler. */
 export interface SharePage {
-  /** `https://playground.archlang.uk`, or the local origin under `wrangler dev`. */
+  /**
+   * The request's origin: `https://playground.archlang.uk` when deployed. Under `wrangler dev` the
+   * route's custom domain is reported too (`http://playground.archlang.uk`), not the local address.
+   */
   origin: string;
   id: string;
   /** The payload, already validated as base64url when it was stored. */
