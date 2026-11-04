@@ -166,7 +166,6 @@ the master rather than restoring an archived PNG. The master is the source; a ra
 |---|---|---|
 | README header (dark/light `<picture>`) | `README.md` | `archlang-wordmark.svg`, `-black.svg` |
 | Docs site favicon / nav / OG | `docs-site/.vitepress/config.ts` | `archlang-icon-plum.svg` (favicon + `nav logo`), `archlang-favicon-32.png`, `archlang-apple-touch.png`, `archlang-og.png` |
-| Docs hero (compile-seam) | `docs-site/.vitepress/theme/CompileSeam.vue` | `archlang-icon-plum.svg` (eyebrow mark) |
 | Playground page | `playground/index.html` | `archlang-icon-plum.svg` (favicon), `archlang-apple-touch.png`, `archlang-og.png`, `archlang-icon.svg` (header) |
 | Playground embed viewer | `playground/embed.html` | `archlang-icon-plum.svg` (favicon), `archlang-icon.svg` (header) |
 

@@ -3735,7 +3735,7 @@ own. `npm audit` goes 19 → 7 and **`npm audit --omit=dev` to 0**.
   one. Two are SHA-pinned GitHub Action references inside a third party's workflow diff (the
   recommended supply-chain practice); the third is a public npm package's `revision`. All three are
   other people's public commit SHAs and none is a credential. They cannot be deleted, because
-  `paper/` moved to a private repository on 2026-08-26 and gitleaks scans the FULL history, so they
+  `paper/` moved to a separate repository on 2026-08-26 and gitleaks scans the FULL history, so they
   are allowlisted in a new `.gitleaksignore` **by commit-pinned fingerprint** — nothing else in that
   file, or anywhere else, is suppressed. Verified rather than assumed: 648 commits, 0 findings, and
   removing one fingerprint makes exactly that one reappear. A permanently red gate is a disabled
@@ -4879,7 +4879,7 @@ visual goldens and eleven of the twelve committed `examples/*.svg` re-blessed in
 by layer below. No new keyword, no new `E_*`/`W_*` code, no
 `src/index.ts` removal. Also in the release: `examples/furnished-flat.arch` and
 `examples/lib/furniture.arch`, a new `/showcase` docs page, and the extraction of `paper/` to a
-private repository.
+separate repository.
 
 ### Added — the room-furniture vocabulary, and the glyph layer it will be drawn on
 
@@ -5146,14 +5146,9 @@ are untouched.
 
 ### Changed — repository contents only; no `src/`, no language, no published artifact
 
-**The papers moved out, to the private repository `ChanMeng666/archlang-paper`.** `paper/` (56
+**The papers moved to a separate repository.** `paper/` (56
 tracked files) plus `scripts/gen-paper-facts.ts` and `scripts/snapshot-paper-scale.ts` were
-extracted on 2026-08-26 and removed here. The reason is not tidiness: one of the three targets is a
-**double-anonymous** ICSE 2027 NIER submission, and its source was sitting in a public repository
-named after its author. `paper/check-anon.mjs` reads the LaTeX and cannot see where the LaTeX is
-hosted, so it reported a clean bill on a paper anyone could attribute in one click — a guard that is
-sound about what it inspects and blind to the thing that actually mattered, which is the subject of
-those very papers.
+extracted on 2026-08-26 and removed here.
 
 What that removes from this repository: the `paper:build` / `paper:check` / `paper:snapshot`
 scripts, `gen:paper-facts` (also dropped from `gen:all`), the `paper/facts.{json,tex}` entry in
@@ -5569,8 +5564,8 @@ No `src/` behaviour change beyond the two table entries; no golden, snapshot or 
 
 ### `paper/` — three papers, and the numbers in them are generated
 
-Adds `CITATION.cff` and a `paper/` working set: three papers (a full-length preprint, a
-double-anonymous 4-page cut, and a tool paper), a 136-entry bibliography, the harnesses and
+Adds `CITATION.cff` and a `paper/` working set: three papers (a full-length paper, a
+4-page short paper, and a tool paper), a 136-entry bibliography, the harnesses and
 datasets behind every empirical claim, and three checkers that gate them. **No `src/` change, no
 language change, and nothing in the npm tarball moves** — `package.json`'s `files` field does not
 include any of it.
@@ -5595,7 +5590,7 @@ regenerate without looking. They live in `paper/scale-snapshot.json`, written on
 `npm run paper:snapshot -- --date YYYY-MM-DD`, with the date an argument rather than a clock read.
 
 - **`npm run paper:check`** — one command over all three papers: banned claims and retracted
-  figures, anonymity for the double-anonymous cut, and the build with its page limits and citation
+  figures, and the build with its page limits and citation
   closure. **All three checkers are proven non-vacuous by planting a fault and watching them
   fail**, and each records in its source what it missed before that proof: a page counter that
   scraped compressed object streams and reported a one-page paper as 47; a citation check that

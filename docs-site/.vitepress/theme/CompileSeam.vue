@@ -56,7 +56,6 @@ async function copyCmd(cmd: string) {
 // permalink below still carries the whole file.
 const raw: string = stripHeaderComments(EXAMPLES[HERO]);
 
-const ARCHCANVAS = "https://archcanvas.uk";
 // The playground, opened on THIS plan rather than on an empty editor: a `#z=` permalink
 // minted at build time by sync-docs.mjs from the same file the hero types. A reader who
 // has just watched laneway-house.arch compile can carry it across the seam and keep going.
@@ -232,12 +231,6 @@ onBeforeUnmount(() => {
       <!-- SOURCE WORLD -->
       <div class="pane pane--source">
         <div class="src-inner">
-          <a class="eyebrow" :href="ARCHCANVAS" target="_blank" rel="noopener">
-            <img class="eyebrow__mark" src="/brand/archlang-icon-plum.svg" alt="" width="20" height="20" />
-            <span>Part of the ArchCanvas family</span>
-            <span class="eyebrow__arrow" aria-hidden="true">↗</span>
-          </a>
-
           <!-- The brand line stays verbatim (brand/README.md, ADR 0010): it is the
                identity line, not a slogan to be rewritten. The second line inside the
                same <h1> is the one a crawler and an answer engine can read the subject
@@ -362,32 +355,6 @@ onBeforeUnmount(() => {
 .src-inner {
   width: 100%;
   max-width: 560px;
-}
-
-/* ── Eyebrow ─────────────────────────────────────────────────────────────── */
-.eyebrow {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 5px 12px 5px 8px;
-  border: 1px solid var(--src-rule);
-  border-radius: 3px;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  color: var(--src-muted);
-  text-decoration: none;
-  transition: border-color 0.2s, color 0.2s;
-}
-.eyebrow:hover {
-  border-color: color-mix(in srgb, var(--plum) 60%, transparent);
-  color: var(--src-fg);
-}
-.eyebrow__mark {
-  display: block;
-}
-.eyebrow__arrow {
-  color: var(--plum-deep);
 }
 
 /* ── Headline ────────────────────────────────────────────────────────────── */

@@ -76,7 +76,7 @@ this entry has been blamed for was a secret-scan failure.
 `sourcegraph-access-token` rule, which fires on a bare 40-character hex run — and a git commit SHA
 is one. Two are SHA-pinned GitHub Action references in a third party's workflow diff, the third is a
 public npm package's `revision`. All three are other people's public commit SHAs; none is a
-credential. They cannot be deleted, because `paper/` moved to the private repo on 2026-08-26 and
+credential. They cannot be deleted, because `paper/` moved to a separate repository on 2026-08-26 and
 gitleaks scans the FULL HISTORY. Allowlisted by commit-pinned fingerprint, so nothing else in that
 file — or anywhere else — is suppressed. Verified locally: 648 commits, 0 findings; removing one
 fingerprint makes exactly that one reappear.

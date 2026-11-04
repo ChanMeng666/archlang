@@ -263,8 +263,8 @@ The card's `task_categories` must come from HF's official list (`text-generation
 **Two permanent rules** (see `dataset/README.md` and
 [ADR 0013](docs/adr/0013-repair-trajectory-dataset.md)): the canary GUID in `dataset/canary.ts` is
 **never regenerated** (a new value silently splits the corpus and defeats leakage probing), and the
-private eval holdout (`eval/corpus.json` + goldens) is **never published** — the public corpus is
-generated independently and deduplicated against it, enforced permanently by `test/dataset.test.ts`.
+eval corpus (`eval/corpus.json` + goldens, a public regression fixture, not a holdout) stays
+disjoint from the dataset — the public corpus is generated independently and deduplicated against it, enforced permanently by `test/dataset.test.ts`.
 
 ### Live authorability eval (optional, gated)
 

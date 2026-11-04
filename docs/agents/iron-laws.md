@@ -14,9 +14,9 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 - **T6 (area-syntax sugar) is parked**: no `area` token and no `m2` unit suffix unless one of the
   frozen G2 reversal triggers fires (archived as `research/2026-07-g2-verdict.md` in the
   archcanvas-growth docs archive). Area ships only as an intent-channel assertion.
-- **Dataset contamination** (`test/dataset.test.ts`): the eval corpus/goldens are a private holdout,
-  never published; `dataset/` imports only `../src/index.js`, never `eval/`; rows are deduplicated
-  against the holdout by text and `describe()`; the canary GUID in `dataset/canary.ts` is never
+- **Dataset contamination** (`test/dataset.test.ts`): the eval corpus/goldens are a public regression
+  fixture, not a holdout (no number on them is called held-out); `dataset/` imports only
+  `../src/index.js`, never `eval/`; rows are deduplicated against that corpus by text and `describe()`; the canary GUID in `dataset/canary.ts` is never
   regenerated; `repair`-split sources stay fully literal.
 - **Judge comparability**: never compare eval rates across a `JUDGE_VERSION`/`SYNONYMS_VERSION`
   change. Regenerate `eval/judge-fixture.json` only for an approved bump, never to green a suite.

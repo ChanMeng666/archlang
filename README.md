@@ -107,4 +107,4 @@ npx -y @chanmeng666/archlang context
 
 <sub>[Full overview](docs/overview.md) · [Language reference](docs/language-reference.md) · [Release notes](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md) (installed: `node_modules/@chanmeng666/archlang/CHANGELOG.md`) · [Contributing](CONTRIBUTING.md) · [MIT](LICENSE)</sub>
 
-<sub>ArchLang is the engine behind [ArchCanvas](https://github.com/archcanvas/archcanvas). Built by [Chan Meng](https://github.com/ChanMeng666).</sub>
+<sub>[ArchCanvas](https://github.com/archcanvas/archcanvas) is a hosted app built on ArchLang. Built by [Chan Meng](https://github.com/ChanMeng666).</sub>

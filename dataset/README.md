@@ -38,7 +38,7 @@ below).
 | `faults.ts` | Deterministic fault injectors — perturb one element's coordinates to seed exactly one (or, for `combined`, two) of the six fault classes, mirroring `eval/faults/*.arch`. |
 | `trajectory.ts` | The repair-trajectory recorder — mirrors `cmdFix` / `eval/l1.ts`'s `l1Pipeline` byte-for-byte and records the intermediate fix/repair steps; sets `fix_kind`. |
 | `briefs.ts` | The authoring split's briefs + intent contracts, both derived from one `PlanModel` so they cannot drift; every row's `validateIntent(source, intent).ok` must hold. |
-| `dedup.ts` | Dual deduplication against the private holdout (text Jaccard + 8-gram, structural `describe()` fingerprint) — the enforcement arm of the iron law; used at gen time and by the CI guard. |
+| `dedup.ts` | Dual deduplication against the eval corpus (text Jaccard + 8-gram, structural `describe()` fingerprint) — the enforcement arm of the iron law; used at gen time and by the CI guard. |
 | `canary.ts` | The hardcoded canary GUID (`CANARY`) + its first-line source comment (`CANARY_COMMENT`). |
 | `diff.ts` | A tiny zero-dependency line-based unified-diff generator (LCS backtrack + hunk grouping). |
 | `rng.ts` | The seeded, deterministic PRNG (`mulberry32` / `splitmix32`) — the only randomness source; no clock, no entropy. |
@@ -73,30 +73,28 @@ any gate is **rejected and counted in `out/report.json`**, never silently emitte
 - **`authoring`**: the golden is strict-clean and `validateIntent(source, intent).ok` is true.
 
 The permanent CI guard `test/dataset.test.ts` re-proves this on a fresh small corpus in four groups:
-**(a) leakage** — no holdout brief/golden text or structure appears; **(b) canary** — every row
+**(a) leakage** — no eval brief/golden text or structure appears; **(b) canary** — every row
 carries the field and the first-line source comment; **(c) determinism** — same seed ⇒ byte-identical
 JSONL, and no clock/entropy API anywhere under `dataset/`; **(d) self-verification** — a sample of
 rows re-verifies from scratch (broken raises its fault; fixed is strict-clean and idempotent;
 authoring intent validates; `fix_kind` matches).
 
-## The iron law — the private holdout is never published
+## The iron law — the dataset stays disjoint from the eval corpus
 
 > **The eval's 26-brief corpus and its goldens (`eval/corpus.json` + the golden `.arch` files it
-> references, under `eval/goldens/` and `examples/`) are a private holdout as a *set*. They are
-> never published as a dataset, and `dataset/` never imports `eval/`.** The generator imports
-> **only** the pure core (`../src/index.js`); the public corpus is generated **independently** and
-> **double-deduplicated** against the holdout:
+> references, under `eval/goldens/` and `examples/`) are a public regression fixture, not a
+> holdout: no number measured against them may be called held-out. `dataset/` never imports
+> `eval/`.** The generator imports **only** the pure core (`../src/index.js`); the public corpus is
+> generated **independently** and **double-deduplicated** against the eval corpus:
 >
-> - **Text:** a candidate brief is rejected on token-set Jaccard ≥ 0.5 with any holdout prompt, or on
+> - **Text:** a candidate brief is rejected on token-set Jaccard ≥ 0.5 with any eval prompt, or on
 >   any shared 8-word n-gram.
 > - **Structure:** a candidate plan is rejected if its `describe()` fingerprint (normalized room-label
 >   multiset with areas rounded to 0.5 m², the interior-door adjacency edge set, the room count)
->   exactly or near-matches any holdout golden.
+>   exactly or near-matches any eval golden.
 >
-> `test/dataset.test.ts` enforces this **permanently**. Getting it wrong **voids the eval forever**:
-> once the holdout leaks into a published corpus, no honest number can ever be reported against it
-> again. `dedup.ts` reads the holdout only to *reject* look-alikes — copying any holdout byte into
-> dataset output is the one unforgivable failure.
+> `test/dataset.test.ts` enforces this **permanently**. `dedup.ts` reads the eval corpus only to
+> *reject* look-alikes — copying any eval byte into dataset output is the one unforgivable failure.
 
 ## The canary rule
 
@@ -158,6 +156,6 @@ Two standing rules for anything written in this directory or the card:
 - [`docs/adr/0011-machine-applicable-fixes.md`](../docs/adr/0011-machine-applicable-fixes.md) /
   [`0006-solver-as-explicit-transform.md`](../docs/adr/0006-solver-as-explicit-transform.md) — the
   fix/repair boundary `fix_kind` preserves.
-- [`eval/README.md`](../eval/README.md) — the holdout and its contamination warning.
+- [`eval/README.md`](../eval/README.md) — the eval corpus and its contamination warning.
 - `archcanvas-growth/archive/archlang/docs-archive/research/2026-07-roadmap-proposal.md` (archived) →
   Tranche 5.
