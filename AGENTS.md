@@ -52,7 +52,7 @@ npm run gen:all       # every gen:* generator
 
 ## Where to look
 
-`src/index.ts` public surface · `docs/adr/` decisions · `docs/backlog.md` open work · `docs/plans/` programmes · `.claude/rules/` path-scoped rules (auto-loaded).
+`src/index.ts` public surface · `REVIEW.md` what a bad diff looks like · `docs/adr/` decisions · `docs/backlog.md` open work · `docs/plans/` programmes · `.claude/rules/` path-scoped rules (auto-loaded).
 `docs/agents/`: `architecture.md` (pipeline, module map) · `gotchas.md` (traps) · `iron-laws.md`
 (owner decisions) · `commands.md` (CI, scripts). `docs/testing.md`: red guards, golden policy.
 `docs/seo.md` § 8: where the project is listed and who may submit.
