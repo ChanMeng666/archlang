@@ -310,6 +310,35 @@ suite("`at axis.2` on an opening stands on the axis", () => {
     expect(d!.hints!.join(" ")).not.toMatch(/`at \d/);
   });
 
+  it("an undeclared axis in the arithmetic is the evaluator's one error, with no hint naming it", () => {
+    for (const pos of ["axis.9 + 1", "axis.9 + 1 from end"]) {
+      const src = AT_X("(1000,0) (9000,0)", pos);
+      const es = errors(src);
+      expect(
+        es.map((d) => d.code),
+        pos,
+      ).toEqual(["E_UNKNOWN_REF"]);
+      expect(es[0]!.message, pos).toContain('No positioning axis is labelled "9"');
+      expect(JSON.stringify(es), pos).not.toContain("`at axis 9`");
+    }
+    // `between … from`, the relational route, the same way.
+    const rooms = `  room id=a at (0,0) size 3000x3000\n  room id=b right-of a size 3000x3000`;
+    const walls = `  walls from rooms exterior 200 partition 100`;
+    const src = plan(
+      `  axes { y at 0, 1500 }`,
+      rooms,
+      walls,
+      `  door id=d between a and b at axis.Q - 1000 from start width 800`,
+    );
+    expect(errors(src).map((d) => d.code)).toEqual(["E_UNKNOWN_REF"]);
+    // A declared axis beside an undeclared one: both errors stand, and the hint names the declared one.
+    const mixed = errors(AT_X("(1000,0) (9000,0)", "axis.2 + axis.9"));
+    expect(mixed.map((d) => d.code).sort()).toEqual(["E_OPENING_DATUM", "E_UNKNOWN_REF"]);
+    const datum = mixed.find((d) => d.code === "E_OPENING_DATUM")!;
+    expect(datum.hints!.join(" ")).toContain("`at axis 2`");
+    expect(datum.hints!.join(" ")).not.toContain("axis 9");
+  });
+
   it("refused under `from` and `%` too, which measure along the wall", () => {
     for (const pos of ["axis.2 + 500 from end", "axis.2 / 100%", "(axis.2 + 500) from start"]) {
       const src = AT_X("(1000,0) (9000,0)", pos);

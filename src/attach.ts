@@ -29,6 +29,7 @@ import {
   axisFamily,
   axisLabelsRead,
   cornerOnWall,
+  declaredAxes,
   hostedDatumDistance,
   placeBetween,
   placeOnEdge,
@@ -302,10 +303,15 @@ export function resolveAttachment(
   // wall: refused, with the distance that reaches the coordinate it meant (decision CR-D5).
   const axes = value === undefined ? [] : axisLabelsRead(value);
   if (axes.length > 0) {
+    // Only the declared labels: an undeclared one is the evaluator's E_UNKNOWN_REF already, so a
+    // position reading no declared axis adds no second error, and no hint names a missing label.
+    // `axisFamily` is undefined unless every label is declared, so a mixed read quotes no distance.
+    const known = declaredAxes(axes, rel);
+    if (known.length === 0) return null;
     const vertical = p.kind === "mm" && Number.isFinite(raw) && rel ? axisFamily(axes, rel) : undefined;
     const d = vertical === undefined ? undefined : axisCrossingDistance({ vertical, c: raw }, segs, segmentLength);
     const along = vertical !== undefined && d !== undefined ? { wall: attach.wall, vertical, c: raw, d } : undefined;
-    diag(axisArithmeticDiag(what, p, axes, attach.span, along));
+    diag(axisArithmeticDiag(what, p, known, attach.span, along));
     return null;
   }
   if (p.kind !== "center" && !Number.isFinite(raw)) {

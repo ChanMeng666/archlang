@@ -426,6 +426,18 @@ export function axisCrossingDistance(
   return hits.length === 1 ? hits[0]!.dist : undefined;
 }
 
+/**
+ * The labels of `labels` this scope declares, in order. An undeclared one (`axis.9` on a grid of
+ * two) is already `E_UNKNOWN_REF` at the datum, from the evaluator; when none is declared the
+ * arithmetic refusal is not added on top, so one mistake is one error and no hint names a label
+ * the plan does not have. One step per label and axis, as `at axis` pays.
+ */
+export function declaredAxes(labels: readonly string[], ctx: RelationCtx | undefined): string[] {
+  const axes = ctx?.datums?.table.axes ?? [];
+  chargeSteps(1 + labels.length * axes.length);
+  return labels.filter((l) => axes.some((a) => a.label === l));
+}
+
 /** The axis family every label belongs to (`vertical` for `x` axes), or `undefined` when they
  *  mix families or one is not declared. One step per label and axis, as `at axis` pays. */
 export function axisFamily(labels: readonly string[], ctx: RelationCtx): boolean | undefined {
@@ -680,7 +692,9 @@ function positionOnRun(
       const v = ctx.eval(pos.value);
       const axes = axisLabelsRead(pos.value);
       if (axes.length > 0) {
-        ctx.diag(axisArithmeticDiag(what, pos, axes, posSpan));
+        // Only the declared labels: an undeclared one is the evaluator's E_UNKNOWN_REF already.
+        const known = declaredAxes(axes, ctx);
+        if (known.length > 0) ctx.diag(axisArithmeticDiag(what, pos, known, posSpan));
         return undefined;
       }
       if (!Number.isFinite(v)) {
