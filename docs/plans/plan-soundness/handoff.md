@@ -277,7 +277,7 @@ apply. The shape that worked for the 49 programme PRs merged between #195 and #2
 commit; the laws that bite (`compile()` purity and count budgets, byte-identity law, derived positions
 from the shape never the bbox, no ids in messages, never bless a golden); the local gate = `check:quick`
 (+ `docs:build` for docs) and nothing else, CI being the full gate (`AGENTS.md` § How to work); **if the
-brief edits any file under `examples/`, CI's corpus-wide suites that move include** `cursor-exhaustive`, `iso-snapshot`, `snapshot`,
+brief edits any file under `examples/`, the corpus-wide CI suites an `examples/` edit can turn red include** `cursor-exhaustive`, `iso-snapshot`, `snapshot`,
 `visual`, `opening-tags-corpus`, `readme-permalink`, `docs-examples-figures`, `example-svgs-drift`,
 `compose-assoc`, `lint-file-provenance`, `rooms-tiling-probe`, `taste-digests`, every
 `*-digests`/`*-byte-identity` suite and `playground/test/llm-prompt.test.ts` (the prefilled-link budget

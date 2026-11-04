@@ -58,7 +58,7 @@ Registering first is impossible, because npm needs the package to exist.
 - The main session plans, reviews and dispatches; one executor subagent per card in an isolated
   worktree branched from `main` (not from another card's branch), with its own `npm ci` (never a
   junctioned `node_modules`); the executor runs the local gate (`check:quick`, + `docs:build`
-  for docs) and pushes; CI runs `check`, drift, `typecheck:all`, `check:3d` and the playground chain,
+  for docs) and pushes; CI runs `check`, drift, `typecheck:all`, `check:3d` (not a required check) and the playground chain,
   and the PR merges by risk tier (`docs/agents/commands.md` § Merging a PR); verify every completion claim with raw `git`/`gh`/`npm` output, not the summary.
 - One independent red-team round per PR (at most two); its should-fix items are fixed in the PR,
   the rest becomes a card, never a scope creep.

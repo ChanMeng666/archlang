@@ -75,7 +75,6 @@ flowchart LR
 
 Each links to a short section with an example, on [archlang.uk/whats-new](https://archlang.uk/whats-new), which also lists the version that brought it.
 
-- [The rendered theme](https://archlang.uk/whats-new#the-rendered-theme): `theme rendered` fills each furniture symbol in a tint of its material
 - [Quantities and takeoff](https://archlang.uk/whats-new#quantities-and-takeoff): `archlang takeoff plan.arch --format csv`
 - [Locked elements](https://archlang.uk/whats-new#locked-elements): `archlang impact new.arch --against old.arch --lock shell,front`
 - [Wall status](https://archlang.uk/whats-new#wall-status): `status existing|demolish|new`, demolition drawn dashed
@@ -97,6 +96,8 @@ Each links to a short section with an example, on [archlang.uk/whats-new](https:
 - [Hidden sheet marks](https://archlang.uk/whats-new#hidden-sheet-marks): `north hidden`, `scale hidden`, `title hidden`
 - [One mirrored piece](https://archlang.uk/whats-new#one-mirrored-piece): `furniture … mirror`
 - [Room floors](https://archlang.uk/whats-new#room-floors): `room … floor tile|paving|deck|concrete`
+- [More furniture](https://archlang.uk/whats-new#more-furniture): twenty new catalogued families
+- [The rendered theme](https://archlang.uk/whats-new#the-rendered-theme): `theme rendered` fills furniture symbols in a tint of their material
 
 ## For your agent
 

@@ -9,7 +9,7 @@
 | 何时 | 命令 |
 |---|---|
 | 本地，永远 | `npm run check:quick`（文档另加 `npm run docs:build`），别的都不跑（`AGENTS.md` § How to work） |
-| 只在 CI 跑（本地不跑） | `check`、`check:drift`、`typecheck:all`，以及下面几行 |
+| 只在 CI 跑 | `check`、`check:drift`、`typecheck:all`，以及下面的 playground 和 3D 两行 |
 | `docs/*.md` | `npm run docs:build`；表格内联代码里的 `\|` 要转义；片段用 `arch static` |
 | playground | `npm run build && npm run playground:build:only && npm run e2e:playground` |
 | 3D 包 | `npm run check:3d` |

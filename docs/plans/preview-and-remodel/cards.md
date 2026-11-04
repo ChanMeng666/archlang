@@ -14,7 +14,7 @@ suggested executor; the main session may override. Every card lists what it must
 | When | Commands |
 |---|---|
 | Locally, always | `npm run check:quick` (+ `npm run docs:build` for docs); nothing else (`AGENTS.md` § How to work) |
-| In CI (never locally) | `check`, `check:drift`, `typecheck:all` (a new workspace is added to its list), the rows below |
+| In CI (never locally) | `check`, `check:drift`, `typecheck:all` (a new workspace is added to its list), the Playground and 3D rows below |
 | Any `docs/*.md` edit | `npm run docs:build`; tables escape `\|` inside inline code; fragments use `arch static` fences |
 | Playground | `npm run build && npm run playground:build:only && npm run e2e:playground` |
 | 3D package heavy tests | `npm run check:3d` (created by A1) |
