@@ -470,6 +470,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   "furniture-on-stair": "invariant",
   // H1: a shell's free ends and the gap between them, all turned or mirrored together.
   "exterior-ring-open": "invariant",
+  // CR2 group D: a piece's footprint against a void, a lift shaft or an escalator, all turned or
+  // mirrored together.
+  "furniture-on-void": "invariant",
 };
 
 /**

@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `W_FURNITURE_ON_VOID`: a piece standing on a `void` of its own storey, a lift shaft or an escalator, where there is no floor (a `void` on the storey above is headroom and is not read; a stair stays `W_FURNITURE_ON_STAIR`'s).
+
+### Fixed
+
+- `arch finish` on a single-storey plan no longer stands furniture on a `void`, a lift or an escalator; it already kept off them on each storey of a plan with `level` blocks. No shipped example's or test plan's `finish` output moves.
 ### Fixed
 
 - `arch finish` counts the rows of the NOTES table and the DOOR & WINDOW SCHEDULE when it picks a sheet. It fitted the band on the room schedule and legend alone, so a plan that already wrote `notes` or `schedule openings` could be fitted on a band shorter than the one drawn; finish's own overflow check then refused the sheet and added no `paper` or `scale`. It now picks the smallest sheet that holds the real band.

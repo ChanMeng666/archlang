@@ -73,6 +73,7 @@ import {
 import { type BuildingContext, buildLintContext } from "./lint/context.js";
 import { definingItems, pasteSet, useNoun } from "./lint/defining.js";
 import { type ExitApproachStrip, exitApproachStrips } from "./lint/rules/doors.js";
+import { floorGapsOf } from "./lint/rules/floor-gaps.js";
 import { stairZones, storeyStairs } from "./lint/rules/stairs.js";
 import { lintStoreys } from "./lint/storeys.js";
 import { fmtSource } from "./num-format.js";
@@ -80,7 +81,7 @@ import { parse } from "./parser.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
 import { sourceConflicts } from "./repair.js";
 import { type EdgeLine, extremeRuns, rectilinear, rectInRing, ringParts, runRect } from "./room-tiling.js";
-import { isVertical, piecesOf, verticalsOf } from "./vertical.js";
+import { piecesOf, verticalsOf } from "./vertical.js";
 
 // ---------------------------------------------------------------------------
 // the table
@@ -759,17 +760,14 @@ function flightsThrough(storeys: readonly Storey[], i: number): BBox[] {
 }
 
 /**
- * Floor a storey of a multi-storey plan has no use of: its own `void`s, each a hole in THIS storey's
- * plate (one on the storey above is headroom here, one below is that storey's floor), and its lifts
- * and escalators. No rule reports a piece on them, so the gate cannot keep it off; a position is
- * refused here. A single-storey plan has none of this, and what it writes does not move.
+ * Floor a storey has no use of: its own `void`s, each a hole in THIS storey's plate (one on the
+ * storey above is headroom here, one below is that storey's floor), and its lifts and escalators,
+ * as `W_FURNITURE_ON_VOID` reads them ({@link floorGapsOf}): a position on them is refused here.
+ * Read on every storey, a single-storey plan's included (CR2 group D): that plan's `void` used to be
+ * skipped, so `finish` stood a sofa over a stairwell.
  */
 function floorGaps(st: Storey): BBox[] {
-  if (st.level === undefined) return [];
-  return st.ir.elements.flatMap((e): BBox[] => {
-    if (e.kind === "void") return [{ x: e.at.x, y: e.at.y, w: e.size.w, h: e.size.h }];
-    return isVertical(e) && e.kind !== "stair" ? piecesOf(e) : [];
-  });
+  return floorGapsOf(st.ir.elements).map((g) => g.rect);
 }
 
 /** A use left out of a room: the required piece that had no position, and the codes that refused it. */

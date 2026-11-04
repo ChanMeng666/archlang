@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**151 errors** · **92 warnings**
+**151 errors** · **93 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -192,6 +192,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_FLOOR_UNASSIGNED`](#w_floor_unassigned) | warning | Walled floor is in no room. |
 | [`W_FOOTPRINT_TRANSPOSED`](#w_footprint_transposed) | warning | A piece is drawn turned a quarter: its long side is on the wrong axis. |
 | [`W_FURNITURE_ON_STAIR`](#w_furniture_on_stair) | warning | Furniture stands on a stair or on the landing it owes. |
+| [`W_FURNITURE_ON_VOID`](#w_furniture_on_void) | warning | Furniture stands on a void, a lift shaft or an escalator. |
 | [`W_FURNITURE_OVERLAP`](#w_furniture_overlap) | warning | Two pieces of furniture overlap. |
 | [`W_FURNITURE_OVER_WINDOW`](#w_furniture_over_window) | warning | A tall unit stands in front of a window, or a low piece against a floor-length one. |
 | [`W_FURNITURE_WALL_COLLISION`](#w_furniture_wall_collision) | warning | Furniture penetrates a wall. |
@@ -2603,7 +2604,7 @@ furniture sofa_l at (500,500) size 900x2400   # lint: a sofa_l is 2600 wide and 
 
 *warning* — Furniture stands on a stair or on the landing it owes.
 
-**Cause.** A piece's footprint overlaps the part of a `stair` a person cannot stand under, or the landing beyond the end the flight is entered from on this storey: as wide as the flight, as deep as the flight is wide (at least 1200 mm in a building other than a dwelling), and only as deep as the floor stands clear, as `W_STAIR_NO_LANDING` measures it. Approved Document K (2013) 1.21b keeps a landing clear of permanent obstructions. On a storey the flight rises from, that part is the run with less than 2 m of headroom, read against the storey height (3000 mm when the plan authors none), so a wardrobe under the high end of a flight is not reported. A block stair rises over its flights alone, so a landing with less than 2 m beneath it is read whole. A stairwell, where a flight comes down or arrives from below, is a hole: all of its footprint is read. `finish` keeps off the whole footprint either way. On the landing a rug, which is walked on, and a wall cabinet, which hangs above it, are not. A landing a curved wall stands near is not judged, and an `elevator` or `escalator` is not read.
+**Cause.** A piece's footprint overlaps the part of a `stair` a person cannot stand under, or the landing beyond the end the flight is entered from on this storey: as wide as the flight, as deep as the flight is wide (at least 1200 mm in a building other than a dwelling), and only as deep as the floor stands clear, as `W_STAIR_NO_LANDING` measures it. Approved Document K (2013) 1.21b keeps a landing clear of permanent obstructions. On a storey the flight rises from, that part is the run with less than 2 m of headroom, read against the storey height (3000 mm when the plan authors none), so a wardrobe under the high end of a flight is not reported. A block stair rises over its flights alone, so a landing with less than 2 m beneath it is read whole. A stairwell, where a flight comes down or arrives from below, is a hole: all of its footprint is read. `finish` keeps off the whole footprint either way. On the landing a rug, which is walked on, and a wall cabinet, which hangs above it, are not. A landing a curved wall stands near is not judged, and an `elevator` or `escalator` is not read here (`W_FURNITURE_ON_VOID` reads them).
 
 **Fix.** Move or resize the piece so it clears the span the hint quotes, or move the stair. There is no machine-applicable fix: where the piece goes instead is a design decision.
 
@@ -2611,6 +2612,20 @@ furniture sofa_l at (500,500) size 900x2400   # lint: a sofa_l is 2600 wide and 
 room id=liv at (0,0) size 5000x4000 label "Living"
 stair id=s1 at (3000,500) size 1000x3000 dir up
 furniture sofa at (2500,1000) size 900x2000 rotate 90   # lint: stands on the flight
+```
+
+## W_FURNITURE_ON_VOID
+
+*warning* — Furniture stands on a void, a lift shaft or an escalator.
+
+**Cause.** A piece's footprint covers more than 1 mm both ways of a `void` of its own storey (a hole in that floor: a stairwell, an atrium, a double-height room), an `elevator`'s shaft or an `escalator`'s footprint. There is no floor there to stand on, so whatever stands there is read, a rug as much as a wardrobe. A `void` on the storey above is headroom, not a hole in this floor, and is not read. A `stair` itself is not read here (its flights and landings are `W_FURNITURE_ON_STAIR`'s), but a `void` is read whatever else stands on it, so a stairwell drawn as a `stair` and a `void` on one rectangle can raise both codes for one piece. `finish` keeps every piece off the same rectangles. One warning per piece and void or shaft.
+
+**Fix.** Move or resize the piece so it clears the span the hint quotes, or move the void, lift or escalator. There is no machine-applicable fix: where the piece goes instead is a design decision.
+
+```arch static
+room id=liv at (0,0) size 6000x5000 label "Living"
+void id=v at (0,0) size 3000x2500
+furniture sofa at (1000,500) size 2000x900   # lint: stands on the void
 ```
 
 ## W_FURNITURE_OVERLAP
