@@ -45,7 +45,10 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   `floorFinish`, ledgered `floor-finish-default`).
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure),
   `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js 0.186.1,
-  `mountReplay(canvas, payload)` → `seek`/`frameHash`), `viewer.ts` (the HTML's host:
+  `mountReplay(canvas, payload)` → `seek`/`frameHash`; with `interactive: true` the free camera,
+  three.js's `OrbitControls`, → `view`), `camera.ts` (the end camera and the stops, and the free
+  camera's presets and limits, `presetCamera`, all pure), `view-dom.ts` (the presets', Reset's and
+  the storeys' buttons, `viewToolbar`), `viewer.ts` (the HTML's host:
   `__seek`/`__frameHash`), `viewer-bundle.ts` (`viewer.ts` plus three.js as one script), `html.ts`
   (one offline file), `video.ts` (Playwright's Chromium on SwiftShader + ffmpeg).
 - `src/glb/write.ts`: the GLB (M1b), written with glTF-Transform from the same Mesh3D: a

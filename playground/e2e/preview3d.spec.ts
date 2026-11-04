@@ -202,6 +202,201 @@ test.describe("3D preview tab follows the editor", () => {
   });
 });
 
+type Viewed = Window & {
+  __preview3d?: Handle & { view?: { camera: string; shown: number; storeys: number } };
+};
+
+/** The hash of the frame on the canvas now (no seek: whatever the last draw left). */
+const current = (page: Page): Promise<string> =>
+  page.evaluate(() => ((window as Viewed).__preview3d as Handle).frameHash());
+
+/** Drag across the middle of the 3D canvas with the left button. */
+async function drag(page: Page, dx: number, dy: number): Promise<void> {
+  const box = await page.locator("#preview3d canvas").boundingBox();
+  if (!box) throw new Error("no canvas");
+  const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+  await page.mouse.move(x, y);
+  await page.mouse.down();
+  await page.mouse.move(x + dx, y + dy, { steps: 6 });
+  await page.mouse.up();
+}
+
+/**
+ * The free camera (card CR4, CR-D2): the view turns, zooms and pans after (or during) the replay;
+ * the presets and Reset are pure functions of the scene, so Iso and Reset give back the end frame's
+ * very hash. Reduced motion: the tab shows the end at once and the orbit has no damping, so every
+ * move lands on the frame before the next assertion.
+ */
+test.describe("3D preview tab: the free camera", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  test("a drag, a key and the wheel turn the view; Iso and Reset return the end frame exactly", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await open3d(page);
+    await expect(page.locator('#preview3d input[type="range"]')).toHaveValue("1");
+    const end = await hashAt(page, 1);
+    const button = (name: string | RegExp) => page.locator("#preview3d").getByRole("button", { name });
+    const camera = () => page.evaluate(() => (window as Viewed).__preview3d?.view?.camera);
+
+    // A plain click (no movement) takes nothing: the frame and the holder stay (red-team round 1).
+    await page.locator("#preview3d canvas").click();
+    expect(await camera(), "a click is not a drag").toBe("replay");
+    expect(await current(page)).toBe(end);
+
+    await drag(page, 160, 40);
+    const dragged = await current(page);
+    expect(dragged, "a drag turns the view").not.toBe(end);
+    expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("free");
+    await button("Iso view: the replay's end view").click();
+    expect(await current(page), "Iso is the end camera, pixel for pixel").toBe(end);
+    await expect(button("Iso view: the replay's end view")).toHaveAttribute("aria-pressed", "true");
+
+    await drag(page, -120, -30);
+    await expect(button("Iso view: the replay's end view"), "a drag leaves the preset").toHaveAttribute(
+      "aria-pressed",
+      "false",
+    );
+    expect(await current(page)).not.toBe(end);
+    await button(/^Reset the view/).click();
+    expect(await current(page), "Reset is the replay's own end frame").toBe(end);
+
+    // The keyboard, on the focused canvas: an arrow turns, − zooms out.
+    await page.locator("#preview3d canvas").focus();
+    await page.keyboard.press("ArrowLeft");
+    const turned = await current(page);
+    expect(turned, "an arrow key turns the view").not.toBe(end);
+    await page.keyboard.press("Minus");
+    expect(await current(page), "− zooms").not.toBe(turned);
+
+    // The wheel zooms; the presets are views of their own.
+    await button("Iso view: the replay's end view").click();
+    const box = await page.locator("#preview3d canvas").boundingBox();
+    if (!box) throw new Error("no canvas");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, -240);
+    expect(await current(page), "the wheel zooms").not.toBe(end);
+    const seen = new Set([end]);
+    for (const name of [/^Top view/, /^North elevation/, /^East elevation/, /^South elevation/, /^West elevation/]) {
+      await button(name).click();
+      seen.add(await current(page));
+    }
+    expect(seen.size, "five presets, five frames, none the end frame").toBe(6);
+
+    // `__seek` keeps its meaning: the replay's own frame at t.
+    expect(await hashAt(page, 1)).toBe(end);
+  });
+
+  test("hiding the upper storeys shows the floor below; All brings the end frame back", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await page.locator("#examples").selectOption("Townhouse (3 levels)");
+    await waitForPlan(page);
+    await open3d(page);
+    await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "all");
+    await expect(page.locator('#preview3d input[type="range"]')).toHaveValue("1");
+    const end = await hashAt(page, 1);
+    const storeys = page.locator("#preview3d [data-storeys]");
+    await expect(storeys).toHaveCount(3);
+    await expect(page.locator('#preview3d [data-storeys="3"]')).toHaveAttribute("aria-pressed", "true");
+
+    await page.locator('#preview3d [data-storeys="1"]').click();
+    await expect(page.locator('#preview3d [data-storeys="1"]')).toHaveAttribute("aria-pressed", "true");
+    expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.shown)).toBe(1);
+    const ground = await current(page);
+    expect(ground, "the storeys above the ground floor are hidden").not.toBe(end);
+    await page.locator('#preview3d [data-storeys="2"]').click();
+    const two = await current(page);
+    expect(new Set([end, ground, two]).size).toBe(3);
+    await page.locator('#preview3d [data-storeys="3"]').click();
+    expect(await current(page), "every storey shown again is the end frame").toBe(end);
+  });
+
+  test("an edit keeps the view the user chose", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await open3d(page);
+    await page
+      .locator("#preview3d")
+      .getByRole("button", { name: /^Top view/ })
+      .click();
+    await page.evaluate(() => {
+      (window as Viewed & { __before?: unknown }).__before = (window as Viewed).__preview3d;
+    });
+    await setEditorSource(page, SIMPLE_PLAN.replace("6000x4000", "6000x4100"));
+    await page.waitForFunction(
+      () => (window as Viewed & { __before?: unknown }).__before !== (window as Viewed).__preview3d,
+    );
+    expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("top");
+    const top = page.locator("#preview3d").getByRole("button", { name: /^Top view/ });
+    await expect(top, "the toolbar shows the restored view").toHaveAttribute("aria-pressed", "true");
+    // The tab redraws the edited plan from the kept view once its drawing is ready (`drawAt`, queued
+    // on `ready` before this wait): that frame is the edited plan's own Top view.
+    await page.evaluate(async () => {
+      await (window as Viewed).__preview3d?.ready;
+    });
+    const kept = await current(page);
+    await top.click();
+    expect(await current(page), "the kept view is a fresh Top of the edited plan").toBe(kept);
+    // And not merely the plan's end frame.
+    expect(kept).not.toBe(await hashAt(page, 1));
+  });
+});
+
+/**
+ * A preset takes the view as a drag does (red-team round 1): pressed while the replay plays, it pauses
+ * the playback and holds, instead of lasting one frame. Autoplay on, no reduced motion.
+ */
+test.describe("3D preview tab: a preset during playback", () => {
+  test("pauses the playback and holds the preset", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await open3d(page);
+    const scrub = page.locator('#preview3d input[type="range"]');
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
+    const top = page.locator("#preview3d").getByRole("button", { name: /^Top view/ });
+    await top.click();
+    const parked = Number(await scrub.inputValue());
+    expect(parked, "still playing when pressed").toBeLessThan(1);
+    const held = await current(page);
+    // Several animation frames later: the same frame, the same t, the same holder.
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.waitForTimeout(150);
+      expect(await current(page), `frame ${i}`).toBe(held);
+    }
+    expect(Number(await scrub.inputValue()), "the playback paused").toBe(parked);
+    expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("top");
+    await expect(top).toHaveAttribute("aria-pressed", "true");
+    // A fresh press, now that the playback is paused, draws the same frame.
+    await top.click();
+    expect(await current(page)).toBe(held);
+  });
+});
+
+test.describe("3D preview tab: grabbing the view", () => {
+  test("pauses the playback", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await open3d(page);
+    const scrub = page.locator('#preview3d input[type="range"]');
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
+    const box = await page.locator("#preview3d canvas").boundingBox();
+    if (!box) throw new Error("no canvas");
+    const [x, y] = [box.x + box.width / 2, box.y + box.height / 2];
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    // The first movement takes the view (a press alone does not).
+    await page.mouse.move(x + 60, y + 10, { steps: 4 });
+    const parked = Number(await scrub.inputValue());
+    expect(parked, "still playing when grabbed").toBeLessThan(1);
+    await page.waitForTimeout(600);
+    expect(Number(await scrub.inputValue()), "no replay frames while the view is held").toBe(parked);
+    await page.mouse.up();
+    expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("free");
+  });
+});
+
 /**
  * What card A5 cares about at startup, gated directly: the 3D code is not in the chunks the page
  * loads before the tab opens (the chunk itself is lazy: the first test above sees it fetched once,
