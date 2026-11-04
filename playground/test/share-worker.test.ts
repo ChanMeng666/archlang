@@ -13,7 +13,7 @@ import { compile, diagnosticToJson, inputTooLarge, rateLimited } from "archlang"
 import { describe, expect, it } from "vitest";
 import { encodePlanHash } from "../../src/cli/share-codec.mjs";
 import { encodeSrc } from "../src/share.js";
-import { FALLBACK_IMAGE, makeShareWorker } from "../worker/app.js";
+import { makeShareWorker, PREVIEW_PER_PERIOD } from "../worker/app.js";
 import {
   base62,
   decodePayload,
@@ -290,7 +290,10 @@ describe.skipIf(!supportsDeflateRaw)("short links: resolving", () => {
     expect(page).toContain(`<meta name="twitter:card" content="summary_large_image">`);
     expect(page).toContain(`<link rel="canonical" href="${ORIGIN}/s/${body.id}">`);
     expect(page).toContain(`<meta property="og:url" content="${ORIGIN}/s/${body.id}">`);
-    expect(page).toContain(`<meta property="og:image" content="${ORIGIN}${FALLBACK_IMAGE.path}">`);
+    expect(page).toContain(`<meta property="og:image" content="${ORIGIN}/s/${body.id}.png">`);
+    expect(page).toContain(`<meta property="og:image:width" content="1200">`);
+    expect(page).toContain(`<meta property="og:image:height" content="630">`);
+    expect(page).toContain(`<meta name="twitter:image" content="${ORIGIN}/s/${body.id}.png">`);
     expect(page).toContain(`location.replace("/#z=${payload}")`);
     expect(page).toContain(`<noscript><meta http-equiv="refresh" content="0; url=/#z=${payload}"></noscript>`);
     expect(await decodePayload(payload)).toBe(STUDIO);
@@ -393,12 +396,15 @@ describe("the static paths stay the asset layer's", () => {
 
   it("binds the store, the limiter at the numbers the code states, and the counter; logs no request", () => {
     expect(w.kv_namespaces).toEqual([{ binding: "SHARE", id: "1a147498742b4bd4b4579175085ef9a0" }]);
-    expect(w.ratelimits).toHaveLength(1);
-    expect(w.ratelimits[0].name).toBe("RATE_SHARE");
-    expect(w.ratelimits[0].simple).toEqual({ limit: SHARE_PER_PERIOD, period: RATE_PERIOD_SECONDS });
+    const limits = w.ratelimits as { name: string; namespace_id: string; simple: unknown }[];
+    expect(Object.fromEntries(limits.map((r) => [r.name, r.simple]))).toEqual({
+      RATE_SHARE: { limit: SHARE_PER_PERIOD, period: RATE_PERIOD_SECONDS },
+      RATE_PREVIEW: { limit: PREVIEW_PER_PERIOD, period: RATE_PERIOD_SECONDS },
+    });
     const mcp = jsonc("packages/mcp-worker/wrangler.jsonc");
     const taken = (mcp.ratelimits as { namespace_id: string }[]).map((r) => r.namespace_id);
-    expect(taken).not.toContain(w.ratelimits[0].namespace_id);
+    const ours = limits.map((r) => r.namespace_id);
+    expect(new Set([...taken, ...ours]).size).toBe(taken.length + ours.length);
     expect(w.analytics_engine_datasets).toEqual([{ binding: "SHARE_ANALYTICS", dataset: "archlang_share" }]);
     expect(w.observability).toEqual({ enabled: true, logs: { enabled: true, invocation_logs: false } });
     expect(w.workers_dev).toBe(false);

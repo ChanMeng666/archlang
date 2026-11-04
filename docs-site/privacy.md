@@ -44,7 +44,9 @@ edge like any URL.
 - A cached `/svg/` drawing is stored under a versioned path with `max-age=31536000` (one year). The
   unversioned `/svg/` path tells clients to reuse a drawing for 300 seconds and revalidate with an
   `ETag`. We cannot list or delete individual entries; Cloudflare may evict them sooner.
-- A short link's plan is kept until someone asks for it to be removed (see below).
+- A short link's plan is kept until someone asks for it to be removed (see below). Its preview image
+  is kept in Cloudflare's edge cache with `max-age=31536000`; once the plan is removed, the image is
+  no longer served.
 - The aggregate counts in Cloudflare Analytics Engine are the request method, the tool name and, for
   a refused request, the reason. They hold no plan text and no address. Cloudflare keeps them for
   three months.

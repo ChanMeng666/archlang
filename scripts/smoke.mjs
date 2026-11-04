@@ -412,7 +412,7 @@ async function playgroundChecks() {
 
 // ---------------------------------------------------------------------------
 // The playground's ONE script (ADR 0034): short links. Every check above is a static path and
-// must pass byte for byte as it did before the script existed; these three are the script's own.
+// must pass byte for byte as it did before the script existed; these four are the script's own.
 // ---------------------------------------------------------------------------
 
 /** An id no plan has (a 62^-8 chance otherwise), for the 404. Fetched once: a 404 is the answer. */
@@ -487,6 +487,32 @@ async function shortLinkChecks() {
         const { decodePlanHash } = await import("../src/cli/share-codec.mjs");
         if (decodePlanHash(z) !== plan) throw new Error("/api/share/<id> does not decode to the plan that was sent");
         return ["card metadata present; the stored payload decodes to the plan"];
+      },
+    },
+    {
+      // The card a link preview shows: a real PNG of the card's size, cacheable forever.
+      name: "GET /s/<that id>.png (1200x630 PNG, immutable)",
+      run: async (base) => {
+        if (!created) throw new Error("no id: the create check failed");
+        let res;
+        let bytes;
+        for (let attempt = 1; attempt <= ATTEMPTS; attempt++) {
+          try {
+            res = await fetch(`${base}/s/${created}.png`, { headers: { "user-agent": "archlang-smoke/1" } });
+            bytes = Buffer.from(await res.arrayBuffer());
+            if (res.status === 200) break;
+          } catch (e) {
+            if (attempt === ATTEMPTS) throw new Error(`network error: ${e.message}`);
+          }
+          if (attempt < ATTEMPTS) await sleep(RETRY_MS);
+        }
+        if (res.status !== 200) throw new Error(`HTTP ${res.status}`);
+        contentType("image/png")("", res);
+        header("cache-control", "immutable")("", res);
+        if (bytes.subarray(0, 8).toString("hex") !== "89504e470d0a1a0a") throw new Error("not a PNG (bad signature)");
+        const [w, h] = [bytes.readUInt32BE(16), bytes.readUInt32BE(20)];
+        if (w !== 1200 || h !== 630) throw new Error(`the PNG is ${w}x${h}, expected 1200x630`);
+        return [`${bytes.length} B, ${w}x${h}`];
       },
     },
   ];

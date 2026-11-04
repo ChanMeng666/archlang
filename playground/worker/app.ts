@@ -8,6 +8,7 @@
  *   POST /api/share        body: a `#z=` payload → `{ id, url }`, the plan stored in KV
  *   GET  /api/share/<id>   → `{ id, z }` (embed.html's `#s=<id>`)
  *   GET  /s/<id>           → a small HTML page: the card metadata, then on to `/#z=<payload>`
+ *   GET  /s/<id>.png       → the 1200×630 card image: the plan as `compile()` draws it
  *
  * The core is passed in rather than imported, so the same handler runs bundled by wrangler
  * (`worker/index.ts`), against the core's source under vitest, and against the built core in a
@@ -30,6 +31,7 @@ import {
   sharePageHtml,
   sourceHash,
 } from "./share-core.js";
+import { PREVIEW_HEIGHT, PREVIEW_WIDTH, previewSvg, type Rasterize } from "./preview.js";
 import type { Env, ExecutionContext, ShareMeta } from "./types.js";
 
 /** The core functions the handler calls. */
@@ -46,8 +48,29 @@ export type ShareErrorCode =
   | "method_not_allowed"
   | "unavailable";
 
-/** The static image `/s/<id>` names as its card until a per-plan preview exists. */
+/**
+ * The site's static card, served for `/s/<id>.png` when the plan draws nothing (it has an error),
+ * draws too much to rasterise here ({@link PREVIEW_SVG_CAP}), or the renderer is unavailable.
+ */
 export const FALLBACK_IMAGE = { path: "/brand/archlang-og.png", width: 1200, height: 630 } as const;
+
+/**
+ * The largest compiled SVG the Worker rasterises, in characters. Measured on a desktop: the
+ * largest example (`hillside-villa`) compiles and rasterises in ~0.4 s; 70×70 rooms written as a
+ * loop, near the element budget, draw 1.7 M characters in ~2.3 s. Past this cap the static card is
+ * served instead, so no plan can make one card cost more than that.
+ */
+export const PREVIEW_SVG_CAP = 2_000_000;
+
+/** `/s/<id>.png` cache misses per address per period (`RATE_PREVIEW`): a hit renders nothing. */
+export const PREVIEW_PER_PERIOD = 120;
+
+/** What the Worker draws card images with; absent, `/s/<id>.png` is always the static card. */
+export interface PreviewDeps {
+  rasterize?: Rasterize;
+  /** The edge cache (`caches.default`); absent in a bare test, which then renders every time. */
+  cache?: Cache;
+}
 
 /** The parse-stage and budget refusals that make a payload "not a plan" (see {@link create}). */
 const NOT_A_PLAN = new Set(["E_PARSE", "E_STEP_LIMIT"]);
@@ -99,17 +122,17 @@ function html(status: number, body: string, cache: string, method: string): Resp
 const addressOf = (req: Request): string => req.headers.get("cf-connecting-ip") ?? "unknown";
 
 /** `true` when the limiter (absent in a test or a bare local run) lets this address through. */
-async function allowed(env: Env, req: Request): Promise<boolean> {
-  if (!env.RATE_SHARE) return true;
+async function allowed(limiter: Env["RATE_SHARE"], req: Request): Promise<boolean> {
+  if (!limiter) return true;
   try {
-    return (await env.RATE_SHARE.limit({ key: addressOf(req) })).success;
+    return (await limiter.limit({ key: addressOf(req) })).success;
   } catch {
     return true; // a limiter fault never takes sharing down
   }
 }
 
 /** The events counted: one data point each, holding the event, the id and the UTC day. */
-export type ShareEvent = "create" | "resolve" | "resolve-json" | "refused";
+export type ShareEvent = "create" | "resolve" | "resolve-json" | "preview" | "refused";
 
 function count(env: Env, event: ShareEvent, idOrReason: string): void {
   try {
@@ -159,8 +182,8 @@ async function lookup(env: Env, id: string): Promise<{ payload: string; meta: Sh
   return value === null ? null : { payload: value, meta: metadata };
 }
 
-/** Build the handler over a core. */
-export function makeShareWorker(core: Core) {
+/** Build the handler over a core, and the card renderer when there is one. */
+export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
   /**
    * `POST /api/share`. The payload must decode, inflate to UTF-8 within the source cap, and be a
    * plan the core reads: `compile()` is the core's public route to its parser, and a plan that
@@ -169,7 +192,7 @@ export function makeShareWorker(core: Core) {
    * with a wall error is exactly what someone shares to ask for help.
    */
   async function create(req: Request, env: Env): Promise<Response> {
-    if (!(await allowed(env, req))) {
+    if (!(await allowed(env.RATE_SHARE, req))) {
       count(env, "refused", "rate");
       const d = core.rateLimited("share", SHARE_PER_PERIOD, RATE_PERIOD_SECONDS);
       return refuse(429, "rate_limited", d.message, {
@@ -242,14 +265,68 @@ export function makeShareWorker(core: Core) {
       id,
       payload: hit.payload,
       title: hit.meta?.t ?? DEFAULT_TITLE,
-      image: { url: `${origin}${FALLBACK_IMAGE.path}`, width: FALLBACK_IMAGE.width, height: FALLBACK_IMAGE.height },
+      image: { url: `${origin}/s/${id}.png`, width: PREVIEW_WIDTH, height: PREVIEW_HEIGHT },
     });
-    // A day, not a year: the plan behind an id never changes, but this page's template can
-    // (its card image does when the per-plan preview lands), and a crawler re-reads it anyway.
+    // A day, not a year: the plan behind an id never changes, but this page's template can,
+    // and a crawler re-reads it anyway.
     return html(200, body, "public, max-age=86400", req.method);
   }
 
-  async function route(req: Request, env: Env): Promise<Response> {
+  /** The static card, from the asset layer, under this route's headers. */
+  async function fallbackImage(req: Request, env: Env, cache: string): Promise<Response> {
+    const asset = await env.ASSETS.fetch(new Request(new URL(FALLBACK_IMAGE.path, req.url), { method: "GET" }));
+    if (!asset.ok) return refuse(503, "unavailable", "no card image");
+    return new Response(req.method === "HEAD" ? null : asset.body, {
+      status: 200,
+      headers: { ...BASE_HEADERS, "content-type": "image/png", "cache-control": cache },
+    });
+  }
+
+  /**
+   * `GET /s/<id>.png`: the plan's card. The image is a function of the stored plan and this
+   * Worker's code, so it is rendered once per edge location and kept in its cache, `immutable`. A plan that
+   * draws nothing (an error) or too much ({@link PREVIEW_SVG_CAP}) gets the static card, also
+   * cached; an address over its rate of cache misses gets the static card uncached.
+   */
+  async function image(req: Request, id: string, env: Env, ctx?: ExecutionContext): Promise<Response> {
+    // The store first, the cache second: a plan removed on request stops showing at once, even
+    // where its card is still cached (one KV read per card request buys that).
+    const hit = await lookup(env, id);
+    if (!hit) return refuse(404, "not_found", "no plan is stored under this id");
+    const key = new Request(new URL(`/s/${id}.png`, req.url), { method: "GET" });
+    const cached = await preview.cache?.match(key);
+    if (cached) return req.method === "HEAD" ? new Response(null, cached) : cached;
+
+    if (!(await allowed(env.RATE_PREVIEW, req))) {
+      count(env, "refused", "preview-rate");
+      return fallbackImage(req, env, "no-store");
+    }
+    count(env, "preview", id);
+    const source = await decodePayload(hit.payload, SOURCE_CAP_BYTES);
+    const svg =
+      typeof source === "string" && source !== "bad_payload" && source !== "source_too_large"
+        ? core.compile(source, { noCache: true }).svg
+        : "";
+    const card = svg.length > 0 && svg.length <= PREVIEW_SVG_CAP ? previewSvg(svg, hit.meta?.t ?? DEFAULT_TITLE) : null;
+    let res: Response;
+    if (card && preview.rasterize) {
+      const png = await preview.rasterize(card);
+      res = new Response(png as Uint8Array<ArrayBuffer>, {
+        status: 200,
+        headers: { ...BASE_HEADERS, "content-type": "image/png", "cache-control": IMMUTABLE },
+      });
+    } else {
+      res = await fallbackImage(new Request(req.url), env, IMMUTABLE);
+    }
+    if (preview.cache && res.status === 200) {
+      const put = preview.cache.put(key, res.clone());
+      if (ctx) ctx.waitUntil(put);
+      else await put;
+    }
+    return req.method === "HEAD" ? new Response(null, res) : res;
+  }
+
+  async function route(req: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const { pathname } = new URL(req.url);
     const read = req.method === "GET" || req.method === "HEAD";
     if (pathname === "/api/share") {
@@ -264,7 +341,9 @@ export function makeShareWorker(core: Core) {
     if (pathname.startsWith("/api/")) return refuse(404, "not_found", "no such endpoint");
     if (pathname.startsWith("/s/")) {
       if (!read) return refuse(405, "method_not_allowed", "GET only", { headers: { allow: "GET, HEAD" } });
-      return page(req, pathname.slice("/s/".length), env);
+      const rest = pathname.slice("/s/".length);
+      if (rest.endsWith(".png")) return image(req, rest.slice(0, -".png".length), env, ctx);
+      return page(req, rest, env);
     }
     // Not one of ours: the asset layer found no file for it (or it is a listed prefix we do not
     // serve). Hand it back so the answer is the asset layer's own, byte for byte.
@@ -272,9 +351,9 @@ export function makeShareWorker(core: Core) {
   }
 
   return {
-    async fetch(req: Request, env: Env, _ctx?: ExecutionContext): Promise<Response> {
+    async fetch(req: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
       try {
-        return await route(req, env);
+        return await route(req, env, ctx);
       } catch (e) {
         // Never a stack, and never the plan: the error's name only.
         console.error(`share worker: internal error (${(e as Error)?.name ?? "unknown"})`);

@@ -40,6 +40,7 @@ two entries.
 | `POST /api/share` | body: a `#z=` payload (≤ 64 KiB, inflating to ≤ 64 KiB, a plan the parser accepts) → `{ id, url }`; refusals are JSON with a stable `error.code` |
 | `GET /api/share/<id>` | `{ id, z }`, `immutable` (what `embed.html#s=<id>` reads) |
 | `GET /s/<id>` | HTML: Open Graph/Twitter card metadata, then `location.replace("/#z=<payload>")`; `max-age=86400`, `noindex` |
+| `GET /s/<id>.png` | the 1200×630 card image (`og:image`): the plan as `compile()` draws it, rasterised by `@resvg/resvg-wasm` with the core's Roboto; edge-cached, `immutable` |
 | `GET /s/<unknown>` | a 404 HTML page linking to the playground |
 
 | Binding | What |
@@ -47,6 +48,7 @@ two entries.
 | `ASSETS` | the asset layer itself (the fallback above) |
 | `SHARE` | KV namespace `archlang-share`: `s:<id>` → the payload, metadata `{ v, h, t }`; no TTL, no address |
 | `RATE_SHARE` | rate limit, `namespace_id` 2603: 30 creates per address per 60 s (best-effort abuse guard) |
+| `RATE_PREVIEW` | rate limit, `namespace_id` 2604: 120 card-image cache misses per address per 60 s |
 | `SHARE_ANALYTICS` | Analytics Engine dataset `archlang_share`: one point per create and resolve, `[event, id, day]` |
 
 Workers Logs are on with invocation logs off: the script logs an internal error's name and nothing

@@ -65,7 +65,9 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 
 The site is static assets plus one script, `worker/index.ts` (`main` in `wrangler.jsonc`), which
 runs only for `/s/*` and `/api/*` (`assets.run_worker_first`): short links, stored in Workers KV
-(`worker/app.ts`, `worker/share-core.ts`; ADR 0034, `docs/hosting-and-domains.md`). wrangler
+(`worker/app.ts`, `worker/share-core.ts`), and their 1200×630 card images, `/s/<id>.png`
+(`worker/preview.ts`: the plan's `compile()` SVG rasterised by `@resvg/resvg-wasm` with the core's
+Roboto; ADR 0034, `docs/hosting-and-domains.md`). wrangler
 bundles it at deploy, against the built core. Locally: `wrangler dev --local` from this directory
 after `npm run playground:build`; never `wrangler deploy` (CI deploys).
 

@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Playground short links. The Share cell's `Link ▾` offers **Copy short link**, `https://playground.archlang.uk/s/<id>`, beside **Copy full link**, the `#z=` link as before; the note between them says a short link stores the plan on archlang.uk's server and the full link does not. The id is content-addressed (the same plan always gets the same link), `/s/<id>` carries link-preview card metadata and then opens the editor on the full link, and `embed.html#s=<id>` draws a stored plan. If a short link cannot be made, the full link is copied and the status line says so. The playground Worker runs a script for `/s/*` and `/api/*` only; every other path is served as before (ADR 0034).
+- A short link's preview card shows the plan: `/s/<id>.png` is a 1200×630 PNG of the drawing with the plan's title, and `/s/<id>` names it as its `og:image` and `twitter:image`. A plan that does not compile shows the site's card.
 
 ### Fixed
 

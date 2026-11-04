@@ -41,6 +41,8 @@ export interface Env {
   SHARE?: KVNamespace;
   /** Per-address limit on `POST /api/share`. */
   RATE_SHARE?: RateLimit;
+  /** Per-address limit on `/s/<id>.png` cache misses (a hit renders nothing). */
+  RATE_PREVIEW?: RateLimit;
   /** One data point per create and per resolve: event, id, day. */
   SHARE_ANALYTICS?: AnalyticsEngineDataset;
 }

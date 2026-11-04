@@ -37,6 +37,7 @@ other request is served by the asset layer as before.
 | `POST /api/share` | body: a `#z=` payload; stores the plan, replies `{ id, url }` |
 | `GET /api/share/<id>` | `{ id, z }`, for `embed.html#s=<id>` |
 | `GET /s/<id>` | a small HTML page: the card metadata, then `location.replace("/#z=<payload>")` |
+| `GET /s/<id>.png` | the card image, 1200×630: the plan as `compile()` draws it |
 | `GET /s/<unknown>` | a 404 HTML page with a link to the playground |
 
 1. **Every static path behaves byte for byte as before.** A path outside the list is served by the
@@ -106,8 +107,32 @@ to ask for help.
 - **Logs:** Workers Logs on, invocation logs off. The script logs only an internal error's name,
   never a plan, and invocation logs would record each request's metadata.
 - **Caching:** `/api/share/<id>` is `immutable` (the plan behind an id never changes). `/s/<id>`
-  is cached for a day, not a year: the plan does not change, but the page's template can, and its
-  card image will when the per-plan preview lands.
+  is cached for a day, not a year: the plan does not change, but the page's template can.
+
+### The card image
+
+X and LinkedIn show no SVG `og:image`, so `/s/<id>` names a PNG, `/s/<id>.png`, with
+`og:image:width` 1200 and `og:image:height` 630. The Worker compiles the stored plan with
+`compile()`, nests its SVG (its own `viewBox`, `xMidYMid meet`) in a 1200×630 white card above one
+caption line (the plan's title, and `playground.archlang.uk`; text only, no logo), and rasterises
+it with `@resvg/resvg-wasm`, pinned exactly in `playground/package.json` (MPL-2.0: the same project and licence as the
+core's optional `@resvg/resvg-js`, used unmodified as a dependency of the playground workspace, not
+the core). The only face is the core's bundled `assets/fonts/Roboto-Regular.ttf`, with no system
+fonts, so the image is a function of the plan and the Worker's code: rendered once per edge
+location, kept in the Cache API (`caches.default`), served `public, max-age=31536000, immutable`.
+The store is read before the cache, so a removed plan's card stops at once.
+
+- **Bounded.** The source is already capped at 64 KiB. Measured on a desktop (Node, resvg-wasm):
+  the largest example, `hillside-villa`, compiles and rasterises in about 0.4 s; 70×70 rooms
+  written as a loop, near the element budget, in about 2.3 s, its SVG 1.7 M characters. A compiled
+  SVG over 2 M characters is not rasterised. Cache misses are rate-limited per address
+  (`RATE_PREVIEW`, 120 a minute, `namespace_id` 2604).
+- **The static card instead** (`/brand/archlang-og.png`): for a plan that draws nothing (it has an
+  error), one over the SVG cap, or an address over its rate (that one uncached).
+- **Size:** the Worker uploads as about 4 MiB, 1.6 MiB gzip (the core, the resvg `.wasm`, the font),
+  inside the platform's 10 MiB compressed limit.
+- **Known gap:** text the bundled face lacks (CJK) draws as empty boxes. The CJK face is an 11 MB
+  optional package, too large for the Worker.
 
 ### Cost
 
@@ -125,9 +150,10 @@ asset requests. The owner can set usage notifications in the Cloudflare dashboar
 - The privacy page and `SUPPORT.md` say what is stored and how to have it removed.
 - The CI deploy token needs **Workers KV Storage: Edit** for the playground deploy to bind the
   namespace (owner step).
-- `scripts/smoke.mjs --site playground` gains three checks (an unknown id 404s; a create returns an
-  id; that id's page carries the card metadata and its payload decodes to the plan sent). The
-  static checks are unchanged. The plan the smoke test creates stays in the store, once.
+- `scripts/smoke.mjs --site playground` gains four checks (an unknown id 404s; a create returns an
+  id; that id's page carries the card metadata and its payload decodes to the plan sent; its card
+  is a 1200×630 PNG, `immutable`). The static checks are unchanged. The plan the smoke test creates
+  stays in the store, once.
 
 ## Alternatives considered
 
