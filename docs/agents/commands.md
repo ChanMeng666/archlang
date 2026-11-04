@@ -165,8 +165,7 @@ core, so a failure there never blocks the core, the shim or the registry.
 ## CLI contract
 
 Every command takes `--json` (result on stdout, messages on stderr) and `-` for stdin. Exit codes:
-`0` ok · `2` user-source error · `1` IO/internal · `3` bad usage · `4` stale source: the file is not
-the revision `--expected-hash` names (re-read it, redo the edit). `arch manifest` prints the whole
+`0` ok · `2` user-source error · `1` IO/internal · `3` bad usage. `arch manifest` prints the whole
 CLI as data; `arch <cmd> --help` is rendered from `src/manifest.ts`. `-f svg|dxf|txt|json|pdf|png`
 (`pdf`/`png` need the optional deps). `annotate` has no CLI flag, so the element controls that
 `accessible` + `annotate` produce are library-only.
