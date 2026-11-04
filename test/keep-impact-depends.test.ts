@@ -757,7 +757,9 @@ suite("keep · red-team round 1: the static facts and impact's keeps", () => {
       "-f",
       "json",
       "-o",
-      "no-such-directory-ps43b/out.json",
+      // A path under a FILE, where no directory can be made. (A missing directory is no
+      // longer a failure: `-o` creates it, as `batch -o` does.)
+      `${KEEP_CORPUS_DIR}/offset-fixed.arch/out.json`,
     ]);
     expect(r.exit).not.toBe(0);
     expect(r.stderr).not.toContain("note: Plan JSON");

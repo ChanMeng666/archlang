@@ -147,7 +147,8 @@ const OUT_FLAG: ManifestFlag = {
   flag: "--out",
   alias: "-o",
   arg: "<file|->",
-  description: "output file, or '-' for stdout (default: the input path with the format's extension)",
+  description:
+    "output file, or '-' for stdout; a missing directory is created (default: the input path with the format's extension)",
 };
 const FMT_FLAG: ManifestFlag = {
   flag: "--format",
@@ -445,7 +446,8 @@ const COMMANDS: ManifestCommand[] = [
         flag: "--out",
         alias: "-o",
         arg: "<dir>",
-        description: "output DIRECTORY for every rendered file, created if missing (default: alongside each input)",
+        description:
+          "output DIRECTORY for every rendered file, created if missing; two inputs that would write one file (same name) are refused (default: alongside each input)",
       },
       FMT_FLAG,
       { flag: "--jobs", alias: "-j", arg: "<n>", description: "max concurrent renders (default: CPU count)" },

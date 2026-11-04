@@ -4,7 +4,7 @@
  * monolithic `src/cli.ts` (mechanical; behavior unchanged).
  */
 
-import { statSync, writeFileSync } from "node:fs";
+import { statSync } from "node:fs";
 import { resolve as resolvePath, dirname, basename } from "node:path";
 import { cpus } from "node:os";
 import {
@@ -29,14 +29,17 @@ import {
   defaultOut,
   emitDiagnosticsHuman,
   emitJson,
+  endsInSeparator,
   hasErrors,
   ioError,
   storeyTarget,
   makeNodeWorld,
   parseFormat,
   readInput,
+  writeOutput,
   refuseJsonDrawingFlags,
   resolveView,
+  separatorRefusal,
   sourceFromJson,
   stdoutJsonConflict,
   stdoutMultiPage,
@@ -112,6 +115,10 @@ export async function cmdCompile(args: Args): Promise<number> {
   // Checked before any read: two writers for one stdout is a usage error, not a silent
   // redirect to `out.svg` (see `stdoutJsonConflict`).
   if (args.json && args.o === "-") return stdoutJsonConflict("compile");
+  // `-o dir/` names a directory; a multi-storey compile would otherwise derive `dir/.L1.svg`-style
+  // names from it, so it is refused here, before anything is read or written.
+  if (args.o !== undefined && args.o !== "-" && endsInSeparator(args.o))
+    return ioError(separatorRefusal(args.o), args.json, { format });
 
   let source: string;
   try {
@@ -223,7 +230,7 @@ export async function cmdCompile(args: Args): Promise<number> {
       process.stdout.write(bytes);
     } else {
       try {
-        writeFileSync(resolvePath(target), bytes);
+        writeOutput(target, bytes);
       } catch (e) {
         return ioError((e as Error).message, args.json, { format });
       }
@@ -257,7 +264,7 @@ export async function cmdCompile(args: Args): Promise<number> {
       return noted(EXIT.OK);
     }
     try {
-      writeFileSync(resolvePath(target), bytes);
+      writeOutput(target, bytes);
     } catch (e) {
       return ioError((e as Error).message, args.json, { format });
     }
@@ -315,7 +322,7 @@ function writePages(
     const target = storeyTarget(base, p.level);
     if (!noWrite) {
       try {
-        writeFileSync(resolvePath(target), p.bytes);
+        writeOutput(target, p.bytes);
       } catch (e) {
         return ioError((e as Error).message, args.json, { format });
       }
@@ -601,7 +608,7 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
       process.stdout.write(r.bytes);
     } else {
       try {
-        writeFileSync(resolvePath(target), r.bytes);
+        writeOutput(target, r.bytes);
       } catch (e) {
         return ioError((e as Error).message, args.json, { format });
       }
@@ -629,7 +636,7 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
     return EXIT.OK;
   }
   try {
-    writeFileSync(resolvePath(target), r.bytes);
+    writeOutput(target, r.bytes);
   } catch (e) {
     return ioError((e as Error).message, args.json, { format });
   }
@@ -716,7 +723,7 @@ async function cmdPreviewReview(args: Args, input: string): Promise<number> {
     return EXIT.OK;
   }
   try {
-    writeFileSync(resolvePath(target), bytes);
+    writeOutput(target, bytes);
   } catch (e) {
     return ioError((e as Error).message, args.json, { format });
   }
@@ -775,6 +782,24 @@ export async function cmdBatch(args: Args): Promise<number> {
   const targetFor = (input: string): string =>
     outDir ? resolvePath(outDir, basename(input).replace(/\.arch$/i, "") + "." + format) : defaultOut(input, format);
 
+  // Two inputs that name one output file (`a/plan.arch` and `b/plan.arch` under one `-o`,
+  // or one input given twice) used to be written in turn, the last silently replacing the
+  // rest. Refuse before anything is written. Paths are compared without case, because on
+  // a case-insensitive filesystem (Windows, macOS) `Plan.svg` and `plan.svg` are one file,
+  // and the answer must not depend on where the batch runs.
+  const claimed = new Map<string, string>();
+  for (const input of inputs) {
+    const target = resolvePath(targetFor(input));
+    const key = target.toLowerCase();
+    const first = claimed.get(key);
+    if (first !== undefined)
+      return usageErrorFor(
+        "batch",
+        `${first} and ${input} would both write ${target}, and the second would replace the first — rename one of them, or render them in separate batch runs with different -o directories`,
+      );
+    claimed.set(key, input);
+  }
+
   const jobs = args.jobs && args.jobs > 0 ? args.jobs : Math.min(cpus().length, inputs.length);
   const results = await runPool(
     inputs.map((input) => () => compileToFile(input, format, args, targetFor(input))),
@@ -826,6 +851,8 @@ export async function cmdMd(args: Args): Promise<number> {
   // Output target: default `<name>.out.md` (`-o -` streams it, and cannot be combined
   // with `--json` — rejected above).
   const target = args.o ?? (input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md");
+  // Resolving drops a trailing separator, so `-o dir/` is refused before any image is written.
+  if (target !== "-" && endsInSeparator(target)) return ioError(separatorRefusal(target), args.json);
   const outAbs = target === "-" ? resolvePath("out.md") : resolvePath(target);
   const outDir = dirname(outAbs);
   const outBase = basename(outAbs).replace(/\.[^.]+$/, "");
@@ -852,7 +879,7 @@ export async function cmdMd(args: Args): Promise<number> {
       continue;
     }
     try {
-      writeFileSync(resolvePath(outDir, imgName), r.bytes);
+      writeOutput(resolvePath(outDir, imgName), r.bytes);
     } catch (e) {
       images.push({
         input: `block ${b.index + 1}`,
@@ -886,7 +913,7 @@ export async function cmdMd(args: Args): Promise<number> {
     process.stdout.write(rewritten);
   } else {
     try {
-      writeFileSync(outAbs, rewritten, "utf8");
+      writeOutput(outAbs, rewritten);
     } catch (e) {
       return ioError((e as Error).message, args.json);
     }
