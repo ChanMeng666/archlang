@@ -748,13 +748,6 @@ connection and decompress nothing, and the sites run on workerd, not Node. At 2.
 
 ## Found while landing the issued-sheet statements (`notes`, `schedule openings`)
 
-### N.1 · `arch finish` picks a sheet without the NOTES or DOOR & WINDOW SCHEDULE rows — `todo`
-
-`src/finish.ts` `tableRows` calls `planTableRows` with only `schedule`/`legend`, so a plan that
-already writes `notes` or `schedule openings` is fitted on a band shorter than the one drawn. It
-fails safe — finish's own post-check raises `W_SCALE_OVERFLOW` and adds no `paper` — but it picks
-nothing it could have picked. Fix: pass `openingSchedule`, `elements` and `notes` as `ir.ts` does.
-
 ### N.2 · `E_LEVEL_MIX`'s remedy does not name `notes` among the plan-level settings — `todo`
 
 The remedy text in `src/error-catalog.ts` lists the statements that stay outside `level` blocks
