@@ -8,9 +8,9 @@ Code and tests are the documentation; this file holds only what they cannot say.
 npm run build         # core + CLI → dist/ (before typecheck:all, e2e)
 npm run cli -- compile examples/studio.arch -o studio.svg
 npm run check:quick   # local pre-push: changed files, nearest tests (CI runs the rest)
-npm run check         # typecheck + lint + test-wiring + vitest (CI's floor)
-npm run check:drift   # generated artifacts == generator output (CI gate)
-npm run typecheck:all # the only typecheck that compiles test/ and the workspaces
+npm run check         # typecheck + lint + test-wiring + vitest (CI only)
+npm run check:drift   # generated artifacts == generator output (CI only)
+npm run typecheck:all # CI only; the one typecheck that compiles test/ + workspaces
 npm run docs:build    # after any docs/*.md edit
 npm run gen:all       # every gen:* generator
 ```
