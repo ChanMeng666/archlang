@@ -1,17 +1,45 @@
 {
   "$schema": "../node_modules/wrangler/config-schema.json",
 
-  // The Vite playground, served as static assets by a Worker with NO script.
-  // See docs-site/wrangler.jsonc for why `main` is absent; the NAME here is
-  // likewise the npm workspace identifier and not the URL.
+  // The Vite playground, served as static assets, plus ONE script that answers only the
+  // short-link paths (docs/adr/0034-playground-short-links.md, amending ADR 0019). The NAME
+  // here is the npm workspace identifier and not the URL.
   "name": "archlang-playground",
   "compatibility_date": "2026-09-05",
+
+  // The script: playground/worker/. wrangler bundles it; `archlang` is the built core, aliased
+  // as vite.config.js aliases it, so the Worker reads plans with the compiler the page runs.
+  "main": "worker/index.ts",
+  // The core's optional Node-only dependencies are reached only through lazy imports on paths
+  // this Worker never takes; each is aliased to a module that refuses, as if absent, so the
+  // bundler can resolve them (it then drops them with the backends that name them).
+  "alias": {
+    "archlang": "../dist/index.js",
+    "@resvg/resvg-js": "./worker/optional-stub.ts",
+    "pdfkit": "./worker/optional-stub.ts",
+    "clipper2-wasm": "./worker/optional-stub.ts",
+    "@chanmeng666/archlang-font-cjk": "./worker/optional-stub.ts"
+  },
+  "minify": true,
+  // The card renderer's font, the core's bundled face, imported as bytes (worker/index.ts). A
+  // `.wasm` import needs no rule: wrangler compiles it to a WebAssembly.Module by default.
+  "rules": [{ "type": "Data", "globs": ["**/*.ttf"], "fallthrough": false }],
 
   "workers_dev": false,
 
   "assets": {
     // Built by `npm run playground:build` from the repo root (core first).
     "directory": "dist",
+
+    // The asset layer as a binding: a request the script receives but does not serve goes
+    // back through it (worker/app.ts), so its answer is the asset layer's own.
+    "binding": "ASSETS",
+
+    // THE LAW (ADR 0034): the script runs FIRST for exactly these prefixes and no other.
+    // Every other path is served by the asset layer as before; one it finds no file for
+    // reaches the script, which hands it straight back to ASSETS. playground/test/
+    // share-worker.test.ts holds this list to exactly these two entries.
+    "run_worker_first": ["/s/*", "/api/*"],
 
     // "none" is an EXACT-PATH lookup, chosen for one measured reason: it keeps
     // `/embed.html` a literal 200. Every other mode drops the `.html` and 307s
@@ -32,6 +60,26 @@
     // "none" returns a bare 404, which is what Vercel does today.
     "not_found_handling": "none"
   },
+
+  // Shared plans, `s:<id>` → the `#z=` payload. No TTL, no address, no account (ADR 0034).
+  // The namespace id names a namespace in the account; it is not a secret.
+  "kv_namespaces": [{ "binding": "SHARE", "id": "1a147498742b4bd4b4579175085ef9a0" }],
+
+  // Per-address abuse guards, keyed on CF-Connecting-IP (never stored or logged): POST
+  // /api/share, and /s/<id>.png cache misses (a hit renders nothing). Held to SHARE_PER_PERIOD
+  // and PREVIEW_PER_PERIOD by test. Their own namespaces: 2601 and 2602 are the MCP Worker's.
+  "ratelimits": [
+    { "name": "RATE_SHARE", "namespace_id": "2603", "simple": { "limit": 30, "period": 60 } },
+    { "name": "RATE_PREVIEW", "namespace_id": "2604", "simple": { "limit": 120, "period": 60 } }
+  ],
+
+  // One data point per create and per resolve: the event, the id and the UTC day.
+  "analytics_engine_datasets": [{ "binding": "SHARE_ANALYTICS", "dataset": "archlang_share" }],
+
+  // Workers Logs on, for the script's own errors (it logs an error's name, never a plan).
+  // Invocation logs off: they record each request's metadata, and this Worker keeps no address.
+  "observability": { "enabled": true, "logs": { "enabled": true, "invocation_logs": false } },
+  "upload_source_maps": false,
 
   "routes": [{ "pattern": "playground.archlang.uk", "custom_domain": true }]
 }

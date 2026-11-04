@@ -4,14 +4,17 @@
  * into any blog / Confluence / GitHub-Pages via a single <iframe>. Client-side
  * only; the zero-dep core compiles in the browser exactly as it does in Node.
  *
- * Hash params (after the `#z=…`/`#src=…` token, `&`-joined):
+ * The plan comes from `#z=…` (or legacy `#src=…`) in place, or from `#s=<id>`, a short link's id,
+ * fetched from this site's server (ADR 0034).
+ *
+ * Hash params (after the `#z=…`/`#src=…`/`#s=…` token, `&`-joined):
  *   editable=1    show a compact editor pane + live re-render on input
  *   theme=<key>   force a named render theme (blueprint | dark | mono | presentation | rendered)
  */
 import { compile } from "archlang";
 import { embedCompileOptions, hashParam, isEditable, renderDecision } from "./embed-params.js";
 import { createPanZoom } from "./pan-zoom.js";
-import { srcFromHash } from "./share.js";
+import { shareIdFromHash, sharedSource } from "./share.js";
 import { createSharedNotice, SHARED_PLAN_NOTICE_SHORT, shouldShowSharedNotice } from "./shared-notice.js";
 // The fallback plan for a hash-less embed: the canonical smallest complete plan,
 // imported verbatim (`?raw`) so it can never drift from examples/one-room.arch.
@@ -63,7 +66,13 @@ toolbar?.addEventListener("click", (e) => {
 });
 
 async function init() {
-  const shared = await srcFromHash();
+  const shared = await sharedSource();
+  // A short link that names no stored plan says so, rather than drawing the fallback as if it were the plan.
+  if (shared === null && shareIdFromHash(location.hash) !== null) {
+    errEl.hidden = false;
+    errEl.textContent = "This short link names no stored plan.";
+    return;
+  }
   const source = shared ?? fallbackPlan;
 
   // This page IS the third-party surface: it exists to be framed by someone else's

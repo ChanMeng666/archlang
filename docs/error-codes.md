@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**153 errors** · **94 warnings**
+**154 errors** · **94 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -139,6 +139,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_SITE_NO_STREET`](#e_site_no_street) | error | A `site` block declares no `street`. |
 | [`E_STAIR_PIECES`](#e_stair_pieces) | error | A stair's flights and landings do not make one stair. |
 | [`E_STAIR_WIDTH`](#e_stair_width) | error | Stair flight `width` is outside the footprint. |
+| [`E_STALE_SOURCE`](#e_stale_source) | error | The file is not the revision `--expected-hash` names. |
 | [`E_STEP_LIMIT`](#e_step_limit) | error | Evaluation did more work than any plan needs. |
 | [`E_STRIP_NEST`](#e_strip_nest) | error | Illegal `strip` nesting. |
 | [`E_STRIP_SIZE`](#e_strip_size) | error | Room in a `strip` is missing a size. |
@@ -1915,6 +1916,18 @@ stair id=s dir up width 1000 { flight at (0,1000) size 1000x1000 flight at (0,0)
 
 ```arch static
 stair id=s at (0,0) size 900x2600 dir up width 1200   # error: cross extent is 900
+```
+
+## E_STALE_SOURCE
+
+*error* — The file is not the revision `--expected-hash` names.
+
+**Cause.** A command that rewrites a `.arch` file (`fix`, `finish`, `repair`, `fmt --write`, `reroll --write`) was given `--expected-hash <sha256>`, and the SHA-256 of the input file's bytes (a BOM and CRLF line ends are part of them) is another value: someone changed the file after you read it. The command checks the hash before it computes anything and refuses then; it reads the file again just before it writes and refuses if the bytes changed while it ran. Nothing is written either way. The second check narrows the race with another writer; it is not a lock. Raised by the CLI (exit 4), never by `compile()`.
+
+**Fix.** Re-read the file, re-apply your edit to what is there now, and pass the new hash: the `source_hash` a `--json` run of the command reports (or the `written_hash` of your own last write).
+
+```arch static
+archlang fix plan.arch --expected-hash 9f86d081884c…   # error: plan.arch changed since that hash was taken, exit 4
 ```
 
 ## E_STEP_LIMIT

@@ -32,6 +32,7 @@ import {
 } from "@chanmeng666/archlang";
 import * as coreNamespace from "@chanmeng666/archlang";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { webcrypto } from "node:crypto";
 import { z } from "zod";
 import {
   compilePngSentence,
@@ -92,6 +93,54 @@ export interface ToolOptions {
 function json(obj: unknown) {
   return { content: [{ type: "text" as const, text: JSON.stringify(obj, null, 2) }] };
 }
+
+/**
+ * SHA-256 of `text`'s UTF-8 encoding, as lowercase hex: the `source_hash` every result of a call
+ * that passed `source` carries. These tools never write a file, so there is nothing to guard here;
+ * the field is the revision an agent hands to the CLI's `--expected-hash` (`src/cli/source-hash.ts`
+ * in the core), which hashes a file's bytes. The two agree whenever the file is valid UTF-8 and
+ * `source` is its text unchanged, a BOM (U+FEFF) and CRLF line ends included.
+ *
+ * Web Crypto, because this module runs on Node and in the Worker; Node 18 has no global `crypto`,
+ * so there it is `node:crypto`'s `webcrypto`, loaded only then.
+ */
+export async function sha256Hex(text: string): Promise<string> {
+  const subtle =
+    (globalThis as { crypto?: { subtle?: webcrypto.SubtleCrypto } }).crypto?.subtle ??
+    (await import("node:crypto")).webcrypto.subtle;
+  const digest = new Uint8Array(await subtle.digest("SHA-256", new TextEncoder().encode(text)));
+  let hex = "";
+  for (const b of digest) hex += b.toString(16).padStart(2, "0");
+  return hex;
+}
+
+/** A tool result: text blocks (the first is the JSON payload), and for a png an image after it. */
+type ToolResult = { content: Array<{ type: string; text?: string }> };
+
+/**
+ * `result` with `source_hash` (the INPUT `source`'s hash) appended to its JSON payload (the first
+ * text block), and after it `output_hash` when the payload carries a rewritten `source` (`repair`,
+ * `fix`, `finish`): the SHA-256 of exactly that returned text's UTF-8, which is the revision a file
+ * has once the caller writes that text to it, so the hash to pass to the CLI's `--expected-hash`
+ * next. Additive: every other key, and its position, is as the handler wrote it.
+ */
+async function withHashFields<R extends ToolResult>(result: R, input: string): Promise<R> {
+  const i = result.content.findIndex((c) => c.type === "text" && typeof c.text === "string");
+  if (i < 0) return result;
+  const payload = JSON.parse(result.content[i]!.text!) as Record<string, unknown>;
+  const fields: Record<string, string> = { source_hash: await sha256Hex(input) };
+  if (typeof payload.source === "string") fields.output_hash = await sha256Hex(payload.source);
+  const text = JSON.stringify({ ...payload, ...fields }, null, 2);
+  return { ...result, content: result.content.map((c, j) => (j === i ? { ...c, text } : c)) };
+}
+
+/** A tool handler whose every result, when the call passed `source`, carries `source_hash`. */
+const hashingSource =
+  <A extends { source?: string }, R extends ToolResult>(handler: (a: A) => Promise<R>) =>
+  async (a: A): Promise<R> => {
+    const result = await handler(a);
+    return typeof a.source === "string" ? withHashFields(result, a.source) : result;
+  };
 
 const errorCount = (ds: Diagnostic[]): number => ds.filter((d) => d.severity === "error").length;
 const toJson = (source: string, ds: Diagnostic[]) => ds.map((d) => diagnosticToJson(source, d));
@@ -311,11 +360,11 @@ export const TOOL_ANNOTATIONS = {
 
 /** Register every ArchLang tool on `server`. */
 export function registerTools(server: McpServer, opts: ToolOptions): void {
-  /** `compile`'s handler with `opts.compileMeta`, when set, on every result it returns. */
+  /** `compile`'s handler with `source_hash` ({@link hashingSource}) and, when set, `opts.compileMeta` on every result. */
   const withCompileMeta =
-    <A, R extends object>(handler: (a: A) => Promise<R>) =>
+    <A extends { source?: string }, R extends ToolResult>(handler: (a: A) => Promise<R>) =>
     async (a: A): Promise<R> => {
-      const result = await handler(a);
+      const result = await hashingSource(handler)(a);
       return opts.compileMeta ? { ...result, _meta: opts.compileMeta } : result;
     };
 
@@ -475,10 +524,10 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         "Report a plan's facts without rendering, so you can check it against the brief without looking at an image. Returns rooms (area, bbox, adjacency, use, and the exact shape: `floor_polygon` for a `room polygon`, `floor_circle` for a `room circle`, whose area is exactly πR²), doors (what each connects), windows, circulation (walk distance, bottleneck width, detour), zones, storeys (`levels[i]` carries the same facts per floor) with the shafts that join them and which storeys stay reachable (`vertical`), the drawing extent (`bbox`, `bbox_outer`), `freedom` (which positions are hand-authored and which are derived), and totals.",
       inputSchema: { source: z.string().describe("ArchLang source.") },
     },
-    async ({ source }) => {
+    hashingSource(async ({ source }) => {
       const s = describe(source);
       return json({ ...s, diagnostics: toJson(source, s.diagnostics) });
-    },
+    }),
   );
 
   server.registerTool(
@@ -493,7 +542,9 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         profile: z.string().optional().describe("Advisory ruleset name (default: the built-in ruleset)."),
       },
     },
-    async ({ source, profile }) => json({ ok: true, diagnostics: toJson(source, lint(source, { profile })) }),
+    hashingSource(async ({ source, profile }) =>
+      json({ ok: true, diagnostics: toJson(source, lint(source, { profile })) }),
+    ),
   );
 
   server.registerTool(
@@ -516,7 +567,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
           .describe("A brief's intent JSON (shape: the archlang://intent-schema resource); gating assertions fail."),
       },
     },
-    async ({ source, strict, graph, intent }) => {
+    hashingSource(async ({ source, strict, graph, intent }) => {
       const { diagnostics } = compile(source, { noCache: true });
       const all = [...diagnostics, ...lint(source)];
       const errs = errorCount(all);
@@ -563,7 +614,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         ...(graph ? { graph: graphReport } : {}),
         ...(intentBlock ? { intent: intentBlock } : {}),
       });
-    },
+    }),
   );
 
   server.registerTool(
@@ -580,7 +631,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
           .describe("A brief's intent JSON (shape: the archlang://intent-schema resource) to measure against."),
       },
     },
-    async ({ source, brief }) => {
+    hashingSource(async ({ source, brief }) => {
       const checked = checkIntent(source, brief);
       if ("intentErrors" in checked) return json({ ok: false, intentErrors: checked.intentErrors });
       const { result } = checked;
@@ -593,7 +644,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         subscores: result.subscores,
         violations: result.violations.map(violationJson),
       });
-    },
+    }),
   );
 
   server.registerTool(
@@ -605,10 +656,10 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         "Correct furniture placement and return the corrected `.arch` source with a change log. It pushes furniture out of walls, doorways and door swings, separates overlapping pieces, moves fixtures that sit in the wrong room, and snaps floating pieces to walls. A piece it may not rewrite is listed in `unresolved` with the reason. It never adds doors or windows (that is a design choice); use `suggest` for those.",
       inputSchema: { source: z.string().describe("ArchLang source to correct.") },
     },
-    async ({ source }) => {
+    hashingSource(async ({ source }) => {
       const r = repair(source);
       return json({ ok: true, changed: r.changed, changes: r.changes, unresolved: r.unresolved, source: r.source });
-    },
+    }),
   );
 
   server.registerTool(
@@ -626,7 +677,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
           .describe("Also apply `maybe-incorrect` fixes (default: machine-applicable only)."),
       },
     },
-    async ({ source, unsafe }) => {
+    hashingSource(async ({ source, unsafe }) => {
       const maxApplicability = unsafe ? ("maybe-incorrect" as const) : ("machine-applicable" as const);
       const applied: Array<{ code?: string; title: string; applicability: string }> = [];
       const skipped: Array<{ code?: string; reason: string }> = [];
@@ -656,7 +707,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       }
       const ok = errorCount(compile(current, { noCache: true }).diagnostics) === 0;
       return json({ ok, passes, applied, skipped, source: current });
-    },
+    }),
   );
 
   server.registerTool(
@@ -678,11 +729,11 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
           .describe("Allow `paper` and `scale` to be replaced when the drawing does not fit the authored sheet."),
       },
     },
-    async ({ source, only, reissue }) => {
+    hashingSource(async ({ source, only, reissue }) => {
       const r = finish(source, { ...(only ? { only } : {}), ...(reissue ? { reissue: true } : {}) });
       const ok = errorCount(compile(source, { noCache: true }).diagnostics) === 0;
       return json({ ok, changed: r.changed, changes: r.changes, unresolved: r.unresolved, source: r.source });
-    },
+    }),
   );
 
   server.registerTool(
@@ -694,7 +745,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         "Suggest the doors and windows a plan's room graph needs, as data; nothing is applied. For a room with no path back, a building with no entrance, a bath reachable only through a bedroom, or a windowless bedroom, it returns ready-to-paste `door`/`window` statements with a rationale, for you to choose among and insert. Each names its wall by an authored id or a unique wall category, else by absolute `at (x, y)` coordinates. Door candidates avoid furniture in the door's approach; window candidates do not consider furniture.",
       inputSchema: { source: z.string().describe("ArchLang source.") },
     },
-    async ({ source }) => json({ ok: true, suggestions: suggestTopology(source) }),
+    hashingSource(async ({ source }) => json({ ok: true, suggestions: suggestTopology(source) })),
   );
 
   server.registerTool(
@@ -709,7 +760,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         at: z.number().int().nonnegative().describe("Source byte offset to complete at."),
       },
     },
-    async ({ source, at }) => json({ ok: true, items: completion(source, at) }),
+    hashingSource(async ({ source, at }) => json({ ok: true, items: completion(source, at) })),
   );
 
   server.registerTool(
@@ -721,10 +772,10 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         "Make two URLs that show a plan in the browser with nothing to install, for handing to a person. `playground` opens it in the hosted editor, rendered; `embed` draws it alone, for an iframe. The plan travels inside the URL, after the `#`, so it is never sent to a server and the URL carries nothing else. A plan that does not compile still gets links, and the page shows its diagnostics; `ok` says whether it compiles, and `errors` counts the errors when it does not. `bytes` is the size of the compressed plan in the URL.",
       inputSchema: { source: z.string().describe("ArchLang source.") },
     },
-    async ({ source }) => {
+    hashingSource(async ({ source }) => {
       const link = await opts.loadLinks();
       if ("error" in link) return json(link);
       return json(link.linkResult(source, compile(source, { noCache: true }).diagnostics));
-    },
+    }),
   );
 }

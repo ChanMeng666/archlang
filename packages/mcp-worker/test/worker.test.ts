@@ -599,9 +599,13 @@ describe("configuration laws", () => {
   const jsonc = (rel: string) => JSON.parse(read(rel).replace(/^\s*\/\/.*$/gm, ""));
   const w = jsonc("packages/mcp-worker/wrangler.jsonc");
 
-  it("the two site Workers keep NO main script (ADR 0019); this Worker is the only scripted one", () => {
+  it("the docs Worker keeps NO script (ADR 0019); the playground's runs only for its run_worker_first paths (ADR 0034)", () => {
     expect(jsonc("docs-site/wrangler.jsonc").main).toBeUndefined();
-    expect(jsonc("playground/wrangler.jsonc").main).toBeUndefined();
+    // A site script is allowed only behind an explicit route list, never `true` (which would run
+    // it, metered, for every request); playground/test/share-worker.test.ts pins the rest.
+    const playground = jsonc("playground/wrangler.jsonc");
+    expect(playground.main).toBe("worker/index.ts");
+    expect(playground.assets.run_worker_first).toEqual(["/s/*", "/api/*"]);
     expect(w.main).toBe("dist/worker.js");
   });
 

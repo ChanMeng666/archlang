@@ -1,6 +1,6 @@
 /**
  * The header/panel action buttons: Format, Finish, Repair furniture, Embed, Copy
- * link, Copy for LLM, Open in Claude / ChatGPT, saved snapshots, the multi-format
+ * link (short or full), Copy for LLM, Open in Claude / ChatGPT, saved snapshots, the multi-format
  * Download, and the draggable pane divider.
  * Each is wired from an explicit context so main.ts stays composition-only.
  */
@@ -20,7 +20,7 @@ import { escapeHtml } from "./escape.js";
 import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";
 import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl, isChatHost } from "./llm-prompt.js";
-import { encodeSrc, updateHash } from "./share.js";
+import { createShortLink, encodeSrc, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { levelFileName } from "./levels.js";
@@ -29,6 +29,11 @@ import { paperSizeMm, saveBlob, svgToCanvas } from "./raster-export.js";
 /** The `finish` notes that ask something of the author: all but a room it has no pieces for. */
 const declined = (result: FinishResult): FinishResult["unresolved"] =>
   result.unresolved.filter((u) => u.scope === undefined);
+
+/** Close a header disclosure (a no-op when it is absent). */
+function closeMenu(menu: HTMLDetailsElement | null): void {
+  if (menu) menu.open = false;
+}
 
 interface ActionsCtx {
   getSource: () => string;
@@ -60,6 +65,11 @@ interface ActionsCtx {
     repairBtn: HTMLElement | null;
     repairPanel: HTMLElement | null;
     embedBtn: HTMLElement | null;
+    /** The "Copy link" disclosure holding the privacy note and the two link buttons. */
+    shareMenu: HTMLDetailsElement | null;
+    /** Copy a short `/s/<id>` link: stores the plan on this site's server (ADR 0034). */
+    copyShortLinkBtn: HTMLElement | null;
+    /** Copy the full `#z=` link: the plan stays in the fragment, on no server. */
     copyLinkBtn: HTMLElement;
     copyLlmBtn: HTMLElement | null;
     savedBtn: HTMLButtonElement;
@@ -140,10 +150,26 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   // Copy permalink (B5) — the hash carries the source; copy the full URL.
   els.copyLinkBtn.addEventListener("click", async () => {
+    closeMenu(els.shareMenu);
     await updateHash(getSource()); // ensure the URL reflects the latest edit
     try {
       await navigator.clipboard.writeText(location.href);
       flash("Link copied");
+    } catch {
+      flash("Copy failed");
+    }
+  });
+
+  // Copy short link (ADR 0034) — the one action that sends the plan to a server, and only
+  // because it was chosen next to the note that says so. Any failure (offline, refused, a host
+  // with no server) copies the full link instead, which always works.
+  els.copyShortLinkBtn?.addEventListener("click", async () => {
+    closeMenu(els.shareMenu);
+    await updateHash(getSource());
+    const short = await createShortLink(location.hash);
+    try {
+      await navigator.clipboard.writeText(short ?? location.href);
+      flash(short ? "Short link copied" : "Short link unavailable: full link copied");
     } catch {
       flash("Copy failed");
     }
@@ -263,22 +289,22 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     });
   }
 
-  // The "Ask AI" disclosure closes like the Saved popover: Escape (listened for on the
-  // document, since Safari does not focus a clicked <summary>), a click outside it, or
-  // choosing a link.
-  const chatMenu = els.chatMenu;
+  // The "Ask AI" and "Copy link" disclosures close like the Saved popover: Escape (listened
+  // for on the document, since Safari does not focus a clicked <summary>), a click outside
+  // it, or choosing an item.
   function closeChatMenu() {
-    if (chatMenu) chatMenu.open = false;
+    closeMenu(els.chatMenu);
   }
-  if (chatMenu) {
+  for (const menu of [els.chatMenu, els.shareMenu]) {
+    if (!menu) continue;
     document.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape" || !chatMenu.open) return;
-      const inside = chatMenu.contains(document.activeElement);
-      closeChatMenu();
-      if (inside) chatMenu.querySelector("summary")?.focus();
+      if (e.key !== "Escape" || !menu.open) return;
+      const inside = menu.contains(document.activeElement);
+      closeMenu(menu);
+      if (inside) menu.querySelector("summary")?.focus();
     });
     document.addEventListener("click", (e) => {
-      if (chatMenu.open && !chatMenu.contains(e.target as Node)) closeChatMenu();
+      if (menu.open && !menu.contains(e.target as Node)) closeMenu(menu);
     });
   }
 

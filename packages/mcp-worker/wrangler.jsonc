@@ -1,6 +1,6 @@
-// The hosted ArchLang MCP server — the ONE Worker in this repository with a `main` script
-// (docs/adr/0026-hosted-mcp-worker.md). The two site Workers (docs-site/, playground/) stay
-// static assets with no script; nothing here touches them.
+// The hosted ArchLang MCP server — the one Worker in this repository that is all script
+// (docs/adr/0026-hosted-mcp-worker.md). The docs Worker has no script; the playground's runs only
+// for its short-link paths (ADR 0034). Nothing here touches either.
 //
 // No `routes` and no `account_id` on purpose: the owner attaches `mcp.archlang.uk` by hand once
 // the workers.dev measurement is in, and CI supplies the account through CLOUDFLARE_ACCOUNT_ID.
@@ -12,8 +12,9 @@
   "no_bundle": true,
   // dist/viewer.html is a build by-product kept for inspection; the Worker already inlines it.
   "find_additional_modules": false,
-  // The newest date the pinned wrangler (4.108.0, workerd 1.20260706) runs locally, so
-  // `wrangler dev` and the deployed Worker execute under the same flags.
+  // The newest date the wrangler pinned when this Worker was built (workerd 1.20260706) ran
+  // locally, so `wrangler dev` and the deployed Worker execute under the same flags; a later pin
+  // runs it too. Moving it changes runtime behaviour: a change of its own, never a side effect.
   "compatibility_date": "2026-07-06",
   // `link` mints share URLs with the same zlib encoder `archlang link` uses (node:zlib).
   "compatibility_flags": ["nodejs_compat"],

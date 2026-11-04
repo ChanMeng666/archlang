@@ -138,6 +138,17 @@ export interface Manifest {
 const JSON_FLAG: ManifestFlag = { flag: "--json", description: "structured result on stdout, messages on stderr" };
 const QUIET_FLAG: ManifestFlag = { flag: "--quiet", alias: "-q", description: "suppress human messages on stderr" };
 /**
+ * The write-back revision guard every command that rewrites a `.arch` file takes
+ * (`src/cli/source-hash.ts`). Its `--json` result reports `source_hash` (and `written_hash` after
+ * a write) with or without the flag, so the value to pass comes from the previous call.
+ */
+const EXPECTED_HASH_FLAG: ManifestFlag = {
+  flag: "--expected-hash",
+  arg: "<sha256>",
+  description:
+    "refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock",
+};
+/**
  * `-o/--out` is deliberately overloaded across commands (kept for backward compat):
  * a FILE for compile/watch/preview/md/repair/fix/new, a DIRECTORY for batch. Each
  * command therefore declares its own `--out` with its real semantics rather than
@@ -814,7 +825,7 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "fmt",
     summary: "canonical formatting",
-    flags: [{ flag: "--write", description: "format the file in place" }, JSON_FLAG, QUIET_FLAG],
+    flags: [{ flag: "--write", description: "format the file in place" }, EXPECTED_HASH_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output: "formatted source (or in place with --write)",
     examples: [
@@ -830,6 +841,7 @@ const COMMANDS: ManifestCommand[] = [
         ...OUT_FLAG,
         description: "output file for the corrected source, or '-' for stdout (default: stdout)",
       },
+      EXPECTED_HASH_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -858,6 +870,7 @@ const COMMANDS: ManifestCommand[] = [
         description: "before rewriting a file in place, save the original bytes to <file>.bak",
       },
       { flag: "--force", description: "keep a pass even if it raises the error count" },
+      EXPECTED_HASH_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -879,6 +892,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "archlang fix plan.arch -o fixed.arch --unsafe --json",
         note: "also apply the maybe-incorrect fixes, leaving the input untouched",
+      },
+      {
+        cmd: "archlang fix plan.arch --expected-hash <source_hash> --json",
+        note: "rewrite in place only if plan.arch is still the bytes an earlier --json run reported as `source_hash`; else exit 4, E_STALE_SOURCE, nothing written",
       },
     ],
   },
@@ -907,6 +924,7 @@ const COMMANDS: ManifestCommand[] = [
         flag: "--backup",
         description: "before rewriting a file in place, save the original bytes to <file>.bak",
       },
+      EXPECTED_HASH_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -942,6 +960,7 @@ const COMMANDS: ManifestCommand[] = [
           "byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes " +
           "nothing, and every suggestion is already proven byte-for-byte before it is offered)",
       },
+      EXPECTED_HASH_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -1136,6 +1155,7 @@ export function buildManifest(version: string): Manifest {
       "2": "user-source error (deterministic — fix it, don't blindly retry)",
       "1": "internal / IO error",
       "3": "bad usage",
+      "4": "stale source: the file is not the revision --expected-hash names (re-read it, redo the edit)",
     },
     globalFlags: [JSON_FLAG, QUIET_FLAG],
     commands: COMMANDS,
