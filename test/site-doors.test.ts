@@ -266,3 +266,16 @@ describe("the sites and the root README carry the doors.json values", () => {
     expect([...sequence].sort((a, b) => a - b)).toEqual(sequence);
   });
 });
+
+describe("the README's fixed lines", () => {
+  const readme = read("README.md");
+  it("opens with the ArchLang boilerplate the messaging library approved", () => {
+    expect(readme).toContain(
+      "ArchLang is an open-source (MIT) DSL for floor plans that compiles `.arch` source to SVG/DXF/PDF with linting and geometric validation — diffable, reproducible, and LLM-writable.",
+    );
+  });
+  it("keeps the one ArchCanvas line verbatim", () => {
+    expect(readme).toContain("ArchCanvas is a hosted app built on ArchLang.");
+    expect(readme.match(/ArchCanvas/g)?.length).toBe(1);
+  });
+});

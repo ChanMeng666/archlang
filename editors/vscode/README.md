@@ -2,7 +2,7 @@
 
 Write floor plans as code. ArchLang is an open-source language that compiles `.arch` text into SVG, DXF or PDF floor plans, and this extension gives `.arch` files full editor support.
 
-<a href="https://archlang.uk/showcase"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/showcase/villa-rotonda.png" width="560" alt="Palladio's Villa La Rotonda as a compiled ArchLang floor plan: four identical quarters around a round central hall, with dimensions, grid lines and a room schedule." /></a>
+<a href="https://archlang.uk/showcase"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang-showcase/main/plans/villa-rotonda/cover.png" width="640" alt="Palladio's Villa La Rotonda compiled from ArchLang: one quarter of the plan written once and placed four times by rotation, 25 rooms, 819.03 m²." /></a>
 
 <!-- doors:start -->
 ## Try it
