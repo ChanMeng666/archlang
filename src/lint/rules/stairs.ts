@@ -913,12 +913,15 @@ export const stairHeadVoid: LintRule = {
         const zone = beyond(l.rect, l.edge, need, l.width);
         const hole = ctx.voids.find((vd) => rectsOverlap(rectOf(vd), zone));
         if (!hole) return;
-        const corners: Point[] = [
-          { x: hole.at.x, y: hole.at.y },
-          { x: hole.at.x + hole.size.w, y: hole.at.y },
-          { x: hole.at.x, y: hole.at.y + hole.size.h },
-          { x: hole.at.x + hole.size.w, y: hole.at.y + hole.size.h },
-        ];
+        // Every piece of that void the zone reaches (a `polygon` void is several rectangles with
+        // one id; a rectangle void is just `hole`), and the nearest of their corners.
+        const pieces = ctx.voids.filter((vd) => vd === hole || (vd.id === hole.id && rectsOverlap(rectOf(vd), zone)));
+        const corners: Point[] = pieces.flatMap((p) => [
+          { x: p.at.x, y: p.at.y },
+          { x: p.at.x + p.size.w, y: p.at.y },
+          { x: p.at.x, y: p.at.y + p.size.h },
+          { x: p.at.x + p.size.w, y: p.at.y + p.size.h },
+        ]);
         const gap = Math.max(0, Math.min(...corners.map((p) => pastEdge(l.rect, l.edge, p))));
         const m = deficitMm(need, gap);
         out.push({

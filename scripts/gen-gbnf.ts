@@ -71,6 +71,7 @@ import {
   HEMISPHERES,
   OUTDOOR_KINDS,
   RAIL_EDGES,
+  RAIL_SIDES,
 } from "../src/ast.js";
 import { FLOOR_MATERIALS } from "../src/hatches.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../src/sheet.js";
@@ -643,7 +644,18 @@ function rules(): [string, string][] {
     ["roof-stmt", `"roof" rws ( roof-overhang | roof-polygon )`],
     ["roof-overhang", `"overhang" ws expr ( rws "wall" rws ref )?`],
     ["roof-polygon", `"polygon" ws point ws point ws point ( ws point )*`],
-    ["void-stmt", `"void" rws id-opt "at" ws point ws "size" ws dims`],
+    /*
+     * `void` (plan decision CR-D8): the rectangle or a ring of four points or more, each with
+     * its own `rail` words — side words on the rectangle, `all|none` or 0-based edge numbers
+     * (`digits`, a whole number) on the ring — so neither spelling derives the other's words.
+     */
+    ["void-stmt", `"void" rws id-opt ( void-rect | void-poly )`],
+    ["void-rect", `"at" ws point ws "size" ws dims ( ws "rail" rws rail-edge ( ( ws "," ws | rws ) rail-edge )* )?`],
+    [
+      "void-poly",
+      `"polygon" ws point ws point ws point ws point ( ws point )* ( ws "rail" rws void-edge ( ( ws "," ws | rws ) void-edge )* )?`,
+    ],
+    ["void-edge", `${litAlt(RAIL_EDGES.filter((w) => !(RAIL_SIDES as readonly string[]).includes(w)))} | digits`],
     /*
      * `outdoor` mirrors `room`'s shape exactly — the KIND word after any `id=`, then one
      * of two mutually-exclusive spellings, then the trailing clauses in the parser's own

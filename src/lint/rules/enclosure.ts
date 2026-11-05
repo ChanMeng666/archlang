@@ -534,7 +534,8 @@ function nonRoomCover(ctx: LintContext): FaceRoom[] {
         size: e.size,
         ...(e.poly ? { poly: e.poly } : {}),
       });
-    else if (e.kind === "void") out.push({ id: e.id, at: e.at, size: e.size });
+    // A `polygon` void carries its ring, as a polygon `outdoor` does: the box is only its index.
+    else if (e.kind === "void") out.push({ id: e.id, at: e.at, size: e.size, ...(e.poly ? { poly: e.poly } : {}) });
   }
   for (const v of ctx.verticals) {
     for (const r of piecesOf(v)) out.push({ id: v.id, at: { x: r.x, y: r.y }, size: { w: r.w, h: r.h } });

@@ -296,8 +296,17 @@ export function statementText(s: LeafStatement): Doc {
       return s.polygon
         ? `roof polygon ${s.polygon.map(ptStr).join(" ")}`
         : `roof overhang ${exprStr(s.overhang!)}${s.wall ? ` wall ${s.wall}` : ""}`;
-    case "void":
-      return `void ${id}at ${ptStr(s.at)} size ${sizeStr(s.size)}`;
+    case "void": {
+      // Both spellings and the `rail` clause come back as written (edge numbers through
+      // `fmtSource`, so `fmt` re-parses to the same edges).
+      const shape = s.polygon
+        ? `polygon ${s.polygon.map(ptStr).join(" ")}`
+        : `at ${ptStr(s.at!)} size ${sizeStr(s.size!)}`;
+      const rail = s.rail?.length
+        ? ` rail ${s.rail.map((w) => (typeof w === "number" ? numStr(w) : w)).join(" ")}`
+        : "";
+      return `void ${id}${shape}${rail}`;
+    }
     case "outdoor": {
       // Every clause the author wrote must come back, in the grammar's own order. The
       // `rail` clause in particular: dropping it would turn an authored `rail none` into

@@ -19,6 +19,7 @@ import { type BBox, rectOverlapAmounts, rectsOverlap } from "../../geometry/rect
 import type { ResolvedElement, RVoid } from "../../ir.js";
 import { isVertical, piecesOf, type RVertical } from "../../vertical.js";
 import type { LintContext, LintRule } from "../context.js";
+import { voidPieces } from "../../elements/void.js";
 import { mm } from "../measure.js";
 
 /** One rectangle of floor no piece stands on, and the element it belongs to. */
@@ -30,7 +31,8 @@ export interface FloorGap {
 /** A storey's voids, lift shafts and escalators, in source order, each by the pieces it covers. */
 export function floorGapsOf(elements: readonly ResolvedElement[]): FloorGap[] {
   return elements.flatMap((e): FloorGap[] => {
-    if (e.kind === "void") return [{ rect: { x: e.at.x, y: e.at.y, w: e.size.w, h: e.size.h }, of: e }];
+    if (e.kind === "void")
+      return voidPieces(e).map((p) => ({ rect: { x: p.at.x, y: p.at.y, w: p.size.w, h: p.size.h }, of: e }));
     return isVertical(e) && e.kind !== "stair" ? piecesOf(e).map((rect) => ({ rect, of: e })) : [];
   });
 }

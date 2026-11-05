@@ -12,6 +12,21 @@ agents: deterministic, self-correcting (errors carry a machine code, a prose `fi
 **machine-applicable** fix `archlang fix` can apply), and verifiable without ever looking at an image
 (`archlang describe`).
 
+## What ArchLang can do
+
+- Compile `.arch` to SVG, DXF, TXT, PDF, PNG or Plan JSON; it never reads images, so a plan from a photo is written by you.
+- `validate --strict` and `lint` check soundness (doors on walls, reachability, clearances) and give a fix per finding.
+- `describe` reports rooms, areas and adjacency; `takeoff` reports quantities as csv or md.
+- `fix`, `repair` and `finish` rewrite the source; each takes `--dry-run` to preview first.
+- `--expected-hash <source_hash>` on those refuses a stale file (exit 4).
+- `impact --against old.arch --lock <ids>` exits 2 when a locked element moved: edit in place, never redraw.
+- `impact --set NAME=value` shows what one top-level `let` would move.
+- `keep` lines in the plan hold a relation through every edit and report a residual.
+- `level` blocks give storeys; `axes` gives one grid; `keep stacked` aligns shafts.
+- `validate --intent` checks a plan against a brief; `score` measures it.
+- Plan JSON in (`compile --from-json`) and out (`-f json`).
+- `link` prints a playground URL; `preview` renders a PNG.
+
 ## Setup (zero-install)
 
 The CLI runs straight from npm — no clone, no build:
