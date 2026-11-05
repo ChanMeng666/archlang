@@ -29,6 +29,10 @@ npx archlang3d view plan.arch --replay -o plan.html
 `plan.html` opens offline. three.js 0.186.1 is inside the file with its licence notice, and nothing
 is fetched from a network. `--theme dark` and `--storey <n>` change what it shows.
 
+The view turns freely: drag to rotate, scroll or pinch to zoom, right-drag or two fingers to pan,
+and the buttons give Iso, Top, the four elevations and Reset (and, with several storeys, hide the
+storeys above one). Moving the view pauses the playback.
+
 To render a video as well, add a browser and `ffmpeg` on your `PATH`:
 
 ```sh

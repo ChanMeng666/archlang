@@ -16,3 +16,7 @@ paths:
   (`test/site-lockstep.test.ts`).
 - Crawlers see static bytes only (`docs/seo.md`); `_headers` rules bind to the request path.
   Restart `vitepress preview` after every build before measuring anything.
+- The playground has a Worker (`playground/worker/`, ADR 0034) for `/s/*` and `/api/*` only; every
+  other path stays a byte-identical static asset (`scripts/playground-static-sweep.mjs`, `scripts/smoke.mjs`).
+  A short link stores a plan only when the user asks for one. The docs Worker has no `main` script
+  (`docs/agents/iron-laws.md`, hosting).

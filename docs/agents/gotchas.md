@@ -158,6 +158,13 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   `examples/hillside-villa.arch`) and the docs e2e: run `npm run e2e:playground` before pushing an
   examples PR (#305).
 
+- CodeQL `js/polynomial-redos` fires on regexes in `test/` too, and the `analyze` job gates: slice
+  a block with `indexOf` rather than a lazy `[\s\S]*?` match over compiler output.
+- A PR that touches `docs/agents/commands.md` is high tier (`scripts/risk-tier.mjs`), so it needs the
+  owner's words: keep such a line out of an otherwise medium PR and land it separately.
+- Right after an OIDC publish, `npm view` and jsDelivr can still show the old version for a few
+  minutes (the log says "being processed"): wait and re-query the registry; never re-run the release.
+
 ## Docs & prose
 
 - **A quoted dimension must name its convention or carry a tilde.** A plan with wall thickness has

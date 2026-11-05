@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.54
+# What's new in 1.44 to 1.55
 
-The features that arrived in 1.44.0 to 1.54.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.55.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -32,7 +32,9 @@ Every command and code name below is the one `archlang <command> --help` and the
 | A floor finish on a room | 1.53.0 | [Room floors](#room-floors) |
 | Furniture filled in its material | 1.54.0 | [The rendered theme](#the-rendered-theme) |
 | Twenty more furniture families | 1.54.0 | [More furniture](#more-furniture) |
-| An L-shaped void with a railing | 1.55 | [Railed voids](#railed-voids) |
+| An L-shaped void with a railing | 1.55.0 | [Railed voids](#railed-voids) |
+| An OpenPlan3D plan read as `.arch` | 1.55.0 | [Import a plan](import.md#check-an-openplan3d-plan) |
+| A rewrite refused when the file changed underneath | 1.55.0 | [Change one room](edit-one-room.md#make-the-assistant-do-it-this-way) |
 
 ## Quantities and takeoff
 
