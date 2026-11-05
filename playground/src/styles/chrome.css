@@ -647,8 +647,12 @@ html:not([data-mode="edit"]) :is(#tab-describe, #tab-lint, #tab-intent, #tab-tak
   .intro {
     padding: 8px 16px;
   }
+  /* Both wrap at phone width: the wide screen's one-line rule (`flex: none` on the H1, which
+     holds it at its one-line width, 459 px) would push the page 85 px sideways at 390 px. */
+  .intro h1,
   .intro .lede {
-    flex-basis: 100%;
+    flex: 1 1 100%;
+    min-width: 0;
     white-space: normal;
   }
 
