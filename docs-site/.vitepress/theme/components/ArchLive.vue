@@ -87,6 +87,10 @@ function syncScroll(): void {
 // `playground/src/share.ts`, so the scheme is checked at runtime too. The byte loops
 // are `for…of` rather than indexed precisely because that satisfies
 // `noUncheckedIndexedAccess` without TS-only syntax.
+//
+// `&edit` after the plan opens the playground in edit mode, the source beside the drawing:
+// a reader who presses "Open in playground" under a code pane came to change it. The
+// playground reads the plan out of the hash either way (`hasEditFlag`, playground/src/share.ts).
 async function playgroundUrl(): Promise<string> {
   const base = "https://playground.archlang.uk/";
   const utf8 = new TextEncoder().encode(source.value);
@@ -100,14 +104,14 @@ async function playgroundUrl(): Promise<string> {
       let bin = "";
       for (const b of bytes) bin += String.fromCharCode(b);
       const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-      return `${base}#z=${b64}`;
+      return `${base}#z=${b64}&edit`;
     }
   } catch {
     /* fall through */
   }
   let bin = "";
   for (const b of utf8) bin += String.fromCharCode(b);
-  return `${base}#src=${btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}`;
+  return `${base}#src=${btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}&edit`;
 }
 
 async function openInPlayground() {

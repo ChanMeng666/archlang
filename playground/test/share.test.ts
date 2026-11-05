@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { b64urlToBytes, bytesToB64url, encodeSrc, srcFromHash } from "../src/share.js";
+import {
+  b64urlToBytes,
+  bytesToB64url,
+  encodeSrc,
+  hasEditFlag,
+  setEditFlag,
+  shareableHref,
+  srcFromHash,
+} from "../src/share.js";
 import { supportsDeflateRaw } from "./helpers.js";
 
 const SRC = `plan "X" {\n  units mm\n  room at (0,0) size 4000x3000 label "Room ünïcode ✓"\n}`;
@@ -45,5 +53,42 @@ describe("share codec", () => {
 
   it("returns null on undecodable payloads rather than throwing", async () => {
     expect(await srcFromHash("#src=!!!not-base64!!!")).toBeNull();
+  });
+});
+
+describe("the edit-mode flag", () => {
+  it("the token still parses with the flag after it, before it, or among other params", async () => {
+    const hash = await encodeSrc(SRC);
+    const token = hash.slice(1);
+    for (const h of [`${hash}&edit`, `#edit&${token}`, `#theme=dark&${token}&edit`]) {
+      expect(await srcFromHash(h), h).toBe(SRC);
+    }
+  });
+
+  it("is read as a whole param, never as part of a token", () => {
+    expect(hasEditFlag("#edit")).toBe(true);
+    expect(hasEditFlag("#z=abc&edit")).toBe(true);
+    expect(hasEditFlag("#edit&z=abc")).toBe(true);
+    expect(hasEditFlag("")).toBe(false);
+    expect(hasEditFlag("#z=abc")).toBe(false);
+    // base64url can spell "edit" inside a token; only a `&`-separated param counts.
+    expect(hasEditFlag("#z=xxedit")).toBe(false);
+    expect(hasEditFlag("#z=abc&editable=1")).toBe(false);
+  });
+
+  it("sets and clears the flag, keeping every other param in order", () => {
+    expect(setEditFlag("#z=abc", true)).toBe("#z=abc&edit");
+    expect(setEditFlag("#z=abc&edit", true)).toBe("#z=abc&edit");
+    expect(setEditFlag("#edit&z=abc", true)).toBe("#z=abc&edit");
+    expect(setEditFlag("#z=abc&edit", false)).toBe("#z=abc");
+    expect(setEditFlag("", true)).toBe("#edit");
+    expect(setEditFlag("#edit", false)).toBe("");
+    expect(setEditFlag("", false)).toBe("");
+  });
+
+  it("a shared link drops the flag and nothing else", () => {
+    expect(shareableHref("https://p.example/#z=abc&edit")).toBe("https://p.example/#z=abc");
+    expect(shareableHref("https://p.example/#z=abc")).toBe("https://p.example/#z=abc");
+    expect(shareableHref("https://p.example/")).toBe("https://p.example/");
   });
 });

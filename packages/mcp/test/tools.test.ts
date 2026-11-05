@@ -687,8 +687,8 @@ describe("validate tool", () => {
 // link
 // ---------------------------------------------------------------------------
 
-/** The `#z=` payload of a minted URL. */
-const payloadOf = (url: unknown): string => new URL(url as string).hash.slice("#z=".length);
+/** The `#z=` payload of a minted URL (the playground link carries `&edit` after it). */
+const payloadOf = (url: unknown): string => /^#z=([A-Za-z0-9_-]+)/.exec(new URL(url as string).hash)?.[1] ?? "";
 
 describe("link tool", () => {
   it("returns the playground and embed URLs, both carrying the plan in the fragment", async () => {
@@ -704,11 +704,13 @@ describe("link tool", () => {
     expect(playground.pathname).toBe("/");
     expect(embed.origin).toBe(PLAYGROUND_ORIGIN);
     expect(embed.pathname).toBe("/embed.html");
-    // Nothing but the plan: no query string, one `#z=` fragment, the same payload in both.
+    // Nothing but the plan: no query string, one `#z=` fragment, the same payload in both. The
+    // playground link adds the `&edit` flag that opens the editor; the embed only draws.
     expect(playground.search).toBe("");
     expect(embed.search).toBe("");
-    expect(playground.hash).toMatch(/^#z=[A-Za-z0-9_-]+$/);
-    expect(embed.hash).toBe(playground.hash);
+    expect(playground.hash).toMatch(/^#z=[A-Za-z0-9_-]+&edit$/);
+    expect(embed.hash).toMatch(/^#z=[A-Za-z0-9_-]+$/);
+    expect(playground.hash).toBe(`${embed.hash}&edit`);
     expect(decodePlanHash(payloadOf(out.playground))).toBe(CLEAN);
     expect(out.bytes).toBe(Buffer.from(payloadOf(out.playground), "base64url").length);
   });

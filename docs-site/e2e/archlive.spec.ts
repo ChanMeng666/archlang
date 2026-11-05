@@ -27,7 +27,7 @@ import { expect, test } from "@playwright/test";
 // The PLAYGROUND's canonical decoder, run here in Node: whatever the docs button mints must
 // come back through it. Requires Node ≥21.2 for `DecompressionStream("deflate-raw")`; the
 // e2e-docs CI job pins Node 22.
-import { srcFromHash } from "../../playground/src/share.js";
+import { hasEditFlag, srcFromHash } from "../../playground/src/share.js";
 import {
   archLiveSvg,
   labelledPlan,
@@ -133,6 +133,8 @@ test.describe("Open in Playground mints a decodable link", () => {
     // base64 for base64url, a stray `=` pad) fails here — and would otherwise show a reader
     // an empty playground with no error at all.
     expect(await srcFromHash(url.slice(url.indexOf("#")))).toBe(source);
+    // …and it opens the playground in edit mode, the source beside the drawing.
+    expect(hasEditFlag(url.slice(url.indexOf("#")))).toBe(true);
   });
 
   test("the link survives a real example, not just a toy plan", async ({ page }) => {

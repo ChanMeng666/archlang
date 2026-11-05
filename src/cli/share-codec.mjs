@@ -17,6 +17,13 @@ import { deflateRawSync, inflateRawSync } from "node:zlib";
 /** The production playground origin every minted link points at (no trailing slash). */
 export const PLAYGROUND_ORIGIN = "https://playground.archlang.uk";
 
+/**
+ * The hash param that opens the playground in edit mode (the source beside the drawing), as
+ * `#z=<payload>&edit`. The playground opens in view mode without it; its `#z=` reader parses the
+ * plan out of the hash either way (`hasEditFlag` in `playground/src/share.ts`).
+ */
+export const PLAYGROUND_EDIT_FLAG = "edit";
+
 /** Encode plan source into the `#z=` share payload (base64url of the raw-deflated UTF-8). */
 export function encodePlanHash(source) {
   return deflateRawSync(Buffer.from(source, "utf8"), { level: 9 })

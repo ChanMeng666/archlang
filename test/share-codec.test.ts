@@ -34,7 +34,14 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inflateRawSync } from "node:zlib";
 import { afterAll, describe, expect, it } from "vitest";
-import { b64urlToBytes, bytesToB64url, encodeSrc, srcFromHash } from "../playground/src/share.js";
+import {
+  b64urlToBytes,
+  bytesToB64url,
+  encodeSrc,
+  hasEditFlag,
+  setEditFlag,
+  srcFromHash,
+} from "../playground/src/share.js";
 
 const ARCHLIVE = "docs-site/.vitepress/theme/components/ArchLive.vue";
 const GEN_PERMALINK = "scripts/gen-permalink.mjs";
@@ -202,17 +209,22 @@ describe(`${GEN_PERMALINK} mints hashes in the canonical scheme`, () => {
 describe(`${ARCHLIVE}'s inline codec matches the canonical one`, () => {
   const encode = archLiveCodec();
 
-  it.each(FIXTURES)("$name links to the same hash share.ts would produce", async (f) => {
+  it.each(FIXTURES)("$name links to the same hash share.ts would produce, opening the editor", async (f) => {
+    // The plan token is share.ts's byte for byte; `&edit` after it opens the playground in edit
+    // mode (a code pane's "Open in playground" is a request to change the plan).
     expect(
       await encode(f.source),
       `The docs widget's inline \`playgroundUrl()\` no longer agrees with playground/src/share.ts. ` +
         `Its "Open in playground" button would mint a link the playground cannot read. Re-sync the ` +
         `copy in ${ARCHLIVE} (WS-D may replace both with one shared module).`,
-    ).toBe(`${PLAYGROUND}/${expectedHash(f)}`);
+    ).toBe(`${PLAYGROUND}/${setEditFlag(expectedHash(f), true)}`);
   });
 
   it("a long real example agrees with the playground's decoder", async () => {
     const source = readFileSync("examples/studio.arch", "utf8");
-    expect(await srcFromHash((await encode(source)).replace(`${PLAYGROUND}/`, ""))).toBe(source);
+    const hash = (await encode(source)).replace(`${PLAYGROUND}/`, "");
+    // The token still parses with the flag after it, and the flag reads as edit mode.
+    expect(await srcFromHash(hash)).toBe(source);
+    expect(hasEditFlag(hash)).toBe(true);
   });
 });
