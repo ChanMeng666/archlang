@@ -181,6 +181,10 @@ source (.arch)
 - `input-limit.ts` `inputTooLarge()` / `rateLimited()`: a HOST's refusals (`E_INPUT_TOO_LARGE`,
   `E_RATE_LIMITED`), which `compile()` never calls · `cli/share-codec.mjs` (Node) and `cli/share-codec.web.mjs`
   (`DecompressionStream`) the two `#z=` decoders, held together by `test/share-codec-web.test.ts`
+- `import/` foreign plans as `.arch` source (`archlang import --from openplan3d`, pure):
+  `openplan3d.ts` the entry, `-model`/`-rooms`/`-catalog` its stages, `limits.ts` the storey cap;
+  what is not carried over goes to `dropped` or a `W_IMPORT_DROPPED`, never silently
+- `cli/source-hash.ts` the write-back revision guard (`--expected-hash`, `E_STALE_SOURCE`, exit 4)
 - `packages/mcp/src/tools.ts` the MCP tool set, transport-agnostic; `server.ts` (stdio, npm) and
   `packages/mcp-worker` (the hosted Worker, ADR 0026) both register it
 - `finish.ts` the completion transform (`arch finish`): runs the stages in `FINISH_STAGE_ORDER`
@@ -206,6 +210,11 @@ source (.arch)
 
 Core at the root; workspaces `editors/vscode`, `playground`, `docs-site`, `packages/*` share one
 lockfile. `docs-site/sync-docs.mjs` copies `docs/*.md` + root artifacts into the site at build time.
+`playground/worker/` is the playground's Worker (ADR 0034, amends ADR 0019): it runs only for
+`/s/*` and `/api/*` (`run_worker_first`) and serves short links (`POST /api/share` stores a `#z=`
+payload in KV under a content address; `/s/<id>` redirects to `/#z=`) and their 1200×630 PNG card
+(`preview.ts`, resvg-wasm); `share-core.ts` is its pure, unit-tested half. Bindings, rate limits and
+the Analytics Engine dataset are in `playground/wrangler.jsonc`.
 `eval/` authorability harness, `dataset/` HF dataset generator, `scripts/` generators + smoke,
 `bench/` timings.
 
@@ -215,6 +224,7 @@ wall ownership, H1) → `src/mesh` (Mesh3D: closed shells,
 canonical order; every catalogued furniture family is a T0 generator in `t0*.ts`, each part in a
 material slot from `src/materials.ts`, the one palette the GLB and the viewer share) → `src/replay` (`timeline.ts` pure in `t`; `camera.ts` the fitted framing;
 `mount.ts` the renderer, shared by the single-file HTML and the playground's lazy "3D preview" tab
-through `./browser`; `video.ts` Playwright + ffmpeg) and `src/glb` + `src/check` (the GLB and its
+through `./browser`, with a free orbit camera (`camera.ts` `presetCamera`; `view-dom.ts` the preset,
+Reset and storey buttons); `video.ts` Playwright + ffmpeg) and `src/glb` + `src/check` (the GLB and its
 checks). `src/cli` is `archlang3d view|build|check|manifest|schema|doctor`. Laws:
 `.claude/rules/archlang-3d.md`.
