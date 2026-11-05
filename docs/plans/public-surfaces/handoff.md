@@ -2,19 +2,48 @@
 
 This is the resume point. Update it at the end of every session.
 
-## State (2026-11-06)
+## State (2026-11-06, end of session 1)
 
-- **Status:** the plan is written and revised once against the growth repo. No card has started.
-- **Sources** (the evidence behind README §1–§2):
-  - live reads of archlang.uk and playground.archlang.uk;
-  - source maps of `playground/`, `docs-site/` and `ChanMeng666/scripts/cards/archlang.mjs`;
-  - an inventory of 22 public surfaces;
-  - a study of `archlang-showcase`;
-  - two passes over `archcanvas-growth`: strategy and marketing (constraints, rooms, approved copy,
-    Show HN material), then research (outreach needs, content that performed, SERP, competitors);
-  - comparable tools.
-- **Clones** of Mermaid Live Editor, D2 and Excalidraw are in
-  `D:\.claude-scratch\2026-11-06\archlang-public-surfaces-research\`. They are disposable.
+Stages 0–3 are merged. What remains is V1 and the owner's items.
+
+| Card | Where | PR |
+|---|---|---|
+| plan, A3 | archlang, archcanvas-growth | #499, growth #49 |
+| S1 doors, O1 npm MCP page, O2 llms.txt | archlang | #500 |
+| S2 no-install doors on the current sites | archlang | #502 |
+| O3 owner database | ChanMeng666 | #48 |
+| P1 view mode, lazy editor, prerendered drawing | archlang | #501 |
+| P2 strip, P3 hover/card/facts line | archlang | #503, #504 |
+| P4 knobs + `knob-flat` | archlang | #505 |
+| P5 Make your own, P6 Checks + "Flat with one thing to fix" sample | archlang | #506, #507 |
+| D1–D4 docs nav, `/start`, home, captions, proof line | archlang | #508 |
+| SC1 showcase front door; Miraflores to the lab | archlang-showcase #3, archlang-lab #1 | |
+| C1 card retold (24 s, 208 KB) | ChanMeng666 | #49 |
+| R1 README, O4 VS Code listing image, O5 (no change needed) | archlang | #509 |
+| O6 chanmeng.org stage refresh (premise corrected) | 2d-portfolio | #12 |
+| O7 film homepage, awesome-aec-mcp entry | repo settings, awesome-aec-mcp #1 | |
+| O8 archcanvas footer link | archcanvas | #289 |
+| GitHub repo description and social preview | repo settings (done through `gh` and Chrome) | |
+
+**Measured (desktop):**
+- Playground startup JS without the compiler: about 625 KB → 13.9 KB gzip.
+- Docs hero both doors above the fold at 1280×800 and 390×844; hero run 7.1 s.
+
+**Open:**
+- **Owner:**
+  - the Glama description (needs a login);
+  - the docs-only patch release (tag after `/release-check`), so the npm pages (core README, MCP
+    README) and the VS Code listing match;
+  - the Marketplace upload of the new vsix (Open VSX by workflow after the tag).
+- **V1:** the first-contact review, three readers per surface, after the deploys settle.
+- **Follow-ups:**
+  - backlog PG.1–PG.3 (room keyboard access, bbox hit-testing, facts-line shift);
+  - a fixable example pair for Checks inside the corpus (examples stay warning-free, so the demo is
+    a playground sample);
+  - `/start` real captures;
+  - `2d-portfolio/public/cv-llms.txt` is a stale copy of the profile's (12,882 tests);
+  - the McCallister post moves off 2026-12-01 (`chanmeng-marketing/calendar.yaml`);
+  - the release marker in `archcanvas-growth/data/agent-reach.csv`.
 
 ## What the revision changed (and why)
 
@@ -49,7 +78,7 @@ All of these were made by the owner's delegation on 2026-11-06. They are PS-D10 
 
 See README §6:
 
-- the GitHub social preview and description;
+- ~~the GitHub social preview and description~~ (done 2026-11-06);
 - the Marketplace upload;
 - Glama;
 - the docs-only patch tag.
@@ -63,8 +92,5 @@ automatically. The owner agreed to every design and decision in this plan.
 
 ## Next
 
-1. S1, then S2 and O1–O3 (one day).
-2. P1, then P2–P6 in parallel worktrees, with P1 merged by 2026-11-24.
-3. D1–D4 and SC1.
-4. C1, R1 and O4–O8.
-5. V1.
+1. The owner's items above, guided.
+2. V1 after the release, so the npm and Marketplace pages are reviewed as published.

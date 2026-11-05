@@ -29,7 +29,7 @@ Remotion, Typst, Maket).
 | VS Code / Open VSX listing | A feature list with no drawing and no door for a newcomer. |
 | `llms.txt` | No ChatGPT door. |
 | archlang-showcase | A 223-line README, about half of it maintainer docs. No hero image, no door, no "make your own". Pinned to core 1.50 (current 1.55). Stale permalinks (dust2, and two on the site page). It leads with recreations of TV sets and game maps, and it places a plan of a real military raid third. |
-| Owner database / profile (`ChanMeng666`) | Says v1.43.0 and "62 published versions" (from 2026-10-14). The wiki shows "Links: None". `chanmeng.org/projects/archlang` returns 404. |
+| Owner database / profile (`ChanMeng666`) | Says v1.43.0 and "62 published versions" (from 2026-10-14). The wiki shows "Links: None". (`chanmeng.org/projects/archlang` is a 404 by design: the site has no project pages; see O6.) |
 | GitHub repo settings | The social preview is GitHub's auto card, not `brand/archlang-og.png`. |
 | Taglines | Six different ones across surfaces: "Floor plans as code", "Designs that compile.", "Typst/LaTeX for architecture", "A deterministic DSL…", a bare tool list, and "linting and geometric validation". |
 
