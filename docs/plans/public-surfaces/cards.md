@@ -31,7 +31,13 @@ are in `README.md`. Every card:
     `README.md`, `packages/mcp/README.md`, `editors/vscode/README.md` and `llms.txt`. The
     `llms.txt` block is one short list, because the file is kept trim. `check:drift` covers all
     four.
-- Test `test/doors.test.ts`: every door string on the docs home, `/start`, `/agents`, `/mcp`, the
+- As built (#500):
+  - The root README block is deferred to R1, which rewrites the README around it.
+  - The Cursor and VS Code one-click links wait for a hand check in those apps (`todo` in
+    `doors.json`).
+  - The test is `test/site-doors.test.ts`; `test/doors.test.ts` is the door-vocabulary test.
+  - `applyDoors` refuses a second block and leaves bytes outside the block untouched.
+- Test `test/site-doors.test.ts`: every door string on the docs home, `/start`, `/agents`, `/mcp`, the
   playground sheet and those four files equals a `doors.json` value. The commands obey
   `test/docs-flags.test.ts`.
 
@@ -273,7 +279,9 @@ are in `README.md`. Every card:
 ### O5 · Skill and registry descriptions
 
 - `skills/*/SKILL.md` descriptions feed skills.sh; check them against PS-D1.
-- The MCP `server.json` description becomes the canonical line.
+- The MCP `server.json` description keeps its tool list: the registry caps it at 100 characters and
+  `packages/mcp/test/server.test.ts` requires every tool to be named. Only the npm description
+  (O1) carries the canonical line.
 - Glama (owner) uses the same line.
 
 ### O6 · chanmeng.org product page (repo `ChanMeng666`)
