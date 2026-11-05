@@ -1,5 +1,10 @@
 # Floor plan MCP server
 
+## No install
+
+- In ChatGPT: [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970).
+- In claude.ai: add `https://mcp.archlang.uk/mcp` as a custom connector.
+
 ArchLang is an open-source language for floor plans, created by
 [Chan Meng](https://github.com/ChanMeng666): you write `.arch` text and compile it to SVG, DXF or
 PDF.

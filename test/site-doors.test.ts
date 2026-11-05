@@ -139,3 +139,38 @@ describe("generated doors blocks", () => {
     expect(JSON.parse(read("packages/mcp/package.json")).description).toBe(doors.canonicalLine);
   });
 });
+
+describe("the sites and the root README carry the doors.json values", () => {
+  it.each(["docs-site/agents.md", "docs-site/mcp.md", "README.md"])("%s spells both URLs out", (file) => {
+    const text = read(file);
+    expect(text).toContain(CHATGPT);
+    expect(text).toContain(HOSTED);
+  });
+
+  it("the docs hero reads both doors from doors.json, not from retyped strings", () => {
+    const vue = read("docs-site/.vitepress/theme/CompileSeam.vue");
+    expect(vue).toContain("site-shared/doors.json");
+    expect(vue).toContain("NO_INSTALL.chatgpt.url");
+    expect(vue).toContain("NO_INSTALL.claudeai.url");
+    expect(vue).not.toContain(CHATGPT);
+    expect(vue).not.toContain(HOSTED);
+    expect(vue).toContain("No install");
+  });
+
+  it("the docs pages label the ChatGPT door as doors.json does and say 'no install', never 'no signup'", () => {
+    for (const file of ["docs-site/agents.md", "docs-site/mcp.md"]) {
+      const text = read(file);
+      expect(text, file).toContain(`[${doors.doors.chatgpt.label}](${CHATGPT})`);
+      expect(text, file).toMatch(/^## No install$/m);
+    }
+  });
+
+  it("the README line sits directly under the pills", () => {
+    const text = read("README.md");
+    const pills = text.indexOf("pill-npm.svg");
+    const line = text.indexOf("No install: [use ArchLang in ChatGPT](" + CHATGPT + ")");
+    expect(pills).toBeGreaterThan(0);
+    expect(line).toBeGreaterThan(pills);
+    expect(text.slice(pills, line)).not.toContain("## ");
+  });
+});
