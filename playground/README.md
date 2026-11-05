@@ -7,7 +7,7 @@ consumes the built core (`../dist/index.js`). Deployed at
 
 ## Features
 
-- **View mode first:** a visit opens on the drawing alone (the default example's, written into
+- **View mode by default:** a visit opens on the drawing alone (the default example's, written into
   `index.html` at build time by `scripts/gen-static.mjs`, so it is there before any JavaScript).
   The header holds the plan picker, **Source** (edit mode: the editor beside the drawing),
   **Tools** (every action below, in one menu) and **Make your own**. `&edit` in the hash
