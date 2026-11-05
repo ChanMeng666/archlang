@@ -319,16 +319,18 @@ if (!root.classList.contains("pg-other")) previewCtl.adopt();
 // value is tried through `render`, which keeps the last good drawing when it does not compile.
 const knobsPanel = mountKnobsPanel({
   viewport: pzViewport,
+  getSource: () => currentSource(),
   tryRender: (source) => render(source),
   commit: keepKnob,
   flash,
 });
 
 /**
- * Keep a source a knob made, which has just compiled. With no editor it is the document now: the
- * draft and the hash follow at once, as for an edit. With the editor open the editor is the
- * document, and it takes the new text once the slider is let go, as one undo step; its change
- * listener then saves the draft and moves the hash.
+ * Keep a source a knob made, which has just compiled. With no editor it is the document at once,
+ * and once the slider is let go (`final`) the draft, the hash and the plan's name follow, as they
+ * do for an edit; the drawing has followed all along. With the editor open the editor is the
+ * document, and it takes the new text on release, as one undo step; its change listener then
+ * saves the draft, moves the hash and renames the plan.
  */
 function keepKnob(source: string, final: boolean) {
   if (edit) {
@@ -338,8 +340,10 @@ function keepKnob(source: string, final: boolean) {
   doc = source;
   if (finishPanel) finishPanel.hidden = true;
   actions?.sourceChanged();
+  if (!final) return;
   writeStr(KEYS.source, source);
   void updateHash(source, editing);
+  void syncPlanMark(source); // no longer the example word for word: "Edited plan"
 }
 
 // The storey switcher sits in the OUTPUT PANE'S TAB STRIP, not the preview toolbar, so
@@ -433,6 +437,7 @@ function render(source: string, refit = false): boolean {
     statusEl.classList.add("err");
     // In view mode the diagnostics are out of sight: say where they are.
     statusText.textContent = `${n} error${n > 1 ? "s" : ""}${editing ? "" : " — open Source to see them"}`;
+    knobsPanel.refresh(); // a document that does not compile has no knobs to move
     return false; // keep last good preview
   }
   statusEl.classList.remove("err");

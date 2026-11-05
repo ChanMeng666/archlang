@@ -372,6 +372,15 @@
   outline: 2px solid var(--plum-deep);
   outline-offset: -2px;
 }
+.knobs-note {
+  margin: 0;
+  padding: 0 12px 6px;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.knobs-note[hidden] {
+  display: none;
+}
 .knobs-list {
   display: grid;
   gap: 8px;
@@ -409,6 +418,10 @@
 .knob input[type="range"]:focus-visible {
   outline: 2px solid var(--plum-deep);
   outline-offset: 2px;
+}
+/* Only the disabled sliders fade; their labels and the note stay at full contrast. */
+.knob-range:disabled {
+  opacity: 0.5;
 }
 .knob-value {
   min-width: 6ch;

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import { srcFromHash } from "../src/share.js";
-import { AUTOSAVE_KEY, gotoEdit, shareHash, waitForPlan } from "./fixtures.js";
+import { AUTOSAVE_KEY, gotoEdit, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * Knobs (card P4): a slider per top-level numeric `let` of the plan on screen, in the drawing's
@@ -58,6 +58,30 @@ test.describe("knobs", () => {
     await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY)).toBe(want);
   });
 
+  test("a moved knob makes the plan an edited one, in the picker and the strip, and a reload agrees", async ({
+    page,
+  }) => {
+    const src = example("knob-flat");
+    await page.goto(`/${await shareHash(src)}`);
+    await waitForPlan(page);
+    // Opened word for word, it is the example.
+    await expect(page.locator("#examples")).toHaveValue("Resizable Flat (knobs)");
+    await expect(page.locator('#strip a.strip-item[aria-current="true"]')).toHaveAttribute(
+      "data-label",
+      "Resizable Flat (knobs)",
+    );
+    await knob(page, "DEPTH").fill("6000");
+    await expect(page.locator("#examples option:checked")).toHaveText("Edited plan");
+    await expect(page.locator('#strip a.strip-item[aria-current="true"]')).toHaveCount(0);
+    // The hash holds the moved plan: a reload opens it as a shared plan, still no example.
+    await expect.poll(() => hashSource(page)).toBe(src.replace("let DEPTH = 5400", "let DEPTH = 6000"));
+    await page.reload();
+    await waitForPlan(page);
+    await expect(page.locator("#examples option:checked")).toHaveText("Shared plan");
+    await expect(page.locator('#strip a.strip-item[aria-current="true"]')).toHaveCount(0);
+    await expect(knob(page, "DEPTH")).toHaveValue("6000");
+  });
+
   test("the keyboard steps a knob by one grid step", async ({ page }) => {
     const src = example("knob-flat");
     await page.goto(`/${await shareHash(src)}`);
@@ -91,6 +115,26 @@ test.describe("knobs", () => {
     await page.locator(".cm-content").click();
     await page.keyboard.press("ControlOrMeta+z");
     await expect(page.locator(".cm-content")).toContainText("let BEDROOM = 3300");
+  });
+
+  test("while the editor's source does not compile the knobs are disabled, and come back when it does", async ({
+    page,
+  }) => {
+    const src = example("knob-flat");
+    await gotoEdit(page, await shareHash(src));
+    await expect(knob(page, "LIVING")).toBeEnabled();
+    await expect(panel(page).locator(".knobs-note")).toBeHidden();
+    // An unfinished expression: the drawing stays, the knobs cannot write over the edit.
+    const broken = src.replace("let LIVING = 4500", "let LIVING = 4500 +");
+    await setEditorSource(page, broken);
+    await expect(knob(page, "LIVING")).toBeDisabled();
+    await expect(panel(page).locator(".knobs-note")).toHaveText("Fix the source to use knobs");
+    await expect(page.locator(".cm-content")).toContainText("let LIVING = 4500 +");
+    await setEditorSource(page, src);
+    await expect(knob(page, "LIVING")).toBeEnabled();
+    await expect(panel(page).locator(".knobs-note")).toBeHidden();
+    await knob(page, "LIVING").fill("5000");
+    await expect(page.locator(".cm-content")).toContainText("let LIVING = 5000");
   });
 
   test("a phone gets the knobs as a sheet across the bottom of the drawing", async ({ page }) => {
