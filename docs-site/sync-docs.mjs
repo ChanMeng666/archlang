@@ -65,6 +65,7 @@ const PAGES = [
  */
 const SITE_PAGES = [
   ["docs-site/index.md", "index.md"],
+  ["docs-site/start.md", "start.md"],
   ["docs-site/guide.md", "guide.md"],
   ["docs-site/agents.md", "agents.md"],
   ["docs-site/examples.md", "examples.md"],

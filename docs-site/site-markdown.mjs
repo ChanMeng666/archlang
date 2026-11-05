@@ -52,6 +52,38 @@ function pull(src, re, what) {
   return m;
 }
 
+/** A fenced block of plain text (a prompt, a command, a URL to paste). */
+const textFence = (body) => `\`\`\`text\n${body}\n\`\`\``;
+
+/**
+ * One door's way in, as markdown — the same values DoorBody.vue renders, from doors.json.
+ * @param {any} file the parsed `site-shared/doors.json`
+ * @param {string} id a key of `file.doors`
+ */
+export function doorMarkdown(file, id) {
+  const d = file.doors;
+  switch (id) {
+    case "playground":
+      return `[${d.playground.label}](${d.playground.url}) (${d.playground.note})`;
+    case "chatgpt":
+      return `[${d.chatgpt.label}](${d.chatgpt.url}) (${d.chatgpt.note})`;
+    case "claudeai":
+      return `${d.claudeai.label} (${d.claudeai.note}):\n\n${textFence(d.claudeai.url)}`;
+    case "agent":
+      return [
+        textFence(file.agentPrompt.join("\n")),
+        "Claude Code, connected to the hosted server:",
+        textFence(d.agent.claudeCodeHttp),
+        `The skill on its own ([skills.sh](${d.agent.skills.url})):`,
+        textFence(d.agent.skills.command),
+      ].join("\n\n");
+    case "vscode":
+      return `[${d.vscode.label}, Visual Studio Marketplace](${d.vscode.marketplace}) · [${d.vscode.label}, Open VSX](${d.vscode.openVsx})`;
+    default:
+      throw new Error(`site-markdown: no markdown rendering for the door "${id}" — add one beside DoorBody.vue's`);
+  }
+}
+
 /**
  * @param {string} src repo-relative path of the page (e.g. `docs-site/guide.md`)
  * @param {{
@@ -109,8 +141,26 @@ export function siteMarkdown(src, deps) {
 
   text = text.replace(/^<img src="([^"]+)" alt="([^"]*)"[^>]*\/>$/gm, "![$2]($1)");
 
-  // The home page: hero (CompileSeam.vue), feature cards (SheetGrid.vue), facts (FactsSection.vue).
+  // /start: every door from doors.json in `order.start`, worded by door-copy.json — the two
+  // files StartDoors.vue and DoorBody.vue render from.
   const theme = join("docs-site", ".vitepress", "theme");
+  const doorsFile = JSON.parse(read("site-shared", "doors.json"));
+  const doorCopy = JSON.parse(read(theme, "door-copy.json"));
+  text = text.replace(/^<StartDoors \/>$/m, () =>
+    doorsFile.order.start
+      .map((id, i) =>
+        [`## ${i + 1} ${doorCopy[id].heading}`, doorCopy[id].body, doorMarkdown(doorsFile, id)].join("\n\n"),
+      )
+      .join("\n\n"),
+  );
+  text = text.replace(/^<FilmFacade poster="([^"]+)" \/>$/m, () => {
+    const vue = read(theme, "components", "FilmFacade.vue");
+    const id = pull(vue, /const FILM_ID = "([^"]+)"/, "FilmFacade's FILM_ID")[1];
+    const title = pull(vue, /const FILM_TITLE = "([^"]+)"/, "FilmFacade's FILM_TITLE")[1];
+    return `[${title} (YouTube)](https://youtu.be/${id})`;
+  });
+
+  // The home page: hero (CompileSeam.vue), feature cards (SheetGrid.vue), facts (FactsSection.vue).
   text = text.replace(/^<SheetGrid \/>\n*/m, () => {
     const vue = read(theme, "SheetGrid.vue");
     const heading = plain(pull(vue, /<h2 class="dimdiv__label">([\s\S]*?)<\/h2>/, "SheetGrid's section heading")[1]);

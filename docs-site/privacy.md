@@ -14,6 +14,10 @@ cookies, run no accounts or sign-in, and load no analytics or tracking script. T
 compiles your plan in your browser; a full share link keeps the plan after the `#`, which a browser
 never sends to a server.
 
+The product film on the home page and on `/start` is a picture from this site until you press play.
+Only then does your browser load YouTube's player, from the privacy-enhanced `youtube-nocookie.com`
+address, under YouTube's own privacy policy.
+
 ## Short links
 
 The playground's **Copy short link** is the one thing on these sites that stores a plan. Only when

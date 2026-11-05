@@ -74,6 +74,22 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect(md.length).toBeGreaterThan(5000);
   });
 
+  it("the /start copy carries every door in doors.json's start order, each with its value", () => {
+    const md = render("docs-site/start.md");
+    const file = JSON.parse(readFileSync("site-shared/doors.json", "utf8"));
+    const copy = JSON.parse(readFileSync("docs-site/.vitepress/theme/door-copy.json", "utf8"));
+    const order = file.order.start as string[];
+    const at = order.map((id, i) => md.indexOf(`## ${i + 1} ${copy[id].heading}`));
+    for (const [i, pos] of at.entries()) expect(pos, order[i]).toBeGreaterThan(0);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    for (const url of [file.doors.playground.url, file.doors.chatgpt.url, file.doors.claudeai.url]) {
+      expect(md).toContain(url);
+    }
+    expect(md).toContain(file.agentPrompt.join("\n"));
+    expect(md).toContain(file.doors.vscode.marketplace);
+    expect(md).toContain("https://youtu.be/");
+  });
+
   it("the gallery copy keeps the provenance sentence and the drawings of every entry", () => {
     const md = render("docs-site/gallery.md");
     const entries = (readFileSync("docs-site/gallery.md", "utf8").match(/<AgentPlan /g) ?? []).length;

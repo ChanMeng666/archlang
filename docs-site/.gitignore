@@ -66,6 +66,7 @@ public/spec.md
 
 # The hand-written pages' raw copies (SITE_PAGES in sync-docs.mjs), served at /<route>.md.
 public/index.md
+public/start.md
 public/guide.md
 public/agents.md
 public/examples.md

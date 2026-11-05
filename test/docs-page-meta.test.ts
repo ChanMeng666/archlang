@@ -272,6 +272,14 @@ describe("the head wiring itself, which no page can prove on its own", () => {
     expect(HOME_TITLE.length).toBeLessThanOrEqual(60);
   });
 
+  it("/start is the get-a-plan page, and says floor plan in both its title and description", () => {
+    // The nav's first slot ("Try it"). Its title is the page's promise, so a search for the
+    // category words lands on it (PS-D6: the category noun stays next to the brand).
+    const start = ROWS.find((r) => r.route === "/start");
+    expect(start?.title).toBe("Get a floor plan from your AI in 60 seconds");
+    expect(start?.description).toMatch(/floor plan/);
+  });
+
   it("every other title is a fragment the template completes, not a repeat of the brand", () => {
     for (const { route, title } of ROWS) {
       if (route === "/") continue;

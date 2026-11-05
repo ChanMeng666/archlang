@@ -11,6 +11,9 @@
 // (`.VPContent.has-sidebar ~ .tblock`), NOT by the `padding` shorthand below.
 // Changing that shorthand to longhands would out-specify nothing, but changing
 // the 24px here without changing the calc there breaks the alignment.
+import { CANONICAL_LINE } from "./doors";
+import { TOPICS } from "./topics";
+
 const ECOSYSTEM = [
   { href: "https://playground.archlang.uk", label: "Playground ↗" },
   { href: "https://archcanvas.uk", label: "ArchCanvas ↗" },
@@ -26,9 +29,7 @@ const ECOSYSTEM = [
         <img class="tblock__mark" src="/brand/archlang-icon-plum.svg" alt="" width="26" height="26" />
         <div>
           <p class="tblock__name"><b>Arch</b>Lang</p>
-          <p class="tblock__blurb">
-            A small declarative language that compiles to professional SVG floor plans.
-          </p>
+          <p class="tblock__blurb">{{ CANONICAL_LINE }}</p>
         </div>
       </div>
 
@@ -66,6 +67,12 @@ const ECOSYSTEM = [
           <nav class="cell__links">
             <a href="/privacy">Privacy</a>
             <a href="/terms">Terms</a>
+          </nav>
+        </div>
+        <div class="cell cell--eco cell--topics">
+          <span class="cell__label">Topics</span>
+          <nav class="cell__links" aria-label="Topics">
+            <a v-for="t in TOPICS" :key="t.href" :href="t.href">{{ t.label }}</a>
           </nav>
         </div>
         <div class="cell cell--eco">

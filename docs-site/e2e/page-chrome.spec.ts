@@ -229,6 +229,9 @@ test.describe("the hero types the plan, not its prose header", () => {
  *    verified non-vacuous by putting the breakpoint back and watching them go red.
  */
 test.describe("the nav bar fits the viewport", () => {
+  /** The five slots (PS-D6), as config.ts's `nav` spells them. */
+  const NAV_SLOTS = ["Try it", "Gallery", "Docs", "Playground", "GitHub"] as const;
+
   /** The last real child of the desktop menu, or `null` when the hamburger is up. */
   const lastItemOverhang = (page: import("@playwright/test").Page) =>
     page.evaluate(() => {
@@ -275,7 +278,7 @@ test.describe("the nav bar fits the viewport", () => {
       await page.locator(".VPNavBarHamburger").click();
       const screen = page.locator(".VPNavScreen");
       await expect(screen).toBeVisible();
-      for (const item of ["Guide", "Reference", "Examples", "Showcase", "AI Agents", "Playground", "Ecosystem"]) {
+      for (const item of NAV_SLOTS) {
         await expect(
           screen.getByText(item, { exact: true }).first(),
           `"${item}" is unreachable at ${width}px`,
@@ -291,7 +294,7 @@ test.describe("the nav bar fits the viewport", () => {
       await expect(page.locator(".VPNavBarHamburger")).toBeHidden();
       const menu = page.locator(".VPNavBarMenu");
       await expect(menu).toBeVisible();
-      for (const item of ["Guide", "Reference", "Examples", "Showcase", "AI Agents", "Playground", "Ecosystem"]) {
+      for (const item of NAV_SLOTS) {
         await expect(menu.getByText(item, { exact: true }).first(), `"${item}" left the desktop bar`).toBeVisible();
       }
       expect(await lastItemOverhang(page), `the desktop row is clipped at ${width}px`).toBeLessThanOrEqual(0);
