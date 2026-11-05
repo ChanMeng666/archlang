@@ -83,11 +83,11 @@ drawing-set 的证据仍然有效，但没有一位外部用户提出过这些�
 
 ## 3. 排期（串行，一次只跑一个执行者）
 
-### 第 A 批 · 11-05 → 11-13 → core 次版本 + archlang-3d 次版本
+### 第 A 批 · 11-05 → 11-13 → core 次版本 + archlang-3d 次版本 — 全部 `done`
 
 | 卡 | 内容 | 估时 | 执行者 |
 |---|---|---|---|
-| CR0 | 本计划落库；drawing-set handoff 记下 CR-D1；清理已合并的旧 worktree — `done` | 0.3 日 | 主会话 |
+| CR0 | 本计划落库；drawing-set handoff 记下 CR-D1；清理已合并的旧 worktree | 0.3 日 | 主会话 |
 | CR1 | = DS1：给 `spec.llm.md` 腾出 ≥650 单位（每处删除在 PR 里写明同一事实留在哪一行；合并后复查） | 1 日 | architect |
 | CR2 | 沉默缺陷四组，每组一个 PR，先复现，已不存在就如实记录：`batch -o` 重名覆盖和 `ENOENT`；JSON 往返时 `uses` 被改；`axis.N + d` 偏离轴线；`finish` 把家具放到 `void` 上 | 2.5 日 | architect |
 | CR2b | = DS2：N.1 选图幅时漏算表行 | 1 日 | builder |
@@ -97,7 +97,7 @@ drawing-set 的证据仍然有效，但没有一位外部用户提出过这些�
 
 CR3 和 CR4 不发核心版本，随 `main` 部署（CR4 另发 archlang-3d）。如果时间紧，先砍 CR4 的“隐藏上层”，旋转本身不砍。
 
-### 第 B 批 · 11-13 → 11-23 → core 次版本
+### 第 B 批 · 11-13 → 11-23 → core 次版本 — 全部 `done`，与第 A 批同一次发布
 
 | 卡 | 内容 | 估时 |
 |---|---|---|
@@ -106,6 +106,24 @@ CR3 和 CR4 不发核心版本，随 `main` 部署（CR4 另发 archlang-3d）�
 | CR8 | #405 的 L 形洞口栏杆，是真实用户的需求，排得下就做 | 1–2 日 |
 
 第 B 批发布后，定位裁定 A3 的条件就满足了，Show HN 文案可以写“也能检查 OpenPlan3D 的平面”。如果 CR6 赶不上 11-23，Show HN 文案就不写 A3，导入器放到 C 批。**绝不在发布之前写进文案。**
+
+### 后续卡（第 A、B 批的红队余项，做完删行）
+
+| 卡 | 内容 |
+|---|---|
+| CRF1 | CR8 的网格单元切分让洞口旁的墙面碎成多段（最重要）：合并共线相邻段，且保持转动不变 |
+| CRF2 | 房间投票的求和顺序依赖输入顺序，改成与顺序无关 |
+| CRF3 | `W_FURNITURE_ON_VOID` 的消息里引用的坐标随帧变化，改成相对房间的说法 |
+| CRF4 | 3D 里多段洞口的 `<id>#<k>` 编号，与 2D 对齐并写进包文档 |
+| CRF5 | 楼梯井同时报 `W_FURNITURE_ON_VOID` 和楼梯规则时去重 |
+| CRF6 | 与 `r.left + 500` 同类的偏移写法，确认要么拒绝要么有明确语义 |
+| CRF7 | `schedule openings` 的直接测试 |
+| CRF8 | MCP 可选工具 `short_link`（CR-D6） |
+| CRF9 | 预览图的 CJK 字体（现在中文标签画成方块） |
+| CRF10 | MCP `INSTRUCTIONS` 已用 879/900 字符，能力摘要没放进去：腾空间或改放资源 |
+| CRF11 | playground 起始模板加“只改一个房间”的例子（CR7 ② 的剩余部分） |
+| CRF12 | `impact --lock --json` 的顶层 `ok` 与 `lock.ok` 不一致 |
+| CRF13 | `src/ir.ts` 里一条过时注释 |
 
 ### 冻结期 · 11-24 → 12-01（Show HN）
 
@@ -130,7 +148,10 @@ NZ/AU advisory 画像（裁定 A1，只能叫 advisory）；`lint --brief` 检�
 | CR-D2 | 3D 查看器规格 §6.1 的“相机”一行提前，仅限 Tier A（playground 标签页 + 包内 HTML 回放）；Tier B 仍等 N10 | 所有者 2026-11-05 的明确要求 |
 | CR-D3 | ADR 0034 修订 ADR 0019：playground Worker 可有 `main`，只经 `run_worker_first` 数组接管列出的路径；静态路径逐字节不变；docs 站点仍无脚本 | 随 CR3 的 ADR 落地；`iron-laws.md` 的托管条目由所有者 2026-11-05 文字批准（“批准托管铁律”） |
 | CR-D4 | 短链接：内容寻址 id、KV 存储、仅在用户点“短链接”时存平面，对话框写明 | 所有者 2026-11-05 文字批准 |
+| CR-D5 | `axis.N + d` 这类在开口位置上对轴线做算术的写法报 `E_OPENING_DATUM` 拒绝，而不是悄悄偏离轴线（轴线是平面坐标，墙上位置是沿墙距离）；改写 `at axis <label>` 或提示给出的沿墙距离 | 主会话 2026-11-05 裁定（CR2c） |
 | CR-D6 | MCP 工具不默认返回短链：那会在用户没选择时上传平面（违背 CR-D4），也违背 `link` 工具“不发往服务器”、`openWorldHint: false` 的已发布契约。另开可选工具 `short_link`（自带 annotations、约 3 s 超时、失败退回长链）列为后续卡；`MAX_CHAT_URL` 不变 | 主会话 2026-11-05 裁定（CR3 执行者提出） |
+| CR-D7 | CR6（OpenPlan3D 导入）在发版前最后一个合并，让文档站和 npm 同时上线（裁定 A3：发布前不写进文案） | 主会话 2026-11-05 裁定 |
+| CR-D8 | #405 的 L 形洞口：`void … polygon` 给出任意直角多边形洞口，`rail` 沿洞口边画栏杆；新码 `E_VOID_POLY`、`E_VOID_RAIL`；墙面按网格单元切分以保持转动不变 | 主会话 2026-11-05 裁定（CR8 设计稿） |
 
 所有者专属步骤（CR3 时暂停给出确切操作）：CI 的 Cloudflare API token 若无 KV 权限需加 “Workers KV Storage: Edit”；Billing → Notifications 设用量告警。
 

@@ -4,12 +4,16 @@
 
 ## 1. 当前位置
 
-- CR0 done（本 PR）：计划落库，drawing-set handoff 记下 CR-D1，已合并的 J 轮 worktree（`feat/j13-sheet-text`、`feat/j3-finish-levels`）已删。
-- `spec.llm.md` 2026-11-05 实测 29,891 UTF-16 单位（`test/llm-spec-drift.test.ts` 的量法，上限 `< 30_000`），CR1 以此为基准腾出 ≥650。
+- 第 A、B 批全部合并（CR0–CR8，含 SECURITY.md 去重），已随一次 core 次版本发布（同时发 MCP、archlang-3d、VS Code 扩展）。版本以 npm 和 tag 为准。
+- 线上已核实：短链接 `/s/<id>`、预览图 `/s/<id>.png`（真实户型，不是兜底图）、3D 自由旋转。
+- 定位裁定 A3 的条件已满足：npm 上的版本能读 OpenPlan3D（`archlang import --from openplan3d`），Show HN 文案可以写。
+- 后续卡见 `README.md` § 3 末尾的“后续卡”，按序号做，做完删行。
 
 ## 2. 接下来，按序
 
-CR1 → CR2（四组，每组一个 PR）→ CR2b → CR3 → CR4 → CR5，然后第 B 批 CR6 → CR7 → CR8。冻结日 2026-11-24。
+1. 冻结期 2026-11-24 → 2026-12-01（Show HN）：只修缺陷，可发补丁版；核对 Show HN 文案，演示链接用短链接和它的预览图；看短链接计数和错误日志。
+2. 冻结前若有余量，先做后续卡 CRF1（洞口切分让墙面碎片化）。
+3. 第 C 批 CR9–CR12，然后第 D 批。
 
 ## 3. 开工前
 
