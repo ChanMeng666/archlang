@@ -509,7 +509,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
   E_VOID_POLY: E(
     "E_VOID_POLY",
     "A `void … polygon` ring must run only horizontally and vertically, without crossing itself.",
-    "A void's ring is cut into the rectangles it is made of, because every reader of the hole (the walking grid, the stair and furniture checks, `walls from rooms`, `finish`) is written on rectangles. A ring with a slanted edge, one that crosses itself, or one with fewer than four effective vertices (after duplicate and straight-through points are removed) has no such cut, so it is refused rather than read as its bounding box.",
+    "A void's ring is cut into the rectangles it is made of, because the walking grid, the stair and furniture checks and `finish` read a hole as rectangles. A ring with a slanted edge, one that crosses itself, or one with fewer than four effective vertices (after duplicate and straight-through points are removed) has no such cut, so it is refused rather than read as its bounding box.",
     "Write the ring with horizontal and vertical edges only (an L, a U, a notch), each corner once, or split a slanted hole into rectangle `void`s.",
     "void id=well polygon (0,0) (3000,0) (2000,2000) (0,2000)   # error: a slanted edge",
   ),

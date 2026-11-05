@@ -33,11 +33,16 @@
  * ## The ring (plan decision CR-D8)
  *
  * `polygon` takes a ring whose every edge is horizontal or vertical — an L, a U, a notch —
- * and cuts it once, at resolve, into the rectangles it is made of (`ringParts`, the cut
- * `walls from rooms` makes of an L room). Every reader of the hole (the nav grid, lint,
- * `finish`, `walls from rooms`, the 3D slab) reads those pieces through {@link voidPieces};
- * a rectangle void is its own one piece, so nothing that reads one changes. A slanted ring
- * is refused (`E_VOID_POLY`): every one of those readers is written on rectangles.
+ * and cuts it once, at resolve, into the cells of the grid its own corners make: every
+ * rectangle between two consecutive distinct corner x's and y's that lies inside it. That set
+ * is the frame's to carry: turning or mirroring the ring turns or mirrors its cells, which a
+ * cut along one page axis (`ringParts`' slabs) would not, so the drawing, the railing's depth
+ * and `describe()`'s room are the same however the void is placed. The readers that are
+ * written on rectangles (the nav grid, lint, `finish`, the 3D slab) read those cells through
+ * {@link voidPieces}; the readers that already take a ring read `poly` instead (`walls from
+ * rooms`' hole cover, `roomBox` in the window-sill and opening-schedule probes, the enclosure
+ * cover, the symmetry fact). A rectangle void is its own one piece and has no `poly`, so
+ * nothing that reads one changes. A slanted ring is refused (`E_VOID_POLY`).
  *
  * ## The railing
  *
@@ -59,7 +64,8 @@ import type { RVoid } from "../ir.js";
 import { rectCorners } from "../geometry.js";
 import { effectiveVertices, polygonBounds, polygonSelfIntersects, polygonSignedArea2 } from "../geometry/polygon.js";
 import { fmtSource } from "../num-format.js";
-import { rectilinear, ringParts } from "../room-tiling.js";
+import { chargeSteps } from "../expr.js";
+import { rectilinear, ringParts, sortSteps } from "../room-tiling.js";
 import { dashedPattern, MAX_RAIL_POSTS, railRun } from "./glyph-lib.js";
 import { railSides } from "./outdoor.js";
 
@@ -71,18 +77,35 @@ export const VOID_RAIL_LAYER = "A-FLOR-HRAL";
 
 /**
  * The rectangles a void's hole is made of: the void itself, or, on the `polygon` spelling,
- * one rectangle void per piece of its ring (same id and span). The one route every reader of
- * the floor hole takes, so none of them reads a ring's bounding box.
+ * one rectangle void per grid cell of its ring (same id and span). The route a reader written
+ * on rectangles takes, so none of them reads a ring's bounding box.
  */
 export function voidPieces(v: RVoid): RVoid[] {
   if (!v.parts) return [v];
   return v.parts.map((p) => ({ kind: "void", id: v.id, at: { ...p.at }, size: { ...p.size }, span: v.span }));
 }
 
-/** A ring's pieces as the IR carries them, or undefined when the ring is not rectilinear. */
+/**
+ * A ring's pieces as the IR carries them — the grid cells inside it, in page order — or
+ * undefined when the ring is not rectilinear. `ringParts` gives the horizontal slabs between
+ * consecutive corner y's; each slab is then cut at every corner x inside it. Charged per cell
+ * before it is allocated.
+ */
 function piecesOfRing(ring: readonly Point[]): RVoid["parts"] {
-  const parts = ringParts(effectiveVertices(ring));
-  return parts?.map((r) => ({ at: { x: r.x0, y: r.y0 }, size: { w: r.x1 - r.x0, h: r.y1 - r.y0 } }));
+  const eff = effectiveVertices(ring);
+  const slabs = ringParts(eff);
+  if (!slabs) return undefined;
+  chargeSteps(sortSteps(eff.length) + eff.length);
+  const xs = [...new Set(eff.map((p) => p.x))].sort((a, b) => a - b);
+  const out: NonNullable<RVoid["parts"]> = [];
+  for (const s of slabs) {
+    const cuts = [s.x0, ...xs.filter((x) => x > s.x0 && x < s.x1), s.x1];
+    chargeSteps(xs.length + cuts.length);
+    for (let k = 0; k + 1 < cuts.length; k++) {
+      out.push({ at: { x: cuts[k]!, y: s.y0 }, size: { w: cuts[k + 1]! - cuts[k]!, h: s.y1 - s.y0 } });
+    }
+  }
+  return out;
 }
 
 /** One edge of the outline, as the railing reads it: its ends and its outward unit normal. */
@@ -120,7 +143,9 @@ function edgesOf(v: RVoid): Edge[] {
 
 /**
  * How far into the hole the inner rail runs: six pens, or a quarter of the narrowest piece
- * when that is less, one figure for the whole void so two railed edges meet on one line.
+ * when that is less, one figure for the whole void so two railed edges meet on one line. The
+ * pieces are the ring's grid cells, a set the frame carries onto itself, so the depth is the
+ * same however the void is turned or mirrored.
  */
 function railDepthOf(v: RVoid, thin: number): number {
   let narrowest = Infinity;
@@ -191,7 +216,7 @@ export const voidEl: ElementDef = {
       type: `${RAIL_EDGES.join("|")}|<n>`,
       optional: true,
       default: "no railing",
-      doc: "Which edges carry a railing: sides on the rectangle; `all`, `none` or edge numbers (0-based, point n to n+1) on the ring.",
+      doc: "Which edges carry a railing: sides on the rectangle; `all`, `none` or edge numbers (0-based, point n to n+1) on the ring. A `none` among the words wins, then an `all`, as on a balcony.",
     },
   ],
 
@@ -221,6 +246,11 @@ export const voidEl: ElementDef = {
         if (t.type === "number" && t.num !== undefined) words.push(t.num);
         else if (t.type === "ident" && (RAIL_EDGES as readonly string[]).includes(t.value))
           words.push(t.value as RailEdge);
+        else if (t.type === "minus" && ctx.peek(1).type === "number")
+          ctx.fail(
+            "A `rail` edge number counts from 0 — edge n runs from point n to point n+1 — so a negative number names no edge",
+            t,
+          );
         else break;
         ctx.next();
         if (ctx.isType("comma")) ctx.next();
@@ -258,7 +288,7 @@ export const voidEl: ElementDef = {
       }
       if (!rectilinear(effective)) {
         return polyDiag(
-          "has a slanted edge — a void ring runs only horizontally and vertically (an L, a U), because every reader of the hole is written on rectangles",
+          "has a slanted edge — a void ring runs only horizontally and vertically (an L, a U), because the walking grid and the stair and furniture checks read a hole as rectangles",
         );
       }
       if (polygonSelfIntersects(effective)) {

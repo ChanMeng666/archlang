@@ -544,7 +544,8 @@ export interface VoidSummary {
   /**
    * The room whose FLOOR contains the opening's centre — the poly-aware containment test,
    * never the room's bounding box, so a void inside a courtyard plan's notch is reported
-   * as belonging to no room rather than to the U-shaped room whose box surrounds it.
+   * as belonging to no room rather than to the U-shaped room whose box surrounds it. On a
+   * `polygon` void, the room holding most of its area (by the cells of its ring).
    */
   room: string | null;
 }
@@ -1630,14 +1631,25 @@ function summarize(
   // A void's owning room is the room whose FLOOR holds the opening's CENTRE — through the
   // poly-aware `pointInRoomBox`, never the bounding box. The box is the wrong datum for a
   // concave room (its notch is inside the box and outside the floor).
-  // A `polygon` void is asked at the centre of its largest piece (the first on a tie): a point
-  // of the hole itself, where the centre of its box can lie outside an L.
+  // A `polygon` void belongs to the room that holds most of it: each grid cell of its ring
+  // votes its area for the room whose floor holds the cell's centre, and the largest total wins
+  // (the first room written on a tie). The cells are a set the frame carries onto itself, so the
+  // answer is the same however the void is placed, which a single probe point chosen in page
+  // order (`polygonLabelPoint`'s scan, or "the largest piece") is not.
+  const ownerOfRing = (v: RVoid): RRoom | undefined => {
+    const votes = new Map<string, number>();
+    for (const p of voidPieces(v)) {
+      const c = { x: p.at.x + p.size.w / 2, y: p.at.y + p.size.h / 2 };
+      const r = roomEls.find((room) => pointInRoomBox(c, roomRects.get(room.id)!));
+      if (r) votes.set(r.id, (votes.get(r.id) ?? 0) + p.size.w * p.size.h);
+    }
+    let best: RRoom | undefined;
+    for (const r of roomEls) if ((votes.get(r.id) ?? 0) > (best ? votes.get(best.id)! : 0)) best = r;
+    return best;
+  };
   const voids: VoidSummary[] = voidEls.map((v) => {
-    const probe = v.parts
-      ? voidPieces(v).reduce((best, p) => (p.size.w * p.size.h > best.size.w * best.size.h ? p : best))
-      : v;
-    const centre = { x: probe.at.x + probe.size.w / 2, y: probe.at.y + probe.size.h / 2 };
-    const owner = roomEls.find((r) => pointInRoomBox(centre, roomRects.get(r.id)!));
+    const centre = { x: v.at.x + v.size.w / 2, y: v.at.y + v.size.h / 2 };
+    const owner = v.parts ? ownerOfRing(v) : roomEls.find((r) => pointInRoomBox(centre, roomRects.get(r.id)!));
     return {
       id: v.id,
       at: { ...v.at },

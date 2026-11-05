@@ -2020,7 +2020,7 @@ stair id=s at (0,0) size 900x0 dir up   # error: zero depth
 
 *error* — A `void … polygon` ring must run only horizontally and vertically, without crossing itself.
 
-**Cause.** A void's ring is cut into the rectangles it is made of, because every reader of the hole (the walking grid, the stair and furniture checks, `walls from rooms`, `finish`) is written on rectangles. A ring with a slanted edge, one that crosses itself, or one with fewer than four effective vertices (after duplicate and straight-through points are removed) has no such cut, so it is refused rather than read as its bounding box.
+**Cause.** A void's ring is cut into the rectangles it is made of, because the walking grid, the stair and furniture checks and `finish` read a hole as rectangles. A ring with a slanted edge, one that crosses itself, or one with fewer than four effective vertices (after duplicate and straight-through points are removed) has no such cut, so it is refused rather than read as its bounding box.
 
 **Fix.** Write the ring with horizontal and vertical edges only (an L, a U, a notch), each corner once, or split a slanted hole into rectangle `void`s.
 
