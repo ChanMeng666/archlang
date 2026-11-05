@@ -2,6 +2,7 @@ import type { Download, Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import * as core from "../../dist/index.js";
 import type { buildReviewSheet as BuildReviewSheet } from "../../src/cli/review.js";
+import { CHECKS_SAMPLE, SAMPLE_GROUP, sampleSource } from "../src/samples.js";
 import { gotoEdit, openTools, shareHash, waitForPlan, watchStatus } from "./fixtures.js";
 
 /**
@@ -89,12 +90,32 @@ test.describe("checks", () => {
     await expect(checksBtn(page)).toHaveAttribute("aria-pressed", "false");
     await expect(overlay(page)).toHaveCount(0);
     await turnOn(page);
-    // The default plan is clean: nothing to ring.
-    await expect(page.locator(".checks-head")).toHaveText("Checks: nothing to ring");
+    // The default plan is clean: nothing to ring, and the rules read are named.
+    await expect(page.locator(".checks-head")).toHaveText("Checks (default checks): nothing to ring");
     await page.reload();
     await waitForPlan(page);
     await expect(checksBtn(page)).toHaveAttribute("aria-pressed", "false");
     await expect(page.locator(".checks")).toHaveCount(0);
+  });
+
+  test("a clean plan points at the sample with one thing to fix, which the picker offers", async ({ page }) => {
+    const sheet = (await review())(sampleSource(CHECKS_SAMPLE)!);
+    if ("kind" in sheet) throw new Error(sheet.kind);
+    expect(sheet.marks).toHaveLength(1);
+    await page.goto("/");
+    await waitForPlan(page);
+    // The picker lists it under its own group, after the examples; the strip does not.
+    await expect(page.locator(`#examples optgroup[label="${SAMPLE_GROUP}"] > option`)).toHaveText([CHECKS_SAMPLE]);
+    await expect(page.locator(`#strip a.strip-item[data-label="${CHECKS_SAMPLE}"]`)).toHaveCount(0);
+    await turnOn(page);
+    await page.getByRole("button", { name: `Try “${CHECKS_SAMPLE}” →` }).click();
+    await expect(page.locator("#examples")).toHaveValue(CHECKS_SAMPLE);
+    // Exactly the one finding the review sheet makes of it, ringed, with its hint.
+    await expect(items(page)).toHaveCount(1);
+    await expect(items(page).locator("code")).toHaveText(sheet.marks[0]!.code);
+    await expect(items(page).locator(".checks-fix")).toHaveText(/^Fix: .*window/);
+    const shown = await page.locator(".pz-stage svg g.pg-checks-rings").innerHTML();
+    expect(await canonical(page, shown)).toBe(await canonical(page, sheetGroup(sheet.svg, "rv-rings")));
   });
 
   test("the rings are the review sheet's, one finding per compile or lint warning", async ({ page }) => {
@@ -140,7 +161,7 @@ test.describe("checks", () => {
     await page.goto(`/${await shareHash(CHECKS_FIXED)}`);
     await waitForPlan(page);
     await turnOn(page);
-    await expect(page.locator(".checks-head")).toHaveText("Checks: nothing to ring");
+    await expect(page.locator(".checks-head")).toHaveText("Checks (default checks): nothing to ring");
     await expect(page.locator(".pz-stage svg g.pg-checks-rings > *")).toHaveCount(0);
   });
 

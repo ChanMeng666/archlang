@@ -43,11 +43,14 @@ import "./styles/editor.css";
 import "./styles/panels.css";
 
 type Core = typeof import("./compiler.js");
-type Examples = typeof import("./examples.js");
+/** The example sources, and the playground-only samples (samples.ts) the picker offers after them. */
+type Examples = typeof import("./examples.js") & { samples: typeof import("./samples.js") };
 
 // Both start now, in parallel, after this module has run: the drawing is already on screen.
 const coreP: Promise<Core> = import("./compiler.js");
-const examplesP: Promise<Examples> = import("./examples.js");
+const examplesP: Promise<Examples> = Promise.all([import("./examples.js"), import("./samples.js")]).then(
+  ([examples, samples]) => ({ ...examples, samples }),
+);
 /** The compiler, once loaded. Nothing compiles before it. */
 let core: Core | undefined;
 
@@ -103,8 +106,11 @@ for (const tab of tabs) {
   });
 }
 
-/** One <optgroup> per example group — the grouping the docs' example tour uses. */
-function fillPicker({ EXAMPLE_GROUPS }: Examples): void {
+/**
+ * One <optgroup> per example group — the grouping the docs' example tour uses — then the samples'
+ * group (`data-sample`: picker-only, never in the strip, which lists the examples).
+ */
+function fillPicker({ EXAMPLE_GROUPS, samples }: Examples): void {
   const keep = select.value;
   // The neutral entry (`markPlan`) survives the rebuild, and stays chosen if it was.
   const neutral = select.querySelector<HTMLOptionElement>("option[data-neutral]");
@@ -120,6 +126,16 @@ function fillPicker({ EXAMPLE_GROUPS }: Examples): void {
     }
     select.appendChild(g);
   }
+  const sg = document.createElement("optgroup");
+  sg.label = samples.SAMPLE_GROUP;
+  sg.dataset.sample = "";
+  for (const { label } of samples.SAMPLES) {
+    const o = document.createElement("option");
+    o.value = label;
+    o.textContent = label;
+    sg.appendChild(o);
+  }
+  select.appendChild(sg);
   if (keep) select.value = keep;
   else if (neutral) neutral.selected = true;
 }
@@ -150,9 +166,9 @@ function markPlan(label: string | null, neutral = "Edited plan") {
 
 /** After a change to the source: still an example word for word, or now a plan of the reader's own. */
 function syncPlanMark(source: string): Promise<void> {
-  return examplesP.then(({ exampleLabelFor }) => {
+  return examplesP.then(({ exampleLabelFor, samples }) => {
     if (currentSource() !== source) return; // a later change syncs again
-    markPlan(exampleLabelFor(source) ?? null);
+    markPlan(exampleLabelFor(source) ?? samples.sampleLabelFor(source) ?? null);
   });
 }
 
@@ -328,7 +344,8 @@ if (!root.classList.contains("pg-other")) previewCtl.adopt();
 const knobsPanel = mountKnobsPanel({
   viewport: pzViewport,
   getSource: () => currentSource(),
-  tryRender: (source) => render(source),
+  // A knob being dragged redraws the plan, but Checks waits for it to be let go (`keepKnob`).
+  tryRender: (source) => render(source, false, true),
   commit: keepKnob,
   flash,
 });
@@ -350,6 +367,8 @@ function keepKnob(source: string, final: boolean) {
   if (finishPanel) finishPanel.hidden = true;
   actions?.sourceChanged();
   if (!final) return;
+  // Let go: Checks catches up with the plan the knob left (the drag drew it without its rings).
+  if (checksOn) render(source);
   writeStr(KEYS.source, source);
   void updateHash(source, editing);
   void syncPlanMark(source); // no longer the example word for word: "Edited plan"
@@ -398,7 +417,7 @@ function shownLevel(): number | null {
 }
 
 /** Compile and show `source`; whether it compiled without errors (else the last good drawing stays). */
-function render(source: string, refit = false): boolean {
+function render(source: string, refit = false, knobMoving = false): boolean {
   if (!core) return false; // nothing compiles before the compiler is in; boot renders once it is
   const { compile, THEMES } = core;
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
@@ -465,7 +484,11 @@ function render(source: string, refit = false): boolean {
   }
   // Checks: the review rings over the drawing on screen. Like the Paths overlay it is never in
   // `lastSvg`, which every export reads, so a download is the same with Checks on or off.
-  if (checksOn && checks) displaySvg = checks.overlay(displaySvg, source, activeLevel);
+  // A knob mid-drag draws without them: the review runs once, when the knob is let go.
+  if (checksOn && checks) {
+    if (knobMoving) checks.pending();
+    else displaySvg = checks.overlay(displaySvg, source, activeLevel);
+  }
   previewCtl.show(displaySvg, refit);
   if (checksOn) checks?.shown();
   lastSvg = pageSvg;
@@ -491,9 +514,18 @@ checksBtn.addEventListener("click", () => {
         stage: pzStage,
         isEditing: () => editing && edit !== undefined,
         jumpToOffset,
+        lintProfile: () => {
+          // The Lint tab's selector once edit mode has filled it, else the profile it will restore.
+          const sel = document.getElementById("lintProfile") as HTMLSelectElement | null;
+          return sel && sel.options.length > 0 ? sel.value : (readStr(KEYS.lintProfile) ?? "");
+        },
+        openSample: switchPlan,
       })),
     (err: unknown) => {
       checksP = undefined; // a failed chunk load is retried on the next press
+      // Nothing is drawn, so the button does not say Checks is on.
+      checksOn = false;
+      checksBtn.setAttribute("aria-pressed", "false");
       flash(`Checks did not load: ${(err as { message?: string })?.message ?? err}`);
       return undefined;
     },
@@ -577,9 +609,11 @@ function onExportError(format: string, err: unknown) {
 function pickExample(label: string) {
   markPlan(label);
   void ready.then(async () => {
-    const { EXAMPLES } = await examplesP;
+    const { EXAMPLES, samples } = await examplesP;
+    const source = EXAMPLES[label] ?? samples.sampleSource(label);
+    if (source === undefined) return;
     markPlan(label);
-    loadSource(EXAMPLES[label], true);
+    loadSource(source, true);
   });
 }
 /** A plan picked by the visitor (the picker or the strip), which counts towards the nudge. */
@@ -613,13 +647,19 @@ async function boot() {
   // The picker and the strip name the plan this visit opens: the default, or the example a link
   // or a draft is word for word, or neither (a plan of someone's own is no example).
   if (!sharedSrc && !savedSrc) markPlan(DEFAULT_EXAMPLE);
-  else markPlan(examples.exampleLabelFor(initialDoc) ?? null, sharedSrc ? "Shared plan" : "Saved draft");
+  else
+    markPlan(
+      examples.exampleLabelFor(initialDoc) ?? examples.samples.sampleLabelFor(initialDoc) ?? null,
+      sharedSrc ? "Shared plan" : "Saved draft",
+    );
 
   // A `#z=` payload that is not one of the bundled examples is third-party text on
   // our page — say so, once, at the top of the preview. Silent for a stock-example
   // permalink and for a hash-less visit. See shared-notice.ts for why it is not
   // remembered.
-  if (shouldShowSharedNotice(sharedSrc, Object.values(EXAMPLES))) {
+  if (
+    shouldShowSharedNotice(sharedSrc, [...Object.values(EXAMPLES), ...examples.samples.SAMPLES.map((s) => s.source)])
+  ) {
     preview.prepend(createSharedNotice());
   }
 

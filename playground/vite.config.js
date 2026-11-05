@@ -1,29 +1,19 @@
 import { defineConfig } from "vite";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { coreFiles } from "./scripts/core-files.mjs";
 
 /** The built core's directory, as rolldown spells module ids (forward slashes). */
 const CORE_DIST = `${resolve(__dirname, "../dist").replace(/\\/g, "/")}/`;
 /** The view path's door to it (src/compiler.ts), which belongs in the same chunk. */
 const CORE_DOOR = resolve(__dirname, "src/compiler.ts").replace(/\\/g, "/");
-/**
- * The built core's files: `index.js` and the chunks it imports, read off the build itself. Not
- * every file under dist/: `cli/review.js` (the Checks overlay's review sheet, card P6) and the
- * chunk holding its code are reached only by a lazy import, so they stay out of the `compiler`
- * chunk the page preloads at startup and load with Checks instead.
- */
-function coreFiles() {
-  const seen = new Set();
-  const visit = (rel) => {
-    if (seen.has(rel) || !existsSync(CORE_DIST + rel)) return;
-    seen.add(rel);
-    for (const m of readFileSync(CORE_DIST + rel, "utf8").matchAll(/^import\s[^;]*?from\s*"\.\/([\w.-]+\.js)";?$/gm))
-      visit(m[1]);
-  };
-  visit("index.js");
-  return seen;
-}
-const CORE_FILES = coreFiles();
+// The built core's files (scripts/core-files.mjs): `index.js` and the chunks it imports. Not every
+// file under dist/: `cli/review.js` (the Checks overlay's review sheet, card P6) and the chunk
+// holding its code are reached only by a lazy import, so they stay out of the `compiler` chunk.
+const CORE_FILES = coreFiles(
+  (rel) => readFileSync(CORE_DIST + rel, "utf8"),
+  (rel) => existsSync(CORE_DIST + rel),
+);
 const isCompiler = (id) => id === CORE_DOOR || (id.startsWith(CORE_DIST) && CORE_FILES.has(id.slice(CORE_DIST.length)));
 
 /**

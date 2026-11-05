@@ -1,25 +1,30 @@
 /**
  * Checks (public-surfaces P6): the header's Checks toggle draws, over the drawing, the review rings
- * `arch preview --review` draws, from the same function (`buildReviewSheet`, src/cli/review.ts,
- * built as `dist/cli/review.js`), and lists each finding beside it: its number (the one on its
- * ring's tag), its code, its message and, when the diagnostic carries one, its fix hint. Choosing
- * a finding highlights its ring; in edit mode it also puts the caret on the statement.
+ * `arch preview --review` draws, from the same function (src/cli/review.ts, built as
+ * `dist/cli/review.js`), and lists each finding beside it: its number (the one on its ring's tag),
+ * its code, its message and, when the diagnostic carries one, its fix hint. Choosing a finding
+ * highlights its ring; in edit mode it also puts the caret on the statement.
  *
  * A chunk of its own, loaded on the first switch-on. Off by default and never persisted. The
- * findings are the review sheet's: every warning of `compile()` and of the default `lint()`, one
- * entry each, in the sheet's order. The overlay is added to the SVG on screen only (main.ts), so
- * the exports never carry it.
+ * findings are the review sheet's: every warning of `compile()` and of `lint()` under its DEFAULT
+ * rules, one entry each, in the sheet's order; the panel says so, and says when the Lint tab is
+ * set to another profile. The hints come from the diagnostics the sheet was made from
+ * (`reviewSheetAndWarnings`), so a check costs one review, not a review and a second compile and
+ * lint. The overlay is added to the SVG on screen only (main.ts), so the exports never carry it.
  */
-import { compile, type Diagnostic, diagnosticToJson, lint } from "archlang";
-import { buildReviewSheet, type ReviewMark } from "archlang/review";
+import { type Diagnostic, diagnosticToJson } from "archlang";
+import { reviewSheetAndWarnings } from "archlang/review";
 import { type Box, HIGHLIGHT_CLASS, highlightMarkup, ringsOverlay, withOverlay } from "./checks-overlay.js";
 import { escapeHtml } from "./escape.js";
+import { CHECKS_SAMPLE } from "./samples.js";
 
 export interface ChecksPanel {
   /** `svg` (the drawing about to be shown) with the rings of `source`'s findings over it. */
   overlay(svg: string, source: string, level: number | null): string;
   /** After the drawing is shown: put back the highlight of the chosen finding. */
   shown(): void;
+  /** The drawing is moving (a knob being dragged): the list waits for it to settle. */
+  pending(): void;
   /** Show or hide the list (the toggle). */
   setVisible(on: boolean): void;
 }
@@ -32,7 +37,14 @@ interface ChecksOpts {
   /** Whether the editor is open (a finding then jumps to its statement). */
   isEditing: () => boolean;
   jumpToOffset: (offset: number) => void;
+  /** The Lint tab's profile, by name, or "" for its default. */
+  lintProfile: () => string;
+  /** Open the plan the empty list points at. */
+  openSample: (label: string) => void;
 }
+
+/** What the panel's heading names as the rules it reads. */
+export const CHECKS_RULES = "default checks";
 
 /** One finding as the list shows it. */
 interface Finding {
@@ -46,36 +58,41 @@ interface Finding {
   boxes: Box[];
 }
 
-/** The hint a finding's list entry carries: the diagnostic's first hint, else its code's fix. */
-function fixFor(source: string, mark: ReviewMark, diagnostics: readonly Diagnostic[]): string | undefined {
-  const d = diagnostics.find(
-    (x) =>
-      (x.code ?? "") === mark.code &&
-      x.message === mark.message &&
-      (x.span?.start ?? -1) === (mark.span?.[0] ?? -1) &&
-      x.file === mark.file,
-  );
+/** The hint a finding's list entry carries: its diagnostic's first hint, else its code's fix. */
+function fixOf(source: string, d: Diagnostic | undefined): string | undefined {
   if (!d) return undefined;
   const j = diagnosticToJson(source, d);
   return j.hints?.[0] ?? j.fix;
 }
 
-export function mountChecks({ viewport, stage, isEditing, jumpToOffset }: ChecksOpts): ChecksPanel {
+export function mountChecks({
+  viewport,
+  stage,
+  isEditing,
+  jumpToOffset,
+  lintProfile,
+  openSample,
+}: ChecksOpts): ChecksPanel {
   const panel = document.createElement("section");
   panel.className = "checks";
   panel.setAttribute("aria-label", "Checks");
   panel.hidden = true;
   const head = document.createElement("h2");
   head.className = "checks-head";
+  const profileNote = document.createElement("p");
+  profileNote.className = "checks-profile";
+  profileNote.hidden = true;
   const list = document.createElement("ol");
   list.className = "checks-list";
-  panel.append(head, list);
+  panel.append(head, profileNote, list);
   viewport.appendChild(panel);
 
   let findings: Finding[] = [];
   let chosen: number | null = null;
-  /** The source and storey the list was built for, so an unchanged plan keeps its choice. */
+  /** The source and storey the list and `rings` were made for. */
   let key = "";
+  /** The overlay for `key`: a re-render of the same plan (a theme, Paths) reuses it. */
+  let rings: string | null = null;
 
   function highlight() {
     const g = stage.querySelector(`svg g.${HIGHLIGHT_CLASS}`);
@@ -87,17 +104,26 @@ export function mountChecks({ viewport, stage, isEditing, jumpToOffset }: Checks
     }
   }
 
+  /** Say when the Lint tab reads another profile than the default rules Checks reads. */
+  function noteProfile() {
+    const p = lintProfile();
+    profileNote.hidden = p === "";
+    profileNote.textContent = p === "" ? "" : `The Lint tab uses the "${p}" profile; Checks reads the default checks.`;
+  }
+
   function renderList(note?: string) {
     const count = findings.length;
     head.textContent = note
-      ? "Checks"
+      ? `Checks (${CHECKS_RULES})`
       : count === 0
-        ? "Checks: nothing to ring"
-        : `Checks: ${count} finding${count === 1 ? "" : "s"}`;
+        ? `Checks (${CHECKS_RULES}): nothing to ring`
+        : `Checks (${CHECKS_RULES}): ${count} finding${count === 1 ? "" : "s"}`;
+    noteProfile();
     list.innerHTML = note
       ? `<li class="checks-note">${escapeHtml(note)}</li>`
       : count === 0
-        ? `<li class="checks-note">No warnings from compile or lint.</li>`
+        ? `<li class="checks-note">No findings here. ` +
+          `<button type="button" class="checks-try" data-sample="${escapeHtml(CHECKS_SAMPLE)}">Try “${escapeHtml(CHECKS_SAMPLE)}” →</button></li>`
         : findings
             .map(
               (f) =>
@@ -111,8 +137,17 @@ export function mountChecks({ viewport, stage, isEditing, jumpToOffset }: Checks
             .join("");
   }
 
+  // A profile picked in the Lint tab is named here at once.
+  document.getElementById("lintProfile")?.addEventListener("change", noteProfile);
+
   list.addEventListener("click", (e) => {
-    const btn = (e.target as Element | null)?.closest<HTMLButtonElement>("button[data-n]");
+    const target = e.target as Element | null;
+    const sample = target?.closest<HTMLButtonElement>("button[data-sample]");
+    if (sample) {
+      openSample(sample.dataset.sample!);
+      return;
+    }
+    const btn = target?.closest<HTMLButtonElement>("button[data-n]");
     if (!btn) return;
     const n = Number(btn.dataset.n);
     chosen = chosen === n ? null : n;
@@ -123,34 +158,40 @@ export function mountChecks({ viewport, stage, isEditing, jumpToOffset }: Checks
 
   return {
     overlay(svg, source, level) {
-      const sheet = buildReviewSheet(source, level === null ? {} : { level });
-      if ("kind" in sheet) {
+      panel.classList.remove("checks-pending");
+      const next = `${level}\u0000${source}`;
+      // The same plan and storey (a theme, the Paths overlay): the same findings and rings, and
+      // the list is left as it is, so a choice and the keyboard focus in it survive.
+      if (next === key) {
+        noteProfile();
+        return rings === null ? svg : withOverlay(svg, rings);
+      }
+      key = next;
+      chosen = null;
+      const r = reviewSheetAndWarnings(source, level === null ? {} : { level });
+      if ("kind" in r) {
         findings = [];
-        chosen = null;
-        key = "";
-        renderList(sheet.kind === "errors" ? "The plan does not compile, so it is not checked." : "No such storey.");
+        rings = null;
+        renderList(r.kind === "errors" ? "The plan does not compile, so it is not checked." : "No such storey.");
         return svg;
       }
-      const next = `${level}\u0000${source}`;
-      // The same plan and storey (a theme, the Paths overlay): the same findings, and the
-      // list is left as it is, so a choice and the keyboard focus in it survive.
-      if (next === key) return withOverlay(svg, ringsOverlay(sheet.svg));
-      const diagnostics = [...(compile(source, { noCache: true }).diagnostics ?? []), ...lint(source)];
-      findings = sheet.marks.map((m) => ({
+      findings = r.sheet.marks.map((m, i) => ({
         n: m.n,
         code: m.code,
         message: m.message,
-        fix: fixFor(source, m, diagnostics),
+        fix: fixOf(source, r.warnings[i]),
         ...(m.span ? { span: m.span } : {}),
         imported: m.file !== undefined,
-        boxes: m.ringed.map((r) => r.box),
+        boxes: m.ringed.map((x) => x.box),
       }));
-      chosen = null;
-      key = next;
+      rings = ringsOverlay(r.sheet.svg);
       renderList();
-      return withOverlay(svg, ringsOverlay(sheet.svg));
+      return withOverlay(svg, rings);
     },
     shown: highlight,
+    pending() {
+      panel.classList.add("checks-pending");
+    },
     setVisible(on) {
       panel.hidden = !on;
     },

@@ -172,6 +172,16 @@ are in `README.md`. Every card:
 - Add a **new** example with one deliberate, fixable finding, plus its fixed twin, for the
   "mistake → receipt → cleared" demo. It is additive, with its own pins.
 - Tests: rings match `lint()` findings one to one; the toggle does not change exports.
+- As built (#507):
+  - The demo is a playground-only sample, "Flat with one thing to fix" (`playground/src/samples.ts`,
+    the picker's "Try Checks" group, one `W_BEDROOM_NO_WINDOW`), not a new example: every shipped
+    example stays warning-free (fix/examples-sound, 2026-10-27; a warned plan is a test fixture).
+    The empty Checks list points at it.
+  - The rings come from `reviewSheetAndWarnings` in `src/cli/review.ts`, built as
+    `dist/cli/review.js`; `buildReviewSheet` is its `.sheet`, so `arch preview --review` is
+    unchanged. Checks reads the default checks and says so when the Lint tab's profile differs.
+  - Known: the rings and tags are sized for the review sheet's 1600-unit width, so they read small
+    on a phone; Checks shows the findings of the storey on screen, as the sheet does.
 
 ## Stage 2 — docs site and showcase
 
