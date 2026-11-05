@@ -31,7 +31,7 @@ is fetched from a network. `--theme dark` and `--storey <n>` change what it show
 
 The view turns freely: drag to rotate, scroll or pinch to zoom, right-drag or two fingers to pan,
 and the buttons give Iso, Top, the four elevations and Reset (and, with several storeys, hide the
-storeys above one). The first movement pauses the playback.
+storeys above one). Moving the view pauses the playback.
 
 To render a video as well, add a browser and `ffmpeg` on your `PATH`:
 
