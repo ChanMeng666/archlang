@@ -11,7 +11,7 @@ Write a floor plan as text. Get a precise, dimensioned drawing back.
 
 <a href="https://playground.archlang.uk"><img src="./.github/readme/pill-playground.svg" height="40" alt="Playground"></a> <a href="https://archlang.uk"><img src="./.github/readme/pill-docs.svg" height="40" alt="Docs"></a> <a href="https://archlang.uk/gallery"><img src="./.github/readme/pill-gallery.svg" height="40" alt="Gallery"></a> <a href="https://www.npmjs.com/package/@chanmeng666/archlang"><img src="./.github/readme/pill-npm.svg" height="40" alt="npm"></a>
 
-No install: [use ArchLang in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970) or add `https://mcp.archlang.uk/mcp` as a claude.ai connector.
+No install: [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970) or add `https://mcp.archlang.uk/mcp` as a claude.ai connector.
 
 </div>
 

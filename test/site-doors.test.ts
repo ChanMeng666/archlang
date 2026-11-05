@@ -155,6 +155,7 @@ describe("the sites and the root README carry the doors.json values", () => {
     expect(vue).not.toContain(CHATGPT);
     expect(vue).not.toContain(HOSTED);
     expect(vue).toContain("No install");
+    expect(vue, "the full doors file would ship to the browser").not.toMatch(/import doorsFile|import doors from/);
   });
 
   it("the docs pages label the ChatGPT door as doors.json does and say 'no install', never 'no signup'", () => {
@@ -168,7 +169,7 @@ describe("the sites and the root README carry the doors.json values", () => {
   it("the README line sits directly under the pills", () => {
     const text = read("README.md");
     const pills = text.indexOf("pill-npm.svg");
-    const line = text.indexOf("No install: [use ArchLang in ChatGPT](" + CHATGPT + ")");
+    const line = text.indexOf(`No install: [${doors.doors.chatgpt.label}](${CHATGPT})`);
     expect(pills).toBeGreaterThan(0);
     expect(line).toBeGreaterThan(pills);
     expect(text.slice(pills, line)).not.toContain("## ");

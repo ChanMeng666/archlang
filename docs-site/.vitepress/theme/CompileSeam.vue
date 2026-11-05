@@ -18,7 +18,7 @@ import { highlightArch } from "./arch-highlight.js";
 import { stripHeaderComments } from "./strip-header-comments.js";
 // The hosted doors (ChatGPT app, claude.ai connector) come from the one doors file shared by
 // every public surface (test/site-doors.test.ts); nothing here retypes them.
-import doorsFile from "../../../site-shared/doors.json";
+import { doors as NO_INSTALL } from "../../../site-shared/doors.json";
 
 // The hero example, already synced into examples-data.js by sync-docs.mjs (no
 // `?raw` / fs.allow dependency). This is the source that types itself; the name is
@@ -31,14 +31,13 @@ const HERO = "laneway-house";
 const { page } = useData();
 const definition = computed(() => page.value.description);
 
-// The three ways in, each one line and copyable. The package names are the published
+// The three install commands, each one line and copyable (the no-install doors sit above them). The package names are the published
 // ones; no version appears anywhere (versions come from npm, never a doc).
 const INSTALL_LINES = [
   { label: "CLI", cmd: "npx -y @chanmeng666/archlang compile plan.arch" },
   { label: "MCP", cmd: "claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp" },
   { label: "Skill", cmd: "npx -y skills add ChanMeng666/archlang --yes" },
 ] as const;
-const NO_INSTALL = doorsFile.doors;
 const copied = ref("");
 async function copyCmd(cmd: string) {
   try {
@@ -249,13 +248,14 @@ onBeforeUnmount(() => {
           <ul class="install install--hosted" aria-label="No install">
             <li class="install__row install__row--door">
               <span class="install__tag">No install</span>
-              <a class="install__link" :href="NO_INSTALL.chatgpt.url" target="_blank" rel="noopener">{{
-                NO_INSTALL.chatgpt.label
-              }}</a>
+              <a class="install__link" :href="NO_INSTALL.chatgpt.url" target="_blank" rel="noopener"
+                >{{ NO_INSTALL.chatgpt.label }}&nbsp;↗</a
+              >
             </li>
             <li class="install__row install__row--door">
               <span class="install__tag">claude.ai</span>
               <code class="install__cmd">{{ NO_INSTALL.claudeai.url }}</code>
+              <span class="install__hint">add as a custom connector</span>
               <button
                 type="button"
                 class="install__copy"
@@ -458,6 +458,11 @@ onBeforeUnmount(() => {
 }
 .install__row--door {
   align-items: baseline;
+}
+.install__hint {
+  flex: none;
+  font-size: 12px;
+  color: var(--src-muted);
 }
 .install__tag {
   flex: none;

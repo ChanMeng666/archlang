@@ -1,13 +1,13 @@
 # Use ArchLang from an AI agent
 
+ArchLang is built to be driven by an AI agent end-to-end — **through its CLI**, with no server and
+nothing to configure. An agent can learn the whole language, author a plan, render it, and **verify
+it matches intent without ever looking at an image** — token-cheap and in any harness.
+
 ## No install
 
 - In ChatGPT: [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970).
 - In claude.ai: add `https://mcp.archlang.uk/mcp` as a custom connector.
-
-ArchLang is built to be driven by an AI agent end-to-end — **through its CLI**, with no server and
-nothing to configure. An agent can learn the whole language, author a plan, render it, and **verify
-it matches intent without ever looking at an image** — token-cheap and in any harness.
 
 > **CLI first — but there is an MCP server too.** A CLI costs nothing in an agent's context until it
 > is called; an MCP server's tool schemas sit in the context window permanently. So the CLI (plus a

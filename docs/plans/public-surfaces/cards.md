@@ -50,6 +50,8 @@ are in `README.md`. Every card:
 - **Playground "Ask AI ▾":** the first item becomes "ArchLang app in ChatGPT".
 - **README:** one line under the pills.
 - All values come from S1.
+- As built (#502): the playground's Ask AI item moved to P1/P5 (P1 rebuilds the header); `/agents`
+  and `/mcp` keep their lede first, with the no-install block after it.
 
 ### O1 · `packages/mcp/README.md` (the npm page for archlang-mcp)
 
