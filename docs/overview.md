@@ -617,15 +617,16 @@ editable** in the browser.
 ## 🎬 Showcase
 
 The examples above teach the language. The **[Showcase](https://archlang.uk/showcase)** is what
-happens when you point it at real buildings and famous fictional ones — the West Wing (whose Oval
+happens when you point it at real buildings and original plans — the West Wing (whose Oval
 Office is a true `arc`, not a faceted polygon), Palladio's Villa La Rotonda (one quarter, `place`d
-four times), Bag End, de_dust2, The Skeld, 742 Evergreen Terrace, the Dunder Mifflin annex. Every one
-is a few dozen lines of source you can open in the playground and recompile.
+four times), a railroad apartment, a house in one tweet — and, under a "fan studies" heading, a few
+famous fictional ones. Every one is a few hundred lines of source or fewer, and you can open it in
+the playground and recompile.
 
 They are worth a look for what the compiler *says* about them as much as for the drawings:
 `archlang lint` reports a real `W_NO_ENTRANCE` on de_dust2 — a quarter century of continuous occupancy,
-achieved entirely by spawning — and it reviews a $2,950-a-month railroad apartment in twelve
-warnings across nine codes.
+achieved entirely by spawning — and, under core 1.55.0, it reviews a $2,950-a-month railroad
+apartment in 24 warnings across 17 codes.
 
 <table>
 <tr>
@@ -636,7 +637,7 @@ warnings across nine codes.
 <img src="https://raw.githubusercontent.com/ChanMeng666/archlang-showcase/main/plans/villa-rotonda/plan.png" width="270" alt="Villa La Rotonda, piano nobile" />
 </td>
 <td width="33%" align="center" valign="top">
-<img src="https://raw.githubusercontent.com/ChanMeng666/archlang-showcase/main/plans/dust2/plan.png" width="270" alt="de_dust2 drawn as a building" />
+<img src="https://raw.githubusercontent.com/ChanMeng666/archlang-showcase/main/plans/railroad-apartment/plan.png" width="270" alt="Railroad apartment, Unit 3R" />
 </td>
 </tr>
 </table>

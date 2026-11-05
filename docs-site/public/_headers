@@ -88,6 +88,9 @@
 /index.md
   Content-Type: text/markdown; charset=utf-8
 
+/start.md
+  Content-Type: text/markdown; charset=utf-8
+
 /guide.md
   Content-Type: text/markdown; charset=utf-8
 

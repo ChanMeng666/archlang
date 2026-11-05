@@ -197,6 +197,14 @@ are in `README.md`. Every card:
   - `page-chrome.spec.ts`: nav fit from 768 to 1152 px, and hamburger reachability.
   - `docs-sync-list.test.ts`.
   - `docs-page-meta.test.ts` (80–170 characters, the `KILLED` list).
+- As built (#508):
+  - `/start` is titled "Get a floor plan from your AI": no time in the title, because "60 seconds"
+    was never measured. Every door's link, URL, prompt and command comes from `doors.json`
+    (`DoorBody.vue`); the words around them are `door-copy.json`'s.
+  - A real capture of the result under each `/start` door is deferred.
+  - The nav keeps its 1152 px breakpoint: with the five-slot row forced on below it, the last item
+    still ends inside the viewport, but the row sits flush against the search box.
+  - The film is a click-to-load facade (`youtube-nocookie.com` on play); `privacy.md` says so.
 
 ### D2 · Docs home rebuilt (README §4)
 
@@ -213,6 +221,23 @@ are in `README.md`. Every card:
 - **Tests:** `homepage-links.spec.ts` derives its counts from the components' data arrays, checks
   both primaries above the fold at 1280×800 and 390×844, and checks that every playground link
   decodes to the plan shown. In `page-chrome.spec.ts`, the hero typing starts with the brief bubble.
+- As built (#508):
+  - The gallery-isolation law (`test/agent-gallery.test.ts`: no other test reads `docs/gallery`)
+    holds. The hero DISPLAYS a gallery pair chosen in `sync-docs.mjs`'s `HOME_PROOFS.hero`, but
+    nothing pins it: if that entry is missing it falls back to another gallery entry, then to an
+    example with no brief, with a build warning, never a build failure. Unit tests check the
+    hero's wiring and a stand-in pair; the e2e specs compare the page with the `home-data.js` the
+    build emitted.
+  - The three Why proofs all read `examples/`: `describe()` of laneway-house; `impact` of
+    knob-flat with BEDROOM 3300 → 3900 and a lock; and knob-flat without its bedroom window, which
+    raises `W_BEDROOM_NO_WINDOW` (the playground's "Flat with one thing to fix" story). The
+    highlight on the flagged room is the site's, a style rule on the compiler's annotated element.
+  - The proof line reads "N example plans, every one compiled and checked in CI · SVG · PDF · DXF ·
+    PNG · MIT"; the page says beside it that PNG is one optional download.
+  - Measured at 1280×800 (Chromium, final build): both primaries end at 597 px, and the hero sheet,
+    its control row (Replay / Open in Playground) included, ends at 795 px, inside the fold (a
+    100 px source pane had left it 3 px below; the pane is now 92 px). At 390×844 the
+    primaries end at 401 and 529 px. The run settles in about 7.1 s.
 
 ### D3 · Plain captions where visitors land
 
@@ -226,12 +251,21 @@ are in `README.md`. Every card:
   - the `/showcase` permalinks (tweet-house, friends, dust2) and the "290 bytes" claim (actual 277);
   - the railroad warning counts (`docs/showcase.md`, `docs/overview.md`);
   - stories saying `npx arch` instead of `archlang`.
+- As built (#508):
+  - `/showcase` follows the showcase repo's order (real buildings, original plans, then "Fan
+    studies" under the notice); its permalinks are that README's and its PNGs are that repo's
+    `plan.png` files, copied (the repo has no export script). Figures re-derived under core 1.55.0.
+  - The standalone `<arch-plan>` is about 1.5 MB (1,485,967 bytes measured), about 520 KB gzipped.
+  - No `npx arch` was found in this repo's stories; the showcase repo's own stories are SC1's.
 
 ### D4 · Proof line
 
 - "N example plans, every one compiled and checked in CI on every commit · SVG · PDF · DXF · PNG ·
   MIT".
 - N is derived at build time. No star, download or version numbers.
+- As built (#508): "on every commit" was dropped (CI runs on pushes and pull requests, which that
+  phrase overstates). N is the count of examples the docs build compiled, emitted as
+  `EXAMPLE_COUNT` in `home-data.js`.
 
 ### SC1 · archlang-showcase (repo `archlang-showcase`) and `/showcase`
 

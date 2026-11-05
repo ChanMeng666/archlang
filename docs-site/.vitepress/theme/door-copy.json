@@ -1,0 +1,23 @@
+{
+  "_": "The words around each door on /start and in the home doors card. Every URL, command, label and the prompt itself come from site-shared/doors.json; this file holds the prose around them, and site-markdown.mjs renders /start.md from the same two files.",
+  "playground": {
+    "heading": "Open a plan in your browser",
+    "body": "Nothing to install. Pick a plan, drag one of its numbers and hover a room for its area. Source shows the ArchLang text behind the drawing, and you can edit it there."
+  },
+  "chatgpt": {
+    "heading": "Ask ChatGPT",
+    "body": "Add the ArchLang app in ChatGPT, then describe the plan you want. ChatGPT writes ArchLang, the compiler draws the plan and reports what is wrong, and ChatGPT can fix it from that message. Nothing to install; you need a ChatGPT account."
+  },
+  "claudeai": {
+    "heading": "Ask Claude on claude.ai",
+    "body": "Add the hosted ArchLang server as a custom connector in claude.ai's settings, then ask for a plan. Nothing to install; you need a claude.ai account."
+  },
+  "agent": {
+    "heading": "Ask your coding agent",
+    "body": "Paste this prompt into Claude Code, Codex, Cursor or any agent that can run commands. It adds the ArchLang skill, reads the language, writes your plan, compiles and checks it, and fixes what the compiler reports, or shows you the message."
+  },
+  "vscode": {
+    "heading": "Write it in VS Code",
+    "body": "The extension highlights .arch files, shows the compiler's errors and warnings as you type, offers its quick fixes, and draws an arch fence in the Markdown preview."
+  }
+}

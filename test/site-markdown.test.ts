@@ -6,7 +6,7 @@
  * real compiler and holds the contract: no throw, a real body, no markup left at a line start,
  * and the two pages whose copies once came out hollow keep their content.
  */
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe } from "../src/index.js";
 
@@ -25,7 +25,31 @@ const syncSrc = readFileSync("docs-site/sync-docs.mjs", "utf8");
 const table = /const SITE_PAGES = \[([\s\S]*?)\n\];/.exec(syncSrc);
 const pages = [...(table?.[1] ?? "").matchAll(/\["([^"]+)",\s*"([^"]*)"\]/g)].map((m) => m[1]!);
 
-const render = (src: string): string =>
+/** The examples sync-docs compiles into the site: every top-level `examples/*.arch` minus its
+ *  EXCLUDED_EXAMPLES table, derived the way test/docs-sync-list.test.ts derives it. */
+const excluded = new Set(
+  [...(/const EXCLUDED_EXAMPLES = \[([\s\S]*?)\n\];/.exec(syncSrc)?.[1] ?? "").matchAll(/\["([^"]+)",/g)].map(
+    (m) => m[1]!,
+  ),
+);
+const EXAMPLE_COUNT = readdirSync("examples").filter(
+  (f) => f.endsWith(".arch") && statSync(`examples/${f}`).isFile() && !excluded.has(f),
+).length;
+
+/**
+ * The home hero sync-docs would inject. The real one is an agent-gallery pair, which no test may
+ * read (test/agent-gallery.test.ts's isolation law), so this is a stand-in of the same shape on an
+ * example: the transform is what is under test, not the pair.
+ */
+const HERO = {
+  id: "one-room",
+  model: "A stand-in model",
+  brief: "A stand-in brief.\nOn two lines.",
+  source: readFileSync("examples/one-room.arch", "utf8").replace(/\r\n/g, "\n"),
+  link: "https://playground.archlang.uk/#z=stand-in",
+};
+
+const render = (src: string, hero: typeof HERO | { [k: string]: unknown } = HERO): string =>
   siteMarkdown(src, {
     repo: process.cwd(),
     compile,
@@ -33,6 +57,8 @@ const render = (src: string): string =>
     encodePlanHash,
     levelSvgName: (name: string, level: number) => `${name}.L${level}.svg`,
     playground: "https://playground.archlang.uk",
+    exampleCount: EXAMPLE_COUNT,
+    hero,
   });
 
 suite("siteMarkdown over every SITE_PAGES row", () => {
@@ -60,18 +86,67 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect(md).not.toContain("%ARCHLANG_VERSION%");
   });
 
-  it("the home copy carries the hero, every feature card and the facts band", () => {
+  it("the home copy carries the hero, every section and the facts band, in the page's order", () => {
     const md = render("docs-site/index.md");
-    expect(md).toContain("# Designs that compile.");
-    expect(md).toContain("A declarative language for floor plans.");
-    expect(md).toContain("[Get started](/guide)");
+    const file = JSON.parse(readFileSync("site-shared/doors.json", "utf8"));
+    expect(md.startsWith("# Designs that compile.\n\nA declarative language for floor plans.\n\n")).toBe(true);
+    expect(md).toContain(file.canonicalLine);
+    // Both primaries, with their doors.json values.
+    expect(md).toContain("**Use it in ChatGPT:**");
+    expect(md).toContain(file.doors.chatgpt.url);
+    expect(md).toContain("**Copy the prompt for your agent:**");
+    expect(md).toContain(file.agentPrompt.join("\n"));
+    // D4: the proof line, N derived the way sync-docs derives it.
+    expect(md).toContain(
+      `${EXAMPLE_COUNT} example plans, every one compiled and checked in CI · SVG · PDF · DXF · PNG · MIT`,
+    );
+    // The hero sync-docs chose: its brief quoted line by line, its model named, its source and link.
+    expect(md).toContain(`The brief below was given to ${HERO.model}`);
+    expect(md).toContain(HERO.brief.replace(/^/gm, "> "));
+    expect(md).toContain(HERO.source.trimEnd());
+    expect(md).toContain(`[Open this plan in the Playground](${HERO.link})`);
+    // A fallback hero with no brief gets no quote and no model line.
+    const bare = render("docs-site/index.md", { ...HERO, model: null, brief: null });
+    expect(bare).not.toContain("The brief below was given to");
+    expect(bare).toContain(`The plan below is \`${HERO.id}.arch\``);
+    const sections = [
+      "## Why use it",
+      "## How it works",
+      "## Plans written in ArchLang",
+      "## What it is, and what it isn't",
+      "## Reads its own plans",
+      "## An interface, not just an image.",
+      "## Topics",
+    ];
+    const at = sections.map((h) => md.indexOf(h));
+    for (const [i, pos] of at.entries()) expect(pos, sections[i]).toBeGreaterThan(0);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    expect(md).toContain("| Room | Use | Area | Adj. |");
+    expect(md).toContain("**Limits.** Plan drawings only");
+    expect(md.length).toBeGreaterThan(5000);
+  });
+
+  it("the /examples copy carries every feature sheet, moved there from the home page", () => {
+    const md = render("docs-site/examples.md");
     const cards = readFileSync("docs-site/.vitepress/theme/SheetGrid.vue", "utf8").match(/\bno: "A-\d+"/g) ?? [];
     expect(cards.length).toBeGreaterThan(0);
     expect((md.match(/^### A-\d+ · /gm) ?? []).length).toBe(cards.length);
-    expect(md).toContain("## Reads its own plans");
-    expect(md).toContain("| Room | Use | Area | Adj. |");
-    expect(md).toContain("An interface, not just an image.");
-    expect(md.length).toBeGreaterThan(5000);
+  });
+
+  it("the /start copy carries every door in doors.json's start order, each with its value", () => {
+    const md = render("docs-site/start.md");
+    const file = JSON.parse(readFileSync("site-shared/doors.json", "utf8"));
+    const copy = JSON.parse(readFileSync("docs-site/.vitepress/theme/door-copy.json", "utf8"));
+    const order = file.order.start as string[];
+    const at = order.map((id, i) => md.indexOf(`## ${i + 1} ${copy[id].heading}`));
+    for (const [i, pos] of at.entries()) expect(pos, order[i]).toBeGreaterThan(0);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    for (const url of [file.doors.playground.url, file.doors.chatgpt.url, file.doors.claudeai.url]) {
+      expect(md).toContain(url);
+    }
+    expect(md).toContain(file.agentPrompt.join("\n"));
+    expect(md).toContain(file.doors.vscode.marketplace);
+    expect(md).toContain("https://youtu.be/");
   });
 
   it("the gallery copy keeps the provenance sentence and the drawings of every entry", () => {

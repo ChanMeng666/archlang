@@ -133,6 +133,11 @@ const PAGE_META = [
     "The diagnostics an AI agent meets most often when writing ArchLang, what each means and how to fix it, from doors off a wall to stale edits and lock errors.",
   ],
   [
+    "/start",
+    "Get a floor plan from your AI",
+    "Five ways to get a floor plan from your AI, from no install at all to your own coding agent, each with the exact link, prompt or command to use.",
+  ],
+  [
     "/gallery",
     "Floor plans written by AI agents",
     "Eleven floor plans, each written by an AI agent from a one-paragraph brief: the brief as given, the ArchLang source the agent delivered, and the compiled drawing.",
@@ -160,7 +165,7 @@ const PAGE_META = [
   [
     "/showcase",
     "Showcase: compiled floor plans",
-    "Floor plans compiled, not drawn. Each drawing here is a few dozen lines of ArchLang source you can open in the playground and recompile in your browser.",
+    "Floor plans compiled, not drawn: real buildings, original plans and fan studies, each a text file you can open in the playground and recompile in your browser.",
   ],
   [
     "/cli",
@@ -195,7 +200,7 @@ const PAGE_META = [
   [
     "/whats-new",
     "What is new in 1.44 to 1.55",
-    "The features added in ArchLang 1.44.0 to 1.46.0, each with an example: quantities and takeoff, locked elements, wall status, imperial lengths and the review sheet.",
+    "The features added in ArchLang 1.44 to 1.55, each with an example: quantities and takeoff, locked elements, stacked storeys, L-shaped rooms and the review sheet.",
   ],
   [
     "/spec",
@@ -732,62 +737,56 @@ export default defineConfig({
     // The ArchLang spark mark beside the "ArchLang" site title in the nav bar.
     // The plum mark reads on both the light docs chrome and the dark mobile nav.
     logo: "/brand/archlang-icon-plum.svg",
-    // Calm, grouped top nav: a few primary links plus dropdowns, so the bar
-    // stays readable on the home page and every doc page (it's one global nav).
-    // Sub-topics live under Reference; the contributor-only ADRs stay in the
-    // sidebar (below) rather than the bar. Playground is the standalone CTA — it
-    // is intentionally NOT repeated inside Ecosystem.
+    // Five slots (public-surfaces PS-D6): Try it · Gallery · Docs ▾ · Playground ↗ · GitHub.
+    // A visitor's first two clicks are "get a plan" and "see plans"; every reference page
+    // lives once, under Docs. The contributor-only ADRs stay in the sidebar (below). The
+    // wider brand family (ArchCanvas, npm) is in the title-block footer's Ecosystem cell.
+    // VitePress appends the external ↗ icon itself, so no manual arrow in any text.
     nav: [
-      { text: "Guide", link: "/guide" },
+      { text: "Try it", link: "/start" },
+      { text: "Gallery", link: "/gallery" },
       {
-        text: "Reference",
+        text: "Docs",
         items: [
-          { text: "Language reference", link: "/reference" },
-          { text: "CLI reference", link: "/cli" },
-          { text: "Relational placement", link: "/relational" },
-          { text: "Furniture & fixtures", link: "/furniture" },
-          { text: "Analysis: describe & lint", link: "/analysis" },
-          { text: "The intent contract", link: "/intent" },
-          { text: "Error catalog", link: "/errors" },
-          { text: "What is new in 1.44 to 1.55", link: "/whats-new" },
+          {
+            items: [
+              { text: "Guide", link: "/guide" },
+              { text: "Language reference", link: "/reference" },
+              { text: "CLI reference", link: "/cli" },
+              { text: "MCP server", link: "/mcp" },
+              { text: "Use it from an agent", link: "/agents" },
+              { text: "Draw a plan from an image or PDF", link: "/from-an-image" },
+              { text: "Change one room without moving the others", link: "/edit-one-room" },
+              { text: "Common mistakes", link: "/common-mistakes" },
+              { text: "Error catalog", link: "/errors" },
+              { text: "What is new", link: "/whats-new" },
+            ],
+          },
+          {
+            text: "More",
+            items: [
+              { text: "Examples", link: "/examples" },
+              { text: "Showcase", link: "/showcase" },
+              { text: "One-page spec", link: "/spec" },
+              { text: "Relational placement", link: "/relational" },
+              { text: "Furniture & fixtures", link: "/furniture" },
+              { text: "Analysis: describe & lint", link: "/analysis" },
+              { text: "The intent contract", link: "/intent" },
+              { text: "Embed in a web page", link: "/embed" },
+              { text: "JavaScript library", link: "/javascript" },
+              { text: "Import from a mask (experimental)", link: "/import" },
+            ],
+          },
         ],
       },
-      { text: "Examples", link: "/examples" },
-      { text: "Showcase", link: "/showcase" },
-      {
-        text: "AI Agents",
-        items: [
-          { text: "Use it from an agent", link: "/agents" },
-          { text: "MCP server", link: "/mcp" },
-          { text: "Plans written by agents", link: "/gallery" },
-          { text: "Embed in a web page", link: "/embed" },
-          { text: "JavaScript library", link: "/javascript" },
-          { text: "Draw a plan from an image or PDF", link: "/from-an-image" },
-          { text: "Change one room without moving the others", link: "/edit-one-room" },
-          { text: "Common mistakes", link: "/common-mistakes" },
-          { text: "Import from a mask (experimental)", link: "/import" },
-          { text: "One-page spec", link: "/spec" },
-          { text: "CLI reference", link: "/cli" },
-        ],
-      },
-      // Keep one-click reach to the playground… (VitePress appends the external
-      // ↗ icon itself for external links, so no manual arrow in the text.)
       { text: "Playground", link: "https://playground.archlang.uk" },
-      // …and group the wider brand family (the ArchCanvas product + packages)
-      // under an Ecosystem dropdown so docs ↔ archcanvas ↔ packages all link.
-      {
-        text: "Ecosystem",
-        items: [
-          { text: "ArchCanvas", link: "https://archcanvas.uk" },
-          { text: "npm", link: "https://www.npmjs.com/package/@chanmeng666/archlang" },
-          { text: "GitHub", link: "https://github.com/chanmeng666/archlang" },
-        ],
-      },
+      { text: "GitHub", link: REPO_URL },
     ],
     sidebar: [
       {
         text: "Introduction",
         items: [
+          { text: "Get a plan from your AI", link: "/start" },
           { text: "What is ArchLang?", link: "/guide" },
           { text: "Floor plans as code", link: "/floor-plans-as-code" },
           { text: "A floor plan DSL", link: "/floor-plan-dsl" },
@@ -820,7 +819,7 @@ export default defineConfig({
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },
-          { text: "What is new in 1.44 to 1.55", link: "/whats-new" },
+          { text: "What is new", link: "/whats-new" },
         ],
       },
       {
@@ -834,7 +833,7 @@ export default defineConfig({
         items: [{ text: "Architecture decisions", link: "/adr/" }, ...ADRS],
       },
     ],
-    socialLinks: [{ icon: "github", link: "https://github.com/chanmeng666/archlang" }],
+    // No socialLinks: GitHub is the nav's fifth slot, so an icon beside it would say it twice.
     search: { provider: "local" },
     // The site-wide footer is rendered by TitleBlockFooter.vue (layout-bottom slot),
     // a drawing title block carrying the project/license/issued cells plus the

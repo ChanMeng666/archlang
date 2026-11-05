@@ -28,6 +28,8 @@ const svg = compile(SRC, { noCache: true }).svg;
 const facts = describe(SRC);
 const rooms = facts.rooms;
 const totals = facts.totals;
+// Read off the access graph, never written as a claim.
+const allReachable = facts.access.rooms.every((r) => r.reachable);
 </script>
 
 <template>
@@ -37,10 +39,9 @@ const totals = facts.totals;
       <p class="facts__eyebrow">describe() &amp; lint</p>
       <h2 class="facts__title">Reads its own plans</h2>
       <p class="facts__lede">
-        A plan compiles to a drawing — and to <em>facts</em>. <code>describe()</code> returns rooms,
-        areas, adjacency, a modelled access graph and circulation figures; <code>lint()</code> flags
-        habitability and circulation problems. Both are image-free, so an agent can confirm what it
-        drew without rendering a pixel.
+        A plan compiles to a drawing and to <em>facts</em>: <code>describe()</code> returns rooms,
+        areas, adjacency and an access graph, and <code>lint()</code> says what is wrong. An agent reads
+        them without an image.
       </p>
     </div>
 
@@ -90,8 +91,8 @@ const totals = facts.totals;
         </table>
         <p class="facts__foot">
           {{ totals.doors }} doors · {{ totals.windows }} windows ·
-          {{ facts.access.hasEntrance ? "entrance verified" : "no entrance" }} ·
-          every room reachable
+          {{ facts.access.hasEntrance ? "an entrance" : "no entrance" }} ·
+          {{ allReachable ? "every room reachable" : "a room cannot be reached" }}
         </p>
       </div>
     </div>

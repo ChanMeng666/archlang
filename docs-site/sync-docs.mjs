@@ -65,6 +65,7 @@ const PAGES = [
  */
 const SITE_PAGES = [
   ["docs-site/index.md", "index.md"],
+  ["docs-site/start.md", "start.md"],
   ["docs-site/guide.md", "guide.md"],
   ["docs-site/agents.md", "agents.md"],
   ["docs-site/examples.md", "examples.md"],
@@ -280,8 +281,14 @@ const failures = [];
 let levelSvgCount = 0;
 let compile = null;
 let describe = null;
+let lint = null;
+let impact = null;
+let applyLetOverride = null;
+let diagnosticToJson = null;
 try {
-  ({ compile, describe } = await import(pathToFileURL(join(repo, "dist", "index.js")).href));
+  ({ compile, describe, lint, impact, applyLetOverride, diagnosticToJson } = await import(
+    pathToFileURL(join(repo, "dist", "index.js")).href
+  ));
 } catch (e) {
   failures.push(`cannot load the built core from dist/ — run \`npm run build\` at the repo root first (${e.message})`);
 }
@@ -324,15 +331,6 @@ if (failures.length > 0) {
   process.exit(1);
 }
 console.log(`  ${examples.length} example SVGs + sources (+ ${levelSvgCount} per-storey pages) → public/examples/`);
-
-// The hand-written pages' raw markdown at /<route>.md. After the gallery gate above because it
-// needs the built core (the home page's facts band is `describe()`, the agent gallery's sheet
-// names come from `compile().pages`); the transform itself lives in site-markdown.mjs.
-for (const [src, dest] of SITE_PAGES) {
-  const md = siteMarkdown(src, { repo, compile, describe, encodePlanHash, levelSvgName, playground: PLAYGROUND });
-  writeFileSync(join(publicDir, dest), md);
-  console.log(`  ${src} → public/${dest}  (+ /${dest})`);
-}
 
 // ───────────────────────────────────────────────────────────────────────────────
 // AGENT GALLERY (`/gallery`): plans written by AI agents from a one-paragraph brief.
@@ -401,3 +399,199 @@ writeFileSync(
     `export const GALLERY = ${JSON.stringify(gallery, null, 2)};\n`,
 );
 console.log(`  ${gallery.length} agent gallery plans → public/gallery/  (+ .vitepress/theme/gallery-data.js)`);
+
+// ───────────────────────────────────────────────────────────────────────────────
+// HOME PAGE PROOFS: the drawings and facts behind the three Why cards, the gallery's
+// facts lines and the proof line's count. Every one is a compile, `describe()`, `lint()` or
+// `impact()` run here on a file in the repo; the cards hold no figure of their own.
+//
+// HOME_PROOFS is the one hand-written part: WHICH file each card reads, and the one edit it
+// makes to show a change. The three Why proofs read examples/ (pinned corpus), and each edit is
+// checked, so a card cannot claim what the compiler no longer says: the build fails if the edit
+// stops doing what the card shows.
+//
+// The hero is different. It DISPLAYS an agent-gallery pair, and the gallery is not corpus: "a
+// compiler change may redraw them freely; it may not break them" (test/agent-gallery.test.ts),
+// and no test pins its bytes. So the hero never fails the build: if its entry is gone, it falls
+// back to another gallery entry, then to an example with no brief, and says so.
+// ───────────────────────────────────────────────────────────────────────────────
+const HOME_PROOFS = {
+  // The hero: one agent-gallery pair, its brief in a chat bubble, its source streamed. `fallback`
+  // is the example shown, with no brief, if the gallery has no compiled entry at all.
+  hero: { gallery: "studio", fallback: "laneway-house" },
+  // "Exact": areas and reachability, computed, on one example.
+  exact: { example: "laneway-house" },
+  // "Change one line, see what moved": one top-level `let`, and the ids that must hold.
+  change: { example: "knob-flat", let: "BEDROOM", to: "3900", lock: ["r_live", "r_hall", "d_front"] },
+  // "It checks itself": the same flat with its bedroom window taken out (the playground's
+  // "Flat with one thing to fix" tells the same story).
+  check: { example: "knob-flat", drop: "window on r_bed.top", code: "W_BEDROOM_NO_WINDOW" },
+};
+
+const homeDest = join(publicDir, "home");
+mkdirSync(homeDest, { recursive: true });
+const homeFailures = [];
+const home = {};
+{
+  // Exact.
+  const name = HOME_PROOFS.exact.example;
+  const d = describe(sources[name]);
+  const reach = new Map(d.access.rooms.map((r) => [r.id, r.reachable]));
+  home.exact = {
+    example: name,
+    plan: d.plan,
+    rooms: d.rooms.map((r) => ({
+      label: r.label,
+      area_m2: r.area_m2,
+      net_area_m2: r.net_area_m2,
+      reachable: reach.get(r.id) === true,
+    })),
+    floor_area_m2: d.totals.floor_area_m2,
+    entrance: d.access.hasEntrance,
+  };
+  if (!home.exact.entrance || home.exact.rooms.some((r) => !r.reachable)) {
+    homeFailures.push(`HOME_PROOFS.exact: examples/${name}.arch is no longer reachable room by room`);
+  }
+}
+{
+  // Change one line.
+  const { example, let: name, to, lock } = HOME_PROOFS.change;
+  const set = applyLetOverride(sources[example], name, to);
+  if (!set.ok) {
+    homeFailures.push(`HOME_PROOFS.change: \`--set ${name}=${to}\` is refused on examples/${example}.arch`);
+  } else {
+    const after = compile(set.source, { noCache: true });
+    const report = impact(sources[example], set.source, { lock });
+    const file = `${example}.${name}-${to}.svg`;
+    writeFileSync(join(homeDest, file), after.svg);
+    home.change = {
+      example,
+      let: name,
+      from: set.before,
+      to: set.after,
+      after: `/home/${file}`,
+      changed: report.changed.length,
+      held: report.held.length,
+      lock,
+      lockOk: report.lock?.ok === true,
+    };
+    if (after.errors.length || !home.change.lockOk || home.change.changed === 0) {
+      homeFailures.push(
+        `HOME_PROOFS.change: ${name}=${to} on ${example} no longer moves some elements and holds ${lock.join(",")}`,
+      );
+    }
+  }
+}
+{
+  // It checks itself: without the line the code is raised, with it (the example as it is) it is not.
+  const { example: id, drop, code } = HOME_PROOFS.check;
+  const source = sources[id].replace(/\r\n/g, "\n");
+  const lines = source.split("\n");
+  const variant = lines.filter((l) => !l.trimStart().startsWith(drop)).join("\n");
+  const raised = lint(variant).find((x) => x.code === code);
+  const cleared = !lint(source).some((x) => x.code === code);
+  if (lines.length - variant.split("\n").length !== 1 || !raised || !cleared) {
+    homeFailures.push(
+      `HOME_PROOFS.check: dropping \`${drop}\` from examples/${id}.arch no longer raises ${code} alone`,
+    );
+  } else {
+    // The flagged element is found by the diagnostic's own span, through the compiler's opt-in
+    // source annotation (ADR 0007). The drawing is the compiler's; the highlight is the SITE's:
+    // a style rule this script adds on the element the compiler already labels, never a shape.
+    // Redline hexes as in style.css.
+    const svg = compile(variant, { noCache: true, annotate: true }).svg;
+    const at = `${raised.span.start}:${raised.span.end}`;
+    const mark =
+      `<style>polygon[data-span="${at}"][data-arch-primary]{fill:#f6d7d3;stroke:#c2362b;stroke-width:80}` +
+      `text[data-span="${at}"]{fill:#b3261e}</style>`;
+    if (!svg.includes(`data-span="${at}"`)) {
+      homeFailures.push(`HOME_PROOFS.check: the compiled drawing has no element at the span of ${code}`);
+    }
+    // Both drawings are framed on the plan rather than the whole sheet, so the mark reads at a
+    // card's size: the same window for both, from the rooms' own floor polygons plus a margin
+    // for the walls, the door swings and the dimension chains. A frame, never an edit.
+    const pts = describe(source).rooms.flatMap((r) => r.floor_polygon);
+    const [x0, y0] = [Math.min(...pts.map((p) => p.x)), Math.min(...pts.map((p) => p.y))];
+    const [x1, y1] = [Math.max(...pts.map((p) => p.x)), Math.max(...pts.map((p) => p.y))];
+    const M = 1500;
+    // The root tag only: a sheet carries width/height in mm, a plain plan carries a viewBox alone.
+    const frame = (s) =>
+      s.replace(/<svg\b[^>]*>/, (root) => {
+        const [w, h] = [x1 - x0 + 2 * M, y1 - y0 + 2 * M];
+        return root
+          .replace(/\s(width|height)="[^"]*"/g, "")
+          .replace(/\sviewBox="[^"]*"/, ` viewBox="${x0 - M} ${y0 - M} ${w} ${h}"`);
+      });
+    const framedRaised = frame(svg);
+    const framedCleared = frame(compile(source, { noCache: true }).svg);
+    if (framedRaised === svg || !framedCleared.includes(`viewBox="${x0 - M} ${y0 - M} `)) {
+      homeFailures.push("HOME_PROOFS.check: the compiled SVG's root no longer carries width, height and viewBox");
+    }
+    const file = `${id}.${code}.raised.svg`;
+    writeFileSync(join(homeDest, file), framedRaised.replace(/(<svg[^>]*>)/, `$1${mark}`));
+    writeFileSync(join(homeDest, `${id}.${code}.cleared.svg`), framedCleared);
+    home.check = {
+      example: id,
+      drop,
+      code,
+      message: raised.message,
+      // The catalogued fix line, as `archlang lint --json` prints it.
+      fix: diagnosticToJson(variant, raised).fix ?? null,
+      raised: `/home/${file}`,
+      cleared: `/home/${id}.${code}.cleared.svg`,
+    };
+  }
+}
+{
+  // The hero: never a build failure. `gallery` holds only the entries that compiled above.
+  const wanted = HOME_PROOFS.hero.gallery;
+  const entry = gallery.find((g) => g.id === wanted) ?? gallery[0];
+  if (entry) {
+    if (entry.id !== wanted) console.warn(`  ⚠ home hero: gallery entry "${wanted}" is missing; showing "${entry.id}"`);
+    const { id, title, model, brief, source, link } = entry;
+    // LF, as every other source this script reads; the `#z=` link carries the file as read.
+    home.hero = { id, title, model, brief, source: source.replace(/\r\n/g, "\n"), link, gallery: true };
+  } else {
+    const id = HOME_PROOFS.hero.fallback;
+    console.warn(`  ⚠ home hero: no gallery entry compiled; showing examples/${id}.arch with no brief`);
+    home.hero = { id, title: id, model: null, brief: null, source: sources[id], link: links[id], gallery: false };
+  }
+}
+if (homeFailures.length > 0) {
+  console.error(`\nsync-docs FAILED — ${homeFailures.length} home page proof problem(s):`);
+  for (const f of homeFailures) console.error(`  ✗ ${f}`);
+  process.exit(1);
+}
+// Rooms and floor area of every gallery example, for the home gallery's facts lines.
+const exampleFacts = {};
+for (const name of examples) {
+  const t = describe(sources[name]).totals;
+  exampleFacts[name] = { rooms: t.rooms, floor_area_m2: t.floor_area_m2 };
+}
+writeFileSync(
+  join(here, ".vitepress", "theme", "home-data.js"),
+  "// GENERATED by sync-docs.mjs (HOME_PROOFS) from examples/ and docs/gallery/ — do not edit.\n" +
+    `export const HOME = ${JSON.stringify(home, null, 2)};\n\n` +
+    "// How many example plans this build compiled into the site: the proof line's N.\n" +
+    `export const EXAMPLE_COUNT = ${examples.length};\n\n` +
+    `export const EXAMPLE_FACTS = ${JSON.stringify(exampleFacts, null, 2)};\n`,
+);
+console.log("  3 home page proofs → public/home/  (+ .vitepress/theme/home-data.js)");
+
+// The hand-written pages' raw markdown at /<route>.md. Last, because it needs the built core (the
+// home page's facts band is `describe()`, the agent gallery's sheet names come from
+// `compile().pages`) and the home hero chosen above; the transform lives in site-markdown.mjs.
+for (const [src, dest] of SITE_PAGES) {
+  const md = siteMarkdown(src, {
+    repo,
+    compile,
+    describe,
+    encodePlanHash,
+    levelSvgName,
+    playground: PLAYGROUND,
+    exampleCount: examples.length,
+    hero: home.hero,
+  });
+  writeFileSync(join(publicDir, dest), md);
+  console.log(`  ${src} → public/${dest}  (+ /${dest})`);
+}

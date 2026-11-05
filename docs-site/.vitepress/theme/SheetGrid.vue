@@ -1,5 +1,6 @@
 <script setup lang="ts">
-// The feature gallery as drafting-sheet cards. Each card is a sheet: a numbered
+// The feature gallery as drafting-sheet cards, at the foot of /examples (it opened the home
+// page until the public-surfaces rebuild moved its long captions here). Each card is a sheet: a numbered
 // title block (A-101 … A-108), a header that shows a real compiled artifact (an
 // example plan's SVG), then the specification copy. Rows are separated by a
 // dimension line — the drawing detail that says "this is a measured document".

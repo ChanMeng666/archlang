@@ -1,88 +1,47 @@
 <script setup lang="ts">
-// The landing hero — "The Compile Boundary" made literal. A full-bleed stage
-// split by a visible compile SEAM: a dark SOURCE world on the left where the
-// canonical example (examples/laneway-house.arch) types itself, and a warm SHEET world
-// on the right where the compiled floor plan draws itself. The whole thing IS the
-// thesis: source on one side, a professional drawing on the other, the compiler
-// the rule between them.
+// The landing hero: "The Compile Boundary" (ADR 0010 §5), told as brief → source → plan.
 //
-// SSR & hydration: compile() is pure/isomorphic, so the server renders the FINAL
-// state (fully-typed source + final SVG). The client only mutates AFTER mount —
-// an IntersectionObserver rewinds to empty and replays the typing on a rAF loop,
-// exactly once, and only when the hero is on-screen and motion is allowed.
+// Left, the SOURCE world: what ArchLang is (the h1, its sub-line and the canonical line) and the
+// two ways to get a plan now, at equal weight (PS-D2): the ChatGPT app, and the prompt for a
+// coding agent. Right, across the plum seam, the SHEET world: a real agent-gallery pair. The
+// brief arrives as a chat message, the agent's ArchLang streams in, and the compiled plan draws
+// itself line by line.
+//
+// SSR & hydration: compile() is pure and isomorphic, so the server renders the FINAL state (the
+// whole source and the final SVG). The client rewinds only after mount, once, when the hero is on
+// screen and motion is allowed, and the whole run takes under eight seconds.
 import { ref, shallowRef, computed, onMounted, onBeforeUnmount, watch } from "vue";
-import { useData } from "vitepress";
 import { compile, describe } from "archlang";
-import { EXAMPLES, EXAMPLE_LINKS } from "./examples-data.js";
+import { EXAMPLE_COUNT, HOME } from "./home-data.js";
 import { highlightArch } from "./arch-highlight.js";
 import { stripHeaderComments } from "./strip-header-comments.js";
-// The hosted doors (ChatGPT app, claude.ai connector) come from the one doors file shared by
-// every public surface (test/site-doors.test.ts); nothing here retypes them.
-import { doors as NO_INSTALL } from "../../../site-shared/doors.json";
+// Every door comes from the one doors file every public surface reads (test/site-doors.test.ts).
+import { agentPrompt, canonicalLine, doors as NO_INSTALL } from "../../../site-shared/doors.json";
+import CopyBox from "./components/CopyBox.vue";
 
-// The hero example, already synced into examples-data.js by sync-docs.mjs (no
-// `?raw` / fs.allow dependency). This is the source that types itself; the name is
-// bound ONCE so the source, the file-name chip and the aspect fallback below can
-// never name three different plans.
-const HERO = "laneway-house";
+// The hero pair, chosen in sync-docs.mjs's HOME_PROOFS and copied byte for byte from
+// docs/gallery/: the brief as given, the plan as the agent delivered it (after one `arch finish`).
+// The gallery is not pinned corpus, so sync-docs falls back rather than fail: another gallery
+// entry, or an example with no brief (then there is no bubble and no wait for one).
+const PAIR = HOME.hero;
+const PROMPT = agentPrompt.join("\n");
 
-// The definition under the headline IS the page's meta description: config.ts patches
-// `page.description` from PAGE_META, so reading it here keeps one sentence, not two.
-const { page } = useData();
-const definition = computed(() => page.value.description);
+// The source, minus its leading prose header: those comment lines are for a reader of the FILE,
+// and in the animation they are seconds of an empty sheet before the first line that draws. The
+// file itself is untouched, and the playground link below carries all of it.
+const raw: string = stripHeaderComments(PAIR.source);
+const PLAYGROUND = PAIR.link;
 
-// The three install commands, each one line and copyable (the no-install doors sit above them). The package names are the published
-// ones; no version appears anywhere (versions come from npm, never a doc).
-const INSTALL_LINES = [
-  { label: "CLI", cmd: "npx -y @chanmeng666/archlang compile plan.arch" },
-  { label: "MCP", cmd: "claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp" },
-  { label: "Skill", cmd: "npx -y skills add ChanMeng666/archlang --yes" },
-] as const;
-const copied = ref("");
-async function copyCmd(cmd: string) {
-  try {
-    await navigator.clipboard.writeText(cmd);
-    copied.value = cmd;
-    setTimeout(() => {
-      if (copied.value === cmd) copied.value = "";
-    }, 1500);
-  } catch {
-    /* clipboard unavailable: the line is still selectable text */
-  }
-}
-// …minus its leading prose header. The file opens with seven comment lines the
-// reader of the FILE wants and the watcher of the ANIMATION cannot use: at 90
-// chars/s they are 5.3 seconds of an empty sheet before the first prefix that
-// compiles, which reads as a broken panel. The inline comments further down stay —
-// by then there is a drawing to read them against. See strip-header-comments.ts;
-// `examples/laneway-house.arch` itself is untouched, and the "Open this plan ↗"
-// permalink below still carries the whole file.
-const raw: string = stripHeaderComments(EXAMPLES[HERO]);
+// ── Timing. The brief sits alone for BRIEF_MS, then the source streams in over TYPE_MS: the
+//    whole run is under eight seconds whatever the pair's length, because the rate is derived
+//    from it rather than fixed. ─────────────────────────────────────────────────────────────
+const BRIEF_MS = PAIR.brief ? 900 : 0;
+const TYPE_MS = 6200;
+const SPEED = raw.length / (TYPE_MS / 1000); // characters per second
 
-// The playground, opened on THIS plan rather than on an empty editor: a `#z=` permalink
-// minted at build time by sync-docs.mjs from the same file the hero types. A reader who
-// has just watched laneway-house.arch compile can carry it across the seam and keep going.
-const PLAYGROUND = EXAMPLE_LINKS[HERO];
+const finalSvg = compile(raw, { noCache: true }).svg;
 
-// ── The source text and its final compiled drawing (computed once, at setup,
-//    so it exists during SSR and initial hydration alike). ──────────────────
-// Characters/second. Bounded at both ends, and NOT by legibility of the source —
-// the typed text PERSISTS, so how long a reader has to take in the inline comments
-// is set by how long they stay on the page, never by this. What this governs is the
-// aesthetic of watching a plan compile.
-//   · Fast enough that geometry lands in ~2 s: the first `<path>` appears at char
-//     233 (the end of the first `wall` statement), and the whole run is 18 s rather
-//     than 28 — a visitor who leaves at 20 s used to never see the plan finish.
-//   · Slow enough that it still reads as TYPING and not as a paste: at 60 fps this
-//     is 2.3 characters per frame, so the per-character texture survives.
-// Was 90 ("a calm, readable typing cadence") until the same round that stripped the
-// example's prose header; measured at both values before changing it.
-const SPEED = 140;
-const finalResult = compile(raw, { noCache: true });
-const finalSvg = finalResult.svg;
-
-// Anti-CLS: reserve the paper stage at the final drawing's exact aspect ratio so
-// the sheet never resizes as intermediate SVGs (different viewBoxes) swap in.
+// Anti-CLS: reserve the paper at the final drawing's exact aspect ratio.
 function aspectFromSvg(svg: string): string {
   const m = svg.match(/viewBox="\s*([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)\s+([-\d.]+)"/);
   if (m) {
@@ -90,40 +49,25 @@ function aspectFromSvg(svg: string): string {
     const h = Number(m[4]);
     if (w > 0 && h > 0) return `${w} / ${h}`;
   }
-  return "10718.4 / 11166"; // laneway-house.arch fallback (its compiled viewBox)
+  return "420 / 297";
 }
 const paperAspect = aspectFromSvg(finalSvg);
 
-// The sheet's title block, DERIVED — it used to hard-code a plan name and a scale,
-// which is the one thing a page about compiling from source must not do. `scale` is
-// optional (this plan declares none, so the chip is simply absent rather than
-// claiming a ratio the drawing was never issued at).
+// The sheet's title strip, DERIVED: the plan's name, its room count and area, from describe().
 const heroFacts = describe(raw);
 
-// ── Reactive display state — starts at the FINAL state for a hydration-safe
-//    first render; the client rewinds it after mount. ────────────────────────
+// ── Display state: starts FINAL for a hydration-safe first render; the client rewinds it. ──
 const typed = ref(raw);
 const displaySvg = shallowRef(finalSvg);
-const phase = ref<"settled" | "typing">("settled");
+const phase = ref<"settled" | "brief" | "typing">("settled");
 const mounted = ref(false);
 
-// ── Syntax tint for the source world. The tokenizer is GENERATED from
-//    src/grammar/tokens.ts (scripts/gen-grammars.ts → arch-highlight.js), the same
-//    tables that produce the VS Code grammar and the playground's CodeMirror mode,
-//    and it emits the shared --syn-* palette as `ahl-*` classes coloured once in
-//    style.css. It is re-run on the visible prefix each frame — cheap (one linear
-//    scan, no backtracking) and deliberately sane mid-token, so a half-typed string
-//    stays a string instead of flickering.
-//
-//    This REPLACED a hand-typed ~200-word keyword Set right here, carrying a "keep
-//    this in step with src/grammar/tokens.ts" comment — the exact drift class
-//    v1.26.0 closed everywhere else in the repo. It was already behind: four token
-//    roles against the palette's eight, so the hero under-coloured its own example.
+// The tokenizer is GENERATED from src/grammar/tokens.ts (scripts/gen-grammars.ts), the tables
+// the VS Code grammar and the playground use, coloured once in style.css.
 const highlightedTyped = computed(() => highlightArch(typed.value));
 
-// ── Line-end offsets: the byte index just past each newline. Compiling only when
-//    a whole line completes keeps intermediate SVGs valid and holds compiles to
-//    ≤1 per frame. ────────────────────────────────────────────────────────────
+// Byte index just past each newline: a compile per completed line keeps every intermediate
+// drawing valid and holds compiles to one per frame.
 const lineEnds: number[] = (() => {
   const ends: number[] = [];
   for (let i = 0; i < raw.length; i++) if (raw[i] === "\n") ends.push(i + 1);
@@ -132,14 +76,13 @@ const lineEnds: number[] = (() => {
 })();
 
 let rafId = 0;
+let briefTimer: ReturnType<typeof setTimeout> | undefined;
 let startTime = 0;
 let nextLineEnd = 0;
 let hasRun = false;
 
-// NB the "last good SVG" IS `displaySvg` — it is only ever assigned from a clean
-// compile, so an erroring intermediate prefix leaves the previous drawing on the
-// stage. A separate `lastGoodSvg` accumulator used to shadow that: written on every
-// clean compile, read nowhere. (Found by the first vue-tsc pass, `noUnusedLocals`.)
+// `displaySvg` is only ever assigned from a clean compile, so an erroring prefix leaves the
+// previous drawing on the stage.
 function compileAt(end: number) {
   const prefix = raw.slice(0, end);
   const open = (prefix.match(/{/g) || []).length;
@@ -154,10 +97,6 @@ function tick(now: number) {
   const elapsed = (now - startTime) / 1000;
   const charIndex = Math.min(raw.length, Math.floor(elapsed * SPEED));
   typed.value = raw.slice(0, charIndex);
-
-  // Advance past every line-end crossed this frame, but compile only the latest
-  // (one compile per frame). Skips comment-only prefixes cheaply — they compile
-  // to the same last-good drawing.
   let crossed = -1;
   // `nextLineEnd < lineEnds.length` is the in-range check the `!` asserts.
   while (nextLineEnd < lineEnds.length && charIndex >= lineEnds[nextLineEnd]!) {
@@ -165,7 +104,6 @@ function tick(now: number) {
     nextLineEnd++;
   }
   if (crossed >= 0) compileAt(crossed);
-
   if (charIndex >= raw.length) {
     finish();
     return;
@@ -177,29 +115,31 @@ function finish() {
   typed.value = raw;
   displaySvg.value = finalSvg;
   phase.value = "settled";
-  // Settle to the top of the source (matches the SSR / reduced-motion state,
-  // and reads as a code preview rather than a scrolled tail).
   if (preEl.value) preEl.value.scrollTop = 0;
 }
 
 function play() {
   cancelAnimationFrame(rafId);
+  clearTimeout(briefTimer);
   hasRun = true;
   startTime = 0;
   nextLineEnd = 0;
   typed.value = "";
   displaySvg.value = "";
-  phase.value = "typing";
-  rafId = requestAnimationFrame(tick);
+  phase.value = "brief";
+  briefTimer = setTimeout(() => {
+    phase.value = "typing";
+    rafId = requestAnimationFrame(tick);
+  }, BRIEF_MS);
 }
 
-// Keep the typed source scrolled to the caret.
+// Keep the streaming source scrolled to its last line.
 const preEl = ref<HTMLElement | null>(null);
 watch(
   typed,
   () => {
     const el = preEl.value;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el && phase.value === "typing") el.scrollTop = el.scrollHeight;
   },
   { flush: "post" },
 );
@@ -209,13 +149,10 @@ const rootEl = ref<HTMLElement | null>(null);
 
 onMounted(() => {
   mounted.value = true;
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  if (reduce) return; // honour reduced motion — stay on the final, static state
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return; // stay final
   observer = new IntersectionObserver(
     (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting && !hasRun) play();
-      }
+      for (const e of entries) if (e.isIntersecting && !hasRun) play();
     },
     { threshold: 0.35 },
   );
@@ -224,116 +161,96 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   cancelAnimationFrame(rafId);
+  clearTimeout(briefTimer);
   observer?.disconnect();
 });
 </script>
 
 <template>
-  <section ref="rootEl" class="seam-hero" aria-label="ArchLang — a declarative language that compiles to floor plans">
+  <section ref="rootEl" class="seam-hero" :data-phase="phase" aria-label="ArchLang: floor plans as code">
     <div class="seam-hero__stage">
       <!-- SOURCE WORLD -->
       <div class="pane pane--source">
         <div class="src-inner">
-          <!-- The brand line stays verbatim (brand/README.md, ADR 0010): it is the
-               identity line, not a slogan to be rewritten. The second line inside the
-               same <h1> is the one a crawler and an answer engine can read the subject
-               off — "Designs that compile." alone names no category. -->
+          <!-- The brand line stays verbatim (brand/README.md, ADR 0010), and the sub-line inside
+               the same <h1> names the category for a crawler (test/docs-home-copy.test.ts). -->
           <h1 class="headline">
             Designs that <span class="headline__accent">compile.</span>
             <span class="headline__sub">A declarative language for floor plans.</span>
           </h1>
 
-          <p class="tagline">{{ definition }}</p>
+          <p class="tagline">{{ canonicalLine }}</p>
 
-          <ul class="install install--hosted" aria-label="No install">
-            <li class="install__row install__row--door">
-              <span class="install__tag">No install</span>
-              <a class="install__link" :href="NO_INSTALL.chatgpt.url" target="_blank" rel="noopener"
-                >{{ NO_INSTALL.chatgpt.label }}&nbsp;↗</a
-              >
-            </li>
-            <li class="install__row install__row--door">
-              <span class="install__tag">claude.ai</span>
-              <code class="install__cmd">{{ NO_INSTALL.claudeai.url }}</code>
-              <span class="install__hint">add as a custom connector</span>
-              <button
-                type="button"
-                class="install__copy"
-                aria-live="polite"
-                aria-label="Copy claude.ai connector URL"
-                @click="copyCmd(NO_INSTALL.claudeai.url)"
-              >
-                {{ copied === NO_INSTALL.claudeai.url ? "Copied" : "Copy" }}
-              </button>
-            </li>
-          </ul>
-
-          <ul class="install" aria-label="Install">
-            <li v-for="l in INSTALL_LINES" :key="l.label" class="install__row">
-              <code class="install__cmd"><span class="install__prompt" aria-hidden="true">$</span> {{ l.cmd }}</code>
-              <button
-                type="button"
-                class="install__copy"
-                aria-live="polite"
-                :aria-label="`Copy ${l.label} command`"
-                @click="copyCmd(l.cmd)"
-              >
-                {{ copied === l.cmd ? "Copied" : "Copy" }}
-              </button>
-            </li>
-          </ul>
-
-          <div class="actions">
-            <a class="btn btn--solid" href="/guide">Get started</a>
-            <a class="btn btn--ghost" href="/reference">Language reference</a>
-            <a class="btn btn--ghost" :href="PLAYGROUND" target="_blank" rel="noopener"
-              >Open this plan&nbsp;↗</a
-            >
-          </div>
-
-          <div class="code-stage" :data-phase="phase">
-            <div class="code-chrome">
-              <span class="code-chrome__file">{{ HERO }}.arch</span>
-              <span class="code-chrome__status">{{ phase === "typing" ? "compiling" : "compiled" }}</span>
+          <!-- The two ways to get a plan now, at equal weight (PS-D2, docs home). -->
+          <div class="primaries">
+            <a class="primary primary--chatgpt" :href="NO_INSTALL.chatgpt.url" target="_blank" rel="noopener">
+              <span class="primary__title">Use it in ChatGPT</span>
+              <span class="primary__sub">{{ NO_INSTALL.chatgpt.label }} · {{ NO_INSTALL.chatgpt.note }}</span>
+              <span class="primary__go">Open&nbsp;↗</span>
+            </a>
+            <div class="primary primary--prompt">
+              <span class="primary__title">Copy the prompt for your agent</span>
+              <CopyBox :text="PROMPT" label="the prompt for your agent" clip />
             </div>
-            <!-- eslint-disable-next-line vue/no-v-html -->
-            <pre ref="preEl" class="code-pre"><code v-html="highlightedTyped"></code><span v-if="phase === 'typing'" class="caret" aria-hidden="true"></span></pre>
           </div>
+
+          <p class="hero-links">
+            <a :href="NO_INSTALL.playground.url" target="_blank" rel="noopener">Or open a plan in the playground&nbsp;↗</a>
+            <a href="#ways-in">claude.ai, VS Code and the rest&nbsp;↓</a>
+          </p>
+
+          <!-- D4: N is the number of example plans this build compiled into the site. -->
+          <p class="proof">
+            {{ EXAMPLE_COUNT }} example plans, every one compiled and checked in CI · SVG · PDF · DXF · PNG ·
+            MIT
+          </p>
         </div>
       </div>
 
       <!-- THE SEAM -->
       <div class="seam" aria-hidden="true"></div>
 
-      <!-- SHEET WORLD -->
+      <!-- SHEET WORLD: brief → source → plan -->
       <div class="pane pane--sheet">
-        <div class="sheet">
-          <div class="sheet__title">
-            <span>{{ heroFacts.plan }}</span><span>Sheet A-101</span
-            ><span v-if="heroFacts.scale">Scale {{ heroFacts.scale }}</span>
-          </div>
-          <div class="sheet__body" :style="{ aspectRatio: paperAspect }">
+        <div class="story">
+          <figure v-if="PAIR.brief" class="chat">
+            <figcaption class="chat__who">The brief, as given to {{ PAIR.model }}</figcaption>
+            <blockquote class="chat__bubble">{{ PAIR.brief }}</blockquote>
+          </figure>
+
+          <div class="code-stage" :data-phase="phase">
+            <div class="code-chrome">
+              <span class="code-chrome__file">{{ PAIR.id }}.arch<template v-if="PAIR.model"> · written by {{ PAIR.model }}</template></span>
+              <span class="code-chrome__status">{{
+                phase === "typing" ? "compiling" : phase === "brief" ? "reading the brief" : "compiled"
+              }}</span>
+            </div>
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div class="sheet__svg" v-html="displaySvg"></div>
+            <pre ref="preEl" class="code-pre"><code v-html="highlightedTyped"></code><span v-if="phase === 'typing'" class="caret" aria-hidden="true"></span></pre>
           </div>
-          <div class="sheet__foot">
-            <button
-              v-if="mounted"
-              type="button"
-              class="sheet__ctl"
-              :disabled="phase === 'typing'"
-              @click="play"
-            >
-              ↻ Replay
-            </button>
-            <a
-              class="sheet__ctl sheet__ctl--open"
-              :href="PLAYGROUND"
-              :aria-label="`Open in Playground: ${heroFacts.plan} (${HERO}.arch)`"
-              target="_blank"
-              rel="noopener"
-              >Open in Playground&nbsp;↗</a
-            >
+
+          <div class="sheet">
+            <div class="sheet__title">
+              <span>{{ heroFacts.plan }}</span><span>{{ heroFacts.totals.rooms }} rooms</span
+              ><span>{{ heroFacts.totals.floor_area_m2 }} m²</span>
+            </div>
+            <div class="sheet__body" :style="{ aspectRatio: paperAspect }">
+              <!-- eslint-disable-next-line vue/no-v-html -->
+              <div class="sheet__svg" v-html="displaySvg"></div>
+            </div>
+            <div class="sheet__foot">
+              <button v-if="mounted" type="button" class="sheet__ctl" :disabled="phase !== 'settled'" @click="play">
+                ↻ Replay
+              </button>
+              <a
+                class="sheet__ctl sheet__ctl--open plan-open"
+                :href="PLAYGROUND"
+                :aria-label="`Open in Playground: ${heroFacts.plan} (${PAIR.id}.arch)`"
+                target="_blank"
+                rel="noopener"
+                >Open in Playground&nbsp;↗</a
+              >
+            </div>
           </div>
         </div>
       </div>
@@ -342,8 +259,7 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-/* Full-bleed: .VPHome is already full-width, so the hero spans edge-to-edge and
-   sits naturally below the (opaque) nav — no negative margins. */
+/* Full-bleed: .VPHome is already full-width, so the hero spans edge to edge below the nav. */
 .seam-hero {
   color: var(--src-fg);
   --seam-w: 3px;
@@ -361,7 +277,7 @@ onBeforeUnmount(() => {
 }
 .pane--source {
   background: var(--src-bg);
-  padding: clamp(32px, 5vw, 72px) clamp(24px, 4vw, 60px);
+  padding: clamp(28px, 4vw, 56px) clamp(24px, 4vw, 60px);
   align-items: center;
   justify-content: flex-end;
 }
@@ -373,11 +289,10 @@ onBeforeUnmount(() => {
     repeating-linear-gradient(to bottom, var(--grid-line) 0 1px, transparent 1px 8px),
     repeating-linear-gradient(to right, var(--grid-line) 0 1px, transparent 1px 40px),
     repeating-linear-gradient(to bottom, var(--grid-line) 0 1px, transparent 1px 40px);
-  padding: clamp(28px, 4vw, 56px) clamp(24px, 4vw, 60px);
+  padding: clamp(16px, 2vw, 24px) clamp(24px, 4vw, 60px);
   align-items: center;
   justify-content: flex-start;
 }
-
 .src-inner {
   width: 100%;
   max-width: 560px;
@@ -385,162 +300,178 @@ onBeforeUnmount(() => {
 
 /* ── Headline ────────────────────────────────────────────────────────────── */
 .headline {
-  margin: 26px 0 0;
+  margin: 0;
   border: 0;
   padding: 0;
   font-family: var(--font-display);
   font-variation-settings: "wdth" 112;
   font-weight: 640;
   letter-spacing: -0.02em;
-  line-height: 1.0;
-  font-size: clamp(2.75rem, 6vw, 4.4rem);
+  line-height: 1;
+  font-size: clamp(2.5rem, 5.4vw, 4rem);
   color: var(--src-fg);
 }
 .headline__accent {
-  /* The headline clamps to ≥44px, so large-text 3:1 applies and the brand plum
-     can finally appear at full saturation (4.1:1 on --src-bg). Body-size plum
-     must still use --plum-deep. */
+  /* ≥ 40px, so large-text 3:1 applies and the brand plum can appear at full saturation. */
   color: var(--plum);
 }
 .headline__sub {
-  /* Inside the <h1>, so it is part of the page's one top-level heading — and sized
-     down to read as the sub-line it is. Tokens only; no dark-mode variant exists. */
   display: block;
-  margin-top: 0.5em;
-  font-size: 0.42em;
+  margin-top: 0.45em;
+  font-size: 0.44em;
   font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--src-muted);
 }
-
 .tagline {
-  margin: 20px 0 0;
-  max-width: 30rem;
-  font-family: var(--font-body);
-  font-size: 1.05rem;
-  line-height: 1.6;
-  color: var(--src-muted);
-}
-
-/* ── Install lines (above the fold at 1280×800 and 390×844) ──────────────── */
-.install {
-  list-style: none;
   margin: 16px 0 0;
-  padding: 0;
-  display: grid;
-  gap: 6px;
-}
-.install__row {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  margin: 0;
-  padding: 6px 8px 6px 10px;
-  border: 1px solid var(--src-rule);
-  border-radius: 3px;
-}
-.install__cmd {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--src-fg);
-  background: none;
-  padding: 0;
-  overflow-wrap: anywhere;
-}
-.install--hosted {
-  margin-top: 16px;
-}
-.install--hosted + .install {
-  margin-top: 6px;
-}
-.install__row--door {
-  align-items: baseline;
-}
-.install__hint {
-  flex: none;
-  font-size: 12px;
-  color: var(--src-muted);
-}
-.install__tag {
-  flex: none;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--src-muted);
-}
-.install__link {
-  flex: 1;
-  min-width: 0;
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--src-fg);
-  text-decoration: underline;
-}
-.install__prompt {
-  color: var(--plum);
-}
-.install__copy {
-  flex: none;
-  padding: 0 6px;
-  border: 0;
-  background: none;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.5;
-  color: var(--src-muted);
-  cursor: pointer;
-}
-.install__copy:hover {
+  max-width: 32rem;
+  font-family: var(--font-body);
+  font-size: 1.08rem;
+  line-height: 1.55;
   color: var(--src-fg);
 }
 
-/* ── CTAs ────────────────────────────────────────────────────────────────── */
-.actions {
-  display: flex;
-  flex-wrap: wrap;
+/* ── The two primaries: one grid, two equal columns, the same box for each ───── */
+.primaries {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
-  margin-top: 16px;
+  margin-top: 20px;
 }
-.btn {
-  display: inline-flex;
-  align-items: center;
-  padding: 10px 20px;
-  border-radius: 3px;
-  border: 1px solid transparent;
-  font-family: var(--font-body);
-  font-size: 0.95rem;
-  font-weight: 550;
+.primary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--src-rule);
+  border-radius: 4px;
+  background: var(--src-surface);
+  color: var(--src-fg);
   text-decoration: none;
-  transition: transform 0.12s, background 0.2s, border-color 0.2s, color 0.2s;
 }
-.btn:active {
-  transform: translateY(1px);
+.primary__title {
+  font-family: var(--font-body);
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.3;
 }
-.btn--solid {
-  /* white on --redline-ink = 6.5:1; hover lightens to the graphics redline, 5.4:1 */
-  background: var(--redline-ink);
+.primary__sub {
+  font-size: 13px;
+  color: var(--src-muted);
+}
+.primary--chatgpt {
+  transition: border-color 0.2s;
+}
+.primary--chatgpt:hover {
+  border-color: var(--redline);
+}
+.primary--chatgpt:focus-visible {
+  outline: 2px solid var(--redline);
+  outline-offset: 2px;
+}
+/* Each card's one action is drawn the same way: the redline control (attention only). */
+.primary__go,
+.primary--prompt :deep(.copybox__btn) {
+  align-self: flex-start;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 3px;
+  background: var(--redline-ink); /* white on it is 6.5:1 */
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
   color: #fff;
 }
-.btn--solid:hover {
+.primary__go {
+  margin-top: auto;
+}
+.primary--chatgpt:hover .primary__go,
+.primary--prompt :deep(.copybox__btn:hover) {
   background: var(--redline);
+  color: #fff;
 }
-.btn--ghost {
-  /* a control edge, so --src-rule (3.2:1), not the decorative --src-border */
-  border-color: var(--src-rule);
-  color: var(--src-fg);
+.primary--prompt :deep(.copybox) {
+  margin: 0;
+  padding: 6px 6px 6px 8px;
 }
-.btn--ghost:hover {
-  border-color: var(--plum);
-  color: var(--plum-deep);
+.primary--prompt :deep(.copybox__text) {
+  font-size: 11px;
+}
+@media (max-width: 1100px) {
+  .primaries {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* ── Code stage (types itself) ───────────────────────────────────────────── */
+.hero-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 14px 0 0;
+  font-size: 14px;
+}
+.hero-links a {
+  color: var(--plum-deep);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.proof {
+  margin: 14px 0 0;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--src-muted);
+}
+
+/* ── Right: brief → source → plan ────────────────────────────────────────── */
+.story {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  max-width: 500px;
+}
+.chat {
+  margin: 0;
+  align-self: flex-end;
+  max-width: 92%;
+}
+.chat__who {
+  margin: 0 0 4px;
+  text-align: right;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 86;
+  font-weight: 600;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+.chat__bubble {
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 14px 14px 4px 14px;
+  background: var(--paper-panel);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.seam-hero[data-phase="brief"] .chat__bubble {
+  animation: bubble-in 0.35s ease-out both;
+}
+@keyframes bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
 .code-stage {
-  margin-top: 34px;
   border: 1px solid var(--src-border);
   border-radius: 4px;
   background: var(--src-surface);
@@ -550,7 +481,8 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 12px;
+  gap: 10px;
+  padding: 6px 12px;
   border-bottom: 1px solid var(--src-border);
   font-family: var(--font-display);
   font-variation-settings: "wdth" 86;
@@ -560,9 +492,14 @@ onBeforeUnmount(() => {
   text-transform: uppercase;
 }
 .code-chrome__file {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--src-muted);
 }
 .code-chrome__status {
+  flex: none;
   color: var(--plum-deep);
 }
 .code-stage[data-phase="settled"] .code-chrome__status {
@@ -570,13 +507,13 @@ onBeforeUnmount(() => {
 }
 .code-pre {
   position: relative;
-  height: 232px;
+  height: 92px;
   margin: 0;
-  padding: 14px 16px;
+  padding: 8px 14px;
   overflow: hidden;
   font-family: var(--font-mono);
-  font-size: 12.5px;
-  line-height: 1.62;
+  font-size: 11.5px;
+  line-height: 1.55;
   color: var(--src-fg);
   white-space: pre-wrap;
   word-break: break-word;
@@ -587,7 +524,7 @@ onBeforeUnmount(() => {
 }
 .caret {
   display: inline-block;
-  width: 8px;
+  width: 7px;
   height: 1.05em;
   margin-left: 1px;
   vertical-align: text-bottom;
@@ -603,8 +540,6 @@ onBeforeUnmount(() => {
 /* ── The seam ────────────────────────────────────────────────────────────── */
 .seam {
   position: relative;
-  /* The seam IS a solid plum rule now. On a light ground a soft plum glow reads
-     as dirt, not as light — so the compiler is drawn as a hard line. */
   background: var(--plum);
 }
 .seam::after {
@@ -622,7 +557,6 @@ onBeforeUnmount(() => {
 /* ── Sheet (draws itself) ────────────────────────────────────────────────── */
 .sheet {
   width: 100%;
-  max-width: 620px;
   background: var(--paper-panel);
   border: 1px solid var(--hairline);
   box-shadow: 0 1px 0 var(--hairline), 0 18px 40px -24px rgb(28 36 48 / 35%);
@@ -631,7 +565,7 @@ onBeforeUnmount(() => {
   display: flex;
   gap: 16px;
   flex-wrap: wrap;
-  padding: 9px 14px;
+  padding: 7px 14px;
   border-bottom: 1px solid var(--hairline);
   font-family: var(--font-display);
   font-variation-settings: "wdth" 86;
@@ -647,7 +581,6 @@ onBeforeUnmount(() => {
 .sheet__body {
   position: relative;
   width: 100%;
-  /* aspect-ratio set inline from the final SVG viewBox — anti-CLS */
 }
 .sheet__svg {
   position: absolute;
@@ -655,17 +588,13 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 8px;
 }
 .sheet__svg :deep(svg) {
   width: 100%;
   height: 100%;
   object-fit: contain;
 }
-/* The sheet's control strip: replay the compile, or carry this plan into the
-   playground. Two cells of one title-block row, split by a hairline — `Replay`
-   only exists after mount (it is a no-op with no JS), so the row collapses to
-   the single link during SSR rather than leaving a gap. */
 .sheet__foot {
   display: flex;
   border-top: 1px solid var(--hairline);
@@ -673,7 +602,7 @@ onBeforeUnmount(() => {
 .sheet__ctl {
   flex: 1;
   display: block;
-  padding: 8px 14px;
+  padding: 7px 14px;
   border: 0;
   background: transparent;
   cursor: pointer;
@@ -703,12 +632,11 @@ onBeforeUnmount(() => {
   opacity: 0.5;
   cursor: default;
 }
-/* The link is the primary way onward, so it carries the accent even at rest. */
 .sheet__ctl--open {
   color: var(--redline-ink);
 }
 
-/* ── Mobile: stack the panes, seam goes horizontal ───────────────────────── */
+/* ── Mobile: stack the panes, the seam goes horizontal ───────────────────── */
 @media (max-width: 767px) {
   .seam-hero__stage {
     grid-template-columns: 1fr;
@@ -717,11 +645,22 @@ onBeforeUnmount(() => {
   }
   .pane--source {
     justify-content: center;
-    padding: clamp(40px, 9vw, 56px) 22px clamp(30px, 7vw, 44px);
+    padding: 24px 16px 28px;
   }
   .pane--sheet {
     justify-content: center;
-    padding: clamp(30px, 7vw, 44px) 22px clamp(40px, 9vw, 56px);
+    padding: 28px 16px 36px;
+  }
+  .headline {
+    font-size: 2.4rem;
+  }
+  .tagline {
+    margin-top: 12px;
+    font-size: 1rem;
+  }
+  .primaries {
+    margin-top: 16px;
+    gap: 10px;
   }
   .seam::after {
     top: var(--seam-w);
@@ -735,11 +674,16 @@ onBeforeUnmount(() => {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .caret {
+  .caret,
+  .seam-hero[data-phase="brief"] .chat__bubble {
     animation: none;
   }
-  .sheet__ctl {
+  .sheet__ctl,
+  .primary--chatgpt {
     transition: none;
+  }
+  .code-pre {
+    scroll-behavior: auto;
   }
 }
 </style>

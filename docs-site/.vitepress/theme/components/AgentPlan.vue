@@ -19,11 +19,10 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
 
 <template>
   <div v-if="plan" class="agent-plan">
-    <p class="agent-plan-label">Brief</p>
+    <!-- Brief → plan → playground, in the order a visitor asks: what was asked, what came back,
+         where to touch it. The source and the provenance follow. -->
+    <p class="agent-plan-label">The brief, as given to {{ plan.model }}</p>
     <blockquote class="agent-plan-brief">{{ plan.brief }}</blockquote>
-    <p class="agent-plan-by">
-      Written by <strong>{{ plan.model }}</strong>, then completed with <code>arch finish</code>.
-    </p>
     <figure v-for="(sheet, i) in plan.sheets" :key="sheet.file" class="agent-plan-sheet">
       <a :href="`/gallery/${sheet.file}`" target="_blank" rel="noopener">
         <img
@@ -41,6 +40,12 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
       </a>
       <figcaption v-if="plan.sheets.length > 1">Sheet {{ i + 1 }} of {{ plan.sheets.length }}, one per storey</figcaption>
     </figure>
+    <p class="agent-plan-open">
+      <a class="agent-plan-open__btn" :href="plan.link" target="_blank" rel="noopener">Open in Playground ↗</a>
+    </p>
+    <p class="agent-plan-by">
+      Written by <strong>{{ plan.model }}</strong>, then completed with <code>arch finish</code>.
+    </p>
     <details class="agent-plan-source">
       <summary>Source: {{ lines }} lines of ArchLang</summary>
       <!-- Everything highlightArch emits is escaped. -->
@@ -48,7 +53,6 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
       <pre><code v-html="highlighted"></code></pre>
     </details>
     <p class="agent-plan-links">
-      <a :href="plan.link" target="_blank" rel="noopener">Open in Playground ↗</a>
       <a :href="`/gallery/${plan.id}.arch`">Raw source</a>
     </p>
   </div>
@@ -71,14 +75,33 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
   text-transform: uppercase;
   color: var(--ink-muted);
 }
+/* The brief as a chat message, the same bubble the home hero uses. */
 .agent-plan-brief {
-  margin: 0 0 12px;
+  max-width: 44rem;
+  margin: 0 0 14px;
   padding: 10px 14px;
-  border-left: 2px solid var(--plum);
-  background: var(--paper);
+  border: 1px solid var(--hairline);
+  border-radius: 14px 14px 14px 4px;
+  background: var(--paper-panel);
   color: var(--ink);
   font-size: 15px;
   line-height: 1.6;
+}
+.agent-plan-open {
+  margin: 0 0 8px;
+}
+.vp-doc a.agent-plan-open__btn {
+  display: inline-block;
+  padding: 7px 16px;
+  border-radius: 3px;
+  background: var(--redline-ink); /* white on it is 6.5:1 */
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+.vp-doc a.agent-plan-open__btn:hover {
+  background: var(--redline);
+  color: #fff;
 }
 .agent-plan-by {
   margin: 0 0 12px;

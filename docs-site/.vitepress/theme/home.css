@@ -4,7 +4,8 @@
    Owns: (1) the home nav bar; (2) full-bleed wiring for the landing sections,
    which live inside VitePress's `.vp-doc` markdown container; (3) the inline
    "built for agents" band. The hero itself (CompileSeam.vue) and the section
-   components (SheetGrid / FactsSection) carry their own scoped styles.
+   components (WhyCards / HowSteps / HomeGallery / IsIsntTable / FactsSection / TopicsRow)
+   carry their own scoped styles.
 
    Specificity note: `.vp-doc` gives its bare-element rules a `.vp-doc x` prefix
    (0,0,1,1). Every rule here that targets landing content therefore carries a
@@ -59,11 +60,22 @@
    there). Clipped on the home wrapper below rather than "fixed" here, because
    there is no unit for "50% of the client width", and every JS-free approximation
    of one is worse than clipping a band of paper. */
-.vp-doc .sheets,
-.vp-doc .facts,
-.vp-doc .agents {
+.VPHome .vp-doc .why,
+.VPHome .vp-doc .how,
+.VPHome .vp-doc .home-gallery,
+.VPHome .vp-doc .isisnt,
+.VPHome .vp-doc .facts,
+.VPHome .vp-doc .agents,
+.VPHome .vp-doc .topics {
   margin-left: var(--vp-offset, calc(50% - 50vw));
   margin-right: var(--vp-offset, calc(50% - 50vw));
+}
+
+/* A doc page's h2 is a dimension line with witness ticks (doc-pages.css); the landing
+   sections draw their own headings, so the ticks would float alone above each one. */
+.VPHome .vp-doc h2::before,
+.VPHome .vp-doc h2::after {
+  display: none;
 }
 
 /* The other half of the rule above: swallow the sub-scrollbar overhang so the
