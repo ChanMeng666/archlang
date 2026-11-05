@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-11-05
+
 ### Added
 
 - The replay's view turns freely: drag to rotate, scroll or pinch to zoom, right-drag or two fingers
