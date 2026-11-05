@@ -1,5 +1,24 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { describe } from "../../src/index.js";
 import { gotoEdit, openTools, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+
+/** The plan a first visit opens (`DEFAULT_EXAMPLE`), as the app bundles it. */
+const LANEWAY = readFileSync(new URL("../../examples/laneway-house.arch", import.meta.url), "utf8");
+
+/** The screen point of plan point (x, y) mm in the drawing on screen (its own CTM). */
+const screenPoint = (page: Page, x: number, y: number): Promise<[number, number]> =>
+  page.locator(".pz-stage svg").evaluate(
+    (svg, [x, y]) => {
+      const s = svg as SVGSVGElement;
+      const p = s.createSVGPoint();
+      p.x = x!;
+      p.y = y!;
+      const q = p.matrixTransform(s.getScreenCTM()!);
+      return [q.x, q.y] as [number, number];
+    },
+    [x, y],
+  );
 
 /**
  * The output tabs, the persisted view preferences, and the two preview
@@ -151,7 +170,7 @@ test.describe("preview interactions", () => {
     await expect(page.locator(".cm-activeLine")).not.toContainText('plan "E2E"');
   });
 
-  test("hovering a room shows a tooltip with its label and area", async ({ page }) => {
+  test("hovering a room shows a tooltip with its name, area and size", async ({ page }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
 
@@ -162,14 +181,78 @@ test.describe("preview interactions", () => {
     const box = (await page.locator(".pz-viewport").boundingBox())!;
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
 
+    // Name · area · W × D: describe()'s net area and the room's centreline rectangle, each
+    // saying which measure it is (written out from describe(), not through the app's formatter).
+    const room = describe(SIMPLE_PLAN).rooms[0]!;
+    expect(room.net_area_m2).toBeDefined();
     await expect(tip).toBeVisible();
-    await expect(tip).toContainText("Main");
-    await expect(tip).toContainText("m²");
-    await expect(tip).toContainText("mm");
+    await expect(tip).toHaveText(`Main · ${room.net_area_m2} m² (net) · 6000 × 4000 mm (centreline)`);
 
     // Leaving the preview hides it again.
     await page.mouse.move(box.x + box.width / 2, box.y - 40);
     await expect(tip).toBeHidden();
+  });
+
+  test("clicking a room opens its facts card, which Escape closes", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    const d = describe(LANEWAY);
+    const bed = d.rooms.find((r) => r.label === "Bedroom")!;
+    // The Bedroom is a rectangle, so the middle of its box is on its floor.
+    const inBed = () => screenPoint(page, bed.bbox.x + bed.bbox.w / 2, bed.bbox.y + bed.bbox.h / 2);
+    await page.mouse.click(...(await inBed()));
+
+    const card = page.getByRole("dialog", { name: "Bedroom" });
+    await expect(card).toBeVisible();
+    await expect(card).toContainText(`${bed.net_area_m2} m² (net)`);
+    await expect(card).toContainText(`${bed.bbox.w} × ${bed.bbox.h} mm (centreline)`);
+    await expect(card).toContainText(bed.uses.join(", "));
+    for (const id of bed.adjacent) await expect(card).toContainText(d.rooms.find((r) => r.id === id)!.label!);
+    const doors = d.doors.filter((x) => x.between.includes(bed.id)).length;
+    const windows = d.windows.filter((x) => x.room === bed.id).length;
+    await expect(card).toContainText(`${doors} door${doors === 1 ? "" : "s"} · ${windows} window`);
+    // View mode: no editor, so no jump; the card has the focus, and Escape closes it.
+    await expect(card.getByRole("button", { name: "Jump to source" })).toHaveCount(0);
+    await expect(card).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(card).toBeHidden();
+
+    // A click off every room (on the sheet, outside the building) closes it too, and so does its ×.
+    await page.mouse.click(...(await inBed()));
+    await expect(card).toBeVisible();
+    await page.mouse.click(...(await screenPoint(page, -1000, -1000)));
+    await expect(card).toBeHidden();
+    await page.mouse.click(...(await inBed()));
+    await expect(card).toBeVisible();
+    await card.getByRole("button", { name: "Close" }).click();
+    await expect(card).toBeHidden();
+  });
+
+  test("in edit mode a room's card jumps to the statement that drew it", async ({ page }) => {
+    await gotoEdit(page);
+    const bed = describe(LANEWAY).rooms.find((r) => r.label === "Bedroom")!;
+    await page.locator(".cm-content").click();
+    await page.keyboard.press("ControlOrMeta+Home");
+    await page.mouse.click(...(await screenPoint(page, bed.bbox.x + bed.bbox.w / 2, bed.bbox.y + bed.bbox.h / 2)));
+    const card = page.getByRole("dialog", { name: "Bedroom" });
+    await expect(card).toBeVisible();
+    // The editor keeps the focus the click gave it; the card offers the room's own statement.
+    await page.keyboard.press("ControlOrMeta+Home");
+    await expect(page.locator(".cm-activeLine")).not.toContainText(`id=${bed.id}`);
+    await card.getByRole("button", { name: "Jump to source" }).click();
+    await expect(page.locator(".cm-content")).toBeFocused();
+    await expect(page.locator(".cm-activeLine")).toContainText(`room id=${bed.id}`);
+  });
+
+  test("the facts line is describe()'s totals for Laneway House, with its source's line count", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    const t = describe(LANEWAY).totals;
+    const lines = LANEWAY.split(/\r\n|\r|\n/).length - (/[\r\n]$/.test(LANEWAY) ? 1 : 0);
+    expect(t.net_floor_area_m2).toBeDefined();
+    await expect(page.locator("#facts")).toHaveText(
+      `${lines} lines of ArchLang → ${t.rooms} rooms · ${t.net_floor_area_m2} m² (net)`,
+    );
   });
 
   test("the zoom controls change the stage transform", async ({ page }) => {

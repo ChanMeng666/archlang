@@ -1,7 +1,8 @@
 /**
  * Preview interactions on top of the SVG:
- *   - hover a room → tooltip with its label, area and bounding size (C2), hit-tested
- *     geometrically against describe()'s room bboxes;
+ *   - hover a room → tooltip with its name, area and size (C2, room-facts.ts `roomTip`),
+ *     hit-tested geometrically against describe()'s room bboxes;
+ *   - click a room → its facts card (room-card.ts), or close it on a click off every room;
  *   - click any drawn element → jump the editor caret to the source that produced it
  *     (C3), using the `data-span` attributes emitted by `compile(..., { annotate:true })`.
  *
@@ -9,6 +10,7 @@
  * the pan/zoom CSS transform and the viewBox — so screen px map straight to plan mm
  * (the SVG user space), matching the bbox coordinates.
  */
+import { type FactsRoom, roomTip } from "./room-facts.js";
 
 /** px of pointer travel that reclassifies a click as a pan (inclusive: exactly
  *  DRAG_SLOP px of travel is still a click). */
@@ -23,12 +25,7 @@ export interface HitBox {
 }
 
 /** The subset of a describe() room this module hit-tests and labels. */
-interface PreviewRoom {
-  id: string;
-  label?: string;
-  area_m2: number;
-  bbox: HitBox;
-}
+type PreviewRoom = FactsRoom;
 
 /**
  * Hit-test `(x,y)` against `items` and return the SMALLEST box containing it, or
@@ -70,9 +67,14 @@ interface InteractOpts {
   stage: HTMLElement;
   getRooms: () => readonly PreviewRoom[];
   jumpToOffset: (offset: number) => void;
+  /** A click on the drawing: the room under it, or `null` off every room (the facts card). */
+  onRoomClick: (room: PreviewRoom | null) => void;
 }
 
-export function mountInteract({ viewport, stage, getRooms, jumpToOffset }: InteractOpts): void {
+/** Floating controls over the drawing that are not the drawing: no tooltip, no click-through. */
+const OVERLAY = ".pz-toolbar, .room-card";
+
+export function mountInteract({ viewport, stage, getRooms, jumpToOffset, onRoomClick }: InteractOpts): void {
   const tip = document.createElement("div");
   tip.className = "room-tip";
   tip.hidden = true;
@@ -99,12 +101,11 @@ export function mountInteract({ viewport, stage, getRooms, jumpToOffset }: Inter
 
   viewport.addEventListener("pointermove", (e) => {
     if (e.buttons) return hide(); // a button is down → panning/pinching, not hovering
+    if ((e.target as Element | null)?.closest(OVERLAY)) return hide();
     const u = toUser(e.clientX, e.clientY);
     const room = u && roomAt(u);
     if (!room) return hide();
-    const b = room.bbox;
-    const name = room.label || room.id;
-    tip.textContent = `${name} · ${room.area_m2} m² · ${Math.round(b.w)}×${Math.round(b.h)} mm`;
+    tip.textContent = roomTip(room);
     const vp = viewport.getBoundingClientRect();
     let x = e.clientX - vp.left + 14;
     let y = e.clientY - vp.top + 14;
@@ -125,6 +126,11 @@ export function mountInteract({ viewport, stage, getRooms, jumpToOffset }: Inter
   });
   viewport.addEventListener("click", (e) => {
     if (isDragNotClick(down, e.clientX, e.clientY)) return;
+    // The toolbar and the card are not the drawing. (Their pointerdown is not captured by the
+    // pan/zoom controller, so the click's target is theirs.)
+    if ((e.target as Element | null)?.closest(OVERLAY)) return;
+    const u = toUser(e.clientX, e.clientY);
+    onRoomClick(u && roomAt(u));
     // Hit-test the POINT, not `e.target`.
     //
     // The pan/zoom controller calls `viewport.setPointerCapture()` on

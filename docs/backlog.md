@@ -2383,7 +2383,14 @@ in `packages/mcp/package.json` and both `server.json` `version` fields.
 **Gate:** the tool description names both fields; the MCP lockstep and tool-text tests pass; the
 version is bumped in all three places. **Size:** S.
 
-### U.21 · The playground facts strip shows only the centreline floor area — `todo`
+### U.21 · The playground facts strip shows only the centreline floor area — closed by P3 (#504)
+
+The facts strip is one line, "57 lines of ArchLang → 3 rooms · 45.05 m² (net)", and the room
+tooltip and the room's facts card say which area they show: the net figure, labelled "(net)", and
+the centreline one, labelled "(centreline)", when the net one is absent
+(`playground/src/room-facts.ts`, `playground/test/room-facts.test.ts`, `panels.spec.ts`). Kept from
+the hypothesis below: a plan with no `net_floor_area_m2` shows its centreline total, labelled, not
+a sum over some rooms. What stays open is in PG.1–PG.3.
 
 **Observed (card D1, out of its scope).** `playground/src/facts-strip.ts:20` prints
 `totals.floor_area_m2` as "Floor area", which is the centreline figure; the net figure
@@ -2592,6 +2599,35 @@ byte-identical without the flag.
 
 Shadow maps cost +55% SwiftShader frame time when measured (V9) and were left out. Revisit only with
 a cheaper technique (baked contact shadows) and a frame-time budget.
+
+## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
+
+### PG.1 · A room cannot be reached from the keyboard — `todo`
+
+The hover tooltip and the room's facts card (`playground/src/interact.ts`, `room-card.ts`) open
+from the pointer only: no room in the drawing takes the focus, so a keyboard or screen-reader user
+cannot open a room's card at all. Once open, the card is reachable and Escape closes it. One way:
+a focusable list of the rooms (the facts line, or a "Rooms" control) that opens the same card.
+**Gate:** an e2e case opens a room's card from the keyboard alone; the card keeps its focus rules.
+
+### PG.2 · The card and the tooltip pick a room by its bounding box — `todo`
+
+`pickSmallestContaining` (`playground/src/interact.ts`) hit-tests describe()'s `bbox`, so on an L,
+a trapezoid or a circle a point inside the box but outside the room picks that room (or a smaller
+box around it), and its card opens. AGENTS.md: a derived position comes from the shape, never its
+bounding box. The shape is in the summary (`floor_polygon`, `floor_circle`): test it, boundary
+inclusive, and keep the smallest-room tie rule (`playground/test/interact.test.ts`). **Gate:**
+unit cases on `hexagon-pavilion` (trapezoids, the rotunda) and `gallery-l`; the rectangle cases
+unchanged.
+
+### PG.3 · The facts line moves the drawing on the first compile — `todo`
+
+The facts line is empty in the served page and filled after the first compile, so the stage
+shrinks by its height then (35 px, measured at 1280 and at 390 wide). Writing
+it at build time (`playground/scripts/gen-static.mjs`) would fix that, but with JavaScript off the
+drawing's share of a 1280×720 viewport would fall to about 0.66, under `boot.spec`'s 0.70; moving
+the line into the output pane's status row first keeps both. **Gate:** the stage box is the same
+before and after the first compile; `boot.spec`'s no-JS share holds.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 

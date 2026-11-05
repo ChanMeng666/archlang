@@ -49,10 +49,11 @@ test.describe("boot", { tag: "@prod" }, () => {
     await waitForPlan(page);
     // "ready" (or an N-warnings count) — never an error state on the shipped default.
     await expect(page.locator("#status")).not.toHaveClass(/err/);
-    // The facts strip is describe()'s totals, so a non-zero room count proves the
-    // analysis layer ran in the browser too, not just the renderer.
-    await expect(page.locator("#facts .fact").first()).toContainText("Rooms");
-    expect(await page.locator("#facts .fact").count()).toBeGreaterThanOrEqual(5);
+    // The facts line is describe()'s totals, so a non-zero room count and an area with its
+    // convention prove the analysis layer ran in the browser too, not just the renderer.
+    await expect(page.locator("#facts")).toHaveText(
+      /^\d+ lines of ArchLang → [1-9]\d* rooms? · \d+(\.\d+)? m² \((net|centreline)\)$/,
+    );
   });
 
   test("serves one H1 and the lede before any JavaScript runs", async ({ page }) => {
