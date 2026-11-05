@@ -86,7 +86,7 @@ public/mcp.md
 public/javascript.md
 public/vs-mermaid.md
 
-# The self-contained <arch-plan> (core inlined, ~700 KB), built from the just-built dist/ by the
+# The self-contained <arch-plan> (core inlined, about 1.5 MB), built from the just-built dist/ by the
 # `standalone` script on every dev/build. The slim /arch-plan.js beside it IS tracked (gen:arch-plan).
 public/arch-plan.standalone.js
 

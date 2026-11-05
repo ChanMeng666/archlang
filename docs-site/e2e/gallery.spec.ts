@@ -55,6 +55,29 @@ test.describe("the agent gallery", () => {
     expect((await raw.text()).replace(/\r\n/g, "\n")).toBe(source);
   });
 
+  test("each entry reads brief → plan → Open in Playground, with the source after them", async ({ page }) => {
+    // Card D3: a visitor sees what was asked, what came back and where to touch it, in that
+    // order; the source is behind a <details> below.
+    await page.goto("/gallery");
+    for (const plan of await page.locator(".agent-plan").all()) {
+      const order = await plan.evaluate((el) =>
+        [".agent-plan-brief", ".agent-plan-sheet", ".agent-plan-open", ".agent-plan-source"].map((sel) => {
+          const node = el.querySelector(sel);
+          return node ? [...el.querySelectorAll("*")].indexOf(node) : -1;
+        }),
+      );
+      expect(
+        order.every((n) => n >= 0),
+        `missing a part: ${order}`,
+      ).toBe(true);
+      expect([...order].sort((a, b) => a - b)).toEqual(order);
+      expect(await plan.locator(".agent-plan-open a").getAttribute("href")).toMatch(
+        /^https:\/\/playground\.archlang\.uk\/#z=/,
+      );
+    }
+    await expect(page.getByText("These are selected examples, not a benchmark.")).toBeVisible();
+  });
+
   test("does not scroll sideways at phone width", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/gallery");

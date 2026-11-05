@@ -11,6 +11,10 @@ ArchLang is a deterministic DSL and compiler for floor plans. You describe a pla
 plain text; the compiler produces a clean, deterministic drawing in SVG, DXF or PDF,
 with linting and geometric validation.
 
+::: tip Want a plan rather than the language?
+Your AI can write the ArchLang for you: [get a floor plan from your AI in 60 seconds](/start).
+:::
+
 **Edit the source below** and watch it recompile live — this runs the real compiler
 in your browser. It is the whole of
 [`examples/one-room.arch`](https://github.com/chanmeng666/archlang/tree/main/examples/one-room.arch):

@@ -165,7 +165,7 @@ const PAGE_META = [
   [
     "/showcase",
     "Showcase: compiled floor plans",
-    "Floor plans compiled, not drawn. Each drawing here is a few dozen lines of ArchLang source you can open in the playground and recompile in your browser.",
+    "Floor plans compiled, not drawn: real buildings, original plans and fan studies, each a text file you can open in the playground and recompile in your browser.",
   ],
   [
     "/cli",

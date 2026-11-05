@@ -29,6 +29,8 @@ line of its source, because a theme changes inks, fills and hatches, never geome
 
 ### Hillside Villa
 
+_A two-storey villa with a garage: nearly the whole language on one sheet._
+
 The showpiece: a two-storey villa with an attached garage, drawn on one A1 sheet at
 1:50. The widget below shows **page 1 — the ground floor**, **11 rooms, 196.54 m²**
 (`archlang describe --json`); the upper floor adds ten more rooms over 140.76 m²
@@ -53,6 +55,8 @@ two cars it holds, and every room is reachable through a door at least 800 mm wi
 <ArchLive :src="EXAMPLES['hillside-villa']" :rows="20" />
 
 ### Garden House
+
+_A family house on its lot: terraces, lawn, fences and a roof around the walls._
 
 The other half of the language, and the one every plan above leaves out: **everything
 outside the wall line**. A two-storey family house on a 22 × 22 m suburban lot, A0 at
@@ -93,6 +97,8 @@ bedrooms take the garden aspect.
 
 ### One room
 
+_The smallest complete plan: one room, one door, one window._
+
 The smallest complete ArchLang plan, and the one the [guide](/guide) opens with: a
 200 mm shell, one room that says what it is for, a door and a window, and a single
 overall dimension chain. **1 room, 20 m²**, fourteen lines including its comment.
@@ -105,6 +111,8 @@ the wall, both openings and the dimension text all follow.
 <ArchLive :src="EXAMPLES['one-room']" :rows="18" />
 
 ### Laneway House
+
+_A one-bedroom laneway cottage, furnished room by room._
 
 The signature example: a one-bedroom laneway cottage of **3 rooms and 48.75 m²**
 (Living / Kitchen 27.3, Bedroom 13.2, Bath 8.25) with **4 doors and 4 windows**, on a
@@ -126,6 +134,8 @@ the hall partition rather than at the 500 mm that would trip `W_POCKET_RUN`.
 
 ### Garden Loft
 
+_A small loft whose room schedule the home page reads back as facts._
+
 **3 rooms, 35 m²**, at `scale 1:50` — deliberately the smallest plan still worth
 *describing*. It is the plan the home page reads its own room schedule from, which is the
 constraint that shaped it: three rooms, so the derived table fits in a band beside the
@@ -140,6 +150,8 @@ instead, which several examples below declare.
 <ArchLive :src="EXAMPLES['garden-loft']" :rows="16" />
 
 ### Tiny House
+
+_A micro-home where every millimetre counts: door kinds, how far each opens, and clearance._
 
 A 7.2 × 3.0 m micro-home — **2 rooms, 19.6 m², 3 doors, 5 windows** — and the example for
 the three language forms that are about *fit* rather than shape.
@@ -161,6 +173,8 @@ indistinguishable from a hinged one on paper.
 
 ### Studio (1BR)
 
+_A compact one-bedroom flat, and a tour of the everyday statements._
+
 The long-standing flagship: **4 rooms, 42 m², 3 doors, 3 windows**, `scale 1:50`. A tour
 of rooms tagged with **`uses`**, a cased [`opening`](/reference#opening-v1-3) linking the
 living space to the hall, real [fixture symbols](/furniture) (sink, counter, stove,
@@ -176,6 +190,8 @@ compile from nothing. Run `archlang describe` / `archlang lint` on it to see the
 
 ### Two-bedroom flat
 
+_A two-bedroom flat written rooms first, with the walls derived from them._
+
 **5 rooms, 80 m², 4 doors, 4 windows** on a 10 × 8 m footprint at `scale 1:100` — a
 larger plan with every room off a central corridor, written rooms first: `walls from rooms`
 derives every wall, the corridor opens to the living room by `open between`, and each door
@@ -184,6 +200,8 @@ and window is hosted by the rooms it joins. `north` is reoriented.
 <ArchLive :src="EXAMPLES['two-bed']" :rows="15" />
 
 ### Attached (placement sugar)
+
+_A one-bedroom flat placed without one hand-computed coordinate._
 
 A one-bedroom flat — **2 rooms, 28 m²** — with **no hand-computed coordinates** for its
 openings or furniture. It exercises the placement sugar together: a
@@ -195,6 +213,8 @@ door that opens toward a named room (`swing into`), and furniture anchored insid
 <ArchLive :src="EXAMPLES['attached']" :rows="13" />
 
 ### Furnished Flat (the drawn symbol catalogue)
+
+_A two-bedroom flat furnished with dozens of drawn fixture symbols._
 
 **7 rooms, 90.72 m², 6 doors, 6 windows** on an 8.4 × 10.8 m footprint — and **39 pieces
 across 38 of the 103 catalogued furniture families**, which is what it is here for. Every
@@ -217,6 +237,8 @@ reports no warnings.
 
 ### Issued Sheet (drawing number, notes, door and window tags)
 
+_A small flat issued as a sheet: drawing number, notes, door and window tags._
+
 A three-room flat — **3 rooms, 54 m², 3 doors, 3 windows**, 9.2 × 6.2 m to the outer
 faces — drawn the way a sheet leaves the office, on A3 at `scale 1:50`. The title block
 carries a drawing **number** and **revision** (`title { … number "A-101" revision "B" }`),
@@ -232,6 +254,8 @@ sits beside the doorway past the hinge jamb, clear of the swing and out of the p
 
 ### Apartment Remodel (walls that come out, a wall that goes in)
 
+_A flat drawn for building work: walls to remove, a wall to build._
+
 A flat drawn for its works — **6 rooms, 83.6 m², 5 doors, 6 windows**, 11.3 × 7.9 m to the
 outer faces. Two partitions are `status demolish`: each is drawn as a dashed outline with no
 poché, beneath the walls that stay, and no fact reads it, so the old kitchen, dining room and
@@ -244,6 +268,8 @@ explains the dashed swatch, and in the DXF the two kinds of wall land on `A-WALL
 
 ### Turning Stair (one stair of flights and a landing)
 
+_A two-storey house with a stair that turns at a landing._
+
 A small house on two storeys, **4 rooms, 2 doors between them and a front door**, 8.2 × 4.0 m to
 the outer faces. Its quarter-turn is one `stair`, written as a block of flights and a landing in
 climbing order, and the upper level copies the block and changes only `dir`. The floor the stair
@@ -255,6 +281,8 @@ residential lint profile warns. `describe` reports the flights, the landing and 
 <ArchLive :src="EXAMPLES['turning-stair']" :rows="30" />
 
 ### Suburban Bungalow (orientation, and doors that are not hinged)
+
+_A single-storey house set to its street and sun, with sliding and pocket doors._
 
 A single-storey house — **8 rooms, 102 m², 6 doors, 7 windows** at `scale 1:100` — on a
 plot that fronts the street on the **south**, in the southern hemisphere, and the whole
@@ -281,6 +309,8 @@ non-hinged leaf sweeps nothing, so only the two bedroom doors carry a swing arc,
 <ArchLive :src="EXAMPLES['bungalow']" :rows="30" />
 
 ### Courtyard House
+
+_A single-storey house whose rooms ring an open courtyard._
 
 A 16 × 11.5 m single-storey house whose rooms ring an open middle — **11 rooms, 163 m²,
 10 doors, 15 windows** at `scale 1:100`.
@@ -312,6 +342,8 @@ centroid falls outside it, its name is pinned by hand in the south arm.
 
 ### Townhouse (three storeys)
 
+_A narrow terrace house on three storeys, one drawing per storey._
+
 A 5.5 × 11 m terrace house written as three
 [`level` blocks](/reference#levels-a-multi-storey-building-v1-21), `paper A3 portrait` at
 `scale 1:50`. Each storey is **4 rooms and 55.64 m²** and becomes its own page — ground
@@ -339,6 +371,8 @@ plan with `W_PATH_TOO_NARROW`.
 
 ### Two-storey house
 
+_A compact house on two storeys, one drawing per storey._
+
 A compact house written as two
 [`level` blocks](/reference#levels-a-multi-storey-building-v1-21) — **3 rooms and 56 m² on
 the ground floor**, on `paper A3 landscape`. No `scale` is written: the sheet auto-fits,
@@ -355,6 +389,8 @@ without the stack of wet rooms.
 
 ### Museum (a real sheet, at a real scale)
 
+_A large single-level museum drawn on a real sheet at a real scale._
+
 A ~100 × 60 m single-level museum — **15 rooms, 6000 m², 9 doors, 9 windows** — and the
 large-building flagship. Everything above is a dwelling, where sizing every annotation as
 a fraction of the drawing happens to look right; at 100 m it does not, and room labels come
@@ -369,6 +405,8 @@ no coordinate is hand-computed.
 <ArchLive :src="EXAMPLES['museum']" :rows="30" />
 
 ### Harbour Aquarium (curves)
+
+_A public aquarium built from curved walls and circular rooms._
 
 A 60 × 40 m public aquarium — **8 rooms, 2365.59 m², 4 doors, 6 windows**, A2 at 1:200 —
 and the [curved-geometry](/reference#curved-walls-arc-edges-v1-24) flagship. Everything
@@ -390,6 +428,8 @@ length rather than its chord — and their leaves swing off the tangent at the d
 <ArchLive :src="EXAMPLES['aquarium']" :rows="30" />
 
 ### Reading Room Library (sheet tables)
+
+_A public library around a round reading room, with schedule and legend._
 
 A 50 × 32 m public library around a circular reading room — **14 rooms, 1545.06 m², 9 doors,
 16 windows**, `paper A2 landscape` at `scale 1:200`, split into three
@@ -418,6 +458,8 @@ from the element they name, so R8000 and the centre are never retyped.
 
 ### Transit Hall
 
+_A metro concourse split by its gate line._
+
 A 90 × 40 m metro concourse — **12 rooms, 3600 m², 7 doors, 19 windows**, A2 at 1:200 — and
 the big-public-building example. One fact organises the whole plan: a transit hall is two
 buildings that share a roof. The unpaid side is street, and anyone may stand in it; the paid
@@ -440,6 +482,8 @@ and `W_STAIR_UNMATCHED` is a multi-storey question that never fires here.
 <ArchLive :src="EXAMPLES['transit-hall']" :rows="30" />
 
 ### Clinic Wing
+
+_An outpatient wing whose consulting rooms are one component, placed six times._
 
 An outpatient clinic — **13 rooms, 294.12 m², 11 doors, 13 windows** at `scale 1:100` —
 whose six consulting rooms are **one [component](/reference#components) placed six times**.
@@ -467,6 +511,8 @@ the default ruleset.
 
 ### Practice Office
 
+_A small office: open workspace, meeting rooms and reception on a corridor._
+
 A small professional-services office — **9 rooms, 225 m², 9 doors, 10 windows**, 18.2 × 12.7 m
 to the outer faces, issued on `paper A2 landscape` at `scale 1:100`. An open workspace, a
 manager's room and two meeting rooms hang off a 1800 mm spine corridor that is a real room
@@ -484,6 +530,8 @@ accessible WC takes a 1000 mm door that swings out into the corridor, a second e
 
 ### Corner Cafe
 
+_A neighbourhood cafe: dining room, servery, kitchen, store and WC._
+
 A neighbourhood cafe — **6 rooms, 150 m², 7 doors, 8 windows** at `scale 1:100` on
 `paper A3 landscape`, 15.2 × 10.2 m to the outer faces. A cafe is two buildings in one plan:
 a front of house the public walks and a back of house they never see. Two
@@ -499,6 +547,8 @@ actually placed. Clean under both lint profiles.
 <ArchLive :src="EXAMPLES['corner-cafe']" :rows="30" />
 
 ### Classroom Block
+
+_A school block of classrooms along one corridor._
 
 A single-storey school block — **10 rooms, 315 m², 10 doors, 7 windows** at `scale 1:100` on
 `paper A2 landscape`, 22.75 × 14.25 m to the outer faces. Three 60 m² classrooms open off a
@@ -518,6 +568,8 @@ the default ruleset.
 
 ### Gallery L (rooms that are not rectangles)
 
+_Two rooms drawn as polygons, because neither is a rectangle._
+
 Two [polygonal rooms](/reference#polygonal-rooms-v1-23) — **2 rooms, 153 m²** on
 `paper A3 landscape`, which auto-fits to 1:100: an **L**-shaped gallery wrapping a
 **trapezoid** lobby, so the building has an angled south-west facade.
@@ -532,6 +584,8 @@ vertex coordinates.
 <ArchLive :src="EXAMPLES['gallery-l']" :rows="13" />
 
 ### Hexagon Pavilion
+
+_Six angled galleries around a round rotunda: nothing here is rectangular._
 
 Six trapezoidal galleries ringing a circular rotunda — **7 rooms, 122.79 m²** on a
 15 × 12 m hexagonal footprint. Every other example is built from rectangles, because that is
@@ -558,6 +612,8 @@ are positioned `on drum at <pct>`, which walks the wall by **arc length**, so 8.
 
 ### Terrace Row
 
+_Four terrace houses from one component, placed and mirrored._
+
 Four terrace dwellings generated from **one component, placed and mirrored** — **16 rooms,
 199.8 m², 16 doors, 18 windows** across 22.2 × 9.6 m. A terrace is the same plan four times,
 so it is written once: `component unit(w, d, gable)` in its own coordinates from (0,0), then
@@ -582,6 +638,8 @@ from one word.
 
 ### Relational (right-of / below)
 
+_Rooms placed beside and below one another instead of at coordinates._
+
 **5 rooms, 60 m²** at `scale 1:100`, positioned relative to one another with `right-of` /
 `below`, `align` and `gap` — resolved to absolute coordinates by deterministic arithmetic in
 topological order, not an optimizer (see [relational placement](/relational)). The walls and
@@ -590,6 +648,8 @@ openings are derived from the rooms, so they reflow with them.
 <ArchLive :src="EXAMPLES['relational']" :rows="11" />
 
 ### Parametric (let + for)
+
+_A row of units generated by a variable and a loop._
 
 **3 rooms, 60 m², 3 doors, 3 windows** — a row of repeated units generated from `let`
 bindings, a value-function, an array, a scoped `set`, a `for` loop and string interpolation.
@@ -601,6 +661,8 @@ row you see is exactly what the loop produced.
 
 ### Resizable Flat (three `let`s)
 
+_A one-bedroom flat whose whole size is three numbers at the top._
+
 **4 rooms, 58.5 m², 3 doors, 3 windows**, a one-bedroom flat whose size is three numbers at the
 top: the living room's width, the bedroom's width and their depth. The rooms read those
 numbers and are placed by relation, `walls from rooms` derives the walls from them, every
@@ -611,6 +673,8 @@ playground each of the three is a slider.
 <ArchLive :src="EXAMPLES['knob-flat']" :rows="16" />
 
 ### Accessible metadata
+
+_A small plan that carries a title and description for screen readers._
 
 **2 rooms, 24 m²** — the smallest plan that carries
 [`accTitle` and `accDescr`](/reference#accessible-metadata-acctitle-accdescr), which supply
@@ -624,6 +688,8 @@ is derived from [`describe()`](/analysis)'s caption instead.
 
 ### Themed (blueprint + brick)
 
+_The same geometry restyled: a blueprint theme and a brick wall._
+
 **2 rooms, 24 m²** with a custom `theme { … }` block and a brick wall **material** (hatch) —
 the same geometry, restyled. Nothing about a theme touches geometry, which is why the
 playground's theme selector can restyle any plan on this page. See
@@ -632,6 +698,8 @@ playground's theme selector can restyle any plan on this page. See
 <ArchLive :src="EXAMPLES['themed']" :rows="14" />
 
 ### Materials (the whole hatch palette)
+
+_A workshop whose walls show every wall material's hatch._
 
 A 16 × 8 m maker-space — **4 rooms, 128 m², 5 doors, 6 windows**, `paper A2 landscape` at
 `scale 1:50` — whose walls carry the entire wall-material palette, one per side. Poché is not

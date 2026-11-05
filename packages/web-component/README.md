@@ -27,7 +27,7 @@ dependency.
 | File | The core | For |
 | --- | --- | --- |
 | `dist/arch-plan.js` | imported as the bare `@chanmeng666/archlang`, on the first render | a bundler; the package's default export |
-| `dist/arch-plan.standalone.js` | inlined (about 700 KB) | a page that must not load a second origin |
+| `dist/arch-plan.standalone.js` | inlined (about 1.5 MB, about 520 KB gzipped) | a page that must not load a second origin |
 
 The docs site serves two builds. `https://archlang.uk/arch-plan.js` is the element alone,
 importing the core from its pinned jsDelivr `+esm` URL. It is generated into

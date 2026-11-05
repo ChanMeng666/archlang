@@ -130,13 +130,15 @@ export function siteMarkdown(src, deps) {
           : `${entry.title}: compiled floor plan`;
       return `![${alt}](/gallery/${f})`;
     });
+    // AgentPlan.vue's order: brief, plan, playground, then the provenance and the source.
     return [
-      "Brief:",
+      `The brief, as given to ${entry.model}:`,
       brief,
-      `Written by **${entry.model}**, then completed with \`arch finish\`.`,
       sheets.join("\n\n"),
+      `[Open in Playground](${playgroundLink(source)})`,
+      `Written by **${entry.model}**, then completed with \`arch finish\`.`,
       fence(source.trimEnd()),
-      `[Open in Playground](${playgroundLink(source)}) · [Raw source](/gallery/${id}.arch)`,
+      `[Raw source](/gallery/${id}.arch)`,
     ].join("\n\n");
   });
 

@@ -52,7 +52,7 @@ The site serves the element in two builds. Load one of them, not both:
 | File | Size | The compiler |
 | --- | --- | --- |
 | `/arch-plan.js` | a few KB | Slim: imported from the pinned jsDelivr URL above on the first render, once per page and shared by every element. |
-| `/arch-plan.standalone.js` | about 700 KB | Standalone: inlined, built from the same source as this site. No CDN dependency. |
+| `/arch-plan.standalone.js` | about 1.5 MB (about 520 KB gzipped) | Standalone: inlined, built from the same source as this site. No CDN dependency. |
 
 The slim build depends on jsDelivr at run time. If jsDelivr cannot be reached, or the page's
 Content-Security-Policy does not allow `cdn.jsdelivr.net` in `script-src`, every element shows
