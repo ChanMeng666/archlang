@@ -142,7 +142,9 @@ diagnostics, or error/lint codes — republish the extension so its bundled serv
    `npm run package --prefix editors/vscode` (`vsce package --no-dependencies`) → a `.vsix`.
 4. Upload the `.vsix` at
    <https://marketplace.visualstudio.com/manage/publishers/ChanMeng> (web upload; there is no
-   Azure DevOps org / CI publish for the extension).
+   Azure DevOps org / CI publish for the extension). An agent does this through Claude in Chrome
+   when the owner's Chrome is signed in to the Marketplace; the steps are in
+   `.claude/commands/release-check.md` ("VS Code Marketplace upload").
 
 > Rule of thumb: **if you changed `src/grammar/tokens.ts`, the language services in
 > `src/lsp.ts`, or the error/lint catalogs, the extension is stale until you republish it.**
@@ -168,7 +170,7 @@ diagnostics, or error/lint codes — republish the extension so its bundled serv
 
 A repack can also be **non-language** — the icon, `galleryBanner`, or other marketplace metadata
 (e.g. `0.4.1` was an icon-only repack of `0.4.0`). Same steps 1–4 above (skip step 2 when the core
-did not move); the `.vsix` still needs a manual web upload.
+did not move); the `.vsix` still needs a web upload (by an agent in the owner's browser, or by hand).
 
 > **Editor syntax colors are generated, not hand-authored.** The live-editor highlight palette
 > flows through `scripts/gen-grammars.ts` → `playground/src/arch-language.js` as
