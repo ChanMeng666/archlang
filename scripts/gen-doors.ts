@@ -76,18 +76,20 @@ export function renderDoorsBlock(d: Doors, orderKey: string): string {
 
 /** `text` with the doors block replaced between the markers, or inserted before `anchor`. */
 export function applyDoors(text: string, block: string, anchor: string): string {
-  const crlf = text.includes("\r\n");
-  const t = text.replace(/\r\n/g, "\n");
-  const s = t.indexOf(START);
-  const e = t.indexOf(END);
-  let out: string;
-  if (s >= 0 && e > s) out = t.slice(0, s) + block + t.slice(e + END.length);
-  else {
-    const at = t.indexOf(`\n${anchor}`);
-    if (at < 0) throw new Error(`anchor "${anchor}" not found`);
-    out = `${t.slice(0, at + 1)}${block}\n${t.slice(at)}`;
-  }
-  return crlf ? out.replace(/\n/g, "\r\n") : out;
+  const s = text.indexOf(START);
+  const e = text.indexOf(END);
+  // A second block (a merge leftover, a paste) would sit outside the span we rewrite and keep its
+  // old URLs while this check stayed green, so more than one marker of either kind is an error.
+  if (text.indexOf(START, s + 1) >= 0 || text.indexOf(END, e + 1) >= 0)
+    throw new Error("more than one doors block: keep exactly one <!-- doors:start --> … <!-- doors:end -->");
+  if (s >= 0 !== e >= 0 || (s >= 0 && e < s)) throw new Error("unpaired doors markers");
+  // Only the block's own bytes take the file's line ending; everything outside it is left as found.
+  const eol = text.includes("\r\n") ? "\r\n" : "\n";
+  const b = block.replace(/\n/g, eol);
+  if (s >= 0) return text.slice(0, s) + b + text.slice(e + END.length);
+  const at = text.indexOf(`\n${anchor}`);
+  if (at < 0) throw new Error(`anchor "${anchor}" not found`);
+  return `${text.slice(0, at + 1)}${b}${eol}${text.slice(at)}`;
 }
 
 function main(): void {

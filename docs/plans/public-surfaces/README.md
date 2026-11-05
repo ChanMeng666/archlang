@@ -105,6 +105,7 @@ pre-JS h1 and lede; the shared-plan attribution strip; `/s/<id>` and its PNG pre
     | Surface | Order |
     |---|---|
     | README / npm / `/agents` | coding agent → hosted (ChatGPT, claude.ai) → VS Code → playground |
+    | npm `archlang-mcp` page, `llms.txt`, VS Code listing | hosted (ChatGPT, claude.ai) → coding agent → (VS Code) → playground: their readers already chose MCP or an editor (O1) |
     | Docs home | ChatGPT and the agent prompt side by side at equal weight |
     | Playground sheet | all doors at equal weight |
     | `/start` | by friction, for the curious non-developer |

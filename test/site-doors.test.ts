@@ -103,6 +103,26 @@ describe("generated doors blocks", () => {
     expect(applyDoors(text, renderDoorsBlock(doors, order), anchor)).toBe(text);
   });
 
+  it.each(SURFACES)("$file has exactly one doors block", ({ file }) => {
+    const text = read(file);
+    expect(text.split("<!-- doors:start -->").length - 1).toBe(1);
+    expect(text.split("<!-- doors:end -->").length - 1).toBe(1);
+  });
+
+  it("a second, stale block is refused, not left alone", () => {
+    const block = renderDoorsBlock(doors, "llms");
+    const twice = `intro\n${block}\nmiddle\n${block.replace(CHATGPT, "https://example.invalid")}\n## Next\n`;
+    expect(() => applyDoors(twice, block, "## Next")).toThrow(/more than one doors block/);
+  });
+
+  it("bytes outside the block keep their line endings", () => {
+    const block = renderDoorsBlock(doors, "llms");
+    const mixed = `a\r\nb\n${block.replace(/\n/g, "\r\n")}\r\nc\nd\r\n`;
+    const out = applyDoors(mixed, block, "## Next");
+    expect(out.slice(0, 5)).toBe("a\r\nb\n");
+    expect(out.endsWith("\r\nc\nd\r\n")).toBe(true);
+  });
+
   it.each(SURFACES)("$file carries the ChatGPT and hosted MCP doors", ({ file }) => {
     const text = read(file);
     expect(text).toContain(CHATGPT);
