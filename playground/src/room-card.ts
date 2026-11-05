@@ -7,12 +7,12 @@
  *
  * A non-modal dialog. Opened in view mode it takes the focus, so a keyboard and a screen reader
  * land on it; in edit mode the click has just put the caret in the editor, and the card leaves it
- * there. Escape or its × closes it, and the focus goes back where it was. A click on another room
- * shows that room; a click off every room closes it. A new plan closes it; a recompile of the same
- * plan refreshes it, or closes it when its room is gone.
+ * there. Escape (outside the editor) or its × closes it, and the focus goes back where it was. A
+ * click on another room shows that room; a click off every room closes it. A new plan closes it; a
+ * recompile of the same plan refreshes it, or closes it when its room is gone.
  */
 import type { SceneSummary } from "archlang";
-import { type FactsRoom, roomCardFacts } from "./room-facts.js";
+import { type FactsRoom, openingsText, roomCardFacts } from "./room-facts.js";
 
 export interface RoomCard {
   /** Show `room`'s facts, or close the card for `null` (a click off every room). */
@@ -79,8 +79,7 @@ export function mountRoomCard({ viewport, stage, getSummary, isEditing, jumpToOf
     row("Size", f.size);
     row("Use", f.use);
     row("Next to", f.neighbours.length > 0 ? f.neighbours.join(", ") : "no other room");
-    const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? "" : "s"}`;
-    row("Openings", `${plural(f.doors, "door")} · ${plural(f.windows, "window")}`);
+    row("Openings", openingsText(f));
     card.replaceChildren(head, dl);
 
     const start = isEditing() ? spanOf(room.id) : undefined;
@@ -106,8 +105,12 @@ export function mountRoomCard({ viewport, stage, getSummary, isEditing, jumpToOf
     returnTo = null;
   }
 
+  // Escape closes it, but not from inside the editor: there Escape is the editor's own (it closes
+  // a completion, drops a selection), and a card the reader opened stays until they close it.
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !card.hidden) close();
+    if (e.key !== "Escape" || card.hidden) return;
+    if (e.target instanceof Element && e.target.closest(".cm-editor")) return;
+    close();
   });
 
   return {

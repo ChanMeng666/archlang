@@ -88,12 +88,14 @@ export interface RoomCardFacts {
   neighbours: string[];
   doors: number;
   windows: number;
+  /** Its cased openings (leaf-less), describe()'s `openings`. */
+  openings: number;
 }
 
 /** The card for `room`, its neighbours and openings read from the same summary. */
 export function roomCardFacts(
   room: FactsRoom,
-  summary: Pick<SceneSummary, "rooms" | "doors" | "windows">,
+  summary: Pick<SceneSummary, "rooms" | "doors" | "windows" | "openings">,
 ): RoomCardFacts {
   const names = new Map(summary.rooms.map((r) => [r.id, roomName(r)]));
   return {
@@ -105,5 +107,17 @@ export function roomCardFacts(
     neighbours: room.adjacent.map((id) => names.get(id) ?? id),
     doors: summary.doors.filter((d) => d.between.includes(room.id)).length,
     windows: summary.windows.filter((w) => w.room === room.id).length,
+    openings: summary.openings.filter((o) => o.between.includes(room.id)).length,
   };
+}
+
+/** A room's openings in plain words, only the kinds it has: "2 doors · 1 window · 6 openings", or "none". */
+export function openingsText(f: Pick<RoomCardFacts, "doors" | "windows" | "openings">): string {
+  const parts = [
+    [f.doors, "door"],
+    [f.windows, "window"],
+    [f.openings, "opening"],
+  ] as const;
+  const said = parts.filter(([n]) => n > 0).map(([n, one]) => `${n} ${one}${n === 1 ? "" : "s"}`);
+  return said.length > 0 ? said.join(" · ") : "none";
 }

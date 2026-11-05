@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe as describeSuite, expect, it } from "vitest";
 import { describe, describeLevel } from "../../src/index.js";
-import { areaText, factsLine, roomCardFacts, roomTip, sizeText, sourceLines } from "../src/room-facts.js";
+import { areaText, factsLine, openingsText, roomCardFacts, roomTip, sizeText, sourceLines } from "../src/room-facts.js";
 
 const example = (name: string) =>
   readFileSync(new URL(`../../examples/${name}.arch`, import.meta.url), "utf8").replace(/\r\n?/g, "\n");
@@ -14,6 +14,14 @@ describeSuite("sourceLines", () => {
     expect(sourceLines("a\nb")).toBe(2);
     expect(sourceLines("a\r\nb\r\n")).toBe(2);
     expect(sourceLines("\n\n")).toBe(2);
+  });
+});
+
+describeSuite("openingsText", () => {
+  it("says only the kinds a room has, in plain words", () => {
+    expect(openingsText({ doors: 2, windows: 1, openings: 6 })).toBe("2 doors · 1 window · 6 openings");
+    expect(openingsText({ doors: 0, windows: 3, openings: 1 })).toBe("3 windows · 1 opening");
+    expect(openingsText({ doors: 0, windows: 0, openings: 0 })).toBe("none");
   });
 });
 
@@ -77,7 +85,17 @@ describeSuite("against describe() of the shipped examples", () => {
       neighbours: ["Living / Kitchen", "Bath"],
       doors: 1,
       windows: 1,
+      openings: 0,
     });
+    expect(openingsText(roomCardFacts(bed, d))).toBe("1 door · 1 window");
+  });
+
+  it("counts a room's cased openings too: the Hexagon Pavilion's Rotunda has six and no door", () => {
+    const d = describe(example("hexagon-pavilion"));
+    const rotunda = d.rooms.find((r) => r.label === "Rotunda")!;
+    const f = roomCardFacts(rotunda, d);
+    expect([f.doors, f.windows, f.openings]).toEqual([0, 0, 6]);
+    expect(openingsText(f)).toBe("6 openings");
   });
 
   it("a storey's facts line names the storey, with that storey's totals", () => {
