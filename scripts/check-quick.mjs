@@ -118,14 +118,15 @@ function workspaceOf(file) {
   return "";
 }
 
+/** A single- or double-quoted literal with no space in it: a path a test may open. */
+const QUOTED = /["']([^"'\s]+)["']/g;
+
 /**
  * Whether test `t` reads the changed file `f` whose name (`README.md`, `CHANGELOG.md`, …) is too
  * common to match on alone. A quoted literal ending in the name counts when it resolves to `f`: a
  * `./`/`../` path from the test's folder, any other path from the repository root, and a bare name
  * when `f` sits at the root of the test's own workspace (a `join(ROOT, "README.md")`).
  */
-const QUOTED = /["']([^"'\s]+)["']/g;
-
 function readsGeneric(t, text, f, name) {
   // Plain quotes only: a name in backticks is a comment's, not a path the test opens.
   for (const m of text.matchAll(QUOTED)) {
