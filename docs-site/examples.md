@@ -599,6 +599,17 @@ row you see is exactly what the loop produced.
 
 <ArchLive :src="EXAMPLES['parametric']" :rows="16" />
 
+### Resizable Flat (three `let`s)
+
+**4 rooms, 58.5 m², 3 doors, 3 windows**, a one-bedroom flat whose size is three numbers at the
+top: the living room's width, the bedroom's width and their depth. The rooms read those
+numbers and are placed by relation, `walls from rooms` derives the walls from them, every
+opening is hosted by the rooms it joins and every fixture is anchored to its room, so a change
+to one number moves the walls, the doors, the furniture and the dimensions with it. In the
+playground each of the three is a slider.
+
+<ArchLive :src="EXAMPLES['knob-flat']" :rows="16" />
+
 ### Accessible metadata
 
 **2 rooms, 24 m²** — the smallest plan that carries

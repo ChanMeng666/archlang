@@ -77,6 +77,7 @@ const BASELINE: [string, string][] = [
   ["8bd6a37eaeb951c8fa11e547eee4ae9727f32c3189c5a79f168e461f01012f08", "examples/hexagon-pavilion.arch"],
   ["225d043f1f439aff8463149d974241706791b9e272b1199f91474772876e53bc", "examples/hillside-villa.arch"],
   ["b3ed32c98852d61c69c521cf756843e3d950dbff3bf5bbe45dabe997336ceb86", "examples/imports.arch"],
+  ["b70f7455f644b327a4b36f56d283a7eb2397d5ed84523363c2f0df92cf0f2f96", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["913ed13bd8dd60b02816e127ef1a347bdcae49c7e944cee0925db120015d6ece", "examples/laneway-house.arch"],
   ["fbc95cdcb6f4c4baf8f8afeae25f4d3b96a49812af107e13ef64713868f8bc46", "examples/library.arch"],
   ["f6e8fc4606bd7782cb703ea8d7ecc0e900be392607be0d5181f9f187db5377fa", "examples/materials.arch"],

@@ -97,6 +97,7 @@ const BASELINE: [string, string][] = [
   ["6544b4c8a8dd7e8a419f1beb6ab9e3daed19bc6a972a2bb493e361dc29f05b02", "examples/hexagon-pavilion.arch"],
   ["e8f15a165ec75acb51c00ee208c02a2adee5d6cd2171f11216be8c6e725b4612", "examples/hillside-villa.arch"],
   ["943cb8dbb7c0438d4f7d62160dafba83a6861b912a5c8cbf70db47e11ec80be7", "examples/imports.arch"],
+  ["eba7e921a8695d44326f95ebdb9e22c7b4a9fa5cb311b81055e6359e0cdeafd5", "examples/knob-flat.arch"], // new example (P4, the knobs example), as in ./block-stair-byte-identity.test.ts
   ["312c51d435f0c106b693ccd6c13a1cebb5c41b3217647e4202eef05101f058a1", "examples/laneway-house.arch"],
   ["3287073b01810f410a7e011350769357b5914455673dd0c1cea8c21f24a517ce", "examples/library.arch"],
   ["cba42cb40c26fc7374e9009aad98330821970d7512ec69463b07f76bb6327913", "examples/materials.arch"],

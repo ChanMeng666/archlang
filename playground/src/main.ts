@@ -21,6 +21,7 @@ import { createPreview } from "./preview.js";
 import { type LevelPage, selectPage } from "./levels.js";
 import { mountLevelSwitcher } from "./level-switcher.js";
 import { renderFacts } from "./facts-strip.js";
+import { mountKnobsPanel } from "./knobs-panel.js";
 import { isNarrow, mountMobileViews } from "./mobile-views.js";
 import { hasEditFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
@@ -314,6 +315,37 @@ const previewCtl = createPreview({
 // this visit opens another plan (the head script's `pg-other`), which hides it until compiled.
 if (!root.classList.contains("pg-other")) previewCtl.adopt();
 
+// The plan's knobs (knobs-panel.ts): a slider per top-level numeric `let`, over the drawing. A
+// value is tried through `render`, which keeps the last good drawing when it does not compile.
+const knobsPanel = mountKnobsPanel({
+  viewport: pzViewport,
+  getSource: () => currentSource(),
+  tryRender: (source) => render(source),
+  commit: keepKnob,
+  flash,
+});
+
+/**
+ * Keep a source a knob made, which has just compiled. With no editor it is the document at once,
+ * and once the slider is let go (`final`) the draft, the hash and the plan's name follow, as they
+ * do for an edit; the drawing has followed all along. With the editor open the editor is the
+ * document, and it takes the new text on release, as one undo step; its change listener then
+ * saves the draft, moves the hash and renames the plan.
+ */
+function keepKnob(source: string, final: boolean) {
+  if (edit) {
+    if (final) edit.setDoc(source);
+    return;
+  }
+  doc = source;
+  if (finishPanel) finishPanel.hidden = true;
+  actions?.sourceChanged();
+  if (!final) return;
+  writeStr(KEYS.source, source);
+  void updateHash(source, editing);
+  void syncPlanMark(source); // no longer the example word for word: "Edited plan"
+}
+
 // The storey switcher sits in the OUTPUT PANE'S TAB STRIP, not the preview toolbar, so
 // it is visible and operable from all four tabs — the storey it picks drives every one
 // of them. ONE control for one piece of state: a second copy inside the preview would be
@@ -356,8 +388,9 @@ function shownLevel(): number | null {
   return selectedLevel === null && preview3dEl.classList.contains("active") ? null : activeLevel;
 }
 
-function render(source: string, refit = false) {
-  if (!core) return; // nothing compiles before the compiler is in; boot renders once it is
+/** Compile and show `source`; whether it compiled without errors (else the last good drawing stays). */
+function render(source: string, refit = false): boolean {
+  if (!core) return false; // nothing compiles before the compiler is in; boot renders once it is
   const { compile, THEMES } = core;
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
   // key overrides it (compile's `theme` option wins over an in-source directive).
@@ -371,7 +404,7 @@ function render(source: string, refit = false) {
   const opts: CompileOptions = themeKey
     ? { noCache: true, annotate: true, accessible, theme: THEMES[themeKey] }
     : { noCache: true, annotate: true, accessible };
-  const { svg, errors, diagnostics, scene, pages } = compile(source, opts);
+  const { svg, errors, diagnostics, scene, pages, ast } = compile(source, opts);
   const ok = errors.length === 0;
   // The 3D preview draws the core's light drawing: this compile is that drawing unless a theme
   // overrides it, so it is handed over and the tab does not compile the source a second time.
@@ -404,7 +437,8 @@ function render(source: string, refit = false) {
     statusEl.classList.add("err");
     // In view mode the diagnostics are out of sight: say where they are.
     statusText.textContent = `${n} error${n > 1 ? "s" : ""}${editing ? "" : " — open Source to see them"}`;
-    return; // keep last good preview
+    knobsPanel.refresh(); // a document that does not compile has no knobs to move
+    return false; // keep last good preview
   }
   statusEl.classList.remove("err");
   const warns = (diagnostics ?? []).filter((d) => d.severity === "warning");
@@ -423,6 +457,8 @@ function render(source: string, refit = false) {
   previewCtl.show(displaySvg, refit);
   lastSvg = pageSvg;
   lastScene = (page ? page.scene : scene) ?? null;
+  knobsPanel.sync(source, ast);
+  return true;
 }
 
 // ---- 3D preview (card A5): three.js and archlang-3d load on the tab's first open, like jsPDF ----

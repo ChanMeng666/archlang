@@ -1,0 +1,45 @@
+# A one-bed flat you can resize: three numbers at the top size the whole plan.
+#
+# The rooms are sized from the three `let`s and placed by relation (`right-of`,
+# `below`), `walls from rooms` derives the shell and the partitions from them, every
+# opening is hosted by the rooms it joins, and every fixture is anchored to its room.
+# So a change to any of the three numbers moves the walls, the doors, the windows, the
+# furniture and the dimensions with it, and nothing needs editing by hand. In the
+# playground each `let` is a slider.
+plan "One-Bed Flat (resizable)" {
+  units mm
+  grid 50
+  north up
+  dims auto all
+
+  let LIVING = 4500    # living room width
+  let BEDROOM = 3300   # bedroom width
+  let DEPTH = 5400     # living and bedroom depth
+
+  room id=r_live at (0,0) size LIVING x DEPTH label "Living / Kitchen" uses living kitchen
+  room id=r_bed  right-of r_live align top gap 0 size BEDROOM x DEPTH label "Bedroom" uses bedroom
+  room id=r_hall below r_live align left gap 0 size LIVING x 2100 label "Entry" uses hall
+  room id=r_bath right-of r_hall align top gap 0 size BEDROOM x 2100 label "Bath" uses bath
+
+  # The entry runs into the living room with no leaf: an opening across the whole edge.
+  walls from rooms exterior 200 partition 100 { open between r_hall and r_live }
+
+  door id=d_front on r_hall.bottom at center width 900 hinge near start swing into r_hall
+  door between r_live and r_bed  at 900 from end width 800 hinge near end swing into r_bed
+  door between r_hall and r_bath at 900 from start width 800 hinge near start swing into r_bath
+
+  window on r_live.top width 1800
+  window on r_bed.top  width 1200
+  window on r_bath.bottom width 600
+
+  furniture counter      against r_live.left offset 400  size 600x600
+  furniture stove        against r_live.left offset 1000 size 600x600
+  furniture kitchen_sink against r_live.left offset 1800 size 800x600
+  furniture sofa         in r_live anchor top-right flush size 800x1600 label "Sofa"
+  furniture bed          in r_bed  anchor top-right flush size 1400x2000 label "Bed"
+  furniture shower       in r_bath anchor top-right flush size 900x900
+  furniture wc           against r_bath.bottom offset 1500 size 400x700
+  furniture basin        against r_bath.bottom offset 600 size 600x450
+
+  title { project "One-Bed Flat (resizable)" drawn_by "ArchLang" date "2026-11-06" }
+}
