@@ -6,7 +6,7 @@
 
 - 第 A、B 批全部合并（CR0–CR8，含 SECURITY.md 去重），已发布。版本以 npm 和 tag 为准。
 - 线上已核实：短链接 `/s/<id>`、预览图 `/s/<id>.png`（真实户型，不是兜底图）、3D 自由旋转。
-- 定位裁定 A3 的条件已满足：npm 上的版本能读 OpenPlan3D（`archlang import --from openplan3d`），Show HN 文案可以写。
+- 定位裁定 A3（2026-11-06 授权裁定，见 `docs/plans/public-surfaces/README.md` §6）：泛称“能检查其他开放格式的方案”须等 OAS 也发布后才可用；现在只可在功能说明中写“导入 OpenPlan3D JSON（`archlang import --from openplan3d`）并像任何方案一样检查”，不作标题或主打宣传。
 - 后续卡见 `README.md` § 3 末尾的“后续卡”，按序号做，做完删行。
 
 ## 2. 接下来，按序
