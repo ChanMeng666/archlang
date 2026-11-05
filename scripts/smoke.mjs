@@ -127,6 +127,10 @@ const contains = (sub) => (body) => {
   if (!body.includes(sub)) throw new Error(`body does not contain ${JSON.stringify(sub)}`);
 };
 
+const matches = (re) => (body) => {
+  if (!re.test(body)) throw new Error(`body does not match ${re}`);
+};
+
 const startsWith = (sub) => (body) => {
   if (!body.trimStart().startsWith(sub)) {
     throw new Error(
@@ -356,7 +360,9 @@ async function playgroundChecks() {
       contains("<h1"),
       contains("compiles in your browser"),
       contains("<svg data-prerendered"),
-      contains('rel="modulepreload"'),
+      // The compiler chunk is preloaded with the page (playground/vite.config.js), as Vite
+      // writes the tag: `<link rel="modulepreload" crossorigin href="./assets/compiler-….js">`.
+      matches(/<link rel="modulepreload"[^>]*\bhref="\.\/assets\/compiler-[\w-]+\.js"/),
       // The shell may be framed only by us. It comes from public/_headers, which
       // nothing else here executes — and it must be asserted on `/` specifically,
       // because `_headers` matches the REQUEST path and `/` is served through the

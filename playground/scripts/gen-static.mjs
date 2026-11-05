@@ -979,6 +979,13 @@ function prerenderIndex(rows) {
   const result = compile(source);
   const d = describe(source);
   if (result.errors.length > 0 || !result.svg) fail(`${row.name}: the default example does not compile.`);
+  // The size attributes below are the stage's (a pixel size from the viewBox). A root that already
+  // carried its own (a plan with `paper` writes `width="…mm"`) would end up with two of each, and
+  // HTML keeps the first: refuse rather than guess which size the drawing meant.
+  const root = /^<svg\b[^>]*>/.exec(result.svg)?.[0] ?? "";
+  if (/\s(?:width|height)=/.test(root)) {
+    fail(`${row.name}: the default example's <svg> root has its own width/height; the built-in drawing sets them.`);
+  }
   const box = /^<svg[^>]*\sviewBox="([\d.\-eE]+) ([\d.\-eE]+) ([\d.\-eE]+) ([\d.\-eE]+)"/.exec(result.svg);
   const w = Number(box?.[3]);
   const h = Number(box?.[4]);
