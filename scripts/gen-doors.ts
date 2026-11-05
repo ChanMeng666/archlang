@@ -3,7 +3,7 @@
  * (READMEs, `llms.txt`). The JSON is the single source of every door URL and command; the block
  * sits between `<!-- doors:start -->` and `<!-- doors:end -->`. On the first run (no markers yet) it
  * is inserted before the surface's anchor heading. {@link renderDoorsBlock} and {@link applyDoors}
- * are pure so `test/doors.test.ts` can regenerate in memory.
+ * are pure so `test/site-doors.test.ts` can regenerate in memory.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";
