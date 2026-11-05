@@ -60,7 +60,8 @@ test.describe("shared-plan notice", () => {
   });
 
   test("a permalink to a BUNDLED example is not attributed to a stranger", async ({ page }) => {
-    await page.goto(`/${await shareHash(ONE_ROOM)}`);
+    // In edit mode (`&edit`), so the editor's text can witness the plan.
+    await page.goto(`/${await shareHash(ONE_ROOM)}&edit`);
     await waitForPlan(page);
     // Proves the link really did load that plan, so the absent notice is the
     // predicate's answer and not a hash that silently failed to decode.

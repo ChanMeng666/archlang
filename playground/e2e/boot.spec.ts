@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
-import { watchForProblems } from "./fixtures.js";
+import { enterEdit, waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
- * The cold-start contract: an untouched visit compiles the default example and
- * draws it, with a clean console and no missing assets.
+ * The cold-start contract: an untouched visit shows the default example's drawing before any
+ * JavaScript, then compiles it in the browser, with a clean console and no missing assets.
  *
  * This is the spec that would have caught a broken asset path, a bundler
  * externalisation mistake, or a module-scope throw — none of which the unit
@@ -15,24 +15,28 @@ import { watchForProblems } from "./fixtures.js";
  * `--grep @prod`), so a tag here is a promise about production, not just about a
  * preview server. Every case below keeps it: they navigate, read the DOM and
  * assert — nothing downloads, writes to the clipboard, or depends on state
- * surviving a reload. (`selectOption` on the examples picker mutates only this
- * throwaway browser context.) Do NOT tag a case that downloads a file, reads or
- * writes the clipboard, or asserts on localStorage persistence.
+ * surviving a reload. (`selectOption` on the examples picker and the Source button
+ * mutate only this throwaway browser context.) Do NOT tag a case that downloads a file,
+ * reads or writes the clipboard, or asserts on localStorage persistence.
  */
 test.describe("boot", { tag: "@prod" }, () => {
   test("renders the default example into the stage", async ({ page }) => {
     await page.goto("/");
+    await waitForPlan(page);
     const svg = page.locator(".pz-stage svg");
     await expect(svg).toBeVisible();
     // A real compiled plan, not an empty shell: it carries a viewBox and drawn geometry.
     await expect(svg).toHaveAttribute("viewBox", /^[\d.\-\s]+$/);
     expect(await svg.locator("path, rect, line, polyline, polygon").count()).toBeGreaterThan(0);
+    // …and it is the compiler's, not the one built into the page: the live compile annotates
+    // every primitive for click-to-source.
+    expect(await svg.locator("[data-span]").count()).toBeGreaterThan(0);
   });
 
   test("boots with no console errors and no failed or 4xx requests", async ({ page }) => {
     const problems = watchForProblems(page);
     await page.goto("/", { waitUntil: "networkidle" });
-    await expect(page.locator(".pz-stage svg")).toBeVisible();
+    await waitForPlan(page);
 
     expect(problems.pageErrors, "uncaught exceptions").toEqual([]);
     expect(problems.consoleErrors, "console.error output").toEqual([]);
@@ -42,7 +46,7 @@ test.describe("boot", { tag: "@prod" }, () => {
 
   test("reports a ready status and real plan facts", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".pz-stage svg")).toBeVisible();
+    await waitForPlan(page);
     // "ready" (or an N-warnings count) — never an error state on the shipped default.
     await expect(page.locator("#status")).not.toHaveClass(/err/);
     // The facts strip is describe()'s totals, so a non-zero room count proves the
@@ -72,17 +76,48 @@ test.describe("boot", { tag: "@prod" }, () => {
 
   test("populates the example and lint-profile selectors from the core", async ({ page }) => {
     await page.goto("/");
+    await waitForPlan(page);
     expect(await page.locator("#examples option").count()).toBeGreaterThan(1);
-    expect(await page.locator("#lintProfile option").count()).toBeGreaterThan(0);
+    // The lint profiles belong to the Lint tab, which is edit mode's.
+    await enterEdit(page);
+    await expect.poll(() => page.locator("#lintProfile option").count()).toBeGreaterThan(0);
   });
 
   test("switching examples loads a different plan", async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator(".pz-stage svg")).toBeVisible();
+    await waitForPlan(page);
     const before = await page.locator(".pz-stage svg").innerHTML();
     await page.locator("#examples").selectOption("Two-bed flat");
     await expect
       .poll(async () => (await page.locator(".pz-stage svg").innerHTML()) !== before, { timeout: 5000 })
       .toBe(true);
+  });
+});
+
+test.describe("boot without JavaScript", { tag: "@prod" }, () => {
+  test.use({ javaScriptEnabled: false });
+
+  test("the page still shows the default drawing, the H1 and the lede", async ({ page }) => {
+    // The drawing is written into index.html at build time (scripts/gen-static.mjs), so a
+    // crawler, a reader with JavaScript off and the first paint all get it.
+    await page.goto("/");
+    const svg = page.locator(".pz-stage svg[data-prerendered]");
+    await expect(svg).toHaveCount(1);
+    await expect(svg).toBeVisible();
+    await expect(svg).toHaveAttribute("viewBox", /^[\d.\-\s]+$/);
+    await expect(svg).toHaveAttribute("role", "img");
+    expect(await svg.locator("path, rect, line, polyline, polygon").count()).toBeGreaterThan(0);
+    // The default example's own drawing: its title block names it.
+    await expect(svg).toContainText("Laneway House");
+    // Fitted to the stage by CSS alone: on screen, and inside the stage.
+    const [box, stage] = await Promise.all([svg.boundingBox(), page.locator(".pz-viewport").boundingBox()]);
+    expect(box && stage).toBeTruthy();
+    expect(box!.width).toBeGreaterThan(stage!.width * 0.4);
+    expect(box!.x).toBeGreaterThanOrEqual(stage!.x);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(stage!.x + stage!.width + 1);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator(".intro .lede").first()).toContainText("compiles in your browser");
+    // The picker names the plan on screen, also with no script.
+    await expect(page.locator("#examples")).toHaveValue("Laneway House");
   });
 });

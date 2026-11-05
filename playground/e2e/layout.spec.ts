@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { embedHash, shareHash, waitForPlan } from "./fixtures.js";
+import { embedHash, gotoEdit, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * The layout: every part of the workspace is REACHABLE, at desktop size and on a phone.
@@ -60,13 +60,28 @@ async function expectLastLineReachable(errors: Locator): Promise<void> {
   await expect(last).toBeInViewport();
 }
 
+/**
+ * The intro band is one line under the header: the H1 and the lede side by side, the band no
+ * taller than one line of each. (It replaced a disclosure that folded a three-line band away.)
+ */
+async function expectOneLineIntro(page: Page): Promise<void> {
+  const { h1, lede, band } = await page.evaluate(() => {
+    const r = (s: string) => document.querySelector(s)!.getBoundingClientRect();
+    return { h1: r(".intro h1"), lede: r(".intro .lede"), band: r(".intro") };
+  });
+  expect(lede.left, "the lede sits beside the H1").toBeGreaterThan(h1.right);
+  expect(Math.abs(lede.bottom - h1.bottom), "on the H1's line").toBeLessThan(8);
+  expect(band.height, "one line tall").toBeLessThanOrEqual(40);
+  await expect(page.locator(".intro details")).toHaveCount(0);
+}
+
 test.describe("diagnostics drawer (desktop)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
-  test("scrolls within its box with the intro open, and its last line can be reached", async ({ page }) => {
-    await page.goto(`/${await shareHash(HILLSIDE)}`);
-    await waitForPlan(page);
-    await expect(page.locator("details.intro__disclosure")).toHaveAttribute("open", "");
+  // The drawer is the editor pane's, so these open in edit mode.
+  test("scrolls within its box under the one-line intro, and its last line can be reached", async ({ page }) => {
+    await gotoEdit(page, await shareHash(HILLSIDE));
+    await expectOneLineIntro(page);
     const errors = page.locator("#errors");
     await expect(errors.locator(".diagrow code").first()).toHaveText("W_DRAWING_OVERFLOW");
     await expectNoClippedRow(page);
@@ -88,13 +103,12 @@ test.describe("diagnostics drawer (desktop)", () => {
     await expectLastLineReachable(errors);
   });
 
-  test("stays scrollable with the intro closed and with many diagnostics", async ({ page }) => {
+  test("stays scrollable with many diagnostics", async ({ page }) => {
     // Eight rooms stacked on one spot: a W_ROOM_OVERLAP per pair, 28 rows.
     const rooms = Array.from({ length: 8 }, (_, i) => `  room id=r${i} at (0,0) size 3000x3000 label "R${i}"\n`);
     const many = `plan "E2E" {\n  units mm\n  wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n${rooms.join("")}}`;
-    await page.goto(`/${await shareHash(many)}`);
-    await page.locator(".intro__summary").click();
-    await expect(page.locator("details.intro__disclosure")).not.toHaveAttribute("open", "");
+    await gotoEdit(page, await shareHash(many));
+    await expectOneLineIntro(page);
     const errors = page.locator("#errors");
     await expect(errors.locator(".diagrow").first()).toBeVisible();
     await expect(errors.locator(".diagrow")).toHaveCount(28);
@@ -110,8 +124,33 @@ test.describe("phone layout", () => {
   const horizontalOverflow = (page: Page) =>
     page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
 
-  test("never scrolls sideways, and the editor, the plan and the problems are each reachable", async ({ page }) => {
+  test("view mode: the drawing fills the screen, and Source is the second screen", async ({ page }) => {
     await page.goto(`/${await shareHash(HILLSIDE)}`);
+    await waitForPlan(page);
+    expect(await horizontalOverflow(page), "horizontal overflow at 375px").toBeLessThanOrEqual(0);
+    // No Code · Plan · Problems switcher in view mode: the drawing alone, full width.
+    await expect(page.locator("#mviews")).toBeHidden();
+    await expect(page.locator("#editor")).toBeHidden();
+    await page.locator("main").scrollIntoViewIfNeeded();
+    await expect(page.locator(".pz-stage svg")).toBeInViewport();
+    const viewport = (await page.locator(".pz-viewport").boundingBox())!;
+    expect(viewport.width, "the drawing is full width").toBeGreaterThanOrEqual(375 - 1);
+    // Make your own is on screen with it.
+    await expect(page.locator("#makeOwn")).toBeVisible();
+
+    // Source: the code, full width, the drawing one tap away.
+    await page.locator("#sourceToggle").tap();
+    await expect(page.locator(".mview[data-mview=code]")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator(".cm-content")).toBeInViewport();
+    await expect(page.locator(".pz-viewport")).toBeHidden();
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    await page.locator(".mview[data-mview=plan]").tap();
+    await expect(page.locator(".pz-stage svg")).toBeInViewport();
+  });
+
+  // In edit mode (`&edit`), as before the view-mode default.
+  test("never scrolls sideways, and the editor, the plan and the problems are each reachable", async ({ page }) => {
+    await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
     await waitForPlan(page);
     expect(await horizontalOverflow(page), "horizontal overflow at 375px").toBeLessThanOrEqual(0);
 
@@ -160,7 +199,7 @@ test.describe("phone layout", () => {
   });
 
   test("a clean plan says so in the Problems view", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#edit");
     await waitForPlan(page);
     await page.locator(".mview[data-mview=problems]").tap();
     await expect(page.locator(".problems-empty")).toBeVisible();
@@ -174,7 +213,7 @@ test.describe("phone layout", () => {
   ] as const) {
     test(`never scrolls sideways at ${width}x${height}, in any view`, async ({ page }) => {
       await page.setViewportSize({ width, height });
-      await page.goto(`/${await shareHash(HILLSIDE)}`);
+      await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
       await waitForPlan(page);
       for (const view of ["plan", "code", "problems"]) {
         await page.locator(`.mview[data-mview=${view}]`).tap();

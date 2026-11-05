@@ -6,7 +6,7 @@ import { expect, type Page, test } from "@playwright/test";
 // The package's own software-WebGL flags (its replay tests render with the same ones); the one
 // browser-free module of the package, so the specs' typecheck never pulls its Node entry.
 import { SWIFTSHADER_ARGS } from "../../packages/archlang-3d/src/replay/swiftshader.js";
-import { BROKEN_PLAN, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import { BROKEN_PLAN, openTools, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * The "3D preview" tab (card A5): the separate archlang-3d package's replay of the editor's plan,
@@ -15,6 +15,11 @@ import { BROKEN_PLAN, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } fro
  * crash; and the chunks the page loads at startup carry no 3D code and grow by nothing 3D-sized.
  *
  * WebGL in headless Chromium: the package's own pinned software renderer (SwiftShader).
+ */
+/*
+ * The tab opens in either mode (it is the one output tab view mode keeps). A case that opens
+ * Describe or Lint, or types into the editor, loads its plan with `&edit` (edit mode); the rest
+ * stay in view mode, the default a visitor meets.
  */
 test.use({ launchOptions: { args: SWIFTSHADER_ARGS } });
 
@@ -86,7 +91,7 @@ test.describe("3D preview tab", () => {
     expect(colours).toBeGreaterThan(3);
 
     // Away and back: the chunk is not fetched again.
-    await page.locator("#tab-describe").click();
+    await page.locator("#tab-preview").click();
     await page.locator("#tab-preview3d").click();
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     expect(chunks.length, "the 3D chunk is fetched once").toBe(1);
@@ -95,7 +100,7 @@ test.describe("3D preview tab", () => {
   test("a plan the package refuses shows the refusal, not a crash", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(`/${await shareHash(BROKEN_PLAN)}`);
+    await page.goto(`/${await shareHash(BROKEN_PLAN)}&edit`);
     await expect(page.locator("#editor .cm-content")).toBeVisible();
     await page.locator("#tab-preview3d").click();
     const message = page.locator("#preview3d .p3d-message");
@@ -104,6 +109,21 @@ test.describe("3D preview tab", () => {
     await expect(page.locator("#preview3d")).toContainText(LABEL);
     await expect(page.locator("#preview3d canvas")).toBeHidden();
     expect(errors).toEqual([]);
+  });
+
+  test("the Tools menu opens it in view mode, labelled as the 3D decision record says", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await openTools(page);
+    // The product word (preview-and-remodel D5): "3D preview", in the menu as on the tab.
+    await page.getByRole("button", { name: "3D preview", exact: true }).click();
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await expect(page.locator("#tab-preview3d")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#preview3d")).toContainText(LABEL);
+    // Still view mode: the 3D preview needs no editor.
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await expect(page.locator(".cm-content")).toHaveCount(0);
   });
 });
 
@@ -118,7 +138,7 @@ async function open3d(page: Page): Promise<void> {
 
 test.describe("3D preview tab follows the editor", () => {
   test("the storey switcher drives it: no selection is all storeys, L2 is storey 2 alone", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#edit");
     await waitForPlan(page);
     await page.locator("#examples").selectOption("Townhouse (3 levels)");
     await waitForPlan(page);
@@ -154,7 +174,7 @@ test.describe("3D preview tab follows the editor", () => {
   });
 
   test("an edit while playing goes on from the current t, not back to the start", async ({ page }) => {
-    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&edit`);
     await waitForPlan(page);
     await open3d(page);
     const scrub = page.locator('#preview3d input[type="range"]');
@@ -169,7 +189,7 @@ test.describe("3D preview tab follows the editor", () => {
   });
 
   test("leaving the tab stops playback; coming back resumes it", async ({ page }) => {
-    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&edit`);
     await waitForPlan(page);
     await open3d(page);
     const scrub = page.locator('#preview3d input[type="range"]');
@@ -192,7 +212,7 @@ test.describe("3D preview tab follows the editor", () => {
 }`;
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
-    await page.goto(`/${await shareHash(tooBig)}`);
+    await page.goto(`/${await shareHash(tooBig)}&edit`);
     await expect(page.locator("#editor .cm-content")).toBeVisible();
     await page.locator("#tab-preview3d").click();
     const message = page.locator("#preview3d .p3d-message");
@@ -313,7 +333,7 @@ test.describe("3D preview tab: the free camera", () => {
   });
 
   test("an edit keeps the view the user chose", async ({ page }) => {
-    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&edit`);
     await waitForPlan(page);
     await open3d(page);
     await page
@@ -398,53 +418,88 @@ test.describe("3D preview tab: grabbing the view", () => {
 });
 
 /**
- * What card A5 cares about at startup, gated directly: the 3D code is not in the chunks the page
- * loads before the tab opens (the chunk itself is lazy: the first test above sees it fetched once,
- * on the first open), and those chunks did not grow by anything 3D-sized.
+ * What card A5 and card P1 care about at startup, gated directly. The chunks the page loads before
+ * anything is opened (index.html's module script and its modulepreloads) carry no 3D code and no
+ * CodeMirror: the 3D chunk loads on the tab's first open (the first test above sees it fetched
+ * once), the editor's chunk on the first entry into edit mode (init-precedence.spec.ts sees it not
+ * fetched in view mode). The compiler is the one startup chunk outside the view path: preloaded so
+ * it downloads with the page, but a `modulepreload`, never the render's own script.
  *
- * The size gate is a budget on the SUM of the startup chunks' gzip sizes, not a per-chunk ±1 %:
- * that fired on ordinary core growth (A5's own PR moved `index` +0.14 %), a re-bless hazard that
- * teaches re-blessing. The budget, `growthBudget` in the baseline, is 20,000 B: the 3D chunk is
- * ~150,500 B gzip (three.js and the package, measured at A8), so a leak of even an eighth of it
- * trips the gate, while ordinary core growth (hundreds of bytes per feature) takes dozens of PRs to
- * reach it, and reaching it is a deliberate re-baseline with its reason in the commit. Summing makes
- * the gate indifferent to the bundler renaming or re-splitting the startup chunks, so the old
- * key-set equality is dropped. Code leaks smaller than the budget are the markers' job: three.js's
- * renderer and camera class names and the package's label, each first checked to be in the 3D
+ * Two size gates, both on SUMS of gzip sizes, never per chunk (a per-chunk ±1 % fired on ordinary
+ * core growth, a re-bless hazard that teaches re-blessing; a sum is indifferent to the bundler
+ * renaming or re-splitting chunks):
+ *
+ * - `viewBudget` (60,000 B, PS-D5): the view path — every startup chunk but the compiler — is a
+ *   hard ceiling, not a growth allowance.
+ * - `growthBudget` (20,000 B): every startup chunk, compiler included, against the baseline. The 3D
+ *   chunk is ~150,500 B gzip (three.js and the package, measured at A8), so a leak of even an eighth
+ *   of it trips the gate, while ordinary core growth (hundreds of bytes per feature) takes dozens of
+ *   PRs to reach it, and reaching it is a deliberate re-baseline with its reason in the commit.
+ *
+ * Code leaks smaller than the budgets are the markers' job: three.js's renderer and camera class
+ * names and the package's label, CodeMirror's own class names, each first checked to be in its lazy
  * chunk, so a minifier that drops one fails here instead of passing vacuously.
  */
 test.describe("startup chunks", () => {
   test.skip(!!process.env.E2E_BASE_URL, "reads the local build");
 
-  test("the startup chunks carry no 3D code and stay within the growth budget", () => {
+  test("the startup chunks carry no 3D code and no editor, and stay within their budgets", () => {
     const baseline = JSON.parse(
       readFileSync(join(dirname(fileURLToPath(import.meta.url)), "startup-chunks.baseline.json"), "utf8"),
     ) as {
+      viewBudget: number;
       growthBudget: number;
       gzip: Record<string, number>;
+      compilerGzip: Record<string, number>;
     };
     const html = readFileSync(join(DIST, "index.html"), "utf8");
-    const startup = [
-      ...html.matchAll(/<script type="module"[^>]*\bsrc="\.\/(assets\/[^"]+\.js)"/g),
-      ...html.matchAll(/<link rel="modulepreload"[^>]*\bhref="\.\/(assets\/[^"]+\.js)"/g),
-    ].map((m) => m[1] as string);
-    expect(startup.length, "index.html loads a module script").toBeGreaterThan(0);
+    const scripts = [...html.matchAll(/<script type="module"[^>]*\bsrc="\.\/(assets\/[^"]+\.js)"/g)].map(
+      (m) => m[1] as string,
+    );
+    const preloads = [...html.matchAll(/<link rel="modulepreload"[^>]*\bhref="\.\/(assets\/[^"]+\.js)"/g)].map(
+      (m) => m[1] as string,
+    );
+    const startup = [...new Set([...scripts, ...preloads])];
+    expect(scripts.length, "index.html loads a module script").toBeGreaterThan(0);
 
-    const lazy = readdirSync(join(DIST, "assets")).filter((f) => /^preview3d-[\w-]+\.js$/.test(f));
-    expect(lazy, "one 3D chunk").toHaveLength(1);
-    expect(startup, "the 3D chunk is not loaded or preloaded at startup").not.toContain(`assets/${lazy[0]}`);
-    const lazyText = readFileSync(join(DIST, "assets", lazy[0] as string), "utf8");
-    const markers = ["WebGLRenderer", "PerspectiveCamera", LABEL];
-    for (const m of markers) expect(lazyText, `the marker "${m}" is in the 3D chunk`).toContain(m);
+    const assets = readdirSync(join(DIST, "assets"));
+    const one = (re: RegExp, what: string): string => {
+      const found = assets.filter((f) => re.test(f));
+      expect(found, what).toHaveLength(1);
+      return `assets/${found[0]}`;
+    };
+    const lazy3d = one(/^preview3d-[\w-]+\.js$/, "one 3D chunk");
+    const editor = one(/^edit-mode-[\w-]+\.js$/, "one edit-mode chunk");
+    const compiler = one(/^compiler-[\w-]+\.js$/, "one compiler chunk");
+    expect(startup, "the 3D chunk is not loaded or preloaded at startup").not.toContain(lazy3d);
+    expect(startup, "the editor's chunk is not loaded or preloaded at startup").not.toContain(editor);
+    // The compiler: preloaded with the page, never the script the first paint waits on.
+    expect(preloads, "the compiler is preloaded").toContain(compiler);
+    expect(scripts, "the compiler is not the page's module script").not.toContain(compiler);
 
+    const markers: [string, string][] = [
+      ...["WebGLRenderer", "PerspectiveCamera", LABEL].map((m): [string, string] => [m, lazy3d]),
+      ...["cm-content", "cm-gutters"].map((m): [string, string] => [m, editor]),
+    ];
+    for (const [m, chunk] of markers) {
+      expect(readFileSync(join(DIST, chunk), "utf8"), `the marker "${m}" is in ${chunk}`).toContain(m);
+    }
+
+    let view = 0;
     let total = 0;
     for (const file of startup) {
       const bytes = readFileSync(join(DIST, file));
-      total += gzipSync(bytes).length;
+      const size = gzipSync(bytes).length;
+      total += size;
+      if (file !== compiler) view += size;
       const text = bytes.toString("utf8");
-      for (const m of markers) expect(text, `${file} carries 3D code ("${m}")`).not.toContain(m);
+      for (const [m] of markers) expect(text, `${file} carries 3D or editor code ("${m}")`).not.toContain(m);
     }
-    const base = Object.values(baseline.gzip).reduce((a, b) => a + b, 0);
+    expect(view, `the view path is ${view} B gzip (budget ${baseline.viewBudget} B)`).toBeLessThanOrEqual(
+      baseline.viewBudget,
+    );
+    const sum = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
+    const base = sum(baseline.gzip) + sum(baseline.compilerGzip);
     expect(
       total - base,
       `startup chunks ${total} B gzip vs the baseline's ${base} B (budget +${baseline.growthBudget} B)`,

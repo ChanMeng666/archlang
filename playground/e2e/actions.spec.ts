@@ -1,7 +1,22 @@
 import { expect, type Download, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { srcFromHash } from "../src/share.js";
-import { AUTOSAVE_KEY, chooseLink, SIMPLE_PLAN, setEditorSource, waitForPlan, watchStatus } from "./fixtures.js";
+import {
+  AUTOSAVE_KEY,
+  chooseLink,
+  gotoEdit,
+  openTools,
+  SIMPLE_PLAN,
+  setEditorSource,
+  waitForPlan,
+  watchStatus,
+} from "./fixtures.js";
+
+/*
+ * The header actions live in the Tools menu: each case opens it (`openTools`) before an action,
+ * and a case that edits the source opens the page in edit mode (`gotoEdit`). The assertions are
+ * the ones the actions had in the header.
+ */
 
 /** Sloppy but valid — `format()` must rewrite it, which is what makes the test honest. */
 const UNFORMATTED = `plan "E2E" {
@@ -28,6 +43,7 @@ async function chatLinkReady(page: Page, name: string): Promise<void> {
 
 /** Click `#download` for `format` and return the resulting browser download. */
 async function downloadAs(page: Page, format: string): Promise<Download> {
+  await openTools(page);
   await page.locator("#format").selectOption(format);
   const [download] = await Promise.all([page.waitForEvent("download"), page.locator("#download").click()]);
   return download;
@@ -41,14 +57,14 @@ async function payload(download: Download): Promise<Buffer> {
 
 test.describe("header actions", () => {
   test("Format rewrites the source to canonical style", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, UNFORMATTED);
     // Record the status transitions BEFORE pressing: "Formatted" is painted over by
     // the reformat's own 250 ms debounced `render()`, so it cannot be polled for
     // live without racing it. See `watchStatus`.
     const status = await watchStatus(page);
 
+    await openTools(page);
     await page.locator("#formatSrc").click();
     await status.expectFlash("Formatted");
     // Canonical style is two-space body indentation under `plan { … }`.
@@ -65,18 +81,19 @@ test.describe("header actions", () => {
       .not.toContain("      door");
 
     // Idempotent: a second press has nothing to do and says so.
+    await openTools(page);
     await page.locator("#formatSrc").click();
     await status.expectFlash("Already formatted");
   });
 
   test("Finish adds the sheet statements as one undoable edit and lists them in Lint", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
     // The same transform as `arch finish`: for this plan, paper/scale/dims/schedule/
     // legend and a title block, nothing left unresolved.
+    await openTools(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
     const editor = page.locator(".cm-content");
@@ -96,6 +113,7 @@ test.describe("header actions", () => {
 
     // Idempotent: a finished sheet has nothing left to add — and a second press
     // leaves the log of what the first one did in place.
+    await openTools(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Nothing to finish");
     await expect(panel).toContainText("Finish — 6 changes");
@@ -111,13 +129,13 @@ test.describe("header actions", () => {
   });
 
   test("A room finish has no pieces for is listed as information, and asks nothing", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
     // "Main" names no use, so it gets no piece, and its note carries `scope` (issue #370): no
     // "unresolved" in the flash, and Lint stays closed.
+    await openTools(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
     await expect(page.locator("#tab-lint")).toHaveAttribute("aria-selected", "false");
@@ -137,6 +155,7 @@ test.describe("header actions", () => {
     const finished = (await page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY)) as string;
     await setEditorSource(page, `${finished}\n`);
     await expect(panel).toBeHidden();
+    await openTools(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Nothing to finish");
     await expect(panel).toContainText("Nothing to finish");
@@ -147,8 +166,7 @@ test.describe("header actions", () => {
     // CodeMirror merges adjacent changes made within 500 ms into one undo step. Typing
     // and then pressing Finish at once must still undo Finish ALONE, keeping the typing
     // — which only `isolateHistory` on the replacement guarantees.
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const editor = page.locator(".cm-content");
     await editor.click();
@@ -184,8 +202,7 @@ test.describe("header actions", () => {
     // information, so the paper is the one note counted as unresolved here.
     const villaOnA2 = readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8");
     expect(villaOnA2.split("  paper A1 landscape").length, "the villa's sheet line, once").toBe(2);
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, villaOnA2.replace("  paper A1 landscape", "  paper A2 landscape"));
     // The editor draws only the lines in view: bring the sheet settings at the top into it.
     await page.locator(".cm-content").click();
@@ -193,6 +210,7 @@ test.describe("header actions", () => {
     await expect(page.locator(".cm-content")).toContainText("paper A2 landscape");
     const status = await watchStatus(page);
 
+    await openTools(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finish added nothing: 1 unresolved (see Lint)");
     await expect(page.locator("#tab-lint")).toHaveAttribute("aria-selected", "true");
@@ -213,14 +231,12 @@ test.describe("header actions", () => {
     await context.route(/^https:\/\/(claude\.ai|chatgpt\.com)\//, (route) =>
       route.fulfill({ contentType: "text/plain", body: "stub" }),
     );
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
 
     const note = page.locator("#chatNote");
-    const summary = page.getByText("Ask AI");
-    // The disclosure closes on Escape, like the Saved popover.
-    await summary.click();
+    // The Tools menu holding the links closes on Escape, like the Saved popover.
+    await openTools(page);
     await expect(note).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(note).toBeHidden();
@@ -229,7 +245,7 @@ test.describe("header actions", () => {
       ["Open in Claude ↗", "https://claude.ai/new"],
       ["Open in ChatGPT ↗", "https://chatgpt.com/"],
     ] as const) {
-      await summary.click();
+      await openTools(page);
       // The panel says, next to the links, that they put the plan in the host's URL.
       await expect(note).toContainText("in the chat host's URL");
       await expect(note).toContainText("never sends");
@@ -253,10 +269,9 @@ test.describe("header actions", () => {
   });
 
   test("a chat link drops to the bare host on an edit and comes back on its undo", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
-    await page.getByText("Ask AI").click();
+    await openTools(page);
     await chatLinkReady(page, "Open in Claude ↗");
     // Read the link by its attribute: the menu closes once the editor is clicked.
     const link = page.locator('a[data-chat-host="claude"]');
@@ -296,7 +311,7 @@ test.describe("header actions", () => {
       /\r\n?/g,
       "\n",
     );
-    await page.getByText("Ask AI").click();
+    await openTools(page);
     await chatLinkReady(page, "Open in Claude ↗");
     const [popup] = await Promise.all([
       context.waitForEvent("page"),
@@ -318,12 +333,11 @@ test.describe("header actions", () => {
       return "abcdefghijklmnopqrstuvwxyz0123456789"[seed % 36];
     }).join("");
     const long = SIMPLE_PLAN.replace("units mm", `units mm\n  # ${filler}`);
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, long);
     const status = await watchStatus(page);
 
-    await page.getByText("Ask AI").click();
+    await openTools(page);
     // Encoded and current, so the copy is for length, not a click that beat the encoding.
     await chatLinkReady(page, "Open in ChatGPT ↗");
     const [popup] = await Promise.all([
@@ -369,8 +383,7 @@ test.describe("header actions", () => {
   });
 
   test("Copy full link puts a #z= permalink in the URL and on the clipboard", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
@@ -380,15 +393,19 @@ test.describe("header actions", () => {
 
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(copied).toContain("#z=");
-    expect(copied).toBe(await page.evaluate(() => window.location.href));
+    // The page's own URL, less the edit-mode flag it carries while the editor is open: a link
+    // someone is sent opens the drawing first.
+    expect(await page.evaluate(() => window.location.hash)).toMatch(/^#z=[A-Za-z0-9_-]+&edit$/);
+    expect(copied).toBe(await page.evaluate(() => window.location.href.replace(/&edit$/, "")));
+    expect(copied).not.toMatch(/&edit/);
   });
 
   test("Copy for LLM writes the spec preamble, the source and the facts", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
+    await openTools(page);
     await page.locator("#copyLlm").click();
     await status.expectFlash("LLM prompt copied");
 
@@ -405,6 +422,7 @@ test.describe("header actions", () => {
   test("Embed builds a copyable iframe snippet pointing at embed.html", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
+    await openTools(page);
     await page.locator("#embed").click();
 
     const dialog = page.locator(".embed-dialog");
@@ -422,10 +440,10 @@ test.describe("header actions", () => {
   test("Embed's Markdown for an edited plan is a link to the share URL, never an image of embed.html", async ({
     page,
   }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
+    await openTools(page);
     await page.locator("#embed").click();
 
     const dialog = page.locator(".embed-dialog");
@@ -445,10 +463,10 @@ test.describe("header actions", () => {
   });
 
   test("Embed's Markdown for an unedited example shows its hosted drawing", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await page.locator("#examples").selectOption("Studio (1BR)");
     await expect(page.locator(".cm-content")).toContainText('plan "');
+    await openTools(page);
     await page.locator("#embed").click();
     const md = page.locator(".embed-dialog").getByLabel(/this example's drawing/);
     await expect(md).toHaveValue(
@@ -459,6 +477,7 @@ test.describe("header actions", () => {
     // A multi-storey example names the storey on screen, as the docs gallery does.
     await page.locator("#examples").selectOption("Hillside Villa");
     await expect(page.locator(".cm-content")).toContainText("paper A1 landscape");
+    await openTools(page);
     await page.locator("#embed").click();
     await expect(page.locator(".embed-dialog").getByLabel(/this example's drawing/)).toHaveValue(
       /\(https:\/\/archlang\.uk\/examples\/hillside-villa\.L1\.svg\)/,
@@ -467,6 +486,7 @@ test.describe("header actions", () => {
 
     // Switch to the upper storey: the snippet follows the drawing on screen.
     await page.locator('#storeys button[data-level="2"]').click();
+    await openTools(page);
     await page.locator("#embed").click();
     await expect(page.locator(".embed-dialog").getByLabel(/this example's drawing/)).toHaveValue(
       /\(https:\/\/archlang\.uk\/examples\/hillside-villa\.L2\.svg\)/,
@@ -474,7 +494,9 @@ test.describe("header actions", () => {
     await page.locator(".embed-close").click();
 
     // Under a View theme override the gallery drawing is not what is on screen: plain link.
+    await openTools(page);
     await page.locator("#theme").selectOption("blueprint");
+    await openTools(page);
     await page.locator("#embed").click();
     await expect(page.locator(".embed-dialog").getByLabel(/not a theme override/)).toHaveValue(
       /^\[ArchLang floor plan/,
@@ -484,8 +506,7 @@ test.describe("header actions", () => {
 
 test.describe("downloads", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     await expect(page.locator("#status")).not.toHaveClass(/err/);
   });
@@ -540,7 +561,7 @@ test.describe("downloads", () => {
   });
 
   test("PDF of a plan with a sheet is that paper's size", async ({ page }) => {
-    await page.goto("/");
+    await gotoEdit(page);
     await setEditorSource(
       page,
       `plan "Sheet" {\n  units mm\n  paper A3 landscape\n  scale 1:100\n  room id=a at (0,0) size 4000x3000 label "A"\n}\n`,
