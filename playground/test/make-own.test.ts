@@ -1,6 +1,14 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { AGENT_PROMPT, AGENT_TABS, playgroundDoors, promptWithPlan, sheetHtml, TOP_ASKS } from "../src/make-own.js";
+import {
+  AGENT_PROMPT,
+  CHAT_NOTE,
+  AGENT_TABS,
+  playgroundDoors,
+  promptWithPlan,
+  sheetHtml,
+  TOP_ASKS,
+} from "../src/make-own.js";
 import { NUDGE_AFTER_SWITCHES, shouldNudge } from "../src/nudge.js";
 
 const doors = JSON.parse(readFileSync(new URL("../../site-shared/doors.json", import.meta.url), "utf8"));
@@ -26,7 +34,13 @@ describe("the Make-your-own sheet", () => {
       agent.skills.url,
     ])
       expect(html).toContain(esc(url));
+    expect(TOP_ASKS.map((a) => a.href)).toEqual([doors.links.fromAnImage, doors.links.editOneRoom]);
     for (const a of TOP_ASKS) expect(html).toContain(`href="${a.href}"`);
+    expect(html).toContain(`href="${doors.links.agents}"`);
+    // Every external link opens a new tab and sends no opener and no referrer, as Tools' links do.
+    const anchors = [...html.matchAll(/<a [^>]*>/g)].map((m) => m[0]);
+    expect(anchors.length).toBeGreaterThan(5);
+    for (const a of anchors) expect(a, a).toContain('target="_blank" rel="noopener noreferrer"');
     expect(html).toContain(esc(doors.canonicalLine));
   });
 
@@ -51,7 +65,8 @@ describe("the Make-your-own sheet", () => {
 
   it("says next to the chat links that they put the plan in that site's address", () => {
     const html = sheetHtml();
-    expect(html).toContain(`id="moChatNote">Opening a chat puts this plan in that site's address.<`);
+    expect(CHAT_NOTE).toBe("Opening a chat puts this plan in that site's address (or copies it, if the plan is long).");
+    expect(html).toContain(`id="moChatNote">${CHAT_NOTE}<`);
     expect([...html.matchAll(/data-chat-host="[a-z]+" aria-describedby="moChatNote"/g)]).toHaveLength(2);
   });
 

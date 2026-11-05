@@ -34,11 +34,19 @@ async function openSheet(page: Page) {
   await expect(sheet(page).locator(".mo-door")).toHaveCount(doors.order.playground.length);
 }
 
-/** Every request the page makes to the short-link API. */
+/**
+ * Every request the page makes that could carry the plan off it: any `/api/*` call (the short-link
+ * API and anything added beside it) and anything to another host. Static assets from this origin
+ * (the lazy chunks, the thumbnails) are neither.
+ */
 function watchShare(page: Page): string[] {
   const seen: string[] = [];
   page.on("request", (r) => {
-    if (new URL(r.url()).pathname.startsWith("/api/share")) seen.push(`${r.method()} ${r.url()}`);
+    const url = new URL(r.url());
+    if (url.protocol === "data:" || url.protocol === "blob:") return;
+    const here = new URL(page.url()).origin;
+    if (url.pathname.startsWith("/api/") || (here !== "null" && url.origin !== here))
+      seen.push(`${r.method()} ${r.url()}`);
   });
   return seen;
 }
@@ -102,6 +110,7 @@ test.describe("make your own", () => {
     for (const a of all) {
       expect(a.target, a.href).toBe("_blank");
       expect(a.rel, a.href).toMatch(/\bnoopener\b/);
+      expect(a.rel, a.href).toMatch(/\bnoreferrer\b/);
     }
     const hrefs = all.map((a) => a.href);
     for (const url of [
@@ -109,8 +118,9 @@ test.describe("make your own", () => {
       doors.doors.vscode.marketplace,
       doors.doors.vscode.openVsx,
       agent.skills.url,
-      "https://archlang.uk/from-an-image",
-      "https://archlang.uk/edit-one-room",
+      doors.links.fromAnImage,
+      doors.links.editOneRoom,
+      doors.links.agents,
     ])
       expect(hrefs).toContain(url);
     await expect(sheet(page).getByRole("link", { name: "Starting from a photo or PDF? →" })).toBeVisible();
@@ -118,13 +128,15 @@ test.describe("make your own", () => {
     // The chat links say, next to them, that they put the plan in that site's address.
     for (const name of ["Open in Claude ↗", "Open in ChatGPT ↗"]) {
       const chat = sheet(page).getByRole("link", { name });
-      await expect(chat).toHaveAccessibleDescription("Opening a chat puts this plan in that site's address.");
+      await expect(chat).toHaveAccessibleDescription(
+        "Opening a chat puts this plan in that site's address (or copies it, if the plan is long).",
+      );
       await expect(chat).toHaveAttribute("data-ready", "true");
       await expect(chat).toHaveAttribute("href", /\?q=/);
     }
   });
 
-  test("nothing reaches /api/share until Start from this plan is clicked", async ({ page }) => {
+  test("no /api call and no other host until Start from this plan is clicked", async ({ page }) => {
     test.skip(!!process.env.E2E_BASE_URL, "answers /api/share through local routing");
     const seen = watchShare(page);
     await page.route("**/api/share", (route) =>
@@ -148,7 +160,7 @@ test.describe("make your own", () => {
     await s.getByRole("button", { name: "Start from this plan" }).click();
     await expect(s.locator("#moStatus")).toHaveText("Prompt copied, with a short link to this plan");
     expect(seen).toHaveLength(1);
-    expect(seen[0]).toMatch(/^POST /);
+    expect(seen[0]).toMatch(/^POST \S+\/api\/share$/);
     const origin = new URL(page.url()).origin;
     const withLink = `${PROMPT}\nStart from this plan: ${origin}/s/AbCdEfGh12`;
     expect(await clipboard(page)).toBe(withLink);

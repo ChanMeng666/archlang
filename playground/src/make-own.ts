@@ -12,16 +12,25 @@
  * no browser sends to a server. The chat links say, next to them, that they put the plan in
  * that site's address.
  */
-import { agentPrompt, canonicalLine, doors, order } from "../../site-shared/doors.json";
+import { agentPrompt, canonicalLine, doors, links, order } from "../../site-shared/doors.json";
 import { escapeHtml } from "./escape.js";
 import { CHAT_HOSTS } from "./llm-prompt.js";
 import { createShortLink, encodeSrc } from "./share.js";
 
-/** The two most-asked questions, answered by a docs page each (not doors: no plan comes out). */
+/**
+ * The two most-asked questions, answered by a docs page each (not doors: no plan comes out). The
+ * URLs are doors.json's `links`; the labels live here, as the card words them.
+ */
 export const TOP_ASKS = [
-  { label: "Starting from a photo or PDF? →", href: "https://archlang.uk/from-an-image" },
-  { label: "Change one room only? →", href: "https://archlang.uk/edit-one-room" },
+  { label: "Starting from a photo or PDF? →", href: links.fromAnImage },
+  { label: "Change one room only? →", href: links.editOneRoom },
 ] as const;
+
+/**
+ * What the chat links do with the plan, true either way: a plan that fits goes into the host's
+ * address (its share link inside the prefilled prompt); a longer one is copied for pasting instead.
+ */
+export const CHAT_NOTE = "Opening a chat puts this plan in that site's address (or copies it, if the plan is long).";
 
 /** The agent prompt as one copyable text, line for line as doors.json has it. */
 export const AGENT_PROMPT = agentPrompt.join("\n");
@@ -70,7 +79,7 @@ export function playgroundDoors(): string[] {
 }
 
 const ext = (href: string, text: string, attrs = "") =>
-  `<a href="${escapeHtml(href)}" target="_blank" rel="noopener"${attrs}>${escapeHtml(text)}</a>`;
+  `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"${attrs}>${escapeHtml(text)}</a>`;
 
 /** A line of code with a Copy button; `key` names the text in the sheet's copy table. */
 const copyRow = (key: string, text: string, caption?: string) =>
@@ -118,7 +127,7 @@ function doorHtml(key: string): string {
           `<p class="mo-cap">Set it up once:</p>` +
           `<div class="mo-tabs" role="tablist" aria-label="Coding agent">${tabs}</div>${panels}` +
           `<span>${ext(agent.skills.url, "The skill on skills.sh ↗")} · ` +
-          `${ext("https://archlang.uk/agents", "Every way to set up an agent ↗", ' id="agentsLink"')}</span>`,
+          `${ext(links.agents, "Every way to set up an agent ↗", ' id="agentsLink"')}</span>`,
       );
     }
     case "vscode":
@@ -155,7 +164,7 @@ export function sheetHtml(): string {
     `<ul class="mo-doors">${playgroundDoors().map(doorHtml).join("")}</ul>` +
     `<div class="mo-ask"><h3>Ask AI about this plan</h3><p class="mo-links">${chat} ` +
     `<button type="button" class="mo-go" data-mo-copy-llm>Copy this plan as a prompt</button></p>` +
-    `<p class="mo-note" id="moChatNote">Opening a chat puts this plan in that site's address.</p></div>` +
+    `<p class="mo-note" id="moChatNote">${escapeHtml(CHAT_NOTE)}</p></div>` +
     `<p class="mo-top">${TOP_ASKS.map((a) => ext(a.href, a.label)).join(" ")}</p>` +
     `<p class="mo-status" id="moStatus" role="status" aria-live="polite"></p>`
   );
