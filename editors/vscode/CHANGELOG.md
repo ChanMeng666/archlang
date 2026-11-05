@@ -14,6 +14,14 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.44.0] - 2026-11-06
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.56.0`** (no change to the language).
+- The listing shows a compiled plan and a "Try it" section with every way to use ArchLang,
+  generated from `site-shared/doors.json`.
+
 ## [0.43.0] - 2026-11-05
 
 ### Changed
