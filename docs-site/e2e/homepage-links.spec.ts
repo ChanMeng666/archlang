@@ -25,6 +25,9 @@ import { expect, test } from "@playwright/test";
 import { srcFromHash } from "../../playground/src/share.js";
 import { ROOT } from "./fixtures.js";
 
+/** The hosted doors, from the same file the hero imports. */
+const DOORS = JSON.parse(readFileSync(join(ROOT, "site-shared", "doors.json"), "utf8")).doors;
+
 /** Every plan the landing page pictures, in the order the page presents them. */
 const PICTURED = [
   "laneway-house", // the hero that types itself
@@ -140,7 +143,7 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
 });
 
 /**
- * The front door: the definition and the three install lines are visible WITHOUT scrolling
+ * The front door: the definition, the two no-install doors and the three install lines are visible WITHOUT scrolling
  * at the two viewports peers are judged at, and the home never scrolls sideways at 390.
  */
 test.describe("home above the fold", () => {
@@ -152,11 +155,18 @@ test.describe("home above the fold", () => {
       await page.setViewportSize({ width, height });
       await page.goto("/");
       const rows = page.locator(".install__row");
-      await expect(rows).toHaveCount(3);
+      await expect(rows).toHaveCount(5);
+      const chatgpt = page.locator(".install__link");
+      // the label from doors.json, plus the new-tab arrow every external link on the hero carries
+      await expect(chatgpt).toHaveText(`${DOORS.chatgpt.label} ↗`);
+      await expect(chatgpt).toHaveAttribute("href", DOORS.chatgpt.url);
+      await expect(page.locator(".install--hosted .install__tag").first()).toHaveText("No install");
       const cmds = page.locator(".install__cmd");
-      await expect(cmds.nth(0)).toContainText("npx -y @chanmeng666/archlang compile plan.arch");
-      await expect(cmds.nth(1)).toContainText("claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp");
-      await expect(cmds.nth(2)).toContainText("npx -y skills add ChanMeng666/archlang --yes");
+      await expect(cmds).toHaveCount(4);
+      await expect(cmds.nth(0)).toHaveText(DOORS.claudeai.url);
+      await expect(cmds.nth(1)).toContainText("npx -y @chanmeng666/archlang compile plan.arch");
+      await expect(cmds.nth(2)).toContainText("claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp");
+      await expect(cmds.nth(3)).toContainText("npx -y skills add ChanMeng666/archlang --yes");
       for (const row of await rows.all()) {
         const box = await row.boundingBox();
         expect(box, "install row must render").not.toBeNull();
