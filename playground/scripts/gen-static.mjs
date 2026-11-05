@@ -1041,7 +1041,7 @@ function prerenderIndex(rows, thumbs) {
         const label = escapeHtml(l);
         return (
           `<li${i === 0 ? ` data-group="${escapeHtml(g.group)}"` : ""}>` +
-          `<a class="strip-item" href="/examples/${r.name}.html" data-label="${label}" title="${label}"` +
+          `<a class="strip-item" href="/examples/${r.name}.html" data-label="${label}"` +
           `${l === row.label ? ' aria-current="true"' : ""}>` +
           `<img src="/examples/thumbs/${r.name}.svg" alt="${label}" loading="lazy" decoding="async" ` +
           `width="${t.w}" height="${t.h}" /></a></li>`

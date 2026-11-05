@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { gotoEdit, shareHash, waitForPlan } from "./fixtures.js";
+import { gotoEdit, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * The plan strip (card P2): a thumbnail link per example under the drawing, in view mode. Its links
@@ -12,9 +12,12 @@ import { gotoEdit, shareHash, waitForPlan } from "./fixtures.js";
 
 const items = (page: Page) => page.locator("#strip a.strip-item");
 const current = (page: Page) => page.locator('#strip a.strip-item[aria-current="true"]');
-/** The picker's options, in order (gen-static writes both from `EXAMPLE_ROWS`). */
+/**
+ * The plans the picker offers, in order (gen-static writes both from `EXAMPLE_ROWS`): its grouped
+ * options, not the neutral entry `markPlan` shows for a plan that is no example.
+ */
 const pickerLabels = (page: Page) =>
-  page.locator("#examples option").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+  page.locator("#examples optgroup > option").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
 const box = async (page: Page) => {
   const b = (await page.locator(".pz-viewport").boundingBox())!;
   return [b.x, b.y, b.width, b.height].map(Math.round);
@@ -155,10 +158,46 @@ test.describe("plan strip", () => {
       await shareHash(readFileSync(new URL("../../examples/one-room.arch", import.meta.url), "utf8")),
     );
     await expect(page.locator("#strip")).toBeHidden();
-    // The plan a link opens is marked when it is an example word for word.
+    // The plan a link opens is named in the strip AND the picker when it is an example word for word.
     await page.locator("#sourceToggle").click();
     await expect(page.locator("#strip")).toBeVisible();
     await expect(current(page)).toHaveAttribute("data-label", "One room");
+    await expect(page.locator("#examples")).toHaveValue("One room");
+  });
+
+  test("a shared plan that is no example is named in neither: the picker says so, the strip marks none", async ({
+    page,
+  }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await expect(current(page)).toHaveCount(0);
+    await expect(page.locator("#examples")).toHaveValue("");
+    await expect(page.locator("#examples option:checked")).toHaveText("Shared plan");
+    // Shown, never offered: the neutral entry is not one of the plans to choose.
+    expect(await pickerLabels(page)).not.toContain("");
+    // Choosing an example names it in both again.
+    await items(page)
+      .filter({ has: page.locator('img[alt="One room"]') })
+      .click();
+    await expect(page.locator("#examples")).toHaveValue("One room");
+    await expect(current(page)).toHaveAttribute("data-label", "One room");
+  });
+
+  test("an edit that makes the plan no longer the example un-names it in both", async ({ page }) => {
+    await gotoEdit(page);
+    await expect(page.locator("#examples")).toHaveValue("Laneway House");
+    const laneway = readFileSync(new URL("../../examples/laneway-house.arch", import.meta.url), "utf8").replace(
+      /\r\n?/g,
+      "\n",
+    );
+    await setEditorSource(page, `${laneway}\n# edited\n`);
+    await expect(page.locator("#examples")).toHaveValue("");
+    await expect(page.locator("#examples option:checked")).toHaveText("Edited plan");
+    await expect(current(page)).toHaveCount(0);
+    // Back to the example word for word (an undo would do the same): named in both again.
+    await setEditorSource(page, laneway);
+    await expect(page.locator("#examples")).toHaveValue("Laneway House");
+    await expect(current(page)).toHaveAttribute("data-label", "Laneway House");
   });
 });
 
@@ -173,7 +212,7 @@ test.describe("plan strip without JavaScript", () => {
     for (const h of hrefs) expect(h).toMatch(/^\/examples\/[\w-]+\.html$/);
     await expect(current(page)).toHaveAttribute("href", "/examples/laneway-house.html");
     await links.nth(1).click();
-    await expect(page).toHaveURL(new RegExp(`${hrefs[1]!.replace(/\./g, "\\.")}$`));
+    await expect(page).toHaveURL((u) => u.pathname === hrefs[1]);
     await expect(page.locator("h1")).toHaveCount(1);
   });
 });

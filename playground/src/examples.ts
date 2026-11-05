@@ -352,6 +352,12 @@ export function exampleNameFor(src: string): string | undefined {
   return undefined;
 }
 
+/** The picker label of the preset whose source is exactly `src`, if `src` is an unedited preset. */
+export function exampleLabelFor(src: string): string | undefined {
+  const name = exampleNameFor(src);
+  return name === undefined ? undefined : EXAMPLE_ROWS.find(([n]) => n === name)?.[1];
+}
+
 /** The preset a first, unshared, unsaved visit loads: the table's first row. */
 export const DEFAULT_EXAMPLE: string = EXAMPLE_ROWS[0][1];
 

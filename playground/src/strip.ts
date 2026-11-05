@@ -10,8 +10,6 @@
 export interface Strip {
   /** Mark the plan on screen by its picker label, or none (a plan that is not an example). */
   setCurrent(label: string | null): void;
-  /** The label of the example whose static page is `/examples/<name>.html`, if it is in the strip. */
-  labelFor(name: string): string | undefined;
 }
 
 export function mountStrip(list: HTMLElement, onPick: (label: string) => void): Strip {
@@ -70,9 +68,6 @@ export function mountStrip(list: HTMLElement, onPick: (label: string) => void): 
       rove();
       // Bring it into the strip's own view, never scrolling the page.
       if (current) list.scrollLeft += scrollDelta(list, current);
-    },
-    labelFor(name) {
-      return items().find((a) => a.pathname === `/examples/${name}.html`)?.dataset.label;
     },
   };
 }

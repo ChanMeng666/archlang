@@ -103,7 +103,9 @@ for (const tab of tabs) {
 /** One <optgroup> per example group — the grouping the docs' example tour uses. */
 function fillPicker({ EXAMPLE_GROUPS }: Examples): void {
   const keep = select.value;
-  select.replaceChildren();
+  // The neutral entry (`markPlan`) survives the rebuild, and stays chosen if it was.
+  const neutral = select.querySelector<HTMLOptionElement>("option[data-neutral]");
+  select.replaceChildren(...(neutral ? [neutral] : []));
   for (const { group, items } of EXAMPLE_GROUPS) {
     const g = document.createElement("optgroup");
     g.label = group;
@@ -116,6 +118,39 @@ function fillPicker({ EXAMPLE_GROUPS }: Examples): void {
     select.appendChild(g);
   }
   if (keep) select.value = keep;
+  else if (neutral) neutral.selected = true;
+}
+
+/**
+ * Name the plan on screen in the picker and the strip together, so the two always agree: the
+ * example labelled `label`, or, for a plan that is no example word for word (a shared link, a
+ * saved draft, an edit), no plan in the strip and `neutral` in the picker. The neutral entry is
+ * shown but never offered: it is hidden from the list and disabled.
+ */
+function markPlan(label: string | null, neutral = "Edited plan") {
+  if (label !== null) select.value = label;
+  else {
+    let o = select.querySelector<HTMLOptionElement>("option[data-neutral]");
+    if (!o) {
+      o = document.createElement("option");
+      o.value = "";
+      o.dataset.neutral = "";
+      o.disabled = true;
+      o.hidden = true;
+      select.prepend(o);
+    }
+    o.textContent = neutral;
+    o.selected = true;
+  }
+  strip.setCurrent(label);
+}
+
+/** After a change to the source: still an example word for word, or now a plan of the reader's own. */
+function syncPlanMark(source: string): Promise<void> {
+  return examplesP.then(({ exampleLabelFor }) => {
+    if (currentSource() !== source) return; // a later change syncs again
+    markPlan(exampleLabelFor(source) ?? null);
+  });
 }
 
 // The shareable-permalink codec (`#z=` compressed / legacy `#src=`) lives in
@@ -439,6 +474,7 @@ function onDocChanged(source: string) {
     render(source);
     writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
     void updateHash(source, editing); // keep the permalink in sync (compression is async)
+    void syncPlanMark(source); // the picker and the strip: still that example, or an edited plan
   }, 250);
 }
 
@@ -455,12 +491,10 @@ function onExportError(format: string, err: unknown) {
  * an example picked before the app is up is loaded once it is.
  */
 function pickExample(label: string) {
-  select.value = label;
-  strip.setCurrent(label);
+  markPlan(label);
   void ready.then(async () => {
     const { EXAMPLES } = await examplesP;
-    select.value = label;
-    strip.setCurrent(label);
+    markPlan(label);
     loadSource(EXAMPLES[label], true);
   });
 }
@@ -487,13 +521,10 @@ async function boot() {
   const { DEFAULT_EXAMPLE, EXAMPLES } = examples;
   fillPicker(examples);
   const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES[DEFAULT_EXAMPLE];
-  if (!sharedSrc && !savedSrc) select.value = DEFAULT_EXAMPLE;
-  // The strip marks the plan this visit opens: the default, or the example a link or a draft is
-  // word for word, or none (a plan of someone's own is no example).
-  const openedName = sharedSrc || savedSrc ? examples.exampleNameFor(initialDoc) : undefined;
-  strip.setCurrent(
-    sharedSrc || savedSrc ? (openedName ? (strip.labelFor(openedName) ?? null) : null) : DEFAULT_EXAMPLE,
-  );
+  // The picker and the strip name the plan this visit opens: the default, or the example a link
+  // or a draft is word for word, or neither (a plan of someone's own is no example).
+  if (!sharedSrc && !savedSrc) markPlan(DEFAULT_EXAMPLE);
+  else markPlan(examples.exampleLabelFor(initialDoc) ?? null, sharedSrc ? "Shared plan" : "Saved draft");
 
   // A `#z=` payload that is not one of the bundled examples is third-party text on
   // our page — say so, once, at the top of the preview. Silent for a stock-example
