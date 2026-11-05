@@ -1019,7 +1019,7 @@ const NEGATIVE: Negative[] = [
   {
     code: "E_VOID_POLY",
     channel: "compile",
-    note: "a slanted edge: every reader of the hole is written on rectangles",
+    note: "a slanted edge: the walking grid and the stair checks read a hole as rectangles",
     src: plan(`${ROOM}\n  void polygon (1000,1000) (4000,1000) (3000,3000) (1000,3000)`),
   },
   {

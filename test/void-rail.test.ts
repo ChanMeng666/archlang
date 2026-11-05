@@ -9,6 +9,7 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { voidPieces } from "../src/elements/void.js";
 import type { RVoid } from "../src/ir.js";
+import { compareScenes, D4_ELEMENTS, frameFor, sceneOf } from "./d4-oracle.js";
 
 const L = "(1000,1000) (4000,1000) (4000,2000) (2000,2000) (2000,4000) (1000,4000)";
 const plan = (body: string): string =>
@@ -44,10 +45,12 @@ suite("void polygon", () => {
     expect(g).not.toBe("");
     expect(g.match(/<polygon /g)).toHaveLength(1);
     expect(g).toContain('points="1000,1000 4000,1000 4000,2000 2000,2000 2000,4000 1000,4000"');
-    // Two pieces (y 1000–2000 the full width, y 2000–4000 the leg), crossed each.
+    // The three cells of the grid its corners make (the corner square and each arm), crossed each.
     expect(linesOn(svg, "A-FLOR-OVHD")).toEqual([
-      [1000, 1000, 4000, 2000],
-      [4000, 1000, 1000, 2000],
+      [1000, 1000, 2000, 2000],
+      [2000, 1000, 1000, 2000],
+      [2000, 1000, 4000, 2000],
+      [4000, 1000, 2000, 2000],
       [1000, 2000, 2000, 4000],
       [2000, 2000, 1000, 4000],
     ]);
@@ -177,6 +180,11 @@ suite("void rail", () => {
     expect(errors(plan(`  void id=w polygon ${L} rail 6`))).toEqual(["E_VOID_RAIL"]);
     expect(errors(plan(`  void id=w polygon ${L} rail 1.5`))).toEqual(["E_VOID_RAIL"]);
     expect(errors(plan("  void id=w at (1000,1000) size 3000x1000 rail 0"))).toEqual(["E_VOID_RAIL"]);
+    const negative = compile(plan(`  void id=w polygon ${L} rail -1`), { noCache: true }).diagnostics;
+    expect(negative.some((d) => d.severity === "error" && d.message.includes("counts from 0"))).toBe(true);
+    // A `none` among the words wins, then an `all`, as on a balcony.
+    expect(describe(plan(`  void id=w polygon ${L} rail 2 none all`)).voids![0]!.rail).toEqual([]);
+    expect(describe(plan(`  void id=w polygon ${L} rail 2 all`)).voids![0]!.rail).toEqual([0, 1, 2, 3, 4, 5]);
     const src = plan(`  void id=w polygon ${L} rail 6`);
     const d = compile(src, { noCache: true }).diagnostics.find((x) => x.code === "E_VOID_RAIL")!;
     expect(src.slice(d.span!.start, d.span!.end)).toBe("rail 6");
@@ -197,5 +205,66 @@ suite("void rail", () => {
       expect(format(once)).toBe(once);
       expect(JSON.stringify(describe(once).voids)).toBe(JSON.stringify(describe(plan(body)).voids));
     }
+  });
+});
+
+/**
+ * The same `polygon` void placed under all eight elements of D4: the same room, the same railing
+ * depth, and a drawing that is the frame's image of the unturned one (the oracle's own primitive
+ * comparison, `test/d4-oracle.ts`). The two rings are the red team's: an L whose largest page-axis
+ * slab lies in another room than most of its area, and a stepped ring whose page-axis slabs are
+ * thin one way only.
+ */
+suite("void polygon under the frame", () => {
+  const RINGS: Record<string, string> = {
+    "L over two rooms": [
+      "    room id=a at (0,0) size 2000x8000 uses hall",
+      "    room id=b at (2000,0) size 6000x8000 uses living",
+      "    void id=v polygon (500,500) (6500,500) (6500,1500) (1500,1500) (1500,6500) (500,6500) rail 1 2 3",
+    ].join("\n"),
+    "stepped ring": [
+      "    room id=a at (0,0) size 8000x5000 uses hall",
+      "    void id=v polygon (1000,1000) (3000,1000) (3000,1200) (5000,1200) (5000,1400) (7000,1400) (7000,4000) (1000,4000) rail all",
+    ].join("\n"),
+  };
+  // One fixed sheet, so every render size is a constant on both sides.
+  const placed = (body: string, rotate: number, mirror?: string): string =>
+    [
+      'plan "F" {',
+      "  units mm",
+      "  paper A1",
+      "  scale 1:100",
+      "  component c() {",
+      body,
+      "  }",
+      `  place c() as w at (0,0)${rotate ? ` rotate ${rotate}` : ""}${mirror ? ` mirror ${mirror}` : ""}`,
+      "}",
+      "",
+    ].join("\n");
+  /** The railing depth: the shortest line it draws (a post tick). */
+  const depthOf = (svg: string): number =>
+    Math.min(...linesOn(svg, "A-FLOR-HRAL").map(([x1, y1, x2, y2]) => Math.hypot(x2! - x1!, y2! - y1!)));
+  const voidViolations = (e: string, src: string, g: (typeof D4_ELEMENTS)[number]) =>
+    compareScenes(sceneOf(e), sceneOf(src), frameFor(g, 0)).filter((v) => v.key.includes("w.v"));
+
+  for (const [name, body] of Object.entries(RINGS)) {
+    it.each(D4_ELEMENTS.map((g) => [g.name, g] as const))(`${name}: %s`, (_, g) => {
+      const e = placed(body, 0);
+      const src = placed(body, g.rotate, g.mirror);
+      expect(describe(src).voids![0]!.room).toBe(describe(e).voids![0]!.room);
+      expect(depthOf(compile(src, { noCache: true }).svg)).toBe(depthOf(compile(e, { noCache: true }).svg));
+      expect(voidViolations(e, src, g)).toEqual([]);
+    });
+  }
+
+  it("the answers it holds are the right ones, and the comparison can fail", () => {
+    // Most of the L (6.5 of 11 m²) stands in `a`, though its largest page-axis slab lies in `b`.
+    expect(describe(placed(RINGS["L over two rooms"]!, 0)).voids![0]!.room).toBe("w.a");
+    // A quarter of the 200 mm steps, the narrowest cell, whichever way the ring is turned.
+    expect(depthOf(compile(placed(RINGS["stepped ring"]!, 90), { noCache: true }).svg)).toBe(50);
+    // r270 observed against r90's prediction is caught.
+    const e = placed(RINGS["L over two rooms"]!, 0);
+    const r90 = D4_ELEMENTS.find((g) => g.name === "r90")!;
+    expect(voidViolations(e, placed(RINGS["L over two rooms"]!, 270), r90).length).toBeGreaterThan(0);
   });
 });
