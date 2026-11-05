@@ -667,7 +667,7 @@ function drawnRecs(ir: ResolvedPlan): Rec<Point>[] {
         out.push({ form: "ring", label: "column", pts: boxRing(e.at, e.size) });
         break;
       case "void":
-        out.push({ form: "ring", label: "void", pts: boxRing(e.at, e.size) });
+        out.push({ form: "ring", label: "void", pts: e.poly ?? boxRing(e.at, e.size) });
         break;
       case "roof":
         if (e.ring.length >= 3) out.push({ form: "ring", label: "roof", pts: e.ring });

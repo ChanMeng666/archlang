@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**152 errors** · **93 warnings**
+**154 errors** · **93 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -147,6 +147,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_UNKNOWN_FN`](#e_unknown_fn) | error | Unknown function. |
 | [`E_UNKNOWN_REF`](#e_unknown_ref) | error | Unknown reference. |
 | [`E_VERT_SIZE`](#e_vert_size) | error | Vertical circulation must have a positive size. |
+| [`E_VOID_POLY`](#e_void_poly) | error | A `void … polygon` ring must run only horizontally and vertically, without crossing itself. |
+| [`E_VOID_RAIL`](#e_void_rail) | error | A void's `rail` clause names an edge the void does not have. |
 | [`E_VOID_SIZE`](#e_void_size) | error | A floor void must have a positive size. |
 | [`E_WALLS_FROM_NO_ROOMS`](#e_walls_from_no_rooms) | error | A `walls from rooms` statement has no room to derive walls from. |
 | [`E_WALLS_FROM_ROOMS_DUP`](#e_walls_from_rooms_dup) | error | More than one `walls from rooms` statement in one plan or component. |
@@ -2012,6 +2014,30 @@ let x = y + 1   # error if `y` is undefined
 
 ```arch static
 stair id=s at (0,0) size 900x0 dir up   # error: zero depth
+```
+
+## E_VOID_POLY
+
+*error* — A `void … polygon` ring must run only horizontally and vertically, without crossing itself.
+
+**Cause.** A void's ring is cut into the rectangles it is made of, because the walking grid, the stair and furniture checks and `finish` read a hole as rectangles. A ring with a slanted edge, one that crosses itself, or one with fewer than four effective vertices (after duplicate and straight-through points are removed) has no such cut, so it is refused rather than read as its bounding box.
+
+**Fix.** Write the ring with horizontal and vertical edges only (an L, a U, a notch), each corner once, or split a slanted hole into rectangle `void`s.
+
+```arch static
+void id=well polygon (0,0) (3000,0) (2000,2000) (0,2000)   # error: a slanted edge
+```
+
+## E_VOID_RAIL
+
+*error* — A void's `rail` clause names an edge the void does not have.
+
+**Cause.** A rectangle `void` names its railed edges by side (`top|bottom|left|right`, or `all`/`none`); a `polygon` void numbers them, edge n running from point n to point n+1, counted from 0 like a wall's `segment <n>`. A side word on a ring (an L has two edges facing the same way), a number on a rectangle, or a number that is not one of the ring's edges is refused rather than guessed.
+
+**Fix.** On a rectangle write side words; on a ring write `all`, `none` or edge numbers from 0 to one less than its point count.
+
+```arch static
+void id=well polygon (0,0) (3000,0) (3000,1000) (1000,1000) (1000,3000) (0,3000) rail 6   # error: edges are 0 to 5
 ```
 
 ## E_VOID_SIZE

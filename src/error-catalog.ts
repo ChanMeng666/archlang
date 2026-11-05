@@ -506,6 +506,20 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Give it a positive `size W x H` — the hole's extent in plan.",
     "void id=well at (2000,1000) size 0x3000   # error: zero width",
   ),
+  E_VOID_POLY: E(
+    "E_VOID_POLY",
+    "A `void … polygon` ring must run only horizontally and vertically, without crossing itself.",
+    "A void's ring is cut into the rectangles it is made of, because the walking grid, the stair and furniture checks and `finish` read a hole as rectangles. A ring with a slanted edge, one that crosses itself, or one with fewer than four effective vertices (after duplicate and straight-through points are removed) has no such cut, so it is refused rather than read as its bounding box.",
+    "Write the ring with horizontal and vertical edges only (an L, a U, a notch), each corner once, or split a slanted hole into rectangle `void`s.",
+    "void id=well polygon (0,0) (3000,0) (2000,2000) (0,2000)   # error: a slanted edge",
+  ),
+  E_VOID_RAIL: E(
+    "E_VOID_RAIL",
+    "A void's `rail` clause names an edge the void does not have.",
+    "A rectangle `void` names its railed edges by side (`top|bottom|left|right`, or `all`/`none`); a `polygon` void numbers them, edge n running from point n to point n+1, counted from 0 like a wall's `segment <n>`. A side word on a ring (an L has two edges facing the same way), a number on a rectangle, or a number that is not one of the ring's edges is refused rather than guessed.",
+    "On a rectangle write side words; on a ring write `all`, `none` or edge numbers from 0 to one less than its point count.",
+    "void id=well polygon (0,0) (3000,0) (3000,1000) (1000,1000) (1000,3000) (0,3000) rail 6   # error: edges are 0 to 5",
+  ),
   // ---- the vertical datum layer ----------------------------------------
   E_HEIGHT_RANGE: E(
     "E_HEIGHT_RANGE",

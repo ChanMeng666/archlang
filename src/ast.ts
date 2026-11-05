@@ -822,13 +822,23 @@ export interface RoofNode extends NodeBase {
  * Drawn as the conventional dashed rectangle with both diagonals, and it OBSTRUCTS
  * circulation (you cannot walk across a hole) while leaving the room's area alone — the
  * area a schedule reports is the floor area of the *room*, and subtracting the well would
- * make the drawing and the table disagree about a number neither of them measured. v1 is
- * rectangle-only; a polygonal void is deferred by name, not silently.
+ * make the drawing and the table disagree about a number neither of them measured. Two
+ * spellings, the `outdoor` pair: `at`+`size`, or a `polygon` ring whose every edge is
+ * horizontal or vertical (an L, a U); a slanted ring is refused (`E_VOID_POLY`).
  */
 export interface VoidNode extends NodeBase {
   kind: "void";
-  at: ExprPoint;
-  size: { w: Expr; h: Expr };
+  /** Top-left corner; absent exactly when {@link VoidNode.polygon} is present. */
+  at?: ExprPoint;
+  /** Width × height; absent exactly when {@link VoidNode.polygon} is present. */
+  size?: { w: Expr; h: Expr };
+  /** An explicit, implicitly-closed rectilinear ring — mutually exclusive with `at`+`size`. */
+  polygon?: ExprPoint[];
+  /** `rail <edges>` — which edges carry a railing, as written: side words (and `all`/`none`)
+   *  on the rectangle, `all`/`none` or 0-based edge numbers on the ring. Absent = no railing. */
+  rail?: (RailEdge | number)[];
+  /** Byte span of the `rail` clause itself, for `E_VOID_RAIL`. */
+  railSpan?: Span;
 }
 
 /**

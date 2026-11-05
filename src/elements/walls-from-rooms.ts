@@ -552,6 +552,8 @@ function tileRoom(r: RRoom): TileRoom {
 }
 
 function coverOfVoid(v: RVoid): TileCover {
+  // A `polygon` void covers by its ring, as a polygon `outdoor` does.
+  if (v.poly) return { kind: "void", poly: v.poly };
   return { kind: "void", rect: { x0: v.at.x, y0: v.at.y, x1: v.at.x + v.size.w, y1: v.at.y + v.size.h } };
 }
 

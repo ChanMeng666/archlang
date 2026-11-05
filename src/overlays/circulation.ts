@@ -18,6 +18,7 @@ import type { Point } from "../ast.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, ResolvedPlan } from "../ir.js";
 import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
+import { voidPieces } from "../elements/void.js";
 
 export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: RenderSizes): SceneNode[] {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
@@ -26,7 +27,7 @@ export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: R
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   // The storey's floor voids, exactly as `describe()` and lint pass them: the drawn walks
   // and pinches must come from the grid the reported numbers were measured on.
-  const voids = ir.elements.filter((e): e is RVoid => e.kind === "void");
+  const voids = ir.elements.filter((e): e is RVoid => e.kind === "void").flatMap(voidPieces);
   // The runs a `status demolish` wall leaves open (B3a): `ir` is the plan after the demolition,
   // so the walk crosses them as describe()'s does. Empty without one, so the graph is unchanged.
   const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL));
