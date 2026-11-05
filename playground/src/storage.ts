@@ -12,6 +12,8 @@ export const KEYS = {
   split: PREFIX + "split",
   theme: PREFIX + "theme",
   lintProfile: PREFIX + "lintProfile",
+  /** Set once the Make-your-own nudge has been shown (nudge.ts): it is never shown again. */
+  nudged: PREFIX + "nudged",
 };
 
 export function readStr(key: string): string | null {

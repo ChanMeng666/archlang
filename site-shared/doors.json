@@ -41,6 +41,11 @@
       "note": "in the browser"
     }
   },
+  "links": {
+    "fromAnImage": "https://archlang.uk/from-an-image",
+    "editOneRoom": "https://archlang.uk/edit-one-room",
+    "agents": "https://archlang.uk/agents"
+  },
   "agentPrompt": [
     "1. Run: npx -y skills add ChanMeng666/archlang --yes",
     "2. Run: npx -y @chanmeng666/archlang spec   (read it before writing anything)",

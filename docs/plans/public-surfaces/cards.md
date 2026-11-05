@@ -158,6 +158,12 @@ are in `README.md`. Every card:
   - External links have `target=_blank rel=noopener`.
   - No network request until a share button is clicked.
   - Keyboard access; phone layout.
+- As built (#506):
+  - The nudge is shown once per browser, not once per session: its showing is remembered in
+    localStorage.
+  - The Codex and VS Code tabs show the skills command only, because `doors.json` has no command
+    of its own for either.
+  - The URLs of the two top-ask links and the `/agents` link are `doors.json`'s `links`.
 
 ### P6 · Checks
 

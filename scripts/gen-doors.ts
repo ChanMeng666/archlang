@@ -32,6 +32,8 @@ export interface Doors {
     vscode: { label: string; marketplace: string; openVsx: string };
     playground: { label: string; url: string; note: string };
   };
+  /** Pages the surfaces link to next to the doors (the two top asks, the agents page). */
+  links: { fromAnImage: string; editOneRoom: string; agents: string };
   agentPrompt: string[];
   order: Record<string, string[]>;
 }

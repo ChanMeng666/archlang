@@ -166,6 +166,36 @@ describe("the sites and the root README carry the doors.json values", () => {
     }
   });
 
+  it("the playground sheet reads the doors from doors.json, not from retyped strings", () => {
+    const sheet = read("playground/src/make-own.ts");
+    expect(sheet).toMatch(/from "\.\.\/\.\.\/site-shared\/doors\.json"/);
+    const retyped = [
+      CHATGPT,
+      HOSTED,
+      doors.doors.vscode.marketplace,
+      doors.doors.vscode.openVsx,
+      doors.doors.agent.skills.url,
+      doors.doors.agent.skills.command,
+      doors.doors.agent.claudeCodeHttp,
+      ...doors.agentPrompt,
+    ];
+    // Nor does the served page or the startup code type a door in: the sheet's body is make-own.ts's.
+    for (const file of ["playground/src/make-own.ts", "playground/index.html", "playground/src/shell.ts"])
+      for (const s of retyped) expect(read(file), `${file}: ${s}`).not.toContain(s);
+    // The doors stay out of the startup chunk: only the lazily loaded sheet imports them.
+    for (const file of ["playground/src/main.ts", "playground/src/shell.ts", "playground/src/nudge.ts"])
+      expect(read(file), file).not.toMatch(/\bfrom\s+["'][^"']*doors\.json["']|import\(\s*["'][^"']*doors\.json/);
+    expect(read("playground/src/shell.ts")).toContain('import("./make-own.js")');
+    // The pages the sheet links beside the doors (the two top asks, the agents page) are
+    // doors.json's `links` too, read, never typed in.
+    expect(Object.keys(doors.links).sort()).toEqual(["agents", "editOneRoom", "fromAnImage"]);
+    for (const url of Object.values(doors.links)) {
+      expect(url).toMatch(/^https:\/\/archlang\.uk\/[a-z-]+$/);
+      expect(sheet, url).not.toContain(url);
+    }
+    for (const key of Object.keys(doors.links)) expect(sheet).toContain(`links.${key}`);
+  });
+
   it("the README line sits directly under the pills", () => {
     const text = read("README.md");
     const pills = text.indexOf("pill-npm.svg");
