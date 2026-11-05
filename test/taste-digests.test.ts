@@ -223,6 +223,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["b47f84f6b6b3d23388dac71a8fe7820a9df4fc6d767b35aaef612ed7b9c04aef", "generic", "examples/hexagon-pavilion.arch"],
   ["685d44a256e3efa54f739d5acab26ad524199e1ce882589a29b352d6a29ea7aa", "generic", "examples/hillside-villa.arch"],
   ["791d5c50b474f2c187df63940ccd669a68761d5d6b081dab90f361ddbbb10735", "generic", "examples/imports.arch"],
+  ["4ded9c825b9a85493a96549244718cc23b57fa99a0f824f55a8c2bb3183dbc7a", "generic", "examples/knob-flat.arch"],
   ["38d6e8eb4c8aa81addd4190e6d9b80dd525cc62d3d4c4e77c32827f173ae0e03", "generic", "examples/laneway-house.arch"],
   ["a0b2bbbc944ba8f9c62d9e0651f8f5684382f10bfb267850bc5d8eabe704aa76", "generic", "examples/library.arch"],
   ["b61384669de378a9dcb3fe21575615fbdf6b72ff97df5b7667fd63f1313debbe", "generic", "examples/materials.arch"],
@@ -1328,6 +1329,11 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "271ad2aece3b9c24110500af695bbf5428d046ed7f4e8833d9dfb798f0472d8f",
     "cn-residential-advisory",
     "examples/imports.arch",
+  ],
+  [
+    "80b00771e516a188d46bdbd772a912d0f4154a2390f70b5368346b4d3a57cb4a",
+    "cn-residential-advisory",
+    "examples/knob-flat.arch",
   ],
   [
     "700126eb56dfe1218fe945db306c2bed250e742ebc3466e50896cf98a23a43f1",
@@ -2518,6 +2524,11 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "106f6f6029edbc082618ee6de4043cc2eddebb59b2ad3901bf357b969bf5bc35",
     "us-residential-advisory",
     "examples/imports.arch",
+  ],
+  [
+    "1847a49225aed11f233a3869eb929219113b2fca27a43e08a63ef82a095f4e1d",
+    "us-residential-advisory",
+    "examples/knob-flat.arch",
   ],
   [
     "d4f3bc663f0a7ac284dab004612b78f02945135c515d9a4c727d6f6b923299fe",

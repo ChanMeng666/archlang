@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: On the merge of main 1.52.0 into feat/j13-sheet-text: W_TITLE_OVERFLOW's catalogue fix now covers the caption a sheet text block writes, and validate's next carries it. With the old sentence back K1 passed main's table, 22 of 22.
+ * Taken: On feat/public-surfaces-p4-knobs (card P4): examples/knob-flat.arch, a new row; no other row moved.
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -90,6 +90,11 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "examples/imports.arch",
     "592d7f617ecc608abe72c0133e7c018cb552f0ba34b13ad71741b006f36a5ce7",
     261,
+  ],
+  [
+    "examples/knob-flat.arch",
+    "8b076e5317ad6b5aa64c1ae5efa9f725a2befb7b02db2e7945ae8573a12847ac",
+    965,
   ],
   [
     "examples/laneway-house.arch",

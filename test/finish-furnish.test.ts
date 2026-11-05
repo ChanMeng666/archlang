@@ -616,6 +616,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["57d4237846d3b666c6806da6ee2bf4cadeb68a2e1d39723c6a024e5b415d5faf", "hexagon-pavilion"],
         ["79df29d09e0b76ead92a5d5359d2dfb787af5934617aea947e86289e57843553", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above; PS2.11e source edit, see above
         ["b43cd18d46e8f1da0e7f97821f75841ec1a252a1c9b99c04f68999821d429a70", "imports"],
+        ["86801700bbd9d51ddf1a9611a8c8dfd98a0967bbbcb7045cc2f901fe1c190c6f", "knob-flat"], // first measurement, added with the example (P4)
         ["878f41b12441462bba678bd4dcd3716a2246f174fa58b731bab125b9e44d6189", "laneway-house"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["d30296c2c7ee4ce7b7fdad894c4a7394d27d8e5422894b6782925d5e172a3414", "library"], // PS2.11e source edit, see above
         ["0a8902f60aa17c548fed121167615cdaaf3d1ea679fb34dff983e1dfa84b2b13", "materials"],

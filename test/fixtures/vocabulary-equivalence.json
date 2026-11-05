@@ -1393,6 +1393,32 @@
       "room_type": "Room"
     }
   ],
+  "examples/knob-flat.arch": [
+    {
+      "id": "r_live",
+      "label": "Living / Kitchen",
+      "uses": ["living", "kitchen"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "r_bed",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "r_hall",
+      "label": "Entry",
+      "uses": ["hall"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "r_bath",
+      "label": "Bath",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    }
+  ],
   "examples/laneway-house.arch": [
     {
       "id": "r_live",

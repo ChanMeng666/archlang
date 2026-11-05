@@ -819,6 +819,12 @@
  * `height`, so it is read through its height-free derivation, as `two-storey` is. Its two rows were
  * measured with this file's own digest bodies on the branch that added it.
  *
+ * ## `knob-flat`: a row ADDED with a new example, nothing re-measured
+ *
+ * `examples/knob-flat.arch` arrived with the playground's knobs (public-surfaces card P4): a
+ * one-bedroom flat sized by three top-level `let`s. Its two rows were measured with this file's own
+ * digest bodies on the branch that added it; no other row moved.
+ *
  * ## `hillside-villa`: both rows re-measured — `W_PATH_TOO_NARROW` names the door, once
  *
  * Case (3), a diagnostic-text change, in `lint()` only (`test/lint-fix-texts.test.ts`). When
@@ -1677,6 +1683,7 @@ export const BASELINE: [string, string][] = [
   ["hexagon-pavilion", "c9feff36e36022353398608901b0b508a737c27eca89e4e2c2becd3a5723e0b5"],
   ["hillside-villa", "3f80c4312c849bac7bd109b4eeb95a59b775741b33940d8cff5ec6f62aec2de5"], // re-measured, see header; PS2.11e, see header
   ["imports", "1de644a1f7abfb2b5cc67269fac11a191810d959379f7b04e14c259014d1e9f4"],
+  ["knob-flat", "1844e64f6fda7da8b8cd66a89979c17934ada812ccea5f24f763731a3ecc7c8d"], // added with the example, see header
   ["laneway-house", "40f81577eb4e641b4fd5cd0bd750c6a9021fb91d9a9b54f7dc09e563382368fd"], // PS2.11e, see header
   ["library", "73209919261006593d52c64eaf7a2979185db6f05464f49defb31f8c1ecd6748"], // PS2.11e, see header
   ["materials", "f30fbe44a6ec1a7803187157bb86c24bc5506db7ddeb3f9512edbec2acbfe708"],
@@ -1727,6 +1734,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["hexagon-pavilion", "435b9fb0cc07194798fde23c5528f869a07ad02ee3842b4d4d87775a76b6f36a"],
   ["hillside-villa", "e863c47547396426ddcabb231fcb2aae2c82482a0a94034042cc0a5c5faee6c6"], // re-measured, see header; PS2.11e, see header
   ["imports", "85b77c3fa1a9961a884cf5966ae5f87af436edf6adf3c16f2e426f72ed2b1b2f"],
+  ["knob-flat", "0649d38e9f1df5f91c531d84b75d19e3268df59b4e7e9220471c9ed4419eb6c7"], // added with the example, see header
   ["laneway-house", "55f68cc66a633508a2442aafa4dcf60d38076c2f54470c3a56ad3107493839d0"],
   ["library", "bb9953f94353e9c648537d0e09a839a7f8d4c24805d30cc51f8c52856e033d66"], // PS2.11e, see header
   ["materials", "076c820e1a3ec44538143118ff196db360fcbe6cf12a34b436c607cee8bd82b6"],

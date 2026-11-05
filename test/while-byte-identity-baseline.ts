@@ -179,6 +179,7 @@
  * `test/fixtures/lock-before.arch`, `lock-partition-moved.arch` and `lock-window-moved.arch`
  * likewise (preview-and-remodel B1, the `impact --lock` acceptance pair; `test/lock.test.ts`).
  * `examples/turning-stair.arch` likewise (issue #362, S2: the block stair's example).
+ * `examples/knob-flat.arch` likewise (public-surfaces P4: the playground's knobs example).
  * `examples/remodel.arch` likewise (preview-and-remodel B3b, the wall-status drawing example;
  * `test/wall-status-drawing.test.ts`).
  *
@@ -360,6 +361,7 @@ export const BASELINE: ReadonlyArray<readonly [string, string]> = [
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
   ["examples/hillside-villa.arch", "9f493e8903437b74f50eb72fd227871d17c13a17b6bc9ccf7592d423f6908572"], // re-measured, see header; PS2.11e, see header
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
+  ["examples/knob-flat.arch", "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5"], // new example (P4, the knobs example), see header
   ["examples/laneway-house.arch", "21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e"], // PS2.11e, see header
   ["examples/library.arch", "9354e572f6d9df8c04e9b3b0fee0fe15b5ddf87831e0feba28078aaa4158ba92"], // PS2.11e, see header
   ["examples/materials.arch", "635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925"],

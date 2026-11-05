@@ -38,6 +38,7 @@
  * same digest body on the tree that adds them; they write no `double` door.
  * `examples/remodel.arch` (preview-and-remodel B3b, `test/wall-status-drawing.test.ts`) likewise.
  * `examples/turning-stair.arch` (issue #362, S2) likewise.
+ * `examples/knob-flat.arch` likewise (public-surfaces P4: the playground's knobs example).
  *
  * A digest here moving is a finding to explain before it is a diff to re-measure.
  */
@@ -70,6 +71,7 @@ const BASELINE: [string, string][] = [
   ["examples/corner-cafe.arch", "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f"], // #367, see test/byte-identity-baseline.ts
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
   ["examples/imports.arch", "a0341285f4e3699b738aa1916bba278eed61e347df4d3a2de139b9f0185d9678"],
+  ["examples/knob-flat.arch", "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5"], // new example (P4, the knobs example), see header
   ["examples/materials.arch", "635e4b1a04bb6497e1fff846708c3f28519c89b531f5ad14b363381344cad925"],
   ["examples/museum-wing.arch", "546b10dfb0204dbce454dff9e47713f32745285f4885e58a46b5faff23d10126"],
   ["examples/one-room.arch", "8c47e263f778993d69c2f85d07a24b3a62c0b96d9f17ccb5cd9ebf2af6fa0120"],
