@@ -53,7 +53,15 @@ describe("npm tarball (npm pack --dry-run)", () => {
 
   it("ships exactly these files at the package root", () => {
     const root = paths.filter((p) => !p.includes("/")).sort();
-    expect(root).toEqual(["CHANGELOG.md", "LICENSE", "README.md", "llms-full.txt", "package.json", "spec.llm.md"]);
+    expect(root).toEqual([
+      "CHANGELOG.md",
+      "LICENSE",
+      "README.md",
+      "THIRD-PARTY-NOTICES.md",
+      "llms-full.txt",
+      "package.json",
+      "spec.llm.md",
+    ]);
   });
 
   it("ships nothing outside the root files, dist/, examples/ and the skills", () => {

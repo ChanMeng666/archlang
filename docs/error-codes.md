@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**154 errors** · **93 warnings**
+**156 errors** · **94 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -53,6 +53,8 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_BAD_SPEC`](#e_import_bad_spec) | error | Malformed import spec. |
 | [`E_IMPORT_CONFLICT`](#e_import_conflict) | error | Imported name conflicts with an existing component. |
 | [`E_IMPORT_CYCLE`](#e_import_cycle) | error | Cyclic import. |
+| [`E_IMPORT_FORMAT`](#e_import_format) | error | A file given to `archlang import` is not a valid plan in the format it was read as. |
+| [`E_IMPORT_LIMIT`](#e_import_limit) | error | A file given to `archlang import` needs more work to convert than any plan does. |
 | [`E_IMPORT_NOT_EXPORTED`](#e_import_not_exported) | error | Imported name is not exported by the module. |
 | [`E_IMPORT_NOT_FOUND`](#e_import_not_found) | error | Import path could not be resolved. |
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
@@ -209,6 +211,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_HOB_FRIDGE_GAP`](#w_hob_fridge_gap) | warning | A fridge or other tall unit stands too close beside a hob. |
 | [`W_HOB_UNDER_WINDOW`](#w_hob_under_window) | warning | A hob stands under a window. |
+| [`W_IMPORT_DROPPED`](#w_import_dropped) | warning | Part of an imported plan has no ArchLang form and was left out. |
 | [`W_IMPORT_EMPTY_FILE`](#w_import_empty_file) | warning | Whole-file import binds an empty component. |
 | [`W_KEEP_VIOLATED`](#w_keep_violated) | warning | A hard keep does not hold. |
 | [`W_LEAF_ACROSS_DOORWAY`](#w_leaf_across_doorway) | warning | A door's open leaf parks across another doorway's approach. |
@@ -799,6 +802,30 @@ import "lib.arch": bed as lib_bed
 
 ```arch static
 # a.arch imports b.arch which imports a.arch  → error
+```
+
+## E_IMPORT_FORMAT
+
+*error* — A file given to `archlang import` is not a valid plan in the format it was read as.
+
+**Cause.** `archlang import --from openplan3d` (`openPlan3dToArch()`) checks the JSON the way OpenPlan3D's own validators do (`readProject` for a web project in centimetres, `validateRoomPlan` for a prepared RoomPlan interchange file in metres) before converting anything, and reports each problem with OpenPlan3D's path and reason: a missing `id`, `floors` or `walls` array, a door on a wall of another floor, a `position` outside 0–1, a zero thickness or width, an unknown `type`, a repeated id, a transform that is not 16 finite numbers. A file OpenPlan3D would refuse is refused here too, and nothing is written. It is not raised by `compile()`: the input is JSON, not `.arch` source.
+
+**Fix.** Fix the field the message names (its path is the JSON path in the file), or re-export the plan from OpenPlan3D. A file read as the wrong format can be forced with `--format web` or `--format handoff`.
+
+```arch static
+archlang import --from openplan3d plan.json   # error: Invalid project: floors[0].doors[1].wallId must refer to a wall on the same floor.
+```
+
+## E_IMPORT_LIMIT
+
+*error* — A file given to `archlang import` needs more work to convert than any plan does.
+
+**Cause.** Converting an OpenPlan3D plan finds its rooms the way OpenPlan3D does, by comparing every wall with every other wall on a floor, so the work grows with the square of a floor's walls. It is counted, as the evaluator's work is (`E_STEP_LIMIT`), and past the same budget of 5,000,000 steps the import stops with nothing written. A floor of a few thousand walls reaches it; a house has tens. A file of more than 200 storeys is refused the same way before any storey is built: each storey is a whole drawing.
+
+**Fix.** Split the plan into several files, a floor or a wing each, and import them one by one.
+
+```arch static
+archlang import --from openplan3d huge.json   # error: one floor with 100,000 walls
 ```
 
 ## E_IMPORT_NOT_EXPORTED
@@ -2834,6 +2861,18 @@ furniture fridge at (2300,100) size 600x650   # lint: 100 mm from the hob, 200 m
 wall id=w exterior thickness 200 { (0,0) (4000,0) }
 window at (2000,0) width 1200 wall w
 furniture stove at (1700,100) size 600x600   # lint: under 600 mm of the window
+```
+
+## W_IMPORT_DROPPED
+
+*warning* — Part of an imported plan has no ArchLang form and was left out.
+
+**Cause.** `archlang import --from openplan3d` writes what ArchLang can say (walls, rooms, doors, windows, openings, straight stairs, square columns, furniture with a matching fixture family, storeys) and leaves out the rest: finishes and textures, notes and prices, text and dimension annotations, round columns, turning or spiral stairs, furniture turned off a quarter turn or with no family, a wall's slope. Each left-out entity is listed in the report's `dropped`, each left-out field in its `fields`, with the reason, and each kind and reason gives one warning. Fields whose loss changes nothing on a plan (project and capture metadata, editor settings, format markers, a room's stored area) are listed in the report only, with no warning. Nothing is left out without a report entry.
+
+**Fix.** Read the report (`--json`). Add what matters by hand in the `.arch` file (a `furniture` piece, a `dim`, a stair), or accept the loss: none of these changes the walls, rooms and openings the checks read.
+
+```arch static
+archlang import --from openplan3d plan.json   # warning: 3 textAnnotations not imported: free text on the plan is not modelled
 ```
 
 ## W_IMPORT_EMPTY_FILE

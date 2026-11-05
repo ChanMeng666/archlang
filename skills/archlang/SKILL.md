@@ -396,6 +396,7 @@ archlang manifest --json                   # the whole CLI API as data: commands
 archlang compile plan.arch -o out.svg --json   # render (also -f dxf|txt|json|pdf|png)
 archlang compile plan.arch -f txt          # zero-dependency ASCII text plan on stdout
 archlang compile plan.json --from-json -o out.svg   # compile structured Plan JSON (see /plan.schema.json)
+archlang import --from openplan3d plan.openplan.json -o plan.arch --json   # an OpenPlan3D JSON plan as .arch + a report of what it left out; then lint it
 echo '<source>' | archlang compile - -o - -f svg    # compile stdin → SVG on stdout
 archlang fix plan.arch --dry-run --json    # preview the machine-applicable fixes as a unified diff (drop --dry-run to apply; --backup keeps <file>.bak)
 archlang suggest plan.arch --json          # advisory door/window statements: unreachable room / no entrance / bath-via-bedroom / windowless bedroom

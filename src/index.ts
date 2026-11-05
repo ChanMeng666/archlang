@@ -242,6 +242,20 @@ export type {
   RoomType,
   GraphCheck,
 } from "./plan-json.js";
+// Foreign plans in: `openPlan3dToArch` reads an OpenPlan3D web project (cm) or prepared
+// RoomPlan interchange (m) JSON and returns `.arch` source plus a report of what was not
+// carried over (`arch import --from openplan3d`). Pure, deterministic, bounded, never throws.
+export { openPlan3dToArch } from "./import/openplan3d.js";
+export type {
+  OpenPlan3dFormat,
+  OpenPlan3dImportOptions,
+  OpenPlan3dImportResult,
+  OpenPlan3dImportReport,
+  OpenPlan3dIdChange,
+  OpenPlan3dDropped,
+  OpenPlan3dDroppedField,
+  OpenPlan3dCount,
+} from "./import/openplan3d.js";
 // Intent channel: author-time checking of a brief's INTENT against a plan.
 // `validateIntent(source, intent)` compiles the intent to predicates, checks them over
 // `describe()`'s facts, and returns catalogued E_INTENT_* violations with Nickel-style

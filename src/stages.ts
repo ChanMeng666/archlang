@@ -69,6 +69,8 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
   // The language itself.
   W_EMPTY_PLAN: "brief",
   W_IMPORT_EMPTY_FILE: "brief",
+  // `arch import`'s report of what a foreign plan held that ArchLang has no form for.
+  W_IMPORT_DROPPED: "brief",
   W_WHILE_DEPRECATED: "brief",
   W_REASSIGN_DEPRECATED: "brief",
   // The plan's own `axes`, which belong to the brief.

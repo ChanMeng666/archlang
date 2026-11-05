@@ -697,8 +697,8 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 162 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 162 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 30 KB; errors = the diagnostic catalog, 67 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 164 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 164 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 31 KB; errors = the diagnostic catalog, 68 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -710,7 +710,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (67 KB) — read one section instead of paying for the whole 162 KB bundle
+# just the diagnostic catalog (68 KB) — read one section instead of paying for the whole 164 KB bundle
 $ archlang context --section errors
 ```
 
@@ -735,6 +735,30 @@ $ archlang new --json
 
 # scaffold a starter file to edit
 $ archlang new -o plan.arch
+```
+
+### `archlang import`
+
+convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out
+
+**Input:** `<file.json|->` · **Output:** the .arch source (stdout or -o); warnings on stderr. With --json: { ok, format, counts, rooms, dropped, fields, notes, ids, diagnostics }, plus `source` when there is no -o
+
+| Flag | Does |
+| --- | --- |
+| `--from <openplan3d>` | the format of the input file (required); openplan3d is the one there is |
+| `--format <web\|handoff>` | read the file as an OpenPlan3D web project (centimetres) or prepared RoomPlan interchange file (metres) instead of detecting which, as OpenPlan3D does |
+| `--out, -o <file\|->` | output file for the .arch source, or '-' for stdout (default: stdout) |
+| `--json` | structured result on stdout, messages on stderr |
+| `--quiet, -q` | suppress human messages on stderr |
+
+**Examples**
+
+```bash
+# convert an OpenPlan3D export, then `archlang lint plan.arch` checks it
+$ archlang import --from openplan3d plan.openplan.json -o plan.arch
+
+# the source plus a report: per-kind counts, every dropped entity and field with its reason
+$ archlang import --from openplan3d scan-openplan3d.json --json
 ```
 
 ### `archlang explain`

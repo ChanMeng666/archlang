@@ -149,6 +149,7 @@ arch manifest  # this document: the whole CLI API as structured data
 arch spec  # print the one-prompt language spec (spec.llm.md)
 arch context  # print the full bundled agent context (spec + workflow + CLI + errors)
 arch new  # scaffold a starter .arch
+arch import  # convert an OpenPlan3D plan (JSON) to .arch source, reporting what it left out
 arch explain  # look up an error code (cause / fix / example)
 ```
 

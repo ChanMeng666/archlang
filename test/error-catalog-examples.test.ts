@@ -57,6 +57,8 @@ const INTENT =
   "raised by `validateIntent()` on the intent channel, which `compile()`/`lint()` never run: there is no `.arch` source that produces it";
 const IMPORT = "needs a `World` serving the named module; a bare snippet cannot have one";
 const JSON_CHANNEL = "raised by `planFromJson()` on a JSON payload, not by compiling `.arch` source";
+const FOREIGN =
+  "raised by `openPlan3dToArch()` (`arch import --from openplan3d`) on a foreign JSON plan, never by compile()/lint(); pinned in test/import-openplan3d.test.ts";
 const JSON_EXPORT =
   "raised by `planToJson()` (`compile -f json`) on a plan that compiled, never by compile()/lint(); pinned in test/walls-from-rooms.test.ts";
 const DEP = "raised only when an OPTIONAL native dependency is absent, which a test process cannot arrange";
@@ -103,6 +105,10 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
   ["E_IMPORT_NOT_EXPORTED", IMPORT],
   ["E_IMPORT_PARSE", IMPORT],
   ["W_IMPORT_EMPTY_FILE", IMPORT],
+
+  ["E_IMPORT_FORMAT", FOREIGN],
+  ["E_IMPORT_LIMIT", FOREIGN],
+  ["W_IMPORT_DROPPED", FOREIGN],
 
   ["E_JSON_KIND", JSON_CHANNEL],
   ["E_JSON_MIRROR", JSON_CHANNEL],
@@ -231,6 +237,9 @@ suite("error catalog — every example that can raise its code does", () => {
     // lock compares two versions of a plan, so no single snippet can raise either; both are
     // raised in test/lock.test.ts. E_STALE_SOURCE took it to 58: the CLI's `--expected-hash` guard
     // raises it on a file's bytes before anything compiles; raised in test/cli-expected-hash.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(58);
+    // E_IMPORT_FORMAT, E_IMPORT_LIMIT and W_IMPORT_DROPPED took it to 61: `openPlan3dToArch()` raises
+    // them on a foreign JSON file before any `.arch` source exists; each is raised in
+    // test/import-openplan3d.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(61);
   });
 });
