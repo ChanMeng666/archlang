@@ -347,27 +347,15 @@
       </section>
     </main>
     <!-- Make your own: the ways to get a plan of your own. A native <dialog> opened with
-         showModal(), so focus stays inside it and Escape closes it. -->
+         showModal(), so focus stays inside it and Escape closes it. Its body is written on the
+         first open by make-own.ts (its own chunk), from site-shared/doors.json, the one file every
+         public surface reads its doors from: no door URL is typed into this page. -->
     <dialog id="makeOwnDialog" class="mo" aria-labelledby="makeOwnTitle">
       <div class="mo-head">
         <h2 id="makeOwnTitle">Make your own plan</h2>
         <button type="button" class="mo-close" data-mo-close aria-label="Close">×</button>
       </div>
-      <p class="mo-lede">Ask your AI for a floor plan. It writes ArchLang; the compiler draws the plan and tells it what is wrong.</p>
-      <ul class="mo-doors">
-        <li>
-          <a id="agentsLink" href="https://archlang.uk/agents" target="_blank" rel="noopener">Set up your coding agent ↗</a>
-          <span>The CLI, the MCP server and the skill, for any agent with a shell.</span>
-        </li>
-        <li>
-          <button type="button" data-mo-copy-llm>Copy this plan as a prompt</button>
-          <span>Its source, its facts and its diagnostics, to paste into any chat.</span>
-        </li>
-        <li>
-          <button type="button" data-mo-edit>Edit this plan here</button>
-          <span>Opens the source beside the drawing.</span>
-        </li>
-      </ul>
+      <div id="makeOwnBody" class="mo-body"></div>
     </dialog>
 
     <script type="module" src="/src/main.ts"></script>

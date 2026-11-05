@@ -1,7 +1,7 @@
 /**
  * The header's own behaviour: the Source toggle, the Tools menu and the Make-your-own dialog.
- * Part of the startup chunk, so it holds no compiler and no editor: it only opens, closes and
- * forwards. The actions inside Tools are wired by actions.ts once the compiler has loaded (their
+ * Part of the startup chunk, so it holds no compiler, no editor and no doors (the sheet's body is
+ * make-own.ts, loaded on its first open): it only opens, closes and forwards. The actions inside Tools are wired by actions.ts once the compiler has loaded (their
  * buttons are `disabled` until then); the panels by main.ts and edit-mode.ts.
  *
  * Tools closes like the menus it replaced: on Escape (listened for on the document, since Safari
@@ -19,11 +19,19 @@ export interface ShellCtx {
   leaveEdit(): void;
   /** Settles once the app is up: the plan compiled and the Tools actions mounted. */
   whenReady(): Promise<unknown>;
+  /** The plan on screen (the sheet's "Start from this plan" links to it). */
+  getSource(): string;
+  /** Wire chat links (`a[data-chat-host]`) the way the Tools menu's Ask AI links are. */
+  wireChatLinks(links: HTMLAnchorElement[]): void;
 }
 
 export interface Shell {
   /** Reflect the mode on the Source toggle. */
   setMode(editing: boolean): void;
+  /** Open the Make-your-own sheet (its chunk loads on the first call). */
+  openMakeOwn(): Promise<void>;
+  /** Told when the sheet opens (the nudge stands down). */
+  onMakeOwnOpen(fn: () => void): void;
 }
 
 export function mountShell(ctx: ShellCtx): Shell {
@@ -87,9 +95,50 @@ export function mountShell(ctx: ShellCtx): Shell {
   }
 
   // ---- Make your own ----
-  makeOwnBtn.addEventListener("click", () => {
+  // The sheet's body (make-own.ts, from doors.json) is its own chunk, rendered on the first open.
+  const body = document.getElementById("makeOwnBody")!;
+  let sheet: Promise<import("./make-own.js").Sheet | undefined> | undefined;
+  const opened: (() => void)[] = [];
+  async function openMakeOwn() {
     tools.open = false;
-    dialog.showModal();
+    sheet ??= import("./make-own.js").then(
+      (m) => {
+        const s = m.mountSheet(body, { getSource: ctx.getSource });
+        ctx.wireChatLinks([...body.querySelectorAll<HTMLAnchorElement>("a[data-chat-host]")]);
+        return s;
+      },
+      (err: unknown) => {
+        sheet = undefined; // a failed chunk load is retried on the next open
+        body.textContent = `This did not load: ${(err as { message?: string })?.message ?? err}`;
+        return undefined;
+      },
+    );
+    (await sheet)?.reset();
+    if (!dialog.open) dialog.showModal();
+    for (const fn of opened) fn();
+  }
+  makeOwnBtn.addEventListener("click", () => void openMakeOwn());
+  // A modal <dialog> makes the page behind it inert, but Tab past its last control still leaves
+  // for the browser's own UI; the sheet keeps it, wrapping round its controls both ways.
+  dialog.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    const stops = [
+      ...dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'),
+    ].filter((el) => el.tabIndex >= 0 && el.getClientRects().length > 0);
+    const first = stops[0];
+    const last = stops[stops.length - 1];
+    if (!first || !last) return;
+    const at = document.activeElement;
+    if (e.shiftKey ? at === first || !dialog.contains(at) : at === last) {
+      e.preventDefault();
+      (e.shiftKey ? last : first).focus();
+    }
+  });
+  // Focus goes back to the button that opened the sheet, unless the sheet sent it on (the editor).
+  let handedOn = false;
+  dialog.addEventListener("close", () => {
+    if (!handedOn) makeOwnBtn.focus();
+    handedOn = false;
   });
   dialog.addEventListener("click", (e) => {
     const target = e.target as Element | null;
@@ -99,6 +148,7 @@ export function mountShell(ctx: ShellCtx): Shell {
     const outside = e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom;
     if ((target === dialog && outside) || target?.closest("[data-mo-close]")) dialog.close();
     else if (target?.closest("[data-mo-edit]")) {
+      handedOn = true;
       dialog.close();
       void ctx.enterEdit();
     } else if (target?.closest("[data-mo-copy-llm]")) {
@@ -112,6 +162,10 @@ export function mountShell(ctx: ShellCtx): Shell {
   return {
     setMode(editing) {
       sourceBtn.setAttribute("aria-pressed", String(editing));
+    },
+    openMakeOwn,
+    onMakeOwnOpen(fn) {
+      opened.push(fn);
     },
   };
 }

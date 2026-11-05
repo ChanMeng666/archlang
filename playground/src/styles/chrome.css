@@ -911,24 +911,31 @@ html[data-mode="edit"] .strip {
 
 /* ── Make your own — a paper sheet over the page ─────────────────────────── */
 .mo {
-  width: min(520px, calc(100vw - 32px));
+  width: min(600px, calc(100vw - 32px));
+  max-height: calc(100dvh - 32px);
   padding: 0;
   border: 1px solid var(--hairline);
   border-radius: 3px;
   background: var(--paper-panel);
   color: var(--ink);
   box-shadow: 0 12px 40px rgb(28 36 48 / 0.28);
+  overflow: auto;
+  overscroll-behavior: contain;
 }
 .mo::backdrop {
   background: color-mix(in srgb, var(--ink) 45%, transparent);
 }
 .mo-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 18px;
   border-bottom: 1px solid var(--hairline);
+  background: var(--paper-panel);
 }
 .mo-head h2 {
   margin: 0;
@@ -949,37 +956,64 @@ html[data-mode="edit"] .strip {
   line-height: 1;
   cursor: pointer;
 }
-.mo-close:focus-visible,
-.mo-doors a:focus-visible,
-.mo-doors button:focus-visible {
+.mo-body {
+  padding: 0 18px 16px;
+}
+.mo :is(a, button):focus-visible {
   outline: 2px solid var(--redline-ink);
   outline-offset: 2px;
 }
 .mo-lede {
-  margin: 14px 18px 4px;
+  margin: 14px 0 4px;
   font-size: 0.92rem;
   line-height: 1.5;
 }
+.mo h3 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 90,
+    "wght" 600;
+  font-size: 0.95rem;
+}
+/* The doors, each the same card: equal weight, in doors.json's order. */
 .mo-doors {
   list-style: none;
-  margin: 8px 18px 18px;
+  margin: 10px 0 0;
   padding: 0;
   display: flex;
   flex-direction: column;
   gap: 10px;
 }
-.mo-doors li {
+.mo-door,
+.mo-ask {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: flex-start;
+  gap: 5px;
+  min-width: 0;
   padding: 10px 12px;
   border: 1px solid var(--hairline);
   border-radius: 3px;
   background: var(--paper);
 }
-.mo-doors a,
-.mo-doors button {
-  align-self: flex-start;
+.mo-ask {
+  margin-top: 10px;
+}
+.mo-door > span,
+.mo-cap,
+.mo-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+.mo-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+}
+.mo-go {
   padding: 0;
   border: 0;
   background: transparent;
@@ -990,11 +1024,162 @@ html[data-mode="edit"] .strip {
   cursor: pointer;
   min-height: 24px;
 }
-.mo-doors a:hover,
-.mo-doors button:hover {
+.mo-go:hover {
   text-decoration: underline;
 }
-.mo-doors span {
+.mo a {
+  color: var(--redline-ink);
+}
+/* Copyable text: it wraps, so a long command never pushes the sheet sideways on a phone. */
+.mo-copy {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.mo-copyrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  min-width: 0;
+}
+.mo-copyrow code,
+.mo-prompt {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--src-rule);
+  border-radius: 3px;
+  background: var(--src-surface);
+  color: var(--src-fg);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.mo-prompt {
+  align-self: stretch;
+  max-height: 11em;
+  overflow-y: auto;
+}
+.mo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mo-copybtn {
+  flex: none;
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--src-rule);
+  border-radius: 3px;
+  background: var(--src-surface);
+  color: var(--src-fg);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.mo-copybtn:hover {
+  border-color: var(--redline-ink);
+}
+.mo-copybtn[aria-busy="true"] {
+  cursor: progress;
+  opacity: 0.6;
+}
+.mo-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.mo-tabs [role="tab"] {
+  min-height: 30px;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.mo-tabs [role="tab"][aria-selected="true"] {
+  border-color: var(--ink);
+  font-weight: 600;
+}
+.mo-door [role="tabpanel"] {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.mo-door [role="tabpanel"][hidden] {
+  display: none;
+}
+.mo-top {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  margin: 12px 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+.mo-top a {
+  text-decoration: none;
+}
+.mo-top a:hover {
+  text-decoration: underline;
+}
+.mo-status {
+  min-height: 1.3em;
+  margin: 8px 0 0;
   font-size: 0.85rem;
   color: var(--ink-muted);
+}
+
+/* ── The nudge: one quiet pointer at Make your own (nudge.ts), never a modal ── */
+.nudge {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 32px);
+  padding: 8px 8px 8px 14px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper-panel);
+  color: var(--ink);
+  font-size: 0.9rem;
+  box-shadow: 0 6px 20px rgb(28 36 48 / 0.18);
+}
+.nudge-go,
+.nudge-x {
+  min-height: 30px;
+  border-radius: 3px;
+  font: inherit;
+  cursor: pointer;
+}
+.nudge-go {
+  padding: 4px 10px;
+  border: 1px solid var(--redline-ink);
+  background: transparent;
+  color: var(--redline-ink);
+  font-weight: 600;
+}
+.nudge-x {
+  min-width: 30px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-muted);
+  font-size: 16px;
+}
+.nudge :is(button):focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 2px;
 }

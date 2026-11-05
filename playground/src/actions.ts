@@ -84,6 +84,8 @@ interface ActionsCtx {
 export interface ActionsHandle {
   /** The editor text changed (any edit, undo or load). */
   sourceChanged: () => void;
+  /** Wire more chat links (the Make-your-own sheet's) exactly as the Tools menu's are. */
+  addChatLinks: (links: HTMLAnchorElement[]) => void;
 }
 
 export function mountActions(ctx: ActionsCtx): ActionsHandle {
@@ -266,9 +268,10 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   els.chatMenu?.addEventListener("toggle", () => {
     if (els.chatMenu?.open) void encodeForChat();
   });
-  for (const link of els.chatLinks) {
+  /** Wire one chat link: encode ahead of the click, open the prefilled host or copy instead. */
+  function wireChatLink(link: HTMLAnchorElement) {
     const host = link.dataset.chatHost;
-    if (!isChatHost(host)) continue;
+    if (!isChatHost(host)) return;
     for (const type of ["pointerenter", "focus", "pointerdown"])
       link.addEventListener(type, () => void encodeForChat());
     link.addEventListener("click", (e) => {
@@ -293,6 +296,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       );
     });
   }
+  for (const link of els.chatLinks) wireChatLink(link);
 
   // The menu holding the links (the playground's Tools) closes on Escape and on a click outside
   // it in shell.ts, the one place that closes it; choosing a chat link closes it here.
@@ -519,6 +523,14 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     // undo) must restore the prefilled link and `data-ready`, or a middle-click would
     // open the bare host as if it were current.
     sourceChanged: () => syncChatLinks(),
+    addChatLinks(links) {
+      for (const link of links) {
+        if (els.chatLinks.includes(link)) continue;
+        els.chatLinks.push(link);
+        wireChatLink(link);
+      }
+      syncChatLinks();
+    },
   };
 }
 

@@ -25,6 +25,7 @@ import { mountKnobsPanel } from "./knobs-panel.js";
 import { isNarrow, mountMobileViews } from "./mobile-views.js";
 import { hasEditFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
+import { mountNudge } from "./nudge.js";
 import { mountShell } from "./shell.js";
 import { mountStrip } from "./strip.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
@@ -296,8 +297,14 @@ const shell = mountShell({
   enterEdit,
   leaveEdit,
   whenReady: () => ready,
+  getSource: () => currentSource(),
+  wireChatLinks: (links) => void ready.then(() => actions?.addChatLinks(links)),
 });
 shell.setMode(editing);
+// The one quiet pointer at Make your own (nudge.ts), after the third plan switch or the first knob
+// let go; it stands down once the sheet has been opened.
+const nudge = mountNudge(() => void shell.openMakeOwn());
+shell.onMakeOwnOpen(() => nudge.sheetOpened());
 
 const previewCtl = createPreview({
   viewport: pzViewport,
@@ -333,6 +340,7 @@ const knobsPanel = mountKnobsPanel({
  * saves the draft, moves the hash and renames the plan.
  */
 function keepKnob(source: string, final: boolean) {
+  if (final) nudge.knobReleased();
   if (edit) {
     if (final) edit.setDoc(source);
     return;
@@ -539,10 +547,15 @@ function pickExample(label: string) {
     loadSource(EXAMPLES[label], true);
   });
 }
-select.addEventListener("change", () => pickExample(select.value));
+/** A plan picked by the visitor (the picker or the strip), which counts towards the nudge. */
+function switchPlan(label: string) {
+  pickExample(label);
+  nudge.planSwitched();
+}
+select.addEventListener("change", () => switchPlan(select.value));
 // The strip's links and thumbnails are in the served page (gen-static.mjs): nothing here waits for
 // the example sources to mark or move through them.
-const strip = mountStrip(document.getElementById("stripList")!, pickExample);
+const strip = mountStrip(document.getElementById("stripList")!, switchPlan);
 
 // Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
 themeSelect.addEventListener("change", () => {
