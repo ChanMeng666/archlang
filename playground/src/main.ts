@@ -1,7 +1,7 @@
 /**
  * The playground's startup module: the view path. It shows the drawing (the one built into the
  * page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and
- * runs the header. Everything heavier is its own chunk, loaded when it is needed:
+ * plans (the picker and the thumbnail strip) and runs the header. Everything heavier is its own chunk, loaded when it is needed:
  *
  * - the compiler (`archlang`, the `compiler` chunk, preloaded by index.html but not
  *   render-blocking) and the example sources: fetched as soon as this module runs;
@@ -25,6 +25,7 @@ import { isNarrow, mountMobileViews } from "./mobile-views.js";
 import { hasEditFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
 import { mountShell } from "./shell.js";
+import { mountStrip } from "./strip.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
@@ -449,15 +450,24 @@ function onExportError(format: string, err: unknown) {
   errorsEl.textContent = `${format.toUpperCase()} export failed: ${(err as { message?: string })?.message ?? err}`;
 }
 
-// An example picked before the app is up is loaded once it is.
-select.addEventListener("change", () => {
-  const label = select.value;
+/**
+ * Open the example labelled `label` (the picker's value). The picker and the strip say so at once;
+ * an example picked before the app is up is loaded once it is.
+ */
+function pickExample(label: string) {
+  select.value = label;
+  strip.setCurrent(label);
   void ready.then(async () => {
     const { EXAMPLES } = await examplesP;
     select.value = label;
+    strip.setCurrent(label);
     loadSource(EXAMPLES[label], true);
   });
-});
+}
+select.addEventListener("change", () => pickExample(select.value));
+// The strip's links and thumbnails are in the served page (gen-static.mjs): nothing here waits for
+// the example sources to mark or move through them.
+const strip = mountStrip(document.getElementById("stripList")!, pickExample);
 
 // Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
 themeSelect.addEventListener("change", () => {
@@ -478,6 +488,12 @@ async function boot() {
   fillPicker(examples);
   const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES[DEFAULT_EXAMPLE];
   if (!sharedSrc && !savedSrc) select.value = DEFAULT_EXAMPLE;
+  // The strip marks the plan this visit opens: the default, or the example a link or a draft is
+  // word for word, or none (a plan of someone's own is no example).
+  const openedName = sharedSrc || savedSrc ? examples.exampleNameFor(initialDoc) : undefined;
+  strip.setCurrent(
+    sharedSrc || savedSrc ? (openedName ? (strip.labelFor(openedName) ?? null) : null) : DEFAULT_EXAMPLE,
+  );
 
   // A `#z=` payload that is not one of the bundled examples is third-party text on
   // our page — say so, once, at the top of the preview. Silent for a stock-example

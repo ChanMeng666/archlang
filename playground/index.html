@@ -212,7 +212,7 @@
             <a href="https://archlang.uk/guide">Guide</a>
             <a href="https://archlang.uk/reference">Language reference</a>
             <a href="https://archlang.uk/spec">One-page spec</a>
-            <a href="/examples/">27 example plans</a>
+            <a href="/examples/"><!--prerender:count--> example plans</a>
             <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a>
             <a href="https://github.com/ChanMeng666/archlang" target="_blank" rel="noopener">GitHub</a>
             <a href="https://archcanvas.uk" target="_blank" rel="noopener">ArchCanvas ↗</a>
@@ -335,6 +335,15 @@
         <div id="takeoff" class="tabview" role="tabpanel" aria-labelledby="tab-takeoff"></div>
         <!-- Filled on the tab's first open by preview3d.ts (lazy: three.js never loads before). -->
         <div id="preview3d" class="tabview" role="tabpanel" aria-labelledby="tab-preview3d"></div>
+        <!-- The plan strip (view mode): one link per example, in the picker's order, each to the
+             plan's static page, so it works with no script and a crawler can follow it. With
+             script, strip.ts opens the plan here instead. The links and their thumbnails are
+             written at build time (scripts/gen-static.mjs); each thumbnail box has a fixed size,
+             so a thumbnail arriving moves nothing. -->
+        <nav class="strip" id="strip" aria-label="Example plans">
+          <ul class="strip-list" id="stripList"><!--prerender:strip--></ul>
+          <a class="strip-all" href="/examples/">All plans →</a>
+        </nav>
       </section>
     </main>
     <!-- Make your own: the ways to get a plan of your own. A native <dialog> opened with

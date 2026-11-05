@@ -360,6 +360,8 @@ async function playgroundChecks() {
       contains("<h1"),
       contains("compiles in your browser"),
       contains("<svg data-prerendered"),
+      // …and the plan strip under it, its links and thumbnails written by the same step.
+      contains('<a class="strip-item" href="/examples/'),
       // The compiler chunk is preloaded with the page (playground/vite.config.js), as Vite
       // writes the tag: `<link rel="modulepreload" crossorigin href="./assets/compiler-….js">`.
       matches(/<link rel="modulepreload"[^>]*\bhref="\.\/assets\/compiler-[\w-]+\.js"/),
@@ -396,7 +398,7 @@ async function playgroundChecks() {
     // breadcrumb point at.
     route("/examples/", contentType("text/html"), contains("<h1"), contains("/examples/thumbs/")),
     // A gallery thumbnail: the one asset these pages reference from a second path, so a
-    // generator that stopped writing them leaves an index of 27 broken tiles behind a
+    // generator that stopped writing them leaves an index of broken tiles behind a
     // perfectly healthy 200.
     route("/examples/thumbs/one-room.svg", contentType("image/svg+xml"), isSvg()),
     route("/sitemap.xml", contains("<urlset"), contains("/examples/one-room.html")),

@@ -79,7 +79,7 @@ async function init() {
   // site, showing a plan that arrived in the fragment. So it carries the same
   // attribution notice the playground does, as one compact line above the drawing.
   // The "bundled" set here is the single plan this entry actually bundles — the
-  // one-room fallback — rather than the playground's 27 presets: importing those
+  // one-room fallback — rather than the playground's presets: importing those
   // would ship a quarter of a megabyte of example text into every iframe on the
   // internet to silence a notice that, on this page, is almost always correct.
   if (shouldShowSharedNotice(shared, [fallbackPlan])) {

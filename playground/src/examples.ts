@@ -272,7 +272,7 @@ const EXAMPLE_ROWS = [
 
 /**
  * Basename → the example's source text. Separate from the table because Vite needs
- * the `?raw` specifiers above to be literal imports, and a table of 27 inline
+ * the `?raw` specifiers above to be literal imports, and a table of inline
  * template literals would be exactly the hand-copied duplication this file exists
  * to avoid.
  */
