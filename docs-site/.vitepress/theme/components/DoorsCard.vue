@@ -53,7 +53,7 @@ function onKey(e: KeyboardEvent, i: number) {
       <p class="doors-card__lead"><strong>{{ COPY[id].heading }}.</strong> {{ COPY[id].body }}</p>
       <DoorBody :id="id" />
     </div>
-    <p class="doors-card__more">Every way in, one screen each: <a href="/start">Get a floor plan in 60 seconds</a>.</p>
+    <p class="doors-card__more">Every way in, one screen each: <a href="/start">Get a floor plan from your AI</a>.</p>
   </div>
 </template>
 

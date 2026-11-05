@@ -1,8 +1,9 @@
 <script setup lang="ts">
 // Why: the three PS-D1 cards, word for word (test/docs-home-copy.test.ts pins them), each with a
 // small real visual from the compiler. The drawings and figures are HOME, which sync-docs.mjs
-// makes from HOME_PROOFS on every build: a describe() of one example, an impact() of one changed
-// number, and a lint() of the hero's plan with one door taken out. No figure is typed here.
+// makes from HOME_PROOFS on every build, all on examples/: a describe() of one example, an
+// impact() of one changed number, and a lint() of a flat with its bedroom window taken out (the
+// highlight on the flagged room is added by the site). No figure is typed here.
 import { HOME } from "./home-data.js";
 
 /** The cards. `body` marks code with backticks; site-markdown.mjs reads this table. */
@@ -87,11 +88,11 @@ const { exact, change, check } = HOME;
           <figure v-else class="why-card__fig">
             <div class="why-card__pair">
               <div>
-                <img :src="check.raised" :alt="`${check.gallery}.arch without ${check.drop}: the room it served is marked`" loading="lazy" />
+                <img :src="check.raised" :alt="`${check.example}.arch without its line ${check.drop}: the compiler raises ${check.code}, and the site highlights the room it names`" loading="lazy" />
                 <span class="why-card__tag why-card__tag--raised">raised</span>
               </div>
               <div>
-                <img :src="check.cleared" :alt="`${check.gallery}.arch as the agent wrote it`" loading="lazy" />
+                <img :src="check.cleared" :alt="`${check.example}.arch as it is: ${check.code} is not raised`" loading="lazy" />
                 <span class="why-card__tag">cleared</span>
               </div>
             </div>

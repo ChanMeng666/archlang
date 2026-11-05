@@ -1,7 +1,7 @@
 // Plain-markdown rendering of the HAND-WRITTEN docs-site pages (SITE_PAGES in
 // sync-docs.mjs), published at `/<route>.md`. Pure apart from reading the repo: the build
 // facts it needs (the compiler, `describe`, the permalink codec) are INJECTED, so
-// `test/site-markdown.test.ts` can run the very same transform over all six pages
+// `test/site-markdown.test.ts` can run the very same transform over every SITE_PAGES row
 // without the built `dist/`.
 //
 // Contract: nothing is dropped silently. A Vue component is replaced by its text (the
@@ -94,10 +94,12 @@ export function doorMarkdown(file, id) {
  *   levelSvgName: (name: string, level: number) => string,
  *   playground: string,
  *   exampleCount: number,
- * }} deps `exampleCount` is how many example plans the build compiled (the home proof line's N)
+ *   hero: { id: string, model: string | null, brief: string | null, source: string, link: string },
+ * }} deps `exampleCount` is how many example plans the build compiled (the home proof line's N);
+ *   `hero` is the plan sync-docs chose for the home hero (HOME_PROOFS.hero)
  */
 export function siteMarkdown(src, deps) {
-  const { repo, compile, describe, encodePlanHash, levelSvgName, playground, exampleCount } = deps;
+  const { repo, compile, describe, encodePlanHash, levelSvgName, playground, exampleCount, hero } = deps;
   const read = (...p) => readFileSync(join(repo, ...p), "utf8").replace(/\r\n/g, "\n");
   const raw = withVersion(read(src), JSON.parse(read("package.json")).version);
   let text = raw.replace(/^---\n[\s\S]*?\n---\n/, "").replace(/<script setup>[\s\S]*?<\/script>\n?/, "");
@@ -308,9 +310,15 @@ export function siteMarkdown(src, deps) {
       "{{ EXAMPLE_COUNT }}",
       String(exampleCount),
     );
-    const heroId = pull(read("docs-site", "sync-docs.mjs"), /hero: \{ gallery: "([^"]+)" \}/, "HOME_PROOFS.hero")[1];
-    const entry = JSON.parse(read(galleryDir, "gallery.json")).find((e) => e.id === heroId);
-    const heroSource = read(galleryDir, `${heroId}.arch`);
+    // The hero is the one sync-docs chose (HOME_PROOFS.hero, with its fallbacks), injected rather
+    // than re-read here, so the copy says exactly what the page shows.
+    if (!hero) throw new Error("site-markdown: the home page needs the hero sync-docs chose (deps.hero)");
+    const heroLines = hero.brief
+      ? [
+          `The brief below was given to ${hero.model}, and the plan under it is the ArchLang it wrote:`,
+          hero.brief.trim().replace(/^/gm, "> "),
+        ]
+      : [`The plan below is \`${hero.id}.arch\`:`];
     text = [
       `# ${title}`,
       sub,
@@ -319,10 +327,9 @@ export function siteMarkdown(src, deps) {
       `**${primaries[1]}:**\n\n${textFence(doorsFile.agentPrompt.join("\n"))}`,
       `Or open a plan in the [${doorsFile.doors.playground.label}](${doorsFile.doors.playground.url}).`,
       proof,
-      `The brief below was given to ${entry.model}, and the plan under it is the ArchLang it wrote (\`docs/gallery/${heroId}.arch\`, drawn at \`/gallery/${heroId}.svg\`):`,
-      read(galleryDir, `${heroId}.brief.txt`).trim().replace(/^/gm, "> "),
-      fence(heroSource.trimEnd()),
-      `[Open this plan in the Playground](${playgroundLink(heroSource)})`,
+      ...heroLines,
+      fence(hero.source.trimEnd()),
+      `[Open this plan in the Playground](${hero.link})`,
       text.replace(/^\n+/, ""),
     ].join("\n\n");
   }

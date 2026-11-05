@@ -21,7 +21,7 @@ import { expect, type Page, test } from "@playwright/test";
 // The playground's canonical decoder, run here in Node (Node ≥ 21.2 for deflate-raw; the
 // e2e-docs CI job pins Node 22).
 import { srcFromHash } from "../../playground/src/share.js";
-import { ROOT } from "./fixtures.js";
+import { homeHero, ROOT } from "./fixtures.js";
 
 const read = (...p: string[]) => readFileSync(join(ROOT, ...p), "utf8").replace(/\r\n/g, "\n");
 const THEME = ["docs-site", ".vitepress", "theme"];
@@ -36,11 +36,12 @@ const GALLERY_PLANS = [
 ].map((m) => m[1]!);
 /** The facts band's plan, from FactsSection.vue. */
 const FACTS_PLAN = /const PLAN = "([^"]+)"/.exec(read(...THEME, "FactsSection.vue"))![1]!;
-/** The hero's agent-gallery pair, from sync-docs.mjs's HOME_PROOFS. */
-const HERO_ID = /hero: \{ gallery: "([^"]+)" \}/.exec(read("docs-site", "sync-docs.mjs"))![1]!;
+/** The hero as the build emitted it (home-data.js): an agent-gallery pair, or its fallback. The
+ *  gallery is not pinned corpus, so the hero is checked against the build, never its files. */
+const HERO = homeHero();
 
 const exampleSource = (name: string) => read("examples", `${name}.arch`);
-const heroSource = () => read("docs", "gallery", `${HERO_ID}.arch`);
+const heroSource = () => HERO.source.replace(/\r\n/g, "\n");
 
 async function decode(href: string | null): Promise<string | null> {
   expect(href, "a playground link must be a real href, not a click handler").toBeTruthy();
@@ -52,7 +53,7 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
   test("the derived tables are real", () => {
     expect(GALLERY_PLANS.length).toBeGreaterThanOrEqual(6);
     expect(GALLERY_PLANS.length).toBeLessThanOrEqual(8);
-    expect(HERO_ID).toBeTruthy();
+    expect(HERO.id).toBeTruthy();
     expect(FACTS_PLAN).toBeTruthy();
   });
 

@@ -36,7 +36,20 @@ const EXAMPLE_COUNT = readdirSync("examples").filter(
   (f) => f.endsWith(".arch") && statSync(`examples/${f}`).isFile() && !excluded.has(f),
 ).length;
 
-const render = (src: string): string =>
+/**
+ * The home hero sync-docs would inject. The real one is an agent-gallery pair, which no test may
+ * read (test/agent-gallery.test.ts's isolation law), so this is a stand-in of the same shape on an
+ * example: the transform is what is under test, not the pair.
+ */
+const HERO = {
+  id: "one-room",
+  model: "A stand-in model",
+  brief: "A stand-in brief.\nOn two lines.",
+  source: readFileSync("examples/one-room.arch", "utf8").replace(/\r\n/g, "\n"),
+  link: "https://playground.archlang.uk/#z=stand-in",
+};
+
+const render = (src: string, hero: typeof HERO | { [k: string]: unknown } = HERO): string =>
   siteMarkdown(src, {
     repo: process.cwd(),
     compile,
@@ -45,6 +58,7 @@ const render = (src: string): string =>
     levelSvgName: (name: string, level: number) => `${name}.L${level}.svg`,
     playground: "https://playground.archlang.uk",
     exampleCount: EXAMPLE_COUNT,
+    hero,
   });
 
 suite("siteMarkdown over every SITE_PAGES row", () => {
@@ -84,10 +98,17 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect(md).toContain(file.agentPrompt.join("\n"));
     // D4: the proof line, N derived the way sync-docs derives it.
     expect(md).toContain(
-      `${EXAMPLE_COUNT} example plans, every one compiled and checked in CI on every commit · SVG · PDF · DXF · PNG · MIT`,
+      `${EXAMPLE_COUNT} example plans, every one compiled and checked in CI · SVG · PDF · DXF · PNG · MIT`,
     );
-    // The hero pair's brief, quoted.
-    expect(md).toContain("> Design a studio flat");
+    // The hero sync-docs chose: its brief quoted line by line, its model named, its source and link.
+    expect(md).toContain(`The brief below was given to ${HERO.model}`);
+    expect(md).toContain(HERO.brief.replace(/^/gm, "> "));
+    expect(md).toContain(HERO.source.trimEnd());
+    expect(md).toContain(`[Open this plan in the Playground](${HERO.link})`);
+    // A fallback hero with no brief gets no quote and no model line.
+    const bare = render("docs-site/index.md", { ...HERO, model: null, brief: null });
+    expect(bare).not.toContain("The brief below was given to");
+    expect(bare).toContain(`The plan below is \`${HERO.id}.arch\``);
     const sections = [
       "## Why use it",
       "## How it works",

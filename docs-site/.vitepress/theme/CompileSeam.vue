@@ -21,6 +21,8 @@ import CopyBox from "./components/CopyBox.vue";
 
 // The hero pair, chosen in sync-docs.mjs's HOME_PROOFS and copied byte for byte from
 // docs/gallery/: the brief as given, the plan as the agent delivered it (after one `arch finish`).
+// The gallery is not pinned corpus, so sync-docs falls back rather than fail: another gallery
+// entry, or an example with no brief (then there is no bubble and no wait for one).
 const PAIR = HOME.hero;
 const PROMPT = agentPrompt.join("\n");
 
@@ -33,7 +35,7 @@ const PLAYGROUND = PAIR.link;
 // ── Timing. The brief sits alone for BRIEF_MS, then the source streams in over TYPE_MS: the
 //    whole run is under eight seconds whatever the pair's length, because the rate is derived
 //    from it rather than fixed. ─────────────────────────────────────────────────────────────
-const BRIEF_MS = 900;
+const BRIEF_MS = PAIR.brief ? 900 : 0;
 const TYPE_MS = 6200;
 const SPEED = raw.length / (TYPE_MS / 1000); // characters per second
 
@@ -199,8 +201,8 @@ onBeforeUnmount(() => {
 
           <!-- D4: N is the number of example plans this build compiled into the site. -->
           <p class="proof">
-            {{ EXAMPLE_COUNT }} example plans, every one compiled and checked in CI on every commit · SVG · PDF ·
-            DXF · PNG · MIT
+            {{ EXAMPLE_COUNT }} example plans, every one compiled and checked in CI · SVG · PDF · DXF · PNG ·
+            MIT
           </p>
         </div>
       </div>
@@ -211,14 +213,14 @@ onBeforeUnmount(() => {
       <!-- SHEET WORLD: brief → source → plan -->
       <div class="pane pane--sheet">
         <div class="story">
-          <figure class="chat">
+          <figure v-if="PAIR.brief" class="chat">
             <figcaption class="chat__who">The brief, as given to {{ PAIR.model }}</figcaption>
             <blockquote class="chat__bubble">{{ PAIR.brief }}</blockquote>
           </figure>
 
           <div class="code-stage" :data-phase="phase">
             <div class="code-chrome">
-              <span class="code-chrome__file">{{ PAIR.id }}.arch · written by {{ PAIR.model }}</span>
+              <span class="code-chrome__file">{{ PAIR.id }}.arch<template v-if="PAIR.model"> · written by {{ PAIR.model }}</template></span>
               <span class="code-chrome__status">{{
                 phase === "typing" ? "compiling" : phase === "brief" ? "reading the brief" : "compiled"
               }}</span>

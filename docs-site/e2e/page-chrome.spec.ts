@@ -26,10 +26,8 @@
  * Deliberately UNTAGGED (no `@prod`): both assert the state of the LOCAL build, and
  * against a lagging production deploy a red here would mean nothing.
  */
-import { readFileSync } from "node:fs";
-import { join } from "node:path";
 import { expect, test } from "@playwright/test";
-import { ROOT } from "./fixtures.js";
+import { homeHero } from "./fixtures.js";
 
 /** Desktop widths where the aside is displayed at all (VitePress shows it from 1280). */
 const WIDE = [
@@ -128,12 +126,10 @@ test.describe("the On this page outline is bounded by its own column", () => {
 });
 
 test.describe("the hero tells brief → source → plan, and finishes inside eight seconds", () => {
-  // The pair the hero streams, as sync-docs.mjs's HOME_PROOFS names it and docs/gallery/ holds it.
-  const HERO_ID = /hero: \{ gallery: "([^"]+)" \}/.exec(
-    readFileSync(join(ROOT, "docs-site", "sync-docs.mjs"), "utf8"),
-  )![1]!;
-  const SOURCE = readFileSync(join(ROOT, "docs", "gallery", `${HERO_ID}.arch`), "utf8").replace(/\r\n/g, "\n");
-  const BRIEF = readFileSync(join(ROOT, "docs", "gallery", `${HERO_ID}.brief.txt`), "utf8").trim();
+  // The pair the hero streams, as the build emitted it (home-data.js). The gallery behind it is not
+  // pinned corpus, so this compares the page with the build, never with the gallery's files.
+  const HERO = homeHero();
+  const SOURCE = HERO.source.replace(/\r\n/g, "\n");
 
   test("the final state is server-rendered: the brief, the whole plan, the drawing", async ({ page }) => {
     // Reduced motion is the state a visitor who asked for no motion sees, and it is also the
@@ -142,7 +138,8 @@ test.describe("the hero tells brief → source → plan, and finishes inside eig
     await page.goto("/");
     await expect(page.locator(".seam-hero")).toHaveAttribute("data-phase", "settled");
     await expect(page.locator(".code-chrome__status")).toHaveText("compiled");
-    await expect(page.locator(".chat__bubble")).toHaveText(BRIEF);
+    if (HERO.brief) await expect(page.locator(".chat__bubble")).toHaveText(HERO.brief.trim());
+    else await expect(page.locator(".chat__bubble"), "a fallback hero has no brief to show").toHaveCount(0);
     const typed = (await page.locator(".code-pre code").textContent()) ?? "";
     expect(typed.trimStart().startsWith('plan "')).toBe(true);
     // The header comment stays in the file and out of the stream.
@@ -193,7 +190,7 @@ test.describe("the hero tells brief → source → plan, and finishes inside eig
     const typing = marks.find((m) => m.phase === "typing" && m.t >= brief.t)!;
     const settled = marks.filter((m) => m.phase === "settled" && m.t > brief.t).pop()!;
     expect(brief.typed, "the brief must arrive alone, before any source").toBe(0);
-    expect(brief.bubble).toBe(true);
+    expect(brief.bubble).toBe(!!HERO.brief);
     expect(typing.t).toBeGreaterThan(brief.t);
     expect(settled.t - brief.t, "the whole run must finish within 8 s").toBeLessThan(8000);
   });

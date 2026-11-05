@@ -7,6 +7,9 @@
  * word for word, the proof line's derived N, the gallery captions' length, and the guardrails
  * every surface's copy is checked against. The e2e specs (homepage-links, page-chrome) prove the
  * built page; this fails in `check:quick` the moment a word moves.
+ *
+ * The hero displays an agent-gallery pair, but the gallery is not pinned corpus (the isolation
+ * law in test/agent-gallery.test.ts): nothing here reads it, only the hero's wiring.
  */
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -16,13 +19,22 @@ const THEME = "docs-site/.vitepress/theme";
 const seam = read(`${THEME}/CompileSeam.vue`);
 const doors = JSON.parse(read("site-shared/doors.json"));
 
-/** A component's visible copy: no `<style>`, no comments. */
+/**
+ * A file's visible copy: no `<style>`, no comments. Repeated to a fixpoint, as site-markdown.mjs's
+ * stripTags is, so removing one block can never splice its neighbours into a new one
+ * (`<!-<!-- x -->- y -->` must not survive as a comment opener).
+ */
 function copyOf(src: string): string {
-  return src
-    .replace(/<style[\s\S]*?<\/style>/g, "")
-    .replace(/<!--[\s\S]*?-->/g, "")
-    .replace(/\/\*[\s\S]*?\*\//g, "")
-    .replace(/^\s*\/\/.*$/gm, "");
+  let out = src;
+  for (let prev = ""; prev !== out; ) {
+    prev = out;
+    out = out
+      .replace(/<style[\s\S]*?<\/style>/g, "")
+      .replace(/<!--[\s\S]*?-->/g, "")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/.*$/gm, "");
+  }
+  return out;
 }
 
 describe("the hero", () => {
@@ -49,21 +61,22 @@ describe("the hero", () => {
     expect(seam).toContain('agentPrompt.join("\\n")');
   });
 
-  it("states the proof line with N derived, never typed", () => {
+  it("states the proof line with N derived, never typed, and keeps its PNG nuance on the page", () => {
     expect(seam).toMatch(
-      /\{\{ EXAMPLE_COUNT \}\} example plans, every one compiled and checked in CI on every commit · SVG · PDF ·\s*DXF · PNG · MIT/,
+      /\{\{ EXAMPLE_COUNT \}\} example plans, every one compiled and checked in CI · SVG · PDF · DXF · PNG ·\s*MIT/,
     );
     expect(seam).toMatch(/import \{ EXAMPLE_COUNT, HOME \} from "\.\/home-data\.js"/);
+    // The bare format list is only fair beside the sentence that says PNG is an optional download.
+    expect(read(`${THEME}/IsIsntTable.vue`)).toContain("SVG, PDF and DXF offline; PNG with one optional download");
+    expect(read(`${THEME}/HowSteps.vue`)).toContain("or PNG with one optional download");
   });
 
-  it("tells the story with a real agent-gallery pair", () => {
-    const sync = read("docs-site/sync-docs.mjs");
-    const hero = /hero: \{ gallery: "([^"]+)" \}/.exec(sync)?.[1];
-    expect(hero, "HOME_PROOFS.hero names no gallery entry").toBeTruthy();
-    const ids = JSON.parse(read("docs/gallery/gallery.json")).map((e: { id: string }) => e.id);
-    expect(ids).toContain(hero);
-    expect(seam).toContain("PAIR.brief");
+  it("shows the pair sync-docs chose, and survives one with no brief", () => {
     expect(seam).toContain("const PAIR = HOME.hero;");
+    expect(seam).toContain('<figure v-if="PAIR.brief" class="chat">');
+    const sync = read("docs-site/sync-docs.mjs");
+    const fallback = /hero: \{ gallery: "[^"]+", fallback: "([^"]+)" \}/.exec(sync)?.[1];
+    expect(readdirSync("examples"), "HOME_PROOFS.hero's fallback must be an example").toContain(`${fallback}.arch`);
   });
 });
 
@@ -87,12 +100,17 @@ describe("the Why cards say exactly what PS-D1 decided", () => {
     ]);
   });
 
-  it("every visual is the compiler's: drawn from HOME, which sync-docs computes", () => {
+  it("every visual is the compiler's: drawn from HOME, which sync-docs computes on examples/", () => {
     const why = read(`${THEME}/WhyCards.vue`);
     expect(why).toMatch(/import \{ HOME \} from "\.\/home-data\.js"/);
     expect(copyOf(why)).not.toMatch(/\d+(\.\d+)?\s*m²/); // no typed area
     const sync = read("docs-site/sync-docs.mjs");
-    for (const k of ["exact", "change", "check"]) expect(sync).toMatch(new RegExp(`\\n  ${k}: \\{`));
+    const table = /const HOME_PROOFS = \{([\s\S]*?)\n\};/.exec(sync)?.[1] ?? "";
+    for (const k of ["exact", "change", "check"]) {
+      expect(table, `HOME_PROOFS.${k} must read examples/, the pinned corpus`).toMatch(
+        new RegExp(`\\n  ${k}: \\{ example: "[a-z0-9-]+"`),
+      );
+    }
   });
 });
 
@@ -118,8 +136,28 @@ describe("the home gallery", () => {
   });
 });
 
-describe("the home copy keeps the guardrails", () => {
-  const files = [
+describe("the copy keeps the guardrails", () => {
+  /** Claims no surface may make, in any sense of the words. */
+  const CLAIMS: ReadonlyArray<readonly [RegExp, string]> = [
+    [/before you see it/i, "B12: a check never comes 'before you see it'"],
+    [/\b(lays out|arranges|designs)\b/i, "ArchLang never designs, arranges or lays out"],
+    [/no.?sign.?up/i, "say 'no install', never 'no signup'"],
+    [/\bpixels?\b/i, "B1: no structure-versus-pixels contrast"],
+    [/\b(beats?|replaces?|displaces?) (CAD|BIM)\b|\bdisplac\w*|instead of (CAD|BIM)\b/i, "no CAD/BIM displacement"],
+    [/\b\d[\d,.]*\s*(stars?|downloads?|installs?)\b/i, "no traction counts"],
+    [/public check suite|lang-1\.0|conformance/i, "not until those cards ship"],
+  ];
+  /** Words whose plain sense is fine in long reference prose, but not in the short home copy. */
+  const WORDS: ReadonlyArray<readonly [RegExp, string]> = [
+    [/\bblocks?\b(?! of)/i, "B12: a check reports, it never 'blocks'"],
+    [/(?<![-\w])first\b/i, "novelty claims are retired"],
+    [/(?<![-\w])only\b/i, "novelty claims are retired"],
+    [/\bv?\d+\.\d+\.\d+\b/, "no version numbers on the home page"],
+  ];
+  /** An unmeasured time promise. */
+  const TIME = /\b\d+\s*(seconds?|minutes?|secs?|mins?)\b/i;
+
+  const HOME_COPY = [
     `${THEME}/CompileSeam.vue`,
     `${THEME}/WhyCards.vue`,
     `${THEME}/HowSteps.vue`,
@@ -130,33 +168,55 @@ describe("the home copy keeps the guardrails", () => {
     `${THEME}/door-copy.json`,
     `${THEME}/components/DoorsCard.vue`,
     `${THEME}/components/DoorBody.vue`,
+    `${THEME}/components/StartDoors.vue`,
+    `${THEME}/components/FilmFacade.vue`,
+    `${THEME}/TitleBlockFooter.vue`,
     "docs-site/index.md",
     "docs-site/start.md",
   ];
-  const BANNED: ReadonlyArray<readonly [RegExp, string]> = [
-    [/before you see it/i, "B12: a check never comes 'before you see it'"],
-    [/\bblocks?\b(?! of)/i, "B12: a check reports, it never 'blocks'"],
-    [/(?<![-\w])first\b/i, "novelty claims are retired"],
-    [/(?<![-\w])only\b/i, "novelty claims are retired"],
-    [/\b(lays out|arranges|designs)\b/i, "ArchLang never designs, arranges or lays out"],
-    [/no.?sign.?up/i, "say 'no install', never 'no signup'"],
-    [/\bpixels?\b/i, "B1: no structure-versus-pixels contrast"],
-    [/\b(beats?|replaces?) (CAD|BIM)\b/i, "no CAD/BIM displacement"],
-    [/\b\d[\d,.]*\s*(stars?|downloads?|installs?)\b/i, "no traction counts"],
-    [/\bv?\d+\.\d+\.\d+\b/, "no version numbers on the home page"],
-    [/public check suite|lang-1\.0|conformance/i, "not until those cards ship"],
-  ];
-  for (const f of files) {
-    it(f, () => {
+  const PAGES = ["docs-site/guide.md", "docs-site/examples.md", "docs-site/gallery.md"];
+
+  /** Copy with the decided wording that uses a word in its plain sense taken out. */
+  const visible = (f: string) =>
+    copyOf(read(f))
       // The h1 is the brand line (ADR 0010): "Designs" there is a noun, not a claim.
-      // The PS-D1 wording itself is exempt where it says "only" in the plain sense.
-      const text = copyOf(read(f))
-        .replace("Designs that", "")
-        .replace("only what depends on it moves", "")
-        .replace(/plan drawings only/gi, "");
-      for (const [re, why] of BANNED) expect(re.exec(text)?.[0], `${f}: ${why}`).toBeUndefined();
+      .replace("Designs that", "")
+      // The PS-D1 wording itself says "only" in the plain sense.
+      .replace("only what depends on it moves", "")
+      .replace(/plan drawings only/gi, "")
+      // CSS that survives in a component's inline style values.
+      .replace(/inline-block|display: block|title block/g, "");
+
+  for (const f of HOME_COPY) {
+    it(f, () => {
+      const text = visible(f);
+      for (const [re, why] of [...CLAIMS, ...WORDS]) expect(re.exec(text)?.[0], `${f}: ${why}`).toBeUndefined();
+      expect(TIME.exec(text)?.[0], `${f}: an unmeasured time claim`).toBeUndefined();
     });
   }
+
+  for (const f of PAGES) {
+    it(`${f} (claims, and time promises in its headings)`, () => {
+      const text = visible(f);
+      for (const [re, why] of CLAIMS) expect(re.exec(text)?.[0], `${f}: ${why}`).toBeUndefined();
+      for (const h of text.split("\n").filter((l) => /^#{1,6} /.test(l))) {
+        expect(TIME.exec(h)?.[0], `${f}: "${h}" promises a time nobody measured`).toBeUndefined();
+      }
+    });
+  }
+
+  it("docs-site/.vitepress/config.ts PAGE_META (every title and description)", () => {
+    const config = read("docs-site/.vitepress/config.ts");
+    const meta = /const PAGE_META = \[([\s\S]*?)\n\] as const;/.exec(config)?.[1] ?? "";
+    const rows = [...meta.matchAll(/\[\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",?\s*\]/g)];
+    expect(rows.length).toBeGreaterThan(30);
+    for (const [, route, title, description] of rows) {
+      for (const [re, why] of CLAIMS) {
+        expect(re.exec(`${title} ${description}`)?.[0], `${route}: ${why}`).toBeUndefined();
+      }
+      expect(TIME.exec(title!)?.[0], `${route}: "${title}" promises a time nobody measured`).toBeUndefined();
+    }
+  });
 
   it("never compares ArchLang against AI images or CAD in a table (positioning B1)", () => {
     const table = copyOf(read(`${THEME}/IsIsntTable.vue`));

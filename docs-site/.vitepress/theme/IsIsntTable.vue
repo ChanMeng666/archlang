@@ -8,7 +8,7 @@ const ROWS = [
     isnt: "Not CAD software: plan drawings only. Heights are data and draw nothing; there are no sections or elevations.",
   },
   {
-    is: "A compiler from that text to SVG, PDF, DXF and PNG, offline, with the same bytes for the same text.",
+    is: "A compiler from that text to SVG, PDF and DXF offline; PNG with one optional download. The same text gives the same bytes.",
     isnt: "Not a CAD interchange tool: DXF is a one-way export. There is no DXF or DWG import.",
   },
   {

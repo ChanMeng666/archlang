@@ -332,23 +332,6 @@ if (failures.length > 0) {
 }
 console.log(`  ${examples.length} example SVGs + sources (+ ${levelSvgCount} per-storey pages) → public/examples/`);
 
-// The hand-written pages' raw markdown at /<route>.md. After the gallery gate above because it
-// needs the built core (the home page's facts band is `describe()`, the agent gallery's sheet
-// names come from `compile().pages`); the transform itself lives in site-markdown.mjs.
-for (const [src, dest] of SITE_PAGES) {
-  const md = siteMarkdown(src, {
-    repo,
-    compile,
-    describe,
-    encodePlanHash,
-    levelSvgName,
-    playground: PLAYGROUND,
-    exampleCount: examples.length,
-  });
-  writeFileSync(join(publicDir, dest), md);
-  console.log(`  ${src} → public/${dest}  (+ /${dest})`);
-}
-
 // ───────────────────────────────────────────────────────────────────────────────
 // AGENT GALLERY (`/gallery`): plans written by AI agents from a one-paragraph brief.
 //
@@ -423,18 +406,26 @@ console.log(`  ${gallery.length} agent gallery plans → public/gallery/  (+ .vi
 // `impact()` run here on a file in the repo; the cards hold no figure of their own.
 //
 // HOME_PROOFS is the one hand-written part: WHICH file each card reads, and the one edit it
-// makes to show a change. Each edit is checked, so a card cannot claim what the compiler no
-// longer says: the build fails if the edit stops doing what the card shows.
+// makes to show a change. The three Why proofs read examples/ (pinned corpus), and each edit is
+// checked, so a card cannot claim what the compiler no longer says: the build fails if the edit
+// stops doing what the card shows.
+//
+// The hero is different. It DISPLAYS an agent-gallery pair, and the gallery is not corpus: "a
+// compiler change may redraw them freely; it may not break them" (test/agent-gallery.test.ts),
+// and no test pins its bytes. So the hero never fails the build: if its entry is gone, it falls
+// back to another gallery entry, then to an example with no brief, and says so.
 // ───────────────────────────────────────────────────────────────────────────────
 const HOME_PROOFS = {
-  // The hero: one real agent-gallery pair, its brief in a chat bubble, its source typed out.
-  hero: { gallery: "studio" },
+  // The hero: one agent-gallery pair, its brief in a chat bubble, its source streamed. `fallback`
+  // is the example shown, with no brief, if the gallery has no compiled entry at all.
+  hero: { gallery: "studio", fallback: "laneway-house" },
   // "Exact": areas and reachability, computed, on one example.
   exact: { example: "laneway-house" },
   // "Change one line, see what moved": one top-level `let`, and the ids that must hold.
   change: { example: "knob-flat", let: "BEDROOM", to: "3900", lock: ["r_live", "r_hall", "d_front"] },
-  // "It checks itself": the hero's own agent-written plan with one door taken out.
-  check: { gallery: "studio", drop: "d_bath", code: "W_ROOM_DISCONNECTED" },
+  // "It checks itself": the same flat with its bedroom window taken out (the playground's
+  // "Flat with one thing to fix" tells the same story).
+  check: { example: "knob-flat", drop: "window on r_bed.top", code: "W_BEDROOM_NO_WINDOW" },
 };
 
 const homeDest = join(publicDir, "home");
@@ -492,22 +483,22 @@ const home = {};
   }
 }
 {
-  // It checks itself: the variant raises the code, the agent's own file does not.
-  const { gallery: id, drop, code } = HOME_PROOFS.check;
-  const source = readFileSync(join(gallerySrc, `${id}.arch`), "utf8").replace(/\r\n/g, "\n");
-  const dropRe = new RegExp(`\\bid=${drop}\\b`);
+  // It checks itself: without the line the code is raised, with it (the example as it is) it is not.
+  const { example: id, drop, code } = HOME_PROOFS.check;
+  const source = sources[id].replace(/\r\n/g, "\n");
   const lines = source.split("\n");
-  const variant = lines.filter((l) => !dropRe.test(l)).join("\n");
+  const variant = lines.filter((l) => !l.trimStart().startsWith(drop)).join("\n");
   const raised = lint(variant).find((x) => x.code === code);
   const cleared = !lint(source).some((x) => x.code === code);
   if (lines.length - variant.split("\n").length !== 1 || !raised || !cleared) {
     homeFailures.push(
-      `HOME_PROOFS.check: dropping ${drop} from docs/gallery/${id}.arch no longer raises ${code} alone`,
+      `HOME_PROOFS.check: dropping \`${drop}\` from examples/${id}.arch no longer raises ${code} alone`,
     );
   } else {
     // The flagged element is found by the diagnostic's own span, through the compiler's opt-in
-    // source annotation (ADR 0007): the drawing is the compiler's, and the mark is a style rule
-    // on the element it already labels, never a shape drawn here. Redline hexes as in style.css.
+    // source annotation (ADR 0007). The drawing is the compiler's; the highlight is the SITE's:
+    // a style rule this script adds on the element the compiler already labels, never a shape.
+    // Redline hexes as in style.css.
     const svg = compile(variant, { noCache: true, annotate: true }).svg;
     const at = `${raised.span.start}:${raised.span.end}`;
     const mark =
@@ -523,38 +514,47 @@ const home = {};
     const [x0, y0] = [Math.min(...pts.map((p) => p.x)), Math.min(...pts.map((p) => p.y))];
     const [x1, y1] = [Math.max(...pts.map((p) => p.x)), Math.max(...pts.map((p) => p.y))];
     const M = 1500;
+    // The root tag only: a sheet carries width/height in mm, a plain plan carries a viewBox alone.
     const frame = (s) =>
-      s.replace(/<svg([^>]*?)\swidth="[^"]*"\sheight="[^"]*"\sviewBox="[^"]*"/, (_, pre) => {
+      s.replace(/<svg\b[^>]*>/, (root) => {
         const [w, h] = [x1 - x0 + 2 * M, y1 - y0 + 2 * M];
-        return `<svg${pre} width="${w / 100}mm" height="${h / 100}mm" viewBox="${x0 - M} ${y0 - M} ${w} ${h}"`;
+        return root
+          .replace(/\s(width|height)="[^"]*"/g, "")
+          .replace(/\sviewBox="[^"]*"/, ` viewBox="${x0 - M} ${y0 - M} ${w} ${h}"`);
       });
     const framedRaised = frame(svg);
     const framedCleared = frame(compile(source, { noCache: true }).svg);
     if (framedRaised === svg || !framedCleared.includes(`viewBox="${x0 - M} ${y0 - M} `)) {
       homeFailures.push("HOME_PROOFS.check: the compiled SVG's root no longer carries width, height and viewBox");
     }
-    const file = `${id}.without-${drop}.svg`;
+    const file = `${id}.${code}.raised.svg`;
     writeFileSync(join(homeDest, file), framedRaised.replace(/(<svg[^>]*>)/, `$1${mark}`));
-    writeFileSync(join(homeDest, `${id}.svg`), framedCleared);
+    writeFileSync(join(homeDest, `${id}.${code}.cleared.svg`), framedCleared);
     home.check = {
-      gallery: id,
+      example: id,
       drop,
       code,
       message: raised.message,
       // The catalogued fix line, as `archlang lint --json` prints it.
       fix: diagnosticToJson(variant, raised).fix ?? null,
       raised: `/home/${file}`,
-      cleared: `/home/${id}.svg`,
+      cleared: `/home/${id}.${code}.cleared.svg`,
     };
   }
 }
 {
-  const entry = gallery.find((g) => g.id === HOME_PROOFS.hero.gallery);
-  if (!entry) homeFailures.push(`HOME_PROOFS.hero: docs/gallery/gallery.json has no "${HOME_PROOFS.hero.gallery}"`);
-  else {
+  // The hero: never a build failure. `gallery` holds only the entries that compiled above.
+  const wanted = HOME_PROOFS.hero.gallery;
+  const entry = gallery.find((g) => g.id === wanted) ?? gallery[0];
+  if (entry) {
+    if (entry.id !== wanted) console.warn(`  ⚠ home hero: gallery entry "${wanted}" is missing; showing "${entry.id}"`);
     const { id, title, model, brief, source, link } = entry;
     // LF, as every other source this script reads; the `#z=` link carries the file as read.
-    home.hero = { id, title, model, brief, source: source.replace(/\r\n/g, "\n"), link };
+    home.hero = { id, title, model, brief, source: source.replace(/\r\n/g, "\n"), link, gallery: true };
+  } else {
+    const id = HOME_PROOFS.hero.fallback;
+    console.warn(`  ⚠ home hero: no gallery entry compiled; showing examples/${id}.arch with no brief`);
+    home.hero = { id, title: id, model: null, brief: null, source: sources[id], link: links[id], gallery: false };
   }
 }
 if (homeFailures.length > 0) {
@@ -577,3 +577,21 @@ writeFileSync(
     `export const EXAMPLE_FACTS = ${JSON.stringify(exampleFacts, null, 2)};\n`,
 );
 console.log("  3 home page proofs → public/home/  (+ .vitepress/theme/home-data.js)");
+
+// The hand-written pages' raw markdown at /<route>.md. Last, because it needs the built core (the
+// home page's facts band is `describe()`, the agent gallery's sheet names come from
+// `compile().pages`) and the home hero chosen above; the transform lives in site-markdown.mjs.
+for (const [src, dest] of SITE_PAGES) {
+  const md = siteMarkdown(src, {
+    repo,
+    compile,
+    describe,
+    encodePlanHash,
+    levelSvgName,
+    playground: PLAYGROUND,
+    exampleCount: examples.length,
+    hero: home.hero,
+  });
+  writeFileSync(join(publicDir, dest), md);
+  console.log(`  ${src} → public/${dest}  (+ /${dest})`);
+}

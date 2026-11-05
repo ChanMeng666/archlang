@@ -3,17 +3,17 @@ import StartDoors from "./.vitepress/theme/components/StartDoors.vue";
 import FilmFacade from "./.vitepress/theme/components/FilmFacade.vue";
 </script>
 
-# Get a floor plan from your AI in 60 seconds
+# Get a floor plan from your AI
 
-Pick the way in that suits you. They run from the least set-up to the most, and they all end the
-same way: your AI writes ArchLang, and the compiler draws a dimensioned plan and tells your AI
-what is wrong with it.
+Pick the way in that suits you. They run from the least set-up to the most. The playground is for
+looking around: open a plan, change a number, see what moves. Every other way in has your AI write
+the ArchLang, and the compiler draws a dimensioned plan and tells your AI what is wrong with it.
 
 <StartDoors />
 
 ## Watch the film
 
-<FilmFacade poster="/gallery/studio.svg" />
+<FilmFacade poster="/examples/laneway-house.svg" />
 
 ## What next
 

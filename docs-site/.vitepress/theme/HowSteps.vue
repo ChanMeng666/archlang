@@ -15,7 +15,7 @@ const STEPS = [
   },
   {
     title: "SVG, PDF, DXF or PNG",
-    body: "You get a dimensioned drawing, and the same text gives the same file every time.",
+    body: "A dimensioned drawing in SVG, PDF or DXF, or PNG with one optional download; the same text gives the same file every time.",
   },
 ] as const;
 </script>

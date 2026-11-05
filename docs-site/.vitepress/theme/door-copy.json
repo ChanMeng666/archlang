@@ -6,7 +6,7 @@
   },
   "chatgpt": {
     "heading": "Ask ChatGPT",
-    "body": "Add the ArchLang app in ChatGPT, then describe the plan you want. ChatGPT writes ArchLang, the compiler draws the plan and reports what is wrong, and ChatGPT fixes it. Nothing to install; you need a ChatGPT account."
+    "body": "Add the ArchLang app in ChatGPT, then describe the plan you want. ChatGPT writes ArchLang, the compiler draws the plan and reports what is wrong, and ChatGPT can fix it from that message. Nothing to install; you need a ChatGPT account."
   },
   "claudeai": {
     "heading": "Ask Claude on claude.ai",
@@ -14,7 +14,7 @@
   },
   "agent": {
     "heading": "Ask your coding agent",
-    "body": "Paste this prompt into Claude Code, Codex, Cursor or any agent that can run commands. It adds the ArchLang skill, reads the language, writes your plan, compiles and checks it, and fixes what the compiler reports."
+    "body": "Paste this prompt into Claude Code, Codex, Cursor or any agent that can run commands. It adds the ArchLang skill, reads the language, writes your plan, compiles and checks it, and fixes what the compiler reports, or shows you the message."
   },
   "vscode": {
     "heading": "Write it in VS Code",

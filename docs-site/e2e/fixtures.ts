@@ -56,6 +56,27 @@ export function tableRowCount(table: string): number {
   return (block?.[1] ?? "").split("\n").filter((l) => /^\s*\["/.test(l)).length;
 }
 
+/** The home hero as sync-docs.mjs chose and emitted it (HOME_PROOFS.hero, with its fallbacks). */
+export interface HomeHero {
+  id: string;
+  model: string | null;
+  brief: string | null;
+  source: string;
+  link: string;
+}
+
+/**
+ * `HOME.hero` out of the GENERATED `docs-site/.vitepress/theme/home-data.js` that the built site
+ * was made from. The hero shows an agent-gallery pair, and the gallery is not pinned corpus, so the
+ * suite compares the page with what the build emitted, never with the gallery's own files.
+ */
+export function homeHero(): HomeHero {
+  const file = join(ROOT, "docs-site", ".vitepress", "theme", "home-data.js");
+  const m = /export const HOME = (\{[\s\S]*?\n\});\n/.exec(readFileSync(file, "utf8"));
+  if (!m) throw new Error(`could not find \`export const HOME = { … };\` in ${file} — run the docs build first`);
+  return (JSON.parse(m[1]!) as { hero: HomeHero }).hero;
+}
+
 /** The repo-root artifacts copied verbatim into `public/`, as site routes. */
 export const ROOT_COPY_ROUTES: readonly string[] = tupleTable("ROOT_COPIES").map(([, dest]) => `/${dest}`);
 

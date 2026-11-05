@@ -134,7 +134,7 @@ const PAGE_META = [
   ],
   [
     "/start",
-    "Get a floor plan from your AI in 60 seconds",
+    "Get a floor plan from your AI",
     "Five ways to get a floor plan from your AI, from no install at all to your own coding agent, each with the exact link, prompt or command to use.",
   ],
   [
@@ -786,7 +786,7 @@ export default defineConfig({
       {
         text: "Introduction",
         items: [
-          { text: "Get a plan in 60 seconds", link: "/start" },
+          { text: "Get a plan from your AI", link: "/start" },
           { text: "What is ArchLang?", link: "/guide" },
           { text: "Floor plans as code", link: "/floor-plans-as-code" },
           { text: "A floor plan DSL", link: "/floor-plan-dsl" },

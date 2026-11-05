@@ -276,7 +276,7 @@ describe("the head wiring itself, which no page can prove on its own", () => {
     // The nav's first slot ("Try it"). Its title is the page's promise, so a search for the
     // category words lands on it (PS-D6: the category noun stays next to the brand).
     const start = ROWS.find((r) => r.route === "/start");
-    expect(start?.title).toBe("Get a floor plan from your AI in 60 seconds");
+    expect(start?.title).toBe("Get a floor plan from your AI");
     expect(start?.description).toMatch(/floor plan/);
   });
 
