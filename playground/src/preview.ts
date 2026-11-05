@@ -6,9 +6,10 @@
  */
 import { createPanZoom } from "./pan-zoom.js";
 import { mountInteract } from "./interact.js";
+import { mountRoomCard } from "./room-card.js";
 import { showSvgInStage, sizeFromViewBox } from "./viewer.js";
 import { svgToCanvas } from "./raster-export.js";
-import type { RoomSummary } from "archlang";
+import type { RoomSummary, SceneSummary } from "archlang";
 
 export interface Preview {
   /** Inject a compiled SVG; `refit` re-centres, else preserves the current view. */
@@ -31,6 +32,10 @@ interface PreviewOpts {
   toolbar: HTMLElement;
   /** describe() rooms for the hover tooltip (read fresh on each pointer move). */
   getRooms: () => RoomSummary[];
+  /** describe() of the storey on screen, for a room's facts card. */
+  getSummary: () => SceneSummary | null;
+  /** Whether the editor is open (a room's card then offers "Jump to source"). */
+  isEditing: () => boolean;
   /** The export-clean SVG (annotations stripped) for the copy buttons. */
   getCleanSvg: () => string;
   /** Move the editor caret to a source byte offset (click-to-source). */
@@ -42,7 +47,8 @@ interface PreviewOpts {
 }
 
 export function createPreview(opts: PreviewOpts): Preview {
-  const { viewport, stage, toolbar, getRooms, getCleanSvg, jumpToOffset, flash, onPathsChange } = opts;
+  const { viewport, stage, toolbar, getRooms, getSummary, isEditing, getCleanSvg, jumpToOffset, flash, onPathsChange } =
+    opts;
 
   // Pan/zoom controller for the preview (created once; survives every re-render).
   const pz = createPanZoom(viewport, stage);
@@ -98,12 +104,18 @@ export function createPreview(opts: PreviewOpts): Preview {
     }
   });
 
-  // Preview interactions: hover a room for facts (C2), click any element to jump
-  // the editor caret to its source (C3, via the annotate data-span attributes).
-  mountInteract({ viewport, stage, getRooms, jumpToOffset });
+  // Preview interactions: hover a room for facts (C2), click it for its card, click any element
+  // to jump the editor caret to its source (C3, via the annotate data-span attributes).
+  const card = mountRoomCard({ viewport, stage, getSummary, isEditing, jumpToOffset });
+  mountInteract({ viewport, stage, getRooms, jumpToOffset, onRoomClick: (room) => card.show(room) });
 
   return {
-    show: (svg, refit) => showSvgInStage(stage, pz, svg, refit),
+    show(svg, refit) {
+      showSvgInStage(stage, pz, svg, refit);
+      // A new plan (re-fitted) closes the card; a recompile of this one re-reads it.
+      if (refit) card.close();
+      else card.refresh();
+    },
     fit: () => pz.fit(),
     pathsEnabled: () => pathsOn,
     adopt() {

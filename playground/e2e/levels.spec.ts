@@ -1,6 +1,6 @@
 import { expect, type Download, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { lint } from "../../src/index.js";
+import { describe, describeLevel, lint } from "../../src/index.js";
 import { openTools, setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
@@ -28,6 +28,21 @@ import { openTools, setEditorSource, waitForPlan, watchForProblems } from "./fix
  * read Describe or Lint, or type into the editor, open the page in edit mode (`/#edit`), and the
  * download opens the Tools menu first.
  */
+
+const TOWNHOUSE = readFileSync(new URL("../../examples/townhouse.arch", import.meta.url), "utf8");
+
+/**
+ * The facts line for one storey of examples/townhouse.arch, from the core's own `describeLevel()`
+ * (the function behind `arch describe --level N`): its source lines, rooms and net area, and the
+ * storey it is. Written out here, not through the app's `factsLine`, so the page is checked
+ * against describe() rather than against itself.
+ */
+function townhouseFacts(level: number): string {
+  const t = describeLevel(describe(TOWNHOUSE), level).totals;
+  const lines = TOWNHOUSE.split(/\r\n|\r|\n/).length - (/[\r\n]$/.test(TOWNHOUSE) ? 1 : 0);
+  expect(t.net_floor_area_m2, "every townhouse storey has a net area").toBeDefined();
+  return `${lines} lines of ArchLang → ${t.rooms} rooms · ${t.net_floor_area_m2} m² (net) · level ${level}`;
+}
 
 /** The storey buttons, in strip order. */
 const levelButtons = (page: Page) => page.locator("#storeys button");
@@ -68,12 +83,9 @@ test.describe("storey switcher", () => {
     await expect(l1).toHaveAttribute("aria-label", 'level 1 "Ground floor"');
     await expect(l3).toHaveAttribute("aria-label", 'level 3 "Second floor"');
 
-    // Level 1 of examples/townhouse.arch: 4 rooms, 4 doors, 2 windows, and the only
-    // storey with an exterior door.
+    // Level 1 of examples/townhouse.arch: the facts line names the storey it measures.
     const facts = page.locator("#facts");
-    await expect(facts).toContainText("Doors 4");
-    await expect(facts).toContainText("Windows 2");
-    await expect(facts).toContainText("Entrance yes");
+    await expect(facts).toHaveText(townhouseFacts(1));
     const groundSvg = await stageSvg(page);
 
     await l3.click();
@@ -85,12 +97,9 @@ test.describe("storey switcher", () => {
     // The drawing is a different storey, not the same one re-rendered.
     await expect.poll(() => stageSvg(page)).not.toBe(groundSvg);
 
-    // …and the numbers came with it. Level 3: 3 doors, 3 windows, and no way in from
-    // outside — which is exactly what `arch describe --level 3` reports, because it is
-    // the same `describeLevel()` producing both.
-    await expect(facts).toContainText("Doors 3");
-    await expect(facts).toContainText("Windows 3");
-    await expect(facts).toContainText("Entrance none");
+    // …and the facts came with it: level 3's, exactly what `arch describe --level 3`
+    // reports, because it is the same `describeLevel()` producing both.
+    await expect(facts).toHaveText(townhouseFacts(3));
 
     expect(problems.consoleErrors, "console errors while switching storeys").toEqual([]);
     expect(problems.pageErrors, "uncaught page errors while switching storeys").toEqual([]);

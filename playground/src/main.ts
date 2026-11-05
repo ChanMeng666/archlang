@@ -14,7 +14,7 @@
  * in the hash) is the editor beside it. index.html's head script sets `html[data-mode]` before
  * the first paint; this module keeps it, the Source button and the hash flag in step.
  */
-import type { CompileOptions, DescribeOptions, RoomSummary } from "archlang";
+import type { CompileOptions, DescribeOptions, RoomSummary, SceneSummary } from "archlang";
 import type { ActionsHandle } from "./actions.js";
 import type { EditMode } from "./edit-mode.js";
 import { createPreview } from "./preview.js";
@@ -161,6 +161,8 @@ let doc = "";
 let lastSvg = "";
 let lastScene: ReturnType<Core["compile"]>["scene"] | null = null;
 let lastRooms: RoomSummary[] = [];
+/** describe() of the storey on screen, at the last good compile (the room facts card reads it). */
+let lastSummary: SceneSummary | null = null;
 /**
  * The storey on screen for a multi-storey plan, or `null` for "the lowest one" — which
  * is also what a single-storey plan always has, since `compile().pages` does not exist
@@ -301,6 +303,8 @@ const previewCtl = createPreview({
   stage: pzStage,
   toolbar: pzToolbar,
   getRooms: () => lastRooms,
+  getSummary: () => lastSummary,
+  isEditing: () => editing && edit !== undefined,
   getCleanSvg: cleanSvg,
   jumpToOffset,
   flash,
@@ -336,7 +340,8 @@ function updateAnalysis(source: string, ok: boolean) {
   // here with a level, and `activeLevel === null` leaves the summary untouched.
   const summary = activeLevel === null ? whole : core.describeLevel(whole, activeLevel);
   lastRooms = ok ? (summary.rooms ?? []) : [];
-  renderFacts(factsEl, summary, ok);
+  lastSummary = ok ? summary : null;
+  renderFacts(factsEl, summary, ok, source, activeLevel);
   // The Describe and Lint tabs are edit mode's (edit-mode.ts): a visit that never opens the
   // editor never runs `lint()`.
   edit?.updatePanels(source, ok, summary, activeLevel);

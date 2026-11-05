@@ -1,22 +1,20 @@
 /**
- * The always-visible plan-facts strip under the preview — a quick read of the
- * describe() totals (rooms / doors / windows / floor area) and whether the plan
- * has an exterior entrance. Differentiator: floor-plan facts a diagram tool
- * can't show.
+ * The facts line under the drawing: one plain sentence of how much source drew how much plan,
+ * "57 lines of ArchLang → 3 rooms · 45.05 m² (net)", computed from the source and describe()'s
+ * totals of the storey on screen (room-facts.ts `factsLine`), never typed.
  */
 import type { SceneSummary } from "archlang";
+import { factsLine } from "./room-facts.js";
 
-export function renderFacts(el: HTMLElement, summary: SceneSummary, ok: boolean): void {
-  const t = summary?.totals;
-  if (!ok || !t) {
-    el.innerHTML = `<span class="fact">— fix the errors to see plan facts —</span>`;
-    return;
-  }
-  const entrance = summary.access?.hasEntrance;
-  el.innerHTML =
-    `<span class="fact">Rooms <b>${t.rooms}</b></span>` +
-    `<span class="fact">Doors <b>${t.doors}</b></span>` +
-    `<span class="fact">Windows <b>${t.windows}</b></span>` +
-    `<span class="fact">Floor area <b>${t.floor_area_m2} m²</b></span>` +
-    `<span class="fact ${entrance ? "fact-ok" : "fact-bad"}">Entrance <b>${entrance ? "yes" : "none"}</b></span>`;
+export function renderFacts(
+  el: HTMLElement,
+  summary: SceneSummary,
+  ok: boolean,
+  source: string,
+  level: number | null,
+): void {
+  const line = document.createElement("span");
+  line.className = "facts-line";
+  line.textContent = ok && summary?.totals ? factsLine(source, summary, level) : "— fix the errors to see plan facts —";
+  el.replaceChildren(line);
 }

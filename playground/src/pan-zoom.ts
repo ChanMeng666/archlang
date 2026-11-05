@@ -128,7 +128,7 @@ export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoo
 
   const onDown = (e: PointerEvent) => {
     // Ignore clicks that originate on the floating toolbar buttons.
-    if ((e.target as Element | null)?.closest(".pz-toolbar")) return;
+    if ((e.target as Element | null)?.closest(".pz-toolbar, .room-card")) return;
     viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     viewport.classList.add("pz-grabbing");
