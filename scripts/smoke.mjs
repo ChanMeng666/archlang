@@ -344,13 +344,19 @@ async function playgroundChecks() {
     // The `<h1` and lede assertions cover the crawlable intro band: a crawler runs no
     // JavaScript, so if those bytes are not in the SERVED html the page has no prose at
     // all — and a bundler config change or a stray `display: none` is exactly how that
-    // would happen without any other check noticing.
+    // would happen without any other check noticing. The same holds for the drawing: the
+    // page opens in view mode on the default example's drawing, which
+    // playground/scripts/gen-static.mjs writes into the HTML, so a build that skipped that
+    // step serves a page whose first paint (and every crawler's view) has no plan on it.
     route(
       "/",
       contentType("text/html"),
       contains('id="editor"'),
+      contains('id="sourceToggle"'),
       contains("<h1"),
       contains("compiles in your browser"),
+      contains("<svg data-prerendered"),
+      contains('rel="modulepreload"'),
       // The shell may be framed only by us. It comes from public/_headers, which
       // nothing else here executes — and it must be asserted on `/` specifically,
       // because `_headers` matches the REQUEST path and `/` is served through the

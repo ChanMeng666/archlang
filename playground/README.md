@@ -7,6 +7,13 @@ consumes the built core (`../dist/index.js`). Deployed at
 
 ## Features
 
+- **View mode first:** a visit opens on the drawing alone (the default example's, written into
+  `index.html` at build time by `scripts/gen-static.mjs`, so it is there before any JavaScript).
+  The header holds the plan picker, **Source** (edit mode: the editor beside the drawing),
+  **Tools** (every action below, in one menu) and **Make your own**. `&edit` in the hash
+  (`#z=…&edit`, or `#edit`) opens edit mode; `arch link` and the docs' "Open in playground" add it,
+  and a link copied here does not. The compiler, the editor, the panels, three.js and jsPDF are
+  their own chunks, loaded after the first paint or on first use.
 - **Editor:** syntax highlighting, inline lint (from the compiler's `diagnostics`),
   and **autocomplete** (reuses the core `completion()` language service).
 - **Preview:** live SVG with **pan / zoom / fit** and a floating toolbar; a **facts
@@ -28,8 +35,9 @@ consumes the built core (`../dist/index.js`). Deployed at
 - **Export:** **copy** SVG/PNG to the clipboard, or **download** SVG / PNG / DXF / PDF.
   Exports strip the `data-span` annotations, so downloaded files stay clean.
 - **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive —
-  at ≤900px the workspace shows one of **Code / Plan / Problems** at a time under a sticky
-  switcher, with touch-sized controls and no sideways scroll.
+  at ≤900px view mode is the drawing full screen, and edit mode shows one of
+  **Code / Plan / Problems** at a time under a sticky switcher, with touch-sized controls and
+  no sideways scroll.
 
 The app is written in **TypeScript** (`src/*.ts`). Note that `npm run build` does **not**
 typecheck it — Vite strips types with esbuild without checking them. Run `npm run typecheck`
@@ -43,7 +51,10 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 
 | File | Role |
 |------|------|
-| `main.ts` | app entry — editor init, render pipeline, permalink, panel wiring |
+| `main.ts` | app entry, the view path (the startup chunk) — modes, render pipeline, permalink, facts, storeys, lazy loading of everything below it |
+| `shell.ts` | the header's Source toggle, Tools menu and Make-your-own dialog |
+| `compiler.ts` | the compiler functions main.ts calls, behind its one dynamic import (the `compiler` chunk, named in `vite.config.js`) |
+| `edit-mode.ts` | edit mode, loaded on first entry: the editor, diagnostics, Describe, Lint (Repair, Suggest), Intent |
 | `editor-setup.ts` | CodeMirror instance: extensions, theme, linter, completion |
 | `arch-language.js` | **GENERATED** by `scripts/gen-grammars.ts` — StreamLanguage + linter. **Do not hand-edit** (CI fails on drift); edit `src/grammar/tokens.ts` and run `npm run gen:grammars`. |
 | `arch-completion.ts` | CodeMirror `autocompletion` over the core `completion()` (hand-written) |
@@ -54,8 +65,8 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `embed-snippets.ts` | the Embed dialog's iframe and Markdown snippets (an example's hosted drawing, or a plain link) |
 | `embed.ts` / `viewer.ts` | the chrome-less `embed.html` page and its viewer runtime |
 | `facts-strip.ts` / `describe-panel.ts` / `lint-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels |
-| `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher (`main[data-mview]`) |
-| `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`); asks the Worker for a short link and reads `#s=<id>` |
+| `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher of edit mode (`main[data-mview]`) |
+| `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`), the `&edit` mode flag; asks the Worker for a short link and reads `#s=<id>` |
 | `raster-export.ts` | copy/download SVG · PNG · DXF · PDF |
 | `snapshots.ts` / `storage.ts` | named snapshot history UI + defensive `localStorage` helpers |
 | `examples.ts`, `escape.ts` | example plans, HTML-escape helper |

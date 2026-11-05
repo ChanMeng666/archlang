@@ -6,13 +6,19 @@
  */
 import { createPanZoom } from "./pan-zoom.js";
 import { mountInteract } from "./interact.js";
-import { showSvgInStage } from "./viewer.js";
+import { showSvgInStage, sizeFromViewBox } from "./viewer.js";
 import { svgToCanvas } from "./raster-export.js";
 import type { RoomSummary } from "archlang";
 
 export interface Preview {
   /** Inject a compiled SVG; `refit` re-centres, else preserves the current view. */
   show(svg: string, refit: boolean): void;
+  /**
+   * Take over the drawing built into the page (`svg[data-prerendered]`, scripts/gen-static.mjs):
+   * size it from its viewBox and fit it, so it pans and zooms before the compiler has loaded.
+   * False when the stage holds no such drawing.
+   */
+  adopt(): boolean;
   /** Re-centre/scale the current plan to the viewport. */
   fit(): void;
   /** Whether the "Paths" circulation overlay toggle is on (drives the preview compile). */
@@ -100,5 +106,18 @@ export function createPreview(opts: PreviewOpts): Preview {
     show: (svg, refit) => showSvgInStage(stage, pz, svg, refit),
     fit: () => pz.fit(),
     pathsEnabled: () => pathsOn,
+    adopt() {
+      const el = stage.querySelector("svg[data-prerendered]");
+      if (!el) return false;
+      // The build-time fit (panels.css) gives way to the pan/zoom transform, which fits the
+      // same box the same way (FIT_PAD), so the drawing does not move.
+      el.removeAttribute("data-prerendered");
+      el.removeAttribute("style");
+      const { w, h } = sizeFromViewBox(el.getAttribute("viewBox"));
+      el.setAttribute("width", String(w));
+      el.setAttribute("height", String(h));
+      pz.setContent(w, h, true);
+      return true;
+    },
   };
 }

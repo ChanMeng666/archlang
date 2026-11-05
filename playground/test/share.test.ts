@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
   b64urlToBytes,
@@ -8,6 +9,7 @@ import {
   shareableHref,
   srcFromHash,
 } from "../src/share.js";
+import { KEYS } from "../src/storage.js";
 import { supportsDeflateRaw } from "./helpers.js";
 
 const SRC = `plan "X" {\n  units mm\n  room at (0,0) size 4000x3000 label "Room ünïcode ✓"\n}`;
@@ -84,6 +86,28 @@ describe("the edit-mode flag", () => {
     expect(setEditFlag("", true)).toBe("#edit");
     expect(setEditFlag("#edit", false)).toBe("");
     expect(setEditFlag("", false)).toBe("");
+  });
+
+  it("index.html's head script reads the flag, and the saved draft, by the same rules", () => {
+    // The head script sets the mode before the first paint, so it cannot import share.ts: it
+    // carries its own regex and storage key, held here to the module's.
+    const html = readFileSync("playground/index.html", "utf8");
+    const mode = /root\.dataset\.mode = \/(.+?)\/\.test\(hash\)/.exec(html);
+    expect(mode, "the head script's mode test").toBeTruthy();
+    const re = new RegExp(mode![1]!);
+    for (const h of [
+      "",
+      "#edit",
+      "#z=abc&edit",
+      "#edit&z=abc",
+      "#z=abc",
+      "#z=xxedit",
+      "#z=abc&editable=1",
+      "#src=a&edit",
+    ]) {
+      expect(re.test(h), h).toBe(hasEditFlag(h));
+    }
+    expect(html).toContain(`localStorage.getItem("${KEYS.source}")`);
   });
 
   it("a shared link drops the flag and nothing else", () => {

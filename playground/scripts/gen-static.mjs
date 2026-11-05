@@ -943,6 +943,86 @@ ${locs.map((l) => `  <url><loc>${escapeHtml(l)}</loc></url>`).join("\n")}
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
+// The playground page itself: its first drawing and its plan picker, in the bytes.
+// ───────────────────────────────────────────────────────────────────────────────
+
+/** Where vite's index.html leaves room for each (playground/index.html). */
+const PLAN_SLOT = "<!--prerender:plan-->";
+const PICKER_SLOT = "<!--prerender:picker-->";
+
+/**
+ * Write the default example's drawing and the plan picker's options into `dist/index.html`.
+ *
+ * The playground is a module-script page, so without this its first paint has no drawing, and
+ * a visit with JavaScript off — every crawler — has none at all. The plan is `EXAMPLE_ROWS`'
+ * FIRST row, the one a first visit opens (src/examples.ts `DEFAULT_EXAMPLE`), compiled by the
+ * same built core as the pages above, so the bytes are a function of the source alone. The app
+ * replaces it with its own compile of the same source (main.ts), or with the plan a `#z=` link
+ * or a saved draft opens, which index.html's head script hides this one for.
+ *
+ * The drawing gets what `showSvgInStage` (src/viewer.ts) would give it — a pixel size from its
+ * viewBox — plus `--ar` for the CSS fit (styles/chrome.css), a role and the core's caption as its
+ * name, and `data-prerendered`, the attribute main.ts's `adopt()` and that CSS look for.
+ */
+function prerenderIndex(rows) {
+  const file = join(outDir, "index.html");
+  const html = readFileSync(file, "utf8");
+  for (const slot of [PLAN_SLOT, PICKER_SLOT]) {
+    if (html.split(slot).length !== 2) {
+      fail(
+        `dist/index.html must hold ${slot} exactly once (playground/index.html); found ${html.split(slot).length - 1}.`,
+      );
+    }
+  }
+  const row = rows[0];
+  const source = readFileSync(join(repo, "examples", `${row.name}.arch`), "utf8");
+  const result = compile(source);
+  const d = describe(source);
+  if (result.errors.length > 0 || !result.svg) fail(`${row.name}: the default example does not compile.`);
+  const box = /^<svg[^>]*\sviewBox="([\d.\-eE]+) ([\d.\-eE]+) ([\d.\-eE]+) ([\d.\-eE]+)"/.exec(result.svg);
+  const w = Number(box?.[3]);
+  const h = Number(box?.[4]);
+  if (!(w > 0 && h > 0)) fail(`${row.name}: the default example's SVG has no usable viewBox.`);
+  const caption = d.caption ?? row.label;
+  const svg = result.svg.replace(
+    /^<svg/,
+    () =>
+      `<svg data-prerendered role="img" aria-label="${escapeHtml(caption)}" width="${w}" height="${h}" ` +
+      `style="--ar: ${Number((w / h).toFixed(6))}"`,
+  );
+
+  // The picker: one <optgroup> per group in first-appearance order, the default selected —
+  // the menu main.ts's `fillPicker` builds from the same table.
+  const groups = [];
+  for (const r of rows) {
+    let g = groups.find((x) => x.group === r.group);
+    if (!g) {
+      g = { group: r.group, labels: [] };
+      groups.push(g);
+    }
+    g.labels.push(r.label);
+  }
+  const picker = groups
+    .map(
+      (g) =>
+        `<optgroup label="${escapeHtml(g.group)}">` +
+        g.labels
+          .map((l) => `<option value="${escapeHtml(l)}"${l === row.label ? " selected" : ""}>${escapeHtml(l)}</option>`)
+          .join("") +
+        "</optgroup>",
+    )
+    .join("");
+
+  // Function replacements: neither the SVG nor a label may splice `$&` back in (v1.36).
+  writeFileSync(
+    file,
+    html.replace(PLAN_SLOT, () => svg).replace(PICKER_SLOT, () => picker),
+    "utf8",
+  );
+  return { name: row.name, bytes: Buffer.byteLength(svg) };
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
 // Main.
 // ───────────────────────────────────────────────────────────────────────────────
 
@@ -1015,6 +1095,7 @@ if (failures.length > 0) {
 
 writeFileSync(join(outDir, "examples", "index.html"), indexPage(rows, { fonts, thumbs }), "utf8");
 writeFileSync(join(outDir, "sitemap.xml"), sitemap(rows), "utf8");
+const prerendered = prerenderIndex(rows);
 
 // /llms.txt for THIS host: a pointer, not a copy. The agent-facing context lives once, on the
 // docs site (`llms.txt`, `llms-full.txt`, `/agents`); duplicating it here would be a second
@@ -1043,5 +1124,6 @@ writeFileSync(
 process.stdout.write(
   `gen-static: ${written} example pages + /examples/index.html + sitemap.xml (${written + 2} urls) → playground/dist/\n` +
     `gen-static: ${thumbs.size} thumbnails (${Math.round(thumbBytes / 1024)} KB) → playground/dist/examples/thumbs/\n` +
-    `gen-static: ${fonts.css.split("@font-face").length - 1} @font-face rules harvested from dist/assets/*.css\n`,
+    `gen-static: ${fonts.css.split("@font-face").length - 1} @font-face rules harvested from dist/assets/*.css\n` +
+    `gen-static: ${prerendered.name}'s drawing (${Math.round(prerendered.bytes / 1024)} KB) and the plan picker → playground/dist/index.html\n`,
 );
