@@ -232,12 +232,37 @@ describe("the sites and the root README carry the doors.json values", () => {
     for (const key of Object.keys(doors.links)) expect(sheet).toContain(`links.${key}`);
   });
 
-  it("the README line sits directly under the pills", () => {
+  it("the README's Try it is the generated block, right after the card and before the plans (PS-D7)", () => {
     const text = read("README.md");
     const pills = text.indexOf("pill-npm.svg");
-    const line = text.indexOf(`No install: [${doors.doors.chatgpt.label}](${CHATGPT})`);
+    const card = text.indexOf(".github/readme/card.svg");
+    const start = text.indexOf("<!-- doors:start -->");
+    const grid = text.indexOf("## What you get");
     expect(pills).toBeGreaterThan(0);
-    expect(line).toBeGreaterThan(pills);
-    expect(text.slice(pills, line)).not.toContain("## ");
+    expect(card).toBeGreaterThan(pills);
+    expect(start).toBeGreaterThan(card);
+    expect(grid).toBeGreaterThan(start);
+    // Nothing but the card sits between the pills and the doors, so Try it stays on the first screen.
+    expect(text.slice(pills, start).match(/^## /gm)).toBeNull();
+    // S2's one-line stopgap is folded into the block, not left beside it.
+    expect(text).not.toContain("No install: [");
+    expect(text.match(/^## Try it$/gm)).toHaveLength(1);
+  });
+
+  it("the README leads its doors with the coding agent's prompt as one copyable block, in README order", () => {
+    const text = read("README.md");
+    expect(doors.order.readme![0]).toBe("agent");
+    expect(text).toContain(["```text", ...doors.agentPrompt, "```"].join("\n"));
+    const at = (s: string): number => text.indexOf(s);
+    const prompt = at(doors.agentPrompt[0]!);
+    const sequence = [
+      prompt,
+      at(CHATGPT),
+      at(`\`${HOSTED}\` as a custom connector`),
+      at(doors.doors.vscode.marketplace),
+      at(`${doors.doors.playground.url}\n`),
+    ];
+    for (const p of sequence) expect(p).toBeGreaterThan(0);
+    expect([...sequence].sort((a, b) => a - b)).toEqual(sequence);
   });
 });

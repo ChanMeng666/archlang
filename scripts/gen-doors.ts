@@ -43,6 +43,7 @@ export const loadDoors = (): Doors =>
 
 /** One surface: the file, its order key, and the heading to insert before on the first run. */
 export const SURFACES = [
+  { file: "README.md", order: "readme", anchor: "## What you get" },
   { file: "packages/mcp/README.md", order: "npmMcp", anchor: "## If your agent has a shell" },
   { file: "editors/vscode/README.md", order: "vscode", anchor: "## Features" },
   { file: "llms.txt", order: "llms", anchor: "## Key documents" },
@@ -68,12 +69,46 @@ function bullet(d: Doors, key: string, compact: boolean): string {
   }
 }
 
+/**
+ * The coding-agent door as the root README shows it: the prompt to paste as a copyable block, then
+ * the MCP commands and the skills listing. The README is the npm page and the one surface where a
+ * developer with an agent lands first (PS-D2), so it gets the whole prompt rather than one line.
+ */
+function agentPromptDoor(d: Doors): string {
+  const a = d.doors.agent;
+  return [
+    `**${a.label}:** paste this prompt.`,
+    "",
+    "```text",
+    ...d.agentPrompt,
+    "```",
+    "",
+    `Or add the MCP server: \`${a.claudeCodeHttp}\` (locally, \`${a.claudeCodeLocal}\`). The skills are listed on [skills.sh](${a.skills.url}).`,
+  ].join("\n");
+}
+
 export function renderDoorsBlock(d: Doors, orderKey: string): string {
   const order = d.order[orderKey];
   if (!order) throw new Error(`doors.json has no order "${orderKey}"`);
   const compact = orderKey === "llms";
-  const lines = order.map((k) => bullet(d, k, compact));
-  return `${START}\n## Try it\n\n${d.canonicalLine}\n\n${lines.join("\n")}\n${END}`;
+  // The root README opens with the 25-word boilerplate (PS-D1), so its block carries the doors only;
+  // every other surface states the canonical line under its heading.
+  const readme = orderKey === "readme";
+  // Consecutive bullets form one list; the README's agent prompt is a chunk of its own between them.
+  const chunks: string[][] = [];
+  for (const k of order) {
+    if (readme && k === "agent") chunks.push([agentPromptDoor(d)], []);
+    else {
+      if (chunks.length === 0) chunks.push([]);
+      chunks[chunks.length - 1]!.push(bullet(d, k, compact));
+    }
+  }
+  const body = chunks
+    .filter((c) => c.length > 0)
+    .map((c) => c.join("\n"))
+    .join("\n\n");
+  const intro = readme ? "" : `${d.canonicalLine}\n\n`;
+  return `${START}\n## Try it\n\n${intro}${body}\n${END}`;
 }
 
 /** `text` with the doors block replaced between the markers, or inserted before `anchor`. */
