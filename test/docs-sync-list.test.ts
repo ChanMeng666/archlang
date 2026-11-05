@@ -173,6 +173,7 @@ describe("no sync-docs output is tracked by git", () => {
       ...galleryExamples().map((n) => `docs-site/public/examples/${n}.arch`),
       "docs-site/.vitepress/theme/adr-data.js",
       "docs-site/.vitepress/theme/examples-data.js",
+      "docs-site/.vitepress/theme/home-data.js",
     ];
   }
 

@@ -42,4 +42,11 @@ describe("the topic pages stay linked", () => {
     // The footer is the site-wide layout-bottom slot, so a link there is a link on every page.
     expect(read("docs-site/.vitepress/theme/Layout.vue")).toMatch(/<template #layout-bottom>\s*<TitleBlockFooter \/>/);
   });
+
+  it("the home page has its own Topics row from the same list", () => {
+    const row = read("docs-site/.vitepress/theme/TopicsRow.vue");
+    expect(row).toMatch(/import \{ TOPICS \} from "\.\/topics"/);
+    expect(row).toMatch(/v-for="t in TOPICS"/);
+    expect(read("docs-site/index.md")).toMatch(/^<TopicsRow \/>$/m);
+  });
 });

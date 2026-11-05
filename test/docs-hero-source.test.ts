@@ -1,13 +1,13 @@
 /**
- * The landing hero types `examples/laneway-house.arch` WITHOUT its leading prose
- * header — and nothing else about that file changes.
+ * The landing hero streams a real agent-gallery plan (`docs/gallery/<id>.arch`, the pair named
+ * by sync-docs.mjs's HOME_PROOFS.hero) WITHOUT its leading comment header — and nothing else
+ * about that file changes.
  *
- * Why this file exists: the hero's right-hand pane was an empty sheet for the first
- * 5.3 seconds of the animation, because `CompileSeam.vue` compiles only when a typed
- * line completes and the example opens with a 7-line, 458-character comment block.
- * The fix narrows the ANIMATION'S INPUT (`stripHeaderComments`), not the file: the
- * `#z=` permalink, the gallery, the README hero and `docs-site/e2e/homepage-links.spec.ts`
- * all still see `examples/laneway-house.arch` byte for byte.
+ * Why this file exists: `CompileSeam.vue` compiles only when a streamed line completes, so a
+ * plan that opens with a comment block shows an empty sheet until the first statement arrives
+ * (the laneway-house hero this replaced spent 5.3 seconds on its 7-line header). The fix narrows
+ * the ANIMATION'S INPUT (`stripHeaderComments`), not the file: the `#z=` permalink, /gallery and
+ * `docs-site/e2e/homepage-links.spec.ts` all still see the agent's file byte for byte.
  *
  * Two things are pinned here that a browser would never notice going wrong:
  *   1. the function's edge cases — a header that is only blank lines away from the
@@ -27,9 +27,6 @@ import { readFileSync } from "node:fs";
 import { describe as vitestDescribe, expect, it } from "vitest";
 import { stripHeaderComments } from "../docs-site/.vitepress/theme/strip-header-comments.js";
 import { compile, describe } from "../src/index.js";
-
-/** The hero's own source, LF-normalised exactly as `sync-docs.mjs` reads it. */
-const HERO_SOURCE = readFileSync("examples/laneway-house.arch", "utf8").replace(/\r\n/g, "\n");
 
 vitestDescribe("stripHeaderComments", () => {
   it("drops the leading comment block and the blank lines inside it", () => {
@@ -66,28 +63,32 @@ vitestDescribe("stripHeaderComments", () => {
   });
 });
 
-vitestDescribe("the hero types laneway-house without its essay", () => {
-  it("removes exactly the seven-line header and nothing else", () => {
+/** The hero pair sync-docs.mjs's HOME_PROOFS names, read from that table (the generated
+ *  home-data.js does not exist on a fresh checkout). */
+const HERO_ID = /hero: \{ gallery: "([^"]+)" \}/.exec(readFileSync("docs-site/sync-docs.mjs", "utf8"))?.[1] ?? "";
+/** Its source, LF-normalised exactly as `sync-docs.mjs` reads it. */
+const HERO_SOURCE = readFileSync(`docs/gallery/${HERO_ID}.arch`, "utf8").replace(/\r\n/g, "\n");
+
+vitestDescribe("the hero streams the agent's plan without its header comments", () => {
+  it("names a real agent-gallery pair, brief and plan", () => {
+    expect(HERO_ID).toMatch(/^[a-z][a-z0-9-]*$/);
+    expect(readFileSync(`docs/gallery/${HERO_ID}.brief.txt`, "utf8").trim().length).toBeGreaterThan(50);
+  });
+
+  it("removes only the leading comment lines, and the plan starts at once", () => {
     const typed = stripHeaderComments(HERO_SOURCE);
     const removed = HERO_SOURCE.slice(0, HERO_SOURCE.length - typed.length);
-    expect(removed.split("\n").filter((l) => l.trim() !== "")).toHaveLength(7);
+    expect(removed.split("\n").filter((l) => l.trim() !== "").length).toBeGreaterThan(0);
     expect(removed.split("\n").every((l) => l.trim() === "" || l.trimStart().startsWith("#"))).toBe(true);
-    expect(typed.startsWith('plan "Laneway House" {')).toBe(true);
-    // The saving is the whole point: quote it, so a shrinking header shows up here.
-    expect(removed.length).toBeGreaterThan(400);
-  });
-
-  it("keeps the inline comments — they are what the hero is demonstrating", () => {
-    const typed = stripHeaderComments(HERO_SOURCE);
-    expect(typed).toContain("is walked lane→garden");
-    expect(typed).toContain("The rug is an UNDERLAY");
-    // Every comment line the file has, minus the seven-line header.
+    expect(typed.startsWith('plan "')).toBe(true);
+    // The comments inside the plan stay: they are what the agent wrote at each decision.
     const all = HERO_SOURCE.split("\n").filter((l) => l.trimStart().startsWith("#")).length;
     const kept = typed.split("\n").filter((l) => l.trimStart().startsWith("#")).length;
-    expect(kept).toBe(all - 7);
+    expect(kept).toBe(all - removed.split("\n").filter((l) => l.trim() !== "").length);
+    expect(kept).toBeGreaterThan(0);
   });
 
-  it("draws and describes the same plan — comments never reach the compiler", () => {
+  it("draws and describes the same plan: comments never reach the compiler", () => {
     const full = compile(HERO_SOURCE, { noCache: true });
     const typed = compile(stripHeaderComments(HERO_SOURCE), { noCache: true });
     expect(full.errors).toHaveLength(0);
@@ -96,9 +97,9 @@ vitestDescribe("the hero types laneway-house without its essay", () => {
     expect(describe(stripHeaderComments(HERO_SOURCE))).toEqual(describe(HERO_SOURCE));
   });
 
-  it("the file on disk still carries the header — only the animation is narrowed", () => {
-    // The `#z=` permalink, the gallery and docs-site/e2e/homepage-links.spec.ts all
-    // read this file; "fixing" it here would break the byte comparison there.
-    expect(HERO_SOURCE.startsWith("# A one-bedroom laneway cottage")).toBe(true);
+  it("the file on disk still carries the header: only the animation is narrowed", () => {
+    // The `#z=` permalink and /gallery read this file; homepage-links.spec.ts decodes the
+    // hero's link back to it byte for byte.
+    expect(HERO_SOURCE.startsWith("#")).toBe(true);
   });
 });

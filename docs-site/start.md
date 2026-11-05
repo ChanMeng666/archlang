@@ -11,7 +11,7 @@ what is wrong with it.
 
 <StartDoors />
 
-## Watch it first
+## Watch the film
 
 <FilmFacade poster="/gallery/studio.svg" />
 

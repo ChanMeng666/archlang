@@ -665,3 +665,19 @@
     padding-left: calc((100vw - var(--vp-layout-max-width)) / 2 + var(--vp-sidebar-width) + 24px);
   }
 }
+
+/* ── The feature sheets on /examples (SheetGrid.vue) ─────────────────────────
+   The component was drawn for the full-bleed home page; on a doc page it sits in the
+   content column, so it drops its own gutter and takes two sheets a row, not three.
+   0,3,0 beats the component's scoped 0,2,0 on specificity, not on load order. */
+.VPDoc .vp-doc .sheets__inner {
+  padding-inline: 0;
+}
+.VPDoc .vp-doc .sheets__row--3 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 560px) {
+  .VPDoc .vp-doc .sheets__row--3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

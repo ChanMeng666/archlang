@@ -16,18 +16,20 @@
  *    over the title block answers the only question that matters — is anything from the
  *    aside on top of it?
  *
- * 2. THE HERO DOES NOT OPEN WITH ITS ESSAY. `CompileSeam.vue` types the hero example
- *    at 140 chars/s and only paints the sheet when a typed line compiles, so
- *    `examples/laneway-house.arch`'s 7-line prose header was 5.3 seconds of empty
- *    paper. `stripHeaderComments` narrows what the ANIMATION types; the file, the
- *    gallery, the README and the `#z=` permalink are untouched (that last one is
- *    byte-compared in homepage-links.spec.ts — the two specs pull in opposite
- *    directions on purpose).
+ * 2. THE HERO TELLS BRIEF → SOURCE → PLAN. `CompileSeam.vue` opens on a real agent-gallery
+ *    brief in a chat bubble, then streams the agent's ArchLang and paints the sheet as each
+ *    line compiles, and the whole run settles within eight seconds. `stripHeaderComments`
+ *    narrows what the ANIMATION streams; the file and its `#z=` permalink are untouched
+ *    (byte-compared in homepage-links.spec.ts; the two specs pull in opposite directions on
+ *    purpose).
  *
  * Deliberately UNTAGGED (no `@prod`): both assert the state of the LOCAL build, and
  * against a lagging production deploy a red here would mean nothing.
  */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { expect, test } from "@playwright/test";
+import { ROOT } from "./fixtures.js";
 
 /** Desktop widths where the aside is displayed at all (VitePress shows it from 1280). */
 const WIDE = [
@@ -125,33 +127,79 @@ test.describe("the On this page outline is bounded by its own column", () => {
   });
 });
 
-test.describe("the hero types the plan, not its prose header", () => {
-  // NB none of these waits out the animation. The stripped source is still 2 553
-  // characters at 140 chars/s — a little over 18 s — so "wait for `compiled`" would
-  // sit right on Playwright's 30 s test timeout and turn a passing guard into a
-  // stopwatch. Each case below reads the state it actually needs instead.
+test.describe("the hero tells brief → source → plan, and finishes inside eight seconds", () => {
+  // The pair the hero streams, as sync-docs.mjs's HOME_PROOFS names it and docs/gallery/ holds it.
+  const HERO_ID = /hero: \{ gallery: "([^"]+)" \}/.exec(
+    readFileSync(join(ROOT, "docs-site", "sync-docs.mjs"), "utf8"),
+  )![1]!;
+  const SOURCE = readFileSync(join(ROOT, "docs", "gallery", `${HERO_ID}.arch`), "utf8").replace(/\r\n/g, "\n");
+  const BRIEF = readFileSync(join(ROOT, "docs", "gallery", `${HERO_ID}.brief.txt`), "utf8").trim();
 
-  test("the whole source the hero will type is the plan, header-free", async ({ page }) => {
-    // `compile()` is isomorphic, so the SERVER renders the full, settled source —
-    // the same string `play()` then types back one character at a time. Reading it
-    // there is byte-exact and costs no animation at all. reduced-motion is also the
-    // state a visitor who asked for no motion sees, so this doubles as that check:
-    // final source, final drawing, nothing moving.
+  test("the final state is server-rendered: the brief, the whole plan, the drawing", async ({ page }) => {
+    // Reduced motion is the state a visitor who asked for no motion sees, and it is also the
+    // SSR state: compile() is isomorphic, so the server renders the settled hero.
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
+    await expect(page.locator(".seam-hero")).toHaveAttribute("data-phase", "settled");
     await expect(page.locator(".code-chrome__status")).toHaveText("compiled");
+    await expect(page.locator(".chat__bubble")).toHaveText(BRIEF);
     const typed = (await page.locator(".code-pre code").textContent()) ?? "";
-    expect(typed.trimStart().startsWith('plan "Laneway House" {')).toBe(true);
-    expect(typed, "the 7-line prose header must not reach the hero").not.toContain("A one-bedroom laneway cottage");
-    // The comments AT the decisions stay — they are half of what the hero demonstrates.
-    expect(typed).toContain("is walked lane→garden");
-    expect(typed).toContain("The rug is an UNDERLAY");
+    expect(typed.trimStart().startsWith('plan "')).toBe(true);
+    // The header comment stays in the file and out of the stream.
+    expect(typed).not.toContain(SOURCE.split("\n")[0]!);
     await expect(page.locator(".sheet__svg svg")).toBeVisible();
+    await page.waitForTimeout(1200);
+    await expect(page.locator(".seam-hero"), "reduced motion must never start the run").toHaveAttribute(
+      "data-phase",
+      "settled",
+    );
   });
 
-  test("the first characters typed are `plan`, not a comment", async ({ page }) => {
+  test("the run opens on the brief bubble, then streams the source, then settles within 8 s", async ({ page }) => {
+    // Record every phase change with its time, and what the source pane held at that moment.
+    await page.addInitScript(() => {
+      type Mark = { phase: string; t: number; typed: number; bubble: boolean };
+      const marks: Mark[] = [];
+      (window as unknown as { __phases: Mark[] }).__phases = marks;
+      const watch = () => {
+        const hero = document.querySelector(".seam-hero");
+        if (!hero) return requestAnimationFrame(watch);
+        const note = () =>
+          marks.push({
+            phase: hero.getAttribute("data-phase") ?? "",
+            t: performance.now(),
+            typed: (document.querySelector(".code-pre code")?.textContent ?? "").length,
+            bubble: !!document.querySelector(".chat__bubble")?.textContent?.trim(),
+          });
+        note();
+        new MutationObserver(note).observe(hero, { attributes: true, attributeFilter: ["data-phase"] });
+      };
+      requestAnimationFrame(watch);
+    });
     await page.goto("/");
-    // Wait only for the rewind plus the first line or so, never for the whole run.
+    await page.waitForFunction(
+      () => {
+        const m = (window as unknown as { __phases: { phase: string }[] }).__phases;
+        return m.some((x) => x.phase === "brief") && m[m.length - 1]!.phase === "settled";
+      },
+      null,
+      { timeout: 20_000 },
+    );
+    const marks = await page.evaluate(
+      () =>
+        (window as unknown as { __phases: { phase: string; t: number; typed: number; bubble: boolean }[] }).__phases,
+    );
+    const brief = marks.find((m) => m.phase === "brief")!;
+    const typing = marks.find((m) => m.phase === "typing" && m.t >= brief.t)!;
+    const settled = marks.filter((m) => m.phase === "settled" && m.t > brief.t).pop()!;
+    expect(brief.typed, "the brief must arrive alone, before any source").toBe(0);
+    expect(brief.bubble).toBe(true);
+    expect(typing.t).toBeGreaterThan(brief.t);
+    expect(settled.t - brief.t, "the whole run must finish within 8 s").toBeLessThan(8000);
+  });
+
+  test("the first characters streamed are `plan`, not a comment", async ({ page }) => {
+    await page.goto("/");
     await page.waitForFunction(
       () => {
         const t = document.querySelector(".code-pre code")?.textContent ?? "";
@@ -161,20 +209,16 @@ test.describe("the hero types the plan, not its prose header", () => {
       { timeout: 20_000 },
     );
     const head = (await page.locator(".code-pre code").textContent()) ?? "";
-    expect(head.startsWith("plan"), `the hero began typing "${head.slice(0, 40)}…"`).toBe(true);
+    expect(head.startsWith("plan"), `the hero began streaming "${head.slice(0, 40)}…"`).toBe(true);
   });
 
-  test("the drawing is on the sheet before the typing finishes", async ({ page }) => {
-    // The SSR'd page already carries the final SVG and `play()` blanks it on mount, so
-    // "an svg exists" proves nothing. Watch for the blank and then for the re-ink, and
-    // require the drawing back well before the ~33 s the full source takes to type.
+  test("the drawing is back on the sheet soon after the source starts", async ({ page }) => {
+    // The SSR'd page carries the final SVG and play() blanks it, so "an svg exists" proves
+    // nothing: watch for the blank, then for the re-ink.
     await page.addInitScript(() => {
-      (window as unknown as { __ink: { blanked: number | null; reInk: number | null } }).__ink = {
-        blanked: null,
-        reInk: null,
-      };
+      const s = { blanked: null as number | null, reInk: null as number | null };
+      (window as unknown as { __ink: typeof s }).__ink = s;
       const tick = () => {
-        const s = (window as unknown as { __ink: { blanked: number | null; reInk: number | null } }).__ink;
         const host = document.querySelector(".sheet__svg");
         if (host && !host.querySelector("svg")) {
           if (s.blanked === null) s.blanked = performance.now();
@@ -189,13 +233,11 @@ test.describe("the hero types the plan, not its prose header", () => {
     await page.waitForFunction(
       () => (window as unknown as { __ink: { reInk: number | null } }).__ink.reInk !== null,
       null,
-      { timeout: 30_000 },
+      { timeout: 20_000 },
     );
     const ink = await page.evaluate(() => (window as unknown as { __ink: { blanked: number; reInk: number } }).__ink);
-    // Measured from the rewind, not from navigation, so a slow CI box cannot move it:
-    // the header used to cost 5.3 s here. A 2 s budget is generous for the ~0.3 s the
-    // first `plan …` line now takes and still fails loudly if the header comes back.
-    expect(ink.reInk - ink.blanked, "the sheet stayed empty too long after the hero rewound").toBeLessThan(2000);
+    // The brief holds the sheet blank for under a second; the first statements then draw.
+    expect(ink.reInk - ink.blanked, "the sheet stayed empty too long after the hero rewound").toBeLessThan(3000);
   });
 });
 

@@ -202,6 +202,13 @@
    on its own schedule. Owner decision 2026-09-20: take the breakpoint now, keep
    the IA; (b) is logged in `docs/backlog.md` § N.1 with its costing.
 
+   UPDATE (public-surfaces D1): the bar is now five slots (Try it / Gallery / Docs /
+   Playground / GitHub), which is option (b) above. The breakpoint stays at 1152 until
+   a measured change moves it: with the desktop row forced on at 768–1151 the last item
+   ends 32 px inside the viewport on `/` and `/guide`, but the row then sits flush
+   against the search box, and a squeezed search box is not a fit this file should
+   declare from one probe. page-chrome.spec.ts holds both faces at every width.
+
    SPECIFICITY. Each rule below overrides a VitePress `<style scoped>` rule of
    the form `.VPNavBarMenu[data-v-…]` — an attribute selector counts as a class,
    so theirs is (0,2,0). A bare `.VPNavBarMenu` would only tie and then depend on

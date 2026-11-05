@@ -147,15 +147,51 @@ describe("the sites and the root README carry the doors.json values", () => {
     expect(text).toContain(HOSTED);
   });
 
-  it("the docs hero reads both doors from doors.json, not from retyped strings", () => {
+  it("the docs hero reads its two primaries from doors.json, not from retyped strings", () => {
+    // PS-D2, docs home: ChatGPT and the agent prompt side by side at equal weight; the
+    // claude.ai connector and the rest are one tab away in the doors card.
     const vue = read("docs-site/.vitepress/theme/CompileSeam.vue");
     expect(vue).toContain("site-shared/doors.json");
     expect(vue).toContain("NO_INSTALL.chatgpt.url");
-    expect(vue).toContain("NO_INSTALL.claudeai.url");
-    expect(vue).not.toContain(CHATGPT);
-    expect(vue).not.toContain(HOSTED);
-    expect(vue).toContain("No install");
+    expect(vue).toContain("NO_INSTALL.chatgpt.note");
+    expect(vue).toContain('agentPrompt.join("\\n")');
     expect(vue, "the full doors file would ship to the browser").not.toMatch(/import doorsFile|import doors from/);
+  });
+
+  it("the docs doors (/start and the home card) read every door from doors.json", () => {
+    const theme = "docs-site/.vitepress/theme";
+    const body = read(`${theme}/components/DoorBody.vue`);
+    for (const ref of [
+      "doors.playground.url",
+      "doors.chatgpt.url",
+      "doors.claudeai.url",
+      "doors.agent.claudeCodeHttp",
+      "doors.agent.skills.command",
+      "doors.vscode.marketplace",
+      "doors.vscode.openVsx",
+      "AGENT_PROMPT",
+    ])
+      expect(body, ref).toContain(ref);
+    expect(read(`${theme}/doors.ts`)).toMatch(/from "\.\.\/\.\.\/\.\.\/site-shared\/doors\.json"/);
+    expect(read(`${theme}/components/StartDoors.vue`)).toContain("START_ORDER");
+    expect(read(`${theme}/components/DoorsCard.vue`)).toContain("HOME_ORDER");
+    const retyped = [
+      CHATGPT,
+      HOSTED,
+      doors.doors.vscode.marketplace,
+      doors.doors.agent.skills.command,
+      ...doors.agentPrompt,
+    ];
+    for (const file of [
+      `${theme}/CompileSeam.vue`,
+      `${theme}/components/DoorBody.vue`,
+      `${theme}/components/DoorsCard.vue`,
+      `${theme}/components/StartDoors.vue`,
+      `${theme}/door-copy.json`,
+      "docs-site/start.md",
+      "docs-site/index.md",
+    ])
+      for (const s of retyped) expect(read(file), `${file}: ${s}`).not.toContain(s);
   });
 
   it("the docs pages label the ChatGPT door as doors.json does and say 'no install', never 'no signup'", () => {

@@ -1,5 +1,5 @@
 {
-  "_": "The words around each door on /start and in the home doors card. Every URL, command, label and the prompt itself come from site-shared/doors.json; this file holds prose only, and site-markdown.mjs renders /start.md from the same two files.",
+  "_": "The words around each door on /start and in the home doors card. Every URL, command, label and the prompt itself come from site-shared/doors.json; this file holds the prose around them, and site-markdown.mjs renders /start.md from the same two files.",
   "playground": {
     "heading": "Open a plan in your browser",
     "body": "Nothing to install. Pick a plan, drag one of its numbers and hover a room for its area. Source shows the ArchLang text behind the drawing, and you can edit it there."

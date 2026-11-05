@@ -655,3 +655,5 @@ actually used and one per fixture category actually placed, growing a row on its
 add a seventh.
 
 <ArchLive :src="EXAMPLES['materials']" :rows="30" />
+
+<SheetGrid />

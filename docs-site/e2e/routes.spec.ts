@@ -322,7 +322,7 @@ test.describe("the title-block footer clears the sidebar", () => {
 /**
  * The landing page must not scroll sideways.
  *
- * Its three bands are pulled full-bleed with `calc(50% - 50vw)` (home.css), which mixes a
+ * Its bands are pulled full-bleed with `calc(50% - 50vw)` (home.css), which mixes a
  * container-relative `50%` — scrollbar excluded — with a viewport-relative `50vw` —
  * scrollbar included. They come out exactly `100vw`, about a scrollbar wider than the
  * client area, so the page grew a horizontal scrollbar for a strip of pure background.
@@ -361,7 +361,7 @@ test.describe("the landing page does not scroll sideways", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/");
     const client = await page.evaluate(() => document.documentElement.clientWidth);
-    for (const sel of [".sheets", ".facts", ".agents"]) {
+    for (const sel of [".why", ".how", ".home-gallery", ".isisnt", ".facts", ".agents", ".topics"]) {
       const box = await page.locator(sel).boundingBox();
       expect(box, `${sel} must render on the home page`).not.toBeNull();
       expect((box as { width: number }).width, `${sel} is no longer full-bleed`).toBeGreaterThanOrEqual(client);

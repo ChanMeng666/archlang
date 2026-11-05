@@ -93,10 +93,11 @@ export function doorMarkdown(file, id) {
  *   encodePlanHash: (source: string) => string,
  *   levelSvgName: (name: string, level: number) => string,
  *   playground: string,
- * }} deps
+ *   exampleCount: number,
+ * }} deps `exampleCount` is how many example plans the build compiled (the home proof line's N)
  */
 export function siteMarkdown(src, deps) {
-  const { repo, compile, describe, encodePlanHash, levelSvgName, playground } = deps;
+  const { repo, compile, describe, encodePlanHash, levelSvgName, playground, exampleCount } = deps;
   const read = (...p) => readFileSync(join(repo, ...p), "utf8").replace(/\r\n/g, "\n");
   const raw = withVersion(read(src), JSON.parse(read("package.json")).version);
   let text = raw.replace(/^---\n[\s\S]*?\n---\n/, "").replace(/<script setup>[\s\S]*?<\/script>\n?/, "");
@@ -212,29 +213,114 @@ export function siteMarkdown(src, deps) {
           ...rows,
           `| Total | ${t.rooms} rooms | ${t.floor_area_m2} m² | ${t.doors + t.windows} |`,
         ].join("\n"),
-        `${t.doors} doors · ${t.windows} windows · ${facts.access.hasEntrance ? "entrance verified" : "no entrance"} · every room reachable`,
+        `${t.doors} doors · ${t.windows} windows · ${facts.access.hasEntrance ? "an entrance" : "no entrance"} · ${facts.access.rooms.every((r) => r.reachable) ? "every room reachable" : "a room cannot be reached"}`,
       ].join("\n\n") + "\n\n"
     );
   });
+  // The home page's sections, each read out of its own component (the hero last, because it
+  // goes on top of everything else).
+  text = text.replace(/^<WhyCards \/>\n*/m, () => {
+    const vue = read(theme, "WhyCards.vue");
+    const heading = plain(pull(vue, /<h2 id="why-title"[^>]*>([\s\S]*?)<\/h2>/, "WhyCards' heading")[1]);
+    const cards = [...vue.matchAll(/title: "([^"]+)",\s*body: "([^"]+)",/g)];
+    if (cards.length !== 3)
+      throw new Error(`site-markdown: parsed ${cards.length} of 3 WhyCards — the WHY table changed shape`);
+    return `## ${heading}\n\n${cards.map(([, t, b]) => `- **${t}** ${b}`).join("\n")}\n\n`;
+  });
+  text = text.replace(/^<HowSteps \/>\n*/m, () => {
+    const vue = read(theme, "HowSteps.vue");
+    const heading = plain(pull(vue, /<h2 id="how-title"[^>]*>([\s\S]*?)<\/h2>/, "HowSteps' heading")[1]);
+    const steps = [...vue.matchAll(/title: "([^"]+)",\s*body: "([^"]+)",/g)];
+    if (steps.length !== 3)
+      throw new Error(`site-markdown: parsed ${steps.length} of 3 HowSteps — the STEPS table changed shape`);
+    const film = read(theme, "components", "FilmFacade.vue");
+    const filmId = pull(film, /const FILM_ID = "([^"]+)"/, "FilmFacade's FILM_ID")[1];
+    const filmTitle = pull(film, /const FILM_TITLE = "([^"]+)"/, "FilmFacade's FILM_TITLE")[1];
+    const doors = doorsFile.order.docsHome.map(
+      (id) => `### ${doorCopy[id].heading}\n\n${doorCopy[id].body}\n\n${doorMarkdown(doorsFile, id)}`,
+    );
+    return (
+      [
+        `## ${heading}`,
+        steps.map(([, t, b], i) => `${i + 1}. **${t}.** ${b}`).join("\n"),
+        ...doors,
+        `[${filmTitle} (YouTube)](https://youtu.be/${filmId})`,
+      ].join("\n\n") + "\n\n"
+    );
+  });
+  text = text.replace(/^<HomeGallery \/>\n*/m, () => {
+    const vue = read(theme, "HomeGallery.vue");
+    const heading = plain(pull(vue, /<h2 id="home-gallery-title"[^>]*>([\s\S]*?)<\/h2>/, "HomeGallery's heading")[1]);
+    const note = plain(
+      pull(vue, /<p class="home-gallery__note">([\s\S]*?)<\/p>/, "HomeGallery's note")[1].replace(
+        /<a href="([^"]+)">([^<]+)<\/a>/g,
+        "[$2]($1)",
+      ),
+    );
+    const plans = [...vue.matchAll(/\{ example: "([^"]+)", caption: "([^"]+)" \}/g)];
+    if (plans.length < 6 || plans.length > 8)
+      throw new Error(`site-markdown: parsed ${plans.length} HomeGallery plans (6 to 8 expected)`);
+    const items = plans.map(
+      ([, ex, cap]) =>
+        `- ${cap} [Open \`${ex}.arch\` in the playground](${playgroundLink(example(ex))})\n\n  ![${cap}](/examples/${ex}.svg)`,
+    );
+    return `## ${heading}\n\n${note}\n\n${items.join("\n")}\n\n`;
+  });
+  text = text.replace(/^<IsIsntTable \/>\n*/m, () => {
+    const vue = read(theme, "IsIsntTable.vue");
+    const heading = plain(pull(vue, /<h2 id="isisnt-title"[^>]*>([\s\S]*?)<\/h2>/, "IsIsntTable's heading")[1]);
+    const rows = [...vue.matchAll(/is: "([^"]+)",\s*isnt: "([^"]+)",/g)];
+    if (rows.length === 0) throw new Error("site-markdown: parsed no IsIsntTable rows — the ROWS table changed shape");
+    const limits = pull(vue, /before: "([^"]+)",\s*link: "([^"]+)",\s*after: "([^"]+)",/, "IsIsntTable's LIMITS");
+    const links = [
+      ...pull(vue, /<p class="isisnt__links">([\s\S]*?)<\/p>/, "IsIsntTable's links")[1].matchAll(
+        /<a href="([^"]+)">([^<]+)<\/a>/g,
+      ),
+    ];
+    return (
+      [
+        `## ${heading}`,
+        ["| What it is | What it isn't |", "|---|---|", ...rows.map(([, a, b]) => `| ${a} | ${b} |`)].join("\n"),
+        `**Limits.** ${limits[1]}[${limits[2]}](${limits[2]})${limits[3]}`,
+        links.map(([, href, label]) => `[${label}](${href})`).join(" · "),
+      ].join("\n\n") + "\n\n"
+    );
+  });
+  text = text.replace(/^<TopicsRow \/>\n*/m, () => {
+    const topics = [...read(theme, "topics.ts").matchAll(/\{ href: "([^"]+)", label: "([^"]+)" \}/g)];
+    if (topics.length !== 5) throw new Error(`site-markdown: parsed ${topics.length} of 5 topics in topics.ts`);
+    return `## Topics\n\n${topics.map(([, href, label]) => `- [${label}](${href})`).join("\n")}\n\n`;
+  });
   if (src === "docs-site/index.md") {
     const vue = read(theme, "CompileSeam.vue");
-    const hero = pull(vue, /const HERO = "([^"]+)"/, "CompileSeam's HERO")[1];
     const h1 = pull(vue, /<h1 class="headline">([\s\S]*?)<\/h1>/, "CompileSeam's headline")[1];
     const sub = plain(pull(h1, /<span class="headline__sub">([\s\S]*?)<\/span>/, "CompileSeam's sub-headline")[1]);
     const title = plain(h1.replace(/<span class="headline__sub">[\s\S]*?<\/span>/, ""));
-    const tagline = plain(pull(vue, /<p class="tagline">([\s\S]*?)<\/p>/, "CompileSeam's tagline")[1]);
-    const actions = [...vue.matchAll(/<a class="btn[^>]*\shref="(\/[^"]+)"[^>]*>([\s\S]*?)<\/a>/g)].map(
-      (m) => `- [${plain(m[2])}](${m[1]})`,
+    if (!/<p class="tagline">\{\{ canonicalLine \}\}<\/p>/.test(vue)) {
+      throw new Error("site-markdown: CompileSeam's lede is no longer doors.json's canonicalLine");
+    }
+    const primaries = [...vue.matchAll(/<span class="primary__title">([^<]+)<\/span>/g)].map((m) => plain(m[1]));
+    if (primaries.length !== 2)
+      throw new Error(`site-markdown: found ${primaries.length} of 2 hero primaries in CompileSeam.vue`);
+    const proof = plain(pull(vue, /<p class="proof">([\s\S]*?)<\/p>/, "CompileSeam's proof line")[1]).replace(
+      "{{ EXAMPLE_COUNT }}",
+      String(exampleCount),
     );
-    if (actions.length === 0) throw new Error("site-markdown: no static hero actions found in CompileSeam.vue");
-    const source = example(hero);
+    const heroId = pull(read("docs-site", "sync-docs.mjs"), /hero: \{ gallery: "([^"]+)" \}/, "HOME_PROOFS.hero")[1];
+    const entry = JSON.parse(read(galleryDir, "gallery.json")).find((e) => e.id === heroId);
+    const heroSource = read(galleryDir, `${heroId}.arch`);
     text = [
       `# ${title}`,
       sub,
-      tagline,
-      [...actions, `- [Open this plan in the Playground](${playgroundLink(source)})`].join("\n"),
-      `The hero plan, \`examples/${hero}.arch\` (drawn at \`/examples/${hero}.svg\`):`,
-      fence(source),
+      doorsFile.canonicalLine,
+      `- **${primaries[0]}:** [${doorsFile.doors.chatgpt.label}](${doorsFile.doors.chatgpt.url}) (${doorsFile.doors.chatgpt.note})`,
+      `**${primaries[1]}:**\n\n${textFence(doorsFile.agentPrompt.join("\n"))}`,
+      `Or open a plan in the [${doorsFile.doors.playground.label}](${doorsFile.doors.playground.url}).`,
+      proof,
+      `The brief below was given to ${entry.model}, and the plan under it is the ArchLang it wrote (\`docs/gallery/${heroId}.arch\`, drawn at \`/gallery/${heroId}.svg\`):`,
+      read(galleryDir, `${heroId}.brief.txt`).trim().replace(/^/gm, "> "),
+      fence(heroSource.trimEnd()),
+      `[Open this plan in the Playground](${playgroundLink(heroSource)})`,
       text.replace(/^\n+/, ""),
     ].join("\n\n");
   }
