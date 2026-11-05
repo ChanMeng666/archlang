@@ -157,7 +157,8 @@ test.describe("home above the fold", () => {
       const rows = page.locator(".install__row");
       await expect(rows).toHaveCount(5);
       const chatgpt = page.locator(".install__link");
-      await expect(chatgpt).toHaveText(DOORS.chatgpt.label);
+      // the label from doors.json, plus the new-tab arrow every external link on the hero carries
+      await expect(chatgpt).toHaveText(`${DOORS.chatgpt.label} ↗`);
       await expect(chatgpt).toHaveAttribute("href", DOORS.chatgpt.url);
       await expect(page.locator(".install--hosted .install__tag").first()).toHaveText("No install");
       const cmds = page.locator(".install__cmd");
