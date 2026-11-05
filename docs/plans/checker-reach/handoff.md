@@ -4,7 +4,7 @@
 
 ## 1. 当前位置
 
-- 第 A、B 批全部合并（CR0–CR8，含 SECURITY.md 去重），已随一次 core 次版本发布（同时发 MCP、archlang-3d、VS Code 扩展）。版本以 npm 和 tag 为准。
+- 第 A、B 批全部合并（CR0–CR8，含 SECURITY.md 去重），已发布。版本以 npm 和 tag 为准。
 - 线上已核实：短链接 `/s/<id>`、预览图 `/s/<id>.png`（真实户型，不是兜底图）、3D 自由旋转。
 - 定位裁定 A3 的条件已满足：npm 上的版本能读 OpenPlan3D（`archlang import --from openplan3d`），Show HN 文案可以写。
 - 后续卡见 `README.md` § 3 末尾的“后续卡”，按序号做，做完删行。

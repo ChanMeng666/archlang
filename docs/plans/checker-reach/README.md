@@ -148,7 +148,7 @@ NZ/AU advisory 画像（裁定 A1，只能叫 advisory）；`lint --brief` 检�
 | CR-D2 | 3D 查看器规格 §6.1 的“相机”一行提前，仅限 Tier A（playground 标签页 + 包内 HTML 回放）；Tier B 仍等 N10 | 所有者 2026-11-05 的明确要求 |
 | CR-D3 | ADR 0034 修订 ADR 0019：playground Worker 可有 `main`，只经 `run_worker_first` 数组接管列出的路径；静态路径逐字节不变；docs 站点仍无脚本 | 随 CR3 的 ADR 落地；`iron-laws.md` 的托管条目由所有者 2026-11-05 文字批准（“批准托管铁律”） |
 | CR-D4 | 短链接：内容寻址 id、KV 存储、仅在用户点“短链接”时存平面，对话框写明 | 所有者 2026-11-05 文字批准 |
-| CR-D5 | `axis.N + d` 这类在开口位置上对轴线做算术的写法报 `E_OPENING_DATUM` 拒绝，而不是悄悄偏离轴线（轴线是平面坐标，墙上位置是沿墙距离）；改写 `at axis <label>` 或提示给出的沿墙距离 | 主会话 2026-11-05 裁定（CR2c） |
+| CR-D5 | `axis.N + d` 这类在开口位置上对轴线做算术的写法报 `E_OPENING_DATUM` 拒绝，而不是悄悄偏离轴线（轴线是平面坐标，墙上位置是沿墙距离）；改写 `at axis <label>` 或提示给出的沿墙距离 | 主会话 2026-11-05 裁定（CR2 第 3 组，`axis.N + d`） |
 | CR-D6 | MCP 工具不默认返回短链：那会在用户没选择时上传平面（违背 CR-D4），也违背 `link` 工具“不发往服务器”、`openWorldHint: false` 的已发布契约。另开可选工具 `short_link`（自带 annotations、约 3 s 超时、失败退回长链）列为后续卡；`MAX_CHAT_URL` 不变 | 主会话 2026-11-05 裁定（CR3 执行者提出） |
 | CR-D7 | CR6（OpenPlan3D 导入）在发版前最后一个合并，让文档站和 npm 同时上线（裁定 A3：发布前不写进文案） | 主会话 2026-11-05 裁定 |
 | CR-D8 | #405 的 L 形洞口：`void … polygon` 给出任意直角多边形洞口，`rail` 沿洞口边画栏杆；新码 `E_VOID_POLY`、`E_VOID_RAIL`；墙面按网格单元切分以保持转动不变 | 主会话 2026-11-05 裁定（CR8 设计稿） |
