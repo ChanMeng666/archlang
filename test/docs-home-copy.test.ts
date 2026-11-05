@@ -20,21 +20,27 @@ const seam = read(`${THEME}/CompileSeam.vue`);
 const doors = JSON.parse(read("site-shared/doors.json"));
 
 /**
- * A file's visible copy: no `<style>`, no comments. Repeated to a fixpoint, as site-markdown.mjs's
- * stripTags is, so removing one block can never splice its neighbours into a new one
- * (`<!-<!-- x -->- y -->` must not survive as a comment opener).
+ * A file's visible copy: no `<style>`, no comments. A single left-to-right scan drops each block
+ * whole, so removing one can never splice its neighbours into a new one.
  */
 function copyOf(src: string): string {
-  let out = src;
-  for (let prev = ""; prev !== out; ) {
-    prev = out;
-    out = out
-      .replace(/<style[\s\S]*?<\/style>/g, "")
-      .replace(/<!--[\s\S]*?-->/g, "")
-      .replace(/\/\*[\s\S]*?\*\//g, "")
-      .replace(/^\s*\/\/.*$/gm, "");
+  let out = cut(cut(src, "<style", "</style>"), "<!--", "-->");
+  out = cut(out, "/*", "*/");
+  return out.replace(/^\s*\/\/.*$/gm, "");
+}
+
+/** `src` with every `open … close` span removed by a plain scan (no regex, so nothing re-forms). */
+function cut(src: string, open: string, close: string): string {
+  let out = "";
+  let at = 0;
+  for (;;) {
+    const s = src.indexOf(open, at);
+    if (s < 0) return out + src.slice(at);
+    out += src.slice(at, s);
+    const e = src.indexOf(close, s + open.length);
+    if (e < 0) return out;
+    at = e + close.length;
   }
-  return out;
 }
 
 describe("the hero", () => {
