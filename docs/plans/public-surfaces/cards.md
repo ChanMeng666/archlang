@@ -340,6 +340,9 @@ are in `README.md`. Every card:
 
 - `/projects/archlang` returns 404 today. Add a product page from `data/profile`: the canonical
   line, the card, the doors, the films.
+- As built (2d-portfolio #12): the premise was wrong. chanmeng.org has no per-project pages by
+  design (one job per page); ArchLang lives on the home stage and `/work`. The stage now carries the
+  canonical line and every door, and the "12,882 tests" count is gone. No new route.
 
 ### O7 · Film repos and `awesome-aec-mcp`
 
