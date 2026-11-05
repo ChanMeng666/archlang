@@ -10,9 +10,10 @@
  *   2. tsc: `tsconfig.json` (src) or `tsconfig.dev.json` (src + test/eval/dataset/scripts/bench),
  *      whichever the changes need, and `typecheck` in each changed workspace.
  *   3. `check:drift`, unless every change is a test file.
- *   4. The nearest tests: the changed test files, then the tests that import a changed file,
- *      nearest first by import distance, up to `--max` files (default 20). The cut is printed;
- *      CI runs the rest.
+ *   4. The nearest tests: the changed test files, then the tests that import a changed file (or
+ *      open a changed doc or data file by name; a `README.md` or `CHANGELOG.md` only by a path
+ *      that resolves to it), nearest first by import distance, up to `--max` files (default 20).
+ *      The cut is printed; CI runs the rest.
  *
  * Flags: `--base <ref>` (default origin/main), `--max <n>`, `--fix` (let Biome write its fixes),
  * `--no-drift`, `--no-tests`, `--list`
@@ -107,6 +108,39 @@ function resolveSpec(fromFile, spec) {
   return null;
 }
 
+/** The folder of the nearest `package.json` above `file` ("" for the repository root). */
+function workspaceOf(file) {
+  let dir = posix.dirname(file);
+  while (dir !== "." && dir !== "") {
+    if (existsSync(join(ROOT, dir, "package.json"))) return dir;
+    dir = posix.dirname(dir);
+  }
+  return "";
+}
+
+/**
+ * Whether test `t` reads the changed file `f` whose name (`README.md`, `CHANGELOG.md`, …) is too
+ * common to match on alone. A quoted literal ending in the name counts when it resolves to `f`: a
+ * `./`/`../` path from the test's folder, any other path from the repository root, and a bare name
+ * when `f` sits at the root of the test's own workspace (a `join(ROOT, "README.md")`).
+ */
+function readsGeneric(t, text, f, name) {
+  // Plain quotes only: a name in backticks is a comment's, not a path the test opens.
+  const lit = new RegExp(`["']([^"'\\s]*${name.replace(/\./g, "\\.")})["']`, "g");
+  for (const m of text.matchAll(lit)) {
+    const p = m[1];
+    if (p === name) {
+      const ws = workspaceOf(t);
+      if (f === (ws ? `${ws}/${name}` : name)) return true;
+    } else if (p.startsWith(".")) {
+      if (posix.normalize(posix.join(posix.dirname(t), p)) === f) return true;
+    } else if (posix.normalize(p.replace(/^\//, "")) === f) {
+      return true;
+    }
+  }
+  return false;
+}
+
 function nearestTests() {
   const tracked = lines(git("ls-files", "--cached", "--others", "--exclude-standard"))
     .map((f) => f.replace(/\\/g, "/"))
@@ -130,14 +164,15 @@ function nearestTests() {
   // importing it: a test with a string literal ending in the file's name counts as one import away
   // (a mention in a comment does not).
   const testTexts = tracked.filter(isTest).map((t) => [t, readFileSync(join(ROOT, t), "utf8")]);
-  // Names too common to say which file a test reads are skipped (CI covers those).
+  // A name too common to say which file a test reads (every package has a README.md) counts only
+  // when the test's literal resolves to the changed file itself: see `readsGeneric`.
   const GENERIC = new Set(["package.json", "package-lock.json", "README.md", "CHANGELOG.md", "tsconfig.json"]);
   for (const f of changed) {
     if (CODE.test(f)) continue;
     const name = posix.basename(f);
-    if (GENERIC.has(name)) continue;
+    const generic = GENERIC.has(name);
     for (const [t, text] of testTexts) {
-      if (text.includes(`${name}"`) || text.includes(`${name}'`)) {
+      if (generic ? readsGeneric(t, text, f, name) : text.includes(`${name}"`) || text.includes(`${name}'`)) {
         if (!importers.has(f)) importers.set(f, new Set());
         importers.get(f).add(t);
       }
