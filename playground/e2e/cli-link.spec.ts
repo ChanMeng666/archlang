@@ -23,9 +23,13 @@ const { playground, embed } = planLinks(STUDIO);
 const fragment = (url: string): string => new URL(url).hash;
 
 test.describe("archlang link", () => {
-  test("the playground link loads examples/studio.arch into the editor, byte for byte", async ({ page }) => {
+  test("the playground link opens examples/studio.arch in the editor, byte for byte", async ({ page }) => {
+    // `arch link` mints `#z=<payload>&edit`: the playground opens in edit mode, source beside plan.
+    expect(fragment(playground)).toMatch(/^#z=[A-Za-z0-9_-]+&edit$/);
     await page.goto(`/${fragment(playground)}`);
     await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
+    await expect(page.locator("#sourceToggle")).toHaveAttribute("aria-pressed", "true");
     await expect(page.locator(".cm-content")).toContainText('plan "Studio 1BR" {');
     // No autosave or default example got in first.
     await expect(page.locator(".pz-stage svg")).toContainText("Studio");
@@ -35,7 +39,8 @@ test.describe("archlang link", () => {
     await status.expectFlash("Link copied");
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     const hash = new URL(copied).hash;
-    expect(hash).toMatch(/^#z=/);
+    // The copy is a link to share: the plan, and no edit-mode flag.
+    expect(hash).toMatch(/^#z=[A-Za-z0-9_-]+$/);
     expect(decodePlanHash(hash.slice("#z=".length))).toBe(STUDIO);
   });
 

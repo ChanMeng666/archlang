@@ -1,9 +1,11 @@
 /**
  * Playground chrome — the shell around the app: reset, page frame, the cool-grey
- * source-world header (a title-block toolbar), the two-pane grid, pane headers,
- * output tabs, the compile-seam divider, and the mobile stacking. Tokens live in
- * tokens.css. This is source-world chrome; the sheet-world panels are styled in
- * panels.css. Both worlds are LIGHT (ADR 0014) — no dark surface anywhere.
+ * source-world header (brand, plan picker, Source · Checks · Tools · Make your own),
+ * the Tools menu, the intro line, the two modes (view: the drawing alone; edit: the
+ * two-pane grid), pane headers, output tabs, the compile-seam divider, the Make-your-own
+ * dialog and the mobile layout. Tokens live in tokens.css. This is source-world chrome;
+ * the sheet-world panels are styled in panels.css. Both worlds are LIGHT (ADR 0014) —
+ * no dark surface anywhere.
  */
 
 * {
@@ -22,52 +24,26 @@ body {
   flex-direction: column;
 }
 
-/* ── Header = source-world chrome: a title-block toolbar on carbon ──────────
-   One row of hairline-separated cells, each a caps micro-label over its
-   controls — the drafting title block, not a strip of pills. */
+/* ── Header = source-world chrome ──────────────────────────────────────────
+   One row: the brand and the plan picker on the left, at most four controls on the
+   right. Narrower than they fit, the items wrap instead of scrolling the page sideways. */
 header {
   display: flex;
-  /* A fallback, not the layout: at ≥1280px the cells fit one row (the compaction
-     below sees to it); narrower, they wrap instead of scrolling the page sideways. */
   flex-wrap: wrap;
-  align-items: stretch;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
   background: var(--src-bg);
   color: var(--src-fg);
   border-bottom: 1px solid var(--hairline);
 }
 
-/* a title-block cell: micro-label stacked over its controls, hairline-divided */
-.tb-cell {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px 12px;
-  border-right: 1px solid var(--src-border);
-}
-.tb-label {
-  font-family: var(--font-display);
-  font-variation-settings:
-    "wdth" 85,
-    "wght" 600;
-  font-size: 10px;
-  line-height: 1;
-  letter-spacing: 0.09em;
-  text-transform: uppercase;
-  color: var(--src-muted);
-}
-.tb-controls {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-}
-
-/* brand cell — mark + wordmark + squared stamp badge, laid out as a row */
+/* brand — mark + wordmark + squared stamp badge, laid out as a row */
 .tb-brand {
-  flex-direction: row;
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding-right: 14px;
+  padding-right: 6px;
 }
 .tb-brand .brand-mark {
   width: 20px;
@@ -102,13 +78,15 @@ header {
   border-radius: 2px;
 }
 
-/* squared carbon controls — selects & buttons share the chrome */
-.tb-controls select,
-.tb-controls button {
+/* squared carbon controls — the header's buttons, the picker and everything in Tools */
+.hd-picker,
+.hd-btn,
+.tools-panel select,
+.tools-panel button {
   font-family: var(--font-body);
   font-size: 12.5px;
   line-height: 1.2;
-  padding: 5px 10px;
+  padding: 6px 11px;
   /* a control's only edge must clear 3:1 — --src-rule, not the decorative --src-border */
   border: 1px solid var(--src-rule);
   border-radius: 3px;
@@ -121,57 +99,73 @@ header {
     background 0.15s,
     border-color 0.15s;
 }
-.tb-controls select {
+/* The closed plan picker stays compact so a long label (e.g. "Bungalow (site + doors)")
+   cannot blow the header row wider than the viewport; the open list shows every one. */
+.hd-picker {
+  max-width: 210px;
+  text-overflow: ellipsis;
   padding-right: 8px;
 }
-/* Keep the closed examples select compact so a long option label (e.g.
-   "Bungalow (site + doors)") can't blow the header row wider than the
-   viewport; the open dropdown still shows every option in full. 190px is the
-   width the longest label needs without the closed control eating the row. */
-#examples {
-  max-width: 190px;
-  text-overflow: ellipsis;
-}
-.tb-controls select option {
+.hd-picker option,
+.tools-panel select option {
   color: var(--src-fg);
   background: var(--src-surface);
 }
-/* Group headings in the examples dropdown. The UA default is italic, which reads
-   as an option that is somehow disabled; a non-italic semibold label in the muted
-   source ink reads as a heading instead. */
-.tb-controls select optgroup {
+/* Group headings in the picker. The UA default is italic, which reads as an option
+   that is somehow disabled; a non-italic semibold label reads as a heading instead. */
+.hd-picker optgroup {
   font-style: normal;
   font-weight: 600;
   color: var(--src-muted);
   background: var(--src-bg);
 }
-.tb-controls select:hover,
-.tb-controls button:hover {
+.hd-picker:hover,
+.hd-btn:hover,
+.tools-panel select:hover,
+.tools-panel button:hover {
   border-color: var(--plum);
   background: color-mix(in srgb, var(--plum) 8%, var(--src-surface));
 }
-.tb-controls select:focus-visible,
-.tb-controls button:focus-visible {
+.hd-picker:focus-visible,
+.hd-btn:focus-visible,
+.tools-panel select:focus-visible,
+.tools-panel button:focus-visible {
   outline: 2px solid var(--plum-deep);
   outline-offset: 1px;
 }
-.tb-controls button:active {
+.hd-btn:active,
+.tools-panel button:active {
   transform: translateY(1px);
 }
-
-/* Download — the one loud control: solid redline fill, both worlds' accent.
-   White on --redline-ink = 6.5:1; the hover lightens to --redline, still 5.4:1. */
-.tb-controls button.tb-primary {
+.tools-panel button:disabled {
+  cursor: progress;
+  opacity: 0.55;
+}
+/* Source pressed = edit mode is on */
+.hd-btn[aria-pressed="true"] {
+  border-color: var(--plum-deep);
+  background: color-mix(in srgb, var(--plum) 12%, var(--src-surface));
+}
+.hd-btn[hidden] {
+  display: none;
+}
+/* Make your own, and Download / Copy short link in Tools — the loud controls: solid
+   redline fill, both worlds' accent. White on --redline-ink = 6.5:1; the hover lightens
+   to --redline, still 5.4:1. */
+.hd-btn.hd-primary,
+.tools-panel button.tb-primary {
   background: var(--redline-ink);
   border-color: transparent;
   color: #fff;
   font-weight: 600;
 }
-.tb-controls button.tb-primary:hover {
+.hd-btn.hd-primary:hover,
+.tools-panel button.tb-primary:hover {
   background: var(--redline);
   border-color: transparent;
 }
-.tb-controls button.tb-primary:focus-visible {
+.hd-btn.hd-primary:focus-visible,
+.tools-panel button.tb-primary:focus-visible {
   outline-color: var(--src-fg);
 }
 
@@ -179,186 +173,152 @@ header {
   flex: 1;
 }
 
-/* NAV — quiet text links, right-aligned, no boxes */
-.tb-nav {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 0 18px;
-}
-.tb-nav a {
-  font-family: var(--font-display);
-  font-variation-settings:
-    "wdth" 90,
-    "wght" 500;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  color: var(--src-muted);
-  text-decoration: none;
-  transition: color 0.15s;
-}
-.tb-nav a:hover {
-  color: var(--src-fg);
-}
-.tb-nav a:focus-visible {
-  outline: 2px solid var(--plum-deep);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-/* A quiet text link among the Share controls (the agents page): same ink as the NAV
-   links, no box, so it adds ~55px to the row rather than a full button. */
-.tb-controls a.tb-link {
-  font-family: var(--font-display);
-  font-variation-settings:
-    "wdth" 90,
-    "wght" 500;
-  font-size: 12px;
-  letter-spacing: 0.02em;
-  color: var(--src-muted);
-  text-decoration: none;
-  white-space: nowrap;
-  padding: 0;
-  transition: color 0.15s;
-}
-.tb-controls a.tb-link:hover {
-  color: var(--src-fg);
-}
-.tb-controls a.tb-link:focus-visible {
-  outline: 2px solid var(--plum-deep);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
-
-/* NAV overflow disclosure (shown <1600px) — a "⋯" menu */
-.tb-nav-more {
-  display: none;
+/* ── Tools — every other action, in one menu ───────────────────────────────── */
+.tools {
   position: relative;
-  align-self: center;
-  margin: 0 12px 0 auto;
 }
-.tb-nav-more > summary {
+.tools > summary {
   list-style: none;
-  cursor: pointer;
-  padding: 4px 10px;
-  border: 1px solid var(--src-border);
-  border-radius: 3px;
-  color: var(--src-fg);
-  font-size: 14px;
-  line-height: 1;
 }
-.tb-nav-more > summary::-webkit-details-marker {
+.tools > summary::-webkit-details-marker {
   display: none;
 }
-.tb-nav-more > summary:focus-visible {
-  outline: 2px solid var(--plum-deep);
-  outline-offset: 1px;
-}
-.tb-nav-panel {
+.tools-panel {
   position: absolute;
   right: 0;
   top: calc(100% + 6px);
-  z-index: 20;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 6px;
-  min-width: 150px;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px 18px;
+  width: min(720px, calc(100vw - 28px));
+  max-height: calc(100dvh - 80px);
+  overflow: auto;
+  padding: 14px;
   background: var(--src-surface);
   border: 1px solid var(--src-rule);
   border-radius: 3px;
   box-shadow: 0 8px 24px rgb(28 36 48 / 18%);
 }
-.tb-nav-panel a {
+/* a closed disclosure's absolutely positioned panel must not widen the scroll area */
+.tools:not([open]) .tools-panel {
+  display: none;
+}
+.tools-group {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  min-width: 0;
+}
+.tools-group > button,
+.tools-group > select {
+  text-align: left;
+}
+.tools-h {
+  margin: 0 0 2px;
   font-family: var(--font-display);
   font-variation-settings:
-    "wdth" 90,
-    "wght" 500;
-  font-size: 12.5px;
-  letter-spacing: 0.02em;
+    "wdth" 85,
+    "wght" 600;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
   color: var(--src-muted);
+}
+.tools-note {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--src-muted);
+  white-space: normal;
+}
+.tools-group a {
+  font-family: var(--font-body);
+  font-size: 12.5px;
+  color: var(--src-fg);
   text-decoration: none;
-  padding: 6px 8px;
+  padding: 5px 6px;
   border-radius: 2px;
 }
-.tb-nav-panel a:hover {
-  color: var(--src-fg);
+.tools-group a:hover {
   background: color-mix(in srgb, var(--plum) 8%, transparent);
 }
-.tb-nav-panel a:focus-visible {
+.tools-group a:focus-visible {
   outline: 2px solid var(--plum-deep);
-  outline-offset: -1px;
+  outline-offset: 1px;
+}
+/* the related sites: one wrapping row across the whole panel */
+.tools-links {
+  grid-column: 1 / -1;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--src-border);
+}
+.tools-links .tools-h {
+  margin-right: 6px;
+}
+.tools-links a {
+  padding-block: 3px;
+  color: var(--src-muted);
+}
+.tools-links a:hover {
+  color: var(--src-fg);
 }
 
-/* ── the intro band — the page's crawlable prose ───────────────────────────
-   A quiet source-world strip between the header and the panes: one line of H1,
-   a short lede, one row of links. It is deliberately SMALL and deliberately
-   VISIBLE — no `display: none`, no off-screen text, no `visibility: hidden`.
+/* ── the intro line — the page's crawlable prose ──────────────────────────────
+   One line under the header: the H1 and a one-sentence lede. Deliberately SMALL and
+   deliberately VISIBLE — no `display: none`, no off-screen text, no `visibility: hidden`.
    Everything here is served in the HTML, because no crawler runs the editor.
-
-   `flex: none` is what keeps `main`'s `flex: 1` doing all the growing, so the
-   editor still fills the rest of the viewport exactly as it did before. */
+   `flex: none` keeps `main`'s `flex: 1` doing all the growing. */
 .intro {
   flex: none;
-  padding: 9px 14px 10px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 12px;
+  row-gap: 2px;
+  padding: 6px 14px 7px;
   background: var(--src-bg);
   color: var(--src-fg);
   border-bottom: 1px solid var(--hairline);
 }
-.intro__summary {
-  /* the native disclosure triangle is replaced by the ::after chevron below —
-     `list-style: none` handles Firefox, the -webkit pseudo handles Chromium */
-  list-style: none;
-  cursor: pointer;
-  display: flex;
-  align-items: baseline;
-  gap: 8px;
-}
-.intro__summary::-webkit-details-marker {
-  display: none;
-}
-.intro__summary::after {
-  content: "▴";
-  font-size: 12.5px;
-  line-height: 1;
-  color: var(--src-muted);
-}
-.intro__summary:hover::after {
-  color: var(--src-fg);
-}
-.intro__disclosure:not([open]) .intro__summary::after {
-  content: "▾";
-}
-.intro__summary:focus-visible {
-  outline: 2px solid var(--plum-deep);
-  outline-offset: 2px;
-  border-radius: 2px;
-}
 .intro h1 {
+  flex: none;
   font-family: var(--font-display);
   font-variation-settings:
-    "wdth" 95,
+    "wdth" 90,
     "wght" 600;
-  font-size: 1.1rem;
-  line-height: 1.25;
+  font-size: 0.95rem;
+  line-height: 1.3;
   letter-spacing: 0.005em;
   margin: 0;
   color: var(--src-fg);
 }
+/* The lede is the page's served prose, kept word for word; on a wide screen it runs on the H1's
+   line and stops at the edge with an ellipsis (the whole sentence is in the bytes, and wraps in
+   full below 900px), so the band stays one line and the drawing keeps the height. */
 .intro .lede {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--font-body);
-  font-size: 0.9rem;
-  line-height: 1.45;
-  margin: 5px 0 0;
-  max-width: 88ch;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  margin: 0;
   color: var(--src-muted);
 }
-.intro__links {
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  line-height: 1.4;
-  margin: 5px 0 0;
-  color: var(--src-muted);
+.intro noscript .lede {
+  flex-basis: 100%;
+  white-space: normal;
+  margin-top: 4px;
 }
 .intro a {
   /* --plum-deep, not --plum: this is body-size text (the brand token rule) */
@@ -553,42 +513,45 @@ main {
   outline-offset: 2px;
 }
 
-/* ── responsive ────────────────────────────────────────────────────────────
-   <1600px: NAV text links collapse into the "⋯" disclosure menu, so mid-width
-   laptops (1280–1600) never clip a link. Full text links only ≥1600px. */
-@media (max-width: 1599px) {
-  .tb-nav {
-    display: none;
-  }
-  .tb-nav-more {
-    display: block;
-    /* The agents link joined the Share cell; this gutter keeps "⋯" on the one row at 1280
-       (the cell padding below does the same work at 1440–1599; under 1440 the tighter
-       7px rule further down takes over). */
-    margin-right: 4px;
-  }
-  .tb-cell {
-    padding-left: 9px;
-    padding-right: 9px;
-  }
+/* ── view mode: the drawing is the page ─────────────────────────────────────
+   Every mode rule keys off `html[data-mode="edit"]`, so a page whose head script never
+   ran (no JavaScript) is in view mode. The editor pane, the seam and the edit-only tabs
+   leave; the divider's inline column ratio is overridden, not removed, so the split a
+   reader chose is still there when Source brings the editor back. */
+html:not([data-mode="edit"]) main {
+  grid-template-columns: minmax(0, 1fr) !important;
+}
+html:not([data-mode="edit"]) main > .pane:first-child,
+html:not([data-mode="edit"]) .divider {
+  display: none;
+}
+html:not([data-mode="edit"]) main > .pane + .pane {
+  border-left: 0;
+}
+html:not([data-mode="edit"]) :is(#tab-describe, #tab-lint, #tab-intent, #tab-takeoff) {
+  display: none;
 }
 
-/* <1440px: tighter cells and no "Playground" stamp (the page's H1 says it), so the
-   whole title block still fits one row at 1280px. */
-@media (max-width: 1439px) {
-  .tb-cell {
-    padding-left: 7px;
-    padding-right: 7px;
-  }
-  .tb-controls select,
-  .tb-controls button,
-  .tb-ai > summary {
-    padding-left: 8px;
-    padding-right: 8px;
-  }
-  .tb-brand .badge {
-    display: none;
-  }
+/* The drawing built into the page: no JavaScript has sized it yet, so CSS fits it to the
+   viewport exactly as pan-zoom.ts's fit() will (centred, FIT_PAD = 94 % of the limiting
+   side), and main.ts's adopt() hands it over without a jump. `--ar` is its width ÷ height,
+   written by scripts/gen-static.mjs. A visit that opens another plan (`pg-other`, set by the
+   head script) hides it until that plan is compiled. */
+.pz-viewport {
+  container-type: size;
+}
+.pz-stage:has(> svg[data-prerendered]) {
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+.pz-stage > svg[data-prerendered] {
+  width: min(94cqw, calc(94cqh * var(--ar, 1.4142)));
+  height: auto;
+  aspect-ratio: var(--ar, 1.4142);
+}
+.pg-other .pz-stage > svg[data-prerendered] {
+  visibility: hidden;
 }
 
 /* The phone view switcher (Code · Plan · Problems) — hidden above the breakpoint. */
@@ -596,11 +559,26 @@ main {
   display: none;
 }
 
-/* ≤900px — the phone (and portrait-tablet) layout. The page scrolls vertically past the header and the intro;
-   below them a sticky Code · Plan · Problems switcher sits over a workspace exactly one
-   screen tall that shows ONE view at a time (`main[data-mview]`, mobile-views.ts), so
-   each gets the full screen instead of a third of it. 16px side gutters, 44px touch
-   targets, and nothing wider than the viewport. */
+/* ── responsive ──────────────────────────────────────────────────────────── */
+/* <1440px: no "Playground" stamp (the page's H1 says it), so the row fits at 1280px. */
+@media (max-width: 1439px) {
+  .tb-brand .badge {
+    display: none;
+  }
+}
+/* Two columns of tools where three do not fit. */
+@media (max-width: 760px) {
+  .tools-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ≤900px — the phone (and portrait-tablet) layout. The page scrolls vertically past the
+   header and the intro; below them is a workspace exactly one screen tall. In view mode it
+   is the drawing alone; in edit mode a sticky Code · Plan · Problems switcher sits over it
+   and it shows ONE view at a time (`main[data-mview]`, mobile-views.ts), so each gets the
+   full screen instead of a third of it. 16px side gutters, 44px touch targets, and nothing
+   wider than the viewport. */
 @media (max-width: 900px) {
   html,
   body {
@@ -609,72 +587,76 @@ main {
   body {
     min-height: 100%;
   }
-  /* the Ask AI / "⋯" panels anchor to the header itself, so they span the gutters */
   header {
     position: relative;
-  }
-  .tb-cell {
     padding: 8px 16px;
-    border-bottom: 1px solid var(--src-border);
-    /* A title-block cell is as wide as the screen, never wider: its controls wrap. */
-    max-width: 100%;
+    row-gap: 8px;
   }
-  .tb-controls {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
-  .tb-controls select,
-  .tb-controls button,
-  .tb-ai > summary,
-  .tb-check,
-  .tb-nav-more > summary {
+  .hd-picker,
+  .hd-btn,
+  .tools-panel select,
+  .tools-panel button,
+  .tb-check {
     min-height: 44px;
+    font-size: 14px;
+  }
+  .hd-btn,
+  .tools-panel button {
     display: inline-flex;
     align-items: center;
   }
-  .tb-controls button,
-  .tb-ai > summary,
-  .tb-check {
-    font-size: 14px;
-  }
   /* 16px stops iOS zooming the page when a select takes focus */
-  .tb-controls select {
+  .hd-picker,
+  .tools-panel select {
     font-size: 16px;
   }
-  .tb-controls a.tb-link {
-    font-size: 14px;
-    padding: 12px 2px;
+  /* The picker takes the brand's row; the controls take the next one. */
+  .hd-picker {
+    flex: 1 1 140px;
+    max-width: none;
   }
-  .tb-nav-more {
-    margin-right: 16px;
+  .spacer {
+    flex-basis: 100%;
+    height: 0;
   }
-  .tb-nav-more > summary {
-    min-width: 44px;
+  .hd-btn {
+    flex: 1 1 auto;
     justify-content: center;
   }
-  .tb-ai {
+  /* the Tools panel anchors to the header itself, so it spans the gutters */
+  .tools {
     position: static;
+    flex: 1 1 auto;
+    display: flex;
   }
-  .tb-ai-panel {
+  .tools > summary {
+    flex: 1;
+  }
+  .tools-panel {
     left: 16px;
     right: 16px;
     width: auto;
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 70dvh;
   }
-  /* a closed disclosure's absolutely positioned panel still widens the scroll area */
-  .tb-ai:not([open]) .tb-ai-panel,
-  .tb-nav-more:not([open]) .tb-nav-panel {
-    display: none;
-  }
-  .tb-nav-panel a {
-    padding: 12px 10px;
+  .tools-group a {
+    padding: 11px 8px;
     font-size: 14px;
   }
 
   .intro {
-    padding: 12px 16px;
+    padding: 8px 16px;
+  }
+  /* Both wrap at phone width: the wide screen's one-line rule (`flex: none` on the H1, which
+     holds it at its one-line width, 459 px) would push the page 85 px sideways at 390 px. */
+  .intro h1,
+  .intro .lede {
+    flex: 1 1 100%;
+    min-width: 0;
+    white-space: normal;
   }
 
-  .mviews {
+  html[data-mode="edit"] .mviews {
     display: flex;
     position: sticky;
     top: 0;
@@ -724,19 +706,24 @@ main {
     display: none;
   }
 
-  /* exactly one screen under the sticky switcher */
+  /* exactly one screen (under the sticky switcher, in edit mode) */
   main {
     flex: none;
-    height: calc(100dvh - 48px);
+    height: 100dvh;
     grid-template-columns: 1fr !important;
     grid-template-rows: minmax(0, 1fr);
+  }
+  html[data-mode="edit"] main {
+    height: calc(100dvh - 48px);
   }
   main > .pane {
     display: none;
   }
-  main[data-mview="plan"] > .pane:nth-child(2),
-  main[data-mview="code"] > .pane:first-child,
-  main[data-mview="problems"] > .pane:first-child {
+  /* view mode: the drawing, whatever view edit mode last showed */
+  html:not([data-mode="edit"]) main > .pane:nth-child(2),
+  html[data-mode="edit"] main[data-mview="plan"] > .pane:nth-child(2),
+  html[data-mode="edit"] main[data-mview="code"] > .pane:first-child,
+  html[data-mode="edit"] main[data-mview="problems"] > .pane:first-child {
     display: flex;
   }
   .pane + .pane {
@@ -793,15 +780,15 @@ main {
 }
 
 /* a11y toggle — opt into the SVG <title>/<desc> metadata (compile's `accessible`).
-   Sits beside the download format, since it changes the exported bytes. */
+   Sits beside the render theme, since it changes the drawn and exported bytes. */
 .tb-check {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   font-family: var(--font-body);
   font-size: 12.5px;
   line-height: 1.2;
-  padding: 5px 8px;
+  padding: 6px 10px;
   border: 1px solid var(--src-rule);
   border-radius: 3px;
   background: var(--src-surface);
@@ -818,75 +805,92 @@ main {
   border-color: var(--plum-deep);
 }
 
-/* "Open in AI" disclosure — a header control that opens a small panel holding the
-   privacy note and the two chat-host links. The summary matches the buttons. */
-.tb-ai {
-  position: relative;
-}
-.tb-ai > summary {
-  list-style: none;
-  font-family: var(--font-body);
-  font-size: 12.5px;
-  line-height: 1.2;
-  padding: 5px 10px;
-  border: 1px solid var(--src-rule);
+/* ── Make your own — a paper sheet over the page ─────────────────────────── */
+.mo {
+  width: min(520px, calc(100vw - 32px));
+  padding: 0;
+  border: 1px solid var(--hairline);
   border-radius: 3px;
-  background: var(--src-surface);
-  color: var(--src-fg);
+  background: var(--paper-panel);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgb(28 36 48 / 0.28);
+}
+.mo::backdrop {
+  background: color-mix(in srgb, var(--ink) 45%, transparent);
+}
+.mo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--hairline);
+}
+.mo-head h2 {
+  margin: 0;
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 90,
+    "wght" 600;
+  font-size: 1.05rem;
+}
+.mo-close {
+  min-width: 36px;
+  min-height: 36px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: transparent;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1;
   cursor: pointer;
-  white-space: nowrap;
 }
-.tb-ai > summary::-webkit-details-marker {
-  display: none;
+.mo-close:focus-visible,
+.mo-doors a:focus-visible,
+.mo-doors button:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 2px;
 }
-.tb-ai > summary:hover {
-  border-color: var(--plum);
-  background: color-mix(in srgb, var(--plum) 8%, var(--src-surface));
+.mo-lede {
+  margin: 14px 18px 4px;
+  font-size: 0.92rem;
+  line-height: 1.5;
 }
-.tb-ai > summary:focus-visible {
-  outline: 2px solid var(--plum-deep);
-  outline-offset: 1px;
-}
-.tb-ai-panel {
-  position: absolute;
-  right: 0;
-  top: calc(100% + 6px);
-  z-index: 20;
+.mo-doors {
+  list-style: none;
+  margin: 8px 18px 18px;
+  padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  width: min(300px, calc(100vw - 32px));
-  padding: 8px;
-  background: var(--src-surface);
-  border: 1px solid var(--src-rule);
+  gap: 10px;
+}
+.mo-doors li {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
   border-radius: 3px;
-  box-shadow: 0 8px 24px rgb(28 36 48 / 18%);
+  background: var(--paper);
 }
-.tb-ai-note {
-  margin: 0 0 6px;
-  font-family: var(--font-body);
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--src-muted);
-  white-space: normal;
-}
-.tb-ai-panel a {
-  font-family: var(--font-body);
-  font-size: 12.5px;
-  color: var(--src-fg);
+.mo-doors a,
+.mo-doors button {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  font-weight: 600;
+  color: var(--redline-ink);
   text-decoration: none;
-  padding: 6px 8px;
-  border-radius: 2px;
+  cursor: pointer;
+  min-height: 24px;
 }
-.tb-ai-panel a:hover {
-  background: color-mix(in srgb, var(--plum) 8%, transparent);
+.mo-doors a:hover,
+.mo-doors button:hover {
+  text-decoration: underline;
 }
-.tb-ai-panel a:focus-visible {
-  outline: 2px solid var(--plum-deep);
-  outline-offset: 1px;
-}
-/* "Copy link": the same panel, holding the note and two buttons (short, full). */
-.tb-share .tb-ai-panel {
-  gap: 6px;
-  width: min(260px, calc(100vw - 32px));
+.mo-doors span {
+  font-size: 0.85rem;
+  color: var(--ink-muted);
 }

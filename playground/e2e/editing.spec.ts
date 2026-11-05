@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
-import { ARC_RADIUS_ERROR_PLAN, RESIZED_PLAN, SIMPLE_PLAN, setEditorSource, waitForPlan } from "./fixtures.js";
+import { ARC_RADIUS_ERROR_PLAN, gotoEdit, RESIZED_PLAN, SIMPLE_PLAN, setEditorSource } from "./fixtures.js";
 
 /**
  * The authoring loop, end to end in the browser: type → debounced recompile →
- * diagnostics as data → apply the machine-applicable fix → clean again.
+ * diagnostics as data → apply the machine-applicable fix → clean again. In edit mode
+ * (`gotoEdit`), where the editor and the diagnostics drawer are.
  *
  * The fix button routes through the same `rankFixes` → `applyFixes` pair that
  * `arch fix` uses, so this is also the assertion that the page and the CLI make
@@ -11,8 +12,7 @@ import { ARC_RADIUS_ERROR_PLAN, RESIZED_PLAN, SIMPLE_PLAN, setEditorSource, wait
  */
 test.describe("editing", () => {
   test("a typed edit recompiles the preview after the debounce", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
 
     await setEditorSource(page, SIMPLE_PLAN);
     await expect.poll(() => page.locator(".pz-stage svg").getAttribute("viewBox")).toBeTruthy();
@@ -25,8 +25,7 @@ test.describe("editing", () => {
   });
 
   test("surfaces an E_ code in the diagnostics panel and applies its fix", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
 
     await setEditorSource(page, ARC_RADIUS_ERROR_PLAN);
 
@@ -54,8 +53,7 @@ test.describe("editing", () => {
   });
 
   test("keeps the last good preview while the source is broken", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     await expect(page.locator("#status")).not.toHaveClass(/err/);
     const good = await page.locator(".pz-stage svg").getAttribute("viewBox");
@@ -68,8 +66,7 @@ test.describe("editing", () => {
   });
 
   test("a diagnostic row jumps the editor caret to its source span", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, ARC_RADIUS_ERROR_PLAN);
 
     const row = page.locator("#errors .diagrow").first();
@@ -83,8 +80,7 @@ test.describe("editing", () => {
   });
 
   test("the Lint tab reports soundness separately from compile errors", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     // A room with no door: reachable-room lint fires, but the plan still COMPILES.
     await setEditorSource(
       page,

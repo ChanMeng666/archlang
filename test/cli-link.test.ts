@@ -10,7 +10,9 @@
  *   - the CLI contract: stdout is the URL (or `{ ok, playground, embed, bytes }` with `--json`),
  *     a plan that does not compile still links with exit 0, `ok:false` + an `errors` count and one
  *     warning line on stderr;
- *   - the URLs carry nothing but the plan: no query string, the fragment alone.
+ *   - the URLs carry nothing but the plan: no query string, the fragment alone — on the playground
+ *     link, the plan and the `&edit` flag that opens the editor (the playground opens in view mode
+ *     without it), with the plan token still parsing in front of it.
  *
  * The browser end of the same claim — the studio link loads `examples/studio.arch` into the
  * editor — is `playground/e2e/cli-link.spec.ts`.
@@ -20,9 +22,9 @@ import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { b64urlToBytes, srcFromHash } from "../playground/src/share.js";
+import { b64urlToBytes, hasEditFlag, srcFromHash } from "../playground/src/share.js";
 import { planLinks } from "../src/cli/link.js";
-import { decodePlanHash, encodePlanHash, PLAYGROUND_ORIGIN } from "../src/cli/share-codec.mjs";
+import { decodePlanHash, encodePlanHash, PLAYGROUND_EDIT_FLAG, PLAYGROUND_ORIGIN } from "../src/cli/share-codec.mjs";
 
 interface Run {
   status: number | null;
@@ -54,7 +56,8 @@ const EXAMPLES = readdirSync("examples")
   .filter((f) => f.endsWith(".arch"))
   .sort();
 const read = (name: string): string => readFileSync(join("examples", name), "utf8");
-const payloadOf = (url: string): string => new URL(url).hash.slice("#z=".length);
+/** The `#z=` payload of a minted URL (the playground link carries `&edit` after it). */
+const payloadOf = (url: string): string => /^#z=([A-Za-z0-9_-]+)/.exec(new URL(url).hash)?.[1] ?? "";
 const STUDIO = read("studio.arch");
 const BROKEN = 'plan "X" {\n  romo at (0,0)\n}\n';
 
@@ -78,6 +81,8 @@ describe("the #z= payload round-trips over every example", () => {
     // Node has deflate-raw, exactly as the browser does it.
     expect(b64urlToBytes(payloadOf(playground))).toEqual(new Uint8Array(Buffer.from(payloadOf(playground), "base64")));
     if (HAS_DEFLATE_RAW) expect(await srcFromHash(hash)).toBe(source);
+    // …and the same hash asks for edit mode, read by the playground's own rule.
+    expect(hasEditFlag(hash)).toBe(true);
   });
 });
 
@@ -124,8 +129,11 @@ describe("one Node encoder", () => {
       expect(u.origin).toBe(PLAYGROUND_ORIGIN);
       expect(u.pathname).toBe(path);
       expect(u.search).toBe("");
-      expect(u.hash).toMatch(/^#z=[A-Za-z0-9_-]+$/);
     }
+    // The playground link opens the editor (`&edit`); the embed only draws, so it carries no flag.
+    expect(PLAYGROUND_EDIT_FLAG).toBe("edit");
+    expect(new URL(links.playground).hash).toMatch(/^#z=[A-Za-z0-9_-]+&edit$/);
+    expect(new URL(links.embed).hash).toMatch(/^#z=[A-Za-z0-9_-]+$/);
     expect(payloadOf(links.embed)).toBe(payloadOf(links.playground));
     expect(links.bytes).toBe(Buffer.from(payloadOf(links.playground), "base64").length);
   });

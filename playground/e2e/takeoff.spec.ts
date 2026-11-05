@@ -1,13 +1,16 @@
 import { expect, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { describe, describeLevel, takeoffCsv } from "../../src/index.js";
-import { RESIZED_PLAN, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import { openTools, RESIZED_PLAN, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * The Takeoff tab, on the assembled page: its code arrives on the first open and no sooner, it shows
  * the core's `quantities` block, the waste box is the author's and starts blank, it follows a
  * recompile and the storey switcher, and its CSV is the bytes `takeoffCsv` writes. Every figure asserted
  * is read from the core here, never retyped.
+ *
+ * The tab is edit mode's: `open` loads the plan with `&edit`, and the first case reaches it from
+ * view mode through the Tools menu, which opens the editor on the way.
  *
  * UNTAGGED (no `@prod`): it types, downloads and reads the clipboard.
  */
@@ -16,7 +19,7 @@ const facts = (src: string, wastePct?: number) =>
   describe(src, { facts: ["quantities"], ...(wastePct !== undefined ? { wastePct } : {}) });
 
 const open = async (page: Page, src: string): Promise<void> => {
-  await page.goto(`/${await shareHash(src)}`);
+  await page.goto(`/${await shareHash(src)}&edit`);
   await waitForPlan(page);
   await page.locator("#tab-takeoff").click();
   await expect(page.locator("#takeoffOutput table").first()).toBeVisible();
@@ -35,7 +38,10 @@ test.describe("Takeoff tab", () => {
     await expect(page.locator("#takeoff")).toBeEmpty();
     expect(chunks).toEqual([]);
 
-    await page.locator("#tab-takeoff").click();
+    // From view mode, through Tools: it opens the editor, then the tab.
+    await openTools(page);
+    await page.getByRole("button", { name: "Takeoff", exact: true }).click();
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
     await expect(page.locator("#takeoff")).toHaveClass(/active/);
     await expect(body(page)).toContainText("Walls by category");
     expect(chunks).toHaveLength(1);

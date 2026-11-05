@@ -3,7 +3,16 @@ import * as core from "../../dist/index.js";
 import { decodePlanHash } from "../../src/cli/share-codec.mjs";
 import { makeShareWorker } from "../worker/app.js";
 import type { Env, ShareMeta } from "../worker/types.js";
-import { chooseLink, SIMPLE_PLAN, setEditorSource, waitForPlan, watchStatus } from "./fixtures.js";
+import {
+  chooseLink,
+  enterEdit,
+  gotoEdit,
+  openTools,
+  SIMPLE_PLAN,
+  setEditorSource,
+  waitForPlan,
+  watchStatus,
+} from "./fixtures.js";
 
 /**
  * Short links (ADR 0034), end to end: Copy short link → open `/s/<id>` → the editor holds the
@@ -14,6 +23,9 @@ import { chooseLink, SIMPLE_PLAN, setEditorSource, waitForPlan, watchStatus } fr
  * through Playwright's request routing: the page's real `fetch` and its real navigation to
  * `/s/<id>` reach the real handler code. What this cannot see (the asset layer's routing, KV
  * itself) is `scripts/smoke.mjs --site playground`'s, against the deployed site.
+ *
+ * The plans are typed in edit mode (`gotoEdit`); the links sit in the Tools menu's Share group. A
+ * short link opens in view mode (it names a plain `#z=` link), so the editor is opened to read it.
  */
 
 /** Route `/api/share…` and `/s/…` to the Worker's handler over a fresh store; returns the store. */
@@ -60,13 +72,12 @@ test.describe("short links", () => {
 
   test("Copy short link → open /s/<id> → the editor holds the plan byte for byte", async ({ page }) => {
     const store = await serveShortLinks(page);
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
     // The note sits next to the choice it describes.
-    await page.locator("#shareMenu > summary").click();
+    await openTools(page);
     await expect(page.locator("#shareNote")).toHaveText(
       "A short link stores this plan on archlang.uk's server; the full link does not.",
     );
@@ -82,6 +93,9 @@ test.describe("short links", () => {
     await page.goto(new URL(short).pathname);
     await page.waitForURL((u) => u.pathname === "/" && u.hash.startsWith("#z="));
     await waitForPlan(page);
+    // A shared plan opens in view mode; Source shows its text.
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await enterEdit(page);
     await expect(page.locator(".cm-content")).toContainText('plan "E2E" {');
 
     // Read the editor's whole document back through the full link, then decode it.
@@ -94,8 +108,7 @@ test.describe("short links", () => {
 
   test("the same plan shared twice gets the same short link", async ({ page }) => {
     const store = await serveShortLinks(page);
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const links: string[] = [];
     for (let i = 0; i < 2; i++) {
@@ -110,21 +123,20 @@ test.describe("short links", () => {
 
   test("with no server to ask, Copy short link copies the full link and says so", async ({ page }) => {
     // `vite preview` answers no /api/share; nothing is routed here.
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
     await chooseLink(page, "short");
     await status.expectFlash("Short link unavailable: full link copied");
     const copied = await page.evaluate(() => navigator.clipboard.readText());
-    expect(copied).toBe(await page.evaluate(() => window.location.href));
+    // The page's URL less the edit-mode flag: a shared link opens the drawing first.
+    expect(copied).toBe(await page.evaluate(() => window.location.href.replace(/&edit$/, "")));
     expect(decodePlanHash(new URL(copied).hash.slice("#z=".length))).toBe(SIMPLE_PLAN);
   });
 
   test("embed.html#s=<id> draws the stored plan; an unknown id says so", async ({ page }) => {
     await serveShortLinks(page);
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
     await chooseLink(page, "short");

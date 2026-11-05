@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import { gotoEdit, openTools, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * The output tabs, the persisted view preferences, and the two preview
@@ -7,8 +7,7 @@ import { SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures
  */
 test.describe("output tabs", () => {
   test("each tab shows its own panel and hides the others", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
 
     for (const [tab, view] of [
       ["#tab-describe", "#describe"],
@@ -26,16 +25,14 @@ test.describe("output tabs", () => {
   });
 
   test("Describe shows the semantic facts the CLI's `describe --json` returns", async ({ page }) => {
-    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
-    await waitForPlan(page);
+    await gotoEdit(page, await shareHash(SIMPLE_PLAN));
     await page.locator("#tab-describe").click();
     await expect(page.locator("#describe")).toContainText("Main");
     await expect(page.locator("#describe")).not.toBeEmpty();
   });
 
   test("Lint reports the clean-plan verdict, not an empty panel", async ({ page }) => {
-    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
-    await waitForPlan(page);
+    await gotoEdit(page, await shareHash(SIMPLE_PLAN));
     await page.locator("#tab-lint").click();
     await expect(page.locator("#lintOutput .ok, #lintOutput .lintrow").first()).toBeVisible();
     await expect(page.locator("#lintCaption")).not.toBeEmpty();
@@ -48,8 +45,7 @@ test.describe("output tabs", () => {
   wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }
   room id=a at (0,0) size 6000x4000 label "Bedroom"
 }`;
-    await page.goto(`/${await shareHash(unreachable)}`);
-    await waitForPlan(page);
+    await gotoEdit(page, await shareHash(unreachable));
     await page.locator("#tab-lint").click();
 
     const suggest = page.locator("#suggest");
@@ -61,8 +57,7 @@ test.describe("output tabs", () => {
   });
 
   test("Intent checks the plan against a brief the panel pre-fills", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await page.locator("#tab-intent").click();
     await expect(page.locator("#intentSrc")).not.toBeEmpty();
     // Opening the tab runs the check once, so it is never an empty panel.
@@ -79,6 +74,7 @@ test.describe("persisted view preferences", () => {
     await waitForPlan(page);
     const before = await page.locator(".pz-stage svg").innerHTML();
 
+    await openTools(page);
     await page.locator("#theme").selectOption("blueprint");
     // A render theme restyles the produced SVG, so the drawing must actually change.
     await expect.poll(async () => (await page.locator(".pz-stage svg").innerHTML()) !== before).toBe(true);
@@ -86,11 +82,13 @@ test.describe("persisted view preferences", () => {
     await page.reload();
     await waitForPlan(page);
     await expect(page.locator("#theme")).toHaveValue("blueprint");
+    // The drawing built into the page is in the default theme, so with a saved theme it is
+    // hidden from the first paint (index.html's head script) instead of restyling in place.
+    await expect(page.locator("html")).toHaveClass(/pg-other/);
   });
 
   test("the lint profile survives a reload, with its caption", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await page.locator("#tab-lint").click(); // the selector lives inside the Lint panel
 
     await page.locator("#lintProfile").selectOption("accessibility-advisory");
@@ -108,6 +106,7 @@ test.describe("persisted view preferences", () => {
     await waitForPlan(page);
     const before = await page.locator(".pz-stage svg").innerHTML();
 
+    await openTools(page);
     await page.locator("#accessible").check();
     // Opt-in `<title>`/`<desc>`/`role="img"` metadata (ADR 0007) really lands…
     await expect.poll(async () => (await page.locator(".pz-stage svg").innerHTML()) !== before).toBe(true);
@@ -123,8 +122,7 @@ test.describe("persisted view preferences", () => {
   });
 
   test("the pane split ratio survives a reload", async ({ page }) => {
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await page.evaluate(() => localStorage.setItem("archlang.pg.split", "0.35"));
     await page.reload();
     await waitForPlan(page);
@@ -135,8 +133,7 @@ test.describe("persisted view preferences", () => {
 
 test.describe("preview interactions", () => {
   test("clicking a drawn element jumps the editor caret to its source", async ({ page }) => {
-    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
-    await waitForPlan(page);
+    await gotoEdit(page, await shareHash(SIMPLE_PLAN));
 
     // Put the caret on line 1 so any jump is observable. (`highlightActiveLine`
     // is in the extension set, so `.cm-activeLine` tracks the caret's line.)
@@ -194,24 +191,44 @@ test.describe("saved snapshots", () => {
     // `window.prompt` names the snapshot.
     page.on("dialog", (d) => void d.accept("E2E snapshot"));
 
-    await page.goto("/");
-    await waitForPlan(page);
+    await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
 
     const pop = page.locator(".snap-pop");
+    const tools = page.locator("#tools");
+    const toolsOpen = () => tools.evaluate((d) => (d as HTMLDetailsElement).open);
+    await openTools(page);
     await page.locator("#saved").click();
     await expect(pop).toBeVisible();
     await expect(pop.locator(".snap-empty")).toBeVisible();
+    // The popover belongs to Tools: the menu stays open beside it.
+    expect(await toolsOpen()).toBe(true);
 
+    // A click inside the popover is a click inside Tools: both stay open.
     await pop.locator(".snap-save").click();
     await expect(pop.locator(".snap-row")).toHaveCount(1);
     await expect(pop.locator(".snap-name")).toHaveText("E2E snapshot");
+    await expect(pop).toBeVisible();
+    expect(await toolsOpen()).toBe(true);
+
+    // Closing Tools closes the popover with it: never a popover floating over a closed menu.
+    await page.locator("#tools > summary").click();
+    await expect.poll(toolsOpen).toBe(false);
+    await expect(pop).toBeHidden();
+
+    // Escape closes both as well.
+    await openTools(page);
+    await page.locator("#saved").click();
+    await expect(pop).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(pop).toBeHidden();
+    await expect.poll(toolsOpen).toBe(false);
 
     // Edit away from the saved plan, then restore it.
-    await page.keyboard.press("Escape");
     await setEditorSource(page, SIMPLE_PLAN.replace('label "Main"', 'label "Elsewhere"'));
     await expect(page.locator(".cm-content")).toContainText("Elsewhere");
 
+    await openTools(page);
     await page.locator("#saved").click();
     await pop.locator(".snap-restore").first().click();
     await expect(page.locator(".cm-content")).toContainText('label "Main"');

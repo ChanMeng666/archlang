@@ -1,37 +1,31 @@
-import {
-  applyFixes,
-  compile,
-  describe,
-  describeLevel,
-  lint,
-  rankFixes,
-  suggestTopology,
-  THEMES,
-  LINT_PROFILE_NAMES,
-  type CompileOptions,
-  type Diagnostic,
-  type DescribeOptions,
-  type LintOptions,
-  type RoomSummary,
-} from "archlang";
-import { isolateHistory } from "@codemirror/commands";
-import type { EditorView } from "@codemirror/view";
-import { createEditor } from "./editor-setup.js";
+/**
+ * The playground's startup module: the view path. It shows the drawing (the one built into the
+ * page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and
+ * runs the header. Everything heavier is its own chunk, loaded when it is needed:
+ *
+ * - the compiler (`archlang`, the `compiler` chunk, preloaded by index.html but not
+ *   render-blocking) and the example sources: fetched as soon as this module runs;
+ * - the header actions (actions.ts): once the compiler is in;
+ * - the editor and its panels (edit-mode.ts: CodeMirror, completion, diagnostics, Describe,
+ *   Lint, Intent): on the first entry into edit mode;
+ * - the Takeoff and 3D preview tabs, jsPDF: on first use, as before.
+ *
+ * Modes: `view` (the default) gives the drawing the page; `edit` (the Source button, or `&edit`
+ * in the hash) is the editor beside it. index.html's head script sets `html[data-mode]` before
+ * the first paint; this module keeps it, the Source button and the hash flag in step.
+ */
+import type { CompileOptions, DescribeOptions, RoomSummary } from "archlang";
+import type { ActionsHandle } from "./actions.js";
+import type { EditMode } from "./edit-mode.js";
 import { createPreview } from "./preview.js";
 import { type LevelPage, selectPage } from "./levels.js";
 import { mountLevelSwitcher } from "./level-switcher.js";
-import { type ActionsHandle, mountActions } from "./actions.js";
 import { renderFacts } from "./facts-strip.js";
-import { renderDescribe } from "./describe-panel.js";
-import { renderLint } from "./lint-panel.js";
-import { renderDiagnostics } from "./diagnostics-panel.js";
 import { isNarrow, mountMobileViews } from "./mobile-views.js";
-import { renderIntent, STARTER_INTENT } from "./intent-panel.js";
-import { renderSuggest } from "./suggest-panel.js";
-import { srcFromHash, updateHash } from "./share.js";
+import { hasEditFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
+import { mountShell } from "./shell.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
-import { DEFAULT_EXAMPLE, EXAMPLE_GROUPS, EXAMPLES } from "./examples.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/public-sans/wght.css";
@@ -44,9 +38,17 @@ import "./styles/chrome.css";
 import "./styles/editor.css";
 import "./styles/panels.css";
 
+type Core = typeof import("./compiler.js");
+type Examples = typeof import("./examples.js");
+
+// Both start now, in parallel, after this module has run: the drawing is already on screen.
+const coreP: Promise<Core> = import("./compiler.js");
+const examplesP: Promise<Examples> = import("./examples.js");
+/** The compiler, once loaded. Nothing compiles before it. */
+let core: Core | undefined;
+
+const root = document.documentElement;
 const preview = document.getElementById("preview")!;
-const describeEl = document.getElementById("describe")!;
-const lintEl = document.getElementById("lint")!;
 const errorsEl = document.getElementById("errors")!;
 const statusEl = document.getElementById("status")!;
 const statusText = document.getElementById("statusText")!;
@@ -57,25 +59,8 @@ const select = document.getElementById("examples") as HTMLSelectElement;
 const formatSelect = document.getElementById("format") as HTMLSelectElement | null;
 const themeSelect = document.getElementById("theme") as HTMLSelectElement;
 const accessibleToggle = document.getElementById("accessible") as HTMLInputElement | null;
-const lintProfileSelect = document.getElementById("lintProfile") as HTMLSelectElement;
-const lintCaptionEl = document.getElementById("lintCaption")!;
-const lintOutput = document.getElementById("lintOutput")!;
-const copyLinkBtn = document.getElementById("copyLink")!;
-const copyLlmBtn = document.getElementById("copyLlm");
-const savedBtn = document.getElementById("saved") as HTMLButtonElement;
-const formatBtn = document.getElementById("formatSrc") as HTMLButtonElement | null;
-const embedBtn = document.getElementById("embed");
-const repairBtn = document.getElementById("repair");
-const repairPanel = document.getElementById("repairPanel");
 const finishPanel = document.getElementById("finishPanel");
-const suggestBtn = document.getElementById("suggest");
-const suggestPanel = document.getElementById("suggestPanel");
-const intentEl = document.getElementById("intent")!;
-const intentSrc = document.getElementById("intentSrc") as HTMLTextAreaElement;
-const intentRunBtn = document.getElementById("intentRun")!;
-const intentOutput = document.getElementById("intentOutput")!;
 const factsEl = document.getElementById("facts")!;
-const downloadBtn = document.getElementById("download")!;
 const pzViewport = document.querySelector<HTMLElement>(".pz-viewport")!;
 const pzStage = document.querySelector<HTMLElement>(".pz-stage")!;
 const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
@@ -93,9 +78,9 @@ const takeoffEl = document.getElementById("takeoff")!;
 const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
 const views: Record<string, HTMLElement> = {
   preview,
-  describe: describeEl,
-  lint: lintEl,
-  intent: intentEl,
+  describe: document.getElementById("describe")!,
+  lint: document.getElementById("lint")!,
+  intent: document.getElementById("intent")!,
   takeoff: takeoffEl,
   preview3d: preview3dEl,
 };
@@ -114,50 +99,31 @@ for (const tab of tabs) {
   });
 }
 
-// One <optgroup> per example group — two dozen flat options is a wall, and the
-// grouping is the same one the docs' example tour uses.
-for (const { group, items } of EXAMPLE_GROUPS) {
-  const g = document.createElement("optgroup");
-  g.label = group;
-  for (const { label } of items) {
-    const o = document.createElement("option");
-    o.value = label;
-    o.textContent = label;
-    g.appendChild(o);
+/** One <optgroup> per example group — the grouping the docs' example tour uses. */
+function fillPicker({ EXAMPLE_GROUPS }: Examples): void {
+  const keep = select.value;
+  select.replaceChildren();
+  for (const { group, items } of EXAMPLE_GROUPS) {
+    const g = document.createElement("optgroup");
+    g.label = group;
+    for (const { label } of items) {
+      const o = document.createElement("option");
+      o.value = label;
+      o.textContent = label;
+      g.appendChild(o);
+    }
+    select.appendChild(g);
   }
-  select.appendChild(g);
+  if (keep) select.value = keep;
 }
-
-// ---- lint-profile selector (advisory rule sets) ----
-// One-line description of what each profile tightens, shown under the selector. The first
-// option, value "", is the default ruleset (no profile), as `lint()` and the CLI run it.
-const LINT_PROFILE_CAPTIONS: Record<string, string> = {
-  "": "Default — doors ≥ 700 mm, habitable rooms ≥ 4 m²; home-only checks skip a café, shop or office.",
-  "residential-basic": "The default's thresholds, asserting a dwelling: every plan is judged as a home.",
-  "accessibility-advisory": "Stricter — doors ≥ 850 mm, rooms ≥ 5 m², 150 mm door-swing clearance.",
-};
-{
-  const o = document.createElement("option");
-  o.value = "";
-  o.textContent = "default";
-  lintProfileSelect.appendChild(o);
-}
-for (const name of LINT_PROFILE_NAMES) {
-  const o = document.createElement("option");
-  o.value = name;
-  o.textContent = name;
-  lintProfileSelect.appendChild(o);
-}
-function syncLintCaption() {
-  lintCaptionEl.textContent = LINT_PROFILE_CAPTIONS[lintProfileSelect.value] ?? "";
-}
-syncLintCaption();
 
 // The shareable-permalink codec (`#z=` compressed / legacy `#src=`) lives in
 // `share.js` so the embed page reuses the exact same scheme.
 
+/** The plan's source. The editor's document mirrors it once edit mode has loaded. */
+let doc = "";
 let lastSvg = "";
-let lastScene: ReturnType<typeof compile>["scene"] | null = null;
+let lastScene: ReturnType<Core["compile"]>["scene"] | null = null;
 let lastRooms: RoomSummary[] = [];
 /**
  * The storey on screen for a multi-storey plan, or `null` for "the lowest one" — which
@@ -176,10 +142,6 @@ let selectedLevel: number | null = null;
 let activeLevel: number | null = null;
 /** The storey pages of the last good compile (the switcher's buttons). */
 let lastPages: readonly LevelPage[] | undefined;
-/** Diagnostics in panel display order — `data-i` on a row indexes into this. */
-let lastDiagRows: Diagnostic[] = [];
-/** Same, for the Lint tab's rows (some lint rules carry their own applicable fix). */
-let lastLintRows: Diagnostic[] = [];
 
 /** The current preview SVG with the editor-only `data-span` annotations removed —
  *  used for every export so a downloaded/copied file never carries them. */
@@ -207,33 +169,96 @@ function flash(msg: string) {
   }, 1200);
 }
 
-// The editor view is created during init() once the (async) initial source is
-// resolved; everything below reaches it through `view`.
-let view: EditorView | undefined;
+// ---- modes ----
+/** The editor and its panels, once edit mode has loaded. */
+let edit: EditMode | undefined;
+let editP: Promise<EditMode | undefined> | undefined;
+let editing = root.dataset.mode === "edit" || hasEditFlag(location.hash);
+
 function currentSource() {
-  return view ? view.state.doc.toString() : "";
+  return edit ? edit.getDoc() : doc;
 }
 function loadSource(src: string, refit = true) {
-  if (!view) return;
   // A wholesale document replacement is a new plan as far as the storey switcher is
   // concerned — its level numbers may mean nothing here. Back to the lowest storey.
   selectedLevel = null;
-  // Its own undo step: one Ctrl+Z reverts exactly this replacement (Format, Repair,
-  // Finish, an applied fix), never merged with the typing just before or after it.
-  view.dispatch({
-    changes: { from: 0, to: view.state.doc.length, insert: src },
-    annotations: isolateHistory.of("full"),
-  });
+  // In edit mode the editor takes it as one undo step, and its change listener calls
+  // `onDocChanged`; with no editor, this does.
+  if (edit) edit.replaceDoc(src);
+  else onDocChanged(src);
   render(src, refit);
 }
 
-/** Move the editor caret to a byte offset and reveal it (click-to-source). */
+/** Move the editor caret to a byte offset and reveal it (click-to-source; edit mode only). */
 function jumpToOffset(offset: number) {
-  if (!view) return;
-  const pos = Math.max(0, Math.min(offset, view.state.doc.length));
-  view.dispatch({ selection: { anchor: pos }, scrollIntoView: true });
-  view.focus();
+  edit?.jumpToOffset(offset);
 }
+
+/** Set the mode: the page layout (`html[data-mode]`), the Source toggle and the hash flag. */
+function setMode(on: boolean) {
+  editing = on;
+  root.dataset.mode = on ? "edit" : "view";
+  shell.setMode(on);
+  const hash = setEditFlag(location.hash, on);
+  if (hash !== location.hash) window.history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
+}
+
+/** Settles once boot has chosen the plan this visit opens (`doc`). */
+let docChosen!: () => void;
+const docReady = new Promise<void>((resolve) => {
+  docChosen = resolve;
+});
+
+/** Load (once) and mount the editor on the current source. */
+function ensureEditor(rerender = true): Promise<EditMode | undefined> {
+  // The editor opens on the plan boot chose, never on the empty document before it.
+  editP ??= Promise.all([import("./edit-mode.js"), coreP, docReady]).then(
+    ([m]) => {
+      edit = m.mountEditMode({
+        doc: currentSource(),
+        onDocChanged,
+        loadSource,
+        rerender: () => render(currentSource()),
+        flash,
+        mobileViews,
+      });
+      if (rerender) render(currentSource());
+      return edit;
+    },
+    (err: unknown) => {
+      editP = undefined; // a failed chunk load is retried on the next entry
+      flash(`The editor did not load: ${(err as { message?: string })?.message ?? err}`);
+      return undefined;
+    },
+  );
+  return editP;
+}
+
+function enterEdit(): Promise<EditMode | undefined> {
+  if (!editing) setMode(true);
+  // On a phone, Source is the code screen (the drawing is the other one).
+  if (isNarrow()) mobileViews.show("code");
+  return ensureEditor();
+}
+
+function leaveEdit() {
+  setMode(false);
+  mobileViews.show("plan");
+  // Describe, Lint, Intent and Takeoff are edit mode's tabs: leave on the drawing.
+  const active = tabs.find((t) => t.classList.contains("active"))?.dataset.tab;
+  if (active !== "preview" && active !== "preview3d") document.getElementById("tab-preview")?.click();
+  // A broken plan's status names where its errors are, which differs by mode.
+  if (statusEl.classList.contains("err")) render(currentSource());
+}
+
+const shell = mountShell({
+  isEditing: () => editing,
+  editorMounted: () => edit !== undefined,
+  enterEdit,
+  leaveEdit,
+  whenReady: () => ready,
+});
+shell.setMode(editing);
 
 const previewCtl = createPreview({
   viewport: pzViewport,
@@ -245,6 +270,9 @@ const previewCtl = createPreview({
   flash,
   onPathsChange: () => render(currentSource()),
 });
+// The drawing built into the page pans and zooms at once, before the compiler is in — unless
+// this visit opens another plan (the head script's `pg-other`), which hides it until compiled.
+if (!root.classList.contains("pg-other")) previewCtl.adopt();
 
 // The storey switcher sits in the OUTPUT PANE'S TAB STRIP, not the preview toolbar, so
 // it is visible and operable from all four tabs — the storey it picks drives every one
@@ -262,63 +290,20 @@ const levelSwitch = mountLevelSwitcher({
   },
 });
 
-/** Update the Describe (semantic facts) and Lint (soundness) tabs for `source`. */
+/** Update the facts strip (and, in edit mode, the Describe and Lint tabs) for `source`. */
 function updateAnalysis(source: string, ok: boolean) {
-  const whole = describe(source, { noCache: true } as DescribeOptions & { noCache?: boolean });
+  if (!core) return;
+  const whole = core.describe(source, { noCache: true } as DescribeOptions & { noCache?: boolean });
   // The panels report the storey on screen. `describeLevel` is the CORE's narrowing —
   // the same function behind `arch describe --level N` — so the playground and the CLI
   // cannot disagree about what one floor's facts are. A single-storey plan never gets
   // here with a level, and `activeLevel === null` leaves the summary untouched.
-  const summary = activeLevel === null ? whole : describeLevel(whole, activeLevel);
-  const { diagnostics: _d, ...facts } = summary;
+  const summary = activeLevel === null ? whole : core.describeLevel(whole, activeLevel);
   lastRooms = ok ? (summary.rooms ?? []) : [];
   renderFacts(factsEl, summary, ok);
-  renderDescribe(describeEl, facts, ok);
-
-  // Lint — architectural soundness warnings (habitability rules), under the chosen
-  // advisory profile. Run over the WHOLE plan, always: `ok`, the status text and the
-  // repair/suggest offers below are verdicts, and a display filter must never move a
-  // verdict (the law `arch describe --level` obeys).
-  const lintDiags = ok
-    ? lint(source, { profile: lintProfileSelect.value, noCache: true } as LintOptions & { noCache?: boolean })
-    : [];
-  // `repair` only corrects furniture-placement faults — offer it exactly when one
-  // is present (ADR 0006: an explicit, reviewable transform, never auto-applied).
-  const repairable = lintDiags.some((d) => /FURNITURE|FIXTURE|DOORWAY|SWING/.test(d.code ?? ""));
-  if (repairBtn) repairBtn.hidden = !repairable;
-  if (!repairable && repairPanel) repairPanel.hidden = true;
-
-  // `suggest` covers the two faults repair deliberately won't touch — adding a door or a
-  // window is a design choice, so it proposes statements instead of applying them.
-  const suggestable = lintDiags.some((d) => d.code === "W_ROOM_UNREACHABLE" || d.code === "W_BEDROOM_NO_WINDOW");
-  if (suggestBtn) suggestBtn.hidden = !suggestable;
-  if (!suggestable && suggestPanel) suggestPanel.hidden = true;
-
-  // …but the ROWS follow the storey on screen, so the panel is about the drawing beside
-  // it. A diagnostic carries the level that raised it; one with no level is a whole-plan
-  // problem and shows on every storey. `renderLint` says out loud that it is narrowed,
-  // so a quiet panel can never be misread as a clean building.
-  const shown =
-    activeLevel === null ? lintDiags : lintDiags.filter((d) => d.level === undefined || d.level === activeLevel);
-  lastLintRows = renderLint(lintOutput, shown, ok, activeLevel, lintDiags.length);
-}
-
-/**
- * Apply the best-ranked machine-applicable fix on `rows[index]` — the same
- * `rankFixes` → `applyFixes` path `arch fix` takes, so the button and the CLI make the
- * identical edit. Shared by the diagnostics panel and the Lint tab.
- */
-function applyFixAt(rows: Diagnostic[], index: number): void {
-  const fixes = rows[index]?.fixes;
-  const best = fixes?.length ? rankFixes(fixes)[0] : undefined;
-  if (!best) return;
-  const report = applyFixes(currentSource(), [best]);
-  if (report.applied.length === 0) {
-    flash(report.skipped[0]?.reason ?? "Fix no longer applies");
-    return;
-  }
-  loadSource(report.output, false);
-  flash(best.title);
+  // The Describe and Lint tabs are edit mode's (edit-mode.ts): a visit that never opens the
+  // editor never runs `lint()`.
+  edit?.updatePanels(source, ok, summary, activeLevel);
 }
 
 /**
@@ -331,6 +316,8 @@ function shownLevel(): number | null {
 }
 
 function render(source: string, refit = false) {
+  if (!core) return; // nothing compiles before the compiler is in; boot renders once it is
+  const { compile, THEMES } = core;
   // Theme: empty value = the source's own `theme` directive (pass nothing); a named
   // key overrides it (compile's `theme` option wins over an in-source directive).
   const themeKey = themeSelect.value;
@@ -369,15 +356,13 @@ function render(source: string, refit = false) {
   updateAnalysis(source, ok);
   // Like the 3D preview, the takeoff follows the editor and the storey only while its tab is open.
   if (takeoff && takeoffEl.classList.contains("active")) void takeoff.then((p) => p?.update(source, activeLevel));
-  lastDiagRows = renderDiagnostics(errorsEl, diagnostics ?? [], source);
-  mobileViews.setProblemCount(lastDiagRows.length);
-  // Keep an already-run intent verdict live as the source changes (but don't run it
-  // unprompted — an untouched Intent tab stays empty until you ask).
-  if (intentOutput.innerHTML) renderIntent(intentOutput, source, intentSrc.value);
+  // The diagnostics drawer, its phone count and a live Intent verdict are edit mode's.
+  edit?.afterCompile(source, diagnostics ?? []);
   if (!ok) {
     const n = errors.length;
     statusEl.classList.add("err");
-    statusText.textContent = `${n} error${n > 1 ? "s" : ""}`;
+    // In view mode the diagnostics are out of sight: say where they are.
+    statusText.textContent = `${n} error${n > 1 ? "s" : ""}${editing ? "" : " — open Source to see them"}`;
     return; // keep last good preview
   }
   statusEl.classList.remove("err");
@@ -413,8 +398,12 @@ document.getElementById("tab-preview3d")?.addEventListener("click", () => {
       return undefined;
     },
   );
-  const source = currentSource();
-  void preview3d.then((p) => p?.show(source, selectedLevel, drawnFor(source)));
+  const shown = preview3d;
+  // Opened before the first compile, it shows the plan the page boots on.
+  void ready.then(() => {
+    const source = currentSource();
+    void shown.then((p) => p?.show(source, selectedLevel, drawnFor(source)));
+  });
 });
 
 // ---- Takeoff: the core's quantities, in a panel whose code loads on the tab's first open ----
@@ -428,14 +417,18 @@ document.getElementById("tab-takeoff")?.addEventListener("click", () => {
       return undefined;
     },
   );
-  const source = currentSource();
-  void takeoff.then((p) => p?.update(source, activeLevel));
+  const opened = takeoff;
+  void ready.then(() => {
+    const source = currentSource();
+    void opened.then((p) => p?.update(source, activeLevel));
+  });
 });
 
 let debounce: ReturnType<typeof setTimeout>;
 /** Set once the header actions mount; told of every document change. */
 let actions: ActionsHandle | undefined;
-const onDocChanged = (source: string) => {
+function onDocChanged(source: string) {
+  doc = source;
   // The Finish log describes the document it ran on; any later change (an edit, an
   // undo, a new example) makes it stale. Finish re-shows it after its own edit.
   if (finishPanel) finishPanel.hidden = true;
@@ -444,9 +437,9 @@ const onDocChanged = (source: string) => {
   debounce = setTimeout(() => {
     render(source);
     writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
-    void updateHash(source); // keep the permalink in sync (compression is async)
+    void updateHash(source, editing); // keep the permalink in sync (compression is async)
   }, 250);
-};
+}
 
 /** Surface an export failure in the status + errors UI. */
 function onExportError(format: string, err: unknown) {
@@ -456,10 +449,33 @@ function onExportError(format: string, err: unknown) {
   errorsEl.textContent = `${format.toUpperCase()} export failed: ${(err as { message?: string })?.message ?? err}`;
 }
 
-async function init() {
+// An example picked before the app is up is loaded once it is.
+select.addEventListener("change", () => {
+  const label = select.value;
+  void ready.then(async () => {
+    const { EXAMPLES } = await examplesP;
+    select.value = label;
+    loadSource(EXAMPLES[label], true);
+  });
+});
+
+// Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
+themeSelect.addEventListener("change", () => {
+  writeStr(KEYS.theme, themeSelect.value);
+  render(currentSource());
+});
+
+// a11y metadata switch — re-compile so the <title>/<desc> land in the preview SVG
+// (and therefore in every SVG export, which reads from the same bytes).
+accessibleToggle?.addEventListener("change", () => render(currentSource()));
+
+async function boot() {
   // First-load source precedence: shared URL hash → autosaved draft → default example.
   const sharedSrc = await srcFromHash();
   const savedSrc = sharedSrc ? null : readStr(KEYS.source);
+  const examples = await examplesP;
+  const { DEFAULT_EXAMPLE, EXAMPLES } = examples;
+  fillPicker(examples);
   const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES[DEFAULT_EXAMPLE];
   if (!sharedSrc && !savedSrc) select.value = DEFAULT_EXAMPLE;
 
@@ -476,35 +492,16 @@ async function init() {
   if (savedTheme !== null && [...themeSelect.options].some((o) => o.value === savedTheme)) {
     themeSelect.value = savedTheme;
   }
-  const savedProfile = readStr(KEYS.lintProfile);
-  if (savedProfile && [...lintProfileSelect.options].some((o) => o.value === savedProfile)) {
-    lintProfileSelect.value = savedProfile;
-    syncLintCaption();
-  }
 
-  view = createEditor({ parent: document.getElementById("editor")!, doc: initialDoc, onDocChanged });
+  doc = initialDoc;
+  docChosen();
+  core = await coreP;
+  if (editing) await ensureEditor(false);
 
-  select.addEventListener("change", () => loadSource(EXAMPLES[select.value], true));
-
-  // Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
-  themeSelect.addEventListener("change", () => {
-    writeStr(KEYS.theme, themeSelect.value);
-    render(currentSource());
-  });
-
-  // a11y metadata switch — re-compile so the <title>/<desc> land in the preview SVG
-  // (and therefore in every SVG export, which reads from the same bytes).
-  accessibleToggle?.addEventListener("change", () => render(currentSource()));
-
-  // Lint-profile switch (B3) — update the caption and re-run the soundness check.
-  lintProfileSelect.addEventListener("change", () => {
-    writeStr(KEYS.lintProfile, lintProfileSelect.value);
-    syncLintCaption();
-    render(currentSource());
-  });
-
-  // Header/panel action buttons: format, repair, embed, copy link, snapshots,
-  // download, and the pane divider.
+  // Header actions: format, finish, repair, embed, copy link, snapshots, download, and the
+  // pane divider. Their code reads the compiler, so it loads with it; until it is mounted
+  // their buttons are disabled in index.html.
+  const { mountActions } = await import("./actions.js");
   actions = mountActions({
     getSource: currentSource,
     loadSource,
@@ -513,90 +510,36 @@ async function init() {
     getScene: () => lastScene,
     getLevel: () => activeLevel,
     onExportError,
+    isEditing: () => editing,
     showLintTab: () => document.getElementById("tab-lint")?.click(),
     getThemeOverride: () => themeSelect.value,
     els: {
-      formatBtn,
+      formatBtn: document.getElementById("formatSrc") as HTMLButtonElement | null,
       finishBtn: document.getElementById("finishSrc") as HTMLButtonElement | null,
       finishPanel,
-      chatMenu: document.getElementById("chatMenu") as HTMLDetailsElement | null,
+      // The Ask AI links and the two share links sit in the Tools menu: choosing one closes it.
+      chatMenu: document.getElementById("tools") as HTMLDetailsElement | null,
       chatLinks: [...document.querySelectorAll<HTMLAnchorElement>("a[data-chat-host]")],
-      repairBtn,
-      repairPanel,
-      embedBtn,
-      shareMenu: document.getElementById("shareMenu") as HTMLDetailsElement | null,
+      repairBtn: document.getElementById("repair"),
+      repairPanel: document.getElementById("repairPanel"),
+      embedBtn: document.getElementById("embed"),
+      shareMenu: document.getElementById("tools") as HTMLDetailsElement | null,
       copyShortLinkBtn: document.getElementById("copyShortLink"),
-      copyLinkBtn,
-      copyLlmBtn,
-      savedBtn,
-      downloadBtn,
+      copyLinkBtn: document.getElementById("copyLink")!,
+      copyLlmBtn: document.getElementById("copyLlm"),
+      savedBtn: document.getElementById("saved") as HTMLButtonElement,
+      downloadBtn: document.getElementById("download")!,
       formatSelect,
     },
   });
-
-  // A lint rule can carry its own machine-applicable fix (W_ALIAS_MATCH → add the `uses`
-  // the label only implied). Make it actionable here too, not just readable.
-  lintOutput.addEventListener("click", (e) => {
-    const apply = (e.target as Element | null)?.closest<HTMLElement>(".diag-apply");
-    if (apply) applyFixAt(lastLintRows, Number(apply.dataset.i));
-  });
-
-  // ---- Suggest (advisory topology) ----
-  // Never edits the plan: it lists candidate `door`/`window` statements and lets you
-  // insert one (ADR 0005 — facts and options, not an invisible architect).
-  suggestBtn?.addEventListener("click", () => {
-    if (!suggestPanel) return;
-    renderSuggest(suggestPanel, suggestTopology(currentSource()));
-  });
-  suggestPanel?.addEventListener("click", (e) => {
-    const btn = (e.target as Element | null)?.closest<HTMLElement>(".sug-insert");
-    const stmt = btn?.dataset.stmt;
-    if (!stmt || !view) return;
-    // Insert just inside the plan's closing brace — the statement is plan-level.
-    const src = currentSource();
-    const close = src.lastIndexOf("}");
-    if (close < 0) return;
-    loadSource(`${src.slice(0, close)}  ${stmt}\n${src.slice(close)}`, false);
-    flash("Statement inserted");
-  });
-
-  // ---- Intent (the brief as a contract) ----
-  intentSrc.value = STARTER_INTENT;
-  const runIntent = () => renderIntent(intentOutput, currentSource(), intentSrc.value);
-  intentRunBtn.addEventListener("click", runIntent);
-  // Check once when the tab is first opened, so it is never an empty panel.
-  document.getElementById("tab-intent")?.addEventListener("click", () => {
-    if (!intentOutput.innerHTML) runIntent();
-  });
-
-  // Diagnostics drill-down — click a row to jump to its source span and reveal the
-  // catalogued cause/fix/example. "Apply fix" runs the diagnostic's machine-applicable
-  // fix through the same `applyFixes` the `arch fix` CLI uses, so the playground and the
-  // command line make the identical edit.
-  errorsEl.addEventListener("click", (e) => {
-    const target = e.target as Element | null;
-
-    const apply = target?.closest<HTMLElement>(".diag-apply");
-    if (apply) {
-      e.stopPropagation(); // don't also toggle/jump the row underneath
-      applyFixAt(lastDiagRows, Number(apply.dataset.i));
-      return;
-    }
-
-    const row = target?.closest<HTMLElement>(".diagrow");
-    if (!row) return;
-    row.classList.toggle("open");
-    const off = row.dataset.offset;
-    // On a phone the Problems view hides the editor: the line:col is the one place that
-    // means "take me there", so it switches to Code; the rest of the row only expands.
-    if (isNarrow() && target?.closest(".diag-loc")) mobileViews.show("code");
-    if (off != null) jumpToOffset(Number(off));
-  });
+  for (const btn of document.querySelectorAll<HTMLButtonElement>("#tools button[disabled]")) btn.disabled = false;
 
   // Initial render — fit the plan to the viewport, then re-fit once layout settles.
   render(initialDoc, true);
   requestAnimationFrame(() => previewCtl.fit());
+  // The e2e specs' "the app is up" signal (fixtures.ts `waitForPlan`).
+  delete root.dataset.booting;
 }
 
-// Bootstrap (async — resolves the shared/saved source, then builds the editor).
-void init();
+// Bootstrap (async — resolves the shared/saved source, then loads the compiler).
+const ready = boot();

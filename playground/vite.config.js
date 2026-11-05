@@ -1,12 +1,48 @@
 import { defineConfig } from "vite";
 import { resolve } from "node:path";
 
+/** The built core's directory, as rolldown spells module ids (forward slashes). */
+const CORE_DIST = `${resolve(__dirname, "../dist").replace(/\\/g, "/")}/`;
+/** The view path's door to it (src/compiler.ts), which belongs in the same chunk. */
+const CORE_DOOR = resolve(__dirname, "src/compiler.ts").replace(/\\/g, "/");
+const isCompiler = (id) => id.startsWith(CORE_DIST) || id === CORE_DOOR;
+
+/**
+ * The compiler is its own chunk (`compiler-*.js`, the codeSplitting group below), which main.ts
+ * reaches through a dynamic `import("archlang")` so it never blocks the first paint: the drawing
+ * is already in the HTML. A dynamic import gets no `<link rel="modulepreload">` from Vite, so
+ * this adds one to index.html, which starts the download with the page's own instead of after
+ * the startup chunk has run. A preload is fetched, not executed, and it does not block rendering.
+ * (embed.html imports the core statically, so Vite already loads it there.)
+ */
+function preloadCompiler() {
+  return {
+    name: "archlang-preload-compiler",
+    transformIndexHtml: {
+      order: "post",
+      handler(_html, ctx) {
+        if (!ctx.bundle || !ctx.filename.replace(/\\/g, "/").endsWith("/index.html")) return;
+        const chunk = Object.values(ctx.bundle).find((c) => c.type === "chunk" && c.name === "compiler");
+        if (!chunk) throw new Error("vite.config.js: no `compiler` chunk in the bundle (codeSplitting groups)");
+        return [
+          {
+            tag: "link",
+            attrs: { rel: "modulepreload", crossorigin: true, href: `./${chunk.fileName}` },
+            injectTo: "head",
+          },
+        ];
+      },
+    },
+  };
+}
+
 // The playground consumes the *built* core (run `npm run build` in the repo
 // root first). Aliasing to dist/ keeps the published core import path honest
 // and avoids re-resolving the source's `.js` ESM specifiers.
 export default defineConfig({
   root: __dirname,
   base: "./",
+  plugins: [preloadCompiler()],
   resolve: {
     alias: {
       archlang: resolve(__dirname, "../dist/index.js"),
@@ -43,6 +79,20 @@ export default defineConfig({
       // <canvas> and embeds PDF via jsPDF. Externalize them (and node: builtins)
       // so Rolldown doesn't try to bundle native binaries it can't parse.
       external: [/^node:/, "@resvg/resvg-js", "pdfkit", "clipper2-wasm"],
+      output: {
+        // The built core in one chunk, `compiler`, whichever page or lazy chunk reaches it:
+        // the startup chunk stays the view path alone (e2e/startup-chunks.baseline.json).
+        // Vite's dynamic-import helper is shared by the startup chunk and the core (whose
+        // optional Node backends are lazy imports), so it gets a chunk of its own first:
+        // left to the bundler it lands in `compiler`, and the startup chunk would then import
+        // the whole core statically just to reach it.
+        codeSplitting: {
+          groups: [
+            { name: "preload-helper", test: (id) => id.includes("vite/preload-helper") },
+            { name: "compiler", test: (id) => isCompiler(id.replace(/\\/g, "/")) },
+          ],
+        },
+      },
     },
   },
 });

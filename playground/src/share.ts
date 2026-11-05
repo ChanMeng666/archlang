@@ -135,11 +135,51 @@ export async function sharedSource(
   }
 }
 
+// ---- the mode flag ------------------------------------------------------------------
+//
+// The playground opens in VIEW mode (the drawing fills the page). `edit` in the hash opens it
+// in EDIT mode (the editor beside the drawing): `#z=<token>&edit`, or `#edit` alone on a
+// hash-less visit. It is a bare `&`-joined param, like embed.html's `editable=1`, so the token
+// readers above (`[#&]z=([^&]*)`) read the plan out of `#z=<token>&edit` unchanged. `arch link`
+// and the docs' "Open in playground" mint it; a link copied from the playground never carries
+// it, so a plan someone shares with you opens in view mode.
+
+/** The hash param that opens edit mode. */
+export const EDIT_FLAG = "edit";
+
+/** Whether `hash` asks for edit mode (`#edit`, or `&edit` among other params). */
+export function hasEditFlag(hash: string): boolean {
+  return hash
+    .replace(/^#/, "")
+    .split("&")
+    .some((p) => p === EDIT_FLAG);
+}
+
+/**
+ * `hash` with the edit flag set (`on`) or removed, every other param kept in order. The flag
+ * goes last, so `#z=<token>` becomes `#z=<token>&edit`. "" when nothing is left.
+ */
+export function setEditFlag(hash: string, on: boolean): string {
+  const params = hash
+    .replace(/^#/, "")
+    .split("&")
+    .filter((p) => p !== "" && p !== EDIT_FLAG);
+  if (on) params.push(EDIT_FLAG);
+  return params.length > 0 ? `#${params.join("&")}` : "";
+}
+
 /** Rewrite the browser's URL hash to carry `src` (replaceState — one entry, no
- *  history spam on every keystroke). */
-export async function updateHash(src: string): Promise<void> {
-  const hash = await encodeSrc(src);
+ *  history spam on every keystroke). `edit` keeps the edit-mode flag after the token;
+ *  without it the hash is exactly `encodeSrc(src)`, as it always was. */
+export async function updateHash(src: string, edit = false): Promise<void> {
+  const hash = setEditFlag(await encodeSrc(src), edit);
   // NB: in main.js `history` is shadowed by CodeMirror's import, so callers reach
   // the global via `window.history`; here we do the same for safety.
   window.history.replaceState(null, "", hash);
+}
+
+/** `href` as a link to share: the plan token kept, the edit-mode flag dropped. */
+export function shareableHref(href: string = location.href): string {
+  const at = href.indexOf("#");
+  return at < 0 ? href : href.slice(0, at) + setEditFlag(href.slice(at), false);
 }

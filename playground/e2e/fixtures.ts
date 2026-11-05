@@ -44,9 +44,47 @@ export async function embedHash(src: string, ...params: string[]): Promise<strin
   return params.length ? `${hash}&${params.join("&")}` : hash;
 }
 
-/** Wait until the preview stage holds a rendered plan. */
+/**
+ * Wait until the preview stage holds a rendered plan and the app is up.
+ *
+ * The playground serves its default drawing in the HTML (gen-static), so a visible SVG alone
+ * no longer means the compiler has run: `html[data-booting]` is removed by main.ts once the
+ * first compile is drawn, the header actions are mounted and, in edit mode, the editor is
+ * open. embed.html never carries the attribute, so this is the old wait there.
+ */
 export async function waitForPlan(page: Page): Promise<void> {
   await expect(page.locator(".pz-stage svg")).toBeVisible();
+  await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+}
+
+/**
+ * Open the playground in EDIT mode (the editor beside the drawing): `hash` (a `#z=…` share
+ * hash, or none) with the `&edit` flag, the way `arch link` and the docs' code panes link.
+ * Waits for the plan and the editor.
+ */
+export async function gotoEdit(page: Page, hash = ""): Promise<void> {
+  await page.goto(`/${hash ? `${hash}&edit` : "#edit"}`);
+  await waitForPlan(page);
+  await expect(page.locator(".cm-content")).toBeVisible();
+}
+
+/** Switch a page already open in view mode to edit mode with the header's Source button. */
+export async function enterEdit(page: Page): Promise<void> {
+  const source = page.locator("#sourceToggle");
+  if ((await source.getAttribute("aria-pressed")) !== "true") await source.click();
+  await expect(source).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".cm-content")).toBeVisible();
+}
+
+/**
+ * Open the header's Tools menu (a no-op when it is open). It holds every action the header
+ * used to show: Format, Finish, Saved, the panels, theme and a11y, Download, the two links,
+ * Copy for LLM, Embed and Ask AI. Choosing a button closes it again, so call this before each.
+ */
+export async function openTools(page: Page): Promise<void> {
+  const tools = page.locator("#tools");
+  if ((await tools.getAttribute("open")) === null) await tools.locator("summary").click();
+  await expect(tools.locator(".tools-panel")).toBeVisible();
 }
 
 /** The autosave key `onDocChanged` writes — also this helper's settle signal. */
@@ -76,12 +114,11 @@ export async function setEditorSource(page: Page, src: string): Promise<void> {
 }
 
 /**
- * Choose one of the two links in the header's "Copy link" disclosure (ADR 0034): `full` is the
+ * Choose one of the two links in the Tools menu's Share group (ADR 0034): `full` is the
  * `#z=` link (`#copyLink`, no server), `short` the stored `/s/<id>` link (`#copyShortLink`).
  */
 export async function chooseLink(page: Page, which: "full" | "short"): Promise<void> {
-  const menu = page.locator("#shareMenu");
-  if ((await menu.getAttribute("open")) === null) await menu.locator("summary").click();
+  await openTools(page);
   await page.locator(which === "full" ? "#copyLink" : "#copyShortLink").click();
 }
 

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-mode="view" data-booting>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -16,6 +16,28 @@
     <!-- Light-only (ADR 0014). The real Chromium Auto-Dark opt-out is the CSS
          `color-scheme: only light` in styles/tokens.css; this states the same intent. -->
     <meta name="color-scheme" content="light" />
+    <!-- Before the first paint, so the layout never jumps: which mode this visit opens in
+         (`&edit` in the hash, the rule `hasEditFlag` in src/share.ts reads), and whether the
+         drawing built into this page is the plan it opens. A `#z=`/`#src=` link or an
+         autosaved draft (`KEYS.source` in src/storage.ts) opens another plan, and a saved render
+         theme (`KEYS.theme`) draws the plan differently, so in those cases the built-in drawing is
+         hidden until the app's own is compiled. (The a11y switch is not persisted.) Without
+         JavaScript neither runs, and the page shows the built-in drawing in view mode. -->
+    <script>
+      (function () {
+        var root = document.documentElement;
+        var hash = location.hash;
+        root.dataset.mode = /(?:^#|&)edit(?:&|$)/.test(hash) ? "edit" : "view";
+        var other = /[#&](?:z|src)=/.test(hash);
+        if (!other) {
+          try {
+            other =
+              localStorage.getItem("archlang.pg.source") !== null || !!localStorage.getItem("archlang.pg.theme");
+          } catch (e) {}
+        }
+        if (other) root.classList.add("pg-other");
+      })();
+    </script>
     <!-- One URL, one page. The `#z=` permalink fragment never reaches the server, so every
          shared plan collapses onto this address: it is the canonical one, and the static
          per-example pages under /examples/ are what carries a plan into an index. -->
@@ -33,7 +55,7 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="The ArchLang playground: declarative .arch source on the left, the compiled SVG floor plan on the right."
+      content="The ArchLang wordmark beside its A-frame floor-plan mark, above the words: code to floor plans."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="ArchLang Playground — code to floor plans" />
@@ -44,7 +66,7 @@
     <meta name="twitter:image" content="https://playground.archlang.uk/brand/archlang-og.png" />
     <meta
       name="twitter:image:alt"
-      content="The ArchLang playground: declarative .arch source on the left, the compiled SVG floor plan on the right."
+      content="The ArchLang wordmark beside its A-frame floor-plan mark, above the words: code to floor plans."
     />
     <!-- Structured data for search and answer engines. No crawler executes this page's
          JavaScript, so everything a machine can learn here has to be in the served bytes:
@@ -97,134 +119,121 @@
     </script>
   </head>
   <body>
-    <!-- Header = source-world chrome (cool grey): one row of title-block cells,
-         hairline-separated groups each with a caps micro-label above its controls. -->
+    <!-- Header = source-world chrome (cool grey): the brand, the plan picker, and at most four
+         controls in one row — Source (the editor), Checks (a slot, hidden until it draws the
+         review rings), Tools (every other action, in one menu) and Make your own (the one
+         redline control). Each control keeps the id the app and the specs know it by. -->
     <header>
-      <div class="tb-cell tb-brand">
+      <div class="tb-brand">
         <!-- The plum mark, not the white one: the header is a light surface. -->
         <img class="brand-mark" src="/brand/archlang-icon-plum.svg" alt="" width="20" height="20" />
         <span class="wordmark"><b>Arch</b>Lang</span>
         <span class="badge">Playground</span>
       </div>
-      <div class="tb-cell">
-        <span class="tb-label">Drawing</span>
-        <div class="tb-controls">
-          <select id="examples" aria-label="Load example"></select>
-          <button id="formatSrc" title="Reformat the source to canonical style">Format</button>
-          <button id="finishSrc" title="Add what a finished sheet needs (paper, scale, dimensions, title, schedule, legend, furniture); Ctrl+Z undoes it">Finish</button>
-          <button id="saved" aria-haspopup="true">Saved ▾</button>
-        </div>
-      </div>
-      <div class="tb-cell">
-        <span class="tb-label">View</span>
-        <div class="tb-controls">
-          <!-- The COMPILER's render themes — these style the produced SVG plan, not the
-               app chrome. "Dark" is a language feature (src/theme.ts), not a dark mode
-               for this page: the app itself is light-only (ADR 0014). Leave it be. -->
-          <select id="theme" aria-label="Render theme">
-            <option value="">Default</option>
-            <option value="blueprint">Blueprint</option>
-            <option value="dark">Dark</option>
-            <option value="mono">Mono</option>
-            <option value="presentation">Presentation</option>
-            <option value="rendered">Rendered</option>
-          </select>
-        </div>
-      </div>
-      <div class="tb-cell">
-        <span class="tb-label">Issue</span>
-        <div class="tb-controls">
-          <select id="format" aria-label="Download format">
-            <option value="svg">SVG</option>
-            <option value="png">PNG</option>
-            <option value="dxf">DXF</option>
-            <option value="txt">TXT</option>
-            <option value="pdf">PDF</option>
-          </select>
-          <label class="tb-check" title="Emit SVG <title>/<desc>/role accessibility metadata (accTitle/accDescr, else the describe() caption)">
-            <input type="checkbox" id="accessible" />
-            a11y
-          </label>
-          <button id="download" class="tb-primary">Download</button>
-        </div>
-      </div>
-      <div class="tb-cell">
-        <span class="tb-label">Share</span>
-        <div class="tb-controls">
+      <!-- The plan picker. Its options are written into the served page at build time
+           (scripts/gen-static.mjs) and rebuilt from src/examples.ts when the app starts. -->
+      <select id="examples" class="hd-picker" aria-label="Plan"><!--prerender:picker--></select>
+      <div class="spacer"></div>
+      <button id="sourceToggle" class="hd-btn" type="button" aria-pressed="false" title="Show the ArchLang source beside the drawing">Source</button>
+      <button id="checks" class="hd-btn" type="button" aria-pressed="false" hidden>Checks</button>
+      <details class="tools" id="tools">
+        <summary class="hd-btn">Tools ▾</summary>
+        <div class="tools-panel">
+          <!-- Edit: these change the source, so they open the editor first. -->
+          <div class="tools-group" role="group" aria-labelledby="toolsEdit">
+            <p class="tools-h" id="toolsEdit">Edit</p>
+            <button id="formatSrc" type="button" data-edit data-close disabled title="Reformat the source to canonical style">Format</button>
+            <button id="finishSrc" type="button" data-edit data-close disabled title="Add what a finished sheet needs (paper, scale, dimensions, title, schedule, legend, furniture); Ctrl+Z undoes it">Finish</button>
+            <button id="saved" type="button" data-edit aria-haspopup="true" disabled>Saved ▾</button>
+          </div>
+          <!-- Panels: the output tabs. Describe, Lint, Intent and Takeoff open the editor;
+               the 3D preview opens in either mode. -->
+          <div class="tools-group" role="group" aria-labelledby="toolsPanels">
+            <p class="tools-h" id="toolsPanels">Panels</p>
+            <button type="button" data-open-tab="describe" data-close>Describe</button>
+            <button type="button" data-open-tab="lint" data-close>Lint</button>
+            <button type="button" data-open-tab="intent" data-close>Intent</button>
+            <button type="button" data-open-tab="takeoff" data-close>Takeoff</button>
+            <button type="button" data-open-tab="preview3d" data-close>3D preview</button>
+          </div>
+          <div class="tools-group" role="group" aria-labelledby="toolsView">
+            <p class="tools-h" id="toolsView">View</p>
+            <!-- The COMPILER's render themes — these style the produced SVG plan, not the
+                 app chrome. "Dark" is a language feature (src/theme.ts), not a dark mode
+                 for this page: the app itself is light-only (ADR 0014). Leave it be. -->
+            <select id="theme" aria-label="Render theme">
+              <option value="">Default</option>
+              <option value="blueprint">Blueprint</option>
+              <option value="dark">Dark</option>
+              <option value="mono">Mono</option>
+              <option value="presentation">Presentation</option>
+              <option value="rendered">Rendered</option>
+            </select>
+            <label class="tb-check" title="Emit SVG <title>/<desc>/role accessibility metadata (accTitle/accDescr, else the describe() caption)">
+              <input type="checkbox" id="accessible" />
+              a11y
+            </label>
+          </div>
+          <div class="tools-group" role="group" aria-labelledby="toolsDownload">
+            <p class="tools-h" id="toolsDownload">Download</p>
+            <select id="format" aria-label="Download format">
+              <option value="svg">SVG</option>
+              <option value="png">PNG</option>
+              <option value="dxf">DXF</option>
+              <option value="txt">TXT</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <button id="download" type="button" class="tb-primary" data-close disabled>Download</button>
+          </div>
           <!-- Two links (ADR 0034). The short one is stored on this site's server, and only when
                it is chosen here; the full one carries the plan after the #, which no browser
                sends to a server. The note says so next to the two buttons. -->
-          <details class="tb-ai tb-share" id="shareMenu">
-            <summary>Link ▾</summary>
-            <div class="tb-ai-panel">
-              <p id="shareNote" class="tb-ai-note">A short link stores this plan on archlang.uk's server; the full link does not.</p>
-              <button id="copyShortLink" type="button" class="tb-primary" aria-describedby="shareNote">Copy short link</button>
-              <button id="copyLink" type="button" aria-describedby="shareNote">Copy full link</button>
-            </div>
-          </details>
-          <button id="copyLlm" title="Copy a paste-ready prompt (source + facts + diagnostics) for an AI assistant">Copy for LLM</button>
-          <button id="embed" title="Copy an iframe snippet to embed this plan">Embed</button>
-          <a class="tb-link" id="agentsLink" href="https://archlang.uk/agents" target="_blank" rel="noopener" title="Use ArchLang from an agent: CLI, MCP server, skill, llms.txt">Agents</a>
+          <div class="tools-group" role="group" aria-labelledby="toolsShare">
+            <p class="tools-h" id="toolsShare">Share</p>
+            <p id="shareNote" class="tools-note">A short link stores this plan on archlang.uk's server; the full link does not.</p>
+            <button id="copyShortLink" type="button" class="tb-primary" aria-describedby="shareNote" disabled>Copy short link</button>
+            <button id="copyLink" type="button" aria-describedby="shareNote" disabled>Copy full link</button>
+            <button id="copyLlm" type="button" data-close disabled title="Copy a paste-ready prompt (source + facts + diagnostics) for an AI assistant">Copy for LLM</button>
+            <button id="embed" type="button" data-close disabled title="Copy an iframe snippet to embed this plan">Embed</button>
+          </div>
           <!-- Unlike Copy link (the plan rides in the #fragment, which no browser sends to
                a server), these links put the plan's share link in the chat host's URL.
-               The panel says so next to the links themselves. No tracking parameter. -->
-          <details class="tb-ai" id="chatMenu">
-            <summary>Ask AI ▾</summary>
-            <div class="tb-ai-panel">
-              <p id="chatNote" class="tb-ai-note">These links put this plan, its full source inside the share link, in the chat host's URL, so the host's servers receive it, and the host may send it as your first message straight away. Copy link keeps the plan after the #, which your browser never sends to any server. A plan too long for a URL is copied instead, for you to paste.</p>
-              <a href="https://claude.ai/new" data-chat-host="claude" target="_blank" rel="noopener noreferrer" aria-describedby="chatNote">Open in Claude ↗</a>
-              <a href="https://chatgpt.com/" data-chat-host="chatgpt" target="_blank" rel="noopener noreferrer" aria-describedby="chatNote">Open in ChatGPT ↗</a>
-            </div>
-          </details>
-        </div>
-      </div>
-      <div class="spacer"></div>
-      <!-- related-site navigation: quiet text links (no boxes), right-aligned.
-           Collapses into the "⋯" disclosure below <1600px (CSS-only). -->
-      <nav class="tb-nav" aria-label="Related sites">
-        <a href="https://archlang.uk" target="_blank" rel="noopener">Docs ↗</a>
-        <a href="https://archlang.uk/spec" target="_blank" rel="noopener">Spec</a>
-        <a href="https://github.com/ChanMeng666/archlang" target="_blank" rel="noopener">GitHub</a>
-        <a href="https://archcanvas.uk" target="_blank" rel="noopener">ArchCanvas ↗</a>
-      </nav>
-      <details class="tb-nav-more">
-        <summary aria-label="More links" title="More links">⋯</summary>
-        <div class="tb-nav-panel">
-          <a href="https://archlang.uk" target="_blank" rel="noopener">Docs ↗</a>
-          <a href="https://archlang.uk/spec" target="_blank" rel="noopener">Spec</a>
-          <a href="https://github.com/ChanMeng666/archlang" target="_blank" rel="noopener">GitHub</a>
-          <a href="https://archcanvas.uk" target="_blank" rel="noopener">ArchCanvas ↗</a>
+               The note says so next to the links themselves. No tracking parameter. -->
+          <div class="tools-group" role="group" aria-labelledby="toolsAsk">
+            <p class="tools-h" id="toolsAsk">Ask AI</p>
+            <p id="chatNote" class="tools-note">These links put this plan, its full source inside the share link, in the chat host's URL, so the host's servers receive it, and the host may send it as your first message straight away. Copy link keeps the plan after the #, which your browser never sends to any server. A plan too long for a URL is copied instead, for you to paste.</p>
+            <a href="https://claude.ai/new" data-chat-host="claude" target="_blank" rel="noopener noreferrer" aria-describedby="chatNote">Open in Claude ↗</a>
+            <a href="https://chatgpt.com/" data-chat-host="chatgpt" target="_blank" rel="noopener noreferrer" aria-describedby="chatNote">Open in ChatGPT ↗</a>
+          </div>
+          <nav class="tools-group tools-links" aria-label="Related sites">
+            <p class="tools-h">More</p>
+            <a href="https://archlang.uk/agents" target="_blank" rel="noopener" title="Use ArchLang from an agent: CLI, MCP server, skill, llms.txt">Agents ↗</a>
+            <a href="https://archlang.uk" target="_blank" rel="noopener">Docs ↗</a>
+            <a href="https://archlang.uk/guide">Guide</a>
+            <a href="https://archlang.uk/reference">Language reference</a>
+            <a href="https://archlang.uk/spec">One-page spec</a>
+            <a href="/examples/">27 example plans</a>
+            <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a>
+            <a href="https://github.com/ChanMeng666/archlang" target="_blank" rel="noopener">GitHub</a>
+            <a href="https://archcanvas.uk" target="_blank" rel="noopener">ArchCanvas ↗</a>
+          </nav>
         </div>
       </details>
+      <button id="makeOwn" class="hd-btn hd-primary" type="button" aria-haspopup="dialog">Make your own</button>
     </header>
-    <!-- The crawlable shell. No AI or search crawler executes this page's JavaScript, so
-         without these ~90px the playground served an empty body with no heading at all.
-         It is a SMALL VISIBLE band, never hidden text: the heading is always on screen and
-         the disclosure only folds the lede and the links away for someone who wants the
-         height back. `open` is the default on every load — collapsing is not remembered,
-         because the served bytes are the point.
+    <!-- The crawlable shell, one line under the header. No AI or search crawler executes this
+         page's JavaScript, so the heading, the lede and the drawing below are all served
+         bytes. A small VISIBLE band, never hidden text.
          NB the tag names are spelled out in prose here on purpose: scripts/smoke.mjs
          asserts the served page contains a literal opening h1 tag, and a comment that
          happened to contain one would make that check pass over a page that had lost it. -->
     <section class="intro">
-      <details class="intro__disclosure" open>
-        <summary class="intro__summary">
-          <h1>ArchLang Playground — write floor plans, compile them in your browser</h1>
-        </summary>
-        <p class="lede">
-          ArchLang is an open-source (MIT) DSL for floor plans. Write .arch source in the editor below
-          and it compiles in your browser to a dimensioned SVG plan — no install, no account. The same
-          source also compiles to DXF, PDF and PNG from the command line.
-        </p>
-        <p class="intro__links">
-          <a href="https://archlang.uk/guide">Guide</a> ·
-          <a href="https://archlang.uk/reference">Language reference</a> ·
-          <a href="https://archlang.uk/spec">One-page spec</a> ·
-          <a href="/examples/">27 example plans</a> ·
-          <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a> ·
-          <a href="https://github.com/ChanMeng666/archlang">GitHub</a>
-        </p>
-      </details>
+      <h1>ArchLang Playground — write floor plans, compile them in your browser</h1>
+      <p class="lede">
+        ArchLang is an open-source (MIT) DSL for floor plans. Write .arch source (or open Source to edit this one)
+        and it compiles in your browser to a dimensioned SVG plan — no install, no account. The same
+        source also compiles to DXF, PDF and PNG from the command line.
+      </p>
       <noscript>
         <p class="lede">
           The editor compiles in the browser, so it needs JavaScript. Without it, the language is
@@ -276,7 +285,7 @@
         </h2>
         <div id="preview" class="tabview active" role="tabpanel" aria-labelledby="tab-preview">
           <div class="pz-viewport">
-            <div class="pz-stage"></div>
+            <div class="pz-stage"><!--prerender:plan--></div>
             <div class="pz-toolbar">
               <button data-pz="out" type="button" title="Zoom out" aria-label="Zoom out">−</button>
               <button data-pz="in" type="button" title="Zoom in" aria-label="Zoom in">+</button>
@@ -328,6 +337,29 @@
         <div id="preview3d" class="tabview" role="tabpanel" aria-labelledby="tab-preview3d"></div>
       </section>
     </main>
+    <!-- Make your own: the ways to get a plan of your own. A native <dialog> opened with
+         showModal(), so focus stays inside it and Escape closes it. -->
+    <dialog id="makeOwnDialog" class="mo" aria-labelledby="makeOwnTitle">
+      <div class="mo-head">
+        <h2 id="makeOwnTitle">Make your own plan</h2>
+        <button type="button" class="mo-close" data-mo-close aria-label="Close">×</button>
+      </div>
+      <p class="mo-lede">Ask your AI for a floor plan. It writes ArchLang; the compiler draws the plan and tells it what is wrong.</p>
+      <ul class="mo-doors">
+        <li>
+          <a id="agentsLink" href="https://archlang.uk/agents" target="_blank" rel="noopener">Set up your coding agent ↗</a>
+          <span>The CLI, the MCP server and the skill, for any agent with a shell.</span>
+        </li>
+        <li>
+          <button type="button" data-mo-copy-llm>Copy this plan as a prompt</button>
+          <span>Its source, its facts and its diagnostics, to paste into any chat.</span>
+        </li>
+        <li>
+          <button type="button" data-mo-edit>Edit this plan here</button>
+          <span>Opens the source beside the drawing.</span>
+        </li>
+      </ul>
+    </dialog>
 
     <script type="module" src="/src/main.ts"></script>
   </body>

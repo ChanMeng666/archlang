@@ -1,7 +1,7 @@
 import { expect, type Download, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { lint } from "../../src/index.js";
-import { setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
+import { openTools, setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
  * The STOREY SWITCHER — the control that picks which level of a multi-storey plan the
@@ -23,6 +23,10 @@ import { setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
  * live host on a schedule. It never types into the editor — every plan here arrives
  * through the example <select>, which is a whole-document load — so nothing about it is
  * editor-timing-sensitive.
+ *
+ * The switcher works in view mode too (it is part of the drawing's view path); the cases that
+ * read Describe or Lint, or type into the editor, open the page in edit mode (`/#edit`), and the
+ * download opens the Tools menu first.
  */
 
 /** The storey buttons, in strip order. */
@@ -39,6 +43,7 @@ const stageSvg = (page: Page): Promise<string> => page.locator(".pz-stage svg").
 
 /** Click `#download` for `format` and return the resulting browser download. */
 async function downloadAs(page: Page, format: string): Promise<Download> {
+  await openTools(page);
   await page.locator("#format").selectOption(format);
   const [download] = await Promise.all([page.waitForEvent("download"), page.locator("#download").click()]);
   return download;
@@ -92,7 +97,7 @@ test.describe("storey switcher", () => {
   });
 
   test("Describe and Lint report the selected storey, not page 1", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#edit");
     await waitForPlan(page);
     await pickExample(page, "Townhouse (3 levels)");
 
@@ -130,7 +135,7 @@ test.describe("storey switcher", () => {
   });
 
   test("a single-storey plan grows no control at all", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#edit");
     await waitForPlan(page);
     await pickExample(page, "Studio (1BR)");
 
@@ -177,7 +182,7 @@ test.describe("storey switcher", () => {
       },
       readFileSync(new URL("../../examples/hillside-villa.arch", import.meta.url), "utf8"),
     );
-    await page.goto("/");
+    await page.goto("/#edit");
     await waitForPlan(page);
     await setEditorSource(page, src);
     await expect(levelButtons(page)).toHaveCount(2);
@@ -213,7 +218,7 @@ test.describe("storey switcher", () => {
    * whole building and is the right thing to print.
    */
   test("a narrowed panel with nothing hidden still gives the full verdict", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/#edit");
     await waitForPlan(page);
     await pickExample(page, "Two-storey (2 levels)");
     await page.locator("#tab-lint").click();

@@ -20,7 +20,7 @@ import { escapeHtml } from "./escape.js";
 import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";
 import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl, isChatHost } from "./llm-prompt.js";
-import { createShortLink, encodeSrc, updateHash } from "./share.js";
+import { createShortLink, encodeSrc, shareableHref, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { levelFileName } from "./levels.js";
@@ -50,6 +50,8 @@ interface ActionsCtx {
   getLevel: () => number | null;
   /** Surface an export failure in the status/errors UI. */
   onExportError: (format: string, err: unknown) => void;
+  /** Whether the page is in edit mode (the hash keeps its `&edit` flag while it is). */
+  isEditing: () => boolean;
   /** Bring the Lint tab to the front (where Finish and Repair report). */
   showLintTab: () => void;
   /** The render-theme override picked in the View menu, or "" for the source's own. */
@@ -93,6 +95,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     getScene,
     getLevel,
     onExportError,
+    isEditing,
     showLintTab,
     getThemeOverride,
     els,
@@ -148,12 +151,13 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   // Embed — build an <iframe> snippet pointing at the chrome-less embed page.
   els.embedBtn?.addEventListener("click", () => void showEmbed());
 
-  // Copy permalink (B5) — the hash carries the source; copy the full URL.
+  // Copy permalink (B5) — the hash carries the source; copy the full URL. A shared link carries
+  // the plan and never the edit-mode flag, so whoever opens it sees the drawing first.
   els.copyLinkBtn.addEventListener("click", async () => {
     closeMenu(els.shareMenu);
-    await updateHash(getSource()); // ensure the URL reflects the latest edit
+    await updateHash(getSource(), isEditing()); // ensure the URL reflects the latest edit
     try {
-      await navigator.clipboard.writeText(location.href);
+      await navigator.clipboard.writeText(shareableHref());
       flash("Link copied");
     } catch {
       flash("Copy failed");
@@ -165,10 +169,11 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   // with no server) copies the full link instead, which always works.
   els.copyShortLinkBtn?.addEventListener("click", async () => {
     closeMenu(els.shareMenu);
-    await updateHash(getSource());
-    const short = await createShortLink(location.hash);
+    await updateHash(getSource(), isEditing());
+    const full = shareableHref();
+    const short = await createShortLink(new URL(full).hash);
     try {
-      await navigator.clipboard.writeText(short ?? location.href);
+      await navigator.clipboard.writeText(short ?? full);
       flash(short ? "Short link copied" : "Short link unavailable: full link copied");
     } catch {
       flash("Copy failed");
@@ -289,27 +294,19 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     });
   }
 
-  // The "Ask AI" and "Copy link" disclosures close like the Saved popover: Escape (listened
-  // for on the document, since Safari does not focus a clicked <summary>), a click outside
-  // it, or choosing an item.
+  // The menu holding the links (the playground's Tools) closes on Escape and on a click outside
+  // it in shell.ts, the one place that closes it; choosing a chat link closes it here.
   function closeChatMenu() {
     closeMenu(els.chatMenu);
   }
-  for (const menu of [els.chatMenu, els.shareMenu]) {
-    if (!menu) continue;
-    document.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape" || !menu.open) return;
-      const inside = menu.contains(document.activeElement);
-      closeMenu(menu);
-      if (inside) menu.querySelector("summary")?.focus();
-    });
-    document.addEventListener("click", (e) => {
-      if (menu.open && !menu.contains(e.target as Node)) closeMenu(menu);
-    });
-  }
 
   // Saved snapshots (history) — named stashes in localStorage.
-  mountSnapshots({ button: els.savedBtn, getSource, setSource: (src) => loadSource(src, true) });
+  const snapshots = mountSnapshots({ button: els.savedBtn, getSource, setSource: (src) => loadSource(src, true) });
+  // The popover belongs to the menu its button sits in: it closes when that menu does.
+  const savedMenu = els.savedBtn.closest("details");
+  savedMenu?.addEventListener("toggle", () => {
+    if (!savedMenu.open) snapshots.close();
+  });
 
   mountDivider();
 

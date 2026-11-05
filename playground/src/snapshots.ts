@@ -40,7 +40,13 @@ function relTime(ts: number): string {
   return new Date(ts).toLocaleDateString();
 }
 
-export function mountSnapshots({ button, getSource, setSource }: SnapshotsOpts): void {
+/** What the page can ask of the mounted popover. */
+export interface SnapshotsHandle {
+  /** Hide the popover (a no-op when it is hidden). */
+  close(): void;
+}
+
+export function mountSnapshots({ button, getSource, setSource }: SnapshotsOpts): SnapshotsHandle {
   let snaps: Snapshot[] = readJSON<Snapshot[]>(KEYS.snapshots, []);
   if (!Array.isArray(snaps)) snaps = [];
 
@@ -135,4 +141,10 @@ export function mountSnapshots({ button, getSource, setSource }: SnapshotsOpts):
   function saveAndKeepOpen() {
     save();
   }
+
+  return {
+    close: () => {
+      if (!pop.hidden) close();
+    },
+  };
 }

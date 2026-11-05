@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- `archlang link` and the MCP `link` tool add `&edit` to the playground URL (`https://playground.archlang.uk/#z=<plan>&edit`), so the link opens the plan with its source beside the drawing. The `embed` URL is unchanged, and an older link without the flag still opens the same plan.
+- The playground opens in view mode: the drawing fills the page, and the default example's drawing is in the served HTML, so it shows before any JavaScript runs. **Source** opens the editor beside it; **Tools** holds every action the header had; **Make your own** lists the ways to get a plan of your own. `&edit` in the hash opens edit mode, and a link copied from the playground opens in view mode. The compiler loads once the drawing is on screen, and the editor when Source is opened.
+
 ## [1.55.0] - 2026-11-05
 
 ### Changed
