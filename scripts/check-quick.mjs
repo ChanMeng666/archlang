@@ -124,11 +124,13 @@ function workspaceOf(file) {
  * `./`/`../` path from the test's folder, any other path from the repository root, and a bare name
  * when `f` sits at the root of the test's own workspace (a `join(ROOT, "README.md")`).
  */
+const QUOTED = /["']([^"'\s]+)["']/g;
+
 function readsGeneric(t, text, f, name) {
   // Plain quotes only: a name in backticks is a comment's, not a path the test opens.
-  const lit = new RegExp(`["']([^"'\\s]*${name.replace(/\./g, "\\.")})["']`, "g");
-  for (const m of text.matchAll(lit)) {
+  for (const m of text.matchAll(QUOTED)) {
     const p = m[1];
+    if (p !== name && !p.endsWith(`/${name}`)) continue;
     if (p === name) {
       const ws = workspaceOf(t);
       if (f === (ws ? `${ws}/${name}` : name)) return true;
