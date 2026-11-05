@@ -194,7 +194,7 @@ const PAGE_META = [
   ],
   [
     "/whats-new",
-    "What is new in 1.44 to 1.54",
+    "What is new in 1.44 to 1.55",
     "The features added in ArchLang 1.44.0 to 1.46.0, each with an example: quantities and takeoff, locked elements, wall status, imperial lengths and the review sheet.",
   ],
   [
@@ -749,7 +749,7 @@ export default defineConfig({
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },
-          { text: "What is new in 1.44 to 1.54", link: "/whats-new" },
+          { text: "What is new in 1.44 to 1.55", link: "/whats-new" },
         ],
       },
       { text: "Examples", link: "/examples" },
@@ -820,7 +820,7 @@ export default defineConfig({
           { text: "Analysis: describe & lint", link: "/analysis" },
           { text: "The intent contract", link: "/intent" },
           { text: "Error catalog", link: "/errors" },
-          { text: "What is new in 1.44 to 1.54", link: "/whats-new" },
+          { text: "What is new in 1.44 to 1.55", link: "/whats-new" },
         ],
       },
       {

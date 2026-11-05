@@ -32,7 +32,7 @@ Every command and code name below is the one `archlang <command> --help` and the
 | A floor finish on a room | 1.53.0 | [Room floors](#room-floors) |
 | Furniture filled in its material | 1.54.0 | [The rendered theme](#the-rendered-theme) |
 | Twenty more furniture families | 1.54.0 | [More furniture](#more-furniture) |
-| An L-shaped void with a railing | unreleased | [Railed voids](#railed-voids) |
+| An L-shaped void with a railing | 1.55 | [Railed voids](#railed-voids) |
 
 ## Quantities and takeoff
 

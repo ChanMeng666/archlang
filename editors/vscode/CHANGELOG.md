@@ -14,6 +14,14 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.43.0] - 2026-11-05
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.55.0`** (L-shaped and railed voids, the refusal
+  of arithmetic on an axis in an opening's position, `W_FURNITURE_ON_VOID`, which completion and
+  diagnostics now know).
+
 ## [0.42.0] - 2026-11-04
 
 ### Changed
