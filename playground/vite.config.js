@@ -1,11 +1,30 @@
 import { defineConfig } from "vite";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 /** The built core's directory, as rolldown spells module ids (forward slashes). */
 const CORE_DIST = `${resolve(__dirname, "../dist").replace(/\\/g, "/")}/`;
 /** The view path's door to it (src/compiler.ts), which belongs in the same chunk. */
 const CORE_DOOR = resolve(__dirname, "src/compiler.ts").replace(/\\/g, "/");
-const isCompiler = (id) => id.startsWith(CORE_DIST) || id === CORE_DOOR;
+/**
+ * The built core's files: `index.js` and the chunks it imports, read off the build itself. Not
+ * every file under dist/: `cli/review.js` (the Checks overlay's review sheet, card P6) and the
+ * chunk holding its code are reached only by a lazy import, so they stay out of the `compiler`
+ * chunk the page preloads at startup and load with Checks instead.
+ */
+function coreFiles() {
+  const seen = new Set();
+  const visit = (rel) => {
+    if (seen.has(rel) || !existsSync(CORE_DIST + rel)) return;
+    seen.add(rel);
+    for (const m of readFileSync(CORE_DIST + rel, "utf8").matchAll(/^import\s[^;]*?from\s*"\.\/([\w.-]+\.js)";?$/gm))
+      visit(m[1]);
+  };
+  visit("index.js");
+  return seen;
+}
+const CORE_FILES = coreFiles();
+const isCompiler = (id) => id === CORE_DOOR || (id.startsWith(CORE_DIST) && CORE_FILES.has(id.slice(CORE_DIST.length)));
 
 /**
  * The compiler is its own chunk (`compiler-*.js`, the codeSplitting group below), which main.ts
@@ -45,6 +64,9 @@ export default defineConfig({
   plugins: [preloadCompiler()],
   resolve: {
     alias: {
+      // The review sheet (`arch preview --review`), for the Checks overlay: its own built file,
+      // listed before the bare name, which would otherwise match it as a prefix.
+      "archlang/review": resolve(__dirname, "../dist/cli/review.js"),
       archlang: resolve(__dirname, "../dist/index.js"),
       // archlang-3d is read from its source, as it always was: its published `exports` name a
       // dist/ this build has no reason to need. The longer key goes first (prefix match).

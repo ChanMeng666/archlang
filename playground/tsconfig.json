@@ -21,6 +21,9 @@
     "baseUrl": ".",
     "paths": {
       "archlang": ["../dist/index.d.ts"],
+      // The review sheet (vite.config.js aliases it to `dist/cli/review.js`, which the build
+      // gives no declaration file): its types are read from the source.
+      "archlang/review": ["../src/cli/review.ts"],
       "@chanmeng666/archlang-3d": ["../packages/archlang-3d/src/index.ts"],
       "@chanmeng666/archlang-3d/browser": ["../packages/archlang-3d/src/browser.ts"]
     }

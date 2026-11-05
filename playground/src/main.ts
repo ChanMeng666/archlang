@@ -16,6 +16,7 @@
  */
 import type { CompileOptions, DescribeOptions, RoomSummary, SceneSummary } from "archlang";
 import type { ActionsHandle } from "./actions.js";
+import type { ChecksPanel } from "./checks-panel.js";
 import type { EditMode } from "./edit-mode.js";
 import { createPreview } from "./preview.js";
 import { type LevelPage, selectPage } from "./levels.js";
@@ -462,12 +463,46 @@ function render(source: string, refit = false): boolean {
     // draw page 1's circulation over whatever storey is selected.
     displaySvg = selectPage(overlaid.pages, activeLevel)?.svg ?? overlaid.svg;
   }
+  // Checks: the review rings over the drawing on screen. Like the Paths overlay it is never in
+  // `lastSvg`, which every export reads, so a download is the same with Checks on or off.
+  if (checksOn && checks) displaySvg = checks.overlay(displaySvg, source, activeLevel);
   previewCtl.show(displaySvg, refit);
+  if (checksOn) checks?.shown();
   lastSvg = pageSvg;
   lastScene = (page ? page.scene : scene) ?? null;
   knobsPanel.sync(source, ast);
   return true;
 }
+
+// ---- Checks (card P6): the review rings `arch preview --review` draws, over the drawing ----
+// Off on every visit (not persisted). The panel and the review code load on the first switch-on.
+const checksBtn = document.getElementById("checks") as HTMLButtonElement;
+let checksOn = false;
+let checks: ChecksPanel | undefined;
+let checksP: Promise<ChecksPanel | undefined> | undefined;
+checksBtn.addEventListener("click", () => {
+  checksOn = !checksOn;
+  checksBtn.setAttribute("aria-pressed", String(checksOn));
+  checks?.setVisible(checksOn);
+  checksP ??= import("./checks-panel.js").then(
+    (m) =>
+      (checks = m.mountChecks({
+        viewport: pzViewport,
+        stage: pzStage,
+        isEditing: () => editing && edit !== undefined,
+        jumpToOffset,
+      })),
+    (err: unknown) => {
+      checksP = undefined; // a failed chunk load is retried on the next press
+      flash(`Checks did not load: ${(err as { message?: string })?.message ?? err}`);
+      return undefined;
+    },
+  );
+  void Promise.all([checksP, ready]).then(([c]) => {
+    c?.setVisible(checksOn);
+    render(currentSource());
+  });
+});
 
 // ---- 3D preview (card A5): three.js and archlang-3d load on the tab's first open, like jsPDF ----
 let preview3d: Promise<import("./preview3d.js").Preview3d | undefined> | undefined;
