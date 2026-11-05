@@ -133,7 +133,10 @@ jobs:
           # re-run and must not also skip the sync. The search API is best-effort (the
           # registry is in preview): if the probe fails or the shape changes, we attempt the
           # sync and let `mcp-publisher publish` be the arbiter (a duplicate fails loudly).
-          reg_json=$(curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.ChanMeng666/archlang-mcp" || echo "")
+          # `version=latest`: the plain search returns the oldest entries first, one page only, so a
+          # version published by an earlier attempt was never seen and the re-run failed on a
+          # duplicate (v1.56.0, 2026-11-06).
+          reg_json=$(curl -fsSL "https://registry.modelcontextprotocol.io/v0/servers?search=io.github.ChanMeng666/archlang-mcp&version=latest" || echo "")
           if echo "$reg_json" | grep -q "\"version\": *\"$mcp_version\""; then
             echo "registry_synced=true" >> "$GITHUB_OUTPUT"
             echo "::notice::MCP registry already has $mcp_version — skipping registry sync."
