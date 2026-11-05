@@ -554,6 +554,96 @@ html:not([data-mode="edit"]) :is(#tab-describe, #tab-lint, #tab-intent, #tab-tak
   visibility: hidden;
 }
 
+/* The plan strip (view mode only): a row of thumbnail links under the drawing that scrolls
+   sideways inside itself, never the page; "All plans" stays at its end. Every thumbnail box has
+   a fixed size and the image is contained in it, so a lazy thumbnail arriving moves nothing.
+   The links are written by scripts/gen-static.mjs; without them (the dev server) the list is
+   only a comment, which `:empty` matches. */
+.strip {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 3px 14px;
+  border-top: 1px solid var(--hairline);
+  background: var(--paper-panel);
+}
+html[data-mode="edit"] .strip {
+  display: none;
+}
+.strip-list {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+  scrollbar-width: thin;
+}
+.strip-list:empty {
+  display: none;
+}
+.strip-list > li {
+  flex: none;
+  scroll-snap-align: start;
+}
+/* A gap and a rule where a group of the picker begins. */
+.strip-list > li[data-group]:not(:first-child) {
+  margin-left: 6px;
+  padding-left: 12px;
+  border-left: 1px solid var(--hairline);
+}
+.strip-item {
+  display: block;
+  width: 60px;
+  height: 40px;
+  padding: 2px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper);
+}
+.strip-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.strip-item:hover {
+  border-color: var(--src-rule);
+}
+.strip-item[aria-current="true"] {
+  border-color: var(--redline-ink);
+  box-shadow: inset 0 0 0 1px var(--redline-ink);
+}
+/* Inside the box: the list clips what overflows it (the list has no padding to spare: every
+   pixel of the strip's height comes off the drawing's). */
+.strip-item:focus-visible {
+  outline: 2px solid var(--plum-deep);
+  outline-offset: -2px;
+}
+.strip-all {
+  flex: none;
+  font-size: 12.5px;
+  white-space: nowrap;
+  /* --plum-deep, not --plum: body-size text (the brand token rule) */
+  color: var(--plum-deep);
+  text-decoration: none;
+  border-bottom: 1px solid var(--src-border);
+}
+.strip-all:hover {
+  border-bottom-color: var(--plum-deep);
+}
+.strip-all:focus-visible {
+  outline: 2px solid var(--plum-deep);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 /* The phone view switcher (Code · Plan · Problems) — hidden above the breakpoint. */
 .mviews {
   display: none;
@@ -773,6 +863,20 @@ html:not([data-mode="edit"]) :is(#tab-describe, #tab-lint, #tab-intent, #tab-tak
   .lv-group,
   .lv-sep {
     margin-left: 4px;
+  }
+  /* A swipe strip in the 16px gutters, of touch-sized targets. */
+  .strip {
+    padding: 4px 16px;
+  }
+  .strip-item {
+    width: 66px;
+    height: 44px;
+  }
+  .strip-all {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    border-bottom: 0;
   }
   .divider {
     display: none;

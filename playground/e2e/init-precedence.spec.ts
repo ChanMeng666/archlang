@@ -40,8 +40,8 @@ test.describe("first-load source precedence", () => {
   test("a clean visit falls through to the default example", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    // The <select> is set to the default only on the fall-through path, so it is
-    // the honest witness that neither a hash nor an autosave was used.
+    // The <select> names the default here because the fall-through path opened it (a hash or a
+    // draft names an example only when it is one word for word, and neither exists here).
     await expect(page.locator("#examples")).toHaveValue("Laneway House");
   });
 

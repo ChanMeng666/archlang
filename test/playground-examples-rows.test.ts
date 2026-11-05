@@ -249,10 +249,25 @@ describe("the static page generator reads this table, and nothing else hand-list
 
   it("each gallery card carries exactly one link", () => {
     // The e2e asserts `ul.plans a[href="/examples/studio.html"]` resolves to ONE element,
-    // and a second <a> per card would also give a screen reader 27 duplicated stops.
-    // Scoped to anchor hrefs — `sitemap()` builds its <loc>s from the same template.
-    expect(gen.match(/href="\/examples\/\$\{r\.name\}\.html"/g) ?? []).toHaveLength(1);
-    expect(gen, "the thumbnail is decorative: the link text already names the plan").toMatch(/alt=""/);
+    // and a second <a> per card would also give a screen reader a duplicated stop per plan.
+    // Scoped to anchor hrefs — `sitemap()` builds its <loc>s from the same template — and to
+    // the index page's builder: the playground's plan strip (`prerenderIndex`) is another
+    // page's list, one link per plan of its own.
+    const index = /\nfunction indexPage\([\s\S]*?\n}\n/.exec(gen)?.[0] ?? "";
+    expect(index, "gen-static.mjs declares `function indexPage(…) { … }`").not.toBe("");
+    expect(index.match(/href="\/examples\/\$\{r\.name\}\.html"/g) ?? []).toHaveLength(1);
+    expect(index, "the thumbnail is decorative: the link text already names the plan").toMatch(/alt=""/);
+  });
+
+  it("the plan strip names each link by its plan and sizes each thumbnail from compile()", () => {
+    // The strip's link has no text but its thumbnail, so the image's alt IS the link's name;
+    // and its thumbnail is the gallery's (`thumbs`, from `thumbSvg`), never re-measured here.
+    const strip = /\nfunction prerenderIndex\([\s\S]*?\n}\n/.exec(gen)?.[0] ?? "";
+    expect(strip, "gen-static.mjs declares `function prerenderIndex(…) { … }`").not.toBe("");
+    expect(strip.match(/href="\/examples\/\$\{r\.name\}\.html"/g) ?? []).toHaveLength(1);
+    expect(strip).toMatch(/alt="\$\{label\}"/);
+    expect(strip).toMatch(/loading="lazy"/);
+    expect(strip).toMatch(/width="\$\{t\.w\}" height="\$\{t\.h\}"/);
   });
 
   it("the reachability clause is gated on describe(), not asserted for every plan", () => {

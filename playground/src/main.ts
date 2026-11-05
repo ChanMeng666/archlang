@@ -1,7 +1,7 @@
 /**
  * The playground's startup module: the view path. It shows the drawing (the one built into the
  * page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and
- * runs the header. Everything heavier is its own chunk, loaded when it is needed:
+ * plans (the picker and the thumbnail strip) and runs the header. Everything heavier is its own chunk, loaded when it is needed:
  *
  * - the compiler (`archlang`, the `compiler` chunk, preloaded by index.html but not
  *   render-blocking) and the example sources: fetched as soon as this module runs;
@@ -25,6 +25,7 @@ import { isNarrow, mountMobileViews } from "./mobile-views.js";
 import { hasEditFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
 import { mountShell } from "./shell.js";
+import { mountStrip } from "./strip.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
@@ -102,7 +103,9 @@ for (const tab of tabs) {
 /** One <optgroup> per example group — the grouping the docs' example tour uses. */
 function fillPicker({ EXAMPLE_GROUPS }: Examples): void {
   const keep = select.value;
-  select.replaceChildren();
+  // The neutral entry (`markPlan`) survives the rebuild, and stays chosen if it was.
+  const neutral = select.querySelector<HTMLOptionElement>("option[data-neutral]");
+  select.replaceChildren(...(neutral ? [neutral] : []));
   for (const { group, items } of EXAMPLE_GROUPS) {
     const g = document.createElement("optgroup");
     g.label = group;
@@ -115,6 +118,39 @@ function fillPicker({ EXAMPLE_GROUPS }: Examples): void {
     select.appendChild(g);
   }
   if (keep) select.value = keep;
+  else if (neutral) neutral.selected = true;
+}
+
+/**
+ * Name the plan on screen in the picker and the strip together, so the two always agree: the
+ * example labelled `label`, or, for a plan that is no example word for word (a shared link, a
+ * saved draft, an edit), no plan in the strip and `neutral` in the picker. The neutral entry is
+ * shown but never offered: it is hidden from the list and disabled.
+ */
+function markPlan(label: string | null, neutral = "Edited plan") {
+  if (label !== null) select.value = label;
+  else {
+    let o = select.querySelector<HTMLOptionElement>("option[data-neutral]");
+    if (!o) {
+      o = document.createElement("option");
+      o.value = "";
+      o.dataset.neutral = "";
+      o.disabled = true;
+      o.hidden = true;
+      select.prepend(o);
+    }
+    o.textContent = neutral;
+    o.selected = true;
+  }
+  strip.setCurrent(label);
+}
+
+/** After a change to the source: still an example word for word, or now a plan of the reader's own. */
+function syncPlanMark(source: string): Promise<void> {
+  return examplesP.then(({ exampleLabelFor }) => {
+    if (currentSource() !== source) return; // a later change syncs again
+    markPlan(exampleLabelFor(source) ?? null);
+  });
 }
 
 // The shareable-permalink codec (`#z=` compressed / legacy `#src=`) lives in
@@ -438,6 +474,7 @@ function onDocChanged(source: string) {
     render(source);
     writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
     void updateHash(source, editing); // keep the permalink in sync (compression is async)
+    void syncPlanMark(source); // the picker and the strip: still that example, or an edited plan
   }, 250);
 }
 
@@ -449,15 +486,22 @@ function onExportError(format: string, err: unknown) {
   errorsEl.textContent = `${format.toUpperCase()} export failed: ${(err as { message?: string })?.message ?? err}`;
 }
 
-// An example picked before the app is up is loaded once it is.
-select.addEventListener("change", () => {
-  const label = select.value;
+/**
+ * Open the example labelled `label` (the picker's value). The picker and the strip say so at once;
+ * an example picked before the app is up is loaded once it is.
+ */
+function pickExample(label: string) {
+  markPlan(label);
   void ready.then(async () => {
     const { EXAMPLES } = await examplesP;
-    select.value = label;
+    markPlan(label);
     loadSource(EXAMPLES[label], true);
   });
-});
+}
+select.addEventListener("change", () => pickExample(select.value));
+// The strip's links and thumbnails are in the served page (gen-static.mjs): nothing here waits for
+// the example sources to mark or move through them.
+const strip = mountStrip(document.getElementById("stripList")!, pickExample);
 
 // Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
 themeSelect.addEventListener("change", () => {
@@ -477,7 +521,10 @@ async function boot() {
   const { DEFAULT_EXAMPLE, EXAMPLES } = examples;
   fillPicker(examples);
   const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES[DEFAULT_EXAMPLE];
-  if (!sharedSrc && !savedSrc) select.value = DEFAULT_EXAMPLE;
+  // The picker and the strip name the plan this visit opens: the default, or the example a link
+  // or a draft is word for word, or neither (a plan of someone's own is no example).
+  if (!sharedSrc && !savedSrc) markPlan(DEFAULT_EXAMPLE);
+  else markPlan(examples.exampleLabelFor(initialDoc) ?? null, sharedSrc ? "Shared plan" : "Saved draft");
 
   // A `#z=` payload that is not one of the bundled examples is third-party text on
   // our page — say so, once, at the top of the preview. Silent for a stock-example

@@ -272,7 +272,7 @@ const EXAMPLE_ROWS = [
 
 /**
  * Basename → the example's source text. Separate from the table because Vite needs
- * the `?raw` specifiers above to be literal imports, and a table of 27 inline
+ * the `?raw` specifiers above to be literal imports, and a table of inline
  * template literals would be exactly the hand-copied duplication this file exists
  * to avoid.
  */
@@ -350,6 +350,12 @@ export function exampleNameFor(src: string): string | undefined {
   const want = lf(src);
   for (const [name] of EXAMPLE_ROWS) if (lf(SOURCES[name] ?? "") === want) return name;
   return undefined;
+}
+
+/** The picker label of the preset whose source is exactly `src`, if `src` is an unedited preset. */
+export function exampleLabelFor(src: string): string | undefined {
+  const name = exampleNameFor(src);
+  return name === undefined ? undefined : EXAMPLE_ROWS.find(([n]) => n === name)?.[1];
 }
 
 /** The preset a first, unshared, unsaved visit loads: the table's first row. */
