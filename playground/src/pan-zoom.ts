@@ -114,8 +114,8 @@ export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoo
   viewport.addEventListener(
     "wheel",
     (e) => {
-      // The knobs panel scrolls its own list; the drawing does not zoom under it.
-      if ((e.target as Element | null)?.closest(".knobs")) return;
+      // The knobs and Checks panels scroll their own lists; the drawing does not zoom under them.
+      if ((e.target as Element | null)?.closest(".knobs, .checks")) return;
       e.preventDefault();
       const rect = viewport.getBoundingClientRect();
       const factor = Math.exp(-e.deltaY * 0.0015);
@@ -130,7 +130,7 @@ export function createPanZoom(viewport: HTMLElement, stage: HTMLElement): PanZoo
 
   const onDown = (e: PointerEvent) => {
     // Ignore clicks that originate on the floating toolbar buttons.
-    if ((e.target as Element | null)?.closest(".pz-toolbar, .room-card, .knobs")) return;
+    if ((e.target as Element | null)?.closest(".pz-toolbar, .room-card, .knobs, .checks")) return;
     viewport.setPointerCapture(e.pointerId);
     pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
     viewport.classList.add("pz-grabbing");

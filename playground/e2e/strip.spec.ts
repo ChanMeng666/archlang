@@ -13,11 +13,14 @@ import { gotoEdit, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "
 const items = (page: Page) => page.locator("#strip a.strip-item");
 const current = (page: Page) => page.locator('#strip a.strip-item[aria-current="true"]');
 /**
- * The plans the picker offers, in order (gen-static writes both from `EXAMPLE_ROWS`): its grouped
- * options, not the neutral entry `markPlan` shows for a plan that is no example.
+ * The examples the picker offers, in order (gen-static writes both from `EXAMPLE_ROWS`): its grouped
+ * options, not the neutral entry `markPlan` shows for a plan that is no example, and not the
+ * playground-only samples' group (`data-sample`, samples.ts), which the strip does not list.
  */
 const pickerLabels = (page: Page) =>
-  page.locator("#examples optgroup > option").evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
+  page
+    .locator("#examples optgroup:not([data-sample]) > option")
+    .evaluateAll((os) => os.map((o) => (o as HTMLOptionElement).value));
 const box = async (page: Page) => {
   const b = (await page.locator(".pz-viewport").boundingBox())!;
   return [b.x, b.y, b.width, b.height].map(Math.round);

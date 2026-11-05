@@ -120,8 +120,8 @@
   </head>
   <body>
     <!-- Header = source-world chrome (cool grey): the brand, the plan picker, and at most four
-         controls in one row — Source (the editor), Checks (a slot, hidden until it draws the
-         review rings), Tools (every other action, in one menu) and Make your own (the one
+         controls in one row — Source (the editor), Checks (the review rings over the drawing,
+         checks-panel.ts), Tools (every other action, in one menu) and Make your own (the one
          redline control). Each control keeps the id the app and the specs know it by. -->
     <header>
       <div class="tb-brand">
@@ -135,7 +135,7 @@
       <select id="examples" class="hd-picker" aria-label="Plan"><!--prerender:picker--></select>
       <div class="spacer"></div>
       <button id="sourceToggle" class="hd-btn" type="button" aria-pressed="false" title="Show the ArchLang source beside the drawing">Source</button>
-      <button id="checks" class="hd-btn" type="button" aria-pressed="false" hidden>Checks</button>
+      <button id="checks" class="hd-btn" type="button" aria-pressed="false" title="Ring what compile and lint warn about, as arch preview --review does">Checks</button>
       <details class="tools" id="tools">
         <summary class="hd-btn">Tools ▾</summary>
         <div class="tools-panel">

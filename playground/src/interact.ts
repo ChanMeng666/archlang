@@ -72,7 +72,7 @@ interface InteractOpts {
 }
 
 /** Floating controls over the drawing that are not the drawing: no tooltip, no click-through. */
-const OVERLAY = ".pz-toolbar, .room-card, .knobs";
+const OVERLAY = ".pz-toolbar, .room-card, .knobs, .checks";
 
 export function mountInteract({ viewport, stage, getRooms, jumpToOffset, onRoomClick }: InteractOpts): void {
   const tip = document.createElement("div");

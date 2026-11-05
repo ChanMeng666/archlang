@@ -4,9 +4,14 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   // `src/cli/link.ts` is the Node-only `@chanmeng666/archlang/link` subpath (it uses zlib), so
   // the MCP shim mints the same share links as `archlang link`; the main entry stays browser-safe.
-  entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts"],
+  // `src/cli/review.ts` (`arch preview --review`'s sheet, pure and browser-safe) is built as its
+  // own file, `dist/cli/review.js`, for the playground's Checks overlay, which draws the same
+  // review rings from the same function. It is not a package export: no `exports` entry names it,
+  // and it gets no declaration file (one would split the shared types out of `index.d.ts`); the
+  // playground reads its types from the source.
+  entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/cli/review.ts"],
   format: ["esm"],
-  dts: true,
+  dts: { entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts"] },
   clean: true,
   sourcemap: true,
   target: "es2022",

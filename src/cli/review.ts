@@ -387,6 +387,26 @@ function unringedText(u: ReviewUnringed, partial: boolean): string {
  * the same SVG bytes.
  */
 export function buildReviewSheet(source: string, opts: ReviewOptions = {}): ReviewSheet | ReviewFailure {
+  const r = reviewSheetAndWarnings(source, opts);
+  return "kind" in r ? r : r.sheet;
+}
+
+/** The review sheet and the warning behind each of its marks: `warnings[i]` is mark `i + 1`'s. */
+export interface ReviewSheetWithWarnings {
+  sheet: ReviewSheet;
+  warnings: Diagnostic[];
+}
+
+/**
+ * {@link buildReviewSheet}, also handing back the diagnostic each mark was made from (in mark
+ * order), so a caller that wants a mark's hints or fixes (the playground's Checks list) reads them
+ * from the same compile and lint the sheet used instead of running both again. The sheet is the
+ * one `buildReviewSheet` returns, byte for byte: that function is this one's `.sheet`.
+ */
+export function reviewSheetAndWarnings(
+  source: string,
+  opts: ReviewOptions = {},
+): ReviewSheetWithWarnings | ReviewFailure {
   const world = opts.world;
   // The drawing exactly as `preview`/`compile` draws it — embedded, never re-rendered.
   const plain = compile(source, { noCache: true, ...(world ? { world } : {}) });
@@ -702,11 +722,14 @@ export function buildReviewSheet(source: string, opts: ReviewOptions = {}): Revi
     `</svg>`,
   );
   return {
-    svg: out.join("\n"),
-    marks,
-    crops,
-    cropsOmitted,
-    diagnostics: plain.diagnostics,
-    ...(level !== undefined ? { level } : {}),
+    sheet: {
+      svg: out.join("\n"),
+      marks,
+      crops,
+      cropsOmitted,
+      diagnostics: plain.diagnostics,
+      ...(level !== undefined ? { level } : {}),
+    },
+    warnings: order.map((x) => x.d),
   };
 }
