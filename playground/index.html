@@ -19,9 +19,10 @@
     <!-- Before the first paint, so the layout never jumps: which mode this visit opens in
          (`&edit` in the hash, the rule `hasEditFlag` in src/share.ts reads), and whether the
          drawing built into this page is the plan it opens. A `#z=`/`#src=` link or an
-         autosaved draft (`KEYS.source` in src/storage.ts) opens another plan, so the built-in
-         drawing is hidden until that one is compiled. Without JavaScript neither runs, and the
-         page shows the built-in drawing in view mode. -->
+         autosaved draft (`KEYS.source` in src/storage.ts) opens another plan, and a saved render
+         theme (`KEYS.theme`) draws the plan differently, so in those cases the built-in drawing is
+         hidden until the app's own is compiled. (The a11y switch is not persisted.) Without
+         JavaScript neither runs, and the page shows the built-in drawing in view mode. -->
     <script>
       (function () {
         var root = document.documentElement;
@@ -30,7 +31,8 @@
         var other = /[#&](?:z|src)=/.test(hash);
         if (!other) {
           try {
-            other = localStorage.getItem("archlang.pg.source") !== null;
+            other =
+              localStorage.getItem("archlang.pg.source") !== null || !!localStorage.getItem("archlang.pg.theme");
           } catch (e) {}
         }
         if (other) root.classList.add("pg-other");
@@ -53,7 +55,7 @@
     <meta property="og:image:height" content="630" />
     <meta
       property="og:image:alt"
-      content="The ArchLang playground: declarative .arch source on the left, the compiled SVG floor plan on the right."
+      content="The ArchLang wordmark beside its A-frame floor-plan mark, above the words: code to floor plans."
     />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="ArchLang Playground — code to floor plans" />
@@ -64,7 +66,7 @@
     <meta name="twitter:image" content="https://playground.archlang.uk/brand/archlang-og.png" />
     <meta
       name="twitter:image:alt"
-      content="The ArchLang playground: declarative .arch source on the left, the compiled SVG floor plan on the right."
+      content="The ArchLang wordmark beside its A-frame floor-plan mark, above the words: code to floor plans."
     />
     <!-- Structured data for search and answer engines. No crawler executes this page's
          JavaScript, so everything a machine can learn here has to be in the served bytes:
@@ -227,14 +229,17 @@
          happened to contain one would make that check pass over a page that had lost it. -->
     <section class="intro">
       <h1>ArchLang Playground — write floor plans, compile them in your browser</h1>
-      <p class="lede">Open-source floor plans as code. The source compiles in your browser; no install, no account.</p>
+      <p class="lede">
+        ArchLang is an open-source (MIT) DSL for floor plans. Write .arch source in the editor below
+        and it compiles in your browser to a dimensioned SVG plan — no install, no account. The same
+        source also compiles to DXF, PDF and PNG from the command line.
+      </p>
       <noscript>
         <p class="lede">
-          The drawing below was compiled when this page was built. Editing a plan needs JavaScript,
-          because the compiler runs in the browser. Without it, the language is documented in full
-          at <a href="https://archlang.uk/reference">archlang.uk/reference</a>, every example plan
-          is published as a static page under <a href="/examples/">/examples/</a>, and the same
-          compiler runs offline from the command line via
+          The editor compiles in the browser, so it needs JavaScript. Without it, the language is
+          documented in full at <a href="https://archlang.uk/reference">archlang.uk/reference</a>, every
+          example plan is published as a static page under <a href="/examples/">/examples/</a>, and the
+          same compiler runs offline from the command line via
           <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a>.
         </p>
       </noscript>

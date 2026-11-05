@@ -109,12 +109,23 @@ test.describe("boot without JavaScript", { tag: "@prod" }, () => {
     expect(await svg.locator("path, rect, line, polyline, polygon").count()).toBeGreaterThan(0);
     // The default example's own drawing: its title block names it.
     await expect(svg).toContainText("Laneway House");
-    // Fitted to the stage by CSS alone: on screen, and inside the stage.
+    // Fitted to the stage by CSS alone, the way pan-zoom.ts's fit() fits it once the app runs:
+    // centred, and filling the stage's LIMITING side to FIT_PAD (94 %). A width floor was the
+    // wrong measure: this plan is about as tall as it is wide, so in a 1280 px-wide stage its
+    // height decides, and its width follows the stage's height (469 px at 1280x720 with the
+    // noscript note showing; the JS fit gives 513 px on the taller JS stage — the same rule).
     const [box, stage] = await Promise.all([svg.boundingBox(), page.locator(".pz-viewport").boundingBox()]);
     expect(box && stage).toBeTruthy();
-    expect(box!.width).toBeGreaterThan(stage!.width * 0.4);
-    expect(box!.x).toBeGreaterThanOrEqual(stage!.x);
-    expect(box!.x + box!.width).toBeLessThanOrEqual(stage!.x + stage!.width + 1);
+    const fill = Math.max(box!.width / stage!.width, box!.height / stage!.height);
+    expect(fill, "fills the stage's limiting side to 94 %").toBeGreaterThan(0.93);
+    expect(fill).toBeLessThan(0.95);
+    expect(Math.abs(box!.x + box!.width / 2 - (stage!.x + stage!.width / 2)), "centred across").toBeLessThan(2);
+    expect(Math.abs(box!.y + box!.height / 2 - (stage!.y + stage!.height / 2)), "centred down").toBeLessThan(2);
+    // …in a stage that is most of the page, as in view mode with JavaScript (PS-D5: >= 70 %).
+    const view = page.viewportSize()!;
+    expect((stage!.width * stage!.height) / (view.width * view.height), "the stage's share").toBeGreaterThanOrEqual(
+      0.7,
+    );
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator(".intro .lede").first()).toContainText("compiles in your browser");
     // The picker names the plan on screen, also with no script.

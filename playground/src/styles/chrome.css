@@ -289,6 +289,7 @@ header {
   border-bottom: 1px solid var(--hairline);
 }
 .intro h1 {
+  flex: none;
   font-family: var(--font-display);
   font-variation-settings:
     "wdth" 90,
@@ -299,7 +300,15 @@ header {
   margin: 0;
   color: var(--src-fg);
 }
+/* The lede is the page's served prose, kept word for word; on a wide screen it runs on the H1's
+   line and stops at the edge with an ellipsis (the whole sentence is in the bytes, and wraps in
+   full below 900px), so the band stays one line and the drawing keeps the height. */
 .intro .lede {
+  flex: 1 1 0;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   font-family: var(--font-body);
   font-size: 0.85rem;
   line-height: 1.4;
@@ -308,7 +317,7 @@ header {
 }
 .intro noscript .lede {
   flex-basis: 100%;
-  max-width: 88ch;
+  white-space: normal;
   margin-top: 4px;
 }
 .intro a {
@@ -637,6 +646,10 @@ html:not([data-mode="edit"]) :is(#tab-describe, #tab-lint, #tab-intent, #tab-tak
 
   .intro {
     padding: 8px 16px;
+  }
+  .intro .lede {
+    flex-basis: 100%;
+    white-space: normal;
   }
 
   html[data-mode="edit"] .mviews {

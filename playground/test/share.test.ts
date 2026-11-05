@@ -108,6 +108,8 @@ describe("the edit-mode flag", () => {
       expect(re.test(h), h).toBe(hasEditFlag(h));
     }
     expect(html).toContain(`localStorage.getItem("${KEYS.source}")`);
+    // A saved render theme draws the plan differently from the built-in drawing.
+    expect(html).toContain(`localStorage.getItem("${KEYS.theme}")`);
   });
 
   it("a shared link drops the flag and nothing else", () => {
