@@ -8,7 +8,19 @@ It is a **thin stdio shim over the `@chanmeng666/archlang` library** (no subproc
 no re-implementation): each tool wraps one pure, exported function. The core stays
 **zero-dependency** — the MCP SDK lives only in this package.
 
-## When to prefer the CLI
+<!-- doors:start -->
+## Try it
+
+Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.
+
+- **ChatGPT, no install:** [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970)
+- **claude.ai, no install:** add `https://mcp.archlang.uk/mcp` as a custom connector
+- **Coding agent:** `claude mcp add --transport http archlang https://mcp.archlang.uk/mcp`; locally, `claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp`; skills, `npx -y skills add ChanMeng666/archlang --yes` ([skills.sh](https://skills.sh/ChanMeng666/archlang))
+- **VS Code:** [Marketplace](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang) or [Open VSX](https://open-vsx.org/extension/ChanMeng/archlang)
+- **Playground, in the browser:** https://playground.archlang.uk
+<!-- doors:end -->
+
+## If your agent has a shell
 
 ArchLang's primary agent interface is the agent-native **`archlang` CLI**, not this
 server. A CLI costs **nothing in an agent's context window until it is called**,

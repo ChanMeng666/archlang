@@ -11,6 +11,18 @@ of the project for large language models and AI agents.
 - Primary stack: Node.js / JavaScript
 - License: MIT
 
+<!-- doors:start -->
+## Try it
+
+Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.
+
+- **ChatGPT, no install:** [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970)
+- **claude.ai, no install:** add `https://mcp.archlang.uk/mcp` as a custom connector
+- **Coding agent:** `claude mcp add --transport http archlang https://mcp.archlang.uk/mcp`, or `npx -y skills add ChanMeng666/archlang --yes`
+- **VS Code:** [Marketplace](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang) or [Open VSX](https://open-vsx.org/extension/ChanMeng/archlang)
+- **Playground, in the browser:** https://playground.archlang.uk
+<!-- doors:end -->
+
 ## Key documents
 
 - [README](https://github.com/chanmeng666/archlang/blob/main/README.md): overview, features, installation, usage

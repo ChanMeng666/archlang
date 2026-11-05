@@ -1,0 +1,62 @@
+{
+  "canonicalLine": "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
+  "todo": "Cursor and VS Code one-click MCP install links (cursor://anysphere.cursor-deeplink/mcp/install and vscode:mcp/install) are not added until someone verifies them by hand in those apps.",
+  "doors": {
+    "chatgpt": {
+      "label": "ArchLang app in ChatGPT",
+      "url": "https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970",
+      "note": "no install"
+    },
+    "claudeai": {
+      "label": "claude.ai connector",
+      "url": "https://mcp.archlang.uk/mcp",
+      "note": "no install; add as a custom connector"
+    },
+    "agent": {
+      "label": "Your coding agent",
+      "claudeCodeHttp": "claude mcp add --transport http archlang https://mcp.archlang.uk/mcp",
+      "claudeCodeLocal": "claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp",
+      "plugin": ["/plugin marketplace add ChanMeng666/archlang", "/plugin install archlang@archlang"],
+      "skills": {
+        "command": "npx -y skills add ChanMeng666/archlang --yes",
+        "url": "https://skills.sh/ChanMeng666/archlang"
+      },
+      "mcpConfig": {
+        "mcpServers": {
+          "archlang": {
+            "command": "npx",
+            "args": ["-y", "@chanmeng666/archlang-mcp"]
+          }
+        }
+      }
+    },
+    "vscode": {
+      "label": "VS Code extension",
+      "marketplace": "https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang",
+      "openVsx": "https://open-vsx.org/extension/ChanMeng/archlang"
+    },
+    "playground": {
+      "label": "Playground",
+      "url": "https://playground.archlang.uk",
+      "note": "in the browser"
+    }
+  },
+  "agentPrompt": [
+    "1. Run: npx -y skills add ChanMeng666/archlang --yes",
+    "2. Run: npx -y @chanmeng666/archlang spec   (read it before writing anything)",
+    "3. Write my floor plan as plan.arch from this brief: <describe rooms, areas, adjacencies>",
+    "4. Run: npx -y @chanmeng666/archlang compile plan.arch -o plan.svg --json",
+    "   then describe plan.arch --json, validate plan.arch --strict --json (same prefix); fix, recompile",
+    "5. Run: npx -y @chanmeng666/archlang finish plan.arch, then compile again to export.",
+    "Starting from a photo or PDF? Read https://archlang.uk/from-an-image. To change one room without moving the others, use `impact --lock` (https://archlang.uk/edit-one-room)."
+  ],
+  "order": {
+    "readme": ["agent", "chatgpt", "claudeai", "vscode", "playground"],
+    "npmMcp": ["chatgpt", "claudeai", "agent", "vscode", "playground"],
+    "vscode": ["chatgpt", "claudeai", "agent", "playground"],
+    "llms": ["chatgpt", "claudeai", "agent", "vscode", "playground"],
+    "docsHome": ["chatgpt", "agent", "claudeai", "vscode", "playground"],
+    "playground": ["chatgpt", "claudeai", "agent", "vscode", "playground"],
+    "start": ["playground", "chatgpt", "claudeai", "agent", "vscode"]
+  }
+}

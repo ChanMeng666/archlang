@@ -2,6 +2,17 @@
 
 Write floor plans as code. ArchLang is an open-source language that compiles `.arch` text into SVG, DXF or PDF floor plans, and this extension gives `.arch` files full editor support.
 
+<!-- doors:start -->
+## Try it
+
+Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.
+
+- **ChatGPT, no install:** [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970)
+- **claude.ai, no install:** add `https://mcp.archlang.uk/mcp` as a custom connector
+- **Coding agent:** `claude mcp add --transport http archlang https://mcp.archlang.uk/mcp`; locally, `claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp`; skills, `npx -y skills add ChanMeng666/archlang --yes` ([skills.sh](https://skills.sh/ChanMeng666/archlang))
+- **Playground, in the browser:** https://playground.archlang.uk
+<!-- doors:end -->
+
 ## Features
 
 - **Syntax highlighting** for `.arch` files, including metric unit suffixes such as `4m`, `40cm` and `20mm`.

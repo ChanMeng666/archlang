@@ -14,6 +14,7 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { PLUGIN_MANIFEST, pluginSkillFiles } from "./gen-plugin.js";
 import { allOutputs } from "./gen-agent-manifests.js";
+import { SURFACES as DOORS_SURFACES } from "./gen-doors.js";
 import { README_SVGS, VIEW_SVGS, svgPath } from "./gen-example-svgs.js";
 
 const HERE = fileURLToPath(new URL(".", import.meta.url));
@@ -56,6 +57,7 @@ const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = 
   { script: "gen:agent-manifests", artifacts: allOutputs() },
   // The `<arch-plan>` element the docs site serves, built by packages/web-component/scripts/build.ts.
   { script: "gen:arch-plan", artifacts: ["docs-site/public/arch-plan.js"] },
+  { script: "gen:doors", artifacts: DOORS_SURFACES.map((s) => s.file) },
 ];
 
 const ALL_ARTIFACTS = GENERATORS.flatMap((g) => g.artifacts);

@@ -2,7 +2,7 @@
   "name": "@chanmeng666/archlang-mcp",
   "version": "0.2.38",
   "mcpName": "io.github.ChanMeng666/archlang-mcp",
-  "description": "Model Context Protocol (MCP) server for ArchLang — compile, describe, lint, validate, score, repair, fix, finish, suggest, complete and link floor plans over stdio, plus the intent channel (gate + continuous score against a brief). Covers the whole current language: multi-storey `level` plans with stairs, `place`d components, zones, scaled paper with dimension chains and room schedules, and non-rectilinear `room polygon` / `room circle` / `arc` walls. A thin shim over @chanmeng666/archlang; the CLI (`npx -y @chanmeng666/archlang <cmd>`) stays the primary, token-cheaper interface.",
+  "description": "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
   "keywords": [
     "mcp",
     "model-context-protocol",
