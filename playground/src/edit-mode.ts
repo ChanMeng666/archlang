@@ -47,6 +47,8 @@ export interface EditMode {
   getDoc(): string;
   /** Replace the document as its own undo step (one Ctrl+Z reverts exactly this). */
   replaceDoc(src: string): void;
+  /** Change the document to `src` by its one changed range, as its own undo step (a knob). */
+  setDoc(src: string): void;
   /** Move the caret to a byte offset and reveal it (click-to-source). */
   jumpToOffset(offset: number): void;
   /** The Describe and Lint tabs for `source` (from main.ts's `updateAnalysis`). */
@@ -212,6 +214,25 @@ export function mountEditMode(ctx: EditCtx): EditMode {
       // Finish, an applied fix), never merged with the typing just before or after it.
       view.dispatch({
         changes: { from: 0, to: view.state.doc.length, insert: src },
+        annotations: isolateHistory.of("full"),
+      });
+    },
+    setDoc(src) {
+      // Only the characters that differ change, so the caret, the scroll and the folds keep
+      // their places: a knob rewrites one number.
+      const old = view.state.doc.toString();
+      if (old === src) return;
+      let from = 0;
+      while (from < old.length && from < src.length && old[from] === src[from]) from++;
+      let tail = 0;
+      while (
+        tail < old.length - from &&
+        tail < src.length - from &&
+        old[old.length - 1 - tail] === src[src.length - 1 - tail]
+      )
+        tail++;
+      view.dispatch({
+        changes: { from, to: old.length - tail, insert: src.slice(from, src.length - tail) },
         annotations: isolateHistory.of("full"),
       });
     },
