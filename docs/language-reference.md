@@ -2535,11 +2535,16 @@ A non-positive extent is [`E_VOID_SIZE`](error-codes.md#e_void_size). Inside a `
 is allowed and transforms exactly, like a `column`.
 
 **An L-shaped void** is a `polygon`: an implicitly closed ring whose every edge is horizontal or
-vertical (an L, a U, a notch). It draws one dashed outline, and the two diagonals of each
-rectangle it is made of, so no cross runs outside the hole. Everything that reads a void (the
-walking grid, the stair and furniture checks, `walls from rooms`, `finish`) reads those
-rectangles, never the ring's bounding box. `describe --json` adds the ring as `polygon` and its
-exact `area_m2`. A slanted edge, a crossing ring or fewer than four corners is
+vertical (an L, a U, a notch). It is cut into the cells of the grid its own corners make (an L
+has three: the corner square and its two arms), and draws one dashed outline with the two
+diagonals of each cell, so no cross runs outside the hole and the drawing turns with the void
+under `place`. The checks written on rectangles (the walking grid, the stair and furniture
+checks, `finish`) read those cells; `walls from rooms` and the window-sill probe read the ring;
+none reads the ring's bounding box, except the deprecated axonometric view. In the 3D preview a
+polygon void is cut exactly out of a rectangular room's floor, but inside a polygon room only one
+cell is cut and the rest are listed as not cut (`void-not-cut-non-rect`). `describe --json` adds
+the ring as `polygon` and its exact `area_m2`, and gives the room that holds most of the void. A
+slanted edge, a crossing ring or fewer than four corners is
 [`E_VOID_POLY`](error-codes.md#e_void_poly): split a slanted hole into rectangle voids.
 `keep stacked` refuses a polygon void, as it refuses a polygon room.
 
@@ -2551,7 +2556,8 @@ L has two edges facing the same way. Leave out the edge a stair arrives across a
 that stand on a wall. Each railed edge draws the balcony's railing symbol (two thin lines with
 posts) on the hole's side of the slab edge, on the `A-FLOR-HRAL` CAD layer, and `describe --json`
 reports `rail`. A side word on a ring, a number on a rectangle, or a number that is not one of
-the ring's edges is [`E_VOID_RAIL`](error-codes.md#e_void_rail). The railing draws a plan symbol
+the ring's edges is [`E_VOID_RAIL`](error-codes.md#e_void_rail). As on a balcony, a `none` among
+the words wins, then an `all`. The railing draws a plan symbol
 only: it has no height, makes no structural or guarding claim, and does not change the walk (a
 void lifts its walking halo on every edge either way).
 

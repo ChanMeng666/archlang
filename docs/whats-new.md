@@ -588,4 +588,4 @@ plan "Railed well" {
 }
 ```
 
-A rectangle names its sides instead, as a balcony does: `void at (5000,2000) size 2000x3000 rail top left`. The outline is one dashed line with a cross in each rectangle of the hole, and the walk, the stair checks and `finish` read the hole as those rectangles. The railing is a drawing: it has no height, and a void with no `rail` draws none. See [Void](language-reference.md#void--a-hole-in-the-floor-v1-29).
+A rectangle names its sides instead, as a balcony does: `void at (5000,2000) size 2000x3000 rail top left`. The outline is one dashed line with a cross in each cell of the grid the ring's corners make (three for an L), and the walk, the stair checks and `finish` read the hole as those cells. The railing is a drawing: it has no height, and a void with no `rail` draws none. See [Void](language-reference.md#void--a-hole-in-the-floor-v1-29).

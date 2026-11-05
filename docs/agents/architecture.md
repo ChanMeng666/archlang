@@ -69,8 +69,9 @@ source (.arch)
   `isBlockStair` are the one path for readers; `vertical.ts` `boardedFlight` and `arrivalOn` say where a stop
   is boarded and stepped off, and `describe` gives `steps_off` when those are two rooms; `sameBlock` is the
   shaft rule's test. Only the id joins two stops, never geometry
-- `elements/void.ts` `voidPieces` is the one path for a reader of a floor hole: a `polygon` void is the
-  rectangles of its ring (`parts`), a rectangle void itself; never read a void's `at`/`size` as the hole
+- `elements/void.ts` `voidPieces` is the path for a reader of a floor hole written on rectangles: a
+  `polygon` void is its ring's grid cells (`parts`, a set a frame carries onto itself), a rectangle
+  void itself; a reader that takes a ring reads `poly` (`roomBox` does); never read `at`/`size` as the hole
 - `geometry/polygon.ts` the ring tests, charged in `RING_READS_PER_STEP`; `polygonsOverlapCost` is the same
   count for a pass outside the meter (`lint/rules/outdoor.ts`)
 - `lint/rules/clearances.ts` WC side clearance and a tall unit in front of a window;
