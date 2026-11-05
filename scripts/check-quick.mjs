@@ -132,7 +132,7 @@ function readsGeneric(t, text, f, name) {
     if (p === name) {
       const ws = workspaceOf(t);
       if (f === (ws ? `${ws}/${name}` : name)) return true;
-    } else if (p.startsWith(".")) {
+    } else if (p.startsWith("./") || p.startsWith("../")) {
       if (posix.normalize(posix.join(posix.dirname(t), p)) === f) return true;
     } else if (posix.normalize(p.replace(/^\//, "")) === f) {
       return true;
