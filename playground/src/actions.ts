@@ -294,28 +294,19 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     });
   }
 
-  // The "Ask AI" and "Copy link" disclosures close like the Saved popover: Escape (listened
-  // for on the document, since Safari does not focus a clicked <summary>), a click outside
-  // it, or choosing an item.
+  // The menu holding the links (the playground's Tools) closes on Escape and on a click outside
+  // it in shell.ts, the one place that closes it; choosing a chat link closes it here.
   function closeChatMenu() {
     closeMenu(els.chatMenu);
   }
-  // (The two may be one menu: the playground's Tools holds both.)
-  for (const menu of new Set([els.chatMenu, els.shareMenu])) {
-    if (!menu) continue;
-    document.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape" || !menu.open) return;
-      const inside = menu.contains(document.activeElement);
-      closeMenu(menu);
-      if (inside) menu.querySelector("summary")?.focus();
-    });
-    document.addEventListener("click", (e) => {
-      if (menu.open && !menu.contains(e.target as Node)) closeMenu(menu);
-    });
-  }
 
   // Saved snapshots (history) — named stashes in localStorage.
-  mountSnapshots({ button: els.savedBtn, getSource, setSource: (src) => loadSource(src, true) });
+  const snapshots = mountSnapshots({ button: els.savedBtn, getSource, setSource: (src) => loadSource(src, true) });
+  // The popover belongs to the menu its button sits in: it closes when that menu does.
+  const savedMenu = els.savedBtn.closest("details");
+  savedMenu?.addEventListener("toggle", () => {
+    if (!savedMenu.open) snapshots.close();
+  });
 
   mountDivider();
 

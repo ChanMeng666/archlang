@@ -82,6 +82,9 @@ test.describe("persisted view preferences", () => {
     await page.reload();
     await waitForPlan(page);
     await expect(page.locator("#theme")).toHaveValue("blueprint");
+    // The drawing built into the page is in the default theme, so with a saved theme it is
+    // hidden from the first paint (index.html's head script) instead of restyling in place.
+    await expect(page.locator("html")).toHaveClass(/pg-other/);
   });
 
   test("the lint profile survives a reload, with its caption", async ({ page }) => {
@@ -192,17 +195,36 @@ test.describe("saved snapshots", () => {
     await setEditorSource(page, SIMPLE_PLAN);
 
     const pop = page.locator(".snap-pop");
+    const tools = page.locator("#tools");
+    const toolsOpen = () => tools.evaluate((d) => (d as HTMLDetailsElement).open);
     await openTools(page);
     await page.locator("#saved").click();
     await expect(pop).toBeVisible();
     await expect(pop.locator(".snap-empty")).toBeVisible();
+    // The popover belongs to Tools: the menu stays open beside it.
+    expect(await toolsOpen()).toBe(true);
 
+    // A click inside the popover is a click inside Tools: both stay open.
     await pop.locator(".snap-save").click();
     await expect(pop.locator(".snap-row")).toHaveCount(1);
     await expect(pop.locator(".snap-name")).toHaveText("E2E snapshot");
+    await expect(pop).toBeVisible();
+    expect(await toolsOpen()).toBe(true);
+
+    // Closing Tools closes the popover with it: never a popover floating over a closed menu.
+    await page.locator("#tools > summary").click();
+    await expect.poll(toolsOpen).toBe(false);
+    await expect(pop).toBeHidden();
+
+    // Escape closes both as well.
+    await openTools(page);
+    await page.locator("#saved").click();
+    await expect(pop).toBeVisible();
+    await page.keyboard.press("Escape");
+    await expect(pop).toBeHidden();
+    await expect.poll(toolsOpen).toBe(false);
 
     // Edit away from the saved plan, then restore it.
-    await page.keyboard.press("Escape");
     await setEditorSource(page, SIMPLE_PLAN.replace('label "Main"', 'label "Elsewhere"'));
     await expect(page.locator(".cm-content")).toContainText("Elsewhere");
 

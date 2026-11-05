@@ -8,6 +8,7 @@ import {
   openTools,
   SIMPLE_PLAN,
   setEditorSource,
+  shareHash,
   waitForPlan,
   watchStatus,
 } from "./fixtures.js";
@@ -160,6 +161,32 @@ test.describe("header actions", () => {
     await status.expectFlash("Nothing to finish");
     await expect(panel).toContainText("Nothing to finish");
     await expect(panel.locator(".repair-outside code", { hasText: "main" })).toBeVisible();
+  });
+
+  test("Finish from view mode opens the editor first, so one Ctrl+Z restores the shared plan", async ({ page }) => {
+    // A visitor on a shared link (view mode, no editor yet) presses Tools → Finish. The click
+    // waits for the editor, then runs through it: Finish is an undo step, and undoing it puts
+    // the shared plan back in the editor, the autosave and the hash.
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    const status = await watchStatus(page);
+    await openTools(page);
+    await page.getByRole("button", { name: "Finish", exact: true }).click();
+    await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
+    const editor = page.locator(".cm-content");
+    await expect(editor).toContainText("dims auto all");
+
+    await editor.click();
+    await page.keyboard.press("ControlOrMeta+z");
+    await expect(editor).not.toContainText("dims auto all");
+    await expect
+      .poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 10_000 })
+      .toBe(SIMPLE_PLAN);
+    await expect
+      .poll(async () => srcFromHash(await page.evaluate(() => location.hash)), { timeout: 10_000 })
+      .toBe(SIMPLE_PLAN);
   });
 
   test("Finish is its own undo step even straight after typing", async ({ page }) => {

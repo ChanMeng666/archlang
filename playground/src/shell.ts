@@ -7,14 +7,18 @@
  * Tools closes like the menus it replaced: on Escape (listened for on the document, since Safari
  * does not focus a clicked <summary>), on a click outside it, and on choosing an item marked
  * `data-close`. A select, the a11y switch and Saved (whose popover anchors to its button) keep it
- * open.
+ * open. This module is the one place that closes it.
  */
 
 export interface ShellCtx {
   isEditing(): boolean;
-  /** Open the editor (loading it on the first call). */
+  /** Whether the editor is mounted (edit mode can be on while its chunk still loads). */
+  editorMounted(): boolean;
+  /** Open the editor (loading it on the first call); resolves to it, or undefined on failure. */
   enterEdit(): Promise<unknown>;
   leaveEdit(): void;
+  /** Settles once the app is up: the plan compiled and the Tools actions mounted. */
+  whenReady(): Promise<unknown>;
 }
 
 export interface Shell {
@@ -42,14 +46,30 @@ export function mountShell(ctx: ShellCtx): Shell {
     if (inside) toolsSummary.focus();
   });
   document.addEventListener("click", (e) => {
-    if (tools.open && !tools.contains(e.target as Node)) tools.open = false;
+    // The Saved popover (snapshots.ts) floats outside the menu but belongs to it: a click in it
+    // is a click in Tools. Closing Tools closes the popover too (actions.ts). Read from the
+    // event's path, fixed when it was dispatched: the popover re-renders its own rows on a click
+    // (Save, Delete), which has detached the clicked button by the time the click gets here.
+    if (!tools.open) return;
+    const inside = e
+      .composedPath()
+      .some((n) => n === tools || (n instanceof Element && n.classList.contains("snap-pop")));
+    if (!inside) tools.open = false;
   });
-  // An item that edits the source opens the editor first. Capture phase, so the mode is edit
-  // before the item's own handler runs (its action works on the same document either way).
+  // An item that edits the source (Format, Finish, Saved) runs through the editor, so its edit is
+  // one undo step and the autosave and the hash follow the editor. Until the editor is mounted the
+  // click is held (capture phase: before the item's own handler), the editor is opened, and the
+  // same click is replayed on the item once it is.
   tools.addEventListener(
     "click",
     (e) => {
-      if ((e.target as Element | null)?.closest("[data-edit]") && !ctx.isEditing()) void ctx.enterEdit();
+      const item = (e.target as Element | null)?.closest<HTMLElement>("[data-edit]");
+      if (!item || ctx.editorMounted()) return;
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      void ctx.enterEdit().then((mounted) => {
+        if (mounted) item.click();
+      });
     },
     true,
   );
@@ -83,7 +103,9 @@ export function mountShell(ctx: ShellCtx): Shell {
       void ctx.enterEdit();
     } else if (target?.closest("[data-mo-copy-llm]")) {
       dialog.close();
-      document.getElementById("copyLlm")?.click();
+      // Copy for LLM is wired (and enabled) once the app is up; its handler copies and says so
+      // in the status line ("LLM prompt copied").
+      void ctx.whenReady().then(() => document.getElementById("copyLlm")?.click());
     }
   });
 

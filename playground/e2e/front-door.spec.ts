@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { enterEdit, waitForPlan } from "./fixtures.js";
+import { enterEdit, waitForPlan, watchStatus } from "./fixtures.js";
 
 /**
  * The playground's front door: what a first visit on a phone, a small laptop or an agent
@@ -129,8 +129,17 @@ test.describe("front door", () => {
     await expect(link).toHaveAttribute("href", "https://archlang.uk/agents");
     await expect(link).toHaveAttribute("rel", /noopener/);
     await expect(link).toHaveAttribute("target", "_blank");
-    await expect(dialog.getByRole("button", { name: "Copy this plan as a prompt" })).toBeVisible();
+    // "Copy this plan as a prompt" copies the Copy-for-LLM prompt, closes, and says so.
+    const status = await watchStatus(page);
+    await dialog.getByRole("button", { name: "Copy this plan as a prompt" }).click();
+    await expect(dialog).toBeHidden();
+    await status.expectFlash("LLM prompt copied");
+    const prompt = await page.evaluate(() => navigator.clipboard.readText());
+    expect(prompt).toContain("This is an ArchLang floor plan");
+    expect(prompt).toContain('plan "Laneway House"');
     // Escape closes it; "Edit this plan here" opens the editor.
+    await button.click();
+    await expect(dialog).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(dialog).toBeHidden();
     await button.click();

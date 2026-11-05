@@ -247,9 +247,17 @@ function leaveEdit() {
   // Describe, Lint, Intent and Takeoff are edit mode's tabs: leave on the drawing.
   const active = tabs.find((t) => t.classList.contains("active"))?.dataset.tab;
   if (active !== "preview" && active !== "preview3d") document.getElementById("tab-preview")?.click();
+  // A broken plan's status names where its errors are, which differs by mode.
+  if (statusEl.classList.contains("err")) render(currentSource());
 }
 
-const shell = mountShell({ isEditing: () => editing, enterEdit, leaveEdit });
+const shell = mountShell({
+  isEditing: () => editing,
+  editorMounted: () => edit !== undefined,
+  enterEdit,
+  leaveEdit,
+  whenReady: () => ready,
+});
 shell.setMode(editing);
 
 const previewCtl = createPreview({
@@ -353,7 +361,8 @@ function render(source: string, refit = false) {
   if (!ok) {
     const n = errors.length;
     statusEl.classList.add("err");
-    statusText.textContent = `${n} error${n > 1 ? "s" : ""}`;
+    // In view mode the diagnostics are out of sight: say where they are.
+    statusText.textContent = `${n} error${n > 1 ? "s" : ""}${editing ? "" : " — open Source to see them"}`;
     return; // keep last good preview
   }
   statusEl.classList.remove("err");

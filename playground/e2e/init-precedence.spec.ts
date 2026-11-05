@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { AUTOSAVE_KEY, enterEdit, gotoEdit, SIMPLE_PLAN, shareHash, waitForPlan } from "./fixtures.js";
+import { AUTOSAVE_KEY, BROKEN_PLAN, enterEdit, gotoEdit, SIMPLE_PLAN, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * First-load source precedence: shared URL hash → autosaved draft → default example; and the
@@ -82,6 +82,21 @@ test.describe("mode", () => {
     await expect(page.locator("#editor")).toBeHidden();
     await expect(page.locator(".cm-content")).toHaveCount(0);
     expect(editChunks, "the editor's chunk is not fetched in view mode").toEqual([]);
+  });
+
+  test("a broken shared plan in view mode says where its errors are", async ({ page }) => {
+    // View mode has no diagnostics drawer: the status line points at Source, which has one.
+    await page.goto(`/${await shareHash(BROKEN_PLAN)}`);
+    // No drawing to wait for (the plan does not compile): wait for the app instead.
+    await expect(page.locator("html[data-booting]")).toHaveCount(0);
+    await expect(page.locator("#status")).toHaveClass(/err/);
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
+    await enterEdit(page);
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?$/);
+    await expect(page.locator("#errors .diagrow").first()).toBeVisible();
+    // And back: the hint returns with view mode.
+    await page.locator("#sourceToggle").click();
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
   });
 
   test("a shared #z= link opens its plan in view mode", async ({ page }) => {
