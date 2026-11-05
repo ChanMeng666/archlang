@@ -188,8 +188,9 @@ you observed. Do NOT push anything — this command only verifies.
   4. Within 2 days: a PR with the 0.1.1 bump (item 2's list), merged, then
      `gh workflow run release.yml --ref main`. The job publishes 0.1.1 with provenance, which
      validates the registration. Confirm with `npm view @chanmeng666/archlang-3d@0.1.1 dist.attestations`.
-- **VS Code Marketplace upload is a human web step** (publisher `ChanMeng`, extension
-  `ChanMeng.archlang`); nothing in CI publishes it. After a language-surface change:
+- **VS Code Marketplace upload: a web upload, done by an agent in the owner's signed-in Chrome**
+  (publisher `ChanMeng`, extension `ChanMeng.archlang`); nothing in CI publishes it. After a
+  language-surface change, or any release that bumps `editors/vscode`:
   1. In the primary checkout: root `npm run build`, then `npm run package` in `editors/vscode`
      (it bundles the core's `dist/`, so a stale root build ships a stale language).
   2. Verify INSIDE the `.vsix` before uploading: `Identity Version`/`Publisher` in
@@ -197,6 +198,28 @@ you observed. Do NOT push anything — this command only verifies.
      `ARCHLANG_CORE_VERSION` in `dist/server.js`; the release's new keywords/error codes present in
      `dist/core.mjs` (the core is bundled there once, not in `dist/server.js`). Search it with a literal matcher, never a regex.
   3. Upload the HIGHEST un-uploaded `.vsix` (`.vsix` files are gitignored and several can pile up).
+     With Claude in Chrome (first done for 0.44.0 on 2026-11-06; no owner action needed when the
+     owner's Chrome is signed in):
+     1. `tabs_context_mcp` (createIfEmpty), then `navigate` to
+        `https://marketplace.visualstudio.com/manage/publishers/ChanMeng`. The page first passes
+        through `/_public/_MsalSignedInFps`; wait ~6 s and read `document.body.innerText`. Signed in
+        means it names `ChanMeng666@outlook.com` and lists the ArchLang row with the live version.
+        If it asks for a sign-in instead, stop and ask the owner to sign in (never type a password).
+     2. Open the row's menu: the button's `aria-label` is "More Actions..." inside the row whose text
+        contains "ArchLang" (`find` cannot see it; locate it with `javascript_tool` and click its
+        centre). Then `find` "Update menu item" and click it.
+     3. In the "Upload Visual Studio Code extension" dialog, `find` the file input and call
+        `file_upload` with the ABSOLUTE path of the `.vsix` (for example
+        `D:\github_repository\archlang\editors\vscode\archlang-0.44.0.vsix`). Confirm the dialog
+        text shows that file name, then `find` and click its "Upload" button. The upload publishes
+        to the public listing, so it needs the owner's go-ahead for this release (a "release" in
+        chat covers it).
+     4. After ~8 s the row reads `<old version> Verifying <new version>`; verification takes a few
+        minutes. Done when `curl -s -o /dev/null -w '%{http_code}'
+        https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ChanMeng/vsextensions/archlang/<version>/vspackage`
+        returns 200.
+     If `file_upload` refuses the path or the dialog never shows the file name, fall back to the
+     owner: give the `.vsix` path and SHA-256 and the steps ⋯ → Update → choose file → Upload.
   4. The gallery lags an upload by minutes; a disagreeing probe means wait and re-probe.
   5. Then dispatch `publish-openvsx.yml` on the tag, `gh workflow run publish-openvsx.yml --ref v<core version>`, never `main`, because it builds the ref it runs on, and check `https://open-vsx.org/api/ChanMeng/archlang`: nothing else
      keeps Open VSX current, and it skips a version it already has.
