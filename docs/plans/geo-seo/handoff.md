@@ -6,17 +6,20 @@ This is the resume point. Update it at the end of every session.
 
 | Card | PR | State |
 |---|---|---|
-| G0 plan, G6 crawler names, G7 redirects | PR A | in flight |
-| G1–G5 agent discovery | PR B | not started (merges on the owner's words, GS-D6) |
+| G0 plan, G6 crawler names, G7 redirects | #530 | CI green; **high tier** (`_redirects` is deploy config), waits for the owner's words |
+| G1–G5 agent discovery | #531 | open; **high tier** (`server.json`), waits for the owner's words; the GitHub topic swap runs after merge |
 | G8–G10, G7b identity, freshness, links | PR C | not started |
 | G11–G12 content | PR D | not started |
-| G13 panel reading, records | growth PR E | panel run in progress |
-| G14 console snapshot, G15 Brave | owner's browser | not started |
+| G13 panel reading, records | growth #54 | **merged 2026-11-06**: 49 rows appended (Perplexity 10 answered, signed in by One Tap, then rate-limited; Google AI Mode 23 answered, signed in; ChatGPT not reached); bands D and E still 0; `research/2026-11-06-geo-panel-run-2.md` |
+| G14 console snapshot | owner's browser, read-only | done 2026-11-06; to be written into `docs/seo.md` § 6 by PR C. archlang.uk: 53 indexed / 34 not (24 discovered-not-indexed, unchanged); 3 months 561 impressions, 13 clicks, position 6.5; the Generative AI features report (Beta) shows 88 AI impressions in 3 months and 55 in 28 days; external links 70 (archcanvas.uk 17, reddit 12, github 8, libraries.io 8, mcpservers.org 7); Bing: 45 pages indexed, IndexNow submissions arriving. archcanvas.uk: 16 / 12; 129 impressions, 10 clicks; 38 AI impressions |
+| G15 Brave | form | waits for the owner's yes |
 | AC1 archcanvas hygiene | archcanvas | not started |
 
 ## Owner queue
 
-See `README.md` § 4. Nothing there has been asked of the owner yet.
+See `README.md` § 4. Added from the panel run: the next Perplexity leg needs a signed-out
+session, so the owner signs out of Perplexity in Chrome (or says an agent may) before 2026-12-01.
+The run also found the frozen P25 prompt contains an em dash (recorded as a finding, not changed).
 
 ## Cadence
 

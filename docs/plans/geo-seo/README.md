@@ -49,13 +49,16 @@ Numbered GS-D*n*. Delegated decisions are marked; the rest are inherited and bin
 - **GS-D4 (inherited).** `llms.txt` stays an agent aid, never a channel; Wikidata stays on hold;
   the paper stays a Zenodo preprint line; ArchCanvas stays in maintenance (hygiene fixes only, no
   new consumer content line).
-- **GS-D5 (delegated).** One category-bearing one-liner is used in every description slot
-  (GitHub, npm packages, MCP registry, marketplaces, JSON-LD): the approved
-  "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan
-  (SVG, DXF, PDF) and tells it what's wrong. Open source, MIT." The approved long sentence
-  ("ArchLang is an open-source (MIT) DSL for floor plans that compiles `.arch` source to
-  SVG/DXF/PDF with linting and geometric validation...") stays the first paragraph of the README
-  and the docs. The name is always paired with "floor plan" on the first mention.
+- **GS-D5 (delegated).** One category-bearing one-liner is used in every package description
+  slot (npm packages, marketplaces, JSON-LD): the `canonicalLine` in `site-shared/doors.json`
+  ("Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan
+  and tells it what's wrong."), which is already the docs hero and the playground lede and is
+  pinned by `test/site-doors.test.ts`. The GitHub repository description keeps the longer form the
+  owner approved on 2026-11-06 (it adds "(SVG, DXF, PDF)" and "Open source, MIT"). The approved
+  long sentence ("ArchLang is an open-source (MIT) DSL for floor plans that compiles `.arch`
+  source to SVG/DXF/PDF with linting and geometric validation...") stays the first paragraph of
+  the README and the docs. **No site wording changes under this card**; the name is always paired
+  with "floor plan" on the first mention.
 - **GS-D6 (delegated).** The MCP registry entry declares the hosted server as a remote and gains
   a description that names floor plans. `packages/mcp/server.json` is a high-risk-tier file:
   **the PR merges only on the owner's words.**
