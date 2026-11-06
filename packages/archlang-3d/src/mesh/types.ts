@@ -22,7 +22,17 @@ export interface Shell {
   slot?: Exclude<MaterialSlot, "body">;
 }
 
-export type NodeKind = "slab" | "floor" | "column" | "wall" | "door" | "window" | "opening" | "furniture" | "roof";
+export type NodeKind =
+  | "slab"
+  | "floor"
+  | "column"
+  | "wall"
+  | "door"
+  | "window"
+  | "opening"
+  | "furniture"
+  | "roof"
+  | "stair";
 
 export interface MeshNode {
   /** `L<level>/<kind>:<id>[:<part>]`, unique in the mesh (plan §3.6). */

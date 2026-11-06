@@ -23,6 +23,11 @@ const REQUIRED_VALUES = [
   "makeVirtualWorld",
   // A handed piece's reflection (`mirror`), cards V5/V6: read from Plan JSON, never `_mirror`.
   "planToJson",
+  // A stair's flights (card X3): a straight stair's entry edge, never `_tail`, and the tread
+  // divisions the plan draws (ADR 0031, amendment 2026-11-06). `treadCount` is feature-detected
+  // (`scene3d/build.ts`): on a core without it no stair is built, ledgered `stair-no-flights`.
+  "entryEdges",
+  "treadCount",
 ];
 
 const walk = (d: string): string[] =>

@@ -502,6 +502,69 @@
         },
         "width": {
           "$ref": "#/$defs/um"
+        },
+        "flights": {
+          "type": "array",
+          "minItems": 1,
+          "description": "The flights in climbing order (one on a straight stair); absent when the core gave no tread count.",
+          "items": {
+            "type": "object",
+            "required": ["at", "size", "foot", "treads"],
+            "additionalProperties": false,
+            "properties": {
+              "at": {
+                "$ref": "#/$defs/pt"
+              },
+              "size": {
+                "type": "object",
+                "required": ["w", "h"],
+                "additionalProperties": false,
+                "properties": {
+                  "w": {
+                    "$ref": "#/$defs/um"
+                  },
+                  "h": {
+                    "$ref": "#/$defs/um"
+                  }
+                }
+              },
+              "foot": {
+                "enum": ["top", "bottom", "left", "right"],
+                "description": "The edge a person climbing the flight starts from."
+              },
+              "treads": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "The tread divisions the plan draws on the flight (the core's treadCount of its run)."
+              }
+            }
+          }
+        },
+        "landings": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["at", "size"],
+            "additionalProperties": false,
+            "properties": {
+              "at": {
+                "$ref": "#/$defs/pt"
+              },
+              "size": {
+                "type": "object",
+                "required": ["w", "h"],
+                "additionalProperties": false,
+                "properties": {
+                  "w": {
+                    "$ref": "#/$defs/um"
+                  },
+                  "h": {
+                    "$ref": "#/$defs/um"
+                  }
+                }
+              }
+            }
+          }
         }
       }
     },

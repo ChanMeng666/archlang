@@ -78,6 +78,10 @@ export const PALETTE: Readonly<Record<Exclude<MaterialSlot, "body">, SlotMateria
   water: m("#a3c6d0", 0.1, 0, 0.7),
 };
 
+/** The slot a stair is built in (card X3): oak treads. The core gives a stair no material, so
+ *  this is a drafting default, ledgered (`stair-material-default`). */
+export const STAIR_MATERIAL = "wood" satisfies Exclude<MaterialSlot, "body">;
+
 /**
  * The building's own materials (visual-assets V9), by Mesh3D kind, and `<kind>:<part>` where a
  * part differs (a window's frame and glass, a demolished wall's ghost): the light replay's colours
@@ -96,6 +100,9 @@ export const KIND_PALETTE = {
   furniture: m("#d6cec1", 0.9),
   roof: m("#9c958a", 0.9),
   "wall:demolish": m("#c8553d", 0.9, 0, 0.3),
+  // A stair (card X3): the core gives it no material, so the ledgered default (`STAIR_MATERIAL`,
+  // `stair-material-default`): that slot's own entry, never a second copy of its colour.
+  stair: PALETTE[STAIR_MATERIAL],
 } as const satisfies Readonly<Record<string, SlotMaterial>>;
 
 export type KindMaterial = keyof typeof KIND_PALETTE;

@@ -2,11 +2,12 @@
  * A stair of flights and landings (issue #362, card S1): a new input to this package, and one its
  * corpus does not hold, so a green corpus run says nothing about it.
  *
- * The package draws no stair (`m1-omits-stairs-outdoor-fences`), so a block stair is omitted as a
- * straight one is, and said to be in the same ledger row; the Scene3D `box` is its bounding box,
- * valid for the same reason a straight stair's is, and read by nothing that draws. The upper
- * storey's void is what a model shows of a stairwell, and it stands where the plan puts it. Pinned
- * here: the same S1–S4 checks the corpus takes, glTF-Validator 0/0, and one SHA-256 over two builds.
+ * Since card X3 the package builds stairs: a block stair is one `stair` node on the storey it climbs
+ * from, its two flights as stepped solids and its landing as a box, read from the core's pieces
+ * (`flights`, `landings`), never from the Scene3D `box`, which is its bounding box and holds floor
+ * that is no stair. The `dir down` stop above is the same stair and builds nothing. The upper
+ * storey's void stays where the plan puts it. Pinned here: the same S1–S4 checks the corpus takes,
+ * glTF-Validator 0/0, and one SHA-256 over two builds.
  */
 import { createHash } from "node:crypto";
 import { describe, expect, it } from "vitest";
@@ -54,10 +55,25 @@ describe("a block stair through the package", () => {
     }
   });
 
-  it("is omitted as a straight stair is, and the ledger says so", async () => {
+  it("is built once, on the storey it climbs from: two flights and a landing, never its box", async () => {
     const { mesh } = await built();
-    expect(mesh.nodes.some((n) => (n.kind as string) === "stair")).toBe(false);
-    expect(mesh.assumptions.some((a) => a.rule === "m1-omits-stairs-outdoor-fences")).toBe(true);
+    const stairs = mesh.nodes.filter((n) => n.kind === "stair");
+    expect(stairs.map((n) => [n.key, n.shells.length])).toEqual([["L1/stair:s", 3]]);
+    // Its plan extent is the pieces' (the flights are 1000 wide, as wide as the stair), and the
+    // notch the box holds at (1100…2500, 2100…3100) is no stair: no vertex stands inside it.
+    const xs: number[] = [];
+    const zs: number[] = [];
+    for (const s of stairs[0]?.shells ?? [])
+      for (let i = 0; i < s.positions.length; i += 3) {
+        xs.push(s.positions[i] as number);
+        zs.push(s.positions[i + 2] as number);
+      }
+    expect([Math.min(...xs), Math.min(...zs), Math.max(...xs), Math.max(...zs)]).toEqual([
+      1100000, 1100000, 3500000, 3100000,
+    ]);
+    expect(xs.some((x, i) => x < 2500000 && (zs[i] as number) > 2100000)).toBe(false);
+    expect(mesh.assumptions.some((a) => a.rule === "stair-risers-from-treads" && a.id === "s")).toBe(true);
+    expect(mesh.assumptions.some((a) => a.rule === "m1-omits-stairs-outdoor-fences")).toBe(false);
   });
 
   it.each(["closed", "plan"] as const)("doors %s: S1–S4 pass, glTF-Validator 0/0", async (doors) => {

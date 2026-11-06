@@ -156,6 +156,7 @@ const THEMES = {
       "window:glass": "#86c5ee",
       "wall:demolish": "#e07a5f",
       furniture: "#3f6a8f",
+      stair: "#5d86a8",
     } as Record<string, string>,
   },
 } as const;

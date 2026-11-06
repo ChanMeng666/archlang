@@ -32,7 +32,10 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   living/bedroom/office batch in `t0-living.ts`, kitchen/bath/utility in `t0-utility.ts`, the
   site (planting, garden, vehicles, terrace, small standing objects) in `t0-outdoor.ts`, office
   and commercial in `t0-office.ts`, the shared part kit in `t0-kit.ts`: every catalogued family)
-  and a grey box for a word outside the catalogue, a hidden flat roof; `earcut` (ISC) for caps.
+  and a grey box for a word outside the catalogue, stairs (`stair.ts`: each flight one stepped
+  prism, each landing a box, from the Scene3D's `flights` and `landings`, which carry the core's
+  `treadCount`; built once per climb, on the storey it climbs from), a hidden flat roof; `earcut`
+  (ISC) for caps.
   A wall-hung family hangs at a ledgered mount (`T0_MOUNT_MM`; a television by its top,
   `T0_HUNG_FROM_TOP`); a piece taller than its storey's walls (a tree) is built at its default
   height and ledgered (`furniture-above-walls`, `furniture-hung-above-walls`); a handed one

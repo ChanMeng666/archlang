@@ -136,12 +136,43 @@ export interface Box {
   size: { w: Um; h: Um };
 }
 
+/** A plan rectangle's edge. */
+export type Side = "top" | "bottom" | "left" | "right";
+
+/**
+ * One straight flight of a stair, as the core resolves it: its rectangle, the edge a person
+ * CLIMBING it starts from (`foot`, the same on every storey whatever `dir` that storey draws), and
+ * the tread divisions the plan draws on it (the core's `treadCount` of its run).
+ */
+export interface StairFlight {
+  at: Pt;
+  size: { w: Um; h: Um };
+  foot: Side;
+  treads: number;
+}
+
+/** A landing between two flights of a turning stair: its rectangle. */
+export interface StairLanding {
+  at: Pt;
+  size: { w: Um; h: Um };
+}
+
 export interface Stair {
   id: string;
   source: Source;
+  /** The footprint's bounding box (on a turning stair it holds floor that is no stair: read `flights`). */
   box: Box;
   dir: "up" | "down";
+  /** The flight band's width, centred across each flight. */
   width: Um;
+  /**
+   * The flights in climbing order (one on a straight stair), from the core's `RStair.flights` or
+   * the stair itself. Absent when the core does not export `treadCount`, or on a Scene3D written
+   * before 0.4.0: such a stair is not built (ledgered `stair-no-flights`).
+   */
+  flights?: StairFlight[];
+  /** `landings[i]` stands between `flights[i]` and `flights[i + 1]`; present with `flights`. */
+  landings?: StairLanding[];
 }
 
 export interface Outdoor {

@@ -78,6 +78,10 @@ const object =
     }
   };
 
+/** A flight's tread divisions: a whole number, at least 1 (the core draws at least 2). */
+const treadCount: Check = (v, p, out) => {
+  if (!Number.isInteger(v) || (v as number) < 1) fail(out, p, "must be an integer of at least 1");
+};
 const pt = array(integer, 2, 2);
 const ring = array(pt, 3);
 const polygon = object({ outer: ring }, { holes: array(ring) });
@@ -131,7 +135,23 @@ const LEVEL_COLLECTIONS: Record<string, Check> = {
       { room: string, mirror: oneOf(true) },
     ),
   ),
-  stairs: array(object({ id, source, box, dir: oneOf("up", "down"), width: integer })),
+  stairs: array(
+    object(
+      { id, source, box, dir: oneOf("up", "down"), width: integer },
+      {
+        flights: array(
+          object({
+            at: pt,
+            size: sized("w", "h"),
+            foot: oneOf("top", "bottom", "left", "right"),
+            treads: treadCount,
+          }),
+          1,
+        ),
+        landings: array(object({ at: pt, size: sized("w", "h") })),
+      },
+    ),
+  ),
   voids: array(box),
   columns: array(box),
   outdoor: array(object({ id, source, surface: string, polygon }, { rail: array(string) })),

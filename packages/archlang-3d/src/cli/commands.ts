@@ -146,7 +146,7 @@ function sceneFacts(scene: Scene3D, mesh: Mesh3D) {
         window: ids("window"),
         furniture: ids("furniture"),
         column: ids("column"),
-        stair: 0,
+        stair: ids("stair"),
       },
     };
   });

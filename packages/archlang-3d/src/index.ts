@@ -18,6 +18,8 @@ export type { DoorPose, MeshOptions } from "./mesh/build.js";
 export { clipToConvex, cutSector, insideCut, prism, sectorBand, slab2d } from "./mesh/extrude.js";
 export type { CutSector } from "./mesh/extrude.js";
 export { rectsOf, slabRegion } from "./mesh/slab.js";
+export { stairRisers, stairSolid } from "./mesh/stair.js";
+export type { StairSolid } from "./mesh/stair.js";
 export {
   assetFor,
   handedAt,
@@ -45,6 +47,7 @@ export {
   PALETTE,
   slotColour,
   slotGroups,
+  STAIR_MATERIAL,
   WALL_CAP_SRGB,
 } from "./materials.js";
 export type { FloorFinish, KindMaterial, MaterialSlot, SlotMaterial } from "./materials.js";

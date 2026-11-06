@@ -367,5 +367,11 @@ describe("Mesh3D determinism and budget", () => {
  * `floor-finish-default` entry per floor (laneway: r_live timber, r_bath tile, r_bed timber). No
  * shell moved: with those three extras and three entries removed, the Mesh3D hashes to 0867ddc0…
  * exactly.
+ *
+ * Moved by card X3 (was 602c89c6…) with the ledger alone: stairs are built now, so the one row
+ * `{ kind: "stair", rule: "m1-omits-stairs-outdoor-fences" }` narrows to two rows, kinds `outdoor`
+ * and `fence`, rule `m1-omits-outdoor-fences`. Laneway has no stair: no node moved, and with that
+ * one row put back in place of the two, the Mesh3D hashes to 602c89c6… exactly. Its GLB (which
+ * carries no ledger) is unchanged (`LANEWAY_GLB_SHA256`, `test/pins.ts`).
  */
-const LANEWAY_MESH_SHA256 = "602c89c65a6d3402b2c9286b016a8fee91e0526f2a575485950bf8c9f94afdb6";
+const LANEWAY_MESH_SHA256 = "334b7949465ba0271bf5b7ec27f8334e129956342c2ad5d9ce858e1422f8293f";
