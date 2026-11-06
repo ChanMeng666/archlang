@@ -246,6 +246,26 @@ const PAGE_META = [
     "Mermaid has no floor plan diagram type. ArchLang is a separate text language for floor plans, and this page compares the two and says when to use each one.",
   ],
   [
+    "/floor-plan-tools-for-ai-agents",
+    "Floor-plan tools for AI agents",
+    "The floor-plan tools an AI agent can be given, from MCP servers and skills to a text language, with what each takes in and gives out and its licence.",
+  ],
+  [
+    "/floor-plan-with-a-coding-agent",
+    "Generate a floor plan with a coding agent",
+    "Give Claude Code, Cursor, Codex or Gemini CLI the ArchLang skills, MCP server or CLI, then let it write, compile, lint and fix a floor plan as text.",
+  ],
+  [
+    "/text-to-dxf-floor-plan",
+    "From text to a DXF floor plan, open source",
+    "Write a floor plan as ArchLang text and compile it to a DXF in millimetres, with walls, doors and windows on named layers, from an MIT-licensed CLI.",
+  ],
+  [
+    "/check-a-floor-plan",
+    "Check a floor plan's reachability and room areas",
+    "Check a floor plan with ArchLang: describe reports each room's area and whether it is reachable from the entrance, and lint lists warnings with fixes.",
+  ],
+  [
     "/3d",
     "The 3D preview of a floor plan",
     "A separate package extrudes the 3D preview from the same .arch file as the floor plan: walls, openings, floors, stairs and furniture, with a replay and a GLB.",
@@ -840,6 +860,8 @@ export default defineConfig({
           { text: "Floor plans as code", link: "/floor-plans-as-code" },
           { text: "A floor plan DSL", link: "/floor-plan-dsl" },
           { text: "ArchLang vs Mermaid", link: "/vs-mermaid" },
+          { text: "Text to a DXF floor plan", link: "/text-to-dxf-floor-plan" },
+          { text: "Check a floor plan", link: "/check-a-floor-plan" },
           { text: "Examples gallery", link: "/examples" },
           { text: "Showcase", link: "/showcase" },
           { text: "The 3D preview", link: "/3d" },
@@ -850,6 +872,8 @@ export default defineConfig({
         items: [
           { text: "Use it from an agent", link: "/agents" },
           { text: "MCP server", link: "/mcp" },
+          { text: "Floor plans with a coding agent", link: "/floor-plan-with-a-coding-agent" },
+          { text: "Floor-plan tools for AI agents", link: "/floor-plan-tools-for-ai-agents" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
           { text: "JavaScript library", link: "/javascript" },
