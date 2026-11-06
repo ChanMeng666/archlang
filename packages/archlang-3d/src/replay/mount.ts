@@ -68,6 +68,14 @@ export interface ReplayHandle {
   dispose: () => void;
   /** The camera the user moves (card CR4); present when mounted with `interactive: true`. */
   view?: ViewControl;
+  /**
+   * Give the canvas a new drawing size (a host whose canvas follows its container, playground card
+   * PG1) and redraw the last frame at it. Everything the frame reads from the size (the drawing's
+   * frame, the cameras' aspect, the stops' framing, the presets) is worked out again as a mount at
+   * that size works it out, so after `resize(w, h)` the frame at `t` is the frame a fresh mount at
+   * `w`×`h` draws at `t`. Never called, nothing changes: the payload's size is the canvas's.
+   */
+  resize: (width: number, height: number) => void;
 }
 
 export type { PresetName } from "./camera.js";
@@ -110,6 +118,13 @@ export interface ViewControl {
   restore: (s: ViewState) => void;
   /** Hear when `camera` or `shown` changes (a drag, a preset, a seek, a restore); returns the unsubscribe. */
   onChange: (fn: () => void) => () => void;
+  /**
+   * Turn the view `degrees` about its pivot, as a drag across would (a host's turntable, playground
+   * card PG1), and draw it. The host chooses each step; nothing here reads a clock. The first step
+   * takes the view from the replay or a preset (the camera becomes "free", `onTake`), from the
+   * frame on the canvas. A host that never calls it draws exactly what it drew before.
+   */
+  spin: (degrees: number) => void;
 }
 
 export interface MountOptions {
@@ -202,8 +217,9 @@ export function mountReplay(
 ): ReplayHandle {
   const theme = THEMES[p.theme];
   const furniture = theme.colors.furniture as string;
-  const W = p.width;
-  const H = p.height;
+  // The drawing size: the payload's, until a host resizes the canvas (`resize`).
+  let W = p.width;
+  let H = p.height;
 
   const gl = document.createElement("canvas");
   gl.width = W;
@@ -339,8 +355,8 @@ export function mountReplay(
 
   // The first frame frames the core drawing's viewBox exactly, letterboxed as the image is.
   const [vx, vy, vw, vh] = p.viewBox;
-  const aspect = W / H;
-  const { cx, cz, ow, oh } = drawingFrame(p.viewBox, aspect);
+  let aspect = W / H;
+  let { cx, cz, ow, oh } = drawingFrame(p.viewBox, aspect);
   // Everything drawn, ghosts included (exploded storeys too): the cameras' clip range. The fitted
   // cameras (`cameraStops`) frame the standing building only.
   const box = boxOfNodes(p.nodes, { ghosts: true });
@@ -353,10 +369,11 @@ export function mountReplay(
   ortho.lookAt(cx, 0, cz);
 
   const persp = new PerspectiveCamera(START_FOV, aspect, 10, 1e9);
-  const orbit = { elevation: p.elevation, azimuth: END_AZIMUTH, fov: END_FOV, aspect };
   // One framing per camera stop (`cameraStops`): the lower floor fills the frame before the floor
   // above rises over it; the last stop is the whole building.
-  const fits = cameraStops(p.nodes, p.events, orbit);
+  const fitsAt = (a: number) =>
+    cameraStops(p.nodes, p.events, { elevation: p.elevation, azimuth: END_AZIMUTH, fov: END_FOV, aspect: a });
+  let fits = fitsAt(aspect);
   const size = hi.clone().sub(lo);
   const mid = lo.clone().add(hi).multiplyScalar(0.5);
   // Every point of the building lies within this of any target the camera aims at (the target moves
@@ -367,8 +384,8 @@ export function mountReplay(
     const reach = Math.max(...cams.map((f) => mid.distanceTo(new Vector3(...f.target))));
     return Math.max(size.length() * 0.75 + reach + Math.hypot(mid.x - (vx + vw / 2), mid.z - (vy + vh / 2)), 1000);
   };
-  const radius = radiusOver(fits.slice(0, stopCount(p.events)));
-  const endRadius = radiusOver(fits);
+  let radius = radiusOver(fits.slice(0, stopCount(p.events)));
+  let endRadius = radiusOver(fits);
   const rad = (d: number) => (d * Math.PI) / 180;
 
   const img = new Image();
@@ -380,7 +397,7 @@ export function mountReplay(
 
   let disposed = false;
 
-  const frameView = { cx, cz, oh, elevation: p.elevation };
+  let frameView = { cx, cz, oh, elevation: p.elevation };
   // Each node's storey, 0-based from the lowest (the combined view's events carry it; one storey: 0).
   const storeyOf = new Map(p.events.map((e) => [e.key, e.storey ?? 0] as const));
   const storeys = Math.max(1, ...p.events.filter((e) => !e.hidden).map((e) => (e.storey ?? 0) + 1));
@@ -390,6 +407,8 @@ export function mountReplay(
   let holder: CameraHolder = "replay";
   /** The replay time last drawn. */
   let tNow = 0;
+  /** Whether any frame has been drawn yet (a `resize` before the first one draws nothing). */
+  let drawn = false;
   const halfDiagonal = size.length() / 2;
   /**
    * The clip radius round a target the replay never aims at (a preset, the user's orbit): every
@@ -417,7 +436,7 @@ export function mountReplay(
 
   // The presets (`presetCamera`), each a pure function of the scene, worked out when first asked for.
   // They frame the building as the end frame shows it: the storeys settled (`ViewScene.box`).
-  const viewScene: ViewScene = {
+  let viewScene: ViewScene = {
     events: p.events,
     fits,
     frame: frameView,
@@ -450,6 +469,7 @@ export function mountReplay(
   /** Draw replay time `t` from whoever holds the camera. */
   function draw(t: number): void {
     tNow = t;
+    drawn = true;
     if (strip && p.facts) paintStrip(strip, stripAt(p.facts, p.events, Math.min(1, Math.max(0, t))));
     const s = stateAt(p.events, t);
     for (const [key, { g, flat, base, lift }] of nodes) {
@@ -681,6 +701,17 @@ export function mountReplay(
         listeners.add(fn);
         return () => listeners.delete(fn);
       },
+      // One undamped step, so each call lands on its frame at once; the orbit's own `change` takes
+      // the view (the first step) and draws. Never under a press: the user's drag holds the view.
+      spin: (degrees) => {
+        if (disposed || dragging || !Number.isFinite(degrees) || degrees === 0) return;
+        prime();
+        const damped = c.enableDamping;
+        c.enableDamping = false;
+        c.rotateLeft(rad(degrees));
+        c.update();
+        c.enableDamping = damped;
+      },
       get shown() {
         return shown;
       },
@@ -710,6 +741,43 @@ export function mountReplay(
     };
   }
 
+  /**
+   * A new drawing size: every size-dependent value is worked out again exactly as the mount above
+   * works it out, so a resized handle draws what a fresh mount at that size draws. A held view keeps
+   * its camera (only its lens's aspect follows), the replay's and the presets' are re-framed.
+   */
+  function resize(width: number, height: number): void {
+    if (disposed) return;
+    const w = Math.max(1, Math.round(width));
+    const h = Math.max(1, Math.round(height));
+    if (w === W && h === H) return;
+    W = w;
+    H = h;
+    gl.width = W;
+    gl.height = H;
+    out.width = W;
+    out.height = H;
+    renderer.setSize(W, H, false);
+    aspect = W / H;
+    ({ cx, cz, ow, oh } = drawingFrame(p.viewBox, aspect));
+    ortho.left = -ow / 2;
+    ortho.right = ow / 2;
+    ortho.top = oh / 2;
+    ortho.bottom = -oh / 2;
+    ortho.position.set(cx, top + 50000, cz);
+    ortho.lookAt(cx, 0, cz);
+    ortho.updateProjectionMatrix();
+    persp.aspect = aspect;
+    persp.updateProjectionMatrix();
+    fits = fitsAt(aspect);
+    radius = radiusOver(fits.slice(0, stopCount(p.events)));
+    endRadius = radiusOver(fits);
+    frameView = { cx, cz, oh, elevation: p.elevation };
+    viewScene = { ...viewScene, fits, frame: frameView, aspect };
+    presets.clear();
+    if (drawn) draw(tNow);
+  }
+
   function dispose(): void {
     if (disposed) return;
     halt();
@@ -720,5 +788,5 @@ export function mountReplay(
     renderer.forceContextLoss();
   }
 
-  return { seek, frameHash, ready, dispose, ...(view ? { view } : {}) };
+  return { seek, frameHash, ready, dispose, resize, ...(view ? { view } : {}) };
 }

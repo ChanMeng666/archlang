@@ -1392,18 +1392,243 @@
   font-family: inherit;
 }
 
-/* 3D preview tab (card A5) — light only, like every surface here (ADR 0014). The
-   caption is the PS-D12 line and the limits line (public-surfaces 3d.md §2), from
-   the archlang-3d package's own constants. */
+/* 3D preview tab (card A5) — light only, like every surface here (ADR 0014). The 3D stage
+   (playground-minimal card PG1, PG-D4): the canvas fills the whole tab in either mode, and every
+   control floats over it, dimmed until the pointer or the focus is on it (never invisible to the
+   keyboard: focus-within brings it back). The caption's lead stays on screen; the PS-D12 line, the
+   limits line and the link are in the ⓘ card (public-surfaces 3d.md §2, as the package exports them). */
 #preview3d {
-  overflow: auto;
-  padding: 12px 14px;
-  background: var(--paper-panel);
+  position: relative;
+  overflow: hidden;
+  background: var(--paper);
   flex-direction: column;
-  gap: 8px;
 }
 #preview3d.active {
   display: flex;
+}
+.p3d-stage {
+  --p3d-foot: 0px;
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  container-type: size;
+  background: var(--paper);
+}
+.p3d-canvas {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  /* Over the inline cursor three.js's orbit controls write on the canvas ("auto" when a mount
+     before this one let go of it). */
+  cursor: grab !important;
+  touch-action: none;
+}
+.p3d-canvas.p3d-grabbing {
+  cursor: grabbing !important;
+}
+/* The free camera (card CR4): the canvas takes keys when focused. */
+.p3d-canvas:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: -3px;
+}
+/* What floats over the canvas: dim at rest, whole on hover or focus. */
+.p3d-float {
+  position: absolute;
+  z-index: 4;
+  opacity: 0.62;
+  transition: opacity 0.18s ease;
+}
+.p3d-stage:hover .p3d-float,
+.p3d-float:focus-within,
+.p3d-float:focus-visible,
+.p3d-float:has([aria-expanded="true"]) {
+  opacity: 1;
+}
+.p3d-btn {
+  font: inherit;
+  font-size: 12px;
+  line-height: 1;
+  height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--paper-panel) 92%, transparent);
+  color: var(--ink);
+  white-space: nowrap;
+  cursor: pointer;
+  box-shadow: 0 1px 4px rgb(28 36 48 / 0.08);
+}
+.p3d-btn:hover {
+  background: color-mix(in srgb, var(--redline) 10%, var(--paper-panel));
+  color: var(--redline-ink);
+}
+.p3d-btn:focus-visible,
+.p3d-info-btn:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
+}
+.p3d-btn[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.p3d-btn:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+/* Visually hidden, still read: the keyboard hint (the canvas's description) and the GLB note. */
+.p3d-sr,
+.p3d-views .archlang-views-hint {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Top-right: ⟲ Reset, View ▾ (its popover under it), the storeys, GLB ↓. */
+.p3d-top {
+  top: 10px;
+  right: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: flex-start;
+  gap: 6px;
+  max-width: calc(100% - 140px);
+}
+.p3d-views .archlang-views {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 6px;
+}
+.p3d-views .archlang-views-menu {
+  position: relative;
+}
+.p3d-views .archlang-views-presets {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
+  min-width: 104px;
+  padding: 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper-panel);
+  box-shadow: 0 2px 10px rgb(28 36 48 / 0.16);
+}
+.p3d-views .archlang-views-presets[hidden] {
+  display: none;
+}
+.p3d-views .archlang-views-storeys {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 4px;
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.p3d-glb {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.p3d-glb-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.p3d-glb-status {
+  max-width: 260px;
+  padding: 4px 8px;
+  border-radius: 3px;
+  background: var(--paper-panel);
+  font-size: 12px;
+  color: var(--ink);
+}
+.p3d-glb-status:empty {
+  display: none;
+}
+
+/* Bottom-left: ▶ Replay, then the caption's lead and its ⓘ; the card opens above them. */
+.p3d-foot {
+  left: 10px;
+  bottom: calc(14px + var(--p3d-foot));
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  max-width: calc(100% - 20px);
+}
+.p3d-lead {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px 3px 8px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--paper) 82%, transparent);
+  font-size: 12px;
+  color: var(--ink-muted);
+}
+.p3d-lead strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.p3d-info-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.p3d-info-btn:hover,
+.p3d-info-btn[aria-expanded="true"] {
+  color: var(--redline-ink);
+}
+.p3d-info {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  width: min(380px, calc(100cqw - 20px));
+  padding: 10px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper-panel);
+  box-shadow: 0 2px 10px rgb(28 36 48 / 0.16);
+  display: grid;
+  gap: 6px;
+}
+.p3d-info:focus {
+  outline: none;
+}
+.p3d-glb-note {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+.p3d-info[hidden] {
+  display: none;
 }
 .p3d-label {
   margin: 0;
@@ -1424,139 +1649,151 @@
   font-size: 11.5px;
   color: var(--ink-muted);
 }
-.p3d-stage {
-  position: relative;
-  container-type: inline-size;
-  border: 1px solid var(--hairline);
-  background: var(--paper);
-}
-/* The replay's facts (card G4): DOM text laid over the canvas, never drawn into it. */
-.p3d-strip {
-  position: absolute;
+
+/* The scrubber: a 3px line along the canvas's foot, its played part in ink; a handle on hover and
+   focus. `--p` is the played fraction (preview3d.ts). */
+.p3d-scrub {
   left: 0;
   right: 0;
-  bottom: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 1.4em;
-  padding: 0.5em 1em;
-  font-size: clamp(9px, 1.7cqw, 15px);
-  line-height: 1.5;
-  color: var(--ink);
-  background: color-mix(in srgb, var(--paper) 88%, transparent);
-  pointer-events: none;
-}
-[hidden].p3d-strip {
-  display: none;
-}
-.p3d-canvas {
-  display: block;
+  bottom: var(--p3d-foot);
   width: 100%;
-  height: auto;
-}
-.p3d-controls {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.p3d-controls input[type="range"] {
-  flex: 1;
-  accent-color: var(--ink);
-}
-.p3d-message {
+  height: 12px;
   margin: 0;
-  font-size: 12.5px;
-  color: var(--ink);
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
 }
-/* The free camera (card CR4): the canvas takes keys when focused; the toolbar's presets and storeys. */
-.p3d-canvas:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+.p3d-scrub::-webkit-slider-runnable-track {
+  height: 3px;
+  background: linear-gradient(to right, var(--ink) var(--p, 100%), var(--hairline) var(--p, 100%));
 }
-.p3d-views .archlang-views {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px;
+.p3d-scrub::-moz-range-track {
+  height: 3px;
+  background: var(--hairline);
 }
-.p3d-views .archlang-views-storeys {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-left: 8px;
-  font-size: 12.5px;
-  color: var(--ink-muted);
-}
-.p3d-views button[aria-pressed="true"] {
+.p3d-scrub::-moz-range-progress {
+  height: 3px;
   background: var(--ink);
-  color: var(--paper);
 }
-.p3d-views .archlang-views-hint {
-  flex-basis: 100%;
-  font-size: 12px;
-  color: var(--ink-muted);
+.p3d-scrub::-webkit-slider-thumb {
+  appearance: none;
+  width: 3px;
+  height: 3px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
 }
-/* Download GLB (card X5): the button, what happened, and the note that says the browser does not
-   validate it (the CLI command does). */
-.p3d-glb {
+.p3d-scrub::-moz-range-thumb {
+  width: 3px;
+  height: 3px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--ink);
+}
+.p3d-scrub:is(:hover, :focus-visible)::-webkit-slider-thumb {
+  width: 12px;
+  height: 12px;
+  margin-top: -4.5px;
+}
+.p3d-scrub:is(:hover, :focus-visible)::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+}
+.p3d-scrub:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: -2px;
+}
+
+/* The coach mark: once, centred over the canvas, never in the way of the pointer. */
+.p3d-coach {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 3;
+  transform: translate(-50%, -50%);
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   align-items: center;
-  gap: 4px 10px;
+  gap: 8px;
+  max-width: calc(100% - 32px);
+  padding: 14px 18px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 78%, transparent);
+  color: var(--paper);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
 }
-.p3d-glb-note {
-  flex-basis: 100%;
+.p3d-coach svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.p3d-coach-gone {
+  opacity: 0;
+}
+.p3d-coach[hidden] {
+  display: none;
+}
+
+.p3d-message {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   margin: 0;
-  font-size: 12px;
-  color: var(--ink-muted);
-}
-.p3d-glb-code {
-  font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--ink);
-  overflow-wrap: anywhere;
+  text-align: center;
 }
-.p3d-glb-status {
-  font-size: 12px;
-  color: var(--ink);
-}
-.p3d-glb-status:empty {
+[hidden].p3d-canvas,
+[hidden].p3d-float,
+[hidden].p3d-message,
+[hidden].p3d-btn {
   display: none;
 }
-[hidden].p3d-stage,
-[hidden].p3d-controls,
-[hidden].p3d-views,
-[hidden].p3d-glb,
-[hidden].p3d-message {
-  display: none;
+@media (prefers-reduced-motion: reduce) {
+  .p3d-float,
+  .p3d-coach {
+    transition: none;
+  }
 }
-/* The knobs over the 3D preview (card X5) sit in its top-left corner, clear of the facts strip
-   along the canvas's foot; on a phone they stay the sheet across the foot, folded to its heading. */
+/* The knobs over the 3D preview (card X5) sit in its top-left corner (under the Plan | 3D switch
+   in view mode); on a phone they stay the sheet across the foot, folded to its heading, and the
+   scrubber and the bottom-left controls ride above it. A refused plan has neither canvas nor knobs. */
 .p3d-stage > .knobs {
   top: 12px;
   bottom: auto;
 }
+html:not([data-mode="edit"]) .p3d-stage > .knobs {
+  top: 52px;
+}
+.p3d-stage[data-refused] > .knobs {
+  display: none;
+}
 @media (max-width: 900px) {
-  .p3d-stage > .knobs {
+  .p3d-stage > .knobs,
+  html:not([data-mode="edit"]) .p3d-stage > .knobs {
     top: auto;
     bottom: 0;
   }
-}
-/* View mode: the 3D preview is the stage (card X5). A band at the top clears the Plan | 3D switch,
-   and the canvas is as large as the pane lets a 16:9 frame be, with the caption, the controls and
-   the notes under the same roof (about 13.5rem of them, with the longer caption). */
-html:not([data-mode="edit"]) #preview3d {
-  container-type: size;
-  padding-top: 50px;
-}
-html:not([data-mode="edit"]) #preview3d .p3d-stage {
-  width: min(100%, max(16rem, (100cqh - 13.5rem) * 16 / 9));
-  align-self: center;
-}
-@media (max-width: 900px) {
-  /* The switch's touch-sized buttons (38px) need a deeper band. */
-  html:not([data-mode="edit"]) #preview3d {
-    padding-top: 62px;
+  .p3d-stage:has(> .knobs:not([hidden])):not([data-refused]) {
+    --p3d-foot: 44px;
+  }
+  .p3d-btn {
+    height: 36px;
+    padding: 0 12px;
+  }
+  .p3d-info-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .p3d-top {
+    max-width: calc(100% - 130px);
   }
 }
 

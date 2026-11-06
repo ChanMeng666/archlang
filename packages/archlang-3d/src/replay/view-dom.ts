@@ -35,6 +35,13 @@ export interface ToolbarOptions {
   buttonClass?: string;
   /** An id for the hint line, so the canvas can point at it (`aria-describedby`). */
   hintId?: string;
+  /**
+   * The compact form, for a host that lays the toolbar over its canvas (playground card PG1): Reset
+   * first ("⟲ Reset"), then a "View ▾" button whose popover holds the preset buttons, then the
+   * storeys and the hint. Every button keeps its text, accessible name, `data-*` and `aria-pressed`;
+   * only where the presets sit changes. Off by default: the row the replay HTML shows.
+   */
+  compact?: boolean;
 }
 
 /** The toolbar for `view`: preset buttons, Reset, the storeys (more than one), the hint. */
@@ -60,13 +67,66 @@ export function viewToolbar(view: ViewControl, opts: ToolbarOptions = {}): HTMLE
     for (const [i, b] of storeyButtons.entries()) b.setAttribute("aria-pressed", String(i + 1 === view.shown));
   };
 
+  /** In the compact form: shut the presets' popover (and give the focus back to its button). */
+  let shut = (_refocus: boolean): void => {};
   for (const [name, text, label] of PRESET_LABELS) {
-    const b = button(text, label, () => view.preset(name));
+    const b = button(text, label, () => {
+      view.preset(name);
+      shut(true);
+    });
     b.dataset.preset = name;
     presetButtons.push([name, b]);
-    bar.append(b);
   }
-  bar.append(button("Reset", "Reset the view: the replay's own camera, every storey shown", () => view.reset()));
+  const resetLabel = "Reset the view: the replay's own camera, every storey shown";
+  if (opts.compact) {
+    bar.classList.add("archlang-views-compact");
+    bar.append(button("⟲ Reset", resetLabel, () => view.reset()));
+    const wrap = document.createElement("span");
+    wrap.className = "archlang-views-menu";
+    const pop = document.createElement("span");
+    pop.className = "archlang-views-presets";
+    pop.id = `${opts.hintId ?? "archlang-views"}-presets`;
+    pop.setAttribute("role", "group");
+    pop.setAttribute("aria-label", "Preset views");
+    pop.hidden = true;
+    pop.append(...presetButtons.map(([, b]) => b));
+    const toggle = button("View ▾", "View presets: iso, top, and from north, east, south and west", () =>
+      pop.hidden ? open() : shut(false),
+    );
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.setAttribute("aria-controls", pop.id);
+    // A press anywhere outside, or the focus leaving, shuts it; Escape shuts it and refocuses.
+    const away = (e: Event): void => {
+      if (!wrap.contains(e.target as Node)) shut(false);
+    };
+    const open = (): void => {
+      pop.hidden = false;
+      toggle.setAttribute("aria-expanded", "true");
+      document.addEventListener("pointerdown", away, true);
+      (presetButtons.find(([n]) => view.camera === n)?.[1] ?? presetButtons[0]?.[1])?.focus();
+    };
+    shut = (refocus) => {
+      if (pop.hidden) return;
+      pop.hidden = true;
+      toggle.setAttribute("aria-expanded", "false");
+      document.removeEventListener("pointerdown", away, true);
+      if (refocus) toggle.focus();
+    };
+    wrap.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || pop.hidden) return;
+      e.preventDefault();
+      e.stopPropagation();
+      shut(true);
+    });
+    wrap.addEventListener("focusout", (e) => {
+      if (!wrap.contains(e.relatedTarget as Node | null)) shut(false);
+    });
+    wrap.append(toggle, pop);
+    bar.append(wrap);
+  } else {
+    bar.append(...presetButtons.map(([, b]) => b));
+    bar.append(button("Reset", resetLabel, () => view.reset()));
+  }
 
   if (view.storeys > 1) {
     const group = document.createElement("span");
