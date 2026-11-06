@@ -12,7 +12,10 @@ consumes the built core (`../dist/index.js`). Deployed at
   The header holds the plan picker, **Source** (edit mode: the editor beside the drawing),
   **Tools** (every action below, in one menu) and **Make your own**. `&edit` in the hash
   (`#z=…&edit`, or `#edit`) opens edit mode; `arch link` and the docs' "Open in playground" add it,
-  and a link copied here does not. The compiler, the editor, the panels, three.js and jsPDF are
+  and a link copied here does not. A **Plan | 3D** switch on the stage shows the drawing or the
+  3D preview; `&3d` in the hash (`#z=…&3d`, or `#3d`) opens on the 3D preview, the hash keeps it
+  while the 3D preview is on screen, and a full link copied then keeps it too (a short link opens
+  on the drawing). The compiler, the editor, the panels, three.js, the GLB writer and jsPDF are
   their own chunks, loaded after the first paint or on first use.
 - **Editor:** syntax highlighting, inline lint (from the compiler's `diagnostics`),
   and **autocomplete** (reuses the core `completion()` language service).
@@ -66,7 +69,8 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `embed.ts` / `viewer.ts` | the chrome-less `embed.html` page and its viewer runtime |
 | `facts-strip.ts` / `describe-panel.ts` / `lint-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels |
 | `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher of edit mode (`main[data-mview]`) |
-| `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`), the `&edit` mode flag; asks the Worker for a short link and reads `#s=<id>` |
+| `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`), the `&edit` mode flag and the `&3d` view flag; asks the Worker for a short link and reads `#s=<id>` |
+| `preview3d.ts` / `plan3d.ts` / `glb-export.ts` | the 3D preview (lazy: three.js and archlang-3d), the plan → Mesh3D path it shares with Download GLB, and the GLB writer (its own lazy chunk) |
 | `raster-export.ts` | copy/download SVG · PNG · DXF · PDF |
 | `snapshots.ts` / `storage.ts` | named snapshot history UI + defensive `localStorage` helpers |
 | `examples.ts`, `escape.ts` | example plans, HTML-escape helper |
