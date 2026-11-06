@@ -2585,7 +2585,7 @@ Dockerfile installs the `@chanmeng666/archlang-mcp` version in `packages/mcp/pac
 commit. **Gate:** after a release that moves the MCP package, a follow-up PR there moves the commit
 (`.claude/commands/release-check.md`).
 
-### O.18 · The awesome-openclaw-skills entry waits for ClawHub usage — `todo` (BLOCKED on users)
+### O.18 · The awesome-openclaw-skills entry waits for ClawHub usage — `todo` (BLOCKED on a third party)
 
 `VoltAgent/awesome-openclaw-skills` declines brand-new skills, so the entry for the ClawHub skill
 (`docs/seo.md` § 8) is deferred; its draft is in the session archive. **Gate:** the skill shows
