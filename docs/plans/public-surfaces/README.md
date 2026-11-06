@@ -163,7 +163,7 @@ pre-JS h1 and lede; the shared-plan attribution strip; `/s/<id>` and its PNG pre
   - Light only (ADR 0014).
   - Token lockstep between the sites.
   - The byte-sacred logo.
-  - 2D only on the README and docs through Show HN.
+  - ~~2D only on the README and docs through Show HN.~~ Superseded by PS-D11 (owner, 2026-11-06; `3d.md`).
   - No AI imagery on ArchLang surfaces; compiler output only.
   - The URL contract: `#z=`, `#src=`, `/s/<id>`, `/s/<id>.png`, `/embed.html` (literal 200),
     `/examples/*`, `/llms.txt` (kept trim).

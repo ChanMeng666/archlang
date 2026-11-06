@@ -14,10 +14,11 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
 - It reads the core only through the core's public exports (the seam, ADR 0031); it never becomes a
   core dependency, and the core never gains a 3D option, command or drawing. Need a core fact? Add
   an additive export with its own byte-identity proof, never a deep import.
-- Exposure is tiered (`docs/plans/preview-and-remodel/README.md` D5, D13, D16): the playground's
-  "3D preview" tab carries D5's label verbatim (`PREVIEW_LABEL`); no 3D on the docs site, the README,
-  any npm README or landing page, except this package's own, which keeps to D5's words
-  (`test/package-meta.test.ts`). Published at 0.x (D20): a version bump merges, then `gh workflow run release.yml --ref main` publishes it with provenance.
+- Exposure (PS-D11, `docs/plans/public-surfaces/3d.md`): the 3D preview may appear on every ArchLang
+  public surface, always beside its plan, from a real `.arch` file, with the PS-D12 line and limits
+  line. Never "3D CAD", "BIM", "render", "walkthrough", "photoreal" or "model" as a product claim:
+  "3D preview", "drafting-order replay". Never on ArchCanvas surfaces. The playground tab keeps
+  `PREVIEW_LABEL` and the package README D5's words (`test/package-meta.test.ts`) until X1. Published at 0.x (D20): a version bump merges, then `gh workflow run release.yml --ref main` publishes it with provenance.
 - `exports` and `bin` name `dist/`; the repository reads `src/` (tests, `npm run archlang3d`, the
   playground's alias). A new file a built module reads at run time goes beside `dist/`'s modules in
   `tsup.config.ts`'s `onSuccess`; `e2e/pack.e2e.ts` and `prove:pack` hold the tarball.
