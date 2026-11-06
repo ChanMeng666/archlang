@@ -118,7 +118,7 @@ Each card is one PR unless bundled below. Executors run in worktrees from `main`
   `docker/mcp-registry` entry prepared under `docs/plans/geo-seo/docker-mcp-catalog/`; the PR to
   Docker's repository is opened only on the owner's word (GS-D1).
 
-### Stage 2: identity, freshness, internal links (PR C, low risk, `docs-site/` + `playground/`)
+### Stage 2: identity, freshness, internal links (PR C; high tier because `docs-site/public/_headers` is deploy config)
 
 - **G8 · Identity graph.** Playground JSON-LD `@id`s resolve to the docs' `#author`;
   playground `SoftwareApplication` gains `sameAs`, `softwareVersion`, `isPartOf`; docs
