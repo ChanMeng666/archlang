@@ -24,9 +24,14 @@
  * from its start; under reduced motion it shows the end frame (`playFrom`). The caption is the
  * PS-D12 line and the limits line (`PREVIEW_LABEL`, `PREVIEW_LIMITS`), with a link to the page that
  * says what the preview shows.
+ *
+ * In view mode it is the stage's other half (public-surfaces card X5): the Plan | 3D switch on the
+ * stage shows it in place of the drawing, `&3d` in the hash opens on it, and the page lays its knobs
+ * over the canvas (`overlay`). Download GLB writes the whole plan in the page (glb-export.ts, its
+ * own chunk), and says that the browser does not validate it.
  */
 import { compile } from "archlang";
-import { adaptPlan, buildMesh, replayFacts, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
+import { adaptPlan, buildMesh, type Mesh3D, replayFacts, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import {
   mountReplay,
   PREVIEW_ABOUT_URL,
@@ -45,6 +50,12 @@ const WIDTH = 960;
 const HEIGHT = 540;
 /** One play-through, in seconds: shorter than the 15 s export, a preview is glanced at. */
 const SECONDS = 10;
+
+/** The package's own command for the validated GLB of a plan file (card X5's note). */
+export const GLB_COMMAND = "npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb";
+/** Download GLB's note, around {@link GLB_COMMAND}: what the browser does, and what it does not. */
+export const GLB_NOTE_LEAD = "The whole plan as a GLB, written in your browser and not validated here. ";
+export const GLB_NOTE_TAIL = " writes the same file and checks it with the Khronos glTF validator.";
 
 /**
  * The editor's compile of the same source, when it has one whose drawing is the light one this tab
@@ -68,6 +79,11 @@ export interface Preview3d {
   update: (source: string, level: number | null, drawn?: Drawn) => void;
   /** The tab was closed: playback stops (no frames are drawn while hidden). */
   hide: () => void;
+  /**
+   * The box over the canvas, for a panel the page lays over the 3D preview as it does over the
+   * drawing (the knobs, card X5). It is positioned, and the canvas takes no pointer outside itself.
+   */
+  overlay: HTMLElement;
 }
 
 declare global {
@@ -127,14 +143,54 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   const views = document.createElement("div");
   views.className = "p3d-views";
 
+  // Download GLB (card X5): the whole plan, written in the page by the package's own writer, in a
+  // chunk of its own loaded on the first click (glb-export.ts). Said plainly: the browser does not
+  // run the validator the CLI runs.
+  const glb = document.createElement("div");
+  glb.className = "p3d-glb";
+  const glbBtn = document.createElement("button");
+  glbBtn.type = "button";
+  glbBtn.className = "repair-btn";
+  glbBtn.textContent = "Download GLB";
+  glbBtn.setAttribute("aria-describedby", "p3d-glb-note");
+  const glbNote = document.createElement("p");
+  glbNote.className = "p3d-glb-note";
+  glbNote.id = "p3d-glb-note";
+  const cmd = document.createElement("code");
+  cmd.textContent = GLB_COMMAND;
+  glbNote.append(GLB_NOTE_LEAD, cmd, GLB_NOTE_TAIL);
+  const glbStatus = document.createElement("span");
+  glbStatus.className = "p3d-glb-status";
+  glbStatus.setAttribute("role", "status");
+  glb.append(glbBtn, glbStatus, glbNote);
+  let glbChunk: Promise<typeof import("./glb-export.js")> | undefined;
+  glbBtn.addEventListener("click", () => {
+    const mesh = glbMesh;
+    if (!mesh) return;
+    glbBtn.disabled = true;
+    glbStatus.textContent = "";
+    glbChunk ??= import("./glb-export.js");
+    void glbChunk
+      .then((m) => m.downloadGlb(mesh))
+      .catch((err: unknown) => {
+        glbChunk = undefined; // a failed chunk load is retried on the next click
+        glbStatus.textContent = `The GLB was not written: ${(err as { message?: string })?.message ?? err}`;
+      })
+      .finally(() => {
+        glbBtn.disabled = false;
+      });
+  });
+
   const message = document.createElement("p");
   message.className = "p3d-message";
   message.setAttribute("role", "status");
   message.hidden = true;
 
-  host.append(label, stage, controls, views, message, limits);
+  host.append(label, stage, controls, views, glb, message, limits);
 
   let handle: ReplayHandle | undefined;
+  /** The whole plan's Mesh3D (every storey, whatever the view shows): what Download GLB writes. */
+  let glbMesh: Mesh3D | undefined;
   /** What the mounted replay (or the refusal showing) was built from. */
   let built: string | undefined;
   let frame = 0;
@@ -152,9 +208,11 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     handle?.dispose();
     handle = undefined;
     window.__preview3d = undefined;
+    glbMesh = undefined;
     stage.hidden = true;
     controls.hidden = true;
     views.hidden = true;
+    glb.hidden = true;
     message.hidden = false;
     message.textContent = `No 3D preview: ${text}`;
     delete host.dataset.view;
@@ -169,6 +227,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     generation += 1;
     let next: ReplayHandle;
     let view: string;
+    let whole: Mesh3D;
     try {
       const r = adaptPlan(source);
       if (!r.ok) {
@@ -181,6 +240,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         return false;
       }
       const mesh = buildMesh(r.scene);
+      whole = mesh;
       const levels = storeysOf(mesh);
       const index = level === null || levels.length < 2 ? -1 : levels.indexOf(level);
       const svg = index < 0 ? drawn.svg : drawn.pages?.find((pg) => pg.level === level)?.svg;
@@ -220,11 +280,13 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       return false;
     }
     handle = next;
+    glbMesh = whole;
     window.__preview3d = next;
     host.dataset.view = view;
     stage.hidden = false;
     controls.hidden = false;
     views.hidden = false;
+    glb.hidden = false;
     message.hidden = true;
     return true;
   };
@@ -309,5 +371,6 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       resume = frame !== 0;
       stop();
     },
+    overlay: stage,
   };
 }

@@ -532,6 +532,76 @@ html:not([data-mode="edit"]) :is(#tab-describe, #tab-lint, #tab-intent, #tab-tak
   display: none;
 }
 
+/* Plan | 3D (card X5): a segmented chip over the stage's top-left corner, in the pz-toolbar's
+   sheet-world dress, the view on screen pressed in ink. Its row has no height, so the stage under
+   it (the drawing or the 3D preview) starts where it always did; view mode only. */
+.stage-switch-row {
+  position: relative;
+  height: 0;
+  z-index: 8;
+}
+.stage-switch-row[hidden],
+html[data-mode="edit"] .stage-switch-row {
+  display: none;
+}
+.stage-switch {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--paper-panel) 90%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 6px rgb(28 36 48 / 0.1);
+}
+.stage-switch button {
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 85,
+    "wght" 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  min-width: 44px;
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.stage-switch button:hover {
+  background: color-mix(in srgb, var(--redline) 12%, transparent);
+  color: var(--redline-ink);
+}
+.stage-switch button[aria-pressed="true"] {
+  background: var(--ink);
+  color: var(--paper);
+}
+.stage-switch button:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
+}
+/* What sits in that corner moves clear of it: a room's facts card and the shared-plan notice. */
+html:not([data-mode="edit"]) .room-card {
+  top: 52px;
+}
+html:not([data-mode="edit"]) #preview > .shared-notice {
+  padding-left: 128px;
+}
+@media (max-width: 900px) {
+  .stage-switch button {
+    height: 38px;
+  }
+  html:not([data-mode="edit"]) .room-card {
+    top: 64px;
+  }
+}
+
 /* The drawing built into the page: no JavaScript has sized it yet, so CSS fits it to the
    viewport exactly as pan-zoom.ts's fit() will (centred, FIT_PAD = 94 % of the limiting
    side), and main.ts's adopt() hands it over without a jump. `--ar` is its width ÷ height,

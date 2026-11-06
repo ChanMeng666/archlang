@@ -20,7 +20,7 @@ import { escapeHtml } from "./escape.js";
 import { embedSnippets, exampleImageUrl } from "./embed-snippets.js";
 import { exampleNameFor } from "./examples.js";
 import { buildChatPrompt, buildLlmPrompt, CHAT_HOSTS, type ChatHost, chatHostUrl, isChatHost } from "./llm-prompt.js";
-import { createShortLink, encodeSrc, shareableHref, updateHash } from "./share.js";
+import { createShortLink, encodeSrc, set3dFlag, shareableHref, updateHash } from "./share.js";
 import { mountSnapshots } from "./snapshots.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 import { levelFileName } from "./levels.js";
@@ -52,6 +52,8 @@ interface ActionsCtx {
   onExportError: (format: string, err: unknown) => void;
   /** Whether the page is in edit mode (the hash keeps its `&edit` flag while it is). */
   isEditing: () => boolean;
+  /** Whether the 3D preview is on screen (the hash, and a copied full link, keep `&3d` while it is). */
+  is3d: () => boolean;
   /** Bring the Lint tab to the front (where Finish and Repair report). */
   showLintTab: () => void;
   /** The render-theme override picked in the View menu, or "" for the source's own. */
@@ -98,6 +100,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     getLevel,
     onExportError,
     isEditing,
+    is3d,
     showLintTab,
     getThemeOverride,
     els,
@@ -154,10 +157,11 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   els.embedBtn?.addEventListener("click", () => void showEmbed());
 
   // Copy permalink (B5) — the hash carries the source; copy the full URL. A shared link carries
-  // the plan and never the edit-mode flag, so whoever opens it sees the drawing first.
+  // the plan and never the edit-mode flag, so whoever opens it sees the drawing first; copied from
+  // the 3D preview it keeps `&3d` (card X5), so it opens on the 3D preview.
   els.copyLinkBtn.addEventListener("click", async () => {
     closeMenu(els.shareMenu);
-    await updateHash(getSource(), isEditing()); // ensure the URL reflects the latest edit
+    await updateHash(getSource(), isEditing(), is3d()); // ensure the URL reflects the latest edit
     try {
       await navigator.clipboard.writeText(shareableHref());
       flash("Link copied");
@@ -168,12 +172,14 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   // Copy short link (ADR 0034) — the one action that sends the plan to a server, and only
   // because it was chosen next to the note that says so. Any failure (offline, refused, a host
-  // with no server) copies the full link instead, which always works.
+  // with no server) copies the full link instead, which always works. A short link names the plan
+  // alone (`/s/<id>` lands on its `#z=` link), so it opens on the drawing even from the 3D
+  // preview; the full link it falls back to keeps `&3d`.
   els.copyShortLinkBtn?.addEventListener("click", async () => {
     closeMenu(els.shareMenu);
-    await updateHash(getSource(), isEditing());
+    await updateHash(getSource(), isEditing(), is3d());
     const full = shareableHref();
-    const short = await createShortLink(new URL(full).hash);
+    const short = await createShortLink(set3dFlag(new URL(full).hash, false));
     try {
       await navigator.clipboard.writeText(short ?? full);
       flash(short ? "Short link copied" : "Short link unavailable: full link copied");

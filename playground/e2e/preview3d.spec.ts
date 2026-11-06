@@ -6,7 +6,16 @@ import { expect, type Page, test } from "@playwright/test";
 // The package's own software-WebGL flags (its replay tests render with the same ones); the one
 // browser-free module of the package, so the specs' typecheck never pulls its Node entry.
 import { SWIFTSHADER_ARGS } from "../../packages/archlang-3d/src/replay/swiftshader.js";
-import { BROKEN_PLAN, openTools, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import { srcFromHash } from "../src/share.js";
+import {
+  BROKEN_PLAN,
+  chooseLink,
+  openTools,
+  SIMPLE_PLAN,
+  setEditorSource,
+  shareHash,
+  waitForPlan,
+} from "./fixtures.js";
 
 /**
  * The "3D preview" tab (card A5): the separate archlang-3d package's replay of the editor's plan,
@@ -486,6 +495,282 @@ test.describe("3D preview tab: grabbing the view", () => {
 });
 
 /**
+ * Plan | 3D (public-surfaces card X5): view mode's switch on the stage between the drawing and the
+ * 3D preview, which drives the Preview and 3D preview tabs (so Tools → 3D preview flips it), the
+ * `&3d` deep link, the hash flag a copied full link keeps, the plan strip and the knobs in 3D, and
+ * Download GLB. Reduced motion, so the end frame is drawn at once and nothing plays on its own.
+ */
+test.describe("Plan | 3D on the stage (card X5)", () => {
+  test.use({ reducedMotion: "reduce" });
+
+  const planBtn = (page: Page) => page.locator("#viewPlan");
+  const threeBtn = (page: Page) => page.locator("#view3d");
+  const hash = (page: Page) => page.evaluate(() => location.hash);
+  /** Wait until a replay is mounted (a new one, when `fresh` marked the old) and drawn. */
+  async function mounted(page: Page, fresh = false): Promise<void> {
+    if (fresh) await page.waitForFunction(() => !(window as Marked).__preview3d?.__old);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await page.evaluate(async () => {
+      await (window as W).__preview3d?.ready;
+    });
+  }
+  /** Mark the mounted replay, so `mounted(page, true)` waits for the next one. */
+  const markOld = (page: Page) =>
+    page.evaluate(() => {
+      const h = (window as Marked).__preview3d;
+      if (h) h.__old = true;
+    });
+  /** The replay is on its end frame: t = 1 on the scrubber, and the canvas is that frame. */
+  async function atEndFrame(page: Page): Promise<void> {
+    await expect(page.locator('#preview3d .p3d-controls input[type="range"]')).toHaveValue("1");
+    const shown = await current(page);
+    expect(await hashAt(page, 1), "the frame on screen is the end frame").toBe(shown);
+  }
+
+  test("the switch flips the stage, keeps its focus, and the hash says which view is on", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await expect(page.locator(".stage-switch")).toBeVisible();
+    await expect(page.locator(".stage-switch")).toHaveAttribute("role", "group");
+    await expect(planBtn(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(threeBtn(page)).toHaveAttribute("aria-pressed", "false");
+    // On the stage, not in the header: the header keeps its controls (PS-D3).
+    await expect(page.locator("header .stage-switch")).toHaveCount(0);
+    const stage = await page.locator("#preview").boundingBox();
+    const chip = await page.locator(".stage-switch").boundingBox();
+    expect(chip && stage && chip.y >= stage.y && chip.x >= stage.x, "over the stage's top-left corner").toBe(true);
+
+    await threeBtn(page).click();
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await expect(page.locator("#tab-preview3d")).toHaveAttribute("aria-selected", "true");
+    await expect(threeBtn(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(planBtn(page)).toHaveAttribute("aria-pressed", "false");
+    await mounted(page);
+    await atEndFrame(page);
+    // The drawing's own overlays leave with it: the hover tip and the room card are the plan's.
+    await expect(page.locator(".pz-viewport")).toBeHidden();
+    await expect(page.locator("#preview3d")).toContainText(LABEL);
+    expect(await hash(page)).toMatch(/^#z=[A-Za-z0-9_-]+&3d$/);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+
+    await planBtn(page).click();
+    await expect(page.locator("#preview")).toHaveClass(/active/);
+    await expect(page.locator(".pz-stage svg")).toBeVisible();
+    expect(await hash(page)).toMatch(/^#z=[A-Za-z0-9_-]+$/);
+
+    // The keyboard: both are buttons in the tab order; the one pressed keeps the focus, whichever
+    // view comes up under it.
+    await threeBtn(page).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await expect(threeBtn(page)).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(planBtn(page)).toBeFocused();
+    await page.keyboard.press("Space");
+    await expect(page.locator("#preview")).toHaveClass(/active/);
+    await expect(planBtn(page)).toBeFocused();
+  });
+
+  test("`&3d` opens view mode on the 3D preview, at the end frame", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await expect(threeBtn(page)).toHaveAttribute("aria-pressed", "true");
+    await mounted(page);
+    await atEndFrame(page);
+    await expect(page.locator("#preview3d canvas")).toHaveAttribute("aria-label", /^E2E/);
+    expect(await hash(page)).toMatch(/^#z=[A-Za-z0-9_-]+&3d$/);
+  });
+
+  test("`#3d` alone opens the plan a hash-less visit opens, on the 3D preview", async ({ page }) => {
+    await page.goto("/#3d");
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await mounted(page);
+    await atEndFrame(page);
+    await expect(page.locator("#strip a.strip-item[aria-current='true']")).toHaveCount(1);
+  });
+
+  test("`&3d&edit` opens the editor beside the 3D preview", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d&edit`);
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await mounted(page);
+    expect(await hash(page)).toMatch(/^#z=[A-Za-z0-9_-]+&3d&edit$/);
+  });
+
+  test("another plan from the strip or the picker, in 3D, is rebuilt at its end frame", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitForPlan(page);
+    await mounted(page);
+    // Leave the end frame, so an end frame after the switch is the rebuild's.
+    await page.locator('#preview3d .p3d-controls input[type="range"]').evaluate((el: HTMLInputElement) => {
+      el.value = "0.3";
+      el.dispatchEvent(new Event("input"));
+    });
+    const canvas = page.locator("#preview3d canvas");
+    const before = await canvas.getAttribute("aria-label");
+    await markOld(page);
+    const item = page.locator("#strip a.strip-item").first();
+    const label = await item.getAttribute("data-label");
+    await item.click();
+    await expect(page.locator("#examples")).toHaveValue(label ?? "");
+    await mounted(page, true);
+    await expect(canvas).not.toHaveAttribute("aria-label", before ?? "");
+    await atEndFrame(page);
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    expect(await hash(page)).toMatch(/&3d$/);
+
+    await markOld(page);
+    const other = await page
+      .locator("#strip a.strip-item")
+      .nth(1)
+      .getAttribute("data-label");
+    await page.locator("#examples").selectOption(other ?? "");
+    await mounted(page, true);
+    await atEndFrame(page);
+  });
+
+  test("the knobs sit over the 3D preview, and letting one go rebuilds it", async ({ page }) => {
+    const src = readFileSync(new URL("../../examples/knob-flat.arch", import.meta.url), "utf8").replace(/\r\n?/g, "\n");
+    await page.goto(`/${await shareHash(src)}&3d`);
+    await waitForPlan(page);
+    await mounted(page);
+    const knobs = page.locator("#preview3d details.knobs");
+    await expect(knobs).toBeVisible();
+    await expect(knobs.locator("summary")).toHaveText("Knobs (3)");
+    await markOld(page);
+    await knobs.locator('input[type="range"][data-knob="LIVING"]').fill("6000");
+    await mounted(page, true);
+    await atEndFrame(page);
+    await expect
+      .poll(async () => srcFromHash(await hash(page)))
+      .toBe(src.replace("let LIVING = 4500", "let LIVING = 6000"));
+    expect(await hash(page)).toMatch(/&3d$/);
+    // Back on the drawing, the knobs come with it.
+    await planBtn(page).click();
+    await expect(page.locator(".pz-viewport details.knobs")).toBeVisible();
+  });
+
+  test("Tools → 3D preview flips the switch, and the tabs and the switch agree", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await openTools(page);
+    await page.getByRole("button", { name: "3D preview", exact: true }).click();
+    await expect(threeBtn(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await page.locator("#tab-preview").click();
+    await expect(planBtn(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(threeBtn(page)).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("a full link copied from the 3D preview keeps `&3d`; from the drawing it does not", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await chooseLink(page, "full");
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toMatch(/#z=[A-Za-z0-9_-]+$/);
+
+    await threeBtn(page).click();
+    await mounted(page);
+    await chooseLink(page, "full");
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toMatch(/#z=[A-Za-z0-9_-]+&3d$/);
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(await srcFromHash(new URL(copied).hash)).toBe(SIMPLE_PLAN);
+
+    // In edit mode too: the edit flag is dropped, the 3D flag kept.
+    await page.locator("#sourceToggle").click();
+    await expect(page.locator(".cm-content")).toBeVisible();
+    await expect.poll(() => hash(page)).toMatch(/&3d&edit$/);
+    await page.evaluate(() => navigator.clipboard.writeText(""));
+    await chooseLink(page, "full");
+    await expect
+      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+      .toMatch(/#z=[A-Za-z0-9_-]+&3d$/);
+  });
+
+  test("Download GLB writes the whole plan as a GLB in the page, in a chunk of its own, and says it is unvalidated", async ({
+    page,
+  }) => {
+    const glbChunks: string[] = [];
+    page.on("request", (r) => {
+      if (/\/assets\/glb-export-[^/]+\.js$/.test(r.url())) glbChunks.push(r.url());
+    });
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitForPlan(page);
+    await mounted(page);
+    const note = page.locator("#preview3d .p3d-glb-note");
+    await expect(note).toContainText("not validated here");
+    await expect(note.locator("code")).toHaveText("npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb");
+    const button = page.locator("#preview3d").getByRole("button", { name: "Download GLB" });
+    await expect(button).toHaveAttribute("aria-describedby", "p3d-glb-note");
+    expect(glbChunks, "the GLB writer is not fetched before the click").toEqual([]);
+
+    const [download] = await Promise.all([page.waitForEvent("download"), button.click()]);
+    expect(download.suggestedFilename()).toBe("floorplan.glb");
+    const path = await download.path();
+    const bytes = readFileSync(path);
+    // A GLB: the magic, glTF 2, its declared length, then the JSON chunk.
+    expect(bytes.subarray(0, 4).toString("latin1")).toBe("glTF");
+    expect(bytes.readUInt32LE(4)).toBe(2);
+    expect(bytes.readUInt32LE(8)).toBe(bytes.length);
+    const jsonLength = bytes.readUInt32LE(12);
+    expect(bytes.subarray(16, 20).toString("latin1")).toBe("JSON");
+    const gltf = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString("utf8")) as {
+      asset: { generator: string; version: string };
+      nodes: Array<{ name: string }>;
+    };
+    expect(gltf.asset.version).toBe("2.0");
+    // The package's own writer: its fixed generator, the storey group and the room's floor.
+    expect(gltf.asset.generator).toMatch(/^archlang-3d \d+\.\d+\.\d+$/);
+    const names = gltf.nodes.map((n) => n.name);
+    expect(names).toContain("level:L1");
+    expect(names.some((n) => n.startsWith("floor:"))).toBe(true);
+    expect(glbChunks.length, "the GLB writer loads on the first click").toBe(1);
+
+    // A second click writes the same bytes, from the chunk already in.
+    const [again] = await Promise.all([page.waitForEvent("download"), button.click()]);
+    expect(readFileSync(await again.path()).equals(bytes), "same plan, same GLB").toBe(true);
+    expect(glbChunks.length).toBe(1);
+  });
+});
+
+test.describe("Plan | 3D on a phone (card X5)", () => {
+  test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, reducedMotion: "reduce" });
+
+  test("the switch is on the stage at touch size, and nothing scrolls sideways in either view", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    const overflow = () => page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    await expect(page.locator(".stage-switch")).toBeVisible();
+    const box = await page.locator("#view3d").boundingBox();
+    expect(box?.height ?? 0, "a touch-sized target").toBeGreaterThanOrEqual(38);
+    expect(await overflow(), "no sideways scroll on the drawing").toBeLessThanOrEqual(0);
+
+    await page.locator("#view3d").tap();
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await expect(page.locator("#preview3d canvas")).toBeVisible();
+    expect(await overflow(), "no sideways scroll on the 3D preview").toBeLessThanOrEqual(0);
+    const canvas = await page.locator("#preview3d canvas").boundingBox();
+    expect((canvas?.x ?? -1) >= 0 && (canvas?.x ?? 0) + (canvas?.width ?? 0) <= 375, "the canvas fits").toBe(true);
+    // The switch's band keeps it clear of the caption under it.
+    const chip = await page.locator(".stage-switch").boundingBox();
+    const caption = await page.locator("#preview3d .p3d-label").boundingBox();
+    expect((chip?.y ?? 0) + (chip?.height ?? 0)).toBeLessThanOrEqual(caption?.y ?? 0);
+    await expect(page.locator("#preview3d .p3d-glb")).toBeVisible();
+  });
+});
+
+type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
+
+/**
  * What card A5 and card P1 care about at startup, gated directly. The chunks the page loads before
  * anything is opened (index.html's module script and its modulepreloads) carry no 3D code and no
  * CodeMirror: the 3D chunk loads on the tab's first open (the first test above sees it fetched
@@ -539,6 +824,13 @@ test.describe("startup chunks", () => {
     const lazy3d = one(/^preview3d-[\w-]+\.js$/, "one 3D chunk");
     const editor = one(/^edit-mode-[\w-]+\.js$/, "one edit-mode chunk");
     const compiler = one(/^compiler-[\w-]+\.js$/, "one compiler chunk");
+    // Download GLB's writer (card X5): its own chunk, so glTF-Transform grows neither the startup
+    // chunks nor the 3D chunk.
+    const glb = one(/^glb-export-[\w-]+\.js$/, "one GLB-writer chunk");
+    expect(startup, "the GLB writer is not loaded or preloaded at startup").not.toContain(glb);
+    expect(readFileSync(join(DIST, lazy3d), "utf8"), "the 3D chunk carries no GLB writer").not.toContain(
+      "glTF-Transform",
+    );
     expect(startup, "the 3D chunk is not loaded or preloaded at startup").not.toContain(lazy3d);
     expect(startup, "the editor's chunk is not loaded or preloaded at startup").not.toContain(editor);
     // The compiler: preloaded with the page, never the script the first paint waits on.
@@ -548,6 +840,7 @@ test.describe("startup chunks", () => {
     const markers: [string, string][] = [
       ...["WebGLRenderer", "PerspectiveCamera", LABEL].map((m): [string, string] => [m, lazy3d]),
       ...["cm-content", "cm-gutters"].map((m): [string, string] => [m, editor]),
+      ["glTF-Transform", glb],
     ];
     for (const [m, chunk] of markers) {
       expect(readFileSync(join(DIST, chunk), "utf8"), `the marker "${m}" is in ${chunk}`).toContain(m);

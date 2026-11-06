@@ -26,6 +26,11 @@ export interface KnobsPanel {
   sync(source: string, plan: PlanNode | undefined): void;
   /** After any compile: enable the sliders only while the document is the one they were read from. */
   refresh(): void;
+  /**
+   * The panel itself, which the page moves between the drawing and the 3D preview (card X5): it
+   * sits over whichever is on screen.
+   */
+  el: HTMLElement;
 }
 
 interface KnobsPanelOpts {
@@ -188,6 +193,7 @@ export function mountKnobsPanel({ viewport, getSource, tryRender, commit, flash 
   }
 
   return {
+    el: panel,
     sync(source, plan) {
       const next = extractKnobs(source, plan);
       // A source the panel wrote comes back more than once (its own compile, then the editor's

@@ -283,6 +283,18 @@
           <span class="lv-sep" id="storeysSep" hidden></span>
           <span class="lv-group" id="storeys" role="group" aria-label="Storey" hidden></span>
         </h2>
+        <!-- Plan | 3D (public-surfaces card X5): view mode's switch between the drawing and the 3D
+             preview, over the stage's top-left corner (the header keeps its four controls). It
+             drives the Preview and 3D preview tabs, so Tools → 3D preview flips it too. A row of
+             no height between the frame header and the stage, so the one control stays put, and
+             keeps its focus, whichever view is under it. Hidden until main.ts wires it: with no
+             script there is nothing to switch to. -->
+        <div class="stage-switch-row" id="stageSwitchRow" hidden>
+          <div class="stage-switch" role="group" aria-label="View">
+            <button type="button" id="viewPlan" aria-pressed="true" title="Show the drawing">Plan</button>
+            <button type="button" id="view3d" aria-pressed="false" title="Show the 3D preview, from the same source">3D</button>
+          </div>
+        </div>
         <div id="preview" class="tabview active" role="tabpanel" aria-labelledby="tab-preview">
           <div class="pz-viewport">
             <div class="pz-stage"><!--prerender:plan--></div>

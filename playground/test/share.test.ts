@@ -4,7 +4,9 @@ import {
   b64urlToBytes,
   bytesToB64url,
   encodeSrc,
+  has3dFlag,
   hasEditFlag,
+  set3dFlag,
   setEditFlag,
   shareableHref,
   srcFromHash,
@@ -116,5 +118,63 @@ describe("the edit-mode flag", () => {
     expect(shareableHref("https://p.example/#z=abc&edit")).toBe("https://p.example/#z=abc");
     expect(shareableHref("https://p.example/#z=abc")).toBe("https://p.example/#z=abc");
     expect(shareableHref("https://p.example/")).toBe("https://p.example/");
+  });
+});
+
+describe("the 3D flag (card X5)", () => {
+  it("the token still parses with the flag after it, before it, or beside the edit flag", async () => {
+    const hash = await encodeSrc(SRC);
+    const token = hash.slice(1);
+    for (const h of [`${hash}&3d`, `#3d&${token}`, `${hash}&3d&edit`, `#edit&3d&${token}`]) {
+      expect(await srcFromHash(h), h).toBe(SRC);
+    }
+  });
+
+  it("is read as a whole param, never as part of a token", () => {
+    expect(has3dFlag("#3d")).toBe(true);
+    expect(has3dFlag("#z=abc&3d")).toBe(true);
+    expect(has3dFlag("#3d&z=abc")).toBe(true);
+    expect(has3dFlag("#z=abc&3d&edit")).toBe(true);
+    expect(has3dFlag("")).toBe(false);
+    expect(has3dFlag("#z=abc")).toBe(false);
+    expect(has3dFlag("#z=abc&edit")).toBe(false);
+    // base64url can spell "3d" inside a token; only a `&`-separated param counts.
+    expect(has3dFlag("#z=xx3d")).toBe(false);
+    expect(has3dFlag("#z=3d")).toBe(false);
+    expect(has3dFlag("#z=abc&3dx")).toBe(false);
+    // The two flags are read apart.
+    expect(hasEditFlag("#z=abc&3d")).toBe(false);
+    expect(hasEditFlag("#z=abc&3d&edit")).toBe(true);
+  });
+
+  it("sets and clears the flag after every other param and before edit, whichever is set last", () => {
+    expect(set3dFlag("#z=abc", true)).toBe("#z=abc&3d");
+    expect(set3dFlag("#z=abc&3d", true)).toBe("#z=abc&3d");
+    expect(set3dFlag("#3d&z=abc", true)).toBe("#z=abc&3d");
+    expect(set3dFlag("#z=abc&3d", false)).toBe("#z=abc");
+    expect(set3dFlag("", true)).toBe("#3d");
+    expect(set3dFlag("#3d", false)).toBe("");
+    expect(set3dFlag("", false)).toBe("");
+    // Beside the edit flag: one order, whichever was set last.
+    expect(set3dFlag("#z=abc&edit", true)).toBe("#z=abc&3d&edit");
+    expect(setEditFlag("#z=abc&3d", true)).toBe("#z=abc&3d&edit");
+    expect(set3dFlag("#z=abc&3d&edit", false)).toBe("#z=abc&edit");
+    expect(setEditFlag("#z=abc&3d&edit", false)).toBe("#z=abc&3d");
+    expect(set3dFlag("#edit", true)).toBe("#3d&edit");
+  });
+
+  it("a shared link keeps the 3D flag and drops the edit flag", () => {
+    expect(shareableHref("https://p.example/#z=abc&3d")).toBe("https://p.example/#z=abc&3d");
+    expect(shareableHref("https://p.example/#z=abc&3d&edit")).toBe("https://p.example/#z=abc&3d");
+    expect(shareableHref("https://p.example/#3d")).toBe("https://p.example/#3d");
+  });
+
+  it("the head script's mode test reads `&3d&edit` as edit mode and `&3d` as view mode", () => {
+    const html = readFileSync("playground/index.html", "utf8");
+    const mode = /root\.dataset\.mode = \/(.+?)\/\.test\(hash\)/.exec(html);
+    const re = new RegExp(mode![1]!);
+    for (const h of ["#3d", "#z=abc&3d", "#z=abc&3d&edit", "#3d&edit", "#edit&3d"]) {
+      expect(re.test(h), h).toBe(hasEditFlag(h));
+    }
   });
 });
