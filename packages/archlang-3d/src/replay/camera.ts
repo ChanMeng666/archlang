@@ -160,16 +160,18 @@ export const endElevation = (_storeys: number): number => 45;
  * `lift` (the combined view's exploded storeys). A demolished wall's ghost (`part` "demolish") is not
  * the building and is left out of a fit (`timeline.ts`'s header), unless nothing else is there;
  * `ghosts: true` keeps it, for a box that must hold everything drawn (the viewer's clip range).
+ * `settle` (`ReplayState.settle`) lowers each lift to `settledLift(lift, settle)`: 1 is the
+ * assembled building, every storey at the height it stands at (the end frame's).
  */
 export function boxOfNodes(
   nodes: ReadonlyArray<{ positions: readonly number[]; lift?: number; part?: string }>,
-  opts: { ghosts?: boolean } = {},
+  opts: { ghosts?: boolean; settle?: number } = {},
 ): Box {
   const lo: Vec3 = [Infinity, Infinity, Infinity];
   const hi: Vec3 = [-Infinity, -Infinity, -Infinity];
   const standing = opts.ghosts ? nodes : nodes.filter((n) => n.part !== "demolish");
   for (const n of standing.length > 0 ? standing : nodes) {
-    const lift = n.lift ?? 0;
+    const lift = opts.settle === undefined ? (n.lift ?? 0) : settledLift(n.lift, opts.settle);
     for (let i = 0; i < n.positions.length; i += 3) {
       const p: Vec3 = [
         (n.positions[i] as number) / 1000,
@@ -185,13 +187,26 @@ export function boxOfNodes(
   return { lo, hi };
 }
 
+/**
+ * A node's lift (mm) at settle `settle` (`ReplayState.settle`): the whole lift while the storeys are
+ * exploded, none once they have settled. The viewer draws a node at this lift.
+ */
+export const settledLift = (lift: number | undefined, settle: number): number => (lift ?? 0) * (1 - settle);
+
+/** How many camera stops the rise has: one per storey of the event table (one storey: one). */
+export const stopCount = (events: readonly ReplayEvent[]): number =>
+  Math.max(1, ...events.map((e) => (e.storey ?? 0) + 1));
+
 /** The perspective camera's lens at the start of the dolly (a near-orthographic top-down view). */
 export const START_FOV = 1.5;
 
 /**
  * One fitted camera per stop: stop k fills the frame with storeys 0…k (the combined view; a node's
- * storey is its event's), the last stop with the whole building. One storey: one stop. Each stop is
- * fitted for the end orbit, which `stateAt` has reached by the time of the first stop.
+ * storey is its event's), the last stop with the whole building, exploded. One storey: one stop.
+ * Several storeys add one fit after the stops: the assembled building (every lift settled), the
+ * camera the settle ends on (`stateAt`'s `settle`), so the last fit is always the whole building as
+ * the end frame shows it. Each is fitted for the end orbit, which `stateAt` has reached by the time
+ * of the first stop.
  */
 export function cameraStops(
   nodes: ReadonlyArray<{ key: string; positions: readonly number[]; lift?: number; part?: string }>,
@@ -199,10 +214,11 @@ export function cameraStops(
   o: Orbit,
 ): EndCamera[] {
   const storeyOf = new Map(events.map((e) => [e.key, e.storey ?? 0] as const));
-  const stops = Math.max(1, ...events.map((e) => (e.storey ?? 0) + 1));
+  const stops = stopCount(events);
   const fits: EndCamera[] = [];
   for (let k = 0; k < stops; k++)
     fits.push(fitEndCamera(boxOfNodes(nodes.filter((n) => (storeyOf.get(n.key) ?? 0) <= k)), o));
+  if (stops > 1) fits.push(fitEndCamera(boxOfNodes(nodes, { settle: 1 }), o));
   return fits;
 }
 
@@ -286,7 +302,10 @@ export interface ViewScene {
   fits: readonly EndCamera[];
   /** The first frame's framing (`drawingFrame`) and the end elevation, as `frameCamera` takes them. */
   frame: { cx: number; cz: number; oh: number; elevation: number };
-  /** The standing building (`boxOfNodes`, ghosts left out): the box the last stop is fitted to. */
+  /**
+   * The standing building as the end frame shows it (`boxOfNodes`, ghosts left out, `settle: 1`):
+   * the box the last fit is fitted to (`cameraStops`).
+   */
   box: Box;
   /** Canvas width / height. */
   aspect: number;

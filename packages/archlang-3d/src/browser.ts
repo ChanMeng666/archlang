@@ -21,5 +21,12 @@ export type { ToolbarOptions } from "./replay/view-dom.js";
 export { stripAt } from "./replay/strip.js";
 export { paintStrip } from "./replay/strip-dom.js";
 export type { ReplayFacts, StripItem } from "./replay/strip.js";
-export { PREVIEW_LABEL, replayPayload, viewBoxOf } from "./replay/payload.js";
+export {
+  PREVIEW_ABOUT_URL,
+  PREVIEW_LABEL,
+  PREVIEW_LEAD,
+  PREVIEW_LIMITS,
+  replayPayload,
+  viewBoxOf,
+} from "./replay/payload.js";
 export type { ReplayOptions } from "./replay/payload.js";

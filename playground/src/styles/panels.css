@@ -1393,8 +1393,8 @@
 }
 
 /* 3D preview tab (card A5) — light only, like every surface here (ADR 0014). The
-   label is decision D5's wording, verbatim: the tab is a preview from a separate
-   package, and ArchLang itself draws plans. */
+   caption is the PS-D12 line and the limits line (public-surfaces 3d.md §2), from
+   the archlang-3d package's own constants. */
 #preview3d {
   overflow: auto;
   padding: 12px 14px;
@@ -1408,6 +1408,20 @@
 .p3d-label {
   margin: 0;
   font-size: 12.5px;
+  color: var(--ink-muted);
+}
+.p3d-label strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.p3d-label a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.p3d-limits {
+  margin: 0;
+  font-size: 11.5px;
   color: var(--ink-muted);
 }
 .p3d-stage {

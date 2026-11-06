@@ -19,7 +19,16 @@ export function makeNodeWorld(baseDir: string): World {
   };
 }
 
-export { PREVIEW_LABEL, replayHtml, replayPayload, viewBoxOf, viewerScript } from "./replay/html.js";
+export {
+  PREVIEW_ABOUT_URL,
+  PREVIEW_LABEL,
+  PREVIEW_LEAD,
+  PREVIEW_LIMITS,
+  replayHtml,
+  replayPayload,
+  viewBoxOf,
+  viewerScript,
+} from "./replay/html.js";
 export type { ReplayOptions } from "./replay/html.js";
 export { replayFacts } from "./replay/facts.js";
 export type { FactsOptions } from "./replay/facts.js";

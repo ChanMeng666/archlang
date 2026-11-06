@@ -18,12 +18,21 @@
  * The view turns freely (card CR4): the package's free camera (`interactive`) and its toolbar
  * (presets, Reset, storeys shown). Grabbing the view pauses the playback; scrubbing or Replay hands
  * the camera back to the replay; an edit keeps the view the user left.
+ *
+ * A new plan opens on the replay's END frame (public-surfaces card X1): the iso view, settled, with
+ * the storeys stacked (card X2), drawn at once and not played. Replay plays the drafting-order replay
+ * from its start; under reduced motion it shows the end frame (`playFrom`). The caption is the
+ * PS-D12 line and the limits line (`PREVIEW_LABEL`, `PREVIEW_LIMITS`), with a link to the page that
+ * says what the preview shows.
  */
 import { compile } from "archlang";
 import { adaptPlan, buildMesh, replayFacts, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import {
   mountReplay,
+  PREVIEW_ABOUT_URL,
   PREVIEW_LABEL,
+  PREVIEW_LEAD,
+  PREVIEW_LIMITS,
   type ReplayHandle,
   replayPayload,
   VIEW_CONTROLS_LABEL,
@@ -51,8 +60,8 @@ export interface Drawn {
 export interface Preview3d {
   /**
    * The tab was opened. A new plan or storey (`level`: the switcher's selection, `null` = none)
-   * is built and played from the start; the same one resumes where it was hidden. `drawn`, when
-   * given, is the editor's compile of `source` (else this tab compiles it).
+   * is built and shown at its end frame (Replay plays it); the same one resumes where it was
+   * hidden. `drawn`, when given, is the editor's compile of `source` (else this tab compiles it).
    */
   show: (source: string, level: number | null, drawn?: Drawn) => void;
   /** The plan or the storey changed while the tab is open: rebuild and go on from the current t. */
@@ -70,9 +79,20 @@ declare global {
 
 export function mountPreview3d(host: HTMLElement): Preview3d {
   host.replaceChildren();
+  // The PS-D12 line, its first sentence in bold, then the link and the limits line.
   const label = document.createElement("p");
   label.className = "p3d-label";
-  label.textContent = PREVIEW_LABEL;
+  const lead = document.createElement("strong");
+  lead.textContent = PREVIEW_LEAD;
+  const about = document.createElement("a");
+  about.href = PREVIEW_ABOUT_URL;
+  about.target = "_blank";
+  about.rel = "noopener";
+  about.textContent = "What it shows";
+  label.append(lead, PREVIEW_LABEL.slice(PREVIEW_LEAD.length), " ", about);
+  const limits = document.createElement("p");
+  limits.className = "p3d-limits";
+  limits.textContent = PREVIEW_LIMITS;
 
   const stage = document.createElement("div");
   stage.className = "p3d-stage";
@@ -93,12 +113,13 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   play.type = "button";
   play.className = "repair-btn";
   play.textContent = "Replay ▸";
+  play.setAttribute("aria-label", "Replay: the plan drawing itself in its authoring order, then rising");
   const scrub = document.createElement("input");
   scrub.type = "range";
   scrub.min = "0";
   scrub.max = "1";
   scrub.step = "0.001";
-  scrub.value = "0";
+  scrub.value = "1";
   scrub.setAttribute("aria-label", "Replay position");
   controls.append(play, scrub);
 
@@ -111,7 +132,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   message.setAttribute("role", "status");
   message.hidden = true;
 
-  host.append(label, stage, controls, views, message);
+  host.append(label, stage, controls, views, message, limits);
 
   let handle: ReplayHandle | undefined;
   /** What the mounted replay (or the refusal showing) was built from. */
@@ -261,7 +282,11 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       const key = keyOf(source, level);
       if (key !== built) {
         resume = false;
-        if (build(source, level, key, drawn)) playFrom(0);
+        // The end frame, at once: the settled iso view (card X1). Replay plays it from the start.
+        if (build(source, level, key, drawn)) {
+          scrub.value = "1";
+          drawAt(1);
+        }
         return;
       }
       const t = Number(scrub.value);

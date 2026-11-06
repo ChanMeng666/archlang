@@ -5,7 +5,11 @@
 your source and the core's drawing as they are.
 
 From a plan it writes a replay (one HTML file: the plan draws itself, then the walls rise) and a GLB
-for any glTF viewer.
+for any glTF viewer. Same source, plan and 3D preview: the 3D preview is extruded from the same
+`.arch` file, and checked against the plan.
+
+3D preview: walls, openings, floors and furniture in flat colours; no stairs or pitched roofs yet,
+and no sections, elevations or BIM.
 
 ## Install
 
@@ -28,6 +32,10 @@ npx archlang3d view plan.arch --replay -o plan.html
 
 `plan.html` opens offline. three.js 0.186.1 is inside the file with its licence notice, and nothing
 is fetched from a network. `--theme dark` and `--storey <n>` change what it shows.
+
+A plan of several storeys rises storey by storey, each lifted clear of the one below so the floor
+underneath stays in view, and at the end the storeys come down to stand on each other at their real
+heights.
 
 The view turns freely: drag to rotate, scroll or pinch to zoom, right-drag or two fingers to pan,
 and the buttons give Iso, Top, the four elevations and Reset (and, with several storeys, hide the

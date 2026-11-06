@@ -8,6 +8,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { MIN_CORE } from "../src/index.js";
+import { PREVIEW_LEAD, PREVIEW_LIMITS } from "../src/replay/payload.js";
 
 interface Conditions {
   types: string;
@@ -85,11 +86,15 @@ describe("package metadata", () => {
     expect(playground.dependencies["@chanmeng666/archlang-3d"]).toBe("*");
   });
 
-  // D5: the words the npm page may use. The README says what the package does and claims no more.
+  // D5, then PS-D12 (public-surfaces card X1): the words the npm page may use. The README says what
+  // the package does and claims no more, with the line every surface uses and the limits line.
   it("the README keeps to the product's words", () => {
     const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8");
     expect(readme).toContain("3D preview");
     expect(readme).toContain("a separate package that reads the same\n`.arch` source and is checked against the plan");
+    const prose = readme.replace(/\s+/g, " ");
+    expect(prose).toContain(PREVIEW_LEAD.replace(/\.$/, ""));
+    expect(prose).toContain(PREVIEW_LIMITS);
     const banned =
       /\b(first|only|CDN|IFC|measur\w*|buildab\w*|structur\w*|accura\w*|to scale|code.?compliant)\b|AI architect/gi;
     expect(readme.match(banned) ?? []).toEqual([]);

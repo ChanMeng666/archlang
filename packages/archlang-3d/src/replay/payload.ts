@@ -13,7 +13,10 @@ export interface ReplayNode {
   key: string;
   kind: string;
   part?: string;
-  /** The combined view's exploded storeys: how far (mm) the node is lifted; absent = 0. */
+  /**
+   * The combined view's exploded storeys: how far (mm) the node is lifted while the storeys rise;
+   * absent = 0. It settles to 0 by the end (`settledLift`).
+   */
   lift?: number;
   /** Flat `[x, y, z, …]` in micrometres, exporters' axes (X plan x, Y up, Z plan y). */
   positions: number[];
@@ -45,9 +48,23 @@ export interface ReplayPayload {
   events: ReplayEvent[];
 }
 
-/** A mounted replay: every frame is `seek(t)`. */
-/** The label every surface that shows the preview carries (decision D5's wording). */
-export const PREVIEW_LABEL = "Preview — from the separate archlang-3d package. ArchLang itself draws plans.";
+/**
+ * The line every surface that shows the preview carries (public-surfaces PS-D12, owner ruling
+ * PS-D11, `docs/plans/public-surfaces/3d.md` §2; it replaced decision D5's label). `PREVIEW_LEAD`
+ * is its first sentence, which a host may set in bold. The plan's full line adds "You can also
+ * download it as a validated GLB." where a surface offers the download.
+ */
+export const PREVIEW_LEAD = "Same source, plan and 3D preview.";
+export const PREVIEW_LABEL =
+  "Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan.";
+/**
+ * The limits line, always near a 3D view (PS-D12). It states what the package builds today
+ * (`3d.md` §3): change it when the package changes.
+ */
+export const PREVIEW_LIMITS =
+  "3D preview: walls, openings, floors and furniture in flat colours; no stairs or pitched roofs yet, and no sections, elevations or BIM.";
+/** The page that says what the 3D preview shows and does not (the docs site's `/3d`). */
+export const PREVIEW_ABOUT_URL = "https://archlang.uk/3d";
 
 export interface ReplayOptions {
   title: string;
@@ -75,8 +92,9 @@ export function viewBoxOf(svg: string): [number, number, number, number] {
 
 /**
  * The data a replay HTML carries for `mesh`: pass `viewMesh(mesh, view)` for one view. A mesh of
- * more than one storey is the combined view: its storeys are exploded (`explodeLifts`) and the end
- * camera looks down more steeply (`endElevation`).
+ * more than one storey is the combined view: its storeys are exploded (`explodeLifts`) while they
+ * rise and come down to their real heights by the end (`stateAt`'s `settle`), and the end camera
+ * looks down at 45° (`endElevation`).
  */
 export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload {
   const lifts = explodeLifts(mesh);
