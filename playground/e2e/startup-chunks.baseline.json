@@ -3,6 +3,8 @@
   "how": "npm ci && npm run build && npm run playground:build:only on that commit; for each chunk dist/index.html loads at startup (its module <script src> and every <link rel=modulepreload>), the byte length of node:zlib gzipSync(file) at the default level, keyed by the file name without its content hash (for reading only: the gates sum them). `compiler` is the one startup chunk outside the view path.",
   "viewBudget": 60000,
   "viewBudgetWhy": "PS-D5 (docs/plans/public-surfaces/README.md): startup JS without the compiler and the editor is at most 60 KB gzip. A hard ceiling on the view path's sum, not a growth allowance.",
+  "compilerPathBudget": 458000,
+  "compilerPathBudgetWhy": "card PG5a: the view path plus the compiler and everything both import statically. Measured 446,819 B on the PG5a branch (index 11,703 + panels 2,773 + preload-helper 798 + compiler 431,116 + rolldown-runtime 429); 575,197 B before it, when the compiler imported the jsPDF chunk (128,804 B). 458,000 B leaves 11,181 B (2.5 %) for ordinary core growth, stays under the ceiling the growth gate already set (438,980 + 20,000 = 458,980 B), and trips on any lazy heavyweight leaking in (glTF-Transform ~19,900 B, CodeMirror ~117,500 B, jsPDF ~129,800 B, three.js ~149,000 B). A hard ceiling like viewBudget: crossing it is a deliberate re-take with the reason in the commit.",
   "growthBudget": 20000,
   "growthBudgetWhy": "card A8: the 3D chunk is ~150,500 B gzip, so +20,000 B over the sum of every startup chunk (view path and compiler) trips on a leak of an eighth of it, while ordinary core growth (A5's own PR: +299 B) takes dozens of PRs to reach it; see preview3d.spec.ts",
   "gzip": {

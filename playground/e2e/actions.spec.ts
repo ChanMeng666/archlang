@@ -616,6 +616,54 @@ test.describe("downloads", () => {
   });
 });
 
+/**
+ * jsPDF (and the html2canvas it brings) loads on the first PDF download and at no other time
+ * (card PG5a): not on boot, with the compiler, nor with the editor. The compiler chunk once
+ * imported the jsPDF chunk statically for the bundler's shared helpers, so every visit paid ~129 KB
+ * gzip for a PDF nobody asked for; the startup-chunks gate (preview3d.spec.ts) reads the build, and
+ * this reads the network.
+ */
+test.describe("jsPDF loads only for a PDF", () => {
+  const PDF_CHUNK = /\/assets\/(?:jspdf|html2canvas)[-.][^/]*\.js$/;
+  const watchPdfChunks = (page: Page): string[] => {
+    const fetched: string[] = [];
+    page.on("request", (r) => {
+      if (PDF_CHUNK.test(r.url())) fetched.push(r.url());
+    });
+    return fetched;
+  };
+  const pdfDownloads = async (page: Page) => {
+    const bytes = await payload(await downloadAs(page, "pdf"));
+    expect(bytes.subarray(0, 5).toString("utf8")).toBe("%PDF-");
+  };
+
+  test("view mode: not on boot, then on the first PDF download", async ({ page }) => {
+    const fetched = watchPdfChunks(page);
+    await page.goto("/");
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    // Another export is not a PDF: still nothing.
+    await downloadAs(page, "svg");
+    expect(fetched, "no jsPDF chunk is fetched on boot or for an SVG").toEqual([]);
+    await pdfDownloads(page);
+    expect(
+      fetched.some((u) => /\/assets\/jspdf[-.]/.test(u)),
+      "the PDF download fetched jsPDF",
+    ).toBe(true);
+  });
+
+  test("edit mode: not with the editor, then on the first PDF download", async ({ page }) => {
+    const fetched = watchPdfChunks(page);
+    await gotoEdit(page);
+    expect(fetched, "no jsPDF chunk is fetched with the editor").toEqual([]);
+    await pdfDownloads(page);
+    expect(
+      fetched.some((u) => /\/assets\/jspdf[-.]/.test(u)),
+      "the PDF download fetched jsPDF",
+    ).toBe(true);
+  });
+});
+
 /** The GLB note, word for word (glb-note.ts): what the browser writes, and that it does not check it. */
 const GLB_NOTE =
   "The whole plan as a GLB, written in your browser and not validated here. npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb writes the same file and checks it with the Khronos glTF validator.";
