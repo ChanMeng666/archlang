@@ -36,7 +36,7 @@ test.use({ launchOptions: { args: SWIFTSHADER_ARGS } });
 const DIST = join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
 // The PS-D12 line and the limits line (public-surfaces card X1), as the package exports them.
 const LABEL =
-  "Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan.";
+  "Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan: every 3D element comes from the plan's elements, and every solid is closed.";
 const LIMITS =
   "3D preview: walls, openings, floors, stairs and furniture in flat colours; no pitched roofs yet, and no sections, elevations or BIM.";
 

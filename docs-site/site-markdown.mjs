@@ -342,7 +342,9 @@ export function siteMarkdown(src, deps) {
         `- ${cap} [Open \`${ex}.arch\` in the playground](${playgroundLink(example(ex))})\n\n  ![${cap}](/examples/${ex}.svg)` +
         (posters.has(ex) ? `\n\n  ![The 3D preview of ${ex}.arch, from the same source.](${posters.get(ex)})` : ""),
     );
-    return `## ${heading}\n\n${note}\n\n${items.join("\n")}\n\n`;
+    // HomeGallery.vue's limits line, under the grid when any card has a 3D preview.
+    const limits = plans.some(([, ex]) => posters.has(ex)) ? `${preview().limits}\n\n` : "";
+    return `## ${heading}\n\n${note}\n\n${items.join("\n")}\n\n${limits}`;
   });
   text = text.replace(/^<IsIsntTable \/>\n*/m, () => {
     const vue = read(theme, "IsIsntTable.vue");

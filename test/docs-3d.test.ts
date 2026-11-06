@@ -69,6 +69,10 @@ describe("the components show the package's lines, never typed", () => {
     expect(page).toMatch(/^<PreviewLine which="limits" \/>$/m);
     expect(page).not.toContain(p.limits);
     expect(page).not.toContain(p.rest);
+    // The limits sit above the plans (V2 round 1): a reader meets them before any 3D picture.
+    expect(page.indexOf('<PreviewLine which="limits" />')).toBeLessThan(page.indexOf("<ThreeDPlans />"));
+    expect(page.indexOf('<PreviewLine which="limits" />')).toBeLessThan(page.indexOf("Heights are assumed where"));
+    expect(page.indexOf("Heights are assumed where")).toBeLessThan(page.indexOf("<ThreeDPlans />"));
     const line = read(`${THEME}/PreviewLine.vue`);
     expect(line).toContain("{{ PREVIEW.lead }}");
     expect(line).toContain("{{ PREVIEW.limits }}");
@@ -79,6 +83,12 @@ describe("the components show the package's lines, never typed", () => {
     expect(band).toContain("{{ PREVIEW.title }}");
     expect(band).toContain("{{ PREVIEW.rest }}");
     expect(band).toContain("{{ PREVIEW.limits }}");
+  });
+
+  it("the home gallery carries the limits line under its grid, from the data module", () => {
+    const gallery = read(`${THEME}/HomeGallery.vue`);
+    expect(gallery).toMatch(/import \{[^}]*\bPREVIEW\b[^}]*\} from "\.\/three-d-data\.js"/);
+    expect(gallery).toMatch(/<\/ul>\s*<p v-if="[^"]+" class="home-gallery__limits">\{\{ PREVIEW\.limits \}\}<\/p>/);
   });
 });
 
