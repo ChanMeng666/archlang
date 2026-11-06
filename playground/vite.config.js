@@ -46,17 +46,18 @@ function preloadCompiler() {
 }
 
 /**
- * Fill index.html's JSON-LD with the two values it must not retype: the core's version (the root
- * package.json, the way the docs config reads it) and the software's `sameAs` listings
- * (site-shared/identity.json, which the docs JSON-LD reads too). Each placeholder is a quoted
- * JSON string, so the file stays valid JSON-LD-shaped text; a missing one fails the build.
+ * Fill index.html's JSON-LD with the value it must not retype: the core's version (the root
+ * package.json, the way the docs config reads it). The placeholder is a quoted JSON string, so the
+ * file stays valid JSON-LD-shaped text; a missing one fails the build.
+ *
+ * No `sameAs` here: the playground app is a web app, a different entity from the library, so the
+ * library's listings (npm, GitHub, marketplaces) belong on the docs `#software` node only. The app
+ * points at that node with `isPartOf`/`isBasedOn` instead.
  */
 function identityJsonLd() {
   const version = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")).version;
-  const identity = JSON.parse(readFileSync(resolve(__dirname, "../site-shared/identity.json"), "utf8"));
   const values = {
     '"%ARCHLANG_VERSION%"': JSON.stringify(version),
-    '"%ARCHLANG_SAME_AS%"': JSON.stringify(identity.softwareSameAs),
   };
   return {
     name: "archlang-identity-jsonld",

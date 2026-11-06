@@ -72,8 +72,9 @@
          JavaScript, so everything a machine can learn here has to be in the served bytes:
          this block plus the intro band below. Keep it in step with the docs site's own
          graph — the same WebSite @id is the parent of both hosts, and every archlang.uk @id
-         here is a node the docs home defines. The two %ARCHLANG_…% values are filled at
-         build time by vite.config.js (the core's version, site-shared/identity.json). -->
+         here is a node the docs home defines. %ARCHLANG_VERSION% is filled at build time by
+         vite.config.js from the root package.json. No sameAs: this app is not the library,
+         whose listings live on the docs #software node it points at. -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -105,7 +106,6 @@
             "inLanguage": "en",
             "license": "https://opensource.org/licenses/MIT",
             "softwareVersion": "%ARCHLANG_VERSION%",
-            "sameAs": "%ARCHLANG_SAME_AS%",
             "isPartOf": { "@id": "https://archlang.uk/#software" },
             "isBasedOn": { "@id": "https://archlang.uk/#software" },
             "author": { "@id": "https://archlang.uk/#author" },

@@ -1,5 +1,5 @@
 {
-  "_": "The ArchLang entity in structured data, shared by both sites: the docs JSON-LD (docs-site/.vitepress/config.ts) defines the nodes, and the playground's (playground/vite.config.js for index.html, playground/scripts/gen-static.mjs for the example pages) references them by these ids. softwareSameAs lists the first-party listings of the software; each URL was fetched and resolved before it was added. The author's ORCID is read from CITATION.cff, not from here.",
+  "_": "The ArchLang entity in structured data, shared by both sites: the docs JSON-LD (docs-site/.vitepress/config.ts) defines the nodes, and the playground's (playground/index.html, playground/scripts/gen-static.mjs for the example pages) references them by these ids. softwareSameAs lists the first-party listings of the library and is emitted on the docs #software node only, never on the playground web app; each URL was fetched and resolved before it was added. The author's ORCID is read from CITATION.cff, not from here.",
   "ids": {
     "website": "https://archlang.uk/#website",
     "author": "https://archlang.uk/#author",
