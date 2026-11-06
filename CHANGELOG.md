@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `treadCount(length)` is exported from the package root: how many tread divisions the stair symbol draws on a flight of that run, so a downstream reader (the 3D preview) can put its treads on the plan's tread lines without a second copy of the rule. A re-export only; no output changes (ADR 0031, amendment 2026-11-06).
+
 ## [1.56.0] - 2026-11-06
 
 ### Changed

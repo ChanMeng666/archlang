@@ -136,3 +136,16 @@ and **`HatchSpec`**, the one type their signatures reach (decision 4: the contra
 like the other five). No function body changes. `Point` (`src/ast.ts`), the element of
 `RWall.points` and of `loopsToPolygons`'s rings, was already nameable from the root through
 `export type * from "./ast.js"`; the consumer now imports it instead of reading it off `RWall`.
+
+## Amendment 2026-11-06: the stair's tread count (card X3)
+
+The 3D preview builds a stair as stepped solids, and its treads must stand on the tread lines the
+plan draws. Each flight is drawn with `treadCount(run)` divisions (`src/elements/vertical-glyphs.ts`),
+which was not exported, so the consumer would have retyped the 280 mm going and its rounding rule:
+a second copy of a drawing fact that `check:drift` cannot see. **Export `treadCount`** as a plain
+re-export, `(length: number) => number`; its signature reaches no type. No function body changes,
+and the import graph of `compile()` does not change (the module is already loaded by the stair
+element). The flights, their entry edges and the landings were already public (`RStair.flights`,
+`RStairFlight.tail`, `RStair.landings`, and `entryEdges` for a straight stair). Proof of no output
+change: the corpus digest (every storey's SVG, `describe()`, `lint()` and `compile().diagnostics`)
+over `examples/` and `test/fixtures/` is byte-identical before and after.

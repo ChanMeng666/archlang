@@ -492,6 +492,9 @@ export type { Arc } from "./geometry/arc.js";
 export { doorLeaves, doorSwing } from "./geometry.js";
 export type { DoorLike, DoorSwing } from "./geometry.js";
 export type { DoorHinge, DoorSwingDir } from "./grammar/tokens.js";
+// How many tread divisions the plan draws on a flight of a given run: a stepped solid read from
+// it keeps its treads on the drawing's tread lines (ADR 0031, amendment 2026-11-06).
+export { treadCount } from "./elements/vertical-glyphs.js";
 export type {
   Opening,
   ROpening,
