@@ -4,7 +4,10 @@ This is the resume point. Update it at the end of every session.
 
 ## State (2026-11-06, end of session 1)
 
-Stages 0–3 are merged. What remains is V1 and the owner's items.
+Stages 0–4 are done. Released as core 1.56.0 / MCP 0.2.39 / VS Code 0.44.0 (npm, MCP registry,
+GitHub Release with the MCPB, Marketplace uploaded by the agent through Chrome, Open VSX). V1 ran
+once with three fresh readers (developer, non-programmer, HN sceptic); its fixes are #514. #512
+fixed the release workflow's registry re-run check; #513 recorded the agent Marketplace upload.
 
 | Card | Where | PR |
 |---|---|---|
@@ -30,12 +33,14 @@ Stages 0–3 are merged. What remains is V1 and the owner's items.
 - Docs hero both doors above the fold at 1280×800 and 390×844; hero run 7.1 s.
 
 **Open:**
-- **Owner:**
-  - the Glama description (needs a login);
-  - the docs-only patch release (tag after `/release-check`), so the npm pages (core README, MCP
-    README) and the VS Code listing match;
-  - the Marketplace upload of the new vsix (Open VSX by workflow after the tag).
-- **V1:** the first-contact review, three readers per surface, after the deploys settle.
+- **Owner:** the Glama description (needs a login the browser does not have).
+- **Next release:** #514 changed the README, the MCP README and the VS Code README after 1.56.0, so
+  the npm pages and the listing lag until the next release (a 1.56.1 patch, or the next minor);
+  the owner says "release" and the agent runs the whole path.
+- **V1 residue (not fixed, judged out of scope or by design):** the playground has no
+  plain-language prompt box (hosted generation is ArchCanvas's room); "Designs that compile." stays
+  as the h1 (ADR 0010) with the plain lede under it; what ChatGPT renders on screen is unverified
+  (the doors say only what the compiler returns).
 - **Follow-ups:**
   - backlog PG.1–PG.3 (room keyboard access, bbox hit-testing, facts-line shift);
   - a fixable example pair for Checks inside the corpus (examples stay warning-free, so the demo is
@@ -92,5 +97,5 @@ automatically. The owner agreed to every design and decision in this plan.
 
 ## Next
 
-1. The owner's items above, guided.
-2. V1 after the release, so the npm and Marketplace pages are reviewed as published.
+1. The next release, when the owner says so.
+2. The follow-ups above, as backlog cards.
