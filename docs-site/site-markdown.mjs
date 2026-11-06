@@ -66,9 +66,20 @@ export function doorMarkdown(file, id) {
     case "playground":
       return `[${d.playground.label}](${d.playground.url}) (${d.playground.note})`;
     case "chatgpt":
-      return `[${d.chatgpt.label}](${d.chatgpt.url}) (${d.chatgpt.note})`;
+      return [
+        `[${d.chatgpt.label}](${d.chatgpt.url}) (${d.chatgpt.note})`,
+        "Then ask, for example:",
+        textFence(d.chatgpt.example),
+        d.chatgpt.returns,
+      ].join("\n\n");
     case "claudeai":
-      return `${d.claudeai.label} (${d.claudeai.note}):\n\n${textFence(d.claudeai.url)}`;
+      return [
+        `${d.claudeai.label} (${d.claudeai.note}):`,
+        textFence(d.claudeai.url),
+        d.claudeai.steps.map((s, i) => `${i + 1}. ${s}`).join("\n"),
+        d.claudeai.plansNote,
+        `[Claude's help page on custom connectors](${d.claudeai.stepsSource})`,
+      ].join("\n\n");
     case "agent":
       return [
         textFence(file.agentPrompt.join("\n")),
@@ -226,10 +237,24 @@ export function siteMarkdown(src, deps) {
   text = text.replace(/^<WhyCards \/>\n*/m, () => {
     const vue = read(theme, "WhyCards.vue");
     const heading = plain(pull(vue, /<h2 id="why-title"[^>]*>([\s\S]*?)<\/h2>/, "WhyCards' heading")[1]);
-    const cards = [...vue.matchAll(/title: "([^"]+)",\s*body: "([^"]+)",/g)];
+    const table = pull(vue, /const WHY = \[([\s\S]*?)\] as const;/, "WhyCards' WHY table")[1];
+    const cards = [...table.matchAll(/key: "([^"]+)",\s*title: "([^"]+)",\s*body: "([^"]+)",/g)];
     if (cards.length !== 3)
       throw new Error(`site-markdown: parsed ${cards.length} of 3 WhyCards — the WHY table changed shape`);
-    return `## ${heading}\n\n${cards.map(([, t, b]) => `- **${t}** ${b}`).join("\n")}\n\n`;
+    const checks = [
+      ...pull(vue, /const CHECKS = \[([\s\S]*?)\] as const;/, "WhyCards' CHECKS")[1].matchAll(
+        /\{ href: "([^"]+)", label: "([^"]+)" \}/g,
+      ),
+    ].map(([, href, label]) => `[${label}](${href})`);
+    if (checks.length === 0) throw new Error("site-markdown: parsed no WhyCards CHECKS links");
+    const lang = pull(
+      vue,
+      /const LANGUAGE = \{\s*heading: "([^"]+)",\s*text: "([^"]+)",\s*\} as const;/,
+      "WhyCards' LANGUAGE paragraph",
+    );
+    // The checks links sit beside the "check" card, as WhyCards.vue draws them.
+    const items = cards.map(([, k, t, b]) => `- **${t}** ${b}${k === "check" ? ` ${checks.join(" · ")}` : ""}`);
+    return `## ${heading}\n\n${items.join("\n")}\n\n### ${lang[1]}\n\n${lang[2]}\n\n`;
   });
   text = text.replace(/^<HowSteps \/>\n*/m, () => {
     const vue = read(theme, "HowSteps.vue");
@@ -325,7 +350,7 @@ export function siteMarkdown(src, deps) {
       doorsFile.canonicalLine,
       `- **${primaries[0]}:** [${doorsFile.doors.chatgpt.label}](${doorsFile.doors.chatgpt.url}) (${doorsFile.doors.chatgpt.note})`,
       `**${primaries[1]}:**\n\n${textFence(doorsFile.agentPrompt.join("\n"))}`,
-      `Or open a plan in the [${doorsFile.doors.playground.label}](${doorsFile.doors.playground.url}).`,
+      `Or open a plan in the [${doorsFile.doors.playground.label}](${doorsFile.doors.playground.url}). New here? [Get a floor plan from your AI](/start).`,
       proof,
       ...heroLines,
       fence(hero.source.trimEnd()),

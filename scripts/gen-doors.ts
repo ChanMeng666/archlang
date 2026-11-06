@@ -19,8 +19,13 @@ export interface Doors {
   canonicalLine: string;
   todo: string;
   doors: {
-    chatgpt: { label: string; url: string; note: string };
-    claudeai: { label: string; url: string; note: string };
+    /** `example` is a prompt to try in the app; `returns` says in one line what comes back. */
+    chatgpt: { label: string; url: string; note: string; example: string; returns: string };
+    /**
+     * `steps` add the connector in claude.ai, worded as `stepsSource` (Claude's help page) has them
+     * for Pro and Max; `plansNote` says so and where Team and Enterprise differ.
+     */
+    claudeai: { label: string; url: string; note: string; steps: string[]; plansNote: string; stepsSource: string };
     agent: {
       label: string;
       claudeCodeHttp: string;
@@ -32,11 +37,17 @@ export interface Doors {
     vscode: { label: string; marketplace: string; openVsx: string };
     playground: { label: string; url: string; note: string };
   };
-  /** Pages the surfaces link to next to the doors (the two top asks, the agents page). */
-  links: { fromAnImage: string; editOneRoom: string; agents: string };
+  /** Pages the surfaces link to next to the doors (the two top asks, the agents page, /start). */
+  links: { fromAnImage: string; editOneRoom: string; agents: string; start: string };
   agentPrompt: string[];
   order: Record<string, string[]>;
 }
+
+/**
+ * One door's section on /start: `links.start` plus the heading id StartDoors.vue gives each door
+ * (`door-<key>`). The longer blocks link the claude.ai steps there rather than repeat them.
+ */
+export const startDoorUrl = (d: Doors, key: keyof Doors["doors"]): string => `${d.links.start}#door-${key}`;
 
 export const loadDoors = (): Doors =>
   JSON.parse(readFileSync(resolve(ROOT, "site-shared/doors.json"), "utf8")) as Doors;
@@ -52,10 +63,14 @@ export const SURFACES = [
 function bullet(d: Doors, key: string, compact: boolean): string {
   const x = d.doors;
   switch (key) {
-    case "chatgpt":
-      return `- **ChatGPT, ${x.chatgpt.note}:** [${x.chatgpt.label}](${x.chatgpt.url})`;
-    case "claudeai":
-      return `- **claude.ai, ${x.claudeai.note.split(";")[0]}:** add \`${x.claudeai.url}\` as a custom connector`;
+    case "chatgpt": {
+      const door = `- **ChatGPT, ${x.chatgpt.note}:** [${x.chatgpt.label}](${x.chatgpt.url})`;
+      return compact ? door : `${door}, then ask, for example: "${x.chatgpt.example}"`;
+    }
+    case "claudeai": {
+      const door = `- **claude.ai, ${x.claudeai.note.split(";")[0]}:** add \`${x.claudeai.url}\` as a custom connector`;
+      return compact ? door : `${door} ([the steps](${startDoorUrl(d, "claudeai")}))`;
+    }
     case "agent":
       return compact
         ? `- **Coding agent:** \`${x.agent.claudeCodeHttp}\`, or \`${x.agent.skills.command}\``
@@ -107,7 +122,11 @@ export function renderDoorsBlock(d: Doors, orderKey: string): string {
     .filter((c) => c.length > 0)
     .map((c) => c.join("\n"))
     .join("\n\n");
-  const intro = readme ? "" : `${d.canonicalLine}\n\n`;
+  // The README's block opens instead with the door for someone who is just looking; the agent
+  // prompt still comes straight after it.
+  const intro = readme
+    ? `Just looking? [Open the playground](${d.doors.playground.url}) — no install.\n\n`
+    : `${d.canonicalLine}\n\n`;
   return `${START}\n## Try it\n\n${intro}${body}\n${END}`;
 }
 

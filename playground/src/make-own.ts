@@ -96,13 +96,18 @@ function doorHtml(key: string): string {
       return door(
         key,
         "ChatGPT",
-        `${ext(doors.chatgpt.url, `${doors.chatgpt.label} ↗`, ' class="mo-go"')}<span>No install.</span>`,
+        `${ext(doors.chatgpt.url, `${doors.chatgpt.label} ↗`, ' class="mo-go"')}<span>No install.</span>` +
+          copyRow("chatgptExample", doors.chatgpt.example, "Then ask, for example:") +
+          `<span>${escapeHtml(doors.chatgpt.returns)}</span>`,
       );
     case "claudeai":
       return door(
         key,
         "claude.ai",
-        `${copyRow("claudeai", doors.claudeai.url)}<span>No install: add it as a custom connector.</span>`,
+        `${copyRow("claudeai", doors.claudeai.url)}<span>No install: add it as a custom connector.</span>` +
+          `<ol class="mo-steps">${doors.claudeai.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>` +
+          `<span>${escapeHtml(doors.claudeai.plansNote)}</span>` +
+          `<span>${ext(doors.claudeai.stepsSource, "Claude's help page on custom connectors ↗")}</span>`,
       );
     case "agent": {
       const tabs = AGENT_TABS.map(
@@ -188,7 +193,10 @@ export function mountSheet(body: HTMLElement, ctx: SheetCtx): Sheet {
   const startBtn = body.querySelector<HTMLButtonElement>("#moStartHere")!;
   let prompt = AGENT_PROMPT;
 
-  const texts = new Map<string, string>([["claudeai", doors.claudeai.url]]);
+  const texts = new Map<string, string>([
+    ["claudeai", doors.claudeai.url],
+    ["chatgptExample", doors.chatgpt.example],
+  ]);
   for (const t of AGENT_TABS) for (const [j, r] of t.rows.entries()) texts.set(`${t.id}.${j}`, r.text);
 
   const say = (msg: string) => {

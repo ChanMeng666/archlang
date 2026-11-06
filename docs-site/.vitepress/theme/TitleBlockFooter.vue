@@ -11,6 +11,10 @@
 // (`.VPContent.has-sidebar ~ .tblock`), NOT by the `padding` shorthand below.
 // Changing that shorthand to longhands would out-specify nothing, but changing
 // the 24px here without changing the calc there breaks the alignment.
+//
+// TEXT NB: each cell's label and value sit on ONE line with a space between them. Vue drops the
+// whitespace between two elements on separate lines, so a page's text (a reader, a crawler)
+// would run them together ("Sheet1 of 1"); the label is display:block, so the space draws nothing.
 import { CANONICAL_LINE } from "./doors";
 import { TOPICS } from "./topics";
 
@@ -35,12 +39,10 @@ const ECOSYSTEM = [
 
       <div class="tblock__grid">
         <div class="cell">
-          <span class="cell__label">Project</span>
-          <span class="cell__value">ArchLang</span>
+          <span class="cell__label">Project</span> <span class="cell__value">ArchLang</span>
         </div>
         <div class="cell">
-          <span class="cell__label">Drawn by</span>
-          <a
+          <span class="cell__label">Drawn by</span> <a
             class="cell__value cell__credit"
             href="https://github.com/ChanMeng666"
             target="_blank"
@@ -51,22 +53,17 @@ const ECOSYSTEM = [
           </a>
         </div>
         <div class="cell">
-          <span class="cell__label">License</span>
-          <span class="cell__value">MIT</span>
+          <span class="cell__label">License</span> <span class="cell__value">MIT</span>
         </div>
         <div class="cell">
-          <span class="cell__label">Issued</span>
-          <span class="cell__value">2026</span>
+          <span class="cell__label">Issued</span> <span class="cell__value">2026</span>
         </div>
         <div class="cell">
-          <span class="cell__label">Sheet</span>
-          <span class="cell__value">1 of 1</span>
+          <span class="cell__label">Sheet</span> <span class="cell__value">1 of 1</span>
         </div>
         <div class="cell">
-          <span class="cell__label">Legal</span>
-          <nav class="cell__links">
-            <a href="/privacy">Privacy</a>
-            <a href="/terms">Terms</a>
+          <span class="cell__label">Legal</span> <nav class="cell__links">
+            <a href="/privacy">Privacy</a> <a href="/terms">Terms</a>
           </nav>
         </div>
         <div class="cell cell--eco cell--topics">
