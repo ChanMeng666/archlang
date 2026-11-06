@@ -7,14 +7,17 @@
 import type { PresetName } from "./camera.js";
 import type { ViewControl } from "./mount.js";
 
-/** Each preset's button text and its accessible name. */
+/**
+ * Each preset's button text and its accessible name. The side views are "View from north" and so
+ * on, never "elevation": the 3D preview draws no elevations (the PS-D12 limits line).
+ */
 export const PRESET_LABELS: ReadonlyArray<readonly [PresetName, string, string]> = [
   ["iso", "Iso", "Iso view: the replay's end view"],
   ["top", "Top", "Top view, the plan's top edge up"],
-  ["north", "N", "North elevation: from the plan's top edge"],
-  ["east", "E", "East elevation: from the plan's right edge"],
-  ["south", "S", "South elevation: from the plan's bottom edge"],
-  ["west", "W", "West elevation: from the plan's left edge"],
+  ["north", "N", "View from north: level, from the plan's top edge"],
+  ["east", "E", "View from east: level, from the plan's right edge"],
+  ["south", "S", "View from south: level, from the plan's bottom edge"],
+  ["west", "W", "View from west: level, from the plan's left edge"],
 ];
 
 export const VIEW_HINT =

@@ -18,6 +18,8 @@
   HTML also carries the limits line (`PREVIEW_LIMITS`): walls, openings, floors and furniture in flat
   colours; no stairs or pitched roofs yet, and no sections, elevations or BIM. `PREVIEW_ABOUT_URL`
   is the page that says what the preview shows.
+- The side views' buttons are named "View from north" (east, south, west) instead of "North
+  elevation" and so on: the 3D preview draws no elevations. The buttons still read N, E, S and W.
 
 ## [0.3.0] - 2026-11-05
 

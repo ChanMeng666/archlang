@@ -344,7 +344,7 @@ test.describe("3D preview tab: the free camera", () => {
     await page.mouse.wheel(0, -240);
     expect(await current(page), "the wheel zooms").not.toBe(end);
     const seen = new Set([end]);
-    for (const name of [/^Top view/, /^North elevation/, /^East elevation/, /^South elevation/, /^West elevation/]) {
+    for (const name of [/^Top view/, /^View from north/, /^View from east/, /^View from south/, /^View from west/]) {
       await button(name).click();
       seen.add(await current(page));
     }

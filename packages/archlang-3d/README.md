@@ -38,7 +38,7 @@ underneath stays in view, and at the end the storeys come down to stand on each 
 heights.
 
 The view turns freely: drag to rotate, scroll or pinch to zoom, right-drag or two fingers to pan,
-and the buttons give Iso, Top, the four elevations and Reset (and, with several storeys, hide the
+and the buttons give Iso, Top, the views from north, east, south and west, and Reset (and, with several storeys, hide the
 storeys above one). Moving the view pauses the playback.
 
 To render a video as well, add a browser and `ffmpeg` on your `PATH`:
