@@ -15,7 +15,7 @@ copies, `PAGE_META`, the smoke checks) for a page no reader of the language need
 No AI crawler executes JavaScript. Measured over roughly a billion requests, the answer-engine
 fetchers render nothing: what they read is the HTML the server sent. So everything here is **static
 bytes in the response** — a heading, a lede, a canonical link, a description, a JSON-LD block — and
-nothing is painted by script. That is why the playground grew a visible intro band and 27 static
+nothing is painted by script. That is why the playground grew a visible intro band and 34 static
 example pages: a Vite shell with five empty mount points and a `#z=` fragment (which never reaches a
 server at all) is, to every engine, one contentless URL. The tactics with measured lift are
 quotations, statistics, cited sources and answer-first prose; **keyword stuffing is the one tactic
@@ -29,14 +29,15 @@ read as a sentence.
 | Docs `robots.txt` (every crawler named and allowed, `Sitemap:`) | `docs-site/public/robots.txt` | `test/docs-page-meta.test.ts` (names + sitemap line); `scripts/smoke.mjs` docs route; `docs-site/e2e/routes.spec.ts` `@prod` |
 | Playground `robots.txt` | `playground/public/robots.txt` | `scripts/smoke.mjs` playground route |
 | Docs sitemap + per-route `lastmod` | `docs-site/.vitepress/config.ts` `sitemap.transformItems`, dates written to `.vitepress/lastmod.json` by `sync-docs.mjs` from `git log` over each page's source | `@prod` "sitemap lists every page route"; `scripts/smoke.mjs`. The writer is wrapped in try/catch — a shallow clone emits no dates rather than failing the build |
-| Playground sitemap (29 URLs: `/`, `/examples/`, 27 pages) | `playground/scripts/gen-static.mjs` | `test/playground-examples-rows.test.ts`; `scripts/smoke.mjs` |
+| Playground sitemap (36 URLs: `/`, `/examples/`, 34 pages) | `playground/scripts/gen-static.mjs` | `test/playground-examples-rows.test.ts`; `scripts/smoke.mjs` |
 | Canonical, per-page `<title>` and description, `og:*` / `twitter:*` | `PAGE_META` + `transformPageData` + `transformHead` in `docs-site/.vitepress/config.ts` | `test/docs-page-meta.test.ts` (two-way route coverage, 80–170 chars, sentence shape, killed-claim regexes); `@prod` "head metadata" |
 | JSON-LD (`WebSite` + `SoftwareApplication` + `SoftwareSourceCode` on `/`, the `SoftwareApplication` carrying `sameAs` GitHub, npm and skills.sh; `TechArticle` + `BreadcrumbList` elsewhere) | `structuredData()` in `docs-site/.vitepress/config.ts` | `@prod` "head metadata" parses it; descriptions come from `PAGE_META`, so the wording law is enforced in one place |
 | Five topic pages, one search cluster each: `/floor-plans-as-code`, `/floor-plan-dsl`, `/mcp`, `/javascript`, `/vs-mermaid` (added 2026-11-03, PR #452, from the SERP study in §8). Each opens with the standalone definition, carries a `.arch` plan compiled and linted clean, and ends in a visible `## FAQ` (no FAQPage markup, §11) | `docs-site/<page>.md`, rows in `PAGE_META` and `sync-docs.mjs` `PAGES` | `test/docs-page-meta.test.ts`; `test/docs-flags.test.ts`; `test/docs-sync-list.test.ts` |
 | The docs H1 keyword sub-line | `docs-site/.vitepress/theme/CompileSeam.vue` | **No gate of its own.** `npm run docs:build` compiles it; the `@prod` home case asserts the agents band, not this line. Treat it as hand-checked |
 | Playground intro band, lede, `<noscript>`, JSON-LD | `playground/index.html` | `scripts/smoke.mjs` (`<h1`, the lede string); `playground/e2e/boot.spec.ts` `@prod` case, which navigates with `waitUntil: "commit"` so it reads pre-hydration bytes |
 | `/embed.html` de-indexed | `playground/public/_headers` (`X-Robots-Tag: noindex, follow`) plus a `<meta name="robots">` in `playground/embed.html` | `scripts/smoke.mjs`'s `header()` assertion — the one check in that file that reads a response header rather than a body |
-| 27 static example pages, `/examples/` index and its gallery thumbnails (`/examples/thumbs/*.svg`), the `#z=` deep link on each | `playground/scripts/gen-static.mjs`, driven by `EXAMPLE_ROWS` in `playground/src/examples.ts`; the `/examples/` rewrite in `playground/public/_redirects`. The page's tokens are sliced from `playground/src/styles/tokens.css` and its `@font-face` rules harvested from `playground/dist/assets/*.css` — neither is retyped | `test/playground-examples-rows.test.ts` (both directions against `examples/*.arch`, blurb length and killed claims); `playground/e2e/examples-static.spec.ts` (incl. the `document.fonts` case and the thumbnail case); `scripts/smoke.mjs` |
+| 34 static example pages, `/examples/` index and its gallery thumbnails (`/examples/thumbs/*.svg`), the `#z=` deep link on each | `playground/scripts/gen-static.mjs`, driven by `EXAMPLE_ROWS` in `playground/src/examples.ts`; the `/examples/` rewrite in `playground/public/_redirects`. The page's tokens are sliced from `playground/src/styles/tokens.css` and its `@font-face` rules harvested from `playground/dist/assets/*.css` — neither is retyped | `test/playground-examples-rows.test.ts` (both directions against `examples/*.arch`, blurb length and killed claims); `playground/e2e/examples-static.spec.ts` (incl. the `document.fonts` case and the thumbnail case); `scripts/smoke.mjs` |
+| Redirects for two dead inbound URLs: `/error-codes` → `/errors`, `/language-reference` → `/reference`, 301 (added 2026-11-06; the Worker has no `main` script, so this is a static-asset rule) | `docs-site/public/_redirects` | `scripts/smoke.mjs` (`redirectCheck`: status 301 and the `Location`) |
 | Raw `/<page>.md` copies and `rel=alternate` links to them | `docs-site/sync-docs.mjs` `PAGES`; `transformHead` | `test/docs-sync-list.test.ts`; the `@prod` byte-equality cases, which double as a deploy-staleness probe |
 | `llms.txt` / `llms-full.txt` | repo root, copied by `sync-docs.mjs`; `llms-full.txt` from `npm run gen:llms` | `npm run check:drift`; `scripts/smoke.mjs`. See §5 |
 | IndexNow key file and post-deploy ping | `docs-site/public/<key>.txt`, `playground/public/<key>.txt`, `scripts/indexnow.mjs`, a step per matrix leg in `deploy.yml` | `test/indexnow-script.test.ts` (sitemap parsing; the always-exit-0 promise, checked by spawning the script). The key is public by design and lives in a repository **variable**, not a secret — see `docs/hosting-and-domains.md` § IndexNow |
@@ -50,7 +51,8 @@ source and its error catalogue is a distribution channel, not a leak. Everything
 and already on npm and GitHub.
 
 - **Search and answer indexes** — `Googlebot`, `Bingbot`, `Applebot`, `Amazonbot`,
-  `OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot`.
+  `OAI-SearchBot`, `Claude-SearchBot`, `PerplexityBot`, `DuckDuckBot`, `ShapBot` (Parallel Web
+  Systems, a Claude web-search provider since 2026-10-15).
 - **Live per-request fetchers** (a user asked something now) — `ChatGPT-User`, `Claude-User`,
   `Perplexity-User`.
 - **Training and corpus crawlers** — `GPTBot`, `ClaudeBot`, `Google-Extended`, `CCBot`
@@ -103,7 +105,7 @@ recorded here or anywhere else in this public repository** — ask the owner rat
 - **Bing Webmaster Tools** holds the same property, imported from Search Console. **The import does not
   carry sitemaps** — observed on two separate imports, despite the card promising it — so submit them
   by hand afterwards, every time.
-- **Two sitemaps** (counted live 2026-11-03): `archlang.uk` 59 URLs, `playground.archlang.uk` 35
+- **Two sitemaps** (counted live 2026-11-06): `archlang.uk` 65 URLs, `playground.archlang.uk` 36
   (34 and 29 at the 2026-09-14 setup). Both
   engines report Success on both and agree on every number; a disagreement means a deploy or a
   generator has drifted, not that a console is being odd.
@@ -170,12 +172,12 @@ do, so off-site work belongs to this surface even though no file here expresses 
 outreach is published to a third party by an agent.** Drafts live in the private growth repository
 under `marketing/offsite/`, with the manual submission guide at
 `marketing/launches/runbook-2026-09.md`; the owner posts. Opened 2026-09-14 from the owner's
-account, awaiting maintainers:
+account, awaiting maintainers (except where marked):
 
 | List | Pull request |
 |---|---|
 | punkpeye/awesome-mcp-servers | [#14383](https://github.com/punkpeye/awesome-mcp-servers/pull/14383) — waits on the Glama badge (below) |
-| osama-ata/Awesome-AECO | [#13](https://github.com/osama-ata/Awesome-AECO/pull/13) |
+| osama-ata/Awesome-AECO | [#13](https://github.com/osama-ata/Awesome-AECO/pull/13) — merged 2026-10-03 |
 | Daviidro/awesome-aec-mcp | [#1](https://github.com/Daviidro/awesome-aec-mcp/pull/1) |
 | steven2358/awesome-generative-ai | [#1375](https://github.com/steven2358/awesome-generative-ai/pull/1375) |
 | semlinker/awesome-typescript | [#192](https://github.com/semlinker/awesome-typescript/pull/192) |
@@ -187,7 +189,8 @@ disclosed reply on [mermaid-js/mermaid#6134](https://github.com/mermaid-js/merma
 (the floorplan-syntax request, Google's first result for "mermaid for floor plans") and to open a
 duplicate awesome-mcp-servers PR (#18435, closed in favour of #14383). The owner kept the reply; it
 is logged with its approval gap in the growth repository's `data/community-replies.json`. Read
-this section before any off-site step.
+this section before any off-site step. The open wave of authority, agent-discovery and
+measurement work is planned in [`plans/geo-seo/README.md`](plans/geo-seo/README.md).
 
 **Registries and directories are a different class from posts**: a listing is how an agent finds
 the tool. This section is the single statement of the submission policy (owner, 2026-10-14): an
@@ -202,16 +205,16 @@ the 429s). An agent never passes a CAPTCHA or pays. State on
 
 | Where | State | Kept current by |
 |---|---|---|
-| Official MCP registry (`io.github.ChanMeng666/archlang-mcp`) | live, latest 0.2.25 | `release.yml` on a `v*` tag |
+| Official MCP registry (`io.github.ChanMeng666/archlang-mcp`) | live, latest 0.2.40 (2026-11-06) | `release.yml` on a `v*` tag |
 | [Context7](https://context7.com/chanmeng666/archlang) | live | parsed from the public repository |
-| Smithery | gone: acquired by Arcade, publishing and its MCP proxy closed on 2026-10-31; the `chanmeng-dev/archlang` page is a 404 (checked 2026-11-04) and the `.smithery.mcpb` variant is retired | — |
+| Smithery | gone: acquired by Arcade on 2026-08-05, publishing and its MCP proxy closed on 2026-10-31; the `chanmeng-dev/archlang` page is a 404 (checked 2026-11-04) and the `.smithery.mcpb` variant is retired | — |
 | Claude plugin directory (claude.ai) | submitted by the owner, in review | reads `plugins/archlang/`; the push-updates webhook it offered is not set up |
 | mcpservers.org | live, approved 2026-10-10 | — |
 | [Glama](https://glama.ai/mcp/servers/ChanMeng666/archlang) | listed and claimed; builds from the Dockerfile set in its admin (installs `@chanmeng666/archlang-mcp`, runs `archlang-mcp` behind `mcp-proxy`), release 0.1.0 passed on 2026-10-25 and was rated A (TDQS 4.3/5 over 11 tools, maintenance A) | Glama's Auto-Release on each GitHub release; the badge is on #14383 (backlog O.1) |
 | mcp.so | not listed: submission is paid | — |
 | VS Code Marketplace (`ChanMeng.archlang`) | live, 0.31.0 uploaded by the owner (the gallery API lags minutes) | the owner's web upload (`/release-check`) |
 | [OpenAI plugin directory](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970) (Codex, ChatGPT) | live: 1.55.0, uploaded by an agent and submitted and published by the owner on 2026-11-05 (portal: "Listed publicly", ChatGPT page reads 1.55.0), no findings, its skills pinning CLI 1.55.0; earlier 1.43.0, 1.50.0 and 1.50.1; all three starter prompts verified in ChatGPT; hosted MCP server `archlang` with no authentication, domain verified through the Worker's `OPENAI_APPS_CHALLENGE`, 12 tools; the review information on file holds countries, five test cases, three negative cases, release notes and the video walkthrough (the unlisted narrated demo of the command line; its URL lives in the portal and in the private `archlang-demo-video` repo, never here) | `npm run build:openai-plugin` in the primary checkout, from `plugins/archlang/` (generated by `gen:agent-manifests`); steps in [`integrations.md`](integrations.md) |
-| [Awesome Copilot](https://github.com/github/awesome-copilot) (Copilot CLI marketplace) | submitted by the owner as an issue, not a pull request: [github/awesome-copilot#5075](https://github.com/github/awesome-copilot/issues/5075) (ref `v1.43.0`, commit `f07a3b4`, path `plugins/archlang`), awaiting review; the owner uses its external-plugin issue form | `plugins/archlang/` (`plugin.json` + `skills/`), generated by `gen:agent-manifests` |
+| [Awesome Copilot](https://github.com/github/awesome-copilot) (Copilot CLI marketplace) | submitted by the owner as an issue, not a pull request: [github/awesome-copilot#5075](https://github.com/github/awesome-copilot/issues/5075) (ref `v1.43.0`, commit `f07a3b4`, path `plugins/archlang`), closed as not relevant on 2026-10-21 (its intake had failed quality gates on 2026-10-14); the owner used its external-plugin issue form | `plugins/archlang/` (`plugin.json` + `skills/`), generated by `gen:agent-manifests` |
 | [Open VSX](https://open-vsx.org) | live (0.38.0 published by the workflow on 2026-11-01, in Open VSX's review at first); namespace `ChanMeng` verified ([EclipseFdn/open-vsx.org#14189](https://github.com/EclipseFdn/open-vsx.org/issues/14189) closed as completed 2026-10-15) | `publish-openvsx.yml` by manual dispatch after the Marketplace upload, tokenless through its registered trusted publisher (`editors/vscode/DEVELOPMENT.md`) |
 | Hosted MCP (`https://mcp.archlang.uk`) | live: Worker `archlang-mcp`, deployed on every `main` push by `deploy.yml`'s `deploy-mcp`; custom domain attached in the dashboard (the workers.dev URL also answers); renders `compile` as an MCP App card in a claude.ai custom connector (no sign-in); the precise guard is the zone WAF rule `mcp abuse guard` (100 requests per 10 s per IP to every path on `mcp.archlang.uk`, block 10 s, dashboard-only), because the Worker's own bindings are best-effort (ADR 0026 addendum) | `deploy.yml` |
 | `@chanmeng666/arch-plan` | on npm (0.1.0 published by the owner by hand, the first version a trusted publisher can be registered on); jsDelivr serves `dist/arch-plan.js` | `release.yml`'s `publish-arch-plan` job (OIDC trusted publisher registered 2026-10-15) |
