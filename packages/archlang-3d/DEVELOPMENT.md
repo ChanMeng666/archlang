@@ -94,7 +94,12 @@ the replay's script, bundled once at build time, so a consumer needs no esbuild;
 empty project with a core from npm and uses it from outside (`release.yml` runs it before publishing).
 
 `ARCHLANG_3D_VERSION` is read from `package.json` and stamped into every GLB and Scene3D. The GLB pin
-(`test/pins.ts`) is taken with a fixed generator, so a version bump leaves it alone.
+(`test/pins.ts`) is taken with a fixed generator, so a version bump leaves it alone. The public
+surfaces' assets are not: `scripts/gen-3d-assets.ts` (root `npm run gen:3d-assets`) writes each listed
+plan's poster (`renderStill`, the canvas alone at `__seek(1)`), replay MP4 and GLB into
+`docs-site/public/3d/` with a `manifest.json`, and `e2e/assets.e2e.ts` fails until they are
+regenerated after a version bump, a changed plan or a moved poster frame. Another repository runs it
+from a checkout of this one: `npm run gen:3d-assets -- --out <dir> --plan <name>=<path.arch>`.
 
 Tests: `test/*.test.ts` run in the core's `npm test`; heavy tests go in `e2e/*.e2e.ts` and run with
 `npm run check:3d` at the repository root. The plan and its cards: `docs/plans/archlang-3d/`,

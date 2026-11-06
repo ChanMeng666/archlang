@@ -11,3 +11,6 @@
 *.vsix binary
 *.ico  binary
 *.pdf  binary
+*.webp binary
+*.mp4  binary
+*.glb  binary

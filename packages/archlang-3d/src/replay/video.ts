@@ -51,6 +51,17 @@ export interface VideoOptions {
   /** Where to write the MP4; omit to measure the key frames only. */
   mp4?: string;
   ffmpeg?: string;
+  /** libx264's constant rate factor for the MP4 (default 18; 0 is lossless: a master to re-encode). */
+  crf?: number;
+}
+
+/** The page the browser opens: the replay with its own playback off, so every frame is chosen by `__seek`. */
+function seekOnly(html: string): string {
+  return html.replace(
+    '<script type="application/json"',
+    // No scrollbar may shift the canvas between frames.
+    '<style>html,body{overflow:hidden}</style><script>window.__replayAutoplay=false</script>\n<script type="application/json"',
+  );
 }
 
 /** Render key frames (and, given `mp4`, every frame) of a replay HTML in headless Chromium. */
@@ -60,15 +71,7 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
   const frames = Math.round(fps * seconds);
   const dir = mkdtempSync(join(tmpdir(), "archlang3d-replay-"));
   const file = join(dir, "replay.html");
-  // The page must not play on its own: every frame is chosen by __seek.
-  writeFileSync(
-    file,
-    o.html.replace(
-      '<script type="application/json"',
-      // No scrollbar may shift the canvas between frames.
-      '<style>html,body{overflow:hidden}</style><script>window.__replayAutoplay=false</script>\n<script type="application/json"',
-    ),
-  );
+  writeFileSync(file, seekOnly(o.html));
   // Loaded only here: playwright-core exits the process on import under Node < 20, and the light
   // tests (which run on CI's Node 18 leg) import this module's neighbours, never a browser.
   const { chromium } = await import("playwright-core");
@@ -122,7 +125,7 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
           "-pix_fmt",
           "yuv420p",
           "-crf",
-          "18",
+          String(o.crf ?? 18),
           "-movflags",
           "+faststart",
           o.mp4,
@@ -186,6 +189,103 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
       ...(mp4 ? { mp4 } : {}),
       browser: browser.version(),
     };
+  } finally {
+    await browser.close();
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
+export interface StillOptions {
+  html: string;
+  width: number;
+  height: number;
+  /** The replay time drawn (default 1, the settled end frame). */
+  t?: number;
+  /** Also encode a WebP: the first of `qualities` (0–1, tried in order) whose bytes fit `maxBytes`. */
+  webp?: { maxBytes: number; qualities: readonly number[] };
+  /** A PNG to compare the frame with, pixel by pixel (the poster's tolerance check). */
+  reference?: Uint8Array;
+  /** A reference pixel differs when one channel is further than this from the frame's (default 24). */
+  threshold?: number;
+}
+
+export interface Still {
+  /** SHA-256 of the composed frame's RGBA pixels: the same `__frameHash` as the key frames. */
+  sha256: string;
+  /** The canvas alone, as Chromium encodes it (`toDataURL`): no page, no strip, no caption. */
+  png: Uint8Array;
+  webp?: { bytes: Uint8Array; quality: number };
+  /** Given `reference`: how many pixels differ beyond `threshold`, of how many, and the largest channel gap. */
+  diff?: { differing: number; total: number; maxDelta: number; sizeMatches: boolean };
+  browser: string;
+}
+
+/** One frame of a replay HTML (default its end frame), from the canvas only, in headless Chromium. */
+export async function renderStill(o: StillOptions): Promise<Still> {
+  const t = o.t ?? 1;
+  const dir = mkdtempSync(join(tmpdir(), "archlang3d-still-"));
+  const file = join(dir, "replay.html");
+  writeFileSync(file, seekOnly(o.html));
+  const { chromium } = await import("playwright-core");
+  const browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
+  const bytesOf = (url: string, type: string): Uint8Array => {
+    const head = `data:${type};base64,`;
+    if (!url.startsWith(head)) throw new Error(`the browser did not encode ${type} (got ${url.slice(0, 32)}…)`);
+    return new Uint8Array(Buffer.from(url.slice(head.length), "base64"));
+  };
+  try {
+    const page = await browser.newPage({
+      viewport: { width: o.width + 40, height: o.height + 120 },
+      deviceScaleFactor: 1,
+    });
+    await page.goto(pathToFileURL(file).href);
+    await page.evaluate(() => window.__ready);
+    const sha256 = await page.evaluate(async (x) => {
+      window.__seek(x);
+      return window.__frameHash();
+    }, t);
+    const canvas = page.locator("#archlang-replay");
+    const png = bytesOf(await canvas.evaluate((c) => (c as HTMLCanvasElement).toDataURL("image/png")), "image/png");
+    let webp: Still["webp"];
+    for (const q of o.webp?.qualities ?? []) {
+      const bytes = bytesOf(
+        await canvas.evaluate((c, quality) => (c as HTMLCanvasElement).toDataURL("image/webp", quality), q),
+        "image/webp",
+      );
+      webp = { bytes, quality: q };
+      if (bytes.byteLength <= (o.webp?.maxBytes ?? Infinity)) break;
+    }
+    let diff: Still["diff"];
+    if (o.reference) {
+      diff = await canvas.evaluate(
+        async (c, { b64, threshold }) => {
+          const out = c as HTMLCanvasElement;
+          const blob = await (await fetch(`data:image/png;base64,${b64}`)).blob();
+          const img = await createImageBitmap(blob);
+          const total = out.width * out.height;
+          if (img.width !== out.width || img.height !== out.height)
+            return { differing: total, total, maxDelta: 255, sizeMatches: false };
+          const ref = document.createElement("canvas");
+          ref.width = img.width;
+          ref.height = img.height;
+          const rc = ref.getContext("2d") as CanvasRenderingContext2D;
+          rc.drawImage(img, 0, 0);
+          const a = rc.getImageData(0, 0, ref.width, ref.height).data;
+          const b = (out.getContext("2d") as CanvasRenderingContext2D).getImageData(0, 0, out.width, out.height).data;
+          let differing = 0;
+          let maxDelta = 0;
+          for (let i = 0; i < a.length; i += 4) {
+            let d = 0;
+            for (let k = 0; k < 4; k++) d = Math.max(d, Math.abs((a[i + k] as number) - (b[i + k] as number)));
+            if (d > maxDelta) maxDelta = d;
+            if (d > threshold) differing++;
+          }
+          return { differing, total, maxDelta, sizeMatches: true };
+        },
+        { b64: Buffer.from(o.reference).toString("base64"), threshold: o.threshold ?? 24 },
+      );
+    }
+    return { sha256, png, ...(webp ? { webp } : {}), ...(diff ? { diff } : {}), browser: browser.version() };
   } finally {
     await browser.close();
     rmSync(dir, { recursive: true, force: true });

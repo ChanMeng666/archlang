@@ -50,6 +50,11 @@
   moves the listing's version and leaves the pin on the core. Neither is in CI; an agent may upload
   the draft, and the owner submits and publishes (`docs/integrations.md`).
 - `gen:font-cjk` needs Python + fonttools + network and sits outside the drift gate.
+- `gen:3d-assets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) writes the 3D preview's posters,
+  replay MP4s, GLBs and `manifest.json` into `docs-site/public/3d/`. It needs Chromium and ffmpeg
+  (`archlang3d doctor`), so it sits outside `gen:all` and the drift gate; its freshness check
+  (`-- --check`) runs in CI's `check-3d` job (`e2e/assets.e2e.ts`). Re-run it after a change to a
+  listed plan or to the package's version, mesh or viewer.
 - `npm run dev` is `tsup --watch`, not a web server (`playground:dev` / `docs:dev` are the sites).
 
 ## CI
