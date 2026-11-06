@@ -129,6 +129,31 @@ test.describe("boot", { tag: "@prod" }, () => {
     expect(lede.x, "the lede is right of the facts").toBeGreaterThanOrEqual(facts.x + facts.width);
     expect(Math.abs(lede.y + lede.height / 2 - (facts.y + facts.height / 2)), "on the facts' row").toBeLessThan(8);
   });
+  test("the facts and the lede are the stage's foot under the 3D preview too, not the drawing's alone", async ({
+    page,
+  }) => {
+    await page.goto("/#3d");
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+    await expect(page.locator(".pz-viewport")).toBeHidden();
+    await expectHeadingAndLede(page);
+    await expect(page.locator("#facts")).toBeVisible();
+    // Under the 3D view, outside both views: the switch flips the view above it, not the foot.
+    const [stage, foot] = await Promise.all([
+      page.locator("#preview3d").boundingBox(),
+      page.locator("#factsRow").boundingBox(),
+    ]);
+    if (!stage || !foot) throw new Error("missing a box");
+    expect(foot.y, "the foot is under the 3D view").toBeGreaterThanOrEqual(stage.y + stage.height - 1);
+    await expect(page.locator("#preview3d #factsRow, #preview #factsRow")).toHaveCount(0);
+    // Edit mode's Facts tab says the facts itself: the foot steps aside there, and comes back on Plan.
+    await enterEdit(page);
+    await page.locator("#tab-facts").click();
+    await expect(page.locator("#factsRow")).toBeHidden();
+    await page.locator("#tab-preview").click();
+    await expect(page.locator(".facts-row .lede")).toBeVisible();
+  });
+
   test("populates the plan gallery and the lint-profile selector", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);

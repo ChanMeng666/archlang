@@ -82,9 +82,10 @@ describe("the Make-your-own sheet", () => {
 
   it("says next to the chat links that they put the plan in the chat host's URL", () => {
     const html = sheetHtml();
-    // The note the Tools menu's Ask AI links carried, word for word: it moved here with them (PG-D5).
+    // Accurate where it sits (PG-D5): the sheet has no link buttons, so it names Share's two, and says
+    // which one keeps the plan off every server and which one stores it on archlang.uk's.
     expect(CHAT_NOTE).toBe(
-      "These links put this plan, its full source inside the share link, in the chat host's URL, so the host's servers receive it, and the host may send it as your first message straight away. Copy link keeps the plan after the #, which your browser never sends to any server. A plan too long for a URL is copied instead, for you to paste.",
+      "These links put this plan in the chat host's URL, so the host's servers receive it, and the host may send it as your first message. A plan too long for a URL is copied instead, for you to paste. To keep the plan off every server, use Copy full link in Share; Copy short link stores it on archlang.uk's server.",
     );
     expect(html).toContain(`id="chatNote">${CHAT_NOTE}<`);
     expect([...html.matchAll(/data-chat-host="[a-z]+" aria-describedby="chatNote"/g)]).toHaveLength(2);

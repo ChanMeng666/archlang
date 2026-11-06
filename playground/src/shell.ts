@@ -23,7 +23,7 @@ export interface ShellCtx {
   /** Open the editor (loading it on the first call); resolves to it, or undefined on failure. */
   enterEdit(): Promise<unknown>;
   leaveEdit(): void;
-  /** Settles once the app is up: the plan compiled and the Tools actions mounted. */
+  /** Settles once the app is up: the plan compiled and the menus' actions mounted. */
   whenReady(): Promise<unknown>;
   /** The plan on screen (the sheet's "Start from this plan" links to it). */
   getSource(): string;

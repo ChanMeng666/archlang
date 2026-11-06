@@ -22,6 +22,7 @@ import {
  * More (⋯, `openMore`); the links, Embed and every export in Share (`openShare`). Open in Claude /
  * ChatGPT and Copy for LLM live in the Make-your-own sheet alone (`openMakeOwn`). Each case opens the
  * menu before an action, and a case that edits the source opens the page in edit mode (`gotoEdit`).
+ */
 
 /** Sloppy but valid — `format()` must rewrite it, which is what makes the test honest. */
 const UNFORMATTED = `plan "E2E" {
@@ -274,7 +275,8 @@ test.describe("header actions", () => {
       await openMakeOwn(page);
       // The sheet says, next to the links, that they put the plan in the host's URL.
       await expect(note).toContainText("in the chat host's URL");
-      await expect(note).toContainText("never sends");
+      await expect(note).toContainText("To keep the plan off every server, use Copy full link in Share");
+      await expect(note).toContainText("Copy short link stores it on archlang.uk's server");
       const link = page.locator("#makeOwnDialog").getByRole("link", { name });
       await expect(link).toHaveAccessibleDescription(/in the chat host's URL/);
       await chatLinkReady(page, name);
@@ -701,6 +703,7 @@ test.describe("Share: one menu for the links, Embed and every export (ruling PG-
     expect(names).toContain("level:L1");
     expect(names.some((n) => n.startsWith("floor:"))).toBe(true);
     expect(glbChunks.length, "the GLB writer loads on the first click").toBe(1);
+    expect(chunks3d, "GLB loads no three.js: the 3D view's chunk stays unloaded").toEqual([]);
     // Still on the drawing: exporting the GLB does not switch the view.
     await expect(page.locator("#preview")).toHaveClass(/\bactive\b/);
     expect(await page.evaluate(() => location.hash)).not.toMatch(/&3d/);
@@ -734,8 +737,38 @@ test.describe("Share: one menu for the links, Embed and every export (ruling PG-
     await openShare(page);
     await page.locator('#share [data-download="glb"]').click();
     await expect(page.locator("#status")).toHaveClass(/\berr\b/);
+    // In view mode the diagnostics drawer is out of sight: the reason is on the stage, visible.
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    const statusText = page.locator("#statusText");
+    await expect(statusText).toBeVisible();
+    await expect(statusText).toHaveText(/^GLB export failed: no 3D preview: The plan has no walls/);
     await expect(page.locator("#errors")).toContainText("GLB export failed: no 3D preview: The plan has no walls");
     expect(downloads).toBe(0);
+  });
+
+  test("GLB says it is under way, and a double activation writes one file", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    const status = await watchStatus(page);
+    let downloads = 0;
+    page.on("download", () => downloads++);
+    await openShare(page);
+    const glb = page.locator('#share [data-download="glb"]');
+    // Two activations in one task, before the first has loaded anything: the second is ignored.
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      glb.evaluate((b: HTMLElement) => {
+        b.click();
+        b.click();
+      }),
+    ]);
+    await status.expectFlash("Preparing GLB…");
+    expect(download.suggestedFilename()).toBe("floorplan.glb");
+    // Once done, the button takes the next activation again; nothing else was written meanwhile.
+    await expect(glb).not.toHaveAttribute("aria-busy", "true");
+    await page.waitForTimeout(500);
+    expect(downloads, "one download for a double activation").toBe(1);
+    await expect(page.locator("#statusText")).not.toHaveText("Preparing GLB…");
   });
 });
 

@@ -240,10 +240,12 @@
   color: var(--redline-ink);
 }
 
-/* The stage's foot (ruling PG-D6): the facts line on the left (facts-strip.ts), the page's lede on
-   the right, one row. The lede is served bytes and stays VISIBLE: never display:none, never off
-   screen. Too narrow for both, it wraps under the facts, whole. */
+/* The stage's foot (ruling PG-D6), under the drawing and the 3D preview alike: the facts line on
+   the left (facts-strip.ts), the page's lede on the right, one row. The lede is served bytes and
+   stays VISIBLE: never display:none, never off screen. Too narrow for both, it wraps under the
+   facts, whole. Hidden only under edit mode's Facts and Checks tabs (main.ts). */
 .facts-row {
+  flex: none;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -253,6 +255,9 @@
   border-top: 1px solid var(--hairline);
   background: var(--paper-panel);
   min-height: 34px;
+}
+.facts-row[hidden] {
+  display: none;
 }
 .facts-row > .lede {
   flex: 0 1 auto;

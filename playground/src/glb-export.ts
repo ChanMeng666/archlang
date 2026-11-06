@@ -1,7 +1,7 @@
 /**
- * The 3D preview's "Download GLB" (public-surfaces card X5): its own chunk, loaded on the first
- * click (preview3d.ts imports it dynamically), so glTF-Transform never reaches the startup chunks
- * or the 3D chunk itself.
+ * Share → Export → GLB (public-surfaces card X5; in the Share menu since card PG4): its own chunk,
+ * loaded on the first click (actions.ts imports it dynamically, beside plan3d.ts), so glTF-Transform
+ * never reaches the startup chunks or the 3D chunk.
  *
  * It writes the GLB the package's `archlang3d build plan.arch -o plan.glb` writes: the same
  * `writeGlb` over the same whole-plan Mesh3D (`plan3d.ts`). `playground/test/glb-export.test.ts`

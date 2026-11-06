@@ -51,6 +51,8 @@ interface ActionsCtx {
   getLevel: () => number | null;
   /** Surface an export failure in the status/errors UI. */
   onExportError: (format: string, err: unknown) => void;
+  /** Say on the stage that something is under way (`null`: it is over, the status goes back). */
+  working: (msg: string | null) => void;
   /** Whether the page is in edit mode (the hash keeps its `&edit` flag while it is). */
   isEditing: () => boolean;
   /** Whether the 3D preview is on screen (the hash, and a copied full link, keep `&3d` while it is). */
@@ -104,6 +106,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     getScene,
     getLevel,
     onExportError,
+    working,
     isEditing,
     is3d,
     showChecksTab,
@@ -502,14 +505,16 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   /**
    * The GLB: the whole plan (every storey, whatever the view shows), built with the 3D preview's own
-   * `adapt3d`/`mesh3d` and written by the package's writer, as `archlang3d build` writes it. Both
-   * load on the first click (the 3D chunk, then glb-export.ts's own), so it works whether or not the
-   * 3D view was ever opened; a failed load is retried on the next click. A plan the 3D package
-   * refuses says why, as the 3D view does.
+   * path (`plan3d.ts`: the package's main entry, which carries no three.js) and written by the
+   * package's writer (`glb-export.ts`), as `archlang3d build` writes it. Both load on the first
+   * click, so it works whether or not the 3D view was ever opened; a failed load is retried on the
+   * next click. While it loads and writes, the status says so and a second activation is ignored. A
+   * plan the 3D package refuses says why, in the status on the stage, as the 3D view does.
    */
-  let glbChunks: Promise<[typeof import("./preview3d.js"), typeof import("./glb-export.js")]> | undefined;
-  async function downloadGlb() {
-    glbChunks ??= Promise.all([import("./preview3d.js"), import("./glb-export.js")]);
+  let glbChunks: Promise<[typeof import("./plan3d.js"), typeof import("./glb-export.js")]> | undefined;
+  let glbBusy = false;
+  async function writeGlb() {
+    glbChunks ??= Promise.all([import("./plan3d.js"), import("./glb-export.js")]);
     let mods: Awaited<NonNullable<typeof glbChunks>>;
     try {
       mods = await glbChunks;
@@ -517,20 +522,36 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       glbChunks = undefined;
       throw err;
     }
-    const [p3d, writer] = mods;
-    const adapted = p3d.adapt3d(getSource());
+    const [plan3d, writer] = mods;
+    const adapted = plan3d.adapt3d(getSource());
     if (!adapted.ok) throw new Error(`no 3D preview: ${adapted.refusal.message}`);
-    await writer.downloadGlb(p3d.mesh3d(adapted.scene));
+    await writer.downloadGlb(plan3d.mesh3d(adapted.scene));
+  }
+  async function downloadGlb() {
+    if (glbBusy) return; // one GLB at a time: a double click writes one file
+    glbBusy = true;
+    const buttons = els.downloadBtns.filter((b) => b.dataset.download === "glb");
+    for (const b of buttons) b.setAttribute("aria-busy", "true");
+    working("Preparing GLB…");
+    let failed = false;
+    let error: unknown;
+    try {
+      await writeGlb();
+    } catch (err) {
+      failed = true;
+      error = err;
+    } finally {
+      glbBusy = false;
+      for (const b of buttons) b.removeAttribute("aria-busy");
+      working(null);
+    }
+    if (failed) onExportError("glb", error);
   }
 
   // ---- multi-format download (SVG vector · DXF vector · TXT ascii · PNG/PDF raster · GLB) ----
   async function downloadCurrent(format: string) {
     if (format === "glb") {
-      try {
-        await downloadGlb();
-      } catch (err) {
-        onExportError(format, err);
-      }
+      await downloadGlb();
       return;
     }
     const clean = getCleanSvg();

@@ -72,6 +72,7 @@ const themeSelect = document.getElementById("theme") as HTMLSelectElement;
 const accessibleToggle = document.getElementById("accessible") as HTMLInputElement | null;
 const finishPanel = document.getElementById("finishPanel");
 const factsEl = document.getElementById("facts")!;
+const factsRow = document.getElementById("factsRow")!;
 const pzViewport = document.querySelector<HTMLElement>(".pz-viewport")!;
 const pzStage = document.querySelector<HTMLElement>(".pz-stage")!;
 const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
@@ -117,6 +118,9 @@ for (const tab of tabs) {
       t.setAttribute("aria-selected", String(on));
     }
     for (const [name, el] of Object.entries(views)) el.classList.toggle("active", name === tab.dataset.tab);
+    // The stage's foot (facts and lede, PG-D6) is the drawing's and the 3D preview's; edit mode's
+    // Facts and Checks tabs say the facts themselves.
+    factsRow.hidden = tab.dataset.tab !== "preview" && tab.dataset.tab !== "preview3d";
     // Leaving the 3D tab stops its playback (opening it is handled below).
     if (tab.dataset.tab !== "preview3d") void preview3d?.then((p) => p?.hide());
     // The switcher's underline follows what the tab now on screen shows (see `shownLevel`).
@@ -701,11 +705,33 @@ function onDocChanged(source: string) {
   }, 250);
 }
 
-/** Surface an export failure in the status + errors UI. */
+/**
+ * Surface an export failure: the reason in the status notice on the stage, where the visitor is in
+ * either mode (the diagnostics drawer, `#errors`, is edit mode's and hidden in view mode), and in
+ * the drawer too.
+ */
 function onExportError(format: string, err: unknown) {
-  setStatus("err", `${format.toUpperCase()} export failed`);
+  const text = `${format.toUpperCase()} export failed: ${(err as { message?: string })?.message ?? err}`;
+  setStatus("err", text);
   errorsEl.classList.add("show");
-  errorsEl.textContent = `${format.toUpperCase()} export failed: ${(err as { message?: string })?.message ?? err}`;
+  errorsEl.textContent = text;
+}
+
+/** The status before `working` took it, put back when the work is over. */
+let beforeWork: { state: StatusState; text: string } | undefined;
+/** Say on the stage that something is under way (an export), or (`null`) that it is over. */
+function working(msg: string | null) {
+  if (msg !== null) {
+    beforeWork ??= {
+      state: statusState,
+      text: flashTimer !== undefined ? (flashResting ?? "") : (statusText.textContent ?? ""),
+    };
+    setStatus("busy", msg);
+    return;
+  }
+  const back = beforeWork;
+  beforeWork = undefined;
+  if (back && statusState === "busy") setStatus(back.state, back.text);
 }
 
 /**
@@ -792,6 +818,7 @@ async function boot() {
     getScene: () => lastScene,
     getLevel: () => activeLevel,
     onExportError,
+    working,
     isEditing: () => editing,
     is3d: in3d,
     showChecksTab: () => openTab("checks"),

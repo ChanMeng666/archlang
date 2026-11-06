@@ -32,12 +32,13 @@ export const TOP_ASKS = [
 ] as const;
 
 /**
- * What the chat links do with the plan, word for word the note the Tools menu's Ask AI links had (it
- * moved here with them, card PG4): a plan that fits goes into the host's address (its share link
- * inside the prefilled prompt), so the host's servers receive it; a longer one is copied instead.
+ * What the chat links do with the plan, said where they sit (the sheet has no link buttons of its
+ * own, so the note names Share's): a plan that fits goes into the host's address (its share link
+ * inside the prefilled prompt), so the host's servers receive it; a longer one is copied instead;
+ * only Copy full link keeps the plan off every server, and Copy short link stores it on ours.
  */
 export const CHAT_NOTE =
-  "These links put this plan, its full source inside the share link, in the chat host's URL, so the host's servers receive it, and the host may send it as your first message straight away. Copy link keeps the plan after the #, which your browser never sends to any server. A plan too long for a URL is copied instead, for you to paste.";
+  "These links put this plan in the chat host's URL, so the host's servers receive it, and the host may send it as your first message. A plan too long for a URL is copied instead, for you to paste. To keep the plan off every server, use Copy full link in Share; Copy short link stores it on archlang.uk's server.";
 
 /** The agent prompt as one copyable text, line for line as doors.json has it. */
 export const AGENT_PROMPT = agentPrompt.join("\n");

@@ -320,20 +320,6 @@
               <button data-pz="paths" type="button" aria-pressed="false" title="Toggle circulation paths overlay" aria-label="Toggle circulation paths">Paths</button>
             </div>
           </div>
-          <!-- `role="group"` is what makes the `aria-label` count: `aria-label` on a bare
-               <div> with no role is not reliably exposed, so the strip had an accessible
-               name on paper and none in practice. It matters more since the storey
-               switcher landed — these figures now describe the SELECTED storey, not the
-               whole building, and the name is what says so. -->
-          <!-- The stage's foot (ruling PG-D6): the facts on the left (filled by main.ts), the page's
-               lede on the right. The lede is served bytes, small and VISIBLE (never hidden text):
-               no crawler runs this page's JavaScript, so the heading in the header, this sentence
-               and the drawing above are all it reads. The sentence is doors.json's canonical line,
-               filled in at build time by vite.config.js (`canonicalLine`), never retyped here. -->
-          <div class="facts-row">
-            <div id="facts" class="facts" role="group" aria-label="Plan facts"></div>
-            <p class="lede" id="lede"><!--doors:canonical-line--></p>
-          </div>
         </div>
         <!-- Filled on the tab's first open by preview3d.ts (lazy: three.js never loads before). -->
         <div id="preview3d" class="tabview" role="tabpanel" aria-labelledby="tab-preview3d"></div>
@@ -385,7 +371,20 @@
             <div id="intentOutput"></div>
           </section>
         </div>
-      </section>
+        <!-- The stage's foot (ruling PG-D6), shared by the drawing and the 3D preview: the facts on
+             the left (filled by main.ts), the page's lede on the right. Outside both views, so it
+             stays put as the Plan | 3D switch flips them; main.ts hides it under edit mode's Facts
+             and Checks tabs, which say the facts themselves. The lede is served bytes, small and
+             VISIBLE (never hidden text): no crawler runs this page's JavaScript, so the heading in
+             the header, this sentence and the drawing above are all it reads. The sentence is
+             doors.json's canonical line, filled in at build time by vite.config.js
+             (`canonicalLine`), never retyped here. The facts' `role="group"` is what makes their
+             `aria-label` count (a bare <div>'s is not reliably exposed): the figures describe the
+             SELECTED storey, and the name says so. -->
+        <div class="facts-row" id="factsRow">
+          <div id="facts" class="facts" role="group" aria-label="Plan facts"></div>
+          <p class="lede" id="lede"><!--doors:canonical-line--></p>
+        </div>      </section>
     </main>
     <!-- Make your own: the ways to get a plan of your own. A native <dialog> opened with
          showModal(), so focus stays inside it and Escape closes it. Its body is written on the

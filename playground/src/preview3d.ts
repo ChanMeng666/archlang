@@ -40,8 +40,8 @@
  * In view mode it is the stage's other half (public-surfaces card X5): the Plan | 3D switch on the
  * stage shows it in place of the drawing, `&3d` in the hash opens on it, and the page lays its knobs
  * over the canvas (`overlay`). The GLB of the plan is Share → Export → GLB (ruling PG-D5, actions.ts),
- * which builds it with this chunk's `adapt3d`/`mesh3d` (re-exported below), whether or not this tab
- * was ever opened.
+ * which builds it through the same `plan3d.ts` path, without this chunk or three.js, whether or not
+ * this tab was ever opened.
  */
 import { compile } from "archlang";
 import { storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
@@ -58,9 +58,6 @@ import {
   viewToolbar,
 } from "@chanmeng666/archlang-3d/browser";
 import { adapt3d, mesh3d } from "./plan3d.js";
-
-/** The whole plan's Mesh3D, as this tab builds it: what Share → Export → GLB writes (actions.ts). */
-export { adapt3d, mesh3d };
 
 /** The drawing size before the stage has a size of its own (a hidden tab): the replay HTML's 16:9. */
 const WIDTH = 960;

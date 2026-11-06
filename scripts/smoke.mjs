@@ -28,6 +28,8 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 /** The canonical line (PS-D1), the playground's served lede (ruling PG-D6): read, never retyped. */
 const CANONICAL_LINE = JSON.parse(readFileSync(join(ROOT, "site-shared/doors.json"), "utf8")).canonicalLine;
+/** The line as the served bytes spell it: HTML-escaped as playground/vite.config.js (`canonicalLine`) writes it. */
+const CANONICAL_LINE_HTML = CANONICAL_LINE.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 
 const ATTEMPTS = 6;
 const RETRY_MS = 5000;
@@ -401,7 +403,7 @@ async function playgroundChecks() {
       // The one heading is the header's brand, as real text.
       contains('<h1 class="tb-brand">'),
       contains('<span class="badge">Playground</span>'),
-      contains(`<p class="lede" id="lede">${CANONICAL_LINE}</p>`),
+      contains(`<p class="lede" id="lede">${CANONICAL_LINE_HTML}</p>`),
       contains("<svg data-prerendered"),
       // …and the plan gallery in the header, its card links and thumbnails written by the same step.
       contains('<a class="gal-card" href="/examples/'),
