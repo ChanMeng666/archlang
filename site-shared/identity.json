@@ -1,0 +1,23 @@
+{
+  "_": "The ArchLang entity in structured data, shared by both sites: the docs JSON-LD (docs-site/.vitepress/config.ts) defines the nodes, and the playground's (playground/index.html, playground/scripts/gen-static.mjs for the example pages) references them by these ids. softwareSameAs lists the first-party listings of the library and is emitted on the docs #software node only, never on the playground web app; each URL was fetched and resolved before it was added. The author's ORCID is read from CITATION.cff, not from here.",
+  "ids": {
+    "website": "https://archlang.uk/#website",
+    "author": "https://archlang.uk/#author",
+    "software": "https://archlang.uk/#software"
+  },
+  "disambiguatingDescription": "The floor-plan language and compiler at archlang.uk, by Chan Meng; not related to other projects named ArchLang.",
+  "softwareSameAs": [
+    "https://github.com/ChanMeng666/archlang",
+    "https://www.npmjs.com/package/@chanmeng666/archlang",
+    "https://www.npmjs.com/package/@chanmeng666/archlang-mcp",
+    "https://skills.sh/ChanMeng666/archlang",
+    "https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang",
+    "https://open-vsx.org/extension/ChanMeng/archlang",
+    "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.ChanMeng666%2Farchlang-mcp/versions/latest",
+    "https://glama.ai/mcp/servers/ChanMeng666/archlang",
+    "https://context7.com/chanmeng666/archlang",
+    "https://www.pulsemcp.com/servers/archlang",
+    "https://huggingface.co/datasets/ChanMeng666/archlang-repair-trajectories",
+    "https://doi.org/10.5281/zenodo.22950936"
+  ]
+}

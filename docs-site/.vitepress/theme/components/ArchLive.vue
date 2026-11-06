@@ -17,7 +17,13 @@ import { highlightArch } from "../arch-highlight.js";
 // `b64` — base64(UTF-8) source, injected by the ```arch fence rule in
 // .vitepress/config.ts (avoids HTML-attribute / Vue-mustache escaping of raw
 // multi-line source). Exactly one is supplied; `b64` wins when present.
-const props = defineProps<{ src?: string; b64?: string; rows?: number }>();
+// `page` — an example's basename (`examples/<page>.arch`): the bar then links to that plan's
+// static page on the playground host, a plain `<a>` in the served bytes a crawler can follow
+// (test/playground-examples-rows.test.ts asserts every example on /examples passes one).
+const props = defineProps<{ src?: string; b64?: string; rows?: number; page?: string }>();
+const staticPage = computed(() =>
+  props.page ? `https://playground.archlang.uk/examples/${encodeURIComponent(props.page)}.html` : "",
+);
 
 // Isomorphic base64(UTF-8) decode (atob + TextDecoder exist in Node 18+ and the
 // browser), so the initial source is ready during SSR and on the client alike.
@@ -150,9 +156,12 @@ async function openInPlayground() {
       <div v-else class="archlive-error">{{ errorMsg }}</div>
       <div class="archlive-bar">
         <span class="archlive-facts">{{ facts ?? "—" }}</span>
-        <button type="button" class="archlive-open" @click="openInPlayground">
-          Open in Playground ↗
-        </button>
+        <span class="archlive-actions">
+          <a v-if="staticPage" class="archlive-page" :href="staticPage">Static page ↗</a>
+          <button type="button" class="archlive-open" @click="openInPlayground">
+            Open in Playground ↗
+          </button>
+        </span>
       </div>
     </div>
   </div>
@@ -342,6 +351,19 @@ async function openInPlayground() {
   cursor: pointer;
   white-space: nowrap;
   transition: background-color 0.2s;
+}
+.archlive-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+.archlive-page {
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 90;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink-muted);
 }
 .archlive-open:hover { background: color-mix(in srgb, var(--redline) 12%, transparent); }
 .archlive-open:focus-visible { outline: 2px solid var(--redline); outline-offset: 2px; }

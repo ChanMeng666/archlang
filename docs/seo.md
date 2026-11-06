@@ -29,16 +29,18 @@ read as a sentence.
 | Docs `robots.txt` (every crawler named and allowed, `Sitemap:`) | `docs-site/public/robots.txt` | `test/docs-page-meta.test.ts` (names + sitemap line); `scripts/smoke.mjs` docs route; `docs-site/e2e/routes.spec.ts` `@prod` |
 | Playground `robots.txt` | `playground/public/robots.txt` | `scripts/smoke.mjs` playground route |
 | Docs sitemap + per-route `lastmod` | `docs-site/.vitepress/config.ts` `sitemap.transformItems`, dates written to `.vitepress/lastmod.json` by `sync-docs.mjs` from `git log` over each page's source | `@prod` "sitemap lists every page route"; `scripts/smoke.mjs`. The writer is wrapped in try/catch — a shallow clone emits no dates rather than failing the build |
-| Playground sitemap (36 URLs: `/`, `/examples/`, 34 pages) | `playground/scripts/gen-static.mjs` | `test/playground-examples-rows.test.ts`; `scripts/smoke.mjs` |
+| Playground sitemap (36 URLs: `/`, `/examples/`, 34 pages) and its per-URL `lastmod`: each example page from `git log -1 --format=%cI` over its `examples/<name>.arch`, floored by the generator's own commit date; `/` and `/examples/` take the newest of those | `playground/scripts/gen-static.mjs` (`exampleDates`) | `test/playground-examples-rows.test.ts`; `scripts/smoke.mjs`. The git call is wrapped in try/catch, as the docs writer is: no git emits no dates rather than failing the build |
 | Canonical, per-page `<title>` and description, `og:*` / `twitter:*` | `PAGE_META` + `transformPageData` + `transformHead` in `docs-site/.vitepress/config.ts` | `test/docs-page-meta.test.ts` (two-way route coverage, 80–170 chars, sentence shape, killed-claim regexes); `@prod` "head metadata" |
-| JSON-LD (`WebSite` + `SoftwareApplication` + `SoftwareSourceCode` on `/`, the `SoftwareApplication` carrying `sameAs` GitHub, npm and skills.sh; `TechArticle` + `BreadcrumbList` elsewhere) | `structuredData()` in `docs-site/.vitepress/config.ts` | `@prod` "head metadata" parses it; descriptions come from `PAGE_META`, so the wording law is enforced in one place |
+| JSON-LD (`WebSite` + `Person` + `SoftwareApplication` + `SoftwareSourceCode` on `/`; `TechArticle` + `BreadcrumbList` elsewhere). The ids `#website`, `#author`, `#software`, the `SoftwareApplication`'s `sameAs` (every first-party listing: GitHub, both npm packages, skills.sh, VS Code Marketplace, Open VSX, the MCP registry entry, Glama, Context7, PulseMCP, the Hugging Face dataset, the Zenodo concept DOI) and its `disambiguatingDescription` come from `site-shared/identity.json`; the `Person.sameAs` adds the ORCID read from `CITATION.cff`; each `TechArticle` carries `dateModified`, the same date as its sitemap entry (`lastmod.json`, else VitePress's git date for a tracked page, else omitted) | `structuredData()` in `docs-site/.vitepress/config.ts`; `site-shared/identity.json` | `@prod` "head metadata" parses it; descriptions come from `PAGE_META`, so the wording law is enforced in one place. A `sameAs` URL is added only after it was fetched and resolved |
 | Five topic pages, one search cluster each: `/floor-plans-as-code`, `/floor-plan-dsl`, `/mcp`, `/javascript`, `/vs-mermaid` (added 2026-11-03, PR #452, from the SERP study in §8). Each opens with the standalone definition, carries a `.arch` plan compiled and linted clean, and ends in a visible `## FAQ` (no FAQPage markup, §11) | `docs-site/<page>.md`, rows in `PAGE_META` and `sync-docs.mjs` `PAGES` | `test/docs-page-meta.test.ts`; `test/docs-flags.test.ts`; `test/docs-sync-list.test.ts` |
 | The docs H1 keyword sub-line | `docs-site/.vitepress/theme/CompileSeam.vue` | **No gate of its own.** `npm run docs:build` compiles it; the `@prod` home case asserts the agents band, not this line. Treat it as hand-checked |
-| Playground intro band, lede, `<noscript>`, JSON-LD | `playground/index.html` | `scripts/smoke.mjs` (`<h1`, the lede string); `playground/e2e/boot.spec.ts` `@prod` case, which navigates with `waitUntil: "commit"` so it reads pre-hydration bytes |
+| Playground intro band, lede, `<noscript>`, JSON-LD. Every `archlang.uk` `@id` it references is a node the docs home defines; its `SoftwareApplication` (the web app, a different entity from the library, so it carries no `sameAs`) has `softwareVersion` from the root `package.json`, filled at build time, and `isPartOf`/`isBasedOn` the docs `#software` | `playground/index.html`; the `identityJsonLd` plugin in `playground/vite.config.js` | `scripts/smoke.mjs` (`<h1`, the lede string); `playground/e2e/boot.spec.ts` `@prod` case, which navigates with `waitUntil: "commit"` so it reads pre-hydration bytes |
 | `/embed.html` de-indexed | `playground/public/_headers` (`X-Robots-Tag: noindex, follow`) plus a `<meta name="robots">` in `playground/embed.html` | `scripts/smoke.mjs`'s `header()` assertion — the one check in that file that reads a response header rather than a body |
 | 34 static example pages, `/examples/` index and its gallery thumbnails (`/examples/thumbs/*.svg`), the `#z=` deep link on each | `playground/scripts/gen-static.mjs`, driven by `EXAMPLE_ROWS` in `playground/src/examples.ts`; the `/examples/` rewrite in `playground/public/_redirects`. The page's tokens are sliced from `playground/src/styles/tokens.css` and its `@font-face` rules harvested from `playground/dist/assets/*.css` — neither is retyped | `test/playground-examples-rows.test.ts` (both directions against `examples/*.arch`, blurb length and killed claims); `playground/e2e/examples-static.spec.ts` (incl. the `document.fonts` case and the thumbnail case); `scripts/smoke.mjs` |
 | Redirects for two dead inbound URLs: `/error-codes` → `/errors`, `/language-reference` → `/reference`, 301 (added 2026-11-06; the Worker has no `main` script, so this is a static-asset rule) | `docs-site/public/_redirects` | `scripts/smoke.mjs` (`redirectCheck`: status 301 and the `Location`) |
 | Raw `/<page>.md` copies and `rel=alternate` links to them | `docs-site/sync-docs.mjs` `PAGES`; `transformHead` | `test/docs-sync-list.test.ts`; the `@prod` byte-equality cases, which double as a deploy-staleness probe |
+| `X-Robots-Tag: noindex` on each raw `/<page>.md` copy, and on nothing else (`/llms.txt`, `/llms-full.txt` and the HTML pages stay indexable; see §5) | `scripts/gen-docs-headers.ts` → the generated block of `docs-site/public/_headers` | `test/docs-headers-drift.test.ts` (closed-world: only the `.md` rules carry it); `scripts/smoke.mjs` (present on `/showcase.md`, absent on `/showcase` and the `llms` files) |
+| Cross-host example links: each plan's widget on the docs `/examples` page links its static playground page, and each static page links back to the docs `/examples` | `page="<name>"` on each `<ArchLive>` in `docs-site/examples.md` (rendered by `ArchLive.vue`, and as a link in the raw copy by `site-markdown.mjs`); `examplePage()` in `playground/scripts/gen-static.mjs` | `test/playground-examples-rows.test.ts` ("the two hosts link each example plan both ways") |
 | `llms.txt` / `llms-full.txt` | repo root, copied by `sync-docs.mjs`; `llms-full.txt` from `npm run gen:llms` | `npm run check:drift`; `scripts/smoke.mjs`. See §5 |
 | IndexNow key file and post-deploy ping | `docs-site/public/<key>.txt`, `playground/public/<key>.txt`, `scripts/indexnow.mjs`, a step per matrix leg in `deploy.yml` | `test/indexnow-script.test.ts` (sitemap parsing; the always-exit-0 promise, checked by spawning the script). The key is public by design and lives in a repository **variable**, not a secret — see `docs/hosting-and-domains.md` § IndexNow |
 
@@ -92,6 +94,11 @@ not be expanded in the hope that it becomes one. Applied on 2026-11-03 (PR #456)
 pages it lists only `/mcp` and `/javascript`, which carry agent setup and API facts found nowhere
 else in the file; the three search-intent pages stay out.
 
+The raw `/<page>.md` copies send `X-Robots-Tag: noindex` (GS-D7, 2026-11-06), because a raw copy
+had become a `site:` result (`/showcase.md`, with no navigation and no structured data) in place of
+its HTML page. The copies stay fetchable for agents and every page keeps its `rel=alternate` link;
+`llms.txt` and `llms-full.txt` carry no such header.
+
 ## 6. Dashboards
 
 Both consoles belong to the owner. **No account address, property id or verification token is
@@ -116,11 +123,17 @@ recorded here or anywhere else in this public repository** — ask the owner rat
   **HTTP 202**, for 34 URLs on the docs host and 29 on the playground. Bing's IndexNow panel stays
   empty until a ping arrives: the key is validated at ping time against the hosted file, never
   registered in advance through the dashboard.
-- **Snapshot, 2026-11-03** (Search Console, last three months, read by hand): `archlang.uk` 509
-  impressions, 12 clicks, average position 6.4, top query `archlang` (74 impressions, 7 clicks); 53
-  pages indexed, 34 not (24 of them "Discovered - currently not indexed", the usual sign of thin
-  external authority). Indexing was requested by hand the same day for the five topic pages.
-  **Do not add properties under any other Google account** — on 2026-11-03 an agent did so by
+- **Snapshot, 2026-11-06** (read by hand, read-only; Google data to 2026-11-04). `archlang.uk`:
+  53 pages indexed, 34 not (24 "Discovered - currently not indexed", the usual sign of thin
+  external authority; 5 "Crawled - currently not indexed"; 4 redirects; 1 "Blocked due to other
+  4xx", which is `mcp.archlang.uk/mcp` and expected). Last three months 561 impressions, 13 clicks,
+  average position 6.5; last 28 days 372 impressions, 8 clicks; top query `archlang` (79
+  impressions, 7 clicks). The **Generative AI features** report (Beta, impressions only) shows 88
+  impressions over three months and 55 over 28 days: the first reading of that report. External
+  links 70 (archcanvas.uk 17, reddit.com 12, github.com 8, libraries.io 8, mcpservers.org 7).
+  Bing: 45 pages indexed, 17 impressions since 2026-09-18, IndexNow submissions arriving.
+  `archcanvas.uk`: 16 pages indexed, 12 not; 129 impressions, 10 clicks; 38 AI impressions.
+  **Do not add properties under any other Google account**: on 2026-11-03 an agent did so by
   mistake and removed them; the owner's account already holds them.
 - **Neither ArchLang site has analytics**, by design, so there is no referrer count from
   `chatgpt.com` or `perplexity.ai` here. State that gap rather than inventing a number.

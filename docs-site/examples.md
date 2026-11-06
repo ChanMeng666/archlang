@@ -52,7 +52,7 @@ face opposite ways.
 street side upstairs is a study and a studio, the garage's 4800 mm sectional door takes the
 two cars it holds, and every room is reachable through a door at least 800 mm wide.
 
-<ArchLive :src="EXAMPLES['hillside-villa']" :rows="20" />
+<ArchLive :src="EXAMPLES['hillside-villa']" page="hillside-villa" :rows="20" />
 
 ### Garden House
 
@@ -91,7 +91,7 @@ footprints and none of them labelled.
 `archlang lint` raises no warnings: the street-side room upstairs is a study, so both
 bedrooms take the garden aspect.
 
-<ArchLive :src="EXAMPLES['garden-house']" :rows="20" />
+<ArchLive :src="EXAMPLES['garden-house']" page="garden-house" :rows="20" />
 
 ## Start here
 
@@ -108,7 +108,7 @@ around the shell wall's own run and puts the door there, so the door cannot be r
 off-wall and cannot drift when the room resizes. Change `5000x4000` to something else and
 the wall, both openings and the dimension text all follow.
 
-<ArchLive :src="EXAMPLES['one-room']" :rows="18" />
+<ArchLive :src="EXAMPLES['one-room']" page="one-room" :rows="18" />
 
 ### Laneway House
 
@@ -130,7 +130,7 @@ against. Two of the four doors are not hinged: a **sliding** garden door, and a
 **pocket** door to the bath whose `slide right` aims the panel down the solid length of
 the hall partition rather than at the 500 mm that would trip `W_POCKET_RUN`.
 
-<ArchLive :src="EXAMPLES['laneway-house']" :rows="17" />
+<ArchLive :src="EXAMPLES['laneway-house']" page="laneway-house" :rows="17" />
 
 ### Garden Loft
 
@@ -147,7 +147,7 @@ and the SVG scales to whatever box it is dropped into. That is what a web page w
 building issued to a builder wants the [sheet](/reference#paper-and-scale-the-sheet)
 instead, which several examples below declare.
 
-<ArchLive :src="EXAMPLES['garden-loft']" :rows="16" />
+<ArchLive :src="EXAMPLES['garden-loft']" page="garden-loft" :rows="16" />
 
 ### Tiny House
 
@@ -169,7 +169,7 @@ number on the drawing is the built clear width, derived. `open 0.6` on the barn 
 drawing-only — nothing measured reads it — and is written because a leaf drawn shut is
 indistinguishable from a hinged one on paper.
 
-<ArchLive :src="EXAMPLES['tiny-house']" :rows="30" />
+<ArchLive :src="EXAMPLES['tiny-house']" page="tiny-house" :rows="30" />
 
 ### Studio (1BR)
 
@@ -184,7 +184,7 @@ and no World seam — which is why the test suite uses it as the plan that must 
 compile from nothing. Run `archlang describe` / `archlang lint` on it to see the
 [analysis](/analysis) layer in action.
 
-<ArchLive :src="EXAMPLES['studio']" :rows="24" />
+<ArchLive :src="EXAMPLES['studio']" page="studio" :rows="24" />
 
 ## Homes
 
@@ -197,7 +197,7 @@ larger plan with every room off a central corridor, written rooms first: `walls 
 derives every wall, the corridor opens to the living room by `open between`, and each door
 and window is hosted by the rooms it joins. `north` is reoriented.
 
-<ArchLive :src="EXAMPLES['two-bed']" :rows="15" />
+<ArchLive :src="EXAMPLES['two-bed']" page="two-bed" :rows="15" />
 
 ### Attached (placement sugar)
 
@@ -210,7 +210,7 @@ to a wall by position (`on <wall> at <pos>`, so they can never be reported "off 
 door that opens toward a named room (`swing into`), and furniture anchored inside a room
 (`in <room> anchor … inset …`).
 
-<ArchLive :src="EXAMPLES['attached']" :rows="13" />
+<ArchLive :src="EXAMPLES['attached']" page="attached" :rows="13" />
 
 ### Furnished Flat (the drawn symbol catalogue)
 
@@ -233,7 +233,7 @@ number. `offset` is where a piece's **centre** lands along the wall run, which i
 fitted run reads as a sequence of centres rather than corners. `archlang validate --strict`
 reports no warnings.
 
-<ArchLive :src="EXAMPLES['furnished-flat']" :rows="30" />
+<ArchLive :src="EXAMPLES['furnished-flat']" page="furnished-flat" :rows="30" />
 
 ### Issued Sheet (drawing number, notes, door and window tags)
 
@@ -250,7 +250,7 @@ plan and all of it draws only — `archlang describe` and `archlang lint` report
 they would without those lines. A window's tag sits inside the room it serves; a door's
 sits beside the doorway past the hinge jamb, clear of the swing and out of the passage.
 
-<ArchLive :src="EXAMPLES['sheet-notes']" :rows="30" />
+<ArchLive :src="EXAMPLES['sheet-notes']" page="sheet-notes" :rows="30" />
 
 ### Apartment Remodel (walls that come out, a wall that goes in)
 
@@ -264,7 +264,7 @@ drawn as any wall. The room schedule's net areas are the flat after the works, t
 explains the dashed swatch, and in the DXF the two kinds of wall land on `A-WALL-DEMO` and
 `A-WALL-NEWW`. See [wall status](/language-reference#wall).
 
-<ArchLive :src="EXAMPLES['remodel']" :rows="30" />
+<ArchLive :src="EXAMPLES['remodel']" page="remodel" :rows="30" />
 
 ### Turning Stair (one stair of flights and a landing)
 
@@ -278,7 +278,7 @@ not the 2640 mm a straight flight owes, and its two 1530 mm flights hold 6 going
 residential lint profile warns. `describe` reports the flights, the landing and the turn. See
 [vertical circulation](/language-reference#vertical-circulation--stair-elevator-escalator-v121).
 
-<ArchLive :src="EXAMPLES['turning-stair']" :rows="30" />
+<ArchLive :src="EXAMPLES['turning-stair']" page="turning-stair" :rows="30" />
 
 ### Suburban Bungalow (orientation, and doors that are not hinged)
 
@@ -306,7 +306,7 @@ aims the panel at the 2200 mm of solid wall between its jamb and the laundry doo
 non-hinged leaf sweeps nothing, so only the two bedroom doors carry a swing arc, and
 `describe().doors[].kind` appears on exactly the three that are not the default.
 
-<ArchLive :src="EXAMPLES['bungalow']" :rows="30" />
+<ArchLive :src="EXAMPLES['bungalow']" page="bungalow" :rows="30" />
 
 ### Courtyard House
 
@@ -338,7 +338,7 @@ is one [polygon room](/reference#polygonal-rooms-v1-23) — a U wrapping three s
 courtyard, so the schedule lists one corridor rather than three — and because a U's
 centroid falls outside it, its name is pinned by hand in the south arm.
 
-<ArchLive :src="EXAMPLES['courtyard-house']" :rows="30" />
+<ArchLive :src="EXAMPLES['courtyard-house']" page="courtyard-house" :rows="30" />
 
 ### Townhouse (three storeys)
 
@@ -367,7 +367,7 @@ short of the back wall. One flight-length further south, the only route from the
 to the kitchen measured 300 mm on the nav grid against a 700 minimum, and `lint` refused the
 plan with `W_PATH_TOO_NARROW`.
 
-<ArchLive :src="EXAMPLES['townhouse']" :rows="30" />
+<ArchLive :src="EXAMPLES['townhouse']" page="townhouse" :rows="30" />
 
 ### Two-storey house
 
@@ -383,7 +383,7 @@ block stamped `LEVEL 1 — Ground floor` / `LEVEL 2 — First floor`. The settin
 It is the smaller sibling of the townhouse above — the two-page version of the same idea,
 without the stack of wet rooms.
 
-<ArchLive :src="EXAMPLES['two-storey']" :rows="26" />
+<ArchLive :src="EXAMPLES['two-storey']" page="two-storey" :rows="26" />
 
 ## Public buildings
 
@@ -402,7 +402,7 @@ measures. It also drives `dims auto all` (the GB/T three-chain exterior dimensio
 column grid written with `for`, and fixture rows placed by `against wall <id> offset …` so
 no coordinate is hand-computed.
 
-<ArchLive :src="EXAMPLES['museum']" :rows="30" />
+<ArchLive :src="EXAMPLES['museum']" page="museum" :rows="30" />
 
 ### Harbour Aquarium (curves)
 
@@ -425,7 +425,7 @@ while the three exterior chains stay on the straight facades. Both rotunda doors
 the curve — `on rotunda at 25%` walks the wall by run length, so an arc contributes its arc
 length rather than its chord — and their leaves swing off the tangent at the doorway.
 
-<ArchLive :src="EXAMPLES['aquarium']" :rows="30" />
+<ArchLive :src="EXAMPLES['aquarium']" page="aquarium" :rows="30" />
 
 ### Reading Room Library (sheet tables)
 
@@ -454,7 +454,7 @@ total are the same numbers `archlang describe --json` reports. At the foot of th
 `dim radius <wallId> segment <n>` and `dim diameter <roomId>` take both geometry and text
 from the element they name, so R8000 and the centre are never retyped.
 
-<ArchLive :src="EXAMPLES['library']" :rows="30" />
+<ArchLive :src="EXAMPLES['library']" page="library" :rows="30" />
 
 ### Transit Hall
 
@@ -479,7 +479,7 @@ nothing else. Escalators and a lift are
 their chevrons and UP/DN arrows; on a single-storey plan they still obstruct circulation,
 and `W_STAIR_UNMATCHED` is a multi-storey question that never fires here.
 
-<ArchLive :src="EXAMPLES['transit-hall']" :rows="30" />
+<ArchLive :src="EXAMPLES['transit-hall']" page="transit-hall" :rows="30" />
 
 ### Clinic Wing
 
@@ -507,7 +507,7 @@ sweeps into a corridor patients queue in, and a sliding door wide enough for a t
 treatment. The plan is clean under `archlang lint --profile accessibility-advisory` as well as
 the default ruleset.
 
-<ArchLive :src="EXAMPLES['clinic']" :rows="30" />
+<ArchLive :src="EXAMPLES['clinic']" page="clinic" :rows="30" />
 
 ### Practice Office
 
@@ -526,7 +526,7 @@ kitchen triangle — and it carries the sheet statements a contractor reads firs
 accessible WC takes a 1000 mm door that swings out into the corridor, a second exit closes the east end of the spine so no room is a dead end, and the plan is clean under
 `archlang lint --profile accessibility-advisory` as well as the default ruleset.
 
-<ArchLive :src="EXAMPLES['practice-office']" :rows="30" />
+<ArchLive :src="EXAMPLES['practice-office']" page="practice-office" :rows="30" />
 
 ### Corner Cafe
 
@@ -544,7 +544,7 @@ loops over the catalogue `table` and `chair`, and the kitchen line (sink, stove,
 `against wall` so each piece derives its own footprint. `legend` lists the fixture categories
 actually placed. Clean under both lint profiles.
 
-<ArchLive :src="EXAMPLES['corner-cafe']" :rows="30" />
+<ArchLive :src="EXAMPLES['corner-cafe']" page="corner-cafe" :rows="30" />
 
 ### Classroom Block
 
@@ -562,7 +562,7 @@ end of the 22.5 m corridor, so no classroom is a dead end. The zones split the f
 and the plan is written to pass `archlang lint --profile accessibility-advisory` as well as
 the default ruleset.
 
-<ArchLive :src="EXAMPLES['classroom-block']" :rows="30" />
+<ArchLive :src="EXAMPLES['classroom-block']" page="classroom-block" :rows="30" />
 
 ## Geometry & experiments
 
@@ -581,7 +581,7 @@ centroid (the lobby pins its own with `label "…" at (x,y)`). The entrance door
 the *angled* wall the ordinary way, and `dims auto all` measures the chain off the rooms'
 vertex coordinates.
 
-<ArchLive :src="EXAMPLES['gallery-l']" :rows="13" />
+<ArchLive :src="EXAMPLES['gallery-l']" page="gallery-l" :rows="13" />
 
 ### Hexagon Pavilion
 
@@ -608,7 +608,7 @@ are positioned `on drum at <pct>`, which walks the wall by **arc length**, so 8.
 — square onto the middle of a gallery. Its palette comes from a single colour with
 `theme from "#2f6f4e"`.
 
-<ArchLive :src="EXAMPLES['hexagon-pavilion']" :rows="30" />
+<ArchLive :src="EXAMPLES['hexagon-pavilion']" page="hexagon-pavilion" :rows="30" />
 
 ### Terrace Row
 
@@ -632,7 +632,7 @@ like any other, so `place` carries it through the frame and the mirrored units g
 mirrored position for free. `theme blueprint` is a named theme base: a whole cyanotype palette
 from one word.
 
-<ArchLive :src="EXAMPLES['terrace-row']" :rows="30" />
+<ArchLive :src="EXAMPLES['terrace-row']" page="terrace-row" :rows="30" />
 
 ## Scripting & composition
 
@@ -645,7 +645,7 @@ _Rooms placed beside and below one another instead of at coordinates._
 topological order, not an optimizer (see [relational placement](/relational)). The walls and
 openings are derived from the rooms, so they reflow with them.
 
-<ArchLive :src="EXAMPLES['relational']" :rows="11" />
+<ArchLive :src="EXAMPLES['relational']" page="relational" :rows="11" />
 
 ### Parametric (let + for)
 
@@ -657,7 +657,7 @@ It is the demonstration that [scripting](/reference#control-flow) expands **at c
 into a fixed, deterministic drawing: there is no runtime, no clock and no randomness, so the
 row you see is exactly what the loop produced.
 
-<ArchLive :src="EXAMPLES['parametric']" :rows="16" />
+<ArchLive :src="EXAMPLES['parametric']" page="parametric" :rows="16" />
 
 ### Resizable Flat (three `let`s)
 
@@ -670,7 +670,7 @@ opening is hosted by the rooms it joins and every fixture is anchored to its roo
 to one number moves the walls, the doors, the furniture and the dimensions with it. In the
 playground each of the three is a slider.
 
-<ArchLive :src="EXAMPLES['knob-flat']" :rows="16" />
+<ArchLive :src="EXAMPLES['knob-flat']" page="knob-flat" :rows="16" />
 
 ### Accessible metadata
 
@@ -682,7 +682,7 @@ the SVG `<title>`/`<desc>` emitted by `archlang compile --accessible`. They are 
 only**: the default output is byte-identical without the flag. Omit them and the description
 is derived from [`describe()`](/analysis)'s caption instead.
 
-<ArchLive :src="EXAMPLES['accessible']" :rows="8" />
+<ArchLive :src="EXAMPLES['accessible']" page="accessible" :rows="8" />
 
 ## Style
 
@@ -695,7 +695,7 @@ the same geometry, restyled. Nothing about a theme touches geometry, which is wh
 playground's theme selector can restyle any plan on this page. See
 [theming](/reference#theming) and [materials](/reference#wall).
 
-<ArchLive :src="EXAMPLES['themed']" :rows="14" />
+<ArchLive :src="EXAMPLES['themed']" page="themed" :rows="14" />
 
 ### Materials (the whole hatch palette)
 
@@ -722,6 +722,6 @@ than left to the auto-fit. The `legend` beside it is derived: one swatch per mat
 actually used and one per fixture category actually placed, growing a row on its own if you
 add a seventh.
 
-<ArchLive :src="EXAMPLES['materials']" :rows="30" />
+<ArchLive :src="EXAMPLES['materials']" page="materials" :rows="30" />
 
 <SheetGrid />

@@ -59,6 +59,7 @@
  * it with no extra step.
  */
 
+import { execFileSync } from "node:child_process";
 import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -73,6 +74,8 @@ const outDir = join(playground, "dist");
 const ORIGIN = "https://playground.archlang.uk";
 const DOCS = "https://archlang.uk";
 const OG_IMAGE = `${ORIGIN}/brand/archlang-og.png`;
+/** The ids the docs JSON-LD defines (site-shared/identity.json); these pages reference them. */
+const IDENTITY = JSON.parse(readFileSync(join(repo, "site-shared", "identity.json"), "utf8"));
 
 /** The pixel width every thumbnail is compiled at. See `thumbSvg`. */
 const THUMB_W = 480;
@@ -128,6 +131,58 @@ async function loadCore() {
         "plan with the SAME core the playground aliases, so there is nothing honest to emit without it.",
     );
   }
+}
+
+// ───────────────────────────────────────────────────────────────────────────────
+// Dates: when each page's content last changed, from git, never from the clock.
+// ───────────────────────────────────────────────────────────────────────────────
+
+/**
+ * The last commit date (`%cI`) of a repo path, or null. Any git failure (no git, an export
+ * tarball) is null, so the build emits no date rather than failing: the docs' `sync-docs.mjs`
+ * does the same for its `lastmod.json`.
+ */
+function commitDate(path) {
+  try {
+    const iso = execFileSync("git", ["log", "-1", "--format=%cI", "--", path], {
+      cwd: repo,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    return iso || null;
+  } catch {
+    return null;
+  }
+}
+
+/** The later of two ISO dates (either may be null), compared as instants, not as strings. */
+function later(a, b) {
+  if (!a) return b;
+  if (!b) return a;
+  return Date.parse(b) > Date.parse(a) ? b : a;
+}
+
+/**
+ * `name → ISO date` for every example page: its `.arch` file's last commit, floored by this
+ * generator's own (a change here changes every page's bytes). An example git cannot date gets no
+ * entry, so its page and sitemap row carry no date: a build-time date on unchanged content is
+ * noise every crawler discounts.
+ */
+function exampleDates(rows) {
+  const floor = commitDate("playground/scripts/gen-static.mjs");
+  const dates = new Map();
+  for (const r of rows) {
+    const own = commitDate(`examples/${r.name}.arch`);
+    if (own) dates.set(r.name, later(own, floor));
+  }
+  return dates;
+}
+
+/** The newest of the example dates: `/` and `/examples/` change whenever any plan does. */
+function newestDate(dates) {
+  let newest = null;
+  for (const d of dates.values()) newest = later(newest, d);
+  return newest;
 }
 
 function fail(message) {
@@ -755,9 +810,10 @@ function examplePage(row, source, result, d, ctx) {
         license: "https://opensource.org/licenses/MIT",
         codeRepository: "https://github.com/ChanMeng666/archlang",
         inLanguage: "en",
+        ...(ctx.dateModified ? { dateModified: ctx.dateModified } : {}),
         author: {
           "@type": "Person",
-          "@id": `${DOCS}/#chan-meng`,
+          "@id": IDENTITY.ids.author,
           name: "Chan Meng",
           url: "https://github.com/ChanMeng666",
         },
@@ -815,6 +871,7 @@ ${siteHeader(`<a href="/">Playground</a> › <a href="/examples/">Example plans<
         <li><a href="/examples/">All ArchLang example plans</a></li>
         <li><a href="${DOCS}/reference">The ArchLang language reference</a></li>
         <li><a href="${DOCS}/spec">The one-page specification</a></li>
+        <li><a href="${DOCS}/examples">The example plans, live and editable, on the documentation site</a></li>
       </ul>
     </main>
 ${siteFooter({ sheet: ctx.sheet, plans: ctx.plans })}
@@ -856,6 +913,7 @@ function indexPage(rows, ctx) {
         description,
         url,
         inLanguage: "en",
+        ...(ctx.dateModified ? { dateModified: ctx.dateModified } : {}),
         isPartOf: { "@type": "WebSite", "@id": `${ORIGIN}/#website`, url: `${ORIGIN}/`, name: "ArchLang Playground" },
       },
       {
@@ -929,15 +987,25 @@ ${siteFooter({ sheet: "index", plans: rows.length })}
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// The sitemap. No <lastmod>: a build-time date on unchanged content is noise, and
-// every crawler discounts a file that stamps today on all of it.
+// The sitemap. Each <lastmod> is a git date (`exampleDates`), never the build's: a
+// build-time date on unchanged content is noise, and every crawler discounts a file
+// that stamps today on all of it. A URL git cannot date carries no <lastmod>.
 // ───────────────────────────────────────────────────────────────────────────────
 
-function sitemap(rows) {
-  const locs = [`${ORIGIN}/`, `${ORIGIN}/examples/`, ...rows.map((r) => `${ORIGIN}/examples/${r.name}.html`)];
+function sitemap(rows, dates) {
+  const newest = newestDate(dates);
+  const entries = [
+    [`${ORIGIN}/`, newest],
+    [`${ORIGIN}/examples/`, newest],
+    ...rows.map((r) => [`${ORIGIN}/examples/${r.name}.html`, dates.get(r.name) ?? null]),
+  ];
+  const url = ([loc, lastmod]) =>
+    lastmod
+      ? `  <url><loc>${escapeHtml(loc)}</loc><lastmod>${escapeHtml(lastmod)}</lastmod></url>`
+      : `  <url><loc>${escapeHtml(loc)}</loc></url>`;
   return `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-${locs.map((l) => `  <url><loc>${escapeHtml(l)}</loc></url>`).join("\n")}
+${entries.map(url).join("\n")}
 </urlset>
 `;
 }
@@ -1068,6 +1136,7 @@ function prerenderIndex(rows, thumbs) {
 // ───────────────────────────────────────────────────────────────────────────────
 
 const rows = readRows();
+const dates = exampleDates(rows);
 const { compile, describe } = await loadCore();
 const fonts = collectFontFaces(TOKEN_BLOCK);
 
@@ -1119,7 +1188,12 @@ for (const row of rows) {
   thumbs.set(row.name, { w: thumb.w, h: thumb.h });
   thumbBytes += Buffer.byteLength(thumb.svg);
 
-  const ctx = { fonts, sheet: `${written + 1} of ${rows.length}`, plans: rows.length };
+  const ctx = {
+    fonts,
+    sheet: `${written + 1} of ${rows.length}`,
+    plans: rows.length,
+    dateModified: dates.get(row.name),
+  };
   writeFileSync(join(outDir, "examples", `${row.name}.html`), examplePage(row, source, result, d, ctx), "utf8");
   written++;
 }
@@ -1134,8 +1208,12 @@ if (failures.length > 0) {
   process.exit(1);
 }
 
-writeFileSync(join(outDir, "examples", "index.html"), indexPage(rows, { fonts, thumbs }), "utf8");
-writeFileSync(join(outDir, "sitemap.xml"), sitemap(rows), "utf8");
+writeFileSync(
+  join(outDir, "examples", "index.html"),
+  indexPage(rows, { fonts, thumbs, dateModified: newestDate(dates) }),
+  "utf8",
+);
+writeFileSync(join(outDir, "sitemap.xml"), sitemap(rows, dates), "utf8");
 const prerendered = prerenderIndex(rows, thumbs);
 
 // /llms.txt for THIS host: a pointer, not a copy. The agent-facing context lives once, on the
