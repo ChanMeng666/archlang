@@ -2666,6 +2666,27 @@ riser the drawing implies, where the plan authors a height. **Gate:** the implie
 example, hand-derived in the test; a plan with no `height` unchanged; the byte-identity law over
 the corpus for `describe()` if a fact is added, and the lint's own corpus findings listed in the PR.
 
+### ST.2 · The walking line over a winder landing is drawn as a chord but credited as an arc — `todo`
+
+PR #533 (winders on a quarter-turn landing, preview-and-remodel D46) credits a winder landing with
+`min(n, floor(arc / going))` goings, where `arc` is the quarter arc of radius `width / 2` round the
+inner corner (about 0.785 × width). The glyph (`src/elements/vertical-glyphs.ts`) still draws the
+walking line across that landing as one straight chord (about 0.707 × width), so the drawing and
+the lint read two different lengths. Lint never reads the drawing, so this is a drawing change:
+draw the arc. It moves the SVG of plans that write `winders` only; `describe()` and `lint()` do
+not move (the `block-stair-winders-byte-identity` law pins every plan without the clause). The
+contributor offered to do it. **Gate:** the winders law green; the digest of every winders fixture
+listed before and after in the PR; a plan without `winders` byte-identical.
+
+### ST.3 · `archlang-3d` builds a winder landing as a level landing — `todo`
+
+The 3D package ignores `describe().verticals[].landings[].winders` and builds the landing flat, so
+the preview climbs the storey in fewer, taller risers than the plan draws (the plan shows `n`
+treads fanning from the inner corner). Fan `n` wedge-shaped treads from the inner corner in
+`packages/archlang-3d`, each rising one riser, so the 3D keeps the plan's treads (the X3 ruling).
+Core untouched. **Gate:** `check:3d`; the mesh/GLB pins move only for the winders fixture; a plan
+without `winders` byte-identical in every 3D output.
+
 ## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
 
 ### 3D.1 · The asset check trusts the manifest for the plan PNG — `todo`
