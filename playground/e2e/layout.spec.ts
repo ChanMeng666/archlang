@@ -267,7 +267,7 @@ test.describe("phone layout", () => {
     await waitForPlan(page);
     await expect(page.locator(".mview")).toHaveCount(5);
     for (const view of ["plan", "3d", "facts", "checks"]) {
-      await page.locator(`.mview[data-mview=${view}]`).tap();
+      await page.locator(`.mview[data-mview="${view}"]`).tap();
       if (view === "facts") await expect(page.locator("#takeoffCopy")).toBeVisible();
       if (view === "checks") await expect(page.locator("#errors .diagrow").first()).toBeVisible();
       if (view === "3d") await expect(page.locator("#preview3d canvas")).toBeVisible();
@@ -329,7 +329,7 @@ test.describe("phone layout", () => {
       await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
       await waitForPlan(page);
       for (const view of ["plan", "3d", "facts", "code", "checks"]) {
-        await page.locator(`.mview[data-mview=${view}]`).tap();
+        await page.locator(`.mview[data-mview="${view}"]`).tap();
         expect(await horizontalOverflow(page), `overflow in ${view} at ${width}px`).toBeLessThanOrEqual(0);
       }
       // The phone's one view control (card PG5b ①): the five views, each inside the switcher's
@@ -408,7 +408,7 @@ test.describe("phone layout", () => {
         expect(bar.x + bar.width).toBeLessThanOrEqual(stage.x + stage.width + 0.5);
         expect(bar.y + bar.height).toBeLessThanOrEqual(stage.y + stage.height + 0.5);
         // The 3D preview: the storeys over its canvas, clear of its own top-right group.
-        if (mode === "edit") await page.locator(".mview[data-mview=3d]").tap();
+        if (mode === "edit") await page.locator('.mview[data-mview="3d"]').tap();
         else await page.locator("#view3d").tap();
         await expect(page.locator("#preview3d .p3d-top")).toBeVisible();
         // Over the 3D preview the chip is at its widest: All, L1, L2, L3.
@@ -478,9 +478,9 @@ test.describe("phone layout", () => {
       ["checks", "checks"],
       ["plan", "preview"],
     ] as const) {
-      await page.locator(`.mview[data-mview=${view}]`).tap();
+      await page.locator(`.mview[data-mview="${view}"]`).tap();
       await expect(page.locator(`#tab-${tab}`)).toHaveAttribute("aria-selected", "true");
-      await expect(page.locator(`.mview[data-mview=${view}]`)).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator(`.mview[data-mview="${view}"]`)).toHaveAttribute("aria-pressed", "true");
     }
   });
 
