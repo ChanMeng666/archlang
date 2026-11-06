@@ -1,0 +1,21 @@
+{
+  "$schema": "https://skills.sh/schemas/skills.sh.schema.json",
+  "notGrouped": "bottom",
+  "groupings": [
+    {
+      "title": "Start here",
+      "description": "The core skill: write, compile and inspect a floor plan as ArchLang code.",
+      "skills": ["archlang"]
+    },
+    {
+      "title": "Write and change",
+      "description": "Turn a written brief into a plan, or change one room without moving the others.",
+      "skills": ["archlang-brief-to-plan", "archlang-edit-plan"]
+    },
+    {
+      "title": "Check and deliver",
+      "description": "Review a plan against its brief, then export SVG, PNG, PDF or DXF.",
+      "skills": ["archlang-review-plan", "archlang-export"]
+    }
+  ]
+}
