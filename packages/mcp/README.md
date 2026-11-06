@@ -20,9 +20,16 @@ Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dime
 - **Playground, in the browser:** https://playground.archlang.uk
 <!-- doors:end -->
 
-<a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/3d/laneway-house.poster.png" width="640" alt="The laneway house plan extruded to a 3D preview in flat colours: walls, openings, floors and furniture." /></a>
+<table>
+<tr>
+<td align="center" width="50%"><a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/test/__goldens__/laneway-house.arch.png" width="100%" alt="The laneway house plan: a living kitchen, a bedroom and a bath, dimensioned." /></a><br><sub>Plan</sub></td>
+<td align="center" width="50%"><a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/3d/laneway-house.poster.png" width="100%" alt="The same plan extruded to a 3D preview in flat colours: walls, openings, floors and furniture." /></a><br><sub>3D preview</sub></td>
+</tr>
+</table>
 
 Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan. [What the 3D preview shows →](https://archlang.uk/3d)
+
+3D preview: walls, openings, floors, stairs and furniture in flat colours; no pitched roofs yet, and no sections, elevations or BIM.
 
 ## If your agent has a shell
 
