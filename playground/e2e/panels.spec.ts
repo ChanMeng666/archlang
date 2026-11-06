@@ -49,6 +49,12 @@ test.describe("one view switch (PG-D3)", () => {
     // …but still a live region for assistive tech.
     await expect(page.locator("#statusText")).toHaveAttribute("role", "status");
     await expect(page.locator("#sourceToggle")).not.toHaveAttribute("data-status");
+    // The hidden notice's × is out of the tab order too: hidden, so no keyboard stop on nothing.
+    const dismiss = page.locator("#statusDismiss");
+    await expect(dismiss).toHaveAttribute("hidden", "");
+    await expect(dismiss).toBeHidden();
+    await dismiss.evaluate((b) => (b as HTMLElement).focus());
+    await expect(dismiss).not.toBeFocused();
     // Exactly one visible Plan control and one visible 3D control: the stage's switch.
     expect(await visibleTexts(page, "button")).toEqual(expect.not.arrayContaining(["Preview", "3D preview"]));
     expect((await visibleTexts(page, "button")).filter((t) => t === "Plan" || t === "3D")).toEqual(["Plan", "3D"]);
@@ -78,6 +84,21 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(page.locator("#tools .tools-h", { hasText: "Panels" })).toHaveCount(0);
     for (const name of ["Describe", "Lint", "Intent", "Takeoff", "3D preview"])
       await expect(page.locator("#tools").getByRole("button", { name, exact: true })).toHaveCount(0);
+  });
+
+  test("a compiler that fails to load says so, and never stays on Compiling…", async ({ page }) => {
+    // The compiler's chunk (`compiler-<hash>.js`, vite.config.js's codeSplitting group) is refused.
+    await page.route(/\/assets\/compiler-[^/]+\.js(\?.*)?$/, (route) => route.abort());
+    await page.goto("/");
+    const status = page.locator("#status");
+    await expect(status).toHaveClass(/\berr\b/, { timeout: 15_000 });
+    await expect(status).toBeVisible();
+    await expect(page.locator("#statusText")).toHaveText("Couldn't load the compiler — reload to retry");
+    await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
+    // Well past the busy threshold: still the error, never "Compiling…" again.
+    await page.waitForTimeout(1000);
+    await expect(page.locator("#statusText")).not.toHaveText(/Compiling/);
+    await expect(status).not.toHaveClass(/\bbusy\b/);
   });
 
   test("a broken plan shows a status on the stage and a dot on Source; a fix clears both", async ({ page }) => {

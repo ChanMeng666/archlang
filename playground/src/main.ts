@@ -865,8 +865,16 @@ async function boot() {
 
 // Bootstrap (async — resolves the shared/saved source, then loads the compiler). A first compile
 // slow enough to notice says so (the notice and Source's dot); a quick one shows nothing.
+// A boot that fails (the compiler's or the examples' chunk did not load) says so instead of
+// "Compiling…" for ever: the busy timer is stopped and the status is an error. `ready` still
+// settles, so nothing waiting on it is left with an unhandled rejection; without `core`, `render`
+// does nothing.
 const busyTimer = setTimeout(() => setStatus("busy", "Compiling…"), BUSY_AFTER_MS);
-const ready = boot();
+const ready = boot().catch((err: unknown) => {
+  clearTimeout(busyTimer);
+  setStatus("err", "Couldn't load the compiler — reload to retry");
+  console.warn("The playground did not boot:", err);
+});
 // `&3d` (or `#3d` alone) opens on the 3D preview (card X5): its chunk starts loading now, beside
 // the compiler, and it shows the plan the visit opens once that is compiled, at its end frame.
 if (has3dFlag(location.hash)) openTab("preview3d");
