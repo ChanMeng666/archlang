@@ -58,6 +58,21 @@ export async function waitForPlan(page: Page): Promise<void> {
 }
 
 /**
+ * `waitForPlan` for a visit that opens on the 3D preview (`&3d`, card X5), where the drawing is
+ * not on screen: the app is up (`html[data-booting]` gone, as above), the 3D preview is the view
+ * shown, and it has settled on what it shows, a drawn canvas or the package's refusal. The
+ * drawing is in the stage all the same, only hidden behind the 3D preview.
+ */
+export async function waitFor3d(page: Page): Promise<void> {
+  await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+  await expect(page.locator(".pz-stage svg")).toHaveCount(1);
+  await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+  await expect(page.locator("#preview3d :is(canvas, .p3d-message):visible").first()).toBeVisible({
+    timeout: 15_000,
+  });
+}
+
+/**
  * Open the playground in EDIT mode (the editor beside the drawing): `hash` (a `#z=…` share
  * hash, or none) with the `&edit` flag, the way `arch link` and the docs' code panes link.
  * Waits for the plan and the editor.

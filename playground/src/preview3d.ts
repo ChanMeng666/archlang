@@ -138,6 +138,8 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   scrub.step = "0.001";
   scrub.value = "1";
   scrub.setAttribute("aria-label", "Replay position");
+  // The specs find it by this, not by its type: the knobs over the canvas are range inputs too.
+  scrub.dataset.role = "scrub";
   controls.append(play, scrub);
 
   // The free camera's toolbar (card CR4), rebuilt with each replay.

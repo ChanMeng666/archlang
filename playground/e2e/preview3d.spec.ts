@@ -14,6 +14,7 @@ import {
   SIMPLE_PLAN,
   setEditorSource,
   shareHash,
+  waitFor3d,
   waitForPlan,
 } from "./fixtures.js";
 
@@ -84,7 +85,7 @@ test.describe("3D preview tab", () => {
       await (window as W).__preview3d?.ready;
     });
     // Stop the play-through so only the seeks below draw.
-    await page.locator('#preview3d input[type="range"]').evaluate((el: HTMLInputElement) => {
+    await page.locator('#preview3d [data-role="scrub"]').evaluate((el: HTMLInputElement) => {
       el.value = "0.5";
       el.dispatchEvent(new Event("input"));
     });
@@ -124,7 +125,7 @@ test.describe("3D preview tab", () => {
     await page.evaluate(async () => {
       await (window as W).__preview3d?.ready;
     });
-    const scrub = page.locator('#preview3d input[type="range"]');
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
     // The settled iso view at once: t = 1, and it stays there (nothing plays on its own).
     await expect(scrub).toHaveValue("1");
     const opened = await current(page);
@@ -176,7 +177,7 @@ test.describe("3D preview tab", () => {
  * playback cases below start here.
  */
 async function replay(page: Page): Promise<void> {
-  const scrub = page.locator('#preview3d input[type="range"]');
+  const scrub = page.locator('#preview3d [data-role="scrub"]');
   await page
     .locator("#preview3d")
     .getByRole("button", { name: /^Replay/ })
@@ -235,7 +236,7 @@ test.describe("3D preview tab follows the editor", () => {
     await waitForPlan(page);
     await open3d(page);
     await replay(page);
-    const scrub = page.locator('#preview3d input[type="range"]');
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.15);
     await page.evaluate(() => {
       (window as W & { __before?: unknown }).__before = (window as W).__preview3d;
@@ -251,7 +252,7 @@ test.describe("3D preview tab follows the editor", () => {
     await waitForPlan(page);
     await open3d(page);
     await replay(page);
-    const scrub = page.locator('#preview3d input[type="range"]');
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
     await page.locator("#tab-lint").click();
     const parked = Number(await scrub.inputValue());
@@ -313,7 +314,7 @@ test.describe("3D preview tab: the free camera", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await open3d(page);
-    await expect(page.locator('#preview3d input[type="range"]')).toHaveValue("1");
+    await expect(page.locator('#preview3d [data-role="scrub"]')).toHaveValue("1");
     const end = await hashAt(page, 1);
     const button = (name: string | RegExp) => page.locator("#preview3d").getByRole("button", { name });
     const camera = () => page.evaluate(() => (window as Viewed).__preview3d?.view?.camera);
@@ -370,7 +371,7 @@ test.describe("3D preview tab: the free camera", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await open3d(page);
-    const scrub = page.locator('#preview3d input[type="range"]');
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
     await expect(scrub).toHaveValue("1");
     const end = await current(page);
     await page
@@ -389,7 +390,7 @@ test.describe("3D preview tab: the free camera", () => {
     await waitForPlan(page);
     await open3d(page);
     await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "all");
-    await expect(page.locator('#preview3d input[type="range"]')).toHaveValue("1");
+    await expect(page.locator('#preview3d [data-role="scrub"]')).toHaveValue("1");
     const end = await hashAt(page, 1);
     const storeys = page.locator("#preview3d [data-storeys]");
     await expect(storeys).toHaveCount(3);
@@ -448,7 +449,7 @@ test.describe("3D preview tab: a preset during playback", () => {
     await waitForPlan(page);
     await open3d(page);
     await replay(page);
-    const scrub = page.locator('#preview3d input[type="range"]');
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
     const top = page.locator("#preview3d").getByRole("button", { name: /^Top view/ });
     await top.click();
@@ -476,7 +477,7 @@ test.describe("3D preview tab: grabbing the view", () => {
     await waitForPlan(page);
     await open3d(page);
     await replay(page);
-    const scrub = page.locator('#preview3d input[type="range"]');
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
     const box = await page.locator("#preview3d canvas").boundingBox();
     if (!box) throw new Error("no canvas");
@@ -522,7 +523,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     });
   /** The replay is on its end frame: t = 1 on the scrubber, and the canvas is that frame. */
   async function atEndFrame(page: Page): Promise<void> {
-    await expect(page.locator('#preview3d .p3d-controls input[type="range"]')).toHaveValue("1");
+    await expect(page.locator('#preview3d [data-role="scrub"]')).toHaveValue("1");
     const shown = await current(page);
     expect(await hashAt(page, 1), "the frame on screen is the end frame").toBe(shown);
   }
@@ -573,7 +574,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
 
   test("`&3d` opens view mode on the 3D preview, at the end frame", async ({ page }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
-    await waitForPlan(page);
+    await waitFor3d(page);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     await expect(threeBtn(page)).toHaveAttribute("aria-pressed", "true");
@@ -585,7 +586,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
 
   test("`#3d` alone opens the plan a hash-less visit opens, on the 3D preview", async ({ page }) => {
     await page.goto("/#3d");
-    await waitForPlan(page);
+    await waitFor3d(page);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     await mounted(page);
@@ -595,7 +596,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
 
   test("`&3d&edit` opens the editor beside the 3D preview", async ({ page }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d&edit`);
-    await waitForPlan(page);
+    await waitFor3d(page);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     await mounted(page);
@@ -604,10 +605,10 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
 
   test("another plan from the strip or the picker, in 3D, is rebuilt at its end frame", async ({ page }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
-    await waitForPlan(page);
+    await waitFor3d(page);
     await mounted(page);
     // Leave the end frame, so an end frame after the switch is the rebuild's.
-    await page.locator('#preview3d .p3d-controls input[type="range"]').evaluate((el: HTMLInputElement) => {
+    await page.locator('#preview3d [data-role="scrub"]').evaluate((el: HTMLInputElement) => {
       el.value = "0.3";
       el.dispatchEvent(new Event("input"));
     });
@@ -634,7 +635,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
   test("the knobs sit over the 3D preview, and letting one go rebuilds it", async ({ page }) => {
     const src = readFileSync(new URL("../../examples/knob-flat.arch", import.meta.url), "utf8").replace(/\r\n?/g, "\n");
     await page.goto(`/${await shareHash(src)}&3d`);
-    await waitForPlan(page);
+    await waitFor3d(page);
     await mounted(page);
     const knobs = page.locator("#preview3d details.knobs");
     await expect(knobs).toBeVisible();
@@ -694,7 +695,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
       if (/\/assets\/glb-export-[^/]+\.js$/.test(r.url())) glbChunks.push(r.url());
     });
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
-    await waitForPlan(page);
+    await waitFor3d(page);
     await mounted(page);
     const note = page.locator("#preview3d .p3d-glb-note");
     await expect(note).toContainText("not validated here");
@@ -734,7 +735,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
   test("a shared plan opened on the 3D preview is attributed there too; a bundled example is not", async ({ page }) => {
     // SIMPLE_PLAN is no bundled example: its words came from whoever made the link.
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
-    await waitForPlan(page);
+    await waitFor3d(page);
     await mounted(page);
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     const notice = page.locator(".shared-notice");
@@ -751,7 +752,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     const bundled = readFileSync(new URL("../../examples/one-room.arch", import.meta.url), "utf8");
     await page.goto(`/${await shareHash(bundled)}&3d`);
     await page.reload();
-    await waitForPlan(page);
+    await waitFor3d(page);
     await mounted(page);
     await expect(page.locator("#preview3d canvas")).toHaveAttribute("aria-label", /One Room/);
     await expect(page.locator(".shared-notice")).toHaveCount(0);
@@ -767,7 +768,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
   room id=r at (0,0) size W x 3000 label "Yard"
 }`;
     await page.goto(`/${await shareHash(noWalls)}&3d`);
-    await waitForPlan(page);
+    await waitFor3d(page);
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     const message = page.locator("#preview3d .p3d-message");
     await expect(message).toBeVisible();
@@ -801,7 +802,7 @@ for (const [width, height, mobile] of [
         "\n",
       );
       await page.goto(`/${await shareHash(src)}&3d`);
-      await waitForPlan(page);
+      await waitFor3d(page);
       await page.waitForFunction(() => (window as W).__preview3d !== undefined);
       await expect(page.locator("#preview3d .p3d-glb-note")).toBeVisible();
       const fit = await page.locator("#preview3d").evaluate((host) => {
