@@ -478,6 +478,18 @@ const AGREEMENT: [string, string][] = [
   // —— vertical / column clause order ————————————————————————————
   ["stair dir then width", P(`  stair at (0,7000) size 1000x3000 dir up width 900`)],
   ["stair width before dir", P(`  stair at (0,7000) size 1000x3000 width 900 dir up`)],
+  [
+    "block stair, landing with winders",
+    P(
+      `  stair id=s dir up width 1000 {\n    flight at (0,2000) size 1000x1000\n    landing at (0,1000) size 1000x1000 winders 3\n    flight at (1000,1000) size 1000x1000\n  }`,
+    ),
+  ],
+  [
+    "block stair, winders on a flight",
+    P(
+      `  stair id=s dir up width 1000 {\n    flight at (0,2000) size 1000x1000 winders 3\n    landing at (0,1000) size 1000x1000\n    flight at (1000,1000) size 1000x1000\n  }`,
+    ),
+  ],
   // —— settings, theme/style, numbers ————————————————————————————
   ["paper A4 landscape", P(`  paper A4 landscape`)],
   ["paper a4 lowercase", P(`  paper a4`)],

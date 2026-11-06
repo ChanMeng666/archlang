@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A quarter-turn landing of a block `stair`, exactly `width` × `width`, may end `winders <2–8>`: that many tapered steps fanning from its inner corner instead of a level landing, drawn as tread lines, reported as `describe().verticals[].landings[].winders`, and compared across a shaft's stops by `W_SHAFT_FOOTPRINT_MISMATCH`. `W_STAIR_TOO_STEEP` credits a winder landing with the whole goings of the profile's least going that fit on the quarter arc of radius `width / 2` round its inner corner, never more than it has winders: geometry only, no standard's figure. Other refusals are `E_STAIR_PIECES`. A plan without `winders` does not move (`block-stair-winders-byte-identity`).
+
 ## [1.57.0] - 2026-11-06
 
 ### Added

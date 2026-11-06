@@ -14,7 +14,7 @@ import { compile, describe as describePlan, type Diagnostic, format, lint } from
 import { resolvePlan } from "../src/analyze.js";
 import type { RStair } from "../src/ir.js";
 import { verticalsOf } from "../src/vertical.js";
-import { hallPlan, L_STAIR, U_STAIR, type BlockStair } from "./block-stair-plans.js";
+import { CLEAR_L, hallBody, hallPlan, L_STAIR, U_STAIR, upperBody, type BlockStair } from "./block-stair-plans.js";
 
 /** The block of `s` with `winders` on its first landing. */
 function winderBlock(s: BlockStair, winders: string, id = "s"): string {
@@ -110,6 +110,13 @@ describe("winders are refused where they cannot stand", () => {
     });
   }
 
+  it("not 8.0000001: the message says it is not a whole number, not what it rounds to", () => {
+    const e = errors(winderPlan("8.0000001"));
+    expect(e.map((d) => d.code)).toEqual(["E_STAIR_PIECES"]);
+    expect(e[0]!.message).toContain("not a whole number");
+    expect(e[0]!.message).not.toContain("found");
+  });
+
   it("not on a half-turn landing", () => {
     const e = errors(winderPlan("3", "", U_STAIR));
     expect(e.map((d) => d.code)).toEqual(["E_STAIR_PIECES"]);
@@ -139,8 +146,37 @@ describe("winders are goings to the steepness check", () => {
     expect(steep(src)).toHaveLength(1);
   });
 
-  it("four winders are four goings: 8 × 220 = 1760 mm of flights is enough", () => {
-    expect(steep(winderPlan("4", "  height 2750\n"))).toEqual([]);
+  // The walking line crosses a 1000 mm winder landing on a quarter arc of radius 500 mm, π/2 × 500
+  // = 785.4 mm, which holds 3 whole goings of 220 mm: that is the most any number of winders earns.
+  // 13 risers, 12 goings, 3 for the winders: 9 × 220 = 1980 mm of flights.
+  const flights = (a: number, b: number): BlockStair => ({
+    ...L_STAIR,
+    pieces: [
+      [1500, 1100, 1000, a],
+      [1500, 100, 1000, 1000],
+      [1500 - b, 100, b, 1000],
+    ],
+  });
+
+  it("four winders on a 1000 mm stair earn three goings, not four", () => {
+    // 990 + 990 = 1980 mm holds 4 + 4 goings, short of the 9 that three goings leave.
+    expect(steep(winderPlan("4", "  height 2750\n", flights(990, 990)))).toHaveLength(1);
+    // 1100 + 880 mm holds 5 + 4: enough.
+    expect(steep(winderPlan("4", "  height 2750\n", flights(1100, 880)))).toEqual([]);
+  });
+
+  it("eight winders earn no more than three: 440 + 440 mm of flights stays too steep", () => {
+    const w = steep(winderPlan("8", "  height 2750\n", flights(440, 440)));
+    expect(w).toHaveLength(1);
+    expect(w[0]!.message).toContain("8 winders, which stand in for 3 goings on the walking line");
+    // The going minimum is the flights', never the winders' own.
+    expect(w[0]!.message).toContain("each flight going at least 220 mm");
+  });
+
+  it("two winders earn two: fewer winders than the arc holds count as they are", () => {
+    // 12 − 2 = 10 goings, 2200 mm: 1100 + 1100 mm holds 5 + 5.
+    expect(steep(winderPlan("2", "  height 2750\n", flights(1100, 1100)))).toEqual([]);
+    expect(steep(winderPlan("2", "  height 2750\n", flights(1100, 990)))).toHaveLength(1);
   });
 
   it("the message counts the winders when the flights are still short", () => {
@@ -154,6 +190,34 @@ describe("winders are goings to the steepness check", () => {
     };
     const w = steep(winderPlan("2", "  height 2750\n", short));
     expect(w).toHaveLength(1);
-    expect(w[0]!.message).toContain("2 winders");
+    expect(w[0]!.message).toContain("2 winders, which stand in for 2 goings on the walking line");
+  });
+});
+
+describe("winders are part of the block a shaft compares", () => {
+  /** A two-storey plan of {@link CLEAR_L}, its landing written `below` on level 1, `above` on 2. */
+  const shaft = (below: string, above: string): string => {
+    const block = (dir: "up" | "down", w: string): string =>
+      winderBlock(CLEAR_L, "4", "s")
+        .replace("dir up", `dir ${dir}`)
+        .replace(" winders 4", w === "" ? "" : ` winders ${w}`);
+    return `plan "Shaft" {\n  units mm\n  level 1 "G" {\n${hallBody(block("up", below))}\n  }\n  level 2 "1" {\n${upperBody(block("down", above))}\n  }\n}\n`;
+  };
+  const mismatch = (src: string) => lint(src).filter((d) => d.code === "W_SHAFT_FOOTPRINT_MISMATCH");
+
+  it("the same winders on both stops: no mismatch", () => {
+    expect(mismatch(shaft("4", "4"))).toEqual([]);
+  });
+
+  it("winders on one stop and a level landing on the other are two stairs", () => {
+    const w = mismatch(shaft("4", ""));
+    expect(w).toHaveLength(1);
+    expect(w[0]!.message).toContain("the landing is 4 winders there and level here");
+  });
+
+  it("another count of winders is another stair", () => {
+    const w = mismatch(shaft("3", "4"));
+    expect(w).toHaveLength(1);
+    expect(w[0]!.message).toContain("the landing is 3 winders there and 4 winders here");
   });
 });

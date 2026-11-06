@@ -233,7 +233,9 @@ function winderRefusal(
   after: BBox,
   width: number,
 ): string | null {
-  if (!Number.isInteger(count) || count < 2 || count > MAX_WINDERS)
+  if (!Number.isInteger(count))
+    return `Stair "${id}": landing ${n} takes \`winders\` 2 to ${MAX_WINDERS}, a whole number of tapered steps, and its \`winders\` is not a whole number`;
+  if (count < 2 || count > MAX_WINDERS)
     return `Stair "${id}": landing ${n} takes \`winders\` 2 to ${MAX_WINDERS}, a whole number of tapered steps (found ${fmt3(count)})`;
   if (Math.abs(landing.w - width) > VERTEX_EPS || Math.abs(landing.h - width) > VERTEX_EPS)
     return `Stair "${id}": landing ${n} with \`winders\` must be the flight \`width\` square (${fmt3(width)} × ${fmt3(width)} mm), not ${fmt3(landing.w)} × ${fmt3(landing.h)} mm`;
@@ -426,7 +428,8 @@ export const stair: ElementDef = {
    *  break lines, the two band edges and the four-stroke arrow), for the drawing budget. A block
    *  stair is that per flight, an outline per landing and up to three more strokes of its
    *  walking line per landing, which is more than `blockStairGlyph` draws, its one break line,
-   *  arrowhead and word being counted on every flight. */
+   *  arrowhead and word being counted on every flight, and on a landing with `winders <n>` one
+   *  more per winder, which covers its `n - 1` tread lines (`winderTreads`). */
   drawCost(resolved): number {
     const s = resolved as RStair;
     if (!isBlockStair(s)) return runTreads(s) + 8;

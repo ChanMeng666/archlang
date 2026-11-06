@@ -1041,7 +1041,7 @@ export function flightsShort(
   for (let tries = 0; tries < MAX_RISER_TRIES; tries++) {
     const risers = need.risers + tries;
     const going = goingFor(rise / risers, rules);
-    if (going <= 0 || total(held(going)) >= risers - 1 - landingGoings(v)) return null;
+    if (going <= 0 || total(held(going)) >= risers - 1 - landingGoings(v, rules.stairMinGoingMm)) return null;
     if (going === rules.stairMinGoingMm) {
       const at = held(need.going);
       const lengthen = runs
@@ -1095,7 +1095,7 @@ export const stairTooSteep: LintRule = {
     const rise = ctx.ir.storeyHeight;
     const out: Diagnostic[] = [];
     for (const v of ups) {
-      const need = minimumRun(rise, ctx.rules, landingGoings(v));
+      const need = minimumRun(rise, ctx.rules, landingGoings(v, ctx.rules.stairMinGoingMm));
       if (need === null) continue;
       const run = runLength(v);
       const short = flightsShort(v, rise, ctx.rules, need);
@@ -1116,7 +1116,7 @@ export const stairTooSteep: LintRule = {
           severity: "warning",
           code: "W_STAIR_TOO_STEEP",
           ...ctx.at(v),
-          message: `${capitalise(stairName(v, ctx))} is too steep: its flights' ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers, ${need.goings} goings and ${landingWords(v)}, each going at least ${going} mm, but the flights hold only ${short.held.join(" + ")} whole goings, which makes ${risers} risers of ${limitMm(rise / risers)} (${owed === 1 ? "1 going" : `${owed} goings`} short).`,
+          message: `${capitalise(stairName(v, ctx))} is too steep: its flights' ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers, ${need.goings} goings and ${landingWords(v, ctx.rules.stairMinGoingMm)}, each ${winding(v)}going at least ${going} mm, but the flights hold only ${short.held.join(" + ")} whole goings, which makes ${risers} risers of ${limitMm(rise / risers)} (${owed === 1 ? "1 going" : `${owed} goings`} short).`,
           hints: [
             `Lengthen ${owed === 1 ? `one flight of \`${v.id}\` ${each[0]}` : `${owed} flights of \`${v.id}\`, ${each.join(" and ")}`} on every storey it is drawn on (each flight's \`size\`), or correct the storey \`height\` if it is wrong; the ${limits} from the lint profile (\`--profile\`).`,
           ],
@@ -1129,7 +1129,7 @@ export const stairTooSteep: LintRule = {
         code: "W_STAIR_TOO_STEEP",
         ...ctx.at(v),
         message: isBlockStair(v)
-          ? `${capitalise(stairName(v, ctx))} is too steep: its flights' ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers, ${need.goings} goings and ${landingWords(v)}, each going at least ${going} mm, so ${m.required} mm of flights (${m.short} mm short).`
+          ? `${capitalise(stairName(v, ctx))} is too steep: its flights' ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers, ${need.goings} goings and ${landingWords(v, ctx.rules.stairMinGoingMm)}, each ${winding(v)}going at least ${going} mm, so ${m.required} mm of flights (${m.short} mm short).`
           : `${capitalise(stairName(v, ctx))} is too steep: its ${mm(run)} mm run must climb the ${mm(rise)} mm storey, and ${atMost} ${need.risers} risers and ${need.goings} goings of at least ${going} mm, a ${m.required} mm run (${m.short} mm short).`,
         hints: [
           isBlockStair(v)
@@ -1145,20 +1145,43 @@ export const stairTooSteep: LintRule = {
 /** The landings between a stair's flights: none on a straight stair. */
 export const landingCount = (v: RStair): number => (isBlockStair(v) ? v.landings.length : 0);
 
-/** The goings a block stair's landings take off its flights: one per level landing, which is one
- *  going, and one per winder on a winder landing, whose tapered steps are goings of their own. */
-export const landingGoings = (v: RStair): number =>
-  isBlockStair(v) ? v.landings.reduce((n, l) => n + (l.winders ?? 1), 0) : 0;
+/**
+ * The goings a winder landing of `winders` tapered steps earns on a stair `width` wide, against a
+ * least going of `going` mm: no more than it has winders, and no more than whole goings fit on the
+ * walking line where it crosses the landing, the quarter arc of radius `width / 2` round the inner
+ * corner. Geometry only: no figure of any standard. Four or eight winders on a 1000 mm stair at a
+ * 220 mm going earn three, since the arc is 785 mm.
+ */
+export function winderGoings(winders: number, width: number, going: number): number {
+  if (!(going > 0)) return winders;
+  const arc = (Math.PI / 2) * (width / 2);
+  return Math.min(winders, Math.floor((arc + VERTEX_EPS) / going));
+}
 
-/** A stair's landings as the message counts them. */
-const landingWords = (v: RStair): string => {
+/** The goings a block stair's landings take off its flights: one per level landing, which is one
+ *  going, and {@link winderGoings} per winder landing, judged at `going`, the profile's least. */
+export const landingGoings = (v: RStair, going: number): number =>
+  isBlockStair(v)
+    ? v.landings.reduce((n, l) => n + (l.winders === undefined ? 1 : winderGoings(l.winders, v.width, going)), 0)
+    : 0;
+
+/** A stair's landings as the message counts them: the winders with the goings they stand in for on
+ *  the walking line, since a winder's own tread is never held to the going minimum. */
+const landingWords = (v: RStair, going: number): string => {
   if (!isBlockStair(v)) return "0 landings";
   const level = v.landings.filter((l) => l.winders === undefined).length;
   const winders = v.landings.reduce((n, l) => n + (l.winders ?? 0), 0);
+  const credit = landingGoings(v, going) - level;
   const levelWords = level === 1 ? "a landing" : `${level} landings`;
   if (winders === 0) return levelWords;
-  return level === 0 ? `${winders} winders` : `${levelWords} and ${winders} winders`;
+  const winderWords = `${winders} winders, which stand in for ${credit === 1 ? "1 going" : `${credit} goings`} on the walking line`;
+  return level === 0 ? winderWords : `${levelWords} and ${winderWords}`;
 };
+
+/** `"flight "` on a stair with winders, so the going minimum the message states reads as the
+ *  flights' own and never as a winder's: a winder tapers to nothing at its inner corner. */
+const winding = (v: RStair): string =>
+  isBlockStair(v) && v.landings.some((l) => l.winders !== undefined) ? "flight " : "";
 
 // ── W_FURNITURE_ON_STAIR ────────────────────────────────────────────────────
 

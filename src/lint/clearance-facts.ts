@@ -335,7 +335,9 @@ function stairFacts(ctx: LintContext): StairFact[] | null {
     const v = sf.v;
     const run = runLength(v);
     const rise = ctx.ir.storeyHeight;
-    const need = ctx.ir._heightsAuthored ? minimumRun(rise, ctx.rules, landingGoings(v)) : null;
+    const need = ctx.ir._heightsAuthored
+      ? minimumRun(rise, ctx.rules, landingGoings(v, ctx.rules.stairMinGoingMm))
+      : null;
     return {
       id: v.id,
       dir: v.dir,
