@@ -10,9 +10,11 @@
  *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`); laid in the finish its
  *   `uses` give it (`floorFinish`, `extras.finish`, ledgered `floor-finish-default`);
  * - column: its box, [e, e + storey height];
- * - wall: its body pieces [e, e + h]; a wall or column wholly under the slab of the storey above
- *   stops at that slab's underside, so the two never overlap or share a face (ledgered
- *   `stops-under-slab-above`); under each cut a sill [e, e + sill], over it a lintel
+ * - wall: its body pieces [e, e + h]; a wall or column whose whole plan lies under the slab of the
+ *   storey above stops at that slab's underside, so the two never overlap or share a face (ledgered
+ *   `stops-under-slab-above`). The stop truncates: a wall declared taller than its storey is cut at
+ *   the underside too, and an opening in it whose head is past the underside is cut there, the slab
+ *   its lintel (ledgered `head-at-slab-above`). Under each cut a sill [e, e + sill], over it a lintel
  *   [e + head, e + h] (§4.1 step 2; a cased opening's head at the wall top makes no lintel). The
  *   body's vertical edges are split at every sill and head that meets them, so body, sill and
  *   lintel meet vertex to vertex (no T-junction);
@@ -41,8 +43,8 @@
  */
 import { floorFinish, STAIR_MATERIAL } from "../materials.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
-import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d, where } from "./extrude.js";
-import { type Rect, rectMinus, slabRegion } from "./slab.js";
+import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
+import { coveredBy, type Rect, rectMinus, slabRegion } from "./slab.js";
 import { stairSolid } from "./stair.js";
 import { isHung, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
@@ -355,22 +357,20 @@ function levelNodes(
   // Under the storey above's slab, a wall or a column stops at the slab's underside (public-surfaces
   // X4 follow-up): the slab, [above − 200 mm, above], would otherwise share its outer face over
   // those 200 mm, two coplanar faces that fight in depth (a sliver along the storey joint in the
-  // assembled view), and the two solids would overlap. It is stopped when every corner of its plan
-  // lies in or on the slab above (less its voids: a wall under a stair's void keeps its height) and
-  // no opening in it reaches the underside. With no storey above (one storey, or the top one),
-  // nothing is stopped.
+  // assembled view), and the two solids would overlap. It is stopped when its whole plan (a wall's
+  // body pieces and its openings' cuts) lies in or on the slab above, less its voids (`coveredBy`:
+  // a wall across a notch of the storey above, or under a stair's void, keeps its height). An
+  // opening whose head reaches past the underside is cut there too: the slab is its lintel (ledgered
+  // `head-at-slab-above`). A wall declared taller than its storey is cut at the underside all the
+  // same: what the plan declares above it would stand inside the slab and the storey above. With no
+  // storey above (one storey, or the top one), nothing is stopped.
   const ceiling = above ? above.elevation - SLAB_MM * MM - e : 0;
   const slabAbove =
     above && ceiling > 0
       ? slabRegion(above.footprint, above.floors, []).flatMap((r) => lessVoids(r.outer, above.voids, "slab", []))
       : [];
-  const underSlab = (ring: readonly Pt[]): boolean =>
-    slabAbove.length > 0 &&
-    ring.every((p) =>
-      slabAbove.some((s) => where(p, s.outer) !== false && !(s.holes ?? []).some((h) => where(p, h) === true)),
-    );
-  const stopped = (height: number, rings: ReadonlyArray<readonly Pt[]>, heads: readonly number[]): boolean =>
-    height > ceiling && ceiling > 0 && heads.every((h) => h <= ceiling) && rings.every(underSlab);
+  const stopped = (height: number, rings: ReadonlyArray<readonly Pt[]>): boolean =>
+    height > ceiling && ceiling > 0 && rings.every((r) => coveredBy(r, slabAbove));
   // The storey is in the field: an id may stand on several storeys.
   const stopLedger = (kind: string, id: string): void => {
     ledger.push({
@@ -385,7 +385,7 @@ function levelNodes(
 
   lv.columns.forEach((c, i) => {
     const box = rect(c.at[0], c.at[1], c.at[0] + c.size.w, c.at[1] + c.size.h);
-    const stop = stopped(lv.storeyHeight, [box.outer], []);
+    const stop = stopped(lv.storeyHeight, [box.outer]);
     if (stop) stopLedger("column", c.id);
     node("column", c.id, i, [prism(box, e, e + (stop ? ceiling : lv.storeyHeight))]);
   });
@@ -474,17 +474,24 @@ function levelNodes(
   const openings = new Map(lv.openings.map((o) => [o.id, o] as const));
   const wallHeight = new Map(
     lv.walls.map((w) => {
-      const heads = w.cuts.flatMap((id) => {
+      const cut = w.cuts.flatMap((id) => {
         const o = openings.get(id);
-        return o ? [o.head] : [];
+        return o ? [o] : [];
       });
-      const stop = stopped(
-        w.height,
-        w.body.map((p) => p.outer),
-        heads,
-      );
-      if (stop) stopLedger("wall", w.id);
-      return [w.id, stop ? ceiling : w.height] as const;
+      const stop = stopped(w.height, [...w.body.map((p) => p.outer), ...cut.map((o) => o.cut)]);
+      if (!stop) return [w.id, w.height] as const;
+      stopLedger("wall", w.id);
+      for (const o of cut.filter((x) => x.head > ceiling)) {
+        ledger.push({
+          kind: o.kind,
+          id: o.id,
+          field: `head_mm(L${lv.level})`,
+          value: ceiling / MM,
+          provenance: "derived",
+          rule: "head-at-slab-above",
+        });
+      }
+      return [w.id, ceiling] as const;
     }),
   );
   const hostHeight = wallHeight;
@@ -644,8 +651,11 @@ function levelNodes(
   });
 
   const floorTop = e + FLOOR_FINISH_MM * MM;
-  // The storey's tallest wall: the roof's height, and the line a hung piece is checked against.
+  // The storey's tallest wall as declared: the roof's height (a roof is hidden, so it keeps it).
   const tallest = lv.walls.reduce((m, w) => Math.max(m, w.height), 0) || lv.storeyHeight;
+  // The tallest wall as built (a wall stopped under the slab above stands at the underside): the line
+  // a piece is checked against, so the ledger's "above walls" means above what is drawn.
+  const tallestBuilt = lv.walls.reduce((m, w) => Math.max(m, wallHeight.get(w.id) ?? w.height), 0) || lv.storeyHeight;
   lv.furniture.forEach((f, i) => {
     const parts = t0Shells(f, floorTop);
     const family = parts ? f.asset.slice("t0:".length) : undefined;
@@ -715,7 +725,7 @@ function levelNodes(
       }
       // Hung at its default above walls that stop lower (a low or a short storey): drawn where the
       // default puts it, and said so.
-      if (floorTop + h * MM > e + tallest) {
+      if (floorTop + h * MM > e + tallestBuilt) {
         ledger.push({
           kind: "furniture",
           id: f.id,
@@ -725,7 +735,7 @@ function levelNodes(
           rule: "furniture-hung-above-walls",
         });
       }
-    } else if (parts && family && floorTop + h * MM > e + tallest) {
+    } else if (parts && family && floorTop + h * MM > e + tallestBuilt) {
       // A standing piece whose default height is above its storey's walls (a tree in the garden,
       // visual-assets V7): built at that height, never clipped to the walls, and said so.
       ledger.push({

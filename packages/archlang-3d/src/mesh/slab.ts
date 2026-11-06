@@ -118,3 +118,78 @@ export function slabRegion(footprint: readonly Ring3[], floors: readonly Floor[]
   }
   return out;
 }
+
+/** The shortest stretch of an edge (µm) `coveredBy` probes, and how far off an edge it looks. */
+const PROBE_MIN = 2;
+const PROBE_OFF = 1;
+
+/** Where segment `ab` meets segment `cd`, as fractions of `ab` (a crossing, a touch, or an overlap's ends). */
+function meets(a: Pt, b: Pt, c: Pt, d: Pt): number[] {
+  const rx = b[0] - a[0];
+  const ry = b[1] - a[1];
+  const sx = d[0] - c[0];
+  const sy = d[1] - c[1];
+  const qx = c[0] - a[0];
+  const qy = c[1] - a[1];
+  const den = rx * sy - ry * sx;
+  if (den !== 0) {
+    const t = (qx * sy - qy * sx) / den;
+    const u = (qx * ry - qy * rx) / den;
+    return t >= 0 && t <= 1 && u >= 0 && u <= 1 ? [t] : [];
+  }
+  if (qx * ry - qy * rx !== 0) return []; // parallel and apart
+  const rr = rx * rx + ry * ry;
+  return [qx * rx + qy * ry, (d[0] - a[0]) * rx + (d[1] - a[1]) * ry].map((x) => x / rr).filter((t) => t > 0 && t < 1);
+}
+
+/** The middle of each stretch of `ab` between the points where `cutters` meet it (one under {@link PROBE_MIN} skipped). */
+function stretches(a: Pt, b: Pt, cutters: ReadonlyArray<readonly [Pt, Pt]>): Pt[] {
+  const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+  const ts = [0, 1, ...cutters.flatMap(([c, d]) => meets(a, b, c, d))].sort((x, y) => x - y);
+  const out: Pt[] = [];
+  for (let i = 1; i < ts.length; i++) {
+    const t0 = ts[i - 1] as number;
+    const t1 = ts[i] as number;
+    if ((t1 - t0) * len < PROBE_MIN) continue;
+    const t = (t0 + t1) / 2;
+    out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]);
+  }
+  return out;
+}
+
+const edgesOf = (r: readonly Pt[]): Array<readonly [Pt, Pt]> =>
+  r.map((p, i) => [p, r[(i + 1) % r.length] as Pt] as const);
+
+/**
+ * Whether `ring` lies wholly within `region` (the union of its polygons, each less its holes), its
+ * boundary included: the storey joint stops a wall only where slab covers its whole footprint,
+ * never across a notch of the storey above or a void between slab corners. Exact up to
+ * {@link PROBE_MIN}:
+ * 1. the ring's boundary: every vertex, and the middle of every stretch of its edges between the
+ *    points where a region edge meets them, lies in or on some polygon and not strictly in its holes;
+ * 2. its inside: every stretch of a region edge strictly inside the ring has the region on both
+ *    sides ({@link PROBE_OFF} off it). An edge two polygons share does; the edge of a gap, or of a
+ *    hole wholly inside the ring, does not.
+ */
+export function coveredBy(ring: readonly Pt[], region: readonly Polygon[]): boolean {
+  if (region.length === 0 || ring.length < 3) return false;
+  const inRegion = (p: Pt): boolean =>
+    region.some((s) => where(p, s.outer) !== false && !(s.holes ?? []).some((h) => where(p, h) === true));
+  const ringEdges = edgesOf(ring);
+  const regionEdges = region.flatMap((s) => [s.outer, ...(s.holes ?? [])].flatMap(edgesOf));
+  for (const [a, b] of ringEdges) {
+    if (!inRegion(a)) return false;
+    if (!stretches(a, b, regionEdges).every(inRegion)) return false;
+  }
+  for (const [a, b] of regionEdges) {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    if (len === 0) continue;
+    const nx = (-(b[1] - a[1]) / len) * PROBE_OFF;
+    const ny = ((b[0] - a[0]) / len) * PROBE_OFF;
+    for (const m of stretches(a, b, ringEdges)) {
+      if (where(m, ring) !== true) continue;
+      if (!inRegion([m[0] + nx, m[1] + ny]) || !inRegion([m[0] - nx, m[1] - ny])) return false;
+    }
+  }
+  return true;
+}
