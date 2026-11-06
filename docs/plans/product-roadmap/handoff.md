@@ -14,4 +14,4 @@
 
 **并行会话：** `plan/geo-seo-wave3`（geo-seo 计划）与 `feat/3d-v2-copy`（PR #529）在飞；`docs/plans/README.md` 的程序表两边都要加行。
 
-**证据存放：** 三份只读报告 + 红队在 `D:\.claude-scratch\2026-11-06\archlang-roadmap\`（A 战略、B 用户与竞品、C 现状、D 红队）。所有者确认后移到 `D:\github_repository\claude-kept\2026-11-06-archlang-product-roadmap\`；`evidence.md` 把计划用到的每条结论回指到 growth 仓库的文件路径，报告本体不进本仓库。
+**证据存放：** 研究报告与评审在 `D:\github_repository\claude-kept\2026-11-06-archlang-product-roadmap\`（A 战略、B 用户与竞品、C 现状、D 红队、E/F #533 两轮评审、G #545 评审）。`evidence.md` 把计划用到的每条结论回指到 growth 仓库的文件路径，报告本体不进本仓库。
