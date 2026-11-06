@@ -2379,8 +2379,24 @@ Where a block's stops do not match, the mismatch is the report
 each stop stands as what it says, a stop that comes down as a stairwell and one that rises as a
 stair rising from its floor, and the coverage report says `block-stair`.
 
-There is no winder form. Draw the turn as a landing, and lint reads the run strictly, with fewer
-goings than the stair has. All of this is arithmetic on what the plan says, not a statement that a
+**Winders.** A quarter-turn landing whose size is exactly `width` × `width` may end in
+`winders <n>`, a whole number from 2 to 8: the landing is then drawn as `n` tapered steps fanning
+from its inner corner (the corner its entry and exit sides share) at equal angles, the walking line
+crosses it as one chord, and lint counts each winder as one going instead of the one going a level
+landing replaces. It is not measured as a landing to stand on. A winder is geometry only: no going
+at the walking line or at the narrow end is checked against any standard, and there is no true
+helical (spiral) stair.
+
+```arch
+stair id=s dir up width 1000 {
+  flight at (1195, 145) size 2700x1000
+  landing at (3895, 145) size 1000x1000 winders 4
+  flight at (3895, 1145) size 1000x560
+}
+```
+
+On a half-turn landing, or one larger than the flights, `winders` is refused (`E_STAIR_PIECES`);
+draw that turn as a level landing. All of this is arithmetic on what the plan says, not a statement that a
 stair complies with anything.
 
 **What it does to circulation.** The footprint obstructs the

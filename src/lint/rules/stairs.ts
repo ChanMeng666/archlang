@@ -244,9 +244,11 @@ function turnLegs(v: RStair, ctx: LintContext): Array<[Landing, Landing]> {
   const up = v.dir === "up";
   const along = (f: RStair, l: RStairPiece): number => (runAxis(f) === "y" ? l.size.h : l.size.w);
   let walked = 0;
-  return v.landings.map((piece, i): [Landing, Landing] => {
+  return v.landings.flatMap((piece, i): Array<[Landing, Landing]> => {
     const [a, b] = [flights[i]!, flights[i + 1]!];
     walked += flightRun(a);
+    // Winders are steps, not floor to stand on: there is no landing to measure.
+    if (piece.winders !== undefined) return [];
     const level = up ? (ctx.ir.storeyHeight * walked) / total : Number.POSITIVE_INFINITY;
     const leg = (f: RStair, edge: Side, flight: TurnLeg["flight"]): Landing => ({
       end: "turn",
@@ -257,8 +259,10 @@ function turnLegs(v: RStair, ctx: LintContext): Array<[Landing, Landing]> {
     });
     // A stop drawn `dir down` carries each flight's head as its tail.
     return [
-      leg(a, up ? oppositeSide(tailEdge(a)) : tailEdge(a), "arrives"),
-      leg(b, up ? tailEdge(b) : oppositeSide(tailEdge(b)), "leaves"),
+      [
+        leg(a, up ? oppositeSide(tailEdge(a)) : tailEdge(a), "arrives"),
+        leg(b, up ? tailEdge(b) : oppositeSide(tailEdge(b)), "leaves"),
+      ],
     ];
   });
 }
@@ -1037,7 +1041,7 @@ export function flightsShort(
   for (let tries = 0; tries < MAX_RISER_TRIES; tries++) {
     const risers = need.risers + tries;
     const going = goingFor(rise / risers, rules);
-    if (going <= 0 || total(held(going)) >= risers - runs.length) return null;
+    if (going <= 0 || total(held(going)) >= risers - 1 - landingGoings(v)) return null;
     if (going === rules.stairMinGoingMm) {
       const at = held(need.going);
       const lengthen = runs
@@ -1091,7 +1095,7 @@ export const stairTooSteep: LintRule = {
     const rise = ctx.ir.storeyHeight;
     const out: Diagnostic[] = [];
     for (const v of ups) {
-      const need = minimumRun(rise, ctx.rules, landingCount(v));
+      const need = minimumRun(rise, ctx.rules, landingGoings(v));
       if (need === null) continue;
       const run = runLength(v);
       const short = flightsShort(v, rise, ctx.rules, need);
@@ -1141,8 +1145,20 @@ export const stairTooSteep: LintRule = {
 /** The landings between a stair's flights: none on a straight stair. */
 export const landingCount = (v: RStair): number => (isBlockStair(v) ? v.landings.length : 0);
 
+/** The goings a block stair's landings take off its flights: one per level landing, which is one
+ *  going, and one per winder on a winder landing, whose tapered steps are goings of their own. */
+export const landingGoings = (v: RStair): number =>
+  isBlockStair(v) ? v.landings.reduce((n, l) => n + (l.winders ?? 1), 0) : 0;
+
 /** A stair's landings as the message counts them. */
-const landingWords = (v: RStair): string => (landingCount(v) === 1 ? "a landing" : `${landingCount(v)} landings`);
+const landingWords = (v: RStair): string => {
+  if (!isBlockStair(v)) return "0 landings";
+  const level = v.landings.filter((l) => l.winders === undefined).length;
+  const winders = v.landings.reduce((n, l) => n + (l.winders ?? 0), 0);
+  const levelWords = level === 1 ? "a landing" : `${level} landings`;
+  if (winders === 0) return levelWords;
+  return level === 0 ? `${winders} winders` : `${levelWords} and ${winders} winders`;
+};
 
 // ── W_FURNITURE_ON_STAIR ────────────────────────────────────────────────────
 

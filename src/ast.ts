@@ -766,11 +766,14 @@ export interface StairNode extends NodeBase {
   pieces?: StairPiece[];
 }
 
-/** One rectangle of a block `stair`: `flight|landing at (x,y) size WxH`. */
+/** One rectangle of a block `stair`: `flight|landing at (x,y) size WxH [winders <n>]`. */
 export interface StairPiece {
   kind: "flight" | "landing";
   at: ExprPoint;
   size: { w: Expr; h: Expr };
+  /** On a landing only: the tapered steps (winders) it is divided into, instead of a level
+   *  landing. A quarter turn of `width` × `width`; a winder is never a true helix. */
+  winders?: Expr;
   span: Span;
 }
 

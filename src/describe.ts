@@ -516,6 +516,9 @@ export interface StairLandingSummary {
   bbox: BBox;
   /** How the person climbing turns on it. */
   turn: StairTurn;
+  /** The tapered steps this landing is divided into (`landing … winders <n>`); absent on a
+   *  level landing. */
+  winders?: number;
 }
 
 /**
@@ -1271,7 +1274,11 @@ function blockStairFacts(v: RBlockStair): Pick<VerticalSummary, "flights" | "lan
   const turns = stairTurns(v);
   return {
     flights: flightsOf(v).map((f) => ({ bbox: rectOf(f), run_mm: flightRun(f), entry: tailEdge(f) })),
-    landings: v.landings.map((l, i) => ({ bbox: rectOf(l), turn: turns.landings[i]! })),
+    landings: v.landings.map((l, i) =>
+      l.winders === undefined
+        ? { bbox: rectOf(l), turn: turns.landings[i]! }
+        : { bbox: rectOf(l), turn: turns.landings[i]!, winders: l.winders },
+    ),
     turn: turns.whole,
   };
 }

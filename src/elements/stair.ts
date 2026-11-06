@@ -70,7 +70,15 @@ function parseBlock(ctx: ParseCtx, id: string, line: number): StairNode {
     const at = ctx.parsePoint();
     ctx.eatKeyword("size");
     const size = ctx.parseDimensions();
-    pieces.push({ kind: t.value as StairPiece["kind"], at, size, span: ctx.spanFrom(t.start) });
+    const piece: StairPiece = { kind: t.value as StairPiece["kind"], at, size, span: ctx.spanFrom(t.start) };
+    if (ctx.isKeyword("winders")) {
+      const w = ctx.peek();
+      if (piece.kind !== "landing") ctx.fail("`winders` divides a landing into tapered steps: a flight has none", w);
+      ctx.next();
+      piece.winders = ctx.parseExpr();
+      piece.span = ctx.spanFrom(t.start);
+    }
+    pieces.push(piece);
   }
   ctx.eat("rcurly");
   return node;
@@ -208,6 +216,34 @@ function bandHeld(c: Contact, centre: number, width: number): boolean {
   return c.lo - VERTEX_EPS <= centre - width / 2 && centre + width / 2 <= c.hi + VERTEX_EPS;
 }
 
+/** The most tapered steps one quarter turn takes: more would leave treads with no going at all. */
+export const MAX_WINDERS = 8;
+
+/**
+ * Why landing `n` (1-based among the landings) cannot be divided into `count` winders, or null. A
+ * winder landing is a quarter turn, `width` × `width`, entered across one side and left across an
+ * adjacent one, so its treads fan from the corner those two sides share ({@link winderCorner}).
+ */
+function winderRefusal(
+  id: string,
+  n: number,
+  count: number,
+  landing: BBox,
+  before: BBox,
+  after: BBox,
+  width: number,
+): string | null {
+  if (!Number.isInteger(count) || count < 2 || count > MAX_WINDERS)
+    return `Stair "${id}": landing ${n} takes \`winders\` 2 to ${MAX_WINDERS}, a whole number of tapered steps (found ${fmt3(count)})`;
+  if (Math.abs(landing.w - width) > VERTEX_EPS || Math.abs(landing.h - width) > VERTEX_EPS)
+    return `Stair "${id}": landing ${n} with \`winders\` must be the flight \`width\` square (${fmt3(width)} × ${fmt3(width)} mm), not ${fmt3(landing.w)} × ${fmt3(landing.h)} mm`;
+  const a = contact(landing, before)!.side;
+  const b = contact(landing, after)!.side;
+  if (a === b || a === oppositeSide(b))
+    return `Stair "${id}": landing ${n} with \`winders\` must turn a quarter, entered and left across two adjacent sides; a half-turn or a straight landing takes no winders here`;
+  return null;
+}
+
 /** Resolve the block form: the checks of `E_STAIR_PIECES`, then the record every reader takes. */
 function resolveBlock(n: StairNode, ctx: ResolveCtx): RStair {
   const id = ctx.id;
@@ -274,9 +310,19 @@ function resolveBlock(n: StairNode, ctx: ResolveCtx): RStair {
     const long = runTooLong(`Stair "${id}" flight ${i + 1}`, { w: axial, h: 0 }, pieces[i * 2]!.span);
     if (long) return stop(long);
   }
-  const landings: RStairPiece[] = rects
-    .filter((_, i) => i % 2 === 1)
-    .map((r) => ({ at: { x: r.x, y: r.y }, size: { w: r.w, h: r.h } }));
+  const landings: RStairPiece[] = [];
+  for (let j = 1; j < rects.length; j += 2) {
+    const r = rects[j]!;
+    const landing: RStairPiece = { at: { x: r.x, y: r.y }, size: { w: r.w, h: r.h } };
+    const w = pieces[j]!.winders;
+    if (w !== undefined) {
+      const count = ctx.eval(w);
+      const why = winderRefusal(id, (j + 1) / 2, count, r, rects[j - 1]!, rects[j + 1]!, width);
+      if (why) return stop({ severity: "error", message: why, code: "E_STAIR_PIECES", span: pieces[j]!.span });
+      landing.winders = count;
+    }
+    landings.push(landing);
+  }
   const boarded = n.dir === "up" ? flights[0]! : flights[flights.length - 1]!;
   return { kind: "stair", id, ...box, dir: n.dir, width, flights, landings, _tail: boarded.tail, span: n.span };
 }
@@ -284,7 +330,7 @@ function resolveBlock(n: StairNode, ctx: ResolveCtx): RStair {
 export const stair: ElementDef = {
   kind: "stair",
   keyword: "stair",
-  doc: "A straight flight of stairs: treads, a break line and an UP/DN direction arrow. Or one turning stair, written `stair dir up width 1000 { flight … landing … flight … }`: each `flight` and `landing` takes its own `at` and `size`, in climbing order on every storey, and each touches the next.",
+  doc: "A straight flight of stairs: treads, a break line and an UP/DN direction arrow. Or one turning stair, written `stair dir up width 1000 { flight … landing … flight … }`: each `flight` and `landing` takes its own `at` and `size`, in climbing order on every storey, and each touches the next. A quarter-turn landing `width` × `width` may take `winders <n>` (2–8): tapered steps fanning from its inner corner instead of a level landing.",
   params: [
     {
       name: "at",
@@ -384,7 +430,9 @@ export const stair: ElementDef = {
   drawCost(resolved): number {
     const s = resolved as RStair;
     if (!isBlockStair(s)) return runTreads(s) + 8;
-    return flightsOf(s).reduce((n, f) => n + runTreads(f) + 8, 0) + 4 * s.landings.length;
+    return (
+      flightsOf(s).reduce((n, f) => n + runTreads(f) + 8, 0) + s.landings.reduce((n, l) => n + 4 + (l.winders ?? 0), 0)
+    );
   },
   /**
    * The frame's action on a stair (`frame.ts`'s `transformElement` calls this). The tail is
@@ -399,7 +447,9 @@ export const stair: ElementDef = {
     const out: RStair = { ...el, id, at: r.at, size: r.size, _tail: t.side(tailEdge(el)) };
     if (el.flights !== undefined) {
       out.flights = el.flights.map((f) => ({ ...t.rect(f.at, f.size), tail: t.side(f.tail) }));
-      out.landings = el.landings!.map((l) => t.rect(l.at, l.size));
+      out.landings = el.landings!.map((l) =>
+        l.winders === undefined ? t.rect(l.at, l.size) : { ...t.rect(l.at, l.size), winders: l.winders },
+      );
     }
     if (t.reflected !== (el._mirror === true)) out._mirror = true;
     else delete out._mirror;

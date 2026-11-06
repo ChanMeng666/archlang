@@ -114,7 +114,7 @@ export function stairHeadStr(s: StairNode): string {
 
 /** One line of a block `stair`, shared with the formatter. */
 export function stairPieceStr(p: StairPiece): string {
-  return `${p.kind} at ${ptStr(p.at)} size ${sizeStr(p.size)}`;
+  return `${p.kind} at ${ptStr(p.at)} size ${sizeStr(p.size)}${p.winders !== undefined ? ` winders ${exprStr(p.winders)}` : ""}`;
 }
 
 function stripRoomStr(r: StripRoomChild): string {
