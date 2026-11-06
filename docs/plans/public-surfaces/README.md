@@ -111,7 +111,8 @@ pre-JS h1 and lede; the shared-plan attribution strip; `/s/<id>` and its PNG pre
     | `/start` | by friction, for the curious non-developer |
 
   - Say "no install", never "no signup" (both hosts need an account).
-- **PS-D3 · The playground opens in view mode.**
+- **PS-D3 · The playground opens in view mode.** (The kept intro band is superseded by PG-D6,
+  owner 2026-11-07: `docs/plans/playground-minimal/`.)
   - The drawing fills the screen.
   - **Source stays a visible header button**: this is the Show HN URL and HN readers "expect to
     touch it immediately".
@@ -119,7 +120,8 @@ pre-JS h1 and lede; the shared-plan attribution strip; `/s/<id>` and its PNG pre
   - Every power tool stays, behind **Tools**. That includes Tier-A "3D preview", labelled exactly as
     the 3D decision record says, in both modes.
   - Kept as they are: the attribution strip, the frame headers, and the pre-JS h1 and lede.
-- **PS-D4 · Interaction without code.**
+- **PS-D4 · Interaction without code.** (The thumbnail strip is superseded by PG-D2's gallery,
+  owner 2026-11-07: `docs/plans/playground-minimal/`.)
   - A thumbnail strip switches plans.
   - Pan and zoom.
   - Hover a room for name, area and size; click it for its facts.
