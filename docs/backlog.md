@@ -2647,6 +2647,40 @@ riser the drawing implies, where the plan authors a height. **Gate:** the implie
 example, hand-derived in the test; a plan with no `height` unchanged; the byte-identity law over
 the corpus for `describe()` if a fact is added, and the lint's own corpus findings listed in the PR.
 
+## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
+
+### 3D.1 · The asset check trusts the manifest for the plan PNG — `todo`
+
+`checkAssets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) compares a committed
+`<name>.plan.png` only by SHA-256 against the manifest, then re-rasterises the source to the
+recorded pixel hash; it never decodes the committed file. A PNG swapped together with its manifest
+`sha256` passes. **Gate:** `pixelsHash(readFileSync(file))` must equal `plan.pixelsSha256`; a
+planted swap fails `--check`.
+
+### 3D.2 · No size budget for plan and poster PNGs — `todo`
+
+The budget table caps WebP, MP4 and GLB only; `.plan.png` (92–245 KB today) and `.poster.png` have
+none, so an A1 sheet could grow unchecked. **Gate:** a budget (for example 300 KB) enforced by the
+generator and `--check`.
+
+### 3D.3 · `pngjs` is not declared by `packages/archlang-3d` — `todo`
+
+The generator script imports it through the root `devDependencies` (hoisting). Not shipped
+(`scripts/` is outside `files`), but an isolated install of the workspace would break. **Gate:**
+`pngjs` and `@types/pngjs` in the package's `devDependencies`.
+
+### 3D.4 · Pitched roofs in the 3D preview — `todo` (design first)
+
+A plan's roof becomes a hidden 150 mm flat slab (`roof-flat-150`); every surface says "no pitched
+roofs yet". **Gate:** a design note (which roof forms the core states, how the replay shows them)
+before any code; the laneway GLB pin moves only with its reason.
+
+### 3D.5 · MP4 replays and byte ranges — `todo` (measure)
+
+Cloudflare answers a `Range` request for `/3d/*.mp4` with 200, so Safari may not play the replays;
+the sites fall back to the poster and an MP4 link. **Gate:** a real Safari check; if it fails,
+serve the MP4s from a host that answers 206, or keep the fallback as the design.
+
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
 ### N.1 · The nav row needs 1152px, and the hamburger persists until then — `todo` (a WANT, not a bug)
