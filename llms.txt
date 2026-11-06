@@ -10,6 +10,7 @@ of the project for large language models and AI agents.
 - Repository: https://github.com/chanmeng666/archlang
 - Primary stack: Node.js / JavaScript
 - License: MIT
+- 3D preview: the separate archlang-3d package extrudes the compiled plan; https://archlang.uk/3d
 
 <!-- doors:start -->
 ## Try it
