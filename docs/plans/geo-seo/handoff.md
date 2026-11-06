@@ -20,12 +20,17 @@ This is the resume point. Update it at the end of every session.
 The owner approved the whole § 4 list in chat on 2026-11-06. Done by agents the same day: PR
 merges, the topic swap, Brave, the GitHub MCP Registry request (discussion #3711), two new
 awesome-list entries, three nudges and two rebases; the launch drafts were refreshed to 1.57.0
-(growth #55). **Still the owner's hands** (each prepared to one step; steps in the growth-side
-submissions log of 2026-11-06 and in `README.md` § 4): Cline issue (test, tick, upload the logo),
-Docker catalog PR (`task validate`, `task build`, one `gh pr create`), ClawHub publish then the
-awesome-openclaw entry, YouTube demo public, Glama description, Claude plugin directory and Cursor
-status, click one VS Code and one Cursor install link, and the posts (Show HN 2026-12-01, two
-dev.to, two listicle messages, r/floorplan). Added from the panel run: the next Perplexity leg needs a signed-out
+(growth #55). Later the same day, by agents: Docker catalog PR docker/mcp-registry#6704 (validate and build
+passed locally), the Glama description, Perplexity signed out in Chrome, the Cursor install link
+verified (the deeplink wrote the stdio entry into `~/.cursor/mcp.json`), the Cline form filled in
+the owner's browser. **Still the owner's hands:** Cline (test with Cline, add the logo, tick both
+boxes, submit), ClawHub login (`clawhub login`, device flow; the CLI is installed and
+`clawhub skill publish skills/archlang --slug archlang --name ArchLang` dry-runs clean) then the
+awesome-openclaw entry, the VS Code install-link click, the YouTube decision (the narrated demo
+`HVRRvgif8cQ` is Private and shows 1.36.0: publish it or wait for a current film), dev.to login
+(then an agent saves the two drafts; the owner publishes), Reddit rules read by hand (every
+automated route is blocked), Claude plugin directory and Cursor Marketplace status, and the posts
+(Show HN 2026-12-01, two dev.to, two listicle messages, r/floorplan). Added from the panel run: the next Perplexity leg needs a signed-out
 session, so the owner signs out of Perplexity in Chrome (or says an agent may) before 2026-12-01.
 The run also found the frozen P25 prompt contains an em dash (recorded as a finding, not changed).
 
