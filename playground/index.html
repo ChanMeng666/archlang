@@ -160,7 +160,7 @@
            `disabled` until the app is up (actions.ts wires them); jsPDF and the GLB writer load on
            their first click. -->
       <details class="tools" id="share">
-        <summary class="hd-btn">Share ▾</summary>
+        <summary class="hd-btn">Share <span aria-hidden="true">▾</span></summary>
         <div class="tools-panel share-panel">
           <!-- Two links (ADR 0034). The short one is stored on this site's server, and only when
                it is chosen here; the full one carries the plan after the #, which no browser
@@ -196,7 +196,7 @@
       </details>
       <!-- More (⋯): the render theme and a11y, the edit actions, and the related sites. -->
       <details class="tools" id="more">
-        <summary class="hd-btn" aria-label="More" title="More">⋯</summary>
+        <summary class="hd-btn" aria-label="More" title="More"><span aria-hidden="true">⋯</span></summary>
         <div class="tools-panel">
           <!-- Edit: these change the source, so they open the editor first. -->
           <div class="tools-group" role="group" aria-labelledby="moreEdit">
@@ -248,15 +248,19 @@
         <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a>.
       </p>
     </noscript>
-    <!-- Phone-width view switcher (≤900px only; CSS hides it above). Below the breakpoint
-         the workspace shows ONE of Code / Plan / Problems at a time, full-height, rather
-         than three slivers; mobile-views.ts sets `main[data-mview]`. Toggle buttons, not
-         a tablist: the views are layout states of one workspace, and the desktop layout
-         shows all three at once. -->
+    <!-- Phone-width view switcher of edit mode (≤900px only; CSS hides it above). Below the
+         breakpoint the workspace shows ONE view at a time, full-height, and this is its one view
+         control (card PG5b ①): the output tab row is hidden there, so each function has one
+         button. Plan, 3D, Facts and Checks are the output tabs (Checks with the compile
+         diagnostics over it, counted on its button); Code is the editor. mobile-views.ts sets
+         `main[data-mview]`. Toggle buttons, not a tablist: the views are layout states of one
+         workspace, and the desktop layout shows the editor and the output at once. -->
     <nav class="mviews" id="mviews" aria-label="Workspace view">
       <button class="mview" type="button" data-mview="code" aria-pressed="false">Code</button>
       <button class="mview" type="button" data-mview="plan" aria-pressed="true">Plan</button>
-      <button class="mview" type="button" data-mview="problems" aria-pressed="false">Problems <span class="mview-count" id="mviewCount"></span></button>
+      <button class="mview" type="button" data-mview="3d" aria-pressed="false">3D</button>
+      <button class="mview" type="button" data-mview="facts" aria-pressed="false">Facts</button>
+      <button class="mview" type="button" data-mview="checks" aria-pressed="false">Checks <span class="mview-count" id="mviewCount"></span></button>
     </nav>
     <main data-mview="plan">
       <section class="pane">
@@ -290,8 +294,8 @@
                until a plan with `level` blocks is compiled.
              - The status (`#status`): a notice, top centre, only while the plan is compiling (and
                slow enough to notice) or broken, or for a moment after an action; dismissible. When
-               the plan is fine nothing shows, but `#statusText` stays a live region, visually
-               hidden, so assistive tech hears every state.
+               the plan is fine nothing shows. Its live region is `#statusLive`, a mirror under
+               <body> (below `main`), never inside a box that is not drawn.
              Hidden until main.ts wires it: with no script there is nothing to switch to. -->
         <div class="stage-switch-row" id="stageSwitchRow" hidden>
           <div class="stage-switch" role="group" aria-label="View">
@@ -300,7 +304,7 @@
           </div>
           <span class="lv-group" id="storeys" role="group" aria-label="Storey" hidden></span>
           <div class="stage-status" id="status">
-            <span id="statusText" role="status" aria-live="polite"></span>
+            <span id="statusText"></span>
             <button type="button" class="stage-status-x" id="statusDismiss" aria-label="Dismiss this message" hidden>×</button>
           </div>
         </div>
@@ -335,7 +339,7 @@
             <div id="takeoff"></div>
           </section>
         </div>
-        <!-- Checks (edit mode; the phone's Problems view): the review findings the drawing's Checks
+        <!-- Checks (edit mode; on a phone, under the compile diagnostics): the review findings the drawing's Checks
              layer rings (checks-panel.ts lists them here in edit mode), the lint panel with its
              profile, Repair, Suggest and the Finish results, and the intent check, as sections of
              one panel. -->
@@ -386,6 +390,11 @@
           <p class="lede" id="lede"><!--doors:canonical-line--></p>
         </div>      </section>
     </main>
+    <!-- The status's live region (main.ts `sayStatus`): the stage notice's text, mirrored here,
+         visually hidden. A child of <body>, so no layout ever puts it in a `display: none` box (the
+         stage's pane is not drawn in the phone's Code view): assistive tech hears every state,
+         errors typed on a phone included (card PG5b ②). -->
+    <p class="vh" id="statusLive" role="status" aria-live="polite"></p>
     <!-- Make your own: the ways to get a plan of your own. A native <dialog> opened with
          showModal(), so focus stays inside it and Escape closes it. Its body is written on the
          first open by make-own.ts (its own chunk), from site-shared/doors.json, the one file every

@@ -60,7 +60,7 @@ another PDF tool. With the ArchLang MCP tools:
    choose a smaller scale or a larger sheet, and say which.
 2. For SVG, `compile` returns the drawing.
 3. For PDF, PNG or DXF, call the `link` tool and give the user its `playground` URL. In the
-   Playground they choose the format beside the Download button and press it.
+   Playground they open Share and press the format under Download.
 4. Say plainly that the user downloads the file and that you wrote none. A Playground PDF is an
    image on a page of the sheet's paper size; a vector PDF needs the CLI.
 

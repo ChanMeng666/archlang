@@ -36,7 +36,9 @@ consumes the built core (`../dist/index.js`). Deployed at
   Intent. The **storey switcher** has one home, top-left on the stage under Plan | 3D, in both
   modes, driving every view. The **status** shows only while the plan is compiling (once that is
   slow enough to notice) or broken, or for a moment after an action: a dismissible notice on the
-  stage and a dot on **Source**; `#statusText` stays a live region either way.
+  stage and a dot on **Source**. Its live region is `#statusLive`, a visually hidden copy of the
+  notice's text directly under `<body>`, so it is heard in every layout, the phone's Code view
+  included.
 - **One menu per kind of action (ruling PG-D5):** **Share ▾** holds Copy short link and Copy full
   link (with ADR 0034's note beside them), **Embed**, and **Export**: Copy SVG, Copy PNG and
   Download SVG · PNG · PDF · DXF · TXT · GLB (GLB is the whole plan, written in the page with its
@@ -73,8 +75,9 @@ consumes the built core (`../dist/index.js`). Deployed at
   TXT / GLB. Exports strip the `data-span` annotations, so downloaded files stay clean.
 - **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive —
   at ≤900px view mode is the drawing full screen, and edit mode shows one of
-  **Code / Plan / Problems** at a time under a sticky switcher (Problems: the diagnostics over
-  the Checks tab's content), with touch-sized controls and no sideways scroll.
+  **Code / Plan / 3D / Facts / Checks** at a time under a sticky switcher, its one view control
+  there (Checks: the diagnostics over the Checks tab's content), with 44 px touch targets and no
+  sideways scroll.
 
 The app is written in **TypeScript** (`src/*.ts`). Note that `npm run build` does **not**
 typecheck it — Vite strips types with esbuild without checking them. Run `npm run typecheck`
@@ -106,7 +109,7 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `embed-snippets.ts` | the Embed dialog's iframe and Markdown snippets (an example's hosted drawing, or a plain link) |
 | `embed.ts` / `viewer.ts` | the chrome-less `embed.html` page and its viewer runtime |
 | `facts-strip.ts` / `describe-panel.ts` / `takeoff-panel.ts` / `lint-panel.ts` / `intent-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels (the facts line; the Facts and Checks tabs' sections; the diagnostics drawer) |
-| `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher of edit mode (`main[data-mview]`; Problems opens the Checks tab) |
+| `mobile-views.ts` | the ≤900px Code / Plan / 3D / Facts / Checks view switcher of edit mode, which replaces the tab row there (`main[data-mview]`; each view but Code opens its tab) |
 | `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`), the `&edit` mode flag and the `&3d` view flag; asks the Worker for a short link and reads `#s=<id>` |
 | `preview3d.ts` / `plan3d.ts` / `glb-export.ts` | the 3D preview (lazy: three.js and archlang-3d), the plan → Mesh3D path it shares with Share → Download GLB, and the GLB writer (its own lazy chunk) |
 | `raster-export.ts` | the PNG/PDF rasterising and the download helper behind Share → Export |

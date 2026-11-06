@@ -16,14 +16,17 @@
  * with this tab open compiles once, not twice; `adaptPlan`'s resolve is the package's own.
  *
  * The view turns freely (card CR4): the package's free camera (`interactive`) and its toolbar
- * (presets, Reset, storeys shown). Grabbing the view pauses the playback; scrubbing or Replay hands
- * the camera back to the replay; an edit keeps the view the user left.
+ * (presets and Reset). Grabbing the view pauses the playback; scrubbing or Replay hands the camera
+ * back to the replay; an edit keeps the view the user left. The toolbar's own "Storeys shown"
+ * cut-away is left out (`storeys: false`, card PG5b): the page's storey switcher is the one storey
+ * control, and it already chooses what this view shows (no storey picked: all of them; Ln: that
+ * storey alone).
  *
  * The 3D stage (playground-minimal card PG1, ruling PG-D4): the canvas fills the whole tab, its
  * drawing size following the box it sits in (`ResizeObserver`, CSS size × device pixels, capped;
  * the package's `resize`), and every control floats over it, dimmed until the pointer or the focus
  * is on it: Replay, the caption's lead and its ⓘ bottom-left, the scrubber a thin line along the
- * foot, ⟲ Reset, `View ▾` (the package's compact toolbar) and the storeys top-right. The
+ * foot, ⟲ Reset and `View ▾` (the package's compact toolbar) top-right. The
  * ⓘ card holds the PS-D12 line, the limits line and the link (`PREVIEW_LABEL`, `PREVIEW_LIMITS`);
  * every word stays in the page, only its place changed. The facts the replay HTML lays over its
  * canvas are not laid over this one: the page's own facts line says them.
@@ -178,7 +181,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   // It takes the pointer and keys (the free camera, card CR4), so it is an application, not an image.
   canvas.setAttribute("role", "application");
 
-  // ---- top-right: ⟲ Reset, View ▾ and the storeys (the package's compact toolbar) ----
+  // ---- top-right: ⟲ Reset and View ▾ (the package's compact toolbar) ----
   // (The GLB is Share → Export → GLB since card PG4, ruling PG-D5: one home for every export.)
   const top = document.createElement("div");
   top.className = "p3d-float p3d-top";
@@ -444,7 +447,9 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       next = mountReplay(canvas, payload, undefined, { interactive: true, onTake: stop });
       if (keep) next.view?.restore(keep);
       views.replaceChildren(
-        ...(next.view ? [viewToolbar(next.view, { buttonClass: "p3d-btn", hintId: "p3d-hint", compact: true })] : []),
+        ...(next.view
+          ? [viewToolbar(next.view, { buttonClass: "p3d-btn", hintId: "p3d-hint", compact: true, storeys: false })]
+          : []),
       );
       canvas.setAttribute("aria-describedby", "p3d-hint");
       const which = index < 0 ? (levels.length > 1 ? "all storeys" : "") : `storey L${level}`;

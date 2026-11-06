@@ -184,6 +184,30 @@ describe("viewToolbar's default form (the replay HTML's row)", () => {
     // `compact: false` is the default, exactly.
     const off = viewToolbar(fakeView(2), { buttonClass: "b", hintId: "h", compact: false }) as unknown as FakeElement;
     expect(outline(off)).toEqual(outline(bar));
+    // …and so is `storeys: true` (playground card PG5b's option, on by default).
+    const on = viewToolbar(fakeView(2), { buttonClass: "b", hintId: "h", storeys: true }) as unknown as FakeElement;
+    expect(outline(on)).toEqual(outline(bar));
+  });
+
+  it("`storeys: false` leaves out only the Storeys shown group, in either form", () => {
+    for (const compact of [false, true]) {
+      const full = outline(
+        viewToolbar(fakeView(3), { buttonClass: "b", hintId: "h", compact }) as unknown as FakeElement,
+      );
+      const view = fakeView(3);
+      const bar = viewToolbar(view, {
+        buttonClass: "b",
+        hintId: "h",
+        compact,
+        storeys: false,
+      }) as unknown as FakeElement;
+      // The full outline minus the group's line and its three buttons' lines, nothing else.
+      expect(outline(bar)).toEqual(full.filter((l) => !l.includes("Storeys shown") && !l.includes("data-storeys=")));
+      expect(bar.all().some((e) => e.dataset.storeys !== undefined)).toBe(false);
+      // The view's own cut-away still works: only the buttons are gone.
+      view.showStoreys(1);
+      expect(view.calls).toEqual(["storeys:1"]);
+    }
   });
 
   it("a preset and Reset do what they did", () => {

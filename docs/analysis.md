@@ -297,7 +297,7 @@ change.
 entrance.
 
 This is what makes a sealed-off room or a wheelchair-impassable corridor visible as
-*data* — the playground's Describe tab draws it as a reachability diagram.
+*data* — the playground's Facts tab (its Describe section) draws it as a reachability diagram.
 
 ## Circulation — how a person walks the plan
 

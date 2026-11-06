@@ -44,7 +44,7 @@ convention in its name (`length_centreline_mm` against `length_face_mm`, `area_n
 read from a spreadsheet says what it measures. `--format` picks `csv` (one figure per row) or `md`
 (tables, the default); `--waste <pct>` adds a floor area with the allowance you chose, and no
 allowance is ever assumed. The same figures are `describe --facts quantities`, and the Playground's
-Takeoff tab shows them for the storey on screen, with a box for your waste percentage that starts
+Facts tab (its Takeoff section) shows them for the storey on screen, with a box for your waste percentage that starts
 blank and a CSV of the whole plan in the same bytes as `--format csv`.
 
 ```bash

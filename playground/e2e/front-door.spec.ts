@@ -166,3 +166,71 @@ test.describe("front door", () => {
     expect(body).toContain("https://archlang.uk/llms-full.txt");
   });
 });
+
+/**
+ * The header's three disclosures (card PG5b ⑧ ⑨): the plan gallery, Share and ⋯ (More). One open
+ * at a time, whichever opens; each closes when the focus Tabs out of it; and each is named by its
+ * words, its glyphs (▦, ▾, ⋯) hidden from the accessibility tree.
+ */
+test.describe("the header's menus (card PG5b)", () => {
+  const MENUS = ["#gallery", "#share", "#more"] as const;
+  const isOpen = (page: Page, id: string) => page.locator(id).evaluate((d) => (d as HTMLDetailsElement).open);
+  const focusInside = (page: Page, id: string) =>
+    page.evaluate((sel) => document.querySelector(sel)!.contains(document.activeElement), id);
+
+  test("are named by their words, not their glyphs", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await expect(page.locator("#share > summary")).toHaveAccessibleName("Share");
+    await expect(page.locator("#more > summary")).toHaveAccessibleName("More");
+    await expect(page.locator("#gallery > summary")).toHaveAccessibleName(/^Plan: \S/);
+    await expect(page.locator("#gallery > summary")).not.toHaveAccessibleName(/[▦▾]/);
+    // The glyphs are still drawn, and hidden from assistive tech.
+    for (const glyph of ["▦", "▾", "⋯"]) {
+      const spans = page.locator("header summary span", { hasText: glyph });
+      expect(await spans.count(), `${glyph} is drawn`).toBeGreaterThan(0);
+      for (const el of await spans.all()) await expect(el).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
+  test("opening any one closes the others", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    for (const first of MENUS) {
+      for (const next of MENUS) {
+        if (next === first) continue;
+        await page.locator(`${first} > summary`).click();
+        expect(await isOpen(page, first), `${first} opens`).toBe(true);
+        await page.locator(`${next} > summary`).click();
+        expect(await isOpen(page, next), `${next} opens`).toBe(true);
+        for (const other of MENUS)
+          if (other !== next) expect(await isOpen(page, other), `${other} closed by opening ${next}`).toBe(false);
+        // Shut it again for the next pair.
+        await page.keyboard.press("Escape");
+        await expect.poll(() => isOpen(page, next)).toBe(false);
+      }
+    }
+  });
+
+  test("Share and ⋯ close when the focus Tabs out, as the gallery does", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    for (const id of MENUS) {
+      await page.locator(`${id} > summary`).click();
+      expect(await isOpen(page, id)).toBe(true);
+      // Tab past the last focusable control inside: out of the menu.
+      const stops = await page
+        .locator(`${id} :is(a[href], button:not([disabled]), input, select, summary)`)
+        .evaluateAll((els) => els.filter((e) => (e as HTMLElement).getClientRects().length > 0).length);
+      for (let i = 0; i <= stops && (await focusInside(page, id)); i++) await page.keyboard.press("Tab");
+      expect(await focusInside(page, id), `the focus left ${id}`).toBe(false);
+      await expect.poll(() => isOpen(page, id), `${id} closes on a Tab out`).toBe(false);
+    }
+    // Shift+Tab out of the top works too: from Share's trigger back to Source.
+    await page.locator("#share > summary").click();
+    await page.locator("#share > summary").focus();
+    await page.keyboard.press("Shift+Tab");
+    await expect(page.locator("#sourceToggle")).toBeFocused();
+    await expect.poll(() => isOpen(page, "#share")).toBe(false);
+  });
+});

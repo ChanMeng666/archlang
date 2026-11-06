@@ -1,7 +1,16 @@
 import { readFileSync } from "node:fs";
 import { describe as describeSuite, expect, it } from "vitest";
 import { describe, describeLevel } from "../../src/index.js";
-import { areaText, factsLine, openingsText, roomCardFacts, roomTip, sizeText, sourceLines } from "../src/room-facts.js";
+import {
+  areaText,
+  factsLine,
+  factsLineAll,
+  openingsText,
+  roomCardFacts,
+  roomTip,
+  sizeText,
+  sourceLines,
+} from "../src/room-facts.js";
 
 const example = (name: string) =>
   readFileSync(new URL(`../../examples/${name}.arch`, import.meta.url), "utf8").replace(/\r\n?/g, "\n");
@@ -105,6 +114,20 @@ describeSuite("against describe() of the shipped examples", () => {
     expect(factsLine(src, upper, 2)).toMatch(
       new RegExp(`→ ${upper.totals.rooms} rooms · ${upper.totals.net_floor_area_m2} m² \\(net\\) · level 2$`),
     );
+  });
+
+  it("every storey's facts line adds the storeys up and says it is all of them (card PG5b)", () => {
+    const src = example("townhouse");
+    const whole = describe(src);
+    const levels = whole.levels!;
+    expect(levels.length).toBe(3);
+    const rooms = levels.reduce((n, l) => n + l.totals.rooms, 0);
+    const net = Math.round(levels.reduce((n, l) => n + l.totals.net_floor_area_m2!, 0) * 100) / 100;
+    const line = factsLineAll(src, levels);
+    expect(line).toBe(`${sourceLines(src)} lines of ArchLang → ${rooms} rooms · ${net} m² (net) · all 3 storeys`);
+    // describe()'s own top-level totals are the lowest storey's: the combined line is more.
+    expect(rooms).toBeGreaterThan(whole.totals.rooms);
+    expect(line).not.toMatch(/level \d/);
   });
 
   it("a circular room and a trapezoid say what their size measures", () => {

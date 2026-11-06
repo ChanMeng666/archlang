@@ -42,9 +42,16 @@ export interface ToolbarOptions {
    * only where the presets sit changes. Off by default: the row the replay HTML shows.
    */
   compact?: boolean;
+  /**
+   * The "Storeys shown" cut-away buttons (a plan of more than one storey). On by default: the row
+   * the replay HTML shows. `false` leaves them out, for a host with its own storey control that
+   * already chooses which storeys the view shows (the playground's storey switcher, card PG5b), so
+   * the page has one storey control, not two. `view.showStoreys` is unchanged either way.
+   */
+  storeys?: boolean;
 }
 
-/** The toolbar for `view`: preset buttons, Reset, the storeys (more than one), the hint. */
+/** The toolbar for `view`: preset buttons, Reset, the storeys (more than one, unless `storeys: false`), the hint. */
 export function viewToolbar(view: ViewControl, opts: ToolbarOptions = {}): HTMLElement {
   const bar = document.createElement("div");
   bar.className = "archlang-views";
@@ -128,7 +135,7 @@ export function viewToolbar(view: ViewControl, opts: ToolbarOptions = {}): HTMLE
     bar.append(button("Reset", resetLabel, () => view.reset()));
   }
 
-  if (view.storeys > 1) {
+  if (view.storeys > 1 && opts.storeys !== false) {
     const group = document.createElement("span");
     group.className = "archlang-views-storeys";
     group.setAttribute("role", "group");
