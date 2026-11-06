@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { dirname, join, posix } from "node:path";
 import { fileURLToPath } from "node:url";
 import { gzipSync } from "node:zlib";
 import { expect, type Page, test } from "@playwright/test";
@@ -1308,12 +1308,22 @@ type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
  * fetched in view mode). The compiler is the one startup chunk outside the view path: preloaded so
  * it downloads with the page, but a `modulepreload`, never the render's own script.
  *
- * Two size gates, both on SUMS of gzip sizes, never per chunk (a per-chunk ±1 % fired on ordinary
+ * "Startup chunks" are the files index.html names AND everything they import statically, walked
+ * through the built files (card PG5a): no lazy heavyweight (three.js, CodeMirror, glTF-Transform,
+ * jsPDF and html2canvas, the takeoff panel) is reachable from them, from the `import()`s every
+ * visit makes (main.ts: the compiler, the examples and samples, the header actions), from the
+ * files embed.html names, nor, but for the editor itself, from the editor's chunk.
+ *
+ * Four size gates, all on SUMS of gzip sizes, never per chunk (a per-chunk ±1 % fired on ordinary
  * core growth, a re-bless hazard that teaches re-blessing; a sum is indifferent to the bundler
  * renaming or re-splitting chunks):
  *
- * - `viewBudget` (60,000 B, PS-D5): the view path — every startup chunk but the compiler — is a
- *   hard ceiling, not a growth allowance.
+ * - `viewBudget` (60,000 B, PS-D5 / PG-D7): the view path — what the entry and every preload but the
+ *   compiler reach — is a hard ceiling, not a growth allowance.
+ * - `compilerPathBudget`: the view path and the compiler with what it reaches, the JS that loads by
+ *   the end of the first compile. A hard ceiling too; the baseline file says how it was set.
+ * - `embedPathBudget`: what embed.html's script and preloads reach (the embed imports the core
+ *   statically). A hard ceiling, set the same way.
  * - `growthBudget` (20,000 B): every startup chunk, compiler included, against the baseline. The 3D
  *   chunk is ~150,500 B gzip (three.js and the package, measured at A8), so a leak of even an eighth
  *   of it trips the gate, while ordinary core growth (hundreds of bytes per feature) takes dozens of
@@ -1331,19 +1341,25 @@ test.describe("startup chunks", () => {
       readFileSync(join(dirname(fileURLToPath(import.meta.url)), "startup-chunks.baseline.json"), "utf8"),
     ) as {
       viewBudget: number;
+      compilerPathBudget: number;
+      embedPathBudget: number;
       growthBudget: number;
       gzip: Record<string, number>;
       compilerGzip: Record<string, number>;
     };
-    const html = readFileSync(join(DIST, "index.html"), "utf8");
-    const scripts = [...html.matchAll(/<script type="module"[^>]*\bsrc="\.\/(assets\/[^"]+\.js)"/g)].map(
-      (m) => m[1] as string,
-    );
-    const preloads = [...html.matchAll(/<link rel="modulepreload"[^>]*\bhref="\.\/(assets\/[^"]+\.js)"/g)].map(
-      (m) => m[1] as string,
-    );
-    const startup = [...new Set([...scripts, ...preloads])];
-    expect(scripts.length, "index.html loads a module script").toBeGreaterThan(0);
+    // A page's own module script and modulepreloads, as index.html / embed.html name them.
+    const pageRoots = (page: string) => {
+      const html = readFileSync(join(DIST, page), "utf8");
+      const scripts = [...html.matchAll(/<script type="module"[^>]*\bsrc="\.\/(assets\/[^"]+\.js)"/g)].map(
+        (m) => m[1] as string,
+      );
+      const preloads = [...html.matchAll(/<link rel="modulepreload"[^>]*\bhref="\.\/(assets\/[^"]+\.js)"/g)].map(
+        (m) => m[1] as string,
+      );
+      expect(scripts.length, `${page} loads a module script`).toBeGreaterThan(0);
+      return { scripts, preloads };
+    };
+    const { scripts, preloads } = pageRoots("index.html");
 
     const assets = readdirSync(join(DIST, "assets"));
     const one = (re: RegExp, what: string): string => {
@@ -1357,38 +1373,129 @@ test.describe("startup chunks", () => {
     // Download GLB's writer (card X5): its own chunk, so glTF-Transform grows neither the startup
     // chunks nor the 3D chunk.
     const glb = one(/^glb-export-[\w-]+\.js$/, "one GLB-writer chunk");
-    expect(startup, "the GLB writer is not loaded or preloaded at startup").not.toContain(glb);
+    // Download PDF's jsPDF and the html2canvas it loads (card PG5a): only on the first PDF.
+    const jspdf = one(/^jspdf[-.][\w.-]+\.js$/, "one jsPDF chunk");
+    const html2canvas = one(/^html2canvas-[\w-]+\.js$/, "one html2canvas chunk");
+    const takeoff = one(/^takeoff-panel-[\w-]+\.js$/, "one takeoff chunk");
     expect(readFileSync(join(DIST, lazy3d), "utf8"), "the 3D chunk carries no GLB writer").not.toContain(
       "glTF-Transform",
     );
-    expect(startup, "the 3D chunk is not loaded or preloaded at startup").not.toContain(lazy3d);
-    expect(startup, "the editor's chunk is not loaded or preloaded at startup").not.toContain(editor);
     // The compiler: preloaded with the page, never the script the first paint waits on.
     expect(preloads, "the compiler is preloaded").toContain(compiler);
     expect(scripts, "the compiler is not the page's module script").not.toContain(compiler);
+
+    // What a startup file costs is everything it imports statically, not the file alone: a
+    // module's static imports load and run before it does. The pages name only the roots, so
+    // the gate walks the graph from them (card PG5a: the compiler once imported the whole jsPDF
+    // chunk, ~129 KB gzip, for the bundler's runtime helpers, and a gate that counted only the
+    // files index.html names never saw it). A dynamic `import()` is not followed: that is a lazy
+    // chunk, loaded on demand, unless it is one every visit makes (`boot` below).
+    // A relative specifier resolves against the importing file, `?query` dropped; one that names
+    // no built file fails here, so a change in how the bundler spells imports cannot quietly
+    // drop edges from the walk.
+    const resolveFrom = (from: string, spec: string): string => {
+      const file = posix.normalize(posix.join(posix.dirname(from), spec.replace(/[?#].*$/, "")));
+      expect(existsSync(join(DIST, file)), `${from} imports "${spec}", a built file`).toBe(true);
+      return file;
+    };
+    const imports = (file: string, re: RegExp): string[] =>
+      [...readFileSync(join(DIST, file), "utf8").matchAll(re)].map((m) => resolveFrom(file, m[1] as string));
+    // `import x,{a as b}from"./c.js"`, `import*as x from…`, `import"./c.js"` and the re-exports
+    // `export{…}from…` / `export*from…`; never `import("./c.js")`.
+    const STATIC =
+      /\b(?:import|export)\s*(?:[\w$]+\s*,?\s*)?(?:\*(?:\s*as\s+[\w$]+)?|\{[^}]*\})?\s*(?:from\s*)?["'](\.{1,2}\/[^"']+)["']/g;
+    const DYNAMIC = /\bimport\(\s*["'`](\.{1,2}\/[^"'`]+)["'`]\s*\)/g;
+    const staticImports = (file: string) => imports(file, STATIC);
+    const reach = (roots: string[]): string[] => {
+      const seen = new Set<string>();
+      const todo = [...roots];
+      while (todo.length) {
+        const file = todo.pop() as string;
+        if (seen.has(file)) continue;
+        seen.add(file);
+        todo.push(...staticImports(file));
+      }
+      return [...seen].sort();
+    };
+    // The walk itself is checked to see imports: the entry imports its shared chunks, and the
+    // compiler at least the bundler's runtime helpers, so a parser miss cannot drop the
+    // compiler's imports from both the forbidden-chunk check and the budgets.
+    expect(staticImports(scripts[0] as string).length, "the walk reads the entry's static imports").toBeGreaterThan(0);
+    expect(reach([compiler]).length, "the walk reads the compiler's static imports").toBeGreaterThan(1);
+    const viewPath = reach([...scripts, ...preloads.filter((p) => p !== compiler)]);
+    const startup = reach([...scripts, ...preloads]);
+    expect(viewPath, "the compiler is not reached by the view path's static imports").not.toContain(compiler);
+
+    // The `import()`s every visit makes once the drawing is up (main.ts): the compiler and the
+    // example sources and samples (the gallery) at the top level, the header actions once the
+    // compiler is in. Named by source module, each checked to be a dynamic import in main.ts and
+    // in the built entry, the chunk read from the built graph. They join the forbidden-chunk
+    // check only: the compiler is already in `compilerPathBudget`, and the rest (the example
+    // sources, the actions) load after the first compile by design, outside PG-D7's startup.
+    const mainTs = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src", "main.ts"), "utf8");
+    const entryDynamic = imports(scripts[0] as string, DYNAMIC);
+    const boot = ["compiler", "examples", "samples", "actions"].map((name) => {
+      expect(mainTs, `main.ts imports ./${name}.js at boot`).toContain(`import("./${name}.js")`);
+      const found = entryDynamic.filter((f) => new RegExp(`^assets/${name}-[\\w-]+\\.js$`).test(f));
+      expect(found, `the built entry imports one ${name} chunk dynamically`).toHaveLength(1);
+      return found[0] as string;
+    });
+    expect(boot, "the boot import of ./compiler.js is the compiler chunk").toContain(compiler);
+    const booted = reach([...startup, ...boot]);
+
+    // The embed (embed.html, the iframe other pages show): it imports the core statically
+    // (embed.ts), so it walks into the compiler the way index.html's preload does.
+    const embed = pageRoots("embed.html");
+    const embedPath = reach([...embed.scripts, ...embed.preloads]);
+    expect(embedPath, "the embed reaches the compiler").toContain(compiler);
+
+    const lazy: [string, string][] = [
+      [lazy3d, "the 3D chunk (three.js)"],
+      [editor, "the editor's chunk (CodeMirror)"],
+      [glb, "the GLB writer (glTF-Transform)"],
+      [jspdf, "jsPDF"],
+      [html2canvas, "html2canvas"],
+      [takeoff, "the takeoff panel"],
+    ];
+    for (const [chunk, what] of lazy) {
+      expect(startup, `${what} is not loaded, preloaded or statically imported at startup`).not.toContain(chunk);
+      expect(booted, `${what} is not statically imported by a boot-time import()`).not.toContain(chunk);
+      expect(embedPath, `${what} is not loaded, preloaded or statically imported by the embed`).not.toContain(chunk);
+      // Nor by the editor's chunk: entering edit mode loads no 3D, PDF or GLB code with it.
+      if (chunk !== editor)
+        expect(reach([editor]), `${what} is not statically imported by the editor`).not.toContain(chunk);
+    }
 
     const markers: [string, string][] = [
       ...["WebGLRenderer", "PerspectiveCamera", LABEL].map((m): [string, string] => [m, lazy3d]),
       ...["cm-content", "cm-gutters"].map((m): [string, string] => [m, editor]),
       ["glTF-Transform", glb],
+      ["AcroForm", jspdf],
     ];
     for (const [m, chunk] of markers) {
       expect(readFileSync(join(DIST, chunk), "utf8"), `the marker "${m}" is in ${chunk}`).toContain(m);
     }
-
-    let view = 0;
-    let total = 0;
-    for (const file of startup) {
-      const bytes = readFileSync(join(DIST, file));
-      const size = gzipSync(bytes).length;
-      total += size;
-      if (file !== compiler) view += size;
-      const text = bytes.toString("utf8");
-      for (const [m] of markers) expect(text, `${file} carries 3D or editor code ("${m}")`).not.toContain(m);
+    for (const file of new Set([...booted, ...embedPath])) {
+      const text = readFileSync(join(DIST, file), "utf8");
+      for (const [m] of markers) expect(text, `${file} carries 3D, editor or PDF code ("${m}")`).not.toContain(m);
     }
+
+    const gz = (file: string) => gzipSync(readFileSync(join(DIST, file))).length;
+    const size = (files: string[]) => files.reduce((a, f) => a + gz(f), 0);
+    const view = size(viewPath);
+    const total = size(startup);
+    const embedTotal = size(embedPath);
     expect(view, `the view path is ${view} B gzip (budget ${baseline.viewBudget} B)`).toBeLessThanOrEqual(
       baseline.viewBudget,
     );
+    expect(
+      total,
+      `the view path and the compiler are ${total} B gzip (budget ${baseline.compilerPathBudget} B): ${startup.join(", ")}`,
+    ).toBeLessThanOrEqual(baseline.compilerPathBudget);
+    expect(
+      embedTotal,
+      `the embed path is ${embedTotal} B gzip (budget ${baseline.embedPathBudget} B): ${embedPath.join(", ")}`,
+    ).toBeLessThanOrEqual(baseline.embedPathBudget);
     const sum = (r: Record<string, number>) => Object.values(r).reduce((a, b) => a + b, 0);
     const base = sum(baseline.gzip) + sum(baseline.compilerGzip);
     expect(

@@ -160,9 +160,20 @@ export default defineConfig({
         // optional Node backends are lazy imports), so it gets a chunk of its own first:
         // left to the bundler it lands in `compiler`, and the startup chunk would then import
         // the whole core statically just to reach it.
+        // jsPDF (Download PDF's lazy import) is a group of its own for the same trap with the
+        // bundler's runtime helpers (`__export`, `__commonJS`, …), which the compiler, jsPDF and
+        // the 3D chunks all use. No group `test` ever sees that runtime module: left to the
+        // automatic split, it was put in jsPDF's chunk, and the compiler then imported all of
+        // jsPDF (~129 KB gzip) statically on every visit. With jsPDF captured by a group, Rolldown
+        // emits the runtime as its own `rolldown-runtime` chunk (~0.4 KB gzip). That placement is
+        // a bundler heuristic, not something this config can pin: no group can name the runtime,
+        // and a Rolldown upgrade or a new shared dependency may move it again. What holds it is
+        // the startup gate (playground/e2e/preview3d.spec.ts, "startup chunks"), which walks the
+        // static imports from both pages and fails when jsPDF or another lazy chunk is reached.
         codeSplitting: {
           groups: [
             { name: "preload-helper", test: (id) => id.includes("vite/preload-helper") },
+            { name: "jspdf", test: /node_modules[\\/]jspdf[\\/]/ },
             { name: "compiler", test: (id) => isCompiler(id.replace(/\\/g, "/")) },
           ],
         },
