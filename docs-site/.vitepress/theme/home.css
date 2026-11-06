@@ -60,6 +60,7 @@
    there). Clipped on the home wrapper below rather than "fixed" here, because
    there is no unit for "50% of the client width", and every JS-free approximation
    of one is worse than clipping a band of paper. */
+.VPHome .vp-doc .same-source,
 .VPHome .vp-doc .why,
 .VPHome .vp-doc .how,
 .VPHome .vp-doc .home-gallery,

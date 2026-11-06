@@ -165,6 +165,8 @@ describe("the copy keeps the guardrails", () => {
 
   const HOME_COPY = [
     `${THEME}/CompileSeam.vue`,
+    `${THEME}/SameSource.vue`,
+    `${THEME}/PreviewLine.vue`,
     `${THEME}/WhyCards.vue`,
     `${THEME}/HowSteps.vue`,
     `${THEME}/HomeGallery.vue`,
@@ -180,7 +182,7 @@ describe("the copy keeps the guardrails", () => {
     "docs-site/index.md",
     "docs-site/start.md",
   ];
-  const PAGES = ["docs-site/guide.md", "docs-site/examples.md", "docs-site/gallery.md"];
+  const PAGES = ["docs-site/guide.md", "docs-site/examples.md", "docs-site/gallery.md", "docs-site/3d.md"];
 
   /** Copy with the decided wording that uses a word in its plain sense taken out. */
   const visible = (f: string) =>
@@ -222,6 +224,76 @@ describe("the copy keeps the guardrails", () => {
       }
       expect(TIME.exec(title!)?.[0], `${route}: "${title}" promises a time nobody measured`).toBeUndefined();
     }
+  });
+
+  /**
+   * The 3D preview's wording bans (the 10-28 positioning record, restated in
+   * docs/plans/public-surfaces/3d.md §1): the product word is "3D preview" and the replay a
+   * "drafting-order replay"; never "3D CAD", "render", "walkthrough", "photoreal" or "model" as a
+   * product claim, and BIM only as what it is not. "Not a renderer" is the one sanctioned use of
+   * the word, in the is/isn't row the plan wrote.
+   */
+  const BANS_3D: ReadonlyArray<readonly [RegExp, string]> = [
+    [/3D[\s-]*CAD/i, "never '3D CAD'"],
+    [/walk[\s-]*through/i, "never a 'walkthrough'"],
+    [/photo[\s-]*real/i, "never 'photoreal'"],
+    [/\brender(s|ed|ing)?\b/i, "a 3D preview, never a render"],
+    [/(?<!not a )\brenderers?\b/i, "'renderer' only as 'not a renderer'"],
+    [/\bmodel(s|led|ling)?\b/i, "never 'model' as a product claim"],
+    [/(?<![-\w])(first|only)\b/i, "novelty claims are retired"],
+  ];
+  /** Each `BIM` with no `no`/`not`/`or` in the words before it: a BIM claim. */
+  const bimClaims = (text: string): string[] =>
+    [...text.matchAll(/\bBIM\b/g)]
+      .filter((m) => !/\b(no|not|nor|or)\b/i.test(text.slice(Math.max(0, m.index! - 40), m.index)))
+      .map((m) => text.slice(Math.max(0, m.index! - 40), m.index! + 3));
+  const check3d = (label: string, text: string) => {
+    for (const [re, why] of [...BANS_3D, ...CLAIMS]) expect(re.exec(text)?.[0], `${label}: ${why}`).toBeUndefined();
+    expect(bimClaims(text), `${label}: BIM only as what the 3D preview is not`).toEqual([]);
+  };
+
+  it("the 3D bans catch what they are for (canaries)", () => {
+    for (const bad of [
+      "A photoreal render of your plan.",
+      "Take a walkthrough of the 3D model.",
+      "3D CAD from text.",
+      "BIM-ready output.",
+      "The first 3D preview.",
+    ]) {
+      expect(() => check3d("canary", bad), bad).toThrow();
+    }
+    expect(() => check3d("canary", "Not a renderer, not BIM: no sections, elevations or BIM.")).not.toThrow();
+  });
+
+  const COPY_3D = [
+    `${THEME}/SameSource.vue`,
+    `${THEME}/ThreeDPlans.vue`,
+    `${THEME}/PreviewLine.vue`,
+    `${THEME}/HomeGallery.vue`,
+    `${THEME}/IsIsntTable.vue`,
+    "docs-site/3d.md",
+  ];
+  for (const f of COPY_3D) {
+    it(`${f} keeps the 3D preview's wording bans`, () => check3d(f, visible(f)));
+  }
+
+  it("the package's lines and the download sentence keep the 3D bans and the home words", () => {
+    const payload = read("packages/archlang-3d/src/replay/payload.ts");
+    const lines = [...payload.matchAll(/export const PREVIEW_(?:LEAD|LABEL|LIMITS) =\s*"([^"]+)";/g)].map((m) => m[1]!);
+    expect(lines).toHaveLength(3);
+    const download = /export const PREVIEW_DOWNLOAD = "([^"]+)";/.exec(read("docs-site/three-d.mjs"))?.[1];
+    expect(download).toBeTruthy();
+    for (const text of [...lines, download!]) {
+      check3d(text, text);
+      for (const [re, why] of WORDS) expect(re.exec(text)?.[0], `${text}: ${why}`).toBeUndefined();
+    }
+  });
+
+  it("the /3d PAGE_META row keeps the 3D bans", () => {
+    const config = read("docs-site/.vitepress/config.ts");
+    const row = /\[\s*"\/3d",\s*"([^"]+)",\s*"([^"]+)",?\s*\]/.exec(config);
+    expect(row).toBeTruthy();
+    check3d("/3d PAGE_META", `${row![1]} ${row![2]}`);
   });
 
   it("never compares ArchLang against AI images or CAD in a table (positioning B1)", () => {

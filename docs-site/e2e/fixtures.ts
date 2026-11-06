@@ -77,6 +77,12 @@ export function homeHero(): HomeHero {
   return (JSON.parse(m[1]!) as { hero: HomeHero }).hero;
 }
 
+/**
+ * The 3D preview's lines and plans, read the way sync-docs.mjs reads them (the package's constants
+ * and `docs-site/public/3d/manifest.json`), so a spec checks the page against the same source.
+ */
+export { HOME_3D_PLAN, previewLines, threeDAssets, VIEW3D_PARAM } from "../three-d.mjs";
+
 /** The repo-root artifacts copied verbatim into `public/`, as site routes. */
 export const ROOT_COPY_ROUTES: readonly string[] = tupleTable("ROOT_COPIES").map(([, dest]) => `/${dest}`);
 

@@ -10,6 +10,7 @@
 // with a hole in it.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { HOME_3D_PLAN, previewLines, sizeLabel, threeDAssets, VIEW3D_PARAM } from "./three-d.mjs";
 
 /**
  * The core's version, written in a hand-written page as this token (the `/embed` page's pinned
@@ -176,6 +177,51 @@ export function siteMarkdown(src, deps) {
     return `[${title} (YouTube)](https://youtu.be/${id})`;
   });
 
+  // The 3D preview (card X6): its lines (PreviewLine.vue), the home band (SameSource.vue) and the
+  // /3d page's plans (ThreeDPlans.vue), from the package's constants and the 3D manifest, which
+  // three-d.mjs reads for the components' data module too.
+  const preview = () => previewLines(repo);
+  const assets3d = () => threeDAssets(repo);
+  // The plan as the home gallery's raw links carry it (`example()`), then the 3D flag.
+  const link3d = (name) => `${playgroundLink(example(name))}&${VIEW3D_PARAM}`;
+  text = text.replace(/^<PreviewLine which="(label|limits)" \/>$/gm, (_, which) => {
+    const p = preview();
+    return which === "label" ? `**${p.lead}** ${p.rest} ${p.download}` : p.limits;
+  });
+  text = text.replace(/^<SameSource \/>\n*/m, () => {
+    const vue = read(theme, "SameSource.vue");
+    const p = preview();
+    const a = assets3d().find((x) => x.name === HOME_3D_PLAN);
+    if (!a) throw new Error(`site-markdown: the home band's plan ${HOME_3D_PLAN} has no 3D assets`);
+    const links = [...vue.matchAll(/<a [^>]*?:?href="([^"]+)"[^>]*>\s*([^<]+?)\s*<\/a\s*>/g)].map(([, h, l]) => [h, l]);
+    const [play, about] = [links.find(([h]) => h === "PLAN.link3d"), links.find(([h]) => h === "/3d")];
+    if (!play || !about) throw new Error("site-markdown: SameSource's two links changed shape");
+    return (
+      [
+        `## ${p.title}`,
+        p.rest,
+        `![The plan: ${a.name}.arch, compiled to SVG.](/examples/${a.name}.svg)`,
+        `![The 3D preview of ${a.name}.arch, from the same source as the plan.](${a.poster.png})`,
+        `[The drafting-order replay of ${a.name}.arch (MP4)](${a.video.mp4})`,
+        p.limits,
+        `[${play[1]}](${link3d(a.name)}) · [${about[1]}](/3d)`,
+      ].join("\n\n") + "\n\n"
+    );
+  });
+  text = text.replace(/^<ThreeDPlans \/>$/m, () =>
+    assets3d()
+      .map((a) => {
+        const storey = a.poster.storey ? `, storey ${a.poster.storey}` : "";
+        return [
+          `### ${a.name}.arch`,
+          `![The plan: ${a.name}.arch${storey}, compiled to SVG.](/examples/${a.name}.svg)`,
+          `![The 3D preview of ${a.name}.arch${storey}, from the same source as the plan.](${a.poster.png})`,
+          `[Play the replay (MP4)](${a.video.mp4}) · [Download GLB (${sizeLabel(a.glb.bytes)})](${a.glb.href}) · [Open in the playground (3D)](${link3d(a.name)}) · [Plan source](/examples/${a.name}.arch)`,
+        ].join("\n\n");
+      })
+      .join("\n\n"),
+  );
+
   // The home page: hero (CompileSeam.vue), feature cards (SheetGrid.vue), facts (FactsSection.vue).
   text = text.replace(/^<SheetGrid \/>\n*/m, () => {
     const vue = read(theme, "SheetGrid.vue");
@@ -289,9 +335,12 @@ export function siteMarkdown(src, deps) {
     const plans = [...vue.matchAll(/\{ example: "([^"]+)", caption: "([^"]+)" \}/g)];
     if (plans.length < 6 || plans.length > 8)
       throw new Error(`site-markdown: parsed ${plans.length} HomeGallery plans (6 to 8 expected)`);
+    // A card with a 3D preview (HomeGallery.vue's swap) carries its poster after the drawing.
+    const posters = new Map(assets3d().map((a) => [a.name, a.poster.png]));
     const items = plans.map(
       ([, ex, cap]) =>
-        `- ${cap} [Open \`${ex}.arch\` in the playground](${playgroundLink(example(ex))})\n\n  ![${cap}](/examples/${ex}.svg)`,
+        `- ${cap} [Open \`${ex}.arch\` in the playground](${playgroundLink(example(ex))})\n\n  ![${cap}](/examples/${ex}.svg)` +
+        (posters.has(ex) ? `\n\n  ![The 3D preview of ${ex}.arch, from the same source.](${posters.get(ex)})` : ""),
     );
     return `## ${heading}\n\n${note}\n\n${items.join("\n")}\n\n`;
   });

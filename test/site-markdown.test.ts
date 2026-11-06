@@ -20,6 +20,14 @@ const { siteMarkdown } = (await import(/* @vite-ignore */ SITE_MARKDOWN)) as {
 const { encodePlanHash } = (await import(/* @vite-ignore */ PERMALINK)) as {
   encodePlanHash: (source: string) => string;
 };
+const THREE_D = "../docs-site/three-d.mjs";
+const { HOME_3D_PLAN, previewLines, threeDAssets } = (await import(/* @vite-ignore */ THREE_D)) as {
+  HOME_3D_PLAN: string;
+  previewLines: (repo: string) => { lead: string; title: string; rest: string; limits: string; download: string };
+  threeDAssets: (
+    repo: string,
+  ) => Array<{ name: string; poster: { png: string }; video: { mp4: string }; glb: { href: string } }>;
+};
 
 const syncSrc = readFileSync("docs-site/sync-docs.mjs", "utf8");
 const table = /const SITE_PAGES = \[([\s\S]*?)\n\];/.exec(syncSrc);
@@ -110,6 +118,7 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect(bare).not.toContain("The brief below was given to");
     expect(bare).toContain(`The plan below is \`${HERO.id}.arch\``);
     const sections = [
+      "## Same source, plan and 3D preview",
       "## Why use it",
       "## How it works",
       "## Plans written in ArchLang",
@@ -124,6 +133,51 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect(md).toContain("| Room | Use | Area | Adj. |");
     expect(md).toContain("**Limits.** Plan drawings only");
     expect(md.length).toBeGreaterThan(5000);
+  });
+
+  it("the home copy's 3D band: the package's lines, the plan beside its poster, the replay and a link opening in 3D", () => {
+    const md = render("docs-site/index.md");
+    const lines = previewLines(process.cwd());
+    const band = md.slice(md.indexOf(`## ${lines.title}\n`), md.indexOf("## Why use it"));
+    expect(band.length).toBeGreaterThan(0);
+    // Right after the hero: the hero's playground link, then the band.
+    expect(md.indexOf(`[Open this plan in the Playground](${HERO.link})`)).toBeLessThan(md.indexOf(band));
+    const a = threeDAssets(process.cwd()).find((x) => x.name === HOME_3D_PLAN)!;
+    expect(band).toContain(lines.rest);
+    expect(band).toContain(lines.limits);
+    expect(band).toContain(`(/examples/${a.name}.svg)`);
+    expect(band).toContain(`(${a.poster.png})`);
+    expect(band).toContain(`(${a.video.mp4})`);
+    const link = /\[Try it in the playground →\]\((https:\/\/playground\.archlang\.uk\/#z=([A-Za-z0-9_-]+)&3d)\)/.exec(
+      band,
+    );
+    expect(link, "the band's playground link, with &3d").toBeTruthy();
+    expect(link![2]).toBe(
+      encodePlanHash(readFileSync(`examples/${a.name}.arch`, "utf8").replace(/\r\n/g, "\n").trimEnd()),
+    );
+    expect(band).toContain("[What the 3D preview shows →](/3d)");
+  });
+
+  it("the /3d copy carries both lines and every plan of the 3D manifest, each beside its drawing", () => {
+    const md = render("docs-site/3d.md");
+    const lines = previewLines(process.cwd());
+    expect(md).toContain(`**${lines.lead}** ${lines.rest} ${lines.download}`);
+    expect(md).toContain(lines.limits);
+    const assets = threeDAssets(process.cwd());
+    // Every sized GLB link, read with a fixed pattern (no pattern built from a path).
+    const glbLinks = [...md.matchAll(/\[Download GLB \(\d+ kB\)\]\(([^)\s]+)\)/g)].map((m) => m[1]);
+    const at = assets.map((a) => md.indexOf(`### ${a.name}.arch\n`));
+    for (const [i, pos] of at.entries()) expect(pos, assets[i]!.name).toBeGreaterThan(0);
+    expect([...at].sort((x, y) => x - y)).toEqual(at);
+    for (const a of assets) {
+      expect(md).toContain(`(/examples/${a.name}.svg)`);
+      expect(md).toContain(`(${a.poster.png})`);
+      expect(md).toContain(`[Play the replay (MP4)](${a.video.mp4})`);
+      expect(glbLinks, `${a.name}: a [Download GLB (N kB)] link to its GLB`).toContain(a.glb.href);
+      expect(md).toMatch(
+        /\[Open in the playground \(3D\)\]\(https:\/\/playground\.archlang\.uk\/#z=[A-Za-z0-9_-]+&3d\)/,
+      );
+    }
   });
 
   it("the /examples copy carries every feature sheet, moved there from the home page", () => {

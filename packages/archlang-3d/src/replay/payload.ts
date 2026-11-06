@@ -64,7 +64,7 @@ export const PREVIEW_LABEL =
 export const PREVIEW_LIMITS =
   "3D preview: walls, openings, floors, stairs and furniture in flat colours; no pitched roofs yet, and no sections, elevations or BIM.";
 /** The page that says what the 3D preview shows and does not (the docs site's `/3d`). */
-export const PREVIEW_ABOUT_URL = "https://www.npmjs.com/package/@chanmeng666/archlang-3d";
+export const PREVIEW_ABOUT_URL = "https://archlang.uk/3d";
 
 export interface ReplayOptions {
   title: string;

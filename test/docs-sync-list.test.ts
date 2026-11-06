@@ -174,6 +174,7 @@ describe("no sync-docs output is tracked by git", () => {
       "docs-site/.vitepress/theme/adr-data.js",
       "docs-site/.vitepress/theme/examples-data.js",
       "docs-site/.vitepress/theme/home-data.js",
+      "docs-site/.vitepress/theme/three-d-data.js",
     ];
   }
 

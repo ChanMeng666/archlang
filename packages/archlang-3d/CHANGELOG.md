@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- `PREVIEW_ABOUT_URL`, the page that says what the 3D preview shows and does not, is the docs
+  site's `https://archlang.uk/3d` (it was this package's npm page). The playground's "What it
+  shows" link follows it. The replay HTML does not carry the link, so its bytes are unchanged.
+
 ## [0.4.0] - 2026-11-06
 
 Stairs require `@chanmeng666/archlang` ≥ 1.57.0, the first core that exports `treadCount`. With an

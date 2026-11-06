@@ -130,6 +130,9 @@
 /vs-mermaid.md
   Content-Type: text/markdown; charset=utf-8
 
+/3d.md
+  Content-Type: text/markdown; charset=utf-8
+
 # END GENERATED
 
 # The GBNF grammar has an extension no static host knows: Cloudflare sends no
@@ -146,3 +149,8 @@
 # `/examples/x.arch` shows its 404 page's HTML as text, still with status 404, which is accepted.
 /examples/*.arch
   Content-Type: text/plain; charset=utf-8
+
+# The 3D preview's posters, replays and GLBs (`/3d/*`, written by `npm run gen:3d-assets`) need no
+# rule. Measured on the live site: Cloudflare already sends `model/gltf-binary` for `.glb`,
+# `video/mp4` for `.mp4` and `image/webp` for `.webp`; and a regenerated asset keeps its name, so
+# these files keep the revalidating default, which shows a new one the moment it deploys.
