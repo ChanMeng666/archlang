@@ -33,7 +33,7 @@ fixed the release workflow's registry re-run check; #513 recorded the agent Mark
 - Docs hero both doors above the fold at 1280×800 and 390×844; hero run 7.1 s.
 
 **Open:**
-- **Owner:** the Glama description (needs a login the browser does not have).
+- **Glama description:** done 2026-11-06 (the canonical line, then the tool list).
 - **Next release:** #514 changed the README, the MCP README and the VS Code README after 1.56.0, so
   the npm pages and the listing lag until the next release (a 1.56.1 patch, or the next minor);
   the owner says "release" and the agent runs the whole path.
@@ -74,7 +74,6 @@ always beside its plan (PS-D12). Every card shipped the same day.
   the next release.
 - **Residue:**
   - backlog ST.1, PG.1–PG.3 and 3D.1–3D.5;
-  - the Glama description (owner login).
 
 ## What the revision changed (and why)
 
@@ -110,8 +109,8 @@ All of these were made by the owner's delegation on 2026-11-06. They are PS-D10 
 See README §6:
 
 - ~~the GitHub social preview and description~~ (done 2026-11-06);
-- the Marketplace upload;
-- Glama;
+- ~~the Marketplace upload~~ (the agent uploads through Chrome since 0.44.0);
+- ~~Glama~~ (done 2026-11-06);
 - the docs-only patch tag.
 
 A3 was ruled on 2026-11-06 (README §6). The general claim waits for OAS; the OpenPlan3D import is
