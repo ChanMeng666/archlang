@@ -41,7 +41,8 @@ you observed. Do NOT push anything — this command only verifies.
      npm's copy of the range's minimum lacks a subpath the server loads.
    - Claude Code plugin manifest (`plugins/archlang/.claude-plugin/plugin.json`): its `version` is
      the core's and its `npx` pin is the shim's exact version. After the version bumps run
-     `npm run gen:plugin` and commit the manifest; `check:drift` fails on a stale one. The release
+     `npm run gen:plugin` and commit the manifest; `check:drift` fails on a stale one. The Gemini CLI
+     manifest (`gemini-extension.json`) carries the core's version too: run `npm run gen:agent-manifests`. The release
      PR pins a shim version that is not on npm until the tag's `release.yml` publishes it, so a
      plugin installed from `main` can fail to launch its server for those few minutes; accepted.
      Confirm `npm view @chanmeng666/archlang-mcp version` equals the pin once the tag run finishes.

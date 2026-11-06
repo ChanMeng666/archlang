@@ -13,6 +13,8 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   CURSOR_RULE,
+  GEMINI_CONTEXT,
+  GEMINI_MANIFEST,
   HOSTED_MCP_URL,
   hostedMcpManifest,
   ICON_SOURCE,
@@ -26,6 +28,7 @@ import {
   PORTABLE_MANIFEST,
   PORTABLE_SCHEMA_ID,
   textOutputs,
+  versionedOutputs,
 } from "../scripts/gen-agent-manifests.js";
 
 const read = (p: string) => readFileSync(resolve(p), "utf8");
@@ -283,7 +286,27 @@ describe("agent-directory manifests", () => {
 
   it("every generated file exists and is the generator's output", () => {
     for (const f of allOutputs()) expect(existsSync(resolve(f)), f).toBe(true);
-    for (const { dest, text } of textOutputs()) expect(read(dest), dest).toBe(text);
+    for (const { dest, text } of [...textOutputs(), ...versionedOutputs()]) expect(read(dest), dest).toBe(text);
+  });
+
+  it("the Gemini CLI manifest sits at the root, names the core's version and the unpinned stdio server", () => {
+    // releasing docs: the manifest is at the repository root and its version matches the release tag
+    expect(GEMINI_MANIFEST).toBe("gemini-extension.json");
+    expect(versionedOutputs().map((o) => o.dest)).toEqual([GEMINI_MANIFEST]);
+    const g = readJson(GEMINI_MANIFEST);
+    const core = readJson("package.json");
+    expect(g.name).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
+    expect(g.name).toBe(readJson(PORTABLE_MANIFEST).name);
+    expect(g.version).toBe(core.version);
+    expect(g.description).toBe(core.description);
+    expect(g.mcpServers).toEqual({ archlang: { command: "npx", args: ["-y", readJson("packages/mcp/package.json").name] } });
+    // contextFileName: relative, inside the extension root, an existing generated file (never a root GEMINI.md)
+    expect(g.contextFileName).toBe(GEMINI_CONTEXT);
+    expect(g.contextFileName).not.toMatch(/^(?:\/|[A-Za-z]:)|(?:^|\/)\.\.(?:\/|$)/);
+    expect(textOutputs().map((o) => o.dest)).toContain(GEMINI_CONTEXT);
+    expect(existsSync(resolve("GEMINI.md"))).toBe(false);
+    for (const re of SECRETS) expect(read(GEMINI_MANIFEST)).not.toMatch(re);
+    for (const re of KILLED) expect(read(GEMINI_MANIFEST)).not.toMatch(re);
   });
 
   it("the Cursor rule and Copilot instructions carry their host's frontmatter and a generated header", () => {

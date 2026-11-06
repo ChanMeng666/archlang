@@ -39,7 +39,7 @@
   caught only where it feeds an exact comparison. It measures, it fixes nothing. Set `PLAYWRIGHT_BROWSERS_PATH` to keep the browsers off the default cache.
 - `gen:plugin` (in `gen:all`, drift-gated) writes `plugins/archlang/`: the Claude Code plugin's
   manifest and its copies of the skills. Edit `skills/` (the umbrella `skills/archlang/` included), never the copies.
-- `gen:agent-manifests` (in `gen:all`, drift-gated) writes the other hosts' files: `plugins/archlang/plugin.json`, `.cursor-plugin/plugin.json`, `rules/archlang.mdc` and `integrations/copilot/*`. Details: `docs/integrations.md`.
+- `gen:agent-manifests` (in `gen:all`, drift-gated) writes the other hosts' files: `plugins/archlang/plugin.json`, `.cursor-plugin/plugin.json`, `rules/archlang.mdc`, `integrations/copilot/*` and the root `gemini-extension.json` (the core's version: rerun after a bump). Details: `docs/integrations.md`.
 - `build:mcpb` rebuilds the core, then writes both `.mcpb` bundles to the gitignored `dist-mcpb/`;
   `prove:mcpb` unpacks one outside the repo and drives it over stdio. Neither runs in `ci.yml`: only
   `release.yml` runs them, last and best-effort, so a broken bundle shows as a yellow step on a
