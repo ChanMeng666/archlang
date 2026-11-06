@@ -81,9 +81,14 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
     await expect(items).toHaveCount(GALLERY_PLANS.length);
     for (let i = 0; i < GALLERY_PLANS.length; i++) {
       const item = items.nth(i);
-      const src = (await item.locator("img").getAttribute("src")) ?? "";
+      // The plan drawing only: a card with a 3D preview also holds its poster (`.home-gallery__3d img`).
+      const src = (await item.locator('img[data-role="plan"]').getAttribute("src")) ?? "";
       const pictured = /^\/examples\/([a-z0-9-]+)\.svg$/.exec(src)?.[1];
       expect(pictured, `gallery item ${i} draws ${src}, not an example`).toBe(GALLERY_PLANS[i]);
+      // Its poster, if it has one, is the same plan's.
+      const asset = ASSETS_3D.find((a) => a.name === pictured);
+      await expect(item.locator(".home-gallery__3d img")).toHaveCount(asset ? 1 : 0);
+      if (asset) expect(await item.locator(".home-gallery__3d img").getAttribute("src")).toBe(asset.poster.png);
       const decoded = await decode(await item.locator("a.plan-open").getAttribute("href"));
       expect(decoded, `gallery item ${i} pictures ${pictured} but opens a different plan`).toBe(
         exampleSource(pictured as string),
@@ -95,7 +100,7 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
     await page.goto("/");
     // The gallery's drawings plus the Why cards' three figures (one drawing, then two pairs); the
     // gallery's 3D posters are checked with the swap, below.
-    const imgs = page.locator(".home-gallery__art > img, .why-card img");
+    const imgs = page.locator('.home-gallery__art > img[data-role="plan"], .why-card img');
     await expect(imgs).toHaveCount(GALLERY_PLANS.length + 1 + 2 + 2);
     for (const img of await imgs.all()) {
       // Lazy: scroll it in and poll, rather than reading a 0 that only means "not asked for".

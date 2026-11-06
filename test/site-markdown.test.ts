@@ -164,6 +164,8 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect(md).toContain(`**${lines.lead}** ${lines.rest} ${lines.download}`);
     expect(md).toContain(lines.limits);
     const assets = threeDAssets(process.cwd());
+    // Every sized GLB link, read with a fixed pattern (no pattern built from a path).
+    const glbLinks = [...md.matchAll(/\[Download GLB \(\d+ kB\)\]\(([^)\s]+)\)/g)].map((m) => m[1]);
     const at = assets.map((a) => md.indexOf(`### ${a.name}.arch\n`));
     for (const [i, pos] of at.entries()) expect(pos, assets[i]!.name).toBeGreaterThan(0);
     expect([...at].sort((x, y) => x - y)).toEqual(at);
@@ -171,7 +173,7 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
       expect(md).toContain(`(/examples/${a.name}.svg)`);
       expect(md).toContain(`(${a.poster.png})`);
       expect(md).toContain(`[Play the replay (MP4)](${a.video.mp4})`);
-      expect(md).toMatch(new RegExp(`\\[Download GLB \\(\\d+ kB\\)\\]\\(${a.glb.href.replace(/\./g, "\\.")}\\)`));
+      expect(glbLinks, `${a.name}: a [Download GLB (N kB)] link to its GLB`).toContain(a.glb.href);
       expect(md).toMatch(
         /\[Open in the playground \(3D\)\]\(https:\/\/playground\.archlang\.uk\/#z=[A-Za-z0-9_-]+&3d\)/,
       );

@@ -43,7 +43,7 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
           <div class="home-gallery__card" :data-show="shown[p.example] ? '3d' : 'plan'">
             <a class="home-gallery__open plan-open" :href="EXAMPLE_LINKS[p.example]" target="_blank" rel="noopener">
               <span class="home-gallery__art">
-                <img :src="`/examples/${p.example}.svg`" :alt="`${p.caption} Compiled from ${p.example}.arch.`" loading="lazy" />
+                <img data-role="plan" :src="`/examples/${p.example}.svg`" :alt="`${p.caption} Compiled from ${p.example}.arch.`" loading="lazy" />
                 <picture
                   v-if="POSTERS.get(p.example)"
                   class="home-gallery__3d"
