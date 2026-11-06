@@ -49,6 +49,8 @@ interface Handle {
   ready: Promise<void>;
 }
 type W = Window & { __preview3d?: Handle };
+/** `W` with the free camera's view, for the storey counts. */
+type WithView = Window & { __preview3d?: Handle & { view?: { storeys: number; shown: number } } };
 
 async function hashAt(page: Page, t: number): Promise<string> {
   return page.evaluate(async (x) => {
@@ -249,14 +251,16 @@ test.describe("3D preview tab follows the editor", () => {
     const canvas = page.locator("#preview3d canvas");
     await expect(tab).toHaveAttribute("data-view", "all");
     await expect(canvas).toHaveAttribute("aria-label", /\(all storeys\)/);
-    // No storey picked: the 3D tab shows them all, so the switcher underlines none; every other
-    // tab shows the lowest storey and underlines L1, as before.
+    // No storey picked: the 3D tab shows them all, so the switcher presses "All" (card PG5b), its
+    // first button there, and no storey; every other tab shows the lowest storey, underlines L1 and
+    // has no "All".
     const pressed = page.locator('#storeys button[aria-pressed="true"]');
-    await expect(pressed).toHaveCount(0);
+    await expect(pressed).toHaveText(["All"]);
     await page.locator("#tab-facts").click();
     await expect(pressed).toHaveText("L1");
+    await expect(page.locator('#storeys button[data-level="all"]')).toHaveCount(0);
     await page.locator("#tab-preview3d").click();
-    await expect(pressed).toHaveCount(0);
+    await expect(pressed).toHaveText(["All"]);
     await expect(tab).toHaveAttribute("data-view", "all");
     const all = await hashAt(page, 1);
 
@@ -305,6 +309,76 @@ test.describe("3D preview tab follows the editor", () => {
     await open3d(page);
     await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "L3");
   });
+
+  // Card PG5b: with the package's cut-away gone, the page's switcher brings the whole building back.
+  // Over the 3D preview it has "All" first, pressed while no storey is picked; L2 then All is the
+  // combined view again, frame for frame; the facts line says it is every storey's; the drawing,
+  // one storey's sheet, has no "All" and comes back on the storey last picked.
+  for (const mode of ["view", "edit"] as const) {
+    test.describe(`All, ${mode} mode (card PG5b)`, () => {
+      test.use({ reducedMotion: "reduce" });
+      test(`All brings the combined building back after L2, in ${mode} mode`, async ({ page }) => {
+        await page.goto(mode === "edit" ? "/#edit" : "/");
+        await waitForPlan(page);
+        await pickPlan(page, "Townhouse (3 levels)");
+        await waitForPlan(page);
+        const storeys = page.locator("#storeys");
+        const all = storeys.locator('button[data-level="all"]');
+        const pressed = storeys.locator('button[aria-pressed="true"]');
+        const facts = page.locator("#facts");
+        // The drawing: L1 L2 L3, no "All" (the drawing has no combined state), the facts L1's.
+        await expect(storeys.locator("button")).toHaveText(["L1", "L2", "L3"]);
+        await expect(facts).toContainText("· level 1");
+
+        await open3d(page);
+        const tab = page.locator("#preview3d");
+        await expect(tab).toHaveAttribute("data-view", "all");
+        await expect(storeys.locator("button")).toHaveText(["All", "L1", "L2", "L3"]);
+        await expect(all).toHaveAttribute("aria-pressed", "true");
+        await expect(all).toHaveAccessibleName("All storeys");
+        await expect(pressed).toHaveCount(1);
+        // No storey picked, all storeys shown: the facts are the building's, not level 1's.
+        await expect(facts).toContainText("· all 3 storeys");
+        await expect(facts).not.toContainText("level 1");
+        const combinedFacts = await facts.textContent();
+        await page.evaluate(async () => {
+          await (window as W).__preview3d?.ready;
+        });
+        const combined = await hashAt(page, 1);
+        expect(await page.evaluate(() => (window as WithView).__preview3d?.view?.storeys)).toBe(3);
+
+        await storeys.getByRole("button", { name: /^level 2/ }).click();
+        await expect(tab).toHaveAttribute("data-view", "L2");
+        await expect(pressed).toHaveText(["L2"]);
+        await expect(facts).toContainText("· level 2");
+        await page.evaluate(async () => {
+          await (window as W).__preview3d?.ready;
+        });
+        expect(await hashAt(page, 1), "storey 2 alone").not.toBe(combined);
+
+        await all.click();
+        await expect(tab).toHaveAttribute("data-view", "all");
+        await expect(all).toHaveAttribute("aria-pressed", "true");
+        await expect(pressed).toHaveCount(1);
+        await expect(facts).toHaveText(combinedFacts ?? "");
+        await page.evaluate(async () => {
+          await (window as W).__preview3d?.ready;
+        });
+        expect(
+          await page.evaluate(() => (window as WithView).__preview3d?.view?.storeys),
+          "every storey in the view",
+        ).toBe(3);
+        expect(await hashAt(page, 1), "the combined view, frame for frame").toBe(combined);
+
+        // Back on the drawing: no "All", and the storey last picked (L2), its facts.
+        if (mode === "edit") await page.locator("#tab-preview").click();
+        else await page.locator("#viewPlan").click();
+        await expect(storeys.locator("button")).toHaveText(["L1", "L2", "L3"]);
+        await expect(pressed).toHaveText(["L2"]);
+        await expect(facts).toContainText("· level 2");
+      });
+    });
+  }
 
   test("an edit while playing goes on from the current t, not back to the start", async ({ page }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&edit`);

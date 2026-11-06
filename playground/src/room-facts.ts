@@ -75,6 +75,29 @@ export function factsLine(source: string, summary: Pick<SceneSummary, "totals">,
   );
 }
 
+/**
+ * The facts line for every storey at once (the 3D preview's combined view, card PG5b): describe()'s
+ * per-storey totals (`levels[].totals`) added up, and said to be all of them — "… → 12 rooms ·
+ * 141.2 m² (net) · all 3 storeys". describe()'s own top-level totals are the lowest storey's, so
+ * they cannot say this. Net when every storey has a net area, else centreline; to 0.01 m², as
+ * describe() rounds.
+ */
+export function factsLineAll(source: string, levels: readonly Pick<SceneSummary, "totals">[]): string {
+  const lines = sourceLines(source);
+  const rooms = levels.reduce((n, l) => n + l.totals.rooms, 0);
+  const sum = (f: (l: Pick<SceneSummary, "totals">) => number) =>
+    Math.round(levels.reduce((n, l) => n + f(l), 0) * 100) / 100;
+  const allNet = levels.every((l) => l.totals.net_floor_area_m2 !== undefined);
+  const area = areaText(
+    allNet ? sum((l) => l.totals.net_floor_area_m2!) : undefined,
+    sum((l) => l.totals.floor_area_m2),
+  );
+  return (
+    `${lines} line${lines === 1 ? "" : "s"} of ArchLang → ${rooms} room${rooms === 1 ? "" : "s"} · ` +
+    `${area} · all ${levels.length} storeys`
+  );
+}
+
 /** What the room's facts card shows. */
 export interface RoomCardFacts {
   name: string;

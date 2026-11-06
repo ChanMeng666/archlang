@@ -149,7 +149,11 @@ for (const tab of tabs) {
     // Leaving the 3D tab stops its playback (opening it is handled below).
     if (tab.dataset.tab !== "preview3d") void preview3d?.then((p) => p?.hide());
     // The switcher's underline follows what the tab now on screen shows (see `shownLevel`).
-    levelSwitch.set(lastPages, shownLevel());
+    // Over the 3D preview it also offers "All" (its combined view, card PG5b).
+    levelSwitch.set(lastPages, shownLevel(), in3d());
+    // Into or out of the 3D preview's combined view: the facts line says what is on screen now.
+    if (lastPages && selectedLevel === null && (from === "preview3d") !== in3d())
+      updateAnalysis(currentSource(), lastOk);
     // The phone's switcher presses the view that shows this tab (a `&3d` link, leaving edit mode).
     mobileViews.follow(tab.dataset.tab);
     stageSwitched();
@@ -244,6 +248,14 @@ let lastSummary: SceneSummary | null = null;
  * does not throw you back to the ground one on every keystroke.
  */
 let selectedLevel: number | null = null;
+/**
+ * The storey last picked, kept when "All" (the 3D preview's combined view) clears the selection,
+ * so the drawing, which is always one storey, stays on it (card PG5b). Reset with `selectedLevel`
+ * when the document is replaced.
+ */
+let lastPicked: number | null = null;
+/** The last compile drew the plan without errors (the facts line is redrawn on a view change). */
+let lastOk = false;
 /** The level whose facts the panels are currently reporting (`null` = whole plan). */
 let activeLevel: number | null = null;
 /** The storey pages of the last good compile (the switcher's buttons). */
@@ -338,6 +350,7 @@ function loadSource(src: string, refit = true) {
   // A wholesale document replacement is a new plan as far as the storey switcher is
   // concerned — its level numbers may mean nothing here. Back to the lowest storey.
   selectedLevel = null;
+  lastPicked = null;
   // In edit mode the editor takes it as one undo step, and its change listener calls
   // `onDocChanged`; with no editor, this does.
   if (edit) edit.replaceDoc(src);
@@ -478,18 +491,29 @@ function keepKnob(source: string, final: boolean) {
 // The storey switcher sits on the STAGE, under the Plan | 3D switch, in both modes and over every
 // tab (ruling PG-D3), so it is visible and operable whatever is on screen — the storey it picks
 // drives every view. ONE control for one piece of state: a second copy would be two things to keep
-// in sync. (The 3D preview's own "Storeys" buttons are another function, a cut-away of the storeys
-// shown, and stay.)
+// in sync. The 3D preview leaves out the package's own "Storeys shown" cut-away, so over the 3D
+// preview the switcher also offers "All" (card PG5b): the combined view of every storey, which is
+// no storey picked. The drawing is one storey's sheet, with no combined state, so it has no "All";
+// it stays on the storey last picked (`lastPicked`), else the lowest.
 const levelSwitch = mountLevelSwitcher({
   el: storeysEl,
   onChange: (level) => {
-    if (level === selectedLevel) return;
-    selectedLevel = level;
+    if (level === "all") {
+      if (selectedLevel === null) return;
+      selectedLevel = null;
+    } else {
+      if (level === selectedLevel) return;
+      selectedLevel = level;
+      lastPicked = level;
+    }
     // Keep the current pan/zoom: the storeys of one building share a page box, so
     // re-fitting would jump the drawing for no reason.
     render(currentSource());
   },
 });
+
+/** The 3D preview's combined view is on screen: all storeys, none picked (the facts say so). */
+const showingAll = () => in3d() && selectedLevel === null && (lastPages?.length ?? 0) > 1;
 
 /** Update the facts strip (and, in edit mode, the Facts and Checks tabs) for `source`. */
 function updateAnalysis(source: string, ok: boolean) {
@@ -502,16 +526,18 @@ function updateAnalysis(source: string, ok: boolean) {
   const summary = activeLevel === null ? whole : core.describeLevel(whole, activeLevel);
   lastRooms = ok ? (summary.rooms ?? []) : [];
   lastSummary = ok ? summary : null;
-  renderFacts(factsEl, summary, ok, source, activeLevel);
+  // Under the 3D preview's combined view the facts line is every storey's, added up: describe()'s
+  // own totals are the lowest storey's, so the line would otherwise say "level 1" under a building.
+  renderFacts(factsEl, summary, ok, source, activeLevel, showingAll() ? whole.levels : undefined);
   // Describe (the Facts tab) and Lint (the Checks tab) are edit mode's (edit-mode.ts): a visit that
   // never opens the editor never runs `lint()`.
   edit?.updatePanels(source, ok, summary, activeLevel);
 }
 
 /**
- * The storey the switcher underlines: the one on screen. Every tab shows `activeLevel` (the lowest
- * storey when none is picked) except the 3D preview, which shows all storeys combined until one is
- * picked, so there, with no pick, no storey is underlined.
+ * The storey the switcher underlines: the one on screen. Every tab shows `activeLevel` (the storey
+ * last picked, else the lowest) except the 3D preview, which shows all storeys combined while none
+ * is picked, so there, with no pick, "All" is pressed (`null`).
  */
 function shownLevel(): number | null {
   return selectedLevel === null && preview3dEl.classList.contains("active") ? null : activeLevel;
@@ -555,11 +581,13 @@ function render(source: string, refit = false, knobMoving = false): boolean {
   // on a GOOD compile — same doctrine as the preview below, which keeps the last good
   // drawing. Otherwise a half-typed statement would blink the storey buttons away and
   // back under a drawing that never changed.
-  const page = ok ? selectPage(pages, selectedLevel) : undefined;
+  // The drawing is one storey: the one picked, else (under "All") the one last picked, else the lowest.
+  const page = ok ? selectPage(pages, selectedLevel ?? lastPicked) : undefined;
+  lastOk = ok;
   if (ok) {
     activeLevel = page?.level ?? null;
     lastPages = pages;
-    levelSwitch.set(pages, shownLevel());
+    levelSwitch.set(pages, shownLevel(), in3d());
   }
   updateAnalysis(source, ok);
   // Like the 3D preview, the takeoff follows the editor and the storey only while its tab is open.

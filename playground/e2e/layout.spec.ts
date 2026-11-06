@@ -328,7 +328,7 @@ test.describe("phone layout", () => {
           }
         };
         await expect(page.locator(".pz-toolbar")).toBeVisible();
-        await check(`${mode} mode, drawing`, [".pz-toolbar", ".stage-switch"]);
+        await check(`${mode} mode, drawing`, [".pz-toolbar", ".stage-switch", ".pz-viewport > .knobs"]);
         // Every toolbar control on one row, and the whole toolbar inside the stage.
         const tools = await page
           .locator(".pz-toolbar > button")
@@ -345,7 +345,9 @@ test.describe("phone layout", () => {
         if (mode === "edit") await page.locator(".mview[data-mview=3d]").tap();
         else await page.locator("#view3d").tap();
         await expect(page.locator("#preview3d .p3d-top")).toBeVisible();
-        await check(`${mode} mode, 3D`, ["#preview3d .p3d-top", ".stage-switch"]);
+        // Over the 3D preview the chip is at its widest: All, L1, L2, L3.
+        await expect(page.locator("#storeys .lv-btn")).toHaveText(["All", "L1", "L2", "L3"]);
+        await check(`${mode} mode, 3D`, ["#preview3d .p3d-top", ".stage-switch", "#preview3d .p3d-stage > .knobs"]);
       }
     });
   }
@@ -499,7 +501,7 @@ test.describe("the storey chip and the 3D view's knobs (card PG5b)", () => {
       await waitFor3d(page);
       const knobs = page.locator("#preview3d .p3d-stage > .knobs");
       await expect(knobs).toBeVisible();
-      await expect(page.locator("#storeys .lv-btn")).toHaveCount(3);
+      await expect(page.locator("#storeys .lv-btn")).toHaveCount(4); // All, L1, L2, L3: the widest chip
       const [chip, k] = [(await page.locator("#storeys").boundingBox())!, (await knobs.boundingBox())!];
       expect(overlaps(chip, k), "the knobs start under the storey chip").toBe(false);
       if (mode === "view") {

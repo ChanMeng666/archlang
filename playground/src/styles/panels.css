@@ -1841,6 +1841,12 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   .p3d-top {
     max-width: calc(100% - 130px);
   }
+  /* Edit mode has no Plan | 3D switch, so the storey chip (with "All", up to ~190 px) takes the top
+     row's left: Reset and View ▾ go under it rather than share a 360 px row with it. */
+  html[data-mode="edit"] .pane:has(#storeys:not([hidden])) .p3d-top {
+    top: 70px;
+    max-width: calc(100% - 20px);
+  }
 }
 
 /* ---- Suggest (advisory topology) -----------------------------------------
