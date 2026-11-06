@@ -65,12 +65,10 @@ no sign-in. Setup for more hosts is on the [MCP server page](/mcp).
    rooms are reachable from the entrance; `lint --json` returns advisory warnings, each with a fix.
 5. **Repeat** until `lint` reports no warnings and the `describe` facts match the brief.
 
-None of these steps needs an image, so the agent checks its work by reading text.
-
 ## What the agent gets back
 
 Suppose the agent misspells a room id, writing `door between hall and livng`. Compile fails with
-exit code `2` and this JSON (trimmed):
+exit code `2` and this JSON (output trimmed):
 
 ```json
 {
@@ -82,6 +80,7 @@ exit code `2` and this JSON (trimmed):
       "message": "Door \"door_2\" names \"livng\", which is not a room this plan or component can see",
       "line": 11,
       "col": 25,
+      "fix": "Declare it with `let`, pass it as a parameter, or fix the typo (for a datum, the room id before the last dot; for an axis, the label the plan's `axes` give it).",
       "hints": ["did you mean \"living\"?"]
     }
   ]
@@ -127,8 +126,6 @@ of the same kind.
 - *"Design a one-bedroom flat of about 45 m² with a shower room off the hall, entered from the
   west. Check it with describe and lint."*
 - *"Add a window to the bedroom and give me the plan as DXF."*
-- *"Draw a two-storey, two-bedroom house, 8 m × 6 m, with a stair linking the floors, and give me
-  one SVG per storey."*
 
 ## FAQ
 
@@ -141,8 +138,8 @@ Yes, by writing ArchLang text. With the skills or the MCP server installed, or w
 ### Should the agent use the CLI or the MCP server?
 
 The CLI when the agent has a shell: nothing sits in its context until it runs a command. The MCP
-server when the host has no shell, or when you want the tools listed in the host's UI. The tools
-are the same.
+server when the host has no shell, or when you want the tools listed in the host's UI. The checks
+are the same; DXF and PDF come from the CLI or the playground.
 
 ### Does it need an API key?
 
@@ -151,7 +148,7 @@ sign-in. Your agent's own subscription or API terms still apply.
 
 ### Is the plan ready to build from?
 
-No. It is a concept or scheme-stage drawing with exact room areas, useful for discussing a layout;
+No. It is a concept or scheme-stage drawing with exact room areas, to discuss a layout;
 take it to a professional for anything that needs approval.
 
 ## Next

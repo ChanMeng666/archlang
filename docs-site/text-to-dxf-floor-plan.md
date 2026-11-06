@@ -102,8 +102,9 @@ the `.arch` source is in millimetres, so a 4800 mm room is 4800 drawing units lo
 ### Can an AI agent produce the DXF?
 
 Yes. An agent with a shell runs the same `compile … -f dxf` command after it has checked the plan
-with `describe` and `lint`. The hosted MCP server has no DXF output; the agent's `link` tool opens
-the plan in the playground, where the DXF can be downloaded.
+with `describe` and `lint`. Neither MCP server writes DXF; DXF and PDF come from the CLI or the
+playground, and the MCP `link` tool opens the plan in the playground, where the DXF can be
+downloaded.
 
 ### Does it export DWG or IFC?
 

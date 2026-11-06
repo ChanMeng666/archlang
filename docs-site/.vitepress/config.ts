@@ -253,7 +253,7 @@ const PAGE_META = [
   [
     "/floor-plan-with-a-coding-agent",
     "Generate a floor plan with a coding agent",
-    "Install ArchLang in Claude Code, Cursor, Codex or Gemini CLI, then let the agent write, compile, lint and fix a floor plan as text until it is clean.",
+    "Give Claude Code, Cursor, Codex or Gemini CLI the ArchLang skills, MCP server or CLI, then let it write, compile, lint and fix a floor plan as text.",
   ],
   [
     "/text-to-dxf-floor-plan",

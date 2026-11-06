@@ -43,7 +43,7 @@ plan "Flat with a bath" {
 }
 ```
 
-It compiles, and `lint` returns one warning:
+It compiles, and `lint` returns one warning (output trimmed):
 
 ```text
 warning[W_ROOM_DISCONNECTED]: Room "Bedroom" has no door or opening — it can't be entered.
@@ -90,8 +90,8 @@ is a plan checked against the stricter `accessibility-advisory` profile.
 ## Using the checks as a gate
 
 - `lint --strict` makes any warning exit with code `2`, for CI or an agent's stop condition.
-- `lint --profile accessibility-advisory` tightens the bar; other profiles cover UK, US and Chinese
-  residential advice.
+- `lint --profile accessibility-advisory` tightens the bar; the other advisory profiles are listed
+  by `npx -y @chanmeng666/archlang lint --help`.
 - `describe --select rooms,totals` keeps the JSON to the parts you are checking.
 - `validate --intent brief.json` fails when the plan misses an expectation written down in a brief
   (see [the intent contract](/intent)).
