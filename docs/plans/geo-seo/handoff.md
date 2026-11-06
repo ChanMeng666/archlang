@@ -27,10 +27,16 @@ the owner's browser. On 2026-11-07, with the owner online: ClawHub skill publish
 made public at the owner's word; two dev.to drafts saved (unpublished; the owner publishes after
 re-running the snippets, since draft 1 still carries 1.36.0 notes and draft 2 lacks its
 `pointInPolygon` helper); the Cursor install link verified; Cline deferred by the owner; the
-awesome-openclaw entry deferred until the skill has users. **Still the owner's hands:** publish the
-two dev.to drafts, read r/floorplan's rules by hand (every automated route is blocked) and post
-there if wanted, the two listicle messages, Show HN on 2026-12-01, Claude plugin directory and Cursor
-Marketplace status checks, and the VS Code install link if a VS Code machine is at hand.
+awesome-openclaw entry deferred until the skill has users. Later on 2026-11-07, at the owner's
+instruction in chat: the two dev.to articles were published by an agent (outputs re-run on 1.57.0;
+growth #58 records the exception), the awesome-openclaw entry was filed (#610), the marketing
+calendar's `show-hn-refresh` task was closed (the draft is at 1.57.0; 2026-12-01 holds only
+`show-hn`). The listicle messages could not be sent by an agent: X and LinkedIn paywall a message
+request to a non-follower and deskflex has only a demo form needing personal data (growth
+`marketing/offsite/listicle-outreach-2026-11.md` has the routes left). **Still the owner's hands:**
+the listicle messages, r/floorplan (rules unreadable by agents; post if wanted), Show HN on
+2026-12-01 (the owner posts), Claude plugin directory and Cursor Marketplace status checks, and
+the VS Code install link if a VS Code machine is at hand.
 
 ## Cadence
 
