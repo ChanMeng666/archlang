@@ -47,10 +47,13 @@ export interface AdaptOptions {
 
 /**
  * The first core release that carries every export this package reads: the seam (`resolvePlan`,
- * ADR 0031) arrived in 1.44.0, `hatchKey`/`hatchOf` (card A0b) in 1.45.0. Kept equal to the
+ * ADR 0031) arrived in 1.44.0, `hatchKey`/`hatchOf` (card A0b) in 1.45.0, `treadCount` (the
+ * stairs, amendment 2026-11-06 to ADR 0031) in 1.57.0. An older core still builds everything but
+ * the stairs (`stair-no-flights`); only a core without `resolvePlan` or `hatchKey` is refused,
+ * `E3D_CORE_TOO_OLD`. Kept equal to the
  * `peerDependencies` floor (`test/package-meta.test.ts`).
  */
-export const MIN_CORE = "1.45.0";
+export const MIN_CORE = "1.57.0";
 
 /** Whether any storey holds a piece of a handed T0 family, whose reflection the model must know. */
 const hasHanded = (storeys: readonly Storey[]): boolean =>

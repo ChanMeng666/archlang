@@ -14,6 +14,16 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.45.0] - 2026-11-06
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.57.0`** (no change to the language).
+- The listing shows a plan beside its 3D preview, from the same source, with the line "Same source,
+  plan and 3D preview" and the 3D preview's limits; the 3D preview itself is the separate
+  `archlang-3d` package, not part of the extension. The "Try it" section gives the ChatGPT app an
+  example request and links the claude.ai connector to its steps.
+
 ## [0.44.0] - 2026-11-06
 
 ### Changed

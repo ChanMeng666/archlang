@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.57.0] - 2026-11-06
+
 ### Added
 
 - `treadCount(length)` is exported from the package root: how many tread divisions the stair symbol draws on a flight of that run, so a downstream reader (the 3D preview) can put its treads on the plan's tread lines without a second copy of the rule. A re-export only; no output changes (ADR 0031, amendment 2026-11-06).
 - The docs site (archlang.uk) shows the 3D preview beside its plan, from the same source. On the home page, a band after the hero puts `furnished-flat.arch`'s drawing beside its drafting-order replay: the poster shows first, and the MP4 loads and plays muted once the band is at least half in view and pauses when it leaves; under reduced motion or Save-Data it never starts by itself, and loads only when its play button is pressed; a gallery card whose plan has a 3D preview swaps to the preview on hover, focus or its **3D** badge; and the is/isn't table gains a row for the 3D preview. A new page, `/3d`, shows each plan `gen:3d-assets` publishes beside its drawing, with its replay where one is published (the gallery's plans have a poster and a GLB), a GLB to download and a playground link that opens it in 3D, says how to get the 3D preview of a plan of your own, and what it shows and does not. The words are the `archlang-3d` package's own (`PREVIEW_LABEL`, `PREVIEW_LIMITS`), and the playground's "What it shows" link beside the 3D preview now opens `/3d` (`PREVIEW_ABOUT_URL`). No URL changed.
+- The playground's **Plan | 3D** switch: two buttons over the stage's top-left corner, in view mode, flip the drawing between the plan and its 3D preview (the same switch as Tools → 3D preview). `&3d` in the hash (`#z=…&3d`, or `#3d` alone) opens on the 3D preview; the hash keeps it while the 3D preview is on screen, and a full link copied then keeps it too, while a short link opens on the drawing. A new plan from the strip or the picker opens on its end frame, and letting a knob go rebuilds the 3D preview. **Download GLB** in the 3D view writes the same bytes as `archlang3d build` for the whole plan, in its own lazy chunk; it refuses a plan with an `import`, and since the browser does not run the glTF validator, the note under the button gives the CLI command. The startup chunks carry no 3D code.
+- `README.md`'s grid of example plans opens with plans beside their 3D previews (more 2D plans follow under it), with the line "Same source, plan and 3D preview" and the 3D preview's limits under it, and a link that opens a plan on the 3D preview in the playground; this is the npm page of `@chanmeng666/archlang`. The npm page of `@chanmeng666/archlang-mcp` and the VS Code extension's listing show a plan beside its 3D preview with the same two lines. `llms.txt` has one line on the 3D preview.
+
+### Changed
+
+- The "Try it" block (`site-shared/doors.json`, written by `gen:doors` into the READMEs and `llms.txt`) gives the ChatGPT app an example request and links the claude.ai connector to its steps on `/start`, which lists them; the README's block opens with a link to the playground for anyone just looking. `/start` and the README say who maintains ArchLang and link `GOVERNANCE.md`.
 
 ## [1.56.0] - 2026-11-06
 
