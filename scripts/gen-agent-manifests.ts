@@ -33,6 +33,21 @@
  * ZIP `npm run build:openai-plugin` assembles swaps in {@link hostedMcpManifest} (ADR 0026's server).
  * `assets/icon.png` is a byte copy of the Claude plugin's `.claude-plugin/icon.png` (1024 px square),
  * so the OpenAI listing icon sits inside the plugin folder the ZIP is built from.
+ * Gemini CLI extension, read on 2026-11-06:
+ *   - https://geminicli.com/docs/extensions/reference/ (`gemini-extension.json` in the extension root:
+ *     `name` lowercase with dashes, matching the install directory; `version`; `description`, shown in
+ *     the gallery; `mcpServers` keyed by server name with `command` and `args` kept apart;
+ *     `contextFileName`, `GEMINI.md` when omitted).
+ *   - https://geminicli.com/docs/extensions/releasing/ (the manifest sits at the repository root; its
+ *     `version` should match the GitHub release tag; the gallery crawls repositories carrying the
+ *     `gemini-cli-extension` topic).
+ *   - google-gemini/gemini-cli `packages/cli/src/config/extension-manager.ts` (`validateContextFilePath`):
+ *     `contextFileName` may be a relative path inside the extension root, so it names the generated
+ *     Copilot instructions file rather than a root `GEMINI.md` (Gemini CLI would also load a root
+ *     `GEMINI.md` as contributor context, and `AGENTS.md` is the repository's only root instruction file).
+ * The Gemini manifest is the one output that names a version: the tag match is the host's rule, so it
+ * carries the core's version from the root `package.json` (as `gen:plugin` does for the Claude
+ * plugin) and a release bump reruns this generator.
  * The instruction snippets are copy-in files (a user's own `.github/` or `.cursor/rules/`), so they
  * live under `integrations/`; the manifests and skills sit where the host auto-detects them.
  */
@@ -55,6 +70,10 @@ export const PORTABLE_SCHEMA_ID = "https://agent-plugins.org/schemas/1.0.0/plugi
 /** The listing icon, copied from the Claude plugin's icon (binary, so not among the text outputs). */
 export const ICON_SOURCE = `${PLUGIN_ROOT}/.claude-plugin/icon.png`;
 export const PLUGIN_ICON = `${PLUGIN_ROOT}/assets/icon.png`;
+/** Gemini CLI extension manifest (repository root) and the context file it names. */
+export const GEMINI_MANIFEST = "gemini-extension.json";
+export const COPILOT_INSTRUCTIONS = "integrations/copilot/copilot-instructions.md";
+export const GEMINI_CONTEXT = COPILOT_INSTRUCTIONS;
 /** The hosted MCP server (ADR 0026; `docs/integrations.md` names the same URL). */
 export const HOSTED_MCP_URL = "https://mcp.archlang.uk/mcp";
 /** The OpenAI directory's categories (submission-errors, `plugin_category_unknown`). */
@@ -193,6 +212,23 @@ export function cursorManifest(): string {
   return json({ name, description, author, homepage, repository, license, keywords });
 }
 
+/**
+ * `gemini-extension.json`: the stdio MCP server, started by its package name with no version like
+ * `mcp.json`, and the generated instructions as the context file. The description is the core
+ * package's one-liner (GS-D5); `version` is the core's, for the tag match the gallery asks for.
+ */
+export function geminiManifest(): string {
+  const core = JSON.parse(read("package.json"));
+  const { name: mcp } = JSON.parse(read("packages/mcp/package.json"));
+  return json({
+    name: identity().name,
+    version: core.version as string,
+    description: core.description as string,
+    contextFileName: GEMINI_CONTEXT,
+    mcpServers: { archlang: { command: "npx", args: ["-y", mcp] } },
+  });
+}
+
 function intro(): string {
   const m = buildManifest("0.0.0");
   const lines = SNIPPET_COMMANDS.map((c) => {
@@ -246,18 +282,23 @@ export function textOutputs(): { dest: string; text: string }[] {
     { dest: MCP_MANIFEST, text: mcpManifest() },
     { dest: CURSOR_MANIFEST, text: cursorManifest() },
     { dest: CURSOR_RULE, text: cursorRule() },
-    { dest: "integrations/copilot/copilot-instructions.md", text: copilotInstructions() },
+    { dest: COPILOT_INSTRUCTIONS, text: copilotInstructions() },
     { dest: "integrations/copilot/archlang.instructions.md", text: copilotPathInstructions() },
   ];
 }
 
-/** Every file this generator writes: the text outputs and the copied icon. */
+/** The generated files that carry the core's version (the host requires it); see the header. */
+export function versionedOutputs(): { dest: string; text: string }[] {
+  return [{ dest: GEMINI_MANIFEST, text: geminiManifest() }];
+}
+
+/** Every file this generator writes: the text outputs, the versioned outputs and the copied icon. */
 export function allOutputs(): string[] {
-  return [...textOutputs().map((o) => o.dest), PLUGIN_ICON];
+  return [...textOutputs().map((o) => o.dest), ...versionedOutputs().map((o) => o.dest), PLUGIN_ICON];
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
-  for (const { dest, text } of textOutputs()) {
+  for (const { dest, text } of [...textOutputs(), ...versionedOutputs()]) {
     mkdirSync(dirname(join(ROOT, dest)), { recursive: true });
     writeFileSync(join(ROOT, dest), text);
   }
