@@ -2387,7 +2387,7 @@ landing replaces. It is not measured as a landing to stand on. A winder is geome
 at the walking line or at the narrow end is checked against any standard, and there is no true
 helical (spiral) stair.
 
-```arch
+```arch static
 stair id=s dir up width 1000 {
   flight at (1195, 145) size 2700x1000
   landing at (3895, 145) size 1000x1000 winders 4
