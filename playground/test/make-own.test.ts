@@ -44,6 +44,22 @@ describe("the Make-your-own sheet", () => {
     expect(html).toContain(esc(doors.canonicalLine));
   });
 
+  it("gives ChatGPT a prompt to copy and what comes back, and claude.ai its steps, all from doors.json", () => {
+    const html = sheetHtml();
+    const door = (k: string) =>
+      new RegExp(`<li class="mo-door" data-door="${k}">([\\s\\S]*?)</li>(?=<li class="mo-door"|</ul>)`).exec(
+        html,
+      )?.[1] ?? "";
+    const chatgpt = door("chatgpt");
+    expect(chatgpt).toContain(`<code>${esc(doors.doors.chatgpt.example)}</code>`);
+    expect(chatgpt).toContain('data-copy="chatgptExample"');
+    expect(chatgpt).toContain(esc(doors.doors.chatgpt.returns));
+    const claudeai = door("claudeai");
+    const steps = [...claudeai.matchAll(/<li>([^<]*)<\/li>/g)].map((m) => m[1]);
+    expect(steps).toEqual(doors.doors.claudeai.steps.map(esc));
+    expect(claudeai).toContain(`href="${esc(doors.doors.claudeai.stepsSource)}"`);
+  });
+
   it("copies the agent prompt line for line, and appends the plan's link to it", () => {
     expect(AGENT_PROMPT).toBe(doors.agentPrompt.join("\n"));
     expect(sheetHtml()).toContain(esc(AGENT_PROMPT));

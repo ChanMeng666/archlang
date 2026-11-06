@@ -195,6 +195,7 @@ onBeforeUnmount(() => {
           </div>
 
           <p class="hero-links">
+            <a href="/start">New here? Get a floor plan from your AI&nbsp;→</a>
             <a :href="NO_INSTALL.playground.url" target="_blank" rel="noopener">Or open a plan in the playground&nbsp;↗</a>
             <a href="#ways-in">claude.ai, VS Code and the rest&nbsp;↓</a>
           </p>

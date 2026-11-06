@@ -25,6 +25,21 @@ const WHY = [
   },
 ] as const;
 
+/**
+ * The question a developer asks next. Argued from what the language gives, never from what some
+ * other output lacks (positioning B1). `answer` marks code with backticks; site-markdown.mjs reads it.
+ */
+const LANGUAGE = {
+  question: "Why a language, not SVG or JSON?",
+  answer: "A plan in ArchLang names its rooms, walls, doors and windows, so the compiler can measure each room and check how the rooms connect. A mistake comes back as a message with a code, pointing at the exact place in the text, and often with a fix your AI can apply. The same text gives the same bytes every time, so a diff of the source shows what moved. SVG, PDF and DXF are what it compiles to, and it also writes and reads a Plan JSON form (`compile -f json`) for tools that want one.",
+} as const;
+
+/** The pages behind "It checks itself": what describe and lint report, and every error code. */
+const CHECKS = [
+  { href: "/analysis", label: "The checks →" },
+  { href: "/errors", label: "Error codes →" },
+] as const;
+
 /** `a `b` c` → text and code runs, so the template never needs v-html. */
 const runs = (s: string) => s.split("`").map((text, i) => ({ text, code: i % 2 === 1 }));
 
@@ -42,6 +57,11 @@ const { exact, change, check } = HOME;
             <template v-for="(r, i) in runs(c.body)" :key="i"
               ><code v-if="r.code">{{ r.text }}</code
               ><template v-else>{{ r.text }}</template></template
+            >
+          </p>
+          <p v-if="c.key === 'check'" class="why-card__more">
+            <template v-for="(l, i) in CHECKS" :key="l.href"
+              ><template v-if="i > 0"> · </template><a :href="l.href">{{ l.label }}</a></template
             >
           </p>
 
@@ -108,6 +128,16 @@ const { exact, change, check } = HOME;
             </figcaption>
           </figure>
         </article>
+      </div>
+
+      <div class="why__lang">
+        <h3 id="why-a-language" class="why__lang-title" tabindex="-1">{{ LANGUAGE.question }}</h3>
+        <p class="why__lang-body">
+          <template v-for="(r, i) in runs(LANGUAGE.answer)" :key="i"
+            ><code v-if="r.code">{{ r.text }}</code
+            ><template v-else>{{ r.text }}</template></template
+          >
+        </p>
       </div>
     </div>
   </section>
@@ -247,7 +277,46 @@ const { exact, change, check } = HOME;
   font-variant-numeric: tabular-nums;
 }
 .why-card__fig figcaption code,
-.why-card__body code {
+.why-card__body code,
+.why__lang-body code {
   border: 0;
+}
+.why-card__more {
+  margin: -6px 0 14px;
+  font-size: 0.9rem;
+}
+.why-card__more a {
+  color: var(--plum-deep);
+  text-underline-offset: 3px;
+}
+/* Why a language: one plain paragraph under the cards, at reading width. */
+.why__lang {
+  max-width: 760px;
+  margin: clamp(20px, 3vw, 32px) 0 0;
+}
+.why__lang-title {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 108;
+  font-weight: 650;
+  font-size: 1.2rem;
+  line-height: 1.25;
+  color: var(--ink);
+  scroll-margin-top: calc(var(--vp-nav-height, 64px) + 16px);
+}
+.why__lang-body {
+  margin: 8px 0 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: var(--ink-muted);
+}
+.why__lang-body code {
+  padding: 0;
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 0.88em;
+  color: var(--ink);
 }
 </style>

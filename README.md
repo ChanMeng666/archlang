@@ -18,6 +18,8 @@ ArchLang is an open-source (MIT) DSL for floor plans that compiles `.arch` sourc
 <!-- doors:start -->
 ## Try it
 
+Just looking? [Open the playground](https://playground.archlang.uk) — no install.
+
 **Your coding agent:** paste this prompt.
 
 ```text
@@ -32,8 +34,8 @@ Starting from a photo or PDF? Read https://archlang.uk/from-an-image. To change 
 
 Or add the MCP server: `claude mcp add --transport http archlang https://mcp.archlang.uk/mcp` (locally, `claude mcp add archlang -- npx -y @chanmeng666/archlang-mcp`). The skills are listed on [skills.sh](https://skills.sh/ChanMeng666/archlang).
 
-- **ChatGPT, no install:** [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970)
-- **claude.ai, no install:** add `https://mcp.archlang.uk/mcp` as a custom connector
+- **ChatGPT, no install:** [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970), then ask, for example: "Draw a two-bedroom flat of about 75 m² as an ArchLang plan, and check it against the brief."
+- **claude.ai, no install:** add `https://mcp.archlang.uk/mcp` as a custom connector ([the steps](https://archlang.uk/start#door-claudeai))
 - **VS Code:** [Marketplace](https://marketplace.visualstudio.com/items?itemName=ChanMeng.archlang) or [Open VSX](https://open-vsx.org/extension/ChanMeng/archlang)
 - **Playground, in the browser:** https://playground.archlang.uk
 <!-- doors:end -->
@@ -59,7 +61,9 @@ Each drawing is compiled from a file in [`examples/`](examples). Click one to op
 
 - **Exact.** Areas and reachability are computed, not estimated; the same text gives the same drawing, byte for byte.
 - **Change one line, see what moved.** Edit a number and just what depends on it moves; `impact --lock` proves the rest didn't.
-- **It checks itself.** An unreachable room or an opening off its wall comes back as a message with a code and a fix your AI can apply; checks other than reachability and area are advisory.
+- **It checks itself.** An unreachable room or an opening off its wall comes back as a message with a code and a fix your AI can apply; checks other than reachability and area are advisory. [The checks →](https://archlang.uk/analysis) · [Error codes →](https://archlang.uk/errors)
+
+**Why a language, not SVG or JSON?** Rooms and walls have names, so the compiler can measure and check them; a mistake comes back as a message with a code, pointing at the exact place in the text and often carrying a fix; and the same text gives the same bytes, so a diff shows what moved. [More →](https://archlang.uk/#why-a-language)
 
 Limits: plan drawings (no 3D in the core, no BIM or IFC, not permit drawings); it does not read images; clearances are advisory.
 
@@ -81,4 +85,4 @@ https://github.com/user-attachments/assets/a60f3174-6a8c-4a42-b24a-fac030d39627
 
 <sub>[Release notes](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md) (installed: `node_modules/@chanmeng666/archlang/CHANGELOG.md`) · [Contributing](CONTRIBUTING.md) · [MIT](LICENSE)</sub>
 
-<sub>ArchCanvas is a hosted app built on ArchLang. Built by [Chan Meng](https://github.com/ChanMeng666).</sub>
+<sub>ArchCanvas is a hosted app built on ArchLang. Maintained by [Chan Meng](https://github.com/ChanMeng666), a single maintainer; written with AI coding agents and checked in CI. [Governance](GOVERNANCE.md).</sub>

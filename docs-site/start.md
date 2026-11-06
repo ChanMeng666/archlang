@@ -21,3 +21,9 @@ the ArchLang, and the compiler draws a dimensioned plan and tells your AI what i
 - [Starting from a photo or a PDF](/from-an-image): your AI reads the image; ArchLang does not.
 - [Change one room without moving the others](/edit-one-room): `impact --lock` checks an edit.
 - [The guide](/guide): what the language looks like, one statement at a time.
+
+## Who maintains it
+
+ArchLang is maintained by Chan Meng, a single maintainer. It is written with AI coding agents, and
+changes are checked in CI. How decisions are made:
+[GOVERNANCE.md](https://github.com/ChanMeng666/archlang/blob/main/GOVERNANCE.md).

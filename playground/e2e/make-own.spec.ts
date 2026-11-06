@@ -82,6 +82,10 @@ test.describe("make your own", () => {
     await s.locator('[data-door="claudeai"] button[data-copy]').click();
     expect(await clipboard(page)).toBe(doors.doors.claudeai.url);
     await expect(s.locator('[data-door="claudeai"] code')).toHaveText(doors.doors.claudeai.url);
+    await expect(s.locator('[data-door="claudeai"] .mo-steps li')).toHaveText(doors.doors.claudeai.steps);
+    await s.locator('[data-door="chatgpt"] button[data-copy]').click();
+    expect(await clipboard(page)).toBe(doors.doors.chatgpt.example);
+    await expect(s.locator('[data-door="chatgpt"] code')).toHaveText(doors.doors.chatgpt.example);
     await s.getByRole("button", { name: "Copy prompt" }).click();
     expect(await clipboard(page)).toBe(PROMPT);
     await expect(s.locator("#moPrompt")).toHaveText(PROMPT);

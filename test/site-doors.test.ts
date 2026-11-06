@@ -34,6 +34,20 @@ describe("doors.json", () => {
     expect(doors.todo).toMatch(/deeplink/i);
   });
 
+  it("gives the ChatGPT door a prompt to try and what comes back, and the claude.ai door its steps", () => {
+    const { chatgpt, claudeai } = doors.doors;
+    // A plan brief, phrased for the app; the returns line says what the compile result carries.
+    expect(chatgpt.example).toMatch(/ArchLang/);
+    expect(chatgpt.example).toMatch(/m²/);
+    expect(chatgpt.returns).toMatch(/^What comes back: /);
+    // The steps name claude.ai's own menu, as Claude's help page words them, and end on adding it.
+    expect(claudeai.steps.length).toBeGreaterThanOrEqual(3);
+    expect(claudeai.steps[0]).toContain("Customize > Connectors");
+    expect(claudeai.steps.join(" ")).toContain("Add custom connector");
+    expect(claudeai.steps.join(" ")).toContain("No sign in");
+    expect(claudeai.stepsSource).toMatch(/^https:\/\/support\.claude\.com\//);
+  });
+
   it("orders every surface with known doors only", () => {
     for (const k of ["readme", "npmMcp", "vscode", "llms", "docsHome", "playground", "start"]) {
       expect(doors.order[k], k).toBeDefined();
@@ -169,6 +183,10 @@ describe("the sites and the root README carry the doors.json values", () => {
       "doors.agent.skills.command",
       "doors.vscode.marketplace",
       "doors.vscode.openVsx",
+      "doors.chatgpt.example",
+      "doors.chatgpt.returns",
+      "doors.claudeai.steps",
+      "doors.claudeai.stepsSource",
       "AGENT_PROMPT",
     ])
       expect(body, ref).toContain(ref);
@@ -181,6 +199,10 @@ describe("the sites and the root README carry the doors.json values", () => {
       doors.doors.vscode.marketplace,
       doors.doors.agent.skills.command,
       ...doors.agentPrompt,
+      doors.doors.chatgpt.example,
+      doors.doors.chatgpt.returns,
+      ...doors.doors.claudeai.steps,
+      doors.doors.claudeai.stepsSource,
     ];
     for (const file of [
       `${theme}/CompileSeam.vue`,
@@ -214,7 +236,18 @@ describe("the sites and the root README carry the doors.json values", () => {
       doors.doors.agent.skills.command,
       doors.doors.agent.claudeCodeHttp,
       ...doors.agentPrompt,
+      doors.doors.chatgpt.example,
+      doors.doors.chatgpt.returns,
+      ...doors.doors.claudeai.steps,
+      doors.doors.claudeai.stepsSource,
     ];
+    for (const ref of [
+      "doors.chatgpt.example",
+      "doors.chatgpt.returns",
+      "doors.claudeai.steps",
+      "doors.claudeai.stepsSource",
+    ])
+      expect(sheet, ref).toContain(ref);
     // Nor does the served page or the startup code type a door in: the sheet's body is make-own.ts's.
     for (const file of ["playground/src/make-own.ts", "playground/index.html", "playground/src/shell.ts"])
       for (const s of retyped) expect(read(file), `${file}: ${s}`).not.toContain(s);
@@ -264,6 +297,18 @@ describe("the sites and the root README carry the doors.json values", () => {
     ];
     for (const p of sequence) expect(p).toBeGreaterThan(0);
     expect([...sequence].sort((a, b) => a - b)).toEqual(sequence);
+  });
+
+  it("the README's Try it opens with the playground for someone just looking, then the agent prompt", () => {
+    const text = read("README.md");
+    const block = text.slice(text.indexOf("<!-- doors:start -->"), text.indexOf("<!-- doors:end -->"));
+    const lines = block.split("\n").filter((l) => l.trim() !== "");
+    expect(lines[1]).toBe("## Try it");
+    expect(lines[2]).toBe(`Just looking? [Open the playground](${doors.doors.playground.url}) — no install.`);
+    expect(lines[3]).toMatch(/^\*\*Your coding agent:\*\* paste this prompt\.$/);
+    // The ChatGPT door carries the prompt to try; the claude.ai door links to /start's steps.
+    expect(block).toContain(doors.doors.chatgpt.example);
+    expect(block).toContain("https://archlang.uk/start#door-claudeai");
   });
 });
 

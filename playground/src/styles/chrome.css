@@ -1007,6 +1007,13 @@ html[data-mode="edit"] .strip {
   font-size: 0.85rem;
   color: var(--ink-muted);
 }
+/* The claude.ai connector steps, as Claude's help page words them (doors.json). */
+.mo-steps {
+  margin: 0;
+  padding-left: 1.3em;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
 .mo-links {
   display: flex;
   flex-wrap: wrap;

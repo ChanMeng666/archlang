@@ -23,11 +23,22 @@ defineProps<{ id: DoorId }>();
         >{{ doors.chatgpt.label }}&nbsp;↗</a
       >
       <span class="door__note">{{ doors.chatgpt.note }}</span>
+      <p class="door__label">Then ask, for example:</p>
+      <CopyBox :text="doors.chatgpt.example" label="the example prompt for ChatGPT" />
+      <p class="door__label">{{ doors.chatgpt.returns }}</p>
     </template>
 
     <template v-else-if="id === 'claudeai'">
       <p class="door__label">{{ doors.claudeai.label }} · {{ doors.claudeai.note }}</p>
       <CopyBox :text="doors.claudeai.url" label="the claude.ai connector URL" />
+      <ol class="door__steps">
+        <li v-for="s in doors.claudeai.steps" :key="s">{{ s }}</li>
+      </ol>
+      <p class="door__label">
+        <a :href="doors.claudeai.stepsSource" target="_blank" rel="noopener"
+          >Claude's help page on custom connectors&nbsp;↗</a
+        >
+      </p>
     </template>
 
     <template v-else-if="id === 'agent'">
@@ -73,5 +84,13 @@ defineProps<{ id: DoorId }>();
 }
 .door__label {
   flex: 1 1 100%;
+}
+.door__steps {
+  flex: 1 1 100%;
+  margin: 0;
+  padding-left: 1.4em;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink);
 }
 </style>

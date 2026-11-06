@@ -5,12 +5,21 @@
     "chatgpt": {
       "label": "ArchLang app in ChatGPT",
       "url": "https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970",
-      "note": "no install"
+      "note": "no install",
+      "example": "Draw a two-bedroom flat of about 75 m² as an ArchLang plan, and check it against the brief.",
+      "returns": "What comes back: the compiled plan, each room labelled with its area, and any problems the compiler found."
     },
     "claudeai": {
       "label": "claude.ai connector",
       "url": "https://mcp.archlang.uk/mcp",
-      "note": "no install; add as a custom connector"
+      "note": "no install; add as a custom connector",
+      "steps": [
+        "In claude.ai, open Customize > Connectors.",
+        "Click + Add, then Add custom connector.",
+        "Name it ArchLang, paste the server URL and click Continue.",
+        "Under Authentication, choose No sign in, then click Add."
+      ],
+      "stepsSource": "https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp"
     },
     "agent": {
       "label": "Your coding agent",
