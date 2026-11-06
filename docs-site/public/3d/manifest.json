@@ -7,13 +7,6 @@
         "path": "examples/studio.arch",
         "sha256": "a43e68008cc6a58036f9b3f8965487cf4c99f66a0f643e7da12cf3f320307f28"
       },
-      "archlang": "1.56.0",
-      "archlang3d": "0.4.0",
-      "environment": {
-        "platform": "win32",
-        "arch": "x64",
-        "chromium": "156.0.8078.4"
-      },
       "posters": [
         {
           "file": "poster",
@@ -23,7 +16,12 @@
           "t": 1,
           "theme": "light",
           "frameSha256": "5717918a1546f7eb85d35df809e03ed71b295529a39169d501f94133f785a441",
-          "webpQuality": 0.9
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
         }
       ],
       "video": {
@@ -35,6 +33,7 @@
       },
       "glb": {
         "sha256": "f45643288baddb578d5b7c06dc0f01744b7f9dae1dcdcebbe70907bf21dc432f",
+        "contentSha256": "6e5ebc0fad41efbaf23a062381f4ef466804cf1b6b92466e640c10c2829a9007",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -44,19 +43,27 @@
       "files": [
         {
           "path": "studio.poster.webp",
-          "bytes": 40992
+          "bytes": 40992,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "studio.poster.png",
-          "bytes": 79056
+          "bytes": 79056,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "studio.replay.mp4",
-          "bytes": 577336
+          "bytes": 577336,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "studio.glb",
-          "bytes": 95596
+          "bytes": 95596,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         }
       ]
     },
@@ -65,13 +72,6 @@
       "source": {
         "path": "examples/furnished-flat.arch",
         "sha256": "cb49c1cdf9f13ae86c0eaea0f1e318dec50277f7e5ddae21464f98ce6ec6dda1"
-      },
-      "archlang": "1.56.0",
-      "archlang3d": "0.4.0",
-      "environment": {
-        "platform": "win32",
-        "arch": "x64",
-        "chromium": "156.0.8078.4"
       },
       "posters": [
         {
@@ -82,7 +82,12 @@
           "t": 1,
           "theme": "light",
           "frameSha256": "2465c211ea42feb7135d4efb5177a4730e7ff49a19afeabf8143a8e2415ce53a",
-          "webpQuality": 0.9
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
         }
       ],
       "video": {
@@ -94,6 +99,7 @@
       },
       "glb": {
         "sha256": "24145c77368b8c7cf3ded03c8678f0ddd0f22205fdb942fe43986625a09e0b56",
+        "contentSha256": "d36050fb578442ce81ee40b2569820b48811120d4a1b4ec29e2e347d5dd55503",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -103,19 +109,27 @@
       "files": [
         {
           "path": "furnished-flat.poster.webp",
-          "bytes": 61598
+          "bytes": 61598,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "furnished-flat.poster.png",
-          "bytes": 107551
+          "bytes": 107551,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "furnished-flat.replay.mp4",
-          "bytes": 747678
+          "bytes": 747678,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "furnished-flat.glb",
-          "bytes": 376860
+          "bytes": 376860,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         }
       ]
     },
@@ -124,13 +138,6 @@
       "source": {
         "path": "examples/laneway-house.arch",
         "sha256": "352a67dd9c0cfcff2535de25c1e8d1a21659828c718bd4ee3b84d92229796896"
-      },
-      "archlang": "1.56.0",
-      "archlang3d": "0.4.0",
-      "environment": {
-        "platform": "win32",
-        "arch": "x64",
-        "chromium": "156.0.8078.4"
       },
       "posters": [
         {
@@ -141,7 +148,12 @@
           "t": 1,
           "theme": "light",
           "frameSha256": "59b0fd87f5f4a953b169d5dbf2973cb86928c09ec3654f2ff0b2c7094343a604",
-          "webpQuality": 0.9
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
         }
       ],
       "video": {
@@ -153,6 +165,7 @@
       },
       "glb": {
         "sha256": "31fc9bf9dc81e3286f77158452ad4283ac6ffa091d6dc73ec34aa8f026cde92a",
+        "contentSha256": "819d505d112fc22386c3737cb69b981110d7f9b6849d29f710459d693b8c3d51",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -162,19 +175,27 @@
       "files": [
         {
           "path": "laneway-house.poster.webp",
-          "bytes": 47804
+          "bytes": 47804,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "laneway-house.poster.png",
-          "bytes": 88092
+          "bytes": 88092,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "laneway-house.replay.mp4",
-          "bytes": 686734
+          "bytes": 686734,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "laneway-house.glb",
-          "bytes": 112436
+          "bytes": 112436,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         }
       ]
     },
@@ -183,13 +204,6 @@
       "source": {
         "path": "examples/knob-flat.arch",
         "sha256": "41d443124778dd95c7469cc67e1379a4d0173283730e3dcfbe920e21d0a14fa8"
-      },
-      "archlang": "1.56.0",
-      "archlang3d": "0.4.0",
-      "environment": {
-        "platform": "win32",
-        "arch": "x64",
-        "chromium": "156.0.8078.4"
       },
       "posters": [
         {
@@ -200,7 +214,12 @@
           "t": 1,
           "theme": "light",
           "frameSha256": "58fd24215f37c080f3774de9c56c1d8765363135cae36edc5f8f1db8b7e66e54",
-          "webpQuality": 0.9
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
         }
       ],
       "video": {
@@ -212,6 +231,7 @@
       },
       "glb": {
         "sha256": "3fdf51f00dedb00ba08049e9c9211f9ecfa045806e1fb3690bbc3df2bd9f05c4",
+        "contentSha256": "c8ee31d8f29d49278eeff97296c392fad7c12522e513f243e8122b882d9b8678",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -221,19 +241,27 @@
       "files": [
         {
           "path": "knob-flat.poster.webp",
-          "bytes": 41138
+          "bytes": 41138,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "knob-flat.poster.png",
-          "bytes": 81214
+          "bytes": 81214,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "knob-flat.replay.mp4",
-          "bytes": 547760
+          "bytes": 547760,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "knob-flat.glb",
-          "bytes": 87608
+          "bytes": 87608,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         }
       ]
     },
@@ -242,13 +270,6 @@
       "source": {
         "path": "examples/two-storey.arch",
         "sha256": "73eab3ce98901747a4170bf56eef4263ec3dd2d85f13b65f50e6e89d04571c0e"
-      },
-      "archlang": "1.56.0",
-      "archlang3d": "0.4.0",
-      "environment": {
-        "platform": "win32",
-        "arch": "x64",
-        "chromium": "156.0.8078.4"
       },
       "posters": [
         {
@@ -259,7 +280,12 @@
           "t": 1,
           "theme": "light",
           "frameSha256": "5d82d4d1a463532668ca62c1fddffce83d1150b43e42419968e310b5dd018305",
-          "webpQuality": 0.9
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
         },
         {
           "file": "poster-full",
@@ -269,7 +295,12 @@
           "t": 1,
           "theme": "light",
           "frameSha256": "75820cedbd13a159bcefc868dece167943a1d3147c9025fe15cc36e840004759",
-          "webpQuality": 0.9
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
         }
       ],
       "video": {
@@ -281,6 +312,7 @@
       },
       "glb": {
         "sha256": "82517f1c17adba935f08170ba434af7a7494932173c535ef3544d9941ef7420a",
+        "contentSha256": "14fb5493b61fb437745f22d98f8a08af08a84e814c1c74673ab0e4fea300fed4",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -290,27 +322,39 @@
       "files": [
         {
           "path": "two-storey.poster.webp",
-          "bytes": 49730
+          "bytes": 49730,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "two-storey.poster.png",
-          "bytes": 88498
+          "bytes": 88498,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "two-storey.poster-full.webp",
-          "bytes": 40220
+          "bytes": 40220,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "two-storey.poster-full.png",
-          "bytes": 76290
+          "bytes": 76290,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "two-storey.replay.mp4",
-          "bytes": 553691
+          "bytes": 553691,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "two-storey.glb",
-          "bytes": 122892
+          "bytes": 122892,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         }
       ]
     },
@@ -319,13 +363,6 @@
       "source": {
         "path": "examples/turning-stair.arch",
         "sha256": "a27caa5aa61a84b32e0280dcff7f127559fbbcb6f50e77ab1ce8963ed9181769"
-      },
-      "archlang": "1.56.0",
-      "archlang3d": "0.4.0",
-      "environment": {
-        "platform": "win32",
-        "arch": "x64",
-        "chromium": "156.0.8078.4"
       },
       "posters": [
         {
@@ -336,7 +373,12 @@
           "t": 1,
           "theme": "light",
           "frameSha256": "8d1bbd8faa4216e4df6fce57bf7191deae785a71e0d46b74837671eabca51ac4",
-          "webpQuality": 0.9
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
         },
         {
           "file": "poster-full",
@@ -346,7 +388,12 @@
           "t": 1,
           "theme": "light",
           "frameSha256": "cfffd3bf723c37bec93755b494daefd95ef8ad251b88eb5212306a20516bf558",
-          "webpQuality": 0.9
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
         }
       ],
       "video": {
@@ -358,6 +405,7 @@
       },
       "glb": {
         "sha256": "22110e01d24322acb1941add1d733db4112e04bfab6757b34e63255860148893",
+        "contentSha256": "33d2ae985a1848aecbffbb5885a4fe610d4edf56eec3b0bfd1c4b41f87c56c7e",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -367,27 +415,39 @@
       "files": [
         {
           "path": "turning-stair.poster.webp",
-          "bytes": 41766
+          "bytes": 41766,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "turning-stair.poster.png",
-          "bytes": 76430
+          "bytes": 76430,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "turning-stair.poster-full.webp",
-          "bytes": 35636
+          "bytes": 35636,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "turning-stair.poster-full.png",
-          "bytes": 69562
+          "bytes": 69562,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "turning-stair.replay.mp4",
-          "bytes": 422329
+          "bytes": 422329,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         },
         {
           "path": "turning-stair.glb",
-          "bytes": 28584
+          "bytes": 28584,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
         }
       ]
     }

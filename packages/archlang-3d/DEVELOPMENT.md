@@ -99,8 +99,18 @@ surfaces' assets are not: `scripts/gen-3d-assets.ts` (root `npm run gen:3d-asset
 plan's poster (`renderStill`, the canvas alone at `__seek(1)`; a storeyed plan whose stair is the
 point shows storey 1 alone and adds the assembled frame as `poster-full`), replay MP4 and GLB into
 `docs-site/public/3d/` with a `manifest.json`, and `e2e/assets.e2e.ts` fails until they are
-regenerated after a version bump, a changed plan or a moved poster frame. Another repository runs it
-from a checkout of this one: `npm run gen:3d-assets -- --out <dir> --plan <name>=<path.arch>`.
+regenerated after a changed plan, a moved poster frame or a changed GLB content, and on a file there
+that the manifest does not list. Another repository runs it from a checkout of this one:
+`npm run gen:3d-assets -- --out <dir> --plan <name>=<path.arch>`.
+
+Assets change only when what they show changes. A version bump of the core or of this package
+rewrites nothing and fails nothing (the manifest records, per file, the versions that wrote it, and
+the check prints an older one as a note). A poster is rewritten when its re-rendered frame hash
+moves; a GLB when its content hash moves (the Mesh3D written with a fixed `asset.generator`, so the
+version it names is not content); an MP4 is re-encoded only when its plan's source or imports change,
+or when `--videos` asks for every one (after a change to the replay or the geometry that the poster
+and GLB already show). A file a plan no longer has is deleted, so a regenerated directory holds only
+what the manifest lists.
 
 Tests: `test/*.test.ts` run in the core's `npm test`; heavy tests go in `e2e/*.e2e.ts` and run with
 `npm run check:3d` at the repository root. The plan and its cards: `docs/plans/archlang-3d/`,

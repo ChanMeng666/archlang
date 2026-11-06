@@ -11,28 +11,47 @@
  *   <name>.replay.mp4    1280×720, 10 s, H.264 yuv420p +faststart, ≤ 1.5 MB (`PLANS[].video`)
  *   <name>.glb           closed doors, every check passed (glTF-Validator 0 errors, 0 warnings), ≤ 1 MB
  *
- * and `manifest.json`: per plan the source path and SHA-256 (and of every file it imports), the
- * core and package versions, the poster's frame hash (`window.__frameHash`, the key-frame
- * baseline's hashing), the environment that rendered it, the GLB's SHA-256 and every file's bytes.
+ * and `manifest.json`: per plan the source path and SHA-256 (and of every file it imports), each
+ * poster's frame hash (`window.__frameHash`, the key-frame baseline's hashing) and the environment
+ * that rendered it, the GLB's SHA-256 and its content hash, and every file's bytes with the core and
+ * package versions that wrote it.
  *
  *   npm run gen:3d-assets                          every default plan
  *   npm run gen:3d-assets -- --only studio,knob-flat   just these (the rest of the manifest kept)
  *   npm run gen:3d-assets -- --out <dir> --plan <name>=<path.arch> [--plan …] [--no-video]
+ *   npm run gen:3d-assets -- --videos              re-encode every MP4 as well
  *   npm run gen:3d-assets -- --check [--out <dir>] [--no-render]
+ *
+ * Assets change only when what they show changes (review of PR #519, M2). A poster is rewritten when
+ * its re-rendered frame hash differs from the recorded one, a GLB when its content hash does (the
+ * GLB written with a fixed `asset.generator`, so a version bump alone moves nothing), and an MP4 is
+ * re-encoded only when its plan's source or imports changed or `--videos` is passed. A file kept
+ * keeps the versions that wrote it; a file the plan no longer has (`--no-video`, a poster view
+ * dropped) is deleted.
  *
  * `--plan` replaces the default list with plans from anywhere (another repository); their paths are
  * recorded relative to the working directory, marked `external`, never absolute. `--check` is the
  * freshness check (`checkAssets`, also `e2e/assets.e2e.ts` under `check:3d`): it compares the
- * sources and the package version with the manifest, the files with their recorded bytes and
- * budgets, rebuilds each GLB, and re-renders each poster frame (hash, then pixel tolerance against
- * the PNG); it never compares an image's or a video's encoded bytes (encoders differ; Q21).
+ * sources with the manifest, the files with their recorded bytes and budgets, rebuilds each GLB's
+ * content hash, re-renders each poster frame (hash, then pixel tolerance against the PNG), and fails
+ * on a file in the directory that no entry lists; it never compares an image's or a video's encoded
+ * bytes (encoders differ; Q21). Versions other than this tree's are notes, never failures.
  *
  * Heavy: Chromium (playwright-core's, on SwiftShader) and ffmpeg (`archlang3d doctor`). Outside the
  * drift gate, which must not need a browser.
  */
 import { spawn } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -105,23 +124,47 @@ export interface PosterEntry {
   theme: "light";
   frameSha256: string;
   webpQuality: number;
+  /** Where it was rendered: the check holds a re-render here to the exact hash. */
+  environment: Environment;
+}
+
+/** A file written for a plan: its bytes, and the core and package versions that wrote it. */
+export interface FileEntry {
+  path: string;
+  bytes: number;
+  archlang: string;
+  archlang3d: string;
 }
 
 export interface AssetEntry {
   name: string;
   source: { path: string; sha256: string; external?: true; imports?: Array<{ path: string; sha256: string }> };
-  archlang: string;
-  archlang3d: string;
-  environment: Environment;
   /** `poster` (the view `PLANS` names), then, when that is one storey, `poster-full` (all of them). */
   posters: PosterEntry[];
   video?: { width: number; height: number; seconds: number; fps: number; crf: number };
-  glb?: { sha256: string; doors: "closed"; validator: { errors: number; warnings: number } };
-  /** Every file written for this plan, by name, with its bytes. */
-  files: Array<{ path: string; bytes: number }>;
+  /**
+   * `sha256`: the file's; `contentSha256`: the same Mesh3D written with {@link CONTENT_GENERATOR},
+   * which a version bump leaves alone.
+   */
+  glb?: { sha256: string; contentSha256: string; doors: "closed"; validator: { errors: number; warnings: number } };
+  /** Every file written for this plan, by name. */
+  files: FileEntry[];
   /** What was not written, and why (a GLB over budget). */
   skipped?: string[];
 }
+
+/** A manifest entry as an earlier generator wrote it: the versions and environment per plan. */
+type PreviousEntry = Omit<AssetEntry, "posters" | "files" | "glb"> & {
+  archlang?: string;
+  archlang3d?: string;
+  environment?: Environment;
+  posters?: Array<Omit<PosterEntry, "environment"> & { environment?: Environment }>;
+  files: Array<{ path: string; bytes: number; archlang?: string; archlang3d?: string }>;
+  glb?: Omit<NonNullable<AssetEntry["glb"]>, "contentSha256"> & { contentSha256?: string };
+};
+
+/** The GLB's `asset.generator` for its content hash: fixed (as `test/pins.ts`'s), so a version bump moves nothing. */
+export const CONTENT_GENERATOR = "archlang-3d";
 
 export interface AssetManifest {
   about: string;
@@ -270,26 +313,49 @@ async function writeVideo(mesh: Mesh3D, title: string, svg: string, out: string)
   }
 }
 
-/** Generate one plan's assets into `out`; returns its manifest entry. */
+/**
+ * Generate one plan's assets into `out`; returns its manifest entry and the files it wrote. With
+ * `prev` (the plan's entry already in the manifest), a file whose content is unchanged is kept, not
+ * rewritten (the module's header says when).
+ */
 export async function generateOne(
   name: string,
   abs: string,
   out: string,
-  opts: { video: boolean; poster?: ReplayView },
-): Promise<AssetEntry> {
+  opts: { video: boolean; poster?: ReplayView; videos?: boolean },
+  prev?: PreviousEntry,
+): Promise<{ entry: AssetEntry; written: string[] }> {
   const p = preparePlan(abs);
-  const files: AssetEntry["files"] = [];
+  const now = { archlang: coreVersion(), archlang3d: ARCHLANG_3D_VERSION };
+  const files: FileEntry[] = [];
+  const written: string[] = [];
   const skipped: string[] = [];
   const put = (file: string, bytes: Uint8Array): void => {
     writeFileSync(join(out, file), bytes);
-    files.push({ path: file, bytes: bytes.byteLength });
+    files.push({ path: file, bytes: bytes.byteLength, ...now });
+    written.push(file);
   };
+  // A file of the previous entry still on disk at its recorded bytes, with the versions that wrote it.
+  const kept = (file: string): FileEntry | undefined => {
+    const f = prev?.files.find((x) => x.path === file);
+    const at = join(out, file);
+    if (!f || !existsSync(at) || statSync(at).size !== f.bytes) return undefined;
+    return {
+      path: file,
+      bytes: f.bytes,
+      archlang: f.archlang ?? prev?.archlang ?? "unknown",
+      archlang3d: f.archlang3d ?? prev?.archlang3d ?? "unknown",
+    };
+  };
+  const sourceSame =
+    prev !== undefined &&
+    prev.source.sha256 === sha256(p.source) &&
+    JSON.stringify(prev.source.imports ?? []) === JSON.stringify(p.imports);
 
   const main = opts.poster ?? "all";
   const views: Array<[PosterEntry["file"], ReplayView]> = [["poster", main]];
   if (main !== "all") views.push(["poster-full", "all"]);
   const posters: PosterEntry[] = [];
-  let browser = "";
   for (const [file, view] of views) {
     // The poster must carry no text: the core's drawing (the only layer with glyphs) is gone at t.
     if (stateAt(timeline(viewMesh(p.mesh, view)), POSTER.t).svg !== 0)
@@ -303,58 +369,95 @@ export async function generateOne(
     });
     if (!still.webp || still.webp.bytes.byteLength > BUDGET.webp)
       throw new Error(`${name}: the WebP ${file} is over ${BUDGET.webp} bytes at every quality tried`);
+    const label = viewLabel(view);
+    // The same frame as recorded, its two files in place: kept as they are.
+    const was = prev?.posters?.find(
+      (x) =>
+        x.file === file &&
+        x.view === label &&
+        x.width === POSTER.width &&
+        x.height === POSTER.height &&
+        x.t === POSTER.t &&
+        x.theme === POSTER.theme,
+    );
+    const keptWebp = kept(`${name}.${file}.webp`);
+    const keptPng = kept(`${name}.${file}.png`);
+    const environment = was?.environment ?? prev?.environment;
+    if (was && was.frameSha256 === still.sha256 && keptWebp && keptPng && environment) {
+      files.push(keptWebp, keptPng);
+      posters.push({ ...was, environment });
+      continue;
+    }
     put(`${name}.${file}.webp`, still.webp.bytes);
     put(`${name}.${file}.png`, still.png);
     posters.push({
       file,
-      view: viewLabel(view),
+      view: label,
       ...POSTER,
       frameSha256: still.sha256,
       webpQuality: still.webp.quality,
+      environment: { platform: process.platform, arch: process.arch, chromium: still.browser },
     });
-    browser = still.browser;
   }
 
   let video: AssetEntry["video"];
   if (opts.video) {
     const file = `${name}.replay.mp4`;
-    const crf = await writeVideo(p.mesh, p.title, p.svg, join(out, file));
-    files.push({ path: file, bytes: statSync(join(out, file)).size });
-    video = { width: VIDEO.width, height: VIDEO.height, seconds: VIDEO.seconds, fps: VIDEO.fps, crf };
+    const was = prev?.video;
+    const keptMp4 = kept(file);
+    const sameShape =
+      was?.width === VIDEO.width &&
+      was.height === VIDEO.height &&
+      was.seconds === VIDEO.seconds &&
+      was.fps === VIDEO.fps;
+    if (!opts.videos && sourceSame && sameShape && was && keptMp4) {
+      files.push(keptMp4);
+      video = was;
+    } else {
+      const crf = await writeVideo(p.mesh, p.title, p.svg, join(out, file));
+      files.push({ path: file, bytes: statSync(join(out, file)).size, ...now });
+      written.push(file);
+      video = { width: VIDEO.width, height: VIDEO.height, seconds: VIDEO.seconds, fps: VIDEO.fps, crf };
+    }
   }
 
   let glb: AssetEntry["glb"];
   const bytes = await writeGlb(p.mesh);
+  const contentSha256 = sha256(await writeGlb(p.mesh, { generator: CONTENT_GENERATOR }));
   const checks = [checkScene(p.scene), checkShells(p.mesh), ...(await checkGlb(bytes, p.mesh))];
   const failed = checks.filter((c) => !c.ok);
   if (failed.length > 0) throw new Error(`${name}: GLB check failed: ${failed.map((c) => c.id).join(", ")}`);
   const v = checks.find((c) => c.id === "V-GLTF-01")?.facts as { errors: number; warnings: number } | undefined;
+  const validator = { errors: v?.errors ?? -1, warnings: v?.warnings ?? -1 };
   if (bytes.byteLength > BUDGET.glb) skipped.push(`${name}.glb: ${bytes.byteLength} bytes, over ${BUDGET.glb}`);
   else {
-    put(`${name}.glb`, bytes);
-    glb = {
-      sha256: sha256(bytes),
-      doors: "closed",
-      validator: { errors: v?.errors ?? -1, warnings: v?.warnings ?? -1 },
-    };
+    const was = prev?.glb;
+    const keptGlb = kept(`${name}.glb`);
+    // An entry from before the content hash: the file's own hash, at this version, decides.
+    const same = was && (was.contentSha256 ? was.contentSha256 === contentSha256 : was.sha256 === sha256(bytes));
+    if (was && same && keptGlb) {
+      files.push(keptGlb);
+      glb = { sha256: was.sha256, contentSha256, doors: "closed", validator };
+    } else {
+      put(`${name}.glb`, bytes);
+      glb = { sha256: sha256(bytes), contentSha256, doors: "closed", validator };
+    }
   }
 
-  return {
+  const entry: AssetEntry = {
     name,
     source: {
       ...sourcePath(abs),
       sha256: sha256(p.source),
       ...(p.imports.length > 0 ? { imports: p.imports } : {}),
     },
-    archlang: coreVersion(),
-    archlang3d: ARCHLANG_3D_VERSION,
-    environment: { platform: process.platform, arch: process.arch, chromium: browser },
     posters,
     ...(video ? { video } : {}),
     ...(glb ? { glb } : {}),
     files,
     ...(skipped.length > 0 ? { skipped } : {}),
   };
+  return { entry, written };
 }
 
 export function readManifest(dir: string): AssetManifest | undefined {
@@ -374,23 +477,31 @@ export interface CheckReport {
 }
 
 /**
- * The freshness check (card X4). Per entry: the source (and its imports) hash as recorded; the
- * package version is this one; every file is there at its recorded bytes and within budget; the
- * GLB rebuilds to its recorded SHA-256; and, with `render`, the poster frame re-rendered hashes as
- * recorded (required when the environment is the recording one) or is within `TOLERANCE` of the
- * committed PNG. A different core version is a note: the re-render says whether it moved a pixel.
- * External sources (another repository) are noted and not checked. With the default directory,
- * every default plan must have an entry.
+ * The freshness check (card X4). Per entry: the source (and its imports) hash as recorded; every
+ * file is there at its recorded bytes and within budget; the GLB is the recorded file and its
+ * Mesh3D rebuilds to the recorded content hash; and, with `render`, each poster frame re-rendered
+ * hashes as recorded (required when the environment is the recording one) or is within `TOLERANCE`
+ * of the committed PNG. A file written by another core or package version is a note: what it shows
+ * is what decides (the GLB's content, the poster's frame), so a version bump fails nothing. External
+ * sources (another repository) are noted and not checked. With the default directory, every
+ * default plan must have an entry; in any directory, every file but `manifest.json` must be listed
+ * by an entry (an orphan is a stale asset nothing vouches for).
  */
 export async function checkAssets(dir: string, opts: { render: boolean }): Promise<CheckReport[]> {
   const m = readManifest(dir);
   if (!m) return [{ name: "manifest.json", ok: false, problems: [`no manifest.json in ${dir}`], notes: [] }];
   const reports: CheckReport[] = [];
+  const top: string[] = [];
   if (resolve(dir) === resolve(DEFAULT_OUT)) {
     const missing = PLANS.filter((p) => !m.assets.some((a) => a.name === p.name)).map((p) => p.name);
-    if (missing.length > 0)
-      reports.push({ name: "manifest.json", ok: false, problems: [`no entry for ${missing.join(", ")}`], notes: [] });
+    if (missing.length > 0) top.push(`no entry for ${missing.join(", ")}`);
   }
+  const listed = new Set(m.assets.flatMap((a) => a.files.map((f) => f.path)));
+  const orphans = readdirSync(dir)
+    .filter((f) => f !== "manifest.json" && !listed.has(f))
+    .sort();
+  if (orphans.length > 0) top.push(`not in the manifest (orphans): ${orphans.join(", ")}`);
+  if (top.length > 0) reports.push({ name: "manifest.json", ok: false, problems: top, notes: [] });
   for (const a of m.assets) {
     const problems: string[] = [];
     const notes: string[] = [];
@@ -412,9 +523,13 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
     if (sha256(p.source) !== a.source.sha256) problems.push(`source ${a.source.path} changed since generation`);
     const imports = JSON.stringify(p.imports);
     if (imports !== JSON.stringify(a.source.imports ?? [])) problems.push("the plan's imported files changed");
-    if (a.archlang3d !== ARCHLANG_3D_VERSION)
-      problems.push(`generated by archlang-3d ${a.archlang3d}; the package is ${ARCHLANG_3D_VERSION}`);
-    if (a.archlang !== coreVersion()) notes.push(`generated with archlang ${a.archlang}; the core is ${coreVersion()}`);
+    const older = (key: "archlang" | "archlang3d", now: string, what: string): void => {
+      const by = new Map<string, string[]>();
+      for (const f of a.files) if (f[key] !== now) by.set(f[key], [...(by.get(f[key]) ?? []), f.path]);
+      for (const [v, paths] of by) notes.push(`${paths.join(", ")} written with ${what} ${v}; this tree is ${now}`);
+    };
+    older("archlang3d", ARCHLANG_3D_VERSION, "archlang-3d");
+    older("archlang", coreVersion(), "archlang");
     for (const f of a.files) {
       const file = join(dir, f.path);
       if (!existsSync(file)) {
@@ -433,8 +548,12 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
       if (size > budget) problems.push(`${f.path} is over its ${budget}-byte budget`);
     }
     if (a.glb) {
-      const glb = sha256(await writeGlb(p.mesh));
-      if (glb !== a.glb.sha256) problems.push(`${a.name}.glb rebuilds to ${glb.slice(0, 12)}…, not the recorded one`);
+      const file = join(dir, `${a.name}.glb`);
+      if (existsSync(file) && sha256(readFileSync(file)) !== a.glb.sha256)
+        problems.push(`${a.name}.glb is not the file the manifest records`);
+      const content = sha256(await writeGlb(p.mesh, { generator: CONTENT_GENERATOR }));
+      if (content !== a.glb.contentSha256)
+        problems.push(`${a.name}.glb's content rebuilds to ${content.slice(0, 12)}…, not the recorded one`);
     }
     const spec = resolve(dir) === resolve(DEFAULT_OUT) ? PLANS.find((s) => s.name === a.name) : undefined;
     if (spec) {
@@ -458,7 +577,7 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
       const d = still.diff;
       const fraction = d ? d.differing / d.total : 1;
       const here: Environment = { platform: process.platform, arch: process.arch, chromium: still.browser };
-      const same = JSON.stringify(here) === JSON.stringify(a.environment);
+      const same = JSON.stringify(here) === JSON.stringify(poster.environment);
       if (still.sha256 !== poster.frameSha256) {
         const where = `${here.platform}/${here.arch}/Chromium ${here.chromium}`;
         const msg = `${poster.file} (${poster.view}) frame hash ${still.sha256.slice(0, 12)}… (recorded ${poster.frameSha256.slice(0, 12)}…, ${where}); ${d?.differing ?? "?"} of ${d?.total ?? "?"} pixels beyond ${TOLERANCE.threshold}, largest gap ${d?.maxDelta ?? "?"}`;
@@ -481,6 +600,7 @@ function args(argv: readonly string[]) {
     only: undefined as string[] | undefined,
     plans: [] as Array<{ name: string; path: string }>,
     video: true,
+    videos: false,
     check: false,
     render: true,
   };
@@ -498,6 +618,7 @@ function args(argv: readonly string[]) {
       if (!m) throw new Error("--plan takes <name>=<path.arch> (name: lower-case letters, digits, hyphens)");
       o.plans.push({ name: m[1] as string, path: m[2] as string });
     } else if (a === "--no-video") o.video = false;
+    else if (a === "--videos") o.videos = true;
     else if (a === "--check") o.check = true;
     else if (a === "--no-render") o.render = false;
     else throw new Error(`unknown argument ${a}`);
@@ -528,21 +649,36 @@ async function main(): Promise<number> {
   if (o.only && list.length !== o.only.length)
     throw new Error(`--only names a plan not in the list: ${o.only.join(",")}`);
   mkdirSync(o.out, { recursive: true });
-  const before = readManifest(o.out)?.assets ?? [];
+  const before = (readManifest(o.out)?.assets ?? []) as unknown as PreviousEntry[];
   const fresh = new Map<string, AssetEntry>();
   for (const p of list) {
     say(`gen:3d-assets: ${p.name} …`);
-    const e = await generateOne(p.name, p.abs, o.out, {
-      video: p.video,
-      ...(p.poster !== undefined ? { poster: p.poster } : {}),
-    });
+    const prev = before.find((e) => e.name === p.name);
+    const { entry: e, written } = await generateOne(
+      p.name,
+      p.abs,
+      o.out,
+      { video: p.video, videos: o.videos, ...(p.poster !== undefined ? { poster: p.poster } : {}) },
+      prev,
+    );
     fresh.set(p.name, e);
-    say(`gen:3d-assets: ${p.name}: ${e.files.map((f) => `${f.path} ${f.bytes}`).join(", ")}`);
+    // A file the plan had and no longer has (`--no-video`, a poster view dropped, a GLB over budget).
+    for (const f of prev?.files ?? []) {
+      if (e.files.some((x) => x.path === f.path)) continue;
+      rmSync(join(o.out, f.path), { force: true });
+      say(`gen:3d-assets: ${p.name}: removed ${f.path}`);
+    }
+    const kept = e.files.filter((f) => !written.includes(f.path)).map((f) => f.path);
+    say(
+      `gen:3d-assets: ${p.name}: wrote ${written.map((f) => `${f} ${e.files.find((x) => x.path === f)?.bytes}`).join(", ") || "nothing"}`,
+    );
+    if (kept.length > 0) say(`gen:3d-assets: ${p.name}: kept (unchanged) ${kept.join(", ")}`);
     for (const s of e.skipped ?? []) say(`gen:3d-assets: skipped ${s}`);
   }
   // Kept entries for plans not regenerated; the default list's order, then any others by name.
   const order = (o.plans.length > 0 ? o.plans : PLANS).map((p) => p.name);
-  const merged = [...before.filter((e) => !fresh.has(e.name)), ...fresh.values()].sort((a, b) => {
+  const others = (before as unknown as AssetEntry[]).filter((e) => !fresh.has(e.name));
+  const merged = [...others, ...fresh.values()].sort((a, b) => {
     const ia = order.indexOf(a.name);
     const ib = order.indexOf(b.name);
     return (ia < 0 ? order.length : ia) - (ib < 0 ? order.length : ib) || (a.name < b.name ? -1 : 1);
