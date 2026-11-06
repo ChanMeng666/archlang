@@ -654,7 +654,10 @@ export default defineConfig({
     transformItems: (items) =>
       items.map((item) => {
         const stamped = LASTMOD[`/${item.url}`];
-        return stamped && !item.lastmod ? { ...item, lastmod: stamped } : item;
+        const dated = stamped && !item.lastmod ? { ...item, lastmod: stamped } : item;
+        // The ADR index is `adr/index.html`; the host serves it at `/adr` and 307s `/adr/`
+        // there (html_handling: drop-trailing-slash), so list the path that answers 200.
+        return dated.url === "adr/" ? { ...dated, url: "adr" } : dated;
       }),
   },
   // sync-docs.mjs drops a RAW markdown copy of each generated page into public/

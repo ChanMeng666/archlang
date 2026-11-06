@@ -333,7 +333,16 @@ describe("the head wiring itself, which no page can prove on its own", () => {
         `discovery signal left unspent.`,
     ).toContain("Sitemap: https://archlang.uk/sitemap.xml");
     // The policy is allow-everything, training crawlers included (owner decision).
-    for (const ua of ["OAI-SearchBot", "ClaudeBot", "PerplexityBot", "GPTBot", "Google-Extended", "CCBot"]) {
+    for (const ua of [
+      "OAI-SearchBot",
+      "ClaudeBot",
+      "PerplexityBot",
+      "GPTBot",
+      "Google-Extended",
+      "CCBot",
+      "ShapBot",
+      "DuckDuckBot",
+    ]) {
       expect(robots, `${ROBOTS} no longer names ${ua}`).toContain(`User-agent: ${ua}`);
     }
     expect(robots, `${ROBOTS} must not disallow anything — the policy is allow-everything`).not.toMatch(

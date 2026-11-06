@@ -41,5 +41,9 @@ User-agent: Applebot-Extended
 Allow: /
 User-agent: Amazonbot
 Allow: /
+User-agent: ShapBot
+Allow: /
+User-agent: DuckDuckBot
+Allow: /
 
 Sitemap: https://playground.archlang.uk/sitemap.xml
