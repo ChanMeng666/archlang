@@ -26,12 +26,12 @@ const WHY = [
 ] as const;
 
 /**
- * The question a developer asks next. Argued from what the language gives, never from what some
- * other output lacks (positioning B1). `answer` marks code with backticks; site-markdown.mjs reads it.
+ * What the language itself gives, as positive properties only: no contrast with any other format
+ * or output (positioning B1). `text` marks code with backticks; site-markdown.mjs reads it.
  */
 const LANGUAGE = {
-  question: "Why a language, not SVG or JSON?",
-  answer: "A plan in ArchLang names its rooms, walls, doors and windows, so the compiler can measure each room and check how the rooms connect. A mistake comes back as a message with a code, pointing at the exact place in the text, and often with a fix your AI can apply. The same text gives the same bytes every time, so a diff of the source shows what moved. SVG, PDF and DXF are what it compiles to, and it also writes and reads a Plan JSON form (`compile -f json`) for tools that want one.",
+  heading: "What writing it as a language gives you",
+  text: "Rooms, walls, doors and windows have names, so the compiler can measure each room and check how the rooms connect. Some mistakes — an unreachable room, an opening off its wall — come back as a message with a code that points at the exact place in the text, often with a fix your AI can apply; other checks are advisory. The same text gives the same bytes every time, and `impact` shows which parts of the drawing a change moved.",
 } as const;
 
 /** The pages behind "It checks itself": what describe and lint report, and every error code. */
@@ -131,9 +131,9 @@ const { exact, change, check } = HOME;
       </div>
 
       <div class="why__lang">
-        <h3 id="why-a-language" class="why__lang-title" tabindex="-1">{{ LANGUAGE.question }}</h3>
+        <h3 id="what-a-language-gives" class="why__lang-title" tabindex="-1">{{ LANGUAGE.heading }}</h3>
         <p class="why__lang-body">
-          <template v-for="(r, i) in runs(LANGUAGE.answer)" :key="i"
+          <template v-for="(r, i) in runs(LANGUAGE.text)" :key="i"
             ><code v-if="r.code">{{ r.text }}</code
             ><template v-else>{{ r.text }}</template></template
           >
@@ -289,7 +289,7 @@ const { exact, change, check } = HOME;
   color: var(--plum-deep);
   text-underline-offset: 3px;
 }
-/* Why a language: one plain paragraph under the cards, at reading width. */
+/* What a language gives: one plain paragraph under the cards, at reading width. */
 .why__lang {
   max-width: 760px;
   margin: clamp(20px, 3vw, 32px) 0 0;

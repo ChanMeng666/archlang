@@ -145,15 +145,15 @@ test.describe("home above the fold", () => {
   }
 });
 
-/** The first-contact answers (V1 round 1): a way in for a newcomer, the checks, and why a language. */
+/** The first-contact answers (V1 round 1): a way in for a newcomer, the checks, what a language gives. */
 test.describe("the newcomer's questions", () => {
-  test("the hero links /start, the check card links the catalogues, and why-a-language answers", async ({ page }) => {
+  test("the hero links /start, the check card links the catalogues, and the language paragraph", async ({ page }) => {
     await page.goto("/");
     await expect(page.locator(".hero-links a[href='/start']")).toHaveText(/New here\? Get a floor plan from your AI/);
     const check = page.locator('.why-card[data-why="check"] .why-card__more');
     await expect(check.locator("a[href='/analysis']")).toHaveText("The checks →");
     await expect(check.locator("a[href='/errors']")).toHaveText("Error codes →");
-    await expect(page.locator("#why-a-language")).toHaveText("Why a language, not SVG or JSON?");
+    await expect(page.locator("#what-a-language-gives")).toHaveText("What writing it as a language gives you");
   });
 
   test("/start shows ChatGPT's example prompt and what comes back, and claude.ai's steps", async ({ page }) => {
@@ -161,7 +161,9 @@ test.describe("the newcomer's questions", () => {
     const chatgpt = page.locator('.start-door[data-door="chatgpt"]');
     expect((await chatgpt.locator(".copybox__text").textContent())?.trim()).toBe(DOORS.chatgpt.example);
     await expect(chatgpt).toContainText(DOORS.chatgpt.returns);
-    await expect(page.locator('.start-door[data-door="claudeai"] .door__steps li')).toHaveText(DOORS.claudeai.steps);
+    const claudeai = page.locator('.start-door[data-door="claudeai"]');
+    await expect(claudeai.locator(".door__steps li")).toHaveText(DOORS.claudeai.steps);
+    await expect(claudeai).toContainText(DOORS.claudeai.plansNote);
     // The footer's title block reads as words: a label and its value never run together.
     expect(await page.locator(".tblock").textContent()).toContain("Sheet 1 of 1");
   });

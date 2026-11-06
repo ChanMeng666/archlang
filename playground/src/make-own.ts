@@ -106,6 +106,7 @@ function doorHtml(key: string): string {
         "claude.ai",
         `${copyRow("claudeai", doors.claudeai.url)}<span>No install: add it as a custom connector.</span>` +
           `<ol class="mo-steps">${doors.claudeai.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>` +
+          `<span>${escapeHtml(doors.claudeai.plansNote)}</span>` +
           `<span>${ext(doors.claudeai.stepsSource, "Claude's help page on custom connectors ↗")}</span>`,
       );
     case "agent": {

@@ -83,6 +83,7 @@ test.describe("make your own", () => {
     expect(await clipboard(page)).toBe(doors.doors.claudeai.url);
     await expect(s.locator('[data-door="claudeai"] code')).toHaveText(doors.doors.claudeai.url);
     await expect(s.locator('[data-door="claudeai"] .mo-steps li')).toHaveText(doors.doors.claudeai.steps);
+    await expect(s.locator('[data-door="claudeai"]')).toContainText(doors.doors.claudeai.plansNote);
     await s.locator('[data-door="chatgpt"] button[data-copy]').click();
     expect(await clipboard(page)).toBe(doors.doors.chatgpt.example);
     await expect(s.locator('[data-door="chatgpt"] code')).toHaveText(doors.doors.chatgpt.example);

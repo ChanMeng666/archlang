@@ -34,6 +34,7 @@ defineProps<{ id: DoorId }>();
       <ol class="door__steps">
         <li v-for="s in doors.claudeai.steps" :key="s">{{ s }}</li>
       </ol>
+      <p class="door__label">{{ doors.claudeai.plansNote }}</p>
       <p class="door__label">
         <a :href="doors.claudeai.stepsSource" target="_blank" rel="noopener"
           >Claude's help page on custom connectors&nbsp;↗</a

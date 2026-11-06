@@ -57,6 +57,7 @@ describe("the Make-your-own sheet", () => {
     const claudeai = door("claudeai");
     const steps = [...claudeai.matchAll(/<li>([^<]*)<\/li>/g)].map((m) => m[1]);
     expect(steps).toEqual(doors.doors.claudeai.steps.map(esc));
+    expect(claudeai).toContain(`<span>${esc(doors.doors.claudeai.plansNote)}</span>`);
     expect(claudeai).toContain(`href="${esc(doors.doors.claudeai.stepsSource)}"`);
   });
 

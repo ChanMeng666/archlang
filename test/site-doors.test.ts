@@ -8,7 +8,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildManifest } from "../src/manifest.js";
-import { applyDoors, loadDoors, renderDoorsBlock, SURFACES } from "../scripts/gen-doors.js";
+import { applyDoors, loadDoors, renderDoorsBlock, SURFACES, startDoorUrl } from "../scripts/gen-doors.js";
 
 const doors = loadDoors();
 const read = (p: string): string => readFileSync(p, "utf8").replace(/\r\n/g, "\n");
@@ -45,7 +45,12 @@ describe("doors.json", () => {
     expect(claudeai.steps[0]).toContain("Customize > Connectors");
     expect(claudeai.steps.join(" ")).toContain("Add custom connector");
     expect(claudeai.steps.join(" ")).toContain("No sign in");
+    // Two Continues, as the page has them: one after the URL, one after the authentication review.
+    expect(claudeai.steps.join(" ").match(/\bContinue\b/g)).toHaveLength(2);
     expect(claudeai.stepsSource).toMatch(/^https:\/\/support\.claude\.com\//);
+    // The steps are the Pro and Max ones; the note says so and names where Team and Enterprise differ.
+    expect(claudeai.plansNote).toMatch(/Pro and Max/);
+    expect(claudeai.plansNote).toContain("Organization settings > Connectors");
   });
 
   it("orders every surface with known doors only", () => {
@@ -186,6 +191,7 @@ describe("the sites and the root README carry the doors.json values", () => {
       "doors.chatgpt.example",
       "doors.chatgpt.returns",
       "doors.claudeai.steps",
+      "doors.claudeai.plansNote",
       "doors.claudeai.stepsSource",
       "AGENT_PROMPT",
     ])
@@ -202,6 +208,7 @@ describe("the sites and the root README carry the doors.json values", () => {
       doors.doors.chatgpt.example,
       doors.doors.chatgpt.returns,
       ...doors.doors.claudeai.steps,
+      doors.doors.claudeai.plansNote,
       doors.doors.claudeai.stepsSource,
     ];
     for (const file of [
@@ -239,12 +246,14 @@ describe("the sites and the root README carry the doors.json values", () => {
       doors.doors.chatgpt.example,
       doors.doors.chatgpt.returns,
       ...doors.doors.claudeai.steps,
+      doors.doors.claudeai.plansNote,
       doors.doors.claudeai.stepsSource,
     ];
     for (const ref of [
       "doors.chatgpt.example",
       "doors.chatgpt.returns",
       "doors.claudeai.steps",
+      "doors.claudeai.plansNote",
       "doors.claudeai.stepsSource",
     ])
       expect(sheet, ref).toContain(ref);
@@ -256,13 +265,13 @@ describe("the sites and the root README carry the doors.json values", () => {
       expect(read(file), file).not.toMatch(/\bfrom\s+["'][^"']*doors\.json["']|import\(\s*["'][^"']*doors\.json/);
     expect(read("playground/src/shell.ts")).toContain('import("./make-own.js")');
     // The pages the sheet links beside the doors (the two top asks, the agents page) are
-    // doors.json's `links` too, read, never typed in.
-    expect(Object.keys(doors.links).sort()).toEqual(["agents", "editOneRoom", "fromAnImage"]);
+    // doors.json's `links` too, read, never typed in. `start` is the generated blocks' (below).
+    expect(Object.keys(doors.links).sort()).toEqual(["agents", "editOneRoom", "fromAnImage", "start"]);
     for (const url of Object.values(doors.links)) {
       expect(url).toMatch(/^https:\/\/archlang\.uk\/[a-z-]+$/);
       expect(sheet, url).not.toContain(url);
     }
-    for (const key of Object.keys(doors.links)) expect(sheet).toContain(`links.${key}`);
+    for (const key of ["agents", "editOneRoom", "fromAnImage"]) expect(sheet).toContain(`links.${key}`);
   });
 
   it("the README's Try it is the generated block, right after the card and before the plans (PS-D7)", () => {
@@ -308,7 +317,14 @@ describe("the sites and the root README carry the doors.json values", () => {
     expect(lines[3]).toMatch(/^\*\*Your coding agent:\*\* paste this prompt\.$/);
     // The ChatGPT door carries the prompt to try; the claude.ai door links to /start's steps.
     expect(block).toContain(doors.doors.chatgpt.example);
-    expect(block).toContain("https://archlang.uk/start#door-claudeai");
+    expect(block).toContain(`(${startDoorUrl(doors, "claudeai")})`);
+  });
+
+  it("the /start link is built from doors.json's links.start and /start's own heading ids, never typed", () => {
+    expect(startDoorUrl(doors, "claudeai")).toBe(`${doors.links.start}#door-claudeai`);
+    // The anchor is real: StartDoors.vue gives each door's heading the id `door-<key>`.
+    expect(read("docs-site/.vitepress/theme/components/StartDoors.vue")).toMatch(/:id="`door-\$\{id\}`"/);
+    expect(read("scripts/gen-doors.ts")).not.toContain(doors.links.start);
   });
 });
 

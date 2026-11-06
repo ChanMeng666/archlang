@@ -21,8 +21,11 @@ export interface Doors {
   doors: {
     /** `example` is a prompt to try in the app; `returns` says in one line what comes back. */
     chatgpt: { label: string; url: string; note: string; example: string; returns: string };
-    /** `steps` add the connector in claude.ai, worded as `stepsSource` (Claude's help page) has them. */
-    claudeai: { label: string; url: string; note: string; steps: string[]; stepsSource: string };
+    /**
+     * `steps` add the connector in claude.ai, worded as `stepsSource` (Claude's help page) has them
+     * for Pro and Max; `plansNote` says so and where Team and Enterprise differ.
+     */
+    claudeai: { label: string; url: string; note: string; steps: string[]; plansNote: string; stepsSource: string };
     agent: {
       label: string;
       claudeCodeHttp: string;
@@ -34,14 +37,17 @@ export interface Doors {
     vscode: { label: string; marketplace: string; openVsx: string };
     playground: { label: string; url: string; note: string };
   };
-  /** Pages the surfaces link to next to the doors (the two top asks, the agents page). */
-  links: { fromAnImage: string; editOneRoom: string; agents: string };
+  /** Pages the surfaces link to next to the doors (the two top asks, the agents page, /start). */
+  links: { fromAnImage: string; editOneRoom: string; agents: string; start: string };
   agentPrompt: string[];
   order: Record<string, string[]>;
 }
 
-/** The /start section with the claude.ai steps; the longer blocks link to it rather than repeat them. */
-export const START_CLAUDEAI = "https://archlang.uk/start#door-claudeai";
+/**
+ * One door's section on /start: `links.start` plus the heading id StartDoors.vue gives each door
+ * (`door-<key>`). The longer blocks link the claude.ai steps there rather than repeat them.
+ */
+export const startDoorUrl = (d: Doors, key: keyof Doors["doors"]): string => `${d.links.start}#door-${key}`;
 
 export const loadDoors = (): Doors =>
   JSON.parse(readFileSync(resolve(ROOT, "site-shared/doors.json"), "utf8")) as Doors;
@@ -63,7 +69,7 @@ function bullet(d: Doors, key: string, compact: boolean): string {
     }
     case "claudeai": {
       const door = `- **claude.ai, ${x.claudeai.note.split(";")[0]}:** add \`${x.claudeai.url}\` as a custom connector`;
-      return compact ? door : `${door} ([the steps](${START_CLAUDEAI}))`;
+      return compact ? door : `${door} ([the steps](${startDoorUrl(d, "claudeai")}))`;
     }
     case "agent":
       return compact

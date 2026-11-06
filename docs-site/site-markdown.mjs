@@ -77,6 +77,7 @@ export function doorMarkdown(file, id) {
         `${d.claudeai.label} (${d.claudeai.note}):`,
         textFence(d.claudeai.url),
         d.claudeai.steps.map((s, i) => `${i + 1}. ${s}`).join("\n"),
+        d.claudeai.plansNote,
         `[Claude's help page on custom connectors](${d.claudeai.stepsSource})`,
       ].join("\n\n");
     case "agent":
@@ -248,8 +249,8 @@ export function siteMarkdown(src, deps) {
     if (checks.length === 0) throw new Error("site-markdown: parsed no WhyCards CHECKS links");
     const lang = pull(
       vue,
-      /const LANGUAGE = \{\s*question: "([^"]+)",\s*answer: "([^"]+)",\s*\} as const;/,
-      "WhyCards' LANGUAGE answer",
+      /const LANGUAGE = \{\s*heading: "([^"]+)",\s*text: "([^"]+)",\s*\} as const;/,
+      "WhyCards' LANGUAGE paragraph",
     );
     // The checks links sit beside the "check" card, as WhyCards.vue draws them.
     const items = cards.map(([, k, t, b]) => `- **${t}** ${b}${k === "check" ? ` ${checks.join(" · ")}` : ""}`);

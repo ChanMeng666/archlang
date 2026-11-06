@@ -6,7 +6,7 @@
       "label": "ArchLang app in ChatGPT",
       "url": "https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970",
       "note": "no install",
-      "example": "Draw a two-bedroom flat of about 75 m² as an ArchLang plan, and check it against the brief.",
+      "example": "Draw a two-bedroom flat of about 75 m² as an ArchLang plan, and check it.",
       "returns": "What comes back: the compiled plan, each room labelled with its area, and any problems the compiler found."
     },
     "claudeai": {
@@ -17,8 +17,9 @@
         "In claude.ai, open Customize > Connectors.",
         "Click + Add, then Add custom connector.",
         "Name it ArchLang, paste the server URL and click Continue.",
-        "Under Authentication, choose No sign in, then click Add."
+        "Review the authentication settings, click Continue, choose No sign in, then click Add."
       ],
+      "plansNote": "These are the steps on Pro and Max. On Team or Enterprise, an Owner adds it under Organization settings > Connectors (see the help page).",
       "stepsSource": "https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp"
     },
     "agent": {
@@ -53,7 +54,8 @@
   "links": {
     "fromAnImage": "https://archlang.uk/from-an-image",
     "editOneRoom": "https://archlang.uk/edit-one-room",
-    "agents": "https://archlang.uk/agents"
+    "agents": "https://archlang.uk/agents",
+    "start": "https://archlang.uk/start"
   },
   "agentPrompt": [
     "1. Run: npx -y skills add ChanMeng666/archlang --yes",
