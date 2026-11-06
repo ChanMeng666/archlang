@@ -206,6 +206,8 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
     const { name, tag } = cardText(label);
     el.className = "gal-card";
     el.dataset.label = label;
+    // The name is the label exactly; from the text, the flex-item spans would read "Studio ( 1BR )".
+    el.setAttribute("aria-label", label);
     el.tabIndex = -1;
     const thumb = document.createElement("span");
     thumb.className = "gal-thumb gal-thumb-none";

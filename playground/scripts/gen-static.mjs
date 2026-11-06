@@ -1092,7 +1092,9 @@ function prerenderIndex(rows, thumbs) {
   // The gallery: a heading (a real <h2>, so a screen reader can jump between groups) and a grid
   // per group. A card's name is its text, which reads as the label itself: the clean name, then
   // the tag between a visually hidden " (" and ")" (`cardText`), so its thumbnail is decorative
-  // (`alt=""`); `data-label` is the plan's full label, which gallery.ts opens.
+  // (`alt=""`); `data-label` is the plan's full label, which gallery.ts opens. The accessible name
+  // is the label exactly (`aria-label`): computed from the text, the card's flex-item spans would
+  // read "Studio ( 1BR )".
   const gallery = groups
     .map((g, gi) => {
       const cards = g.rows
@@ -1101,7 +1103,8 @@ function prerenderIndex(rows, thumbs) {
           if (!t) fail(`${r.name}: no thumbnail for the plan gallery.`);
           const { name, tag } = cardText(r.label);
           return (
-            `<li><a class="gal-card" href="/examples/${r.name}.html" data-label="${escapeHtml(r.label)}"` +
+            `<li><a class="gal-card" href="/examples/${r.name}.html" data-label="${escapeHtml(r.label)}" ` +
+            `aria-label="${escapeHtml(r.label)}"` +
             `${r.label === row.label ? ' aria-current="true"' : ""}>` +
             `<img class="gal-thumb" src="/examples/thumbs/${r.name}.svg" alt="" loading="lazy" decoding="async" ` +
             `width="${t.w}" height="${t.h}" />` +

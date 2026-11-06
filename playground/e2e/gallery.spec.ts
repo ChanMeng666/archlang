@@ -49,7 +49,11 @@ test.describe("plan gallery", () => {
     await page.goto("/");
     await waitForPlan(page);
     await expect(page.locator("#examples, #strip, #stripList, .strip-item")).toHaveCount(0);
-    await expect(page.locator("header select")).toHaveCount(0);
+    // No plan-choosing <select>: the header's only selects are Tools' render theme and format.
+    const pickers = await page.evaluate(() =>
+      [...document.querySelectorAll("header select")].filter((s) => !s.closest(".tools-panel")).map((s) => s.id),
+    );
+    expect(pickers, "a <select> in the header outside Tools").toEqual([]);
     await expect(page.locator("header .gal-trigger")).toHaveCount(1);
     // The trigger: a grid glyph, the plan's name, a caret; it says what it controls.
     const trigger = galleryTrigger(page);
@@ -277,7 +281,14 @@ test.describe("plan gallery", () => {
     await page.goto("/");
     await waitForPlan(page);
     await openGallery(page);
-    await page.locator(".pz-viewport").click({ position: { x: 20, y: 20 } });
+    // A point on the stage to the right of the open panel, checked to be outside it.
+    const p = (await panel(page).boundingBox())!;
+    const stage = (await page.locator(".pz-viewport").boundingBox())!;
+    const at = { x: p.x + p.width + 40, y: stage.y + 40 };
+    expect(at.x, "a point right of the panel, on the stage").toBeLessThan(stage.x + stage.width);
+    expect(at.y).toBeGreaterThan(p.y);
+    expect(at.y).toBeLessThan(p.y + p.height);
+    await page.mouse.click(at.x, at.y);
     await expect(panel(page)).toBeHidden();
     await openGallery(page);
     // Tab: the card, then "All plans", then out of the gallery.
@@ -426,7 +437,7 @@ test.describe("plan gallery", () => {
 });
 
 test.describe("plan gallery in the served bytes", () => {
-  test("every example has a crawlable <a href> in the HTML before any script runs", async ({ request }) => {
+  test("every example has a crawlable <a href> in the HTML before any script runs", async ({ page, request }) => {
     // The bytes a crawler gets: no script has run on them.
     const html = await (await request.get("/")).text();
     const hrefs = [...html.matchAll(/<a class="gal-card" href="(\/examples\/[\w-]+\.html)"/g)].map((m) => m[1]);
@@ -436,9 +447,16 @@ test.describe("plan gallery in the served bytes", () => {
     expect(html).toMatch(/<a class="gal-card" href="\/examples\/laneway-house\.html" [^>]*aria-current="true"/);
     expect(html).toMatch(/id="planName">Laneway House</);
     // A tagged card's text reads as its label: hidden brackets around the tag, not "Clinicplace ×6".
-    const clinic = /<a class="gal-card" href="\/examples\/clinic\.html"[^>]*>([\s\S]*?)<\/a>/.exec(html)?.[1] ?? "";
-    expect(clinic.replace(/<[^>]*>/g, "")).toBe("Clinic (place ×6)");
-    expect(clinic).toContain('<span class="vh"> (</span>place ×6<span class="vh">)</span>');
+    // Parsed as a document (DOMParser runs no script), as a crawler reads it.
+    const clinic = await page.evaluate((h) => {
+      const a = new DOMParser()
+        .parseFromString(h, "text/html")
+        .querySelector<HTMLAnchorElement>('a.gal-card[href="/examples/clinic.html"]');
+      return { text: a?.textContent, label: a?.getAttribute("aria-label"), html: a?.innerHTML };
+    }, html);
+    expect(clinic.text).toBe("Clinic (place ×6)");
+    expect(clinic.label).toBe("Clinic (place ×6)");
+    expect(clinic.html).toContain('<span class="vh"> (</span>place ×6<span class="vh">)</span>');
     // The trigger's expanded state is the script's to set, from the real state: none is authored.
     expect(/<summary[^>]*id="planPicker"[^>]*>/.exec(html)?.[0]).not.toContain("aria-expanded");
   });
