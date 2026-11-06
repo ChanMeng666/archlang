@@ -299,7 +299,9 @@ describe("agent-directory manifests", () => {
     expect(g.name).toBe(readJson(PORTABLE_MANIFEST).name);
     expect(g.version).toBe(core.version);
     expect(g.description).toBe(core.description);
-    expect(g.mcpServers).toEqual({ archlang: { command: "npx", args: ["-y", readJson("packages/mcp/package.json").name] } });
+    expect(g.mcpServers).toEqual({
+      archlang: { command: "npx", args: ["-y", readJson("packages/mcp/package.json").name] },
+    });
     // contextFileName: relative, inside the extension root, an existing generated file (never a root GEMINI.md)
     expect(g.contextFileName).toBe(GEMINI_CONTEXT);
     expect(g.contextFileName).not.toMatch(/^(?:\/|[A-Za-z]:)|(?:^|\/)\.\.(?:\/|$)/);
