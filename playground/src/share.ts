@@ -191,11 +191,18 @@ export function set3dFlag(hash: string, on: boolean): string {
   return withFlags(hash, on, hasEditFlag(hash));
 }
 
+/** A flag's value, or a function read when the hash is written. */
+type Flag = boolean | (() => boolean);
+const read = (f: Flag): boolean => (typeof f === "function" ? f() : f);
+
 /** Rewrite the browser's URL hash to carry `src` (replaceState — one entry, no
  *  history spam on every keystroke). `edit` keeps the edit-mode flag after the token and
- *  `view3d` the 3D flag; without them the hash is exactly `encodeSrc(src)`, as it always was. */
-export async function updateHash(src: string, edit = false, view3d = false): Promise<void> {
-  const hash = withFlags(await encodeSrc(src), view3d, edit);
+ *  `view3d` the 3D flag; without them the hash is exactly `encodeSrc(src)`, as it always was.
+ *  Given as functions, the flags are read after the (async) compression, at the write: a mode
+ *  or view switched meanwhile has already written its flag, and this must not put back the old. */
+export async function updateHash(src: string, edit: Flag = false, view3d: Flag = false): Promise<void> {
+  const token = await encodeSrc(src);
+  const hash = withFlags(token, read(view3d), read(edit));
   // NB: in main.js `history` is shadowed by CodeMirror's import, so callers reach
   // the global via `window.history`; here we do the same for safety.
   window.history.replaceState(null, "", hash);

@@ -16,6 +16,13 @@
  * Browser-agnostic code, but exported from `./node` only: glTF-Transform's bundle contains a
  * `Math.random()` (its id helper, reached only when READING external resources, never on this
  * write path), which the browser bundle's scan forbids (`test/browser-safety.test.ts`).
+ *
+ * The playground bundles this module anyway, in a lazy chunk of its own behind its Download GLB
+ * button (`playground/src/glb-export.ts`, public-surfaces card X5), never in `./browser` or the
+ * 3D preview's chunk. That is safe because only `writeGlb` runs there: the playground's tests load
+ * the module and write with every `Math.random` caller recorded and find none on this path
+ * (`playground/test/glb-export-random.test.ts`), and hold its bytes to the CLI's `build`
+ * (`playground/test/glb-export.test.ts`).
  */
 import { Document, Logger, WebIO } from "@gltf-transform/core";
 import {

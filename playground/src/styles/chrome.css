@@ -586,12 +586,10 @@ html[data-mode="edit"] .stage-switch-row {
   outline: 2px solid var(--redline-ink);
   outline-offset: 1px;
 }
-/* What sits in that corner moves clear of it: a room's facts card and the shared-plan notice. */
+/* A room's facts card, in that corner too, moves clear of it. (The shared-plan notice sits above
+   the switch's row, over both views, so the switch never covers it.) */
 html:not([data-mode="edit"]) .room-card {
   top: 52px;
-}
-html:not([data-mode="edit"]) #preview > .shared-notice {
-  padding-left: 128px;
 }
 @media (max-width: 900px) {
   .stage-switch button {

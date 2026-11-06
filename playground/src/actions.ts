@@ -161,7 +161,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   // the 3D preview it keeps `&3d` (card X5), so it opens on the 3D preview.
   els.copyLinkBtn.addEventListener("click", async () => {
     closeMenu(els.shareMenu);
-    await updateHash(getSource(), isEditing(), is3d()); // ensure the URL reflects the latest edit
+    await updateHash(getSource(), isEditing, is3d); // ensure the URL reflects the latest edit
     try {
       await navigator.clipboard.writeText(shareableHref());
       flash("Link copied");
@@ -177,7 +177,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   // preview; the full link it falls back to keeps `&3d`.
   els.copyShortLinkBtn?.addEventListener("click", async () => {
     closeMenu(els.shareMenu);
-    await updateHash(getSource(), isEditing(), is3d());
+    await updateHash(getSource(), isEditing, is3d);
     const full = shareableHref();
     const short = await createShortLink(set3dFlag(new URL(full).hash, false));
     try {

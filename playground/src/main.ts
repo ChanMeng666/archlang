@@ -411,7 +411,7 @@ function keepKnob(source: string, final: boolean) {
   // without the rings, and left the 3D preview where it was).
   if (checksOn || in3d()) render(source);
   writeStr(KEYS.source, source);
-  void updateHash(source, editing, in3d());
+  void updateHash(source, () => editing, in3d);
   void syncPlanMark(source); // no longer the example word for word: "Edited plan"
 }
 
@@ -636,7 +636,7 @@ function onDocChanged(source: string) {
   debounce = setTimeout(() => {
     render(source);
     writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
-    void updateHash(source, editing, in3d()); // keep the permalink in sync (compression is async)
+    void updateHash(source, () => editing, in3d); // keep the permalink in sync (compression is async)
     void syncPlanMark(source); // the picker and the strip: still that example, or an edited plan
   }, 250);
 }
@@ -701,13 +701,14 @@ async function boot() {
     );
 
   // A `#z=` payload that is not one of the bundled examples is third-party text on
-  // our page — say so, once, at the top of the preview. Silent for a stock-example
+  // our page — say so, once, at the top of the stage. Silent for a stock-example
   // permalink and for a hash-less visit. See shared-notice.ts for why it is not
-  // remembered.
+  // remembered. Above the Plan | 3D switch, not inside the drawing's panel: the 3D
+  // preview shows the same plan, its names included, so it is attributed too (card X5).
   if (
     shouldShowSharedNotice(sharedSrc, [...Object.values(EXAMPLES), ...examples.samples.SAMPLES.map((s) => s.source)])
   ) {
-    preview.prepend(createSharedNotice());
+    stageSwitchRow.before(createSharedNotice());
   }
 
   // Restore persisted UI prefs (advisory — never block on storage).

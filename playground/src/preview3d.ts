@@ -31,7 +31,7 @@
  * own chunk), and says that the browser does not validate it.
  */
 import { compile } from "archlang";
-import { adaptPlan, buildMesh, type Mesh3D, replayFacts, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
+import { type Mesh3D, replayFacts, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import {
   mountReplay,
   PREVIEW_ABOUT_URL,
@@ -44,6 +44,7 @@ import {
   type ViewState,
   viewToolbar,
 } from "@chanmeng666/archlang-3d/browser";
+import { adapt3d, mesh3d } from "./plan3d.js";
 
 /** The canvas's drawing size (CSS scales it to the pane); 16:9 like the replay HTML. */
 const WIDTH = 960;
@@ -230,7 +231,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     let view: string;
     let whole: Mesh3D;
     try {
-      const r = adaptPlan(source);
+      const r = adapt3d(source);
       if (!r.ok) {
         refuse(r.refusal.message);
         return false;
@@ -240,7 +241,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         refuse(drawn.errors[0]?.message ?? "the core did not draw the plan.");
         return false;
       }
-      const mesh = buildMesh(r.scene);
+      const mesh = mesh3d(r.scene);
       whole = mesh;
       const levels = storeysOf(mesh);
       const index = level === null || levels.length < 2 ? -1 : levels.indexOf(level);

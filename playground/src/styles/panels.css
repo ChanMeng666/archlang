@@ -168,7 +168,7 @@
    somebody else's `#z=` link (shared-notice.ts). Deliberately NOT redline: the
    plan is not wrong and nothing failed, so this is an annotation in the margin
    voice — paper ground, hairline rule, muted ink — not an alarm. Mounted by
-   both the playground (top of #preview) and the embed page (top of
+   both the playground (top of the stage, over the drawing and the 3D preview) and the embed page (top of
    .embed-preview), which is why it lives in the file they share. */
 .shared-notice {
   display: flex;

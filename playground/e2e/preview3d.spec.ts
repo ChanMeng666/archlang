@@ -730,7 +730,97 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     expect(readFileSync(await again.path()).equals(bytes), "same plan, same GLB").toBe(true);
     expect(glbChunks.length).toBe(1);
   });
+
+  test("a shared plan opened on the 3D preview is attributed there too; a bundled example is not", async ({ page }) => {
+    // SIMPLE_PLAN is no bundled example: its words came from whoever made the link.
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitForPlan(page);
+    await mounted(page);
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    const notice = page.locator(".shared-notice");
+    await expect(notice).toBeVisible();
+    await expect(notice).toContainText("written by whoever shared it, not by ArchLang");
+    // Above the switch, so the switch never covers it, and the same one in either view.
+    const box = await notice.boundingBox();
+    const chip = await page.locator(".stage-switch").boundingBox();
+    expect((box?.y ?? 0) + (box?.height ?? 0)).toBeLessThanOrEqual(chip?.y ?? 0);
+    await planBtn(page).click();
+    await expect(notice).toBeVisible();
+    await expect(page.locator(".shared-notice")).toHaveCount(1);
+
+    const bundled = readFileSync(new URL("../../examples/one-room.arch", import.meta.url), "utf8");
+    await page.goto(`/${await shareHash(bundled)}&3d`);
+    await page.reload();
+    await waitForPlan(page);
+    await mounted(page);
+    await expect(page.locator("#preview3d canvas")).toHaveAttribute("aria-label", /One Room/);
+    await expect(page.locator(".shared-notice")).toHaveCount(0);
+  });
+
+  test("a plan the 3D package refuses: the message, no GLB and no knobs in 3D; the switch still works", async ({
+    page,
+  }) => {
+    // Compiles (a knob and a room), but has no walls to raise: E3D_NO_WALLS.
+    const noWalls = `plan "No walls" {
+  units mm
+  let W = 3000   # room width
+  room id=r at (0,0) size W x 3000 label "Yard"
+}`;
+    await page.goto(`/${await shareHash(noWalls)}&3d`);
+    await waitForPlan(page);
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    const message = page.locator("#preview3d .p3d-message");
+    await expect(message).toBeVisible();
+    await expect(message).toContainText("No 3D preview: The plan has no walls");
+    await expect(page.locator("#preview3d").getByRole("button", { name: "Download GLB" })).toBeHidden();
+    await expect(page.locator("#preview3d canvas")).toBeHidden();
+    await expect(page.locator("details.knobs")).toBeHidden();
+    // The caption and the limits line stay; the switch takes the visitor back to the drawing.
+    await expect(page.locator("#preview3d")).toContainText(LABEL);
+    await planBtn(page).click();
+    await expect(page.locator(".pz-stage svg")).toBeVisible();
+    await expect(page.locator(".pz-viewport details.knobs")).toBeVisible();
+    expect(await hash(page)).not.toMatch(/&3d/);
+    await threeBtn(page).click();
+    await expect(message).toBeVisible();
+  });
 });
+
+for (const [width, height, mobile] of [
+  [1280, 720, false],
+  [390, 740, true],
+] as const) {
+  test.describe(`Plan | 3D at ${width}x${height} (card X5)`, () => {
+    test.use({ viewport: { width, height }, isMobile: mobile, hasTouch: mobile, reducedMotion: "reduce" });
+
+    test("the 3D view fits its pane: nothing scrolls or clips, the GLB note and limits line included", async ({
+      page,
+    }) => {
+      const src = readFileSync(new URL("../../examples/knob-flat.arch", import.meta.url), "utf8").replace(
+        /\r\n?/g,
+        "\n",
+      );
+      await page.goto(`/${await shareHash(src)}&3d`);
+      await waitForPlan(page);
+      await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+      await expect(page.locator("#preview3d .p3d-glb-note")).toBeVisible();
+      const fit = await page.locator("#preview3d").evaluate((host) => {
+        const box = host.getBoundingClientRect();
+        const bottom = (s: string) => host.querySelector(s)?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY;
+        return {
+          scroll: host.scrollHeight - host.clientHeight,
+          note: bottom(".p3d-glb-note") <= box.bottom,
+          limits: bottom(".p3d-limits") <= box.bottom,
+          sideways: document.documentElement.scrollWidth - window.innerWidth,
+        };
+      });
+      expect(fit.scroll, "the 3D view does not scroll inside its pane").toBeLessThanOrEqual(0);
+      expect(fit.note, "the GLB note is inside the pane").toBe(true);
+      expect(fit.limits, "the limits line is inside the pane").toBe(true);
+      expect(fit.sideways, "no sideways scroll").toBeLessThanOrEqual(0);
+    });
+  });
+}
 
 test.describe("Plan | 3D on a phone (card X5)", () => {
   test.use({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, reducedMotion: "reduce" });

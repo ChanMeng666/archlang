@@ -1,5 +1,5 @@
 import { readFileSync } from "node:fs";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   b64urlToBytes,
   bytesToB64url,
@@ -10,6 +10,7 @@ import {
   setEditFlag,
   shareableHref,
   srcFromHash,
+  updateHash,
 } from "../src/share.js";
 import { KEYS } from "../src/storage.js";
 import { supportsDeflateRaw } from "./helpers.js";
@@ -161,6 +162,34 @@ describe("the 3D flag (card X5)", () => {
     expect(set3dFlag("#z=abc&3d&edit", false)).toBe("#z=abc&edit");
     expect(setEditFlag("#z=abc&3d&edit", false)).toBe("#z=abc&3d");
     expect(set3dFlag("#edit", true)).toBe("#3d&edit");
+  });
+
+  it("updateHash reads flags given as functions at the write, after the compression", async () => {
+    const writes: string[] = [];
+    vi.stubGlobal("window", { history: { replaceState: (_s: unknown, _t: string, h: string) => writes.push(h) } });
+    try {
+      // The view switches while the token is being compressed: the write carries the new flag.
+      let view3d = false;
+      let edit = true;
+      const pending = updateHash(
+        SRC,
+        () => edit,
+        () => view3d,
+      );
+      view3d = true;
+      edit = false;
+      await pending;
+      expect(writes).toHaveLength(1);
+      expect(hasEditFlag(writes[0]!)).toBe(false);
+      expect(has3dFlag(writes[0]!)).toBe(true);
+      expect(await srcFromHash(writes[0]!)).toBe(SRC);
+      // Plain booleans, as before.
+      await updateHash(SRC, true, false);
+      expect(hasEditFlag(writes[1]!)).toBe(true);
+      expect(has3dFlag(writes[1]!)).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("a shared link keeps the 3D flag and drops the edit flag", () => {
