@@ -46,9 +46,12 @@ function preloadCompiler() {
 }
 
 /**
- * Fill index.html's JSON-LD with the value it must not retype: the core's version (the root
- * package.json, the way the docs config reads it). The placeholder is a quoted JSON string, so the
- * file stays valid JSON-LD-shaped text; a missing one fails the build.
+ * Fill index.html's JSON-LD with the values it must not retype: the core's version (the root
+ * package.json, the way the docs config reads it) and the archlang.uk node ids it references
+ * (`ids` in site-shared/identity.json, the same ids the docs graph defines its nodes by, so a
+ * renamed id cannot leave this page pointing at a node nobody defines, as `#chan-meng` once did).
+ * Each placeholder is a quoted JSON string, so the file stays valid JSON-LD-shaped text; a
+ * placeholder that is missing, or one left unfilled, fails the build.
  *
  * No `sameAs` here: the playground app is a web app, a different entity from the library, so the
  * library's listings (npm, GitHub, marketplaces) belong on the docs `#software` node only. The app
@@ -56,8 +59,12 @@ function preloadCompiler() {
  */
 function identityJsonLd() {
   const version = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")).version;
+  const { ids } = JSON.parse(readFileSync(resolve(__dirname, "../site-shared/identity.json"), "utf8"));
   const values = {
     '"%ARCHLANG_VERSION%"': JSON.stringify(version),
+    '"%ARCHLANG_ID_WEBSITE%"': JSON.stringify(ids.website),
+    '"%ARCHLANG_ID_AUTHOR%"': JSON.stringify(ids.author),
+    '"%ARCHLANG_ID_SOFTWARE%"': JSON.stringify(ids.software),
   };
   return {
     name: "archlang-identity-jsonld",
@@ -67,10 +74,11 @@ function identityJsonLd() {
         if (!ctx.filename.replace(/\\/g, "/").endsWith("/index.html")) return html;
         let out = html;
         for (const [slot, value] of Object.entries(values)) {
-          if (out.split(slot).length !== 2)
-            throw new Error(`vite.config.js: index.html must hold ${slot} exactly once`);
-          out = out.replace(slot, () => value);
+          if (!out.includes(slot)) throw new Error(`vite.config.js: index.html no longer holds ${slot}`);
+          out = out.split(slot).join(value);
         }
+        if (out.includes('"%ARCHLANG_'))
+          throw new Error("vite.config.js: index.html has an unfilled %ARCHLANG_…% value");
         return out;
       },
     },

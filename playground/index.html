@@ -72,8 +72,9 @@
          JavaScript, so everything a machine can learn here has to be in the served bytes:
          this block plus the intro band below. Keep it in step with the docs site's own
          graph — the same WebSite @id is the parent of both hosts, and every archlang.uk @id
-         here is a node the docs home defines. %ARCHLANG_VERSION% is filled at build time by
-         vite.config.js from the root package.json. No sameAs: this app is not the library,
+         here is a node the docs home defines. The %ARCHLANG_…% values are filled at build time by
+         vite.config.js: the version from the root package.json, each %ARCHLANG_ID_…% from the
+         ids in site-shared/identity.json, which the docs graph defines its nodes by. No sameAs: this app is not the library,
          whose listings live on the docs #software node it points at. -->
     <script type="application/ld+json">
       {
@@ -88,11 +89,11 @@
             "inLanguage": "en",
             "isPartOf": {
               "@type": "WebSite",
-              "@id": "https://archlang.uk/#website",
+              "@id": "%ARCHLANG_ID_WEBSITE%",
               "url": "https://archlang.uk/",
               "name": "ArchLang"
             },
-            "publisher": { "@id": "https://archlang.uk/#author" }
+            "publisher": { "@id": "%ARCHLANG_ID_AUTHOR%" }
           },
           {
             "@type": "SoftwareApplication",
@@ -106,9 +107,9 @@
             "inLanguage": "en",
             "license": "https://opensource.org/licenses/MIT",
             "softwareVersion": "%ARCHLANG_VERSION%",
-            "isPartOf": { "@id": "https://archlang.uk/#software" },
-            "isBasedOn": { "@id": "https://archlang.uk/#software" },
-            "author": { "@id": "https://archlang.uk/#author" },
+            "isPartOf": { "@id": "%ARCHLANG_ID_SOFTWARE%" },
+            "isBasedOn": { "@id": "%ARCHLANG_ID_SOFTWARE%" },
+            "author": { "@id": "%ARCHLANG_ID_AUTHOR%" },
             "softwareHelp": { "@type": "CreativeWork", "url": "https://archlang.uk/guide" },
             "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
           }

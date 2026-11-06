@@ -338,3 +338,33 @@ describe("the two hosts link each example plan both ways", () => {
     expect(gen).toMatch(/<lastmod>\$\{escapeHtml\(lastmod\)\}<\/lastmod>/);
   });
 });
+
+describe("the playground's JSON-LD references only ids the docs graph defines", () => {
+  // The playground once pointed at `https://archlang.uk/#chan-meng`, which no page defined. Its
+  // archlang.uk ids now come from `ids` in site-shared/identity.json (the docs config defines its
+  // nodes by the same ids), so nothing here may spell one out by hand.
+  const ids = (JSON.parse(readFileSync("site-shared/identity.json", "utf8")) as { ids: Record<string, string> }).ids;
+  const indexHtml = readFileSync("playground/index.html", "utf8");
+  const gen = readFileSync(GEN_STATIC, "utf8");
+  const viteConfig = readFileSync("playground/vite.config.js", "utf8");
+
+  it("every archlang.uk @id literal in index.html and gen-static.mjs is an identity id", () => {
+    const valid = new Set(Object.values(ids));
+    const literals = [indexHtml, gen].flatMap((src) =>
+      [...src.matchAll(/https:\/\/archlang\.uk\/#[\w-]+/g)].map((m) => m[0]),
+    );
+    expect(literals.filter((l) => !valid.has(l))).toEqual([]);
+    expect(gen, "a docs id spelled from the DOCS origin instead of IDENTITY.ids").not.toMatch(/\$\{DOCS\}\/#/);
+  });
+
+  it("each %ARCHLANG_ID_…% placeholder in index.html names an identity id the vite plugin fills", () => {
+    const slots = [...new Set([...indexHtml.matchAll(/"%ARCHLANG_ID_([A-Z]+)%"/g)].map((m) => m[1]!))];
+    expect(slots.sort()).toEqual(["AUTHOR", "SOFTWARE", "WEBSITE"]);
+    for (const slot of slots) {
+      expect(ids[slot.toLowerCase()], `identity.json has no ids.${slot.toLowerCase()}`).toMatch(
+        /^https:\/\/archlang\.uk\/#/,
+      );
+      expect(viteConfig).toContain(`'"%ARCHLANG_ID_${slot}%"': JSON.stringify(ids.${slot.toLowerCase()})`);
+    }
+  });
+});
