@@ -41,8 +41,8 @@
 - The preview's label is the line every ArchLang surface uses: "Same source, plan and 3D preview.
   The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and
   checked against the plan." (`PREVIEW_LABEL`; its first sentence is `PREVIEW_LEAD`). The replay
-  HTML also carries the limits line (`PREVIEW_LIMITS`): walls, openings, floors and furniture in flat
-  colours; no stairs or pitched roofs yet, and no sections, elevations or BIM. `PREVIEW_ABOUT_URL`
+  HTML also carries the limits line (`PREVIEW_LIMITS`): walls, openings, floors, stairs and furniture
+  in flat colours; no pitched roofs yet, and no sections, elevations or BIM. `PREVIEW_ABOUT_URL`
   is the page that says what the preview shows.
 - The side views' buttons are named "View from north" (east, south, west) instead of "North
   elevation" and so on: the 3D preview draws no elevations. The buttons still read N, E, S and W.
