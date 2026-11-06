@@ -2467,7 +2467,8 @@ part of the input; an unknown or error code is a usage error. **Size:** S.
 
 ## Registry listings (opened 2026-10-10)
 
-The state of each listing is the table in `docs/seo.md` § 8. These are what is still owed.
+The state of each listing is the table in `docs/seo.md` § 8. These are what is still owed. The
+2026-11-06/07 submissions and deferrals are in `docs/plans/geo-seo/handoff.md`.
 
 Readings of the agent-reach E1/E2 metrics must discount the 2026-10-14 burst traffic (the owner's
 own ~1,500 hosted-MCP requests; `docs/seo.md` section 8).
@@ -2477,7 +2478,8 @@ own ~1,500 hosted-MCP requests; `docs/seo.md` section 8).
 The merge condition, a Glama quality score of any grade, is met: on 2026-10-25 Glama's Dockerfile
 settings were set to install `@chanmeng666/archlang-mcp` and run `archlang-mcp` behind `mcp-proxy`
 (its auto-generated build had run the CLI, not the MCP server), release 0.1.0 built and was rated A.
-The score badge is on the entry in #14383 and the maintainer was told there. Left: the merge.
+The score badge is on the entry in #14383 and the maintainer was told there. On 2026-11-06 #14383
+was rebased and is conflict-free. Left: the merge.
 
 ### O.3 · How the Claude plugin directory learns of a new version is unverified — `todo`
 
@@ -2569,8 +2571,25 @@ rule's WAF records in the Cloudflare dashboard, which an agent cannot open.
 Smithery was acquired by Arcade (arcade.dev) and closed its MCP proxy and publishing on 2026-10-31;
 our Smithery listing is gone and the release path no longer builds for it (#468). Arcade's catalogue
 lists MCP servers (Context7, Exa). Unknown: whether it takes third-party stdio servers, by what
-submission, and on what terms. **Gate:** a short note in `docs/seo.md` § 8 saying yes (with the steps)
+submission, and on what terms. The 2026-11-06 channel research found no submission route (it
+records the Smithery row as retired), and arcade.dev on 2026-11-07 names an "Arcade Registry" to
+"share and discover all your MCP tools" without saying who can publish to it, so the question is
+still open. **Gate:** a short note in `docs/seo.md` § 8 saying yes (with the steps)
 or no (with the reason); a submission itself is the owner's.
+
+### O.17 · The Docker MCP Catalog entry pins an archlang commit — `todo` (at each release)
+
+`servers/archlang/server.yaml` in docker/mcp-registry#6704 (from the owner's fork
+`ChanMeng666/mcp-registry`) builds `packages/mcp/Dockerfile` at a pinned `source.commit`, and the
+Dockerfile installs the `@chanmeng666/archlang-mcp` version in `packages/mcp/package.json` at that
+commit. **Gate:** after a release that moves the MCP package, a follow-up PR there moves the commit
+(`.claude/commands/release-check.md`).
+
+### O.18 · The awesome-openclaw-skills entry waits for ClawHub usage — `todo` (BLOCKED on users)
+
+`VoltAgent/awesome-openclaw-skills` declines brand-new skills, so the entry for the ClawHub skill
+(`docs/seo.md` § 8) is deferred; its draft is in the session archive. **Gate:** the skill shows
+users on ClawHub, then the entry is filed.
 
 ## Visual-assets residue (from `docs/plans/visual-assets/handoff.md`, 2026-11-04)
 

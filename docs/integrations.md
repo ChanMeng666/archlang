@@ -69,6 +69,8 @@ server `https://mcp.archlang.uk/mcp` (below).
   `~/.cursor/plugins/local/archlang` and reload the window.
 - **Gemini CLI:** `gemini extensions install https://github.com/ChanMeng666/archlang`. The gallery
   at <https://geminicli.com/extensions/> lists repositories with the `gemini-cli-extension` topic.
+- **OpenClaw:** the skill is on ClawHub at <https://clawhub.ai/chanmeng666/skills/archlang>;
+  `clawhub install archlang` puts it in `./skills/archlang`.
 - **Anything else:** `npx skills add ChanMeng666/archlang` installs the same skills for the hosts the
   `skills` CLI supports. With the GitHub CLI, install one skill at a time by path, e.g.
   `gh skill install ChanMeng666/archlang skills/archlang --agent cursor`: `gh skill install --all`

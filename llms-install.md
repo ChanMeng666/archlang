@@ -65,6 +65,7 @@ code --add-mcp '{"name":"archlang","type":"http","url":"https://mcp.archlang.uk/
 
 Cursor and VS Code install links for both servers: <https://archlang.uk/mcp#install-the-floor-plan-mcp-server>.
 claude.ai: add `https://mcp.archlang.uk/mcp` as a custom connector with no authentication.
+OpenClaw: the ArchLang skill is on ClawHub (<https://clawhub.ai/chanmeng666/skills/archlang>); `clawhub install archlang`.
 
 ## Verify
 

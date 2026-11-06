@@ -112,7 +112,7 @@ recorded here or anywhere else in this public repository** — ask the owner rat
 - **Bing Webmaster Tools** holds the same property, imported from Search Console. **The import does not
   carry sitemaps** — observed on two separate imports, despite the card promising it — so submit them
   by hand afterwards, every time.
-- **Two sitemaps** (counted live 2026-11-06): `archlang.uk` 65 URLs, `playground.archlang.uk` 36
+- **Two sitemaps** (counted live 2026-11-07): `archlang.uk` 69 URLs, `playground.archlang.uk` 36
   (34 and 29 at the 2026-09-14 setup). Both
   engines report Success on both and agree on every number; a disagreement means a deploy or a
   generator has drifted, not that a console is being odd.

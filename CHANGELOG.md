@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The MCP registry entry (`packages/mcp/server.json`) declares the hosted server as a remote, `remotes: [{ "type": "streamable-http", "url": "https://mcp.archlang.uk/mcp" }]`, and its description is "Floor plans as code: compile, lint and repair ArchLang (.arch) floor plans to SVG, DXF and PDF." in place of the list of tool names. Both reach the registry with this release.
+- `gemini-extension.json` at the repository root, written by `gen:agent-manifests`: `gemini extensions install https://github.com/ChanMeng666/archlang` installs the MCP server (`npx -y @chanmeng666/archlang-mcp`) with the Copilot instructions file as its context. It carries the core's version.
+- Install links: `/mcp` on archlang.uk has a table of VS Code, VS Code Insiders and Cursor links that add the stdio package or the hosted server in one click, and the README has the VS Code ones (through `vscode.dev/redirect`, since GitHub strips custom schemes) and points to `/mcp` for Cursor.
+- `llms-install.md` at the repository root: how an agent installs either MCP server, with the config blocks, one-line installs for Claude Code, Codex, Gemini CLI and VS Code, and `tools/list` to verify.
+- `packages/mcp/Dockerfile`: an image that installs the published `@chanmeng666/archlang-mcp` at its `package.json` version on Node 22 Alpine and runs `archlang-mcp` on stdio, for the Docker MCP Catalog. It is not in the npm package.
+- Four docs pages: `/floor-plan-tools-for-ai-agents` (what each floor-plan tool for agents takes in, exports and costs, from each tool's own pages), `/floor-plan-with-a-coding-agent`, `/text-to-dxf-floor-plan` and `/check-a-floor-plan`. Each carries a plan that compiles and lints clean and ends with a FAQ.
+- The docs `/examples` page links each plan to its static page on the playground, and each static example page links back to `/examples`.
+
+### Changed
+
+- The root package's description is the line every surface shares ("Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong."). Its keywords drop `typst` and gain `floorplan`, `floor-plans`, `dxf`, `pdf`, `mcp`, `llm` and `ai-agents`; `@chanmeng666/archlang-mcp`'s gain `llm` and `ai-agents`. The MCP package's homepage is `https://archlang.uk/mcp` and `@chanmeng666/archlang-3d`'s is `https://archlang.uk/3d`. The README's title line is its H1.
+- The sites' structured data describe one entity: the ids, the `sameAs` listings and the `disambiguatingDescription` come from `site-shared/identity.json`; the author's `sameAs` adds the ORCID; each docs article carries a `dateModified` equal to its sitemap date. The playground's application node refers to the docs author and library by id, gains `softwareVersion`, `isPartOf` and `isBasedOn`, and carries no `sameAs`.
+- The playground sitemap gives each example page a `lastmod`, the date of the last commit to its `.arch` file or to the page generator, whichever is newer; `/` and `/examples/` take the newest.
+- Both `robots.txt` files name `ShapBot` and `DuckDuckBot`, allowed like every other crawler. `/error-codes` redirects to `/errors` and `/language-reference` to `/reference` (301), and the docs sitemap lists `/adr` in place of `/adr/`, which redirects.
+- The raw `/<page>.md` copies on archlang.uk are served with `X-Robots-Tag: noindex`, so search engines index the HTML page; `rel=alternate` still points to them, and `/llms.txt`, `/llms-full.txt` and the HTML pages are unchanged.
+
 ## [1.57.0] - 2026-11-06
 
 ### Added
