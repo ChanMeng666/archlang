@@ -13,10 +13,10 @@ import { openTools, setEditorSource, waitForPlan, watchForProblems } from "./fix
  * grew `describeLevel`), that a download of level 3 is NAMED for level 3 the way
  * `arch compile` names it, and that a single-storey plan grows no control at all.
  *
- * The switcher lives in the output pane's TAB STRIP, not the preview toolbar, so a
- * storey can be changed while reading Describe or Lint — the tabs whose contents it
- * selects. One of the cases below switches from the Describe tab and never returns to
- * Preview, which is the whole reason it moved.
+ * The switcher has ONE home (ruling PG-D3): on the stage, top-left, under the Plan | 3D switch,
+ * in both modes and over every tab, so a storey can be changed while reading Facts or Checks —
+ * the tabs whose contents it selects. One of the cases below switches from the Facts tab and
+ * never returns to Plan; the 3D half of "it drives both views" is in preview3d.spec.ts.
  *
  * UNTAGGED (no `@prod`). Two reasons: the nightly production subset is deliberately
  * load-and-look, and this spec drives a download, which is not something to fire at the
@@ -105,27 +105,62 @@ test.describe("storey switcher", () => {
     expect(problems.pageErrors, "uncaught page errors while switching storeys").toEqual([]);
   });
 
+  test("it has one home: top-left on the stage, under the Plan | 3D switch, in both modes", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await pickExample(page, "Townhouse (3 levels)");
+    await expect(page.locator('[role="group"][aria-label="Storey"]')).toHaveCount(1);
+    const at = async () => {
+      const [g, sw, stage] = await Promise.all([
+        page.locator("#storeys").boundingBox(),
+        page.locator(".stage-switch").boundingBox(),
+        page.locator(".pane:has(#storeys)").boundingBox(),
+      ]);
+      return { g: g!, sw, stage: stage! };
+    };
+    // View mode: just under the switch, left-aligned with it, never in the (absent) tab row.
+    const view = await at();
+    expect(view.sw, "the switch is on screen in view mode").not.toBeNull();
+    expect(view.g.y).toBeGreaterThanOrEqual(view.sw!.y + view.sw!.height);
+    expect(view.g.y - (view.sw!.y + view.sw!.height)).toBeLessThan(16);
+    expect(Math.abs(view.g.x - view.sw!.x)).toBeLessThan(2);
+    await expect(page.locator(".out-tabs #storeys")).toHaveCount(0);
+    // Edit mode: the same element in the stage's top-left corner (the tabs replace the switch),
+    // on every tab.
+    await page.locator("#sourceToggle").click();
+    await expect(page.locator(".cm-content")).toBeVisible();
+    for (const tab of ["#tab-preview", "#tab-facts", "#tab-checks"]) {
+      await page.locator(tab).click();
+      await expect(page.locator("#storeys")).toBeVisible();
+      const edit = await at();
+      expect(edit.g.x - edit.stage.x, `left edge on ${tab}`).toBeLessThan(24);
+      const tabs = (await page.locator(".out-tabs").boundingBox())!;
+      expect(edit.g.y, `under the tab row on ${tab}`).toBeGreaterThanOrEqual(tabs.y + tabs.height);
+      expect(edit.g.y - (tabs.y + tabs.height), `at the stage's top on ${tab}`).toBeLessThan(24);
+    }
+  });
+
   test("Describe and Lint report the selected storey, not page 1", async ({ page }) => {
     await page.goto("/#edit");
     await waitForPlan(page);
     await pickExample(page, "Townhouse (3 levels)");
 
-    await page.locator("#tab-describe").click();
+    await page.locator("#tab-facts").click();
     // Level 1 holds the hall and the entrance; level 3 does not.
     await expect(page.locator("#describe")).toContainText("Hall");
 
-    // Switched FROM the Describe tab, without going back to Preview: the control is in
-    // the tab strip, so the facts can be re-aimed while you are reading them.
+    // Switched FROM the Facts tab, without going back to Plan: the control floats over every
+    // tab, so the facts can be re-aimed while you are reading them.
     await levelButtons(page).nth(2).click();
     await expect(page.locator("#describe")).not.toContainText("Hall");
-    // Still on Describe, and still exactly one panel showing — the switcher is not a tab.
-    await expect(page.locator("#describe")).toHaveClass(/active/);
+    // Still on Facts, and still exactly one panel showing — the switcher is not a tab.
+    await expect(page.locator("#factsView")).toHaveClass(/active/);
     await expect(page.locator(".tabview.active")).toHaveCount(1);
 
-    // The Lint tab narrows too — and SAYS it is narrowed, so a quiet panel can never be
+    // Lint (the Checks tab) narrows too — and SAYS it is narrowed, so a quiet panel can never be
     // read as a clean building. The building's verdict itself never moved: the status
     // dot and its warning count come from the unfiltered diagnostics.
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
     await expect(page.locator("#lintOutput .lint-narrowed")).toContainText("Showing level 3");
   });
 
@@ -148,19 +183,18 @@ test.describe("storey switcher", () => {
     await waitForPlan(page);
     await pickExample(page, "Studio (1BR)");
 
-    // Hidden ENTIRELY — the group and the rule in front of it — because there is no
-    // storey to choose. `compile()` does not even emit a `pages` key for this plan.
+    // Hidden ENTIRELY, because there is no storey to choose. `compile()` does not even emit a
+    // `pages` key for this plan.
     await expect(page.locator("#storeys")).toBeHidden();
-    await expect(page.locator("#storeysSep")).toBeHidden();
-    // The tablist still contains only tabs, so a screen reader is told there are six
-    // (Preview, Describe, Lint, Intent, Takeoff, 3D preview).
-    expect(await page.locator('[role="tablist"] > *').count()).toBe(6);
-    await expect(page.locator('[role="tablist"] > [role="tab"]')).toHaveCount(6);
+    // The tablist contains only tabs, so a screen reader is told there are four
+    // (Plan, 3D, Facts, Checks).
+    expect(await page.locator('[role="tablist"] > *').count()).toBe(4);
+    await expect(page.locator('[role="tablist"] > [role="tab"]')).toHaveCount(4);
     await expect(levelButtons(page)).toHaveCount(0);
 
     // And the panels are the whole-plan read: no narrowing marker anywhere, and the
     // full whole-building tick, which is only sayable when nothing is hidden.
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
     await expect(page.locator("#lintOutput .lint-narrowed")).toHaveCount(0);
     await expect(page.locator("#lintOutput .ok")).toContainText("every room is reachable");
   });
@@ -204,7 +238,7 @@ test.describe("storey switcher", () => {
     expect(hiddenFromLevel1).toBeGreaterThan(1);
 
     const out = page.locator("#lintOutput");
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
 
     // Level 1 raises nothing of its own — and the other storey's warnings are out of sight.
     await expect(out.locator(".lint-narrowed")).toContainText(
@@ -230,7 +264,7 @@ test.describe("storey switcher", () => {
     await page.goto("/#edit");
     await waitForPlan(page);
     await pickExample(page, "Two-storey (2 levels)");
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
 
     const out = page.locator("#lintOutput");
     // No "— N more warnings" clause, because there are none anywhere.

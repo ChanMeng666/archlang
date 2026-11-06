@@ -170,11 +170,16 @@ test.describe("phone layout", () => {
     await expect(page.locator(".pz-viewport")).toBeHidden();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
 
-    // Problems: the diagnostics list, counted on its button, scrollable to its last line.
+    // Problems: the diagnostics list, counted on its button, scrollable to its last line, over
+    // the Checks tab's content (ruling PG-D3), with no tab row of its own.
     await expect(page.locator("#mviewCount")).toHaveText("1");
     await page.locator(".mview[data-mview=problems]").tap();
     const errors = page.locator("#errors");
     await expect(errors.locator(".diagrow").first()).toBeInViewport();
+    await expect(page.locator("#tab-checks")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator("#checksView")).toBeVisible();
+    await expect(page.locator("#lintOutput")).toBeVisible();
+    await expect(page.locator(".out-tabs")).toBeHidden();
     await errors.locator(".diag-head code").first().tap();
     await expectNoClippedRow(page);
     await expectLastLineReachable(errors);
@@ -204,6 +209,13 @@ test.describe("phone layout", () => {
     await page.locator(".mview[data-mview=problems]").tap();
     await expect(page.locator(".problems-empty")).toBeVisible();
     await expect(page.locator("#mviewCount")).toBeEmpty();
+    // …and Problems shows the Checks content: the review findings and Lint's clean verdict.
+    await expect(page.locator("#checksView .checks-head")).toHaveText("Checks (default checks): nothing to ring");
+    await expect(page.locator("#lintOutput .ok")).toBeVisible();
+    // Back on Plan: the drawing, not the Checks tab.
+    await page.locator(".mview[data-mview=plan]").tap();
+    await expect(page.locator("#tab-preview")).toHaveAttribute("aria-selected", "true");
+    await expect(page.locator(".pz-stage svg")).toBeVisible();
   });
 
   for (const [width, height] of [
@@ -219,19 +231,19 @@ test.describe("phone layout", () => {
         await page.locator(`.mview[data-mview=${view}]`).tap();
         expect(await horizontalOverflow(page), `overflow in ${view} at ${width}px`).toBeLessThanOrEqual(0);
       }
-      // The output pane's strip: six tabs and the storey switcher (a two-storey plan), each
-      // inside the strip's content box (its side gutters kept), and the strip does not scroll
-      // sideways. At 360 px five tabs once ran 6 px into the right gutter.
+      // The output pane's strip: the four tabs, each inside the strip's content box (its side
+      // gutters kept), and the strip does not scroll sideways. (At 360 px five tabs once ran 6 px
+      // into the right gutter.) The storey switcher (a two-storey plan) is on the stage, inside it.
       await page.locator(".mview[data-mview=plan]").tap();
-      await expect(page.locator("#storeys")).toBeVisible();
-      const strip = await page.locator(".pane h2:has(.tabs)").evaluate((h) => {
+      await expect(page.locator(".out-tabs .tab")).toHaveCount(4);
+      const strip = await page.locator(".out-tabs").evaluate((h) => {
         const box = h.getBoundingClientRect();
         const cs = getComputedStyle(h);
         const left = box.left + Number.parseFloat(cs.paddingLeft);
         const right = box.right - Number.parseFloat(cs.paddingRight);
         return {
           scroll: h.scrollWidth - h.clientWidth,
-          out: [...h.querySelectorAll<HTMLElement>(".tab, .lv-btn")]
+          out: [...h.querySelectorAll<HTMLElement>(".tab")]
             .filter((b) => {
               const r = b.getBoundingClientRect();
               return r.left < left - 0.5 || r.right > right + 0.5;
@@ -241,6 +253,13 @@ test.describe("phone layout", () => {
       });
       expect(strip.scroll, `the tab strip scrolls sideways at ${width}px`).toBeLessThanOrEqual(0);
       expect(strip.out, `tabs outside the strip at ${width}px`).toEqual([]);
+      await expect(page.locator("#storeys")).toBeVisible();
+      const [g, stage] = await Promise.all([
+        page.locator("#storeys").boundingBox(),
+        page.locator(".pz-viewport").boundingBox(),
+      ]);
+      expect(g!.x, `storeys inside the stage at ${width}px`).toBeGreaterThanOrEqual(stage!.x);
+      expect(g!.x + g!.width, `storeys inside the stage at ${width}px`).toBeLessThanOrEqual(stage!.x + stage!.width);
     });
   }
 

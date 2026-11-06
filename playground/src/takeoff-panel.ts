@@ -1,8 +1,8 @@
 /**
- * The Takeoff tab: `describe --facts quantities` in the browser. It runs the SAME core calls as
+ * Takeoff, the Facts tab's second section: `describe --facts quantities` in the browser. It runs the SAME core calls as
  * `arch takeoff` (`describe` with the `quantities` fact, `describeLevel` for the storey on screen,
  * `takeoffCsv` for the export), so the panel and the command line cannot disagree, and it holds no
- * calculation of its own. Its code loads on the tab's first open, like the 3D preview: nothing here
+ * calculation of its own. Its code loads on the Facts tab's first open, like the 3D preview: nothing here
  * is in a startup chunk.
  *
  * The waste percentage is an author's input, as `--waste` is: blank unless typed, never a default,

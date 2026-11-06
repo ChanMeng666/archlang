@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { enterEdit, waitForPlan, watchForProblems } from "./fixtures.js";
+import { BROKEN_PLAN, enterEdit, shareHash, waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
  * The cold-start contract: an untouched visit shows the default example's drawing before any
@@ -44,16 +44,32 @@ test.describe("boot", { tag: "@prod" }, () => {
     expect(problems.failedRequests, "failed requests").toEqual([]);
   });
 
-  test("reports a ready status and real plan facts", async ({ page }) => {
+  test("shows no status when the plan is fine, and real plan facts", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    // "ready" (or an N-warnings count) — never an error state on the shipped default.
+    // Never an error state on the shipped default, and nothing on screen says so (ruling PG-D3):
+    // no notice on the stage, no dot on Source; the live region keeps "ready" (or a warnings count).
     await expect(page.locator("#status")).not.toHaveClass(/err/);
+    await expect(page.locator("#status")).not.toHaveClass(/\bshow\b/);
+    await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
+    const box = (await page.locator("#status").boundingBox())!;
+    expect(box.width * box.height, "the status is visually hidden").toBeLessThanOrEqual(1);
+    await expect(page.locator("#sourceToggle")).not.toHaveAttribute("data-status");
     // The facts line is describe()'s totals, so a non-zero room count and an area with its
     // convention prove the analysis layer ran in the browser too, not just the renderer.
     await expect(page.locator("#facts")).toHaveText(
       /^\d+ lines of ArchLang → [1-9]\d* rooms? · \d+(\.\d+)? m² \((net|centreline)\)$/,
     );
+  });
+
+  test("a broken plan shows a status on the stage and a dot on Source", async ({ page }) => {
+    // Pure navigation: the plan rides in the hash, which no server sees.
+    await page.goto(`/${await shareHash(BROKEN_PLAN)}`);
+    await expect(page.locator("html[data-booting]")).toHaveCount(0);
+    await expect(page.locator("#status")).toHaveClass(/\berr\b/);
+    await expect(page.locator("#status")).toBeVisible();
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
+    await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
   });
 
   test("serves one H1 and the lede before any JavaScript runs", async ({ page }) => {
@@ -79,7 +95,7 @@ test.describe("boot", { tag: "@prod" }, () => {
     await page.goto("/");
     await waitForPlan(page);
     expect(await page.locator("#examples option").count()).toBeGreaterThan(1);
-    // The lint profiles belong to the Lint tab, which is edit mode's.
+    // The lint profiles belong to the Checks tab, which is edit mode's.
     await enterEdit(page);
     await expect.poll(() => page.locator("#lintProfile option").count()).toBeGreaterThan(0);
   });

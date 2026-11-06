@@ -8,15 +8,19 @@
  * - the header actions (actions.ts): once the compiler is in;
  * - the editor and its panels (edit-mode.ts: CodeMirror, completion, diagnostics, Describe,
  *   Lint, Intent): on the first entry into edit mode;
- * - the Takeoff and 3D preview tabs, jsPDF: on first use, as before.
+ * - the takeoff (the Facts tab), the 3D preview, Checks, jsPDF: on first use, as before.
  *
  * Modes: `view` (the default) gives the drawing the page; `edit` (the Source button, or `&edit`
  * in the hash) is the editor beside it. index.html's head script sets `html[data-mode]` before
  * the first paint; this module keeps it, the Source button and the hash flag in step.
  *
- * Views: the stage shows the drawing or the 3D preview (the Plan | 3D switch, the Preview and 3D
- * preview tabs, Tools → 3D preview, or `&3d` in the hash; card X5), and `&3d` stays in the hash
- * while the 3D preview is on screen.
+ * Views (ruling PG-D3: one entry point each): the stage shows the drawing or the 3D preview. View
+ * mode has no tab row; the stage's Plan | 3D switch is its one view control. Edit mode has one row
+ * of four tabs, Plan · 3D · Facts · Checks, which replace the switch there, so each mode has exactly
+ * one Plan/3D control. Both drive the same tabs underneath, as `&3d` in the hash does (card X5),
+ * and `&3d` stays in the hash while the 3D preview is on screen. The storey switcher has one home,
+ * on the stage under the switch, in both modes. The status is a notice on the stage and a dot on
+ * Source, shown only while the plan is compiling or broken (or for a moment after an action).
  */
 import type { CompileOptions, DescribeOptions, RoomSummary, SceneSummary } from "archlang";
 import type { ActionsHandle } from "./actions.js";
@@ -76,25 +80,39 @@ const pzViewport = document.querySelector<HTMLElement>(".pz-viewport")!;
 const pzStage = document.querySelector<HTMLElement>(".pz-stage")!;
 const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
 const storeysEl = document.getElementById("storeys");
-const storeysSepEl = document.getElementById("storeysSep");
+const sourceBtn = document.getElementById("sourceToggle")!;
+const statusDismiss = document.getElementById("statusDismiss") as HTMLButtonElement;
+// On a phone, Problems is the Checks tab (under the diagnostics); back on Plan, the drawing.
 const mobileViews = mountMobileViews(
   document.querySelector("main")!,
   document.getElementById("mviews")!,
   document.getElementById("mviewCount")!,
+  (view) => {
+    if (view === "problems") openTab("checks");
+    else if (view === "plan" && activeTab() === "checks") openTab("preview");
+  },
 );
 
-// ---- output tabs (Preview · Describe · Lint · Intent · Takeoff · 3D preview) ----
+// ---- output tabs (edit mode: Plan · 3D · Facts · Checks; view mode drives Plan and 3D) ----
 const preview3dEl = document.getElementById("preview3d")!;
 const takeoffEl = document.getElementById("takeoff")!;
+const factsView = document.getElementById("factsView")!;
+const checksHost = document.getElementById("checksHost")!;
 const tabs = [...document.querySelectorAll<HTMLElement>(".tab")];
 const views: Record<string, HTMLElement> = {
   preview,
-  describe: document.getElementById("describe")!,
-  lint: document.getElementById("lint")!,
-  intent: document.getElementById("intent")!,
-  takeoff: takeoffEl,
   preview3d: preview3dEl,
+  facts: factsView,
+  checks: document.getElementById("checksView")!,
 };
+/** The tab on screen: `preview`, `preview3d`, `facts` or `checks`. */
+function activeTab(): string | undefined {
+  return tabs.find((t) => t.classList.contains("active"))?.dataset.tab;
+}
+/** Open a tab by its name, as a press on it does (its own listeners included). */
+function openTab(name: string) {
+  document.getElementById(`tab-${name}`)?.click();
+}
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
     for (const t of tabs) {
@@ -111,17 +129,17 @@ for (const tab of tabs) {
   });
 }
 
-// ---- Plan | 3D (public-surfaces card X5): the stage's switch, over the Preview and 3D tabs ----
+// ---- Plan | 3D (public-surfaces card X5): view mode's switch on the stage, over the Plan and 3D tabs ----
 const stageSwitchRow = document.getElementById("stageSwitchRow")!;
 const viewPlanBtn = document.getElementById("viewPlan") as HTMLButtonElement;
 const view3dBtn = document.getElementById("view3d") as HTMLButtonElement;
 /** Whether the 3D preview is on screen (its tab is the active one, in either mode). */
 const in3d = () => preview3dEl.classList.contains("active");
 viewPlanBtn.addEventListener("click", () => {
-  if (in3d()) document.getElementById("tab-preview")?.click();
+  if (in3d()) openTab("preview");
 });
 view3dBtn.addEventListener("click", () => {
-  if (!in3d()) document.getElementById("tab-preview3d")?.click();
+  if (!in3d()) openTab("preview3d");
 });
 stageSwitchRow.hidden = false;
 
@@ -244,6 +262,47 @@ let lastPages: readonly LevelPage[] | undefined;
  *  used for every export so a downloaded/copied file never carries them. */
 const cleanSvg = () => lastSvg.replace(/ data-span="\d+:\d+"/g, "");
 
+// ---- the status (ruling PG-D3) ----
+// `#status` is a notice on the stage and `#statusText` its live region. It is shown only while the
+// plan is compiling (once that has taken long enough to notice: `BUSY_AFTER_MS`), while it is broken
+// (until dismissed), and for a moment after an action (`flash`). When the plan is fine nothing shows,
+// but the live region keeps its text, visually hidden, so assistive tech hears every state. The
+// Source button wears a dot in the same two states: Source is where the diagnostics are.
+type StatusState = "ok" | "busy" | "err";
+let statusState: StatusState = "ok";
+/** The notice of the current state was dismissed (until the state changes). */
+let statusDismissed = false;
+/** A first compile this long in coming says so; a quicker one never flashes a notice. */
+const BUSY_AFTER_MS = 400;
+
+/** Set the resting status: its state and its text (a flash on screen keeps it until it ends). */
+function setStatus(state: StatusState, text: string) {
+  if (state !== statusState) statusDismissed = false;
+  statusState = state;
+  statusEl.classList.toggle("err", state === "err");
+  statusEl.classList.toggle("busy", state === "busy");
+  if (flashTimer !== undefined) flashResting = text;
+  else statusText.textContent = text;
+  paintStatus();
+}
+/** Show the notice exactly when there is something to say, and the Source button's dot with it. */
+function paintStatus() {
+  const shown = flashTimer !== undefined || (statusState !== "ok" && !statusDismissed);
+  statusEl.classList.toggle("show", shown);
+  statusDismiss.hidden = !shown;
+  if (statusState === "ok") delete sourceBtn.dataset.status;
+  else sourceBtn.dataset.status = statusState;
+}
+statusDismiss.addEventListener("click", () => {
+  if (flashTimer !== undefined) {
+    clearTimeout(flashTimer);
+    flashTimer = undefined;
+    statusText.textContent = flashResting;
+  }
+  statusDismissed = true;
+  paintStatus();
+});
+
 /** Briefly show a message in the status text, then restore it. */
 // A transient status message that restores the resting status after 1200 ms.
 // Two subtleties, both of which were real bugs:
@@ -263,7 +322,9 @@ function flash(msg: string) {
   flashTimer = setTimeout(() => {
     flashTimer = undefined;
     statusText.textContent = flashResting;
+    paintStatus();
   }, 1200);
+  paintStatus();
 }
 
 // ---- modes ----
@@ -296,6 +357,7 @@ function setMode(on: boolean) {
   editing = on;
   root.dataset.mode = on ? "edit" : "view";
   shell.setMode(on);
+  placeChecks();
   const hash = setEditFlag(location.hash, on);
   if (hash !== location.hash) window.history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
 }
@@ -341,9 +403,9 @@ function enterEdit(): Promise<EditMode | undefined> {
 function leaveEdit() {
   setMode(false);
   mobileViews.show("plan");
-  // Describe, Lint, Intent and Takeoff are edit mode's tabs: leave on the drawing.
-  const active = tabs.find((t) => t.classList.contains("active"))?.dataset.tab;
-  if (active !== "preview" && active !== "preview3d") document.getElementById("tab-preview")?.click();
+  // Facts and Checks are edit mode's tabs: leave on the drawing.
+  const active = activeTab();
+  if (active !== "preview" && active !== "preview3d") openTab("preview");
   // A broken plan's status names where its errors are, which differs by mode.
   if (statusEl.classList.contains("err")) render(currentSource());
 }
@@ -409,19 +471,19 @@ function keepKnob(source: string, final: boolean) {
   if (!final) return;
   // Let go: Checks and the 3D preview catch up with the plan the knob left (the drag drew it
   // without the rings, and left the 3D preview where it was).
-  if (checksOn || in3d()) render(source);
+  if (reviewWanted() || in3d()) render(source);
   writeStr(KEYS.source, source);
   void updateHash(source, () => editing, in3d);
   void syncPlanMark(source); // no longer the example word for word: "Edited plan"
 }
 
-// The storey switcher sits in the OUTPUT PANE'S TAB STRIP, not the preview toolbar, so
-// it is visible and operable from all four tabs — the storey it picks drives every one
-// of them. ONE control for one piece of state: a second copy inside the preview would be
-// two things to keep in sync.
+// The storey switcher sits on the STAGE, under the Plan | 3D switch, in both modes and over every
+// tab (ruling PG-D3), so it is visible and operable whatever is on screen — the storey it picks
+// drives every view. ONE control for one piece of state: a second copy would be two things to keep
+// in sync. (The 3D preview's own "Storeys" buttons are another function, a cut-away of the storeys
+// shown, and stay.)
 const levelSwitch = mountLevelSwitcher({
   el: storeysEl,
-  sepEl: storeysSepEl,
   onChange: (level) => {
     if (level === selectedLevel) return;
     selectedLevel = level;
@@ -431,7 +493,7 @@ const levelSwitch = mountLevelSwitcher({
   },
 });
 
-/** Update the facts strip (and, in edit mode, the Describe and Lint tabs) for `source`. */
+/** Update the facts strip (and, in edit mode, the Facts and Checks tabs) for `source`. */
 function updateAnalysis(source: string, ok: boolean) {
   if (!core) return;
   const whole = core.describe(source, { noCache: true } as DescribeOptions & { noCache?: boolean });
@@ -443,8 +505,8 @@ function updateAnalysis(source: string, ok: boolean) {
   lastRooms = ok ? (summary.rooms ?? []) : [];
   lastSummary = ok ? summary : null;
   renderFacts(factsEl, summary, ok, source, activeLevel);
-  // The Describe and Lint tabs are edit mode's (edit-mode.ts): a visit that never opens the
-  // editor never runs `lint()`.
+  // Describe (the Facts tab) and Lint (the Checks tab) are edit mode's (edit-mode.ts): a visit that
+  // never opens the editor never runs `lint()`.
   edit?.updatePanels(source, ok, summary, activeLevel);
 }
 
@@ -503,20 +565,20 @@ function render(source: string, refit = false, knobMoving = false): boolean {
   }
   updateAnalysis(source, ok);
   // Like the 3D preview, the takeoff follows the editor and the storey only while its tab is open.
-  if (takeoff && takeoffEl.classList.contains("active")) void takeoff.then((p) => p?.update(source, activeLevel));
+  if (takeoff && factsView.classList.contains("active")) void takeoff.then((p) => p?.update(source, activeLevel));
   // The diagnostics drawer, its phone count and a live Intent verdict are edit mode's.
   edit?.afterCompile(source, diagnostics ?? []);
+  clearTimeout(busyTimer);
   if (!ok) {
     const n = errors.length;
-    statusEl.classList.add("err");
     // In view mode the diagnostics are out of sight: say where they are.
-    statusText.textContent = `${n} error${n > 1 ? "s" : ""}${editing ? "" : " — open Source to see them"}`;
+    setStatus("err", `${n} error${n > 1 ? "s" : ""}${editing ? "" : " — open Source to see them"}`);
     knobsPanel.refresh(); // a document that does not compile has no knobs to move
     return false; // keep last good preview
   }
-  statusEl.classList.remove("err");
+  // A plan that compiles is fine: the notice goes, and the live region keeps the verdict.
   const warns = (diagnostics ?? []).filter((d) => d.severity === "warning");
-  statusText.textContent = warns.length ? `${warns.length} warning${warns.length > 1 ? "s" : ""}` : "ready";
+  setStatus("ok", warns.length ? `${warns.length} warning${warns.length > 1 ? "s" : ""}` : "ready");
   // The export SVG (lastSvg) is always overlay-free; the "Paths" toggle re-compiles
   // with the circulation overlay for the on-screen preview only, so downloads/copies
   // never carry it (matching how annotate is stripped for export).
@@ -528,12 +590,17 @@ function render(source: string, refit = false, knobMoving = false): boolean {
     // draw page 1's circulation over whatever storey is selected.
     displaySvg = selectPage(overlaid.pages, activeLevel)?.svg ?? overlaid.svg;
   }
-  // Checks: the review rings over the drawing on screen. Like the Paths overlay it is never in
-  // `lastSvg`, which every export reads, so a download is the same with Checks on or off.
-  // A knob mid-drag draws without them: the review runs once, when the knob is let go.
-  if (checksOn && checks) {
+  // Checks: the review rings over the drawing on screen, and their list (over the drawing in view
+  // mode; in edit mode the Checks tab, which lists them whether or not they are drawn). Like the
+  // Paths overlay the rings are never in `lastSvg`, which every export reads, so a download is the
+  // same with Checks on or off. A knob mid-drag draws without them: the review runs once, when the
+  // knob is let go.
+  if (checks && reviewWanted()) {
     if (knobMoving) checks.pending();
-    else displaySvg = checks.overlay(displaySvg, source, activeLevel);
+    else {
+      const ringed = checks.overlay(displaySvg, source, activeLevel);
+      if (checksOn) displaySvg = ringed;
+    }
   }
   previewCtl.show(displaySvg, refit);
   if (checksOn) checks?.shown();
@@ -544,41 +611,71 @@ function render(source: string, refit = false, knobMoving = false): boolean {
 }
 
 // ---- Checks (card P6): the review rings `arch preview --review` draws, over the drawing ----
-// Off on every visit (not persisted). The panel and the review code load on the first switch-on.
+// A layer of the drawing (ruling PG-D3): a pressed-state toggle on the stage's toolbar, beside Paths,
+// which leaves with the drawing when the 3D preview is on screen (the rings are 2D only). Off on
+// every visit (not persisted). Its findings list floats over the drawing in view mode while the
+// rings are on; in edit mode it is the first section of the Checks tab. The panel and the review
+// code load on the first switch-on, or on the Checks tab's first open in edit mode.
 const checksBtn = document.getElementById("checks") as HTMLButtonElement;
 let checksOn = false;
 let checks: ChecksPanel | undefined;
 let checksP: Promise<ChecksPanel | undefined> | undefined;
-checksBtn.addEventListener("click", () => {
-  checksOn = !checksOn;
-  checksBtn.setAttribute("aria-pressed", String(checksOn));
-  checks?.setVisible(checksOn);
+/** Whether the review runs: the rings are on, or edit mode's Checks tab (which lists it) is open. */
+function reviewWanted(): boolean {
+  return checksOn || (editing && activeTab() === "checks");
+}
+/** The findings list: in edit mode the Checks tab's, always shown there; else over the drawing. */
+function placeChecks() {
+  if (!checks) return;
+  checks.dock(editing ? checksHost : null);
+  checks.setVisible(editing || checksOn);
+}
+function loadChecks(): Promise<ChecksPanel | undefined> {
   checksP ??= import("./checks-panel.js").then(
-    (m) =>
-      (checks = m.mountChecks({
+    (m) => {
+      checks = m.mountChecks({
         viewport: pzViewport,
         stage: pzStage,
         isEditing: () => editing && edit !== undefined,
         jumpToOffset,
         lintProfile: () => {
-          // The Lint tab's selector once edit mode has filled it, else the profile it will restore.
+          // The Lint selector once edit mode has filled it, else the profile it will restore.
           const sel = document.getElementById("lintProfile") as HTMLSelectElement | null;
           return sel && sel.options.length > 0 ? sel.value : (readStr(KEYS.lintProfile) ?? "");
         },
         openSample: switchPlan,
-      })),
+      });
+      placeChecks();
+      return checks;
+    },
     (err: unknown) => {
       checksP = undefined; // a failed chunk load is retried on the next press
       // Nothing is drawn, so the button does not say Checks is on.
       checksOn = false;
       checksBtn.setAttribute("aria-pressed", "false");
+      checksBtn.classList.remove("active");
       flash(`Checks did not load: ${(err as { message?: string })?.message ?? err}`);
       return undefined;
     },
   );
-  void Promise.all([checksP, ready]).then(([c]) => {
-    c?.setVisible(checksOn);
+  return checksP;
+}
+checksBtn.addEventListener("click", () => {
+  checksOn = !checksOn;
+  checksBtn.setAttribute("aria-pressed", String(checksOn));
+  // Pressed, it wears the toolbar's active dress, as Paths does.
+  checksBtn.classList.toggle("active", checksOn);
+  placeChecks();
+  void Promise.all([loadChecks(), ready]).then(() => {
+    placeChecks();
     render(currentSource());
+  });
+});
+// Edit mode's Checks tab lists the findings whether or not the rings are drawn.
+document.getElementById("tab-checks")?.addEventListener("click", () => {
+  if (!editing) return;
+  void Promise.all([loadChecks(), ready]).then(() => {
+    if (reviewWanted()) render(currentSource());
   });
 });
 
@@ -605,9 +702,10 @@ document.getElementById("tab-preview3d")?.addEventListener("click", () => {
   });
 });
 
-// ---- Takeoff: the core's quantities, in a panel whose code loads on the tab's first open ----
+// ---- Takeoff: the core's quantities, the Facts tab's second section; its code loads on the
+// tab's first open ----
 let takeoff: Promise<import("./takeoff-panel.js").TakeoffPanel | undefined> | undefined;
-document.getElementById("tab-takeoff")?.addEventListener("click", () => {
+document.getElementById("tab-facts")?.addEventListener("click", () => {
   takeoff ??= import("./takeoff-panel.js").then(
     (m) => m.mountTakeoff(takeoffEl, { flash }),
     (err: unknown) => {
@@ -643,8 +741,7 @@ function onDocChanged(source: string) {
 
 /** Surface an export failure in the status + errors UI. */
 function onExportError(format: string, err: unknown) {
-  statusEl.classList.add("err");
-  statusText.textContent = `${format.toUpperCase()} export failed`;
+  setStatus("err", `${format.toUpperCase()} export failed`);
   errorsEl.classList.add("show");
   errorsEl.textContent = `${format.toUpperCase()} export failed: ${(err as { message?: string })?.message ?? err}`;
 }
@@ -736,7 +833,7 @@ async function boot() {
     onExportError,
     isEditing: () => editing,
     is3d: in3d,
-    showLintTab: () => document.getElementById("tab-lint")?.click(),
+    showChecksTab: () => openTab("checks"),
     getThemeOverride: () => themeSelect.value,
     els: {
       formatBtn: document.getElementById("formatSrc") as HTMLButtonElement | null,
@@ -766,8 +863,18 @@ async function boot() {
   delete root.dataset.booting;
 }
 
-// Bootstrap (async — resolves the shared/saved source, then loads the compiler).
-const ready = boot();
+// Bootstrap (async — resolves the shared/saved source, then loads the compiler). A first compile
+// slow enough to notice says so (the notice and Source's dot); a quick one shows nothing.
+// A boot that fails (the compiler's or the examples' chunk did not load) says so instead of
+// "Compiling…" for ever: the busy timer is stopped and the status is an error. `ready` still
+// settles, so nothing waiting on it is left with an unhandled rejection; without `core`, `render`
+// does nothing.
+const busyTimer = setTimeout(() => setStatus("busy", "Compiling…"), BUSY_AFTER_MS);
+const ready = boot().catch((err: unknown) => {
+  clearTimeout(busyTimer);
+  setStatus("err", "Couldn't load the compiler — reload to retry");
+  console.warn("The playground did not boot:", err);
+});
 // `&3d` (or `#3d` alone) opens on the 3D preview (card X5): its chunk starts loading now, beside
 // the compiler, and it shows the plan the visit opens once that is compiled, at its end frame.
-if (has3dFlag(location.hash)) document.getElementById("tab-preview3d")?.click();
+if (has3dFlag(location.hash)) openTab("preview3d");

@@ -1,5 +1,5 @@
 /**
- * The Describe tab: a compact access-graph diagram from `describe().access` with
+ * Describe, the Facts tab's first section: a compact access-graph diagram from `describe().access` with
  * the raw describe JSON tucked into a <details>. Zero-dep — pure DOM/CSS strings,
  * no graph library.
  */
@@ -9,7 +9,7 @@ import type { SceneSummary } from "archlang";
 /** A room node in describe()'s access graph (the type is not exported directly). */
 type AccessRoomNode = SceneSummary["access"]["rooms"][number];
 
-/** describe() facts with the diagnostics list stripped (as rendered in the tab). */
+/** describe() facts with the diagnostics list stripped (as rendered in the Facts tab). */
 type Facts = Omit<SceneSummary, "diagnostics">;
 
 /**
@@ -56,7 +56,7 @@ function renderAccessGraph(facts: Facts): string {
   return `<div class="ag">${cols.join(`<div class="ag-arrow">→</div>`)}</div>`;
 }
 
-/** Render the whole Describe tab into `el` (or an empty-state hint on errors). */
+/** Render the whole Describe section into `el` (or an empty-state hint on errors). */
 export function renderDescribe(el: HTMLElement, facts: Facts, ok: boolean): void {
   if (ok) {
     el.innerHTML =

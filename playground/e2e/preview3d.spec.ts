@@ -27,8 +27,9 @@ import {
  * WebGL in headless Chromium: the package's own pinned software renderer (SwiftShader).
  */
 /*
- * The tab opens in either mode (it is the one output tab view mode keeps). A case that opens
- * Describe or Lint, or types into the editor, loads its plan with `&edit` (edit mode); the rest
+ * It opens in either mode: from the stage's Plan | 3D switch in view mode, from the 3D tab in edit
+ * mode (ruling PG-D3: one control per mode; `open3d` uses whichever). A case that opens Facts or
+ * Checks, or types into the editor, loads its plan with `&edit` (edit mode); the rest
  * stay in view mode, the default a visitor meets.
  */
 test.use({ launchOptions: { args: SWIFTSHADER_ARGS } });
@@ -65,7 +66,7 @@ test.describe("3D preview tab", () => {
     await waitForPlan(page);
     expect(chunks, "the 3D chunk is not fetched before the tab opens").toEqual([]);
 
-    await page.locator("#tab-preview3d").click();
+    await page.locator("#view3d").click();
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     await expect(page.locator("#tab-preview3d")).toHaveAttribute("aria-selected", "true");
     await expect(page.locator(".tabview.active")).toHaveCount(1);
@@ -109,8 +110,8 @@ test.describe("3D preview tab", () => {
     expect(colours).toBeGreaterThan(3);
 
     // Away and back: the chunk is not fetched again.
-    await page.locator("#tab-preview").click();
-    await page.locator("#tab-preview3d").click();
+    await page.locator("#viewPlan").click();
+    await page.locator("#view3d").click();
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     expect(chunks.length, "the 3D chunk is fetched once").toBe(1);
   });
@@ -184,13 +185,20 @@ test.describe("3D preview tab", () => {
     expect(errors).toEqual([]);
   });
 
-  test("the Tools menu opens it in view mode, labelled as the 3D decision record says", async ({ page }) => {
+  test("view mode opens it from the stage's switch alone, labelled as the 3D decision record says", async ({
+    page,
+  }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    // One entry point (ruling PG-D3): no Tools item and no visible tab opens it.
     await openTools(page);
-    // The product word (preview-and-remodel D5): "3D preview", in the menu as on the tab.
-    await page.getByRole("button", { name: "3D preview", exact: true }).click();
+    await expect(page.locator("#tools").getByRole("button", { name: "3D preview", exact: true })).toHaveCount(0);
+    await page.locator("#tools > summary").click();
+    await expect(page.locator("#tab-preview3d")).toBeHidden();
+    // The product word (preview-and-remodel D5): "3D preview", in the switch's description.
+    await expect(page.locator("#view3d")).toHaveAttribute("title", /3D preview/);
+    await page.locator("#view3d").click();
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     await expect(page.locator("#tab-preview3d")).toHaveAttribute("aria-selected", "true");
     await expect(page.locator("#preview3d")).toContainText(LABEL);
@@ -213,9 +221,13 @@ async function replay(page: Page): Promise<void> {
   await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeLessThan(0.5);
 }
 
-/** Open the 3D tab and wait until a replay is mounted and its drawing is ready. */
+/**
+ * Open the 3D preview through the one control the mode has (ruling PG-D3): the stage's switch in
+ * view mode, the 3D tab in edit mode. Then wait until a replay is mounted and its drawing is ready.
+ */
 async function open3d(page: Page): Promise<void> {
-  await page.locator("#tab-preview3d").click();
+  const editing = (await page.locator("html").getAttribute("data-mode")) === "edit";
+  await page.locator(editing ? "#tab-preview3d" : "#view3d").click();
   await page.waitForFunction(() => (window as W).__preview3d !== undefined);
   await page.evaluate(async () => {
     await (window as W).__preview3d?.ready;
@@ -237,7 +249,7 @@ test.describe("3D preview tab follows the editor", () => {
     // tab shows the lowest storey and underlines L1, as before.
     const pressed = page.locator('#storeys button[aria-pressed="true"]');
     await expect(pressed).toHaveCount(0);
-    await page.locator("#tab-describe").click();
+    await page.locator("#tab-facts").click();
     await expect(pressed).toHaveText("L1");
     await page.locator("#tab-preview3d").click();
     await expect(pressed).toHaveCount(0);
@@ -254,9 +266,40 @@ test.describe("3D preview tab follows the editor", () => {
     expect(await hashAt(page, 1), "storey 2 alone is not the combined view").not.toBe(all);
 
     // Another tab and back: the storey holds, and the tab redraws.
-    await page.locator("#tab-describe").click();
+    await page.locator("#tab-facts").click();
     await page.locator("#tab-preview3d").click();
     await expect(tab).toHaveAttribute("data-view", "L2");
+  });
+
+  test("in view mode the one storey switcher, under Plan | 3D, drives both views", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await page.locator("#examples").selectOption("Townhouse (3 levels)");
+    await waitForPlan(page);
+    const storeys = page.locator("#storeys");
+    // One switcher, wherever the stage is: the same element over the drawing and over the 3D view.
+    await expect(page.locator('[role="group"][aria-label="Storey"]')).toHaveCount(1);
+    const onPlan = (await storeys.boundingBox())!;
+    const plan = await page.locator(".pz-stage svg").innerHTML();
+    await open3d(page);
+    await expect(storeys).toBeVisible();
+    const on3d = (await storeys.boundingBox())!;
+    expect(on3d.x).toBe(onPlan.x);
+    expect(on3d.y).toBe(onPlan.y);
+    const sw = (await page.locator(".stage-switch").boundingBox())!;
+    expect(on3d.y, "just under the switch").toBeGreaterThanOrEqual(sw.y + sw.height);
+    // L2 from the 3D view: storey 2 alone there…
+    await storeys.getByRole("button", { name: /^level 2/ }).click();
+    await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "L2");
+    // …and the drawing followed it: back on Plan, storey 2 is pressed and drawn.
+    await page.locator("#viewPlan").click();
+    await expect(storeys.locator('button[aria-pressed="true"]')).toHaveText("L2");
+    await expect.poll(() => page.locator(".pz-stage svg").innerHTML()).not.toBe(plan);
+    await expect(page.locator("#facts")).toContainText("level 2");
+    // L3 from the drawing: the 3D view follows when it comes back.
+    await storeys.getByRole("button", { name: /^level 3/ }).click();
+    await open3d(page);
+    await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "L3");
   });
 
   test("an edit while playing goes on from the current t, not back to the start", async ({ page }) => {
@@ -282,7 +325,7 @@ test.describe("3D preview tab follows the editor", () => {
     await replay(page);
     const scrub = page.locator('#preview3d [data-role="scrub"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
     const parked = Number(await scrub.inputValue());
     await page.waitForTimeout(600);
     expect(Number(await scrub.inputValue()), "no frames while hidden").toBe(parked);
@@ -537,7 +580,7 @@ test.describe("3D preview tab: grabbing the view", () => {
 
 /**
  * Plan | 3D (public-surfaces card X5): view mode's switch on the stage between the drawing and the
- * 3D preview, which drives the Preview and 3D preview tabs (so Tools → 3D preview flips it), the
+ * 3D preview, which drives the Plan and 3D tabs (edit mode's control, which replaces it there), the
  * `&3d` deep link, the hash flag a copied full link keeps, the plan strip and the knobs in 3D, and
  * Download GLB. Reduced motion, so the end frame is drawn at once and nothing plays on its own.
  */
@@ -693,16 +736,43 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await expect(page.locator(".pz-viewport details.knobs")).toBeVisible();
   });
 
-  test("Tools → 3D preview flips the switch, and the tabs and the switch agree", async ({ page }) => {
+  test("each mode has one Plan/3D control, the switch or the tabs, and the two agree", async ({ page }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
-    await openTools(page);
-    await page.getByRole("button", { name: "3D preview", exact: true }).click();
-    await expect(threeBtn(page)).toHaveAttribute("aria-pressed", "true");
-    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    // View mode: the switch, and no tab on screen.
+    await expect(page.locator(".stage-switch")).toBeVisible();
+    await expect(page.locator(".tab:visible")).toHaveCount(0);
+    await threeBtn(page).click();
+    await mounted(page);
+    await expect(page.locator("#tab-preview3d")).toHaveAttribute("aria-selected", "true");
+    // Edit mode: the tabs replace the switch; they open on the view the switch left, `&3d` kept.
+    await page.locator("#sourceToggle").click();
+    await expect(page.locator(".cm-content")).toBeVisible();
+    await expect(page.locator(".stage-switch")).toBeHidden();
+    await expect(page.locator("#tab-preview3d")).toBeVisible();
+    await expect(page.locator("#tab-preview3d")).toHaveAttribute("aria-selected", "true");
+    expect(await hash(page)).toMatch(/&3d&edit$/);
     await page.locator("#tab-preview").click();
+    await expect(page.locator("#tab-preview")).toBeFocused();
+    expect(await hash(page)).toMatch(/^#z=[A-Za-z0-9_-]+&edit$/);
+    // Back in view mode, the switch says what the tabs chose.
+    await page.locator("#sourceToggle").click();
+    await expect(page.locator(".stage-switch")).toBeVisible();
     await expect(planBtn(page)).toHaveAttribute("aria-pressed", "true");
     await expect(threeBtn(page)).toHaveAttribute("aria-pressed", "false");
+  });
+
+  test("the Checks toggle is the drawing's: it leaves with it for the 3D view (rings are 2D)", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    const checks = page.locator(".pz-toolbar #checks");
+    await expect(checks).toBeVisible();
+    await threeBtn(page).click();
+    await mounted(page);
+    await expect(checks).toBeHidden();
+    await expect(page.locator("#preview3d #checks, #preview3d [data-layer='checks']")).toHaveCount(0);
+    await planBtn(page).click();
+    await expect(checks).toBeVisible();
   });
 
   test("a full link copied from the 3D preview keeps `&3d`; from the drawing it does not", async ({ page }) => {

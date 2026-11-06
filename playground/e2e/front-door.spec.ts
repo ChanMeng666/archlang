@@ -72,7 +72,7 @@ test.describe("front door", () => {
     await page.goto("/");
     await waitForPlan(page);
     await expect(page.locator("#examples")).toHaveValue("Laneway House");
-    // The diagnostics and the Lint tab are edit mode's.
+    // The diagnostics and the Checks tab (Lint) are edit mode's.
     await enterEdit(page);
     // #errors is the COMPILE sink; lint renders into #lintOutput (a clean plan shows the ".ok" verdict).
     await expect(page.locator("#errors")).toBeEmpty();
@@ -98,7 +98,7 @@ test.describe("front door", () => {
       expect(wrapped, `header items on a second row at ${width}px`).toEqual([]);
       const controls = await headerControls(page);
       expect(controls.length, `header controls at ${width}px: ${controls.join(", ")}`).toBeLessThanOrEqual(5);
-      // The picker, Source, Tools and Make your own are among them.
+      // The picker, Source, Tools and Make your own are among them; Checks is the stage's (PG-D3).
       expect(controls).toEqual(expect.arrayContaining(["examples", "sourceToggle", "makeOwn"]));
       await expect(page.locator("#tools > summary")).toBeVisible();
     });

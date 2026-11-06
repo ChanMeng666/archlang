@@ -13,11 +13,21 @@ export interface MobileViewsHandle {
   setProblemCount(n: number): void;
 }
 
-export function mountMobileViews(main: HTMLElement, nav: HTMLElement, countEl: HTMLElement): MobileViewsHandle {
+/**
+ * `onShow` is told of every switch: Problems is the diagnostics over the Checks tab's content
+ * (ruling PG-D3), so main.ts opens that tab as the view comes up.
+ */
+export function mountMobileViews(
+  main: HTMLElement,
+  nav: HTMLElement,
+  countEl: HTMLElement,
+  onShow?: (view: MobileView) => void,
+): MobileViewsHandle {
   const buttons = [...nav.querySelectorAll<HTMLButtonElement>("button[data-mview]")];
   const show = (view: MobileView) => {
     main.dataset.mview = view;
     for (const b of buttons) b.setAttribute("aria-pressed", String(b.dataset.mview === view));
+    onShow?.(view);
   };
   for (const b of buttons) b.addEventListener("click", () => show(b.dataset.mview as MobileView));
   return {

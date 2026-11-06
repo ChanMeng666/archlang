@@ -51,7 +51,7 @@ export interface EditMode {
   setDoc(src: string): void;
   /** Move the caret to a byte offset and reveal it (click-to-source). */
   jumpToOffset(offset: number): void;
-  /** The Describe and Lint tabs for `source` (from main.ts's `updateAnalysis`). */
+  /** Describe (the Facts tab) and Lint (the Checks tab) for `source` (from main.ts's `updateAnalysis`). */
   updatePanels(source: string, ok: boolean, summary: SceneSummary, activeLevel: number | null): void;
   /** The diagnostics drawer, its count and a live Intent verdict (from main.ts's `render`). */
   afterCompile(source: string, diagnostics: Diagnostic[]): void;
@@ -99,7 +99,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
 
   /** Diagnostics in panel display order — `data-i` on a row indexes into this. */
   let lastDiagRows: Diagnostic[] = [];
-  /** Same, for the Lint tab's rows (some lint rules carry their own applicable fix). */
+  /** Same, for the Lint section's rows (some lint rules carry their own applicable fix). */
   let lastLintRows: Diagnostic[] = [];
 
   // Restore the persisted lint profile (advisory — never block on storage).
@@ -126,7 +126,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
   /**
    * Apply the best-ranked machine-applicable fix on `rows[index]` — the same
    * `rankFixes` → `applyFixes` path `arch fix` takes, so the button and the CLI make the
-   * identical edit. Shared by the diagnostics panel and the Lint tab.
+   * identical edit. Shared by the diagnostics panel and the Lint section.
    */
   function applyFixAt(rows: Diagnostic[], index: number): void {
     const fixes = rows[index]?.fixes;
@@ -178,8 +178,8 @@ export function mountEditMode(ctx: EditCtx): EditMode {
   intentSrc.value = STARTER_INTENT;
   const runIntent = () => renderIntent(intentOutput, currentSource(), intentSrc.value);
   intentRunBtn.addEventListener("click", runIntent);
-  // Check once when the tab is first opened, so it is never an empty panel.
-  document.getElementById("tab-intent")?.addEventListener("click", () => {
+  // Check once when the Checks tab is first opened, so the Intent section is never empty.
+  document.getElementById("tab-checks")?.addEventListener("click", () => {
     if (!intentOutput.innerHTML) runIntent();
   });
 

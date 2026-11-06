@@ -12,17 +12,28 @@ consumes the built core (`../dist/index.js`). Deployed at
   The header holds the plan picker, **Source** (edit mode: the editor beside the drawing),
   **Tools** (every action below, in one menu) and **Make your own**. `&edit` in the hash
   (`#z=…&edit`, or `#edit`) opens edit mode; `arch link` and the docs' "Open in playground" add it,
-  and a link copied here does not. A **Plan | 3D** switch on the stage shows the drawing or the
-  3D preview; `&3d` in the hash (`#z=…&3d`, or `#3d`) opens on the 3D preview, the hash keeps it
-  while the 3D preview is on screen, and a full link copied then keeps it too (a short link opens
-  on the drawing). The compiler, the editor, the panels, three.js, the GLB writer and jsPDF are
-  their own chunks, loaded after the first paint or on first use.
+  and a link copied here does not. The compiler, the editor, the panels, three.js, the GLB writer
+  and jsPDF are their own chunks, loaded after the first paint or on first use.
+- **One entry point per function (ruling PG-D3):** view mode has no tab row and no status row; the
+  stage's **Plan | 3D** switch is its one view control. `&3d` in the hash (`#z=…&3d`, or `#3d`)
+  opens on the 3D preview, the hash keeps it while the 3D preview is on screen, and a full link
+  copied then keeps it too (a short link opens on the drawing). Edit mode's output pane has one
+  row of four tabs, **Plan · 3D · Facts · Checks**, which replace the switch there: **Facts** is
+  Describe and Takeoff (two sections, from the same `describe()` data; the takeoff loads on first
+  open), **Checks** is the review findings, Lint (profile, Repair, Suggest, Finish results) and
+  Intent. The **storey switcher** has one home, top-left on the stage under Plan | 3D, in both
+  modes, driving every view. The **status** shows only while the plan is compiling (once that is
+  slow enough to notice) or broken, or for a moment after an action: a dismissible notice on the
+  stage and a dot on **Source**; `#statusText` stays a live region either way.
 - **Editor:** syntax highlighting, inline lint (from the compiler's `diagnostics`),
   and **autocomplete** (reuses the core `completion()` language service).
 - **Preview:** live SVG with **pan / zoom / fit** and a floating toolbar; a **facts
   strip** showing `describe()` totals (rooms/doors/windows/area/entrance); and a
   **Paths** toggle that overlays the human-**circulation** routes
-  (`compile(..., { overlays: ["circulation"] })` — entrance→room walks + pinch markers).
+  (`compile(..., { overlays: ["circulation"] })` — entrance→room walks + pinch markers); beside it
+  a **Checks** toggle that rings what compile and lint warn about, as `arch preview --review`
+  does (2D only: it leaves with the drawing in the 3D view; in view mode its findings list floats
+  over the drawing, in edit mode it is the Checks tab's first section).
 - **IDE-parity actions:** **Format** (idempotent, comment-preserving source rewrite),
   **Repair furniture** (runs the deterministic `arch repair` corrector and shows the
   change log), and clickable diagnostics.
@@ -39,8 +50,8 @@ consumes the built core (`../dist/index.js`). Deployed at
   Exports strip the `data-span` annotations, so downloaded files stay clean.
 - **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive —
   at ≤900px view mode is the drawing full screen, and edit mode shows one of
-  **Code / Plan / Problems** at a time under a sticky switcher, with touch-sized controls and
-  no sideways scroll.
+  **Code / Plan / Problems** at a time under a sticky switcher (Problems: the diagnostics over
+  the Checks tab's content), with touch-sized controls and no sideways scroll.
 
 The app is written in **TypeScript** (`src/*.ts`). Note that `npm run build` does **not**
 typecheck it — Vite strips types with esbuild without checking them. Run `npm run typecheck`
@@ -54,21 +65,23 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 
 | File | Role |
 |------|------|
-| `main.ts` | app entry, the view path (the startup chunk) — modes, render pipeline, permalink, facts, storeys, lazy loading of everything below it |
-| `shell.ts` | the header's Source toggle, Tools menu and Make-your-own dialog |
+| `main.ts` | app entry, the view path (the startup chunk) — modes, the output tabs and the Plan \| 3D switch, the status, render pipeline, permalink, facts, storeys, lazy loading of everything below it |
+| `shell.ts` | the header's Source toggle, Tools menu (which opens no tab) and Make-your-own dialog |
+| `checks-panel.ts` / `checks-overlay.ts` | the Checks layer (lazy): the review rings over the drawing and their findings list, over the drawing in view mode, docked in the Checks tab in edit mode |
+| `level-switcher.ts` / `levels.ts` | the one storey switcher, on the stage under Plan \| 3D |
 | `compiler.ts` | the compiler functions main.ts calls, behind its one dynamic import (the `compiler` chunk, named in `vite.config.js`) |
-| `edit-mode.ts` | edit mode, loaded on first entry: the editor, diagnostics, Describe, Lint (Repair, Suggest), Intent |
+| `edit-mode.ts` | edit mode, loaded on first entry: the editor, diagnostics, Describe (the Facts tab), Lint (Repair, Suggest) and Intent (the Checks tab) |
 | `editor-setup.ts` | CodeMirror instance: extensions, theme, linter, completion |
 | `arch-language.js` | **GENERATED** by `scripts/gen-grammars.ts` — StreamLanguage + linter. **Do not hand-edit** (CI fails on drift); edit `src/grammar/tokens.ts` and run `npm run gen:grammars`. |
 | `arch-completion.ts` | CodeMirror `autocompletion` over the core `completion()` (hand-written) |
 | `preview.ts` / `pan-zoom.ts` | SVG preview + circulation Paths overlay; CSS-transform pan/zoom/fit controller |
 | `interact.ts` | hover-room tooltip + click-to-source (`data-span`) |
-| `actions.ts` | header actions: **Format**, **Finish** (core `finish()`, one undo step, log in the Lint tab), **Repair furniture**, **Embed**, copy-link, **Open in Claude / ChatGPT** |
+| `actions.ts` | header actions: **Format**, **Finish** (core `finish()`, one undo step, log in the Checks tab's Lint section), **Repair furniture**, **Embed**, copy-link, **Open in Claude / ChatGPT** |
 | `llm-prompt.ts` | builds the **Copy for LLM** payload (source + `describe()` facts + diagnostics) and the short **Ask AI** prompt and chat-host URL |
 | `embed-snippets.ts` | the Embed dialog's iframe and Markdown snippets (an example's hosted drawing, or a plain link) |
 | `embed.ts` / `viewer.ts` | the chrome-less `embed.html` page and its viewer runtime |
-| `facts-strip.ts` / `describe-panel.ts` / `lint-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels |
-| `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher of edit mode (`main[data-mview]`) |
+| `facts-strip.ts` / `describe-panel.ts` / `takeoff-panel.ts` / `lint-panel.ts` / `intent-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels (the facts line; the Facts and Checks tabs' sections; the diagnostics drawer) |
+| `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher of edit mode (`main[data-mview]`; Problems opens the Checks tab) |
 | `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`), the `&edit` mode flag and the `&3d` view flag; asks the Worker for a short link and reads `#s=<id>` |
 | `preview3d.ts` / `plan3d.ts` / `glb-export.ts` | the 3D preview (lazy: three.js and archlang-3d), the plan → Mesh3D path it shares with Download GLB, and the GLB writer (its own lazy chunk) |
 | `raster-export.ts` | copy/download SVG · PNG · DXF · PDF |

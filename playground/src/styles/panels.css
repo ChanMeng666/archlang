@@ -14,10 +14,8 @@
 
 /* tab views: only the active one shows */
 #preview,
-#describe,
-#lint,
-#intent,
-#takeoff,
+#factsView,
+#checksView,
 #preview3d {
   flex: 1;
   min-height: 0;
@@ -28,6 +26,45 @@
 }
 #preview.active {
   display: flex;
+}
+
+/* Facts and Checks (edit mode, ruling PG-D3): one scrolling panel of sections each — Describe and
+   Takeoff; the review findings, Lint and Intent — under a caps micro-label per section, in the
+   paper world of the panels they replaced. A multi-storey plan's storey switcher floats over the
+   panel's top-left corner (chrome.css), so the panel starts clear of it. */
+.tv-sections {
+  overflow: auto;
+  padding: 12px 14px 20px;
+  background: var(--paper-panel);
+  flex-direction: column;
+  gap: 22px;
+  color: var(--ink);
+}
+#factsView.active,
+#checksView.active {
+  display: flex;
+}
+.pane:has(#storeys:not([hidden])) .tv-sections {
+  padding-top: 52px;
+}
+.tv-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.tv-h {
+  margin: 0;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--hairline);
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 85,
+    "wght" 600;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--ink-muted);
 }
 
 /* pan/zoom viewport — clips, the inner stage is transformed. Ground is paper
@@ -141,6 +178,9 @@
   font-size: 10.5px;
   font-weight: 500;
 }
+/* The drawing's two layers, Checks (the review rings) and Paths: caps micro-labels, the pressed
+   one in the toolbar's active dress. */
+.pz-toolbar button[data-layer="checks"],
 .pz-toolbar button[data-pz="paths"] {
   font-family: var(--font-display);
   font-variation-settings: "wdth" 85;
@@ -581,7 +621,8 @@
 }
 @media (max-width: 900px) {
   .checks {
-    top: 56px;
+    /* under the switch, the storeys and a wrapped toolbar */
+    top: 116px;
     left: 8px;
     right: 8px;
     width: auto;
@@ -591,18 +632,37 @@
     min-height: 44px;
   }
 }
+/* In edit mode the list is the Checks tab's first section (checks-panel.ts `dock`): in the flow
+   of the panel, not floating over a drawing, so none of the overlay's dress. (After the phone rule
+   above, so it wins there too.) */
+.checks.checks-docked {
+  position: static;
+  width: auto;
+  max-height: none;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  backdrop-filter: none;
+  box-shadow: none;
+}
+.checks.checks-docked .checks-head {
+  padding: 0 0 4px;
+  border-bottom: 1px solid var(--hairline);
+  font-size: 11px;
+}
+.checks.checks-docked .checks-profile {
+  padding: 6px 0 0;
+}
+.checks.checks-docked .checks-list {
+  padding: 8px 0 0;
+}
 
 #describe {
   margin: 0;
-  padding: 14px;
-  overflow: auto;
-  background: var(--paper-panel);
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--ink);
-}
-#describe.active {
-  display: block;
 }
 #describe .empty {
   color: var(--ink-muted);
@@ -724,16 +784,7 @@
   overflow: auto;
 }
 
-#lint {
-  overflow: auto;
-  padding: 12px 14px;
-  background: var(--paper-panel);
-  flex-direction: column;
-  gap: 8px;
-}
-#lint.active {
-  display: flex;
-}
+/* (#lint is a section of the Checks tab: `.tv-section` lays it out.) */
 
 /* lint-profile selector (B3) */
 .lint-controls {
@@ -1285,29 +1336,14 @@
   font-size: 12.5px;
 }
 
-/* Intent tab shell — same scroll/padding idiom as #lint. */
-#intent {
-  overflow: auto;
-  padding: 12px 14px;
-  background: var(--paper-panel);
-  flex-direction: column;
-  gap: 8px;
-}
-#intent.active {
-  display: flex;
-}
+/* (#intent is a section of the Checks tab: `.tv-section` lays it out.) */
 
-/* Takeoff tab: same scroll/padding idiom as #lint; the figures sit in ruled sheet tables, mono and
-   right-aligned so a column of lengths reads down its digits. */
+/* Takeoff, the Facts tab's second section: the figures sit in ruled sheet tables, mono and
+   right-aligned so a column of lengths reads down its digits. (The tab scrolls, not the section.) */
 #takeoff {
-  overflow: auto;
-  padding: 12px 14px;
-  background: var(--paper-panel);
+  display: flex;
   flex-direction: column;
   gap: 10px;
-}
-#takeoff.active {
-  display: flex;
 }
 .to-controls {
   display: flex;
@@ -2011,6 +2047,11 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   .pz-toolbar {
     top: 8px;
     right: 8px;
+    /* Clear of the Plan | 3D switch in the other top corner: a narrow stage wraps the toolbar to
+       a second row rather than run it under the switch. */
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    max-width: calc(100% - 140px);
   }
   .pz-toolbar button {
     min-width: 36px;
