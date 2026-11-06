@@ -23,7 +23,7 @@
  * drawing size following the box it sits in (`ResizeObserver`, CSS size × device pixels, capped;
  * the package's `resize`), and every control floats over it, dimmed until the pointer or the focus
  * is on it: Replay, the caption's lead and its ⓘ bottom-left, the scrubber a thin line along the
- * foot, ⟲ Reset, `View ▾` (the package's compact toolbar), the storeys and `GLB ↓` top-right. The
+ * foot, ⟲ Reset, `View ▾` (the package's compact toolbar) and the storeys top-right. The
  * ⓘ card holds the PS-D12 line, the limits line and the link (`PREVIEW_LABEL`, `PREVIEW_LIMITS`);
  * every word stays in the page, only its place changed. The facts the replay HTML lays over its
  * canvas are not laid over this one: the page's own facts line says them.
@@ -39,11 +39,12 @@
  *
  * In view mode it is the stage's other half (public-surfaces card X5): the Plan | 3D switch on the
  * stage shows it in place of the drawing, `&3d` in the hash opens on it, and the page lays its knobs
- * over the canvas (`overlay`). `GLB ↓` writes the whole plan in the page (glb-export.ts, its own
- * chunk, loaded on the first click), and its description says that the browser does not validate it.
+ * over the canvas (`overlay`). The GLB of the plan is Share → Export → GLB (ruling PG-D5, actions.ts),
+ * which builds it through the same `plan3d.ts` path, without this chunk or three.js, whether or not
+ * this tab was ever opened.
  */
 import { compile } from "archlang";
-import { type Mesh3D, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
+import { storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import {
   mountReplay,
   PREVIEW_ABOUT_URL,
@@ -78,12 +79,6 @@ const COACH_KEY = "archlang.pg.coach3d";
 const PLAYED_KEY = "archlang.pg.played3d";
 /** What the coach mark says (the hint, `VIEW_HINT`, is the full text, keys included). */
 export const COACH_TEXT = "Drag to turn · scroll to zoom · right-drag to pan";
-
-/** The package's own command for the validated GLB of a plan file (card X5's note). */
-export const GLB_COMMAND = "npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb";
-/** `GLB ↓`'s note, around {@link GLB_COMMAND}: what the browser does, and what it does not. */
-export const GLB_NOTE_LEAD = "The whole plan as a GLB, written in your browser and not validated here. ";
-export const GLB_NOTE_TAIL = " writes the same file and checks it with the Khronos glTF validator.";
 
 /**
  * The editor's compile of the same source, when it has one whose drawing is the light one this tab
@@ -183,44 +178,14 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   // It takes the pointer and keys (the free camera, card CR4), so it is an application, not an image.
   canvas.setAttribute("role", "application");
 
-  // ---- top-right: ⟲ Reset, View ▾ and the storeys (the package's compact toolbar), GLB ↓ ----
+  // ---- top-right: ⟲ Reset, View ▾ and the storeys (the package's compact toolbar) ----
+  // (The GLB is Share → Export → GLB since card PG4, ruling PG-D5: one home for every export.)
   const top = document.createElement("div");
   top.className = "p3d-float p3d-top";
   // The free camera's toolbar (card CR4), rebuilt with each replay.
   const views = document.createElement("div");
   views.className = "p3d-views";
-
-  // GLB ↓ (card X5; PG4 moves it into the Share/Export menu): the whole plan, written in the page
-  // by the package's own writer, in a chunk of its own loaded on the first click (glb-export.ts).
-  // Said plainly, in its description and as a line of the ⓘ card: the browser does not run the
-  // validator the CLI runs.
-  const glb = document.createElement("div");
-  glb.className = "p3d-glb";
-  const glbBtn = btn("GLB ↓", "p3d-btn", "Download GLB");
-  glbBtn.title = `${GLB_NOTE_LEAD}${GLB_COMMAND}${GLB_NOTE_TAIL}`;
-  glbBtn.setAttribute("aria-describedby", "p3d-glb-note");
-  const glbStatus = document.createElement("span");
-  glbStatus.className = "p3d-glb-status";
-  glbStatus.setAttribute("role", "status");
-  glb.append(glbBtn, glbStatus);
-  let glbChunk: Promise<typeof import("./glb-export.js")> | undefined;
-  glbBtn.addEventListener("click", () => {
-    const mesh = glbMesh;
-    if (!mesh) return;
-    glbBtn.disabled = true;
-    glbStatus.textContent = "";
-    glbChunk ??= import("./glb-export.js");
-    void glbChunk
-      .then((m) => m.downloadGlb(mesh))
-      .catch((err: unknown) => {
-        glbChunk = undefined; // a failed chunk load is retried on the next click
-        glbStatus.textContent = `The GLB was not written: ${(err as { message?: string })?.message ?? err}`;
-      })
-      .finally(() => {
-        glbBtn.disabled = false;
-      });
-  });
-  top.append(views, glb);
+  top.append(views);
 
   // ---- bottom-left: ▶ Replay, the caption's lead and its ⓘ card ----
   const foot = document.createElement("div");
@@ -235,9 +200,9 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   infoBtn.setAttribute("aria-expanded", "false");
   infoBtn.setAttribute("aria-controls", "p3d-info");
   caption.append(leadText, " ", infoBtn);
-  // The PS-D12 line, its first sentence in bold, then the link; the limits line under it, then the
-  // GLB note (`GLB ↓`'s description). After the ⓘ in the page's order, so Tab goes from ⓘ into it;
-  // focusable itself, so a press on its text keeps it open.
+  // The PS-D12 line, its first sentence in bold, then the link; the limits line under it. After the
+  // ⓘ in the page's order, so Tab goes from ⓘ into it; focusable itself, so a press on its text
+  // keeps it open.
   const info = document.createElement("div");
   info.className = "p3d-info";
   info.id = "p3d-info";
@@ -257,14 +222,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   const limits = document.createElement("p");
   limits.className = "p3d-limits";
   limits.textContent = PREVIEW_LIMITS;
-  const glbNote = document.createElement("p");
-  glbNote.className = "p3d-glb-note";
-  glbNote.id = "p3d-glb-note";
-  const cmd = document.createElement("code");
-  cmd.className = "p3d-glb-code";
-  cmd.textContent = GLB_COMMAND;
-  glbNote.append(GLB_NOTE_LEAD, cmd, GLB_NOTE_TAIL);
-  info.append(label, limits, glbNote);
+  info.append(label, limits);
   foot.append(play, caption, info);
 
   const away = (e: Event): void => {
@@ -350,8 +308,6 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   host.append(stage);
 
   let handle: ReplayHandle | undefined;
-  /** The whole plan's Mesh3D (every storey, whatever the view shows): what `GLB ↓` writes. */
-  let glbMesh: Mesh3D | undefined;
   /** What the mounted replay (or the refusal showing) was built from. */
   let built: string | undefined;
   let frame = 0;
@@ -430,7 +386,6 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     handle?.dispose();
     handle = undefined;
     window.__preview3d = undefined;
-    glbMesh = undefined;
     stage.dataset.refused = "";
     canvas.hidden = true;
     top.hidden = true;
@@ -451,7 +406,6 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     generation += 1;
     let next: ReplayHandle;
     let view: string;
-    let whole: Mesh3D;
     try {
       const r = adapt3d(source);
       if (!r.ok) {
@@ -464,7 +418,6 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         return false;
       }
       const mesh = mesh3d(r.scene);
-      whole = mesh;
       const levels = storeysOf(mesh);
       const index = level === null || levels.length < 2 ? -1 : levels.indexOf(level);
       const svg = index < 0 ? drawn.svg : drawn.pages?.find((pg) => pg.level === level)?.svg;
@@ -504,7 +457,6 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       return false;
     }
     handle = next;
-    glbMesh = whole;
     window.__preview3d = next;
     host.dataset.view = view;
     top.hidden = false;

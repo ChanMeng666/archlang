@@ -38,7 +38,7 @@ test.describe("Takeoff (the Facts tab)", () => {
     await expect(page.locator("#takeoff")).toBeEmpty();
     expect(chunks).toEqual([]);
 
-    // From view mode: Source opens the editor (Tools opens no tab, ruling PG-D3), and the Facts tab
+    // From view mode: Source opens the editor (no header menu opens a tab, ruling PG-D3), and the Facts tab
     // holds the takeoff as its second section. Opening the editor alone does not load it.
     await page.locator("#sourceToggle").click();
     await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");

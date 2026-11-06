@@ -9,8 +9,11 @@ consumes the built core (`../dist/index.js`). Deployed at
 
 - **View mode by default:** a visit opens on the drawing alone (the default example's, written into
   `index.html` at build time by `scripts/gen-static.mjs`, so it is there before any JavaScript).
-  The header holds the plan gallery, **Source** (edit mode: the editor beside the drawing),
-  **Tools** (every action below, in one menu) and **Make your own**. `&edit` in the hash
+  The header (ruling PG-D6) is one row: the brand, which is the page's one h1 ("ArchLang
+  Playground" as real text), the plan gallery, **Source** (edit mode: the editor beside the
+  drawing), **Share ▾**, **⋯** (More) and **Make your own**. There is no intro band: the page's
+  lede, the canonical line from site-shared/doors.json, is small text at the right of the stage's
+  foot, beside the facts line, in the served bytes. `&edit` in the hash
   (`#z=…&edit`, or `#edit`) opens edit mode; `arch link` and the docs' "Open in playground" add it,
   and a link copied here does not. The compiler, the editor, the panels, three.js, the GLB writer
   and jsPDF are their own chunks, loaded after the first paint or on first use.
@@ -34,6 +37,17 @@ consumes the built core (`../dist/index.js`). Deployed at
   modes, driving every view. The **status** shows only while the plan is compiling (once that is
   slow enough to notice) or broken, or for a moment after an action: a dismissible notice on the
   stage and a dot on **Source**; `#statusText` stays a live region either way.
+- **One menu per kind of action (ruling PG-D5):** **Share ▾** holds Copy short link and Copy full
+  link (with ADR 0034's note beside them), **Embed**, and **Export**: Copy SVG, Copy PNG and
+  Download SVG · PNG · PDF · DXF · TXT · GLB (GLB is the whole plan, written in the page with its
+  note that the browser does not validate it; it works whether or not the 3D view was opened, and
+  loads the 3D chunk and the writer on the first click, as PDF loads jsPDF). **⋯** (More) holds the
+  render theme and a11y, **Format / Finish / Saved** (they open the editor first), and the links
+  (agents, docs, guide, reference, spec, example plans, npm, GitHub, ArchCanvas). **Make your own**
+  holds every way to get a plan of your own and "Continue this plan with your AI": **Open in
+  Claude ↗**, **Open in ChatGPT ↗** (the plan's share link in the host's URL, as the note beside
+  them says; a plan too long is copied instead; an edit drops them to the bare host) and **Copy for
+  LLM**. The stage toolbar is **− + ⤢ ⛶ · Checks · Paths**, one row on a phone too.
 - **Editor:** syntax highlighting, inline lint (from the compiler's `diagnostics`),
   and **autocomplete** (reuses the core `completion()` language service).
 - **Preview:** live SVG with **pan / zoom / fit** and a floating toolbar; a **facts
@@ -55,8 +69,8 @@ consumes the built core (`../dist/index.js`). Deployed at
   `localStorage`; a **compressed permalink** (`#z=` deflate-raw, still reads legacy `#src=`), and
   on request a **short link** (`/s/<id>`, the plan stored on the server; ADR 0034) that opens the
   same permalink. `embed.html` reads `#s=<id>` too.
-- **Export:** **copy** SVG/PNG to the clipboard, or **download** SVG / PNG / DXF / PDF.
-  Exports strip the `data-span` annotations, so downloaded files stay clean.
+- **Export (Share ▾):** **copy** SVG/PNG to the clipboard, or **download** SVG / PNG / PDF / DXF /
+  TXT / GLB. Exports strip the `data-span` annotations, so downloaded files stay clean.
 - **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive —
   at ≤900px view mode is the drawing full screen, and edit mode shows one of
   **Code / Plan / Problems** at a time under a sticky switcher (Problems: the diagnostics over
@@ -75,7 +89,7 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | File | Role |
 |------|------|
 | `main.ts` | app entry, the view path (the startup chunk) — modes, the output tabs and the Plan \| 3D switch, the status, render pipeline, permalink, facts, storeys, lazy loading of everything below it |
-| `shell.ts` | the header's Source toggle, Tools menu (which opens no tab) and Make-your-own dialog |
+| `shell.ts` | the header's Source toggle, the Share and More (⋯) menus (one open at a time; neither opens a tab) and the Make-your-own dialog (it forwards the sheet's chat links and Copy for LLM to actions.ts) |
 | `checks-panel.ts` / `checks-overlay.ts` | the Checks layer (lazy): the review rings over the drawing and their findings list, over the drawing in view mode, docked in the Checks tab in edit mode |
 | `level-switcher.ts` / `levels.ts` | the one storey switcher, on the stage under Plan \| 3D |
 | `compiler.ts` | the compiler functions main.ts calls, behind its one dynamic import (the `compiler` chunk, named in `vite.config.js`) |
@@ -85,15 +99,17 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `arch-completion.ts` | CodeMirror `autocompletion` over the core `completion()` (hand-written) |
 | `preview.ts` / `pan-zoom.ts` | SVG preview + circulation Paths overlay; CSS-transform pan/zoom/fit controller |
 | `interact.ts` | hover-room tooltip + click-to-source (`data-span`) |
-| `actions.ts` | header actions: **Format**, **Finish** (core `finish()`, one undo step, log in the Checks tab's Lint section), **Repair furniture**, **Embed**, copy-link, **Open in Claude / ChatGPT** |
-| `llm-prompt.ts` | builds the **Copy for LLM** payload (source + `describe()` facts + diagnostics) and the short **Ask AI** prompt and chat-host URL |
+| `actions.ts` | header actions: **Format**, **Finish** (core `finish()`, one undo step, log in the Checks tab's Lint section) and Saved (More); **Repair furniture**; Share's copy-link, **Embed**, Copy SVG / PNG and the downloads (GLB through the 3D chunk and `glb-export.ts`); the sheet's **Open in Claude / ChatGPT** and **Copy for LLM** |
+| `llm-prompt.ts` | builds the **Copy for LLM** payload (source + `describe()` facts + diagnostics) and the short chat prompt and chat-host URL of **Open in Claude / ChatGPT** |
+| `make-own.ts` | the Make-your-own sheet (lazy): the doors from `site-shared/doors.json`, "Continue this plan with your AI" (the chat links, their note, **Copy for LLM**), the two top asks |
+| `glb-note.ts` | the GLB note's words beside Share → GLB (startup-safe: no writer, no three.js) |
 | `embed-snippets.ts` | the Embed dialog's iframe and Markdown snippets (an example's hosted drawing, or a plain link) |
 | `embed.ts` / `viewer.ts` | the chrome-less `embed.html` page and its viewer runtime |
 | `facts-strip.ts` / `describe-panel.ts` / `takeoff-panel.ts` / `lint-panel.ts` / `intent-panel.ts` / `diagnostics-panel.ts` | the `describe()`/`lint()` fact & diagnostic panels (the facts line; the Facts and Checks tabs' sections; the diagnostics drawer) |
 | `mobile-views.ts` | the ≤900px Code / Plan / Problems view switcher of edit mode (`main[data-mview]`; Problems opens the Checks tab) |
 | `share.ts` | `#z=` deflate-raw permalink encode/decode (reads legacy `#src=`), the `&edit` mode flag and the `&3d` view flag; asks the Worker for a short link and reads `#s=<id>` |
-| `preview3d.ts` / `plan3d.ts` / `glb-export.ts` | the 3D preview (lazy: three.js and archlang-3d), the plan → Mesh3D path it shares with Download GLB, and the GLB writer (its own lazy chunk) |
-| `raster-export.ts` | copy/download SVG · PNG · DXF · PDF |
+| `preview3d.ts` / `plan3d.ts` / `glb-export.ts` | the 3D preview (lazy: three.js and archlang-3d), the plan → Mesh3D path it shares with Share → Download GLB, and the GLB writer (its own lazy chunk) |
+| `raster-export.ts` | the PNG/PDF rasterising and the download helper behind Share → Export |
 | `snapshots.ts` / `storage.ts` | named snapshot history UI + defensive `localStorage` helpers |
 | `gallery.ts` / `plan-label.js` | the header's plan gallery (opens a plan in place, marks the current one, filters, keyboard), and the label → name + tag split it shares with `scripts/gen-static.mjs` |
 | `examples.ts`, `escape.ts` | example plans, HTML-escape helper |

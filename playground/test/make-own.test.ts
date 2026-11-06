@@ -80,11 +80,28 @@ describe("the Make-your-own sheet", () => {
     for (const t of AGENT_TABS) for (const r of t.rows) expect(allowed.has(r.text), `${t.label}: ${r.text}`).toBe(true);
   });
 
-  it("says next to the chat links that they put the plan in that site's address", () => {
+  it("says next to the chat links that they put the plan in the chat host's URL", () => {
     const html = sheetHtml();
-    expect(CHAT_NOTE).toBe("Opening a chat puts this plan in that site's address (or copies it, if the plan is long).");
-    expect(html).toContain(`id="moChatNote">${CHAT_NOTE}<`);
-    expect([...html.matchAll(/data-chat-host="[a-z]+" aria-describedby="moChatNote"/g)]).toHaveLength(2);
+    // Accurate where it sits (PG-D5): the sheet has no link buttons, so it names Share's two, and says
+    // which one keeps the plan off every server and which one stores it on archlang.uk's.
+    expect(CHAT_NOTE).toBe(
+      "These links put this plan in the chat host's URL, so the host's servers receive it, and the host may send it as your first message. A plan too long for a URL is copied instead, for you to paste. To keep the plan off every server, use Copy full link in Share; Copy short link stores it on archlang.uk's server.",
+    );
+    expect(html).toContain(`id="chatNote">${CHAT_NOTE}<`);
+    expect([...html.matchAll(/data-chat-host="[a-z]+" aria-describedby="chatNote"/g)]).toHaveLength(2);
+  });
+
+  it("is the one home of handing the plan to an AI: the two chat links and Copy for LLM, in one section", () => {
+    const html = sheetHtml();
+    const section = /<section class="mo-ask"[^>]*>([\s\S]*?)<\/section>/.exec(html)?.[1] ?? "";
+    expect(section).toContain('<h3 id="moAskHead">Continue this plan with your AI</h3>');
+    expect([...section.matchAll(/>Open in (Claude|ChatGPT) ↗</g)].map((m) => m[1])).toEqual(["Claude", "ChatGPT"]);
+    expect(section).toMatch(/<button type="button" class="mo-go" id="copyLlm"[^>]*>Copy for LLM<\/button>/);
+    // …and the page's static header no longer repeats any of it.
+    const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+    expect(page).not.toContain("data-chat-host");
+    expect(page).not.toContain('id="copyLlm"');
+    expect(page).not.toContain('id="chatNote"');
   });
 
   it("says, next to Start from this plan, that it stores the plan on a server", () => {

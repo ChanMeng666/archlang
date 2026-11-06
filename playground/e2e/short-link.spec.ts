@@ -7,7 +7,7 @@ import {
   chooseLink,
   enterEdit,
   gotoEdit,
-  openTools,
+  openShare,
   SIMPLE_PLAN,
   setEditorSource,
   waitForPlan,
@@ -24,7 +24,7 @@ import {
  * `/s/<id>` reach the real handler code. What this cannot see (the asset layer's routing, KV
  * itself) is `scripts/smoke.mjs --site playground`'s, against the deployed site.
  *
- * The plans are typed in edit mode (`gotoEdit`); the links sit in the Tools menu's Share group. A
+ * The plans are typed in edit mode (`gotoEdit`); the links sit in the Share menu. A
  * short link opens in view mode (it names a plain `#z=` link), so the editor is opened to read it.
  */
 
@@ -77,7 +77,7 @@ test.describe("short links", () => {
     const status = await watchStatus(page);
 
     // The note sits next to the choice it describes.
-    await openTools(page);
+    await openShare(page);
     await expect(page.locator("#shareNote")).toHaveText(
       "A short link stores this plan on archlang.uk's server; the full link does not.",
     );

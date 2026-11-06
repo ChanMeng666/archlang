@@ -1,6 +1,7 @@
 /**
  * The SVG preview: the pan/zoom controller, the SVG-into-stage display, the
- * floating toolbar (zoom / fit / fullscreen / copy), and the hover-facts +
+ * floating toolbar (zoom / fit / fullscreen and the Paths layer; copying and downloading the drawing
+ * are Share → Export since card PG4, ruling PG-D5), and the hover-facts +
  * click-to-source interactions. Owns everything inside `.pz-viewport` so main.ts
  * only has to hand it each freshly compiled SVG.
  */
@@ -8,7 +9,6 @@ import { createPanZoom } from "./pan-zoom.js";
 import { mountInteract } from "./interact.js";
 import { mountRoomCard } from "./room-card.js";
 import { showSvgInStage, sizeFromViewBox } from "./viewer.js";
-import { svgToCanvas } from "./raster-export.js";
 import type { RoomSummary, SceneSummary } from "archlang";
 
 export interface Preview {
@@ -36,19 +36,14 @@ interface PreviewOpts {
   getSummary: () => SceneSummary | null;
   /** Whether the editor is open (a room's card then offers "Jump to source"). */
   isEditing: () => boolean;
-  /** The export-clean SVG (annotations stripped) for the copy buttons. */
-  getCleanSvg: () => string;
   /** Move the editor caret to a source byte offset (click-to-source). */
   jumpToOffset: (offset: number) => void;
-  /** Briefly surface a status message. */
-  flash: (msg: string) => void;
   /** Re-render the preview when the "Paths" overlay toggle flips. */
   onPathsChange: () => void;
 }
 
 export function createPreview(opts: PreviewOpts): Preview {
-  const { viewport, stage, toolbar, getRooms, getSummary, isEditing, getCleanSvg, jumpToOffset, flash, onPathsChange } =
-    opts;
+  const { viewport, stage, toolbar, getRooms, getSummary, isEditing, jumpToOffset, onPathsChange } = opts;
 
   // Pan/zoom controller for the preview (created once; survives every re-render).
   const pz = createPanZoom(viewport, stage);
@@ -62,31 +57,7 @@ export function createPreview(opts: PreviewOpts): Preview {
     else viewport.requestFullscreen?.();
   }
 
-  async function copySvg() {
-    const svg = getCleanSvg();
-    if (!svg) return;
-    try {
-      await navigator.clipboard.writeText(svg);
-      flash("SVG copied");
-    } catch {
-      flash("Copy failed");
-    }
-  }
-
-  async function copyPng() {
-    const svg = getCleanSvg();
-    if (!svg) return;
-    try {
-      const canvas = await svgToCanvas(svg);
-      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
-      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob! })]);
-      flash("PNG copied");
-    } catch {
-      flash("Copy failed");
-    }
-  }
-
-  // Floating preview toolbar — pan/zoom + copy + the Paths overlay toggle.
+  // Floating preview toolbar — pan/zoom + the Paths overlay toggle.
   toolbar.addEventListener("click", (e) => {
     const btn = (e.target as Element | null)?.closest<HTMLElement>("button");
     const action = btn?.dataset.pz;
@@ -94,8 +65,6 @@ export function createPreview(opts: PreviewOpts): Preview {
     else if (action === "out") pz.zoomOut();
     else if (action === "fit") pz.fit();
     else if (action === "full") toggleFullscreen();
-    else if (action === "copysvg") void copySvg();
-    else if (action === "copypng") void copyPng();
     else if (action === "paths") {
       pathsOn = !pathsOn;
       btn?.classList.toggle("active", pathsOn);

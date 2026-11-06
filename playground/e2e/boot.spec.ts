@@ -1,5 +1,38 @@
-import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
+import { expect, type Page, test } from "@playwright/test";
 import { BROKEN_PLAN, enterEdit, pickPlan, shareHash, waitForPlan, watchForProblems } from "./fixtures.js";
+
+/** The canonical line (PS-D1), the page's lede (ruling PG-D6), read from doors.json, never retyped. */
+const CANONICAL_LINE: string = JSON.parse(
+  readFileSync(new URL("../../site-shared/doors.json", import.meta.url), "utf8"),
+).canonicalLine;
+
+/**
+ * Ruling PG-D6: exactly one H1, the header's brand, "ArchLang Playground" as real, visible text; no
+ * intro band; the lede is the canonical line, word for word, small and visible at the right of the
+ * stage's foot (the facts row), not in the facts themselves.
+ */
+async function expectHeadingAndLede(page: Page, styled = true): Promise<void> {
+  const h1 = page.locator("h1");
+  await expect(h1).toHaveCount(1);
+  await expect(page.locator("header > h1.tb-brand")).toHaveCount(1);
+  await expect(h1).toHaveText(/^\s*ArchLang\s+Playground\s*$/);
+  await expect(h1).toHaveAccessibleName("ArchLang Playground");
+  await expect(h1).toBeVisible();
+  await expect(page.locator(".intro, section.intro")).toHaveCount(0);
+  const lede = page.locator(".lede");
+  await expect(lede).toHaveCount(1);
+  await expect(page.locator(".facts-row > p.lede")).toHaveCount(1);
+  await expect(page.locator("#facts .lede")).toHaveCount(0);
+  await expect(lede).toHaveText(CANONICAL_LINE);
+  // Visible, not hidden text: a lede that is display:none is a cloaking pattern, not content.
+  await expect(lede).toBeVisible();
+  // Small, muted text (once the page's styles are in: the pre-hydration read may beat them).
+  if (styled)
+    await expect
+      .poll(() => lede.evaluate((el) => parseFloat(getComputedStyle(el).fontSize)), { message: "small text" })
+      .toBeLessThan(13);
+}
 
 /**
  * The cold-start contract: an untouched visit shows the default example's drawing before any
@@ -72,23 +105,53 @@ test.describe("boot", { tag: "@prod" }, () => {
     await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
   });
 
-  test("serves one H1 and the lede before any JavaScript runs", async ({ page }) => {
+  test("serves one H1 in the header and the lede in the facts line before any JavaScript runs", async ({ page }) => {
     // `waitUntil: "commit"` returns as soon as the response's first bytes are committed —
     // before the module script has loaded, let alone executed. Anything asserted here is
     // therefore in the SERVED HTML, which is all a search or answer crawler ever sees
     // (no AI crawler executes JavaScript). Asserting it after hydration would prove
-    // nothing: the app could be painting the band itself and every crawler would still
+    // nothing: the app could be painting the prose itself and every crawler would still
     // read an empty body.
     await page.goto("/", { waitUntil: "commit" });
-    const h1 = page.locator("h1");
-    await expect(h1).toHaveCount(1);
-    await expect(h1).toContainText("Playground");
-    const lede = page.locator(".intro .lede").first();
-    await expect(lede).toHaveCount(1);
-    await expect(lede).toContainText("compiles in your browser");
-    // Visible, not hidden text: the band is a real part of the page, and an SEO band that
-    // is display:none is a cloaking pattern rather than content.
-    await expect(lede).toBeVisible();
+    await expectHeadingAndLede(page, false);
+  });
+
+  test("the H1 and the lede are the same after the app is up, and the intro band is gone", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await expectHeadingAndLede(page);
+    // The lede sits at the right of the facts line, beside the facts, on one row at this width.
+    const [facts, lede] = await Promise.all([
+      page.locator("#facts").boundingBox(),
+      page.locator(".facts-row .lede").boundingBox(),
+    ]);
+    if (!facts || !lede) throw new Error("missing a box");
+    expect(lede.x, "the lede is right of the facts").toBeGreaterThanOrEqual(facts.x + facts.width);
+    expect(Math.abs(lede.y + lede.height / 2 - (facts.y + facts.height / 2)), "on the facts' row").toBeLessThan(8);
+  });
+  test("the facts and the lede are the stage's foot under the 3D preview too, not the drawing's alone", async ({
+    page,
+  }) => {
+    await page.goto("/#3d");
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+    await expect(page.locator(".pz-viewport")).toBeHidden();
+    await expectHeadingAndLede(page);
+    await expect(page.locator("#facts")).toBeVisible();
+    // Under the 3D view, outside both views: the switch flips the view above it, not the foot.
+    const [stage, foot] = await Promise.all([
+      page.locator("#preview3d").boundingBox(),
+      page.locator("#factsRow").boundingBox(),
+    ]);
+    if (!stage || !foot) throw new Error("missing a box");
+    expect(foot.y, "the foot is under the 3D view").toBeGreaterThanOrEqual(stage.y + stage.height - 1);
+    await expect(page.locator("#preview3d #factsRow, #preview #factsRow")).toHaveCount(0);
+    // Edit mode's Facts tab says the facts itself: the foot steps aside there, and comes back on Plan.
+    await enterEdit(page);
+    await page.locator("#tab-facts").click();
+    await expect(page.locator("#factsRow")).toBeHidden();
+    await page.locator("#tab-preview").click();
+    await expect(page.locator(".facts-row .lede")).toBeVisible();
   });
 
   test("populates the plan gallery and the lint-profile selector", async ({ page }) => {
@@ -114,7 +177,9 @@ test.describe("boot", { tag: "@prod" }, () => {
 test.describe("boot without JavaScript", { tag: "@prod" }, () => {
   test.use({ javaScriptEnabled: false });
 
-  test("the page still shows the default drawing, the H1 and the lede", async ({ page }) => {
+  test("the page still shows the default drawing, the H1 in the header and the lede in the facts line", async ({
+    page,
+  }) => {
     // The drawing is written into index.html at build time (scripts/gen-static.mjs), so a
     // crawler, a reader with JavaScript off and the first paint all get it.
     await page.goto("/");
@@ -143,8 +208,7 @@ test.describe("boot without JavaScript", { tag: "@prod" }, () => {
     expect((stage!.width * stage!.height) / (view.width * view.height), "the stage's share").toBeGreaterThanOrEqual(
       0.7,
     );
-    await expect(page.locator("h1")).toHaveCount(1);
-    await expect(page.locator(".intro .lede").first()).toContainText("compiles in your browser");
+    await expectHeadingAndLede(page);
     // The gallery's trigger names the plan on screen, also with no script.
     await expect(page.locator("#planName")).toHaveText("Laneway House");
     await expect(page.locator('#gallery .gal-card[aria-current="true"]')).toHaveAttribute(

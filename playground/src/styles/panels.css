@@ -165,18 +165,11 @@
   background: color-mix(in srgb, var(--redline) 12%, transparent);
   color: var(--redline-ink);
 }
-.pz-toolbar button[data-pz="copysvg"],
-.pz-toolbar button[data-pz="copypng"],
 .pz-toolbar button[data-pz="out"],
 .pz-toolbar button[data-pz="in"],
 .pz-toolbar button[data-pz="fit"],
 .pz-toolbar button[data-pz="full"] {
   font-family: var(--font-mono);
-}
-.pz-toolbar button[data-pz="copysvg"],
-.pz-toolbar button[data-pz="copypng"] {
-  font-size: 10.5px;
-  font-weight: 500;
 }
 /* The drawing's two layers, Checks (the review rings) and Paths: caps micro-labels, the pressed
    one in the toolbar's active dress. */
@@ -247,18 +240,44 @@
   color: var(--redline-ink);
 }
 
+/* The stage's foot (ruling PG-D6), under the drawing and the 3D preview alike: the facts line on
+   the left (facts-strip.ts), the page's lede on the right, one row. The lede is served bytes and
+   stays VISIBLE: never display:none, never off screen. Too narrow for both, it wraps under the
+   facts, whole. Hidden only under edit mode's Facts and Checks tabs (main.ts). */
+.facts-row {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  column-gap: 12px;
+  padding: 0 4px;
+  border-top: 1px solid var(--hairline);
+  background: var(--paper-panel);
+  min-height: 34px;
+}
+.facts-row[hidden] {
+  display: none;
+}
+.facts-row > .lede {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0 0 0 auto;
+  padding: 6px 10px;
+  font-family: var(--font-body);
+  font-size: 11.5px;
+  line-height: 1.4;
+  color: var(--ink-muted);
+  text-align: right;
+}
 /* facts line — always-visible plan totals under the preview (facts-strip.ts). */
 .facts {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
   gap: 0;
-  padding: 0 4px;
-  border-top: 1px solid var(--hairline);
-  background: var(--paper-panel);
   font-size: 12px;
   color: var(--ink-muted);
-  min-height: 34px;
 }
 .facts:empty {
   display: none;
@@ -1515,7 +1534,7 @@
   opacity: 0.6;
   cursor: progress;
 }
-/* Visually hidden, still read: the keyboard hint (the canvas's description) and the GLB note. */
+/* Visually hidden, still read: the keyboard hint (the canvas's description). */
 .p3d-sr,
 .p3d-views .archlang-views-hint {
   position: absolute;
@@ -1530,7 +1549,7 @@
   border: 0;
 }
 
-/* Top-right: ⟲ Reset, View ▾ (its popover under it), the storeys, GLB ↓. */
+/* Top-right: ⟲ Reset, View ▾ (its popover under it), the storeys. */
 .p3d-top {
   top: 10px;
   right: 10px;
@@ -1577,30 +1596,6 @@
   font-size: 12px;
   color: var(--ink-muted);
 }
-.p3d-glb {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-}
-.p3d-glb-code {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-.p3d-glb-status {
-  max-width: 260px;
-  padding: 4px 8px;
-  border-radius: 3px;
-  background: var(--paper-panel);
-  font-size: 12px;
-  color: var(--ink);
-}
-.p3d-glb-status:empty {
-  display: none;
-}
-
 /* Bottom-left: ▶ Replay, then the caption's lead and its ⓘ; the card opens above them. */
 .p3d-foot {
   left: 10px;
@@ -1657,11 +1652,6 @@
 }
 .p3d-info:focus {
   outline: none;
-}
-.p3d-glb-note {
-  margin: 0;
-  font-size: 11.5px;
-  color: var(--ink-muted);
 }
 .p3d-info[hidden] {
   display: none;
@@ -2048,13 +2038,14 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
     top: 8px;
     right: 8px;
     /* Clear of the Plan | 3D switch in the other top corner: a narrow stage wraps the toolbar to
-       a second row rather than run it under the switch. */
+       a second row rather than run it under the switch. With the copy buttons gone to Share (card
+       PG4) the six controls fit one row at 390 px: 34 px wide, 40 px tall, beside a 113 px switch. */
     flex-wrap: wrap;
     justify-content: flex-end;
-    max-width: calc(100% - 140px);
+    max-width: calc(100% - 124px);
   }
   .pz-toolbar button {
-    min-width: 36px;
+    min-width: 34px;
     height: 40px;
   }
   .diag-head {

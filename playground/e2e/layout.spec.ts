@@ -9,7 +9,7 @@ import { embedHash, gotoEdit, shareHash, waitForPlan } from "./fixtures.js";
  * scrolling column, and with `overflow: hidden` a row's automatic minimum height is 0 —
  * so a long diagnostic (hillside-villa's W_DRAWING_OVERFLOW) was squeezed to the drawer's
  * height and clipped, leaving the drawer nothing to scroll. The phone layout is the
- * other: three panes, a wrapping header and the intro stacked into 812px left each a
+ * other: three panes and a wrapping header (then, an intro band too) stacked into 812px left each a
  * sliver, so below 900px the workspace shows one of Code / Plan / Problems at a time.
  */
 
@@ -61,27 +61,29 @@ async function expectLastLineReachable(errors: Locator): Promise<void> {
 }
 
 /**
- * The intro band is one line under the header: the H1 and the lede side by side, the band no
- * taller than one line of each. (It replaced a disclosure that folded a three-line band away.)
+ * The page's heading is the header's brand, one row with the header's controls, and nothing sits
+ * between the header and the workspace (ruling PG-D6: the intro band is gone).
  */
-async function expectOneLineIntro(page: Page): Promise<void> {
-  const { h1, lede, band } = await page.evaluate(() => {
+async function expectOneRowHeaderNoBand(page: Page): Promise<void> {
+  const { h1, header, main } = await page.evaluate(() => {
     const r = (s: string) => document.querySelector(s)!.getBoundingClientRect();
-    return { h1: r(".intro h1"), lede: r(".intro .lede"), band: r(".intro") };
+    return { h1: r("header > h1"), header: r("header"), main: r("main") };
   });
-  expect(lede.left, "the lede sits beside the H1").toBeGreaterThan(h1.right);
-  expect(Math.abs(lede.bottom - h1.bottom), "on the H1's line").toBeLessThan(8);
-  expect(band.height, "one line tall").toBeLessThanOrEqual(40);
-  await expect(page.locator(".intro details")).toHaveCount(0);
+  expect(h1.top, "the H1 is in the header").toBeGreaterThanOrEqual(header.top);
+  expect(h1.bottom).toBeLessThanOrEqual(header.bottom);
+  expect(header.height, "one row tall").toBeLessThanOrEqual(48);
+  await expect(page.locator(".intro")).toHaveCount(0);
+  // In edit mode the workspace starts right under the header.
+  expect(Math.abs(main.top - header.bottom), "no band between the header and the workspace").toBeLessThanOrEqual(1);
 }
 
 test.describe("diagnostics drawer (desktop)", () => {
   test.use({ viewport: { width: 1440, height: 900 } });
 
   // The drawer is the editor pane's, so these open in edit mode.
-  test("scrolls within its box under the one-line intro, and its last line can be reached", async ({ page }) => {
+  test("scrolls within its box under the one-row header, and its last line can be reached", async ({ page }) => {
     await gotoEdit(page, await shareHash(HILLSIDE));
-    await expectOneLineIntro(page);
+    await expectOneRowHeaderNoBand(page);
     const errors = page.locator("#errors");
     await expect(errors.locator(".diagrow code").first()).toHaveText("W_DRAWING_OVERFLOW");
     await expectNoClippedRow(page);
@@ -108,7 +110,7 @@ test.describe("diagnostics drawer (desktop)", () => {
     const rooms = Array.from({ length: 8 }, (_, i) => `  room id=r${i} at (0,0) size 3000x3000 label "R${i}"\n`);
     const many = `plan "E2E" {\n  units mm\n  wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n${rooms.join("")}}`;
     await gotoEdit(page, await shareHash(many));
-    await expectOneLineIntro(page);
+    await expectOneRowHeaderNoBand(page);
     const errors = page.locator("#errors");
     await expect(errors.locator(".diagrow").first()).toBeVisible();
     await expect(errors.locator(".diagrow")).toHaveCount(28);
@@ -275,5 +277,59 @@ test.describe("phone layout", () => {
       );
       if (params.length) await expect(page.locator("#embedSrc")).toBeInViewport();
     }
+  });
+});
+
+/**
+ * Card PG4 on a phone (390×844): the header never scrolls sideways (the brand shrinks to the mark
+ * and its stamp, the h1 keeping its whole text), its four controls share one row, and the stage
+ * toolbar, with no copy buttons on it any more, is one row too. Share opens inside the screen.
+ */
+test.describe("phone header and stage toolbar (card PG4)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+  /** The boxes' tops: one row when every box starts above the first one's bottom edge. */
+  const oneRow = (boxes: { top: number; bottom: number }[]) => boxes.every((b) => b.top < boxes[0]!.bottom - 1);
+
+  test("the header does not scroll sideways, and its controls and the stage toolbar are one row each", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    const m = await page.evaluate(() => {
+      const box = (el: Element) => {
+        const r = el.getBoundingClientRect();
+        return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+      };
+      const header = document.querySelector("header")!;
+      const controls = ["#sourceToggle", "#share", "#more", "#makeOwn"].map((s) => box(document.querySelector(s)!));
+      const tools = [...document.querySelectorAll(".pz-toolbar > *")]
+        .filter((e) => e.getClientRects().length > 0)
+        .map(box);
+      return {
+        page: document.documentElement.scrollWidth - window.innerWidth,
+        header: header.scrollWidth - header.clientWidth,
+        controls,
+        tools,
+        h1: box(document.querySelector("header > h1")!),
+      };
+    });
+    expect(m.page, "no sideways scroll at 390px").toBeLessThanOrEqual(0);
+    expect(m.header, "the header does not overflow").toBeLessThanOrEqual(0);
+    expect(oneRow(m.controls), "Source, Share, ⋯ and Make your own on one row").toBe(true);
+    for (const c of m.controls) expect(c.right, "inside the screen").toBeLessThanOrEqual(390);
+    expect(m.tools.length, "− + ⤢ ⛶ | Checks Paths").toBe(7);
+    expect(oneRow(m.tools), "the stage toolbar is one row").toBe(true);
+    expect(m.h1.right).toBeLessThanOrEqual(390);
+    // The h1 keeps its whole text; only its drawing shrinks.
+    await expect(page.locator("h1")).toHaveAccessibleName("ArchLang Playground");
+    await expect(page.locator("h1 .badge")).toBeVisible();
+
+    // Share opens inside the screen, its panel no wider than it.
+    await page.locator("#share > summary").tap();
+    const panel = (await page.locator("#share .tools-panel").boundingBox())!;
+    expect(panel.x).toBeGreaterThanOrEqual(0);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(390);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   });
 });

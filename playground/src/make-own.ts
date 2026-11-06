@@ -11,6 +11,11 @@
  * clicked, next to the note that says so; any failure falls back to the full `#z=` link, which
  * no browser sends to a server. The chat links say, next to them, that they put the plan in
  * that site's address.
+ *
+ * "Continue this plan with your AI" (ruling PG-D5) is the page's one home for handing the plan to an
+ * AI: Open in Claude, Open in ChatGPT and Copy for LLM (`#copyLlm`), which the More menu no longer
+ * repeats. The links are wired by actions.ts (shell.ts hands them over): a prefilled share link,
+ * the copy fallback for a plan too long for a URL, the bare host after an edit.
  */
 import { agentPrompt, canonicalLine, doors, links, order } from "../../site-shared/doors.json";
 import { escapeHtml } from "./escape.js";
@@ -27,10 +32,13 @@ export const TOP_ASKS = [
 ] as const;
 
 /**
- * What the chat links do with the plan, true either way: a plan that fits goes into the host's
- * address (its share link inside the prefilled prompt); a longer one is copied for pasting instead.
+ * What the chat links do with the plan, said where they sit (the sheet has no link buttons of its
+ * own, so the note names Share's): a plan that fits goes into the host's address (its share link
+ * inside the prefilled prompt), so the host's servers receive it; a longer one is copied instead;
+ * only Copy full link keeps the plan off every server, and Copy short link stores it on ours.
  */
-export const CHAT_NOTE = "Opening a chat puts this plan in that site's address (or copies it, if the plan is long).";
+export const CHAT_NOTE =
+  "These links put this plan in the chat host's URL, so the host's servers receive it, and the host may send it as your first message. A plan too long for a URL is copied instead, for you to paste. To keep the plan off every server, use Copy full link in Share; Copy short link stores it on archlang.uk's server.";
 
 /** The agent prompt as one copyable text, line for line as doors.json has it. */
 export const AGENT_PROMPT = agentPrompt.join("\n");
@@ -153,23 +161,20 @@ function doorHtml(key: string): string {
   }
 }
 
-/** The sheet's body, under its heading: the doors, Ask AI, the two top asks, a status line. */
+/** The sheet's body, under its heading: the doors, Continue with your AI, the two top asks, a status line. */
 export function sheetHtml(): string {
   const chat = (Object.keys(CHAT_HOSTS) as (keyof typeof CHAT_HOSTS)[])
     .map((h) =>
-      ext(
-        CHAT_HOSTS[h].base,
-        `Open in ${CHAT_HOSTS[h].name} ↗`,
-        ` data-chat-host="${h}" aria-describedby="moChatNote"`,
-      ),
+      ext(CHAT_HOSTS[h].base, `Open in ${CHAT_HOSTS[h].name} ↗`, ` data-chat-host="${h}" aria-describedby="chatNote"`),
     )
     .join(" ");
   return (
     `<p class="mo-lede">${escapeHtml(canonicalLine)}</p>` +
     `<ul class="mo-doors">${playgroundDoors().map(doorHtml).join("")}</ul>` +
-    `<div class="mo-ask"><h3>Ask AI about this plan</h3><p class="mo-links">${chat} ` +
-    `<button type="button" class="mo-go" data-mo-copy-llm>Copy this plan as a prompt</button></p>` +
-    `<p class="mo-note" id="moChatNote">${escapeHtml(CHAT_NOTE)}</p></div>` +
+    `<section class="mo-ask" aria-labelledby="moAskHead"><h3 id="moAskHead">Continue this plan with your AI</h3>` +
+    `<p class="mo-links">${chat} ` +
+    `<button type="button" class="mo-go" id="copyLlm" title="Copy a paste-ready prompt (source + facts + diagnostics) for an AI assistant">Copy for LLM</button></p>` +
+    `<p class="mo-note" id="chatNote">${escapeHtml(CHAT_NOTE)}</p></section>` +
     `<p class="mo-top">${TOP_ASKS.map((a) => ext(a.href, a.label)).join(" ")}</p>` +
     `<p class="mo-status" id="moStatus" role="status" aria-live="polite"></p>`
   );

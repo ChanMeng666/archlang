@@ -85,13 +85,35 @@ function identityJsonLd() {
   };
 }
 
+/**
+ * Fill index.html's lede (ruling PG-D6: the sentence at the right of the stage's foot) with the
+ * canonical line from site-shared/doors.json (PS-D1), the one copy every public surface reads, so
+ * the page never retypes it. HTML-escaped; a missing slot fails the build.
+ */
+function canonicalLine() {
+  const { canonicalLine: line } = JSON.parse(readFileSync(resolve(__dirname, "../site-shared/doors.json"), "utf8"));
+  const slot = "<!--doors:canonical-line-->";
+  const text = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return {
+    name: "archlang-canonical-line",
+    transformIndexHtml: {
+      order: "pre",
+      handler(html, ctx) {
+        if (!ctx.filename.replace(/\\/g, "/").endsWith("/index.html")) return html;
+        if (!html.includes(slot)) throw new Error(`vite.config.js: index.html no longer holds ${slot}`);
+        return html.split(slot).join(text);
+      },
+    },
+  };
+}
+
 // The playground consumes the *built* core (run `npm run build` in the repo
 // root first). Aliasing to dist/ keeps the published core import path honest
 // and avoids re-resolving the source's `.js` ESM specifiers.
 export default defineConfig({
   root: __dirname,
   base: "./",
-  plugins: [identityJsonLd(), preloadCompiler()],
+  plugins: [identityJsonLd(), canonicalLine(), preloadCompiler()],
   resolve: {
     alias: {
       // The review sheet (`arch preview --review`), for the Checks overlay: its own built file,

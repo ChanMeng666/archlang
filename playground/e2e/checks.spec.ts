@@ -1,9 +1,17 @@
-import type { Download, Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import * as core from "../../dist/index.js";
 import type { buildReviewSheet as BuildReviewSheet } from "../../src/cli/review.js";
 import { CHECKS_SAMPLE, SAMPLE_GROUP, sampleSource } from "../src/samples.js";
-import { expectPlanNamed, gotoEdit, openTools, shareHash, waitForPlan, watchStatus } from "./fixtures.js";
+import {
+  downloadFromShare,
+  expectPlanNamed,
+  gotoEdit,
+  openShare,
+  shareHash,
+  waitForPlan,
+  watchStatus,
+} from "./fixtures.js";
 
 /**
  * Checks (card P6): the drawing toolbar's layer toggle (PG-D3) draws the review rings `arch preview
@@ -60,18 +68,14 @@ const canonical = (page: Page, markup: string) =>
   );
 
 async function download(page: Page, format: string): Promise<Buffer> {
-  await openTools(page);
-  await page.locator("#format").selectOption(format);
-  const [d]: [Download, unknown] = await Promise.all([
-    page.waitForEvent("download"),
-    page.locator("#download").click(),
-  ]);
+  const d = await downloadFromShare(page, format);
   return (await import("node:fs/promises")).readFile((await d.path())!);
 }
 
 async function copySvg(page: Page): Promise<string> {
   const status = await watchStatus(page);
-  await page.locator("button[data-pz='copysvg']").click();
+  await openShare(page);
+  await page.locator("#copySvg").click();
   await status.expectFlash("SVG copied");
   return page.evaluate(() => navigator.clipboard.readText());
 }

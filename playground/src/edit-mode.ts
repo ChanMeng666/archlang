@@ -1,7 +1,7 @@
 /**
  * Edit mode: the CodeMirror editor and the panels that read the source — diagnostics, Describe,
  * Lint (with Repair and Suggest), Intent. Loaded on the first entry into edit mode (the Source
- * button, `&edit` in the hash, or a Tools item that edits), so a visit that only looks at a plan
+ * button, `&edit` in the hash, or a More (⋯) item that edits), so a visit that only looks at a plan
  * never downloads CodeMirror and never runs `lint()`. main.ts keeps the drawing, the facts and
  * the storey switcher, and calls the two hooks below from its render.
  *

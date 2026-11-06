@@ -4,8 +4,11 @@ import { srcFromHash } from "../src/share.js";
 import {
   AUTOSAVE_KEY,
   chooseLink,
+  downloadFromShare,
   gotoEdit,
-  openTools,
+  openMakeOwn,
+  openMore,
+  openShare,
   pickPlan,
   setEditorSource,
   shareHash,
@@ -15,9 +18,10 @@ import {
 } from "./fixtures.js";
 
 /*
- * The header actions live in the Tools menu: each case opens it (`openTools`) before an action,
- * and a case that edits the source opens the page in edit mode (`gotoEdit`). The assertions are
- * the ones the actions had in the header.
+ * The header actions live in two menus (ruling PG-D5): Format, Finish, Saved and the render theme in
+ * More (⋯, `openMore`); the links, Embed and every export in Share (`openShare`). Open in Claude /
+ * ChatGPT and Copy for LLM live in the Make-your-own sheet alone (`openMakeOwn`). Each case opens the
+ * menu before an action, and a case that edits the source opens the page in edit mode (`gotoEdit`).
  */
 
 /** Sloppy but valid — `format()` must rewrite it, which is what makes the test honest. */
@@ -43,13 +47,8 @@ async function chatLinkReady(page: Page, name: string): Promise<void> {
   await expect(page.getByRole("link", { name })).toHaveAttribute("data-ready", "true");
 }
 
-/** Click `#download` for `format` and return the resulting browser download. */
-async function downloadAs(page: Page, format: string): Promise<Download> {
-  await openTools(page);
-  await page.locator("#format").selectOption(format);
-  const [download] = await Promise.all([page.waitForEvent("download"), page.locator("#download").click()]);
-  return download;
-}
+/** Download `format` from Share → Export and return the resulting browser download. */
+const downloadAs = (page: Page, format: string): Promise<Download> => downloadFromShare(page, format);
 
 /** The downloaded bytes. */
 async function payload(download: Download): Promise<Buffer> {
@@ -66,7 +65,7 @@ test.describe("header actions", () => {
     // live without racing it. See `watchStatus`.
     const status = await watchStatus(page);
 
-    await openTools(page);
+    await openMore(page);
     await page.locator("#formatSrc").click();
     await status.expectFlash("Formatted");
     // Canonical style is two-space body indentation under `plan { … }`.
@@ -83,7 +82,7 @@ test.describe("header actions", () => {
       .not.toContain("      door");
 
     // Idempotent: a second press has nothing to do and says so.
-    await openTools(page);
+    await openMore(page);
     await page.locator("#formatSrc").click();
     await status.expectFlash("Already formatted");
   });
@@ -95,7 +94,7 @@ test.describe("header actions", () => {
 
     // The same transform as `arch finish`: for this plan, paper/scale/dims/schedule/
     // legend and a title block, nothing left unresolved.
-    await openTools(page);
+    await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
     const editor = page.locator(".cm-content");
@@ -115,7 +114,7 @@ test.describe("header actions", () => {
 
     // Idempotent: a finished sheet has nothing left to add — and a second press
     // leaves the log of what the first one did in place.
-    await openTools(page);
+    await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Nothing to finish");
     await expect(panel).toContainText("Finish — 6 changes");
@@ -137,7 +136,7 @@ test.describe("header actions", () => {
 
     // "Main" names no use, so it gets no piece, and its note carries `scope` (issue #370): no
     // "unresolved" in the flash, and the Checks tab stays closed.
-    await openTools(page);
+    await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
     await expect(page.locator("#tab-checks")).toHaveAttribute("aria-selected", "false");
@@ -157,7 +156,7 @@ test.describe("header actions", () => {
     const finished = (await page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY)) as string;
     await setEditorSource(page, `${finished}\n`);
     await expect(panel).toBeHidden();
-    await openTools(page);
+    await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Nothing to finish");
     await expect(panel).toContainText("Nothing to finish");
@@ -165,14 +164,14 @@ test.describe("header actions", () => {
   });
 
   test("Finish from view mode opens the editor first, so one Ctrl+Z restores the shared plan", async ({ page }) => {
-    // A visitor on a shared link (view mode, no editor yet) presses Tools → Finish. The click
+    // A visitor on a shared link (view mode, no editor yet) presses ⋯ → Finish. The click
     // waits for the editor, then runs through it: Finish is an undo step, and undoing it puts
     // the shared plan back in the editor, the autosave and the hash.
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
     const status = await watchStatus(page);
-    await openTools(page);
+    await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
     await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
@@ -238,7 +237,7 @@ test.describe("header actions", () => {
     await expect(page.locator(".cm-content")).toContainText("paper A2 landscape");
     const status = await watchStatus(page);
 
-    await openTools(page);
+    await openMore(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finish added nothing: 1 unresolved (see Checks)");
     await expect(page.locator("#tab-checks")).toHaveAttribute("aria-selected", "true");
@@ -263,8 +262,8 @@ test.describe("header actions", () => {
     await setEditorSource(page, SIMPLE_PLAN);
 
     const note = page.locator("#chatNote");
-    // The Tools menu holding the links closes on Escape, like the Saved popover.
-    await openTools(page);
+    // The links live in the Make-your-own sheet alone (ruling PG-D5); it closes on Escape.
+    await openMakeOwn(page);
     await expect(note).toBeVisible();
     await page.keyboard.press("Escape");
     await expect(note).toBeHidden();
@@ -273,11 +272,12 @@ test.describe("header actions", () => {
       ["Open in Claude ↗", "https://claude.ai/new"],
       ["Open in ChatGPT ↗", "https://chatgpt.com/"],
     ] as const) {
-      await openTools(page);
-      // The panel says, next to the links, that they put the plan in the host's URL.
+      await openMakeOwn(page);
+      // The sheet says, next to the links, that they put the plan in the host's URL.
       await expect(note).toContainText("in the chat host's URL");
-      await expect(note).toContainText("never sends");
-      const link = page.getByRole("link", { name });
+      await expect(note).toContainText("To keep the plan off every server, use Copy full link in Share");
+      await expect(note).toContainText("Copy short link stores it on archlang.uk's server");
+      const link = page.locator("#makeOwnDialog").getByRole("link", { name });
       await expect(link).toHaveAccessibleDescription(/in the chat host's URL/);
       await chatLinkReady(page, name);
       const [popup] = await Promise.all([context.waitForEvent("page"), link.click()]);
@@ -292,17 +292,24 @@ test.describe("header actions", () => {
       expect(await planInPrompt(q)).toBe(SIMPLE_PLAN);
       expect(q).toContain("zlib.decompress(");
       await popup.close();
-      await expect(note).toBeHidden(); // choosing a link closes the menu
+      // The sheet stays open beside the chat it opened; Escape closes it.
+      await expect(note).toBeVisible();
+      await page.keyboard.press("Escape");
+      await expect(note).toBeHidden();
     }
+    // One home: no chat link anywhere outside the sheet.
+    await expect(page.locator("a[data-chat-host]:not(#makeOwnDialog *)")).toHaveCount(0);
   });
 
   test("a chat link drops to the bare host on an edit and comes back on its undo", async ({ page }) => {
     await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
-    await openTools(page);
+    await openMakeOwn(page);
     await chatLinkReady(page, "Open in Claude ↗");
-    // Read the link by its attribute: the menu closes once the editor is clicked.
+    // Read the link by its attribute: the sheet is closed to reach the editor.
     const link = page.locator('a[data-chat-host="claude"]');
+    await page.keyboard.press("Escape");
+    await expect(page.locator("#makeOwnDialog")).toBeHidden();
     const planInHref = async () =>
       planInPrompt(new URL((await link.getAttribute("href")) ?? "about:blank").searchParams.get("q") ?? "");
     expect(await planInHref()).toBe(SIMPLE_PLAN);
@@ -339,7 +346,7 @@ test.describe("header actions", () => {
       /\r\n?/g,
       "\n",
     );
-    await openTools(page);
+    await openMakeOwn(page);
     await chatLinkReady(page, "Open in Claude ↗");
     const [popup] = await Promise.all([
       context.waitForEvent("page"),
@@ -365,7 +372,7 @@ test.describe("header actions", () => {
     await setEditorSource(page, long);
     const status = await watchStatus(page);
 
-    await openTools(page);
+    await openMakeOwn(page);
     // Encoded and current, so the copy is for length, not a click that beat the encoding.
     await chatLinkReady(page, "Open in ChatGPT ↗");
     const [popup] = await Promise.all([
@@ -387,7 +394,7 @@ test.describe("header actions", () => {
       await page.setViewportSize({ width, height: 800 });
       await page.goto("/");
       await waitForPlan(page);
-      // EVERY visible header item counts — the "⋯" menu is the last flex item and so the
+      // EVERY visible header item counts — Make your own is the last flex item and so the
       // first to wrap. Items are vertically centred or stretched, so "one row" means each
       // item starts above the first cell's bottom edge, not that all tops are equal.
       const { scroll, client, wrapped } = await page.evaluate(() => {
@@ -405,7 +412,7 @@ test.describe("header actions", () => {
       expect(scroll, `header overflows at ${width}px`).toBeLessThanOrEqual(client);
       expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
       // Below 1280 the cells may wrap (better than a sideways scroll); from 1280 up the
-      // title block is one row, as it was before Finish and Ask AI joined it.
+      // header is one row (ruling PG-D6): the h1 brand, the gallery, Source, Share, ⋯, Make your own.
       if (width >= 1280) expect(wrapped, `header items on a second row at ${width}px`).toEqual([]);
     }
   });
@@ -433,9 +440,16 @@ test.describe("header actions", () => {
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
 
-    await openTools(page);
-    await page.locator("#copyLlm").click();
+    // In the Make-your-own sheet's "Continue this plan with your AI" (ruling PG-D5): choosing it
+    // closes the sheet, copies, and says so.
+    await openMakeOwn(page);
+    const section = page.locator("#makeOwnDialog .mo-ask");
+    await expect(section.getByRole("heading", { name: "Continue this plan with your AI" })).toBeVisible();
+    await section.locator("#copyLlm").click();
+    await expect(page.locator("#makeOwnDialog")).toBeHidden();
     await status.expectFlash("LLM prompt copied");
+    // One home: More (⋯) and Share hold no Copy for LLM and no chat link.
+    await expect(page.locator(":is(#more, #share) :is(#copyLlm, a[data-chat-host])")).toHaveCount(0);
 
     const prompt = await page.evaluate(() => navigator.clipboard.readText());
     expect(prompt).toContain("This is an ArchLang floor plan");
@@ -450,7 +464,7 @@ test.describe("header actions", () => {
   test("Embed builds a copyable iframe snippet pointing at embed.html", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    await openTools(page);
+    await openShare(page);
     await page.locator("#embed").click();
 
     const dialog = page.locator(".embed-dialog");
@@ -471,7 +485,7 @@ test.describe("header actions", () => {
     await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
-    await openTools(page);
+    await openShare(page);
     await page.locator("#embed").click();
 
     const dialog = page.locator(".embed-dialog");
@@ -494,7 +508,7 @@ test.describe("header actions", () => {
     await gotoEdit(page);
     await pickPlan(page, "Studio (1BR)");
     await expect(page.locator(".cm-content")).toContainText('plan "');
-    await openTools(page);
+    await openShare(page);
     await page.locator("#embed").click();
     const md = page.locator(".embed-dialog").getByLabel(/this example's drawing/);
     await expect(md).toHaveValue(
@@ -505,7 +519,7 @@ test.describe("header actions", () => {
     // A multi-storey example names the storey on screen, as the docs gallery does.
     await pickPlan(page, "Hillside Villa");
     await expect(page.locator(".cm-content")).toContainText("paper A1 landscape");
-    await openTools(page);
+    await openShare(page);
     await page.locator("#embed").click();
     await expect(page.locator(".embed-dialog").getByLabel(/this example's drawing/)).toHaveValue(
       /\(https:\/\/archlang\.uk\/examples\/hillside-villa\.L1\.svg\)/,
@@ -514,7 +528,7 @@ test.describe("header actions", () => {
 
     // Switch to the upper storey: the snippet follows the drawing on screen.
     await page.locator('#storeys button[data-level="2"]').click();
-    await openTools(page);
+    await openShare(page);
     await page.locator("#embed").click();
     await expect(page.locator(".embed-dialog").getByLabel(/this example's drawing/)).toHaveValue(
       /\(https:\/\/archlang\.uk\/examples\/hillside-villa\.L2\.svg\)/,
@@ -522,9 +536,9 @@ test.describe("header actions", () => {
     await page.locator(".embed-close").click();
 
     // Under a View theme override the gallery drawing is not what is on screen: plain link.
-    await openTools(page);
+    await openMore(page);
     await page.locator("#theme").selectOption("blueprint");
-    await openTools(page);
+    await openShare(page);
     await page.locator("#embed").click();
     await expect(page.locator(".embed-dialog").getByLabel(/not a theme override/)).toHaveValue(
       /^\[ArchLang floor plan/,
@@ -602,13 +616,171 @@ test.describe("downloads", () => {
   });
 });
 
-test.describe("preview toolbar", () => {
+/** The GLB note, word for word (glb-note.ts): what the browser writes, and that it does not check it. */
+const GLB_NOTE =
+  "The whole plan as a GLB, written in your browser and not validated here. npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb writes the same file and checks it with the Khronos glTF validator.";
+
+/** A GLB's header and JSON chunk, read from its bytes; the glTF node names. */
+function glbNodes(bytes: Buffer): string[] {
+  expect(bytes.subarray(0, 4).toString("latin1")).toBe("glTF");
+  expect(bytes.readUInt32LE(4)).toBe(2);
+  expect(bytes.readUInt32LE(8)).toBe(bytes.length);
+  const jsonLength = bytes.readUInt32LE(12);
+  expect(bytes.subarray(16, 20).toString("latin1")).toBe("JSON");
+  const gltf = JSON.parse(bytes.subarray(20, 20 + jsonLength).toString("utf8")) as {
+    asset: { generator: string; version: string };
+    nodes: Array<{ name: string }>;
+  };
+  expect(gltf.asset.version).toBe("2.0");
+  // The package's own writer: its fixed generator.
+  expect(gltf.asset.generator).toMatch(/^archlang-3d \d+\.\d+\.\d+$/);
+  return gltf.nodes.map((n) => n.name);
+}
+
+test.describe("Share: one menu for the links, Embed and every export (ruling PG-D5)", () => {
+  test("holds exactly the links, Embed and Export, the GLB note beside GLB", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await openShare(page);
+    const share = page.locator("#share");
+    await expect(share.locator(".tools-h")).toHaveText(["Link", "Export"]);
+    // ADR 0034's note, word for word, describes both link buttons.
+    await expect(share.locator("#shareNote")).toHaveText(
+      "A short link stores this plan on archlang.uk's server; the full link does not.",
+    );
+    for (const id of ["#copyShortLink", "#copyLink"])
+      await expect(share.locator(id)).toHaveAttribute("aria-describedby", "shareNote");
+    expect(
+      await share
+        .locator(".tools-panel button")
+        .evaluateAll((bs) => bs.map((b) => b.getAttribute("aria-label") ?? b.textContent?.trim())),
+    ).toEqual([
+      "Copy short link",
+      "Copy full link",
+      "Embed",
+      "Copy SVG",
+      "Copy PNG",
+      "Download SVG",
+      "Download PNG",
+      "Download PDF",
+      "Download DXF",
+      "Download TXT",
+      "Download GLB",
+    ]);
+    // GLB's note is visible subtext, and the button's description.
+    const note = share.locator("#glbNote");
+    await expect(note).toBeVisible();
+    await expect(note).toHaveText(GLB_NOTE);
+    await expect(note.locator("code")).toHaveText("npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb");
+    const glb = share.getByRole("button", { name: "Download GLB" });
+    await expect(glb).toHaveAttribute("aria-describedby", "glbNote");
+    await expect(glb).toHaveAccessibleDescription(GLB_NOTE);
+    // Escape closes it; Share and More are never open together.
+    await page.keyboard.press("Escape");
+    await expect(share.locator(".tools-panel")).toBeHidden();
+    await openShare(page);
+    await openMore(page);
+    await expect(share.locator(".tools-panel")).toBeHidden();
+  });
+
+  test("GLB downloads the whole plan without the 3D view ever opened, and the writer loads on the click", async ({
+    page,
+  }) => {
+    const glbChunks: string[] = [];
+    const chunks3d: string[] = [];
+    page.on("request", (r) => {
+      if (/\/assets\/glb-export-[^/]+\.js$/.test(r.url())) glbChunks.push(r.url());
+      if (/\/assets\/preview3d-[^/]+\.js$/.test(r.url())) chunks3d.push(r.url());
+    });
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await expect(page.locator("#preview3d")).not.toHaveClass(/\bactive\b/);
+    expect(glbChunks, "the GLB writer is not fetched before the click").toEqual([]);
+    expect(chunks3d, "nor the 3D chunk").toEqual([]);
+    const download = await downloadFromShare(page, "glb");
+    expect(download.suggestedFilename()).toBe("floorplan.glb");
+    const names = glbNodes(await payload(download));
+    expect(names).toContain("level:L1");
+    expect(names.some((n) => n.startsWith("floor:"))).toBe(true);
+    expect(glbChunks.length, "the GLB writer loads on the first click").toBe(1);
+    expect(chunks3d, "GLB loads no three.js: the 3D view's chunk stays unloaded").toEqual([]);
+    // Still on the drawing: exporting the GLB does not switch the view.
+    await expect(page.locator("#preview")).toHaveClass(/\bactive\b/);
+    expect(await page.evaluate(() => location.hash)).not.toMatch(/&3d/);
+  });
+
+  test("GLB from Share with the 3D view open writes the same bytes as without it", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    const before = await payload(await downloadFromShare(page, "glb"));
+    await page.locator("#view3d").click();
+    await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+    await page.waitForFunction(() => (window as { __preview3d?: unknown }).__preview3d !== undefined);
+    // The 3D view's floating group has no GLB button any more: Share is its one home.
+    await expect(page.locator("#preview3d").getByRole("button", { name: /GLB/ })).toHaveCount(0);
+    await expect(page.locator("#preview3d").getByText(/GLB/)).toHaveCount(0);
+    const after = await payload(await downloadFromShare(page, "glb"));
+    expect(after.equals(before), "same plan, same GLB").toBe(true);
+    // And opened on `&3d` from the start.
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+    await page.waitForFunction(() => (window as { __preview3d?: unknown }).__preview3d !== undefined);
+    expect((await payload(await downloadFromShare(page, "glb"))).equals(before)).toBe(true);
+  });
+
+  test("GLB of a plan the 3D package refuses says why, and writes nothing", async ({ page }) => {
+    const noWalls = `plan "No walls" {\n  units mm\n  room id=r at (0,0) size 3000x3000 label "Yard"\n}`;
+    await page.goto(`/${await shareHash(noWalls)}`);
+    await waitForPlan(page);
+    let downloads = 0;
+    page.on("download", () => downloads++);
+    await openShare(page);
+    await page.locator('#share [data-download="glb"]').click();
+    await expect(page.locator("#status")).toHaveClass(/\berr\b/);
+    // In view mode the diagnostics drawer is out of sight: the reason is on the stage, visible.
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    const statusText = page.locator("#statusText");
+    await expect(statusText).toBeVisible();
+    await expect(statusText).toHaveText(/^GLB export failed: no 3D preview: The plan has no walls/);
+    await expect(page.locator("#errors")).toContainText("GLB export failed: no 3D preview: The plan has no walls");
+    expect(downloads).toBe(0);
+  });
+
+  test("GLB says it is under way, and a double activation writes one file", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    const status = await watchStatus(page);
+    let downloads = 0;
+    page.on("download", () => downloads++);
+    await openShare(page);
+    const glb = page.locator('#share [data-download="glb"]');
+    // Two activations in one task, before the first has loaded anything: the second is ignored.
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      glb.evaluate((b: HTMLElement) => {
+        b.click();
+        b.click();
+      }),
+    ]);
+    await status.expectFlash("Preparing GLB…");
+    expect(download.suggestedFilename()).toBe("floorplan.glb");
+    // Once done, the button takes the next activation again; nothing else was written meanwhile.
+    await expect(glb).not.toHaveAttribute("aria-busy", "true");
+    await page.waitForTimeout(500);
+    expect(downloads, "one download for a double activation").toBe(1);
+    await expect(page.locator("#statusText")).not.toHaveText("Preparing GLB…");
+  });
+});
+
+test.describe("Share → Export copies, and the stage toolbar", () => {
   test("Copy SVG puts the export-clean markup on the clipboard", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
     const status = await watchStatus(page);
-    await page.locator("button[data-pz='copysvg']").click();
+    await openShare(page);
+    await page.locator("#copySvg").click();
     await status.expectFlash("SVG copied");
+    await expect(page.locator("#share .tools-panel")).toBeHidden(); // choosing it closes Share
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(copied.startsWith("<svg")).toBe(true);
     expect(copied).not.toContain("data-span");
@@ -619,7 +791,8 @@ test.describe("preview toolbar", () => {
     await waitForPlan(page);
     const status = await watchStatus(page);
 
-    await page.locator("button[data-pz='copysvg']").click();
+    await openShare(page);
+    await page.locator("#copySvg").click();
     // Consume this copy's flash as well as asserting it: both presses paint the same
     // message, and without advancing the cursor the second assertion would be
     // satisfied by the first press — green whatever the second one did.
@@ -635,8 +808,44 @@ test.describe("preview toolbar", () => {
 
     // …but the export re-compiles WITHOUT it, so a downloaded/copied file never
     // carries a diagnostic aid. Byte-identical, not merely "similar".
-    await page.locator("button[data-pz='copysvg']").click();
+    await openShare(page);
+    await page.locator("#copySvg").click();
     await status.expectFlash("SVG copied");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(exportBefore);
+  });
+
+  test("Copy PNG puts a PNG image on the clipboard", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    const status = await watchStatus(page);
+    await openShare(page);
+    await page.locator("#copyPng").click();
+    await status.expectFlash("PNG copied");
+    const head = await page.evaluate(async () => {
+      const [item] = await navigator.clipboard.read();
+      const blob = await item!.getType("image/png");
+      return [...new Uint8Array(await blob.slice(0, 8).arrayBuffer())]
+        .map((b) => b.toString(16).padStart(2, "0"))
+        .join("");
+    });
+    expect(head).toBe("89504e470d0a1a0a"); // PNG magic
+  });
+
+  test("the stage toolbar holds no copy or download: zoom, fit, fullscreen, Checks and Paths only", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    const toolbar = page.locator(".pz-toolbar");
+    expect(await toolbar.locator("button").evaluateAll((bs) => bs.map((b) => b.textContent?.trim()))).toEqual([
+      "−",
+      "+",
+      "⤢",
+      "⛶",
+      "Checks",
+      "Paths",
+    ]);
+    await expect(toolbar.getByRole("button", { name: /SVG|PNG/ })).toHaveCount(0);
+    await expect(page.locator("[data-pz='copysvg'], [data-pz='copypng']")).toHaveCount(0);
   });
 });

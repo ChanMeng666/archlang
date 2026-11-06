@@ -49,11 +49,11 @@ test.describe("plan gallery", () => {
     await page.goto("/");
     await waitForPlan(page);
     await expect(page.locator("#examples, #strip, #stripList, .strip-item")).toHaveCount(0);
-    // No plan-choosing <select>: the header's only selects are Tools' render theme and format.
+    // No plan-choosing <select>: the header's only select is More's render theme.
     const pickers = await page.evaluate(() =>
       [...document.querySelectorAll("header select")].filter((s) => !s.closest(".tools-panel")).map((s) => s.id),
     );
-    expect(pickers, "a <select> in the header outside Tools").toEqual([]);
+    expect(pickers, "a <select> in the header outside its menus").toEqual([]);
     await expect(page.locator("header .gal-trigger")).toHaveCount(1);
     // The trigger: a grid glyph, the plan's name, a caret; it says what it controls.
     const trigger = galleryTrigger(page);
@@ -67,7 +67,7 @@ test.describe("plan gallery", () => {
     expect(Math.abs(facts.y - (stage.y + stage.height)), "facts line right under the stage").toBeLessThanOrEqual(2);
   });
 
-  test("lists every example in the table's groups and order, the default marked, and counts them in Tools", async ({
+  test("lists every example in the table's groups and order, the default marked, and counts them in More", async ({
     page,
   }) => {
     await page.goto("/");
@@ -100,9 +100,9 @@ test.describe("plan gallery", () => {
     ]);
     await expect(page.locator("h1")).toHaveCount(1);
     await page.keyboard.press("Escape");
-    // "All plans", and the Tools menu's count is the number of plans, not a typed figure.
+    // "All plans", and the More menu's count is the number of plans, not a typed figure.
     await expect(page.locator("#gallery a.gal-all")).toHaveAttribute("href", "/examples/");
-    await expect(page.locator('#tools a[href="/examples/"]')).toHaveText(`${ROWS.length} example plans`, {
+    await expect(page.locator('#more a[href="/examples/"]')).toHaveText(`${ROWS.length} example plans`, {
       useInnerText: false,
     });
   });

@@ -224,7 +224,7 @@ commands, VS Code, playground) with a per-surface order; `scripts/gen-doors.ts` 
 `editors/vscode/README.md` and `llms.txt`, and both sites import it.
 
 The playground (`playground/src`) has two paths. The view path loads at startup: `main.ts` +
-`shell.ts` (header, Tools menu, Plan | 3D switch, hash flags via `share.ts`), the stage, `gallery.ts`
+`shell.ts` (header, the Share and More menus, Plan | 3D switch, hash flags via `share.ts`), the stage, `gallery.ts`
 (the header's plan gallery, its cards also written into the served HTML by `scripts/gen-static.mjs`
 with the default drawing), `room-facts.ts`/`room-card.ts` (hover and card), `knobs.ts`/`knobs-panel.ts` (sliders over
 top-level numeric `let`s). Lazy chunks: `compiler.ts` (the core, preloaded), `edit-mode.ts`
