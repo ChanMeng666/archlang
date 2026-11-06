@@ -127,7 +127,7 @@
 | **PG2 · 一个视图开关** | PG-D3：浏览模式去掉 tab 栏和状态行；编辑模式四个 tab；Checks 变图层开关；删掉 Tools → Panels | `index.html`、`main.ts`、`edit-mode.ts`、`checks-panel.ts`、`describe-panel.ts`、`takeoff-panel.ts`、`lint-panel.ts`、`intent-panel.ts` | `panels.spec.ts`、`checks.spec.ts`、`takeoff.spec.ts`、`layout.spec.ts` |
 | **PG3 · 画廊** | PG-D2：弹出画廊替代下拉和缩略图条，爬虫链接一条不丢 | `index.html`、`scripts/gen-static.mjs`、`strip.ts`→`gallery.ts`、`examples.ts` | `strip.spec.ts`→`gallery.spec.ts`、`examples-static.spec.ts`、`front-door.spec.ts`、`test/playground-examples-rows.test.ts` |
 | **PG4 · 菜单与顶栏** | PG-D5 和 PG-D6：Share、⋯、Make your own 吸收 Ask AI；h1 入顶栏；lede 入底行 | `index.html`、`shell.ts`、`make-own.ts`、`share.ts`、`styles/chrome.css`、`scripts/smoke.mjs`、`docs/seo.md` | `boot.spec.ts`（`@prod` 的 h1/lede 用例）、`actions.spec.ts`、`make-own.spec.ts`、`short-link.spec.ts` |
-| **PG5 · 收尾** | Plan ↔ 3D 交叉淡入（reduced-motion 时不做）；手机端检查；README 的 Features 节重写 | `styles/*.css`、`mobile-views.ts`、`playground/README.md` | `layout.spec.ts` 的手机用例 |
+| **PG5 · 收尾** | Plan ↔ 3D 交叉淡入（reduced-motion 时不做）；手机端检查；README 的 Features 节重写。PG2 审查遗留：① 手机编辑模式下 Code / Plan / Problems 与四个 tab 并存，出现两个"Plan"、两条进 Checks 的路；② `#statusText` 在输出窗格里，手机 Code 视图下这个 live region 是 `display:none`，不会播报；③ 360 px 时楼层开关可能压住换行后的舞台工具条；④ 3D 里 L1/L2/L3 开关和包自带的"Storeys shown"剖切控件并排；⑤ `docs/whats-new.md:47`（"Takeoff tab"）和 `docs/analysis.md:300`（"Describe tab"）还用旧 tab 名；⑥ 启动失败后 `data-booting` 永不移除 | `styles/*.css`、`mobile-views.ts`、`playground/README.md` | `layout.spec.ts` 的手机用例 |
 
 PG1 最先做：它是所有者最在意的一点，也和其他卡最少重叠。PG2 和 PG3 都改 `index.html` 的舞台，
 要按顺序做，不并行。

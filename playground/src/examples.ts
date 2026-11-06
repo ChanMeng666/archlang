@@ -7,7 +7,7 @@
 // already whitelists the repo root, and `?raw` inlines the file contents at build
 // time. Edit examples/*.arch, not a duplicate.
 //
-// The presets are GROUPED — the toolbar renders one <optgroup> per group — because
+// The presets are GROUPED — the plan gallery shows one heading per group — because
 // there are now two dozen of them and a flat list of that length is a wall. Group
 // order is a learning progression (a plan you can read in one screen first, the
 // large public buildings last), and so is the order inside each group.
@@ -65,8 +65,9 @@ import materials from "../../examples/materials.arch?raw";
 // SENTENCE about what the plan is (40–160 characters, checked by that test), derived
 // from the example's own header comment — never a keyword list, never a claim.
 //
-// Group order and item order are the menu's order, and the labels are the <select>'s
-// values as well as its text: the Playwright specs select by label, so a label is a
+// Group order and item order are the gallery's order, and the labels are what the
+// gallery opens a plan by (a trailing parenthetical becomes a small tag under the name,
+// `src/plan-label.js`): the Playwright specs pick a plan by label, so a label is a
 // small public surface. Reorder deliberately, if at all. The FIRST row is the plan a first
 // visit opens, so it must be lint-clean (`arch lint --json` returns no diagnostics).
 // ───────────────────────────────────────────────────────────────────────────────
@@ -320,10 +321,10 @@ const SOURCES: Record<string, string> = {
   materials,
 };
 
-/** One `<optgroup>` in the examples selector: a heading plus its ordered presets. */
+/** One group of the plan gallery: a heading plus its ordered presets (`name`: the `examples/` basename). */
 export interface ExampleGroup {
   group: string;
-  items: readonly { label: string; source: string }[];
+  items: readonly { label: string; name: string; source: string }[];
 }
 
 /**
@@ -333,7 +334,7 @@ export interface ExampleGroup {
  */
 export const EXAMPLE_GROUPS: readonly ExampleGroup[] = (() => {
   const groups: ExampleGroup[] = [];
-  const byName = new Map<string, { group: string; items: { label: string; source: string }[] }>();
+  const byName = new Map<string, { group: string; items: { label: string; name: string; source: string }[] }>();
   for (const [name, label, group] of EXAMPLE_ROWS) {
     let bucket = byName.get(group);
     if (!bucket) {
@@ -341,12 +342,12 @@ export const EXAMPLE_GROUPS: readonly ExampleGroup[] = (() => {
       byName.set(group, bucket);
       groups.push(bucket);
     }
-    bucket.items.push({ label, source: SOURCES[name] ?? "" });
+    bucket.items.push({ label, name, source: SOURCES[name] ?? "" });
   }
   return groups;
 })();
 
-/** Flat label → source map (insertion order = menu order), for lookup by `<select>` value. */
+/** Flat label → source map (insertion order = gallery order), for lookup by a card's label. */
 export const EXAMPLES: Record<string, string> = Object.fromEntries(
   EXAMPLE_GROUPS.flatMap((g) => g.items.map((i) => [i.label, i.source])),
 );
@@ -370,7 +371,7 @@ export function exampleLabelFor(src: string): string | undefined {
 export const DEFAULT_EXAMPLE: string = EXAMPLE_ROWS[0][1];
 
 // Dev-time integrity checks. A duplicate label would silently shadow a preset in
-// EXAMPLES (and make the <select>'s value ambiguous), and a row whose basename has
+// EXAMPLES (and make a gallery card's label ambiguous), and a row whose basename has
 // no `?raw` import above would boot that preset empty — both are typos a build
 // cannot see. Stripped from the production bundle by Vite's `import.meta.env.DEV`.
 if (import.meta.env.DEV) {

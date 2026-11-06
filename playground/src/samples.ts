@@ -1,17 +1,17 @@
 /**
- * Playground-only sample plans: plans the picker offers that are NOT shipped examples.
+ * Playground-only sample plans: plans the gallery offers that are NOT shipped examples.
  *
  * Every file in `examples/` stays warning-free (fix/examples-sound, 2026-10-27: a warned plan is a
  * test fixture, never a shipped example), so the plan that demonstrates Checks, which has to raise
- * a finding, lives here instead. It is offered in the picker under its own group ("Try Checks"),
- * never in the strip, the static example pages or the sitemap (those are `EXAMPLE_ROWS`'), and
- * the Checks panel points at it when the plan on screen has nothing to ring.
+ * a finding, lives here instead. It is offered in the gallery under its own group ("Try Checks"),
+ * as a button, never as a link: not in the static example pages or the sitemap (those are
+ * `EXAMPLE_ROWS`'), and the Checks panel points at it when the plan on screen has nothing to ring.
  *
  * A lazy module, loaded with the example sources. `playground/test/samples.test.ts` holds each
  * sample to its promise: it compiles, and raises exactly the finding it is for.
  */
 
-/** The picker group the samples are listed under. */
+/** The gallery group the samples are listed under. */
 export const SAMPLE_GROUP = "Try Checks";
 
 /** The label of the plan with one thing to fix (the Checks panel's pointer names it). */
@@ -54,13 +54,13 @@ plan "Flat with one thing to fix" {
 }
 `;
 
-/** One sample: its picker label and its source. */
+/** One sample: its gallery label and its source. */
 export interface Sample {
   label: string;
   source: string;
 }
 
-/** The samples, in picker order. */
+/** The samples, in gallery order. */
 export const SAMPLES: readonly Sample[] = [{ label: CHECKS_SAMPLE, source: FLAT_ONE_FIX }];
 
 /** The source of the sample labelled `label`, if there is one. */

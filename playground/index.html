@@ -118,7 +118,7 @@
     </script>
   </head>
   <body>
-    <!-- Header = source-world chrome (cool grey): the brand, the plan picker, and three controls
+    <!-- Header = source-world chrome (cool grey): the brand, the plan gallery, and three controls
          in one row — Source (the editor), Tools (every other action, in one menu) and Make your
          own (the one redline control). Checks, the review rings, is a layer of the drawing and sits
          on the stage's toolbar (ruling PG-D3). Each control keeps the id the app and the specs know
@@ -130,9 +130,25 @@
         <span class="wordmark"><b>Arch</b>Lang</span>
         <span class="badge">Playground</span>
       </div>
-      <!-- The plan picker. Its options are written into the served page at build time
-           (scripts/gen-static.mjs) and rebuilt from src/examples.ts when the app starts. -->
-      <select id="examples" class="hd-picker" aria-label="Plan"><!--prerender:picker--></select>
+      <!-- The plan gallery (ruling PG-D2): the one way to choose a plan. A non-modal disclosure,
+           like Tools: with no script it opens by itself, and every card is a link to the plan's
+           static page. Its cards, their thumbnails and the trigger's plan name are written into
+           the served page at build time (scripts/gen-static.mjs); with script, gallery.ts opens
+           a plan here instead, filters, and moves through the grid with the arrow keys. A closed
+           <details> renders nothing, so no thumbnail is fetched before the first open. -->
+      <details class="gal" id="gallery">
+        <summary class="hd-btn gal-trigger" id="planPicker" aria-controls="galleryPanel" aria-expanded="false" title="Choose a plan">
+          <span class="gal-glyph" aria-hidden="true">▦</span>
+          <span class="vh">Plan: </span><span class="gal-current" id="planName"><!--prerender:plan-name--></span>
+          <span class="gal-caret" aria-hidden="true">▾</span>
+        </summary>
+        <div class="gal-panel" id="galleryPanel" role="group" aria-label="Example plans">
+          <input type="search" id="galleryFilter" class="gal-filter" placeholder="Filter plans by name" aria-label="Filter plans by name" autocomplete="off" spellcheck="false" />
+          <div class="gal-groups" id="galleryGroups"><!--prerender:gallery--></div>
+          <p class="gal-empty" id="galleryEmpty" role="status" hidden>No plan matches that name.</p>
+          <a class="gal-all" href="/examples/">All plans →</a>
+        </div>
+      </details>
       <div class="spacer"></div>
       <button id="sourceToggle" class="hd-btn" type="button" aria-pressed="false" title="Show the ArchLang source beside the drawing">Source</button>
       <details class="tools" id="tools">
@@ -365,15 +381,6 @@
             <div id="intentOutput"></div>
           </section>
         </div>
-        <!-- The plan strip (view mode): one link per example, in the picker's order, each to the
-             plan's static page, so it works with no script and a crawler can follow it. With
-             script, strip.ts opens the plan here instead. The links and their thumbnails are
-             written at build time (scripts/gen-static.mjs); each thumbnail box has a fixed size,
-             so a thumbnail arriving moves nothing. -->
-        <nav class="strip" id="strip" aria-label="Example plans">
-          <ul class="strip-list" id="stripList"><!--prerender:strip--></ul>
-          <a class="strip-all" href="/examples/">All plans →</a>
-        </nav>
       </section>
     </main>
     <!-- Make your own: the ways to get a plan of your own. A native <dialog> opened with

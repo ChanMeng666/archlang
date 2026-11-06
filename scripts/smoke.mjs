@@ -398,8 +398,8 @@ async function playgroundChecks() {
       contains("<h1"),
       contains("compiles in your browser"),
       contains("<svg data-prerendered"),
-      // …and the plan strip under it, its links and thumbnails written by the same step.
-      contains('<a class="strip-item" href="/examples/'),
+      // …and the plan gallery in the header, its card links and thumbnails written by the same step.
+      contains('<a class="gal-card" href="/examples/'),
       // The compiler chunk is preloaded with the page (playground/vite.config.js), as Vite
       // writes the tag: `<link rel="modulepreload" crossorigin href="./assets/compiler-….js">`.
       matches(/<link rel="modulepreload"[^>]*\bhref="\.\/assets\/compiler-[\w-]+\.js"/),

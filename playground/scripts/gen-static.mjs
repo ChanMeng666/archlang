@@ -65,6 +65,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { encodePlanHash } from "../../scripts/gen-permalink.mjs";
+import { splitLabel } from "../src/plan-label.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const playground = join(here, "..");
@@ -1011,18 +1012,18 @@ ${entries.map(url).join("\n")}
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
-// The playground page itself: its first drawing and its plan picker, in the bytes.
+// The playground page itself: its first drawing and its plan gallery, in the bytes.
 // ───────────────────────────────────────────────────────────────────────────────
 
 /** Where vite's index.html leaves room for each (playground/index.html). */
 const PLAN_SLOT = "<!--prerender:plan-->";
-const PICKER_SLOT = "<!--prerender:picker-->";
-const STRIP_SLOT = "<!--prerender:strip-->";
+const NAME_SLOT = "<!--prerender:plan-name-->";
+const GALLERY_SLOT = "<!--prerender:gallery-->";
 const COUNT_SLOT = "<!--prerender:count-->";
 
 /**
- * Write the default example's drawing, the plan picker's options, the plan strip and the number
- * of example plans into `dist/index.html`.
+ * Write the default example's drawing, the plan gallery (its trigger's plan name and its cards)
+ * and the number of example plans into `dist/index.html`.
  *
  * The playground is a module-script page, so without this its first paint has no drawing, and
  * a visit with JavaScript off — every crawler — has none at all. The plan is `EXAMPLE_ROWS`'
@@ -1035,15 +1036,18 @@ const COUNT_SLOT = "<!--prerender:count-->";
  * viewBox — plus `--ar` for the CSS fit (styles/chrome.css), a role and the core's caption as its
  * name, and `data-prerendered`, the attribute main.ts's `adopt()` and that CSS look for.
  *
- * The strip (src/strip.ts) is one link per example to its static page, in the picker's order,
- * each holding the plan's gallery thumbnail at its intrinsic size (`thumbs`, from `thumbSvg`), so
- * it is a gallery a reader with no script and a crawler can follow. The default is marked current.
- * No `tabindex` here: without script every link is a tab stop; strip.ts makes the list one stop.
+ * The gallery (src/gallery.ts, ruling PG-D2) is one card per example, grouped and ordered as
+ * `EXAMPLE_ROWS` is, each a link to the plan's static page holding its thumbnail at its intrinsic
+ * size (`thumbs`, from `thumbSvg`) and its name, a trailing parenthetical split off as a tag
+ * (src/plan-label.js), so a reader with no script and a crawler can follow every one. The default
+ * is marked current and named on the trigger. The thumbnails are lazy inside a closed <details>,
+ * so none is fetched before the gallery first opens. No `tabindex` here: without script every
+ * card is a tab stop; gallery.ts makes the grid one stop.
  */
 function prerenderIndex(rows, thumbs) {
   const file = join(outDir, "index.html");
   const html = readFileSync(file, "utf8");
-  for (const slot of [PLAN_SLOT, PICKER_SLOT, STRIP_SLOT, COUNT_SLOT]) {
+  for (const slot of [PLAN_SLOT, NAME_SLOT, GALLERY_SLOT, COUNT_SLOT]) {
     if (html.split(slot).length !== 2) {
       fail(
         `dist/index.html must hold ${slot} exactly once (playground/index.html); found ${html.split(slot).length - 1}.`,
@@ -1074,48 +1078,44 @@ function prerenderIndex(rows, thumbs) {
       `style="--ar: ${Number((w / h).toFixed(6))}"`,
   );
 
-  // The picker: one <optgroup> per group in first-appearance order, the default selected —
-  // the menu main.ts's `fillPicker` builds from the same table.
+  // The groups, in first-appearance order: the order main.ts's `EXAMPLE_GROUPS` derives too.
   const groups = [];
   for (const r of rows) {
     let g = groups.find((x) => x.group === r.group);
     if (!g) {
-      g = { group: r.group, labels: [] };
+      g = { group: r.group, rows: [] };
       groups.push(g);
     }
-    g.labels.push(r.label);
+    g.rows.push(r);
   }
-  const picker = groups
-    .map(
-      (g) =>
-        `<optgroup label="${escapeHtml(g.group)}">` +
-        g.labels
-          .map((l) => `<option value="${escapeHtml(l)}"${l === row.label ? " selected" : ""}>${escapeHtml(l)}</option>`)
-          .join("") +
-        "</optgroup>",
-    )
-    .join("");
 
-  // The strip: the same groups in the same order. A group's first item carries the group's name,
-  // which styles/chrome.css reads as the gap between groups. A link's name is its thumbnail's alt,
-  // the plan's label (the picker's value, which strip.ts opens).
-  const byLabel = new Map(rows.map((r) => [r.label, r]));
-  const strip = groups
-    .flatMap((g) =>
-      g.labels.map((l, i) => {
-        const r = byLabel.get(l);
-        const t = thumbs.get(r.name);
-        if (!t) fail(`${r.name}: no thumbnail for the plan strip.`);
-        const label = escapeHtml(l);
-        return (
-          `<li${i === 0 ? ` data-group="${escapeHtml(g.group)}"` : ""}>` +
-          `<a class="strip-item" href="/examples/${r.name}.html" data-label="${label}"` +
-          `${l === row.label ? ' aria-current="true"' : ""}>` +
-          `<img src="/examples/thumbs/${r.name}.svg" alt="${label}" loading="lazy" decoding="async" ` +
-          `width="${t.w}" height="${t.h}" /></a></li>`
-        );
-      }),
-    )
+  // The gallery: a heading and a grid per group. A card's name is its visible text (the clean
+  // name, then the tag), so its thumbnail is decorative (`alt=""`); `data-label` is the plan's
+  // full label, which gallery.ts opens.
+  const gallery = groups
+    .map((g, gi) => {
+      const cards = g.rows
+        .map((r) => {
+          const t = thumbs.get(r.name);
+          if (!t) fail(`${r.name}: no thumbnail for the plan gallery.`);
+          const { name, tag } = splitLabel(r.label);
+          return (
+            `<li><a class="gal-card" href="/examples/${r.name}.html" data-label="${escapeHtml(r.label)}"` +
+            `${r.label === row.label ? ' aria-current="true"' : ""}>` +
+            `<img class="gal-thumb" src="/examples/thumbs/${r.name}.svg" alt="" loading="lazy" decoding="async" ` +
+            `width="${t.w}" height="${t.h}" />` +
+            `<span class="gal-name">${escapeHtml(name)}</span>` +
+            (tag ? `<span class="gal-tag">${escapeHtml(tag)}</span>` : "") +
+            `</a></li>`
+          );
+        })
+        .join("");
+      return (
+        `<section class="gal-group" data-group="${escapeHtml(g.group)}">` +
+        `<p class="gal-h" id="gal-h-${gi}">${escapeHtml(g.group)}</p>` +
+        `<ul class="gal-grid" aria-labelledby="gal-h-${gi}">${cards}</ul></section>`
+      );
+    })
     .join("");
 
   // Function replacements: neither the SVG nor a label may splice `$&` back in (v1.36).
@@ -1123,8 +1123,8 @@ function prerenderIndex(rows, thumbs) {
     file,
     html
       .replace(PLAN_SLOT, () => svg)
-      .replace(PICKER_SLOT, () => picker)
-      .replace(STRIP_SLOT, () => strip)
+      .replace(NAME_SLOT, () => escapeHtml(splitLabel(row.label).name))
+      .replace(GALLERY_SLOT, () => gallery)
       .replace(COUNT_SLOT, () => String(rows.length)),
     "utf8",
   );
@@ -1244,5 +1244,5 @@ process.stdout.write(
   `gen-static: ${written} example pages + /examples/index.html + sitemap.xml (${written + 2} urls) → playground/dist/\n` +
     `gen-static: ${thumbs.size} thumbnails (${Math.round(thumbBytes / 1024)} KB) → playground/dist/examples/thumbs/\n` +
     `gen-static: ${fonts.css.split("@font-face").length - 1} @font-face rules harvested from dist/assets/*.css\n` +
-    `gen-static: ${prerendered.name}'s drawing (${Math.round(prerendered.bytes / 1024)} KB), the plan picker and the plan strip → playground/dist/index.html\n`,
+    `gen-static: ${prerendered.name}'s drawing (${Math.round(prerendered.bytes / 1024)} KB), the plan gallery → playground/dist/index.html\n`,
 );

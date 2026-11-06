@@ -1,7 +1,7 @@
 /**
  * The playground's startup module: the view path. It shows the drawing (the one built into the
  * page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and
- * plans (the picker and the thumbnail strip) and runs the header. Everything heavier is its own chunk, loaded when it is needed:
+ * plans (the plan gallery in the header) and runs the header. Everything heavier is its own chunk, loaded when it is needed:
  *
  * - the compiler (`archlang`, the `compiler` chunk, preloaded by index.html but not
  *   render-blocking) and the example sources: fetched as soon as this module runs;
@@ -34,9 +34,9 @@ import { mountKnobsPanel } from "./knobs-panel.js";
 import { isNarrow, mountMobileViews } from "./mobile-views.js";
 import { has3dFlag, hasEditFlag, set3dFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
+import { mountGallery } from "./gallery.js";
 import { mountNudge } from "./nudge.js";
 import { mountShell } from "./shell.js";
-import { mountStrip } from "./strip.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
@@ -51,7 +51,7 @@ import "./styles/editor.css";
 import "./styles/panels.css";
 
 type Core = typeof import("./compiler.js");
-/** The example sources, and the playground-only samples (samples.ts) the picker offers after them. */
+/** The example sources, and the playground-only samples (samples.ts) the gallery offers after them. */
 type Examples = typeof import("./examples.js") & { samples: typeof import("./samples.js") };
 
 // Both start now, in parallel, after this module has run: the drawing is already on screen.
@@ -67,7 +67,6 @@ const preview = document.getElementById("preview")!;
 const errorsEl = document.getElementById("errors")!;
 const statusEl = document.getElementById("status")!;
 const statusText = document.getElementById("statusText")!;
-const select = document.getElementById("examples") as HTMLSelectElement;
 // `#format` is the download-format <select>; the reformat-source button is `#formatSrc`
 // (they collided on a single `format` id until the header rework — the button had never
 // been reachable via getElementById because the <select> won the duplicate id).
@@ -165,61 +164,25 @@ function stageSwitched() {
 }
 
 /**
- * One <optgroup> per example group — the grouping the docs' example tour uses — then the samples'
- * group (`data-sample`: picker-only, never in the strip, which lists the examples).
+ * The gallery's groups: the examples' (in the served page, written by gen-static; built here only
+ * on the dev server, where it has not run), then the samples' (`data-sample`: playground-only,
+ * buttons rather than links, since no static page exists for them).
  */
-function fillPicker({ EXAMPLE_GROUPS, samples }: Examples): void {
-  const keep = select.value;
-  // The neutral entry (`markPlan`) survives the rebuild, and stays chosen if it was.
-  const neutral = select.querySelector<HTMLOptionElement>("option[data-neutral]");
-  select.replaceChildren(...(neutral ? [neutral] : []));
-  for (const { group, items } of EXAMPLE_GROUPS) {
-    const g = document.createElement("optgroup");
-    g.label = group;
-    for (const { label } of items) {
-      const o = document.createElement("option");
-      o.value = label;
-      o.textContent = label;
-      g.appendChild(o);
-    }
-    select.appendChild(g);
-  }
-  const sg = document.createElement("optgroup");
-  sg.label = samples.SAMPLE_GROUP;
-  sg.dataset.sample = "";
-  for (const { label } of samples.SAMPLES) {
-    const o = document.createElement("option");
-    o.value = label;
-    o.textContent = label;
-    sg.appendChild(o);
-  }
-  select.appendChild(sg);
-  if (keep) select.value = keep;
-  else if (neutral) neutral.selected = true;
+function fillGallery({ EXAMPLE_GROUPS, samples }: Examples): void {
+  gallery.ensureExamples(EXAMPLE_GROUPS);
+  gallery.addSamples(
+    samples.SAMPLE_GROUP,
+    samples.SAMPLES.map((s) => s.label),
+  );
 }
 
 /**
- * Name the plan on screen in the picker and the strip together, so the two always agree: the
- * example labelled `label`, or, for a plan that is no example word for word (a shared link, a
- * saved draft, an edit), no plan in the strip and `neutral` in the picker. The neutral entry is
- * shown but never offered: it is hidden from the list and disabled.
+ * Name the plan on screen in the gallery: its trigger and the card it marks current. The example
+ * labelled `label`, or, for a plan that is no example word for word (a shared link, a saved
+ * draft, an edit), no card, and `neutral` on the trigger.
  */
 function markPlan(label: string | null, neutral = "Edited plan") {
-  if (label !== null) select.value = label;
-  else {
-    let o = select.querySelector<HTMLOptionElement>("option[data-neutral]");
-    if (!o) {
-      o = document.createElement("option");
-      o.value = "";
-      o.dataset.neutral = "";
-      o.disabled = true;
-      o.hidden = true;
-      select.prepend(o);
-    }
-    o.textContent = neutral;
-    o.selected = true;
-  }
-  strip.setCurrent(label);
+  gallery.setCurrent(label, neutral);
 }
 
 /** After a change to the source: still an example word for word, or now a plan of the reader's own. */
@@ -542,7 +505,7 @@ function render(source: string, refit = false, knobMoving = false): boolean {
   lastDrawn = themeKey ? undefined : { source, drawn: { svg, pages, errors } };
   // The 3D preview follows the editor only while its tab is open (and once loaded).
   // The storey it shows is the switcher's explicit selection (none = the combined view). A new
-  // plan (a document replaced, `refit`: the picker, the strip, a snapshot) opens on its end frame,
+  // plan (a document replaced, `refit`: the gallery, a snapshot) opens on its end frame,
   // as the tab does (card X5); an edit goes on from where the view was. A knob being dragged
   // waits: the 3D preview is rebuilt once it is let go (`keepKnob`).
   if (preview3d && in3d() && !knobMoving)
@@ -735,7 +698,7 @@ function onDocChanged(source: string) {
     render(source);
     writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
     void updateHash(source, () => editing, in3d); // keep the permalink in sync (compression is async)
-    void syncPlanMark(source); // the picker and the strip: still that example, or an edited plan
+    void syncPlanMark(source); // the gallery: still that example, or an edited plan
   }, 250);
 }
 
@@ -747,7 +710,7 @@ function onExportError(format: string, err: unknown) {
 }
 
 /**
- * Open the example labelled `label` (the picker's value). The picker and the strip say so at once;
+ * Open the example labelled `label` (a gallery card's). The gallery says so at once;
  * an example picked before the app is up is loaded once it is.
  */
 function pickExample(label: string) {
@@ -760,15 +723,14 @@ function pickExample(label: string) {
     loadSource(source, true);
   });
 }
-/** A plan picked by the visitor (the picker or the strip), which counts towards the nudge. */
+/** A plan picked by the visitor (a gallery card, the Checks sample pointer), which counts towards the nudge. */
 function switchPlan(label: string) {
   pickExample(label);
   nudge.planSwitched();
 }
-select.addEventListener("change", () => switchPlan(select.value));
-// The strip's links and thumbnails are in the served page (gen-static.mjs): nothing here waits for
-// the example sources to mark or move through them.
-const strip = mountStrip(document.getElementById("stripList")!, switchPlan);
+// The gallery's cards and thumbnails are in the served page (gen-static.mjs): nothing here waits
+// for the example sources to mark or move through them.
+const gallery = mountGallery(document.getElementById("gallery") as HTMLDetailsElement, switchPlan);
 
 // Theme switch (B2) — re-render the preview only; describe/lint are theme-agnostic.
 themeSelect.addEventListener("change", () => {
@@ -786,9 +748,9 @@ async function boot() {
   const savedSrc = sharedSrc ? null : readStr(KEYS.source);
   const examples = await examplesP;
   const { DEFAULT_EXAMPLE, EXAMPLES } = examples;
-  fillPicker(examples);
+  fillGallery(examples);
   const initialDoc = sharedSrc ?? savedSrc ?? EXAMPLES[DEFAULT_EXAMPLE];
-  // The picker and the strip name the plan this visit opens: the default, or the example a link
+  // The gallery names the plan this visit opens: the default, or the example a link
   // or a draft is word for word, or neither (a plan of someone's own is no example).
   if (!sharedSrc && !savedSrc) markPlan(DEFAULT_EXAMPLE);
   else

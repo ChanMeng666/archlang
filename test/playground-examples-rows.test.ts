@@ -251,7 +251,7 @@ describe("the static page generator reads this table, and nothing else hand-list
     // The e2e asserts `ul.plans a[href="/examples/studio.html"]` resolves to ONE element,
     // and a second <a> per card would also give a screen reader a duplicated stop per plan.
     // Scoped to anchor hrefs — `sitemap()` builds its <loc>s from the same template — and to
-    // the index page's builder: the playground's plan strip (`prerenderIndex`) is another
+    // the index page's builder: the playground's plan gallery (`prerenderIndex`) is another
     // page's list, one link per plan of its own.
     const index = /\nfunction indexPage\([\s\S]*?\n}\n/.exec(gen)?.[0] ?? "";
     expect(index, "gen-static.mjs declares `function indexPage(…) { … }`").not.toBe("");
@@ -259,15 +259,44 @@ describe("the static page generator reads this table, and nothing else hand-list
     expect(index, "the thumbnail is decorative: the link text already names the plan").toMatch(/alt=""/);
   });
 
-  it("the plan strip names each link by its plan and sizes each thumbnail from compile()", () => {
-    // The strip's link has no text but its thumbnail, so the image's alt IS the link's name;
-    // and its thumbnail is the gallery's (`thumbs`, from `thumbSvg`), never re-measured here.
-    const strip = /\nfunction prerenderIndex\([\s\S]*?\n}\n/.exec(gen)?.[0] ?? "";
-    expect(strip, "gen-static.mjs declares `function prerenderIndex(…) { … }`").not.toBe("");
-    expect(strip.match(/href="\/examples\/\$\{r\.name\}\.html"/g) ?? []).toHaveLength(1);
-    expect(strip).toMatch(/alt="\$\{label\}"/);
-    expect(strip).toMatch(/loading="lazy"/);
-    expect(strip).toMatch(/width="\$\{t\.w\}" height="\$\{t\.h\}"/);
+  it("the plan gallery names each card by its plan and sizes each thumbnail from compile()", () => {
+    // The playground's plan gallery (card PG3, ruling PG-D2): one link per plan, named by its
+    // visible text (the clean name and the tag, split by `splitLabel` from the table's label,
+    // never retyped), so its thumbnail is decorative; and its thumbnail is the index's
+    // (`thumbs`, from `thumbSvg`), never re-measured here, lazy so a closed gallery fetches none.
+    const index = /\nfunction prerenderIndex\([\s\S]*?\n}\n/.exec(gen)?.[0] ?? "";
+    expect(index, "gen-static.mjs declares `function prerenderIndex(…) { … }`").not.toBe("");
+    expect(index.match(/href="\/examples\/\$\{r\.name\}\.html"/g) ?? []).toHaveLength(1);
+    expect(index).toMatch(/<a class="gal-card" href="\/examples\/\$\{r\.name\}\.html"/);
+    expect(index).toMatch(/splitLabel\(r\.label\)/);
+    expect(index).toMatch(/<span class="gal-name">\$\{escapeHtml\(name\)\}<\/span>/);
+    expect(index).toMatch(/alt=""/);
+    expect(index).toMatch(/loading="lazy"/);
+    expect(index).toMatch(/width="\$\{t\.w\}" height="\$\{t\.h\}"/);
+    // Every row becomes a card: the loop runs over the table's rows, not a list of its own.
+    expect(index).toMatch(/for \(const r of rows\)/);
+  });
+
+  it("the gallery's tag split keeps the name and moves only a trailing parenthetical", async () => {
+    // The one split the generator and the app share (a plain .js module, typed by JSDoc there).
+    // @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
+    const { splitLabel } = (await import("../playground/src/plan-label.js")) as {
+      splitLabel(label: string): { name: string; tag: string | null };
+    };
+    for (const { label } of rows) {
+      const { name, tag } = splitLabel(label);
+      expect(name.length, label).toBeGreaterThan(0);
+      expect(tag === null ? name : `${name} (${tag})`, label).toBe(label);
+      expect(name, label).not.toMatch(/[()]$/);
+    }
+    expect(splitLabel("Clinic (place ×6)")).toEqual({
+      name: "Clinic",
+      tag: "place ×6",
+    });
+    expect(splitLabel("Furnished Flat")).toEqual({
+      name: "Furnished Flat",
+      tag: null,
+    });
   });
 
   it("the reachability clause is gated on describe(), not asserted for every plan", () => {

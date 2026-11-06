@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import { srcFromHash } from "../src/share.js";
-import { AUTOSAVE_KEY, gotoEdit, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import { AUTOSAVE_KEY, expectPlanNamed, gotoEdit, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * Knobs (card P4): a slider per top-level numeric `let` of the plan on screen, in the drawing's
@@ -58,27 +58,20 @@ test.describe("knobs", () => {
     await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY)).toBe(want);
   });
 
-  test("a moved knob makes the plan an edited one, in the picker and the strip, and a reload agrees", async ({
-    page,
-  }) => {
+  test("a moved knob makes the plan an edited one in the gallery, and a reload agrees", async ({ page }) => {
     const src = example("knob-flat");
     await page.goto(`/${await shareHash(src)}`);
     await waitForPlan(page);
     // Opened word for word, it is the example.
-    await expect(page.locator("#examples")).toHaveValue("Resizable Flat (knobs)");
-    await expect(page.locator('#strip a.strip-item[aria-current="true"]')).toHaveAttribute(
-      "data-label",
-      "Resizable Flat (knobs)",
-    );
+    await expectPlanNamed(page, "Resizable Flat (knobs)");
+    await expect(page.locator("#planName")).toHaveText("Resizable Flat");
     await knob(page, "DEPTH").fill("6000");
-    await expect(page.locator("#examples option:checked")).toHaveText("Edited plan");
-    await expect(page.locator('#strip a.strip-item[aria-current="true"]')).toHaveCount(0);
+    await expectPlanNamed(page, { neutral: "Edited plan" });
     // The hash holds the moved plan: a reload opens it as a shared plan, still no example.
     await expect.poll(() => hashSource(page)).toBe(src.replace("let DEPTH = 5400", "let DEPTH = 6000"));
     await page.reload();
     await waitForPlan(page);
-    await expect(page.locator("#examples option:checked")).toHaveText("Shared plan");
-    await expect(page.locator('#strip a.strip-item[aria-current="true"]')).toHaveCount(0);
+    await expectPlanNamed(page, { neutral: "Shared plan" });
     await expect(knob(page, "DEPTH")).toHaveValue("6000");
   });
 

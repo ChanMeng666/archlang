@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { enterEdit, waitForPlan, watchStatus } from "./fixtures.js";
+import { enterEdit, expectPlanNamed, waitForPlan, watchStatus } from "./fixtures.js";
 
 /**
  * The playground's front door: what a first visit on a phone, a small laptop or an agent
@@ -12,7 +12,7 @@ import { enterEdit, waitForPlan, watchStatus } from "./fixtures.js";
 const headerControls = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll("header :is(button, select, summary, a, input)")]
-      .filter((e) => !e.closest(".tools-panel") && e.getClientRects().length > 0)
+      .filter((e) => !e.closest(".tools-panel, .gal-panel") && e.getClientRects().length > 0)
       .map((e) => e.id || e.textContent?.trim() || e.tagName),
   );
 
@@ -71,7 +71,7 @@ test.describe("front door", () => {
   test("the first visit opens a plan with no diagnostics", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    await expect(page.locator("#examples")).toHaveValue("Laneway House");
+    await expectPlanNamed(page, "Laneway House");
     // The diagnostics and the Checks tab (Lint) are edit mode's.
     await enterEdit(page);
     // #errors is the COMPILE sink; lint renders into #lintOutput (a clean plan shows the ".ok" verdict).
@@ -98,8 +98,10 @@ test.describe("front door", () => {
       expect(wrapped, `header items on a second row at ${width}px`).toEqual([]);
       const controls = await headerControls(page);
       expect(controls.length, `header controls at ${width}px: ${controls.join(", ")}`).toBeLessThanOrEqual(5);
-      // The picker, Source, Tools and Make your own are among them; Checks is the stage's (PG-D3).
-      expect(controls).toEqual(expect.arrayContaining(["examples", "sourceToggle", "makeOwn"]));
+      // The plan gallery, Source, Tools and Make your own are among them; Checks is the stage's
+      // (PG-D3). The gallery is the one plan-choosing control (PG-D2): no <select> in the header.
+      expect(controls).toEqual(expect.arrayContaining(["planPicker", "sourceToggle", "makeOwn"]));
+      await expect(page.locator("header select:visible")).toHaveCount(0);
       await expect(page.locator("#tools > summary")).toBeVisible();
     });
   }

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { BROKEN_PLAN, enterEdit, shareHash, waitForPlan, watchForProblems } from "./fixtures.js";
+import { BROKEN_PLAN, enterEdit, pickPlan, shareHash, waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
  * The cold-start contract: an untouched visit shows the default example's drawing before any
@@ -15,7 +15,7 @@ import { BROKEN_PLAN, enterEdit, shareHash, waitForPlan, watchForProblems } from
  * `--grep @prod`), so a tag here is a promise about production, not just about a
  * preview server. Every case below keeps it: they navigate, read the DOM and
  * assert — nothing downloads, writes to the clipboard, or depends on state
- * surviving a reload. (`selectOption` on the examples picker and the Source button
+ * surviving a reload. (`pickPlan` on the plan gallery and the Source button
  * mutate only this throwaway browser context.) Do NOT tag a case that downloads a file,
  * reads or writes the clipboard, or asserts on localStorage persistence.
  */
@@ -91,10 +91,10 @@ test.describe("boot", { tag: "@prod" }, () => {
     await expect(lede).toBeVisible();
   });
 
-  test("populates the example and lint-profile selectors from the core", async ({ page }) => {
+  test("populates the plan gallery and the lint-profile selector", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    expect(await page.locator("#examples option").count()).toBeGreaterThan(1);
+    expect(await page.locator("#gallery .gal-card").count()).toBeGreaterThan(1);
     // The lint profiles belong to the Checks tab, which is edit mode's.
     await enterEdit(page);
     await expect.poll(() => page.locator("#lintProfile option").count()).toBeGreaterThan(0);
@@ -104,7 +104,7 @@ test.describe("boot", { tag: "@prod" }, () => {
     await page.goto("/");
     await waitForPlan(page);
     const before = await page.locator(".pz-stage svg").innerHTML();
-    await page.locator("#examples").selectOption("Two-bed flat");
+    await pickPlan(page, "Two-bed flat");
     await expect
       .poll(async () => (await page.locator(".pz-stage svg").innerHTML()) !== before, { timeout: 5000 })
       .toBe(true);
@@ -145,7 +145,11 @@ test.describe("boot without JavaScript", { tag: "@prod" }, () => {
     );
     await expect(page.locator("h1")).toHaveCount(1);
     await expect(page.locator(".intro .lede").first()).toContainText("compiles in your browser");
-    // The picker names the plan on screen, also with no script.
-    await expect(page.locator("#examples")).toHaveValue("Laneway House");
+    // The gallery's trigger names the plan on screen, also with no script.
+    await expect(page.locator("#planName")).toHaveText("Laneway House");
+    await expect(page.locator('#gallery .gal-card[aria-current="true"]')).toHaveAttribute(
+      "data-label",
+      "Laneway House",
+    );
   });
 });

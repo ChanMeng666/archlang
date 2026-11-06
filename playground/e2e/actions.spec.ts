@@ -6,9 +6,10 @@ import {
   chooseLink,
   gotoEdit,
   openTools,
-  SIMPLE_PLAN,
+  pickPlan,
   setEditorSource,
   shareHash,
+  SIMPLE_PLAN,
   waitForPlan,
   watchStatus,
 } from "./fixtures.js";
@@ -491,7 +492,7 @@ test.describe("header actions", () => {
 
   test("Embed's Markdown for an unedited example shows its hosted drawing", async ({ page }) => {
     await gotoEdit(page);
-    await page.locator("#examples").selectOption("Studio (1BR)");
+    await pickPlan(page, "Studio (1BR)");
     await expect(page.locator(".cm-content")).toContainText('plan "');
     await openTools(page);
     await page.locator("#embed").click();
@@ -502,7 +503,7 @@ test.describe("header actions", () => {
     await page.locator(".embed-close").click();
 
     // A multi-storey example names the storey on screen, as the docs gallery does.
-    await page.locator("#examples").selectOption("Hillside Villa");
+    await pickPlan(page, "Hillside Villa");
     await expect(page.locator(".cm-content")).toContainText("paper A1 landscape");
     await openTools(page);
     await page.locator("#embed").click();

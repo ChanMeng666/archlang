@@ -1,5 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { AUTOSAVE_KEY, BROKEN_PLAN, enterEdit, gotoEdit, SIMPLE_PLAN, shareHash, waitForPlan } from "./fixtures.js";
+import {
+  AUTOSAVE_KEY,
+  BROKEN_PLAN,
+  enterEdit,
+  expectPlanNamed,
+  gotoEdit,
+  shareHash,
+  SIMPLE_PLAN,
+  waitForPlan,
+} from "./fixtures.js";
 
 /**
  * First-load source precedence: shared URL hash → autosaved draft → default example; and the
@@ -40,15 +49,15 @@ test.describe("first-load source precedence", () => {
   test("a clean visit falls through to the default example", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    // The <select> names the default here because the fall-through path opened it (a hash or a
+    // The gallery names the default here because the fall-through path opened it (a hash or a
     // draft names an example only when it is one word for word, and neither exists here).
-    await expect(page.locator("#examples")).toHaveValue("Laneway House");
+    await expectPlanNamed(page, "Laneway House");
   });
 
   test("an undecodable #z= payload falls back rather than showing an empty editor", async ({ page }) => {
     await page.goto("/#z=!!!not-a-valid-payload!!!&edit");
     await waitForPlan(page);
-    await expect(page.locator("#examples")).toHaveValue("Laneway House");
+    await expectPlanNamed(page, "Laneway House");
     await expect(page.locator(".cm-content")).not.toBeEmpty();
   });
 

@@ -11,9 +11,10 @@ import {
   BROKEN_PLAN,
   chooseLink,
   openTools,
-  SIMPLE_PLAN,
+  pickPlan,
   setEditorSource,
   shareHash,
+  SIMPLE_PLAN,
   waitFor3d,
   waitForPlan,
 } from "./fixtures.js";
@@ -238,7 +239,7 @@ test.describe("3D preview tab follows the editor", () => {
   test("the storey switcher drives it: no selection is all storeys, L2 is storey 2 alone", async ({ page }) => {
     await page.goto("/#edit");
     await waitForPlan(page);
-    await page.locator("#examples").selectOption("Townhouse (3 levels)");
+    await pickPlan(page, "Townhouse (3 levels)");
     await waitForPlan(page);
     await open3d(page);
     const tab = page.locator("#preview3d");
@@ -274,7 +275,7 @@ test.describe("3D preview tab follows the editor", () => {
   test("in view mode the one storey switcher, under Plan | 3D, drives both views", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    await page.locator("#examples").selectOption("Townhouse (3 levels)");
+    await pickPlan(page, "Townhouse (3 levels)");
     await waitForPlan(page);
     const storeys = page.locator("#storeys");
     // One switcher, wherever the stage is: the same element over the drawing and over the 3D view.
@@ -473,7 +474,7 @@ test.describe("3D preview tab: the free camera", () => {
   test("hiding the upper storeys shows the floor below; All brings the end frame back", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    await page.locator("#examples").selectOption("Townhouse (3 levels)");
+    await pickPlan(page, "Townhouse (3 levels)");
     await waitForPlan(page);
     await open3d(page);
     await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "all");
@@ -674,7 +675,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await expect(page.locator("#preview3d")).toHaveClass(/active/);
     await mounted(page);
     await atEndFrame(page);
-    await expect(page.locator("#strip a.strip-item[aria-current='true']")).toHaveCount(1);
+    await expect(page.locator("#gallery .gal-card[aria-current='true']")).toHaveCount(1);
   });
 
   test("`&3d&edit` opens the editor beside the 3D preview", async ({ page }) => {
@@ -686,7 +687,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     expect(await hash(page)).toMatch(/^#z=[A-Za-z0-9_-]+&3d&edit$/);
   });
 
-  test("another plan from the strip or the picker, in 3D, is rebuilt at its end frame", async ({ page }) => {
+  test("another plan from the gallery, in 3D, is rebuilt at its end frame, twice", async ({ page }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
     await waitFor3d(page);
     await mounted(page);
@@ -698,10 +699,8 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     const canvas = page.locator("#preview3d canvas");
     const before = await canvas.getAttribute("aria-label");
     await markOld(page);
-    const item = page.locator("#strip a.strip-item").first();
-    const label = await item.getAttribute("data-label");
-    await item.click();
-    await expect(page.locator("#examples")).toHaveValue(label ?? "");
+    const label = await page.locator("#gallery a.gal-card").first().getAttribute("data-label");
+    await pickPlan(page, label ?? "");
     await mounted(page, true);
     await expect(canvas).not.toHaveAttribute("aria-label", before ?? "");
     await atEndFrame(page);
@@ -709,8 +708,8 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     expect(await hash(page)).toMatch(/&3d$/);
 
     await markOld(page);
-    const other = await page.locator("#strip a.strip-item").nth(1).getAttribute("data-label");
-    await page.locator("#examples").selectOption(other ?? "");
+    const other = await page.locator("#gallery a.gal-card").nth(1).getAttribute("data-label");
+    await pickPlan(page, other ?? "");
     await mounted(page, true);
     await atEndFrame(page);
   });
