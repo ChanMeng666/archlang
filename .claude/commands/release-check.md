@@ -66,8 +66,11 @@ you observed. Do NOT push anything — this command only verifies.
      Its peer range stays a caret range whose floor is `MIN_CORE` (same test); a core MAJOR needs a
      look at the seam (ADR 0031) before the range moves. A core that adds an export archlang-3d
      needs → raise its peer floor and `MIN_CORE` to that core version and bump archlang-3d, after
-     that core is on npm (pending: `treadCount`, core 1.57.0, for archlang-3d 0.4.0's stairs). No 3D wording reaches the core: the core's
-     `npm pack --dry-run` list and its `CHANGELOG.md` stay silent on it (Tier C).
+     that core is on npm, or in the same release: `publish-archlang-3d` needs `publish`, whose shim
+     step waits until npm shows the new core, and `prove:pack` installs the core's `latest` (done:
+     `treadCount`, core 1.57.0, archlang-3d 0.4.0's stairs, floor `^1.57.0`). The core ships no 3D
+     code: its `npm pack --dry-run` list stays free of it. Its README and `CHANGELOG.md` may show
+     the 3D preview beside its plan, in the PS-D12 words (PS-D11, `docs/plans/public-surfaces/3d.md`).
 
 3. **CHANGELOG.md has an entry for the new version**, and
    `node scripts/changelog-section.mjs <version>` exits 0 with the section body. A new sheet-level

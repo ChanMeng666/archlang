@@ -380,7 +380,7 @@ describe("V3 generators", () => {
 /**
  * The core's family → material table (`FIXTURE_FAMILY_MATERIALS`, a public export since the
  * `rendered` theme, PR #460), read off the root as a consumer would and feature-detected: a
- * published core older than that has no such export (the peer floor is 1.45).
+ * published core older than that has no such export (the peer floor is 1.57).
  */
 function familyTable(): Readonly<Record<string, { primary: string; secondary?: string }>> {
   const t = (core as unknown as { FIXTURE_FAMILY_MATERIALS?: Record<string, { primary: string; secondary?: string }> })

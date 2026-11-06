@@ -2,16 +2,11 @@
 
 ## [Unreleased]
 
-### Changed
-
-- `PREVIEW_ABOUT_URL`, the page that says what the 3D preview shows and does not, is the docs
-  site's `https://archlang.uk/3d` (it was this package's npm page). The playground's "What it
-  shows" link follows it. The replay HTML does not carry the link, so its bytes are unchanged.
-
 ## [0.4.0] - 2026-11-06
 
-Stairs require `@chanmeng666/archlang` ≥ 1.57.0, the first core that exports `treadCount`. With an
-older core everything else works as before and no stair is built (`stair-no-flights`).
+The core peer range is now `^1.57.0` (was `^1.45.0`): 1.57.0 is the first core that exports
+`treadCount`, which the stairs read. With an older core (npm warns of the peer range) everything
+else works as before and no stair is built (`stair-no-flights`).
 
 ### Added
 
@@ -57,6 +52,9 @@ older core everything else works as before and no stair is built (`stair-no-flig
   elevation" and so on: the 3D preview draws no elevations. The buttons still read N, E, S and W.
 - The ledger row `m1-omits-stairs-outdoor-fences` is now `m1-omits-outdoor-fences`, written once
   for outdoor surfaces and once for fences, which are still not built.
+- `PREVIEW_ABOUT_URL`, the page that says what the 3D preview shows and does not, is the docs
+  site's `https://archlang.uk/3d` (it was this package's npm page). The playground's "What it
+  shows" link follows it. The replay HTML does not carry the link, so its bytes are unchanged.
 
 ## [0.3.0] - 2026-11-05
 
