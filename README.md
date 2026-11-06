@@ -5,7 +5,7 @@
   <img src="./brand/archlang-wordmark-black.svg" alt="ArchLang" width="440" />
 </picture>
 
-### Floor plans as code.
+# Floor plans as code.
 
 ArchLang is an open-source (MIT) DSL for floor plans that compiles `.arch` source to SVG/DXF/PDF with linting and geometric validation — diffable, reproducible, and LLM-writable.
 

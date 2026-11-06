@@ -2,7 +2,7 @@
   "name": "@chanmeng666/archlang-mcp",
   "version": "0.2.40",
   "mcpName": "io.github.ChanMeng666/archlang-mcp",
-  "description": "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
+  "description": "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan (SVG, DXF, PDF) and tells it what's wrong. Open source, MIT.",
   "keywords": [
     "mcp",
     "model-context-protocol",
@@ -10,11 +10,13 @@
     "floor-plan",
     "architecture",
     "svg",
-    "dsl"
+    "dsl",
+    "llm",
+    "ai-agents"
   ],
   "license": "MIT",
   "author": "Chan Meng <chanmeng.dev@gmail.com>",
-  "homepage": "https://github.com/ChanMeng666/archlang/tree/main/packages/mcp#readme",
+  "homepage": "https://archlang.uk/mcp",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ChanMeng666/archlang.git",

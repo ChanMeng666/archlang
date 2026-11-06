@@ -54,7 +54,7 @@ describe("the hero", () => {
     expect(seam).toContain('<p class="tagline">{{ canonicalLine }}</p>');
     expect(seam).toMatch(/import \{[^}]*\bcanonicalLine\b[^}]*\} from "\.\.\/\.\.\/\.\.\/site-shared\/doors\.json"/);
     expect(doors.canonicalLine).toBe(
-      "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
+      "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan (SVG, DXF, PDF) and tells it what's wrong. Open source, MIT.",
     );
   });
 

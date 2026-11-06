@@ -28,7 +28,7 @@ const HOSTED = doors.doors.claudeai.url;
 describe("doors.json", () => {
   it("has the canonical line and every door", () => {
     expect(doors.canonicalLine).toBe(
-      "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
+      "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan (SVG, DXF, PDF) and tells it what's wrong. Open source, MIT.",
     );
     expect(Object.keys(doors.doors).sort()).toEqual([...KEYS].sort());
     expect(doors.todo).toMatch(/deeplink/i);
