@@ -16,6 +16,7 @@ Closed programme research (audits, studies, spikes) lives in the private sibling
 | `public-surfaces/` | Rework the playground (view mode, knobs, lazy editor), the docs home (what/why/how, zero-install doors) and the README + card so a visitor sees the output and tries it in a minute; `handoff.md` is the resume point | stages 0–4 done (1.56.0); 3D on every surface (`3d.md`) done (1.57.0), both 2026-11-06; residue in `handoff.md` |
 | `geo-seo/` | GEO/SEO wave 3: authority, agent discovery (registry `remotes`, marketplaces), one entity, internal links to the example pages, the monthly panel reading; `handoff.md` is the resume point | planned 2026-11-06; PR A in flight; start at `geo-seo/handoff.md` |
 | `visual-assets/` | Richer 3D furniture (material slots, shapes, a T0 generator for every family), an opt-in `rendered` 2D theme, twenty new families; `handoff.md` is the resume point | done and released 2026-11-04 (#459–#466); residue in `handoff.md` and backlog VA |
+| `product-roadmap/` | The product roadmap derived from the growth repo's research: seven tracks (checker credibility, edit-one-room, interop, sheet drafting, agent context, gated drawing-set/3D, foundations), four waves around the freeze and batch C, a "not doing" list, the RM cards and the owner's rulings RM-D1…D8; `handoff.md` is the resume point | planned 2026-11-06, rulings approved by the owner the same day; wave 0 not started |
 
 The backlog (`docs/backlog.md`) points here for programme work; `docs/adr/` holds the decisions that
 outlive a programme.
