@@ -7,9 +7,11 @@
 // the components, the raw copies and the tests all read one source.
 //
 // Pure apart from reading the repo; the payload module is TypeScript, so its three string
-// constants are read out of its text (test/docs-3d.test.ts holds them equal to the real exports).
+// constants are read out of its text (packages/archlang-3d/test/docs-site.test.ts holds them equal
+// to the real exports), as is the playground's 3D hash flag.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 /** The package module that declares the preview's lines. */
 export const PAYLOAD = "packages/archlang-3d/src/replay/payload.ts";
@@ -18,12 +20,18 @@ export const MANIFEST = "docs-site/public/3d/manifest.json";
 /** The site route the assets are served under (`docs-site/public/3d/`). */
 export const ASSET_ROUTE = "/3d";
 
+/** The playground module that declares its hash flags. */
+export const SHARE = "playground/src/share.ts";
+
 /**
- * The hash param that opens the playground on the 3D preview, after the plan: `#z=<token>&3d`
- * (card X5, `VIEW3D_FLAG` in playground/src/share.ts; test/docs-3d.test.ts holds the two equal
- * once that export exists). A playground without it reads the plan and ignores the param.
+ * The hash param that opens the playground on the 3D preview, after the plan (`#z=<token>&3d`):
+ * the playground's own `VIEW3D_FLAG` (card X5), read out of its source beside this file.
  */
-export const VIEW3D_PARAM = "3d";
+export const VIEW3D_PARAM = stringConstant(
+  readFileSync(fileURLToPath(new URL(`../${SHARE}`, import.meta.url)), "utf8"),
+  "VIEW3D_FLAG",
+  SHARE,
+);
 
 /** The plan the home page's band shows, its drawing beside its replay. */
 export const HOME_3D_PLAN = "furnished-flat";
@@ -31,14 +39,15 @@ export const HOME_3D_PLAN = "furnished-flat";
 /**
  * The PS-D12 line's last sentence, which the plan (`docs/plans/public-surfaces/3d.md` §2) adds
  * where a surface offers the download; payload.ts says so beside `PREVIEW_LABEL`, and
- * test/docs-3d.test.ts holds the plan's line equal to `PREVIEW_LABEL` plus this.
+ * packages/archlang-3d/test/docs-site.test.ts holds the plan's line equal to `PREVIEW_LABEL` plus
+ * this.
  */
 export const PREVIEW_DOWNLOAD = "You can also download it as a validated GLB.";
 
 /** One `export const NAME = "…";` string constant out of TypeScript source, or a build error. */
-function stringConstant(src, name) {
+function stringConstant(src, name, file = PAYLOAD) {
   const m = new RegExp(`export const ${name} =\\s*"((?:[^"\\\\]|\\\\.)*)";`).exec(src);
-  if (!m) throw new Error(`three-d: cannot find \`export const ${name} = "…";\` in ${PAYLOAD}`);
+  if (!m) throw new Error(`three-d: cannot find \`export const ${name} = "…";\` in ${file}`);
   return JSON.parse(`"${m[1]}"`);
 }
 

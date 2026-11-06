@@ -222,29 +222,59 @@ test.describe("the feature sheets on /examples", () => {
 });
 
 /**
- * The 3D band (card X6, PS-D12): the plan beside its replay, poster-first. Nothing of the replay
- * loads on the first screen (a lazy poster over a `preload="none"` video with no `poster`
- * attribute, which a browser would fetch eagerly); it plays muted once half of it is in view and
- * pauses when it leaves; under reduced motion it never starts by itself.
+ * The 3D band (card X6, PS-D12): the plan beside its replay, poster-first. The poster is a lazy
+ * picture over a `preload="none"` video with no `poster` attribute (which a browser would fetch
+ * eagerly); the MP4 loads when the band is at least half in view, where it plays muted, and it
+ * pauses when the band leaves. Under reduced motion it never starts by itself. A video that cannot
+ * play leaves the poster with a link to the MP4.
  *
- * `play()` and `pause()` are stubbed to count their calls and fire the media events, so the
- * band's logic is tested without depending on the browser's H.264 decoder.
+ * `play()`, `pause()` and `paused` are stubbed to count the calls and fire the media events, so the
+ * band's logic is tested without depending on the browser's H.264 decoder. With `__holdPlay` set, a
+ * play() stays pending (no frame yet) until `__resolvePlay()`, as a slow load does.
  */
 const STUB_MEDIA = () => {
-  const w = window as unknown as { __plays: number; __pauses: number };
+  type V = HTMLMediaElement & { __paused?: boolean; __reject?: (e: unknown) => void; __start?: () => void };
+  const w = window as unknown as {
+    __plays: number;
+    __pauses: number;
+    __holdPlay?: boolean;
+    __resolvePlay?: () => void;
+  };
   w.__plays = 0;
   w.__pauses = 0;
-  HTMLMediaElement.prototype.play = function () {
+  Object.defineProperty(HTMLMediaElement.prototype, "paused", {
+    configurable: true,
+    get(this: V) {
+      return this.__paused ?? true;
+    },
+  });
+  HTMLMediaElement.prototype.play = function (this: V) {
     w.__plays++;
-    this.dispatchEvent(new Event("playing"));
-    return Promise.resolve();
+    this.__paused = false;
+    const start = () => this.dispatchEvent(new Event("playing"));
+    if (!w.__holdPlay) {
+      start();
+      return Promise.resolve();
+    }
+    return new Promise<void>((resolve, reject) => {
+      this.__reject = reject;
+      w.__resolvePlay = () => {
+        if (this.__paused) return;
+        start();
+        resolve();
+      };
+    });
   };
-  HTMLMediaElement.prototype.pause = function () {
+  HTMLMediaElement.prototype.pause = function (this: V) {
     w.__pauses++;
+    this.__paused = true;
+    this.__reject?.(new DOMException("The play() request was interrupted by a call to pause().", "AbortError"));
+    this.__reject = undefined;
     this.dispatchEvent(new Event("pause"));
   };
 };
 const plays = (page: Page) => page.evaluate(() => (window as unknown as { __plays: number }).__plays);
+const pauses = (page: Page) => page.evaluate(() => (window as unknown as { __pauses: number }).__pauses);
 const videoFrame = (page: Page) => page.locator(".same-source__frame--video");
 
 test.describe("the 3D band", () => {
@@ -265,7 +295,9 @@ test.describe("the 3D band", () => {
     expect(await video.evaluate((v) => (v as HTMLVideoElement).muted && (v as HTMLVideoElement).playsInline)).toBe(
       true,
     );
-    await expect(video.locator("source")).toHaveAttribute("src", BAND.video.mp4);
+    await expect(video).toHaveAttribute("src", BAND.video.mp4);
+    // Until it fails, no link to the MP4: the video plays in place.
+    await expect(band.locator(".same-source__mp4")).toHaveCount(0);
     const poster = band.locator(".same-source__poster");
     await expect(poster.locator("source")).toHaveAttribute("srcset", BAND.poster.webp);
     await expect(poster.locator("img")).toHaveAttribute("src", BAND.poster.png);
@@ -315,6 +347,41 @@ test.describe("the 3D band", () => {
     await page.waitForTimeout(300);
     await expect(fig).toHaveAttribute("data-state", "paused");
     await expect(toggle).toHaveAccessibleName("Play the replay");
+  });
+
+  test("a play still pending when the band leaves is paused, and the poster stays", async ({ page }) => {
+    await page.addInitScript(() => {
+      (window as unknown as { __holdPlay: boolean }).__holdPlay = true;
+    });
+    await page.addInitScript(STUB_MEDIA);
+    await page.goto("/");
+    const fig = page.locator(".same-source__fig--3d");
+    await videoFrame(page).scrollIntoViewIfNeeded();
+    await expect.poll(() => plays(page)).toBe(1);
+    // No frame yet: still the poster.
+    await expect(fig).toHaveAttribute("data-state", "poster");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect.poll(() => pauses(page)).toBe(1);
+    // The load finishing off-screen does not start it: the pause rejected the pending play.
+    await page.evaluate(() => (window as unknown as { __resolvePlay?: () => void }).__resolvePlay?.());
+    await page.waitForTimeout(300);
+    await expect(fig).toHaveAttribute("data-state", "poster");
+    expect(await page.locator(".same-source video").evaluate((v) => (v as HTMLVideoElement).paused)).toBe(true);
+    await expect(page.locator(".same-source__poster img")).toBeVisible();
+  });
+
+  test("a video that cannot play leaves the poster, with a link to the MP4", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    const fig = page.locator(".same-source__fig--3d");
+    await videoFrame(page).scrollIntoViewIfNeeded();
+    await page.locator(".same-source video").dispatchEvent("error");
+    await expect(fig).toHaveAttribute("data-state", "failed");
+    await expect(page.locator(".same-source__poster img")).toBeVisible();
+    await expect(page.locator(".same-source__toggle")).toHaveCount(0);
+    const link = page.locator(".same-source__mp4");
+    await expect(link).toHaveText("Play the replay (MP4)");
+    await expect(link).toHaveAttribute("href", BAND.video.mp4);
   });
 
   test("under reduced motion it stays on the poster until the play button is pressed", async ({ page }) => {

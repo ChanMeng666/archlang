@@ -6,11 +6,21 @@
 // the raw /3d.md.
 //
 // Each replay is behind its poster: nothing of the video loads until the visitor presses play,
-// and with no JavaScript the button is a plain link to the MP4.
+// and with no JavaScript the poster is a plain link to the MP4. "Play the replay (MP4)" stays under
+// the frame: before the first press it plays in place, after it (or once the video has failed to
+// play, which puts the poster back) it is a plain link to the file.
 import { reactive } from "vue";
 import { ASSETS_3D } from "./three-d-data.js";
 
-const playing = reactive<Record<string, boolean>>({});
+/** Per plan: `video` once play was pressed, `failed` once that video could not play. */
+const mode = reactive<Record<string, "video" | "failed">>({});
+
+/** Play in place on the first press; after that, or after a failure, follow the link. */
+function press(e: MouseEvent, name: string): void {
+  if (mode[name] !== undefined) return;
+  e.preventDefault();
+  mode[name] = "video";
+}
 </script>
 
 <template>
@@ -27,7 +37,7 @@ const playing = reactive<Record<string, boolean>>({});
         <figure class="plans3d__fig">
           <div class="plans3d__frame">
             <video
-              v-if="playing[a.name]"
+              v-if="mode[a.name] === 'video'"
               class="plans3d__video"
               :src="a.video.mp4"
               :width="a.video.width"
@@ -37,13 +47,14 @@ const playing = reactive<Record<string, boolean>>({});
               muted
               playsinline
               :aria-label="`The drafting-order replay of ${a.name}.arch.`"
+              @error="mode[a.name] = 'failed'"
             ></video>
             <a
               v-else
               class="plans3d__facade"
               :href="a.video.mp4"
               :aria-label="`Play the replay of ${a.name}.arch`"
-              @click.prevent="playing[a.name] = true"
+              @click="press($event, a.name)"
             >
               <picture>
                 <source :srcset="a.poster.webp" type="image/webp" />
@@ -67,7 +78,7 @@ const playing = reactive<Record<string, boolean>>({});
         </figure>
       </div>
       <p class="plans3d__links">
-        <a :href="a.video.mp4" @click.prevent="playing[a.name] = true">Play the replay</a> ·
+        <a class="plans3d__mp4" :href="a.video.mp4" @click="press($event, a.name)">Play the replay (MP4)</a> ·
         <a :href="a.glb.href" :download="`${a.name}.glb`">Download GLB ({{ a.glbSize }})</a> ·
         <a :href="a.link3d" target="_blank" rel="noopener">Open in the playground (3D)</a> ·
         <a :href="`/examples/${a.name}.arch`">Plan source</a>

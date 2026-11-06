@@ -170,7 +170,7 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     for (const a of assets) {
       expect(md).toContain(`(/examples/${a.name}.svg)`);
       expect(md).toContain(`(${a.poster.png})`);
-      expect(md).toContain(`[Play the replay](${a.video.mp4})`);
+      expect(md).toContain(`[Play the replay (MP4)](${a.video.mp4})`);
       expect(md).toMatch(new RegExp(`\\[Download GLB \\(\\d+ kB\\)\\]\\(${a.glb.href.replace(/\./g, "\\.")}\\)`));
       expect(md).toMatch(
         /\[Open in the playground \(3D\)\]\(https:\/\/playground\.archlang\.uk\/#z=[A-Za-z0-9_-]+&3d\)/,

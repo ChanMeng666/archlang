@@ -6,47 +6,62 @@
 // public/3d/manifest.json; nothing here names a file. site-markdown.mjs renders the same band for
 // the raw /index.md.
 //
-// The replay is poster-first and lazy, so the page's first screen loads nothing of it: the poster
-// is a lazy <picture> (WebP, PNG fallback) over a `preload="none"` video, which plays muted once
-// half of it is in view and pauses when it leaves. Under reduced motion, or with Save-Data on, it
-// never starts by itself: the poster stays, with the play button. The video carries no `poster`
-// attribute, because a browser fetches that eagerly.
+// The replay is poster-first: the poster is a lazy <picture> (WebP, PNG fallback) over a
+// `preload="none"` video, and the MP4 loads when the band is at least half in view, where it plays
+// muted, and pauses when it leaves. Under reduced motion, or with Save-Data on, it never starts by
+// itself (the MP4 loads only when the play button is pressed): the poster stays, with the button.
+// The video carries no `poster` attribute, because a browser fetches that eagerly. A video that
+// cannot play (no decoder, a failed load) leaves the poster in place with a link to the MP4.
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { ASSETS_3D, HOME_3D_PLAN, PREVIEW } from "./three-d-data.js";
 
 const PLAN = ASSETS_3D.find((a) => a.name === HOME_3D_PLAN)!;
 
-type State = "poster" | "playing" | "paused" | "ended";
-const state = ref<State>("poster");
 const frame = ref<HTMLElement | null>(null);
 const video = ref<HTMLVideoElement | null>(null);
+/** A frame has played: from then on the video shows its own frame, paused or not. */
+const started = ref(false);
+const playing = ref(false);
+const ended = ref(false);
+/** The video cannot play here: the poster stays, and the link to the MP4 shows. */
+const failed = ref(false);
 /** The visitor paused it: scrolling back into view does not start it again. */
 let held = false;
 let observer: IntersectionObserver | null = null;
 
+/** `poster` until a frame has played, then `playing`, `paused` or `ended`; `failed` for good. */
+const state = computed(() =>
+  failed.value
+    ? "failed"
+    : !started.value
+      ? "poster"
+      : playing.value
+        ? "playing"
+        : ended.value
+          ? "ended"
+          : "paused",
+);
 const buttonLabel = computed(() =>
-  state.value === "playing"
-    ? "Pause the replay"
-    : state.value === "ended"
-      ? "Play the replay again"
-      : "Play the replay",
+  playing.value ? "Pause the replay" : ended.value ? "Play the replay again" : "Play the replay",
 );
 
 async function play(): Promise<void> {
   const v = video.value;
-  if (!v) return;
+  if (!v || failed.value) return;
   try {
     await v.play();
-  } catch {
-    // Refused (no decoder, a blocked autoplay): the poster stays, and the button still offers it.
-    if (state.value !== "paused") state.value = "poster";
+  } catch (e) {
+    // An AbortError is our own pause() (the band left the view before the play began), and a
+    // NotAllowedError a blocked autoplay: the button still offers it. Anything else cannot play.
+    const name = (e as { name?: string }).name;
+    if (name !== "AbortError" && name !== "NotAllowedError") failed.value = true;
   }
 }
 
 function toggle(): void {
   const v = video.value;
   if (!v) return;
-  if (state.value === "playing") {
+  if (!v.paused) {
     held = true;
     v.pause();
   } else {
@@ -58,11 +73,20 @@ function toggle(): void {
 onMounted(() => {
   const v = video.value;
   if (!v) return;
-  v.addEventListener("playing", () => (state.value = "playing"));
-  v.addEventListener("pause", () => {
-    if (!v.ended) state.value = "paused";
+  v.addEventListener("playing", () => {
+    started.value = true;
+    playing.value = true;
+    ended.value = false;
   });
-  v.addEventListener("ended", () => (state.value = "ended"));
+  v.addEventListener("pause", () => (playing.value = false));
+  v.addEventListener("ended", () => {
+    playing.value = false;
+    ended.value = true;
+  });
+  v.addEventListener("error", () => {
+    playing.value = false;
+    failed.value = true;
+  });
   const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const saveData = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData === true;
   observer = new IntersectionObserver(
@@ -70,10 +94,11 @@ onMounted(() => {
       const e = entries[entries.length - 1];
       if (!e) return;
       if (e.intersectionRatio >= 0.5) {
-        // Only the first time, and never under reduced motion or Save-Data; a replay the
-        // visitor paused or watched to the end stays where it is.
-        if (!reduced && !saveData && !held && (state.value === "poster" || state.value === "paused")) void play();
-      } else if (state.value === "playing") {
+        // Never under reduced motion or Save-Data; a replay the visitor paused or watched to the
+        // end stays where it is.
+        if (!reduced && !saveData && !held && !ended.value && v.paused) void play();
+      } else if (!v.paused) {
+        // Playing, or a play() still pending: either way it stops once the band leaves.
         v.pause();
       }
     },
@@ -110,12 +135,11 @@ onBeforeUnmount(() => observer?.disconnect());
               muted
               playsinline
               preload="none"
+              :src="PLAN.video.mp4"
               :width="PLAN.video.width"
               :height="PLAN.video.height"
               :aria-label="`The drafting-order replay of ${PLAN.name}.arch: the plan draws itself, then rises into the 3D preview.`"
-            >
-              <source :src="PLAN.video.mp4" type="video/mp4" />
-            </video>
+            ></video>
             <picture class="same-source__poster">
               <source :srcset="PLAN.poster.webp" type="image/webp" />
               <img
@@ -127,11 +151,21 @@ onBeforeUnmount(() => observer?.disconnect());
                 decoding="async"
               />
             </picture>
-            <button type="button" class="same-source__toggle" :aria-label="buttonLabel" @click="toggle">
-              <span aria-hidden="true">{{ state === "playing" ? "❚❚" : "▶" }}</span>
+            <button
+              v-if="!failed"
+              type="button"
+              class="same-source__toggle"
+              :aria-label="buttonLabel"
+              @click="toggle"
+            >
+              <span aria-hidden="true">{{ playing ? "❚❚" : "▶" }}</span>
             </button>
           </div>
-          <figcaption class="same-source__cap">The 3D preview · its drafting-order replay</figcaption>
+          <figcaption class="same-source__cap">
+            The 3D preview · its drafting-order replay<template v-if="failed">
+              · <a class="same-source__mp4" :href="PLAN.video.mp4">Play the replay (MP4)</a></template
+            >
+          </figcaption>
         </figure>
       </div>
       <p class="same-source__limits">{{ PREVIEW.limits }}</p>
@@ -211,8 +245,9 @@ onBeforeUnmount(() => observer?.disconnect());
   height: 100%;
   object-fit: contain;
 }
-/* The poster covers the video until it first plays; a paused replay shows its own frame. */
-.same-source__fig--3d:not([data-state="poster"]) .same-source__poster {
+/* The poster covers the video until a frame has played (and for good when it cannot play); a
+   paused replay shows its own frame. */
+.same-source__fig--3d:not([data-state="poster"]):not([data-state="failed"]) .same-source__poster {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.3s;
@@ -256,7 +291,7 @@ onBeforeUnmount(() => observer?.disconnect());
   font-size: 14.5px;
 }
 @media (prefers-reduced-motion: reduce) {
-  .same-source__fig--3d:not([data-state="poster"]) .same-source__poster {
+  .same-source__fig--3d:not([data-state="poster"]):not([data-state="failed"]) .same-source__poster {
     transition: none;
   }
 }

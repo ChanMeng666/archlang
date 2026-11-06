@@ -14,7 +14,7 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { COMMANDS } from "../src/cli/manifest.js";
-import { PREVIEW_LABEL, PREVIEW_LEAD, PREVIEW_LIMITS } from "../src/replay/payload.js";
+import { PREVIEW_ABOUT_URL, PREVIEW_LABEL, PREVIEW_LEAD, PREVIEW_LIMITS } from "../src/replay/payload.js";
 
 const REPO = fileURLToPath(new URL("../../../", import.meta.url));
 const read = (p: string): string =>
@@ -65,6 +65,13 @@ describe("the docs site's lines are the package's", () => {
     expect(page).toMatch(/^<PreviewLine which="limits" \/>$/m);
     expect(page).not.toContain(PREVIEW_LIMITS);
     expect(page).not.toContain(PREVIEW_LABEL.slice(PREVIEW_LEAD.length).trim());
+  });
+
+  it("PREVIEW_ABOUT_URL is the docs site's /3d page, which the site builds", () => {
+    expect(PREVIEW_ABOUT_URL).toBe("https://archlang.uk/3d");
+    // `docs-site/3d.md` is the page VitePress serves at /3d (cleanUrls), published by sync-docs.
+    expect(read("docs-site/sync-docs.mjs")).toContain('["docs-site/3d.md", "3d.md"],');
+    expect(page).toMatch(/^# The 3D preview/m);
   });
 });
 

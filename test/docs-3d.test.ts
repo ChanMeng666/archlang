@@ -16,10 +16,23 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
+import { has3dFlag, hasEditFlag, srcFromHash, VIEW3D_FLAG } from "../playground/src/share.js";
 
-// A plain `.mjs` module (no declaration file): loaded by a computed specifier, as
+// Plain `.mjs` modules (no declaration file): loaded by a computed specifier, as
 // test/site-markdown.test.ts loads its siblings.
 const THREE_D = "../docs-site/three-d.mjs";
+const hasDeflateRaw = (): boolean => {
+  try {
+    new DecompressionStream("deflate-raw");
+    return true;
+  } catch {
+    return false;
+  }
+};
+const PERMALINK = "../scripts/gen-permalink.mjs";
+const { encodePlanHash } = (await import(/* @vite-ignore */ PERMALINK)) as {
+  encodePlanHash: (source: string) => string;
+};
 type Asset = {
   name: string;
   source: string;
@@ -114,10 +127,18 @@ describe("the plans come from the 3D manifest", () => {
     expect(read("docs-site/sync-docs.mjs")).toMatch(/threeDAssets\(repo\)/);
   });
 
-  it("the playground's 3D flag is the playground's own, once it declares one (card X5)", () => {
-    const declared = /export const VIEW3D_FLAG = "([^"]+)"/.exec(read("playground/src/share.ts"))?.[1];
-    if (declared !== undefined) expect(T.VIEW3D_PARAM).toBe(declared);
-    expect(T.VIEW3D_PARAM).toBe("3d");
+  it("the 3D flag is the playground's own (card X5), and a link built with it opens the 3D preview", async () => {
+    expect(T.VIEW3D_PARAM).toBe(VIEW3D_FLAG);
+    // The links the band and /3d carry: the plan's `#z=` token, then the flag. The playground's
+    // own readers see the 3D flag and the same plan, and not edit mode.
+    const source = read(`examples/${T.HOME_3D_PLAN}.arch`);
+    const hash = `#z=${encodePlanHash(source)}&${T.VIEW3D_PARAM}`;
+    expect(has3dFlag(hash)).toBe(true);
+    expect(hasEditFlag(hash)).toBe(false);
+    // Node 18 ships `DecompressionStream` without "deflate-raw" (added in 21.2), as test/cli-link.test.ts says.
+    if (hasDeflateRaw()) expect((await srcFromHash(hash))?.replace(/\r\n/g, "\n")).toBe(source);
+    // A canary: without the flag the same reader says no.
+    expect(has3dFlag(`#z=${encodePlanHash(source)}`)).toBe(false);
   });
 });
 

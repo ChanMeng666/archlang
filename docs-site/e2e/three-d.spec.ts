@@ -58,6 +58,23 @@ test.describe("the /3d page", () => {
     await expect(video).toHaveCount(1);
     await expect(video).toHaveAttribute("src", ASSETS[0]!.video.mp4);
     await expect(video).toHaveAttribute("controls", "");
+    // The link to the file stays under the frame, now a plain link.
+    const link = item.locator(".plans3d__mp4");
+    await expect(link).toBeVisible();
+    await expect(link).toHaveText("Play the replay (MP4)");
+    await expect(link).toHaveAttribute("href", ASSETS[0]!.video.mp4);
+  });
+
+  test("a replay that cannot play puts its poster back, with the link to the MP4", async ({ page }) => {
+    await page.goto("/3d");
+    const item = page.locator(".plans3d__item").first();
+    await item.locator(".plans3d__facade").click();
+    await item.locator("video").dispatchEvent("error");
+    await expect(item.locator("video")).toHaveCount(0);
+    await expect(item.locator(".plans3d__facade picture img")).toBeVisible();
+    await expect(item.locator(".plans3d__mp4")).toHaveAttribute("href", ASSETS[0]!.video.mp4);
+    // After a failure the poster is a plain link to the file; it does not try the video again.
+    await expect(item.locator(".plans3d__facade")).toHaveAttribute("href", ASSETS[0]!.video.mp4);
   });
 
   for (const [width, height] of [
