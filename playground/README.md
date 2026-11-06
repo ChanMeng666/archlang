@@ -9,11 +9,20 @@ consumes the built core (`../dist/index.js`). Deployed at
 
 - **View mode by default:** a visit opens on the drawing alone (the default example's, written into
   `index.html` at build time by `scripts/gen-static.mjs`, so it is there before any JavaScript).
-  The header holds the plan picker, **Source** (edit mode: the editor beside the drawing),
+  The header holds the plan gallery, **Source** (edit mode: the editor beside the drawing),
   **Tools** (every action below, in one menu) and **Make your own**. `&edit` in the hash
   (`#z=…&edit`, or `#edit`) opens edit mode; `arch link` and the docs' "Open in playground" add it,
   and a link copied here does not. The compiler, the editor, the panels, three.js, the GLB writer
   and jsPDF are their own chunks, loaded after the first paint or on first use.
+- **Plan gallery (ruling PG-D2):** the header's one way to choose a plan. Its trigger names the
+  plan on screen (`▦ Furnished Flat ▾`); it opens a grid of thumbnail cards under the example
+  groups, each card a plan's clean name with any trailing parenthetical as a small grey tag
+  (`plan-label.js`), then the playground-only "Try Checks" sample. Every example card is a real
+  link to its static page, written into `index.html` at build time, so it works with no script
+  and crawlers follow it; with script a plain click opens the plan here (a modified click keeps
+  the link's meaning). The arrow keys, Home and End move through the grid, typing filters it by
+  name, Escape closes it. Its thumbnails load on the first open, not before. On a phone it opens
+  as a full-width two-column sheet.
 - **One entry point per function (ruling PG-D3):** view mode has no tab row and no status row; the
   stage's **Plan | 3D** switch is its one view control. `&3d` in the hash (`#z=…&3d`, or `#3d`)
   opens on the 3D preview, the hash keeps it while the 3D preview is on screen, and a full link
@@ -86,6 +95,7 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `preview3d.ts` / `plan3d.ts` / `glb-export.ts` | the 3D preview (lazy: three.js and archlang-3d), the plan → Mesh3D path it shares with Download GLB, and the GLB writer (its own lazy chunk) |
 | `raster-export.ts` | copy/download SVG · PNG · DXF · PDF |
 | `snapshots.ts` / `storage.ts` | named snapshot history UI + defensive `localStorage` helpers |
+| `gallery.ts` / `plan-label.js` | the header's plan gallery (opens a plan in place, marks the current one, filters, keyboard), and the label → name + tag split it shares with `scripts/gen-static.mjs` |
 | `examples.ts`, `escape.ts` | example plans, HTML-escape helper |
 | `styles/*.css` | the shell's styles, split by concern: `tokens.css` (the shared "Compile Boundary" brand tokens, byte-identical with the docs site), `chrome.css` (the cool light source-world header + the compile-seam divider), `editor.css`, `panels.css` (sheet-world output panels), `embed.css` (the chrome-less viewer) |
 

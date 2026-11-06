@@ -1,7 +1,7 @@
 import { expect, type Download, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { describe, describeLevel, lint } from "../../src/index.js";
-import { openTools, setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
+import { openTools, pickPlan, setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
  * The STOREY SWITCHER — the control that picks which level of a multi-storey plan the
@@ -47,9 +47,9 @@ function townhouseFacts(level: number): string {
 /** The storey buttons, in strip order. */
 const levelButtons = (page: Page) => page.locator("#storeys button");
 
-/** Load a bundled example by its menu label and wait for the plan to land. */
+/** Load a bundled example by its gallery label and wait for the plan to land. */
 async function pickExample(page: Page, label: string): Promise<void> {
-  await page.locator("#examples").selectOption(label);
+  await pickPlan(page, label);
   await waitForPlan(page);
 }
 

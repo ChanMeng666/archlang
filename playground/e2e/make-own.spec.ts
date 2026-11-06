@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
-import { shareHash, waitForPlan } from "./fixtures.js";
+import { pickPlan, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
  * Make your own (card P5): the sheet of doors, read from `site-shared/doors.json` in its
@@ -157,7 +157,7 @@ test.describe("make your own", () => {
     await s.locator('[data-door="claudeai"] button[data-copy]').click();
     await s.getByRole("link", { name: "Open in Claude ↗" }).hover();
     await page.keyboard.press("Escape");
-    await page.locator("#examples").selectOption("Two-bed flat");
+    await pickPlan(page, "Two-bed flat");
     await openSheet(page);
     await page.waitForTimeout(500);
     expect(seen).toEqual([]);
@@ -250,7 +250,7 @@ test.describe("make your own", () => {
     const nudge = page.locator(".nudge");
     for (const [i, label] of ["Two-bed flat", "Laneway House", "Two-bed flat"].entries()) {
       await expect(nudge, `before switch ${i + 1}`).toHaveCount(0);
-      await page.locator("#examples").selectOption(label);
+      await pickPlan(page, label);
     }
     await expect(nudge).toBeVisible();
     await expect(nudge).toHaveAttribute("role", "status");
@@ -264,8 +264,7 @@ test.describe("make your own", () => {
 
     await page.reload();
     await waitForPlan(page);
-    for (const label of ["Two-bed flat", "Laneway House", "Two-bed flat", "Laneway House"])
-      await page.locator("#examples").selectOption(label);
+    for (const label of ["Two-bed flat", "Laneway House", "Two-bed flat", "Laneway House"]) await pickPlan(page, label);
     await page.waitForTimeout(300);
     await expect(nudge).toHaveCount(0);
   });

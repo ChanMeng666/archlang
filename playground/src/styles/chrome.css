@@ -1,6 +1,6 @@
 /**
  * Playground chrome — the shell around the app: reset, page frame, the cool-grey
- * source-world header (brand, plan picker, Source · Checks · Tools · Make your own),
+ * source-world header (brand, plan gallery, Source · Tools · Make your own),
  * the Tools menu, the intro line, the two modes (view: the drawing alone; edit: the
  * two-pane grid), pane headers, output tabs, the compile-seam divider, the Make-your-own
  * dialog and the mobile layout. Tokens live in tokens.css. This is source-world chrome;
@@ -25,9 +25,11 @@ body {
 }
 
 /* ── Header = source-world chrome ──────────────────────────────────────────
-   One row: the brand and the plan picker on the left, at most four controls on the
-   right. Narrower than they fit, the items wrap instead of scrolling the page sideways. */
+   One row: the brand and the plan gallery on the left, at most four controls on the
+   right. Narrower than they fit, the items wrap instead of scrolling the page sideways.
+   Positioned, so the gallery's panel can anchor to it. */
 header {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -78,8 +80,7 @@ header {
   border-radius: 2px;
 }
 
-/* squared carbon controls — the header's buttons, the picker and everything in Tools */
-.hd-picker,
+/* squared carbon controls — the header's buttons, the gallery trigger and everything in Tools */
 .hd-btn,
 .tools-panel select,
 .tools-panel button {
@@ -99,34 +100,16 @@ header {
     background 0.15s,
     border-color 0.15s;
 }
-/* The closed plan picker stays compact so a long label (e.g. "Bungalow (site + doors)")
-   cannot blow the header row wider than the viewport; the open list shows every one. */
-.hd-picker {
-  max-width: 210px;
-  text-overflow: ellipsis;
-  padding-right: 8px;
-}
-.hd-picker option,
 .tools-panel select option {
   color: var(--src-fg);
   background: var(--src-surface);
 }
-/* Group headings in the picker. The UA default is italic, which reads as an option
-   that is somehow disabled; a non-italic semibold label reads as a heading instead. */
-.hd-picker optgroup {
-  font-style: normal;
-  font-weight: 600;
-  color: var(--src-muted);
-  background: var(--src-bg);
-}
-.hd-picker:hover,
 .hd-btn:hover,
 .tools-panel select:hover,
 .tools-panel button:hover {
   border-color: var(--plum);
   background: color-mix(in srgb, var(--plum) 8%, var(--src-surface));
 }
-.hd-picker:focus-visible,
 .hd-btn:focus-visible,
 .tools-panel select:focus-visible,
 .tools-panel button:focus-visible {
@@ -742,80 +725,178 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   visibility: hidden;
 }
 
-/* The plan strip (view mode only): a row of thumbnail links under the drawing that scrolls
-   sideways inside itself, never the page; "All plans" stays at its end. Every thumbnail box has
-   a fixed size and the image is contained in it, so a lazy thumbnail arriving moves nothing.
-   The links are written by scripts/gen-static.mjs; without them (the dev server) the list is
-   only a comment, which `:empty` matches. */
-.strip {
-  flex: none;
-  display: flex;
+/* ── The plan gallery (ruling PG-D2) — the header's one way to choose a plan ──
+   A disclosure like Tools: the trigger names the plan on screen, the panel is a grid of
+   thumbnail cards per group. A closed <details> renders nothing, so its lazy thumbnails are
+   not fetched until the first open. Every thumbnail box has a fixed aspect, so a thumbnail
+   arriving moves nothing. The cards are written by scripts/gen-static.mjs. */
+.gal > summary {
+  list-style: none;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
-  min-width: 0;
-  padding: 3px 14px;
-  border-top: 1px solid var(--hairline);
-  background: var(--paper-panel);
+  gap: 7px;
 }
-html[data-mode="edit"] .strip {
+.gal > summary::-webkit-details-marker {
   display: none;
 }
-.strip-list {
-  flex: 1 1 auto;
-  min-width: 0;
+/* A long name (e.g. "Corner Cafe") cannot blow the header row wider than the viewport. */
+.gal-current {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.gal-glyph,
+.gal-caret {
+  color: var(--src-muted);
+}
+.vh {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.gal-panel {
+  position: absolute;
+  left: 14px;
+  top: calc(100% + 1px);
+  z-index: 40;
   display: flex;
-  gap: 6px;
+  flex-direction: column;
+  gap: 12px;
+  width: min(820px, calc(100vw - 28px));
+  max-height: calc(100dvh - 64px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 12px 14px 14px;
+  background: var(--src-surface);
+  border: 1px solid var(--src-rule);
+  border-radius: 3px;
+  box-shadow: 0 8px 24px rgb(28 36 48 / 18%);
+}
+.gal:not([open]) .gal-panel {
+  display: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .gal[open] .gal-panel {
+    animation: gal-in 0.14s ease-out;
+  }
+}
+@keyframes gal-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+.gal-filter {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--src-rule);
+  border-radius: 3px;
+  background: var(--paper);
+  color: var(--ink);
+  width: min(280px, 100%);
+}
+.gal-filter:focus-visible {
+  outline: 2px solid var(--plum-deep);
+  outline-offset: 1px;
+}
+.gal-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.gal-group[hidden] {
+  display: none;
+}
+.gal-h {
+  margin: 0 0 6px;
+  font-weight: 600;
+  font-family: var(--font-display);
+  font-variation-settings:
+    "wdth" 85,
+    "wght" 600;
+  font-size: 10px;
+  line-height: 1;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--src-muted);
+}
+.gal-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(128px, 1fr));
+  gap: 8px;
   margin: 0;
   padding: 0;
   list-style: none;
-  overflow-x: auto;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x proximity;
-  scrollbar-width: thin;
 }
-.strip-list:empty {
+.gal-grid > li[hidden] {
   display: none;
 }
-.strip-list > li {
-  flex: none;
-  scroll-snap-align: start;
-}
-/* A gap and a rule where a group of the picker begins. */
-.strip-list > li[data-group]:not(:first-child) {
-  margin-left: 6px;
-  padding-left: 12px;
-  border-left: 1px solid var(--hairline);
-}
-.strip-item {
-  display: block;
-  width: 60px;
-  height: 40px;
-  padding: 2px;
+.gal-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  height: 100%;
+  padding: 5px 5px 6px;
   border: 1px solid var(--hairline);
   border-radius: 3px;
   background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
 }
-.strip-item img {
+.gal-thumb {
   display: block;
   width: 100%;
-  height: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
   object-fit: contain;
+  margin-bottom: 3px;
 }
-.strip-item:hover {
+/* A sample has no thumbnail (no static page draws one): an empty box of the same size. */
+.gal-thumb-none {
+  background: repeating-linear-gradient(135deg, transparent 0 6px, var(--hairline) 6px 7px);
+  border-radius: 2px;
+}
+.gal-name {
+  font-size: 12.5px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.gal-tag {
+  font-size: 11px;
+  line-height: 1.25;
+  color: var(--src-muted);
+}
+.gal-card:hover {
   border-color: var(--src-rule);
 }
-.strip-item[aria-current="true"] {
+.gal-card[aria-current="true"] {
   border-color: var(--redline-ink);
   box-shadow: inset 0 0 0 1px var(--redline-ink);
 }
-/* Inside the box: the list clips what overflows it (the list has no padding to spare: every
-   pixel of the strip's height comes off the drawing's). */
-.strip-item:focus-visible {
+.gal-card:focus-visible {
   outline: 2px solid var(--plum-deep);
-  outline-offset: -2px;
+  outline-offset: 1px;
 }
-.strip-all {
-  flex: none;
+/* Always present and rendered (a live region): empty, it has no height, and the negative
+   margin takes back the panel's gap, so it takes no room. */
+.gal-empty:empty {
+  margin-top: -12px;
+}
+.gal-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--src-muted);
+}
+.gal-all {
+  align-self: flex-start;
   font-size: 12.5px;
   white-space: nowrap;
   /* --plum-deep, not --plum: body-size text (the brand token rule) */
@@ -823,10 +904,10 @@ html[data-mode="edit"] .strip {
   text-decoration: none;
   border-bottom: 1px solid var(--src-border);
 }
-.strip-all:hover {
+.gal-all:hover {
   border-bottom-color: var(--plum-deep);
 }
-.strip-all:focus-visible {
+.gal-all:focus-visible {
   outline: 2px solid var(--plum-deep);
   outline-offset: 2px;
   border-radius: 2px;
@@ -870,7 +951,6 @@ html[data-mode="edit"] .strip {
     padding: 8px 16px;
     row-gap: 8px;
   }
-  .hd-picker,
   .hd-btn,
   .tools-panel select,
   .tools-panel button,
@@ -883,15 +963,61 @@ html[data-mode="edit"] .strip {
     display: inline-flex;
     align-items: center;
   }
-  /* 16px stops iOS zooming the page when a select takes focus */
-  .hd-picker,
-  .tools-panel select {
+  /* 16px stops iOS zooming the page when a field takes focus */
+  .tools-panel select,
+  .gal-filter {
     font-size: 16px;
   }
-  /* The picker takes the brand's row; the controls take the next one. */
-  .hd-picker {
+  /* The gallery's trigger takes the brand's row; the controls take the next one. */
+  .gal {
     flex: 1 1 140px;
+    display: flex;
+    min-width: 0;
+  }
+  .gal > summary {
+    flex: 1;
+    min-width: 0;
+  }
+  .gal-current {
     max-width: none;
+    flex: 0 1 auto;
+  }
+  .gal-caret {
+    margin-left: auto;
+  }
+  /* The gallery opens as a sheet from the bottom: full width, two columns, touch-sized. */
+  .gal-panel {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    max-height: 85dvh;
+    padding: 14px 16px 16px;
+    border-width: 1px 0 0;
+    border-radius: 8px 8px 0 0;
+    box-shadow: 0 -8px 24px rgb(28 36 48 / 18%);
+  }
+  .gal-filter {
+    width: 100%;
+    min-height: 44px;
+  }
+  .gal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .gal-card {
+    min-height: 44px;
+  }
+  .gal-name {
+    font-size: 14px;
+  }
+  .gal-all {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+    border-bottom: 0;
   }
   .spacer {
     flex-basis: 100%;
@@ -1056,20 +1182,6 @@ html[data-mode="edit"] .strip {
   }
   .tabs {
     flex-wrap: wrap;
-  }
-  /* A swipe strip in the 16px gutters, of touch-sized targets. */
-  .strip {
-    padding: 4px 16px;
-  }
-  .strip-item {
-    width: 66px;
-    height: 44px;
-  }
-  .strip-all {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    border-bottom: 0;
   }
   .divider {
     display: none;

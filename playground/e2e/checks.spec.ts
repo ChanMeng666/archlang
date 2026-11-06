@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 import * as core from "../../dist/index.js";
 import type { buildReviewSheet as BuildReviewSheet } from "../../src/cli/review.js";
 import { CHECKS_SAMPLE, SAMPLE_GROUP, sampleSource } from "../src/samples.js";
-import { gotoEdit, openTools, shareHash, waitForPlan, watchStatus } from "./fixtures.js";
+import { expectPlanNamed, gotoEdit, openTools, shareHash, waitForPlan, watchStatus } from "./fixtures.js";
 
 /**
  * Checks (card P6): the drawing toolbar's layer toggle (PG-D3) draws the review rings `arch preview
@@ -104,18 +104,23 @@ test.describe("checks", () => {
     await expect(page.locator(".checks")).toHaveCount(0);
   });
 
-  test("a clean plan points at the sample with one thing to fix, which the picker offers", async ({ page }) => {
+  test("a clean plan points at the sample with one thing to fix, which the gallery offers", async ({ page }) => {
     const sheet = (await review())(sampleSource(CHECKS_SAMPLE)!);
     if ("kind" in sheet) throw new Error(sheet.kind);
     expect(sheet.marks).toHaveLength(1);
     await page.goto("/");
     await waitForPlan(page);
-    // The picker lists it under its own group, after the examples; the strip does not.
-    await expect(page.locator(`#examples optgroup[label="${SAMPLE_GROUP}"] > option`)).toHaveText([CHECKS_SAMPLE]);
-    await expect(page.locator(`#strip a.strip-item[data-label="${CHECKS_SAMPLE}"]`)).toHaveCount(0);
+    // The gallery lists it under its own group, the last, after the examples; as a button, since
+    // it has no static page, so no crawlable link points at it.
+    const sampleGroup = page.locator("#gallery .gal-group").last();
+    await expect(sampleGroup).toHaveAttribute("data-group", SAMPLE_GROUP);
+    await expect(sampleGroup).toHaveAttribute("data-sample", "");
+    await expect(sampleGroup.locator(".gal-card")).toHaveCount(1);
+    await expect(sampleGroup.locator("button.gal-card")).toHaveAttribute("data-label", CHECKS_SAMPLE);
+    await expect(page.locator(`#gallery a.gal-card[data-label="${CHECKS_SAMPLE}"]`)).toHaveCount(0);
     await turnOn(page);
     await page.getByRole("button", { name: `Try “${CHECKS_SAMPLE}” →` }).click();
-    await expect(page.locator("#examples")).toHaveValue(CHECKS_SAMPLE);
+    await expectPlanNamed(page, CHECKS_SAMPLE);
     // Exactly the one finding the review sheet makes of it, ringed, with its hint.
     await expect(items(page)).toHaveCount(1);
     await expect(items(page).locator("code")).toHaveText(sheet.marks[0]!.code);

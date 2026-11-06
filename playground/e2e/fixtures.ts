@@ -102,6 +102,47 @@ export async function openTools(page: Page): Promise<void> {
   await expect(tools.locator(".tools-panel")).toBeVisible();
 }
 
+/** The header's plan gallery (ruling PG-D2): its `<details>`, its trigger and its cards. */
+export const gallery = (page: Page) => page.locator("#gallery");
+export const galleryTrigger = (page: Page) => page.locator("#planPicker");
+/** The card for the plan labelled `label` (an example's or a sample's), open or not. */
+export const planCard = (page: Page, label: string) =>
+  page.locator("#gallery .gal-card").and(page.locator(`[data-label="${label}"]`));
+/** The card the gallery marks as the plan on screen (none for a plan that is no example). */
+export const currentPlanCard = (page: Page) => page.locator('#gallery .gal-card[aria-current="true"]');
+
+/** Open the plan gallery (a no-op when it is open). */
+export async function openGallery(page: Page): Promise<void> {
+  if ((await gallery(page).getAttribute("open")) === null) await galleryTrigger(page).click();
+  await expect(page.locator("#galleryPanel")).toBeVisible();
+}
+
+/**
+ * Choose the plan labelled `label` the way a visitor does: open the header's gallery and click
+ * its card, which opens the plan in place and closes the gallery. Does not wait for the plan to
+ * be drawn; callers that need it wait as they did after a pick.
+ */
+export async function pickPlan(page: Page, label: string): Promise<void> {
+  await openGallery(page);
+  await planCard(page, label).click();
+  await expect(page.locator("#galleryPanel")).toBeHidden();
+  await expect(currentPlanCard(page)).toHaveAttribute("data-label", label);
+}
+
+/**
+ * Assert the plan the gallery names: `label` is an example's or a sample's label (its card is
+ * marked current), or, for a plan that is no example, `{ neutral }` is the text on the trigger
+ * ("Edited plan", "Shared plan", "Saved draft") and no card is marked.
+ */
+export async function expectPlanNamed(page: Page, want: string | { neutral: string }): Promise<void> {
+  if (typeof want === "string") {
+    await expect(currentPlanCard(page)).toHaveAttribute("data-label", want);
+  } else {
+    await expect(currentPlanCard(page)).toHaveCount(0);
+    await expect(page.locator("#planName")).toHaveText(want.neutral);
+  }
+}
+
 /** The autosave key `onDocChanged` writes — also this helper's settle signal. */
 export const AUTOSAVE_KEY = "archlang.pg.source";
 
