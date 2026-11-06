@@ -21,6 +21,18 @@ function adapted(source: string) {
   return r;
 }
 
+/**
+ * A wall's built height (µm): its resolved height, or, where it stops under the slab of the storey
+ * above (`stops-under-slab-above`, the storey joint; `storey-joint.test.ts` checks the stop), the
+ * height the ledger gives.
+ */
+function builtHeight(mesh: Mesh3D, level: number, id: string, height: number): number {
+  const a = mesh.assumptions.find(
+    (x) => x.rule === "stops-under-slab-above" && x.kind === "wall" && x.id === id && x.field === `top_mm(L${level})`,
+  );
+  return a ? (a.value as number) * 1000 : height;
+}
+
 const digest = (m: Mesh3D): string => createHash("sha256").update(JSON.stringify(m)).digest("hex");
 
 const corpus = EXAMPLES_LIST.map(([n, s]) => {
@@ -86,14 +98,15 @@ describe("Mesh3D on the shipped corpus", () => {
     }
   });
 
-  it("V-GEO-07: each wall stands exactly its resolved height above its storey", () => {
+  it("V-GEO-07: each wall stands exactly its resolved height above its storey (or stops under the slab above)", () => {
     for (const { n, r, mesh } of corpus) {
       for (const lv of r.scene.levels) {
         for (const w of lv.walls) {
           const nd = mesh.nodes.find((x) => x.key === `L${lv.level}/wall:${w.id}`);
           if (w.body.length === 0) continue;
           const ys = nd?.shells.flatMap((s) => s.positions.filter((_, i) => i % 3 === 1)) ?? [];
-          expect([Math.min(...ys), Math.max(...ys)], `${n} ${w.id}`).toEqual([lv.elevation, lv.elevation + w.height]);
+          const h = builtHeight(mesh, lv.level, w.id, w.height);
+          expect([Math.min(...ys), Math.max(...ys)], `${n} ${w.id}`).toEqual([lv.elevation, lv.elevation + h]);
         }
       }
     }
@@ -150,10 +163,11 @@ describe("Mesh3D on the shipped corpus", () => {
           if (!host) continue;
           const [x, z] = o.centre;
           probes++;
-          const mid = lv.elevation + Math.round((o.sill + Math.min(o.head, host.height)) / 2);
+          const height = builtHeight(mesh, lv.level, host.id, host.height);
+          const mid = lv.elevation + Math.round((o.sill + Math.min(o.head, height)) / 2);
           if (anyAt([x, mid, z])) blocked.push(`${n} ${o.id}`);
-          if (o.head < host.height - 50_000) {
-            const y = lv.elevation + Math.round((o.head + host.height) / 2);
+          if (o.head < height - 50_000) {
+            const y = lv.elevation + Math.round((o.head + height) / 2);
             if (!solidAt([x, y, z])) notSolid.push(`${n} ${o.id} lintel`);
           }
           if (o.sill > 50_000 && !solidAt([x, lv.elevation + Math.round(o.sill / 2), z]))

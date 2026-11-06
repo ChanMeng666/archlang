@@ -13,6 +13,26 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-pinned by public-surfaces card X4's follow-up (2026-11-06, the storey joint): a wall or column
+wholly under the slab of the storey above now stops at that slab's underside
+(`stops-under-slab-above`, `src/mesh/build.ts`). Before, storey 1's walls rose to storey 2's floor level, through the 200 mm
+of storey 2's slab, so the slab's edge and the wall's outer face were coplanar over that band and
+fought in depth: a thin diagonal sliver along the storey joint in the assembled view (the X4
+posters of two-storey and turning-stair, 1600 × 900). Now the slab's edge is the band between the
+storeys, as the ground slab is under storey 1. A one-storey plan has no storey above, so nothing
+of laneway-house moves (its Mesh3D and GLB pins hold; all seven of its frames rendered the same).
+Rendered locally (Windows 11 x64, the same Chromium build, the same `render` as
+`../keyframes.e2e.ts`), exactly five frames move, all of two-storey and all after its storey-1
+walls have risen: `stop:1` (was `446f42c2…`, now `0d781879…`), `tilted` (`281d6cf0…` →
+`92324745…`), `storey:2` (`a842a681…` → `52bdc549…`), `stop:2` (`ee31f6b2…` → `60d5fc32…`) and
+`end` (`2801716e…` → `c029568d…`). `stage:brief` … `stage:fixtures` keep their hashes: the walls
+are still flat footprints there. The five new hashes are the ones CI's `check-3d` job printed for
+this branch (GitHub Actions run https://github.com/ChanMeng666/archlang/actions/runs/42153991108,
+job 127683691654), the same five the local render gave; every other hash and both `taken` entries
+are unchanged. The review's exact footprint test (a wall stops only when its whole plan, not its
+corners, lies under the slab above) stops the same walls on two-storey, so its Mesh3D and these
+frames hold.
+
 Re-pinned by public-surfaces card X3 (2026-11-06, stairs; on top of X2's settle): two-storey's
 stair is built now (one `stair` node on storey 1, a stepped solid in the `wood` palette colour,
 stage `walls`), so its footprint appears in phase 1 after the storey's walls and it rises with

@@ -62,6 +62,7 @@
     "archlang3d": "tsx src/cli/main.ts",
     "notices": "tsx scripts/licence-gate.ts --write",
     "prove:pack": "tsx scripts/prove-pack.ts",
+    "gen:3d-assets": "tsx scripts/gen-3d-assets.ts",
     "prepack": "npm run build"
   },
   "peerDependencies": {
