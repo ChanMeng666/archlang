@@ -93,7 +93,7 @@ export async function enterEdit(page: Page): Promise<void> {
 
 /**
  * Open the header's Tools menu (a no-op when it is open). It holds every action the header
- * used to show: Format, Finish, Saved, the panels, theme and a11y, Download, the two links,
+ * used to show: Format, Finish, Saved, theme and a11y, Download, the two links,
  * Copy for LLM, Embed and Ask AI. Choosing a button closes it again, so call this before each.
  */
 export async function openTools(page: Page): Promise<void> {

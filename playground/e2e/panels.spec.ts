@@ -1,7 +1,7 @@
 import { expect, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { describe } from "../../src/index.js";
-import { gotoEdit, openTools, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import { BROKEN_PLAN, gotoEdit, openTools, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /** The plan a first visit opens (`DEFAULT_EXAMPLE`), as the app bundles it. */
 const LANEWAY = readFileSync(new URL("../../examples/laneway-house.arch", import.meta.url), "utf8");
@@ -20,6 +20,97 @@ const screenPoint = (page: Page, x: number, y: number): Promise<[number, number]
     [x, y],
   );
 
+/** The visible elements among `selector`, by their trimmed text. */
+const visibleTexts = (page: Page, selector: string): Promise<string[]> =>
+  page
+    .locator(selector)
+    .evaluateAll((els) =>
+      els.filter((e) => (e as HTMLElement).getClientRects().length > 0).map((e) => e.textContent?.trim() ?? ""),
+    );
+
+/**
+ * One entry point per function (ruling PG-D3): view mode has no tab row and no status row, the
+ * stage's Plan | 3D switch being its one view control; edit mode has one row of four tabs, which
+ * replace the switch there; Tools opens no tab; the status shows only when there is something to
+ * say.
+ */
+test.describe("one view switch (PG-D3)", () => {
+  test("view mode has no tablist and no status row; the switch is its one Plan/3D control", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await expect(page.getByRole("tablist", { name: "Output view" })).toBeHidden();
+    await expect(page.locator(".tab:visible")).toHaveCount(0);
+    // No status row: nothing says "ready" on screen, and the old dot is gone.
+    await expect(page.locator(".dot")).toHaveCount(0);
+    await expect(page.locator("#status")).not.toHaveClass(/\bshow\b/);
+    const box = (await page.locator("#status").boundingBox())!;
+    expect(box.width * box.height, "the status is visually hidden").toBeLessThanOrEqual(1);
+    // …but still a live region for assistive tech.
+    await expect(page.locator("#statusText")).toHaveAttribute("role", "status");
+    await expect(page.locator("#sourceToggle")).not.toHaveAttribute("data-status");
+    // Exactly one visible Plan control and one visible 3D control: the stage's switch.
+    expect(await visibleTexts(page, "button")).toEqual(expect.not.arrayContaining(["Preview", "3D preview"]));
+    expect((await visibleTexts(page, "button")).filter((t) => t === "Plan" || t === "3D")).toEqual(["Plan", "3D"]);
+    await expect(page.locator(".stage-switch")).toBeVisible();
+  });
+
+  test("edit mode has exactly four tabs, Plan · 3D · Facts · Checks, and they replace the switch", async ({ page }) => {
+    await gotoEdit(page);
+    const tablist = page.getByRole("tablist", { name: "Output view" });
+    await expect(tablist).toBeVisible();
+    await expect(tablist.getByRole("tab")).toHaveText(["Plan", "3D", "Facts", "Checks"]);
+    // The tablist holds only tabs.
+    expect(await tablist.evaluate((t) => t.children.length)).toBe(4);
+    // Exactly one visible Plan/3D control in this mode too: the tabs, not the stage's switch.
+    await expect(page.locator(".stage-switch")).toBeHidden();
+    expect((await visibleTexts(page, "button")).filter((t) => t === "Plan" || t === "3D")).toEqual(["Plan", "3D"]);
+    await expect(page.locator("#tab-preview")).toHaveAttribute("aria-selected", "true");
+    // Still no status row while the plan is fine.
+    await expect(page.locator("#status")).not.toHaveClass(/\bshow\b/);
+  });
+
+  test("Tools opens no output tab: the Panels group is gone", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await openTools(page);
+    await expect(page.locator("#tools [data-open-tab]")).toHaveCount(0);
+    await expect(page.locator("#tools .tools-h", { hasText: "Panels" })).toHaveCount(0);
+    for (const name of ["Describe", "Lint", "Intent", "Takeoff", "3D preview"])
+      await expect(page.locator("#tools").getByRole("button", { name, exact: true })).toHaveCount(0);
+  });
+
+  test("a broken plan shows a status on the stage and a dot on Source; a fix clears both", async ({ page }) => {
+    await page.goto(`/${await shareHash(BROKEN_PLAN)}`);
+    await expect(page.locator("html[data-booting]")).toHaveCount(0);
+    const status = page.locator("#status");
+    await expect(status).toHaveClass(/\berr\b/);
+    await expect(status).toBeVisible();
+    await expect(status).toContainText(/^\d+ errors? — open Source to see them/);
+    // On the stage, not in the header.
+    expect(await status.evaluate((s) => !!s.closest(".pane") && !s.closest("header"))).toBe(true);
+    await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
+    // Dismissible: the notice goes, the dot (where to look) stays.
+    await page.getByRole("button", { name: "Dismiss this message" }).click();
+    await expect(status).not.toHaveClass(/\bshow\b/);
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?/);
+    await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
+
+    // Fixed in the editor: the notice and the dot are gone, and nothing replaces them.
+    await page.locator("#sourceToggle").click();
+    await expect(page.locator(".cm-content")).toBeVisible();
+    await setEditorSource(page, SIMPLE_PLAN);
+    await expect(status).not.toHaveClass(/\berr\b/);
+    await expect(status).not.toHaveClass(/\bshow\b/);
+    await expect(page.locator("#sourceToggle")).not.toHaveAttribute("data-status");
+    // Broken again in the editor: it comes back, undismissed.
+    await setEditorSource(page, BROKEN_PLAN);
+    await expect(status).toHaveClass(/\bshow\b/);
+    await expect(status).toBeVisible();
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?$/);
+  });
+});
+
 /**
  * The output tabs, the persisted view preferences, and the two preview
  * interactions that tie the drawing back to the source.
@@ -29,10 +120,8 @@ test.describe("output tabs", () => {
     await gotoEdit(page);
 
     for (const [tab, view] of [
-      ["#tab-describe", "#describe"],
-      ["#tab-lint", "#lint"],
-      ["#tab-intent", "#intent"],
-      ["#tab-takeoff", "#takeoff"],
+      ["#tab-facts", "#factsView"],
+      ["#tab-checks", "#checksView"],
       ["#tab-preview", "#preview"],
     ] as const) {
       await page.locator(tab).click();
@@ -43,16 +132,37 @@ test.describe("output tabs", () => {
     }
   });
 
+  test("Facts is Describe and Takeoff, two sections of one panel", async ({ page }) => {
+    await gotoEdit(page, await shareHash(SIMPLE_PLAN));
+    await page.locator("#tab-facts").click();
+    const facts = page.locator("#factsView");
+    await expect(facts.getByRole("heading", { level: 3 })).toHaveText(["Describe", "Takeoff"]);
+    await expect(facts.locator("#describe")).toBeVisible();
+    await expect(facts.locator("#takeoffOutput table").first()).toBeVisible();
+  });
+
+  test("Checks is the review findings, Lint and Intent, sections of one panel", async ({ page }) => {
+    await gotoEdit(page, await shareHash(SIMPLE_PLAN));
+    await page.locator("#tab-checks").click();
+    const checks = page.locator("#checksView");
+    await expect(checks.locator(".checks-head")).toHaveText(/^Checks \(default checks\)/);
+    await expect(checks.getByRole("heading", { level: 3 })).toHaveText(["Lint", "Intent"]);
+    for (const id of ["#lintProfile", "#lintOutput", "#intentSrc", "#intentRun"])
+      await expect(checks.locator(id)).toBeVisible();
+    // The Finish results region lives in the Lint section (shown once Finish has run).
+    await expect(checks.locator("#lint #finishPanel")).toHaveCount(1);
+  });
+
   test("Describe shows the semantic facts the CLI's `describe --json` returns", async ({ page }) => {
     await gotoEdit(page, await shareHash(SIMPLE_PLAN));
-    await page.locator("#tab-describe").click();
+    await page.locator("#tab-facts").click();
     await expect(page.locator("#describe")).toContainText("Main");
     await expect(page.locator("#describe")).not.toBeEmpty();
   });
 
   test("Lint reports the clean-plan verdict, not an empty panel", async ({ page }) => {
     await gotoEdit(page, await shareHash(SIMPLE_PLAN));
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
     await expect(page.locator("#lintOutput .ok, #lintOutput .lintrow").first()).toBeVisible();
     await expect(page.locator("#lintCaption")).not.toBeEmpty();
   });
@@ -65,7 +175,7 @@ test.describe("output tabs", () => {
   room id=a at (0,0) size 6000x4000 label "Bedroom"
 }`;
     await gotoEdit(page, await shareHash(unreachable));
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
 
     const suggest = page.locator("#suggest");
     await expect(suggest).toBeVisible();
@@ -77,9 +187,9 @@ test.describe("output tabs", () => {
 
   test("Intent checks the plan against a brief the panel pre-fills", async ({ page }) => {
     await gotoEdit(page);
-    await page.locator("#tab-intent").click();
+    await page.locator("#tab-checks").click();
     await expect(page.locator("#intentSrc")).not.toBeEmpty();
-    // Opening the tab runs the check once, so it is never an empty panel.
+    // Opening the Checks tab runs the check once, so the Intent section is never empty.
     await expect(page.locator("#intentOutput")).not.toBeEmpty();
 
     await page.locator("#intentRun").click();
@@ -108,14 +218,14 @@ test.describe("persisted view preferences", () => {
 
   test("the lint profile survives a reload, with its caption", async ({ page }) => {
     await gotoEdit(page);
-    await page.locator("#tab-lint").click(); // the selector lives inside the Lint panel
+    await page.locator("#tab-checks").click(); // the selector lives in the Checks tab's Lint section
 
     await page.locator("#lintProfile").selectOption("accessibility-advisory");
     await expect(page.locator("#lintCaption")).toContainText("850");
 
     await page.reload();
     await waitForPlan(page);
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
     await expect(page.locator("#lintProfile")).toHaveValue("accessibility-advisory");
     await expect(page.locator("#lintCaption")).toContainText("850");
   });

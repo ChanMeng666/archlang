@@ -54,8 +54,8 @@ interface ActionsCtx {
   isEditing: () => boolean;
   /** Whether the 3D preview is on screen (the hash, and a copied full link, keep `&3d` while it is). */
   is3d: () => boolean;
-  /** Bring the Lint tab to the front (where Finish and Repair report). */
-  showLintTab: () => void;
+  /** Bring the Checks tab, whose Lint section Finish and Repair report into, to the front. */
+  showChecksTab: () => void;
   /** The render-theme override picked in the View menu, or "" for the source's own. */
   getThemeOverride: () => string;
   els: {
@@ -101,7 +101,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     onExportError,
     isEditing,
     is3d,
-    showLintTab,
+    showChecksTab,
     getThemeOverride,
     els,
   } = ctx;
@@ -120,7 +120,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   // Finish — the core's `finish()` (the same transform as `arch finish`) adds what a
   // finished sheet needs and replaces the source as ONE undo step (Ctrl+Z reverts
-  // it); what it added and what it declined are listed in the Lint tab.
+  // it); what it added and what it declined are listed in the Checks tab's Lint section.
   els.finishBtn?.addEventListener("click", () => runFinish(false));
 
   /**
@@ -139,14 +139,14 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     flash(
       result.changed
         ? m > 0
-          ? `Finished: ${added}, ${m} unresolved (see Lint)`
+          ? `Finished: ${added}, ${m} unresolved (see Checks)`
           : `Finished: ${added} (Ctrl+Z undoes)`
         : m > 0
-          ? `Finish added nothing: ${m} unresolved (see Lint)`
+          ? `Finish added nothing: ${m} unresolved (see Checks)`
           : "Nothing to finish",
     );
     // A declined statement is the part a user must act on: put it in front of them.
-    if (m > 0) showLintTab();
+    if (m > 0) showChecksTab();
   }
 
   // Repair furniture (ADR 0006) — run the deterministic corrector, show the change
@@ -325,7 +325,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     void downloadCurrent(els.formatSelect ? els.formatSelect.value : "svg");
   });
 
-  /** Render what `finish` added and what it declined into the Lint tab, in the
+  /** Render what `finish` added and what it declined into the Checks tab's Lint section, in the
    *  same change-log form Repair uses. */
   function showFinish(result: FinishResult) {
     const panel = els.finishPanel;

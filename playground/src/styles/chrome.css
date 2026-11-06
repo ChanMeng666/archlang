@@ -366,23 +366,15 @@ main {
   border-bottom: 1px solid var(--hairline);
   background: var(--paper-panel);
   display: flex;
-  /* Five tabs and a storey switcher outgrow a half-width pane near 1024 px: the
-     strip wraps to a second row there rather than scrolling the page sideways. */
+  /* A strip that outgrows its pane wraps to a second row rather than scrolling the page
+     sideways. */
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--ok);
-}
-.dot.err {
-  background: var(--redline);
-}
-.pane h2 .grow {
-  flex: 1;
+/* View mode has no output tab row (ruling PG-D3): the stage's Plan | 3D switch is its view control. */
+html:not([data-mode="edit"]) .out-tabs {
+  display: none;
 }
 
 /* output tabs — squared sheet tabs on the paper world: caps micro-labels, and
@@ -420,47 +412,52 @@ main {
   outline-offset: 1px;
 }
 
-/* storey switcher — one `L<n>` toggle per `level` block, sitting at the right end
-   of the tab strip because every tab's contents follow it. Mono, because the face
-   is a number (`L1`, `L-1` for a basement), and it wears the tabs' own active
-   language — a redline underline rule, no pill, no fill — so the strip reads as
-   one row rather than two. Hidden ENTIRELY, rule included, for a single-storey
-   plan: `[hidden]` has to beat the inline-flex, and a leftover separator would be
-   a gap with nothing after it. */
+/* storey switcher — one `L<n>` toggle per `level` block, in ONE place (ruling PG-D3): on the
+   stage, top-left, just under the Plan | 3D switch in view mode, and in that corner itself in edit
+   mode (where the tabs replace the switch), over every view, because every view follows it. A chip
+   in the switch's own sheet-world dress; mono, because the face is a number (`L1`, `L-1` for a
+   basement); the storey on screen pressed in ink, as the switch presses its view. Hidden ENTIRELY
+   for a single-storey plan: `[hidden]` has to beat the inline-flex. */
 .lv-group {
+  position: absolute;
+  top: 50px;
+  left: 10px;
   display: inline-flex;
   align-items: center;
   gap: 2px;
-  margin-left: 10px;
+  padding: 3px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--paper-panel) 90%, transparent);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 1px 6px rgb(28 36 48 / 0.1);
 }
-.lv-sep {
-  width: 1px;
-  height: 14px;
-  margin-left: 10px;
-  background: var(--hairline);
+html[data-mode="edit"] .lv-group {
+  top: 10px;
 }
-.lv-group[hidden],
-.lv-sep[hidden] {
+.lv-group[hidden] {
   display: none;
 }
 .lv-btn {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 11px;
   font-weight: 500;
-  padding: 4px 7px;
+  min-width: 34px;
+  height: 26px;
+  padding: 0 7px;
   border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
+  border-radius: 2px;
   background: transparent;
-  color: var(--ink-muted);
+  color: var(--ink);
   cursor: pointer;
 }
 .lv-btn:hover {
-  color: var(--ink);
+  background: color-mix(in srgb, var(--redline) 12%, transparent);
+  color: var(--redline-ink);
 }
 .lv-btn.active {
-  color: var(--ink);
-  border-bottom-color: var(--redline-ink);
+  background: var(--ink);
+  color: var(--paper);
 }
 .lv-btn:focus-visible {
   outline: 2px solid var(--redline-ink);
@@ -528,20 +525,19 @@ html:not([data-mode="edit"]) .divider {
 html:not([data-mode="edit"]) main > .pane + .pane {
   border-left: 0;
 }
-html:not([data-mode="edit"]) :is(#tab-describe, #tab-lint, #tab-intent, #tab-takeoff) {
-  display: none;
-}
 
-/* Plan | 3D (card X5): a segmented chip over the stage's top-left corner, in the pz-toolbar's
-   sheet-world dress, the view on screen pressed in ink. Its row has no height, so the stage under
-   it (the drawing or the 3D preview) starts where it always did; view mode only. */
+/* The stage's overlay row: no height, so the view under it (the drawing, the 3D preview, a tab)
+   starts where it always did, and what floats in it stays put as the view changes.
+   Plan | 3D (card X5): a segmented chip over the stage's top-left corner, in the pz-toolbar's
+   sheet-world dress, the view on screen pressed in ink; view mode only (edit mode's tabs are its
+   control there). */
 .stage-switch-row {
   position: relative;
   height: 0;
   z-index: 8;
 }
 .stage-switch-row[hidden],
-html[data-mode="edit"] .stage-switch-row {
+html[data-mode="edit"] .stage-switch {
   display: none;
 }
 .stage-switch {
@@ -586,17 +582,141 @@ html[data-mode="edit"] .stage-switch-row {
   outline: 2px solid var(--redline-ink);
   outline-offset: 1px;
 }
-/* A room's facts card, in that corner too, moves clear of it. (The shared-plan notice sits above
-   the switch's row, over both views, so the switch never covers it.) */
+/* A room's facts card, in that corner too, moves clear of the switch and the storeys. (The
+   shared-plan notice sits above the switch's row, over both views, so the switch never covers it.) */
 html:not([data-mode="edit"]) .room-card {
   top: 52px;
 }
+.pane:has(#storeys:not([hidden])) .room-card {
+  top: 52px;
+}
+html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
+  top: 92px;
+}
+
+/* The status (ruling PG-D3): a notice at the top centre of the stage, only while the plan is
+   compiling or broken, or for a moment after an action (main.ts adds `.show`). Otherwise it is
+   visually hidden, never removed: `#statusText` stays a live region for assistive tech. Broken is
+   redline, like the drawing's errors; compiling and a message are ink. */
+.stage-status {
+  position: absolute;
+  /* under the toolbar's line, centred, clear of the switch and the storeys on the left */
+  top: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  max-width: min(460px, calc(100% - 300px));
+  min-height: 34px;
+  padding: 3px 4px 3px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 3px;
+  background: var(--paper-panel);
+  box-shadow: 0 2px 10px rgb(28 36 48 / 0.16);
+  color: var(--ink);
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+.stage-status.err {
+  border-color: var(--redline);
+  color: var(--redline-ink);
+}
+.stage-status:not(.show) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+  box-shadow: none;
+}
+.stage-status-x {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+.stage-status-x:hover {
+  background: color-mix(in srgb, var(--redline) 12%, transparent);
+}
+.stage-status-x:focus-visible {
+  outline: 2px solid var(--redline-ink);
+  outline-offset: 1px;
+}
+.stage-status-x[hidden] {
+  display: none;
+}
+/* Source's dot: the plan is compiling (ink) or broken (redline). Source is where the diagnostics
+   are, so the dot says where to look; the live region says what it is. */
+#sourceToggle[data-status] {
+  position: relative;
+}
+#sourceToggle[data-status]::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink-muted);
+}
+#sourceToggle[data-status="err"]::after {
+  background: var(--redline);
+}
+
 @media (max-width: 900px) {
   .stage-switch button {
     height: 38px;
   }
-  html:not([data-mode="edit"]) .room-card {
+  /* under the touch-sized switch (38 px buttons in a 46 px chip) */
+  .lv-group {
+    top: 62px;
+  }
+  .lv-btn {
+    height: 38px;
+    min-width: 44px;
+  }
+  html:not([data-mode="edit"]) .room-card,
+  .pane:has(#storeys:not([hidden])) .room-card {
     top: 64px;
+  }
+  html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
+    top: 116px;
+  }
+  /* A phone stage is narrow: the notice spans it, under the switch (and the storeys). */
+  .stage-status {
+    top: 62px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+    transform: none;
+    max-width: none;
+  }
+  .pane:has(#storeys:not([hidden])) .stage-status {
+    top: 116px;
+  }
+  html[data-mode="edit"] .stage-status {
+    top: 10px;
+  }
+  html[data-mode="edit"] .pane:has(#storeys:not([hidden])) .stage-status {
+    top: 64px;
+  }
+  /* Facts and Checks start clear of the taller storey chip. */
+  main .pane:has(#storeys:not([hidden])) .tv-sections {
+    padding-top: 66px;
   }
 }
 
@@ -881,7 +1001,7 @@ html[data-mode="edit"] .strip {
   html:not([data-mode="edit"]) main > .pane:nth-child(2),
   html[data-mode="edit"] main[data-mview="plan"] > .pane:nth-child(2),
   html[data-mode="edit"] main[data-mview="code"] > .pane:first-child,
-  html[data-mode="edit"] main[data-mview="problems"] > .pane:first-child {
+  html[data-mode="edit"] main[data-mview="problems"] > .pane {
     display: flex;
   }
   .pane + .pane {
@@ -891,10 +1011,19 @@ html[data-mode="edit"] .strip {
   main[data-mview="code"] #errors {
     display: none;
   }
-  /* Problems: the diagnostics alone, full height */
+  /* Problems (ruling PG-D3): the compile diagnostics on top, then the Checks tab's content (the
+     review findings, Lint, Intent; main.ts opens that tab), each scrolling in its own box. The
+     diagnostics take what they need, up to under half the screen. */
+  html[data-mode="edit"] main[data-mview="problems"] {
+    grid-template-rows: fit-content(45%) minmax(0, 1fr);
+  }
   main[data-mview="problems"] .src-tab,
-  main[data-mview="problems"] #editor {
+  main[data-mview="problems"] #editor,
+  main[data-mview="problems"] .out-tabs {
     display: none;
+  }
+  main[data-mview="problems"] > .pane + .pane {
+    border-top: 1px solid var(--hairline);
   }
   main[data-mview="problems"] #errors {
     flex: 1;
@@ -927,10 +1056,6 @@ html[data-mode="edit"] .strip {
   }
   .tabs {
     flex-wrap: wrap;
-  }
-  .lv-group,
-  .lv-sep {
-    margin-left: 4px;
   }
   /* A swipe strip in the 16px gutters, of touch-sized targets. */
   .strip {

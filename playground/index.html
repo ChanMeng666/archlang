@@ -118,10 +118,11 @@
     </script>
   </head>
   <body>
-    <!-- Header = source-world chrome (cool grey): the brand, the plan picker, and at most four
-         controls in one row — Source (the editor), Checks (the review rings over the drawing,
-         checks-panel.ts), Tools (every other action, in one menu) and Make your own (the one
-         redline control). Each control keeps the id the app and the specs know it by. -->
+    <!-- Header = source-world chrome (cool grey): the brand, the plan picker, and three controls
+         in one row — Source (the editor), Tools (every other action, in one menu) and Make your
+         own (the one redline control). Checks, the review rings, is a layer of the drawing and sits
+         on the stage's toolbar (ruling PG-D3). Each control keeps the id the app and the specs know
+         it by. Source carries a small dot while the plan is compiling or broken (main.ts). -->
     <header>
       <div class="tb-brand">
         <!-- The plum mark, not the white one: the header is a light surface. -->
@@ -134,7 +135,6 @@
       <select id="examples" class="hd-picker" aria-label="Plan"><!--prerender:picker--></select>
       <div class="spacer"></div>
       <button id="sourceToggle" class="hd-btn" type="button" aria-pressed="false" title="Show the ArchLang source beside the drawing">Source</button>
-      <button id="checks" class="hd-btn" type="button" aria-pressed="false" title="Ring what compile and lint warn about, as arch preview --review does">Checks</button>
       <details class="tools" id="tools">
         <summary class="hd-btn">Tools ▾</summary>
         <div class="tools-panel">
@@ -144,16 +144,6 @@
             <button id="formatSrc" type="button" data-edit data-close disabled title="Reformat the source to canonical style">Format</button>
             <button id="finishSrc" type="button" data-edit data-close disabled title="Add what a finished sheet needs (paper, scale, dimensions, title, schedule, legend, furniture); Ctrl+Z undoes it">Finish</button>
             <button id="saved" type="button" data-edit aria-haspopup="true" disabled>Saved ▾</button>
-          </div>
-          <!-- Panels: the output tabs. Describe, Lint, Intent and Takeoff open the editor;
-               the 3D preview opens in either mode. -->
-          <div class="tools-group" role="group" aria-labelledby="toolsPanels">
-            <p class="tools-h" id="toolsPanels">Panels</p>
-            <button type="button" data-open-tab="describe" data-close>Describe</button>
-            <button type="button" data-open-tab="lint" data-close>Lint</button>
-            <button type="button" data-open-tab="intent" data-close>Intent</button>
-            <button type="button" data-open-tab="takeoff" data-close>Takeoff</button>
-            <button type="button" data-open-tab="preview3d" data-close>3D preview</button>
           </div>
           <div class="tools-group" role="group" aria-labelledby="toolsView">
             <p class="tools-h" id="toolsView">View</p>
@@ -261,37 +251,42 @@
         <p class="problems-empty">No problems — the plan compiles clean.</p>
       </section>
       <section class="pane">
-        <h2>
-          <span class="dot" id="status"></span><span id="statusText">ready</span>
-          <span class="grow"></span>
+        <!-- Edit mode's one row of output tabs (ruling PG-D3): Plan · 3D · Facts · Checks. View mode
+             has no tab row at all: the stage's Plan | 3D switch below is its only view control, and
+             in edit mode these tabs replace that switch, so each mode has exactly one Plan/3D
+             control. The tabs stay the one mechanism under both (main.ts), so `&3d`, the switch and
+             the tabs can never disagree. -->
+        <h2 class="out-tabs">
           <span class="tabs" role="tablist" aria-label="Output view">
-            <button class="tab active" id="tab-preview" data-tab="preview" type="button" role="tab" aria-selected="true" aria-controls="preview">Preview</button>
-            <button class="tab" id="tab-describe" data-tab="describe" type="button" role="tab" aria-selected="false" aria-controls="describe">Describe</button>
-            <button class="tab" id="tab-lint" data-tab="lint" type="button" role="tab" aria-selected="false" aria-controls="lint">Lint</button>
-            <button class="tab" id="tab-intent" data-tab="intent" type="button" role="tab" aria-selected="false" aria-controls="intent">Intent</button>
-            <button class="tab" id="tab-takeoff" data-tab="takeoff" type="button" role="tab" aria-selected="false" aria-controls="takeoff">Takeoff</button>
-            <button class="tab" id="tab-preview3d" data-tab="preview3d" type="button" role="tab" aria-selected="false" aria-controls="preview3d">3D preview</button>
+            <button class="tab active" id="tab-preview" data-tab="preview" type="button" role="tab" aria-selected="true" aria-controls="preview">Plan</button>
+            <button class="tab" id="tab-preview3d" data-tab="preview3d" type="button" role="tab" aria-selected="false" aria-controls="preview3d">3D</button>
+            <button class="tab" id="tab-facts" data-tab="facts" type="button" role="tab" aria-selected="false" aria-controls="factsView">Facts</button>
+            <button class="tab" id="tab-checks" data-tab="checks" type="button" role="tab" aria-selected="false" aria-controls="checksView">Checks</button>
           </span>
-          <!-- Storey switcher for a multi-storey plan. It sits in the tab strip rather
-               than in the preview toolbar because every tab's contents follow it: a
-               control the reader cannot see while reading the facts it selects only
-               does half its job. OUTSIDE the role="tablist" above on purpose — these
-               are toggle buttons, not tabs, and a tablist must contain only tabs.
-               Empty and hidden until a plan with `level` blocks is compiled;
-               level-switcher.ts fills it. -->
-          <span class="lv-sep" id="storeysSep" hidden></span>
-          <span class="lv-group" id="storeys" role="group" aria-label="Storey" hidden></span>
         </h2>
-        <!-- Plan | 3D (public-surfaces card X5): view mode's switch between the drawing and the 3D
-             preview, over the stage's top-left corner (the header keeps its four controls). It
-             drives the Preview and 3D preview tabs, so Tools → 3D preview flips it too. A row of
-             no height between the frame header and the stage, so the one control stays put, and
-             keeps its focus, whichever view is under it. Hidden until main.ts wires it: with no
-             script there is nothing to switch to. -->
+        <!-- The stage's own overlay row, of no height, over whichever view is on screen, so what
+             sits in it stays put, and keeps its focus, as the view under it changes:
+             - Plan | 3D (public-surfaces card X5): view mode's switch between the drawing and the 3D
+               preview, top-left. It drives the Plan and 3D tabs; edit mode hides it (the tabs are
+               its control there).
+             - The storey switcher (`#storeys`, level-switcher.ts), just under it, in both modes: the
+               one home of the storey on screen, which drives the drawing, the 3D preview, the facts
+               and every export. Toggle buttons in a `role="group"`, not tabs. Empty and hidden
+               until a plan with `level` blocks is compiled.
+             - The status (`#status`): a notice, top centre, only while the plan is compiling (and
+               slow enough to notice) or broken, or for a moment after an action; dismissible. When
+               the plan is fine nothing shows, but `#statusText` stays a live region, visually
+               hidden, so assistive tech hears every state.
+             Hidden until main.ts wires it: with no script there is nothing to switch to. -->
         <div class="stage-switch-row" id="stageSwitchRow" hidden>
           <div class="stage-switch" role="group" aria-label="View">
             <button type="button" id="viewPlan" aria-pressed="true" title="Show the drawing">Plan</button>
             <button type="button" id="view3d" aria-pressed="false" title="Show the 3D preview, from the same source">3D</button>
+          </div>
+          <span class="lv-group" id="storeys" role="group" aria-label="Storey" hidden></span>
+          <div class="stage-status" id="status">
+            <span id="statusText" role="status" aria-live="polite"></span>
+            <button type="button" class="stage-status-x" id="statusDismiss" aria-label="Dismiss this message">×</button>
           </div>
         </div>
         <div id="preview" class="tabview active" role="tabpanel" aria-labelledby="tab-preview">
@@ -303,6 +298,10 @@
               <button data-pz="fit" type="button" title="Fit to view" aria-label="Fit to view">⤢</button>
               <button data-pz="full" type="button" title="Fullscreen" aria-label="Fullscreen">⛶</button>
               <span class="pz-sep"></span>
+              <!-- Checks (card P6; on the stage since PG-D3): a layer of the drawing, like Paths. It
+                   rings what compile and lint warn about, as `arch preview --review` does. The rings
+                   are 2D only, so it leaves with the drawing when the 3D preview is on screen. -->
+              <button id="checks" data-layer="checks" type="button" aria-pressed="false" title="Ring what compile and lint warn about, as arch preview --review does">Checks</button>
               <button data-pz="paths" type="button" aria-pressed="false" title="Toggle circulation paths overlay" aria-label="Toggle circulation paths">Paths</button>
               <span class="pz-sep"></span>
               <button data-pz="copysvg" type="button" title="Copy SVG markup" aria-label="Copy SVG">SVG</button>
@@ -316,36 +315,56 @@
                whole building, and the name is what says so. -->
           <div id="facts" class="facts" role="group" aria-label="Plan facts"></div>
         </div>
-        <div id="describe" class="tabview" role="tabpanel" aria-labelledby="tab-describe"></div>
-        <div id="lint" class="tabview" role="tabpanel" aria-labelledby="tab-lint">
-          <div class="lint-controls">
-            <label for="lintProfile">Profile</label>
-            <select id="lintProfile" aria-label="Lint profile"></select>
-            <button id="repair" class="repair-btn" hidden title="Deterministically fix furniture placement (ADR 0006)">Repair furniture ▸</button>
-            <button id="suggest" class="repair-btn" hidden title="Suggest door/window statements that resolve reachability and window faults">Suggest topology ▸</button>
-            <p id="lintCaption" class="lint-caption"></p>
-          </div>
-          <div id="finishPanel" class="repair-panel" role="region" aria-label="Finish results" hidden></div>
-          <div id="repairPanel" class="repair-panel" hidden></div>
-          <div id="suggestPanel" class="repair-panel" hidden></div>
-          <div id="lintOutput"></div>
-        </div>
-        <div id="intent" class="tabview" role="tabpanel" aria-labelledby="tab-intent">
-          <div class="lint-controls">
-            <label for="intentSrc">Brief (intent JSON)</label>
-            <button id="intentRun" class="repair-btn">Check ▸</button>
-            <p class="lint-caption">
-              Write the brief down as data, then gate the plan on it — the same contract
-              <code>arch validate --intent</code> and <code>arch score --brief</code> use.
-            </p>
-          </div>
-          <textarea id="intentSrc" class="intent-src" spellcheck="false" aria-label="Intent JSON"></textarea>
-          <div id="intentOutput"></div>
-        </div>
-        <!-- Filled on the tab's first open by takeoff-panel.ts (lazy, like the 3D preview). -->
-        <div id="takeoff" class="tabview" role="tabpanel" aria-labelledby="tab-takeoff"></div>
         <!-- Filled on the tab's first open by preview3d.ts (lazy: three.js never loads before). -->
         <div id="preview3d" class="tabview" role="tabpanel" aria-labelledby="tab-preview3d"></div>
+        <!-- Facts (edit mode): describe()'s facts and the takeoff, two sections of one panel, from the
+             same describe() data. The takeoff is filled on the tab's first open by takeoff-panel.ts. -->
+        <div id="factsView" class="tabview tv-sections" role="tabpanel" aria-labelledby="tab-facts">
+          <section class="tv-section" aria-labelledby="describeHead">
+            <h3 class="tv-h" id="describeHead">Describe</h3>
+            <div id="describe"></div>
+          </section>
+          <section class="tv-section" aria-labelledby="takeoffHead">
+            <h3 class="tv-h" id="takeoffHead">Takeoff</h3>
+            <div id="takeoff"></div>
+          </section>
+        </div>
+        <!-- Checks (edit mode; the phone's Problems view): the review findings the drawing's Checks
+             layer rings (checks-panel.ts lists them here in edit mode), the lint panel with its
+             profile, Repair, Suggest and the Finish results, and the intent check, as sections of
+             one panel. -->
+        <div id="checksView" class="tabview tv-sections" role="tabpanel" aria-labelledby="tab-checks">
+          <!-- The review findings: checks-panel.ts's own section ("Checks (default checks): …"),
+               put here by main.ts on the tab's first open. -->
+          <div class="tv-section" id="checksHost"></div>
+          <section class="tv-section" id="lint" aria-labelledby="lintHead">
+            <h3 class="tv-h" id="lintHead">Lint</h3>
+            <div class="lint-controls">
+              <label for="lintProfile">Profile</label>
+              <select id="lintProfile" aria-label="Lint profile"></select>
+              <button id="repair" class="repair-btn" hidden title="Deterministically fix furniture placement (ADR 0006)">Repair furniture ▸</button>
+              <button id="suggest" class="repair-btn" hidden title="Suggest door/window statements that resolve reachability and window faults">Suggest topology ▸</button>
+              <p id="lintCaption" class="lint-caption"></p>
+            </div>
+            <div id="finishPanel" class="repair-panel" role="region" aria-label="Finish results" hidden></div>
+            <div id="repairPanel" class="repair-panel" hidden></div>
+            <div id="suggestPanel" class="repair-panel" hidden></div>
+            <div id="lintOutput"></div>
+          </section>
+          <section class="tv-section" id="intent" aria-labelledby="intentHead">
+            <h3 class="tv-h" id="intentHead">Intent</h3>
+            <div class="lint-controls">
+              <label for="intentSrc">Brief (intent JSON)</label>
+              <button id="intentRun" class="repair-btn">Check ▸</button>
+              <p class="lint-caption">
+                Write the brief down as data, then gate the plan on it — the same contract
+                <code>arch validate --intent</code> and <code>arch score --brief</code> use.
+              </p>
+            </div>
+            <textarea id="intentSrc" class="intent-src" spellcheck="false" aria-label="Intent JSON"></textarea>
+            <div id="intentOutput"></div>
+          </section>
+        </div>
         <!-- The plan strip (view mode): one link per example, in the picker's order, each to the
              plan's static page, so it works with no script and a crawler can follow it. With
              script, strip.ts opens the plan here instead. The links and their thumbnails are

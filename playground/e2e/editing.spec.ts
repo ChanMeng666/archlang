@@ -79,15 +79,16 @@ test.describe("editing", () => {
     await expect(page.locator(".cm-content")).toBeFocused();
   });
 
-  test("the Lint tab reports soundness separately from compile errors", async ({ page }) => {
+  test("the Checks tab's Lint section reports soundness separately from compile errors", async ({ page }) => {
     await gotoEdit(page);
     // A room with no door: reachable-room lint fires, but the plan still COMPILES.
     await setEditorSource(
       page,
       `plan "E2E" {\n  units mm\n  wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }\n  room id=a at (0,0) size 6000x4000 label "Bedroom"\n}`,
     );
-    await page.locator("#tab-lint").click();
-    await expect(page.locator("#lint")).toHaveClass(/active/);
+    await page.locator("#tab-checks").click();
+    await expect(page.locator("#checksView")).toHaveClass(/active/);
+    await expect(page.locator("#lint")).toBeVisible();
     await expect(page.locator("#lintOutput .lintrow, #lintOutput .ok")).not.toHaveCount(0);
     // Compiling cleanly and being architecturally sound are different questions.
     await expect(page.locator("#status")).not.toHaveClass(/err/);

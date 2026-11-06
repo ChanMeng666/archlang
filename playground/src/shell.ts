@@ -2,7 +2,8 @@
  * The header's own behaviour: the Source toggle, the Tools menu and the Make-your-own dialog.
  * Part of the startup chunk, so it holds no compiler, no editor and no doors (the sheet's body is
  * make-own.ts, loaded on its first open): it only opens, closes and forwards. The actions inside Tools are wired by actions.ts once the compiler has loaded (their
- * buttons are `disabled` until then); the panels by main.ts and edit-mode.ts.
+ * buttons are `disabled` until then). Tools opens no output tab (ruling PG-D3): the output tabs
+ * are reached only through themselves, wired by main.ts and edit-mode.ts.
  *
  * Tools closes like the menus it replaced: on Escape (listened for on the document, since Safari
  * does not focus a clicked <summary>), on a click outside it, and on choosing an item marked
@@ -85,14 +86,6 @@ export function mountShell(ctx: ShellCtx): Shell {
     // After the item's own handler, so the menu closes on what was chosen.
     if ((e.target as Element | null)?.closest("[data-close]")) setTimeout(() => (tools.open = false), 0);
   });
-  // The output tabs, from the menu. Every tab but the 3D preview is edit mode's.
-  for (const btn of tools.querySelectorAll<HTMLButtonElement>("[data-open-tab]")) {
-    btn.addEventListener("click", async () => {
-      const tab = btn.dataset.openTab;
-      if (tab !== "preview3d" && !ctx.isEditing()) await ctx.enterEdit();
-      document.getElementById(`tab-${tab}`)?.click();
-    });
-  }
 
   // ---- Make your own ----
   // The sheet's body (make-own.ts, from doors.json) is its own chunk, rendered on the first open.

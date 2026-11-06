@@ -1,14 +1,19 @@
 /**
- * Checks (public-surfaces P6): the header's Checks toggle draws, over the drawing, the review rings
- * `arch preview --review` draws, from the same function (src/cli/review.ts, built as
- * `dist/cli/review.js`), and lists each finding beside it: its number (the one on its ring's tag),
- * its code, its message and, when the diagnostic carries one, its fix hint. Choosing a finding
- * highlights its ring; in edit mode it also puts the caret on the statement.
+ * Checks (public-surfaces P6): the Checks layer toggle on the drawing's toolbar (beside Paths,
+ * ruling PG-D3) draws, over the drawing, the review rings `arch preview --review` draws, from the
+ * same function (src/cli/review.ts, built as `dist/cli/review.js`), and this panel lists each
+ * finding: its number (the one on its ring's tag), its code, its message and, when the diagnostic
+ * carries one, its fix hint. Choosing a finding highlights its ring; in edit mode it also puts the
+ * caret on the statement.
  *
- * A chunk of its own, loaded on the first switch-on. Off by default and never persisted. The
- * findings are the review sheet's: every warning of `compile()` and of `lint()` under its DEFAULT
- * rules, one entry each, in the sheet's order; the panel says so, and says when the Lint tab is
- * set to another profile. The hints come from the diagnostics the sheet was made from
+ * Where the list sits (`dock`): in view mode it floats over the drawing, beside the rings, while
+ * they are on; in edit mode it is the first section of the Checks tab, shown whether or not the
+ * rings are drawn (main.ts runs the review while that tab is open).
+ *
+ * A chunk of its own, loaded on the first switch-on (or the Checks tab's first open in edit mode).
+ * Off by default and never persisted. The findings are the review sheet's: every warning of
+ * `compile()` and of `lint()` under its DEFAULT rules, one entry each, in the sheet's order; the
+ * panel says so, and says when the Lint section is set to another profile. The hints come from the diagnostics the sheet was made from
  * (`reviewSheetAndWarnings`), so a check costs one review, not a review and a second compile and
  * lint. The overlay is added to the SVG on screen only (main.ts), so the exports never carry it.
  */
@@ -27,6 +32,8 @@ export interface ChecksPanel {
   pending(): void;
   /** Show or hide the list (the toggle). */
   setVisible(on: boolean): void;
+  /** Put the list in `host` (edit mode's Checks tab), or back over the drawing (`null`). */
+  dock(host: HTMLElement | null): void;
 }
 
 interface ChecksOpts {
@@ -37,7 +44,7 @@ interface ChecksOpts {
   /** Whether the editor is open (a finding then jumps to its statement). */
   isEditing: () => boolean;
   jumpToOffset: (offset: number) => void;
-  /** The Lint tab's profile, by name, or "" for its default. */
+  /** The Lint section's profile, by name, or "" for its default. */
   lintProfile: () => string;
   /** Open the plan the empty list points at. */
   openSample: (label: string) => void;
@@ -104,11 +111,11 @@ export function mountChecks({
     }
   }
 
-  /** Say when the Lint tab reads another profile than the default rules Checks reads. */
+  /** Say when Lint reads another profile than the default rules Checks reads. */
   function noteProfile() {
     const p = lintProfile();
     profileNote.hidden = p === "";
-    profileNote.textContent = p === "" ? "" : `The Lint tab uses the "${p}" profile; Checks reads the default checks.`;
+    profileNote.textContent = p === "" ? "" : `Lint uses the "${p}" profile; Checks reads the default checks.`;
   }
 
   function renderList(note?: string) {
@@ -137,7 +144,7 @@ export function mountChecks({
             .join("");
   }
 
-  // A profile picked in the Lint tab is named here at once.
+  // A profile picked in the Lint section is named here at once.
   document.getElementById("lintProfile")?.addEventListener("change", noteProfile);
 
   list.addEventListener("click", (e) => {
@@ -194,6 +201,11 @@ export function mountChecks({
     },
     setVisible(on) {
       panel.hidden = !on;
+    },
+    dock(host) {
+      const to = host ?? viewport;
+      panel.classList.toggle("checks-docked", host !== null);
+      if (panel.parentElement !== to) to.appendChild(panel);
     },
   };
 }

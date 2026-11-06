@@ -1,5 +1,5 @@
 /**
- * The Lint tab body — architectural soundness warnings (habitability rules) for
+ * The Lint section of the Checks tab — architectural soundness warnings (habitability rules) for
  * the current plan, under the chosen advisory profile. The repair-button
  * visibility (keyed off the same diagnostics) is wired in actions.ts.
  *

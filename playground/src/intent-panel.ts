@@ -1,5 +1,5 @@
 /**
- * The Intent tab — the v1.14 intent channel, in the browser.
+ * Intent, the Checks tab's last section — the v1.14 intent channel, in the browser.
  *
  * A brief ("a 1-bed flat, bathroom about 6 m², ~40 m² total") is written down as data,
  * then the plan is checked against it. This runs the SAME pure functions the CLI does —

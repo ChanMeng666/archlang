@@ -87,7 +87,7 @@ test.describe("header actions", () => {
     await status.expectFlash("Already formatted");
   });
 
-  test("Finish adds the sheet statements as one undoable edit and lists them in Lint", async ({ page }) => {
+  test("Finish adds the sheet statements as one undoable edit and lists them in Checks", async ({ page }) => {
     await gotoEdit(page);
     await setEditorSource(page, SIMPLE_PLAN);
     const status = await watchStatus(page);
@@ -104,8 +104,8 @@ test.describe("header actions", () => {
       .poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 10_000 })
       .toContain("paper A4 landscape");
 
-    // The change log reads like Repair's, in the Lint tab.
-    await page.locator("#tab-lint").click();
+    // The change log reads like Repair's, in the Checks tab's Lint section.
+    await page.locator("#tab-checks").click();
     const panel = page.getByRole("region", { name: "Finish results" });
     await expect(panel).toBeVisible();
     await expect(panel).toContainText("Finish — 6 changes");
@@ -135,13 +135,13 @@ test.describe("header actions", () => {
     const status = await watchStatus(page);
 
     // "Main" names no use, so it gets no piece, and its note carries `scope` (issue #370): no
-    // "unresolved" in the flash, and Lint stays closed.
+    // "unresolved" in the flash, and the Checks tab stays closed.
     await openTools(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
     await status.expectFlash("Finished: 6 changes (Ctrl+Z undoes)");
-    await expect(page.locator("#tab-lint")).toHaveAttribute("aria-selected", "false");
+    await expect(page.locator("#tab-checks")).toHaveAttribute("aria-selected", "false");
 
-    await page.locator("#tab-lint").click();
+    await page.locator("#tab-checks").click();
     const panel = page.getByRole("region", { name: "Finish results" });
     await expect(panel.locator(".repair-outside code", { hasText: "main" })).toBeVisible();
     await expect(panel.locator(".repair-outside")).toContainText("is outside the furnish table");
@@ -222,7 +222,7 @@ test.describe("header actions", () => {
       .toBe(true);
   });
 
-  test("Finish that declines says so, opens Lint, and offers Reissue sheet", async ({ page }) => {
+  test("Finish that declines says so, opens Checks, and offers Reissue sheet", async ({ page }) => {
     // The flagship on its old A2 sheet (it is issued on A1 since fix/examples-sound) is too
     // small at 1:50: finish adds nothing and says why, and only a reissue may replace the
     // paper (the `arch finish --reissue` rule). The villa's halls and stores it leaves empty are
@@ -239,8 +239,8 @@ test.describe("header actions", () => {
 
     await openTools(page);
     await page.getByRole("button", { name: "Finish", exact: true }).click();
-    await status.expectFlash("Finish added nothing: 1 unresolved (see Lint)");
-    await expect(page.locator("#tab-lint")).toHaveAttribute("aria-selected", "true");
+    await status.expectFlash("Finish added nothing: 1 unresolved (see Checks)");
+    await expect(page.locator("#tab-checks")).toHaveAttribute("aria-selected", "true");
     const panel = page.getByRole("region", { name: "Finish results" });
     await expect(panel).toBeVisible();
     await expect(panel).toContainText("1 unresolved");

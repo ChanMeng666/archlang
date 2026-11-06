@@ -1,16 +1,16 @@
 import { expect, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { describe, describeLevel, takeoffCsv } from "../../src/index.js";
-import { openTools, RESIZED_PLAN, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import { RESIZED_PLAN, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
 
 /**
- * The Takeoff tab, on the assembled page: its code arrives on the first open and no sooner, it shows
+ * The takeoff (the Facts tab's second section), on the assembled page: its code arrives on the Facts tab's first open and no sooner, it shows
  * the core's `quantities` block, the waste box is the author's and starts blank, it follows a
  * recompile and the storey switcher, and its CSV is the bytes `takeoffCsv` writes. Every figure asserted
  * is read from the core here, never retyped.
  *
  * The tab is edit mode's: `open` loads the plan with `&edit`, and the first case reaches it from
- * view mode through the Tools menu, which opens the editor on the way.
+ * view mode through Source, then the Facts tab.
  *
  * UNTAGGED (no `@prod`): it types, downloads and reads the clipboard.
  */
@@ -21,13 +21,13 @@ const facts = (src: string, wastePct?: number) =>
 const open = async (page: Page, src: string): Promise<void> => {
   await page.goto(`/${await shareHash(src)}&edit`);
   await waitForPlan(page);
-  await page.locator("#tab-takeoff").click();
+  await page.locator("#tab-facts").click();
   await expect(page.locator("#takeoffOutput table").first()).toBeVisible();
 };
 
 const body = (page: Page) => page.locator("#takeoffOutput");
 
-test.describe("Takeoff tab", () => {
+test.describe("Takeoff (the Facts tab)", () => {
   test("its code loads on the first open, and only once", async ({ page }) => {
     const chunks: string[] = [];
     page.on("response", (r) => {
@@ -38,16 +38,20 @@ test.describe("Takeoff tab", () => {
     await expect(page.locator("#takeoff")).toBeEmpty();
     expect(chunks).toEqual([]);
 
-    // From view mode, through Tools: it opens the editor, then the tab.
-    await openTools(page);
-    await page.getByRole("button", { name: "Takeoff", exact: true }).click();
+    // From view mode: Source opens the editor (Tools opens no tab, ruling PG-D3), and the Facts tab
+    // holds the takeoff as its second section. Opening the editor alone does not load it.
+    await page.locator("#sourceToggle").click();
     await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
-    await expect(page.locator("#takeoff")).toHaveClass(/active/);
+    await expect(page.locator(".cm-content")).toBeVisible();
+    expect(chunks).toEqual([]);
+    await page.locator("#tab-facts").click();
+    await expect(page.locator("#factsView")).toHaveClass(/active/);
+    await expect(page.locator("#factsView #takeoff")).toBeVisible();
     await expect(body(page)).toContainText("Walls by category");
     expect(chunks).toHaveLength(1);
 
     await page.locator("#tab-preview").click();
-    await page.locator("#tab-takeoff").click();
+    await page.locator("#tab-facts").click();
     await expect(body(page)).toContainText("Walls by category");
     expect(chunks).toHaveLength(1);
   });
@@ -93,7 +97,7 @@ test.describe("Takeoff tab", () => {
     await box.fill("10");
     await page.reload();
     await waitForPlan(page);
-    await page.locator("#tab-takeoff").click();
+    await page.locator("#tab-facts").click();
     await expect(page.locator("#takeoffWaste")).toHaveValue("");
   });
 

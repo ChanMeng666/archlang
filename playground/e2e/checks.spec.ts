@@ -6,7 +6,7 @@ import { CHECKS_SAMPLE, SAMPLE_GROUP, sampleSource } from "../src/samples.js";
 import { gotoEdit, openTools, shareHash, waitForPlan, watchStatus } from "./fixtures.js";
 
 /**
- * Checks (card P6): the header toggle draws, over the drawing, the review rings `arch preview
+ * Checks (card P6): the drawing toolbar's layer toggle (PG-D3) draws the review rings `arch preview
  * --review` draws, from the same function (`buildReviewSheet`, built as `dist/cli/review.js`), and
  * lists one finding per compile or lint warning, with its fix hint. Every expectation below is
  * computed here by that function and by the core, never typed in. Untagged (no `@prod`): a deploy
@@ -83,10 +83,16 @@ async function turnOn(page: Page) {
 }
 
 test.describe("checks", () => {
-  test("off by default, a header button, and not remembered", async ({ page }) => {
+  test("off by default, a layer toggle on the drawing's toolbar beside Paths, and not remembered", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
     await expect(checksBtn(page)).toBeVisible();
+    // On the stage's floating toolbar (ruling PG-D3), next to Paths; no longer in the header.
+    await expect(page.locator(".pz-toolbar #checks")).toHaveCount(1);
+    await expect(page.locator("header #checks")).toHaveCount(0);
+    expect(await checksBtn(page).evaluate((b) => (b.nextElementSibling as HTMLElement | null)?.dataset.pz)).toBe(
+      "paths",
+    );
     await expect(checksBtn(page)).toHaveAttribute("aria-pressed", "false");
     await expect(overlay(page)).toHaveCount(0);
     await turnOn(page);
@@ -219,15 +225,39 @@ test.describe("checks", () => {
     await expect(chosen).toHaveCount(0);
     await expect(page.locator(".pz-stage svg g.pg-checks-hl rect")).toHaveCount(0);
 
-    // In edit mode a finding puts the caret on its statement.
+    // In edit mode the list is the Checks tab's first section, listed whether or not the rings are
+    // drawn, and a finding puts the caret on its statement.
     await page.goto("about:blank");
     await gotoEdit(page, await shareHash(CHECKS_PLAN));
-    await turnOn(page);
+    await page.locator("#tab-checks").click();
+    await expect(page.locator("#checksView .checks")).toBeVisible();
+    await expect(page.locator("#checksView .checks-list button[data-n]")).toHaveCount(sheet.marks.length);
+    await expect(checksBtn(page)).toHaveAttribute("aria-pressed", "false");
+    await expect(overlay(page)).toHaveCount(0);
     const door = sheet.marks.find((m) => m.code === "W_DOOR_CLEARANCE")!;
     await items(page)
       .filter({ has: page.locator("code", { hasText: door.code }) })
       .click();
     const line = CHECKS_PLAN.slice(0, door.span![0]).split("\n").length;
     await expect(page.locator(".cm-activeLine")).toHaveText(CHECKS_PLAN.split("\n")[line - 1]!);
+  });
+
+  test("in edit mode the toggle rings the drawing, and its list stays in the Checks tab", async ({ page }) => {
+    const sheet = (await review())(CHECKS_PLAN);
+    if ("kind" in sheet) throw new Error(sheet.kind);
+    await gotoEdit(page, await shareHash(CHECKS_PLAN));
+    await checksBtn(page).click();
+    await expect(checksBtn(page)).toHaveAttribute("aria-pressed", "true");
+    await expect(overlay(page)).toHaveCount(1);
+    // No list floating over the drawing in edit mode: it is the Checks tab's.
+    await expect(page.locator(".pz-viewport .checks")).toHaveCount(0);
+    await page.locator("#tab-checks").click();
+    await expect(page.locator("#checksView .checks-list button[data-n]")).toHaveCount(sheet.marks.length);
+    // Back to view mode: the list floats over the drawing again, beside the rings.
+    await page.locator("#tab-preview").click();
+    await page.locator("#sourceToggle").click();
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    await expect(page.locator(".pz-viewport .checks")).toBeVisible();
+    await expect(overlay(page)).toHaveCount(1);
   });
 });
