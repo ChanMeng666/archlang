@@ -61,7 +61,10 @@ test.describe("3D preview tab", () => {
     await expect(page.locator(".tabview.active")).toHaveCount(1);
     await expect(page.locator("#preview3d")).toContainText(LABEL);
     await expect(page.locator("#preview3d .p3d-limits")).toHaveText(LIMITS);
-    await expect(page.locator("#preview3d .p3d-label a")).toHaveAttribute("href", "https://archlang.uk/3d");
+    await expect(page.locator("#preview3d .p3d-label a")).toHaveAttribute(
+      "href",
+      "https://www.npmjs.com/package/@chanmeng666/archlang-3d",
+    );
     await expect(page.locator("#preview3d .p3d-label a")).toHaveText("What it shows");
     const canvas = page.locator("#preview3d canvas");
     await expect(canvas).toBeVisible();

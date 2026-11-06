@@ -25,7 +25,7 @@ showed (the event table, the payload, and each key frame's `stateAt` and `frameC
 before and after: only the combined view's `end` of the five multi-storey plans moved, and only by
 `stop`, `settle` and the camera). laneway-house (one storey) has no settle. The new `end` hash was
 not rendered locally (the heavy suite is CI's): it is the hash CI's `check-3d` job printed for
-two-storey `end` (GitHub Actions run PENDING), entered with every other hash and both `taken`
+two-storey `end` (GitHub Actions run https://github.com/ChanMeng666/archlang/actions/runs/42143593654, job check-3d), entered with every other hash and both `taken`
 entries unchanged.
 
 Re-taken by visual-assets card V9 (2026-11-04, viewer polish) on Windows 11 x64 with the same

@@ -5,8 +5,7 @@
 your source and the core's drawing as they are.
 
 From a plan it writes a replay (one HTML file: the plan draws itself, then the walls rise) and a GLB
-for any glTF viewer. Same source, plan and 3D preview: the 3D preview is extruded from the same
-`.arch` file, and checked against the plan.
+for any glTF viewer. Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan.
 
 3D preview: walls, openings, floors and furniture in flat colours; no stairs or pitched roofs yet,
 and no sections, elevations or BIM.
@@ -41,7 +40,7 @@ The view turns freely: drag to rotate, scroll or pinch to zoom, right-drag or tw
 and the buttons give Iso, Top, the views from north, east, south and west, and Reset (and, with several storeys, hide the
 storeys above one). Moving the view pauses the playback.
 
-To render a video as well, add a browser and `ffmpeg` on your `PATH`:
+To make a video as well, add a browser and `ffmpeg` on your `PATH`:
 
 ```sh
 npx playwright-core install chromium
