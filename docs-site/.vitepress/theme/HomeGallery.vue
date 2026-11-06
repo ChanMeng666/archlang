@@ -8,10 +8,11 @@
 // A card whose plan has a 3D preview in public/3d/manifest.json (ASSETS_3D, card X6) swaps its
 // drawing for the preview's poster on hover or focus of its link, and its "3D" badge toggles the
 // swap for a tap or a key. The drawing stays the card's picture; the poster lies over it, lazy.
+// When any card has a poster, the limits line (PS-D12, `PREVIEW_LIMITS`) sits under the grid.
 import { reactive } from "vue";
 import { EXAMPLE_LINKS } from "./examples-data.js";
 import { EXAMPLE_FACTS } from "./home-data.js";
-import { ASSETS_3D } from "./three-d-data.js";
+import { ASSETS_3D, PREVIEW } from "./three-d-data.js";
 
 type ExampleName = keyof typeof EXAMPLE_LINKS;
 type Poster = (typeof ASSETS_3D)[number]["poster"];
@@ -80,6 +81,7 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
           </p>
         </li>
       </ul>
+      <p v-if="PLANS.some((p) => POSTERS.has(p.example))" class="home-gallery__limits">{{ PREVIEW.limits }}</p>
     </div>
   </section>
 </template>
@@ -224,6 +226,12 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
   font-size: 14.5px;
   line-height: 1.45;
   color: var(--ink);
+}
+.home-gallery__limits {
+  margin: 16px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-muted);
 }
 .home-gallery__facts {
   margin: 2px 0 0;

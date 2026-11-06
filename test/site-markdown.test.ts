@@ -132,6 +132,12 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect([...at].sort((a, b) => a - b)).toEqual(at);
     expect(md).toContain("| Room | Use | Area | Adj. |");
     expect(md).toContain("**Limits.** Plan drawings only");
+    // The gallery's cards carry 3D posters, so its section ends on the 3D limits line (HomeGallery.vue).
+    const gallery = md.slice(
+      md.indexOf("## Plans written in ArchLang"),
+      md.indexOf("## What it is, and what it isn't"),
+    );
+    expect(gallery.trimEnd().endsWith(previewLines(process.cwd()).limits)).toBe(true);
     expect(md.length).toBeGreaterThan(5000);
   });
 

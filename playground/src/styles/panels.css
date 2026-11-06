@@ -1544,13 +1544,13 @@
 }
 /* View mode: the 3D preview is the stage (card X5). A band at the top clears the Plan | 3D switch,
    and the canvas is as large as the pane lets a 16:9 frame be, with the caption, the controls and
-   the notes under the same roof (about 12rem of them). */
+   the notes under the same roof (about 13.5rem of them, with the longer caption). */
 html:not([data-mode="edit"]) #preview3d {
   container-type: size;
   padding-top: 50px;
 }
 html:not([data-mode="edit"]) #preview3d .p3d-stage {
-  width: min(100%, max(16rem, (100cqh - 12rem) * 16 / 9));
+  width: min(100%, max(16rem, (100cqh - 13.5rem) * 16 / 9));
   align-self: center;
 }
 @media (max-width: 900px) {

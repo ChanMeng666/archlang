@@ -50,6 +50,11 @@ describe.each(READMES)("%s carries the 3D preview honestly", (file) => {
 
 describe("the root README's plan and 3D pairs", () => {
   const text = read("README.md");
+  it("its Limits line quotes the 3D preview's limits line verbatim (V2 round 1)", () => {
+    const limits = text.split("\n").find((l) => l.startsWith("Limits: "));
+    expect(limits, "the README's Limits line").toBeTruthy();
+    expect(limits).toContain(`"${PREVIEW_LIMITS}"`);
+  });
   it("opens each 3D poster in the playground on the 3D view", () => {
     const links = [...text.matchAll(/<a href="([^"]+)"><img src="\.\/docs-site\/public\/3d\//g)].map((m) => m[1]!);
     expect(links.length).toBeGreaterThan(0);
