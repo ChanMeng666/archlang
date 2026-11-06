@@ -15,6 +15,10 @@ Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dime
 - **Playground, in the browser:** https://playground.archlang.uk
 <!-- doors:end -->
 
+<a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/3d/laneway-house.poster.png" width="640" alt="The laneway house plan extruded to a 3D preview in flat colours: walls, openings, floors and furniture." /></a>
+
+Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan. [What the 3D preview shows →](https://archlang.uk/3d)
+
 ## Features
 
 - **Syntax highlighting** for `.arch` files, including metric unit suffixes such as `4m`, `40cm` and `20mm`.
