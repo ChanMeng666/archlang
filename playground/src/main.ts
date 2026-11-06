@@ -37,6 +37,7 @@ import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
 import { mountGallery } from "./gallery.js";
 import { mountNudge } from "./nudge.js";
 import { mountShell } from "./shell.js";
+import { fillGlbNote } from "./glb-note.js";
 import { KEYS, readStr, writeStr } from "./storage.js";
 // Self-hosted brand fonts (no CDN) — shared with the docs site.
 import "@fontsource-variable/archivo/wdth.css";
@@ -67,10 +68,6 @@ const preview = document.getElementById("preview")!;
 const errorsEl = document.getElementById("errors")!;
 const statusEl = document.getElementById("status")!;
 const statusText = document.getElementById("statusText")!;
-// `#format` is the download-format <select>; the reformat-source button is `#formatSrc`
-// (they collided on a single `format` id until the header rework — the button had never
-// been reachable via getElementById because the <select> won the duplicate id).
-const formatSelect = document.getElementById("format") as HTMLSelectElement | null;
 const themeSelect = document.getElementById("theme") as HTMLSelectElement;
 const accessibleToggle = document.getElementById("accessible") as HTMLInputElement | null;
 const finishPanel = document.getElementById("finishPanel");
@@ -381,7 +378,11 @@ const shell = mountShell({
   whenReady: () => ready,
   getSource: () => currentSource(),
   wireChatLinks: (links) => void ready.then(() => actions?.addChatLinks(links)),
+  prepareChat: () => void ready.then(() => actions?.prepareChat()),
+  copyForLlm: () => void actions?.copyForLlm(),
 });
+// Share → Export → GLB's note, from the one home of its words.
+fillGlbNote(document.getElementById("glbNote")!);
 shell.setMode(editing);
 // The one quiet pointer at Make your own (nudge.ts), after the third plan switch or the first knob
 // let go; it stands down once the sheet has been opened.
@@ -395,9 +396,7 @@ const previewCtl = createPreview({
   getRooms: () => lastRooms,
   getSummary: () => lastSummary,
   isEditing: () => editing && edit !== undefined,
-  getCleanSvg: cleanSvg,
   jumpToOffset,
-  flash,
   onPathsChange: () => render(currentSource()),
 });
 // The drawing built into the page pans and zooms at once, before the compiler is in — unless
@@ -801,22 +800,23 @@ async function boot() {
       formatBtn: document.getElementById("formatSrc") as HTMLButtonElement | null,
       finishBtn: document.getElementById("finishSrc") as HTMLButtonElement | null,
       finishPanel,
-      // The Ask AI links and the two share links sit in the Tools menu: choosing one closes it.
-      chatMenu: document.getElementById("tools") as HTMLDetailsElement | null,
-      chatLinks: [...document.querySelectorAll<HTMLAnchorElement>("a[data-chat-host]")],
+      // The chat links are the Make-your-own sheet's, handed over when it is first drawn (shell.ts).
+      chatLinks: [],
       repairBtn: document.getElementById("repair"),
       repairPanel: document.getElementById("repairPanel"),
       embedBtn: document.getElementById("embed"),
-      shareMenu: document.getElementById("tools") as HTMLDetailsElement | null,
+      // The links, Embed and the exports sit in the Share menu: choosing one closes it.
+      shareMenu: document.getElementById("share") as HTMLDetailsElement | null,
       copyShortLinkBtn: document.getElementById("copyShortLink"),
       copyLinkBtn: document.getElementById("copyLink")!,
-      copyLlmBtn: document.getElementById("copyLlm"),
       savedBtn: document.getElementById("saved") as HTMLButtonElement,
-      downloadBtn: document.getElementById("download")!,
-      formatSelect,
+      copySvgBtn: document.getElementById("copySvg"),
+      copyPngBtn: document.getElementById("copyPng"),
+      downloadBtns: [...document.querySelectorAll<HTMLElement>("#share [data-download]")],
     },
   });
-  for (const btn of document.querySelectorAll<HTMLButtonElement>("#tools button[disabled]")) btn.disabled = false;
+  for (const btn of document.querySelectorAll<HTMLButtonElement>(":is(#share, #more) button[disabled]"))
+    btn.disabled = false;
 
   // Initial render — fit the plan to the viewport, then re-fit once layout settles.
   render(initialDoc, true);

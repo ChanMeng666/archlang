@@ -12,7 +12,7 @@
  * samples' group (samples.ts, "Try Checks") has no static page, so its cards are buttons, added
  * once the samples load.
  *
- * Non-modal, like the Tools menu beside it: Escape closes it and returns focus to the trigger; a
+ * Non-modal, like the Share and More menus beside it: Escape closes it and returns focus to the trigger; a
  * click outside or a Tab out of it closes it. Its thumbnails are `loading="lazy"` inside a closed
  * `<details>`, which renders nothing, so none is fetched before the first open.
  */

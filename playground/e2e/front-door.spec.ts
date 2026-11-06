@@ -8,7 +8,7 @@ import { enterEdit, expectPlanNamed, waitForPlan, watchStatus } from "./fixtures
  * is new, so the nightly run against the live site would fail for a deploy lag that is not a bug.
  */
 
-/** The header's visible controls, the Tools menu's contents not counted. */
+/** The header's visible controls, the Share and More menus' contents not counted. */
 const headerControls = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll("header :is(button, select, summary, a, input)")]
@@ -98,11 +98,15 @@ test.describe("front door", () => {
       expect(wrapped, `header items on a second row at ${width}px`).toEqual([]);
       const controls = await headerControls(page);
       expect(controls.length, `header controls at ${width}px: ${controls.join(", ")}`).toBeLessThanOrEqual(5);
-      // The plan gallery, Source, Tools and Make your own are among them; Checks is the stage's
+      // Exactly the gallery, Source, Share, ⋯ and Make your own (PG-D6); Checks is the stage's
       // (PG-D3). The gallery is the one plan-choosing control (PG-D2): no <select> in the header.
-      expect(controls).toEqual(expect.arrayContaining(["planPicker", "sourceToggle", "makeOwn"]));
+      expect(controls).toEqual(["planPicker", "sourceToggle", "Share ▾", "⋯", "makeOwn"]);
       await expect(page.locator("header select:visible")).toHaveCount(0);
-      await expect(page.locator("#tools > summary")).toBeVisible();
+      await expect(page.locator("#share > summary")).toBeVisible();
+      await expect(page.locator("#more > summary")).toHaveAccessibleName("More");
+      // The brand is the page's one heading, inside the header.
+      await expect(page.locator("header > h1")).toHaveAccessibleName("ArchLang Playground");
+      await expect(page.locator("h1")).toHaveCount(1);
     });
   }
 
@@ -131,9 +135,12 @@ test.describe("front door", () => {
     await expect(link).toHaveAttribute("href", "https://archlang.uk/agents");
     await expect(link).toHaveAttribute("rel", /noopener/);
     await expect(link).toHaveAttribute("target", "_blank");
-    // "Copy this plan as a prompt" copies the Copy-for-LLM prompt, closes, and says so.
+    // "Continue this plan with your AI" (PG-D5): the two chat links and Copy for LLM, which copies
+    // the prompt, closes, and says so.
+    const ask = dialog.getByRole("region", { name: "Continue this plan with your AI" });
+    await expect(ask.getByRole("link", { name: /^Open in (Claude|ChatGPT) ↗$/ })).toHaveCount(2);
     const status = await watchStatus(page);
-    await dialog.getByRole("button", { name: "Copy this plan as a prompt" }).click();
+    await ask.getByRole("button", { name: "Copy for LLM" }).click();
     await expect(dialog).toBeHidden();
     await status.expectFlash("LLM prompt copied");
     const prompt = await page.evaluate(() => navigator.clipboard.readText());

@@ -70,7 +70,7 @@
     />
     <!-- Structured data for search and answer engines. No crawler executes this page's
          JavaScript, so everything a machine can learn here has to be in the served bytes:
-         this block plus the intro band below. Keep it in step with the docs site's own
+         this block plus the heading in the header and the lede under the drawing. Keep it in step with the docs site's own
          graph — the same WebSite @id is the parent of both hosts, and every archlang.uk @id
          here is a node the docs home defines. The %ARCHLANG_…% values are filled at build time by
          vite.config.js: the version from the root package.json, each %ARCHLANG_ID_…% from the
@@ -118,24 +118,29 @@
     </script>
   </head>
   <body>
-    <!-- Header = source-world chrome (cool grey): the brand, the plan gallery, and three controls
-         in one row — Source (the editor), Tools (every other action, in one menu) and Make your
-         own (the one redline control). Checks, the review rings, is a layer of the drawing and sits
-         on the stage's toolbar (ruling PG-D3). Each control keeps the id the app and the specs know
-         it by. Source carries a small dot while the plan is compiling or broken (main.ts). -->
+    <!-- Header = source-world chrome (cool grey), one row (ruling PG-D6): the brand, which is the
+         page's one heading, the plan gallery, and four controls — Source (the editor), Share (the
+         links, Embed and every export, ruling PG-D5), ⋯ (More: the render theme, a11y, the edit
+         actions and the related sites) and Make your own (the one redline control, which also
+         holds the hand-it-to-an-AI links). Checks, the review rings, is a layer of the drawing and
+         sits on the stage's toolbar (ruling PG-D3). Each control keeps the id the app and the specs
+         know it by. Source carries a small dot while the plan is compiling or broken (main.ts).
+         NB the heading's tag name is spelled out in prose here on purpose: scripts/smoke.mjs
+         asserts the served page contains a literal opening h1 tag, and a comment that happened to
+         contain one would make that check pass over a page that had lost it. -->
     <header>
-      <div class="tb-brand">
+      <h1 class="tb-brand">
         <!-- The plum mark, not the white one: the header is a light surface. -->
         <img class="brand-mark" src="/brand/archlang-icon-plum.svg" alt="" width="20" height="20" />
         <span class="wordmark"><b>Arch</b>Lang</span>
         <span class="badge">Playground</span>
-      </div>
+      </h1>
       <!-- The plan gallery (ruling PG-D2): the one way to choose a plan. A non-modal disclosure,
-           like Tools: with no script it opens by itself, and every card is a link to the plan's
-           static page. Its cards, their thumbnails and the trigger's plan name are written into
-           the served page at build time (scripts/gen-static.mjs); with script, gallery.ts opens
-           a plan here instead, filters, and moves through the grid with the arrow keys. A closed
-           <details> renders nothing, so no thumbnail is fetched before the first open. -->
+           like Share and More: with no script it opens by itself, and every card is a link to the
+           plan's static page. Its cards, their thumbnails and the trigger's plan name are written
+           into the served page at build time (scripts/gen-static.mjs); with script, gallery.ts
+           opens a plan here instead, filters, and moves through the grid with the arrow keys. A
+           closed <details> renders nothing, so no thumbnail is fetched before the first open. -->
       <details class="gal" id="gallery">
         <summary class="hd-btn gal-trigger" id="planPicker" aria-controls="galleryPanel" title="Choose a plan">
           <span class="gal-glyph" aria-hidden="true">▦</span>
@@ -151,18 +156,57 @@
       </details>
       <div class="spacer"></div>
       <button id="sourceToggle" class="hd-btn" type="button" aria-pressed="false" title="Show the ArchLang source beside the drawing">Source</button>
-      <details class="tools" id="tools">
-        <summary class="hd-btn">Tools ▾</summary>
+      <!-- Share (ruling PG-D5): every way the plan leaves the page, in one menu. Its buttons are
+           `disabled` until the app is up (actions.ts wires them); jsPDF and the GLB writer load on
+           their first click. -->
+      <details class="tools" id="share">
+        <summary class="hd-btn">Share ▾</summary>
+        <div class="tools-panel share-panel">
+          <!-- Two links (ADR 0034). The short one is stored on this site's server, and only when
+               it is chosen here; the full one carries the plan after the #, which no browser
+               sends to a server. The note says so next to the two buttons. -->
+          <div class="tools-group" role="group" aria-labelledby="shareLinks">
+            <p class="tools-h" id="shareLinks">Link</p>
+            <p id="shareNote" class="tools-note">A short link stores this plan on archlang.uk's server; the full link does not.</p>
+            <button id="copyShortLink" type="button" class="tb-primary" aria-describedby="shareNote" disabled>Copy short link</button>
+            <button id="copyLink" type="button" aria-describedby="shareNote" disabled>Copy full link</button>
+            <button id="embed" type="button" data-close disabled title="Copy an iframe snippet to embed this plan">Embed</button>
+          </div>
+          <!-- Export: the drawing on screen (the storey selected), copied or downloaded. GLB is the
+               whole plan, written in the page; its note says the browser does not validate it. -->
+          <div class="tools-group" role="group" aria-labelledby="shareExport">
+            <p class="tools-h" id="shareExport">Export</p>
+            <div class="tools-row">
+              <button id="copySvg" type="button" data-close disabled title="Copy the SVG markup">Copy SVG</button>
+              <button id="copyPng" type="button" data-close disabled title="Copy a PNG image">Copy PNG</button>
+            </div>
+            <p class="tools-sub" id="downloadHead">Download</p>
+            <div class="tools-row" role="group" aria-labelledby="downloadHead">
+              <button type="button" data-download="svg" data-close disabled aria-label="Download SVG">SVG</button>
+              <button type="button" data-download="png" data-close disabled aria-label="Download PNG">PNG</button>
+              <button type="button" data-download="pdf" data-close disabled aria-label="Download PDF">PDF</button>
+              <button type="button" data-download="dxf" data-close disabled aria-label="Download DXF">DXF</button>
+              <button type="button" data-download="txt" data-close disabled aria-label="Download TXT">TXT</button>
+              <button type="button" data-download="glb" data-close disabled aria-label="Download GLB" aria-describedby="glbNote">GLB</button>
+            </div>
+            <!-- Filled at startup from glb-note.ts, the one home of the words (main.ts). -->
+            <p id="glbNote" class="tools-note"></p>
+          </div>
+        </div>
+      </details>
+      <!-- More (⋯): the render theme and a11y, the edit actions, and the related sites. -->
+      <details class="tools" id="more">
+        <summary class="hd-btn" aria-label="More" title="More">⋯</summary>
         <div class="tools-panel">
           <!-- Edit: these change the source, so they open the editor first. -->
-          <div class="tools-group" role="group" aria-labelledby="toolsEdit">
-            <p class="tools-h" id="toolsEdit">Edit</p>
+          <div class="tools-group" role="group" aria-labelledby="moreEdit">
+            <p class="tools-h" id="moreEdit">Edit</p>
             <button id="formatSrc" type="button" data-edit data-close disabled title="Reformat the source to canonical style">Format</button>
             <button id="finishSrc" type="button" data-edit data-close disabled title="Add what a finished sheet needs (paper, scale, dimensions, title, schedule, legend, furniture); Ctrl+Z undoes it">Finish</button>
             <button id="saved" type="button" data-edit aria-haspopup="true" disabled>Saved ▾</button>
           </div>
-          <div class="tools-group" role="group" aria-labelledby="toolsView">
-            <p class="tools-h" id="toolsView">View</p>
+          <div class="tools-group" role="group" aria-labelledby="moreView">
+            <p class="tools-h" id="moreView">View</p>
             <!-- The COMPILER's render themes — these style the produced SVG plan, not the
                  app chrome. "Dark" is a language feature (src/theme.ts), not a dark mode
                  for this page: the app itself is light-only (ADR 0014). Leave it be. -->
@@ -179,39 +223,8 @@
               a11y
             </label>
           </div>
-          <div class="tools-group" role="group" aria-labelledby="toolsDownload">
-            <p class="tools-h" id="toolsDownload">Download</p>
-            <select id="format" aria-label="Download format">
-              <option value="svg">SVG</option>
-              <option value="png">PNG</option>
-              <option value="dxf">DXF</option>
-              <option value="txt">TXT</option>
-              <option value="pdf">PDF</option>
-            </select>
-            <button id="download" type="button" class="tb-primary" data-close disabled>Download</button>
-          </div>
-          <!-- Two links (ADR 0034). The short one is stored on this site's server, and only when
-               it is chosen here; the full one carries the plan after the #, which no browser
-               sends to a server. The note says so next to the two buttons. -->
-          <div class="tools-group" role="group" aria-labelledby="toolsShare">
-            <p class="tools-h" id="toolsShare">Share</p>
-            <p id="shareNote" class="tools-note">A short link stores this plan on archlang.uk's server; the full link does not.</p>
-            <button id="copyShortLink" type="button" class="tb-primary" aria-describedby="shareNote" disabled>Copy short link</button>
-            <button id="copyLink" type="button" aria-describedby="shareNote" disabled>Copy full link</button>
-            <button id="copyLlm" type="button" data-close disabled title="Copy a paste-ready prompt (source + facts + diagnostics) for an AI assistant">Copy for LLM</button>
-            <button id="embed" type="button" data-close disabled title="Copy an iframe snippet to embed this plan">Embed</button>
-          </div>
-          <!-- Unlike Copy link (the plan rides in the #fragment, which no browser sends to
-               a server), these links put the plan's share link in the chat host's URL.
-               The note says so next to the links themselves. No tracking parameter. -->
-          <div class="tools-group" role="group" aria-labelledby="toolsAsk">
-            <p class="tools-h" id="toolsAsk">Ask AI</p>
-            <p id="chatNote" class="tools-note">These links put this plan, its full source inside the share link, in the chat host's URL, so the host's servers receive it, and the host may send it as your first message straight away. Copy link keeps the plan after the #, which your browser never sends to any server. A plan too long for a URL is copied instead, for you to paste.</p>
-            <a href="https://claude.ai/new" data-chat-host="claude" target="_blank" rel="noopener noreferrer" aria-describedby="chatNote">Open in Claude ↗</a>
-            <a href="https://chatgpt.com/" data-chat-host="chatgpt" target="_blank" rel="noopener noreferrer" aria-describedby="chatNote">Open in ChatGPT ↗</a>
-          </div>
           <nav class="tools-group tools-links" aria-label="Related sites">
-            <p class="tools-h">More</p>
+            <p class="tools-h">Links</p>
             <a href="https://archlang.uk/agents" target="_blank" rel="noopener" title="Use ArchLang from an agent: CLI, MCP server, skill, llms.txt">Agents ↗</a>
             <a href="https://archlang.uk" target="_blank" rel="noopener">Docs ↗</a>
             <a href="https://archlang.uk/guide">Guide</a>
@@ -226,29 +239,15 @@
       </details>
       <button id="makeOwn" class="hd-btn hd-primary" type="button" aria-haspopup="dialog">Make your own</button>
     </header>
-    <!-- The crawlable shell, one line under the header. No AI or search crawler executes this
-         page's JavaScript, so the heading, the lede and the drawing below are all served
-         bytes. A small VISIBLE band, never hidden text.
-         NB the tag names are spelled out in prose here on purpose: scripts/smoke.mjs
-         asserts the served page contains a literal opening h1 tag, and a comment that
-         happened to contain one would make that check pass over a page that had lost it. -->
-    <section class="intro">
-      <h1>ArchLang Playground — write floor plans, compile them in your browser</h1>
-      <p class="lede">
-        ArchLang is an open-source (MIT) DSL for floor plans. Write .arch source (or open Source to edit this one)
-        and it compiles in your browser to a dimensioned SVG plan — no install, no account. The same
-        source also compiles to DXF, PDF and PNG from the command line.
+    <noscript>
+      <p class="noscript-note">
+        The editor compiles in the browser, so it needs JavaScript. Without it, the language is
+        documented in full at <a href="https://archlang.uk/reference">archlang.uk/reference</a>, every
+        example plan is published as a static page under <a href="/examples/">/examples/</a>, and the
+        same compiler runs offline from the command line via
+        <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a>.
       </p>
-      <noscript>
-        <p class="lede">
-          The editor compiles in the browser, so it needs JavaScript. Without it, the language is
-          documented in full at <a href="https://archlang.uk/reference">archlang.uk/reference</a>, every
-          example plan is published as a static page under <a href="/examples/">/examples/</a>, and the
-          same compiler runs offline from the command line via
-          <a href="https://www.npmjs.com/package/@chanmeng666/archlang">npm</a>.
-        </p>
-      </noscript>
-    </section>
+    </noscript>
     <!-- Phone-width view switcher (≤900px only; CSS hides it above). Below the breakpoint
          the workspace shows ONE of Code / Plan / Problems at a time, full-height, rather
          than three slivers; mobile-views.ts sets `main[data-mview]`. Toggle buttons, not
@@ -319,9 +318,6 @@
                    are 2D only, so it leaves with the drawing when the 3D preview is on screen. -->
               <button id="checks" data-layer="checks" type="button" aria-pressed="false" title="Ring what compile and lint warn about, as arch preview --review does">Checks</button>
               <button data-pz="paths" type="button" aria-pressed="false" title="Toggle circulation paths overlay" aria-label="Toggle circulation paths">Paths</button>
-              <span class="pz-sep"></span>
-              <button data-pz="copysvg" type="button" title="Copy SVG markup" aria-label="Copy SVG">SVG</button>
-              <button data-pz="copypng" type="button" title="Copy PNG image" aria-label="Copy PNG">PNG</button>
             </div>
           </div>
           <!-- `role="group"` is what makes the `aria-label` count: `aria-label` on a bare
@@ -329,7 +325,15 @@
                name on paper and none in practice. It matters more since the storey
                switcher landed — these figures now describe the SELECTED storey, not the
                whole building, and the name is what says so. -->
-          <div id="facts" class="facts" role="group" aria-label="Plan facts"></div>
+          <!-- The stage's foot (ruling PG-D6): the facts on the left (filled by main.ts), the page's
+               lede on the right. The lede is served bytes, small and VISIBLE (never hidden text):
+               no crawler runs this page's JavaScript, so the heading in the header, this sentence
+               and the drawing above are all it reads. The sentence is doors.json's canonical line,
+               filled in at build time by vite.config.js (`canonicalLine`), never retyped here. -->
+          <div class="facts-row">
+            <div id="facts" class="facts" role="group" aria-label="Plan facts"></div>
+            <p class="lede" id="lede"><!--doors:canonical-line--></p>
+          </div>
         </div>
         <!-- Filled on the tab's first open by preview3d.ts (lazy: three.js never loads before). -->
         <div id="preview3d" class="tabview" role="tabpanel" aria-labelledby="tab-preview3d"></div>

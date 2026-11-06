@@ -130,11 +130,15 @@ test.describe("make your own", () => {
       expect(hrefs).toContain(url);
     await expect(sheet(page).getByRole("link", { name: "Starting from a photo or PDF? →" })).toBeVisible();
     await expect(sheet(page).getByRole("link", { name: "Change one room only? →" })).toBeVisible();
-    // The chat links say, next to them, that they put the plan in that site's address.
+    // "Continue this plan with your AI" (ruling PG-D5): the page's one home for the chat links and
+    // Copy for LLM. The links say, next to them, word for word as they did in the old Tools menu, that they put the
+    // plan in the chat host's URL.
+    const ask = sheet(page).getByRole("region", { name: "Continue this plan with your AI" });
+    await expect(ask.getByRole("button", { name: "Copy for LLM" })).toHaveId("copyLlm");
     for (const name of ["Open in Claude ↗", "Open in ChatGPT ↗"]) {
-      const chat = sheet(page).getByRole("link", { name });
+      const chat = ask.getByRole("link", { name });
       await expect(chat).toHaveAccessibleDescription(
-        "Opening a chat puts this plan in that site's address (or copies it, if the plan is long).",
+        "These links put this plan, its full source inside the share link, in the chat host's URL, so the host's servers receive it, and the host may send it as your first message straight away. Copy link keeps the plan after the #, which your browser never sends to any server. A plan too long for a URL is copied instead, for you to paste.",
       );
       await expect(chat).toHaveAttribute("data-ready", "true");
       await expect(chat).toHaveAttribute("href", /\?q=/);

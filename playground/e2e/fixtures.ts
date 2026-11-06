@@ -5,7 +5,7 @@
  * vitest `include` is `playground/test/ ** /*.test.ts`, which matches neither this
  * file nor the `*.spec.ts` siblings — the two suites never collide.
  */
-import { expect, type Page } from "@playwright/test";
+import { type Download, expect, type Page } from "@playwright/test";
 import { encodeSrc } from "../src/share.js";
 
 /** A minimal, lint-clean plan: one room, one door, one window. */
@@ -91,15 +91,40 @@ export async function enterEdit(page: Page): Promise<void> {
   await expect(page.locator(".cm-content")).toBeVisible();
 }
 
+/** Open a header menu (a no-op when it is open), and wait for its panel. */
+async function openMenu(page: Page, id: "share" | "more"): Promise<void> {
+  const menu = page.locator(`#${id}`);
+  if ((await menu.getAttribute("open")) === null) await menu.locator("summary").click();
+  await expect(menu.locator(".tools-panel")).toBeVisible();
+}
+
 /**
- * Open the header's Tools menu (a no-op when it is open). It holds every action the header
- * used to show: Format, Finish, Saved, theme and a11y, Download, the two links,
- * Copy for LLM, Embed and Ask AI. Choosing a button closes it again, so call this before each.
+ * Open the header's ⋯ menu, More (ruling PG-D5): the render theme and a11y, Format, Finish and
+ * Saved, and the related sites. Choosing a button closes it again, so call this before each.
  */
-export async function openTools(page: Page): Promise<void> {
-  const tools = page.locator("#tools");
-  if ((await tools.getAttribute("open")) === null) await tools.locator("summary").click();
-  await expect(tools.locator(".tools-panel")).toBeVisible();
+export const openMore = (page: Page): Promise<void> => openMenu(page, "more");
+
+/**
+ * Open the header's Share menu (ruling PG-D5): the two links and Embed, and Export (Copy SVG,
+ * Copy PNG, Download SVG · PNG · PDF · DXF · TXT · GLB). Choosing a button closes it again.
+ */
+export const openShare = (page: Page): Promise<void> => openMenu(page, "share");
+
+/** The Make-your-own sheet, opened (its body drawn) and on screen. */
+export async function openMakeOwn(page: Page): Promise<void> {
+  await page.locator("#makeOwn").click();
+  await expect(page.locator("#makeOwnDialog")).toBeVisible();
+  await expect(page.locator("#makeOwnDialog .mo-ask")).toBeVisible();
+}
+
+/** Download `format` (`svg`, `png`, `pdf`, `dxf`, `txt`, `glb`) from Share → Export. */
+export async function downloadFromShare(page: Page, format: string): Promise<Download> {
+  await openShare(page);
+  const [download] = await Promise.all([
+    page.waitForEvent("download"),
+    page.locator(`#share [data-download="${format}"]`).click(),
+  ]);
+  return download;
 }
 
 /** The header's plan gallery (ruling PG-D2): its `<details>`, its trigger and its cards. */
@@ -170,11 +195,11 @@ export async function setEditorSource(page: Page, src: string): Promise<void> {
 }
 
 /**
- * Choose one of the two links in the Tools menu's Share group (ADR 0034): `full` is the
- * `#z=` link (`#copyLink`, no server), `short` the stored `/s/<id>` link (`#copyShortLink`).
+ * Choose one of the two links in the Share menu (ADR 0034): `full` is the `#z=` link
+ * (`#copyLink`, no server), `short` the stored `/s/<id>` link (`#copyShortLink`).
  */
 export async function chooseLink(page: Page, which: "full" | "short"): Promise<void> {
-  await openTools(page);
+  await openShare(page);
   await page.locator(which === "full" ? "#copyLink" : "#copyShortLink").click();
 }
 

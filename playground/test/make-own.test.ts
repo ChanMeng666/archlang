@@ -80,11 +80,27 @@ describe("the Make-your-own sheet", () => {
     for (const t of AGENT_TABS) for (const r of t.rows) expect(allowed.has(r.text), `${t.label}: ${r.text}`).toBe(true);
   });
 
-  it("says next to the chat links that they put the plan in that site's address", () => {
+  it("says next to the chat links that they put the plan in the chat host's URL", () => {
     const html = sheetHtml();
-    expect(CHAT_NOTE).toBe("Opening a chat puts this plan in that site's address (or copies it, if the plan is long).");
-    expect(html).toContain(`id="moChatNote">${CHAT_NOTE}<`);
-    expect([...html.matchAll(/data-chat-host="[a-z]+" aria-describedby="moChatNote"/g)]).toHaveLength(2);
+    // The note the Tools menu's Ask AI links carried, word for word: it moved here with them (PG-D5).
+    expect(CHAT_NOTE).toBe(
+      "These links put this plan, its full source inside the share link, in the chat host's URL, so the host's servers receive it, and the host may send it as your first message straight away. Copy link keeps the plan after the #, which your browser never sends to any server. A plan too long for a URL is copied instead, for you to paste.",
+    );
+    expect(html).toContain(`id="chatNote">${CHAT_NOTE}<`);
+    expect([...html.matchAll(/data-chat-host="[a-z]+" aria-describedby="chatNote"/g)]).toHaveLength(2);
+  });
+
+  it("is the one home of handing the plan to an AI: the two chat links and Copy for LLM, in one section", () => {
+    const html = sheetHtml();
+    const section = /<section class="mo-ask"[^>]*>([\s\S]*?)<\/section>/.exec(html)?.[1] ?? "";
+    expect(section).toContain('<h3 id="moAskHead">Continue this plan with your AI</h3>');
+    expect([...section.matchAll(/>Open in (Claude|ChatGPT) ↗</g)].map((m) => m[1])).toEqual(["Claude", "ChatGPT"]);
+    expect(section).toMatch(/<button type="button" class="mo-go" id="copyLlm"[^>]*>Copy for LLM<\/button>/);
+    // …and the page's static header no longer repeats any of it.
+    const page = readFileSync(new URL("../index.html", import.meta.url), "utf8");
+    expect(page).not.toContain("data-chat-host");
+    expect(page).not.toContain('id="copyLlm"');
+    expect(page).not.toContain('id="chatNote"');
   });
 
   it("says, next to Start from this plan, that it stores the plan on a server", () => {

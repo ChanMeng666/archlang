@@ -1,7 +1,8 @@
 /**
- * The header/panel action buttons: Format, Finish, Repair furniture, Embed, Copy
- * link (short or full), Copy for LLM, Open in Claude / ChatGPT, saved snapshots, the multi-format
- * Download, and the draggable pane divider.
+ * The header/panel action buttons: Format, Finish and Saved (the More menu), Repair furniture, the
+ * Share menu (Copy link, short or full; Embed; Export: Copy SVG / PNG and the downloads, SVG · PNG ·
+ * PDF · DXF · TXT · GLB, ruling PG-D5), Copy for LLM and Open in Claude / ChatGPT (the Make-your-own
+ * sheet's, which the shell hands over once the sheet is drawn), and the draggable pane divider.
  * Each is wired from an explicit context so main.ts stays composition-only.
  */
 import {
@@ -62,23 +63,23 @@ interface ActionsCtx {
     formatBtn: HTMLButtonElement | null;
     finishBtn: HTMLButtonElement | null;
     finishPanel: HTMLElement | null;
-    /** The "Ask AI" disclosure holding the chat links. */
-    chatMenu: HTMLDetailsElement | null;
-    /** The "Open in Claude / ChatGPT" links, each naming its host in `data-chat-host`. */
+    /** The "Open in Claude / ChatGPT" links, each naming its host in `data-chat-host` (the sheet's, once drawn). */
     chatLinks: HTMLAnchorElement[];
     repairBtn: HTMLElement | null;
     repairPanel: HTMLElement | null;
     embedBtn: HTMLElement | null;
-    /** The "Copy link" disclosure holding the privacy note and the two link buttons. */
+    /** The Share menu: the privacy note and the two link buttons, Embed, and the exports. */
     shareMenu: HTMLDetailsElement | null;
     /** Copy a short `/s/<id>` link: stores the plan on this site's server (ADR 0034). */
     copyShortLinkBtn: HTMLElement | null;
     /** Copy the full `#z=` link: the plan stays in the fragment, on no server. */
     copyLinkBtn: HTMLElement;
-    copyLlmBtn: HTMLElement | null;
     savedBtn: HTMLButtonElement;
-    downloadBtn: HTMLElement;
-    formatSelect: HTMLSelectElement | null;
+    /** Share → Export: Copy SVG and Copy PNG (the drawing on screen, export-clean). */
+    copySvgBtn: HTMLElement | null;
+    copyPngBtn: HTMLElement | null;
+    /** Share → Export → Download: one button per format, named in `data-download`. */
+    downloadBtns: HTMLElement[];
   };
 }
 
@@ -86,8 +87,12 @@ interface ActionsCtx {
 export interface ActionsHandle {
   /** The editor text changed (any edit, undo or load). */
   sourceChanged: () => void;
-  /** Wire more chat links (the Make-your-own sheet's) exactly as the Tools menu's are. */
+  /** Wire chat links (the Make-your-own sheet's, drawn on its first open), and encode ahead of a click. */
   addChatLinks: (links: HTMLAnchorElement[]) => void;
+  /** The sheet opened: encode the plan for its chat links now, ahead of a click. */
+  prepareChat: () => void;
+  /** Copy for LLM: the paste-ready prompt to the clipboard, and say so in the status. */
+  copyForLlm: () => Promise<void>;
 }
 
 export function mountActions(ctx: ActionsCtx): ActionsHandle {
@@ -190,11 +195,38 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   // Copy-for-LLM — assemble one paste-ready prompt (source + describe() facts +
   // diagnostics with fixes + a spec pointer) so a user can hand the plan to any
-  // AI assistant. All client-side; no API key. Same clipboard UX as Copy link.
-  els.copyLlmBtn?.addEventListener("click", async () => {
+  // AI assistant. All client-side; no API key. Same clipboard UX as Copy link. Its button is in the
+  // Make-your-own sheet (`#copyLlm`), which the shell forwards here.
+  async function copyForLlm() {
     try {
       await navigator.clipboard.writeText(llmPrompt());
       flash("LLM prompt copied");
+    } catch {
+      flash("Copy failed");
+    }
+  }
+
+  // Copy SVG / Copy PNG (Share → Export): the export-clean drawing on screen, the storey selected.
+  els.copySvgBtn?.addEventListener("click", async () => {
+    closeMenu(els.shareMenu);
+    const svg = getCleanSvg();
+    if (!svg) return;
+    try {
+      await navigator.clipboard.writeText(svg);
+      flash("SVG copied");
+    } catch {
+      flash("Copy failed");
+    }
+  });
+  els.copyPngBtn?.addEventListener("click", async () => {
+    closeMenu(els.shareMenu);
+    const svg = getCleanSvg();
+    if (!svg) return;
+    try {
+      const canvas = await svgToCanvas(svg);
+      const blob = await new Promise<Blob | null>((res) => canvas.toBlob(res, "image/png"));
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": blob! })]);
+      flash("PNG copied");
     } catch {
       flash("Copy failed");
     }
@@ -219,7 +251,7 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   //
   // The share codec is async (CompressionStream) and a click must not await before
   // opening a tab (that spends the user activation popup blockers check). So the
-  // current source is encoded AHEAD of the click — at mount, when the menu opens, on
+  // current source is encoded AHEAD of the click — at mount, when the sheet opens, on
   // hover, focus and press — into `chatEncoded`, tagged with the source it encodes.
   // The click uses it only if that source is still the editor's text; anything else
   // (a click before the encoding landed, a stale one) takes the copy path below.
@@ -271,9 +303,6 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     }
   }
   void encodeForChat();
-  els.chatMenu?.addEventListener("toggle", () => {
-    if (els.chatMenu?.open) void encodeForChat();
-  });
   /** Wire one chat link: encode ahead of the click, open the prefilled host or copy instead. */
   function wireChatLink(link: HTMLAnchorElement) {
     const host = link.dataset.chatHost;
@@ -284,7 +313,6 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
       const fresh = chatEncoded?.source === getSource();
       const { url, fits } = chatTarget(host);
       link.href = url;
-      setTimeout(closeChatMenu, 0); // after the anchor's own activation
       if (fits) return; // the anchor itself opens the prefilled host
       e.preventDefault();
       void copyThenOpen(host, fresh ? "Plan too long for a link" : "Link not ready");
@@ -304,12 +332,6 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
   }
   for (const link of els.chatLinks) wireChatLink(link);
 
-  // The menu holding the links (the playground's Tools) closes on Escape and on a click outside
-  // it in shell.ts, the one place that closes it; choosing a chat link closes it here.
-  function closeChatMenu() {
-    closeMenu(els.chatMenu);
-  }
-
   // Saved snapshots (history) — named stashes in localStorage.
   const snapshots = mountSnapshots({ button: els.savedBtn, getSource, setSource: (src) => loadSource(src, true) });
   // The popover belongs to the menu its button sits in: it closes when that menu does.
@@ -320,10 +342,13 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
 
   mountDivider();
 
-  // Multi-format download.
-  els.downloadBtn.addEventListener("click", () => {
-    void downloadCurrent(els.formatSelect ? els.formatSelect.value : "svg");
-  });
+  // Share → Export → Download: a button per format.
+  for (const btn of els.downloadBtns) {
+    btn.addEventListener("click", () => {
+      closeMenu(els.shareMenu);
+      void downloadCurrent(btn.dataset.download ?? "svg");
+    });
+  }
 
   /** Render what `finish` added and what it declined into the Checks tab's Lint section, in the
    *  same change-log form Repair uses. */
@@ -475,8 +500,39 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
     }
   }
 
-  // ---- multi-format download (SVG vector · DXF vector · TXT ascii · PNG/PDF raster) ----
+  /**
+   * The GLB: the whole plan (every storey, whatever the view shows), built with the 3D preview's own
+   * `adapt3d`/`mesh3d` and written by the package's writer, as `archlang3d build` writes it. Both
+   * load on the first click (the 3D chunk, then glb-export.ts's own), so it works whether or not the
+   * 3D view was ever opened; a failed load is retried on the next click. A plan the 3D package
+   * refuses says why, as the 3D view does.
+   */
+  let glbChunks: Promise<[typeof import("./preview3d.js"), typeof import("./glb-export.js")]> | undefined;
+  async function downloadGlb() {
+    glbChunks ??= Promise.all([import("./preview3d.js"), import("./glb-export.js")]);
+    let mods: Awaited<NonNullable<typeof glbChunks>>;
+    try {
+      mods = await glbChunks;
+    } catch (err) {
+      glbChunks = undefined;
+      throw err;
+    }
+    const [p3d, writer] = mods;
+    const adapted = p3d.adapt3d(getSource());
+    if (!adapted.ok) throw new Error(`no 3D preview: ${adapted.refusal.message}`);
+    await writer.downloadGlb(p3d.mesh3d(adapted.scene));
+  }
+
+  // ---- multi-format download (SVG vector · DXF vector · TXT ascii · PNG/PDF raster · GLB) ----
   async function downloadCurrent(format: string) {
+    if (format === "glb") {
+      try {
+        await downloadGlb();
+      } catch (err) {
+        onExportError(format, err);
+      }
+      return;
+    }
     const clean = getCleanSvg();
     if (!clean) return;
     const level = getLevel();
@@ -536,7 +592,10 @@ export function mountActions(ctx: ActionsCtx): ActionsHandle {
         wireChatLink(link);
       }
       syncChatLinks();
+      void encodeForChat();
     },
+    prepareChat: () => void encodeForChat(),
+    copyForLlm,
   };
 }
 

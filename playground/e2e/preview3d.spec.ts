@@ -10,7 +10,8 @@ import { srcFromHash } from "../src/share.js";
 import {
   BROKEN_PLAN,
   chooseLink,
-  openTools,
+  openMore,
+  openShare,
   pickPlan,
   setEditorSource,
   shareHash,
@@ -192,10 +193,12 @@ test.describe("3D preview tab", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
-    // One entry point (ruling PG-D3): no Tools item and no visible tab opens it.
-    await openTools(page);
-    await expect(page.locator("#tools").getByRole("button", { name: "3D preview", exact: true })).toHaveCount(0);
-    await page.locator("#tools > summary").click();
+    // One entry point (ruling PG-D3): no menu item and no visible tab opens it.
+    for (const open of [openMore, openShare]) {
+      await open(page);
+      await expect(page.locator(":is(#more, #share)").getByRole("button", { name: /3D/ })).toHaveCount(0);
+      await page.keyboard.press("Escape");
+    }
     await expect(page.locator("#tab-preview3d")).toBeHidden();
     // The product word (preview-and-remodel D5): "3D preview", in the switch's description.
     await expect(page.locator("#view3d")).toHaveAttribute("title", /3D preview/);
@@ -583,7 +586,7 @@ test.describe("3D preview tab: grabbing the view", () => {
  * Plan | 3D (public-surfaces card X5): view mode's switch on the stage between the drawing and the
  * 3D preview, which drives the Plan and 3D tabs (edit mode's control, which replaces it there), the
  * `&3d` deep link, the hash flag a copied full link keeps, the plan gallery and the knobs in 3D, and
- * Download GLB. Reduced motion, so the end frame is drawn at once and nothing plays on its own.
+ * the GLB (Share's since card PG4). Reduced motion, so the end frame is drawn at once and nothing plays on its own.
  */
 test.describe("Plan | 3D on the stage (card X5)", () => {
   test.use({ reducedMotion: "reduce" });
@@ -796,7 +799,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toMatch(/#z=[A-Za-z0-9_-]+&3d$/);
   });
 
-  test("Download GLB writes the whole plan as a GLB in the page, in a chunk of its own, and says it is unvalidated", async ({
+  test("the GLB is Share's (card PG4): written in the page, in a chunk of its own, and said to be unvalidated", async ({
     page,
   }) => {
     const glbChunks: string[] = [];
@@ -806,25 +809,19 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
     await waitFor3d(page);
     await mounted(page);
-    const note = page.locator("#preview3d .p3d-glb-note");
+    // Not in the 3D view's floating group any more (ruling PG-D5): one home for every export.
+    await expect(page.locator("#preview3d").getByRole("button", { name: /GLB/ })).toHaveCount(0);
+    await expect(page.locator("#preview3d .p3d-top")).not.toContainText("GLB");
+    await openShare(page);
+    const note = page.locator("#share #glbNote");
+    await expect(note).toBeVisible();
     await expect(note).toContainText("not validated here");
     await expect(note.locator("code")).toHaveText("npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb");
-    const button = page.locator("#preview3d").getByRole("button", { name: "Download GLB" });
-    await expect(button).toHaveAttribute("aria-describedby", "p3d-glb-note");
-    // One compact button in the floating top-right group (card PG1); the note is its description,
-    // its title, and a line of the ⓘ card a visitor can read.
-    await expect(button).toHaveText("GLB ↓");
-    await expect(button).toHaveAttribute(
-      "title",
+    const button = page.locator("#share").getByRole("button", { name: "Download GLB" });
+    await expect(button).toHaveAttribute("aria-describedby", "glbNote");
+    await expect(button).toHaveAccessibleDescription(
       "The whole plan as a GLB, written in your browser and not validated here. npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb writes the same file and checks it with the Khronos glTF validator.",
     );
-    await expect(page.locator("#preview3d .p3d-top").getByRole("button", { name: "Download GLB" })).toBeVisible();
-    await page
-      .locator("#preview3d")
-      .getByRole("button", { name: /^About the 3D preview/ })
-      .click();
-    await expect(page.locator("#preview3d .p3d-info .p3d-glb-note"), "the disclosure is on screen").toBeVisible();
-    await page.keyboard.press("Escape");
     expect(glbChunks, "the GLB writer is not fetched before the click").toEqual([]);
 
     const [download] = await Promise.all([page.waitForEvent("download"), button.click()]);
@@ -850,6 +847,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     expect(glbChunks.length, "the GLB writer loads on the first click").toBe(1);
 
     // A second click writes the same bytes, from the chunk already in.
+    await openShare(page);
     const [again] = await Promise.all([page.waitForEvent("download"), button.click()]);
     expect(readFileSync(await again.path()).equals(bytes), "same plan, same GLB").toBe(true);
     expect(glbChunks.length).toBe(1);
@@ -881,7 +879,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await expect(page.locator(".shared-notice")).toHaveCount(0);
   });
 
-  test("a plan the 3D package refuses: the message, no GLB and no knobs in 3D; the switch still works", async ({
+  test("a plan the 3D package refuses: the message, no GLB button and no knobs in 3D; the switch still works", async ({
     page,
   }) => {
     // Compiles (a knob and a room), but has no walls to raise: E3D_NO_WALLS.
@@ -896,7 +894,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     const message = page.locator("#preview3d .p3d-message");
     await expect(message).toBeVisible();
     await expect(message).toContainText("No 3D preview: The plan has no walls");
-    await expect(page.locator("#preview3d").getByRole("button", { name: "Download GLB" })).toBeHidden();
+    await expect(page.locator("#preview3d").getByRole("button", { name: /GLB/ })).toHaveCount(0);
     await expect(page.locator("#preview3d canvas")).toBeHidden();
     await expect(page.locator("details.knobs")).toBeHidden();
     // The caption and the limits line stay; the switch takes the visitor back to the drawing.
@@ -995,8 +993,10 @@ test.describe("Plan | 3D on a phone (card X5)", () => {
     expect(top.x, "the top-right group clears the switch").toBeGreaterThanOrEqual(chip.x + chip.width);
     expect(lead.y, "the caption's lead is below the switch").toBeGreaterThan(chip.y + chip.height);
     expect(lead.y + lead.height).toBeLessThanOrEqual(canvas.y + canvas.height);
-    await expect(page.locator("#preview3d").getByRole("button", { name: "Download GLB" })).toBeVisible();
+    await expect(page.locator("#preview3d").getByRole("button", { name: /^Reset the view/ })).toBeVisible();
     await expect(page.locator("#preview3d").getByRole("button", { name: /^Replay/ })).toBeVisible();
+    // The GLB is Share's (card PG4): none in the 3D view's group.
+    await expect(page.locator("#preview3d").getByRole("button", { name: /GLB/ })).toHaveCount(0);
   });
 });
 
@@ -1116,17 +1116,9 @@ test.describe("the 3D stage (card PG1)", () => {
     await expect(card.locator(".p3d-limits")).toHaveText(LIMITS);
     await expect(card.locator("a")).toHaveText("What it shows");
     await expect(card.locator("a")).toHaveAttribute("href", "https://archlang.uk/3d");
-    // The GLB note is a line of it, under the limits line, on screen.
-    const note = card.locator(".p3d-glb-note");
-    await expect(note).toBeVisible();
-    await expect(note).toHaveText(
-      "The whole plan as a GLB, written in your browser and not validated here. npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb writes the same file and checks it with the Khronos glTF validator.",
-    );
-    expect(await card.evaluate((c) => [...c.children].map((e) => e.className))).toEqual([
-      "p3d-label",
-      "p3d-limits",
-      "p3d-glb-note",
-    ]);
+    // The caption and the limits line, nothing else: the GLB note lives beside Share → GLB (card PG4).
+    expect(await card.evaluate((c) => [...c.children].map((e) => e.className))).toEqual(["p3d-label", "p3d-limits"]);
+    await expect(card).not.toContainText("GLB");
     // The keyboard: Tab from ⓘ goes into the card, to its link; Tab out of the card shuts it.
     await expect(info).toBeFocused();
     await page.keyboard.press("Tab");
@@ -1144,7 +1136,7 @@ test.describe("the 3D stage (card PG1)", () => {
     await expect(card).toBeVisible();
     await page.locator("#preview3d canvas").click({ position: { x: 300, y: 200 } });
     await expect(card).toBeHidden();
-    // No row under the canvas: the caption, the controls and the GLB button all lie over it.
+    // No row under the canvas: the caption and the controls all lie over it.
     const canvas = await page.locator("#preview3d canvas").boundingBox();
     const host = await page.locator("#preview3d").boundingBox();
     expect(canvas?.height).toBeCloseTo(host?.height ?? 0, 0);

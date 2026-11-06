@@ -1,7 +1,16 @@
 import { expect, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { describe } from "../../src/index.js";
-import { BROKEN_PLAN, gotoEdit, openTools, SIMPLE_PLAN, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import {
+  BROKEN_PLAN,
+  gotoEdit,
+  openMore,
+  openShare,
+  SIMPLE_PLAN,
+  setEditorSource,
+  shareHash,
+  waitForPlan,
+} from "./fixtures.js";
 
 /** The plan a first visit opens (`DEFAULT_EXAMPLE`), as the app bundles it. */
 const LANEWAY = readFileSync(new URL("../../examples/laneway-house.arch", import.meta.url), "utf8");
@@ -31,7 +40,7 @@ const visibleTexts = (page: Page, selector: string): Promise<string[]> =>
 /**
  * One entry point per function (ruling PG-D3): view mode has no tab row and no status row, the
  * stage's Plan | 3D switch being its one view control; edit mode has one row of four tabs, which
- * replace the switch there; Tools opens no tab; the status shows only when there is something to
+ * replace the switch there; neither header menu opens a tab; the status shows only when there is something to
  * say.
  */
 test.describe("one view switch (PG-D3)", () => {
@@ -76,14 +85,60 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(page.locator("#status")).not.toHaveClass(/\bshow\b/);
   });
 
-  test("Tools opens no output tab: the Panels group is gone", async ({ page }) => {
+  test("neither Share nor More opens an output tab: the Panels group is gone", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
-    await openTools(page);
-    await expect(page.locator("#tools [data-open-tab]")).toHaveCount(0);
-    await expect(page.locator("#tools .tools-h", { hasText: "Panels" })).toHaveCount(0);
-    for (const name of ["Describe", "Lint", "Intent", "Takeoff", "3D preview"])
-      await expect(page.locator("#tools").getByRole("button", { name, exact: true })).toHaveCount(0);
+    for (const [open, id] of [
+      [openMore, "#more"],
+      [openShare, "#share"],
+    ] as const) {
+      await open(page);
+      await expect(page.locator(`${id} [data-open-tab]`)).toHaveCount(0);
+      await expect(page.locator(`${id} .tools-h`, { hasText: "Panels" })).toHaveCount(0);
+      for (const name of ["Describe", "Lint", "Intent", "Takeoff", "3D preview"])
+        await expect(page.locator(id).getByRole("button", { name, exact: true })).toHaveCount(0);
+      await page.keyboard.press("Escape");
+    }
+  });
+
+  test("⋯ (More) holds exactly the render theme and a11y, Format / Finish / Saved, and the links", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    const summary = page.locator("#more > summary");
+    await expect(summary).toHaveText("⋯");
+    await expect(summary).toHaveAccessibleName("More");
+    await openMore(page);
+    const panel = page.locator("#more .tools-panel");
+    // Three groups, nothing else (ruling PG-D5).
+    expect(await panel.evaluate((p) => [...p.children].map((c) => c.querySelector(".tools-h")?.textContent))).toEqual([
+      "Edit",
+      "View",
+      "Links",
+    ]);
+    expect(await panel.locator("button").evaluateAll((bs) => bs.map((b) => b.id))).toEqual([
+      "formatSrc",
+      "finishSrc",
+      "saved",
+    ]);
+    expect(await panel.locator("select, input").evaluateAll((es) => es.map((e) => e.id))).toEqual([
+      "theme",
+      "accessible",
+    ]);
+    expect(await panel.locator("a").evaluateAll((as) => as.map((a) => a.textContent?.trim()))).toEqual([
+      "Agents ↗",
+      "Docs ↗",
+      "Guide",
+      "Language reference",
+      "One-page spec",
+      expect.stringMatching(/^\d+ example plans$/),
+      "npm",
+      "GitHub",
+      "ArchCanvas ↗",
+    ]);
+    // No export, link, embed or AI action in it: those are Share's and Make your own's.
+    await expect(
+      panel.locator("[data-download], #copyLink, #copyShortLink, #embed, #copyLlm, [data-chat-host]"),
+    ).toHaveCount(0);
   });
 
   test("a compiler that fails to load says so, and never stays on Compiling…", async ({ page }) => {
@@ -225,7 +280,7 @@ test.describe("persisted view preferences", () => {
     await waitForPlan(page);
     const before = await page.locator(".pz-stage svg").innerHTML();
 
-    await openTools(page);
+    await openMore(page);
     await page.locator("#theme").selectOption("blueprint");
     // A render theme restyles the produced SVG, so the drawing must actually change.
     await expect.poll(async () => (await page.locator(".pz-stage svg").innerHTML()) !== before).toBe(true);
@@ -257,7 +312,7 @@ test.describe("persisted view preferences", () => {
     await waitForPlan(page);
     const before = await page.locator(".pz-stage svg").innerHTML();
 
-    await openTools(page);
+    await openMore(page);
     await page.locator("#accessible").check();
     // Opt-in `<title>`/`<desc>`/`role="img"` metadata (ADR 0007) really lands…
     await expect.poll(async () => (await page.locator(".pz-stage svg").innerHTML()) !== before).toBe(true);
@@ -410,29 +465,29 @@ test.describe("saved snapshots", () => {
     await setEditorSource(page, SIMPLE_PLAN);
 
     const pop = page.locator(".snap-pop");
-    const tools = page.locator("#tools");
+    const tools = page.locator("#more");
     const toolsOpen = () => tools.evaluate((d) => (d as HTMLDetailsElement).open);
-    await openTools(page);
+    await openMore(page);
     await page.locator("#saved").click();
     await expect(pop).toBeVisible();
     await expect(pop.locator(".snap-empty")).toBeVisible();
-    // The popover belongs to Tools: the menu stays open beside it.
+    // The popover belongs to More: the menu stays open beside it.
     expect(await toolsOpen()).toBe(true);
 
-    // A click inside the popover is a click inside Tools: both stay open.
+    // A click inside the popover is a click inside More: both stay open.
     await pop.locator(".snap-save").click();
     await expect(pop.locator(".snap-row")).toHaveCount(1);
     await expect(pop.locator(".snap-name")).toHaveText("E2E snapshot");
     await expect(pop).toBeVisible();
     expect(await toolsOpen()).toBe(true);
 
-    // Closing Tools closes the popover with it: never a popover floating over a closed menu.
-    await page.locator("#tools > summary").click();
+    // Closing More closes the popover with it: never a popover floating over a closed menu.
+    await page.locator("#more > summary").click();
     await expect.poll(toolsOpen).toBe(false);
     await expect(pop).toBeHidden();
 
     // Escape closes both as well.
-    await openTools(page);
+    await openMore(page);
     await page.locator("#saved").click();
     await expect(pop).toBeVisible();
     await page.keyboard.press("Escape");
@@ -443,7 +498,7 @@ test.describe("saved snapshots", () => {
     await setEditorSource(page, SIMPLE_PLAN.replace('label "Main"', 'label "Elsewhere"'));
     await expect(page.locator(".cm-content")).toContainText("Elsewhere");
 
-    await openTools(page);
+    await openMore(page);
     await page.locator("#saved").click();
     await pop.locator(".snap-restore").first().click();
     await expect(page.locator(".cm-content")).toContainText('label "Main"');

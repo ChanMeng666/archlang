@@ -1,7 +1,7 @@
 import { expect, type Download, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { describe, describeLevel, lint } from "../../src/index.js";
-import { openTools, pickPlan, setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
+import { downloadFromShare, pickPlan, setEditorSource, waitForPlan, watchForProblems } from "./fixtures.js";
 
 /**
  * The STOREY SWITCHER — the control that picks which level of a multi-storey plan the
@@ -26,7 +26,7 @@ import { openTools, pickPlan, setEditorSource, waitForPlan, watchForProblems } f
  *
  * The switcher works in view mode too (it is part of the drawing's view path); the cases that
  * read Describe or Lint, or type into the editor, open the page in edit mode (`/#edit`), and the
- * download opens the Tools menu first.
+ * download opens the Share menu first.
  */
 
 const TOWNHOUSE = readFileSync(new URL("../../examples/townhouse.arch", import.meta.url), "utf8");
@@ -56,13 +56,8 @@ async function pickExample(page: Page, label: string): Promise<void> {
 /** The serialized drawing currently in the preview stage. */
 const stageSvg = (page: Page): Promise<string> => page.locator(".pz-stage svg").innerHTML();
 
-/** Click `#download` for `format` and return the resulting browser download. */
-async function downloadAs(page: Page, format: string): Promise<Download> {
-  await openTools(page);
-  await page.locator("#format").selectOption(format);
-  const [download] = await Promise.all([page.waitForEvent("download"), page.locator("#download").click()]);
-  return download;
-}
+/** Download `format` from Share → Export and return the resulting browser download. */
+const downloadAs = (page: Page, format: string): Promise<Download> => downloadFromShare(page, format);
 
 test.describe("storey switcher", () => {
   test("switching to level 3 moves the drawing AND the facts under it", async ({ page }) => {
