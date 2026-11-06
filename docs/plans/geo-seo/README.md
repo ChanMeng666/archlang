@@ -169,7 +169,10 @@ Each card is one PR unless bundled below. Executors run in worktrees from `main`
 
 ## 4. Owner queue (nothing here is done by an agent)
 
-In the order of expected reach. Each is prepared by an agent to the point of a click.
+In the order of expected reach. Each is prepared by an agent to the point of a click. **The state
+of each item lives in `handoff.md`**, which records what the owner later approved, what agents did
+on that word, and what proved impossible for an agent (message requests on X and LinkedIn are
+paywalled for non-followers; Reddit refuses every agent route).
 
 1. **Approve PR B** (GS-D6, high tier) and the `zero-dependency` → `gemini-cli-extension` topic swap.
 2. **GitHub MCP Registry onboarding**: a post in GitHub's MCP registry discussion asking for

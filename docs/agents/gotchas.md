@@ -328,6 +328,10 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   started, by its PID.
 - **The Claude in Chrome extension drops after a terminal crash**; the owner reconnects it with
   `/chrome`.
+- **Off-site messages are the owner's in practice, not only by rule:** X and LinkedIn paywall a
+  message request to someone who does not follow the account, Reddit refuses every agent route
+  (extension, HTTP, fetch), and a subagent will not send a message on an approval relayed by
+  another agent, so the main session acts on the owner's words itself or hands the item back.
 - **(Eval) Reasoning models spend thinking tokens out of `max_completion_tokens`.** An implausibly low
   score means suspect the token cap (`eval/run.ts` uses 16384) before the language.
 - **(Dataset) `dataset/out/` is gitignored and HF-only.** On re-upload the card's
