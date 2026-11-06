@@ -27,6 +27,22 @@
 #preview.active {
   display: flex;
 }
+/* View mode's Plan ↔ 3D switch: the view coming on screen fades in from the paper ground both
+   stand on, opacity only, so nothing moves (main.ts `fadeIn` adds the class; never under reduced
+   motion, and this rule is guarded too). */
+@media (prefers-reduced-motion: no-preference) {
+  .pg-fade-in {
+    animation: pg-fade-in 180ms ease-out;
+  }
+}
+@keyframes pg-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
 
 /* Facts and Checks (edit mode, ruling PG-D3): one scrolling panel of sections each — Describe and
    Takeoff; the review findings, Lint and Intent — under a caps micro-label per section, in the
@@ -500,7 +516,7 @@
     border-radius: 0;
   }
   .knobs-head {
-    padding: 12px 16px;
+    padding: 13px 16px;
   }
   .knobs-list {
     padding: 2px 16px 14px;
@@ -640,8 +656,8 @@
 }
 @media (max-width: 900px) {
   .checks {
-    /* under the switch, the storeys and a wrapped toolbar */
-    top: 116px;
+    /* under the switch and the storeys (the toolbar is at the foot) */
+    top: 130px;
     left: 8px;
     right: 8px;
     width: auto;
@@ -901,7 +917,7 @@
   display: flex;
 }
 
-/* the Problems view's clean-plan line (phone layout only; chrome.css shows it) */
+/* the Checks view's clean-plan line (phone layout only; chrome.css shows it) */
 .problems-empty {
   display: none;
   margin: 0;
@@ -1549,7 +1565,7 @@
   border: 0;
 }
 
-/* Top-right: ⟲ Reset, View ▾ (its popover under it), the storeys. */
+/* Top-right: ⟲ Reset, View ▾ (its popover under it). */
 .p3d-top {
   top: 10px;
   right: 10px;
@@ -1588,14 +1604,8 @@
 .p3d-views .archlang-views-presets[hidden] {
   display: none;
 }
-.p3d-views .archlang-views-storeys {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding-left: 4px;
-  font-size: 12px;
-  color: var(--ink-muted);
-}
+/* No "Storeys shown" group: the page's storey switcher is the one storey control (preview3d.ts
+   builds the toolbar with `storeys: false`, card PG5b ④). */
 /* Bottom-left: ▶ Replay, then the caption's lead and its ⓘ; the card opens above them. */
 .p3d-foot {
   left: 10px;
@@ -1801,6 +1811,16 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
 .p3d-stage[data-refused] > .knobs {
   display: none;
 }
+/* …and under the storeys too, when a plan has them (card PG5b ③: the chip covered the knobs'
+   heading). The phone's knobs are the foot sheet, clear of the corner already. */
+@media (min-width: 901px) {
+  .pane:has(#storeys:not([hidden])) .p3d-stage > .knobs {
+    top: 50px;
+  }
+  html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .p3d-stage > .knobs {
+    top: 90px;
+  }
+}
 @media (max-width: 900px) {
   .p3d-stage > .knobs,
   html:not([data-mode="edit"]) .p3d-stage > .knobs {
@@ -1808,15 +1828,15 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
     bottom: 0;
   }
   .p3d-stage:has(> .knobs:not([hidden])):not([data-refused]) {
-    --p3d-foot: 44px;
+    --p3d-foot: 46px;
   }
   .p3d-btn {
-    height: 36px;
+    height: 44px;
     padding: 0 12px;
   }
   .p3d-info-btn {
-    width: 36px;
-    height: 36px;
+    width: 44px;
+    height: 44px;
   }
   .p3d-top {
     max-width: calc(100% - 130px);
@@ -2034,19 +2054,25 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
 /* ≤900px (the phone layout, chrome.css): touch-sized preview controls, a diagnostic
    head that wraps its message under the code, 16px side gutters in the panels. */
 @media (max-width: 900px) {
+  /* The toolbar rides the stage's foot, bottom-right, on one row (card PG5b ③ ⑦): at 44 × 44 px
+     its six controls (~300 px) cannot share the top row with the Plan | 3D switch at 390 px, and
+     wrapped there they ran into the storeys under the switch. The top-left corner keeps the switch
+     and the storeys; the foot is the thumb's. Above a plan's knobs, which fold to a 45 px sheet
+     across the foot (as the 3D view's foot controls ride above them). */
   .pz-toolbar {
-    top: 8px;
+    top: auto;
+    bottom: 8px;
     right: 8px;
-    /* Clear of the Plan | 3D switch in the other top corner: a narrow stage wraps the toolbar to
-       a second row rather than run it under the switch. With the copy buttons gone to Share (card
-       PG4) the six controls fit one row at 390 px: 34 px wide, 40 px tall, beside a 113 px switch. */
     flex-wrap: wrap;
     justify-content: flex-end;
-    max-width: calc(100% - 124px);
+    max-width: calc(100% - 16px);
+  }
+  .pz-viewport:has(> .knobs:not([hidden])) .pz-toolbar {
+    bottom: 54px;
   }
   .pz-toolbar button {
-    min-width: 34px;
-    height: 40px;
+    min-width: 44px;
+    height: 44px;
   }
   .diag-head {
     flex-wrap: wrap;

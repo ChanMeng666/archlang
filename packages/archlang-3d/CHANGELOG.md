@@ -11,6 +11,8 @@
   `viewToolbar(view, { compact: true })` puts Reset first and the six presets in a `View ▾`
   popover, every button keeping its name, `data-*` and `aria-pressed`. All three are opt-in: a
   host that never calls them, and the single-file replay HTML, draw and show exactly what they did.
+- `viewToolbar(view, { storeys: false })` leaves out the "Storeys shown" buttons, for a host with
+  its own storey control (the playground). On by default: the replay HTML's toolbar is unchanged.
 
 ### Changed
 

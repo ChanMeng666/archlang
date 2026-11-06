@@ -657,27 +657,29 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 }
 
 @media (max-width: 900px) {
+  /* Touch-sized: every button here is at least 44 × 44 px (card PG5b ⑦), so the switch's chip is
+     52 px tall (10 → 62) and the storeys sit under it (70 → 122); in edit mode, with no switch,
+     they take its place (10 → 62). */
   .stage-switch button {
-    height: 38px;
+    height: 44px;
   }
-  /* under the touch-sized switch (38 px buttons in a 46 px chip) */
   .lv-group {
-    top: 62px;
+    top: 70px;
   }
   .lv-btn {
-    height: 38px;
+    height: 44px;
     min-width: 44px;
   }
   html:not([data-mode="edit"]) .room-card,
   .pane:has(#storeys:not([hidden])) .room-card {
-    top: 64px;
+    top: 70px;
   }
   html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
-    top: 116px;
+    top: 130px;
   }
   /* A phone stage is narrow: the notice spans it, under the switch (and the storeys). */
   .stage-status {
-    top: 62px;
+    top: 70px;
     left: 16px;
     right: 16px;
     width: auto;
@@ -685,17 +687,21 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
     max-width: none;
   }
   .pane:has(#storeys:not([hidden])) .stage-status {
-    top: 116px;
+    top: 130px;
   }
   html[data-mode="edit"] .stage-status {
     top: 10px;
   }
   html[data-mode="edit"] .pane:has(#storeys:not([hidden])) .stage-status {
-    top: 64px;
+    top: 70px;
+  }
+  .stage-status-x {
+    width: 44px;
+    height: 44px;
   }
   /* Facts and Checks start clear of the taller storey chip. */
   main .pane:has(#storeys:not([hidden])) .tv-sections {
-    padding-top: 66px;
+    padding-top: 72px;
   }
 }
 
@@ -909,7 +915,7 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   border-radius: 2px;
 }
 
-/* The phone view switcher (Code · Plan · Problems) — hidden above the breakpoint. */
+/* The phone view switcher (Code · Plan · 3D · Facts · Checks) — hidden above the breakpoint. */
 .mviews {
   display: none;
 }
@@ -924,7 +930,7 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 
 /* ≤900px — the phone (and portrait-tablet) layout. The page scrolls vertically past the
    header; below it is a workspace exactly one screen tall. In view mode it
-   is the drawing alone; in edit mode a sticky Code · Plan · Problems switcher sits over it
+   is the drawing alone; in edit mode a sticky Code · Plan · 3D · Facts · Checks switcher sits over it
    and it shows ONE view at a time (`main[data-mview]`, mobile-views.ts), so each gets the
    full screen instead of a third of it. 16px side gutters, 44px touch targets, and nothing
    wider than the viewport. */
@@ -1016,6 +1022,7 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   .hd-btn {
     flex: 1 1 auto;
     justify-content: center;
+    min-width: 44px;
   }
   /* a menu's panel anchors to the header itself, so it spans the gutters */
   .tools {
@@ -1064,14 +1071,18 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
     background: var(--paper-panel);
     border-bottom: 1px solid var(--hairline);
   }
+  /* Five views (card PG5b ①): equal shares of the row, each at least 44 px, with no side padding
+     so "Checks" and its count fit a 360 px screen's share. */
   .mview {
-    flex: 1;
+    flex: 1 1 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
+    gap: 4px;
+    min-width: 44px;
     min-height: 44px;
     margin-top: 2px;
+    padding: 0 2px;
     border: 0;
     border-bottom: 2px solid transparent;
     background: transparent;
@@ -1116,42 +1127,46 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   main > .pane {
     display: none;
   }
-  /* view mode: the drawing, whatever view edit mode last showed */
+  /* view mode: the stage, whatever view edit mode last showed; edit mode: Plan, 3D and Facts are
+     the output pane (main.ts opens the view's tab), Code the editor's, Checks both */
   html:not([data-mode="edit"]) main > .pane:nth-child(2),
-  html[data-mode="edit"] main[data-mview="plan"] > .pane:nth-child(2),
+  html[data-mode="edit"] main:is([data-mview="plan"], [data-mview="3d"], [data-mview="facts"]) > .pane:nth-child(2),
   html[data-mode="edit"] main[data-mview="code"] > .pane:first-child,
-  html[data-mode="edit"] main[data-mview="problems"] > .pane {
+  html[data-mode="edit"] main[data-mview="checks"] > .pane {
     display: flex;
   }
   .pane + .pane {
     border-left: 0;
   }
-  /* Code: the editor alone — the diagnostics live in their own view */
+  /* The switcher above is the phone's one view control (card PG5b ①): no tab row under it. */
+  main .out-tabs {
+    display: none;
+  }
+  /* Code: the editor alone — the diagnostics are the Checks view's */
   main[data-mview="code"] #errors {
     display: none;
   }
-  /* Problems (ruling PG-D3): the compile diagnostics on top, then the Checks tab's content (the
+  /* Checks (ruling PG-D3): the compile diagnostics on top, then the Checks tab's content (the
      review findings, Lint, Intent; main.ts opens that tab), each scrolling in its own box. The
      diagnostics take what they need, up to under half the screen. */
-  html[data-mode="edit"] main[data-mview="problems"] {
+  html[data-mode="edit"] main[data-mview="checks"] {
     grid-template-rows: fit-content(45%) minmax(0, 1fr);
   }
-  main[data-mview="problems"] .src-tab,
-  main[data-mview="problems"] #editor,
-  main[data-mview="problems"] .out-tabs {
+  main[data-mview="checks"] .src-tab,
+  main[data-mview="checks"] #editor {
     display: none;
   }
-  main[data-mview="problems"] > .pane + .pane {
+  main[data-mview="checks"] > .pane + .pane {
     border-top: 1px solid var(--hairline);
   }
-  main[data-mview="problems"] #errors {
+  main[data-mview="checks"] #errors {
     flex: 1;
     max-height: none;
     padding: 12px 16px;
     border-top: 0;
     gap: 8px;
   }
-  main[data-mview="problems"] #errors:not(.show) ~ .problems-empty {
+  main[data-mview="checks"] #errors:not(.show) ~ .problems-empty {
     display: block;
   }
   /* 16px stops iOS zooming the page when the editor takes focus */
@@ -1163,18 +1178,6 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
     flex-wrap: wrap;
     padding: 4px 16px;
     row-gap: 0;
-  }
-  .tab,
-  .lv-btn {
-    min-height: 40px;
-  }
-  /* The tabs keep inside the 16 px gutters of a phone at 8 px side padding; narrower than their
-     sum, they wrap rather than run into the gutter. */
-  .tab {
-    padding-inline: 8px;
-  }
-  .tabs {
-    flex-wrap: wrap;
   }
   .divider {
     display: none;

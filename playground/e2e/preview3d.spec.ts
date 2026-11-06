@@ -474,7 +474,10 @@ test.describe("3D preview tab: the free camera", () => {
     expect(await current(page), "no motion: the end frame").toBe(end);
   });
 
-  test("hiding the upper storeys shows the floor below; All brings the end frame back", async ({ page }) => {
+  // Card PG5b ④: one storey control in the 3D view, the page's switcher. The package toolbar's own
+  // "Storeys shown" cut-away is left out (`storeys: false`); the view's cut-away itself is unchanged,
+  // so it is driven here through the view, as the replay HTML's buttons drive it.
+  test("one storey control: no Storeys shown buttons; the view still hides the upper storeys", async ({ page }) => {
     await page.goto("/");
     await waitForPlan(page);
     await pickPlan(page, "Townhouse (3 levels)");
@@ -483,19 +486,29 @@ test.describe("3D preview tab: the free camera", () => {
     await expect(page.locator("#preview3d")).toHaveAttribute("data-view", "all");
     await expect(page.locator('#preview3d [data-role="scrub"]')).toHaveValue("1");
     const end = await hashAt(page, 1);
-    const storeys = page.locator("#preview3d [data-storeys]");
-    await expect(storeys).toHaveCount(3);
-    await expect(page.locator('#preview3d [data-storeys="3"]')).toHaveAttribute("aria-pressed", "true");
+    await expect(page.locator("#preview3d [data-storeys]")).toHaveCount(0);
+    await expect(page.locator("#preview3d").getByRole("group", { name: "Storeys shown" })).toHaveCount(0);
+    // The page's switcher is the one storey control on screen.
+    await expect(page.locator("#storeys")).toBeVisible();
+    await expect(page.locator('[role="group"][aria-label="Storey"]')).toHaveCount(1);
+    expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.storeys)).toBe(3);
 
-    await page.locator('#preview3d [data-storeys="1"]').click();
-    await expect(page.locator('#preview3d [data-storeys="1"]')).toHaveAttribute("aria-pressed", "true");
+    const show = (k: number) =>
+      page.evaluate(
+        (n) =>
+          (
+            window as unknown as { __preview3d?: { view?: { showStoreys(k: number): void } } }
+          ).__preview3d?.view?.showStoreys(n),
+        k,
+      );
+    await show(1);
     expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.shown)).toBe(1);
     const ground = await current(page);
     expect(ground, "the storeys above the ground floor are hidden").not.toBe(end);
-    await page.locator('#preview3d [data-storeys="2"]').click();
+    await show(2);
     const two = await current(page);
     expect(new Set([end, ground, two]).size).toBe(3);
-    await page.locator('#preview3d [data-storeys="3"]').click();
+    await show(3);
     expect(await current(page), "every storey shown again is the end frame").toBe(end);
   });
 

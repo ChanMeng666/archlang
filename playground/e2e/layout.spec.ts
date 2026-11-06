@@ -1,6 +1,17 @@
 import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
-import { embedHash, gotoEdit, shareHash, waitForPlan } from "./fixtures.js";
+import { BROKEN_PLAN, embedHash, gotoEdit, setEditorSource, shareHash, waitFor3d, waitForPlan } from "./fixtures.js";
+
+/** Townhouse, the three-storey example: the widest storey chip (L1 L2 L3) on the stage. */
+const TOWNHOUSE = readFileSync(new URL("../../examples/townhouse.arch", import.meta.url), "utf8").replace(
+  /\r\n?/g,
+  "\n",
+);
+
+type Box = { x: number; y: number; width: number; height: number };
+/** Whether two boxes share any area (touching edges do not count). */
+const overlaps = (a: Box, b: Box): boolean =>
+  a.x < b.x + b.width - 0.5 && b.x < a.x + a.width - 0.5 && a.y < b.y + b.height - 0.5 && b.y < a.y + a.height - 0.5;
 
 /**
  * The layout: every part of the workspace is REACHABLE, at desktop size and on a phone.
@@ -172,10 +183,10 @@ test.describe("phone layout", () => {
     await expect(page.locator(".pz-viewport")).toBeHidden();
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
 
-    // Problems: the diagnostics list, counted on its button, scrollable to its last line, over
-    // the Checks tab's content (ruling PG-D3), with no tab row of its own.
+    // Checks: the diagnostics list, counted on its button, scrollable to its last line, over
+    // the Checks tab's content (ruling PG-D3), with no tab row at all (card PG5b ①).
     await expect(page.locator("#mviewCount")).toHaveText("1");
-    await page.locator(".mview[data-mview=problems]").tap();
+    await page.locator(".mview[data-mview=checks]").tap();
     const errors = page.locator("#errors");
     await expect(errors.locator(".diagrow").first()).toBeInViewport();
     await expect(page.locator("#tab-checks")).toHaveAttribute("aria-selected", "true");
@@ -193,22 +204,44 @@ test.describe("phone layout", () => {
     await expect(page.locator(".cm-content")).toBeInViewport();
   });
 
-  test("controls are touch-sized", async ({ page }) => {
-    await page.goto("/");
+  // Card PG5b ⑦: every visible control at least 44 × 44 px, wide as well as tall — the header's
+  // buttons and its <summary> triggers (the gallery, Share, ⋯), the stage's switch, storeys and
+  // toolbar, the phone's view switcher — in view mode and in edit mode, on a three-storey plan.
+  test("controls are touch-sized: 44 × 44 at least", async ({ page }) => {
+    const CONTROLS =
+      "header button, header select, header summary, .mview, .stage-switch button, .lv-btn, .pz-toolbar button, #preview3d button";
+    const tooSmall = () =>
+      page.locator(CONTROLS).evaluateAll((els) =>
+        els
+          .filter((e) => e.getClientRects().length > 0)
+          .filter((e) => {
+            const r = e.getBoundingClientRect();
+            return r.height < 44 - 0.5 || r.width < 44 - 0.5;
+          })
+          .map((e) => {
+            const r = e.getBoundingClientRect();
+            return `${e.id || e.textContent?.trim() || e.className} ${Math.round(r.width)}×${Math.round(r.height)}`;
+          }),
+      );
+    await page.goto(`/${await shareHash(TOWNHOUSE)}`);
     await waitForPlan(page);
-    const small = await page.locator("header button, header select, .mview, .pz-toolbar button").evaluateAll((els) =>
-      els
-        .filter((e) => e.getClientRects().length > 0)
-        .filter((e) => e.getBoundingClientRect().height < 40)
-        .map((e) => e.id || e.textContent?.trim() || e.className),
-    );
-    expect(small, "controls under 40px tall").toEqual([]);
+    await expect(page.locator("header summary")).toHaveCount(3);
+    await expect(page.locator(".lv-btn")).toHaveCount(3);
+    expect(await tooSmall(), "view mode, the drawing").toEqual([]);
+    await page.locator("#view3d").tap();
+    await expect(page.locator("#preview3d canvas")).toBeVisible();
+    expect(await tooSmall(), "view mode, the 3D preview").toEqual([]);
+    await page.goto("about:blank");
+    await page.goto(`/${await shareHash(TOWNHOUSE)}&edit`);
+    await waitForPlan(page);
+    await expect(page.locator(".mview")).toHaveCount(5);
+    expect(await tooSmall(), "edit mode").toEqual([]);
   });
 
-  test("a clean plan says so in the Problems view", async ({ page }) => {
+  test("a clean plan says so in the Checks view", async ({ page }) => {
     await page.goto("/#edit");
     await waitForPlan(page);
-    await page.locator(".mview[data-mview=problems]").tap();
+    await page.locator(".mview[data-mview=checks]").tap();
     await expect(page.locator(".problems-empty")).toBeVisible();
     await expect(page.locator("#mviewCount")).toBeEmpty();
     // …and Problems shows the Checks content: the review findings and Lint's clean verdict.
@@ -229,23 +262,25 @@ test.describe("phone layout", () => {
       await page.setViewportSize({ width, height });
       await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
       await waitForPlan(page);
-      for (const view of ["plan", "code", "problems"]) {
+      for (const view of ["plan", "3d", "facts", "code", "checks"]) {
         await page.locator(`.mview[data-mview=${view}]`).tap();
         expect(await horizontalOverflow(page), `overflow in ${view} at ${width}px`).toBeLessThanOrEqual(0);
       }
-      // The output pane's strip: the four tabs, each inside the strip's content box (its side
-      // gutters kept), and the strip does not scroll sideways. (At 360 px five tabs once ran 6 px
-      // into the right gutter.) The storey switcher (a two-storey plan) is on the stage, inside it.
+      // The phone's one view control (card PG5b ①): the five views, each inside the switcher's
+      // content box (its side gutters kept), and it does not scroll sideways. (At 360 px the tab
+      // row it replaces once ran 6 px into the right gutter; that row is not drawn here at all.)
+      // The storey switcher (a two-storey plan) is on the stage, inside it.
       await page.locator(".mview[data-mview=plan]").tap();
-      await expect(page.locator(".out-tabs .tab")).toHaveCount(4);
-      const strip = await page.locator(".out-tabs").evaluate((h) => {
+      await expect(page.locator(".out-tabs")).toBeHidden();
+      await expect(page.locator(".mview")).toHaveText(["Code", "Plan", "3D", "Facts", /^Checks/]);
+      const strip = await page.locator("#mviews").evaluate((h) => {
         const box = h.getBoundingClientRect();
         const cs = getComputedStyle(h);
         const left = box.left + Number.parseFloat(cs.paddingLeft);
         const right = box.right - Number.parseFloat(cs.paddingRight);
         return {
           scroll: h.scrollWidth - h.clientWidth,
-          out: [...h.querySelectorAll<HTMLElement>(".tab")]
+          out: [...h.querySelectorAll<HTMLElement>(".mview")]
             .filter((b) => {
               const r = b.getBoundingClientRect();
               return r.left < left - 0.5 || r.right > right + 0.5;
@@ -253,8 +288,8 @@ test.describe("phone layout", () => {
             .map((b) => b.textContent),
         };
       });
-      expect(strip.scroll, `the tab strip scrolls sideways at ${width}px`).toBeLessThanOrEqual(0);
-      expect(strip.out, `tabs outside the strip at ${width}px`).toEqual([]);
+      expect(strip.scroll, `the view switcher scrolls sideways at ${width}px`).toBeLessThanOrEqual(0);
+      expect(strip.out, `views outside the switcher at ${width}px`).toEqual([]);
       await expect(page.locator("#storeys")).toBeVisible();
       const [g, stage] = await Promise.all([
         page.locator("#storeys").boundingBox(),
@@ -264,6 +299,122 @@ test.describe("phone layout", () => {
       expect(g!.x + g!.width, `storeys inside the stage at ${width}px`).toBeLessThanOrEqual(stage!.x + stage!.width);
     });
   }
+
+  // Card PG5b ③: on a three-storey plan the storey chip shares no pixel with the stage's toolbar
+  // (whole boxes, not only their left and right edges), nor with the Plan | 3D switch, in view mode
+  // and in edit mode, over the drawing and over the 3D preview.
+  for (const [width, height] of [
+    [360, 780],
+    [390, 844],
+  ] as const) {
+    test(`the storey chip overlaps no stage control at ${width}x${height}, in either mode`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      for (const mode of ["view", "edit"] as const) {
+        await page.goto("about:blank");
+        await page.goto(`/${await shareHash(TOWNHOUSE)}${mode === "edit" ? "&edit" : ""}`);
+        await waitForPlan(page);
+        if (mode === "edit") await page.locator(".mview[data-mview=plan]").tap();
+        await expect(page.locator("#storeys .lv-btn")).toHaveCount(3);
+        const visibleBox = async (sel: string) => {
+          const l = page.locator(sel);
+          return (await l.isVisible()) ? l.boundingBox() : null;
+        };
+        const check = async (where: string, others: string[]) => {
+          const chip = (await page.locator("#storeys").boundingBox())!;
+          expect(chip, `the storey chip is on screen (${where})`).toBeTruthy();
+          for (const sel of others) {
+            const box = await visibleBox(sel);
+            if (box) expect(overlaps(chip, box), `${sel} overlaps the storeys (${where}, ${width}px)`).toBe(false);
+          }
+        };
+        await expect(page.locator(".pz-toolbar")).toBeVisible();
+        await check(`${mode} mode, drawing`, [".pz-toolbar", ".stage-switch"]);
+        // Every toolbar control on one row, and the whole toolbar inside the stage.
+        const tools = await page
+          .locator(".pz-toolbar > button")
+          .evaluateAll((bs) => bs.map((b) => b.getBoundingClientRect().top));
+        expect(new Set(tools.map(Math.round)).size, "the toolbar is one row").toBe(1);
+        const [bar, stage] = [
+          (await page.locator(".pz-toolbar").boundingBox())!,
+          (await page.locator(".pz-viewport").boundingBox())!,
+        ];
+        expect(bar.x).toBeGreaterThanOrEqual(stage.x);
+        expect(bar.x + bar.width).toBeLessThanOrEqual(stage.x + stage.width + 0.5);
+        expect(bar.y + bar.height).toBeLessThanOrEqual(stage.y + stage.height + 0.5);
+        // The 3D preview: the storeys over its canvas, clear of its own top-right group.
+        if (mode === "edit") await page.locator(".mview[data-mview=3d]").tap();
+        else await page.locator("#view3d").tap();
+        await expect(page.locator("#preview3d .p3d-top")).toBeVisible();
+        await check(`${mode} mode, 3D`, ["#preview3d .p3d-top", ".stage-switch"]);
+      }
+    });
+  }
+
+  // Card PG5b ②: the status's live region is drawn in every layout, so an error typed in the
+  // phone's Code view (where the stage, and its notice, are not drawn) is still announced.
+  test("the status's live region is never display:none, and speaks in the phone's Code view", async ({ page }) => {
+    await page.goto("/#edit");
+    await waitForPlan(page);
+    await page.locator(".mview[data-mview=code]").tap();
+    await expect(page.locator(".pz-viewport")).toBeHidden();
+    const live = page.locator("#statusLive");
+    await expect(live).toHaveAttribute("role", "status");
+    await expect(live).toHaveAttribute("aria-live", "polite");
+    const rendered = () =>
+      live.evaluate((el) => {
+        for (let n: Element | null = el; n; n = n.parentElement)
+          if (getComputedStyle(n).display === "none") return `display:none at ${n.tagName}#${n.id}`;
+        return el.getClientRects().length > 0 ? "rendered" : "no box";
+      });
+    expect(await rendered()).toBe("rendered");
+    await setEditorSource(page, BROKEN_PLAN);
+    await expect(live).toHaveText(/^\d+ errors?$/);
+    expect(await rendered(), "still drawn while it speaks").toBe("rendered");
+    // It mirrors the stage's notice word for word.
+    await expect(page.locator("#statusText")).toHaveText((await live.textContent()) ?? "");
+  });
+
+  // Card PG5b ①: at phone width each function has one control. Edit mode: the switcher's five
+  // views and no tab row, so one Plan, one 3D, one way into Checks (the stage's Checks LAYER is
+  // the rings, another function); view mode: the stage's Plan | 3D switch alone.
+  test("exactly one visible Plan and one 3D control per mode at 390 px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    const visible = (sel: string) =>
+      page
+        .locator(sel)
+        .evaluateAll((els) =>
+          els.filter((e) => (e as HTMLElement).getClientRects().length > 0).map((e) => e.textContent?.trim() ?? ""),
+        );
+    await page.goto("/");
+    await waitForPlan(page);
+    expect((await visible("button")).filter((t) => t === "Plan" || t === "3D")).toEqual(["Plan", "3D"]);
+    await expect(page.locator(".stage-switch")).toBeVisible();
+    await page.goto("about:blank");
+    await page.goto("/#edit");
+    await waitForPlan(page);
+    await expect(page.locator(".tab:visible")).toHaveCount(0);
+    await expect(page.locator(".stage-switch")).toBeHidden();
+    expect((await visible("button")).filter((t) => t === "Plan" || t === "3D")).toEqual(["Plan", "3D"]);
+    expect(await visible(".mview")).toEqual(["Code", "Plan", "3D", "Facts", "Checks"]);
+    expect(await visible('[role="tab"], .mview'), "one control per view").toEqual([
+      "Code",
+      "Plan",
+      "3D",
+      "Facts",
+      "Checks",
+    ]);
+    // Each view opens its tab, and the switcher follows a tab opened another way.
+    for (const [view, tab] of [
+      ["3d", "preview3d"],
+      ["facts", "facts"],
+      ["checks", "checks"],
+      ["plan", "preview"],
+    ] as const) {
+      await page.locator(`.mview[data-mview=${view}]`).tap();
+      await expect(page.locator(`#tab-${tab}`)).toHaveAttribute("aria-selected", "true");
+      await expect(page.locator(`.mview[data-mview=${view}]`)).toHaveAttribute("aria-pressed", "true");
+    }
+  });
 
   test("the embed page fits a phone, read-only and editable", async ({ page }) => {
     for (const params of [[], ["editable=1"]]) {
@@ -332,4 +483,29 @@ test.describe("phone header and stage toolbar (card PG4)", () => {
     expect(panel.x + panel.width).toBeLessThanOrEqual(390);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth)).toBeLessThanOrEqual(0);
   });
+});
+
+/**
+ * Card PG5b ③ on the desktop stage: over the 3D preview a plan's knobs sit in the top-left corner,
+ * where the storey chip is too; with a three-storey plan with knobs (Townhouse) the knobs start
+ * under the chip, in view mode (under Plan | 3D) and in edit mode.
+ */
+test.describe("the storey chip and the 3D view's knobs (card PG5b)", () => {
+  test.use({ viewport: { width: 1422, height: 676 }, reducedMotion: "reduce" });
+
+  for (const mode of ["view", "edit"] as const) {
+    test(`do not overlap in ${mode} mode`, async ({ page }) => {
+      await page.goto(`/${await shareHash(TOWNHOUSE)}&3d${mode === "edit" ? "&edit" : ""}`);
+      await waitFor3d(page);
+      const knobs = page.locator("#preview3d .p3d-stage > .knobs");
+      await expect(knobs).toBeVisible();
+      await expect(page.locator("#storeys .lv-btn")).toHaveCount(3);
+      const [chip, k] = [(await page.locator("#storeys").boundingBox())!, (await knobs.boundingBox())!];
+      expect(overlaps(chip, k), "the knobs start under the storey chip").toBe(false);
+      if (mode === "view") {
+        const sw = (await page.locator(".stage-switch").boundingBox())!;
+        expect(overlaps(sw, k)).toBe(false);
+      }
+    });
+  }
 });

@@ -201,7 +201,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     if (!row) return;
     row.classList.toggle("open");
     const off = row.dataset.offset;
-    // On a phone the Problems view hides the editor: the line:col is the one place that
+    // On a phone the Checks view hides the editor: the line:col is the one place that
     // means "take me there", so it switches to Code; the rest of the row only expands.
     if (isNarrow() && target?.closest(".diag-loc")) mobileViews.show("code");
     if (off != null) jumpToOffset(Number(off));

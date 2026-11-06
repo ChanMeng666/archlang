@@ -31,7 +31,7 @@ import { type LevelPage, selectPage } from "./levels.js";
 import { mountLevelSwitcher } from "./level-switcher.js";
 import { renderFacts } from "./facts-strip.js";
 import { mountKnobsPanel } from "./knobs-panel.js";
-import { isNarrow, mountMobileViews } from "./mobile-views.js";
+import { isNarrow, mountMobileViews, VIEW_TAB } from "./mobile-views.js";
 import { has3dFlag, hasEditFlag, set3dFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
 import { mountGallery } from "./gallery.js";
@@ -68,6 +68,7 @@ const preview = document.getElementById("preview")!;
 const errorsEl = document.getElementById("errors")!;
 const statusEl = document.getElementById("status")!;
 const statusText = document.getElementById("statusText")!;
+const statusLive = document.getElementById("statusLive")!;
 const themeSelect = document.getElementById("theme") as HTMLSelectElement;
 const accessibleToggle = document.getElementById("accessible") as HTMLInputElement | null;
 const finishPanel = document.getElementById("finishPanel");
@@ -79,14 +80,14 @@ const pzToolbar = document.querySelector<HTMLElement>(".pz-toolbar")!;
 const storeysEl = document.getElementById("storeys");
 const sourceBtn = document.getElementById("sourceToggle")!;
 const statusDismiss = document.getElementById("statusDismiss") as HTMLButtonElement;
-// On a phone, Problems is the Checks tab (under the diagnostics); back on Plan, the drawing.
+// On a phone the switcher is edit mode's one view control (card PG5b ①): Plan, 3D, Facts and
+// Checks open their tab (Checks under the diagnostics); Code is the editor, over whatever tab.
 const mobileViews = mountMobileViews(
   document.querySelector("main")!,
   document.getElementById("mviews")!,
   document.getElementById("mviewCount")!,
   (view) => {
-    if (view === "problems") openTab("checks");
-    else if (view === "plan" && activeTab() === "checks") openTab("preview");
+    if (view !== "code" && activeTab() !== VIEW_TAB[view]) openTab(VIEW_TAB[view]);
   },
 );
 
@@ -110,14 +111,38 @@ function activeTab(): string | undefined {
 function openTab(name: string) {
   document.getElementById(`tab-${name}`)?.click();
 }
+/**
+ * View mode's Plan ↔ 3D switch fades the view coming on screen in from the stage's paper ground,
+ * about 180 ms, opacity only (card PG5b; `.pg-fade-in` in panels.css): both views stand on that one
+ * ground, so the change reads as a crossfade, and no box moves. It is a class on the incoming view,
+ * so nothing waits for it: the 3D preview's first-open playback starts as it would, and the focus
+ * stays where it was. Under reduced motion there is no class and the change is instant. Edit mode's
+ * tabs, and the page's first paint, never fade.
+ */
+const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+function fadeIn(el: HTMLElement | undefined, from: string | undefined) {
+  if (!el || root.dataset.mode === "edit" || reducedMotion.matches) return;
+  if (from !== "preview" && from !== "preview3d") return;
+  el.classList.remove("pg-fade-in");
+  void el.offsetWidth; // restart the animation on a quick switch back
+  el.classList.add("pg-fade-in");
+}
+for (const el of [preview, preview3dEl]) {
+  // Its own animation's end only: a child's (the 3D hint's) bubbles here too.
+  el.addEventListener("animationend", (e) => {
+    if (e.target === el) el.classList.remove("pg-fade-in");
+  });
+}
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
+    const from = activeTab();
     for (const t of tabs) {
       const on = t === tab;
       t.classList.toggle("active", on);
       t.setAttribute("aria-selected", String(on));
     }
     for (const [name, el] of Object.entries(views)) el.classList.toggle("active", name === tab.dataset.tab);
+    if (from !== tab.dataset.tab) fadeIn(views[tab.dataset.tab ?? ""], from);
     // The stage's foot (facts and lede, PG-D6) is the drawing's and the 3D preview's; edit mode's
     // Facts and Checks tabs say the facts themselves.
     factsRow.hidden = tab.dataset.tab !== "preview" && tab.dataset.tab !== "preview3d";
@@ -125,6 +150,8 @@ for (const tab of tabs) {
     if (tab.dataset.tab !== "preview3d") void preview3d?.then((p) => p?.hide());
     // The switcher's underline follows what the tab now on screen shows (see `shownLevel`).
     levelSwitch.set(lastPages, shownLevel());
+    // The phone's switcher presses the view that shows this tab (a `&3d` link, leaving edit mode).
+    mobileViews.follow(tab.dataset.tab);
     stageSwitched();
   });
 }
@@ -227,11 +254,18 @@ let lastPages: readonly LevelPage[] | undefined;
 const cleanSvg = () => lastSvg.replace(/ data-span="\d+:\d+"/g, "");
 
 // ---- the status (ruling PG-D3) ----
-// `#status` is a notice on the stage and `#statusText` its live region. It is shown only while the
-// plan is compiling (once that has taken long enough to notice: `BUSY_AFTER_MS`), while it is broken
-// (until dismissed), and for a moment after an action (`flash`). When the plan is fine nothing shows,
-// but the live region keeps its text, visually hidden, so assistive tech hears every state. The
-// Source button wears a dot in the same two states: Source is where the diagnostics are.
+// `#status` is a notice on the stage and `#statusText` its text. It is shown only while the plan is
+// compiling (once that has taken long enough to notice: `BUSY_AFTER_MS`), while it is broken (until
+// dismissed), and for a moment after an action (`flash`). The live region is `#statusLive`, a
+// visually hidden mirror that is a child of <body>, so it is never inside a `display: none` box: the
+// stage's pane is not drawn in the phone's Code view, and the errors typed there are still heard
+// (card PG5b ②). The Source button wears a dot in the same two states: Source is where the
+// diagnostics are.
+/** Write the status text: the notice's, and its live mirror's (only on a change, so it speaks once). */
+function sayStatus(text: string | null) {
+  statusText.textContent = text;
+  if (statusLive.textContent !== (text ?? "")) statusLive.textContent = text;
+}
 type StatusState = "ok" | "busy" | "err";
 let statusState: StatusState = "ok";
 /** The notice of the current state was dismissed (until the state changes). */
@@ -246,7 +280,7 @@ function setStatus(state: StatusState, text: string) {
   statusEl.classList.toggle("err", state === "err");
   statusEl.classList.toggle("busy", state === "busy");
   if (flashTimer !== undefined) flashResting = text;
-  else statusText.textContent = text;
+  else sayStatus(text);
   paintStatus();
 }
 /** Show the notice exactly when there is something to say, and the Source button's dot with it. */
@@ -261,7 +295,7 @@ statusDismiss.addEventListener("click", () => {
   if (flashTimer !== undefined) {
     clearTimeout(flashTimer);
     flashTimer = undefined;
-    statusText.textContent = flashResting;
+    sayStatus(flashResting);
   }
   statusDismissed = true;
   paintStatus();
@@ -282,10 +316,10 @@ let flashResting: string | null = null;
 function flash(msg: string) {
   if (flashTimer !== undefined) clearTimeout(flashTimer);
   else flashResting = statusText.textContent;
-  statusText.textContent = msg;
+  sayStatus(msg);
   flashTimer = setTimeout(() => {
     flashTimer = undefined;
-    statusText.textContent = flashResting;
+    sayStatus(flashResting);
     paintStatus();
   }, 1200);
   paintStatus();
@@ -366,10 +400,8 @@ function enterEdit(): Promise<EditMode | undefined> {
 
 function leaveEdit() {
   setMode(false);
-  mobileViews.show("plan");
-  // Facts and Checks are edit mode's tabs: leave on the drawing.
-  const active = activeTab();
-  if (active !== "preview" && active !== "preview3d") openTab("preview");
+  // Facts and Checks are edit mode's tabs: leave on the drawing (or on the 3D preview, if on screen).
+  mobileViews.show(activeTab() === "preview3d" ? "3d" : "plan");
   // A broken plan's status names where its errors are, which differs by mode.
   if (statusEl.classList.contains("err")) render(currentSource());
 }
@@ -862,6 +894,10 @@ const busyTimer = setTimeout(() => setStatus("busy", "Compiling…"), BUSY_AFTER
 const ready = boot().catch((err: unknown) => {
   clearTimeout(busyTimer);
   setStatus("err", "Couldn't load the compiler — reload to retry");
+  // The boot is over, failed: nothing waiting for `data-booting` to go is left waiting for ever,
+  // and `data-boot-failed` says how it ended (card PG5b ⑥).
+  delete root.dataset.booting;
+  root.dataset.bootFailed = "";
   console.warn("The playground did not boot:", err);
 });
 // `&3d` (or `#3d` alone) opens on the 3D preview (card X5): its chunk starts loading now, beside

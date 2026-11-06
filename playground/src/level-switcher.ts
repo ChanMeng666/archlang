@@ -8,8 +8,8 @@
  * facts follow the storey" — you would have to leave the numbers to change which numbers you are
  * reading. It is no part of the edit-mode `role="tablist"`: these are toggle buttons in a
  * `role="group"`, and a tablist that contains a non-tab lies to a screen reader about how many
- * tabs there are. (The 3D preview's own "Storeys" buttons are a different function, a cut-away
- * of how many storeys are shown, and stay.)
+ * tabs there are. It is the page's one storey control: the 3D preview leaves out the package
+ * toolbar's own "Storeys shown" cut-away (`viewToolbar(…, { storeys: false })`, card PG5b).
  *
  * The rendering is DOM-built, never an HTML string, because a storey NAME is author text
  * (`level 1 "Ground floor"`) — `textContent`/`setAttribute` are the escaping, and there

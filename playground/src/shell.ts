@@ -11,7 +11,8 @@
  * for LLM live in the Make-your-own sheet alone.
  *
  * A menu closes on Escape (listened for on the document, since Safari does not focus a clicked
- * <summary>), on a click outside it, on opening the other one, and on choosing an item marked
+ * <summary>), on a click outside it, on the focus Tabbing out of it, on opening the other one (or the
+ * plan gallery, whose trigger's click is a click outside), and on choosing an item marked
  * `data-close`. A select, the a11y switch and Saved (whose popover anchors to its button) keep More
  * open. This module is the one place that closes them.
  */
@@ -85,6 +86,15 @@ export function mountShell(ctx: ShellCtx): Shell {
   for (const menu of menus) {
     menu.addEventListener("toggle", () => {
       if (menu.open) for (const other of menus) if (other !== menu) other.open = false;
+    });
+    // Tab out of a menu and it closes, as the gallery does (card PG5b ⑧). The focus going into
+    // More's Saved popover (outside More, but More's) keeps it open; focus going nowhere (a click
+    // on the page's ground) is the click listener's to judge.
+    menu.addEventListener("focusout", (e) => {
+      const to = e.relatedTarget as Element | null;
+      if (!menu.open || !to || menu.contains(to)) return;
+      if (menu === more && to.closest(".snap-pop")) return;
+      menu.open = false;
     });
   }
   // An item that edits the source (Format, Finish, Saved) runs through the editor, so its edit is

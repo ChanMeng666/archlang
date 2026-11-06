@@ -55,8 +55,11 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(page.locator("#status")).not.toHaveClass(/\bshow\b/);
     const box = (await page.locator("#status").boundingBox())!;
     expect(box.width * box.height, "the status is visually hidden").toBeLessThanOrEqual(1);
-    // …but still a live region for assistive tech.
-    await expect(page.locator("#statusText")).toHaveAttribute("role", "status");
+    // …but still a live region for assistive tech: `#statusLive`, the notice's mirror under <body>
+    // (card PG5b ②; layout.spec checks it is drawn in every layout), and only one.
+    await expect(page.locator("#statusLive")).toHaveAttribute("role", "status");
+    expect(await page.locator("#statusLive").evaluate((el) => el.parentElement === document.body)).toBe(true);
+    await expect(page.locator("#status [role=status], #status [aria-live]")).toHaveCount(0);
     await expect(page.locator("#sourceToggle")).not.toHaveAttribute("data-status");
     // The hidden notice's × is out of the tab order too: hidden, so no keyboard stop on nothing.
     const dismiss = page.locator("#statusDismiss");
@@ -154,6 +157,17 @@ test.describe("one view switch (PG-D3)", () => {
     await page.waitForTimeout(1000);
     await expect(page.locator("#statusText")).not.toHaveText(/Compiling/);
     await expect(status).not.toHaveClass(/\bbusy\b/);
+    // The boot is over (card PG5b ⑥): `data-booting` is gone, so nothing waiting on it hangs, and
+    // `data-boot-failed` says how it ended. The live region says it too.
+    await expect(page.locator("html[data-booting]")).toHaveCount(0);
+    await expect(page.locator("html[data-boot-failed]")).toHaveCount(1);
+    await expect(page.locator("#statusLive")).toHaveText("Couldn't load the compiler — reload to retry");
+  });
+
+  test("a boot that succeeds never says it failed", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await expect(page.locator("html[data-boot-failed]")).toHaveCount(0);
   });
 
   test("a broken plan shows a status on the stage and a dot on Source; a fix clears both", async ({ page }) => {
@@ -504,5 +518,92 @@ test.describe("saved snapshots", () => {
     await expect(page.locator(".cm-content")).toContainText('label "Main"');
     await expect(page.locator(".cm-content")).not.toContainText("Elsewhere");
     await expect(pop).toBeHidden(); // restoring closes the popover
+  });
+});
+
+/**
+ * View mode's Plan ↔ 3D crossfade (card PG5b): the view coming on screen fades in (`.pg-fade-in`,
+ * an opacity animation), and under reduced motion it is instant. Checked by the end state, never
+ * the timing: the class came and went, the view is fully opaque, no box moved, the focus stayed on
+ * the switch, and the first open's playback still started on its own.
+ */
+test.describe("Plan ↔ 3D crossfade (card PG5b)", () => {
+  /** Record every class the two views wear from now on. */
+  const watchFades = (page: Page) =>
+    page.evaluate(() => {
+      const seen: string[] = [];
+      (window as unknown as { __fades: string[] }).__fades = seen;
+      for (const id of ["preview", "preview3d"]) {
+        const el = document.getElementById(id)!;
+        new MutationObserver(() => {
+          if (el.classList.contains("pg-fade-in")) seen.push(id);
+        }).observe(el, { attributes: true, attributeFilter: ["class"] });
+      }
+    });
+  const fades = (page: Page) => page.evaluate(() => (window as unknown as { __fades: string[] }).__fades);
+  const settled = (page: Page, id: string) =>
+    page.locator(`#${id}`).evaluate((el) => ({
+      opacity: getComputedStyle(el).opacity,
+      animations: el.getAnimations().length,
+      fading: el.classList.contains("pg-fade-in"),
+    }));
+
+  test.describe("normal motion", () => {
+    test.use({ reducedMotion: "no-preference" });
+
+    test("the incoming view fades in and settles fully opaque, the switch keeping the focus", async ({ page }) => {
+      await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+      await waitForPlan(page);
+      // The first paint never fades: the drawing built into the page is simply there.
+      expect(await settled(page, "preview")).toEqual({ opacity: "1", animations: 0, fading: false });
+      const stage = (await page.locator(".pz-viewport").boundingBox())!;
+      await watchFades(page);
+      await page.locator("#view3d").focus();
+      await page.keyboard.press("Enter");
+      await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+      await expect(page.locator("#view3d")).toBeFocused();
+      await expect.poll(() => settled(page, "preview3d")).toEqual({ opacity: "1", animations: 0, fading: false });
+      expect(await fades(page)).toEqual(["preview3d"]);
+      // The first open's playback starts on its own, as it does without the fade.
+      const scrub = page.locator('#preview3d [data-role="scrub"]');
+      await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeLessThan(0.9);
+      // Back to the drawing: it fades in too, into the same box.
+      await page.keyboard.press("Shift+Tab");
+      await expect(page.locator("#viewPlan")).toBeFocused();
+      await page.keyboard.press("Enter");
+      await expect(page.locator("#preview")).toHaveClass(/\bactive\b/);
+      await expect(page.locator("#viewPlan")).toBeFocused();
+      await expect.poll(() => settled(page, "preview")).toEqual({ opacity: "1", animations: 0, fading: false });
+      expect(await fades(page)).toEqual(["preview3d", "preview"]);
+      expect(await page.locator(".pz-viewport").boundingBox(), "no layout shift").toEqual(stage);
+    });
+
+    test("edit mode's tabs never fade", async ({ page }) => {
+      await gotoEdit(page);
+      await watchFades(page);
+      await page.locator("#tab-preview3d").click();
+      await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+      await page.locator("#tab-facts").click();
+      await page.locator("#tab-preview").click();
+      expect(await fades(page)).toEqual([]);
+    });
+  });
+
+  test.describe("reduced motion", () => {
+    test.use({ reducedMotion: "reduce" });
+
+    test("the switch is instant: no fade class, no animation, either way", async ({ page }) => {
+      await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+      await waitForPlan(page);
+      await watchFades(page);
+      await page.locator("#view3d").click();
+      await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+      expect(await settled(page, "preview3d")).toEqual({ opacity: "1", animations: 0, fading: false });
+      await page.locator("#viewPlan").click();
+      await expect(page.locator("#preview")).toHaveClass(/\bactive\b/);
+      expect(await settled(page, "preview")).toEqual({ opacity: "1", animations: 0, fading: false });
+      expect(await fades(page)).toEqual([]);
+      await expect(page.locator("#viewPlan")).toBeFocused();
+    });
   });
 });
