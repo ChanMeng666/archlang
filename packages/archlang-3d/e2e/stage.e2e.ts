@@ -75,6 +75,9 @@ describe("the replay on a host's stage (card PG1)", () => {
       expect(await at(0.4)).toBe(freshMid);
       await page.evaluate(() => window.__handle?.view?.preset("north"));
       expect(await now(), "the presets are re-framed").toBe(freshNorth);
+      // A preset draws the replay time last drawn (0.4 above: the storeys half risen), so back to
+      // t = 1 first: Iso at the end is the end frame.
+      expect(await at(1)).toBe(freshEnd);
       await page.evaluate(() => window.__handle?.view?.preset("iso"));
       expect(await now(), "Iso is still the end frame").toBe(freshEnd);
       // The same size again draws nothing new.

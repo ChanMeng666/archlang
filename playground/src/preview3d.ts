@@ -192,23 +192,17 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
 
   // GLB ↓ (card X5; PG4 moves it into the Share/Export menu): the whole plan, written in the page
   // by the package's own writer, in a chunk of its own loaded on the first click (glb-export.ts).
-  // Said plainly, in its description: the browser does not run the validator the CLI runs.
+  // Said plainly, in its description and as a line of the ⓘ card: the browser does not run the
+  // validator the CLI runs.
   const glb = document.createElement("div");
   glb.className = "p3d-glb";
   const glbBtn = btn("GLB ↓", "p3d-btn", "Download GLB");
   glbBtn.title = `${GLB_NOTE_LEAD}${GLB_COMMAND}${GLB_NOTE_TAIL}`;
   glbBtn.setAttribute("aria-describedby", "p3d-glb-note");
-  const glbNote = document.createElement("p");
-  glbNote.className = "p3d-glb-note p3d-sr";
-  glbNote.id = "p3d-glb-note";
-  const cmd = document.createElement("code");
-  cmd.className = "p3d-glb-code";
-  cmd.textContent = GLB_COMMAND;
-  glbNote.append(GLB_NOTE_LEAD, cmd, GLB_NOTE_TAIL);
   const glbStatus = document.createElement("span");
   glbStatus.className = "p3d-glb-status";
   glbStatus.setAttribute("role", "status");
-  glb.append(glbBtn, glbStatus, glbNote);
+  glb.append(glbBtn, glbStatus);
   let glbChunk: Promise<typeof import("./glb-export.js")> | undefined;
   glbBtn.addEventListener("click", () => {
     const mesh = glbMesh;
@@ -234,17 +228,21 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   const play = btn("▶ Replay", "p3d-btn", "Replay: the plan drawing itself in its authoring order, then rising");
   const caption = document.createElement("p");
   caption.className = "p3d-lead";
-  const leadText = document.createElement("span");
+  // The PS-D12 line's first sentence, bold as it is in the full line.
+  const leadText = document.createElement("strong");
   leadText.textContent = PREVIEW_LEAD;
   const infoBtn = btn("ⓘ", "p3d-info-btn", "About the 3D preview: what it shows and its limits");
   infoBtn.setAttribute("aria-expanded", "false");
   infoBtn.setAttribute("aria-controls", "p3d-info");
   caption.append(leadText, " ", infoBtn);
-  // The PS-D12 line, its first sentence in bold, then the link; the limits line under it.
+  // The PS-D12 line, its first sentence in bold, then the link; the limits line under it, then the
+  // GLB note (`GLB ↓`'s description). After the ⓘ in the page's order, so Tab goes from ⓘ into it;
+  // focusable itself, so a press on its text keeps it open.
   const info = document.createElement("div");
   info.className = "p3d-info";
   info.id = "p3d-info";
   info.setAttribute("role", "note");
+  info.tabIndex = -1;
   info.hidden = true;
   const label = document.createElement("p");
   label.className = "p3d-label";
@@ -259,8 +257,15 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   const limits = document.createElement("p");
   limits.className = "p3d-limits";
   limits.textContent = PREVIEW_LIMITS;
-  info.append(label, limits);
-  foot.append(info, play, caption);
+  const glbNote = document.createElement("p");
+  glbNote.className = "p3d-glb-note";
+  glbNote.id = "p3d-glb-note";
+  const cmd = document.createElement("code");
+  cmd.className = "p3d-glb-code";
+  cmd.textContent = GLB_COMMAND;
+  glbNote.append(GLB_NOTE_LEAD, cmd, GLB_NOTE_TAIL);
+  info.append(label, limits, glbNote);
+  foot.append(play, caption, info);
 
   const away = (e: Event): void => {
     if (!foot.contains(e.target as Node)) shutInfo(false);
@@ -282,6 +287,11 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     if (e.key !== "Escape" || info.hidden) return;
     e.preventDefault();
     shutInfo(true);
+  });
+  // The focus leaving the ⓘ and its card shuts the card, as the View ▾ popover does.
+  foot.addEventListener("focusout", (e) => {
+    const to = e.relatedTarget as Node | null;
+    if (!(to && (to === infoBtn || info.contains(to)))) shutInfo(false);
   });
 
   // ---- the scrubber: a thin line along the canvas's foot, grown on hover and focus ----
@@ -614,6 +624,8 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       }
       fadeCoach();
       shutInfo(false);
+      // And View ▾'s popover (the package's toolbar shuts it on its own button).
+      views.querySelector<HTMLButtonElement>('[aria-controls][aria-expanded="true"]')?.click();
     },
     overlay: stage,
   };

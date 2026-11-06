@@ -93,7 +93,6 @@ export function viewToolbar(view: ViewControl, opts: ToolbarOptions = {}): HTMLE
     const toggle = button("View ▾", "View presets: iso, top, and from north, east, south and west", () =>
       pop.hidden ? open() : shut(false),
     );
-    toggle.setAttribute("aria-haspopup", "true");
     toggle.setAttribute("aria-expanded", "false");
     toggle.setAttribute("aria-controls", pop.id);
     // A press anywhere outside, or the focus leaving, shuts it; Escape shuts it and refocuses.

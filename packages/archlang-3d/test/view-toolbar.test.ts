@@ -242,7 +242,7 @@ describe("viewToolbar's compact form (playground card PG1)", () => {
       `SPAN .archlang-views-hint "${VIEW_HINT}"`,
     ]);
     expect(toggle.getAttribute("aria-expanded")).toBe("false");
-    expect(toggle.getAttribute("aria-haspopup")).toBe("true");
+    expect(toggle.getAttribute("aria-haspopup"), "a group, not a menu").toBeNull();
     expect(toggle.getAttribute("aria-controls")).toBe(pop.id);
     expect(pop.id).toBe("h-presets");
   });

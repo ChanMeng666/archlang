@@ -96,7 +96,7 @@ test.describe("3D preview tab", () => {
     // No facts laid over the canvas (PG-D4): the page's own facts line says them. (The package's
     // replay HTML keeps its strip: `packages/archlang-3d/e2e/replay.e2e.ts`.)
     await expect(page.locator("#preview3d .p3d-strip")).toHaveCount(0);
-    await expect(page.locator("#facts")).toContainText("m²");
+    await expect(page.locator("#facts")).toContainText(/[\d.]+ m² \(net\)/);
     // The canvas drew something: not one flat colour.
     const colours = await page.evaluate(() => {
       const c = document.querySelector("#preview3d canvas") as HTMLCanvasElement;
@@ -138,16 +138,21 @@ test.describe("3D preview tab", () => {
       await page.waitForTimeout(150);
       expect(await current(page), `still, frame ${i}`).toBe(held);
     }
-    // Away and back, in the same page: the end frame, nothing playing or turning.
+    // Away and back, in the same page: the view the touch left, nothing playing or turning.
     await page.locator("#viewPlan").click();
     await page.locator("#view3d").click();
     await page.waitForTimeout(400);
     expect(await current(page), "still where the touch left it").toBe(held);
 
-    // A later open in the same session (a reload keeps the tab's session): the end frame, unplayed.
+    // A later open in the same session: a reload keeps the tab's session, and the hash's `&3d`
+    // (the 3D view was on) opens the page straight on the 3D preview: the end frame, unplayed.
+    expect(await page.evaluate(() => location.hash)).toMatch(/&3d$/);
     await page.reload();
-    await waitForPlan(page);
-    await open3d(page);
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await page.evaluate(async () => {
+      await (window as W).__preview3d?.ready;
+    });
     // The settled iso view at once: t = 1, and it stays there (nothing plays on its own).
     await expect(scrub).toHaveValue("1");
     const opened = await current(page);
@@ -737,14 +742,20 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await expect(note.locator("code")).toHaveText("npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb");
     const button = page.locator("#preview3d").getByRole("button", { name: "Download GLB" });
     await expect(button).toHaveAttribute("aria-describedby", "p3d-glb-note");
-    // One compact button in the floating top-right group (card PG1); the note is its description
-    // and its title, not a row of the layout.
+    // One compact button in the floating top-right group (card PG1); the note is its description,
+    // its title, and a line of the ⓘ card a visitor can read.
     await expect(button).toHaveText("GLB ↓");
     await expect(button).toHaveAttribute(
       "title",
       "The whole plan as a GLB, written in your browser and not validated here. npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb writes the same file and checks it with the Khronos glTF validator.",
     );
     await expect(page.locator("#preview3d .p3d-top").getByRole("button", { name: "Download GLB" })).toBeVisible();
+    await page
+      .locator("#preview3d")
+      .getByRole("button", { name: /^About the 3D preview/ })
+      .click();
+    await expect(page.locator("#preview3d .p3d-info .p3d-glb-note"), "the disclosure is on screen").toBeVisible();
+    await page.keyboard.press("Escape");
     expect(glbChunks, "the GLB writer is not fetched before the click").toEqual([]);
 
     const [download] = await Promise.all([page.waitForEvent("download"), button.click()]);
@@ -1023,7 +1034,8 @@ test.describe("the 3D stage (card PG1)", () => {
     await waitFor3d(page);
     const lead = page.locator("#preview3d .p3d-lead");
     await expect(lead).toBeVisible();
-    await expect(lead).toContainText("Same source, plan and 3D preview.");
+    // The lead in bold, as PG-D4 has it.
+    await expect(lead.locator("strong")).toHaveText("Same source, plan and 3D preview.");
     const card = page.locator("#preview3d .p3d-info");
     const info = page.locator("#preview3d").getByRole("button", { name: /^About the 3D preview/ });
     await expect(card).toBeHidden();
@@ -1035,6 +1047,26 @@ test.describe("the 3D stage (card PG1)", () => {
     await expect(card.locator(".p3d-limits")).toHaveText(LIMITS);
     await expect(card.locator("a")).toHaveText("What it shows");
     await expect(card.locator("a")).toHaveAttribute("href", "https://archlang.uk/3d");
+    // The GLB note is a line of it, under the limits line, on screen.
+    const note = card.locator(".p3d-glb-note");
+    await expect(note).toBeVisible();
+    await expect(note).toHaveText(
+      "The whole plan as a GLB, written in your browser and not validated here. npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb writes the same file and checks it with the Khronos glTF validator.",
+    );
+    expect(await card.evaluate((c) => [...c.children].map((e) => e.className))).toEqual([
+      "p3d-label",
+      "p3d-limits",
+      "p3d-glb-note",
+    ]);
+    // The keyboard: Tab from ⓘ goes into the card, to its link; Tab out of the card shuts it.
+    await expect(info).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(card.locator("a")).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(card, "the focus left the card").toBeHidden();
+    await expect(info).toHaveAttribute("aria-expanded", "false");
+    await info.click();
+    await expect(card).toBeVisible();
     // Escape shuts it and gives the focus back; a press elsewhere shuts it too.
     await page.keyboard.press("Escape");
     await expect(card).toBeHidden();
@@ -1103,6 +1135,18 @@ test.describe("the 3D stage (card PG1)", () => {
       "south",
       "west",
     ]);
+    // A group, not a menu: no aria-haspopup, and aria-expanded follows it.
+    const toggle = page.locator("#preview3d").getByRole("button", { name: /^View presets/ });
+    await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(await toggle.getAttribute("aria-haspopup")).toBeNull();
+    // Leaving the 3D view shuts it (`hide`); it is shut when the view comes back. The switch is
+    // clicked from script, so no press outside the popover is what shut it.
+    await page.evaluate(() => document.getElementById("viewPlan")?.click());
+    await expect(page.locator("#preview")).toHaveClass(/active/);
+    await page.evaluate(() => document.getElementById("view3d")?.click());
+    await expect(page.locator("#preview3d")).toHaveClass(/active/);
+    await expect(page.locator("#preview3d .archlang-views-presets")).toBeHidden();
+    await expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
 });
 
