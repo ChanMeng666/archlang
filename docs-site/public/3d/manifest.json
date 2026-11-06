@@ -40,6 +40,13 @@
           "warnings": 0
         }
       },
+      "plan": {
+        "width": 1600,
+        "height": 1694,
+        "sheet": false,
+        "sha256": "f4e3f462652d3617f700afd4d552cca9be246bfb8dbb755bb105c6ba0a5f47b9",
+        "pixelsSha256": "8b6edab614cf71aff5efc1586912d960201883c918b53c9b4f2fc1e1e8d0b292"
+      },
       "files": [
         {
           "path": "studio.poster.webp",
@@ -62,6 +69,12 @@
         {
           "path": "studio.glb",
           "bytes": 95596,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "studio.plan.png",
+          "bytes": 235556,
           "archlang": "1.56.0",
           "archlang3d": "0.4.0"
         }
@@ -106,6 +119,13 @@
           "warnings": 0
         }
       },
+      "plan": {
+        "width": 1600,
+        "height": 2263,
+        "sheet": true,
+        "sha256": "5b8fa5cda56e301101f16386cdeb75ac59783ae3528f2831d124ed428025344c",
+        "pixelsSha256": "9f0d29eba925f8342ba7455e8fc4f849589d8a81cc023daffd9c0cdc711527e0"
+      },
       "files": [
         {
           "path": "furnished-flat.poster.webp",
@@ -128,6 +148,12 @@
         {
           "path": "furnished-flat.glb",
           "bytes": 376860,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "furnished-flat.plan.png",
+          "bytes": 244629,
           "archlang": "1.56.0",
           "archlang3d": "0.4.0"
         }
@@ -172,6 +198,13 @@
           "warnings": 0
         }
       },
+      "plan": {
+        "width": 1600,
+        "height": 1667,
+        "sheet": false,
+        "sha256": "ed5d979bce2b4d132ca24a5190494b684c2aa927d51201449d691057485f6683",
+        "pixelsSha256": "da4dacc282c4782a5e4a4986e434ea3090d32c4bc2581639ee94641c98250aa3"
+      },
       "files": [
         {
           "path": "laneway-house.poster.webp",
@@ -194,6 +227,12 @@
         {
           "path": "laneway-house.glb",
           "bytes": 112436,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "laneway-house.plan.png",
+          "bytes": 187286,
           "archlang": "1.56.0",
           "archlang3d": "0.4.0"
         }
@@ -238,6 +277,13 @@
           "warnings": 0
         }
       },
+      "plan": {
+        "width": 1600,
+        "height": 1807,
+        "sheet": false,
+        "sha256": "36fb4b11d2629a10a4c56166c0bdbf4dd6f7bc111f7c66737f28048198477b21",
+        "pixelsSha256": "c2e07a226051ece16c0cd5b28356aaace5c612da75e14ac9e2a86c587d2f57c4"
+      },
       "files": [
         {
           "path": "knob-flat.poster.webp",
@@ -260,6 +306,12 @@
         {
           "path": "knob-flat.glb",
           "bytes": 87608,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "knob-flat.plan.png",
+          "bytes": 171793,
           "archlang": "1.56.0",
           "archlang3d": "0.4.0"
         }
@@ -319,6 +371,14 @@
           "warnings": 0
         }
       },
+      "plan": {
+        "width": 1600,
+        "height": 1131,
+        "level": 1,
+        "sheet": true,
+        "sha256": "5d4219167f8f2af0cb0ecf101350d232e879a021e2c656fbb3160c2cae2bcc56",
+        "pixelsSha256": "27e7df0a632f9b8c9ed2b84daa086060fddae700ee2b6e08f85d78ccee1f8dfe"
+      },
       "files": [
         {
           "path": "two-storey.poster.webp",
@@ -353,6 +413,12 @@
         {
           "path": "two-storey.glb",
           "bytes": 122892,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "two-storey.plan.png",
+          "bytes": 144471,
           "archlang": "1.56.0",
           "archlang3d": "0.4.0"
         }
@@ -412,6 +478,14 @@
           "warnings": 0
         }
       },
+      "plan": {
+        "width": 1600,
+        "height": 1131,
+        "level": 1,
+        "sheet": true,
+        "sha256": "d33ac93ecb99221c45f024fcf065fccf7073053288b8e5d651e995ed26619ae6",
+        "pixelsSha256": "232c2f9b5327c9e96a2bbcd8788ed0458c3bc5dc520a294dfd91d8d9c2d0e183"
+      },
       "files": [
         {
           "path": "turning-stair.poster.webp",
@@ -446,6 +520,370 @@
         {
           "path": "turning-stair.glb",
           "bytes": 28584,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "turning-stair.plan.png",
+          "bytes": 92645,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        }
+      ]
+    },
+    {
+      "name": "bungalow",
+      "source": {
+        "path": "examples/bungalow.arch",
+        "sha256": "f11b7341682a13e794d3ec9873c89c534fee539dcdb159430640c3c1c589a54a"
+      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "dd411ccd07b79a430f65b71c3a09ef829404e7d97fabaeab889e297ab3935fa4",
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
+        }
+      ],
+      "glb": {
+        "sha256": "612c3e402daca0bdad230fbcd5f7f2a9c51e783e61c79712674c9850f6859a45",
+        "contentSha256": "d769ca1e51d4a4e5df4f5ee51a7204a49a396702e30f95c8d18f599c68074846",
+        "doors": "closed",
+        "validator": {
+          "errors": 0,
+          "warnings": 0
+        }
+      },
+      "plan": {
+        "width": 1600,
+        "height": 1131,
+        "sheet": true,
+        "sha256": "325ca6323cbdd65a4e64956a5c13b8a3939dc058467b8f18b57ff1d605f0e767",
+        "pixelsSha256": "f78986745c733f7b832834542e27463dc90adb1307752d79f7a6e83bd8154c77"
+      },
+      "files": [
+        {
+          "path": "bungalow.poster.webp",
+          "bytes": 55208,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "bungalow.poster.png",
+          "bytes": 93779,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "bungalow.glb",
+          "bytes": 138536,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "bungalow.plan.png",
+          "bytes": 120347,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        }
+      ]
+    },
+    {
+      "name": "courtyard-house",
+      "source": {
+        "path": "examples/courtyard-house.arch",
+        "sha256": "132f56392900cec97dfcf400aca872425649ea1340aed2e6ce16533bf5037f74"
+      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "56816c979352cf5e73cb05d6c05575471a266e31ce51e33bb151bcd7a52f2dc1",
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
+        }
+      ],
+      "glb": {
+        "sha256": "0e0b66882a646ea8bc91a3e7f1be76a570035255859ecd4861937bf075bc0f48",
+        "contentSha256": "405015dca946e6d9df9c8426e7fc7c342624ba7429706371cf88a48231b9b911",
+        "doors": "closed",
+        "validator": {
+          "errors": 0,
+          "warnings": 0
+        }
+      },
+      "plan": {
+        "width": 1600,
+        "height": 1131,
+        "sheet": true,
+        "sha256": "7a2331b8939c9d8798158ef97a4e0497df91f7044b60157fae85f12be48600a4",
+        "pixelsSha256": "214224cf9b8f9466293925a3f07c0e0fce51fa72d419dd0abc400d6e8e9f47c0"
+      },
+      "files": [
+        {
+          "path": "courtyard-house.poster.webp",
+          "bytes": 68830,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "courtyard-house.poster.png",
+          "bytes": 109391,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "courtyard-house.glb",
+          "bytes": 234908,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "courtyard-house.plan.png",
+          "bytes": 209379,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        }
+      ]
+    },
+    {
+      "name": "hillside-villa",
+      "source": {
+        "path": "examples/hillside-villa.arch",
+        "sha256": "0eaaabc3786f512e5c29ce8a04ec4ce57695ec801e95f373c36c872e71b8369b"
+      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "storey:1",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "5d04031b1b76bdd0b99d39d7662698659a457bc0d31520b21c0846796da94915",
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
+        },
+        {
+          "file": "poster-full",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "9fb7d19da02ff7f3d568a5928ab2f5e35a16682dc9982cfad29709c9351ac8c9",
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
+        }
+      ],
+      "glb": {
+        "sha256": "b991359dfd80115a4a1b2af1e5c5193b9101c81a8ca4a27bc6121e4d7155ab1a",
+        "contentSha256": "f563cabe67f362f18a944baa90b090b91ad18877169a8b71624b7f2001a79752",
+        "doors": "closed",
+        "validator": {
+          "errors": 0,
+          "warnings": 0
+        }
+      },
+      "plan": {
+        "width": 1600,
+        "height": 1130,
+        "level": 1,
+        "sheet": true,
+        "sha256": "1554bdd1a60899f5b28bb593f92b8fd94183f3a2ef6037c902de5090048f6260",
+        "pixelsSha256": "564e8c6a841521cd8bf0d16ee429087aed9dbcb5d0b839c45772017f26beefc8"
+      },
+      "files": [
+        {
+          "path": "hillside-villa.poster.webp",
+          "bytes": 73064,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "hillside-villa.poster.png",
+          "bytes": 115944,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "hillside-villa.poster-full.webp",
+          "bytes": 67746,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "hillside-villa.poster-full.png",
+          "bytes": 109837,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "hillside-villa.glb",
+          "bytes": 563672,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "hillside-villa.plan.png",
+          "bytes": 127305,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        }
+      ]
+    },
+    {
+      "name": "corner-cafe",
+      "source": {
+        "path": "examples/corner-cafe.arch",
+        "sha256": "e071472965f1901c72d0678cc6627fca389b6a92c04c4433a341a1abf9c43e70"
+      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "5bf084c1d7ab6125fbc5b6a673864844e0df1e917b3b65c6825235eb19ee0831",
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
+        }
+      ],
+      "glb": {
+        "sha256": "31e72361d15be2879c63210d2976fddd5614e64934c7517828f7c96a4dd1724a",
+        "contentSha256": "c26c27afe519da49ee577fbb970d5111f72a913cce3c59f189fb10b652a9d36a",
+        "doors": "closed",
+        "validator": {
+          "errors": 0,
+          "warnings": 0
+        }
+      },
+      "plan": {
+        "width": 1600,
+        "height": 1131,
+        "sheet": true,
+        "sha256": "a8524cad53428bd7ae10dfd6fe02be5f5b0619bc28a346b51b77bc5c53b23d93",
+        "pixelsSha256": "7c1fe9775d45b6925d87f261cb553ba1c612608046f0146ffe5215634aba1d43"
+      },
+      "files": [
+        {
+          "path": "corner-cafe.poster.webp",
+          "bytes": 68358,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "corner-cafe.poster.png",
+          "bytes": 115546,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "corner-cafe.glb",
+          "bytes": 338316,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "corner-cafe.plan.png",
+          "bytes": 126514,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        }
+      ]
+    },
+    {
+      "name": "library",
+      "source": {
+        "path": "examples/library.arch",
+        "sha256": "3c1dd2ab3d69885db633ea2370bddb4d5044ce6cc9812dae93aea220c7688773"
+      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "7a6984d7ee790bf4648e5ceaae7410fa59ab00090d951aa7550f651293cfeb56",
+          "webpQuality": 0.9,
+          "environment": {
+            "platform": "win32",
+            "arch": "x64",
+            "chromium": "156.0.8078.4"
+          }
+        }
+      ],
+      "glb": {
+        "sha256": "6eb6ac222e364db242003acdde8864fcf66e13d096b22e2aa0ce700257b17844",
+        "contentSha256": "d9974d853c6b142326d27931a53358772e89b5ca21d13878585c46889d52f511",
+        "doors": "closed",
+        "validator": {
+          "errors": 0,
+          "warnings": 0
+        }
+      },
+      "plan": {
+        "width": 1600,
+        "height": 1131,
+        "sheet": true,
+        "sha256": "5e6fa7eb0b1cd9d42f529031b427f2c20c4389a7de9d014268cd984db2f82b1d",
+        "pixelsSha256": "b9117a408024efb57815025312bd3c037cbe5969e458d3da200977cb6f854c8a"
+      },
+      "files": [
+        {
+          "path": "library.poster.webp",
+          "bytes": 114984,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "library.poster.png",
+          "bytes": 154035,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "library.glb",
+          "bytes": 533604,
+          "archlang": "1.56.0",
+          "archlang3d": "0.4.0"
+        },
+        {
+          "path": "library.plan.png",
+          "bytes": 163184,
           "archlang": "1.56.0",
           "archlang3d": "0.4.0"
         }

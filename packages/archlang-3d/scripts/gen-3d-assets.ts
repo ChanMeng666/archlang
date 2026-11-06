@@ -8,13 +8,18 @@
  *   <name>.poster.png    the same frame, lossless: the fallback, and the reference the freshness
  *                        check compares a re-render with
  *   <name>.poster-full.* the assembled end frame too, when the poster shows one storey (`PLANS`)
- *   <name>.replay.mp4    1280×720, 10 s, H.264 yuv420p +faststart, ≤ 1.5 MB (`PLANS[].video`)
+ *   <name>.replay.mp4    1280×720, 10 s, H.264 yuv420p +faststart, ≤ 1.5 MB (only when `PLANS[].video`)
  *   <name>.glb           closed doors, every check passed (glTF-Validator 0 errors, 0 warnings), ≤ 1 MB
+ *   <name>.plan.png      the plan beside it: the core's own drawing of the poster's storey, rasterised
+ *                        by the core's PNG path (`renderPng`, resvg with the bundled font: what
+ *                        `arch preview` writes) at `PNG_PREVIEW_WIDTH` px wide, on the drawing's own
+ *                        white ground; a plan that declares `paper` comes with its sheet, since the
+ *                        core has no plan-only output (`plan.sheet`)
  *
  * and `manifest.json`: per plan the source path and SHA-256 (and of every file it imports), each
  * poster's frame hash (`window.__frameHash`, the key-frame baseline's hashing) and the environment
- * that rendered it, the GLB's SHA-256 and its content hash, and every file's bytes with the core and
- * package versions that wrote it.
+ * that rendered it, the GLB's SHA-256 and its content hash, the plan PNG's SHA-256 and its pixels'
+ * hash, and every file's bytes with the core and package versions that wrote it.
  *
  *   npm run gen:3d-assets                          every default plan
  *   npm run gen:3d-assets -- --only studio,knob-flat   just these (the rest of the manifest kept)
@@ -24,7 +29,8 @@
  *
  * Assets change only when what they show changes (review of PR #519, M2). A poster is rewritten when
  * its re-rendered frame hash differs from the recorded one, a GLB when its content hash does (the
- * GLB written with a fixed `asset.generator`, so a version bump alone moves nothing), and an MP4 is
+ * GLB written with a fixed `asset.generator`, so a version bump alone moves nothing), a plan PNG when
+ * its pixels' hash does (decoded RGBA, so an encoder's bytes are not content), and an MP4 is
  * re-encoded only when its plan's source or imports changed or `--videos` is passed. A file kept
  * keeps the versions that wrote it; a file the plan no longer has (`--no-video`, a poster view
  * dropped) is deleted.
@@ -33,8 +39,10 @@
  * recorded relative to the working directory, marked `external`, never absolute. `--check` is the
  * freshness check (`checkAssets`, also `e2e/assets.e2e.ts` under `check:3d`): it compares the
  * sources with the manifest, the files with their recorded bytes and budgets, rebuilds each GLB's
- * content hash, re-renders each poster frame (hash, then pixel tolerance against the PNG), and fails
- * on a file in the directory that no entry lists; it never compares an image's or a video's encoded
+ * content hash, re-renders each poster frame (hash, then pixel tolerance against the PNG),
+ * re-rasterises each plan PNG to its recorded pixels' hash (exact everywhere: resvg is pinned and
+ * draws with the bundled font only, as `test/visual.test.ts`'s goldens rely on), and fails on a file
+ * in the directory that no entry lists; it never compares an image's or a video's encoded
  * bytes (encoders differ; Q21). Versions other than this tree's are notes, never failures.
  *
  * Heavy: Chromium (playwright-core's, on SwiftShader) and ffmpeg (`archlang3d doctor`). Outside the
@@ -55,7 +63,8 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
-import { compile, type World } from "@chanmeng666/archlang";
+import { compile, PNG_PREVIEW_WIDTH, renderPng, type World } from "@chanmeng666/archlang";
+import { PNG } from "pngjs";
 import { adaptPlan } from "../src/adapter/adapt.js";
 import { checkGlb, checkScene, checkShells } from "../src/check/verify.js";
 import { coreVersion } from "../src/cli/commands.js";
@@ -74,9 +83,11 @@ export const DEFAULT_OUT = join(REPO, "docs-site", "public", "3d");
 
 /**
  * The plans (card X4): a studio, a furnished flat, a laneway house, the knob flat, a two-storey
- * house with a straight stair and a turning stair. `video`: whether the plan also gets an MP4. All
- * do while the MP4s stay under about 6 MB together (each is 0.5–0.8 MB at crf 24); past that, only
- * two or three hero plans keep one (card X4), and the rest keep their posters and GLBs.
+ * house with a straight stair and a turning stair; then (card X4b) the rest of the docs home
+ * gallery's plans (`docs-site/.vitepress/theme/HomeGallery.vue`). `video`: whether the plan also
+ * gets an MP4. X4's six do, about 3.5 MB together (each 0.4–0.8 MB at crf 24); the gallery's plans
+ * keep a poster, a GLB and a plan PNG only (card X4: past about 6 MB of MP4, only the hero plans
+ * keep one).
  *
  * `poster`: the replay view the poster shows, `"all"` (the storeys assembled) unless named. A
  * storeyed plan whose stair is the point shows storey 1 on its own (`viewMesh(mesh, 1)`, the CLI's
@@ -96,6 +107,12 @@ export const PLANS: readonly PlanSpec[] = [
   { name: "knob-flat", path: "examples/knob-flat.arch", video: true },
   { name: "two-storey", path: "examples/two-storey.arch", video: true, poster: 1 },
   { name: "turning-stair", path: "examples/turning-stair.arch", video: true, poster: 1 },
+  { name: "bungalow", path: "examples/bungalow.arch", video: false },
+  { name: "courtyard-house", path: "examples/courtyard-house.arch", video: false },
+  // The gallery shows its ground floor; storey 1 alone puts the stair and the rooms in sight.
+  { name: "hillside-villa", path: "examples/hillside-villa.arch", video: false, poster: 1 },
+  { name: "corner-cafe", path: "examples/corner-cafe.arch", video: false },
+  { name: "library", path: "examples/library.arch", video: false },
 ];
 
 export const POSTER = { width: 1600, height: 900, t: 1, theme: "light" as const };
@@ -147,10 +164,27 @@ export interface AssetEntry {
    * which a version bump leaves alone.
    */
   glb?: { sha256: string; contentSha256: string; doors: "closed"; validator: { errors: number; warnings: number } };
+  /** `<name>.plan.png`: the core's drawing of {@link PlanPng.level} (or the plan's one drawing). */
+  plan?: PlanPng;
   /** Every file written for this plan, by name. */
   files: FileEntry[];
   /** What was not written, and why (a GLB over budget). */
   skipped?: string[];
+}
+
+/**
+ * The plan PNG: `sha256` the file's, `pixelsSha256` its decoded pixels' ({@link pixelsHash}), the
+ * content an encoder cannot move. `level`: the storey drawn (the poster's), absent for a plan without
+ * storeys. `sheet`: the plan declares `paper`, so the drawing carries its sheet (border, title
+ * block); the core has no plan-only output to leave it off.
+ */
+export interface PlanPng {
+  width: number;
+  height: number;
+  level?: number;
+  sheet: boolean;
+  sha256: string;
+  pixelsSha256: string;
 }
 
 /** A manifest entry as an earlier generator wrote it: the versions and environment per plan. */
@@ -223,6 +257,18 @@ export function preparePlan(abs: string) {
       view === "all"
         ? compiled.svg
         : (compiled.pages?.find((pg) => pg.level === storeys[view - 1])?.svg ?? compiled.svg),
+    /**
+     * The core's Scene of the storey `view` names (`svgOf`'s page), and that storey's level; `"all"`
+     * is the plan's first drawing (`compile().scene`, the lowest storey: what `arch preview` draws).
+     */
+    sceneOf: (view: ReplayView): { scene: NonNullable<typeof compiled.scene>; level?: number } => {
+      const page = view === "all" ? compiled.pages?.[0] : compiled.pages?.find((pg) => pg.level === storeys[view - 1]);
+      const scene = page?.scene ?? compiled.scene;
+      if (!scene) throw new Error(`${abs}: the core drew nothing (${compiled.errors.length} errors)`);
+      return { scene, ...(page ? { level: page.level } : {}) };
+    },
+    /** The plan declares `paper`: its drawing carries the sheet. */
+    sheet: compiled.ast?.paper !== undefined,
     imports: [...imports].sort(([a], [b]) => (a < b ? -1 : 1)).map(([path, h]) => ({ path, sha256: h })),
   };
 }
@@ -245,6 +291,45 @@ export function posterHtml(p: ReturnType<typeof preparePlan>, view: ReplayView):
     seconds: POSTER_SECONDS,
     theme: POSTER.theme,
   });
+}
+
+/** A PNG's content: its decoded RGBA pixels and their size, so an encoder's choices do not count. */
+export function pixelsHash(png: Uint8Array): string {
+  const img = PNG.sync.read(Buffer.from(png));
+  return createHash("sha256").update(`${img.width}x${img.height}\n`).update(img.data).digest("hex");
+}
+
+/**
+ * The plan PNG for `view`: the core's PNG path at `PNG_PREVIEW_WIDTH` px wide, scale 1 (`arch
+ * preview`'s defaults). A render-time warning (a glyph no bundled face draws, a CJK face absent)
+ * would make the picture depend on what is installed, so it fails the run.
+ */
+export async function planPng(
+  p: ReturnType<typeof preparePlan>,
+  view: ReplayView,
+): Promise<{ png: Uint8Array; plan: PlanPng }> {
+  const { scene, level } = p.sceneOf(view);
+  const warned: string[] = [];
+  const png = await renderPng(scene, {
+    width: PNG_PREVIEW_WIDTH,
+    scale: 1,
+    onDiagnostic: (d) => {
+      warned.push(`${d.code}: ${d.message}`);
+    },
+  });
+  if (warned.length > 0) throw new Error(`the plan PNG warned: ${warned.join("; ")}`);
+  const img = PNG.sync.read(Buffer.from(png));
+  return {
+    png,
+    plan: {
+      width: img.width,
+      height: img.height,
+      ...(level !== undefined ? { level } : {}),
+      sheet: p.sheet,
+      sha256: sha256(png),
+      pixelsSha256: pixelsHash(png),
+    },
+  };
 }
 
 function ffmpeg(args: string[]): Promise<void> {
@@ -444,6 +529,26 @@ export async function generateOne(
     }
   }
 
+  // The plan beside the poster: the poster's storey, drawn by the core.
+  const drawn = await planPng(p, main);
+  const planFile = `${name}.plan.png`;
+  const keptPlan = kept(planFile);
+  const wasPlan = prev?.plan;
+  let plan: PlanPng;
+  if (
+    wasPlan &&
+    keptPlan &&
+    wasPlan.pixelsSha256 === drawn.plan.pixelsSha256 &&
+    wasPlan.level === drawn.plan.level &&
+    sha256(readFileSync(join(out, planFile))) === wasPlan.sha256
+  ) {
+    files.push(keptPlan);
+    plan = { ...drawn.plan, sha256: wasPlan.sha256 };
+  } else {
+    put(planFile, drawn.png);
+    plan = drawn.plan;
+  }
+
   const entry: AssetEntry = {
     name,
     source: {
@@ -454,6 +559,7 @@ export async function generateOne(
     posters,
     ...(video ? { video } : {}),
     ...(glb ? { glb } : {}),
+    plan,
     files,
     ...(skipped.length > 0 ? { skipped } : {}),
   };
@@ -481,8 +587,11 @@ export interface CheckReport {
  * file is there at its recorded bytes and within budget; the GLB is the recorded file and its
  * Mesh3D rebuilds to the recorded content hash; and, with `render`, each poster frame re-rendered
  * hashes as recorded (required when the environment is the recording one) or is within `TOLERANCE`
- * of the committed PNG. A file written by another core or package version is a note: what it shows
- * is what decides (the GLB's content, the poster's frame), so a version bump fails nothing. External
+ * of the committed PNG; the plan PNG is the recorded file and re-rasterises (here, always: resvg, no
+ * browser) to the recorded pixels' hash. With the default directory, each entry also has what its
+ * `PLANS` row asks for: the posters, a replay MP4 exactly when `video`, and a plan PNG. A file
+ * written by another core or package version is a note: what it shows is what decides (the GLB's
+ * content, the poster's frame, the plan PNG's pixels), so a version bump fails nothing. External
  * sources (another repository) are noted and not checked. With the default directory, every
  * default plan must have an entry; in any directory, every file but `manifest.json` must be listed
  * by an entry (an orphan is a stale asset nothing vouches for).
@@ -562,6 +671,28 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
       const have = a.posters.map((x) => x.view);
       if (JSON.stringify(have) !== JSON.stringify(want))
         problems.push(`posters show ${have.join(", ")}; the plan list asks for ${want.join(", ")}`);
+      // `video: false` (poster, GLB and plan PNG only): no replay recorded and no MP4 listed.
+      const mp4 = a.files.some((f) => f.path.endsWith(".mp4"));
+      if (spec.video && (!a.video || !mp4)) problems.push("the plan list asks for a replay MP4; there is none");
+      if (!spec.video && (a.video || mp4))
+        problems.push("the plan list asks for no replay MP4 (video: false); one is listed");
+      if (!a.plan) problems.push(`no plan PNG (${a.name}.plan.png)`);
+    }
+    if (a.plan) {
+      const file = join(dir, `${a.name}.plan.png`);
+      if (!a.files.some((f) => f.path === `${a.name}.plan.png`)) problems.push(`${a.name}.plan.png is not listed`);
+      else if (existsSync(file) && sha256(readFileSync(file)) !== a.plan.sha256)
+        problems.push(`${a.name}.plan.png is not the file the manifest records`);
+      const main = spec?.poster ?? (a.posters[0] ? viewOf(a.posters[0].view) : "all");
+      const drawn = await planPng(p, main);
+      if (drawn.plan.level !== a.plan.level)
+        problems.push(
+          `${a.name}.plan.png draws level ${a.plan.level ?? "-"}; the poster's storey is ${drawn.plan.level ?? "-"}`,
+        );
+      if (drawn.plan.pixelsSha256 !== a.plan.pixelsSha256)
+        problems.push(
+          `${a.name}.plan.png re-rasterises to pixels ${drawn.plan.pixelsSha256.slice(0, 12)}…, not the recorded ${a.plan.pixelsSha256.slice(0, 12)}… (regenerate)`,
+        );
     }
     for (const poster of a.posters) {
       const png = join(dir, `${a.name}.${poster.file}.png`);
@@ -662,7 +793,8 @@ async function main(): Promise<number> {
       prev,
     );
     fresh.set(p.name, e);
-    // A file the plan had and no longer has (`--no-video`, a poster view dropped, a GLB over budget).
+    // A file the plan had and no longer has (`--no-video` or `video: false`, a poster view dropped,
+    // a GLB over budget).
     for (const f of prev?.files ?? []) {
       if (e.files.some((x) => x.path === f.path)) continue;
       rmSync(join(o.out, f.path), { force: true });

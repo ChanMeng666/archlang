@@ -97,17 +97,20 @@ empty project with a core from npm and uses it from outside (`release.yml` runs 
 (`test/pins.ts`) is taken with a fixed generator, so a version bump leaves it alone. The public
 surfaces' assets are not: `scripts/gen-3d-assets.ts` (root `npm run gen:3d-assets`) writes each listed
 plan's poster (`renderStill`, the canvas alone at `__seek(1)`; a storeyed plan whose stair is the
-point shows storey 1 alone and adds the assembled frame as `poster-full`), replay MP4 and GLB into
-`docs-site/public/3d/` with a `manifest.json`, and `e2e/assets.e2e.ts` fails until they are
-regenerated after a changed plan, a moved poster frame or a changed GLB content, and on a file there
-that the manifest does not list. Another repository runs it from a checkout of this one:
+point shows storey 1 alone and adds the assembled frame as `poster-full`), replay MP4 (only for a
+plan whose row says `video: true`), GLB and plan PNG (the core's own drawing of that storey through
+its PNG path, `renderPng`, the bytes `arch preview` writes) into `docs-site/public/3d/` with a
+`manifest.json`, and `e2e/assets.e2e.ts` fails until they are regenerated after a changed plan, a
+moved poster frame, a changed GLB content or plan PNG pixels, and on a file there that the manifest
+does not list. Another repository runs it from a checkout of this one:
 `npm run gen:3d-assets -- --out <dir> --plan <name>=<path.arch>`.
 
 Assets change only when what they show changes. A version bump of the core or of this package
 rewrites nothing and fails nothing (the manifest records, per file, the versions that wrote it, and
 the check prints an older one as a note). A poster is rewritten when its re-rendered frame hash
 moves; a GLB when its content hash moves (the Mesh3D written with a fixed `asset.generator`, so the
-version it names is not content); an MP4 is re-encoded only when its plan's source or imports change,
+version it names is not content); a plan PNG when its decoded pixels' hash moves; an MP4 is
+re-encoded only when its plan's source or imports change,
 or when `--videos` asks for every one (after a change to the replay or the geometry that the poster
 and GLB already show). A file a plan no longer has is deleted, so a regenerated directory holds only
 what the manifest lists.
