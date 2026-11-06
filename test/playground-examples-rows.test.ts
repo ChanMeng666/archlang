@@ -295,3 +295,46 @@ describe("the plan a first visit opens", () => {
     expect(lint(source), `${first.name} (row 0)`).toEqual([]);
   });
 });
+
+describe("the two hosts link each example plan both ways", () => {
+  // The docs host used to link the playground only by its bare host and `#z=` fragments, so the
+  // static example pages were reachable from the playground's own index alone. Each direction is
+  // asserted against the source the build reads: the docs page's widgets, and the generator's template.
+  const rows = readRows();
+  const docsPage = readFileSync("docs-site/examples.md", "utf8");
+  const archLive = readFileSync("docs-site/.vitepress/theme/components/ArchLive.vue", "utf8");
+  const gen = readFileSync(GEN_STATIC, "utf8");
+
+  it("every EXAMPLE_ROWS plan's widget on the docs /examples page names its static page", () => {
+    const named = new Set(
+      [...docsPage.matchAll(/<ArchLive :src="EXAMPLES\['([^']+)'\]" page="([^"]+)"/g)]
+        .filter((m) => m[1] === m[2])
+        .map((m) => m[1]!),
+    );
+    const missing = rows.filter((r) => !named.has(r.name)).map((r) => r.name);
+    expect(missing, 'add `page="<name>"` to the plan\'s <ArchLive> widget in docs-site/examples.md').toEqual([]);
+  });
+
+  it("the widget renders that name as a plain link to the playground's static page", () => {
+    // A plain <a> in the SSR output, not a click handler: a crawler follows hrefs only.
+    expect(archLive).toMatch(
+      /https:\/\/playground\.archlang\.uk\/examples\/\$\{encodeURIComponent\(props\.page\)\}\.html/,
+    );
+    expect(archLive).toMatch(/<a v-if="staticPage" class="archlive-page" :href="staticPage">/);
+  });
+
+  it("every static example page links back to the docs /examples page", () => {
+    const page = /\nfunction examplePage\([\s\S]*?\n}\n/.exec(gen)?.[0] ?? "";
+    expect(page, "gen-static.mjs declares `function examplePage(…) { … }`").not.toBe("");
+    expect(page).toMatch(/href="\$\{DOCS\}\/examples"/);
+    // The three docs links the page already carried stay.
+    expect(page).toMatch(/href="\$\{DOCS\}\/reference"/);
+    expect(page).toMatch(/href="\$\{DOCS\}\/spec"/);
+  });
+
+  it("the sitemap's dates come from git, and a failed git call emits none", () => {
+    expect(gen).toMatch(/execFileSync\("git", \["log", "-1", "--format=%cI", "--", path\]/);
+    expect(gen, "a build-time date on unchanged content").not.toMatch(/new Date\(\)/);
+    expect(gen).toMatch(/<lastmod>\$\{escapeHtml\(lastmod\)\}<\/lastmod>/);
+  });
+});

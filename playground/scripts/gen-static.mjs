@@ -871,6 +871,7 @@ ${siteHeader(`<a href="/">Playground</a> › <a href="/examples/">Example plans<
         <li><a href="/examples/">All ArchLang example plans</a></li>
         <li><a href="${DOCS}/reference">The ArchLang language reference</a></li>
         <li><a href="${DOCS}/spec">The one-page specification</a></li>
+        <li><a href="${DOCS}/examples">The example plans, live and editable, on the documentation site</a></li>
       </ul>
     </main>
 ${siteFooter({ sheet: ctx.sheet, plans: ctx.plans })}
