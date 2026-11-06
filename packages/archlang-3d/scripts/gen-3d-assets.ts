@@ -7,6 +7,7 @@
  *                        alone (no page, caption or strip), ≤ 200 KB
  *   <name>.poster.png    the same frame, lossless: the fallback, and the reference the freshness
  *                        check compares a re-render with
+ *   <name>.poster-full.* the assembled end frame too, when the poster shows one storey (`PLANS`)
  *   <name>.replay.mp4    1280×720, 10 s, H.264 yuv420p +faststart, ≤ 1.5 MB (`PLANS[].video`)
  *   <name>.glb           closed doors, every check passed (glTF-Validator 0 errors, 0 warnings), ≤ 1 MB
  *
@@ -44,7 +45,7 @@ import { buildMesh } from "../src/mesh/build.js";
 import type { Mesh3D } from "../src/mesh/types.js";
 import { makeNodeWorld } from "../src/node.js";
 import { replayHtml } from "../src/replay/html.js";
-import { stateAt, timeline } from "../src/replay/timeline.js";
+import { type ReplayView, stateAt, storeysOf, timeline, viewLabel, viewMesh } from "../src/replay/timeline.js";
 import { renderReplay, renderStill } from "../src/replay/video.js";
 import { ARCHLANG_3D_VERSION } from "../src/scene3d/build.js";
 
@@ -57,14 +58,25 @@ export const DEFAULT_OUT = join(REPO, "docs-site", "public", "3d");
  * house with a straight stair and a turning stair. `video`: whether the plan also gets an MP4. All
  * do while the MP4s stay under about 6 MB together (each is 0.5–0.8 MB at crf 24); past that, only
  * two or three hero plans keep one (card X4), and the rest keep their posters and GLBs.
+ *
+ * `poster`: the replay view the poster shows, `"all"` (the storeys assembled) unless named. A
+ * storeyed plan whose stair is the point shows storey 1 on its own (`viewMesh(mesh, 1)`, the CLI's
+ * `--storey 1`: the upper storeys absent, so the stair is in sight) and also gets the assembled end
+ * frame as `<name>.poster-full.*`. The MP4 always replays the storeys combined.
  */
-export const PLANS: ReadonlyArray<{ name: string; path: string; video: boolean }> = [
+export interface PlanSpec {
+  name: string;
+  path: string;
+  video: boolean;
+  poster?: ReplayView;
+}
+export const PLANS: readonly PlanSpec[] = [
   { name: "studio", path: "examples/studio.arch", video: true },
   { name: "furnished-flat", path: "examples/furnished-flat.arch", video: true },
   { name: "laneway-house", path: "examples/laneway-house.arch", video: true },
   { name: "knob-flat", path: "examples/knob-flat.arch", video: true },
-  { name: "two-storey", path: "examples/two-storey.arch", video: true },
-  { name: "turning-stair", path: "examples/turning-stair.arch", video: true },
+  { name: "two-storey", path: "examples/two-storey.arch", video: true, poster: 1 },
+  { name: "turning-stair", path: "examples/turning-stair.arch", video: true, poster: 1 },
 ];
 
 export const POSTER = { width: 1600, height: 900, t: 1, theme: "light" as const };
@@ -82,13 +94,27 @@ export interface Environment {
   chromium: string;
 }
 
+export interface PosterEntry {
+  /** The files' stem after the plan's name: `<name>.<file>.webp` and `.png`. */
+  file: "poster" | "poster-full";
+  /** The replay view drawn (`viewLabel`): `all`, or `storey:<n>` on its own. */
+  view: string;
+  width: number;
+  height: number;
+  t: number;
+  theme: "light";
+  frameSha256: string;
+  webpQuality: number;
+}
+
 export interface AssetEntry {
   name: string;
   source: { path: string; sha256: string; external?: true; imports?: Array<{ path: string; sha256: string }> };
   archlang: string;
   archlang3d: string;
   environment: Environment;
-  poster: { width: number; height: number; t: number; theme: "light"; frameSha256: string; webpQuality: number };
+  /** `poster` (the view `PLANS` names), then, when that is one storey, `poster-full` (all of them). */
+  posters: PosterEntry[];
   video?: { width: number; height: number; seconds: number; fps: number; crf: number };
   glb?: { sha256: string; doors: "closed"; validator: { errors: number; warnings: number } };
   /** Every file written for this plan, by name, with its bytes. */
@@ -142,21 +168,35 @@ export function preparePlan(abs: string) {
   if (!r.ok) throw new Error(`${abs}: ${r.refusal.code}: ${r.refusal.message}`);
   const mesh = buildMesh(r.scene, { doors: "closed" });
   const compiled = compile(source, { world });
+  const storeys = storeysOf(mesh);
   return {
     source,
     title: r.scene.meta.name,
     mesh,
     scene: r.scene,
     svg: compiled.svg,
+    /** The core's drawing a view replays over, as `archlang3d view --storey` picks it. */
+    svgOf: (view: ReplayView): string =>
+      view === "all"
+        ? compiled.svg
+        : (compiled.pages?.find((pg) => pg.level === storeys[view - 1])?.svg ?? compiled.svg),
     imports: [...imports].sort(([a], [b]) => (a < b ? -1 : 1)).map(([path, h]) => ({ path, sha256: h })),
   };
 }
 
-/** The poster's page: no facts (so no strip), light theme, the replay's own camera. */
-export function posterHtml(mesh: Mesh3D, title: string, svg: string): Promise<string> {
-  return replayHtml(mesh, {
-    title,
-    svg,
+/** A view from its manifest label (`viewLabel`'s inverse). */
+export function viewOf(label: string): ReplayView {
+  if (label === "all") return "all";
+  const m = /^storey:([1-9]\d*)$/.exec(label);
+  if (!m) throw new Error(`unknown view "${label}"`);
+  return Number(m[1]);
+}
+
+/** The poster's page for `view`: no facts (so no strip), light theme, the replay's own camera. */
+export function posterHtml(p: ReturnType<typeof preparePlan>, view: ReplayView): Promise<string> {
+  return replayHtml(viewMesh(p.mesh, view), {
+    title: p.title,
+    svg: p.svgOf(view),
     width: POSTER.width,
     height: POSTER.height,
     seconds: POSTER_SECONDS,
@@ -235,12 +275,9 @@ export async function generateOne(
   name: string,
   abs: string,
   out: string,
-  opts: { video: boolean },
+  opts: { video: boolean; poster?: ReplayView },
 ): Promise<AssetEntry> {
   const p = preparePlan(abs);
-  const events = timeline(p.mesh);
-  // The poster must carry no text: the core's drawing (the only layer with glyphs) is gone at t.
-  if (stateAt(events, POSTER.t).svg !== 0) throw new Error(`${name}: the drawing still shows at t = ${POSTER.t}`);
   const files: AssetEntry["files"] = [];
   const skipped: string[] = [];
   const put = (file: string, bytes: Uint8Array): void => {
@@ -248,17 +285,35 @@ export async function generateOne(
     files.push({ path: file, bytes: bytes.byteLength });
   };
 
-  const still = await renderStill({
-    html: await posterHtml(p.mesh, p.title, p.svg),
-    width: POSTER.width,
-    height: POSTER.height,
-    t: POSTER.t,
-    webp: { maxBytes: BUDGET.webp, qualities: WEBP_QUALITIES },
-  });
-  if (!still.webp || still.webp.bytes.byteLength > BUDGET.webp)
-    throw new Error(`${name}: the WebP poster is over ${BUDGET.webp} bytes at every quality tried`);
-  put(`${name}.poster.webp`, still.webp.bytes);
-  put(`${name}.poster.png`, still.png);
+  const main = opts.poster ?? "all";
+  const views: Array<[PosterEntry["file"], ReplayView]> = [["poster", main]];
+  if (main !== "all") views.push(["poster-full", "all"]);
+  const posters: PosterEntry[] = [];
+  let browser = "";
+  for (const [file, view] of views) {
+    // The poster must carry no text: the core's drawing (the only layer with glyphs) is gone at t.
+    if (stateAt(timeline(viewMesh(p.mesh, view)), POSTER.t).svg !== 0)
+      throw new Error(`${name} (${viewLabel(view)}): the drawing still shows at t = ${POSTER.t}`);
+    const still = await renderStill({
+      html: await posterHtml(p, view),
+      width: POSTER.width,
+      height: POSTER.height,
+      t: POSTER.t,
+      webp: { maxBytes: BUDGET.webp, qualities: WEBP_QUALITIES },
+    });
+    if (!still.webp || still.webp.bytes.byteLength > BUDGET.webp)
+      throw new Error(`${name}: the WebP ${file} is over ${BUDGET.webp} bytes at every quality tried`);
+    put(`${name}.${file}.webp`, still.webp.bytes);
+    put(`${name}.${file}.png`, still.png);
+    posters.push({
+      file,
+      view: viewLabel(view),
+      ...POSTER,
+      frameSha256: still.sha256,
+      webpQuality: still.webp.quality,
+    });
+    browser = still.browser;
+  }
 
   let video: AssetEntry["video"];
   if (opts.video) {
@@ -293,8 +348,8 @@ export async function generateOne(
     },
     archlang: coreVersion(),
     archlang3d: ARCHLANG_3D_VERSION,
-    environment: { platform: process.platform, arch: process.arch, chromium: still.browser },
-    poster: { ...POSTER, frameSha256: still.sha256, webpQuality: still.webp.quality },
+    environment: { platform: process.platform, arch: process.arch, chromium: browser },
+    posters,
     ...(video ? { video } : {}),
     ...(glb ? { glb } : {}),
     files,
@@ -381,13 +436,22 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
       const glb = sha256(await writeGlb(p.mesh));
       if (glb !== a.glb.sha256) problems.push(`${a.name}.glb rebuilds to ${glb.slice(0, 12)}…, not the recorded one`);
     }
-    const png = join(dir, `${a.name}.poster.png`);
-    if (opts.render && existsSync(png)) {
+    const spec = resolve(dir) === resolve(DEFAULT_OUT) ? PLANS.find((s) => s.name === a.name) : undefined;
+    if (spec) {
+      const main = spec.poster ?? "all";
+      const want = [viewLabel(main), ...(main !== "all" ? ["all"] : [])];
+      const have = a.posters.map((x) => x.view);
+      if (JSON.stringify(have) !== JSON.stringify(want))
+        problems.push(`posters show ${have.join(", ")}; the plan list asks for ${want.join(", ")}`);
+    }
+    for (const poster of a.posters) {
+      const png = join(dir, `${a.name}.${poster.file}.png`);
+      if (!opts.render || !existsSync(png)) continue;
       const still = await renderStill({
-        html: await posterHtml(p.mesh, p.title, p.svg),
-        width: a.poster.width,
-        height: a.poster.height,
-        t: a.poster.t,
+        html: await posterHtml(p, viewOf(poster.view)),
+        width: poster.width,
+        height: poster.height,
+        t: poster.t,
         reference: new Uint8Array(readFileSync(png)),
         threshold: TOLERANCE.threshold,
       });
@@ -395,15 +459,15 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
       const fraction = d ? d.differing / d.total : 1;
       const here: Environment = { platform: process.platform, arch: process.arch, chromium: still.browser };
       const same = JSON.stringify(here) === JSON.stringify(a.environment);
-      if (still.sha256 !== a.poster.frameSha256) {
+      if (still.sha256 !== poster.frameSha256) {
         const where = `${here.platform}/${here.arch}/Chromium ${here.chromium}`;
-        const msg = `poster frame hash ${still.sha256.slice(0, 12)}… (recorded ${a.poster.frameSha256.slice(0, 12)}…, ${where}); ${d?.differing ?? "?"} of ${d?.total ?? "?"} pixels beyond ${TOLERANCE.threshold}, largest gap ${d?.maxDelta ?? "?"}`;
+        const msg = `${poster.file} (${poster.view}) frame hash ${still.sha256.slice(0, 12)}… (recorded ${poster.frameSha256.slice(0, 12)}…, ${where}); ${d?.differing ?? "?"} of ${d?.total ?? "?"} pixels beyond ${TOLERANCE.threshold}, largest gap ${d?.maxDelta ?? "?"}`;
         if (same) problems.push(`${msg}: this is the recording environment, so the frame moved (regenerate)`);
         else if (!d?.sizeMatches || fraction > TOLERANCE.fraction) problems.push(`${msg}: beyond tolerance`);
         else notes.push(`${msg}: within tolerance`);
       } else if (d?.maxDelta !== 0) {
         // The frame is the recorded one, so the committed PNG must be exactly it.
-        problems.push(`the frame hashes as recorded but ${a.name}.poster.png is not that frame`);
+        problems.push(`the frame hashes as recorded but ${a.name}.${poster.file}.png is not that frame`);
       }
     }
     report();
@@ -452,13 +516,14 @@ async function main(): Promise<number> {
     }
     return reports.every((r) => r.ok) ? 0 : 1;
   }
-  const list =
+  const list: Array<{ name: string; abs: string; video: boolean; poster?: ReplayView }> =
     o.plans.length > 0
       ? o.plans.map((p) => ({ name: p.name, abs: resolve(CALLER, p.path), video: o.video }))
       : PLANS.filter((p) => !o.only || o.only.includes(p.name)).map((p) => ({
           name: p.name,
           abs: join(REPO, p.path),
           video: p.video && o.video,
+          ...(p.poster !== undefined ? { poster: p.poster } : {}),
         }));
   if (o.only && list.length !== o.only.length)
     throw new Error(`--only names a plan not in the list: ${o.only.join(",")}`);
@@ -467,7 +532,10 @@ async function main(): Promise<number> {
   const fresh = new Map<string, AssetEntry>();
   for (const p of list) {
     say(`gen:3d-assets: ${p.name} …`);
-    const e = await generateOne(p.name, p.abs, o.out, { video: p.video });
+    const e = await generateOne(p.name, p.abs, o.out, {
+      video: p.video,
+      ...(p.poster !== undefined ? { poster: p.poster } : {}),
+    });
     fresh.set(p.name, e);
     say(`gen:3d-assets: ${p.name}: ${e.files.map((f) => `${f.path} ${f.bytes}`).join(", ")}`);
     for (const s of e.skipped ?? []) say(`gen:3d-assets: skipped ${s}`);

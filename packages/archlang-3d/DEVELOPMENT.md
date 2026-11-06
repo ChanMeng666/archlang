@@ -96,7 +96,8 @@ empty project with a core from npm and uses it from outside (`release.yml` runs 
 `ARCHLANG_3D_VERSION` is read from `package.json` and stamped into every GLB and Scene3D. The GLB pin
 (`test/pins.ts`) is taken with a fixed generator, so a version bump leaves it alone. The public
 surfaces' assets are not: `scripts/gen-3d-assets.ts` (root `npm run gen:3d-assets`) writes each listed
-plan's poster (`renderStill`, the canvas alone at `__seek(1)`), replay MP4 and GLB into
+plan's poster (`renderStill`, the canvas alone at `__seek(1)`; a storeyed plan whose stair is the
+point shows storey 1 alone and adds the assembled frame as `poster-full`), replay MP4 and GLB into
 `docs-site/public/3d/` with a `manifest.json`, and `e2e/assets.e2e.ts` fails until they are
 regenerated after a version bump, a changed plan or a moved poster frame. Another repository runs it
 from a checkout of this one: `npm run gen:3d-assets -- --out <dir> --plan <name>=<path.arch>`.
