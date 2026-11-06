@@ -28,13 +28,20 @@
  * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the families it covers
  *   (on the floor finish, or hung at its family's mount), each part's shell carrying its material
  *   slot (`materials.ts`), else a grey box on the floor finish, its height a per-family default;
+ * - stair (card X3): stepped solids on the floor finish of the storey it climbs from, up to the next
+ *   storey's floor finish (`stair.ts`): a `dir up` stair climbs from its own storey; a `dir down`
+ *   one is the same stair seen from above when the storey below holds a `dir up` stair of its id
+ *   (built there, once), else it is built from the storey below. The void above stays as the plan
+ *   puts it. A stair on the top storey climbs that storey's height; a `dir down` stair on the lowest
+ *   storey has nothing to climb from and is not built; both are ledgered;
  * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3).
- * Stairs, outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
+ * Outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
  */
-import { floorFinish } from "../materials.js";
-import type { Assumption, Level, Polygon, Pt, Scene3D } from "../scene3d/types.js";
+import { floorFinish, STAIR_MATERIAL } from "../materials.js";
+import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { type Rect, rectMinus, slabRegion } from "./slab.js";
+import { stairSolid } from "./stair.js";
 import { isHung, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
@@ -93,6 +100,7 @@ const STAGE: Record<NodeKind, Stage> = {
   window: "openings",
   opening: "openings",
   furniture: "fixtures",
+  stair: "walls",
 };
 
 const byText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
@@ -238,6 +246,8 @@ function levelNodes(
   defaulted: Set<string>,
   isTop: boolean,
   doors: DoorPose,
+  below?: Level,
+  above?: Level,
 ): MeshNode[] {
   const e = lv.elevation;
   const out: MeshNode[] = [];
@@ -345,6 +355,87 @@ function levelNodes(
       prism(rect(c.at[0], c.at[1], c.at[0] + c.size.w, c.at[1] + c.size.h), e, e + lv.storeyHeight),
     ]);
   });
+
+  // Stairs (card X3): each climb is built once, on the storey it climbs from. This storey's own
+  // `dir up` stairs climb to the storey above (or this storey's height on the top storey); a
+  // `dir down` stair of the storey above with no `dir up` stair of its id here climbs from here
+  // too. A `dir down` stair here is the top of a climb built below, or, on the lowest storey, one
+  // with nothing to climb from.
+  const climbs: Array<{ s: Stair; order: number; rise: number; from: "own" | "above" }> = [];
+  lv.stairs.forEach((s, i) => {
+    if (s.dir === "up") {
+      climbs.push({ s, order: i, rise: above ? above.elevation - e : lv.storeyHeight, from: "own" });
+      if (!above) {
+        ledger.push({
+          kind: "stair",
+          id: s.id,
+          field: "rise_mm",
+          value: lv.storeyHeight / MM,
+          provenance: "default",
+          rule: "stair-rise-storey-height",
+        });
+      }
+    } else if (!below) {
+      ledger.push({
+        kind: "stair",
+        id: s.id,
+        field: "geometry",
+        value: "omitted",
+        provenance: "default",
+        rule: "stair-down-no-storey-below",
+      });
+    }
+  });
+  (above?.stairs ?? []).forEach((s, i) => {
+    const partnered = lv.stairs.some((t) => t.id === s.id && t.dir === "up");
+    if (s.dir === "down" && !partnered && above)
+      climbs.push({ s, order: lv.stairs.length + i, rise: above.elevation - e, from: "above" });
+  });
+  const stairFloor = e + FLOOR_FINISH_MM * MM;
+  for (const { s, order, rise, from } of climbs) {
+    const solid = stairSolid(s, stairFloor, rise);
+    if (!solid) {
+      ledger.push({
+        kind: "stair",
+        id: s.id,
+        field: "geometry",
+        value: "omitted",
+        provenance: "default",
+        rule: s.flights?.length ? "stair-rise-not-positive" : "stair-no-flights",
+      });
+      continue;
+    }
+    if (!defaulted.has("stair:defaults")) {
+      defaulted.add("stair:defaults");
+      ledger.push(
+        {
+          kind: "stair",
+          field: "material",
+          value: STAIR_MATERIAL,
+          provenance: "default",
+          rule: "stair-material-default",
+        },
+        { kind: "stair", field: "form", value: "solid", provenance: "default", rule: "stair-solid-default" },
+      );
+    }
+    // One riser per tread the plan draws, and one at each flight's head: derived, never assumed.
+    ledger.push({
+      kind: "stair",
+      id: s.id,
+      field: "risers",
+      value: solid.risers,
+      provenance: "derived",
+      rule: "stair-risers-from-treads",
+    });
+    node("stair", s.id, order, [...solid.shells, ...Array.from({ length: solid.dropped }, () => null)], {
+      dir: s.dir,
+      width_mm: s.width / MM,
+      flights: s.flights?.length ?? 0,
+      risers: solid.risers,
+      rise_mm: rise / MM,
+      ...(from === "above" ? { from_storey_above: true } : {}),
+    });
+  }
 
   const openings = new Map(lv.openings.map((o) => [o.id, o] as const));
   const hostHeight = new Map(lv.walls.map((w) => [w.id, w.height] as const));
@@ -664,17 +755,22 @@ export function buildMesh(scene: Scene3D, opts: MeshOptions = {}): Mesh3D {
     },
     { kind: "door", field: "leaf_mm", value: LEAF_MM, provenance: "default", rule: "door-leaf-40" },
     { kind: "roof", field: "thickness_mm", value: ROOF_MM, provenance: "default", rule: "roof-flat-150" },
-    {
-      kind: "stair",
-      field: "geometry",
-      value: "omitted",
-      provenance: "default",
-      rule: "m1-omits-stairs-outdoor-fences",
-    },
+    // Narrowed by card X3 (was `m1-omits-stairs-outdoor-fences`, kind `stair`): stairs are built.
+    ...(["outdoor", "fence"] as const).map(
+      (kind): Assumption => ({
+        kind,
+        field: "geometry",
+        value: "omitted",
+        provenance: "default",
+        rule: "m1-omits-outdoor-fences",
+      }),
+    ),
   ];
   const defaulted = new Set<string>();
   const top = scene.levels.length - 1;
-  const nodes = scene.levels.flatMap((lv, i) => levelNodes(lv, ledger, defaulted, i === top, doors));
+  const nodes = scene.levels.flatMap((lv, i) =>
+    levelNodes(lv, ledger, defaulted, i === top, doors, scene.levels[i - 1], scene.levels[i + 1]),
+  );
   nodes.sort(
     (a, b) => a.level - b.level || byText(a.kind, b.kind) || byText(a.id, b.id) || byText(a.part ?? "", b.part ?? ""),
   );

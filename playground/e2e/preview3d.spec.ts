@@ -28,7 +28,7 @@ const DIST = join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
 const LABEL =
   "Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan.";
 const LIMITS =
-  "3D preview: walls, openings, floors and furniture in flat colours; no stairs or pitched roofs yet, and no sections, elevations or BIM.";
+  "3D preview: walls, openings, floors, stairs and furniture in flat colours; no pitched roofs yet, and no sections, elevations or BIM.";
 
 interface Handle {
   seek: (t: number) => void;

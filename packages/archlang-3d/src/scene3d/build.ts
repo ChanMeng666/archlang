@@ -8,9 +8,11 @@
  * the core's promise (ADR 0031) and are never read (`test/contract.test.ts`).
  */
 import { version } from "../../package.json";
+import * as core from "@chanmeng666/archlang";
 import {
   doorLeaves,
   doorSwing,
+  entryEdges,
   type RColumn,
   type RDoor,
   type ResolvedElement,
@@ -44,8 +46,10 @@ import type {
   Ring3,
   Roof,
   Scene3D,
+  Side,
   Source,
   Stair,
+  StairFlight,
   Wall,
 } from "./types.js";
 
@@ -158,12 +162,44 @@ const fenceOf = (f: RFence): Fence => ({
   closed: f.closed,
 });
 
+const OPPOSITE: Readonly<Record<Side, Side>> = { top: "bottom", bottom: "top", left: "right", right: "left" };
+
+/**
+ * A stair's flights in climbing order, each with the edge its climb starts from and the tread
+ * divisions the plan draws on it, read from the core and never re-derived: a turning stair's
+ * `flights` (each `tail`, the edge it is entered by on THIS storey) and `landings`, or a straight
+ * stair's own rectangle and `entryEdges` (the core's tail, which a `place` frame has carried). On a
+ * `dir down` stop the tail is the flight's head, so the climb's foot is the opposite edge. The
+ * count is the core's `treadCount` of the run (the side the tail runs along, as the drawing reads
+ * it), so the treads stand on the drawing's tread lines. `undefined` when the core does not export
+ * `treadCount` (a core before the amendment of 2026-11-06 to ADR 0031): no stair is built then.
+ */
+function stairPieces(s: RStair): Pick<Stair, "flights" | "landings"> | undefined {
+  const treadCount = (core as Partial<typeof core>).treadCount;
+  if (typeof treadCount !== "function") return undefined;
+  const flight = (at: Point, size: { w: number; h: number }, tail: Side): StairFlight => ({
+    at: umPoint(at),
+    size: { w: um(size.w), h: um(size.h) },
+    foot: s.dir === "up" ? tail : OPPOSITE[tail],
+    treads: treadCount(tail === "top" || tail === "bottom" ? size.h : size.w),
+  });
+  if (s.flights && s.landings) {
+    return {
+      flights: s.flights.map((f) => flight(f.at, f.size, f.tail)),
+      landings: s.landings.map((l) => ({ at: umPoint(l.at), size: { w: um(l.size.w), h: um(l.size.h) } })),
+    };
+  }
+  const tail = entryEdges(s)[0];
+  return tail ? { flights: [flight(s.at, s.size, tail)], landings: [] } : undefined;
+}
+
 const stairOf = (s: RStair): Stair => ({
   id: s.id,
   source: source(s),
   box: box(s),
   dir: s.dir,
   width: um(s.width),
+  ...stairPieces(s),
 });
 
 /** One storey's walls and openings, through the core's joinery. */

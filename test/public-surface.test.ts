@@ -46,6 +46,7 @@ const SEAM_VALUES: ReadonlyArray<readonly [name: string, module: string]> = [
   ["doorLeaves", "geometry.ts"],
   ["hatchKey", "hatches.ts"],
   ["hatchOf", "hatches.ts"],
+  ["treadCount", "elements/vertical-glyphs.ts"],
 ];
 
 /**

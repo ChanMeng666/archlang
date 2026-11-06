@@ -64,7 +64,9 @@ you observed. Do NOT push anything — this command only verifies.
      `ARCHLANG_3D_VERSION` reads the manifest, `playground/package.json` says `*`, and the GLB pin
      (`test/pins.ts`) uses a fixed generator, so a moved pin means moved geometry, never a release.
      Its peer range stays a caret range whose floor is `MIN_CORE` (same test); a core MAJOR needs a
-     look at the seam (ADR 0031) before the range moves. No 3D wording reaches the core: the core's
+     look at the seam (ADR 0031) before the range moves. A core that adds an export archlang-3d
+     needs → raise its peer floor and `MIN_CORE` to that core version and bump archlang-3d, after
+     that core is on npm (pending: `treadCount`, core 1.57.0, for archlang-3d 0.4.0's stairs). No 3D wording reaches the core: the core's
      `npm pack --dry-run` list and its `CHANGELOG.md` stay silent on it (Tier C).
 
 3. **CHANGELOG.md has an entry for the new version**, and

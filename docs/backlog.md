@@ -2629,6 +2629,24 @@ drawing's share of a 1280×720 viewport would fall to about 0.66, under `boot.sp
 the line into the output pane's status row first keeps both. **Gate:** the stage box is the same
 before and after the first compile; `boot.spec`'s no-JS share holds.
 
+## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
+
+### ST.1 · No lint compares a stair's drawn treads with its storey height — `todo`
+
+The plan draws each flight with `treadCount(run)` treads (`src/elements/vertical-glyphs.ts`, a
+nominal 280 mm going, whatever the storey height), and the 3D preview climbs the storey on one
+riser per drawn tread plus one per flight (`docs/plans/public-surfaces/3d.md` §3, a ruling: the 3D
+keeps the plan's treads). So the drawing itself implies a riser height, and several examples imply
+245–273 mm (two-storey 2700 / 11, townhouse and garden-house 3000 / 12, hillside-villa 3000 / 11),
+above the 220 mm `stairMaxRiseMm` that `W_STAIR_TOO_STEEP` assumes. That rule checks a flight's
+run against the shortest run that climbs the storey, and only where the plan authors a height; it
+never compares the treads drawn with the storey height, so none of these plans warns (measured with
+`arch lint --json`: no `W_STAIR_*` on any of the four; only two-storey authors a height, and its
+2900 mm run passes the 2640 mm its 2700 mm storey needs at 220 mm). A lint (or a `describe()` fact first) would report the
+riser the drawing implies, where the plan authors a height. **Gate:** the implied riser for each
+example, hand-derived in the test; a plan with no `height` unchanged; the byte-identity law over
+the corpus for `describe()` if a fact is added, and the lint's own corpus findings listed in the PR.
+
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 
 ### N.1 · The nav row needs 1152px, and the hamburger persists until then — `todo` (a WANT, not a bug)

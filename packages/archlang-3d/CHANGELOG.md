@@ -2,6 +2,35 @@
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-06
+
+Stairs require `@chanmeng666/archlang` ≥ 1.57.0, the first core that exports `treadCount`. With an
+older core everything else works as before and no stair is built (`stair-no-flights`).
+
+### Added
+
+- Stairs. A straight stair and a turning stair (flights and landings) are built as stepped solids,
+  read from the core's own stair: each flight's rectangle, the edge it is climbed from and the
+  number of treads the plan draws on it (the core's new `treadCount` export), so the treads stand
+  on the drawing's tread lines. A stair climbs to the floor of the storey above in equal risers, one
+  per tread plus one at the head of each flight; a landing stands at the height its flight ends on.
+  The flight is as wide as the stair's `width`, centred as the plan centres it, and solid down to
+  its floor. The void in the floor above stays where the plan puts it.
+- A stair is built once, on the storey it climbs from: a `dir up` stair climbs from its own
+  storey, and the `dir down` stop above it is the same stair. A `dir down` stair with no stair of
+  its id below is built from the storey below. A `dir up` stair on the top storey climbs that
+  storey's height; a `dir down` stair on the lowest storey is not built. Each case is in the
+  ledger.
+- Stairs are oak, from the palette's `wood` (the core gives a stair no material), and the ledger
+  says so (`stair-material-default`), with the solid form (`stair-solid-default`) and each stair's
+  riser count (`stair-risers-from-treads`). In the GLB a stair is a `stair:<id>` node under its
+  storey, in a `stair` material, its facts (direction, width, flights, risers, rise) in
+  `extras.archlang`. In the replay it rises after its storey's walls. `build --json` counts stairs
+  per storey.
+- Scene3D: a stair carries `flights` (each `at`, `size`, `foot` and `treads`) and `landings`. Both
+  are optional, so a Scene3D written before 0.4.0 still validates; its stairs are not built
+  (`stair-no-flights`). New exports: `stairSolid`, `stairRisers`, `StairSolid`, `STAIR_MATERIAL`.
+
 ### Changed
 
 - A replay of several storeys ends with the storeys assembled: they still rise one by one, each
@@ -15,11 +44,13 @@
 - The preview's label is the line every ArchLang surface uses: "Same source, plan and 3D preview.
   The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and
   checked against the plan." (`PREVIEW_LABEL`; its first sentence is `PREVIEW_LEAD`). The replay
-  HTML also carries the limits line (`PREVIEW_LIMITS`): walls, openings, floors and furniture in flat
-  colours; no stairs or pitched roofs yet, and no sections, elevations or BIM. `PREVIEW_ABOUT_URL`
+  HTML also carries the limits line (`PREVIEW_LIMITS`): walls, openings, floors, stairs and furniture
+  in flat colours; no pitched roofs yet, and no sections, elevations or BIM. `PREVIEW_ABOUT_URL`
   is the page that says what the preview shows.
 - The side views' buttons are named "View from north" (east, south, west) instead of "North
   elevation" and so on: the 3D preview draws no elevations. The buttons still read N, E, S and W.
+- The ledger row `m1-omits-stairs-outdoor-fences` is now `m1-omits-outdoor-fences`, written once
+  for outdoor surfaces and once for fences, which are still not built.
 
 ## [0.3.0] - 2026-11-05
 

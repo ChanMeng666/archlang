@@ -85,7 +85,12 @@ export function runFrame(v: RVertical, flightWidth: number): RunFrame {
   return { length, width: flightWidth, at };
 }
 
-/** How many tread divisions a run of `length` mm gets (≥ {@link MIN_TREADS}). */
+/**
+ * How many tread divisions a run of `length` mm gets (≥ {@link MIN_TREADS}): the stair symbol
+ * draws its tread lines at `length / treadCount(length)` along each flight. Public from the
+ * package root (ADR 0031, amendment 2026-11-06): `(length: number) => number`, a whole number of
+ * at least 2 for any finite length; a change to the count is a change to every stair drawing.
+ */
 export function treadCount(length: number): number {
   return Math.max(MIN_TREADS, Math.round(length / TREAD_GOING_MM));
 }

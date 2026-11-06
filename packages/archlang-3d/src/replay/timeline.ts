@@ -128,6 +128,9 @@ function groupOf(n: MeshNode): number {
       return n.extras.category === "exterior" ? 1 : 2;
     case "roof":
       return 3;
+    case "stair":
+      // After the storey's walls (card X3); it rises across the storey's wall slot.
+      return 3;
     case "door":
       return 0;
     case "window":
