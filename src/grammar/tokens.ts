@@ -110,6 +110,7 @@ export const KEYWORDS = {
     // `room id=landing` would stop parsing.
     "flight",
     "landing",
+    "winders",
     // The `title { … }` field words, from their one list.
     ...TITLE_FIELDS,
     "from",

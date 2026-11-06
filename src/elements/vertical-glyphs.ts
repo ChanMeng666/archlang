@@ -30,6 +30,7 @@ import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
 import type { RElevator, REscalator, RStair, RStairPiece } from "../ir.js";
 import { rectCorners } from "../geometry.js";
+import type { BBox } from "../geometry/rect.js";
 import {
   flightsOf,
   isBlockStair,
@@ -38,6 +39,7 @@ import {
   type RVertical,
   tailEdge,
   travelVector,
+  winderTreads,
 } from "../vertical.js";
 import { symbolInk } from "./glyph-lib.js";
 
@@ -191,6 +193,9 @@ function runWord(
   };
 }
 
+/** A piece's rectangle as a box. */
+const rectOfPiece = (v: RStairPiece): BBox => ({ x: v.at.x, y: v.at.y, w: v.size.w, h: v.size.h });
+
 /** The footprint rectangle every run draws under its symbol. */
 function footprint(v: RStairPiece, layerName: string, theme: Theme, sizes: RenderSizes): SceneNode {
   return {
@@ -298,6 +303,8 @@ function flightSymbol(s: RStair, f: RunFrame, cut: FlightCut, theme: Theme, size
 /** The walking line's way across a landing, from `p` (where the flight before it ends) to `q`
  *  (where the flight after it starts), turning at right angles: the points between them. */
 function acrossLanding(p: Point, q: Point, before: RStair, after: RStair, landing: RStairPiece): Point[] {
+  // Over winders the walk turns with the treads: one straight chord, no right angle.
+  if (landing.winders !== undefined) return [];
   const d0 = travelVector(before);
   const d1 = travelVector(after);
   const parallel = d0.x * d1.x + d0.y * d1.y !== 0;
@@ -375,7 +382,12 @@ function blockStairGlyph(s: RBlockStair, theme: Theme, sizes: RenderSizes, text:
   climb.forEach((f, i) => {
     nodes.push(...flightSymbol(f, runFrame(f, s.width), i === cut ? "shallow" : "none", theme, sizes));
     const landing = s.landings[i];
-    if (landing) nodes.push(footprint(landing, layer, theme, sizes));
+    if (landing) {
+      nodes.push(footprint(landing, layer, theme, sizes));
+      const stroke: Paint = { stroke: theme.furnitureStroke, width: sizes.thin, fill: "none" };
+      for (const [a, b] of winderTreads(landing, rectOfPiece(f), rectOfPiece(climb[i + 1]!)))
+        nodes.push(line(a, b, layer, stroke));
+    }
   });
 
   const up = s.dir === "up";

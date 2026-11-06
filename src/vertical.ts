@@ -39,7 +39,7 @@ import type {
 } from "./ir.js";
 import type { BBox } from "./geometry/rect.js";
 import type { RectEdge } from "./fixture-orientation.js";
-import { oppositeSide, SIDE_NORMAL } from "./algebra/d4.js";
+import { oppositeSide, SIDE_NORMAL, type Side } from "./algebra/d4.js";
 import { pointInPolygon } from "./geometry/polygon.js";
 import { pointInRect } from "./geometry/rect.js";
 
@@ -789,4 +789,51 @@ function arrivalOn(
   // footprint (a flight's length read as a doorway).
   if (runAxis(src) !== runAxis(run)) return own;
   return { edges: [oppositeSide(tailEdge(src))], flight: run };
+}
+
+/** The side of `landing` that the rectangle `r` stands against, or null. */
+function sideAgainst(landing: BBox, r: BBox): Side | null {
+  const eps = 0.5;
+  if (Math.abs(r.x + r.w - landing.x) <= eps) return "left";
+  if (Math.abs(landing.x + landing.w - r.x) <= eps) return "right";
+  if (Math.abs(r.y + r.h - landing.y) <= eps) return "top";
+  if (Math.abs(landing.y + landing.h - r.y) <= eps) return "bottom";
+  return null;
+}
+
+/**
+ * The tread lines of a winder landing (`landing … winders <n>`), between the flight `before` it in
+ * climbing order and the flight `after`: `n - 1` lines fanning from the inner corner, the corner the
+ * entry and exit sides share, at equal angles over the quarter turn, each to the far edge of the
+ * landing. Equal angles give equal goings on any walking line that turns round that corner. `[]`
+ * for a level landing. Geometry only: no tread is checked against any going here.
+ */
+export function winderTreads(landing: RStairPiece, before: BBox, after: BBox): Array<[Point, Point]> {
+  const n = landing.winders;
+  if (n === undefined) return [];
+  const r: BBox = { x: landing.at.x, y: landing.at.y, w: landing.size.w, h: landing.size.h };
+  const a = sideAgainst(r, before);
+  const b = sideAgainst(r, after);
+  if (a === null || b === null) return [];
+  const cx = a === "left" || b === "left" ? r.x : r.x + r.w;
+  const cy = a === "top" || b === "top" ? r.y : r.y + r.h;
+  // Unit vectors from the corner along the entry side and along the exit side.
+  const along = (s: Side): Point =>
+    s === "left" || s === "right" ? { x: 0, y: cy === r.y ? 1 : -1 } : { x: cx === r.x ? 1 : -1, y: 0 };
+  const e = along(a);
+  const x = along(b);
+  const se = e.x !== 0 ? r.w : r.h;
+  const sx = x.x !== 0 ? r.w : r.h;
+  const out: Array<[Point, Point]> = [];
+  for (let k = 1; k < n; k++) {
+    const t = ((Math.PI / 2) * k) / n;
+    const c = Math.cos(t);
+    const s = Math.sin(t);
+    const len = Math.min(c > 1e-12 ? se / c : Number.POSITIVE_INFINITY, s > 1e-12 ? sx / s : Number.POSITIVE_INFINITY);
+    out.push([
+      { x: cx, y: cy },
+      { x: cx + len * (c * e.x + s * x.x), y: cy + len * (c * e.y + s * x.y) },
+    ]);
+  }
+  return out;
 }

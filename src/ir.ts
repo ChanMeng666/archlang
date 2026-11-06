@@ -743,6 +743,9 @@ export interface RColumn extends RBase {
 export interface RStairPiece {
   at: Point;
   size: { w: number; h: number };
+  /** A block stair's landing divided into this many tapered steps (`landing … winders <n>`);
+   *  absent on a level landing and on every flight. */
+  winders?: number;
 }
 
 /** One flight of a block stair: its rectangle and the edge it is entered across on THIS storey. */

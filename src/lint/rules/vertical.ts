@@ -120,7 +120,18 @@ function blockDiffers(v: RBlockStair, b: RBlockStair, level: number): { why: str
     const o = there[i]!;
     return [r.x - o.x, r.y - o.y, r.w - o.w, r.h - o.h].some((d) => Math.abs(d) > VERTEX_EPS);
   });
-  if (at < 0) return null;
+  if (at < 0) {
+    // The same rectangles can still be two stairs: a landing of winders on one stop, a level
+    // landing or another count of winders on the other.
+    const j = v.landings.findIndex((l, i) => l.winders !== b.landings[i]!.winders);
+    if (j < 0) return null;
+    const landing = v.landings.length === 1 ? "the landing" : `landing ${j + 1}`;
+    const steps = (n: number | undefined): string => (n === undefined ? "level" : `${n} winders`);
+    return {
+      why: `${landing} is ${steps(b.landings[j]!.winders)} there and ${steps(v.landings[j]!.winders)} here`,
+      hint: `Draw \`${v.id}\` with the same \`winders\` on both storeys, ${copy}`,
+    };
+  }
   const nth = Math.floor(at / 2) + 1;
   const piece = at % 2 === 0 ? `flight ${nth}` : v.landings.length === 1 ? "the landing" : `landing ${nth}`;
   return {

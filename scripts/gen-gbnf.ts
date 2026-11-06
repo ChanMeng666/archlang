@@ -628,7 +628,10 @@ function rules(): [string, string][] {
       "stair-stmt",
       `"stair" rws id-opt ( "at" ws point ws "size" ws dims ws "dir" rws vert-dir ( ws "width" ws expr )? | "dir" rws vert-dir ws "width" ws expr ws "{" ws stair-piece ( ws stair-piece )+ ws "}" )`,
     ],
-    ["stair-piece", `( "flight" | "landing" ) rws "at" ws point ws "size" ws dims`],
+    [
+      "stair-piece",
+      `"flight" rws "at" ws point ws "size" ws dims | "landing" rws "at" ws point ws "size" ws dims ( ws "winders" ws expr )?`,
+    ],
     ["elevator-stmt", `"elevator" rws id-opt "at" ws point ws "size" ws dims`],
     ["escalator-stmt", `"escalator" rws id-opt "at" ws point ws "size" ws dims ws "dir" rws vert-dir`],
     ["vert-dir", `"up" | "down"`],
