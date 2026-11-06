@@ -21,7 +21,7 @@ import { expect, type Page, test } from "@playwright/test";
 // The playground's canonical decoder, run here in Node (Node ≥ 21.2 for deflate-raw; the
 // e2e-docs CI job pins Node 22).
 import { srcFromHash } from "../../playground/src/share.js";
-import { homeHero, ROOT } from "./fixtures.js";
+import { HOME_3D_PLAN, homeHero, previewLines, ROOT, threeDAssets, VIEW3D_PARAM } from "./fixtures.js";
 
 const read = (...p: string[]) => readFileSync(join(ROOT, ...p), "utf8").replace(/\r\n/g, "\n");
 const THEME = ["docs-site", ".vitepress", "theme"];
@@ -39,6 +39,11 @@ const FACTS_PLAN = /const PLAN = "([^"]+)"/.exec(read(...THEME, "FactsSection.vu
 /** The hero as the build emitted it (home-data.js): an agent-gallery pair, or its fallback. The
  *  gallery is not pinned corpus, so the hero is checked against the build, never its files. */
 const HERO = homeHero();
+/** The 3D preview's plans (public/3d/manifest.json), and the home band's. */
+const ASSETS_3D = threeDAssets(ROOT);
+const BAND = ASSETS_3D.find((a) => a.name === HOME_3D_PLAN)!;
+/** The home gallery's cards that carry the 2D/3D swap: those whose plan has a 3D preview. */
+const SWAP_PLANS = GALLERY_PLANS.filter((p) => ASSETS_3D.some((a) => a.name === p));
 
 const exampleSource = (name: string) => read("examples", `${name}.arch`);
 const heroSource = () => HERO.source.replace(/\r\n/g, "\n");
@@ -60,10 +65,16 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
   test("each `#z=` href decodes to the plan the page pictures beside it", async ({ page }) => {
     await page.goto("/");
     const links = page.locator('a[href*="playground.archlang.uk/#z="]');
-    // the hero sheet + one per gallery plan + the facts band
-    await expect(links).toHaveCount(1 + GALLERY_PLANS.length + 1);
+    // the hero sheet + the 3D band + one per gallery plan + the facts band
+    await expect(links).toHaveCount(1 + 1 + GALLERY_PLANS.length + 1);
 
     expect(await decode(await page.locator(".seam-hero .sheet__ctl--open").getAttribute("href"))).toBe(heroSource());
+    // The 3D band pictures BAND's drawing and opens that plan, on the 3D preview (`&3d`).
+    const band = page.locator(".same-source");
+    expect(await band.locator(".same-source__fig--plan img").getAttribute("src")).toBe(`/examples/${BAND.name}.svg`);
+    const bandHref = await band.locator(".same-source__open").getAttribute("href");
+    expect(bandHref?.endsWith(`&${VIEW3D_PARAM}`), `${bandHref} must open the 3D preview`).toBe(true);
+    expect(await decode(bandHref)).toBe(exampleSource(BAND.name));
     expect(await decode(await page.locator(".facts__open").getAttribute("href"))).toBe(exampleSource(FACTS_PLAN));
 
     const items = page.locator(".home-gallery__item");
@@ -82,8 +93,9 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
 
   test("every drawing the landing page asks for actually renders", async ({ page }) => {
     await page.goto("/");
-    // The gallery plus the Why cards' three figures (one drawing, then two pairs).
-    const imgs = page.locator(".home-gallery img, .why-card img");
+    // The gallery's drawings plus the Why cards' three figures (one drawing, then two pairs); the
+    // gallery's 3D posters are checked with the swap, below.
+    const imgs = page.locator(".home-gallery__art > img, .why-card img");
     await expect(imgs).toHaveCount(GALLERY_PLANS.length + 1 + 2 + 2);
     for (const img of await imgs.all()) {
       // Lazy: scroll it in and poll, rather than reading a 0 that only means "not asked for".
@@ -205,6 +217,178 @@ test.describe("the feature sheets on /examples", () => {
       await expect
         .poll(() => img.evaluate((el) => (el as HTMLImageElement).naturalWidth), { timeout: 10_000 })
         .toBeGreaterThan(0);
+    }
+  });
+});
+
+/**
+ * The 3D band (card X6, PS-D12): the plan beside its replay, poster-first. Nothing of the replay
+ * loads on the first screen (a lazy poster over a `preload="none"` video with no `poster`
+ * attribute, which a browser would fetch eagerly); it plays muted once half of it is in view and
+ * pauses when it leaves; under reduced motion it never starts by itself.
+ *
+ * `play()` and `pause()` are stubbed to count their calls and fire the media events, so the
+ * band's logic is tested without depending on the browser's H.264 decoder.
+ */
+const STUB_MEDIA = () => {
+  const w = window as unknown as { __plays: number; __pauses: number };
+  w.__plays = 0;
+  w.__pauses = 0;
+  HTMLMediaElement.prototype.play = function () {
+    w.__plays++;
+    this.dispatchEvent(new Event("playing"));
+    return Promise.resolve();
+  };
+  HTMLMediaElement.prototype.pause = function () {
+    w.__pauses++;
+    this.dispatchEvent(new Event("pause"));
+  };
+};
+const plays = (page: Page) => page.evaluate(() => (window as unknown as { __plays: number }).__plays);
+const videoFrame = (page: Page) => page.locator(".same-source__frame--video");
+
+test.describe("the 3D band", () => {
+  test("carries the package's lines, the plan, and a poster-first replay", async ({ page }) => {
+    const lines = previewLines(ROOT);
+    await page.goto("/");
+    const band = page.locator(".same-source");
+    await expect(band.locator("h2")).toHaveText(lines.title);
+    await expect(band.locator(".same-source__lede")).toHaveText(lines.rest);
+    await expect(band.locator(".same-source__limits")).toHaveText(lines.limits);
+    await expect(band.locator("a[href='/3d']")).toHaveText("What the 3D preview shows →");
+    await expect(band.locator(".same-source__open")).toHaveText("Try it in the playground →");
+
+    const video = band.locator("video");
+    await expect(video).toHaveAttribute("preload", "none");
+    expect(await video.getAttribute("autoplay"), "no autoplay attribute").toBeNull();
+    expect(await video.getAttribute("poster"), "a poster attribute is fetched eagerly").toBeNull();
+    expect(await video.evaluate((v) => (v as HTMLVideoElement).muted && (v as HTMLVideoElement).playsInline)).toBe(
+      true,
+    );
+    await expect(video.locator("source")).toHaveAttribute("src", BAND.video.mp4);
+    const poster = band.locator(".same-source__poster");
+    await expect(poster.locator("source")).toHaveAttribute("srcset", BAND.poster.webp);
+    await expect(poster.locator("img")).toHaveAttribute("src", BAND.poster.png);
+    await expect(poster.locator("img")).toHaveAttribute("loading", "lazy");
+    // The frames reserve their 16:9 boxes, so nothing below moves when they load.
+    for (const sel of [".same-source__fig--plan .same-source__frame", ".same-source__frame--video"]) {
+      const box = await band.locator(sel).boundingBox();
+      expect(Math.abs(box!.width / box!.height - 16 / 9), sel).toBeLessThan(0.02);
+    }
+  });
+
+  test("the video is not fetched until it is asked for, and the poster is one image", async ({ page }) => {
+    // A lazy image may load before it is on screen (Chromium starts some way below the
+    // viewport), so the poster is allowed early; the MP4 is not.
+    const fetched: string[] = [];
+    page.on("request", (r) => fetched.push(new URL(r.url()).pathname));
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    await page.waitForLoadState("networkidle");
+    await videoFrame(page).scrollIntoViewIfNeeded();
+    await expect
+      .poll(() => fetched.filter((p) => p === BAND.poster.webp || p === BAND.poster.png))
+      .toEqual([BAND.poster.webp]);
+    expect(fetched.filter((p) => p.startsWith("/3d/") && !p.includes(".poster."))).toEqual([]);
+  });
+
+  test("plays once half in view, pauses off-screen, and the button pauses it for good", async ({ page }) => {
+    await page.addInitScript(STUB_MEDIA);
+    await page.goto("/");
+    const fig = page.locator(".same-source__fig--3d");
+    await expect(fig).toHaveAttribute("data-state", "poster");
+    expect(await plays(page)).toBe(0);
+    await videoFrame(page).scrollIntoViewIfNeeded();
+    await expect(fig).toHaveAttribute("data-state", "playing");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await expect(fig).toHaveAttribute("data-state", "paused");
+    await videoFrame(page).scrollIntoViewIfNeeded();
+    await expect(fig).toHaveAttribute("data-state", "playing");
+    const toggle = page.locator(".same-source__toggle");
+    await expect(toggle).toHaveAccessibleName("Pause the replay");
+    await toggle.click();
+    await expect(fig).toHaveAttribute("data-state", "paused");
+    // Paused by the visitor: scrolling away and back does not start it again.
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await videoFrame(page).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    await expect(fig).toHaveAttribute("data-state", "paused");
+    await expect(toggle).toHaveAccessibleName("Play the replay");
+  });
+
+  test("under reduced motion it stays on the poster until the play button is pressed", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.addInitScript(STUB_MEDIA);
+    await page.goto("/");
+    const fig = page.locator(".same-source__fig--3d");
+    await videoFrame(page).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500);
+    await expect(fig).toHaveAttribute("data-state", "poster");
+    expect(await plays(page)).toBe(0);
+    await expect(page.locator(".same-source__poster img")).toBeVisible();
+    const toggle = page.locator(".same-source__toggle");
+    await expect(toggle).toHaveAccessibleName("Play the replay");
+    await toggle.focus();
+    await page.keyboard.press("Enter");
+    await expect(fig).toHaveAttribute("data-state", "playing");
+    expect(await plays(page)).toBe(1);
+  });
+});
+
+/** The gallery cards whose plan has a 3D preview swap their drawing for its poster (card X6). */
+test.describe("the gallery's 2D/3D swap", () => {
+  test("there is a card to swap (so the cases below are not vacuous)", () => {
+    expect(SWAP_PLANS.length).toBeGreaterThan(0);
+  });
+
+  test("a card with a 3D preview shows its poster on hover, and its badge toggles it", async ({ page }) => {
+    await page.goto("/");
+    const items = page.locator(".home-gallery__item");
+    for (let i = 0; i < GALLERY_PLANS.length; i++) {
+      const item = items.nth(i);
+      const has3d = SWAP_PLANS.includes(GALLERY_PLANS[i]!);
+      await expect(item.locator(".home-gallery__badge")).toHaveCount(has3d ? 1 : 0);
+      await expect(item.locator(".home-gallery__3d")).toHaveCount(has3d ? 1 : 0);
+      if (!has3d) continue;
+      const asset = ASSETS_3D.find((a) => a.name === GALLERY_PLANS[i])!;
+      const poster = item.locator(".home-gallery__3d");
+      await expect(poster.locator("source")).toHaveAttribute("srcset", asset.poster.webp);
+      await expect(poster.locator("img")).toHaveAttribute("src", asset.poster.png);
+      await expect(poster.locator("img")).toHaveAttribute("loading", "lazy");
+      const opacity = () => poster.evaluate((el) => getComputedStyle(el).opacity);
+      await item.scrollIntoViewIfNeeded();
+      await page.mouse.move(0, 0);
+      await expect.poll(opacity).toBe("0");
+      await item.locator(".home-gallery__open").hover();
+      await expect.poll(opacity).toBe("1");
+      await page.mouse.move(0, 0);
+      await expect.poll(opacity).toBe("0");
+      // Keyboard and tap: the badge is a toggle button.
+      const badge = item.locator(".home-gallery__badge");
+      await expect(badge).toHaveAttribute("aria-pressed", "false");
+      await badge.focus();
+      await page.keyboard.press("Enter");
+      await expect(badge).toHaveAttribute("aria-pressed", "true");
+      await expect.poll(opacity).toBe("1");
+      await page.keyboard.press("Space");
+      await expect(badge).toHaveAttribute("aria-pressed", "false");
+      await badge.click();
+      await expect(badge).toHaveAttribute("aria-pressed", "true");
+      // The poster loads, and the card's link still opens the plan it pictures.
+      await expect
+        .poll(() => poster.locator("img").evaluate((el) => (el as HTMLImageElement).naturalWidth), { timeout: 10_000 })
+        .toBeGreaterThan(0);
+      expect(await decode(await item.locator("a.plan-open").getAttribute("href"))).toBe(exampleSource(asset.name));
+    }
+  });
+
+  test("under reduced motion the swap is instant", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+    for (const name of SWAP_PLANS) {
+      const poster = page.locator(".home-gallery__item").nth(GALLERY_PLANS.indexOf(name)).locator(".home-gallery__3d");
+      expect(await poster.evaluate((el) => getComputedStyle(el).transitionDuration)).toBe("0s");
     }
   });
 });

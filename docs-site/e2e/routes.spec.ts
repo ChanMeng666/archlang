@@ -213,6 +213,40 @@ test.describe("the hand-written pages serve a raw /<page>.md copy", { tag: "@pro
   }
 });
 
+/**
+ * The 3D preview (card X6): the `/3d` page beside the `public/3d/` directory of the same name, and
+ * every file `public/3d/manifest.json` lists, byte for byte the size the manifest records.
+ * Against production this is a staleness probe too: a deploy that missed a regenerated asset fails.
+ */
+test.describe("the 3D preview's page and assets", { tag: "@prod" }, () => {
+  test("/3d is its page, not the asset directory or a 404", async ({ page }) => {
+    const res = await page.goto("/3d");
+    expect(res?.status()).toBe(200);
+    expect(res?.headers()["content-type"] ?? "").toContain("text/html");
+    await expect(page.locator("h1")).toHaveText(firstHeading(readRepoFile("docs-site/3d.md")).slice(2));
+  });
+
+  test("/sitemap.xml lists /3d", async ({ request }) => {
+    expect(await (await request.get("/sitemap.xml")).text()).toContain("<loc>https://archlang.uk/3d</loc>");
+  });
+
+  test("every file the manifest lists is served, at its recorded size", async ({ request }) => {
+    const manifest = JSON.parse(readRepoFile("docs-site/public/3d/manifest.json")) as {
+      assets: Array<{ files: Array<{ path: string; bytes: number }> }>;
+    };
+    const files = manifest.assets.flatMap((a) => a.files);
+    expect(files.length).toBeGreaterThanOrEqual(24);
+    for (const f of files) {
+      const res = await request.get(`/3d/${f.path}`);
+      expect(res.status(), f.path).toBe(200);
+      expect(res.headers()["content-type"] ?? "", f.path).not.toContain("text/html");
+      expect((await res.body()).length, f.path).toBe(f.bytes);
+    }
+    const res = await request.get("/3d/manifest.json");
+    expect(res.status()).toBe(200);
+  });
+});
+
 test.describe("the example gallery", { tag: "@prod" }, () => {
   test("the derived gallery is non-trivial and holds the flagships", () => {
     expect(GALLERY_EXAMPLES.length).toBeGreaterThan(5);
@@ -361,7 +395,7 @@ test.describe("the landing page does not scroll sideways", () => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/");
     const client = await page.evaluate(() => document.documentElement.clientWidth);
-    for (const sel of [".why", ".how", ".home-gallery", ".isisnt", ".facts", ".agents", ".topics"]) {
+    for (const sel of [".same-source", ".why", ".how", ".home-gallery", ".isisnt", ".facts", ".agents", ".topics"]) {
       const box = await page.locator(sel).boundingBox();
       expect(box, `${sel} must render on the home page`).not.toBeNull();
       expect((box as { width: number }).width, `${sel} is no longer full-bleed`).toBeGreaterThanOrEqual(client);

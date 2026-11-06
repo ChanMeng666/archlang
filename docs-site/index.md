@@ -8,6 +8,8 @@ layout: home
 # stock VitePress hero nor the VPFeatures grid renders.
 ---
 
+<SameSource />
+
 <WhyCards />
 
 <HowSteps />

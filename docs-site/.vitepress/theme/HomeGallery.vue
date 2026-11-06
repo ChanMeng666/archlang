@@ -4,10 +4,21 @@
 // cannot show one plan and open another (homepage-links.spec.ts decodes every link). Captions are
 // plain words, at most 20 (test/docs-home-copy.test.ts). These are the language's own examples:
 // the showcase's fan studies never appear here.
+//
+// A card whose plan has a 3D preview in public/3d/manifest.json (ASSETS_3D, card X6) swaps its
+// drawing for the preview's poster on hover or focus of its link, and its "3D" badge toggles the
+// swap for a tap or a key. The drawing stays the card's picture; the poster lies over it, lazy.
+import { reactive } from "vue";
 import { EXAMPLE_LINKS } from "./examples-data.js";
 import { EXAMPLE_FACTS } from "./home-data.js";
+import { ASSETS_3D } from "./three-d-data.js";
 
 type ExampleName = keyof typeof EXAMPLE_LINKS;
+type Poster = (typeof ASSETS_3D)[number]["poster"];
+
+const POSTERS: ReadonlyMap<string, Poster> = new Map(ASSETS_3D.map((a) => [a.name, a.poster]));
+/** The cards whose badge is pressed. */
+const shown = reactive<Record<string, boolean>>({});
 
 const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
   { example: "furnished-flat", caption: "A two-bedroom flat with every room furnished, each piece standing against its wall." },
@@ -29,10 +40,39 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
       </p>
       <ul class="home-gallery__grid">
         <li v-for="p in PLANS" :key="p.example" class="home-gallery__item">
-          <a class="home-gallery__open plan-open" :href="EXAMPLE_LINKS[p.example]" target="_blank" rel="noopener">
-            <img :src="`/examples/${p.example}.svg`" :alt="`${p.caption} Compiled from ${p.example}.arch.`" loading="lazy" />
-            <span class="home-gallery__cta">Open in playground&nbsp;↗</span>
-          </a>
+          <div class="home-gallery__card" :data-show="shown[p.example] ? '3d' : 'plan'">
+            <a class="home-gallery__open plan-open" :href="EXAMPLE_LINKS[p.example]" target="_blank" rel="noopener">
+              <span class="home-gallery__art">
+                <img :src="`/examples/${p.example}.svg`" :alt="`${p.caption} Compiled from ${p.example}.arch.`" loading="lazy" />
+                <picture
+                  v-if="POSTERS.get(p.example)"
+                  class="home-gallery__3d"
+                  :aria-hidden="shown[p.example] ? undefined : 'true'"
+                >
+                  <source :srcset="POSTERS.get(p.example)?.webp" type="image/webp" />
+                  <img
+                    :src="POSTERS.get(p.example)?.png"
+                    :width="POSTERS.get(p.example)?.width"
+                    :height="POSTERS.get(p.example)?.height"
+                    :alt="`The 3D preview of ${p.example}.arch, from the same source.`"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </picture>
+              </span>
+              <span class="home-gallery__cta">Open in playground&nbsp;↗</span>
+            </a>
+            <button
+              v-if="POSTERS.get(p.example)"
+              type="button"
+              class="home-gallery__badge"
+              :aria-pressed="shown[p.example] ? 'true' : 'false'"
+              :aria-label="`Show the 3D preview of ${p.example}.arch`"
+              @click="shown[p.example] = !shown[p.example]"
+            >
+              3D
+            </button>
+          </div>
           <p class="home-gallery__cap">{{ p.caption }}</p>
           <p class="home-gallery__facts">
             {{ p.example }}.arch · {{ EXAMPLE_FACTS[p.example].rooms }} rooms ·
@@ -105,12 +145,67 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
   outline: 2px solid var(--redline);
   outline-offset: 2px;
 }
-.home-gallery__open img {
+.home-gallery__card {
+  position: relative;
+}
+.home-gallery__art {
+  position: relative;
+  display: block;
+}
+.home-gallery__art > img {
   display: block;
   width: 100%;
   height: 240px;
   padding: 10px;
   object-fit: contain;
+}
+/* The 3D poster lies over the drawing: shown on hover or focus of the card's link, or while the
+   badge is pressed. */
+.home-gallery__3d,
+.home-gallery__3d img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.home-gallery__3d {
+  background: var(--paper-panel);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.home-gallery__open:hover .home-gallery__3d,
+.home-gallery__open:focus-visible .home-gallery__3d,
+.home-gallery__card[data-show="3d"] .home-gallery__3d {
+  opacity: 1;
+}
+.home-gallery__badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: 44px;
+  min-height: 32px;
+  padding: 4px 10px;
+  border: 1px solid var(--hairline);
+  border-radius: 2px;
+  background: var(--paper);
+  font-family: var(--font-display);
+  font-variation-settings: "wdth" 88;
+  font-weight: 600;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  color: var(--redline-ink);
+  cursor: pointer;
+}
+.home-gallery__badge[aria-pressed="true"] {
+  border-color: var(--redline-ink);
+  background: var(--redline-ink);
+  color: #fff;
+}
+.home-gallery__badge:focus-visible {
+  outline: 2px solid var(--redline);
+  outline-offset: 2px;
 }
 .home-gallery__cta {
   display: block;
@@ -137,7 +232,8 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
   color: var(--ink-muted);
 }
 @media (prefers-reduced-motion: reduce) {
-  .home-gallery__open {
+  .home-gallery__open,
+  .home-gallery__3d {
     transition: none;
   }
 }

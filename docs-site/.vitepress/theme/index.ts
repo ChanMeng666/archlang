@@ -25,6 +25,9 @@ import HowSteps from "./HowSteps.vue";
 import HomeGallery from "./HomeGallery.vue";
 import IsIsntTable from "./IsIsntTable.vue";
 import TopicsRow from "./TopicsRow.vue";
+import SameSource from "./SameSource.vue";
+import ThreeDPlans from "./ThreeDPlans.vue";
+import PreviewLine from "./PreviewLine.vue";
 
 export default {
   extends: DefaultTheme,
@@ -43,5 +46,8 @@ export default {
     app.component("HomeGallery", HomeGallery);
     app.component("IsIsntTable", IsIsntTable);
     app.component("TopicsRow", TopicsRow);
+    app.component("SameSource", SameSource);
+    app.component("ThreeDPlans", ThreeDPlans);
+    app.component("PreviewLine", PreviewLine);
   },
 } satisfies Theme;

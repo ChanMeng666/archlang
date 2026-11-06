@@ -233,6 +233,11 @@ const PAGE_META = [
     "Mermaid has no floor plan diagram type. ArchLang is a separate text language for floor plans, and this page compares the two and says when to use each one.",
   ],
   [
+    "/3d",
+    "The 3D preview of a floor plan",
+    "A separate package extrudes the 3D preview from the same .arch file as the floor plan: walls, openings, floors, stairs and furniture, with a replay and a GLB.",
+  ],
+  [
     "/adr/",
     "Architecture decision records",
     "Index of ArchLang's architecture decision records: the decisions behind the compiler, each with its context, the decision taken and the trade-offs accepted.",
@@ -751,6 +756,7 @@ export default defineConfig({
           {
             items: [
               { text: "Guide", link: "/guide" },
+              { text: "The 3D preview", link: "/3d" },
               { text: "Language reference", link: "/reference" },
               { text: "CLI reference", link: "/cli" },
               { text: "MCP server", link: "/mcp" },
@@ -793,6 +799,7 @@ export default defineConfig({
           { text: "ArchLang vs Mermaid", link: "/vs-mermaid" },
           { text: "Examples gallery", link: "/examples" },
           { text: "Showcase", link: "/showcase" },
+          { text: "The 3D preview", link: "/3d" },
         ],
       },
       {
