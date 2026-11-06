@@ -107,14 +107,15 @@ test.describe("one view switch (PG-D3)", () => {
     const status = page.locator("#status");
     await expect(status).toHaveClass(/\berr\b/);
     await expect(status).toBeVisible();
-    await expect(status).toContainText(/^\d+ errors? — open Source to see them/);
+    // The message itself is `#statusText`'s; `#status` also holds the dismiss button and whitespace.
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
     // On the stage, not in the header.
     expect(await status.evaluate((s) => !!s.closest(".pane") && !s.closest("header"))).toBe(true);
     await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
     // Dismissible: the notice goes, the dot (where to look) stays.
     await page.getByRole("button", { name: "Dismiss this message" }).click();
     await expect(status).not.toHaveClass(/\bshow\b/);
-    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors?/);
+    await expect(page.locator("#statusText")).toHaveText(/^\d+ errors? — open Source to see them$/);
     await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
 
     // Fixed in the editor: the notice and the dot are gone, and nothing replaces them.
