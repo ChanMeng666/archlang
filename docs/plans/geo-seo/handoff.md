@@ -23,16 +23,14 @@ awesome-list entries, three nudges and two rebases; the launch drafts were refre
 (growth #55). Later the same day, by agents: Docker catalog PR docker/mcp-registry#6704 (validate and build
 passed locally), the Glama description, Perplexity signed out in Chrome, the Cursor install link
 verified (the deeplink wrote the stdio entry into `~/.cursor/mcp.json`), the Cline form filled in
-the owner's browser. **Still the owner's hands:** Cline (test with Cline, add the logo, tick both
-boxes, submit), ClawHub login (`clawhub login`, device flow; the CLI is installed and
-`clawhub skill publish skills/archlang --slug archlang --name ArchLang` dry-runs clean) then the
-awesome-openclaw entry, the VS Code install-link click, the YouTube decision (the narrated demo
-`HVRRvgif8cQ` is Private and shows 1.36.0: publish it or wait for a current film), dev.to login
-(then an agent saves the two drafts; the owner publishes), Reddit rules read by hand (every
-automated route is blocked), Claude plugin directory and Cursor Marketplace status, and the posts
-(Show HN 2026-12-01, two dev.to, two listicle messages, r/floorplan). Added from the panel run: the next Perplexity leg needs a signed-out
-session, so the owner signs out of Perplexity in Chrome (or says an agent may) before 2026-12-01.
-The run also found the frozen P25 prompt contains an em dash (recorded as a finding, not changed).
+the owner's browser. On 2026-11-07, with the owner online: ClawHub skill published (live, scan clean); the YouTube demo
+made public at the owner's word; two dev.to drafts saved (unpublished; the owner publishes after
+re-running the snippets, since draft 1 still carries 1.36.0 notes and draft 2 lacks its
+`pointInPolygon` helper); the Cursor install link verified; Cline deferred by the owner; the
+awesome-openclaw entry deferred until the skill has users. **Still the owner's hands:** publish the
+two dev.to drafts, read r/floorplan's rules by hand (every automated route is blocked) and post
+there if wanted, the two listicle messages, Show HN on 2026-12-01, Claude plugin directory and Cursor
+Marketplace status checks, and the VS Code install link if a VS Code machine is at hand.
 
 ## Cadence
 
