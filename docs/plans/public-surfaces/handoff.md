@@ -73,10 +73,7 @@ always beside its plan (PS-D12). Every card shipped the same day.
 - **#529 after the release:** it changed the package README wording, so the npm pages carry it at
   the next release.
 - **Residue:**
-  - ST.1, a lint comparing a stair's drawn treads with its storey height;
-  - asset-check hardening: check the committed PNG's own pixels, cap the plan PNG size, declare
-    `pngjs` in archlang-3d;
-  - pitched roofs in 3D;
+  - backlog ST.1, PG.1–PG.3 and 3D.1–3D.5;
   - the Glama description (owner login).
 
 ## What the revision changed (and why)

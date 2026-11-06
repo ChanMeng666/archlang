@@ -235,6 +235,25 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **`npx tsx test/keep-weak-law-gen.ts` needs a reason argument** and prints only a usage line without one, so a
   conflict in `test/keep-byte-identity-baseline.ts` stays unresolved if you do not read its output.
 - **`check:drift` reports the generated `_headers` as drift while a new docs page is uncommitted.** Commit, then run it.
+- **Two green PRs can break `main` together.** #521 required one MP4 per 3D plan and #523 added
+  plans without one; each PR's CI ran without the other, and `main`'s docs build (and deploy) went
+  red until #525. When two open PRs share a data shape (a manifest, a JSON schema, a component's
+  props), rebase the second after the first merges, and read `main`'s own CI after every merge.
+- **CI runs only on PRs whose base is `main`.** A stacked PR gets no CI, and retargeting it to
+  `main` fires `edited`, not a run: push a commit (or rebase and force-push) to start one.
+- **`check:drift` reads committed files.** An uncommitted edit to a file with a generated block
+  (`README.md`, `llms.txt`, the MCP and VS Code READMEs) reads as drift: commit, then run it.
+- **`python3` on this machine is a stub that silently does nothing.** Use `python`.
+- **A worktree's playground typecheck can miss `@resvg/resvg-wasm`** (the primary checkout's
+  `node_modules` lacks it): run `npm ci` in the worktree rather than junctioning.
+- **vsce rejects an SVG image from a host outside its badge allow-list** (raw.githubusercontent.com
+  included): the VS Code README uses PNGs.
+- **archlang-3d key frames are pinned from CI's printed hashes.** A change that moves frames leaves
+  `e2e/fixtures/keyframe-baseline.json` alone, `check-3d` prints the new hashes, and a follow-up
+  commit on the same PR pins them with the run link (`e2e/fixtures/README.md`). `check-3d` is not a
+  required check, so never merge with it red.
+- **Cloudflare static assets answer a `Range` request with 200, not 206**, so an MP4 may not play
+  on Safari: every replay on the sites keeps its poster and an MP4 link as the fallback.
 - **`2>nul` in the Bash tool on Windows creates files** named `nul`, `nul.L0`, `nul.L1` in the
   working tree (it is cmd syntax). Write `2>/dev/null`.
 

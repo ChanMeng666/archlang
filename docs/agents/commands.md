@@ -49,6 +49,9 @@
   skills' CLI) and checks what it wrote; `prove:openai-plugin` re-checks a ZIP. `--plugin-version=<v>`
   moves the listing's version and leaves the pin on the core. Neither is in CI; an agent may upload
   the draft, and the owner submits and publishes (`docs/integrations.md`).
+- `gen:doors` writes the "Try it" blocks from `site-shared/doors.json` into `README.md`,
+  `packages/mcp/README.md`, `editors/vscode/README.md` and `llms.txt` (in `gen:all` and the drift
+  gate). Edit the JSON, never a block.
 - `gen:font-cjk` needs Python + fonttools + network and sits outside the drift gate.
 - `gen:3d-assets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) writes the 3D preview's posters,
   replay MP4s, GLBs and `manifest.json` into `docs-site/public/3d/`. It needs Chromium and ffmpeg
@@ -167,7 +170,17 @@ Two things it pins:
   still fails, the remedy is `gh run rerun <id> --failed` (idempotent; backlog 4.7).
 
 `@chanmeng666/arch-plan` is published by `release.yml` in its own job, `publish-arch-plan`, after the
-core, so a failure there never blocks the core, the shim or the registry.
+core, so a failure there never blocks the core, the shim or the registry. `publish-archlang-3d`
+likewise runs after `publish`, so a release can raise archlang-3d's core peer floor to the core it
+publishes. The VS Code `.vsix` is uploaded by the agent through Claude in Chrome when the owner's
+browser is signed in (release-check, "VS Code Marketplace upload"); then `publish-openvsx.yml` runs
+on the tag. A step that fails after npm has published (a GitHub 500, the registry) is finished by
+re-running the run; the registry probe asks for `version=latest` (#512), so a re-run skips a
+version already published.
+
+The owner says "release" for each release; the agent then runs the whole path (release PR, tag,
+publish, Marketplace, Open VSX) and reports. A PR merged after a release reaches the npm and
+Marketplace pages only at the next one.
 
 ## CLI contract
 
