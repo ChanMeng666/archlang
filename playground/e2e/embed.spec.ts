@@ -47,6 +47,20 @@ test.describe("embed page", () => {
     await expect(page.locator(".embed-brand img")).toBeVisible();
   });
 
+  // Card PG5a: the embed imports the compiler statically, and the compiler once imported the
+  // jsPDF chunk with it. The embed has no PDF export, so it fetches no jsPDF or html2canvas at all
+  // (the startup-chunks gate in preview3d.spec.ts reads the same from the build).
+  test("fetches no jsPDF or html2canvas chunk", async ({ page }) => {
+    const fetched: string[] = [];
+    page.on("request", (r) => {
+      if (/\/assets\/(?:jspdf|html2canvas)[-.][^/]*\.js$/.test(r.url())) fetched.push(r.url());
+    });
+    await page.goto(`/embed.html${await embedHash(SIMPLE_PLAN)}`, { waitUntil: "networkidle" });
+    await waitForPlan(page);
+    await expect(page.locator(".pz-stage svg")).toContainText("Main");
+    expect(fetched, "no jsPDF or html2canvas chunk is fetched by the embed").toEqual([]);
+  });
+
   test("editable=1 shows the editor and live-recompiles", async ({ page }) => {
     await page.goto(`/embed.html${await embedHash(SIMPLE_PLAN, "editable=1")}`);
     await waitForPlan(page);
