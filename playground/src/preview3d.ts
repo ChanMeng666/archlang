@@ -19,19 +19,31 @@
  * (presets, Reset, storeys shown). Grabbing the view pauses the playback; scrubbing or Replay hands
  * the camera back to the replay; an edit keeps the view the user left.
  *
- * A new plan opens on the replay's END frame (public-surfaces card X1): the iso view, settled, with
- * the storeys stacked (card X2), drawn at once and not played. Replay plays the drafting-order replay
- * from its start; under reduced motion it shows the end frame (`playFrom`). The caption is the
- * PS-D12 line and the limits line (`PREVIEW_LABEL`, `PREVIEW_LIMITS`), with a link to the page that
- * says what the preview shows.
+ * The 3D stage (playground-minimal card PG1, ruling PG-D4): the canvas fills the whole tab, its
+ * drawing size following the box it sits in (`ResizeObserver`, CSS size × device pixels, capped;
+ * the package's `resize`), and every control floats over it, dimmed until the pointer or the focus
+ * is on it: Replay, the caption's lead and its ⓘ bottom-left, the scrubber a thin line along the
+ * foot, ⟲ Reset, `View ▾` (the package's compact toolbar), the storeys and `GLB ↓` top-right. The
+ * ⓘ card holds the PS-D12 line, the limits line and the link (`PREVIEW_LABEL`, `PREVIEW_LIMITS`);
+ * every word stays in the page, only its place changed. The facts the replay HTML lays over its
+ * canvas are not laid over this one: the page's own facts line says them.
+ *
+ * What the view does on its own: the session's FIRST open plays the drafting-order replay once,
+ * then turns the building slowly (a turntable: the package's `spin`, one step per animation frame);
+ * the first press, wheel, key or input anywhere on the stage stops the turntable for good. Every
+ * later open, and a new plan, shows the replay's END frame (public-surfaces card X1): the iso view,
+ * settled, with the storeys stacked (card X2). Under reduced motion nothing plays or turns: the end
+ * frame. A one-time coach mark over the canvas says how to move it, until the first interaction or
+ * five seconds; the page remembers it was shown (`localStorage`, every access guarded, so the page
+ * works without storage). The full keyboard hint is the canvas's description, visually hidden.
  *
  * In view mode it is the stage's other half (public-surfaces card X5): the Plan | 3D switch on the
  * stage shows it in place of the drawing, `&3d` in the hash opens on it, and the page lays its knobs
- * over the canvas (`overlay`). Download GLB writes the whole plan in the page (glb-export.ts, its
- * own chunk), and says that the browser does not validate it.
+ * over the canvas (`overlay`). `GLB ↓` writes the whole plan in the page (glb-export.ts, its own
+ * chunk, loaded on the first click), and its description says that the browser does not validate it.
  */
 import { compile } from "archlang";
-import { type Mesh3D, replayFacts, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
+import { type Mesh3D, storeysOf, viewMesh } from "@chanmeng666/archlang-3d";
 import {
   mountReplay,
   PREVIEW_ABOUT_URL,
@@ -46,15 +58,30 @@ import {
 } from "@chanmeng666/archlang-3d/browser";
 import { adapt3d, mesh3d } from "./plan3d.js";
 
-/** The canvas's drawing size (CSS scales it to the pane); 16:9 like the replay HTML. */
+/** The drawing size before the stage has a size of its own (a hidden tab): the replay HTML's 16:9. */
 const WIDTH = 960;
 const HEIGHT = 540;
+/**
+ * The drawing buffer: the canvas's CSS size × the device's pixel ratio, the ratio at most this, and
+ * the buffer at most `MAX_PIXELS` (each frame is read back into the 2D canvas the page shows).
+ */
+const MAX_DPR = 2;
+const MAX_PIXELS = 2_400_000;
 /** One play-through, in seconds: shorter than the 15 s export, a preview is glanced at. */
-const SECONDS = 10;
+const SECONDS = 6;
+/** The turntable after the first open's play-through: degrees per second (a turn in 45 s). */
+const TURN_DEG_PER_S = 8;
+/** The coach mark fades after this long if nothing has touched the view. */
+const COACH_MS = 5000;
+/** `localStorage`: the coach mark has been shown. `sessionStorage`: the first open has played. */
+const COACH_KEY = "archlang.pg.coach3d";
+const PLAYED_KEY = "archlang.pg.played3d";
+/** What the coach mark says (the hint, `VIEW_HINT`, is the full text, keys included). */
+export const COACH_TEXT = "Drag to turn · scroll to zoom · right-drag to pan";
 
 /** The package's own command for the validated GLB of a plan file (card X5's note). */
 export const GLB_COMMAND = "npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb";
-/** Download GLB's note, around {@link GLB_COMMAND}: what the browser does, and what it does not. */
+/** `GLB ↓`'s note, around {@link GLB_COMMAND}: what the browser does, and what it does not. */
 export const GLB_NOTE_LEAD = "The whole plan as a GLB, written in your browser and not validated here. ";
 export const GLB_NOTE_TAIL = " writes the same file and checks it with the Khronos glTF validator.";
 
@@ -72,8 +99,9 @@ export interface Drawn {
 export interface Preview3d {
   /**
    * The tab was opened. A new plan or storey (`level`: the switcher's selection, `null` = none)
-   * is built and shown at its end frame (Replay plays it); the same one resumes where it was
-   * hidden. `drawn`, when given, is the editor's compile of `source` (else this tab compiles it).
+   * is built and shown at its end frame (Replay plays it), except on the session's first open,
+   * which plays it once and turns; the same one resumes where it was hidden. `drawn`, when given,
+   * is the editor's compile of `source` (else this tab compiles it).
    */
   show: (source: string, level: number | null, drawn?: Drawn) => void;
   /** The plan or the storey changed while the tab is open: rebuild and go on from the current t. */
@@ -94,22 +122,59 @@ declare global {
   }
 }
 
+/** Storage that may be missing or throw (a private window, blocked site data): never fatal. */
+function stored(area: "localStorage" | "sessionStorage", key: string): boolean {
+  try {
+    return window[area].getItem(key) === "1";
+  } catch {
+    return false;
+  }
+}
+function store(area: "localStorage" | "sessionStorage", key: string): void {
+  try {
+    window[area].setItem(key, "1");
+  } catch {
+    /* the page works without it */
+  }
+}
+
+const reducedMotion = (): boolean => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true;
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+/** The coach mark's glyph: a hand with a curved two-way arrow over it (inline, no image asset). */
+function dragGlyph(): SVGSVGElement {
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", "0 0 48 48");
+  svg.setAttribute("width", "40");
+  svg.setAttribute("height", "40");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  for (const d of [
+    // The arrow: an arc over the hand, a head at each end.
+    "M9 15 C 16 6, 32 6, 39 15",
+    "M9 15 l 1 -6 M9 15 l 6 1",
+    "M39 15 l -1 -6 M39 15 l -6 1",
+    // The hand: a pointing finger, the folded fingers and the palm.
+    "M21 36 V 21 a 2.5 2.5 0 0 1 5 0 V 30 M26 28 a 2.5 2.5 0 0 1 5 0 V 31 M31 30 a 2.5 2.5 0 0 1 5 0 V 35 c 0 5 -3 8 -8 8 h -3 c -3 0 -5 -2 -7 -4 l -5 -6 a 2.5 2.5 0 0 1 4 -3 l 3 3",
+  ]) {
+    const path = document.createElementNS(SVG_NS, "path");
+    path.setAttribute("d", d);
+    svg.append(path);
+  }
+  return svg;
+}
+
+const btn = (text: string, cls: string, label?: string): HTMLButtonElement => {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.className = cls;
+  b.textContent = text;
+  if (label) b.setAttribute("aria-label", label);
+  return b;
+};
+
 export function mountPreview3d(host: HTMLElement): Preview3d {
   host.replaceChildren();
-  // The PS-D12 line, its first sentence in bold, then the link and the limits line.
-  const label = document.createElement("p");
-  label.className = "p3d-label";
-  const lead = document.createElement("strong");
-  lead.textContent = PREVIEW_LEAD;
-  const about = document.createElement("a");
-  about.href = PREVIEW_ABOUT_URL;
-  about.target = "_blank";
-  about.rel = "noopener";
-  about.textContent = "What it shows";
-  label.append(lead, PREVIEW_LABEL.slice(PREVIEW_LEAD.length), " ", about);
-  const limits = document.createElement("p");
-  limits.className = "p3d-limits";
-  limits.textContent = PREVIEW_LIMITS;
 
   const stage = document.createElement("div");
   stage.className = "p3d-stage";
@@ -117,47 +182,24 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   canvas.className = "p3d-canvas";
   // It takes the pointer and keys (the free camera, card CR4), so it is an application, not an image.
   canvas.setAttribute("role", "application");
-  const strip = document.createElement("div");
-  strip.className = "p3d-strip";
-  strip.setAttribute("role", "group");
-  strip.setAttribute("aria-label", "Plan facts");
-  strip.hidden = true;
-  stage.append(canvas, strip);
 
-  const controls = document.createElement("div");
-  controls.className = "p3d-controls";
-  const play = document.createElement("button");
-  play.type = "button";
-  play.className = "repair-btn";
-  play.textContent = "Replay ▸";
-  play.setAttribute("aria-label", "Replay: the plan drawing itself in its authoring order, then rising");
-  const scrub = document.createElement("input");
-  scrub.type = "range";
-  scrub.min = "0";
-  scrub.max = "1";
-  scrub.step = "0.001";
-  scrub.value = "1";
-  scrub.setAttribute("aria-label", "Replay position");
-  // The specs find it by this, not by its type: the knobs over the canvas are range inputs too.
-  scrub.dataset.role = "scrub";
-  controls.append(play, scrub);
-
+  // ---- top-right: ⟲ Reset, View ▾ and the storeys (the package's compact toolbar), GLB ↓ ----
+  const top = document.createElement("div");
+  top.className = "p3d-float p3d-top";
   // The free camera's toolbar (card CR4), rebuilt with each replay.
   const views = document.createElement("div");
   views.className = "p3d-views";
 
-  // Download GLB (card X5): the whole plan, written in the page by the package's own writer, in a
-  // chunk of its own loaded on the first click (glb-export.ts). Said plainly: the browser does not
-  // run the validator the CLI runs.
+  // GLB ↓ (card X5; PG4 moves it into the Share/Export menu): the whole plan, written in the page
+  // by the package's own writer, in a chunk of its own loaded on the first click (glb-export.ts).
+  // Said plainly, in its description: the browser does not run the validator the CLI runs.
   const glb = document.createElement("div");
   glb.className = "p3d-glb";
-  const glbBtn = document.createElement("button");
-  glbBtn.type = "button";
-  glbBtn.className = "repair-btn";
-  glbBtn.textContent = "Download GLB";
+  const glbBtn = btn("GLB ↓", "p3d-btn", "Download GLB");
+  glbBtn.title = `${GLB_NOTE_LEAD}${GLB_COMMAND}${GLB_NOTE_TAIL}`;
   glbBtn.setAttribute("aria-describedby", "p3d-glb-note");
   const glbNote = document.createElement("p");
-  glbNote.className = "p3d-glb-note";
+  glbNote.className = "p3d-glb-note p3d-sr";
   glbNote.id = "p3d-glb-note";
   const cmd = document.createElement("code");
   cmd.className = "p3d-glb-code";
@@ -184,16 +226,121 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         glbBtn.disabled = false;
       });
   });
+  top.append(views, glb);
+
+  // ---- bottom-left: ▶ Replay, the caption's lead and its ⓘ card ----
+  const foot = document.createElement("div");
+  foot.className = "p3d-float p3d-foot";
+  const play = btn("▶ Replay", "p3d-btn", "Replay: the plan drawing itself in its authoring order, then rising");
+  const caption = document.createElement("p");
+  caption.className = "p3d-lead";
+  const leadText = document.createElement("span");
+  leadText.textContent = PREVIEW_LEAD;
+  const infoBtn = btn("ⓘ", "p3d-info-btn", "About the 3D preview: what it shows and its limits");
+  infoBtn.setAttribute("aria-expanded", "false");
+  infoBtn.setAttribute("aria-controls", "p3d-info");
+  caption.append(leadText, " ", infoBtn);
+  // The PS-D12 line, its first sentence in bold, then the link; the limits line under it.
+  const info = document.createElement("div");
+  info.className = "p3d-info";
+  info.id = "p3d-info";
+  info.setAttribute("role", "note");
+  info.hidden = true;
+  const label = document.createElement("p");
+  label.className = "p3d-label";
+  const lead = document.createElement("strong");
+  lead.textContent = PREVIEW_LEAD;
+  const about = document.createElement("a");
+  about.href = PREVIEW_ABOUT_URL;
+  about.target = "_blank";
+  about.rel = "noopener";
+  about.textContent = "What it shows";
+  label.append(lead, PREVIEW_LABEL.slice(PREVIEW_LEAD.length), " ", about);
+  const limits = document.createElement("p");
+  limits.className = "p3d-limits";
+  limits.textContent = PREVIEW_LIMITS;
+  info.append(label, limits);
+  foot.append(info, play, caption);
+
+  const away = (e: Event): void => {
+    if (!foot.contains(e.target as Node)) shutInfo(false);
+  };
+  const openInfo = (): void => {
+    info.hidden = false;
+    infoBtn.setAttribute("aria-expanded", "true");
+    document.addEventListener("pointerdown", away, true);
+  };
+  const shutInfo = (refocus: boolean): void => {
+    if (info.hidden) return;
+    info.hidden = true;
+    infoBtn.setAttribute("aria-expanded", "false");
+    document.removeEventListener("pointerdown", away, true);
+    if (refocus) infoBtn.focus();
+  };
+  infoBtn.addEventListener("click", () => (info.hidden ? openInfo() : shutInfo(false)));
+  foot.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || info.hidden) return;
+    e.preventDefault();
+    shutInfo(true);
+  });
+
+  // ---- the scrubber: a thin line along the canvas's foot, grown on hover and focus ----
+  const scrub = document.createElement("input");
+  scrub.type = "range";
+  scrub.className = "p3d-float p3d-scrub";
+  scrub.min = "0";
+  scrub.max = "1";
+  scrub.step = "0.001";
+  scrub.value = "1";
+  scrub.setAttribute("aria-label", "Replay position");
+  // The specs find it by this, not by its type: the knobs over the canvas are range inputs too.
+  scrub.dataset.role = "scrub";
+  const setScrub = (t: number): void => {
+    scrub.value = String(t);
+    scrub.style.setProperty("--p", `${Math.round(Number(scrub.value) * 1000) / 10}%`);
+  };
+  setScrub(1);
+
+  // ---- the coach mark: once per browser, over the canvas, until touched or five seconds ----
+  const coach = document.createElement("div");
+  coach.className = "p3d-coach";
+  // The hint (the canvas's description) says it in full; this is its picture.
+  coach.setAttribute("aria-hidden", "true");
+  coach.hidden = true;
+  const coachText = document.createElement("span");
+  coachText.textContent = COACH_TEXT;
+  coach.append(dragGlyph(), coachText);
+  let coachTimer = 0;
+  const fadeCoach = (): void => {
+    if (coachTimer) clearTimeout(coachTimer);
+    coachTimer = 0;
+    if (coach.hidden || coach.classList.contains("p3d-coach-gone")) return;
+    coach.classList.add("p3d-coach-gone");
+    // Gone from the layer once faded (at once under reduced motion, where nothing transitions).
+    setTimeout(
+      () => {
+        coach.hidden = true;
+      },
+      reducedMotion() ? 0 : 400,
+    );
+  };
+  const showCoach = (): void => {
+    if (stored("localStorage", COACH_KEY) || !coach.hidden) return;
+    store("localStorage", COACH_KEY);
+    coach.hidden = false;
+    coachTimer = window.setTimeout(fadeCoach, COACH_MS);
+  };
 
   const message = document.createElement("p");
   message.className = "p3d-message";
   message.setAttribute("role", "status");
   message.hidden = true;
 
-  host.append(label, stage, controls, views, glb, message, limits);
+  stage.append(canvas, coach, top, scrub, foot, message);
+  host.append(stage);
 
   let handle: ReplayHandle | undefined;
-  /** The whole plan's Mesh3D (every storey, whatever the view shows): what Download GLB writes. */
+  /** The whole plan's Mesh3D (every storey, whatever the view shows): what `GLB ↓` writes. */
   let glbMesh: Mesh3D | undefined;
   /** What the mounted replay (or the refusal showing) was built from. */
   let built: string | undefined;
@@ -201,22 +348,85 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   let generation = 0;
   /** Playback was running when the tab was hidden: `show` resumes it. */
   let resume = false;
+  /** The session's first open plays and turns (once per tab session). */
+  let firstOpen = !stored("sessionStorage", PLAYED_KEY);
+  /** The turntable's animation frame, while it turns; `turnOff` once anything has touched the view. */
+  let spinFrame = 0;
+  let turnOff = false;
+  /** The turntable was stopped by leaving the tab: the next open shows the end frame again. */
+  let resetOnShow = false;
 
   const stop = () => {
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
   };
+  const stopTurn = () => {
+    if (spinFrame) cancelAnimationFrame(spinFrame);
+    spinFrame = 0;
+  };
+  /** The turntable: one `spin` step per animation frame, its size from the frame clock. */
+  const startTurn = () => {
+    const h = handle;
+    if (turnOff || !h?.view || reducedMotion()) return;
+    stopTurn();
+    let last: number | undefined;
+    const step = (now: number) => {
+      if (turnOff || h !== handle) {
+        spinFrame = 0;
+        return;
+      }
+      const dt = last === undefined ? 0 : Math.min(100, now - last);
+      last = now;
+      if (dt > 0) h.view?.spin((TURN_DEG_PER_S * dt) / 1000);
+      spinFrame = requestAnimationFrame(step);
+    };
+    spinFrame = requestAnimationFrame(step);
+  };
+  /** Anything on the stage (a press, the wheel, a key, a slider): the turntable stops for good. */
+  const touched = () => {
+    turnOff = true;
+    resetOnShow = false;
+    stopTurn();
+    fadeCoach();
+  };
+  for (const type of ["pointerdown", "wheel", "keydown", "input"] as const)
+    stage.addEventListener(type, touched, { capture: true, passive: true });
+
+  // grab, and grabbing while a press on the canvas is down.
+  canvas.addEventListener("pointerdown", () => canvas.classList.add("p3d-grabbing"));
+  for (const type of ["pointerup", "pointercancel"] as const)
+    window.addEventListener(type, () => canvas.classList.remove("p3d-grabbing"));
+
+  /** The drawing size the stage's box asks for, or the 16:9 fallback while it has none. */
+  const sizeNow = (): [number, number] => {
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    if (w < 2 || h < 2) return [WIDTH, HEIGHT];
+    let dpr = Math.min(MAX_DPR, Math.max(1, window.devicePixelRatio || 1));
+    if (w * h * dpr * dpr > MAX_PIXELS) dpr = Math.sqrt(MAX_PIXELS / (w * h));
+    return [Math.max(1, Math.round(w * dpr)), Math.max(1, Math.round(h * dpr))];
+  };
+  if (typeof ResizeObserver === "function") {
+    new ResizeObserver(() => {
+      if (canvas.clientWidth < 2 || canvas.clientHeight < 2) return; // a hidden tab: keep the size
+      const [w, h] = sizeNow();
+      handle?.resize(w, h);
+    }).observe(canvas);
+  }
 
   const refuse = (text: string) => {
     stop();
+    stopTurn();
     handle?.dispose();
     handle = undefined;
     window.__preview3d = undefined;
     glbMesh = undefined;
-    stage.hidden = true;
-    controls.hidden = true;
-    views.hidden = true;
-    glb.hidden = true;
+    stage.dataset.refused = "";
+    canvas.hidden = true;
+    top.hidden = true;
+    play.hidden = true;
+    scrub.hidden = true;
+    coach.hidden = true;
     message.hidden = false;
     message.textContent = `No 3D preview: ${text}`;
     delete host.dataset.view;
@@ -253,25 +463,25 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         return false;
       }
       view = index < 0 ? "all" : `L${level}`;
-      const facts = replayFacts(source, { storeys: levels, view: index < 0 ? "all" : index + 1 });
-      delete strip.dataset.stripKey;
-      strip.hidden = true;
+      // The canvas shows again before it is measured: a refusal hid it.
+      delete stage.dataset.refused;
+      canvas.hidden = false;
+      const [width, height] = sizeNow();
+      // No facts over the canvas (PG-D4): the page's own facts line says them.
       const payload = replayPayload(viewMesh(mesh, index < 0 ? "all" : index + 1), {
         title: r.scene.meta.name,
         svg,
-        width: WIDTH,
-        height: HEIGHT,
+        width,
+        height,
         seconds: SECONDS,
-        // The strip's numbers: the core's describe() and lint() of the same source.
-        ...(facts ? { facts } : {}),
       });
       stop();
       handle?.dispose();
       // Grabbing the view pauses the playback.
-      next = mountReplay(canvas, payload, strip, { interactive: true, onTake: stop });
+      next = mountReplay(canvas, payload, undefined, { interactive: true, onTake: stop });
       if (keep) next.view?.restore(keep);
       views.replaceChildren(
-        ...(next.view ? [viewToolbar(next.view, { buttonClass: "repair-btn", hintId: "p3d-hint" })] : []),
+        ...(next.view ? [viewToolbar(next.view, { buttonClass: "p3d-btn", hintId: "p3d-hint", compact: true })] : []),
       );
       canvas.setAttribute("aria-describedby", "p3d-hint");
       const which = index < 0 ? (levels.length > 1 ? "all storeys" : "") : `storey L${level}`;
@@ -287,28 +497,27 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     glbMesh = whole;
     window.__preview3d = next;
     host.dataset.view = view;
-    stage.hidden = false;
-    controls.hidden = false;
-    views.hidden = false;
-    glb.hidden = false;
+    top.hidden = false;
+    play.hidden = false;
+    scrub.hidden = false;
     message.hidden = true;
     return true;
   };
 
   const seek = (t: number) => {
     handle?.seek(t);
-    scrub.value = String(t);
+    setScrub(t);
   };
 
-  /** Play from `from` to the end; the frame clock only advances t. */
-  const playFrom = (from: number) => {
+  /** Play from `from` to the end; the frame clock only advances t. `then` runs at the end. */
+  const playFrom = (from: number, then?: () => void) => {
     const h = handle;
     if (!h) return;
     stop();
     const mine = generation;
     void h.ready.then(() => {
       if (mine !== generation) return;
-      if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches === true) {
+      if (reducedMotion()) {
         seek(1);
         return;
       }
@@ -318,6 +527,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         const t = Math.min(1, from + (now - t0) / (SECONDS * 1000));
         seek(t);
         frame = t < 1 ? requestAnimationFrame(step) : 0;
+        if (t >= 1 && mine === generation) then?.();
       };
       frame = requestAnimationFrame(step);
     });
@@ -331,7 +541,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       if (mine !== generation) return;
       if (h.view) h.view.at(t);
       else h.seek(t);
-      scrub.value = String(t);
+      setScrub(t);
     });
   };
 
@@ -339,6 +549,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   scrub.addEventListener("input", () => {
     stop();
     handle?.seek(Number(scrub.value));
+    setScrub(Number(scrub.value));
   });
 
   const keyOf = (source: string, level: number | null) => `${level ?? ""}|${source}`;
@@ -346,23 +557,44 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   return {
     show(source, level, drawn) {
       const key = keyOf(source, level);
+      const first = firstOpen;
+      firstOpen = false;
+      store("sessionStorage", PLAYED_KEY);
       if (key !== built) {
         resume = false;
-        // The end frame, at once: the settled iso view (card X1). Replay plays it from the start.
+        resetOnShow = false;
         if (build(source, level, key, drawn)) {
-          scrub.value = "1";
-          drawAt(1);
+          showCoach();
+          if (first && !reducedMotion()) {
+            // The session's first open (PG-D4): the replay once, then the turntable.
+            setScrub(0);
+            playFrom(0, startTurn);
+          } else {
+            // The end frame, at once: the settled iso view (card X1). Replay plays it from the start.
+            setScrub(1);
+            drawAt(1);
+          }
         }
         return;
       }
+      if (resetOnShow) {
+        // The turntable stopped when the tab was left: back to the end frame, as any later open.
+        resetOnShow = false;
+        handle?.view?.reset();
+        setScrub(1);
+        drawAt(1);
+        return;
+      }
       const t = Number(scrub.value);
-      if (resume) playFrom(t);
+      if (resume) playFrom(t, turnOff ? undefined : startTurn);
       else drawAt(t);
       resume = false;
     },
     update(source, level, drawn) {
       const key = keyOf(source, level);
       if (key === built) return;
+      // An edit is a hand on the plan: the turntable stops for good.
+      touched();
       const t = Number(scrub.value);
       const playing = frame !== 0;
       // An edit keeps the view the user left; another storey starts from the replay's own.
@@ -374,6 +606,14 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     hide() {
       resume = frame !== 0;
       stop();
+      if (spinFrame) {
+        // Left while turning: the turntable is over, and the next open is the end frame.
+        stopTurn();
+        turnOff = true;
+        resetOnShow = true;
+      }
+      fadeCoach();
+      shutInfo(false);
     },
     overlay: stage,
   };

@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Added
+
+- For a host page whose canvas follows its container (the playground's 3D stage):
+  `handle.resize(width, height)` gives the canvas a new drawing size and redraws the last frame at
+  it, the same frame a fresh mount at that size draws; `view.spin(degrees)` turns the view about
+  its pivot by one step the host chooses (a turntable), taking the view as a drag does; and
+  `viewToolbar(view, { compact: true })` puts Reset first and the six presets in a `View ▾`
+  popover, every button keeping its name, `data-*` and `aria-pressed`. All three are opt-in: a
+  host that never calls them, and the single-file replay HTML, draw and show exactly what they did.
+
 ### Changed
 
 - The line every surface carries (`PREVIEW_LABEL`) now says what "checked against the plan" means:

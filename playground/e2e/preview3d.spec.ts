@@ -92,10 +92,11 @@ test.describe("3D preview tab", () => {
     const b = await hashAt(page, 0.6);
     expect(a).toMatch(/^[0-9a-f]{64}$/);
     expect(b, "two seeks of one t give one frame").toBe(a);
-    // The facts strip (card G4) is DOM over the canvas: at the end it names both area conventions.
-    await expect(page.locator("#preview3d .p3d-strip")).toContainText(/floor area [\d.]+ m² \(net\)/);
-    await expect(page.locator("#preview3d .p3d-strip")).toContainText("(to wall centre lines)");
     expect(end, "a different t is a different frame").not.toBe(a);
+    // No facts laid over the canvas (PG-D4): the page's own facts line says them. (The package's
+    // replay HTML keeps its strip: `packages/archlang-3d/e2e/replay.e2e.ts`.)
+    await expect(page.locator("#preview3d .p3d-strip")).toHaveCount(0);
+    await expect(page.locator("#facts")).toContainText("m²");
     // The canvas drew something: not one flat colour.
     const colours = await page.evaluate(() => {
       const c = document.querySelector("#preview3d canvas") as HTMLCanvasElement;
@@ -114,21 +115,46 @@ test.describe("3D preview tab", () => {
     expect(chunks.length, "the 3D chunk is fetched once").toBe(1);
   });
 
-  test("opens on the end frame, unplayed; Replay plays the replay from the start (card X1)", async ({ page }) => {
+  test("the session's first open plays once, then turns until the first touch; later opens are the end frame (PG-D4)", async ({
+    page,
+  }) => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
-    await page.locator("#tab-preview3d").click();
-    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
-    await page.evaluate(async () => {
-      await (window as W).__preview3d?.ready;
-    });
+    await open3d(page);
     const scrub = page.locator('#preview3d [data-role="scrub"]');
+    const camera = () => page.evaluate(() => (window as Viewed).__preview3d?.view?.camera);
+    // The replay plays from the start on its own, about 6 s, to the end.
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeLessThan(0.9);
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 20_000 }).toBe(1);
+    // Then the turntable: the view is taken from the replay and keeps turning.
+    await expect.poll(camera, { timeout: 10_000 }).toBe("free");
+    const a = await current(page);
+    await expect.poll(() => current(page), { timeout: 10_000 }).not.toBe(a);
+    // The first touch (a press on the canvas, no drag) stops it for good.
+    await page.locator("#preview3d canvas").click();
+    const held = await current(page);
+    for (let i = 0; i < 3; i++) {
+      await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+      await page.waitForTimeout(150);
+      expect(await current(page), `still, frame ${i}`).toBe(held);
+    }
+    // Away and back, in the same page: the end frame, nothing playing or turning.
+    await page.locator("#viewPlan").click();
+    await page.locator("#view3d").click();
+    await page.waitForTimeout(400);
+    expect(await current(page), "still where the touch left it").toBe(held);
+
+    // A later open in the same session (a reload keeps the tab's session): the end frame, unplayed.
+    await page.reload();
+    await waitForPlan(page);
+    await open3d(page);
     // The settled iso view at once: t = 1, and it stays there (nothing plays on its own).
     await expect(scrub).toHaveValue("1");
     const opened = await current(page);
     await page.waitForTimeout(400);
     await expect(scrub).toHaveValue("1");
-    expect(await current(page), "no playback on open").toBe(opened);
+    expect(await current(page), "no playback or turntable on a later open").toBe(opened);
+    expect(await camera()).toBe("replay");
     expect(await hashAt(page, 1), "the frame it opens on is the end frame").toBe(opened);
     // Replay plays from the start.
     await page
@@ -287,6 +313,25 @@ type Viewed = Window & {
 const current = (page: Page): Promise<string> =>
   page.evaluate(() => ((window as Viewed).__preview3d as Handle).frameHash());
 
+/**
+ * Press a preset: they sit in the `View ▾` popover (the package's compact toolbar, card PG1), so
+ * open it first when it is shut. A preset shuts it again.
+ */
+async function preset(page: Page, name: string | RegExp): Promise<void> {
+  const pop = page.locator("#preview3d .archlang-views-presets");
+  if (await pop.isHidden()) {
+    await page
+      .locator("#preview3d")
+      .getByRole("button", { name: /^View presets/ })
+      .click();
+  }
+  await page.locator("#preview3d").getByRole("button", { name }).click();
+  await expect(pop, "a preset shuts the popover").toBeHidden();
+}
+
+/** A preset's button, found whether its popover is open or shut (for `aria-pressed`). */
+const presetBtn = (page: Page, name: string) => page.locator(`#preview3d [data-preset="${name}"]`);
+
 /** Drag across the middle of the 3D canvas with the left button. */
 async function drag(page: Page, dx: number, dy: number): Promise<void> {
   const box = await page.locator("#preview3d canvas").boundingBox();
@@ -325,15 +370,12 @@ test.describe("3D preview tab: the free camera", () => {
     const dragged = await current(page);
     expect(dragged, "a drag turns the view").not.toBe(end);
     expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("free");
-    await button("Iso view: the replay's end view").click();
+    await preset(page, "Iso view: the replay's end view");
     expect(await current(page), "Iso is the end camera, pixel for pixel").toBe(end);
-    await expect(button("Iso view: the replay's end view")).toHaveAttribute("aria-pressed", "true");
+    await expect(presetBtn(page, "iso")).toHaveAttribute("aria-pressed", "true");
 
     await drag(page, -120, -30);
-    await expect(button("Iso view: the replay's end view"), "a drag leaves the preset").toHaveAttribute(
-      "aria-pressed",
-      "false",
-    );
+    await expect(presetBtn(page, "iso"), "a drag leaves the preset").toHaveAttribute("aria-pressed", "false");
     expect(await current(page)).not.toBe(end);
     await button(/^Reset the view/).click();
     expect(await current(page), "Reset is the replay's own end frame").toBe(end);
@@ -347,7 +389,7 @@ test.describe("3D preview tab: the free camera", () => {
     expect(await current(page), "− zooms").not.toBe(turned);
 
     // The wheel zooms; the presets are views of their own.
-    await button("Iso view: the replay's end view").click();
+    await preset(page, "Iso view: the replay's end view");
     const box = await page.locator("#preview3d canvas").boundingBox();
     if (!box) throw new Error("no canvas");
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -355,7 +397,7 @@ test.describe("3D preview tab: the free camera", () => {
     expect(await current(page), "the wheel zooms").not.toBe(end);
     const seen = new Set([end]);
     for (const name of [/^Top view/, /^View from north/, /^View from east/, /^View from south/, /^View from west/]) {
-      await button(name).click();
+      await preset(page, name);
       seen.add(await current(page));
     }
     expect(seen.size, "five presets, five frames, none the end frame").toBe(6);
@@ -409,10 +451,7 @@ test.describe("3D preview tab: the free camera", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&edit`);
     await waitForPlan(page);
     await open3d(page);
-    await page
-      .locator("#preview3d")
-      .getByRole("button", { name: /^Top view/ })
-      .click();
+    await preset(page, /^Top view/);
     await page.evaluate(() => {
       (window as Viewed & { __before?: unknown }).__before = (window as Viewed).__preview3d;
     });
@@ -421,15 +460,14 @@ test.describe("3D preview tab: the free camera", () => {
       () => (window as Viewed & { __before?: unknown }).__before !== (window as Viewed).__preview3d,
     );
     expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("top");
-    const top = page.locator("#preview3d").getByRole("button", { name: /^Top view/ });
-    await expect(top, "the toolbar shows the restored view").toHaveAttribute("aria-pressed", "true");
+    await expect(presetBtn(page, "top"), "the toolbar shows the restored view").toHaveAttribute("aria-pressed", "true");
     // The tab redraws the edited plan from the kept view once its drawing is ready (`drawAt`, queued
     // on `ready` before this wait): that frame is the edited plan's own Top view.
     await page.evaluate(async () => {
       await (window as Viewed).__preview3d?.ready;
     });
     const kept = await current(page);
-    await top.click();
+    await preset(page, /^Top view/);
     expect(await current(page), "the kept view is a fresh Top of the edited plan").toBe(kept);
     // And not merely the plan's end frame.
     expect(kept).not.toBe(await hashAt(page, 1));
@@ -448,8 +486,8 @@ test.describe("3D preview tab: a preset during playback", () => {
     await replay(page);
     const scrub = page.locator('#preview3d [data-role="scrub"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
-    const top = page.locator("#preview3d").getByRole("button", { name: /^Top view/ });
-    await top.click();
+    // Opening `View ▾` takes nothing: the playback goes on until the preset is pressed.
+    await preset(page, /^Top view/);
     const parked = Number(await scrub.inputValue());
     expect(parked, "still playing when pressed").toBeLessThan(1);
     const held = await current(page);
@@ -461,9 +499,9 @@ test.describe("3D preview tab: a preset during playback", () => {
     }
     expect(Number(await scrub.inputValue()), "the playback paused").toBe(parked);
     expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera)).toBe("top");
-    await expect(top).toHaveAttribute("aria-pressed", "true");
+    await expect(presetBtn(page, "top")).toHaveAttribute("aria-pressed", "true");
     // A fresh press, now that the playback is paused, draws the same frame.
-    await top.click();
+    await preset(page, /^Top view/);
     expect(await current(page)).toBe(held);
   });
 });
@@ -699,6 +737,14 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await expect(note.locator("code")).toHaveText("npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb");
     const button = page.locator("#preview3d").getByRole("button", { name: "Download GLB" });
     await expect(button).toHaveAttribute("aria-describedby", "p3d-glb-note");
+    // One compact button in the floating top-right group (card PG1); the note is its description
+    // and its title, not a row of the layout.
+    await expect(button).toHaveText("GLB ↓");
+    await expect(button).toHaveAttribute(
+      "title",
+      "The whole plan as a GLB, written in your browser and not validated here. npx -y @chanmeng666/archlang-3d build plan.arch -o plan.glb writes the same file and checks it with the Khronos glTF validator.",
+    );
+    await expect(page.locator("#preview3d .p3d-top").getByRole("button", { name: "Download GLB" })).toBeVisible();
     expect(glbChunks, "the GLB writer is not fetched before the click").toEqual([]);
 
     const [download] = await Promise.all([page.waitForEvent("download"), button.click()]);
@@ -791,9 +837,7 @@ for (const [width, height, mobile] of [
   test.describe(`Plan | 3D at ${width}x${height} (card X5)`, () => {
     test.use({ viewport: { width, height }, isMobile: mobile, hasTouch: mobile, reducedMotion: "reduce" });
 
-    test("the 3D view fits its pane: nothing scrolls or clips, the GLB note and limits line included", async ({
-      page,
-    }) => {
+    test("the canvas fills its pane, every control floats inside it, and the ⓘ card fits too", async ({ page }) => {
       const src = readFileSync(new URL("../../examples/knob-flat.arch", import.meta.url), "utf8").replace(
         /\r\n?/g,
         "\n",
@@ -801,20 +845,43 @@ for (const [width, height, mobile] of [
       await page.goto(`/${await shareHash(src)}&3d`);
       await waitFor3d(page);
       await page.waitForFunction(() => (window as W).__preview3d !== undefined);
-      await expect(page.locator("#preview3d .p3d-glb-note")).toBeVisible();
+      await page.locator("#preview3d .p3d-info-btn").click();
+      await expect(page.locator("#preview3d .p3d-info")).toBeVisible();
       const fit = await page.locator("#preview3d").evaluate((host) => {
         const box = host.getBoundingClientRect();
-        const bottom = (s: string) => host.querySelector(s)?.getBoundingClientRect().bottom ?? Number.POSITIVE_INFINITY;
+        const canvas = host.querySelector("canvas") as HTMLCanvasElement;
+        const c = canvas.getBoundingClientRect();
+        const inside = (s: string) => {
+          const r = host.querySelector(s)?.getBoundingClientRect();
+          return (
+            !!r &&
+            r.left >= box.left - 0.5 &&
+            r.right <= box.right + 0.5 &&
+            r.top >= box.top - 0.5 &&
+            r.bottom <= box.bottom + 0.5
+          );
+        };
         return {
           scroll: host.scrollHeight - host.clientHeight,
-          note: bottom(".p3d-glb-note") <= box.bottom,
-          limits: bottom(".p3d-limits") <= box.bottom,
+          filled: Math.abs(c.width - box.width) <= 1 && Math.abs(c.height - box.height) <= 1,
+          buffer: [
+            canvas.width,
+            canvas.height,
+            Math.round(c.width * devicePixelRatio),
+            Math.round(c.height * devicePixelRatio),
+          ],
+          floats: [".p3d-top", ".p3d-foot", ".p3d-scrub", ".p3d-info", ".p3d-limits"].filter((s) => !inside(s)),
           sideways: document.documentElement.scrollWidth - window.innerWidth,
         };
       });
       expect(fit.scroll, "the 3D view does not scroll inside its pane").toBeLessThanOrEqual(0);
-      expect(fit.note, "the GLB note is inside the pane").toBe(true);
-      expect(fit.limits, "the limits line is inside the pane").toBe(true);
+      expect(fit.filled, "the canvas is the pane's own size").toBe(true);
+      const [bw, bh, cw, ch] = fit.buffer as [number, number, number, number];
+      expect(
+        Math.abs(bw - cw) <= 1 && Math.abs(bh - ch) <= 1,
+        `the drawing buffer follows the box: ${fit.buffer}`,
+      ).toBe(true);
+      expect(fit.floats, "every control and the ⓘ card inside the pane").toEqual([]);
       expect(fit.sideways, "no sideways scroll").toBeLessThanOrEqual(0);
     });
   });
@@ -839,11 +906,203 @@ test.describe("Plan | 3D on a phone (card X5)", () => {
     expect(await overflow(), "no sideways scroll on the 3D preview").toBeLessThanOrEqual(0);
     const canvas = await page.locator("#preview3d canvas").boundingBox();
     expect((canvas?.x ?? -1) >= 0 && (canvas?.x ?? 0) + (canvas?.width ?? 0) <= 375, "the canvas fits").toBe(true);
-    // The switch's band keeps it clear of the caption under it.
+    // Everything floats over the canvas, and the switch overlaps none of it: the top-right group
+    // starts right of it, the caption's lead sits at the foot.
     const chip = await page.locator(".stage-switch").boundingBox();
-    const caption = await page.locator("#preview3d .p3d-label").boundingBox();
-    expect((chip?.y ?? 0) + (chip?.height ?? 0)).toBeLessThanOrEqual(caption?.y ?? 0);
-    await expect(page.locator("#preview3d .p3d-glb")).toBeVisible();
+    const top = await page.locator("#preview3d .p3d-top").boundingBox();
+    const lead = await page.locator("#preview3d .p3d-lead").boundingBox();
+    if (!chip || !top || !lead || !canvas) throw new Error("missing a box");
+    expect(top.x, "the top-right group clears the switch").toBeGreaterThanOrEqual(chip.x + chip.width);
+    expect(lead.y, "the caption's lead is below the switch").toBeGreaterThan(chip.y + chip.height);
+    expect(lead.y + lead.height).toBeLessThanOrEqual(canvas.y + canvas.height);
+    await expect(page.locator("#preview3d").getByRole("button", { name: "Download GLB" })).toBeVisible();
+    await expect(page.locator("#preview3d").getByRole("button", { name: /^Replay/ })).toBeVisible();
+  });
+});
+
+/**
+ * The 3D stage (playground-minimal card PG1, ruling PG-D4): the canvas is the stage, the controls
+ * float over it, and it says it can be turned. Measured where the owner measured it: 1422×676, view
+ * mode, `#3d` (the canvas was 402×226, 9% of the viewport).
+ */
+test.describe("the 3D stage (card PG1)", () => {
+  test.use({ viewport: { width: 1422, height: 676 }, reducedMotion: "reduce" });
+
+  test("the canvas covers at least 60% of a 1422×676 viewport in view mode", async ({ page }) => {
+    await page.goto("/#3d");
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", "view");
+    const box = await page.locator("#preview3d canvas").boundingBox();
+    if (!box) throw new Error("no canvas");
+    const share = (box.width * box.height) / (1422 * 676);
+    expect(share, `the canvas is ${Math.round(box.width)}×${Math.round(box.height)}`).toBeGreaterThanOrEqual(0.6);
+    // Not a fixed 16:9: it takes the pane's own shape.
+    expect(Math.abs(box.width / box.height - 16 / 9)).toBeGreaterThan(0.05);
+  });
+
+  test("reduced motion: no autoplay and no turntable on the first open, only the end frame", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await page.evaluate(async () => {
+      await (window as W).__preview3d?.ready;
+    });
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
+    await expect(scrub).toHaveValue("1");
+    const opened = await current(page);
+    for (let i = 0; i < 4; i++) {
+      await page.waitForTimeout(250);
+      expect(await current(page), `the same frame, ${i}`).toBe(opened);
+    }
+    await expect(scrub).toHaveValue("1");
+    expect(await page.evaluate(() => (window as Viewed).__preview3d?.view?.camera), "nothing took the view").toBe(
+      "replay",
+    );
+    expect(await hashAt(page, 1)).toBe(opened);
+  });
+
+  test("the coach mark is shown once, and goes on the first touch", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    const coach = page.locator("#preview3d .p3d-coach");
+    await expect(coach).toBeVisible();
+    await expect(coach).toHaveText("Drag to turn · scroll to zoom · right-drag to pan");
+    await expect(coach.locator("svg")).toHaveCount(1);
+    await expect(coach).toHaveAttribute("aria-hidden", "true");
+    // The full hint stays the canvas's description, visually hidden.
+    const hint = page.locator("#p3d-hint");
+    await expect(page.locator("#preview3d canvas")).toHaveAttribute("aria-describedby", "p3d-hint");
+    await expect(hint).toContainText("arrow keys turn");
+    expect((await hint.boundingBox())?.height ?? 0, "the hint is not a layout row").toBeLessThanOrEqual(1);
+    // The coach mark never takes the pointer: a press on the canvas under it reaches the canvas.
+    await page.locator("#preview3d canvas").click();
+    await expect(coach).toBeHidden();
+
+    // Shown once: a later visit, or another plan, does not show it again.
+    await page.reload();
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await expect(page.locator("#preview3d canvas")).toBeVisible();
+    await page.waitForTimeout(300);
+    await expect(coach).toBeHidden();
+  });
+
+  test("the coach mark fades on its own after five seconds", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    const coach = page.locator("#preview3d .p3d-coach");
+    await expect(coach).toBeVisible();
+    await expect(coach).toBeHidden({ timeout: 8_000 });
+  });
+
+  test("the page works with no storage: the coach mark, the view and the controls", async ({ page }) => {
+    await page.addInitScript(() => {
+      for (const area of ["localStorage", "sessionStorage"] as const) {
+        Object.defineProperty(window, area, {
+          get() {
+            throw new Error("storage blocked");
+          },
+        });
+      }
+    });
+    const errors: string[] = [];
+    page.on("pageerror", (e) => errors.push(e.message));
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await expect(page.locator("#preview3d .p3d-coach")).toBeVisible();
+    await expect(page.locator('#preview3d [data-role="scrub"]')).toHaveValue("1");
+    expect(errors.filter((m) => /storage|p3d|preview3d/i.test(m))).toEqual([]);
+  });
+
+  test("the ⓘ card holds the full caption, the limits line and the link; the lead stays on screen", async ({
+    page,
+  }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    const lead = page.locator("#preview3d .p3d-lead");
+    await expect(lead).toBeVisible();
+    await expect(lead).toContainText("Same source, plan and 3D preview.");
+    const card = page.locator("#preview3d .p3d-info");
+    const info = page.locator("#preview3d").getByRole("button", { name: /^About the 3D preview/ });
+    await expect(card).toBeHidden();
+    await expect(info).toHaveAttribute("aria-expanded", "false");
+    await info.click();
+    await expect(card).toBeVisible();
+    await expect(info).toHaveAttribute("aria-expanded", "true");
+    await expect(card).toContainText(LABEL);
+    await expect(card.locator(".p3d-limits")).toHaveText(LIMITS);
+    await expect(card.locator("a")).toHaveText("What it shows");
+    await expect(card.locator("a")).toHaveAttribute("href", "https://archlang.uk/3d");
+    // Escape shuts it and gives the focus back; a press elsewhere shuts it too.
+    await page.keyboard.press("Escape");
+    await expect(card).toBeHidden();
+    await expect(info).toBeFocused();
+    await info.click();
+    await expect(card).toBeVisible();
+    await page.locator("#preview3d canvas").click({ position: { x: 300, y: 200 } });
+    await expect(card).toBeHidden();
+    // No row under the canvas: the caption, the controls and the GLB button all lie over it.
+    const canvas = await page.locator("#preview3d canvas").boundingBox();
+    const host = await page.locator("#preview3d").boundingBox();
+    expect(canvas?.height).toBeCloseTo(host?.height ?? 0, 0);
+  });
+
+  test("the canvas says it can be grabbed: grab, and grabbing while pressed", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    const canvas = page.locator("#preview3d canvas");
+    const cursor = () => canvas.evaluate((c) => getComputedStyle(c).cursor);
+    expect(await cursor()).toBe("grab");
+    const box = await canvas.boundingBox();
+    if (!box) throw new Error("no canvas");
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    expect(await cursor()).toBe("grabbing");
+    await page.mouse.up();
+    expect(await cursor()).toBe("grab");
+  });
+
+  test("the controls float over the canvas, dim at rest and whole on hover or focus", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    const top = page.locator("#preview3d .p3d-top");
+    const opacity = () => top.evaluate((el) => Number(getComputedStyle(el).opacity));
+    await page.mouse.move(2, 2); // the pointer off the stage (over the header)
+    await expect.poll(opacity).toBeLessThan(1);
+    // The keyboard brings it back: never invisible to focus.
+    await page
+      .locator("#preview3d")
+      .getByRole("button", { name: /^Reset the view/ })
+      .focus();
+    await expect.poll(opacity).toBe(1);
+    expect(await opacity()).toBeGreaterThan(0);
+    // The scrubber is the thin line along the canvas's foot, and keeps its name.
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
+    await expect(scrub).toHaveAttribute("aria-label", "Replay position");
+    const s = await scrub.boundingBox();
+    const c = await page.locator("#preview3d canvas").boundingBox();
+    if (!s || !c) throw new Error("missing a box");
+    expect(s.height).toBeLessThanOrEqual(16);
+    expect(Math.abs(s.y + s.height - (c.y + c.height))).toBeLessThanOrEqual(1);
+    expect(Math.abs(s.width - c.width)).toBeLessThanOrEqual(1);
+    // `View ▾` holds the six presets, by the names and `data-preset` they always had.
+    await page
+      .locator("#preview3d")
+      .getByRole("button", { name: /^View presets/ })
+      .click();
+    const presets = page.locator("#preview3d .archlang-views-presets [data-preset]");
+    await expect(presets).toHaveCount(6);
+    expect(await presets.evaluateAll((bs) => bs.map((b) => b.getAttribute("data-preset")))).toEqual([
+      "iso",
+      "top",
+      "north",
+      "east",
+      "south",
+      "west",
+    ]);
   });
 });
 
