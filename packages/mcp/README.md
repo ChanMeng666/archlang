@@ -22,7 +22,7 @@ Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dime
 
 <table>
 <tr>
-<td align="center" width="50%"><a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/test/__goldens__/laneway-house.arch.png" width="100%" alt="The laneway house plan: a living kitchen, a bedroom and a bath, dimensioned." /></a><br><sub>Plan</sub></td>
+<td align="center" width="50%"><a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/3d/laneway-house.plan.png" width="100%" alt="The laneway house plan: a living kitchen, a bedroom and a bath, dimensioned." /></a><br><sub>Plan</sub></td>
 <td align="center" width="50%"><a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/3d/laneway-house.poster.png" width="100%" alt="The same plan extruded to a 3D preview in flat colours: walls, openings, floors and furniture." /></a><br><sub>3D preview</sub></td>
 </tr>
 </table>
