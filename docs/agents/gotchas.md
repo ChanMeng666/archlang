@@ -162,6 +162,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   a block with `indexOf` rather than a lazy `[\s\S]*?` match over compiler output.
 - A PR that touches `docs/agents/commands.md` is high tier (`scripts/risk-tier.mjs`), so it needs the
   owner's words: keep such a line out of an otherwise medium PR and land it separately.
+- `scripts/risk-tier.mjs` also puts `docs-site/public/_headers`, `_redirects`, any `server.json` and
+  the root `package.json` in the high tier, so an SEO or metadata PR that regenerates `_headers`
+  waits for the owner's words even when the rest is docs.
 - Right after an OIDC publish, `npm view` and jsDelivr can still show the old version for a few
   minutes (the log says "being processed"): wait and re-query the registry; never re-run the release.
 
@@ -193,6 +196,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   but its hashed CSS 404s, and every measurement reads plausible and wrong. Restart the preview after
   every build, give a measurement server its own port (a parallel worktree may hold the fixed one),
   and gate on a marker only the new build has, never a status code.
+- **`check:quick` picks the nearest tests**, so `docs-page-meta`, `docs-sync-list`, `docs-fences`
+  and `docs-topics` may run only in CI for a docs-site PR; read its CI before calling it green.
 
 - **An executor's targeted test subset misses corpus-wide guards.** On 2026-10-28 five PRs went red
   only under the full suite: the taste-digest table, the fixture corpus tables (import-module-lets,
@@ -316,6 +321,13 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   merged head, and grep every caller of a function the other branch changed.
 - **(MCP registry) The `io.github.ChanMeng666/*` namespace is case-sensitive and identity-checked**
   against the npm package's `mcpName`, and the server `description` is capped at 100 chars.
+- **(MCP registry) Search matches server names only**, so the 100-char `description` says what the
+  server is for; the tool-name lockstep lives in `packages/mcp/README.md`'s tool table
+  (`packages/mcp/test/server.test.ts`).
+- **`taskkill` on `workerd.exe` kills every session's `wrangler dev`.** Stop only the process you
+  started, by its PID.
+- **The Claude in Chrome extension drops after a terminal crash**; the owner reconnects it with
+  `/chrome`.
 - **(Eval) Reasoning models spend thinking tokens out of `max_completion_tokens`.** An implausibly low
   score means suspect the token cap (`eval/run.ts` uses 16384) before the language.
 - **(Dataset) `dataset/out/` is gitignored and HF-only.** On re-upload the card's
