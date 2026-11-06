@@ -813,6 +813,7 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 }
 .gal-h {
   margin: 0 0 6px;
+  font-weight: 600;
   font-family: var(--font-display);
   font-variation-settings:
     "wdth" 85,
@@ -883,6 +884,11 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 .gal-card:focus-visible {
   outline: 2px solid var(--plum-deep);
   outline-offset: 1px;
+}
+/* Always present and rendered (a live region): empty, it has no height, and the negative
+   margin takes back the panel's gap, so it takes no room. */
+.gal-empty:empty {
+  margin-top: -12px;
 }
 .gal-empty {
   margin: 0;

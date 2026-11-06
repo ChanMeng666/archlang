@@ -268,7 +268,10 @@ describe("the static page generator reads this table, and nothing else hand-list
     expect(index, "gen-static.mjs declares `function prerenderIndex(…) { … }`").not.toBe("");
     expect(index.match(/href="\/examples\/\$\{r\.name\}\.html"/g) ?? []).toHaveLength(1);
     expect(index).toMatch(/<a class="gal-card" href="\/examples\/\$\{r\.name\}\.html"/);
-    expect(index).toMatch(/splitLabel\(r\.label\)/);
+    expect(index).toMatch(/cardText\(r\.label\)/);
+    // The tag's brackets are visually hidden, so the link's text and name are the whole label.
+    expect(index).toMatch(/<span class="vh">\$\{escapeHtml\(tag\.open\)\}<\/span>/);
+    expect(index).toMatch(/<h2 class="gal-h"/);
     expect(index).toMatch(/<span class="gal-name">\$\{escapeHtml\(name\)\}<\/span>/);
     expect(index).toMatch(/alt=""/);
     expect(index).toMatch(/loading="lazy"/);
@@ -280,14 +283,18 @@ describe("the static page generator reads this table, and nothing else hand-list
   it("the gallery's tag split keeps the name and moves only a trailing parenthetical", async () => {
     // The one split the generator and the app share (a plain .js module, typed by JSDoc there).
     // @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
-    const { splitLabel } = (await import("../playground/src/plan-label.js")) as {
+    const { splitLabel, cardText } = (await import("../playground/src/plan-label.js")) as {
       splitLabel(label: string): { name: string; tag: string | null };
+      cardText(label: string): { name: string; tag: null | { open: string; text: string; close: string } };
     };
     for (const { label } of rows) {
       const { name, tag } = splitLabel(label);
       expect(name.length, label).toBeGreaterThan(0);
       expect(tag === null ? name : `${name} (${tag})`, label).toBe(label);
       expect(name, label).not.toMatch(/[()]$/);
+      // A card's pieces, read together (its text, its accessible name), are the label itself.
+      const c = cardText(label);
+      expect(c.name + (c.tag ? c.tag.open + c.tag.text + c.tag.close : ""), label).toBe(label);
     }
     expect(splitLabel("Clinic (place ×6)")).toEqual({
       name: "Clinic",

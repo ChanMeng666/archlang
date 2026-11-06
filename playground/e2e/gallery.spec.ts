@@ -85,9 +85,17 @@ test.describe("plan gallery", () => {
     );
     await expect(currentPlanCard(page)).toHaveCount(1);
     await expect(currentPlanCard(page)).toHaveAttribute("data-label", "Laneway House");
-    // The headings are the table's groups, in its order, then the samples' group.
+    // The headings are the table's groups, in its order, then the samples' group: real headings,
+    // so a screen reader can jump between groups (and still one H1 on the page).
     const groups = [...new Set(ROWS.map((r) => r.group))];
     await expect(page.locator("#gallery .gal-h")).toHaveText([...groups, SAMPLE_GROUP]);
+    await openGallery(page);
+    await expect(page.locator("#galleryPanel").getByRole("heading", { level: 2 })).toHaveText([
+      ...groups,
+      SAMPLE_GROUP,
+    ]);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await page.keyboard.press("Escape");
     // "All plans", and the Tools menu's count is the number of plans, not a typed figure.
     await expect(page.locator("#gallery a.gal-all")).toHaveAttribute("href", "/examples/");
     await expect(page.locator('#tools a[href="/examples/"]')).toHaveText(`${ROWS.length} example plans`, {
@@ -95,7 +103,9 @@ test.describe("plan gallery", () => {
     });
   });
 
-  test("shows each card's clean name, with a trailing parenthetical as a tag under it", async ({ page }) => {
+  test("shows each card's clean name, a trailing parenthetical as a tag under it, named by the whole label", async ({
+    page,
+  }) => {
     await page.goto("/");
     await waitForPlan(page);
     await openGallery(page);
@@ -106,10 +116,23 @@ test.describe("plan gallery", () => {
       const card = planCard(page, r.label);
       await expect(card.locator(".gal-name")).toHaveText(name);
       if (tag === null) await expect(card.locator(".gal-tag")).toHaveCount(0);
-      else await expect(card.locator(".gal-tag")).toHaveText(tag);
+      else await expect(card.locator(".gal-tag")).toContainText(tag);
+      // The link's name and its text are the label itself, never "Clinicplace ×6".
+      await expect(card).toHaveAccessibleName(r.label);
+      expect(await card.evaluate((c) => c.textContent)).toBe(r.label);
     }
-    await expect(planCard(page, "Clinic (place ×6)").locator(".gal-name")).toHaveText("Clinic");
-    await expect(planCard(page, "Clinic (place ×6)").locator(".gal-tag")).toHaveText("place ×6");
+    await expect(planCard(page, "Laneway House")).toHaveAccessibleName("Laneway House");
+    const clinic = planCard(page, "Clinic (place ×6)");
+    await expect(clinic).toHaveAccessibleName("Clinic (place ×6)");
+    await expect(clinic.locator(".gal-name")).toHaveText("Clinic");
+    // On screen the tag shows without its brackets (they are visually hidden).
+    const shownTag = await clinic.locator(".gal-tag").evaluate((t) =>
+      [...t.childNodes]
+        .filter((n) => !(n instanceof Element && n.classList.contains("vh")))
+        .map((n) => n.textContent)
+        .join(""),
+    );
+    expect(shownTag).toBe("place ×6");
     // The tag is grey and smaller than the name.
     const [nameSize, tagSize] = await planCard(page, "Parametric (for loop)").evaluate((c) =>
       [".gal-name", ".gal-tag"].map((s) => Number.parseFloat(getComputedStyle(c.querySelector(s)!).fontSize)),
@@ -216,18 +239,39 @@ test.describe("plan gallery", () => {
     // Down from the filter goes to the first match, and Enter opens it.
     await page.keyboard.press("ArrowDown");
     await expect(planCard(page, want[0]!)).toBeFocused();
-    // Nothing matches: the empty state, no card.
+    // The empty state is a live region always in the tree: silent while cards match…
+    const empty = page.locator("#galleryEmpty");
+    await expect(empty).toHaveAttribute("role", "status");
+    await expect(empty).toHaveText("");
+    // …and says so when nothing matches.
     await filter.fill("zzzz");
-    await expect(page.locator("#galleryEmpty")).toBeVisible();
+    await expect(empty).toHaveText("No plans match “zzzz”.");
     await expect(page.locator("#gallery .gal-card:visible")).toHaveCount(0);
     // Escape from the filter closes; the next open starts unfiltered.
     await page.keyboard.press("Escape");
     await expect(panel(page)).toBeHidden();
     await openGallery(page);
     await expect(filter).toHaveValue("");
-    await expect(page.locator("#galleryEmpty")).toBeHidden();
+    await expect(empty).toHaveCount(1);
+    await expect(empty).toHaveText("");
     await expect(page.locator("#gallery .gal-card:visible")).toHaveCount(ROWS.length + 1);
   });
+
+  for (const [width, height] of [
+    [1422, 676],
+    [390, 844],
+  ] as const) {
+    test(`opening on a current plan far down the list shows its card, at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height });
+      await page.goto("/");
+      await waitForPlan(page);
+      const far = ROWS.at(-1)!.label; // the table's last row, the furthest example down
+      await pickPlan(page, far);
+      await openGallery(page);
+      await expect(planCard(page, far)).toBeFocused();
+      await expect(planCard(page, far)).toBeInViewport();
+    });
+  }
 
   test("a click outside or a Tab out closes it", async ({ page }) => {
     await page.goto("/");
@@ -391,6 +435,12 @@ test.describe("plan gallery in the served bytes", () => {
     // The default is marked and named before hydration.
     expect(html).toMatch(/<a class="gal-card" href="\/examples\/laneway-house\.html" [^>]*aria-current="true"/);
     expect(html).toMatch(/id="planName">Laneway House</);
+    // A tagged card's text reads as its label: hidden brackets around the tag, not "Clinicplace ×6".
+    const clinic = /<a class="gal-card" href="\/examples\/clinic\.html"[^>]*>([\s\S]*?)<\/a>/.exec(html)?.[1] ?? "";
+    expect(clinic.replace(/<[^>]*>/g, "")).toBe("Clinic (place ×6)");
+    expect(clinic).toContain('<span class="vh"> (</span>place ×6<span class="vh">)</span>');
+    // The trigger's expanded state is the script's to set, from the real state: none is authored.
+    expect(/<summary[^>]*id="planPicker"[^>]*>/.exec(html)?.[0]).not.toContain("aria-expanded");
   });
 });
 

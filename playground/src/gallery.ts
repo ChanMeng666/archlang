@@ -16,7 +16,7 @@
  * click outside or a Tab out of it closes it. Its thumbnails are `loading="lazy"` inside a closed
  * `<details>`, which renders nothing, so none is fetched before the first open.
  */
-import { splitLabel } from "./plan-label.js";
+import { cardText, splitLabel } from "./plan-label.js";
 
 export interface Gallery {
   /**
@@ -44,6 +44,7 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
   const groupsEl = root.querySelector<HTMLElement>("#galleryGroups")!;
   const filter = root.querySelector<HTMLInputElement>("#galleryFilter")!;
   const empty = root.querySelector<HTMLElement>("#galleryEmpty")!;
+  trigger.setAttribute("aria-expanded", String(root.open));
 
   const cards = () => [...groupsEl.querySelectorAll<HTMLElement>(CARD)];
   const shown = () => cards().filter((c) => !c.closest("li")!.hidden);
@@ -71,7 +72,8 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
       g.hidden = !inGroup;
       any ||= inGroup;
     }
-    empty.hidden = any;
+    // Always in the tree (a live region must exist before it speaks): empty while cards match.
+    empty.textContent = any ? "" : `No plans match “${filter.value.trim()}”.`;
     rove();
   }
 
@@ -188,7 +190,7 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
     sec.className = "gal-group";
     sec.dataset.group = group;
     if (sample) sec.dataset.sample = "";
-    const h = document.createElement("p");
+    const h = document.createElement("h2");
     h.className = "gal-h";
     h.id = `gal-h-${groupsEl.children.length}`;
     h.textContent = group;
@@ -201,7 +203,7 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
   }
 
   function makeCard(el: HTMLElement, label: string) {
-    const { name, tag } = splitLabel(label);
+    const { name, tag } = cardText(label);
     el.className = "gal-card";
     el.dataset.label = label;
     el.tabIndex = -1;
@@ -213,9 +215,16 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
     n.textContent = name;
     el.append(thumb, n);
     if (tag) {
+      // The tag reads as part of the label, "Clinic (place ×6)": hidden " (" and ")" around it.
       const t = document.createElement("span");
       t.className = "gal-tag";
-      t.textContent = tag;
+      const open = document.createElement("span");
+      open.className = "vh";
+      open.textContent = tag.open;
+      const close = document.createElement("span");
+      close.className = "vh";
+      close.textContent = tag.close;
+      t.append(open, tag.text, close);
       el.append(t);
     }
     return el;

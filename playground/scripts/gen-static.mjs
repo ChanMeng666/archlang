@@ -65,7 +65,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { encodePlanHash } from "../../scripts/gen-permalink.mjs";
-import { splitLabel } from "../src/plan-label.js";
+import { cardText, splitLabel } from "../src/plan-label.js";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const playground = join(here, "..");
@@ -1089,30 +1089,34 @@ function prerenderIndex(rows, thumbs) {
     g.rows.push(r);
   }
 
-  // The gallery: a heading and a grid per group. A card's name is its visible text (the clean
-  // name, then the tag), so its thumbnail is decorative (`alt=""`); `data-label` is the plan's
-  // full label, which gallery.ts opens.
+  // The gallery: a heading (a real <h2>, so a screen reader can jump between groups) and a grid
+  // per group. A card's name is its text, which reads as the label itself: the clean name, then
+  // the tag between a visually hidden " (" and ")" (`cardText`), so its thumbnail is decorative
+  // (`alt=""`); `data-label` is the plan's full label, which gallery.ts opens.
   const gallery = groups
     .map((g, gi) => {
       const cards = g.rows
         .map((r) => {
           const t = thumbs.get(r.name);
           if (!t) fail(`${r.name}: no thumbnail for the plan gallery.`);
-          const { name, tag } = splitLabel(r.label);
+          const { name, tag } = cardText(r.label);
           return (
             `<li><a class="gal-card" href="/examples/${r.name}.html" data-label="${escapeHtml(r.label)}"` +
             `${r.label === row.label ? ' aria-current="true"' : ""}>` +
             `<img class="gal-thumb" src="/examples/thumbs/${r.name}.svg" alt="" loading="lazy" decoding="async" ` +
             `width="${t.w}" height="${t.h}" />` +
             `<span class="gal-name">${escapeHtml(name)}</span>` +
-            (tag ? `<span class="gal-tag">${escapeHtml(tag)}</span>` : "") +
+            (tag
+              ? `<span class="gal-tag"><span class="vh">${escapeHtml(tag.open)}</span>${escapeHtml(tag.text)}` +
+                `<span class="vh">${escapeHtml(tag.close)}</span></span>`
+              : "") +
             `</a></li>`
           );
         })
         .join("");
       return (
         `<section class="gal-group" data-group="${escapeHtml(g.group)}">` +
-        `<p class="gal-h" id="gal-h-${gi}">${escapeHtml(g.group)}</p>` +
+        `<h2 class="gal-h" id="gal-h-${gi}">${escapeHtml(g.group)}</h2>` +
         `<ul class="gal-grid" aria-labelledby="gal-h-${gi}">${cards}</ul></section>`
       );
     })

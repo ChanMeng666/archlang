@@ -582,7 +582,7 @@ test.describe("3D preview tab: grabbing the view", () => {
 /**
  * Plan | 3D (public-surfaces card X5): view mode's switch on the stage between the drawing and the
  * 3D preview, which drives the Plan and 3D tabs (edit mode's control, which replaces it there), the
- * `&3d` deep link, the hash flag a copied full link keeps, the plan strip and the knobs in 3D, and
+ * `&3d` deep link, the hash flag a copied full link keeps, the plan gallery and the knobs in 3D, and
  * Download GLB. Reduced motion, so the end frame is drawn at once and nothing plays on its own.
  */
 test.describe("Plan | 3D on the stage (card X5)", () => {

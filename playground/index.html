@@ -137,7 +137,7 @@
            a plan here instead, filters, and moves through the grid with the arrow keys. A closed
            <details> renders nothing, so no thumbnail is fetched before the first open. -->
       <details class="gal" id="gallery">
-        <summary class="hd-btn gal-trigger" id="planPicker" aria-controls="galleryPanel" aria-expanded="false" title="Choose a plan">
+        <summary class="hd-btn gal-trigger" id="planPicker" aria-controls="galleryPanel" title="Choose a plan">
           <span class="gal-glyph" aria-hidden="true">▦</span>
           <span class="vh">Plan: </span><span class="gal-current" id="planName"><!--prerender:plan-name--></span>
           <span class="gal-caret" aria-hidden="true">▾</span>
@@ -145,7 +145,7 @@
         <div class="gal-panel" id="galleryPanel" role="group" aria-label="Example plans">
           <input type="search" id="galleryFilter" class="gal-filter" placeholder="Filter plans by name" aria-label="Filter plans by name" autocomplete="off" spellcheck="false" />
           <div class="gal-groups" id="galleryGroups"><!--prerender:gallery--></div>
-          <p class="gal-empty" id="galleryEmpty" role="status" hidden>No plan matches that name.</p>
+          <p class="gal-empty" id="galleryEmpty" role="status"></p>
           <a class="gal-all" href="/examples/">All plans →</a>
         </div>
       </details>
