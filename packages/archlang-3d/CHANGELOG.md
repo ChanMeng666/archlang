@@ -4,6 +4,9 @@
 
 ## [0.4.0] - 2026-11-06
 
+Stairs require `@chanmeng666/archlang` ≥ 1.57.0, the first core that exports `treadCount`. With an
+older core everything else works as before and no stair is built (`stair-no-flights`).
+
 ### Added
 
 - Stairs. A straight stair and a turning stair (flights and landings) are built as stepped solids,
@@ -48,8 +51,6 @@
   elevation" and so on: the 3D preview draws no elevations. The buttons still read N, E, S and W.
 - The ledger row `m1-omits-stairs-outdoor-fences` is now `m1-omits-outdoor-fences`, written once
   for outdoor surfaces and once for fences, which are still not built.
-- With a core older than the one that exports `treadCount`, no stair is built, and the ledger says
-  so (`stair-no-flights`); nothing else changes.
 
 ## [0.3.0] - 2026-11-05
 
