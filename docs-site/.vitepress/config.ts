@@ -69,10 +69,23 @@ const SITE_ORIGIN = "https://archlang.uk";
 const OG_IMAGE = `${SITE_ORIGIN}/brand/archlang-og.png`;
 const REPO_URL = "https://github.com/ChanMeng666/archlang";
 const MIT_LICENSE = "https://opensource.org/licenses/MIT";
-const NPM_URL = "https://www.npmjs.com/package/@chanmeng666/archlang";
-const SKILLS_URL = "https://skills.sh/ChanMeng666/archlang";
 /** Author and publisher of everything on this host. A person, not an organisation. */
 const AUTHOR = { name: "Chan Meng", url: "https://github.com/ChanMeng666" };
+
+/**
+ * The entity's ids, its first-party listings (`sameAs`) and its disambiguating sentence, shared
+ * with the playground's JSON-LD, which references the nodes this file defines by these ids.
+ */
+const IDENTITY: {
+  ids: { website: string; author: string; software: string };
+  disambiguatingDescription: string;
+  softwareSameAs: string[];
+} = JSON.parse(readFileSync(fileURLToPath(new URL("../../site-shared/identity.json", import.meta.url)), "utf8"));
+
+/** The author's ORCID, read from CITATION.cff (its first `orcid:` is the first author's), never retyped. */
+const AUTHOR_ORCID: string | undefined = /^\s*orcid:\s*"(https:\/\/orcid\.org\/[^"]+)"/m.exec(
+  readFileSync(fileURLToPath(new URL("../../CITATION.cff", import.meta.url)), "utf8"),
+)?.[1];
 
 /** The published core's version, read once at config load — never retyped. */
 const CORE_VERSION: string = JSON.parse(
@@ -231,6 +244,26 @@ const PAGE_META = [
     "/vs-mermaid",
     "Mermaid for floor plans? ArchLang vs Mermaid",
     "Mermaid has no floor plan diagram type. ArchLang is a separate text language for floor plans, and this page compares the two and says when to use each one.",
+  ],
+  [
+    "/floor-plan-tools-for-ai-agents",
+    "Floor-plan tools for AI agents",
+    "The floor-plan tools an AI agent can be given, from MCP servers and skills to a text language, with what each takes in and gives out and its licence.",
+  ],
+  [
+    "/floor-plan-with-a-coding-agent",
+    "Generate a floor plan with a coding agent",
+    "Give Claude Code, Cursor, Codex or Gemini CLI the ArchLang skills, MCP server or CLI, then let it write, compile, lint and fix a floor plan as text.",
+  ],
+  [
+    "/text-to-dxf-floor-plan",
+    "From text to a DXF floor plan, open source",
+    "Write a floor plan as ArchLang text and compile it to a DXF in millimetres, with walls, doors and windows on named layers, from an MIT-licensed CLI.",
+  ],
+  [
+    "/check-a-floor-plan",
+    "Check a floor plan's reachability and room areas",
+    "Check a floor plan with ArchLang: describe reports each room's area and whether it is reachable from the entrance, and lint lists warnings with fixes.",
   ],
   [
     "/3d",
@@ -464,22 +497,41 @@ const LASTMOD: Readonly<Record<string, string>> = (() => {
   }
 })();
 
+/**
+ * A route's last-modified date, the same one its sitemap entry carries: `lastmod.json` for the
+ * pages sync-docs generates, VitePress's own git date (`pageData.lastUpdated`, ms) for a tracked
+ * page. Neither → undefined, and the property is omitted rather than invented.
+ */
+function modifiedDate(route: string, lastUpdated: number | undefined): string | undefined {
+  const stamped = LASTMOD[route];
+  if (stamped) return stamped;
+  return typeof lastUpdated === "number" && Number.isFinite(lastUpdated) && lastUpdated > 0
+    ? new Date(lastUpdated).toISOString()
+    : undefined;
+}
+
 /** JSON-LD for one route, as the `<script type="application/ld+json">` body. */
-function structuredData(route: string, url: string, title: string, description: string): string {
+function structuredData(
+  route: string,
+  url: string,
+  title: string,
+  description: string,
+  dateModified: string | undefined,
+): string {
   const person = {
     "@type": "Person",
-    "@id": `${SITE_ORIGIN}/#author`,
+    "@id": IDENTITY.ids.author,
     name: AUTHOR.name,
     url: AUTHOR.url,
-    sameAs: [AUTHOR.url],
+    sameAs: AUTHOR_ORCID ? [AUTHOR.url, AUTHOR_ORCID] : [AUTHOR.url],
   };
   const website = {
     "@type": "WebSite",
-    "@id": `${SITE_ORIGIN}/#website`,
+    "@id": IDENTITY.ids.website,
     url: `${SITE_ORIGIN}/`,
     name: "ArchLang",
     inLanguage: "en-GB",
-    publisher: { "@id": `${SITE_ORIGIN}/#author` },
+    publisher: { "@id": IDENTITY.ids.author },
   };
   const graph =
     route === "/"
@@ -488,19 +540,22 @@ function structuredData(route: string, url: string, title: string, description: 
           person,
           {
             "@type": "SoftwareApplication",
-            "@id": `${SITE_ORIGIN}/#software`,
+            "@id": IDENTITY.ids.software,
             name: "ArchLang",
             applicationCategory: "DeveloperApplication",
             operatingSystem: "Any",
             softwareVersion: CORE_VERSION,
             url: `${SITE_ORIGIN}/`,
             description,
+            // Another project shares the name; this sentence says which ArchLang this is.
+            disambiguatingDescription: IDENTITY.disambiguatingDescription,
             license: MIT_LICENSE,
-            // The same software at its other canonical homes: source, package registry, skills.
-            sameAs: [REPO_URL, NPM_URL, SKILLS_URL],
+            // The same software at its other first-party homes: source, package registries,
+            // editor marketplaces, MCP directories, the dataset and the archive DOI.
+            sameAs: IDENTITY.softwareSameAs,
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-            author: { "@id": `${SITE_ORIGIN}/#author` },
-            publisher: { "@id": `${SITE_ORIGIN}/#author` },
+            author: { "@id": IDENTITY.ids.author },
+            publisher: { "@id": IDENTITY.ids.author },
           },
           {
             "@type": "SoftwareSourceCode",
@@ -509,8 +564,8 @@ function structuredData(route: string, url: string, title: string, description: 
             codeRepository: REPO_URL,
             programmingLanguage: "TypeScript",
             license: MIT_LICENSE,
-            author: { "@id": `${SITE_ORIGIN}/#author` },
-            targetProduct: { "@id": `${SITE_ORIGIN}/#software` },
+            author: { "@id": IDENTITY.ids.author },
+            targetProduct: { "@id": IDENTITY.ids.software },
           },
         ]
       : [
@@ -522,7 +577,8 @@ function structuredData(route: string, url: string, title: string, description: 
             description,
             url,
             inLanguage: "en-GB",
-            isPartOf: { "@id": `${SITE_ORIGIN}/#website` },
+            ...(dateModified ? { dateModified } : {}),
+            isPartOf: { "@id": IDENTITY.ids.website },
             author: { "@type": "Person", name: AUTHOR.name, url: AUTHOR.url },
             publisher: { "@type": "Person", name: AUTHOR.name, url: AUTHOR.url },
           },
@@ -606,7 +662,7 @@ export default defineConfig({
   // This hook runs once per page at BUILD time and an exception here fails the build
   // with no page context — so the lookup falls back to the site defaults (return [])
   // rather than throwing on a route the table does not know.
-  transformHead({ page, title, description }): HeadConfig[] {
+  transformHead({ page, title, description, pageData }): HeadConfig[] {
     const route = routeOf(page);
     const meta = PAGE_META_BY_ROUTE.get(route);
     if (!meta) return [];
@@ -634,7 +690,11 @@ export default defineConfig({
     // The structured headline is the page's own name, without the " — ArchLang" the
     // <title> carries: a breadcrumb crumb reading "Language reference — ArchLang"
     // inside a trail that already starts at ArchLang says the brand twice.
-    head.push(["script", { type: "application/ld+json" }, structuredData(route, url, meta.title, description)]);
+    head.push([
+      "script",
+      { type: "application/ld+json" },
+      structuredData(route, url, meta.title, description, modifiedDate(route, pageData.lastUpdated)),
+    ]);
     return head;
   },
   // Could be built into a subdir under any static host; "./" keeps asset URLs
@@ -654,7 +714,10 @@ export default defineConfig({
     transformItems: (items) =>
       items.map((item) => {
         const stamped = LASTMOD[`/${item.url}`];
-        return stamped && !item.lastmod ? { ...item, lastmod: stamped } : item;
+        const dated = stamped && !item.lastmod ? { ...item, lastmod: stamped } : item;
+        // The ADR index is `adr/index.html`; the host serves it at `/adr` and 307s `/adr/`
+        // there (html_handling: drop-trailing-slash), so list the path that answers 200.
+        return dated.url === "adr/" ? { ...dated, url: "adr" } : dated;
       }),
   },
   // sync-docs.mjs drops a RAW markdown copy of each generated page into public/
@@ -797,6 +860,8 @@ export default defineConfig({
           { text: "Floor plans as code", link: "/floor-plans-as-code" },
           { text: "A floor plan DSL", link: "/floor-plan-dsl" },
           { text: "ArchLang vs Mermaid", link: "/vs-mermaid" },
+          { text: "Text to a DXF floor plan", link: "/text-to-dxf-floor-plan" },
+          { text: "Check a floor plan", link: "/check-a-floor-plan" },
           { text: "Examples gallery", link: "/examples" },
           { text: "Showcase", link: "/showcase" },
           { text: "The 3D preview", link: "/3d" },
@@ -807,6 +872,8 @@ export default defineConfig({
         items: [
           { text: "Use it from an agent", link: "/agents" },
           { text: "MCP server", link: "/mcp" },
+          { text: "Floor plans with a coding agent", link: "/floor-plan-with-a-coding-agent" },
+          { text: "Floor-plan tools for AI agents", link: "/floor-plan-tools-for-ai-agents" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
           { text: "JavaScript library", link: "/javascript" },

@@ -24,6 +24,16 @@ The MCP server is for hosts without a shell, and for people who prefer to instal
 
 ## Install the floor plan MCP server
 
+One-click install links. Each opens the host, which shows the server's configuration before it adds
+anything.
+
+| Server | VS Code | VS Code Insiders | Cursor |
+| --- | --- | --- | --- |
+| Local, `npx -y @chanmeng666/archlang-mcp` | [Install in VS Code](vscode:mcp/install?%7B%22name%22%3A%22archlang%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40chanmeng666%2Farchlang-mcp%22%5D%7D) | [Install in VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22archlang%22%2C%22type%22%3A%22stdio%22%2C%22command%22%3A%22npx%22%2C%22args%22%3A%5B%22-y%22%2C%22%40chanmeng666%2Farchlang-mcp%22%5D%7D) | [Install in Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=archlang&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBjaGFubWVuZzY2Ni9hcmNobGFuZy1tY3AiXX0=) |
+| Hosted, `https://mcp.archlang.uk/mcp` | [Install in VS Code](vscode:mcp/install?%7B%22name%22%3A%22archlang%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.archlang.uk%2Fmcp%22%7D) | [Install in VS Code Insiders](vscode-insiders:mcp/install?%7B%22name%22%3A%22archlang%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.archlang.uk%2Fmcp%22%7D) | [Install in Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=archlang&config=eyJ1cmwiOiJodHRwczovL21jcC5hcmNobGFuZy51ay9tY3AifQ==) |
+
+Or by hand:
+
 Claude Code:
 
 ```bash

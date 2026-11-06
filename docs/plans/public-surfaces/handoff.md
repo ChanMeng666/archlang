@@ -33,7 +33,7 @@ fixed the release workflow's registry re-run check; #513 recorded the agent Mark
 - Docs hero both doors above the fold at 1280×800 and 390×844; hero run 7.1 s.
 
 **Open:**
-- **Owner:** the Glama description (needs a login the browser does not have).
+- **Glama description:** done 2026-11-06 (the canonical line, then the tool list).
 - **Next release:** #514 changed the README, the MCP README and the VS Code README after 1.56.0, so
   the npm pages and the listing lag until the next release (a 1.56.1 patch, or the next minor);
   the owner says "release" and the agent runs the whole path.
@@ -49,6 +49,31 @@ fixed the release workflow's registry re-run check; #513 recorded the agent Mark
   - `2d-portfolio/public/cv-llms.txt` is a stale copy of the profile's (12,882 tests);
   - the McCallister post moves off 2026-12-01 (`chanmeng-marketing/calendar.yaml`);
   - the release marker in `archcanvas-growth/data/agent-reach.csv`.
+
+## 3D on every surface (PS-D11, `3d.md`): done, released as 1.57.0
+
+The owner ruled on 2026-11-06 that the archlang-3d preview goes on every ArchLang surface,
+always beside its plan (PS-D12). Every card shipped the same day.
+
+| Card | What | PR |
+|---|---|---|
+| X0 | The ruling recorded in both repos | #516, growth #51 |
+| X1, X2 | The 3D view opens on the settled iso frame; storeys stack | #517 |
+| X3 | Stairs as stepped solids (`treadCount` exported) | #518 |
+| X4, X4b | `gen:3d-assets`: posters, replays and GLBs for 11 plans, a plan PNG each; an asset changes only when what it shows changes; storey-joint z-fight fixed | #519, #523 |
+| X5 | Playground Plan \| 3D switch, `&3d`, Download GLB | #520 |
+| X6 | Docs home band, gallery swap, `/3d` | #521, #525 |
+| X7 | README plan and 3D pairs; npm MCP and VS Code pages | #522 |
+| X8 | Showcase 3D for 11 plans, chanmeng.org, `llms.txt` | showcase #4, 2d-portfolio #13, #524 |
+| X9 | Show HN 3D paragraph and answers | growth #52, #53 |
+| V2 | Fresh readers; "checked against the plan" defined, limits above the pictures | #529 |
+
+- **Release (`v1.57.0`):** core 1.57.0, archlang-3d 0.4.0 (peer `^1.57.0`), MCP 0.2.40, VS Code
+  0.45.0 (Marketplace and Open VSX).
+- **#529 after the release:** it changed the package README wording, so the npm pages carry it at
+  the next release.
+- **Residue:**
+  - backlog ST.1, PG.1–PG.3 and 3D.1–3D.5;
 
 ## What the revision changed (and why)
 
@@ -84,8 +109,8 @@ All of these were made by the owner's delegation on 2026-11-06. They are PS-D10 
 See README §6:
 
 - ~~the GitHub social preview and description~~ (done 2026-11-06);
-- the Marketplace upload;
-- Glama;
+- ~~the Marketplace upload~~ (the agent uploads through Chrome since 0.44.0);
+- ~~Glama~~ (done 2026-11-06);
 - the docs-only patch tag.
 
 A3 was ruled on 2026-11-06 (README §6). The general claim waits for OAS; the OpenPlan3D import is

@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- The line every surface carries (`PREVIEW_LABEL`) now says what "checked against the plan" means:
+  every 3D element comes from the plan's elements, and every solid is closed. The package
+  description says the same; the npm page shows the new README at the next publish.
+
 ## [0.4.0] - 2026-11-06
 
 The core peer range is now `^1.57.0` (was `^1.45.0`): 1.57.0 is the first core that exports

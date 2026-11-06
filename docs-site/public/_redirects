@@ -1,0 +1,6 @@
+# Cloudflare `_redirects`, parsed by the static-asset layer of a Worker with NO `main` script
+# (never served). Two URLs that earlier copies of the docs linked to and that return 404 today:
+# the repo's own file names, `docs/error-codes.md` and `docs/language-reference.md`, whose pages
+# live here at /errors and /reference (docs-site/sync-docs.mjs PAGES).
+/error-codes        /errors     301
+/language-reference /reference  301

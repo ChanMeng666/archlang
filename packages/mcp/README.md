@@ -27,7 +27,7 @@ Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dime
 </tr>
 </table>
 
-Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan. [What the 3D preview shows →](https://archlang.uk/3d)
+Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan: every 3D element comes from the plan's elements, and every solid is closed. [What the 3D preview shows →](https://archlang.uk/3d)
 
 3D preview: walls, openings, floors, stairs and furniture in flat colours; no pitched roofs yet, and no sections, elevations or BIM.
 

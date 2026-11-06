@@ -121,11 +121,14 @@ export function siteMarkdown(src, deps) {
   const fence = (body) => `\`\`\`arch\n${body}\n\`\`\``;
   const playgroundLink = (source) => `${playground}/#z=${encodePlanHash(source)}`;
 
-  // <ArchLive :src="EXAMPLES['x']" /> → the compiled drawing's route + the source.
-  text = text.replace(/^<ArchLive :src="([^"]+)"[^>]*\/>$/gm, (_, expr) => {
+  // <ArchLive :src="EXAMPLES['x']" /> → the compiled drawing's route + the source, and the
+  // plan's static playground page when the widget names one (`page="x"`).
+  text = text.replace(/^<ArchLive :src="([^"]+)"([^>]*)\/>$/gm, (_, expr, attrs) => {
     const name = /^EXAMPLES\['([^']+)'\]$/.exec(expr)?.[1] ?? alias[expr];
     if (!name) throw new Error(`${src}: cannot resolve <ArchLive :src="${expr}">`);
-    return `![${name}.arch, compiled](/examples/${name}.svg)\n\n${fence(example(name))}`;
+    const page = /\bpage="([^"]+)"/.exec(attrs)?.[1];
+    const pageLink = page ? `\n\n[Static page](${playground}/examples/${page}.html)` : "";
+    return `![${name}.arch, compiled](/examples/${name}.svg)${pageLink}\n\n${fence(example(name))}`;
   });
 
   // <AgentPlan id="x" /> → the same provenance the component prints, the sheets, the source.
@@ -342,7 +345,9 @@ export function siteMarkdown(src, deps) {
         `- ${cap} [Open \`${ex}.arch\` in the playground](${playgroundLink(example(ex))})\n\n  ![${cap}](/examples/${ex}.svg)` +
         (posters.has(ex) ? `\n\n  ![The 3D preview of ${ex}.arch, from the same source.](${posters.get(ex)})` : ""),
     );
-    return `## ${heading}\n\n${note}\n\n${items.join("\n")}\n\n`;
+    // HomeGallery.vue's limits line, under the grid when any card has a 3D preview.
+    const limits = plans.some(([, ex]) => posters.has(ex)) ? `${preview().limits}\n\n` : "";
+    return `## ${heading}\n\n${note}\n\n${items.join("\n")}\n\n${limits}`;
   });
   text = text.replace(/^<IsIsntTable \/>\n*/m, () => {
     const vue = read(theme, "IsIsntTable.vue");

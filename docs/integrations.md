@@ -6,7 +6,9 @@ is the slim folder `plugins/archlang/`, not the repository root: the repository 
 that plugin directories can reject. `plugins/archlang/skills/` is filled by `npm run gen:plugin`; the
 other files below by `npm run gen:agent-manifests`. Both are gated by `npm run check:drift`, so edit
 the skill or `src/manifest.ts`, never the output. No generated manifest names a version or a count, so
-none can go stale; hosts read the repository's own tags and releases.
+none can go stale; hosts read the repository's own tags and releases. The one exception is the Gemini
+CLI manifest at the repository root, whose `version` Gemini asks to match the release tag: it carries
+the core's version, so a release bump reruns `npm run gen:agent-manifests`.
 
 Formats were taken from each host's own documentation on 2026-10-13 (the OpenAI directory's on
 2026-10-15); the source URLs are in the header of `scripts/gen-agent-manifests.ts`. The Claude Code plugin (`plugins/archlang/.claude-plugin/`) is
@@ -17,6 +19,7 @@ covered in [`overview.md`](overview.md) and is not repeated here.
 | Codex and ChatGPT | a ZIP built from `plugin.json`, `mcp.json`, `skills/`, `assets/icon.png` (below) | none |
 | GitHub Copilot (CLI) | `plugin.json`, `mcp.json`, `skills/` | `integrations/copilot/*` |
 | Cursor | `.cursor-plugin/plugin.json`, `mcp.json`, `skills/`, `rules/archlang.mdc` | none |
+| Gemini CLI | `gemini-extension.json` at the repository root (not under `plugins/archlang/`) | none |
 | Any Agent Plugins client | `plugin.json`, `mcp.json`, `skills/` | none |
 
 ## What the files are
@@ -39,6 +42,12 @@ covered in [`overview.md`](overview.md) and is not repeated here.
   Copilot custom instructions (repository-wide, and path-specific with `applyTo: "**/*.arch"`), for a
   user to copy into their own project.
 
+- `gemini-extension.json` (repository root): the Gemini CLI extension manifest. `name`, the core's
+  `version` and `description`, the same stdio MCP server as `mcp.json`, and `contextFileName` set to
+  `integrations/copilot/copilot-instructions.md` (Gemini accepts a relative path inside the extension;
+  a root `GEMINI.md` would also load as contributor context, and `AGENTS.md` is the only root
+  instruction file).
+
 `mcp.json` declares the MCP server as a stdio server run with `npx -y @chanmeng666/archlang-mcp`, the
 unpinned command the README recommends, so it names no version. Copilot CLI gives the portable
 `plugin.json` precedence over the Claude manifest, and this file is how Copilot (and Cursor) users get the
@@ -58,6 +67,10 @@ server `https://mcp.archlang.uk/mcp` (below).
   `integrations/copilot/archlang.instructions.md` to `.github/instructions/`.
 - **Cursor:** once listed, install from the Cursor Marketplace. Locally, copy `plugins/archlang/` to
   `~/.cursor/plugins/local/archlang` and reload the window.
+- **Gemini CLI:** `gemini extensions install https://github.com/ChanMeng666/archlang`. The gallery
+  at <https://geminicli.com/extensions/> lists repositories with the `gemini-cli-extension` topic.
+- **OpenClaw:** the skill is on ClawHub at <https://clawhub.ai/chanmeng666/skills/archlang>;
+  `clawhub install archlang` puts it in `./skills/archlang`.
 - **Anything else:** `npx skills add ChanMeng666/archlang` installs the same skills for the hosts the
   `skills` CLI supports. With the GitHub CLI, install one skill at a time by path, e.g.
   `gh skill install ChanMeng666/archlang skills/archlang --agent cursor`: `gh skill install --all`

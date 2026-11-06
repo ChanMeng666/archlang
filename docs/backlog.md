@@ -2467,7 +2467,8 @@ part of the input; an unknown or error code is a usage error. **Size:** S.
 
 ## Registry listings (opened 2026-10-10)
 
-The state of each listing is the table in `docs/seo.md` § 8. These are what is still owed.
+The state of each listing is the table in `docs/seo.md` § 8. These are what is still owed. The
+2026-11-06/07 submissions and deferrals are in `docs/plans/geo-seo/handoff.md`.
 
 Readings of the agent-reach E1/E2 metrics must discount the 2026-10-14 burst traffic (the owner's
 own ~1,500 hosted-MCP requests; `docs/seo.md` section 8).
@@ -2477,7 +2478,8 @@ own ~1,500 hosted-MCP requests; `docs/seo.md` section 8).
 The merge condition, a Glama quality score of any grade, is met: on 2026-10-25 Glama's Dockerfile
 settings were set to install `@chanmeng666/archlang-mcp` and run `archlang-mcp` behind `mcp-proxy`
 (its auto-generated build had run the CLI, not the MCP server), release 0.1.0 built and was rated A.
-The score badge is on the entry in #14383 and the maintainer was told there. Left: the merge.
+The score badge is on the entry in #14383 and the maintainer was told there. On 2026-11-06 #14383
+was rebased and is conflict-free. Left: the merge.
 
 ### O.3 · How the Claude plugin directory learns of a new version is unverified — `todo`
 
@@ -2569,8 +2571,25 @@ rule's WAF records in the Cloudflare dashboard, which an agent cannot open.
 Smithery was acquired by Arcade (arcade.dev) and closed its MCP proxy and publishing on 2026-10-31;
 our Smithery listing is gone and the release path no longer builds for it (#468). Arcade's catalogue
 lists MCP servers (Context7, Exa). Unknown: whether it takes third-party stdio servers, by what
-submission, and on what terms. **Gate:** a short note in `docs/seo.md` § 8 saying yes (with the steps)
+submission, and on what terms. The 2026-11-06 channel research found no submission route (it
+records the Smithery row as retired), and arcade.dev on 2026-11-07 names an "Arcade Registry" to
+"share and discover all your MCP tools" without saying who can publish to it, so the question is
+still open. **Gate:** a short note in `docs/seo.md` § 8 saying yes (with the steps)
 or no (with the reason); a submission itself is the owner's.
+
+### O.17 · The Docker MCP Catalog entry pins an archlang commit — `todo` (at each release)
+
+`servers/archlang/server.yaml` in docker/mcp-registry#6704 (from the owner's fork
+`ChanMeng666/mcp-registry`) builds `packages/mcp/Dockerfile` at a pinned `source.commit`, and the
+Dockerfile installs the `@chanmeng666/archlang-mcp` version in `packages/mcp/package.json` at that
+commit. **Gate:** after a release that moves the MCP package, a follow-up PR there moves the commit
+(`.claude/commands/release-check.md`).
+
+### O.18 · The awesome-openclaw-skills entry waits for ClawHub usage — `todo` (BLOCKED on a third party)
+
+`VoltAgent/awesome-openclaw-skills` declines brand-new skills, so the entry for the ClawHub skill
+(`docs/seo.md` § 8) is deferred; its draft is in the session archive. **Gate:** the skill shows
+users on ClawHub, then the entry is filed.
 
 ## Visual-assets residue (from `docs/plans/visual-assets/handoff.md`, 2026-11-04)
 
@@ -2646,6 +2665,40 @@ never compares the treads drawn with the storey height, so none of these plans w
 riser the drawing implies, where the plan authors a height. **Gate:** the implied riser for each
 example, hand-derived in the test; a plan with no `height` unchanged; the byte-identity law over
 the corpus for `describe()` if a fact is added, and the lint's own corpus findings listed in the PR.
+
+## 3D asset and surface residue (public-surfaces 3D cards X4b, X6, V2, 2026-11-06)
+
+### 3D.1 · The asset check trusts the manifest for the plan PNG — `todo`
+
+`checkAssets` (`packages/archlang-3d/scripts/gen-3d-assets.ts`) compares a committed
+`<name>.plan.png` only by SHA-256 against the manifest, then re-rasterises the source to the
+recorded pixel hash; it never decodes the committed file. A PNG swapped together with its manifest
+`sha256` passes. **Gate:** `pixelsHash(readFileSync(file))` must equal `plan.pixelsSha256`; a
+planted swap fails `--check`.
+
+### 3D.2 · No size budget for plan and poster PNGs — `todo`
+
+The budget table caps WebP, MP4 and GLB only; `.plan.png` (92–245 KB today) and `.poster.png` have
+none, so an A1 sheet could grow unchecked. **Gate:** a budget (for example 300 KB) enforced by the
+generator and `--check`.
+
+### 3D.3 · `pngjs` is not declared by `packages/archlang-3d` — `todo`
+
+The generator script imports it through the root `devDependencies` (hoisting). Not shipped
+(`scripts/` is outside `files`), but an isolated install of the workspace would break. **Gate:**
+`pngjs` and `@types/pngjs` in the package's `devDependencies`.
+
+### 3D.4 · Pitched roofs in the 3D preview — `todo` (design first)
+
+A plan's roof becomes a hidden 150 mm flat slab (`roof-flat-150`); every surface says "no pitched
+roofs yet". **Gate:** a design note (which roof forms the core states, how the replay shows them)
+before any code; the laneway GLB pin moves only with its reason.
+
+### 3D.5 · MP4 replays and byte ranges — `todo` (measure)
+
+Cloudflare answers a `Range` request for `/3d/*.mp4` with 200, so Safari may not play the replays;
+the sites fall back to the poster and an MP4 link. **Gate:** a real Safari check; if it fails,
+serve the MP4s from a host that answers 206, or keep the fallback as the design.
 
 ## Site chrome (found while fixing the nav overflow, 2026-09-20)
 

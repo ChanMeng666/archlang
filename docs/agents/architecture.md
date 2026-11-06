@@ -218,6 +218,29 @@ the Analytics Engine dataset are in `playground/wrangler.jsonc`.
 `eval/` authorability harness, `dataset/` HF dataset generator, `scripts/` generators + smoke,
 `bench/` timings.
 
+`site-shared/doors.json` holds every way in (ChatGPT app, claude.ai connector, agent prompt and
+commands, VS Code, playground) with a per-surface order; `scripts/gen-doors.ts` (`gen:doors`, in
+`check:drift`) writes its marked "Try it" blocks into `README.md`, `packages/mcp/README.md`,
+`editors/vscode/README.md` and `llms.txt`, and both sites import it.
+
+The playground (`playground/src`) has two paths. The view path loads at startup: `main.ts` +
+`shell.ts` (header, Tools menu, Plan | 3D switch, hash flags via `share.ts`), the stage, `strip.ts`
+(thumbnail strip, also written into the served HTML by `scripts/gen-static.mjs` with the default
+drawing), `room-facts.ts`/`room-card.ts` (hover and card), `knobs.ts`/`knobs-panel.ts` (sliders over
+top-level numeric `let`s). Lazy chunks: `compiler.ts` (the core, preloaded), `edit-mode.ts`
+(CodeMirror and the editor panels), `make-own.ts` (the doors sheet), `checks-panel.ts` +
+`checks-overlay.ts` (review rings from the core CLI's `reviewSheetAndWarnings`, built as
+`dist/cli/review.js`), `preview3d.ts` + `plan3d.ts` (the 3D view) and `glb-export.ts` (Download GLB,
+byte-identical to `archlang3d build`). `samples.ts` holds playground-only plans (examples stay
+warning-free).
+
+The docs site home is `CompileSeam.vue` (brief → source → plan hero), `SameSource.vue` (plan beside
+its 3D replay), `WhyCards.vue`, `HowSteps.vue`, `DoorsCard.vue`, `HomeGallery.vue`,
+`IsIsntTable.vue`; `/start` and `/3d` are pages. `docs-site/three-d.mjs` reads the 3D wording from
+`packages/archlang-3d/src/replay/payload.ts` and the plans from `docs-site/public/3d/manifest.json`;
+`sync-docs.mjs` builds the proof figures (`HOME_PROOFS`) from pinned examples, never the agent
+gallery.
+
 `packages/archlang-3d` (separate package, ADRs 0030/0031) reads a resolved plan through the core's public
 seam: `src/adapter` + `src/scene3d` (plan → Scene3D, plan-aligned, integer µm; `src/walls` the
 wall ownership, H1) → `src/mesh` (Mesh3D: closed shells,

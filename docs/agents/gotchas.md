@@ -162,6 +162,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   a block with `indexOf` rather than a lazy `[\s\S]*?` match over compiler output.
 - A PR that touches `docs/agents/commands.md` is high tier (`scripts/risk-tier.mjs`), so it needs the
   owner's words: keep such a line out of an otherwise medium PR and land it separately.
+- `scripts/risk-tier.mjs` also puts `docs-site/public/_headers`, `_redirects`, any `server.json` and
+  the root `package.json` in the high tier, so an SEO or metadata PR that regenerates `_headers`
+  waits for the owner's words even when the rest is docs.
 - Right after an OIDC publish, `npm view` and jsDelivr can still show the old version for a few
   minutes (the log says "being processed"): wait and re-query the registry; never re-run the release.
 
@@ -193,6 +196,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   but its hashed CSS 404s, and every measurement reads plausible and wrong. Restart the preview after
   every build, give a measurement server its own port (a parallel worktree may hold the fixed one),
   and gate on a marker only the new build has, never a status code.
+- **`check:quick` picks the nearest tests**, so `docs-page-meta`, `docs-sync-list`, `docs-fences`
+  and `docs-topics` may run only in CI for a docs-site PR; read its CI before calling it green.
 
 - **An executor's targeted test subset misses corpus-wide guards.** On 2026-10-28 five PRs went red
   only under the full suite: the taste-digest table, the fixture corpus tables (import-module-lets,
@@ -235,6 +240,25 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **`npx tsx test/keep-weak-law-gen.ts` needs a reason argument** and prints only a usage line without one, so a
   conflict in `test/keep-byte-identity-baseline.ts` stays unresolved if you do not read its output.
 - **`check:drift` reports the generated `_headers` as drift while a new docs page is uncommitted.** Commit, then run it.
+- **Two green PRs can break `main` together.** #521 required one MP4 per 3D plan and #523 added
+  plans without one; each PR's CI ran without the other, and `main`'s docs build (and deploy) went
+  red until #525. When two open PRs share a data shape (a manifest, a JSON schema, a component's
+  props), rebase the second after the first merges, and read `main`'s own CI after every merge.
+- **CI runs only on PRs whose base is `main`.** A stacked PR gets no CI, and retargeting it to
+  `main` fires `edited`, not a run: push a commit (or rebase and force-push) to start one.
+- **`check:drift` reads committed files.** An uncommitted edit to a file with a generated block
+  (`README.md`, `llms.txt`, the MCP and VS Code READMEs) reads as drift: commit, then run it.
+- **`python3` on this machine is a stub that silently does nothing.** Use `python`.
+- **A worktree's playground typecheck can miss `@resvg/resvg-wasm`** (the primary checkout's
+  `node_modules` lacks it): run `npm ci` in the worktree rather than junctioning.
+- **vsce rejects an SVG image from a host outside its badge allow-list** (raw.githubusercontent.com
+  included): the VS Code README uses PNGs.
+- **archlang-3d key frames are pinned from CI's printed hashes.** A change that moves frames leaves
+  `e2e/fixtures/keyframe-baseline.json` alone, `check-3d` prints the new hashes, and a follow-up
+  commit on the same PR pins them with the run link (`e2e/fixtures/README.md`). `check-3d` is not a
+  required check, so never merge with it red.
+- **Cloudflare static assets answer a `Range` request with 200, not 206**, so an MP4 may not play
+  on Safari: every replay on the sites keeps its poster and an MP4 link as the fallback.
 - **`2>nul` in the Bash tool on Windows creates files** named `nul`, `nul.L0`, `nul.L1` in the
   working tree (it is cmd syntax). Write `2>/dev/null`.
 
@@ -297,6 +321,13 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   merged head, and grep every caller of a function the other branch changed.
 - **(MCP registry) The `io.github.ChanMeng666/*` namespace is case-sensitive and identity-checked**
   against the npm package's `mcpName`, and the server `description` is capped at 100 chars.
+- **(MCP registry) Search matches server names only**, so the 100-char `description` says what the
+  server is for; the tool-name lockstep lives in `packages/mcp/README.md`'s tool table
+  (`packages/mcp/test/server.test.ts`).
+- **`taskkill` on `workerd.exe` kills every session's `wrangler dev`.** Stop only the process you
+  started, by its PID.
+- **The Claude in Chrome extension drops after a terminal crash**; the owner reconnects it with
+  `/chrome`.
 - **(Eval) Reasoning models spend thinking tokens out of `max_completion_tokens`.** An implausibly low
   score means suspect the token cap (`eval/run.ts` uses 16384) before the language.
 - **(Dataset) `dataset/out/` is gitignored and HF-only.** On re-upload the card's

@@ -46,6 +46,10 @@ const DOCS = [
   "docs-site/mcp.md",
   "docs-site/javascript.md",
   "docs-site/vs-mermaid.md",
+  "docs-site/floor-plan-tools-for-ai-agents.md",
+  "docs-site/floor-plan-with-a-coding-agent.md",
+  "docs-site/text-to-dxf-floor-plan.md",
+  "docs-site/check-a-floor-plan.md",
   "docs-site/3d.md",
   "docs/analysis.md",
   "docs/axonometric.md",
@@ -58,6 +62,7 @@ const DOCS = [
   ".claude/commands/regen.md",
   ".claude/commands/verify-loop.md",
   ".claude/commands/release-check.md",
+  "llms-install.md",
 ];
 
 /** command name (and alias) → every flag + alias it accepts, incl. the global ones. */
@@ -149,7 +154,12 @@ describe("agent-facing docs never tell an agent to run a bare `arch` or a prompt
     "docs-site/mcp.md",
     "docs-site/javascript.md",
     "docs-site/vs-mermaid.md",
+    "docs-site/floor-plan-tools-for-ai-agents.md",
+    "docs-site/floor-plan-with-a-coding-agent.md",
+    "docs-site/text-to-dxf-floor-plan.md",
+    "docs-site/check-a-floor-plan.md",
     "docs-site/3d.md",
+    "llms-install.md",
     // The reference pages the docs site syncs from `docs/` (the generated spec is exempt: it keeps
     // `arch <cmd>` under its one alias line).
     "docs/language-reference.md",

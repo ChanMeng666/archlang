@@ -53,10 +53,17 @@ export interface ReplayPayload {
  * PS-D11, `docs/plans/public-surfaces/3d.md` §2; it replaced decision D5's label). `PREVIEW_LEAD`
  * is its first sentence, which a host may set in bold. The plan's full line adds "You can also
  * download it as a validated GLB." where a surface offers the download.
+ *
+ * What "checked against the plan" means, as the line says it: every 3D element comes from the
+ * plan's elements (each Scene3D record carries the `source` naming its plan element, required by
+ * the schema, V-SCH-01 in `check/verify.ts`; the slab and a default roof come from the storey's
+ * rooms and walls; V-GLTF-02 holds the GLB's nodes to the Mesh3D's, each named `<kind>:<id>`), and
+ * every solid is closed (V-GEO-02, `openEdges` in `check/verify.ts`: every shell closed,
+ * consistently wound, of positive volume). `build` writes nothing when a check fails.
  */
 export const PREVIEW_LEAD = "Same source, plan and 3D preview.";
 export const PREVIEW_LABEL =
-  "Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan.";
+  "Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan: every 3D element comes from the plan's elements, and every solid is closed.";
 /**
  * The limits line, always near a 3D view (PS-D12). It states what the package builds today
  * (`3d.md` §3): change it when the package changes.

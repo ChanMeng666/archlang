@@ -5,7 +5,7 @@
 const ROWS = [
   {
     is: "A text language for floor plans: rooms, walls, doors, windows and furniture in millimetres, in a file you can diff.",
-    isnt: "Not CAD software: plan drawings only. Heights are data and draw nothing; there are no sections or elevations.",
+    isnt: "Not CAD software: the compiler draws plans, and the 3D preview is a separate package's flat-colour preview. Heights draw nothing in the plan; there are no sections or elevations.",
   },
   {
     is: "A 3D preview from the same source (the separate archlang-3d package): walls, openings, floors, stairs and furniture in flat colours.",

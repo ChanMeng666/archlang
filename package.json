@@ -1,7 +1,7 @@
 {
   "name": "@chanmeng666/archlang",
   "version": "1.57.0",
-  "description": "An open-source DSL and compiler for floor plans: write .arch source and compile it to SVG, DXF or PDF with linting and geometric validation.",
+  "description": "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
   "keywords": [
     "architecture",
     "floor-plan",
@@ -9,9 +9,15 @@
     "compiler",
     "svg",
     "cad",
-    "typst",
     "parametric",
-    "language"
+    "language",
+    "floorplan",
+    "floor-plans",
+    "dxf",
+    "pdf",
+    "mcp",
+    "llm",
+    "ai-agents"
   ],
   "license": "MIT",
   "author": "Chan Meng <chanmeng.dev@gmail.com>",

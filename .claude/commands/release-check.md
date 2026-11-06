@@ -41,7 +41,8 @@ you observed. Do NOT push anything — this command only verifies.
      npm's copy of the range's minimum lacks a subpath the server loads.
    - Claude Code plugin manifest (`plugins/archlang/.claude-plugin/plugin.json`): its `version` is
      the core's and its `npx` pin is the shim's exact version. After the version bumps run
-     `npm run gen:plugin` and commit the manifest; `check:drift` fails on a stale one. The release
+     `npm run gen:plugin` and commit the manifest; `check:drift` fails on a stale one. The Gemini CLI
+     manifest (`gemini-extension.json`) carries the core's version too: run `npm run gen:agent-manifests`. The release
      PR pins a shim version that is not on npm until the tag's `release.yml` publishes it, so a
      plugin installed from `main` can fail to launch its server for those few minutes; accepted.
      Confirm `npm view @chanmeng666/archlang-mcp version` equals the pin once the tag run finishes.
@@ -152,6 +153,12 @@ you observed. Do NOT push anything — this command only verifies.
 - **MCP registry race.** The registry step can 404 on a version npm has published but not yet made
   visible. Both npm publishes have already succeeded; run `gh run rerun <id> --failed`. Never delete
   the retry loop (`docs/backlog.md` 4.7).
+- **Confirm the registry entry is live.** After the registry publish, read the entry and check that
+  `remotes` names `https://mcp.archlang.uk/mcp` and the description is `packages/mcp/server.json`'s:
+
+  ```bash
+  curl -s "https://registry.modelcontextprotocol.io/v0.1/servers/io.github.ChanMeng666%2Farchlang-mcp/versions/latest" | node -e "const s=JSON.parse(require('fs').readFileSync(0,'utf8')).server; console.log(s.version, s.description, JSON.stringify(s.remotes))"
+  ```
 - **Sigstore 409 on a provenance publish.** `npm error code TLOG_CREATE_ENTRY_ERROR … (409) an
   equivalent entry already exists in the transparency log` fails a publish job without publishing
   (seen on `publish-archlang-3d` at v1.54.0). Nothing is broken: `gh run rerun <id> --failed` publishes
@@ -240,3 +247,11 @@ you observed. Do NOT push anything — this command only verifies.
   upload it. An update between core releases keeps the CLI pin and names a higher plugin version,
   `npm run build:openai-plugin -- --plugin-version=<version>`. Wait for the scans, then the owner submits (six attestations) and publishes. Steps in
   `docs/integrations.md`.
+- **ClawHub skill (OpenClaw).** Republish `skills/archlang` at the core's version:
+  `clawhub skill publish skills/archlang --slug archlang --name ArchLang --version <core>`. The CLI
+  is installed globally; `clawhub login` is the owner's device flow, so an agent asks the owner to
+  log in when `clawhub whoami` fails. Check with `clawhub inspect archlang` (latest and the scan).
+- **Docker MCP Catalog.** The entry (`servers/archlang/server.yaml` in `docker/mcp-registry`, from
+  the owner's fork `ChanMeng666/mcp-registry`) pins an archlang commit. When the MCP package's
+  version moved, open a follow-up PR there that moves `source.commit` to the release commit
+  (`docs/backlog.md` O.17).
