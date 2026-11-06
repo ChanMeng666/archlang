@@ -196,6 +196,7 @@ account, awaiting maintainers (except where marked):
 | semlinker/awesome-typescript | [#192](https://github.com/semlinker/awesome-typescript/pull/192) |
 | BehiSecc/awesome-claude-skills | [#1212](https://github.com/BehiSecc/awesome-claude-skills/pull/1212) — opened 2026-11-06 |
 | THUCBIMS/Awesome-AIGC4AEC | [#21](https://github.com/THUCBIMS/Awesome-AIGC4AEC/pull/21) — opened 2026-11-06; a papers list, so ArchLang is offered as a project and may be declined |
+| hashgraph-online/awesome-ai-plugins | [#1209](https://github.com/hashgraph-online/awesome-ai-plugins/pull/1209) — opened 2026-11-07 on their outreach issue #554, at the owner's word; Agent Skills section; its scanner must score ≥ 75 before merge |
 
 On 2026-11-06, with the owner's approval in chat, an agent rebased #14383 and #1375 (both had
 conflicts; the re-added lines no longer claim DXF/PDF from the MCP server), left one short comment
