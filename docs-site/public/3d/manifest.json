@@ -14,14 +14,18 @@
         "arch": "x64",
         "chromium": "156.0.8078.4"
       },
-      "poster": {
-        "width": 1600,
-        "height": 900,
-        "t": 1,
-        "theme": "light",
-        "frameSha256": "5717918a1546f7eb85d35df809e03ed71b295529a39169d501f94133f785a441",
-        "webpQuality": 0.9
-      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "5717918a1546f7eb85d35df809e03ed71b295529a39169d501f94133f785a441",
+          "webpQuality": 0.9
+        }
+      ],
       "video": {
         "width": 1280,
         "height": 720,
@@ -69,14 +73,18 @@
         "arch": "x64",
         "chromium": "156.0.8078.4"
       },
-      "poster": {
-        "width": 1600,
-        "height": 900,
-        "t": 1,
-        "theme": "light",
-        "frameSha256": "2465c211ea42feb7135d4efb5177a4730e7ff49a19afeabf8143a8e2415ce53a",
-        "webpQuality": 0.9
-      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "2465c211ea42feb7135d4efb5177a4730e7ff49a19afeabf8143a8e2415ce53a",
+          "webpQuality": 0.9
+        }
+      ],
       "video": {
         "width": 1280,
         "height": 720,
@@ -124,14 +132,18 @@
         "arch": "x64",
         "chromium": "156.0.8078.4"
       },
-      "poster": {
-        "width": 1600,
-        "height": 900,
-        "t": 1,
-        "theme": "light",
-        "frameSha256": "59b0fd87f5f4a953b169d5dbf2973cb86928c09ec3654f2ff0b2c7094343a604",
-        "webpQuality": 0.9
-      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "59b0fd87f5f4a953b169d5dbf2973cb86928c09ec3654f2ff0b2c7094343a604",
+          "webpQuality": 0.9
+        }
+      ],
       "video": {
         "width": 1280,
         "height": 720,
@@ -179,14 +191,18 @@
         "arch": "x64",
         "chromium": "156.0.8078.4"
       },
-      "poster": {
-        "width": 1600,
-        "height": 900,
-        "t": 1,
-        "theme": "light",
-        "frameSha256": "58fd24215f37c080f3774de9c56c1d8765363135cae36edc5f8f1db8b7e66e54",
-        "webpQuality": 0.9
-      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "58fd24215f37c080f3774de9c56c1d8765363135cae36edc5f8f1db8b7e66e54",
+          "webpQuality": 0.9
+        }
+      ],
       "video": {
         "width": 1280,
         "height": 720,
@@ -234,14 +250,28 @@
         "arch": "x64",
         "chromium": "156.0.8078.4"
       },
-      "poster": {
-        "width": 1600,
-        "height": 900,
-        "t": 1,
-        "theme": "light",
-        "frameSha256": "3db3a9e0828c76f2b8493520d8b3872da4963c5f4a0fcb13f24b144ab3b1d06e",
-        "webpQuality": 0.9
-      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "storey:1",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "5d82d4d1a463532668ca62c1fddffce83d1150b43e42419968e310b5dd018305",
+          "webpQuality": 0.9
+        },
+        {
+          "file": "poster-full",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "75820cedbd13a159bcefc868dece167943a1d3147c9025fe15cc36e840004759",
+          "webpQuality": 0.9
+        }
+      ],
       "video": {
         "width": 1280,
         "height": 720,
@@ -250,7 +280,7 @@
         "crf": 24
       },
       "glb": {
-        "sha256": "15f03a63209d7bee8cf934934ef098681b69a59dc7bd9134f51c64800647658d",
+        "sha256": "82517f1c17adba935f08170ba434af7a7494932173c535ef3544d9941ef7420a",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -260,19 +290,27 @@
       "files": [
         {
           "path": "two-storey.poster.webp",
-          "bytes": 39586
+          "bytes": 49730
         },
         {
           "path": "two-storey.poster.png",
-          "bytes": 76125
+          "bytes": 88498
+        },
+        {
+          "path": "two-storey.poster-full.webp",
+          "bytes": 40220
+        },
+        {
+          "path": "two-storey.poster-full.png",
+          "bytes": 76290
         },
         {
           "path": "two-storey.replay.mp4",
-          "bytes": 548471
+          "bytes": 553691
         },
         {
           "path": "two-storey.glb",
-          "bytes": 122936
+          "bytes": 122892
         }
       ]
     },
@@ -289,14 +327,28 @@
         "arch": "x64",
         "chromium": "156.0.8078.4"
       },
-      "poster": {
-        "width": 1600,
-        "height": 900,
-        "t": 1,
-        "theme": "light",
-        "frameSha256": "07a58178fdb8270351733e9bff33a7cdbebc0a77ea7c70526541414c5ca63f8b",
-        "webpQuality": 0.9
-      },
+      "posters": [
+        {
+          "file": "poster",
+          "view": "storey:1",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "8d1bbd8faa4216e4df6fce57bf7191deae785a71e0d46b74837671eabca51ac4",
+          "webpQuality": 0.9
+        },
+        {
+          "file": "poster-full",
+          "view": "all",
+          "width": 1600,
+          "height": 900,
+          "t": 1,
+          "theme": "light",
+          "frameSha256": "cfffd3bf723c37bec93755b494daefd95ef8ad251b88eb5212306a20516bf558",
+          "webpQuality": 0.9
+        }
+      ],
       "video": {
         "width": 1280,
         "height": 720,
@@ -305,7 +357,7 @@
         "crf": 24
       },
       "glb": {
-        "sha256": "fdd8610dd5c86caaa6ae86072f4c18940e913f6a928556d1cc8f144117512c0b",
+        "sha256": "22110e01d24322acb1941add1d733db4112e04bfab6757b34e63255860148893",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -315,19 +367,27 @@
       "files": [
         {
           "path": "turning-stair.poster.webp",
-          "bytes": 35444
+          "bytes": 41766
         },
         {
           "path": "turning-stair.poster.png",
-          "bytes": 69940
+          "bytes": 76430
+        },
+        {
+          "path": "turning-stair.poster-full.webp",
+          "bytes": 35636
+        },
+        {
+          "path": "turning-stair.poster-full.png",
+          "bytes": 69562
         },
         {
           "path": "turning-stair.replay.mp4",
-          "bytes": 420021
+          "bytes": 422329
         },
         {
           "path": "turning-stair.glb",
-          "bytes": 28560
+          "bytes": 28584
         }
       ]
     }
