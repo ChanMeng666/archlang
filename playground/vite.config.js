@@ -45,13 +45,44 @@ function preloadCompiler() {
   };
 }
 
+/**
+ * Fill index.html's JSON-LD with the two values it must not retype: the core's version (the root
+ * package.json, the way the docs config reads it) and the software's `sameAs` listings
+ * (site-shared/identity.json, which the docs JSON-LD reads too). Each placeholder is a quoted
+ * JSON string, so the file stays valid JSON-LD-shaped text; a missing one fails the build.
+ */
+function identityJsonLd() {
+  const version = JSON.parse(readFileSync(resolve(__dirname, "../package.json"), "utf8")).version;
+  const identity = JSON.parse(readFileSync(resolve(__dirname, "../site-shared/identity.json"), "utf8"));
+  const values = {
+    '"%ARCHLANG_VERSION%"': JSON.stringify(version),
+    '"%ARCHLANG_SAME_AS%"': JSON.stringify(identity.softwareSameAs),
+  };
+  return {
+    name: "archlang-identity-jsonld",
+    transformIndexHtml: {
+      order: "pre",
+      handler(html, ctx) {
+        if (!ctx.filename.replace(/\\/g, "/").endsWith("/index.html")) return html;
+        let out = html;
+        for (const [slot, value] of Object.entries(values)) {
+          if (out.split(slot).length !== 2)
+            throw new Error(`vite.config.js: index.html must hold ${slot} exactly once`);
+          out = out.replace(slot, () => value);
+        }
+        return out;
+      },
+    },
+  };
+}
+
 // The playground consumes the *built* core (run `npm run build` in the repo
 // root first). Aliasing to dist/ keeps the published core import path honest
 // and avoids re-resolving the source's `.js` ESM specifiers.
 export default defineConfig({
   root: __dirname,
   base: "./",
-  plugins: [preloadCompiler()],
+  plugins: [identityJsonLd(), preloadCompiler()],
   resolve: {
     alias: {
       // The review sheet (`arch preview --review`), for the Checks overlay: its own built file,

@@ -69,10 +69,23 @@ const SITE_ORIGIN = "https://archlang.uk";
 const OG_IMAGE = `${SITE_ORIGIN}/brand/archlang-og.png`;
 const REPO_URL = "https://github.com/ChanMeng666/archlang";
 const MIT_LICENSE = "https://opensource.org/licenses/MIT";
-const NPM_URL = "https://www.npmjs.com/package/@chanmeng666/archlang";
-const SKILLS_URL = "https://skills.sh/ChanMeng666/archlang";
 /** Author and publisher of everything on this host. A person, not an organisation. */
 const AUTHOR = { name: "Chan Meng", url: "https://github.com/ChanMeng666" };
+
+/**
+ * The entity's ids, its first-party listings (`sameAs`) and its disambiguating sentence, shared
+ * with the playground's JSON-LD, which references the nodes this file defines by these ids.
+ */
+const IDENTITY: {
+  ids: { website: string; author: string; software: string };
+  disambiguatingDescription: string;
+  softwareSameAs: string[];
+} = JSON.parse(readFileSync(fileURLToPath(new URL("../../site-shared/identity.json", import.meta.url)), "utf8"));
+
+/** The author's ORCID, read from CITATION.cff (its first `orcid:` is the first author's), never retyped. */
+const AUTHOR_ORCID: string | undefined = /^\s*orcid:\s*"(https:\/\/orcid\.org\/[^"]+)"/m.exec(
+  readFileSync(fileURLToPath(new URL("../../CITATION.cff", import.meta.url)), "utf8"),
+)?.[1];
 
 /** The published core's version, read once at config load — never retyped. */
 const CORE_VERSION: string = JSON.parse(
@@ -464,22 +477,41 @@ const LASTMOD: Readonly<Record<string, string>> = (() => {
   }
 })();
 
+/**
+ * A route's last-modified date, the same one its sitemap entry carries: `lastmod.json` for the
+ * pages sync-docs generates, VitePress's own git date (`pageData.lastUpdated`, ms) for a tracked
+ * page. Neither → undefined, and the property is omitted rather than invented.
+ */
+function modifiedDate(route: string, lastUpdated: number | undefined): string | undefined {
+  const stamped = LASTMOD[route];
+  if (stamped) return stamped;
+  return typeof lastUpdated === "number" && Number.isFinite(lastUpdated) && lastUpdated > 0
+    ? new Date(lastUpdated).toISOString()
+    : undefined;
+}
+
 /** JSON-LD for one route, as the `<script type="application/ld+json">` body. */
-function structuredData(route: string, url: string, title: string, description: string): string {
+function structuredData(
+  route: string,
+  url: string,
+  title: string,
+  description: string,
+  dateModified: string | undefined,
+): string {
   const person = {
     "@type": "Person",
-    "@id": `${SITE_ORIGIN}/#author`,
+    "@id": IDENTITY.ids.author,
     name: AUTHOR.name,
     url: AUTHOR.url,
-    sameAs: [AUTHOR.url],
+    sameAs: AUTHOR_ORCID ? [AUTHOR.url, AUTHOR_ORCID] : [AUTHOR.url],
   };
   const website = {
     "@type": "WebSite",
-    "@id": `${SITE_ORIGIN}/#website`,
+    "@id": IDENTITY.ids.website,
     url: `${SITE_ORIGIN}/`,
     name: "ArchLang",
     inLanguage: "en-GB",
-    publisher: { "@id": `${SITE_ORIGIN}/#author` },
+    publisher: { "@id": IDENTITY.ids.author },
   };
   const graph =
     route === "/"
@@ -488,19 +520,22 @@ function structuredData(route: string, url: string, title: string, description: 
           person,
           {
             "@type": "SoftwareApplication",
-            "@id": `${SITE_ORIGIN}/#software`,
+            "@id": IDENTITY.ids.software,
             name: "ArchLang",
             applicationCategory: "DeveloperApplication",
             operatingSystem: "Any",
             softwareVersion: CORE_VERSION,
             url: `${SITE_ORIGIN}/`,
             description,
+            // Another project shares the name; this sentence says which ArchLang this is.
+            disambiguatingDescription: IDENTITY.disambiguatingDescription,
             license: MIT_LICENSE,
-            // The same software at its other canonical homes: source, package registry, skills.
-            sameAs: [REPO_URL, NPM_URL, SKILLS_URL],
+            // The same software at its other first-party homes: source, package registries,
+            // editor marketplaces, MCP directories, the dataset and the archive DOI.
+            sameAs: IDENTITY.softwareSameAs,
             offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-            author: { "@id": `${SITE_ORIGIN}/#author` },
-            publisher: { "@id": `${SITE_ORIGIN}/#author` },
+            author: { "@id": IDENTITY.ids.author },
+            publisher: { "@id": IDENTITY.ids.author },
           },
           {
             "@type": "SoftwareSourceCode",
@@ -509,8 +544,8 @@ function structuredData(route: string, url: string, title: string, description: 
             codeRepository: REPO_URL,
             programmingLanguage: "TypeScript",
             license: MIT_LICENSE,
-            author: { "@id": `${SITE_ORIGIN}/#author` },
-            targetProduct: { "@id": `${SITE_ORIGIN}/#software` },
+            author: { "@id": IDENTITY.ids.author },
+            targetProduct: { "@id": IDENTITY.ids.software },
           },
         ]
       : [
@@ -522,7 +557,8 @@ function structuredData(route: string, url: string, title: string, description: 
             description,
             url,
             inLanguage: "en-GB",
-            isPartOf: { "@id": `${SITE_ORIGIN}/#website` },
+            ...(dateModified ? { dateModified } : {}),
+            isPartOf: { "@id": IDENTITY.ids.website },
             author: { "@type": "Person", name: AUTHOR.name, url: AUTHOR.url },
             publisher: { "@type": "Person", name: AUTHOR.name, url: AUTHOR.url },
           },
@@ -606,7 +642,7 @@ export default defineConfig({
   // This hook runs once per page at BUILD time and an exception here fails the build
   // with no page context — so the lookup falls back to the site defaults (return [])
   // rather than throwing on a route the table does not know.
-  transformHead({ page, title, description }): HeadConfig[] {
+  transformHead({ page, title, description, pageData }): HeadConfig[] {
     const route = routeOf(page);
     const meta = PAGE_META_BY_ROUTE.get(route);
     if (!meta) return [];
@@ -634,7 +670,11 @@ export default defineConfig({
     // The structured headline is the page's own name, without the " — ArchLang" the
     // <title> carries: a breadcrumb crumb reading "Language reference — ArchLang"
     // inside a trail that already starts at ArchLang says the brand twice.
-    head.push(["script", { type: "application/ld+json" }, structuredData(route, url, meta.title, description)]);
+    head.push([
+      "script",
+      { type: "application/ld+json" },
+      structuredData(route, url, meta.title, description, modifiedDate(route, pageData.lastUpdated)),
+    ]);
     return head;
   },
   // Could be built into a subdir under any static host; "./" keeps asset URLs

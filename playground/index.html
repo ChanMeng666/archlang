@@ -71,18 +71,13 @@
     <!-- Structured data for search and answer engines. No crawler executes this page's
          JavaScript, so everything a machine can learn here has to be in the served bytes:
          this block plus the intro band below. Keep it in step with the docs site's own
-         graph — the same WebSite @id is the parent of both hosts. -->
+         graph — the same WebSite @id is the parent of both hosts, and every archlang.uk @id
+         here is a node the docs home defines. The two %ARCHLANG_…% values are filled at
+         build time by vite.config.js (the core's version, site-shared/identity.json). -->
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@graph": [
-          {
-            "@type": "Person",
-            "@id": "https://archlang.uk/#chan-meng",
-            "name": "Chan Meng",
-            "url": "https://github.com/ChanMeng666",
-            "sameAs": ["https://github.com/ChanMeng666"]
-          },
           {
             "@type": "WebSite",
             "@id": "https://playground.archlang.uk/#website",
@@ -96,7 +91,7 @@
               "url": "https://archlang.uk/",
               "name": "ArchLang"
             },
-            "publisher": { "@id": "https://archlang.uk/#chan-meng" }
+            "publisher": { "@id": "https://archlang.uk/#author" }
           },
           {
             "@type": "SoftwareApplication",
@@ -109,8 +104,11 @@
             "browserRequirements": "Requires JavaScript.",
             "inLanguage": "en",
             "license": "https://opensource.org/licenses/MIT",
-            "isPartOf": { "@id": "https://archlang.uk/#website" },
-            "author": { "@id": "https://archlang.uk/#chan-meng" },
+            "softwareVersion": "%ARCHLANG_VERSION%",
+            "sameAs": "%ARCHLANG_SAME_AS%",
+            "isPartOf": { "@id": "https://archlang.uk/#software" },
+            "isBasedOn": { "@id": "https://archlang.uk/#software" },
+            "author": { "@id": "https://archlang.uk/#author" },
             "softwareHelp": { "@type": "CreativeWork", "url": "https://archlang.uk/guide" },
             "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
           }
