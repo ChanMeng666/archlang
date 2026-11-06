@@ -37,7 +37,7 @@ function press(e: MouseEvent, name: string): void {
         <figure class="plans3d__fig">
           <div class="plans3d__frame">
             <video
-              v-if="mode[a.name] === 'video'"
+              v-if="a.video && mode[a.name] === 'video'"
               class="plans3d__video"
               :src="a.video.mp4"
               :width="a.video.width"
@@ -50,7 +50,7 @@ function press(e: MouseEvent, name: string): void {
               @error="mode[a.name] = 'failed'"
             ></video>
             <a
-              v-else
+              v-else-if="a.video"
               class="plans3d__facade"
               :href="a.video.mp4"
               :aria-label="`Play the replay of ${a.name}.arch`"
@@ -69,16 +69,31 @@ function press(e: MouseEvent, name: string): void {
               </picture>
               <span class="plans3d__play" aria-hidden="true">▶</span>
             </a>
+            <picture v-else>
+              <source :srcset="a.poster.webp" type="image/webp" />
+              <img
+                :src="a.poster.png"
+                :width="a.poster.width"
+                :height="a.poster.height"
+                :alt="`The 3D preview of ${a.name}.arch, from the same source as the plan.`"
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
           </div>
           <figcaption class="plans3d__cap">
             The 3D preview{{
-              a.poster.storey ? `, storey ${a.poster.storey} on its own; the replay assembles every storey` : ""
+              a.poster.storey
+                ? `, storey ${a.poster.storey} on its own${a.video ? "; the replay assembles every storey" : ""}`
+                : ""
             }}
           </figcaption>
         </figure>
       </div>
       <p class="plans3d__links">
-        <a class="plans3d__mp4" :href="a.video.mp4" @click="press($event, a.name)">Play the replay (MP4)</a> ·
+        <template v-if="a.video"
+          ><a class="plans3d__mp4" :href="a.video.mp4" @click="press($event, a.name)">Play the replay (MP4)</a> ·
+        </template>
         <a :href="a.glb.href" :download="`${a.name}.glb`">Download GLB ({{ a.glbSize }})</a> ·
         <a :href="a.link3d" target="_blank" rel="noopener">Open in the playground (3D)</a> ·
         <a :href="`/examples/${a.name}.arch`">Plan source</a>

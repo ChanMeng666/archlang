@@ -37,7 +37,12 @@ test.describe("the /3d page", () => {
       await expect(item.locator("picture img")).toHaveAttribute("loading", "lazy");
       // Poster first: no video element until the visitor asks for it.
       await expect(item.locator("video")).toHaveCount(0);
-      await expect(item.locator(".plans3d__facade")).toHaveAttribute("href", a.video.mp4);
+      if (a.video) await expect(item.locator(".plans3d__facade")).toHaveAttribute("href", a.video.mp4);
+      else {
+        // A plan published without a replay shows its poster alone, and no MP4 link.
+        await expect(item.locator(".plans3d__facade")).toHaveCount(0);
+        await expect(item.locator(".plans3d__mp4")).toHaveCount(0);
+      }
       const glb = item.getByRole("link", { name: /^Download GLB \(\d+ kB\)$/ });
       await expect(glb).toHaveAttribute("href", a.glb.href);
       await expect(glb).toHaveAttribute("download", `${a.name}.glb`);
@@ -56,13 +61,13 @@ test.describe("the /3d page", () => {
     await item.locator(".plans3d__facade").click();
     const video = item.locator("video");
     await expect(video).toHaveCount(1);
-    await expect(video).toHaveAttribute("src", ASSETS[0]!.video.mp4);
+    await expect(video).toHaveAttribute("src", ASSETS[0]!.video!.mp4);
     await expect(video).toHaveAttribute("controls", "");
     // The link to the file stays under the frame, now a plain link.
     const link = item.locator(".plans3d__mp4");
     await expect(link).toBeVisible();
     await expect(link).toHaveText("Play the replay (MP4)");
-    await expect(link).toHaveAttribute("href", ASSETS[0]!.video.mp4);
+    await expect(link).toHaveAttribute("href", ASSETS[0]!.video!.mp4);
   });
 
   test("a replay that cannot play puts its poster back, with the link to the MP4", async ({ page }) => {
@@ -72,9 +77,9 @@ test.describe("the /3d page", () => {
     await item.locator("video").dispatchEvent("error");
     await expect(item.locator("video")).toHaveCount(0);
     await expect(item.locator(".plans3d__facade picture img")).toBeVisible();
-    await expect(item.locator(".plans3d__mp4")).toHaveAttribute("href", ASSETS[0]!.video.mp4);
+    await expect(item.locator(".plans3d__mp4")).toHaveAttribute("href", ASSETS[0]!.video!.mp4);
     // After a failure the poster is a plain link to the file; it does not try the video again.
-    await expect(item.locator(".plans3d__facade")).toHaveAttribute("href", ASSETS[0]!.video.mp4);
+    await expect(item.locator(".plans3d__facade")).toHaveAttribute("href", ASSETS[0]!.video!.mp4);
   });
 
   for (const [width, height] of [

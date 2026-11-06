@@ -265,8 +265,8 @@ const assets3d = threeDAssets(repo).map((a) => {
   if (!links[a.name]) throw new Error(`sync-docs: the 3D asset ${a.name} is not a gallery example`);
   return { ...a, link3d: `${links[a.name]}&${VIEW3D_PARAM}`, glbSize: sizeLabel(a.glb.bytes) };
 });
-if (!assets3d.some((a) => a.name === HOME_3D_PLAN)) {
-  throw new Error(`sync-docs: the home band's plan ${HOME_3D_PLAN} has no 3D assets in ${MANIFEST}`);
+if (!assets3d.some((a) => a.name === HOME_3D_PLAN && a.video)) {
+  throw new Error(`sync-docs: the home band's plan ${HOME_3D_PLAN} has no 3D assets with a replay in ${MANIFEST}`);
 }
 writeFileSync(
   join(here, ".vitepress", "theme", "three-d-data.js"),

@@ -37,7 +37,7 @@ type Asset = {
   name: string;
   source: string;
   poster: { webp: string; png: string; width: number; height: number; storey: string | null };
-  video: { mp4: string; width: number; height: number };
+  video: { mp4: string; width: number; height: number } | null;
   glb: { href: string; bytes: number; doors: string };
 };
 const T = (await import(/* @vite-ignore */ THREE_D)) as {
@@ -90,7 +90,7 @@ describe("the plans come from the 3D manifest", () => {
     expect(assets.map((a) => a.name)).toEqual(manifest.assets.map((a) => a.name));
     expect(assets.length).toBeGreaterThanOrEqual(6);
     for (const a of assets) {
-      for (const route of [a.poster.webp, a.poster.png, a.video.mp4, a.glb.href]) {
+      for (const route of [a.poster.webp, a.poster.png, a.video?.mp4, a.glb.href].filter((r): r is string => !!r)) {
         expect(route, a.name).toMatch(/^\/3d\//);
         expect(existsSync(join("docs-site/public", route)), `${a.name}: ${route}`).toBe(true);
       }
