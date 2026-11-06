@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import pkg from "../package.json" with { type: "json" };
 import serverJson from "../server.json" with { type: "json" };
@@ -26,10 +27,14 @@ describe("archlang mcp server", () => {
         "validate",
       ].sort(),
     );
-    // The registry description is hand-written (no generator), so it is held to the tools
-    // the server actually registers: every one is named in it.
-    for (const tool of tools)
-      expect(serverJson.description.toLowerCase(), `server.json omits "${tool}"`).toContain(tool);
+    // The registry description is hand-written and capped at 100 characters by the 2025-12-11
+    // server schema, too short to name every tool and also say "floor plan" (GS-D6), so it says
+    // what the server is for. The tool-name lockstep is held against the package README instead,
+    // whose tool table has room: every registered tool has its own row there.
+    expect(serverJson.description.toLowerCase()).toContain("floor plan");
+    expect(serverJson.description.length).toBeLessThanOrEqual(100);
+    const readme = readFileSync(new URL("../README.md", import.meta.url), "utf8").toLowerCase();
+    for (const tool of tools) expect(readme, `README.md has no row for "${tool}"`).toContain(`| \`${tool}\` |`);
     const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
     expect(resources).toEqual([
       "archlang://context",
