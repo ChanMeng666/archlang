@@ -21,7 +21,7 @@ const overlaps = (a: Box, b: Box): boolean =>
  * so a long diagnostic (hillside-villa's W_DRAWING_OVERFLOW) was squeezed to the drawer's
  * height and clipped, leaving the drawer nothing to scroll. The phone layout is the
  * other: three panes and a wrapping header (then, an intro band too) stacked into 812px left each a
- * sliver, so below 900px the workspace shows one of Code / Plan / Problems at a time.
+ * sliver, so below 900px the workspace shows one view at a time (Code / Plan / 3D / Facts / Checks).
  */
 
 /** A plan whose one warning is long enough to overflow the drawer once expanded. */
@@ -141,7 +141,7 @@ test.describe("phone layout", () => {
     await page.goto(`/${await shareHash(HILLSIDE)}`);
     await waitForPlan(page);
     expect(await horizontalOverflow(page), "horizontal overflow at 375px").toBeLessThanOrEqual(0);
-    // No Code · Plan · Problems switcher in view mode: the drawing alone, full width.
+    // No Code · Plan · 3D · Facts · Checks switcher in view mode: the drawing alone, full width.
     await expect(page.locator("#mviews")).toBeHidden();
     await expect(page.locator("#editor")).toBeHidden();
     await page.locator("main").scrollIntoViewIfNeeded();
@@ -162,7 +162,7 @@ test.describe("phone layout", () => {
   });
 
   // In edit mode (`&edit`), as before the view-mode default.
-  test("never scrolls sideways, and the editor, the plan and the problems are each reachable", async ({ page }) => {
+  test("never scrolls sideways, and the editor, the plan and the checks are each reachable", async ({ page }) => {
     await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
     await waitForPlan(page);
     expect(await horizontalOverflow(page), "horizontal overflow at 375px").toBeLessThanOrEqual(0);
@@ -205,11 +205,19 @@ test.describe("phone layout", () => {
   });
 
   // Card PG5b ⑦: every visible control at least 44 × 44 px, wide as well as tall — the header's
-  // buttons and its <summary> triggers (the gallery, Share, ⋯), the stage's switch, storeys and
-  // toolbar, the phone's view switcher — in view mode and in edit mode, on a three-storey plan.
+  // buttons and its <summary> triggers (the gallery, Share, ⋯) and the items of the open Share and ⋯
+  // menus, the stage's switch, storeys, toolbar and knobs heading, the drawing's findings list, the
+  // status's dismiss button, the phone's view switcher, and every control of edit mode's Plan, 3D,
+  // Facts and Checks views — on a three-storey plan with knobs. Inline text links and the a11y
+  // checkbox (its label is the target) are not measured; neither is the Intent text box.
   test("controls are touch-sized: 44 × 44 at least", async ({ page }) => {
-    const CONTROLS =
-      "header button, header select, header summary, .mview, .stage-switch button, .lv-btn, .pz-toolbar button, #preview3d button";
+    const CONTROLS = [
+      "header button, header select, header summary, .mview, .stage-switch button, .lv-btn, .pz-toolbar button",
+      "#preview3d button, .knobs-head, #statusDismiss, .checks button",
+      ".tools-panel button, .tools-panel select, .tools-panel .tb-check, .tools-panel a",
+      ":is(#factsView, #checksView) :is(button, select, summary, input:not([type=checkbox]))",
+      "#errors button",
+    ].join(", ");
     const tooSmall = () =>
       page.locator(CONTROLS).evaluateAll((els) =>
         els
@@ -227,15 +235,73 @@ test.describe("phone layout", () => {
     await waitForPlan(page);
     await expect(page.locator("header summary")).toHaveCount(3);
     await expect(page.locator(".lv-btn")).toHaveCount(3);
+    await expect(page.locator(".pz-viewport .knobs-head")).toBeVisible();
     expect(await tooSmall(), "view mode, the drawing").toEqual([]);
+    // The drawing's findings list (the Checks layer on).
+    await page.locator("#checks").tap();
+    await expect(page.locator(".checks button").first()).toBeVisible();
+    expect(await tooSmall(), "view mode, the findings list").toEqual([]);
+    await page.locator("#checks").tap();
+    // Each header menu open: its items.
+    for (const id of ["#share", "#more"]) {
+      await page.locator(`${id} > summary`).tap();
+      await expect(page.locator(`${id} .tools-panel`)).toBeVisible();
+      expect(await tooSmall(), `view mode, ${id} open`).toEqual([]);
+      await page.locator(`${id} > summary`).tap();
+      await expect(page.locator(`${id} .tools-panel`)).toBeHidden();
+    }
     await page.locator("#view3d").tap();
     await expect(page.locator("#preview3d canvas")).toBeVisible();
     expect(await tooSmall(), "view mode, the 3D preview").toEqual([]);
+
+    // A broken plan: the status notice and its dismiss button.
     await page.goto("about:blank");
-    await page.goto(`/${await shareHash(TOWNHOUSE)}&edit`);
+    await page.goto(`/${await shareHash(BROKEN_PLAN)}`);
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.locator("#statusDismiss")).toBeVisible();
+    expect(await tooSmall(), "view mode, the status").toEqual([]);
+
+    // Edit mode: every view, with a diagnostic so the Checks view has its rows and Apply fix.
+    await page.goto("about:blank");
+    await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
     await waitForPlan(page);
     await expect(page.locator(".mview")).toHaveCount(5);
-    expect(await tooSmall(), "edit mode").toEqual([]);
+    for (const view of ["plan", "3d", "facts", "checks"]) {
+      await page.locator(`.mview[data-mview=${view}]`).tap();
+      if (view === "facts") await expect(page.locator("#takeoffCopy")).toBeVisible();
+      if (view === "checks") await expect(page.locator("#errors .diagrow").first()).toBeVisible();
+      if (view === "3d") await expect(page.locator("#preview3d canvas")).toBeVisible();
+      expect(await tooSmall(), `edit mode, ${view}`).toEqual([]);
+    }
+  });
+
+  // Card PG5b: the knobs sheet opened on a phone covers the stage's foot; the toolbar rides above it
+  // and stays usable.
+  test("the stage toolbar stays clear of the open knobs sheet at 390 px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(`/${await shareHash(TOWNHOUSE)}`);
+    await waitForPlan(page);
+    const knobs = page.locator(".pz-viewport > .knobs");
+    await page.locator(".pz-viewport .knobs-head").tap();
+    await expect(knobs).toHaveAttribute("open", "");
+    await expect(page.locator(".pz-viewport .knob").first()).toBeVisible();
+    const [sheet, bar] = [(await knobs.boundingBox())!, (await page.locator(".pz-toolbar").boundingBox())!];
+    expect(overlaps(sheet, bar), "the toolbar is clear of the open sheet").toBe(false);
+    // Usable: what is under each button's centre is that button (the page scrolls past the header
+    // on a phone, so bring the toolbar on screen first).
+    await page.locator(".pz-toolbar").scrollIntoViewIfNeeded();
+    const covered = await page.locator(".pz-toolbar > button").evaluateAll((bs) =>
+      bs
+        .filter((b) => {
+          const r = b.getBoundingClientRect();
+          return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) !== b;
+        })
+        .map((b) => b.textContent),
+    );
+    expect(covered, "toolbar buttons covered").toEqual([]);
+    const zoom = page.locator('.pz-toolbar [data-pz="in"]');
+    await zoom.tap();
+    await expect(knobs).toHaveAttribute("open", "");
   });
 
   test("a clean plan says so in the Checks view", async ({ page }) => {
@@ -244,7 +310,7 @@ test.describe("phone layout", () => {
     await page.locator(".mview[data-mview=checks]").tap();
     await expect(page.locator(".problems-empty")).toBeVisible();
     await expect(page.locator("#mviewCount")).toBeEmpty();
-    // …and Problems shows the Checks content: the review findings and Lint's clean verdict.
+    // …and the Checks view shows the Checks tab's content: the review findings and Lint's clean verdict.
     await expect(page.locator("#checksView .checks-head")).toHaveText("Checks (default checks): nothing to ring");
     await expect(page.locator("#lintOutput .ok")).toBeVisible();
     // Back on Plan: the drawing, not the Checks tab.

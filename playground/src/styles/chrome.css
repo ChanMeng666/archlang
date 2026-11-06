@@ -1033,6 +1033,10 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   .tools > summary {
     flex: 1;
   }
+  /* ⋯ is the narrowest control: square at the touch size (its desktop rule says 34 px). */
+  #more > summary {
+    min-width: 44px;
+  }
   .tools-panel {
     left: 16px;
     right: 16px;
@@ -1041,7 +1045,10 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
     max-height: 70dvh;
   }
   .tools-group a {
-    padding: 11px 8px;
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 8px;
     font-size: 14px;
   }
 

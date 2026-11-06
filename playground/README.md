@@ -36,7 +36,9 @@ consumes the built core (`../dist/index.js`). Deployed at
   Intent. The **storey switcher** has one home, top-left on the stage under Plan | 3D, in both
   modes, driving every view. The **status** shows only while the plan is compiling (once that is
   slow enough to notice) or broken, or for a moment after an action: a dismissible notice on the
-  stage and a dot on **Source**; `#statusText` stays a live region either way.
+  stage and a dot on **Source**. Its live region is `#statusLive`, a visually hidden copy of the
+  notice's text directly under `<body>`, so it is heard in every layout, the phone's Code view
+  included.
 - **One menu per kind of action (ruling PG-D5):** **Share ▾** holds Copy short link and Copy full
   link (with ADR 0034's note beside them), **Embed**, and **Export**: Copy SVG, Copy PNG and
   Download SVG · PNG · PDF · DXF · TXT · GLB (GLB is the whole plan, written in the page with its

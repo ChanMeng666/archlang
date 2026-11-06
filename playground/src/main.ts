@@ -117,21 +117,27 @@ function openTab(name: string) {
  * ground, so the change reads as a crossfade, and no box moves. It is a class on the incoming view,
  * so nothing waits for it: the 3D preview's first-open playback starts as it would, and the focus
  * stays where it was. Under reduced motion there is no class and the change is instant. Edit mode's
- * tabs, and the page's first paint, never fade.
+ * tabs, and the page's first paint, never fade: a `&3d` link opens the 3D preview while the page
+ * still boots (`data-booting`), and that is no switch.
  */
 const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+const fadeViews = [preview, preview3dEl];
 function fadeIn(el: HTMLElement | undefined, from: string | undefined) {
-  if (!el || root.dataset.mode === "edit" || reducedMotion.matches) return;
+  // Every switch first clears a fade still running: a view hidden mid-fade cancels its animation,
+  // and its class must not outlive it.
+  for (const v of fadeViews) v.classList.remove("pg-fade-in");
+  if (!el || root.dataset.mode === "edit" || reducedMotion.matches || "booting" in root.dataset) return;
   if (from !== "preview" && from !== "preview3d") return;
-  el.classList.remove("pg-fade-in");
   void el.offsetWidth; // restart the animation on a quick switch back
   el.classList.add("pg-fade-in");
 }
-for (const el of [preview, preview3dEl]) {
-  // Its own animation's end only: a child's (the 3D hint's) bubbles here too.
-  el.addEventListener("animationend", (e) => {
-    if (e.target === el) el.classList.remove("pg-fade-in");
-  });
+for (const el of fadeViews) {
+  // Its own animation's end only: a child's (the 3D hint's) bubbles here too. A cancelled one (the
+  // view hidden mid-fade) ends it as well.
+  for (const type of ["animationend", "animationcancel"] as const)
+    el.addEventListener(type, (e) => {
+      if (e.target === el) el.classList.remove("pg-fade-in");
+    });
 }
 for (const tab of tabs) {
   tab.addEventListener("click", () => {
@@ -142,7 +148,7 @@ for (const tab of tabs) {
       t.setAttribute("aria-selected", String(on));
     }
     for (const [name, el] of Object.entries(views)) el.classList.toggle("active", name === tab.dataset.tab);
-    if (from !== tab.dataset.tab) fadeIn(views[tab.dataset.tab ?? ""], from);
+    fadeIn(from !== tab.dataset.tab ? views[tab.dataset.tab ?? ""] : undefined, from);
     // The stage's foot (facts and lede, PG-D6) is the drawing's and the 3D preview's; edit mode's
     // Facts and Checks tabs say the facts themselves.
     factsRow.hidden = tab.dataset.tab !== "preview" && tab.dataset.tab !== "preview3d";

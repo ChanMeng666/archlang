@@ -578,6 +578,42 @@ test.describe("Plan ↔ 3D crossfade (card PG5b)", () => {
       expect(await page.locator(".pz-viewport").boundingBox(), "no layout shift").toEqual(stage);
     });
 
+    test("a `&3d` link's first paint never fades (review follow-up)", async ({ page }) => {
+      // Recorded from the very first script on: the 3D view opens while the page still boots.
+      await page.addInitScript(() => {
+        const seen: string[] = [];
+        (window as unknown as { __fades: string[] }).__fades = seen;
+        new MutationObserver(() => {
+          for (const id of ["preview", "preview3d"])
+            if (document.getElementById(id)?.classList.contains("pg-fade-in")) seen.push(id);
+        }).observe(document, { attributes: true, attributeFilter: ["class"], subtree: true });
+      });
+      await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+      await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+      await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+      expect(await fades(page), "no fade on the first paint").toEqual([]);
+      expect(await settled(page, "preview3d")).toEqual({ opacity: "1", animations: 0, fading: false });
+    });
+
+    test("a quick Plan → 3D → Plan leaves no fade class behind (review follow-up)", async ({ page }) => {
+      await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+      await waitForPlan(page);
+      // Both presses inside one task: the 3D view is hidden long before its 180 ms fade ends.
+      await page.evaluate(() => {
+        document.getElementById("view3d")!.click();
+        document.getElementById("viewPlan")!.click();
+      });
+      await expect(page.locator("#preview")).toHaveClass(/\bactive\b/);
+      await expect.poll(() => settled(page, "preview")).toEqual({ opacity: "1", animations: 0, fading: false });
+      await expect(page.locator(".pg-fade-in")).toHaveCount(0);
+      // …so a later edit-mode tab change fades nothing.
+      await page.locator("#sourceToggle").click();
+      await expect(page.locator("html")).toHaveAttribute("data-mode", "edit");
+      await page.locator("#tab-preview3d").click();
+      await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+      await expect(page.locator(".pg-fade-in")).toHaveCount(0);
+    });
+
     test("edit mode's tabs never fade", async ({ page }) => {
       await gotoEdit(page);
       await watchFades(page);

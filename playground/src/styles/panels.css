@@ -1813,7 +1813,7 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
 }
 /* …and under the storeys too, when a plan has them (card PG5b ③: the chip covered the knobs'
    heading). The phone's knobs are the foot sheet, clear of the corner already. */
-@media (min-width: 901px) {
+@media not all and (max-width: 900px) {
   .pane:has(#storeys:not([hidden])) .p3d-stage > .knobs {
     top: 50px;
   }
@@ -2076,6 +2076,11 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   .pz-viewport:has(> .knobs:not([hidden])) .pz-toolbar {
     bottom: 54px;
   }
+  /* Opened, the sheet takes up to half the stage (`.knobs` max-height): the toolbar rides above that,
+     over the drawing, and stays usable. */
+  .pz-viewport:has(> .knobs[open]:not([hidden])) .pz-toolbar {
+    bottom: calc(50% + 8px);
+  }
   .pz-toolbar button {
     min-width: 44px;
     height: 44px;
@@ -2097,7 +2102,7 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
     padding: 0 12px 10px;
   }
   .diag-apply {
-    min-height: 40px;
+    min-height: 44px;
     padding: 0 12px;
   }
   #describe,
@@ -2106,8 +2111,15 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
     padding-left: 16px;
     padding-right: 16px;
   }
+  /* Every control of edit mode's Facts and Checks views and of the drawing's findings list at least
+     44 × 44 px (card PG5b ⑦; layout.spec measures them). */
   .lint-controls select,
-  .repair-btn {
-    min-height: 40px;
+  .repair-btn,
+  .sug-insert,
+  .checks-list button,
+  .describe-json summary,
+  .to-waste {
+    min-height: 44px;
+    min-width: 44px;
   }
 }
