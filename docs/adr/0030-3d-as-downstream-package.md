@@ -48,7 +48,9 @@ door-leaf pose) are defaults, not facts.
    nothing public until the replay viewer is accepted; then, on the owner's word, a playground toggle
    labelled "Preview — from the separate archlang-3d package. ArchLang itself draws plans." and the
    owner's own posts; the docs site and landing pages only at the release milestone. ArchLang remains a
-   plan language.
+   plan language. *Exposure superseded for ArchLang surfaces by PS-D11 (owner, 2026-11-06,
+   `docs/plans/public-surfaces/3d.md`): the 3D preview may appear on every ArchLang public surface,
+   beside its plan, with the PS-D12 line in place of this label. The package stays separate.*
 2. **It reads already-resolved data through public surfaces.** Primary input: `resolvePlan(source,
    { world })` from the core's root (ADR 0031), which links imports; the `compile().ast` → `resolveAll`
    route silently drops imported content. Plan JSON is a secondary input accepted only for the subset it

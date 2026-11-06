@@ -43,7 +43,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   read (a T0 piece stays one node; one primitive or mesh per slot), the building's kind colours
   (`KIND_PALETTE`) and the floor finishes (`FINISH_PALETTE`; a room's from its `uses`,
   `floorFinish`, ledgered `floor-finish-default`).
-- `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure),
+- `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure; several
+  storeys rise exploded and settle to their real heights by the end),
   `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js 0.186.1,
   `mountReplay(canvas, payload)` → `seek`/`frameHash`; with `interactive: true` the free camera,
   three.js's `OrbitControls`, → `view`), `camera.ts` (the end camera and the stops, and the free
@@ -56,7 +57,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   facts in `extras.archlang`; deterministic bytes.
 - `src/check/verify.ts`: V-SCH-01, V-GEO-02, V-GLTF-01 (Khronos glTF-Validator, 0 errors and 0
   warnings) and V-GLTF-02 (the GLB's nodes are the Mesh3D's, named per plan §3.6).
-- `src/browser.ts` (`./browser`): `replayPayload` + `mountReplay` + `PREVIEW_LABEL` for a page
+- `src/browser.ts` (`./browser`): `replayPayload` + `mountReplay` + `PREVIEW_LABEL` and
+  `PREVIEW_LIMITS` (the PS-D12 line and the limits line, `payload.ts`) for a page
   that shows the replay (the playground's 3D preview tab, card A5); it bundles three.js, so it is
   not `.`.
 - `src/node.ts`: the Node `World` and the Node-only builders (replay, GLB, checks), kept out of the

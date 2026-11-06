@@ -41,6 +41,8 @@ import {
   type PresetName,
   presetCamera,
   START_FOV,
+  settledLift,
+  stopCount,
   takenLens,
   targetBounds,
   type Vec3,
@@ -226,8 +228,9 @@ export function mountReplay(
   fill.position.set(...LIGHT.fillFrom);
   scene.add(fill);
 
-  // Nodes in millimetres. Each node rises about its own base (its lowest point).
-  const nodes = new Map<string, { g: Group; flat: number }>();
+  // Nodes in millimetres. Each node rises about its own base (its lowest point). A node of an
+  // exploded storey (`lift`) comes down by it as the storeys settle (`stateAt`'s `settle`).
+  const nodes = new Map<string, { g: Group; flat: number; base: number; lift: number }>();
   const owned: Array<{ dispose: () => void }> = [];
   for (const n of p.nodes) {
     const pos = new Float32Array(n.positions.length);
@@ -330,7 +333,7 @@ export function mountReplay(
     }
     g.visible = false;
     scene.add(g);
-    nodes.set(n.key, { g, flat: Math.min(1, FOOTPRINT_MM / Math.max(1e-6, topY - base)) });
+    nodes.set(n.key, { g, flat: Math.min(1, FOOTPRINT_MM / Math.max(1e-6, topY - base)), base, lift: n.lift ?? 0 });
   }
 
   // The first frame frames the core drawing's viewBox exactly, letterboxed as the image is.
@@ -356,12 +359,15 @@ export function mountReplay(
   const size = hi.clone().sub(lo);
   const mid = lo.clone().add(hi).multiplyScalar(0.5);
   // Every point of the building lies within this of any target the camera aims at (the target moves
-  // from the drawing's centre to the stops' targets).
-  const reach = Math.max(...fits.map((f) => mid.distanceTo(new Vector3(...f.target))));
-  const radius = Math.max(
-    size.length() * 0.75 + reach + Math.hypot(mid.x - (vx + vw / 2), mid.z - (vy + vh / 2)),
-    1000,
-  );
+  // from the drawing's centre to the stops' targets). `radius` is the rise's (the stops' targets);
+  // `endRadius` adds the settle's (several storeys: the assembled building's fit, the last), so a
+  // frame before the settle keeps the very clip range it had before the settle existed.
+  const radiusOver = (cams: readonly { target: Vec3 }[]): number => {
+    const reach = Math.max(...cams.map((f) => mid.distanceTo(new Vector3(...f.target))));
+    return Math.max(size.length() * 0.75 + reach + Math.hypot(mid.x - (vx + vw / 2), mid.z - (vy + vh / 2)), 1000);
+  };
+  const radius = radiusOver(fits.slice(0, stopCount(p.events)));
+  const endRadius = radiusOver(fits);
   const rad = (d: number) => (d * Math.PI) / 180;
 
   const img = new Image();
@@ -390,7 +396,7 @@ export function mountReplay(
    * that is wider, as it is for the end camera's target (`reach` covers it), so a preset that is the
    * end camera draws the end frame's own near and far planes.
    */
-  const reachFrom = (target: Vector3): number => Math.max(radius, mid.distanceTo(target) + halfDiagonal);
+  const reachFrom = (target: Vector3): number => Math.max(endRadius, mid.distanceTo(target) + halfDiagonal);
 
   /** Aim the perspective camera from `f`, its near and far planes `r` either side of the target. */
   function place(f: FrameCamera, r: number): void {
@@ -409,7 +415,14 @@ export function mountReplay(
   }
 
   // The presets (`presetCamera`), each a pure function of the scene, worked out when first asked for.
-  const viewScene: ViewScene = { events: p.events, fits, frame: frameView, box: boxOfNodes(p.nodes), aspect };
+  // They frame the building as the end frame shows it: the storeys settled (`ViewScene.box`).
+  const viewScene: ViewScene = {
+    events: p.events,
+    fits,
+    frame: frameView,
+    box: boxOfNodes(p.nodes, { settle: 1 }),
+    aspect,
+  };
   const presets = new Map<PresetName, FrameCamera>();
   const presetOf = (name: PresetName): FrameCamera => {
     const known = presets.get(name);
@@ -438,10 +451,11 @@ export function mountReplay(
     tNow = t;
     if (strip && p.facts) paintStrip(strip, stripAt(p.facts, p.events, Math.min(1, Math.max(0, t))));
     const s = stateAt(p.events, t);
-    for (const [key, { g, flat }] of nodes) {
+    for (const [key, { g, flat, base, lift }] of nodes) {
       const st = s.nodes.get(key);
       g.visible = st?.visible === true && (storeyOf.get(key) ?? 0) < shown;
       g.scale.y = Math.max(flat, st?.rise ?? 0);
+      if (lift !== 0) g.position.y = base + settledLift(lift, s.settle);
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
     if (holder === "free" && controls) {
@@ -457,7 +471,7 @@ export function mountReplay(
       place(f, reachFrom(new Vector3(...f.target)));
       cam = persp;
     } else if (s.tilt > 0 || s.dolly > 0) {
-      place(frameCamera(s, fits, frameView), radius);
+      place(frameCamera(s, fits, frameView), s.settle > 0 ? endRadius : radius);
       cam = persp;
     }
     renderer.render(scene, cam);

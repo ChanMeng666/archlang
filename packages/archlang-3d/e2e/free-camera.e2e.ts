@@ -82,7 +82,7 @@ describe("the replay HTML's free camera (card CR4)", () => {
       expect(await now()).toBe(end);
 
       // `__seek` still means the replay's own frame, whoever held the camera.
-      await button("North elevation: from the plan's top edge").click();
+      await button("View from north: level, from the plan's top edge").click();
       expect(await now()).not.toBe(end);
       const seeked = await page.evaluate(async () => {
         window.__seek(1);

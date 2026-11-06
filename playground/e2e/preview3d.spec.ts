@@ -24,7 +24,11 @@ import { BROKEN_PLAN, openTools, SIMPLE_PLAN, setEditorSource, shareHash, waitFo
 test.use({ launchOptions: { args: SWIFTSHADER_ARGS } });
 
 const DIST = join(dirname(fileURLToPath(import.meta.url)), "..", "dist");
-const LABEL = "Preview — from the separate archlang-3d package. ArchLang itself draws plans.";
+// The PS-D12 line and the limits line (public-surfaces card X1), as the package exports them.
+const LABEL =
+  "Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan.";
+const LIMITS =
+  "3D preview: walls, openings, floors and furniture in flat colours; no stairs or pitched roofs yet, and no sections, elevations or BIM.";
 
 interface Handle {
   seek: (t: number) => void;
@@ -56,6 +60,12 @@ test.describe("3D preview tab", () => {
     await expect(page.locator("#tab-preview3d")).toHaveAttribute("aria-selected", "true");
     await expect(page.locator(".tabview.active")).toHaveCount(1);
     await expect(page.locator("#preview3d")).toContainText(LABEL);
+    await expect(page.locator("#preview3d .p3d-limits")).toHaveText(LIMITS);
+    await expect(page.locator("#preview3d .p3d-label a")).toHaveAttribute(
+      "href",
+      "https://www.npmjs.com/package/@chanmeng666/archlang-3d",
+    );
+    await expect(page.locator("#preview3d .p3d-label a")).toHaveText("What it shows");
     const canvas = page.locator("#preview3d canvas");
     await expect(canvas).toBeVisible();
     expect(chunks.length, "the 3D chunk loads on the first open").toBe(1);
@@ -97,6 +107,31 @@ test.describe("3D preview tab", () => {
     expect(chunks.length, "the 3D chunk is fetched once").toBe(1);
   });
 
+  test("opens on the end frame, unplayed; Replay plays the replay from the start (card X1)", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await page.locator("#tab-preview3d").click();
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await page.evaluate(async () => {
+      await (window as W).__preview3d?.ready;
+    });
+    const scrub = page.locator('#preview3d input[type="range"]');
+    // The settled iso view at once: t = 1, and it stays there (nothing plays on its own).
+    await expect(scrub).toHaveValue("1");
+    const opened = await current(page);
+    await page.waitForTimeout(400);
+    await expect(scrub).toHaveValue("1");
+    expect(await current(page), "no playback on open").toBe(opened);
+    expect(await hashAt(page, 1), "the frame it opens on is the end frame").toBe(opened);
+    // Replay plays from the start.
+    await page
+      .locator("#preview3d")
+      .getByRole("button", { name: /^Replay/ })
+      .click();
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeLessThan(0.9);
+    await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
+  });
+
   test("a plan the package refuses shows the refusal, not a crash", async ({ page }) => {
     const errors: string[] = [];
     page.on("pageerror", (e) => errors.push(e.message));
@@ -126,6 +161,19 @@ test.describe("3D preview tab", () => {
     await expect(page.locator(".cm-content")).toHaveCount(0);
   });
 });
+
+/**
+ * Press Replay and wait until the playback has left the end frame the tab opens on (card X1): the
+ * playback cases below start here.
+ */
+async function replay(page: Page): Promise<void> {
+  const scrub = page.locator('#preview3d input[type="range"]');
+  await page
+    .locator("#preview3d")
+    .getByRole("button", { name: /^Replay/ })
+    .click();
+  await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeLessThan(0.5);
+}
 
 /** Open the 3D tab and wait until a replay is mounted and its drawing is ready. */
 async function open3d(page: Page): Promise<void> {
@@ -177,6 +225,7 @@ test.describe("3D preview tab follows the editor", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&edit`);
     await waitForPlan(page);
     await open3d(page);
+    await replay(page);
     const scrub = page.locator('#preview3d input[type="range"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.15);
     await page.evaluate(() => {
@@ -192,6 +241,7 @@ test.describe("3D preview tab follows the editor", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}&edit`);
     await waitForPlan(page);
     await open3d(page);
+    await replay(page);
     const scrub = page.locator('#preview3d input[type="range"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
     await page.locator("#tab-lint").click();
@@ -297,7 +347,7 @@ test.describe("3D preview tab: the free camera", () => {
     await page.mouse.wheel(0, -240);
     expect(await current(page), "the wheel zooms").not.toBe(end);
     const seen = new Set([end]);
-    for (const name of [/^Top view/, /^North elevation/, /^East elevation/, /^South elevation/, /^West elevation/]) {
+    for (const name of [/^Top view/, /^View from north/, /^View from east/, /^View from south/, /^View from west/]) {
       await button(name).click();
       seen.add(await current(page));
     }
@@ -305,6 +355,22 @@ test.describe("3D preview tab: the free camera", () => {
 
     // `__seek` keeps its meaning: the replay's own frame at t.
     expect(await hashAt(page, 1)).toBe(end);
+  });
+
+  test("Replay under reduced motion stays on the end frame (card X1)", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
+    await waitForPlan(page);
+    await open3d(page);
+    const scrub = page.locator('#preview3d input[type="range"]');
+    await expect(scrub).toHaveValue("1");
+    const end = await current(page);
+    await page
+      .locator("#preview3d")
+      .getByRole("button", { name: /^Replay/ })
+      .click();
+    await page.waitForTimeout(400);
+    await expect(scrub).toHaveValue("1");
+    expect(await current(page), "no motion: the end frame").toBe(end);
   });
 
   test("hiding the upper storeys shows the floor below; All brings the end frame back", async ({ page }) => {
@@ -372,6 +438,7 @@ test.describe("3D preview tab: a preset during playback", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await open3d(page);
+    await replay(page);
     const scrub = page.locator('#preview3d input[type="range"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
     const top = page.locator("#preview3d").getByRole("button", { name: /^Top view/ });
@@ -399,6 +466,7 @@ test.describe("3D preview tab: grabbing the view", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await open3d(page);
+    await replay(page);
     const scrub = page.locator('#preview3d input[type="range"]');
     await expect.poll(async () => Number(await scrub.inputValue()), { timeout: 10_000 }).toBeGreaterThan(0.05);
     const box = await page.locator("#preview3d canvas").boundingBox();

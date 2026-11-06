@@ -17,8 +17,9 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
 - Exposure (PS-D11, `docs/plans/public-surfaces/3d.md`): the 3D preview may appear on every ArchLang
   public surface, always beside its plan, from a real `.arch` file, with the PS-D12 line and limits
   line. Never "3D CAD", "BIM", "render", "walkthrough", "photoreal" or "model" as a product claim:
-  "3D preview", "drafting-order replay". Never on ArchCanvas surfaces. The playground tab keeps
-  `PREVIEW_LABEL` and the package README D5's words (`test/package-meta.test.ts`) until X1. Published at 0.x (D20): a version bump merges, then `gh workflow run release.yml --ref main` publishes it with provenance.
+  "3D preview", "drafting-order replay". Never on ArchCanvas surfaces. `PREVIEW_LABEL` is the PS-D12 line and
+  `PREVIEW_LIMITS` the limits line (the playground tab, the replay HTML); the package README carries
+  both (`test/package-meta.test.ts`). Side views are "View from north" etc., never "elevation". Published at 0.x (D20): a version bump merges, then `gh workflow run release.yml --ref main` publishes it with provenance.
 - `exports` and `bin` name `dist/`; the repository reads `src/` (tests, `npm run archlang3d`, the
   playground's alias). A new file a built module reads at run time goes beside `dist/`'s modules in
   `tsup.config.ts`'s `onSuccess`; `e2e/pack.e2e.ts` and `prove:pack` hold the tarball.

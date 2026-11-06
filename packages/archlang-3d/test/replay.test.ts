@@ -23,6 +23,7 @@ import {
   END_FOV,
   explodeLifts,
   fitEndCamera,
+  settledLift,
   keyFrames,
   type Mesh3D,
   PHASE,
@@ -33,7 +34,7 @@ import {
   viewMesh,
 } from "../src/index.js";
 import { cameraPosition } from "../src/replay/camera.js";
-import { PREVIEW_LABEL, replayHtml, replayPayload } from "../src/node.js";
+import { PREVIEW_LABEL, PREVIEW_LEAD, PREVIEW_LIMITS, replayHtml, replayPayload } from "../src/node.js";
 import { EXAMPLES_LIST, WORLD } from "./corpus.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -133,8 +134,9 @@ describe("replay timeline (D3)", () => {
     expect(stateAt(ev, 0.3).tilt).toBe(0);
     expect(stateAt(ev, 1).tilt).toBe(1);
     expect([...stateAt(ev, 1).nodes.values()].filter((s) => s.visible).every((s) => s.rise === 1)).toBe(true);
-    // One storey: one camera stop, and the dolly runs to the end.
+    // One storey: one camera stop, the dolly runs to the end, and nothing settles (card X2).
     for (const t of [0.5, 0.7, 0.9, 1]) expect(stateAt(ev, t).stop).toBe(0);
+    for (const t of [0, 0.5, 0.97, 1]) expect(stateAt(ev, t).settle).toBe(0);
     expect(stateAt(ev, 0.96).dolly).toBeLessThan(1);
     expect(stateAt(ev, 1).dolly).toBe(1);
   });
@@ -259,7 +261,44 @@ describe("multi-storey views (D14: each storey on its own, and the storeys combi
       const end0 = Math.max(...ev.filter((e) => !e.hidden && e.storey === 0).map((e) => e.riseTo));
       expect(stateAt(ev, end0).stop).toBe(0);
       expect(stateAt(ev, end0).dolly).toBe(1);
-      expect(stateAt(ev, 1).stop).toBe(levels.length - 1);
+      // The last stop is the exploded building, once everything is up; then the settle (card X2)
+      // runs the camera on to the assembled building's framing, `cameraStops`'s last fit.
+      const up = Math.max(...ev.filter((e) => !e.hidden).map((e) => e.riseTo));
+      expect(up).toBeLessThanOrEqual(PHASE.done);
+      expect(stateAt(ev, up).stop).toBe(levels.length - 1);
+      expect(stateAt(ev, PHASE.done).stop).toBe(levels.length - 1);
+      expect(stateAt(ev, 1).stop).toBe(levels.length);
+    });
+
+    it(`${name}: combined, the storeys settle to their real heights by the end (card X2)`, () => {
+      const ev = timeline(mesh);
+      // The whole rise, every key frame but the end included, is exploded: the settle is 0.
+      for (const k of keyFrames(ev))
+        if (k.label !== "end") expect(stateAt(ev, k.t).settle, `${name} ${k.label}`).toBe(0);
+      expect(stateAt(ev, PHASE.done).settle).toBe(0);
+      const mid = stateAt(ev, (PHASE.done + 1) / 2).settle;
+      expect(mid).toBeGreaterThan(0);
+      expect(mid).toBeLessThan(1);
+      expect(stateAt(ev, 1).settle).toBe(1);
+      // At the end every node stands where the mesh puts it: the assembled building, not exploded.
+      const svg = compile(src, { world: WORLD }).svg;
+      const p = replayPayload(mesh, { title: name, svg });
+      expect(
+        p.nodes.some((n) => (n.lift ?? 0) > 0),
+        name,
+      ).toBe(true);
+      for (const n of p.nodes) expect(settledLift(n.lift, stateAt(ev, 1).settle), n.key).toBe(0);
+      const assembled = boxOfNodes(p.nodes.map(({ lift: _lift, ...n }) => n));
+      expect(boxOfNodes(p.nodes, { settle: 1 })).toEqual(assembled);
+      expect(boxOfNodes(p.nodes, { settle: 0 })).toEqual(boxOfNodes(p.nodes));
+      // The upper storeys stand on the ones below: the exploded box is taller by the top lift.
+      const top = (levels.length - 1) * 3000;
+      expect(boxOfNodes(p.nodes).hi[1] - assembled.hi[1]).toBeCloseTo(top, 6);
+      // And the camera the end frame is drawn from is the assembled building's fit.
+      const orbit = { elevation: p.elevation, azimuth: END_AZIMUTH, fov: END_FOV, aspect: 16 / 9 };
+      const fits = cameraStops(p.nodes, p.events, orbit);
+      expect(fits.length).toBe(levels.length + 1);
+      expect(fits[levels.length]).toEqual(fitEndCamera(assembled, orbit));
     });
 
     it(`${name}: combined key frames sample each upper storey's start and each camera stop`, () => {
@@ -353,7 +392,11 @@ describe("the end frame fills the canvas (look notes round 1)", () => {
         expect(s.tilt, `${name} ${label}: the end orbit is reached`).toBe(1);
         const cam = frameCamera(s, fits, frame);
         const o = { elevation: cam.elevation, azimuth: cam.azimuth, fov: cam.fov, aspect: ASPECT };
-        const box = boxOfNodes(p.nodes.filter((n) => s.nodes.get(n.key)?.visible));
+        // Where the nodes stand at t: exploded at every stop, settled at the end (card X2).
+        const box = boxOfNodes(
+          p.nodes.filter((n) => s.nodes.get(n.key)?.visible),
+          { settle: s.settle },
+        );
         const pr = projectBox(box, cam, o);
         for (const x of [...pr.x, ...pr.y]) expect(Math.abs(x), `${name} ${label}`).toBeLessThanOrEqual(0.95);
         expect(coverage(box, cam, o), `${name} ${label}`).toBeGreaterThanOrEqual(0.8);
@@ -370,7 +413,8 @@ describe("the end frame fills the canvas (look notes round 1)", () => {
       const svg = compile(src, { world: WORLD }).svg;
       for (const v of viewsOf(mesh)) {
         const p = replayPayload(viewMesh(mesh, v), { title: name, svg });
-        const box = boxOfNodes(p.nodes);
+        // The end frame's building: the storeys settled (card X2; one storey has no lifts).
+        const box = boxOfNodes(p.nodes, { settle: 1 });
         const orbit = { elevation: p.elevation, azimuth: END_AZIMUTH, fov: END_FOV, aspect: ASPECT };
         const end = fitEndCamera(box, orbit);
         const pr = projectBox(box, end, orbit);
@@ -391,6 +435,8 @@ describe("replay HTML", () => {
     expect(html).toMatch(/three\.js 0\.186\.1/);
     expect(html).toMatch(/MIT License/);
     expect(html).toContain(PREVIEW_LABEL);
+    expect(html).toContain(PREVIEW_LIMITS);
+    expect(PREVIEW_LABEL.startsWith(PREVIEW_LEAD)).toBe(true);
     expect(html).toContain('id="archlang-replay-payload"');
     expect(html).not.toMatch(/<script[^>]+src=/i);
     expect(html).not.toMatch(/<link[^>]+href=/i);

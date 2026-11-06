@@ -10,10 +10,10 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Mesh3D } from "../mesh/types.js";
-import { PREVIEW_LABEL, type ReplayOptions, replayPayload } from "./payload.js";
+import { PREVIEW_LABEL, PREVIEW_LIMITS, type ReplayOptions, replayPayload } from "./payload.js";
 import { VIEW_CONTROLS_LABEL } from "./view-dom.js";
 
-export { PREVIEW_LABEL, replayPayload, viewBoxOf } from "./payload.js";
+export { PREVIEW_ABOUT_URL, PREVIEW_LABEL, PREVIEW_LEAD, PREVIEW_LIMITS, replayPayload, viewBoxOf } from "./payload.js";
 export type { ReplayOptions } from "./payload.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -103,6 +103,7 @@ canvas:focus-visible{outline:2px solid ${fg};outline-offset:2px}
 <input id="archlang-replay-t" type="range" min="0" max="1" step="0.001" value="0" aria-label="Replay position">
 <div id="archlang-replay-views"></div>
 <p>${escapeHtml(PREVIEW_LABEL)}</p>
+<p>${escapeHtml(PREVIEW_LIMITS)}</p>
 </main>
 <script type="application/json" id="archlang-replay-payload">${json}</script>
 <script>${script}</script>

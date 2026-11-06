@@ -13,6 +13,21 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-pinned by public-surfaces card X2 (2026-11-06, storeys stack): a replay of several storeys
+now ends assembled. The storeys still rise exploded (3 m apart, with the camera stops); from
+`PHASE.done` to `t = 1` they come down to their real heights and the camera moves from the last
+stop to a fit of the assembled building (`stateAt`'s `settle`, `cameraStops`'s last fit). Exactly
+one frame moves: two-storey's `end` (it was `7a2c8d11…`, the same hash as `stop:2`; it is now the
+assembled building, a different frame). Every other frame is unchanged by construction: each sits
+at `settle = 0` with the same state, the same camera and the same clip range (the viewer keeps the
+rise's clip radius until the settle starts), as a browser-free sweep of every corpus plan and view
+showed (the event table, the payload, and each key frame's `stateAt` and `frameCamera` hashed
+before and after: only the combined view's `end` of the five multi-storey plans moved, and only by
+`stop`, `settle` and the camera). laneway-house (one storey) has no settle. The new `end` hash was
+not rendered locally (the heavy suite is CI's): it is the hash CI's `check-3d` job printed for
+two-storey `end` (GitHub Actions run https://github.com/ChanMeng666/archlang/actions/runs/42143593654, job check-3d), entered with every other hash and both `taken`
+entries unchanged.
+
 Re-taken by visual-assets card V9 (2026-11-04, viewer polish) on Windows 11 x64 with the same
 Chromium build and command: the replay is lit and coloured anew, so every one of the 17 frames
 moved, by design: a hemisphere light (warm-white sky over a warm-grey ground), one fixed key and a

@@ -34,6 +34,14 @@
  * Considered, not built: upper storeys fading (translucent walls over a furnished floor; neither
  * storey reads cleanly) and a cutaway (it removes the storey the viewer just watched rise).
  *
+ * The explode is the RISE's, not the building's (public-surfaces card X2): once every storey is up
+ * (`PHASE.done`), the storeys SETTLE: in the replay's last stretch each comes down by its lift to
+ * the height it really stands at, and the camera moves from the last stop (the exploded building)
+ * to a framing of the assembled one (`stateAt`'s `settle`; `cameraStops`'s last fit). So the end
+ * frame, the frame a host opens on and the Iso view show the storeys stacked; every frame before
+ * the settle is the exploded rise, unchanged. Hiding the storeys above one (the viewer's toolbar) is
+ * the cutaway of the assembled building.
+ *
  * A demolished wall's ghost (B3a; `part` "demolish") is NOT construction (decision, red-team round 1
  * of card A2b): it takes no place in the build order. Its footprint appears in phase 1 with its
  * storey's walls (at the time of the standing node drawn just before it) without taking a step of
@@ -60,7 +68,7 @@ export const PHASE = {
   tilted: 0.78,
   /** Every wall has risen; fixtures rise from here. */
   wallsUp: 0.84,
-  /** Everything has risen. */
+  /** Everything has risen; several storeys combined settle from here to the end (`stateAt`). */
   done: 0.96,
 } as const;
 
@@ -313,10 +321,18 @@ export interface ReplayState {
   /** 0…1 along the dolly (to the first camera stop). */
   dolly: number;
   /**
-   * The combined view's camera stop, 0…storeys − 1: at k the camera frames storeys 0…k; between
-   * stops it moves from one framing to the next. Always 0 for one storey.
+   * The combined view's camera stop, 0…storeys − 1 during the rise: at k the camera frames storeys
+   * 0…k; between stops it moves from one framing to the next. During the settle it runs on from
+   * storeys − 1 to storeys, the assembled building's framing (`cameraStops`'s last fit). Always 0
+   * for one storey.
    */
   stop: number;
+  /**
+   * The combined view's settle, 0…1: 0 while the storeys are exploded (the whole rise), 1 when each
+   * has come down to the height it stands at (the end frame). A node's lift is `lift × (1 − settle)`
+   * (`settledLift`). Always 0 for one storey.
+   */
+  settle: number;
   /** Opacity of the core's drawing over the scene. */
   svg: number;
   nodes: Map<string, NodeState>;
@@ -357,16 +373,31 @@ export function stateAt(events: readonly ReplayEvent[], t: number): ReplayState 
     const b = starts[k] as number;
     if (u > a) stop = k - 1 + (b > a ? ease((u - a) / (b - a)) : 1);
   }
+  // The settle (see the header): from the moment every storey is up to the end, the exploded storeys
+  // come down and the camera moves on to the assembled building's framing (stop `storeys`).
+  let settle = 0;
+  if (ends.length > 1) {
+    const from = settleFrom(ends);
+    settle = from < 1 ? ease((u - from) / (1 - from)) : u >= 1 ? 1 : 0;
+    if (settle > 0) stop = ends.length - 1 + settle;
+  }
   return {
     // The tilt is done by the first stop, so every stop sees the end orbit its camera was fitted for
     // (one storey: `first` is 1 and the tilt keeps PHASE's own timing).
     tilt: ease((u - PHASE.rise) / (Math.min(PHASE.tilted, first) - PHASE.rise)),
     dolly: ease((u - PHASE.rise) / (first - PHASE.rise)),
     stop,
+    settle,
     svg,
     nodes,
   };
 }
+
+/**
+ * When the combined view's settle starts: once everything has risen (`PHASE.done`), and never
+ * before the last storey's last node is up (`ends`: each storey's last `riseTo`).
+ */
+const settleFrom = (ends: readonly number[]): number => Math.max(PHASE.done, ...ends);
 
 /**
  * The key frames: when each stage first shows, the drawing, the tilt, then (combined view only)

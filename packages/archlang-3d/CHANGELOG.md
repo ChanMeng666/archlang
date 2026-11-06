@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### Changed
+
+- A replay of several storeys ends with the storeys assembled: they still rise one by one, each
+  lifted 3 m clear of the one below, and once everything is up they come down to their real heights
+  while the camera moves to frame the assembled building. The end frame, the Iso view and Reset show
+  the storeys stacked; hiding the storeys above one is the cutaway. Every earlier frame is unchanged.
+  `ReplayState` gains `settle` (0 while exploded, 1 at the end) and its `stop` runs on to the storey
+  count during the settle; `cameraStops` returns one more fit for several storeys (the assembled
+  building, last); `boxOfNodes` takes `settle`. New exports: `settledLift`, `stopCount`. A one-storey
+  replay is the same in every frame.
+- The preview's label is the line every ArchLang surface uses: "Same source, plan and 3D preview.
+  The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and
+  checked against the plan." (`PREVIEW_LABEL`; its first sentence is `PREVIEW_LEAD`). The replay
+  HTML also carries the limits line (`PREVIEW_LIMITS`): walls, openings, floors and furniture in flat
+  colours; no stairs or pitched roofs yet, and no sections, elevations or BIM. `PREVIEW_ABOUT_URL`
+  is the page that says what the preview shows.
+- The side views' buttons are named "View from north" (east, south, west) instead of "North
+  elevation" and so on: the 3D preview draws no elevations. The buttons still read N, E, S and W.
+
 ## [0.3.0] - 2026-11-05
 
 ### Added

@@ -63,7 +63,8 @@ function scenes(): Array<{ name: string; v: ViewScene }> {
           events: p.events,
           fits: cameraStops(p.nodes, p.events, orbit),
           frame: { cx, cz, oh, elevation: p.elevation },
-          box: boxOfNodes(p.nodes),
+          // As the viewer mounts it: the building as the end frame shows it, storeys settled (card X2).
+          box: boxOfNodes(p.nodes, { settle: 1 }),
           aspect: ASPECT,
         },
       });
