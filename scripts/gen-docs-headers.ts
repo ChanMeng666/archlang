@@ -8,6 +8,10 @@
  * `SITE_PAGES` in `docs-site/sync-docs.mjs` (the single source of truth, parsed here
  * and never retyped); only the region between the BEGIN/END markers is rewritten.
  *
+ * Each rule also sends `X-Robots-Tag: noindex` (GS-D7): the HTML page, not its raw markdown
+ * twin, is the search result. The copy stays fetchable and the page's `rel=alternate` link stays;
+ * `/llms.txt`, `/llms-full.txt` and every HTML route have no rule here, so they carry no such header.
+ *
  * One exact-path rule per page means the rule count grows with the site; Cloudflare documents
  * a cap on rules per `_headers` file (100 at the time of writing), so watch it.
  *
@@ -43,7 +47,9 @@ export function markdownRoutes(syncSrc: string): string[] {
 
 /** The generated region, markers included. */
 export function renderSection(routes: readonly string[]): string {
-  const rules = routes.map((r) => `/${r}\n  Content-Type: text/markdown; charset=utf-8`).join("\n\n");
+  const rules = routes
+    .map((r) => `/${r}\n  Content-Type: text/markdown; charset=utf-8\n  X-Robots-Tag: noindex`)
+    .join("\n\n");
   return `${BEGIN}\n\n${rules}\n\n${END}`;
 }
 

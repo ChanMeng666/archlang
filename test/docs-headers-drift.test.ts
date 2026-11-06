@@ -24,6 +24,22 @@ describe("docs-site/public/_headers", () => {
     }
   });
 
+  it("de-indexes every raw .md copy and nothing else (GS-D7, docs/seo.md § 5)", () => {
+    for (const r of routes) {
+      expect(headers).toContain(`/${r}\n  Content-Type: text/markdown; charset=utf-8\n  X-Robots-Tag: noindex\n`);
+    }
+    // Closed-world, as below: only the generated `.md` rules carry the header, so /llms.txt,
+    // /llms-full.txt and every HTML route stay indexable.
+    const tagged: string[] = [];
+    let path: string | null = null;
+    for (const line of headers.split("\n")) {
+      if (/^\s*(#|$)/.test(line)) continue;
+      if (!/^\s/.test(line)) path = line.trim();
+      else if (path && /^\s+X-Robots-Tag:/i.test(line)) tagged.push(path);
+    }
+    expect(tagged.sort()).toEqual(routes.map((r) => `/${r}`).sort());
+  });
+
   it("serves the gallery plans' `.arch` sources as UTF-8 text (an unknown extension otherwise downloads)", () => {
     // scripts/smoke.mjs asserts the header itself after a deploy; the local preview applies no _headers.
     expect(headers).toContain("\n/examples/*.arch\n  Content-Type: text/plain; charset=utf-8\n");

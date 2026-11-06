@@ -290,10 +290,11 @@ function docsChecks() {
     // docs-site/public/_redirects. The sitemap lists `/adr`, never the 307-ing `/adr/`.
     redirectCheck("/error-codes", "/errors"),
     redirectCheck("/language-reference", "/reference"),
-    route("/llms.txt", contentType("text"), nonEmpty()),
+    // No noindex on the agent files: GS-D7 de-indexes the raw page copies only (below).
+    route("/llms.txt", contentType("text"), nonEmpty(), noHeader("x-robots-tag")),
     // Heading emitted by scripts/gen-llms-full.ts — its presence proves we got the bundle,
     // not an SPA fallback page.
-    route("/llms-full.txt", nonEmpty(), contains("# ArchLang — full agent context")),
+    route("/llms-full.txt", nonEmpty(), contains("# ArchLang — full agent context"), noHeader("x-robots-tag")),
     route(
       "/plan.schema.json",
       json((s) => {
@@ -315,6 +316,11 @@ function docsChecks() {
       route(p, contentType("text/markdown"), contentType("charset=utf-8"), nonEmpty()),
     ),
     missingMarkdownCheck(),
+    // GS-D7 (docs/seo.md § 5): a raw copy says noindex so its HTML twin is the search result,
+    // and the HTML twin must not inherit it. `_headers` binds to the request path, so
+    // only a served response shows either half.
+    route("/showcase.md", header("x-robots-tag", "noindex")),
+    route("/showcase", contentType("text/html"), noHeader("x-robots-tag")),
     ...docsExampleRoutes(syncSrc).map((p) => route(p, startsWith("<svg"))),
     // The `<arch-plan>` element (/embed): a module script, so a browser needs a JavaScript type
     // AND CORS to load it from another origin, and the sources it fetches by URL.
