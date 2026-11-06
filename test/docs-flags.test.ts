@@ -46,6 +46,7 @@ const DOCS = [
   "docs-site/mcp.md",
   "docs-site/javascript.md",
   "docs-site/vs-mermaid.md",
+  "docs-site/floor-plan-tools-for-ai-agents.md",
   "docs-site/3d.md",
   "docs/analysis.md",
   "docs/axonometric.md",
@@ -150,6 +151,7 @@ describe("agent-facing docs never tell an agent to run a bare `arch` or a prompt
     "docs-site/mcp.md",
     "docs-site/javascript.md",
     "docs-site/vs-mermaid.md",
+    "docs-site/floor-plan-tools-for-ai-agents.md",
     "docs-site/3d.md",
     "llms-install.md",
     // The reference pages the docs site syncs from `docs/` (the generated spec is exempt: it keeps

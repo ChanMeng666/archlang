@@ -89,6 +89,7 @@ public/floor-plan-dsl.md
 public/mcp.md
 public/javascript.md
 public/vs-mermaid.md
+public/floor-plan-tools-for-ai-agents.md
 public/3d.md
 
 # The self-contained <arch-plan> (core inlined, about 1.5 MB), built from the just-built dist/ by the

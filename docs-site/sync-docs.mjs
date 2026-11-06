@@ -80,6 +80,7 @@ const SITE_PAGES = [
   ["docs-site/mcp.md", "mcp.md"],
   ["docs-site/javascript.md", "javascript.md"],
   ["docs-site/vs-mermaid.md", "vs-mermaid.md"],
+  ["docs-site/floor-plan-tools-for-ai-agents.md", "floor-plan-tools-for-ai-agents.md"],
   ["docs-site/3d.md", "3d.md"],
 ];
 

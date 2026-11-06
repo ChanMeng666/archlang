@@ -246,6 +246,11 @@ const PAGE_META = [
     "Mermaid has no floor plan diagram type. ArchLang is a separate text language for floor plans, and this page compares the two and says when to use each one.",
   ],
   [
+    "/floor-plan-tools-for-ai-agents",
+    "Floor-plan tools for AI agents",
+    "The floor-plan tools an AI agent can be given, from MCP servers and skills to a text language, with what each takes in and gives out and its licence.",
+  ],
+  [
     "/3d",
     "The 3D preview of a floor plan",
     "A separate package extrudes the 3D preview from the same .arch file as the floor plan: walls, openings, floors, stairs and furniture, with a replay and a GLB.",
@@ -850,6 +855,7 @@ export default defineConfig({
         items: [
           { text: "Use it from an agent", link: "/agents" },
           { text: "MCP server", link: "/mcp" },
+          { text: "Floor-plan tools for AI agents", link: "/floor-plan-tools-for-ai-agents" },
           { text: "Plans written by agents", link: "/gallery" },
           { text: "Embed in a web page", link: "/embed" },
           { text: "JavaScript library", link: "/javascript" },
