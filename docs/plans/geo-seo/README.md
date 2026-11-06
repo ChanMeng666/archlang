@@ -60,8 +60,11 @@ Numbered GS-D*n*. Delegated decisions are marked; the rest are inherited and bin
   the README and the docs. **No site wording changes under this card**; the name is always paired
   with "floor plan" on the first mention.
 - **GS-D6 (delegated).** The MCP registry entry declares the hosted server as a remote and gains
-  a description that names floor plans. `packages/mcp/server.json` is a high-risk-tier file:
-  **the PR merges only on the owner's words.**
+  a description that names floor plans. The registry schema caps the description at 100
+  characters, so it can no longer name all eleven tools; the anti-drift lockstep that
+  `packages/mcp/test/server.test.ts` held against the description moves to the package README,
+  which has room, and the test keeps asserting that the description says "floor plan" and fits.
+  `packages/mcp/server.json` is a high-risk-tier file: **the PR merges only on the owner's words.**
 - **GS-D7 (delegated, default yes).** Raw `/<page>.md` copies send `X-Robots-Tag: noindex` so
   the HTML page, not its Markdown twin, is the search result (`/showcase.md` is a `site:` result
   today). The copies stay fetchable and `rel=alternate` stays. The owner may veto.
