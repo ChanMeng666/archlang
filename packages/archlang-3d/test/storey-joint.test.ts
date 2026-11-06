@@ -33,18 +33,26 @@ describe("the storey joint", () => {
       const entries = mesh.assumptions.filter((a) => a.rule === "stops-under-slab-above");
       if (levels.length === 1) expect(entries, name).toEqual([]);
       for (const a of entries) {
-        const nodes = mesh.nodes.filter((n) => n.kind === a.kind && n.id === a.id && n.part === undefined);
-        expect(nodes.length, `${name} ${a.kind}:${a.id}`).toBeGreaterThan(0);
-        for (const n of nodes) {
-          const i = levels.indexOf(n.level);
-          const above = scene.levels[i + 1];
-          expect(above, `${name} ${a.id}: a storey above`).toBeDefined();
-          const underside = (above?.elevation ?? 0) - SLAB_UM;
-          expect(topOf(n), `${name} ${a.kind}:${a.id}`).toBe(underside);
-          expect(a.value, `${name} ${a.id}`).toBe((underside - (scene.levels[i]?.elevation ?? 0)) / 1000);
-          stopped++;
-        }
+        // The storey is in the field (`top_mm(L<n>)`): an id may stand on several storeys.
+        const level = Number(/^top_mm\(L(-?\d+)\)$/.exec(a.field)?.[1]);
+        const nodes = mesh.nodes.filter(
+          (n) => n.kind === a.kind && n.id === a.id && n.level === level && n.part === undefined,
+        );
+        expect(nodes.length, `${name} ${a.kind}:${a.id} on L${level}`).toBe(1);
+        const i = levels.indexOf(level);
+        const above = scene.levels[i + 1];
+        expect(above, `${name} ${a.id}: a storey above L${level}`).toBeDefined();
+        const underside = (above?.elevation ?? 0) - SLAB_UM;
+        for (const n of nodes) expect(topOf(n), `${name} ${a.kind}:${a.id}`).toBe(underside);
+        expect(a.value, `${name} ${a.id}`).toBe((underside - (scene.levels[i]?.elevation ?? 0)) / 1000);
+        stopped++;
       }
+      // The top storey stops nothing.
+      const top = levels.at(-1);
+      expect(
+        entries.filter((a) => a.field === `top_mm(L${top})`),
+        name,
+      ).toEqual([]);
     }
     expect(stopped).toBeGreaterThan(0);
   });

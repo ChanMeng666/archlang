@@ -371,11 +371,12 @@ function levelNodes(
     );
   const stopped = (height: number, rings: ReadonlyArray<readonly Pt[]>, heads: readonly number[]): boolean =>
     height > ceiling && ceiling > 0 && heads.every((h) => h <= ceiling) && rings.every(underSlab);
+  // The storey is in the field: an id may stand on several storeys.
   const stopLedger = (kind: string, id: string): void => {
     ledger.push({
       kind,
       id,
-      field: "top_mm",
+      field: `top_mm(L${lv.level})`,
       value: ceiling / MM,
       provenance: "derived",
       rule: "stops-under-slab-above",
