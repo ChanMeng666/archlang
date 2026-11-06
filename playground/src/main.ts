@@ -485,9 +485,7 @@ function render(source: string, refit = false, knobMoving = false): boolean {
   // waits: the 3D preview is rebuilt once it is let go (`keepKnob`).
   if (preview3d && in3d() && !knobMoving)
     void preview3d.then((p) =>
-      refit
-        ? p?.show(source, selectedLevel, drawnFor(source))
-        : p?.update(source, selectedLevel, drawnFor(source)),
+      refit ? p?.show(source, selectedLevel, drawnFor(source)) : p?.update(source, selectedLevel, drawnFor(source)),
     );
   // `pages` exists ONLY for a plan with `level` blocks; a single-storey plan has no such
   // key, `selectPage` returns undefined for it, and everything below takes the exact

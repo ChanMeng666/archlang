@@ -157,6 +157,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   glbNote.className = "p3d-glb-note";
   glbNote.id = "p3d-glb-note";
   const cmd = document.createElement("code");
+  cmd.className = "p3d-glb-code";
   cmd.textContent = GLB_COMMAND;
   glbNote.append(GLB_NOTE_LEAD, cmd, GLB_NOTE_TAIL);
   const glbStatus = document.createElement("span");

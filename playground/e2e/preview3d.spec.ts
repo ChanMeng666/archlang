@@ -625,10 +625,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     expect(await hash(page)).toMatch(/&3d$/);
 
     await markOld(page);
-    const other = await page
-      .locator("#strip a.strip-item")
-      .nth(1)
-      .getAttribute("data-label");
+    const other = await page.locator("#strip a.strip-item").nth(1).getAttribute("data-label");
     await page.locator("#examples").selectOption(other ?? "");
     await mounted(page, true);
     await atEndFrame(page);
@@ -671,16 +668,12 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await page.goto(`/${await shareHash(SIMPLE_PLAN)}`);
     await waitForPlan(page);
     await chooseLink(page, "full");
-    await expect
-      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-      .toMatch(/#z=[A-Za-z0-9_-]+$/);
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toMatch(/#z=[A-Za-z0-9_-]+$/);
 
     await threeBtn(page).click();
     await mounted(page);
     await chooseLink(page, "full");
-    await expect
-      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-      .toMatch(/#z=[A-Za-z0-9_-]+&3d$/);
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toMatch(/#z=[A-Za-z0-9_-]+&3d$/);
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     expect(await srcFromHash(new URL(copied).hash)).toBe(SIMPLE_PLAN);
 
@@ -690,9 +683,7 @@ test.describe("Plan | 3D on the stage (card X5)", () => {
     await expect.poll(() => hash(page)).toMatch(/&3d&edit$/);
     await page.evaluate(() => navigator.clipboard.writeText(""));
     await chooseLink(page, "full");
-    await expect
-      .poll(() => page.evaluate(() => navigator.clipboard.readText()))
-      .toMatch(/#z=[A-Za-z0-9_-]+&3d$/);
+    await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toMatch(/#z=[A-Za-z0-9_-]+&3d$/);
   });
 
   test("Download GLB writes the whole plan as a GLB in the page, in a chunk of its own, and says it is unvalidated", async ({
