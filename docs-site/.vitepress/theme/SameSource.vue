@@ -16,6 +16,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { ASSETS_3D, HOME_3D_PLAN, PREVIEW } from "./three-d-data.js";
 
 const PLAN = ASSETS_3D.find((a) => a.name === HOME_3D_PLAN)!;
+// sync-docs refuses a home plan without a replay, so the band always has one.
+const VIDEO = PLAN.video!;
 
 const frame = ref<HTMLElement | null>(null);
 const video = ref<HTMLVideoElement | null>(null);
@@ -135,9 +137,9 @@ onBeforeUnmount(() => observer?.disconnect());
               muted
               playsinline
               preload="none"
-              :src="PLAN.video.mp4"
-              :width="PLAN.video.width"
-              :height="PLAN.video.height"
+              :src="VIDEO.mp4"
+              :width="VIDEO.width"
+              :height="VIDEO.height"
               :aria-label="`The drafting-order replay of ${PLAN.name}.arch: the plan draws itself, then rises into the 3D preview.`"
             ></video>
             <picture class="same-source__poster">
@@ -163,7 +165,7 @@ onBeforeUnmount(() => observer?.disconnect());
           </div>
           <figcaption class="same-source__cap">
             The 3D preview · its drafting-order replay<template v-if="failed">
-              · <a class="same-source__mp4" :href="PLAN.video.mp4">Play the replay (MP4)</a></template
+              · <a class="same-source__mp4" :href="VIDEO.mp4">Play the replay (MP4)</a></template
             >
           </figcaption>
         </figure>

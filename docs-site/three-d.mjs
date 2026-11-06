@@ -77,7 +77,7 @@ export function previewLines(repo) {
  *   name: string,
  *   source: string,
  *   poster: { webp: string, png: string, width: number, height: number, storey: string | null },
- *   video: { mp4: string, width: number, height: number },
+ *   video: { mp4: string, width: number, height: number } | null,
  *   glb: { href: string, bytes: number, doors: string },
  * }} Asset3D
  */
@@ -111,7 +111,11 @@ export function threeDAssets(repo) {
     const example = /^examples\/([a-z0-9-]+)\.arch$/.exec(a.source.path)?.[1];
     if (example !== a.name)
       throw new Error(`three-d: ${a.name}'s source ${a.source.path} is not examples/${a.name}.arch`);
-    const mp4 = only(".mp4");
+    // A plan generated with `video: false` (the gallery's) has a poster and a GLB but no replay.
+    const mp4s = a.files.filter((f) => f.path.endsWith(".mp4"));
+    if (mp4s.length > 1) throw new Error(`three-d: ${a.name} lists ${mp4s.length} .mp4 files in ${MANIFEST}`);
+    if (mp4s.length === 1 && !a.video)
+      throw new Error(`three-d: ${a.name} lists an .mp4 but no \`video\` in ${MANIFEST}`);
     const glb = only(".glb");
     if (a.glb?.validator?.errors !== 0 || a.glb.validator.warnings !== 0) {
       throw new Error(`three-d: ${a.name}'s GLB is not recorded with 0 validator errors and 0 warnings`);
@@ -127,7 +131,10 @@ export function threeDAssets(repo) {
         // `all`, or `storey:<n>` (1 = the lowest) when the poster shows one storey alone.
         storey: /^storey:(\d+)$/.exec(poster.view)?.[1] ?? null,
       },
-      video: { mp4: `${ASSET_ROUTE}/${mp4.path}`, width: a.video.width, height: a.video.height },
+      video:
+        mp4s.length === 1
+          ? { mp4: `${ASSET_ROUTE}/${mp4s[0].path}`, width: a.video.width, height: a.video.height }
+          : null,
       glb: { href: `${ASSET_ROUTE}/${glb.path}`, bytes: glb.bytes, doors: a.glb.doors },
     };
   });

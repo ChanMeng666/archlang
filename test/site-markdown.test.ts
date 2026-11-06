@@ -147,7 +147,8 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     expect(band).toContain(lines.limits);
     expect(band).toContain(`(/examples/${a.name}.svg)`);
     expect(band).toContain(`(${a.poster.png})`);
-    expect(band).toContain(`(${a.video.mp4})`);
+    expect(a.video, "the home band's plan has a replay").not.toBeNull();
+    expect(band).toContain(`(${a.video!.mp4})`);
     const link = /\[Try it in the playground →\]\((https:\/\/playground\.archlang\.uk\/#z=([A-Za-z0-9_-]+)&3d)\)/.exec(
       band,
     );
@@ -172,7 +173,12 @@ suite("siteMarkdown over every SITE_PAGES row", () => {
     for (const a of assets) {
       expect(md).toContain(`(/examples/${a.name}.svg)`);
       expect(md).toContain(`(${a.poster.png})`);
-      expect(md).toContain(`[Play the replay (MP4)](${a.video.mp4})`);
+      // A plan published without a replay (video: false) has no MP4 link.
+      if (a.video) expect(md).toContain(`[Play the replay (MP4)](${a.video.mp4})`);
+      else {
+        const section = md.slice(md.indexOf(`### ${a.name}.arch`)).split("### ")[1] ?? "";
+        expect(section, `${a.name}: no replay link`).not.toContain("Play the replay");
+      }
       expect(glbLinks, `${a.name}: a [Download GLB (N kB)] link to its GLB`).toContain(a.glb.href);
       expect(md).toMatch(
         /\[Open in the playground \(3D\)\]\(https:\/\/playground\.archlang\.uk\/#z=[A-Za-z0-9_-]+&3d\)/,

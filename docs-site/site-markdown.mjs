@@ -216,7 +216,7 @@ export function siteMarkdown(src, deps) {
           `### ${a.name}.arch`,
           `![The plan: ${a.name}.arch${storey}, compiled to SVG.](/examples/${a.name}.svg)`,
           `![The 3D preview of ${a.name}.arch${storey}, from the same source as the plan.](${a.poster.png})`,
-          `[Play the replay (MP4)](${a.video.mp4}) · [Download GLB (${sizeLabel(a.glb.bytes)})](${a.glb.href}) · [Open in the playground (3D)](${link3d(a.name)}) · [Plan source](/examples/${a.name}.arch)`,
+          `${a.video ? `[Play the replay (MP4)](${a.video.mp4}) · ` : ""}[Download GLB (${sizeLabel(a.glb.bytes)})](${a.glb.href}) · [Open in the playground (3D)](${link3d(a.name)}) · [Plan source](/examples/${a.name}.arch)`,
         ].join("\n\n");
       })
       .join("\n\n"),

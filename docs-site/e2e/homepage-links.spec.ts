@@ -300,7 +300,7 @@ test.describe("the 3D band", () => {
     expect(await video.evaluate((v) => (v as HTMLVideoElement).muted && (v as HTMLVideoElement).playsInline)).toBe(
       true,
     );
-    await expect(video).toHaveAttribute("src", BAND.video.mp4);
+    await expect(video).toHaveAttribute("src", BAND.video!.mp4);
     // Until it fails, no link to the MP4: the video plays in place.
     await expect(band.locator(".same-source__mp4")).toHaveCount(0);
     const poster = band.locator(".same-source__poster");
@@ -386,7 +386,7 @@ test.describe("the 3D band", () => {
     await expect(page.locator(".same-source__toggle")).toHaveCount(0);
     const link = page.locator(".same-source__mp4");
     await expect(link).toHaveText("Play the replay (MP4)");
-    await expect(link).toHaveAttribute("href", BAND.video.mp4);
+    await expect(link).toHaveAttribute("href", BAND.video!.mp4);
   });
 
   test("under reduced motion it stays on the poster until the play button is pressed", async ({ page }) => {
