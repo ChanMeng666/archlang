@@ -10,7 +10,9 @@
  *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`); laid in the finish its
  *   `uses` give it (`floorFinish`, `extras.finish`, ledgered `floor-finish-default`);
  * - column: its box, [e, e + storey height];
- * - wall: its body pieces [e, e + h]; under each cut a sill [e, e + sill], over it a lintel
+ * - wall: its body pieces [e, e + h]; a wall or column wholly under the slab of the storey above
+ *   stops at that slab's underside, so the two never overlap or share a face (ledgered
+ *   `stops-under-slab-above`); under each cut a sill [e, e + sill], over it a lintel
  *   [e + head, e + h] (§4.1 step 2; a cased opening's head at the wall top makes no lintel). The
  *   body's vertical edges are split at every sill and head that meets them, so body, sill and
  *   lintel meet vertex to vertex (no T-junction);
@@ -39,7 +41,7 @@
  */
 import { floorFinish, STAIR_MATERIAL } from "../materials.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
-import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
+import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d, where } from "./extrude.js";
 import { type Rect, rectMinus, slabRegion } from "./slab.js";
 import { stairSolid } from "./stair.js";
 import { isHung, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
@@ -350,10 +352,41 @@ function levelNodes(
     );
   });
 
+  // Under the storey above's slab, a wall or a column stops at the slab's underside (public-surfaces
+  // X4 follow-up): the slab, [above − 200 mm, above], would otherwise share its outer face over
+  // those 200 mm, two coplanar faces that fight in depth (a sliver along the storey joint in the
+  // assembled view), and the two solids would overlap. It is stopped when every corner of its plan
+  // lies in or on the slab above (less its voids: a wall under a stair's void keeps its height) and
+  // no opening in it reaches the underside. With no storey above (one storey, or the top one),
+  // nothing is stopped.
+  const ceiling = above ? above.elevation - SLAB_MM * MM - e : 0;
+  const slabAbove =
+    above && ceiling > 0
+      ? slabRegion(above.footprint, above.floors, []).flatMap((r) => lessVoids(r.outer, above.voids, "slab", []))
+      : [];
+  const underSlab = (ring: readonly Pt[]): boolean =>
+    slabAbove.length > 0 &&
+    ring.every((p) =>
+      slabAbove.some((s) => where(p, s.outer) !== false && !(s.holes ?? []).some((h) => where(p, h) === true)),
+    );
+  const stopped = (height: number, rings: ReadonlyArray<readonly Pt[]>, heads: readonly number[]): boolean =>
+    height > ceiling && ceiling > 0 && heads.every((h) => h <= ceiling) && rings.every(underSlab);
+  const stopLedger = (kind: string, id: string): void => {
+    ledger.push({
+      kind,
+      id,
+      field: "top_mm",
+      value: ceiling / MM,
+      provenance: "derived",
+      rule: "stops-under-slab-above",
+    });
+  };
+
   lv.columns.forEach((c, i) => {
-    node("column", c.id, i, [
-      prism(rect(c.at[0], c.at[1], c.at[0] + c.size.w, c.at[1] + c.size.h), e, e + lv.storeyHeight),
-    ]);
+    const box = rect(c.at[0], c.at[1], c.at[0] + c.size.w, c.at[1] + c.size.h);
+    const stop = stopped(lv.storeyHeight, [box.outer], []);
+    if (stop) stopLedger("column", c.id);
+    node("column", c.id, i, [prism(box, e, e + (stop ? ceiling : lv.storeyHeight))]);
   });
 
   // Stairs (card X3): each climb is built once, on the storey it climbs from. This storey's own
@@ -438,7 +471,22 @@ function levelNodes(
   }
 
   const openings = new Map(lv.openings.map((o) => [o.id, o] as const));
-  const hostHeight = new Map(lv.walls.map((w) => [w.id, w.height] as const));
+  const wallHeight = new Map(
+    lv.walls.map((w) => {
+      const heads = w.cuts.flatMap((id) => {
+        const o = openings.get(id);
+        return o ? [o.head] : [];
+      });
+      const stop = stopped(
+        w.height,
+        w.body.map((p) => p.outer),
+        heads,
+      );
+      if (stop) stopLedger("wall", w.id);
+      return [w.id, stop ? ceiling : w.height] as const;
+    }),
+  );
+  const hostHeight = wallHeight;
   // Every cut corner's sill and head heights (µm above e): where a body's vertical edge is split,
   // so the body meets its sill and lintel vertex to vertex. Keyed by the plan point, not by the
   // host wall, on purpose: another wall with a vertex at a cut corner meets that sill or lintel
@@ -456,13 +504,14 @@ function levelNodes(
   }
   const splits = (p: Pt): number[] => (splitAt.get(`${p[0]},${p[1]}`) ?? []).map((h) => e + h);
   lv.walls.forEach((w, i) => {
-    const top = e + w.height;
+    const height = wallHeight.get(w.id) ?? w.height;
+    const top = e + height;
     const shells: Array<Shell | null> = w.body.map((p) => prism(p, e, top, splits));
     for (const id of w.cuts) {
       const o = openings.get(id);
       if (!o) continue;
-      if (o.sill > 0) shells.push(prism({ outer: o.cut }, e, e + Math.min(o.sill, w.height)));
-      if (o.head < w.height) shells.push(prism({ outer: o.cut }, e + o.head, top));
+      if (o.sill > 0) shells.push(prism({ outer: o.cut }, e, e + Math.min(o.sill, height)));
+      if (o.head < height) shells.push(prism({ outer: o.cut }, e + o.head, top));
     }
     node("wall", w.id, i, shells, {
       ...(w.category ? { category: w.category } : {}),
