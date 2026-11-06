@@ -15,7 +15,7 @@ of the project for large language models and AI agents.
 <!-- doors:start -->
 ## Try it
 
-Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan (SVG, DXF, PDF) and tells it what's wrong. Open source, MIT.
+Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.
 
 - **ChatGPT, no install:** [ArchLang app in ChatGPT](https://chatgpt.com/plugins/plugin_asdk_app_6acf8381cca08191bfb3eb7305fb6970)
 - **claude.ai, no install:** add `https://mcp.archlang.uk/mcp` as a custom connector
