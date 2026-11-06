@@ -13,22 +13,27 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
-PENDING, public-surfaces card X3 (2026-11-06, stairs; on top of X2's settle): two-storey's
+Re-pinned by public-surfaces card X3 (2026-11-06, stairs; on top of X2's settle): two-storey's
 stair is built now (one `stair` node on storey 1, a stepped solid in the `wood` palette colour,
 stage `walls`), so its footprint appears in phase 1 after the storey's walls and it rises with
-them. A browser-free sweep (the event table and each key frame's `stateAt`, with and without the
-stair node, on the tree that already holds X2's settle) names the frames that move: exactly seven
-of two-storey's, those where the stair is visible: `stage:openings` (was `c5e33ae9…`),
+them. Exactly six frames moved, all of two-storey: `stage:openings` (was `c5e33ae9…`),
 `stage:fixtures` (`a9850073…`), `stop:1` (`58b2de1f…`), `tilted` (`827be4d2…`), `storey:2`
-(`d96412c2…`), `stop:2` (`7a2c8d11…`) and `end` (`2801716e…`, X2's assembled frame, which now
-shows the stair too). `stage:brief`, `stage:rooms` and `stage:walls` keep their hashes: the stair
-is not yet visible there, and every other node's state is the same (their times move, from 0.0211
-to 0.0200 and 0.0842 to 0.0800, because one more node shares phase 1; `stage:openings` from 0.1474
-to 0.1600, `stage:fixtures` from 0.2947 to 0.3000). laneway-house has no stair: its event table and
-all seven of its frames are unchanged. The hashes in `keyframe-baseline.json` are NOT updated here
-(the heavy suite is CI's): enter the seven two-storey hashes CI's `check-3d` job prints for this
-branch, keep every other hash and both `taken` entries, and replace this paragraph with the run's
-link.
+(`d96412c2…`) and `stop:2` (`7a2c8d11…`). `stage:brief`, `stage:rooms` and `stage:walls` keep
+their hashes: the stair is not yet visible there, and every other node's state is the same (their
+times move, from 0.0211 to 0.0200 and 0.0842 to 0.0800, because one more node shares phase 1;
+`stage:openings` from 0.1474 to 0.1600, `stage:fixtures` from 0.2947 to 0.3000). `end`
+(`2801716e…`) keeps its hash although the stair is visible in its state: in X2's assembled end
+frame the stair stands on storey 1 under storey 2, along the west wall, and storey 2's slab and
+walls hide it from the iso camera. Measured, not argued: rendered locally with and without the
+stair node, the end frame hashes the same at 480 × 270 and at 1280 × 720, and hiding storey 2 at
+`t = 1` (the toolbar's "1") shows the stair in place, so it is built in the assembled view and only
+occluded. A browser-free sweep of the event table and each key frame's `stateAt` (with and without
+the stair node) had named seven frames where the stair is visible; `end` is that seventh, and no
+pixel of it changes. laneway-house has no stair: its event table and all seven of its frames are
+unchanged. The six new hashes are the ones CI's `check-3d` job printed for this branch (GitHub
+Actions run https://github.com/ChanMeng666/archlang/actions/runs/42147866382, job check-3d), and a
+local Windows 11 x64 render with the same Chromium build gave the same six, byte for byte; every
+other hash and both `taken` entries are unchanged.
 
 Re-pinned by public-surfaces card X2 (2026-11-06, storeys stack): a replay of several storeys
 now ends assembled. The storeys still rise exploded (3 m apart, with the camera stops); from
