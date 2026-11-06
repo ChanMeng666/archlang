@@ -17,6 +17,9 @@ export default defineConfig({
       // to the SOURCE entry too so its smoke test runs against src/ with no prior
       // build (CI runs the suite without `npm run build`) — same rationale as above.
       "@chanmeng666/archlang": resolve(__dirname, "src/index.ts"),
+      // The 3D package by name, for the playground modules a playground test reads
+      // (`playground/src/plan3d.ts`): its source entry, as the playground's Vite alias does.
+      "@chanmeng666/archlang-3d": resolve(__dirname, "packages/archlang-3d/src/index.ts"),
     },
   },
   test: {

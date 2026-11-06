@@ -33,7 +33,9 @@
   // here: the Playwright specs run in Node (`node:fs/promises`, `Buffer`) under a
   // different lib/types set, so they get their own `tsconfig.e2e.json`, which the
   // workspace `typecheck` script runs straight after this one. `worker/` is the short-link
-  // Worker (ADR 0034): Web-standard APIs only, which the DOM lib already types.
-  "include": ["src", "test", "worker"],
+  // Worker (ADR 0034): Web-standard APIs only, which the DOM lib already types. The 3D package's
+  // declaration for glTF-Validator (which ships no types) comes too: `test/glb-export.test.ts`
+  // runs the package's CLI `build`, whose checks import it.
+  "include": ["src", "test", "worker", "../packages/archlang-3d/src/types/gltf-validator.d.ts"],
   "exclude": ["node_modules", "dist", "e2e"]
 }

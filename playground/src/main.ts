@@ -13,6 +13,10 @@
  * Modes: `view` (the default) gives the drawing the page; `edit` (the Source button, or `&edit`
  * in the hash) is the editor beside it. index.html's head script sets `html[data-mode]` before
  * the first paint; this module keeps it, the Source button and the hash flag in step.
+ *
+ * Views: the stage shows the drawing or the 3D preview (the Plan | 3D switch, the Preview and 3D
+ * preview tabs, Tools → 3D preview, or `&3d` in the hash; card X5), and `&3d` stays in the hash
+ * while the 3D preview is on screen.
  */
 import type { CompileOptions, DescribeOptions, RoomSummary, SceneSummary } from "archlang";
 import type { ActionsHandle } from "./actions.js";
@@ -24,7 +28,7 @@ import { mountLevelSwitcher } from "./level-switcher.js";
 import { renderFacts } from "./facts-strip.js";
 import { mountKnobsPanel } from "./knobs-panel.js";
 import { isNarrow, mountMobileViews } from "./mobile-views.js";
-import { hasEditFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
+import { has3dFlag, hasEditFlag, set3dFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
 import { mountNudge } from "./nudge.js";
 import { mountShell } from "./shell.js";
@@ -103,6 +107,42 @@ for (const tab of tabs) {
     if (tab.dataset.tab !== "preview3d") void preview3d?.then((p) => p?.hide());
     // The switcher's underline follows what the tab now on screen shows (see `shownLevel`).
     levelSwitch.set(lastPages, shownLevel());
+    stageSwitched();
+  });
+}
+
+// ---- Plan | 3D (public-surfaces card X5): the stage's switch, over the Preview and 3D tabs ----
+const stageSwitchRow = document.getElementById("stageSwitchRow")!;
+const viewPlanBtn = document.getElementById("viewPlan") as HTMLButtonElement;
+const view3dBtn = document.getElementById("view3d") as HTMLButtonElement;
+/** Whether the 3D preview is on screen (its tab is the active one, in either mode). */
+const in3d = () => preview3dEl.classList.contains("active");
+viewPlanBtn.addEventListener("click", () => {
+  if (in3d()) document.getElementById("tab-preview")?.click();
+});
+view3dBtn.addEventListener("click", () => {
+  if (!in3d()) document.getElementById("tab-preview3d")?.click();
+});
+stageSwitchRow.hidden = false;
+
+/**
+ * After any tab change: the switch says which view is on screen, the hash carries `&3d` while the 3D
+ * preview is (so a reload and a copied link open on it), and the knobs sit over that view: the 3D
+ * preview's canvas once its chunk is in, else the drawing. The room card and the hover tip are the
+ * drawing's own and leave with it.
+ */
+function stageSwitched() {
+  const on = in3d();
+  viewPlanBtn.setAttribute("aria-pressed", String(!on));
+  view3dBtn.setAttribute("aria-pressed", String(on));
+  const hash = set3dFlag(location.hash, on);
+  if (hash !== location.hash) window.history.replaceState(null, "", `${location.pathname}${location.search}${hash}`);
+  if (!on) {
+    if (knobsPanel.el.parentElement !== pzViewport) pzViewport.appendChild(knobsPanel.el);
+    return;
+  }
+  void preview3d?.then((p) => {
+    if (p && in3d() && knobsPanel.el.parentElement !== p.overlay) p.overlay.appendChild(knobsPanel.el);
   });
 }
 
@@ -367,10 +407,11 @@ function keepKnob(source: string, final: boolean) {
   if (finishPanel) finishPanel.hidden = true;
   actions?.sourceChanged();
   if (!final) return;
-  // Let go: Checks catches up with the plan the knob left (the drag drew it without its rings).
-  if (checksOn) render(source);
+  // Let go: Checks and the 3D preview catch up with the plan the knob left (the drag drew it
+  // without the rings, and left the 3D preview where it was).
+  if (checksOn || in3d()) render(source);
   writeStr(KEYS.source, source);
-  void updateHash(source, editing);
+  void updateHash(source, () => editing, in3d);
   void syncPlanMark(source); // no longer the example word for word: "Edited plan"
 }
 
@@ -438,9 +479,14 @@ function render(source: string, refit = false, knobMoving = false): boolean {
   // overrides it, so it is handed over and the tab does not compile the source a second time.
   lastDrawn = themeKey ? undefined : { source, drawn: { svg, pages, errors } };
   // The 3D preview follows the editor only while its tab is open (and once loaded).
-  // The storey it shows is the switcher's explicit selection (none = the combined view).
-  if (preview3d && preview3dEl.classList.contains("active"))
-    void preview3d.then((p) => p?.update(source, selectedLevel, drawnFor(source)));
+  // The storey it shows is the switcher's explicit selection (none = the combined view). A new
+  // plan (a document replaced, `refit`: the picker, the strip, a snapshot) opens on its end frame,
+  // as the tab does (card X5); an edit goes on from where the view was. A knob being dragged
+  // waits: the 3D preview is rebuilt once it is let go (`keepKnob`).
+  if (preview3d && in3d() && !knobMoving)
+    void preview3d.then((p) =>
+      refit ? p?.show(source, selectedLevel, drawnFor(source)) : p?.update(source, selectedLevel, drawnFor(source)),
+    );
   // `pages` exists ONLY for a plan with `level` blocks; a single-storey plan has no such
   // key, `selectPage` returns undefined for it, and everything below takes the exact
   // path it always took — the drawing, the exports and the panels are all unmoved.
@@ -551,6 +597,7 @@ document.getElementById("tab-preview3d")?.addEventListener("click", () => {
     },
   );
   const shown = preview3d;
+  stageSwitched(); // the knobs move over the canvas once the chunk is in
   // Opened before the first compile, it shows the plan the page boots on.
   void ready.then(() => {
     const source = currentSource();
@@ -589,7 +636,7 @@ function onDocChanged(source: string) {
   debounce = setTimeout(() => {
     render(source);
     writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
-    void updateHash(source, editing); // keep the permalink in sync (compression is async)
+    void updateHash(source, () => editing, in3d); // keep the permalink in sync (compression is async)
     void syncPlanMark(source); // the picker and the strip: still that example, or an edited plan
   }, 250);
 }
@@ -654,13 +701,14 @@ async function boot() {
     );
 
   // A `#z=` payload that is not one of the bundled examples is third-party text on
-  // our page — say so, once, at the top of the preview. Silent for a stock-example
+  // our page — say so, once, at the top of the stage. Silent for a stock-example
   // permalink and for a hash-less visit. See shared-notice.ts for why it is not
-  // remembered.
+  // remembered. Above the Plan | 3D switch, not inside the drawing's panel: the 3D
+  // preview shows the same plan, its names included, so it is attributed too (card X5).
   if (
     shouldShowSharedNotice(sharedSrc, [...Object.values(EXAMPLES), ...examples.samples.SAMPLES.map((s) => s.source)])
   ) {
-    preview.prepend(createSharedNotice());
+    stageSwitchRow.before(createSharedNotice());
   }
 
   // Restore persisted UI prefs (advisory — never block on storage).
@@ -687,6 +735,7 @@ async function boot() {
     getLevel: () => activeLevel,
     onExportError,
     isEditing: () => editing,
+    is3d: in3d,
     showLintTab: () => document.getElementById("tab-lint")?.click(),
     getThemeOverride: () => themeSelect.value,
     els: {
@@ -719,3 +768,6 @@ async function boot() {
 
 // Bootstrap (async — resolves the shared/saved source, then loads the compiler).
 const ready = boot();
+// `&3d` (or `#3d` alone) opens on the 3D preview (card X5): its chunk starts loading now, beside
+// the compiler, and it shows the plan the visit opens once that is compiled, at its end frame.
+if (has3dFlag(location.hash)) document.getElementById("tab-preview3d")?.click();
