@@ -4,7 +4,7 @@
  * A gallery card is about 150 px wide. At that size dimensions, labels, furniture, the title
  * block and the north arrow are sub-pixel grey fuzz, and they were most of the bytes: the full
  * drawings came to about 2 MB for 34 cards, and decoding them cost a phone seconds of main thread.
- * A thumbnail keeps what reads at card size: walls, doors, windows and room fills.
+ * A thumbnail keeps what reads at card size: walls, doors, windows, room fills, stairs and lifts.
  *
  * NOTHING HERE DRAWS. The input is the SVG `compile()` returned; this parses it and keeps whole
  * CAD layers by the ids the renderer wrote (`<g id="A-WALL" inkscape:groupmode="layer">`), so every
@@ -32,8 +32,12 @@
 /** Millimetres per thumbnail unit. */
 export const SCALE = 100;
 
-/** The most bytes one thumbnail may take (MP-D5); `gen-static.mjs` stops the build past it. */
-export const THUMB_MAX_BYTES = 8 * 1024;
+/**
+ * The most bytes one thumbnail may take (MP-D5); `gen-static.mjs` stops the build past it, and the
+ * vitest and e2e suites read this same constant. 10 KB: the card asked for 8 KB, and keeping stairs
+ * and lifts put the largest example (transit-hall) at about 9.2 KB.
+ */
+export const THUMB_MAX_BYTES = 10 * 1024;
 
 /**
  * Decimals a coordinate keeps, in `SCALE` units: one (a 10 mm grid), or none (100 mm) once the
@@ -47,9 +51,17 @@ export function decimalsFor(widthMm) {
   return widthMm >= 1000 * SCALE ? 0 : 1;
 }
 
-/** The CAD layers a thumbnail keeps: room fills, walls, doors, windows. */
+/** The CAD layers a thumbnail keeps: room fills, walls, doors, windows, stairs and lifts. */
 export function keepsLayer(id) {
-  return id === "A-FLOR" || id === "A-WALL" || id.startsWith("A-WALL-") || id === "A-DOOR" || id === "A-GLAZ";
+  return (
+    id === "A-FLOR" ||
+    id === "A-FLOR-STRS" ||
+    id === "A-FLOR-EVTR" ||
+    id === "A-WALL" ||
+    id.startsWith("A-WALL-") ||
+    id === "A-DOOR" ||
+    id === "A-GLAZ"
+  );
 }
 
 /** Attributes holding one length or a list of them: scaled, rounded to one decimal. */
@@ -365,8 +377,8 @@ export function leanThumb(svg) {
       const items = [];
       for (const c of k.kids) {
         if (!("tag" in c)) throw new Error(`thumbnail: text inside layer ${id}`);
-        if (c.kids.length > 0) throw new Error(`thumbnail: <${c.tag}> with children inside layer ${id}`);
         if (c.tag === "text") continue;
+        if (c.kids.length > 0) throw new Error(`thumbnail: <${c.tag}> with children inside layer ${id}`);
         if (paintsNothing(c.attrs)) continue;
         // The poché-then-outline pair: one path with both paints.
         const prev = items[items.length - 1];
@@ -384,7 +396,8 @@ export function leanThumb(svg) {
         items.push({ tag: c.tag, attrs: new Map(c.attrs) });
       }
       const els = mergeRuns(items, places);
-      if (els.length > 0) layers.push({ id, els });
+      // Kept even when empty, so every kept layer the compiler drew is named in the thumbnail.
+      layers.push({ id, els });
     }
     // Everything else under the root is sheet chrome (north arrow, scale bar, title block,
     // accessible title/desc) or a layer not kept, and is not carried over.

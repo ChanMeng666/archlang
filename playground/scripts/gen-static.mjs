@@ -419,7 +419,7 @@ function labelSvg(svg, caption) {
  * overrides the millimetre paper size a `paper` plan would otherwise emit — so a sheet
  * plan and a bare plan come back in the same units. Second, `leanThumb` (lean-thumb.mjs)
  * parses that drawing and keeps whole CAD layers by the ids the renderer wrote: walls,
- * doors, windows and room fills (ruling MP-D5). Dimensions, labels, furniture and the
+ * doors, windows, room fills, stairs and lifts (ruling MP-D5). Dimensions, labels, furniture and the
  * sheet chrome are sub-pixel fuzz at card size and were 90% of the bytes.
  */
 function thumbSvg(compile, source) {

@@ -372,17 +372,19 @@ describe("the gallery's thumbnails are lean drawings cut from compile() (MP-D5)"
       expect(Buffer.byteLength(thumb)).toBeLessThanOrEqual(lean.THUMB_MAX_BYTES);
       expect(thumb).not.toMatch(/<text\b/);
       expect(thumb, "no furniture, dimensions, labels or grid").not.toMatch(/id="A-(?:FURN|ANNO|GRID|COLS)/);
-
       // The card's intrinsic size is the compiler's: the same root width and height.
       const root = (s: string) => /^<svg[^>]*\swidth="([\d.]+)"\s+height="([\d.]+)"/.exec(s)?.slice(1);
       expect(root(thumb)).toEqual(root(full));
 
-      // Every layer it keeps is one the compiler drew, and the walls are the compiler's walls:
-      // the same vertices, on the thumbnail's grid.
+      // Its layers are exactly the keepable layers the compiler drew, in the compiler's order (none
+      // lost, none invented), and the walls are the compiler's walls: the same vertices, on the
+      // thumbnail's grid.
       const fullLayers = [...full.matchAll(/<g id="([^"]+)" inkscape:groupmode="layer"/g)].map((m) => m[1]!);
       const kept = [...thumb.matchAll(/<g id="([^"]+)">/g)].map((m) => m[1]!);
-      expect(kept.length).toBeGreaterThan(0);
-      expect(kept).toEqual(fullLayers.filter((id) => lean.keepsLayer(id) && kept.includes(id)));
+      expect(kept).toEqual(fullLayers.filter((id) => lean.keepsLayer(id)));
+      for (const id of ["A-WALL", "A-DOOR", "A-FLOR", "A-FLOR-STRS", "A-FLOR-EVTR"]) {
+        if (fullLayers.includes(id)) expect(kept, `${row.name} keeps ${id}`).toContain(id);
+      }
       const vbW = Number((/ viewBox="([^"]*)"/.exec(full)?.[1] ?? "").trim().split(/\s+/)[2]);
       const p = 10 ** lean.decimalsFor(vbW);
       const snap = (v: number) => Math.round((v / lean.SCALE) * p) / p;
