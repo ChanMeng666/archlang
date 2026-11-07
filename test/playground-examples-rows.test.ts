@@ -383,7 +383,7 @@ describe("the gallery's thumbnails are lean drawings cut from compile() (MP-D5)"
       const kept = [...thumb.matchAll(/<g id="([^"]+)">/g)].map((m) => m[1]!);
       expect(kept.length).toBeGreaterThan(0);
       expect(kept).toEqual(fullLayers.filter((id) => lean.keepsLayer(id) && kept.includes(id)));
-      const vbW = Number(/viewBox="[^ ]+ [^ ]+ ([^ ]+) /.exec(full)?.[1]);
+      const vbW = Number((/ viewBox="([^"]*)"/.exec(full)?.[1] ?? "").trim().split(/\s+/)[2]);
       const p = 10 ** lean.decimalsFor(vbW);
       const snap = (v: number) => Math.round((v / lean.SCALE) * p) / p;
       const walls = fullLayers.filter((id) => id === "A-WALL" || id.startsWith("A-WALL-"));
