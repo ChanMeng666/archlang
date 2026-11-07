@@ -70,10 +70,15 @@ come after load:
 | **MP4b** thumbnail cache rule (#564) | MP-D5 | `public/_headers`, `scripts/smoke.mjs` | cache header checked by smoke | high (`_headers`) |
 | **MP5** no compile at boot (#565) | MP-D4 | `src/main.ts`, `scripts/gen-static.mjs`, `vite.config.js`, `e2e/startup-chunks.baseline.json` | no compiler request before interaction under Save-Data; facts line in served HTML; `init-precedence`, `examples-static`, `front-door` specs unchanged and green | high (baseline) |
 | **MP6** compile in a worker (#569) | MP-D6 | `src/main.ts`, new `src/compile-worker.ts`, panels reading results | typing 20 characters into Hillside gives no main-thread task over 100 ms; last result wins; panel specs unchanged. Startup set 17,184 B gzip (index 13,613 + panels 2,773 + preload-helper 798): +801 B over MP5 for the worker client's wiring, the baseline not re-taken | medium/high |
-| MP7 (deferred) | draw 3D straight to the visible canvas | `packages/archlang-3d/src/replay/mount.ts` | frame hashes and single-file replay HTML bytes unchanged | high, package release |
+| MP7 (deferred, § 5) | draw 3D straight to the visible canvas | `packages/archlang-3d/src/replay/mount.ts` | frame hashes and single-file replay HTML bytes unchanged | high, package release |
+| **MP8** a dragged knob compiles in the worker | MP-D6 for the knobs panel: a moving slider's compile leaves the page, and a value that does not compile still snaps back | `src/main.ts` (`tryRender`), `src/knobs-panel.ts` | dragging a knob on Hillside at 4× CPU gives no main-thread task over 100 ms; the last value wins; `knobs` specs unchanged and green | medium |
+| **MP9** a plan switch compiles once | `render` asked for the drawing already on screen, with nothing in flight, compiles nothing (today the switch's own render and its debounced one both compile when the first lands within 250 ms) | `src/main.ts` | a gallery switch makes exactly one compile request; an edit after it still compiles | medium |
+| **MP10** a failed compiler load retries in every engine | MP5 forgets a failed `import()` so the next use asks again; that is proven in Chromium only, and an engine that keeps a failed module fetch would never retry | `src/main.ts` loaders, CI | the failed-load spec passes in Firefox and WebKit too; if an engine keeps the failure, the retry asks by another URL | medium/high (CI) |
 
-Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6. High-tier cards wait for the owner's words before merge.
-MP1–MP6 are done (MP6: #569); MP7 stays deferred.
+Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6, then MP8 → MP9 → MP10 (follow-ups found in
+MP5/MP6 review). High-tier cards wait for the owner's words before merge.
+MP1–MP6 are done (MP6: #569; its main-red parity test fixed by #571); MP8–MP10 are next; MP7
+stays deferred.
 
 ## 4. Open for the owner
 
@@ -81,3 +86,25 @@ MP1–MP6 are done (MP6: #569); MP7 stays deferred.
   of JS per page) is free, so the owner kept it; the privacy page and `docs/seo.md` now say so.
 - Real iOS Safari, the virtual keyboard and phone GPU cost were not measurable in emulation; check
   on a real phone after MP1–MP3.
+
+## 5. Deferred: MP7
+
+**What.** The 3D preview draws each frame into a hidden WebGL canvas
+(`preserveDrawingBuffer: true`), then copies it into the visible 2D canvas
+(`ctx.drawImage(gl, 0, 0)` in `packages/archlang-3d/src/replay/mount.ts`). That 2D context is made
+with `willReadFrequently`, so it lives in CPU memory and every frame is read back from the GPU. On a
+phone that copy is a large share of a frame's cost. MP7 would draw straight to the visible canvas.
+
+**Why it waits.**
+- The change is in `packages/archlang-3d`, not the playground. The same mount is used by the
+  single-file replay HTML, the video export and the frame-hash tests.
+- The 2D canvas is there for a reason. It cross-fades the core's SVG drawing over the replay's top
+  view (`ctx.globalAlpha = s.svg`), and the frame hashes read its pixels (`getImageData`). Drawing
+  straight to the canvas needs another way to do both, with frame hashes and replay HTML bytes
+  unchanged.
+- It ships only through an `archlang-3d` release, which is owner-only, and then a playground bump.
+- MP3 already bounds the cost: nothing is drawn while the 3D view is covered, off-screen or in a
+  hidden tab, and the drawing buffer is capped at 1.5× on touch screens.
+
+**When to take it up.** When the owner's real-phone check finds the 3D view slow, or with the next
+`archlang-3d` release, whichever comes first. Start from this section and the MP7 row.
