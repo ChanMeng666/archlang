@@ -467,7 +467,7 @@ const previewCtl = createPreview({
 });
 // The drawing built into the page pans and zooms at once, before the compiler is in — unless
 // this visit opens another plan (the head script's `pg-other`), which hides it until compiled.
-if (!root.classList.contains("pg-other")) previewCtl.adopt();
+const adoptedBuiltIn = !root.classList.contains("pg-other") && previewCtl.adopt();
 
 // The plan's knobs (knobs-panel.ts): a slider per top-level numeric `let`, over the drawing. A
 // value is tried through `render`, which keeps the last good drawing when it does not compile.
@@ -865,10 +865,10 @@ interface Choice {
 /**
  * The plan built into the page (scripts/gen-static.mjs, card MP5): its source and describe(), in
  * `#planData` beside its drawing and facts line. Null on a visit that opens another plan (the head
- * script's `pg-other`), and on the dev server, where gen-static has not run.
+ * script's `pg-other`, so nothing was adopted), and on the dev server, where gen-static has not run.
  */
 function builtInPlan(): Choice["built"] {
-  if (root.classList.contains("pg-other") || !pzStage.querySelector("svg[data-prerendered]")) return null;
+  if (!adoptedBuiltIn) return null; // `pg-other`, or no drawing built in
   try {
     const data = JSON.parse(document.getElementById("planData")?.textContent ?? "") as Choice["built"];
     return typeof data?.source === "string" && data.summary ? data : null;
@@ -967,6 +967,9 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
   }
 
   core = await corePending;
+  // A task of its own for what follows: the compiler's module has just run in this one, so the
+  // first render does not add to that long task (a tap in between is handled between the two).
+  await new Promise<void>((resolve) => setTimeout(resolve, 0));
   if (editing) await ensureEditor(false);
 
   // Header actions: format, finish, repair, embed, copy link, snapshots, download, and the

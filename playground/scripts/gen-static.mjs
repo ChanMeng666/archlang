@@ -990,7 +990,8 @@ const NAME_SLOT = "<!--prerender:plan-name-->";
 const GALLERY_SLOT = "<!--prerender:gallery-->";
 const COUNT_SLOT = "<!--prerender:count-->";
 const FACTS_SLOT = "<!--prerender:facts-->";
-const DATA_SLOT = "<!--prerender:plan-data-->";
+/** A JSON value, so the page's `<script type="application/json">` stays JSON before it is filled. */
+const DATA_SLOT = '{ "prerender": "plan-data" }';
 
 /**
  * The options main.ts's `render` compiles with on a visit with no theme picked and the a11y switch

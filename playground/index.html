@@ -415,8 +415,8 @@
          drawing and the facts line above, everything the live page would show for it, so a visit
          that opens on it draws, pans, and shows its rooms' facts without compiling. Data, not
          script: nothing runs it. On the dev server, where gen-static has not run, it holds the
-         slot, which is no JSON, and the app compiles at boot. -->
-    <script type="application/json" id="planData"><!--prerender:plan-data--></script>
+         slot (valid JSON, but no plan), and the app compiles at boot. -->
+    <script type="application/json" id="planData">{ "prerender": "plan-data" }</script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>
