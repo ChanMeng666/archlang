@@ -1786,10 +1786,35 @@
   color: var(--ink);
   text-align: center;
 }
+/* The WebGL context was lost (ruling MP-D3, preview3d.ts): a press draws the view again. Over
+   everything on the stage, centred, touch-sized. */
+.p3d-lost {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+  max-width: calc(100% - 32px);
+  min-height: 44px;
+  padding: 10px 18px;
+  border: 1px solid var(--hairline);
+  border-radius: 6px;
+  background: var(--paper-panel);
+  box-shadow: 0 2px 10px rgb(28 36 48 / 0.16);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.p3d-lost:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
 [hidden].p3d-canvas,
 [hidden].p3d-float,
 [hidden].p3d-message,
-[hidden].p3d-btn {
+[hidden].p3d-btn,
+[hidden].p3d-lost {
   display: none;
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1822,6 +1847,31 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   .p3d-info-btn {
     width: 44px;
     height: 44px;
+  }
+}
+/* No hover on a touch screen (ruling MP-D2): what floats over the canvas rests whole, not dimmed
+   until a hover that never comes. The scrubber keeps its thin line at the foot but takes a 44 px
+   tall press (the padding puts the 12 px it draws in at the bottom, where the line always was),
+   and its handle shows. */
+@media (hover: none) {
+  .p3d-float {
+    opacity: 1;
+  }
+}
+@media (pointer: coarse), (hover: none) {
+  .p3d-scrub {
+    box-sizing: border-box;
+    height: 44px;
+    padding: 32px 0 0;
+  }
+  .p3d-scrub::-webkit-slider-thumb {
+    width: 12px;
+    height: 12px;
+    margin-top: -4.5px;
+  }
+  .p3d-scrub::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
   }
 }
 @media not all and (max-width: 900px) {

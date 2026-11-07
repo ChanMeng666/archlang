@@ -603,6 +603,7 @@ test.describe("the phone page is one screen (card MP1)", () => {
           expect(m.toolbar!, "the stage toolbar's bottom is inside the window").toBeLessThanOrEqual(m.inner);
           expect(m.facts, "the facts row is drawn").not.toBeNull();
           expect(m.facts!, "the facts row's bottom is inside the window").toBeLessThanOrEqual(m.inner);
+          expect(m.lede, "the lede is drawn").not.toBeNull();
           expect(m.lede!, "the lede's bottom is inside the window").toBeLessThanOrEqual(m.inner);
           expect(m.scroll, "the page itself does not scroll").toBeLessThanOrEqual(m.inner + 1);
           await expect(page.locator("#makeOwn")).toBeInViewport();
@@ -630,65 +631,86 @@ test.describe("the phone page is one screen (card MP1)", () => {
 
   // Ruling MP-D2: text a phone shows is 12 px at least, and a field is 16 px at least (under 16 px
   // iOS zooms the page when it takes focus). SVG text is the drawing's, scaled with it: not counted.
-  test.describe("text and fields at 390x844", () => {
-    test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+  // On the narrowest phone too, and with each header menu and the Make your own dialog open.
+  for (const [width, height] of [
+    [390, 844],
+    [320, 568],
+  ] as const)
+    test.describe(`text and fields at ${width}x${height}`, () => {
+      test.use({ viewport: { width, height }, isMobile: true, hasTouch: true });
 
-    const tooSmall = (page: Page) =>
-      page.evaluate(() => {
-        const shown = (el: Element) => {
-          if (el.getClientRects().length === 0 || getComputedStyle(el).visibility === "hidden") return false;
-          const r = el.getBoundingClientRect();
-          return (
-            r.width > 1 && r.height > 1 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth
-          );
-        };
-        const text = [...document.body.querySelectorAll("*")]
-          .filter((el) => !el.closest("svg, .vh"))
-          .filter((el) => [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim()))
-          .filter(shown)
-          .filter((el) => Number.parseFloat(getComputedStyle(el).fontSize) < 12)
-          .map(
-            (el) =>
-              `${el.tagName.toLowerCase()}.${el.className || el.id} ${getComputedStyle(el).fontSize} "${el.textContent!.trim().slice(0, 24)}"`,
-          );
-        const fields = [
-          ...document.querySelectorAll(
-            'input:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"]), select, textarea, .cm-content',
-          ),
-        ]
-          .filter((el) => el.getClientRects().length > 0)
-          .filter((el) => Number.parseFloat(getComputedStyle(el).fontSize) < 16)
-          .map((el) => `${el.id || el.className} ${getComputedStyle(el).fontSize}`);
-        return { text, fields };
+      const tooSmall = (page: Page) =>
+        page.evaluate(() => {
+          const shown = (el: Element) => {
+            if (el.getClientRects().length === 0 || getComputedStyle(el).visibility === "hidden") return false;
+            const r = el.getBoundingClientRect();
+            return (
+              r.width > 1 && r.height > 1 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth
+            );
+          };
+          const text = [...document.body.querySelectorAll("*")]
+            .filter((el) => !el.closest("svg, .vh"))
+            .filter((el) => [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim()))
+            .filter(shown)
+            .filter((el) => Number.parseFloat(getComputedStyle(el).fontSize) < 12)
+            .map(
+              (el) =>
+                `${el.tagName.toLowerCase()}.${el.className || el.id} ${getComputedStyle(el).fontSize} "${el.textContent!.trim().slice(0, 24)}"`,
+            );
+          const fields = [
+            ...document.querySelectorAll(
+              'input:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"]), select, textarea, .cm-content',
+            ),
+          ]
+            .filter((el) => el.getClientRects().length > 0)
+            .filter((el) => Number.parseFloat(getComputedStyle(el).fontSize) < 16)
+            .map((el) => `${el.id || el.className} ${getComputedStyle(el).fontSize}`);
+          return { text, fields };
+        });
+
+      test("no visible text under 12 px and no field under 16 px, in view mode and in every edit view", async ({
+        page,
+      }) => {
+        await page.goto(`/${await shareHash(TOWNHOUSE)}`);
+        await waitForPlan(page);
+        expect(await tooSmall(page), "view mode, the drawing").toEqual({ text: [], fields: [] });
+        await page.locator("#view3d").tap();
+        await expect(page.locator("#preview3d canvas")).toBeVisible();
+        expect(await tooSmall(page), "view mode, the 3D preview").toEqual({ text: [], fields: [] });
+        await page.locator("#viewPlan").tap();
+
+        // Each header menu open (the gallery, Share, ⋯), then the Make your own dialog.
+        for (const id of ["#gallery", "#share", "#more"]) {
+          await page.locator(`${id} > summary`).tap();
+          await expect(page.locator(id)).toHaveAttribute("open", "");
+          if (id === "#gallery") await expect(page.locator("#galleryPanel .gal-card").first()).toBeVisible();
+          expect(await tooSmall(page), `view mode, ${id} open`).toEqual({ text: [], fields: [] });
+          await page.locator(`${id} > summary`).tap();
+          await expect(page.locator(id)).not.toHaveAttribute("open", "");
+        }
+        await page.locator("#makeOwn").tap();
+        await expect(page.locator("#makeOwnDialog")).toBeVisible();
+        expect(await tooSmall(page), "view mode, Make your own open").toEqual({ text: [], fields: [] });
+        await page.keyboard.press("Escape");
+        await expect(page.locator("#makeOwnDialog")).toBeHidden();
+
+        await page.goto("about:blank");
+        await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
+        await waitForPlan(page);
+        for (const view of ["plan", "code", "facts", "checks"]) {
+          await page.locator(`.mview[data-mview="${view}"]`).tap();
+          if (view === "facts") await expect(page.locator("#takeoffCopy")).toBeVisible();
+          if (view === "checks") await expect(page.locator("#errors .diagrow").first()).toBeVisible();
+          if (view === "code") await expect(page.locator(".cm-content")).toBeVisible();
+          expect(await tooSmall(page), `edit mode, ${view}`).toEqual({ text: [], fields: [] });
+        }
+        // The Checks view's own fields, scrolled to: the lint profile and the intent brief.
+        for (const sel of ["#lintProfile", "#intentSrc"]) {
+          await page.locator(sel).scrollIntoViewIfNeeded();
+          expect(await tooSmall(page), `edit mode, checks, ${sel} in view`).toEqual({ text: [], fields: [] });
+        }
       });
-
-    test("no visible text under 12 px and no field under 16 px, in view mode and in every edit view", async ({
-      page,
-    }) => {
-      await page.goto(`/${await shareHash(TOWNHOUSE)}`);
-      await waitForPlan(page);
-      expect(await tooSmall(page), "view mode, the drawing").toEqual({ text: [], fields: [] });
-      await page.locator("#view3d").tap();
-      await expect(page.locator("#preview3d canvas")).toBeVisible();
-      expect(await tooSmall(page), "view mode, the 3D preview").toEqual({ text: [], fields: [] });
-
-      await page.goto("about:blank");
-      await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
-      await waitForPlan(page);
-      for (const view of ["plan", "code", "facts", "checks"]) {
-        await page.locator(`.mview[data-mview="${view}"]`).tap();
-        if (view === "facts") await expect(page.locator("#takeoffCopy")).toBeVisible();
-        if (view === "checks") await expect(page.locator("#errors .diagrow").first()).toBeVisible();
-        if (view === "code") await expect(page.locator(".cm-content")).toBeVisible();
-        expect(await tooSmall(page), `edit mode, ${view}`).toEqual({ text: [], fields: [] });
-      }
-      // The Checks view's own fields, scrolled to: the lint profile and the intent brief.
-      for (const sel of ["#lintProfile", "#intentSrc"]) {
-        await page.locator(sel).scrollIntoViewIfNeeded();
-        expect(await tooSmall(page), `edit mode, checks, ${sel} in view`).toEqual({ text: [], fields: [] });
-      }
     });
-  });
 });
 
 /**
@@ -768,6 +790,43 @@ test.describe("a touch tablet at 1024x768 (card MP1)", () => {
       if (tab === "preview3d") await expect(page.locator("#preview3d canvas")).toBeVisible();
       expect(await tooSmall(), `edit mode, ${tab}`).toEqual([]);
     }
+  });
+});
+
+/**
+ * Card MP2 (an MP1 follow-up): a touch screen wider than 900 px keeps the desktop's centred stage
+ * notice. Only the 44 px targets apply there under `(pointer: coarse)`; the phone's full-width
+ * notice would lie across the findings list in the top-right corner.
+ */
+test.describe("the stage notice on a wide touch screen (card MP2)", () => {
+  test.use({ viewport: { width: 1280, height: 800 }, hasTouch: true, reducedMotion: "reduce" });
+
+  test("is centred on the stage and clear of the findings list", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches), "a touch screen").toBe(true);
+    await page.goto(`/${await shareHash(TOWNHOUSE)}`);
+    await waitForPlan(page);
+    await page.locator("#checks").tap();
+    await expect(page.locator(".checks button").first()).toBeVisible();
+    // A flash: Share → Copy full link says so on the stage for a moment.
+    await page.locator("#share > summary").tap();
+    await expect(page.locator("#copyLink")).toBeEnabled();
+    await page.locator("#copyLink").tap();
+    const notice = page.locator(".stage-status.show");
+    await expect(notice).toBeVisible();
+    const m = await page.evaluate(() => {
+      const box = (s: string) => document.querySelector(s)!.getBoundingClientRect().toJSON() as Box;
+      const n = document.querySelector(".stage-status")!;
+      return {
+        n: box(".stage-status"),
+        checks: box(".checks"),
+        host: (n as HTMLElement).offsetParent!.getBoundingClientRect().toJSON() as Box,
+      };
+    });
+    const centre = m.n.x + m.n.width / 2;
+    expect(Math.abs(centre - (m.host.x + m.host.width / 2)), "centred on the stage").toBeLessThanOrEqual(1);
+    expect(m.n.width, "a notice, not a full-width bar").toBeLessThan(m.host.width - 64);
+    expect(overlaps(m.n, m.checks), "clear of the findings list").toBe(false);
   });
 });
 
