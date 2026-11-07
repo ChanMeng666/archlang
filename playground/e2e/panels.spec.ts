@@ -146,9 +146,22 @@ test.describe("one view switch (PG-D3)", () => {
 
   test("a compiler that fails to load says so, and never stays on Compiling…", async ({ page }) => {
     // The compiler's chunk (`compiler-<hash>.js`, vite.config.js's codeSplitting group) is refused.
-    await page.route(/\/assets\/compiler-[^/]+\.js(\?.*)?$/, (route) => route.abort());
+    const refused = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
+    await page.route(refused, (route) => route.abort());
+    let asked = 0;
+    page.on("request", (r) => {
+      if (refused.test(r.url())) asked++;
+    });
     await page.goto("/");
     const status = page.locator("#status");
+    // On a plain visit only the idle import asks for it (card MP5), and its failure says nothing:
+    // the drawing built into the page is all there.
+    await expect.poll(() => asked, { timeout: 15_000 }).toBeGreaterThan(0);
+    await page.waitForTimeout(1000);
+    await expect(status).not.toHaveClass(/\b(err|busy|show)\b/);
+    await expect(page.locator("html[data-boot-failed]")).toHaveCount(0);
+    // A use that needs it (Share opened) is what says so.
+    await page.locator("#share > summary").click();
     await expect(status).toHaveClass(/\berr\b/, { timeout: 15_000 });
     await expect(status).toBeVisible();
     await expect(page.locator("#statusText")).toHaveText("Couldn't load the compiler — reload to retry");
@@ -162,6 +175,14 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(page.locator("html[data-booting]")).toHaveCount(0);
     await expect(page.locator("html[data-boot-failed]")).toHaveCount(1);
     await expect(page.locator("#statusLive")).toHaveText("Couldn't load the compiler — reload to retry");
+    // The failure is not kept: once the chunk can load, the next use loads it and the app is up.
+    await page.unroute(refused);
+    await page.locator("#share > summary").click(); // closes the menu
+    await page.locator("#share > summary").click(); // opens it again: a use
+    await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
+    await expect(page.locator("html[data-boot-failed]")).toHaveCount(0);
+    await expect(status).not.toHaveClass(/\berr\b/);
+    await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
   });
 
   test("a boot that succeeds never says it failed", async ({ page }) => {

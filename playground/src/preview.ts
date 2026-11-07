@@ -16,7 +16,8 @@ export interface Preview {
   show(svg: string, refit: boolean): void;
   /**
    * Take over the drawing built into the page (`svg[data-prerendered]`, scripts/gen-static.mjs):
-   * size it from its viewBox and fit it, so it pans and zooms before the compiler has loaded.
+   * size it from its viewBox and fit it, so it pans and zooms before the compiler has loaded, and
+   * drop what only the no-script page needs, so it is the element the live render would draw.
    * False when the stage holds no such drawing.
    */
   adopt(): boolean;
@@ -94,6 +95,10 @@ export function createPreview(opts: PreviewOpts): Preview {
       // same box the same way (FIT_PAD), so the drawing does not move.
       el.removeAttribute("data-prerendered");
       el.removeAttribute("style");
+      // The role and name are for a reader with no script (gen-static); the live render's root
+      // carries neither (a11y off), so the adopted root is the one that render would draw (card MP5).
+      el.removeAttribute("role");
+      el.removeAttribute("aria-label");
       const { w, h } = sizeFromViewBox(el.getAttribute("viewBox"));
       el.setAttribute("width", String(w));
       el.setAttribute("height", String(h));

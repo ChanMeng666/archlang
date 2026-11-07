@@ -1587,26 +1587,29 @@ type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
  * anything is opened (index.html's module script and its modulepreloads) carry no 3D code and no
  * CodeMirror: the 3D chunk loads on the tab's first open (the first test above sees it fetched
  * once), the editor's chunk on the first entry into edit mode (init-precedence.spec.ts sees it not
- * fetched in view mode). The compiler is the one startup chunk outside the view path: preloaded so
- * it downloads with the page, but a `modulepreload`, never the render's own script.
+ * fetched in view mode). The compiler is no startup chunk either (card MP5, ruling MP-D4): a visit on
+ * the built-in plan loads it on first use or when idle (boot.spec.ts sees it not fetched before a
+ * use under Save-Data), so index.html neither runs nor preloads it, and the startup set is the view
+ * path alone.
  *
  * "Startup chunks" are the files index.html names AND everything they import statically, walked
  * through the built files (card PG5a): no lazy heavyweight (three.js, CodeMirror, glTF-Transform,
- * jsPDF and html2canvas, the takeoff panel) is reachable from them, from the `import()`s every
- * visit makes (main.ts: the compiler, the examples and samples, the header actions), from the
- * files embed.html names, nor, but for the editor itself, from the editor's chunk.
+ * jsPDF and html2canvas, the takeoff panel) is reachable from them, from the `import()`s a visit
+ * makes on its first use (main.ts: the compiler, the examples and samples, the header actions),
+ * from the files embed.html names, nor, but for the editor itself, from the editor's chunk.
  *
  * Four size gates, all on SUMS of gzip sizes, never per chunk (a per-chunk ±1 % fired on ordinary
  * core growth, a re-bless hazard that teaches re-blessing; a sum is indifferent to the bundler
  * renaming or re-splitting chunks):
  *
- * - `viewBudget` (60,000 B, PS-D5 / PG-D7): the view path — what the entry and every preload but the
- *   compiler reach — is a hard ceiling, not a growth allowance.
+ * - `viewBudget` (60,000 B, PS-D5 / PG-D7): the view path — what the entry and every preload
+ *   reach, the whole startup set since MP5 — is a hard ceiling, not a growth allowance.
  * - `compilerPathBudget`: the view path and the compiler with what it reaches, the JS that loads by
- *   the end of the first compile. A hard ceiling too; the baseline file says how it was set.
+ *   the end of the first compile (on first use). A hard ceiling too; the baseline file says how it
+ *   was set.
  * - `embedPathBudget`: what embed.html's script and preloads reach (the embed imports the core
  *   statically). A hard ceiling, set the same way.
- * - `growthBudget` (20,000 B): every startup chunk, compiler included, against the baseline. The 3D
+ * - `growthBudget` (20,000 B): that compiler path, against the baseline. The 3D
  *   chunk is ~150,500 B gzip (three.js and the package, measured at A8), so a leak of even an eighth
  *   of it trips the gate, while ordinary core growth (hundreds of bytes per feature) takes dozens of
  *   PRs to reach it, and reaching it is a deliberate re-baseline with its reason in the commit.
@@ -1662,8 +1665,8 @@ test.describe("startup chunks", () => {
     expect(readFileSync(join(DIST, lazy3d), "utf8"), "the 3D chunk carries no GLB writer").not.toContain(
       "glTF-Transform",
     );
-    // The compiler: preloaded with the page, never the script the first paint waits on.
-    expect(preloads, "the compiler is preloaded").toContain(compiler);
+    // The compiler: neither preloaded with the page nor its script (card MP5): it loads on first use.
+    expect(preloads, "the compiler is not preloaded").not.toContain(compiler);
     expect(scripts, "the compiler is not the page's module script").not.toContain(compiler);
 
     // What a startup file costs is everything it imports statically, not the file alone: a
@@ -1707,23 +1710,27 @@ test.describe("startup chunks", () => {
     const viewPath = reach([...scripts, ...preloads.filter((p) => p !== compiler)]);
     const startup = reach([...scripts, ...preloads]);
     expect(viewPath, "the compiler is not reached by the view path's static imports").not.toContain(compiler);
+    // What every visit loads is the view path and nothing more: the compiler waits for a use.
+    expect(startup, "the startup set is the view path alone (no compiler)").toEqual(viewPath);
+    // What has loaded by the end of the first compile: the startup set and the compiler's own walk.
+    const compilerPath = reach([...startup, compiler]);
 
-    // The `import()`s every visit makes once the drawing is up (main.ts): the compiler and the
-    // example sources and samples (the gallery) at the top level, the header actions once the
+    // The `import()`s a visit makes on its first use, or when idle (main.ts `up`): the compiler
+    // and the example sources and samples (the gallery), and the header actions once the
     // compiler is in. Named by source module, each checked to be a dynamic import in main.ts and
     // in the built entry, the chunk read from the built graph. They join the forbidden-chunk
     // check only: the compiler is already in `compilerPathBudget`, and the rest (the example
-    // sources, the actions) load after the first compile by design, outside PG-D7's startup.
+    // sources, the actions) load with the first compile by design, outside PG-D7's startup.
     const mainTs = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src", "main.ts"), "utf8");
     const entryDynamic = imports(scripts[0] as string, DYNAMIC);
     const boot = ["compiler", "examples", "samples", "actions"].map((name) => {
-      expect(mainTs, `main.ts imports ./${name}.js at boot`).toContain(`import("./${name}.js")`);
+      expect(mainTs, `main.ts imports ./${name}.js on first use`).toContain(`import("./${name}.js")`);
       const found = entryDynamic.filter((f) => new RegExp(`^assets/${name}-[\\w-]+\\.js$`).test(f));
       expect(found, `the built entry imports one ${name} chunk dynamically`).toHaveLength(1);
       return found[0] as string;
     });
     expect(boot, "the boot import of ./compiler.js is the compiler chunk").toContain(compiler);
-    const booted = reach([...startup, ...boot]);
+    const booted = reach([...compilerPath, ...boot]);
 
     // The embed (embed.html, the iframe other pages show): it imports the core statically
     // (embed.ts), so it walks into the compiler the way index.html's preload does.
@@ -1765,14 +1772,14 @@ test.describe("startup chunks", () => {
     const gz = (file: string) => gzipSync(readFileSync(join(DIST, file))).length;
     const size = (files: string[]) => files.reduce((a, f) => a + gz(f), 0);
     const view = size(viewPath);
-    const total = size(startup);
+    const total = size(compilerPath);
     const embedTotal = size(embedPath);
     expect(view, `the view path is ${view} B gzip (budget ${baseline.viewBudget} B)`).toBeLessThanOrEqual(
       baseline.viewBudget,
     );
     expect(
       total,
-      `the view path and the compiler are ${total} B gzip (budget ${baseline.compilerPathBudget} B): ${startup.join(", ")}`,
+      `the view path and the compiler are ${total} B gzip (budget ${baseline.compilerPathBudget} B): ${compilerPath.join(", ")}`,
     ).toBeLessThanOrEqual(baseline.compilerPathBudget);
     expect(
       embedTotal,
@@ -1782,7 +1789,7 @@ test.describe("startup chunks", () => {
     const base = sum(baseline.gzip) + sum(baseline.compilerGzip);
     expect(
       total - base,
-      `startup chunks ${total} B gzip vs the baseline's ${base} B (budget +${baseline.growthBudget} B)`,
+      `the compiler path ${total} B gzip vs the baseline's ${base} B (budget +${baseline.growthBudget} B)`,
     ).toBeLessThanOrEqual(baseline.growthBudget);
   });
 });

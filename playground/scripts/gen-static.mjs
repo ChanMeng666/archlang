@@ -65,6 +65,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { encodePlanHash } from "../../scripts/gen-permalink.mjs";
+import { factsLine } from "../src/facts-line.js";
 import { cardText, splitLabel } from "../src/plan-label.js";
 import { leanThumb, THUMB_MAX_BYTES } from "./lean-thumb.mjs";
 
@@ -988,6 +989,17 @@ const PLAN_SLOT = "<!--prerender:plan-->";
 const NAME_SLOT = "<!--prerender:plan-name-->";
 const GALLERY_SLOT = "<!--prerender:gallery-->";
 const COUNT_SLOT = "<!--prerender:count-->";
+const FACTS_SLOT = "<!--prerender:facts-->";
+/** A JSON value, so the page's `<script type="application/json">` stays JSON before it is filled. */
+const DATA_SLOT = '{ "prerender": "plan-data" }';
+
+/**
+ * The options main.ts's `render` compiles with on a visit with no theme picked and the a11y switch
+ * off, the visit the built-in drawing stands for (`noCache` changes no byte). The drawing is that
+ * compile's, so the page draws it before the compiler loads, and the live page's own compile of
+ * it, later, draws the same: `annotate` is the `data-span` a click in edit mode jumps to source by.
+ */
+const LIVE_RENDER = { annotate: true, accessible: false };
 
 /**
  * Write the default example's drawing, the plan gallery (its trigger's plan name and its cards)
@@ -996,9 +1008,12 @@ const COUNT_SLOT = "<!--prerender:count-->";
  * The playground is a module-script page, so without this its first paint has no drawing, and
  * a visit with JavaScript off — every crawler — has none at all. The plan is `EXAMPLE_ROWS`'
  * FIRST row, the one a first visit opens (src/examples.ts `DEFAULT_EXAMPLE`), compiled by the
- * same built core as the pages above, so the bytes are a function of the source alone. The app
- * replaces it with its own compile of the same source (main.ts), or with the plan a `#z=` link
- * or a saved draft opens, which index.html's head script hides this one for.
+ * same built core as the pages above, with the options the app's own render uses (`LIVE_RENDER`),
+ * so the bytes are a function of the source alone and equal what the app would draw. A visit on
+ * this plan therefore does not compile at boot (card MP5, ruling MP-D4): the drawing, the facts
+ * line and, in `#planData`, the source, its describe() and its warning count are all here; the
+ * compiler compiles on first use (the browser's idle time only imports it). A `#z=` link or a saved draft opens another plan, which
+ * index.html's head script hides this one (and its facts line) for, and the app compiles at once.
  *
  * The drawing gets what `showSvgInStage` (src/viewer.ts) would give it — a pixel size from its
  * viewBox — plus `--ar` for the CSS fit (styles/chrome.css), a role and the core's caption as its
@@ -1015,7 +1030,7 @@ const COUNT_SLOT = "<!--prerender:count-->";
 function prerenderIndex(rows, thumbs) {
   const file = join(outDir, "index.html");
   const html = readFileSync(file, "utf8");
-  for (const slot of [PLAN_SLOT, NAME_SLOT, GALLERY_SLOT, COUNT_SLOT]) {
+  for (const slot of [PLAN_SLOT, NAME_SLOT, GALLERY_SLOT, COUNT_SLOT, FACTS_SLOT, DATA_SLOT]) {
     if (html.split(slot).length !== 2) {
       fail(
         `dist/index.html must hold ${slot} exactly once (playground/index.html); found ${html.split(slot).length - 1}.`,
@@ -1024,9 +1039,16 @@ function prerenderIndex(rows, thumbs) {
   }
   const row = rows[0];
   const source = readFileSync(join(repo, "examples", `${row.name}.arch`), "utf8");
-  const result = compile(source);
+  const result = compile(source, LIVE_RENDER);
   const d = describe(source);
   if (result.errors.length > 0 || !result.svg) fail(`${row.name}: the default example does not compile.`);
+  // The page holds no storey switcher and no knobs (card MP5): main.ts draws those only from a
+  // compile, which a visit on the built-in plan no longer makes at boot. A default with storeys or
+  // a top-level `let` (a knob, src/knobs.ts) would show them only once the compiler is in.
+  if (result.pages) fail(`${row.name}: the default example has storeys; the built-in page has no storey switcher.`);
+  if ((result.ast?.body ?? []).some((s) => s.kind === "let")) {
+    fail(`${row.name}: the default example has a top-level \`let\` (a knob); the built-in page draws no knobs.`);
+  }
   // The size attributes below are the stage's (a pixel size from the viewBox). A root that already
   // carried its own (a plan with `paper` writes `width="…mm"`) would end up with two of each, and
   // HTML keeps the first: refuse rather than guess which size the drawing meant.
@@ -1093,6 +1115,17 @@ function prerenderIndex(rows, thumbs) {
     })
     .join("");
 
+  // The facts line (facts-strip.ts's markup, facts-line.js's words) and the data main.ts reads for
+  // the room facts and the source, so a visit on this plan needs no compile until it is used.
+  // `data-prerendered` lets index.html's head-script class `pg-other` hide the line for a visit
+  // that opens another plan, as it hides the drawing. In the JSON every `<` is escaped, so no
+  // text in it can close the <script> element.
+  const facts = `<span class="facts-line" data-prerendered>${escapeHtml(factsLine(source, d, null))}</span>`;
+  // (The JSON's element is index.html's own: this script writes no element of that kind.)
+  // `warnings`: the count main.ts's status rests on ("ready", or "N warnings"), from this compile.
+  const warnings = (result.diagnostics ?? []).filter((x) => x.severity === "warning").length;
+  const data = escapeJsonLd({ source, summary: d, warnings });
+
   // Function replacements: neither the SVG nor a label may splice `$&` back in (v1.36).
   writeFileSync(
     file,
@@ -1100,7 +1133,9 @@ function prerenderIndex(rows, thumbs) {
       .replace(PLAN_SLOT, () => svg)
       .replace(NAME_SLOT, () => escapeHtml(splitLabel(row.label).name))
       .replace(GALLERY_SLOT, () => gallery)
-      .replace(COUNT_SLOT, () => String(rows.length)),
+      .replace(COUNT_SLOT, () => String(rows.length))
+      .replace(FACTS_SLOT, () => facts)
+      .replace(DATA_SLOT, () => data),
     "utf8",
   );
   return { name: row.name, bytes: Buffer.byteLength(svg) };

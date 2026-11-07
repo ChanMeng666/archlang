@@ -16,34 +16,15 @@ const CORE_FILES = coreFiles(
 );
 const isCompiler = (id) => id === CORE_DOOR || (id.startsWith(CORE_DIST) && CORE_FILES.has(id.slice(CORE_DIST.length)));
 
-/**
+/*
  * The compiler is its own chunk (`compiler-*.js`, the codeSplitting group below), which main.ts
- * reaches through a dynamic `import("archlang")` so it never blocks the first paint: the drawing
- * is already in the HTML. A dynamic import gets no `<link rel="modulepreload">` from Vite, so
- * this adds one to index.html, which starts the download with the page's own instead of after
- * the startup chunk has run. A preload is fetched, not executed, and it does not block rendering.
- * (embed.html imports the core statically, so Vite already loads it there.)
+ * reaches through a dynamic `import("./compiler.js")` on first use, or (imported only, nothing
+ * compiled) when the browser is idle (card MP5, ruling MP-D4): a visit on the built-in plan has the drawing, its facts line and its
+ * rooms' facts in the HTML, so it needs no compiler to show them. index.html therefore names no
+ * `<link rel="modulepreload">` for it (it had one until MP5, which every visit paid for, ~430 KB
+ * brotli, whether it used the compiler or not). embed.html imports the core statically, so Vite
+ * loads it there at once.
  */
-function preloadCompiler() {
-  return {
-    name: "archlang-preload-compiler",
-    transformIndexHtml: {
-      order: "post",
-      handler(_html, ctx) {
-        if (!ctx.bundle || !ctx.filename.replace(/\\/g, "/").endsWith("/index.html")) return;
-        const chunk = Object.values(ctx.bundle).find((c) => c.type === "chunk" && c.name === "compiler");
-        if (!chunk) throw new Error("vite.config.js: no `compiler` chunk in the bundle (codeSplitting groups)");
-        return [
-          {
-            tag: "link",
-            attrs: { rel: "modulepreload", crossorigin: true, href: `./${chunk.fileName}` },
-            injectTo: "head",
-          },
-        ];
-      },
-    },
-  };
-}
 
 /**
  * Fill index.html's JSON-LD with the values it must not retype: the core's version (the root
@@ -113,7 +94,7 @@ function canonicalLine() {
 export default defineConfig({
   root: __dirname,
   base: "./",
-  plugins: [identityJsonLd(), canonicalLine(), preloadCompiler()],
+  plugins: [identityJsonLd(), canonicalLine()],
   resolve: {
     alias: {
       // The review sheet (`arch preview --review`), for the Checks overlay: its own built file,

@@ -135,6 +135,10 @@ const matches = (re) => (body) => {
   if (!re.test(body)) throw new Error(`body does not match ${re}`);
 };
 
+const lacks = (re) => (body) => {
+  if (re.test(body)) throw new Error(`body matches ${re}, expected no match`);
+};
+
 const startsWith = (sub) => (body) => {
   if (!body.trimStart().startsWith(sub)) {
     throw new Error(
@@ -407,9 +411,13 @@ async function playgroundChecks() {
       contains("<svg data-prerendered"),
       // …and the plan gallery in the header, its card links and thumbnails written by the same step.
       contains('<a class="gal-card" href="/examples/'),
-      // The compiler chunk is preloaded with the page (playground/vite.config.js), as Vite
-      // writes the tag: `<link rel="modulepreload" crossorigin href="./assets/compiler-….js">`.
-      matches(/<link rel="modulepreload"[^>]*\bhref="\.\/assets\/compiler-[\w-]+\.js"/),
+      // …and the facts line beside it (card MP5): a visit on that plan compiles nothing at boot,
+      // so the page itself must hold what the compile would have filled in.
+      matches(/<span class="facts-line" data-prerendered>\d+ lines? of ArchLang → /),
+      contains('<script type="application/json" id="planData">'),
+      // The compiler chunk is NOT preloaded with the page (card MP5, playground/vite.config.js):
+      // it loads on first use or when idle, never as part of every visit.
+      lacks(/<link rel="modulepreload"[^>]*\bhref="\.\/assets\/compiler-[\w-]+\.js"/),
       // The shell may be framed only by us. It comes from public/_headers, which
       // nothing else here executes — and it must be asserted on `/` specifically,
       // because `_headers` matches the REQUEST path and `/` is served through the

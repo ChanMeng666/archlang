@@ -10,6 +10,10 @@
  *   trapezoid has no single width.
  */
 import type { RoomSummary, SceneSummary } from "archlang";
+import { areaText, sourceLines } from "./facts-line.js";
+
+// The facts line's own words live in a plain .js module, which scripts/gen-static.mjs reads too.
+export { areaText, factsLine, sourceLines } from "./facts-line.js";
 
 /** The subset of a describe() room the tooltip and the card read. */
 export type FactsRoom = Pick<
@@ -19,11 +23,6 @@ export type FactsRoom = Pick<
 
 /** The room's name: its label, else its id. */
 export const roomName = (r: Pick<RoomSummary, "id" | "label">): string => r.label || r.id;
-
-/** An area with its convention: net when describe() has it, else centreline. */
-export function areaText(net: number | undefined, centreline: number): string {
-  return net !== undefined ? `${net} m² (net)` : `${centreline} m² (centreline)`;
-}
 
 /** Whether `ring` is exactly the axis-aligned rectangle `box` (any start, either direction). */
 function isBox(ring: readonly { x: number; y: number }[], box: RoomSummary["bbox"]): boolean {
@@ -51,28 +50,6 @@ export function sizeText(r: Pick<RoomSummary, "bbox" | "floor_polygon" | "floor_
 /** The hover tooltip: name · area · size. */
 export function roomTip(r: FactsRoom): string {
   return `${roomName(r)} · ${areaText(r.net_area_m2, r.area_m2)} · ${sizeText(r)}`;
-}
-
-/** The source's line count: its newline-terminated lines, plus a last one with no newline. */
-export function sourceLines(source: string): number {
-  if (source === "") return 0;
-  const n = source.split(/\r\n|\r|\n/).length;
-  return /[\r\n]$/.test(source) ? n - 1 : n;
-}
-
-/**
- * The facts line: "57 lines of ArchLang → 3 rooms · 45.05 m² (net)", from describe()'s totals of
- * the summary on screen. On a plan with storeys that summary is one storey's (`describeLevel`),
- * and the line names it.
- */
-export function factsLine(source: string, summary: Pick<SceneSummary, "totals">, level: number | null): string {
-  const t = summary.totals;
-  const lines = sourceLines(source);
-  const where = level === null ? "" : ` · level ${level}`;
-  return (
-    `${lines} line${lines === 1 ? "" : "s"} of ArchLang → ${t.rooms} room${t.rooms === 1 ? "" : "s"} · ` +
-    `${areaText(t.net_floor_area_m2, t.floor_area_m2)}${where}`
-  );
 }
 
 /**
