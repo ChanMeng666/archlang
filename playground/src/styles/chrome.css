@@ -656,10 +656,10 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   background: var(--redline);
 }
 
-@media (max-width: 900px) {
+@media (max-width: 900px), (pointer: coarse) {
   /* Touch-sized: every button here is at least 44 × 44 px (card PG5b ⑦), so the switch's chip is
      52 px tall (10 → 62) and the storeys sit under it (70 → 122); in edit mode, with no switch,
-     they take its place (10 → 62). */
+     they take its place (10 → 62). A touch tablet wider than 900 px too (ruling MP-D2). */
   .stage-switch button {
     height: 44px;
   }
@@ -928,25 +928,10 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   }
 }
 
-/* ≤900px — the phone (and portrait-tablet) layout. The page scrolls vertically past the
-   header; below it is a workspace exactly one screen tall. In view mode it
-   is the drawing alone; in edit mode a sticky Code · Plan · 3D · Facts · Checks switcher sits over it
-   and it shows ONE view at a time (`main[data-mview]`, mobile-views.ts), so each gets the
-   full screen instead of a third of it. 16px side gutters, 44px touch targets, and nothing
-   wider than the viewport. */
-@media (max-width: 900px) {
-  html,
-  body {
-    height: auto;
-  }
-  body {
-    min-height: 100%;
-  }
-  header {
-    position: relative;
-    padding: 8px 16px;
-    row-gap: 8px;
-  }
+/* Touch-sized targets (ruling MP-D2): on a phone, and on any screen whose main pointer is a finger
+   (a touch tablet wider than 900 px keeps the desktop layout, but not its 26–29 px targets).
+   Every header control, menu item and output tab is at least 44 × 44 px. */
+@media (max-width: 900px), (pointer: coarse) {
   .hd-btn,
   .tools-panel select,
   .tools-panel button,
@@ -958,11 +943,81 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   .tools-panel button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
+  }
+  .hd-btn {
+    min-width: 44px;
   }
   /* 16px stops iOS zooming the page when a field takes focus */
   .tools-panel select,
   .gal-filter {
     font-size: 16px;
+  }
+  .gal-filter {
+    min-height: 44px;
+  }
+  .gal-card {
+    min-height: 44px;
+  }
+  .gal-name {
+    font-size: 14px;
+  }
+  .gal-all {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+    border-bottom: 0;
+  }
+  /* ⋯ is the narrowest control: square at the touch size (its desktop rule says 34 px). */
+  #more > summary {
+    min-width: 44px;
+  }
+  .tools-group a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 14px;
+  }
+  /* Edit mode's output tabs (the phone hides them; a touch tablet taps them). */
+  .tab {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* ≤900px — the phone (and portrait-tablet) layout (ruling MP-D1): the page is ONE screen and never
+   scrolls. The body is a column exactly the screen's height — the header, (in edit mode) the
+   Code · Plan · 3D · Facts · Checks switcher, then the workspace taking the rest — and what is
+   longer than its box scrolls inside it (the editor, the Facts and Checks panels, the menus).
+   The drawing and the 3D canvas take every touch for pan and orbit (`touch-action: none`), so a
+   page that scrolled under them could not be scrolled back: the header, the stage toolbar and
+   the facts row with the lede are all on the first screen instead. In view mode the workspace is
+   the drawing alone; in edit mode it shows ONE view at a time (`main[data-mview]`,
+   mobile-views.ts), so each gets the full screen instead of a third of it. 16px side gutters,
+   44px touch targets (above), and nothing wider than the viewport.
+
+   The height is the SMALL viewport (`svh`; `100%` for a browser without the unit): the
+   screen with the browser's bars shown. A page that never scrolls does not collapse them, so
+   that is the screen the reader has; and unlike `dvh` it does not change while a bar animates
+   away or back, so the 3D canvas (sized to its box by a ResizeObserver) is not re-sized, its
+   drawing buffer reallocated, frame after frame. The on-screen keyboard still shrinks it where
+   the viewport meta asks for it (`interactive-widget=resizes-content`), which keeps the editor
+   above the keyboard. */
+@media (max-width: 900px) {
+  /* (A browser without `svh` drops this and keeps the frame's `height: 100%` at the top.) */
+  body {
+    height: 100svh;
+  }
+  /* At most two rows (ruling MP-D1): the brand and the gallery, then the four controls. The
+     rows have no gap of their own (the spacer's line break would count it twice); the spacer, 4 px
+     tall, is the gap. 3 + 44 + 4 + 44 + 3 + 1 px (the rule) = 99 px. */
+  header {
+    position: relative;
+    flex: none;
+    padding: 3px 16px;
+    row-gap: 0;
   }
   /* The gallery's trigger takes the brand's row; the controls take the next one. */
   .gal {
@@ -997,32 +1052,16 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   }
   .gal-filter {
     width: 100%;
-    min-height: 44px;
   }
   .gal-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .gal-card {
-    min-height: 44px;
-  }
-  .gal-name {
-    font-size: 14px;
-  }
-  .gal-all {
-    display: inline-flex;
-    align-items: center;
-    min-height: 44px;
-    font-size: 14px;
-    border-bottom: 0;
-  }
   .spacer {
     flex-basis: 100%;
-    height: 0;
+    height: 4px;
   }
   .hd-btn {
     flex: 1 1 auto;
-    justify-content: center;
-    min-width: 44px;
   }
   /* a menu's panel anchors to the header itself, so it spans the gutters */
   .tools {
@@ -1033,23 +1072,12 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   .tools > summary {
     flex: 1;
   }
-  /* ⋯ is the narrowest control: square at the touch size (its desktop rule says 34 px). */
-  #more > summary {
-    min-width: 44px;
-  }
   .tools-panel {
     left: 16px;
     right: 16px;
     width: auto;
     grid-template-columns: minmax(0, 1fr);
     max-height: 70dvh;
-  }
-  .tools-group a {
-    display: flex;
-    align-items: center;
-    min-height: 44px;
-    padding: 0 8px;
-    font-size: 14px;
   }
 
   /* The brand shrinks to the mark and its stamp; the wordmark stays the h1's text, read but not
@@ -1069,8 +1097,8 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
 
   html[data-mode="edit"] .mviews {
     display: flex;
-    position: sticky;
-    top: 0;
+    flex: none;
+    position: relative;
     z-index: 30;
     height: 48px;
     padding: 0 16px;
@@ -1113,7 +1141,7 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   }
   .mview-count {
     font-family: var(--font-mono);
-    font-size: 11px;
+    font-size: 12px;
     letter-spacing: 0;
     color: var(--redline-ink);
   }
@@ -1121,15 +1149,12 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
     display: none;
   }
 
-  /* exactly one screen (under the sticky switcher, in edit mode) */
+  /* the rest of the screen, under the header (and the switcher, in edit mode) */
   main {
-    flex: none;
-    height: 100dvh;
+    flex: 1 1 0;
+    min-height: 0;
     grid-template-columns: 1fr !important;
     grid-template-rows: minmax(0, 1fr);
-  }
-  html[data-mode="edit"] main {
-    height: calc(100dvh - 48px);
   }
   main > .pane {
     display: none;
@@ -1188,6 +1213,75 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   }
   .divider {
     display: none;
+  }
+
+  /* No text under 12 px on a phone (ruling MP-D2): the micro-labels of the desktop chrome. */
+  .tb-brand .badge,
+  .tools-h,
+  .tools-sub,
+  .tools-code,
+  .pane h2,
+  .tab,
+  .lv-btn,
+  .stage-switch button,
+  .gal-h,
+  .gal-tag {
+    font-size: 12px;
+  }
+}
+
+/* The narrowest phones (≤ 380 px): the four controls still share one row (ruling MP-D1, two
+   rows at most), a little tighter — 13 px labels, 6 px sides, 6 px apart, Share without its
+   caret — rather than putting Make your own on a third (~275 px of the 288 a 320 px screen has). */
+@media (max-width: 380px) {
+  header {
+    column-gap: 6px;
+  }
+  .hd-btn {
+    padding-left: 6px;
+    padding-right: 6px;
+    font-size: 13px;
+  }
+  #share > summary > [aria-hidden="true"] {
+    display: none;
+  }
+}
+
+/* A phone on its side (under 500 px tall): ONE header row, so the stage keeps the height
+   (ruling MP-D1). The row break goes, the gallery's trigger takes what the controls leave (its
+   plan name ellipsised), and the brand is the mark alone: the stamp's text, like the wordmark's,
+   stays the h1's, read but not drawn. 4 + 44 + 4 + 1 px = 53 px. */
+@media (max-width: 900px) and (max-height: 499.98px) {
+  header {
+    flex-wrap: nowrap;
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+  .spacer {
+    display: none;
+  }
+  .gal {
+    flex: 1 1 0;
+  }
+  .tools,
+  .hd-btn:not(.gal-trigger) {
+    flex: none;
+  }
+  .gal-current {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tb-brand .badge {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 }
 
