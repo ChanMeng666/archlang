@@ -563,7 +563,33 @@ jobs:
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
-        run: npx playwright test -c playground
+        run: npx playwright test -c playground --project chromium
+
+      # Firefox and WebKit run only the specs tagged `@engines` (playground/playwright.config.ts,
+      # card MP10): a failed compiler load is asked for again, which an engine that keeps a failed
+      # module fetch would never do. Their browsers are cached apart from Chromium's, by the same
+      # version key; the system deps install on every run, as Chromium's do.
+      - name: Cache Firefox and WebKit
+        if: env.FULL_CI == 'true'
+        id: pw-cache-engines
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/ms-playwright/firefox-*
+            ~/.cache/ms-playwright/webkit-*
+          key: playwright-engines-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Firefox and WebKit (browsers + system deps)
+        if: env.FULL_CI == 'true' && steps.pw-cache-engines.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps firefox webkit
+
+      - name: Install Firefox and WebKit system deps only (cached browsers)
+        if: env.FULL_CI == 'true' && steps.pw-cache-engines.outputs.cache-hit == 'true'
+        run: npx playwright install-deps firefox webkit
+
+      - name: Run the @engines specs in Firefox and WebKit
+        if: env.FULL_CI == 'true'
+        run: npx playwright test -c playground --project firefox --project webkit
 
       - name: Upload Playwright report
         if: failure()

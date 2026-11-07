@@ -144,7 +144,12 @@ test.describe("one view switch (PG-D3)", () => {
     ).toHaveCount(0);
   });
 
-  test("a compiler that fails to load says so, and never stays on Compiling…", async ({ page }) => {
+  // `@engines`: also run in Firefox and WebKit (playwright.config.ts, card MP10). Per the HTML
+  // spec an engine may keep a failed module fetch in its module map, so that a second `import()`
+  // of the same URL rejects again without a request; this proves each engine asks again.
+  test("a compiler that fails to load says so, and never stays on Compiling…", { tag: "@engines" }, async ({
+    page,
+  }) => {
     // The compiler's chunk (`compiler-<hash>.js`, vite.config.js's codeSplitting group) is refused.
     const refused = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
     await page.route(refused, (route) => route.abort());

@@ -45,10 +45,20 @@ export default defineConfig({
     // `navigator.clipboard`, which is permission-gated in Chromium.
     permissions: ["clipboard-read", "clipboard-write"],
   },
-  // Chromium only: the playground's browser requirements (CompressionStream for
-  // the `#z=` codec, canvas rasterization, the clipboard API) are not what these
+  // Chromium runs every spec: the playground's browser requirements (CompressionStream
+  // for the `#z=` codec, canvas rasterization, the clipboard API) are not what these
   // specs are testing — the app's own behaviour is. One engine, run fast.
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  //
+  // Firefox and WebKit run only the specs tagged `@engines` (card MP10): behaviour the
+  // engines may differ on, such as whether a failed `import()` is asked for again. CI
+  // runs them in a step of their own (`--project firefox --project webkit`); locally
+  // they need `npx playwright install firefox webkit`. No clipboard permissions there:
+  // Firefox refuses the names, and no tagged spec copies.
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    { name: "firefox", grep: /@engines/, use: { ...devices["Desktop Firefox"], permissions: [] } },
+    { name: "webkit", grep: /@engines/, use: { ...devices["Desktop Safari"], permissions: [] } },
+  ],
   // Spread, not a `webServer: undefined` key: with an external base URL there is
   // nothing to start and nothing to build.
   ...(externalBaseUrl
