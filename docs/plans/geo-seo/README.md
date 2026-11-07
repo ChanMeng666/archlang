@@ -54,8 +54,11 @@ Numbered GS-D*n*. Delegated decisions are marked; the rest are inherited and bin
   ("Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan
   and tells it what's wrong."), which is already the docs hero and the playground lede and is
   pinned by `test/site-doors.test.ts`. The GitHub repository description keeps the longer form the
-  owner approved on 2026-11-06 (it adds "(SVG, DXF, PDF)" and "Open source, MIT"). The approved
-  long sentence ("ArchLang is an open-source (MIT) DSL for floor plans that compiles `.arch`
+  owner approved on 2026-11-06 (it adds "(SVG, DXF, PDF)" and "Open source, MIT"), and since
+  2026-11-07 (owner) it starts with the star line "【Every star you give feeds a hungry developer's
+  motivation! ⭐️】" that her public repos carry; only the GitHub description has it, never a package
+  or JSON-LD slot. The approved long sentence ("ArchLang is an open-source (MIT) DSL for floor plans
+  that compiles `.arch`
   source to SVG/DXF/PDF with linting and geometric validation...") stays the first paragraph of
   the README and the docs. **No site wording changes under this card**; the name is always paired
   with "floor plan" on the first mention.
