@@ -94,7 +94,8 @@ MCP clients: [archlang.uk/mcp](https://archlang.uk/mcp) · Agents: [archlang.uk/
 Local MCP server: [Install in VS Code](https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522archlang%2522%252C%2522type%2522%253A%2522stdio%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540chanmeng666%252Farchlang-mcp%2522%255D%257D) · [Install in VS Code Insiders](https://vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522archlang%2522%252C%2522type%2522%253A%2522stdio%2522%252C%2522command%2522%253A%2522npx%2522%252C%2522args%2522%253A%255B%2522-y%2522%252C%2522%2540chanmeng666%252Farchlang-mcp%2522%255D%257D). Hosted MCP server: [Install in VS Code](https://vscode.dev/redirect?url=vscode%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522archlang%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fmcp.archlang.uk%252Fmcp%2522%257D) · [Install in VS Code Insiders](https://vscode.dev/redirect?url=vscode-insiders%3Amcp%2Finstall%3F%257B%2522name%2522%253A%2522archlang%2522%252C%2522type%2522%253A%2522http%2522%252C%2522url%2522%253A%2522https%253A%252F%252Fmcp.archlang.uk%252Fmcp%2522%257D). Install in Cursor: [the links on archlang.uk/mcp](https://archlang.uk/mcp#install-the-floor-plan-mcp-server).
 
 <!-- FILM: archlang-plan-to-3d. Chan replaces the video line below with "ArchLang, from plan to 3D" (release v1.0.0 of ChanMeng666/film-archlang-2d-3d), uploaded on github.com. -->
-https://github.com/user-attachments/assets/a60f3174-6a8c-4a42-b24a-fac030d39627
+https://github.com/user-attachments/assets/879a4b71-415e-4848-a4af-db9c879d6a71
+
 
 [Watch the full film on YouTube (3:16)](https://youtu.be/oCg3tBTlVvI)
 
