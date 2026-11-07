@@ -43,14 +43,17 @@ come after load:
 - **MP-D4 A visit pays only for what it uses.** The built-in plan is prerendered exactly as the
   live page would draw it (annotations and the facts line included), so boot does not compile.
   The compiler loads on first use or when the browser is idle, never on idle under Save-Data or
-  2g. The URL contract is unchanged: `#z=`, `#src=`, drafts and `/s/<id>` still compile at once.
+  2g. The URL contract is unchanged: `#z=`, `#src=`, drafts and `/s/<id>` still compile at once,
+  except a saved draft identical to the built-in plan (no `#z=`/`#src=`, no saved theme), which
+  opens like a plain visit.
   Startup bytes only go down; the startup baseline is re-taken with the reason recorded.
 - **MP-D5 Thumbnails are thumbnails.** Gallery images are lean SVGs (walls, openings, room fills,
   stairs and lifts; no text, dimensions or furniture), generated from `compile()`, at the same URLs, cached a day
   with stale-while-revalidate. PG-D2 holds.
 - **MP-D6 Typing never freezes the page.** Compile, describe and lint run in a lazily loaded Web
   Worker; stale results are dropped by sequence number. `compile()` stays pure; the worker is a
-  playground file, not core.
+  playground file, not core. It is a chunk of the page's own build, so it shares the compiler
+  chunk the page already loaded; where a worker cannot run, the page compiles as before.
 - **MP-D7 Laws unchanged.** Light-only, the 60 KB startup ceiling, no three.js or CodeMirror at
   startup, crawler-visible static bytes, the 3D wording bans. Tests are rewritten, never loosened.
 
@@ -58,16 +61,17 @@ come after load:
 
 | Card | Scope | Main files | Proof | Tier |
 |---|---|---|---|---|
-| **MP1** phone stage fits the screen | MP-D1, MP-D2 sizes/text/inputs, viewport meta `interactive-widget=resizes-content` | `styles/chrome.css`, `styles/panels.css`, `index.html` | `layout.spec.ts` at 320×568, 360×780, 390×844, 844×390 (view and `&edit`): toolbar and facts row inside the window, page does not scroll, header ≤ 100 px; 1024×768 touch: every control ≥ 44 px; text ≥ 12 px, inputs ≥ 16 px | medium |
-| **MP2** touch on the 3D stage | MP-D2 hint/opacity/scrubber, MP-D3 context loss | `src/preview3d.ts`, `styles/panels.css` | `preview3d.spec.ts`: touch wording, opacity 1 without hover, scrubber hit area ≥ 44 px, forced context loss → message → restore redraws | medium |
-| **MP3** 3D draws only when visible | MP-D3 pause/resume, buffer cap | `src/preview3d.ts` | `preview3d.spec.ts`: no frames for 1 s under the dialog or off-screen; resumes on close; buffer ≤ cap at 390×844 | medium |
+| **MP1** phone stage fits the screen (#559) | MP-D1, MP-D2 sizes/text/inputs, viewport meta `interactive-widget=resizes-content` | `styles/chrome.css`, `styles/panels.css`, `index.html` | `layout.spec.ts` at 320×568, 360×780, 390×844, 844×390 (view and `&edit`): toolbar and facts row inside the window, page does not scroll, header ≤ 100 px; 1024×768 touch: every control ≥ 44 px; text ≥ 12 px, inputs ≥ 16 px | medium |
+| **MP2** touch on the 3D stage (#560) | MP-D2 hint/opacity/scrubber, MP-D3 context loss | `src/preview3d.ts`, `styles/panels.css` | `preview3d.spec.ts`: touch wording, opacity 1 without hover, scrubber hit area ≥ 44 px, forced context loss → message → restore redraws | medium |
+| **MP3** 3D draws only when visible (#561) | MP-D3 pause/resume, buffer cap | `src/preview3d.ts` | `preview3d.spec.ts`: no frames for 1 s under the dialog or off-screen; resumes on close; buffer ≤ cap at 390×844 | medium |
 | **MP4a** lean thumbnails (#563) | MP-D5 | `scripts/gen-static.mjs`, `scripts/lean-thumb.mjs` | each thumbnail ≤ 10 KB (`THUMB_MAX_BYTES`) and cut from `compile()`; keeps every keepable layer the compiler drew | medium |
 | **MP4b** thumbnail cache rule (#564) | MP-D5 | `public/_headers`, `scripts/smoke.mjs` | cache header checked by smoke | high (`_headers`) |
-| **MP5** no compile at boot | MP-D4 | `src/main.ts`, `scripts/gen-static.mjs`, `vite.config.js`, `e2e/startup-chunks.baseline.json` | no compiler request before interaction under Save-Data; facts line in served HTML; `init-precedence`, `examples-static`, `front-door` specs unchanged and green | high (baseline) |
-| **MP6** compile in a worker | MP-D6 | `src/main.ts`, new `src/compile-worker.ts`, panels reading results | typing 20 characters into Hillside gives no main-thread task over 100 ms; last result wins; panel specs unchanged | medium/high |
+| **MP5** no compile at boot (#565) | MP-D4 | `src/main.ts`, `scripts/gen-static.mjs`, `vite.config.js`, `e2e/startup-chunks.baseline.json` | no compiler request before interaction under Save-Data; facts line in served HTML; `init-precedence`, `examples-static`, `front-door` specs unchanged and green | high (baseline) |
+| **MP6** compile in a worker (this PR) | MP-D6 | `src/main.ts`, new `src/compile-worker.ts`, panels reading results | typing 20 characters into Hillside gives no main-thread task over 100 ms; last result wins; panel specs unchanged | medium/high |
 | MP7 (deferred) | draw 3D straight to the visible canvas | `packages/archlang-3d/src/replay/mount.ts` | frame hashes and single-file replay HTML bytes unchanged | high, package release |
 
 Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6. High-tier cards wait for the owner's words before merge.
+MP1–MP5 are done; MP6 is in review; MP7 stays deferred.
 
 ## 4. Open for the owner
 

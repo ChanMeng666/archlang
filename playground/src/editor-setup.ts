@@ -10,14 +10,20 @@ import { bracketMatching } from "@codemirror/language";
 import { lintGutter } from "@codemirror/lint";
 import { archLanguage, archLinter } from "./arch-language.js";
 import { archCompletion } from "./arch-completion.js";
+import type { Diagnostic } from "archlang";
 
 interface EditorOpts {
   parent: HTMLElement;
   doc: string;
   onDocChanged: (source: string) => void;
+  /**
+   * The compiler's diagnostics of a document, for the lint gutter: the page's render compile
+   * hands them over (card MP6, from the worker), so the gutter compiles nothing on the page.
+   */
+  diagnosticsOf: (text: string) => Promise<readonly Diagnostic[]>;
 }
 
-export function createEditor({ parent, doc, onDocChanged }: EditorOpts): EditorView {
+export function createEditor({ parent, doc, onDocChanged, diagnosticsOf }: EditorOpts): EditorView {
   return new EditorView({
     state: EditorState.create({
       doc,
@@ -33,7 +39,7 @@ export function createEditor({ parent, doc, onDocChanged }: EditorOpts): EditorV
         EditorView.contentAttributes.of({ "aria-label": "ArchLang source editor" }),
         archLanguage(),
         archCompletion(),
-        archLinter(),
+        archLinter(diagnosticsOf),
         // Source-world LIGHT theme (cool ground, plum selection/brackets — ADR 0014).
         // Values are CSS var() references into tokens.css; the two lint-underline
         // squiggles must inline their colour into a data URI (var() can't cross into

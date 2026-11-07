@@ -86,26 +86,40 @@ export function archLanguage() {
   return new LanguageSupport(archStream, [syntaxHighlighting(highlightStyle)]);
 }
 
-/** A CodeMirror linter that surfaces the compiler's diagnostics inline. */
-export function archLinter() {
+/** The compiler's diagnostics of `text` as CodeMirror lint entries. */
+export function archLintEntries(text, diagnostics) {
+  const len = text.length;
+  const out = [];
+  for (const d of diagnostics) {
+    const from = Math.max(0, Math.min(d.span?.start ?? 0, len));
+    const to = Math.max(from, Math.min(d.span?.end ?? from, len));
+    out.push({
+      from,
+      to: to > from ? to : Math.min(from + 1, len),
+      severity: d.severity === "error" ? "error" : "warning",
+      message: d.code ? `${d.message}  [${d.code}]` : d.message,
+    });
+  }
+  return out;
+}
+
+/**
+ * The compiler's diagnostics of `text`, as the linter below reads them unless it is handed
+ * another source of them (the playground hands it its compile worker's, card MP6).
+ */
+export const compileDiagnostics = (text) => compile(text, { noCache: true }).diagnostics;
+
+/**
+ * A CodeMirror linter that surfaces the compiler's diagnostics inline. `diagnosticsOf(text)`
+ * gives them, or a promise of them; a result for a document that has since changed is dropped.
+ *
+ * @param {(text: string) => ReadonlyArray<import("archlang").Diagnostic> | Promise<ReadonlyArray<import("archlang").Diagnostic>>} [diagnosticsOf]
+ */
+export function archLinter(diagnosticsOf = compileDiagnostics) {
   return linter(
-    (view) => {
-      const doc = view.state.doc;
-      const text = doc.toString();
-      const { diagnostics } = compile(text, { noCache: true });
-      const len = text.length;
-      const out = [];
-      for (const d of diagnostics) {
-        const from = Math.max(0, Math.min(d.span?.start ?? 0, len));
-        const to = Math.max(from, Math.min(d.span?.end ?? from, len));
-        out.push({
-          from,
-          to: to > from ? to : Math.min(from + 1, len),
-          severity: d.severity === "error" ? "error" : "warning",
-          message: d.code ? `${d.message}  [${d.code}]` : d.message,
-        });
-      }
-      return out;
+    async (view) => {
+      const text = view.state.doc.toString();
+      return archLintEntries(text, await diagnosticsOf(text));
     },
     { delay: 250 },
   );
