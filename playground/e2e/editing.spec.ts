@@ -1,5 +1,17 @@
-import { expect, test } from "@playwright/test";
-import { ARC_RADIUS_ERROR_PLAN, gotoEdit, RESIZED_PLAN, SIMPLE_PLAN, setEditorSource } from "./fixtures.js";
+import { readFileSync } from "node:fs";
+import { expect, type Page, test } from "@playwright/test";
+import {
+  ARC_RADIUS_ERROR_PLAN,
+  AUTOSAVE_KEY,
+  BROKEN_PLAN,
+  gotoEdit,
+  RESIZED_PLAN,
+  SIMPLE_PLAN,
+  setEditorSource,
+} from "./fixtures.js";
+
+const example = (name: string) =>
+  readFileSync(new URL(`../../examples/${name}.arch`, import.meta.url), "utf8").replace(/\r\n?/g, "\n");
 
 /**
  * The authoring loop, end to end in the browser: type → debounced recompile →
@@ -93,4 +105,146 @@ test.describe("editing", () => {
     // Compiling cleanly and being architecturally sound are different questions.
     await expect(page.locator("#status")).not.toHaveClass(/err/);
   });
+});
+
+/**
+ * Card MP6 (ruling MP-D6): the render's compile, describe and lint run in a Web Worker
+ * (compile-worker.ts), so typing never freezes the page; the newest edit's drawing always wins; the
+ * worker draws what the page drew, byte for byte; and a browser where the worker cannot run
+ * compiles on the page, as before. `html[data-compiler]` says where the last render compiled.
+ */
+test.describe("compiling in a worker", () => {
+  /** The start offset of the drawing's first annotated element (`data-span="start:end"`). */
+  const firstSpan = async (page: Page) =>
+    Number(((await page.locator(".pz-stage svg [data-span]").first().getAttribute("data-span")) ?? "").split(":")[0]);
+
+  test("typing 20 characters into Hillside Villa holds the page for no task over 100 ms, and the last edit's drawing wins", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000);
+    const villa = example("hillside-villa");
+    await gotoEdit(page);
+    // A comment line first: every character typed into it moves every span after it by one.
+    await setEditorSource(page, `#\n${villa}`);
+    await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
+    const before = await firstSpan(page);
+    expect(before).toBeGreaterThan(1);
+    await page.evaluate(() => {
+      const w = window as unknown as { __longTasks: number[]; __drawn: number[] };
+      w.__longTasks = [];
+      w.__drawn = [];
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) w.__longTasks.push(e.duration);
+      }).observe({ type: "longtask" });
+      // Every drawing put on the stage, by its first span: an older result never lands after a newer one.
+      const stage = document.querySelector(".pz-stage")!;
+      new MutationObserver(() => {
+        const span = stage.querySelector("svg [data-span]")?.getAttribute("data-span");
+        if (span) w.__drawn.push(Number(span.split(":")[0]));
+      }).observe(stage, { childList: true });
+    });
+    await page.locator(".cm-content").click();
+    await page.keyboard.press("ControlOrMeta+Home");
+    await page.keyboard.press("End");
+    const typed = "abcdefghijklmnopqrst";
+    // Slower than the 250 ms debounce, so every character asks for a compile of its own.
+    await page.keyboard.type(typed, { delay: 300 });
+    const final = `#${typed}\n${villa}`;
+    await expect
+      .poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY), { timeout: 60_000 })
+      .toBe(final);
+    // The drawing on screen is the final source's.
+    expect(await firstSpan(page)).toBe(before + typed.length);
+    const { longTasks, drawn } = await page.evaluate(() => {
+      const w = window as unknown as { __longTasks: number[]; __drawn: number[] };
+      return { longTasks: w.__longTasks, drawn: w.__drawn };
+    });
+    expect(drawn.length, "the drawing followed the typing").toBeGreaterThan(0);
+    expect(drawn.at(-1)).toBe(before + typed.length);
+    for (let i = 1; i < drawn.length; i++)
+      expect(drawn[i]!, `drawing ${i} is no older than the one before it: ${drawn.join(", ")}`).toBeGreaterThanOrEqual(
+        drawn[i - 1]!,
+      );
+    expect(
+      Math.max(0, ...longTasks),
+      `main-thread long tasks while typing: ${longTasks.map(Math.round).join(", ")} ms`,
+    ).toBeLessThanOrEqual(100);
+  });
+
+  test("the worker draws what the page draws, byte for byte", async ({ browser }) => {
+    test.setTimeout(120_000);
+    const capture = async (page: Page, source: string) => {
+      await setEditorSource(page, source);
+      return page.evaluate(() => ({
+        svg: document.querySelector(".pz-stage svg")?.outerHTML,
+        facts: document.getElementById("facts")?.innerHTML,
+        describe: document.getElementById("describe")?.innerHTML,
+        lint: document.getElementById("lintOutput")?.innerHTML,
+        errors: document.getElementById("errors")?.innerHTML,
+        status: document.getElementById("statusText")?.textContent,
+      }));
+    };
+    const inWorker = await browser.newPage();
+    const onPage = await browser.newPage();
+    // No Worker in this page: every render compiles on the page, as before card MP6.
+    await onPage.addInitScript(() => {
+      Object.defineProperty(window, "Worker", { value: undefined });
+    });
+    await gotoEdit(inWorker);
+    await gotoEdit(onPage);
+    for (const name of ["laneway-house", "townhouse", "hillside-villa"]) {
+      const source = example(name);
+      const a = await capture(inWorker, source);
+      const b = await capture(onPage, source);
+      expect(a.svg, `${name} is drawn`).toContain("<svg");
+      expect(a, `${name}: the worker's render is the page's`).toEqual(b);
+    }
+    // A plan that does not compile reports the same errors either way.
+    expect(await capture(inWorker, BROKEN_PLAN)).toEqual(await capture(onPage, BROKEN_PLAN));
+    await expect(inWorker.locator("html")).toHaveAttribute("data-compiler", "worker");
+    await expect(onPage.locator("html")).toHaveAttribute("data-compiler", "page");
+    await inWorker.close();
+    await onPage.close();
+  });
+
+  const failures: [string, () => void][] = [
+    [
+      "cannot be made",
+      () => {
+        (window as unknown as { Worker: unknown }).Worker = class {
+          constructor() {
+            throw new Error("Workers are blocked here");
+          }
+        };
+      },
+    ],
+    [
+      "fails to load",
+      () => {
+        (window as unknown as { Worker: unknown }).Worker = class extends EventTarget {
+          constructor() {
+            super();
+            setTimeout(() => this.dispatchEvent(new Event("error")), 0);
+          }
+          postMessage() {}
+          terminate() {}
+        };
+      },
+    ],
+  ];
+  for (const [what, stub] of failures) {
+    test(`a worker that ${what} falls back to compiling on the page, and editing still works`, async ({ page }) => {
+      await page.addInitScript(stub);
+      await gotoEdit(page);
+      await setEditorSource(page, SIMPLE_PLAN);
+      await expect(page.locator("html")).toHaveAttribute("data-compiler", "page");
+      const first = await page.locator(".pz-stage svg").getAttribute("viewBox");
+      await setEditorSource(page, RESIZED_PLAN);
+      await expect.poll(() => page.locator(".pz-stage svg").getAttribute("viewBox")).not.toBe(first);
+      await expect(page.locator("#status")).not.toHaveClass(/err/);
+      await setEditorSource(page, BROKEN_PLAN);
+      await expect(page.locator("#status")).toHaveClass(/err/);
+      await expect(page.locator("#errors .diagrow")).not.toHaveCount(0);
+    });
+  }
 });

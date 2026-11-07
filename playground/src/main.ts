@@ -10,6 +10,9 @@
  *   page already holds the drawing, its facts line, its status and its rooms' facts. A visit that
  *   opens another plan (a `#z=`/`#src=` link, a draft of another plan, a saved theme), `&edit` or
  *   `&3d` compiles at once, as before;
+ * - the compile job (compile-worker.ts, card MP6): with the compiler; every render's compile,
+ *   describe and lint then run in a Web Worker started from it, so typing never freezes the page
+ *   (on the page instead where a worker cannot run; a knob being dragged compiles on the page);
  * - the header actions (actions.ts): once the compiler is in;
  * - the editor and its panels (edit-mode.ts: CodeMirror, completion, diagnostics, Describe,
  *   Lint, Intent): on the first entry into edit mode;
@@ -27,8 +30,9 @@
  * on the stage under the switch, in both modes. The status is a notice on the stage and a dot on
  * Source, shown only while the plan is compiling or broken (or for a moment after an action).
  */
-import type { CompileOptions, DescribeOptions, RoomSummary, SceneSummary } from "archlang";
+import type { Diagnostic, PlanNode, RoomSummary, SceneSummary } from "archlang";
 import type { ActionsHandle } from "./actions.js";
+import type { CompileClient, CompileRequest, CompileResult } from "./compile-worker.js";
 import type { ChecksPanel } from "./checks-panel.js";
 import type { EditMode } from "./edit-mode.js";
 import { createPreview } from "./preview.js";
@@ -79,6 +83,19 @@ const loadExamples = (): Promise<Examples> =>
   ));
 /** The compiler, once loaded. Nothing compiles before it. */
 let core: Core | undefined;
+/**
+ * The compile job and the worker that runs it (compile-worker.ts, card MP6): loaded with the
+ * compiler, so a render's compile, describe and lint run off the page. A failed load is forgotten.
+ */
+type Jobs = typeof import("./compile-worker.js");
+let jobsP: Promise<Jobs> | undefined;
+const loadJobs = (): Promise<Jobs> =>
+  (jobsP ??= import("./compile-worker.js").catch((err: unknown) => {
+    jobsP = undefined;
+    throw err;
+  }));
+let jobs: Jobs | undefined;
+let compiler: CompileClient | undefined;
 
 const root = document.documentElement;
 const preview = document.getElementById("preview")!;
@@ -176,8 +193,7 @@ for (const tab of tabs) {
     // Over the 3D preview it also offers "All" (its combined view, card PG5b).
     levelSwitch.set(lastPages, shownLevel(), in3d());
     // Into or out of the 3D preview's combined view: the facts line says what is on screen now.
-    if (lastPages && selectedLevel === null && (from === "preview3d") !== in3d())
-      updateAnalysis(currentSource(), lastOk);
+    if (lastPages && selectedLevel === null && (from === "preview3d") !== in3d()) updateAnalysis();
     // The phone's switcher presses the view that shows this tab (a `&3d` link, leaving edit mode).
     mobileViews.follow(tab.dataset.tab);
     stageSwitched();
@@ -255,7 +271,11 @@ function syncPlanMark(source: string): Promise<void> {
 /** The plan's source. The editor's document mirrors it once edit mode has loaded. */
 let doc = "";
 let lastSvg = "";
-let lastScene: ReturnType<Core["compile"]>["scene"] | null = null;
+/**
+ * The request of the last good render and the storey it drew: a DXF or TXT download compiles the
+ * Scene of that drawing on demand (`sceneFor`), the one output no render sends from the worker.
+ */
+let lastGood: { req: CompileRequest; level: number | null } | null = null;
 let lastRooms: RoomSummary[] = [];
 /** describe() of the storey on screen, at the last good compile (the room facts card reads it). */
 let lastSummary: SceneSummary | null = null;
@@ -278,8 +298,6 @@ let selectedLevel: number | null = null;
  * when the document is replaced.
  */
 let lastPicked: number | null = null;
-/** The last compile drew the plan without errors (the facts line is redrawn on a view change). */
-let lastOk = false;
 /** The level whose facts the panels are currently reporting (`null` = whole plan). */
 let activeLevel: number | null = null;
 /** The storey pages of the last good compile (the switcher's buttons). */
@@ -379,7 +397,7 @@ function loadSource(src: string, refit = true) {
   // `onDocChanged`; with no editor, this does.
   if (edit) edit.replaceDoc(src);
   else onDocChanged(src);
-  render(src, refit);
+  void render(src, refit);
 }
 
 /** Move the editor caret to a byte offset and reveal it (click-to-source; edit mode only). */
@@ -414,11 +432,12 @@ function ensureEditor(rerender = true): Promise<EditMode | undefined> {
         doc: currentSource(),
         onDocChanged,
         loadSource,
-        rerender: () => render(currentSource()),
+        rerender: () => void render(currentSource()),
         flash,
         mobileViews,
+        gutterFor,
       });
-      if (rerender) render(currentSource());
+      if (rerender) void render(currentSource());
       return edit;
     },
     (err: unknown) => {
@@ -442,7 +461,7 @@ function leaveEdit() {
   // Facts and Checks are edit mode's tabs: leave on the drawing (or on the 3D preview, if on screen).
   mobileViews.show(activeTab() === "preview3d" ? "3d" : "plan");
   // A broken plan's status names where its errors are, which differs by mode.
-  if (statusEl.classList.contains("err")) render(currentSource());
+  if (statusEl.classList.contains("err")) void render(currentSource());
 }
 
 const shell = mountShell({
@@ -516,8 +535,10 @@ const adoptedBuiltIn = !root.classList.contains("pg-other") && previewCtl.adopt(
 const knobsPanel = mountKnobsPanel({
   viewport: pzViewport,
   getSource: () => currentSource(),
-  // A knob being dragged redraws the plan, but Checks waits for it to be let go (`keepKnob`).
-  tryRender: (source) => render(source, false, true),
+  // A knob being dragged redraws the plan, but Checks waits for it to be let go (`keepKnob`). The
+  // panel needs the verdict at once (a value that does not compile snaps back), so a knob's
+  // compile runs on the page (`renderNow`), as before card MP6.
+  tryRender: (source) => renderNow(source, true),
   commit: keepKnob,
   flash,
 });
@@ -541,7 +562,7 @@ function keepKnob(source: string, final: boolean) {
   if (!final) return;
   // Let go: Checks and the 3D preview catch up with the plan the knob left (the drag drew it
   // without the rings, and left the 3D preview where it was).
-  if (reviewWanted() || in3d()) render(source);
+  if (reviewWanted() || in3d()) void render(source);
   writeStr(KEYS.source, source);
   void updateHash(source, () => editing, in3d);
   void syncPlanMark(source); // no longer the example word for word: "Edited plan"
@@ -574,10 +595,17 @@ const levelSwitch = mountLevelSwitcher({
 /** The 3D preview's combined view is on screen: all storeys, none picked (the facts say so). */
 const showingAll = () => in3d() && selectedLevel === null && (lastPages?.length ?? 0) > 1;
 
-/** Update the facts strip (and, in edit mode, the Facts and Checks tabs) for `source`. */
-function updateAnalysis(source: string, ok: boolean) {
-  if (!core) return;
-  const whole = core.describe(source, { noCache: true } as DescribeOptions & { noCache?: boolean });
+/**
+ * What the last render's compile said about its source: `describe()` of the whole plan and, in edit
+ * mode, `lint()` (both run with the compile, in the worker). A view change that only re-narrows the
+ * facts (into or out of the 3D preview's combined view) reads it again instead of describing anew.
+ */
+let analysis: { source: string; ok: boolean; whole: SceneSummary; lint: Diagnostic[] | null } | undefined;
+
+/** Update the facts strip (and, in edit mode, the Facts and Checks tabs) for the last render. */
+function updateAnalysis() {
+  if (!core || !analysis) return;
+  const { source, ok, whole, lint } = analysis;
   // The panels report the storey on screen. `describeLevel` is the CORE's narrowing —
   // the same function behind `arch describe --level N` — so the playground and the CLI
   // cannot disagree about what one floor's facts are. A single-storey plan never gets
@@ -590,7 +618,7 @@ function updateAnalysis(source: string, ok: boolean) {
   renderFacts(factsEl, summary, ok, source, activeLevel, showingAll() ? whole.levels : undefined);
   // Describe (the Facts tab) and Lint (the Checks tab) are edit mode's (edit-mode.ts): a visit that
   // never opens the editor never runs `lint()`.
-  edit?.updatePanels(source, ok, summary, activeLevel);
+  edit?.updatePanels(source, ok, summary, activeLevel, lint);
 }
 
 /**
@@ -605,27 +633,136 @@ function shownLevel(): number | null {
 /** The resting status of a plan that compiles: its warnings counted, else "ready". */
 const okStatus = (warnings: number): string => (warnings ? `${warnings} warning${warnings > 1 ? "s" : ""}` : "ready");
 
-/** Compile and show `source`; whether it compiled without errors (else the last good drawing stays). */
-function render(source: string, refit = false, knobMoving = false): boolean {
-  if (!core) return false; // nothing compiles before the compiler is in; boot renders once it is
-  const { compile, THEMES } = core;
-  // Theme: empty value = the source's own `theme` directive (pass nothing); a named
-  // key overrides it (compile's `theme` option wins over an in-source directive).
-  const themeKey = themeSelect.value;
-  // annotate: stamp data-span on primitives so a click in the preview can jump to
-  // source (interact.js). Exports strip it (cleanSvg) so downloads stay clean.
-  // accessible: emit SVG <title>/<desc>/role from `accTitle`/`accDescr` (or, absent
-  // those, describe()'s caption). Opt-in — the default output stays byte-identical
-  // (ADR 0007), which is exactly why it needs a toggle to be visible at all.
-  const accessible = accessibleToggle?.checked === true;
-  const opts: CompileOptions = themeKey
-    ? { noCache: true, annotate: true, accessible, theme: THEMES[themeKey] }
-    : { noCache: true, annotate: true, accessible };
-  const { svg, errors, diagnostics, scene, pages, ast } = compile(source, opts);
-  const ok = errors.length === 0;
+/** The sequence number of the newest render request (compile-worker.ts drops older replies). */
+let renderSeq = 0;
+/** A render asked for a re-fit (a new plan) that a newer request superseded: the newer one fits. */
+let refitPending = false;
+/** Settled once the drawing is of that render's request or a newer one: its verdict. */
+const renderWaiters: { seq: number; resolve: (ok: boolean) => void }[] = [];
+/** The request in the worker, so a render of exactly the same request rides on it (`render`). */
+let inFlight: { key: string; done: Promise<boolean> } | undefined;
+/** Plans picked whose render has not been asked for yet (the app was still coming up). */
+let picking = 0;
+/**
+ * `html[data-rendering]` while a render is on its way (a compile in the worker, or a plan picked
+ * that has yet to compile): what is on screen is not yet the plan asked for. The e2e specs'
+ * `waitForPlan` waits for it to go, as a render on the page was over before anything else ran.
+ */
+function paintRendering() {
+  if (renderWaiters.length > 0 || picking > 0) root.dataset.rendering = "";
+  else delete root.dataset.rendering;
+}
+
+/**
+ * The editor's lint gutter (arch-language.js `archLinter`) asks for a document's diagnostics; they
+ * come with that document's render (`CompileResult.gutter`), so the gutter compiles nothing on the
+ * page. A request for a document no render will draw any more (it has changed since) gets none:
+ * CodeMirror drops a lint result for a document that has changed anyway.
+ */
+let lastGutter: { source: string; diags: readonly Diagnostic[] } | undefined;
+let gutterWaits: { text: string; resolve: (d: readonly Diagnostic[]) => void }[] = [];
+function gutterFor(text: string): Promise<readonly Diagnostic[]> {
+  if (lastGutter?.source === text) return Promise.resolve(lastGutter.diags);
+  return new Promise((resolve) => gutterWaits.push({ text, resolve }));
+}
+function gutterReady(source: string, diags: readonly Diagnostic[]) {
+  lastGutter = { source, diags };
+  const current = currentSource();
+  const waiting = gutterWaits;
+  gutterWaits = [];
+  for (const w of waiting) {
+    if (w.text === source) w.resolve(diags);
+    else if (w.text !== current)
+      w.resolve([]); // stale: the editor has moved on
+    else gutterWaits.push(w);
+  }
+}
+
+/** A render request for `source` with the settings on screen now. */
+function renderRequest(source: string): CompileRequest {
+  // Lint is edit mode's: a visit that never opens the editor never runs `lint()`.
+  const profile = edit ? ((document.getElementById("lintProfile") as HTMLSelectElement | null)?.value ?? "") : null;
+  return {
+    seq: ++renderSeq,
+    source,
+    theme: themeSelect.value,
+    accessible: accessibleToggle?.checked === true,
+    paths: previewCtl.pathsEnabled(),
+    lintProfile: profile,
+  };
+}
+
+/**
+ * Compile and show `source` (card MP6: in the worker, so the page never waits on the compiler);
+ * settles with whether it compiled without errors (else the last good drawing stays), once the
+ * drawing is of this request or a newer one. A reply to an older request than the newest is
+ * dropped, so the last edit always wins and an older drawing never flashes over a newer one.
+ */
+function render(source: string, refit = false): Promise<boolean> {
+  if (!core || !jobs || !compiler) return Promise.resolve(false); // boot renders once it is in
+  // The same request as the one in the worker (the debounced render a plan switch also schedules):
+  // its result is this one's, so it is not compiled twice. Everything the drawing depends on is
+  // in the key, so the two are the same render.
+  if (refit) refitPending = true; // whichever result lands next is the new plan's, and fits it
+  const key = JSON.stringify([source, renderState()]);
+  if (inFlight?.key === key) return inFlight.done;
+  const req = renderRequest(source);
+  const done = new Promise<boolean>((resolve) => {
+    renderWaiters.push({ seq: req.seq, resolve });
+  });
+  paintRendering();
+  const mine = { key, done };
+  inFlight = mine;
+  void compiler.run(req).then((result) => {
+    if (inFlight === mine) inFlight = undefined;
+    if (result && req.seq === renderSeq) show(req, result, false);
+  });
+  return done;
+}
+
+/** What else a render's drawing and panels depend on besides its request (`render`'s key). */
+function renderState(): unknown[] {
+  return [
+    themeSelect.value,
+    accessibleToggle?.checked === true,
+    previewCtl.pathsEnabled(),
+    edit ? ((document.getElementById("lintProfile") as HTMLSelectElement | null)?.value ?? "") : null,
+    selectedLevel,
+    lastPicked,
+    editing,
+    activeTab(),
+    checksOn,
+    checks !== undefined,
+  ];
+}
+
+/**
+ * Compile and show `source` on the page, now; whether it compiled without errors. For a knob
+ * being dragged (`knobMoving`), whose panel needs the verdict at once.
+ */
+function renderNow(source: string, knobMoving = false): boolean {
+  if (!core || !jobs || !compiler) return false;
+  const req = renderRequest(source);
+  inFlight = undefined;
+  return show(req, compiler.runNow(req), knobMoving);
+}
+
+/** Show a render's result (from `render` or `renderNow`); whether it compiled without errors. */
+function show(req: CompileRequest, result: CompileResult, knobMoving: boolean): boolean {
+  const { source } = req;
+  const refit = refitPending;
+  refitPending = false;
+  // Every render waiting on this request or an older one is over: the drawing is at least theirs.
+  const ok = result.errors.length === 0;
+  // In the order they were made, so what each does next happens in that order too.
+  while (renderWaiters.length > 0 && renderWaiters[0]!.seq <= req.seq) renderWaiters.shift()!.resolve(ok);
+  paintRendering();
+  root.dataset.compiler = compiler?.where() ?? "page";
+  if (result.gutter) gutterReady(source, result.gutter);
+  const { svg, errors, diagnostics, pages } = result;
   // The 3D preview draws the core's light drawing: this compile is that drawing unless a theme
   // overrides it, so it is handed over and the tab does not compile the source a second time.
-  lastDrawn = themeKey ? undefined : { source, drawn: { svg, pages, errors } };
+  lastDrawn = req.theme ? undefined : { source, drawn: { svg, pages, errors } };
   // The 3D preview follows the editor only while its tab is open (and once loaded).
   // The storey it shows is the switcher's explicit selection (none = the combined view). A new
   // plan (a document replaced, `refit`: the gallery, a snapshot) opens on its end frame,
@@ -645,17 +782,17 @@ function render(source: string, refit = false, knobMoving = false): boolean {
   // back under a drawing that never changed.
   // The drawing is one storey: the one picked, else (under "All") the one last picked, else the lowest.
   const page = ok ? selectPage(pages, selectedLevel ?? lastPicked) : undefined;
-  lastOk = ok;
   if (ok) {
     activeLevel = page?.level ?? null;
     lastPages = pages;
     levelSwitch.set(pages, shownLevel(), in3d());
   }
-  updateAnalysis(source, ok);
+  analysis = { source, ok, whole: result.whole, lint: result.lint };
+  updateAnalysis();
   // Like the 3D preview, the takeoff follows the editor and the storey only while its tab is open.
   if (takeoff && factsView.classList.contains("active")) void takeoff.then((p) => p?.update(source, activeLevel));
   // The diagnostics drawer, its phone count and a live Intent verdict are edit mode's.
-  edit?.afterCompile(source, diagnostics ?? []);
+  edit?.afterCompile(source, diagnostics);
   clearTimeout(busyTimer);
   if (!ok) {
     const n = errors.length;
@@ -665,17 +802,16 @@ function render(source: string, refit = false, knobMoving = false): boolean {
     return false; // keep last good preview
   }
   // A plan that compiles is fine: the notice goes, and the live region keeps the verdict.
-  setStatus("ok", okStatus((diagnostics ?? []).filter((d) => d.severity === "warning").length));
-  // The export SVG (lastSvg) is always overlay-free; the "Paths" toggle re-compiles
-  // with the circulation overlay for the on-screen preview only, so downloads/copies
-  // never carry it (matching how annotate is stripped for export).
+  setStatus("ok", okStatus(diagnostics.filter((d) => d.severity === "warning").length));
+  // The export SVG (lastSvg) is always overlay-free; the "Paths" toggle's drawing is a second
+  // compile with the circulation overlay (made with this one) for the on-screen preview only, so
+  // downloads/copies never carry it (matching how annotate is stripped for export).
   const pageSvg = page ? page.svg : svg;
   let displaySvg = pageSvg;
-  if (previewCtl.pathsEnabled()) {
-    const overlaid = compile(source, { ...opts, overlays: ["circulation"] });
+  if (result.paths) {
     // Pick the SAME storey out of the overlay compile — reading `.svg` would silently
     // draw page 1's circulation over whatever storey is selected.
-    displaySvg = selectPage(overlaid.pages, activeLevel)?.svg ?? overlaid.svg;
+    displaySvg = selectPage(result.paths.pages, activeLevel)?.svg ?? result.paths.svg;
   }
   // Checks: the review rings over the drawing on screen, and their list (over the drawing in view
   // mode; in edit mode the Checks tab, which lists them whether or not they are drawn). Like the
@@ -692,8 +828,9 @@ function render(source: string, refit = false, knobMoving = false): boolean {
   previewCtl.show(displaySvg, refit);
   if (checksOn) checks?.shown();
   lastSvg = pageSvg;
-  lastScene = (page ? page.scene : scene) ?? null;
-  knobsPanel.sync(source, ast);
+  lastGood = { req, level: activeLevel };
+  // The knobs read the parse's top-level statements and grid, which is all `knobPlan` carries.
+  knobsPanel.sync(source, result.knobPlan as PlanNode | undefined);
   return true;
 }
 
@@ -703,7 +840,7 @@ function render(source: string, refit = false, knobMoving = false): boolean {
  * settings as they are by then.
  */
 function redraw() {
-  if (isUp) render(currentSource());
+  if (isUp) void render(currentSource());
   else void up();
 }
 
@@ -765,14 +902,14 @@ checksBtn.addEventListener("click", () => {
   placeChecks();
   void Promise.all([loadChecks(), up()]).then(() => {
     placeChecks();
-    render(currentSource());
+    void render(currentSource());
   });
 });
 // Edit mode's Checks tab lists the findings whether or not the rings are drawn.
 document.getElementById("tab-checks")?.addEventListener("click", () => {
   if (!editing) return;
   void Promise.all([loadChecks(), up()]).then(() => {
-    if (reviewWanted()) render(currentSource());
+    if (reviewWanted()) void render(currentSource());
   });
 });
 
@@ -829,12 +966,19 @@ function onDocChanged(source: string) {
   actions?.sourceChanged();
   clearTimeout(debounce);
   debounce = setTimeout(() => {
-    render(source);
-    writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
-    void updateHash(source, () => editing, in3d); // keep the permalink in sync (compression is async)
-    void syncPlanMark(source); // the gallery: still that example, or an edited plan
+    const mine = ++docRenders;
+    // Once the drawing is of this source (the worker's compile is in), and only for the newest
+    // change: the draft, the hash and the plan's name follow what is on screen.
+    void render(source).then(() => {
+      if (mine !== docRenders) return; // a later change saves its own
+      writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
+      void updateHash(source, () => editing, in3d); // keep the permalink in sync (compression is async)
+      void syncPlanMark(source); // the gallery: still that example, or an edited plan
+    });
   }, 250);
 }
+/** Counts the debounced renders of document changes (`onDocChanged`): only the newest saves. */
+let docRenders = 0;
 
 /**
  * Surface an export failure: the reason in the status notice on the stage, where the visitor is in
@@ -871,13 +1015,21 @@ function working(msg: string | null) {
  */
 function pickExample(label: string) {
   markPlan(label);
-  void up().then(async () => {
-    const { EXAMPLES, samples } = await loadExamples();
-    const source = EXAMPLES[label] ?? samples.sampleSource(label);
-    if (source === undefined) return;
-    markPlan(label);
-    loadSource(source, true);
-  });
+  // The plan is on its way from now (`data-rendering`), though it compiles once the app is up.
+  picking++;
+  paintRendering();
+  void up()
+    .then(async () => {
+      const { EXAMPLES, samples } = await loadExamples();
+      const source = EXAMPLES[label] ?? samples.sampleSource(label);
+      if (source === undefined) return;
+      markPlan(label);
+      loadSource(source, true);
+    })
+    .finally(() => {
+      picking--;
+      paintRendering();
+    });
 }
 /** A plan picked by the visitor (a gallery card, the Checks sample pointer), which counts towards the nudge. */
 function switchPlan(label: string) {
@@ -934,7 +1086,6 @@ async function choose(): Promise<Choice> {
     doc = built.source;
     lastSummary = built.summary;
     lastRooms = built.summary.rooms ?? [];
-    lastOk = true;
     setStatus("ok", okStatus(built.warnings));
     docChosen();
   }
@@ -966,7 +1117,7 @@ function up(): Promise<void> {
     readyP = chosen.then(start).catch((err: unknown) => {
       readyP = undefined; // the next use retries
       clearTimeout(busyTimer);
-      setStatus("err", "Couldn't load the compiler — reload to retry");
+      setStatus("err", "Couldn't load the compiler — try again or reload");
       // This boot is over, failed: nothing waiting for `data-booting` to go is left waiting for
       // ever, and `data-boot-failed` says how it ended (card PG5b ⑥) until a retry succeeds.
       delete root.dataset.booting;
@@ -979,6 +1130,7 @@ function up(): Promise<void> {
 
 async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
   const corePending = loadCore();
+  const jobsPending = loadJobs();
   const examples = await loadExamples();
   const { DEFAULT_EXAMPLE, EXAMPLES } = examples;
   fillGallery(examples);
@@ -1001,8 +1153,10 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
     // our page — say so, once, at the top of the stage. Silent for a stock-example
     // permalink and for a hash-less visit. See shared-notice.ts for why it is not
     // remembered. Above the Plan | 3D switch, not inside the drawing's panel: the 3D
-    // preview shows the same plan, its names included, so it is attributed too (card X5).
+    // preview shows the same plan, its names included, so it is attributed too (card X5). A boot
+    // that is a retry (the first one failed after this point) finds it there already.
     if (
+      !document.querySelector(".shared-notice") &&
       shouldShowSharedNotice(sharedSrc, [...Object.values(EXAMPLES), ...examples.samples.SAMPLES.map((s) => s.source)])
     ) {
       stageSwitchRow.before(createSharedNotice());
@@ -1012,6 +1166,9 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
   }
 
   core = await corePending;
+  jobs = await jobsPending;
+  // Renders compile in the worker from here on; on a browser where it cannot run, on the page.
+  compiler ??= jobs.createCompileClient();
   // A task of its own for what follows: the compiler's module has just run in this one, so the
   // first render does not add to that long task (a tap in between is handled between the two).
   await new Promise<void>((resolve) => setTimeout(resolve, 0));
@@ -1026,7 +1183,9 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
     loadSource,
     flash,
     getCleanSvg: cleanSvg,
-    getScene: () => lastScene,
+    // The Scene of the drawing on screen, compiled on the page on demand (a DXF or TXT download):
+    // the one compile output a render does not send from the worker.
+    getScene: () => (lastGood && jobs ? jobs.sceneFor(lastGood.req, lastGood.level) : null),
     getLevel: () => activeLevel,
     onExportError,
     working,
@@ -1053,20 +1212,21 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
       downloadBtns: [...document.querySelectorAll<HTMLElement>("#share [data-download]")],
     },
   });
-  for (const btn of document.querySelectorAll<HTMLButtonElement>(":is(#share, #more) button[disabled]"))
-    btn.disabled = false;
-
-  isUp = true;
   if (built && !editing) {
     // The plan on screen is the built-in one, drawn as this render draws it (gen-static's
     // `LIVE_RENDER`): no re-fit, so a drawing the visitor has panned or zoomed stays where it is.
     // (Edit mode re-fits as it always has: the editor beside it is new.)
-    render(currentSource());
+    await render(currentSource());
   } else {
     // Initial render — fit the plan to the viewport, then re-fit once layout settles.
-    render(currentSource(), true);
+    await render(currentSource(), true);
     requestAnimationFrame(() => previewCtl.fit());
   }
+  // The exports and links read the drawing this render made (it lands from the worker), so they
+  // come on with it.
+  for (const btn of document.querySelectorAll<HTMLButtonElement>(":is(#share, #more) button[disabled]"))
+    btn.disabled = false;
+  isUp = true;
   // The e2e specs' "the app is up" signal (fixtures.ts `waitForPlan`).
   delete root.dataset.booting;
   delete root.dataset.bootFailed;
@@ -1091,7 +1251,7 @@ function importWhenIdle() {
     .connection;
   if (connection?.saveData === true || /^(?:slow-)?2g$/.test(connection?.effectiveType ?? "")) return;
   const warm = () =>
-    void Promise.all([loadCore(), loadExamples()]).then(
+    void Promise.all([loadCore(), loadExamples(), loadJobs()]).then(
       ([, examples]) => {
         // The gallery's samples group is data, not a compile: it joins the gallery now, as at boot.
         fillGallery(examples);

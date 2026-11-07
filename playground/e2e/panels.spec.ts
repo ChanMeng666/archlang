@@ -164,7 +164,7 @@ test.describe("one view switch (PG-D3)", () => {
     await page.locator("#share > summary").click();
     await expect(status).toHaveClass(/\berr\b/, { timeout: 15_000 });
     await expect(status).toBeVisible();
-    await expect(page.locator("#statusText")).toHaveText("Couldn't load the compiler — reload to retry");
+    await expect(page.locator("#statusText")).toHaveText("Couldn't load the compiler — try again or reload");
     await expect(page.locator("#sourceToggle")).toHaveAttribute("data-status", "err");
     // Well past the busy threshold: still the error, never "Compiling…" again.
     await page.waitForTimeout(1000);
@@ -174,7 +174,7 @@ test.describe("one view switch (PG-D3)", () => {
     // `data-boot-failed` says how it ended. The live region says it too.
     await expect(page.locator("html[data-booting]")).toHaveCount(0);
     await expect(page.locator("html[data-boot-failed]")).toHaveCount(1);
-    await expect(page.locator("#statusLive")).toHaveText("Couldn't load the compiler — reload to retry");
+    await expect(page.locator("#statusLive")).toHaveText("Couldn't load the compiler — try again or reload");
     // The failure is not kept: once the chunk can load, the next use loads it and the app is up.
     await page.unroute(refused);
     await page.locator("#share > summary").click(); // closes the menu
