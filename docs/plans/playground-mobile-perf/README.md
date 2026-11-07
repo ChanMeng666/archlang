@@ -46,7 +46,9 @@ come after load:
   2g. The URL contract is unchanged: `#z=`, `#src=`, drafts and `/s/<id>` still compile at once,
   except a saved draft identical to the built-in plan (no `#z=`/`#src=`, no saved theme), which
   opens like a plain visit.
-  Startup bytes only go down; the startup baseline is re-taken with the reason recorded.
+  The startup set went down with MP5 (447,460 B to 16,383 B gzip, the view path alone); a later
+  card may add only a small amount to it, recorded in its row, under MP-D7's 60 KB ceiling. A
+  re-taken startup baseline records its reason.
 - **MP-D5 Thumbnails are thumbnails.** Gallery images are lean SVGs (walls, openings, room fills,
   stairs and lifts; no text, dimensions or furniture), generated from `compile()`, at the same URLs, cached a day
   with stale-while-revalidate. PG-D2 holds.
@@ -67,11 +69,11 @@ come after load:
 | **MP4a** lean thumbnails (#563) | MP-D5 | `scripts/gen-static.mjs`, `scripts/lean-thumb.mjs` | each thumbnail ≤ 10 KB (`THUMB_MAX_BYTES`) and cut from `compile()`; keeps every keepable layer the compiler drew | medium |
 | **MP4b** thumbnail cache rule (#564) | MP-D5 | `public/_headers`, `scripts/smoke.mjs` | cache header checked by smoke | high (`_headers`) |
 | **MP5** no compile at boot (#565) | MP-D4 | `src/main.ts`, `scripts/gen-static.mjs`, `vite.config.js`, `e2e/startup-chunks.baseline.json` | no compiler request before interaction under Save-Data; facts line in served HTML; `init-precedence`, `examples-static`, `front-door` specs unchanged and green | high (baseline) |
-| **MP6** compile in a worker (#569) | MP-D6 | `src/main.ts`, new `src/compile-worker.ts`, panels reading results | typing 20 characters into Hillside gives no main-thread task over 100 ms; last result wins; panel specs unchanged | medium/high |
+| **MP6** compile in a worker (#569) | MP-D6 | `src/main.ts`, new `src/compile-worker.ts`, panels reading results | typing 20 characters into Hillside gives no main-thread task over 100 ms; last result wins; panel specs unchanged. Startup set 17,184 B gzip (index 13,613 + panels 2,773 + preload-helper 798): +801 B over MP5 for the worker client's wiring, the baseline not re-taken | medium/high |
 | MP7 (deferred) | draw 3D straight to the visible canvas | `packages/archlang-3d/src/replay/mount.ts` | frame hashes and single-file replay HTML bytes unchanged | high, package release |
 
 Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6. High-tier cards wait for the owner's words before merge.
-MP1–MP5 are done; MP6 is in review; MP7 stays deferred.
+MP1–MP6 are done (MP6: #569); MP7 stays deferred.
 
 ## 4. Open for the owner
 

@@ -20,8 +20,9 @@
  * - `createCompileClient`: the page's side. At most one request is in the worker and one waits;
  *   a newer request replaces the waiting one, and a reply to a request older than the latest sent
  *   is dropped (sequence numbers), so the last edit always wins. When the worker cannot be made or
- *   fails (no Worker, a blocked or failed load, a reply that would not clone), the client says so
- *   once and runs every request on the page from then on, the way the page compiled before.
+ *   fails (no Worker, a blocked or failed load, a reply that would not clone, or no answer within
+ *   `WORKER_TIMEOUT_MS`: a compile is bounded, so a worker that silent is stuck), the client says
+ *   so once and runs every request on the page from then on, the way the page compiled before.
  *
  * The page and the worker run the same function on the same compiler build, so a request gives
  * byte-identical results in both (playground/test/compile-worker.test.ts, e2e/editing.spec.ts).
@@ -185,6 +186,7 @@ export interface CompileClient {
   /**
    * The result of `req`, from the worker (or the page once the worker has failed); null when a
    * newer request has been made meanwhile (this one's reply is dropped, or it was never sent).
+   * Rejects only when the job threw on the page (never in the worker: that falls back).
    */
   run(req: CompileRequest): Promise<CompileResult | null>;
   /** Run `req` on the page, now, and drop every older request (a knob being dragged). */
@@ -196,13 +198,24 @@ export interface CompileClient {
 interface Pending {
   req: CompileRequest;
   resolve: (r: CompileResult | null) => void;
+  reject: (err: unknown) => void;
 }
 
 /**
- * The page's side of the worker. `onFallback` is told, once, when requests start running on the
- * page instead (the worker could not be made, or failed).
+ * How long a request may be in the worker unanswered before the worker counts as stuck. Every
+ * compile returns within its step and drawing budgets (well under a second for the corpus's
+ * biggest plan), so this is far past any real one.
  */
-export function createCompileClient(onFallback: (why: unknown) => void = () => {}): CompileClient {
+export const WORKER_TIMEOUT_MS = 8_000;
+
+/**
+ * The page's side of the worker. `onFallback` is told, once, when requests start running on the
+ * page instead (the worker could not be made, failed, or did not answer within `timeoutMs`).
+ */
+export function createCompileClient(
+  onFallback: (why: unknown) => void = () => {},
+  { timeoutMs = WORKER_TIMEOUT_MS }: { timeoutMs?: number } = {},
+): CompileClient {
   let worker: Worker | undefined;
   let broken = typeof Worker === "undefined";
   /** The newest request made (run or runNow). */
@@ -210,10 +223,25 @@ export function createCompileClient(onFallback: (why: unknown) => void = () => {
   /** The request in the worker, and the one waiting for it to be free. */
   let inFlight: Pending | undefined;
   let queued: Pending | undefined;
+  /** The watchdog on the request in the worker. */
+  let timer: ReturnType<typeof setTimeout> | undefined;
 
-  const onPage = (p: Pending) => p.resolve(p.req.seq < latest ? null : runCompileJob(p.req));
+  // A job that throws on the page settles its promise anyway (rejected), so nothing waits for ever.
+  const onPage = (p: Pending) => {
+    if (p.req.seq < latest) return p.resolve(null);
+    let result: CompileResult;
+    try {
+      result = runCompileJob(p.req);
+    } catch (err) {
+      p.reject(err);
+      return;
+    }
+    p.resolve(result);
+  };
 
   function fallBack(why: unknown) {
+    clearTimeout(timer);
+    timer = undefined;
     if (!broken) {
       broken = true;
       worker?.terminate();
@@ -228,6 +256,10 @@ export function createCompileClient(onFallback: (why: unknown) => void = () => {
 
   function send(p: Pending) {
     inFlight = p;
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (inFlight === p) fallBack(`the worker did not answer within ${timeoutMs} ms`);
+    }, timeoutMs);
     try {
       worker!.postMessage(p.req);
     } catch (err) {
@@ -248,6 +280,8 @@ export function createCompileClient(onFallback: (why: unknown) => void = () => {
       const reply = e.data;
       const done = inFlight;
       if (!done || done.req.seq !== reply.seq) return;
+      clearTimeout(timer);
+      timer = undefined;
       if (!reply.ok) {
         fallBack(reply.error);
         return;
@@ -271,8 +305,8 @@ export function createCompileClient(onFallback: (why: unknown) => void = () => {
   return {
     run(req) {
       latest = Math.max(latest, req.seq);
-      return new Promise((resolve) => {
-        const p: Pending = { req, resolve };
+      return new Promise((resolve, reject) => {
+        const p: Pending = { req, resolve, reject };
         if (!ensureWorker()) {
           onPage(p);
           return;

@@ -231,9 +231,20 @@ test.describe("compiling in a worker", () => {
         };
       },
     ],
+    [
+      // Stuck: loads, takes every request, answers none. The watchdog (WORKER_TIMEOUT_MS) stops it.
+      "never answers",
+      () => {
+        (window as unknown as { Worker: unknown }).Worker = class extends EventTarget {
+          postMessage() {}
+          terminate() {}
+        };
+      },
+    ],
   ];
   for (const [what, stub] of failures) {
     test(`a worker that ${what} falls back to compiling on the page, and editing still works`, async ({ page }) => {
+      if (what === "never answers") test.slow(); // the first render waits out the watchdog
       await page.addInitScript(stub);
       await gotoEdit(page);
       await setEditorSource(page, SIMPLE_PLAN);

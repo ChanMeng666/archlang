@@ -713,11 +713,30 @@ function render(source: string, refit = false): Promise<boolean> {
   paintRendering();
   const mine = { key, done };
   inFlight = mine;
-  void compiler.run(req).then((result) => {
-    if (inFlight === mine) inFlight = undefined;
-    if (result && req.seq === renderSeq) show(req, result, false);
-  });
+  void compiler.run(req).then(
+    (result) => {
+      if (inFlight === mine) inFlight = undefined;
+      if (result && req.seq === renderSeq) show(req, result, false);
+    },
+    (err: unknown) => {
+      if (inFlight === mine) inFlight = undefined;
+      renderFailed(req, err);
+    },
+  );
   return done;
+}
+
+/**
+ * A render whose job threw (on the page, the worker having failed): every render waiting on it
+ * is over, not compiled, so nothing (a boot, `data-rendering`) waits for ever; the last good
+ * drawing stays, and the status says what happened.
+ */
+function renderFailed(req: CompileRequest, err: unknown) {
+  while (renderWaiters.length > 0 && renderWaiters[0]!.seq <= req.seq) renderWaiters.shift()!.resolve(false);
+  paintRendering();
+  clearTimeout(busyTimer); // a boot's "Compiling…" is over too
+  if (req.seq === renderSeq) setStatus("err", "The compiler failed on this plan — try again or reload");
+  console.warn("A render did not compile:", err);
 }
 
 /** What else a render's drawing and panels depend on besides its request (`render`'s key). */
@@ -965,19 +984,23 @@ function onDocChanged(source: string) {
   if (finishPanel) finishPanel.hidden = true;
   actions?.sourceChanged();
   clearTimeout(debounce);
+  // Any change (an edit, a plan picked: `loadSource`) makes an earlier change's save stale at
+  // once, not when its own debounce fires: a render in the worker for an edit must not save that
+  // edit over a plan picked meanwhile.
+  const mine = ++docRenders;
   debounce = setTimeout(() => {
-    const mine = ++docRenders;
     // Once the drawing is of this source (the worker's compile is in), and only for the newest
     // change: the draft, the hash and the plan's name follow what is on screen.
     void render(source).then(() => {
       if (mine !== docRenders) return; // a later change saves its own
+      if (analysis?.source !== source) return; // another plan is on screen: it saves itself
       writeStr(KEYS.source, source); // autosave the working draft (restored on reload)
       void updateHash(source, () => editing, in3d); // keep the permalink in sync (compression is async)
       void syncPlanMark(source); // the gallery: still that example, or an edited plan
     });
   }, 250);
 }
-/** Counts the debounced renders of document changes (`onDocChanged`): only the newest saves. */
+/** Counts document changes (`onDocChanged`): only the newest one's render saves. */
 let docRenders = 0;
 
 /**

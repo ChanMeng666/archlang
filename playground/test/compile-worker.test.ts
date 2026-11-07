@@ -97,7 +97,8 @@ suite("runCompileJob", () => {
 /** A stand-in for a module Worker that runs the job itself, a turn later, as a worker would. */
 class FakeWorker extends EventTarget {
   static made = 0;
-  static fail: "throw" | "error" | null = null;
+  static fail: "throw" | "error" | "silent" | null = null;
+  static terminated = 0;
   posted: number[] = [];
   constructor() {
     super();
@@ -107,14 +108,16 @@ class FakeWorker extends EventTarget {
   }
   postMessage(r: CompileRequest) {
     this.posted.push(r.seq);
-    if (FakeWorker.fail === "error") return;
+    if (FakeWorker.fail === "error" || FakeWorker.fail === "silent") return; // a stuck worker never answers
     setTimeout(() => {
       const ev = new Event("message") as Event & { data: unknown };
       ev.data = { seq: r.seq, ok: true, result: structuredClone(runCompileJob(r)) };
       this.dispatchEvent(ev);
     }, 0);
   }
-  terminate() {}
+  terminate() {
+    FakeWorker.terminated++;
+  }
 }
 
 suite("createCompileClient", () => {
@@ -123,6 +126,7 @@ suite("createCompileClient", () => {
     (globalThis as { Worker?: unknown }).Worker = original;
     FakeWorker.made = 0;
     FakeWorker.fail = null;
+    FakeWorker.terminated = 0;
   });
   const install = () => {
     (globalThis as { Worker?: unknown }).Worker = FakeWorker;
@@ -168,6 +172,42 @@ suite("createCompileClient", () => {
       expect(FakeWorker.made).toBe(1);
     });
   }
+
+  it("a worker that never answers is stopped, and the newest request runs on the page, once", async () => {
+    install();
+    FakeWorker.fail = "silent";
+    const told: unknown[] = [];
+    const client = createCompileClient((why) => told.push(why), { timeoutMs: 50 });
+    const a = client.run(req(src, { seq: 1 }));
+    const b = client.run(req(`${src}\n# b`, { seq: 2 }));
+    // 1 was in the worker, 2 waited: the watchdog stops the worker and runs the newest one here.
+    expect(await a).toBeNull();
+    expect(plain(await b)).toBe(plain(runCompileJob(req(`${src}\n# b`, { seq: 2 }))));
+    expect(client.where()).toBe("page");
+    expect(FakeWorker.terminated).toBe(1);
+    expect(told).toHaveLength(1);
+    expect(String(told[0])).toMatch(/did not answer within 50 ms/);
+    // From then on the page compiles, and no second worker is made.
+    expect((await client.run(req(src, { seq: 3 })))?.errors).toEqual([]);
+    expect(FakeWorker.made).toBe(1);
+  });
+
+  it("an answer in time clears the watchdog: the worker keeps running", async () => {
+    install();
+    const client = createCompileClient(() => {}, { timeoutMs: 1_000 });
+    expect((await client.run(req(src, { seq: 1 })))?.errors).toEqual([]);
+    await new Promise((r) => setTimeout(r, 1_100));
+    expect(client.where()).toBe("worker");
+    expect(FakeWorker.terminated).toBe(0);
+  });
+
+  it("a job that throws on the page settles its request (rejected), never leaving it waiting", async () => {
+    (globalThis as { Worker?: unknown }).Worker = undefined;
+    const client = createCompileClient();
+    // Not a string: the job throws on it, as a compiler bug on the page would.
+    await expect(client.run(req(null as unknown as string))).rejects.toBeTruthy();
+    expect((await client.run(req(src, { seq: 2 })))?.errors).toEqual([]);
+  });
 
   it("compiles on the page where there is no Worker at all", async () => {
     (globalThis as { Worker?: unknown }).Worker = undefined;
