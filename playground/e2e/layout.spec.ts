@@ -554,6 +554,224 @@ test.describe("phone header and stage toolbar (card PG4)", () => {
 });
 
 /**
+ * Card MP1 (ruling MP-D1): the phone page is ONE screen. The drawing and the 3D canvas take every
+ * touch for pan and orbit, so a page that scrolled under them could not be scrolled back: the
+ * header, the stage toolbar and the facts row with the lede must all be in the window on first
+ * paint, in view mode and in edit mode (each of the phone's views), and the page itself must not
+ * scroll. The header is at most two rows (≤ 100 px), one row on a phone on its side (≤ 60 px).
+ */
+test.describe("the phone page is one screen (card MP1)", () => {
+  for (const [width, height] of [
+    [320, 568],
+    [360, 780],
+    [390, 844],
+    [844, 390],
+  ] as const) {
+    test.describe(`at ${width}x${height}`, () => {
+      test.use({ viewport: { width, height }, isMobile: true, hasTouch: true });
+
+      const measure = (page: Page) =>
+        page.evaluate(() => {
+          const bottom = (s: string) => {
+            const el = document.querySelector(s);
+            return el && el.getClientRects().length > 0 ? el.getBoundingClientRect().bottom : null;
+          };
+          return {
+            inner: window.innerHeight,
+            scroll: document.scrollingElement!.scrollHeight,
+            header: document.querySelector("header")!.getBoundingClientRect().height,
+            toolbar: bottom(".pz-toolbar"),
+            facts: bottom("#factsRow"),
+            lede: bottom("#lede"),
+          };
+        });
+
+      for (const mode of ["view", "edit"] as const) {
+        test(`${mode} mode: the toolbar and the facts row are on the first screen, and the page does not scroll`, async ({
+          page,
+        }) => {
+          await page.goto(mode === "edit" ? "/#edit" : "/");
+          await waitForPlan(page);
+          if (mode === "edit")
+            await expect(page.locator('.mview[data-mview="plan"]')).toHaveAttribute("aria-pressed", "true");
+          const m = await measure(page);
+          const headerMax = height < 500 ? 60 : 100;
+          expect(m.header, `header height (${height < 500 ? "one row" : "two rows at most"})`).toBeLessThanOrEqual(
+            headerMax,
+          );
+          expect(m.toolbar, "the stage toolbar is drawn").not.toBeNull();
+          expect(m.toolbar!, "the stage toolbar's bottom is inside the window").toBeLessThanOrEqual(m.inner);
+          expect(m.facts, "the facts row is drawn").not.toBeNull();
+          expect(m.facts!, "the facts row's bottom is inside the window").toBeLessThanOrEqual(m.inner);
+          expect(m.lede!, "the lede's bottom is inside the window").toBeLessThanOrEqual(m.inner);
+          expect(m.scroll, "the page itself does not scroll").toBeLessThanOrEqual(m.inner + 1);
+          await expect(page.locator("#makeOwn")).toBeInViewport();
+          if (mode === "edit") {
+            // Every view of the phone's switcher: still one screen, the switcher on it.
+            for (const view of ["code", "3d", "facts", "checks", "plan"]) {
+              await page.locator(`.mview[data-mview="${view}"]`).tap();
+              await expect(page.locator(`.mview[data-mview="${view}"]`)).toHaveAttribute("aria-pressed", "true");
+              const v = await measure(page);
+              expect(v.scroll, `the page does not scroll in the ${view} view`).toBeLessThanOrEqual(v.inner + 1);
+              await expect(page.locator("#mviews")).toBeInViewport({ ratio: 1 });
+            }
+          } else {
+            // The 3D preview, the stage's other view: the facts row stays on screen under it.
+            await page.locator("#view3d").tap();
+            await expect(page.locator("#preview3d canvas")).toBeVisible();
+            const v = await measure(page);
+            expect(v.facts!, "the facts row under the 3D preview is inside the window").toBeLessThanOrEqual(v.inner);
+            expect(v.scroll, "the page does not scroll over the 3D preview").toBeLessThanOrEqual(v.inner + 1);
+          }
+        });
+      }
+    });
+  }
+
+  // Ruling MP-D2: text a phone shows is 12 px at least, and a field is 16 px at least (under 16 px
+  // iOS zooms the page when it takes focus). SVG text is the drawing's, scaled with it: not counted.
+  test.describe("text and fields at 390x844", () => {
+    test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+
+    const tooSmall = (page: Page) =>
+      page.evaluate(() => {
+        const shown = (el: Element) => {
+          if (el.getClientRects().length === 0 || getComputedStyle(el).visibility === "hidden") return false;
+          const r = el.getBoundingClientRect();
+          return (
+            r.width > 1 && r.height > 1 && r.bottom > 0 && r.top < innerHeight && r.right > 0 && r.left < innerWidth
+          );
+        };
+        const text = [...document.body.querySelectorAll("*")]
+          .filter((el) => !el.closest("svg, .vh"))
+          .filter((el) => [...el.childNodes].some((n) => n.nodeType === Node.TEXT_NODE && n.textContent!.trim()))
+          .filter(shown)
+          .filter((el) => Number.parseFloat(getComputedStyle(el).fontSize) < 12)
+          .map(
+            (el) =>
+              `${el.tagName.toLowerCase()}.${el.className || el.id} ${getComputedStyle(el).fontSize} "${el.textContent!.trim().slice(0, 24)}"`,
+          );
+        const fields = [
+          ...document.querySelectorAll(
+            'input:not([type="checkbox"], [type="radio"], [type="range"], [type="hidden"]), select, textarea, .cm-content',
+          ),
+        ]
+          .filter((el) => el.getClientRects().length > 0)
+          .filter((el) => Number.parseFloat(getComputedStyle(el).fontSize) < 16)
+          .map((el) => `${el.id || el.className} ${getComputedStyle(el).fontSize}`);
+        return { text, fields };
+      });
+
+    test("no visible text under 12 px and no field under 16 px, in view mode and in every edit view", async ({
+      page,
+    }) => {
+      await page.goto(`/${await shareHash(TOWNHOUSE)}`);
+      await waitForPlan(page);
+      expect(await tooSmall(page), "view mode, the drawing").toEqual({ text: [], fields: [] });
+      await page.locator("#view3d").tap();
+      await expect(page.locator("#preview3d canvas")).toBeVisible();
+      expect(await tooSmall(page), "view mode, the 3D preview").toEqual({ text: [], fields: [] });
+
+      await page.goto("about:blank");
+      await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
+      await waitForPlan(page);
+      for (const view of ["plan", "code", "facts", "checks"]) {
+        await page.locator(`.mview[data-mview="${view}"]`).tap();
+        if (view === "facts") await expect(page.locator("#takeoffCopy")).toBeVisible();
+        if (view === "checks") await expect(page.locator("#errors .diagrow").first()).toBeVisible();
+        if (view === "code") await expect(page.locator(".cm-content")).toBeVisible();
+        expect(await tooSmall(page), `edit mode, ${view}`).toEqual({ text: [], fields: [] });
+      }
+      // The Checks view's own fields, scrolled to: the lint profile and the intent brief.
+      for (const sel of ["#lintProfile", "#intentSrc"]) {
+        await page.locator(sel).scrollIntoViewIfNeeded();
+        expect(await tooSmall(page), `edit mode, checks, ${sel} in view`).toEqual({ text: [], fields: [] });
+      }
+    });
+  });
+});
+
+/**
+ * Card MP1 (ruling MP-D2): a touch tablet wider than 900 px keeps the desktop layout, but every
+ * visible control is still 44 × 44 px at least — the 44 px rules apply under `(pointer: coarse)`,
+ * not only under the phone width. The header's triggers (the gallery, Share, ⋯), the open menus'
+ * items, the stage's switch, storeys, toolbar and knobs heading, the findings list, the 3D view's
+ * controls and edit mode's output tabs and panels.
+ */
+test.describe("a touch tablet at 1024x768 (card MP1)", () => {
+  test.use({ viewport: { width: 1024, height: 768 }, hasTouch: true, reducedMotion: "reduce" });
+
+  test("every visible control is touch-sized", async ({ page }) => {
+    const CONTROLS = [
+      "header button, header select, header summary, .stage-switch button, .lv-btn, .pz-toolbar button, .tab",
+      "#preview3d button, .knobs-head, #statusDismiss, .checks button",
+      ".tools-panel button, .tools-panel select, .tools-panel .tb-check, .tools-panel a",
+      ":is(#factsView, #checksView) :is(button, select, summary, input:not([type=checkbox]))",
+      "#errors button",
+    ].join(", ");
+    const tooSmall = () =>
+      page.locator(CONTROLS).evaluateAll((els) =>
+        els
+          .filter((e) => e.getClientRects().length > 0)
+          .filter((e) => {
+            const r = e.getBoundingClientRect();
+            return r.height < 44 - 0.5 || r.width < 44 - 0.5;
+          })
+          .map((e) => {
+            const r = e.getBoundingClientRect();
+            return `${e.id || e.textContent?.trim() || e.className} ${Math.round(r.width)}×${Math.round(r.height)}`;
+          }),
+      );
+    expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches), "a touch screen").toBe(true);
+    await page.goto(`/${await shareHash(TOWNHOUSE)}`);
+    await waitForPlan(page);
+    await expect(page.locator("header summary")).toHaveCount(3);
+    await expect(page.locator(".lv-btn")).toHaveCount(3);
+    await expect(page.locator(".pz-viewport .knobs-head")).toBeVisible();
+    expect(await tooSmall(), "view mode, the drawing").toEqual([]);
+    await page.locator("#checks").tap();
+    await expect(page.locator(".checks button").first()).toBeVisible();
+    expect(await tooSmall(), "view mode, the findings list").toEqual([]);
+    const [list, bar] = [
+      (await page.locator(".checks").boundingBox())!,
+      (await page.locator(".pz-toolbar").boundingBox())!,
+    ];
+    expect(overlaps(list, bar), "the findings list clears the taller toolbar").toBe(false);
+    await page.locator("#checks").dispatchEvent("click");
+    await expect(page.locator(".checks")).toBeHidden();
+    for (const id of ["#share", "#more"]) {
+      await page.locator(`${id} > summary`).tap();
+      await expect(page.locator(`${id} .tools-panel`)).toBeVisible();
+      expect(await tooSmall(), `view mode, ${id} open`).toEqual([]);
+      await page.locator(`${id} > summary`).tap();
+      await expect(page.locator(`${id} .tools-panel`)).toBeHidden();
+    }
+    await page.locator("#view3d").tap();
+    await expect(page.locator("#preview3d canvas")).toBeVisible();
+    expect(await tooSmall(), "view mode, the 3D preview").toEqual([]);
+    // The 3D view's knobs start under the taller switch and storeys.
+    const [chip, knobs] = [
+      (await page.locator("#storeys").boundingBox())!,
+      (await page.locator("#preview3d .p3d-stage > .knobs").boundingBox())!,
+    ];
+    expect(overlaps(chip, knobs), "the 3D knobs clear the storeys").toBe(false);
+
+    // Edit mode: the output tabs and each tab's controls, with diagnostics in the drawer.
+    await page.goto("about:blank");
+    await page.goto(`/${await shareHash(HILLSIDE)}&edit`);
+    await waitForPlan(page);
+    await expect(page.locator(".tab")).toHaveCount(4);
+    for (const tab of ["preview", "preview3d", "facts", "checks"]) {
+      await page.locator(`#tab-${tab}`).tap();
+      await expect(page.locator(`#tab-${tab}`)).toHaveAttribute("aria-selected", "true");
+      if (tab === "facts") await expect(page.locator("#takeoffCopy")).toBeVisible();
+      if (tab === "preview3d") await expect(page.locator("#preview3d canvas")).toBeVisible();
+      expect(await tooSmall(), `edit mode, ${tab}`).toEqual([]);
+    }
+  });
+});
+
+/**
  * Card PG5b ③ on the desktop stage: over the 3D preview a plan's knobs sit in the top-left corner,
  * where the storey chip is too; with a three-storey plan with knobs (Townhouse) the knobs start
  * under the chip, in view mode (under Plan | 3D) and in edit mode.

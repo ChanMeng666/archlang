@@ -399,7 +399,7 @@
   outline: 2px solid var(--plum-deep);
   outline-offset: 2px;
 }
-@media (max-width: 900px) {
+@media (max-width: 900px), (pointer: coarse) {
   .room-card .rc-close,
   .room-card .rc-jump {
     min-height: 44px;
@@ -1813,6 +1813,17 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
 }
 /* …and under the storeys too, when a plan has them (card PG5b ③: the chip covered the knobs'
    heading). The phone's knobs are the foot sheet, clear of the corner already. */
+/* The 3D view's touch-sized buttons: on a phone and on any touch screen (ruling MP-D2). */
+@media (max-width: 900px), (pointer: coarse) {
+  .p3d-btn {
+    height: 44px;
+    padding: 0 12px;
+  }
+  .p3d-info-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
 @media not all and (max-width: 900px) {
   .pane:has(#storeys:not([hidden])) .p3d-stage > .knobs {
     top: 50px;
@@ -1829,14 +1840,6 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   }
   .p3d-stage:has(> .knobs:not([hidden])):not([data-refused]) {
     --p3d-foot: 46px;
-  }
-  .p3d-btn {
-    height: 44px;
-    padding: 0 12px;
-  }
-  .p3d-info-btn {
-    width: 44px;
-    height: 44px;
   }
   .p3d-top {
     max-width: calc(100% - 130px);
@@ -2081,10 +2084,6 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   .pz-viewport:has(> .knobs[open]:not([hidden])) .pz-toolbar {
     bottom: calc(50% + 8px);
   }
-  .pz-toolbar button {
-    min-width: 44px;
-    height: 44px;
-  }
   .diag-head {
     flex-wrap: wrap;
     padding: 10px 12px;
@@ -2101,18 +2100,111 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   .diag-fix {
     padding: 0 12px 10px;
   }
-  .diag-apply {
-    min-height: 44px;
-    padding: 0 12px;
-  }
   #describe,
   #lint,
   #intent {
     padding-left: 16px;
     padding-right: 16px;
   }
-  /* Every control of edit mode's Facts and Checks views and of the drawing's findings list at least
-     44 × 44 px (card PG5b ⑦; layout.spec measures them). */
+
+  /* No text under 12 px on a phone (ruling MP-D2): the panels' micro-labels and small mono. */
+  .tv-h,
+  .room-tip,
+  .pz-toolbar button[data-layer="checks"],
+  .pz-toolbar button[data-pz="paths"],
+  .shared-notice-dismiss,
+  .facts-row > .lede,
+  .room-card dt,
+  .knobs-head,
+  .knob-name,
+  .checks-head,
+  .checks-n,
+  .checks-body code,
+  .checks.checks-docked .checks-head,
+  .ag-col-h,
+  .ag-card-meta,
+  .ag-door,
+  .describe-json summary,
+  .lint-controls label,
+  .lintrow code,
+  .diag-head code,
+  .diag-loc,
+  .diag-toggle,
+  .diag-fix b,
+  .diag-detail b,
+  .diag-detail pre,
+  .repair-list code,
+  .repair-cat,
+  .repair-move,
+  .embed-head strong,
+  .embed-box label,
+  .snap-head strong,
+  .snap-time,
+  .to-table caption,
+  .p3d-limits,
+  .sug-problem code,
+  .sug-stmt,
+  .intent-count,
+  .intent-sub-val,
+  .intent-list code,
+  .intent-tag,
+  .diag-apply {
+    font-size: 12px;
+  }
+  /* A field under 16 px makes iOS zoom the page when it takes focus (the lint profile, the
+     takeoff's waste, the intent brief). */
+  :is(input:not([type="checkbox"], [type="radio"], [type="range"]), select, textarea) {
+    font-size: 16px;
+  }
+}
+
+/* On a phone the findings list ends above the toolbar at the stage's foot (8 + 52 px, and the
+   folded knobs' 46 px), however short the one-screen stage is; it scrolls inside. */
+@media (max-width: 900px) {
+  .checks {
+    max-height: min(40%, calc(100% - 198px));
+  }
+  .pz-viewport:has(> .knobs:not([hidden])) .checks {
+    max-height: min(40%, calc(100% - 244px));
+  }
+}
+/* A phone on its side: the stage is short and wide, so the findings list leaves the switch and
+   the storeys their column and takes the top-right corner, ending above the toolbar at the foot
+   (8 + 52 px, and the folded knobs' 46 px when the plan has knobs). */
+@media (max-width: 900px) and (max-height: 499.98px) {
+  .checks {
+    top: 8px;
+    left: auto;
+    right: 8px;
+    width: min(340px, calc(100% - 220px));
+    max-height: calc(100% - 76px);
+  }
+  .pz-viewport:has(> .knobs:not([hidden])) .checks {
+    max-height: calc(100% - 122px);
+  }
+}
+
+/* The narrowest phones: the two layer labels a little tighter, so the toolbar stays one row. */
+@media (max-width: 380px) {
+  .pz-toolbar button[data-layer="checks"],
+  .pz-toolbar button[data-pz="paths"] {
+    padding: 0 4px;
+    letter-spacing: 0.02em;
+  }
+}
+
+/* Touch-sized (card PG5b ⑦, ruling MP-D2): every control of the stage, of edit mode's Facts and
+   Checks views and of the drawing's findings list at least 44 × 44 px (layout.spec measures
+   them), on a phone and on any screen whose main pointer is a finger. */
+@media (max-width: 900px), (pointer: coarse) {
+  .pz-toolbar button {
+    min-width: 44px;
+    height: 44px;
+  }
+  .diag-apply {
+    min-height: 44px;
+    padding: 0 12px;
+  }
   .lint-controls select,
   .repair-btn,
   .sug-insert,
@@ -2121,5 +2213,26 @@ html:not([data-mode="edit"]) .p3d-stage > .knobs {
   .to-waste {
     min-height: 44px;
     min-width: 44px;
+  }
+}
+/* A touch screen wider than 900 px keeps the desktop stage, its toolbar top-right; with 44 px
+   targets the Plan | 3D switch, the toolbar and the storeys are taller (chrome.css), so what sits
+   under them moves down to clear them: the findings list under the toolbar, the 3D view's knobs
+   under the switch and the storeys. */
+@media (pointer: coarse) and (min-width: 900.02px) {
+  .checks {
+    top: 70px;
+    max-height: calc(100% - 82px);
+  }
+  html:not([data-mode="edit"]) .p3d-stage > .knobs,
+  .pane:has(#storeys:not([hidden])) .p3d-stage > .knobs {
+    top: 70px;
+  }
+  html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .p3d-stage > .knobs {
+    top: 130px;
+  }
+  .knobs-head {
+    padding-top: 13px;
+    padding-bottom: 13px;
   }
 }

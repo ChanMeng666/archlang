@@ -2,7 +2,10 @@
 <html lang="en" data-mode="view" data-booting>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- `interactive-widget=resizes-content`: the on-screen keyboard shrinks the layout viewport,
+         so the one-screen phone page (styles/chrome.css) keeps the editor above the keyboard
+         instead of being pushed under it. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, interactive-widget=resizes-content" />
     <title>ArchLang Playground — code to floor plans</title>
     <meta
       name="description"
