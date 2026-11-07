@@ -677,14 +677,9 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
     top: 130px;
   }
-  /* A phone stage is narrow: the notice spans it, under the switch (and the storeys). */
+  /* Under the taller switch (and the storeys). */
   .stage-status {
     top: 70px;
-    left: 16px;
-    right: 16px;
-    width: auto;
-    transform: none;
-    max-width: none;
   }
   .pane:has(#storeys:not([hidden])) .stage-status {
     top: 130px;
@@ -702,6 +697,24 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   /* Facts and Checks start clear of the taller storey chip. */
   main .pane:has(#storeys:not([hidden])) .tv-sections {
     padding-top: 72px;
+  }
+}
+
+/* A phone stage is narrow: the notice spans it. A touch screen wider than 900 px keeps the
+   desktop's centred notice, kept clear of the findings list on the right (340 px + 10 px from the
+   edge, `.checks`) and so of the switch on the left too, never narrower than 220 px. */
+@media (max-width: 900px) {
+  .stage-status {
+    left: 16px;
+    right: 16px;
+    width: auto;
+    transform: none;
+    max-width: none;
+  }
+}
+@media (pointer: coarse) and (min-width: 900.02px) {
+  .stage-status {
+    max-width: min(460px, max(220px, calc(100% - 720px)));
   }
 }
 
@@ -944,6 +957,10 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+  }
+  /* A menu item reads from its left edge, as on the desktop. */
+  .tools-panel button {
+    justify-content: flex-start;
   }
   .hd-btn {
     min-width: 44px;

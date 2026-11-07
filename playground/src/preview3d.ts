@@ -40,6 +40,11 @@
  * five seconds; the page remembers it was shown (`localStorage`, every access guarded, so the page
  * works without storage). The full keyboard hint is the canvas's description, visually hidden.
  *
+ * Touch (playground-mobile-perf card MP2, ruling MP-D2): on a touch screen the coach mark says the
+ * finger's words, and with no hover the floating controls rest whole (panels.css). A lost WebGL
+ * context (ruling MP-D3) stops the loops and says so over the stage; its restore, or a press of
+ * the message, mounts the replay again where it was.
+ *
  * In view mode it is the stage's other half (public-surfaces card X5): the Plan | 3D switch on the
  * stage shows it in place of the drawing, `&3d` in the hash opens on it, and the page lays its knobs
  * over the canvas (`overlay`). The GLB of the plan is Share → Export → GLB (ruling PG-D5, actions.ts),
@@ -82,6 +87,18 @@ const COACH_KEY = "archlang.pg.coach3d";
 const PLAYED_KEY = "archlang.pg.played3d";
 /** What the coach mark says (the hint, `VIEW_HINT`, is the full text, keys included). */
 export const COACH_TEXT = "Drag to turn · scroll to zoom · right-drag to pan";
+/**
+ * The same on a touch screen (ruling MP-D2). The words are what three.js's `OrbitControls` (0.186)
+ * does with fingers: `touches = { ONE: ROTATE, TWO: DOLLY_PAN }`, so one finger turns, and two
+ * fingers zoom by their spread and pan by moving together.
+ */
+export const COACH_TEXT_TOUCH = "Drag to turn · pinch to zoom · two-finger drag to pan";
+/** A touch screen: the main pointer is a finger, or nothing hovers (ruling MP-D2). */
+const touchScreen = (): boolean =>
+  window.matchMedia?.("(pointer: coarse)").matches === true || window.matchMedia?.("(hover: none)").matches === true;
+/** What the stage says while the browser has taken its WebGL context away (ruling MP-D3). */
+export const LOST_TEXT = "3D view paused. Tap to draw it again.";
+export const LOST_TEXT_MOUSE = "3D view paused. Click to draw it again.";
 
 /**
  * The editor's compile of the same source, when it has one whose drawing is the light one this tab
@@ -117,6 +134,8 @@ declare global {
   interface Window {
     /** The mounted replay (tests read frames through it, as the replay HTML's `__seek`/`__frameHash`). */
     __preview3d?: ReplayHandle;
+    /** Its WebGL canvas (tests force a context loss through it, `WEBGL_lose_context`). */
+    __preview3dGl?: HTMLCanvasElement;
   }
 }
 
@@ -133,6 +152,29 @@ function store(area: "localStorage" | "sessionStorage", key: string): void {
     window[area].setItem(key, "1");
   } catch {
     /* the page works without it */
+  }
+}
+
+/**
+ * Run `mount` and hand back the first canvas it creates: `mountReplay`'s WebGL canvas, which is not
+ * in the page (each frame is copied into the canvas the page shows) and which the handle does not
+ * expose. The playground hears its context loss and restore on it (ruling MP-D3) without a change
+ * to the package: `createElement` is wrapped for the one synchronous call, then put back.
+ */
+function withGlCanvas<T>(mount: () => T): [T, HTMLCanvasElement | undefined] {
+  const own = Object.prototype.hasOwnProperty.call(document, "createElement");
+  const create = document.createElement;
+  let made: HTMLCanvasElement | undefined;
+  document.createElement = function (this: Document, tag: string, options?: ElementCreationOptions) {
+    const el = create.call(this, tag, options);
+    if (!made && el instanceof HTMLCanvasElement) made = el;
+    return el;
+  } as typeof document.createElement;
+  try {
+    return [mount(), made];
+  } finally {
+    if (own) document.createElement = create;
+    else delete (document as { createElement?: unknown }).createElement;
   }
 }
 
@@ -279,7 +321,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   coach.setAttribute("aria-hidden", "true");
   coach.hidden = true;
   const coachText = document.createElement("span");
-  coachText.textContent = COACH_TEXT;
+  coachText.textContent = touchScreen() ? COACH_TEXT_TOUCH : COACH_TEXT;
   coach.append(dragGlyph(), coachText);
   let coachTimer = 0;
   const fadeCoach = (): void => {
@@ -307,7 +349,11 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   message.setAttribute("role", "status");
   message.hidden = true;
 
-  stage.append(canvas, coach, top, scrub, foot, message);
+  // ---- the browser took the WebGL context away (ruling MP-D3): say so; a press draws it again ----
+  const lostBtn = btn(LOST_TEXT, "p3d-lost");
+  lostBtn.hidden = true;
+
+  stage.append(canvas, coach, top, scrub, foot, message, lostBtn);
   host.append(stage);
 
   let handle: ReplayHandle | undefined;
@@ -324,6 +370,10 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   let turnOff = false;
   /** The turntable was stopped by leaving the tab: the next open shows the end frame again. */
   let resetOnShow = false;
+  /** What the mounted replay was built from, so a lost WebGL context can be mounted again. */
+  let last: { source: string; level: number | null; key: string; drawn?: Drawn } | undefined;
+  /** The WebGL context is lost: what was going on when it went (playing, turning, the replay time). */
+  let lost: { playing: boolean; turning: boolean; t: number } | undefined;
 
   const stop = () => {
     if (frame) cancelAnimationFrame(frame);
@@ -389,12 +439,14 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     handle?.dispose();
     handle = undefined;
     window.__preview3d = undefined;
+    window.__preview3dGl = undefined;
     stage.dataset.refused = "";
     canvas.hidden = true;
     top.hidden = true;
     play.hidden = true;
     scrub.hidden = true;
     coach.hidden = true;
+    clearLost();
     message.hidden = false;
     message.textContent = `No 3D preview: ${text}`;
     delete host.dataset.view;
@@ -406,8 +458,10 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
    */
   const build = (source: string, level: number | null, key: string, given?: Drawn, keep?: ViewState): boolean => {
     built = key;
+    last = { source, level, key, drawn: given };
     generation += 1;
     let next: ReplayHandle;
+    let gl: HTMLCanvasElement | undefined;
     let view: string;
     try {
       const r = adapt3d(source);
@@ -444,7 +498,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       stop();
       handle?.dispose();
       // Grabbing the view pauses the playback.
-      next = mountReplay(canvas, payload, undefined, { interactive: true, onTake: stop });
+      [next, gl] = withGlCanvas(() => mountReplay(canvas, payload, undefined, { interactive: true, onTake: stop }));
       if (keep) next.view?.restore(keep);
       views.replaceChildren(
         ...(next.view
@@ -463,6 +517,9 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     }
     handle = next;
     window.__preview3d = next;
+    window.__preview3dGl = gl;
+    if (gl) watchContext(gl, next);
+    clearLost();
     host.dataset.view = view;
     top.hidden = false;
     play.hidden = false;
@@ -512,6 +569,49 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     });
   };
 
+  /**
+   * A lost WebGL context (ruling MP-D3): the GPU was reset, or the browser took the context for
+   * another page. The canvas the page shows is a 2D copy, so it would keep the last frame with no
+   * word; instead the loops stop and the stage says so. The loss's default is prevented, so the
+   * browser may restore the context; on restore, or on a press of the message, the replay is
+   * mounted again (a fresh renderer, its buffers uploaded anew) and drawn where it was.
+   */
+  const watchContext = (gl: HTMLCanvasElement, h: ReplayHandle): void => {
+    gl.addEventListener("webglcontextlost", (e) => {
+      // A replaced or refused mount's own `dispose` loses its context on purpose: not this one's.
+      if (h !== handle) return;
+      e.preventDefault();
+      if (lost) return;
+      lost = { playing: frame !== 0, turning: spinFrame !== 0, t: Number(scrub.value) };
+      stop();
+      stopTurn();
+      lostBtn.textContent = touchScreen() ? LOST_TEXT : LOST_TEXT_MOUSE;
+      lostBtn.hidden = false;
+      stage.dataset.lost = "";
+    });
+    gl.addEventListener("webglcontextrestored", () => {
+      if (h === handle) drawAgain();
+    });
+  };
+  function clearLost(): void {
+    lost = undefined;
+    lostBtn.hidden = true;
+    delete stage.dataset.lost;
+  }
+  function drawAgain(): void {
+    const was = lost;
+    if (!was || !last) return;
+    const { source, level, key, drawn } = last;
+    if (!build(source, level, key, drawn, handle?.view?.state())) return;
+    if (was.playing) playFrom(was.t, turnOff ? undefined : startTurn);
+    else {
+      drawAt(was.t);
+      // After the frame `drawAt` draws once ready, the turntable goes on from it.
+      if (was.turning) void handle?.ready.then(startTurn);
+    }
+  }
+  lostBtn.addEventListener("click", drawAgain);
+
   play.addEventListener("click", () => playFrom(0));
   scrub.addEventListener("input", () => {
     stop();
@@ -544,6 +644,8 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         }
         return;
       }
+      // The context was lost while away: the message stays until it is restored or pressed.
+      if (lost) return;
       if (resetOnShow) {
         // The turntable stopped when the tab was left: back to the end frame, as any later open.
         resetOnShow = false;

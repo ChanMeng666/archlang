@@ -1296,6 +1296,145 @@ test.describe("the 3D stage (card PG1)", () => {
     await expect(page.locator("#preview3d .archlang-views-presets")).toBeHidden();
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
   });
+
+  test("a lost WebGL context says so, and its restore draws the view again (card MP2, ruling MP-D3)", async ({
+    page,
+  }) => {
+    type Lost = Window & { __preview3dGl?: HTMLCanvasElement; __ext?: WEBGL_lose_context | null };
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    await page.evaluate(async () => {
+      await (window as W).__preview3d?.ready;
+    });
+    const lost = page.locator("#preview3d .p3d-lost");
+    await expect(lost).toBeHidden();
+    const end = await current(page);
+    // The extension's own forced loss, on the WebGL canvas the replay draws into.
+    const lose = () =>
+      page.evaluate(() => {
+        const w = window as Lost & Marked;
+        const gl = w.__preview3dGl?.getContext("webgl2") as WebGL2RenderingContext | null;
+        w.__ext = gl?.getExtension("WEBGL_lose_context");
+        if (!w.__ext) throw new Error("no WEBGL_lose_context on the replay's canvas");
+        (w.__preview3d as Handle & { __old?: boolean }).__old = true;
+        w.__ext.loseContext();
+      });
+    // Paint the visible canvas one flat colour: only a new frame takes it off.
+    const paintOver = () =>
+      page.evaluate(() => {
+        const c = document.querySelector("#preview3d canvas") as HTMLCanvasElement;
+        const g = c.getContext("2d") as CanvasRenderingContext2D;
+        g.fillStyle = "#f0f";
+        g.fillRect(0, 0, c.width, c.height);
+      });
+
+    await lose();
+    await expect(lost).toBeVisible();
+    // A mouse here (the touch words are the touch-screen spec's): it says what to do, and is a button.
+    await expect(lost).toHaveText("3D view paused. Click to draw it again.");
+    await expect(lost).toHaveRole("button");
+    await paintOver();
+    const flat = await current(page);
+    expect(flat, "the canvas was painted over").not.toBe(end);
+    await page.evaluate(() => (window as Lost).__ext?.restoreContext());
+    await expect(lost).toBeHidden();
+    await page.waitForFunction(() => (window as Marked).__preview3d?.__old !== true);
+    await page.evaluate(async () => {
+      await (window as W).__preview3d?.ready;
+    });
+    await expect.poll(() => current(page), { message: "the restore drew a new frame" }).not.toBe(flat);
+    expect(await current(page), "the frame it was on: the end frame").toBe(end);
+
+    // Lost again, and the browser does not give it back: a press of the message draws it again.
+    await lose();
+    await expect(lost).toBeVisible();
+    await paintOver();
+    await lost.click();
+    await expect(lost).toBeHidden();
+    await page.waitForFunction(() => (window as Marked).__preview3d?.__old !== true);
+    await page.evaluate(async () => {
+      await (window as W).__preview3d?.ready;
+    });
+    await expect.poll(() => current(page), { message: "the press drew a new frame" }).toBe(end);
+  });
+});
+
+/**
+ * Ruling MP-D2 on the 3D stage: a touch screen has no hover and no wheel or right button. The coach
+ * mark says the finger's words (what three.js's `OrbitControls` does with one and two fingers), the
+ * floating controls rest whole, and the scrubber, still a thin line at the foot, takes a 44 px press.
+ */
+test.describe("the 3D stage on a touch screen (card MP2)", () => {
+  test.use({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, reducedMotion: "reduce" });
+
+  test("touch words, controls whole without hover, a 44 px scrubber with its handle", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    expect(await page.evaluate(() => matchMedia("(hover: none)").matches), "no hover here").toBe(true);
+    const coach = page.locator("#preview3d .p3d-coach");
+    await expect(coach).toBeVisible();
+    await expect(coach).toHaveText("Drag to turn · pinch to zoom · two-finger drag to pan");
+    await expect(coach).not.toContainText(/scroll|right-drag/);
+
+    // Whole at rest: nothing floats dimmed waiting for a hover that never comes.
+    for (const s of [".p3d-top", ".p3d-foot", ".p3d-scrub"]) {
+      const o = await page.locator(`#preview3d ${s}`).evaluate((el) => Number(getComputedStyle(el).opacity));
+      expect(o, `${s} rests at full opacity`).toBe(1);
+    }
+
+    const scrub = page.locator('#preview3d [data-role="scrub"]');
+    const s = await scrub.boundingBox();
+    const c = await page.locator("#preview3d canvas").boundingBox();
+    if (!s || !c) throw new Error("missing a box");
+    expect(s.height, "a touch-sized press").toBeGreaterThanOrEqual(44);
+    expect(Math.abs(s.width - c.width)).toBeLessThanOrEqual(1);
+    expect(s.y + s.height, "inside the canvas").toBeLessThanOrEqual(c.y + c.height + 0.5);
+    // The handle shows without hover: a rule that applies here (no `:hover` in it) draws the thumb at
+    // 12 px, not the 3 px dot of a mouse's rest. (Computed style does not reach a range's thumb.)
+    const thumbs = await page.evaluate(() => {
+      const found: string[] = [];
+      const walk = (rules: CSSRuleList, applies: boolean) => {
+        for (const r of rules) {
+          if (r instanceof CSSMediaRule) walk(r.cssRules, applies && matchMedia(r.conditionText).matches);
+          else if (
+            applies &&
+            r instanceof CSSStyleRule &&
+            /^\.p3d-scrub::-webkit-slider-thumb$/.test(r.selectorText) &&
+            r.style.width
+          )
+            found.push(r.style.width);
+        }
+      };
+      for (const sheet of document.styleSheets) walk(sheet.cssRules, true);
+      return found;
+    });
+    expect(thumbs.at(-1), `the last thumb width that applies without hover: ${thumbs}`).toBe("12px");
+    // The line it draws stays thin and at the foot: the 44 px is padding over it.
+    const pad = await scrub.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return [cs.boxSizing, Number.parseFloat(cs.paddingTop)];
+    });
+    expect(pad).toEqual(["border-box", 32]);
+    // A tap on the scrubber still seeks.
+    await scrub.tap({ position: { x: Math.round(s.width * 0.25), y: Math.round(s.height - 6) } });
+    await expect.poll(async () => Number(await scrub.inputValue())).toBeLessThan(0.5);
+  });
+});
+
+/** The mouse's words where there is a mouse (and the touch words never reach it). */
+test.describe("the 3D stage with a mouse (card MP2)", () => {
+  test.use({ viewport: { width: 1280, height: 800 }, reducedMotion: "reduce" });
+
+  test("the coach mark says scroll and right-drag", async ({ page }) => {
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    expect(await page.evaluate(() => matchMedia("(pointer: fine)").matches), "a mouse here").toBe(true);
+    await expect(page.locator("#preview3d .p3d-coach")).toHaveText("Drag to turn · scroll to zoom · right-drag to pan");
+    const s = await page.locator('#preview3d [data-role="scrub"]').boundingBox();
+    expect(s?.height ?? 0, "the mouse's thin scrubber").toBeLessThanOrEqual(16);
+  });
 });
 
 type Marked = Window & { __preview3d?: Handle & { __old?: boolean } };
