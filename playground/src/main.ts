@@ -1074,8 +1074,9 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
 
 /**
  * The idle import (ruling MP-D4): once the page has loaded and the browser has time to spare, fetch
- * and run the compiler's and the example sources' modules, so the first use finds them in, and
- * nothing more: no compile, no describe, no render, the built-in drawing stays the element it is.
+ * and run the compiler's and the example sources' modules, so the first use finds them in, and add
+ * the gallery's samples group (data from the examples chunk), and nothing more: no compile, no
+ * describe, no render, the built-in drawing stays the element it is.
  * The first use compiles (`up`). Never under Save-Data or on a 2g connection, where a visit pays
  * only for what it uses. No deadline is passed to `requestIdleCallback`, so the browser is never
  * forced into it; one without it (Safari) waits `IDLE_FALLBACK_MS` after `load`. A failed import
@@ -1091,7 +1092,11 @@ function importWhenIdle() {
   if (connection?.saveData === true || /^(?:slow-)?2g$/.test(connection?.effectiveType ?? "")) return;
   const warm = () =>
     void Promise.all([loadCore(), loadExamples()]).then(
-      () => delete root.dataset.booting,
+      ([, examples]) => {
+        // The gallery's samples group is data, not a compile: it joins the gallery now, as at boot.
+        fillGallery(examples);
+        delete root.dataset.booting;
+      },
       (err: unknown) => console.warn("The compiler did not load in the background (a use retries):", err),
     );
   const go = () => {
