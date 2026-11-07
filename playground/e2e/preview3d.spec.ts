@@ -1467,9 +1467,12 @@ test.describe("3D draws only when someone can see it (card MP3)", () => {
     expect(await framesIn(page, 1000), "no frames with the gallery open").toBe(0);
     await page.keyboard.press("Escape");
     await expect(page.locator("#gallery")).not.toHaveAttribute("open", "");
-    // Headless Chromium stops producing frames for every rAF loop on the page (its own included)
-    // for a while after the gallery shuts, until the next input; measured on main before this card
-    // too. A pointer moving over the stage (not a press: the turntable stays) is that input.
+    // Under the software WebGL these specs run on (SwiftShader), Chromium stops producing frames for
+    // every rAF loop on the page (a bare probe loop too) for a while after the gallery shuts, until
+    // the next input: headless and headed alike, and on main before this card too. With a real GPU
+    // (headed) the frames go on at once with no input (measured for card MP3), so this is the
+    // renderer, not the pause. A pointer moving over the stage (not a press: the turntable stays) is
+    // that input.
     const box = await page.locator("#preview3d canvas").boundingBox();
     if (!box) throw new Error("no canvas");
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
@@ -1483,6 +1486,18 @@ test.describe("3D draws only when someone can see it (card MP3)", () => {
     await page.keyboard.press("Escape");
     await expect(page.locator("#makeOwnDialog")).toBeHidden();
     expect(await framesIn(page, 1000), "frames again once the dialog is shut").toBeGreaterThan(0);
+
+    // Share → Embed: a full-screen sheet over the page (not a <dialog>): not one frame under it.
+    await page.locator("#share > summary").click();
+    await expect(page.locator("#embed")).toBeEnabled();
+    await page.locator("#embed").click();
+    await expect(page.locator(".embed-dialog")).toBeVisible();
+    await expect(page.locator("#share")).not.toHaveAttribute("open", "");
+    await page.waitForTimeout(200);
+    expect(await framesIn(page, 1000), "no frames under the Embed sheet").toBe(0);
+    await page.locator(".embed-dialog .embed-close").click();
+    await expect(page.locator(".embed-dialog")).toHaveCount(0);
+    expect(await framesIn(page, 1000), "frames again once the Embed sheet is shut").toBeGreaterThan(0);
 
     // Off screen: the canvas pushed 80 % out of its stage (which clips it), under half visible.
     await page.addStyleTag({ content: "#preview3d canvas { translate: 0 80%; }" });
@@ -1508,6 +1523,24 @@ test.describe("3D draws only when someone can see it (card MP3)", () => {
       .evaluate((c: HTMLCanvasElement) => [c.width, c.clientWidth]);
     expect(buffer, `buffer ${buffer} for ${css} CSS px`).toBe(Math.round(css! * 2));
     await context.close();
+  });
+});
+
+test.describe("a touch tablet's drawing buffer, wider than 900 px (card MP3)", () => {
+  test.use({ viewport: { width: 1280, height: 800 }, hasTouch: true, deviceScaleFactor: 2, reducedMotion: "reduce" });
+
+  test("is at most 1.5 × its CSS size on a 2× tablet", async ({ page }) => {
+    expect(await page.evaluate(() => matchMedia("(pointer: coarse)").matches), "a touch screen").toBe(true);
+    await page.goto(`/${await shareHash(SIMPLE_PLAN)}&3d`);
+    await waitFor3d(page);
+    await page.waitForFunction(() => (window as W).__preview3d !== undefined);
+    const [buffer, css, h, cssH] = await page
+      .locator("#preview3d canvas")
+      .evaluate((c: HTMLCanvasElement) => [c.width, c.clientWidth, c.height, c.clientHeight]);
+    expect(css!, "the desktop stage, wider than a phone's").toBeGreaterThan(900);
+    expect(buffer, `buffer ${buffer} for ${css} CSS px`).toBeLessThanOrEqual(1.5 * css! + 1);
+    expect(h).toBeLessThanOrEqual(1.5 * cssH! + 1);
+    expect(buffer, "still sharper than 1×").toBeGreaterThan(css!);
   });
 });
 

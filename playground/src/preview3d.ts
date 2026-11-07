@@ -476,10 +476,11 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     }).observe(canvas);
   }
 
-  // Who can see the stage (ruling MP-D3). Covered: the Make your own dialog, or a header menu (the
-  // gallery, Share, ⋯) open over it. Off screen: under half the canvas in the window (a hidden
+  // Who can see the stage (ruling MP-D3). Covered: the Make your own dialog, the Embed sheet (a
+  // full-screen `div.embed-dialog` that actions.ts adds to <body> and removes), or a header menu
+  // (the gallery, Share, ⋯) open over it. Off screen: under half the canvas in the window (a hidden
   // tab's canvas is not in it at all). Hidden: the page is.
-  const COVERS = "dialog[open], header details[open]";
+  const COVERS = "dialog[open], body > .embed-dialog, header details[open]";
   const covered = (): void => see("covered", document.querySelector(COVERS) !== null);
   if (typeof MutationObserver === "function") {
     new MutationObserver(covered).observe(document.body, {
@@ -487,6 +488,8 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       attributes: true,
       attributeFilter: ["open"],
     });
+    // The Embed sheet comes and goes as a child of <body> (no subtree: the editor's edits are not watched).
+    new MutationObserver(covered).observe(document.body, { childList: true });
   }
   covered();
   if (typeof IntersectionObserver === "function") {
@@ -565,6 +568,8 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         seconds: SECONDS,
       });
       stop();
+      // A parked turntable step of the replaced mount would leave `turning()` true: drop it too.
+      stopTurn();
       handle?.dispose();
       // Grabbing the view pauses the playback.
       [next, gl] = withGlCanvas(() => mountReplay(canvas, payload, undefined, { interactive: true, onTake: stop }));
