@@ -1212,6 +1212,9 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
       downloadBtns: [...document.querySelectorAll<HTMLElement>("#share [data-download]")],
     },
   });
+  // Up from here: a setting changed while the first render is in the worker (`redraw`) renders
+  // again with it, instead of waiting on a render made before it changed.
+  isUp = true;
   if (built && !editing) {
     // The plan on screen is the built-in one, drawn as this render draws it (gen-static's
     // `LIVE_RENDER`): no re-fit, so a drawing the visitor has panned or zoomed stays where it is.
@@ -1226,7 +1229,6 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
   // come on with it.
   for (const btn of document.querySelectorAll<HTMLButtonElement>(":is(#share, #more) button[disabled]"))
     btn.disabled = false;
-  isUp = true;
   // The e2e specs' "the app is up" signal (fixtures.ts `waitForPlan`).
   delete root.dataset.booting;
   delete root.dataset.bootFailed;
