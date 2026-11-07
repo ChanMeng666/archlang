@@ -20,6 +20,14 @@
 /assets/*
   Cache-Control: public, max-age=31536000, immutable
 
+# The plan gallery's thumbnails (card MP4, ruling MP-D5) keep their names across deploys, so
+# they cannot be immutable; they change only when an example's walls or openings do. A day
+# fresh, then a week served stale while the browser revalidates, so reopening the gallery on
+# a phone fetches none of them. `_headers` binds to the request path: this is the path
+# gen-static.mjs writes and the gallery's <img src> names.
+/examples/thumbs/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+
 # The embed viewer is a chrome-less <iframe> target, not a page anyone should reach
 # from a search result — the canonical experience is the playground itself, and the
 # plan an embed shows lives in a `#z=` fragment a crawler never receives anyway.

@@ -445,7 +445,14 @@ async function playgroundChecks() {
     // A gallery thumbnail: the one asset these pages reference from a second path, so a
     // generator that stopped writing them leaves an index of broken tiles behind a
     // perfectly healthy 200.
-    route("/examples/thumbs/one-room.svg", contentType("image/svg+xml"), isSvg()),
+    // Cached a day, then served stale for a week while it revalidates (public/_headers, MP-D5).
+    route(
+      "/examples/thumbs/one-room.svg",
+      contentType("image/svg+xml"),
+      isSvg(),
+      header("cache-control", "max-age=86400"),
+      header("cache-control", "stale-while-revalidate=604800"),
+    ),
     route("/sitemap.xml", contains("<urlset"), contains("/examples/one-room.html")),
     // Written by gen-static.mjs: a pointer at the docs site's llms.txt / llms-full.txt.
     route("/llms.txt", nonEmpty(), contains("https://archlang.uk/llms-full.txt")),
