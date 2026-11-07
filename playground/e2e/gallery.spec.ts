@@ -447,6 +447,44 @@ test.describe("plan gallery", () => {
     await setEditorSource(page, laneway);
     await expectPlanNamed(page, "Laneway House");
   });
+
+  test("a plan switch compiles once, and an edit after it still compiles and redraws", async ({ page }) => {
+    // Card MP9: the switch renders the new plan, and the editor's debounced render of the same
+    // document 250 ms later asks for the drawing already on screen, which compiles nothing.
+    // Every compile is one request posted to the compiler worker: count them.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __compiles: number };
+      w.__compiles = 0;
+      const post = Worker.prototype.postMessage;
+      Worker.prototype.postMessage = function (this: Worker, ...args: Parameters<Worker["postMessage"]>) {
+        const msg = args[0] as { source?: unknown } | null;
+        if (msg && typeof msg === "object" && typeof msg.source === "string") w.__compiles++;
+        return post.apply(this, args);
+      } as Worker["postMessage"];
+    });
+    const compiles = () => page.evaluate(() => (window as unknown as { __compiles: number }).__compiles);
+    const autosave = () => page.evaluate(() => localStorage.getItem("archlang.pg.source"));
+    const viewBoxWidth = () =>
+      page.locator(".pz-stage svg").evaluate((svg) => Number(svg.getAttribute("viewBox")?.split(/\s+/)[2]));
+    await gotoEdit(page);
+    await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
+    const row = ROWS.find((r) => r.name === "knob-flat")!;
+    const flat = readFileSync(new URL("../../examples/knob-flat.arch", import.meta.url), "utf8").replace(
+      /\r\n?/g,
+      "\n",
+    );
+    await page.evaluate(() => {
+      (window as unknown as { __compiles: number }).__compiles = 0;
+    });
+    await pickPlan(page, row.label);
+    // The autosave is written once the debounced render has settled: both renders are over.
+    await expect.poll(autosave, { timeout: 10_000 }).toBe(flat);
+    expect(await compiles(), "a gallery switch makes exactly one compile request").toBe(1);
+    const width = await viewBoxWidth();
+    await setEditorSource(page, flat.replace("let LIVING = 4500", "let LIVING = 6000"));
+    expect(await compiles(), "the edit after it compiles").toBe(2);
+    await expect.poll(viewBoxWidth).toBeGreaterThan(width);
+  });
 });
 
 test.describe("plan gallery in the served bytes", () => {

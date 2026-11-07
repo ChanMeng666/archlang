@@ -130,6 +130,69 @@ test.describe("knobs", () => {
     await expect(page.locator(".cm-content")).toContainText("let LIVING = 5000");
   });
 
+  test("dragging a knob on Hillside Villa at 4× CPU holds the page for no task over 100 ms, and the last value's drawing wins", async ({
+    page,
+    browser,
+  }) => {
+    // Card MP8: a moving knob's compile runs in the worker, as an edit's does (card MP6).
+    test.setTimeout(180_000);
+    // Hillside Villa names no number of its own: one `let` for its front door's width makes a knob
+    // whose every move compiles the whole two-storey sheet.
+    const villa = example("hillside-villa");
+    const door = "door id=d_front         at (6000,0) width 1200";
+    expect(villa).toContain(door);
+    const src = villa
+      .replace("  legend\n", "  legend\n  let FRONT = 1200 # front door width\n")
+      .replace(door, door.replace("width 1200", "width FRONT"));
+    await page.goto(`/${await shareHash(src)}`);
+    await waitForPlan(page);
+    await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
+    const slider = knob(page, "FRONT");
+    await expect(slider).toBeVisible();
+    const box = (await slider.boundingBox())!;
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+    await page.evaluate(() => {
+      const w = window as unknown as { __longTasks: number[] };
+      w.__longTasks = [];
+      new PerformanceObserver((list) => {
+        for (const e of list.getEntries()) w.__longTasks.push(e.duration);
+      }).observe({ type: "longtask" });
+    });
+    // Press at the middle and drag right in steps slower than the panel's 120 ms debounce, so the
+    // moving slider asks for a compile at most steps, then let go.
+    const y = box.y + box.height / 2;
+    await page.mouse.move(box.x + box.width / 2, y);
+    await page.mouse.down();
+    for (let i = 1; i <= 8; i++) {
+      await page.mouse.move(box.x + box.width / 2 + (i * box.width) / 20, y);
+      await page.waitForTimeout(200);
+    }
+    await page.mouse.up();
+    const last = Number(await slider.inputValue());
+    expect(last, "the drag moved the knob").toBeGreaterThan(1200);
+    const want = src.replace("let FRONT = 1200", `let FRONT = ${last}`);
+    // Let go, the plan the knob left is kept: the hash holds the last value's source.
+    await expect.poll(() => hashSource(page), { timeout: 60_000 }).toBe(want);
+    await expect(page.locator("html[data-rendering]")).toHaveCount(0, { timeout: 30_000 });
+    await expect(slider).toHaveValue(String(last));
+    const longTasks = await page.evaluate(() => (window as unknown as { __longTasks: number[] }).__longTasks);
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+    // The drawing on screen is the one the last value's source makes, as a fresh visit draws it.
+    const drawn = await page.locator(".pz-stage svg").innerHTML();
+    const fresh = await browser.newPage();
+    await fresh.goto(`/${await shareHash(want)}`);
+    await waitForPlan(fresh);
+    expect(drawn === (await fresh.locator(".pz-stage svg").innerHTML()), "the last value's drawing is on screen").toBe(
+      true,
+    );
+    await fresh.close();
+    expect(
+      Math.max(0, ...longTasks),
+      `main-thread long tasks while dragging: ${longTasks.map(Math.round).join(", ")} ms`,
+    ).toBeLessThanOrEqual(100);
+  });
+
   test("a phone gets the knobs as a sheet across the bottom of the drawing", async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/${await shareHash(example("knob-flat"))}`);
