@@ -5,10 +5,11 @@
  *
  * - the compiler (`archlang`, the `compiler` chunk) and the example sources: on a visit that opens
  *   on the plan built into the page, on first use (a plan picked, the gallery, Share or ⋯ opened,
- *   3D, Source, Checks, Paths, Make your own) or when the browser is idle, never on idle under
- *   Save-Data or 2g (card MP5, ruling MP-D4): that page already holds the drawing, its facts line
- *   and its rooms' facts. A visit that opens another plan (a `#z=`/`#src=` link, a draft, a saved
- *   theme), `&edit` or `&3d` loads them at once, as before;
+ *   3D, Source, Checks, Paths, Make your own), which compiles; or, imported only (nothing compiled
+ *   or drawn), when the browser is idle, never under Save-Data or 2g (card MP5, ruling MP-D4): that
+ *   page already holds the drawing, its facts line, its status and its rooms' facts. A visit that
+ *   opens another plan (a `#z=`/`#src=` link, a draft of another plan, a saved theme), `&edit` or
+ *   `&3d` compiles at once, as before;
  * - the header actions (actions.ts): once the compiler is in;
  * - the editor and its panels (edit-mode.ts: CodeMirror, completion, diagnostics, Describe,
  *   Lint, Intent): on the first entry into edit mode;
@@ -59,15 +60,23 @@ type Core = typeof import("./compiler.js");
 /** The example sources, and the playground-only samples (samples.ts) the gallery offers after them. */
 type Examples = typeof import("./examples.js") & { samples: typeof import("./samples.js") };
 
-// Requested on first need (`up`), never by this module's top level: the drawing is already on screen.
+// Requested on first need (`up`) or by the idle import, never by this module's top level: the
+// drawing is already on screen. A failed load is forgotten, so the next use asks again.
 let coreP: Promise<Core> | undefined;
 let examplesP: Promise<Examples> | undefined;
-const loadCore = (): Promise<Core> => (coreP ??= import("./compiler.js"));
+const loadCore = (): Promise<Core> =>
+  (coreP ??= import("./compiler.js").catch((err: unknown) => {
+    coreP = undefined;
+    throw err;
+  }));
 const loadExamples = (): Promise<Examples> =>
-  (examplesP ??= Promise.all([import("./examples.js"), import("./samples.js")]).then(([examples, samples]) => ({
-    ...examples,
-    samples,
-  })));
+  (examplesP ??= Promise.all([import("./examples.js"), import("./samples.js")]).then(
+    ([examples, samples]) => ({ ...examples, samples }),
+    (err: unknown) => {
+      examplesP = undefined;
+      throw err;
+    },
+  ));
 /** The compiler, once loaded. Nothing compiles before it. */
 let core: Core | undefined;
 
@@ -465,6 +474,39 @@ const previewCtl = createPreview({
   jumpToOffset,
   onPathsChange: () => redraw(),
 });
+/** What `#planData` holds (scripts/gen-static.mjs, card MP5), beside the built-in drawing. */
+interface BuiltInPlan {
+  source: string;
+  summary: SceneSummary;
+  /** The warnings its compile reports: the status the live render would rest on. */
+  warnings: number;
+}
+/**
+ * The plan built into the page: its source, describe() and warning count. Null on the dev server,
+ * where gen-static has not run (the element then holds its slot, no plan).
+ */
+const planData: BuiltInPlan | null = (() => {
+  try {
+    const data = JSON.parse(document.getElementById("planData")?.textContent ?? "") as Partial<BuiltInPlan>;
+    return typeof data.source === "string" && data.summary && typeof data.warnings === "number"
+      ? (data as BuiltInPlan)
+      : null;
+  } catch {
+    return null;
+  }
+})();
+// A returning visitor whose autosaved draft is the built-in plan word for word, with no `#z=`/
+// `#src=` plan and no saved theme, opens on exactly the built-in drawing: the head script could not
+// tell (it runs before the plan's data is parsed), so its `pg-other` is taken back here. The a11y
+// switch and Paths are never restored (`autocomplete="off"`, no storage key), nor is a storey.
+if (
+  root.classList.contains("pg-other") &&
+  planData &&
+  !/[#&](?:z|src)=/.test(location.hash) &&
+  !readStr(KEYS.theme) &&
+  readStr(KEYS.source) === planData.source
+)
+  root.classList.remove("pg-other");
 // The drawing built into the page pans and zooms at once, before the compiler is in — unless
 // this visit opens another plan (the head script's `pg-other`), which hides it until compiled.
 const adoptedBuiltIn = !root.classList.contains("pg-other") && previewCtl.adopt();
@@ -560,6 +602,9 @@ function shownLevel(): number | null {
   return selectedLevel === null && preview3dEl.classList.contains("active") ? null : activeLevel;
 }
 
+/** The resting status of a plan that compiles: its warnings counted, else "ready". */
+const okStatus = (warnings: number): string => (warnings ? `${warnings} warning${warnings > 1 ? "s" : ""}` : "ready");
+
 /** Compile and show `source`; whether it compiled without errors (else the last good drawing stays). */
 function render(source: string, refit = false, knobMoving = false): boolean {
   if (!core) return false; // nothing compiles before the compiler is in; boot renders once it is
@@ -620,8 +665,7 @@ function render(source: string, refit = false, knobMoving = false): boolean {
     return false; // keep last good preview
   }
   // A plan that compiles is fine: the notice goes, and the live region keeps the verdict.
-  const warns = (diagnostics ?? []).filter((d) => d.severity === "warning");
-  setStatus("ok", warns.length ? `${warns.length} warning${warns.length > 1 ? "s" : ""}` : "ready");
+  setStatus("ok", okStatus((diagnostics ?? []).filter((d) => d.severity === "warning").length));
   // The export SVG (lastSvg) is always overlay-free; the "Paths" toggle re-compiles
   // with the circulation overlay for the on-screen preview only, so downloads/copies
   // never carry it (matching how annotate is stripped for export).
@@ -858,23 +902,8 @@ accessibleToggle?.addEventListener("change", () => redraw());
 interface Choice {
   sharedSrc: string | null;
   savedSrc: string | null;
-  /** The plan built into the page (`#planData`), when this visit opens on it; else null. */
-  built: { source: string; summary: SceneSummary } | null;
-}
-
-/**
- * The plan built into the page (scripts/gen-static.mjs, card MP5): its source and describe(), in
- * `#planData` beside its drawing and facts line. Null on a visit that opens another plan (the head
- * script's `pg-other`, so nothing was adopted), and on the dev server, where gen-static has not run.
- */
-function builtInPlan(): Choice["built"] {
-  if (!adoptedBuiltIn) return null; // `pg-other`, or no drawing built in
-  try {
-    const data = JSON.parse(document.getElementById("planData")?.textContent ?? "") as Choice["built"];
-    return typeof data?.source === "string" && data.summary ? data : null;
-  } catch {
-    return null;
-  }
+  /** The plan built into the page (`#planData`), when this visit opens on it as drawn; else null. */
+  built: BuiltInPlan | null;
 }
 
 /** First-load source precedence: shared URL hash → autosaved draft → the default example. */
@@ -887,14 +916,26 @@ async function choose(): Promise<Choice> {
   if (savedTheme !== null && [...themeSelect.options].some((o) => o.value === savedTheme)) {
     themeSelect.value = savedTheme;
   }
-  const built = !sharedSrc && savedSrc === null ? builtInPlan() : null;
+  // The built-in drawing is this visit's when it was adopted (no `pg-other`), no link or other
+  // draft opens instead, and nothing the browser restored (a form control) draws it differently.
+  const built =
+    adoptedBuiltIn &&
+    planData &&
+    !sharedSrc &&
+    (savedSrc === null || savedSrc === planData.source) &&
+    themeSelect.value === "" &&
+    accessibleToggle?.checked !== true
+      ? planData
+      : null;
   if (built) {
     // Everything the live page would show for it is in the page: the drawing (adopted above), the
-    // facts line, and the rooms' facts the hover tip and the room card read. No compile needed.
+    // facts line, the status, and the rooms' facts the hover tip and the room card read. No
+    // compile needed until a use asks for one.
     doc = built.source;
     lastSummary = built.summary;
     lastRooms = built.summary.rooms ?? [];
     lastOk = true;
+    setStatus("ok", okStatus(built.warnings));
     docChosen();
   }
   return { sharedSrc, savedSrc, built };
@@ -911,24 +952,28 @@ const chosen = choose();
 
 /**
  * Bring the app up, once: load the compiler and the example sources, mount the header actions and
- * render the plan. Every use that needs the compiler calls it; `user` is false only for the idle
- * load. A boot that fails (the compiler's or the examples' chunk did not load) says so instead of
- * "Compiling…" for ever: the busy timer is stopped and the status is an error. The promise still
- * settles, so nothing waiting on it is left with an unhandled rejection; without `core`, `render`
- * does nothing.
+ * render the plan. Every use that needs the compiler calls it, and nothing else does (the idle
+ * import compiles nothing). A boot that fails (the compiler's or the examples' chunk did not load)
+ * says so instead of "Compiling…" for ever: the busy timer is stopped and the status is an error.
+ * The promise still settles, so nothing waiting on it is left with an unhandled rejection; without
+ * `core`, `render` does nothing. The failure is not kept: the next use tries again.
  */
-function up(user = true): Promise<void> {
-  if (user && !isUp && busyTimer === undefined && !("bootFailed" in root.dataset))
-    busyTimer = setTimeout(() => setStatus("busy", "Compiling…"), BUSY_AFTER_MS);
-  readyP ??= chosen.then(start).catch((err: unknown) => {
+function up(): Promise<void> {
+  if (isUp) return readyP ?? Promise.resolve();
+  if (readyP === undefined) {
     clearTimeout(busyTimer);
-    setStatus("err", "Couldn't load the compiler — reload to retry");
-    // The boot is over, failed: nothing waiting for `data-booting` to go is left waiting for ever,
-    // and `data-boot-failed` says how it ended (card PG5b ⑥).
-    delete root.dataset.booting;
-    root.dataset.bootFailed = "";
-    console.warn("The playground did not boot:", err);
-  });
+    busyTimer = setTimeout(() => setStatus("busy", "Compiling…"), BUSY_AFTER_MS);
+    readyP = chosen.then(start).catch((err: unknown) => {
+      readyP = undefined; // the next use retries
+      clearTimeout(busyTimer);
+      setStatus("err", "Couldn't load the compiler — reload to retry");
+      // This boot is over, failed: nothing waiting for `data-booting` to go is left waiting for
+      // ever, and `data-boot-failed` says how it ended (card PG5b ⑥) until a retry succeeds.
+      delete root.dataset.booting;
+      root.dataset.bootFailed = "";
+      console.warn("The playground did not boot:", err);
+    });
+  }
   return readyP;
 }
 
@@ -1024,23 +1069,34 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
   }
   // The e2e specs' "the app is up" signal (fixtures.ts `waitForPlan`).
   delete root.dataset.booting;
+  delete root.dataset.bootFailed;
 }
 
 /**
- * The idle load (ruling MP-D4): once the page has loaded and the browser has nothing else to do,
- * bring the app up in the background, so the first use finds it ready. Never under Save-Data or on
- * a 2g connection, where a visit pays only for what it uses. A browser with no
- * `requestIdleCallback` (Safari) waits a moment after `load` instead.
+ * The idle import (ruling MP-D4): once the page has loaded and the browser has time to spare, fetch
+ * and run the compiler's and the example sources' modules, so the first use finds them in, and
+ * nothing more: no compile, no describe, no render, the built-in drawing stays the element it is.
+ * The first use compiles (`up`). Never under Save-Data or on a 2g connection, where a visit pays
+ * only for what it uses. No deadline is passed to `requestIdleCallback`, so the browser is never
+ * forced into it; one without it (Safari) waits `IDLE_FALLBACK_MS` after `load`. A failed import
+ * says nothing (the drawing is all there): the loaders forget it, and a use tries again.
+ *
+ * Once the modules are in, the page is up as far as the e2e specs' `waitForPlan` can see
+ * (`data-booting` goes): every control works, the uses that need a compile making one.
  */
-const IDLE_TIMEOUT_MS = 4000;
-const IDLE_FALLBACK_MS = 1500;
-function loadWhenIdle() {
+const IDLE_FALLBACK_MS = 3000;
+function importWhenIdle() {
   const connection = (navigator as Navigator & { connection?: { saveData?: boolean; effectiveType?: string } })
     .connection;
   if (connection?.saveData === true || /^(?:slow-)?2g$/.test(connection?.effectiveType ?? "")) return;
+  const warm = () =>
+    void Promise.all([loadCore(), loadExamples()]).then(
+      () => delete root.dataset.booting,
+      (err: unknown) => console.warn("The compiler did not load in the background (a use retries):", err),
+    );
   const go = () => {
-    if ("requestIdleCallback" in window) requestIdleCallback(() => void up(false), { timeout: IDLE_TIMEOUT_MS });
-    else setTimeout(() => void up(false), IDLE_FALLBACK_MS);
+    if ("requestIdleCallback" in window) requestIdleCallback(warm);
+    else setTimeout(warm, IDLE_FALLBACK_MS);
   };
   if (document.readyState === "complete") go();
   else window.addEventListener("load", go, { once: true });
@@ -1052,10 +1108,10 @@ for (const id of ["gallery", "share", "more"])
     if ((e.currentTarget as HTMLDetailsElement).open) void up();
   });
 
-// A visit on the built-in plan waits for a use, or the idle load; any other visit, `&edit` (the
-// editor opens at once) and `&3d` (below) compile at once, as before.
+// A visit on the built-in plan compiles on its first use (the idle import only warms the modules);
+// any other visit, `&edit` (the editor opens at once) and `&3d` (below) compile at once, as before.
 void chosen.then(({ built }) => {
-  if (built && !editing && !has3dFlag(location.hash)) loadWhenIdle();
+  if (built && !editing && !has3dFlag(location.hash)) importWhenIdle();
   else void up();
 });
 // `&3d` (or `#3d` alone) opens on the 3D preview (card X5): its chunk starts loading now, beside

@@ -18,8 +18,8 @@ const isCompiler = (id) => id === CORE_DOOR || (id.startsWith(CORE_DIST) && CORE
 
 /*
  * The compiler is its own chunk (`compiler-*.js`, the codeSplitting group below), which main.ts
- * reaches through a dynamic `import("./compiler.js")` on first use, or when the browser is idle
- * (card MP5, ruling MP-D4): a visit on the built-in plan has the drawing, its facts line and its
+ * reaches through a dynamic `import("./compiler.js")` on first use, or (imported only, nothing
+ * compiled) when the browser is idle (card MP5, ruling MP-D4): a visit on the built-in plan has the drawing, its facts line and its
  * rooms' facts in the HTML, so it needs no compiler to show them. index.html therefore names no
  * `<link rel="modulepreload">` for it (it had one until MP5, which every visit paid for, ~430 KB
  * brotli, whether it used the compiler or not). embed.html imports the core statically, so Vite

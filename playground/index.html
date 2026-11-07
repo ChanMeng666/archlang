@@ -213,7 +213,10 @@
             <!-- The COMPILER's render themes — these style the produced SVG plan, not the
                  app chrome. "Dark" is a language feature (src/theme.ts), not a dark mode
                  for this page: the app itself is light-only (ADR 0014). Leave it be. -->
-            <select id="theme" aria-label="Render theme">
+            <!-- `autocomplete="off"` on both: a browser restoring a form control on reload could
+                 otherwise draw the plan differently from the drawing built into the page, which
+                 main.ts would then take for this visit's (card MP5). The theme comes from storage. -->
+            <select id="theme" aria-label="Render theme" autocomplete="off">
               <option value="">Default</option>
               <option value="blueprint">Blueprint</option>
               <option value="dark">Dark</option>
@@ -222,7 +225,7 @@
               <option value="rendered">Rendered</option>
             </select>
             <label class="tb-check" title="Emit SVG <title>/<desc>/role accessibility metadata (accTitle/accDescr, else the describe() caption)">
-              <input type="checkbox" id="accessible" />
+              <input type="checkbox" id="accessible" autocomplete="off" />
               a11y
             </label>
           </div>

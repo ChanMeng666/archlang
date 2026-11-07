@@ -1011,8 +1011,8 @@ const LIVE_RENDER = { annotate: true, accessible: false };
  * same built core as the pages above, with the options the app's own render uses (`LIVE_RENDER`),
  * so the bytes are a function of the source alone and equal what the app would draw. A visit on
  * this plan therefore does not compile at boot (card MP5, ruling MP-D4): the drawing, the facts
- * line and, in `#planData`, the source and its describe() are all here, and the compiler loads on
- * first use or when the browser is idle. A `#z=` link or a saved draft opens another plan, which
+ * line and, in `#planData`, the source, its describe() and its warning count are all here; the
+ * compiler compiles on first use (the browser's idle time only imports it). A `#z=` link or a saved draft opens another plan, which
  * index.html's head script hides this one (and its facts line) for, and the app compiles at once.
  *
  * The drawing gets what `showSvgInStage` (src/viewer.ts) would give it — a pixel size from its
@@ -1122,7 +1122,9 @@ function prerenderIndex(rows, thumbs) {
   // text in it can close the <script> element.
   const facts = `<span class="facts-line" data-prerendered>${escapeHtml(factsLine(source, d, null))}</span>`;
   // (The JSON's element is index.html's own: this script writes no element of that kind.)
-  const data = escapeJsonLd({ source, summary: d });
+  // `warnings`: the count main.ts's status rests on ("ready", or "N warnings"), from this compile.
+  const warnings = (result.diagnostics ?? []).filter((x) => x.severity === "warning").length;
+  const data = escapeJsonLd({ source, summary: d, warnings });
 
   // Function replacements: neither the SVG nor a label may splice `$&` back in (v1.36).
   writeFileSync(

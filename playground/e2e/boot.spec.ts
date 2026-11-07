@@ -267,14 +267,55 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
     });
   }
 
-  test("with no Save-Data the compiler loads when the browser is idle, with no use", async ({ page }) => {
+  test("with no Save-Data the compiler is imported when the browser is idle, and nothing is redrawn", async ({
+    page,
+  }) => {
+    // Tag the built-in drawing as soon as the document is parsed (the module, which adopts it in
+    // place, has run by then; the idle import waits for `load`).
+    await page.addInitScript(() => {
+      document.addEventListener("DOMContentLoaded", () => {
+        const el = document.querySelector(".pz-stage svg") as (Element & { __built?: boolean }) | null;
+        if (el) el.__built = true;
+      });
+    });
     const seen = watchCompiler(page);
     await page.goto("/");
     await waitForPlan(page);
     expect(
       seen.some((u) => COMPILER_CHUNK.test(u)),
-      "the idle load fetched the compiler",
+      "the idle import fetched the compiler",
     ).toBe(true);
+    // Imported, not compiled: the drawing on screen is still the element built into the page.
+    await page.waitForTimeout(500);
+    expect(
+      await page.locator(".pz-stage svg").evaluate((el) => (el as Element & { __built?: boolean }).__built === true),
+      "the built-in drawing was not replaced",
+    ).toBe(true);
+    await expect(page.locator(".pz-stage svg")).toHaveCount(1);
+    await expect(page.locator("#facts")).toHaveText(FACTS_LINE);
+    await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
+  });
+
+  test("a returning visitor whose draft is the built-in plan opens on it, with no compile", async ({ page }) => {
+    await emulateConnection(page, SAVE_DATA);
+    await page.goto("/");
+    const html = await (await page.request.get("/")).text();
+    const data = /<script type="application\/json" id="planData">([^<]*)<\/script>/.exec(html);
+    const { source } = JSON.parse(data?.[1] ?? "{}") as { source: string };
+    await page.evaluate((s) => localStorage.setItem("archlang.pg.source", s), source);
+    const seen = watchCompiler(page);
+    await page.reload();
+    await expect(page.locator("#viewPlan")).toBeVisible();
+    await expect(page.locator("html")).not.toHaveClass(/pg-other/);
+    await expect(page.locator(".pz-stage svg")).toBeVisible();
+    await expect(page.locator("#facts")).toHaveText(FACTS_LINE);
+    await page.waitForTimeout(1000);
+    expect(seen, "no compile at boot").toEqual([]);
+    // A draft that differs from it is another plan, as before.
+    await page.evaluate((s) => localStorage.setItem("archlang.pg.source", `${s}\n`), source);
+    await page.reload();
+    await expect(page.locator("html")).toHaveClass(/pg-other/);
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
   });
 
   const uses: [string, (page: Page) => Promise<void>, (page: Page) => Promise<void>][] = [
@@ -331,12 +372,20 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
     expect(served).toMatch(FACTS_LINE);
     const data = /<script type="application\/json" id="planData">([^<]*)<\/script>/.exec(html);
     expect(data, "the served page holds the plan's data").not.toBeNull();
-    const { source, summary } = JSON.parse(data?.[1] ?? "{}") as { source: string; summary: { rooms: unknown[] } };
+    const { source, summary, warnings } = JSON.parse(data?.[1] ?? "{}") as {
+      source: string;
+      summary: { rooms: unknown[] };
+      warnings: number;
+    };
     expect(source).toContain('plan "Laneway House"');
     expect(summary.rooms.length).toBeGreaterThan(0);
-    // The app says the same once it has compiled the plan itself.
+    expect(Number.isInteger(warnings)).toBe(true);
+    // The app says the same once it has compiled the plan itself (on a use: Share opened).
+    await emulateConnection(page, SAVE_DATA);
     await page.goto("/");
-    await waitForPlan(page);
+    await page.locator("#share > summary").click();
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.locator("#copyLink")).toBeEnabled();
     await expect(page.locator("#facts")).toHaveText(served);
   });
 
@@ -349,6 +398,8 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
       svg.evaluate((el) => {
         const box = el.getBoundingClientRect();
         return {
+          // The root's own attributes, by name (their order is the parser's, not the drawing's).
+          attrs: Object.fromEntries([...el.attributes].map((a) => [a.name, a.value]).sort()),
           viewBox: el.getAttribute("viewBox"),
           inner: el.innerHTML,
           spans: el.querySelectorAll("[data-span]").length,
@@ -368,7 +419,10 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
     expect(live.built, "the live render drew a new element").toBe(false);
     expect(live.viewBox).toBe(built.viewBox);
     expect(live.spans).toBe(built.spans);
-    expect(live.inner === built.inner, "the same markup, byte for byte").toBe(true);
+    // The root's children, byte for byte, and the root's own attributes, every one: the adopted
+    // root has dropped what only the no-script page carries (role, aria-label, style).
+    expect(live.inner === built.inner, "the same children, byte for byte").toBe(true);
+    expect(live.attrs, "the same root attributes").toEqual(built.attrs);
     expect(live.box, "in the same place, at the same size").toEqual(built.box);
   });
 });
