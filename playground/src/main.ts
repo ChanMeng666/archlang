@@ -641,6 +641,17 @@ let refitPending = false;
 const renderWaiters: { seq: number; resolve: (ok: boolean) => void }[] = [];
 /** The request in the worker, so a render of exactly the same request rides on it (`render`). */
 let inFlight: { key: string; done: Promise<boolean> } | undefined;
+/** Plans picked whose render has not been asked for yet (the app was still coming up). */
+let picking = 0;
+/**
+ * `html[data-rendering]` while a render is on its way (a compile in the worker, or a plan picked
+ * that has yet to compile): what is on screen is not yet the plan asked for. The e2e specs'
+ * `waitForPlan` waits for it to go, as a render on the page was over before anything else ran.
+ */
+function paintRendering() {
+  if (renderWaiters.length > 0 || picking > 0) root.dataset.rendering = "";
+  else delete root.dataset.rendering;
+}
 
 /**
  * The editor's lint gutter (arch-language.js `archLinter`) asks for a document's diagnostics; they
@@ -699,6 +710,7 @@ function render(source: string, refit = false): Promise<boolean> {
   const done = new Promise<boolean>((resolve) => {
     renderWaiters.push({ seq: req.seq, resolve });
   });
+  paintRendering();
   const mine = { key, done };
   inFlight = mine;
   void compiler.run(req).then((result) => {
@@ -744,6 +756,7 @@ function show(req: CompileRequest, result: CompileResult, knobMoving: boolean): 
   const ok = result.errors.length === 0;
   // In the order they were made, so what each does next happens in that order too.
   while (renderWaiters.length > 0 && renderWaiters[0]!.seq <= req.seq) renderWaiters.shift()!.resolve(ok);
+  paintRendering();
   root.dataset.compiler = compiler?.where() ?? "page";
   if (result.gutter) gutterReady(source, result.gutter);
   const { svg, errors, diagnostics, pages } = result;
@@ -1002,13 +1015,21 @@ function working(msg: string | null) {
  */
 function pickExample(label: string) {
   markPlan(label);
-  void up().then(async () => {
-    const { EXAMPLES, samples } = await loadExamples();
-    const source = EXAMPLES[label] ?? samples.sampleSource(label);
-    if (source === undefined) return;
-    markPlan(label);
-    loadSource(source, true);
-  });
+  // The plan is on its way from now (`data-rendering`), though it compiles once the app is up.
+  picking++;
+  paintRendering();
+  void up()
+    .then(async () => {
+      const { EXAMPLES, samples } = await loadExamples();
+      const source = EXAMPLES[label] ?? samples.sampleSource(label);
+      if (source === undefined) return;
+      markPlan(label);
+      loadSource(source, true);
+    })
+    .finally(() => {
+      picking--;
+      paintRendering();
+    });
 }
 /** A plan picked by the visitor (a gallery card, the Checks sample pointer), which counts towards the nudge. */
 function switchPlan(label: string) {
@@ -1191,10 +1212,6 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
       downloadBtns: [...document.querySelectorAll<HTMLElement>("#share [data-download]")],
     },
   });
-  for (const btn of document.querySelectorAll<HTMLButtonElement>(":is(#share, #more) button[disabled]"))
-    btn.disabled = false;
-
-  isUp = true;
   if (built && !editing) {
     // The plan on screen is the built-in one, drawn as this render draws it (gen-static's
     // `LIVE_RENDER`): no re-fit, so a drawing the visitor has panned or zoomed stays where it is.
@@ -1205,6 +1222,11 @@ async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
     await render(currentSource(), true);
     requestAnimationFrame(() => previewCtl.fit());
   }
+  // The exports and links read the drawing this render made (it lands from the worker), so they
+  // come on with it.
+  for (const btn of document.querySelectorAll<HTMLButtonElement>(":is(#share, #more) button[disabled]"))
+    btn.disabled = false;
+  isUp = true;
   // The e2e specs' "the app is up" signal (fixtures.ts `waitForPlan`).
   delete root.dataset.booting;
   delete root.dataset.bootFailed;
