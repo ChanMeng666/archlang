@@ -1,7 +1,15 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 import { srcFromHash } from "../src/share.js";
-import { AUTOSAVE_KEY, expectPlanNamed, gotoEdit, setEditorSource, shareHash, waitForPlan } from "./fixtures.js";
+import {
+  AUTOSAVE_KEY,
+  countCompiles,
+  expectPlanNamed,
+  gotoEdit,
+  setEditorSource,
+  shareHash,
+  waitForPlan,
+} from "./fixtures.js";
 
 /**
  * Knobs (card P4): a slider per top-level numeric `let` of the plan on screen, in the drawing's
@@ -144,6 +152,7 @@ test.describe("knobs", () => {
     const src = villa
       .replace("  legend\n", "  legend\n  let FRONT = 1200 # front door width\n")
       .replace(door, door.replace("width 1200", "width FRONT"));
+    const compiles = await countCompiles(page);
     await page.goto(`/${await shareHash(src)}`);
     await waitForPlan(page);
     await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
@@ -160,7 +169,8 @@ test.describe("knobs", () => {
       }).observe({ type: "longtask" });
     });
     // Press at the middle and drag right in steps slower than the panel's 120 ms debounce, so the
-    // moving slider asks for a compile at most steps, then let go.
+    // moving slider asks for a compile at most of its steps, then let go.
+    await compiles.reset();
     const y = box.y + box.height / 2;
     await page.mouse.move(box.x + box.width / 2, y);
     await page.mouse.down();
@@ -168,6 +178,11 @@ test.describe("knobs", () => {
       await page.mouse.move(box.x + box.width / 2 + (i * box.width) / 20, y);
       await page.waitForTimeout(200);
     }
+    // The moving slider's compiles are posted to the worker, not run on the page: one at a time,
+    // the newest waiting move sent when the one in the worker answers, all before the release.
+    await expect
+      .poll(compiles, { message: "the drag compiled in the worker", timeout: 30_000 })
+      .toBeGreaterThanOrEqual(2);
     await page.mouse.up();
     const last = Number(await slider.inputValue());
     expect(last, "the drag moved the knob").toBeGreaterThan(1200);

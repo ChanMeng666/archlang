@@ -4,6 +4,7 @@ import { CHECKS_SAMPLE, SAMPLE_GROUP } from "../src/samples.js";
 import { THUMB_MAX_BYTES } from "../scripts/lean-thumb.mjs";
 import { splitLabel } from "../src/plan-label.js";
 import {
+  countCompiles,
   currentPlanCard,
   expectPlanNamed,
   gallery,
@@ -451,18 +452,7 @@ test.describe("plan gallery", () => {
   test("a plan switch compiles once, and an edit after it still compiles and redraws", async ({ page }) => {
     // Card MP9: the switch renders the new plan, and the editor's debounced render of the same
     // document 250 ms later asks for the drawing already on screen, which compiles nothing.
-    // Every compile is one request posted to the compiler worker: count them.
-    await page.addInitScript(() => {
-      const w = window as unknown as { __compiles: number };
-      w.__compiles = 0;
-      const post = Worker.prototype.postMessage;
-      Worker.prototype.postMessage = function (this: Worker, ...args: Parameters<Worker["postMessage"]>) {
-        const msg = args[0] as { source?: unknown } | null;
-        if (msg && typeof msg === "object" && typeof msg.source === "string") w.__compiles++;
-        return post.apply(this, args);
-      } as Worker["postMessage"];
-    });
-    const compiles = () => page.evaluate(() => (window as unknown as { __compiles: number }).__compiles);
+    const compiles = await countCompiles(page);
     const autosave = () => page.evaluate(() => localStorage.getItem("archlang.pg.source"));
     const viewBoxWidth = () =>
       page.locator(".pz-stage svg").evaluate((svg) => Number(svg.getAttribute("viewBox")?.split(/\s+/)[2]));
@@ -473,9 +463,7 @@ test.describe("plan gallery", () => {
       /\r\n?/g,
       "\n",
     );
-    await page.evaluate(() => {
-      (window as unknown as { __compiles: number }).__compiles = 0;
-    });
+    await compiles.reset();
     await pickPlan(page, row.label);
     // The autosave is written once the debounced render has settled: both renders are over.
     await expect.poll(autosave, { timeout: 10_000 }).toBe(flat);

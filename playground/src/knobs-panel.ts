@@ -196,6 +196,14 @@ export function mountKnobsPanel({ viewport, getSource, tryRender, commit, flash 
       // Another drawing landed instead (an edit, a plan picked), or the document changed while
       // this compiled: the verdict is not about the document this move was read from.
       if (ok === null || getSource() !== doc) {
+        // A release still decides: when the drawing that landed was of this same document (a
+        // Checks or theme render of it), the value let go on is asked for again, and kept or
+        // snapped back by its own verdict.
+        if (final && ok === null && getSource() === doc && current()) {
+          show(name, value);
+          apply(name, value, true);
+          return;
+        }
         refresh();
         return;
       }

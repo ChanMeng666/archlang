@@ -307,3 +307,33 @@ export function watchForProblems(page: Page): PageProblems {
   });
   return problems;
 }
+
+/** Counts the compile requests a page posts to its compiler worker (cards MP6, MP8, MP9). */
+export interface CompileCounter {
+  (): Promise<number>;
+  /** Start counting from zero. */
+  reset(): Promise<void>;
+}
+
+/**
+ * Count every compile request the page posts to its compiler worker (one per compile: a request
+ * carries its `source`). Attach BEFORE the first navigation; nothing in the app is added for it.
+ */
+export async function countCompiles(page: Page): Promise<CompileCounter> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __compiles: number };
+    w.__compiles = 0;
+    const post = Worker.prototype.postMessage;
+    Worker.prototype.postMessage = function (this: Worker, ...args: Parameters<Worker["postMessage"]>) {
+      const msg = args[0] as { source?: unknown } | null;
+      if (msg && typeof msg === "object" && typeof msg.source === "string") w.__compiles++;
+      return post.apply(this, args);
+    } as Worker["postMessage"];
+  });
+  const count = (() => page.evaluate(() => (window as unknown as { __compiles: number }).__compiles)) as CompileCounter;
+  count.reset = () =>
+    page.evaluate(() => {
+      (window as unknown as { __compiles: number }).__compiles = 0;
+    });
+  return count;
+}
