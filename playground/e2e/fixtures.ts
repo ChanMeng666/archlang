@@ -195,6 +195,18 @@ export const AUTOSAVE_KEY = "archlang.pg.source";
  */
 export async function setEditorSource(page: Page, src: string): Promise<void> {
   const content = page.locator(".cm-content");
+  // Typing the document over itself is no edit: nothing renders or saves, and the poll below
+  // would time out with a bare `null` (issue #570). Say so at once instead.
+  // Only an exact match counts; a long document the editor draws in part never matches.
+  const already = await page.evaluate(
+    (k) => ({
+      saved: localStorage.getItem(k),
+      doc: [...document.querySelectorAll(".cm-content .cm-line")].map((l) => l.textContent ?? "").join("\n"),
+    }),
+    AUTOSAVE_KEY,
+  );
+  if (already.saved !== src && already.doc === src)
+    throw new Error("setEditorSource: the editor already holds this source; type a different plan first");
   await content.click();
   await page.keyboard.press("ControlOrMeta+a");
   await page.keyboard.insertText(src);

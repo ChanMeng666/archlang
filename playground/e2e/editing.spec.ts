@@ -192,7 +192,9 @@ test.describe("compiling in a worker", () => {
     });
     await gotoEdit(inWorker);
     await gotoEdit(onPage);
-    for (const name of ["laneway-house", "townhouse", "hillside-villa"]) {
+    // Never the boot plan (laneway-house) first: typing a document over itself is no edit, so no
+    // draft is saved and `setEditorSource` waits for ever (issue #570). Each plan differs from the last.
+    for (const name of ["townhouse", "hillside-villa", "laneway-house"]) {
       const source = example(name);
       const a = await capture(inWorker, source);
       const b = await capture(onPage, source);
