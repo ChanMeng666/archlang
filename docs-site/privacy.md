@@ -10,9 +10,17 @@ these sites, the hosted endpoint at `mcp.archlang.uk` and the ArchLang plugins.
 ## This site and the playground
 
 The documentation site and the playground are static pages served by Cloudflare. We set no
-cookies, run no accounts or sign-in, and load no analytics or tracking script. The playground
-compiles your plan in your browser; a full share link keeps the plan after the `#`, which a browser
-never sends to a server.
+cookies and run no accounts or sign-in. The playground compiles your plan in your browser; a full
+share link keeps the plan after the `#`, which a browser never sends to a server.
+
+Both sites count visits with Cloudflare Web Analytics, a cookie-free counter that Cloudflare adds
+to each page. For each page view it reports the page address and the page you came from, each with
+everything after a `?` or `#` removed (so the plan in a full share link never reaches it), your
+browser and operating system, and the page's load and responsiveness timings. A short link's
+address is counted like any page. Like any request, the report reaches Cloudflare with your IP
+address, which it uses for the country. Cloudflare processes these reports under its own privacy
+policy. We see totals per page, referring site, country, browser, operating system and device
+type, and page-speed figures.
 
 The product film on the home page and on `/start` is a picture from this site until you press play.
 Only then does your browser load YouTube's player, from the privacy-enhanced `youtube-nocookie.com`
@@ -58,7 +66,7 @@ edge like any URL.
 ## Sharing and your choices
 
 We do not sell data, share it with advertisers, or send it to anyone except Cloudflare, which hosts
-the service and processes IP addresses under its own privacy policy. We keep no account or log; the
+the service and processes IP addresses under its own privacy policy. We keep no account or request log; Cloudflare keeps the visit counts described above; the
 one plan text we keep is a plan you made a short link for. To have one removed, open an issue with
 the link, or email chanmeng.dev@gmail.com if the plan should not be named in public; once it is
 deleted the short link stops working. To avoid the edge cache, use the playground or the local

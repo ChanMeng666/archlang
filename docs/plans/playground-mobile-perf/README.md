@@ -70,8 +70,7 @@ Order: MP1 → MP2 → MP3 → MP4 → MP5 → MP6. High-tier cards wait for the
 
 ## 4. Open for the owner
 
-- Cloudflare Web Analytics is injected at the edge on both sites (about 10 KB of JS per page),
-  which contradicts `docs/seo.md` ("Neither ArchLang site has analytics") and the playground-minimal
-  plan ("不加分析埋点"). Turning it off is a dashboard setting.
+- Decided 2026-11-07: Cloudflare Web Analytics (injected at the edge on both sites, about 10 KB
+  of JS per page) is free, so the owner kept it; the privacy page and `docs/seo.md` now say so.
 - Real iOS Safari, the virtual keyboard and phone GPU cost were not measurable in emulation; check
   on a real phone after MP1–MP3.
