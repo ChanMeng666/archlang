@@ -510,6 +510,15 @@ function modifiedDate(route: string, lastUpdated: number | undefined): string | 
     : undefined;
 }
 
+/** The product film, read from the component that plays it so the two never disagree. */
+const FILM = (() => {
+  const vue = readFileSync(fileURLToPath(new URL("./theme/components/FilmFacade.vue", import.meta.url)), "utf8");
+  const id = vue.match(/const FILM_ID = "([^"]+)"/)?.[1];
+  const title = vue.match(/const FILM_TITLE = "([^"]+)"/)?.[1];
+  if (!id || !title) throw new Error("config.ts: FILM_ID or FILM_TITLE missing from FilmFacade.vue");
+  return { id, title };
+})();
+
 /** JSON-LD for one route, as the `<script type="application/ld+json">` body. */
 function structuredData(
   route: string,
@@ -566,6 +575,21 @@ function structuredData(
             license: MIT_LICENSE,
             author: { "@id": IDENTITY.ids.author },
             targetProduct: { "@id": IDENTITY.ids.software },
+          },
+          {
+            "@type": "VideoObject",
+            "@id": `${SITE_ORIGIN}/#film`,
+            name: FILM.title,
+            description:
+              "One .arch text file becomes a dimensioned floor plan that checks itself, then a 3D preview. Every plan on screen is compiled by ArchLang and every 3D frame comes from archlang-3d.",
+            thumbnailUrl: `https://i.ytimg.com/vi/${FILM.id}/maxresdefault.jpg`,
+            uploadDate: "2026-11-07",
+            duration: "PT3M16S",
+            embedUrl: `https://www.youtube-nocookie.com/embed/${FILM.id}`,
+            url: `https://youtu.be/${FILM.id}`,
+            inLanguage: "en",
+            about: { "@id": IDENTITY.ids.software },
+            creator: { "@id": IDENTITY.ids.author },
           },
         ]
       : [

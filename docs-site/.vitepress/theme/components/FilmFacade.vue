@@ -6,8 +6,10 @@
 import { ref } from "vue";
 
 /** The video id, typed once; site-markdown.mjs reads it from here for the /start.md copy. */
-const FILM_ID = "RBcGF6X4esY";
-const FILM_TITLE = "ArchLang — a language that compiles to dimensioned floor plans";
+// "ArchLang, from plan to 3D" (github.com/ChanMeng666/film-archlang-2d-3d), the product film since
+// 2026-11-08; config.ts reads these lines too, for the home page VideoObject.
+const FILM_ID = "oCg3tBTlVvI";
+const FILM_TITLE = "ArchLang, from plan to 3D — a floor plan that checks itself, then stands up";
 
 const watch = `https://youtu.be/${FILM_ID}`;
 const embed = `https://www.youtube-nocookie.com/embed/${FILM_ID}?autoplay=1&rel=0`;
