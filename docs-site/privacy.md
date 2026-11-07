@@ -10,9 +10,14 @@ these sites, the hosted endpoint at `mcp.archlang.uk` and the ArchLang plugins.
 ## This site and the playground
 
 The documentation site and the playground are static pages served by Cloudflare. We set no
-cookies, run no accounts or sign-in, and load no analytics or tracking script. The playground
-compiles your plan in your browser; a full share link keeps the plan after the `#`, which a browser
-never sends to a server.
+cookies and run no accounts or sign-in. The playground compiles your plan in your browser; a full
+share link keeps the plan after the `#`, which a browser never sends to a server.
+
+Both sites count visits with Cloudflare Web Analytics, a cookie-free counter that Cloudflare adds
+to each page. For each page view it reports the page address and the page you came from, each with
+everything after a `?` or `#` removed (so a plan in a share link never reaches it), and the page's
+load timings. Cloudflare processes these reports under its own privacy policy. We see only totals
+per page, per referring site, per country and per browser.
 
 The product film on the home page and on `/start` is a picture from this site until you press play.
 Only then does your browser load YouTube's player, from the privacy-enhanced `youtube-nocookie.com`

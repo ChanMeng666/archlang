@@ -135,8 +135,11 @@ recorded here or anywhere else in this public repository** — ask the owner rat
   `archcanvas.uk`: 16 pages indexed, 12 not; 129 impressions, 10 clicks; 38 AI impressions.
   **Do not add properties under any other Google account**: on 2026-11-03 an agent did so by
   mistake and removed them; the owner's account already holds them.
-- **Neither ArchLang site has analytics**, by design, so there is no referrer count from
-  `chatgpt.com` or `perplexity.ai` here. State that gap rather than inventing a number.
+- **Both ArchLang sites run Cloudflare Web Analytics** (free, cookie-free, injected at the edge;
+  the owner kept it on 2026-11-07). Its dashboard counts page views per referring site, so a
+  referrer count from `chatgpt.com` or `perplexity.ai` can be read there; the beacon strips the
+  `?` and `#` parts of every address, so a playground plan never reaches it. `docs-site/privacy.md`
+  discloses it. Quote only numbers read from that dashboard; never invent one.
 
 ## 7. Safe Browsing incident, 2026-09-14
 
