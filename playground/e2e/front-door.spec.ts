@@ -138,21 +138,30 @@ test.describe("front door", () => {
     const home = (await page.locator("a.brand-home").boundingBox())!;
     expect(home.width, "the mark's target is 44 px wide").toBeGreaterThanOrEqual(43.5);
     expect(home.height, "and 44 px tall").toBeGreaterThanOrEqual(43.5);
-    const hit = await page.locator("a.badge").evaluate((a) => {
-      const r = getComputedStyle(a, "::before");
-      const box = a.getBoundingClientRect();
-      return { content: r.content, height: box.height + 2 * Number.parseFloat(r.top) * -1 };
-    });
-    expect(hit.content, "the stamp has a hit area").not.toBe("none");
-    expect(hit.height, "44 px tall").toBeGreaterThanOrEqual(43.5);
-    // On its side the stamp is read but not drawn; reached by the keyboard it is drawn.
+    // The stamp keeps its look, and a tap 12 px above or below its middle still lands on it.
+    const hits = (dy: number) =>
+      page.locator("a.badge").evaluate((a, d) => {
+        const r = a.getBoundingClientRect();
+        return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2 + d)?.closest("a") === a;
+      }, dy);
+    expect(await hits(-12), "a tap just above the stamp").toBe(true);
+    expect(await hits(12), "a tap just below the stamp").toBe(true);
+    // On its side the stamp is read but not drawn; reached by the keyboard it is drawn, and its
+    // hit area stays its own: the gallery beside it is still the gallery.
     await page.setViewportSize({ width: 844, height: 390 });
     const stamp = page.locator("a.badge");
-    expect((await stamp.boundingBox())!.width).toBeLessThanOrEqual(1.5);
+    await expect.poll(async () => (await stamp.boundingBox())!.width).toBeLessThanOrEqual(1.5);
     await page.locator("a.brand-home").focus();
     await page.keyboard.press("Tab");
     await expect(stamp).toBeFocused();
-    expect((await stamp.boundingBox())!.width, "drawn while it has the focus").toBeGreaterThan(20);
+    await expect
+      .poll(async () => (await stamp.boundingBox())!.width, { message: "drawn while it has the focus" })
+      .toBeGreaterThan(20);
+    const galleryIsItself = await page.locator(".gal-trigger").evaluate((g) => {
+      const r = g.getBoundingClientRect();
+      return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest(".gal-trigger") === g;
+    });
+    expect(galleryIsItself, "the focused stamp covers nothing else").toBe(true);
     await ctx.close();
   });
 

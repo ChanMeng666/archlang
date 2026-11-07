@@ -1341,7 +1341,9 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   }
   /* The stamp is a link: reached by the keyboard, it shows itself where it stands. */
   .tb-brand .badge:focus-visible {
-    position: static;
+    /* Relative, never static: the touch hit area (::before) must stay anchored to the stamp, not
+       spread over the whole header. */
+    position: relative;
     width: auto;
     height: auto;
     margin: 0;
