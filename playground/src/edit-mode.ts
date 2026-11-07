@@ -40,6 +40,8 @@ export interface EditCtx {
   rerender: () => void;
   flash: (msg: string) => void;
   mobileViews: MobileViewsHandle;
+  /** The lint gutter's diagnostics of a document, once its render has compiled it (main.ts). */
+  gutterFor: (text: string) => Promise<readonly Diagnostic[]>;
 }
 
 export interface EditMode {
@@ -51,8 +53,18 @@ export interface EditMode {
   setDoc(src: string): void;
   /** Move the caret to a byte offset and reveal it (click-to-source). */
   jumpToOffset(offset: number): void;
-  /** Describe (the Facts tab) and Lint (the Checks tab) for `source` (from main.ts's `updateAnalysis`). */
-  updatePanels(source: string, ok: boolean, summary: SceneSummary, activeLevel: number | null): void;
+  /**
+   * Describe (the Facts tab) and Lint (the Checks tab) for `source` (from main.ts's `updateAnalysis`).
+   * `lintDiags` is `lint()` of it under the selected profile, run with the compile (in the worker,
+   * card MP6); null when that compile was made before the editor was here, and this runs it.
+   */
+  updatePanels(
+    source: string,
+    ok: boolean,
+    summary: SceneSummary,
+    activeLevel: number | null,
+    lintDiags: Diagnostic[] | null,
+  ): void;
   /** The diagnostics drawer, its count and a live Intent verdict (from main.ts's `render`). */
   afterCompile(source: string, diagnostics: Diagnostic[]): void;
 }
@@ -113,6 +125,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
     parent: document.getElementById("editor")!,
     doc: ctx.doc,
     onDocChanged: ctx.onDocChanged,
+    diagnosticsOf: ctx.gutterFor,
   });
   const currentSource = () => view.state.doc.toString();
 
@@ -237,7 +250,7 @@ export function mountEditMode(ctx: EditCtx): EditMode {
       });
     },
     jumpToOffset,
-    updatePanels(source, ok, summary, activeLevel) {
+    updatePanels(source, ok, summary, activeLevel, given) {
       const { diagnostics: _d, ...facts } = summary;
       renderDescribe(describeEl, facts, ok);
 
@@ -245,9 +258,10 @@ export function mountEditMode(ctx: EditCtx): EditMode {
       // advisory profile. Run over the WHOLE plan, always: `ok`, the status text and the
       // repair/suggest offers below are verdicts, and a display filter must never move a
       // verdict (the law `arch describe --level` obeys).
-      const lintDiags = ok
-        ? lint(source, { profile: lintProfileSelect.value, noCache: true } as LintOptions & { noCache?: boolean })
-        : [];
+      const lintDiags = !ok
+        ? []
+        : (given ??
+          lint(source, { profile: lintProfileSelect.value, noCache: true } as LintOptions & { noCache?: boolean }));
       // `repair` only corrects furniture-placement faults — offer it exactly when one
       // is present (ADR 0006: an explicit, reviewable transform, never auto-applied).
       const repairable = lintDiags.some((d) => /FURNITURE|FIXTURE|DOORWAY|SWING/.test(d.code ?? ""));

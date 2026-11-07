@@ -1723,13 +1723,22 @@ test.describe("startup chunks", () => {
     // sources, the actions) load with the first compile by design, outside PG-D7's startup.
     const mainTs = readFileSync(join(dirname(fileURLToPath(import.meta.url)), "..", "src", "main.ts"), "utf8");
     const entryDynamic = imports(scripts[0] as string, DYNAMIC);
-    const boot = ["compiler", "examples", "samples", "actions"].map((name) => {
+    // The compile job and its worker (card MP6) load with the compiler, so they are a boot import too.
+    const boot = ["compiler", "examples", "samples", "actions", "compile-worker"].map((name) => {
       expect(mainTs, `main.ts imports ./${name}.js on first use`).toContain(`import("./${name}.js")`);
       const found = entryDynamic.filter((f) => new RegExp(`^assets/${name}-[\\w-]+\\.js$`).test(f));
       expect(found, `the built entry imports one ${name} chunk dynamically`).toHaveLength(1);
       return found[0] as string;
     });
     expect(boot, "the boot import of ./compiler.js is the compiler chunk").toContain(compiler);
+    // The worker runs the compile job's chunk and what it imports statically: the compiler, and
+    // nothing of the page's (the entry and the startup chunks run page code, which needs a
+    // document), so it never runs the view path in a worker.
+    const workerChunk = boot[boot.length - 1] as string;
+    const inWorker = reach([workerChunk]);
+    expect(inWorker, "the compile worker imports the compiler").toContain(compiler);
+    for (const file of viewPath)
+      expect(inWorker, `the compile worker does not import the view path's ${file}`).not.toContain(file);
     const booted = reach([...compilerPath, ...boot]);
 
     // The embed (embed.html, the iframe other pages show): it imports the core statically

@@ -57,6 +57,9 @@ export async function embedHash(src: string, ...params: string[]): Promise<strin
 export async function waitForPlan(page: Page): Promise<void> {
   await expect(page.locator(".pz-stage svg")).toBeVisible();
   await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+  // The render compiles in a worker (card MP6): `data-rendering` is there until the plan asked
+  // for is the one on screen, its storeys, facts and panels with it.
+  await expect(page.locator("html[data-rendering]")).toHaveCount(0, { timeout: 30_000 });
 }
 
 /**
@@ -146,14 +149,16 @@ export async function openGallery(page: Page): Promise<void> {
 
 /**
  * Choose the plan labelled `label` the way a visitor does: open the header's gallery and click
- * its card, which opens the plan in place and closes the gallery. Does not wait for the plan to
- * be drawn; callers that need it wait as they did after a pick.
+ * its card, which opens the plan in place and closes the gallery. Waits for the plan to be the
+ * one drawn (`data-rendering` gone: it compiles in a worker, card MP6), as a pick on the page
+ * once drew it before anything else ran.
  */
 export async function pickPlan(page: Page, label: string): Promise<void> {
   await openGallery(page);
   await planCard(page, label).click();
   await expect(page.locator("#galleryPanel")).toBeHidden();
   await expect(currentPlanCard(page)).toHaveAttribute("data-label", label);
+  await expect(page.locator("html[data-rendering]")).toHaveCount(0, { timeout: 30_000 });
 }
 
 /**
