@@ -316,6 +316,89 @@ describe("the static page generator reads this table, and nothing else hand-list
   });
 });
 
+// @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
+const lean = (await import("../playground/scripts/lean-thumb.mjs")) as {
+  leanThumb(svg: string): string;
+  keepsLayer(id: string): boolean;
+  decimalsFor(widthMm: number): number;
+  SCALE: number;
+  THUMB_MAX_BYTES: number;
+};
+
+describe("the gallery's thumbnails are lean drawings cut from compile() (MP-D5)", () => {
+  const gen = readFileSync(GEN_STATIC, "utf8");
+  const thumbW = Number(/\nconst THUMB_W = (\d+);/.exec(gen)?.[1]);
+
+  /** Every vertex an absolute M/L/H/V/A/Z path visits, as [x, y] in the path's own units. */
+  function vertices(d: string): [number, number][] {
+    const out: [number, number][] = [];
+    let x = 0;
+    let y = 0;
+    let sx = 0;
+    let sy = 0;
+    for (const seg of d.match(/[A-Za-z][^A-Za-z]*/g) ?? []) {
+      const c = seg[0]!;
+      const n = (seg.slice(1).match(/-?(?:\d+\.?\d*|\.\d+)/g) ?? []).map(Number);
+      if (c === "M") [x, y, sx, sy] = [n[0]!, n[1]!, n[0]!, n[1]!];
+      else if (c === "L") [x, y] = [n[0]!, n[1]!];
+      else if (c === "H") x = n[0]!;
+      else if (c === "V") y = n[0]!;
+      else if (c === "A") [x, y] = [n[5]!, n[6]!];
+      else if (c === "Z") [x, y] = [sx, sy];
+      else throw new Error(`a wall path with a ${c} command`);
+      out.push([x, y]);
+    }
+    return out;
+  }
+  /** The `d` of every path inside one layer group of a drawing. */
+  function layerPaths(svg: string, id: string): string[] {
+    const open = new RegExp(`<g id="${id}"[^>]*>`).exec(svg);
+    if (!open) return [];
+    const body = svg.slice(open.index, svg.indexOf("</g>", open.index));
+    return [...body.matchAll(/<path\b[^>]*\sd="([^"]*)"/g)].map((m) => m[1]!);
+  }
+
+  it("gen-static builds each thumbnail with leanThumb from a compile() at a fixed width", () => {
+    expect(thumbW).toBeGreaterThan(0);
+    expect(gen).toMatch(/const result = compile\(source, \{ width: THUMB_W \}\);/);
+    expect(gen).toMatch(/const svg = leanThumb\(result\.svg\);/);
+    expect(gen, "the build stops on an oversized thumbnail").toMatch(/> THUMB_MAX_BYTES/);
+  });
+
+  for (const row of rows) {
+    it(`${row.name}: at most ${lean.THUMB_MAX_BYTES} bytes, no text, the same box and the same walls`, () => {
+      const full = compile(readFileSync(join("examples", `${row.name}.arch`), "utf8"), { width: thumbW }).svg;
+      const thumb = lean.leanThumb(full);
+      expect(Buffer.byteLength(thumb)).toBeLessThanOrEqual(lean.THUMB_MAX_BYTES);
+      expect(thumb).not.toMatch(/<text\b/);
+      expect(thumb, "no furniture, dimensions, labels or grid").not.toMatch(/id="A-(?:FURN|ANNO|GRID|COLS)/);
+      // The card's intrinsic size is the compiler's: the same root width and height.
+      const root = (s: string) => /^<svg[^>]*\swidth="([\d.]+)"\s+height="([\d.]+)"/.exec(s)?.slice(1);
+      expect(root(thumb)).toEqual(root(full));
+
+      // Its layers are exactly the keepable layers the compiler drew, in the compiler's order (none
+      // lost, none invented), and the walls are the compiler's walls: the same vertices, on the
+      // thumbnail's grid.
+      const fullLayers = [...full.matchAll(/<g id="([^"]+)" inkscape:groupmode="layer"/g)].map((m) => m[1]!);
+      const kept = [...thumb.matchAll(/<g id="([^"]+)">/g)].map((m) => m[1]!);
+      expect(kept).toEqual(fullLayers.filter((id) => lean.keepsLayer(id)));
+      for (const id of ["A-WALL", "A-DOOR", "A-FLOR", "A-FLOR-STRS", "A-FLOR-EVTR"]) {
+        if (fullLayers.includes(id)) expect(kept, `${row.name} keeps ${id}`).toContain(id);
+      }
+      const vbW = Number((/ viewBox="([^"]*)"/.exec(full)?.[1] ?? "").trim().split(/\s+/)[2]);
+      const p = 10 ** lean.decimalsFor(vbW);
+      const snap = (v: number) => Math.round((v / lean.SCALE) * p) / p;
+      const walls = fullLayers.filter((id) => id === "A-WALL" || id.startsWith("A-WALL-"));
+      expect(walls.length).toBeGreaterThan(0);
+      for (const id of walls) {
+        const want = new Set(layerPaths(full, id).flatMap((d) => vertices(d).map(([x, y]) => `${snap(x)},${snap(y)}`)));
+        const got = new Set(layerPaths(thumb, id).flatMap((d) => vertices(d).map(([x, y]) => `${x},${y}`)));
+        expect([...got].sort(), `${id} vertices`).toEqual([...want].sort());
+      }
+    });
+  }
+});
+
 describe("the plan a first visit opens", () => {
   // `EXAMPLE_ROWS[0]` is `DEFAULT_EXAMPLE`: the first thing a visitor and an agent see. It
   // must open clean, or the front door greets them with warnings. The playground cannot be
