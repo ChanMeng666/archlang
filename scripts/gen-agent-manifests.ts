@@ -70,6 +70,8 @@ export const PORTABLE_SCHEMA_ID = "https://agent-plugins.org/schemas/1.0.0/plugi
 /** The listing icon, copied from the Claude plugin's icon (binary, so not among the text outputs). */
 export const ICON_SOURCE = `${PLUGIN_ROOT}/.claude-plugin/icon.png`;
 export const PLUGIN_ICON = `${PLUGIN_ROOT}/assets/icon.png`;
+/** Root files copied byte-for-byte into the plugin bundle, which is distributed on its own (MIT notice). */
+export const BUNDLED_ROOT_FILES = ["LICENSE", "SECURITY.md"] as const;
 /** Gemini CLI extension manifest (repository root) and the context file it names. */
 export const GEMINI_MANIFEST = "gemini-extension.json";
 export const COPILOT_INSTRUCTIONS = "integrations/copilot/copilot-instructions.md";
@@ -292,9 +294,14 @@ export function versionedOutputs(): { dest: string; text: string }[] {
   return [{ dest: GEMINI_MANIFEST, text: geminiManifest() }];
 }
 
-/** Every file this generator writes: the text outputs, the versioned outputs and the copied icon. */
+/** Every file this generator writes: the text outputs, the versioned outputs and the copied files. */
 export function allOutputs(): string[] {
-  return [...textOutputs().map((o) => o.dest), ...versionedOutputs().map((o) => o.dest), PLUGIN_ICON];
+  return [
+    ...textOutputs().map((o) => o.dest),
+    ...versionedOutputs().map((o) => o.dest),
+    PLUGIN_ICON,
+    ...BUNDLED_ROOT_FILES.map((f) => `${PLUGIN_ROOT}/${f}`),
+  ];
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
@@ -304,5 +311,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
   }
   mkdirSync(dirname(join(ROOT, PLUGIN_ICON)), { recursive: true });
   copyFileSync(join(ROOT, ICON_SOURCE), join(ROOT, PLUGIN_ICON));
+  for (const f of BUNDLED_ROOT_FILES) copyFileSync(join(ROOT, f), join(ROOT, PLUGIN_ROOT, f));
   process.stdout.write(`gen-agent-manifests: wrote ${allOutputs().length} files\n`);
 }

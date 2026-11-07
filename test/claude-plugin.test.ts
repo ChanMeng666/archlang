@@ -10,6 +10,7 @@
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+import { BUNDLED_ROOT_FILES } from "../scripts/gen-agent-manifests.js";
 
 const read = (p: string) => JSON.parse(readFileSync(resolve(p), "utf8"));
 const PLUGIN = "plugins/archlang";
@@ -25,6 +26,7 @@ const CLAUDE_PLUGIN_FILES = new Set([
   "assets/icon.png",
   ".cursor-plugin/plugin.json",
   "rules/archlang.mdc",
+  ...BUNDLED_ROOT_FILES,
 ]);
 
 function walk(dir: string): string[] {
