@@ -17,6 +17,7 @@ import {
   GEMINI_MANIFEST,
   HOSTED_MCP_URL,
   hostedMcpManifest,
+  BUNDLED_ROOT_FILES,
   ICON_SOURCE,
   MCP_MANIFEST,
   MCP_SCHEMA_ID,
@@ -237,6 +238,12 @@ describe("agent-directory manifests", () => {
     ] as const) {
       expect(ui[k]).toBe(`${manifest.homepage}/${page.slice("docs-site/".length, -".md".length)}`);
       expect(existsSync(resolve(page)), page).toBe(true);
+    }
+  });
+
+  it("the plugin bundle carries the root LICENSE and SECURITY.md byte-for-byte", () => {
+    for (const f of BUNDLED_ROOT_FILES) {
+      expect(readFileSync(resolve(`${PLUGIN_ROOT}/${f}`)).equals(readFileSync(resolve(f))), f).toBe(true);
     }
   });
 
