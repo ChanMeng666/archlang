@@ -8,11 +8,14 @@ import { enterEdit, expectPlanNamed, waitForPlan, watchStatus } from "./fixtures
  * is new, so the nightly run against the live site would fail for a deploy lag that is not a bug.
  */
 
-/** The header's visible controls, the Share and More menus' contents not counted. */
+/**
+ * The header's visible controls, the Share and More menus' contents not counted, nor the brand's
+ * two links (the mark to the docs site, the stamp to this page): they are the page's name.
+ */
 const headerControls = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll("header :is(button, select, summary, a, input)")]
-      .filter((e) => !e.closest(".tools-panel, .gal-panel") && e.getClientRects().length > 0)
+      .filter((e) => !e.closest(".tools-panel, .gal-panel, .tb-brand") && e.getClientRects().length > 0)
       .map((e) => e.id || e.textContent?.trim() || e.tagName),
   );
 
@@ -109,6 +112,49 @@ test.describe("front door", () => {
       await expect(page.locator("h1")).toHaveCount(1);
     });
   }
+
+  test("the brand's mark goes to the docs site and its stamp to the playground's front page", async ({ page }) => {
+    await page.goto("/#edit");
+    await waitForPlan(page);
+    const home = page.locator("header > h1 > a.brand-home");
+    await expect(home).toHaveAttribute("href", "https://archlang.uk/");
+    await expect(home).toHaveAccessibleName("ArchLang");
+    const stamp = page.locator("header > h1 > a.badge");
+    await expect(stamp).toHaveAttribute("href", "/");
+    await expect(stamp).toHaveText("Playground");
+    // The stamp is a real way back: from an edited plan's page it opens the plain front page.
+    await stamp.click();
+    await expect(page).toHaveURL((u) => u.pathname === "/" && u.hash === "");
+    await waitForPlan(page);
+  });
+
+  test("on a touch phone the brand's links are touch-sized, and the stamp shows itself when tabbed to on its side", async ({
+    browser,
+  }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await waitForPlan(page);
+    const home = (await page.locator("a.brand-home").boundingBox())!;
+    expect(home.width, "the mark's target is 44 px wide").toBeGreaterThanOrEqual(43.5);
+    expect(home.height, "and 44 px tall").toBeGreaterThanOrEqual(43.5);
+    const hit = await page.locator("a.badge").evaluate((a) => {
+      const r = getComputedStyle(a, "::before");
+      const box = a.getBoundingClientRect();
+      return { content: r.content, height: box.height + 2 * Number.parseFloat(r.top) * -1 };
+    });
+    expect(hit.content, "the stamp has a hit area").not.toBe("none");
+    expect(hit.height, "44 px tall").toBeGreaterThanOrEqual(43.5);
+    // On its side the stamp is read but not drawn; reached by the keyboard it is drawn.
+    await page.setViewportSize({ width: 844, height: 390 });
+    const stamp = page.locator("a.badge");
+    expect((await stamp.boundingBox())!.width).toBeLessThanOrEqual(1.5);
+    await page.locator("a.brand-home").focus();
+    await page.keyboard.press("Tab");
+    await expect(stamp).toBeFocused();
+    expect((await stamp.boundingBox())!.width, "drawn while it has the focus").toBeGreaterThan(20);
+    await ctx.close();
+  });
 
   test("Make your own is the redline control, and opens the ways to get a plan", async ({ page }) => {
     await page.goto("/");

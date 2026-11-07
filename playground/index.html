@@ -132,11 +132,16 @@
          asserts the served page contains a literal opening h1 tag, and a comment that happened to
          contain one would make that check pass over a page that had lost it. -->
     <header>
+      <!-- Two links inside the one h1 (the owner, 2026-11-08): the mark and the wordmark go to the
+           docs site, the stamp to the playground's own front page. They are the brand, so the
+           header's at-most-five controls do not count them (front-door.spec.ts). -->
       <h1 class="tb-brand">
-        <!-- The plum mark, not the white one: the header is a light surface. -->
-        <img class="brand-mark" src="/brand/archlang-icon-plum.svg" alt="" width="20" height="20" />
-        <span class="wordmark"><b>Arch</b>Lang</span>
-        <span class="badge">Playground</span>
+        <a class="brand-home" href="https://archlang.uk/">
+          <!-- The plum mark, not the white one: the header is a light surface. -->
+          <img class="brand-mark" src="/brand/archlang-icon-plum.svg" alt="" width="20" height="20" />
+          <span class="wordmark"><b>Arch</b>Lang</span>
+        </a>
+        <a class="badge" href="/">Playground</a>
       </h1>
       <!-- The plan gallery (ruling PG-D2): the one way to choose a plan. A non-modal disclosure,
            like Share and More: with no script it opens by itself, and every card is a link to the

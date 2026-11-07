@@ -406,7 +406,9 @@ async function playgroundChecks() {
       contains('id="sourceToggle"'),
       // The one heading is the header's brand, as real text.
       contains('<h1 class="tb-brand">'),
-      contains('<span class="badge">Playground</span>'),
+      // …its mark to the docs site and its stamp to this front page (the owner, 2026-11-08).
+      contains('<a class="brand-home" href="https://archlang.uk/">'),
+      contains('<a class="badge" href="/">Playground</a>'),
       contains(`<p class="lede" id="lede">${CANONICAL_LINE_HTML}</p>`),
       contains("<svg data-prerendered"),
       // …and the plan gallery in the header, its card links and thumbnails written by the same step.
