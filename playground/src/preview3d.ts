@@ -45,6 +45,11 @@
  * context (ruling MP-D3) stops the loops and says so over the stage; its restore, or a press of
  * the message, mounts the replay again where it was.
  *
+ * It draws only when someone can see it (card MP3, ruling MP-D3): while a modal dialog or a header
+ * menu covers the stage, while under half the canvas is on screen, or while the page is hidden, the
+ * replay's and the turntable's frames are parked, and they go on from where they were once the
+ * stage is seen again. A touch screen's drawing buffer is at most 1.5× its CSS size (2× elsewhere).
+ *
  * In view mode it is the stage's other half (public-surfaces card X5): the Plan | 3D switch on the
  * stage shows it in place of the drawing, `&3d` in the hash opens on it, and the page lays its knobs
  * over the canvas (`overlay`). The GLB of the plan is Share → Export → GLB (ruling PG-D5, actions.ts),
@@ -72,9 +77,12 @@ const WIDTH = 960;
 const HEIGHT = 540;
 /**
  * The drawing buffer: the canvas's CSS size × the device's pixel ratio, the ratio at most this, and
- * the buffer at most `MAX_PIXELS` (each frame is read back into the 2D canvas the page shows).
+ * the buffer at most `MAX_PIXELS` (each frame is read back into the 2D canvas the page shows). A
+ * touch screen, a phone or a tablet, caps the ratio lower (ruling MP-D3): at 3× a phone's buffer
+ * was 2.25 times the pixels for a picture a finger turns.
  */
 const MAX_DPR = 2;
+const MAX_DPR_TOUCH = 1.5;
 const MAX_PIXELS = 2_400_000;
 /** One play-through, in seconds: shorter than the 15 s export, a preview is glanced at. */
 const SECONDS = 6;
@@ -375,13 +383,39 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
   /** The WebGL context is lost: what was going on when it went (playing, turning, the replay time). */
   let lost: { playing: boolean; turning: boolean; t: number } | undefined;
 
+  /**
+   * Nobody can see the stage (ruling MP-D3): a modal dialog or a header menu is over it, under half
+   * the canvas is on screen, or the page is hidden. The replay's and the turntable's next frame is
+   * then not drawn but parked, and taken up where it left off once nothing covers the stage.
+   */
+  const unseen = new Set<"covered" | "offscreen" | "hidden">();
+  let parkedPlay: (() => void) | undefined;
+  let parkedTurn: (() => void) | undefined;
+  /** The replay is playing (a frame requested, or parked while the stage is unseen). */
+  const playing = (): boolean => frame !== 0 || parkedPlay !== undefined;
+  /** The turntable is turning (likewise). */
+  const turning = (): boolean => spinFrame !== 0 || parkedTurn !== undefined;
+  const see = (why: "covered" | "offscreen" | "hidden", on: boolean): void => {
+    if (on) unseen.add(why);
+    else unseen.delete(why);
+    if (unseen.size > 0) return;
+    const play = parkedPlay;
+    const turn = parkedTurn;
+    parkedPlay = undefined;
+    parkedTurn = undefined;
+    play?.();
+    turn?.();
+  };
+
   const stop = () => {
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
+    parkedPlay = undefined;
   };
   const stopTurn = () => {
     if (spinFrame) cancelAnimationFrame(spinFrame);
     spinFrame = 0;
+    parkedTurn = undefined;
   };
   /** The turntable: one `spin` step per animation frame, its size from the frame clock. */
   const startTurn = () => {
@@ -392,6 +426,15 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     const step = (now: number) => {
       if (turnOff || h !== handle) {
         spinFrame = 0;
+        return;
+      }
+      if (unseen.size > 0) {
+        // Parked: no frame while nobody sees it; the step after it starts a fresh frame clock.
+        spinFrame = 0;
+        parkedTurn = () => {
+          last = undefined;
+          spinFrame = requestAnimationFrame(step);
+        };
         return;
       }
       const dt = last === undefined ? 0 : Math.min(100, now - last);
@@ -421,7 +464,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
     const w = canvas.clientWidth;
     const h = canvas.clientHeight;
     if (w < 2 || h < 2) return [WIDTH, HEIGHT];
-    let dpr = Math.min(MAX_DPR, Math.max(1, window.devicePixelRatio || 1));
+    let dpr = Math.min(touchScreen() ? MAX_DPR_TOUCH : MAX_DPR, Math.max(1, window.devicePixelRatio || 1));
     if (w * h * dpr * dpr > MAX_PIXELS) dpr = Math.sqrt(MAX_PIXELS / (w * h));
     return [Math.max(1, Math.round(w * dpr)), Math.max(1, Math.round(h * dpr))];
   };
@@ -432,6 +475,32 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       handle?.resize(w, h);
     }).observe(canvas);
   }
+
+  // Who can see the stage (ruling MP-D3). Covered: the Make your own dialog, or a header menu (the
+  // gallery, Share, ⋯) open over it. Off screen: under half the canvas in the window (a hidden
+  // tab's canvas is not in it at all). Hidden: the page is.
+  const COVERS = "dialog[open], header details[open]";
+  const covered = (): void => see("covered", document.querySelector(COVERS) !== null);
+  if (typeof MutationObserver === "function") {
+    new MutationObserver(covered).observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["open"],
+    });
+  }
+  covered();
+  if (typeof IntersectionObserver === "function") {
+    new IntersectionObserver(
+      (entries) => {
+        const e = entries[entries.length - 1];
+        if (e) see("offscreen", !e.isIntersecting || e.intersectionRatio < 0.5);
+      },
+      { threshold: [0, 0.5] },
+    ).observe(canvas);
+  }
+  const pageShown = (): void => see("hidden", document.visibilityState === "hidden");
+  document.addEventListener("visibilitychange", pageShown);
+  pageShown();
 
   const refuse = (text: string) => {
     stop();
@@ -545,13 +614,24 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
         seek(1);
         return;
       }
-      let t0: number | undefined;
+      // t advances by the frame clock's steps, so a pause (the stage unseen) resumes where it was.
+      let t = from;
+      let last: number | undefined;
       const step = (now: number) => {
-        t0 ??= now;
-        const t = Math.min(1, from + (now - t0) / (SECONDS * 1000));
+        frame = 0;
+        if (mine !== generation) return;
+        if (unseen.size > 0) {
+          parkedPlay = () => {
+            last = undefined;
+            frame = requestAnimationFrame(step);
+          };
+          return;
+        }
+        if (last !== undefined) t = Math.min(1, t + (now - last) / (SECONDS * 1000));
+        last = now;
         seek(t);
-        frame = t < 1 ? requestAnimationFrame(step) : 0;
-        if (t >= 1 && mine === generation) then?.();
+        if (t < 1) frame = requestAnimationFrame(step);
+        else then?.();
       };
       frame = requestAnimationFrame(step);
     });
@@ -582,7 +662,7 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       if (h !== handle) return;
       e.preventDefault();
       if (lost) return;
-      lost = { playing: frame !== 0, turning: spinFrame !== 0, t: Number(scrub.value) };
+      lost = { playing: playing(), turning: turning(), t: Number(scrub.value) };
       stop();
       stopTurn();
       lostBtn.textContent = touchScreen() ? LOST_TEXT : LOST_TEXT_MOUSE;
@@ -665,17 +745,18 @@ export function mountPreview3d(host: HTMLElement): Preview3d {
       // An edit is a hand on the plan: the turntable stops for good.
       touched();
       const t = Number(scrub.value);
-      const playing = frame !== 0;
+      const wasPlaying = playing();
       // An edit keeps the view the user left; another storey starts from the replay's own.
       const sameStorey = built?.startsWith(keyOf("", level)) === true;
       if (!build(source, level, key, drawn, sameStorey ? handle?.view?.state() : undefined)) return;
-      if (playing) playFrom(t);
+      if (wasPlaying) playFrom(t);
       else drawAt(t);
     },
     hide() {
-      resume = frame !== 0;
+      resume = playing();
+      const wasTurning = turning();
       stop();
-      if (spinFrame) {
+      if (wasTurning) {
         // Left while turning: the turntable is over, and the next open is the end frame.
         stopTurn();
         turnOff = true;
