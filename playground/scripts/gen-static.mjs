@@ -66,6 +66,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { encodePlanHash } from "../../scripts/gen-permalink.mjs";
 import { cardText, splitLabel } from "../src/plan-label.js";
+import { leanThumb, THUMB_MAX_BYTES } from "./lean-thumb.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const playground = join(here, "..");
@@ -416,51 +417,18 @@ function labelSvg(svg, caption) {
  * TWO things make this a derivation rather than a resize. First, `compile(src, {width})`
  * makes the COMPILER write the root `width`/`height` from its own viewBox, and that also
  * overrides the millimetre paper size a `paper` plan would otherwise emit — so a sheet
- * plan and a bare plan come back in the same units. Second, the renderer emits one
- * `<g id="…" inkscape:groupmode="layer">` per CAD layer, one element per line, so the
- * layers can be filtered by the id the renderer itself wrote.
- *
- * `A-ANNO*` — the room-schedule tables, the dimension strings and the room labels — is
- * dropped: at card size every one of them renders as sub-pixel grey fuzz, which reads as
- * a dirty card rather than as information. What is left is the poché massing diagram,
- * which is the part that IS legible at that size. It halves the bytes as a side effect.
- *
- * The open/close parity check is the guard on the line-shape assumption: if an element
- * ever starts carrying a line-initial `</g>` of its own, this returns a torn document,
- * and a torn document must stop the build rather than reach the cards.
+ * plan and a bare plan come back in the same units. Second, `leanThumb` (lean-thumb.mjs)
+ * parses that drawing and keeps whole CAD layers by the ids the renderer wrote: walls,
+ * doors, windows and room fills (ruling MP-D5). Dimensions, labels, furniture and the
+ * sheet chrome are sub-pixel fuzz at card size and were 90% of the bytes.
  */
 function thumbSvg(compile, source) {
   const result = compile(source, { width: THUMB_W });
   if (result.errors.length > 0 || !result.svg) throw new Error("no drawing at thumbnail width");
 
-  const kept = [];
-  let opens = 0;
-  let closes = 0;
-  let dropping = false;
-  for (const line of result.svg.split("\n")) {
-    const open = /^<g id="([^"]+)" inkscape:groupmode="layer"/.exec(line);
-    if (open) {
-      opens++;
-      dropping = open[1].startsWith("A-ANNO");
-      if (dropping) continue;
-    } else if (line === "</g>") {
-      closes++;
-      if (dropping) {
-        dropping = false;
-        continue;
-      }
-    } else if (dropping) {
-      continue;
-    }
-    kept.push(line);
-  }
-  if (opens !== closes) {
-    throw new Error(`layer parity: ${opens} \`<g … groupmode="layer">\` opens vs ${closes} line-initial closes`);
-  }
-
-  const svg = kept.join("\n");
-  if (!/<(?:path|rect|line|polyline|polygon|circle)\b/.test(svg)) {
-    throw new Error("the thumbnail kept no drawing primitive — the layer filter dropped everything");
+  const svg = leanThumb(result.svg);
+  if (Buffer.byteLength(svg) > THUMB_MAX_BYTES) {
+    throw new Error(`the thumbnail is ${Buffer.byteLength(svg)} bytes, over the ${THUMB_MAX_BYTES}-byte budget`);
   }
 
   // The card's intrinsic size comes off the root tag the compiler JUST wrote, so the

@@ -319,6 +319,10 @@ test.describe("plan gallery", () => {
       const res = await request.get(src);
       expect(res.status(), src).toBe(200);
       expect(res.headers()["content-type"], src).toContain("image/svg+xml");
+      // A lean drawing (MP-D5): walls, openings and room fills, no text, at most 8 KB.
+      const body = await res.body();
+      expect(body.length, src).toBeLessThanOrEqual(8 * 1024);
+      expect(body.toString("utf8"), src).not.toContain("<text");
     }
     // Lazy, with a declared intrinsic size, in a box whose size is fixed before any arrives.
     for (const attr of ["loading", "width", "height"]) {
@@ -330,6 +334,14 @@ test.describe("plan gallery", () => {
     const stage = await box(page);
     await openGallery(page);
     await expect.poll(() => asked.length).toBeGreaterThan(0);
+    // The first card's picture is drawn on first open, not just requested.
+    const firstThumb = planCard(page, ROWS[0]!.label).locator("img.gal-thumb");
+    await expect(firstThumb).toBeVisible();
+    await expect
+      .poll(() =>
+        firstThumb.evaluate((i) => ((i as HTMLImageElement).complete ? (i as HTMLImageElement).naturalWidth : 0)),
+      )
+      .toBeGreaterThan(0);
     const cardBox = await planCard(page, ROWS[0]!.label).boundingBox();
     // Bring every thumbnail in (the panel scrolls) and wait for all of them.
     await panel(page).evaluate((p) => {
