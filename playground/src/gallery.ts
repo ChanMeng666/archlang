@@ -232,7 +232,10 @@ export function mountGallery(root: HTMLDetailsElement, onPick: (label: string) =
     return el;
   }
 
-  let lastLabel: string | null = null;
+  // The plan named until `setCurrent` is first called: the card the served page marks current
+  // (gen-static, the built-in plan), which a visit on that plan keeps with no compile (card MP5).
+  let lastLabel: string | null =
+    groupsEl.querySelector<HTMLElement>('.gal-card[aria-current="true"]')?.dataset.label ?? null;
   let lastNeutral = "Edited plan";
 
   const gallery: Gallery = {
