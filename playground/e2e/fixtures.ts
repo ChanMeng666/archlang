@@ -50,7 +50,9 @@ export async function embedHash(src: string, ...params: string[]): Promise<strin
  * The playground serves its default drawing in the HTML (gen-static), so a visible SVG alone
  * no longer means the compiler has run: `html[data-booting]` is removed by main.ts once the
  * first compile is drawn, the header actions are mounted and, in edit mode, the editor is
- * open. embed.html never carries the attribute, so this is the old wait there.
+ * open. On a plain visit that compile waits for a use or the browser's idle time (card MP5); the
+ * specs run with no Save-Data, so the idle load brings it. embed.html never carries the
+ * attribute, so this is the old wait there.
  */
 export async function waitForPlan(page: Page): Promise<void> {
   await expect(page.locator(".pz-stage svg")).toBeVisible();

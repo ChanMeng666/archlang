@@ -379,7 +379,8 @@
           </section>
         </div>
         <!-- The stage's foot (ruling PG-D6), shared by the drawing and the 3D preview: the facts on
-             the left (filled by main.ts), the page's lede on the right. Outside both views, so it
+             the left (the built-in plan's written at build time, scripts/gen-static.mjs; then
+             main.ts's), the page's lede on the right. Outside both views, so it
              stays put as the Plan | 3D switch flips them; main.ts hides it under edit mode's Facts
              and Checks tabs, which say the facts themselves. The lede is served bytes, small and
              VISIBLE (never hidden text): no crawler runs this page's JavaScript, so the heading in
@@ -389,7 +390,7 @@
              `aria-label` count (a bare <div>'s is not reliably exposed): the figures describe the
              SELECTED storey, and the name says so. -->
         <div class="facts-row" id="factsRow">
-          <div id="facts" class="facts" role="group" aria-label="Plan facts"></div>
+          <div id="facts" class="facts" role="group" aria-label="Plan facts"><!--prerender:facts--></div>
           <p class="lede" id="lede"><!--doors:canonical-line--></p>
         </div>      </section>
     </main>
@@ -410,6 +411,12 @@
       <div id="makeOwnBody" class="mo-body"></div>
     </dialog>
 
+    <!-- The built-in plan's source and describe() (scripts/gen-static.mjs, card MP5): with the
+         drawing and the facts line above, everything the live page would show for it, so a visit
+         that opens on it draws, pans, and shows its rooms' facts without compiling. Data, not
+         script: nothing runs it. On the dev server, where gen-static has not run, it holds the
+         slot, which is no JSON, and the app compiles at boot. -->
+    <script type="application/json" id="planData"><!--prerender:plan-data--></script>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

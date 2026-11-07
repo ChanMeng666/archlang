@@ -722,7 +722,7 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
    viewport exactly as pan-zoom.ts's fit() will (centred, FIT_PAD = 94 % of the limiting
    side), and main.ts's adopt() hands it over without a jump. `--ar` is its width ÷ height,
    written by scripts/gen-static.mjs. A visit that opens another plan (`pg-other`, set by the
-   head script) hides it until that plan is compiled. */
+   head script) hides it, and the facts line built in with it, until that plan is compiled. */
 .pz-viewport {
   container-type: size;
 }
@@ -736,7 +736,8 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
   height: auto;
   aspect-ratio: var(--ar, 1.4142);
 }
-.pg-other .pz-stage > svg[data-prerendered] {
+.pg-other .pz-stage > svg[data-prerendered],
+.pg-other .facts-line[data-prerendered] {
   visibility: hidden;
 }
 

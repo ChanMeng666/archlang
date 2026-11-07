@@ -36,7 +36,8 @@ async function expectHeadingAndLede(page: Page, styled = true): Promise<void> {
 
 /**
  * The cold-start contract: an untouched visit shows the default example's drawing before any
- * JavaScript, then compiles it in the browser, with a clean console and no missing assets.
+ * JavaScript, then compiles it in the browser (on first use or when idle, card MP5), with a clean
+ * console and no missing assets.
  *
  * This is the spec that would have caught a broken asset path, a bundler
  * externalisation mistake, or a module-scope throw — none of which the unit
@@ -61,8 +62,8 @@ test.describe("boot", { tag: "@prod" }, () => {
     // A real compiled plan, not an empty shell: it carries a viewBox and drawn geometry.
     await expect(svg).toHaveAttribute("viewBox", /^[\d.\-\s]+$/);
     expect(await svg.locator("path, rect, line, polyline, polygon").count()).toBeGreaterThan(0);
-    // …and it is the compiler's, not the one built into the page: the live compile annotates
-    // every primitive for click-to-source.
+    // …annotated for click-to-source, as the live compile draws it (since card MP5 the drawing
+    // built into the page is that same compile's: "boot without compiling" below pins the two equal).
     expect(await svg.locator("[data-span]").count()).toBeGreaterThan(0);
   });
 
@@ -215,5 +216,159 @@ test.describe("boot without JavaScript", { tag: "@prod" }, () => {
       "data-label",
       "Laneway House",
     );
+  });
+});
+
+/** Every request for the compiler's chunk or the example sources' (card MP5). */
+function watchCompiler(page: Page): string[] {
+  const seen: string[] = [];
+  page.on("request", (r) => {
+    if (/\/assets\/(?:compiler|examples)-[^/]+\.js(?:\?.*)?$/.test(r.url())) seen.push(r.url());
+  });
+  return seen;
+}
+const COMPILER_CHUNK = /\/assets\/compiler-[^/]+\.js(?:\?.*)?$/;
+
+/** Emulate a connection (`navigator.connection`, the Network Information API main.ts reads). */
+async function emulateConnection(page: Page, connection: { saveData: boolean; effectiveType: string }) {
+  await page.addInitScript((c) => {
+    Object.defineProperty(Navigator.prototype, "connection", { configurable: true, get: () => c });
+  }, connection);
+}
+const SAVE_DATA = { saveData: true, effectiveType: "4g" };
+
+/** The facts line's words (facts-line.js `factsLine`) for a one-storey plan. */
+const FACTS_LINE = /^\d+ lines of ArchLang → [1-9]\d* rooms? · \d+(\.\d+)? m² \((net|centreline)\)$/;
+
+/**
+ * Card MP5 (ruling MP-D4): a visit on the built-in plan pays only for what it uses. The page holds
+ * the drawing as the live render draws it, its facts line and its rooms' facts, so boot compiles
+ * nothing; the compiler loads on the first use, or when the browser is idle, never on idle under
+ * Save-Data or 2g. Navigation and DOM reads only, so the `@prod` tag holds.
+ */
+test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
+  for (const [name, connection] of [
+    ["Save-Data", SAVE_DATA],
+    ["a 2g connection", { saveData: false, effectiveType: "2g" }],
+  ] as const) {
+    test(`a plain visit under ${name} requests no compiler before a use`, async ({ page }) => {
+      await emulateConnection(page, connection);
+      const seen = watchCompiler(page);
+      await page.goto("/");
+      // The module has run (it shows the Plan | 3D switch) and the facts line is there, uncompiled.
+      await expect(page.locator("#stageSwitchRow")).toBeVisible();
+      await expect(page.locator("#facts")).toHaveText(FACTS_LINE);
+      await expect(page.locator(".pz-stage svg")).toBeVisible();
+      // Well past the idle load's timeout (main.ts `IDLE_TIMEOUT_MS`, 4 s): it never came.
+      await page.waitForTimeout(5000);
+      expect(seen, "no compiler or example chunk before a use").toEqual([]);
+      await expect(page.locator("html[data-booting]")).toHaveCount(1);
+      await expect(page.locator("#status")).not.toHaveClass(/\b(show|busy|err)\b/);
+    });
+  }
+
+  test("with no Save-Data the compiler loads when the browser is idle, with no use", async ({ page }) => {
+    const seen = watchCompiler(page);
+    await page.goto("/");
+    await waitForPlan(page);
+    expect(
+      seen.some((u) => COMPILER_CHUNK.test(u)),
+      "the idle load fetched the compiler",
+    ).toBe(true);
+  });
+
+  const uses: [string, (page: Page) => Promise<void>, (page: Page) => Promise<void>][] = [
+    [
+      "the gallery's first open, and the plan picked in it",
+      (page) => page.locator("#planPicker").click(),
+      async (page) => {
+        await expect(page.locator("#galleryPanel")).toBeVisible();
+        const before = await page.locator(".pz-stage svg").innerHTML();
+        await page.locator('#gallery .gal-card[data-label="Two-bed flat"]').click();
+        await expect.poll(async () => (await page.locator(".pz-stage svg").innerHTML()) !== before).toBe(true);
+      },
+    ],
+    [
+      "the 3D switch",
+      (page) => page.locator("#view3d").click(),
+      async (page) => {
+        await expect(page.locator("#preview3d")).toHaveClass(/\bactive\b/);
+        await expect(page.locator("#preview3d :is(canvas, .p3d-message):visible").first()).toBeVisible({
+          timeout: 15_000,
+        });
+      },
+    ],
+    [
+      "Source (edit mode)",
+      (page) => page.locator("#sourceToggle").click(),
+      async (page) => {
+        await expect(page.locator(".cm-content")).toBeVisible();
+        await expect(page.locator(".cm-content")).toContainText('plan "Laneway House"');
+      },
+    ],
+  ];
+  for (const [use, act, works] of uses) {
+    test(`under Save-Data, ${use} loads the compiler and works`, async ({ page }) => {
+      await emulateConnection(page, SAVE_DATA);
+      const seen = watchCompiler(page);
+      await page.goto("/");
+      await expect(page.locator("#stageSwitchRow")).toBeVisible();
+      expect(seen, "nothing before the use").toEqual([]);
+      const request = page.waitForRequest(COMPILER_CHUNK);
+      await act(page);
+      await request;
+      await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+      await expect(page.locator("html[data-boot-failed]")).toHaveCount(0);
+      await works(page);
+    });
+  }
+
+  test("the facts line and the plan's data are in the served HTML", async ({ page }) => {
+    const html = await (await page.request.get("/")).text();
+    const line = /<div id="facts"[^>]*><span class="facts-line" data-prerendered>([^<]*)<\/span><\/div>/.exec(html);
+    expect(line, "the served page holds the facts line").not.toBeNull();
+    const served = (line?.[1] ?? "").replace(/&amp;/g, "&");
+    expect(served).toMatch(FACTS_LINE);
+    const data = /<script type="application\/json" id="planData">([^<]*)<\/script>/.exec(html);
+    expect(data, "the served page holds the plan's data").not.toBeNull();
+    const { source, summary } = JSON.parse(data?.[1] ?? "{}") as { source: string; summary: { rooms: unknown[] } };
+    expect(source).toContain('plan "Laneway House"');
+    expect(summary.rooms.length).toBeGreaterThan(0);
+    // The app says the same once it has compiled the plan itself.
+    await page.goto("/");
+    await waitForPlan(page);
+    await expect(page.locator("#facts")).toHaveText(served);
+  });
+
+  test("the built-in drawing is the one the live render draws, so nothing jumps when it lands", async ({ page }) => {
+    await emulateConnection(page, SAVE_DATA);
+    await page.goto("/");
+    await expect(page.locator("#stageSwitchRow")).toBeVisible();
+    const svg = page.locator(".pz-stage svg");
+    const read = () =>
+      svg.evaluate((el) => {
+        const box = el.getBoundingClientRect();
+        return {
+          viewBox: el.getAttribute("viewBox"),
+          inner: el.innerHTML,
+          spans: el.querySelectorAll("[data-span]").length,
+          box: [box.x, box.y, box.width, box.height].map((n) => Math.round(n)),
+          built: (el as Element & { __built?: boolean }).__built === true,
+        };
+      });
+    await svg.evaluate((el) => {
+      (el as Element & { __built?: boolean }).__built = true;
+    });
+    const built = await read();
+    expect(built.spans, "the built-in drawing is annotated as the live render is").toBeGreaterThan(0);
+    // A use (Share opened) brings the compiler in, and its render replaces the element.
+    await page.locator("#share > summary").click();
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
+    const live = await read();
+    expect(live.built, "the live render drew a new element").toBe(false);
+    expect(live.viewBox).toBe(built.viewBox);
+    expect(live.spans).toBe(built.spans);
+    expect(live.inner === built.inner, "the same markup, byte for byte").toBe(true);
+    expect(live.box, "in the same place, at the same size").toEqual(built.box);
   });
 });
