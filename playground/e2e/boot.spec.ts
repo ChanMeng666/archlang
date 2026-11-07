@@ -255,8 +255,8 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
       await emulateConnection(page, connection);
       const seen = watchCompiler(page);
       await page.goto("/");
-      // The module has run (it shows the Plan | 3D switch) and the facts line is there, uncompiled.
-      await expect(page.locator("#stageSwitchRow")).toBeVisible();
+      // The module has run (it shows the Plan | 3D switch, `#viewPlan`) and the facts line is there, uncompiled.
+      await expect(page.locator("#viewPlan")).toBeVisible();
       await expect(page.locator("#facts")).toHaveText(FACTS_LINE);
       await expect(page.locator(".pz-stage svg")).toBeVisible();
       // Well past the idle load's timeout (main.ts `IDLE_TIMEOUT_MS`, 4 s): it never came.
@@ -312,7 +312,7 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
       await emulateConnection(page, SAVE_DATA);
       const seen = watchCompiler(page);
       await page.goto("/");
-      await expect(page.locator("#stageSwitchRow")).toBeVisible();
+      await expect(page.locator("#viewPlan")).toBeVisible();
       expect(seen, "nothing before the use").toEqual([]);
       const request = page.waitForRequest(COMPILER_CHUNK);
       await act(page);
@@ -343,7 +343,7 @@ test.describe("boot without compiling (card MP5)", { tag: "@prod" }, () => {
   test("the built-in drawing is the one the live render draws, so nothing jumps when it lands", async ({ page }) => {
     await emulateConnection(page, SAVE_DATA);
     await page.goto("/");
-    await expect(page.locator("#stageSwitchRow")).toBeVisible();
+    await expect(page.locator("#viewPlan")).toBeVisible();
     const svg = page.locator(".pz-stage svg");
     const read = () =>
       svg.evaluate((el) => {
