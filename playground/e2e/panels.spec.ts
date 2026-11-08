@@ -146,7 +146,8 @@ test.describe("one view switch (PG-D3)", () => {
 
   // `@engines`: also run in Firefox and WebKit (playwright.config.ts, card MP10). Per the HTML
   // spec an engine may keep a failed module fetch in its module map, so that a second `import()`
-  // of the same URL rejects again without a request; this proves each engine asks again.
+  // of the same URL rejects again without a request. Chromium and Firefox ask again; WebKit does
+  // not, and there the second failed boot reloads the page, which comes up at once (main.ts `up`).
   test("a compiler that fails to load says so, and never stays on Compiling…", { tag: "@engines" }, async ({
     page,
   }) => {
@@ -187,6 +188,41 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
     await expect(page.locator("html[data-boot-failed]")).toHaveCount(0);
     await expect(status).not.toHaveClass(/\berr\b/);
+    await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
+  });
+
+  // Card MP10: the reload is how an engine that keeps a failed module fetch (WebKit) retries, and
+  // how a page left open across a deploy (its chunk names gone) gets the new ones. Never in a loop:
+  // the reloaded page comes up at once, and that boot failing is its first, so it stays.
+  test("a second failed boot reloads the page, and the new page comes up at once", { tag: "@engines" }, async ({
+    page,
+  }) => {
+    const refused = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
+    await page.route(refused, (route) => route.abort());
+    let loads = 0;
+    page.on("load", () => loads++);
+    await page.goto("/");
+    const share = page.locator("#share > summary");
+    const failed = page.locator("html[data-boot-failed]");
+    // The first failed boot says so and stays on the page.
+    await share.click();
+    await expect(failed).toHaveCount(1, { timeout: 15_000 });
+    await page.waitForTimeout(1000);
+    expect(loads).toBe(1);
+    // The second reloads it, and the new page boots with no use: still refused, it fails, says so
+    // and stays, with no use to retry it.
+    await share.click(); // closes the menu
+    await share.click(); // opens it again: a use
+    await expect.poll(() => loads, { timeout: 15_000 }).toBe(2);
+    await expect(failed).toHaveCount(1, { timeout: 15_000 });
+    await expect(page.locator("#statusText")).toHaveText("Couldn't load the compiler — try again or reload");
+    await page.waitForTimeout(2000);
+    expect(loads).toBe(2);
+    // Once the chunk can load, the next use brings the app up (in place, or by one more reload).
+    await page.unroute(refused);
+    await share.click();
+    await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
+    await expect(failed).toHaveCount(0);
     await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
   });
 
