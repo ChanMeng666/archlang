@@ -12,7 +12,7 @@
  *   `&3d` compiles at once, as before;
  * - the compile job (compile-worker.ts, card MP6): with the compiler; every render's compile,
  *   describe and lint then run in a Web Worker started from it, so typing never freezes the page
- *   (on the page instead where a worker cannot run; a knob being dragged compiles on the page);
+ *   (on the page instead where a worker cannot run); a dragged knob's too (card MP8);
  * - the header actions (actions.ts): once the compiler is in;
  * - the editor and its panels (edit-mode.ts: CodeMirror, completion, diagnostics, Describe,
  *   Lint, Intent): on the first entry into edit mode;
