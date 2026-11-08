@@ -73,7 +73,7 @@ come after load:
 | MP7 (deferred, § 5) | draw 3D straight to the visible canvas | `packages/archlang-3d/src/replay/mount.ts` | frame hashes and single-file replay HTML bytes unchanged | high, package release |
 | **MP8** a dragged knob compiles in the worker (#574) | MP-D6 for the knobs panel: a moving slider's compile leaves the page, and a value that does not compile still snaps back | `src/main.ts` (`tryRender`), `src/knobs-panel.ts` | dragging a knob on Hillside at 4× CPU gives no main-thread task over 100 ms; the last value wins; `knobs` specs unchanged and green. Startup set 17,366 B gzip (index 13,795): +182 B over MP6, the baseline not re-taken | medium |
 | **MP9** a plan switch compiles once (#574) | `render` asked for the drawing already on screen, with nothing in flight, compiles nothing (today the switch's own render and its debounced one both compile when the first lands within 250 ms) | `src/main.ts` | a gallery switch makes exactly one compile request; an edit after it still compiles | medium |
-| **MP10** a failed compiler load retries in every engine (#575) | MP5 forgets a failed `import()` so the next use asks again; that is proven in Chromium only, and an engine that keeps a failed module fetch would never retry | `src/main.ts` (`up`), `e2e/panels.spec.ts` `@engines`, `playwright.config.ts`, CI | per engine, as it is: Chromium and Firefox ask again in place; WebKit keeps the failure for the document (HTML module map, no request), and another URL cannot help (every chunk imports the compiler by its own), so a page's second failed boot reloads it once, only when the page itself answers; the reloaded page boots at once and never reloads itself, and says plainly when it still failed. WebKit's recovery after that reload is not asserted (decided under the owner's delegation, 2026-11-08): Playwright's WebKit kept the refused chunk in its memory cache across reloads for a time that varied (up to 38 s), and its next import of a refused chunk rejects only after 20–30 s (the WebKit runs are marked slow for it). Real Safari is part of the owner's real-phone check. Startup set 17,520 B gzip (index 13,949): +128 B over main, the baseline not re-taken | medium/high (CI) |
+| **MP10** a failed compiler load retries in every engine (#575) | MP5 forgets a failed `import()` so the next use asks again; that is proven in Chromium only, and an engine that keeps a failed module fetch would never retry | `src/main.ts` (`up`), `e2e/panels.spec.ts` `@engines`, `playwright.config.ts`, CI | per engine, as it is: Chromium and Firefox ask again in place; WebKit keeps the failure for the document (HTML module map, no request), and another URL cannot help (every chunk imports the compiler by its own), so a page's second failed boot reloads it once, only when the page itself answers; the reloaded page boots at once and never reloads itself, and says plainly when it still failed. WebKit's recovery after that reload is not asserted (decided under the owner's delegation, 2026-11-08): Playwright's WebKit kept the refused chunk in its memory cache across reloads for a time that varied (up to 38 s), and its next import of a refused chunk rejects only after 20–30 s (the WebKit runs are marked slow for it). The owner's real-iPhone check (2026-11-08) found the playground smooth. Startup set 17,520 B gzip (index 13,949): +128 B over main, the baseline not re-taken | medium/high (CI) |
 
 Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6, then MP8 → MP9 → MP10 (follow-ups found in
 MP5/MP6 review). High-tier cards wait for the owner's words before merge.
@@ -94,8 +94,9 @@ Open follow-ups from the reviews, too small for a card each:
 
 - Decided 2026-11-07: Cloudflare Web Analytics (injected at the edge on both sites, about 10 KB
   of JS per page) is free, so the owner kept it; the privacy page and `docs/seo.md` now say so.
-- Real iOS Safari, the virtual keyboard and phone GPU cost were not measurable in emulation; check
-  on a real phone after MP1–MP3.
+- Real iOS Safari, the virtual keyboard and phone GPU cost were not measurable in emulation. Checked
+  2026-11-08: the owner used playground.archlang.uk on a real iPhone (iOS Safari) after MP1–MP10
+  and found it smooth throughout, with nothing to fix.
 
 ## 5. Deferred: MP7
 
@@ -116,5 +117,6 @@ phone that copy is a large share of a frame's cost. MP7 would draw straight to t
 - MP3 already bounds the cost: nothing is drawn while the 3D view is covered, off-screen or in a
   hidden tab, and the drawing buffer is capped at 1.5× on touch screens.
 
-**When to take it up.** When the owner's real-phone check finds the 3D view slow, or with the next
-`archlang-3d` release, whichever comes first. Start from this section and the MP7 row.
+**When to take it up.** With the next `archlang-3d` release, or if a phone is later found slow in
+3D. The owner's real-phone check (2026-11-08) found the 3D view smooth, so nothing forces it now.
+Start from this section and the MP7 row.
