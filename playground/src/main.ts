@@ -535,10 +535,10 @@ const adoptedBuiltIn = !root.classList.contains("pg-other") && previewCtl.adopt(
 const knobsPanel = mountKnobsPanel({
   viewport: pzViewport,
   getSource: () => currentSource(),
-  // A knob being dragged redraws the plan, but Checks waits for it to be let go (`keepKnob`). The
-  // panel needs the verdict at once (a value that does not compile snaps back), so a knob's
-  // compile runs on the page (`renderNow`), as before card MP6.
-  tryRender: (source) => renderNow(source, true),
+  // A knob being dragged redraws the plan, but Checks and the 3D preview wait for it to be let go
+  // (`keepKnob`). Its compile runs in the worker like any render's (card MP8); the panel acts on
+  // the verdict when it lands (a value that does not compile snaps back).
+  tryRender: (source) => renderKnob(source),
   commit: keepKnob,
   flash,
 });
@@ -637,10 +637,22 @@ const okStatus = (warnings: number): string => (warnings ? `${warnings} warning$
 let renderSeq = 0;
 /** A render asked for a re-fit (a new plan) that a newer request superseded: the newer one fits. */
 let refitPending = false;
-/** Settled once the drawing is of that render's request or a newer one: its verdict. */
-const renderWaiters: { seq: number; resolve: (ok: boolean) => void }[] = [];
-/** The request in the worker, so a render of exactly the same request rides on it (`render`). */
-let inFlight: { key: string; done: Promise<boolean> } | undefined;
+/** What settled a render: the verdict of the drawing that landed, and that drawing's request. */
+interface Landed {
+  ok: boolean;
+  seq: number;
+}
+/** Settled once the drawing is of that render's request or a newer one. */
+const renderWaiters: { seq: number; resolve: (landed: Landed) => void }[] = [];
+/** The request in the worker, so a render of exactly the same request rides on it (`request`). */
+let inFlight: { key: string; seq: number; done: Promise<Landed> } | undefined;
+/**
+ * The request whose drawing is on screen, complete (not a knob mid-drag's, which leaves Checks
+ * and the 3D preview behind), and its verdict: a render asked for that very request again, with
+ * nothing newer asked for, compiles nothing (card MP9: a plan switch's own render and its
+ * debounced one). Cleared by anything that leaves the screen other than that render left it.
+ */
+let onScreen: { key: string; seq: number; ok: boolean } | undefined;
 /** Plans picked whose render has not been asked for yet (the app was still coming up). */
 let picking = 0;
 /**
@@ -699,31 +711,56 @@ function renderRequest(source: string): CompileRequest {
  * dropped, so the last edit always wins and an older drawing never flashes over a newer one.
  */
 function render(source: string, refit = false): Promise<boolean> {
-  if (!core || !jobs || !compiler) return Promise.resolve(false); // boot renders once it is in
-  // The same request as the one in the worker (the debounced render a plan switch also schedules):
-  // its result is this one's, so it is not compiled twice. Everything the drawing depends on is
-  // in the key, so the two are the same render.
+  return request(source, refit, false).then((landed) => landed.ok);
+}
+
+/**
+ * Compile and show `source` for a knob being dragged (card MP8): in the worker like any render,
+ * drawn without the Checks rings and leaving the 3D preview where it is (`keepKnob` catches them
+ * up on release). Settles with this request's own verdict, or null when another request's drawing
+ * landed instead (a newer move, an edit, a plan picked): that verdict is not this value's.
+ */
+function renderKnob(source: string): Promise<boolean | null> {
+  return request(source, false, true).then((landed) => (landed.seq === landed.own ? landed.ok : null));
+}
+
+/** `render` and `renderKnob`: ask for a drawing, unless it is the one on screen or in the worker. */
+function request(source: string, refit: boolean, knobMoving: boolean): Promise<Landed & { own: number }> {
+  if (!core || !jobs || !compiler) return Promise.resolve({ ok: false, seq: -1, own: 0 }); // boot renders once it is in
+  // Everything the drawing depends on is in the key, so two requests with one key are one render.
+  const key = JSON.stringify([source, renderState(), knobMoving]);
+  // The drawing on screen is this request's, complete, and nothing newer has been asked for: its
+  // verdict stands, and nothing is compiled (card MP9). A re-fit is never answered from the
+  // screen: a request for one compiles, as a new plan does, and is fitted when it lands.
+  if (!refit && onScreen?.key === key && onScreen.seq === renderSeq && !inFlight) {
+    const { ok, seq } = onScreen;
+    return Promise.resolve({ ok, seq, own: seq });
+  }
   if (refit) refitPending = true; // whichever result lands next is the new plan's, and fits it
-  const key = JSON.stringify([source, renderState()]);
-  if (inFlight?.key === key) return inFlight.done;
+  // The same request as the one in the worker (the debounced render a plan switch also schedules,
+  // when the first has not landed yet): its result is this one's, so it is not compiled twice.
+  if (inFlight?.key === key) {
+    const { seq: own, done } = inFlight;
+    return done.then((landed) => ({ ...landed, own }));
+  }
   const req = renderRequest(source);
-  const done = new Promise<boolean>((resolve) => {
+  const done = new Promise<Landed>((resolve) => {
     renderWaiters.push({ seq: req.seq, resolve });
   });
   paintRendering();
-  const mine = { key, done };
+  const mine = { key, seq: req.seq, done };
   inFlight = mine;
   void compiler.run(req).then(
     (result) => {
       if (inFlight === mine) inFlight = undefined;
-      if (result && req.seq === renderSeq) show(req, result, false);
+      if (result && req.seq === renderSeq) show(req, result, knobMoving, key);
     },
     (err: unknown) => {
       if (inFlight === mine) inFlight = undefined;
       renderFailed(req, err);
     },
   );
-  return done;
+  return done.then((landed) => ({ ...landed, own: req.seq }));
 }
 
 /**
@@ -732,7 +769,9 @@ function render(source: string, refit = false): Promise<boolean> {
  * drawing stays, and the status says what happened.
  */
 function renderFailed(req: CompileRequest, err: unknown) {
-  while (renderWaiters.length > 0 && renderWaiters[0]!.seq <= req.seq) renderWaiters.shift()!.resolve(false);
+  onScreen = undefined; // the status is no longer the drawing's verdict
+  while (renderWaiters.length > 0 && renderWaiters[0]!.seq <= req.seq)
+    renderWaiters.shift()!.resolve({ ok: false, seq: req.seq });
   paintRendering();
   clearTimeout(busyTimer); // a boot's "Compiling…" is over too
   if (req.seq === renderSeq) setStatus("err", "The compiler failed on this plan — try again or reload");
@@ -756,25 +795,20 @@ function renderState(): unknown[] {
 }
 
 /**
- * Compile and show `source` on the page, now; whether it compiled without errors. For a knob
- * being dragged (`knobMoving`), whose panel needs the verdict at once.
+ * Show a render's result (`request`, whose key it was); whether it compiled without errors. A
+ * knob mid-drag's drawing is not complete (no Checks rings, the 3D preview left behind), so it is
+ * not remembered as the drawing on screen (`onScreen`).
  */
-function renderNow(source: string, knobMoving = false): boolean {
-  if (!core || !jobs || !compiler) return false;
-  const req = renderRequest(source);
-  inFlight = undefined;
-  return show(req, compiler.runNow(req), knobMoving);
-}
-
-/** Show a render's result (from `render` or `renderNow`); whether it compiled without errors. */
-function show(req: CompileRequest, result: CompileResult, knobMoving: boolean): boolean {
+function show(req: CompileRequest, result: CompileResult, knobMoving: boolean, key: string): boolean {
   const { source } = req;
   const refit = refitPending;
   refitPending = false;
   // Every render waiting on this request or an older one is over: the drawing is at least theirs.
   const ok = result.errors.length === 0;
+  onScreen = knobMoving ? undefined : { key, seq: req.seq, ok };
   // In the order they were made, so what each does next happens in that order too.
-  while (renderWaiters.length > 0 && renderWaiters[0]!.seq <= req.seq) renderWaiters.shift()!.resolve(ok);
+  while (renderWaiters.length > 0 && renderWaiters[0]!.seq <= req.seq)
+    renderWaiters.shift()!.resolve({ ok, seq: req.seq });
   paintRendering();
   root.dataset.compiler = compiler?.where() ?? "page";
   if (result.gutter) gutterReady(source, result.gutter);
@@ -1010,6 +1044,7 @@ let docRenders = 0;
  */
 function onExportError(format: string, err: unknown) {
   const text = `${format.toUpperCase()} export failed: ${(err as { message?: string })?.message ?? err}`;
+  onScreen = undefined; // the status is no longer the drawing's verdict: a render puts it back
   setStatus("err", text);
   errorsEl.classList.add("show");
   errorsEl.textContent = text;

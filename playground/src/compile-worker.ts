@@ -189,8 +189,6 @@ export interface CompileClient {
    * Rejects only when the job threw on the page (never in the worker: that falls back).
    */
   run(req: CompileRequest): Promise<CompileResult | null>;
-  /** Run `req` on the page, now, and drop every older request (a knob being dragged). */
-  runNow(req: CompileRequest): CompileResult;
   /** Where requests run: in the worker, or on the page (no worker, or it failed). */
   where(): "worker" | "page";
 }
@@ -218,7 +216,7 @@ export function createCompileClient(
 ): CompileClient {
   let worker: Worker | undefined;
   let broken = typeof Worker === "undefined";
-  /** The newest request made (run or runNow). */
+  /** The newest request made. */
   let latest = 0;
   /** The request in the worker, and the one waiting for it to be free. */
   let inFlight: Pending | undefined;
@@ -316,12 +314,6 @@ export function createCompileClient(
           queued = p;
         } else send(p);
       });
-    },
-    runNow(req) {
-      latest = Math.max(latest, req.seq);
-      queued?.resolve(null);
-      queued = undefined;
-      return runCompileJob(req);
     },
     where: () => (broken ? "page" : "worker"),
   };

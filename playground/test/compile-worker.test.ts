@@ -148,15 +148,6 @@ suite("createCompileClient", () => {
     expect(FakeWorker.made).toBe(1);
   });
 
-  it("drops a worker reply once the page has run a newer request itself (a knob)", async () => {
-    install();
-    const client = createCompileClient();
-    const a = client.run(req(src, { seq: 1 }));
-    const now = client.runNow(req(src, { seq: 2 }));
-    expect(now.errors).toEqual([]);
-    expect(await a).toBeNull();
-  });
-
   for (const fail of ["throw", "error"] as const) {
     it(`falls back to the page, once, when the worker ${fail === "throw" ? "cannot be made" : "fails to load"}`, async () => {
       install();
