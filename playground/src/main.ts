@@ -1202,18 +1202,25 @@ function up(): Promise<void> {
       // Only a new document helps either, so a page's second failed boot reloads it, when the page
       // itself still answers (offline, a reload would lose the drawing on screen), and the new page
       // boots at once (`RETRY_UP`). That page never reloads itself: a failure there says so and
-      // stays, and the message names the reload. Before a boot there is no editor: nothing is lost.
+      // stays, and the message names the reload. An `&edit` boot can fail after its editor
+      // mounted (a later chunk refused): the draft is saved first, so no edit is lost.
       if (++bootFailures < 2 || reloaded) return;
-      const answers = await fetch(location.pathname, { method: "HEAD", cache: "no-store" }).then(
+      const answers = await fetch(location.pathname, {
+        method: "HEAD",
+        cache: "no-store",
+        signal: typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(5000) : undefined,
+      }).then(
         (r) => r.ok,
         () => false,
       );
-      if (!answers) return;
+      // A use while the page was asked started another boot: that one decides (it may be up).
+      if (!answers || isUp || readyP !== undefined) return;
       try {
         sessionStorage.setItem(RETRY_UP, "1");
       } catch {
         return; // without the flag the new page would wait for a use, and the user's use is lost
       }
+      if (edit) writeStr(KEYS.source, currentSource());
       location.reload();
     });
   }
