@@ -193,7 +193,8 @@ test.describe("one view switch (PG-D3)", () => {
 
   // Card MP10: the reload is how an engine that keeps a failed module fetch (WebKit) retries, and
   // how a page left open across a deploy (its chunk names gone) gets the new ones. Never in a loop:
-  // the reloaded page comes up at once, and that boot failing is its first, so it stays.
+  // the reloaded page comes up at once, and its boot failing reloads once more (WebKit can hand
+  // the first reloaded page the same failure), then the page stays.
   test("a second failed boot reloads the page, and the new page comes up at once", { tag: "@engines" }, async ({
     page,
   }) => {
@@ -209,15 +210,15 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(failed).toHaveCount(1, { timeout: 15_000 });
     await page.waitForTimeout(1000);
     expect(loads).toBe(1);
-    // The second reloads it, and the new page boots with no use: still refused, it fails, says so
-    // and stays, with no use to retry it.
+    // The second reloads it, and the new page boots with no use: still refused, it fails and
+    // reloads once more; that page fails too, says so and stays, with no use to retry it.
     await share.click(); // closes the menu
     await share.click(); // opens it again: a use
-    await expect.poll(() => loads, { timeout: 15_000 }).toBe(2);
+    await expect.poll(() => loads, { timeout: 30_000 }).toBe(3);
     await expect(failed).toHaveCount(1, { timeout: 15_000 });
     await expect(page.locator("#statusText")).toHaveText("Couldn't load the compiler — try again or reload");
     await page.waitForTimeout(2000);
-    expect(loads).toBe(2);
+    expect(loads).toBe(3);
     // Once the chunk can load, the next use brings the app up (in place, or by one more reload).
     await page.unroute(refused);
     await share.click();
