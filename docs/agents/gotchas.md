@@ -263,6 +263,14 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   with `countCompiles` (fixtures.ts). Measure main-thread long tasks under CDP CPU throttling, as the
   Hillside typing and knob-drag tests in `editing.spec.ts` and `knobs.spec.ts` do.
   `html[data-compiler]` says whether the worker or the page compiled.
+- **Playwright's WebKit after a refused module chunk** (`route.abort()` or a 503 alike, card
+  MP10's CI runs): the next `import()` of it rejects only after 20–30 s, and a click that starts it
+  returns then (`test.slow` with the reason, never a project-wide timeout); a page reloaded within a
+  second or two of the failure gets it again with no request, and how long the memory cache keeps it
+  varies (38 s once), so never assert that a reload recovers in WebKit. WebKit does keep
+  a failed module fetch for the document's life (the HTML module map); Chromium and
+  Firefox forget it and fetch again in place. Tell the engines apart by documents loaded, never by
+  counting the chunk's requests: one boot asks twice (the page and the compile worker).
 - **A worktree's playground typecheck can miss `@resvg/resvg-wasm`** (the primary checkout's
   `node_modules` lacks it): run `npm ci` in the worktree rather than junctioning.
 - **vsce rejects an SVG image from a host outside its badge allow-list** (raw.githubusercontent.com

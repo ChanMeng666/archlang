@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Route, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { describe } from "../../src/index.js";
 import {
@@ -183,6 +183,142 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(page.locator("html[data-boot-failed]")).toHaveCount(0);
     await expect(status).not.toHaveClass(/\berr\b/);
     await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
+  });
+
+  // Card MP10, `@engines`: the two specs below also run in Firefox and WebKit (playwright.config.ts).
+  // The chunk is refused with a response (a CDN gap, a deploy that removed it); the aborted request
+  // stays Chromium's, above. Two things Playwright's WebKit does after a refused module chunk, seen
+  // on the MP10 CI runs and not chased: the next `import()` of it rejects only after 20–30 s (a
+  // click that starts it returns then; the WebKit runs are marked slow for it), and a page reloaded
+  // within a second or two of the failure gets the failure again with no request (the memory cache
+  // keeps it for a time that varies). So WebKit's recovery is not asserted here; Chromium and
+  // Firefox prove the retry, WebKit the one reload and the honest message.
+  const refusedChunk = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
+  const WEBKIT_SLOW = "WebKit's next import of a refused chunk rejects only after 20–30 s (MP10 CI runs)";
+  const refuse = (page: Page) => page.route(refusedChunk, (route) => route.fulfill({ status: 503, body: "" }));
+  /**
+   * Whether the compiler's chunk was asked for yet (the page's `import()` and the compile worker's
+   * static import both ask, so this is never a count), and how many documents loaded.
+   */
+  function watchLoads(page: Page) {
+    const seen = { asked: false, loads: 0 };
+    page.on("request", (r) => {
+      if (refusedChunk.test(r.url())) seen.asked = true;
+    });
+    page.on("load", () => seen.loads++);
+    return seen;
+  }
+  const FAILED_TEXT = "Couldn't load the compiler — try again or reload";
+
+  // Per the HTML spec a failed module fetch stays in the document's module map, so a second
+  // `import()` of the URL rejects with no request. Chromium and Firefox forget it instead and ask
+  // again in place; WebKit keeps it, so there the second failed boot reloads the page (main.ts
+  // `up`), and the new page boots at once. The documents loaded tell the two apart: once the chunk
+  // can load, an engine that asks again comes up in the same document, and one that keeps the
+  // failure can only come up in a new one.
+  test("a failed compiler load is asked for again: in place, or (WebKit) by one reload", { tag: "@engines" }, async ({
+    page,
+    browserName,
+  }) => {
+    const webkit = browserName === "webkit";
+    test.slow(webkit, WEBKIT_SLOW);
+    await refuse(page);
+    const seen = watchLoads(page);
+    await page.goto("/");
+    // The idle import asks (card MP5), and its failure says nothing.
+    await expect.poll(() => seen.asked, { timeout: 15_000 }).toBe(true);
+    await page.waitForTimeout(1000);
+    const share = page.locator("#share > summary");
+    const failed = page.locator("html[data-boot-failed]");
+    const status = page.locator("#statusText");
+    await expect(failed).toHaveCount(0);
+    // The first use says so, and stays on the page.
+    await share.click();
+    await expect(failed).toHaveCount(1, { timeout: 15_000 });
+    await expect(status).toHaveText(FAILED_TEXT);
+    expect(seen.loads).toBe(1);
+    // Once the chunk can load, the next use asks again.
+    await page.unroute(refusedChunk);
+    await share.click(); // closes the menu
+    await share.click(); // opens it again: a use
+    if (!webkit) {
+      // Chromium, Firefox: asked again and up, in the same document.
+      await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
+      await expect(failed).toHaveCount(0);
+      await expect(status).toHaveText(/^(ready|\d+ warnings?)$/);
+      expect(seen.loads).toBe(1);
+      return;
+    }
+    // WebKit: the use failed again from the module map, so the page reloaded, once, and the new
+    // page booted with no use. Whether that page gets the chunk is up to Playwright's WebKit memory
+    // cache, which kept a refused chunk across reloads for an unpredictable time on the MP10 CI runs
+    // (38 s once), so this run does not assert the recovery (decided under the owner's delegation, 2026-11-08). It
+    // asserts what is certain: one reload, never a second, and a page that is either up or says
+    // plainly that it failed and that a reload helps.
+    await expect.poll(() => seen.loads, { timeout: 15_000 }).toBe(2);
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 30_000 });
+    await page.waitForTimeout(3000);
+    expect(seen.loads, "the reloaded page never reloads itself").toBe(2);
+    if ((await failed.count()) > 0) await expect(status).toHaveText(FAILED_TEXT);
+    else await expect(status).toHaveText(/^(ready|\d+ warnings?)$/);
+  });
+
+  // The reload is for the engine that keeps the failure and for a page left open across a deploy
+  // (its chunk names gone). Never in a loop, and never off the page: a page that does not answer
+  // is not reloaded (offline, the drawing on screen would be lost), the reloaded page boots at
+  // once and never reloads itself, and a hand reload still recovers. The same in every engine.
+  test("a second failed boot reloads the page once, when the page answers, and never in a loop", {
+    tag: "@engines",
+  }, async ({ page, browserName }) => {
+    test.slow(browserName === "webkit", WEBKIT_SLOW);
+    await refuse(page);
+    const seen = watchLoads(page);
+    await page.goto("/");
+    const share = page.locator("#share > summary");
+    const failed = page.locator("html[data-boot-failed]");
+    const status = page.locator("#statusText");
+    // Share toggled twice: the open is a use (on a fresh page the first click is that open).
+    const use = async () => {
+      await share.click();
+      await share.click();
+    };
+    // The first failed boot says so and stays.
+    await share.click();
+    await expect(failed).toHaveCount(1, { timeout: 15_000 });
+    await expect(status).toHaveText(FAILED_TEXT);
+    // With the page itself not answering, the second failure stays too.
+    const ownPath = (url: URL) => url.pathname === "/";
+    const noAnswer = (route: Route) =>
+      route.request().method() === "HEAD" ? route.fulfill({ status: 503, body: "" }) : route.fallback();
+    await page.route(ownPath, noAnswer);
+    await use();
+    await expect(status).toHaveText(FAILED_TEXT);
+    await page.waitForTimeout(1500);
+    expect(seen.loads).toBe(1);
+    await page.unroute(ownPath, noAnswer);
+    // With the page answering, the next failure reloads it once: the new page boots at once (no
+    // use), still refused, says so and stays.
+    await use();
+    await expect.poll(() => seen.loads, { timeout: 15_000 }).toBe(2);
+    await expect(failed).toHaveCount(1, { timeout: 15_000 });
+    await expect(status).toHaveText(FAILED_TEXT);
+    await page.waitForTimeout(1500);
+    expect(seen.loads).toBe(2);
+    // A use on the reloaded page fails again (in place, or from the module map) and never reloads.
+    await use();
+    await expect(status).toHaveText(FAILED_TEXT);
+    await page.waitForTimeout(1500);
+    expect(seen.loads).toBe(2);
+    await expect(failed).toHaveCount(1);
+    // The message's reload, by hand, recovers once the chunk can load. Not asserted in WebKit,
+    // whose memory cache keeps the refused chunk across reloads for a time that varies (above).
+    if (browserName === "webkit") return;
+    await page.unroute(refusedChunk);
+    await page.reload();
+    await share.click();
+    await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
+    await expect(failed).toHaveCount(0);
+    await expect(status).toHaveText(/^(ready|\d+ warnings?)$/);
   });
 
   test("a boot that succeeds never says it failed", async ({ page }) => {

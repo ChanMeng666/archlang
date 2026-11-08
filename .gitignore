@@ -8,6 +8,8 @@ playground/node_modules/
 # Playwright E2E artifacts (traces, screenshots, HTML report) — per-run, never committed.
 playground/test-results/
 playground/playwright-report/
+playground/test-results-engines/
+playground/playwright-report-engines/
 playground/blob-report/
 docs-site/test-results/
 docs-site/playwright-report/

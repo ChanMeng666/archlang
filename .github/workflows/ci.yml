@@ -543,8 +543,13 @@ jobs:
         id: pw-cache
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
+          # Chromium's own folders only: Firefox and WebKit have their cache below, and a save of
+          # the whole folder would hold them twice.
+          path: |
+            ~/.cache/ms-playwright/chromium-*
+            ~/.cache/ms-playwright/chromium_headless_shell-*
+            ~/.cache/ms-playwright/ffmpeg-*
+          key: playwright-chromium-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       # On a cache hit the browser binary is already there but the OS packages it
       # links against are not (they live outside the cached path), so the two
@@ -563,7 +568,40 @@ jobs:
 
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
-        run: npx playwright test -c playground
+        run: npx playwright test -c playground --project chromium
+
+      # Firefox and WebKit run only the specs tagged `@engines` (playground/playwright.config.ts,
+      # card MP10): what each engine does after a failed compiler load. Their browsers are cached
+      # apart from Chromium's, by the same version key; the system deps install on every run, as
+      # Chromium's do. `!cancelled()`: they run after a red Chromium step too, so one run reports
+      # every engine.
+      - name: Cache Firefox and WebKit
+        if: env.FULL_CI == 'true' && !cancelled()
+        id: pw-cache-engines
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ~/.cache/ms-playwright/firefox-*
+            ~/.cache/ms-playwright/webkit-*
+          key: playwright-engines-${{ runner.os }}-${{ steps.pw.outputs.version }}
+
+      - name: Install Firefox and WebKit (browsers + system deps)
+        if: env.FULL_CI == 'true' && !cancelled() && steps.pw-cache-engines.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps firefox webkit
+
+      - name: Install Firefox and WebKit system deps only (cached browsers)
+        if: env.FULL_CI == 'true' && !cancelled() && steps.pw-cache-engines.outputs.cache-hit == 'true'
+        run: npx playwright install-deps firefox webkit
+
+      # Its own report and results folders, so a red Chromium run's report and traces survive.
+      - name: Run the @engines specs in Firefox and WebKit
+        if: env.FULL_CI == 'true' && !cancelled()
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: ${{ github.workspace }}/playground/playwright-report-engines
+          PLAYWRIGHT_HTML_REPORT: ${{ github.workspace }}/playground/playwright-report-engines
+        run: >-
+          npx playwright test -c playground --project firefox --project webkit
+          --output ${{ github.workspace }}/playground/test-results-engines
 
       - name: Upload Playwright report
         if: failure()
@@ -573,6 +611,8 @@ jobs:
           path: |
             playground/playwright-report
             playground/test-results
+            playground/playwright-report-engines
+            playground/test-results-engines
           retention-days: 7
           if-no-files-found: ignore
 

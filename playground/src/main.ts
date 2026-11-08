@@ -1158,6 +1158,19 @@ let readyP: Promise<void> | undefined;
 // drawing is already on screen then, and nothing is waiting.
 let busyTimer: ReturnType<typeof setTimeout> | undefined;
 const chosen = choose();
+/**
+ * Set by the reload a failed boot asks for (`up`): the new page boots at once, and never reloads
+ * itself again.
+ */
+const RETRY_UP = "archlang.pg.retryUp";
+let bootFailures = 0;
+let reloaded = false;
+try {
+  reloaded = sessionStorage.getItem(RETRY_UP) !== null;
+  sessionStorage.removeItem(RETRY_UP);
+} catch {
+  /* no session storage: never reloads, as `setItem` fails too */
+}
 
 /**
  * Bring the app up, once: load the compiler and the example sources, mount the header actions and
@@ -1165,14 +1178,15 @@ const chosen = choose();
  * import compiles nothing). A boot that fails (the compiler's or the examples' chunk did not load)
  * says so instead of "Compiling…" for ever: the busy timer is stopped and the status is an error.
  * The promise still settles, so nothing waiting on it is left with an unhandled rejection; without
- * `core`, `render` does nothing. The failure is not kept: the next use tries again.
+ * `core`, `render` does nothing. The failure is not kept: the next use tries again, and a second
+ * failure reloads the page once (below).
  */
 function up(): Promise<void> {
   if (isUp) return readyP ?? Promise.resolve();
   if (readyP === undefined) {
     clearTimeout(busyTimer);
     busyTimer = setTimeout(() => setStatus("busy", "Compiling…"), BUSY_AFTER_MS);
-    readyP = chosen.then(start).catch((err: unknown) => {
+    readyP = chosen.then(start).catch(async (err: unknown) => {
       readyP = undefined; // the next use retries
       clearTimeout(busyTimer);
       setStatus("err", "Couldn't load the compiler — try again or reload");
@@ -1181,6 +1195,33 @@ function up(): Promise<void> {
       delete root.dataset.booting;
       root.dataset.bootFailed = "";
       console.warn("The playground did not boot:", err);
+      // Chromium and Firefox forget the failed fetch, so the next use fetches again. WebKit keeps it
+      // for the document's life (the HTML module map): there every use fails again with no request,
+      // and every chunk that needs the compiler imports it by the same URL, so no other URL helps
+      // (card MP10). A page open across a deploy keeps chunk names that are gone, in every engine.
+      // Only a new document helps either, so a page's second failed boot reloads it, when the page
+      // itself still answers (offline, a reload would lose the drawing on screen), and the new page
+      // boots at once (`RETRY_UP`). That page never reloads itself: a failure there says so and
+      // stays, and the message names the reload. An `&edit` boot can fail after its editor
+      // mounted (a later chunk refused): the draft is saved first, so no edit is lost.
+      if (++bootFailures < 2 || reloaded) return;
+      const answers = await fetch(location.pathname, {
+        method: "HEAD",
+        cache: "no-store",
+        signal: typeof AbortSignal.timeout === "function" ? AbortSignal.timeout(5000) : undefined,
+      }).then(
+        (r) => r.ok,
+        () => false,
+      );
+      // A use while the page was asked started another boot: that one decides (it may be up).
+      if (!answers || isUp || readyP !== undefined) return;
+      try {
+        sessionStorage.setItem(RETRY_UP, "1");
+      } catch {
+        return; // without the flag the new page would wait for a use, and the user's use is lost
+      }
+      if (edit) writeStr(KEYS.source, currentSource());
+      location.reload();
     });
   }
   return readyP;
@@ -1336,7 +1377,7 @@ for (const id of ["gallery", "share", "more"])
 // A visit on the built-in plan compiles on its first use (the idle import only warms the modules);
 // any other visit, `&edit` (the editor opens at once) and `&3d` (below) compile at once, as before.
 void chosen.then(({ built }) => {
-  if (built && !editing && !has3dFlag(location.hash)) importWhenIdle();
+  if (built && !editing && !has3dFlag(location.hash) && !reloaded) importWhenIdle();
   else void up();
 });
 // `&3d` (or `#3d` alone) opens on the 3D preview (card X5): its chunk starts loading now, beside
