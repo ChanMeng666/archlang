@@ -969,12 +969,15 @@ html:not([data-mode="edit"]) .pane:has(#storeys:not([hidden])) .room-card {
    (a touch tablet wider than 900 px keeps the desktop layout, but not its 26–29 px targets).
    Every header control, menu item and output tab is at least 44 × 44 px. */
 @media (max-width: 900px), (pointer: coarse) {
-  /* The brand's two links: the mark is 44 px each way, and the stamp keeps its look over a 44 px
-     hit area. */
+  /* The brand's two links keep their look and the header its width (a 320 px phone has none to
+     spare); each gets a 44 px hit area instead. */
   .tb-brand .brand-home {
-    min-height: 44px;
-    min-width: 44px;
-    justify-content: center;
+    position: relative;
+  }
+  .tb-brand .brand-home::before {
+    content: "";
+    position: absolute;
+    inset: -12px;
   }
   .tb-brand .badge {
     position: relative;

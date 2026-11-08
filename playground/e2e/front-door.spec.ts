@@ -135,9 +135,23 @@ test.describe("front door", () => {
     const page = await ctx.newPage();
     await page.goto("/");
     await waitForPlan(page);
-    const home = (await page.locator("a.brand-home").boundingBox())!;
-    expect(home.width, "the mark's target is 44 px wide").toBeGreaterThanOrEqual(43.5);
-    expect(home.height, "and 44 px tall").toBeGreaterThanOrEqual(43.5);
+    // Each keeps its look, and a tap 12 px off its middle still lands on it: the mark 44 px wide
+    // and tall, the stamp 44 px tall.
+    const lands = (sel: string, dx: number, dy: number) =>
+      page.locator(sel).evaluate(
+        (a, [x, y]) => {
+          const r = a.getBoundingClientRect();
+          return document.elementFromPoint(r.left + r.width / 2 + x!, r.top + r.height / 2 + y!)?.closest("a") === a;
+        },
+        [dx, dy],
+      );
+    for (const [dx, dy] of [
+      [-12, 0],
+      [12, 0],
+      [0, -12],
+      [0, 12],
+    ] as const)
+      expect(await lands("a.brand-home", dx, dy), `a tap ${dx},${dy} px off the mark`).toBe(true);
     // The stamp keeps its look, and a tap 12 px above or below its middle still lands on it.
     const hits = (dy: number) =>
       page.locator("a.badge").evaluate((a, d) => {
