@@ -249,6 +249,19 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **`check:drift` reads committed files.** An uncommitted edit to a file with a generated block
   (`README.md`, `llms.txt`, the MCP and VS Code READMEs) reads as drift: commit, then run it.
 - **`python3` on this machine is a stub that silently does nothing.** Use `python`.
+- **The playground's Vite is not the root's.** The root `node_modules` holds Vite 6 and the
+  playground needs Vite 8, so a worktree that junctions only the root `node_modules` builds the
+  playground with the wrong Vite. Junction `playground/node_modules` to the primary's too, and
+  unlink both with `[System.IO.Directory]::Delete` before removing the worktree.
+- **Playground e2e: `setEditorSource` (`playground/e2e/fixtures.ts`) waits for the autosave**, so
+  typing the document over itself is no edit and never saves. It throws at once when asked to
+  (issue #570): a test that types plans in turn must start with one other than the boot plan
+  (`laneway-house`, `DEFAULT_EXAMPLE`).
+- **Playground renders are asynchronous** (a module Web Worker since card MP6). Wait with
+  `waitForPlan`, which waits for `html[data-rendering]` to go, never for a fixed time. Count compiles
+  with `countCompiles` (fixtures.ts). Measure main-thread long tasks under CDP CPU throttling, as the
+  Hillside typing and knob-drag tests in `editing.spec.ts` and `knobs.spec.ts` do.
+  `html[data-compiler]` says whether the worker or the page compiled.
 - **A worktree's playground typecheck can miss `@resvg/resvg-wasm`** (the primary checkout's
   `node_modules` lacks it): run `npm ci` in the worktree rather than junctioning.
 - **vsce rejects an SVG image from a host outside its badge allow-list** (raw.githubusercontent.com

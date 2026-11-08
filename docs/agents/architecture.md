@@ -227,7 +227,11 @@ The playground (`playground/src`) has two paths. The view path loads at startup:
 `shell.ts` (header, the Share and More menus, Plan | 3D switch, hash flags via `share.ts`), the stage, `gallery.ts`
 (the header's plan gallery, its cards also written into the served HTML by `scripts/gen-static.mjs`
 with the default drawing), `room-facts.ts`/`room-card.ts` (hover and card), `knobs.ts`/`knobs-panel.ts` (sliders over
-top-level numeric `let`s). Lazy chunks: `compiler.ts` (the core, preloaded), `edit-mode.ts`
+top-level numeric `let`s). A plain visit compiles nothing at boot: the default plan's drawing,
+facts line and `#planData` are in the served HTML (`scripts/gen-static.mjs`). Lazy chunks:
+`compiler.ts` (the core; on first use, or imported when idle, never under Save-Data or 2g),
+`compile-worker.ts` (every render's compile, describe and lint in a module Web Worker, with the page
+as fallback; `docs/plans/playground-mobile-perf/`), `edit-mode.ts`
 (CodeMirror and the editor panels), `make-own.ts` (the doors sheet), `checks-panel.ts` +
 `checks-overlay.ts` (review rings from the core CLI's `reviewSheetAndWarnings`, built as
 `dist/cli/review.js`), `preview3d.ts` + `plan3d.ts` (the 3D view) and `glb-export.ts` (Download GLB,

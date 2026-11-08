@@ -77,8 +77,15 @@ come after load:
 
 Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6, then MP8 → MP9 → MP10 (follow-ups found in
 MP5/MP6 review). High-tier cards wait for the owner's words before merge.
-MP1–MP6, MP8 and MP9 are done (MP6: #569, its main-red parity test fixed by #571; MP8, MP9: #574); MP10 is next; MP7
-stays deferred.
+MP1–MP6, MP8 and MP9 are done (MP6: #569, its main-red parity test fixed by #571; MP8, MP9: #574);
+MP10 is in review (#575); MP7 stays deferred (§ 5).
+
+Open follow-ups from the reviews, too small for a card each:
+- No test covers a knob release that is overtaken twice in a row (a Checks toggle, then a theme
+  change). By the code it asks again each time and then decides (#574 review).
+- The touch tests of the brand's two links (#573) probe their 44 px hit areas by 1–2 px.
+- A gallery switch's "exactly one compile" test passes on a slow runner even without MP9's change,
+  because there the old in-flight dedupe catches the second render (#574 review).
 
 ## 4. Open for the owner
 
