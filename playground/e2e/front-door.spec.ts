@@ -8,11 +8,14 @@ import { enterEdit, expectPlanNamed, waitForPlan, watchStatus } from "./fixtures
  * is new, so the nightly run against the live site would fail for a deploy lag that is not a bug.
  */
 
-/** The header's visible controls, the Share and More menus' contents not counted. */
+/**
+ * The header's visible controls, the Share and More menus' contents not counted, nor the brand's
+ * two links (the mark to the docs site, the stamp to this page): they are the page's name.
+ */
 const headerControls = (page: Page) =>
   page.evaluate(() =>
     [...document.querySelectorAll("header :is(button, select, summary, a, input)")]
-      .filter((e) => !e.closest(".tools-panel, .gal-panel") && e.getClientRects().length > 0)
+      .filter((e) => !e.closest(".tools-panel, .gal-panel, .tb-brand") && e.getClientRects().length > 0)
       .map((e) => e.id || e.textContent?.trim() || e.tagName),
   );
 
@@ -109,6 +112,72 @@ test.describe("front door", () => {
       await expect(page.locator("h1")).toHaveCount(1);
     });
   }
+
+  test("the brand's mark goes to the docs site and its stamp to the playground's front page", async ({ page }) => {
+    await page.goto("/#edit");
+    await waitForPlan(page);
+    const home = page.locator("header > h1 > a.brand-home");
+    await expect(home).toHaveAttribute("href", "https://archlang.uk/");
+    await expect(home).toHaveAccessibleName("ArchLang");
+    const stamp = page.locator("header > h1 > a.badge");
+    await expect(stamp).toHaveAttribute("href", "/");
+    await expect(stamp).toHaveText("Playground");
+    // The stamp is a real way back: from an edited plan's page it opens the plain front page.
+    await stamp.click();
+    await expect(page).toHaveURL((u) => u.pathname === "/" && u.hash === "");
+    await waitForPlan(page);
+  });
+
+  test("on a touch phone the brand's links are touch-sized, and the stamp shows itself when tabbed to on its side", async ({
+    browser,
+  }) => {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const page = await ctx.newPage();
+    await page.goto("/");
+    await waitForPlan(page);
+    // Each keeps its look, and a tap 12 px off its middle still lands on it: the mark 44 px wide
+    // and tall, the stamp 44 px tall.
+    const lands = (sel: string, dx: number, dy: number) =>
+      page.locator(sel).evaluate(
+        (a, [x, y]) => {
+          const r = a.getBoundingClientRect();
+          return document.elementFromPoint(r.left + r.width / 2 + x!, r.top + r.height / 2 + y!)?.closest("a") === a;
+        },
+        [dx, dy],
+      );
+    for (const [dx, dy] of [
+      [-12, 0],
+      [12, 0],
+      [0, -12],
+      [0, 12],
+    ] as const)
+      expect(await lands("a.brand-home", dx, dy), `a tap ${dx},${dy} px off the mark`).toBe(true);
+    // The stamp keeps its look, and a tap 12 px above or below its middle still lands on it.
+    const hits = (dy: number) =>
+      page.locator("a.badge").evaluate((a, d) => {
+        const r = a.getBoundingClientRect();
+        return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2 + d)?.closest("a") === a;
+      }, dy);
+    expect(await hits(-12), "a tap just above the stamp").toBe(true);
+    expect(await hits(12), "a tap just below the stamp").toBe(true);
+    // On its side the stamp is read but not drawn; reached by the keyboard it is drawn, and its
+    // hit area stays its own: the gallery beside it is still the gallery.
+    await page.setViewportSize({ width: 844, height: 390 });
+    const stamp = page.locator("a.badge");
+    await expect.poll(async () => (await stamp.boundingBox())!.width).toBeLessThanOrEqual(1.5);
+    await page.locator("a.brand-home").focus();
+    await page.keyboard.press("Tab");
+    await expect(stamp).toBeFocused();
+    await expect
+      .poll(async () => (await stamp.boundingBox())!.width, { message: "drawn while it has the focus" })
+      .toBeGreaterThan(20);
+    const galleryIsItself = await page.locator(".gal-trigger").evaluate((g) => {
+      const r = g.getBoundingClientRect();
+      return document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)?.closest(".gal-trigger") === g;
+    });
+    expect(galleryIsItself, "the focused stamp covers nothing else").toBe(true);
+    await ctx.close();
+  });
 
   test("Make your own is the redline control, and opens the ways to get a plan", async ({ page }) => {
     await page.goto("/");
