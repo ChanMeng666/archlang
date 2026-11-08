@@ -191,11 +191,10 @@ test.describe("one view switch (PG-D3)", () => {
   // on the MP10 CI runs and not chased: the next `import()` of it rejects only after 20–30 s (a
   // click that starts it returns then; the WebKit runs are marked slow for it), and a page reloaded
   // within a second or two of the failure gets the failure again with no request (the memory cache
-  // lets the chunk go a moment later). So WebKit's recovery is proven by a reload after a pause.
+  // keeps it for a time that varies). So WebKit's recovery is not asserted here; Chromium and
+  // Firefox prove the retry, WebKit the one reload and the honest message.
   const refusedChunk = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
   const WEBKIT_SLOW = "WebKit's next import of a refused chunk rejects only after 20–30 s (MP10 CI runs)";
-  /** The moment Playwright's WebKit keeps a refused chunk in its memory cache after the failure. */
-  const CACHE_LETS_GO_MS = 3000;
   const refuse = (page: Page) => page.route(refusedChunk, (route) => route.fulfill({ status: 503, body: "" }));
   /**
    * Whether the compiler's chunk was asked for yet (the page's `import()` and the compile worker's
@@ -251,18 +250,17 @@ test.describe("one view switch (PG-D3)", () => {
       return;
     }
     // WebKit: the use failed again from the module map, so the page reloaded, once, and the new
-    // page booted with no use. Playwright's WebKit hands that boot the refused chunk from its
-    // memory cache (above), so what it proves is the reload and that the reloaded page never
-    // reloads itself; the recovery is a reload after the cache lets the chunk go.
+    // page booted with no use. Whether that page gets the chunk is up to Playwright's WebKit memory
+    // cache, which kept a refused chunk across reloads for an unpredictable time on the MP10 CI runs
+    // (38 s once), so this run does not assert the recovery (the owner's call, 2026-11-08). It
+    // asserts what is certain: one reload, never a second, and a page that is either up or says
+    // plainly that it failed and that a reload helps.
     await expect.poll(() => seen.loads, { timeout: 15_000 }).toBe(2);
-    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 15_000 });
-    await page.waitForTimeout(CACHE_LETS_GO_MS);
-    expect(seen.loads).toBe(2);
-    await page.reload();
-    await share.click();
-    await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
-    await expect(failed).toHaveCount(0);
-    await expect(status).toHaveText(/^(ready|\d+ warnings?)$/);
+    await expect(page.locator("html[data-booting]")).toHaveCount(0, { timeout: 30_000 });
+    await page.waitForTimeout(3000);
+    expect(seen.loads, "the reloaded page never reloads itself").toBe(2);
+    if ((await failed.count()) > 0) await expect(status).toHaveText(FAILED_TEXT);
+    else await expect(status).toHaveText(/^(ready|\d+ warnings?)$/);
   });
 
   // The reload is for the engine that keeps the failure and for a page left open across a deploy
@@ -312,10 +310,10 @@ test.describe("one view switch (PG-D3)", () => {
     await page.waitForTimeout(1500);
     expect(seen.loads).toBe(2);
     await expect(failed).toHaveCount(1);
-    // The message's reload, by hand, recovers once the chunk can load (and, in Playwright's
-    // WebKit, once its memory cache has let the refused chunk go).
+    // The message's reload, by hand, recovers once the chunk can load. Not asserted in WebKit,
+    // whose memory cache keeps the refused chunk across reloads for a time that varies (above).
+    if (browserName === "webkit") return;
     await page.unroute(refusedChunk);
-    await page.waitForTimeout(CACHE_LETS_GO_MS);
     await page.reload();
     await share.click();
     await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
