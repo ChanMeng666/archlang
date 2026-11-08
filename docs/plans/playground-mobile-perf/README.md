@@ -77,8 +77,8 @@ come after load:
 
 Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6, then MP8 → MP9 → MP10 (follow-ups found in
 MP5/MP6 review). High-tier cards wait for the owner's words before merge.
-MP1–MP6, MP8 and MP9 are done (MP6: #569, its main-red parity test fixed by #571; MP8, MP9: #574);
-MP10 is in review (#575): Chromium and Firefox ask again in place; WebKit keeps the failed
+MP1–MP6 and MP8–MP10 are done (MP6: #569, its main-red parity test fixed by #571; MP8, MP9: #574);
+MP10 (#575): Chromium and Firefox ask again in place; WebKit keeps the failed
 fetch for the document (no request), so a page's second failed boot reloads it once, when the
 page answers, and the reloaded page never reloads itself (WebKit's recovery after it is not
 asserted, see the row); MP7 stays deferred (§ 5).
