@@ -1159,14 +1159,14 @@ let readyP: Promise<void> | undefined;
 let busyTimer: ReturnType<typeof setTimeout> | undefined;
 const chosen = choose();
 /**
- * Set by a reload after a failed boot, to how many reloads in a row led here: the new page comes
- * up at once (`up`), and a boot of its that fails reloads once more, never more than twice in all.
+ * Set by the reload a failed boot asks for (`up`): the new page boots at once, and never reloads
+ * itself again.
  */
 const RETRY_UP = "archlang.pg.retryUp";
 let bootFailures = 0;
-let reloads = 0;
+let reloaded = false;
 try {
-  reloads = Number(sessionStorage.getItem(RETRY_UP)) || 0;
+  reloaded = sessionStorage.getItem(RETRY_UP) !== null;
   sessionStorage.removeItem(RETRY_UP);
 } catch {
   /* no session storage: never reloads, as `setItem` fails too */
@@ -1178,7 +1178,8 @@ try {
  * import compiles nothing). A boot that fails (the compiler's or the examples' chunk did not load)
  * says so instead of "Compiling…" for ever: the busy timer is stopped and the status is an error.
  * The promise still settles, so nothing waiting on it is left with an unhandled rejection; without
- * `core`, `render` does nothing. The failure is not kept: the next use tries again.
+ * `core`, `render` does nothing. The failure is not kept: the next use tries again, and a second
+ * failure reloads the page once (below).
  */
 function up(): Promise<void> {
   if (isUp) return readyP ?? Promise.resolve();
@@ -1194,27 +1195,26 @@ function up(): Promise<void> {
       delete root.dataset.booting;
       root.dataset.bootFailed = "";
       console.warn("The playground did not boot:", err);
-      // WebKit keeps a failed module fetch in the page's module map: asking again by the same URL
-      // rejects with no request, and every chunk that needs the compiler imports it by that URL
-      // (card MP10). So a page's second failed boot, when the page still answers, reloads it, and
-      // the new page comes up at once (`RETRY_UP`). WebKit can hand the reloaded page the same
-      // failure with no request, so that page's own boot failing reloads once more; past two
-      // reloads in a row only a use reloads. Before a boot there is no editor, so nothing is lost.
-      const chained = bootFailures++ === 0 && reloads === 1;
-      if (
-        (bootFailures > 1 || chained) &&
-        (await fetch(location.pathname, { method: "HEAD", cache: "no-store" }).then(
-          (r) => r.ok,
-          () => false,
-        ))
-      ) {
-        try {
-          sessionStorage.setItem(RETRY_UP, String(chained ? 2 : 1));
-        } catch {
-          return; // without the flag the new page would not come up: the user's use is lost
-        }
-        location.reload();
+      // Chromium and Firefox forget the failed fetch, so the next use fetches again. WebKit keeps it
+      // for the document's life (the HTML module map): there every use fails again with no request,
+      // and every chunk that needs the compiler imports it by the same URL, so no other URL helps
+      // (card MP10). A page open across a deploy keeps chunk names that are gone, in every engine.
+      // Only a new document helps either, so a page's second failed boot reloads it, when the page
+      // itself still answers (offline, a reload would lose the drawing on screen), and the new page
+      // boots at once (`RETRY_UP`). That page never reloads itself: a failure there says so and
+      // stays, and the message names the reload. Before a boot there is no editor: nothing is lost.
+      if (++bootFailures < 2 || reloaded) return;
+      const answers = await fetch(location.pathname, { method: "HEAD", cache: "no-store" }).then(
+        (r) => r.ok,
+        () => false,
+      );
+      if (!answers) return;
+      try {
+        sessionStorage.setItem(RETRY_UP, "1");
+      } catch {
+        return; // without the flag the new page would wait for a use, and the user's use is lost
       }
+      location.reload();
     });
   }
   return readyP;
@@ -1370,7 +1370,7 @@ for (const id of ["gallery", "share", "more"])
 // A visit on the built-in plan compiles on its first use (the idle import only warms the modules);
 // any other visit, `&edit` (the editor opens at once) and `&3d` (below) compile at once, as before.
 void chosen.then(({ built }) => {
-  if (built && !editing && !has3dFlag(location.hash) && !reloads) importWhenIdle();
+  if (built && !editing && !has3dFlag(location.hash) && !reloaded) importWhenIdle();
   else void up();
 });
 // `&3d` (or `#3d` alone) opens on the 3D preview (card X5): its chunk starts loading now, beside

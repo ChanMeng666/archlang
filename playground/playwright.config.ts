@@ -57,9 +57,7 @@ export default defineConfig({
   projects: [
     { name: "chromium", use: { ...devices["Desktop Chrome"] } },
     { name: "firefox", grep: /@engines/, use: { ...devices["Desktop Firefox"], permissions: [] } },
-    // On CI WebKit's first click after a refused chunk returns 15-25 s late (seen on the MP10
-    // runs), which alone used up the default 30 s; the steps keep their own timeouts.
-    { name: "webkit", grep: /@engines/, timeout: 90_000, use: { ...devices["Desktop Safari"], permissions: [] } },
+    { name: "webkit", grep: /@engines/, use: { ...devices["Desktop Safari"], permissions: [] } },
   ],
   // Spread, not a `webServer: undefined` key: with an external base URL there is
   // nothing to start and nothing to build.

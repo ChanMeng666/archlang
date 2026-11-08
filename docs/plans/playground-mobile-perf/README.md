@@ -73,14 +73,14 @@ come after load:
 | MP7 (deferred, § 5) | draw 3D straight to the visible canvas | `packages/archlang-3d/src/replay/mount.ts` | frame hashes and single-file replay HTML bytes unchanged | high, package release |
 | **MP8** a dragged knob compiles in the worker (#574) | MP-D6 for the knobs panel: a moving slider's compile leaves the page, and a value that does not compile still snaps back | `src/main.ts` (`tryRender`), `src/knobs-panel.ts` | dragging a knob on Hillside at 4× CPU gives no main-thread task over 100 ms; the last value wins; `knobs` specs unchanged and green. Startup set 17,366 B gzip (index 13,795): +182 B over MP6, the baseline not re-taken | medium |
 | **MP9** a plan switch compiles once (#574) | `render` asked for the drawing already on screen, with nothing in flight, compiles nothing (today the switch's own render and its debounced one both compile when the first lands within 250 ms) | `src/main.ts` | a gallery switch makes exactly one compile request; an edit after it still compiles | medium |
-| **MP10** a failed compiler load retries in every engine (#575) | MP5 forgets a failed `import()` so the next use asks again; that is proven in Chromium only, and an engine that keeps a failed module fetch would never retry | `src/main.ts` loaders, CI | the failed-load spec passes in Firefox and WebKit too; if an engine keeps the failure, the retry asks by another URL | medium/high (CI) |
+| **MP10** a failed compiler load retries in every engine (#575) | MP5 forgets a failed `import()` so the next use asks again; that is proven in Chromium only, and an engine that keeps a failed module fetch would never retry | `src/main.ts` (`up`), `e2e/panels.spec.ts` `@engines`, `playwright.config.ts`, CI | per engine, as it is: Chromium and Firefox ask again in place; WebKit keeps the failure for the document (HTML module map, no request), and another URL cannot help (every chunk imports the compiler by its own), so a page's second failed boot reloads it once, only when the page itself answers; the reloaded page boots at once and never reloads itself; a hand reload recovers. Startup set 17,520 B gzip (index 13,949): +128 B over main, the baseline not re-taken | medium/high (CI) |
 
 Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6, then MP8 → MP9 → MP10 (follow-ups found in
 MP5/MP6 review). High-tier cards wait for the owner's words before merge.
 MP1–MP6, MP8 and MP9 are done (MP6: #569, its main-red parity test fixed by #571; MP8, MP9: #574);
 MP10 is in review (#575): Chromium and Firefox ask again in place; WebKit keeps the failed
-fetch (no request, even on the first reloaded page), so a second failed boot reloads the page,
-at most twice in a row; MP7 stays deferred (§ 5).
+fetch for the document (no request), so a page's second failed boot reloads it once, when the
+page answers, and the reloaded page never reloads itself; MP7 stays deferred (§ 5).
 
 Open follow-ups from the reviews, too small for a card each:
 - No test covers a knob release that is overtaken twice in a row (a Checks toggle, then a theme

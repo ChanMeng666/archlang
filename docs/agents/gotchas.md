@@ -262,6 +262,12 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   `waitForPlan`, which waits for `html[data-rendering]` to go, never for a fixed time. Count compiles
   with `countCompiles` (fixtures.ts). Measure main-thread long tasks under CDP CPU throttling, as the
   Hillside typing and knob-drag tests in `editing.spec.ts` and `knobs.spec.ts` do.
+- **Playwright's WebKit keeps a `route.abort()`ed module chunk dead for the whole tab**: no later
+  `import()` of it makes a request, not even from a reloaded page, and the first one hangs 7–30 s
+  (card MP10's CI runs). An engine-level failure to re-test is refused with a response
+  (`route.fulfill({ status: 503 })`), which every engine fetches again after a reload. Real WebKit
+  does keep a failed module fetch for the document's life (the HTML module map); Chromium and
+  Firefox forget it.
   `html[data-compiler]` says whether the worker or the page compiled.
 - **A worktree's playground typecheck can miss `@resvg/resvg-wasm`** (the primary checkout's
   `node_modules` lacks it): run `npm ci` in the worktree rather than junctioning.

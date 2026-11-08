@@ -1,4 +1,4 @@
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Page, type Route, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { describe } from "../../src/index.js";
 import {
@@ -144,13 +144,7 @@ test.describe("one view switch (PG-D3)", () => {
     ).toHaveCount(0);
   });
 
-  // `@engines`: also run in Firefox and WebKit (playwright.config.ts, card MP10). Per the HTML
-  // spec an engine may keep a failed module fetch in its module map, so that a second `import()`
-  // of the same URL rejects again without a request. Chromium and Firefox ask again; WebKit does
-  // not, and there the second failed boot reloads the page, which comes up at once (main.ts `up`).
-  test("a compiler that fails to load says so, and never stays on Compiling…", { tag: "@engines" }, async ({
-    page,
-  }) => {
+  test("a compiler that fails to load says so, and never stays on Compiling…", async ({ page }) => {
     // The compiler's chunk (`compiler-<hash>.js`, vite.config.js's codeSplitting group) is refused.
     const refused = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
     await page.route(refused, (route) => route.abort());
@@ -191,40 +185,119 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
   });
 
-  // Card MP10: the reload is how an engine that keeps a failed module fetch (WebKit) retries, and
-  // how a page left open across a deploy (its chunk names gone) gets the new ones. Never in a loop:
-  // the reloaded page comes up at once, and its boot failing reloads once more (WebKit can hand
-  // the first reloaded page the same failure), then the page stays.
-  test("a second failed boot reloads the page, and the new page comes up at once", { tag: "@engines" }, async ({
+  // Card MP10, `@engines`: the two specs below also run in Firefox and WebKit (playwright.config.ts).
+  // The chunk is refused with a response (a CDN gap, a deploy that removed it), not an aborted
+  // request as above: Playwright's WebKit keeps an aborted module request's URL dead for the whole
+  // tab, across reloads and with no request, and its first `import()` of it hangs 7–30 s (the MP10
+  // CI runs; an interception artifact no engine shows for a response). The aborted case stays
+  // Chromium's, above.
+  const refusedChunk = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
+  const refuse = (page: Page) => page.route(refusedChunk, (route) => route.fulfill({ status: 503, body: "" }));
+  /** How many times the page asked for the compiler's chunk, and how many documents loaded. */
+  function watchLoads(page: Page) {
+    const seen = { asked: 0, loads: 0 };
+    page.on("request", (r) => {
+      if (refusedChunk.test(r.url())) seen.asked++;
+    });
+    page.on("load", () => seen.loads++);
+    return seen;
+  }
+  const FAILED_TEXT = "Couldn't load the compiler — try again or reload";
+
+  // Per the HTML spec a failed module fetch stays in the document's module map, so a second
+  // `import()` of the URL rejects with no request. Chromium and Firefox forget it instead and ask
+  // again in place; WebKit keeps it, so there the second failed boot reloads the page (main.ts
+  // `up`), and the new page boots at once.
+  test("a failed compiler load is asked for again: in place, or (WebKit) by one reload", { tag: "@engines" }, async ({
     page,
+    browserName,
   }) => {
-    const refused = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
-    await page.route(refused, (route) => route.abort());
-    let loads = 0;
-    page.on("load", () => loads++);
+    await refuse(page);
+    const seen = watchLoads(page);
     await page.goto("/");
+    // The idle import asks once (card MP5), and its failure says nothing.
+    await expect.poll(() => seen.asked, { timeout: 15_000 }).toBe(1);
     const share = page.locator("#share > summary");
     const failed = page.locator("html[data-boot-failed]");
-    // The first failed boot says so and stays on the page.
+    // The first use says so, and stays on the page.
     await share.click();
     await expect(failed).toHaveCount(1, { timeout: 15_000 });
-    await page.waitForTimeout(1000);
-    expect(loads).toBe(1);
-    // The second reloads it, and the new page boots with no use: still refused, it fails and
-    // reloads once more; that page fails too, says so and stays, with no use to retry it.
+    await expect(page.locator("#statusText")).toHaveText(FAILED_TEXT);
+    expect(seen.loads).toBe(1);
+    const askedByUse = seen.asked - 1;
+    // Once the chunk can load, the next use brings the app up.
+    await page.unroute(refusedChunk);
     await share.click(); // closes the menu
     await share.click(); // opens it again: a use
-    await expect.poll(() => loads, { timeout: 30_000 }).toBe(3);
-    await expect(failed).toHaveCount(1, { timeout: 15_000 });
-    await expect(page.locator("#statusText")).toHaveText("Couldn't load the compiler — try again or reload");
-    await page.waitForTimeout(2000);
-    expect(loads).toBe(3);
-    // Once the chunk can load, the next use brings the app up (in place, or by one more reload).
-    await page.unroute(refused);
-    await share.click();
     await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
     await expect(failed).toHaveCount(0);
     await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
+    // (The successful boot's own asks are not counted: the compile worker imports the chunk too.)
+    if (browserName === "webkit") {
+      // The first use asked nothing (the module map answered); the second failed the same way and
+      // reloaded the page, whose boot asked and got it.
+      expect(askedByUse).toBe(0);
+      expect(seen.loads).toBe(2);
+    } else {
+      // Both uses asked, in place.
+      expect(askedByUse).toBe(1);
+      expect(seen.loads).toBe(1);
+    }
+  });
+
+  // The reload is for the engine that keeps the failure and for a page left open across a deploy
+  // (its chunk names gone). Never in a loop, and never off the page: a page that does not answer
+  // is not reloaded (offline, the drawing on screen would be lost), the reloaded page boots at
+  // once and never reloads itself, and a hand reload still recovers. The same in every engine.
+  test("a second failed boot reloads the page once, when the page answers, and never in a loop", {
+    tag: "@engines",
+  }, async ({ page }) => {
+    await refuse(page);
+    const seen = watchLoads(page);
+    await page.goto("/");
+    const share = page.locator("#share > summary");
+    const failed = page.locator("html[data-boot-failed]");
+    const status = page.locator("#statusText");
+    // Share toggled twice: the open is a use (on a fresh page the first click is that open).
+    const use = async () => {
+      await share.click();
+      await share.click();
+    };
+    // The first failed boot says so and stays.
+    await share.click();
+    await expect(failed).toHaveCount(1, { timeout: 15_000 });
+    await expect(status).toHaveText(FAILED_TEXT);
+    // With the page itself not answering, the second failure stays too.
+    const ownPath = (url: URL) => url.pathname === "/";
+    const noAnswer = (route: Route) =>
+      route.request().method() === "HEAD" ? route.fulfill({ status: 503, body: "" }) : route.fallback();
+    await page.route(ownPath, noAnswer);
+    await use();
+    await expect(status).toHaveText(FAILED_TEXT);
+    await page.waitForTimeout(1500);
+    expect(seen.loads).toBe(1);
+    await page.unroute(ownPath, noAnswer);
+    // With the page answering, the next failure reloads it once: the new page boots at once (no
+    // use), still refused, says so and stays.
+    await use();
+    await expect.poll(() => seen.loads, { timeout: 15_000 }).toBe(2);
+    await expect(failed).toHaveCount(1, { timeout: 15_000 });
+    await expect(status).toHaveText(FAILED_TEXT);
+    await page.waitForTimeout(1500);
+    expect(seen.loads).toBe(2);
+    // A use on the reloaded page fails again (in place, or from the module map) and never reloads.
+    await use();
+    await expect(status).toHaveText(FAILED_TEXT);
+    await page.waitForTimeout(1500);
+    expect(seen.loads).toBe(2);
+    await expect(failed).toHaveCount(1);
+    // The message's reload, by hand, recovers once the chunk can load.
+    await page.unroute(refusedChunk);
+    await page.reload();
+    await share.click();
+    await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
+    await expect(failed).toHaveCount(0);
+    await expect(status).toHaveText(/^(ready|\d+ warnings?)$/);
   });
 
   test("a boot that succeeds never says it failed", async ({ page }) => {
