@@ -193,11 +193,14 @@ test.describe("one view switch (PG-D3)", () => {
   // Chromium's, above.
   const refusedChunk = /\/assets\/compiler-[^/]+\.js(\?.*)?$/;
   const refuse = (page: Page) => page.route(refusedChunk, (route) => route.fulfill({ status: 503, body: "" }));
-  /** How many times the page asked for the compiler's chunk, and how many documents loaded. */
+  /**
+   * Whether the compiler's chunk was asked for yet (the page's `import()` and the compile worker's
+   * static import both ask, so this is never a count), and how many documents loaded.
+   */
   function watchLoads(page: Page) {
-    const seen = { asked: 0, loads: 0 };
+    const seen = { asked: false, loads: 0 };
     page.on("request", (r) => {
-      if (refusedChunk.test(r.url())) seen.asked++;
+      if (refusedChunk.test(r.url())) seen.asked = true;
     });
     page.on("load", () => seen.loads++);
     return seen;
@@ -207,7 +210,9 @@ test.describe("one view switch (PG-D3)", () => {
   // Per the HTML spec a failed module fetch stays in the document's module map, so a second
   // `import()` of the URL rejects with no request. Chromium and Firefox forget it instead and ask
   // again in place; WebKit keeps it, so there the second failed boot reloads the page (main.ts
-  // `up`), and the new page boots at once.
+  // `up`), and the new page boots at once. The documents loaded tell the two apart: once the chunk
+  // can load, an engine that asks again comes up in the same document, and one that keeps the
+  // failure can only come up in a new one.
   test("a failed compiler load is asked for again: in place, or (WebKit) by one reload", { tag: "@engines" }, async ({
     page,
     browserName,
@@ -215,16 +220,17 @@ test.describe("one view switch (PG-D3)", () => {
     await refuse(page);
     const seen = watchLoads(page);
     await page.goto("/");
-    // The idle import asks once (card MP5), and its failure says nothing.
-    await expect.poll(() => seen.asked, { timeout: 15_000 }).toBe(1);
+    // The idle import asks (card MP5), and its failure says nothing.
+    await expect.poll(() => seen.asked, { timeout: 15_000 }).toBe(true);
+    await page.waitForTimeout(1000);
     const share = page.locator("#share > summary");
     const failed = page.locator("html[data-boot-failed]");
+    await expect(failed).toHaveCount(0);
     // The first use says so, and stays on the page.
     await share.click();
     await expect(failed).toHaveCount(1, { timeout: 15_000 });
     await expect(page.locator("#statusText")).toHaveText(FAILED_TEXT);
     expect(seen.loads).toBe(1);
-    const askedByUse = seen.asked - 1;
     // Once the chunk can load, the next use brings the app up.
     await page.unroute(refusedChunk);
     await share.click(); // closes the menu
@@ -232,17 +238,9 @@ test.describe("one view switch (PG-D3)", () => {
     await expect(page.locator("#copyLink")).toBeEnabled({ timeout: 15_000 });
     await expect(failed).toHaveCount(0);
     await expect(page.locator("#statusText")).toHaveText(/^(ready|\d+ warnings?)$/);
-    // (The successful boot's own asks are not counted: the compile worker imports the chunk too.)
-    if (browserName === "webkit") {
-      // The first use asked nothing (the module map answered); the second failed the same way and
-      // reloaded the page, whose boot asked and got it.
-      expect(askedByUse).toBe(0);
-      expect(seen.loads).toBe(2);
-    } else {
-      // Both uses asked, in place.
-      expect(askedByUse).toBe(1);
-      expect(seen.loads).toBe(1);
-    }
+    // WebKit: the use failed again from the module map, the page reloaded, the new one came up.
+    // Chromium, Firefox: the use asked again and came up in place.
+    expect(seen.loads).toBe(browserName === "webkit" ? 2 : 1);
   });
 
   // The reload is for the engine that keeps the failure and for a page left open across a deploy
