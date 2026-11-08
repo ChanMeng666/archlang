@@ -96,6 +96,8 @@
     文档、GitHub、npm、ArchCanvas 等链接。
 - **PG-D6 · 一行事实，一行介绍。**
   - h1 就是顶栏里的品牌文字"ArchLang Playground"（看得见，是真文本），介绍条整行删掉。
+    （2026-11-08 所有者补充，#573：h1 里是两个链接：标志和 ArchLang 字标指向 `https://archlang.uk/`，
+    Playground 印章指向本站首页 `/`。它们是页面的名字，不算顶栏五个控件之一。）
   - lede 缩成 PS-D1 的标准句，放在舞台底部那一行的右侧，小号灰字，可见、可爬：
     "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan."
     同时更新 `scripts/smoke.mjs` 里检查的 lede 原文和 `docs/seo.md` 第 37 行。`<noscript>` 段落

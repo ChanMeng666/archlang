@@ -71,14 +71,21 @@ come after load:
 | **MP5** no compile at boot (#565) | MP-D4 | `src/main.ts`, `scripts/gen-static.mjs`, `vite.config.js`, `e2e/startup-chunks.baseline.json` | no compiler request before interaction under Save-Data; facts line in served HTML; `init-precedence`, `examples-static`, `front-door` specs unchanged and green | high (baseline) |
 | **MP6** compile in a worker (#569) | MP-D6 | `src/main.ts`, new `src/compile-worker.ts`, panels reading results | typing 20 characters into Hillside gives no main-thread task over 100 ms; last result wins; panel specs unchanged. Startup set 17,184 B gzip (index 13,613 + panels 2,773 + preload-helper 798): +801 B over MP5 for the worker client's wiring, the baseline not re-taken | medium/high |
 | MP7 (deferred, § 5) | draw 3D straight to the visible canvas | `packages/archlang-3d/src/replay/mount.ts` | frame hashes and single-file replay HTML bytes unchanged | high, package release |
-| **MP8** a dragged knob compiles in the worker | MP-D6 for the knobs panel: a moving slider's compile leaves the page, and a value that does not compile still snaps back | `src/main.ts` (`tryRender`), `src/knobs-panel.ts` | dragging a knob on Hillside at 4× CPU gives no main-thread task over 100 ms; the last value wins; `knobs` specs unchanged and green | medium |
-| **MP9** a plan switch compiles once | `render` asked for the drawing already on screen, with nothing in flight, compiles nothing (today the switch's own render and its debounced one both compile when the first lands within 250 ms) | `src/main.ts` | a gallery switch makes exactly one compile request; an edit after it still compiles | medium |
+| **MP8** a dragged knob compiles in the worker (#574) | MP-D6 for the knobs panel: a moving slider's compile leaves the page, and a value that does not compile still snaps back | `src/main.ts` (`tryRender`), `src/knobs-panel.ts` | dragging a knob on Hillside at 4× CPU gives no main-thread task over 100 ms; the last value wins; `knobs` specs unchanged and green. Startup set 17,366 B gzip (index 13,795): +182 B over MP6, the baseline not re-taken | medium |
+| **MP9** a plan switch compiles once (#574) | `render` asked for the drawing already on screen, with nothing in flight, compiles nothing (today the switch's own render and its debounced one both compile when the first lands within 250 ms) | `src/main.ts` | a gallery switch makes exactly one compile request; an edit after it still compiles | medium |
 | **MP10** a failed compiler load retries in every engine | MP5 forgets a failed `import()` so the next use asks again; that is proven in Chromium only, and an engine that keeps a failed module fetch would never retry | `src/main.ts` loaders, CI | the failed-load spec passes in Firefox and WebKit too; if an engine keeps the failure, the retry asks by another URL | medium/high (CI) |
 
 Order: MP1 → MP2 → MP3 → MP4a/MP4b → MP5 → MP6, then MP8 → MP9 → MP10 (follow-ups found in
 MP5/MP6 review). High-tier cards wait for the owner's words before merge.
-MP1–MP6 are done (MP6: #569; its main-red parity test fixed by #571); MP8–MP10 are next; MP7
-stays deferred.
+MP1–MP6, MP8 and MP9 are done (MP6: #569, its main-red parity test fixed by #571; MP8, MP9: #574);
+MP10 is in review (#575); MP7 stays deferred (§ 5).
+
+Open follow-ups from the reviews, too small for a card each:
+- No test covers a knob release that is overtaken twice in a row (a Checks toggle, then a theme
+  change). By the code it asks again each time and then decides (#574 review).
+- The touch tests of the brand's two links (#573) probe their 44 px hit areas by 1–2 px.
+- A gallery switch's "exactly one compile" test passes on a slow runner even without MP9's change,
+  because there the old in-flight dedupe catches the second render (#574 review).
 
 ## 4. Open for the owner
 

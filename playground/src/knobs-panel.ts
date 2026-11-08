@@ -8,6 +8,9 @@
  * is kept (`commit`; the draft, the hash and, in edit mode, the editor take it on release). One that
  * does not keeps the last good drawing: the slider snaps back to the last value that compiled, and
  * that source is compiled again so the status and the facts are about the drawing on screen.
+ * The compile runs in the worker (card MP8), so a verdict arrives later: only the newest move's is
+ * acted on, an older one never snaps back over a newer value or keeps a value passed on the way,
+ * and letting go keeps only the verdict of the value let go on.
  *
  * A knob only ever rewrites the document it was read from. While the document is something else
  * (an edit that does not compile yet, or one the compile has not caught up with), the sliders are
@@ -38,8 +41,11 @@ interface KnobsPanelOpts {
   viewport: HTMLElement;
   /** The document: the editor's text in edit mode, else the plan on screen. */
   getSource: () => string;
-  /** Compile and show `source`; whether it compiled without errors. */
-  tryRender: (source: string) => boolean;
+  /**
+   * Compile and show `source` (in the worker, card MP8); settles with whether it compiled without
+   * errors, or null when another request's drawing landed instead (a newer one superseded it).
+   */
+  tryRender: (source: string) => Promise<boolean | null>;
   /** Keep `source`, which compiled; `final` when the slider was let go (or stepped by a key). */
   commit: (source: string, final: boolean) => void;
   /** A short status message. */
@@ -80,6 +86,10 @@ export function mountKnobsPanel({ viewport, getSource, tryRender, commit, flash 
   let knobs: Knob[] = [];
   const rows = new Map<string, { input: HTMLInputElement; out: HTMLOutputElement }>();
   let timer: ReturnType<typeof setTimeout> | undefined;
+  /** Counts moves: only the newest one's verdict is acted on. */
+  let ticket = 0;
+  /** The newest move's compile has not answered yet. */
+  let pending = false;
 
   /** Whether the document is the one the knobs were read from. */
   const current = (): boolean => {
@@ -159,31 +169,56 @@ export function mountKnobsPanel({ viewport, getSource, tryRender, commit, flash 
   function apply(name: string, value: number, final: boolean) {
     const k = knobs.find((x) => x.name === name);
     if (!k) return;
+    // This move supersedes every earlier one: an earlier verdict still on its way is dropped.
+    const mine = ++ticket;
     if (!current()) {
       // The document moved on since these knobs were read: never write over it.
+      pending = false;
       show(name, k.value);
       refresh();
       return;
     }
-    if (value === k.value) {
+    if (value === k.value && !pending) {
       // Already compiled while it moved: letting go only has to keep it.
       if (final) keep(base, true);
       return;
     }
+    // Back on the value the drawing was made from while another value's compile is on its way:
+    // that source is asked for again, so the drawing ends on it, not on the one passed.
     const before = base;
-    const candidate = rewriteKnob(before, k, value);
+    const candidate = value === k.value ? before : rewriteKnob(before, k, value);
+    const doc = getSource();
     own = candidate;
-    if (tryRender(candidate)) {
-      keep(candidate, final);
-      return;
-    }
-    // It does not compile: back to the last value that did, and to the drawing it made, which a
-    // release keeps (the slider may have passed good values on its way here).
-    own = before;
-    show(name, k.value);
-    tryRender(before);
-    if (final) keep(before, true);
-    flash(`${name} = ${knobReadout(k, value)} does not compile; back to ${knobReadout(k, k.value)}`);
+    pending = true;
+    void tryRender(candidate).then((ok) => {
+      if (mine !== ticket) return; // a newer move decides
+      pending = false;
+      // Another drawing landed instead (an edit, a plan picked), or the document changed while
+      // this compiled: the verdict is not about the document this move was read from.
+      if (ok === null || getSource() !== doc) {
+        // A release still decides: when the drawing that landed was of this same document (a
+        // Checks or theme render of it), the value let go on is asked for again, and kept or
+        // snapped back by its own verdict.
+        if (final && ok === null && getSource() === doc && current()) {
+          show(name, value);
+          apply(name, value, true);
+          return;
+        }
+        refresh();
+        return;
+      }
+      if (ok) {
+        keep(candidate, final);
+        return;
+      }
+      // It does not compile: back to the last value that did, and to the drawing it made, which a
+      // release keeps (the slider may have passed good values on its way here).
+      own = before;
+      show(name, k.value);
+      void tryRender(before);
+      if (final) keep(before, true);
+      flash(`${name} = ${knobReadout(k, value)} does not compile; back to ${knobReadout(k, k.value)}`);
+    });
   }
 
   function keep(source: string, final: boolean) {

@@ -4,6 +4,7 @@ import { CHECKS_SAMPLE, SAMPLE_GROUP } from "../src/samples.js";
 import { THUMB_MAX_BYTES } from "../scripts/lean-thumb.mjs";
 import { splitLabel } from "../src/plan-label.js";
 import {
+  countCompiles,
   currentPlanCard,
   expectPlanNamed,
   gallery,
@@ -446,6 +447,31 @@ test.describe("plan gallery", () => {
     // Back to the example word for word (an undo would do the same): named again.
     await setEditorSource(page, laneway);
     await expectPlanNamed(page, "Laneway House");
+  });
+
+  test("a plan switch compiles once, and an edit after it still compiles and redraws", async ({ page }) => {
+    // Card MP9: the switch renders the new plan, and the editor's debounced render of the same
+    // document 250 ms later asks for the drawing already on screen, which compiles nothing.
+    const compiles = await countCompiles(page);
+    const autosave = () => page.evaluate(() => localStorage.getItem("archlang.pg.source"));
+    const viewBoxWidth = () =>
+      page.locator(".pz-stage svg").evaluate((svg) => Number(svg.getAttribute("viewBox")?.split(/\s+/)[2]));
+    await gotoEdit(page);
+    await expect(page.locator("html")).toHaveAttribute("data-compiler", "worker");
+    const row = ROWS.find((r) => r.name === "knob-flat")!;
+    const flat = readFileSync(new URL("../../examples/knob-flat.arch", import.meta.url), "utf8").replace(
+      /\r\n?/g,
+      "\n",
+    );
+    await compiles.reset();
+    await pickPlan(page, row.label);
+    // The autosave is written once the debounced render has settled: both renders are over.
+    await expect.poll(autosave, { timeout: 10_000 }).toBe(flat);
+    expect(await compiles(), "a gallery switch makes exactly one compile request").toBe(1);
+    const width = await viewBoxWidth();
+    await setEditorSource(page, flat.replace("let LIVING = 4500", "let LIVING = 6000"));
+    expect(await compiles(), "the edit after it compiles").toBe(2);
+    await expect.poll(viewBoxWidth).toBeGreaterThan(width);
   });
 });
 

@@ -10,13 +10,15 @@ consumes the built core (`../dist/index.js`). Deployed at
 - **View mode by default:** a visit opens on the drawing alone (the default example's, written into
   `index.html` at build time by `scripts/gen-static.mjs`, so it is there before any JavaScript).
   The header (ruling PG-D6) is one row: the brand, which is the page's one h1 ("ArchLang
-  Playground" as real text), the plan gallery, **Source** (edit mode: the editor beside the
+  Playground" as real text; its mark and wordmark link to the docs site, its stamp to this front
+  page, and the two links are not counted among the header's controls), the plan gallery, **Source** (edit mode: the editor beside the
   drawing), **Share ▾**, **⋯** (More) and **Make your own**. There is no intro band: the page's
   lede, the canonical line from site-shared/doors.json, is small text at the right of the stage's
   foot, beside the facts line, in the served bytes. `&edit` in the hash
   (`#z=…&edit`, or `#edit`) opens edit mode; `arch link` and the docs' "Open in playground" add it,
   and a link copied here does not. The compiler, the editor, the panels, three.js, the GLB writer
-  and jsPDF are their own chunks, loaded after the first paint or on first use.
+  and jsPDF are their own chunks, loaded on first use (the compiler also when the browser is idle,
+  never under Save-Data or 2g).
 - **Plan gallery (ruling PG-D2):** the header's one way to choose a plan. Its trigger names the
   plan on screen (`▦ Furnished Flat ▾`); it opens a grid of thumbnail cards under the example
   groups, each card a plan's clean name with any trailing parenthetical as a small grey tag
@@ -78,6 +80,29 @@ consumes the built core (`../dist/index.js`). Deployed at
   **Code / Plan / 3D / Facts / Checks** at a time under a sticky switcher, its one view control
   there (Checks: the diagnostics over the Checks tab's content), with 44 px touch targets and no
   sideways scroll.
+- **Phones and performance (`docs/plans/playground-mobile-perf/`, MP1–MP6, MP8, MP9):**
+  - A phone page is one screen tall (`100svh`). The header is at most two rows (one on a phone on
+    its side). Text is at least 12 px, and inputs are 16 px so iOS does not zoom.
+  - A plain visit compiles nothing at boot. The default plan's drawing, its facts line and its data
+    (`#planData`: the source, `describe()` output and the warning count) are written into the page
+    by `scripts/gen-static.mjs`. The compiler loads on first use, or is imported, with nothing
+    compiled, when the browser is idle. It is never loaded early under Save-Data or 2g. A failed
+    load is forgotten, so the next use tries again.
+  - Every render's compile, describe and lint run in a module Web Worker (`compile-worker.ts`), and
+    so does a dragged knob's.
+    - Sequence numbers drop stale replies, so the last edit wins.
+    - If the worker cannot be made, fails to load, or gives no answer within 8 s, the page compiles
+      instead.
+    - `html[data-compiler]` says which one is compiling (`worker` or `page`), and
+      `html[data-rendering]` marks a render on its way.
+    - A render asked for the drawing already on screen, with nothing in flight, compiles nothing.
+      So a plan switch compiles once: its own render fits the new plan, and the editor's debounced
+      render after it finds that drawing on screen (or still in the worker).
+  - The 3D view draws only while it can be seen: not under a dialog, a menu or the Embed sheet, not
+    off-screen, not in a hidden tab. Its drawing buffer is capped at 1.5× on touch screens, and a
+    lost WebGL context says so and redraws when it is restored.
+  - Gallery thumbnails are lean cuts of the `compile()` SVG (`scripts/lean-thumb.mjs`, at most
+    10 KB each), cached for a day by `public/_headers`.
 
 The app is written in **TypeScript** (`src/*.ts`). Note that `npm run build` does **not**
 typecheck it — Vite strips types with esbuild without checking them. Run `npm run typecheck`
@@ -95,7 +120,9 @@ The playground is TypeScript; every module below is `.ts` except the generated g
 | `shell.ts` | the header's Source toggle, the Share and More (⋯) menus (one open at a time; neither opens a tab) and the Make-your-own dialog (it forwards the sheet's chat links and Copy for LLM to actions.ts) |
 | `checks-panel.ts` / `checks-overlay.ts` | the Checks layer (lazy): the review rings over the drawing and their findings list, over the drawing in view mode, docked in the Checks tab in edit mode |
 | `level-switcher.ts` / `levels.ts` | the one storey switcher, on the stage under Plan \| 3D |
-| `compiler.ts` | the compiler functions main.ts calls, behind its one dynamic import (the `compiler` chunk, named in `vite.config.js`) |
+| `compiler.ts` | the compiler functions main.ts calls, behind its one dynamic import (the `compiler` chunk, named in `vite.config.js`; not preloaded: loaded on first use or when idle, card MP5) |
+| `compile-worker.ts` | the compile job (`runCompileJob`: compile, describe, lint for one render request) and its client (`createCompileClient`): a module Web Worker, one request in flight and one waiting, an 8 s watchdog, and the page as fallback (card MP6) |
+| `facts-line.js` | the facts line's words, plain JavaScript so `scripts/gen-static.mjs` writes the same line into the served page from Node |
 | `edit-mode.ts` | edit mode, loaded on first entry: the editor, diagnostics, Describe (the Facts tab), Lint (Repair, Suggest) and Intent (the Checks tab) |
 | `editor-setup.ts` | CodeMirror instance: extensions, theme, linter, completion |
 | `arch-language.js` | **GENERATED** by `scripts/gen-grammars.ts` — StreamLanguage + linter. **Do not hand-edit** (CI fails on drift); edit `src/grammar/tokens.ts` and run `npm run gen:grammars`. |
