@@ -252,7 +252,7 @@ test.describe("one view switch (PG-D3)", () => {
     // WebKit: the use failed again from the module map, so the page reloaded, once, and the new
     // page booted with no use. Whether that page gets the chunk is up to Playwright's WebKit memory
     // cache, which kept a refused chunk across reloads for an unpredictable time on the MP10 CI runs
-    // (38 s once), so this run does not assert the recovery (the owner's call, 2026-11-08). It
+    // (38 s once), so this run does not assert the recovery (decided under the owner's delegation, 2026-11-08). It
     // asserts what is certain: one reload, never a second, and a page that is either up or says
     // plainly that it failed and that a reload helps.
     await expect.poll(() => seen.loads, { timeout: 15_000 }).toBe(2);
