@@ -252,12 +252,13 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **The playground's Vite is not the root's.** The root `node_modules` holds Vite 6 and the
   playground needs Vite 8, so a worktree that junctions only the root `node_modules` builds the
   playground with the wrong Vite. Junction `playground/node_modules` to the primary's too, and
-  unlink both with `[System.IO.Directory]::Delete` before removing the worktree.
+  unlink both with `[System.IO.Directory]::Delete` before removing the worktree. When a package is
+  missing from the primary's tree, use `npm ci` in the worktree instead (the `@resvg/resvg-wasm` entry below).
 - **Playground e2e: `setEditorSource` (`playground/e2e/fixtures.ts`) waits for the autosave**, so
-  typing the document over itself is no edit and never saves. It throws at once when asked to
-  (issue #570): a test that types plans in turn must start with one other than the boot plan
-  (`laneway-house`, `DEFAULT_EXAMPLE`).
-- **Playground renders are asynchronous** (a module Web Worker since card MP6). Wait with
+  typing the document over itself is no edit and never saves. It throws at once when asked to: a
+  test that types plans in turn must start with one other than the boot plan (`laneway-house`,
+  `DEFAULT_EXAMPLE`).
+- **Playground renders are asynchronous** (they compile in a module Web Worker). Wait with
   `waitForPlan`, which waits for `html[data-rendering]` to go, never for a fixed time. Count compiles
   with `countCompiles` (fixtures.ts). Measure main-thread long tasks under CDP CPU throttling, as the
   Hillside typing and knob-drag tests in `editing.spec.ts` and `knobs.spec.ts` do.

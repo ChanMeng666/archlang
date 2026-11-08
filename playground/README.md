@@ -95,8 +95,9 @@ consumes the built core (`../dist/index.js`). Deployed at
       instead.
     - `html[data-compiler]` says which one is compiling (`worker` or `page`), and
       `html[data-rendering]` marks a render on its way.
-    - A render asked for the drawing already on screen, with nothing in flight, compiles nothing,
-      so a plan switch compiles once.
+    - A render asked for the drawing already on screen, with nothing in flight, compiles nothing.
+      So a plan switch compiles once: its own render fits the new plan, and the editor's debounced
+      render after it finds that drawing on screen (or still in the worker).
   - The 3D view draws only while it can be seen: not under a dialog, a menu or the Embed sheet, not
     off-screen, not in a hidden tab. Its drawing buffer is capped at 1.5× on touch screens, and a
     lost WebGL context says so and redraws when it is restored.
