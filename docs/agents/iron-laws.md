@@ -126,6 +126,11 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 ## Owner policies
 
+- **High-tier merges (owner, 2026-11-09, in words):** the coordinator judges whether a high-tier PR
+  (workflows, root config, hooks, owner rules, policy files) can merge and merges it after a
+  fresh-context review and green CI, without asking per PR. Still owner-only: `v*` tags and releases,
+  `eval:live`, the npmjs account, anything that spends money. An executor never merges its own PR.
+
 - **Merging a PR**: once CI is green and the diff has been read (a code change: adversarially
   reviewed), the agent merges without asking, pinned to the reviewed commit (procedure:
   `docs/agents/commands.md` § Merging a PR). It never merges a red gate or an unread diff.

@@ -7,12 +7,10 @@ EH1.4 (#590) · EH1.5 (#591) · EH1.6 tranche 1 (#592) · EH1.10 (#593) · EH1.1
 (#594, #595) · EH1.14 (#605) · EH1.15 (#607) · EH1.16 (#608; also fixed `sanitizeSvg` throwing on CDATA) ·
 EH2.9 (#611; 163 alias hashes pinned in `test/tables/glyph-dispatch.json`) · records #582, #596, #600, #602, #609.
 
-**In flight:** EH1.7 (#610; high tier: `vitest.config.ts` + `nightly.yml`; review done, CodeQL regex-escape fix
-landing; then the owner's word) · EH1.8 (`runCli`, in-process CLI tests) · EH2.1 (error catalogue by family;
+**In flight:** EH1.8 (`runCli`, in-process CLI tests) · EH2.1 (error catalogue by family;
 PR 2 = fix-table split for the browser bundle, measured).
 
-**Owner queue:** #606 (one AGENTS.md line); #610 once green. The first `workflow_run` deploy fired (#585 works);
-`main` requires ten checks; the release-compat gate already caught one type widening in a PR (#608).
+**Owner queue:** none. On 2026-11-09 the owner merged #606 and #610 in words and granted standing approval for high-tier merges (`docs/agents/iron-laws.md` § Owner policies); the coordinator now judges and merges them after review and green CI. Still owner-only: releases, paid eval, the npmjs account.
 
 **Next cards:** EH1.9 (after EH1.8), EH0.8 (flaky reporter), EH1.17 (residue), then wave 2: EH2.2 `src/ir/`
 (after EH2.1 lands: both touch the catalogue's importers), EH2.4–EH2.8; wave 3 from EH3.1.

@@ -130,7 +130,7 @@ reason line in the table's header. Tranche 2 adds counters returned by `splitAll
 return or a test-only seam, never through the memoised `PlanNode`. Proof: tranche 1 pins 30 rows;
 a scratch extra loop in `expr.ts` turns the test red.
 
-### EH1.7 · counts not clocks; fast-check policy — `in review (#610, high tier: owner queue once green)` · S · low · sonnet · T-F5, T-F6
+### EH1.7 · counts not clocks; fast-check policy — `done (#610)` · S · low · sonnet · T-F5, T-F6
 Replace `wall-closure-measure.test.ts:110-112`'s `Date.now()` bound with the scan's probe count.
 Guard test: no `Date.now()`/`performance.now()` inside an `expect(` in `test/**`, allow-list named.
 Per-test timeouts above 120 s need an allow-list row. `test/setup/fast-check.ts` (vitest
@@ -189,7 +189,7 @@ Codec fuzz: arbitrary base64url and high-ratio deflate through `decodePayload`,
 `decodePlanHashWeb`, `srcFromHash`: size cap holds, no throw. Proof: playground unit tests + e2e
 green; the 204 KB bomb from the audit is refused.
 
-### EH1.14 · agent docs name no blocked command; stale recipes fixed — `done (#605); the AGENTS.md line is #606 (owner queue)` · S · low+high · sonnet · N-F1, N-F2, N-F3 · EH-D3
+### EH1.14 · agent docs name no blocked command; stale recipes fixed — `done (#605, #606)` · S · low+high · sonnet · N-F1, N-F2, N-F3 · EH-D3
 Rewrite as "CI runs X; read its result": `gotchas.md:57-62,107-109,156-159,311-317`,
 `.claude/commands/verify-loop.md` step 2, `docs/backlog.md:26`. `test/agent-docs-gate.test.ts`
 scans `docs/agents`, `.claude/**/*.md`, `docs/backlog.md` for the hook's `HEAVY` patterns
@@ -239,8 +239,7 @@ filling `code` from the key; `error-catalog.ts` spreads them in today's key orde
 frozen object. `export type CatalogCode = keyof typeof …`; internal `diag(code: CatalogCode, …)` for
 new sites; public `Diagnostic.code: string` unchanged. Second commit: `error-fix-table.ts` (code →
 `fix`, severity) is what `diagnostic-json.ts:84` reads; the prose catalogue loads only for
-`explain`/CLI/docs; a test asserts the two agree per code. Proof: `JSON.stringify(ERROR_CATALOG)`
-identical before/after (script in the PR body); `gen:errors`, `gen:llms` no drift; corpus `--json`
+`explain`/CLI/docs; a test asserts the two agree per code. Proof (amended 2026-11-09 by #614's review: key ORDER is not part of the contract — nothing in `src/`, the generators or the packages reads it; entries must be identical BY CODE): per-code JSON identical before/after; `gen:errors`, `gen:llms` no drift; corpus `--json`
 diagnostics digest unchanged; playground compiler chunk size before/after from its own build.
 
 ### EH2.2 · `src/ir/` — `todo` · M · medium · opus · A-F2 · depends EH1.4, EH1.6

@@ -2,7 +2,8 @@
 // Risk tier of a change, read from the paths it touches (the change sets the tier, not the author).
 //   low    — CI green is enough to merge.
 //   medium — plus one independent review in a fresh context, against REVIEW.md.
-//   high   — plus the owner's approval in words; an agent never merges it.
+//   high   — plus the coordinator's own judgement after that review (the owner's standing approval,
+//            2026-11-09); an executor never merges its own PR; releases stay owner-only.
 // The highest tier any path reaches wins; a path no rule names is medium. Usage:
 //   node scripts/risk-tier.mjs [base]        (default base: origin/main; base...HEAD plus uncommitted)
 //   node scripts/risk-tier.mjs --files a b c
