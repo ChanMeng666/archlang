@@ -123,6 +123,31 @@ export function lex(src: string): LexResult {
   return out;
 }
 
+/**
+ * Does `s` read as exactly one identifier and nothing else: the one `ident` token whose value is
+ * `s`, with no comment, no lex error and no other token? It is the shape every one-word grammar
+ * position (`ctx.eatIdent()`) takes, read off this lexer rather than retyped, so a generator that
+ * prints a value into such a position (Plan JSON's emitter) can refuse one that would lex as
+ * something else (`""`, `"1000"`, `"a b"`, `"a}"`, `"a#b"`). Unmemoised: it runs once per field
+ * and must not evict a whole source's entry from the stage memo.
+ */
+export function isLexWord(s: string): boolean {
+  const { tokens, errors, comments } = lexImpl(s);
+  return (
+    errors.length === 0 &&
+    comments.length === 0 &&
+    tokens.length === 2 &&
+    tokens[0]!.type === "ident" &&
+    tokens[0]!.value === s &&
+    tokens[1]!.type === "eof"
+  );
+}
+
+/** {@link lex} without the stage memo, for a probe of many throwaway sources (`parseUnmemoised`). */
+export function lexUnmemoised(src: string): LexResult {
+  return lexImpl(src);
+}
+
 /** Clear the lex stage memo (called by `clearCache`). */
 export function clearLexCache(): void {
   lexCache.clear();
