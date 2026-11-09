@@ -44,4 +44,43 @@ describe("a plan that does not parse", () => {
       expect(j.diagnostics[0]!.code).toBe("E_PARSE");
     }
   });
+
+  it("impact --set on a plan that does not parse exits 2 with the parse diagnostics", async () => {
+    writeFileSync(join(dir, "badlet.arch"), 'plan "B" { units mm let W = 4000 room at (0,0) size Wx3000 label "R" @ }\n');
+    const r = await runArch(["impact", join(dir, "badlet.arch"), "--set", "W=5000", "--json"]);
+    expect(r.status).toBe(EXIT.USER);
+    const j = JSON.parse(r.stdout) as { ok: boolean; diagnostics: Array<{ code: string }> };
+    expect(j.ok).toBe(false);
+    expect(j.diagnostics[0]!.code).toBe("E_PARSE");
+  });
+
+  it("impact --lock with a side that does not parse: { ok: false, diagnostics } and no lock key", async () => {
+    const r = await runArch([
+      "impact",
+      join(dir, "bad.arch"),
+      "--against",
+      join(dir, "good.arch"),
+      "--lock",
+      "r1",
+      "--json",
+    ]);
+    expect(r.status).toBe(EXIT.USER);
+    const j = JSON.parse(r.stdout) as Record<string, unknown>;
+    expect(Object.keys(j).sort()).toEqual(["diagnostics", "ok"]);
+    expect(j.ok).toBe(false);
+  });
+
+  it("impact in human mode exits 2 with the diagnostic", async () => {
+    const r = await runArch(["impact", join(dir, "bad.arch"), "--against", join(dir, "good.arch")]);
+    expect(r.status).toBe(EXIT.USER);
+    expect(r.stderr + r.stdout).toContain("E_PARSE");
+  });
+
+  it("fmt - (stdin) exits 2 with the diagnostics", async () => {
+    const r = await runArch(["fmt", "-", "--json"], { input: BAD });
+    expect(r.status).toBe(EXIT.USER);
+    const j = JSON.parse(r.stdout) as { ok: boolean; diagnostics: Array<{ code: string }> };
+    expect(j.ok).toBe(false);
+    expect(j.diagnostics[0]!.code).toBe("E_PARSE");
+  });
 });

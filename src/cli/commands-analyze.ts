@@ -1203,8 +1203,8 @@ export function cmdLint(args: Args, io: CliIo): number {
  * the after side and the named file the before side. Exactly one is required (exit 3).
  *
  * A report is a measurement, so it exits 0 whatever broke (like `score`), except that a side that
- * does not parse exits 2 with its diagnostics; a refused `--set`
- * is a deterministic user error (exit 2, `E_SET_OVERRIDE`); an unreadable file exits 1.
+ * does not parse exits 2 with its diagnostics; a refused `--set` is a deterministic user error
+ * (exit 2, `E_SET_OVERRIDE`); an unreadable file exits 1.
  * `--lock <id,…>` (card B1) turns the report into a gate: exit 2 when a locked element changed
  * (`E_LOCKED_ELEMENT_CHANGED`), a lock was refused (`E_LOCK_UNNAMED`) or a side does not
  * resolve, so nothing could be checked. The check itself is `impact`'s (`src/lock.ts`).

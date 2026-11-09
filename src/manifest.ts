@@ -1026,7 +1026,7 @@ const COMMANDS: ManifestCommand[] = [
         flag: "--lock",
         arg: "<id[,id…]>",
         description:
-          "elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]`",
+          "elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]`. A side that does not parse is exit 2 with `{ ok: false, diagnostics }` and no `lock` key: nothing is checked",
       },
       IMPORT_ROOT_FLAG,
       JSON_FLAG,
