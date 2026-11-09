@@ -38,6 +38,11 @@
  * hugs a wall). These are honest **coarse** numbers, rounded deterministically; facts
  * for an agent to read, never a layout the compiler generates (ADR 0005/0006/0008).
  * Pure, synchronous, zero-dependency.
+ *
+ * A door's width lives only on the cells its carve opened; routes start, and rooms are reached, on
+ * the room's floor (the cells walkable before any carve). A storey with no front door is seeded at
+ * the arrival head of each arriving run, and whether a landing exists is decided on the plan's
+ * geometry (`landingProbe`), not on cells.
  */
 
 import type { RRoom, RDoor, ROpening, RFurniture, RVoid, RWall } from "../ir.js";

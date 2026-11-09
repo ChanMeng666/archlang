@@ -60,6 +60,9 @@
  * comparison would call 63 of the 83 families handed and be useless.
  *
  * Pure and deterministic: no clock, no randomness, no trig.
+ *
+ * A symbol's handedness is derived from its marks (`marksEqual`), read by `mirrorGlyph` and by
+ * `analyze/symmetry.ts` `handed()`; a glyph never gains handedness.
  */
 
 import type { Point } from "../ast.js";

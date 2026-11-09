@@ -7,6 +7,11 @@
  * treatment, not merely cross-segment), and the page-level sizing
  * (reference dimension, derived font/stroke sizes, bounds) is computed once and
  * carried on the Scene for the backends. Pure & deterministic — no I/O, no time.
+ *
+ * `renderOrder()` draws `underlay` fixtures before the other furniture; `RenderCtx.floorAt`
+ * (`registry.ts`) answers "inside the building?" from rooms and voids, the probe that puts a
+ * window's sill on the side with no floor; `planTheme()` is the one theme cascade shared by the
+ * drawing and the pipeline's `lineWeight` check.
  */
 
 import type { CompileOptions } from "./types.js";

@@ -1,3 +1,5 @@
+/** Builds the hosted MCP viewer's SVG element from the compiler's output: sanitised, then sized by its `viewBox`. */
+
 import { type SvgEnv, sanitizeSvg } from "./svg-sanitize.js";
 
 /** The compiler's SVG as a sanitised element (`svg-sanitize.ts`), sized by its `viewBox`. */

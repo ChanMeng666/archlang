@@ -5,6 +5,8 @@
  *
  * A pure function of the diagnostics alone. It lives in the CLI layer on purpose: `lint()` and
  * `compile()` return exactly what they returned before, so no corpus digest moves.
+ *
+ * The summary is CLI only, so no corpus digest moves.
  */
 
 import { ERROR_CODES } from "../error-catalog.js";

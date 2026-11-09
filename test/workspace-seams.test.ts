@@ -14,7 +14,7 @@
  * Every hit must be an ALLOW row `{ file, specifier, why }`; an unlisted hit fails, and so does a row
  * with no hit (stale). Test code (`test/`, `e2e/`, `*.test.*`, `*.spec.*`, `*.e2e.*`) is not scanned:
  * it is not shipped, and reading a source under test is its job. The last test parses the table in
- * `docs/agents/architecture.md` back and compares it to ALLOW row by row.
+ * `docs/agents/workspace-seams.md` back and compares it to ALLOW row by row.
  */
 import {
   mkdirSync,
@@ -286,7 +286,7 @@ describe("workspace seams are an allow-list", () => {
       unlisted.map((h) => `${h.file}:${h.line} ${h.specifier}`),
       "a workspace reached the core's (or another workspace's) src/ or dist/ outside the package exports.\n" +
         "Import by package name, or add a row {file, specifier, why} to ALLOW in test/workspace-seams.allow.ts " +
-        "and paste `npx tsx test/workspace-seams.allow.ts` into docs/agents/architecture.md:",
+        "and paste `npx tsx test/workspace-seams.allow.ts` into docs/agents/workspace-seams.md:",
     ).toEqual([]);
   });
 
@@ -302,10 +302,10 @@ describe("workspace seams are an allow-list", () => {
     expect(ALLOW.filter((s) => `${s.file}${s.specifier}${s.why}`.includes("|")).map(key)).toEqual([]);
   });
 
-  it("architecture.md's seam table is ALLOW, row for row", () => {
-    const doc = readFileSync(join(ROOT, "docs/agents/architecture.md"), "utf8");
+  it("workspace-seams.md's seam table is ALLOW, row for row", () => {
+    const doc = readFileSync(join(ROOT, "docs/agents/workspace-seams.md"), "utf8");
     const at = doc.indexOf("## Seams between workspaces and the core");
-    expect(at, "docs/agents/architecture.md lacks the 'Seams between workspaces and the core' section").toBeGreaterThan(
+    expect(at, "docs/agents/workspace-seams.md lacks the 'Seams between workspaces and the core' section").toBeGreaterThan(
       -1,
     );
     const section = doc.slice(at).split(/\n## /)[0] ?? "";

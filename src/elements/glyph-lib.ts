@@ -55,6 +55,8 @@
  *
  * Pure and deterministic: no clock, no randomness; trig only in the fixed-step tessellation of
  * the legacy shape helpers. The curve builders are closed-form (`hypot` and arithmetic).
+ *
+ * A helper moves here verbatim on its second caller.
  */
 
 import type { Point } from "../ast.js";
