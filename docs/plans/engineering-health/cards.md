@@ -71,7 +71,7 @@ updates on, `cooldown: default-days: 7`. Proof: the PR body lists each diff hunk
 
 ## Wave 1 · every breakage class has a guard
 
-### EH1.1 · release-compatibility gate — `todo` · M · medium · opus · T-F8 items 1–3, 5
+### EH1.1 · release-compatibility gate — `in review (#599)` · M · medium · opus · T-F8 items 1–3, 5
 `scripts/compat-check.mjs`, run in the `Node 22 checks` job: fetch the last published core and MCP
 tarballs (`npm pack <pkg>@latest` into a tmp dir) and compare, additive-only: (1) the sorted
 declaration list of `dist/index.d.ts` (needs `npm run build` in that job, or compare `src/index.ts`
@@ -82,7 +82,7 @@ export names + the `.d.ts` of the tarball against a drift-gated `api/archlang.ap
 `[Unreleased]`. Skips loudly offline, fails under `CI`. Proof: the script run against `main` passes;
 with a deleted export it fails naming the export.
 
-### EH1.2 · a new element kind fails loudly everywhere it must be handled — `in review` · M · medium · opus · A-F1, A-F11
+### EH1.2 · a new element kind fails loudly everywhere it must be handled — `done (#598)` · M · medium · opus · A-F1, A-F11
 Convert the per-kind switches at `analyze/depends.ts:195`, `analyze/symmetry.ts:665`,
 `datum.ts:348`, `ir.ts:4115`, `cursor.ts:257` into exhaustive forms (`Record<ElementKind, …>`
 `satisfies`, or `const _x: never`), with explicit `case "x": return false` where not applicable.
@@ -156,14 +156,14 @@ shows `src/cli/**` above 0; Node 22 shard total down (report the number).
 `--json` envelope key set against `test/tables/cli-envelopes.json`, additive-only. Proof: both
 tests green; the `TODO` count in the PR body.
 
-### EH1.10 · malformed input never throws — `in review` · M · low · sonnet · T-F3, S-FZ-5
+### EH1.10 · malformed input never throws — `done (#593; its three findings are EH1.15)` · M · low · sonnet · T-F3, S-FZ-5
 Seeded fast-check mutators over valid `planToJson` output (drop key, wrong type, NaN, ±1e12,
 empty array, extra key, `__proto__`) into `planFromJson`; laws: never throws, result is a plan or
 ≥ 1 catalogued `E_JSON_*` with a JSON path, `Object.prototype` unchanged, round-trip law intact for
 unmutated input. Same for `openPlan3dToArch` from `test/fixtures/openplan3d`. Nightly coverage adds
 the `lcov` reporter to its artifact. Proof: both files above 95 % branches in the next nightly.
 
-### EH1.11 · diagnostics cost O(1) each — `in review` · S · medium · opus · S-F1 · EH-D8
+### EH1.11 · diagnostics cost O(1) each — `done (#597)` · S · medium · opus · S-F1 · EH-D8
 `offsetToLineCol` (`src/diagnostics.ts:145-158`) reads a per-source line-start table (binary
 search), built once and memoised with the lex stage. Cap diagnostics at 500 per compile, then one
 `E_DIAGNOSTIC_LIMIT` (catalogued, `gen:errors`). `test/diagnostics-volume.test.ts`: 64 KiB of `@`,
@@ -172,7 +172,7 @@ NUL, `zone "a" {`, `let a = 1` each produce ≤ 501 diagnostics; a counter seam 
 corpus. Add the four inputs to `scripts/measure-cpu.mjs`. CHANGELOG line under `[Unreleased]`.
 Proof: digests unchanged; the four inputs under 1 s in the test.
 
-### EH1.12 · `import` is rooted — `todo` · S · medium · opus · S-F2 · EH-D7
+### EH1.12 · `import` is rooted — `in progress` · S · medium · opus · S-F2 · EH-D7
 `makeNodeWorld` (`src/cli/io.ts:315-326`) resolves with `realpath`, refuses a result outside the
 working directory unless `--import-root <dir>` names an ancestor, refuses non-`.arch`, caps module
 size at the input limit. `E_IMPORT_PARSE` for an imported file reports line:col, never the token.
@@ -180,7 +180,7 @@ Tests for `..`, absolute, symlink, `.txt`, and a sibling-directory library that 
 `test/import-world-fuzz.test.ts` (S-FZ-2) over hostile specs. CHANGELOG line. Proof: the probe
 from the audit (`import "../../secret.txt"`) returns a diagnostic with no file content.
 
-### EH1.13 · browser surfaces: capped inflate, one sanitiser, a CSP — `in review` · S · low · sonnet · S-F4, S-F5, S-FZ-3
+### EH1.13 · browser surfaces: capped inflate, one sanitiser, a CSP — `done (#594); the CSP half is #595 (owner queue)` · S · low · sonnet · S-F4, S-F5, S-FZ-3
 `playground/src/share.ts` uses `inflateCapped` (1 MiB) with a visible "link too large" notice,
 also for `#s=`. `svgElement` from `mcp-worker/src/viewer/viewer.ts:114-128` becomes a shared
 helper used by `packages/web-component/src/arch-plan.ts:193` and `playground/src/viewer.ts:31`.
@@ -200,6 +200,30 @@ integration branch as a parameter; `gotchas.md:333` matches `:255`; plans README
 `/x` reference becomes "read `.claude/commands/x.md`" (AGENTS.md's line is the high-tier part,
 split into its own PR). Proof: the new test green; `grep -rn '^/\|`/release-check`'` finds no
 slash-invocation in agent docs.
+
+### EH1.15 · `planFromJson` hardening — `in progress` · M · medium · opus · from EH1.10's findings and #597's review
+Three defects #593 pinned as `it.fails`: a non-string furniture `label` and a non-string `title.*` field
+throw `TypeError` from the emitter (should be a pathed `E_JSON_SCHEMA`); identifier-like strings (an
+empty `category`, a number in an opening `id`) are emitted unchecked and the source then fails to
+parse, and quotes/newlines in an identifier position are a source-injection vector by the same
+mechanism. Also `Validator.err` pushes without a limit, so 64 KiB of `{"rooms":[{},…]}` yields tens of
+thousands of `E_JSON_SCHEMA` through the hosted `plan_json` tool. Do: validate every field the emitter
+quotes or writes as an identifier before emission (grammar's identifier rule, closed vocabularies,
+a shared string-literal printer that escapes quotes, backslashes, newlines); cap the validator's
+diagnostics with `capDiagnostics`; flip the three pins to plain tests and remove the absorbers; a seeded
+property test over hostile strings in every string field. CHANGELOG `### Fixed` ×2. Proof: the former
+pins green; the 64 KiB probe ≤ 501 diagnostics; corpus digests unchanged.
+
+### EH1.16 · review residue of wave 1 — `todo` · S · low · sonnet
+From the fresh-context reviews of #594, #598, #599: (a) `svg-sanitize` fast-path negatives built by
+injecting `<!--`, `<![CDATA[`, `<?`, `<!DOCTYPE`, `<SCRIPT>`, `<rect/onload=x>` into a real example's SVG
+(each must fail `isPlainSvg` and clean to nothing removable); document that the fast path repairs
+malformed input while the full path refuses it; CSS `url(` is not inspected. (b) `OpeningJson.kind`
+(`src/plan-json.ts` ~:371) and the schema enum (~:2550) are hand-written twins of `OPENING_KINDS`: tie them
+to `KIND_FACETS` by a test. (c) `scripts/compat-check.mjs` does not compare generic constraints,
+`readonly`, or the literal values of `as const` objects; the old shim runs against the repo's current
+zod and MCP SDK (after a major bump of either, pin the old versions in the cache). Proof: each item a
+test or a doc sentence; no `src/` change except (b) if a derivation is cheap.
 
 ## Wave 2 · structure, by pure moves
 
