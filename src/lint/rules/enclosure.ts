@@ -693,7 +693,7 @@ const END_SCAN_STEP_MM = 1;
  * millimetre per free end, so the work is bounded by a count (at most this many steps per end;
  * `AGENTS.md`: budgets are counts), never by a ruleset figure. Far above any real slit.
  */
-const MAX_WALL_GAP_SCAN_MM = 500;
+export const MAX_WALL_GAP_SCAN_MM = 500;
 
 /** A free end {@link wallEndShort} measures a slit from, and what it stops short of. */
 interface ShortEnd {

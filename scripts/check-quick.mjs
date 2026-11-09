@@ -248,6 +248,8 @@ if (!flag("--no-tests")) {
       name: `vitest (${picked.length} files)`,
       cmd: "npx",
       args: ["vitest", "run", "--poolOptions.forks.maxForks=2", "--poolOptions.forks.minForks=1", ...picked],
+      // A quarter of every property's runs: the nearest-tests pass is a smoke, CI runs the full counts.
+      env: { FC_SCALE: process.env.FC_SCALE ?? "0.25" },
     });
   }
 }
@@ -266,7 +268,12 @@ const started = Date.now();
 for (const s of steps) {
   const t0 = Date.now();
   console.log(`\n▶ ${s.name}`);
-  const r = spawnSync(s.cmd, s.args, { cwd: ROOT, stdio: "inherit", shell: process.platform === "win32" });
+  const r = spawnSync(s.cmd, s.args, {
+    cwd: ROOT,
+    stdio: "inherit",
+    shell: process.platform === "win32",
+    env: { ...process.env, ...s.env },
+  });
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   if (r.status !== 0) {
     console.error(`\n✗ check:quick: ${s.name} failed (${secs}s). Fix it before pushing.`);

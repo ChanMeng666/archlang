@@ -15,6 +15,7 @@ import fc from "fast-check";
 import { format } from "../src/format.js";
 import { parse } from "../src/parser.js";
 import { archPlan } from "./arbitrary-plan.js";
+import { runs } from "./setup/fast-check.js";
 
 /** Field names that are pure position/trivia, not semantics: every `*Span` field
  *  recorded for a diagnostic/fix, the parser's own `span`/`line`, and the plan's
@@ -98,6 +99,6 @@ describe("print-roundtrip — parse(format(s)) ≡ parse(s), modulo spans and tr
   });
 
   it("also holds over fc.sample(archPlan)", () => {
-    for (const src of fc.sample(archPlan, { numRuns: 200, seed: 20260927 })) checkRoundtrip(src);
+    for (const src of fc.sample(archPlan, { numRuns: runs(200), seed: 20260927 })) checkRoundtrip(src);
   });
 });

@@ -21,6 +21,7 @@ import { scaleDenominator } from "../src/sheet.js";
 import { GROUND_MATERIALS, hatchTileMm, KNOWN_MATERIALS } from "../src/hatches.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 import { readFileSync } from "node:fs";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 const digits = (e: number, lead = "1"): string => lead + "0".repeat(e);
 const plan = (body: string, head = ""): string => `plan "P" {\n${head}${body}\n}\n`;
@@ -598,7 +599,7 @@ suite("property: random magnitudes up to 1e308 never escape the closed domain", 
       }),
       {
         seed: 20261002,
-        numRuns: 300,
+        numRuns: runs(300),
         // Always run: a coarse hatch and a heavy pen on a small plan are drawn (they used to be
         // refused by fixed caps); the same settings at 1e308 are one report, no Infinity.
         examples: [
@@ -614,8 +615,8 @@ suite("property: random magnitudes up to 1e308 never escape the closed domain", 
       },
     );
     // Not vacuous: the seed reaches both sides of the bound.
-    expect(drawn).toBeGreaterThan(20);
-    expect(refused).toBeGreaterThan(20);
+    expect(drawn).toBeGreaterThan(floorAt(20));
+    expect(refused).toBeGreaterThan(floorAt(20));
   }, 60_000);
 });
 

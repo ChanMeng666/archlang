@@ -11,6 +11,7 @@ import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { PointInterner, SNAP_MM } from "../src/geometry/band.js";
 import type { Point } from "../src/ast.js";
+import { runs } from "./setup/fast-check.js";
 
 const KEY_SCALE = 1e2;
 
@@ -97,7 +98,7 @@ describe("PointInterner agrees with its string-keyed predecessor", () => {
   it("returns the identical object sequence", () => {
     fc.assert(
       fc.property(sequence, (pts) => diverges(pts) === -1),
-      { numRuns: 3000 },
+      { numRuns: runs(3000) },
     );
   });
 
@@ -106,7 +107,7 @@ describe("PointInterner agrees with its string-keyed predecessor", () => {
     const cluster = fc.array(fc.record({ x: step, y: step }), { minLength: 2, maxLength: 80 });
     fc.assert(
       fc.property(cluster, (pts) => diverges(pts) === -1),
-      { numRuns: 1500 },
+      { numRuns: runs(1500) },
     );
   });
 

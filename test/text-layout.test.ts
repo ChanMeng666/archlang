@@ -10,6 +10,7 @@ import fc from "fast-check";
 import { EM_PER_CHAR } from "../src/text-metrics.js";
 import { balancedLines, breakUnits, fewestLines, textExtent, textLines } from "../src/text-layout.js";
 import type { ScenePrim } from "../src/scene.js";
+import { runs } from "./setup/fast-check.js";
 
 /** The drawn width of `n` characters at font size 1. */
 const chars = (n: number): number => n * 1 * EM_PER_CHAR;
@@ -107,7 +108,7 @@ describe("fewestLines / balancedLines — how it breaks", () => {
         // …and the fewest lines a width allows is what greedy filling at that width gives.
         expect(fewestLines(name, 1, chars(best))).toBeLessThanOrEqual(n);
       }),
-      { numRuns: 400 },
+      { numRuns: runs(400) },
     );
   });
 });

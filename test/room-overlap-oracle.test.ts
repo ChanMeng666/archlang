@@ -40,6 +40,7 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 const ROOT = resolvePath(__dirname, "..");
 
@@ -378,10 +379,10 @@ describe("W_ROOM_OVERLAP: the class pass against the grid pass and the double lo
         if (o.counted) counted++;
         if (o.diagnostics > 0) listed++;
       }),
-      { numRuns: 400, seed: 19 },
+      { numRuns: runs(400), seed: 19 },
     );
-    expect(counted).toBeGreaterThan(20);
-    expect(listed).toBeGreaterThan(100);
+    expect(counted).toBeGreaterThan(floorAt(20));
+    expect(listed).toBeGreaterThan(floorAt(100));
   }, 120_000);
 });
 
@@ -401,9 +402,9 @@ describe("countOverlappingRectPairs against the double loop", () => {
         expect(countOverlappingRectPairs(bs)).toBe(n);
         if (n > 0) nonzero++;
       }),
-      { numRuns: 1000, seed: 1915 },
+      { numRuns: runs(1000), seed: 1915 },
     );
-    expect(nonzero).toBeGreaterThan(300);
+    expect(nonzero).toBeGreaterThan(floorAt(300));
   });
 
   it("refuses a non-finite box rather than answering", () => {

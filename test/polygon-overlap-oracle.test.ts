@@ -37,6 +37,7 @@ import { resolveAll } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import type { World } from "../src/world.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 const ROOT = resolvePath(__dirname, "..");
 
@@ -156,11 +157,11 @@ describe("the windowed exact ring test answers as the whole-ring test did", () =
           if (want) hits++;
           else misses++;
         }),
-        { numRuns: 1500, seed: 20261101 },
+        { numRuns: runs(1500), seed: 20261101 },
       );
     }
-    expect(hits).toBeGreaterThan(500);
-    expect(misses).toBeGreaterThan(500);
+    expect(hits).toBeGreaterThan(floorAt(500));
+    expect(misses).toBeGreaterThan(floorAt(500));
   }, 120_000);
 
   it("points a tolerance from an edge: the on-edge and `eps` arms decide as they did", () => {

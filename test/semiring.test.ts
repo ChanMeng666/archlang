@@ -1,6 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { BOOLEAN, lexicographic, MAX_MIN, MIN_PLUS, type OrderedSemiring } from "../src/algebra/semiring.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * The semiring laws `bestPaths` relies on, checked by property over each semiring
@@ -49,7 +50,7 @@ const CASES: Array<{ name: string; s: OrderedSemiring<any>; v: fc.Arbitrary<any>
   },
 ];
 
-const RUNS = { numRuns: 500 };
+const RUNS = { numRuns: runs(500) };
 
 for (const { name, s, v } of CASES) {
   describe(`${name} is a selective, isotone, monotone commutative semiring`, () => {

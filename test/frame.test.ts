@@ -21,6 +21,7 @@ import type { Arc } from "../src/geometry/arc.js";
 import type { Point } from "../src/ast.js";
 import type { WallSegment } from "../src/geometry.js";
 import type { RColumn, RDim, RDoor, RFurniture, RRoom, RWall, ResolvedElement } from "../src/ir.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * Direct coverage of `src/frame.ts` — the exact-isometry layer behind `place` (and, via
@@ -129,7 +130,7 @@ describe("frame algebra — signed permutation + translation", () => {
           for (const v of [h.a, h.b, h.c, h.d]) expect([-1, 0, 1]).toContain(nz(v));
         }
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -138,7 +139,7 @@ describe("frame algebra — signed permutation + translation", () => {
       fc.property(frameArb(), frameArb(), (f, g) => {
         expect(det(composeFrame(f, g))).toBe(det(f) * det(g));
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -148,7 +149,7 @@ describe("frame algebra — signed permutation + translation", () => {
         expect(isIdentity(composeFrame(f, inverse(f)))).toBe(true);
         expect(isIdentity(composeFrame(inverse(f), f))).toBe(true);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -157,7 +158,7 @@ describe("frame algebra — signed permutation + translation", () => {
       fc.property(frameArb(), frameArb(), frameArb(), (f, g, h) => {
         expect(mat(composeFrame(composeFrame(f, g), h))).toEqual(mat(composeFrame(f, composeFrame(g, h))));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -167,7 +168,7 @@ describe("frame algebra — signed permutation + translation", () => {
         expect(mat(composeFrame(IDENTITY, f))).toEqual(mat(f));
         expect(mat(composeFrame(f, IDENTITY))).toEqual(mat(f));
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -189,7 +190,7 @@ describe("frame algebra — signed permutation + translation", () => {
         });
         expect(mat(rebuilt)).toEqual(mat(c));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -234,7 +235,7 @@ describe("tp — mapping a point local → global", () => {
       fc.property(frameArb(), pointArb(), (f, p) => {
         expect(pt(tp(inverse(f), tp(f, p)))).toEqual(pt(p));
       }),
-      { numRuns: 1000 },
+      { numRuns: runs(1000) },
     );
   });
 
@@ -243,7 +244,7 @@ describe("tp — mapping a point local → global", () => {
       fc.property(frameArb(), frameArb(), pointArb(), (f, g, p) => {
         expect(pt(tp(composeFrame(f, g), p))).toEqual(pt(tp(f, tp(g, p))));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -253,7 +254,7 @@ describe("tp — mapping a point local → global", () => {
         const q = { x: p.x + 300, y: p.y + 400 };
         expect(Math.hypot(tp(f, q).x - tp(f, p).x, tp(f, q).y - tp(f, p).y)).toBe(500);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });
@@ -294,7 +295,7 @@ describe("transformRect — a top-left + size box", () => {
         expect(nz(out.at.x + out.size.w)).toBe(Math.max(c1.x, c2.x));
         expect(nz(out.at.y + out.size.h)).toBe(Math.max(c1.y, c2.y));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -307,7 +308,7 @@ describe("transformRect — a top-left + size box", () => {
         expect(pt(back.at)).toEqual(pt(at));
         expect(back.size).toEqual({ w, h });
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });
@@ -326,7 +327,7 @@ describe("transformDeg — carrying a fixture's quarter-turn through a frame", (
       fc.property(frameArb(), fc.integer({ min: -4, max: 4 }), (f, k) => {
         expect([0, 90, 180, 270]).toContain(transformDeg(f, k * 90));
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -362,7 +363,7 @@ describe("transformDeg — carrying a fixture's quarter-turn through a frame", (
       fc.property(frameArb(), frameArb(), fc.constantFrom(...ROTATIONS), (f, g, d) => {
         expect(transformDeg(composeFrame(f, g), d)).toBe(transformDeg(f, transformDeg(g, d)));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -371,7 +372,7 @@ describe("transformDeg — carrying a fixture's quarter-turn through a frame", (
       fc.property(frameArb(), fc.constantFrom(...ROTATIONS), (f, d) => {
         expect(transformDeg(inverse(f), transformDeg(f, d))).toBe(d);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });
@@ -400,7 +401,7 @@ describe("nsId — namespacing an id with the instance path", () => {
           seen.set(out, source);
         }
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -591,7 +592,7 @@ describe("transformElement — an instance's resolved element crossing into plan
       fc.property(frameArb(), (f) => {
         expect(shoelace((transformElement(f, polyRoom()) as RRoom).poly!)).toBe(base);
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -705,7 +706,7 @@ describe("transformElement — an instance's resolved element crossing into plan
         expect(d.swing).toBe("in");
         expect((transformElement(inverse(f), transformElement(f, dim(300))) as RDim).offset).toBe(300);
       }),
-      { numRuns: 400 },
+      { numRuns: runs(400) },
     );
   });
 
@@ -727,7 +728,7 @@ describe("transformElement — an instance's resolved element crossing into plan
         const fs1 = transformElement(f, transformElement(g, furniture(90))) as RFurniture;
         expect(fc1.rotate).toBe(fs1.rotate);
       }),
-      { numRuns: 400 },
+      { numRuns: runs(400) },
     );
   });
 });

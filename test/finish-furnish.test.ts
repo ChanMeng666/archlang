@@ -35,6 +35,7 @@ import type { World } from "../src/world.js";
 import { canonicalFixture } from "../src/elements/fixtures-glyphs.js";
 import { countsByClass, GATED, sweep } from "../scripts/probe-finish-wet-rooms.js";
 import { finishDigest, PARTLY } from "./finish-digest.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 /**
  * `finish()` — the furnish stage (`docs/adr/0025-furnish-as-explicit-transform.md`).
@@ -1177,9 +1178,9 @@ suite("furnish law — generated rows of rooms: fixpoint, never worse, pure inse
           }
         }
       }),
-      { numRuns: 60, seed: 20261009 },
+      { numRuns: runs(60), seed: 20261009 },
     );
-    expect(furnished, "the property never furnished a room").toBeGreaterThan(20);
+    expect(furnished, "the property never furnished a room").toBeGreaterThan(floorAt(20));
     expect(leftEmpty, "the property never met a room it had to leave empty").toBeGreaterThan(0);
     expect(FURNISHED_USES.length).toBeGreaterThan(4);
   }, 300000);

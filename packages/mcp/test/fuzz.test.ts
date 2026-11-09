@@ -21,6 +21,7 @@
  */
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import { runs } from "../../../test/setup/fast-check.js";
 import { call, connect, TINY } from "./helpers.js";
 
 /** Bounded so the whole file stays well under ~30s: 11 tools × NUM_RUNS calls. */
@@ -103,7 +104,7 @@ describe("malformed tool arguments", () => {
           const result = await client.callTool({ name, arguments: args as Record<string, unknown> });
           assertWellFormed(result, label);
         }),
-        { numRuns: NUM_RUNS },
+        { numRuns: runs(NUM_RUNS) },
       );
       await assertTransportAlive(client, name);
     }, 30_000);
@@ -138,7 +139,7 @@ describe("malformed tool arguments", () => {
         const text = (result as { content: Array<{ text: string }> }).content[0]!.text;
         expect(() => JSON.parse(text)).not.toThrow();
       }),
-      { numRuns: 120 },
+      { numRuns: runs(120) },
     );
     await assertTransportAlive(client, "arbitrary-source");
   }, 30_000);

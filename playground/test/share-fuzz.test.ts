@@ -14,9 +14,10 @@ import { PlanHashTooLarge, decodePlanHashWeb } from "../../src/cli/share-codec.w
 import { LINK_INFLATE_CAP_BYTES, bytesToB64url, readHash, srcFromHash } from "../src/share.js";
 import { decodePayload } from "../worker/share-core.js";
 import { supportsDeflateRaw } from "./helpers.js";
+import { runs } from "../../test/setup/fast-check.js";
 
 const SEED = 20261109;
-const RUNS = { numRuns: 60, seed: SEED };
+const RUNS = { numRuns: runs(60), seed: SEED };
 const b64url = fc.stringMatching(/^[A-Za-z0-9_-]{0,400}$/);
 /** A valid deflate stream of `n` spaces: tiny on the wire, `n` bytes out. */
 const bomb = (n: number) => bytesToB64url(deflateRawSync(Buffer.alloc(n, 0x20)));
@@ -95,7 +96,7 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
           if (n <= LINK_INFLATE_CAP_BYTES) expect(r !== null && "src" in r && r.src.length === n).toBe(true);
           else expect(r).toEqual({ refused: "too_large" });
         }),
-        { numRuns: 12, seed: SEED },
+        { numRuns: runs(12), seed: SEED },
       );
     });
   });
@@ -117,7 +118,7 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
           PlanHashTooLarge,
         );
       }),
-      { numRuns: 4, seed: SEED },
+      { numRuns: runs(4), seed: SEED },
     );
   });
 });
