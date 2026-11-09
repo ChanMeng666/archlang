@@ -20,6 +20,10 @@
   every 3D element comes from the plan's elements, and every solid is closed. The package
   description says the same; the npm page shows the new README at the next publish.
 
+### Fixed
+
+- An `import` is rooted like the core CLI's: `makeNodeWorld(baseDir, root?)` (and so `archlang3d build`, `check` and `view`) reads a module only from under `root` (default: the working directory) or `baseDir`, with links and junctions followed, only a `.arch` file, and only up to 1 MiB. A refused module is the core's `E_IMPORT_OUTSIDE_ROOT`, `E_IMPORT_NOT_ARCH` or `E_IMPORT_TOO_LARGE` at the `import` (reported through `E3D_PLAN_ERRORS`); with a core older than 1.58 the refusal reads as `E_IMPORT_NOT_FOUND`; the file is still never read. Before, any path an `import` named was read.
+
 ## [0.4.0] - 2026-11-06
 
 The core peer range is now `^1.57.0` (was `^1.45.0`): 1.57.0 is the first core that exports
