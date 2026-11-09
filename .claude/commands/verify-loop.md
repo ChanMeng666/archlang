@@ -22,7 +22,7 @@ is not (a targeted subset misses the corpus-wide guards, `docs/agents/gotchas.md
    - If a drift step fails, run the matching `npm run gen:*` (or `npm run gen:all`) to regenerate
      the artifact **from its source**, then re-run `npm run check:quick`.
    - **NEVER hand-edit a generated file** to make drift pass. The generated artifacts
-     (every `artifacts` entry of `GENERATORS` in `scripts/check-drift.ts`) are outputs: edit the
+     (every `artifacts` entry of `GENERATORS` in `scripts/generators.ts`) are outputs: edit the
      source the generator reads and regenerate.
    - If you touched the CLI, expect `docs/cli-reference.md` to move — it is generated from
      `src/manifest.ts`. **Read that diff**; it is the one artifact a CLI change always rewrites.

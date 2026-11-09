@@ -60,9 +60,10 @@ coordinator's own notes (merging, registries, browser and social automation, the
 
 - **`vitest -u -t "<name>"` (the owner's update command) on a snapshot file deletes every snapshot the filter skipped** as obsolete
   (`snapshot.test.ts` lost its multi-level plans this way). Run `-u` unfiltered and read the diff.
+  (guarded: hook rule `filtered-update`, `.claude/hooks/local-gate.mjs`, even under `#allow-local-heavy`)
 - **`vitest -u` (the owner's update command) on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
   the file, group 1 included.** Scope it: `-u -t "re-blessed when redrawn"`, then confirm group 1
-  is untouched in the diff.
+  is untouched in the diff. (guarded: hook rule `filtered-update` refuses any other `-u` naming the file)
 - **CI runs `check:drift` and fails on drift; the local `check:quick` regenerates in place** and leaves the
   artifacts (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
   commit them or `git checkout --` them; do not mistake them for your own edits.
@@ -72,6 +73,7 @@ coordinator's own notes (merging, registries, browser and social automation, the
   under `[Unreleased]`. If not, take main's file and insert the branch's lines; bullets have no blank
   line between them, so cut an entry on the next `- ` as well. After merging `main` past a release,
   `node scripts/changelog-section.mjs <x.y.z>` must not list the branch's entry; move it under `[Unreleased]` (B3b, #337).
+  (guarded: CI's `changelog` job, `scripts/check-changelog-unreleased.mjs`, on every PR)
 - **A change to the step meter moves every law that digests steps**: K1,
   `test/rectilinear-rooms-byte-identity.test.ts`, `test/block-stair-byte-identity.test.ts`. Re-take each by
   its own route, and show that putting the old count back reproduces the pinned digest.
@@ -109,9 +111,12 @@ coordinator's own notes (merging, registries, browser and social automation, the
   while and double-door byte identity, rooms-tiling-probe), the per-storey key list (`cli-levels`),
   and `context-size`'s hand-written catalogue size. Read the PR's full CI (`gh pr checks`) before pinning its auto-merge;
   a `check:quick` pass is never merge evidence, and the full suite runs in CI, not locally.
+  (guarded, in part: for an `examples/` or `docs/**/*.md` change `check:quick` runs the tests that list
+  that folder first, within its 20-file cap; CI runs the rest)
 - **A record written through a shell `node -e`/heredoc loses its backslashes** (a Windows path's
   `\2…` became a control byte in a handoff, #335). Write such text with the Write/Edit tools, then
-  `LC_ALL=C grep -c $'[\x01-\x08]' <file>` must print 0.
+  `LC_ALL=C grep -c $'[\x01-\x08]' <file>` must print 0. (guarded: `test/no-control-bytes.test.ts`, every
+  tracked `*.md`)
 
 ## Tooling & process
 
@@ -146,6 +151,7 @@ coordinator's own notes (merging, registries, browser and social automation, the
   older core and be invalid, so read them from the PR's CI.
 - **Remove a worktree's `node_modules` junctions with `[System.IO.Directory]::Delete(<junction>)`** (never recursive; the PowerShell tool blocks `cmd /c rmdir`) before
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
+  (guarded: hook rule `delete-through-link` refuses the delete while a link sits within two levels)
   Git Bash's `ln -s` does not link: it COPIES the target, and a copy of the primary's `node_modules`
   carries its workspace junctions (one points at the repository root). Scan any such copy for
   reparse points and unlink each (`[System.IO.Directory]::Delete(<junction>)`) before deleting it.
