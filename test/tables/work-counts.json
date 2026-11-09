@@ -1,5 +1,5 @@
 {
-  "_reason": "2026-11-10 EH2.10: lint work counters (leafDoorPairs, boundaryRunTests, navCells) added, measured on the unchanged rules (main bab56e23)",
+  "_reason": "2026-11-10 EH2.10 leaf-across-doorway: each leaf measured only against the doors whose approach-zone box it meets (overlapIndex); leafDoorPairs falls",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -16,7 +16,7 @@
       "steps": 3350,
       "drawUnits": 1740,
       "elements": 46,
-      "leafDoorPairs": 9,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 273,
       "navCells": 240000
     },
@@ -24,7 +24,7 @@
       "steps": 264,
       "drawUnits": 110,
       "elements": 13,
-      "leafDoorPairs": 2,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 7,
       "navCells": 2800
     },
@@ -32,7 +32,7 @@
       "steps": 777,
       "drawUnits": 924,
       "elements": 46,
-      "leafDoorPairs": 15,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 276,
       "navCells": 10200
     },
@@ -40,7 +40,7 @@
       "steps": 2413,
       "drawUnits": 1559,
       "elements": 90,
-      "leafDoorPairs": 99,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 416,
       "navCells": 31500
     },
@@ -48,7 +48,7 @@
       "steps": 2066,
       "drawUnits": 2307,
       "elements": 96,
-      "leafDoorPairs": 30,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 880,
       "navCells": 29412
     },
@@ -56,7 +56,7 @@
       "steps": 1394,
       "drawUnits": 1905,
       "elements": 65,
-      "leafDoorPairs": 42,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 152,
       "navCells": 15000
     },
@@ -64,7 +64,7 @@
       "steps": 1277,
       "drawUnits": 2728,
       "elements": 74,
-      "leafDoorPairs": 63,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 528,
       "navCells": 18400
     },
@@ -72,7 +72,7 @@
       "steps": 969,
       "drawUnits": 906,
       "elements": 69,
-      "leafDoorPairs": 30,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 171,
       "navCells": 9072
     },
@@ -80,7 +80,7 @@
       "steps": 294,
       "drawUnits": 265,
       "elements": 15,
-      "leafDoorPairs": 1,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 18,
       "navCells": 16800
     },
@@ -88,7 +88,7 @@
       "steps": 3876,
       "drawUnits": 4659,
       "elements": 115,
-      "leafDoorPairs": 44,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 246,
       "navCells": 25650
     },
@@ -96,7 +96,7 @@
       "steps": 411,
       "drawUnits": 432,
       "elements": 27,
-      "leafDoorPairs": 6,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 30,
       "navCells": 3500
     },
@@ -112,7 +112,7 @@
       "steps": 5294,
       "drawUnits": 5882,
       "elements": 152,
-      "leafDoorPairs": 160,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 1288,
       "navCells": 33762
     },
@@ -128,7 +128,7 @@
       "steps": 965,
       "drawUnits": 374,
       "elements": 20,
-      "leafDoorPairs": 6,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 52,
       "navCells": 5850
     },
@@ -136,7 +136,7 @@
       "steps": 535,
       "drawUnits": 525,
       "elements": 29,
-      "leafDoorPairs": 6,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 33,
       "navCells": 4875
     },
@@ -144,7 +144,7 @@
       "steps": 2687,
       "drawUnits": 3573,
       "elements": 133,
-      "leafDoorPairs": 72,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 672,
       "navCells": 160000
     },
@@ -152,7 +152,7 @@
       "steps": 687,
       "drawUnits": 1425,
       "elements": 38,
-      "leafDoorPairs": 16,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 90,
       "navCells": 12800
     },
@@ -168,7 +168,7 @@
       "steps": 781,
       "drawUnits": 930,
       "elements": 42,
-      "leafDoorPairs": 40,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 280,
       "navCells": 50400
     },
@@ -176,7 +176,7 @@
       "steps": 1868,
       "drawUnits": 1299,
       "elements": 105,
-      "leafDoorPairs": 80,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 1044,
       "navCells": 250648
     },
@@ -192,7 +192,7 @@
       "steps": 1015,
       "drawUnits": 175,
       "elements": 20,
-      "leafDoorPairs": 6,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 30,
       "navCells": 6000
     },
@@ -200,7 +200,7 @@
       "steps": 1001,
       "drawUnits": 1335,
       "elements": 55,
-      "leafDoorPairs": 72,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 322,
       "navCells": 22500
     },
@@ -208,7 +208,7 @@
       "steps": 1020,
       "drawUnits": 281,
       "elements": 26,
-      "leafDoorPairs": 6,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 80,
       "navCells": 6000
     },
@@ -216,7 +216,7 @@
       "steps": 1291,
       "drawUnits": 1477,
       "elements": 37,
-      "leafDoorPairs": 20,
+      "leafDoorPairs": 1,
       "boundaryRunTests": 144,
       "navCells": 8360
     },
@@ -224,7 +224,7 @@
       "steps": 192,
       "drawUnits": 451,
       "elements": 12,
-      "leafDoorPairs": 4,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 27,
       "navCells": 5400
     },
@@ -232,7 +232,7 @@
       "steps": 484,
       "drawUnits": 239,
       "elements": 28,
-      "leafDoorPairs": 6,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 60,
       "navCells": 4200
     },
@@ -240,7 +240,7 @@
       "steps": 5198,
       "drawUnits": 952,
       "elements": 110,
-      "leafDoorPairs": 180,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 1456,
       "navCells": 21312
     },
@@ -248,7 +248,7 @@
       "steps": 256,
       "drawUnits": 118,
       "elements": 13,
-      "leafDoorPairs": 2,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 7,
       "navCells": 2400
     },
@@ -256,7 +256,7 @@
       "steps": 485,
       "drawUnits": 274,
       "elements": 29,
-      "leafDoorPairs": 2,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 11,
       "navCells": 1960
     },
@@ -264,7 +264,7 @@
       "steps": 3824,
       "drawUnits": 1218,
       "elements": 72,
-      "leafDoorPairs": 18,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 165,
       "navCells": 16692
     },
@@ -272,7 +272,7 @@
       "steps": 2678,
       "drawUnits": 1974,
       "elements": 116,
-      "leafDoorPairs": 24,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 819,
       "navCells": 250500
     },
@@ -280,7 +280,7 @@
       "steps": 1186,
       "drawUnits": 484,
       "elements": 16,
-      "leafDoorPairs": 2,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 13,
       "navCells": 6080
     },
@@ -288,7 +288,7 @@
       "steps": 1310,
       "drawUnits": 333,
       "elements": 31,
-      "leafDoorPairs": 12,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 119,
       "navCells": 8000
     },
@@ -296,7 +296,7 @@
       "steps": 1822,
       "drawUnits": 750,
       "elements": 39,
-      "leafDoorPairs": 12,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 70,
       "navCells": 11200
     },
@@ -304,7 +304,7 @@
       "steps": 15880,
       "drawUnits": 6900,
       "elements": 1000,
-      "leafDoorPairs": 39800,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 226000,
       "navCells": 0
     },
@@ -312,7 +312,7 @@
       "steps": 13872,
       "drawUnits": 7328,
       "elements": 1004,
-      "leafDoorPairs": 89700,
+      "leafDoorPairs": 0,
       "boundaryRunTests": 2800,
       "navCells": 0
     },

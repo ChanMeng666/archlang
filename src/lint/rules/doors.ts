@@ -33,6 +33,7 @@ import {
   wallFaceProbes,
 } from "../../geometry.js";
 import { arcOpeningVoid } from "../../geometry/arc-band.js";
+import { type GridBox, overlapIndex } from "../../geometry/grid-index.js";
 import { type Arc, arcLength, arcTangentAt } from "../../geometry/arc.js";
 import { type BBox, DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, RFurniture, ROpening } from "../../ir.js";
@@ -768,24 +769,33 @@ export const leafAcrossDoorway: LintRule = {
   codes: ["W_LEAF_ACROSS_DOORWAY"],
   check(ctx: LintContext): Diagnostic[] {
     const { doors, rules, rooms, roomRects, at } = ctx;
+    // Each door's leaves, once (`doorLeaves` is pure): read below per leaf and per pair.
+    const leaves = doors.map((d) => doorLeaves(d));
     // Every leaf, a `double` door's two in order: one warning per pair of doors.
     const swings: Array<{ d: RDoor; s: DoorSwing }> = [];
-    for (const d of doors) for (const s of doorLeaves(d)) swings.push({ d, s });
+    doors.forEach((d, i) => {
+      for (const s of leaves[i]!) swings.push({ d, s });
+    });
     if (swings.length === 0 || doors.length < 2) return [];
     const warned = new Set<string>();
     const edgeOf = new Map(ctx.access().edges.map((e) => [e.doorId, e] as const));
     const roomById = new Map(rooms.map((r) => [r.id, r] as const));
     const depth = rules.doorwayLandingMm;
+    // Only a leaf that reaches door b's approach zone can stand in it (`leafOverApproach` clips the
+    // leaf to that zone and is null otherwise), so each leaf is measured against the doors whose
+    // zone box its own box meets, in door order: the doors a full scan would warn on, in its order.
+    const approachOf = overlapIndex(doors.map((b) => (edgeOf.has(b.id) ? approachBox(b, depth) : null)));
     const out: Diagnostic[] = [];
     for (const { d: a, s: sa } of swings) {
       const ea = edgeOf.get(a.id);
       if (!ea || !orthogonalHost(a)) continue;
-      for (const b of doors) {
+      for (const bi of approachOf(segmentBox(sa.hinge, sa.leafEnd))) {
+        const b = doors[bi]!;
         if (b === a || warned.has(`${a.id}|${b.id}`)) continue;
         const eb = edgeOf.get(b.id);
         if (!eb) continue;
         ctx.work.leafDoorPairs++;
-        if (doorLeaves(b).some((sb) => swingsCollide(sa, sb, rules.swingClearanceMm))) continue;
+        if (leaves[bi]!.some((sb) => swingsCollide(sa, sb, rules.swingClearanceMm))) continue;
         const hit = leafOverApproach(sa, b, depth);
         if (!hit) continue;
         const need = Math.min(b.width, rules.minDoorWidthMm);
@@ -878,6 +888,36 @@ function leafOverApproach(s: DoorSwing, b: RDoor, depth: number): { depth: numbe
   }
   return best;
 }
+
+/**
+ * A box holding door `b`'s approach zone on BOTH faces of its wall (the zones
+ * {@link leafOverApproach} clips a leaf to: the span jamb to jamb, by `depth` off each face, so
+ * within `half + depth` of the centreline), padded by {@link ZONE_BOX_PAD_MM}; `null` for a door
+ * with no orthogonal host, which no leaf is measured against. A leaf whose box misses it cannot
+ * stand in either zone. A filter only: the clip decides.
+ */
+function approachBox(b: RDoor, depth: number): GridBox | null {
+  const seg = b.host;
+  if (!seg || !orthogonalHost(b)) return null;
+  const reach = seg.thickness / 2 + depth + ZONE_BOX_PAD_MM;
+  const lo = (seg.a.y === seg.b.y ? b.at.x : b.at.y) - b.width / 2 - ZONE_BOX_PAD_MM;
+  const hi = lo + b.width + 2 * ZONE_BOX_PAD_MM;
+  return seg.a.y === seg.b.y
+    ? { minX: lo, maxX: hi, minY: b.at.y - reach, maxY: b.at.y + reach }
+    : { minX: b.at.x - reach, maxX: b.at.x + reach, minY: lo, maxY: hi };
+}
+
+/** The bounding box of the segment `p`→`q`. */
+const segmentBox = (p: Point, q: Point): GridBox => ({
+  minX: Math.min(p.x, q.x),
+  maxX: Math.max(p.x, q.x),
+  minY: Math.min(p.y, q.y),
+  maxY: Math.max(p.y, q.y),
+});
+
+/** How far (mm) {@link approachBox} pads its zone box: far above the float dust of the clip's
+ *  frame change, so the filter can never drop a leaf the clip would keep. */
+const ZONE_BOX_PAD_MM = 1;
 
 /** A door hosted on a straight, axis-aligned wall segment. */
 function orthogonalHost(d: RDoor): boolean {

@@ -1,9 +1,9 @@
-/** GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents. */
+/** GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents; overlapIndex ≡ a full scan. */
 
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile } from "../src/index.js";
-import { GridIndex } from "../src/geometry/grid-index.js";
+import { boxesMeet, GridIndex, overlapIndex } from "../src/geometry/grid-index.js";
 import { resolvePlan } from "../src/analyze.js";
 import { MAX_OVERLAP_PAIRS_LISTED, type RRoom } from "../src/ir.js";
 import { roomOverlapNamer } from "../src/naming.js";
@@ -168,5 +168,41 @@ describe("GridIndex extreme extents", () => {
     const small = { minX: 0, minY: 0, maxX: 400, maxY: 400 };
     const huge = { minX: -1e12, minY: -1e12, maxX: 1e12, maxY: 1e12 };
     expect(a.queryBox(huge)).toEqual(b.queryBox(small));
+  });
+});
+
+describe("overlapIndex ≡ a full scan (EH2.10: the lint rules' leaf and boundary queries)", () => {
+  const box = fc
+    .tuple(
+      fc.integer({ min: -20_000, max: 20_000 }),
+      fc.integer({ min: -20_000, max: 20_000 }),
+      fc.integer({ min: 0, max: 6_000 }),
+      fc.integer({ min: 0, max: 6_000 }),
+    )
+    .map(([x, y, w, h]) => ({ minX: x, minY: y, maxX: x + w, maxY: y + h }));
+  it("returns exactly the meeting boxes' positions, ascending, nulls never", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.option(box, { nil: null }), { maxLength: 60 }),
+        fc.array(box, { maxLength: 10 }),
+        (bs, qs) => {
+          const query = overlapIndex(bs);
+          for (const q of qs) {
+            const scan = bs.flatMap((b, i) => (b !== null && boxesMeet(b, q) ? [i] : []));
+            expect(query(q)).toEqual(scan);
+          }
+        },
+      ),
+      { numRuns: runs(200) },
+    );
+  });
+
+  it("a box touching the query at one edge or corner meets it (closed boxes)", () => {
+    const query = overlapIndex([
+      { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+      { minX: 10, minY: 10, maxX: 20, maxY: 20 },
+      { minX: 10.5, minY: 0, maxX: 20, maxY: 5 },
+    ]);
+    expect(query({ minX: 10, minY: 10, maxX: 10, maxY: 10 })).toEqual([0, 1]);
   });
 });

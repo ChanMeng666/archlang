@@ -198,3 +198,32 @@ export class GridIndex<T> {
     return out;
   }
 }
+
+/** Do two closed boxes meet (share at least a point)? */
+export const boxesMeet = (a: GridBox, b: GridBox): boolean =>
+  a.minX <= b.maxX && b.minX <= a.maxX && a.minY <= b.maxY && b.minY <= a.maxY;
+
+/**
+ * A query over `boxes` answering, for a box, the POSITIONS in `boxes` of every box that meets
+ * it ({@link boxesMeet}, closed), in ascending position order: the order a full scan over
+ * `boxes` visits them, so a scan rewritten as a query keeps its order. A `null` entry (and an
+ * inverted or non-finite box, which {@link GridIndex.insert} drops) is never returned. The
+ * cell is the median box extent. A caller whose exact test is implied by its boxes meeting
+ * gets the full scan's answer.
+ */
+export function overlapIndex(boxes: readonly (GridBox | null)[]): (q: GridBox) => number[] {
+  const sizes = boxes
+    .filter((b): b is GridBox => b !== null)
+    .map((b) => Math.max(b.maxX - b.minX, b.maxY - b.minY))
+    .filter((s) => s > 0)
+    .sort((a, b) => a - b);
+  const index = new GridIndex<number>(sizes.length > 0 ? sizes[sizes.length >> 1]! : 1);
+  boxes.forEach((b, i) => {
+    if (b !== null) index.insert(b, i);
+  });
+  return (q) =>
+    index
+      .queryBox(q)
+      .filter((i) => boxesMeet(boxes[i]!, q))
+      .sort((a, b) => a - b);
+}
