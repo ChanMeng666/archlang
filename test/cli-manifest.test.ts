@@ -132,7 +132,7 @@ describe("manifest — examples", () => {
 });
 
 describe("manifest — fixture categories match the glyph renderer", () => {
-  it("every advertised FIXTURE_CATEGORIES word draws a symbol (dispatch is by family, `test/glyph-dispatch-table.test.ts`)", () => {
+  it("every advertised fixture category draws a symbol", () => {
     // Asks the renderer instead of scraping its source: a word the manifest advertises but the
     // dispatch cannot draw is the defect; the table type makes the converse unrepresentable.
     const undrawn = FIXTURE_CATEGORIES.filter((c) => !hasFixtureGlyph(c));

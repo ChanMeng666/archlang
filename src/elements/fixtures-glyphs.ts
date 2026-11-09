@@ -530,6 +530,11 @@ export function familyMaterials(category: string): FamilyMaterials | undefined {
  * {@link CanonicalFamily}, so a family added to that table without a drawer here fails `tsc`;
  * an alias reaches its drawer through {@link FAMILY_OF}, never through a second list of names.
  */
+/** The canonical families that have a drawer, for the guard that holds them equal to {@link CANONICAL_FIXTURES}. */
+export function drawnFamilies(): readonly string[] {
+  return Object.keys(DRAW_BY_FAMILY);
+}
+
 type DrawFn = (r: Rect, g: GlyphCtx) => SceneNode[];
 const DRAW_BY_FAMILY: Readonly<Record<CanonicalFamily, DrawFn>> = {
   wc: drawWc,
@@ -671,5 +676,5 @@ const PROBE_SIZES: RenderSizes = {
  * row appears with it. `fixtureGlyph` is pure, so this allocates a few points and nothing else.
  */
 export function hasFixtureGlyph(category: string): boolean {
-  return fixtureGlyph(category, PROBE_RECT, DEFAULT_THEME, PROBE_SIZES) !== null;
+  return (fixtureGlyph(category, PROBE_RECT, DEFAULT_THEME, PROBE_SIZES)?.length ?? 0) > 0;
 }
