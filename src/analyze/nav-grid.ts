@@ -124,6 +124,15 @@ export interface NavCache {
   floors?: { roomCells: number[][]; seed: Point[]; poles: Point[][] };
 }
 
+/**
+ * A work counter a caller hands {@link buildNav}: the cells of every grid it builds are added to
+ * `navCells` (lint's per-run `LintWork`, `src/lint/work.ts`). An out-parameter only; nothing the
+ * build returns depends on it.
+ */
+export interface NavStats {
+  navCells: number;
+}
+
 export interface NavGrid {
   minX: number;
   minY: number;
@@ -1504,6 +1513,8 @@ export function buildNav(
   arrivals: readonly ShaftArrival[] = [],
   /** A grid already built from these same inputs ({@link NavCache}). */
   cache?: NavCache,
+  /** Counts the cells of the grid when one is built here (not on a cache hit). Out only. */
+  stats?: NavStats,
 ): Nav {
   // A storey with an exterior entrance walks from it, whatever shafts land here; one
   // without walks from where its shafts land, or not at all.
@@ -1561,6 +1572,7 @@ export function buildNav(
       viaShaft ? arrivals : [],
     );
     if (cache) cache.grid = built;
+    if (stats && built) stats.navCells += built.nx * built.ny;
   }
   if (!built) return { kind: "none" };
   // Seeding stamps entrance widths into `clearMm`, the one array touched after the build, so a

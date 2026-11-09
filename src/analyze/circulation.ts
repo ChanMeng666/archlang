@@ -49,7 +49,7 @@
 import type { RRoom, RDoor, ROpening, RFurniture, RVoid, RWall } from "../ir.js";
 import type { ArrivingRun, RVertical } from "../vertical.js";
 import { accessDigraph, reachFrom, isBedroom, isKitchen, isWetRoom, type AccessGraph } from "../analyze.js";
-import type { NavCache, Nav } from "./nav-grid.js";
+import type { NavCache, Nav, NavStats } from "./nav-grid.js";
 import {
   DEFAULT_BODY_RADIUS_MM,
   isLivingOrDining,
@@ -69,7 +69,7 @@ import {
   routeBetween,
 } from "./nav-grid.js";
 
-export type { NavCache, NavGrid, NavExtent } from "./nav-grid.js";
+export type { NavCache, NavGrid, NavExtent, NavStats } from "./nav-grid.js";
 export {
   DEFAULT_BODY_RADIUS_MM,
   navCellSizeMm,
@@ -252,6 +252,8 @@ export function roomBottlenecks(
   voids: RVoid[] = [],
   arrivals: readonly ArrivingRun[] = [],
   avoiding?: { request: ReadonlyMap<string, ReadonlySet<string>>; result: Map<string, number> },
+  /** Counts the cells of the grid this builds ({@link NavStats}). Out only; append-only. */
+  stats?: NavStats,
 ): Map<string, number> {
   const out = new Map<string, number>();
   const landed = access.hasEntrance ? [] : landedOn(arrivals, rooms);
@@ -279,6 +281,8 @@ export function roomBottlenecks(
     tol,
     DEFAULT_BODY_RADIUS_MM,
     shafts,
+    undefined,
+    stats,
   );
   if (nav.kind !== "ok") return out;
   const doorReachable = access.hasEntrance
@@ -392,11 +396,13 @@ export function computeCirculation(
    * runs, voids and body radius, never on the entrances, so the second model reuses the first
    * one's grid. `routes: false`: the caller reads no key route from this model (the second of
    * the two reads its rooms only), so the routes are not walked and `routes` is empty.
-   * Append-only: omitting it builds the grid and walks the routes as before.
+   * Append-only: omitting it builds the grid and walks the routes as before. `stats` counts the
+   * cells of every grid the model builds ({@link NavStats}); an out-parameter only.
    */
-  share: { navCache?: NavCache; routes?: boolean } = {},
+  share: { navCache?: NavCache; routes?: boolean; stats?: NavStats } = {},
 ): CirculationModel | null {
   const navCache = share.navCache;
+  const stats = share.stats;
   const walkRoutes = share.routes !== false;
   // The room each arriving run lands in, read off the plan as given — the same
   // `roomOfVertical` that names `verticalReach`'s arrival rooms. A run standing in no room
@@ -429,6 +435,7 @@ export function computeCirculation(
     bodyRadiusMm,
     shafts,
     navCache,
+    stats,
   );
   if (nav.kind === "none") return null;
   // Rooms the modeled doors reach: the only ones a walkability verdict is meaningful
@@ -489,7 +496,21 @@ export function computeCirculation(
    */
   const furnitureSealed = (cand: number[]): string[] => {
     if (cand.length === 0) return [];
-    const control = buildNav(rooms, walls, doors, openings, [], verticals, voids, access, tol, bodyRadiusMm, shafts);
+    const control = buildNav(
+      rooms,
+      walls,
+      doors,
+      openings,
+      [],
+      verticals,
+      voids,
+      access,
+      tol,
+      bodyRadiusMm,
+      shafts,
+      undefined,
+      stats,
+    );
     if (control.kind === "none") return [];
     const reach = reachableFromAny(control.g, control.sources);
     return cand.filter((ri) => control.roomCells[ri]!.some((k) => reach[k])).map((ri) => rooms[ri]!.id);
@@ -508,7 +529,21 @@ export function computeCirculation(
     const found = new Map<string, number>();
     const step = Math.max(1, Math.round(cell / 2));
     for (let r = bodyRadiusMm - step; r > 0 && pending.size > 0; r -= step) {
-      const nv = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, r, shafts);
+      const nv = buildNav(
+        rooms,
+        walls,
+        doors,
+        openings,
+        furniture,
+        verticals,
+        voids,
+        access,
+        tol,
+        r,
+        shafts,
+        undefined,
+        stats,
+      );
       if (nv.kind === "none") break;
       const reach = reachableFromAny(nv.g, nv.sources);
       for (const id of ids) {

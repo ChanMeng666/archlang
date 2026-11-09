@@ -3,7 +3,7 @@
  * by the test (`./work-counts.test.ts`) and by the table's generator (`./work-counts-gen.ts`). Two
  * callers, one instrument, so the table and the check can never measure different things.
  *
- * Per plan, three counts, each the instrument the budget suites already use:
+ * Per plan, three resolution counts, each the instrument the budget suites already use, and three lint ones:
  *
  *  - `steps`: `evaluationSteps()` of the whole resolution (`./step-budget.test.ts`'s `stepsOf`).
  *    It is ONE counter across every storey, instance, call and loop iteration, so a multi-storey
@@ -11,6 +11,11 @@
  *  - `drawUnits`: the drawing budget's estimate summed over every storey, `drawUnits()` of each
  *    element plus `storeyPassUnits()` of the storey (`./drawing-budget.test.ts`'s `estimate`).
  *  - `elements`: the resolved elements over every storey (what the drawing budget is charged for).
+ *  - `leafDoorPairs`, `boundaryRunTests`, `navCells`: one `lint()` run's work counters
+ *    (`lintWork()`, `src/lint/work.ts`; engineering-health EH2.10): the (leaf, door) pairs
+ *    `W_LEAF_ACROSS_DOORWAY` measured, the elements `W_BOUNDARY_NO_WALL` measured against shared
+ *    runs, and the cells of every circulation nav grid the run built. 0 on a plan that does not
+ *    reach the rule, which a row may be.
  *
  * Every row must be a clean resolution with work in it ({@link rowProblems}).
  *
@@ -25,6 +30,7 @@ import { fileURLToPath } from "node:url";
 import { BALANCED, genPlan, OPENING_HEAVY, ROOM_HEAVY } from "../../bench/gen.js";
 import { drawUnits, storeyPassUnits } from "../../src/draw-budget.js";
 import { link } from "../../src/import.js";
+import { lintWork } from "../../src/lint.js";
 import { evaluationSteps, resolveAll } from "../../src/ir.js";
 import { parse } from "../../src/parser.js";
 import { BUILTIN_REGISTRY } from "../../src/registry.js";
@@ -38,6 +44,9 @@ export interface WorkCounts {
   steps: number;
   drawUnits: number;
   elements: number;
+  leafDoorPairs: number;
+  boundaryRunTests: number;
+  navCells: number;
 }
 
 export interface WorkCountsTable {
@@ -81,7 +90,11 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
     ds.filter((d) => d.severity === "error").map((d) => d.code ?? "<uncoded>");
   const errors = codes(parsed.diagnostics);
   const ast = parsed.plan;
-  if (!ast) return { counts: { steps: 0, drawUnits: 0, elements: 0 }, errors };
+  if (!ast)
+    return {
+      counts: { steps: 0, drawUnits: 0, elements: 0, leafDoorPairs: 0, boundaryRunTests: 0, navCells: 0 },
+      errors,
+    };
   const linked = link(ast, world, BUILTIN_REGISTRY);
   const res = resolveAll(linked.plan, BUILTIN_REGISTRY, world);
   errors.push(...codes(linked.diagnostics), ...codes(res.diagnostics));
@@ -94,7 +107,11 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure 
     units += storeyPassUnits(s, BUILTIN_REGISTRY);
     elements += s.elements.length;
   }
-  return { counts: { steps: evaluationSteps(res), drawUnits: units, elements }, errors: [...new Set(errors)] };
+  const { leafDoorPairs, boundaryRunTests, navCells } = lintWork(src, { world });
+  return {
+    counts: { steps: evaluationSteps(res), drawUnits: units, elements, leafDoorPairs, boundaryRunTests, navCells },
+    errors: [...new Set(errors)],
+  };
 }
 
 /**

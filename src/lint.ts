@@ -25,6 +25,7 @@ import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
 import { LINT_PROFILES, type LintOptions, type LintRuleset, resolveRuleset } from "./lint/ruleset.js";
 import { lintStoreys } from "./lint/storeys.js";
+import { type LintWork, newLintWork } from "./lint/work.js";
 
 export { buildingContexts } from "./lint/storeys.js";
 export {
@@ -103,6 +104,29 @@ export function lintWithCoverage(
   source: string,
   opts: LintOptions = {},
 ): { diagnostics: Diagnostic[]; coverage: LintCoverage | null; layers: Readonly<Record<string, LintLayer>> } {
+  return lintRun(source, opts, newLintWork());
+}
+
+/**
+ * The work counters of one {@link lint} run over `source` ({@link LintWork}, summed over every
+ * storey): counts of the geometric tests the costliest rules make, never a time. Read by the
+ * pinned work-count table (`test/tables/work-counts.json`) only; `lint()` itself never reads
+ * them. Pure: a fresh set of counters per call.
+ *
+ * @internal Not part of the package surface (`src/index.ts` does not export it).
+ */
+export function lintWork(source: string, opts: LintOptions = {}): LintWork {
+  const work = newLintWork();
+  lintRun(source, opts, work);
+  return work;
+}
+
+/** {@link lintWithCoverage}, counting the rules' work into `work`. */
+function lintRun(
+  source: string,
+  opts: LintOptions,
+  work: LintWork,
+): { diagnostics: Diagnostic[]; coverage: LintCoverage | null; layers: Readonly<Record<string, LintLayer>> } {
   // Ruleset cascade: defaults → named profile → explicit per-call overrides.
   const profileRules = opts.profile ? (LINT_PROFILES[opts.profile] ?? {}) : {};
   const rules: LintRuleset = resolveRuleset(profileRules, opts.ruleset);
@@ -115,7 +139,7 @@ export function lintWithCoverage(
   if (levels.length > 0) {
     const out = storeys.flatMap((st) => {
       unclassified.push(...unclassifiedRooms(st.ir, st.level));
-      return lintOne(st.ir, rules, st.building, notes, st.level).map((d) => ({ ...d, level: st.level }));
+      return lintOne(st.ir, rules, st.building, notes, work, st.level).map((d) => ({ ...d, level: st.level }));
     });
     return {
       diagnostics: reconcileSharedFixes(out, levels),
@@ -125,7 +149,7 @@ export function lintWithCoverage(
   }
   unclassified.push(...unclassifiedRooms(ir));
   return {
-    diagnostics: reconcileSharedFixes(lintOne(ir, rules, storeys[0]!.building, notes), [{ ir }]),
+    diagnostics: reconcileSharedFixes(lintOne(ir, rules, storeys[0]!.building, notes, work), [{ ir }]),
     coverage: foldCoverage(LINT_RULES, notes, unclassified, 1),
     layers: LINT_CODE_LAYERS,
   };
@@ -251,20 +275,27 @@ function lintOne(
   rules: LintRuleset,
   building: BuildingContext | undefined,
   notes: SkipNote[],
+  work: LintWork,
   level?: number,
 ): Diagnostic[] {
   // The coverage seam: a rule's `ctx.skip(...)` is filed under the family of the rule
   // running, which the fold — not the rule — supplies.
   let current = LINT_RULES[0]!;
-  const ctx = buildLintContext(ir, rules, LINT_RULES, building, (reason, room, cap) =>
-    notes.push({
-      rule: current.name,
-      family: current.family,
-      reason,
-      ...(room ? { room } : {}),
-      ...(level !== undefined ? { level } : {}),
-      ...(cap ? { cap } : {}),
-    }),
+  const ctx = buildLintContext(
+    ir,
+    rules,
+    LINT_RULES,
+    building,
+    (reason, room, cap) =>
+      notes.push({
+        rule: current.name,
+        family: current.family,
+        reason,
+        ...(room ? { room } : {}),
+        ...(level !== undefined ? { level } : {}),
+        ...(cap ? { cap } : {}),
+      }),
+    work,
   );
   const out: Diagnostic[] = [];
   for (const rule of LINT_RULES) {

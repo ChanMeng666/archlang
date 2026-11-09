@@ -41,7 +41,15 @@
  */
 
 import type { Point } from "../../ast.js";
-import { edgeWallCover, type RoomBox, pointInRoomBox, rectOf, roomRing, roomUses } from "../../analyze.js";
+import {
+  type AccessConnector,
+  edgeWallCover,
+  type RoomBox,
+  pointInRoomBox,
+  rectOf,
+  roomRing,
+  roomUses,
+} from "../../analyze.js";
 import {
   endsOfWall,
   inDrawnWall,
@@ -61,8 +69,9 @@ import {
 import type { Diagnostic } from "../../diagnostics.js";
 import { distPointToWallSegment, type WallSegment, wallFaceProbes } from "../../geometry.js";
 import { edgeMid, edgeTangentAt } from "../../geometry/band.js";
+import { type GridBox, overlapIndex } from "../../geometry/grid-index.js";
 import { collinearOverlapLength, rectRing } from "../../geometry/polygon.js";
-import type { ResolvedPlan, RRoom, RWall } from "../../ir.js";
+import type { RDoor, ROpening, ResolvedPlan, RRoom, RWall } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
 import { piecesOf } from "../../vertical.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -122,7 +131,7 @@ function runWords(p: Point, q: Point): string {
 const SAME_LINE_MM = 1;
 
 /** One run two rooms share, measured along the line midway between their edges. */
-interface SharedRun {
+export interface SharedRun {
   /** The run's ends on the midline. */
   p: Point;
   q: Point;
@@ -132,7 +141,7 @@ interface SharedRun {
 }
 
 /** One stretch of a run with nothing standing on it, and what the run holds besides. */
-interface OpenStretch {
+export interface OpenStretch {
   run: SharedRun;
   /** Along-run interval (mm from `run.p`). */
   lo: number;
@@ -189,13 +198,98 @@ function gapsOf(covered: Array<[number, number]>, len: number): Array<[number, n
 }
 
 /**
+ * What {@link openStretches} measures a run against, built once per storey and rule run: the
+ * straight wall segments (`wallSegs` order), the doors, cased openings and open runs (in that
+ * order), and the corners of every closing counter, with an index over the first two.
+ *
+ * The index is a filter only, and an exact one: every wall segment or connector that can put an
+ * interval on a run lies within a bound of the run's line segment, so a box query returns all of
+ * them, in their scan order. A parallel wall counts when its line is within its half thickness,
+ * the slack and half the gap of the run and its extent overlaps the run's; a crossing wall when
+ * its body, clipped to the strip half the gap wide, lands inside the run; a connector when its
+ * centre is within its half thickness, the slack and half the gap across and its width overlaps
+ * along. So a segment's box is its bounding box grown by half its thickness and the slack, a
+ * connector's its centre grown by half its width, half its host's thickness and the slack, and
+ * the run's query box (`runBox`) the run's bounding box grown by half the gap; each grown by
+ * {@link RUN_BOX_PAD_MM} more. Counters are not indexed: one standing across the run's LINE
+ * anywhere along it decides whether the run is `bare`, so every counter is read.
+ *
+ * @internal Exported, with {@link runCandidates}, {@link sharedRuns} and {@link openStretches},
+ * for `test/lint-index-superset.test.ts`.
+ */
+export interface RunCandidates {
+  straight: WallSegment[];
+  links: Array<RDoor | ROpening | AccessConnector>;
+  /** The positions in {@link straight} and {@link links} a run is measured against, ascending. */
+  hits(run: SharedRun): { segs: number[]; links: number[] };
+  counters: Point[][];
+}
+
+/** How far (mm) the {@link RunCandidates} boxes are padded beyond their exact bounds: far above
+ *  the float dust of a projection (a "parallel" wall drifts at most 1e-9 of its length). Exported
+ *  for the superset test, which shows a pad 2 mm smaller drops a wall or connector that counts. */
+export const RUN_BOX_PAD_MM = 1;
+
+/** {@link RunCandidates} for one storey; `pad` is {@link RUN_BOX_PAD_MM} in the rule. */
+export function runCandidates(ctx: LintContext, pad: number = RUN_BOX_PAD_MM): RunCandidates {
+  const straight = ctx.wallSegs.filter((s) => !s.arc);
+  const links = [...ctx.connectors, ...ctx.openRuns];
+  const grow = (minX: number, minY: number, maxX: number, maxY: number, by: number): GridBox => ({
+    minX: minX - by,
+    minY: minY - by,
+    maxX: maxX + by,
+    maxY: maxY + by,
+  });
+  const segBoxes = straight.map((s) =>
+    grow(
+      Math.min(s.a.x, s.b.x),
+      Math.min(s.a.y, s.b.y),
+      Math.max(s.a.x, s.b.x),
+      Math.max(s.a.y, s.b.y),
+      s.thickness / 2 + WALL_BODY_SLACK_MM + pad,
+    ),
+  );
+  const linkBoxes = links.map((c) =>
+    grow(
+      c.at.x,
+      c.at.y,
+      c.at.x,
+      c.at.y,
+      Math.abs(c.width) / 2 + (c.host?.thickness ?? 0) / 2 + WALL_BODY_SLACK_MM + pad,
+    ),
+  );
+  const segsNear = overlapIndex(segBoxes);
+  const linksNear = overlapIndex(linkBoxes);
+  return {
+    straight,
+    links,
+    hits: (run) => {
+      const box = runBox(run, pad);
+      return { segs: segsNear(box), links: linksNear(box) };
+    },
+    counters: ctx.furniture.filter((f) => BOUNDARY_FIXTURES.has(f.category)).map((f) => rectRing(rectOf(f))),
+  };
+}
+
+/** The box a run's {@link RunCandidates} query reads: its bounding box grown by half the gap. */
+function runBox(run: SharedRun, pad: number): GridBox {
+  const by = run.sep / 2 + pad;
+  return {
+    minX: Math.min(run.p.x, run.q.x) - by,
+    minY: Math.min(run.p.y, run.q.y) - by,
+    maxX: Math.max(run.p.x, run.q.x) + by,
+    maxY: Math.max(run.p.y, run.q.y) + by,
+  };
+}
+
+/**
  * Every run rooms `a` and `b` share. A piece is a pair of parallel ring edges within `tolMm`
  * that overlap along their length, with `a`'s floor on one side and `b`'s on the other just
  * past the edges at the piece's middle (rooms that overlap or nest share no boundary). Pieces
  * on one line are then merged where they meet, so a vertex on a ring (an edge split in two)
  * does not split the run and hide a gap across it.
  */
-function sharedRuns(ctx: LintContext, a: RRoom, b: RRoom): SharedRun[] {
+export function sharedRuns(ctx: LintContext, a: RRoom, b: RRoom): SharedRun[] {
   const ba = ctx.roomRects.get(a.id)!;
   const bb = ctx.roomRects.get(b.id)!;
   const tol = ctx.rules.tolMm;
@@ -285,13 +379,17 @@ function sharedRuns(ctx: LintContext, a: RRoom, b: RRoom): SharedRun[] {
  * leave is compared with the doorway (two stubs leaving 950 mm in all, the longest 400 mm, are
  * silent).
  */
-function openStretches(ctx: LintContext, run: SharedRun): OpenStretch[] {
+export function openStretches(ctx: LintContext, run: SharedRun, near: RunCandidates): OpenStretch[] {
   const { p, q, len, sep } = run;
   const u = { x: (q.x - p.x) / len, y: (q.y - p.y) / len };
   const n = { x: -u.y, y: u.x };
   const along = (x: Point): number => (x.x - p.x) * u.x + (x.y - p.y) * u.y;
   const across = (x: Point): number => (x.x - p.x) * n.x + (x.y - p.y) * n.y;
-  const straight = ctx.wallSegs.filter((s) => !s.arc);
+  // Only what stands within reach of the run can cover it (see {@link RunCandidates}).
+  const hit = near.hits(run);
+  const straight = hit.segs.map((i) => near.straight[i]!);
+  const links = hit.links.map((i) => near.links[i]!);
+  ctx.work.boundaryRunTests += straight.length + links.length + near.counters.length;
   const covered = edgeWallCover(p, q, straight, ctx.rules.tolMm, { halfGap: sep / 2, slack: WALL_BODY_SLACK_MM });
   // A wall CROSSING the run (not parallel to it) stands on it where its body spans the gap
   // between the room edges: its body is clipped to that strip and its extent along the run
@@ -324,7 +422,7 @@ function openStretches(ctx: LintContext, run: SharedRun): OpenStretch[] {
   }
   let connector = false;
   // A run a demolished wall leaves open (B3a) joins the two rooms as an opening does.
-  for (const c of [...ctx.connectors, ...ctx.openRuns]) {
+  for (const c of links) {
     const half = (c.host?.thickness ?? 0) / 2;
     if (Math.abs(across(c.at)) - half - WALL_BODY_SLACK_MM > sep / 2) continue;
     const s = along(c.at);
@@ -333,10 +431,7 @@ function openStretches(ctx: LintContext, run: SharedRun): OpenStretch[] {
     connector = true;
   }
   const counters: Array<[number, number]> = [];
-  for (const f of ctx.furniture) {
-    if (!BOUNDARY_FIXTURES.has(f.category)) continue;
-    const r = rectOf(f);
-    const corners = rectRing(r);
+  for (const corners of near.counters) {
     const ns = corners.map(across);
     if (!(Math.min(...ns) < 0 && Math.max(...ns) > 0)) continue;
     const ss = corners.map(along);
@@ -384,17 +479,21 @@ export const boundaryNoWall: LintRule = {
       (t, w) => (w.category === "partition" ? Math.min(t, w.thickness) : t),
       Number.POSITIVE_INFINITY,
     );
+    // Per room, once: its box, and whether its uses make it one half of an open-plan pair.
+    const rects = rooms.map((r) => ctx.roomRects.get(r.id)!);
+    const openPlan: Array<boolean | undefined> = [];
+    const isOpenPlan = (i: number): boolean => (openPlan[i] ??= [...roomUses(rooms[i]!)].some((x) => OPEN_PLAN.has(x)));
+    let near: RunCandidates | null = null;
     for (let j = 0; j < rooms.length; j++) {
       const b = rooms[j]!;
       if (b.circle) continue;
       for (let i = 0; i < j; i++) {
         const a = rooms[i]!;
         if (a.circle) continue;
-        if (!boxesNear(ctx.roomRects.get(a.id)!, ctx.roomRects.get(b.id)!, tol)) continue;
-        const ua = [...roomUses(a)];
-        const ub = [...roomUses(b)];
-        if (ua.some((x) => OPEN_PLAN.has(x)) && ub.some((x) => OPEN_PLAN.has(x))) continue;
-        const stretches = sharedRuns(ctx, a, b).flatMap((run) => openStretches(ctx, run));
+        if (!boxesNear(rects[i]!, rects[j]!, tol)) continue;
+        if (isOpenPlan(i) && isOpenPlan(j)) continue;
+        near ??= runCandidates(ctx);
+        const stretches = sharedRuns(ctx, a, b).flatMap((run) => openStretches(ctx, run, near!));
         if (stretches.length === 0) continue;
         const worst = stretches.reduce((w, s) => (s.hi - s.lo > w.hi - w.lo ? s : w));
         const gapLen = worst.hi - worst.lo;
