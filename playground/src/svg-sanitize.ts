@@ -80,8 +80,10 @@ export interface SvgEnv {
 
 /**
  * The root element of `text` as SVG, adopted into `env.doc`, with the elements and attributes
- * listed above removed. Undefined when `text` is not a well-formed `<svg>` document in the SVG
- * namespace (the fast path trusts the compiler to be well-formed and checks only its shape).
+ * listed above removed, and no comment, processing instruction or CDATA section left (see
+ * {@link plainNodes}). Undefined when `text` is not a well-formed `<svg>` document in the SVG
+ * namespace, or when the DOM refuses the import (the fast path trusts the compiler to be well-formed
+ * and checks only its shape).
  */
 export function sanitizeSvg(
   text: string,
@@ -107,5 +109,23 @@ export function sanitizeSvg(
       if (/^on/i.test(a.name) || (isHref(a.name) && !isSafeLink(a.value))) el.removeAttribute(a.name);
     }
   }
-  return env.doc.importNode(root, true) as unknown as SVGSVGElement;
+  plainNodes(root, parsed);
+  try {
+    return env.doc.importNode(root, true) as unknown as SVGSVGElement;
+  } catch {
+    return undefined; // a DOM exception on odd input is a refusal, never thrown at the caller
+  }
+}
+
+/**
+ * Leave only elements and text under `node`: comments and processing instructions are removed, and
+ * a CDATA section becomes a text node with the same data (importing one into an HTML document
+ * throws, and the compiler writes none).
+ */
+function plainNodes(node: Node, parsed: Document): void {
+  for (const child of Array.from(node.childNodes)) {
+    if (child.nodeType === 1) plainNodes(child, parsed);
+    else if (child.nodeType === 4) node.replaceChild(parsed.createTextNode(child.nodeValue ?? ""), child);
+    else if (child.nodeType !== 3) node.removeChild(child);
+  }
 }

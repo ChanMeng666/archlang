@@ -131,7 +131,7 @@ describe("sanitizeSvg leaves a compiled drawing as it was", () => {
  * The fast path's negatives, built the way a real regression would arrive: a form the compiler
  * never writes, injected into a real compiled drawing (`examples/studio.arch`), not a toy string.
  * Each must leave the fast path, and after `sanitizeSvg` the serialisation must hold none of it
- * (a document the full path refuses outright, `undefined`, holds none of it either).
+ * (a document the full path refuses outright, `undefined`, holds none of it either; none throws).
  *
  * Not covered, by design: CSS. `url(` in a `style` attribute or a `<style>` body is not
  * inspected by the fast path (the full path drops `<style>` elements, not `style="..."` values);
@@ -140,16 +140,13 @@ describe("sanitizeSvg leaves a compiled drawing as it was", () => {
 describe("the fast path refuses what the compiler never writes", () => {
   const { svg } = compile(readFileSync("examples/studio.arch", "utf8"));
   const open = svg.indexOf(">") + 1;
-  const baseline = clean(svg)!.querySelectorAll("*").length;
   const inject = (frag: string) => svg.slice(0, open) + frag + svg.slice(open);
-  const FORMS: { name: string; frag: string; gone: RegExp | null }[] = [
-    // The full path removes elements and attributes only: a comment or a processing instruction
-    // stays as an inert non-element node (`gone: null`, checked below as "adds no element").
-    { name: "comment", frag: "<!--x-->", gone: null },
-    // importNode of a CDATA section into an HTML document throws, so the full path throws
-    // rather than returning a node: nothing reaches the DOM either way.
+  const FORMS: { name: string; frag: string; gone: RegExp }[] = [
+    // The full path leaves only elements and text: a comment and a processing instruction are
+    // removed, a CDATA section becomes plain text (so it neither throws nor survives as CDATA).
+    { name: "comment", frag: "<!--x-->", gone: /<!--/ },
     { name: "CDATA", frag: "<![CDATA[x]]>", gone: /CDATA/ },
-    { name: "processing instruction", frag: `<?xml-stylesheet href="x"?>`, gone: null },
+    { name: "processing instruction", frag: `<?xml-stylesheet href="x"?>`, gone: /xml-stylesheet|<\?/ },
     { name: "DOCTYPE", frag: "<!DOCTYPE svg>", gone: /DOCTYPE/i },
     { name: "upper-case SCRIPT", frag: "<SCRIPT>x</SCRIPT>", gone: /script/i },
     { name: "slash-separated handler", frag: "<rect/onload=x>", gone: /onload/i },
@@ -164,15 +161,8 @@ describe("the fast path refuses what the compiler never writes", () => {
   it.each(FORMS)("$name fails isPlainSvg and does not survive sanitizeSvg", ({ frag, gone }) => {
     const evil = inject(frag);
     expect(isPlainSvg(evil), evil.slice(0, open + frag.length)).toBe(false);
-    let out: SVGSVGElement | undefined;
-    try {
-      out = clean(evil);
-    } catch {
-      return; // refused by throwing: nothing was returned to insert
-    }
-    if (!out) return;
-    if (gone) expect(serialize(out)).not.toMatch(gone);
-    else expect(out.querySelectorAll("*").length).toBe(baseline);
+    const out = clean(evil); // never throws
+    if (out) expect(serialize(out)).not.toMatch(gone);
   });
 
   it("a malformed document is repaired leniently on the fast path and refused on the full path", () => {

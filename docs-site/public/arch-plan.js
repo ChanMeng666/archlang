@@ -47,7 +47,19 @@ function sanitizeSvg(text, env = { parser: new DOMParser(), doc: document }) {
       if (/^on/i.test(a.name) || isHref(a.name) && !isSafeLink(a.value)) el.removeAttribute(a.name);
     }
   }
-  return env.doc.importNode(root, true);
+  plainNodes(root, parsed);
+  try {
+    return env.doc.importNode(root, true);
+  } catch {
+    return void 0;
+  }
+}
+function plainNodes(node, parsed) {
+  for (const child of Array.from(node.childNodes)) {
+    if (child.nodeType === 1) plainNodes(child, parsed);
+    else if (child.nodeType === 4) node.replaceChild(parsed.createTextNode(child.nodeValue ?? ""), child);
+    else if (child.nodeType !== 3) node.removeChild(child);
+  }
 }
 
 // packages/web-component/src/arch-plan.ts
