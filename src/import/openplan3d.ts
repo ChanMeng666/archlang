@@ -26,6 +26,8 @@
  * nothing on a plan (project and capture metadata, editor settings, format markers, a room's
  * stored area: {@link QUIET_REASONS}), which are listed in the report without a warning. It never
  * throws on its input.
+ *
+ * What is not carried over goes to `dropped` or a `W_IMPORT_DROPPED`, never silently.
  */
 
 import type { Diagnostic } from "../diagnostics.js";

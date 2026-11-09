@@ -15,6 +15,9 @@
  *
  * Deliberately small: poché stays an SVG `<pattern>` fill string, and page chrome
  * (north arrow, scale bar, title block) stays in the backends.
+ *
+ * A hatch prim's `origin`/`zoom` re-frame one region's tile and are honoured by SVG (and so PNG)
+ * only; the legend's ground swatches set them (`hatches.ts` `groundSwatchFrame`, `sheet-tables.ts`).
  */
 
 import type { NorthDir, Point, TitleNode } from "./ast.js";

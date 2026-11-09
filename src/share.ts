@@ -17,6 +17,10 @@
  *
  * The base64url pair, the web decoder and the flag live in `cli/share-codec.web.mjs`, plain JS, so
  * the Node encoder (`cli/share-codec.mjs`, which scripts import with plain `node`) shares the flag.
+ *
+ * The encoders stay one per implementation (Node zlib, the playground's and the docs widget's
+ * `CompressionStream`), since deflate output differs by implementation, pinned by
+ * `test/share-codec.test.ts`.
  */
 export {
   decodePlanHashWeb,

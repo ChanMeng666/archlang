@@ -38,6 +38,8 @@
  * wet room's set search ({@link wetSet}): a bounded depth-first search over the candidates that
  * backs up when a piece has no position, with no compile check inside it; each set it completes
  * costs one check, and at most {@link MAX_SET_CHECKS_PER_ROOM} are checked.
+ *
+ * It imports nothing from `intent-concepts.ts` or `eval/`.
  */
 
 import type { FurnitureAnchor, LevelNode, PlanNode, Point, Statement, UseKind, VerticalDir } from "./ast.js";

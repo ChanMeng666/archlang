@@ -1,6 +1,6 @@
 /**
  * The seam allow-list `test/workspace-seams.test.ts` enforces, and the table text
- * `docs/agents/architecture.md` carries (the test parses the doc table back and compares row by row;
+ * `docs/agents/workspace-seams.md` carries (the test parses the doc table back and compares row by row;
  * `npx tsx test/workspace-seams.allow.ts` prints the table to paste).
  */
 import { fileURLToPath } from "node:url";

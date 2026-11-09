@@ -51,6 +51,9 @@
  * is never memoized — the failure may live in an imported module the same
  * `world` will read fixed on the next call — and `clearCache()` empties the
  * slot (`resetRerollCache`), as it does the compile cache.
+ *
+ * It backs `arch reroll`, `reroll()` and the LSP's `refactorActions`; its twin-compile proof calls
+ * `pipeline.ts`.
  */
 
 import type { PlanNode, Statement } from "./ast.js";

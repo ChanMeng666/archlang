@@ -14,6 +14,7 @@ docs/cli-reference.md
 docs/error-codes.md
 docs/backlog-index.md
 docs/agents/public-surface.md
+docs/agents/module-map.md
 grammars/archlang.gbnf
 schemas/*.schema.json
 editors/archlang.tmLanguage.json

@@ -51,6 +51,9 @@
  *
  * Pure: parse → resolve (wall/door/room geometry) → mutate a private clone of the
  * parsed AST → re-emit via the formatter. No I/O, deterministic.
+ *
+ * This is the geometric corrector; `fix-apply.ts` is the separate `arch fix` path, which skips a fix
+ * carrying `file`.
  */
 
 import { isServiceCounter } from "./lint/clearance-measure.js";

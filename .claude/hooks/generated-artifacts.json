@@ -58,6 +58,7 @@
     "editors/vscode/README.md": "gen:doors",
     "llms.txt": "gen:doors",
     "docs/agents/public-surface.md": "gen:surface",
+    "docs/agents/module-map.md": "gen:module-map",
     ".claude/hooks/generated-artifacts.json": "gen:generated-artifacts"
   }
 }
