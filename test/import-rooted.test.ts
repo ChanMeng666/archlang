@@ -69,9 +69,14 @@ describe("a module outside the import root is refused, never read", () => {
     noContent(ds);
   });
 
+  // The importer drops a leading `/` (its spec is a module path, not an OS path), so on POSIX an
+  // "absolute" spec resolves under the plan's directory, where nothing is: not found, never read.
+  // On Windows a drive letter is absolute and leaves the root.
+  const WIN = process.platform === "win32";
+
   it("an absolute path", () => {
-    const ds = run(plan(join(TMP, "secret.arch").replace(/\\/g, "/")));
-    expect(codes(ds)).toEqual(["E_IMPORT_OUTSIDE_ROOT"]);
+    const ds = run(plan(resolve(ROOT, "..", "secret.arch").replace(/\\/g, "/")));
+    expect(codes(ds)).toEqual([WIN ? "E_IMPORT_OUTSIDE_ROOT" : "E_IMPORT_NOT_FOUND"]);
     noContent(ds);
   });
 
@@ -109,17 +114,25 @@ describe("a module outside the import root is refused, never read", () => {
     }
   });
 
-  it("the audit's probe: `..`, an absolute path and C:/Windows/win.ini — no file content in any diagnostic", () => {
+  it("the audit's probe: `..`, an absolute path and a system file — no file content in any diagnostic", () => {
+    // A system file every CI runner has: C:/Windows/win.ini on Windows, /etc/hosts on POSIX.
+    const system = WIN ? "C:/Windows/win.ini" : "/etc/hosts";
     const src = [
       'plan "P" {',
       '  import "../../secret.txt" as s',
-      `  import "${join(TMP, "secret.txt").replace(/\\/g, "/")}" as t`,
-      '  import "C:/Windows/win.ini" as w',
+      `  import "${resolve(ROOT, "..", "secret.txt").replace(/\\/g, "/")}" as t`,
+      `  import "${system}" as w`,
       "  room at (0,0) size 3000x3000",
       "}",
     ].join("\n");
     const ds = run(src);
-    expect(codes(ds)).toEqual(["E_IMPORT_OUTSIDE_ROOT", "E_IMPORT_OUTSIDE_ROOT", "E_IMPORT_OUTSIDE_ROOT"]);
+    // On POSIX the two absolute specs lose their leading `/` and land under the plan's directory,
+    // where neither is `.arch`, so both are refused by extension before anything is opened.
+    expect(codes(ds)).toEqual(
+      WIN
+        ? ["E_IMPORT_OUTSIDE_ROOT", "E_IMPORT_OUTSIDE_ROOT", "E_IMPORT_OUTSIDE_ROOT"]
+        : ["E_IMPORT_OUTSIDE_ROOT", "E_IMPORT_NOT_ARCH", "E_IMPORT_NOT_ARCH"],
+    );
     noContent(ds);
     expect(JSON.stringify(ds)).not.toMatch(/found "/);
   });

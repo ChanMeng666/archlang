@@ -890,7 +890,7 @@ import "lib/missing.arch": a   # error
 **Fix.** Run `archlang` from a directory that contains both the plan and the library, or pass `--import-root <dir>` naming a directory that contains them.
 
 ```arch static
-import "../../shared/lib.arch" as lib   # error unless --import-root covers ../../shared
+import "lib.arch" as lib   # error when lib.arch resolves outside the import root (e.g. through a link)
 ```
 
 ## E_IMPORT_PARSE

@@ -699,7 +699,7 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "An imported module lies outside the import root.",
     "The `archlang` CLI reads an `import` only from inside its import root (the directory it was started in, or the directory `--import-root <dir>` names) or from under the compiled plan's own directory. The path is resolved with symbolic links and junctions followed, so a `..`, an absolute path, a drive letter or a link cannot leave the root. A library beside or below the plan, or in a sibling directory under the root, still imports; one above both does not.",
     "Run `archlang` from a directory that contains both the plan and the library, or pass `--import-root <dir>` naming a directory that contains them.",
-    'import "../../shared/lib.arch" as lib   # error unless --import-root covers ../../shared',
+    'import "lib.arch" as lib   # error when lib.arch resolves outside the import root (e.g. through a link)',
   ),
   E_IMPORT_PARSE: E(
     "E_IMPORT_PARSE",
