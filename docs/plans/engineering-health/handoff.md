@@ -1,8 +1,8 @@
 # Resume point
 
-**Where (2026-11-09, end):** waves 0 and 1 DONE. Wave 2: EH2.1, EH2.2, EH2.5, EH2.6, EH2.7, EH2.9 done; EH2.3 (three
-split PRs) and EH2.8 (bench against the merge base, incremental tsc, `sideEffects`) running. Wave 3: EH3.2 (#629) in
-review.
+**Where (2026-11-10, morning):** waves 0 and 1 DONE; wave 2 DONE except EH2.4 (and the residue cards EH2.3b,
+EH2.5b, EH2.8b, EH2.10); wave 3: EH3.2 done, EH3.1 (#639) and EH3.3 (#637, #638) in review, EH3.5 running; EH3.4 and
+EH3.6 not started.
 
 **Landed today (34 PRs):** EH0.1–EH0.7, EH0.9 (#581, #583–#588) · EH1.1 (#599) · EH1.2 (#598) · EH1.3 (#589) · EH1.4
 (#590) · EH1.5 (#591) · EH1.6 tranche 1 (#592) · EH1.7 (#610) · EH1.8 (#613; `runCli` + `CliIo`, 40 spawn copies gone,
@@ -11,16 +11,15 @@ five sampled files 82.5 s → 5.7 s) · EH1.10 (#593) · EH1.11 (#597) · EH1.12
 CLI's world is rooted under a lockstep table) · EH2.1 (#614) · EH2.9 (#611) · policy #615 · records #582, #596, #600,
 #602, #609, #612, #616.
 
-**In flight:** EH2.3 (describe/plan-json/circulation splits) · EH2.8 (two PRs) · EH3.2 (#629; backlog 220 KB → 142 KB, 45
-entries archived verbatim in `archlang-lab/backlog-archive.md`, generated `docs/backlog-index.md`, the 3D drafts moved).
-Also landed since the last note: EH2.6 (#624; `src/scene-memo.ts`, weight-bounded) and EH2.7 (#627; `release:pin`,
-`gen:surface` → `docs/agents/public-surface.md`, the index header's state paragraph).
+**In flight:** EH3.1 (#639; `gen:module-map`, a `:(glob)` pathspec fix landing so top-level modules are listed) · EH3.3
+(#637 low + #638 high; rounds landed) · EH3.5 (hooks for the recurring mistakes). Landed since the last note: EH2.3
+(#626, #630, #634), EH2.8 (#631, #635). New card: EH2.3b.
 
 **Owner queue:** none (standing approval; releases, paid eval and the npmjs account stay owner-only). Tomorrow's
 reads: the nightly's `ci-red` behaviour (#584) and its new `fuzz-deep` job (#610) and `test-durations` artifact (#586).
 
-**Next cards:** EH2.3 (describe/plan-json/circulation splits), EH2.4, EH2.7, EH2.8, EH1.18; wave 3 from EH3.1 (module map)
-and EH3.2 (backlog split).
+**Next cards:** EH2.4 (unblocked), EH3.4 (test helpers + generated test index), EH3.6 (nightly sampled mutants), then the
+residue cards EH1.18, EH2.3b, EH2.5b, EH2.8b, EH2.10.
 
 **Process notes from this day:** executors must NOT edit `cards.md` (adjacent card headings conflict
 on every merge; the coordinator records status in a records PR); every pure-move PR repoints the

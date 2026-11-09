@@ -15,6 +15,8 @@ nothing here but that gate. The consumer scan is a set of regexes over source te
 `Pick<typeof import("pkg"), "a" | "b">`). Not read: `require`, markdown, a module object handed to a
 function and read there; a variable read counts file-wide.
 
+Every module, not only the entry, is in the sibling [`module-map.md`](module-map.md).
+
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
@@ -285,12 +287,22 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
-| `AxesSummary` | type | none |
-| `AxisSummary` | type | none |
-| `ClearFact` | type | none |
 | `DESCRIBE_FACTS` | value | `src/cli`, `test` |
 | `DescribeFact` | type | `src/cli` |
 | `DescribeOptions` | type | `playground` |
+| `MAX_WASTE_PCT` | value | `playground` |
+| `PER_STOREY_OPTIONAL_KEYS` | value | `test` |
+| `describe` | value | `dataset`, `docs-site`, `eval`, `packages/archlang-3d`, `packages/mcp`, `playground`, `scripts`, `src/cli`, `test`, `tools` |
+| `describeLevel` | value | `packages/archlang-3d`, `playground`, `src/cli`, `test` |
+| `instanceTransform` | value | `test` |
+
+## `src/describe/types.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `AxesSummary` | type | none |
+| `AxisSummary` | type | none |
+| `ClearFact` | type | none |
 | `DoorSummary` | type | none |
 | `FenceSummary` | type | none |
 | `FreedomElement` | type | `src/cli` |
@@ -299,10 +311,8 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `HeightFacts` | type | none |
 | `InstanceSummary` | type | none |
 | `LevelSummary` | type | none |
-| `MAX_WASTE_PCT` | value | `playground` |
 | `OpeningSummary` | type | none |
 | `OutdoorSummary` | type | none |
-| `PER_STOREY_OPTIONAL_KEYS` | value | `test` |
 | `RoomSummary` | type | `eval`, `playground`, `test` |
 | `SceneSummary` | type | `eval`, `playground`, `src/cli`, `test` |
 | `SheetSummary` | type | none |
@@ -314,9 +324,6 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `WallStatusFacts` | type | none |
 | `WindowSummary` | type | none |
 | `ZoneSummary` | type | none |
-| `describe` | value | `dataset`, `docs-site`, `eval`, `packages/archlang-3d`, `packages/mcp`, `playground`, `scripts`, `src/cli`, `test`, `tools` |
-| `describeLevel` | value | `packages/archlang-3d`, `playground`, `src/cli`, `test` |
-| `instanceTransform` | value | `test` |
 
 ## `src/diagnostic-json.ts`
 
@@ -768,7 +775,55 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `NextTier` | type | none |
 | `nextDiagnostic` | value | `src/cli`, `test` |
 
-## `src/plan-json.ts`
+## `src/plan-json/ast-json.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `astToJson` | value | `src/cli`, `test` |
+
+## `src/plan-json/check-graph.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `GraphCheck` | type | `src/cli` |
+| `checkGraph` | value | `packages/mcp`, `src/cli`, `test` |
+
+## `src/plan-json/emit.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `planFromJson` | value | `packages/mcp`, `src/cli`, `test` |
+| `planJsonToArch` | value | `test`, `tools` |
+
+## `src/plan-json/room-types.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `ROOM_TYPES` | value | `test` |
+| `ROOM_TYPE_TO_USE` | value | `test` |
+| `RoomType` | type | none |
+| `USE_TO_ROOM_TYPE` | value | `test` |
+| `roomTypeForUses` | value | `test` |
+| `usesForRoomType` | value | `test` |
+
+## `src/plan-json/schema.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `PLAN_JSON_SCHEMA` | value | `packages/mcp`, `test` |
+
+## `src/plan-json/to-json.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `PlanJsonDropped` | type | `src/cli`, `test` |
+| `PlanJsonDroppedClause` | type | `src/cli`, `test` |
+| `PlanJsonPage` | type | none |
+| `buildInputGraph` | value | none |
+| `planToJson` | value | `packages/mcp`, `src/cli`, `test` |
+| `resolvedToJson` | value | none |
+
+## `src/plan-json/types.ts`
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
@@ -776,35 +831,17 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `DimJson` | type | none |
 | `EdgeJson` | type | none |
 | `FurnitureJson` | type | none |
-| `GraphCheck` | type | `src/cli` |
 | `OpeningJson` | type | none |
 | `OpeningOnJson` | type | none |
-| `PLAN_JSON_SCHEMA` | value | `packages/mcp`, `test` |
 | `PaperJson` | type | none |
 | `PlanJson` | type | `src/cli`, `test` |
-| `PlanJsonDropped` | type | `src/cli`, `test` |
-| `PlanJsonDroppedClause` | type | `src/cli`, `test` |
-| `PlanJsonPage` | type | none |
 | `PointJson` | type | none |
-| `ROOM_TYPES` | value | `test` |
-| `ROOM_TYPE_TO_USE` | value | `test` |
 | `RoomJson` | type | none |
-| `RoomType` | type | none |
 | `TitleJson` | type | none |
-| `USE_TO_ROOM_TYPE` | value | `test` |
 | `WallArcJson` | type | none |
 | `WallJson` | type | none |
 | `WallPointJson` | type | none |
 | `WallsFromRoomsJson` | type | none |
-| `astToJson` | value | `src/cli`, `test` |
-| `buildInputGraph` | value | none |
-| `checkGraph` | value | `packages/mcp`, `src/cli`, `test` |
-| `planFromJson` | value | `packages/mcp`, `src/cli`, `test` |
-| `planJsonToArch` | value | `test`, `tools` |
-| `planToJson` | value | `packages/mcp`, `src/cli`, `test` |
-| `resolvedToJson` | value | none |
-| `roomTypeForUses` | value | `test` |
-| `usesForRoomType` | value | `test` |
 
 ## `src/registry.ts`
 

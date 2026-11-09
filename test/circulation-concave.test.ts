@@ -4,7 +4,7 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { describe as describePlan } from "../src/index.js";
 import { buildDoorAccessGraph, DEFAULT_TOL, roomBox } from "../src/analyze.js";
-import { computeCirculationOverlay } from "../src/analyze/circulation.js";
+import { computeCirculationOverlay } from "../src/analyze/circulation-overlay.js";
 import { distToPolygonEdge, pointInPolygon, polygonCentroid, polygonLabelPoint } from "../src/geometry/polygon.js";
 import { resolve } from "../src/ir.js";
 import type { RDoor, RFurniture, ROpening, RRoom } from "../src/ir.js";
@@ -64,7 +64,7 @@ const ringOf = (src: string, id: string): Point[] => {
 
 /**
  * Each room's routing anchor, read where it is observable: the overlay walk ends AT the
- * anchor cell's centre (`circulation.ts` — `reconstructPath(g, parent, anchor[ri])`), so
+ * anchor cell's centre (`circulation-overlay.ts` — `reconstructPath(g, parent, anchor[ri])`), so
  * the last point of a room's path is the anchor. Same `buildNav` the facts use.
  */
 const anchors = (src: string): { anchor: Map<string, Point>; cellSizeMm: number } => {

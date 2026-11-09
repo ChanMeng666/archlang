@@ -18,8 +18,11 @@ Preamble, every time:
   use 2 workers (`--poolOptions.forks.maxForks=2 --poolOptions.forks.minForks=1`).
 - Never edit `docs/plans/*/cards.md`; the commander owns the cards.
 
-Read first: `AGENTS.md`, `docs/agents/architecture.md`, `docs/agents/iron-laws.md`,
-`docs/testing.md`, and the `.claude/rules/` file for each path you edit. Hard rules: `compile()`
+Read first: `AGENTS.md`, `docs/agents/iron-laws.md`, `docs/agents/gotchas.md`, and the `.claude/rules/`
+file for each path you edit (they load by path). Read `docs/agents/architecture.md` when the card moves
+code across modules, `docs/testing.md` § 2–3 when a golden or a digest goes red, and the
+`.claude/commands/` recipe when the card adds a lint rule, element, fixture
+family, CLI flag or MCP tool. Hard rules: `compile()`
 pure/sync/deterministic; zero runtime deps; diagnostics never thrown; never hand-edit generated files
 (run the `gen:*` script); byte-identity law: plans not using a change render, describe and lint
 exactly as before; never bless a golden to go green; a moved golden is a finding to explain.

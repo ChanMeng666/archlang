@@ -2,6 +2,11 @@
  * The shared, precomputed context every lint rule checks against — element
  * subsets, room rectangles and the hoisted wall-segment list are built exactly
  * once per `lint()` run, so no rule re-derives them.
+ *
+ * `LintRule` carries its `family`, its `layer` (`validity` or `drafting`) and every code it may emit
+ * (`codes`); `lint/rules/index.ts` is the ordered rule list (order is contract); `lint/coverage.ts`
+ * says which families ran or were skipped and why (`ctx.skip`), beside the diagnostics and never
+ * inside them.
  */
 
 import { type D4, D4_IDENTITY, fromSpelling } from "../algebra/d4.js";

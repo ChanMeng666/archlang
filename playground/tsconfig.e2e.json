@@ -14,6 +14,7 @@
   // in CI instead of a compile error.
   "extends": "./tsconfig.json",
   "compilerOptions": {
+    "tsBuildInfoFile": "../node_modules/.cache/tsc/playground-e2e.tsbuildinfo",
     "types": ["vite/client", "node"]
   },
   "include": ["e2e", "src", "worker", "playwright.config.ts"],
