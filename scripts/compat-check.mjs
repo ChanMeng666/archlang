@@ -353,7 +353,55 @@ export function typeSurface(entryFile) {
   if (!sf) throw new Error(`cannot read ${entryFile}`);
   const mod = checker.getSymbolAtLocation(sf);
   if (!mod) throw new Error(`${entryFile} is not a module`);
-  const print = (t) => normType(checker.typeToString(t, undefined, ts.TypeFormatFlags.NoTruncation));
+  // A literal-union alias the module does not export (`KindsWith<"opening">`, a mapped-type helper
+  // in `src/elements/facets.ts`) is not a name a consumer can see, and the published `.d.ts` may
+  // print the same type as its literals: print such an alias as its members (inside an array too,
+  // `readonly (…)[]`), so a derived literal union compares as its literals. A lib alias (`Record`,
+  // `Partial`) and an alias of anything but literals keep their name; a type with no hidden
+  // literal alias in it prints exactly as before.
+  const exported = new Set(
+    checker.getExportsOfModule(mod).map((s) => (s.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(s) : s)),
+  );
+  const raw = (t) => checker.typeToString(t, undefined, ts.TypeFormatFlags.NoTruncation);
+  const LITERAL =
+    ts.TypeFlags.StringLiteral |
+    ts.TypeFlags.NumberLiteral |
+    ts.TypeFlags.BigIntLiteral |
+    ts.TypeFlags.BooleanLiteral |
+    ts.TypeFlags.EnumLiteral |
+    ts.TypeFlags.Undefined |
+    ts.TypeFlags.Null;
+  const hidden = (t) =>
+    !!t.aliasSymbol &&
+    (t.isUnion() ? t.types : [t]).every((u) => !!(u.flags & LITERAL)) &&
+    !exported.has(t.aliasSymbol) &&
+    !(t.aliasSymbol.declarations ?? []).some((d) => {
+      const file = d.getSourceFile();
+      return program.isSourceFileDefaultLibrary(file) || program.isSourceFileFromExternalLibrary(file);
+    });
+  const expand = (t, depth) => {
+    if (depth > 8) return null;
+    if (checker.isArrayType(t) && !t.aliasSymbol) {
+      const el = checker.getTypeArguments(t)[0];
+      const inner = el && expand(el, depth + 1);
+      if (inner === null || inner === undefined) return null;
+      const ro = t.symbol?.getName() === "ReadonlyArray" ? "readonly " : "";
+      return `${ro}${/[\s|&]/.test(inner) ? `(${inner})` : inner}[]`;
+    }
+    if (t.isUnion() && !t.aliasSymbol) {
+      const parts = t.types.map((u) => expand(u, depth + 1));
+      if (parts.every((p) => p === null)) return null;
+      return t.types.map((u, i) => parts[i] ?? raw(u)).join(" | ");
+    }
+    if (hidden(t)) {
+      const ms = (t.isUnion() ? t.types : [t]).map(raw);
+      // The checker prints `true | false` as `boolean`; so does this.
+      const out = ms.includes("true") && ms.includes("false") ? [...ms.filter((m) => m !== "true" && m !== "false"), "boolean"] : ms;
+      return out.join(" | ");
+    }
+    return null;
+  };
+  const print = (t) => normType(expand(t, 0) ?? raw(t));
   const printAlias = (t) =>
     normType(checker.typeToString(t, undefined, ts.TypeFormatFlags.NoTruncation | ts.TypeFormatFlags.InTypeAlias));
 
@@ -567,10 +615,11 @@ const isLiteral = (s) => /^("([^"\\]|\\.)*"|-?\d+(\.\d+)?|true|false)$/.test(s);
  * part keeps the strict variance of `role`. `null` when the pair is not enum-like.
  */
 function enumDiff(o, n, role) {
-  const arr = (s) => /^(readonly )?\((.+)\)\[\]$/.exec(s);
+  // (One literal prints without parentheses: `readonly "a"[]`.)
+  const arr = (s) => /^(readonly )?(?:\((.+)\)|([^\s|()]+))\[\]$/.exec(s);
   const ao = arr(o);
   const an = arr(n);
-  if (ao && an) return ao[1] === an[1] ? enumDiff(ao[2], an[2], role) : null;
+  if (ao && an) return ao[1] === an[1] ? enumDiff(ao[2] ?? ao[3], an[2] ?? an[3], role) : null;
   const om = unionMembers(o);
   const nm = unionMembers(n);
   const nullish = (x) => x === "undefined" || x === "null";
@@ -581,6 +630,13 @@ function enumDiff(o, n, role) {
   const kept = new Set(nl);
   const rest = (ms) => ms.filter(nullish).sort().join(" | ") || "never";
   return { removed: ol.filter((m) => !kept.has(m)), restOk: compatible(rest(om), rest(nm), role) };
+}
+
+/** The element type of a printed array (`readonly (A | B)[]`, `A[]`), or `null` for any other type. */
+function arrayElements(s) {
+  if (typeof s !== "string") return null;
+  const m = /^(?:readonly )?(?:\((.+)\)|([^\s|()]+))\[\]$/.exec(s);
+  return m ? (m[1] ?? m[2]) : null;
 }
 
 const optionals = (s) => (s.match(/\.\?/g) ?? []).length;
@@ -616,7 +672,20 @@ export function compareTypeSurfaces(oldS, newS) {
     for (const k of Object.keys(o)) {
       if (k.startsWith("@")) continue;
       const role = roleOf(k);
-      const nk = k in n ? k : nKeys.get(unq(k));
+      let nk = k in n ? k : nKeys.get(unq(k));
+      // A list read as a tuple on one side (`k[]`, an `as const` list) and as an array on the
+      // other (`k`, `readonly ("a" | "b")[]`, e.g. spread from a derived list) is the same set.
+      let list = null;
+      if (nk === undefined) {
+        const twin = k.endsWith("[]") ? k.slice(0, -2) : `${k}[]`;
+        const tk = twin in n ? twin : nKeys.get(unq(twin));
+        const ol = k.endsWith("[]") ? o[k] : arrayElements(o[k]);
+        const nl = tk === undefined ? null : tk.endsWith("[]") ? n[tk] : arrayElements(n[tk]);
+        if (ol && nl) {
+          nk = tk;
+          list = { o: ol, n: nl };
+        }
+      }
       if (nk === undefined) {
         push(k, { kind: k === "kind" ? "removed kind" : "removed member", path: k, old: o[k] });
         continue;
@@ -636,10 +705,12 @@ export function compareTypeSurfaces(oldS, newS) {
         if (kinds(o.kind).some((x) => x && !nk2.has(x))) push(k, { kind: "removed kind", old: o.kind, new: n.kind });
       } else if (/\.required$/.test(k)) {
         if (Number(n[nk]) > Number(o[k])) push(k, { kind: "new required parameter", path: k, old: o[k], new: n[nk] });
-      } else if (k.endsWith("[]")) {
+      } else if (list || k.endsWith("[]")) {
         // An `as const` list (keyword tables, enum values): entries may be added, not removed.
-        const en = enumDiff(o[k], n[nk], "input");
-        if (en ? en.removed.length > 0 : !subsumes(o[k], n[nk], false)) {
+        const ol = list ? list.o : o[k];
+        const nl = list ? list.n : n[nk];
+        const en = enumDiff(ol, nl, "input");
+        if (en ? en.removed.length > 0 : !subsumes(ol, nl, false)) {
           push(k, { kind: en ? "enum member removed" : "removed list entry", path: k, old: o[k], new: n[nk] });
         }
       } else if (o.kind === "const" && n.kind === "const" && isLiteral(o[k]) && isLiteral(n[nk])) {
@@ -679,6 +750,9 @@ export function compareTypeSurfaces(oldS, newS) {
       for (const k of Object.keys(o)) {
         const segs = unq(k).split(".");
         for (let i = 1; i <= segs.length; i++) oldPrefixes.add(segs.slice(0, i).join("."));
+        // A list member is the same member as a tuple (`.x[]`) or as an array (`.x`).
+        const whole = unq(k);
+        oldPrefixes.add(whole.endsWith("[]") ? whole.slice(0, -2) : `${whole}[]`);
       }
       const seen = new Set();
       for (const nk of Object.keys(n)) {
