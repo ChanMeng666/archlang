@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `lint()` reuses the compile's Scene; large plans lint faster. `annotation-overlap` reads the annotated Scene of each storey from a small memo that `compile()` fills with a copy of what it drew (once a lint has asked for that Scene) and that a repeated lint of the same source reuses, instead of drawing it again. Output is byte-identical, and a caller's changes to `compile().scene` never reach lint.
 - The product film on archlang.uk (`/` and `/start`) and in the README is "ArchLang, from plan to 3D" (3:16, [YouTube](https://youtu.be/oCg3tBTlVvI)), in place of the 1:09 film; the home page carries it as a schema.org `VideoObject`.
 
 - The root package's description is the line every surface shares ("Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong."). Its keywords drop `typst` and gain `floorplan`, `floor-plans`, `dxf`, `pdf`, `mcp`, `llm` and `ai-agents`; `@chanmeng666/archlang-mcp`'s gain `llm` and `ai-agents`. The MCP package's homepage is `https://archlang.uk/mcp` and `@chanmeng666/archlang-3d`'s is `https://archlang.uk/3d`. The README's title line is its H1.

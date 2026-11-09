@@ -16,6 +16,7 @@ import { parse } from "./parser.js";
 import { drawnView, lineWeightOutOfRange, resolveAll } from "./ir.js";
 import type { PlanResolution } from "./ir.js";
 import { planTheme, toScene } from "./scene-build.js";
+import { offerScene } from "./scene-memo.js";
 import { drawBudgetDiagnostic } from "./draw-budget.js";
 import type { PlanNode } from "./ast.js";
 import { toIso } from "./view/iso.js";
@@ -123,12 +124,15 @@ export function compileUncached(source: string, opts: CompileOptions): CompileRe
     } else if (resolved.levels.length > 0) {
       pages = resolved.levels.map((l) => {
         const s = toScene(l.ir, opts, runtime);
+        offerScene(l.ir, opts, runtime, s);
         return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), svg: renderSvg(s, opts), scene: s };
       });
       scene = pages[0]!.scene;
       svg = pages[0]!.svg;
     } else {
       scene = toScene(resolved.ir, opts, runtime);
+      // `lint()` reads this storey's annotated Scene; it keeps a copy when it has asked for one.
+      offerScene(resolved.ir, opts, runtime, scene);
       svg = renderSvg(scene, opts);
     }
   } else if (errs.length > 0 && opts.onError === "svg") {
