@@ -7,21 +7,17 @@
  * Scheme: `#z=<base64url(deflate-raw(utf8))>` — compressed so larger plans fit the
  * address bar. The legacy raw `#src=<base64url(utf8)>` form is still *read* so
  * previously-shared links keep working forever.
+ *
+ * The DECODE side (base64url, the bounded inflater, the id shape, the edit flag) is the core's
+ * `archlang/share` subpath, which the short-link Worker and the hosted MCP Worker read too. The
+ * ENCODER stays here: `CompressionStream` output is the browser's own, and
+ * `test/share-codec.test.ts` pins it to the scheme.
  */
-import { inflateCapped } from "../worker/share-core.js";
+import { fromBase64Url, inflateCapped, isShareId, PLAYGROUND_EDIT_FLAG, toBase64Url } from "archlang/share";
 
-/** base64url ⇄ bytes (UTF-8-safe; no `escape`/`unescape`). */
-export function bytesToB64url(bytes: Uint8Array): string {
-  let bin = "";
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]!);
-  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
-export function b64urlToBytes(b64: string): Uint8Array {
-  const bin = atob(b64.replace(/-/g, "+").replace(/_/g, "/"));
-  const out = new Uint8Array(bin.length);
-  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-  return out;
-}
+/** base64url ⇄ bytes (UTF-8-safe; no `escape`/`unescape`), the core's pair under this module's names. */
+export const bytesToB64url: (bytes: Uint8Array) => string = toBase64Url;
+export const b64urlToBytes: (b64: string) => Uint8Array = fromBase64Url;
 
 async function pipeStream(stream: CompressionStream, bytes: Uint8Array): Promise<Uint8Array> {
   const w = stream.writable.getWriter();
@@ -100,8 +96,6 @@ export async function encodeSrc(src: string): Promise<string> {
 /** How long a short-link request may take before the full link is used instead. */
 export const SHORT_LINK_TIMEOUT_MS = 5000;
 
-const SHARE_ID = /^[0-9A-Za-z]{8,43}$/;
-
 /**
  * Ask this site's server for a short link to the plan in `hash` (a `#z=` fragment). Resolves to
  * the `/s/<id>` URL, or null on any failure (no `#z=`, offline, refused, slow, a host with no
@@ -125,7 +119,7 @@ export async function createShortLink(
     });
     if (!res.ok) return null;
     const body = (await res.json()) as { id?: unknown };
-    return typeof body.id === "string" && SHARE_ID.test(body.id) ? `${origin}/s/${body.id}` : null;
+    return typeof body.id === "string" && isShareId(body.id) ? `${origin}/s/${body.id}` : null;
   } catch {
     return null;
   } finally {
@@ -136,7 +130,7 @@ export async function createShortLink(
 /** The short-link id in a hash (`#s=<id>`, also after other `&`-joined params), or null. */
 export function shareIdFromHash(hash: string): string | null {
   const m = hash.match(/[#&]s=([^&]*)/);
-  return m && SHARE_ID.test(m[1]!) ? m[1]! : null;
+  return m && isShareId(m[1]!) ? m[1]! : null;
 }
 
 /**
@@ -182,8 +176,8 @@ export async function readShared(hash: string = location.hash, origin: string = 
 // the 3D view they are looking at. Both flags go after every other param, `3d` before `edit`,
 // whichever was set last.
 
-/** The hash param that opens edit mode. */
-export const EDIT_FLAG = "edit";
+/** The hash param that opens edit mode (the core's `PLAYGROUND_EDIT_FLAG`, the one `arch link` mints). */
+export const EDIT_FLAG = PLAYGROUND_EDIT_FLAG;
 /** The hash param that opens the 3D preview. */
 export const VIEW3D_FLAG = "3d";
 

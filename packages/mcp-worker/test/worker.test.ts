@@ -27,7 +27,7 @@ import {
 import {
   BODY_CAP_BYTES,
   MCP_PER_PERIOD,
-  PAYLOAD_CAP_CHARS,
+  MCP_PAYLOAD_CAP_CHARS,
   RATE_PERIOD_SECONDS,
   SOURCE_CAP_BYTES,
   SVG_PER_PERIOD,
@@ -411,7 +411,7 @@ describe("telemetry: one data point per MCP message, method and tool name from f
     expect(points).toEqual([{ blobs: ["refused", "too-large body"], indexes: ["refused"] }]);
     // The /svg/ payload LENGTH check runs before any decode, so it needs no deflate-raw either.
     points.length = 0;
-    await worker.fetch(new Request(`${ORIGIN}/svg/${"A".repeat(PAYLOAD_CAP_CHARS + 1)}`), env, ctx);
+    await worker.fetch(new Request(`${ORIGIN}/svg/${"A".repeat(MCP_PAYLOAD_CAP_CHARS + 1)}`), env, ctx);
     expect(points).toEqual([{ blobs: ["refused", "too-large payload"], indexes: ["refused"] }]);
   });
 

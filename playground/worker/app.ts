@@ -22,7 +22,7 @@ import {
   ID_MIN,
   isShareId,
   notFoundHtml,
-  PAYLOAD_CAP_CHARS,
+  SHORT_LINK_PAYLOAD_CAP_CHARS,
   planTitle,
   RATE_PERIOD_SECONDS,
   SHARE_PER_PERIOD,
@@ -219,10 +219,15 @@ export function makeShareWorker(core: Core, preview: PreviewDeps = {}) {
         headers: { "retry-after": String(RATE_PERIOD_SECONDS) },
       });
     }
-    const body = await readCapped(req, PAYLOAD_CAP_CHARS);
+    const body = await readCapped(req, SHORT_LINK_PAYLOAD_CAP_CHARS);
     if (body === null) {
       count(env, "refused", "payload-size");
-      const d = core.inputTooLarge(PAYLOAD_CAP_CHARS + 1, PAYLOAD_CAP_CHARS, "share payload", false)!;
+      const d = core.inputTooLarge(
+        SHORT_LINK_PAYLOAD_CAP_CHARS + 1,
+        SHORT_LINK_PAYLOAD_CAP_CHARS,
+        "share payload",
+        false,
+      )!;
       return refuse(413, "payload_too_large", d.message, { diagnostic: core.diagnosticToJson("", d) });
     }
     const payload = body.trim();

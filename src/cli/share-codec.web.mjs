@@ -8,7 +8,18 @@
  * Bounded: `maxBytes` caps the INFLATED size and stops reading the moment it is passed, so a
  * small payload that inflates enormously costs at most `maxBytes` of work, never the whole bomb.
  * Types: `share-codec.web.d.mts`.
+ *
+ * Published in `@chanmeng666/archlang/share` (`src/share.ts` re-exports it). Plain `.mjs` with no
+ * Node built-in on purpose: `share-codec.mjs`, the Node encoder that scripts run with plain `node`,
+ * imports the edit flag from here, so the flag has one definition.
  */
+
+/**
+ * The hash param that opens the playground in edit mode (the source beside the drawing), as
+ * `#z=<payload>&edit`. The playground opens in view mode without it; its `#z=` reader parses the
+ * plan out of the hash either way (`hasEditFlag` in `playground/src/share.ts`).
+ */
+export const PLAYGROUND_EDIT_FLAG = "edit";
 
 /** Thrown by {@link decodePlanHashWeb} when the inflated source would exceed `maxBytes`. */
 export class PlanHashTooLarge extends RangeError {
@@ -20,8 +31,15 @@ export class PlanHashTooLarge extends RangeError {
   }
 }
 
+/** bytes → base64url (no padding). UTF-8-safe: no `escape`/`unescape`. */
+export function toBase64Url(bytes) {
+  let bin = "";
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
 /** base64url (no padding) → bytes. Throws on a character outside the alphabet. */
-function fromBase64Url(hash) {
+export function fromBase64Url(hash) {
   const bin = atob(hash.replace(/-/g, "+").replace(/_/g, "/"));
   const bytes = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);

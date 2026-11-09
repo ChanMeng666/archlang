@@ -11,6 +11,7 @@ import { fileURLToPath } from "node:url";
 import { deflateRawSync } from "node:zlib";
 import { compile, diagnosticToJson, inputTooLarge, rateLimited } from "archlang";
 import { describe, expect, it } from "vitest";
+import { SOURCE_CAP_BYTES as SHARED_SOURCE_CAP_BYTES } from "archlang/share";
 import { encodePlanHash } from "../../src/cli/share-codec.mjs";
 import { encodeSrc } from "../src/share.js";
 import { makeShareWorker, PREVIEW_PER_PERIOD } from "../worker/app.js";
@@ -20,7 +21,7 @@ import {
   escapeHtml,
   ID_MAX,
   ID_MIN,
-  PAYLOAD_CAP_CHARS,
+  SHORT_LINK_PAYLOAD_CAP_CHARS,
   planTitle,
   RATE_PERIOD_SECONDS,
   SHARE_PER_PERIOD,
@@ -29,7 +30,6 @@ import {
   sourceHash,
 } from "../worker/share-core.js";
 import type { Env, ShareMeta } from "../worker/types.js";
-import { SOURCE_CAP_BYTES as MCP_SOURCE_CAP_BYTES } from "../../packages/mcp-worker/src/limits.js";
 import { supportsDeflateRaw } from "./helpers.js";
 
 // Node 18 has neither a global `crypto` nor a "deflate-raw" DecompressionStream; the Worker runtime
@@ -161,7 +161,7 @@ describe.skipIf(!supportsDeflateRaw)("short links: what POST /api/share refuses"
 
   it("a body over the payload cap, before reading it all", async () => {
     const { env, kv } = fakeEnv();
-    const res = await worker.fetch(post("A".repeat(PAYLOAD_CAP_CHARS + 1)), env);
+    const res = await worker.fetch(post("A".repeat(SHORT_LINK_PAYLOAD_CAP_CHARS + 1)), env);
     expect(res.status).toBe(413);
     const body = (await res.json()) as { error: { code: string; diagnostic: { code: string } } };
     expect(body.error.code).toBe("payload_too_large");
@@ -188,13 +188,14 @@ describe.skipIf(!supportsDeflateRaw)("short links: what POST /api/share refuses"
     expect(res.status).toBe(413);
     expect(await code(res)).toBe("source_too_large");
     expect(await decodePayload(bomb, 1024)).toBe("source_too_large");
-    // A plan of exactly the cap is read; the cap is the hosted MCP Worker's, held in step here.
+    // A plan of exactly the cap is read; the cap is the core share subpath's, the one the hosted MCP
+    // Worker reads too (packages/mcp-worker/src/limits.ts re-exports it).
     const atCap = `plan "B" {
 ${" ".repeat(SOURCE_CAP_BYTES - 13)}
 }`;
     expect(new TextEncoder().encode(atCap).length).toBe(SOURCE_CAP_BYTES);
     expect(await decodePayload(encodePlanHash(atCap))).toBe(atCap);
-    expect(SOURCE_CAP_BYTES).toBe(MCP_SOURCE_CAP_BYTES);
+    expect(SOURCE_CAP_BYTES).toBe(SHARED_SOURCE_CAP_BYTES);
   });
 
   it("text the parser does not accept as a plan, with its E_PARSE diagnostic", async () => {

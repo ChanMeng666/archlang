@@ -818,6 +818,8 @@ export default defineConfig({
   vite: {
     resolve: {
       alias: {
+        // The share-link subpath first: an alias also matches `archlang/…`.
+        "archlang/share": fileURLToPath(new URL("../../dist/share.js", import.meta.url)),
         archlang: fileURLToPath(new URL("../../dist/index.js", import.meta.url)),
       },
     },

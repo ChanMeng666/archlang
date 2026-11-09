@@ -16,7 +16,8 @@ export interface Seam {
   why: string;
 }
 
-const CORE_SHARE = "the shared-link codec is a core CLI file with no package export";
+const CORE_SHARE =
+  "the Node share-link encoder is a core CLI file with no package export (the browser-safe decoder is ./share)";
 
 export const ALLOW: readonly Seam[] = [
   // playground
@@ -34,6 +35,11 @@ export const ALLOW: readonly Seam[] = [
     file: "playground/tsconfig.json",
     specifier: "paths archlang/review",
     why: "types for the review sheet come from src/: the build emits no declaration for dist/cli/review.js",
+  },
+  {
+    file: "playground/tsconfig.json",
+    specifier: "paths archlang/share",
+    why: "the share-link subpath read from src/share.ts: Playwright resolves tsconfig paths at run time for the specs that import share.ts in Node, where a .d.ts would load as an empty module",
   },
   {
     file: "playground/tsconfig.json",
@@ -57,6 +63,11 @@ export const ALLOW: readonly Seam[] = [
   },
   {
     file: "playground/vite.config.js",
+    specifier: "alias archlang/share",
+    why: "the share-link decoder, the core's ./share export, built (dist/share.js); listed before the bare name (prefix match)",
+  },
+  {
+    file: "playground/vite.config.js",
     specifier: "alias @chanmeng666/archlang",
     why: "archlang-3d imports the core by its published name; same built file so the lazy chunk shares the core",
   },
@@ -75,6 +86,11 @@ export const ALLOW: readonly Seam[] = [
     specifier: "alias archlang",
     why: "the short-link Worker bundles the built core by name",
   },
+  {
+    file: "playground/wrangler.jsonc",
+    specifier: "alias archlang/share",
+    why: "the short-link Worker reads its caps and inflater from the core's ./share export, the built dist/share.js",
+  },
   // docs-site
   {
     file: "docs-site/.vitepress/config.ts",
@@ -82,9 +98,19 @@ export const ALLOW: readonly Seam[] = [
     why: "examples compile client-side against the built core, the same alias the playground uses",
   },
   {
+    file: "docs-site/.vitepress/config.ts",
+    specifier: "alias archlang/share",
+    why: "the widget's Open in playground link takes base64url and the edit flag from the core's ./share export; listed before the bare name (prefix match)",
+  },
+  {
     file: "docs-site/tsconfig.json",
     specifier: "paths archlang",
     why: "mirrors the VitePress alias to the built core",
+  },
+  {
+    file: "docs-site/tsconfig.json",
+    specifier: "paths archlang/share",
+    why: "mirrors the VitePress alias to the built share subpath",
   },
   // packages
   {
@@ -103,14 +129,14 @@ export const ALLOW: readonly Seam[] = [
     why: "the Worker imports the Node-free link helper by its exports name; the alias pins it to this checkout's dist/cli/link.js, so an installed core cannot supply a different encoder than the one the render version hashes",
   },
   {
+    file: "packages/mcp-worker/scripts/build.mjs",
+    specifier: "alias @chanmeng666/archlang/share",
+    why: "the Worker decodes /svg/ payloads with the core's ./share export; the alias pins it to this checkout's dist/share.js, like /link",
+  },
+  {
     file: "packages/mcp-worker/scripts/measure-cpu.mjs",
     specifier: "../../../src/cli/share-codec.mjs",
     why: `CPU measurement script encodes a plan hash; ${CORE_SHARE}`,
-  },
-  {
-    file: "packages/mcp-worker/src/app.ts",
-    specifier: "../../../src/cli/share-codec.web.mjs",
-    why: `the Worker decodes #z= payloads with the Web-stream codec; ${CORE_SHARE}`,
   },
   {
     file: "packages/mcp-worker/src/env.d.ts",
@@ -131,6 +157,11 @@ export const ALLOW: readonly Seam[] = [
     file: "packages/mcp-worker/tsconfig.json",
     specifier: "paths @chanmeng666/archlang/link",
     why: "tsc must type the Worker's /link import from the same build the bundler inlines (scripts/build.mjs), not an installed copy that could differ",
+  },
+  {
+    file: "packages/mcp-worker/tsconfig.json",
+    specifier: "paths @chanmeng666/archlang/share",
+    why: "types the Worker's ./share import from the same build the bundler inlines, as for /link",
   },
   {
     file: "packages/web-component/tsconfig.json",
@@ -194,6 +225,11 @@ export const ALLOW: readonly Seam[] = [
   },
   {
     file: "packages/mcp-worker/scripts/build.mjs",
+    specifier: "path dist/share.js",
+    why: "the Worker bundle's share entry, the alias target for @chanmeng666/archlang/share",
+  },
+  {
+    file: "packages/mcp-worker/scripts/build.mjs",
     specifier: "path packages/mcp/src/server.ts",
     why: "parses the stdio server's readResource(...) calls to bundle the same resource texts into the Worker",
   },
@@ -204,6 +240,11 @@ export const ALLOW: readonly Seam[] = [
   },
   {
     file: "vitest.config.ts",
+    specifier: "alias archlang/share",
+    why: "the playground modules import the share subpath by name; to src/share.ts, listed before the bare name (prefix match)",
+  },
+  {
+    file: "vitest.config.ts",
     specifier: "alias @chanmeng666/archlang",
     why: "the MCP shim and archlang-3d import the core by its published name; this runs their tests against src/",
   },
@@ -211,6 +252,11 @@ export const ALLOW: readonly Seam[] = [
     file: "vitest.config.ts",
     specifier: "alias @chanmeng666/archlang/link",
     why: "the Node-only subpath, listed before the bare name since an alias also matches name/...; to src/cli/link.ts",
+  },
+  {
+    file: "vitest.config.ts",
+    specifier: "alias @chanmeng666/archlang/share",
+    why: "the mcp-worker imports the share subpath by its published name; to src/share.ts",
   },
   {
     file: "vitest.config.ts",
