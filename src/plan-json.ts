@@ -1325,6 +1325,13 @@ function reqPoint(v: unknown, path: string, val: Validator): PointJson | null {
 const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
 const ROOM_TYPE_SET: ReadonlySet<string> = new Set<string>(ROOM_TYPES);
 const OPENING_KINDS: ReadonlySet<string> = new Set(kindsWith("opening"));
+/**
+ * The schema's `openings[].kind` enum: the table's `opening` kinds at run time, printed as the
+ * literal tuple in the published types (an alias such as `KindsWith` is not part of the public
+ * surface, and the release-compat gate reads the printed type). `test/element-facets.test.ts`
+ * holds this, the `OpeningJson.kind` union and the table equal.
+ */
+const OPENING_KIND_ENUM = [...kindsWith("opening")] as unknown as readonly ["door", "window", "opening"];
 
 /**
  * Validate `json` against the plan shape (no throw). Returns the value cast to
@@ -2647,7 +2654,7 @@ export const PLAN_JSON_SCHEMA = {
         required: ["kind", "width"],
         properties: {
           instance: INSTANCE_MARKER,
-          kind: { enum: ["door", "window", "opening"], description: "Opening kind." },
+          kind: { enum: OPENING_KIND_ENUM, description: "Opening kind." },
           id: { type: "string", description: "Unique opening id." },
           x: { type: "number", description: "Center X in millimetres (on the wall centerline)." },
           y: { type: "number", description: "Center Y in millimetres (on the wall centerline)." },
