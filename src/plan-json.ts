@@ -67,7 +67,7 @@ import type {
   ResolvedElement,
 } from "./ir.js";
 import { drawnView, instanceBodiesOf, keepResultsOf } from "./ir.js";
-import type { Diagnostic } from "./diagnostics.js";
+import { capDiagnostics, type Diagnostic, MAX_DIAGNOSTICS } from "./diagnostics.js";
 import type {
   DoorEnumClause,
   DoorHinge,
@@ -1237,17 +1237,30 @@ function bodyJson(ir: ResolvedPlan, local: readonly ResolvedElement[]): PlanBody
 // planFromJson — validate the shape, emit canonical .arch, run the real parser.
 // ---------------------------------------------------------------------------
 
-/** Diagnostic collector that stamps JSON paths onto shape/kind problems. */
+/**
+ * Diagnostic collector that stamps JSON paths onto shape/kind problems. It keeps one past
+ * {@link MAX_DIAGNOSTICS} and drops the rest, so 64 KiB of `{"rooms":[{},{},…]}` holds a bounded
+ * list rather than one error per field; {@link capDiagnostics} then turns the overflow into the
+ * `E_DIAGNOSTIC_LIMIT` marker (EH1.15). Every validation diagnostic is an error.
+ */
 class Validator {
   readonly diags: Diagnostic[] = [];
+  push(d: Diagnostic): void {
+    if (this.diags.length <= MAX_DIAGNOSTICS) this.diags.push(d);
+  }
   err(path: string, msg: string): void {
-    this.diags.push({ severity: "error", message: `plan JSON ${path}: ${msg}`, code: "E_JSON_SCHEMA" });
+    this.push({ severity: "error", message: `plan JSON ${path}: ${msg}`, code: "E_JSON_SCHEMA" });
   }
   kindErr(path: string, msg: string): void {
-    this.diags.push({ severity: "error", message: `plan JSON ${path}: ${msg}`, code: "E_JSON_KIND" });
+    this.push({ severity: "error", message: `plan JSON ${path}: ${msg}`, code: "E_JSON_KIND" });
   }
   hasError(): boolean {
     return this.diags.some((d) => d.severity === "error");
+  }
+  /** The list a caller sees: capped (sub-cap, the same array). A JSON payload has no source text,
+   *  so the marker's span is the empty one at 0. */
+  capped(): Diagnostic[] {
+    return capDiagnostics(this.diags, 0);
   }
 }
 
@@ -1679,7 +1692,7 @@ function validateWallsFromRooms(w: unknown, path: string, val: Validator): void 
 function refuseMirror(mirror: unknown, path: string, what: string, own: string, val: Validator): void {
   if (mirror !== undefined && typeof mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
   if (mirror === true)
-    val.diags.push({
+    val.push({
       severity: "error",
       message: `plan JSON ${path}/mirror: ${what} cannot be written as source — \`.arch\` has no ${own} \`mirror\` (only a \`place … mirror x|y\` frame reflects one)`,
       code: "E_JSON_MIRROR",
@@ -1843,7 +1856,7 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   // reflection, so it is refused here with its door's code rather than reach the parser.
   if (f.mirror !== undefined && typeof f.mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
   if (f.mirror === true && isStr(f.id) && f.id.includes("."))
-    val.diags.push({
+    val.push({
       severity: "error",
       message: `plan JSON ${path}/mirror: a fixture reflected by a \`place\` frame cannot be written as source — "${f.id}" is an instance's piece, flattened, and only its \`place … mirror x|y\` states the reflection`,
       code: "E_JSON_MIRROR",
@@ -2156,7 +2169,7 @@ function emitFurniture(f: FurnitureJson): string {
 export function planJsonToArch(json: unknown): { source?: string; diagnostics: Diagnostic[] } {
   const val = new Validator();
   const model = validatePlanJson(json, val);
-  if (!model || val.hasError()) return { diagnostics: val.diags };
+  if (!model || val.hasError()) return { diagnostics: val.capped() };
   return { source: emitArch(model), diagnostics: val.diags };
 }
 

@@ -364,6 +364,24 @@ describe("malformed Plan JSON", () => {
     ]);
   });
 
+  it("EH1.15: 64 KiB of empty rooms returns at most 500 validation diagnostics and one E_DIAGNOSTIC_LIMIT", () => {
+    const rows = Math.floor((64 * 1024 - '{"rooms":[]}'.length + 1) / 3);
+    const text = `{"rooms":[${Array.from({ length: rows }, () => "{}").join(",")}]}`;
+    expect(text.length).toBeLessThanOrEqual(64 * 1024);
+    const r = planFromJson(JSON.parse(text));
+    console.info(`plan-json-malformed cap probe: ${rows} rows, ${r.diagnostics.length} diagnostics`);
+    expect(r.diagnostics.length).toBeLessThanOrEqual(501);
+    expect(r.diagnostics.at(-1)?.code).toBe("E_DIAGNOSTIC_LIMIT");
+    expect(r.diagnostics.at(-1)?.severity).toBe("error");
+    const ordinary = r.diagnostics.slice(0, -1);
+    expect(ordinary.length).toBe(500);
+    expect(ordinary.every((d) => d.code === "E_JSON_SCHEMA" && PATHED.test(d.message))).toBe(true);
+    // Below the cap nothing changes: the same document cut to 10 rows reports every field, no marker.
+    const small = planFromJson({ rooms: [{}, {}, {}, {}, {}, {}, {}, {}, {}, {}] }).diagnostics;
+    expect(small.some((d) => d.code === "E_DIAGNOSTIC_LIMIT")).toBe(false);
+    expect(small.length).toBe(40);
+  });
+
   it("hostile roots: non-objects and empty containers", () => {
     for (const v of [undefined, null, 0, Number.NaN, "x", true, [], {}, [{}], { rooms: null }, { rooms: {} }]) {
       expect(check(v), String(JSON.stringify(v))).toBeUndefined();
