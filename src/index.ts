@@ -37,6 +37,7 @@ import { clearLexCache } from "./lexer.js";
 import { clearLineTableCache } from "./diagnostics.js";
 import { clearParseCache } from "./parser.js";
 import { clearResolveCache } from "./ir.js";
+import { clearSceneMemo } from "./scene-memo.js";
 import { resetRerollCache } from "./reroll.js";
 import { idToken } from "./identity.js";
 import type { CompileOptions, CompileResult } from "./types.js";
@@ -739,13 +740,14 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
   return result;
 }
 
-/** Clear the internal compile cache + all per-stage memos (lex/parse/resolve, net area) and the `reroll` baseline memo. */
+/** Clear the internal compile cache + all per-stage memos (lex/parse/resolve, Scene, net area) and the `reroll` baseline memo. */
 export function clearCache(): void {
   cache.clear();
   clearLexCache();
   clearLineTableCache();
   clearParseCache();
   clearResolveCache();
+  clearSceneMemo();
   clearNetAreaMemo();
   resetRerollCache();
 }

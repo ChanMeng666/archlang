@@ -96,7 +96,8 @@ import { doorLeaves, rectCorners } from "../../geometry.js";
 import type { RDim, RDoor, ResolvedElement, ResolvedPlan, RFurniture, RRoom } from "../../ir.js";
 import type { ScenePrim } from "../../scene.js";
 import { BUILTIN_RUNTIME } from "../../registry.js";
-import { autoDimensions, toScene } from "../../scene-build.js";
+import { autoDimensions } from "../../scene-build.js";
+import { memoScene } from "../../scene-memo.js";
 import { dimTextPrim } from "../../elements/dim.js";
 import { titleBlockMetrics, titleRows } from "../../chrome-layout.js";
 import { drawBudgetDiagnostic } from "../../draw-budget.js";
@@ -158,7 +159,8 @@ export const annotationOverlap: LintRule = {
       ctx.skip("annotation-budget");
       return [];
     }
-    const scene = toScene(ir, { annotate: true });
+    // The compile's own Scene when it drew this storey annotated (the playground's render).
+    const scene = memoScene(ir, { annotate: true });
 
     // Symbols, grouped by the element that drew them, in drawing order.
     const byId = new Map<string, ResolvedElement>();
