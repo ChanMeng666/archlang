@@ -9,7 +9,7 @@
   nearest tests by import distance, capped at `--max` (20) with the cut printed. The base is the merge
   base with `origin/main` (`--base`); `--list` prints the plan. What runs where: AGENTS.md § How to work.
   It cannot see a guard that scans a directory rather than naming a file (the corpus and byte-identity
-  laws over `examples/` and `docs/`), which is why a quick pass is not merge evidence.
+  laws over `examples/` and `docs/`), which is why a quick pass is never merge evidence.
 - `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`, and it is the owner's release
   gate only: ci.yml runs its parts (typecheck, `lint:ci`, `check:drift`, the vitest shards, `check:test-wiring`),
   never the script. Its `typecheck` covers `src/` only; CI runs `npm run typecheck:all`, which adds `test/`,

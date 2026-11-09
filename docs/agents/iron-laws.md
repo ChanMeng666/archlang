@@ -102,7 +102,8 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 - **Every new language form ships a byte-identity law** (hard rule: AGENTS.md § Hard rules). Prove it with a SHA-256 sweep whose payload is SVG
   + `describe()` + `lint()` (add `compile().diagnostics` when the resolver is reachable), taking the
   baseline with the test's own digest body. A moved golden is a finding to explain first.
-- **Drafting-layer lint rules read the sheet** (hard rule: AGENTS.md § Hard rules; ADR 0032; owner decision taken by delegation, `docs/plans/plan-soundness/README.md` § 3
+- **A drawing change never moves `describe()`/`lint()` over the corpus, except drafting-layer lint rules,
+  which read the sheet** (hard rule: AGENTS.md § Hard rules; ADR 0032; owner decision taken by delegation, `docs/plans/plan-soundness/README.md` § 3
   D17/D18). `W_ANNOTATION_OVERLAP` and `W_TITLE_OVERFLOW` (PS2.12,
   `src/lint/rules/annotations.ts`) read the drawn sheet, because the defect they report (text
   printed over a symbol, a wall, a door swing or a label, or off its room; a title value wider than
@@ -139,9 +140,9 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 - **Listings**: an agent may drive a submission form or a publish step through the owner's logged-in
   browser or CLI when the owner has asked for that listing; the final submit of anything that
   accepts terms, and Cloudflare dashboard edits, are the owner's (`docs/seo.md` section 8).
-- **The full test suite runs on GitHub CI, never on the owner's machine** (owner, 2026-11-04; the local
-  gate is AGENTS.md § How to work): then push, set auto-merge, and start the next item. A CI red is read
-  from CI's log, not reproduced by a local full run.
+- **The full test suite runs on GitHub CI, never on the owner's machine** (owner, 2026-11-04). The local
+  gate is `check:quick` (AGENTS.md § How to work); then push, set auto-merge, and start the next item. A
+  CI red is read from CI's log, not reproduced by a local full run.
 - **Distribution first**: ArchLang exists for distribution and credibility; revenue is secondary.
 - **ArchCanvas is in maintenance** (D26, the day-90 verdict) and stays on its pinned core (D28): its prompts
   inject `spec.llm.md` verbatim, so a core bump changes what the model writes, and only a paid run can price

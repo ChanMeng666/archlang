@@ -7,9 +7,9 @@ intent and its evidence, not every line. Cite file and line for each finding.
 ## What failure looks like here
 
 - **Compiler output stops being a function of the source** (hard rule: AGENTS.md § Hard rules). Look
-  for time, randomness, I/O or a Node API in `src/` outside the CLI, an environment read that skips
-  `World`, a number formatted outside `src/num-format.ts`, a mutated `PlanNode`, a runtime dependency,
-  or `packages/archlang-3d` imported by the core.
+  for time, randomness, I/O or a Node API in `src/` outside `src/cli.ts`+`src/cli/`, an environment read
+  that skips the `World` seam, a number formatted outside `src/num-format.ts`, a mutated parse-stage
+  `PlanNode`, a runtime dependency added to the core, or `packages/archlang-3d` imported by it.
 - **An element added outside the pattern** (hard rule: AGENTS.md § Hard rules): a switch instead of one
   registered module; a new language form with no byte-identity test; a height that draws.
 - **A golden, digest or baseline moved without a byte-level reason.** Any change under
@@ -17,10 +17,10 @@ intent and its evidence, not every line. Cite file and line for each finding.
   PR. A re-bless that makes a suite green is the bug.
 - **A drawing change moved `describe()` or `lint()` over the corpus** (outside drafting-layer lint
   rules), or a glyph gained handedness.
-- **Unbounded work** (hard rule: AGENTS.md § Hard rules): evaluator work not charged before it
-  allocates; a coordinate that can leave `MODEL_RANGE_MM`; an element whose `drawCost`, `bounds()` or
+- **Unbounded work** (hard rule: AGENTS.md § Hard rules): evaluator work not charged to the step meter
+  before it allocates; a coordinate or length that can leave `MODEL_RANGE_MM`; an element whose `drawCost`, `bounds()` or
   `measures()` does not cover what it draws.
-- **A user-source error thrown** instead of returned as a `Diagnostic`.
+- **A user-source error thrown** instead of returned as a catalogued `Diagnostic`.
 - **A generated file edited by hand**, or a generator template that retypes a fact.
 - **CI or a check got weaker.** A skipped or deleted assertion, a narrowed test glob, a relaxed
   workflow, a lowered budget or cap, a widened `.gitleaksignore`. Blocker unless the owner approved it.
