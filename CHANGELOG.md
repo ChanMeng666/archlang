@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `packages/mcp/Dockerfile`: an image that installs the published `@chanmeng666/archlang-mcp` at its `package.json` version on Node 22 Alpine and runs `archlang-mcp` on stdio, for the Docker MCP Catalog. It is not in the npm package.
 - Four docs pages: `/floor-plan-tools-for-ai-agents` (what each floor-plan tool for agents takes in, exports and costs, from each tool's own pages), `/floor-plan-with-a-coding-agent`, `/text-to-dxf-floor-plan` and `/check-a-floor-plan`. Each carries a plan that compiles and lints clean and ends with a FAQ.
 - The docs `/examples` page links each plan to its static page on the playground, and each static example page links back to `/examples`.
+- `E_DIAGNOSTIC_LIMIT`: `compile()` and `describe()` report at most 500 diagnostics, then this one error, at the byte past the last kept; the lexer and parser stop collecting there. A plan with 500 or fewer is reported exactly as before.
 
 ### Changed
 
@@ -27,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The playground sitemap gives each example page a `lastmod`, the date of the last commit to its `.arch` file or to the page generator, whichever is newer; `/` and `/examples/` take the newest.
 - Both `robots.txt` files name `ShapBot` and `DuckDuckBot`, allowed like every other crawler. `/error-codes` redirects to `/errors` and `/language-reference` to `/reference` (301), and the docs sitemap lists `/adr` in place of `/adr/`, which redirects.
 - The raw `/<page>.md` copies on archlang.uk are served with `X-Robots-Tag: noindex`, so search engines index the HTML page; `rel=alternate` still points to them, and `/llms.txt`, `/llms-full.txt` and the HTML pages are unchanged.
+
+### Fixed
+
+- Reporting diagnostics cost time quadratic in their number: `offsetToLineCol` scanned the source from byte 0 for each one, so 64 KiB of `@` took about 4 s and 64 KiB of NUL about 8.5 s to compile. It now reads a line-start table built once per source; the same inputs take about 50 ms, with the same line and column numbers.
 
 ## [1.57.0] - 2026-11-06
 

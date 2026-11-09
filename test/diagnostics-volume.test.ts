@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { offsetToLineCol } from "../src/diagnostics.js";
+import { capDiagnostics, MAX_DIAGNOSTICS, offsetToLineCol } from "../src/diagnostics.js";
+import type { Diagnostic } from "../src/diagnostics.js";
+import { compile, describe as describePlan, ERROR_CATALOG } from "../src/index.js";
+import { parse } from "../src/parser.js";
+import { lex } from "../src/lexer.js";
 
 /**
  * The oracle: `offsetToLineCol` as it was before the line-start table (EH1.11) — a scan
@@ -79,5 +83,88 @@ describe("offsetToLineCol — line-start table agrees with the scan", () => {
       }
       expect(offsetToLineCol(src, o)).toEqual({ line, col });
     }
+  });
+});
+
+const K = 64 * 1024;
+const fill = (unit: string, bytes: number): string => unit.repeat(Math.ceil(bytes / unit.length)).slice(0, bytes);
+const plan = (body: string): string => `plan "p" {\n${body}\n}\n`;
+
+/** The flood inputs of the security audit (S-F1); each once cost seconds of line/column scans. */
+const FLOODS: readonly (readonly [string, string])[] = [
+  ["64 KiB of @", fill("@", K)],
+  ["64 KiB of NUL", fill("\u0000", K)],
+  ["5,000 lines of a room with a stray word", "room at (0,0) size 1x1 zzz\n".repeat(5000)],
+  ["8,000 unclosed zones", 'zone "a" {\n'.repeat(8000)],
+  ["20,000 re-declarations", "let a = 1\n".repeat(20000)],
+  ["600 errors from one statement in a loop", "for i in 0..600 { let x = 1 / 0 }"],
+];
+
+describe("diagnostics are capped at MAX_DIAGNOSTICS, then one E_DIAGNOSTIC_LIMIT (EH-D8)", () => {
+  it("the cap is 500 and its code is catalogued as an error", () => {
+    expect(MAX_DIAGNOSTICS).toBe(500);
+    expect(ERROR_CATALOG.E_DIAGNOSTIC_LIMIT?.severity).toBe("error");
+  });
+
+  for (const [name, body] of FLOODS) {
+    it(`${name}: exactly 500 diagnostics, then the limit, in compile() and describe()`, () => {
+      const src = plan(body);
+      const r = compile(src, { noCache: true });
+      expect(r.diagnostics).toHaveLength(MAX_DIAGNOSTICS + 1);
+      const last = r.diagnostics.at(-1)!;
+      expect(last.code).toBe("E_DIAGNOSTIC_LIMIT");
+      expect(last.severity).toBe("error");
+      expect(r.diagnostics.filter((d) => d.code === "E_DIAGNOSTIC_LIMIT")).toHaveLength(1);
+      expect(r.errors).toHaveLength(r.diagnostics.filter((d) => d.severity === "error").length);
+      expect(r.svg).toBe("");
+      // The span is the byte just past the 500th diagnostic's span.
+      const kept = r.diagnostics[MAX_DIAGNOSTICS - 1]!;
+      const at = kept.span ? kept.span.end : src.length;
+      expect(last.span).toEqual({ start: at, end: Math.min(at + 1, src.length) });
+      const d = describePlan(src);
+      expect(d.ok).toBe(false);
+      expect(d.diagnostics).toHaveLength(MAX_DIAGNOSTICS + 1);
+      expect(d.diagnostics.at(-1)!.code).toBe("E_DIAGNOSTIC_LIMIT");
+    });
+  }
+
+  it("64 KiB of @: the lexer keeps one past the cap, parse() reports exactly 501", () => {
+    const src = fill("@", K);
+    expect(lex(src).errors).toHaveLength(MAX_DIAGNOSTICS + 1);
+    const p = parse(src);
+    expect(p.diagnostics).toHaveLength(MAX_DIAGNOSTICS + 1);
+    expect(p.diagnostics.at(-1)!.code).toBe("E_DIAGNOSTIC_LIMIT");
+    // The 500th `@` is at byte 499, so the limit sits at byte 500.
+    expect(p.diagnostics.at(-1)!.span).toEqual({ start: 500, end: 501 });
+  });
+
+  it("at the cap nothing changes: 500 diagnostics are returned as is, the same array", () => {
+    const list: Diagnostic[] = Array.from({ length: MAX_DIAGNOSTICS }, (_, i) => ({
+      severity: "error",
+      message: "m",
+      code: "E_PARSE",
+      span: { start: i, end: i + 1 },
+    }));
+    expect(capDiagnostics(list, 1000)).toBe(list);
+    const over = [...list, list[0]!];
+    const capped = capDiagnostics(over, 1000);
+    expect(capped).toHaveLength(MAX_DIAGNOSTICS + 1);
+    expect(capped.at(-1)!.span).toEqual({ start: MAX_DIAGNOSTICS, end: MAX_DIAGNOSTICS + 1 });
+    // Idempotent: capping a capped list (parse, then compile) keeps its one limit.
+    expect(capDiagnostics([...capped, list[1]!], 1000)).toEqual(capped);
+  });
+
+  it("a plan with exactly 500 errors is reported in full, with no limit", () => {
+    const r = compile(plan("for i in 0..499 { let x = 1 / 0 }"), { noCache: true }); // `..` is inclusive
+    expect(r.diagnostics).toHaveLength(MAX_DIAGNOSTICS);
+    expect(r.diagnostics.some((d) => d.code === "E_DIAGNOSTIC_LIMIT")).toBe(false);
+  });
+
+  // A smoke bound, not a count: the counts above are the proof. It only catches a return of
+  // the quadratic line/column scan (the 64 KiB NUL flood alone took 8.5 s before).
+  it("smoke: every flood compiles within a generous bound", () => {
+    const t0 = performance.now();
+    for (const [, body] of FLOODS) compile(plan(body), { noCache: true });
+    expect(performance.now() - t0).toBeLessThan(30_000);
   });
 });

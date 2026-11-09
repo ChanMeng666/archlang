@@ -162,7 +162,7 @@ empty array, extra key, `__proto__`) into `planFromJson`; laws: never throws, re
 unmutated input. Same for `openPlan3dToArch` from `test/fixtures/openplan3d`. Nightly coverage adds
 the `lcov` reporter to its artifact. Proof: both files above 95 % branches in the next nightly.
 
-### EH1.11 · diagnostics cost O(1) each — `todo` · S · medium · opus · S-F1 · EH-D8
+### EH1.11 · diagnostics cost O(1) each — `in review` · S · medium · opus · S-F1 · EH-D8
 `offsetToLineCol` (`src/diagnostics.ts:145-158`) reads a per-source line-start table (binary
 search), built once and memoised with the lex stage. Cap diagnostics at 500 per compile, then one
 `E_DIAGNOSTIC_LIMIT` (catalogued, `gen:errors`). `test/diagnostics-volume.test.ts`: 64 KiB of `@`,

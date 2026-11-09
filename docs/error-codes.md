@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**156 errors** · **94 warnings**
+**157 errors** · **94 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -22,6 +22,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DATUM_COMPASS`](#e_datum_compass) | error | A compass word is used as a room-edge datum where it would mean two things. |
 | [`E_DATUM_NAME`](#e_datum_name) | error | A dotted name reads both as a room-edge datum and as an element inside an instance. |
 | [`E_DATUM_UNPLACED`](#e_datum_unplaced) | error | A room-edge datum names a room that has no position or no size. |
+| [`E_DIAGNOSTIC_LIMIT`](#e_diagnostic_limit) | error | More than 500 diagnostics; further diagnostics were not collected. |
 | [`E_DIM_CURVE_REF`](#e_dim_curve_ref) | error | Invalid `dim radius`/`dim diameter` reference. |
 | [`E_DIV_ZERO`](#e_div_zero) | error | Division or modulo by zero. |
 | [`E_DOMAIN`](#e_domain) | error | Math domain error. |
@@ -421,6 +422,18 @@ wall interior thickness 100 { (0, west.top) (3000, west.top) }   # error: `west.
 ```arch static
 room id=a right-of ghost size 3000x3000
 wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # error: a could not be placed
+```
+
+## E_DIAGNOSTIC_LIMIT
+
+*error* — More than 500 diagnostics; further diagnostics were not collected.
+
+**Cause.** One compile reports at most 500 diagnostics. Past that the lexer and parser stop collecting and every later stage's are dropped, and this one closes the list, at the byte just past the last diagnostic kept. A page of stray characters, thousands of repeated declarations or one bad statement inside a long loop would otherwise cost more to report than the plan costs to compile. It is an error, so the plan draws nothing.
+
+**Fix.** Fix the first problems reported (they usually share one cause: a pasted binary file, a block that never closes, one bad line inside a loop) and compile again.
+
+```arch static
+for i in 0..600 { let x = 1 / 0 }   # error: 500 E_DIV_ZERO, then E_DIAGNOSTIC_LIMIT
 ```
 
 ## E_DIM_CURVE_REF

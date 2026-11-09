@@ -189,6 +189,37 @@ export function offsetToLineCol(source: string, offset: number): { line: number;
   return { line: lo + 1, col: o - starts[lo]! + 1 };
 }
 
+/**
+ * The most diagnostics one compile reports (ruling EH-D8). Past it the producers stop
+ * collecting and {@link capDiagnostics} appends ONE `E_DIAGNOSTIC_LIMIT`, so a source that
+ * floods them (a page of stray characters, thousands of re-declared names) costs a bounded
+ * amount of reporting. A count, never a time; no example plan comes near it.
+ */
+export const MAX_DIAGNOSTICS = 500;
+
+/**
+ * `list` with at most {@link MAX_DIAGNOSTICS} entries, then one `E_DIAGNOSTIC_LIMIT` when any
+ * were dropped. A list at or under the cap is returned AS IS (the same array), so sub-cap
+ * output is byte-identical. Idempotent: a list already capped upstream (the parse stage)
+ * keeps its `E_DIAGNOSTIC_LIMIT` and loses what followed. The limit's span is the byte just
+ * past the last kept diagnostic's span, or the end of the source when that one has no span
+ * or is measured in another file.
+ */
+export function capDiagnostics(list: Diagnostic[], sourceLength: number): Diagnostic[] {
+  if (list.length <= MAX_DIAGNOSTICS) return list;
+  if (list[MAX_DIAGNOSTICS]!.code === "E_DIAGNOSTIC_LIMIT") return list.slice(0, MAX_DIAGNOSTICS + 1);
+  const last = list[MAX_DIAGNOSTICS - 1]!;
+  const at = last.span && last.file === undefined ? Math.min(Math.max(0, last.span.end), sourceLength) : sourceLength;
+  const limit: Diagnostic = {
+    severity: "error",
+    message: `More than ${MAX_DIAGNOSTICS} diagnostics; further diagnostics were not collected`,
+    code: "E_DIAGNOSTIC_LIMIT",
+    span: { start: at, end: Math.min(at + 1, sourceLength) },
+    hints: ["fix the first problems reported and compile again"],
+  };
+  return [...list.slice(0, MAX_DIAGNOSTICS), limit];
+}
+
 /** Byte offset of the start of the line containing `offset`. */
 function lineStart(source: string, offset: number): number {
   let k = Math.max(0, Math.min(offset, source.length));

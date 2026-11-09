@@ -94,6 +94,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Give the column a positive `size W x H`.",
     "column at (0,0) size 0x300   # error: width is 0",
   ),
+  E_DIAGNOSTIC_LIMIT: E(
+    "E_DIAGNOSTIC_LIMIT",
+    "More than 500 diagnostics; further diagnostics were not collected.",
+    "One compile reports at most 500 diagnostics. Past that the lexer and parser stop collecting and every later stage's are dropped, and this one closes the list, at the byte just past the last diagnostic kept. A page of stray characters, thousands of repeated declarations or one bad statement inside a long loop would otherwise cost more to report than the plan costs to compile. It is an error, so the plan draws nothing.",
+    "Fix the first problems reported (they usually share one cause: a pasted binary file, a block that never closes, one bad line inside a loop) and compile again.",
+    "for i in 0..600 { let x = 1 / 0 }   # error: 500 E_DIV_ZERO, then E_DIAGNOSTIC_LIMIT",
+  ),
   E_DIV_ZERO: E(
     "E_DIV_ZERO",
     "Division or modulo by zero.",
