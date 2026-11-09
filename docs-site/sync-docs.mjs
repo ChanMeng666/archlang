@@ -17,6 +17,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 // inline copy), welded by test/share-codec.test.ts. The home page's per-example links are
 // a fourth CONSUMER of that encoder, never a fourth copy of it.
 import { encodePlanHash } from "../scripts/gen-permalink.mjs";
+import { rewriteLinks } from "./link-rewrite.mjs";
 import { siteMarkdown } from "./site-markdown.mjs";
 import { HOME_3D_PLAN, MANIFEST, PAYLOAD, previewLines, sizeLabel, threeDAssets, VIEW3D_PARAM } from "./three-d.mjs";
 
@@ -135,11 +136,35 @@ mkdirSync(publicDir, { recursive: true });
  */
 function page(src, dest) {
   const body = readFileSync(join(repo, src), "utf8");
+  const siteBody = linkRewrite(body, src);
   const banner = `> _This page is generated from [\`${src}\`](https://github.com/chanmeng666/archlang/blob/main/${src}) — edit it there._\n\n`;
-  writeFileSync(join(here, dest), banner + body);
+  writeFileSync(join(here, dest), banner + siteBody);
   writeFileSync(join(publicDir, dest), body); // raw markdown at /<route>.md
   // eslint-disable-next-line no-console
   console.log(`  ${src} → ${dest}  (+ /${dest})`);
+}
+
+/** The site copy of a canonical doc: repo-relative links rewritten to site routes (link-rewrite.mjs). */
+function linkRewrite(body, src) {
+  return rewriteLinks(body, src, {
+    pages: [...PAGES, ...SITE_PAGES],
+    rootCopies: ROOT_COPIES,
+    playground: PLAYGROUND,
+    sourceOf: (p) => {
+      try {
+        return readFileSync(join(repo, p), "utf8");
+      } catch {
+        return null;
+      }
+    },
+    kindOf: (p) => {
+      try {
+        return statSync(join(repo, p)).isDirectory() ? "dir" : "file";
+      } catch {
+        return null;
+      }
+    },
+  });
 }
 
 console.log("syncing canonical docs into the site:");
@@ -157,7 +182,8 @@ mkdirSync(adrDest, { recursive: true });
 const adrs = readdirSync(adrSrc)
   .filter((f) => f.endsWith(".md") && f !== "index.md")
   .sort();
-for (const f of adrs) copyFileSync(join(adrSrc, f), join(adrDest, f));
+for (const f of adrs)
+  writeFileSync(join(adrDest, f), linkRewrite(readFileSync(join(adrSrc, f), "utf8"), `docs/adr/${f}`));
 const adrEntries = adrs.map((f) => {
   const first = readFileSync(join(adrSrc, f), "utf8")
     .split("\n")

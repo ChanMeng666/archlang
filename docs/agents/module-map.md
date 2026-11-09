@@ -113,7 +113,7 @@ Totals: 378 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `app.ts` | 534 | 2 | The hosted ArchLang MCP Worker's request handler (docs/adr/0026-hosted-mcp-worker.md); `worker.ts` is the entry that hands it the assets bundled at build time. | none |
+| `app.ts` | 539 | 2 | The hosted ArchLang MCP Worker's request handler (docs/adr/0026-hosted-mcp-worker.md); `worker.ts` is the entry that hands it the assets bundled at build time. | none |
 | `limits.ts` | 46 | 3 | The hosted server's caps — byte counts and request counts, checked BEFORE any compile work, never a clock (docs/adr/0026-hosted-mcp-worker.md). | none |
 | `server.ts` | 109 | 2 | The hosted server's `McpServer`: the stdio server's tool set and resources (one registry, `packages/mcp/src/tools.ts`), plus what only a hosted, HTTP-reachable server has — the `read_me` tool, the MCP App viewer that `compile` links to… | none |
 | `worker.ts` | 15 | 0 | The Worker entry: the request handler (`app.ts`) over the assets the build inlined — the five `archlang://` resources and the viewer page — because a Worker has no filesystem to read them from at run time (scripts/build.mjs). | none |
