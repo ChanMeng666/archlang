@@ -34,7 +34,6 @@
  * step meter.
  */
 
-import type { PlanNode } from "./ast.js";
 import { ARC_DIRS, AUTO_DIMS_MODES, COMPASS_DIRECTIONS, FURNITURE_ANCHORS, HEMISPHERES, USE_KINDS } from "./ast.js";
 import type { RRoom, RDoor, ROpening, ResolvedPlan } from "./ir.js";
 import { DOOR_ENUMS, DOOR_KINDS, DOOR_SWING_BUILDING, WALL_STATUSES, WINDOW_KINDS } from "./grammar/tokens.js";
@@ -81,40 +80,7 @@ export type {
 export type { PlanJsonDroppedClause, PlanJsonDropped, PlanJsonPage, CarriedInstances } from "./plan-json/to-json.js";
 export { buildInputGraph, resolvedToJson, UNPROJECTED_KINDS, planToJson } from "./plan-json/to-json.js";
 export { planJsonToArch, planFromJson } from "./plan-json/emit.js";
-
-/**
- * Project a parsed {@link PlanNode} to a plain, JSON-serializable tree, preserving
- * source spans and leaving scripting nodes (`let`/`for`/`if`/`while`/instances/
- * `set`/`strip`/components/imports) as their node kind — nothing is expanded. This
- * is for `arch ast --json` (inspection); it does **not** round-trip through
- * {@link planFromJson}, which only accepts fully-elaborated geometry.
- */
-export function astToJson(ast: PlanNode): object {
-  return {
-    kind: "plan",
-    name: ast.name,
-    units: ast.units,
-    grid: ast.grid,
-    ...(ast.paper ? { paper: ast.paper } : {}),
-    ...(ast.scale !== undefined ? { scale: ast.scale } : {}),
-    north: ast.north,
-    ...(ast.site ? { site: ast.site } : {}),
-    ...(ast.autoDims !== undefined ? { autoDims: ast.autoDims } : {}),
-    ...(ast.accTitle !== undefined ? { accTitle: ast.accTitle } : {}),
-    ...(ast.accDescr !== undefined ? { accDescr: ast.accDescr } : {}),
-    ...(ast.title ? { title: ast.title } : {}),
-    components: [...ast.components.values()].map((c) => ({
-      kind: "component",
-      name: c.name,
-      params: c.params,
-      body: c.body,
-      ...(c.span ? { span: c.span } : {}),
-    })),
-    imports: ast.imports,
-    body: ast.body,
-    ...(ast.bodyStart !== undefined ? { bodyStart: ast.bodyStart } : {}),
-  };
-}
+export { astToJson } from "./plan-json/ast-json.js";
 
 /** The result of comparing an intended adjacency graph against a compiled plan. */
 export interface GraphCheck {
