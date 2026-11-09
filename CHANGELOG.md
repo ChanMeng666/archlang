@@ -28,6 +28,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Both `robots.txt` files name `ShapBot` and `DuckDuckBot`, allowed like every other crawler. `/error-codes` redirects to `/errors` and `/language-reference` to `/reference` (301), and the docs sitemap lists `/adr` in place of `/adr/`, which redirects.
 - The raw `/<page>.md` copies on archlang.uk are served with `X-Robots-Tag: noindex`, so search engines index the HTML page; `rel=alternate` still points to them, and `/llms.txt`, `/llms-full.txt` and the HTML pages are unchanged.
 
+### Fixed
+
+- A `#z=` link, or a short link, that inflates past 1 MiB is refused instead of hanging the playground or the embed page: the page shows "This link is too large to open". The playground, the `<arch-plan>` element and the MCP viewer put a compiled SVG on the page through one sanitiser that parses it and drops `<script>`, `<foreignObject>`, `on*` attributes and `javascript:` links; a compiled drawing is unchanged.
+
 ## [1.57.0] - 2026-11-06
 
 ### Added

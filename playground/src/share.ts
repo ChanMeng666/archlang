@@ -8,6 +8,7 @@
  * address bar. The legacy raw `#src=<base64url(utf8)>` form is still *read* so
  * previously-shared links keep working forever.
  */
+import { inflateCapped } from "../worker/share-core.js";
 
 /** base64url ⇄ bytes (UTF-8-safe; no `escape`/`unescape`). */
 export function bytesToB64url(bytes: Uint8Array): string {
@@ -22,34 +23,59 @@ export function b64urlToBytes(b64: string): Uint8Array {
   return out;
 }
 
-async function pipeStream(stream: CompressionStream | DecompressionStream, bytes: Uint8Array): Promise<Uint8Array> {
+async function pipeStream(stream: CompressionStream, bytes: Uint8Array): Promise<Uint8Array> {
   const w = stream.writable.getWriter();
   w.write(bytes as BufferSource);
   w.close();
   return new Uint8Array(await new Response(stream.readable).arrayBuffer());
 }
 
-/** Decode the plan source from `hash` (`#z=…` compressed, or legacy `#src=…`).
- *  Returns null when neither token is present or decoding fails. */
-export async function srcFromHash(hash: string = location.hash): Promise<string | null> {
+/**
+ * The most UTF-8 bytes a link may inflate to in the browser. A deflate stream expands a
+ * thousandfold, so inflation stops here, not at the end of the stream (200 MB of spaces is a
+ * 272 KB fragment). Sixty times the largest bundled example; the share Worker holds its own,
+ * lower `SOURCE_CAP_BYTES`.
+ */
+export const LINK_INFLATE_CAP_BYTES = 1024 * 1024;
+
+/** What the page says when a link is refused for its size. */
+export const LINK_TOO_LARGE_NOTICE = "This link is too large to open";
+
+/** What a hash carries: its source, nothing, or a refusal for size. */
+export type HashRead = { src: string } | { refused: "too_large" } | null;
+
+/** Like {@link srcFromHash}, but tells "too large" apart from "no plan here". Never throws. */
+export async function readHash(hash: string = location.hash): Promise<HashRead> {
   const z = hash.match(/[#&]z=([^&]*)/);
   if (z) {
     if (typeof DecompressionStream === "undefined") return null;
     try {
-      const bytes = await pipeStream(new DecompressionStream("deflate-raw"), b64urlToBytes(z[1]!));
-      return new TextDecoder().decode(bytes);
+      const bytes = z[1]! === "" ? null : b64urlToBytes(z[1]!);
+      if (!bytes) return null;
+      const raw = await inflateCapped(bytes, LINK_INFLATE_CAP_BYTES);
+      if (raw === "source_too_large") return { refused: "too_large" };
+      if (typeof raw === "string") return null;
+      return { src: new TextDecoder().decode(raw) };
     } catch {
       return null;
     }
   }
-  // Legacy `#src=` — base64url of the UTF-8 bytes (back-compat).
+  // Legacy `#src=` — base64url of the UTF-8 bytes (back-compat). Not compressed, so the
+  // address bar's own length bounds it.
   const m = hash.match(/[#&]src=([^&]*)/);
   if (!m) return null;
   try {
-    return new TextDecoder().decode(b64urlToBytes(m[1]!));
+    return { src: new TextDecoder().decode(b64urlToBytes(m[1]!)) };
   } catch {
     return null;
   }
+}
+
+/** Decode the plan source from `hash` (`#z=…` compressed, or legacy `#src=…`).
+ *  Returns null when neither token is present, decoding fails or the link is too large. */
+export async function srcFromHash(hash: string = location.hash): Promise<string | null> {
+  const r = await readHash(hash);
+  return r && "src" in r ? r.src : null;
 }
 
 /** Encode `src` to a hash fragment (`#z=…`, or `#src=…` on ancient browsers). */
@@ -121,7 +147,13 @@ export async function sharedSource(
   hash: string = location.hash,
   origin: string = location.origin,
 ): Promise<string | null> {
-  const inline = await srcFromHash(hash);
+  const r = await readShared(hash, origin);
+  return r && "src" in r ? r.src : null;
+}
+
+/** Like {@link sharedSource}, but tells "too large" (inline or fetched) apart from "no plan". */
+export async function readShared(hash: string = location.hash, origin: string = location.origin): Promise<HashRead> {
+  const inline = await readHash(hash);
   if (inline !== null) return inline;
   const id = shareIdFromHash(hash);
   if (!id) return null;
@@ -129,7 +161,7 @@ export async function sharedSource(
     const res = await fetch(`${origin}/api/share/${id}`);
     if (!res.ok) return null;
     const { z } = (await res.json()) as { z?: unknown };
-    return typeof z === "string" && /^[A-Za-z0-9_-]+$/.test(z) ? srcFromHash(`#z=${z}`) : null;
+    return typeof z === "string" && /^[A-Za-z0-9_-]+$/.test(z) ? readHash(`#z=${z}`) : null;
   } catch {
     return null;
   }

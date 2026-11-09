@@ -41,7 +41,15 @@ import { mountLevelSwitcher } from "./level-switcher.js";
 import { renderFacts } from "./facts-strip.js";
 import { mountKnobsPanel } from "./knobs-panel.js";
 import { isNarrow, mountMobileViews, VIEW_TAB } from "./mobile-views.js";
-import { has3dFlag, hasEditFlag, set3dFlag, setEditFlag, srcFromHash, updateHash } from "./share.js";
+import {
+  LINK_TOO_LARGE_NOTICE,
+  has3dFlag,
+  hasEditFlag,
+  readHash,
+  set3dFlag,
+  setEditFlag,
+  updateHash,
+} from "./share.js";
 import { createSharedNotice, shouldShowSharedNotice } from "./shared-notice.js";
 import { mountGallery } from "./gallery.js";
 import { mountNudge } from "./nudge.js";
@@ -1111,6 +1119,8 @@ accessibleToggle?.addEventListener("change", () => redraw());
 /** What boot chose before any chunk loads: the plan this visit opens, as far as it can tell. */
 interface Choice {
   sharedSrc: string | null;
+  /** The link was refused for its size: say so, open the default plan. */
+  tooLarge: boolean;
   savedSrc: string | null;
   /** The plan built into the page (`#planData`), when this visit opens on it as drawn; else null. */
   built: BuiltInPlan | null;
@@ -1118,7 +1128,9 @@ interface Choice {
 
 /** First-load source precedence: shared URL hash → autosaved draft → the default example. */
 async function choose(): Promise<Choice> {
-  const sharedSrc = await srcFromHash();
+  const read = await readHash();
+  const sharedSrc = read && "src" in read ? read.src : null;
+  const tooLarge = read !== null && "refused" in read;
   const savedSrc = sharedSrc ? null : readStr(KEYS.source);
   // Restore persisted UI prefs (advisory — never block on storage). A saved theme makes the head
   // script's `pg-other`, so the built-in drawing (in the default theme) is not this visit's.
@@ -1147,7 +1159,7 @@ async function choose(): Promise<Choice> {
     setStatus("ok", okStatus(built.warnings));
     docChosen();
   }
-  return { sharedSrc, savedSrc, built };
+  return { sharedSrc, tooLarge, savedSrc, built };
 }
 
 /** The app is up: the compiler in, the header actions mounted, the plan rendered by it. */
@@ -1227,12 +1239,16 @@ function up(): Promise<void> {
   return readyP;
 }
 
-async function start({ sharedSrc, savedSrc, built }: Choice): Promise<void> {
+async function start({ sharedSrc, tooLarge, savedSrc, built }: Choice): Promise<void> {
   const corePending = loadCore();
   const jobsPending = loadJobs();
   const examples = await loadExamples();
   const { DEFAULT_EXAMPLE, EXAMPLES } = examples;
   fillGallery(examples);
+  // A link inflating past the cap was refused unread: say so above the stage (it is not a shared plan).
+  if (tooLarge && !document.querySelector(".shared-notice")) {
+    stageSwitchRow.before(createSharedNotice(LINK_TOO_LARGE_NOTICE));
+  }
   if (built) {
     // The page's own plan, which the gallery already names; unless a plan was picked meanwhile
     // (`pickExample` names it again once this is up).
