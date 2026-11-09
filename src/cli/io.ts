@@ -9,15 +9,8 @@ import { readFileSync, existsSync, mkdirSync, realpathSync, statSync, writeFileS
 import { resolve as resolvePath, dirname, isAbsolute, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest, ERROR_CATALOG } from "../index.js";
-import type {
-  Diagnostic,
-  World,
-  WorldRefusal,
-  ExportFormat,
-  ManifestCommand,
-  ManifestFlag,
-  ViewName,
-} from "../index.js";
+import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag, ViewName } from "../index.js";
+import type { WorldRefusal } from "../world.js";
 import { VIEW_NAMES, isViewName } from "../index.js";
 import { closest } from "../expr.js";
 import { MODULE_CAP_BYTES, utf8ByteLength } from "../input-limit.js";
@@ -33,13 +26,7 @@ export const FORMAT_LIST = `${EXPORT_FORMATS.slice(0, -1)
 
 /** Deterministic exit codes (documented in `--help`). `STALE` is the write-back guard's refusal
  *  (`--expected-hash`, `E_STALE_SOURCE`; `src/cli/source-hash.ts`). */
-export const EXIT = {
-  OK: 0,
-  INTERNAL: 1,
-  USER: 2,
-  USAGE: 3,
-  STALE: 4,
-} as const;
+export const EXIT = { OK: 0, INTERNAL: 1, USER: 2, USAGE: 3, STALE: 4 } as const;
 
 /**
  * The one non-exit-code a command may return: "I have installed a handle and the
@@ -200,11 +187,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--scale": { key: "scale", kind: "number" },
   "-s": { key: "scale", kind: "number" },
   "--cols": { key: "cols", kind: "number" },
-  "--level": {
-    key: "level",
-    kind: "number",
-    perCommand: { context: { key: "contextLevel", kind: "string" } },
-  },
+  "--level": { key: "level", kind: "number", perCommand: { context: { key: "contextLevel", kind: "string" } } },
   "--at": { key: "at", kind: "number" },
   "--charset": { key: "charset", kind: "string" },
   "--profile": { key: "profile", kind: "string" },
@@ -359,10 +342,15 @@ export function setImportRoot(dir: string | undefined): string | null {
   return `--import-root "${dir}" is not a directory`;
 }
 
-/** `child` is `root` itself or lies under it (both absolute; case-insensitive on Windows via `relative`). */
+/**
+ * `child` is `root` itself or lies under it (both absolute; case-insensitive on Windows via
+ * `relative`). Only a whole `..` segment leaves the root: `..evil.arch` is a file inside it, and
+ * `D:\proj2` is not under `D:\proj`.
+ */
 function isWithin(root: string, child: string): boolean {
   const rel = relative(root, child);
-  return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+  if (rel === "") return true;
+  return rel !== ".." && !rel.startsWith("../") && !rel.startsWith("..\\") && !isAbsolute(rel);
 }
 
 const realOrNull = (p: string): string | null => {
@@ -373,17 +361,30 @@ const realOrNull = (p: string): string | null => {
   }
 };
 
+/** The real path of `p`'s nearest existing ancestor (or of `p`), or `null` when none resolves. */
+function nearestRealAncestor(p: string): string | null {
+  for (let at = dirname(p); ; at = dirname(at)) {
+    const real = realOrNull(at);
+    if (real !== null) return real;
+    if (dirname(at) === at) return null;
+  }
+}
+
 /**
  * A real-filesystem {@link World}: imports resolve against `baseDir`; `now` is the wall clock.
  * The one spot Node APIs + real time are allowed.
  *
  * An import is ROOTED (EH-D7): it is read only when its real path (symbolic links and junctions
  * followed) lies under `root` (`--import-root`, else the working directory) or under `baseDir`
- * (the entry file's own directory), and ends in
- * `.arch`, and only up to {@link MODULE_CAP_BYTES}. A refusal is not thrown: `read` returns
- * `null` and `refusal` names the catalogued code, which the importer reports at the `import`.
- * The lexical checks run before the file system is touched, so a refused path outside the
- * root is never even stat'ed (no existence oracle).
+ * (the entry file's own directory), and ends in `.arch`, and only up to {@link MODULE_CAP_BYTES}.
+ * A refusal is not thrown: `read` returns `null` and `refusal` names the catalogued code, which
+ * the importer reports at the `import`.
+ *
+ * No existence oracle outside the roots: a path whose written form leaves them is refused before
+ * the file system is touched. A path written inside them that a link carries out is judged on
+ * real paths: the file's own when it exists, else its nearest existing ancestor's. So a missing
+ * and an existing file beyond a link both read `E_IMPORT_OUTSIDE_ROOT`; only a file missing
+ * INSIDE the roots is `E_IMPORT_NOT_FOUND`.
  */
 export function makeNodeWorld(baseDir: string, root?: string): World {
   const rootLexical = resolvePath(root ?? importRootFlag ?? process.cwd());
@@ -396,7 +397,7 @@ export function makeNodeWorld(baseDir: string, root?: string): World {
   const refusals = new Map<string, WorldRefusal>();
   const outside = (path: string): WorldRefusal => ({
     code: "E_IMPORT_OUTSIDE_ROOT",
-    message: `Imported module "${path}" is outside the import root "${rootLexical}" and the plan's own directory; pass --import-root <dir> naming a directory that contains it`,
+    message: `Imported module "${path}" is outside the import root (the working directory, or --import-root) and the plan's own directory; pass --import-root <dir> naming a directory that contains it`,
   });
   const notArch = (path: string): WorldRefusal => ({
     code: "E_IMPORT_NOT_ARCH",
@@ -412,7 +413,10 @@ export function makeNodeWorld(baseDir: string, root?: string): World {
     if (!inRoot(abs)) return outside(path);
     if (!isArch(abs)) return notArch(path);
     const real = realOrNull(abs);
-    if (real === null) return null;
+    if (real === null) {
+      const ancestor = nearestRealAncestor(abs);
+      return ancestor !== null && inRealRoot(ancestor) ? null : outside(path);
+    }
     if (!inRealRoot(real)) return outside(path);
     if (!isArch(real)) return notArch(path);
     const st = statSync(real);
@@ -490,15 +494,7 @@ export function sourceFromJson(jsonText: string): { source: string } | { error: 
   try {
     parsed = JSON.parse(jsonText);
   } catch (e) {
-    return {
-      error: [
-        {
-          severity: "error",
-          code: "E_JSON_SCHEMA",
-          message: `invalid JSON: ${(e as Error).message}`,
-        },
-      ],
-    };
+    return { error: [{ severity: "error", code: "E_JSON_SCHEMA", message: `invalid JSON: ${(e as Error).message}` }] };
   }
   const { source, diagnostics } = planFromJson(parsed);
   if (source === undefined || hasErrors(diagnostics)) return { error: diagnostics, generated: source };

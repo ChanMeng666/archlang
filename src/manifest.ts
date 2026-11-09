@@ -135,15 +135,8 @@ export interface Manifest {
   };
 }
 
-const JSON_FLAG: ManifestFlag = {
-  flag: "--json",
-  description: "structured result on stdout, messages on stderr",
-};
-const QUIET_FLAG: ManifestFlag = {
-  flag: "--quiet",
-  alias: "-q",
-  description: "suppress human messages on stderr",
-};
+const JSON_FLAG: ManifestFlag = { flag: "--json", description: "structured result on stdout, messages on stderr" };
+const QUIET_FLAG: ManifestFlag = { flag: "--quiet", alias: "-q", description: "suppress human messages on stderr" };
 /**
  * The write-back revision guard every command that rewrites a `.arch` file takes
  * (`src/cli/source-hash.ts`). Its `--json` result reports `source_hash` (and `written_hash` after
@@ -440,14 +433,8 @@ const COMMANDS: ManifestCommand[] = [
         cmd: "archlang compile plan.arch --json",
         note: "check it compiles and WRITE NOTHING (no -o names a file) — reports written:false, bytes, diagnostics, summary",
       },
-      {
-        cmd: "archlang compile plan.arch",
-        note: "render SVG next to the input (plan.svg)",
-      },
-      {
-        cmd: "archlang compile - -o - < plan.arch",
-        note: "compile source from stdin straight to SVG on stdout",
-      },
+      { cmd: "archlang compile plan.arch", note: "render SVG next to the input (plan.svg)" },
+      { cmd: "archlang compile - -o - < plan.arch", note: "compile source from stdin straight to SVG on stdout" },
       {
         cmd: "archlang compile plan.arch -f json -o plan.json",
         note: "export the Plan JSON; `archlang compile plan.json --from-json` renders it back",
@@ -486,12 +473,7 @@ const COMMANDS: ManifestCommand[] = [
           "output DIRECTORY for every rendered file, created if missing; two inputs that would write one file (same name) are refused (default: alongside each input)",
       },
       FMT_FLAG,
-      {
-        flag: "--jobs",
-        alias: "-j",
-        arg: "<n>",
-        description: "max concurrent renders (default: CPU count)",
-      },
+      { flag: "--jobs", alias: "-j", arg: "<n>", description: "max concurrent renders (default: CPU count)" },
       WIDTH_FLAG,
       SCALE_FLAG,
       COLS_FLAG,
@@ -529,12 +511,7 @@ const COMMANDS: ManifestCommand[] = [
         arg: "<out.md|->",
         description: "rewritten Markdown file, or '-' for stdout (default: <name>.out.md)",
       },
-      {
-        flag: "--format",
-        alias: "-f",
-        arg: "<svg|png>",
-        description: "image format for the blocks (default svg)",
-      },
+      { flag: "--format", alias: "-f", arg: "<svg|png>", description: "image format for the blocks (default svg)" },
       WIDTH_FLAG,
       SCALE_FLAG,
       OVERLAY_FLAG,
@@ -574,10 +551,7 @@ const COMMANDS: ManifestCommand[] = [
         description: `raster scale (default 1; without -w/-s the page auto-targets ~${PNG_PREVIEW_WIDTH}px wide for legibility)`,
       },
       WIDTH_FLAG,
-      {
-        flag: "--ascii",
-        description: "print a zero-dependency ASCII text plan to stdout instead of a PNG",
-      },
+      { flag: "--ascii", description: "print a zero-dependency ASCII text plan to stdout instead of a PNG" },
       {
         flag: "--review",
         description:
@@ -591,10 +565,7 @@ const COMMANDS: ManifestCommand[] = [
       CHARSET_FLAG,
       OVERLAY_FLAG,
       ERROR_SVG_FLAG,
-      {
-        ...INSTALL_FLAG,
-        description: "auto-install @resvg/resvg-js if missing, then render",
-      },
+      { ...INSTALL_FLAG, description: "auto-install @resvg/resvg-js if missing, then render" },
       VIEW_FLAG,
       IMPORT_ROOT_FLAG,
       JSON_FLAG,
@@ -633,10 +604,7 @@ const COMMANDS: ManifestCommand[] = [
     output:
       "the playground URL; --json gives { ok, playground, embed, bytes } (embed: the plan alone, for an iframe; bytes: the compressed plan). A plan that does not compile still gets a link: ok false with an errors count, one warning on stderr, exit 0",
     examples: [
-      {
-        cmd: "archlang link plan.arch",
-        note: "a URL to give the user: it opens the plan in the hosted playground",
-      },
+      { cmd: "archlang link plan.arch", note: "a URL to give the user: it opens the plan in the hosted playground" },
       {
         cmd: "archlang link plan.arch --json",
         note: "the playground and embed URLs as data, and whether the plan compiles",
@@ -660,11 +628,7 @@ const COMMANDS: ManifestCommand[] = [
     name: "validate",
     summary: "parse + resolve + lint, no render (is it valid & sound?)",
     flags: [
-      {
-        flag: "--strict",
-        alias: "--fail-on-warning",
-        description: "advisory warnings fail too (exit 2)",
-      },
+      { flag: "--strict", alias: "--fail-on-warning", description: "advisory warnings fail too (exit 2)" },
       GRAPH_FLAG,
       INTENT_FLAG,
       FEEDBACK_FLAG,
@@ -746,10 +710,7 @@ const COMMANDS: ManifestCommand[] = [
         cmd: "archlang describe plan.arch --json",
         note: "rooms, areas, adjacency, door connections, caption, freedom — confirm the plan means what you intended",
       },
-      {
-        cmd: "archlang describe - --json < plan.arch",
-        note: "describe source piped on stdin, no temp file",
-      },
+      { cmd: "archlang describe - --json < plan.arch", note: "describe source piped on stdin, no temp file" },
       {
         cmd: "archlang describe plan.arch --select rooms,totals --json",
         note: "just the rooms and the totals — keep a big plan's facts inside a bounded context",
@@ -833,16 +794,8 @@ const COMMANDS: ManifestCommand[] = [
     name: "lint",
     summary: "architectural soundness warnings",
     flags: [
-      {
-        flag: "--profile",
-        arg: `<${LINT_PROFILE_NAMES.join("|")}>`,
-        description: "advisory ruleset",
-      },
-      {
-        flag: "--strict",
-        alias: "--fail-on-warning",
-        description: "warnings fail (exit 2)",
-      },
+      { flag: "--profile", arg: `<${LINT_PROFILE_NAMES.join("|")}>`, description: "advisory ruleset" },
+      { flag: "--strict", alias: "--fail-on-warning", description: "warnings fail (exit 2)" },
       CODE_FLAG,
       SEVERITY_FLAG,
       IMPORT_ROOT_FLAG,
@@ -853,10 +806,7 @@ const COMMANDS: ManifestCommand[] = [
     output:
       "W_* warnings (narrowed by --code/--severity; `filtered`/`total_diagnostics` mark a filtered result), then a `coverage` block naming the rule families skipped and why",
     examples: [
-      {
-        cmd: "archlang lint plan.arch --json",
-        note: "architectural soundness warnings as data, each with a fix",
-      },
+      { cmd: "archlang lint plan.arch --json", note: "architectural soundness warnings as data, each with a fix" },
       {
         cmd: "archlang lint plan.arch --profile accessibility-advisory --strict",
         note: "gate on the accessibility ruleset (any warning exits 2)",
@@ -887,14 +837,8 @@ const COMMANDS: ManifestCommand[] = [
     input: "<file.arch|->",
     output: "{ items: [...] } completion items",
     examples: [
-      {
-        cmd: "archlang complete plan.arch --at 120 --json",
-        note: "what may legally be written at byte offset 120",
-      },
-      {
-        cmd: "archlang complete - --at 0 --json < plan.arch",
-        note: "completions for source on stdin",
-      },
+      { cmd: "archlang complete plan.arch --at 120 --json", note: "what may legally be written at byte offset 120" },
+      { cmd: "archlang complete - --at 0 --json < plan.arch", note: "completions for source on stdin" },
     ],
   },
   {
@@ -904,14 +848,8 @@ const COMMANDS: ManifestCommand[] = [
     input: "<file.arch|->",
     output: "formatted source (or in place with --write)",
     examples: [
-      {
-        cmd: "archlang fmt plan.arch --json",
-        note: "canonical source plus a `changed` flag, nothing written",
-      },
-      {
-        cmd: "archlang fmt plan.arch --write",
-        note: "rewrite the file in canonical form",
-      },
+      { cmd: "archlang fmt plan.arch --json", note: "canonical source plus a `changed` flag, nothing written" },
+      { cmd: "archlang fmt plan.arch --write", note: "rewrite the file in canonical form" },
     ],
   },
   {
@@ -933,10 +871,7 @@ const COMMANDS: ManifestCommand[] = [
         cmd: "archlang repair plan.arch --json",
         note: "the geometric corrector: `source` + a `changes[]` log of every furniture move",
       },
-      {
-        cmd: "archlang repair plan.arch -o repaired.arch",
-        note: "write the corrected source to a new file",
-      },
+      { cmd: "archlang repair plan.arch -o repaired.arch", note: "write the corrected source to a new file" },
     ],
   },
   {
@@ -947,22 +882,13 @@ const COMMANDS: ManifestCommand[] = [
         ...OUT_FLAG,
         description: "output file for the fixed source, or '-' for stdout (default: rewrite the input file in place)",
       },
-      {
-        flag: "--unsafe",
-        description: "also apply `maybe-incorrect` fixes (default: machine-applicable only)",
-      },
-      {
-        flag: "--dry-run",
-        description: "compute the result but do not write it (the diff preview still prints)",
-      },
+      { flag: "--unsafe", description: "also apply `maybe-incorrect` fixes (default: machine-applicable only)" },
+      { flag: "--dry-run", description: "compute the result but do not write it (the diff preview still prints)" },
       {
         flag: "--backup",
         description: "before rewriting a file in place, save the original bytes to <file>.bak",
       },
-      {
-        flag: "--force",
-        description: "keep a pass even if it raises the error count",
-      },
+      { flag: "--force", description: "keep a pass even if it raises the error count" },
       EXPECTED_HASH_FLAG,
       IMPORT_ROOT_FLAG,
       JSON_FLAG,
@@ -1013,10 +939,7 @@ const COMMANDS: ManifestCommand[] = [
         description:
           "allow `paper` and `scale` (nothing else) to be replaced when the drawing does not fit the authored sheet",
       },
-      {
-        flag: "--dry-run",
-        description: "compute the result but do not write it (the diff preview still prints)",
-      },
+      { flag: "--dry-run", description: "compute the result but do not write it (the diff preview still prints)" },
       {
         flag: "--backup",
         description: "before rewriting a file in place, save the original bytes to <file>.bak",
@@ -1141,10 +1064,7 @@ const COMMANDS: ManifestCommand[] = [
     input: "none",
     output: "the manifest (JSON or a summary)",
     examples: [
-      {
-        cmd: "archlang manifest --json",
-        note: "discover every command, flag, format, and error code in one call",
-      },
+      { cmd: "archlang manifest --json", note: "discover every command, flag, format, and error code in one call" },
     ],
   },
   {
@@ -1153,12 +1073,7 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG],
     input: "none",
     output: "the spec",
-    examples: [
-      {
-        cmd: "archlang spec",
-        note: "the whole language on one page — read this before authoring",
-      },
-    ],
+    examples: [{ cmd: "archlang spec", note: "the whole language on one page — read this before authoring" }],
   },
   {
     name: "context",
@@ -1167,10 +1082,7 @@ const COMMANDS: ManifestCommand[] = [
     input: "none",
     output: "the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter",
     examples: [
-      {
-        cmd: "archlang context",
-        note: "the cold-start bundle: spec + workflow + CLI reference + every diagnostic",
-      },
+      { cmd: "archlang context", note: "the cold-start bundle: spec + workflow + CLI reference + every diagnostic" },
       {
         cmd: "archlang context --level starter",
         note: "one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first",
@@ -1199,14 +1111,8 @@ const COMMANDS: ManifestCommand[] = [
     input: "none",
     output: "starter source",
     examples: [
-      {
-        cmd: "archlang new --json",
-        note: "get the starter plan as a `template` string, writing nothing",
-      },
-      {
-        cmd: "archlang new -o plan.arch",
-        note: "scaffold a starter file to edit",
-      },
+      { cmd: "archlang new --json", note: "get the starter plan as a `template` string, writing nothing" },
+      { cmd: "archlang new -o plan.arch", note: "scaffold a starter file to edit" },
     ],
   },
   {
@@ -1285,10 +1191,7 @@ export function buildManifest(version: string): Manifest {
       defaultRuleset: DEFAULT_RULESET,
       profileOverrides: Object.fromEntries(LINT_PROFILE_NAMES.map((name) => [name, LINT_PROFILES[name] ?? {}])),
     },
-    errorCodes: ERROR_CODES.map((code) => ({
-      code,
-      severity: ERROR_CATALOG[code]!.severity,
-    })),
+    errorCodes: ERROR_CODES.map((code) => ({ code, severity: ERROR_CATALOG[code]!.severity })),
     // Interpolated from `src/datum.ts`, never retyped — the drift `check:drift` cannot
     // see is a language fact typed a second time into something that describes it.
     datum: {

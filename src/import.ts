@@ -47,15 +47,10 @@ const PKG_SPEC = /^@([a-z0-9_-]+)\/([a-z0-9_./-]+):(\d+\.\d+\.\d+)$/i;
 function resolveSpec(spec: string, baseDir: string): { path: string } | { error: string } {
   if (spec.startsWith("@")) {
     const m = PKG_SPEC.exec(spec);
-    if (!m)
-      return {
-        error: `Malformed package spec "${spec}" (expected @namespace/name:major.minor.patch)`,
-      };
+    if (!m) return { error: `Malformed package spec "${spec}" (expected @namespace/name:major.minor.patch)` };
     const [, ns, name, ver] = m;
     if (ns !== "local")
-      return {
-        error: `Unknown package namespace "@${ns}" in "${spec}" (only "@local" is supported)`,
-      };
+      return { error: `Unknown package namespace "@${ns}" in "${spec}" (only "@local" is supported)` };
     return { path: `@local/${name}/${ver}/index.arch` };
   }
   return { path: joinPath(baseDir, spec) };
@@ -185,12 +180,7 @@ function loadModule(
     const refused = world.refusal?.(path);
     diagnostics.push(
       refused
-        ? {
-            severity: "error",
-            code: refused.code,
-            message: refused.message,
-            span: atSpan,
-          }
+        ? { severity: "error", code: refused.code, message: refused.message, span: atSpan }
         : {
             severity: "error",
             code: "E_IMPORT_NOT_FOUND",
@@ -265,12 +255,7 @@ function mergeImport(
 ): void {
   const r = resolveSpec(imp.spec, baseDir);
   if ("error" in r) {
-    diagnostics.push({
-      severity: "error",
-      code: "E_IMPORT_BAD_SPEC",
-      message: r.error,
-      span: imp.span,
-    });
+    diagnostics.push({ severity: "error", code: "E_IMPORT_BAD_SPEC", message: r.error, span: imp.span });
     return;
   }
   const mod = loadModule(r.path, world, registry, diagnostics, imp.span, stack, cache);

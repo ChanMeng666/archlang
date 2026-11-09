@@ -81,7 +81,7 @@ describe("a module outside the import root is refused, never read", () => {
     noContent(ds);
   });
 
-  it("a symbolic link or junction inside the root pointing out of it", (ctx) => {
+  it("a symbolic link or junction inside the root pointing out of it: an existing and a missing target read the same", (ctx) => {
     const link = join(ROOT, "lib", "escape");
     try {
       symlinkSync(TMP, link, process.platform === "win32" ? "junction" : "dir");
@@ -95,6 +95,10 @@ describe("a module outside the import root is refused, never read", () => {
       const ds = run(plan("../lib/escape/secret.arch"));
       expect(codes(ds)).toEqual(["E_IMPORT_OUTSIDE_ROOT"]);
       noContent(ds);
+      // No existence oracle through the link: a file that is NOT there beyond it is refused the
+      // same way, never E_IMPORT_NOT_FOUND.
+      expect(codes(run(plan("../lib/escape/missing.arch")))).toEqual(["E_IMPORT_OUTSIDE_ROOT"]);
+      expect(codes(run(plan("../lib/escape/nodir/missing.arch")))).toEqual(["E_IMPORT_OUTSIDE_ROOT"]);
     } finally {
       // Remove the link itself (never recursively through it) before the tree is deleted.
       try {
@@ -146,6 +150,22 @@ describe("what the root allows", () => {
   it("a library in a sibling directory under the root imports", () => {
     const ds = run(plan("../lib/box.arch"));
     expect(codes(ds)).toEqual([]);
+  });
+
+  it("a file whose name starts with `..` is inside the root, not above it", () => {
+    writeFileSync(join(ROOT, "lib", "..evil.arch"), LIB);
+    writeFileSync(join(ROOT, "plans", "..beside.arch"), LIB);
+    expect(codes(run(plan("../lib/..evil.arch")))).toEqual([]);
+    expect(codes(run(plan("..beside.arch")))).toEqual([]);
+  });
+
+  it("a directory that merely shares the root's name as a prefix is outside it (`proj` vs `proj2`)", () => {
+    const proj = join(TMP, "proj");
+    mkdirSync(proj, { recursive: true });
+    mkdirSync(join(TMP, "proj2"), { recursive: true });
+    writeFileSync(join(TMP, "proj2", "x.arch"), LIB);
+    const ds = compile(plan("../proj2/x.arch"), { world: makeNodeWorld(proj, proj), noCache: true }).diagnostics;
+    expect(codes(ds)).toEqual(["E_IMPORT_OUTSIDE_ROOT"]);
   });
 
   it("--import-root widening to a parent lets the outside module through (and its parse error stays token-free)", () => {
