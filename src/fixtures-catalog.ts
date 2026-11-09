@@ -87,7 +87,7 @@ export interface FixtureSpec {
    *     is not the exempt case, and one rug half over another is a drawing mistake.
    *   - `W_FURN_CLEARANCE` never counts an underlay as the thing blocking a fixture's frontal
    *     use-space; you can stand on it.
-   *   - Both walkability grids (`analyze/circulation.ts`'s nav grid and
+   *   - Both walkability grids (`analyze/nav-grid.ts`'s nav grid and
    *     `analyze/occupancy.ts`'s per-room flood fill) drop it from their obstacle list, so a
    *     rug across the only route into a room does not seal that room off.
    *
@@ -120,7 +120,7 @@ export interface FixtureSpec {
    *     exempt case, and one wall cabinet half through another is a drawing mistake, which is
    *     the rule two rugs already obey. Read through {@link cutPlaneLayer}, never by testing
    *     this flag beside `underlay` at the call site.
-   *   - Both walkability grids (`analyze/circulation.ts`'s nav grid and
+   *   - Both walkability grids (`analyze/nav-grid.ts`'s nav grid and
    *     `analyze/occupancy.ts`'s per-room flood fill) **keep it as an obstacle**, which is the
    *     whole difference from an underlay. A rug is walked ON. A wall cabinet is not walked
    *     UNDER in any sense those grids model: they ask whether a BODY fits, and a body is
@@ -928,7 +928,7 @@ export function cutPlaneLayer(category: string): CutPlaneLayer {
  * The pieces a walkability grid must treat as obstacles — everything that is not an
  * {@link isUnderlay}.
  *
- * Lives here, beside the flag, rather than in either grid: `analyze/circulation.ts`'s
+ * Lives here, beside the flag, rather than in either grid: `analyze/nav-grid.ts`'s
  * whole-plan nav grid and `analyze/occupancy.ts`'s per-room flood fill both need it, and two
  * copies of "is a rug an obstacle?" is exactly the shape of drift this repository keeps
  * finding. Generic over the element type so this module keeps importing nothing.

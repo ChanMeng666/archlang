@@ -12,7 +12,7 @@
  */
 
 import { buildDoorAccessGraph, DEFAULT_TOL, openRunsOf } from "../analyze.js";
-import { computeCirculationOverlay } from "../analyze/circulation.js";
+import { computeCirculationOverlay } from "../analyze/circulation-overlay.js";
 import { verticalsOf } from "../vertical.js";
 import type { Point } from "../ast.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, ResolvedPlan } from "../ir.js";
