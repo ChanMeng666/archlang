@@ -10,7 +10,6 @@
  * (B1'), the component-site `maybe-incorrect` tier, and comment preservation (M-A).
  */
 
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -18,6 +17,7 @@ import { describe, expect, it } from "vitest";
 import { applyFixes, compile, describe as describePlan, format, planToJson } from "../src/index.js";
 import type { World } from "../src/world.js";
 import { proveWhileFixes } from "../src/while-fix.js";
+import { runArch } from "./helpers/cli.js";
 
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;
 
@@ -349,40 +349,29 @@ describe("`arch fix` — the one real caller, tiered by applicability", () => {
     return { dir, file };
   }
 
-  it("applies a plan-level canonical fix by default (no --unsafe needed)", () => {
+  it("applies a plan-level canonical fix by default (no --unsafe needed)", async () => {
     const { file } = fixture(
       plan(`  let i = 0\n  while i < 4 {\n    column at (i * 300, 0) size 100x100\n    i = i + 1\n  }`),
     );
-    const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", "fix", file, "--dry-run", "--json"], {
-      encoding: "utf8",
-      cwd: process.cwd(),
-    });
+    const r = await runArch(["fix", file, "--dry-run", "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.applied.map((a: { code: string }) => a.code)).toContain("W_WHILE_DEPRECATED");
     expect(j.diff).toContain("for i in 0..4");
   }, 60000);
 
-  it("declines a component-site fix by default, and applies it only with --unsafe", () => {
+  it("declines a component-site fix by default, and applies it only with --unsafe", async () => {
     const src = plan(
       `  component c() {\n    let i = 0\n    while i < 3 {\n      column at (i * 300, 0) size 100x100\n      i = i + 1\n    }\n  }\n  c()`,
     );
     const { file } = fixture(src);
-    const rDefault = spawnSync(
-      process.execPath,
-      ["--import", "tsx", "src/cli.ts", "fix", file, "--dry-run", "--json"],
-      { encoding: "utf8", cwd: process.cwd() },
-    );
+    const rDefault = await runArch(["fix", file, "--dry-run", "--json"]);
     expect(rDefault.status).toBe(0);
     const jDefault = JSON.parse(rDefault.stdout);
     expect(jDefault.applied).toEqual([]);
     expect(jDefault.unresolved).toContain("W_WHILE_DEPRECATED");
 
-    const rUnsafe = spawnSync(
-      process.execPath,
-      ["--import", "tsx", "src/cli.ts", "fix", file, "--dry-run", "--unsafe", "--json"],
-      { encoding: "utf8", cwd: process.cwd() },
-    );
+    const rUnsafe = await runArch(["fix", file, "--dry-run", "--unsafe", "--json"]);
     expect(rUnsafe.status).toBe(0);
     const jUnsafe = JSON.parse(rUnsafe.stdout);
     expect(jUnsafe.applied.map((a: { applicability: string }) => a.applicability)).toContain("maybe-incorrect");

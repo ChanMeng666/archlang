@@ -91,6 +91,12 @@ table literal. Record the measured tree and the patch in the baseline's header.
 - **A byte-identity law for every new language form**, and a cross-feature test whenever two
   branches edit a shared literal or predicate — with a control case on the identical geometry, so the
   test can tell "it works" from "the check never ran".
+- **CLI: run it in-process** with `runArch(args, { input?, cwd? })` from `test/helpers/cli.ts`
+  (`{ status, stdout, stderr }`, through `runCli` and a capturing `CliIo`): no child process, so it
+  costs milliseconds and coverage sees the commands. `spawnArch` (same shape) is only for what a
+  process shows: exit flushing, a real stdin pipe, the exit code reaching the shell, `watch`. Every
+  file that starts a CLI process (`spawnArch`, `ARCH_ARGV` or its own spawn) is in
+  `test/no-cli-spawn.test.ts`'s allow-list with its reason.
 - **MCP: drive the server** through `packages/mcp/test/helpers.ts` (real `Client`, in-memory
   transport); malformed args must return an MCP error result, never throw.
 - **VS Code: inject, don't import.** Test handlers in `editors/vscode/src/handlers.ts` with text in,

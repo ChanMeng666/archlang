@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -8,6 +7,7 @@ import { dwellingReading } from "../src/analyze/dwelling.js";
 import type { UseKind } from "../src/ast.js";
 import { SKIP_WHY } from "../src/lint/coverage.js";
 import { STRICTER_PROFILES, stricterProfileNames } from "../src/finish.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * Plan-soundness PS2.18: the rules that describe a defect of a HOME judge a plan only when it
@@ -238,20 +238,18 @@ describe("the non-dwelling reason", () => {
     expect(SKIP_WHY["non-dwelling"]).toBe("the plan reads as non-residential");
   });
 
-  it("appears in `arch lint --json` coverage for the first-contact café and clinic", () => {
-    const cli = (f: string) =>
-      spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", "lint", f, "--json"], {
-        cwd: ROOT,
-        encoding: "utf8",
-      });
+  it("appears in `arch lint --json` coverage for the first-contact café and clinic", async () => {
+    const cli = (f: string) => runArch(["lint", f, "--json"], { cwd: ROOT });
     for (const f of ["4-cafe.arch", "6-clinic.arch"]) {
-      const r = cli(`test/plans/plan-soundness/audits/first-contact-plans/${f}`);
+      const r = await cli(`test/plans/plan-soundness/audits/first-contact-plans/${f}`);
       const out = JSON.parse(r.stdout) as { coverage: LintCoverage };
       expect(skipsOf(out.coverage, "privacy"), f).toContain("non-dwelling");
       // The diagnostics never carry it: lint messages name no reason id.
       expect(r.stdout.split('"coverage"')[0], f).not.toContain("non-dwelling");
     }
-    const house = JSON.parse(cli("test/plans/plan-soundness/audits/first-contact-plans/2-house.arch").stdout) as {
+    const house = JSON.parse(
+      (await cli("test/plans/plan-soundness/audits/first-contact-plans/2-house.arch")).stdout,
+    ) as {
       coverage: LintCoverage;
     };
     expect(JSON.stringify(house.coverage)).not.toContain("non-dwelling");

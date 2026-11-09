@@ -19,7 +19,7 @@ import {
 import { LINT_RULES } from "../src/lint.js";
 import type { KeepNode } from "../src/ast.js";
 import { cmdValidate } from "../src/cli/commands-analyze.js";
-import { parseArgs } from "../src/cli/io.js";
+import { nodeIo, parseArgs } from "../src/cli/io.js";
 import { DECIDED } from "./stage-decisions.js";
 import { runValidate, withoutStageKeys } from "./validate-json-run.js";
 
@@ -394,7 +394,7 @@ describe("intent, --graph and taste under --stage", () => {
     }) as typeof process.stderr.write;
     process.stdout.write = (() => true) as typeof process.stdout.write;
     try {
-      cmdValidate(parseArgs([plan, "--graph", graph, "--stage", "rooms"]));
+      cmdValidate(parseArgs([plan, "--graph", graph, "--stage", "rooms"]), nodeIo());
     } finally {
       process.stderr.write = writeErr;
       process.stdout.write = write;

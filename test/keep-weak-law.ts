@@ -27,7 +27,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
 import { cmdImpact, cmdValidate } from "../src/cli/commands-analyze.js";
-import { parseArgs } from "../src/cli/io.js";
+import { type CliIo, nodeIo, parseArgs } from "../src/cli/io.js";
 import { link } from "../src/import.js";
 import { compile, describe, lint } from "../src/index.js";
 import { evaluationSteps, resolveAll } from "../src/ir.js";
@@ -78,7 +78,11 @@ function worldFor(file: string): World {
 }
 /** Run a CLI command in-process; its exit code and everything it wrote to stdout (`stripSummary`: minus the `summary` and `stage` keys, for `validate`, whose pins predate them). */
 /** Run a CLI command in-process; its exit code and everything it wrote to stdout. */
-function runCli(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[], stripSummary = false): string {
+function runCli(
+  cmd: (a: ReturnType<typeof parseArgs>, io: CliIo) => number,
+  argv: string[],
+  stripSummary = false,
+): string {
   let stdout = "";
   const write = process.stdout.write.bind(process.stdout);
   const writeErr = process.stderr.write.bind(process.stderr);
@@ -88,7 +92,7 @@ function runCli(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[]
   }) as typeof process.stdout.write;
   process.stderr.write = (() => true) as typeof process.stderr.write;
   try {
-    const exit = cmd(parseArgs(argv));
+    const exit = cmd(parseArgs(argv), nodeIo());
     return `${exit}\n${stripSummary ? validateDigestView(stdout) : stdout}`;
   } finally {
     process.stdout.write = write;

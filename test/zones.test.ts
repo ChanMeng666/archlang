@@ -1,9 +1,9 @@
 import { readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, format, lint, repair } from "../src/index.js";
 import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * `zone <id> ["Label"] { … }` — the wing/department grouping.
@@ -24,13 +24,8 @@ interface Run {
   stderr: string;
 }
 
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 // ---------------------------------------------------------------------------
@@ -485,8 +480,8 @@ ${body}
 // ---------------------------------------------------------------------------
 
 suite("describe --zone — narrowing that never gates", () => {
-  it("keeps only the selected wing's rooms and what touches them", () => {
-    const r = run(["describe", "test/fixtures/zones-wings.arch", "--zone", "east", "--json"]);
+  it("keeps only the selected wing's rooms and what touches them", async () => {
+    const r = await run(["describe", "test/fixtures/zones-wings.arch", "--zone", "east", "--json"]);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
     expect(o.rooms.map((x: { id: string }) => x.id)).toEqual(["office", "store"]);
@@ -497,25 +492,25 @@ suite("describe --zone — narrowing that never gates", () => {
     expect(o.bbox).toEqual({ w: 12000, h: 8000 });
   });
 
-  it("rolls a nested zone up: `--zone west` keeps the galleries too", () => {
-    const r = run(["describe", "test/fixtures/zones-wings.arch", "--zone", "west", "--json"]);
+  it("rolls a nested zone up: `--zone west` keeps the galleries too", async () => {
+    const r = await run(["describe", "test/fixtures/zones-wings.arch", "--zone", "west", "--json"]);
     const o = JSON.parse(r.stdout);
     expect(o.rooms.map((x: { id: string }) => x.id)).toEqual(["lobby", "gal_a", "gal_b"]);
     expect(o.zones.map((z: { path: string }) => z.path)).toEqual(["west", "west.galleries"]);
   });
 
-  it("selects a nested zone alone by its dotted path", () => {
-    const r = run(["describe", "test/fixtures/zones-wings.arch", "--zone", "west.galleries", "--json"]);
+  it("selects a nested zone alone by its dotted path", async () => {
+    const r = await run(["describe", "test/fixtures/zones-wings.arch", "--zone", "west.galleries", "--json"]);
     const o = JSON.parse(r.stdout);
     expect(o.rooms.map((x: { id: string }) => x.id)).toEqual(["gal_a", "gal_b"]);
     expect(o.zones.map((z: { path: string }) => z.path)).toEqual(["west.galleries"]);
   });
 
-  it("NEVER changes `ok`, the diagnostics or the exit code — even when the hidden zone is the one with the warnings", () => {
+  it("NEVER changes `ok`, the diagnostics or the exit code — even when the hidden zone is the one with the warnings", async () => {
     // Both interior doors (and therefore both W_DOOR_OFF_WALL warnings) live in zones the
     // filter below hides; the diagnostics and the exit code must be untouched.
-    const full = run(["describe", "test/fixtures/zones-wings.arch", "--json"]);
-    const narrowed = run(["describe", "test/fixtures/zones-wings.arch", "--zone", "east", "--json"]);
+    const full = await run(["describe", "test/fixtures/zones-wings.arch", "--json"]);
+    const narrowed = await run(["describe", "test/fixtures/zones-wings.arch", "--zone", "east", "--json"]);
     const a = JSON.parse(full.stdout);
     const b = JSON.parse(narrowed.stdout);
     expect(a.diagnostics.length).toBeGreaterThan(0);
@@ -525,32 +520,32 @@ suite("describe --zone — narrowing that never gates", () => {
     expect(narrowed.status).toBe(0);
   });
 
-  it("composes with --room and --level", () => {
-    const r = run(["describe", "test/fixtures/zones-wings.arch", "--zone", "west", "--room", "gal_a", "--json"]);
+  it("composes with --room and --level", async () => {
+    const r = await run(["describe", "test/fixtures/zones-wings.arch", "--zone", "west", "--room", "gal_a", "--json"]);
     const o = JSON.parse(r.stdout);
     expect(o.rooms.map((x: { id: string }) => x.id)).toEqual(["gal_a"]);
     expect(o.selected_zones).toEqual(["west"]);
     expect(o.selected_rooms).toEqual(["gal_a"]);
 
-    const lv = run(["describe", "test/fixtures/zones-levels.arch", "--level", "2", "--zone", "north", "--json"]);
+    const lv = await run(["describe", "test/fixtures/zones-levels.arch", "--level", "2", "--zone", "north", "--json"]);
     expect(lv.status).toBe(0);
     expect(JSON.parse(lv.stdout).rooms.map((x: { id: string }) => x.id)).toEqual(["u_a"]);
   });
 
-  it("is a usage error (exit 3, with a did-you-mean) on an unknown zone", () => {
-    const r = run(["describe", "test/fixtures/zones-wings.arch", "--zone", "wast", "--json"]);
+  it("is a usage error (exit 3, with a did-you-mean) on an unknown zone", async () => {
+    const r = await run(["describe", "test/fixtures/zones-wings.arch", "--zone", "wast", "--json"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('did you mean "west"');
   });
 
-  it("is a usage error on a plan that declares no zones at all", () => {
-    const r = run(["describe", "-", "--zone", "x", "--json"], `plan "P" { room at (0,0) size 3000x3000 }`);
+  it("is a usage error on a plan that declares no zones at all", async () => {
+    const r = await run(["describe", "-", "--zone", "x", "--json"], `plan "P" { room at (0,0) size 3000x3000 }`);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("declares no `zone` blocks");
   });
 
-  it("is a selectable `--select` key", () => {
-    const r = run(["describe", "test/fixtures/zones-wings.arch", "--select", "zones", "--json"]);
+  it("is a selectable `--select` key", async () => {
+    const r = await run(["describe", "test/fixtures/zones-wings.arch", "--select", "zones", "--json"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).zones).toHaveLength(3);
   });
@@ -604,7 +599,7 @@ zone w { room id=a at (0,0) size 3000x3000 } }`;
     if (a.changed) expect(a.source).toContain("zone wet");
   });
 
-  it("completes inside a zone body (the LSP sees through the wrapper)", () => {
+  it("completes inside a zone body (the LSP sees through the wrapper)", async () => {
     const src = `plan "P" {
   units mm
   let W = 4000
@@ -612,14 +607,14 @@ zone w { room id=a at (0,0) size 3000x3000 } }`;
     room at (0,0) size
   }
 }`;
-    const r = run(["complete", "-", "--at", String(src.indexOf("size ") + 5), "--json"], src);
+    const r = await run(["complete", "-", "--at", String(src.indexOf("size ") + 5), "--json"], src);
     expect(r.status).toBe(0);
     const items = JSON.parse(r.stdout).items as { label: string }[];
     expect(items.map((i) => i.label)).toContain("W");
   });
 
-  it("projects into `arch ast --json` as a span-bearing zone node", () => {
-    const r = run(["ast", "test/fixtures/zones-wings.arch", "--json"]);
+  it("projects into `arch ast --json` as a span-bearing zone node", async () => {
+    const r = await run(["ast", "test/fixtures/zones-wings.arch", "--json"]);
     expect(r.status).toBe(0);
     const body = JSON.parse(r.stdout).ast.body as { kind: string; id?: string; label?: string }[];
     const z = body.find((s) => s.kind === "zone")!;

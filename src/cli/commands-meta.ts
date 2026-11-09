@@ -12,13 +12,13 @@ import { buildManifest, ERROR_CATALOG, explain } from "../index.js";
 import { closest } from "../expr.js";
 import { CLI_NAME } from "../manifest.js";
 import { CONTEXT_LEVELS, leadExampleFromSpec, renderStarter } from "./context-starter.js";
-import { type Args, EXIT, HERE, VERSION, emitJson, ioError, usageError, writeOutput } from "./io.js";
+import { type Args, type CliIo, EXIT, HERE, VERSION, emitJson, ioError, usageError, writeOutput } from "./io.js";
 
 /** `manifest` — the whole CLI API surface as one structured document for agents. */
-export function cmdManifest(args: Args): number {
+export function cmdManifest(args: Args, io: CliIo): number {
   const m = buildManifest(VERSION);
   if (args.json) {
-    emitJson(m);
+    emitJson(io, m);
   } else {
     const lines = [
       `${CLI_NAME} ${m.version} — ${m.commands.length} commands`,
@@ -27,7 +27,7 @@ export function cmdManifest(args: Args): number {
       `lint profiles: ${m.lint.profiles.join(", ")}`,
       `error codes: ${m.errorCodes.length}  ·  elements: ${m.elements.join(", ")}`,
     ];
-    process.stdout.write(lines.join("\n") + "\n");
+    io.stdout.write(lines.join("\n") + "\n");
   }
   return EXIT.OK;
 }
@@ -48,23 +48,23 @@ const STARTER = `plan "New Plan" {
 }
 `;
 
-export function cmdNew(args: Args): number {
+export function cmdNew(args: Args, io: CliIo): number {
   if (args.o && args.o !== "-") {
     const target = resolvePath(args.o);
     if (existsSync(target) && !args.force) {
-      return ioError(`${args.o} already exists (use --force to overwrite)`, args.json);
+      return ioError(io, `${args.o} already exists (use --force to overwrite)`, args.json);
     }
     try {
       writeOutput(target, STARTER);
     } catch (e) {
-      return ioError((e as Error).message, args.json);
+      return ioError(io, (e as Error).message, args.json);
     }
-    if (args.json) emitJson({ ok: true, output: target });
-    else if (!args.quiet) process.stdout.write(`✓ wrote starter plan to ${args.o}\n`);
+    if (args.json) emitJson(io, { ok: true, output: target });
+    else if (!args.quiet) io.stdout.write(`✓ wrote starter plan to ${args.o}\n`);
     return EXIT.OK;
   }
-  if (args.json) emitJson({ ok: true, template: STARTER });
-  else process.stdout.write(STARTER);
+  if (args.json) emitJson(io, { ok: true, template: STARTER });
+  else io.stdout.write(STARTER);
   return EXIT.OK;
 }
 
@@ -77,11 +77,11 @@ function readSpec(): string | null {
   return null;
 }
 
-export function cmdSpec(args: Args): number {
+export function cmdSpec(args: Args, io: CliIo): number {
   const spec = readSpec();
-  if (spec === null) return ioError("spec.llm.md not found", args.json);
-  if (args.json) emitJson({ ok: true, spec });
-  else process.stdout.write(spec.endsWith("\n") ? spec : spec + "\n");
+  if (spec === null) return ioError(io, "spec.llm.md not found", args.json);
+  if (args.json) emitJson(io, { ok: true, spec });
+  else io.stdout.write(spec.endsWith("\n") ? spec : spec + "\n");
   return EXIT.OK;
 }
 
@@ -145,51 +145,56 @@ export function splitContext(text: string): Record<string, string> | null {
 }
 
 /** `context --level starter`: the one-screen starter, rendered from the shipped spec. */
-function cmdContextStarter(args: Args): number {
+function cmdContextStarter(io: CliIo, args: Args): number {
   if (args.section !== undefined) {
-    return usageError("--level starter is one screen; --section picks a part of the full bundle — drop one of the two");
+    return usageError(
+      io,
+      "--level starter is one screen; --section picks a part of the full bundle — drop one of the two",
+    );
   }
   const spec = readSpec();
-  if (spec === null) return ioError("spec.llm.md not found", args.json);
+  if (spec === null) return ioError(io, "spec.llm.md not found", args.json);
   const lead = leadExampleFromSpec(spec);
-  if (lead === null) return ioError("spec.llm.md has no ```arch example to build the starter from", args.json);
+  if (lead === null) return ioError(io, "spec.llm.md has no ```arch example to build the starter from", args.json);
   let starter: string;
   try {
     starter = renderStarter(lead, SECTION_NAMES);
   } catch (e) {
-    return ioError(`cannot build the starter from spec.llm.md: ${(e as Error).message}`, args.json);
+    return ioError(io, `cannot build the starter from spec.llm.md: ${(e as Error).message}`, args.json);
   }
-  if (args.json) emitJson({ ok: true, level: "starter", context: starter });
-  else process.stdout.write(starter);
+  if (args.json) emitJson(io, { ok: true, level: "starter", context: starter });
+  else io.stdout.write(starter);
   return EXIT.OK;
 }
 
-export function cmdContext(args: Args): number {
+export function cmdContext(args: Args, io: CliIo): number {
   const level = args.contextLevel;
   if (level !== undefined) {
-    if (level === "") return usageError(`--level needs a value: ${CONTEXT_LEVELS.join(" or ")}`);
+    if (level === "") return usageError(io, `--level needs a value: ${CONTEXT_LEVELS.join(" or ")}`);
     if (!(CONTEXT_LEVELS as readonly string[]).includes(level)) {
       const hint = closest(level, [...CONTEXT_LEVELS]);
       return usageError(
+        io,
         `unknown level "${level}" — expected one of: ${CONTEXT_LEVELS.join(", ")}` +
           (hint === null ? "" : ` (did you mean "${hint}"?)`),
       );
     }
-    if (level === "starter") return cmdContextStarter(args);
+    if (level === "starter") return cmdContextStarter(io, args);
   }
   const context = readContext();
-  if (context === null) return ioError("llms-full.txt not found", args.json);
+  if (context === null) return ioError(io, "llms-full.txt not found", args.json);
 
   const name = args.section;
   if (name === undefined) {
-    if (args.json) emitJson({ ok: true, context });
-    else process.stdout.write(context.endsWith("\n") ? context : context + "\n");
+    if (args.json) emitJson(io, { ok: true, context });
+    else io.stdout.write(context.endsWith("\n") ? context : context + "\n");
     return EXIT.OK;
   }
 
   if (!(name in SECTIONS)) {
     const hint = closest(name, SECTION_NAMES);
     return usageError(
+      io,
       `unknown section "${name}" — expected one of: ${SECTION_NAMES.join(", ")}` +
         (hint === null ? "" : ` (did you mean "${hint}"?)`),
     );
@@ -197,27 +202,28 @@ export function cmdContext(args: Args): number {
   const sections = splitContext(context);
   if (sections === null) {
     return ioError(
+      io,
       "llms-full.txt does not have the expected section layout — regenerate it with `npm run gen:llms`",
       args.json,
     );
   }
   const section = sections[name]!;
-  if (args.json) emitJson({ ok: true, section: name, context: section });
-  else process.stdout.write(section.endsWith("\n") ? section : section + "\n");
+  if (args.json) emitJson(io, { ok: true, section: name, context: section });
+  else io.stdout.write(section.endsWith("\n") ? section : section + "\n");
   return EXIT.OK;
 }
 
-export function cmdExplain(args: Args): number {
+export function cmdExplain(args: Args, io: CliIo): number {
   const code = args._[0];
-  if (!code) return usageError(`missing error code (e.g. ${CLI_NAME} explain E_ROOM_SIZE)`);
+  if (!code) return usageError(io, `missing error code (e.g. ${CLI_NAME} explain E_ROOM_SIZE)`);
   const upper = code.toUpperCase();
   const entry = ERROR_CATALOG[upper];
   if (!entry) {
-    if (args.json) emitJson({ ok: false, code: upper });
-    else process.stderr.write(`error: unknown error code "${code}"\n`);
+    if (args.json) emitJson(io, { ok: false, code: upper });
+    else io.stderr.write(`error: unknown error code "${code}"\n`);
     return EXIT.USAGE;
   }
-  if (args.json) emitJson({ ok: true, code: upper, entry });
-  else process.stdout.write((explain(upper) ?? "") + "\n");
+  if (args.json) emitJson(io, { ok: true, code: upper, entry });
+  else io.stdout.write((explain(upper) ?? "") + "\n");
   return EXIT.OK;
 }

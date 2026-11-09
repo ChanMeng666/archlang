@@ -1,8 +1,8 @@
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * `arch finish` at the process boundary. It follows `arch fix`'s write conventions
@@ -16,13 +16,8 @@ interface Run {
   stdout: string;
   stderr: string;
 }
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 const BARE = `plan "Bare" {
@@ -46,8 +41,8 @@ beforeEach(() => {
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("arch finish — the write boundary", () => {
-  it("rewrites the input in place, prints the diff and the change log on stderr, exits 0", () => {
-    const r = run(["finish", file]);
+  it("rewrites the input in place, prints the diff and the change log on stderr, exits 0", async () => {
+    const r = await run(["finish", file]);
     expect(r.status).toBe(0);
     expect(r.stdout).toBe("");
     const out = readFileSync(file, "utf8");
@@ -58,22 +53,22 @@ describe("arch finish — the write boundary", () => {
     expect(existsSync(`${file}.bak`)).toBe(false);
 
     // …and a second run is a no-op that says so.
-    const again = run(["finish", file]);
+    const again = await run(["finish", file]);
     expect(again.status).toBe(0);
     expect(readFileSync(file, "utf8")).toBe(out);
     expect(again.stderr).toContain("(no changes)");
   }, 60000);
 
-  it("`--dry-run` writes nothing and still shows the diff", () => {
-    const r = run(["finish", file, "--dry-run"]);
+  it("`--dry-run` writes nothing and still shows the diff", async () => {
+    const r = await run(["finish", file, "--dry-run"]);
     expect(r.status).toBe(0);
     expect(readFileSync(file, "utf8")).toBe(BARE);
     expect(r.stderr).toContain("+  legend");
     expect(r.stderr).toContain("(dry run — nothing written)");
   }, 30000);
 
-  it("`--dry-run --json` is the same preview as data", () => {
-    const r = run(["finish", file, "--dry-run", "--json"]);
+  it("`--dry-run --json` is the same preview as data", async () => {
+    const r = await run(["finish", file, "--dry-run", "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j).toMatchObject({ ok: true, changed: true, wrote: false, target: file, unresolved: [] });
@@ -92,36 +87,36 @@ describe("arch finish — the write boundary", () => {
     expect(readFileSync(file, "utf8")).toBe(BARE);
   }, 30000);
 
-  it("`--backup` keeps the original bytes in <file>.bak", () => {
-    const r = run(["finish", file, "--backup", "--json"]);
+  it("`--backup` keeps the original bytes in <file>.bak", async () => {
+    const r = await run(["finish", file, "--backup", "--json"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout)).toMatchObject({ wrote: true, backup: `${file}.bak` });
     expect(readFileSync(`${file}.bak`, "utf8")).toBe(BARE);
     expect(readFileSync(file, "utf8")).not.toBe(BARE);
   }, 30000);
 
-  it("`-o` writes the finished source elsewhere and leaves the input untouched", () => {
+  it("`-o` writes the finished source elsewhere and leaves the input untouched", async () => {
     const out = join(dir, "issued.arch");
-    const r = run(["finish", file, "-o", out]);
+    const r = await run(["finish", file, "-o", out]);
     expect(r.status).toBe(0);
     expect(readFileSync(file, "utf8")).toBe(BARE);
     expect(readFileSync(out, "utf8")).toContain("schedule rooms");
   }, 30000);
 
-  it("stdin streams the finished source to stdout", () => {
-    const r = run(["finish", "-"], BARE);
+  it("stdin streams the finished source to stdout", async () => {
+    const r = await run(["finish", "-"], BARE);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain(`title { project "Bare" }`);
     expect(r.stdout.startsWith(`plan "Bare" {`)).toBe(true);
   }, 30000);
 
-  it("`--reissue` replaces a paper the drawing does not fit", () => {
+  it("`--reissue` replaces a paper the drawing does not fit", async () => {
     const tight = BARE.replace("  north up\n", "  paper A4\n  scale 1:10\n  north up\n");
     writeFileSync(file, tight, "utf8");
-    const kept = JSON.parse(run(["finish", file, "--only", "sheet", "--dry-run", "--json"]).stdout);
+    const kept = JSON.parse((await run(["finish", file, "--only", "sheet", "--dry-run", "--json"])).stdout);
     expect(kept.changed).toBe(false);
     expect(kept.unresolved[0].reason).toContain("--reissue");
-    const r = JSON.parse(run(["finish", file, "--reissue", "--json"]).stdout);
+    const r = JSON.parse((await run(["finish", file, "--reissue", "--json"])).stdout);
     expect(
       r.changes.some((c: { kind: string; statement: string }) => c.kind === "replaced" && c.statement === "paper"),
     ).toBe(true);
@@ -130,10 +125,10 @@ describe("arch finish — the write boundary", () => {
 });
 
 describe("arch finish — exit codes", () => {
-  it("a plan that does not compile is left untouched and exits 2", () => {
+  it("a plan that does not compile is left untouched and exits 2", async () => {
     const broken = `plan "X" {\n  units mm\n  room at (0,0) size\n}\n`;
     writeFileSync(file, broken, "utf8");
-    const r = run(["finish", file, "--json"]);
+    const r = await run(["finish", file, "--json"]);
     expect(r.status).toBe(2);
     const j = JSON.parse(r.stdout);
     expect(j).toMatchObject({ ok: false, changed: false, wrote: false, changes: [] });
@@ -141,13 +136,13 @@ describe("arch finish — exit codes", () => {
     expect(readFileSync(file, "utf8")).toBe(broken);
   }, 30000);
 
-  it("a room left empty for its use writes nothing, exits 0, and is named in the JSON and on stderr", () => {
+  it("a room left empty for its use writes nothing, exits 0, and is named in the JSON and on stderr", async () => {
     const hall = BARE.replace('label "Room" uses living', 'label "Hall" uses hall');
     writeFileSync(file, hall, "utf8");
     const note =
       '"r" is outside the furnish table and was left empty — its use `hall` has no row there; add furniture yourself only if it should hold some';
 
-    const dry = run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
+    const dry = await run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
     expect(dry.status).toBe(0);
     const j = JSON.parse(dry.stdout);
     expect(j).toMatchObject({ ok: true, changed: false, changes: [], wrote: false, source: hall });
@@ -156,15 +151,15 @@ describe("arch finish — exit codes", () => {
       expect.objectContaining({ stage: "furnish", room: "r", scope: "outside-table", reason: note }),
     ]);
 
-    const human = run(["finish", file, "--only", "furnish"]);
+    const human = await run(["finish", file, "--only", "furnish"]);
     expect(human.status).toBe(0);
     expect(human.stderr).toContain(`⚠ ${note}`);
     expect(human.stderr).toContain("(no changes)");
     expect(readFileSync(file, "utf8")).toBe(hall);
   }, 30000);
 
-  it("`--only furnish` runs the furnish stage and writes no sheet statement", () => {
-    const r = run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
+  it("`--only furnish` runs the furnish stage and writes no sheet statement", async () => {
+    const r = await run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.changed).toBe(true);
@@ -174,27 +169,27 @@ describe("arch finish — exit codes", () => {
     expect(readFileSync(file, "utf8")).toBe(BARE);
   }, 30000);
 
-  it("an unknown stage is a usage error with a did-you-mean", () => {
-    const r = run(["finish", file, "--only", "shet"]);
+  it("an unknown stage is a usage error with a did-you-mean", async () => {
+    const r = await run(["finish", file, "--only", "shet"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain(`did you mean "sheet"?`);
   }, 30000);
 
-  it("`--only sheet` runs the sheet stage", () => {
-    const r = run(["finish", file, "--only", "sheet", "--dry-run", "--json"]);
+  it("`--only sheet` runs the sheet stage", async () => {
+    const r = await run(["finish", file, "--only", "sheet", "--dry-run", "--json"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).changed).toBe(true);
   }, 30000);
 
-  it("a missing input and an undeclared flag are usage errors", () => {
-    expect(run(["finish"]).status).toBe(3);
-    const r = run(["finish", file, "--unsafe"]);
+  it("a missing input and an undeclared flag are usage errors", async () => {
+    expect((await run(["finish"])).status).toBe(3);
+    const r = await run(["finish", file, "--unsafe"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain(`unknown flag "--unsafe"`);
   }, 30000);
 
-  it("an unreadable input is an IO error (exit 1)", () => {
-    expect(run(["finish", join(dir, "nope.arch")]).status).toBe(1);
+  it("an unreadable input is an IO error (exit 1)", async () => {
+    expect((await run(["finish", join(dir, "nope.arch")])).status).toBe(1);
   }, 30000);
 });
 
@@ -216,8 +211,8 @@ describe("arch finish — a plan with `level` blocks", () => {
 `;
   beforeEach(() => writeFileSync(file, LEVELS, "utf8"));
 
-  it("`--only furnish --dry-run --json`: the same keys, each change with its `level`, nothing written", () => {
-    const r = run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
+  it("`--only furnish --dry-run --json`: the same keys, each change with its `level`, nothing written", async () => {
+    const r = await run(["finish", file, "--only", "furnish", "--dry-run", "--json"]);
     expect(r.status).toBe(0);
     expect(readFileSync(file, "utf8")).toBe(LEVELS);
     const out = JSON.parse(r.stdout);
@@ -253,22 +248,22 @@ describe("arch finish — a plan with `level` blocks", () => {
     expect(out.unresolved).toEqual([]);
   }, 30000);
 
-  it("rewrites the file with each storey's pieces in its own block, and a second run says no changes", () => {
-    const r = run(["finish", file, "--only", "furnish"]);
+  it("rewrites the file with each storey's pieces in its own block, and a second run says no changes", async () => {
+    const r = await run(["finish", file, "--only", "furnish"]);
     expect(r.status).toBe(0);
     expect(r.stderr).toContain("+    furniture sofa in r anchor");
     const out = readFileSync(file, "utf8");
     expect(out.indexOf("furniture sofa")).toBeLessThan(out.indexOf(`level 1 "Upper"`));
     expect(out.indexOf("furniture bed")).toBeGreaterThan(out.indexOf(`level 1 "Upper"`));
-    const again = run(["finish", file, "--only", "furnish"]);
+    const again = await run(["finish", file, "--only", "furnish"]);
     expect(again.status).toBe(0);
     expect(readFileSync(file, "utf8")).toBe(out);
     expect(again.stderr).toContain("(no changes)");
   }, 60000);
 
-  it("a human run names the storey of a room it left alone", () => {
+  it("a human run names the storey of a room it left alone", async () => {
     writeFileSync(file, LEVELS.replace(`label "Bedroom" uses bedroom`, `label "Store" uses storage`), "utf8");
-    const r = run(["finish", file, "--only", "furnish", "--dry-run"]);
+    const r = await run(["finish", file, "--only", "furnish", "--dry-run"]);
     expect(r.status).toBe(0);
     expect(r.stderr).toContain(`"r" (level 1) is outside the furnish table`);
   }, 30000);

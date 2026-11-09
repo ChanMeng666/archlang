@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -6,21 +5,18 @@ import { describe, expect, it } from "vitest";
 import type { Diagnostic } from "../src/index.js";
 import type { PerFile } from "../src/cli/serialize.js";
 import { aggregateExit, perFileJson, runPool } from "../src/cli/serialize.js";
+import { runArch } from "./helpers/cli.js";
 
-/** Spawn the real CLI via the tsx loader (no build step), as in cli.test.ts. */
-function run(args: string[]): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+/** Run the CLI in-process (`test/helpers/cli.ts`). */
+function run(args: string[]): Promise<{ status: number | null; stdout: string; stderr: string }> {
+  return runArch(args);
 }
 
 describe("CLI — batch", () => {
-  it("-o creates a directory that does not exist, however deep", () => {
+  it("-o creates a directory that does not exist, however deep", async () => {
     const root = mkdtempSync(join(tmpdir(), "arch-batch-"));
     const dir = join(root, "not", "yet", "here");
-    const r = run(["batch", "examples/studio.arch", "examples/two-bed.arch", "-o", dir, "--json"]);
+    const r = await run(["batch", "examples/studio.arch", "examples/two-bed.arch", "-o", dir, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.results.map((x: { output: string }) => x.output)).toEqual([
@@ -30,29 +26,29 @@ describe("CLI — batch", () => {
     for (const res of j.results) expect(existsSync(res.output)).toBe(true);
   }, 60000);
 
-  it("a plan that does not compile leaves no directory behind", () => {
+  it("a plan that does not compile leaves no directory behind", async () => {
     const root = mkdtempSync(join(tmpdir(), "arch-batch-"));
     const bad = join(root, "bad.arch");
     writeFileSync(bad, 'plan "x" { units mm\n  room id=a at (0,0) size 0x0\n  nonsense\n}\n');
     const dir = join(root, "out");
-    const r = run(["batch", bad, "-o", dir, "--json"]);
+    const r = await run(["batch", bad, "-o", dir, "--json"]);
     expect(r.status).toBe(2);
     expect(existsSync(dir)).toBe(false);
   }, 60000);
 
-  it("a file where the directory should be is one clear error, with the IO exit code", () => {
+  it("a file where the directory should be is one clear error, with the IO exit code", async () => {
     const root = mkdtempSync(join(tmpdir(), "arch-batch-"));
     const dir = join(root, "taken");
     writeFileSync(dir, "a file\n");
-    const r = run(["batch", "examples/studio.arch", "-o", dir]);
+    const r = await run(["batch", "examples/studio.arch", "-o", dir]);
     expect(r.status).toBe(1);
     expect(r.stderr).toContain(`cannot create the output directory ${dir}`);
     expect(r.stderr.trim().split("\n")).toHaveLength(1);
   }, 60000);
 
-  it("renders many files in one call: array JSON, both outputs written, exit 0", () => {
+  it("renders many files in one call: array JSON, both outputs written, exit 0", async () => {
     const dir = mkdtempSync(join(tmpdir(), "arch-batch-"));
-    const r = run(["batch", "examples/studio.arch", "examples/two-bed.arch", "-f", "svg", "-o", dir, "--json"]);
+    const r = await run(["batch", "examples/studio.arch", "examples/two-bed.arch", "-f", "svg", "-o", dir, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -64,7 +60,7 @@ describe("CLI — batch", () => {
     }
   }, 60000);
 
-  it("-f json reports `dropped` per file and a stderr note; absent for a plan that drops nothing (#366)", () => {
+  it("-f json reports `dropped` per file and a stderr note; absent for a plan that drops nothing (#366)", async () => {
     const dir = mkdtempSync(join(tmpdir(), "arch-batch-"));
     const lossy = join(dir, "lossy.arch");
     const arc = join(dir, "arc.arch");
@@ -79,7 +75,7 @@ describe("CLI — batch", () => {
       'plan "arc round trip" {\n  units mm\n  paper A4 landscape\n  scale 1:50\n  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) arc (0,4000) radius 4000 cw (0,0) close }\n}\n',
     );
     writeFileSync(plain, 'plan "G" { units mm room at (0,0) size 3000x3000 label "R" }');
-    const r = run(["batch", lossy, arc, plain, "-f", "json", "-o", dir, "--json"]);
+    const r = await run(["batch", lossy, arc, plain, "-f", "json", "-o", dir, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     const l = j.results.find((x: { input: string }) => x.input.endsWith("lossy.arch"));
@@ -94,18 +90,18 @@ describe("CLI — batch", () => {
       orientation: "landscape",
     });
     // The control: svg drops nothing and says nothing.
-    const s = run(["batch", lossy, "-f", "svg", "-o", dir, "--json"]);
+    const s = await run(["batch", lossy, "-f", "svg", "-o", dir, "--json"]);
     expect("dropped" in JSON.parse(s.stdout).results[0]).toBe(false);
     expect(s.stderr).not.toContain("note:");
   }, 60000);
 
-  it("reports a user-source error per file and aggregates exit 2", () => {
+  it("reports a user-source error per file and aggregates exit 2", async () => {
     const dir = mkdtempSync(join(tmpdir(), "arch-batch-"));
     const good = join(dir, "good.arch");
     const bad = join(dir, "bad.arch");
     writeFileSync(good, 'plan "G" { units mm room at (0,0) size 3000x3000 label "R" }');
     writeFileSync(bad, 'plan "B" { units mm room at (0,0) size 0x3000 }');
-    const r = run(["batch", good, bad, "-o", dir, "--json"]);
+    const r = await run(["batch", good, bad, "-o", dir, "--json"]);
     expect(r.status).toBe(2);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(false);
@@ -120,7 +116,7 @@ describe("CLI — batch", () => {
    * code for many files, so which failure wins is the whole point: a wrong answer here
    * misleads every automated consumer silently.
    */
-  it("aggregates one exit code over mixed inputs: user-source (2) outranks IO (1); a bad flag is 3", () => {
+  it("aggregates one exit code over mixed inputs: user-source (2) outranks IO (1); a bad flag is 3", async () => {
     const dir = mkdtempSync(join(tmpdir(), "arch-batch-"));
     const good = join(dir, "good.arch");
     const bad = join(dir, "bad.arch");
@@ -130,7 +126,7 @@ describe("CLI — batch", () => {
 
     // An unreadable input is an IO failure, not a user-source one: no diagnostics, an
     // `error` string, exit 1 — and the readable sibling still renders.
-    const io = run(["batch", good, missing, "-o", dir, "--json"]);
+    const io = await run(["batch", good, missing, "-o", dir, "--json"]);
     expect(io.status).toBe(1);
     const ji = JSON.parse(io.stdout);
     expect(ji.ok).toBe(false);
@@ -141,12 +137,12 @@ describe("CLI — batch", () => {
 
     // Both failure kinds at once: the user-source error wins, so a broken plan is never
     // hidden behind a missing-file 1.
-    const mixed = run(["batch", good, missing, bad, "-o", dir, "--json"]);
+    const mixed = await run(["batch", good, missing, bad, "-o", dir, "--json"]);
     expect(mixed.status).toBe(2);
     expect(JSON.parse(mixed.stdout).results).toHaveLength(3);
 
     // A flag `batch` does not declare is a usage error before any file is read.
-    const usage = run(["batch", good, "--nope", "-o", dir]);
+    const usage = await run(["batch", good, "--nope", "-o", dir]);
     expect(usage.status).toBe(3);
     expect(usage.stderr).toContain('unknown flag "--nope"');
   }, 60000);
