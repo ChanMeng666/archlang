@@ -19,13 +19,19 @@
  * passing an option.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 
-/** Every module the two summary surfaces are built from. */
+/** Every module the two summary surfaces are built from: the resolver (`src/ir.ts` and every
+ *  stage under `src/ir/`, read from the directory) and the analyses on top of it. */
 const SUMMARY_MODULES = [
+  "src/ir.ts",
+  ...readdirSync(resolvePath("src/ir"))
+    .filter((f) => f.endsWith(".ts"))
+    .sort()
+    .map((f) => `src/ir/${f}`),
   "src/describe.ts",
   "src/lint.ts",
   "src/analyze.ts",

@@ -148,7 +148,7 @@ and `spawnArch` for `cli-flush`, `watch` and exit-flush cases. Migrate the 40 sp
 guard refuses a new `spawnSync(… "src/cli.ts")`. Proof: every `cli-*` test green; nightly coverage
 shows `src/cli/**` above 0; Node 22 shard total down (report the number).
 
-### EH1.9 · CLI flag matrix and contract table — `in review (#619)` · S+M · low · sonnet · T-F2, T-F8 item 4 · depends EH1.8
+### EH1.9 · CLI flag matrix and contract table — `done (#619; 72 honest TODO rows remain, ratcheted)` · S+M · low · sonnet · T-F2, T-F8 item 4 · depends EH1.8
 `test/cli-flag-matrix.test.ts` derives (command × flag) from `buildManifest()`; each pair needs an
 `EXERCISED` row naming its test, seeded with today's gaps as `TODO` rows; close `arch import` (exit
 0/2/3, `--json`, `--out`) and `batch --jobs` (jobs 1 = jobs 4 bytes) first.
@@ -251,7 +251,7 @@ new sites; public `Diagnostic.code: string` unchanged. Second commit: `error-fix
 `explain`/CLI/docs; a test asserts the two agree per code. Proof (amended 2026-11-09 by #614's review: key ORDER is not part of the contract — nothing in `src/`, the generators or the packages reads it; entries must be identical BY CODE): per-code JSON identical before/after; `gen:errors`, `gen:llms` no drift; corpus `--json`
 diagnostics digest unchanged; playground compiler chunk size before/after from its own build.
 
-### EH2.2 · `src/ir/` — `in review (#618)` · M · medium · opus · A-F2 · depends EH1.4, EH1.6
+### EH2.2 · `src/ir/` — `done (#618)` · M · medium · opus · A-F2 · depends EH1.4, EH1.6
 Verbatim moves, `ir.ts` re-exports: `ir/types.ts` (R* interfaces, `ResolvedPlan`), `ir/expand.ts`
 (`Scope`, `expandScope*`, zones, `placeFrame`, `stripRooms`), `ir/side-tables.ts` (the 9 WeakMaps
 and accessors), `ir/groups.ts` (partition, `assignIds`, `markPlacement`, demolition,
@@ -285,7 +285,7 @@ mean different things, else derive one from `SOURCE_CAP_BYTES`. `editors/vscode`
 derived from `typeof import("@chanmeng666/archlang")`, cast removed. Hash pins stay. Proof:
 `share-codec` tests green; every example's share link decodes to the same source.
 
-### EH2.6 · one Scene per lint — `todo` · M · medium · opus · P-F3 · depends EH1.6
+### EH2.6 · one Scene per lint — `in progress` · M · medium · opus · P-F3 · depends EH1.6
 A one-slot Scene memo keyed by `(ResolvedPlan identity, annotate, theme identity, runtime identity)`
 shared by `pipeline.ts` and `lint/rules/annotations.ts:161`; hand out a frozen or cloned Scene
 (`CompileResult.scene` is public). Check whether `accessible` belongs in the key. Test: mutate a

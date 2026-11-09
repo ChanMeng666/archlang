@@ -41,7 +41,7 @@ function toLegacy(source: string, d: Diagnostic): CompileError {
  * `E_OUT_OF_RANGE` when the `lineWeight` the drawing will use came from the compile options
  * (`opts.theme`, or a theme registered in `opts.themes` that the plan selects and does not
  * override) and its heaviest pen leaves the modelling range, by the rule the source's
- * `lineWeight` is held to (`checkDrawnSizes`, `src/ir.ts`). The value has no source span, so
+ * `lineWeight` is held to (`checkDrawnSizes`, `src/ir/checks.ts`). The value has no source span, so
  * it is reported at the plan header. A built-in theme's weight is bounded and a source
  * `lineWeight` is checked by the resolver, so neither is re-checked here.
  */

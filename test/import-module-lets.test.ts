@@ -2,7 +2,7 @@
  * An imported component sees its OWN module's plan-level `let`s (backlog M.5, owner decision:
  * the old `E_UNKNOWN_REF` was a defect).
  *
- * The rule, as built (`moduleFallback`, `src/ir.ts`; `moduleBindings`, `src/import.ts`): inside
+ * The rule, as built (`moduleFallback`, `src/ir/expand.ts`; `moduleBindings`, `src/import.ts`): inside
  * the body of a component imported from module M — by name, or reached through a whole-file
  * `import … as` — a name that no parameter, no `let` of the body, no root plan `let` and no
  * built-in binds resolves against M's own plan-level `let`s (and value-functions), evaluated in

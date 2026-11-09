@@ -15,15 +15,15 @@
  * So three properties are pinned here:
  *
  *  1. **No seventh copy.** Modelled on the `EM_PER_CHAR` pin in `dim-stagger.test.ts`: a
- *     fixed list of the files that used to hold a copy, and only the source file may still
- *     spell one out.
+ *     list of the files that used to hold a copy (the resolver's read from `src/ir/`), and only
+ *     the source file may still spell one out.
  *  2. **Both generators fail LOUDLY** when a door clause has no rendering — proved by
  *     calling each guard on a synthetic table, not by trusting a comment.
  *  3. **The weld to `KEYWORDS.enum`** — the highlighting bucket must contain every value,
  *     so a new one can never ship unhighlighted.
  */
 
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
@@ -45,18 +45,29 @@ const read = (...p: string[]): string => readFileSync(join(__dirname, ...p), "ut
 
 /** The one file allowed to spell a door value set out. */
 const SOURCE = "../src/grammar/tokens.ts";
-/** Every file that used to keep its own copy, plus the source. */
-const FILES = [
-  SOURCE,
+/** The resolver: `src/ir.ts` and every stage under `src/ir/`, read from the directory, so a
+ *  stage split out of `ir.ts` stays under the scan. */
+const IR_MODULES = [
+  "../src/ir.ts",
+  ...readdirSync(join(__dirname, "../src/ir"))
+    .filter((f) => f.endsWith(".ts"))
+    .sort()
+    .map((f) => `../src/ir/${f}`),
+];
+/** The call sites outside the resolver that used to keep their own copy. */
+const CALL_SITES = [
   "../src/elements/door.ts",
   "../src/plan-json.ts",
   "../scripts/gen-gbnf.ts",
   "../scripts/gen-llm-spec.ts",
   "../src/ast.ts",
-  "../src/ir.ts",
   "../src/geometry.ts",
   "../src/fix-producers.ts",
 ];
+/** Every file the copy scan reads: the source, the call sites and the resolver. */
+const FILES = [SOURCE, ...CALL_SITES, ...IR_MODULES];
+/** The scanned files that import the table (`grammar/tokens`), the source excepted. */
+const IMPORTERS = FILES.filter((f) => f !== SOURCE && /grammar\/tokens\.js/.test(read(f)));
 
 /**
  * The spellings a copy of a two-value set takes in this tree: a TS union or a literal
@@ -101,7 +112,10 @@ suite("door enums — one source, six call sites", () => {
   });
 
   it("routes every call site through the table", () => {
-    for (const f of FILES.filter((f) => f !== SOURCE)) {
+    // Every former call site imports the table, and so does the resolver module that holds the
+    // IR's door types; a resolver module that reads no door value is not asked to.
+    for (const f of [...CALL_SITES, "../src/ir/types.ts"]) expect(IMPORTERS, f).toContain(f);
+    for (const f of IMPORTERS) {
       const src = read(f);
       // Either the values (DOOR_ENUMS) or the derived types are imported from the source.
       expect(src, f).toMatch(/DOOR_ENUMS|DOOR_HINGE_NEAR|DOOR_KINDS|DoorHinge|DoorSwingDir|DoorEnumClause|DoorKind/);

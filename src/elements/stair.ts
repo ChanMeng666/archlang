@@ -14,6 +14,9 @@
  * neighbours, so its direction is arithmetic on what the author wrote (ADR 0004), and neither
  * its long side nor an `entry` word decides it. Nothing here lays a stair out: a piece that does
  * not meet the next is refused (`E_STAIR_PIECES`), never moved.
+ *
+ * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): a block's pairwise overlap test is charged one
+ * step per pair of pieces before it runs.
  */
 
 import type { Point, StairNode, StairPiece, VerticalDir } from "../ast.js";

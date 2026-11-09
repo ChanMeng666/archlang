@@ -124,7 +124,7 @@ export const MAX_RUN_TREADS = 1_100;
  * drawn with more than {@link MAX_RUN_TREADS} divisions, else undefined. It holds at every
  * size, inside the modelling range or not; a run that is ALSO out of range is reported once,
  * by `E_OUT_OF_RANGE`, because the resolver drops every other diagnostic of an element it
- * drops (`checkNumberDomain`, `src/ir.ts`).
+ * drops (`checkNumberDomain`, `src/ir/checks.ts`).
  */
 export function runTooLong(
   what: string,

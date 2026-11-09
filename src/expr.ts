@@ -4,6 +4,10 @@
  * Expressions appear anywhere a number does (coordinates, sizes, widths,
  * thickness, offsets). They are parsed into an {@link Expr} AST and evaluated
  * during `resolve` against an {@link Env} of `let`/parameter bindings.
+ *
+ * It also owns the evaluation step meter (`MAX_EVAL_STEPS`, `chargeSteps`, `withStepMeter`) that
+ * bounds every compile: one step per node evaluated, per binding copied, per item compared and per
+ * character a string builds, each charged before the allocation it pays for.
  */
 
 import type { Token, TokenType } from "./lexer.js";
