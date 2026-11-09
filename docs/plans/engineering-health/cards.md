@@ -112,7 +112,7 @@ Move `analyze.ts:84-770`'s leaf helpers (`rectOf`, `roomBox`, `roomRing`, `roomA
 parameter from `lint.ts`. `test/no-value-cycles.test.ts`: the import graph (value imports, comments
 stripped) has no strongly connected component. Proof: the test lists 0 cycles; digests unchanged.
 
-### EH1.5 · boundary tests: core never imports 3D, workspace seams are an allow-list — `todo` · S · low · sonnet · W-F2, W-F4
+### EH1.5 · boundary tests: core never imports 3D, workspace seams are an allow-list — `in review` · S · low · sonnet · W-F2, W-F4
 `test/core-no-3d.test.ts`: no `src/**` import specifier names `archlang-3d` or `three`; root
 `package.json` has no such dependency. `test/workspace-seams.test.ts`: every `src/` or `dist/`
 specifier a workspace reaches outside the `exports` map (`archlang/review` alias,

@@ -2,7 +2,10 @@
  * Boundary: 3D lives only in `packages/archlang-3d`, never a core dependency (AGENTS.md hard rules).
  * The rule was prose and comments; this scans `src/` so a stray import goes red. Any import/export
  * specifier (static, `export ... from`, dynamic `import(`, `require(`) naming `archlang-3d` or
- * `three` (or a `three/...` subpath) fails, with its file:line.
+ * `three` (a `three/...` subpath, `three-*` such as three-stdlib or three-mesh-bvh, `@types/three`) fails, as does a
+ * `/// <reference types="three" />` directive (read before comments are stripped). Reports file:line.
+ * Limitation: a `//` inside a string literal blanks the rest of its line, so an import after one on the
+ * same line is missed.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
@@ -10,7 +13,8 @@ import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const FORBIDDEN = /^(?:@[\w-]+\/archlang-3d|archlang-3d|three)(?:\/.*)?$/;
+const FORBIDDEN = /^(?:@[\w-]+\/archlang-3d|archlang-3d|@types\/three|three(?:-[\w-]+)?)(?:\/.*)?$/;
+const REFERENCE = /^[ \t]*\/\/\/\s*<reference\s+(?:types|path)\s*=\s*(["'])([^"'\n]+)\1/gm;
 const SOURCE = /\.(?:ts|mts|cts|mjs|cjs|js)$/;
 const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)(["'`])([^"'`\n]+)\1/g;
 
@@ -30,15 +34,21 @@ function stripComments(text: string): string {
     .replace(/(?<!:)\/\/.*$/gm, (m) => " ".repeat(m.length));
 }
 
+/** Every specifier a source text names (reference directives from the raw text), with its line. */
+function specifiersOf(raw: string): { spec: string; line: number }[] {
+  const out: { spec: string; line: number }[] = [];
+  const lineOf = (s: string, at: number | undefined) => s.slice(0, at).split("\n").length;
+  for (const m of raw.matchAll(REFERENCE)) out.push({ spec: m[2] ?? "", line: lineOf(raw, m.index) });
+  const text = stripComments(raw);
+  for (const m of text.matchAll(SPECIFIER)) out.push({ spec: m[2] ?? "", line: lineOf(text, m.index) });
+  return out;
+}
+
 function offences(file: string): string[] {
-  const text = stripComments(readFileSync(file, "utf8"));
-  const found: string[] = [];
-  for (const m of text.matchAll(SPECIFIER)) {
-    if (!FORBIDDEN.test(m[2] ?? "")) continue;
-    const line = text.slice(0, m.index).split("\n").length;
-    found.push(`${relative(ROOT, file).split(sep).join("/")}:${line} imports "${m[2]}"`);
-  }
-  return found;
+  const where = relative(ROOT, file).split(sep).join("/");
+  return specifiersOf(readFileSync(file, "utf8"))
+    .filter((s) => FORBIDDEN.test(s.spec))
+    .map((s) => `${where}:${s.line} imports "${s.spec}"`);
 }
 
 describe("the core never imports 3D", () => {
@@ -63,11 +73,16 @@ describe("the core never imports 3D", () => {
   });
 
   it("the detector recognises the specifier forms it guards", () => {
-    const hit = (s: string) => [...stripComments(s).matchAll(SPECIFIER)].some((m) => FORBIDDEN.test(m[2] ?? ""));
+    const hit = (s: string) => specifiersOf(s).some((x) => FORBIDDEN.test(x.spec));
     expect(hit(`import * as T from "three";`)).toBe(true);
     expect(hit(`import("three/examples/jsm/x.js")`)).toBe(true);
     expect(hit(`export { a } from "@chanmeng666/archlang-3d";`)).toBe(true);
     expect(hit(`import "three";`)).toBe(true);
+    expect(hit(`import { x } from "three-stdlib";`)).toBe(true);
+    expect(hit(`import("three-mesh-bvh/src/x.js")`)).toBe(true);
+    expect(hit(`import type { Mesh } from "@types/three";`)).toBe(true);
+    expect(hit(`/// <reference types="three" />`)).toBe(true);
+    expect(hit(`import x from "./three-way.js"; import y from "threshold";`)).toBe(false);
     expect(hit(`// import x from "three"\n/* import("archlang-3d") */`)).toBe(false);
     expect(hit(`import x from "./three-way.js";`)).toBe(false);
   });
