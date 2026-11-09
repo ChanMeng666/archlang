@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 378 modules in 34 directories.
+Totals: 379 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -113,7 +113,7 @@ Totals: 378 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `app.ts` | 539 | 2 | The hosted ArchLang MCP Worker's request handler (docs/adr/0026-hosted-mcp-worker.md); `worker.ts` is the entry that hands it the assets bundled at build time. | none |
+| `app.ts` | 538 | 2 | The hosted ArchLang MCP Worker's request handler (docs/adr/0026-hosted-mcp-worker.md); `worker.ts` is the entry that hands it the assets bundled at build time. | none |
 | `limits.ts` | 46 | 3 | The hosted server's caps — byte counts and request counts, checked BEFORE any compile work, never a clock (docs/adr/0026-hosted-mcp-worker.md). | none |
 | `server.ts` | 109 | 2 | The hosted server's `McpServer`: the stdio server's tool set and resources (one registry, `packages/mcp/src/tools.ts`), plus what only a hosted, HTTP-reachable server has — the `read_me` tool, the MCP App viewer that `compile` links to… | none |
 | `worker.ts` | 15 | 0 | The Worker entry: the request handler (`app.ts`) over the assets the build inlined — the five `archlang://` resources and the viewer page — because a Worker has no filesystem to read them from at run time (scripts/build.mjs). | none |
@@ -251,7 +251,7 @@ Totals: 378 modules in 34 directories.
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1588 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
-| `ir.ts` | 1723 | 243 | Intermediate representation + `resolve(ast)`. | charges the step meter |
+| `ir.ts` | 1723 | 242 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1833 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 744 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
@@ -281,7 +281,7 @@ Totals: 378 modules in 34 directories.
 | `scene-memo.ts` | 175 | 4 | One Scene per resolved plan and drawing options, shared by `compile()` and `lint()`. | none |
 | `scene.ts` | 512 | 114 | Backend-neutral **Scene IR** — the keystone drawing intermediate. | none |
 | `segment-select.ts` | 217 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
-| `share.ts` | 126 | 1 | `@chanmeng666/archlang/share`: the browser-safe half of the playground's `#z=` share link, `#z=<base64url(deflate-raw(utf8))>`, for every consumer with no `zlib` (the playground page and its short-link Worker, the hosted MCP Worker, the… | none |
+| `share.ts` | 72 | 1 | `@chanmeng666/archlang/share`: the browser-safe half of the playground's `#z=` share link, `#z=<base64url(deflate-raw(utf8))>`, for every consumer with no `zlib` (the playground page and its short-link Worker, the hosted MCP Worker, the… | none |
 | `sheet-tables.ts` | 1305 | 12 | **Sheet tables** — the ROOM SCHEDULE and the derived LEGEND, and beside them the DOOR & WINDOW SCHEDULE (`schedule openings`, rows from `opening-schedule.ts`) and the authored NOTES (`notes "…"`), each drawn only when the plan writes it. | none |
 | `sheet-text.ts` | 165 | 14 | **`sheet text { … }`** — the words a sheet draws, and the decimal mark of its numbers, as the plan writes them (issue #403). The design and what was rejected: `archlang-lab/plans/preview-and-remodel/research/2026-11-02-sheet-text.md`. | none |
 | `sheet.ts` | 396 | 28 | **Paper size + operative drawing scale** — the sheet layer. | none |
@@ -367,7 +367,7 @@ Totals: 378 modules in 34 directories.
 | `run.ts` | 172 | 3 | The CLI as a function: argument parse + dispatch over a {@link CliIo}, returning the exit code (or {@link RESIDENT}) instead of ending the process. `src/cli.ts` runs it on the real process and exits through `exitFlushed`… | none |
 | `serialize.ts` | 502 | 8 | The render/serialize core shared by the file-producing commands (compile/preview/batch/md): compile a source to bytes, the format seam that turns a built {@link Scene} into the requested output, and the optional-dependency auto-install… | none |
 | `share-codec.mjs` | 38 | 12 | The Node side of the playground's `#z=` share link: `#z=<base64url(deflate-raw(utf8))>`, the scheme `playground/src/share.ts` reads (the browser copy, which has `CompressionStream` and no `zlib`). | none |
-| `share-codec.web.mjs` | 81 | 4 | The Web-standard decoder of the playground's `#z=` share payload, beside the Node one in `share-codec.mjs`: `#z=<base64url(deflate-raw(utf8))>`, read with `DecompressionStream` and `atob` instead of `zlib` and `Buffer`, so a runtime with… | none |
+| `share-codec.web.mjs` | 123 | 4 | The Web-standard decoder of the playground's `#z=` share payload, beside the Node one in `share-codec.mjs`: `#z=<base64url(deflate-raw(utf8))>`, read with `DecompressionStream` and `atob` instead of `zlib` and `Buffer`, so a runtime with… | none |
 | `source-hash.ts` | 182 | 3 | The write-back revision guard, `--expected-hash <sha256>` (card CR5). | none |
 | `summary.ts` | 61 | 2 | The one-line summary `lint` and `validate` open with (plan-soundness PS7.6): the count and the codes, first in the text report and first key of the JSON, so a reader who cuts the output short (`head -c`, a 200-byte tool preview) still… | none |
 
@@ -542,11 +542,12 @@ Totals: 378 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `ast-json.ts` | 42 | 1 | `astToJson` — a faithful, span-bearing projection of a parsed AST for `arch ast --json`, with no expansion (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `check-graph.ts` | 158 | 1 | `checkGraph` (T3b) — compare an intended adjacency dict to a compiled plan's interior-door connectivity (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
-| `emit.ts` | 318 | 2 | Canonical `.arch` emission from validated Plan JSON, and the two entry points built on it, `planJsonToArch` and `planFromJson` (validate, emit, run the real parser) (moved verbatim from `src/plan-json.ts`, which re-exports every name it… | none |
-| `from-json.ts` | 710 | 3 | The Plan JSON validator `planFromJson` runs first: the shape and kind checks that stamp a JSON path on every `E_JSON_*` diagnostic, capped at `MAX_DIAGNOSTICS` (moved verbatim from `src/plan-json.ts`, which re-exports every name it… | none |
+| `emit.ts` | 298 | 1 | Canonical `.arch` emission from validated Plan JSON, and the two entry points built on it, `planJsonToArch` and `planFromJson` (validate, emit, run the real parser) (moved verbatim from `src/plan-json.ts`, which re-exports every name it… | none |
+| `from-json.ts` | 693 | 2 | The Plan JSON validator `planFromJson` runs first: the shape and kind checks that stamp a JSON path on every `E_JSON_*` diagnostic, capped at `MAX_DIAGNOSTICS` (moved verbatim from `src/plan-json.ts`, which re-exports every name it… | none |
 | `room-types.ts` | 133 | 7 | Room-type mapping (uses ⇄ RPLAN-style `room_type`) — ONE source of truth for Plan JSON and `describe()`'s `room_type` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `schema.ts` | 564 | 1 | The Plan JSON Schema (2020-12), {@link PLAN_JSON_SCHEMA} — ONE source of truth; `scripts/gen-plan-schema.ts` only writes it to `schemas/plan.schema.json` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
-| `to-json.ts` | 665 | 3 | `planToJson` — parse + resolve a plan, then project it OUT to the wire shape with the output-only enrichments (areas, `edges`, `input_graph`, `dropped`) (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `source-tokens.ts` | 26 | 2 | The two source-token formatters Plan JSON's projector and emitter share: a leaf module (no parser, no validator), so `to-json.ts` can print a token without loading `from-json.ts`. | none |
+| `to-json.ts` | 680 | 3 | `planToJson` — parse + resolve a plan, then project it OUT to the wire shape with the output-only enrichments (areas, `edges`, `input_graph`, `dropped`) (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `types.ts` | 400 | 4 | The Plan JSON wire shape (`version: 1`): every row interface and {@link PlanJson} itself. All coordinates are millimetres; areas m² (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 
 ## `src/taste/`
