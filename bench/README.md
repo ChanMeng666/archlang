@@ -7,19 +7,28 @@ It compiles deterministically-generated plans (`bench/gen.ts`, no `Math.random`/
 stage (parse / resolve / toScene / renderSvg), times the analysis entry points
 (lint / describe), and runs two **skewed** plans to isolate geometry hotspots.
 
-## Baseline
+## How to read it
 
-`bench/baseline.json` is measured on an idle machine with the grid generator below
-(`npx tsx bench/run.ts --json > bench/baseline.json`); regenerate it the same way after any
-generator or methodology change. Timings on a loaded machine move by tens of percent, and one
-machine's absolutes are not another's, so use ratios measured back to back in one session,
-never absolutes across sessions or hosts.
+There is no committed baseline: a number from one machine is not another's, and a file regenerated
+once in a while drifts from the code under test. CI's `Benchmark (informational)` job instead
+compares the PR against its own base **in the same job**: it checks out the merge commit and its
+first parent (the base branch tip), runs `tsx bench/run.ts --json` on each twice, alternating
+(base, head, base, head), takes the per-row median of each side and posts the ratio head/base as a
+PR comment. Nothing is built; `bench/run.ts` imports `src/` directly.
 
-The committed baseline is the per-stage median of five such runs, taken after the joinery,
-room-overlap, label-placement, vocabulary and room-adjacency speed-ups. The five agreed to
-within about 10 % on the heavy rows (the sub-5 ms rows move more). The same machine at about
-40 % load put BALANCED `compile` anywhere from 67 to 96 ms, so check the spread of a few runs
-before trusting a new one.
+- A row is flagged only when its base time is above 5 ms **and** it moved by more than 50 %
+  (`bench/compare.mjs`, unit-tested in `test/bench-compare.test.ts`). Below 5 ms a row is timer and
+  scheduler noise.
+- The comment prints a **noise floor**: the largest spread between the two base runs (identical
+  code) over the rows above 5 ms. A flagged row near that figure is noise; one far above it is worth
+  a local look.
+- The job is informational and always exits 0. The deterministic gate for work done is
+  `test/work-counts.test.ts` (counts, never time).
+- Each side runs its own `bench/run.ts`; a PR that changes the generator or the harness moves every
+  row, and a row only one side has is shown without a ratio.
+
+Locally, `npm run bench` prints one run; for a before/after take back-to-back runs on one idle
+machine in one session and read ratios, never absolutes across sessions or hosts.
 
 Where the time goes: on the wall-heavy plans the hotspot is the joinery pass
 (`joinWalls`, ADR 0018); `src/geometry/union.ts` is a test oracle and is not on the compile
