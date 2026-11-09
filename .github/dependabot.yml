@@ -4,6 +4,8 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       dev-dependencies:
         dependency-type: development
@@ -26,6 +28,8 @@ updates:
     directory: "/"
     schedule:
       interval: weekly
+    cooldown:
+      default-days: 7
     groups:
       # `init` and `analyze` must run the same version: bumped as two PRs, each one fails
       # CodeQL on its own ("Loaded a configuration file for version X, but running Y").
