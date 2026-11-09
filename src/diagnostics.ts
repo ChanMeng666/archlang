@@ -141,20 +141,52 @@ export interface Diagnostic {
   component?: string;
 }
 
-/** Convert a byte offset into a 1-based `{line, col}`. Offsets are clamped. */
+/**
+ * The line-start table of a source: `starts[i]` is the offset of the first byte of line
+ * `i + 1`, so `starts[0]` is `0` and every `\n` at offset `k` adds `k + 1`. Only `\n` ends a
+ * line (a `\r` is an ordinary column, as it always was). Built once per source and kept in
+ * a small count-bounded FIFO, newest first, so the many `offsetToLineCol` calls one compile
+ * makes for its diagnostics share one O(n) scan.
+ */
+const lineTables: { src: string; starts: Uint32Array }[] = [];
+const LINE_TABLE_MAX = 8;
+
+function lineStartsOf(source: string): Uint32Array {
+  for (const t of lineTables) if (t.src === source) return t.starts;
+  let count = 1;
+  for (let k = source.indexOf("\n"); k !== -1; k = source.indexOf("\n", k + 1)) count++;
+  const starts = new Uint32Array(count);
+  let i = 1;
+  for (let k = source.indexOf("\n"); k !== -1; k = source.indexOf("\n", k + 1)) starts[i++] = k + 1;
+  if (lineTables.length >= LINE_TABLE_MAX) lineTables.pop();
+  lineTables.unshift({ src: source, starts });
+  return starts;
+}
+
+/** Clear the line-start tables (called by `clearCache`). */
+export function clearLineTableCache(): void {
+  lineTables.length = 0;
+}
+
+/**
+ * Convert a byte offset into a 1-based `{line, col}`. Offsets are clamped. `line` is one
+ * more than the `\n`s before the offset; `col` one more than the bytes since the last of
+ * them. O(log lines) per call after the source's first (see {@link lineStartsOf}).
+ */
 export function offsetToLineCol(source: string, offset: number): { line: number; col: number } {
-  const o = Math.max(0, Math.min(offset, source.length));
-  let line = 1;
-  let col = 1;
-  for (let k = 0; k < o; k++) {
-    if (source[k] === "\n") {
-      line++;
-      col = 1;
-    } else {
-      col++;
-    }
+  const clamped = Math.max(0, Math.min(offset, source.length));
+  if (!(clamped > 0)) return { line: 1, col: 1 }; // 0, and NaN (which counts no bytes)
+  const o = Math.ceil(clamped); // a fractional offset counts the bytes below it
+  const starts = lineStartsOf(source);
+  // The last line start at or before `o`.
+  let lo = 0;
+  let hi = starts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >>> 1;
+    if (starts[mid]! <= o) lo = mid;
+    else hi = mid - 1;
   }
-  return { line, col };
+  return { line: lo + 1, col: o - starts[lo]! + 1 };
 }
 
 /** Byte offset of the start of the line containing `offset`. */
