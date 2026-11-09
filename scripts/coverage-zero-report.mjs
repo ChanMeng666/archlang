@@ -15,9 +15,9 @@
  * Read a name here as "the in-process suite never entered this file", which has two very
  * different causes, and the report says so rather than pretending they are the same:
  *   1. genuinely unexercised code, or
- *   2. code exercised only in a CHILD process — `src/cli.ts` and `src/cli/commands-*.ts` are
- *      driven by ~20 suites that `spawnSync` the real CLI, so v8's in-process counters never
- *      see them however thoroughly they are tested.
+ *   2. code exercised only in a CHILD process — `src/cli.ts`, the process entry, runs only in the
+ *      few suites that spawn the real binary (the commands run in-process through
+ *      `test/helpers/cli.ts`), so v8's in-process counters never see it however well it is tested.
  * Neither is filtered out. An allowlist here would be the same "nobody notices the zero"
  * failure one level up.
  *
@@ -90,9 +90,9 @@ function main() {
   console.log();
   console.log(
     "A module lands here for one of two reasons, and coverage cannot tell them apart: it is " +
-      "genuinely unexercised, or it runs only in a CHILD process. The CLI modules are the second " +
-      "case — `test/cli*.test.ts` `spawnSync`s the real `arch`, so v8's in-process counters never " +
-      "see `src/cli.ts` or `src/cli/` however well they are tested. **This is a map, not a gate:** " +
+      "genuinely unexercised, or it runs only in a CHILD process. The CLI's process entry " +
+      "`src/cli.ts` is the second case — only the tests about the process itself spawn the real " +
+      "binary (the commands run in-process), so v8's in-process counters never see it. **This is a map, not a gate:** " +
       "there are no coverage thresholds and this step cannot fail the build.",
   );
 }
