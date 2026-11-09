@@ -45,7 +45,8 @@ const FILES = TEST_ROOTS.flatMap((r) => walk(r))
 
 const CLOCK_CALL = /\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b/;
 /** `const t0 = Date.now()`, `let t = performance.now()` or a bare `t0 = Date.now()`. */
-const CAPTURE = /(?:\b(?:const|let|var)\s+)?\b([A-Za-z_$][\w$]*)\s*=[^=][^;\n]*?(?:\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b)/;
+const CAPTURE =
+  /(?:\b(?:const|let|var)\s+)?\b([A-Za-z_$][\w$]*)\s*=[^=][^;\n]*?(?:\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b)/;
 
 const isComment = (l: string) => /^\s*(\/\/|\*|\/\*)/.test(l);
 
@@ -87,7 +88,8 @@ function clockAssertions(text: string): number[] {
     const arg = argText(text, m.index + m[0].length - 1);
     if (CLOCK_CALL.test(arg)) hits.add(line);
     for (const c of captured) {
-      if (c.line < line - 1 && new RegExp(`(?<![\\w$.])${c.name.replace(/\$/g, "\\$")}(?![\\w$])`).test(arg)) hits.add(line);
+      if (c.line < line - 1 && new RegExp(`(?<![\\w$.])${c.name.replace(/\$/g, "\\$")}(?![\\w$])`).test(arg))
+        hits.add(line);
     }
   }
   return [...hits].sort((a, b) => a - b);
@@ -105,28 +107,40 @@ const CLOCK_ALLOWED: Record<string, string> = {
 
 /** Per-test timeouts above 120 s, one row per file: the test sweeps a corpus or a generated family. */
 const SLOW_ALLOWED: Record<string, string> = {
-  "test/cli-commands.test.ts": "the three `watch` tests spawn the CLI and wait for a save to be recompiled and reported",
-  "test/cli-validate-next.test.ts": "every example x variant through the CLI validate path, output compared with and without `next`",
+  "test/cli-commands.test.ts":
+    "the three `watch` tests spawn the CLI and wait for a save to be recompiled and reported",
+  "test/cli-validate-next.test.ts":
+    "every example x variant through the CLI validate path, output compared with and without `next`",
   "test/drawing-budget.test.ts": "corpus sweep: drawn units against the drawing budget for every example",
-  "test/finish-furnish.test.ts": "a generated-rows property plus the wet-room sweep (its counts), each candidate compile-checked",
-  "test/finish-levels.test.ts": "the compile-check count over every storey of the corpus, and a generated-storeys property",
+  "test/finish-furnish.test.ts":
+    "a generated-rows property plus the wet-room sweep (its counts), each candidate compile-checked",
+  "test/finish-levels.test.ts":
+    "the compile-check count over every storey of the corpus, and a generated-storeys property",
   "test/finish.test.ts": "sheet-stage candidates measured on every example and every planted refusal",
-  "test/huge-coordinates.test.ts": "one case: transit-hall scaled x1000 must be refused with E_OUT_OF_RANGE, never thrown",
+  "test/huge-coordinates.test.ts":
+    "one case: transit-hall scaled x1000 must be refused with E_OUT_OF_RANGE, never thrown",
   "test/keep-byte-identity.test.ts": "digest and evaluation steps of every corpus file (the weak keep law)",
-  "test/label-fit.test.ts": "the label-fit rule over the corpus: moves only reported labels, and agrees with the passes before it",
-  "test/label-placement-oracle.test.ts": "oracle against the placer on every corpus storey, on named families and on a pile of identical rooms",
+  "test/label-fit.test.ts":
+    "the label-fit rule over the corpus: moves only reported labels, and agrees with the passes before it",
+  "test/label-placement-oracle.test.ts":
+    "oracle against the placer on every corpus storey, on named families and on a pile of identical rooms",
   "test/label-wrap.test.ts": "the wrap law over the corpus, and a 120-run generated narrow-room property",
   "test/lint-hint-paste.test.ts": "applies each lint hint and re-lints, walk round included, across the corpus",
   "test/lint-layers.test.ts": "lints the corpus checking every warning is among its rule's codes",
-  "test/lint-summary.test.ts": "the lint summary key and `lint --json` equality with lint(), byte for byte, over the corpus",
-  "test/net-area-oracle-corpus.test.ts": "the net-area oracle over every room of the corpus (its work count is pinned in the test)",
+  "test/lint-summary.test.ts":
+    "the lint summary key and `lint --json` equality with lint(), byte for byte, over the corpus",
+  "test/net-area-oracle-corpus.test.ts":
+    "the net-area oracle over every room of the corpus (its work count is pinned in the test)",
   "test/polygon-overlap-oracle.test.ts": "every pair of rings in each corpus plan, with each eps a caller passes",
-  "test/reroll-findrun-oracle.test.ts": "two reroll properties over generated sources (new finder against the oracle, 300 s each)",
+  "test/reroll-findrun-oracle.test.ts":
+    "two reroll properties over generated sources (new finder against the oracle, 300 s each)",
   "test/shaft-equivariance.test.ts": "one test per bound: shaft facts under the D4 group, each over a corpus plan",
   "test/stages.test.ts": "the stage of every diagnostic over every example, and the held-back counts per stage",
-  "test/step-budget.test.ts": "every clean corpus plan spends at most 1/100 of the step budget, every error demo at most 1/10",
+  "test/step-budget.test.ts":
+    "every clean corpus plan spends at most 1/100 of the step budget, every error demo at most 1/10",
   "test/taste-budget.test.ts": "the taste charge against its budget on every corpus plan, and the skip behaviour",
-  "test/taste-digests.test.ts": "taste digests: a profile that inherits generic must report generic's numbers, over the corpus",
+  "test/taste-digests.test.ts":
+    "taste digests: a profile that inherits generic must report generic's numbers, over the corpus",
   "test/taste-invisible.test.ts": "every corpus file's payload equals the one taken before taste ran",
   "test/taste-separation.test.ts": "twin pairs over the corpus ledger, both ways",
   "test/taste.test.ts": "every room a taste message names is named by its label, over the corpus",

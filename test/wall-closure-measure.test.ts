@@ -115,8 +115,7 @@ suite("wall closure, measured (G5, issue #346)", () => {
     // reported, one millimetre over it is not, at a setting far above either.
     expect(MAX_WALL_GAP_SCAN_MM).toBe(500);
     // No `grid` line: `collinear`'s `grid 10` would snap a 501 mm slit onto 500.
-    const at = (slit: number) =>
-      codes(collinear(3900, 4000 + slit).replace("  grid 10\n", ""), { wallGapMm: 1e7 });
+    const at = (slit: number) => codes(collinear(3900, 4000 + slit).replace("  grid 10\n", ""), { wallGapMm: 1e7 });
     expect(at(MAX_WALL_GAP_SCAN_MM)).toEqual(["W_WALL_END_SHORT"]);
     expect(at(MAX_WALL_GAP_SCAN_MM + 1)).toEqual([]);
     // A slit inside the clamp is still found at a huge setting.

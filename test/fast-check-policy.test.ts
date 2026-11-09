@@ -131,7 +131,8 @@ describe("fast-check run policy", () => {
       "fc.assert(fc.property(a, (x) => { expect(x.length).toBe(1); }), { numRuns: 5, seed: 1 });",
       'fc.assert(fc.property(a, (x) => { f("at least ) one"); }), { seed: 7 });',
     ].join("\n");
-    const after = 'it("x", () => {\n  fc.assert(fc.property(a, (x) => { n++; }), { numRuns: 5 });\n  expect(n).toBeGreaterThan(0);\n});';
+    const after =
+      'it("x", () => {\n  fc.assert(fc.property(a, (x) => { n++; }), { numRuns: 5 });\n  expect(n).toBeGreaterThan(0);\n});';
     expect(propertyCalls(after).map((c) => [c.claim, c.seeded])).toEqual([[true, false]]);
     expect(propertyCalls(src).map((c) => [c.claim, c.seeded])).toEqual([
       [true, false],
