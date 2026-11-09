@@ -262,7 +262,7 @@ poché, beneath the walls that stay, and no fact reads it, so the old kitchen, d
 living room are measured as the one space they become. The study's wall is `status new`,
 drawn as any wall. The room schedule's net areas are the flat after the works, the legend
 explains the dashed swatch, and in the DXF the two kinds of wall land on `A-WALL-DEMO` and
-`A-WALL-NEWW`. See [wall status](/language-reference#wall).
+`A-WALL-NEWW`. See [wall status](/reference#wall).
 
 <ArchLive :src="EXAMPLES['remodel']" page="remodel" :rows="30" />
 
@@ -276,7 +276,7 @@ climbing order, and the upper level copies the block and changes only `dir`. The
 wraps round stays floor. At a 2750 mm storey it owes 11 goings and a landing, 2420 mm of flights,
 not the 2640 mm a straight flight owes, and its two 1530 mm flights hold 6 goings each, so no
 residential lint profile warns. `describe` reports the flights, the landing and the turn. See
-[vertical circulation](/language-reference#vertical-circulation--stair-elevator-escalator-v121).
+[vertical circulation](/reference#vertical-circulation-—-stair-elevator-escalator-v1-21).
 
 <ArchLive :src="EXAMPLES['turning-stair']" page="turning-stair" :rows="30" />
 
@@ -357,7 +357,7 @@ stated once, because one building is issued on one sheet at one scale.
 same `id=st` on all three storeys is not a clash — it is the declaration that these are one
 shaft, and it is what makes the upper floors legal: they have no front door of their own,
 and `lint` still reads the first-floor landing as reached from outside because
-[`describe().vertical`](/reference#vertical-circulation-stair-elevator-escalator-v1-21)
+[`describe().vertical`](/reference#vertical-circulation-—-stair-elevator-escalator-v1-21)
 connects it to the storey below. Change one storey's id and you get `W_STAIR_UNMATCHED`
 rather than a silently disconnected floor. `dir` is not decoration either: the flight runs
 along its footprint's long axis and `dir up` is entered at that axis's larger-coordinate
@@ -475,7 +475,7 @@ byte-identical without the zone wrappers. The four retail units are one
 [`strip`](/reference#strip-v1-13), not four hand-placed rooms: each unit's offset is the
 running sum of the ones before it, so changing a shop's depth moves every unit below it and
 nothing else. Escalators and a lift are
-[vertical shafts](/reference#vertical-circulation-stair-elevator-escalator-v1-21) drawn with
+[vertical shafts](/reference#vertical-circulation-—-stair-elevator-escalator-v1-21) drawn with
 their chevrons and UP/DN arrows; on a single-storey plan they still obstruct circulation,
 and `W_STAIR_UNMATCHED` is a multi-storey question that never fires here.
 

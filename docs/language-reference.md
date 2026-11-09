@@ -130,7 +130,7 @@ steps out to the next coarser one instead of quietly running the table off the p
 
 An authored `scale` is **never silently overridden** — a drawing is issued at the scale
 printed in its own title block. If the building does not fit at that scale you get the
-advisory [`W_SCALE_OVERFLOW`](errors.md#w-scale-overflow) and the page grows past the
+advisory [`W_SCALE_OVERFLOW`](error-codes.md#w_scale_overflow) and the page grows past the
 sheet so nothing is clipped. Fix it by choosing a coarser scale, a larger sheet, or by
 dropping the `scale` line and letting auto-fit choose.
 
