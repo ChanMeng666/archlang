@@ -1,6 +1,6 @@
 # Resume point
 
-**Where (2026-11-10, evening):** waves 0–3 DONE except EH2.10 (#656, in review, partial by design). Residue cards
+**Where (2026-11-10, evening):** waves 0–3 DONE (EH2.10 #656 partial by design). Residue cards
 EH1.18, EH1.19, EH2.3b, EH2.5b, EH2.8b done today. Open cards: EH2.3c, EH2.11, EH2.12, EH3.7 (merge queue — do this
 first next time), then the programme's closing audit.
 
@@ -11,7 +11,7 @@ five sampled files 82.5 s → 5.7 s) · EH1.10 (#593) · EH1.11 (#597) · EH1.12
 CLI's world is rooted under a lockstep table) · EH2.1 (#614) · EH2.9 (#611) · policy #615 · records #582, #596, #600,
 #602, #609, #612, #616.
 
-**In flight:** #656 only. 71 PRs merged since 2026-11-09.
+**In flight:** nothing from the programme; EH3.7 (merge queue) executing. 72 PRs merged since 2026-11-09.
 Lessons of 2026-11-10: (1) CodeQL is required and fails on `String.replace` escaper chains and argv-built RegExps —
 five PRs lost a round; the gotcha and `test/no-replace-chain-escapers.test.ts` now guard it. (2) A 400-file PR shifts
 every pre-existing CodeQL alert into its diff: triage main first (22 test-only alerts dismissed as 'used in tests').

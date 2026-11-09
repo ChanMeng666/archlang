@@ -331,7 +331,7 @@ decoding identically (the 37-example identity test and the at-cap/over-cap cases
 the browser-safe module imports no `node:` API (it lives under `src/cli/`, where Node APIs are allowed). A refusal
 that used to throw now returns a code: say so in the CHANGELOG. Proof: `share-codec` and the Worker tests green.
 
-### EH2.10 · lint rule costs after the shared Scene — `in review (#656; leaf-across-doorway and boundary-no-wall indexed, path-too-narrow inherent and pinned only — partial)` · M · medium · opus · from #624's measurements
+### EH2.10 · lint rule costs after the shared Scene — `done (#656: leaf-across-doorway and boundary-no-wall indexed with a checked-in superset test; path-too-narrow inherent, pinned by navCells; the card's other counters and the K1 table are not addressed — partial by design)` · M · medium · opus · from #624's measurements
 With the Scene shared, lint's time sits in rules: BALANCED `leaf-across-doorway` 44.9 ms and `boundary-no-wall`
 29.1 ms of 163 ms; MUSEUM `path-too-narrow` 75.2 ms of 108 ms. Profile each (what is quadratic or repeated),
 cut the cost without moving a byte of `lint()` output (the corpus digest and the K1 table are the proof),
