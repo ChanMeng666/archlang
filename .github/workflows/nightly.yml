@@ -383,6 +383,15 @@ jobs:
           # it catches a published core that jsDelivr re-bundles badly, and an unpublished pin.
           E2E_PROD: "1"
 
+      # A case that passed only on its retry fails the night, so it reaches the `ci-red` issue
+      # through `report` (which counts any job result other than success/skipped).
+      - name: Flaky tests
+        if: ${{ always() }}
+        run: >-
+          node scripts/playwright-flaky.mjs --fail-on-flaky
+          playground/test-results/results.json
+          docs-site/test-results/results.json
+
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
