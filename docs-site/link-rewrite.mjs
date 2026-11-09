@@ -8,6 +8,98 @@ import { posix } from "node:path";
 
 const GITHUB = "https://github.com/ChanMeng666/archlang";
 
+// VitePress's heading-id rule, copied from vitepress 1.6.4 (`slugify` in dist/node, the one it hands
+// markdown-it-anchor; this repo's config sets no custom one). GitHub keeps `_` in an anchor and
+// VitePress turns it into `-`, so `error-codes.md#w_scale_overflow` must become `/errors#w-scale-overflow`.
+// biome-ignore lint/suspicious/noControlCharactersInRegex: VitePress's own rule, copied verbatim
+const rControl = /[\u0000-\u001f]/g;
+const rSpecial = /[\s~`!@#$%^&*()\-_+=[\]{}|\\;:"'“”‘’<>,.?/]+/g;
+const rCombining = /[̀-ͯ]/g;
+
+/** The id VitePress gives a heading with this text (and so the fragment a site link must carry). */
+export function slugify(str) {
+  return str
+    .normalize("NFKD")
+    .replace(rCombining, "")
+    .replace(rControl, "")
+    .replace(rSpecial, "-")
+    .replace(/-{2,}/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .replace(/^(\d)/, "_$1")
+    .toLowerCase();
+}
+
+/** The visible text of a markdown heading: links reduced to their text, tags and emphasis dropped. */
+const headingText = (h) =>
+  h
+    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
+    .replace(/<[^>]+>/g, "")
+    .replace(/[`*]/g, "");
+
+/** GitHub's anchor for a heading text (what the canonical docs' fragments are written in). */
+const githubSlug = (text) =>
+  text
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, "")
+    .replace(/ /g, "-");
+
+/**
+ * The headings of a markdown source as `{ vp, gh }` id pairs: the id VitePress gives each (its
+ * `slugify`, which KEEPS an em dash GitHub drops) and the GitHub anchor, with each one's duplicates
+ * numbered `-1`, `-2`, ... by both. Fenced code is skipped.
+ */
+export function headingIds(markdown) {
+  const out = [];
+  const seenVp = new Map();
+  const seenGh = new Map();
+  const uniq = (seen, base) => {
+    const n = seen.get(base) ?? 0;
+    seen.set(base, n + 1);
+    return n === 0 ? base : `${base}-${n}`;
+  };
+  let fence = null;
+  for (const line of markdown.split("\n")) {
+    const f = /^\s*(`{3,}|~{3,})/.exec(line);
+    if (f) {
+      if (fence === null) fence = f[1][0];
+      else if (f[1][0] === fence) fence = null;
+      continue;
+    }
+    const h = fence === null ? /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(line) : null;
+    if (!h) continue;
+    const text = headingText(h[1]);
+    out.push({ vp: uniq(seenVp, slugify(text)), gh: uniq(seenGh, githubSlug(text)) });
+  }
+  return out;
+}
+
+/**
+ * A `#fragment` written for GitHub, re-spelled as the VitePress heading id of the same heading in
+ * `source` (the target page's markdown). A fragment that is already a VitePress id stays; one that
+ * matches no heading falls back to VitePress's slug of the fragment text.
+ */
+function siteFrag(frag, source) {
+  if (frag.length < 2) return frag;
+  let raw = frag.slice(1);
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {
+    // keep the raw text
+  }
+  if (source) {
+    const heads = headingIds(source);
+    if (heads.some((h) => h.vp === raw)) return `#${raw}`;
+    const hit = heads.find((h) => h.gh === raw.toLowerCase());
+    if (hit) return `#${hit.vp}`;
+    // A hand-typed anchor that only differs in punctuation (`v1-29` for GitHub's `v129`, one dash where
+    // the heading has an em dash): accept it when exactly one heading is that text.
+    const key = (x) => x.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+    const near = [...new Set(heads.filter((h) => key(h.vp) === key(raw)).map((h) => h.vp))];
+    if (near.length === 1) return `#${near[0]}`;
+  }
+  return `#${slugify(raw)}`;
+}
+
 /** A page's site route from its `dest` (`reference.md` -> `/reference`, `index.md` -> `/`). */
 export function routeOfDest(dest) {
   const r = dest.replace(/\.md$/, "");
@@ -22,6 +114,7 @@ export function routeOfDest(dest) {
  *   rootCopies: ReadonlyArray<readonly [string, string]>, ROOT_COPIES rows
  *   playground: string,                                   the PLAYGROUND origin
  *   kindOf: (repoPath: string) => "file" | "dir" | null,  what the repo holds at a path
+ *   sourceOf?: (repoPath: string) => string | null,       a markdown source's text (resolves #fragments)
  * }} ctx
  */
 export function rewriteLinks(markdown, srcPath, ctx) {
@@ -42,10 +135,11 @@ export function rewriteLinks(markdown, srcPath, ctx) {
     if (path.startsWith("..") || path === ".") return target;
     const bare = path.replace(/\/$/, "");
     let out;
-    if (pageRoute.has(bare)) out = pageRoute.get(bare) + frag;
-    else if (/^docs\/adr\/index\.md$/.test(bare) || bare === "docs/adr") out = "/adr" + frag;
-    else if (/^docs\/adr\/[^/]+\.md$/.test(bare)) out = `/adr/${posix.basename(bare, ".md")}` + frag;
-    else if (rootPath.has(bare)) out = rootPath.get(bare) + frag;
+    if (pageRoute.has(bare)) out = pageRoute.get(bare) + siteFrag(frag, ctx.sourceOf?.(bare));
+    else if (/^docs\/adr\/index\.md$/.test(bare) || bare === "docs/adr") out = "/adr" + siteFrag(frag, null);
+    else if (/^docs\/adr\/[^/]+\.md$/.test(bare))
+      out = `/adr/${posix.basename(bare, ".md")}` + siteFrag(frag, ctx.sourceOf?.(bare));
+    else if (rootPath.has(bare)) out = rootPath.get(bare) + siteFrag(frag, null);
     else if (bare === "playground/index.html") out = ctx.playground + frag;
     else {
       const kind = ctx.kindOf(bare);

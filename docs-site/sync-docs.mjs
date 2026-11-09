@@ -150,6 +150,13 @@ function linkRewrite(body, src) {
     pages: [...PAGES, ...SITE_PAGES],
     rootCopies: ROOT_COPIES,
     playground: PLAYGROUND,
+    sourceOf: (p) => {
+      try {
+        return readFileSync(join(repo, p), "utf8");
+      } catch {
+        return null;
+      }
+    },
     kindOf: (p) => {
       try {
         return statSync(join(repo, p)).isDirectory() ? "dir" : "file";

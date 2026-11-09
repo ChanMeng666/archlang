@@ -751,17 +751,12 @@ export default defineConfig({
   // markdown page parsing so VitePress neither routes them nor dead-link-checks
   // their canonical relative links (which resolve on the real page, not the copy).
   srcExclude: ["public/**"],
-  // The reference/errors pages are synced verbatim from the canonical repo docs,
-  // which contain relative links to repo files (examples/*.arch, playground/,
-  // CHANGELOG.md, error-codes.md → the site's /errors page) that are
-  // valid on GitHub but not pages on this site under the same name. Don't fail
-  // the build on them.
+  // The synced pages' repo-relative links are rewritten to site routes by docs-site/link-rewrite.mjs,
+  // so a dead link there is a real one and fails the build. The two repo-path patterns below predate
+  // the rewrite and are kept as they were.
   ignoreDeadLinks: [
     /\.\.\/(examples|playground)\//,
     /\.\.\/\.\.\//,
-    /\.\.\/CHANGELOG/,
-    /error-codes/,
-    /language-reference/,
     // Machine-readable artifacts served verbatim from public/ (sync-docs.mjs). VitePress
     // knows .txt/.json are assets, but not the unknown .gbnf extension — it takes
     // /archlang.gbnf for a page route and calls it dead. It is a real, served file.
