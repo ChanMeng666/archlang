@@ -222,11 +222,17 @@ describe("the summary table", () => {
     no("src/num.format.ts", "src/num-format.ts");
     yes("a+(b)[c]{d}$^|.ts", "a+(b)[c]{d}$^|.ts");
     no("a+(b).ts", "aa(b).ts");
-    // Bounded on a hostile pattern: each position pair is decided once.
-    const t0 = Date.now();
-    no(`${"*".repeat(40)}x`, "a".repeat(200));
-    no(`${"**/".repeat(20)}x`, "a/".repeat(100));
-    expect(Date.now() - t0).toBeLessThan(2000);
+    // Bounded on a hostile pattern: each position pair is decided once, so the decided pairs never
+    // exceed (pattern length + 1) × (path length + 1). A count, not a clock.
+    for (const [p, f] of [
+      [`${"*".repeat(40)}x`, "a".repeat(200)],
+      [`${"**/".repeat(20)}x`, "a/".repeat(100)],
+    ] as const) {
+      const meter = { steps: 0 };
+      expect(globMatch(p, f, meter), `${p} !~ ${f}`).toBe(false);
+      expect(meter.steps).toBeGreaterThan(0);
+      expect(meter.steps).toBeLessThanOrEqual((p.length + 1) * (f.length + 1));
+    }
   });
 
   it("a glob in --files matches tracked paths, its regex metacharacters taken literally", async () => {

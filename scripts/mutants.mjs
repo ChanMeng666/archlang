@@ -452,13 +452,16 @@ export function markdown(r) {
  * `/` (and `**\/` also matches no folder at all, so `src/**\/*.ts` takes `src/a.ts`), `?` one
  * character except `/`; every other character is itself. Each (pattern, path) position pair is
  * decided once, so the walk is at most pattern length × path length steps whatever the input.
+ * An optional `meter` counts the pairs decided (`meter.steps`), so a test can pin that bound as a
+ * count rather than a clock.
  */
-export function globMatch(pattern, path) {
+export function globMatch(pattern, path, meter) {
   const memo = new Map();
   const at = (p, s) => {
     const key = p * (path.length + 1) + s;
     const known = memo.get(key);
     if (known !== undefined) return known;
+    if (meter) meter.steps++;
     let r = false;
     const c = pattern[p];
     if (p === pattern.length) r = s === path.length;
