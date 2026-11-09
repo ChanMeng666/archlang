@@ -38,7 +38,7 @@ A row with no failing check is a gap; say so in the PR rather than relying on re
 ## Sets built from, or held to, `KIND_FACETS`
 
 `CROPPED` (`src/cli/review.ts`), `SHELL_KINDS` (`src/furnish.ts`), `STACKED_KINDS`
-(`src/keep.ts`), `UNPROJECTED_KINDS` and `OPENING_KINDS` (`src/plan-json.ts`) and the label
+(`src/keep.ts`), `UNPROJECTED_KINDS` (`src/plan-json/to-json.ts`), `OPENING_KINDS` (`src/plan-json/from-json.ts`) and the label
 fallback of `elementLabelOf` (`src/scene-build.ts`) are BUILT from the table: write the row, not
 the set. `VERTICAL_KINDS` (`src/vertical.ts`, a public tuple) and `STYLE_KEYS` (`src/theme.ts`,
 whose key order feeds the generated spec) are HELD to it by `test/element-facets.test.ts`.
@@ -54,9 +54,9 @@ that table is a `Record` over `PlanJsonDroppedClause`.
   `E_*`/`W_*` code (`test/error-catalog-*.test.ts` catch a
   raised code with no entry, not a missing diagnostic).
 - `src/lint/rules/`: any rule the kind needs (the lint-rule recipe is `.claude/commands/new-lint-rule.md`).
-- The two hand-written opening-kind literals of Plan JSON in `src/plan-json.ts`: the
-  `OpeningJson.kind` type (`"door"`, `"window"`, `"opening"`) and the `openings[].kind` enum of
-  `PLAN_JSON_SCHEMA` (which `schemas/plan.schema.json` is generated from). A kind marked `opening`
+- The two hand-written opening-kind literals of Plan JSON in `src/plan-json/`: the
+  `OpeningJson.kind` type (`types.ts`; `"door"`, `"window"`, `"opening"`) and the `openings[].kind`
+  enum of `PLAN_JSON_SCHEMA` (`schema.ts`) (which `schemas/plan.schema.json` is generated from). A kind marked `opening`
   in `KIND_FACETS` also needs both.
 - Generated artifacts (grammars, spec, GBNF, schemas): `npm run gen:all`, then `check:drift` (the
   recipe is `.claude/commands/regen.md`).
