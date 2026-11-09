@@ -241,7 +241,7 @@ Totals: 378 modules in 34 directories.
 | `furnish-table.ts` | 143 | 3 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
 | `furnish.ts` | 1677 | 9 | The `furnish` stage of `finish()` — furniture by room use, in rooms that hold none (`docs/adr/0025-furnish-as-explicit-transform.md`). | none |
 | `furniture-relation.ts` | 372 | 8 | Furniture relations (ADR 0029): the closed-form geometry behind `facing <id>`, `against <room>.<edge>` and `clear front\|sides <mm>`. | none |
-| `geometry.ts` | 958 | 104 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
+| `geometry.ts` | 952 | 105 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
 | `hash.ts` | 14 | 3 | FNV-1a — a tiny, fast, deterministic non-cryptographic string hash, used to key the per-stage memo caches (lex → tokens, parse → ast). The length is appended to make accidental collisions vanishingly unlikely; callers that need certainty… | none |
 | `hatches.ts` | 665 | 26 | Material hatch patterns — a small named hatch *library*. Each material maps to an SVG `<pattern>` builder (for the SVG backend), a natural rotation, and a predefined DXF HATCH pattern name (so the hatch survives to CAD as a real `HATCH`… | none |
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
@@ -333,7 +333,7 @@ Totals: 378 modules in 34 directories.
 | `open-shell.ts` | 304 | 2 | **Open shells:** exterior walls that should enclose a room and do not. `W_EXTERIOR_RING_OPEN` reports them, and `describe()` says which rooms the gross internal area leaves out because of them (`totals.gross_internal_area_leaves_out`)… | none |
 | `quantities.ts` | 309 | 4 | `describe --facts quantities` and `arch takeoff`: the geometric quantities of one storey, as an estimator reads them. Geometry only, never a claim: every figure is a length, an area or a count measured from the shapes, and its convention… | none |
 | `rooms.ts` | 204 | 4 | Room geometry leaves of the analysis layer: a room's box and ring, its area, the point-in-room and edge-touch tests, and the room-use predicates. | none |
-| `symmetry.ts` | 989 | 2 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
+| `symmetry.ts` | 974 | 3 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
 | `syntax.ts` | 127 | 2 | SPACE SYNTAX on the access graph — `describe(src, { facts: ["syntax"] })`. Opt-in. | none |
 | `takeoff.ts` | 66 | 2 | The long form of a takeoff: every figure of `describe --facts quantities`, one row each, and the CSV `arch takeoff --format csv` and the Playground's Takeoff tab both write from it. Pure, so the two cannot disagree. | none |
 | `wall-faces.ts` | 525 | 5 | **Walled faces** — the closed regions of floor a storey's wall bodies enclose, and how much of each one the rooms cover (plan-soundness PS2.4: `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL`). | none |
@@ -397,11 +397,11 @@ Totals: 378 modules in 34 directories.
 | `furniture.ts` | 1227 | 11 | `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label. | charges the step meter |
 | `glyph-chirality.ts` | 224 | 13 | The handedness of a drawn fixture symbol, and what a mirrored `place` does to it. | none |
 | `glyph-lib.ts` | 917 | 31 | The drawing vocabulary every fixture glyph is built from. | none |
-| `glyphs-bath.ts` | 374 | 2 | Bathroom plan symbols: the WC, the basin, the shower tray, the tub, the bidet, the urinal and the mirror. | none |
+| `glyphs-bath.ts` | 370 | 2 | Bathroom plan symbols: the WC, the basin, the shower tray, the tub, the bidet, the urinal and the mirror. | none |
 | `glyphs-bedroom.ts` | 459 | 2 | Bedroom plan symbols — the bed and what stands beside it. | none |
 | `glyphs-kitchen.ts` | 793 | 2 | Kitchen and utility plan symbols: the sink run, the worktop, the hob, the fridge, the built-in appliances and the overhead cabinet. | none |
 | `glyphs-living.ts` | 1233 | 4 | Living- and dining-room plan symbols: seating, tables and the media wall. | none |
-| `glyphs-misc.ts` | 881 | 2 | The remaining plan symbols: the workspace pieces, the two that belong to no room at all (a plant, a parked car), and the one that belongs outdoors (a sun lounger). | none |
+| `glyphs-misc.ts` | 876 | 2 | The remaining plan symbols: the workspace pieces, the two that belong to no room at all (a plant, a parked car), and the one that belongs outdoors (a sun lounger). | none |
 | `glyphs-outdoor.ts` | 1252 | 2 | The OUTDOOR plan symbols: what a site plan draws once the drawing leaves the building — planting, garden furniture, the things parked on a driveway, and the small standing objects (a bin, a mailbox, a charge point) a survey records. | none |
 | `index.ts` | 17 | 1 | Built-in element registry — back-compatible views over the default {@link Registry}. The canonical built-in list now lives in `defs.ts`; the per-call registry machinery (and the public `register*` extension points) live in `registry.ts`.… | none |
 | `opening.ts` | 158 | 2 | `opening [id=] at (x,y) width N [wall ref]` — a leaf-less cased opening: a gap in the host wall (no door leaf, no glazing) that still connects the two spaces. | none |
@@ -447,7 +447,7 @@ Totals: 378 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `arc-band.ts` | 201 | 4 | How deep a rectangle reaches into a CURVED wall's solid — the radial analogue of the straight-segment frame in `./rect.ts`. | none |
+| `arc-band.ts` | 199 | 4 | How deep a rectangle reaches into a CURVED wall's solid — the radial analogue of the straight-segment frame in `./rect.ts`. | none |
 | `arc.ts` | 444 | 48 | Circular-arc math for **curved geometry** — arc wall edges and circular rooms. | none |
 | `backend.ts` | 73 | 5 | Optional polygon-geometry backend seam. | none |
 | `band.ts` | 771 | 25 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
@@ -456,7 +456,7 @@ Totals: 378 modules in 34 directories.
 | `intersect.ts` | 341 | 8 | Closed-form intersection and ray-crossing primitives for **wall joinery**. | none |
 | `joinery.ts` | 1227 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
-| `polygon.ts` | 669 | 66 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
+| `polygon.ts` | 669 | 68 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
 | `rect.ts` | 502 | 37 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
 | `union.ts` | 193 | 3 | Boolean of axis-aligned rectangles (union, and difference of "holes") → boundary loops. | none |
 
@@ -546,7 +546,7 @@ Totals: 378 modules in 34 directories.
 | `from-json.ts` | 710 | 3 | The Plan JSON validator `planFromJson` runs first: the shape and kind checks that stamp a JSON path on every `E_JSON_*` diagnostic, capped at `MAX_DIAGNOSTICS` (moved verbatim from `src/plan-json.ts`, which re-exports every name it… | none |
 | `room-types.ts` | 133 | 7 | Room-type mapping (uses ⇄ RPLAN-style `room_type`) — ONE source of truth for Plan JSON and `describe()`'s `room_type` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `schema.ts` | 564 | 1 | The Plan JSON Schema (2020-12), {@link PLAN_JSON_SCHEMA} — ONE source of truth; `scripts/gen-plan-schema.ts` only writes it to `schemas/plan.schema.json` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
-| `to-json.ts` | 665 | 2 | `planToJson` — parse + resolve a plan, then project it OUT to the wire shape with the output-only enrichments (areas, `edges`, `input_graph`, `dropped`) (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `to-json.ts` | 665 | 3 | `planToJson` — parse + resolve a plan, then project it OUT to the wire shape with the output-only enrichments (areas, `edges`, `input_graph`, `dropped`) (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `types.ts` | 400 | 4 | The Plan JSON wire shape (`version: 1`): every row interface and {@link PlanJson} itself. All coordinates are millimetres; areas m² (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 
 ## `src/taste/`
