@@ -20,6 +20,7 @@
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, DEFAULT_RULESET, lint, type LintRuleset } from "../src/index.js";
+import { MAX_WALL_GAP_SCAN_MM } from "../src/lint/rules/enclosure.js";
 
 const read = (p: string): string => readFileSync(new URL(`./${p}`, import.meta.url), "utf8");
 const codes = (src: string, ruleset?: Partial<LintRuleset>): string[] =>
@@ -107,10 +108,17 @@ suite("wall closure, measured (G5, issue #346)", () => {
 
   it("a huge wallGapMm is clamped: the scan is a count, not the ruleset's figure", () => {
     const src = read(`${SHORT}.arch`).replace("(4000,230)", "(4000,2500)");
-    // A scan that honoured 1e7 would walk the 2500 mm slit and report it; the clamp
-    // (MAX_WALL_GAP_SCAN_MM, 500 steps per end, not exported) stops it first. The finding's
-    // absence is the count bound; no clock is read (AGENTS.md: budgets are counts, never time).
+    // A scan that honoured 1e7 would walk the 2500 mm slit and report it; the clamp stops it first.
+    // No clock is read (AGENTS.md: budgets are counts, never time): both sides of the clamp are pinned.
     expect(codes(src, { wallGapMm: 1e7 })).not.toContain("W_WALL_END_SHORT");
+    // The drawn slit of `collinear(a, b)` is b - a - 100 (two 50 mm caps): exactly the clamp is
+    // reported, one millimetre over it is not, at a setting far above either.
+    expect(MAX_WALL_GAP_SCAN_MM).toBe(500);
+    // No `grid` line: `collinear`'s `grid 10` would snap a 501 mm slit onto 500.
+    const at = (slit: number) =>
+      codes(collinear(3900, 4000 + slit).replace("  grid 10\n", ""), { wallGapMm: 1e7 });
+    expect(at(MAX_WALL_GAP_SCAN_MM)).toEqual(["W_WALL_END_SHORT"]);
+    expect(at(MAX_WALL_GAP_SCAN_MM + 1)).toEqual([]);
     // A slit inside the clamp is still found at a huge setting.
     expect(codes(read(`${SHORT}.arch`), { wallGapMm: 1e7 })).toEqual(["W_WALL_END_SHORT"]);
   });

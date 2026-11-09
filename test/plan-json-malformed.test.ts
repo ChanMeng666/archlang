@@ -305,7 +305,7 @@ describe("malformed Plan JSON", () => {
           expect(field.read(source), `${where}\n${source}`).toBe(s);
         tally[field.kind]++;
       }),
-      { seed: STRING_SEED, numRuns: STRING_RUNS },
+      { seed: STRING_SEED, numRuns: scaledRuns(STRING_RUNS) },
     );
     console.info(`plan-json-malformed law (e): ${JSON.stringify(tally)}`);
     // Every half ran: hostile strings were refused, and literals, words and positions were each

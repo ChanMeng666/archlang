@@ -484,7 +484,8 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
           }
         }
       }),
-      { numRuns: runs(300) },
+      // Seeded: the claim after the call is a non-vacuity one (test/fast-check-policy.test.ts).
+      { numRuns: runs(300), seed: 20261111 },
     );
     // Not vacuous: runs were found, and some only after the old search shrank the window.
     expect(found).toBeGreaterThan(0);
@@ -503,7 +504,8 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
           if (want) found++;
         }
       }),
-      { numRuns: runs(5000) },
+      // Seeded: the claim after the call is a non-vacuity one (test/fast-check-policy.test.ts).
+      { numRuns: runs(5000), seed: 20261111 },
     );
     expect(found).toBeGreaterThan(0);
   });
@@ -547,7 +549,8 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
         ap++;
         for (let m = 2; m <= vs.length; m++) expect(newIsArithmeticProgression(vs.slice(0, m))).toBe(true);
       }),
-      { numRuns: runs(5000) },
+      // Seeded: the claim after the call is a non-vacuity one (test/fast-check-policy.test.ts).
+      { numRuns: runs(5000), seed: 20261111 },
     );
     expect(ap).toBeGreaterThan(0);
   });

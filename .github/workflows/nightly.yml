@@ -220,7 +220,7 @@ jobs:
           npx vitest run --reporter=default --reporter=json --outputFile.json=fuzz-deep-report.json
           test/fuzz.test.ts test/escape-fuzz.test.ts test/equivariance-fuzz.test.ts
           test/frame.test.ts test/reroll-findrun-oracle.test.ts test/plan-json-malformed.test.ts
-          test/openplan3d-malformed.test.ts
+          test/openplan3d-malformed.test.ts test/import-world-fuzz.test.ts
 
       - name: Upload the report
         if: ${{ always() }}

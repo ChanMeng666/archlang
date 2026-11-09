@@ -849,7 +849,8 @@ suite("verticalReach — the room-aware fixpoint refines the storey-level one", 
         for (const [n, rooms] of got.arrivalRooms) for (const r of rooms) expect(old.arrivalRooms.get(n)).toContain(r);
         if (got.reachable.size < old.reachable.size) pruned++;
       }),
-      { numRuns: runs(400) },
+      // Seeded: the `pruned > 0` below is a non-vacuity claim (test/fast-check-policy.test.ts).
+      { numRuns: runs(400), seed: 20261111 },
     );
     expect(pruned).toBeGreaterThan(0); // the generator really produced dead stops
   });

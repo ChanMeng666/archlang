@@ -43,12 +43,34 @@ const FILES = TEST_ROOTS.flatMap((r) => walk(r))
   .filter((f) => f !== SELF)
   .sort();
 
-const CLOCK = /\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b/;
-const CAPTURE = /\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=[^=]*(?:\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b)/;
+const CLOCK_CALL = /\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b/;
+/** `const t0 = Date.now()`, `let t = performance.now()` or a bare `t0 = Date.now()`. */
+const CAPTURE = /(?:\b(?:const|let|var)\s+)?\b([A-Za-z_$][\w$]*)\s*=[^=][^;\n]*?(?:\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b)/;
 
 const isComment = (l: string) => /^\s*(\/\/|\*|\/\*)/.test(l);
 
-/** `file:line` of every clock-in-assertion in `text`. */
+/** The argument text of the call whose `(` is at `open` (strings skipped), across lines. */
+function argText(text: string, open: number): string {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    const c = text[i];
+    if (c === '"' || c === "'" || c === "`") {
+      for (i++; i < text.length && text[i] !== c; i++) if (text[i] === "\\") i++;
+    } else if (c === "(") depth++;
+    else if (c === ")" && --depth === 0) return text.slice(open, i + 1);
+  }
+  return text.slice(open);
+}
+
+/**
+ * The 1-based line of every `expect(` whose argument (possibly over several lines) reads a clock, or
+ * uses a name captured from a clock EARLIER in the file: the stamp is always taken before the
+ * assertion, so any later `expect(` that mentions the name counts, however far down it sits.
+ *
+ * Blind spot, accepted: a clock read inside a helper (`const took = () => performance.now() - t0`,
+ * or a function that returns the elapsed time) is not followed; the helper's call site is not seen
+ * as a clock. The guard is a tripwire for the direct forms, not a proof.
+ */
 function clockAssertions(text: string): number[] {
   const lines = text.split("\n");
   const hits = new Set<number>();
@@ -57,59 +79,58 @@ function clockAssertions(text: string): number[] {
     if (isComment(l)) return;
     const cap = CAPTURE.exec(l);
     if (cap?.[1]) captured.push({ name: cap[1], line: i });
-    if (CLOCK.test(l) && /\bexpect\s*\(/.test(l)) hits.add(i + 1);
   });
-  lines.forEach((l, i) => {
-    if (isComment(l) || !/\bexpect\s*\(/.test(l)) return;
+  const lineOf = (offset: number) => text.slice(0, offset).split("\n").length;
+  for (const m of text.matchAll(/\bexpect\s*\(/g)) {
+    const line = lineOf(m.index);
+    if (isComment(lines[line - 1] ?? "")) continue;
+    const arg = argText(text, m.index + m[0].length - 1);
+    if (CLOCK_CALL.test(arg)) hits.add(line);
     for (const c of captured) {
-      // The captured value is used by an `expect(` within a few lines of its capture, or later in
-      // the same test (a start stamp read after the work): the stamp is always before the expect.
-      if (c.line < i && new RegExp(`\\b${c.name.replace(/\$/g, "\\$")}\\b`).test(l)) hits.add(i + 1);
+      if (c.line < line - 1 && new RegExp(`(?<![\\w$.])${c.name.replace(/\$/g, "\\$")}(?![\\w$])`).test(arg)) hits.add(line);
     }
-  });
+  }
   return [...hits].sort((a, b) => a - b);
 }
 
 /** Honest remaining clock uses: file -> why a count cannot stand in. */
 const CLOCK_ALLOWED: Record<string, string> = {
   "test/diagnostics-volume.test.ts":
-    "10 s / 30 s linear-time smoke over a generated volume of diagnostics (#597); the count bound is pinned beside it, the clock only catches a quadratic blow-up of the whole pipeline",
+    "the one time-based check for the uncapped path, by ruling: offsetToLineCol called outside compile() has no 500-diagnostic cap and no work counter, so a 10 s smoke over 200,000 calls is what catches the quadratic scan; the 30 s flood smoke beside it is a backstop for the counted caps",
   "test/rectilinear-sides.test.ts":
     "30 s smoke that a pathological rectilinear input returns at all; the step budget is the real bound and is asserted elsewhere in the suite",
-  "test/rooms-tiling-probe.test.ts":
-    "5 s smoke over the tiling probe on a large input; the probe has no exported work counter to read",
   "packages/archlang-3d/test/mesh.test.ts":
     "2 s smoke on the 3D mesh builder, which lives outside the core's step meter and exports no count",
 };
 
 /** Per-test timeouts above 120 s, one row per file: the test sweeps a corpus or a generated family. */
 const SLOW_ALLOWED: Record<string, string> = {
-  "test/cli-commands.test.ts": "spawns the built CLI per command, serial; process start dominates",
-  "test/cli-validate-next.test.ts": "runs the CLI over every example, one process each",
-  "test/drawing-budget.test.ts": "compiles drawings sized at the drawing budget's edge",
-  "test/finish-furnish.test.ts": "furnishes a generated family of plans and the whole corpus",
-  "test/finish-levels.test.ts": "finishes a generated family of storeys and the whole corpus",
-  "test/finish.test.ts": "finishes every example of the corpus",
-  "test/huge-coordinates.test.ts": "sweeps coordinate magnitudes up to the model range across element kinds",
-  "test/keep-byte-identity.test.ts": "hashes SVG + describe + lint over the whole corpus (byte-identity law)",
-  "test/label-fit.test.ts": "label fitting over the corpus and a generated family",
-  "test/label-placement-oracle.test.ts": "brute-force oracle against the label placer over the corpus",
-  "test/label-wrap.test.ts": "label wrapping over the corpus at several widths",
-  "test/lint-hint-paste.test.ts": "pastes every lint hint back through the compiler across the corpus",
-  "test/lint-layers.test.ts": "lints the corpus once per layer set",
-  "test/lint-summary.test.ts": "lints the whole corpus and compares the summary",
-  "test/net-area-oracle-corpus.test.ts": "net-area oracle over the whole corpus (work count is pinned in-test)",
-  "test/polygon-overlap-oracle.test.ts": "overlap oracle versus brute force over generated polygons",
-  "test/reroll-findrun-oracle.test.ts": "generated-sources property against the brute-force oracle",
-  "test/shaft-equivariance.test.ts": "the D4 group over shafts across the corpus",
-  "test/stages.test.ts": "stage of every lint code over the corpus",
-  "test/step-budget.test.ts": "step-budget probes that run each evaluator to its limit",
-  "test/taste-budget.test.ts": "taste rules over the corpus at the budget's edge",
-  "test/taste-digests.test.ts": "taste digests over the whole corpus",
-  "test/taste-invisible.test.ts": "taste rules must not move drawings; whole-corpus sweep",
-  "test/taste-separation.test.ts": "taste/lint separation over the corpus",
-  "test/taste.test.ts": "taste rules over the whole corpus",
-  "playground/test/glb-export.test.ts": "builds every example's GLB through the page and the CLI and compares bytes",
+  "test/cli-commands.test.ts": "the three `watch` tests spawn the CLI and wait for a save to be recompiled and reported",
+  "test/cli-validate-next.test.ts": "every example x variant through the CLI validate path, output compared with and without `next`",
+  "test/drawing-budget.test.ts": "corpus sweep: drawn units against the drawing budget for every example",
+  "test/finish-furnish.test.ts": "a generated-rows property plus the wet-room sweep (its counts), each candidate compile-checked",
+  "test/finish-levels.test.ts": "the compile-check count over every storey of the corpus, and a generated-storeys property",
+  "test/finish.test.ts": "sheet-stage candidates measured on every example and every planted refusal",
+  "test/huge-coordinates.test.ts": "one case: transit-hall scaled x1000 must be refused with E_OUT_OF_RANGE, never thrown",
+  "test/keep-byte-identity.test.ts": "digest and evaluation steps of every corpus file (the weak keep law)",
+  "test/label-fit.test.ts": "the label-fit rule over the corpus: moves only reported labels, and agrees with the passes before it",
+  "test/label-placement-oracle.test.ts": "oracle against the placer on every corpus storey, on named families and on a pile of identical rooms",
+  "test/label-wrap.test.ts": "the wrap law over the corpus, and a 120-run generated narrow-room property",
+  "test/lint-hint-paste.test.ts": "applies each lint hint and re-lints, walk round included, across the corpus",
+  "test/lint-layers.test.ts": "lints the corpus checking every warning is among its rule's codes",
+  "test/lint-summary.test.ts": "the lint summary key and `lint --json` equality with lint(), byte for byte, over the corpus",
+  "test/net-area-oracle-corpus.test.ts": "the net-area oracle over every room of the corpus (its work count is pinned in the test)",
+  "test/polygon-overlap-oracle.test.ts": "every pair of rings in each corpus plan, with each eps a caller passes",
+  "test/reroll-findrun-oracle.test.ts": "two reroll properties over generated sources (new finder against the oracle, 300 s each)",
+  "test/shaft-equivariance.test.ts": "one test per bound: shaft facts under the D4 group, each over a corpus plan",
+  "test/stages.test.ts": "the stage of every diagnostic over every example, and the held-back counts per stage",
+  "test/step-budget.test.ts": "every clean corpus plan spends at most 1/100 of the step budget, every error demo at most 1/10",
+  "test/taste-budget.test.ts": "the taste charge against its budget on every corpus plan, and the skip behaviour",
+  "test/taste-digests.test.ts": "taste digests: a profile that inherits generic must report generic's numbers, over the corpus",
+  "test/taste-invisible.test.ts": "every corpus file's payload equals the one taken before taste ran",
+  "test/taste-separation.test.ts": "twin pairs over the corpus ledger, both ways",
+  "test/taste.test.ts": "every room a taste message names is named by its label, over the corpus",
+  "playground/test/glb-export.test.ts": "every example built into a GLB by the page and by the CLI, bytes compared",
 };
 
 const NUM = /(?:timeout:|testTimeout:|\},|setTimeout\()\s*([0-9_]+(?:\s*\*\s*[0-9_]+)*)\s*[,)}]/g;
@@ -137,6 +158,8 @@ describe("counts, not clocks", () => {
       clockAssertions("const t0 = performance.now();\nwork();\nexpect(performance.now() - t0).toBeLessThan(5);"),
     ).toEqual([3]);
     expect(clockAssertions("const t = Date.now();\nwork();\nconst dt = 3;\nexpect(t).toBe(1);")).toEqual([4]);
+    expect(clockAssertions("expect(\n  performance.now() - t0,\n).toBeLessThan(5);")).toEqual([1]);
+    expect(clockAssertions("let t0;\nt0 = Date.now();\nwork();\nexpect(t0).toBe(1);")).toEqual([4]);
     expect(clockAssertions("// expect(Date.now())\nconst end = Date.now() + 5;\nwhile (Date.now() < end) {}")).toEqual(
       [],
     );

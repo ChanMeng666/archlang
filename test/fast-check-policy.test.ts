@@ -62,6 +62,18 @@ function callText(text: string, open: number): string {
   return text.slice(open);
 }
 
+/** The end offset of the `it(`/`test(` call that contains `at`, or undefined when none does. */
+function enclosingTestEnd(text: string, at: number): number | undefined {
+  const starts = [...text.slice(0, at).matchAll(/\b(?:it|test)(?:\.\w+)?\(/g)];
+  for (let i = starts.length - 1; i >= 0; i--) {
+    const m = starts[i] as RegExpMatchArray;
+    const open = (m.index as number) + m[0].length - 1;
+    const end = open + callText(text, open).length;
+    if (end > at) return end;
+  }
+  return undefined;
+}
+
 const CLAIM = /\bsome\(|toBeGreaterThan\(0\)|\.length\s*>\s*0|at least/i;
 
 interface Call {
@@ -78,10 +90,13 @@ function propertyCalls(text: string): Call[] {
   for (const m of text.matchAll(/\bfc\.(?:assert|check)\(/g)) {
     const open = m.index + m[0].length - 1;
     const body = callText(text, open);
+    // The claim often sits AFTER the call (`expect(found).toBeGreaterThan(0)`): read from the call to
+    // the end of the enclosing `it(` / `test(` body, or just the call when there is none.
+    const scope = text.slice(m.index, enclosingTestEnd(text, m.index) ?? open + body.length);
     out.push({
       nth: out.length + 1,
       line: text.slice(0, m.index).split("\n").length,
-      claim: CLAIM.test(body),
+      claim: CLAIM.test(scope),
       seeded: /\bseed\s*:/.test(body),
     });
   }
@@ -116,6 +131,8 @@ describe("fast-check run policy", () => {
       "fc.assert(fc.property(a, (x) => { expect(x.length).toBe(1); }), { numRuns: 5, seed: 1 });",
       'fc.assert(fc.property(a, (x) => { f("at least ) one"); }), { seed: 7 });',
     ].join("\n");
+    const after = 'it("x", () => {\n  fc.assert(fc.property(a, (x) => { n++; }), { numRuns: 5 });\n  expect(n).toBeGreaterThan(0);\n});';
+    expect(propertyCalls(after).map((c) => [c.claim, c.seeded])).toEqual([[true, false]]);
     expect(propertyCalls(src).map((c) => [c.claim, c.seeded])).toEqual([
       [true, false],
       [false, true],
