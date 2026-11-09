@@ -1,7 +1,11 @@
 /**
- * The three `#z=` decoders against hostile input: arbitrary base64url text and valid deflate
- * streams that inflate far past the cap. None may hang or throw out of its refusal path, and no
- * output may pass its cap. Seeded, so a failure replays.
+ * The three `#z=` decoders against hostile input: arbitrary base64url text, and valid deflate
+ * streams whose inflated size sits around the cap. None may hang or throw out of its refusal path,
+ * and the cap is exact: `cap` bytes open, `cap + 1` is refused. Seeded, so a failure replays.
+ *
+ * What this cannot show: Node's zlib applies backpressure whatever the write size, so these pass
+ * with or without the 1 KiB write slices in `inflateCapped` (see its comment); only a browser's
+ * `DecompressionStream` gains from them.
  */
 import { deflateRawSync } from "node:zlib";
 import fc from "fast-check";
@@ -11,10 +15,14 @@ import { LINK_INFLATE_CAP_BYTES, bytesToB64url, readHash, srcFromHash } from "..
 import { decodePayload } from "../worker/share-core.js";
 import { supportsDeflateRaw } from "./helpers.js";
 
-const RUNS = { numRuns: 60, seed: 20261109 };
+const SEED = 20261109;
+const RUNS = { numRuns: 60, seed: SEED };
 const b64url = fc.stringMatching(/^[A-Za-z0-9_-]{0,400}$/);
-/** Deflate streams of `n` spaces: tiny on the wire, `n` bytes out. */
+/** A valid deflate stream of `n` spaces: tiny on the wire, `n` bytes out. */
 const bomb = (n: number) => bytesToB64url(deflateRawSync(Buffer.alloc(n, 0x20)));
+/** Inflated sizes around `cap`: both sides of it, and the two bytes at its edge. */
+const around = (cap: number) =>
+  fc.oneof(fc.constantFrom(cap - 1, cap, cap + 1), fc.integer({ min: Math.max(0, cap - 64), max: cap + 64 }));
 
 describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => {
   it("the playground decoder never throws and any source it returns is within the cap", async () => {
@@ -22,7 +30,7 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
       fc.asyncProperty(b64url, async (s) => {
         const r = await readHash(`#z=${s}`);
         if (r !== null && "src" in r)
-          expect(new TextEncoder().encode(r.src).length).toBeLessThanOrEqual(LINK_INFLATE_CAP_BYTES * 3);
+          expect(new TextEncoder().encode(r.src).length).toBeLessThanOrEqual(LINK_INFLATE_CAP_BYTES);
         expect(await srcFromHash(`#z=${s}`)).toSatisfy((v: unknown) => v === null || typeof v === "string");
       }),
       RUNS,
@@ -56,7 +64,49 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
     );
   });
 
-  it("valid deflate that inflates past the cap is refused by all three, unread", async () => {
+  describe("valid streams around the cap: the bound is exact", () => {
+    const cap = 4096;
+    it("the worker decoder opens up to the cap and refuses past it", async () => {
+      await fc.assert(
+        fc.asyncProperty(around(cap), async (n) => {
+          const r = await decodePayload(bomb(n), cap);
+          if (n <= cap) expect(r).toBe(" ".repeat(n));
+          else expect(r).toBe("source_too_large");
+        }),
+        RUNS,
+      );
+    });
+
+    it("the web decoder opens up to maxBytes and refuses past it", async () => {
+      await fc.assert(
+        fc.asyncProperty(around(cap), async (n) => {
+          const run = decodePlanHashWeb(bomb(n), { maxBytes: cap });
+          if (n <= cap) expect((await run).length).toBe(n);
+          else await expect(run).rejects.toBeInstanceOf(PlanHashTooLarge);
+        }),
+        RUNS,
+      );
+    });
+
+    it("the playground decoder opens up to LINK_INFLATE_CAP_BYTES and refuses past it", async () => {
+      await fc.assert(
+        fc.asyncProperty(around(LINK_INFLATE_CAP_BYTES), async (n) => {
+          const r = await readHash(`#z=${bomb(n)}`);
+          if (n <= LINK_INFLATE_CAP_BYTES) expect(r !== null && "src" in r && r.src.length === n).toBe(true);
+          else expect(r).toEqual({ refused: "too_large" });
+        }),
+        { numRuns: 12, seed: SEED },
+      );
+    });
+  });
+
+  it("cap + 1 byte is refused where exactly the cap opens", async () => {
+    expect(await readHash(`#z=${bomb(LINK_INFLATE_CAP_BYTES + 1)}`)).toEqual({ refused: "too_large" });
+    const at = await readHash(`#z=${bomb(LINK_INFLATE_CAP_BYTES)}`);
+    expect(at !== null && "src" in at && at.src.length === LINK_INFLATE_CAP_BYTES).toBe(true);
+  });
+
+  it("valid deflate that inflates far past the cap is refused by all three, unread", async () => {
     await fc.assert(
       fc.asyncProperty(fc.integer({ min: 2, max: 40 }), async (mib) => {
         const z = bomb(mib * 1024 * 1024);
@@ -67,12 +117,7 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
           PlanHashTooLarge,
         );
       }),
-      { numRuns: 4, seed: 20261109 },
+      { numRuns: 4, seed: SEED },
     );
-  });
-
-  it("a stream just inside the cap still opens", async () => {
-    const r = await readHash(`#z=${bomb(LINK_INFLATE_CAP_BYTES)}`);
-    expect(r !== null && "src" in r && r.src.length === LINK_INFLATE_CAP_BYTES).toBe(true);
   });
 });

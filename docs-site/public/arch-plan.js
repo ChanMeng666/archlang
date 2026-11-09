@@ -3,19 +3,48 @@
 // Usage: https://archlang.uk/embed
 
 // packages/web-component/src/svg-sanitize.ts
-var BLOCKED = /* @__PURE__ */ new Set(["script", "foreignobject"]);
+var SVG_NS = "http://www.w3.org/2000/svg";
+var BLOCKED = /* @__PURE__ */ new Set([
+  "script",
+  "foreignobject",
+  "style",
+  "set",
+  "animate",
+  "animatemotion",
+  "animatetransform",
+  "animatecolor",
+  "discard"
+]);
 var isHref = (name) => /(^|:)href$/i.test(name);
-var isJsUrl = (value) => Array.from(value).filter((c) => c.charCodeAt(0) > 32).join("").toLowerCase().startsWith("javascript:");
+var isSafeLink = (value) => {
+  const v = Array.from(value).filter((c) => c.charCodeAt(0) > 32).join("").toLowerCase();
+  return v === "" || v.startsWith("#") || /^(https?|mailto):/.test(v) || !/^[a-z][a-z0-9+.-]*:/.test(v);
+};
+var COMPILER_TAGS = "svg|g|defs|desc|title|text|tspan|path|rect|line|circle|pattern|polygon";
+var FOREIGN_TAG = new RegExp(`<(?!/?(?:${COMPILER_TAGS})[\\s/>])`);
+var SVG_XMLNS = /\sxmlns="http:\/\/www\.w3\.org\/2000\/svg"|\sxmlns:inkscape="http:\/\/www\.inkscape\.org\/namespaces\/inkscape"/g;
+var SVG_OPEN = `<svg xmlns="http://www.w3.org/2000/svg"`;
+var SUSPECT = /\bon[a-z]+\s*=|href|xmlns|&#|javascript|data:/i;
+function isPlainSvg(text) {
+  return text.startsWith(SVG_OPEN) && !FOREIGN_TAG.test(text) && !SUSPECT.test(text.replace(SVG_XMLNS, ""));
+}
 function sanitizeSvg(text, env = { parser: new DOMParser(), doc: document }) {
+  if (isPlainSvg(text)) {
+    const holder = env.doc.createElement("template");
+    holder.innerHTML = text;
+    const first = holder.content.firstElementChild;
+    return first && first.localName === "svg" && first.namespaceURI === SVG_NS ? first : void 0;
+  }
   const parsed = env.parser.parseFromString(text, "image/svg+xml");
   const root = parsed.documentElement;
-  if (root.nodeName !== "svg" || parsed.getElementsByTagName("parsererror").length > 0) return void 0;
+  if (root.nodeName !== "svg" || root.namespaceURI !== SVG_NS || parsed.getElementsByTagName("parsererror").length > 0)
+    return void 0;
   for (const el of Array.from(root.querySelectorAll("*"))) {
-    if (BLOCKED.has(el.localName.toLowerCase())) el.remove();
+    if (el.namespaceURI !== SVG_NS || BLOCKED.has(el.localName.toLowerCase())) el.remove();
   }
   for (const el of Array.from(root.querySelectorAll("*")).concat(root)) {
     for (const a of Array.from(el.attributes)) {
-      if (/^on/i.test(a.name) || isHref(a.name) && isJsUrl(a.value)) el.removeAttribute(a.name);
+      if (/^on/i.test(a.name) || isHref(a.name) && !isSafeLink(a.value)) el.removeAttribute(a.name);
     }
   }
   return env.doc.importNode(root, true);

@@ -9,7 +9,7 @@
  * result's `content` stays the text fallback the spec requires for every host.
  */
 import { App } from "@modelcontextprotocol/ext-apps";
-import { sanitizeSvg } from "./svg-sanitize.js";
+import { svgElement } from "./svg-element.js";
 
 interface DiagnosticJson {
   code?: string;
@@ -111,24 +111,6 @@ stage.addEventListener("keydown", (e) => {
 // ---------------------------------------------------------------------------
 // rendering
 // ---------------------------------------------------------------------------
-
-/** The compiler's SVG as a sanitised element (`svg-sanitize.ts`), sized by its `viewBox`. */
-function svgElement(text: string): SVGSVGElement | undefined {
-  const root = sanitizeSvg(text);
-  if (!root) return undefined;
-  // The compiler sizes its drawings by `viewBox` alone; give the element that size in user units
-  // so fit() scales a known box (an unsized <svg> lays out at the browser's 300×150 default).
-  const vb = root
-    .getAttribute("viewBox")
-    ?.trim()
-    .split(/[\s,]+/)
-    .map(Number);
-  if (vb && vb.length === 4 && vb.every(Number.isFinite)) {
-    if (!root.hasAttribute("width")) root.setAttribute("width", String(vb[2]));
-    if (!root.hasAttribute("height")) root.setAttribute("height", String(vb[3]));
-  }
-  return root;
-}
 
 function listDiagnostics(title: string, ds: DiagnosticJson[]): void {
   findingsTitle.textContent = title;

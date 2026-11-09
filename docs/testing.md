@@ -49,7 +49,7 @@ diff's bounding box lands where the geometry changed.
 | Guard class | Examples | Red ⇒ |
 |---|---|---|
 | Generated-artifact drift | `check:drift`, `example-svgs-drift` | run the matching `gen:*` and commit. Never hand-edit |
-| Lockstep pins (two copies that cannot share an import) | `site-lockstep`, `brand-assets`, `share-codec`, `level-filename-lockstep`, `docs-level-svgs` | change the OTHER copy. A changed `share-codec` hash breaks every shared link — fix the copy, never re-pin |
+| Lockstep pins (two copies that cannot share an import) | `site-lockstep`, `brand-assets`, `share-codec`, `level-filename-lockstep`, `docs-level-svgs`, `svg-sanitize` (three copies of the browser SVG sanitiser: `playground/test/svg-sanitize.test.ts`) | change the OTHER copy. A changed `share-codec` hash breaks every shared link — fix the copy, never re-pin |
 | Intentional-friction pins | `packages/mcp/test/lockstep.test.ts` and `editors/vscode/test/lockstep.test.ts` dep range (string `^` + root version) | red on every core release by design: re-pin the range, rebuild, bump the shim (`package.json` + both `server.json` versions). Never relax to a semver check |
 | MCP baked resources | `packages/mcp/scripts/check-dist-resources.mjs` | `npm run mcp:build` (`gen:all` first if the repo artifact is stale) |
 | VS Code bundle freshness | `editors/vscode/test/stdio.test.ts` | `npm run vscode:build:only` |

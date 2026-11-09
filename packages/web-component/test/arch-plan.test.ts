@@ -11,11 +11,19 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import type { ArchPlanElement, ArchPlanRenderDetail } from "../src/arch-plan.js";
 
 const compiles = vi.hoisted(() => new Map<string, number>());
+/** A source whose compile result carries an SVG with a <script> and an h:iframe, to prove the element sanitises. */
+const EVIL = vi.hoisted(() => ({
+  src: "# evil svg",
+  svg:
+    '<svg xmlns="http://www.w3.org/2000/svg" xmlns:h="http://www.w3.org/1999/xhtml" viewBox="0 0 10 10">' +
+    '<script>alert(1)</script><h:iframe srcdoc="x"/><rect width="5" height="5"/></svg>',
+}));
 vi.mock("@chanmeng666/archlang", async (importOriginal) => {
   const core = await importOriginal<typeof import("@chanmeng666/archlang")>();
   const compile: typeof core.compile = (source, opts) => {
     compiles.set(source, (compiles.get(source) ?? 0) + 1);
-    return core.compile(source, opts);
+    const out = core.compile(source, opts);
+    return source.includes(EVIL.src) ? { ...out, svg: EVIL.svg } : out;
   };
   return { ...core, compile };
 });
@@ -100,6 +108,19 @@ describe("<arch-plan>", () => {
     expect(upgrade.fetches, "fetches of src while upgrading").toBe(1);
     expect(upgrade.compilesSrc, "compiles of the fetched plan").toBe(1);
     expect(upgrade.compilesInline, "compiles of the inline plan").toBe(1);
+  });
+
+  it("sanitises the SVG it renders: no <script>, no h:iframe", async () => {
+    const { root } = await mount((el) => {
+      el.textContent = `${STUDIO}${EVIL.src}
+`;
+    });
+    const svg = root.querySelector(".plan > svg");
+    expect(svg).not.toBeNull();
+    expect(svg!.querySelector("rect")).not.toBeNull();
+    expect(root.querySelector("script")).toBeNull();
+    expect(svg!.getElementsByTagNameNS("*", "iframe").length).toBe(0);
+    expect(svg!.innerHTML).not.toMatch(/script|iframe/i);
   });
 
   it("renders examples/studio.arch, given inline, as an <svg> in its shadow root", async () => {
