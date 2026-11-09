@@ -181,6 +181,17 @@
   Content-Type: text/markdown; charset=utf-8
   X-Robots-Tag: noindex
 
+/examples/*.arch
+  Content-Type: text/plain; charset=utf-8
+  X-Robots-Tag: noindex
+
+/gallery/*.arch
+  Content-Type: text/plain; charset=utf-8
+  X-Robots-Tag: noindex
+
+/3d/*.glb
+  X-Robots-Tag: noindex
+
 # END GENERATED
 
 # The GBNF grammar has an extension no static host knows: Cloudflare sends no
@@ -191,14 +202,13 @@
 /archlang.gbnf
   Content-Type: text/plain; charset=utf-8
 
-# The gallery plans' sources (`/examples/<name>.arch`, written by sync-docs.mjs beside each SVG;
-# the /embed page's `<arch-plan src>` loads them). `.arch` is another extension no host knows, so
-# without this a reader who opens one gets a download. A glob, unlike the `.md` rules: a missing
-# `/examples/x.arch` shows its 404 page's HTML as text, still with status 404, which is accepted.
-/examples/*.arch
-  Content-Type: text/plain; charset=utf-8
+# The gallery plans' sources (`/examples/<name>.arch`, `/gallery/<id>.arch`, written by sync-docs.mjs; the
+# /embed page's `<arch-plan src>` loads them) are typed UTF-8 text and de-indexed (X-Robots-Tag), and
+# the 3D GLBs (`/3d/*.glb`) are de-indexed too: those rules are GENERATED above (RAW_FILE_RULES in
+# scripts/gen-docs-headers.ts). A glob, unlike the `.md` rules: a missing `/examples/x.arch` shows its
+# 404 page's HTML as text, still with status 404, which is accepted.
 
-# The 3D preview's posters, replays and GLBs (`/3d/*`, written by `npm run gen:3d-assets`) need no
+# The 3D preview's posters, replays and GLBs (`/3d/*`, written by `npm run gen:3d-assets`) need no Content-Type
 # rule. Measured on the live site: Cloudflare already sends `model/gltf-binary` for `.glb`,
 # `video/mp4` for `.mp4` and `image/webp` for `.webp`; and a regenerated asset keeps its name, so
 # these files keep the revalidating default, which shows a new one the moment it deploys.
