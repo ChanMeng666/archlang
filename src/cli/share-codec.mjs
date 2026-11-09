@@ -19,6 +19,7 @@ import { deflateRawSync, inflateRawSync } from "node:zlib";
  * the browser-safe half (`share-codec.web.mjs`, published as `@chanmeng666/archlang/share`).
  */
 export { PLAYGROUND_EDIT_FLAG } from "./share-codec.web.mjs";
+import { SHARE_INFLATE_CAP_BYTES } from "./share-codec.web.mjs";
 
 /** The production playground origin every minted link points at (no trailing slash). */
 export const PLAYGROUND_ORIGIN = "https://playground.archlang.uk";
@@ -32,7 +33,13 @@ export function encodePlanHash(source) {
     .replace(/=+$/, "");
 }
 
-/** Decode a `#z=` payload back to plan source. The inverse of {@link encodePlanHash}. */
-export function decodePlanHash(hash) {
-  return inflateRawSync(Buffer.from(hash.replace(/-/g, "+").replace(/_/g, "/"), "base64")).toString("utf8");
+/**
+ * Decode a `#z=` payload back to plan source. The inverse of {@link encodePlanHash}. Throws (a
+ * RangeError) when the source inflates past `opts.maxBytes` (default `SHARE_INFLATE_CAP_BYTES`,
+ * 1 MiB), so a decompression bomb costs at most that much.
+ */
+export function decodePlanHash(hash, opts = {}) {
+  return inflateRawSync(Buffer.from(hash.replace(/-/g, "+").replace(/_/g, "/"), "base64"), {
+    maxOutputLength: opts.maxBytes ?? SHARE_INFLATE_CAP_BYTES,
+  }).toString("utf8");
 }

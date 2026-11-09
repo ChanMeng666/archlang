@@ -9,5 +9,8 @@ export { PLAYGROUND_EDIT_FLAG } from "./share-codec.web.mjs";
 /** Encode plan source into the `#z=` share payload (base64url of the raw-deflated UTF-8). */
 export declare function encodePlanHash(source: string): string;
 
-/** Decode a `#z=` payload back to plan source. The inverse of {@link encodePlanHash}. */
-export declare function decodePlanHash(hash: string): string;
+/**
+ * Decode a `#z=` payload back to plan source. The inverse of {@link encodePlanHash}. Throws when the
+ * source inflates past `opts.maxBytes` (default 1 MiB, `SHARE_INFLATE_CAP_BYTES` in `share-codec.web.mjs`).
+ */
+export declare function decodePlanHash(hash: string, opts?: { maxBytes?: number }): string;

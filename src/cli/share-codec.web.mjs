@@ -5,7 +5,7 @@
  * Worker's `GET /svg/<payload>`) reads exactly what `archlang link` mints.
  * `test/share-codec-web.test.ts` holds the two decoders to the same source on every example.
  *
- * Bounded: `maxBytes` caps the INFLATED size and stops reading the moment it is passed, so a
+ * Bounded: `maxBytes` (default `SHARE_INFLATE_CAP_BYTES`, 1 MiB) caps the INFLATED size and stops reading the moment it is passed, so a
  * small payload that inflates enormously costs at most `maxBytes` of work, never the whole bomb.
  * There is ONE inflater, `inflateCapped`; `decodePlanHashWeb` is built on it, and a refusal is a
  * returned code (`PayloadFault`), never a throw on a supported runtime.
@@ -37,6 +37,13 @@ export function fromBase64Url(hash) {
   for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
   return bytes;
 }
+
+/**
+ * The default cap on the INFLATED size of a `#z=` payload, 1 MiB: what `decodePlanHashWeb` allows
+ * when the caller passes no `maxBytes`, and what the playground page reads to. A host with a
+ * tighter cap (the MCP Worker's `SOURCE_CAP_BYTES`) passes its own; a larger `maxBytes` is honoured.
+ */
+export const SHARE_INFLATE_CAP_BYTES = 1_048_576;
 
 /** @typedef {"bad_payload" | "source_too_large"} PayloadFault Why a payload was refused, before any plan is read. */
 
@@ -107,7 +114,7 @@ export async function inflateCapped(bytes, cap) {
  * `bad_payload` cannot be mistaken for a refusal.
  *
  * @param {string} hash the payload after `#z=`
- * @param {{ maxBytes?: number }} [opts] refuse past this many inflated bytes (default: no cap)
+ * @param {{ maxBytes?: number }} [opts] refuse past this many inflated bytes (default: {@link SHARE_INFLATE_CAP_BYTES}, 1 MiB)
  * @returns {Promise<{ ok: true, source: string } | { ok: false, code: PayloadFault }>}
  */
 export async function decodePlanHashWeb(hash, opts = {}) {
@@ -117,7 +124,7 @@ export async function decodePlanHashWeb(hash, opts = {}) {
   } catch {
     return { ok: false, code: "bad_payload" };
   }
-  const raw = await inflateCapped(input, opts.maxBytes ?? Number.POSITIVE_INFINITY);
+  const raw = await inflateCapped(input, opts.maxBytes ?? SHARE_INFLATE_CAP_BYTES);
   if (typeof raw === "string") return { ok: false, code: raw };
   return { ok: true, source: new TextDecoder("utf-8").decode(raw) };
 }
