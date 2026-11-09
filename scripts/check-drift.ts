@@ -58,6 +58,8 @@ const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = 
   // The `<arch-plan>` element the docs site serves, built by packages/web-component/scripts/build.ts.
   { script: "gen:arch-plan", artifacts: ["docs-site/public/arch-plan.js"] },
   { script: "gen:doors", artifacts: DOORS_SURFACES.map((s) => s.file) },
+  // The public-surface map: every export of `src/index.ts`, its declaring module and in-repo consumers.
+  { script: "gen:surface", artifacts: ["docs/agents/public-surface.md"] },
 ];
 
 const ALL_ARTIFACTS = GENERATORS.flatMap((g) => g.artifacts);
