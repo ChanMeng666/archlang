@@ -132,7 +132,9 @@ function resolveSpec(file: string, spec: string, known: ReadonlySet<string>): st
   return null;
 }
 
-const esc = (s: string): string => s.replace(/\|/g, "\\|");
+/** Table-cell escapes, character by character (no regex replace, so no character is left half-escaped). */
+const CELL_ESC: Record<string, string> = { "|": "\\|", "\\": "\\\\", "\r": " ", "\n": " " };
+const esc = (s: string): string => Array.from(s, (c) => CELL_ESC[c] ?? c).join("");
 
 function render(): { text: string; count: number } {
   const modules = moduleFiles();
