@@ -66,6 +66,10 @@ const SUMMARY_MODULES = [...closure([resolvePath("src/describe.ts"), resolvePath
 /** How many modules the hand-written list this walk replaced named. */
 const OLD_LIST_LENGTH = 19;
 
+/** A type-position `import("…")` is erased, so it is a name, not a load: `Scene.view` is typed
+ *  `ViewName` and no code under `describe()`/`lint()` reads it. Listed by module, exact text. */
+const TYPE_ONLY_VIEW_REFERENCE = new Map<string, string[]>([["src/scene.ts", ['import("./view/camera.js"']]]);
+
 /** Any import that reaches the view layer, however it is spelled. */
 const VIEW_IMPORT = /from\s+["'][^"']*\bview\/[^"']*["']|import\s*\(\s*["'][^"']*\bview\/[^"']*["']/g;
 
@@ -82,9 +86,16 @@ suite("describe()/lint() are blind to the axonometric", () => {
   for (const m of SUMMARY_MODULES) {
     it(`${m} imports nothing from src/view/`, () => {
       const hits = [...readFileSync(resolvePath(m), "utf8").matchAll(VIEW_IMPORT)].map((h) => h[0]);
-      expect(hits).toEqual([]);
+      expect(hits.filter((h) => !(TYPE_ONLY_VIEW_REFERENCE.get(m) ?? []).includes(h))).toEqual([]);
     });
   }
+
+  it("the one allowed reference is a type (erased), so it loads nothing at runtime", () => {
+    expect(runtimeImports(resolvePath("src/scene.ts"))).not.toContain(resolvePath("src/view/camera.ts"));
+    expect(readFileSync(resolvePath("src/scene.ts"), "utf8")).toMatch(
+      /view\?: import\("\.\/view\/camera\.js"\)\.ViewName;/,
+    );
+  });
 
   it("catches a planted import — the pattern is not inert", () => {
     const planted = 'import { cameraFor } from "./view/camera.js";';
