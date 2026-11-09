@@ -23,11 +23,13 @@ const {
   dateSeed,
   enumerateSites,
   main,
+  markdown,
   mulberry32,
   OPERATORS,
   parseAllow,
   runVitest,
   sampleSites,
+  tally,
 } = sampler;
 
 type Site = {
@@ -165,6 +167,52 @@ describe("allow-list", () => {
     );
     expect(() => parseAllow('[{"file":"f"}]')).toThrow(/no `line`/);
     expect(Array.isArray(parseAllow(readFileSync("test/mutants.allow.json", "utf8")))).toBe(true);
+  });
+});
+
+describe("the summary table", () => {
+  it("escapes every cell character by character: pipe, backslash, backtick, line breaks", () => {
+    const results = [
+      {
+        file: "src/a.ts",
+        line: 3,
+        operator: "equality",
+        before: 'if (s === "a|b\\c`") x();',
+        after: 'if (s !== "a|b\\c`") x();',
+        verdict: "error",
+        reason: "does not compile: x | y\r\nz \\ w",
+        killer: "test/a.test.ts › p|q",
+        seconds: 1,
+      },
+    ];
+    const md: string = markdown({
+      seed: 1,
+      sitesTotal: 1,
+      dryRun: false,
+      final: true,
+      budgetMinutes: 85,
+      tests: { "src/a.ts": { list: ["test/a.test.ts"], related: 1 } },
+      staleAllow: [],
+      results,
+      ...tally(results),
+    });
+    const row = md.split("\n").find((l) => l.startsWith("| 1 |")) ?? "";
+    expect(row).toContain('`if (s === "a\\|b\\\\c\'") x();`');
+    expect(row).toContain("error (does not compile: x \\| y  z \\\\ w)");
+    expect(row).toContain("test/a.test.ts › p\\|q");
+    // No unescaped pipe inside a cell: splitting on the unescaped ones gives exactly the 7 columns.
+    expect(row.split(/(?<!\\)\|/).length).toBe(9);
+  });
+
+  it("a glob in --files matches tracked paths, its regex metacharacters taken literally", async () => {
+    const out: string[] = [];
+    expect(
+      await main(["--files", "src/num-form?t.ts", "--mutants", "1", "--dry-run"], { log: (s: string) => out.push(s) }),
+    ).toBe(0);
+    expect(out.join("\n")).toContain("`src/num-format.ts:");
+    const none: string[] = [];
+    expect(await main(["--files", "src/num.format*.ts", "--dry-run"], { log: (s: string) => none.push(s) })).toBe(2);
+    expect(none.join("\n")).toContain("--files matched nothing");
   });
 });
 

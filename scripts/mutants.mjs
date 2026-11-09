@@ -354,9 +354,13 @@ function guardExit() {
 
 // ---- report ----------------------------------------------------------------------------------
 
-// A table cell: a pipe escaped (GFM honours `\|` inside a code span too), a backtick and a newline
-// replaced, so the cell cannot end its code span or its row.
-const cell = (s) => String(s).replace(/\|/g, "\\|").replace(/`/g, "'").replace(/\n/g, " ");
+/**
+ * Table-cell escapes, character by character (no regex replace, so no character is left
+ * half-escaped): a pipe and a backslash escaped (GFM honours `\|` inside a code span too), a
+ * backtick made a quote and a line break a space, so a cell can end neither its code span nor its row.
+ */
+const CELL_ESC = { "|": "\\|", "\\": "\\\\", "`": "'", "\r": " ", "\n": " " };
+const cell = (s) => Array.from(String(s), (c) => CELL_ESC[c] ?? c).join("");
 /** A window of at most `n` characters of `s` around index `at`, with an ellipsis for each cut. */
 const clip = (s, at, n = 64) => {
   if (s.length <= n) return s;
@@ -442,6 +446,9 @@ export function markdown(r) {
 
 // ---- main ------------------------------------------------------------------------------------
 
+/** The characters a RegExp reads as syntax; each is escaped by itself, character by character. */
+const REGEX_META = new Set(Array.from(".+^{}$()|[]\\/?*"));
+
 function globToRegExp(g) {
   let re = "";
   for (let i = 0; i < g.length; i++) {
@@ -452,7 +459,7 @@ function globToRegExp(g) {
       if (g[i + 1] === "/") i++;
     } else if (ch === "*") re += "[^/]*";
     else if (ch === "?") re += "[^/]";
-    else re += ch.replace(/[.+^${}()|[\]\\]/g, "\\$&");
+    else re += REGEX_META.has(ch) ? `\\${ch}` : ch;
   }
   return new RegExp(`^${re}$`);
 }
