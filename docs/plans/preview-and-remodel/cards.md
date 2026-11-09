@@ -24,7 +24,7 @@ suggested executor; the main session may override. Every card lists what it must
 
 ## A · The checked 3D preview (archlang-3d M0–M1 recut; D1, D2)
 
-Baseline facts for every A-card: `../archlang-3d/development-plan.md` §3 (architecture), §4
+Baseline facts for every A-card: `archlang-lab/plans/archlang-3d/development-plan.md` §3 (architecture), §4
 (algorithms), §6.1/§6.5 (viewer, time seam), §7 (CLI), §8 (checks), §9.8/§9.10 (day list, week-one
 kit); `amendment-v0.7.md` (the recut). The viewer subset of three.js 0.186.1 is 140 kB gzip (MIT).
 

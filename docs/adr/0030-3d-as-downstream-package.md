@@ -1,13 +1,13 @@
 # 30. 3D is a downstream package: `archlang-3d` reads resolved data, the core never draws the building
 
 - **Status:** Accepted 2026-10-28 with the PR that creates `packages/archlang-3d` (preview-and-remodel
-  card A1). Drafted as `docs/plans/archlang-3d/adr-draft-0030-3d-as-downstream-package.md` (v0.6,
+  card A1). Drafted as `archlang-lab/plans/archlang-3d/adr-draft-0030-3d-as-downstream-package.md` (v0.6,
   2026-10-24) and amended by `docs/plans/archlang-3d/amendment-v0.7.md` (2026-10-28: the M1 recut and
   the exposure tiers, which rewrite Decision 1 and reopen Q1's "private until the release milestone").
 - **Date:** 2026-10
 - **Owner decisions recorded:** Q1–Q22 of the archlang-3d plan (2026-10-23 and 2026-10-24) and the
   preview-and-remodel decisions D1, D2, D5 (2026-10-28). The full table, each with its reason and
-  reversal condition, is in the draft and in `docs/plans/archlang-3d/development-plan.md` §10.
+  reversal condition, is in the draft and in `archlang-lab/plans/archlang-3d/development-plan.md` §10.
 - **Extends:** [ADR 0021](0021-plan-first-view-deprecated.md) (plan-first; the third dimension goes
   through data, not a drawing backend). It refines that ADR's decision 5 and reverses none.
 - **Relates to:** [ADR 0018](0018-zero-dep-wall-joinery.md) (one wall joinery),
