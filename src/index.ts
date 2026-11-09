@@ -4,6 +4,27 @@
  * @example
  * import { compile } from "@chanmeng666/archlang";
  * const { svg, errors } = compile(`plan "Demo" { room at (0,0) size 4000x3000 label "Room" }`);
+ *
+ * The full list of exports, with each one's declaring module and in-repo consumers, is the
+ * generated `docs/agents/public-surface.md` (`npm run gen:surface`).
+ *
+ * State (everything below is invisible from the export list):
+ *  - Process-wide memo caches, all cleared by {@link clearCache}: the compile result cache
+ *    (below), and the lex, line-table, parse, resolve, net-area and `reroll` baseline memos
+ *    (`src/lexer.ts`, `src/diagnostics.ts`, `src/parser.ts`, `src/ir.ts`,
+ *    `src/analyze/net-area-memo.ts`, `src/reroll.ts`). Results are keyed by content, so a hit is
+ *    byte-identical to a miss. Not cleared by it: the font caches in `src/backends/font.ts` (the
+ *    resolved font path, the CJK face, per-file glyph coverage), which only the PDF/PNG backends use.
+ *  - Per-resolution side tables: `WeakMap`s keyed on the `ResolvedPlan` in `src/ir/side-tables.ts`
+ *    (datum tables, instance bodies, steps spent, keep state); `src/ir.ts` writes them while it
+ *    resolves, everything else reads through accessors, and no serialisation can see them.
+ *  - Internal IR facts: `_`-prefixed fields on the resolved IR types (`src/ir/types.ts`). They are
+ *    not public API.
+ *  - Global registries: `setGeometryBackend` (`src/geometry/backend.ts`), `registerElement`,
+ *    `registerTheme`, `registerHatch` and `registerBackend` (`src/registry.ts`) mutate process-wide state. The per-call `plugins`,
+ *    `hatches`, `themes` and `backend` options of {@link compile} do not; prefer them.
+ *  - A new internal fact: a side table keyed on the `ResolvedPlan` (ADR 0033's keep precedent),
+ *    never a new `_` field and never a new global.
  */
 
 // The one compile pipeline (parse → link → resolve → render) lives in
@@ -16,6 +37,7 @@ import { clearLexCache } from "./lexer.js";
 import { clearLineTableCache } from "./diagnostics.js";
 import { clearParseCache } from "./parser.js";
 import { clearResolveCache } from "./ir.js";
+import { clearSceneMemo } from "./scene-memo.js";
 import { resetRerollCache } from "./reroll.js";
 import { idToken } from "./identity.js";
 import type { CompileOptions, CompileResult } from "./types.js";
@@ -718,13 +740,14 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
   return result;
 }
 
-/** Clear the internal compile cache + all per-stage memos (lex/parse/resolve, net area) and the `reroll` baseline memo. */
+/** Clear the internal compile cache + all per-stage memos (lex/parse/resolve, Scene, net area) and the `reroll` baseline memo. */
 export function clearCache(): void {
   cache.clear();
   clearLexCache();
   clearLineTableCache();
   clearParseCache();
   clearResolveCache();
+  clearSceneMemo();
   clearNetAreaMemo();
   resetRerollCache();
 }

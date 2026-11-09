@@ -11,7 +11,7 @@ import { dirname, join, relative, resolve as resolvePath, sep } from "node:path"
 import { describe, expect, it, vi } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { toDxf } from "../src/export/dxf.js";
-import { compile, lint } from "../src/index.js";
+import { clearCache, compile, lint } from "../src/index.js";
 import type { ResolvedPlan, RRoom } from "../src/ir.js";
 import { fitWork, labelHeights, MAX_FIT_WORK } from "../src/label-fit.js";
 import { extractArchBlocks } from "../src/markdown.js";
@@ -39,12 +39,19 @@ const OVERLAP = "W_ANNOTATION_OVERLAP";
 const ROOT = resolvePath(__dirname, "..");
 const of = (src: string, world?: World) => lint(src, world ? { world } : undefined).filter((d) => d.code === OVERLAP);
 
+/**
+ * Runs `f` with the pass switched off. `clearCache()` on both sides of the swap: the memos assume
+ * `toScene` is a pure function of its key (`src/scene-memo.ts`), and a mock that changes the drawing
+ * breaks that, so a Scene drawn on one side must never be read on the other.
+ */
 const off = <T>(f: () => T): T => {
+  clearCache();
   state.off = true;
   try {
     return f();
   } finally {
     state.off = false;
+    clearCache();
   }
 };
 

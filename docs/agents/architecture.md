@@ -62,6 +62,10 @@ source (.arch)
 
 ## Module map (`src/`)
 
+The public surface (every export of `src/index.ts`, its declaring module and in-repo consumers) is
+the generated [`public-surface.md`](public-surface.md) (`npm run gen:surface`); the process-wide
+state behind it is described in the `src/index.ts` header.
+
 - `describe.ts` semantic summary · `lint.ts` + `lint/` soundness rules · `analyze.ts` +
   `analyze/` shared resolve + circulation/occupancy grids
 - `analyze/rooms.ts` room box/ring/area, point-in-room and room-use leaves · `analyze/connectors.ts` which rooms a door or opening joins and which room a window serves; both import no `ir.ts` value (`test/no-value-cycles.test.ts`), re-exported from `analyze.ts`
@@ -166,6 +170,9 @@ source (.arch)
   element's own `resolve()` fix text and Plan JSON's decompiler
 - `analyze/symmetry.ts` a plan's D4 ⋉ Z² stabiliser and its repeats · `analyze/syntax.ts`
   space-syntax depths/RA/RRA/integration on the access graph — both opt-in `describe --facts`
+- `scene-memo.ts` one Scene per (`ResolvedPlan` identity, registry, `themes`, annotate/accessible/
+  circulation): `annotation-overlap` reads it, `compile()` offers a copy of what it drew; never
+  the public `compile().scene`; `clearCache()` empties it
 - `analyze/net-area-memo.ts` memoises each storey's wall bands and each room's exact net internal
   area, keyed on their exact inputs (ADR 0027's figures, output byte-identical); `clearCache()`
   empties it

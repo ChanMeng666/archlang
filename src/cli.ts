@@ -33,6 +33,9 @@
  * their shared IO/render helpers) live in `src/cli/`. Node APIs and real time
  * are allowed here and across `src/cli/`, the one place they are — everything else
  * in `src/` gets its environment via the `World` seam.
+ *
+ * Step meter: charges nothing; it only dispatches, and each command's `compile()`/`resolve()` call
+ * runs under its own meter.
  */
 
 import { type CommandResult, RESIDENT, nodeIo } from "./cli/io.js";
