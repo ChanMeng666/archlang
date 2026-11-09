@@ -48,6 +48,9 @@ const CLOCK_CALL = /\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b/;
 const CAPTURE =
   /(?:\b(?:const|let|var)\s+)?\b([A-Za-z_$][\w$]*)\s*=[^=][^;\n]*?(?:\b(?:Date\.now|performance\.now)\s*\(|\bhrtime\b)/;
 
+/** `s` as a literal inside a RegExp: every metacharacter, backslash included, escaped. */
+const escapeRegExp = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
 const isComment = (l: string) => /^\s*(\/\/|\*|\/\*)/.test(l);
 
 /** The argument text of the call whose `(` is at `open` (strings skipped), across lines. */
@@ -88,8 +91,7 @@ function clockAssertions(text: string): number[] {
     const arg = argText(text, m.index + m[0].length - 1);
     if (CLOCK_CALL.test(arg)) hits.add(line);
     for (const c of captured) {
-      if (c.line < line - 1 && new RegExp(`(?<![\\w$.])${c.name.replace(/\$/g, "\\$")}(?![\\w$])`).test(arg))
-        hits.add(line);
+      if (c.line < line - 1 && new RegExp(`(?<![\\w$.])${escapeRegExp(c.name)}(?![\\w$])`).test(arg)) hits.add(line);
     }
   }
   return [...hits].sort((a, b) => a - b);
