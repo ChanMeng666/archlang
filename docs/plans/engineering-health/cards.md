@@ -228,7 +228,7 @@ test or a doc sentence; no `src/` change except (b) if a derivation is cheap.
 ### EH1.17 · residue of the second review batch — `done (#617)` · S · low · sonnet
 (a) `scripts/compat-check.mjs` reports a member whose printed type is a NON-EXPORTED alias (e.g. `readonly KindsWith<"opening">[]`) as "new: (none)"; resolve such aliases structurally (print the apparent type with `typeToString` flags that expand aliases, or fall back to the alias's declared type) so a derived literal union compares as its members (#608 had to cast to a hand-written tuple). (b) Root `packages/archlang-3d/src/node.ts`'s `makeNodeWorld` like `src/cli/io.ts` (realpath containment, `.arch` only, size cap; EH1.16d's allow-list row then goes). (c) `hasFixtureGlyph`/the manifest guard: a drawer returning `[]` passes — pin per-family non-empty output (the alias golden table from #611 already does; confirm and drop the redundancy or keep both with a sentence). Proof: tests; no `src/` change except (b).
 
-### EH1.18 · CLI exit codes on a plan that does not parse — `todo` · S · medium · sonnet · from #619's review
+### EH1.18 · CLI exit codes on a plan that does not parse — `in review (#648)` · S · medium · sonnet · from #619's review
 `fmt`, `repair`, `reroll`, `suggest`, `complete` and `impact` exit 0 on a plan with `E_PARSE` (pinned as-is in
 `test/cli-contract-cases.ts`); `link` does so by documented contract (`docs/cli-reference.md`: a plan that does
 not compile still gets a link). `impact` is the one that matters: a CI gate on `impact` passes on a broken plan
@@ -236,6 +236,15 @@ while its docs say "what broke". Decide per command (document the exit-0 contrac
 diagnostic), update `docs/cli-reference.md` through `gen:cli` and the manifest descriptions, and move the
 contract table rows with the generator and a reason. CHANGELOG for any exit-code change (a breaking change for
 scripts: say so). Proof: `cli-contract` green with the new rows; `docs-flags`/`cli-help` green.
+
+### EH1.19 · clear the open CodeQL alerts on main — `todo` · S · medium · sonnet · from #645's CodeQL red
+Code scanning holds four open non-test alerts: `actions/missing-workflow-permissions` on
+`.github/workflows/plugin-validate.yml` (add `permissions: contents: read`), and `js/incomplete-sanitization` in
+`eval/fidelity-run.ts:77`, `scripts/gen-cli-reference.ts:39` and `scripts/gen-grammars.ts:248` (replace-chain
+escapers → character maps, as `gen-module-map.ts` does; regenerate and prove the generated files byte-identical).
+Twenty-two test-only alerts (regexes over compiler-emitted SVG) were dismissed as "used in tests" on 2026-11-10
+with a comment naming this card; a header line shift had surfaced them all on #645. Proof: zero open alerts;
+`check:drift` green.
 
 ## Wave 2 · structure, by pure moves
 
@@ -269,7 +278,7 @@ One PR per module, along the section dividers the audit lists: `describe/types.t
 circulation-overlay}.ts`. `keep.ts`, `repair.ts`, `furnish.ts` (`furnish/site.ts`), `intent.ts`
 (`intent/schema.ts`, `from-json.ts`) follow if the first three land clean. Proof per PR as EH2.2.
 
-### EH2.4 · one write-back, one ring, one plural — `todo` · S · low · sonnet · A-F7, A-F8
+### EH2.4 · one write-back, one ring, one plural — `done (#646; residue: none — every ring copy found is on rectRing)` · S · low · sonnet · A-F7, A-F8
 `cli/io.ts` `writeBack({target, bytes, read, args})` replaces the five copies in
 `commands-author.ts` (order of operations unchanged: recheck before the first byte, `.bak`
 included). Replace the ~22 inline TL→TR→BR→BL ring literals with `rectRing`; alias `rectPoly`/
@@ -313,7 +322,7 @@ the new table; `npm run build` time before/after.
 a script proves every category maps to the same draw function before and after;
 `fixture-byte-identity` group 1 is the CI proof. Follow `.claude/rules/glyphs.md`.
 
-### EH2.5b · one bounded inflater — `todo` · S · medium · sonnet · from #623's review
+### EH2.5b · one bounded inflater — `in review (#647)` · S · medium · sonnet · from #623's review
 The `./share` subpath ships two bounded inflaters that behave differently: `decodePlanHashWeb` pipes one
 `Blob.stream()` with no 1 KiB write slicing and throws, while `inflateCapped` feeds slices and returns codes; the
 hosted MCP Worker uses the unsliced one, so the bomb protection exists only where the short-link Worker reads.
@@ -329,7 +338,7 @@ cut the cost without moving a byte of `lint()` output (the corpus digest and the
 and pin the work with counters in `test/tables/work-counts.json` (EH1.6 tranche 2's geometry counters: nav cells,
 split candidates, label relocations) so a regression turns red. Timing is informational only.
 
-### EH2.8b · `sideEffects: false` after an explicit builtins registration — `todo` · S · medium · sonnet · from #635
+### EH2.8b · `sideEffects: false` after an explicit builtins registration — `in progress` · S · medium · sonnet · from #635
 `src/builtins.ts` ends with `setBuiltinDispatch(dispatch)`, an import-time registration into `src/expr.ts`; it is
 kept today only because `ir.ts` and `analyze/depends.ts` import `BUILTIN_NAMES` as a value. Make the registration an
 explicit call from the pipeline (or have `expr.ts` import the table directly), drop the allow-list entry in
@@ -339,7 +348,7 @@ CHANGELOG `### Changed` line (consumers' bundlers tree-shake differently). Also 
 side-effect scan green with one pinned entry (`src/cli.ts`'s `void main()`), digests unchanged, the playground bundle
 size before/after.
 
-### EH2.3b · residue of the splits — `todo` · S · medium · sonnet · from #626/#630/#634's review
+### EH2.3b · residue of the splits — `in progress` · S · medium · sonnet · from #626/#630/#634's review
 (a) `pairsJson` sits in `src/plan-json/from-json.ts` but its only caller is `to-json.ts`; `to-json` imports `num`/`q`
 from `emit.ts` for one use, pulling `emit` → `from-json` → the parser into the projector: move `pairsJson` to
 `to-json.ts` (pure move) and give the one `num`/`q` use a tiny shared helper, so the projector no longer loads the
@@ -350,7 +359,7 @@ does. (c) Later, with a body edit and its own byte-identity proof: `summarize` (
 
 ## Wave 3 · agent navigation
 
-### EH3.1 · generated module map — `in review (#639)` · M · medium+high · sonnet · N-F5
+### EH3.1 · generated module map — `done (#639; 378 modules; the :(glob) pathspec lesson is in gotchas)` · M · medium+high · sonnet · N-F5
 `scripts/gen-module-map.ts` walks `src/**/*.ts`, `packages/*/src/**/*.ts`, `playground/src/*.ts`;
 takes each header's first paragraph (≤ 200 chars) and the optional tags `@budget`, `@reads`,
 `@readBy`; emits `docs/agents/module-map.md` grouped by directory; fails on a module with no first
@@ -368,7 +377,7 @@ resolves. Archive `visual-assets/`, `playground-minimal/`, `playground-mobile-pe
 `public-surfaces/` and `archlang-3d/{development-plan,adr-draft-*}.md` to the lab repo, one README
 row each. Proof: `wc -c docs/backlog.md` and the index in the PR body.
 
-### EH3.3 · docs by audience and path — `in review (#637, #638)` · M · medium+high · sonnet · N-F4, N-F6, N-F9
+### EH3.3 · docs by audience and path — `done (#637, #638)` · M · medium+high · sonnet · N-F4, N-F6, N-F9
 `gotchas.md` splits: drawing → `glyphs.md`, sites/e2e → `sites.md`, CLI → `cli.md`, 3D →
 `archlang-3d.md`, "examples move suites" → new `.claude/rules/examples.md`; orchestrator-only items
 → `docs/agents/orchestration.md` (including the executor brief limits and "worktree agents start
@@ -378,7 +387,7 @@ recipes `new-fixture-family.md`, `new-cli-flag.md`, `new-mcp-tool.md`, each deri
 commit and paired with a registration test (docs-site `mcp.md` tool table pinned to `tools/list`).
 Proof: executor read-first bytes before/after in the PR body (target ≤ 40 KB).
 
-### EH3.4 · test helpers and a generated test index — `todo` · M · low · sonnet · T-F7
+### EH3.4 · test helpers and a generated test index — `in review (#645)` · M · low · sonnet · T-F7
 `test/helpers/{cli,corpus,world,digest,diag,tmp}.ts`; `corpus.ts` is the one `corpusFiles({dirs})`
 the byte-identity sweep uses, with named subsets. Move the 51 helper/table modules under
 `test/helpers/` and `test/tables/`. Migrate opportunistically; a grep guard blocks new copies of the
@@ -386,7 +395,7 @@ runner, `worldFor`, sha256 one-liners. `gen:test-index` → `test/INDEX.md`: per
 tests that import it (directly or transitively, reusing `check-quick.mjs`'s distance), per test its
 header's first sentence; the 66 unimported modules listed. Proof: drift green; suite green.
 
-### EH3.5 · hooks for the recurring mistakes — `in progress` · S · high · sonnet · N-F8
+### EH3.5 · hooks for the recurring mistakes — `done (#642; three hook rules, changelog job, control-bytes test, corpus guards)` · S · high · sonnet · N-F8
 `local-gate.mjs` grows: Edit/Write on a `GENERATORS` artifact or `dist/` → deny with
 "run `gen:<script>`"; `vitest -u` together with `-t` → deny except the documented scope; recursive
 delete whose target contains a reparse point → deny. CI step: added CHANGELOG lines must sit under
@@ -395,7 +404,7 @@ delete whose target contains a reparse point → deny. CI step: added CHANGELOG 
 (derived by scanning tests for `readdirSync("examples")`). PR template rows for moved digests and
 CHANGELOG placement. Proof: each hook exercised once with the denied command in the PR body.
 
-### EH3.6 · nightly sampled mutants (report-only) — `todo` · M · low · sonnet · T-F9
+### EH3.6 · nightly sampled mutants (report-only) — `in review (#644)` · M · low · sonnet · T-F9
 `scripts/mutants.mjs`: seeded sample of 40 mutants per night from `src/num-format.ts` and
 `src/expr.ts` (relational boundary, sign, negation, early return); each runs only the nearest tests
 (≤ 20 files, 3 min); survivors in the job summary; allow-list of equivalent mutants with reasons.
