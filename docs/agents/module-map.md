@@ -17,7 +17,7 @@ alias is not counted, so a low count is a hint, not proof a module is unused.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 254 modules in 27 directories.
+Totals: 266 modules in 29 directories.
 
 ## `packages/archlang-3d/src/adapter/`
 
@@ -179,23 +179,23 @@ Totals: 254 modules in 27 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `circulation.ts` | 2778 | 23 | Circulation as FACTS: not just "can you reach this room?" (that is the door access graph in analyze.ts and the per-room reachable-floor flood-fill in occupancy.ts) but **how far, how wide and how direct** the walk is — from the building's… | none |
+| `circulation.ts` | 2778 | 24 | Circulation as FACTS: not just "can you reach this room?" (that is the door access graph in analyze.ts and the per-room reachable-floor flood-fill in occupancy.ts) but **how far, how wide and how direct** the walk is — from the building's… | none |
 | `connectors.ts` | 475 | 2 | Connector (door / opening / window) helpers of the analysis layer: which rooms a connector joins, the wall faces it opens onto, and which room a window serves. | none |
 | `contacts.ts` | 259 | 4 | Contact facts (plan-soundness card PS4.5): which room edges an element written at fixed coordinates lies ON, so `arch impact` can say it stayed while that edge moved. | none |
-| `depends.ts` | 355 | 3 | `describe --facts depends` (plan-soundness card PS4.1): per element, what it is derived from. Opt-in; a summary that does not ask for it is unchanged by a byte. | none |
+| `depends.ts` | 355 | 4 | `describe --facts depends` (plan-soundness card PS4.1): per element, what it is derived from. Opt-in; a summary that does not ask for it is unchanged by a byte. | none |
 | `dwelling.ts` | 52 | 5 | Does the plan read as a dwelling? (plan-soundness PS2.18.) | none |
-| `entrance.ts` | 339 | 7 | A storey's ways in from outside, and its MAIN entrance (plan-soundness PS0.10). | none |
+| `entrance.ts` | 339 | 8 | A storey's ways in from outside, and its MAIN entrance (plan-soundness PS0.10). | none |
 | `grid.ts` | 27 | 3 | The 4-neighbourhood of a row-major cell grid, shared by the nav grid (`circulation.ts`) and the occupancy grid (`occupancy.ts`). | none |
-| `gross-area.ts` | 252 | 6 | **Gross internal area** (GIA) — the floor enclosed by the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`, plan-soundness PS4.4). | none |
+| `gross-area.ts` | 252 | 7 | **Gross internal area** (GIA) — the floor enclosed by the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`, plan-soundness PS4.4). | none |
 | `keep-facts.ts` | 715 | 2 | `describe --facts depends` for keeps (ADR 0033; plan-soundness PS4.3b, design §5, R5, R16): `depends.keeps[]`, one row per accepted keep, read from the declarations alone. | none |
 | `net-area-memo.ts` | 90 | 5 | Net internal area, computed once per storey and once per room (ADR 0027's figures, unchanged). | none |
 | `net-area.ts` | 570 | 9 | **Net internal area** — the part of a room's floor that no wall stands on (`describe().rooms[].net_area_m2`; the rule and why: `docs/adr/0027-net-internal-area.md`). | none |
 | `occupancy.ts` | 238 | 4 | Room circulation as a fact: can a person actually step through a room's door and reach its floor, or do furniture, fixtures and door swings seal it off? | none |
 | `open-shell.ts` | 304 | 2 | **Open shells:** exterior walls that should enclose a room and do not. `W_EXTERIOR_RING_OPEN` reports them, and `describe()` says which rooms the gross internal area leaves out because of them (`totals.gross_internal_area_leaves_out`), fro… | none |
-| `quantities.ts` | 309 | 3 | `describe --facts quantities` and `arch takeoff`: the geometric quantities of one storey, as an estimator reads them. Geometry only, never a claim: every figure is a length, an area or a count measured from the shapes, and its convention i… | none |
+| `quantities.ts` | 309 | 4 | `describe --facts quantities` and `arch takeoff`: the geometric quantities of one storey, as an estimator reads them. Geometry only, never a claim: every figure is a length, an area or a count measured from the shapes, and its convention i… | none |
 | `rooms.ts` | 204 | 4 | Room geometry leaves of the analysis layer: a room's box and ring, its area, the point-in-room and edge-touch tests, and the room-use predicates. | none |
-| `symmetry.ts` | 992 | 1 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
-| `syntax.ts` | 127 | 1 | SPACE SYNTAX on the access graph — `describe(src, { facts: ["syntax"] })`. Opt-in. | none |
+| `symmetry.ts` | 992 | 2 | The plan's SYMMETRY GROUP and its REPETITION, as facts — `describe(src, { facts: ["symmetry"] })`. Opt-in: nothing here runs unless a caller asks for it. | none |
+| `syntax.ts` | 127 | 2 | SPACE SYNTAX on the access graph — `describe(src, { facts: ["syntax"] })`. Opt-in. | none |
 | `takeoff.ts` | 66 | 2 | The long form of a takeoff: every figure of `describe --facts quantities`, one row each, and the CSV `arch takeoff --format csv` and the Playground's Takeoff tab both write from it. Pure, so the two cannot disagree. | none |
 | `wall-faces.ts` | 530 | 5 | **Walled faces** — the closed regions of floor a storey's wall bodies enclose, and how much of each one the rooms cover (plan-soundness PS2.4: `W_FLOOR_UNASSIGNED`, `W_ROOM_OUTSIDE_SHELL`). | none |
 
@@ -232,6 +232,15 @@ Totals: 254 modules in 27 directories.
 | `source-hash.ts` | 182 | 2 | The write-back revision guard, `--expected-hash <sha256>` (card CR5). | none |
 | `summary.ts` | 63 | 2 | The one-line summary `lint` and `validate` open with (plan-soundness PS7.6): the count and the codes, first in the text report and first key of the JSON, so a reader who cuts the output short (`head -c`, a 200-byte tool preview) still lear… | none |
 
+## `src/describe/`
+
+| Module | Lines | Importers | Summary | Budget |
+| --- | ---: | ---: | --- | --- |
+| `adjacency.ts` | 156 | 1 | Each room's `adjacent` list for `describe()`: {@link roomAdjacency}, which asks `roomsAdjacent` of only the pairs that can touch, and the all-pairs definition it falls back to (moved verbatim from `src/describe.ts`). | none |
+| `fabric.ts` | 122 | 1 | The fabric `diffPlans` compares and `describe()` never reports: each wall and each opening's host, read from the same resolve as the summary (moved verbatim from `src/describe.ts`). | none |
+| `types.ts` | 899 | 2 | The shapes `describe()` returns: {@link SceneSummary}, the one storey's {@link LevelSummary}, and every row and fact block they are built from (moved verbatim from `src/describe.ts`, which re-exports each one, so the public types are uncha… | none |
+| `verticals.ts` | 80 | 1 | The vertical facts of `describe()`: what only a block stair reports (its flights, landings and turn) and the building-level vertical report of a multi-storey plan (moved verbatim from `src/describe.ts`). | none |
+
 ## `src/elements/`
 
 | Module | Lines | Importers | Summary | Budget |
@@ -243,7 +252,7 @@ Totals: 254 modules in 27 directories.
 | `door.ts` | 676 | 2 | `door [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>] [swing <dir>] [slide <dir>] [open <0..1>]` — opening + leaf + swing arc, or (for a non-hinged kind) opening + panels/track/cavity. | none |
 | `elevator.ts` | 74 | 1 | `elevator [id=] at (x,y) size WxH` — a lift shaft, drawn as the car rectangle with the conventional crossed diagonals. | none |
 | `escalator.ts` | 83 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
-| `facets.ts` | 86 | 9 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
+| `facets.ts` | 86 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
 | `fence.ts` | 309 | 1 | `fence [id=] [picket\|panel\|post] { (x,y) (x,y) … [close] }` — a boundary line on the ground. | none |
 | `fixtures-glyphs.ts` | 683 | 35 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
 | `furniture.ts` | 1227 | 11 | `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label. | charges the step meter |
@@ -316,7 +325,7 @@ Totals: 254 modules in 27 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `tokens.ts` | 640 | 46 | The single source of truth for ArchLang's lexical grammar. | none |
+| `tokens.ts` | 640 | 51 | The single source of truth for ArchLang's lexical grammar. | none |
 
 ## `src/import/`
 
@@ -343,7 +352,7 @@ Totals: 254 modules in 27 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `clearance-facts.ts` | 405 | 1 | `describe --facts clearances` (plan-soundness PS2.72): what each clearance rule measured, per storey, so a reviewer can check a warning, or its absence, from the CLI instead of re-measuring the resolved geometry in a script. | none |
+| `clearance-facts.ts` | 405 | 2 | `describe --facts clearances` (plan-soundness PS2.72): what each clearance rule measured, per storey, so a reviewer can check a warning, or its absence, from the CLI instead of re-measuring the resolved geometry in a script. | none |
 | `clearance-measure.ts` | 500 | 9 | The measures behind the clearance family of plan-soundness PS2.11 (`rules/clearances.ts`): a WC's two side strips, and the band a window's span makes on its host wall. Stated once here so the rules and the placement check every quoted posi… | none |
 | `context.ts` | 386 | 42 | The shared, precomputed context every lint rule checks against — element subsets, room rectangles and the hoisted wall-segment list are built exactly once per `lint()` run, so no rule re-derives them. | none |
 | `coverage.ts` | 358 | 10 | The lint coverage report (plan-soundness PS2.13): which rule families ran on a plan, which were skipped and why, and which rooms no use-reading rule could judge. | none |
@@ -387,6 +396,19 @@ Totals: 254 modules in 27 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `circulation.ts` | 94 | 1 | The opt-in circulation render overlay (ADR 0008): draws, on the `annotations` layer, the entrance→room walk for each reachable room, a marker + clear-width label at each room's bottleneck pinch, and the key functional routes in a muted sty… | none |
+
+## `src/plan-json/`
+
+| Module | Lines | Importers | Summary | Budget |
+| --- | ---: | ---: | --- | --- |
+| `ast-json.ts` | 42 | 1 | `astToJson` — a faithful, span-bearing projection of a parsed AST for `arch ast --json`, with no expansion (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `check-graph.ts` | 158 | 1 | `checkGraph` (T3b) — compare an intended adjacency dict to a compiled plan's interior-door connectivity (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `emit.ts` | 318 | 2 | Canonical `.arch` emission from validated Plan JSON, and the two entry points built on it, `planJsonToArch` and `planFromJson` (validate, emit, run the real parser) (moved verbatim from `src/plan-json.ts`, which re-exports every name it ex… | none |
+| `from-json.ts` | 710 | 3 | The Plan JSON validator `planFromJson` runs first: the shape and kind checks that stamp a JSON path on every `E_JSON_*` diagnostic, capped at `MAX_DIAGNOSTICS` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exporte… | none |
+| `room-types.ts` | 133 | 7 | Room-type mapping (uses ⇄ RPLAN-style `room_type`) — ONE source of truth for Plan JSON and `describe()`'s `room_type` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `schema.ts` | 564 | 1 | The Plan JSON Schema (2020-12), {@link PLAN_JSON_SCHEMA} — ONE source of truth; `scripts/gen-plan-schema.ts` only writes it to `schemas/plan.schema.json` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `to-json.ts` | 669 | 2 | `planToJson` — parse + resolve a plan, then project it OUT to the wire shape with the output-only enrichments (areas, `edges`, `input_graph`, `dropped`) (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `types.ts` | 400 | 4 | The Plan JSON wire shape (`version: 1`): every row interface and {@link PlanJson} itself. All coordinates are millimetres; areas m² (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 
 ## `src/taste/`
 
