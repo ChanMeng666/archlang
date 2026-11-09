@@ -3,6 +3,7 @@
 import type { LexResult, Token } from "./lexer.js";
 import { lex, lexUnmemoised } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
+import { recordIdSpan } from "./id-spans.js";
 import { capDiagnostics, isLimitClass, MAX_DIAGNOSTICS } from "./diagnostics.js";
 import type {
   AssignNode,
@@ -94,18 +95,6 @@ const PARSE_CACHE_MAX = 32;
 /** Clear the parse stage memo (called by `clearCache`). */
 export function clearParseCache(): void {
   parseCache.clear();
-}
-
-/**
- * The byte span of each element statement's `id=<name>` NAME, kept beside the AST rather than
- * in it, so the AST (and every projection of it, `arch ast --json` included) is unchanged. Read
- * by a diagnostic that is about the id itself (`E_WALL_ID_RESERVED`).
- */
-const ID_SPANS = new WeakMap<object, Span>();
-
-/** The span of a parsed element's authored `id=` name, when it has one. */
-export function idSpanOf(node: object): Span | undefined {
-  return ID_SPANS.get(node);
 }
 
 export function parse(src: string, registry: Registry = BUILTIN_REGISTRY): ParseOutcome {
@@ -1610,7 +1599,7 @@ class Parser {
       if (def) {
         this.lastIdSpan = undefined;
         node = def.parse(this.ctx);
-        if (this.lastIdSpan && (node as { id?: string }).id) ID_SPANS.set(node, this.lastIdSpan);
+        if (this.lastIdSpan && (node as { id?: string }).id) recordIdSpan(node, this.lastIdSpan);
       } else if (t.value === "let") node = this.parseLet();
       // An ident immediately followed by "=" is an assignment.
       else if (this.peek(1).type === "equals") node = this.parseAssign();
