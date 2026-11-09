@@ -18,9 +18,11 @@ Preamble, every time:
   --poolOptions.forks.minForks=1`) and one heavy process at a time.
 - Never edit `docs/plans/*/cards.md`; the commander owns the cards.
 
-Read first, every time: `AGENTS.md`, `docs/agents/architecture.md`, `docs/agents/iron-laws.md`,
-`docs/agents/gotchas.md`, `docs/testing.md`, and the `.claude/rules/` file matching each path you
-edit. Their hard rules bind you: `compile()` pure/sync/deterministic; zero runtime deps; user-source
+Read first, every time: `AGENTS.md`, `docs/agents/gotchas.md`, and the `.claude/rules/` file matching
+each path you edit (they load by path). Read `docs/agents/architecture.md` and `docs/agents/iron-laws.md`
+before a core or cross-module change, `docs/testing.md` § 2–3 when a golden or a digest goes red, and the
+`.claude/commands/` recipe when the card adds a lint rule, element, fixture family, CLI flag or MCP
+tool. Their hard rules bind you: `compile()` pure/sync/deterministic; zero runtime deps; user-source
 errors returned as catalogued diagnostics, never thrown; new element behaviour lives in its
 `src/elements/` module (registry, no switch); never hand-edit generated files (run `gen:*`);
 numbers print through `src/num-format.ts`; a derived position comes from the shape; a byte-identity
