@@ -19,13 +19,13 @@ PR #581. Lazy `dist` imports in `playground/e2e/{checks,short-link}.spec.ts`; `h
 inside the tests in `docs-site/e2e/{homepage-links,page-chrome}.spec.ts`. Proof: `--list` with no
 `dist/` names 29 + 101 cases, no module error. Done when the next nightly's `e2e-prod` is green.
 
-### EH0.2 · a red nightly or red `main` notifies — `todo` · S · high · sonnet · C-F4
+### EH0.2 · a red nightly or red `main` notifies — `done (#584)` · S · high · sonnet · C-F4
 `nightly.yml` `report` and `main-red.yml`: label the marker issue `ci-red`, post a comment on every
 red run (a body edit notifies nobody), close or relabel on the first green. Add
 `gh issue list -l ci-red` to `docs/agents/commands.md` § session start. Proof: the workflow YAML
 validates (`gh workflow view`), and the PR body quotes the two `issues.createComment` calls.
 
-### EH0.3 · release guard — `todo` · S · high · sonnet · C-F1, C-F2, C-F17
+### EH0.3 · release guard — `done (#583)` · S · high · sonnet · C-F1, C-F2, C-F17
 First step of `release.yml` `publish`: tag = core `package.json` version; tag SHA is an ancestor of
 `origin/main`; the SHA's CI run concluded `success` (`gh api .../commits/$SHA/check-runs`);
 `CHANGELOG.md` has a `## [<version>]` section; `workflow_dispatch` refuses a ref that is not a `v*`
@@ -34,22 +34,22 @@ A final `verify` job `npm view`s every published package at its `package.json` v
 job's "registry 5xx → warning" becomes a failure. Proof: a dry run of the guard script against the
 `v1.57.0` tag passes and against a mistyped tag fails (run the script locally with `--dry-run`).
 
-### EH0.4 · deploy waits for CI — `todo` · S · high · sonnet · C-F3 · EH-D5
+### EH0.4 · deploy waits for CI — `done (#585)` · S · high · sonnet · C-F3 · EH-D5
 `deploy.yml` triggers on `workflow_run` of `CI` with `conclusion == success` on `main` (keep
 `workflow_dispatch`). The checkout uses `github.event.workflow_run.head_sha`. Proof: PR body shows the
 trigger block and the SHA plumbing; after merge, the next `main` push produces one deploy run that
 starts after CI's.
 
-### EH0.5 · required checks and the stale protection line — `todo` · S · owner · (coordinator) · C-F9
+### EH0.5 · required checks and the stale protection line — `done (2026-11-09: ten required checks incl. 3D package (check:3d), Analyze (javascript-typescript), Analyze (actions); ci-throughput § 1 corrected)` · S · owner · (coordinator) · C-F9
 Owner setting: add `3D package (check:3d)` and CodeQL `Analyze` to `main`'s required contexts
 (EH-D2). Repo side: correct `docs/plans/ci-throughput.md` § 1 ("no branch protection" is false since
 option A). Proof: `gh api repos/ChanMeng666/archlang/branches/main/protection` lists nine contexts.
 
-### EH0.6 · `mcp-worker` is built before merge — `todo` · S · high · sonnet · W-F1
+### EH0.6 · `mcp-worker` is built before merge — `done (#587)` · S · high · sonnet · W-F1
 Add `npm run mcp-worker:build` to the `Workspace builds` job and to `build:workspaces`. Proof: the
 job log shows the wrangler/rolldown bundle step; its minutes are reported in the PR body.
 
-### EH0.7 · five duration-balanced shards — `todo` · S · high (workflow) + low (tests) · sonnet · T-F4, C-F5, P-F10 · EH-D9
+### EH0.7 · five duration-balanced shards — `done (#586)` · S · high (workflow) + low (tests) · sonnet · T-F4, C-F5, P-F10 · EH-D9
 (a) Move `net-area.test.ts`'s corpus oracle (the 235 s `it` at `:483`) into
 `test/net-area-oracle-corpus.test.ts` as `it.each` per corpus directory. (b) Add a vitest
 `sequencer` whose `shard()` does longest-processing-time balancing over
@@ -64,7 +64,7 @@ Both Playwright configs add the `json` reporter; a step parses it for status `fl
 `::warning::` and a job-summary line per flaky case; nightly `e2e-prod` fails on any flaky.
 Proof: the parser run on a saved report with one flaky case prints the warning.
 
-### EH0.9 · token-bearing jobs — `todo` · S · high · sonnet · C-F11, C-F12, C-F13, C-F14
+### EH0.9 · token-bearing jobs — `done (#588)` · S · high · sonnet · C-F11, C-F12, C-F13, C-F14
 `deploy.yml` and `release.yml`: `npm ci --ignore-scripts && npm rebuild esbuild`; Cloudflare env
 moves from job level to the wrangler step. CodeQL matrix adds `actions`. Dependabot: security
 updates on, `cooldown: default-days: 7`. Proof: the PR body lists each diff hunk and its finding.
@@ -180,7 +180,7 @@ Tests for `..`, absolute, symlink, `.txt`, and a sibling-directory library that 
 `test/import-world-fuzz.test.ts` (S-FZ-2) over hostile specs. CHANGELOG line. Proof: the probe
 from the audit (`import "../../secret.txt"`) returns a diagnostic with no file content.
 
-### EH1.13 · browser surfaces: capped inflate, one sanitiser, a CSP — `done (#594); the CSP half is #595 (owner queue)` · S · low · sonnet · S-F4, S-F5, S-FZ-3
+### EH1.13 · browser surfaces: capped inflate, one sanitiser, a CSP — `done (#594, #595)` · S · low · sonnet · S-F4, S-F5, S-FZ-3
 `playground/src/share.ts` uses `inflateCapped` (1 MiB) with a visible "link too large" notice,
 also for `#s=`. `svgElement` from `mcp-worker/src/viewer/viewer.ts:114-128` becomes a shared
 helper used by `packages/web-component/src/arch-plan.ts:193` and `playground/src/viewer.ts:31`.

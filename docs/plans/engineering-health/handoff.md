@@ -1,6 +1,6 @@
 # Resume point
 
-**Where (2026-11-09, night):** wave 0 prepared (owner queue below), wave 1 two-thirds landed.
+**Where (2026-11-09, night):** wave 0 done except EH0.8; wave 1 two-thirds landed.
 Rulings EH-D1…D9 taken by delegation (`README.md` § 6; EH-D8 amended by #597: severity follows the
 list, budget-class codes survive the cap), owner may overturn.
 
@@ -14,13 +14,7 @@ inflate cap, `sanitizeSvg` ×3 under a lockstep pin, `isPlainSvg` fast path).
 by the coordinator's ruling). **In progress:** EH1.12 (`import` rooted), EH1.15 (`planFromJson`
 hardening, waits on nothing now that #597 is in).
 
-**Owner queue (high tier, all CI-green; each PR body carries the diff and its finding):** #586 EH0.7
-(five balanced shards, 4.2–5.6 min each) · #583 EH0.3 (release guard + verify job) · #584 EH0.2
-(`ci-red` label, a comment per red run) · #585 EH0.4 (deploy waits for CI) · #587 EH0.6 (mcp-worker
-built on PRs) · #588 EH0.9 (`--ignore-scripts`, step-scoped Cloudflare env, CodeQL `actions`,
-Dependabot cooldown) · #595 EH1.13 PR 2 (playground CSP, report-only) · EH0.5 (required checks
-`3D package (check:3d)` + CodeQL `Analyze`, a repository setting). One sentence from the owner merges
-the set; several of these need a `git merge origin/main` first (CHANGELOG and cards moved).
+**Owner queue:** empty. The owner approved the wave-0 set on 2026-11-09 ("merge the EH high-tier set"): #583–#588 and #595 merged, EH0.5 applied (ten required checks). First things to read tomorrow: the nightly's `ci-red` behaviour (#584), the first `workflow_run` deploy (#585), the five-shard times on the next code PR (#586), and the release guard on the next tag (#583).
 
 **Next cards:** EH1.14 (agent docs, stale recipes), EH1.16 (review residue), EH1.8 (`runCli`) then
 EH1.9, EH1.7 after #586 lands (it edits `vitest.config.ts`); then wave 2 (EH2.1 error catalogue
