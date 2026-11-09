@@ -1,6 +1,6 @@
 /**
  * **The Plan JSON projector is a leaf.** `to-json.ts` turns a resolved plan into Plan JSON; it
- * must not load the validator (`from-json.ts`), which it reads nothing from. (The parser stays in its closure through the resolver, `src/ir.ts`, whose IR it projects; that edge is the projector's input, not a leak.) A
+ * must not load the validator (`from-json.ts`), which it reads nothing from. Nor does it load the parser: the resolver (`src/ir.ts`) it reads takes `idSpanOf` from the leaf `src/id-spans.ts`. A
  * stray import of a printer helper from `emit.ts` once pulled both in. Structural, with the
  * walk `describe-overlay-blind.test.ts` uses.
  */
@@ -56,10 +56,8 @@ describe("the Plan JSON projector is a leaf", () => {
     expect(mods.has(resolve(SRC, "plan-json/from-json.ts"))).toBe(false);
   });
 
-  it("to-json.ts reaches the parser only through the resolver it reads (src/ir.ts)", () => {
-    const direct = runtimeImports(resolve(SRC, "plan-json/to-json.ts"));
-    expect(direct).not.toContain(resolve(SRC, "parser.ts"));
-    expect(direct).toContain(resolve(SRC, "ir.ts"));
+  it("to-json.ts does not reach the parser", () => {
+    expect(mods.has(resolve(SRC, "parser.ts"))).toBe(false);
   });
 
   it("the walk can see the edge where it exists (emit.ts loads both)", () => {
