@@ -55,7 +55,8 @@ export class GridIndex<T> {
   /** Populated buckets (rows across all columns) — what a huge query range is compared to. */
   private bucketCount = 0;
   /**
-   * Items whose box spans more than {@link MAX_CELLS_PER_BOX} cells. Every query returns
+   * Items whose box spans more than {@link MAX_CELLS_PER_BOX} cells, or has a NaN or
+   * infinite extent. Every query returns
    * all of them (after the bucketed items, in insertion order) — still a superset of the
    * true overlappers, so callers' exact tests keep the answer exact, and the index never
    * allocates more than O(1) per such item.
@@ -76,9 +77,15 @@ export class GridIndex<T> {
     const x1 = this.idx(box.maxX);
     const y0 = this.idx(box.minY);
     const y1 = this.idx(box.maxY);
-    // A NaN/infinite extent or an inverted box occupies no cell and was always dropped
-    // silently; keep dropping it rather than letting overflow return it to every query.
-    if (!(Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(y0) && Number.isFinite(y1))) return;
+    // A NaN or infinite extent cannot be bucketed, but it is not nothing: a box reaching to
+    // infinity (an `Infinity` ruleset depth) meets every query. It goes to the overflow list,
+    // which every query returns, so a scan rewritten as a query still sees it and the caller's
+    // exact test decides (it used to be dropped silently, a scan's answer lost, EH2.10 review).
+    // A finite inverted box meets nothing and is still dropped.
+    if (!(Number.isFinite(x0) && Number.isFinite(x1) && Number.isFinite(y0) && Number.isFinite(y1))) {
+      this.overflow.push(item);
+      return;
+    }
     if (x1 < x0 || y1 < y0) return;
     // From 2^53 a cell index cannot be stepped (`cx++` stops changing it), so the cell
     // loop below would spin on one bucket until the array overflows. Indices from 2^52 up
@@ -198,3 +205,43 @@ export class GridIndex<T> {
     return out;
   }
 }
+
+/** Do two closed boxes meet (share at least a point)? */
+export const boxesMeet = (a: GridBox, b: GridBox): boolean =>
+  a.minX <= b.maxX && b.minX <= a.maxX && a.minY <= b.maxY && b.minY <= a.maxY;
+
+/**
+ * A query over `boxes` answering, for a box, the POSITIONS in `boxes` of every box that meets
+ * it ({@link boxesMeet}, closed), in ascending position order: the order a full scan over
+ * `boxes` visits them, so a scan rewritten as a query keeps its order. A `null` entry is never
+ * returned, nor a finite inverted box for a finite query (it meets nothing). A box with a NaN or
+ * infinite coordinate is returned for EVERY query, and every box for a query with one: `boxesMeet`
+ * cannot be trusted on them, so the caller's exact test decides, as in a scan. The cell is the
+ * median finite box extent. A caller whose exact test is implied by its boxes meeting gets the
+ * full scan's answer.
+ */
+export function overlapIndex(boxes: readonly (GridBox | null)[]): (q: GridBox) => number[] {
+  const sizes = boxes
+    .filter((b): b is GridBox => b !== null)
+    .map((b) => Math.max(b.maxX - b.minX, b.maxY - b.minY))
+    .filter((s) => s > 0 && Number.isFinite(s))
+    .sort((a, b) => a - b);
+  const index = new GridIndex<number>(sizes.length > 0 ? sizes[sizes.length >> 1]! : 1);
+  const all: number[] = [];
+  boxes.forEach((b, i) => {
+    if (b === null) return;
+    index.insert(b, i);
+    all.push(i);
+  });
+  return (q) => {
+    if (!finiteBox(q)) return [...all];
+    return index
+      .queryBox(q)
+      .filter((i) => !finiteBox(boxes[i]!) || boxesMeet(boxes[i]!, q))
+      .sort((a, b) => a - b);
+  };
+}
+
+/** Are all four of a box's coordinates finite? */
+const finiteBox = (b: GridBox): boolean =>
+  Number.isFinite(b.minX) && Number.isFinite(b.minY) && Number.isFinite(b.maxX) && Number.isFinite(b.maxY);

@@ -1,9 +1,9 @@
-/** GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents. */
+/** GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents; overlapIndex ≡ a full scan. */
 
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile } from "../src/index.js";
-import { GridIndex } from "../src/geometry/grid-index.js";
+import { boxesMeet, GridIndex, overlapIndex } from "../src/geometry/grid-index.js";
 import { resolvePlan } from "../src/analyze.js";
 import { MAX_OVERLAP_PAIRS_LISTED, type RRoom } from "../src/ir.js";
 import { roomOverlapNamer } from "../src/naming.js";
@@ -147,14 +147,35 @@ describe("GridIndex extreme extents", () => {
     expect(seen).toEqual(["wall"]);
   });
 
-  it("still drops a NaN, infinite or inverted box exactly as before", () => {
+  it("keeps a NaN or infinite box in the overflow list (every query returns it) and drops an inverted one", () => {
+    // EH2.10 review: a box reaching to infinity (an `Infinity` ruleset depth) meets every query, so
+    // dropping it lost a scan's answer. It is returned after the bucketed items; the caller's exact
+    // test decides. A finite inverted box meets nothing and is still dropped.
     const g = new GridIndex<string>(100);
     g.insert({ minX: NaN, minY: 0, maxX: 10, maxY: 10 }, "nan");
     g.insert({ minX: 0, minY: 0, maxX: Infinity, maxY: 10 }, "inf");
     g.insert({ minX: 500, minY: 0, maxX: 10, maxY: 10 }, "inverted");
     g.insert({ minX: 0, minY: 0, maxX: 10, maxY: 10 }, "ok");
-    expect(g.queryBox({ minX: 0, minY: 0, maxX: 5, maxY: 5 })).toEqual(["ok"]);
-    expect(g.queryBox({ minX: -1e12, minY: -1e12, maxX: 1e12, maxY: 1e12 })).toEqual(["ok"]);
+    expect(g.queryBox({ minX: 0, minY: 0, maxX: 5, maxY: 5 })).toEqual(["ok", "nan", "inf"]);
+    expect(g.queryBox({ minX: 9e5, minY: 9e5, maxX: 9e5 + 1, maxY: 9e5 + 1 })).toEqual(["nan", "inf"]);
+    expect(g.queryBox({ minX: -1e12, minY: -1e12, maxX: 1e12, maxY: 1e12 })).toEqual(["ok", "nan", "inf"]);
+    const seen: string[] = [];
+    g.forEach({ minX: 9e5, minY: 9e5, maxX: 9e5 + 1, maxY: 9e5 + 1 }, (i) => seen.push(i));
+    expect(seen).toEqual(["nan", "inf"]);
+  });
+
+  it("overlapIndex returns a non-finite box for every query, and every box for a non-finite query", () => {
+    const query = overlapIndex([
+      { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+      { minX: 0, minY: -Infinity, maxX: 10, maxY: Infinity },
+      null,
+      { minX: NaN, minY: 0, maxX: 10, maxY: 10 },
+      { minX: 500, minY: 500, maxX: 510, maxY: 510 },
+    ]);
+    expect(query({ minX: 1e6, minY: 1e6, maxX: 1e6 + 1, maxY: 1e6 + 1 })).toEqual([1, 3]);
+    expect(query({ minX: 2, minY: 2, maxX: 3, maxY: 3 })).toEqual([0, 1, 3]);
+    expect(query({ minX: 0, minY: 0, maxX: Infinity, maxY: 1 })).toEqual([0, 1, 3, 4]);
+    expect(query({ minX: NaN, minY: 0, maxX: 1, maxY: 1 })).toEqual([0, 1, 3, 4]);
   });
 
   it("a huge query box returns the populated buckets in the same order as a cell walk", () => {
@@ -168,5 +189,41 @@ describe("GridIndex extreme extents", () => {
     const small = { minX: 0, minY: 0, maxX: 400, maxY: 400 };
     const huge = { minX: -1e12, minY: -1e12, maxX: 1e12, maxY: 1e12 };
     expect(a.queryBox(huge)).toEqual(b.queryBox(small));
+  });
+});
+
+describe("overlapIndex ≡ a full scan (EH2.10: the lint rules' leaf and boundary queries)", () => {
+  const box = fc
+    .tuple(
+      fc.integer({ min: -20_000, max: 20_000 }),
+      fc.integer({ min: -20_000, max: 20_000 }),
+      fc.integer({ min: 0, max: 6_000 }),
+      fc.integer({ min: 0, max: 6_000 }),
+    )
+    .map(([x, y, w, h]) => ({ minX: x, minY: y, maxX: x + w, maxY: y + h }));
+  it("returns exactly the meeting boxes' positions, ascending, nulls never", () => {
+    fc.assert(
+      fc.property(
+        fc.array(fc.option(box, { nil: null }), { maxLength: 60 }),
+        fc.array(box, { maxLength: 10 }),
+        (bs, qs) => {
+          const query = overlapIndex(bs);
+          for (const q of qs) {
+            const scan = bs.flatMap((b, i) => (b !== null && boxesMeet(b, q) ? [i] : []));
+            expect(query(q)).toEqual(scan);
+          }
+        },
+      ),
+      { numRuns: runs(200) },
+    );
+  });
+
+  it("a box touching the query at one edge or corner meets it (closed boxes)", () => {
+    const query = overlapIndex([
+      { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+      { minX: 10, minY: 10, maxX: 20, maxY: 20 },
+      { minX: 10.5, minY: 0, maxX: 20, maxY: 5 },
+    ]);
+    expect(query({ minX: 10, minY: 10, maxX: 10, maxY: 10 })).toEqual([0, 1]);
   });
 });
