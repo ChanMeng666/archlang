@@ -1,9 +1,9 @@
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { runValidate, validateJsonFiles } from "./validate-json-run.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * `validate` gains `next` (plan-soundness PS5.3).
@@ -113,27 +113,22 @@ interface Run {
   stdout: string;
   stderr: string;
 }
-function cli(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", "validate", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function cli(args: string[], input?: string): Promise<Run> {
+  return runArch(["validate", ...args], { input });
 }
 
 // A validity warning (W_ROOM_VIA_PRIVATE) first in emission order.
 const BAD = "test/defect-corpus/circulation-privacy/bedroom-via-bedroom.arch";
 
 describe("validate · next tiers through the CLI", () => {
-  it("error: a parse error is next, exit 2", () => {
-    const r = cli(["-", "--json"], 'plan "x" { units mm room id=a at (0,0) size 0x }');
+  it("error: a parse error is next, exit 2", async () => {
+    const r = await cli(["-", "--json"], 'plan "x" { units mm room id=a at (0,0) size 0x }');
     expect(r.status).toBe(2);
     expect(JSON.parse(r.stdout).next).toMatchObject({ tier: "error", code: "E_PARSE" });
   });
 
-  it("warning: a compile-channel warning is next", () => {
-    const r = cli(["-", "--json"], 'plan "x" { units mm }');
+  it("warning: a compile-channel warning is next", async () => {
+    const r = await cli(["-", "--json"], 'plan "x" { units mm }');
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).next).toMatchObject({ tier: "warning", code: "W_EMPTY_PLAN" });
   });
@@ -192,9 +187,9 @@ describe("validate · next tiers through the CLI", () => {
     }
   });
 
-  it("nothing: null, and no human next line", () => {
+  it("nothing: null, and no human next line", async () => {
     expect(JSON.parse(runValidate([cleanPlan(), "--json"]).stdout).next).toBeNull();
-    const h = cli([cleanPlan()]);
+    const h = await cli([cleanPlan()]);
     expect(h.status).toBe(0);
     expect(h.stderr).not.toMatch(/next \(/);
   });
@@ -251,24 +246,24 @@ describe("validate · next tiers through the CLI", () => {
     expect(filtered.next).toEqual(all);
   });
 
-  it("unknown profile names are bad usage (exit 3) with a did-you-mean", () => {
-    const p = cli([cleanPlan(), "--profile", "acessibility-advisory"]);
+  it("unknown profile names are bad usage (exit 3) with a did-you-mean", async () => {
+    const p = await cli([cleanPlan(), "--profile", "acessibility-advisory"]);
     expect(p.status).toBe(3);
     expect(p.stderr).toMatch(
       /unknown lint profile "acessibility-advisory" \(did you mean "accessibility-advisory"\?\)/,
     );
-    const t = cli([cleanPlan(), "--taste", "generik"]);
+    const t = await cli([cleanPlan(), "--taste", "generik"]);
     expect(t.status).toBe(3);
     expect(t.stderr).toMatch(/unknown taste profile "generik" \(did you mean "generic"\?\)/);
   });
 
-  it("human mode: one next line on stderr (plus its help line); --quiet drops it", () => {
-    const h = cli([BAD]);
+  it("human mode: one next line on stderr (plus its help line); --quiet drops it", async () => {
+    const h = await cli([BAD]);
     expect(h.status).toBe(0);
     const lines = h.stderr.split("\n").filter((l) => l.startsWith("next ("));
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatch(/^next \(validity\): W_ROOM_VIA_PRIVATE at \d+:\d+: /);
     expect(h.stdout).not.toMatch(/next/);
-    expect(cli([BAD, "--quiet"]).stderr).not.toMatch(/next \(/);
+    expect((await cli([BAD, "--quiet"])).stderr).not.toMatch(/next \(/);
   });
 });

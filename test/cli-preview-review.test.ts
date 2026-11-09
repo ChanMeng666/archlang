@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -6,6 +5,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildReviewSheet, REVIEW_MAX_CROPS, type ReviewSheet } from "../src/cli/review.js";
 import { compile, describe as describePlan, lint } from "../src/index.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * `arch preview --review` (plan-soundness PS5.4): the review sheet rings every element a
@@ -16,13 +16,8 @@ import { compile, describe as describePlan, lint } from "../src/index.js";
 
 const FIXTURE = "test/review-sheet/fixture.arch";
 
-function run(args: string[], input?: string): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<{ status: number | null; stdout: string; stderr: string }> {
+  return runArch(args, { input });
 }
 
 /**
@@ -251,9 +246,9 @@ describe("preview --review: one mark per warning, and no ring on a guess (red-te
 });
 
 describe("preview --review: the CLI", () => {
-  it("writes the PNG and reports marks and crops, exit 0", () => {
+  it("writes the PNG and reports marks and crops, exit 0", async () => {
     const out = join(mkdtempSync(join(tmpdir(), "arch-review-")), "fixture.review.png");
-    const r = run(["preview", FIXTURE, "--review", "-o", out, "--json"]);
+    const r = await run(["preview", FIXTURE, "--review", "-o", out, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j).toMatchObject({ ok: true, format: "png", review: true, rings: 5 });
@@ -265,26 +260,26 @@ describe("preview --review: the CLI", () => {
     expect(j.bytes).toBeGreaterThan(0);
   }, 60000);
 
-  it("refuses --ascii, --view and --overlay beside it (exit 3), and a bad --level", () => {
+  it("refuses --ascii, --view and --overlay beside it (exit 3), and a bad --level", async () => {
     for (const extra of [["--ascii"], ["--view", "axon"], ["--overlay", "circulation"]]) {
-      const r = run(["preview", FIXTURE, "--review", ...extra]);
+      const r = await run(["preview", FIXTURE, "--review", ...extra]);
       expect(r.status).toBe(3);
       expect(r.stderr).toContain("--review cannot be combined with");
     }
-    expect(run(["preview", FIXTURE, "--review", "--level", "2"]).status).toBe(3);
+    expect((await run(["preview", FIXTURE, "--review", "--level", "2"])).status).toBe(3);
   }, 60000);
 
-  it("reports compile()'s warnings in diagnostics, as plain preview does", () => {
+  it("reports compile()'s warnings in diagnostics, as plain preview does", async () => {
     const out = join(mkdtempSync(join(tmpdir(), "arch-review-")), "p7.review.png");
     const p7 = "test/review-sheet/p7-overlap.arch";
-    const review = JSON.parse(run(["preview", p7, "--review", "-o", out, "--json"]).stdout);
-    const plain = JSON.parse(run(["preview", p7, "-o", `${out}.plain.png`, "--json"]).stdout);
+    const review = JSON.parse((await run(["preview", p7, "--review", "-o", out, "--json"])).stdout);
+    const plain = JSON.parse((await run(["preview", p7, "-o", `${out}.plain.png`, "--json"])).stdout);
     expect(review.diagnostics).toEqual(plain.diagnostics);
     expect(review.diagnostics.map((d: { code: string }) => d.code)).toEqual(["W_ROOM_OVERLAP"]);
   }, 60000);
 
-  it("a broken plan fails like preview, exit 2", () => {
-    const r = run(["preview", "-", "--review", "--json"], 'plan "B" { units mm room at (0,0) size 0x3000 }');
+  it("a broken plan fails like preview, exit 2", async () => {
+    const r = await run(["preview", "-", "--review", "--json"], 'plan "B" { units mm room at (0,0) size 0x3000 }');
     expect(r.status).toBe(2);
     expect(JSON.parse(r.stdout).diagnostics[0].code).toBe("E_ROOM_SIZE");
   }, 60000);

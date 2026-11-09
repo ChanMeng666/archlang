@@ -8,12 +8,12 @@
  * `held` definition and the `--set` refusal; the broke/healed case is the drill read backwards.
  */
 
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { applyLetOverride, ERROR_CATALOG, impact, MAX_WHY_DEPTH, type ImpactReport } from "../src/index.js";
+import { runArch } from "./helpers/cli.js";
 
 const REPRO = "test/plans/plan-soundness/repro";
 const read = (p: string): string => readFileSync(p, "utf8");
@@ -557,48 +557,44 @@ suite("PS4.2 — `--set` refuses with E_SET_OVERRIDE", () => {
 // ---------------------------------------------------------------------------------------
 // The CLI
 
-function run(args: string[]): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[]): Promise<{ status: number | null; stdout: string; stderr: string }> {
+  return runArch(args);
 }
 
 suite("PS4.2 — `arch impact`", () => {
   const before = `${REPRO}/widen-before.arch`;
 
-  it("--set prints the drill report and exits 0", () => {
-    const r = run(["impact", before, "--set", "AW=4500"]);
+  it("--set prints the drill report and exits 0", async () => {
+    const r = await run(["impact", before, "--set", "AW=4500"]);
     expect(r.status).toBe(0);
     const lines = r.stdout.trimEnd().split("\n");
     expect(lines[0]).toBe("AW: 4000 → 4500");
     expect(lines.slice(1)).toEqual(impact(read(before), read(`${REPRO}/widen-after.arch`)).summary);
   });
 
-  it("--json carries the set and the whole report; --against gives the same sections", () => {
-    const j = JSON.parse(run(["impact", before, "--set", "AW=4500", "--json"]).stdout);
+  it("--json carries the set and the whole report; --against gives the same sections", async () => {
+    const j = JSON.parse((await run(["impact", before, "--set", "AW=4500", "--json"])).stdout);
     expect(j.ok).toBe(true);
     expect(j.set).toEqual({ name: "AW", before: "4000", after: "4500" });
     const dir = mkdtempSync(join(tmpdir(), "arch-impact-"));
     const old = join(dir, "old.arch");
     writeFileSync(old, read(before), "utf8");
-    const k = JSON.parse(run(["impact", `${REPRO}/widen-after.arch`, "--against", old, "--json"]).stdout);
+    const k = JSON.parse((await run(["impact", `${REPRO}/widen-after.arch`, "--against", old, "--json"])).stdout);
     expect(k.set).toBeUndefined();
     const { set: _set, ...rest } = j;
     expect(k).toEqual(rest);
   });
 
-  it("a refused --set exits 2 with E_SET_OVERRIDE; usage errors exit 3", () => {
-    const r = run(["impact", before, "--set", "NOPE=1", "--json"]);
+  it("a refused --set exits 2 with E_SET_OVERRIDE; usage errors exit 3", async () => {
+    const r = await run(["impact", before, "--set", "NOPE=1", "--json"]);
     expect(r.status).toBe(2);
     expect(JSON.parse(r.stdout).diagnostics[0].code).toBe("E_SET_OVERRIDE");
-    expect(run(["impact", before]).status).toBe(3);
-    expect(run(["impact", before, "--set", "AW=1", "--against", before]).status).toBe(3);
-    expect(run(["impact", before, "--set", "AW"]).status).toBe(3);
+    expect((await run(["impact", before])).status).toBe(3);
+    expect((await run(["impact", before, "--set", "AW=1", "--against", before])).status).toBe(3);
+    expect((await run(["impact", before, "--set", "AW"])).status).toBe(3);
   });
 
-  it("--against resolves each file's imports against its own directory (red team N4)", () => {
+  it("--against resolves each file's imports against its own directory (red team N4)", async () => {
     // old.arch sits in another directory and imports a sibling module that exists only there.
     // Resolved against the new file's directory it would fail to import, and nothing would be
     // compared; resolved against its own, both sides resolve.
@@ -612,7 +608,7 @@ suite("PS4.2 — `arch impact`", () => {
     writeFileSync(join(oldDir, "old.arch"), body(300), "utf8");
     writeFileSync(join(newDir, "new.arch"), body(300), "utf8");
     const j = JSON.parse(
-      run(["impact", join(newDir, "new.arch"), "--against", join(oldDir, "old.arch"), "--json"]).stdout,
+      (await run(["impact", join(newDir, "new.arch"), "--against", join(oldDir, "old.arch"), "--json"])).stdout,
     );
     expect(j.ok).toBe(true);
     // The only difference is the sibling module each file imports: the bed is 100 mm wider.

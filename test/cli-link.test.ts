@@ -18,13 +18,13 @@
  * editor — is `playground/e2e/cli-link.spec.ts`.
  */
 
-import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { b64urlToBytes, hasEditFlag, srcFromHash } from "../playground/src/share.js";
 import { planLinks } from "../src/cli/link.js";
 import { decodePlanHash, encodePlanHash, PLAYGROUND_EDIT_FLAG, PLAYGROUND_ORIGIN } from "../src/cli/share-codec.mjs";
+import { runArch } from "./helpers/cli.js";
 
 interface Run {
   status: number | null;
@@ -32,13 +32,8 @@ interface Run {
   stderr: string;
 }
 
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 /** Node 18 ships `DecompressionStream` without "deflate-raw" (added in 21.2); CI runs 18/20/22. */
@@ -140,32 +135,32 @@ describe("one Node encoder", () => {
 });
 
 describe("archlang link", () => {
-  it("prints the playground URL alone on stdout", () => {
-    const r = run(["link", "examples/studio.arch"]);
+  it("prints the playground URL alone on stdout", async () => {
+    const r = await run(["link", "examples/studio.arch"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toBe(`${planLinks(STUDIO).playground}\n`);
     expect(r.stderr).toBe("");
   });
 
-  it("--json prints { ok, playground, embed, bytes }", () => {
-    const r = run(["link", "examples/studio.arch", "--json"]);
+  it("--json prints { ok, playground, embed, bytes }", async () => {
+    const r = await run(["link", "examples/studio.arch", "--json"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout)).toEqual({ ok: true, ...planLinks(STUDIO) });
     expect(Object.keys(JSON.parse(r.stdout))).toEqual(["ok", "playground", "embed", "bytes"]);
   });
 
-  it("reads stdin with `-`", () => {
-    const r = run(["link", "-", "--json"], STUDIO);
+  it("reads stdin with `-`", async () => {
+    const r = await run(["link", "-", "--json"], STUDIO);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).playground).toBe(planLinks(STUDIO).playground);
   });
 
-  it("a plan that does not compile still links: exit 0, one warning line on stderr", () => {
-    const r = run(["link", "-"], BROKEN);
+  it("a plan that does not compile still links: exit 0, one warning line on stderr", async () => {
+    const r = await run(["link", "-"], BROKEN);
     expect(r.status).toBe(0);
     expect(r.stdout).toBe(`${planLinks(BROKEN).playground}\n`);
     expect(r.stderr).toMatch(/^warning: stdin does not compile \(1 error, first E_PARSE at 2:3\);[^\n]*\n$/);
-    const json = run(["link", "-", "--json"], BROKEN);
+    const json = await run(["link", "-", "--json"], BROKEN);
     expect(json.status).toBe(0);
     // `ok` and `errors` lead, so an agent reading stdout alone sees the plan is broken.
     expect(JSON.parse(json.stdout)).toEqual({ ok: false, errors: 1, ...planLinks(BROKEN) });
@@ -173,16 +168,16 @@ describe("archlang link", () => {
     expect(json.stderr).toMatch(/^warning: /);
   });
 
-  it("--quiet drops the warning, not the link", () => {
-    const r = run(["link", "-", "--quiet"], BROKEN);
+  it("--quiet drops the warning, not the link", async () => {
+    const r = await run(["link", "-", "--quiet"], BROKEN);
     expect(r.status).toBe(0);
     expect(r.stdout).toBe(`${planLinks(BROKEN).playground}\n`);
     expect(r.stderr).toBe("");
   });
 
-  it("a missing file is an IO error, and no input or an undeclared flag is bad usage", () => {
-    expect(run(["link", "examples/no-such-plan.arch"]).status).toBe(1);
-    expect(run(["link"]).status).toBe(3);
-    expect(run(["link", "examples/studio.arch", "--level", "2"]).status).toBe(3);
+  it("a missing file is an IO error, and no input or an undeclared flag is bad usage", async () => {
+    expect((await run(["link", "examples/no-such-plan.arch"])).status).toBe(1);
+    expect((await run(["link"])).status).toBe(3);
+    expect((await run(["link", "examples/studio.arch", "--level", "2"])).status).toBe(3);
   });
 });

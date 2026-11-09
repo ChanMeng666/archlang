@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -8,6 +7,7 @@ import { cmdFinish, cmdFix, cmdFmt, cmdRepair, cmdReroll } from "../src/cli/comm
 import { nodeIo, parseArgs } from "../src/cli/io.js";
 import { writeGuardSeam } from "../src/cli/source-hash.js";
 import { buildManifest, format } from "../src/index.js";
+import { spawnArch } from "./helpers/cli.js";
 
 /**
  * The write-back revision guard, `--expected-hash` (card CR5, `src/cli/source-hash.ts`).
@@ -385,10 +385,9 @@ describe("--expected-hash: a change made while the command computed is caught, n
 
 describe("--expected-hash through the real binary", () => {
   it("exits 4 and leaves the file untouched", () => {
-    const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", "fix", file, "--expected-hash", STALE], {
-      encoding: "utf8",
-      cwd: process.cwd(),
-    });
+    // Spawned on purpose: every other case here calls the commands in-process; this one proves the exit code
+    // reaches the real process.
+    const r = spawnArch(["fix", file, "--expected-hash", STALE]);
     expect(r.status).toBe(4);
     expect(r.stderr).toContain("E_STALE_SOURCE");
     untouched(OFF_WALL);

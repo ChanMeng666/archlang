@@ -1,5 +1,4 @@
 import { readFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { afterAll, describe as suite, expect, it } from "vitest";
 import { arcSweepAngle, pathArcs, pathLines } from "./path-prim.js";
 import {
@@ -30,6 +29,7 @@ import {
   minArcRadius,
 } from "../src/geometry/arc.js";
 import type { RRoom, RWall } from "../src/ir.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * Curved geometry — `arc (x,y) radius R [cw|ccw] [major]` wall edges and
@@ -70,13 +70,8 @@ interface Run {
   stdout: string;
   stderr: string;
 }
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 const wallsOf = (src: string): RWall[] => resolve(parse(src).plan!).ir.walls;
@@ -426,8 +421,8 @@ suite("rendering — visible faces are TRUE arcs, fills are tessellated", () => 
     expect(dxf).toMatch(/\nCIRCLE\n/);
   });
 
-  it("rasterizes a curve in the ASCII plan without crashing", () => {
-    const txt = run(["compile", "examples/aquarium.arch", "-f", "txt", "-o", "-"]);
+  it("rasterizes a curve in the ASCII plan without crashing", async () => {
+    const txt = await run(["compile", "examples/aquarium.arch", "-f", "txt", "-o", "-"]);
     expect(txt.status).toBe(0);
     expect(txt.stdout.split("\n").length).toBeGreaterThan(10);
     // The circular room's label still lands (its floor is a `circle`, not a polygon).
@@ -727,8 +722,8 @@ suite("LAW: a curve compiles identically with and without the clipper2 backend",
 // ---------------------------------------------------------------------------
 
 suite("examples/aquarium.arch — the curved-geometry flagship", () => {
-  it("is lint-clean under --strict", () => {
-    const r = run(["validate", "examples/aquarium.arch", "--strict", "--json"]);
+  it("is lint-clean under --strict", async () => {
+    const r = await run(["validate", "examples/aquarium.arch", "--strict", "--json"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).diagnostics).toEqual([]);
   });

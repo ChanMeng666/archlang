@@ -10,10 +10,10 @@
  * spans).
  */
 
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { ERROR_CATALOG, impact, type ImpactLock, parseLockList } from "../src/index.js";
+import { runArch } from "./helpers/cli.js";
 
 const FX = "test/fixtures";
 const read = (p: string): string => readFileSync(p, "utf8");
@@ -178,18 +178,18 @@ suite("B1 — change classes and refusals", () => {
   });
 });
 
-function run(args: string[]): { status: number | null; stdout: string } {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], { encoding: "utf8" });
+async function run(args: string[]): Promise<{ status: number | null; stdout: string }> {
+  const r = await runArch(args);
   return { status: r.status, stdout: r.stdout };
 }
 
 suite("B1 — `arch impact --lock`", () => {
   const lock = ["--lock", LOCKS.join(",")];
 
-  it("the partition pair exits 0; the window pair exits 2 with both spans in --json", () => {
-    const ok = run(["impact", `${FX}/lock-partition-moved.arch`, "--against", `${FX}/lock-before.arch`, ...lock]);
+  it("the partition pair exits 0; the window pair exits 2 with both spans in --json", async () => {
+    const ok = await run(["impact", `${FX}/lock-partition-moved.arch`, "--against", `${FX}/lock-before.arch`, ...lock]);
     expect(ok.status).toBe(0);
-    const bad = run([
+    const bad = await run([
       "impact",
       `${FX}/lock-window-moved.arch`,
       "--against",
@@ -204,16 +204,16 @@ suite("B1 — `arch impact --lock`", () => {
     expect(j.lock.violations[0].after.span).toHaveLength(2);
   });
 
-  it("the human report names both locations", () => {
-    const r = run(["impact", `${FX}/lock-window-moved.arch`, "--against", `${FX}/lock-before.arch`, ...lock]);
+  it("the human report names both locations", async () => {
+    const r = await run(["impact", `${FX}/lock-window-moved.arch`, "--against", `${FX}/lock-before.arch`, ...lock]);
     expect(r.status).toBe(2);
     expect(r.stdout).toContain('E_LOCKED_ELEMENT_CHANGED: Locked window "w2" moved 100 mm right.');
     expect(r.stdout).toContain(`w2: ${FX}/lock-before.arch:11:3 → ${FX}/lock-window-moved.arch:11:3`);
   });
 
-  it("a refused lock exits 2; an empty --lock is a usage error (exit 3)", () => {
+  it("a refused lock exits 2; an empty --lock is a usage error (exit 3)", async () => {
     const f = `${FX}/lock-before.arch`;
-    expect(run(["impact", f, "--against", f, "--lock", "living,room_9"]).status).toBe(2);
-    expect(run(["impact", f, "--against", f, "--lock", ","]).status).toBe(3);
+    expect((await run(["impact", f, "--against", f, "--lock", "living,room_9"])).status).toBe(2);
+    expect((await run(["impact", f, "--against", f, "--lock", ","])).status).toBe(3);
   });
 });

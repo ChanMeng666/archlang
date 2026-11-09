@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import {
   mkdirSync,
   mkdtempSync,
@@ -11,12 +10,12 @@ import {
 } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { pathToFileURL } from "node:url";
 import { afterAll, describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
 import { MODULE_CAP_BYTES } from "../src/input-limit.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * `import` is rooted (EH1.12, ruling EH-D7). The CLI's file-system World once read any path an
@@ -194,13 +193,8 @@ describe("what the root allows", () => {
 });
 
 describe("the CLI: default root is the working directory; --import-root is a declared flag", () => {
-  const CLI = resolve("src/cli.ts");
-  const TSX = resolve("node_modules/tsx/dist/esm/index.mjs");
-  const cli = (cwd: string, ...args: string[]) => {
-    const r = spawnSync(process.execPath, ["--import", pathToFileURL(TSX).href, CLI, ...args], {
-      cwd,
-      encoding: "utf8",
-    });
+  const cli = async (cwd: string, ...args: string[]) => {
+    const r = await runArch(args, { cwd });
     return { status: r.status, out: r.stdout + r.stderr, json: r.stdout };
   };
   writeFileSync(join(ROOT, "plans", "outside.arch"), plan("../../secret.txt"));
@@ -209,32 +203,32 @@ describe("the CLI: default root is the working directory; --import-root is a dec
   writeFileSync(join(ROOT, "plans", "parts", "box.arch"), LIB);
   writeFileSync(join(ROOT, "plans", "beside.arch"), plan("parts/box.arch"));
 
-  it("run from the root: a sibling library imports, `..` out of it is refused with no content", () => {
-    const ok = cli(ROOT, "compile", "plans/sibling.arch", "--json");
+  it("run from the root: a sibling library imports, `..` out of it is refused with no content", async () => {
+    const ok = await cli(ROOT, "compile", "plans/sibling.arch", "--json");
     expect(ok.status, ok.out).toBe(0);
-    const bad = cli(ROOT, "compile", "plans/outside.arch", "--json");
+    const bad = await cli(ROOT, "compile", "plans/outside.arch", "--json");
     expect(bad.status).toBe(2);
     expect(bad.json).toContain("E_IMPORT_OUTSIDE_ROOT");
     expect(bad.out).not.toContain(SECRET);
   });
 
-  it("run from plans/: the sibling library is outside the default root until --import-root names its parent", () => {
-    const refused = cli(join(ROOT, "plans"), "compile", "sibling.arch", "--json");
+  it("run from plans/: the sibling library is outside the default root until --import-root names its parent", async () => {
+    const refused = await cli(join(ROOT, "plans"), "compile", "sibling.arch", "--json");
     expect(refused.status).toBe(2);
     expect(refused.json).toContain("E_IMPORT_OUTSIDE_ROOT");
-    const widened = cli(join(ROOT, "plans"), "compile", "sibling.arch", "--json", "--import-root", "..");
+    const widened = await cli(join(ROOT, "plans"), "compile", "sibling.arch", "--json", "--import-root", "..");
     expect(widened.status, widened.out).toBe(0);
-    const lint = cli(join(ROOT, "plans"), "lint", "sibling.arch", "--json", "--import-root", "..");
+    const lint = await cli(join(ROOT, "plans"), "lint", "sibling.arch", "--json", "--import-root", "..");
     expect(lint.json).not.toContain("E_IMPORT_OUTSIDE_ROOT");
   });
 
-  it("run from anywhere: a library beside or below the plan imports (the plan's own directory is a root)", () => {
-    const r = cli(TMP, "compile", join(ROOT, "plans", "beside.arch"), "--json");
+  it("run from anywhere: a library beside or below the plan imports (the plan's own directory is a root)", async () => {
+    const r = await cli(TMP, "compile", join(ROOT, "plans", "beside.arch"), "--json");
     expect(r.status, r.out).toBe(0);
   });
 
-  it("--import-root naming no directory is a usage error (exit 3)", () => {
-    const r = cli(ROOT, "compile", "plans/sibling.arch", "--import-root", join(TMP, "nope"));
+  it("--import-root naming no directory is a usage error (exit 3)", async () => {
+    const r = await cli(ROOT, "compile", "plans/sibling.arch", "--import-root", join(TMP, "nope"));
     expect(r.status).toBe(3);
     expect(r.out).toContain("--import-root");
   });

@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -6,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { buildManifest } from "../src/index.js";
 import { FLAG_KEYS, HELP_FLAGS } from "../src/cli/io.js";
 import { findCommand, renderCommandHelp, renderTopHelp, usageLine } from "../src/cli/help.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * Help, `--version`, and flag strictness — the discoverability contract.
@@ -22,13 +22,8 @@ interface Run {
   stderr: string;
 }
 
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 const VALID = 'plan "S" { units mm room at (0,0) size 4000x3000 label "R" door at (0,1500) width 900 }';
@@ -139,75 +134,75 @@ describe("help renderers (pure)", () => {
 });
 
 describe("CLI — help & version", () => {
-  it("`compile --help` prints help, exit 0 (it used to read --help as a filename)", () => {
-    const r = run(["compile", "--help"]);
+  it("`compile --help` prints help, exit 0 (it used to read --help as a filename)", async () => {
+    const r = await run(["compile", "--help"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("Usage");
     expect(r.stdout).toContain("archlang compile");
     expect(r.stdout).toContain("$ archlang compile"); // an example line
   }, 30000);
 
-  it("`help lint` ≡ `lint --help`", () => {
-    const a = run(["help", "lint"]);
-    const b = run(["lint", "--help"]);
+  it("`help lint` ≡ `lint --help`", async () => {
+    const a = await run(["help", "lint"]);
+    const b = await run(["lint", "--help"]);
     expect(a.status).toBe(0);
     expect(b.status).toBe(0);
     expect(a.stdout).toBe(b.stdout);
     expect(a.stdout).toContain("--profile");
   }, 30000);
 
-  it("`describe --help` works with NO input file (no 'missing input')", () => {
-    const r = run(["describe", "--help"]);
+  it("`describe --help` works with NO input file (no 'missing input')", async () => {
+    const r = await run(["describe", "--help"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("archlang describe");
     expect(r.stderr).not.toContain("missing input");
   }, 30000);
 
-  it("`--version` prints a semver on stdout, exit 0", () => {
-    const r = run(["--version"]);
+  it("`--version` prints a semver on stdout, exit 0", async () => {
+    const r = await run(["--version"]);
     expect(r.status).toBe(0);
     expect(r.stdout.trim()).toMatch(/^\d+\.\d+\.\d+/);
   }, 30000);
 
-  it("bare `arch` is a usage error with help on stderr", () => {
-    const r = run([]);
+  it("bare `arch` is a usage error with help on stderr", async () => {
+    const r = await run([]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("missing command");
     expect(r.stderr).toContain("Commands:");
     expect(r.stdout).toBe("");
   }, 30000);
 
-  it("`archlang help` prints the top help on stdout, exit 0", () => {
-    const r = run(["help"]);
+  it("`archlang help` prints the top help on stdout, exit 0", async () => {
+    const r = await run(["help"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("Commands:");
   }, 30000);
 });
 
 describe("CLI — unknown command / unknown flag", () => {
-  it("suggests the nearest command for a typo'd verb", () => {
-    const r = run(["comple", "x.arch"]);
+  it("suggests the nearest command for a typo'd verb", async () => {
+    const r = await run(["comple", "x.arch"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("unknown command");
     expect(r.stderr).toContain("compile");
   }, 30000);
 
-  it("rejects an unknown flag instead of reading it as a filename", () => {
-    const r = run(["lint", "-", "--jsn"], VALID);
+  it("rejects an unknown flag instead of reading it as a filename", async () => {
+    const r = await run(["lint", "-", "--jsn"], VALID);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('unknown flag "--jsn"');
     expect(r.stderr).toContain("--json"); // did-you-mean
     expect(r.stderr).toContain("usage: archlang lint");
   }, 30000);
 
-  it("rejects a real flag that this command does not take", () => {
-    const r = run(["describe", "-", "--strict"], VALID);
+  it("rejects a real flag that this command does not take", async () => {
+    const r = await run(["describe", "-", "--strict"], VALID);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('unknown flag "--strict"');
   }, 30000);
 
-  it("still accepts the flags a command does declare", () => {
-    const r = run(["lint", "-", "--json"], VALID);
+  it("still accepts the flags a command does declare", async () => {
+    const r = await run(["lint", "-", "--json"], VALID);
     expect(r.status).toBe(0);
     expect(() => JSON.parse(r.stdout)).not.toThrow();
   }, 30000);
@@ -233,9 +228,9 @@ describe("CLI — `-o -` conflicts with --json", () => {
     return { dir, file };
   }
 
-  it("`compile <file> -o - --json` is a usage error (exit 3) and writes no file", () => {
+  it("`compile <file> -o - --json` is a usage error (exit 3) and writes no file", async () => {
     const { dir, file } = tmpWith("p.arch", VALID);
-    const r = run(["compile", file, "-o", "-", "--json"]);
+    const r = await run(["compile", file, "-o", "-", "--json"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("`-o -`");
     expect(r.stderr).toContain("--json");
@@ -245,41 +240,41 @@ describe("CLI — `-o -` conflicts with --json", () => {
     expect(readdirSync(dir)).toEqual(["p.arch"]);
   }, 30000);
 
-  it("`compile - -o - --json` (stdin) is the same usage error, not a quiet `out.svg`", () => {
-    const r = run(["compile", "-", "-o", "-", "--json"], VALID);
+  it("`compile - -o - --json` (stdin) is the same usage error, not a quiet `out.svg`", async () => {
+    const r = await run(["compile", "-", "-o", "-", "--json"], VALID);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("`-o -`");
     expect(r.stdout).toBe("");
     expect(existsSync(join(process.cwd(), "out.svg"))).toBe(false);
   }, 30000);
 
-  it("`compile <file> -o -` without --json still streams SVG to stdout, exit 0", () => {
+  it("`compile <file> -o -` without --json still streams SVG to stdout, exit 0", async () => {
     const { dir, file } = tmpWith("p.arch", VALID);
-    const r = run(["compile", file, "-o", "-"]);
+    const r = await run(["compile", file, "-o", "-"]);
     expect(r.status).toBe(0);
     expect(r.stdout.trimStart().startsWith("<svg")).toBe(true);
     expect(readdirSync(dir)).toEqual(["p.arch"]);
   }, 30000);
 
-  it("`preview -o - --json` is rejected before any raster work", () => {
+  it("`preview -o - --json` is rejected before any raster work", async () => {
     const { dir, file } = tmpWith("p.arch", VALID);
-    const r = run(["preview", file, "-o", "-", "--json"]);
+    const r = await run(["preview", file, "-o", "-", "--json"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("usage: archlang preview");
     expect(readdirSync(dir)).toEqual(["p.arch"]);
   }, 30000);
 
-  it("`md -o - --json` is rejected", () => {
+  it("`md -o - --json` is rejected", async () => {
     const { dir, file } = tmpWith("doc.md", "# Doc\n\n```arch\n" + VALID + "\n```\n");
-    const r = run(["md", file, "-o", "-", "--json"]);
+    const r = await run(["md", file, "-o", "-", "--json"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("usage: archlang md");
     expect(readdirSync(dir)).toEqual(["doc.md"]);
   }, 30000);
 
-  it("`batch -o -` is rejected outright: -o is a DIRECTORY, batch never streams", () => {
+  it("`batch -o -` is rejected outright: -o is a DIRECTORY, batch never streams", async () => {
     const { dir, file } = tmpWith("p.arch", VALID);
-    const r = run(["batch", file, "-o", "-", "--json"]);
+    const r = await run(["batch", file, "-o", "-", "--json"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("DIRECTORY");
     expect(r.stderr).toContain("usage: archlang batch");
