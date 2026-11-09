@@ -9,8 +9,7 @@
  * bounds every compile: one step per node evaluated, per binding copied, per item compared and per
  * character a string builds, each charged before the allocation it pays for.
  *
- * The meter: one step per node evaluated, per binding copied and per item compared, taken before the
- * allocation it pays for; `ir.ts` stops the resolution at the crossing with one `E_STEP_LIMIT`.
+ * `ir.ts` stops the resolution at the crossing with one `E_STEP_LIMIT`.
  */
 
 import type { Token, TokenType } from "./lexer.js";

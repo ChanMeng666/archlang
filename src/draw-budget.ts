@@ -16,9 +16,6 @@
  *
  * Only `compile()` draws, so only `compile()` checks it (`src/pipeline.ts`); `describe()` and
  * `lint()` draw nothing and are unaffected.
- *
- * It runs in `compile()` only, and only when no error is already present, so `describe()` and
- * `lint()` never see it.
  */
 
 import type { Diagnostic, Span } from "./diagnostics.js";

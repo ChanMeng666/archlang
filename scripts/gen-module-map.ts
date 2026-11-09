@@ -24,12 +24,13 @@ import { fileURLToPath } from "node:url";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const OUT = resolve(ROOT, "docs/agents/module-map.md");
 export const SUMMARY_CAP = 240;
+// `:(glob)` pathspecs: a plain pathspec with a double-star directory would miss the files directly under `src/`.
 export const MODULE_GLOBS = [
-  "src/**/*.ts",
-  "src/**/*.mjs",
-  "packages/*/src/**/*.ts",
-  "playground/src/*.ts",
-  "playground/worker/*.ts",
+  ":(glob)src/**/*.ts",
+  ":(glob)src/**/*.mjs",
+  ":(glob)packages/*/src/**/*.ts",
+  ":(glob)playground/src/*.ts",
+  ":(glob)playground/worker/*.ts",
 ] as const;
 const IMPORTER_GLOBS = ["*.ts", "*.tsx", "*.mts", "*.mjs", "*.js", "*.vue"] as const;
 
@@ -97,12 +98,17 @@ export function parseHeader(text: string): Header {
     para.push(l.trim());
   }
   let summary = para.join(" ").replace(/\s+/g, " ");
-  if (summary.length > SUMMARY_CAP) summary = `${summary.slice(0, SUMMARY_CAP - 1).trimEnd()}…`;
+  if (summary.length > SUMMARY_CAP) {
+    const cut = summary.slice(0, SUMMARY_CAP - 1);
+    const sp = cut.lastIndexOf(" ");
+    summary = `${(sp > 0 ? cut.slice(0, sp) : cut).replace(/[\s,;:(]+$/, "")}…`;
+  }
   return { summary, budget: tag("budget"), reads: tag("reads"), readBy: tag("readBy") };
 }
 
+// Code with line-leading block comments and `//` comments removed (an inline block comment stays).
 function stripComments(text: string): string {
-  return text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");
+  return text.replace(/^[ \t]*\/\*[\s\S]*?\*\//gm, "").replace(/(^|[^:"'`\\])\/\/.*$/gm, "$1");
 }
 
 const SPEC_RE = /\b(?:from|import|require)\s*\(?\s*["'](\.[^"']*)["']/g;
@@ -134,7 +140,7 @@ function render(): { text: string; count: number } {
   const importers = new Map<string, Set<string>>();
   for (const f of known) {
     if (f.includes("node_modules/")) continue;
-    const text = readFileSync(resolve(ROOT, f), "utf8");
+    const text = stripComments(readFileSync(resolve(ROOT, f), "utf8"));
     for (const m of text.matchAll(SPEC_RE)) {
       const target = resolveSpec(f, m[1]!, known);
       if (!target || target === f) continue;
@@ -177,9 +183,11 @@ function render(): { text: string; count: number } {
     "the generator. A header may carry the tags `@budget <text>`, `@reads <modules>` and `@readBy <modules>`.",
     "",
     '"Charges the step meter" is derived from a `chargeSteps(` call in the code, never from the prose.',
-    "Importers are counted by a regex over relative `import`, `export ... from`, `import()` and `require()`",
-    "specifiers across tracked sources, tests and scripts; an import through the package name or an",
-    "alias is not counted, so a low count is a hint, not proof a module is unused.",
+    "Importers are counted by a regex over relative `import` (a type-only `import type` counts),",
+    "`export ... from`, `import()` and `require()` specifiers across tracked sources, tests and scripts,",
+    "with comments removed first; an import through the package name or an alias is not counted, so a",
+    "low count is a hint, not proof a module is unused. A summary is cut at a word boundary; the",
+    "module's remaining facts are in its own header.",
     "",
     "[`architecture.md`](architecture.md) holds the pipeline, the conventions and the cross-module",
     "invariants; this file holds every module. The exports of `src/index.ts` are in the sibling",

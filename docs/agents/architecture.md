@@ -71,6 +71,9 @@ source (.arch)
 
 Core at the root; workspaces `editors/vscode`, `playground`, `docs-site`, `packages/*` share one
 lockfile. `docs-site/sync-docs.mjs` copies `docs/*.md` + root artifacts into the site at build time.
+The docs site (`docs-site/`, outside the module map's globs) has a home built from `CompileSeam.vue`,
+`SameSource.vue`, `WhyCards.vue`, `HowSteps.vue`, `DoorsCard.vue`, `HomeGallery.vue` and
+`IsIsntTable.vue`; `/start` and `/3d` are pages.
 `eval/` authorability harness, `dataset/` HF dataset generator, `scripts/` generators + smoke,
 `bench/` timings. `packages/archlang-3d` is separate and reads a resolved plan through the core's
 public seam (ADRs 0030/0031; `.claude/rules/archlang-3d.md`). `site-shared/doors.json` holds every
