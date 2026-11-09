@@ -65,7 +65,10 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   that shows the replay (the playground's 3D preview tab, card A5); it bundles three.js, so it is
   not `.`.
 - `src/node.ts`: the Node `World` and the Node-only builders (replay, GLB, checks), kept out of the
-  browser entry.
+  browser entry. The World is `src/world.ts`: an `import` is read only from under the working
+  directory or the plan's own directory, only `.arch`, only up to 1 MiB, a copy of the core CLI's
+  held in lockstep by the repository's `test/workspace-seams.test.ts`. With a core older than 1.58
+  the refusal reads as `E_IMPORT_NOT_FOUND`; the file is still never read.
 
 The command (from the repository root):
 

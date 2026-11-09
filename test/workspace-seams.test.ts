@@ -16,10 +16,27 @@
  * it is not shipped, and reading a source under test is its job. The last test parses the table in
  * `docs/agents/architecture.md` back and compares it to ALLOW row by row.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  realpathSync,
+  rmdirSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { MODULE_CAP_BYTES as MODULE_CAP_3D, makeNodeWorld as world3d } from "../packages/archlang-3d/src/world.js";
+import { makeNodeWorld as coreWorld } from "../src/cli/io.js";
+import { MODULE_CAP_BYTES } from "../src/input-limit.js";
+import type { World } from "../src/index.js";
 import { ALLOW, seamTable } from "./workspace-seams.allow.js";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
@@ -298,17 +315,18 @@ describe("workspace seams are an allow-list", () => {
 });
 
 /**
- * A second `makeNodeWorld` (a `World` over the file system) is a second import-read policy: the
- * core CLI's (`src/cli/io.ts`) is rooted, and a copy that is not roots nothing. The ones known to
- * be unrooted are listed here with the reason, so the gap stays visible; a new copy fails until it
- * is rooted or listed, and a listed one that is gone or renamed fails until its row is deleted.
+ * A second `makeNodeWorld` (a `World` over the file system) is a second import-read policy, so
+ * there are exactly two and they agree: the core CLI's (`src/cli/io.ts`) and the 3D package's
+ * (`packages/archlang-3d/src/world.ts`), a copy because the core's is not a public export and the
+ * package reads the core only through those (ADR 0031). The copy is held to the original by what
+ * it does: one case table runs through both, every case reads the same text or is refused with the
+ * same code (or neither reads it), each case's outcome is pinned so a shared regression fails too,
+ * and the caps are equal. A new copy fails until it is rooted and joins the table.
  */
 const CORE_WORLD = "src/cli/io.ts";
-const KNOWN_UNROOTED_WORLDS: { file: string; why: string }[] = [
-  { file: "packages/archlang-3d/src/node.ts", why: "follow-up: root it like src/cli/io.ts (EH1.16d)" },
-];
+const LOCKSTEP_WORLD = "packages/archlang-3d/src/world.ts";
 
-describe("every makeNodeWorld is rooted or listed", () => {
+describe("every makeNodeWorld is rooted, and the two agree", () => {
   const declares = walk(ROOT)
     .map((f) => relative(ROOT, f).split(sep).join("/"))
     .filter((f) => /\.(ts|mts|js|mjs)$/.test(f))
@@ -317,16 +335,133 @@ describe("every makeNodeWorld is rooted or listed", () => {
     )
     .sort();
 
-  it("the core CLI's is the one rooted copy; every other copy is in KNOWN_UNROOTED_WORLDS", () => {
-    expect(declares).toContain(CORE_WORLD);
+  it("the core CLI's and the 3D package's lockstep copy are the only ones", () => {
     expect(
-      declares.filter((f) => f !== CORE_WORLD),
-      "a makeNodeWorld outside src/cli/io.ts: root it like src/cli/io.ts or list it in KNOWN_UNROOTED_WORLDS",
-    ).toEqual(KNOWN_UNROOTED_WORLDS.map((w) => w.file).sort());
+      declares,
+      "a makeNodeWorld outside src/cli/io.ts and packages/archlang-3d/src/world.ts: use one of them, or root it and add it to the lockstep table",
+    ).toEqual([CORE_WORLD, LOCKSTEP_WORLD].sort());
   });
 
-  it("the 3D package's unrooted copy is listed with its follow-up", () => {
-    const row = KNOWN_UNROOTED_WORLDS.find((w) => w.file === "packages/archlang-3d/src/node.ts");
-    expect(row?.why).toBe("follow-up: root it like src/cli/io.ts (EH1.16d)");
+  it("the 3D package's World reads and refuses exactly what the core CLI's does", () => {
+    expect(MODULE_CAP_3D, "packages/archlang-3d/src/world.ts MODULE_CAP_BYTES").toBe(MODULE_CAP_BYTES);
+    const tmp = realpathSync(mkdtempSync(join(tmpdir(), "arch-world-lockstep-")));
+    const root = join(tmp, "root");
+    const plans = join(root, "plans");
+    const lib = join(root, "lib");
+    // A plan directory OUTSIDE the explicit root: its own directory is a root too.
+    const outside = join(tmp, "outside", "plans");
+    mkdirSync(plans, { recursive: true });
+    mkdirSync(lib, { recursive: true });
+    mkdirSync(outside, { recursive: true });
+    mkdirSync(join(tmp, "root2"), { recursive: true });
+    const LIB = 'plan "lib" {}\n';
+    writeFileSync(join(tmp, "secret.arch"), "secret\n");
+    writeFileSync(join(tmp, "root2", "x.arch"), LIB);
+    writeFileSync(join(tmp, "outside", "other.arch"), LIB);
+    writeFileSync(join(outside, "sib.arch"), LIB);
+    writeFileSync(join(plans, "beside.arch"), LIB);
+    writeFileSync(join(lib, "box.arch"), LIB);
+    writeFileSync(join(lib, "BOX2.ARCH"), LIB);
+    writeFileSync(join(lib, "notes.txt"), LIB);
+    writeFileSync(join(lib, "..evil.arch"), LIB);
+    writeFileSync(join(lib, "huge.arch"), "#".repeat(MODULE_CAP_BYTES + 1));
+    mkdirSync(join(lib, "dir.arch"));
+    let linked = true;
+    try {
+      symlinkSync(tmp, join(lib, "escape"), process.platform === "win32" ? "junction" : "dir");
+    } catch (e) {
+      linked = false;
+      const why = `workspace-seams: this runner cannot create a directory link: ${(e as Error).message}`;
+      if (process.env.CI) expect.fail(why);
+      console.warn(`${why}; the lockstep table runs without its two link cases`);
+    }
+    const abs = (p: string) => join(tmp, p).replace(/\\/g, "/");
+    // A file inside the working directory (the default root) and outside every tmp directory.
+    const inCwd = join(process.cwd(), "examples", "studio.arch").replace(/\\/g, "/");
+    type Row = { from: "plans" | "outside"; root: "root" | "default"; spec: string; want: string };
+    // Each row: the plan's directory, the explicit root (`root`) or none (`default`: the working
+    // directory), the spec as an `import` names it, and the outcome BOTH Worlds must give: `text`,
+    // a refusal code, or `E_IMPORT_NOT_FOUND` for a plain `null` with no refusal (the core reports
+    // that code). Every code a World can refuse with has a row; a code either World starts to
+    // return fails here only when a row reaches it, so the last assertion below also requires one
+    // row per refusal code written in either World's source.
+    const R = (spec: string, want: string): Row => ({ from: "plans", root: "root", spec, want });
+    const rows: Row[] = [
+      R("../lib/box.arch", "text"),
+      R("../lib/BOX2.ARCH", "text"),
+      R("../lib/..evil.arch", "text"),
+      R("beside.arch", "text"),
+      R("../lib/missing.arch", "E_IMPORT_NOT_FOUND"),
+      R("../lib/nodir/missing.arch", "E_IMPORT_NOT_FOUND"),
+      R("../lib/dir.arch", "E_IMPORT_NOT_FOUND"),
+      R("bad\0.arch", "E_IMPORT_NOT_FOUND"),
+      R("../lib/notes.txt", "E_IMPORT_NOT_ARCH"),
+      R("../lib/huge.arch", "E_IMPORT_TOO_LARGE"),
+      R("../../secret.arch", "E_IMPORT_OUTSIDE_ROOT"),
+      R("../../root2/x.arch", "E_IMPORT_OUTSIDE_ROOT"),
+      R("../../missing.arch", "E_IMPORT_OUTSIDE_ROOT"),
+      R(abs("secret.arch"), "E_IMPORT_OUTSIDE_ROOT"),
+      R(abs("root/lib/box.arch"), "text"),
+      // The plan's own directory is a root even outside the explicit one.
+      { from: "outside", root: "root", spec: "sib.arch", want: "text" },
+      { from: "outside", root: "root", spec: "../../root/lib/box.arch", want: "text" },
+      { from: "outside", root: "root", spec: "../other.arch", want: "E_IMPORT_OUTSIDE_ROOT" },
+      // No explicit root: the working directory is the root, beside the plan's own directory.
+      { from: "plans", root: "default", spec: "beside.arch", want: "text" },
+      { from: "plans", root: "default", spec: "../lib/box.arch", want: "E_IMPORT_OUTSIDE_ROOT" },
+      { from: "plans", root: "default", spec: inCwd, want: "text" },
+      ...(linked
+        ? [
+            R("../lib/escape/secret.arch", "E_IMPORT_OUTSIDE_ROOT"),
+            R("../lib/escape/missing.arch", "E_IMPORT_OUTSIDE_ROOT"),
+          ]
+        : []),
+    ];
+    try {
+      const outcome = (w: World, spec: string): string => {
+        if (w.read(spec) !== null) return "text";
+        return w.refusal?.(spec)?.code ?? "E_IMPORT_NOT_FOUND";
+      };
+      const worlds = (r: Row): [World, World] => {
+        const base = r.from === "plans" ? plans : outside;
+        return r.root === "root" ? [coreWorld(base, root), world3d(base, root)] : [coreWorld(base), world3d(base)];
+      };
+      const got = rows.map((r) => {
+        const [core, d3] = worlds(r);
+        return { ...r, core: outcome(core, r.spec), d3: outcome(d3, r.spec) };
+      });
+      expect(
+        got
+          .filter((g) => g.core !== g.d3)
+          .map(({ from, root: r, spec, core, d3 }) => ({ from, root: r, spec, core, d3 })),
+        "packages/archlang-3d/src/world.ts disagrees with src/cli/io.ts makeNodeWorld",
+      ).toEqual([]);
+      expect(got.map((g) => [g.from, g.root, g.spec, g.core])).toEqual(
+        rows.map((r) => [r.from, r.root, r.spec, r.want]),
+      );
+      // One row per refusal code, read from each World's source (the core's: its makeNodeWorld only).
+      const io = readFileSync(join(ROOT, CORE_WORLD), "utf8");
+      const at = io.indexOf("export function makeNodeWorld");
+      expect(at, "src/cli/io.ts: makeNodeWorld not found").toBeGreaterThan(-1);
+      const coreBody = io.slice(at, io.indexOf("\n}\n", at));
+      const codesIn = (text: string) => [...text.matchAll(/"(E_[A-Z_]+)"/g)].map((m) => m[1] ?? "");
+      const written = new Set([...codesIn(coreBody), ...codesIn(readFileSync(join(ROOT, LOCKSTEP_WORLD), "utf8"))]);
+      written.add("E_IMPORT_NOT_FOUND");
+      expect(written.size).toBeGreaterThanOrEqual(4);
+      const wanted = new Set(rows.map((r) => r.want));
+      expect(
+        [...written].filter((c) => !wanted.has(c)),
+        "a refusal code with no lockstep row",
+      ).toEqual([]);
+    } finally {
+      if (linked) {
+        try {
+          unlinkSync(join(lib, "escape"));
+        } catch {
+          rmdirSync(join(lib, "escape"));
+        }
+      }
+      rmSync(tmp, { recursive: true, force: true });
+    }
   });
 });
