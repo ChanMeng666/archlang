@@ -93,6 +93,18 @@ table literal. Record the measured tree and the patch in the baseline's header.
 - **A byte-identity law for every new language form**, and a cross-feature test whenever two
   branches edit a shared literal or predicate — with a control case on the identical geometry, so the
   test can tell "it works" from "the check never ran".
+- **Find the test first, then use the shared helpers.** `test/INDEX.md` (generated; `npm run gen:test-index`) lists,
+  per `src` module, the tests that import it, and per test file its header's first sentence; the last section lists
+  the modules no test imports. A new test file starts with a header comment whose first sentence says what it pins
+  (the generator fails without one). Do not paste a local copy of what `test/helpers/` provides:
+  `corpus.ts` (`corpusFiles()` is the sweep corpus of § 5, `exampleNames()` / `libNames()` the examples,
+  `walkFiles()` the recursive listing), `world.ts` (`worldFor(dir)`, the on-disk World for imports), `digest.ts`
+  (`sha256`), `diag.ts` (`codes` / `lintCodes` / `codesOf`), `tmp.ts` (`mkTmp`, `withTmpDir`), `cli.ts` (below).
+  A test that needs a different set says why beside it. `test/no-duplicate-helpers.test.ts` fails a new local
+  `worldFor`, `createHash("sha256")` or `readdirSync("examples")` unless it is on that file's allow-list.
+- **Where shared code lives.** Pure helpers under `test/helpers/`; data tables (plan sources, case lists, decided
+  rows) under `test/tables/`; neither is collected (only `*.test.ts` is). Byte-identity baselines stay beside the
+  tests that pin them (`test/*baseline*.ts`, risk tier high).
 - **CLI: run it in-process** with `runArch(args, { input?, cwd? })` from `test/helpers/cli.ts`
   (`{ status, stdout, stderr }`, through `runCli` and a capturing `CliIo`): no child process, so it
   costs milliseconds and coverage sees the commands. `spawnArch` (same shape) is only for what a
