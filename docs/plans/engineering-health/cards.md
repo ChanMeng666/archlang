@@ -14,7 +14,7 @@ W = workspaces (`claude-kept/2026-11-09-archlang-health-audit/`).
 
 ## Wave 0 · the signal is trustworthy
 
-### EH0.1 · nightly `e2e-prod` collects without a build — `in review` · S · low · sonnet
+### EH0.1 · nightly `e2e-prod` collects without a build — `done (#581)` · S · low · sonnet
 PR #581. Lazy `dist` imports in `playground/e2e/{checks,short-link}.spec.ts`; `home-data.js` read
 inside the tests in `docs-site/e2e/{homepage-links,page-chrome}.spec.ts`. Proof: `--list` with no
 `dist/` names 29 + 101 cases, no module error. Done when the next nightly's `e2e-prod` is green.
@@ -95,7 +95,7 @@ Proof: digests unchanged (CI); a scratch `kind: "zzz"` added to `BUILTIN_DEFS` m
 test fail at every listed site (list them in the PR body).
 Design: one table `KIND_FACETS` (`src/elements/facets.ts`, `satisfies Record<ElementKind, KindFacets>`) builds `CROPPED`/`SHELL_KINDS`/`STACKED_KINDS`/`UNPROJECTED_KINDS`/`OPENING_KINDS` and the scene label fallback, and holds `VERTICAL_KINDS`/`STYLE_KEYS`; `Statement` switches end in `nonElementKind(s.kind)`, element switches in `const unhandled: never`.
 
-### EH1.3 · lint-rule registration is one test — `todo` · S · low · sonnet · A-F4, N-F6
+### EH1.3 · lint-rule registration is one test — `done (#589)` · S · low · sonnet · A-F4, N-F6
 `test/lint-rule-order.test.ts` pins the full `LINT_RULES` name list once and replaces the three
 `slice(-N)` windows (`doors.test.ts:524`, `lint-circulation-privacy.test.ts:439`,
 `lint-space-enclosure.test.ts:285`). The same test asserts, per rule, membership in `RULE_CLASS`
@@ -104,7 +104,7 @@ Design: one table `KIND_FACETS` (`src/elements/facets.ts`, `satisfies Record<Ele
 `.claude/commands/new-lint-rule.md`: the checklist derived from commit `974d9981`. Proof: lint
 output digests unchanged; a scratch rule appended to `rules/index.ts` fails with all sites named.
 
-### EH1.4 · no runtime import cycles — `todo` · S · low · sonnet · A-F5
+### EH1.4 · no runtime import cycles — `done (#590)` · S · low · sonnet · A-F5
 Move `analyze.ts:84-770`'s leaf helpers (`rectOf`, `roomBox`, `roomRing`, `roomAreaMm2`,
 `pointInRoomBox`, `rectInRoomBox`, `DEFAULT_TOL`, `roomUses`/`is*`, connector/face helpers) to
 `src/analyze/rooms.ts` and `src/analyze/connectors.ts`, re-exported from `analyze.ts`; repoint
@@ -114,7 +114,7 @@ parameter from `lint.ts`. `test/no-value-cycles.test.ts`: the import graph (valu
 stripped) has no strongly connected component. Proof: the test lists 0 cycles; digests unchanged.
 Design (PR #590): rules reach `defining.ts` through `LintContext.lintRules`, a required field every `buildLintContext` caller passes `LINT_RULES` for (named `lintRules` because `LintContext.rules` is already the ruleset).
 
-### EH1.5 · boundary tests: core never imports 3D, workspace seams are an allow-list — `in review` · S · low · sonnet · W-F2, W-F4
+### EH1.5 · boundary tests: core never imports 3D, workspace seams are an allow-list — `done (#591)` · S · low · sonnet · W-F2, W-F4
 `test/core-no-3d.test.ts`: no `src/**` import specifier names `archlang-3d` or `three`; root
 `package.json` has no such dependency. `test/workspace-seams.test.ts`: every `src/` or `dist/`
 specifier a workspace reaches outside the `exports` map (`archlang/review` alias,
@@ -122,7 +122,7 @@ specifier a workspace reaches outside the `exports` map (`archlang/review` alias
 in an allow-list with its reason; a new one fails. Add the seam table to
 `docs/agents/architecture.md`. Proof: both tests green on `main`; a scratch import turns each red.
 
-### EH1.6 · work-count golden — `in review` · S (steps + draw) then M (geometry) · low · opus · P-F2, T-F8 item 6
+### EH1.6 · work-count golden — `done (#592, tranche 1)` · S (steps + draw) then M (geometry) · low · opus · P-F2, T-F8 item 6
 `test/work-counts.test.ts` + `test/tables/work-counts.json`: per `examples/*.arch` and the bench
 plans, `{steps: evaluationSteps(), drawUnits: drawUnits()}`; fail on a rise above 10 % without a
 reason line in the table's header. Tranche 2 adds counters returned by `splitAll`
@@ -202,6 +202,8 @@ split into its own PR). Proof: the new test green; `grep -rn '^/\|`/release-chec
 slash-invocation in agent docs.
 
 ## Wave 2 · structure, by pure moves
+
+Every move PR also repoints the source-text guards: tests that read a module's bytes (`readFileSync("src/analyze.ts")`-style, e.g. `test/arc-tessellation-error.test.ts`, `test/iso-describe-blind.test.ts`'s module list) follow the code to its new file (EH1.4 learned this on CI).
 
 ### EH2.1 · error catalogue by family, typed once — `todo` · M · medium · opus · A-F3, P-F4 · depends EH1.1
 `src/error-catalog/` with one file per family (`parse`, `resolve`, `openings`, `lint-doors`,
