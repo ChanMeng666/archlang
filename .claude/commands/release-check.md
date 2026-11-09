@@ -122,7 +122,7 @@ you observed. Do NOT push anything — this command only verifies.
    types, the CLI's checked GLB and a replay with three.js inline that fetches nothing. Its summary
    line gives the tarball's size.
 
-   Gate ORDER: these builds come BEFORE `npm run check` (item 5). `check` includes
+   Gate ORDER: these builds come BEFORE `npm run check` (item 5, the owner-sanctioned run). `check` includes
    `editors/vscode/test/stdio.test.ts`, which compares the bundled server's stamped core version with
    the workspace version, so a stale `editors/vscode/dist/server.js` fails it after a version bump.
 
@@ -145,7 +145,7 @@ you observed. Do NOT push anything — this command only verifies.
 
   then open `https://archlang.uk/arch-plan-demo.html` and check that both plans draw and the third
   element shows its `E_PARSE` box, or run its `@prod` case:
-  `E2E_PROD=1 E2E_BASE_URL=https://archlang.uk npx playwright test -c docs-site arch-plan --grep @prod`.
+  `E2E_PROD=1 E2E_BASE_URL=https://archlang.uk npx playwright test -c docs-site arch-plan --grep @prod` #allow-local-heavy (a release step against the live site).
 
 - **Release is tokenless OIDC.** The tag runs `.github/workflows/release.yml` (npm with provenance,
   then the MCP registry via github-oidc); re-runs are idempotent. Never add an npm token; an auth
