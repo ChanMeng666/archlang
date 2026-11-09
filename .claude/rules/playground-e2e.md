@@ -14,6 +14,7 @@ paths:
   cannot run it faithfully.
 
 ## Traps
+
 - **The playground's Vite is not the root's.** The root `node_modules` holds Vite 6 and the
   playground needs Vite 8, so a worktree that junctions only the root `node_modules` builds the
   playground with the wrong Vite. Junction `playground/node_modules` to the primary's too, and

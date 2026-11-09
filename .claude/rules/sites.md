@@ -33,6 +33,7 @@ paths:
   they change only when what they show changes (`packages/archlang-3d/DEVELOPMENT.md`).
 
 ## Traps
+
 - **VitePress `.vp-doc a:hover` (0,2,1) outranks a two-class rule (0,2,0).** A control whose colour
   must survive hover re-asserts `color` in its own `:hover` rule. Check hover/focus/active states.
 - **A fixed hex in the site CSS is a fossil** — convert it to a token. The one legitimate literal is

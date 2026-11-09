@@ -48,6 +48,7 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
   says what it guards and why its size budget is what it is).
 
 ## Traps
+
 - **archlang-3d key frames are pinned from CI's printed hashes.** A change that moves frames leaves
   `e2e/fixtures/keyframe-baseline.json` alone, `check-3d` prints the new hashes, and a follow-up
   commit on the same PR pins them with the run link (`e2e/fixtures/README.md`). `check-3d` is not a

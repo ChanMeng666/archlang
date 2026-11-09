@@ -11,6 +11,8 @@ merge procedure and the CI job map in `commands.md`.
   "worktree"` checks out the default branch). The card names the integration branch (default `main`);
   the executor's first step is `git fetch` and re-pointing its branch to it, and the coordinator checks
   each worktree's base with `git merge-base --is-ancestor <integration> HEAD` before merging.
+- **Name the reading in the brief**: the card lists every doc beyond `AGENTS.md`, `gotchas.md` and the path rule
+  that the executor needs (architecture, testing § 2–3, a recipe); the agent definitions only default to the three.
 - **The limits every card repeats**: run `npm run check:quick` once, at the end (plus `npm run docs:build`
   after a published `docs/*.md` edit); never the full suite, `check`, `check:drift`, `typecheck:all`,
   e2e or bench locally (the local-gate hook blocks them and CI is the gate); a vitest file, when it
@@ -71,8 +73,6 @@ merge procedure and the CI job map in `commands.md`.
   you land one without releasing it.
 - **(npm) A newly registered trusted publisher lapses unless a publish goes through it within about
   48 hours**; dispatch `release.yml` once (`.claude/commands/release-check.md`).
-- **(MCP registry) The `io.github.ChanMeng666/*` namespace is case-sensitive and identity-checked**
-  against the npm package's `mcpName`, and the server `description` is capped at 100 chars.
 - **(MCP registry) Search matches server names only**, so the 100-char `description` says what the
   server is for; the tool-name lockstep lives in `packages/mcp/README.md`'s tool table
   (`packages/mcp/test/server.test.ts`).

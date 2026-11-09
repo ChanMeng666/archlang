@@ -17,6 +17,7 @@ paths:
 - Tag an e2e case `@prod` only if it purely navigates, reads and asserts. More: `docs/testing.md`.
 
 ## Traps
+
 - **A guard that skips when a dependency is absent can be dead with the dependency present.** A test resolving
   `pdfkit/package.json` hit `ERR_PACKAGE_PATH_NOT_EXPORTED`, took the "absent" branch everywhere, and passed locally while
   never reading the file (#433). Run such a test with `CI=true` before trusting it.

@@ -17,6 +17,7 @@ paths:
 - Before a tag, follow `.claude/commands/release-check.md` (it holds the human steps).
 
 ## Traps
+
 - **`actions/setup-node` takes the runner's tool cache, which lags a Node security release by
   days**; every setup-node step carries `check-latest: true`, so a new one must too (the job log
   prints `Attempting to download` when it bites).

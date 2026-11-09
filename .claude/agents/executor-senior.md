@@ -20,7 +20,7 @@ Preamble, every time:
 
 Read first, every time: `AGENTS.md`, `docs/agents/gotchas.md`, and the `.claude/rules/` file matching
 each path you edit (they load by path). Read `docs/agents/architecture.md` and `docs/agents/iron-laws.md`
-before a core or cross-module change, `docs/testing.md` when a golden or a guard goes red, and the
+before a core or cross-module change, `docs/testing.md` § 2–3 when a golden or a digest goes red, and the
 `.claude/commands/` recipe when the card adds a lint rule, element, fixture family, CLI flag or MCP
 tool. Their hard rules bind you: `compile()` pure/sync/deterministic; zero runtime deps; user-source
 errors returned as catalogued diagnostics, never thrown; new element behaviour lives in its

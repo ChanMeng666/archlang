@@ -17,3 +17,5 @@ paths:
   narrative goes in `CHANGELOG.md` only.
 - **`docs-site/sync-docs.mjs` copies `docs/*.md` and root artifacts into the site** (gitignored
   there). Edit the repo-root source, never the copy.
+- A docs example may not name a new fixture family: `test/new-families-byte-identity.test.ts` scans every
+  shipped plan, Markdown fences in `docs/` included, so show a new family in prose (`.claude/rules/glyphs.md` § Traps).

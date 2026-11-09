@@ -54,6 +54,7 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
   `test/fixture-byte-identity.test.ts`.
 
 ## Traps
+
 - **A docs example may not name a new fixture family.** `test/new-families-byte-identity.test.ts` scans
   every shipped plan, Markdown fences in `docs/` included, for `furniture <new word>`: the byte-identity
   law's corpus must not change. Show new families in prose, and examples with existing families.
@@ -63,6 +64,6 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
   (`docs/adr/0023-plan-symbol-drawing-language.md`, decision 7).
 - **A symmetric glyph reads handed at one footprint or position and not another.** Cause: a
   structure decided by an ulp, or a mark and its mirror straddling a `fmt4` tie (compounded
-  fractions of the footprint land on `x.xxxx5`). Remedy: `.claude/rules/glyphs.md`; why: ADR 0023.
+  fractions of the footprint land on `x.xxxx5`). Remedy: § Drawing a symbol above (exact reflection, structure from radii and extents) and the fixture rows of `docs/testing.md` § 3; why: ADR 0023.
 - **Changing the default `furnitureStroke`/`furnitureFill` turns group 1 of
   `test/fixture-byte-identity.test.ts` red** — always a bug (ADR 0023, decision 6).

@@ -67,10 +67,11 @@ coordinator's own notes (merging, registries, browser and social automation, the
   artifacts (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
   commit them or `git checkout --` them; do not mistake them for your own edits.
 - **A branch cut before a release merges its `[Unreleased]` entry into the released section, with no
-  conflict.** After merging `main`, check `git diff origin/main -- CHANGELOG.md` shows only added lines
+  conflict.** The release PR turns `[Unreleased]` into `## [x.y.z]` above an empty `[Unreleased]`, so
+  merging `main` into an older branch is clean and leaves the branch's entry inside `[x.y.z]`. After merging `main`, check `git diff origin/main -- CHANGELOG.md` shows only added lines
   under `[Unreleased]`. If not, take main's file and insert the branch's lines; bullets have no blank
   line between them, so cut an entry on the next `- ` as well. After merging `main` past a release,
-  `node scripts/changelog-section.mjs <x.y.z>` must not list the branch's entry (B3b, #337).
+  `node scripts/changelog-section.mjs <x.y.z>` must not list the branch's entry; move it under `[Unreleased]` (B3b, #337).
 - **A change to the step meter moves every law that digests steps**: K1,
   `test/rectilinear-rooms-byte-identity.test.ts`, `test/block-stair-byte-identity.test.ts`. Re-take each by
   its own route, and show that putting the old count back reproduces the pinned digest.

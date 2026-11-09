@@ -32,10 +32,9 @@ lands first (`.claude/commands/release-check.md`).
    `tools/list`, never typed. Red without them: those three files.
 5. **A test of the tool**: a case in `packages/mcp/test/tools.test.ts` for a firing call, a clean call
    and a malformed argument, through the real `Client` in `packages/mcp/test/helpers.ts`.
-6. **The tables people read**: a row in `packages/mcp/README.md`'s tool table (the registry search
-   matches names; `packages/mcp/test/server.test.ts` holds the README to the registry) and in
-   `docs-site/mcp.md` § "What the tools do". No test reads the docs-site table: say in the PR that you
-   updated it. A command the tool wraps that has a CLI twin keeps the two in step
+6. **The tables people read**: a row in `packages/mcp/README.md` § Tools and in `docs-site/mcp.md`
+   § "What the tools do". Red without it: `packages/mcp/test/docs-tool-table.test.ts`, which compares
+   both tables with `tools/list` and names the missing or extra tool. A command the tool wraps that has a CLI twin keeps the two in step
    (`.claude/commands/new-cli-flag.md`).
 7. **Compatibility**: the tool's `inputSchema`/`outputSchema` are compared with the last published shim
    (`scripts/compat-check.mjs`, `test/release-compat.test.ts`, additive-only). A new tool passes; later,
