@@ -143,6 +143,11 @@ export function isLexWord(s: string): boolean {
   );
 }
 
+/** {@link lex} without the stage memo, for a probe of many throwaway sources (`parseUnmemoised`). */
+export function lexUnmemoised(src: string): LexResult {
+  return lexImpl(src);
+}
+
 /** Clear the lex stage memo (called by `clearCache`). */
 export function clearLexCache(): void {
   lexCache.clear();

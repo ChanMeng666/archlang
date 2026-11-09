@@ -1,7 +1,7 @@
 /** Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. */
 
-import type { Token } from "./lexer.js";
-import { lex } from "./lexer.js";
+import type { LexResult, Token } from "./lexer.js";
+import { lex, lexUnmemoised } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import { capDiagnostics, isLimitClass, MAX_DIAGNOSTICS } from "./diagnostics.js";
 import type {
@@ -121,8 +121,17 @@ export function parse(src: string, registry: Registry = BUILTIN_REGISTRY): Parse
   return out;
 }
 
-function parseImpl(src: string, registry: Registry): ParseOutcome {
-  const { tokens, errors: lexErrors, comments } = lex(src);
+/**
+ * {@link parse} with neither stage memo: for a probe that parses many small throwaway sources
+ * (Plan JSON's position check) and must not evict a real source from the 32-entry caches.
+ * Internal: not re-exported from the package root.
+ */
+export function parseUnmemoised(src: string, registry: Registry = BUILTIN_REGISTRY): ParseOutcome {
+  return parseImpl(src, registry, lexUnmemoised);
+}
+
+function parseImpl(src: string, registry: Registry, lexer: (src: string) => LexResult = lex): ParseOutcome {
+  const { tokens, errors: lexErrors, comments } = lexer(src);
   const lexDiags: Diagnostic[] = lexErrors.map((e) => ({
     severity: "error" as const,
     message: e.message,
@@ -796,9 +805,10 @@ class Parser {
     const a = this.eatNumber();
     this.eat("colon");
     const b = this.eatNumber();
-    // `plainDigits` is `String` below 1e21, so every scale that was readable reads the same;
-    // above it `String` wrote `1e+21`, which `scaleDenominator` could not read (the scale was
-    // silently dropped) and `arch fmt` could not re-parse.
+    // `plainDigits` is `String` from 1e-6 to below 1e21, so every scale that was readable reads
+    // the same; outside that range `String` wrote an exponent (`1e+21`, `1e-7`), which
+    // `scaleDenominator` could not read (the scale was silently dropped) and `arch fmt` could not
+    // re-parse, and `plainDigits` writes the digits out instead.
     plan.scale = `${plainDigits(a)}:${plainDigits(b)}`;
     plan.scaleSpan = this.spanFrom(t.start);
     this.eatHidden(plan, "scale");

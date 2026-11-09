@@ -17,6 +17,7 @@ import fc from "fast-check";
 import { compile, describe, ERROR_CATALOG, format, lint, resolve } from "../src/index.js";
 import { fmtSource, MAX_ANGLE_DEG, MODEL_RANGE_MM, maxScaleDenominator } from "../src/num-format.js";
 import { lex } from "../src/lexer.js";
+import { scaleDenominator } from "../src/sheet.js";
 import { GROUND_MATERIALS, hatchTileMm, KNOWN_MATERIALS } from "../src/hatches.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 import { readFileSync } from "node:fs";
@@ -616,4 +617,21 @@ suite("property: random magnitudes up to 1e308 never escape the closed domain", 
     expect(drawn).toBeGreaterThan(20);
     expect(refused).toBeGreaterThan(20);
   }, 60_000);
+});
+
+suite("a scale number below 1e-6 is written out, not as an exponent (EH1.15)", () => {
+  const scaled = (s: string): string =>
+    `plan "S" {\n  units mm\n  scale ${s}\n  room at (0,0) size 4000x3000 label "R"\n}\n`;
+
+  it("`scale 0.0000001:1` reads back as its denominator instead of being dropped", () => {
+    // `plainDigits` used to leave `String(1e-7)` as `1e-7`, which `scaleDenominator` could not
+    // read, so the plan's scale fell away with no word.
+    const scale = describe(scaled("0.0000001:1")).scale;
+    expect(scale).toBe("0.0000001:1");
+    expect(scaleDenominator(scale)).toBeCloseTo(1e7, 0);
+  });
+
+  it("the exponent spelling is not a scale: the lexer has no exponent form", () => {
+    expect(compile(scaled("1e-7:1"), { noCache: true }).diagnostics.map((d) => d.code)).toContain("E_PARSE");
+  });
 });

@@ -307,9 +307,12 @@ describe("malformed Plan JSON", () => {
       { seed: STRING_SEED, numRuns: STRING_RUNS },
     );
     console.info(`plan-json-malformed law (e): ${JSON.stringify(tally)}`);
-    // Both halves ran: hostile strings were refused, and literals were written and read back.
+    // Every half ran: hostile strings were refused, and literals, words and positions were each
+    // written and read back.
     expect(tally.refused).toBeGreaterThan(0);
     expect(tally.literal).toBeGreaterThan(0);
+    expect(tally.word).toBeGreaterThan(0);
+    expect(tally.position).toBeGreaterThan(0);
   });
 
   it("law (e) by example: a string that tries to leave its literal or its word stays put", () => {

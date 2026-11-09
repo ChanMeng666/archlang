@@ -50,6 +50,7 @@ import {
 } from "./ast.js";
 import { isLexWord } from "./lexer.js";
 import { isEdgeName } from "./attach.js";
+import { EDGE_WORDS } from "./room-datums.js";
 import { escapeStr } from "./expr-source.js";
 import { plainDigits } from "./num-format.js";
 import type {
@@ -89,7 +90,7 @@ import {
   WINDOW_KIND_HINGED,
   WINDOW_KINDS,
 } from "./grammar/tokens.js";
-import { parse } from "./parser.js";
+import { parse, parseUnmemoised } from "./parser.js";
 import { isDrawableHeight, isPlacedHeight, MAX_HEIGHT } from "./datum.js";
 import {
   resolvePlan,
@@ -1281,7 +1282,7 @@ function reqWord(v: unknown, path: string, what: string, val: Validator, emptyOk
 const ATTACH_PROBE_HEAD = 'plan "" {\n  opening on w at ';
 function isAttachPosText(s: string): boolean {
   if (s === "" || s !== s.trim() || /[\r\n]/.test(s)) return false;
-  const { plan, diagnostics } = parse(`${ATTACH_PROBE_HEAD}${s} width 1\n}\n`);
+  const { plan, diagnostics } = parseUnmemoised(`${ATTACH_PROBE_HEAD}${s} width 1\n}\n`);
   if (!plan || diagnostics.some((d) => d.severity === "error") || plan.body.length !== 1) return false;
   const st = plan.body[0] as {
     kind?: string;
@@ -1834,7 +1835,7 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
     f.against_edge !== undefined &&
     !(isStr(f.against_edge) && isLexWord(f.against_edge) && isEdgeName(f.against_edge))
   )
-    val.err(`${path}/against_edge`, "expected a room edge `<room>.top|bottom|left|right`");
+    val.err(`${path}/against_edge`, `expected a room edge \`<room>.${EDGE_WORDS.join("|")}\``);
   // Re-emitted verbatim after `segment`, so it must be a selector and nothing else.
   if (f.segment_select !== undefined && !(isStr(f.segment_select) && SEGMENT_SELECT_RE.test(f.segment_select)))
     val.err(`${path}/segment_select`, "expected `north|south|east|west` or `containing <room>.<edge>`");
