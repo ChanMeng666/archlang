@@ -6,7 +6,7 @@
 # Release history
 CHANGELOG.md
 
-# Generated artifacts (sources: scripts/check-drift.ts GENERATORS; regenerate with `npm run gen:*`)
+# Generated artifacts (sources: scripts/generators.ts GENERATORS; regenerate with `npm run gen:*`)
 spec.llm.md
 llms-full.txt
 src/context-size.ts

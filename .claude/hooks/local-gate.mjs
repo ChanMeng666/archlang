@@ -255,7 +255,12 @@ function vitestArgs(words) {
   const at = words.findIndex((w) => commandName(w) === "vitest");
   if (at >= 0) return words.slice(at + 1);
   if (commandName(words[0] ?? "") !== "npm") return null;
-  const rest = words.slice(1).filter((w) => !/^--prefix(?:=|$)/.test(w));
+  // `--prefix <dir>` and `--prefix=<dir>` move the call, not its arguments: drop the flag and its value.
+  const rest = [];
+  for (let i = 1; i < words.length; i++) {
+    if (words[i] === "--prefix") i++;
+    else if (!words[i].startsWith("--prefix=")) rest.push(words[i]);
+  }
   const i = rest[0] === "run" || rest[0] === "run-script" ? 1 : 0;
   return rest[i] === "test" || rest[i] === "t" ? rest.slice(i + 1) : null;
 }
@@ -266,6 +271,17 @@ const VITEST_VALUE_FLAG =
 /** The one scoped update `docs/testing.md` § 3 allows: groups 2–4 of fixture-byte-identity. */
 const REBLESS = "re-blessed when redrawn";
 const FIXTURE_PINS = "fixture-byte-identity";
+const PINS_FILE = `test/${FIXTURE_PINS}.test.ts`;
+
+/**
+ * Whether a vitest file filter selects the pins file. Vitest matches a filter as a substring of the
+ * path, so `fixture-byte`, `byte-identity` or `test/fixture-byte-identity` select it as surely as the
+ * full name; a filter with no part of its stem (`test`) selects the whole suite, an unfiltered run.
+ */
+const selectsPins = (f) => {
+  const p = f.replace(/^(?:\.\/)+/, "");
+  return p.includes(FIXTURE_PINS) || (PINS_FILE.includes(p) && /fixture|byte|ident/.test(p));
+};
 
 /** `{ update, filter, files }` read from vitest's arguments. */
 export function vitestRun(args) {
@@ -290,7 +306,7 @@ function filteredUpdate({ tool, input, cwd, hookRepo }) {
     if (!args) continue;
     const { update, filter, files } = vitestRun(args);
     if (!update) continue;
-    const pins = files.some((f) => f.includes(FIXTURE_PINS));
+    const pins = files.some(selectsPins);
     let reason = null;
     if (filter !== undefined) {
       const scoped = filter === REBLESS && files.length > 0 && files.every((f) => f.includes(FIXTURE_PINS));
@@ -369,36 +385,44 @@ export function deleteTargets(command, shell) {
 /** How many folder entries one check reads at most; a larger tree is read only that far. */
 const LINK_SCAN_LIMIT = 5000;
 
+/** How deep below a delete's target the link check reads (a scratch folder holds worktrees 2–4 down). */
+const LINK_SCAN_DEPTH = 6;
+
 /**
- * The junctions and symlinks at `path` or below it to `depth` (2: the folder, its children and
- * theirs), never following one. On Windows, Node reports a junction as a symbolic link.
+ * The junctions and symlinks at `path` or below it to `depth` levels, never following one. Read
+ * breadth-first, so the scan cap is spent on the shallow levels, where a worktree's `node_modules`
+ * sits, before a deep tree. On Windows, Node reports a junction as a symbolic link.
  */
-export function linksUnder(path, depth = 2) {
+export function linksUnder(path, depth = LINK_SCAN_DEPTH) {
+  let st;
+  try {
+    st = lstatSync(path);
+  } catch {
+    return [];
+  }
+  if (st.isSymbolicLink()) return [path];
+  if (!st.isDirectory()) return [];
   const found = [];
   let read = 0;
-  const walk = (p, d) => {
-    let st;
-    try {
-      st = lstatSync(p);
-    } catch {
-      return;
+  let level = [path];
+  for (let d = 0; d < depth && level.length > 0; d++) {
+    const next = [];
+    for (const dir of level) {
+      let entries;
+      try {
+        entries = readdirSync(dir, { withFileTypes: true });
+      } catch {
+        continue;
+      }
+      for (const e of entries) {
+        if (++read > LINK_SCAN_LIMIT) return found;
+        const child = resolve(dir, e.name);
+        if (e.isSymbolicLink()) found.push(child);
+        else if (e.isDirectory()) next.push(child);
+      }
     }
-    if (st.isSymbolicLink()) found.push(p);
-    if (!st.isDirectory() || d === 0) return;
-    let entries;
-    try {
-      entries = readdirSync(p, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const e of entries) {
-      if (++read > LINK_SCAN_LIMIT) return;
-      const child = resolve(p, e.name);
-      if (e.isSymbolicLink()) found.push(child);
-      else if (e.isDirectory()) walk(child, d - 1);
-    }
-  };
-  walk(path, depth);
+    level = next;
+  }
   return found;
 }
 

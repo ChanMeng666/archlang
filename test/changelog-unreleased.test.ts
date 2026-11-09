@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 // @ts-expect-error — a zero-dep .mjs script with no type declarations.
-import { checkChangelogDiff } from "../scripts/check-changelog-unreleased.mjs";
+import { changelogVerdict, checkChangelogDiff } from "../scripts/check-changelog-unreleased.mjs";
 
 /**
  * `scripts/check-changelog-unreleased.mjs` (CI, every pull request): a PR's CHANGELOG lines land
@@ -82,7 +82,7 @@ describe("check-changelog-unreleased", () => {
     expect(checkChangelogDiff(d).violations[0]).toContain("deleted under");
   });
 
-  it("exempts a release PR, which adds a `## [x.y.z]` heading", () => {
+  it("passes a release PR: the lines under the `## [x.y.z]` heading it adds", () => {
     const d = diff([
       [" ", "# Changelog"],
       [" ", ""],
@@ -94,6 +94,42 @@ describe("check-changelog-unreleased", () => {
       [" ", "- an entry"],
     ]);
     expect(checkChangelogDiff(d)).toEqual({ release: true, violations: [] });
+  });
+
+  it("is red on a line added under an OLDER released heading, even in a release PR", () => {
+    // The loophole: an added `## [x.y.z]` heading used to exempt every line of the diff.
+    const d = diff([
+      [" ", "# Changelog"],
+      [" ", ""],
+      [" ", "## [Unreleased]"],
+      [" ", ""],
+      ["+", "## [1.58.0] - 2026-11-10"],
+      ["+", "- cut into the new release"],
+      [" ", ""],
+      [" ", "## [1.57.0] - 2026-11-06"],
+      ["+", "- slipped into an old release"],
+      [" ", "- shipped"],
+    ]);
+    const { release, violations } = checkChangelogDiff(d);
+    expect(release).toBe(true);
+    expect(violations).toEqual([
+      `CHANGELOG.md:9: added under "## [1.57.0] - 2026-11-06": - slipped into an old release`,
+    ]);
+    // `## [1.58.0` without its closing bracket is not a release heading, so it exempts nothing.
+    const loose = diff([...HEAD, ["+", "## [1.58.0 draft"], ["+", "- x"]]);
+    expect(checkChangelogDiff(loose).release).toBe(false);
+    expect(checkChangelogDiff(loose).violations).toHaveLength(2);
+  });
+
+  it("the `changelog-exempt` label (`--exempt`) turns a refusal into notices; without it the verdict is red", () => {
+    const d = diff([...HEAD, [" ", "## [1.57.0] - 2026-11-06"], [" ", ""], ["-", "- a wrong released claim"]]);
+    const red = changelogVerdict(d);
+    expect(red.code).toBe(1);
+    expect(red.out.join("\n")).toContain("changelog-exempt");
+    const exempt = changelogVerdict(d, { exempt: true });
+    expect(exempt.code).toBe(0);
+    expect(exempt.out.join("\n")).toContain('deleted under "## [1.57.0] - 2026-11-06": - a wrong released claim');
+    expect(changelogVerdict("").code).toBe(0);
   });
 
   it("reads CRLF and a missing final newline", () => {

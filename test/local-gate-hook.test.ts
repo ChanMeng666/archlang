@@ -89,7 +89,8 @@ describe(".claude/hooks/local-gate.mjs RULES", () => {
   let base = "";
   let husk = ""; // a worktree husk whose node_modules is a junction (a dir symlink off Windows)
   let deep = ""; // a link at depth 2: deep/packages/node_modules
-  let deeper = ""; // a link at depth 3 only: deeper/a/b/node_modules
+  let scratchDay = ""; // a scratch day folder: a worktree's node_modules junction 4 levels down
+  let tooDeep = ""; // a link 7 levels down only, past the scan depth (6)
   let plain = "";
   const links: string[] = [];
 
@@ -98,15 +99,19 @@ describe(".claude/hooks/local-gate.mjs RULES", () => {
     const primary = join(base, "primary-node_modules");
     husk = join(base, "husk");
     deep = join(base, "deep");
-    deeper = join(base, "deeper");
+    scratchDay = join(base, "2026-11-10");
+    tooDeep = join(base, "too-deep");
     plain = join(base, "plain");
-    for (const d of [primary, husk, join(deep, "packages"), join(deeper, "a", "b"), join(plain, "a", "b")]) {
+    const scratchWorktree = join(scratchDay, "eh35-slug", "worktrees", "agent-x");
+    const sevenDown = join(tooDeep, "a", "b", "c", "d", "e", "f");
+    for (const d of [primary, husk, join(deep, "packages"), scratchWorktree, sevenDown, join(plain, "a", "b")]) {
       mkdirSync(d, { recursive: true });
     }
     for (const at of [
       join(husk, "node_modules"),
       join(deep, "packages", "node_modules"),
-      join(deeper, "a", "b", "node_modules"),
+      join(scratchWorktree, "node_modules"),
+      join(sevenDown, "node_modules"),
     ]) {
       symlinkSync(primary, at, "junction");
       links.push(at);
@@ -191,6 +196,10 @@ describe(".claude/hooks/local-gate.mjs RULES", () => {
         'npx vitest run -u -t "re-blessed when redrawn" test/fixture-byte-identity.test.ts test/snapshot.test.ts',
         "npx vitest run -u test/fixture-byte-identity.test.ts #allow-local-heavy owner",
         "node_modules/.bin/vitest run -t=x -u",
+        "npm --prefix . test -- -u -t storeys",
+        "npx vitest run -u fixture-byte",
+        "npx vitest run -u test/fixture-byte-identity",
+        'npx vitest run -u -t "re-blessed when redrawn" byte-identity',
       ]) {
         expect(ruleOf("Bash", command), command).toBe("filtered-update");
       }
@@ -203,6 +212,11 @@ describe(".claude/hooks/local-gate.mjs RULES", () => {
       expect(ruleOf("Bash", scoped)).toBeNull();
       expect(verdict(scoped, here, here)).toBeNull();
       expect(ruleOf("Bash", "npx vitest run -u test/snapshot.test.ts")).toBeNull();
+      expect(ruleOf("Bash", "npx vitest run -u test"), "no part of the pins file's stem: the whole suite").toBeNull();
+      expect(
+        ruleOf("Bash", "npm --prefix test run lint -- -u -t x"),
+        "`--prefix`'s value is not the script",
+      ).toBeNull();
       expect(ruleOf("Bash", "npx vitest run -t storeys test/a.test.ts")).toBeNull();
       expect(ruleOf("Bash", 'git commit -m "never run vitest -u -t x"')).toBeNull();
       expect(ruleOf("Bash", `cd ${other} && npx vitest run -u -t x`)).toBeNull();
@@ -210,13 +224,14 @@ describe(".claude/hooks/local-gate.mjs RULES", () => {
   });
 
   describe("delete-through-link", () => {
-    it("refuses a recursive delete whose target, child or grandchild is a link", () => {
+    it("refuses a recursive delete with a link at the target or up to six levels below it", () => {
       for (const command of [
         `rm -rf "${fwd(husk)}"`,
         `rm -r -f ${fwd(husk)}`,
         `rm --recursive -- ${fwd(husk)}`,
         `rm -rf ${fwd(join(husk, "node_modules"))}`,
         `rm -rf ${fwd(deep)}`,
+        `rm -rf ${fwd(scratchDay)}/`,
         `cd ${fwd(base)} && rm -rf hu*`,
         `git worktree remove --force ${fwd(husk)}`,
         `git -C ${fwd(base)} worktree remove husk`,
@@ -237,9 +252,9 @@ describe(".claude/hooks/local-gate.mjs RULES", () => {
       expect(hit?.reason).toContain(`[System.IO.Directory]::Delete('${join(husk, "node_modules")}')`);
     });
 
-    it("allows a tree with no link to depth 2, a non-recursive delete, the unlink itself, and what it cannot read", () => {
+    it("allows a tree with no link within six levels, a non-recursive delete, the unlink itself, and what it cannot read", () => {
       expect(ruleOf("Bash", `rm -rf ${fwd(plain)}`)).toBeNull();
-      expect(ruleOf("Bash", `rm -rf ${fwd(deeper)}`)).toBeNull();
+      expect(ruleOf("Bash", `rm -rf ${fwd(tooDeep)}`)).toBeNull();
       expect(ruleOf("Bash", `rm -f ${fwd(join(husk, "x.txt"))}`)).toBeNull();
       expect(ruleOf("Bash", "rm -rf $TARGET")).toBeNull();
       expect(ruleOf("Bash", `echo "rm -rf ${fwd(husk)}"`)).toBeNull();

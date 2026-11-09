@@ -220,10 +220,16 @@ jobs:
   # PR (it adds `## [x.y.z]`) is exempt. Runs on record-only PRs too: CHANGELOG.md is a record. The
   # checkout is the PR's merge commit, so `HEAD^1` is the base tip and the diff is what merging adds.
   # Not a required check itself: the `Node 22` aggregator below requires its success on a PR.
+  # Escape: the PR label `changelog-exempt` (a deliberate edit of released history) passes
+  # `--exempt`. The label is read from the event AND live, so labelling a red PR and re-running this
+  # job is enough (a re-run replays the original event, whose label list is stale).
   changelog:
     name: CHANGELOG under [Unreleased]
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -236,7 +242,19 @@ jobs:
           check-latest: true
 
       - name: Every added CHANGELOG line sits under [Unreleased]
-        run: node scripts/check-changelog-unreleased.mjs HEAD^1
+        env:
+          EVENT_EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'changelog-exempt') }}
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          live=$(gh pr view "$PR" --repo "$REPO" --json labels --jq '[.labels[].name] | index("changelog-exempt") != null' || echo false)
+          if [ "$EVENT_EXEMPT" = "true" ] || [ "$live" = "true" ]; then
+            echo "PR labelled changelog-exempt: violations are reported, not refused." | tee -a "$GITHUB_STEP_SUMMARY"
+            node scripts/check-changelog-unreleased.mjs HEAD^1 --exempt
+          else
+            node scripts/check-changelog-unreleased.mjs HEAD^1
+          fi
 
   # The required `Node 22` check. It decides from its needs' results, so a shard that failed,
   # was cancelled or was skipped when it had work to do turns it red. `always()`, not

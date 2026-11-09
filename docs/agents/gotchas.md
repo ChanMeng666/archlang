@@ -73,7 +73,8 @@ coordinator's own notes (merging, registries, browser and social automation, the
   under `[Unreleased]`. If not, take main's file and insert the branch's lines; bullets have no blank
   line between them, so cut an entry on the next `- ` as well. After merging `main` past a release,
   `node scripts/changelog-section.mjs <x.y.z>` must not list the branch's entry; move it under `[Unreleased]` (B3b, #337).
-  (guarded: CI's `changelog` job, `scripts/check-changelog-unreleased.mjs`, on every PR)
+  (guarded: CI's `changelog` job, `scripts/check-changelog-unreleased.mjs`, on every PR; a deliberate edit of
+  released history carries the label `changelog-exempt`)
 - **A change to the step meter moves every law that digests steps**: K1,
   `test/rectilinear-rooms-byte-identity.test.ts`, `test/block-stair-byte-identity.test.ts`. Re-take each by
   its own route, and show that putting the old count back reproduces the pinned digest.
@@ -156,7 +157,7 @@ coordinator's own notes (merging, registries, browser and social automation, the
   older core and be invalid, so read them from the PR's CI.
 - **Remove a worktree's `node_modules` junctions with `[System.IO.Directory]::Delete(<junction>)`** (never recursive; the PowerShell tool blocks `cmd /c rmdir`) before
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
-  (guarded: hook rule `delete-through-link` refuses the delete while a link sits within two levels)
+  (guarded: hook rule `delete-through-link` refuses the delete while a link sits within six levels of the target)
   Git Bash's `ln -s` does not link: it COPIES the target, and a copy of the primary's `node_modules`
   carries its workspace junctions (one points at the repository root). Scan any such copy for
   reparse points and unlink each (`[System.IO.Directory]::Delete(<junction>)`) before deleting it.
