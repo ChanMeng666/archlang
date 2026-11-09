@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-482 test files in `test/`, 267 `src` modules, 98 modules no test imports.
+483 test files in `test/`, 268 `src` modules, 99 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -531,6 +531,7 @@ The first sentence of each file's header comment.
 - `test/plan-json-dropped.test.ts` — every clause is reported on the plan that has it, and alone; a multi-storey plan answers for the export in hand; the keep path is the same path, and unchanged;…
 - `test/plan-json-instances.test.ts` — PS3.9 — Plan JSON for a component that derives its walls.
 - `test/plan-json-malformed.test.ts` — malformed Plan JSON.
+- `test/plan-json-projector-leaf.test.ts` — **The Plan JSON projector is a leaf.** `to-json.ts` turns a resolved plan into Plan JSON; it must not load the validator (`from-json.ts`), which it reads nothing from.
 - `test/plan-json-uses-roundtrip.test.ts` — A room's uses survive a Plan JSON round trip (checker-reach CR2 group B).
 - `test/plan-json.test.ts` — plan-json — round-trip byte-identity (SVG); plan-json — derived furniture positions; plan-json — planToJson projection & enrichments; plan-json — `dims auto` is…
 - `test/plan-schema-drift.test.ts` — plan.schema.json drift.
@@ -762,6 +763,7 @@ module); adding a test that imports it removes it from this list.
 - `src/plan-json/from-json.ts`
 - `src/plan-json/room-types.ts`
 - `src/plan-json/schema.ts`
+- `src/plan-json/source-tokens.ts`
 - `src/plan-json/types.ts`
 - `src/sanitize.ts`
 - `src/stages.ts`
