@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Test-duration table refreshed from the nightly; `gen-test-durations.mjs` merges an artifact map.
 - `arch impact` now exits 2 on a plan that does not parse (breaking for scripts that relied on exit 0), with `{ ok: false, diagnostics }` under `--json`. `fmt`, `repair`, `reroll`, `suggest`, `complete` and `link` keep exit 0 on such a plan, now documented in `docs/cli-reference.md`; `fmt` returns the source verbatim and `fmt --write` leaves the file untouched.
 - Share decoding: an over-cap payload now returns `source_too_large` instead of throwing. `decodePlanHashWeb` from `@chanmeng666/archlang/share` is built on `inflateCapped` (one bounded inflater, the 1 KiB write slices included) and returns `{ ok: true, source }` or `{ ok: false, code }` (`code` is `"bad_payload"` or `"source_too_large"`, the `PayloadFault` type) instead of throwing; `PlanHashTooLarge` is gone. The hosted MCP Worker's `GET /svg/<payload>` now has the same bomb protection as the short-link Worker. Every link decodes as before.
 - The root package declares `"sideEffects": false`: no `src/` module registers into another module when it loads (the built-in functions are registered where the evaluator makes them, not on load), so a bundler may drop an unused import of the core; a consumer's bundle may tree-shake differently.
