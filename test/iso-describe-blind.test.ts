@@ -25,7 +25,8 @@ import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 
 /** Every module the two summary surfaces are built from: the resolver (`src/ir.ts` and every
- *  stage under `src/ir/`, read from the directory) and the analyses on top of it. */
+ *  stage under `src/ir/`, read from the directory), `src/describe.ts` and every module under
+ *  `src/describe/` (read the same way), and the analyses on top of it. */
 const SUMMARY_MODULES = [
   "src/ir.ts",
   ...readdirSync(resolvePath("src/ir"))
@@ -33,6 +34,10 @@ const SUMMARY_MODULES = [
     .sort()
     .map((f) => `src/ir/${f}`),
   "src/describe.ts",
+  ...readdirSync(resolvePath("src/describe"))
+    .filter((f) => f.endsWith(".ts"))
+    .sort()
+    .map((f) => `src/describe/${f}`),
   "src/lint.ts",
   "src/analyze.ts",
   "src/analyze/rooms.ts",

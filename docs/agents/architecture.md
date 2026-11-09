@@ -66,7 +66,8 @@ The public surface (every export of `src/index.ts`, its declaring module and in-
 the generated [`public-surface.md`](public-surface.md) (`npm run gen:surface`); the process-wide
 state behind it is described in the `src/index.ts` header.
 
-- `describe.ts` semantic summary · `lint.ts` + `lint/` soundness rules · `analyze.ts` +
+- `describe.ts` semantic summary (`summarize`; `describe/` holds its types, room adjacency, the
+  vertical facts and the diff fabric) · `lint.ts` + `lint/` soundness rules · `analyze.ts` +
   `analyze/` shared resolve + circulation/occupancy grids
 - `analyze/rooms.ts` room box/ring/area, point-in-room and room-use leaves · `analyze/connectors.ts` which rooms a door or opening joins and which room a window serves; both import no `ir.ts` value (`test/no-value-cycles.test.ts`), re-exported from `analyze.ts`
 - `lint/context.ts` the shared per-run `LintContext` and `LintRule` (`family`, `layer`: `validity` or
@@ -170,6 +171,9 @@ state behind it is described in the `src/index.ts` header.
   element's own `resolve()` fix text and Plan JSON's decompiler
 - `analyze/symmetry.ts` a plan's D4 ⋉ Z² stabiliser and its repeats · `analyze/syntax.ts`
   space-syntax depths/RA/RRA/integration on the access graph — both opt-in `describe --facts`
+- `scene-memo.ts` one Scene per (`ResolvedPlan` identity, registry, `themes`, annotate/accessible/
+  circulation): `annotation-overlap` reads it, `compile()` offers a copy of what it drew; never
+  the public `compile().scene`; `clearCache()` empties it
 - `analyze/net-area-memo.ts` memoises each storey's wall bands and each room's exact net internal
   area, keyed on their exact inputs (ADR 0027's figures, output byte-identical); `clearCache()`
   empties it
@@ -188,7 +192,8 @@ state behind it is described in the `src/index.ts` header.
 - `cli/summary.ts` the one-line count-and-codes summary `lint`/`validate` open with (CLI only, so
   no corpus digest moves) · `cli/review.ts` `arch preview --review`, the review sheet: consumes
   `compile()`/`describe()`/`lint()`, feeds none of them
-- `plan-json.ts` Plan JSON · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
+- `plan-json.ts` Plan JSON, re-exporting `plan-json/` (room types, wire types, `to-json`, the
+  `from-json` validator, `.arch` `emit`, `ast-json`, `check-graph`, `schema`) · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
   `fix-apply.ts` (`arch fix`; skips a fix carrying `file`) · `manifest.ts` the CLI contract
 - `input-limit.ts` `inputTooLarge()` / `rateLimited()`: a HOST's refusals (`E_INPUT_TOO_LARGE`,
   `E_RATE_LIMITED`), which `compile()` never calls · `cli/share-codec.mjs` (Node) and `cli/share-codec.web.mjs`

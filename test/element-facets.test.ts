@@ -27,8 +27,8 @@ const READER: Record<keyof KindFacets, string> = {
   cropped: "src/cli/review.ts CROPPED",
   shell: "src/furnish.ts SHELL_KINDS",
   stacked: "src/keep.ts STACKED_KINDS",
-  unprojected: "src/plan-json.ts UNPROJECTED_KINDS",
-  opening: "src/plan-json.ts OPENING_KINDS",
+  unprojected: "src/plan-json/to-json.ts UNPROJECTED_KINDS",
+  opening: "src/plan-json/from-json.ts OPENING_KINDS",
   vertical: "src/vertical.ts VERTICAL_KINDS",
   styled: "src/theme.ts STYLE_KEYS",
   label: "src/scene-build.ts elementLabelOf",
@@ -79,7 +79,7 @@ describe("element facets (src/elements/facets.ts)", () => {
       "escalator",
       "void",
     ]);
-    expect([...UNPROJECTED_KINDS], `src/plan-json.ts UNPROJECTED_KINDS (in order): ${CHANGED}`).toEqual([
+    expect([...UNPROJECTED_KINDS], `src/plan-json/to-json.ts UNPROJECTED_KINDS (in order): ${CHANGED}`).toEqual([
       "stair",
       "elevator",
       "escalator",
@@ -88,7 +88,11 @@ describe("element facets (src/elements/facets.ts)", () => {
       "outdoor",
       "fence",
     ]);
-    expect(kindsWith("opening"), `src/plan-json.ts OPENING_KINDS: ${CHANGED}`).toEqual(["door", "window", "opening"]);
+    expect(kindsWith("opening"), `src/plan-json/from-json.ts OPENING_KINDS: ${CHANGED}`).toEqual([
+      "door",
+      "window",
+      "opening",
+    ]);
     const labels = Object.fromEntries(KINDS.flatMap((k) => (rowOf(k)?.label ? [[k, rowOf(k)?.label]] : [])));
     expect(labels, `src/scene-build.ts elementLabelOf fallback: ${CHANGED}`).toEqual({
       furniture: "category",
@@ -96,7 +100,7 @@ describe("element facets (src/elements/facets.ts)", () => {
     });
   });
 
-  it("src/plan-json.ts UNPROJECTED_KINDS is the table's `unprojected` kinds, in order", () => {
+  it("src/plan-json/to-json.ts UNPROJECTED_KINDS is the table's `unprojected` kinds, in order", () => {
     expect([...UNPROJECTED_KINDS]).toEqual(KINDS.filter((k) => rowOf(k)?.unprojected === true));
   });
 
@@ -131,7 +135,7 @@ describe("element facets (src/elements/facets.ts)", () => {
     const fromTable = (Object.keys(KIND_FACETS) as (keyof typeof KIND_FACETS)[]).filter((k) => KIND_FACETS[k].opening);
     expect(fromTable, "KIND_FACETS `opening` rows").toEqual([...kindsWith("opening")]);
     const schemaEnum = PLAN_JSON_SCHEMA.properties.openings.items.properties.kind.enum;
-    expect([...schemaEnum], "src/plan-json.ts PLAN_JSON_SCHEMA openings[].kind enum").toEqual(fromTable);
+    expect([...schemaEnum], "src/plan-json/schema.ts PLAN_JSON_SCHEMA openings[].kind enum").toEqual(fromTable);
     // The interface's union is hand-written (a public type); this fails `typecheck:all` when it
     // and the table part, in either direction.
     type OpeningKind = KindsWith<"opening">;

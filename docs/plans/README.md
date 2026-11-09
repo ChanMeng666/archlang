@@ -9,7 +9,7 @@ Closed programme research (audits, studies, spikes) lives in the private sibling
 |---|---|---|
 | `plan-soundness/` | Professional rules and taste for AI-written plans: validity lint, relation-first forms, the change model, the taste layer | open; §7 rows 1–5 and 3a met, row 6 closed in part (PS4.6 remains), row 7 parked; start at `plan-soundness/handoff.md` |
 | `ci-throughput.md` | Options to shorten the PR cycle (auto-merge, concurrency, path filters, coverage off the PR path, merge queue, changelog fragments, PR legs and shards) | A–D and G live; E, F open, the owner decides |
-| `archlang-3d/` | The owner's 3D plan (ADR 0030/0031 drafts) | owner's; not part of plan-soundness |
+| `archlang-3d/` | The M1 recut (`amendment-v0.7.md`); the 3D plan and ADR drafts are archived in the lab (table below) | archived |
 | `preview-and-remodel/` | The 3D preview, the G cards and Wave 7 (what the German-houses user reported); `handoff.md` is the resume point | waves 0–3, 5 and 7 done; waves 4 and 6 wait for the N10 read |
 | `checker-reach/` | Check plans from any tool: OpenPlan3D/OAS import, revision guard, public check suite, language-spec version, short share links on the playground Worker, a free-orbit 3D preview; `handoff.md` is the resume point | planned 2026-11-05; runs before drawing-set waves 1–2 (CR-D1) |
 | `drawing-set/` | The scheme-stage drawing set: indicators, site, sections and elevations, analysis diagrams, a sheet pack; `handoff.md` is the resume point | planned 2026-11-02; DS1/DS2 run as checker-reach CR1/CR2b, DS3–DS9 after Show HN (CR-D1) |
@@ -23,3 +23,14 @@ Closed programme research (audits, studies, spikes) lives in the private sibling
 
 The backlog (`docs/backlog.md`) points here for programme work; `docs/adr/` holds the decisions that
 outlive a programme.
+
+## Archived
+
+Moved verbatim to the private sibling repository `archlang-lab` (clone it next to this one); nothing here reads them.
+
+| What | Now at | Why it left |
+|---|---|---|
+| Closed backlog entries (45, 2026-11-09) | `archlang-lab/backlog-archive.md` | `docs/backlog.md` keeps open work only; `scripts/backlog-archive.mjs` does the move; a closed id that a tracked file still cites keeps a one-line tombstone |
+| The 3D programme plan (`development-plan.md`) | `archlang-lab/plans/archlang-3d/development-plan.md` | 287 KB, superseded by the delivered package and `preview-and-remodel/` |
+| ADR 0030 draft | `archlang-lab/plans/archlang-3d/adr-draft-0030-3d-as-downstream-package.md` | superseded by the accepted `docs/adr/0030` |
+| ADR 0031 draft | `archlang-lab/plans/archlang-3d/adr-draft-0031-core-exports-for-downstream-3d.md` | superseded by the accepted `docs/adr/0031` |

@@ -1,0 +1,564 @@
+/**
+ * The Plan JSON Schema (2020-12), {@link PLAN_JSON_SCHEMA} — ONE source of truth;
+ * `scripts/gen-plan-schema.ts` only writes it to `schemas/plan.schema.json` (moved verbatim from
+ * `src/plan-json.ts`, which re-exports every name it exported).
+ *
+ * Invariant: a constant. Its token enums spread the source tables (`ROOM_TYPES`, `USE_KINDS`,
+ * `OPENING_KIND_ENUM`, the grammar token lists) rather than restating them. It charges nothing to
+ * the step meter.
+ */
+
+import { ARC_DIRS, AUTO_DIMS_MODES, COMPASS_DIRECTIONS, FURNITURE_ANCHORS, HEMISPHERES, USE_KINDS } from "../ast.js";
+import { DOOR_ENUMS, DOOR_KINDS, DOOR_SWING_BUILDING, WALL_STATUSES, WINDOW_KINDS } from "../grammar/tokens.js";
+import { MAX_HEIGHT } from "../datum.js";
+import { SEGMENT_SELECT_RE } from "../segment-select.js";
+import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../sheet.js";
+import { ROOM_TYPES } from "./room-types.js";
+import { OPENING_KIND_ENUM } from "./from-json.js";
+
+const POINT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["x", "y"],
+  properties: {
+    x: { type: "number", description: "X coordinate in millimetres (origin top-left, +x right)." },
+    y: { type: "number", description: "Y coordinate in millimetres (+y DOWN, screen convention)." },
+  },
+} as const;
+
+/** A wall vertex: {@link POINT_SCHEMA} plus the `arc` of the edge arriving at it. */
+const WALL_POINT_SCHEMA = {
+  type: "object",
+  additionalProperties: false,
+  required: ["x", "y"],
+  properties: {
+    ...POINT_SCHEMA.properties,
+    arc: {
+      type: "object",
+      additionalProperties: false,
+      required: ["radius"],
+      description:
+        "`arc (x,y) radius R [cw|ccw] [major]`: the edge ARRIVING at this point is a circular arc, and x/y are its end, so ignoring this key leaves the chord. Not on a wall's first point.",
+      properties: {
+        radius: { type: "number", exclusiveMinimum: 0, description: "Radius in millimetres." },
+        dir: {
+          enum: [...ARC_DIRS],
+          description: "Which way round, as the reader sees it on the sheet. Defaults to `ccw`.",
+        },
+        major: { type: "boolean", description: "Take the long way round. Omitted when false." },
+      },
+    },
+  },
+} as const;
+
+/** {@link InstanceMark}: the `instance` key every row schema accepts. */
+const INSTANCE_MARKER = {
+  type: "string",
+  description:
+    "Output-only, and present only when the payload carries `instances`: the placed instance this row was born inside. The row is that instance's element in plan coordinates under its dotted id (`west.kit`), kept for a reader that only wants geometry. On input a marked row is regenerated from its component and an edit to it is IGNORED: edit `components[].body` (or `instances[]`) instead. A marked row's `id` must start with `<instance>.` (a dimension has none), so a root row cannot be marked and lost by mistake (E_JSON_SCHEMA). Never present on a row inside `components[].body`.",
+} as const;
+
+/**
+ * The JSON Schema (2020-12) for {@link PlanJson}, description-rich for LLM consumption.
+ * This object is the single source of truth: `scripts/gen-plan-schema.ts` writes it to
+ * `schemas/plan.schema.json` and a drift test regenerates it in-memory to compare.
+ */
+export const PLAN_JSON_SCHEMA = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  $id: "https://archlang.uk/plan.schema.json",
+  title: "ArchLang Plan",
+  description:
+    "A floor plan as structured JSON (RPLAN / DStruct2Design convention). Coordinates are millimetres; the origin is top-left with +x right and +y DOWN. Fields marked output-only are produced by planToJson and ignored on input. Scripting (let/for/if/component) and import are not representable — author those in .arch source; the one exception is a placed component that derives its walls, carried by `components`/`instances`. Vertical circulation (stair/escalator/elevator) is not projected: Plan JSON has no member for it.",
+  type: "object",
+  required: ["plan", "rooms", "walls", "openings", "furniture"],
+  additionalProperties: false,
+  properties: {
+    version: { const: 1, description: "Schema version. Always 1." },
+    plan: { type: "string", description: "Plan name (shown in the title block)." },
+    units: { const: "mm", description: "Distance unit. Only millimetres are supported." },
+    grid: { type: "number", description: "Snap module in millimetres; 0 or omitted disables snapping." },
+    scale: {
+      type: "string",
+      pattern: "^\\d+:\\d+$",
+      description:
+        'Drawing scale, e.g. "1:50". Annotation only without `paper`; with it, the operative scale of the sheet.',
+    },
+    paper: {
+      type: "object",
+      additionalProperties: false,
+      required: ["size"],
+      description: "`paper <size> <orientation>`: the sheet the drawing is issued on. Omit it for no sheet.",
+      properties: {
+        size: { enum: [...PAPER_SIZES], description: "ISO paper size." },
+        orientation: { enum: [...PAPER_ORIENTATIONS], description: "Defaults to `landscape`." },
+        scale_auto: {
+          type: "boolean",
+          description:
+            "The plan wrote no `scale`, so the sheet fitted one. `scale` then reports that fit and is ignored on input, which fits again.",
+        },
+      },
+    },
+    north: {
+      description: "North orientation: a cardinal keyword or an explicit bearing in degrees.",
+      oneOf: [
+        { enum: ["up", "down", "left", "right"] },
+        { type: "object", required: ["deg"], additionalProperties: false, properties: { deg: { type: "number" } } },
+      ],
+    },
+    site: {
+      type: "object",
+      additionalProperties: false,
+      required: ["street"],
+      description:
+        "Where the building sits relative to its street. `street` is the TRUE compass direction the frontage faces; `hemisphere` (default `north`) decides only which way the equator lies. It draws nothing and moves nothing — it names directions, so a brief can say `equator_side` instead of `S`. NOTE: the derived names ArchLang reports from it (`back`, `equator_side`, `sunrise_side`, `sunset_side`) are a drafting convention, NOT a daylight measurement: there is no sun model, latitude or date anywhere in ArchLang.",
+      properties: {
+        street: { enum: [...COMPASS_DIRECTIONS], description: "Compass direction the street frontage faces." },
+        hemisphere: { enum: [...HEMISPHERES], description: "Hemisphere the building sits in. Defaults to north." },
+      },
+    },
+    dims_auto: {
+      enum: [...AUTO_DIMS_MODES],
+      description:
+        "`dims auto <mode>` — draw automatic dimension chains: `overall` (the two exterior chains), `rooms`, `walls`, or `all`. Omit it and no chains are drawn. This is a SETTING, not the `dims` array beside it: `dims` lists explicit `dim` statements, and the two compose. It affects output — the chains grow the drawing extent — so a document that drops it renders a differently-sized sheet.",
+    },
+    storey_height: {
+      type: "number",
+      exclusiveMinimum: 0,
+      maximum: MAX_HEIGHT,
+      description:
+        "`height <mm>` — the plan's default floor-to-floor storey height in millimetres (default 3000). The VERTICAL datum: it draws nothing at all, because a floor plan is a horizontal cut, and exists so heights are readable facts. A wall's own `height` overrides it. Plan JSON is a single-storey projection, so per-level heights and elevations are not representable here — author those with `level <n> height <mm>` in .arch source.",
+    },
+    room_count: { type: "integer", description: "Output-only: number of rooms." },
+    total_area: { type: "number", description: "Output-only: total floor area in square metres." },
+    room_types: {
+      type: "array",
+      description: "Output-only: the distinct room_type values present, in first-appearance order.",
+      items: { enum: [...ROOM_TYPES] },
+    },
+    rooms: {
+      type: "array",
+      description: "Rooms — a rectangle (x/y/width/height) or an explicit `polygon` ring.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        anyOf: [{ required: ["x", "y", "width", "height"] }, { required: ["polygon"] }],
+        properties: {
+          instance: INSTANCE_MARKER,
+          id: { type: "string", description: "Unique room id (referenced by furniture/openings)." },
+          label: { type: "string", description: "Human-readable room label drawn in the room." },
+          room_type: {
+            enum: [...ROOM_TYPES],
+            description: "Canonical RPLAN-style room category (mapped bidirectionally from `uses`).",
+          },
+          uses: {
+            type: "array",
+            description: "Explicit ArchLang function tags; authoritative over room_type when present.",
+            // Interpolated from USE_KINDS for the reason USE_SET above is: a retyped copy
+            // of a closed value set inside a document that DESCRIBES the set is the drift
+            // `check:drift` cannot see.
+            items: { enum: [...USE_KINDS] },
+          },
+          x: { type: "number", description: "Top-left corner X in millimetres." },
+          y: { type: "number", description: "Top-left corner Y in millimetres." },
+          width: { type: "number", description: "Room width in millimetres." },
+          height: { type: "number", description: "Room height in millimetres." },
+          polygon: {
+            type: "array",
+            minItems: 3,
+            description:
+              "An implicitly-closed simple polygon of >=3 vertices — the room's floor when it is not a rectangle. Replaces x/y/width/height on input; on output those remain as its bounding box.",
+            items: POINT_SCHEMA,
+          },
+          area: { type: "number", description: "Output-only: floor area in square metres (2 dp)." },
+          floor_polygon: {
+            type: "array",
+            description:
+              "Output-only: the room's floor ring — a rectangle's four corners (clockwise from top-left), or the polygon's own vertices.",
+            items: POINT_SCHEMA,
+          },
+        },
+      },
+    },
+    walls_from_rooms: {
+      type: "object",
+      additionalProperties: false,
+      required: ["exterior", "partition"],
+      description:
+        "`walls from rooms` (ADR 0028 §3): derive every wall from the rooms — an exterior ring on their outline and a partition on each shared edge. The derived walls are not listed in `walls`.",
+      properties: {
+        exterior: { type: "number", exclusiveMinimum: 0, description: "Exterior ring thickness in millimetres." },
+        partition: { type: "number", exclusiveMinimum: 0, description: "Partition thickness in millimetres." },
+        except: { type: "array", items: { type: "string" }, description: "Room ids left out of the derivation." },
+        status: {
+          type: "string",
+          enum: [...WALL_STATUSES],
+          description:
+            "`status existing|demolish|new`: the status of every wall the statement derives (as on a wall). Omitted when not written.",
+        },
+        open: {
+          type: "array",
+          description:
+            "`open [id=] between A and B [width]`: the pair's partition is voided by a derived leaf-less opening across its clear span (not listed in `openings`).",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["between"],
+            properties: {
+              between: {
+                type: "array",
+                items: { type: "string" },
+                minItems: 2,
+                maxItems: 2,
+                description: "The two room ids.",
+              },
+              id: { type: "string", description: "The derived opening's id, when the clause gives one." },
+              width: {
+                type: "number",
+                exclusiveMinimum: 0,
+                description: "Opening width in millimetres, centred on the clear span.",
+              },
+            },
+          },
+        },
+        between: {
+          type: "array",
+          description: "`between A and B thickness t`: that one partition's thickness.",
+          items: {
+            type: "object",
+            additionalProperties: false,
+            required: ["between", "thickness"],
+            properties: {
+              between: {
+                type: "array",
+                items: { type: "string" },
+                minItems: 2,
+                maxItems: 2,
+                description: "The two room ids.",
+              },
+              thickness: { type: "number", exclusiveMinimum: 0, description: "Partition thickness in millimetres." },
+            },
+          },
+        },
+      },
+    },
+    walls: {
+      type: "array",
+      description: "Wall polylines (poché-filled; host doors/windows/openings).",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["points"],
+        properties: {
+          instance: INSTANCE_MARKER,
+          id: { type: "string", description: "Unique wall id." },
+          category: {
+            type: "string",
+            description: 'Free-form category, e.g. "exterior" or "partition"; also a host reference.',
+          },
+          points: { type: "array", minItems: 2, description: "Polyline vertices in order.", items: WALL_POINT_SCHEMA },
+          thickness: { type: "number", description: "Wall thickness in millimetres." },
+          height: {
+            type: "number",
+            exclusiveMinimum: 0,
+            maximum: MAX_HEIGHT,
+            description:
+              "How tall the wall STANDS, in millimetres — a vertical height, NOT a plan extent like a room's `height`. Defaults to the plan's `storey_height` (3000). It draws nothing: a floor plan is a horizontal cut. An opening's `head` may not exceed it.",
+          },
+          status: {
+            type: "string",
+            enum: [...WALL_STATUSES],
+            description:
+              "What becomes of the wall in a remodel: `existing` (the default when omitted), `demolish` or `new`. A `demolish` wall is drawn but encloses nothing, hosts nothing (a door, window or opening in it is E_OPENING_ON_DEMOLISHED_WALL) and counts in no area; where it stood between two rooms, they are joined. Omitted when not written.",
+          },
+          closed: { type: "boolean", description: "Whether the polyline closes back to its first vertex." },
+          material: {
+            type: "string",
+            description: "Hatch material (brick, concrete, …); omitted for the default poché.",
+          },
+          material_scale: { type: "number", description: "Hatch tile-size multiplier (after material)." },
+          material_angle: { type: "number", description: "Extra hatch rotation in degrees (after material)." },
+        },
+      },
+    },
+    openings: {
+      type: "array",
+      description: "Doors, windows and leaf-less cased openings — all must lie on a wall.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["kind", "width"],
+        properties: {
+          instance: INSTANCE_MARKER,
+          kind: { enum: OPENING_KIND_ENUM, description: "Opening kind." },
+          id: { type: "string", description: "Unique opening id." },
+          x: { type: "number", description: "Center X in millimetres (on the wall centerline)." },
+          y: { type: "number", description: "Center Y in millimetres (on the wall centerline)." },
+          on: {
+            type: "object",
+            additionalProperties: false,
+            required: ["wall", "at"],
+            description: "Wall-attached placement (alternative to x/y): walk `wall` to position `at`.",
+            properties: {
+              wall: { type: "string", description: "Host wall id or category to walk." },
+              at: {
+                type: "string",
+                description: 'Position along the wall: a percentage ("40%"), millimetres ("1200"), or "center".',
+              },
+            },
+          },
+          relation: {
+            type: "object",
+            additionalProperties: false,
+            description:
+              "Relational placement as written (ADR 0028 §5), alternative to x/y on input: `between` two rooms (the wall on their shared edge) or `edge` (`<room>.top|bottom|left|right`, the exterior wall on it), at `at` (`center`, `<mm> from start|end|<room>.<edge>`, `axis <label>`; a window on an edge may leave it out).",
+            properties: {
+              between: {
+                type: "array",
+                items: { type: "string" },
+                minItems: 2,
+                maxItems: 2,
+                description: "The two room ids whose shared edge run hosts the opening.",
+              },
+              edge: { type: "string", description: "A room edge, `<room>.top|bottom|left|right`." },
+              at: { type: "string", description: "The position along the run or the edge, as written." },
+            },
+          },
+          width: { type: "number", description: "Opening width in millimetres." },
+          wall: { type: "string", description: "Host wall by id or category (else nearest)." },
+          hinge: {
+            enum: [...DOOR_ENUMS.hinge],
+            description:
+              "Hinge side relative to the wall direction: a door's, or a `casement` or `tilt_turn` window's when one was written.",
+          },
+          swing: {
+            enum: [...DOOR_ENUMS.swing],
+            description:
+              "Hinged: which side of the wall the leaf sweeps to. Barn/bifold: which face the panel hangs on or folds toward. Not accepted on a sliding or pocket door.",
+          },
+          swing_building: {
+            enum: [...DOOR_SWING_BUILDING],
+            description: `\`swing ${DOOR_SWING_BUILDING.join("|")}\` as written: relative to the building (towards or away from the one face of the host wall that has floor), beside the wall-relative \`swing\` it resolved to. On input it wins over \`swing\`.`,
+          },
+          door_kind: {
+            enum: [...DOOR_KINDS],
+            description:
+              "Door kind (default `hinged`, in which case this is omitted). A non-hinged kind has no swing arc; `hinge` is not accepted on one.",
+          },
+          window_kind: {
+            enum: [...WINDOW_KINDS],
+            description: "Window only. The kind word as written; omitted on a window with none.",
+          },
+          slide: {
+            enum: [...DOOR_ENUMS.slide],
+            description:
+              "Which way a sliding-family panel travels to open, along the wall's direction (as `hinge` is). Sliding family only.",
+          },
+          mirror: {
+            type: "boolean",
+            description:
+              "Door only. True on a door inside a reflecting `place` frame: it records the frame's reflection (a sliding door takes the other track), not the leaf's handedness. Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
+          },
+          open: {
+            type: "number",
+            minimum: 0,
+            maximum: 1,
+            description:
+              "How far the panel is DRAWN open, 0–1 (default 0.5). A drawing fact only — no measured output reads it. Sliding family only.",
+          },
+          sill: {
+            type: "number",
+            minimum: 0,
+            maximum: MAX_HEIGHT,
+            description:
+              "Bottom of the glazing above this storey's floor, in millimetres (default 900 — GB 50352-2019's minimum for a residential external window). WINDOW ONLY: a door and a cased opening start at the floor. 0 is legal and means a floor-length window. Draws nothing.",
+          },
+          head: {
+            type: "number",
+            exclusiveMinimum: 0,
+            maximum: MAX_HEIGHT,
+            description:
+              "Top of the opening above this storey's floor, in millimetres — 2100 for a door or a window, the host wall's own height for a cased opening. Must be above `sill` and no higher than the host wall. Draws nothing.",
+          },
+        },
+      },
+    },
+    furniture: {
+      type: "array",
+      description: "Furniture and plumbing/kitchen fixtures.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["category"],
+        properties: {
+          instance: INSTANCE_MARKER,
+          category: { type: "string", description: "Furniture category, e.g. bed, sofa, wc, basin, stove." },
+          id: { type: "string", description: "Unique furniture id." },
+          room: { type: "string", description: "Owning room id (`in <room>`)." },
+          x: { type: "number", description: "Top-left corner X in millimetres (resolved footprint)." },
+          y: { type: "number", description: "Top-left corner Y in millimetres (resolved footprint)." },
+          width: { type: "number", description: "Plan-axis width in millimetres." },
+          height: { type: "number", description: "Plan-axis height in millimetres." },
+          rotate: { enum: [0, 90, 180, 270], description: "Quarter-turn rotation of the drawn symbol." },
+          mirror: {
+            type: "boolean",
+            description:
+              "True on a fixture that writes `mirror` and on every fixture inside a reflecting `place` frame, the two composed: it records the reflection, not the glyph's handedness, so a symmetric symbol carries it too (a handed one is drawn as its mirror image). Absent otherwise. `planFromJson` prints it as the `mirror` clause, and refuses it with E_JSON_MIRROR on a dotted id, a flattened instance's piece.",
+          },
+          centered: { type: "boolean", description: "Room-relative placement: centre inside `room`." },
+          anchor: {
+            // DERIVED from the parser's own `FURNITURE_ANCHORS`, never retyped.
+            enum: [...FURNITURE_ANCHORS],
+            description: "Room-relative placement: anchor to a corner/edge of `room`.",
+          },
+          inset: { type: "number", description: "Inset (mm) from the anchored edge." },
+          flush: {
+            type: "boolean",
+            description: "Measure the anchored edge from the backing wall's inner face (needs `anchor`).",
+          },
+          against_wall: { type: "string", description: "Wall-anchored placement: back onto this wall id/category." },
+          segment: { type: "number", description: "Which segment of a multi-segment wall (for against_wall)." },
+          segment_select: {
+            type: "string",
+            pattern: SEGMENT_SELECT_RE.source,
+            description:
+              "A segment selector as written (for against_wall): `north|south|east|west` or `containing <room>.<edge>`; re-emitted in place of `segment`.",
+          },
+          offset: {
+            type: "number",
+            description: "Distance (mm) along the segment (for against_wall) or the room edge (for against_edge).",
+          },
+          side: { enum: ["left", "right"], description: "Which wall face to back onto (for against_wall)." },
+          against_edge: {
+            type: "string",
+            description: "Edge-anchored placement: back onto this room edge (`<room>.top|bottom|left|right`).",
+          },
+          facing: {
+            type: "string",
+            description: "Id of the piece, rectangular room or opening this piece faces; its turn is derived.",
+          },
+          clear_front: { type: "number", exclusiveMinimum: 0, description: "Declared clear depth (mm) in front." },
+          clear_sides: { type: "number", exclusiveMinimum: 0, description: "Declared clear depth (mm) at each side." },
+          label: { type: "string", description: "Label for the generic rectangle fallback." },
+        },
+      },
+    },
+    dims: {
+      type: "array",
+      description: "Dimension lines.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["from", "to"],
+        properties: {
+          instance: INSTANCE_MARKER,
+          from: { ...POINT_SCHEMA, description: "Start point." },
+          to: { ...POINT_SCHEMA, description: "End point." },
+          offset: { type: "number", description: "Perpendicular offset of the dimension line in millimetres." },
+          text: { type: "string", description: "Override text; defaults to the measured length." },
+          mirror: {
+            type: "boolean",
+            description:
+              "True on a dimension inside a reflecting `place` frame: it records the frame's reflection (the side a zero-offset call-out's number reads on). Absent otherwise. Output-only: `planFromJson` refuses `true` with E_JSON_MIRROR.",
+          },
+        },
+      },
+    },
+    columns: {
+      type: "array",
+      description: "Structural columns.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["x", "y", "width", "height"],
+        properties: {
+          instance: INSTANCE_MARKER,
+          id: { type: "string", description: "Unique column id." },
+          x: { type: "number", description: "Top-left corner X in millimetres." },
+          y: { type: "number", description: "Top-left corner Y in millimetres." },
+          width: { type: "number", description: "Width in millimetres." },
+          height: { type: "number", description: "Height in millimetres." },
+        },
+      },
+    },
+    components: {
+      type: "array",
+      description:
+        "The components the plan's placed instances were made from. Present (with `instances`, and with `instance` on every flattened instance row) ONLY on a storey where a placed component derives its walls with `walls from rooms`; every other payload has neither key, and a placed plan without that statement is exported flattened. Each body is what one instance resolved to in the component's own frame and names (`liv`, not `west.liv`), with the same row shapes as the root: the `walls from rooms` statement as written, never the walls it derives. A component that took parameters is carried parameterless, its arguments already applied. planFromJson prints each as `component <name>() { … }`. Not representable (planToJson refuses, E_JSON_DERIVED_IN_INSTANCE): a nested `place`, two instances of one component with different bodies, an imported component.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name", "body"],
+        properties: {
+          name: { type: "string", description: "The component name, as `place` names it." },
+          body: {
+            type: "object",
+            additionalProperties: false,
+            required: ["rooms", "walls", "openings", "furniture"],
+            description: "The component's statements in its LOCAL frame and names; the root row shapes.",
+            properties: {
+              rooms: { $ref: "#/properties/rooms" },
+              walls: { $ref: "#/properties/walls" },
+              walls_from_rooms: { $ref: "#/properties/walls_from_rooms" },
+              openings: { $ref: "#/properties/openings" },
+              furniture: { $ref: "#/properties/furniture" },
+              dims: { $ref: "#/properties/dims" },
+              columns: { $ref: "#/properties/columns" },
+            },
+          },
+        },
+      },
+    },
+    instances: {
+      type: "array",
+      description:
+        "The placed instances, in source order, as `describe().instances` lists them; present exactly when `components` is. planFromJson prints each as `place <component>() as <name> at (x,y) [rotate r] [mirror m]`, after the root statements: the round trip is byte-identical for a plan whose `place`s follow its root statements (one that places first comes back in that grouped order).",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["name", "component", "at"],
+        properties: {
+          name: { type: "string", description: "The `as <name>` instance name; one level, so never dotted." },
+          component: { type: "string", description: "A `components[].name`." },
+          at: { ...POINT_SCHEMA, description: "Where the component's local (0,0) lands, in plan coordinates." },
+          rotate: { enum: [0, 90, 180, 270], description: "Quarter-turn of the instance (omitted when 0)." },
+          mirror: { enum: ["x", "y"], description: "Axis reflection of the instance, applied before the rotation." },
+        },
+      },
+    },
+    title: {
+      type: "object",
+      additionalProperties: false,
+      description: "Title-block metadata.",
+      properties: {
+        project: { type: "string", description: "Project name." },
+        drawn_by: { type: "string", description: "Author / drafter." },
+        date: { type: "string", description: "Date string." },
+        number: { type: "string", description: "Drawing number, e.g. A-101." },
+        revision: { type: "string", description: "Drawing revision, e.g. B." },
+      },
+    },
+    edges: {
+      type: "array",
+      description: "Output-only: connector edges from the modeled door/opening access graph.",
+      items: {
+        type: "object",
+        additionalProperties: false,
+        required: ["from", "to", "via", "type"],
+        properties: {
+          from: { type: "string", description: "One endpoint (room id or `exterior`)." },
+          to: { type: "string", description: "Other endpoint (room id or `exterior`)." },
+          via: { enum: ["door", "opening"], description: "Whether the connector is a door or a cased opening." },
+          type: {
+            enum: ["interior", "front"],
+            description: "`front` connects the exterior (an entrance); else `interior`.",
+          },
+        },
+      },
+    },
+    input_graph: {
+      type: "object",
+      description: "Output-only: interior-door adjacency dict, keyed by room id → neighbouring room ids.",
+      additionalProperties: { type: "array", items: { type: "string" } },
+    },
+  },
+} as const;
