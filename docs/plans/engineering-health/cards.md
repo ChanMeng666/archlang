@@ -111,6 +111,7 @@ Move `analyze.ts:84-770`'s leaf helpers (`rectOf`, `roomBox`, `roomRing`, `roomA
 `grammar/tokens.ts`, re-exported from `sheet.ts`. `lint/defining.ts` takes the rule list as a
 parameter from `lint.ts`. `test/no-value-cycles.test.ts`: the import graph (value imports, comments
 stripped) has no strongly connected component. Proof: the test lists 0 cycles; digests unchanged.
+Design (PR #590): rules reach `defining.ts` through `LintContext.lintRules`, a required field every `buildLintContext` caller passes `LINT_RULES` for (named `lintRules` because `LintContext.rules` is already the ruleset).
 
 ### EH1.5 · boundary tests: core never imports 3D, workspace seams are an allow-list — `todo` · S · low · sonnet · W-F2, W-F4
 `test/core-no-3d.test.ts`: no `src/**` import specifier names `archlang-3d` or `three`; root

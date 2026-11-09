@@ -14,6 +14,7 @@ import { describe, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { compile, describe as describePlan, type Diagnostic, lint, lintCoverage } from "../src/index.js";
 import { buildLintContext } from "../src/lint/context.js";
+import { LINT_RULES } from "../src/lint/rules/index.js";
 import { stairZones, storeyStairs } from "../src/lint/rules/stairs.js";
 import { resolveRuleset } from "../src/lint/ruleset.js";
 import { lintStoreys } from "../src/lint/storeys.js";
@@ -487,7 +488,7 @@ describe("a rising block is read to the height asked", () => {
     const { ir, levels } = resolvePlan(planOf(CLEAR_L, "up", HEIGHT));
     const rules = resolveRuleset();
     const [st] = lintStoreys(ir!, levels, rules.tolMm);
-    const zones = stairZones(storeyStairs(buildLintContext(st!.ir, rules, st!.building))!);
+    const zones = stairZones(storeyStairs(buildLintContext(st!.ir, rules, LINT_RULES, st!.building))!);
     expect(zones.filter((z) => z.piece !== undefined).map((z) => z.rect)).toEqual([
       { x: 2500, y: 2100, w: 1000, h: 1000 },
       { x: 2500, y: 1100, w: 1000, h: 1000 },

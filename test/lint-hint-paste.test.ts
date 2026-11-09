@@ -187,7 +187,7 @@ describe("a quoted set, pasted, is what was checked and raises nothing (fixed-se
     for (const src of [...corpus(20261020, 120), ...corpusB(987, 240)]) {
       const res = resolvePlan(src);
       const ir = res.ir!;
-      const ctx = buildLintContext(ir, DEFAULT_RULESET);
+      const ctx = buildLintContext(ir, DEFAULT_RULESET, LINT_RULES);
       const room = ir.elements.find((e): e is RRoom => e.kind === "room" && e.id === "r_x")!;
       const paste = pasteSet(ctx, room, roomDefiningItems(room));
       if (!("stmts" in paste) || paste.stmts.length === 0) continue;
@@ -227,7 +227,7 @@ describe("a quoted set, pasted, raises nothing on multi-room fuzz (rooms on a co
       const ir = resolvePlan(src).ir!;
       for (const room of ir.elements.filter((e): e is RRoom => e.kind === "room" && e.id !== "r_c")) {
         // A context per room: each verification is the hint's own, never past the run's budget.
-        const ctx = buildLintContext(ir, DEFAULT_RULESET);
+        const ctx = buildLintContext(ir, DEFAULT_RULESET, LINT_RULES);
         const paste = pasteSet(ctx, room, roomDefiningItems(room));
         if (!("stmts" in paste) || paste.stmts.length === 0) continue;
         quoted++;

@@ -1291,7 +1291,7 @@ ${extra}
       const sink = (reason: string): void => {
         if (reason === "block-stair") filed = true;
       };
-      LINT_RULES.find((r) => r.name === rule)!.check(buildLintContext(st.ir, rules, st.building, sink));
+      LINT_RULES.find((r) => r.name === rule)!.check(buildLintContext(st.ir, rules, LINT_RULES, st.building, sink));
       return filed ? [st.level ?? 0] : [];
     });
   };

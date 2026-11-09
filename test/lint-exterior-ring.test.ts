@@ -13,6 +13,7 @@ import { describe as suite, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { DOOR_HEAD, describe, describeLevel, lint, lintCoverage } from "../src/index.js";
 import { buildLintContext } from "../src/lint/context.js";
+import { LINT_RULES } from "../src/lint/rules/index.js";
 import { exteriorRingOpen, wallEndShort } from "../src/lint/rules/enclosure.js";
 import { DEFAULT_RULESET } from "../src/lint/ruleset.js";
 
@@ -791,7 +792,7 @@ suite("the budget: counted, charged first, refused in words", () => {
         return DEFAULT_RULESET.wallGapMm;
       },
     };
-    const ctx = buildLintContext(resolvePlan(splitRing(250), {}).ir!, rules);
+    const ctx = buildLintContext(resolvePlan(splitRing(250), {}).ir!, rules, LINT_RULES);
     expect(wallEndShort.check(ctx)).toHaveLength(1);
     expect(reads).toBe(1);
     expect(exteriorRingOpen.check(ctx)).toEqual([]);

@@ -102,6 +102,9 @@ export const NO_BUILDING: BuildingContext = {
 export interface LintContext {
   ir: ResolvedPlan;
   rules: LintRuleset;
+  /** The ordered rule list (`LINT_RULES`), carried so `lint/defining.ts` can re-lint a placement
+   *  without importing it (a runtime import cycle). Required: no caller verifies against none. */
+  lintRules: readonly LintRule[];
   rooms: RRoom[];
   doors: RDoor[];
   windows: RWindow[];
@@ -279,6 +282,7 @@ const DROP_SKIP: SkipSink = () => {};
 export function buildLintContext(
   ir: ResolvedPlan,
   rules: LintRuleset,
+  lintRules: readonly LintRule[],
   building: BuildingContext = NO_BUILDING,
   onSkip: SkipSink = DROP_SKIP,
 ): LintContext {
@@ -324,6 +328,7 @@ export function buildLintContext(
   return {
     ir,
     rules,
+    lintRules,
     rooms,
     doors,
     windows,

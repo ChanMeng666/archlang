@@ -256,7 +256,7 @@ function lintOne(
   // The coverage seam: a rule's `ctx.skip(...)` is filed under the family of the rule
   // running, which the fold — not the rule — supplies.
   let current = LINT_RULES[0]!;
-  const ctx = buildLintContext(ir, rules, building, (reason, room, cap) =>
+  const ctx = buildLintContext(ir, rules, LINT_RULES, building, (reason, room, cap) =>
     notes.push({
       rule: current.name,
       family: current.family,

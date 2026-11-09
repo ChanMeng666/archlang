@@ -26,8 +26,35 @@ function listTs(dir: string): string[] {
   return out;
 }
 
+/**
+ * Drop `//` and block comments, leaving string and template literals intact (a `//` inside a
+ * URL string, or a block-comment opener inside a glob string, is not a comment). Limitation: a
+ * quote inside a regex literal can start a phantom string; it is closed at the end of the line,
+ * which bounds the damage (and the guard's non-vacuity assertion would notice a lost graph).
+ */
 function stripComments(s: string): string {
-  return s.replace(/(^|\s)\/\*[\s\S]*?\*\//g, "$1").replace(/(^|\s)\/\/.*$/gm, "$1");
+  let out = "";
+  let i = 0;
+  while (i < s.length) {
+    const c = s[i]!;
+    const n = s[i + 1];
+    if (c === "/" && n === "/") {
+      while (i < s.length && s[i] !== "\n") i++;
+    } else if (c === "/" && n === "*") {
+      const end = s.indexOf("*/", i + 2);
+      i = end < 0 ? s.length : end + 2;
+      out += " ";
+    } else if (c === '"' || c === "'" || c === "`") {
+      let j = i + 1;
+      while (j < s.length && s[j] !== c && (c === "`" || s[j] !== "\n")) j += s[j] === "\\" ? 2 : 1;
+      out += s.slice(i, j + 1);
+      i = j + 1;
+    } else {
+      out += c;
+      i++;
+    }
+  }
+  return out;
 }
 
 /** Value-import specifiers of one stripped source text. */
@@ -140,7 +167,10 @@ describe("no runtime import cycles in src/", () => {
   it("has no strongly connected component of more than one module", () => {
     const files = listTs(SRC);
     const graph = valueGraph(files);
+    // Non-vacuity: a parser that lost the imports would find "no cycles" in an empty graph.
     expect(files.length).toBeGreaterThan(100);
+    expect([...graph.values()].reduce((n, d) => n + d.length, 0)).toBeGreaterThan(500);
+    expect(graph.get(join(SRC, "analyze.ts"))).toContain(join(SRC, "ir.ts"));
     const found = cycles(graph).map((c) => c.map((f) => relative(SRC, f).replace(/\\/g, "/")));
     const message = found.map((c) => `cycle of ${c.length} modules: ${c.join(", ")}`).join("\n");
     expect(found, message).toEqual([]);
