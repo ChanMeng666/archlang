@@ -42,6 +42,9 @@ describe("fixture glyph dispatch is by family", () => {
     expect(drawn.size).toBe(CANONICAL_FIXTURES.length);
   });
 
+  // The same `hasFixtureGlyph` check as `test/cli-manifest.test.ts`'s (manifest = categories ⊆
+  // drawn); what it adds is only where it fails: here, beside the drawer table and its golden,
+  // naming the category whose drawer is empty on the 1x1 probe, which the golden cannot see.
   it("every catalogued category draws a symbol", () => {
     for (const category of FIXTURE_CATEGORIES) expect(hasFixtureGlyph(category), category).toBe(true);
   });
