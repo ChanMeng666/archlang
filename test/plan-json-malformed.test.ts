@@ -289,8 +289,7 @@ describe("malformed Plan JSON", () => {
 
   it("EH1.20 defect 1: a negative furniture width is refused with a pathed E_JSON_SCHEMA, not emitted as `size -1000000000000x400`", () => {
     // The nightly's counterexample (FC_SCALE=10, seed 20261109): [0,[{"kind":"special-number","pick":96862,"aux":13}]].
-    const doc = docs[0]!;
-    expect(doc.name).toBe("accessible.arch");
+    const doc = docs.find((d) => d.name === "accessible.arch")!;
     const { value, applied } = applyMutations(doc.json, [{ kind: "special-number", pick: 96862, aux: 13 } as any]);
     expect(applied).toEqual(["special-number -1000000000000 @ /furniture/1/width"]);
     expect(check(value)).toBeUndefined();
