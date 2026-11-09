@@ -104,7 +104,8 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
 | `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
-| `node-22` (Node 22) | gates on the two above; on a record-only PR, runs the docs leg | < 0.2 |
+| `changelog` (CHANGELOG under [Unreleased]) | PR only, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success | not yet measured |
+| `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR, `changelog`; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
 | `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |

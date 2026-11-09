@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-475 test files in `test/`, 267 `src` modules, 100 modules no test imports.
+477 test files in `test/`, 267 `src` modules, 100 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -224,6 +224,7 @@ The first sentence of each file's header comment.
 - `test/bump-lockstep.test.ts` — `scripts/bump-lockstep.ts` rewrites exactly the pinned release fields and nothing else: run on a tmp copy of the manifests and the lock, undo exactly the expected edits, compare every byte.
 - `test/cache.test.ts` — compile cache — hits & eviction.
 - `test/carve-inward-walk.test.ts` — a far seed past a stair no longer takes the doorway's width (hillside-villa's landing); furniture within R + δ of a doorway's face blocks it: the threshold, from the mechanism.
+- `test/changelog-unreleased.test.ts` — CHANGELOG lines land under Unreleased, no released line is deleted, and a release PR is exempt.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
 - `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented).
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.
@@ -492,6 +493,7 @@ The first sentence of each file's header comment.
 - `test/next.test.ts` — `nextDiagnostic()` (plan-soundness PS5.3): the one item to fix first, by fixed precedence — error → compile warning → validity → drafting → intent (gating, graph, advisory) → profile → taste — and, within a tier, emis...
 - `test/no-cli-spawn.test.ts` — no test spawns the CLI unless it is about the process.
 - `test/no-clock-assertions.test.ts` — Counts, not clocks (AGENTS.md: "budgets are counts, never time").
+- `test/no-control-bytes.test.ts` — No tracked Markdown file contains a stray control byte.
 - `test/no-duplicate-helpers.test.ts` — No new local copy of a helper `test/helpers/` already provides.
 - `test/no-import-side-effects.test.ts` — importing a src module has no side effect beyond the known ones.
 - `test/no-value-cycles.test.ts` — No runtime import cycles in `src/`.

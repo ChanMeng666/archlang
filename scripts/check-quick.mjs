@@ -14,6 +14,10 @@
  *      open a changed doc or data file by name; a `README.md` or `CHANGELOG.md` only by a path
  *      that resolves to it), nearest first by import distance, up to `--max` files (default 20).
  *      The cut is printed; CI runs the rest.
+ *      When a change is under `examples/` or is a `docs/**\/*.md`, the directory-scanning guards for
+ *      that folder come right after the changed test files and before the import-distance tests:
+ *      a corpus digest or docs tripwire lists the folder and never names the file, so the import
+ *      graph cannot reach it (five PRs went red that way on 2026-10-28). See `scanningGuards`.
  *
  * Flags: `--base <ref>` (default origin/main), `--max <n>`, `--fix` (let Biome write its fixes),
  * `--no-drift`, `--no-tests`, `--list`
@@ -205,14 +209,91 @@ function nearestTests() {
   return order;
 }
 
+// ---- 2b. the directory-scanning guards -------------------------------------------------------
+// A folder whose files a suite LISTS rather than names. `touches` says which changed path wakes them.
+const SCANNED_DIRS = [
+  { dir: "examples", why: "an examples/ change", touches: (f) => f.startsWith("examples/") },
+  { dir: "docs", why: "a docs/**/*.md change", touches: (f) => f.startsWith("docs/") && f.endsWith(".md") },
+];
+const LISTS_A_DIR = /\b(?:readdirSync|readdir|opendirSync|globSync)\s*\(/;
+/** A test that pins what it reads (a snapshot, a digest, a baseline or a `tables/` row) moves on ANY edit. */
+const PINS = /toMatch(?:Inline|File)?Snapshot\(|createHash\(|\bdigest|baseline|\btables\//i;
+
+/** The scanned folders a module's text lists: a directory call plus a quoted folder literal for it. */
+function listedDirs(text) {
+  const dirs = new Set();
+  if (!LISTS_A_DIR.test(text)) return dirs;
+  for (const m of text.matchAll(QUOTED)) {
+    const segs = m[1]
+      .replace(/^(?:\.\.?\/)+/, "")
+      .replace(/\/$/, "")
+      .split("/");
+    // A folder (`"examples"`, `"../examples"`, `"docs/agents"`), never a file (`"examples/studio.arch"`).
+    if (SCANNED_DIRS.some((s) => s.dir === segs[0]) && !segs[segs.length - 1].includes(".")) dirs.add(segs[0]);
+  }
+  return dirs;
+}
+
+/**
+ * The tests that list one of `dirs`, themselves or through a test-folder helper they import
+ * (transitively): a test file whose source calls `readdirSync(`/`readdir(`/`opendirSync(`/`globSync(`
+ * and quotes the folder. Ordered: tests that pin what they read first, then by the duration CI
+ * recorded (`test/.durations.json`, cheapest first, so the cap buys the most guards), then by name.
+ * Each is `{ file, why }`.
+ */
+function scanningGuards(dirs) {
+  const modules = lines(git("ls-files", "--cached", "--others", "--exclude-standard"))
+    .map((f) => f.replace(/\\/g, "/"))
+    .filter((f) => TEST_DIRS.test(f) && CODE.test(f) && existsSync(join(ROOT, f)));
+  const text = new Map(modules.map((f) => [f, readFileSync(join(ROOT, f), "utf8")]));
+  const direct = new Map(modules.map((f) => [f, listedDirs(text.get(f))]));
+  const durations = (() => {
+    try {
+      return JSON.parse(readFileSync(join(ROOT, "test", ".durations.json"), "utf8"));
+    } catch {
+      return {};
+    }
+  })();
+  const guards = [];
+  for (const t of modules.filter(isTest)) {
+    // Breadth-first over the helpers it imports; a test file is never a helper.
+    const reached = new Map([[t, t]]);
+    let frontier = [t];
+    while (frontier.length > 0) {
+      const next = [];
+      for (const f of frontier) {
+        for (const m of text.get(f).matchAll(SPEC)) {
+          const dep = resolveSpec(f, m[1]);
+          if (dep && direct.has(dep) && !isTest(dep) && !reached.has(dep)) {
+            reached.set(dep, f);
+            next.push(dep);
+          }
+        }
+      }
+      frontier = next;
+    }
+    const hit = [...reached.keys()].find((f) => dirs.some((d) => direct.get(f).has(d)));
+    if (!hit) continue;
+    const listed = dirs.filter((d) => [...reached.keys()].some((f) => direct.get(f).has(d)));
+    const pins = PINS.test(text.get(t));
+    const why = `lists ${listed.map((d) => `${d}/`).join(" and ")}${hit === t ? "" : ` via ${hit}`}${pins ? ", pins its output" : ""}`;
+    guards.push({ file: t, why, pins, secs: durations[t] ?? Number.POSITIVE_INFINITY });
+  }
+  return guards.sort((a, b) => Number(b.pins) - Number(a.pins) || a.secs - b.secs || (a.file < b.file ? -1 : 1));
+}
+
 // ---- 3. the plan -----------------------------------------------------------------------------
 const steps = [];
 const lintFiles = changed.filter((f) => LINTABLE.test(f));
-if (lintFiles.length > 0) {
+// One command line per at most 100 files: Windows refuses a command line past ~32k characters, which a
+// large branch (400 changed files) exceeds.
+const BIOME_CHUNK = 100;
+for (let i = 0; i < lintFiles.length; i += BIOME_CHUNK) {
+  const chunk = lintFiles.slice(i, i + BIOME_CHUNK);
   steps.push({
-    name: `biome (${lintFiles.length} files)`,
+    name: `biome (${chunk.length} files${lintFiles.length > BIOME_CHUNK ? `, ${i + 1}-${i + chunk.length} of ${lintFiles.length}` : ""})`,
     cmd: "npx",
-    args: ["biome", "check", ...(flag("--fix") ? ["--write"] : []), ...lintFiles],
+    args: ["biome", "check", ...(flag("--fix") ? ["--write"] : []), ...chunk],
   });
 }
 
@@ -237,11 +318,28 @@ if (!flag("--no-drift") && !changed.every(isTestDirFile)) {
 }
 
 let cutNote = "";
+const guardNotes = [];
 if (!flag("--no-tests")) {
   const related = nearestTests();
-  const picked = related.slice(0, MAX);
-  if (related.length > picked.length) {
-    cutNote = `ran the ${picked.length} nearest of ${related.length} related tests; CI runs the rest`;
+  // The order: the branch's own changed test files, then the directory-scanning guards the change
+  // wakes (they take every slot left before the import-distance tests), then the nearest tests.
+  const own = related.filter((f) => changed.includes(f));
+  const woken = SCANNED_DIRS.filter((s) => changed.some(s.touches));
+  const guards = woken.length > 0 ? scanningGuards(woken.map((s) => s.dir)).filter((g) => !own.includes(g.file)) : [];
+  const guardPick = guards.slice(0, Math.max(0, MAX - own.length));
+  const rest = related.filter((f) => !own.includes(f) && !guardPick.some((g) => g.file === f));
+  const picked = [...own, ...guardPick.map((g) => g.file), ...rest].slice(0, MAX);
+  const total = new Set([...related, ...guards.map((g) => g.file)]).size;
+  if (total > picked.length) {
+    cutNote = `ran ${picked.length} of ${total} related tests; CI runs the rest`;
+  }
+  if (woken.length > 0) {
+    guardNotes.push(
+      `directory-scanning guards for ${woken.map((s) => s.why).join(" and ")}: ` +
+        `${guardPick.length} of ${guards.length} take ${guardPick.length} of the ${MAX} slots` +
+        (own.length > 0 ? ` (after ${own.length} changed test file${own.length === 1 ? "" : "s"})` : ""),
+      ...guardPick.map((g) => `    + ${g.file} (${g.why})`),
+    );
   }
   if (picked.length > 0) {
     steps.push({
@@ -257,6 +355,7 @@ if (!flag("--no-tests")) {
 console.log(`check:quick: ${changed.length} changed files against ${BASE} (${mergeBase.slice(0, 8)})`);
 for (const s of steps) console.log(`  - ${s.name}`);
 if (cutNote) console.log(`  (${cutNote})`);
+for (const note of guardNotes) console.log(`  ${note}`);
 if (LIST) {
   const t = steps.find((s) => s.name.startsWith("vitest"));
   if (t) for (const f of t.args.filter((a) => a.endsWith(".test.ts"))) console.log(`      ${f}`);
