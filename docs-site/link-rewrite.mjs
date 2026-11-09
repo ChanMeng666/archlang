@@ -29,13 +29,25 @@ export function slugify(str) {
     .toLowerCase();
 }
 
+/**
+ * Drop inline HTML tags, then any stray angle bracket. Character by character rather than by
+ * regex, so no partial tag can survive a single pass (CodeQL
+ * js/incomplete-multi-character-sanitization). `<` and `>` map to `-` in `slugify` and vanish in
+ * `githubSlug`, so removing a stray one changes no id.
+ */
+function stripTags(s) {
+  let out = "";
+  let inTag = false;
+  for (const ch of s) {
+    if (ch === "<") inTag = true;
+    else if (ch === ">") inTag = false;
+    else if (!inTag) out += ch;
+  }
+  return out;
+}
+
 /** The visible text of a markdown heading: links reduced to their text, tags and emphasis dropped. */
-const headingText = (h) =>
-  h
-    .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/<[^>]+>/g, "")
-    .replace(/[<>]/g, "")
-    .replace(/[`*]/g, "");
+const headingText = (h) => stripTags(h.replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")).replace(/[`*]/g, "");
 
 /** GitHub's anchor for a heading text (what the canonical docs' fragments are written in). */
 const githubSlug = (text) =>
