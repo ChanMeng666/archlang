@@ -63,7 +63,7 @@ import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeight
 import { planTableRows } from "./sheet-tables.js";
 import { effectiveVertices, polygonSelfIntersects } from "./geometry/polygon.js";
 import { BUILTIN_NAMES, registerBuiltins } from "./builtins.js";
-import { idSpanOf } from "./parser.js";
+import { idSpanOf } from "./id-spans.js";
 import { evaluateKeeps, evaluateStacked, expandKeep, type KeepSink, type StackedStorey, violationOf } from "./keep.js";
 import type { KeepNode } from "./ast.js";
 import { keepFormText } from "./statement-print.js";
