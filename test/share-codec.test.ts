@@ -287,9 +287,10 @@ const ENCODERS: ReadonlyArray<readonly [string, (source: string) => Promise<stri
 /** `source` read back through every reader the share subpath serves, each as its consumer calls it. */
 async function everyReader(payload: string): Promise<Record<string, unknown>> {
   const raw = await inflateCapped(fromBase64Url(payload), SOURCE_CAP_BYTES);
+  const web = await decodePlanHashWeb(payload, { maxBytes: SOURCE_CAP_BYTES });
   return {
     "decodePlanHash (Node)": decodePlanHash(payload),
-    "decodePlanHashWeb (MCP Worker)": await decodePlanHashWeb(payload, { maxBytes: SOURCE_CAP_BYTES }),
+    "decodePlanHashWeb (MCP Worker)": web.ok ? web.source : web.code,
     inflateCapped: typeof raw === "string" ? raw : new TextDecoder().decode(raw),
     "decodePayload (short-link Worker)": await decodePayload(payload),
     "readHash (playground)": await readHash(`#z=${payload}`),
@@ -345,8 +346,14 @@ describe.skipIf(!HAS_DEFLATE_RAW)("the source caps hold at the byte for every re
   const overCap = spaces(SOURCE_CAP_BYTES + 1);
 
   it("decodePlanHashWeb (returns a code): opens at SOURCE_CAP_BYTES, source_too_large one byte over", async () => {
-    expect(await decodePlanHashWeb(atCap, { maxBytes: SOURCE_CAP_BYTES })).toHaveLength(SOURCE_CAP_BYTES);
-    expect(await decodePlanHashWeb(overCap, { maxBytes: SOURCE_CAP_BYTES })).toBe("source_too_large");
+    expect(await decodePlanHashWeb(atCap, { maxBytes: SOURCE_CAP_BYTES })).toEqual({
+      ok: true,
+      source: " ".repeat(SOURCE_CAP_BYTES),
+    });
+    expect(await decodePlanHashWeb(overCap, { maxBytes: SOURCE_CAP_BYTES })).toEqual({
+      ok: false,
+      code: "source_too_large",
+    });
   });
 
   it("inflateCapped (returns a code): opens at SOURCE_CAP_BYTES, source_too_large one byte over", async () => {

@@ -465,13 +465,14 @@ async function handleSvg(
   }
 
   const decoded = await decodePlanHashWeb(payload, { maxBytes: SOURCE_CAP_BYTES });
-  if (decoded === "source_too_large") {
-    countRefusal(env, "too-large payload");
-    return jsonResponse(envelope(inputTooLarge(SOURCE_CAP_BYTES + 1, SOURCE_CAP_BYTES, "source", false)!), 413);
-  }
-  if (decoded === "bad_payload")
+  if (!decoded.ok) {
+    if (decoded.code === "source_too_large") {
+      countRefusal(env, "too-large payload");
+      return jsonResponse(envelope(inputTooLarge(SOURCE_CAP_BYTES + 1, SOURCE_CAP_BYTES, "source", false)!), 413);
+    }
     return jsonResponse({ ok: false, error: "not a #z= payload: it does not inflate (deflate-raw)" }, 400);
-  const source: string = decoded;
+  }
+  const source = decoded.source;
 
   const { svg, diagnostics } = compile(source, { noCache: true });
   if (diagnostics.some((d) => d.severity === "error"))

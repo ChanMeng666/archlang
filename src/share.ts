@@ -5,9 +5,9 @@
  * (`atob`/`btoa`, `DecompressionStream`); nothing here is reached by `compile()`.
  *
  * The decoders need a runtime with `DecompressionStream("deflate-raw")`: a modern browser, a
- * Worker, or a current Node 20 or later. On Node 18 that constructor throws, so both
- * `decodePlanHashWeb` and `inflateCapped` reject; the CLI's sync Node decoder
- * (`cli/share-codec.mjs`) has no such need.
+ * Worker, or a current Node 20 or later. A runtime without `DecompressionStream` (Node 18) throws
+ * from the constructor, so both `decodePlanHashWeb` and `inflateCapped` reject there; the CLI's
+ * sync Node decoder (`cli/share-codec.mjs`) has no such need.
  *
  * It holds the base64url pair, the bounded decoders (`decodePlanHashWeb`, `inflateCapped`), the
  * edit flag, the short-link id shape and the hosts' size caps. It holds no encoder: deflate output
@@ -69,4 +69,4 @@ export const SHARE_ID = /^[0-9A-Za-z]{8,43}$/;
 export const isShareId = (s: string): boolean => SHARE_ID.test(s);
 
 /** Why a payload was refused, before any plan is read. */
-export type { PayloadFault } from "./cli/share-codec.web.mjs";
+export type { DecodedPlanHash, PayloadFault } from "./cli/share-codec.web.mjs";

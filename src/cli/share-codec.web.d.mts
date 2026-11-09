@@ -18,8 +18,12 @@ export declare function toBase64Url(bytes: Uint8Array): string;
 /** base64url (no padding) → bytes. Throws on a character outside the alphabet. */
 export declare function fromBase64Url(hash: string): Uint8Array;
 
+/** What {@link decodePlanHashWeb} returns: the plan source, or why the payload was refused. */
+export type DecodedPlanHash = { ok: true; source: string } | { ok: false; code: PayloadFault };
+
 /**
  * Decode a `#z=` payload back to plan source with `DecompressionStream` (no Node built-ins), on
- * {@link inflateCapped}. A refusal is a returned code, never a throw.
+ * {@link inflateCapped}. A refusal is a returned `{ ok: false, code }`, never a throw on a
+ * supported runtime (one with `DecompressionStream`).
  */
-export declare function decodePlanHashWeb(hash: string, opts?: { maxBytes?: number }): Promise<string | PayloadFault>;
+export declare function decodePlanHashWeb(hash: string, opts?: { maxBytes?: number }): Promise<DecodedPlanHash>;

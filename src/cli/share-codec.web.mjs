@@ -8,7 +8,7 @@
  * Bounded: `maxBytes` caps the INFLATED size and stops reading the moment it is passed, so a
  * small payload that inflates enormously costs at most `maxBytes` of work, never the whole bomb.
  * There is ONE inflater, `inflateCapped`; `decodePlanHashWeb` is built on it, and a refusal is a
- * returned code (`PayloadFault`), never a throw.
+ * returned code (`PayloadFault`), never a throw on a supported runtime.
  * Types: `share-codec.web.d.mts`.
  *
  * Published in `@chanmeng666/archlang/share` (`src/share.ts` re-exports it). Plain `.mjs` with no
@@ -100,22 +100,24 @@ export async function inflateCapped(bytes, cap) {
 
 /**
  * Decode a `#z=` payload back to plan source. The inverse of `encodePlanHash` in
- * `share-codec.mjs`, and of the playground's browser encoder. Never throws on a bad payload:
- * `"bad_payload"` for text that is not base64url or a stream that does not inflate,
- * `"source_too_large"` once the inflated source passes `maxBytes`.
+ * `share-codec.mjs`, and of the playground's browser encoder. Never throws on a supported runtime
+ * (one with `DecompressionStream`); a refusal is `{ ok: false, code }`: `"bad_payload"` for text
+ * that is not base64url or a stream that does not inflate, `"source_too_large"` once the inflated
+ * source passes `maxBytes`. A result object, not a bare string, so a plan whose text is
+ * `bad_payload` cannot be mistaken for a refusal.
  *
  * @param {string} hash the payload after `#z=`
  * @param {{ maxBytes?: number }} [opts] refuse past this many inflated bytes (default: no cap)
- * @returns {Promise<string | PayloadFault>}
+ * @returns {Promise<{ ok: true, source: string } | { ok: false, code: PayloadFault }>}
  */
 export async function decodePlanHashWeb(hash, opts = {}) {
   let input;
   try {
     input = fromBase64Url(hash);
   } catch {
-    return "bad_payload";
+    return { ok: false, code: "bad_payload" };
   }
   const raw = await inflateCapped(input, opts.maxBytes ?? Number.POSITIVE_INFINITY);
-  if (typeof raw === "string") return raw;
-  return new TextDecoder("utf-8").decode(raw);
+  if (typeof raw === "string") return { ok: false, code: raw };
+  return { ok: true, source: new TextDecoder("utf-8").decode(raw) };
 }

@@ -55,8 +55,7 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
     await fc.assert(
       fc.asyncProperty(b64url, async (s) => {
         const out = await decodePlanHashWeb(s, { maxBytes });
-        if (out !== "bad_payload" && out !== "source_too_large")
-          expect(new TextEncoder().encode(out).length).toBeLessThanOrEqual(maxBytes);
+        if (out.ok) expect(new TextEncoder().encode(out.source).length).toBeLessThanOrEqual(maxBytes);
       }),
       RUNS,
     );
@@ -79,8 +78,8 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
       await fc.assert(
         fc.asyncProperty(around(cap), async (n) => {
           const out = await decodePlanHashWeb(bomb(n), { maxBytes: cap });
-          if (n <= cap) expect(out.length).toBe(n);
-          else expect(out).toBe("source_too_large");
+          if (n <= cap) expect(out).toEqual({ ok: true, source: " ".repeat(n) });
+          else expect(out).toEqual({ ok: false, code: "source_too_large" });
         }),
         RUNS,
       );
@@ -111,7 +110,10 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
         expect(await readHash(`#z=${z}`)).toEqual({ refused: "too_large" });
         expect(await srcFromHash(`#z=${z}`)).toBeNull();
         expect(await decodePayload(z)).toBe("source_too_large");
-        expect(await decodePlanHashWeb(z, { maxBytes: LINK_INFLATE_CAP_BYTES })).toBe("source_too_large");
+        expect(await decodePlanHashWeb(z, { maxBytes: LINK_INFLATE_CAP_BYTES })).toEqual({
+          ok: false,
+          code: "source_too_large",
+        });
       }),
       { numRuns: runs(4), seed: SEED },
     );
