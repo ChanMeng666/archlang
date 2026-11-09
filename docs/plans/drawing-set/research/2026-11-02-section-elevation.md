@@ -294,7 +294,7 @@ lineClass(p, q) =
 
 ### 4.4 墙板重叠（已验证，影响设计）
 
-计划里的 `slab-below-floor` 规则（`docs/plans/archlang-3d/development-plan.md:654`）**没有实现**：`packages/archlang-3d/src` 和 `test` 中查无此名。`build.ts:345` 的墙顶是 `e + w.height`，而上一层楼板占 `[e_next − 200, e_next]`（`:301`）。
+计划里的 `slab-below-floor` 规则（`archlang-lab/plans/archlang-3d/development-plan.md:654`）**没有实现**：`packages/archlang-3d/src` 和 `test` 中查无此名。`build.ts:345` 的墙顶是 `e + w.height`，而上一层楼板占 `[e_next − 200, e_next]`（`:301`）。
 
 two-storey 实测：一层墙到 2700，板在 2500–2700，二者重叠。语料中 7 个方案的剖切线上出现重叠：townhouse 0.66 m²、hillside-villa 0.30、garden-house 0.29、two-storey 0.20、turning-stair 0.19、corner-cafe 和 courtyard-house 各 0.02。
 
