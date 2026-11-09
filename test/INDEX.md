@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-482 test files in `test/`, 267 `src` modules, 98 modules no test imports.
+483 test files in `test/`, 267 `src` modules, 98 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -500,6 +500,7 @@ The first sentence of each file's header comment.
 - `test/no-control-bytes.test.ts` — No tracked Markdown file contains a stray control byte.
 - `test/no-duplicate-helpers.test.ts` — No new local copy of a helper `test/helpers/` already provides.
 - `test/no-import-side-effects.test.ts` — importing a src module has no side effect beyond the known ones.
+- `test/no-replace-chain-escapers.test.ts` — Guard: no `String.replace` escaper chains in tooling or source (CodeQL js/incomplete-sanitization).
 - `test/no-value-cycles.test.ts` — No runtime import cycles in `src/`.
 - `test/non-finite.test.ts` — The number domain is closed and nesting is bounded: no non-finite value and no deep nesting can make `compile()` / `describe()` / `lint()` throw.
 - `test/npm-tarball.test.ts` — What `npm publish` actually ships — asked of npm itself, not of `package.json`.

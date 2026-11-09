@@ -74,7 +74,8 @@ export function runFidelity(entries: readonly FidelityEntry[]): FidelityRow[] {
 }
 
 /** `\|`-escape a cell so a requirement id list can never split a GFM table row. */
-const cell = (s: string): string => (s.length === 0 ? "—" : s.replace(/\|/g, "\\|"));
+const CELL_ESC: Record<string, string> = { "|": "\\|", "\\": "\\\\" };
+const cell = (s: string): string => (s.length === 0 ? "—" : Array.from(s, (c) => CELL_ESC[c] ?? c).join(""));
 
 /** Render the scorecard as Markdown. Deterministic: same corpus ⇒ same bytes. */
 export function renderFidelityResults(rows: readonly FidelityRow[]): string {

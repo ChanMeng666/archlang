@@ -38,7 +38,12 @@ export const CONSTRUCTS = [
   ["let", "Bindings (let)", "bindings-—-let", (f) => f.kinds.has("let")],
   ["component", "Components", "components", (f) => f.components > 0],
   ["place", "Placing instances (place)", "placing-instances-—-place-v1-22", (f) => f.kinds.has("place")],
-  ["control", "Control flow (for, if)", "control-flow", (f) => f.kinds.has("for") || f.kinds.has("if")],
+  [
+    "control",
+    "Control flow (for, if, while)",
+    "control-flow",
+    (f) => f.kinds.has("for") || f.kinds.has("if") || f.kinds.has("while"),
+  ],
   ["set", "Set rules", "set-rules", (f) => f.kinds.has("set")],
   ["wall", "Walls", "wall", (f) => f.kinds.has("wall")],
   ["walls-from-rooms", "Walls from rooms", "walls-from-rooms", (f) => f.kinds.has("walls")],
@@ -100,10 +105,13 @@ function* walk(list) {
 
 /**
  * What the detectors read: the plan node, every statement of its body and of the components its
- * own source declares (an imported component's body is another file's source), and their kinds.
+ * source declares, and their kinds. `compile().ast` is the parse-stage plan, before `import`s are
+ * linked (src/import.ts `link` returns a new plan with the merged map and leaves this one alone),
+ * so `components` holds only the components this file declares: an imported component's body,
+ * which is another file's source, never reaches it.
  */
 export function planFacts(plan) {
-  const own = plan.components instanceof Map ? [...plan.components.values()].filter((c) => !c.file) : [];
+  const own = plan.components instanceof Map ? [...plan.components.values()] : [];
   const statements = [...walk(plan.body), ...own.flatMap((c) => [...walk(c.body)])];
   return { plan, statements, kinds: new Set(statements.map((s) => s.kind)), components: own.length };
 }

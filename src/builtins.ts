@@ -3,8 +3,9 @@
  * `builtin` Values. Each is total — bad arity / types emit a diagnostic and
  * return a safe default, never throw — and deterministic (no I/O, no clock).
  *
- * The dispatch is registered into the evaluator via {@link setBuiltinDispatch}
- * so `expr.ts` needs no static import of this module (avoids an import cycle).
+ * The dispatch is registered into the evaluator by {@link registerBuiltins}, called
+ * where the `builtin` Values are created (`src/ir.ts`), so `expr.ts` needs no static
+ * import of this module (avoids an import cycle) and loading this module has no effect.
  */
 
 import type { Diagnostic, Span } from "./diagnostics.js";
@@ -121,5 +122,8 @@ function dispatch(name: string, args: Value[], onError: OnError, span?: Span): V
   return fn(args, onError, span);
 }
 
-// Register dispatch with the evaluator the moment this module loads.
-setBuiltinDispatch(dispatch);
+/** Hand the dispatch to the evaluator. Idempotent and deterministic (it stores the same
+ *  module-level function every time); called before any `builtin` Value is created. */
+export function registerBuiltins(): void {
+  setBuiltinDispatch(dispatch);
+}
