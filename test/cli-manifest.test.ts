@@ -135,7 +135,13 @@ describe("manifest — fixture categories match the glyph renderer", () => {
   it("every advertised fixture category draws a symbol", () => {
     // Asks the renderer instead of scraping its source: a word the manifest advertises but the
     // dispatch cannot draw is the defect; the table type makes the converse unrepresentable.
-    const undrawn = FIXTURE_CATEGORIES.filter((c) => !hasFixtureGlyph(c));
+    // This is the MANIFEST's claim, read from what it advertises, through the predicate the legend
+    // and the LSP use (`hasFixtureGlyph`, non-empty primitives on its 1x1 probe). The per-alias
+    // drawing identity at real sizes is `test/glyph-dispatch-table.test.ts`'s golden, which does
+    // not imply this: a drawer that is empty only on the degenerate probe keeps every hash.
+    const advertised = buildManifest().fixtureCategories;
+    expect(advertised).toEqual(FIXTURE_CATEGORIES);
+    const undrawn = advertised.filter((c) => !hasFixtureGlyph(c));
     expect(undrawn).toEqual([]);
   });
 });

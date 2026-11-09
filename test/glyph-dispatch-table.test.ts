@@ -47,7 +47,9 @@ describe("fixture glyph dispatch is by family", () => {
   });
 
   // The pin that stops an alias from ever diverging from its family: a moved hash is a drawing
-  // change to explain (docs/testing.md § 3), not a golden to re-bless.
+  // change to explain (docs/testing.md § 3), not a golden to re-bless. It is the drawing identity
+  // at two real rects (so an empty drawer there moves the hash); the test above is the 1x1-probe
+  // predicate the legend and the LSP read, which this does not imply.
   it("each alias's primitives match test/tables/glyph-dispatch.json", () => {
     expect(Object.keys(GOLDEN).sort()).toEqual([...FIXTURE_CATEGORIES].sort());
     for (const category of FIXTURE_CATEGORIES) expect(digest(category), category).toBe(GOLDEN[category]);
