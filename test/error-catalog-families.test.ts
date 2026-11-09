@@ -7,6 +7,8 @@
  * from `FAMILY_NOUN`, the rules' codes from `LINT_RULES`.
  */
 import { readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import type { CatalogEntry } from "../src/error-catalog.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
@@ -28,7 +30,8 @@ interface Family {
 async function loadFamilies(): Promise<Family[]> {
   const out: Family[] = [];
   for (const file of FILES) {
-    const mod = (await import(`../src/error-catalog/${file}`)) as Record<string, unknown>;
+    const href = pathToFileURL(resolve(DIR, file)).href;
+    const mod = (await import(/* @vite-ignore */ href)) as Record<string, unknown>;
     const named = Object.keys(mod).filter((k) => k.endsWith("_ENTRIES"));
     expect(named, `${file} exports exactly one *_ENTRIES object`).toHaveLength(1);
     const header = /^\/\*\*([\s\S]*?)\*\//.exec(readFileSync(`${DIR}/${file}`, "utf8"))?.[1] ?? "";
