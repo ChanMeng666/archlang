@@ -27,7 +27,16 @@ const UPGRADE_SRC = "https://example.test/upgrade.arch";
 const UPGRADE_INLINE = `${STUDIO}# upgraded inline\n`;
 
 const dom = new JSDOM("<!doctype html><html><body></body></html>", { url: "https://example.test/" });
-const GLOBALS = ["window", "document", "HTMLElement", "customElements", "MutationObserver", "CustomEvent", "Node"];
+const GLOBALS = [
+  "window",
+  "document",
+  "HTMLElement",
+  "customElements",
+  "MutationObserver",
+  "CustomEvent",
+  "Node",
+  "DOMParser",
+];
 const saved = new Map<string, unknown>();
 const fetchMock = vi.fn<(input: string) => Promise<Response>>();
 /** Fetches and compiles seen while the page's pre-existing elements upgraded. */

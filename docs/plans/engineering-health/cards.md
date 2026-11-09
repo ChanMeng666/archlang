@@ -178,7 +178,7 @@ Tests for `..`, absolute, symlink, `.txt`, and a sibling-directory library that 
 `test/import-world-fuzz.test.ts` (S-FZ-2) over hostile specs. CHANGELOG line. Proof: the probe
 from the audit (`import "../../secret.txt"`) returns a diagnostic with no file content.
 
-### EH1.13 · browser surfaces: capped inflate, one sanitiser, a CSP — `todo` · S · low · sonnet · S-F4, S-F5, S-FZ-3
+### EH1.13 · browser surfaces: capped inflate, one sanitiser, a CSP — `in review` · S · low · sonnet · S-F4, S-F5, S-FZ-3
 `playground/src/share.ts` uses `inflateCapped` (1 MiB) with a visible "link too large" notice,
 also for `#s=`. `svgElement` from `mcp-worker/src/viewer/viewer.ts:114-128` becomes a shared
 helper used by `packages/web-component/src/arch-plan.ts:193` and `playground/src/viewer.ts:31`.

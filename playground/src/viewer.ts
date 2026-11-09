@@ -5,6 +5,7 @@
  * Used by both the main playground and the chrome-less embed page.
  */
 import type { PanZoom } from "./pan-zoom.js";
+import { sanitizeSvg } from "./svg-sanitize.js";
 
 /** Fallback stage size for an SVG with no usable `viewBox`. */
 export const DEFAULT_STAGE_SIZE = { w: 800, h: 600 } as const;
@@ -28,8 +29,8 @@ export function sizeFromViewBox(viewBox: string | null | undefined): { w: number
 }
 
 export function showSvgInStage(stage: HTMLElement, pz: PanZoom, svg: string, refit: boolean): void {
-  stage.innerHTML = svg;
-  const el = stage.firstElementChild;
+  const el = sanitizeSvg(svg);
+  stage.replaceChildren(...(el ? [el] : []));
   const { w, h } = sizeFromViewBox(el?.getAttribute("viewBox"));
   if (el) {
     el.setAttribute("width", String(w));

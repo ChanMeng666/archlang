@@ -2,6 +2,25 @@
 // Loads the ArchLang compiler 1.57.0 from https://cdn.jsdelivr.net/npm/@chanmeng666/archlang@1.57.0/+esm on the first render.
 // Usage: https://archlang.uk/embed
 
+// packages/web-component/src/svg-sanitize.ts
+var BLOCKED = /* @__PURE__ */ new Set(["script", "foreignobject"]);
+var isHref = (name) => /(^|:)href$/i.test(name);
+var isJsUrl = (value) => Array.from(value).filter((c) => c.charCodeAt(0) > 32).join("").toLowerCase().startsWith("javascript:");
+function sanitizeSvg(text, env = { parser: new DOMParser(), doc: document }) {
+  const parsed = env.parser.parseFromString(text, "image/svg+xml");
+  const root = parsed.documentElement;
+  if (root.nodeName !== "svg" || parsed.getElementsByTagName("parsererror").length > 0) return void 0;
+  for (const el of Array.from(root.querySelectorAll("*"))) {
+    if (BLOCKED.has(el.localName.toLowerCase())) el.remove();
+  }
+  for (const el of Array.from(root.querySelectorAll("*")).concat(root)) {
+    for (const a of Array.from(el.attributes)) {
+      if (/^on/i.test(a.name) || isHref(a.name) && isJsUrl(a.value)) el.removeAttribute(a.name);
+    }
+  }
+  return env.doc.importNode(root, true);
+}
+
 // packages/web-component/src/arch-plan.ts
 var corePromise;
 function loadCore() {
@@ -132,7 +151,8 @@ var ArchPlanElement = class extends Base {
       const plan = document.createElement("div");
       plan.className = "plan";
       plan.setAttribute("part", "plan");
-      plan.innerHTML = result.svg;
+      const svg = sanitizeSvg(result.svg);
+      if (svg) plan.append(svg);
       this.#root.replaceChildren(style, plan);
     } else {
       const pre = document.createElement("pre");
