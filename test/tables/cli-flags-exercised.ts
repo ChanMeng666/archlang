@@ -22,13 +22,14 @@ export const EXERCISED: Record<string, string> = {
   "compile --install":
     "TODO: the optional-dependency install hint path needs a missing optional dep; no test forces it",
   "compile --import-root": "test/import-rooted.test.ts",
-  "compile --json": "test/cli-commands.test.ts",
+  "compile --json": "test/cli-output-paths.test.ts",
   "compile --quiet": "test/cli-human-fix.test.ts",
   "compile --view": "test/cli-plan-json-roundtrip.test.ts",
   "batch --out": "test/cli-flag-matrix.test.ts",
   "batch --format": "test/cli-flag-matrix.test.ts",
   "batch --jobs": "test/cli-flag-matrix.test.ts",
-  "batch --width": "test/cli-plan-json-roundtrip.test.ts",
+  "batch --width":
+    "TODO: cli-plan-json-roundtrip.test.ts only asserts the -f json rejection; no test shows --width changing batch output",
   "batch --scale": "TODO: no test passes this flag to this command and asserts its effect",
   "batch --cols": "test/cli-flag-matrix.test.ts",
   "batch --charset": "test/cli-flag-matrix.test.ts",
@@ -111,7 +112,8 @@ export const EXERCISED: Record<string, string> = {
   "validate --profile": "test/cli-validate-next.test.ts",
   "validate --taste": "test/cli-validate-next.test.ts",
   "validate --stage": "test/stages.test.ts",
-  "validate --code": "test/task-skills.test.ts",
+  "validate --code":
+    "TODO: task-skills.test.ts only lints docs snippets and never runs the CLI; no test passes --code to validate",
   "validate --severity": "test/cli-narrow.test.ts",
   "validate --import-root":
     "TODO: parsed for every compiling command (import-rooted.test.ts drives compile and lint only); no test passes it here",
@@ -179,7 +181,7 @@ export const EXERCISED: Record<string, string> = {
     "TODO: parsed for every compiling command (import-rooted.test.ts drives compile and lint only); no test passes it here",
   "finish --json": "test/cli-finish.test.ts",
   "finish --quiet": "TODO: no test passes --quiet to this command and asserts the stderr summary is gone",
-  "reroll --write": "test/cli-expected-hash.test.ts",
+  "reroll --write": "test/reroll.test.ts",
   "reroll --expected-hash": "TODO: no test passes this flag to this command and asserts its effect",
   "reroll --import-root":
     "TODO: parsed for every compiling command (import-rooted.test.ts drives compile and lint only); no test passes it here",

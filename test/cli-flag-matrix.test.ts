@@ -18,6 +18,25 @@ import { EXERCISED } from "./tables/cli-flags-exercised.js";
  */
 
 const isAscii = (s: string): boolean => [...s].every((ch) => ch.charCodeAt(0) < 128);
+/** How close (characters) the flag must stand after the command name for a call to count. */
+const NEAR = 300;
+/** Today's TODO count. Lower this as rows close; never raise it. */
+const MAX_TODO = 72;
+/** Source without block comments and whole-line `//` comments: prose naming a flag is not a run of it. */
+const codeOnly = (text: string): string =>
+  text
+    .replace(/\/\*[\s\S]*?\*\//g, "")
+    .split("\n")
+    .filter((l) => !l.trim().startsWith("//"))
+    .join("\n");
+/** Does the code quote the command and, within {@link NEAR} characters after it, the flag? */
+function passesFlagToCommand(text: string, cmd: string, flag: string): boolean {
+  const code = codeOnly(text);
+  const flagRe = new RegExp(`(?<![\\w-])${flag}(?![\\w-])`);
+  for (const m of code.matchAll(new RegExp(`["'\`]${cmd}["'\`\\s]`, "g")))
+    if (flagRe.test(code.slice(m.index, m.index + NEAR))) return true;
+  return false;
+}
 const SELF = "test/cli-flag-matrix.test.ts";
 const manifest = buildManifest("0.0.0");
 const PAIRS = manifest.commands.flatMap((c) =>
@@ -51,13 +70,16 @@ describe("the flag matrix — every (command, flag) has an exercising test", () 
         bad.push(`${p.key}: "${v}" is not an existing test file`);
         continue;
       }
-      const text = readFileSync(v, "utf8");
-      if (!text.includes(`"${p.flag}"`) && !text.includes(`${p.flag} `) && !text.includes(`${p.flag}=`))
-        bad.push(`${p.key}: ${v} never mentions ${p.flag}`);
-      if (!text.includes(`"${p.cmd}"`) && !text.includes(`${p.cmd} `))
-        bad.push(`${p.key}: ${v} never mentions ${p.cmd}`);
+      if (!passesFlagToCommand(readFileSync(v, "utf8"), p.cmd, p.flag))
+        bad.push(`${p.key}: ${v} never passes ${p.flag} to ${p.cmd} (both within ${NEAR} characters, on code lines)`);
     }
     expect(bad).toEqual([]);
+  });
+
+  it("the ratchet: the TODO count only goes down", () => {
+    const todos = Object.values(EXERCISED).filter((v) => v.startsWith("TODO")).length;
+    // Lower this as rows close; never raise it.
+    expect(todos).toBeLessThanOrEqual(MAX_TODO);
   });
 
   it("the rows that name this file are the ones the tests below close", () => {
@@ -174,6 +196,7 @@ describe("batch", () => {
   const bytes = (dir: string): Record<string, string> =>
     Object.fromEntries(readdirSync(dir).map((f) => [f, readFileSync(join(dir, f)).toString("base64")]));
 
+  // `--jobs` changes only how many files render at once, so byte identity IS its observable effect: a determinism law.
   it("closes: batch --jobs, batch --out — one worker and four write byte-identical files", async () => {
     const root = tmp();
     const one = await runArch(["batch", ...INPUTS, "--out", join(root, "j1"), "--jobs", "1"]);
