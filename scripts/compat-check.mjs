@@ -396,7 +396,10 @@ export function typeSurface(entryFile) {
     if (hidden(t)) {
       const ms = (t.isUnion() ? t.types : [t]).map(raw);
       // The checker prints `true | false` as `boolean`; so does this.
-      const out = ms.includes("true") && ms.includes("false") ? [...ms.filter((m) => m !== "true" && m !== "false"), "boolean"] : ms;
+      const out =
+        ms.includes("true") && ms.includes("false")
+          ? [...ms.filter((m) => m !== "true" && m !== "false"), "boolean"]
+          : ms;
       return out.join(" | ");
     }
     return null;

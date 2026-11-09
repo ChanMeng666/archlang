@@ -5,7 +5,16 @@
  * code at the `import`. Before, `makeNodeWorld` read any path an `import` named.
  * `test/workspace-seams.test.ts` (repository root) holds this World and the core CLI's in lockstep.
  */
-import { mkdirSync, mkdtempSync, realpathSync, rmdirSync, rmSync, symlinkSync, unlinkSync, writeFileSync } from "node:fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmdirSync,
+  rmSync,
+  symlinkSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { compile } from "@chanmeng666/archlang";

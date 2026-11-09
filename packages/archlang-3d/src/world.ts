@@ -10,7 +10,17 @@
  */
 import { readFileSync, realpathSync, statSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
-import { utf8ByteLength, type World, type WorldRefusal } from "@chanmeng666/archlang";
+import { utf8ByteLength, type World } from "@chanmeng666/archlang";
+
+/**
+ * The core's `WorldRefusal`, written here so this module also compiles against a core that predates
+ * `World.refusal` (the peer range starts below it). Such a core never asks: a refused module reads
+ * as not found, and is still never read.
+ */
+interface WorldRefusal {
+  code: string;
+  message: string;
+}
 
 /** The most UTF-8 bytes of one imported module this World reads (1 MiB, the core CLI's cap). */
 export const MODULE_CAP_BYTES = 1024 * 1024;
@@ -92,7 +102,7 @@ export function makeNodeWorld(baseDir: string, root: string = process.cwd()): Wo
     // The file may have grown since the stat.
     return utf8ByteLength(text) > MODULE_CAP_BYTES ? tooLarge() : text;
   };
-  return {
+  const world = {
     read(path: string): string | null {
       let r: string | WorldRefusal | null;
       try {
@@ -108,6 +118,7 @@ export function makeNodeWorld(baseDir: string, root: string = process.cwd()): Wo
       else refusals.delete(path);
       return null;
     },
-    refusal: (path: string) => refusals.get(path),
+    refusal: (path: string): WorldRefusal | undefined => refusals.get(path),
   };
+  return world;
 }

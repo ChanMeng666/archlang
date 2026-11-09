@@ -139,7 +139,7 @@ describe("manifest — fixture categories match the glyph renderer", () => {
     // and the LSP use (`hasFixtureGlyph`, non-empty primitives on its 1x1 probe). The per-alias
     // drawing identity at real sizes is `test/glyph-dispatch-table.test.ts`'s golden, which does
     // not imply this: a drawer that is empty only on the degenerate probe keeps every hash.
-    const advertised = buildManifest().fixtureCategories;
+    const advertised = buildManifest("9.9.9").fixtureCategories;
     expect(advertised).toEqual(FIXTURE_CATEGORIES);
     const undrawn = advertised.filter((c) => !hasFixtureGlyph(c));
     expect(undrawn).toEqual([]);
