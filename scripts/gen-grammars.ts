@@ -245,7 +245,10 @@ const HL_IDENT = "([A-Za-z_][A-Za-z0-9_]*)";
  * inside a character class. (Caught by the generated file failing to parse at all,
  * which is the good failure mode.)
  */
-const escapeRegexLiteral = (s: string): string => escapeRegex(s).replace(/\//g, "\\/");
+const REGEX_LITERAL_ESC: Record<string, string> = Object.fromEntries(
+  Array.from(".*+?^${}()|[]\\/", (c) => [c, `\\${c}`]),
+);
+const escapeRegexLiteral = (s: string): string => Array.from(s, (c) => REGEX_LITERAL_ESC[c] ?? c).join("");
 
 /**
  * The framework-free ArchLang → HTML highlighter the DOCS SITE paints source with

@@ -27,7 +27,8 @@ const ROOT = resolve(HERE, "..");
  * "Element is missing end tag". Inside backticks the brackets are already safe; this is
  * for the places that aren't.
  */
-const prose = (s: string): string => s.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const PROSE_ESC: Record<string, string> = { "<": "&lt;", ">": "&gt;" };
+const prose = (s: string): string => Array.from(s, (c) => PROSE_ESC[c] ?? c).join("");
 
 /**
  * Escape a `|` in a GFM table cell. GFM splits cells on `|` *before* inline code is parsed,
@@ -36,7 +37,8 @@ const prose = (s: string): string => s.replace(/</g, "&lt;").replace(/>/g, "&gt;
  * Angle brackets are NOT touched here — inside a code span markdown escapes them for us,
  * and escaping them again would render a literal `&lt;`.
  */
-const codeCell = (s: string): string => s.replace(/\|/g, "\\|");
+const CELL_ESC: Record<string, string> = { "|": "\\|", "\\": "\\\\" };
+const codeCell = (s: string): string => Array.from(s, (c) => CELL_ESC[c] ?? c).join("");
 
 /** A prose table cell: needs the pipe escape *and* the angle-bracket escape. */
 const proseCell = (s: string): string => codeCell(prose(s));
