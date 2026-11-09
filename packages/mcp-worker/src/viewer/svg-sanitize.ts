@@ -80,8 +80,10 @@ export interface SvgEnv {
 
 /**
  * The root element of `text` as SVG, adopted into `env.doc`, with the elements and attributes
- * listed above removed. Undefined when `text` is not a well-formed `<svg>` document in the SVG
- * namespace (the fast path trusts the compiler to be well-formed and checks only its shape).
+ * listed above removed, and no comment, processing instruction or CDATA section left (see
+ * {@link plainNodes}). Undefined when `text` is not a well-formed `<svg>` document in the SVG
+ * namespace, or when the DOM refuses the import (the fast path trusts the compiler to be well-formed
+ * and checks only its shape).
  */
 export function sanitizeSvg(
   text: string,
@@ -107,5 +109,34 @@ export function sanitizeSvg(
       if (/^on/i.test(a.name) || (isHref(a.name) && !isSafeLink(a.value))) el.removeAttribute(a.name);
     }
   }
-  return env.doc.importNode(root, true) as unknown as SVGSVGElement;
+  plainNodes(root, parsed);
+  try {
+    return env.doc.importNode(root, true) as unknown as SVGSVGElement;
+  } catch (e) {
+    // A DOM refusal is a refusal; anything else is a programming error and surfaces.
+    if (isDomRefusal(e)) return undefined;
+    throw e;
+  }
+}
+
+/** The names of the DOM exceptions `importNode` raises (`DOMException` itself may belong to another realm). */
+const DOM_REFUSALS = new Set(["NotSupportedError", "HierarchyRequestError", "InvalidStateError", "WrongDocumentError"]);
+const isDomRefusal = (e: unknown): boolean =>
+  typeof e === "object" && e !== null && DOM_REFUSALS.has((e as { name?: unknown }).name as string);
+
+/**
+ * Leave only elements and text under `root`: comments and processing instructions are removed, and
+ * a CDATA section becomes a text node with the same data (the compiler writes none). jsdom's
+ * `importNode` throws on a CDATA section; the spec's clones without throwing, so this and the guard
+ * above are a refusal layer either way. Iterative, so hostile nesting cannot overflow the stack here.
+ */
+function plainNodes(root: Node, parsed: Document): void {
+  const stack: Node[] = [root];
+  for (let node = stack.pop(); node; node = stack.pop()) {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === 1) stack.push(child);
+      else if (child.nodeType === 4) node.replaceChild(parsed.createTextNode(child.nodeValue ?? ""), child);
+      else if (child.nodeType !== 3) node.removeChild(child);
+    }
+  }
 }
