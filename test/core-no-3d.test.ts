@@ -3,20 +3,18 @@
  * The rule was prose and comments; this scans `src/` so a stray import goes red. Any import/export
  * specifier (static, `export ... from`, dynamic `import(`, `require(`) naming `archlang-3d` or
  * `three` (a `three/...` subpath, `three-*` such as three-stdlib or three-mesh-bvh, `@types/three`) fails, as does a
- * `/// <reference types="three" />` directive (read before comments are stripped). Reports file:line.
- * Limitation: a `//` inside a string literal blanks the rest of its line, so an import after one on the
- * same line is missed.
+ * `/// <reference types="three" />` directive. Reports file:line. Specifiers come from the TypeScript-AST
+ * walk in `helpers/imports.ts`, so comments and string contents are never mistaken for code.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { importRefs } from "./helpers/imports.js";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const FORBIDDEN = /^(?:@[\w-]+\/archlang-3d|archlang-3d|@types\/three|three(?:-[\w-]+)?)(?:\/.*)?$/;
-const REFERENCE = /^[ \t]*\/\/\/\s*<reference\s+(?:types|path)\s*=\s*(["'])([^"'\n]+)\1/gm;
 const SOURCE = /\.(?:ts|mts|cts|mjs|cjs|js)$/;
-const SPECIFIER = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)(["'`])([^"'`\n]+)\1/g;
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(dir).sort()) {
@@ -27,26 +25,14 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-/** Blank comments (keeping newlines) so a comment that names the rule is not a violation. */
-function stripComments(text: string): string {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, " "))
-    .replace(/(?<!:)\/\/.*$/gm, (m) => " ".repeat(m.length));
-}
-
-/** Every specifier a source text names (reference directives from the raw text), with its line. */
-function specifiersOf(raw: string): { spec: string; line: number }[] {
-  const out: { spec: string; line: number }[] = [];
-  const lineOf = (s: string, at: number | undefined) => s.slice(0, at).split("\n").length;
-  for (const m of raw.matchAll(REFERENCE)) out.push({ spec: m[2] ?? "", line: lineOf(raw, m.index) });
-  const text = stripComments(raw);
-  for (const m of text.matchAll(SPECIFIER)) out.push({ spec: m[2] ?? "", line: lineOf(text, m.index) });
-  return out;
+/** Every specifier a source text names (the shared AST walk: type-only and `/// <reference>` included), with its line. */
+function specifiersOf(raw: string, file = "x.ts"): { spec: string; line: number }[] {
+  return importRefs(file, raw);
 }
 
 function offences(file: string): string[] {
   const where = relative(ROOT, file).split(sep).join("/");
-  return specifiersOf(readFileSync(file, "utf8"))
+  return specifiersOf(readFileSync(file, "utf8"), file)
     .filter((s) => FORBIDDEN.test(s.spec))
     .map((s) => `${where}:${s.line} imports "${s.spec}"`);
 }
@@ -85,5 +71,11 @@ describe("the core never imports 3D", () => {
     expect(hit(`import x from "./three-way.js"; import y from "threshold";`)).toBe(false);
     expect(hit(`// import x from "three"\n/* import("archlang-3d") */`)).toBe(false);
     expect(hit(`import x from "./three-way.js";`)).toBe(false);
+  });
+
+  it("an import after a // inside a string literal on the same line is still seen", () => {
+    const text = `const s = "x // y"; import "../packages/archlang-3d/src/index.js";`;
+    expect(specifiersOf(text).map((x) => x.spec)).toContain("../packages/archlang-3d/src/index.js");
+    expect(specifiersOf(`const s = "x // y"; import "three";`).some((x) => FORBIDDEN.test(x.spec))).toBe(true);
   });
 });

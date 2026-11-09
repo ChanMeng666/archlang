@@ -7,28 +7,16 @@
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
-import ts from "typescript";
 import { describe, expect, it } from "vitest";
+import { importRefs } from "./helpers/imports.js";
 
 const SRC = resolve("src");
 
 /** Every relative module a source file loads at runtime (type-only statements are erased). */
 function runtimeImports(file: string, text: string = readFileSync(file, "utf8")): string[] {
-  const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
-  const out: string[] = [];
-  const visit = (node: ts.Node): void => {
-    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
-      if (node.importClause?.isTypeOnly !== true) out.push(node.moduleSpecifier.text);
-    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
-      if (!node.isTypeOnly) out.push(node.moduleSpecifier.text);
-    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
-      const a = node.arguments[0];
-      if (a && ts.isStringLiteral(a)) out.push(a.text);
-    }
-    ts.forEachChild(node, visit);
-  };
-  visit(sf);
-  return out.filter((s) => s.startsWith(".")).map((s) => resolve(dirname(file), s).replace(/\.js$/, ".ts"));
+  return importRefs(file, text)
+    .filter((r) => !r.typeOnly && r.spec.startsWith("."))
+    .map((r) => resolve(dirname(file), r.spec).replace(/\.js$/, ".ts"));
 }
 
 /** The modules `entry` loads, transitively. */
