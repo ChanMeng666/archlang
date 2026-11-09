@@ -35,8 +35,12 @@ lists. The list comes from commit `974d9981` (`W_FURNITURE_ON_VOID`).
    `readsFurniture` (`test/lint-hint-paste.test.ts`); `test/defect-corpus/README.md` lists a case
    per code it names; the totals in `test/rooms-tiling-probe.test.ts` and
    `test/walls-from-rooms.test.ts` if the rule judges room tiling or enclosure; the K1 keep digests
-   move when `next` or lint output moves (`docs/agents/gotchas.md` § PRs & CI).
-10. **Regenerate**: `npm run gen:all` (error-code docs, `llms-full.txt`, the context-size figure);
+   move when `next` or lint output moves (`docs/agents/gotchas.md` § PRs & CI); the lint-code
+   category table in `docs/analysis.md` (around lines 1222-1230) lists the rule's code, and no test
+   catches a missing row yet.
+10. **`CHANGELOG.md`**: an `### Added` line under `[Unreleased]` naming the code (required; the
+    release narrative lives only there).
+11. **Regenerate**: `npm run gen:all` (error-code docs, `llms-full.txt`, the context-size figure);
     never hand-edit the outputs. Red without it: `npm run check:drift` in CI.
-11. **Prove it through the CLI** (`arch lint --json` on a plan that fires it and on the examples,
+12. **Prove it through the CLI** (`arch lint --json` on a plan that fires it and on the examples,
     which must not move), then `npm run check:quick`, push, and read the PR's CI.

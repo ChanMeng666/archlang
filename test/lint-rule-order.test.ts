@@ -122,6 +122,8 @@ describe("a lint rule is registered in every place a rule is listed", () => {
     );
   });
 
+  // tsc already rejects a family missing from FAMILY_NOUN (a Record over LintFamily); this keeps the
+  // failure in the same run as the other sites.
   it("every rule's family has words in FAMILY_NOUN (src/lint/coverage.ts)", () => {
     none(
       LINT_RULES.filter((r) => FAMILY_NOUN[r.family] === undefined).map((r) => `${r.name} (family ${r.family})`),

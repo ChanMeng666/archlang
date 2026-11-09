@@ -59,7 +59,7 @@ describe("the stage ladder and the per-rule table", () => {
     }
   });
 
-  it("each lint code has exactly one stage, the one decided for it (a new code adds its row above)", () => {
+  it("each lint code has exactly one stage, the one decided for it (a new code adds its row to test/stage-decisions.ts)", () => {
     expect(Object.keys(LINT_CODE_STAGES).sort()).toEqual(Object.keys(LINT_CODE_LAYERS).sort());
     const decided = new Map<string, AuthoringStage>();
     for (const [s, codes] of Object.entries(DECIDED) as Array<[AuthoringStage, string[]]>)
