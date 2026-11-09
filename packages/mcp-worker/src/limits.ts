@@ -7,8 +7,14 @@
  * refused.
  */
 
-/** The most UTF-8 bytes any one tool argument (`source`, `plan_json`, `intent`, …) may carry. */
-export const SOURCE_CAP_BYTES = 64 * 1024;
+import { SOURCE_CAP_BYTES } from "@chanmeng666/archlang/share";
+
+/**
+ * The most UTF-8 bytes any one tool argument (`source`, `plan_json`, `intent`, …) may carry, and a
+ * `/svg/<payload>` may inflate to: the share-link source cap, defined once in the core's
+ * `@chanmeng666/archlang/share` (the playground's short-link Worker holds a stored plan to it too).
+ */
+export { SOURCE_CAP_BYTES };
 
 /**
  * The most bytes a request body may carry, read before it is parsed. JSON-escaping a source can
@@ -17,8 +23,11 @@ export const SOURCE_CAP_BYTES = 64 * 1024;
  */
 export const BODY_CAP_BYTES = 4 * SOURCE_CAP_BYTES;
 
-/** The longest `/svg/<payload>` accepted. A cap-sized source that does not compress stays under it. */
-export const PAYLOAD_CAP_CHARS = Math.ceil((SOURCE_CAP_BYTES * 4) / 3) + 1024;
+/**
+ * The longest `/svg/<payload>` accepted (`MCP_PAYLOAD_CAP_CHARS`, derived in the core from
+ * {@link SOURCE_CAP_BYTES}): a cap-sized source that does not compress stays under it.
+ */
+export { MCP_PAYLOAD_CAP_CHARS } from "@chanmeng666/archlang/share";
 
 /**
  * Per-address request rates, enforced by the Workers rate-limiting bindings declared in

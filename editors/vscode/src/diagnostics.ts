@@ -20,30 +20,22 @@ export interface LspRange {
 }
 export interface LspDiagnostic {
   range: LspRange;
-  severity: number;
+  /** One of {@link Severity}: the LSP `DiagnosticSeverity` codes, so the result IS an LSP `Diagnostic`. */
+  severity: (typeof Severity)[keyof typeof Severity];
   message: string;
   code?: string;
   source: string;
 }
 
-/** Minimal shape of a compiler diagnostic (matches the core's `Diagnostic`). */
-interface CoreDiagnostic {
-  severity: "error" | "warning";
-  message: string;
-  code?: string;
-  span?: { start: number; end: number };
-  /**
-   * The module `span` is measured in, when that is NOT the compiled source — i.e.
-   * the defect lives inside an `import`ed component. Absent for every diagnostic
-   * about the open document. `handlers.ts` reads it to refuse a quickfix whose
-   * edits address another file (see its `foreignDiagnostics`).
-   */
-  file?: string;
-}
-interface CoreResult {
-  diagnostics: CoreDiagnostic[];
-}
-export type CompileFn = (source: string, opts?: { noCache?: boolean }) => CoreResult;
+/**
+ * The core's `compile`, typed from the core's own declarations (a type-only reference from this
+ * CJS module into the ESM core), so a renamed or reshaped field of its `Diagnostic` (`span`,
+ * `severity`, `file`, …) is a compile error here, not a silent miss. `file` is the module `span`
+ * is measured in when that is NOT the compiled source (the defect lives inside an `import`ed
+ * component); `handlers.ts` reads it to refuse a quickfix whose edits address another file (see
+ * its `foreignDiagnostics`).
+ */
+export type CompileFn = typeof import("@chanmeng666/archlang", { with: { "resolution-mode": "import" }}).compile;
 
 /** 0-based line/character for a source offset. */
 export function offsetToPosition(text: string, offset: number): LspPosition {

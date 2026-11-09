@@ -9,9 +9,14 @@ export default defineConfig({
   // review rings from the same function. It is not a package export: no `exports` entry names it,
   // and it gets no declaration file (one would split the shared types out of `index.d.ts`); the
   // playground reads its types from the source.
-  entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/cli/review.ts"],
+  // `src/share.ts` is the browser-safe `@chanmeng666/archlang/share` subpath (the share-link
+  // decoder, caps and id shape, no encoder), `dist/share.js` + `dist/share.d.ts`. Its web codec
+  // lands in a small chunk that `dist/share.js`, `dist/cli/link.js` and `dist/cli.js` share (the
+  // Node encoder imports the edit flag from it); `dist/index.js` imports none of it, so it stays
+  // out of the compiler chunk the playground splits off.
+  entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/cli/review.ts", "src/share.ts"],
   format: ["esm"],
-  dts: { entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts"] },
+  dts: { entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/share.ts"] },
   clean: true,
   sourcemap: true,
   target: "es2022",

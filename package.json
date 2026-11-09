@@ -41,6 +41,10 @@
     "./link": {
       "types": "./dist/cli/link.d.ts",
       "import": "./dist/cli/link.js"
+    },
+    "./share": {
+      "types": "./dist/share.d.ts",
+      "import": "./dist/share.js"
     }
   },
   "bin": {
@@ -95,7 +99,9 @@
     "gen:agent-manifests": "tsx scripts/gen-agent-manifests.ts",
     "gen:arch-plan": "tsx scripts/gen-arch-plan.ts",
     "gen:doors": "tsx scripts/gen-doors.ts",
-    "gen:all": "npm run gen:grammars && npm run gen:errors && npm run gen:spec && npm run gen:llms && npm run gen:cli && npm run gen:gbnf && npm run gen:plan-schema && npm run gen:intent-schema && npm run gen:example-svgs && npm run gen:plugin && npm run gen:docs-headers && npm run gen:agent-manifests && npm run gen:arch-plan && npm run gen:doors",
+    "release:pin": "tsx scripts/bump-lockstep.ts",
+    "gen:surface": "tsx scripts/gen-surface.ts",
+    "gen:all": "npm run gen:grammars && npm run gen:errors && npm run gen:spec && npm run gen:llms && npm run gen:cli && npm run gen:gbnf && npm run gen:plan-schema && npm run gen:intent-schema && npm run gen:example-svgs && npm run gen:plugin && npm run gen:docs-headers && npm run gen:agent-manifests && npm run gen:arch-plan && npm run gen:doors && npm run gen:surface",
     "gen:font-cjk": "python scripts/gen-font-cjk.py",
     "gen:3d-assets": "npm -w packages/archlang-3d run gen:3d-assets --",
     "check": "npm run typecheck && npm run lint && npm run check:test-wiring && npm test",

@@ -8,12 +8,14 @@
   "compatibility_date": "2026-09-05",
 
   // The script: playground/worker/. wrangler bundles it; `archlang` is the built core, aliased
-  // as vite.config.js aliases it, so the Worker reads plans with the compiler the page runs.
+  // as vite.config.js aliases it, so the Worker reads plans with the compiler the page runs, and
+  // `archlang/share` (the share-link caps and inflater, share-core.ts) is the built subpath.
   "main": "worker/index.ts",
   // The core's optional Node-only dependencies are reached only through lazy imports on paths
   // this Worker never takes; each is aliased to a module that refuses, as if absent, so the
   // bundler can resolve them (it then drops them with the backends that name them).
   "alias": {
+    "archlang/share": "../dist/share.js",
     "archlang": "../dist/index.js",
     "@resvg/resvg-js": "./worker/optional-stub.ts",
     "pdfkit": "./worker/optional-stub.ts",

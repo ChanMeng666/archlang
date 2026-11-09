@@ -59,7 +59,7 @@ it; not drift-gated: a stale table costs balance, never correctness). (c) `ci.ym
 `shard: [1..5]` and the `Node 22` aggregator's expectations. Proof: two code PRs after merge show
 the five shard times in the PR body; the longest is under 6 min.
 
-### EH0.8 · retries no longer hide flakes — `in review (#620)` · S · low · sonnet · C-F8
+### EH0.8 · retries no longer hide flakes — `done (#620)` · S · low · sonnet · C-F8
 Both Playwright configs add the `json` reporter; a step parses it for status `flaky`, prints
 `::warning::` and a job-summary line per flaky case; nightly `e2e-prod` fails on any flaky.
 Proof: the parser run on a saved report with one flaky case prints the warning.
@@ -277,7 +277,7 @@ included). Replace the ~22 inline TL→TR→BR→BL ring literals with `rectRing
 `naming.ts`'s `Bounds` to `RoomBounds`. One commit per replacement, each proven by digests. Glyph
 files follow `.claude/rules/glyphs.md`.
 
-### EH2.5 · one share codec, typed LSP seam — `in review (#623)` · M · medium · sonnet · A-F9, W-F3, W-F9
+### EH2.5 · one share codec, typed LSP seam — `done (#623)` · M · medium · sonnet · A-F9, W-F3, W-F9
 Expose the web decoder + `inflateCapped` + the id regex as a core subpath (`./share`); import it
 from `playground/src/share.ts`, `playground/worker/share-core.ts`, `mcp-worker`, `ArchLive.vue`.
 Encoders stay per environment. Reconcile `PAYLOAD_CAP_CHARS` (65,536 vs 88,406): rename if they
@@ -293,7 +293,7 @@ returned scene, recompile, bytes unchanged. Playground worker reuses the scene a
 compile/lint/paths passes where the key matches. Proof: digests unchanged; `lint` bench row and
 work counts reported before/after.
 
-### EH2.7 · release pins from one source; public-surface map — `todo` · M · medium · sonnet · W-F5, A-F10, A-F13
+### EH2.7 · release pins from one source; public-surface map — `in review (#627)` · M · medium · sonnet · W-F5, A-F10, A-F13
 `scripts/bump-lockstep.ts` (`npm run release:pin`) rewrites the mcp range + version, both
 `server.json` versions, the VS Code range, the font pin from the root version; the red lockstep
 tests stay as the verifier. `gen:surface` writes `docs/agents/public-surface.md` (export, module,
@@ -339,7 +339,7 @@ paragraph. `GENERATORS` row (high tier, own PR). `.ignore` lists the artifact. T
 `docs/agents/architecture.md` to pipeline + conventions + cross-module invariants, pointing at the
 map. Proof: `check:drift` green; the map names 100 % of modules.
 
-### EH3.2 · backlog and plans fit in a context window — `todo` · M · low · sonnet · N-F7 · EH-D4
+### EH3.2 · backlog and plans fit in a context window — `in progress` · M · low · sonnet · N-F7 · EH-D4
 `scripts/backlog-archive.mjs` moves every `closed|done|won't fix|decided|measured` entry verbatim
 to `archlang-lab/backlog-archive.md`, leaving a one-line tombstone only where another doc cites the
 id. Normalise open headings to `### <id> · <title> — \`<status>\``. `scripts/gen-backlog-index.ts`

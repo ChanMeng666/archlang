@@ -604,9 +604,21 @@ jobs:
         env:
           PLAYWRIGHT_HTML_OUTPUT_DIR: ${{ github.workspace }}/playground/playwright-report-engines
           PLAYWRIGHT_HTML_REPORT: ${{ github.workspace }}/playground/playwright-report-engines
+          # Its own JSON file too, or this run would overwrite the Chromium run's.
+          PLAYWRIGHT_JSON_OUTPUT_NAME: ${{ github.workspace }}/playground/test-results-engines/results.json
         run: >-
           npx playwright test -c playground --project firefox --project webkit
           --output ${{ github.workspace }}/playground/test-results-engines
+
+      # A retry keeps both Playwright steps green; this one reads their JSON reports (Chromium's and
+      # the engines run's, each in its own file) and annotates every case that passed only on the
+      # retry. Warning only here; nightly's e2e-prod fails on one.
+      - name: Flaky tests
+        if: ${{ always() && env.FULL_CI == 'true' }}
+        run: >-
+          node scripts/playwright-flaky.mjs
+          playground/test-results/results.json
+          playground/test-results-engines/results.json
 
       - name: Upload Playwright report
         if: failure()
@@ -793,6 +805,12 @@ jobs:
       - name: Run E2E specs
         if: env.FULL_CI == 'true'
         run: npx playwright test -c docs-site
+
+      # A retry keeps the step above green; this one reads its JSON report and annotates every case
+      # that passed only on the retry. Warning only here; nightly's e2e-prod fails on one.
+      - name: Flaky tests
+        if: ${{ always() && env.FULL_CI == 'true' }}
+        run: node scripts/playwright-flaky.mjs docs-site/test-results/results.json
 
       - name: Upload Playwright report
         if: failure()
