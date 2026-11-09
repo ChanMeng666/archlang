@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-477 test files in `test/`, 267 `src` modules, 100 modules no test imports.
+478 test files in `test/`, 267 `src` modules, 100 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -305,6 +305,7 @@ The first sentence of each file's header comment.
 - `test/docs-home-copy.test.ts` — The docs home page's copy contract (public-surfaces PS-D1, card D2).
 - `test/docs-level-svgs.test.ts` — The docs gallery's PER-STOREY file names must be the CLI's file names.
 - `test/docs-page-meta.test.ts` — The docs site's PER-PAGE METADATA gate.
+- `test/docs-site-links.test.ts` — The site copies of the canonical docs (PAGES + docs/adr/*.md) must not carry repo-relative links: `../CHANGELOG.md` or `README.md` resolve on GitHub and 404 on archlang.uk (GSC "Not found", 2026-11-09).
 - `test/docs-sync-list.test.ts` — Docs-site sync gate — the two things about `docs-site/sync-docs.mjs` that no build step checks: what it deliberately leaves OUT, and what it writes that git must never hold.
 - `test/docs-table-pipes.test.ts` — The bare-`|`-inside-inline-code gate — the one Markdown fault that has actually taken the docs deploy down.
 - `test/docs-topics.test.ts` — The five topic pages stay linked (public-surfaces PS-D6).
