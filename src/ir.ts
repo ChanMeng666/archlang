@@ -62,7 +62,7 @@ import { resolveSheetSpec, usablePlanMm } from "./sheet.js";
 import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeights, STOREY_HEIGHT } from "./datum.js";
 import { planTableRows } from "./sheet-tables.js";
 import { effectiveVertices, polygonSelfIntersects } from "./geometry/polygon.js";
-import { BUILTIN_NAMES } from "./builtins.js";
+import { BUILTIN_NAMES, registerBuiltins } from "./builtins.js";
 import { idSpanOf } from "./parser.js";
 import { evaluateKeeps, evaluateStacked, expandKeep, type KeepSink, type StackedStorey, violationOf } from "./keep.js";
 import type { KeepNode } from "./ast.js";
@@ -832,6 +832,7 @@ function resolveBody(
   // 0. Expand body (lets, assignments, instances, control flow) into a flat
   //    element stream. Built-ins live in a scope ABOVE the plan's globals, so a
   //    user `let` of the same name shadows them without an E_REDEF.
+  registerBuiltins(); // the one place `builtin` Values are made: the evaluator can dispatch them
   const builtinScope = new Scope();
   for (const name of BUILTIN_NAMES) builtinScope.vars.set(name, { t: "builtin", name });
   const globalScope = new Scope(builtinScope);

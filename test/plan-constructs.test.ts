@@ -58,22 +58,49 @@ function vitepressSlugify(): ((s: string) => string) | null {
 }
 
 /**
- * Every heading id of a Markdown page as VitePress publishes it: ATX headings outside fenced code,
- * the text of their inline content (code spans keep their text, links their label), slugged, and a
- * repeat suffixed `-1`, `-2` … as markdown-it-anchor does.
+ * Every heading id of a Markdown page as VitePress publishes it: ATX headings outside fenced code
+ * and outside HTML comment blocks, the text of their inline content (code spans keep their text,
+ * links their label), slugged, and a repeat suffixed `-1`, `-2` … as markdown-it-anchor does.
+ *
+ * - A fence opens on a run of >= 3 backticks or tildes and closes only on a bare run of the SAME
+ *   character at least as long (the rule `test/docs-fences.test.ts` states).
+ * - A line that starts (after <= 3 spaces) with `<!--` opens an HTML comment block, which runs to
+ *   the line holding `-->` (markdown-it's HTML block type 2): a `#` line inside it is no heading.
+ * - A heading ending in an attribute block with `#id` (`## Title {#custom-id}`) keeps that id, as
+ *   markdown-it-attrs sets it and markdown-it-anchor keeps it; the explicit id takes its place in
+ *   the same slug registry, so a later heading slugged to it is suffixed.
  */
 function headingIds(md: string, slugify: (s: string) => string): Set<string> {
   const ids = new Set<string>();
   let fence: string | null = null;
+  let inComment = false;
   for (const line of md.replace(/\r\n/g, "\n").split("\n")) {
-    const f = /^ {0,3}(`{3,}|~{3,})/.exec(line)?.[1];
-    if (f && (fence === null || (f[0] === fence[0] && f.length >= fence.length))) {
-      fence = fence === null ? f : null;
+    if (inComment) {
+      if (line.includes("-->")) inComment = false;
       continue;
     }
-    if (fence !== null) continue;
+    const f = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+    if (fence === null && f) {
+      fence = f[1]!;
+      continue;
+    }
+    if (fence !== null) {
+      if (f && f[1]![0] === fence[0] && f[1]!.length >= fence.length && !f[2]!.trim()) fence = null;
+      continue;
+    }
+    const open = /^ {0,3}<!--/.exec(line);
+    if (open) {
+      if (!line.slice(open[0].length).includes("-->")) inComment = true;
+      continue;
+    }
     const h = /^ {0,3}#{1,6}[ \t]+(.*?)(?:[ \t]+#+)?[ \t]*$/.exec(line);
     if (!h) continue;
+    const attrs = /[ \t]*\{([^{}]*)\}$/.exec(h[1]!);
+    const custom = attrs ? /(?:^|\s)#([^\s#.{}]+)/.exec(attrs[1]!)?.[1] : undefined;
+    if (custom !== undefined) {
+      ids.add(custom);
+      continue;
+    }
     const text = h[1]!.replace(/`([^`]*)`/g, "$1").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1");
     const base = slugify(text);
     let id = base;
@@ -111,6 +138,29 @@ describe("every construct anchor is a heading of the language reference", () => 
       `construct anchor(s) with no heading in ${REFERENCE}: a heading was renamed. Point the row at the ` +
         "heading's new id, or drop the row if the reference no longer documents it.",
     ).toEqual([]);
+  });
+
+  it("reads headings as VitePress does: fences, HTML comments and explicit ids", (ctx) => {
+    if (slugify === null) {
+      if (required) throw new Error("node_modules/vitepress is missing under CI: the anchor check cannot run.");
+      ctx.skip();
+    }
+    const md = [
+      "## Kept",
+      "````md",
+      "```",
+      "## In a four-backtick fence",
+      "```",
+      "````",
+      "<!-- one-line comment -->",
+      "<!--",
+      "## In a comment",
+      "-->",
+      "## Named {#my-id}",
+      "## My id",
+      "## Kept",
+    ].join("\n");
+    expect([...headingIds(md, slugify!)]).toEqual(["kept", "my-id", "my-id-1", "kept-1"]);
   });
 
   it("the links go to the published reference page", () => {
@@ -167,6 +217,13 @@ describe("the constructs are read off the parse tree", () => {
     for (const k of ["boundary", "fence"]) expect(keys("garden-house").has(k), `garden-house: ${k}`).toBe(true);
     expect(keys("accessible").has("accessible")).toBe(true);
     expect(keys("one-room").has("level"), "a single-storey plan has no levels").toBe(false);
+  });
+
+  it("a `while` loop is control flow (no shipped example writes one: `while` is deprecated)", () => {
+    const src =
+      'plan "w" {\n  units mm\n  let i = 0\n  while i < 2 {\n    column at (i * 600, 0) size 300x300\n    i = i + 1\n  }\n}\n';
+    const keys = constructs.planConstructs(compile(src).ast).map((c) => c.key);
+    expect(keys).toContain("control");
   });
 
   it("a construct written only in a comment does not count", () => {

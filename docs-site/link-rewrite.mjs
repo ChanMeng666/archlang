@@ -57,6 +57,20 @@ const githubSlug = (text) =>
     .replace(/ /g, "-");
 
 /**
+ * One step of a fenced-code scan: the fence still open after `line` (`null` for none) and whether
+ * `line` is itself a fence marker. A fence opens on a run of >= 3 backticks or tildes and closes
+ * only on a bare run of the SAME character at least as long (CommonMark; the rule
+ * `test/docs-fences.test.ts` states), so a ```` ```` ```` block quoting a ```` ``` ```` fence is
+ * one block, not two.
+ */
+export function fenceStep(open, line) {
+  const f = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+  if (open === null) return f ? { open: f[1], marker: true } : { open: null, marker: false };
+  if (f && f[1][0] === open[0] && f[1].length >= open.length && !f[2].trim()) return { open: null, marker: true };
+  return { open, marker: false };
+}
+
+/**
  * The headings of a markdown source as `{ vp, gh }` id pairs: the id VitePress gives each (its
  * `slugify`, which KEEPS an em dash GitHub drops) and the GitHub anchor, with each one's duplicates
  * numbered `-1`, `-2`, ... by both. Fenced code is skipped.
@@ -72,13 +86,10 @@ export function headingIds(markdown) {
   };
   let fence = null;
   for (const line of markdown.split("\n")) {
-    const f = /^\s*(`{3,}|~{3,})/.exec(line);
-    if (f) {
-      if (fence === null) fence = f[1][0];
-      else if (f[1][0] === fence) fence = null;
-      continue;
-    }
-    const h = fence === null ? /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(line) : null;
+    const step = fenceStep(fence, line);
+    const inside = fence !== null || step.marker;
+    fence = step.open;
+    const h = inside ? null : /^#{1,6}\s+(.*?)\s*#*\s*$/.exec(line);
     if (!h) continue;
     const text = headingText(h[1]);
     out.push({ vp: uniq(seenVp, slugify(text)), gh: uniq(seenGh, githubSlug(text)) });
@@ -142,22 +153,26 @@ export function rewriteLinks(markdown, srcPath, ctx) {
     const angled = url.startsWith("<") && url.endsWith(">");
     if (angled) url = url.slice(1, -1);
     if (url === "" || url.startsWith("#") || url.startsWith("/") || /^[a-z][a-z0-9+.-]*:/i.test(url)) return target;
+    // `path?query#fragment`: the query is carried through, between the new path and the fragment.
     const hash = url.indexOf("#");
     const frag = hash < 0 ? "" : url.slice(hash);
-    const path = posix.normalize(posix.join(dir, (hash < 0 ? url : url.slice(0, hash)).split("?")[0]));
+    const pathAndQuery = hash < 0 ? url : url.slice(0, hash);
+    const q = pathAndQuery.indexOf("?");
+    const query = q < 0 ? "" : pathAndQuery.slice(q);
+    const path = posix.normalize(posix.join(dir, q < 0 ? pathAndQuery : pathAndQuery.slice(0, q)));
     if (path.startsWith("..") || path === ".") return target;
     const bare = path.replace(/\/$/, "");
     let out;
-    if (pageRoute.has(bare)) out = pageRoute.get(bare) + siteFrag(frag, ctx.sourceOf?.(bare));
-    else if (/^docs\/adr\/index\.md$/.test(bare) || bare === "docs/adr") out = "/adr" + siteFrag(frag, null);
+    if (pageRoute.has(bare)) out = pageRoute.get(bare) + query + siteFrag(frag, ctx.sourceOf?.(bare));
+    else if (/^docs\/adr\/index\.md$/.test(bare) || bare === "docs/adr") out = `/adr${query}${siteFrag(frag, null)}`;
     else if (/^docs\/adr\/[^/]+\.md$/.test(bare))
-      out = `/adr/${posix.basename(bare, ".md")}` + siteFrag(frag, ctx.sourceOf?.(bare));
-    else if (rootPath.has(bare)) out = rootPath.get(bare) + siteFrag(frag, null);
-    else if (bare === "playground/index.html") out = ctx.playground + frag;
+      out = `/adr/${posix.basename(bare, ".md")}${query}${siteFrag(frag, ctx.sourceOf?.(bare))}`;
+    else if (rootPath.has(bare)) out = rootPath.get(bare) + query + siteFrag(frag, null);
+    else if (bare === "playground/index.html") out = ctx.playground + query + frag;
     else {
       const kind = ctx.kindOf(bare);
       if (!kind) return target; // dead in the repo too: not ours to invent a target for
-      out = `${GITHUB}/${kind === "dir" ? "tree" : "blob"}/main/${bare}${frag}`;
+      out = `${GITHUB}/${kind === "dir" ? "tree" : "blob"}/main/${bare}${query}${frag}`;
     }
     return (angled ? `<${out}>` : out) + (m[2] ?? "");
   };
@@ -167,13 +182,10 @@ export function rewriteLinks(markdown, srcPath, ctx) {
   return markdown
     .split("\n")
     .map((line) => {
-      const f = /^\s*(`{3,}|~{3,})/.exec(line);
-      if (f) {
-        if (fence === null) fence = f[1][0];
-        else if (f[1][0] === fence) fence = null;
-        return line;
-      }
-      if (fence !== null) return line;
+      const step = fenceStep(fence, line);
+      const inside = fence !== null || step.marker;
+      fence = step.open;
+      if (inside) return line;
       return line
         .split(/(`+[^`]*`+)/)
         .map((seg, i) =>

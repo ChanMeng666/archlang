@@ -834,8 +834,9 @@ export function withDatumReader<T>(
   }
 }
 
-/** Built-in dispatch is injected by {@link setBuiltinDispatch} (from builtins.ts)
- *  to avoid a static import cycle. Until set, built-in calls are unknown. */
+/** Built-in dispatch is injected by {@link setBuiltinDispatch}: `registerBuiltins()` (builtins.ts)
+ *  calls it from `ir.ts` before the builtin scope is built, which avoids a static import cycle.
+ *  Until set, built-in calls are unknown. */
 let builtinDispatch: ((name: string, args: Value[], onError: (d: Diagnostic) => void, span?: Span) => Value) | null =
   null;
 export function setBuiltinDispatch(fn: typeof builtinDispatch): void {
