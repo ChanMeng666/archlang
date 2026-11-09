@@ -70,7 +70,7 @@ required checks are the ten names `Node 18`, `Node 20`, `Node 22`, `Workspace bu
 auto-merge is on. A new push to a PR cancels that PR's running CI (`concurrency`, per PR number); each
 push to `main` runs in a group of its own and is never cancelled.
 
-**Merge queue (`merge_group`).** Every workflow that produces a required check (`ci.yml`, `codeql.yml`)
+**Merged-result CI (`merge_group`).** Every workflow that produces a required check (`ci.yml`, `codeql.yml`)
 also triggers on `merge_group`; a required check that did not would block the queue forever. Under it
 `changes` classifies nothing (`code=true`), so every leg runs in full, Node 18, Node 20 and Windows
 included (the queue is the last gate: `FULL_LEG` is true for any event but `pull_request`); `changelog`
@@ -81,11 +81,12 @@ read live from the PR, so the label must be on the PR when it enters the queue. 
 comment stay PR-only; `deploy.yml` and `main-red.yml` act on `push` runs only. `plugin-validate.yml`
 and `arch-render-selftest.yml` are not required and do not run in the queue.
 
-The queue itself is a branch-protection setting, not a file: the coordinator turns it on after the PR
-that added the triggers merges, so until then it is NOT on. Its merge method must be "Merge commit"
-(set in the queue's settings, not by a `gh` flag). **Cost:** every queue entry runs the full matrix,
-entries are serial, and the post-merge `push` run repeats it (`deploy.yml` depends on that run), so
-expect about two full runs per merge; skipping the push re-run is a later card.
+**Not available here:** a merge queue needs an organization-owned repo; on this user-owned repo
+the API rejects a `merge_queue` ruleset (422, 2026-11-10). The protection in force is branch
+protection's `strict` required status checks ("require branches to be up to date before merging")
+plus the repo setting "always suggest updating branches": a PR behind `main` cannot merge until its
+branch includes `main`'s tip and the checks have re-run on that tree. The `merge_group` triggers stay
+so the workflows are queue-ready if the repo ever moves to an organization.
 
 **Record-only PRs.** The `changes` job sets `code=false` when every changed path is a record: the
 negated globs in its `dorny/paths-filter` step (Markdown under `docs/plans/`, `docs/agents/`, a few
@@ -150,14 +151,12 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
    safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
    never merges its own PR. Releases (`v*` tags), paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
-2. `gh pr merge <n> --match-head-commit <full 40-character sha>`: with the merge queue required, this
-   ENQUEUES the PR (no strategy flag; `--merge` is ignored, the queue's own setting picks "Merge
-   commit"), and the pin applies at enqueue time only: the queue tests the head as it is. Before the
-   queue is on, the old form is `gh pr merge <n> --auto --merge --match-head-commit <sha>`. GitHub re-runs the required checks on the PR
-   merged onto `main` (and the PRs ahead of it, § CI, Merge queue) and only then fast-forwards `main`,
-   so a PR ahead of yours that moves a generated file or an import no longer breaks `main`. The queue
-   merges with a merge commit (a squash or rebase re-creates allowlisted gitleaks lines) and deletes
-   the branch. A later push voids the pin: re-review, re-run step 2.
+2. When GitHub reports the PR behind (`mergeStateStatus: BEHIND`), `gh pr update-branch <n>`, wait for
+   CI on the new head, re-read what the update brought in (`git diff <old-head> <new-head> -- .
+   ':!test/INDEX.md' ':!docs/agents/module-map.md'` must be empty apart from the merge), then
+   `gh pr merge <n> --merge --match-head-commit <new full 40-character sha>`: a merge commit (a squash
+   or rebase re-creates allowlisted gitleaks lines) once the required checks pass; the branch is
+   deleted. A later push voids the pin: re-review, re-run step 2.
 3. PRs touching the same records (`CHANGELOG.md` `[Unreleased]`, handoff, cards) are STACKED: the next
    branches from the previous PR's head and, once that merges, runs `gh pr update-branch <n>` (or
    merges `main`); the coordinator re-pins. Independent PRs run in parallel.
