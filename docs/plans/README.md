@@ -5,7 +5,7 @@ work, dated evidence, and (where the programme is running) a `handoff.md` that i
 A plan small enough for one page is a single file here.
 Closed programme research (audits, studies, spikes) lives in the private sibling repository `archlang-lab`.
 
-| Folder | What | Status (2026-11-01) |
+| Folder | What | Status (see each row) |
 |---|---|---|
 | `plan-soundness/` | Professional rules and taste for AI-written plans: validity lint, relation-first forms, the change model, the taste layer | open; §7 rows 1–5 and 3a met, row 6 closed in part (PS4.6 remains), row 7 parked; start at `plan-soundness/handoff.md` |
 | `ci-throughput.md` | Options to shorten the PR cycle (auto-merge, concurrency, path filters, coverage off the PR path, merge queue, changelog fragments, PR legs and shards) | A–D and G live; E, F open, the owner decides |
@@ -18,7 +18,7 @@ Closed programme research (audits, studies, spikes) lives in the private sibling
 | `visual-assets/` | Richer 3D furniture (material slots, shapes, a T0 generator for every family), an opt-in `rendered` 2D theme, twenty new families; `handoff.md` is the resume point | done and released 2026-11-04 (#459–#466); residue in `handoff.md` and backlog VA |
 | `playground-minimal/` | Make the playground minimal: one entry per function (gallery replaces picker + strip, one Plan \| 3D switch, Share and ⋯ menus), and the 3D preview fills the stage with visible affordances; cards PG1–PG5, rulings PG-D1…D7 | done 2026-11-07 (#549–#553, #555) |
 | `playground-mobile-perf/` | The playground fits a phone screen and stops wasting CPU, battery and bytes: one-screen phone layout, touch-first affordances, 3D draws only when visible, lean thumbnails, no compile at boot, compile in a worker; cards MP1–MP10, rulings MP-D1…D7 | MP1–MP6, MP8–MP10 done (#557–#575; MP10: Chromium and Firefox retry in place, WebKit keeps the failure and the second failed boot reloads the page once); MP7 deferred (§ 5); the owner's real-iPhone check passed 2026-11-08 |
-| `engineering-health/` | Guards for every "change one, break another" class (release-compat gate, exhaustive kind tables, lint registration, import cycles, work counts), release/deploy/CI-signal guards, pure-move splits of the churn hotspots, generated module/test maps, the backlog split; cards EH0–EH3, rulings EH-D1…D9; `handoff.md` is the resume point | planned 2026-11-09 from seven audits; wave 0 running (EH0.1 = #581) |
+| `engineering-health/` | Guards for every "change one, break another" class (release-compat gate, exhaustive kind tables, lint registration, import cycles, work counts), release/deploy/CI-signal guards, pure-move splits of the churn hotspots, generated module/test maps, the backlog split; cards EH0–EH3, rulings EH-D1…D9; `handoff.md` is the resume point | planned 2026-11-09 from seven audits; wave 0 done, wave 1 running |
 | `product-roadmap/` | The product roadmap derived from the growth repo's research: seven tracks (checker credibility, edit-one-room, interop, sheet drafting, agent context, gated drawing-set/3D, foundations), four waves around the freeze and batch C, a "not doing" list, the RM cards and the owner's rulings RM-D1…D8; `handoff.md` is the resume point | planned 2026-11-06, rulings approved by the owner the same day; wave 0 not started |
 
 The backlog (`docs/backlog.md`) points here for programme work; `docs/adr/` holds the decisions that

@@ -10,14 +10,16 @@
   base with `origin/main` (`--base`); `--list` prints the plan. The full suite runs in CI, never locally.
   It cannot see a guard that scans a directory rather than naming a file (the corpus and byte-identity
   laws over `examples/` and `docs/`), so a quick pass is never merge evidence.
-- `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`. Its `typecheck` covers
-  `src/` only; `npm run typecheck:all` adds `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and
-  the four workspaces. Run `npm run build` first: without `dist/` the playground resolves the bare
-  `archlang` specifier to the wrong package and reports dozens of spurious "no exported member" errors.
-- `npm run check:drift` is separate from `check` and is a CI gate. `gen:all` orders `gen:spec`
+- `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`, and it is the owner's release
+  gate only: ci.yml runs its parts (typecheck, `lint:ci`, `check:drift`, the vitest shards, `check:test-wiring`),
+  never the script. Its `typecheck` covers `src/` only; CI runs `npm run typecheck:all`, which adds `test/`,
+  `eval/`, `dataset/`, `scripts/`, `bench/` and the four workspaces, and needs `dist/` (from `npm run build`):
+  without it the playground resolves the bare `archlang` specifier to the wrong package and reports dozens
+  of spurious "no exported member" errors.
+- CI runs `npm run check:drift`, separate from `check` (`check:quick` runs it too). `gen:all` orders `gen:spec`
   before `gen:llms` before `gen:cli` (the CLI reference states the bundle size `gen:llms`
   measures). Run `gen:example-svgs` after any rendering change.
-- `npm test` runs the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`,
+- CI runs `npm test`, the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`,
   `packages/*/test/`, `editors/vscode/test/`. `check:test-wiring` fails on a test outside it.
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
 - `e2e:playground` / `e2e:docs` run Playwright against the BUILT site. `E2E_BASE_URL=<origin>` drops
@@ -89,14 +91,14 @@ a PR too.
 **A break on a main-only leg appears after the merge**, and nothing blocks on it. It is seen in three
 places: the red push run on `main`, with GitHub's failed-run notification to whoever merged;
 nightly's `report`, which lists a failed `full-matrix` job in the pinned issue, by the next 03:00 UTC;
-and `/release-check` item 5, which refuses a release on either. Both alarms label their issue
+and `.claude/commands/release-check.md` item 5, which refuses a release on either. Both alarms label their issue
 `ci-red` and comment on every red run, so `gh issue list -l ci-red` is the first thing a session
 checks; a green run closes the issue with a comment.
 
 Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock
 22.7), the Node 22 rows on PR #385 at cd730b85:
 
-| Job (check name) | Runs | Min |
+| Job (CI's check name) | Runs | Min |
 |---|---|---|
 | `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
 | `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
@@ -144,7 +146,7 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
-`full-matrix` (`npm test` + `check:drift`), `coverage` (`test:coverage`, the coverage summary and artifact; report-only, `continue-on-error`, outside `report`), `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
+`full-matrix` (CI runs `npm test` + `check:drift`), `coverage` (`test:coverage`, the coverage summary and artifact; report-only, `continue-on-error`, outside `report`), `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
 the pinned issue; its report is an
 artifact), `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
 detects a stale deploy), and `report` (the single writer of the pinned issue; a fully green night comments on it and closes it). `deploy.yml` deploys
@@ -156,11 +158,11 @@ workflows are manual and owner-only — never dispatch `eval-l2.yml`.
 
 ## Release
 
-`/release-check` (`.claude/commands/release-check.md`) is the checklist and holds the human steps.
+`.claude/commands/release-check.md` is the checklist and holds the human steps.
 Two things it pins:
 
 - **Gate order in the PRIMARY checkout**: `npm run build`, `npm run mcp:build:only`,
-  `npm run vscode:build:only`, then `npm run check`. `check` runs
+  `npm run vscode:build:only`, then `npm run check` (the owner-sanctioned release gate, with `#allow-local-heavy`). `check` runs
   `editors/vscode/test/stdio.test.ts`, which compares the bundled server's stamped core version with
   the workspace version, so a stale `editors/vscode/dist/server.js` fails it after a version bump.
 - **npm shows a just-published version only about 3 minutes after `npm publish` returns.** The

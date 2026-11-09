@@ -59,8 +59,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   `docs-examples-figures`, `example-svgs-drift`, `rooms-tiling-probe`, `taste-digests`,
   `intent-all-storeys`, the
   `*-digests` and `*-byte-identity` suites, `playground/test/llm-prompt.test.ts` and the corpus counts
-  written into `packages/archlang-3d`'s tests (light and `e2e/`) to react; run the
-  lot, and explain each moved golden rather than re-pin it. A new lint rule moves a different set:
+  written into `packages/archlang-3d`'s tests (light and `e2e/`) to react; CI runs the
+  lot, so read its result and explain each moved golden rather than re-pin it. A new lint rule moves a different set:
   `compose-assoc`, `lint-file-provenance`. `hillside-villa`'s prefilled-link budget in the playground
   test is the tightest constraint on that example: deflate output differs by zlib implementation (pako
   and zlib-ng measure 26–35 characters longer than Node/Chromium; the test is skipped on Node 18), so
@@ -86,13 +86,13 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   fractions of the footprint land on `x.xxxx5`). Remedy: `.claude/rules/glyphs.md`; why: ADR 0023.
 - **Changing the default `furnitureStroke`/`furnitureFill` turns group 1 of
   `test/fixture-byte-identity.test.ts` red** — always a bug (ADR 0023, decision 6).
-- **`vitest -u -t "<name>"` on a snapshot file deletes every snapshot the filter skipped** as obsolete
+- **`vitest -u -t "<name>"` (the owner's update command) on a snapshot file deletes every snapshot the filter skipped** as obsolete
   (`snapshot.test.ts` lost its multi-level plans this way). Run `-u` unfiltered and read the diff.
-- **`vitest -u` on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
+- **`vitest -u` (the owner's update command) on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
   the file, group 1 included.** Scope it: `-u -t "re-blessed when redrawn"`, then confirm group 1
   is untouched in the diff.
-- **`npm run check:drift` regenerates in place.** A red run leaves the regenerated artifacts
-  (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
+- **CI runs `check:drift` and fails on drift; the local `check:quick` regenerates in place** and leaves the
+  artifacts (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
   commit them or `git checkout --` them; do not mistake them for your own edits.
 
 ## PRs & CI
@@ -106,7 +106,7 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   its own route, and show that putting the old count back reproduces the pinned digest.
 - **A new example moves more than the example tables**: the corpus counts in `packages/archlang-3d`
   (`e2e/glb.e2e.ts`, `e2e/replay.e2e.ts`, `test/adapter-corpus.test.ts`, `test/mesh.test.ts`) and the digest
-  rows naming it. `npm run check` does not run the e2e half: run `check:3d`.
+  rows naming it. CI's `check` parts (ci.yml) do not run the e2e half; CI's `check-3d` job runs `check:3d`.
 - **The playground's startup budget is a sum, not a per-PR limit**: ordinary core growth reaches it
   eventually. Confirm no 3D marker is in the chunks, then re-take `playground/e2e/startup-chunks.baseline.json`
   with the reason in the commit. The budget stays.
@@ -138,7 +138,7 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   A break on the others first shows in the push run on `main` (`commands.md` § CI). Suspect them for
   a `node:` API newer than Node 18, a dependency that drops an old Node, deflate output (the
   `hillside-villa` budget), and line endings or path handling.
-- **A test file must not read what another test file wrote.** `vitest --shard` assigns files by sorted
+- **A test file must not read what another test file wrote.** CI runs `vitest --shard`, which assigns files by sorted
   hash, so a new file can move others into another shard, on another runner. Symptom: a red shard on a
   PR that touched neither file. Write to a `mkdtemp` directory.
 - **A new lint rule is registered beyond its module**: `.claude/commands/new-lint-rule.md` is the
@@ -153,9 +153,9 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   entries as whole blocks (a hunk-level merge split entries and broke the build, #315).
 - **`validate`'s `next` and lint output feed the K1 keep digests**: a change to `next` or a new rule
   moves K1 rows. After merging `main`, re-run `npx tsx test/keep-weak-law-gen.ts` (D24); never
-  hand-merge the table (#314). `keep-byte-identity` times out under a parallel local run: run it alone.
+  hand-merge the table (#314). `keep-byte-identity` times out under a parallel local run (CI runs it alone).
 - **Editing `examples/` moves the playground e2e specs** (actions, layout and levels read
-  `examples/hillside-villa.arch`) and the docs e2e: run `npm run e2e:playground` before pushing an
+  `examples/hillside-villa.arch`) and the docs e2e: CI runs `npm run e2e:playground`; read its result on an
   examples PR (#305).
 
 - CodeQL `js/polynomial-redos` fires on regexes in `test/` too, and the `analyze` job gates: slice
@@ -225,12 +225,12 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   the executor did not. A worktree branch can track `origin/main`, so push with an explicit
   `HEAD:<branch>`.
 - **The session scratchpad is shared by parallel executors**: give each its own subfolder in the brief. A
-  reviewer's `scratchpad/` left inside a worktree fails `npm run check` on lint, and must not be staged.
+  reviewer's `scratchpad/` left inside a worktree fails CI's `npm run check` on lint, and must not be staged.
 - **In the Bash tool `/tmp` is not the `/tmp` Node resolves** (`D:\tmp` here): pass scratch paths through an
   environment variable or use the session scratchpad.
 - **A worktree locked by the running session refuses `git worktree remove`**, even with `--force`. Leave
   it for the session's end rather than removing it with `-f -f`.
-- **`npx vitest run --maxWorkers=N` errors in this repo unless `--minWorkers=1` is also given.**
+- **For the owner's rare local run, `npx vitest run --maxWorkers=N` errors in this repo unless `--minWorkers=1` is also given.**
 - **Under heavy machine load the visual, sheet and roof tests can time out.** Rerun the file alone
   before suspecting the code.
 - **`test/reroll-findrun-oracle.test.ts` › "generated sources" is an unseeded property flake**: it
@@ -309,12 +309,12 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   so the branch must land by a merge commit: a squash or rebase re-creates the line in a new commit
   and the nightly full-history scan flags it again.
 - **In a `.claude/worktrees/*` checkout whose `node_modules` is a junction to the primary,
-  `editors/vscode/test/wrong-core.test.ts` fails by design**, so `npm run check` is fully green only
+  `editors/vscode/test/wrong-core.test.ts` fails by design**, so the owner's release-gate `npm run check` is fully green only
   in the primary checkout and a `&&` gate chain stops there. Run gates one by one in a worktree;
   build/package the extension and the MCP shim only in the primary.
-- **Card tests under `test/` and the playground specs are typed and run only by `typecheck:all` and
-  the playground e2e in the PRIMARY checkout.** A worktree whose `node_modules` is a junction
-  resolves an older core, so those two gates are invalid there.
+- **Card tests under `test/` and the playground specs are typed and run by CI's `typecheck:all` and
+  the playground e2e.** In a worktree whose `node_modules` is a junction both would resolve an
+  older core and be invalid, so read them from the PR's CI.
 - **A stale zero-byte `.git/index.lock` in the primary checkout** (left by a killed git process)
   makes `git checkout` and `gh pr merge` fail. Delete it only after confirming no git process runs.
 - **The primary checkout can hold CRLF working copies** (`core.autocrlf=true`) that git shows clean;
@@ -323,14 +323,14 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **The hosted MCP's precise rate guard is a zone WAF rule in the Cloudflare dashboard**
   (`mcp abuse guard`, ADR 0026 "Addendum: production"). The Worker's own bindings count per server,
   so the repository alone shows a limit that does not hold; the WAF rule covers every path on the host.
-- **A version bump reddens `npm run check` until `editors/vscode/dist/server.js` is rebuilt**:
+- **A version bump reddens CI's `npm run check` until `editors/vscode/dist/server.js` is rebuilt**:
   `editors/vscode/test/stdio.test.ts` compares the bundle's stamped core version with the
   workspace's. Release gate order is in `docs/agents/commands.md`.
 - **`@chanmeng666/arch-plan`'s `prepack` refuses a stale root `dist/`**: run `npm run build` at the
   root before packing or publishing it.
 - **(npm) A newly registered trusted publisher lapses unless a publish goes through it within about
   48 hours**; dispatch `release.yml` once (`.claude/commands/release-check.md`).
-- **Remove a worktree's `node_modules` junctions with `cmd /c rmdir <path>`** before
+- **Remove a worktree's `node_modules` junctions with `[System.IO.Directory]::Delete(<junction>)`** (never recursive; the PowerShell tool blocks `cmd /c rmdir`) before
   `git worktree remove --force` or any recursive delete, or the delete follows them into the primary.
   Git Bash's `ln -s` does not link: it COPIES the target, and a copy of the primary's `node_modules`
   carries its workspace junctions (one points at the repository root). Scan any such copy for
