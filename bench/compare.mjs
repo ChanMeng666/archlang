@@ -5,7 +5,7 @@
  *
  * Each file is the output of `tsx bench/run.ts --json` (`{ plan: { stage: medianMs } }`). The base
  * runs come from the PR's merge base and the head runs from its tip, measured in the same job on
- * the same machine, alternating, so a row's ratio head/base cancels most of the runner's speed.
+ * the same machine, alternating (base, head, head, base), so a row's ratio head/base cancels most of the runner's speed.
  * Per row the median over the runs of each side is taken. A row is flagged only when its base time
  * is above MIN_BASE_MS and it moved by more than THRESHOLD_PCT; the "noise floor" is the largest
  * spread between the base runs themselves (over the same rows), so a reader sees how far a row
@@ -52,9 +52,25 @@ export function compareRuns(baseRuns, headRuns) {
   const head = collect(headRuns);
   const rows = [];
   let noiseFloor = 0;
-  for (const [k, hv] of head) {
+  const keys = [...head.keys(), ...[...base.keys()].filter((k) => !head.has(k))];
+  for (const k of keys) {
     const [plan, stage] = k.split("|");
+    const hv = head.get(k);
     const bv = base.get(k);
+    if (!hv) {
+      // Only the base has the row: the PR removed or renamed it. Show it, with no ratio.
+      rows.push({
+        plan,
+        stage,
+        base: median(bv),
+        head: null,
+        ratio: null,
+        deltaPct: null,
+        flagged: false,
+        removed: true,
+      });
+      continue;
+    }
     const h = median(hv);
     if (!bv) {
       rows.push({ plan, stage, base: null, head: h, ratio: null, deltaPct: null, flagged: false });
@@ -75,6 +91,18 @@ export function compareRuns(baseRuns, headRuns) {
   return { rows, noiseFloor, flagged: rows.filter((r) => r.flagged) };
 }
 
+/** The class a stage row belongs to, by its name: lint rows are reported on their own. */
+export function stageClass(stage) {
+  if (stage.startsWith("lint")) return "lint";
+  if (["compile", "parse", "resolve", "toScene", "renderSvg"].includes(stage)) return "pipeline";
+  return "analysis";
+}
+const CLASS_TITLES = {
+  pipeline: "Pipeline stages",
+  lint: "Lint",
+  analysis: "Other analysis (describe, circulation, occupancy)",
+};
+
 const fmtPct = (p) => (p === null ? "-" : `${p >= 0 ? "+" : ""}${p.toFixed(0)}%`);
 
 /** @param {ReturnType<typeof compareRuns>} result */
@@ -85,7 +113,7 @@ export function render(result) {
   lines.push("### Benchmark: PR head vs its merge base (median ms)");
   lines.push("");
   lines.push(
-    "Informational, not a gate. Both sides were built and timed in this one job, two runs each, alternating; " +
+    "Informational, not a gate. Both sides were timed in this one job (nothing is built), two runs each, in the order base, head, head, base so a systematic first-run bias cancels; " +
       "a row shows the median of the runs and the ratio head/base. " +
       `Flagged only when the base is above ${MIN_BASE_MS} ms and the change exceeds ${THRESHOLD_PCT} %. ` +
       "The deterministic gate for work done is `test/work-counts.test.ts`.",
@@ -95,14 +123,22 @@ export function render(result) {
     `Noise floor (largest spread between the two base runs, rows above ${MIN_BASE_MS} ms): **${noiseFloor.toFixed(0)}%**.`,
   );
   lines.push("");
-  lines.push("| Plan | Stage | Base | Head | Ratio | Delta |");
-  lines.push("|------|-------|-----:|-----:|------:|------:|");
-  for (const r of rows) {
-    const ratio = r.ratio === null ? "-" : `${r.ratio.toFixed(2)}x`;
-    const flag = r.flagged ? " ⚠️" : "";
-    lines.push(
-      `| ${r.plan} | ${r.stage} | ${r.base === null ? "-" : r.base.toFixed(2)} | ${r.head.toFixed(2)} | ${ratio} | ${fmtPct(r.deltaPct)}${flag} |`,
-    );
+  for (const cls of ["pipeline", "lint", "analysis"]) {
+    const group = rows.filter((r) => stageClass(r.stage) === cls);
+    if (!group.length) continue;
+    lines.push(`**${CLASS_TITLES[cls]}**`);
+    lines.push("");
+    lines.push("| Plan | Stage | Base | Head | Ratio | Delta |");
+    lines.push("|------|-------|-----:|-----:|------:|------:|");
+    for (const r of group) {
+      const ratio = r.ratio === null ? "-" : `${r.ratio.toFixed(2)}x`;
+      const flag = r.flagged ? " ⚠️" : "";
+      const delta = r.removed ? "removed" : fmtPct(r.deltaPct);
+      lines.push(
+        `| ${r.plan} | ${r.stage} | ${r.base === null ? "-" : r.base.toFixed(2)} | ${r.head === null ? "-" : r.head.toFixed(2)} | ${ratio} | ${delta}${flag} |`,
+      );
+    }
+    lines.push("");
   }
   lines.push("");
   lines.push(

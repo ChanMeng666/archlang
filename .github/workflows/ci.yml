@@ -444,7 +444,7 @@ jobs:
     runs-on: ubuntu-latest
     # Timings are runner-dependent, so this never gates the build (the deterministic gate for work
     # done is test/work-counts.test.ts). It times the PR's merge commit against that commit's first
-    # parent (the base branch tip the PR lands on) in this one job, two runs each, alternating, and
+    # parent (the base branch tip the PR lands on) in this one job, two runs each in the order base, head, head, base, and
     # reports the per-row ratio plus the noise floor between the two base runs; on same-repo PRs
     # (a fork's GITHUB_TOKEN is read-only) it posts that as a comment. Not a required check, so on
     # a record-only PR the whole job is skipped.
@@ -467,7 +467,7 @@ jobs:
       - run: npm ci
       - name: Check out the base next to the head
         run: git worktree add --detach ../bench-base HEAD^1
-      - name: Run benchmark (base, head, base, head)
+      - name: Run benchmark (base, head, head, base)
         # bench/run.ts imports ../src directly (no build), so the base tree needs no install of its
         # own; each side runs its own bench/run.ts, and a row only one side has is shown without a ratio.
         run: |
@@ -475,8 +475,8 @@ jobs:
           HERE="$PWD"
           (cd ../bench-base && "$TSX" bench/run.ts --json > "$HERE/base1.json")
           "$TSX" bench/run.ts --json > head1.json
-          (cd ../bench-base && "$TSX" bench/run.ts --json > "$HERE/base2.json")
           "$TSX" bench/run.ts --json > head2.json
+          (cd ../bench-base && "$TSX" bench/run.ts --json > "$HERE/base2.json")
           node bench/compare.mjs --base base1.json base2.json --head head1.json head2.json --out bench-comment.md
       - name: Write benchmark summary
         run: cat bench-comment.md >> "$GITHUB_STEP_SUMMARY"

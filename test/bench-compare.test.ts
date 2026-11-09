@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 // @ts-expect-error — a zero-dep .mjs CI script with no type declarations.
-import { compareRuns, median, MIN_BASE_MS, parseArgs, render, THRESHOLD_PCT } from "../bench/compare.mjs";
+import { compareRuns, median, MIN_BASE_MS, parseArgs, render, stageClass, THRESHOLD_PCT } from "../bench/compare.mjs";
 
 const run = (v: Record<string, number>) => ({ P: v });
 const stageOf = (x: { stage: string }) => x.stage;
@@ -37,6 +37,34 @@ describe("bench/compare.mjs", () => {
       ratio: null,
       flagged: false,
     });
+  });
+
+  it("shows a row only the base has as removed, with no ratio and no flag", () => {
+    const r = compareRuns([run({ a: 100, gone: 400 })], [run({ a: 100 })]);
+    const gone = r.rows.find((x: { stage: string }) => x.stage === "gone");
+    expect(gone).toMatchObject({ base: 400, head: null, ratio: null, flagged: false, removed: true });
+    expect(r.flagged).toEqual([]);
+    expect(render(r)).toContain("| P | gone | 400.00 | - | - | removed |");
+  });
+
+  it("does not flag a row whose base is exactly the floor, however far it moves", () => {
+    const r = compareRuns([run({ edge: 5, above: 5.01 })], [run({ edge: 50, above: 50 })]);
+    expect(r.flagged.map(stageOf)).toEqual(["above"]);
+  });
+
+  it("reports lint rows as their own class", () => {
+    expect(stageClass("lint")).toBe("lint");
+    expect(stageClass("compile")).toBe("pipeline");
+    expect(stageClass("describe")).toBe("analysis");
+    const md = render(
+      compareRuns([run({ compile: 10, lint: 10, describe: 10 })], [run({ compile: 10, lint: 10, describe: 10 })]),
+    );
+    const at = (t: string) => md.indexOf(t);
+    expect(at("**Pipeline stages**")).toBeGreaterThan(-1);
+    expect(at("**Pipeline stages**")).toBeLessThan(at("**Lint**"));
+    expect(at("| P | lint |")).toBeGreaterThan(at("**Lint**"));
+    expect(at("| P | lint |")).toBeLessThan(at("**Other analysis"));
+    expect(md).toContain("nothing is built");
   });
 
   it("renders the honest header, the noise line and the work-counts pointer", () => {
