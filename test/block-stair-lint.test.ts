@@ -78,7 +78,7 @@ const filedBy = (src: string, rule: string, rules: LintRuleset = resolveRuleset(
     const sink = (reason: string): void => {
       if (reason === "block-stair") filed = true;
     };
-    LINT_RULES.find((r) => r.name === rule)!.check(buildLintContext(st.ir, rules, st.building, sink));
+    LINT_RULES.find((r) => r.name === rule)!.check(buildLintContext(st.ir, rules, LINT_RULES, st.building, sink));
     return filed ? [st.level ?? 0] : [];
   });
 };
@@ -352,7 +352,9 @@ describe("flights that cannot hold the goings whole", () => {
     const steepWith = (r: LintRuleset): number => {
       const { ir, levels } = resolvePlan(stair(1295, 1295));
       return lintStoreys(ir!, levels, r.tolMm).flatMap((st) =>
-        LINT_RULES.find((x) => x.name === "stair-too-steep")!.check(buildLintContext(st.ir, r, st.building, () => {})),
+        LINT_RULES.find((x) => x.name === "stair-too-steep")!.check(
+          buildLintContext(st.ir, r, LINT_RULES, st.building, () => {}),
+        ),
       ).length;
     };
 

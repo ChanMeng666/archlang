@@ -38,7 +38,7 @@ import {
   windowBands,
   windowCover,
 } from "./clearance-measure.js";
-import { buildLintContext, type LintContext } from "./context.js";
+import { buildLintContext, type LintContext, type LintRule } from "./context.js";
 import { deficitMm, mm } from "./measure.js";
 import { blockedApproach } from "./rules/doors.js";
 import { landingGoings, leastRun, minimumRun, runLength, storeyStairs } from "./rules/stairs.js";
@@ -379,6 +379,13 @@ function storeyClearances(ctx: LintContext): ClearanceFacts {
 }
 
 /**
+ * The rule list this module's contexts carry: none. Clearance facts only measure; nothing here
+ * re-lints a placement (the one reader of `LintContext.lintRules`), and importing `LINT_RULES`
+ * would close a cycle through `describe.ts`.
+ */
+const NO_PLACEMENT_RULES: readonly LintRule[] = [];
+
+/**
  * The clearance measures of a resolved plan, under the default ruleset: the plan's own (its
  * lowest storey's, `levels[0].ir === ir`) and, on a multi-storey plan, each storey's by level.
  */
@@ -390,7 +397,7 @@ export function clearanceFacts(
   const byLevel = new Map<number, ClearanceFacts>();
   let top: ClearanceFacts | undefined;
   for (const st of lintStoreys(ir, levels, rules.tolMm)) {
-    const facts = storeyClearances(buildLintContext(st.ir, rules, st.building));
+    const facts = storeyClearances(buildLintContext(st.ir, rules, NO_PLACEMENT_RULES, st.building));
     if (st.level !== undefined) byLevel.set(st.level, facts);
     top ??= facts;
   }

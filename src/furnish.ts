@@ -61,7 +61,7 @@ import { distToPolygonEdge, pointInPolygon, polygonsOverlap, rectRing } from "./
 import { type BBox, DOORWAY_WIDTH_MM, doorLandingRect, openingBlock, rectsOverlap } from "./geometry/rect.js";
 import type { RDoor, RFurniture, ROpening, ResolvedLevel, ResolvedPlan, RRoom, RWall, RWindow } from "./ir.js";
 import { lex } from "./lexer.js";
-import { ADVISORY_CODE_PROFILES, DEFAULT_RULESET, LINT_CODE_LAYERS, LINT_PROFILES } from "./lint.js";
+import { ADVISORY_CODE_PROFILES, DEFAULT_RULESET, LINT_CODE_LAYERS, LINT_PROFILES, LINT_RULES } from "./lint.js";
 import {
   isCookingSurface,
   isShort,
@@ -438,7 +438,7 @@ export function furnishStage(
     /** The walls and doorways a WC's sides are measured against, as `W_WC_SIDE_CLEARANCE` reads them. */
     const wcSrc: WcWorldSource = { wallSegs: segs, doors, openings };
     const windows = ir.elements.filter((e): e is RWindow => e.kind === "window");
-    const lintCtx = buildLintContext(ir, DEFAULT_RULESET, st.building);
+    const lintCtx = buildLintContext(ir, DEFAULT_RULESET, LINT_RULES, st.building);
     /** The exterior exits' clear floor, as `W_EXIT_APPROACH_BLOCKED` measures it (PS2.69). */
     const exits = EXIT_MM ? exitApproachStrips(lintCtx, EXIT_MM.push, EXIT_MM.pull) : [];
     /**
@@ -565,7 +565,7 @@ export function furnishStage(
         const ir = st.level === undefined ? now.ir : now.levels.find((l) => l.level === st.level)?.ir;
         const here = ir?.elements.find((e): e is RRoom => e.kind === "room" && e.id === room.id);
         if (!ir || !here) return null;
-        const paste = pasteSet(buildLintContext(ir, DEFAULT_RULESET, st.building), here, [item]);
+        const paste = pasteSet(buildLintContext(ir, DEFAULT_RULESET, LINT_RULES, st.building), here, [item]);
         const text = "stmts" in paste ? paste.stmts[0] : undefined;
         if (text === undefined || text.includes(" at (")) return null;
         budget--;

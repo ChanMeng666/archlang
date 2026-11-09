@@ -503,7 +503,7 @@ function withFixProvenance(d: Diagnostic): Diagnostic {
  *  post-pass is applied per rule, which is the same thing: it groups by diagnostic code,
  *  and a code belongs to one rule. */
 export function lintByRule(ir: ResolvedPlan): { name: string; diags: Diagnostic[] }[] {
-  const ctx = buildLintContext(ir, DEFAULT_RULESET);
+  const ctx = buildLintContext(ir, DEFAULT_RULESET, LINT_RULES);
   return LINT_RULES.map((r) => ({
     name: r.name,
     diags: reconcileSharedFixes(r.check(ctx).map(withFixProvenance), [{ ir }]),
@@ -2067,7 +2067,7 @@ export function lintStoreysByRule(
   const building = buildingContextsOf(levels, DEFAULT_RULESET.tolMm);
   const ctxs = levels.map((l) => ({
     level: l.level,
-    ctx: buildLintContext(l.ir, DEFAULT_RULESET, building.get(l.level)),
+    ctx: buildLintContext(l.ir, DEFAULT_RULESET, LINT_RULES, building.get(l.level)),
   }));
   const out = new Map<number, { name: string; diags: Diagnostic[] }[]>(levels.map((l) => [l.level, []]));
   for (const r of LINT_RULES) {

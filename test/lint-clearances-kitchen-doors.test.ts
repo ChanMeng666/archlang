@@ -15,6 +15,7 @@ import { doorLandingRect, openingBlock } from "../src/geometry/rect.js";
 import type { RFurniture, ROpening } from "../src/ir.js";
 import { clearancesClear, windowBands, windowCover } from "../src/lint/clearance-measure.js";
 import { buildLintContext } from "../src/lint/context.js";
+import { LINT_RULES } from "../src/lint/rules/index.js";
 import { DEFAULT_RULESET } from "../src/lint/ruleset.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
@@ -100,7 +101,7 @@ suite("W_HOB_UNDER_WINDOW (PS2.46)", () => {
   it("a hob on a return wall, 125 mm off the window wall's face, is beside the window (PS2.64)", () => {
     // Stove x 5175–5775, y 100–700: a 75 × 400 mm corner enters the band, 125 mm off the face.
     const src = returnWall(5475);
-    const ctx = buildLintContext(resolvePlan(src, {}).ir!, DEFAULT_RULESET);
+    const ctx = buildLintContext(resolvePlan(src, {}).ir!, DEFAULT_RULESET, LINT_RULES);
     const fr = { x: 5175, y: 100, w: 600, h: 600 };
     expect(windowBands(ctx.windows).some((b) => windowCover(b, fr, DEFAULT_RULESET.fixtureWallTolMm))).toBe(true);
     expect(of(src, HU)).toEqual([]);
@@ -113,7 +114,7 @@ suite("W_HOB_UNDER_WINDOW (PS2.46)", () => {
     const ds = of(returnWall(5600), HU);
     expect(ds).toHaveLength(1);
     expect(ds[0]!.message).toContain("stands under 400 mm of a 1200 mm window");
-    const ctx = buildLintContext(resolvePlan(returnWall(5600), {}).ir!, DEFAULT_RULESET);
+    const ctx = buildLintContext(resolvePlan(returnWall(5600), {}).ir!, DEFAULT_RULESET, LINT_RULES);
     expect(clearancesClear(ctx, { x: 5300, y: 100, w: 600, h: 600 }, "stove", 0)).toBe(false);
   });
 
@@ -176,7 +177,7 @@ suite("W_HOB_FRIDGE_GAP (PS2.11e)", () => {
   furniture fridge against wall shell segment 0 offset 2750 in r_p
 }`;
     expect(of(src, HF)).toEqual([]);
-    const ctx = buildLintContext(resolvePlan(src, {}).ir!, DEFAULT_RULESET);
+    const ctx = buildLintContext(resolvePlan(src, {}).ir!, DEFAULT_RULESET, LINT_RULES);
     // The placement check reads the same measure: the fridge where it stands is clear of the stove,
     // and so is the stove where it stands of the fridge.
     expect(clearancesClear(ctx, { x: 2450, y: 100, w: 600, h: 650 }, "fridge", 0)).toBe(true);

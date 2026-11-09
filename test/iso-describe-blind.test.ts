@@ -29,6 +29,8 @@ const SUMMARY_MODULES = [
   "src/describe.ts",
   "src/lint.ts",
   "src/analyze.ts",
+  "src/analyze/rooms.ts",
+  "src/analyze/connectors.ts",
   "src/analyze/circulation.ts",
   "src/analyze/occupancy.ts",
 ];

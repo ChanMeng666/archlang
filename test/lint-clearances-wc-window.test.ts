@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { lint, lintWithCoverage } from "../src/index.js";
 import { buildLintContext } from "../src/lint/context.js";
+import { LINT_RULES } from "../src/lint/rules/index.js";
 import { placementClear } from "../src/lint/fixture-paste.js";
 import { DEFAULT_RULESET } from "../src/lint/ruleset.js";
 
@@ -308,7 +309,7 @@ describe("W_FURNITURE_OVER_WINDOW: a low piece against a `sill 0` window", () =>
 describe("placementClear refuses what the two rules would report", () => {
   const ctxOf = (src: string) => {
     const { ir } = resolvePlan(src, {});
-    return buildLintContext(ir!, DEFAULT_RULESET);
+    return buildLintContext(ir!, DEFAULT_RULESET, LINT_RULES);
   };
   it("a corner WC is refused, the same pan 400 mm off the corner is not", () => {
     const ctx = ctxOf(bath(""));

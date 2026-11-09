@@ -8,6 +8,7 @@ import type { World } from "../src/world.js";
 import { resolvePlan } from "../src/analyze.js";
 import { computeCirculation } from "../src/analyze/circulation.js";
 import { buildLintContext } from "../src/lint/context.js";
+import { LINT_RULES } from "../src/lint/rules/index.js";
 
 /**
  * Four lint diagnostics whose text an agent must be able to act on WITHOUT a second guess.
@@ -476,7 +477,7 @@ function ruleStoreys(src: string, world: World | undefined): unknown[] {
   return storeys.map((s, i) => {
     const st = irs[i];
     if (!st || !s.circulation) return s;
-    const ctx = buildLintContext(st, DEFAULT_RULESET, building?.get(levels[i]!.level));
+    const ctx = buildLintContext(st, DEFAULT_RULESET, LINT_RULES, building?.get(levels[i]!.level));
     if (ctx.walkAccess() === ctx.access()) return s;
     const walk = computeCirculation(
       ctx.rooms,
@@ -744,7 +745,7 @@ describe("W_PATH_TOO_NARROW — names only doors whose widening clears the room,
         const storeyIrs = planned.levels.length > 0 ? planned.levels.map((l) => l.ir) : planned.ir ? [planned.ir] : [];
         const building = planned.levels.length > 0 ? buildingContexts(planned.levels, DEFAULT_RULESET.tolMm) : null;
         const phrases = storeyIrs.map((st, i) => {
-          const c = buildLintContext(st, DEFAULT_RULESET, building?.get(planned.levels[i]!.level));
+          const c = buildLintContext(st, DEFAULT_RULESET, LINT_RULES, building?.get(planned.levels[i]!.level));
           return new Map(c.rooms.map((r) => [r.id, c.nameOf(r)] as const));
         });
         for (const [i, s] of (ruleStoreys(src, world) as Storey[]).entries()) {

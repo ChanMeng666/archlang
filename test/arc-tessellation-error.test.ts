@@ -53,9 +53,9 @@ describe("arc tessellation error statements", () => {
     absent("docs/analysis.md", /R\/1400|0\.14\s*%/);
   });
 
-  it("src/analyze.ts states the derived area shortfall", () => {
-    stated("src/analyze.ts", new RegExp(`understates${S}the${S}area${S}by${S}${pct}\\s*%`));
-    absent("src/analyze.ts", /understates\s+the\s+area\s+by\s+~?0\.1\s*%/);
+  it("src/analyze/rooms.ts states the derived area shortfall", () => {
+    stated("src/analyze/rooms.ts", new RegExp(`understates${S}the${S}area${S}by${S}${pct}\\s*%`));
+    absent("src/analyze/rooms.ts", /understates\s+the\s+area\s+by\s+~?0\.1\s*%/);
   });
 
   it("src/elements/room.ts states the derived area shortfall", () => {

@@ -630,3 +630,11 @@ export const KEEP_WORDS = {
 
 /** The `keep` grades, weakest last; the first is the default (ADR 0033 decision 3). */
 export const KEEP_GRADES = ["hard", "soft", "advisory"] as const;
+
+/** The paper sizes ArchLang can draw on. */
+export const PAPER_SIZES = ["A4", "A3", "A2", "A1", "A0"] as const;
+export type PaperSize = (typeof PAPER_SIZES)[number];
+
+/** Sheet orientation. Floor plans are wide, so `landscape` is the default. */
+export const PAPER_ORIENTATIONS = ["landscape", "portrait"] as const;
+export type PaperOrientation = (typeof PAPER_ORIENTATIONS)[number];
