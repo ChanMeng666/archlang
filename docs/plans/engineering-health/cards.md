@@ -154,7 +154,7 @@ shows `src/cli/**` above 0; Node 22 shard total down (report the number).
 `--json` envelope key set against `test/tables/cli-envelopes.json`, additive-only. Proof: both
 tests green; the `TODO` count in the PR body.
 
-### EH1.10 · malformed input never throws — `todo` · M · low · sonnet · T-F3, S-FZ-5
+### EH1.10 · malformed input never throws — `in review` · M · low · sonnet · T-F3, S-FZ-5
 Seeded fast-check mutators over valid `planToJson` output (drop key, wrong type, NaN, ±1e12,
 empty array, extra key, `__proto__`) into `planFromJson`; laws: never throws, result is a plan or
 ≥ 1 catalogued `E_JSON_*` with a JSON path, `Object.prototype` unchanged, round-trip law intact for
