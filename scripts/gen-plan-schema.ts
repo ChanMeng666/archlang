@@ -1,6 +1,7 @@
 /**
  * Generate `schemas/plan.schema.json` from the single source of truth
- * (`PLAN_JSON_SCHEMA` in `src/plan-json.ts`). Run with `npx tsx scripts/gen-plan-schema.ts`.
+ * (`PLAN_JSON_SCHEMA` in `src/plan-json/schema.ts`, re-exported by `src/plan-json.ts`).
+ * Run with `npx tsx scripts/gen-plan-schema.ts`.
  *
  * The committed file is what tools and LLMs fetch at
  * https://archlang.uk/plan.schema.json; a vitest drift test
