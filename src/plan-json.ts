@@ -45,9 +45,14 @@ import {
   COMPASS_DIRECTIONS,
   FURNITURE_ANCHORS,
   HEMISPHERES,
+  NORTH_DIRS,
   TITLE_FIELD_KEY,
   USE_KINDS,
 } from "./ast.js";
+import { isLexWord } from "./lexer.js";
+import { isEdgeName } from "./attach.js";
+import { escapeStr } from "./expr-source.js";
+import { plainDigits } from "./num-format.js";
 import type {
   RRoom,
   RDoor,
@@ -1250,6 +1255,42 @@ const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object
 const isNum = (v: unknown): v is number => typeof v === "number" && Number.isFinite(v);
 const isStr = (v: unknown): v is string => typeof v === "string";
 
+/**
+ * A value the emitter prints where the grammar reads ONE word (`ctx.eatIdent()`: an id, a
+ * category, a wall, room or edge reference, `material`, `facing`) must lex as exactly that word
+ * ({@link isLexWord}, the lexer's own rule, never retyped). Unchecked, `""` printed
+ * `furniture  at (…)`, a number printed `id=1000`, and a string with a space, a quote, a brace
+ * or a `#` was written into the source as more tokens than one (EH1.15, defect 3). `id` may be
+ * `""`, which the emitter writes as no `id=` at all.
+ */
+const WORD_SHAPE = "one word as an identifier lexes (a letter or _, then letters, digits or _; dotted parts allowed)";
+function reqWord(v: unknown, path: string, what: string, val: Validator, emptyOk = false): void {
+  if (v === undefined || (emptyOk && v === "")) return;
+  if (!(isStr(v) && isLexWord(v))) val.err(path, `expected ${what}: ${WORD_SHAPE}`);
+}
+
+/** A position string (`on.at`, `relation.at`) as `parseAttachPos` reads it: probed through the real
+ *  parser, and accepted only when the position it reads ends exactly where the string does, so
+ *  no clause (`width 1 hinge left`) and no comment rides in behind it. */
+const ATTACH_PROBE_HEAD = 'plan "" {\n  opening on w at ';
+function isAttachPosText(s: string): boolean {
+  if (s === "" || s !== s.trim() || /[\r\n]/.test(s)) return false;
+  const { plan, diagnostics } = parse(`${ATTACH_PROBE_HEAD}${s} width 1\n}\n`);
+  if (!plan || diagnostics.some((d) => d.severity === "error") || plan.body.length !== 1) return false;
+  const st = plan.body[0] as {
+    kind?: string;
+    attach?: { span?: { end: number } };
+  };
+  return st.kind === "opening" && st.attach?.span?.end === ATTACH_PROBE_HEAD.length + s.length;
+}
+const POS_SHAPE =
+  'expected a position as written after `at`: "40%", "1200", "center", "<mm> from start|end|<room>.<edge>" or "axis <label>"';
+
+/** An optional number the emitter prints: finite when present (JSON cannot carry NaN, a caller can). */
+function optNum(v: unknown, path: string, val: Validator): void {
+  if (v !== undefined && !isNum(v)) val.err(path, "expected a number");
+}
+
 /** Validate a `{x,y}` point at `path`; returns it (or null on error). */
 function reqPoint(v: unknown, path: string, val: Validator): PointJson | null {
   if (!isObj(v)) {
@@ -1297,6 +1338,24 @@ function validatePlanJson(json: unknown, val: Validator): PlanJson | null {
   if ("version" in json && json.version !== 1) val.err("/version", "only version 1 is supported");
   if ("units" in json && json.units !== "mm") val.err("/units", 'only "mm" is supported');
   if (!isStr(json.plan) && json.plan !== undefined) val.err("/plan", "expected a string");
+  // Every head value the emitter prints is held to its type here, so emission never sees a value
+  // of the wrong type (EH1.15): a non-finite `grid` printed `grid NaN`, a `north` that was neither
+  // a word nor `{ deg }` printed `north undefined`, and a non-string title field threw.
+  if (json.grid !== undefined && !isNum(json.grid)) val.err("/grid", "expected a number");
+  if (
+    json.north !== undefined &&
+    !(isStr(json.north) && (NORTH_DIRS as readonly string[]).includes(json.north)) &&
+    !(isObj(json.north) && isNum(json.north.deg))
+  )
+    val.err("/north", `expected ${enumList(NORTH_DIRS)} or { "deg": <number> }`);
+  if (json.title !== undefined) {
+    if (!isObj(json.title)) val.err("/title", "expected an object");
+    else
+      for (const word of TITLE_FIELDS) {
+        const v = json.title[word];
+        if (v !== undefined && !isStr(v)) val.err(`/title/${word}`, "expected a string");
+      }
+  }
 
   if (json.site !== undefined) validateSite(json.site, "/site", val);
   if (json.paper !== undefined) validatePaper(json.paper, "/paper", val);
@@ -1502,7 +1561,7 @@ function validateRoom(r: unknown, path: string, val: Validator): void {
       if (!isNum(r[key])) val.err(`${path}/${key}`, "expected a number");
     }
   }
-  if (r.id !== undefined && !isStr(r.id)) val.err(`${path}/id`, "expected a string");
+  reqWord(r.id, `${path}/id`, "a room id", val, true);
   if (r.label !== undefined && !isStr(r.label)) val.err(`${path}/label`, "expected a string");
   if (r.room_type !== undefined && !(isStr(r.room_type) && ROOM_TYPE_SET.has(r.room_type)))
     val.err(`${path}/room_type`, `expected one of ${ROOM_TYPES.join(", ")}`);
@@ -1530,7 +1589,11 @@ function validateWall(w: unknown, path: string, val: Validator): void {
     });
   }
   if (w.thickness !== undefined && !isNum(w.thickness)) val.err(`${path}/thickness`, "expected a number");
-  if (w.category !== undefined && !isStr(w.category)) val.err(`${path}/category`, "expected a string");
+  reqWord(w.id, `${path}/id`, "a wall id", val, true);
+  reqWord(w.category, `${path}/category`, "a wall category", val);
+  reqWord(w.material, `${path}/material`, "a material name", val);
+  optNum(w.material_scale, `${path}/material_scale`, val);
+  optNum(w.material_angle, `${path}/material_angle`, val);
   // A VERTICAL height, not a plan extent — see `WallJson.height`.
   if (w.height !== undefined && !(isNum(w.height) && isDrawableHeight(w.height)))
     val.err(`${path}/height`, `expected a number greater than 0 and no more than ${MAX_HEIGHT}`);
@@ -1574,10 +1637,11 @@ function validateWallsFromRooms(w: unknown, path: string, val: Validator): void 
     if (!Array.isArray(w.except)) val.err(`${path}/except`, "expected an array of room ids");
     else
       w.except.forEach((x, i) => {
-        if (!(isStr(x) && /^[A-Za-z_][\w-]*$/.test(x))) val.err(`${path}/except/${i}`, "expected a room id");
+        if (!(isStr(x) && isLexWord(x))) val.err(`${path}/except/${i}`, `expected a room id: ${WORD_SHAPE}`);
       });
   }
-  const ident = (x: unknown): boolean => isStr(x) && /^[A-Za-z_][\w-]*$/.test(x);
+  // `isLexWord`, not the hyphen-admitting pattern this was: `a-b` lexes as `a - b`.
+  const ident = (x: unknown): boolean => isStr(x) && isLexWord(x);
   const pair = (c: Record<string, unknown>, at: string): void => {
     if (!(Array.isArray(c.between) && c.between.length === 2 && c.between.every(ident)))
       val.err(`${at}/between`, "expected two room ids");
@@ -1630,8 +1694,11 @@ function validateRelation(r: unknown, path: string, kind: unknown, val: Validato
     return false;
   }
   const between = r.between;
-  const okBetween = Array.isArray(between) && between.length === 2 && between.every((x) => isStr(x));
-  const okEdge = isStr(r.edge) && /^[^.\s]+(\.[^.\s]+)*\.(top|bottom|left|right|north|south|east|west)$/.test(r.edge);
+  const okBetween = Array.isArray(between) && between.length === 2 && between.every((x) => isStr(x) && isLexWord(x));
+  const okEdge =
+    isStr(r.edge) &&
+    isLexWord(r.edge) &&
+    /^[^.\s]+(\.[^.\s]+)*\.(top|bottom|left|right|north|south|east|west)$/.test(r.edge);
   let ok = true;
   if ((between !== undefined) === (r.edge !== undefined)) {
     val.err(path, "needs exactly one of `between` (two room ids) and `edge` (`<room>.<edge>`)");
@@ -1647,8 +1714,8 @@ function validateRelation(r: unknown, path: string, kind: unknown, val: Validato
     val.err(`${path}/between`, "a window stands on one room's edge (`edge`), not `between` two rooms");
     ok = false;
   }
-  if (r.at !== undefined && !isStr(r.at)) {
-    val.err(`${path}/at`, "expected a position string");
+  if (r.at !== undefined && !(isStr(r.at) && isAttachPosText(r.at))) {
+    val.err(`${path}/at`, POS_SHAPE);
     ok = false;
   }
   for (const k of Object.keys(r)) {
@@ -1668,6 +1735,18 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
   if (!(isStr(o.kind) && OPENING_KINDS.has(o.kind)))
     val.kindErr(`${path}/kind`, `expected "door", "window", or "opening"${isStr(o.kind) ? ` (got "${o.kind}")` : ""}`);
   if (!isNum(o.width)) val.err(`${path}/width`, "expected a number");
+  reqWord(o.id, `${path}/id`, "an opening id", val, true);
+  reqWord(o.wall, `${path}/wall`, "a wall id or category", val);
+  // `on` is printed whenever it is present (`on <wall> at <pos>`), so a present one is checked
+  // whole, not only when it is the placement that counts.
+  if (o.on !== undefined) {
+    if (!isObj(o.on)) val.err(`${path}/on`, "expected an object { wall, at }");
+    else {
+      if (o.on.wall === undefined) val.err(`${path}/on/wall`, "expected a wall id or category");
+      else reqWord(o.on.wall, `${path}/on/wall`, "a wall id or category", val);
+      if (!(isStr(o.on.at) && isAttachPosText(o.on.at))) val.err(`${path}/on/at`, POS_SHAPE);
+    }
+  }
   // `mirror` is a door's alone (only a door carries the IR's `_mirror`), as `sill` is a window's.
   if (o.mirror !== undefined && o.kind !== "door")
     val.err(`${path}/mirror`, "only a door has a `mirror` — a window and a cased opening are never reflected");
@@ -1730,19 +1809,31 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
     val.err(path, "expected an object");
     return;
   }
-  if (!isStr(f.category)) val.err(`${path}/category`, "expected a string");
+  if (f.category === undefined) val.err(`${path}/category`, "expected a fixture category");
+  else reqWord(f.category, `${path}/category`, "a fixture category", val);
+  reqWord(f.id, `${path}/id`, "a fixture id", val, true);
+  reqWord(f.room, `${path}/room`, "a room id", val);
+  reqWord(f.against_wall, `${path}/against_wall`, "a wall id or category", val);
+  reqWord(f.facing, `${path}/facing`, "a facing target", val);
+  // Printed with `q`, which iterates it: a number threw `TypeError: s is not iterable` (defect 1).
+  if (f.label !== undefined && !isStr(f.label)) val.err(`${path}/label`, "expected a string");
+  for (const k of ["width", "height", "segment", "offset", "inset"] as const) optNum(f[k], `${path}/${k}`, val);
   const hasAt = isNum(f.x) && isNum(f.y);
   const hasAgainst = isStr(f.against_wall) || isStr(f.against_edge);
   const hasInPlace = (f.centered === true || isStr(f.anchor)) && isStr(f.room);
   if (!hasAt && !hasAgainst && !hasInPlace)
     val.err(path, "needs a placement: `x`/`y`, `against_wall`, `against_edge`, or (`centered`/`anchor` with `room`)");
-  if (f.against_edge !== undefined && !isStr(f.against_edge)) val.err(`${path}/against_edge`, "expected a string");
+  // Printed as `against <edge>`, one word the parser reads only when it is not `wall`.
+  if (
+    f.against_edge !== undefined &&
+    !(isStr(f.against_edge) && isLexWord(f.against_edge) && isEdgeName(f.against_edge))
+  )
+    val.err(`${path}/against_edge`, "expected a room edge `<room>.top|bottom|left|right`");
   // Re-emitted verbatim after `segment`, so it must be a selector and nothing else.
   if (f.segment_select !== undefined && !(isStr(f.segment_select) && SEGMENT_SELECT_RE.test(f.segment_select)))
     val.err(`${path}/segment_select`, "expected `north|south|east|west` or `containing <room>.<edge>`");
   if (f.segment_select !== undefined && !isStr(f.against_wall))
     val.err(`${path}/segment_select`, "needs `against_wall`");
-  if (f.facing !== undefined && !isStr(f.facing)) val.err(`${path}/facing`, "expected a string");
   for (const k of ["clear_front", "clear_sides"] as const)
     if (f[k] !== undefined && !(isNum(f[k]) && (f[k] as number) > 0))
       val.err(`${path}/${k}`, "expected a positive number");
@@ -1792,6 +1883,7 @@ function validateColumn(c: unknown, path: string, val: Validator): void {
   for (const key of ["x", "y", "width", "height"]) {
     if (!isNum(c[key])) val.err(`${path}/${key}`, "expected a number");
   }
+  reqWord(c.id, `${path}/id`, "a column id", val, true);
 }
 
 // ---- canonical .arch emission ---------------------------------------------
@@ -1801,24 +1893,18 @@ function validateColumn(c: unknown, path: string, val: Validator): void {
  *  (`statement-print.ts`'s `numStr`): Plan JSON round-trips a RESOLVED, already-rounded
  *  number, so re-quantizing it here would only lose precision a second time for
  *  nothing — this emitter also never touches `statement-print.ts`, since it prints from
- *  validated JSON values, not the `Expr` AST that module's leaf printer takes. */
+ *  validated JSON values, not the `Expr` AST that module's leaf printer takes.
+ *  `String(n)` with its exponent expanded ({@link plainDigits}): `String(1e-9)` is `1e-9`, which
+ *  the lexer (no exponent form) read as `1` then `e`, an `E_PARSE` (EH1.15). */
 function num(n: number): string {
   if (Object.is(n, -0)) return "0";
-  return String(n);
+  return plainDigits(n);
 }
 
-/** Escape a literal string for an ArchLang `"…"` template (so `{`/`}`/`"`/`\` stay literal). */
+/** A literal string as an ArchLang `"…"` template, through the language's own escaper
+ *  ({@link escapeStr}, so `{`/`}`/`"`/`\`/newline stay literal and cannot end the literal). */
 function q(s: string): string {
-  let out = '"';
-  for (const ch of s) {
-    if (ch === "\\") out += "\\\\";
-    else if (ch === '"') out += '\\"';
-    else if (ch === "{") out += "\\{";
-    else if (ch === "}") out += "\\}";
-    else if (ch === "\n") out += "\\n";
-    else out += ch;
-  }
-  return out + '"';
+  return `"${escapeStr(s)}"`;
 }
 
 const idAttr = (id: string | undefined): string => (id ? `id=${id} ` : "");
