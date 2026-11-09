@@ -6,15 +6,17 @@ gap in the sequence means that item shipped; the commit that closed it is cited 
 referenced it. Closed entries are archived verbatim in the private sibling repository, at
 `archlang-lab/backlog-archive.md` (`scripts/backlog-archive.mjs` does the move); an archived id that a
 tracked file still cites leaves a one-line tombstone `- <id> · <title> — <status> → archived (lab)`.
-Every heading here reads ``### <id> · <title> — `<status>` ``, with status one of `todo`,
-`declared`, `parked`, `deferred`, `decision`, `note`; `docs/backlog-index.md` (generated) lists them all.
+Every heading here reads ``### <id> · <title> — `<status>` ``, with status one of `todo`, `declared`,
+`parked`, `deferred`, `decision` (waits on the owner), `note`. `docs/backlog-index.md` lists them all; it is
+generated, so run `npm run gen:backlog-index` after any heading change.
 
 It is also the state file for the `/loop` burn-down driver:
 
 ```
-/loop Read docs/backlog-index.md. Take the topmost row whose status is `todo` and open that one
-entry in docs/backlog.md (its anchor is in the row). Dispatch one Opus subagent with
-isolation:"worktree" to implement it, run that item's stated verification gate, then report the diff and the gate output to me and STOP for approval. Do not commit, do not
+/loop Read docs/backlog-index.md. Take the topmost row whose status is `todo`. Locate it with
+`grep -n '^### <id> · ' docs/backlog.md` and read from that line to the next `### `. Dispatch one
+Opus subagent with isolation:"worktree" to implement it, run that item's stated verification gate,
+then report the diff and the gate output to me and STOP for approval. Do not commit, do not
 push, do not start a second item in the same tick.
 ```
 
@@ -412,6 +414,14 @@ single re-measure of a large nav grid is most of the cost. Close by re-measuring
 without rebuilding the raster (only the widened doorways' cells and stamps change), which would
 make each re-measure cheap enough to raise the budget.
 
+## Wall-face probe findings
+
+Left open by routing "which side of this wall has floor" through `wallFaceProbes`
+(`src/geometry.ts`) and giving `roomOfVertical` the room's shape. Neither was in that change's scope.
+Both closed their SHAPE half in W5a; P.1's message half closed with #404.
+
+- P.2 · `swing into <rectangle room>` on an arc host picks its side off the chord — closed by W5a → archived (lab)
+
 ## Axonometric view findings
 
 Left open by W9, which made `compile(src, { view })` stop throwing on a wall set its openings
@@ -529,7 +539,7 @@ the same kind without also fetching Plan JSON. Small, additive, same key name.
 
 - 6.3 · Plan JSON reflection on dims, doors and vertical runs — done (doors, dims), vertical _tail/_mirror not projected → archived (lab)
 
-### 6.4 · Rectangle-algebra path consistency for `intent` (rejected for now (ADR 0020)) — `todo`
+### 6.4 · Rectangle-algebra path consistency for `intent` (rejected for now (ADR 0020)) — `decision`
 
 Considered and set aside while writing ADR 0020: routing the `intent` channel's
 adjacency/reachability assertions through a general interval/rectangle constraint solver
@@ -538,7 +548,7 @@ a solver can satisfy a rubric with a *different* room assignment than the judge 
 moving eval scores for reasons unrelated to plan quality. Revisit only against a concrete
 rubric failure, not as a generalisation exercise.
 
-### 6.5 · Exact projective predicates (orient2d / homogeneous intersection) (rejected for now (ADR 0020)) — `todo`
+### 6.5 · Exact projective predicates (orient2d / homogeneous intersection) (rejected for now (ADR 0020)) — `decision`
 
 Measured bounds with today's plain double arithmetic: `orient2d` stays exact to `2²⁵` mm;
 homogeneous line intersection is exact only to about 104 m (`2^(50/3)` mm ≈ 104,000 mm). Both cover every plan size the
@@ -551,7 +561,7 @@ the candidate modelling range in M.1.
 
 - 6.6 · A trig/hypot cross-engine audit — measured: no divergence; replacement not motivated → archived (lab)
 
-### 6.7 · `while` and reassignment removal at 2.0 (owner decision: remove at the next MAJOR, no code before then) — `todo`
+### 6.7 · `while` and reassignment removal at 2.0 (owner decision: remove at the next MAJOR, no code before then) — `decision`
 
 `W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED` (`src/while-deprecation.ts`) soft-deprecate the two
 forms and `arch fix` offers a proven `while`→`for` rewrite (`src/while-fix.ts`); nothing is removed
@@ -805,7 +815,7 @@ Recorded with reasons in ADR 0022; none was built this round.
 - Interval-graph layering for `W_DIM_OVERLAP`, regular-path queries on the access graph, bare
   component extraction (MDL), a dataset entropy report: possible, no failure evidence yet.
 
-### M.20 · Intent concept `dining-room` is not a table key, so a room labelled "Dining" misses it (needs an owner-approved `SYNONYMS_VERSION` bump) — `todo`
+### M.20 · Intent concept `dining-room` is not a table key, so a room labelled "Dining" misses it (needs an owner-approved `SYNONYMS_VERSION` bump) — `decision`
 
 `CONCEPTS` (`src/intent-concepts.ts`) has `dining` but no `dining-room`, so `dining-room` is an
 UNKNOWN concept and takes the literal fallback in `roomsMatchingConcept`: it matches the label
@@ -883,7 +893,7 @@ false at every one. No D4 sweep covers it (`glyphs-misc.test.ts` sweeps `plant` 
 `requiresWall: false` and no `directional`, the flag changes no orientation decision; drop it or
 make the square drawing D4-exact.
 
-### D.7 · The sheet draws two different hairlines (an owner decision) — `todo`
+### D.7 · The sheet draws two different hairlines (an owner decision) — `decision`
 
 A sheet-table hairline (`rule(…, hairline)`, `src/sheet-tables.ts`) is `extraThin`,
 `thin × 13/18`; the title block's row rules are drawn outside the Scene at `thin × 0.5`
@@ -1222,7 +1232,7 @@ with a `label`. Decide that line before coding.
 **Gate:** `furniture grand_pianno` raises a catalogued warning with a nearest-category `fix`
 under `arch validate --strict --json`; no example gains a diagnostic. **Size:** S.
 
-### U.4 · A furniture `label` on a drawn symbol vanishes without a word (needs a decision) — `todo`
+### U.4 · A furniture `label` on a drawn symbol vanishes without a word (needs a decision) — `decision`
 
 **Observed (audit finding 11).** A `label` on a furniture item disappears from the drawing with
 no diagnostic.
@@ -1267,7 +1277,7 @@ lists the valid uses and gives no hint toward `outdoor balcony`.
 **Gate:** `uses balcony` yields a message that contains `outdoor balcony`, pinned by test;
 `arch compile --json` over the examples unchanged. **Size:** S.
 
-### U.7 · Two bedrooms are both typed `MasterRoom` in Plan JSON (needs a decision) — `todo`
+### U.7 · Two bedrooms are both typed `MasterRoom` in Plan JSON (needs a decision) — `decision`
 
 **Observed (audit finding 16).** Both bedrooms of the audit plan come out of the Plan JSON
 export typed `MasterRoom`.
@@ -1536,7 +1546,7 @@ https://archlang.uk/terms. The OpenAI submission's state is O.7 and `docs/seo.md
 row of https://developers.openai.com/plugins/deploy/submission-errors as read on 2026-10-15. When
 `test/agent-manifests.test.ts` or the portal disagrees with it, re-check it against that page.
 
-### O.10 · Two Dependabot major bumps wait for a decision (decision needed) — `todo`
+### O.10 · Two Dependabot major bumps wait for a decision (decision needed) — `decision`
 
 `@types/node` 22 → 26 (#121; the runtime stays Node 18-22, so the types would run ahead of it) and
 `vitest` 2 → 5 (#119, CI red on the branch). Patch/minor bumps were merged on 2026-10-15 under the merge policy.
@@ -1606,7 +1616,7 @@ users on ClawHub, then the entry is filed.
 Lawn, paving and deck areas are not built in 3D, so a garden is bare ground in the replay and the GLB.
 **Gate:** a ledgered default per surface; pins move only with the reason recorded.
 
-### VA.3 · A room with no `uses` keeps the neutral floor (decision: read the label?) — `todo`
+### VA.3 · A room with no `uses` keeps the neutral floor (decision: read the label?) — `decision`
 
 `floorFinish` reads `uses` only; the label is deliberately not read. Decide whether a label should
 ever pick a finish before building anything.

@@ -39,7 +39,7 @@ const HEADING = /^### (\S+) · (.+) — `([^`]+)`$/;
 export function slug(heading: string): string {
   return heading
     .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-    .replace(/[`*_~]/g, "")
+    .replace(/`/g, "")
     .toLowerCase()
     .replace(/[^\p{L}\p{N}\p{M} _-]/gu, "")
     .replace(/ /g, "-");
@@ -85,7 +85,7 @@ export function parseEntries(src: string): BacklogEntry[] {
   return entries;
 }
 
-const cell = (s: string): string => s.replace(/\|/g, "\\|");
+const cell = (s: string): string => s.replace(/[\\|]/g, "\\$&");
 
 /** The whole generated file. */
 export function renderIndex(entries: readonly BacklogEntry[]): string {

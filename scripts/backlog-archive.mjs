@@ -11,12 +11,14 @@
  *            `<lab>/backlog-archive.md` under a dated section, in backlog order
  *   KEEP     todo, declared, parked, deferred, decision, note   stay; the heading is normalised to
  *            `### <id> · <title> — \`<status>\`` (a qualifier such as "(needs a decision)" moves
- *            into the title as a parenthetical; the body is untouched)
+ *            into the title as a parenthetical; the body is untouched). A `todo` whose qualifier
+ *            says it waits on the owner reads `decision`, so the /loop driver skips it.
  *
  * Where another tracked file (docs/, src/, test/, .claude/, CHANGELOG.md, or what stays of the
  * backlog) cites an archived id, the entry leaves a one-line tombstone
  * `- <id> · <title> — <status> → archived (lab)`; otherwise it is deleted. A `## ` section whose
- * entries were all archived is dropped. Re-running on a clean backlog changes nothing.
+ * entries were all archived is dropped unless one of them keeps a tombstone. Re-running on a clean
+ * backlog changes nothing.
  */
 import { execFileSync } from "node:child_process";
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from "node:fs";
@@ -37,6 +39,10 @@ const RENAME_SECTION = { prefix: "Accessibility — axe findings", from: /^A\.(\
 
 const STATUS_WORD = "(?:todo|declared|deferred|parked|done|won't fix|closed|decided|measured)";
 const SPLIT = new RegExp(`\\s—\\s(?=\`?${STATUS_WORD}\\b)`, "g");
+
+/** Qualifiers that make a `todo` a `decision`: an owner ruling, or a rejection awaiting reversal. */
+const DECISION =
+  /needs (?:an? )?(?:owner-approved|decision)|owner decision|decision needed|rejected for now|^\(?decision:/i;
 
 /** `{ id, title, status, qualifier, archive, original }` for one `### ` line, or throws. */
 export function parseHeading(line) {
@@ -65,7 +71,8 @@ export function parseHeading(line) {
     .slice(word.length)
     .replace(/^[\s,:]+/, "")
     .trim();
-  return { id: idm[1], title: idm[2], status: word, qualifier, archive, original: tail.replace(/`/g, "") };
+  const status = word === "todo" && DECISION.test(qualifier) ? "decision" : word;
+  return { id: idm[1], title: idm[2], status, qualifier, archive, original: tail.replace(/`/g, "") };
 }
 
 /** `### <id> · <title> — \`<status>\`` for a kept entry. */
@@ -104,20 +111,6 @@ function idsOf(id) {
   return ids;
 }
 
-function trackedLines(kept) {
-  const files = execFileSync("git", ["ls-files", "docs", "src", "test", ".claude", "CHANGELOG.md"], {
-    cwd: ROOT,
-    encoding: "utf8",
-    maxBuffer: 1 << 28,
-  })
-    .split("\n")
-    .filter((f) => f && f !== "docs/backlog.md" && /\.(md|ts|mjs|js|json|arch|txt|yml|yaml|sh)$/.test(f));
-  const texts = [];
-  for (const f of files) if (existsSync(join(ROOT, f))) texts.push(readFileSync(join(ROOT, f), "utf8"));
-  texts.push(kept);
-  return texts.join("\n").split("\n");
-}
-
 /** Does any line cite `id`? Numeric ids (6.8) also need the line to talk about the backlog. */
 function cited(id, lines) {
   const esc = id.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -126,16 +119,11 @@ function cited(id, lines) {
   return lines.some((l) => re.test(l) && (!numeric || /backlog|entry|item|§/i.test(l)));
 }
 
-function main() {
-  const args = process.argv.slice(2);
-  const arg = (n) => (args.includes(n) ? args[args.indexOf(n) + 1] : undefined);
-  const lab = arg("--lab");
-  const dry = args.includes("--dry");
-  const date = arg("--date") ?? new Date().toISOString().slice(0, 10);
-  if (!lab && !dry) throw new Error("--lab <archlang-lab path> is required (or --dry)");
-  const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
-
-  const src = readFileSync(BACKLOG, "utf8");
+/**
+ * The pure core: `src` is the backlog text, `otherLines` the lines of every other tracked file that
+ * may cite an id. Returns the new backlog, the archive body, the tombstoned ids and the heading mapping.
+ */
+export function archiveBacklog(src, otherLines) {
   const doc = parseBacklog(src);
   const mapping = new Map();
   for (const sec of doc.sections) {
@@ -149,17 +137,24 @@ function main() {
     }
   }
 
-  // First pass: what stays, to know which archived ids it still cites.
-  const keptSections = doc.sections.filter((sec) => sec.entries.length === 0 || sec.entries.some((e) => !e.h.archive));
+  // What stays (before any tombstone), to know which archived ids it still cites.
+  const stays = doc.sections.filter((sec) => sec.entries.length === 0 || sec.entries.some((e) => !e.h.archive));
   const keptText = [
     ...doc.preamble,
-    ...keptSections.flatMap((s) => [
+    ...stays.flatMap((s) => [
       s.head,
       ...s.preface,
       ...s.entries.filter((e) => !e.h.archive).flatMap((e) => [e.heading, ...e.body]),
     ]),
   ].join("\n");
-  const lines = trackedLines(keptText);
+  const lines = [...otherLines, ...keptText.split("\n")];
+  for (const sec of doc.sections) {
+    for (const e of sec.entries) e.tomb = e.h.archive && idsOf(e.h.id).some((i) => cited(i, lines));
+  }
+  // A section with a tombstone stays, so the tombstone is not lost with it.
+  const keptSections = doc.sections.filter(
+    (sec) => sec.entries.length === 0 || sec.entries.some((e) => !e.h.archive || e.tomb),
+  );
 
   const tombstoned = [];
   const out = [...doc.preamble];
@@ -171,12 +166,10 @@ function main() {
       pending = [];
     };
     for (const e of sec.entries) {
-      if (e.h.archive) {
-        if (idsOf(e.h.id).some((i) => cited(i, lines))) {
-          tombstoned.push(e.h.id);
-          pending.push(`- ${e.h.id} · ${e.h.title} — ${e.h.original} → archived (lab)`);
-        }
-      } else {
+      if (e.tomb) {
+        tombstoned.push(e.h.id);
+        pending.push(`- ${e.h.id} · ${e.h.title} — ${e.h.original} → archived (lab)`);
+      } else if (!e.h.archive) {
         flush();
         out.push(normaliseHeading(e.h), ...e.body);
       }
@@ -197,6 +190,33 @@ function main() {
     for (const e of gone) arch.push(e.heading, ...e.body);
     archived += gone.length;
   }
+  return { text, arch, archived, tombstoned, mapping };
+}
+
+function otherTrackedLines() {
+  const files = execFileSync("git", ["ls-files", "docs", "src", "test", ".claude", "CHANGELOG.md"], {
+    cwd: ROOT,
+    encoding: "utf8",
+    maxBuffer: 1 << 28,
+  })
+    .split("\n")
+    .filter((f) => f && f !== "docs/backlog.md" && /\.(md|ts|mjs|js|json|arch|txt|yml|yaml|sh)$/.test(f));
+  const texts = [];
+  for (const f of files) if (existsSync(join(ROOT, f))) texts.push(readFileSync(join(ROOT, f), "utf8"));
+  return texts.join("\n").split("\n");
+}
+
+function main() {
+  const args = process.argv.slice(2);
+  const arg = (n) => (args.includes(n) ? args[args.indexOf(n) + 1] : undefined);
+  const lab = arg("--lab");
+  const dry = args.includes("--dry");
+  const date = arg("--date") ?? new Date().toISOString().slice(0, 10);
+  if (!lab && !dry) throw new Error("--lab <archlang-lab path> is required (or --dry)");
+  const sha = execFileSync("git", ["rev-parse", "HEAD"], { cwd: ROOT, encoding: "utf8" }).trim();
+
+  const src = readFileSync(BACKLOG, "utf8");
+  const { text, arch, archived, tombstoned, mapping } = archiveBacklog(src, otherTrackedLines());
   const count = (s) => `${Buffer.byteLength(s)} bytes, ${s.split("\n").length - 1} lines`;
   console.log(`before: ${count(src)}\nafter:  ${count(text)}`);
   console.log(`archived entries: ${archived}; tombstones (${tombstoned.length}): ${tombstoned.join(", ")}`);
@@ -206,7 +226,7 @@ function main() {
   if (archived) {
     const file = join(lab, "backlog-archive.md");
     const head = `## Archived from archlang docs/backlog.md on ${date}, commit ${sha}\n\n`;
-    const body = `${arch.join("\n").replace(/\n*$/, "\n")}`;
+    const body = arch.join("\n").replace(/\n*$/, "\n");
     if (existsSync(file)) appendFileSync(file, `\n${head}${body}`);
     else
       writeFileSync(
