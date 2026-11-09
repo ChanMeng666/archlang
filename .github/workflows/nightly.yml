@@ -503,10 +503,18 @@ jobs:
             });
             const existing = issues.find((i) => !i.pull_request && (i.body ?? '').includes(marker));
 
+            // `ci-red` is what a session checks first (`gh issue list -l ci-red`). Editing the body
+            // notifies nobody, so every red night also posts a comment.
+            await github.rest.issues.createLabel({ owner, repo, name: 'ci-red', color: 'b60205', description: 'CI or nightly is red' }).catch(() => {});
+            const names = failed.length > 0 ? failed.map((f) => f.split('`')[1]).join(', ') : 'none (advisory only)';
+            const comment = `Red nightly: ${run}\nFailed jobs: ${names}`;
             if (existing) {
               await github.rest.issues.update({ owner, repo, issue_number: existing.number, title, body });
+              await github.rest.issues.addLabels({ owner, repo, issue_number: existing.number, labels: ['ci-red'] });
+              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body: comment });
               core.info(`updated #${existing.number}`);
             } else {
-              const { data } = await github.rest.issues.create({ owner, repo, title, body });
+              const { data } = await github.rest.issues.create({ owner, repo, title, body, labels: ['ci-red'] });
+              await github.rest.issues.createComment({ owner, repo, issue_number: data.number, body: comment });
               core.info(`created #${data.number}`);
             }
