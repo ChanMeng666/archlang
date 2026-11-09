@@ -23,7 +23,8 @@
  * the build reads, and a generator's template cannot go stale behind it.
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile, lint } from "../src/index.js";
@@ -80,9 +81,7 @@ function excludedExamples(): string[] {
 
 /** Every top-level `examples/*.arch` (`examples/lib/` holds component libraries). */
 function exampleFiles(): string[] {
-  return readdirSync("examples")
-    .filter((f) => f.endsWith(".arch") && statSync(join("examples", f)).isFile())
-    .sort();
+  return exampleNames();
 }
 
 const rows = readRows();

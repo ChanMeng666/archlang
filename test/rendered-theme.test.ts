@@ -2,7 +2,7 @@
  * The `rendered` theme (visual-assets card V4; ADR 0023, the 2026-11-04 amendment).
  *
  * 1. **The byte-identity law.** Every shipped example and the inline rows of
- *    `./rendered-theme-law.ts`, under the default and each of the four themes that existed before
+ *    `test/helpers/rendered-theme-law.ts`, under the default and each of the four themes that existed before
  *    `rendered`, draw, describe, lint and diagnose exactly as they did. Each row is
  *    {@link themeLawDigest}, **measured against `src/` at `241fbfc3`** (`main` before the theme) by
  *    the law's own body, run with that tree's compiler and themes. A digest moving is a finding to
@@ -37,7 +37,7 @@ import { glyphCtx, parseHexColor, symbolInk } from "../src/elements/glyph-lib.js
 import type { SceneNode } from "../src/scene.js";
 import { DEFAULT_THEME, mergeTheme, sanitizeTheme, THEMES, type Theme } from "../src/theme.js";
 import type { World } from "../src/world.js";
-import { ROOT } from "./rectilinear-rooms-law.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 import {
   LEGACY_THEMES,
   MEASURED_FAMILIES,
@@ -45,7 +45,7 @@ import {
   type ThemeLawApi,
   themeLawDigest,
   themeLawRows,
-} from "./rendered-theme-law.js";
+} from "./helpers/rendered-theme-law.js";
 
 const sceneOf = () =>
   compile(`plan "G" { units mm room id=r at (0,0) size 4000x3000 label "R" }`, { noCache: true }).scene!;

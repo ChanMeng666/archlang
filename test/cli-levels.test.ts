@@ -1,3 +1,5 @@
+/** v1.21 CLI — compile writes one file per storey; v1.21 CLI — describe --level is a display filter; v1.21 CLI — the level-free path is unchanged. */
+
 import { mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

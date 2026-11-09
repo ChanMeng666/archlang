@@ -1,6 +1,8 @@
+/** frame algebra — signed permutation + translation; tp — mapping a point local → global; transformRect — a top-left + size box; transformDeg — carrying a fixture'… */
+
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { arcMidpoint, arcSweepAngle, pathArcs } from "./path-prim.js";
+import { arcMidpoint, arcSweepAngle, pathArcs } from "./helpers/path-prim.js";
 import {
   IDENTITY,
   composeFrame,

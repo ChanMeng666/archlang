@@ -1,3 +1,5 @@
+/** bench/compare.mjs. */
+
 import { describe, expect, it } from "vitest";
 // @ts-expect-error — a zero-dep .mjs CI script with no type declarations.
 import { compareRuns, median, MIN_BASE_MS, parseArgs, render, stageClass, THRESHOLD_PCT } from "../bench/compare.mjs";

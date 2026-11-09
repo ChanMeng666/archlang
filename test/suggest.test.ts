@@ -1,3 +1,5 @@
+/** suggestTopology; suggestTopology — W_NO_ENTRANCE; suggestTopology — W_BATH_VIA_BEDROOM; suggestTopology — W_BATH_VIA_BEDROOM spares an en-suite beside a bathroo… */
+
 import { describe, expect, it } from "vitest";
 import { suggestTopology } from "../src/suggest.js";
 import { lint, compile } from "../src/index.js";

@@ -87,7 +87,7 @@ it.
 
 `npm run digest:engines` (`scripts/engine-digests.ts`) runs the built core in Playwright
 Chromium, Firefox and WebKit, rebuilds the byte-identity payload from the same functions
-(`test/byte-identity-payload.ts`) and compares each engine's digests with Node's and with the
+(`test/helpers/byte-identity-payload.ts`) and compares each engine's digests with Node's and with the
 pinned baseline. The nightly `cross-engine` job runs it as an advisory signal that never fails
 the night. Measured: 172 of 172 digests identical (86 plans × 2 payloads) in all three engines
 and on Node, when the harness landed and again with every change of this round merged. It
@@ -127,7 +127,7 @@ Content after the plan's closing `}` is an `E_PARSE` (`E_IMPORT_PARSE` in a modu
 statement reads the file's indentation, a local signal no brace far away can move, and its
 quality is a metric with floors that may only rise: every statement of a frozen corpus is
 fingerprinted and mutants (a dropped `}`, a deleted token) are scored on how many survive
-(`test/recovery-metric.ts`, `test/parser-recovery-metric.test.ts`, `test/recovery-corpus/`).
+(`test/helpers/recovery-metric.ts`, `test/parser-recovery-metric.test.ts`, `test/recovery-corpus/`).
 The metric was written before the recovery change and shows the loss it fixes.
 
 ### 6. Fixpoints and carves do not depend on order

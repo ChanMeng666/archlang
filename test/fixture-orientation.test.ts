@@ -1,3 +1,6 @@
+/** the shared back-edge ⇄ quarter-turn mapping; backingWallForRoomEdge / wallBackedEdges; backCandidateEdges — the footprint's aspect constrains the back; derived… */
+
+import { lintCodes as codes } from "./helpers/diag.js";
 import { describe, expect, it } from "vitest";
 import { applyFixes, compile, lint, repair } from "../src/index.js";
 import { parse } from "../src/parser.js";
@@ -49,8 +52,6 @@ const furnOf = (src: string): RFurniture =>
 
 /** The effective quarter-turn (an absent `rotate` is 0). */
 const rotOf = (src: string): number => furnOf(src).rotate ?? 0;
-
-const codes = (src: string): string[] => lint(src).map((d) => d.code ?? "");
 
 describe("the shared back-edge ⇄ quarter-turn mapping", () => {
   it("round-trips every edge (0 = back north, then clockwise)", () => {

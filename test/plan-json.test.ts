@@ -1,5 +1,8 @@
+/** plan-json — round-trip byte-identity (SVG); plan-json — derived furniture positions; plan-json — planToJson projection & enrichments; plan-json — `dims auto` is… */
+
+import { exampleNames } from "./helpers/corpus.js";
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import {
   planFromJson,
   planToJson,
@@ -18,8 +21,8 @@ import {
 // The parser's own accept-list, imported rather than retyped — the same law the
 // projection itself follows, so a fifth `dims auto` mode cannot pass this suite unnoticed.
 import { AUTO_DIMS_MODES } from "../src/ast.js";
-import { CANNOT_ROUND_TRIP } from "./plan-json-gaps.js";
-import { WALLS_FROM_ROOMS_PLANS } from "./walls-from-rooms-plans.js";
+import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
+import { WALLS_FROM_ROOMS_PLANS } from "./tables/walls-from-rooms-plans.js";
 
 /**
  * Structured JSON I/O: planFromJson / planToJson / astToJson.
@@ -94,7 +97,7 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
     // An authored wall beside the statement is still a `walls[]` row.
     const coexist = WALLS_FROM_ROOMS_PLANS.find((p) => p[0] === "coexist")![1];
     expect(planToJson(coexist).json!.walls.map((w) => w.id)).toEqual(["p"]);
-    // two-bed carries a `roof`, which Plan JSON leaves out (plan-json-gaps.ts); the studio twin round-trips
+    // two-bed carries a `roof`, which Plan JSON leaves out (test/tables/plan-json-gaps.ts); the studio twin round-trips
     roundTrips(readFileSync("test/walls-from-rooms/studio.arch", "utf8"));
     expect(planToJson(readFileSync("test/walls-from-rooms/studio.arch", "utf8")).json!.walls).toEqual([]);
     const withExcept = coexist.replace("partition 100\n", "partition 100 { except b }\n");
@@ -204,9 +207,7 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
    * a defect in its own reason string.
    */
 
-  const EXAMPLES = readdirSync("examples")
-    .filter((f) => f.endsWith(".arch"))
-    .sort();
+  const EXAMPLES = exampleNames().sort();
   const COVERED = EXAMPLES.filter((f) => !(f in CANNOT_ROUND_TRIP));
 
   it("names only exclusions that exist and still use the feature their reason cites", () => {
@@ -337,11 +338,7 @@ describe("plan-json — derived furniture positions", () => {
    * this test shipped with, 30 fixtures across `two-bed`, `garden-house`,
    * `hillside-villa` and `materials` came back somewhere else.
    */
-  it.each(
-    readdirSync("examples")
-      .filter((f) => f.endsWith(".arch"))
-      .sort(),
-  )("keeps every fixture of examples/%s where the source put it", (name) => {
+  it.each(exampleNames().sort())("keeps every fixture of examples/%s where the source put it", (name) => {
     const src = readFileSync(`examples/${name}`, "utf8");
     const { json, diagnostics } = planToJson(src);
     // `import`/`place` plans are refused by the projection itself, by design; they have

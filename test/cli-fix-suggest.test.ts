@@ -1,3 +1,5 @@
+/** arch fix; arch suggest. */
+
 import { describe, expect, it } from "vitest";
 import { runArch } from "./helpers/cli.js";
 

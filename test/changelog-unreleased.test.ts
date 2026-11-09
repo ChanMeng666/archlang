@@ -1,3 +1,5 @@
+/** CHANGELOG lines land under Unreleased, no released line is deleted, and a release PR is exempt. */
+
 import { describe, expect, it } from "vitest";
 // @ts-expect-error — a zero-dep .mjs script with no type declarations.
 import { changelogVerdict, checkChangelogDiff } from "../scripts/check-changelog-unreleased.mjs";

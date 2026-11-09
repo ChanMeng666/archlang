@@ -1,3 +1,5 @@
+/** T4.5 — sanitizeConfig utility; T4.5 — sanitization routed through the compiler. */
+
 import { describe, expect, it } from "vitest";
 import { compile, sanitizeConfig, isDisallowedConfigValue } from "../src/index.js";
 

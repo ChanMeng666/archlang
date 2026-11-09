@@ -1,3 +1,5 @@
+/** off-wall opening fix (W_*_OFF_WALL → attachment form); opening width fix (E_*_WIDTH → has-placeholders); attach-position clamp fix (E_ATTACH_POS_RANGE → machine… */
+
 import { describe, expect, it } from "vitest";
 import { applyFixes, compile, describe as describePlan } from "../src/index.js";
 

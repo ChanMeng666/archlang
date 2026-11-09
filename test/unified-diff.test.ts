@@ -1,3 +1,5 @@
+/** unifiedDiff. */
+
 import { describe, expect, it } from "vitest";
 import { unifiedDiff } from "../src/index.js";
 import { unifiedDiff as datasetUnifiedDiff } from "../dataset/diff.js";

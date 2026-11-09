@@ -1,3 +1,5 @@
+/** T4.1 — cache key reflects plugin identity. */
+
 import { describe, expect, it } from "vitest";
 import { compile, clearCache, registerElement } from "../src/index.js";
 import type { ElementDef, ParseCtx, ResolveCtx, RenderCtx } from "../src/index.js";

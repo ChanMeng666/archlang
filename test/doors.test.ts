@@ -24,6 +24,7 @@
  *  5. **Determinism** with the optional clipper2 backend registered *and* cleared.
  */
 
+import { lintCodes as codes } from "./helpers/diag.js";
 import { afterAll, describe as suite, expect, it } from "vitest";
 import {
   applyFixes,
@@ -73,8 +74,6 @@ const doorsOf = (src: string): RDoor[] => {
   const { ir } = resolve(parse(src).plan!);
   return ir.elements.filter((e): e is RDoor => e.kind === "door");
 };
-
-const codes = (src: string): string[] => lint(src).map((d) => d.code ?? "");
 
 // ---------------------------------------------------------------------------
 // 1 — the byte-identity law

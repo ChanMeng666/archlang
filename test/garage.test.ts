@@ -26,6 +26,7 @@
  * No warning is the right answer there, and it is asserted rather than left to the reader.
  */
 
+import { lintCodes as codes } from "./helpers/diag.js";
 import { describe as suite, expect, it } from "vitest";
 import {
   compile,
@@ -54,7 +55,6 @@ const plan = (w: number, h: number, cars = 0, uses = "uses garage", shape?: stri
     "}",
   ].join("\n");
 
-const codes = (src: string): string[] => lint(src).map((d) => d.code ?? "");
 const garageWarning = (src: string) => lint(src).find((d) => d.code === "W_GARAGE_TOO_NARROW");
 
 suite("uses garage — the word reaches every closed set", () => {

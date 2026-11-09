@@ -1,4 +1,6 @@
-import { createHash } from "node:crypto";
+/** fixture glyph dispatch is by family. */
+
+import { sha256 } from "./helpers/digest.js";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -27,9 +29,7 @@ const RECTS = [
 ];
 
 const digest = (category: string): string =>
-  createHash("sha256")
-    .update(JSON.stringify(RECTS.map((r) => fixtureGlyph(category, r, DEFAULT_THEME, SIZES))))
-    .digest("hex");
+  sha256(JSON.stringify(RECTS.map((r) => fixtureGlyph(category, r, DEFAULT_THEME, SIZES))));
 
 const GOLDEN = JSON.parse(readFileSync("test/tables/glyph-dispatch.json", "utf8")) as Record<string, string>;
 

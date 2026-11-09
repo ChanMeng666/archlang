@@ -13,7 +13,7 @@
  * placement errors; readers of a relational room (backlog PS0.5); instances that diagnose
  * under a turn and a mirror; an axes block that diagnoses beside its elements.
  *
- * Each row is `allStoreysDigestWithDiagnostics` (`./byte-identity-digest.ts`: every storey's
+ * Each row is `allStoreysDigestWithDiagnostics` (`test/helpers/byte-identity-digest.ts`: every storey's
  * SVG + `describe()` + `lint()` + `compile().diagnostics`) and, readable beside it, the
  * diagnostic sequence `code@span.start`. Both were measured on `main` at `60be6a4` — a
  * `git archive` of that commit's `src/` and digest modules, through this test's own digest
@@ -38,7 +38,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 const DIR = resolvePath("test/resolve-order");

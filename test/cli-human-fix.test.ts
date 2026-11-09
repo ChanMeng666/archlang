@@ -1,3 +1,5 @@
+/** CLI — human-mode diagnostics carry the catalog fix. */
+
 import { describe, expect, it } from "vitest";
 import { ERROR_CATALOG } from "../src/index.js";
 import { runArch } from "./helpers/cli.js";

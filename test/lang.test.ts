@@ -1,3 +1,5 @@
+/** let bindings; components; control flow (T2.3); scope chain (T2.4); value-functions / closures (T2.5); built-ins (T2.6); set rules (T2.7); string-interpolated la… */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { parse } from "../src/parser.js";

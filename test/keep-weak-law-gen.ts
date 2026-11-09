@@ -3,7 +3,7 @@
  *
  *     npx tsx test/keep-weak-law-gen.ts "<why, and on which commit>"
  *
- * It measures every file of `keepWeakLawFiles()` with the test's own body (`./keep-weak-law.ts`),
+ * It measures every file of `keepWeakLawFiles()` with the test's own body (`test/helpers/keep-weak-law.ts`),
  * writes the table, and records the reason it was given in the file's header. The first table was
  * taken on the tree BEFORE any keep code, and committed on its own, so the next commit's diff proved
  * the law. A later PR that legitimately moves one of the hashed outputs (a lint rule, a drawing fix,
@@ -12,7 +12,7 @@
  */
 
 import { writeFileSync } from "node:fs";
-import { keepWeakLawDigest, keepWeakLawFiles, keepWeakLawSteps } from "./keep-weak-law.js";
+import { keepWeakLawDigest, keepWeakLawFiles, keepWeakLawSteps } from "./helpers/keep-weak-law.js";
 
 const why = process.argv[2];
 if (!why) {
@@ -26,7 +26,7 @@ const rows = keepWeakLawFiles().map(
 
 const header = `/**
  * The weak \`keep\` law's baseline (ADR 0033 decision 7; PS4.3 design §7 K1): per file, SHA-256 of
- * \`keepWeakLawPayload\` (\`./keep-weak-law.ts\`: every storey's SVG, \`describe()\` with and without
+ * \`keepWeakLawPayload\` (\`test/helpers/keep-weak-law.ts\`: every storey's SVG, \`describe()\` with and without
  * \`--facts depends\`, \`lint()\`, \`compile().diagnostics\`, \`validate --json\`, \`impact --json\`) and the
  * resolution's evaluation-step count.
  *

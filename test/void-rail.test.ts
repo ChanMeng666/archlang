@@ -9,7 +9,7 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { voidPieces } from "../src/elements/void.js";
 import type { RVoid } from "../src/ir.js";
-import { compareScenes, D4_ELEMENTS, frameFor, sceneOf } from "./d4-oracle.js";
+import { compareScenes, D4_ELEMENTS, frameFor, sceneOf } from "./helpers/d4-oracle.js";
 
 const L = "(1000,1000) (4000,1000) (4000,2000) (2000,2000) (2000,4000) (1000,4000)";
 const plan = (body: string): string =>
@@ -211,7 +211,7 @@ suite("void rail", () => {
 /**
  * The same `polygon` void placed under all eight elements of D4: the same room, the same railing
  * depth, and a drawing that is the frame's image of the unturned one (the oracle's own primitive
- * comparison, `test/d4-oracle.ts`). The two rings are the red team's: an L whose largest page-axis
+ * comparison, `test/helpers/d4-oracle.ts`). The two rings are the red team's: an L whose largest page-axis
  * slab lies in another room than most of its area, and a stepped ring whose page-axis slabs are
  * thin one way only.
  */

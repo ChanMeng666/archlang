@@ -3,7 +3,7 @@
  *
  * A plan with no block stair resolves, draws, describes and lints exactly as before, down to its
  * Scene and the steps its resolution spends, in the accessibility profile and on the circulation
- * overlay too. Each digest is {@link stairLawDigest} (`test/block-stair-law.ts`), **measured
+ * overlay too. Each digest is {@link stairLawDigest} (`test/helpers/block-stair-law.ts`), **measured
  * against `src/` at `c3e3948e`** (`main` before the form), that tree extracted by `git archive`,
  * the body imported from this branch and handed that tree's compiler. The rows are every plan the
  * rectilinear-rooms law pins, the stair-safety defect corpus, and {@link STAIR_INLINE_ROWS}: a
@@ -42,9 +42,9 @@ import { link } from "../src/import.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { NULL_WORLD, type World } from "../src/world.js";
-import { planOf, L_STAIR } from "./block-stair-plans.js";
-import { STAIR_INLINE_ROWS, type StairLawApi, stairLawDigest, stairLawRows } from "./block-stair-law.js";
-import { ROOT } from "./rectilinear-rooms-law.js";
+import { planOf, L_STAIR } from "./tables/block-stair-plans.js";
+import { STAIR_INLINE_ROWS, type StairLawApi, stairLawDigest, stairLawRows } from "./helpers/block-stair-law.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 
 const stepsOf = (src: string, world: World | undefined): number => {
   clearResolveCache();

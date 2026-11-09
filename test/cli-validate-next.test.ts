@@ -1,8 +1,10 @@
+/** validate --json · next is purely additive; validate · next tiers through the CLI. */
+
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import { runValidate, validateJsonFiles } from "./validate-json-run.js";
+import { runValidate, validateJsonFiles } from "./helpers/validate-json-run.js";
 import { runArch } from "./helpers/cli.js";
 
 /**

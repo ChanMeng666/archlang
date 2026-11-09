@@ -4,13 +4,13 @@
  *
  * A plan with no rectilinear polygon in a `walls from rooms` set, or named by a `door|opening
  * between`, resolves, draws, describes and lints exactly as before, down to its Scene and the steps
- * its resolution spends. Each digest is {@link lawDigest} (`test/rectilinear-rooms-law.ts`): every
+ * its resolution spends. Each digest is {@link lawDigest} (`test/helpers/rectilinear-rooms-law.ts`): every
  * page's SVG, `describe()`, `lint()`, `compile().diagnostics`, every page's Scene and the step
  * count, **measured against `src/` at `58c1fc81`** (`main` before the form), that tree extracted by
  * `git archive`, the body imported from this branch and handed that tree's compiler. The three
  * `inline:door-` rows are card L2's, measured the same way at `1e29c3af` (`main` before doors). The
  * rows are every plan of `examples/`, `test/fixtures/` and `test/walls-from-rooms/`, the digest-table plans of
- * `test/walls-from-rooms-plans.ts`, and {@link INLINE_ROWS}: a rectilinear polygon that is
+ * `test/tables/walls-from-rooms-plans.ts`, and {@link INLINE_ROWS}: a rectilinear polygon that is
  * excepted, or that stands beside typed walls, is on the law's side of the line.
  *
  * In this table the digest comes first: a row keyed by a path holding `access` is the shape the
@@ -46,7 +46,7 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { rectilinear } from "../src/room-tiling.js";
 import { NULL_WORLD, type World } from "../src/world.js";
-import { type LawApi, lawDigest, lawRows, ROOT } from "./rectilinear-rooms-law.js";
+import { type LawApi, lawDigest, lawRows, ROOT } from "./helpers/rectilinear-rooms-law.js";
 
 const stepsOf = (src: string, world: World | undefined): number => {
   clearResolveCache();

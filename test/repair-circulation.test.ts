@@ -1,3 +1,5 @@
+/** repair — circulation guard. */
+
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint, repair } from "../src/index.js";
 

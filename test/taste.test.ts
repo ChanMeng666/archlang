@@ -27,7 +27,7 @@ import {
   type TasteReport,
 } from "../src/index.js";
 import { tasteWithBudget } from "../src/taste/index.js";
-import { TASTE_SOURCES, TASTE_WORLD } from "./taste-sources.js";
+import { TASTE_SOURCES, TASTE_WORLD } from "./helpers/taste-sources.js";
 import { runArch } from "./helpers/cli.js";
 
 const read = (p: string): string => readFileSync(p, "utf8");

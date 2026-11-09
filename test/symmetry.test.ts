@@ -9,7 +9,7 @@
  *
  *   Stab(g·P) = g · Stab(P) · g⁻¹,   centre(g·P) = g(centre(P)).
  *
- * It is checked through the W1 oracle's wrapper (`test/d4-oracle.ts`): P₀ and gP are the
+ * It is checked through the W1 oracle's wrapper (`test/helpers/d4-oracle.ts`): P₀ and gP are the
  * same example imported whole and placed once, at the identity and by g, so both sides carry
  * the same `g.` ids and the prediction is made with `src/algebra/d4.ts`'s own `compose` and
  * `inverse` and `src/frame.ts`'s own point map. A D1 whose axis turns under a quarter-turn,
@@ -38,8 +38,8 @@ import {
   TRANSLATION,
   witnessPair,
   wrapperSource,
-} from "./d4-oracle.js";
-import { KNOWN } from "./equivariance-known.js";
+} from "./helpers/d4-oracle.js";
+import { KNOWN } from "./tables/equivariance-known.js";
 
 const LAYERS = ["shell", "rooms", "full"] as const;
 

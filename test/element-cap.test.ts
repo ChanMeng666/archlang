@@ -1,3 +1,6 @@
+/** element budget (E_ELEMENT_LIMIT); 1000 identical rooms; huge finite coordinates. */
+
+import { codes } from "./helpers/diag.js";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
@@ -10,7 +13,6 @@ import { MAX_ELEMENTS } from "../src/ir.js";
  * Columns stand in for rooms where only the COUNT matters: a column costs a fraction of a
  * room (no label relocation), which keeps a test that runs past the cap fast.
  */
-const codes = (src: string): string[] => compile(src, { noCache: true }).diagnostics.map((d) => d.code ?? "");
 const count = (cs: string[], c: string): number => cs.filter((x) => x === c).length;
 
 suite("element budget (E_ELEMENT_LIMIT)", () => {

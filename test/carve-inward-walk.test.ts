@@ -1,3 +1,5 @@
+/** a far seed past a stair no longer takes the doorway's width (hillside-villa's landing); furniture within R + δ of a doorway's face blocks it: the threshold, fro… */
+
 import { describe, expect, it } from "vitest";
 import { describe as describePlan } from "../src/index.js";
 import { centreFreedomToClearWidth, DEFAULT_BODY_RADIUS_MM } from "../src/analyze/circulation.js";

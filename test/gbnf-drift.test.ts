@@ -364,6 +364,7 @@ function parses(src: string): boolean {
 }
 
 /** The catalogued codes the compiler answers this source with. */
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), filters the codes, keeps an undefined code as `undefined`.
 function codes(src: string): string[] {
   return compile(src, { noCache: true })
     .diagnostics.map((d) => d.code)

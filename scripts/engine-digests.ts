@@ -11,7 +11,7 @@
  *   2. digest each source in-process on Node, through the BUILT `dist/`;
  *   3. serve `dist/` to Playwright's chromium, firefox and webkit on a fake origin, `import()` the
  *      core in the page, rebuild the payload from the SAME payload functions
- *      (`test/byte-identity-payload.ts`, via `Function.prototype.toString`) and hash with
+ *      (`test/helpers/byte-identity-payload.ts`, via `Function.prototype.toString`) and hash with
  *      `crypto.subtle`;
  *   4. compare every engine with Node, and Node with the pinned `while-byte-identity` baseline
  *      where one exists; for a mismatch name the first differing payload part and its bytes.
@@ -36,7 +36,7 @@ import {
   allStoreysDiagnosticsPayload,
   engineProbeParts,
   type CompilerApi,
-} from "../test/byte-identity-payload.js";
+} from "../test/helpers/byte-identity-payload.js";
 import { BASELINE } from "../test/while-byte-identity-baseline.js";
 
 const ROOT = resolve(fileURLToPath(new URL(".", import.meta.url)), "..");
@@ -416,7 +416,7 @@ async function main(): Promise<void> {
     "",
   );
   L.push(
-    "This compares the agent-facing OUTPUT BYTES (SVG, `describe()`, `lint()`, diagnostics, after the compiler's 2-decimal rounding), not transcendental agreement: a 1-ulp `Math.cos` difference is invisible here by design, and `Math.hypot`/`atan2` are caught only where they feed an exact comparison or tie. `core` = SVG of every page + `describe()` + `lint()` + `compile().diagnostics` (the `while-byte-identity` payload); `facts` = the same plus `describe({facts:[symmetry,syntax]})` (sin/cos/atan2/log2). All engines run the same payload functions from `test/byte-identity-payload.ts` over the built `dist/`.",
+    "This compares the agent-facing OUTPUT BYTES (SVG, `describe()`, `lint()`, diagnostics, after the compiler's 2-decimal rounding), not transcendental agreement: a 1-ulp `Math.cos` difference is invisible here by design, and `Math.hypot`/`atan2` are caught only where they feed an exact comparison or tie. `core` = SVG of every page + `describe()` + `lint()` + `compile().diagnostics` (the `while-byte-identity` payload); `facts` = the same plus `describe({facts:[symmetry,syntax]})` (sin/cos/atan2/log2). All engines run the same payload functions from `test/helpers/byte-identity-payload.ts` over the built `dist/`.",
     "",
   );
   L.push(

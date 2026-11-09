@@ -1,3 +1,5 @@
+/** arc radius — exact semicircle on a Pythagorean chord; arc radius — the exact tie is built as the exact semicircle, whichever way hypot rounds; arc radius — the… */
+
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it, vi } from "vitest";
 import { applyFixes, compile } from "../src/index.js";
@@ -6,7 +8,7 @@ import { resolve } from "../src/ir.js";
 import { arcFromChord, arcSteps, arcTessellate } from "../src/geometry/arc.js";
 import type { Point } from "../src/ast.js";
 import type { SceneNode } from "../src/scene.js";
-import { pathArcs } from "./path-prim.js";
+import { pathArcs } from "./helpers/path-prim.js";
 
 /**
  * The `arc … radius R` validity test is decided EXACTLY — `4·R²` against `DX² + DY²` in

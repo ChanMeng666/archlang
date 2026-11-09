@@ -1,3 +1,5 @@
+/** door access graph. */
+
 import { describe, expect, it } from "vitest";
 import { describe as describePlan } from "../src/index.js";
 

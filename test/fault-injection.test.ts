@@ -1,3 +1,5 @@
+/** fault-injection gate — the L1 deterministic pipeline heals seeded defects; fault-injection gate — a clean plan is untouched. */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

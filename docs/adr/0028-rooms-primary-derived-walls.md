@@ -492,7 +492,7 @@ Recorded with D1 and D5 in the plan:
 
 - the resolve-order change cannot be made byte-identical for plans that use no new form, or the
   `place`-frame semantics of datums cannot be made sound (the test is the D4 equivariance oracle,
-  `test/d4-oracle.ts`, run on a component that derives walls and hosts a hinged door on them under
+  `test/helpers/d4-oracle.ts`, run on a component that derives walls and hosts a hinged door on them under
   all eight frames): ship datums in wall points only and keep `between` as an explicit `arch`
   transform;
 - `walls from rooms` needs a fourth clause in practice, or its preconditions refuse more than a

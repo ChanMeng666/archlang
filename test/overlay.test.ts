@@ -1,3 +1,5 @@
+/** circulation overlay (opt-in render); circulation overlay — drawn on the grid the facts were measured on (backlog C.2). */
+
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

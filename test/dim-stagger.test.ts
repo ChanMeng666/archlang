@@ -1,3 +1,5 @@
+/** dims auto — number staggering on a crowded chain; text width — one estimate, one place; chain geometry constants stay welded to the drawing. */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
