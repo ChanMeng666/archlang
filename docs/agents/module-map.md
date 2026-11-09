@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 378 modules in 34 directories.
+Totals: 379 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -257,7 +257,7 @@ Totals: 378 modules in 34 directories.
 | `label-placement.ts` | 744 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 249 | 1 | Relational placement (T6.2) — the optional layout seam. | none |
 | `lexer.ts` | 611 | 23 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
-| `lint.ts` | 292 | 28 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
+| `lint.ts` | 323 | 29 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 684 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
 | `manifest.ts` | 1212 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
@@ -317,7 +317,7 @@ Totals: 378 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `circulation-overlay.ts` | 230 | 5 | Circulation overlay geometry: the routes and room marks `--overlay circulation` draws, moved verbatim from `src/analyze/circulation.ts`. Opt-in render only. | none |
-| `circulation.ts` | 677 | 21 | Circulation as FACTS: not just "can you reach this room?" (that is the door access graph in analyze.ts and the per-room reachable-floor flood-fill in occupancy.ts) but **how far, how wide and how direct** the walk is — from the building's… | none |
+| `circulation.ts` | 712 | 21 | Circulation as FACTS: not just "can you reach this room?" (that is the door access graph in analyze.ts and the per-room reachable-floor flood-fill in occupancy.ts) but **how far, how wide and how direct** the walk is — from the building's… | none |
 | `connectors.ts` | 475 | 2 | Connector (door / opening / window) helpers of the analysis layer: which rooms a connector joins, the wall faces it opens onto, and which room a window serves. | none |
 | `contacts.ts` | 259 | 4 | Contact facts (plan-soundness card PS4.5): which room edges an element written at fixed coordinates lies ON, so `arch impact` can say it stayed while that edge moved. | none |
 | `depends.ts` | 355 | 4 | `describe --facts depends` (plan-soundness card PS4.1): per element, what it is derived from. Opt-in; a summary that does not ask for it is unchanged by a byte. | none |
@@ -326,7 +326,7 @@ Totals: 378 modules in 34 directories.
 | `grid.ts` | 27 | 3 | The 4-neighbourhood of a row-major cell grid, shared by the nav grid (`circulation.ts`) and the occupancy grid (`occupancy.ts`). | none |
 | `gross-area.ts` | 252 | 7 | **Gross internal area** (GIA) — the floor enclosed by the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`, plan-soundness PS4.4). | none |
 | `keep-facts.ts` | 715 | 2 | `describe --facts depends` for keeps (ADR 0033; plan-soundness PS4.3b, design §5, R5, R16): `depends.keeps[]`, one row per accepted keep, read from the declarations alone. | none |
-| `nav-grid.ts` | 1940 | 2 | The whole-plan navigation grid circulation walks on, and the walking primitives its two readers (the facts in `circulation.ts`, the overlay in `circulation-overlay.ts`) share, moved verbatim from `src/analyze/circulation.ts`: the cell… | none |
+| `nav-grid.ts` | 1952 | 2 | The whole-plan navigation grid circulation walks on, and the walking primitives its two readers (the facts in `circulation.ts`, the overlay in `circulation-overlay.ts`) share, moved verbatim from `src/analyze/circulation.ts`: the cell… | none |
 | `net-area-memo.ts` | 90 | 5 | Net internal area, computed once per storey and once per room (ADR 0027's figures, unchanged). | none |
 | `net-area.ts` | 563 | 9 | **Net internal area** — the part of a room's floor that no wall stands on (`describe().rooms[].net_area_m2`; the rule and why: `docs/adr/0027-net-internal-area.md`). | none |
 | `occupancy.ts` | 238 | 4 | Room circulation as a fact: can a person actually step through a room's door and reach its floor, or do furniture, fixtures and door swings seal it off? | none |
@@ -452,7 +452,7 @@ Totals: 378 modules in 34 directories.
 | `backend.ts` | 73 | 5 | Optional polygon-geometry backend seam. | none |
 | `band.ts` | 771 | 25 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
 | `clipper.ts` | 177 | 2 | Optional {@link GeometryBackend} adapter over `clipper2-wasm`. | none |
-| `grid-index.ts` | 200 | 15 | Uniform-grid bucket spatial index over axis-aligned boxes. | none |
+| `grid-index.ts` | 229 | 17 | Uniform-grid bucket spatial index over axis-aligned boxes. | none |
 | `intersect.ts` | 341 | 8 | Closed-form intersection and ray-crossing primitives for **wall joinery**. | none |
 | `joinery.ts` | 1227 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
@@ -493,7 +493,7 @@ Totals: 378 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `clearance-facts.ts` | 405 | 2 | `describe --facts clearances` (plan-soundness PS2.72): what each clearance rule measured, per storey, so a reviewer can check a warning, or its absence, from the CLI instead of re-measuring the resolved geometry in a script. | none |
 | `clearance-measure.ts` | 489 | 9 | The measures behind the clearance family of plan-soundness PS2.11 (`rules/clearances.ts`): a WC's two side strips, and the band a window's span makes on its host wall. Stated once here so the rules and the placement check every quoted… | none |
-| `context.ts` | 386 | 41 | The shared, precomputed context every lint rule checks against — element subsets, room rectangles and the hoisted wall-segment list are built exactly once per `lint()` run, so no rule re-derives them. | none |
+| `context.ts` | 395 | 41 | The shared, precomputed context every lint rule checks against — element subsets, room rectangles and the hoisted wall-segment list are built exactly once per `lint()` run, so no rule re-derives them. | none |
 | `coverage.ts` | 358 | 10 | The lint coverage report (plan-soundness PS2.13): which rule families ran on a plan, which were skipped and why, and which rooms no use-reading rule could judge. | none |
 | `defining.ts` | 496 | 6 | The pieces that define a room of each use, read from `FURNISH_TABLE` (the table `finish` furnishes from), and the checked statements that place them. Shared by `W_ROOM_MISSING_DEFINING` (which reports a furnished room lacking one) and… | none |
 | `element-phrases.ts` | 96 | 6 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
@@ -501,6 +501,7 @@ Totals: 378 modules in 34 directories.
 | `measure.ts` | 95 | 19 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
 | `ruleset.ts` | 740 | 17 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 118 | 7 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
+| `work.ts` | 33 | 2 | Work counters for one `lint()` run: how many geometric tests the costliest rules made, as COUNTS (engineering-health EH2.10). They are an out-parameter on the per-run {@link import("./context.js").LintContext}, never module state, so… | none |
 
 ## `src/lint/rules/`
 
@@ -508,12 +509,12 @@ Totals: 378 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `alias-match.ts` | 93 | 1 | `W_ALIAS_MATCH` — advisory: a room's use was inferred from a non-canonical alias. | none |
 | `annotations.ts` | 636 | 2 | Annotation collisions on the drawn sheet (plan-soundness PS2.12): two drafting advisories that read the drawing itself, never the plan's facts, so `describe()`, Plan JSON and the SVG are untouched by them. | none |
-| `circulation-facts.ts` | 889 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
+| `circulation-facts.ts` | 890 | 3 | Circulation quality as advisory warnings, built on the circulation nav-grid facts (ADR 0008): a walk that squeezes below a passable width (`W_PATH_TOO_NARROW`), or that wanders far from a straight line (`W_CIRCUITOUS_PATH`). Facts →… | none |
 | `circulation.ts` | 40 | 1 | Circulation: a room whose doorways can't reach a usable patch of clear floor — technically reachable (it has a door) but so packed that you can't step in. A grid flood-fill fact (see analyze/occupancy.ts); only fires when there *is*… | none |
 | `clearances.ts` | 464 | 2 | The clearance family of plan-soundness PS2.11, beyond the seat check: a WC whose centreline stands too near a side obstacle (PS2.11a) and a tall unit standing in front of a window (PS2.11b). Both measure the drawn shapes — a fixture's… | none |
 | `dims.ts` | 614 | 3 | Annotation-quality advisories over the plan's HAND-WRITTEN dimensions: `W_DIM_INSIDE` (a dimension line landing inside the building) and `W_DIM_OVERLAP` (two dimensions drawn on top of each other). Both are advisory with a… | none |
-| `doors.ts` | 1110 | 6 | Door rules: obstructed swing arcs, blocked walk-through landings, sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves too little wall at a corner — in that (pinned) order via `rules/index.ts`. | none |
-| `enclosure.ts` | 954 | 3 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
+| `doors.ts` | 1151 | 6 | Door rules: obstructed swing arcs, blocked walk-through landings, sub-passable widths, a pocket panel with nowhere to go, and a jamb that leaves too little wall at a corner — in that (pinned) order via `rules/index.ts`. | none |
+| `enclosure.ts` | 1045 | 3 | Space-enclosure rules (plan-soundness PS2.4): floor the walls and the rooms disagree about. | none |
 | `entrance.ts` | 143 | 1 | The building has rooms but no way in. | none |
 | `floor-gaps.ts` | 99 | 2 | Floor a piece cannot stand on: a storey's own `void`s, lift shafts and escalators (CR2 group D). | none |
 | `footprint.ts` | 222 | 1 | `W_FOOTPRINT_TRANSPOSED` (plan-soundness PS2.11c): a piece of a family that comes in one shape, written with its two sides the wrong way round, so its symbol draws turned a quarter and stretched (`sofa_l … size 900x2400` with no `rotate`… | none |

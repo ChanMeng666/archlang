@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-482 test files in `test/`, 267 `src` modules, 98 modules no test imports.
+482 test files in `test/`, 268 `src` modules, 99 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -121,7 +121,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
 - `src/lexer.ts` (8) — `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `stage-cache`, `unit-suffix`
-- `src/lint.ts` (52) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish`, `lint-coverage`, `lint-fix-texts` (+44)
+- `src/lint.ts` (53) — `annotation-collisions`, `annotation-small-rooms`, `block-stair-shaft`, `block-stair`, `equivariance-corpus`, `finish-furnish`, `lint-coverage`, `lint-fix-texts` (+45)
 - `src/lint/clearance-measure.ts` (2) — `lint-clearances-kitchen-doors`, `repair-no-worse`
 - `src/lint/context.ts` (47) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+39)
 - `src/lint/coverage.ts` (5) — `annotation-collisions`, `error-catalog-families`, `lint-coverage`, `lint-dwelling-reading`, `lint-rule-order`
@@ -395,7 +395,7 @@ The first sentence of each file's header comment.
 - `test/grammar-drift.test.ts` — T5.4 — one grammar source of truth: drift guard.
 - `test/grammar.test.ts` — tmLanguage grammar highlights .arch.
 - `test/graph-check.test.ts` — checkGraph.
-- `test/grid-index.test.ts` — GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents.
+- `test/grid-index.test.ts` — GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents; overlapIndex ≡ a full scan.
 - `test/grid-overlap-hint.test.ts` — `W_ROOM_OVERLAP` names the grid when the grid can be the cause (issue #405).
 - `test/gridsnap.test.ts` — grid-snap rounding.
 - `test/height-byte-identity.test.ts` — The byte-identity law for the **vertical datum layer**.
@@ -665,7 +665,7 @@ The first sentence of each file's header comment.
 - `test/window-kinds.test.ts` — Window kinds and the glazed sliding door (issue #369): what each form draws, states and refuses.
 - `test/windows-furniture.test.ts` — window — placement & hosting; furniture — rect + label (the uncatalogued fallback).
 - `test/witness-lines.test.ts` — dims auto — witness lines terminate on the facade.
-- `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, as COUNTS.
+- `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, and the work counters of one `lint()` run (EH2.10), as COUNTS.
 - `test/workspace-seams.test.ts` — Boundary: a workspace reaches the core (or another workspace) only through a declared package name, except at the seams listed in ALLOW (`workspace-seams.allow.ts`).
 - `test/world.test.ts` — T4.2 — World seam.
 - `test/zones.test.ts` — zone — byte identity (a zone draws nothing and moves nothing); zone — declared membership and nesting paths; zone — inside `level` blocks; zone — the grouped RO…
@@ -752,6 +752,7 @@ module); adding a test that imports it removes it from this list.
 - `src/lint/rules/room-contents.ts`
 - `src/lint/rules/site.ts`
 - `src/lint/rules/vertical.ts`
+- `src/lint/work.ts`
 - `src/lock.ts`
 - `src/opening-junctions.ts`
 - `src/overlays/circulation.ts`
