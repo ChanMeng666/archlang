@@ -11,11 +11,11 @@
 
 import { describe, expect, it } from "vitest";
 import { BUILTIN_DEFS } from "../src/elements/defs.js";
-import { KIND_FACETS, type KindFacets, kindsWith } from "../src/elements/facets.js";
+import { KIND_FACETS, type KindFacets, type KindsWith, kindsWith } from "../src/elements/facets.js";
 import { KEYWORDS } from "../src/grammar/tokens.js";
 import { VERTICAL_KINDS } from "../src/vertical.js";
 import { STYLE_KEYS } from "../src/theme.js";
-import { UNPROJECTED_KINDS } from "../src/plan-json.js";
+import { type OpeningJson, PLAN_JSON_SCHEMA, UNPROJECTED_KINDS } from "../src/plan-json.js";
 import { DROPPED_WORDS } from "../src/cli/serialize.js";
 
 const KINDS = BUILTIN_DEFS.map((d) => String(d.kind));
@@ -125,5 +125,20 @@ describe("element facets (src/elements/facets.ts)", () => {
     const words = new Set<string>(KEYWORDS.element);
     const missing = BUILTIN_DEFS.filter((d) => !words.has(d.keyword)).map((d) => String(d.kind));
     expect(missing, "src/grammar/tokens.ts KEYWORDS.element: kinds whose keyword is missing").toEqual([]);
+  });
+
+  it("Plan JSON `openings[].kind` (type and schema enum) is the table's `opening` kinds", () => {
+    const fromTable = (Object.keys(KIND_FACETS) as (keyof typeof KIND_FACETS)[]).filter((k) => KIND_FACETS[k].opening);
+    expect(fromTable, "KIND_FACETS `opening` rows").toEqual([...kindsWith("opening")]);
+    const schemaEnum = PLAN_JSON_SCHEMA.properties.openings.items.properties.kind.enum;
+    expect([...schemaEnum], "src/plan-json.ts PLAN_JSON_SCHEMA openings[].kind enum").toEqual(fromTable);
+    // The interface's union is hand-written (a public type); this fails `typecheck:all` when it
+    // and the table part, in either direction.
+    type OpeningKind = KindsWith<"opening">;
+    type Expect<T extends true> = T;
+    type Equal<A, B> = (<T>() => T extends A ? 1 : 2) extends <T>() => T extends B ? 1 : 2 ? true : false;
+    type _Check = Expect<Equal<OpeningJson["kind"], OpeningKind>>;
+    const _check: _Check = true;
+    expect(_check).toBe(true);
   });
 });
