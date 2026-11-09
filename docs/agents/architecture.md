@@ -62,7 +62,8 @@ source (.arch)
 
 ## Module map (`src/`)
 
-- `describe.ts` semantic summary · `lint.ts` + `lint/` soundness rules · `analyze.ts` +
+- `describe.ts` semantic summary (`summarize`; `describe/` holds its types, room adjacency, the
+  vertical facts and the diff fabric) · `lint.ts` + `lint/` soundness rules · `analyze.ts` +
   `analyze/` shared resolve + circulation/occupancy grids
 - `analyze/rooms.ts` room box/ring/area, point-in-room and room-use leaves · `analyze/connectors.ts` which rooms a door or opening joins and which room a window serves; both import no `ir.ts` value (`test/no-value-cycles.test.ts`), re-exported from `analyze.ts`
 - `lint/context.ts` the shared per-run `LintContext` and `LintRule` (`family`, `layer`: `validity` or
