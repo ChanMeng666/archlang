@@ -66,6 +66,8 @@ const PLUGIN =
   "needs a third-party `ElementDef` passed through `compile(src, { plugins })`, which a bare snippet cannot have; pinned in test/transform-seam.test.ts";
 const RENDER =
   "raised by the PDF/PNG backends at render time (a glyph no embedded font covers), never by compile()/lint(); pinned in test/export-font-cjk.test.ts";
+const ROOTED =
+  "raised by the CLI's file-system World (`makeNodeWorld`, src/cli/io.ts) when it refuses an `import`, never by compile() over a virtual World; pinned in test/import-rooted.test.ts";
 const HOSTED =
   "raised by a HOST before compile() runs (the hosted MCP Worker's byte cap and rate limit, `inputTooLarge()`/`rateLimited()`), never by compile()/lint(), which have neither; pinned in test/input-limit.test.ts";
 const IMPACT =
@@ -123,6 +125,9 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
 
   ["E_PNG_DEPENDENCY", DEP],
   ["E_INPUT_TOO_LARGE", HOSTED],
+  ["E_IMPORT_NOT_ARCH", ROOTED],
+  ["E_IMPORT_OUTSIDE_ROOT", ROOTED],
+  ["E_IMPORT_TOO_LARGE", ROOTED],
   ["E_RATE_LIMITED", HOSTED],
   ["W_CJK_FONT_MISSING", RENDER],
   ["W_GLYPH_UNSUPPORTED", RENDER],
@@ -239,7 +244,9 @@ suite("error catalog — every example that can raise its code does", () => {
     // raises it on a file's bytes before anything compiles; raised in test/cli-expected-hash.test.ts.
     // E_IMPORT_FORMAT, E_IMPORT_LIMIT and W_IMPORT_DROPPED took it to 61: `openPlan3dToArch()` raises
     // them on a foreign JSON file before any `.arch` source exists; each is raised in
-    // test/import-openplan3d.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(61);
+    // test/import-openplan3d.test.ts. E_IMPORT_NOT_ARCH, E_IMPORT_OUTSIDE_ROOT and E_IMPORT_TOO_LARGE
+    // took it to 64: the CLI's file-system World raises them when it refuses an `import` (EH-D7), and
+    // no virtual World a snippet runs under can; each is raised in test/import-rooted.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(64);
   });
 });

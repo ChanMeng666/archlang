@@ -17,6 +17,8 @@ import type { ComponentDef, ImportNode, PlanNode, Statement } from "./ast.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Registry } from "./registry.js";
 import type { World } from "./world.js";
+import { offsetToLineCol } from "./diagnostics.js";
+import { plainDigits } from "./num-format.js";
 import { parse } from "./parser.js";
 
 /** Directory portion of a forward-slash path ("" for a bare filename). */
@@ -45,10 +47,15 @@ const PKG_SPEC = /^@([a-z0-9_-]+)\/([a-z0-9_./-]+):(\d+\.\d+\.\d+)$/i;
 function resolveSpec(spec: string, baseDir: string): { path: string } | { error: string } {
   if (spec.startsWith("@")) {
     const m = PKG_SPEC.exec(spec);
-    if (!m) return { error: `Malformed package spec "${spec}" (expected @namespace/name:major.minor.patch)` };
+    if (!m)
+      return {
+        error: `Malformed package spec "${spec}" (expected @namespace/name:major.minor.patch)`,
+      };
     const [, ns, name, ver] = m;
     if (ns !== "local")
-      return { error: `Unknown package namespace "@${ns}" in "${spec}" (only "@local" is supported)` };
+      return {
+        error: `Unknown package namespace "@${ns}" in "${spec}" (only "@local" is supported)`,
+      };
     return { path: `@local/${name}/${ver}/index.arch` };
   }
   return { path: joinPath(baseDir, spec) };
@@ -173,26 +180,43 @@ function loadModule(
   }
   const src = world.read(path);
   if (src == null) {
-    diagnostics.push({
-      severity: "error",
-      code: "E_IMPORT_NOT_FOUND",
-      message: `Cannot resolve imported module "${path}"`,
-      span: atSpan,
-    });
+    // A World that REFUSED the module (outside its root, not `.arch`, too large) says so with
+    // its own catalogued code; every other miss is "not found".
+    const refused = world.refusal?.(path);
+    diagnostics.push(
+      refused
+        ? {
+            severity: "error",
+            code: refused.code,
+            message: refused.message,
+            span: atSpan,
+          }
+        : {
+            severity: "error",
+            code: "E_IMPORT_NOT_FOUND",
+            message: `Cannot resolve imported module "${path}"`,
+            span: atSpan,
+          },
+    );
     cache.set(path, null);
     return null;
   }
   stack.add(path);
   const { plan, diagnostics: pdiags } = parse(src, registry);
-  // Module spans don't map onto the importing source, so surface parse *errors*
-  // at the import site, prefixed with the module path. (Most warnings are dropped —
-  // see below for the two named exceptions.)
+  // Module spans don't map onto the importing source, so surface parse *errors* at the
+  // import site as the module's own code and `<path>:<line>:<col>`. Never the module's
+  // message: a parse message quotes the offending token, and a file the import reached is
+  // not necessarily one the importer may read, so the token was an oracle on its content.
+  // (Most warnings are dropped — see below for the two named exceptions.)
   for (const d of pdiags) {
     if (d.severity === "error") {
+      const at = d.span ? offsetToLineCol(src, d.span.start) : undefined;
+      const where = at ? `${path}:${plainDigits(at.line)}:${plainDigits(at.col)}` : path;
+      const code = d.code ?? "E_PARSE";
       diagnostics.push({
         severity: "error",
         code: "E_IMPORT_PARSE",
-        message: `In module "${path}": ${d.message}`,
+        message: `In module "${path}": ${code} at ${where} (run \`archlang explain ${code}\`)`,
         span: atSpan,
       });
     } else if (d.code === "W_WHILE_DEPRECATED" || d.code === "W_REASSIGN_DEPRECATED") {
@@ -241,7 +265,12 @@ function mergeImport(
 ): void {
   const r = resolveSpec(imp.spec, baseDir);
   if ("error" in r) {
-    diagnostics.push({ severity: "error", code: "E_IMPORT_BAD_SPEC", message: r.error, span: imp.span });
+    diagnostics.push({
+      severity: "error",
+      code: "E_IMPORT_BAD_SPEC",
+      message: r.error,
+      span: imp.span,
+    });
     return;
   }
   const mod = loadModule(r.path, world, registry, diagnostics, imp.span, stack, cache);

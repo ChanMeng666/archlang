@@ -8,6 +8,7 @@
 
 import { CANONICAL_FIXTURES } from "./elements/fixtures-glyphs.js";
 import { MAX_IMPORT_LEVELS } from "./import/limits.js";
+import { MODULE_CAP_BYTES } from "./input-limit.js";
 import { fixtureSpec } from "./fixtures-catalog.js";
 
 /**
@@ -665,6 +666,13 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Split the plan into several files, a floor or a wing each, and import them one by one.",
     "archlang import --from openplan3d huge.json   # error: one floor with 100,000 walls",
   ),
+  E_IMPORT_NOT_ARCH: E(
+    "E_IMPORT_NOT_ARCH",
+    "An imported module is not a `.arch` file.",
+    "The `archlang` CLI reads an `import` only from a file whose name ends in `.arch` (in any case). Any other file is refused before it is opened, so an `import` cannot pull a text, config or system file into a drawing, nor learn what it holds from the parse error it would raise. A symbolic link whose target is not `.arch` is refused the same way. Hosts with no file system (the playground, the hosted MCP server) never read files at all.",
+    "Import the `.arch` module itself; rename the file to end in `.arch` if it is one.",
+    'import "notes.txt" as n   # error: not an .arch file',
+  ),
   E_IMPORT_NOT_EXPORTED: E(
     "E_IMPORT_NOT_EXPORTED",
     "Imported name is not exported by the module.",
@@ -679,12 +687,28 @@ export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = Object.free
     "Check the path (relative to the importing file) and that the file exists.",
     'import "lib/missing.arch": a   # error',
   ),
+  E_IMPORT_OUTSIDE_ROOT: E(
+    "E_IMPORT_OUTSIDE_ROOT",
+    "An imported module lies outside the import root.",
+    "The `archlang` CLI reads an `import` only from inside its import root (the directory it was started in, or the directory `--import-root <dir>` names) or from under the compiled plan's own directory. The path is resolved with symbolic links and junctions followed, so a `..`, an absolute path, a drive letter or a link cannot leave the root. A library beside or below the plan, or in a sibling directory under the root, still imports; one above both does not.",
+    "Run `archlang` from a directory that contains both the plan and the library, or pass `--import-root <dir>` naming a directory that contains them.",
+    'import "../../shared/lib.arch" as lib   # error unless --import-root covers ../../shared',
+  ),
   E_IMPORT_PARSE: E(
     "E_IMPORT_PARSE",
     "Imported module has a parse error.",
-    "The module referenced by `import` does not itself parse.",
-    "Fix the syntax error in the imported module.",
+    "The module referenced by `import` does not itself parse. The message gives the module's own error code and its `<path>:<line>:<col>`, never the module's text, so an `import` cannot read a file it reached by quoting it back.",
+    "Fix the syntax error in the imported module at the line and column given; `archlang lint <module>.arch` shows it in full.",
     "# error originates in the imported file",
+  ),
+  E_IMPORT_TOO_LARGE: E(
+    "E_IMPORT_TOO_LARGE",
+    "An imported module is larger than the CLI reads.",
+    "The `archlang` CLI reads an imported `.arch` module of at most " +
+      String(MODULE_CAP_BYTES) +
+      " bytes (`MODULE_CAP_BYTES`) and refuses a larger file without reading it. No plan library comes near it; the cap stops an `import` from pulling a huge file into memory.",
+    "Split the module into several smaller `.arch` files and import each.",
+    'import "huge.arch" as h   # error: the module is larger than the cap',
   ),
   E_INDEX: E(
     "E_INDEX",
