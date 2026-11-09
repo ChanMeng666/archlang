@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `packages/mcp/Dockerfile`: an image that installs the published `@chanmeng666/archlang-mcp` at its `package.json` version on Node 22 Alpine and runs `archlang-mcp` on stdio, for the Docker MCP Catalog. It is not in the npm package.
 - Four docs pages: `/floor-plan-tools-for-ai-agents` (what each floor-plan tool for agents takes in, exports and costs, from each tool's own pages), `/floor-plan-with-a-coding-agent`, `/text-to-dxf-floor-plan` and `/check-a-floor-plan`. Each carries a plan that compiles and lints clean and ends with a FAQ.
 - The docs `/examples` page links each plan to its static page on the playground, and each static example page links back to `/examples`.
+- `E_DIAGNOSTIC_LIMIT` and `W_DIAGNOSTIC_LIMIT`: `compile()` and `describe()` report at most 500 diagnostics, then one limit at the byte past the last kept; the lexer and parser stop collecting there. A budget or cap code that stopped the work (`E_STEP_LIMIT`, `E_DRAWING_LIMIT` and the other `*_LIMIT` codes) is never dropped. The limit is the error when any diagnostic, kept or dropped, is an error, and otherwise the warning, so a plan that only floods warnings still draws. A plan with 500 or fewer is reported exactly as before.
 
 ### Changed
 
@@ -33,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The CLI reads an `import`ed module only from under the import root (the working directory, or `--import-root`) or the plan's own directory, with symbolic links and junctions followed, only a `.arch` file, and only up to 1 MiB. Before, `import "../../secret.txt"`, an absolute path or `C:/Windows/win.ini` was read, and its parse error quoted the file's first tokens. A refusal is `E_IMPORT_OUTSIDE_ROOT`, `E_IMPORT_NOT_ARCH` or `E_IMPORT_TOO_LARGE` at the `import`. The playground, the MCP servers and the `<arch-plan>` element read no files, so they refuse no import.
 - `E_IMPORT_PARSE`, with any World (a virtual one included, so every host and library caller sees it), gives the module's own error code and `<path>:<line>:<col>` (`In module "lib.arch": E_PARSE at lib.arch:4:1 …`), never the module's message, which quoted the offending token.
+- Reporting diagnostics cost time quadratic in their number: `offsetToLineCol` scanned the source from byte 0 for each one, so 64 KiB of `@` took about 4 s and 64 KiB of NUL about 8.5 s to compile. It now reads a line-start table built once per source; the same inputs take about 50 ms, with the same line and column numbers.
 - A `#z=` link, or a short link, that inflates past 1 MiB is refused instead of hanging the playground or the embed page: the page shows "This link is too large to open". The playground, the `<arch-plan>` element and the MCP viewer put a compiled SVG on the page through one sanitiser that parses it and drops `<script>`, `<foreignObject>`, `on*` attributes and `javascript:` links; a compiled drawing is unchanged.
 
 ## [1.57.0] - 2026-11-06

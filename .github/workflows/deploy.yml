@@ -24,8 +24,13 @@ name: Deploy (Cloudflare)
 #                            kept as one so the workflow reads the same way).
 # Then push to main (or run this workflow manually) to deploy.
 
+# Deploys wait for CI: the trigger is the completed CI run on a push to main, and a red CI
+# deploys nothing (Node 18, Node 20 and Windows run only on main pushes, so before this a red
+# there still deployed). A manual run still deploys the ref it is dispatched from.
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -39,6 +44,7 @@ permissions:
 jobs:
   deploy:
     name: Deploy ${{ matrix.name }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -52,11 +58,11 @@ jobs:
             dir: playground
             build: playground:build
             url: https://playground.archlang.uk
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Check Cloudflare credentials are set
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "::error::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set. Add them in Settings → Secrets and variables → Actions, then re-run this workflow."
@@ -69,6 +75,7 @@ jobs:
       # silently collapse to the deploy commit.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -78,7 +85,9 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        # No dependency install script runs in a job that holds the Cloudflare token; esbuild's
+        # (the only one the builds need) is re-run by hand.
+        run: npm ci --ignore-scripts && npm rebuild esbuild
 
       # Builds the core, then the site. Run from the repo ROOT — both scripts are
       # `npm run build && npm -w <workspace> run build`.
@@ -95,6 +104,9 @@ jobs:
       # uploads nothing.
       - name: Deploy to Cloudflare
         working-directory: ${{ matrix.dir }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: wrangler deploy
 
       - name: Smoke check (machine routes + assets; retries ~30s for propagation)
@@ -134,12 +146,13 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy-mcp:
     name: Deploy mcp (scripted Worker)
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - name: Check Cloudflare credentials are set
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           if [ -z "$CLOUDFLARE_API_TOKEN" ] || [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
             echo "::error::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set. Add them in Settings → Secrets and variables → Actions, then re-run this workflow."
@@ -148,18 +161,21 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - name: Did anything the hosted MCP server bundles change?
         id: changed
         env:
           EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
-          AFTER: ${{ github.sha }}
+          AFTER: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "manual run: deploying"; exit 0
           fi
+          # A workflow_run event carries no push `before`. Merges to main are single merge or
+          # squash commits, so the first parent is the previous main; an unresolvable parent deploys.
+          BEFORE=$(git rev-parse --verify --quiet "$AFTER^1" || true)
           if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "no comparable previous commit: deploying"; exit 0
           fi
@@ -179,7 +195,9 @@ jobs:
 
       - name: Install dependencies
         if: steps.changed.outputs.run == 'true'
-        run: npm ci
+        # No dependency install script runs in a job that holds the Cloudflare token; esbuild's
+        # (the only one the builds need) is re-run by hand.
+        run: npm ci --ignore-scripts && npm rebuild esbuild
 
       # The core first (the Worker bundles this checkout's dist/), then the one-module bundle.
       - name: Build
@@ -195,6 +213,9 @@ jobs:
         id: deploy
         if: steps.changed.outputs.run == 'true'
         working-directory: packages/mcp-worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           # Without pipefail a failed deploy would hide behind tee's exit status. wrangler writes its
           # errors to STDERR, so 2>&1: the log the failure step reads must hold the error itself.

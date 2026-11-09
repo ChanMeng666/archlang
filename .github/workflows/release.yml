@@ -59,8 +59,19 @@ jobs:
   publish:
     name: Publish (npm + MCP registry)
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write # OIDC token exchange for npm trusted publishing + mcp-publisher
+      contents: write # create the GitHub Release for the pushed v* tag
+      checks: read # the guard reads the tagged commit's CI check-runs
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      # Nothing below runs unless this is a vX.Y.Z tag equal to the core version, documented in
+      # CHANGELOG.md, on main, with every required CI check green on that exact commit.
+      - name: Guard the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/release-guard.sh
 
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -71,11 +82,11 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci # with the bundled npm, like ci.yml
+        run: npm ci --ignore-scripts && npm rebuild esbuild # no install script runs in an id-token job except esbuild's
 
       # Trusted publishing needs npm >= 11.5.1. Pin to 11.x on purpose, NOT npm@latest:
       # npm 12 defaults allowScripts off, which would block esbuild's postinstall — and we
-      # only upgrade AFTER `npm ci` above has already run its install scripts.
+      # only upgrade AFTER `npm ci` above (which skips install scripts except esbuild's, rebuilt by hand).
       - name: Pin npm to 11.x (trusted-publishing minimum)
         run: |
           npm install -g npm@11.18.0
@@ -184,6 +195,37 @@ jobs:
         if: ${{ success() && steps.check.outputs.mcp_exists != 'true' }}
         run: npm publish -w packages/mcp --provenance --access public
 
+      # The GitHub Release. This step used to not exist: releases were created by hand, so
+      # they drifted — 23 tags shipped with NO Release at all, including the two newest, and
+      # the Releases page advertised v1.13.0 as "Latest" while npm served 1.15.0.
+      #
+      # Notes are EXTRACTED from CHANGELOG.md (the canonical release narrative — AGENTS.md
+      # keeps it there and nowhere else) rather than hand-written or derived from commit
+      # subjects, so the Release page cannot say something the changelog doesn't. The
+      # extractor exits non-zero when a version has no section, so an undocumented release
+      # fails loudly instead of shipping with an empty body.
+      #
+      # Right after the npm publishes and BEFORE the MCP registry sync: the registry is in preview
+      # and has failed after npm was already published, which used to leave npm with no Release.
+      # Only on success, so it never appears for a run whose npm publish failed. Idempotent — a re-run over an
+      # existing Release skips instead of failing (matching how the publish steps behave).
+      - name: Create the GitHub Release
+        if: ${{ success() && startsWith(github.ref, 'refs/tags/v') }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice::GitHub Release $TAG already exists — skipping."
+            exit 0
+          fi
+          node scripts/changelog-section.mjs "$TAG" > release-notes.md
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file release-notes.md \
+            --verify-tag
+          echo "::notice::Created GitHub Release $TAG from its CHANGELOG.md section."
+
       # MCP registry sync — whenever the registry lags server.json's version (independent of
       # whether npm published this run: by this point npm has the version either way, and the
       # registry validates against npm). Official install/auth flow from
@@ -259,39 +301,9 @@ jobs:
           echo "::error::MCP registry publish failed after 6 attempts."
           exit 1
 
-      # The GitHub Release. This step used to not exist: releases were created by hand, so
-      # they drifted — 23 tags shipped with NO Release at all, including the two newest, and
-      # the Releases page advertised v1.13.0 as "Latest" while npm served 1.15.0.
-      #
-      # Notes are EXTRACTED from CHANGELOG.md (the canonical release narrative — AGENTS.md
-      # keeps it there and nowhere else) rather than hand-written or derived from commit
-      # subjects, so the Release page cannot say something the changelog doesn't. The
-      # extractor exits non-zero when a version has no section, so an undocumented release
-      # fails loudly instead of shipping with an empty body.
-      #
-      # Last, and only on success: a Release is the human-visible announcement, so it must
-      # not appear for a run whose npm/registry publish failed. Idempotent — a re-run over an
-      # existing Release skips instead of failing (matching how the publish steps behave).
-      - name: Create the GitHub Release
-        if: ${{ success() && startsWith(github.ref, 'refs/tags/v') }}
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-        run: |
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::notice::GitHub Release $TAG already exists — skipping."
-            exit 0
-          fi
-          node scripts/changelog-section.mjs "$TAG" > release-notes.md
-          gh release create "$TAG" \
-            --title "$TAG" \
-            --notes-file release-notes.md \
-            --verify-tag
-          echo "::notice::Created GitHub Release $TAG from its CHANGELOG.md section."
-
       # The Claude Desktop extension bundle (`archlang-mcp-<mcp version>.mcpb`),
       # attached to the Release so there is a stable download URL. Strictly an add-on, so it is
-      # LAST (after npm, the registry and the Release: nothing it does can undo or block them) and
+      # LAST (after npm, the Release and the registry: nothing it does can undo or block them) and
       # `continue-on-error` (a failure here is a yellow step, never a red release). No secret.
       # It is built from source and run once over stdio
       # before upload, so a bundle that does not start is never attached.
@@ -332,7 +344,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci # with the bundled npm, like ci.yml
+        run: npm ci --ignore-scripts && npm rebuild esbuild # no install script runs in an id-token job except esbuild's
 
       # Same pin and reason as the publish job.
       - name: Pin npm to 11.x (trusted-publishing minimum)
@@ -366,8 +378,8 @@ jobs:
   # registers it (npmjs.com → @chanmeng666/archlang-3d → Settings → Trusted Publisher → GitHub Actions,
   # repo ChanMeng666/archlang, workflow release.yml, no environment), and 0.1.1 comes through this job
   # within 2 days, which validates the registration; every later version comes this way too, with
-  # provenance. An unreadable registry (a failed request, a body that does not parse) skips with a
-  # warning: a dispatch re-runs it. Once the package exists, a version not on npm is built, proved and
+  # provenance. A registry that answers 404 or 5xx, or a body that does not parse, fails the
+  # job (it used to warn and go green with nothing published): a dispatch re-runs it. Once the package exists, a version not on npm is built, proved and
   # published; an auth failure then means the registration lapsed, and only this job is red. Nothing
   # is installed unless there is something to publish.
   publish-archlang-3d:
@@ -399,7 +411,8 @@ jobs:
             200)
               # One read decides: a body that does not parse skips, as an unreadable registry does.
               if ! known=$(VERSION="$version" PACKUMENT="$packument" node -p "!!JSON.parse(require('fs').readFileSync(process.env.PACKUMENT,'utf8')).versions[process.env.VERSION]" 2>/dev/null); then
-                echo "::warning::The registry's answer for @chanmeng666/archlang-3d did not parse — skipping publish; dispatch this workflow to retry."
+                echo "::error::The registry's answer for @chanmeng666/archlang-3d did not parse; dispatch this workflow to retry."
+                exit 1
               elif [ "$known" = "true" ]; then
                 echo "::notice::@chanmeng666/archlang-3d@$version already on npm — skipping publish."
               else
@@ -407,18 +420,16 @@ jobs:
                 echo "::notice::Will publish @chanmeng666/archlang-3d@$version to npm."
               fi
               ;;
-            404)
-              echo "::notice::@chanmeng666/archlang-3d is not on npm yet; the owner publishes 0.1.0 by hand — skipping publish."
-              ;;
             *)
-              echo "::warning::The registry answered '$status' for @chanmeng666/archlang-3d — skipping publish; dispatch this workflow to retry."
+              echo "::error::The registry answered '$status' for @chanmeng666/archlang-3d; refusing to skip silently. Dispatch this workflow to retry."
+              exit 1
               ;;
           esac
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
         if: ${{ success() && steps.check.outputs.publish == 'true' }}
-        run: npm ci # with the bundled npm, like ci.yml
+        run: npm ci --ignore-scripts && npm rebuild esbuild # no install script runs in an id-token job except esbuild's
 
       # Same pin and reason as the publish job.
       - name: Pin npm to 11.x (trusted-publishing minimum)
@@ -445,3 +456,42 @@ jobs:
       - name: Publish archlang-3d to npm (@chanmeng666/archlang-3d)
         if: ${{ success() && steps.check.outputs.publish == 'true' }}
         run: npm publish -w packages/archlang-3d --provenance --access public
+
+  # The last word: every package at its package.json version must be visible on npm, whatever
+  # the publish jobs reported (a skipped or warned job used to look green). npm shows a new
+  # version minutes late, so each lookup polls (20 s apart, up to 10 minutes).
+  verify:
+    name: Verify the packages are on npm
+    needs: [publish, publish-arch-plan, publish-archlang-3d]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+
+      - name: Every published package is on npm at its package.json version
+        run: |
+          missing=0
+          for dir in . packages/font-cjk packages/mcp packages/web-component packages/archlang-3d; do
+            name=$(node -p "require('./$dir/package.json').name")
+            version=$(node -p "require('./$dir/package.json').version")
+            seen=""
+            for attempt in $(seq 1 30); do
+              seen=$(npm view "$name@$version" version --prefer-online 2>/dev/null || true)
+              [ "$seen" = "$version" ] && break
+              [ "$attempt" -lt 30 ] && sleep 20
+            done
+            if [ "$seen" = "$version" ]; then
+              echo "::notice::$name@$version is on npm."
+            else
+              echo "::error::$name@$version is NOT on npm."
+              missing=1
+            fi
+          done
+          exit $missing

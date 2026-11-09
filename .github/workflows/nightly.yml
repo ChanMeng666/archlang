@@ -169,6 +169,23 @@ jobs:
       - run: npm ci
 
       - run: npm test
+        if: ${{ !(matrix.os == 'ubuntu-latest' && matrix.node == 22) }}
+
+      # The Node 22 ubuntu leg also records per-file durations: download the `test-durations`
+      # artifact and keep it as test/.durations.json (test/.durations.README.md).
+      - name: Test (with the duration report)
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.node == 22 }}
+        run: |
+          npx vitest run --reporter=default --reporter=json --outputFile.json=vitest-report.json
+          node scripts/gen-test-durations.mjs vitest-report.json test-durations.json
+
+      - name: Upload the regenerated durations
+        if: ${{ always() && matrix.os == 'ubuntu-latest' && matrix.node == 22 }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations
+          path: test-durations.json
+          if-no-files-found: ignore
 
       - name: Generated artifacts are in sync
         run: npm run check:drift
@@ -503,10 +520,18 @@ jobs:
             });
             const existing = issues.find((i) => !i.pull_request && (i.body ?? '').includes(marker));
 
+            // `ci-red` is what a session checks first (`gh issue list -l ci-red`). Editing the body
+            // notifies nobody, so every red night also posts a comment.
+            await github.rest.issues.createLabel({ owner, repo, name: 'ci-red', color: 'b60205', description: 'CI or nightly is red' }).catch(() => {});
+            const names = failed.length > 0 ? failed.map((f) => f.split('`')[1]).join(', ') : 'none (advisory only)';
+            const comment = `Red nightly: ${run}\nFailed jobs: ${names}`;
             if (existing) {
               await github.rest.issues.update({ owner, repo, issue_number: existing.number, title, body });
+              await github.rest.issues.addLabels({ owner, repo, issue_number: existing.number, labels: ['ci-red'] });
+              await github.rest.issues.createComment({ owner, repo, issue_number: existing.number, body: comment });
               core.info(`updated #${existing.number}`);
             } else {
-              const { data } = await github.rest.issues.create({ owner, repo, title, body });
+              const { data } = await github.rest.issues.create({ owner, repo, title, body, labels: ['ci-red'] });
+              await github.rest.issues.createComment({ owner, repo, issue_number: data.number, body: comment });
               core.info(`created #${data.number}`);
             }

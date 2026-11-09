@@ -76,6 +76,8 @@ const LOCK =
   "raised by `impact()` with a lock (`arch impact --against old.arch --lock <id,…>`) on two versions of a plan, never by compile()/lint(); pinned in test/lock.test.ts";
 const STALE =
   "raised by the CLI's write-back guard (`--expected-hash`, `src/cli/source-hash.ts`) on a file's bytes, never by compile()/lint(); pinned in test/cli-expected-hash.test.ts";
+const FLOOD =
+  "needs more than 500 warnings and no error, which takes hundreds of lines (a loop of overlapping rooms stops at 201 `W_ROOM_OVERLAP`), so the example shows two of the 600; the full flood is pinned in test/diagnostics-volume.test.ts";
 const FRAGMENT =
   "a one-line fragment: the code needs a building around it (a wall to be off, rooms to be unreachable between, a sheet to overflow), and the whole-plan spatial rules are owned by test/lint.test.ts";
 
@@ -158,6 +160,8 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
   ["W_SCALE_OVERFLOW", FRAGMENT],
   ["W_SWING_OBSTRUCTED", FRAGMENT],
   ["W_WINDOW_OFF_WALL", FRAGMENT],
+
+  ["W_DIAGNOSTIC_LIMIT", FLOOD],
 ]);
 
 /** The smallest legal plan an example fragment can be dropped into. */
@@ -244,9 +248,12 @@ suite("error catalog — every example that can raise its code does", () => {
     // raises it on a file's bytes before anything compiles; raised in test/cli-expected-hash.test.ts.
     // E_IMPORT_FORMAT, E_IMPORT_LIMIT and W_IMPORT_DROPPED took it to 61: `openPlan3dToArch()` raises
     // them on a foreign JSON file before any `.arch` source exists; each is raised in
-    // test/import-openplan3d.test.ts. E_IMPORT_NOT_ARCH, E_IMPORT_OUTSIDE_ROOT and E_IMPORT_TOO_LARGE
-    // took it to 64: the CLI's file-system World raises them when it refuses an `import` (EH-D7), and
+    // test/import-openplan3d.test.ts. W_DIAGNOSTIC_LIMIT took it to 62: it needs more than 500
+    // warnings and no error, hundreds of lines no example can carry (a loop raising an error
+    // per pass gives the E_ form, which IS executed here); raised in
+    // test/diagnostics-volume.test.ts. E_IMPORT_NOT_ARCH, E_IMPORT_OUTSIDE_ROOT and E_IMPORT_TOO_LARGE
+    // took it to 65: the CLI's file-system World raises them when it refuses an `import` (EH-D7), and
     // no virtual World a snippet runs under can; each is raised in test/import-rooted.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(64);
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(65);
   });
 });

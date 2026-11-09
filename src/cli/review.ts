@@ -28,6 +28,7 @@ import { distToPolygonEdge, pointInPolygon } from "../geometry/polygon.js";
 import { fmt2 } from "../num-format.js";
 import { textWidth } from "../text-metrics.js";
 import { xmlText } from "../text-safe.js";
+import { kindsWith } from "../elements/facets.js";
 
 /** The sheet's own coordinate width; the root `width` scales it to the requested pixels. */
 export const REVIEW_SHEET_UNITS = 1600;
@@ -284,8 +285,8 @@ function ringOf(e: ResolvedElement, drawn: ReadonlyMap<string, Point[]>, padMm: 
   return { t: "rect", ext: grow(ext, padMm) };
 }
 
-/** Kinds whose marks get a close-up: the openings and the furniture pieces. */
-const CROPPED = new Set(["door", "window", "opening", "furniture"]);
+/** Kinds whose marks get a close-up: the openings and the furniture pieces (`KIND_FACETS.cropped`). */
+const CROPPED: ReadonlySet<string> = new Set(kindsWith("cropped"));
 
 /** Wrap `text` into lines no wider than `maxW` at `size`, breaking at spaces. */
 function wrap(text: string, size: number, maxW: number): string[] {

@@ -16,6 +16,7 @@ import type { PlanNode, UseKind } from "./ast.js";
 import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
 import { NULL_WORLD } from "./world.js";
 import type { Diagnostic } from "./diagnostics.js";
+import { capDiagnostics } from "./diagnostics.js";
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
 import { segmentsOfWall, wallFaceProbes, type WallLike, type WallSegment } from "./geometry.js";
@@ -169,7 +170,11 @@ export function resolvePlan(
   const { plan, diagnostics: parseDiags } = parse(source, registry);
   const linked = plan ? link(plan, world, registry) : null;
   const resolved = linked ? resolveAll(linked.plan, registry, world) : null;
-  const diagnostics: Diagnostic[] = [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])];
+  // Capped as `compile()` caps them (EH-D8): at most MAX_DIAGNOSTICS, then one `E_DIAGNOSTIC_LIMIT`.
+  const diagnostics: Diagnostic[] = capDiagnostics(
+    [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])],
+    source.length,
+  );
 
   const hasError = diagnostics.some((d) => d.severity === "error");
   const ok = resolved !== null && !hasError;

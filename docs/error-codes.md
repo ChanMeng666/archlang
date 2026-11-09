@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**159 errors** · **94 warnings**
+**160 errors** · **95 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -22,6 +22,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_DATUM_COMPASS`](#e_datum_compass) | error | A compass word is used as a room-edge datum where it would mean two things. |
 | [`E_DATUM_NAME`](#e_datum_name) | error | A dotted name reads both as a room-edge datum and as an element inside an instance. |
 | [`E_DATUM_UNPLACED`](#e_datum_unplaced) | error | A room-edge datum names a room that has no position or no size. |
+| [`E_DIAGNOSTIC_LIMIT`](#e_diagnostic_limit) | error | More than 500 diagnostics; further diagnostics were not collected. |
 | [`E_DIM_CURVE_REF`](#e_dim_curve_ref) | error | Invalid `dim radius`/`dim diameter` reference. |
 | [`E_DIV_ZERO`](#e_div_zero) | error | Division or modulo by zero. |
 | [`E_DOMAIN`](#e_domain) | error | Math domain error. |
@@ -180,6 +181,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_CIRCUITOUS_PATH`](#w_circuitous_path) | warning | A room is reached by a very roundabout path. |
 | [`W_CJK_FONT_MISSING`](#w_cjk_font_missing) | warning | PDF/PNG text has CJK characters, but the optional CJK font package is not installed. |
 | [`W_CONNECTOR_AMBIGUOUS`](#w_connector_ambiguous) | warning | A door or cased opening does not join two rooms cleanly. |
+| [`W_DIAGNOSTIC_LIMIT`](#w_diagnostic_limit) | warning | More than 500 diagnostics, all warnings; further diagnostics were not collected. |
 | [`W_DIM_INSIDE`](#w_dim_inside) | warning | A hand-written dimension line lands inside the building. |
 | [`W_DIM_NO_WALL`](#w_dim_no_wall) | warning | A `dim faces`/`dim clear` endpoint has no wall to measure to. |
 | [`W_DIM_OVERLAP`](#w_dim_overlap) | warning | Two hand-written dimensions are drawn on top of each other. |
@@ -424,6 +426,18 @@ wall interior thickness 100 { (0, west.top) (3000, west.top) }   # error: `west.
 ```arch static
 room id=a right-of ghost size 3000x3000
 wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # error: a could not be placed
+```
+
+## E_DIAGNOSTIC_LIMIT
+
+*error* — More than 500 diagnostics; further diagnostics were not collected.
+
+**Cause.** One compile reports at most 500 diagnostics. Past that the lexer and parser stop collecting and every later stage's are dropped, except a budget or cap that stopped the work (`E_STEP_LIMIT`, `E_DRAWING_LIMIT`, `E_ELEMENT_LIMIT` and the other `*_LIMIT` codes), which are always kept, and this one closes the list, at the byte just past the 500th diagnostic kept. A page of stray characters, thousands of repeated declarations or one bad statement inside a long loop would otherwise cost more to report than the plan costs to compile. It is the error form, raised when any diagnostic, kept or dropped, is an error, so the plan draws nothing; when every one is a warning the limit is `W_DIAGNOSTIC_LIMIT` instead.
+
+**Fix.** Fix the first problems reported (they usually share one cause: a pasted binary file, a block that never closes, one bad line inside a loop) and compile again.
+
+```arch static
+for i in 0..600 { let x = 1 / 0 }   # error: 500 E_DIV_ZERO, then E_DIAGNOSTIC_LIMIT
 ```
 
 ## E_DIM_CURVE_REF
@@ -2453,6 +2467,20 @@ wall partition thickness 100 { (4000,0) (4000,5000) }
 room at (0,0) size 4000x5000
 room at (4000,0) size 4000x5000
 door on shell at 4000 width 900   # lint: its inner side spans both rooms
+```
+
+## W_DIAGNOSTIC_LIMIT
+
+*warning* — More than 500 diagnostics, all warnings; further diagnostics were not collected.
+
+**Cause.** One compile reports at most 500 diagnostics (`E_DIAGNOSTIC_LIMIT` explains the cap). When none of them is an error, neither those kept nor those dropped, the limit is this warning instead: the plan still draws, lints and describes, and only the report is cut short.
+
+**Fix.** Fix the first warnings reported (a flood of them usually has one cause, such as a line repeated hundreds of times) and compile again.
+
+```arch static
+room at (0,0) size 3000x3000
+accTitle "a"
+accTitle "a"   # … 600 such lines: 500 W_DUP_ACC_METADATA, then W_DIAGNOSTIC_LIMIT; the room still draws
 ```
 
 ## W_DIM_INSIDE

@@ -13,6 +13,7 @@
 import { compileUncached } from "./pipeline.js";
 import { clearNetAreaMemo } from "./analyze/net-area-memo.js";
 import { clearLexCache } from "./lexer.js";
+import { clearLineTableCache } from "./diagnostics.js";
 import { clearParseCache } from "./parser.js";
 import { clearResolveCache } from "./ir.js";
 import { resetRerollCache } from "./reroll.js";
@@ -721,6 +722,7 @@ export function compile(source: string, opts: CompileOptions = {}): CompileResul
 export function clearCache(): void {
   cache.clear();
   clearLexCache();
+  clearLineTableCache();
   clearParseCache();
   clearResolveCache();
   clearNetAreaMemo();

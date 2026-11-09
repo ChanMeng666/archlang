@@ -68,3 +68,30 @@
 /index.html
   X-Frame-Options: SAMEORIGIN
   Content-Security-Policy: frame-ancestors 'self'
+
+# A Content-Security-Policy, REPORT-ONLY first (card EH1.13). Nothing is blocked while it is
+# Report-Only; a browser console lists what an enforced policy would have refused, and enforcing
+# is a later change once a real-browser run of every page shows no violation. Each directive:
+#   default-src 'self'        every fetch not named below is same-origin (assets, /api/share).
+#   script-src 'self' <hash>  Vite's module bundles come from /assets/; the one inline classic script
+#                             in index.html (the mode/pg-other head script) is allowed by its SHA-256.
+#                             The JSON-LD and #planData blocks are data, not executed. No 'unsafe-eval'.
+#   worker-src 'self'         the compile worker is new Worker(import.meta.url), a same-origin module.
+#   style-src 'self' 'unsafe-inline'
+#                             CodeMirror injects <style> elements at run time, so inline styles stay.
+#   img-src 'self' data: blob: the CodeMirror lint squiggle is a data: SVG; raster export loads an
+#                             SVG blob: into an image.
+#   font-src 'self'           @fontsource files are bundled under /assets/.
+#   connect-src 'self'        fetch('/api/share'), '/api/share/<id>' and the page's own path.
+#   object-src 'none'; base-uri 'self'; form-action 'self'.
+# The enforced `frame-ancestors 'self'` on / and /index.html is untouched; embed.html may be framed.
+# If index.html's inline script changes, its hash changes: SHA-256 of the text between
+# <script> and </script>, base64.
+/
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-HhCeic+OjGk30+D7ysWzn4ddg3FhFRx9klsXYYgY1Dk='; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
+
+/index.html
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-HhCeic+OjGk30+D7ysWzn4ddg3FhFRx9klsXYYgY1Dk='; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
+
+/embed.html
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'

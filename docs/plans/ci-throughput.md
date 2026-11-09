@@ -13,7 +13,7 @@ Every option changes a workflow or a repository setting, and the owner decides w
   `eval:ci` is not the cause: it runs on all three Linux Node legs and takes seconds.
 - The E2E legs vary: their apt step "Install Chromium system deps" took 10 and 18 min in that run,
   under a minute in others.
-- No `concurrency` group and no path filters in `ci.yml`; `main` has no branch protection;
+- (As measured then.) No `concurrency` group and no path filters in `ci.yml`; `main` had no branch protection. Since option A (and EH0.5, 2026-11-09) `main` requires ten checks: the seven gating `ci.yml` jobs, `3D package (check:3d)` and both CodeQL `Analyze` legs;
   `allow_auto_merge`, `allow_update_branch` and `delete_branch_on_merge` are all false.
 - Programme PRs are mostly records only (cards, handoff, audits, backlog, CHANGELOG).
 - Measured 2026-10-27 (row-7 tranche 1, code PRs #296–#301; option D live, Node 22 no longer runs coverage on PRs):

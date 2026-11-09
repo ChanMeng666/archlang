@@ -49,6 +49,7 @@
  */
 
 import type { PlanNode, Statement, WallsFromRoomsNode, WallsPairClause } from "../ast.js";
+import { nonElementKind } from "../elements/facets.js";
 import { BUILTIN_NAMES } from "../builtins.js";
 import { exprChildren, statementBodies, statementReads } from "../cursor.js";
 import type { Span } from "../diagnostics.js";
@@ -226,6 +227,19 @@ function readsOf(s: Statement): Reads {
         if (s.curve.segmentSelect?.kind === "containing") datumRoom(s.curve.segmentSelect.edge, ids);
       }
       break;
+    // These read nothing beyond their expressions.
+    case "column":
+    case "stair":
+    case "elevator":
+    case "escalator":
+    case "roof":
+    case "void":
+    case "outdoor":
+    case "fence":
+    case "walls":
+      break;
+    default:
+      nonElementKind(s.kind);
   }
   return { names, ids, axes };
 }
