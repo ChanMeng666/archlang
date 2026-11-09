@@ -12,6 +12,7 @@ import {
 import { describe as describePlan, lint, suggestTopology, validateIntent } from "../src/index.js";
 import type { RDoor, ROpening, RRoom } from "../src/ir.js";
 import { archPlan } from "./arbitrary-plan.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * The access graph's ONE ambiguity policy (`AmbiguityPolicy` in `src/analyze.ts`), as a law.
@@ -192,7 +193,7 @@ describe("one access policy: every surface agrees on reachability", () => {
   it("offset T-junctions at every position along the cross wall", () => {
     fc.assert(
       fc.property(fc.integer({ min: 3600, max: 4400 }), fc.boolean(), (at, bed) => assertAgree(tJunction(at, bed))),
-      { numRuns: 60 },
+      { numRuns: runs(60) },
     );
   });
 
@@ -225,7 +226,8 @@ describe("one access policy: every surface agrees on reachability", () => {
         probed++;
         assertAgree(src);
       }),
-      { numRuns: 25 },
+      // Seeded: the `probed > 0` below is a non-vacuity claim (test/fast-check-policy.test.ts).
+      { numRuns: runs(25), seed: 20261109 },
     );
     expect(probed).toBeGreaterThan(0); // the precondition admitted real cases
   }, 120_000);

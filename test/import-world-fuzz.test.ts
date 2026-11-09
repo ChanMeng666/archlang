@@ -5,6 +5,7 @@ import fc from "fast-check";
 import { afterAll, describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * S-FZ-2: hostile `import` specs against the CLI's file-system World (EH1.12, EH-D7).
@@ -84,7 +85,7 @@ describe("S-FZ-2 — hostile import specs against a rooted Node World", () => {
         const why = world.refusal?.(s);
         if (why) expect(why.code).toMatch(/^E_IMPORT_(OUTSIDE_ROOT|NOT_ARCH|TOO_LARGE)$/);
       }),
-      { seed: 20261109, numRuns: 400 },
+      { seed: 20261109, numRuns: runs(400) },
     );
   });
 
@@ -97,7 +98,7 @@ describe("S-FZ-2 — hostile import specs against a rooted Node World", () => {
         expect(JSON.stringify(out.diagnostics)).not.toContain(CANARY);
         expect(out.svg).not.toContain(CANARY);
       }),
-      { seed: 20261109, numRuns: 150 },
+      { seed: 20261109, numRuns: runs(150) },
     );
   });
 });

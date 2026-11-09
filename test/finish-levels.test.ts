@@ -11,6 +11,7 @@ import { compile, finish, lint } from "../src/index.js";
 import type { RFurniture, RRoom } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import type { World } from "../src/world.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * `finish()` on a plan of `level` blocks (issue #364, part 2). Each storey is furnished as a
@@ -785,7 +786,7 @@ suite("finish on `level` blocks — generated storeys", () => {
         }
         furnished += new Set(r.changes.map((c) => `${c.level}|${c.room}`)).size;
       }),
-      { numRuns: 25, seed: 20261102 },
+      { numRuns: runs(25), seed: 20261102 },
     );
     expect(furnished, "the property never furnished a room").toBeGreaterThan(15);
   }, 300000);

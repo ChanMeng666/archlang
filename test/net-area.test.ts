@@ -29,6 +29,7 @@ import { MAX_NET_CURVES, MAX_NET_PROBE_WORK, netAreaBands, netAreaDetail } from 
 import { pointInPolygon, polygonInsideTest, VERTEX_EPS } from "../src/geometry/polygon.js";
 import type { RRoom } from "../src/ir.js";
 import { oracleNetArea } from "./net-area-oracle.js";
+import { runs } from "./setup/fast-check.js";
 
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;
 
@@ -409,7 +410,7 @@ suite("net area — the probe walk is charged before it runs (PS0.14)", () => {
         }
         return true;
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });

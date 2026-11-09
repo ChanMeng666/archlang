@@ -27,6 +27,7 @@ import {
   withZone,
   zoneId,
 } from "./arbitrary-plan.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * Property-based guards over `compile()` and the source-to-source transforms.
@@ -91,7 +92,7 @@ describe("compile — hostile input", () => {
         const hasError = r.diagnostics.some((d) => d.severity === "error");
         if (hasError) expect(r.svg).toBe("");
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -104,7 +105,7 @@ describe("compile — hostile input", () => {
         const src = `plan "F" { ${body} }`;
         expect(compile(src, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });
@@ -136,7 +137,7 @@ describe("the grammar-aware arbitrary is honest about what it emits", () => {
         ).toEqual([]);
         expect(geometryCount(compile(src, { noCache: true }).svg)).toBeGreaterThan(10);
       }),
-      { numRuns: 200 },
+      { numRuns: runs(200) },
     );
   });
 
@@ -145,7 +146,7 @@ describe("the grammar-aware arbitrary is honest about what it emits", () => {
     // proves nothing, and nothing else in this file would notice if it degenerated into
     // that. A fixed seed keeps the assertion stable — it is a statement about the
     // GENERATOR, not about a particular run.
-    const corpus = fc.sample(archPlan, { numRuns: 400, seed: 20260813 }).join("\n");
+    const corpus = fc.sample(archPlan, { numRuns: runs(400), seed: 20260813 }).join("\n");
     const missing = [
       // walls with several segments, and a curved one
       ["a closed multi-segment shell", /wall id=w_shell exterior[^\n]*close/],
@@ -212,7 +213,7 @@ describe("compile — determinism on rendering plans", () => {
         // Diagnostics are part of the contract too: order, spans and codes all stable.
         expect(b.diagnostics).toEqual(a.diagnostics);
       }),
-      { numRuns: 200 },
+      { numRuns: runs(200) },
     );
   });
 
@@ -227,7 +228,7 @@ describe("compile — determinism on rendering plans", () => {
         expect(fresh.svg).toBe(cached.svg);
         expect(fresh.diagnostics).toEqual(cached.diagnostics);
       }),
-      { numRuns: 150 },
+      { numRuns: runs(150) },
     );
   });
 });
@@ -250,7 +251,7 @@ describe("byte-identity under an unrelated addition", () => {
         expect(treated).not.toBe(control); // the treatment really was applied
         expect(compile(treated, { noCache: true }).svg).toBe(compile(control, { noCache: true }).svg);
       }),
-      { numRuns: 120 },
+      { numRuns: runs(120) },
     );
   });
 
@@ -262,7 +263,7 @@ describe("byte-identity under an unrelated addition", () => {
         expect(treated).not.toBe(control);
         expect(compile(treated, { noCache: true }).svg).toBe(compile(control, { noCache: true }).svg);
       }),
-      { numRuns: 120 },
+      { numRuns: runs(120) },
     );
   });
 
@@ -272,7 +273,7 @@ describe("byte-identity under an unrelated addition", () => {
         expect(src).not.toMatch(/^\s*site\b/m);
         expect(src).not.toMatch(/^\s*zone\b/m);
       }),
-      { numRuns: 50 },
+      { numRuns: runs(50) },
     );
   });
 });
@@ -288,7 +289,7 @@ describe("format — round-trip", () => {
         const once = format(src);
         expect(format(once)).toBe(once);
       }),
-      { numRuns: 120 },
+      { numRuns: runs(120) },
     );
   });
 
@@ -315,7 +316,7 @@ describe("format — round-trip", () => {
         expect(errorsOf(formatted)).toEqual([]);
         expect(compile(formatted, { noCache: true }).svg).toBe(compile(src, { noCache: true }).svg);
       }),
-      { numRuns: 120 },
+      { numRuns: runs(120) },
     );
   });
 
@@ -356,7 +357,7 @@ describe("repair — round-trip", () => {
         const once = repair(src).source;
         expect(repair(once).source, `repair is not idempotent on:\n\n${src}\n\nfirst pass gave:\n\n${once}`).toBe(once);
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 
@@ -385,7 +386,7 @@ describe("repair — round-trip", () => {
             expect({ x: at.x, y: at.y }, `repair reported "${c.id}" at a place its own output does not`).toEqual(c.to);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: runs(200) },
     );
   });
 
@@ -398,7 +399,7 @@ describe("repair — round-trip", () => {
           `repair() turned a clean plan into one that does not compile:\n\n${out}`,
         ).toEqual([]);
       }),
-      { numRuns: 60 },
+      { numRuns: runs(60) },
     );
   });
 
@@ -413,7 +414,7 @@ describe("repair — round-trip", () => {
         const rooms = (s: string) => (s.match(/^\s*room .*$/gm) ?? []).length;
         expect(rooms(out)).toBe(rooms(src));
       }),
-      { numRuns: 60 },
+      { numRuns: runs(60) },
     );
   });
 });
@@ -440,7 +441,7 @@ describe("finish — round-trip", () => {
         // The law holds by design, not because the settle check papered over a miss.
         expect(once.unresolved.map((u) => u.reason).join("\n")).not.toContain("did not settle");
       }),
-      { numRuns: 150 },
+      { numRuns: runs(150) },
     );
   });
 
@@ -470,7 +471,7 @@ describe("finish — round-trip", () => {
         const rolledBack = r.unresolved.some((u) => u.reason.includes("rolled back"));
         if (rolledBack) expect(r.changes.filter((c) => c.stage === "sheet")).toEqual([]);
       }),
-      { numRuns: 100 },
+      { numRuns: runs(100) },
     );
   });
 
@@ -484,7 +485,8 @@ describe("finish — round-trip", () => {
         const after = codesOf(r.source);
         expect(after.has("W_SCALE_OVERFLOW") || after.has("W_DRAWING_OVERFLOW"), r.source).toBe(false);
       }),
-      { numRuns: 100 },
+      // Seeded: the `wrote > 20` below is a non-vacuity claim (test/fast-check-policy.test.ts).
+      { numRuns: runs(100), seed: 20261109 },
     );
     expect(wrote, "the property never reached a plan finish wrote a sheet for").toBeGreaterThan(20);
   });
@@ -536,7 +538,7 @@ describe("applyFixes — convergence", () => {
           `the fix loop introduced an error:\n\nBEFORE\n${src}\nAFTER\n${cur}`,
         ).toEqual([]);
       }),
-      { numRuns: 60 },
+      { numRuns: runs(60) },
     );
   });
 

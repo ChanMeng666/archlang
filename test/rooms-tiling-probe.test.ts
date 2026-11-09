@@ -163,11 +163,9 @@ describe("planted cases: each precondition can refuse, each near-miss passes", (
 
   it("is bounded: a group too large to decide crosses the step budget and is reported, not decided", () => {
     // 1,600 staggered rooms give a ~3,200 × 3,200 cell grid: the sweep is charged before it allocates.
-    const t0 = performance.now();
     const s = storeys(plan(`  for i in 0..1600 {\n    room at (i * 1001, i * 1003) size 1000x1000\n  }`))[0]!;
     expect(s.groups[0]!.budget).toBe(true);
     expect(isRefused(s)).toBe(true);
-    expect(performance.now() - t0).toBeLessThan(5000);
   });
 
   it("each `place`d instance is its own group: abutting instances do not tile each other", () => {

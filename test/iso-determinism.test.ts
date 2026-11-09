@@ -25,6 +25,7 @@ import { describe as suite, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import type { World } from "../src/world.js";
 import { archPlan } from "./arbitrary-plan.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 const EXAMPLES = resolvePath("examples");
 const world: World = {
@@ -78,7 +79,7 @@ suite("iso determinism — generated plans", () => {
           expect(b.svg).toBe(a.svg);
         }
       }),
-      { numRuns: 200 },
+      { numRuns: runs(200) },
     );
   });
 
@@ -89,8 +90,9 @@ suite("iso determinism — generated plans", () => {
         const out = compile(src, { view: "iso", noCache: true });
         if ((out.scene?.nodes.length ?? 0) > 0) withFaces++;
       }),
-      { numRuns: 50 },
+      // Seeded: the floor below is a non-vacuity claim (test/fast-check-policy.test.ts).
+      { numRuns: runs(50), seed: 20261109 },
     );
-    expect(withFaces).toBeGreaterThan(40);
+    expect(withFaces).toBeGreaterThan(floorAt(40));
   });
 });

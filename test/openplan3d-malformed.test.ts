@@ -7,6 +7,7 @@ import { compile, openPlan3dToArch } from "../src/index.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { MAX_IMPORT_LEVELS } from "../src/import/limits.js";
 import { MUTATION_KINDS, type MutationKind, applyMutations, mutationsArb, protoSnapshot } from "./json-mutate.js";
+import { runs as scaledRuns } from "./setup/fast-check.js";
 
 /**
  * Malformed OpenPlan3D input never throws (EH1.10, T-F3 / S-FZ-5).
@@ -70,7 +71,7 @@ describe("malformed OpenPlan3D input", () => {
         const bad = check(value);
         if (bad) throw new Error(`${FIXTURES[fi]!.name}: ${applied.join("; ")}\n${bad}`);
       }),
-      { seed: SEED, numRuns: NUM_RUNS },
+      { seed: SEED, numRuns: scaledRuns(NUM_RUNS) },
     );
     console.info(`openplan3d-malformed mutation histogram: ${JSON.stringify(Object.fromEntries(histogram))}`);
     expect(changed / runs).toBeGreaterThanOrEqual(0.9);

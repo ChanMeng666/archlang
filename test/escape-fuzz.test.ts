@@ -3,6 +3,7 @@ import fc from "fast-check";
 import { compile, renderAscii, renderErrorSvg, toDxf } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
 import { textLines } from "../src/text-layout.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * Output-escaping fuzz (workstream WS-G).
@@ -319,7 +320,7 @@ describe("escaping fuzz — SVG", () => {
           assertSafeSvg(svg);
         }
       }),
-      { numRuns: 220 },
+      { numRuns: runs(220) },
     );
   });
 
@@ -344,7 +345,7 @@ describe("escaping fuzz — SVG", () => {
           expect(svg).toContain(entity);
         }
       }),
-      { numRuns: 220 },
+      { numRuns: runs(220) },
     );
   });
 
@@ -357,7 +358,7 @@ describe("escaping fuzz — SVG", () => {
           compile(src, { noCache: true, annotate: true }).svg,
         );
       }),
-      { numRuns: 150 },
+      { numRuns: runs(150) },
     );
   });
 });
@@ -378,7 +379,7 @@ describe("escaping fuzz — error-card SVG", () => {
         assertSafeSvg(svg);
         expect(renderErrorSvg(source, diagnostics)).toBe(svg); // determinism
       }),
-      { numRuns: 200 },
+      { numRuns: runs(200) },
     );
   });
 
@@ -391,7 +392,7 @@ describe("escaping fuzz — error-card SVG", () => {
         if (svg === "") return;
         assertSafeSvg(svg);
       }),
-      { numRuns: 150 },
+      { numRuns: runs(150) },
     );
   });
 });
@@ -421,7 +422,7 @@ describe("escaping fuzz — ASCII plan", () => {
         expect(txt.split("\n").length).toBe(renderAscii(baseline.scene!).split("\n").length);
         expect(renderAscii(scene)).toBe(txt); // determinism
       }),
-      { numRuns: 150 },
+      { numRuns: runs(150) },
     );
   });
 
@@ -434,7 +435,7 @@ describe("escaping fuzz — ASCII plan", () => {
           expect([...row].length).toBeLessThanOrEqual(60);
         }
       }),
-      { numRuns: 120 },
+      { numRuns: runs(120) },
     );
   });
 });
@@ -488,7 +489,7 @@ describe("escaping fuzz — DXF export", () => {
         }
         expect(toDxf(scene)).toBe(dxf); // determinism
       }),
-      { numRuns: 150 },
+      { numRuns: runs(150) },
     );
   });
 });

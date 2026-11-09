@@ -32,6 +32,7 @@ import {
   translationFor,
   wrapperSource,
 } from "./d4-oracle.js";
+import { runs } from "./setup/fast-check.js";
 
 const plan = (body: string, head = "grid 50"): string => `plan "t" {\n  units mm\n  ${head}\n${body}\n}\n`;
 
@@ -565,7 +566,7 @@ suite("equivariance: `on` and `params` do not move with the frame", () => {
         expect(p0.depends, "the instance variant emits only plans that resolve").toBeDefined();
         expect(JSON.stringify(gP.depends)).toBe(underFrame(p0.depends, g));
       }),
-      { numRuns: 30 },
+      { numRuns: runs(30) },
     );
   }, 120_000);
 });

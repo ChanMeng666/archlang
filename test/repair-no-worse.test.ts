@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { lint, repair } from "../src/index.js";
 import { archPlan } from "./arbitrary-plan.js";
 import { HARD_CODES, hardConflicts, newConflicts } from "./repair-conflicts.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * **`repair()` never returns a source that is worse than its input.**
@@ -122,7 +123,7 @@ describe("repair — the no-worse law", () => {
   it("holds over generated plans", () => {
     fc.assert(
       fc.property(archPlan, (src) => expectNoWorse("<generated>", src)),
-      { numRuns: 200 },
+      { numRuns: runs(200) },
     );
   });
 
@@ -134,7 +135,7 @@ describe("repair — the no-worse law", () => {
     // thing, would disagree with `lint()` here rather than keep the law above green.
     const plans = [
       ...corpus(),
-      ...fc.sample(archPlan, { numRuns: 150, seed: 20261005 }).map((src) => ({ name: "<generated>", src })),
+      ...fc.sample(archPlan, { numRuns: runs(150), seed: 20261005 }).map((src) => ({ name: "<generated>", src })),
     ];
     const kinds = new Set<string>();
     for (const { name, src } of plans) {
