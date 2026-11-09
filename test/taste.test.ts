@@ -9,7 +9,6 @@
  * `taste-equivariance` (translation and D4) and `taste-budget` (the measured budget).
  */
 
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
@@ -29,6 +28,7 @@ import {
 } from "../src/index.js";
 import { tasteWithBudget } from "../src/taste/index.js";
 import { TASTE_SOURCES, TASTE_WORLD } from "./taste-sources.js";
+import { runArch } from "./helpers/cli.js";
 
 const read = (p: string): string => readFileSync(p, "utf8");
 const CHAIN = "test/defect-corpus/circulation-privacy/two-bed-chain";
@@ -492,41 +492,34 @@ describe("messages name rooms by label, never by id (the lint iron law, applied 
 });
 
 describe("arch score --taste (the CLI contract)", () => {
-  const run = (args: string[], input?: string) => {
-    const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-      input,
-      encoding: "utf8",
-      cwd: process.cwd(),
-    });
-    return { status: r.status, stdout: r.stdout, stderr: r.stderr };
-  };
+  const run = (args: string[], input?: string) => runArch(args, { input });
 
-  it("--json prints taste()'s report and exits 0, capped or not", () => {
-    const r = run(["score", `${CHAIN}.arch`, "--taste", "generic", "--json"]);
+  it("--json prints taste()'s report and exits 0, capped or not", async () => {
+    const r = await run(["score", `${CHAIN}.arch`, "--taste", "generic", "--json"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout)).toEqual(taste(read(`${CHAIN}.arch`)));
   }, 30000);
 
-  it("prints a human summary line and exits 0", () => {
-    const r = run(["score", `${CHAIN}.arch`, "--taste", "generic"]);
+  it("prints a human summary line and exits 0", async () => {
+    const r = await run(["score", `${CHAIN}.arch`, "--taste", "generic"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toBe("taste generic: 0.5 (capped; uncapped 0.6875) · judged 10/11 of the weight\n");
     expect(r.stderr).toContain("A_INTIMACY_INVERSION");
   }, 30000);
 
-  it("--taste with --brief is a usage error (exit 3)", () => {
-    const r = run(["score", `${CHAIN}.arch`, "--taste", "generic", "--brief", "x.json"]);
+  it("--taste with --brief is a usage error (exit 3)", async () => {
+    const r = await run(["score", `${CHAIN}.arch`, "--taste", "generic", "--brief", "x.json"]);
     expect(r.status).toBe(3);
   }, 30000);
 
-  it("an unknown profile exits 3 with a did-you-mean", () => {
-    const r = run(["score", `${CHAIN}.arch`, "--taste", "generik"]);
+  it("an unknown profile exits 3 with a did-you-mean", async () => {
+    const r = await run(["score", `${CHAIN}.arch`, "--taste", "generik"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('did you mean "generic"');
   }, 30000);
 
-  it("a plan with compile errors exits 2 and prints them", () => {
-    const r = run(["score", "-", "--taste", "generic", "--json"], `plan "x" { room id=a at (0,0) size 1x }`);
+  it("a plan with compile errors exits 2 and prints them", async () => {
+    const r = await run(["score", "-", "--taste", "generic", "--json"], `plan "x" { room id=a at (0,0) size 1x }`);
     expect(r.status).toBe(2);
     expect(JSON.parse(r.stdout).ok).toBe(false);
   }, 30000);

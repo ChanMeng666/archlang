@@ -13,13 +13,13 @@
  * both name the module, and a plan with no `import` is completely unchanged.
  */
 
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { applyFixes, compile, diagnosticToJson, lint, makeVirtualWorld } from "../src/index.js";
 import type { Diagnostic } from "../src/diagnostics.js";
+import { runArch } from "./helpers/cli.js";
 
 /* ---------------------------------------------------------------------------
  * The reproduction: a `dim` inside an imported component.
@@ -249,12 +249,9 @@ describe("`arch fix` on an importer declines, explains, and writes nothing", () 
     return { dir, main };
   }
 
-  it("reports the skip reason (not silence) and leaves the bytes alone", () => {
+  it("reports the skip reason (not silence) and leaves the bytes alone", async () => {
     const { main } = fixture();
-    const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", "fix", main, "--json"], {
-      encoding: "utf8",
-      cwd: process.cwd(),
-    });
+    const r = await runArch(["fix", main, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.applied).toEqual([]);
@@ -267,13 +264,9 @@ describe("`arch fix` on an importer declines, explains, and writes nothing", () 
     expect(readFileSync(main, "utf8")).toBe(DIM_MAIN);
   }, 60000);
 
-  it("`lint --json` names the module and drops the meaningless line/col", () => {
+  it("`lint --json` names the module and drops the meaningless line/col", async () => {
     const { main } = fixture();
-    const r = spawnSync(
-      process.execPath,
-      ["--import", "tsx", "src/cli.ts", "lint", main, "--json", "--code", "W_DIM_INSIDE"],
-      { encoding: "utf8", cwd: process.cwd() },
-    );
+    const r = await runArch(["lint", main, "--json", "--code", "W_DIM_INSIDE"]);
     expect(r.status).toBe(0);
     const [d] = JSON.parse(r.stdout).diagnostics;
     expect(d.file).toBe("lib.arch");

@@ -16,7 +16,7 @@ import { describe as suite, expect, it } from "vitest";
 import { fromSpelling, type D4 } from "../src/algebra/d4.js";
 import type { KeepNode, KeepRef } from "../src/ast.js";
 import { cmdFix } from "../src/cli/commands-author.js";
-import { parseArgs } from "../src/cli/io.js";
+import { nodeIo, parseArgs } from "../src/cli/io.js";
 import { codesOf } from "../src/finish.js";
 import { gainedCodes } from "../src/furnish.js";
 import { link } from "../src/import.js";
@@ -483,7 +483,7 @@ suite("keep · every source-rewriting transform counts a broken hard keep", () =
       }) as typeof process.stdout.write;
       process.stderr.write = (() => true) as typeof process.stderr.write;
       try {
-        await cmdFix(parseArgs([file, "--dry-run", "--json"]));
+        await cmdFix(parseArgs([file, "--dry-run", "--json"]), nodeIo());
       } finally {
         process.stdout.write = write;
         process.stderr.write = err;

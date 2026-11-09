@@ -9,7 +9,6 @@
  * `perimeter_net_mm` is the outline of the room less every band.
  */
 
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
@@ -18,6 +17,7 @@ import { MAX_FACE_CURVES } from "../src/analyze/quantities.js";
 import { PointInterner, wallBand } from "../src/geometry/band.js";
 import { describe, type QuantityFacts, type SceneSummary } from "../src/index.js";
 import { EXAMPLE_FILES, EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./d4-oracle.js";
+import { runArch } from "./helpers/cli.js";
 
 const src = (name: string): string => readFileSync(`examples/${name}`, "utf8");
 const quantities = (name: string, wastePct?: number): SceneSummary =>
@@ -273,14 +273,13 @@ suite("quantities: the opt-in path and its parameters", () => {
   });
 });
 
-function cli(args: string[]): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], { encoding: "utf8" });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function cli(args: string[]): Promise<{ status: number | null; stdout: string; stderr: string }> {
+  return runArch(args);
 }
 
 suite("arch takeoff", () => {
-  it("laneway-house as CSV: the hand-computed table, one figure per row", () => {
-    const r = cli(["takeoff", "examples/laneway-house.arch", "--format", "csv", "--waste", "10"]);
+  it("laneway-house as CSV: the hand-computed table, one figure per row", async () => {
+    const r = await cli(["takeoff", "examples/laneway-house.arch", "--format", "csv", "--waste", "10"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toBe(
       [
@@ -316,29 +315,26 @@ suite("arch takeoff", () => {
     );
   });
 
-  it("Markdown by default, one table per section and storey", () => {
-    const r = cli(["takeoff", "examples/two-storey.arch"]);
+  it("Markdown by default, one table per section and storey", async () => {
+    const r = await cli(["takeoff", "examples/two-storey.arch"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("## Level 2 (First floor): walls");
     expect(r.stdout).toContain("| exterior | 1 | 30000 | 59600 | 178.8 |");
     expect(r.stdout).not.toMatch(/cost|stud|code/i);
   });
 
-  it("--json carries the describe block", () => {
-    const r = cli(["takeoff", "examples/laneway-house.arch", "--json", "--waste", "10"]);
+  it("--json carries the describe block", async () => {
+    const r = await cli(["takeoff", "examples/laneway-house.arch", "--json", "--waste", "10"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).quantities).toEqual(LANEWAY);
   });
 
-  it("exit codes: 3 for a bad flag value, 2 for a plan that does not resolve", () => {
-    expect(cli(["takeoff", "examples/one-room.arch", "--format", "xls"]).status).toBe(3);
-    expect(cli(["takeoff", "examples/one-room.arch", "--waste", "150"]).status).toBe(3);
-    expect(cli(["takeoff", "examples/one-room.arch", "--json", "--format", "csv"]).status).toBe(3);
-    expect(cli(["describe", "examples/one-room.arch", "--waste", "10"]).status).toBe(3);
-    const broken = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", "takeoff", "-"], {
-      input: 'plan "B" { units mm room at (0,0) size 0x3000 }',
-      encoding: "utf8",
-    });
+  it("exit codes: 3 for a bad flag value, 2 for a plan that does not resolve", async () => {
+    expect((await cli(["takeoff", "examples/one-room.arch", "--format", "xls"])).status).toBe(3);
+    expect((await cli(["takeoff", "examples/one-room.arch", "--waste", "150"])).status).toBe(3);
+    expect((await cli(["takeoff", "examples/one-room.arch", "--json", "--format", "csv"])).status).toBe(3);
+    expect((await cli(["describe", "examples/one-room.arch", "--waste", "10"])).status).toBe(3);
+    const broken = await runArch(["takeoff", "-"], { input: 'plan "B" { units mm room at (0,0) size 0x3000 }' });
     expect(broken.status).toBe(2);
   });
 });

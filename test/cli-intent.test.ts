@@ -1,13 +1,13 @@
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { spawnSync } from "node:child_process";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * CLI integration for the intent surface: `arch validate --intent`
- * (+ `--feedback`) and the `arch score` meter. Spawns the real CLI via the tsx loader
- * (no build) and checks the agent contract: `--json` parses on stdout, the documented
+ * (+ `--feedback`) and the `arch score` meter. Runs the CLI in-process
+ * (`test/helpers/cli.ts`) and checks the agent contract: `--json` parses on stdout, the documented
  * exit codes (0 ok · 2 gating violation · 1 IO · 3 usage), the intent/graph blocks
  * compose, and `--feedback` is deterministic. Mirrors `test/cli-structured.test.ts`.
  */
@@ -17,13 +17,8 @@ interface Run {
   stdout: string;
   stderr: string;
 }
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 // A two-room plan: a Bedroom (with an exterior window) and a Bathroom, sharing a
@@ -86,8 +81,8 @@ beforeAll(() => {
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("arch validate --intent", () => {
-  it("passes (exit 0) when every gating assertion holds; intent.ok, satisfied === total", () => {
-    const r = run(["validate", "-", "--intent", p("ok.json"), "--json"], PLAN);
+  it("passes (exit 0) when every gating assertion holds; intent.ok, satisfied === total", async () => {
+    const r = await run(["validate", "-", "--intent", p("ok.json"), "--json"], PLAN);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -97,16 +92,16 @@ describe("arch validate --intent", () => {
     expect(j.intent.subscores).toHaveProperty("rooms");
   }, 30000);
 
-  it("loads an intent file that carries a $schema key", () => {
-    const r = run(["validate", "-", "--intent", p("with-schema.json"), "--json"], PLAN);
+  it("loads an intent file that carries a $schema key", async () => {
+    const r = await run(["validate", "-", "--intent", p("with-schema.json"), "--json"], PLAN);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.intent.ok).toBe(true);
     expect(j.intent.satisfied).toBe(j.intent.total);
   }, 30000);
 
-  it("fails (exit 2) on a gating room-count miss with E_INTENT_ROOM_COUNT naming the path + fact", () => {
-    const r = run(["validate", "-", "--intent", p("count7.json"), "--json"], PLAN);
+  it("fails (exit 2) on a gating room-count miss with E_INTENT_ROOM_COUNT naming the path + fact", async () => {
+    const r = await run(["validate", "-", "--intent", p("count7.json"), "--json"], PLAN);
     expect(r.status).toBe(2);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(false);
@@ -119,8 +114,8 @@ describe("arch validate --intent", () => {
     expect(v.message).toContain("got 2");
   }, 30000);
 
-  it("passes (exit 0) on an advisory-only adjacency miss; the violation is listed with gate:false", () => {
-    const r = run(["validate", "-", "--intent", p("advisory.json"), "--json"], PLAN);
+  it("passes (exit 0) on an advisory-only adjacency miss; the violation is listed with gate:false", async () => {
+    const r = await run(["validate", "-", "--intent", p("advisory.json"), "--json"], PLAN);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -130,17 +125,17 @@ describe("arch validate --intent", () => {
     expect(v.gate).toBe(false);
   }, 30000);
 
-  it("fails (exit 2) on a gating window miss with E_INTENT_NO_WINDOW", () => {
-    const r = run(["validate", "-", "--intent", p("bathwin.json"), "--json"], PLAN);
+  it("fails (exit 2) on a gating window miss with E_INTENT_NO_WINDOW", async () => {
+    const r = await run(["validate", "-", "--intent", p("bathwin.json"), "--json"], PLAN);
     expect(r.status).toBe(2);
     const j = JSON.parse(r.stdout);
     expect(j.intent.ok).toBe(false);
     expect(j.intent.violations.some((x: { code: string }) => x.code === "E_INTENT_NO_WINDOW")).toBe(true);
   }, 30000);
 
-  it("--feedback appends a deterministic prompt per violation (identical across runs)", () => {
-    const once = run(["validate", "-", "--intent", p("two-fail.json"), "--feedback", "--json"], PLAN);
-    const twice = run(["validate", "-", "--intent", p("two-fail.json"), "--feedback", "--json"], PLAN);
+  it("--feedback appends a deterministic prompt per violation (identical across runs)", async () => {
+    const once = await run(["validate", "-", "--intent", p("two-fail.json"), "--feedback", "--json"], PLAN);
+    const twice = await run(["validate", "-", "--intent", p("two-fail.json"), "--feedback", "--json"], PLAN);
     expect(once.status).toBe(2);
     const j1 = JSON.parse(once.stdout);
     const j2 = JSON.parse(twice.stdout);
@@ -150,28 +145,28 @@ describe("arch validate --intent", () => {
     expect(j1.intent.feedback).toEqual(j2.intent.feedback);
   }, 30000);
 
-  it("is a usage error (exit 3) on a bad-shape intent, naming the JSON path on stderr", () => {
-    const r = run(["validate", "-", "--intent", p("unknown-key.json"), "--json"], PLAN);
+  it("is a usage error (exit 3) on a bad-shape intent, naming the JSON path on stderr", async () => {
+    const r = await run(["validate", "-", "--intent", p("unknown-key.json"), "--json"], PLAN);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("/bogus");
     expect(r.stderr).toContain("unknown key");
   }, 30000);
 
-  it("is a usage error (exit 3) when a band omits its required source", () => {
-    const r = run(["validate", "-", "--intent", p("no-source.json"), "--json"], PLAN);
+  it("is a usage error (exit 3) when a band omits its required source", async () => {
+    const r = await run(["validate", "-", "--intent", p("no-source.json"), "--json"], PLAN);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("/roomsInclude/0/areaM2/source");
   }, 30000);
 
-  it("is an IO error (exit 1) when the intent file cannot be read", () => {
-    const r = run(["validate", "-", "--intent", p("does-not-exist.json"), "--json"], PLAN);
+  it("is an IO error (exit 1) when the intent file cannot be read", async () => {
+    const r = await run(["validate", "-", "--intent", p("does-not-exist.json"), "--json"], PLAN);
     expect(r.status).toBe(1);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(false);
   }, 30000);
 
-  it("composes with --graph: both the graph{} and intent{} blocks appear", () => {
-    const r = run(["validate", "-", "--graph", p("graph-empty.json"), "--intent", p("ok.json"), "--json"], PLAN);
+  it("composes with --graph: both the graph{} and intent{} blocks appear", async () => {
+    const r = await run(["validate", "-", "--graph", p("graph-empty.json"), "--intent", p("ok.json"), "--json"], PLAN);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.graph).toBeDefined();
@@ -182,8 +177,8 @@ describe("arch validate --intent", () => {
 });
 
 describe("arch score", () => {
-  it("scores a fully satisfied intent 1.0 and exits 0", () => {
-    const r = run(["score", "-", "--brief", p("ok.json"), "--json"], PLAN);
+  it("scores a fully satisfied intent 1.0 and exits 0", async () => {
+    const r = await run(["score", "-", "--brief", p("ok.json"), "--json"], PLAN);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -191,8 +186,8 @@ describe("arch score", () => {
     expect(j.satisfied).toBe(j.total);
   }, 30000);
 
-  it("measures a partial intent (exit 0 even though a gating assertion fails)", () => {
-    const r = run(["score", "-", "--brief", p("partial.json"), "--json"], PLAN);
+  it("measures a partial intent (exit 0 even though a gating assertion fails)", async () => {
+    const r = await run(["score", "-", "--brief", p("partial.json"), "--json"], PLAN);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.satisfied).toBeLessThan(j.total);
@@ -202,14 +197,14 @@ describe("arch score", () => {
     expect(j.ok).toBe(false);
   }, 30000);
 
-  it("is a usage error (exit 3) when --brief is missing", () => {
-    const r = run(["score", "-", "--json"], PLAN);
+  it("is a usage error (exit 3) when --brief is missing", async () => {
+    const r = await run(["score", "-", "--json"], PLAN);
     expect(r.status).toBe(3);
   }, 30000);
 });
 
 describe("arch validate --intent: brief-bound measures (PS4.4)", () => {
-  it("prints one human `measure` line per bound size, rounded, with (turned); --json lists them", () => {
+  it("prints one human `measure` line per bound size, rounded, with (turned); --json lists them", async () => {
     const intent = writeJson("measures.json", {
       grossInternalAreaM2: { min: 30, source: "about 35 m²" },
       roomDimensions: [
@@ -217,7 +212,7 @@ describe("arch validate --intent: brief-bound measures (PS4.4)", () => {
         { room: "Bathroom", widthMm: { min: 4333.333, source: "x" } },
       ],
     });
-    const human = run(["validate", "-", "--intent", intent], PLAN);
+    const human = await run(["validate", "-", "--intent", intent], PLAN);
     expect(human.status).toBe(2);
     expect(human.stderr).toContain(
       "  measure /grossInternalAreaM2: gross internal area 37.44 m², residual 0 m² · ok\n",
@@ -228,20 +223,20 @@ describe("arch validate --intent: brief-bound measures (PS4.4)", () => {
     expect(human.stderr).toContain(
       '  measure /roomDimensions/1/widthMm: "Bathroom" width 4000 mm, residual −333.33 mm · miss\n',
     );
-    const j = JSON.parse(run(["validate", "-", "--intent", intent, "--json"], PLAN).stdout);
+    const j = JSON.parse((await run(["validate", "-", "--intent", intent, "--json"], PLAN)).stdout);
     expect(j.intent.measures.map((m: { path: string; residual: number[] }) => [m.path, m.residual])).toEqual([
       ["/grossInternalAreaM2", [0]],
       ["/roomDimensions/0/sizeMm", [0, 0]],
       ["/roomDimensions/1/widthMm", [-333.33]],
     ]);
     // An intent with no brief-bound size has no `measures` key: the payload is what it was.
-    const plain = JSON.parse(run(["validate", "-", "--intent", p("ok.json"), "--json"], PLAN).stdout);
+    const plain = JSON.parse((await run(["validate", "-", "--intent", p("ok.json"), "--json"], PLAN)).stdout);
     expect("measures" in plain.intent).toBe(false);
   }, 30000);
 });
 
 describe("arch validate --intent: every storey", () => {
-  it("counts every storey of a plan with `level` blocks (#365)", () => {
+  it("counts every storey of a plan with `level` blocks (#365)", async () => {
     const intent = writeJson("storeys.json", {
       rooms: 2,
       roomsInclude: [{ concept: "bedroom", count: { min: 1, max: 1 }, windows: { min: 1 } }],
@@ -256,7 +251,7 @@ describe("arch validate --intent: every storey", () => {
         window on bed.right width 1200
       }
     }`;
-    const r = run(["validate", "-", "--intent", intent], plan);
+    const r = await run(["validate", "-", "--intent", intent], plan);
     expect(r.stderr).not.toContain("E_INTENT");
     expect(r.status).toBe(0);
   }, 30000);

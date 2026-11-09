@@ -30,12 +30,12 @@
  * declared, and a plan DXF declares none of them.
  */
 
-import { spawnSync } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe as suite, expect, it } from "vitest";
+import { beforeAll, describe as suite, expect, it } from "vitest";
 import { VIEW_LAYER_NAMES } from "../src/view/paint.js";
+import { runArch } from "./helpers/cli.js";
 
 interface Run {
   status: number | null;
@@ -43,21 +43,17 @@ interface Run {
   stderr: string;
 }
 
-function run(args: string[]): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[]): Promise<Run> {
+  return runArch(args);
 }
 
 const scratch = (): string => mkdtempSync(join(tmpdir(), "archlang-view-"));
 
 suite("arch compile --view", () => {
-  it("renders an SVG and reports it like any other compile", () => {
+  it("renders an SVG and reports it like any other compile", async () => {
     const dir = scratch();
     const out = join(dir, "studio.svg");
-    const r = run(["compile", "examples/studio.arch", "--view", "iso", "-o", out, "--json"]);
+    const r = await run(["compile", "examples/studio.arch", "--view", "iso", "-o", out, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -68,33 +64,33 @@ suite("arch compile --view", () => {
     expect(svg).not.toContain('inkscape:label="A-WALL"');
   });
 
-  it("prints a one-line deprecation notice on stderr, and stdout is the plain SVG", () => {
-    const r = run(["compile", "examples/studio.arch", "--view", "iso", "-o", "-"]);
+  it("prints a one-line deprecation notice on stderr, and stdout is the plain SVG", async () => {
+    const r = await run(["compile", "examples/studio.arch", "--view", "iso", "-o", "-"]);
     expect(r.status).toBe(0);
     expect(r.stderr).toContain("--view is deprecated");
     expect(r.stderr.trim().split(/\r?\n/)).toHaveLength(1);
     expect(r.stdout.startsWith("<svg")).toBe(true);
     expect(r.stdout).not.toContain("deprecated");
     // `--quiet` silences the advisory; a plain plan compile never prints it.
-    expect(run(["compile", "examples/studio.arch", "--view", "iso", "-o", "-", "--quiet"]).stderr).toBe("");
-    expect(run(["compile", "examples/studio.arch", "-o", "-"]).stderr).not.toContain("deprecated");
+    expect((await run(["compile", "examples/studio.arch", "--view", "iso", "-o", "-", "--quiet"])).stderr).toBe("");
+    expect((await run(["compile", "examples/studio.arch", "-o", "-"])).stderr).not.toContain("deprecated");
   });
 
-  it("both presets work and DIFFER", () => {
+  it("both presets work and DIFFER", async () => {
     const dir = scratch();
     const a = join(dir, "a.svg");
     const b = join(dir, "b.svg");
-    expect(run(["compile", "examples/studio.arch", "--view", "iso", "-o", a]).status).toBe(0);
-    expect(run(["compile", "examples/studio.arch", "--view", "axon", "-o", b]).status).toBe(0);
+    expect((await run(["compile", "examples/studio.arch", "--view", "iso", "-o", a])).status).toBe(0);
+    expect((await run(["compile", "examples/studio.arch", "--view", "axon", "-o", b])).status).toBe(0);
     expect(readFileSync(b, "utf8")).not.toBe(readFileSync(a, "utf8"));
   });
 
-  it("a multi-storey plan writes the ONE file -o names — the view is the whole building", () => {
+  it("a multi-storey plan writes the ONE file -o names — the view is the whole building", async () => {
     const dir = scratch();
     const plan = join(dir, "house.arch");
     writeFileSync(plan, readFileSync("examples/two-storey.arch", "utf8"), "utf8");
     const out = join(dir, "house-iso.svg");
-    const r = run(["compile", plan, "--view", "iso", "-o", out, "--json"]);
+    const r = await run(["compile", plan, "--view", "iso", "-o", out, "--json"]);
     expect(r.status).toBe(0);
     expect(existsSync(out)).toBe(true);
     // No per-level fan-out: nothing called `house-iso.L1.svg` was written.
@@ -103,62 +99,62 @@ suite("arch compile --view", () => {
     expect(j.outputs).toBeUndefined();
   });
 
-  it("an unknown value exits 3 with a did-you-mean", () => {
-    const r = run(["compile", "examples/studio.arch", "--view", "bogus"]);
+  it("an unknown value exits 3 with a did-you-mean", async () => {
+    const r = await run(["compile", "examples/studio.arch", "--view", "bogus"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('unknown view "bogus"');
     expect(r.stderr).toContain("iso, axon");
   });
 
-  it("a NEAR-miss gets the suggestion, which is what makes the hint worth having", () => {
-    const r = run(["compile", "examples/studio.arch", "--view", "izo"]);
+  it("a NEAR-miss gets the suggestion, which is what makes the hint worth having", async () => {
+    const r = await run(["compile", "examples/studio.arch", "--view", "izo"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('did you mean "iso"');
   });
 
-  it("`--view … -f txt` exits 3 — the ASCII backend draws a plan, not a projection", () => {
-    const r = run(["compile", "examples/studio.arch", "--view", "iso", "-f", "txt"]);
+  it("`--view … -f txt` exits 3 — the ASCII backend draws a plan, not a projection", async () => {
+    const r = await run(["compile", "examples/studio.arch", "--view", "iso", "-f", "txt"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("--view cannot be combined with -f txt");
   });
 
-  it("`watch` does not take it at all — a watcher re-renders the plan you are editing", () => {
-    const r = run(["watch", "examples/studio.arch", "--view", "iso"]);
+  it("`watch` does not take it at all — a watcher re-renders the plan you are editing", async () => {
+    const r = await run(["watch", "examples/studio.arch", "--view", "iso"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("--view");
   });
 
-  it("`--view … --level` exits 3, and does NOT claim a two-storey plan is single-storey", () => {
+  it("`--view … --level` exits 3, and does NOT claim a two-storey plan is single-storey", async () => {
     // `two-storey.arch` declares two `level` blocks. A view returns no `pages`, so the
     // generic handler used to read an empty level list and say the opposite — the exact
     // class of confident wrong answer this project ranks worst. Assert the wrong sentence
     // is gone, not merely that something failed.
-    const r = run(["compile", "examples/two-storey.arch", "--view", "iso", "--level", "2"]);
+    const r = await run(["compile", "examples/two-storey.arch", "--view", "iso", "--level", "2"]);
     expect(r.status).toBe(3);
     expect(r.stderr).not.toContain("declares no `level` blocks");
     expect(r.stderr).toContain("--view draws ONE picture of the whole building");
   });
 
-  it("`--level` alone still works on that same plan — the refusal is about the PAIR", () => {
+  it("`--level` alone still works on that same plan — the refusal is about the PAIR", async () => {
     const dir = scratch();
     const out = join(dir, "upper.svg");
-    const r = run(["compile", "examples/two-storey.arch", "--level", "2", "-o", out]);
+    const r = await run(["compile", "examples/two-storey.arch", "--level", "2", "-o", out]);
     expect(r.status).toBe(0);
     expect(existsSync(out)).toBe(true);
   });
 
-  it("`--view … --overlay` exits 3 — an overlay is a measurement drawn on a plan", () => {
-    const r = run(["compile", "examples/studio.arch", "--view", "iso", "--overlay", "circulation"]);
+  it("`--view … --overlay` exits 3 — an overlay is a measurement drawn on a plan", async () => {
+    const r = await run(["compile", "examples/studio.arch", "--view", "iso", "--overlay", "circulation"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("--view cannot be combined with --overlay");
   });
 
-  it("`--overlay` alone still draws the overlay — again, the refusal is about the PAIR", () => {
+  it("`--overlay` alone still draws the overlay — again, the refusal is about the PAIR", async () => {
     const dir = scratch();
     const plain = join(dir, "plain.svg");
     const over = join(dir, "over.svg");
-    expect(run(["compile", "examples/studio.arch", "-o", plain]).status).toBe(0);
-    expect(run(["compile", "examples/studio.arch", "--overlay", "circulation", "-o", over]).status).toBe(0);
+    expect((await run(["compile", "examples/studio.arch", "-o", plain])).status).toBe(0);
+    expect((await run(["compile", "examples/studio.arch", "--overlay", "circulation", "-o", over])).status).toBe(0);
     // Non-vacuity: the overlay really does change the drawing, so the pair-refusal above
     // is withholding something real rather than nothing.
     expect(readFileSync(over, "utf8")).not.toBe(readFileSync(plain, "utf8"));
@@ -166,27 +162,27 @@ suite("arch compile --view", () => {
 });
 
 suite("arch preview --view", () => {
-  it("declares the flag and refuses --ascii for the same reason -f txt is refused", () => {
-    const r = run(["preview", "examples/studio.arch", "--view", "iso", "--ascii"]);
+  it("declares the flag and refuses --ascii for the same reason -f txt is refused", async () => {
+    const r = await run(["preview", "examples/studio.arch", "--view", "iso", "--ascii"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("--view cannot be combined with -f txt");
   });
 
-  it("an unknown value exits 3 there too", () => {
-    const r = run(["preview", "examples/studio.arch", "--view", "nope"]);
+  it("an unknown value exits 3 there too", async () => {
+    const r = await run(["preview", "examples/studio.arch", "--view", "nope"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('unknown view "nope"');
   });
 
-  it("refuses `--level` here too, with the same true sentence", () => {
-    const r = run(["preview", "examples/two-storey.arch", "--view", "axon", "--level", "1"]);
+  it("refuses `--level` here too, with the same true sentence", async () => {
+    const r = await run(["preview", "examples/two-storey.arch", "--view", "axon", "--level", "1"]);
     expect(r.status).toBe(3);
     expect(r.stderr).not.toContain("declares no `level` blocks");
     expect(r.stderr).toContain("--view draws ONE picture of the whole building");
   });
 
-  it("`--help` lists the flag with its two values", () => {
-    const r = run(["compile", "--help"]);
+  it("`--help` lists the flag with its two values", async () => {
+    const r = await run(["compile", "--help"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("--view <iso|axon>");
   });
@@ -225,8 +221,12 @@ suite("arch compile --view -f dxf — the V- layers", () => {
   const dir = scratch();
   const isoPath = join(dir, "studio-iso.dxf");
   const planPath = join(dir, "studio-plan.dxf");
-  const isoRun = run(["compile", "examples/studio.arch", "--view", "iso", "-f", "dxf", "-o", isoPath]);
-  const planRun = run(["compile", "examples/studio.arch", "-f", "dxf", "-o", planPath]);
+  let isoRun: Run;
+  let planRun: Run;
+  beforeAll(async () => {
+    isoRun = await run(["compile", "examples/studio.arch", "--view", "iso", "-f", "dxf", "-o", isoPath]);
+    planRun = await run(["compile", "examples/studio.arch", "-f", "dxf", "-o", planPath]);
+  });
 
   it("both renders succeed", () => {
     expect(isoRun.status).toBe(0);

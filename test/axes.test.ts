@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -11,6 +10,7 @@ import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
 import type { RAxis } from "../src/ir.js";
 import type { SceneNode } from "../src/scene.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * Positioning axes (定位轴线, GB/T 50001) — the plan-level `axes { … }` datum grid:
@@ -337,15 +337,9 @@ describe("axes — describe() facts", () => {
     expect("axes" in s).toBe(false);
   });
 
-  it("is a whole-plan fact — a --room narrowed read keeps it", () => {
-    // Spawn the real CLI through the tsx loader, as in cli.test.ts: `process.execPath`
-    // + `--import tsx` and repo-relative paths resolved against `cwd`. Do NOT reach into
-    // `node_modules/tsx/dist/cli.mjs` — a git worktree has no `node_modules` of its own.
-    const r = spawnSync(
-      process.execPath,
-      ["--import", "tsx", "src/cli.ts", "describe", "test/fixtures/axes-grid.arch", "--json", "--room", "left"],
-      { encoding: "utf8", cwd: process.cwd() },
-    );
+  it("is a whole-plan fact — a --room narrowed read keeps it", async () => {
+    // The real CLI dispatch, in-process (`test/helpers/cli.ts`).
+    const r = await runArch(["describe", "test/fixtures/axes-grid.arch", "--json", "--room", "left"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.rooms.map((r: { id: string }) => r.id)).toEqual(["left"]);

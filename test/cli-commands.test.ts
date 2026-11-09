@@ -1,9 +1,10 @@
-import { spawn, spawnSync } from "node:child_process";
+import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildManifest, compile, describe as describePlan } from "../src/index.js";
+import { ARCH_ARGV, type CliRun, runArch, spawnArch } from "./helpers/cli.js";
 
 /**
  * End-to-end execution of the three shipped commands no test ever invoked:
@@ -20,24 +21,13 @@ import { buildManifest, compile, describe as describePlan } from "../src/index.j
  * for twenty-five releases. It is the one RESIDENT command, so it is driven with an
  * async `spawn` and bounded polls rather than `spawnSync` — see that block's docblock.
  *
- * Spawns the real CLI via the tsx loader, as in `cli.test.ts`.
+ * `fmt` and `manifest` run the CLI in-process (`test/helpers/cli.ts`); every `watch` case spawns the
+ * real binary, because what it proves is the process: that it stays alive, or that it exits.
  */
 
-interface Run {
-  status: number | null;
-  signal: NodeJS.Signals | null;
-  stdout: string;
-  stderr: string;
-}
-
-function run(args: string[], input?: string, timeout?: number): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-    ...(timeout !== undefined ? { timeout } : {}),
-  });
-  return { status: r.status, signal: r.signal, stdout: r.stdout, stderr: r.stderr };
+/** In-process (`test/helpers/cli.ts`). */
+function run(args: string[], input?: string): Promise<CliRun> {
+  return runArch(args, { input });
 }
 
 const tmpDir = (): string => mkdtempSync(join(tmpdir(), "arch-cmd-"));
@@ -64,9 +54,9 @@ const MESSY = `plan "F" {
 `;
 
 describe("CLI — fmt", () => {
-  it("formatting does not change the drawing (bytes), and keeps every door kind clause", () => {
+  it("formatting does not change the drawing (bytes), and keeps every door kind clause", async () => {
     const file = tmp("messy.arch", MESSY);
-    const r = run(["fmt", file, "--json"]);
+    const r = await run(["fmt", file, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout) as { ok: boolean; changed: boolean; formatted: string };
     expect(j.ok).toBe(true);
@@ -92,16 +82,16 @@ describe("CLI — fmt", () => {
     expect(describePlan(j.formatted).doors.map((d) => d.kind)).toEqual(["pocket", "bifold"]);
 
     // Formatting is idempotent as a pure text operation, before any file IO is involved.
-    const again = run(["fmt", "-", "--json"], j.formatted);
+    const again = await run(["fmt", "-", "--json"], j.formatted);
     expect(again.status).toBe(0);
     const j2 = JSON.parse(again.stdout) as { changed: boolean; formatted: string };
     expect(j2.changed).toBe(false);
     expect(j2.formatted).toBe(j.formatted);
   }, 60000);
 
-  it("`--write` rewrites the file in place and a second run is a no-op", () => {
+  it("`--write` rewrites the file in place and a second run is a no-op", async () => {
     const file = tmp("write.arch", MESSY);
-    const w = run(["fmt", file, "--write", "--json"]);
+    const w = await run(["fmt", file, "--write", "--json"]);
     expect(w.status).toBe(0);
     const j = JSON.parse(w.stdout) as { ok: boolean; changed: boolean; output: string };
     expect(j.ok).toBe(true);
@@ -113,15 +103,15 @@ describe("CLI — fmt", () => {
     expect(compile(written, { noCache: true }).svg).toBe(compile(MESSY, { noCache: true }).svg);
 
     // Second pass: human mode, so the "(no changes)" branch is exercised too.
-    const again = run(["fmt", file, "--write"]);
+    const again = await run(["fmt", file, "--write"]);
     expect(again.status).toBe(0);
     expect(again.stdout).toContain("(no changes)");
     expect(readFileSync(file, "utf8")).toBe(written);
   }, 60000);
 
-  it("never destroys source it cannot parse — an unparseable plan comes back verbatim", () => {
+  it("never destroys source it cannot parse — an unparseable plan comes back verbatim", async () => {
     const broken = 'plan "B" {\n  units mm\n  room at (0,0) size 4000x3000 label "R"\n  garbage nonsense here\n}\n';
-    const r = run(["fmt", "-"], broken);
+    const r = await run(["fmt", "-"], broken);
     // `fmt` is deliberately non-gating (it reports no diagnostics), so the only
     // protection an author has is that the bytes survive.
     expect(r.status).toBe(0);
@@ -156,7 +146,7 @@ interface Child {
  * observed with `spawnSync`, which by definition only returns once it is over.
  */
 function start(args: string[]): Child {
-  const child = spawn(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
+  const child = spawn(process.execPath, [...ARCH_ARGV, ...args], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -465,13 +455,15 @@ describe("CLI — watch", () => {
   }, 240000);
 
   it("refuses a missing path and stdin with exit 3", () => {
-    const none = run(["watch"]);
+    // Spawned, with a timeout: what this proves is that a refused `watch` EXITS the process. A run
+    // that stayed resident is killed at the timeout and comes back with a signal, not exit 3.
+    const none = spawnArch(["watch"], { timeout: 30_000 });
     expect(none.status).toBe(3);
     expect(none.stderr).toContain("watch needs a file path");
 
     // `-` cannot be re-read on every save, so it is a usage error, not a one-shot compile.
     // This is the path that must STILL exit even though the command is resident on success.
-    const stdin = run(["watch", "-"], MESSY);
+    const stdin = spawnArch(["watch", "-"], { input: MESSY, timeout: 30_000 });
     expect(stdin.status).toBe(3);
     expect(stdin.stderr).toContain("watch needs a file path");
     expect(stdin.signal).toBe(null);
@@ -479,8 +471,8 @@ describe("CLI — watch", () => {
 });
 
 describe("CLI — manifest / capabilities", () => {
-  it("`--json` is buildManifest() verbatim, at the package's own version", () => {
-    const r = run(["manifest", "--json"]);
+  it("`--json` is buildManifest() verbatim, at the package's own version", async () => {
+    const r = await run(["manifest", "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout) as { version: string; commands: Array<{ name: string }> };
 
@@ -492,13 +484,13 @@ describe("CLI — manifest / capabilities", () => {
     expect(j).toEqual(JSON.parse(JSON.stringify(buildManifest(pkg.version))));
 
     // `capabilities` is an alias, not a second (drift-prone) document.
-    const alias = run(["capabilities", "--json"]);
+    const alias = await run(["capabilities", "--json"]);
     expect(alias.status).toBe(0);
     expect(alias.stdout).toBe(r.stdout);
   }, 60000);
 
-  it("human mode summarizes every command the manifest declares", () => {
-    const r = run(["manifest"]);
+  it("human mode summarizes every command the manifest declares", async () => {
+    const r = await run(["manifest"]);
     expect(r.status).toBe(0);
     const m = buildManifest("0.0.0");
     expect(r.stdout).toContain(`${m.commands.length} commands`);

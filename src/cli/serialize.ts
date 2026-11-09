@@ -25,6 +25,7 @@ import type { Diagnostic, PlanJson, PlanJsonDropped, PlanJsonDroppedClause, Scen
 import { fmt3 } from "../num-format.js";
 import {
   type Args,
+  type CliIo,
   type Format,
   EXIT,
   asciiCharset,
@@ -32,16 +33,17 @@ import {
   ensureOutputDir,
   hasErrors,
   makeNodeWorld,
+  nodeIo,
   readInput,
 } from "./io.js";
 
 /** Pick the package manager from the environment (lockfiles / npm_config_user_agent). */
-function detectPackageManager(): string {
-  const ua = process.env.npm_config_user_agent ?? "";
+function detectPackageManager(io: CliIo): string {
+  const ua = io.env.npm_config_user_agent ?? "";
   if (ua.startsWith("pnpm")) return "pnpm";
   if (ua.startsWith("yarn")) return "yarn";
-  if (existsSync(resolvePath(process.cwd(), "pnpm-lock.yaml"))) return "pnpm";
-  if (existsSync(resolvePath(process.cwd(), "yarn.lock"))) return "yarn";
+  if (existsSync(resolvePath(io.cwd(), "pnpm-lock.yaml"))) return "pnpm";
+  if (existsSync(resolvePath(io.cwd(), "yarn.lock"))) return "yarn";
   return "npm";
 }
 
@@ -49,27 +51,31 @@ function detectPackageManager(): string {
  * Auto-install an optional render dependency into the current working directory
  * (the one impure, networked CLI action — opt-in via `--install`). Best-effort:
  * Node resolves the dep from the package's own location, so this works when `arch`
- * runs as a project dependency; an `npx`-ephemeral install may not be found.
+ * runs as a project dependency; an `npx`-ephemeral install may not be found. The installer inherits
+ * the REAL process stdio, so its output cannot be captured; the banner goes to `process.stderr` to
+ * stay beside it (allow-listed in `test/cli-io-seam.test.ts`). Environment and directory come from
+ * `io`.
  */
-function autoInstall(pkg: string, quiet?: boolean): void {
-  const pm = detectPackageManager();
+function autoInstall(io: CliIo, pkg: string, quiet?: boolean): void {
+  const pm = detectPackageManager(io);
   const cmdArgs = pm === "yarn" ? ["add", pkg] : ["install", pkg];
   if (!quiet) process.stderr.write(`installing ${pkg} via ${pm} … (use SVG/DXF to avoid this)\n`);
   const r = spawnSync(pm, cmdArgs, {
     stdio: quiet ? "ignore" : "inherit",
-    cwd: process.cwd(),
+    cwd: io.cwd(),
+    env: { ...io.env },
     shell: process.platform === "win32",
   });
   if (r.status !== 0) throw new Error(`auto-install of ${pkg} failed (run manually: ${pm} ${cmdArgs.join(" ")})`);
 }
 
 /** Run a render, and on a missing-optional-dep error retry once after auto-install (if `--install`). */
-export async function runWithInstall<T>(fn: () => Promise<T>, pkg: string, args: Args): Promise<T> {
+export async function runWithInstall<T>(io: CliIo, fn: () => Promise<T>, pkg: string, args: Args): Promise<T> {
   try {
     return await fn();
   } catch (e) {
     if (args.install && isOptionalDepError(e)) {
-      autoInstall(pkg, args.quiet);
+      autoInstall(io, pkg, args.quiet);
       return await fn();
     }
     throw e;
@@ -84,6 +90,7 @@ export async function runWithInstall<T>(fn: () => Promise<T>, pkg: string, args:
  * {@link renderArtifact} calls before any Scene is serialized, so it never reaches this seam.
  */
 async function serialize(
+  io: CliIo,
   scene: Scene,
   svg: string,
   format: Format,
@@ -103,9 +110,10 @@ async function serialize(
     case "txt":
       return renderAscii(scene, { cols: args.cols, charset: asciiCharset(args) });
     case "pdf":
-      return runWithInstall(() => toPdf(scene, { onDiagnostic }), "pdfkit", args);
+      return runWithInstall(io, () => toPdf(scene, { onDiagnostic }), "pdfkit", args);
     case "png":
       return runWithInstall(
+        io,
         () => renderPng(scene, { width: args.width, scale: args.scale, onDiagnostic }),
         "@resvg/resvg-js",
         args,
@@ -289,7 +297,11 @@ export interface Rendered {
  */
 export type PageSelect = "first" | "all" | { level: number };
 
-/** Compile + serialize one source to bytes (no file IO). Compile errors → no bytes. */
+/**
+ * Compile + serialize one source to bytes (no file IO). Compile errors → no bytes. `io` is what
+ * `--install` reads the environment from; a caller that never passes `--install` (a test asking
+ * for bytes) may leave it to the real process.
+ */
 export async function renderArtifact(
   source: string,
   format: Format,
@@ -297,6 +309,7 @@ export async function renderArtifact(
   baseDir: string,
   page: PageSelect = "first",
   view?: ViewName,
+  io: CliIo = nodeIo(),
 ): Promise<Rendered> {
   const world = makeNodeWorld(baseDir);
   const { svg, diagnostics, scene, pages } = compile(source, {
@@ -335,6 +348,7 @@ export async function renderArtifact(
         const bytes =
           format === "png"
             ? await runWithInstall(
+                io,
                 () => renderPngFromSvg(svg, { width: args.width, scale: args.scale }),
                 "@resvg/resvg-js",
                 args,
@@ -367,19 +381,19 @@ export async function renderArtifact(
           out.push({
             level: p.level,
             ...(p.name !== undefined ? { name: p.name } : {}),
-            bytes: await serialize(p.scene, p.svg, format, args, warnings),
+            bytes: await serialize(io, p.scene, p.svg, format, args, warnings),
           });
         }
         return { pages: out, levels, diagnostics: withWarnings() };
       }
       const want = page === "first" ? pages[0]! : pages.find((p) => p.level === page.level);
       if (!want) return { diagnostics, levels, badLevel: true };
-      const bytes = await serialize(want.scene, want.svg, format, args, warnings);
+      const bytes = await serialize(io, want.scene, want.svg, format, args, warnings);
       return { bytes, levels, diagnostics: withWarnings() };
     }
     // A `--level` on a single-storey plan is a usage error, not a silently ignored flag.
     if (typeof page === "object") return { diagnostics, levels, badLevel: true };
-    const bytes = await serialize(scene, svg, format, args, warnings);
+    const bytes = await serialize(io, scene, svg, format, args, warnings);
     return { bytes, levels, diagnostics: withWarnings() };
   } catch (e) {
     const message = (e as Error).message;
@@ -410,14 +424,20 @@ export interface PerFile {
 }
 
 /** Read a `.arch` file, render it, and write the artifact to `targetPath`. */
-export async function compileToFile(input: string, format: Format, args: Args, targetPath: string): Promise<PerFile> {
+export async function compileToFile(
+  io: CliIo,
+  input: string,
+  format: Format,
+  args: Args,
+  targetPath: string,
+): Promise<PerFile> {
   let source: string;
   try {
-    source = readInput(input);
+    source = readInput(io, input);
   } catch {
     return { input, ok: false, format, error: `cannot read ${input}`, diagnostics: [], source: "" };
   }
-  const r = await renderArtifact(source, format, args, baseDirOf(input));
+  const r = await renderArtifact(source, format, args, baseDirOf(io, input), "first", undefined, io);
   if (r.error || r.bytes === undefined) {
     return { input, ok: false, format, error: r.error, errorCode: r.errorCode, diagnostics: r.diagnostics, source };
   }

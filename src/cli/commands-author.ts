@@ -33,6 +33,7 @@ import { parse } from "../parser.js";
 import { proveWhileFixes } from "../while-fix.js";
 import {
   type Args,
+  type CliIo,
   EXIT,
   baseDirOf,
   emitDiagnosticsHuman,
@@ -58,8 +59,8 @@ import { readGuarded, sha256Hex, withGuardedSource } from "./source-hash.js";
  * recovers, so a partial AST is emitted even on error; error diagnostics still
  * force exit 2. Human mode pretty-prints the same JSON (diagnostics → stderr).
  */
-export function cmdAst(args: Args): number {
-  return withSource(args, (source) => {
+export function cmdAst(args: Args, io: CliIo): number {
+  return withSource(io, args, (source) => {
     const { plan, diagnostics } = parse(source);
     const ast = plan ? astToJson(plan) : undefined;
     const errored = hasErrors(diagnostics);
@@ -67,10 +68,10 @@ export function cmdAst(args: Args): number {
       const o: Record<string, unknown> = { ok: !errored };
       if (ast !== undefined) o.ast = ast;
       o.diagnostics = diagnostics.map((d) => diagnosticToJson(source, d));
-      emitJson(o);
+      emitJson(io, o);
     } else {
-      if (diagnostics.length) emitDiagnosticsHuman(source, diagnostics, args.quiet);
-      if (ast !== undefined) process.stdout.write(JSON.stringify(ast, null, 2) + "\n");
+      if (diagnostics.length) emitDiagnosticsHuman(io, source, diagnostics, args.quiet);
+      if (ast !== undefined) io.stdout.write(JSON.stringify(ast, null, 2) + "\n");
     }
     return errored ? EXIT.USER : EXIT.OK;
   });
@@ -80,18 +81,18 @@ export function cmdAst(args: Args): number {
  * `complete --at <byteOffset>` — the core LSP `completion()` projected as data: the
  * items in scope at that source offset. Missing/invalid `--at` is a usage error.
  */
-export function cmdComplete(args: Args): number {
+export function cmdComplete(args: Args, io: CliIo): number {
   if (args.at === undefined || !Number.isFinite(args.at) || args.at < 0) {
-    return usageError("complete needs --at <byteOffset> (a non-negative integer)");
+    return usageError(io, "complete needs --at <byteOffset> (a non-negative integer)");
   }
   const offset = Math.trunc(args.at);
-  return withSource(args, (source) => {
+  return withSource(io, args, (source) => {
     const items = completion(source, offset);
     if (args.json) {
-      emitJson({ ok: true, items });
+      emitJson(io, { ok: true, items });
     } else if (!args.quiet) {
       for (const it of items) {
-        process.stdout.write(`${it.label}\t${it.kind}${it.detail ? `\t${it.detail}` : ""}\n`);
+        io.stdout.write(`${it.label}\t${it.kind}${it.detail ? `\t${it.detail}` : ""}\n`);
       }
     }
     return EXIT.OK;
@@ -107,8 +108,8 @@ export function cmdComplete(args: Args): number {
  * `--expected-hash` guards that rewrite (`src/cli/source-hash.ts`); `--json` reports
  * `source_hash`, and `written_hash` when bytes were written.
  */
-export function cmdFmt(args: Args): number {
-  return withGuardedSource(args, "fmt", (read, input) => {
+export function cmdFmt(args: Args, io: CliIo): number {
+  return withGuardedSource(io, args, "fmt", (read, input) => {
     const { source } = read;
     const formatted = format(source);
     const changed = formatted !== source;
@@ -119,18 +120,18 @@ export function cmdFmt(args: Args): number {
         writeFileSync(resolvePath(input), formatted, "utf8");
       }
       if (args.json)
-        emitJson({
+        emitJson(io, {
           ok: true,
           changed,
           output: resolvePath(input),
           source_hash: read.hash,
           ...(changed ? { written_hash: sha256Hex(formatted) } : {}),
         });
-      else if (!args.quiet) process.stdout.write(`✓ ${input} formatted${changed ? "" : " (no changes)"}\n`);
+      else if (!args.quiet) io.stdout.write(`✓ ${input} formatted${changed ? "" : " (no changes)"}\n`);
     } else if (args.json) {
-      emitJson({ ok: true, changed, formatted, source_hash: read.hash, output_hash: sha256Hex(formatted) });
+      emitJson(io, { ok: true, changed, formatted, source_hash: read.hash, output_hash: sha256Hex(formatted) });
     } else {
-      process.stdout.write(formatted);
+      io.stdout.write(formatted);
     }
     return EXIT.OK;
   });
@@ -141,12 +142,12 @@ export function cmdFmt(args: Args): number {
  * source (furniture pushed out of walls) plus a change log; never edits render output.
  * Writes corrected source to `-o <file>` (or stdout); the change log goes to stderr.
  */
-export function cmdRepair(args: Args): number {
-  return withGuardedSource(args, "repair", (read, input) => {
+export function cmdRepair(args: Args, io: CliIo): number {
+  return withGuardedSource(io, args, "repair", (read, input) => {
     const { source } = read;
     const r = repair(source);
     if (args.json) {
-      emitJson({
+      emitJson(io, {
         ok: true,
         changed: r.changed,
         changes: r.changes,
@@ -164,14 +165,12 @@ export function cmdRepair(args: Args): number {
       try {
         writeOutput(target, r.source);
       } catch (e) {
-        return ioError((e as Error).message, args.json);
+        return ioError(io, (e as Error).message, args.json);
       }
       if (!args.quiet)
-        process.stderr.write(
-          `✓ ${input} → ${target} (${r.changes.length} change${r.changes.length === 1 ? "" : "s"})\n`,
-        );
+        io.stderr.write(`✓ ${input} → ${target} (${r.changes.length} change${r.changes.length === 1 ? "" : "s"})\n`);
     } else {
-      process.stdout.write(r.source);
+      io.stdout.write(r.source);
     }
     if (!args.quiet) {
       for (const c of r.changes) {
@@ -184,11 +183,11 @@ export function cmdRepair(args: Args): number {
           c.kind === "rotated"
             ? `rotated ${c.id} ${c.fromRotate ?? 0}° → ${c.toRotate ?? 0}°`
             : `moved ${c.id}${clause} (${c.from.x},${c.from.y}) → (${c.to.x},${c.to.y})`;
-        process.stderr.write(`  ${what} — ${c.reason}\n`);
+        io.stderr.write(`  ${what} — ${c.reason}\n`);
       }
-      for (const u of r.unresolved) process.stderr.write(`  ⚠ ${u.id}: ${u.reason}\n`);
+      for (const u of r.unresolved) io.stderr.write(`  ⚠ ${u.id}: ${u.reason}\n`);
       if (!r.changed)
-        process.stderr.write(
+        io.stderr.write(
           r.unresolved.length > 0
             ? `  (no changes — ${r.unresolved.length} problem${r.unresolved.length === 1 ? "" : "s"} repair declined to guess at; see above)\n`
             : "  (no changes — nothing to repair)\n",
@@ -215,14 +214,14 @@ export function cmdRepair(args: Args): number {
  * included) and into `--json` as `diff`, and `--backup` saves the target's original bytes
  * to `<target>.bak` before overwriting (opt-in, so a plain `fix` leaves no `.bak` litter).
  */
-export async function cmdFix(args: Args): Promise<number> {
+export async function cmdFix(args: Args, io: CliIo): Promise<number> {
   const input = args._[0];
-  if (!input) return usageError("fix needs an input file (use a path or `-` for stdin)");
-  const read = readGuarded(args, "fix", input);
+  if (!input) return usageError(io, "fix needs an input file (use a path or `-` for stdin)");
+  const read = readGuarded(io, args, "fix", input);
   if ("code" in read) return read.code;
   const { source } = read;
 
-  const world = makeNodeWorld(baseDirOf(input));
+  const world = makeNodeWorld(baseDirOf(io, input));
   const maxApplicability = args.unsafe ? ("maybe-incorrect" as const) : ("machine-applicable" as const);
   const MAX_PASSES = 4;
 
@@ -344,7 +343,7 @@ export async function cmdFix(args: Args): Promise<number> {
         writeFileSync(`${path}.bak`, readFileSync(path, "utf8"), "utf8");
         backup = `${target}.bak`;
       } catch (e) {
-        return ioError((e as Error).message, args.json);
+        return ioError(io, (e as Error).message, args.json);
       }
     }
   }
@@ -353,7 +352,7 @@ export async function cmdFix(args: Args): Promise<number> {
     try {
       writeOutput(target, current);
     } catch (e) {
-      return ioError((e as Error).message, args.json);
+      return ioError(io, (e as Error).message, args.json);
     }
   }
 
@@ -369,22 +368,22 @@ export async function cmdFix(args: Args): Promise<number> {
     if (wrote && target !== "-") out.written_hash = sha256Hex(current);
     // The fixed text's own revision (what `diff` produces): `written_hash` when it was written here.
     out.output_hash = sha256Hex(current);
-    emitJson(out);
+    emitJson(io, out);
   } else {
-    if (target === "-" && !args.dryRun) process.stdout.write(current);
+    if (target === "-" && !args.dryRun) io.stdout.write(current);
     if (!args.quiet) {
-      if (diff) process.stderr.write(diff);
-      for (const c of changeLog) process.stderr.write(`  ${c}\n`);
-      for (const s of skipped) process.stderr.write(`  skipped${s.code ? ` [${s.code}]` : ""}: ${s.reason}\n`);
-      if (stopReason) process.stderr.write(`  ⚠ ${stopReason}\n`);
-      if (backup) process.stderr.write(`  backup: ${backup}\n`);
-      if (applied.length === 0) process.stderr.write("  (no fixes applied)\n");
-      else if (args.dryRun) process.stderr.write("  (dry run — nothing written)\n");
+      if (diff) io.stderr.write(diff);
+      for (const c of changeLog) io.stderr.write(`  ${c}\n`);
+      for (const s of skipped) io.stderr.write(`  skipped${s.code ? ` [${s.code}]` : ""}: ${s.reason}\n`);
+      if (stopReason) io.stderr.write(`  ⚠ ${stopReason}\n`);
+      if (backup) io.stderr.write(`  backup: ${backup}\n`);
+      if (applied.length === 0) io.stderr.write("  (no fixes applied)\n");
+      else if (args.dryRun) io.stderr.write("  (dry run — nothing written)\n");
       else if (wrote && target !== "-")
-        process.stderr.write(
+        io.stderr.write(
           `✓ ${input} → ${target} (${applied.length} fix${applied.length === 1 ? "" : "es"}, ${passes} pass${passes === 1 ? "" : "es"})\n`,
         );
-      if (unresolved.length) process.stderr.write(`  unresolved: ${unresolved.join(", ")}\n`);
+      if (unresolved.length) io.stderr.write(`  unresolved: ${unresolved.join(", ")}\n`);
     }
   }
   return ok ? EXIT.OK : EXIT.USER;
@@ -404,15 +403,16 @@ export async function cmdFix(args: Args): Promise<number> {
  * returned untouched with exit 2. A stage name this version does not run is refused
  * (exit 3): a flag that quietly did nothing would read as "nothing to do".
  */
-export function cmdFinish(args: Args): number {
+export function cmdFinish(args: Args, io: CliIo): number {
   const input = args._[0];
-  if (!input) return usageError("finish needs an input file (use a path or `-` for stdin)");
+  if (!input) return usageError(io, "finish needs an input file (use a path or `-` for stdin)");
   let only: FinishStage | undefined;
   if (args.only !== undefined) {
     const stage = FINISH_STAGES.find((s) => s === args.only);
     if (!stage) {
       const hint = closest(String(args.only), [...FINISH_STAGES]);
       return usageErrorFor(
+        io,
         "finish",
         `unknown stage "${args.only}" for --only — expected one of: ${FINISH_STAGES.join(", ")}` +
           (hint ? ` (did you mean "${hint}"?)` : ""),
@@ -420,16 +420,17 @@ export function cmdFinish(args: Args): number {
     }
     if (!FINISH_STAGES_AVAILABLE.includes(stage))
       return usageErrorFor(
+        io,
         "finish",
         `--only ${stage} is not available yet — this version implements: ${FINISH_STAGES_AVAILABLE.join(", ")}`,
       );
     only = stage;
   }
-  const read = readGuarded(args, "finish", input);
+  const read = readGuarded(io, args, "finish", input);
   if ("code" in read) return read.code;
   const { source } = read;
 
-  const world = makeNodeWorld(baseDirOf(input));
+  const world = makeNodeWorld(baseDirOf(io, input));
   const errors = compile(source, { noCache: true, world }).diagnostics.filter((d) => d.severity === "error");
   const ok = errors.length === 0;
   const r = finish(source, { world, ...(only ? { only } : {}), ...(args.reissue ? { reissue: true } : {}) });
@@ -455,7 +456,7 @@ export function cmdFinish(args: Args): number {
         writeFileSync(`${path}.bak`, readFileSync(path, "utf8"), "utf8");
         backup = `${target}.bak`;
       } catch (e) {
-        return ioError((e as Error).message, args.json);
+        return ioError(io, (e as Error).message, args.json);
       }
     }
   }
@@ -463,7 +464,7 @@ export function cmdFinish(args: Args): number {
     try {
       writeOutput(target, r.source);
     } catch (e) {
-      return ioError((e as Error).message, args.json);
+      return ioError(io, (e as Error).message, args.json);
     }
   }
 
@@ -486,22 +487,20 @@ export function cmdFinish(args: Args): number {
     if (wrote && target !== "-") out.written_hash = sha256Hex(r.source);
     // `source`'s own revision, for a caller that writes it: `written_hash` when it was written here.
     out.output_hash = sha256Hex(r.source);
-    emitJson(out);
+    emitJson(io, out);
   } else {
-    if (!ok) emitDiagnosticsHuman(source, errors, args.quiet);
-    if (target === "-" && !args.dryRun) process.stdout.write(r.source);
+    if (!ok) emitDiagnosticsHuman(io, source, errors, args.quiet);
+    if (target === "-" && !args.dryRun) io.stdout.write(r.source);
     if (!args.quiet) {
-      if (diff) process.stderr.write(diff);
+      if (diff) io.stderr.write(diff);
       for (const c of r.changes)
-        process.stderr.write(`  ${c.kind} ${c.from ? `${c.from} → ` : ""}${c.text} — ${c.reason}\n`);
-      for (const u of r.unresolved) process.stderr.write(`  ⚠ ${u.statement ? `${u.statement}: ` : ""}${u.reason}\n`);
-      if (backup) process.stderr.write(`  backup: ${backup}\n`);
-      if (!r.changed) process.stderr.write("  (no changes)\n");
-      else if (args.dryRun) process.stderr.write("  (dry run — nothing written)\n");
+        io.stderr.write(`  ${c.kind} ${c.from ? `${c.from} → ` : ""}${c.text} — ${c.reason}\n`);
+      for (const u of r.unresolved) io.stderr.write(`  ⚠ ${u.statement ? `${u.statement}: ` : ""}${u.reason}\n`);
+      if (backup) io.stderr.write(`  backup: ${backup}\n`);
+      if (!r.changed) io.stderr.write("  (no changes)\n");
+      else if (args.dryRun) io.stderr.write("  (dry run — nothing written)\n");
       else if (target !== "-")
-        process.stderr.write(
-          `✓ ${input} → ${target} (${r.changes.length} statement${r.changes.length === 1 ? "" : "s"})\n`,
-        );
+        io.stderr.write(`✓ ${input} → ${target} (${r.changes.length} statement${r.changes.length === 1 ? "" : "s"})\n`);
     }
   }
   return ok ? EXIT.OK : EXIT.USER;
@@ -536,13 +535,13 @@ function compiledPages(source: string, world: ReturnType<typeof makeNodeWorld>):
  * writes nothing at all (the same "prove, then possibly write" shape a
  * preview would add nothing to).
  */
-export function cmdReroll(args: Args): number {
-  return withGuardedSource(args, "reroll", (read, input) => {
+export function cmdReroll(args: Args, io: CliIo): number {
+  return withGuardedSource(io, args, "reroll", (read, input) => {
     const { source } = read;
     // The fs World, like `compile` gets — so a plan with `import`s can still
     // be proven (the proof obligation resolves the same modules `compile`
     // would).
-    const world = makeNodeWorld(baseDirOf(input));
+    const world = makeNodeWorld(baseDirOf(io, input));
     const suggestions = reroll(source, { world });
 
     if (args.write && input !== "-") {
@@ -571,13 +570,13 @@ export function cmdReroll(args: Args): number {
         try {
           writeFileSync(resolvePath(input), report.output, "utf8");
         } catch (e) {
-          return ioError((e as Error).message, args.json);
+          return ioError(io, (e as Error).message, args.json);
         }
       }
 
       const wrote = changed && verified;
       if (args.json) {
-        emitJson({
+        emitJson(io, {
           ok: verified,
           wrote,
           target: resolvePath(input),
@@ -587,10 +586,10 @@ export function cmdReroll(args: Args): number {
           ...(wrote ? { written_hash: sha256Hex(report.output) } : {}),
         });
       } else if (!args.quiet) {
-        if (!verified) process.stderr.write("  ⚠ combined result failed re-verification — nothing written\n");
-        else if (!wrote) process.stdout.write(`${input}: no reroll suggestions\n`);
+        if (!verified) io.stderr.write("  ⚠ combined result failed re-verification — nothing written\n");
+        else if (!wrote) io.stdout.write(`${input}: no reroll suggestions\n`);
         else
-          process.stdout.write(
+          io.stdout.write(
             `✓ ${input} rerolled (${report.applied.length} loop${report.applied.length === 1 ? "" : "s"})\n`,
           );
       }
@@ -598,11 +597,11 @@ export function cmdReroll(args: Args): number {
     }
 
     if (args.json) {
-      emitJson({ ok: true, suggestions, source_hash: read.hash });
+      emitJson(io, { ok: true, suggestions, source_hash: read.hash });
     } else if (!args.quiet) {
-      if (suggestions.length === 0) process.stdout.write("no reroll suggestions\n");
+      if (suggestions.length === 0) io.stdout.write("no reroll suggestions\n");
       for (const s of suggestions) {
-        process.stdout.write(
+        io.stdout.write(
           `[${s.span.start},${s.span.end}) ${s.count} statements → for ${s.loopVar} ` +
             `(tokens ${s.tokensBefore} → ${s.tokensAfter})\n${s.replacement}\n\n`,
         );
@@ -619,15 +618,15 @@ export function cmdReroll(args: Args): number {
  * statements (furniture-aware, each referencing its wall by a stable ref — an authored
  * id or a unique category — or absolute coordinates) plus a rationale.
  */
-export function cmdSuggest(args: Args): number {
-  return withSource(args, (source, input) => {
-    const suggestions = suggestTopology(source, { world: makeNodeWorld(baseDirOf(input)) });
+export function cmdSuggest(args: Args, io: CliIo): number {
+  return withSource(io, args, (source, input) => {
+    const suggestions = suggestTopology(source, { world: makeNodeWorld(baseDirOf(io, input)) });
     if (args.json) {
-      emitJson({ ok: true, suggestions });
+      emitJson(io, { ok: true, suggestions });
       return EXIT.OK;
     }
     if (suggestions.length === 0) {
-      if (!args.quiet) process.stdout.write("no topology suggestions\n");
+      if (!args.quiet) io.stdout.write("no topology suggestions\n");
       return EXIT.OK;
     }
     const lines: string[] = [];
@@ -635,7 +634,7 @@ export function cmdSuggest(args: Args): number {
       lines.push(`${s.code}: ${s.problem}`);
       for (const c of s.candidates) lines.push(`  ${c.insertText}\n    → ${c.rationale}`);
     }
-    process.stdout.write(lines.join("\n") + "\n");
+    io.stdout.write(lines.join("\n") + "\n");
     return EXIT.OK;
   });
 }

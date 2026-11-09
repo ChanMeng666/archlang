@@ -6,7 +6,6 @@
  * (units, lines, columns).
  */
 
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -32,18 +31,14 @@ import {
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { compile, lint } from "../src/index.js";
 import { buildManifest } from "../src/manifest.js";
+import { runArch } from "./helpers/cli.js";
 
 const spec = readFileSync(resolve("spec.llm.md"), "utf8");
 const starter = renderStarter(LEAD_EXAMPLE, SECTION_NAMES);
 const manifest = buildManifest("0.0.0");
 
-function run(args: string[], input?: string): { status: number | null; stdout: string; stderr: string } {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<{ status: number | null; stdout: string; stderr: string }> {
+  return runArch(args, { input });
 }
 
 /** The lead example with `statement` as an extra last line of the plan. */
@@ -141,10 +136,10 @@ describe("every quoted snippet comes from its source", () => {
     expect([...seen].sort()).toEqual(["--json", "--section", "--taste", "-o"]);
   });
 
-  it("names only JSON keys the real validate and lint output carry", () => {
+  it("names only JSON keys the real validate and lint output carry", async () => {
     const plan = probe(STARTER_ERRORS.find((e) => e.code === "E_OPENING_NIB")!.bad);
-    const validate = JSON.parse(run(["validate", "-", "--json"], plan).stdout) as Record<string, any>;
-    const lintOut = JSON.parse(run(["lint", "-", "--json"], plan).stdout) as Record<string, any>;
+    const validate = JSON.parse((await run(["validate", "-", "--json"], plan)).stdout) as Record<string, any>;
+    const lintOut = JSON.parse((await run(["lint", "-", "--json"], plan)).stdout) as Record<string, any>;
     expect(Object.keys(validate)[0]).toBe("summary");
     expect(Object.keys(lintOut)[0]).toBe("summary");
     expect(validate.ok).toBe(false);
@@ -260,47 +255,47 @@ describe("the error table is executable", () => {
 });
 
 describe("archlang context --level", () => {
-  it("--level starter prints the starter and nothing else", () => {
-    const r = run(["context", "--level", "starter"]);
+  it("--level starter prints the starter and nothing else", async () => {
+    const r = await run(["context", "--level", "starter"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toBe(starter);
   });
 
-  it("--level starter --json wraps it", () => {
-    const r = run(["context", "--level", "starter", "--json"]);
+  it("--level starter --json wraps it", async () => {
+    const r = await run(["context", "--level", "starter", "--json"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout)).toEqual({ ok: true, level: "starter", context: starter });
   });
 
-  it("--level full is the default output, byte for byte", () => {
-    const plain = run(["context"]);
-    const full = run(["context", "--level", "full"]);
+  it("--level full is the default output, byte for byte", async () => {
+    const plain = await run(["context"]);
+    const full = await run(["context", "--level", "full"]);
     expect(plain.status).toBe(0);
     expect(full.stdout).toBe(plain.stdout);
     expect(full.stdout.length).toBeGreaterThan(100_000);
   });
 
-  it("an unknown level is a usage error with a did-you-mean", () => {
-    const r = run(["context", "--level", "starer"]);
+  it("an unknown level is a usage error with a did-you-mean", async () => {
+    const r = await run(["context", "--level", "starer"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('did you mean "starter"');
     expect(CONTEXT_LEVELS).toEqual(["starter", "full"]);
   });
 
-  it("--level starter refuses --section", () => {
-    const r = run(["context", "--level", "starter", "--section", "spec"]);
+  it("--level starter refuses --section", async () => {
+    const r = await run(["context", "--level", "starter", "--section", "spec"]);
     expect(r.status).toBe(3);
   });
 
-  it("--level with no value is a usage error, never the full bundle", () => {
-    const r = run(["context", "--level"]);
+  it("--level with no value is a usage error, never the full bundle", async () => {
+    const r = await run(["context", "--level"]);
     expect(r.status).toBe(3);
     expect(r.stdout).toBe("");
     expect(r.stderr).toContain("--level needs a value");
   });
 
-  it("--level stays a number for the storey commands (describe --level starter exits 3)", () => {
-    const r = run(["describe", "examples/two-bed.arch", "--level", "starter"]);
+  it("--level stays a number for the storey commands (describe --level starter exits 3)", async () => {
+    const r = await run(["describe", "examples/two-bed.arch", "--level", "starter"]);
     expect(r.status).toBe(3);
     expect(r.stdout + r.stderr).not.toContain("expected one of: starter");
   });
