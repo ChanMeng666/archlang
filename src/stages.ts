@@ -75,6 +75,10 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
   W_REASSIGN_DEPRECATED: "brief",
   // The plan's own `axes`, which belong to the brief.
   W_AXES_DIFFER: "brief",
+  // The diagnostic cap (EH-D8) is about the whole report, not an element: a budget, staged as the
+  // budget errors are (`E_STEP_LIMIT` falls to `brief`), so it is shown at every stage and a
+  // `--stage` view can never hide that the list was cut short.
+  W_DIAGNOSTIC_LIMIT: "brief",
   // Rooms laid on top of each other.
   W_ROOM_OVERLAP: "rooms",
   // An opening that did not land on its wall, or a swing naming a room it does not border.

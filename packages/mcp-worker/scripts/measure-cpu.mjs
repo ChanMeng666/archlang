@@ -48,6 +48,28 @@ function synthetic(kb) {
 }
 const SYNTH = [8, 16, 32, 60].map(synthetic);
 
+/**
+ * Diagnostic floods (EH1.11, S-F1): sources at (or near) the Worker's 64 KiB cap that each raise thousands
+ * of diagnostics, which cost a quadratic line/column scan before the line-start table and the
+ * 500-diagnostic cap. One row each in a second table.
+ */
+function flood(name, unit, kb = 64) {
+  const head = 'plan "Flood" {\n';
+  const tail = "\n}\n";
+  const room = kb * 1024 - head.length - tail.length;
+  return { name: `flood: ${name}`, source: head + unit.repeat(Math.ceil(room / unit.length)).slice(0, room) + tail };
+}
+const FLOODS = [
+  flood("@ (one per byte)", "@"),
+  // JSON escapes a NUL as six bytes, so 40 KiB keeps the request body under BODY_CAP_BYTES.
+  flood("NUL (one per byte, 40 KiB)", "\u0000", 40),
+  flood("room with a stray word", "room at (0,0) size 1x1 zzz\n"),
+  flood('unclosed zone "a" {', 'zone "a" {\n'),
+  flood("let a = 1 (E_REDEF)", "let a = 1\n"),
+  flood("1 / 0 in a loop", "for i in 0..600 { let x = 1 / 0 }\n"),
+];
+const FLOOD_TOOLS = ["compile", "describe", "lint", "validate"];
+
 const HEADERS = { "content-type": "application/json", accept: "application/json, text/event-stream" };
 let nextId = 1;
 
@@ -128,7 +150,14 @@ async function main() {
     }
   }
 
-  const corpusOnly = (key) => samples[key].filter((s) => !s.label.startsWith("synthetic"));
+  for (const fl of FLOODS) {
+    for (const tool of FLOOD_TOOLS) {
+      for (let r = 0; r < Math.min(3, REPS); r++) record(tool, await TOOLS[tool](fl.source), fl.name);
+    }
+  }
+
+  const corpusOnly = (key) =>
+    samples[key].filter((s) => !s.label.startsWith("synthetic") && !s.label.startsWith("flood"));
   const rows = Object.keys(samples).map((key) => {
     const all = corpusOnly(key).map((s) => s.ms);
     const worst = corpusOnly(key).reduce((a, b) => (b.ms > a.ms ? b : a), { ms: -1, label: "" });
@@ -152,6 +181,17 @@ async function main() {
   console.log(`|---|---:|---:|---:|---|${SYNTH.map(() => "---:").join("|")}|`);
   for (const r of rows)
     console.log(`| ${r.key} | ${f(r.p50)} | ${f(r.p95)} | ${f(r.max)} | ${r.worst} | ${r.synth.join(" | ")} |`);
+
+  console.log("");
+  console.log(`| flood | ${FLOOD_TOOLS.map((t) => `${t} p50 ms`).join(" | ")} |`);
+  console.log(`|---|${FLOOD_TOOLS.map(() => "---:").join("|")}|`);
+  for (const fl of FLOODS) {
+    const cells = FLOOD_TOOLS.map((t) => {
+      const xs = samples[t].filter((s) => s.label === fl.name).map((s) => s.ms);
+      return xs.length ? pct(xs, 50).toFixed(1) : "-";
+    });
+    console.log(`| ${fl.name} | ${cells.join(" | ")} |`);
+  }
 }
 
 await main();
