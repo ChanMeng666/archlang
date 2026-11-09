@@ -1,4 +1,4 @@
-/** W_PATH_TOO_NARROW is monotone in an obstacle's depth; the reported clear width is the width a body passes through. */
+/** W_PATH_TOO_NARROW is monotone in an obstacle's depth; the reported clear width is the width a body passes through; a blocked room is a claim about FURNITURE, an… */
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";

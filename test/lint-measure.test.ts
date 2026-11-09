@@ -1,4 +1,4 @@
-/** mm — millimetre rounding into diagnostic prose; shortfall — how far `required` exceeds `available`. */
+/** mm — millimetre rounding into diagnostic prose; shortfall — how far `required` exceeds `available`; deficitMm — a requirement, an availability and a shortfall t… */
 
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";

@@ -1,4 +1,4 @@
-/** `dim faces` / `dim clear` — endpoint projection onto the wall faces; W_DIM_INSIDE — a hand dim whose line reads inside the building. */
+/** `dim faces` / `dim clear` — endpoint projection onto the wall faces; W_DIM_INSIDE — a hand dim whose line reads inside the building; W_DIM_OVERLAP — two hand di… */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

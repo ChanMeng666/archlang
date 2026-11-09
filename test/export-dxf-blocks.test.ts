@@ -1,4 +1,4 @@
-/** the Scene is the Scene it was; a Scene with no parts is the flat file. */
+/** the Scene is the Scene it was; a Scene with no parts is the flat file; over the corpus; a block; a dimension; the drawing budget; the wiring. */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";

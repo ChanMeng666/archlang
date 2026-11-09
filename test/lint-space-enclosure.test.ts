@@ -1,4 +1,4 @@
-/** W_BOUNDARY_NO_WALL; W_FLOOR_UNASSIGNED. */
+/** W_BOUNDARY_NO_WALL; W_FLOOR_UNASSIGNED; W_ROOM_OUTSIDE_SHELL; circulation-reachable implies access-reachable, on the corpus; review round 1 — W_BOUNDARY_NO_WALL… */
 
 import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync, statSync } from "node:fs";

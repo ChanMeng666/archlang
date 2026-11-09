@@ -1,4 +1,4 @@
-/** arcFromChord — the closed-form centre solve; the tessellator — one fixed angular step, integer vertex count. */
+/** arcFromChord — the closed-form centre solve; the tessellator — one fixed angular step, integer vertex count; closed-form arc queries (never sampled from the tes… */
 
 import { readFileSync } from "node:fs";
 import { afterAll, describe as suite, expect, it } from "vitest";

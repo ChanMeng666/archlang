@@ -1,4 +1,4 @@
-/** W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING. */
+/** W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING; finish with the room-contents rule: the review's probes; PS2.17: a kitchen's worktop, written by finish. */
 
 import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync } from "node:fs";

@@ -1,4 +1,4 @@
-/** Cases: writes the arc on the point it arrives at, and the paper beside the scale; comes back byte for byte, `bbox_outer` and `sheet` included. */
+/** Cases: writes the arc on the point it arrives at, and the paper beside the scale; comes back byte for byte, `bbox_outer` and `sheet` included; does the same thr… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";

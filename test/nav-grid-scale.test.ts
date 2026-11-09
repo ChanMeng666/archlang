@@ -1,4 +1,4 @@
-/** nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one. */
+/** nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one; a fixture across part of a wide threshold narrows it, never sea… */
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";

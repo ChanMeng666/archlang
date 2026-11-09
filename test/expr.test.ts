@@ -1,4 +1,4 @@
-/** expressions; Value coercions (errors-as-data, never thrown). */
+/** expressions; Value coercions (errors-as-data, never thrown); expression grammar (T2.2). */
 
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";

@@ -1,4 +1,4 @@
-/** diagnosticsSummary; the diagnostics are what lint() returns. */
+/** diagnosticsSummary; the diagnostics are what lint() returns; a wide summary and a failing later tier; the text report opens with the line; withoutSummary (the d… */
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

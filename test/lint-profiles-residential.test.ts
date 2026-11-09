@@ -1,4 +1,4 @@
-/** the residential-advisory profiles; the catalog example. */
+/** the residential-advisory profiles; the catalog example; single or double: read from the bed, never the label (ADR 0005); areas are net floor under every residen… */
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";

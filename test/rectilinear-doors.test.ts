@@ -40,7 +40,7 @@ const onL = (line: string, extra = ""): string => plan(`${LIV}\n${BED}\n${extra}
 const door = (at: string): string => onL(`door id=d between liv and bed ${at} width 800 swing into bed`);
 
 const errors = (src: string) => compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
-// TODO(EH3.4): differs from test/helpers/diag.ts by asserts the code with `!`.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it asserts the code with `!`.
 const codes = (src: string): string[] => errors(src).map((d) => d.code!);
 const irOf = (src: string) => {
   const ir = resolvePlan(src).ir;

@@ -4,7 +4,7 @@
  * every profile, pinned below.
  *
  * Measured on the PS5.1b tree (all eleven criteria under `generic`) with this file's own digest body,
- * `tasteDigest` in `./taste-sources.ts`, never a lookalike. Each row is `[digest, profile, file]`
+ * `tasteDigest` in `test/helpers/taste-sources.ts`, never a lookalike. Each row is `[digest, profile, file]`
  * (digest first, so no file name that contains a key-like word sits before an opaque literal).
  *
  * A moved row is a finding: the PR that moves it explains the move per criterion (the criterion

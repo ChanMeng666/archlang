@@ -16,7 +16,7 @@ const ROOM = "room id=r at (0,0) size 900x900";
 const BIG = "9".repeat(400);
 
 /** All three entry points, never throwing; returns the compile() diagnostic codes. */
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile().
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile().
 function codes(src: string): string[] {
   const r = compile(src, { noCache: true });
   expect(() => describePlan(src)).not.toThrow();

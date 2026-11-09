@@ -30,7 +30,7 @@
  * the box, because the estimate behind it went per character. It too is input, not the search.
  */
 
-import { CORPUS_DIRS, walkFiles as walk } from "./helpers/corpus.js";
+import { corpusFiles, walkFiles as walk } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
@@ -446,9 +446,8 @@ function replay(label: string): Reach {
 
 function corpus(): { name: string; src: string; world: World }[] {
   const out: { name: string; src: string; world: World }[] = [];
-  for (const d of CORPUS_DIRS)
-    for (const p of walk(join(ROOT, d), (f) => f.endsWith(".arch")))
-      out.push({ name: p, src: readFileSync(p, "utf8"), world: worldFor(dirname(p)) });
+  for (const p of corpusFiles({ absolute: true }))
+    out.push({ name: p, src: readFileSync(p, "utf8"), world: worldFor(dirname(p)) });
   const md = [
     ...walk(join(ROOT, "docs"), (f) => f.endsWith(".md")),
     ...readdirSync(ROOT)

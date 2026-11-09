@@ -1,4 +1,4 @@
-/** compile — hostile input; the grammar-aware arbitrary is honest about what it emits. */
+/** compile — hostile input; the grammar-aware arbitrary is honest about what it emits; compile — determinism on rendering plans; byte-identity under an unrelated a… */
 
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";

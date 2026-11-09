@@ -57,7 +57,7 @@ import {
 } from "./tables/corner-window-plans.js";
 import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile(), leaves the memo cache on, asserts the code with `!`.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), leaves the memo cache on, asserts the code with `!`.
 const codes = (src: string): string[] => compile(src).diagnostics.map((d) => d.code!);
 const errors = (src: string): string[] =>
   compile(src)

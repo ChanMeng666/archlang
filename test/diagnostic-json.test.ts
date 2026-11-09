@@ -1,4 +1,4 @@
-/** diagnosticToJson; fixes projection. */
+/** diagnosticToJson. */
 
 import { describe, expect, it } from "vitest";
 import { compile, diagnosticToJson, offsetToLineCol, ERROR_CATALOG, renderErrorSvg } from "../src/index.js";

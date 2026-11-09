@@ -1,4 +1,4 @@
-/** ascii backend — golden text plans; ascii backend — determinism & invariants. */
+/** ascii backend — golden text plans; ascii backend — determinism & invariants; ascii backend — degenerate scenes. */
 
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

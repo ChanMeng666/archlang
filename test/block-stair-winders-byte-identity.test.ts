@@ -10,7 +10,7 @@
  * Each digest is {@link allStoreysDigestWithDiagnostics} (every storey's SVG, `describe()`,
  * `lint()` and `compile().diagnostics`), **measured against `src/` at `5593484d`** (`main`
  * before the clause), that tree extracted by `git archive`, handed to this suite's own digest body
- * (`./byte-identity-digest.ts`) and to these very rows (`./block-stair-winders-law.ts`), never a
+ * (`test/helpers/byte-identity-digest.ts`) and to these very rows (`test/helpers/block-stair-winders-law.ts`), never a
  * rebuilt working tree. The rows: `examples/turning-stair.arch`; every `BLOCK_STAIRS` fixture,
  * `dir up` and `dir down`, without and with `height 2750`; and the quarter-turn drawn in a
  * `component` and placed once `mirror x` and once `rotate 90`. None writes `winders`; none moved.

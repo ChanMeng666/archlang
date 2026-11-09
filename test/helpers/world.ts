@@ -1,8 +1,9 @@
 /**
  * The one on-disk `World` a test hands the compiler so a plan's `import`s resolve.
  *
- * Replaces the 21 local `worldFor(dir)` copies (the same `read` over `readFileSync(resolve(dir, p))`,
- * `null` for a missing module). The clock is pinned to the epoch so a plan that stamps the date
+ * Replaces the local `worldFor(dir)` copies: the same `read` over `readFileSync(resolve(dir, p))`, `null`
+ * for a missing module. 23 definitions went (22 named `worldFor`, one `worldAt`); two stay, on the guard's
+ * allow-list or in `keep-weak-law.ts`, because they take a file or build a virtual World. The clock is pinned to the epoch so a plan that stamps the date
  * compiles to the same bytes on every run. For an in-memory `{ path: source }` World use
  * `makeVirtualWorld` from `src/world.ts`.
  *

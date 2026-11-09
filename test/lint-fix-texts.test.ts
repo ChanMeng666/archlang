@@ -1,4 +1,4 @@
-/** W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and raises nothing new; W_FIXTURE_BACK_TO_ROOM — the size's aspect decides the wall; the hint swaps it. */
+/** W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and raises nothing new; W_FIXTURE_BACK_TO_ROOM — the size's aspect decides the wall; the hint swap… */
 
 import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync } from "node:fs";
@@ -34,7 +34,7 @@ const minOf = (p: Profile) =>
 const of = (src: string, code: string, p?: Profile) => lint(src, opts(p)).filter((d) => d.code === code);
 
 /** Every code the plan raises, compile and lint, as a multiset. */
-// TODO(EH3.4): differs from test/helpers/diag.ts by returns counts or a set.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it returns counts or a set.
 function codes(src: string, p: Profile): Map<string, number> {
   const m = new Map<string, number>();
   for (const d of [...compile(src, { noCache: true }).diagnostics, ...lint(src, opts(p))])

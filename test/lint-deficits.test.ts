@@ -1,4 +1,4 @@
-/** W_SWING_OBSTRUCTED states the measured deficit; W_SWING_OBSTRUCTED on a double door (backlog 6.8). */
+/** W_SWING_OBSTRUCTED states the measured deficit; W_SWING_OBSTRUCTED on a double door (backlog 6.8); W_SWING_OBSTRUCTED's hinge-flip fix; W_DOORWAY_BLOCKED / W_FU… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";

@@ -1,4 +1,4 @@
-/** relational placement — equivalence with manual coords; relational placement — determinism. */
+/** relational placement — equivalence with manual coords; relational placement — determinism; relational placement — diagnostics; relational placement — the align/… */
 
 import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan } from "../src/index.js";
@@ -16,7 +16,7 @@ import { compile, describe as describePlan } from "../src/index.js";
 
 const NL = String.fromCharCode(10);
 const svgOf = (src: string) => compile(src, { noCache: true });
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile(), keeps an undefined code as `undefined`.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), keeps an undefined code as `undefined`.
 const codes = (src: string) => compile(src, { noCache: true }).diagnostics.map((d) => d.code);
 
 describe("relational placement — equivalence with manual coords", () => {

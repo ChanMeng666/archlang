@@ -1,4 +1,4 @@
-/** W_OPENING_AT_JUNCTION; W_OPENING_OVERLAP. */
+/** W_OPENING_AT_JUNCTION; W_OPENING_OVERLAP; W_CONNECTOR_AMBIGUOUS. */
 
 import { describe, expect, it } from "vitest";
 import { compile, lint } from "../src/index.js";

@@ -1,4 +1,4 @@
-/** plan-json — round-trip byte-identity (SVG); plan-json — derived furniture positions. */
+/** plan-json — round-trip byte-identity (SVG); plan-json — derived furniture positions; plan-json — planToJson projection & enrichments; plan-json — `dims auto` is… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { describe, expect, it } from "vitest";
@@ -97,7 +97,7 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
     // An authored wall beside the statement is still a `walls[]` row.
     const coexist = WALLS_FROM_ROOMS_PLANS.find((p) => p[0] === "coexist")![1];
     expect(planToJson(coexist).json!.walls.map((w) => w.id)).toEqual(["p"]);
-    // two-bed carries a `roof`, which Plan JSON leaves out (plan-json-gaps.ts); the studio twin round-trips
+    // two-bed carries a `roof`, which Plan JSON leaves out (test/tables/plan-json-gaps.ts); the studio twin round-trips
     roundTrips(readFileSync("test/walls-from-rooms/studio.arch", "utf8"));
     expect(planToJson(readFileSync("test/walls-from-rooms/studio.arch", "utf8")).json!.walls).toEqual([]);
     const withExcept = coexist.replace("partition 100\n", "partition 100 { except b }\n");

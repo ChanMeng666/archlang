@@ -2,7 +2,7 @@
  * K3 of the `keep` byte-identity law (ADR 0033 decision 7; PS4.3 design §7): SHA-256 over each
  * keep-corpus plan's keep rows in every surface that carries them — `describe().keeps`,
  * `compile().diagnostics` and `validate --json` with its exit code (`k3DigestOf`,
- * `./keep-harness.ts`). Pinned in its own commit, after K1 and K2 held, as ADR 0029 §7's relation
+ * `test/helpers/keep-harness.ts`). Pinned in its own commit, after K1 and K2 held, as ADR 0029 §7's relation
  * digests were. A moved row is a finding to explain (`docs/testing.md` §3), never a re-pin; a lint
  * rewording on a corpus plan moves its `validate --json` part, and that row is then re-measured
  * with its reason beside it.
@@ -64,7 +64,7 @@ suite("keep · K3, the keep rows: a digest table over the corpus", () => {
 /**
  * K3's second table (PS4.3b): the keep rows of the surfaces PS4.3b added — `depends.keeps` (top
  * level and per storey) and `impact`'s `keeps` (against itself, and with the first top-level
- * numeric `let` raised by 100) — over the same corpus (`k3bDigestOf`, `./keep-harness.ts`).
+ * numeric `let` raised by 100) — over the same corpus (`k3bDigestOf`, `test/helpers/keep-harness.ts`).
  * Pinned in its own table, after the first held unchanged, so PS4.3a's 23 rows above prove
  * PS4.3b moved none of them. The refused plans share one digest: they resolve to no keeps, so
  * every surface reads `null`.

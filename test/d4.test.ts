@@ -1,4 +1,4 @@
-/** D4 — the group; D4 — faithful actions agree with the matrix. */
+/** D4 — the group; D4 — faithful actions agree with the matrix; D4 — the normal form is frame.ts's; D4 — the degree helpers keep their exact arithmetic; D4 — insta… */
 
 import { describe, expect, it } from "vitest";
 import {

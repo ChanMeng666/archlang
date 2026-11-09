@@ -59,7 +59,7 @@ const SAME_ID_PLAN = `plan "same id" {
   }
 }`;
 
-// TODO(EH3.4): differs from test/helpers/diag.ts by keeps an undefined code as `undefined`.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it keeps an undefined code as `undefined`.
 const codes = (src: string, intent: Intent): string[] => validateIntent(src, intent).violations.map((v) => v.code);
 
 suite("the intent reads every storey (#365)", () => {

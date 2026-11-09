@@ -1,4 +1,4 @@
-/** element budget (E_ELEMENT_LIMIT); 1000 identical rooms. */
+/** element budget (E_ELEMENT_LIMIT); 1000 identical rooms; huge finite coordinates. */
 
 import { codes } from "./helpers/diag.js";
 import { describe as suite, expect, it } from "vitest";

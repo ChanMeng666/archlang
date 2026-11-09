@@ -35,7 +35,7 @@ const svg = (src: string): string => {
   expect(out.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   return out.svg;
 };
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile(), maps a missing code to "?".
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), maps a missing code to "?".
 const codes = (src: string): string[] => compile(src, { noCache: true }).diagnostics.map((d) => d.code ?? "?");
 
 /** The resolved furniture of a source, in plan space. */

@@ -19,7 +19,7 @@
  * than retyped, because two hand-typed copies of thirty hashes is two things to keep true
  * and the point of a measured baseline is that it is measured once. It was taken on
  * `f4548db`, the last tree before the datum layer, by a script that imported the digest bodies in
- * `./byte-identity-digest.ts` — never a lookalike.
+ * `test/helpers/byte-identity-digest.ts` — never a lookalike.
  *
  * The corpus is still all thirty, and the ones named in `AUTHORS_HEIGHT` are read the way
  * that module's header describes: their baseline rows are checked against the plan's

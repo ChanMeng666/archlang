@@ -1,4 +1,4 @@
-/** DXF export; AIA CAD layers. */
+/** DXF export; AIA CAD layers; DXF units and wall layers; DXF text placement and encoding. */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";

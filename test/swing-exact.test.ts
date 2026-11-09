@@ -1,4 +1,4 @@
-/** 6.12 — an overlap with no sampled point in it collides; a separating gap is never contact. */
+/** 6.12 — an overlap with no sampled point in it collides; a separating gap is never contact; the superset law: every collision the old sampler found is still a co… */
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -21,7 +21,7 @@ import { floorAt, runs } from "./setup/fast-check.js";
  * miss any overlap whose shared region held none of its points.
  *
  * Pinned here: the backlog's counterexample (red on the sampler, frozen in
- * `./swing-predicate-v1.ts`); the separating-GAP case the bare axis test got wrong (two leaves
+ * `test/helpers/swing-predicate-v1.ts`); the separating-GAP case the bare axis test got wrong (two leaves
  * with parallel facing edges, apart, read as touching); the superset law (every collision
  * the old predicate found is still one); agreement with an independent oracle (convex
  * polygon clipping, plus straight-edge contact); and the narrowing hint's bisection checked

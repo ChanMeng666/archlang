@@ -1,4 +1,4 @@
-/** fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose. */
+/** fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose; the detector discriminates — faithful clean, laundered caught… */
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";

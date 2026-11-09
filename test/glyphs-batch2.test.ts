@@ -87,7 +87,7 @@ function pointsOf(n: SceneNode): Point[] {
       const apex = len > 0 ? [{ x: p.center.x + (dx / len) * p.r, y: p.center.y + (dy / len) * p.r }] : [];
       return [p.start, p.end, p.center, ...apex];
     }
-    // A curved outline: its vertices and its arcs' axis extremes, exactly (`glyph-extent.ts`).
+    // A curved outline: its vertices and its arcs' axis extremes, exactly (`test/helpers/glyph-extent.ts`).
     case "path":
       return pathExtentPoints(p);
     default:

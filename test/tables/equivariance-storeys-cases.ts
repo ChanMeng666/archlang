@@ -7,7 +7,7 @@
  *  - the named `test/fixtures/` buildings a shipped example no longer covers
  *    ({@link FIXTURE_BUILDINGS}), and
  *  - every building `test/shaft-equivariance.test.ts` runs (its `CASES`), as level bodies from
- *    `./shaft-equivariance-models.ts` — at 1× (a 100 mm nav cell, lattice-aligned, so the
+ *    `test/helpers/shaft-equivariance-models.ts` — at 1× (a 100 mm nav cell, lattice-aligned, so the
  *    raster is compared under every element) and scaled (a larger cell that does not divide
  *    the plan, so the raster is compared under the translation only; the shaft suite owns
  *    their turned and flipped circulation, within its measured bounds).

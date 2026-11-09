@@ -1,4 +1,4 @@
-/** every clause is reported on the plan that has it, and alone; a multi-storey plan answers for the export in hand. */
+/** every clause is reported on the plan that has it, and alone; a multi-storey plan answers for the export in hand; the keep path is the same path, and unchanged;… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

@@ -1,4 +1,4 @@
-/** innerFaceOfRoomEdge — the geometry `flush` measures from; flush arithmetic — the four edge anchors. */
+/** innerFaceOfRoomEdge — the geometry `flush` measures from; flush arithmetic — the four edge anchors; flush arithmetic — corners apply the rule per edge; flush an… */
 
 import { lintCodes as codes } from "./helpers/diag.js";
 import { readFileSync } from "node:fs";

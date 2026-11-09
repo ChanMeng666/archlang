@@ -1,16 +1,22 @@
 /**
- * The one definition of "the corpus" for tests, and the example listings they share.
+ * The `.arch` files of the corpus, and the example listings tests share.
  *
- * `docs/testing.md` § 5 defines the corpus a sweep covers: `examples/` (including `lib`),
- * `test/fixtures`, `test/recovery-corpus`, and the eval `goldens`, `fidelity-plans` and `faults`.
- * {@link corpusFiles} is that set. Replaces the 28 local `corpus()` / `archFiles()` / `exampleFiles()`
- * / `walk()` copies and the `readdirSync("examples").filter(… endsWith(".arch"))` listings (113 files
- * read the examples with their own directories and filters).
+ * {@link corpusFiles} returns the `.arch` files (recursively) under {@link CORPUS_DIRS}: `examples/`
+ * (`lib` included), `test/fixtures`, `test/recovery-corpus`, `eval/goldens`, `eval/faults` and
+ * `eval/fidelity-plans`. That is the file half of the corpus `docs/testing.md` § 5 sweeps; the sweep
+ * also covers the `arch` fences of docs/, README and spec, which a test extracts with
+ * `extractArchBlocks` (`src/markdown.ts`) and which this module does not return.
+ * `scripts/engine-digests.ts` keeps its own directory list on purpose (non-recursive, adds
+ * `examples/lib`, omits `eval/faults`), so its browser digests do not move with this one.
+ *
+ * Replaces the local recursive `.arch` walkers (14 migrated to {@link walkFiles}), the six-directory
+ * lists (6 migrated to {@link CORPUS_DIRS}, 4 of them to {@link corpusFiles}) and the
+ * `readdirSync("examples")` listings (52 migrated to {@link exampleNames} / {@link libNames}). A copy
+ * that picks a different set stays, with a comment saying how.
  *
  * Paths are repo-relative with forward slashes (`examples/studio.arch`): vitest runs from the repo
  * root, so they open as they are; pass `absolute: true` for absolute ones. A test that needs a
- * DIFFERENT set (an extra directory, the defect corpus, a filter) passes `dirs` or filters the
- * result, and says why.
+ * DIFFERENT set passes `dirs` or filters the result, and says why.
  */
 
 import { readdirSync, statSync } from "node:fs";

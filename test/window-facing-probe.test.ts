@@ -1,4 +1,4 @@
-/** Cases: a courtyard window with no host room faces the courtyard, not the plan centre; a window on a re-entrant polygon room's courtyard wall faces the courtyard. */
+/** Cases: a courtyard window with no host room faces the courtyard, not the plan centre; a window on a re-entrant polygon room's courtyard wall faces the courtyard… */
 
 import { describe as vDescribe, expect, it } from "vitest";
 import { describe } from "../src/describe.js";

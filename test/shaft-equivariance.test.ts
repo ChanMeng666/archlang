@@ -4,7 +4,7 @@
  * `test/equivariance-corpus.test.ts` cannot see a `level` plan (a whole-file import drops the
  * `level` blocks), so nothing held a stair-reached storey to D4. Here each building's storeys
  * are components placed with the SAME frame on every storey (`place sN() as g at (t, t)
- * rotate … mirror …`; see `./shaft-equivariance-models.ts`), and every storey's
+ * rotate … mirror …`; see `test/helpers/shaft-equivariance-models.ts`), and every storey's
  * `describe().levels[*].circulation` under each of the eight frames is compared with the
  * identity's.
  *

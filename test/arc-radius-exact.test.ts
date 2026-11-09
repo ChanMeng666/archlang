@@ -1,4 +1,4 @@
-/** arc radius — exact semicircle on a Pythagorean chord; arc radius — the exact tie is built as the exact semicircle, whichever way hypot rounds. */
+/** arc radius — exact semicircle on a Pythagorean chord; arc radius — the exact tie is built as the exact semicircle, whichever way hypot rounds; arc radius — the… */
 
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it, vi } from "vitest";

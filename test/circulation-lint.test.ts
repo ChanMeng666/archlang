@@ -11,7 +11,7 @@ import { describe as describePlan, lint } from "../src/index.js";
  */
 
 const STUDIO = readFileSync(new URL("../examples/studio.arch", import.meta.url), "utf8");
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads lint(), takes options, keeps an undefined code as `undefined`.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads lint(), takes options, keeps an undefined code as `undefined`.
 const codes = (src: string, opts?: Parameters<typeof lint>[1]) => lint(src, opts).map((d) => d.code);
 
 describe("circulation lint", () => {

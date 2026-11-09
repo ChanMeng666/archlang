@@ -1,4 +1,4 @@
-/** repair — scripted statements are reported, not skipped; repair — a single resolved instance is rewritten however it is nested. */
+/** repair — scripted statements are reported, not skipped; repair — a single resolved instance is rewritten however it is nested; repair — `in <room>` placements;… */
 
 import { describe, expect, it } from "vitest";
 import { lint, repair } from "../src/index.js";
@@ -34,7 +34,7 @@ const FURNITURE_CODES = new Set([
   "W_FIXTURE_BACK_TO_ROOM",
 ]);
 
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads lint(), asserts the code with `!`.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads lint(), asserts the code with `!`.
 const codes = (src: string): string[] => lint(src).map((d) => d.code!);
 
 /** Statement offsets repair reported on, as changes ∪ unresolved. */

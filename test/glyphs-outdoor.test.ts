@@ -240,7 +240,7 @@ function boundingPoints(n: SceneNode): Point[] {
       }
       return out;
     }
-    // A curved outline: its vertices and its arcs' axis extremes, exactly (`glyph-extent.ts`).
+    // A curved outline: its vertices and its arcs' axis extremes, exactly (`test/helpers/glyph-extent.ts`).
     case "path":
       return pathExtentPoints(p);
     default:

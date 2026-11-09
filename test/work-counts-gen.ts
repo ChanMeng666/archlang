@@ -3,7 +3,7 @@
  *
  *     npx tsx test/work-counts-gen.ts "<why, and on which commit>"
  *
- * It measures every plan of `workCountPlans()` with the test's own body (`./work-counts.ts`) and
+ * It measures every plan of `workCountPlans()` with the test's own body (`test/helpers/work-counts.ts`) and
  * writes the table, recording the reason it was given in its `_reason` header. A moved count is an
  * algorithmic change to explain (`docs/testing.md` §3): a PR that legitimately moves one re-takes
  * the whole table with this generator, never by hand, and names the moved rows in its commit message.

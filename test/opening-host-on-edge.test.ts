@@ -29,7 +29,7 @@ const NARROW = `  room id=w at (0,3000) size 9000x3000\n  room id=n at (3000,0) 
 const mixed = (s: string): string => plan(`${MIXED}${s}\n${ENTRY}`);
 
 const errors = (src: string) => compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
-// TODO(EH3.4): differs from test/helpers/diag.ts by asserts the code with `!`.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it asserts the code with `!`.
 const codes = (src: string): string[] => errors(src).map((d) => d.code!);
 const placedAt = (src: string, id: string) => {
   const { ir } = resolvePlan(src, {});

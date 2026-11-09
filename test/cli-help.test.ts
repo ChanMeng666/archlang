@@ -1,4 +1,4 @@
-/** FLAG_KEYS — no drift vs the manifest; help renderers (pure). */
+/** FLAG_KEYS — no drift vs the manifest; help renderers (pure); CLI — help & version; CLI — unknown command / unknown flag; CLI — `-o -` conflicts with --json. */
 
 import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

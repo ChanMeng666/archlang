@@ -1,4 +1,4 @@
-/** manifest — no drift vs the CLI dispatch; package.json bins. */
+/** manifest — no drift vs the CLI dispatch; package.json bins; manifest — content; manifest — examples; manifest — fixture categories match the glyph renderer. */
 
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";

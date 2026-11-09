@@ -1,4 +1,4 @@
-/** T4.5 — stage memo: lex; T4.5 — stage memo: parse. */
+/** T4.5 — stage memo: lex; T4.5 — stage memo: parse; T4.5 — stage memo: resolve; T4.5 — memos are transparent (determinism intact). */
 
 import { describe, expect, it } from "vitest";
 import { compile, clearCache, createRegistry, BUILTIN_REGISTRY, registerElement } from "../src/index.js";

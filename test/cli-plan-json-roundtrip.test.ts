@@ -1,4 +1,4 @@
-/** compile -f json → compile --from-json (the whole corpus); compile -f json writes the existing projection. */
+/** compile -f json → compile --from-json (the whole corpus); compile -f json writes the existing projection; the stdin pipe (the real binary) and the refusals. */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";

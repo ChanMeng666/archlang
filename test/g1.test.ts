@@ -1,4 +1,4 @@
-/** G1 generate — the user prompt is the brief verbatim; G1 generate — oracle isolation of the system prompt. */
+/** G1 generate — the user prompt is the brief verbatim; G1 generate — oracle isolation of the system prompt; G1 generate — extractJson; G1 generate — the worked ex… */
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";

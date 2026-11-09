@@ -1,4 +1,4 @@
-/** runLoopArm — the diagnostic feedback loop; runControlArm — equal-budget i.i.d. resampling. */
+/** runLoopArm — the diagnostic feedback loop; runControlArm — equal-budget i.i.d. resampling; buildFeedback / oracle isolation; scoreArm / combineMetrics — best-of… */
 
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";

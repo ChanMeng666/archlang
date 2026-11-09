@@ -1,4 +1,4 @@
-/** arch ast; arch compile --from-json. */
+/** arch ast; arch compile --from-json; arch validate --graph; arch complete. */
 
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";

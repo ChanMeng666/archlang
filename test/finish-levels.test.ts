@@ -1,4 +1,4 @@
-/** finish on `level` blocks — the issue's plans; finish on `level` blocks — the floor a piece stands on. */
+/** finish on `level` blocks — the issue's plans; finish on `level` blocks — the floor a piece stands on; finish on `level` blocks — the same id on several levels;… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";

@@ -97,8 +97,8 @@ table literal. Record the measured tree and the patch in the baseline's header.
   per `src` module, the tests that import it, and per test file its header's first sentence; the last section lists
   the modules no test imports. A new test file starts with a header comment whose first sentence says what it pins
   (the generator fails without one). Do not paste a local copy of what `test/helpers/` provides:
-  `corpus.ts` (`corpusFiles()` is the sweep corpus of § 5, `exampleNames()` / `libNames()` the examples,
-  `walkFiles()` the recursive listing), `world.ts` (`worldFor(dir)`, the on-disk World for imports), `digest.ts`
+  `corpus.ts` (`corpusFiles()` returns the `.arch` files under `CORPUS_DIRS`; the § 5 sweep adds the Markdown
+  fences, via `extractArchBlocks`; `exampleNames()` / `libNames()` the examples, `walkFiles()` the recursive listing), `world.ts` (`worldFor(dir)`, the on-disk World for imports), `digest.ts`
   (`sha256`), `diag.ts` (`codes` / `lintCodes` / `codesOf`), `tmp.ts` (`mkTmp`, `withTmpDir`), `cli.ts` (below).
   A test that needs a different set says why beside it. `test/no-duplicate-helpers.test.ts` fails a new local
   `worldFor`, `createHash("sha256")` or `readdirSync("examples")` unless it is on that file's allow-list.

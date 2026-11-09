@@ -1,4 +1,4 @@
-/** the stage ladder and the per-rule table; a keep's stage is the stage of its measure. */
+/** the stage ladder and the per-rule table; a keep's stage is the stage of its measure; validate --json without --stage: one stage key per diagnostic, last; valida… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";

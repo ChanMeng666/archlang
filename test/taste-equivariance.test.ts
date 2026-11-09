@@ -4,7 +4,7 @@
  * frame with `north` FIXED, every criterion but R12 is invariant. R12 (dwelling aspect) is the
  * only compass reader: it counts the compass facings of the habitable windows and, with `site`,
  * names the pole side, so a turn or a mirror under a fixed north relabels its facings (and, with
- * `site`, may move its score). The frames are the equivariance oracle's own (`./d4-oracle.ts`):
+ * `site`, may move its score). The frames are the equivariance oracle's own (`test/helpers/d4-oracle.ts`):
  * P₀ is the example placed whole by `place … as g`, gP the same placement turned or mirrored, so
  * every id is `g.<id>` on both sides and the reports compare byte for byte.
  *

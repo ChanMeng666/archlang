@@ -1,4 +1,4 @@
-/** extractArchBlocks; rewriteMarkdown. */
+/** extractArchBlocks; rewriteMarkdown; CLI — md format handling. */
 
 import { existsSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

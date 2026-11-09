@@ -1,4 +1,4 @@
-/** Scene style metadata (T3.1); AIA layers (T3.2). */
+/** Scene style metadata (T3.1); AIA layers (T3.2); openings void walls (T3.3). */
 
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";

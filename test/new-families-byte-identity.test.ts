@@ -7,7 +7,7 @@
  * ## Where the hashes came from
  *
  * Measured on `main` at `8233acc4` (the tip before the tranche), with `src/` and `examples/`
- * extracted by `git archive`, by THIS law's body (`./new-families-law.ts`) handed that tree's
+ * extracted by `git archive`, by THIS law's body (`test/helpers/new-families-law.ts`) handed that tree's
  * `compile`/`describe`/`lint`, its `rendered` theme, its family table and its `makeNodeWorld` —
  * not a lookalike (see `test/helpers/byte-identity-digest.ts`). The branch measured the same table, row
  * for row. The sweep was proved able to fail first: a planted 0.05 → 0.051 corner radius on the

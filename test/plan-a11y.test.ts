@@ -1,4 +1,4 @@
-/** data-arch-label (annotate); data-arch-primary (annotate). */
+/** data-arch-label (annotate); data-arch-primary (annotate); accessible + annotate — the element roles; accessible idPrefix — the <title>/<desc> ids. */
 
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";

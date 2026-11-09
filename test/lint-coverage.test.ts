@@ -1,4 +1,4 @@
-/** lint coverage: beside lint(), never inside it; lint coverage: the seam. */
+/** lint coverage: beside lint(), never inside it; lint coverage: the seam; lint coverage: the skips rules declare; lint coverage: review round 1 (the reviewer's re… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";

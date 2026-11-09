@@ -1,4 +1,4 @@
-/** source anchors — scene metadata; source anchors — SVG attributes. */
+/** source anchors — scene metadata; source anchors — SVG attributes; public API surface. */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

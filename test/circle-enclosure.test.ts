@@ -1,4 +1,4 @@
-/** W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented). */
+/** W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`. */
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, lint } from "../src/index.js";

@@ -7,7 +7,7 @@
  * non-test file under `test/` (`test/helpers/`, `test/tables/`, a baseline) that does, transitively.
  * The walk STOPS at `src`: `src/index.ts` is a barrel, so following it would make every test
  * "import" every module and the index would say nothing. A module reached by no test path is
- * exercised only through `compile()` and appears in the last section. The import resolver is a copy of
+ * imported directly by no test (it may still run through `src/index.ts` or another `src` module) and appears in the last section. The import resolver is a copy of
  * the one in `scripts/check-quick.mjs` (static `from`, `import(...)`, bare `import "x"`; plus the
  * `archlang` package aliases `vitest.config.ts` adds); keep the two in step.
  *
@@ -177,8 +177,8 @@ export function buildIndex({ files }: IndexInput): string {
     "",
     "## `src` modules no test imports",
     "",
-    "Reached only through `compile()` (or not at all by the root `test/` suite). A reviewable list: a module here",
-    "is covered by a pipeline test or by none; adding a direct test removes it.",
+    "Imported directly by no test of the root `test/` suite (it may still run through `src/index.ts` or another `src`",
+    "module); adding a test that imports it removes it from this list.",
     "",
   );
   for (const s of unimported) lines.push(`- \`${s}\``);

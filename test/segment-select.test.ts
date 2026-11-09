@@ -35,7 +35,7 @@ import {
 
 const API: CompilerApi = { compile, describe, lint };
 const plan = (body: string, head = ""): string => `plan "p" {\n  units mm\n  grid 50\n${head}${body}\n}\n`;
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile(), leaves the memo cache on.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), leaves the memo cache on.
 const codes = (src: string): string[] => compile(src).diagnostics.map((d) => d.code ?? "");
 
 /** The numeric twin of a selector line: `segment <n>` padded to the selector's length, so the

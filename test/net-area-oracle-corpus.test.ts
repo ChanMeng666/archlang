@@ -1,7 +1,7 @@
 /**
  * NET internal area over the whole corpus (examples, fixtures, recovery plans, eval goldens,
  * fidelity plans and faults; the docs gallery is left out, `agent-gallery.test.ts` owns it): the
- * closed-form figure agrees with the GRID ORACLE (`./net-area-oracle.ts`, which shares nothing
+ * closed-form figure agrees with the GRID ORACLE (`test/helpers/net-area-oracle.ts`, which shares nothing
  * with the code under test but the band and the room's own area) within the oracle's own error
  * bound, on every room. The figure is read UNCLAMPED (`netAreaDetail`): `covered` must lie in
  * `[0, area]` on its own. See `net-area.test.ts` for the rule and the hand-derived evidence.

@@ -15,7 +15,10 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
-type Rule = "worldFor" | "sha256" | "examplesDir";
+type Rule = "worldFor" | "sha256" | "runner" | "examplesDir";
+
+/** A hashing call, in either quote style. */
+const HASH = /createHash\(\s*["']sha256["']\s*\)/;
 
 const RULES: Record<Rule, { re: RegExp; use: string }> = {
   worldFor: {
@@ -23,8 +26,14 @@ const RULES: Record<Rule, { re: RegExp; use: string }> = {
     use: "import { worldFor } from './helpers/world.js'",
   },
   sha256: {
-    re: /createHash\(\s*"sha256"\s*\)/,
+    re: HASH,
     use: "import { sha256 } from './helpers/digest.js'",
+  },
+  // A new byte-identity RUNNER: a file that hashes (sha256) and also calls compile(...). Its digest body must be
+  // test/helpers/byte-identity-digest.ts (digestWith / allStoreysDigestWith...), run against the old tree by git archive.
+  runner: {
+    re: new RegExp(`(?=[\\s\\S]*${HASH.source})(?=[\\s\\S]*\\bcompile\\()`),
+    use: "digestWith / allStoreysDigestWithDiagnostics from './helpers/byte-identity-digest.js' (one digest body, never a lookalike)",
   },
   examplesDir: {
     re: /readdirSync\(\s*(?:"examples"|[^)\n]*"examples"[^)\n]*\))/,
@@ -32,17 +41,19 @@ const RULES: Record<Rule, { re: RegExp; use: string }> = {
   },
 };
 
+const HASHES_BYTES =
+  "hashes GLB or share bytes, not the compile digest; a workspace package cannot import the root test/ helpers";
 const WORKSPACE = "a workspace package's tests cannot import the root test/ helpers (workspace seam)";
 
 /** file -> rule -> why this file may keep its own. */
 const ALLOW: Record<string, Partial<Record<Rule, string>>> = {
-  "packages/archlang-3d/test/glb.test.ts": { sha256: WORKSPACE },
+  "packages/archlang-3d/test/glb.test.ts": { sha256: WORKSPACE, runner: HASHES_BYTES },
   "packages/archlang-3d/test/mesh.test.ts": { sha256: WORKSPACE },
-  "packages/archlang-3d/test/replay.test.ts": { sha256: WORKSPACE },
+  "packages/archlang-3d/test/replay.test.ts": { sha256: WORKSPACE, runner: HASHES_BYTES },
   "packages/mcp/test/tools.test.ts": { sha256: WORKSPACE },
   "playground/test/glb-export-random.test.ts": { sha256: WORKSPACE },
-  "playground/test/glb-export.test.ts": { sha256: WORKSPACE },
-  "playground/test/share-worker.test.ts": { sha256: WORKSPACE },
+  "playground/test/glb-export.test.ts": { sha256: WORKSPACE, runner: HASHES_BYTES },
+  "playground/test/share-worker.test.ts": { sha256: WORKSPACE, runner: HASHES_BYTES },
   "playground/test/svg-sanitize.test.ts": { examplesDir: WORKSPACE },
   "test/compose-assoc.test.ts": {
     worldFor: "a virtual World over one in-memory source (makeVirtualWorld), not a directory reader",
@@ -79,6 +90,9 @@ describe("no new local copy of a test helper", () => {
     expect(files.length).toBeGreaterThan(400);
     expect(RULES.worldFor.re.test("const worldFor = (dir: string): World => ({")).toBe(true);
     expect(RULES.sha256.re.test('createHash("sha256").update(x)')).toBe(true);
+    expect(RULES.sha256.re.test("createHash('sha256').update(x)")).toBe(true);
+    expect(RULES.runner.re.test("createHash('sha256'); const r = compile(src);")).toBe(true);
+    expect(RULES.runner.re.test('createHash("sha256")')).toBe(false);
     expect(RULES.examplesDir.re.test('readdirSync(join(ROOT, "examples"))')).toBe(true);
   });
 

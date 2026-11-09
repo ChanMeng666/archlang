@@ -1,4 +1,4 @@
-/** opening element; cased opening rendering — never repaint the void the wall union opened. */
+/** opening element; cased opening rendering — never repaint the void the wall union opened; interior doorway rendering — the same white-band fix. */
 
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint, compile } from "../src/index.js";

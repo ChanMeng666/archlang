@@ -6,7 +6,7 @@
  * `--facts depends`), lints, validates and reports impact byte for byte as it did on the tree
  * before the statement existed, and its resolution spends the same evaluation steps. The baseline
  * (`./keep-byte-identity-baseline.ts`) was measured with this file's own body
- * (`./keep-weak-law.ts`) and committed before any code landed.
+ * (`test/helpers/keep-weak-law.ts`) and committed before any code landed.
  *
  * **K2, strong: an accepted keep draws nothing and moves nothing** (R8, R9, R13). Every plan of
  * the keep corpus (`test/keep-corpus/`) whose keeps are all accepted is compiled as written and

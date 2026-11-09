@@ -1,4 +1,4 @@
-/** repair — the villa witness; repair — the no-worse law. */
+/** repair — the villa witness; repair — the no-worse law; repair — order dependence, stated rather than hidden. */
 
 import { CORPUS_DIRS, walkFiles as walk } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";
@@ -14,7 +14,7 @@ import { runs } from "./setup/fast-check.js";
  * **`repair()` never returns a source that is worse than its input.**
  *
  * "Worse" means: the repaired source holds a hard conflict — an instance of a fault
- * `repair()` itself exists to clear (`./repair-conflicts.ts`: two pieces overlapping, a
+ * `repair()` itself exists to clear (`test/helpers/repair-conflicts.ts`: two pieces overlapping, a
  * piece through a wall, a piece in a door's landing, a piece in a door's swing) — that
  * the input did not hold, identified by WHO is in it (the pair of pieces, the piece, the
  * door and the piece). A subset, not a count: trading the overlap the author drew for a

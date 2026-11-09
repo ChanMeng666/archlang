@@ -1,4 +1,4 @@
-/** rectUnionOutline; wall rendering — clean joins. */
+/** rectUnionOutline; wall rendering — clean joins; wall materials; hatch as data (T3.5); wall joinery — no geometry engine is consulted; wall joinery — a registere… */
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compile, getGeometryBackend, loadClipperBackend, setGeometryBackend } from "../src/index.js";

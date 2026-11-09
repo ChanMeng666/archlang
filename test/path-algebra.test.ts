@@ -1,4 +1,4 @@
-/** bestPaths equals brute force on random digraphs; neighbours4 lists W, E, N, S and stays in bounds. */
+/** bestPaths equals brute force on random digraphs; neighbours4 lists W, E, N, S and stays in bounds; the nav-grid searches equal the engine on random grids up to… */
 
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";

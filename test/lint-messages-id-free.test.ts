@@ -1,4 +1,4 @@
-/** no message over the corpus quotes an internal id (PS2.22, PS2.29); makeNaming — what an unlabelled room is called (src/naming.ts). */
+/** no message over the corpus quotes an internal id (PS2.22, PS2.29); makeNaming — what an unlabelled room is called (src/naming.ts); the storey is named only on a… */
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";

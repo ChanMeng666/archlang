@@ -71,7 +71,7 @@ const stairOf = (src: string): RStair => {
   const { ir } = resolvePlan(src);
   return verticalsOf(ir!).find((v) => v.kind === "stair") as RStair;
 };
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile(), keeps only errors.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), keeps only errors.
 const codes = (src: string): string[] =>
   compile(src, { noCache: true })
     .diagnostics.filter((d: Diagnostic) => d.severity === "error")

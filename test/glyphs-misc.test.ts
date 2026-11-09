@@ -7,7 +7,7 @@
  * **1. Nothing leaves its own footprint.** A fixture's footprint is what every clearance,
  * collision and repair rule measures; a symbol that draws outside it makes the drawing and
  * `arch lint` disagree about where the piece is, silently. The containment check below
- * measures a `path` by its vertices and its arcs' axis extremes (`glyph-extent.ts`) and SAMPLES
+ * measures a `path` by its vertices and its arcs' axis extremes (`test/helpers/glyph-extent.ts`) and SAMPLES
  * a bare arc along its sweep rather than taking its start/end/centre — the box those three points
  * span misses the whole bulge, which is exactly where a curved backrest lives.
  *
@@ -157,7 +157,7 @@ function boundingPoints(n: SceneNode): Point[] {
       }
       return out;
     }
-    // A curved outline: its vertices and its arcs' axis extremes, exactly (`glyph-extent.ts`).
+    // A curved outline: its vertices and its arcs' axis extremes, exactly (`test/helpers/glyph-extent.ts`).
     case "path":
       return pathExtentPoints(p);
     default:

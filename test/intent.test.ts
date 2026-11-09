@@ -1,4 +1,4 @@
-/** validateIntent — corpus round-trip (goldens satisfy their own intent); validateIntent — determinism. */
+/** validateIntent — corpus round-trip (goldens satisfy their own intent); validateIntent — determinism; validateIntent — per-kind gating; validateIntent — window f… */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

@@ -179,35 +179,35 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (98) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+90)
+- `src/world.ts` (99) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+91)
 
 ## Test files
 
 The first sentence of each file's header comment.
 
-- `test/acc-metadata.test.ts` — T4.1b — parsing accTitle/accDescr; T4.1b — accessible override.
+- `test/acc-metadata.test.ts` — T4.1b — parsing accTitle/accDescr; T4.1b — accessible override; T4.1b — default-output invariant; T4.1b — describe() surfaces the explicit values; T4.1b — arch…
 - `test/access-graph.test.ts` — door access graph.
 - `test/access-policy.test.ts` — one access policy: every surface agrees on reachability; one access policy across storeys: a shaft relays only from a reachable room.
-- `test/accessible-svg.test.ts` — Cases: default output carries no accessibility metadata (byte-identical); accessible:true emits <title>, <desc>, role and aria-labelledby.
+- `test/accessible-svg.test.ts` — Cases: default output carries no accessibility metadata (byte-identical); accessible:true emits <title>, <desc>, role and aria-labelledby; the <desc> text is ex…
 - `test/agent-docs-gate.test.ts` — agent docs name no blocked command.
 - `test/agent-gallery.test.ts` — The agent gallery (`/gallery` on the docs site): plans written by AI agents from a brief.
 - `test/agent-manifests.test.ts` — The agent-directory manifests (`npm run gen:agent-manifests`) are one skill source published in each host's shape.
 - `test/algebra-leaf.test.ts` — src/algebra/ is a leaf.
 - `test/alias-match.test.ts` — `W_ALIAS_MATCH` — the advisory that a room's use was inferred from an indirect alias, plus the shared `matchVocabulary` / `classifyLabelUses` core it rests on.
-- `test/anchors.test.ts` — source anchors — scene metadata; source anchors — SVG attributes.
+- `test/anchors.test.ts` — source anchors — scene metadata; source anchors — SVG attributes; public API surface.
 - `test/annotate.test.ts` — annotate (opt-in data-span).
 - `test/annotation-collisions.test.ts` — Plan-soundness PS2.12: `W_ANNOTATION_OVERLAP` and `W_TITLE_OVERFLOW` (`src/lint/rules/annotations.ts`).
 - `test/annotation-small-rooms.test.ts` — #367: a room label in a small room.
-- `test/arc-radius-exact.test.ts` — arc radius — exact semicircle on a Pythagorean chord; arc radius — the exact tie is built as the exact semicircle, whichever way hypot rounds.
+- `test/arc-radius-exact.test.ts` — arc radius — exact semicircle on a Pythagorean chord; arc radius — the exact tie is built as the exact semicircle, whichever way hypot rounds; arc radius — the…
 - `test/arc-tessellation-error.test.ts` — arc tessellation error statements.
 - `test/arc-window-attribution.test.ts` — PS0.12 — a window on an arc edge is attributed from the shape.
 - `test/arch-highlight.test.ts` — The docs site's ArchLang highlighter — the vocabulary weld and the three properties that make it safe to render through `v-html`.
-- `test/ascii.test.ts` — ascii backend — golden text plans; ascii backend — determinism & invariants.
-- `test/attach.test.ts` — T1a — opening attachment; T1b — swing into / hinge near.
-- `test/axes.test.ts` — axes — GB/T 50001 numbering (derived, never authored); axes — parsing.
+- `test/ascii.test.ts` — ascii backend — golden text plans; ascii backend — determinism & invariants; ascii backend — degenerate scenes.
+- `test/attach.test.ts` — T1a — opening attachment; T1b — swing into / hinge near; S.2 — an attachment position is an expression; S.2 — every refusal in the slot is coded; PS0.19 — `at <…
+- `test/axes.test.ts` — axes — GB/T 50001 numbering (derived, never authored); axes — parsing; axes — render pass; axes — the `dims auto` middle chain becomes the axis chain; axes — de…
 - `test/backlog-index.test.ts` — The backlog holds open work only, and `docs/backlog-index.md` lists exactly its entries (card EH3.2).
 - `test/band.test.ts` — `src/geometry/band.ts` — a wall's two faces, its mitred corners and its caps, as exact edge loops.
-- `test/bbox-derived-position.test.ts` — door `swing into <room>` asks the room's floor, not its bounding box; `furniture … against wall <w> in <room>` probes the floor, not the bounding box.
+- `test/bbox-derived-position.test.ts` — door `swing into <room>` asks the room's floor, not its bounding box; `furniture … against wall <w> in <room>` probes the floor, not the bounding box; dimReach'…
 - `test/bench-compare.test.ts` — bench/compare.mjs.
 - `test/between-face-probes.test.ts` — between is read off the host wall's faces.
 - `test/block-stair-byte-identity.test.ts` — Block stairs (issue #362, card S1): the byte-identity law.
@@ -223,10 +223,10 @@ The first sentence of each file's header comment.
 - `test/brief-bound.test.ts` — PS4.4 — brief-bound dimensions: the gross internal area fact (`describe().totals`) and the intent assertions that bind a brief's stated sizes (`grossInternalAreaM2`, `roomDimensions`).
 - `test/bump-lockstep.test.ts` — `scripts/bump-lockstep.ts` rewrites exactly the pinned release fields and nothing else: run on a tmp copy of the manifests and the lock, undo exactly the expected edits, compare every byte.
 - `test/cache.test.ts` — compile cache — hits & eviction.
-- `test/carve-inward-walk.test.ts` — a far seed past a stair no longer takes the doorway's width (hillside-villa's landing); furniture within R + δ of a doorway's face blocks it: the threshold, from the mechanism.
+- `test/carve-inward-walk.test.ts` — a far seed past a stair no longer takes the doorway's width (hillside-villa's landing); furniture within R + δ of a doorway's face blocks it: the threshold, fro…
 - `test/changelog-unreleased.test.ts` — CHANGELOG lines land under Unreleased, no released line is deleted, and a release PR is exempt.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
-- `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented).
+- `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`.
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.
 - `test/circulation-entrances.test.ts` — each room walks from its nearest entrance; two entrances that seed one cell (the fuzz gate's seed 1438601647).
 - `test/circulation-hand-derived.test.ts` — G.11 — a curved walk, derived by hand: the drum; G.11 — a second shape class: an open arc with a free end.
@@ -236,35 +236,35 @@ The first sentence of each file's header comment.
 - `test/circulation-unmeasured.test.ts` — G.5 — circulation reports every room it cannot measure; G.5 — a curved wall obstructs the arc it is drawn as.
 - `test/circulation.test.ts` — circulation — facts on the nav grid.
 - `test/claude-plugin.test.ts` — The Claude Code plugin is a slim, self-contained folder, `plugins/archlang/`: the plugin directory rejects any plugin folder holding a file over 5 MiB, and the repo root carries an 11 MB font.
-- `test/cli-batch.test.ts` — CLI — batch; runPool — bounded concurrency.
-- `test/cli-commands.test.ts` — CLI — fmt; CLI — watch.
+- `test/cli-batch.test.ts` — CLI — batch; runPool — bounded concurrency; aggregateExit — one code for many files; perFileJson — the agent-facing per-file shape.
+- `test/cli-commands.test.ts` — CLI — fmt; CLI — watch; CLI — manifest / capabilities.
 - `test/cli-context.test.ts` — `arch context --section` — bounded agent context.
 - `test/cli-contract.test.ts` — the contract table covers the manifest.
-- `test/cli-expected-hash.test.ts` — --expected-hash: a stale read refuses before anything is computed or written; --expected-hash: a matching read writes, and reports the revisions.
-- `test/cli-finish.test.ts` — arch finish — the write boundary; arch finish — exit codes.
+- `test/cli-expected-hash.test.ts` — --expected-hash: a stale read refuses before anything is computed or written; --expected-hash: a matching read writes, and reports the revisions; --expected-has…
+- `test/cli-finish.test.ts` — arch finish — the write boundary; arch finish — exit codes; arch finish — a plan with `level` blocks.
 - `test/cli-fix-backup.test.ts` — arch fix — safe retries (--backup / diff preview).
 - `test/cli-fix-suggest.test.ts` — arch fix; arch suggest.
-- `test/cli-flag-matrix.test.ts` — the flag matrix — every (command, flag) has an exercising test; import.
+- `test/cli-flag-matrix.test.ts` — the flag matrix — every (command, flag) has an exercising test; import; batch; compile; md; preview; new; spec; fix and repair.
 - `test/cli-flush.test.ts` — CLI — stdout is flushed before the process exits.
-- `test/cli-help.test.ts` — FLAG_KEYS — no drift vs the manifest; help renderers (pure).
+- `test/cli-help.test.ts` — FLAG_KEYS — no drift vs the manifest; help renderers (pure); CLI — help & version; CLI — unknown command / unknown flag; CLI — `-o -` conflicts with --json.
 - `test/cli-human-fix.test.ts` — CLI — human-mode diagnostics carry the catalog fix.
-- `test/cli-intent.test.ts` — arch validate --intent; arch score.
+- `test/cli-intent.test.ts` — arch validate --intent; arch score; arch validate --intent: brief-bound measures (PS4.4); arch validate --intent: every storey.
 - `test/cli-io-seam.test.ts` — the CLI writes through CliIo.
-- `test/cli-levels.test.ts` — v1.21 CLI — compile writes one file per storey; v1.21 CLI — describe --level is a display filter.
+- `test/cli-levels.test.ts` — v1.21 CLI — compile writes one file per storey; v1.21 CLI — describe --level is a display filter; v1.21 CLI — the level-free path is unchanged.
 - `test/cli-link.test.ts` — `archlang link` — a URL that opens a plan in the hosted playground, for handing to a person.
-- `test/cli-manifest.test.ts` — manifest — no drift vs the CLI dispatch; package.json bins.
-- `test/cli-narrow.test.ts` — DESCRIBE_KEYS — no drift vs the real describe() result; describe --facts.
+- `test/cli-manifest.test.ts` — manifest — no drift vs the CLI dispatch; package.json bins; manifest — content; manifest — examples; manifest — fixture categories match the glyph renderer.
+- `test/cli-narrow.test.ts` — DESCRIBE_KEYS — no drift vs the real describe() result; describe --facts; describe --select; describe --room; lint/validate --code, --severity — display filters…
 - `test/cli-output-format.test.ts` — `compile -o plan.<ext>` with no `-f` writes what the extension says.
 - `test/cli-output-paths.test.ts` — Where `-o` writes (checker-reach CR2 group A).
-- `test/cli-plan-json-roundtrip.test.ts` — compile -f json → compile --from-json (the whole corpus); compile -f json writes the existing projection.
-- `test/cli-preview-review.test.ts` — preview --review: the fixture's five warnings; preview --review: clean plans, storeys and the corpus.
+- `test/cli-plan-json-roundtrip.test.ts` — compile -f json → compile --from-json (the whole corpus); compile -f json writes the existing projection; the stdin pipe (the real binary) and the refusals.
+- `test/cli-preview-review.test.ts` — preview --review: the fixture's five warnings; preview --review: clean plans, storeys and the corpus; preview --review: one mark per warning, and no ring on a g…
 - `test/cli-preview.test.ts` — CLI — preview (PNG you can look at).
 - `test/cli-storey-names.test.ts` — The two small CLI items of issue #405: `{level}` in `-o` and `--flag=value`.
-- `test/cli-structured.test.ts` — arch ast; arch compile --from-json.
+- `test/cli-structured.test.ts` — arch ast; arch compile --from-json; arch validate --graph; arch complete.
 - `test/cli-validate-next.test.ts` — validate --json · next is purely additive; validate · next tiers through the CLI.
 - `test/cli.test.ts` — CLI — agent contract; CLI — compile file-writing side effects.
 - `test/closed-vocabularies.test.ts` — Every CLOSED value set in the language must be highlightable.
-- `test/compile.test.ts` — compile — valid studio; compile — determinism.
+- `test/compile.test.ts` — compile — valid studio; compile — determinism; compile — grid snap; compile — string escaping; compile — error cases.
 - `test/compose-assoc.test.ts` — `place` composes ASSOCIATIVELY: every level reaches into its own descendants the way the root does, and none reaches out (ADR 0016 §3, backlog E.16).
 - `test/context-size.test.ts` — Every stated size of the agent bundle (`llms-full.txt`, what `archlang context` prints) is true.
 - `test/context-starter.test.ts` — `archlang context --level starter` (PS7.2): one screen for a weak model, with the same truth as the full context.
@@ -272,9 +272,9 @@ The first sentence of each file's header comment.
 - `test/corner-window-byte-identity.test.ts` — The corner window and the position on an open boundary (issue #401): the byte-identity law.
 - `test/corner-window.test.ts` — A window round a corner, and a position on an open boundary (issue #401, points 4 and 2).
 - `test/cursor-exhaustive.test.ts` — `cursor.ts`'s `statementExprs` is a compiler-enforced mapped type (`STATEMENT_EXPRS`): adding a `Statement` kind now fails typecheck until it is handled.
-- `test/curves.test.ts` — arcFromChord — the closed-form centre solve; the tessellator — one fixed angular step, integer vertex count.
-- `test/d4.test.ts` — D4 — the group; D4 — faithful actions agree with the matrix.
-- `test/dataset.test.ts` — Cases: emits the requested rows; no row's brief or source contains any holdout prompt's normalized 8-gram.
+- `test/curves.test.ts` — arcFromChord — the closed-form centre solve; the tessellator — one fixed angular step, integer vertex count; closed-form arc queries (never sampled from the tes…
+- `test/d4.test.ts` — D4 — the group; D4 — faithful actions agree with the matrix; D4 — the normal form is frame.ts's; D4 — the degree helpers keep their exact arithmetic; D4 — insta…
+- `test/dataset.test.ts` — Cases: emits the requested rows; no row's brief or source contains any holdout prompt's normalized 8-gram; no row source contains a holdout golden source (white…
 - `test/datum.test.ts` — The **vertical datum layer** — heights, sills and heads.
 - `test/defect-corpus.test.ts` — defect corpus: shape.
 - `test/describe-centreline-at.test.ts` — `describe()`'s `centreline_at` (issue #401): where a `between` door or cased opening landed.
@@ -284,16 +284,16 @@ The first sentence of each file's header comment.
 - `test/describe-level.test.ts` — `describeLevel(summary, n)` — the core narrowing that reads ONE storey of a multi-storey summary.
 - `test/describe-overlay-blind.test.ts` — **`describe()` never reads the circulation overlay.** The overlay is the opt-in render of the walking model (`--overlay circulation`): polylines for a picture, never a measured fact.
 - `test/describe-quantities.test.ts` — `describe --facts quantities` and `arch takeoff` (preview-and-remodel B4, D9): geometric quantities, held to figures computed BY HAND from the source coordinates, not copied from a run.
-- `test/describe.test.ts` — describe — semantic facts; describe — window facing is read against the plan's `north`.
-- `test/diagnostic-json.test.ts` — diagnosticToJson; fixes projection.
+- `test/describe.test.ts` — describe — semantic facts; describe — window facing is read against the plan's `north`; describe — freedom (degrees-of-freedom placement report); describe — err…
+- `test/diagnostic-json.test.ts` — diagnosticToJson.
 - `test/diagnostics-volume.test.ts` — offsetToLineCol — line-start table agrees with the scan; diagnostics are capped at MAX_DIAGNOSTICS, then one E_DIAGNOSTIC_LIMIT (EH-D8).
-- `test/diagnostics.test.ts` — lexer — byte-offset spans; offsetToLineCol.
+- `test/diagnostics.test.ts` — lexer — byte-offset spans; offsetToLineCol; formatDiagnostic — codespan frames; parser — error recovery + multi-error collection; compile — warnings never block…
 - `test/diff-fabric.test.ts` — PS0.4 (plan-soundness): three `diffPlans` defects found by `research/associativity.md` §1.2, fixed additively in `src/diff.ts`.
 - `test/diff-laws.test.ts` — Laws `diffPlans` (`src/diff.ts`) must hold regardless of which side is "before": - **Reflexivity.** `diffPlans(A, A)` reports no change of any kind.
-- `test/diff.test.ts` — diffPlans — structural; diffPlans — summary & circulation.
-- `test/dim-faces.test.ts` — `dim faces` / `dim clear` — endpoint projection onto the wall faces; W_DIM_INSIDE — a hand dim whose line reads inside the building.
-- `test/dim-stagger.test.ts` — dims auto — number staggering on a crowded chain; text width — one estimate, one place.
-- `test/dim-text-mismatch.test.ts` — readDimText — what reads as a length; W_DIM_TEXT_MISMATCH — the rounding rule.
+- `test/diff.test.ts` — diffPlans — structural; diffPlans — summary & circulation; diffPlans — circulation deltas (entrance-bearing fixtures); diffPlans — auto-id rooms pair by unique…
+- `test/dim-faces.test.ts` — `dim faces` / `dim clear` — endpoint projection onto the wall faces; W_DIM_INSIDE — a hand dim whose line reads inside the building; W_DIM_OVERLAP — two hand di…
+- `test/dim-stagger.test.ts` — dims auto — number staggering on a crowded chain; text width — one estimate, one place; chain geometry constants stay welded to the drawing.
+- `test/dim-text-mismatch.test.ts` — readDimText — what reads as a length; W_DIM_TEXT_MISMATCH — the rounding rule; W_DIM_TEXT_MISMATCH — the fix and the hint; W_DIM_TEXT_MISMATCH — red-team round…
 - `test/dim-thickness-callout.test.ts` — wall-thickness call-outs are never drawn in the poché; wall-thickness call-outs stay off doorways and fixtures.
 - `test/dims-ground.test.ts` — `dims auto` chains clear the ground attached to the facade they measure.
 - `test/docs-3d.test.ts` — The docs site's 3D preview (public-surfaces card X6): the home band, the gallery cards' 2D/3D swap and the `/3d` page.
@@ -315,15 +315,15 @@ The first sentence of each file's header comment.
 - `test/double-door-byte-identity.test.ts` — The `double` door kind (plan-soundness PS2.11e): its byte-identity law, its printer and Plan JSON round trips, and what it draws and refuses.
 - `test/drawing-budget.test.ts` — The drawing budget (`MAX_DRAW_UNITS`, `src/draw-budget.ts`): before anything is drawn, `compile()` estimates the primitives every storey will draw, kind by kind, and a plan past the budget is ONE `E_DRAWING_LIMIT` at...
 - `test/drawing-overflow.test.ts` — `sheet.drawing_fits` and `W_DRAWING_OVERFLOW`.
-- `test/element-cap.test.ts` — element budget (E_ELEMENT_LIMIT); 1000 identical rooms.
+- `test/element-cap.test.ts` — element budget (E_ELEMENT_LIMIT); 1000 identical rooms; huge finite coordinates.
 - `test/element-facets.test.ts` — Every built-in element kind answers every hand-written kind set explicitly (EH1.2).
 - `test/element-keyword-drift.test.ts` — Drift guard for the weakest joint in the "adding an element = one module" story: `KEYWORDS.element` (src/grammar/tokens.ts — feeds the parser's statement-start set, the editor grammars and the LLM spec) and `BUILTIN_D...
-- `test/elements.test.ts` — element registry; column — extensibility proof.
+- `test/elements.test.ts` — element registry; column — extensibility proof; computed dimensions (T3.6); render passes — global draw order is independent of source order.
 - `test/emit-opening-oracle.test.ts` — Byte-identity oracle for W4b: `emitOpening` (`src/fix-producers.ts`) was rewritten to print through the shared printer (`printDoc(statementText(...))`) instead of a second, hand-written enumeration of clauses — the ol...
 - `test/equivariance-corpus.test.ts` — The D4 ⋉ Z² equivariance oracle over the shipped examples — tiers T0, T1 and T2 — and the `STILL …` witness of every pinned class.
 - `test/equivariance-fuzz.test.ts` — The D4 ⋉ Z² equivariance oracle over RANDOM plans (`test/helpers/arbitrary-plan.ts`).
 - `test/equivariance-scene.test.ts` — Tier T3 of the D4 ⋉ Z² equivariance oracle: the DRAWING.
-- `test/equivariance-storeys-head.test.ts` — `test/equivariance-storeys.test.ts`'s tiers T0, T1 and T2 over the 220 mm shells whose stair head meets something — the shell 300 mm off the flight and the red team's p3 cases (`P3`, `./shaft-equivariance-models.ts`).
+- `test/equivariance-storeys-head.test.ts` — `test/equivariance-storeys.test.ts`'s tiers T0, T1 and T2 over the 220 mm shells whose stair head meets something — the shell 300 mm off the flight and the red team's p3 cases (`P3`, `test/helpers/shaft-equivariance-m...
 - `test/equivariance-storeys-scaled.test.ts` — `test/equivariance-storeys.test.ts`'s tiers T0, T1 and T2 over the SCALED shaft models — the scaled layouts and the plain 179/220 mm shells.
 - `test/equivariance-storeys-scene.test.ts` — Tier T3 of the D4 ⋉ Z² equivariance oracle for MULTI-STOREY plans: each storey's DRAWN SCENE under the group (backlog M.5), and T0 for the drawing.
 - `test/equivariance-storeys.test.ts` — The D4 ⋉ Z² equivariance oracle for MULTI-STOREY plans — tiers T0, T1 and T2, storey by storey (backlog M.5).
@@ -331,47 +331,47 @@ The first sentence of each file's header comment.
 - `test/error-catalog-families.test.ts` — The error catalogue is written by family (`src/error-catalog/<family>.ts`, one `defineEntries({...})` each) and merged by `src/error-catalog.ts` with object spreads.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
-- `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG.
-- `test/eval-fidelity.test.ts` — fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose.
+- `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.
+- `test/eval-fidelity.test.ts` — fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose; the detector discriminates — faithful clean, laundered caught…
 - `test/eval-fixture.test.ts` — judge fixture — byte-equivalence proof across the intent lift.
 - `test/eval-offline.test.ts` — eval — committed goldens still author correctly; L1 deterministic-dividend overlay.
 - `test/eval-stats.test.ts` — wilson95; live report intervals.
 - `test/example-svgs-drift.test.ts` — Drift guard for the committed `examples/*.svg` drawings the README embeds.
 - `test/explain.test.ts` — T5.5 — error-code catalog + diagnostic enrichment.
-- `test/export-dxf-blocks.test.ts` — the Scene is the Scene it was; a Scene with no parts is the flat file.
-- `test/export-dxf.test.ts` — DXF export; AIA CAD layers.
+- `test/export-dxf-blocks.test.ts` — the Scene is the Scene it was; a Scene with no parts is the flat file; over the corpus; a block; a dimension; the drawing budget; the wiring.
+- `test/export-dxf.test.ts` — DXF export; AIA CAD layers; DXF units and wall layers; DXF text placement and encoding.
 - `test/export-font-cjk.test.ts` — CJK text in the Node-only backends.
 - `test/export-pdf.test.ts` — The PDF export backend (`src/export/pdf.ts`) — a PUBLISHED output format (`arch compile -f pdf`), and until now 294 lines behind four assertions on one rectangle.
-- `test/expr.test.ts` — expressions; Value coercions (errors-as-data, never thrown).
-- `test/far-seed-pinch.test.ts` — a doorway's far seed keeps the room's own clearance (the route reads min(door, pinch)); a door a walk never uses cannot cap it (no far-seed stamp).
+- `test/expr.test.ts` — expressions; Value coercions (errors-as-data, never thrown); expression grammar (T2.2).
+- `test/far-seed-pinch.test.ts` — a doorway's far seed keeps the room's own clearance (the route reads min(door, pinch)); a door a walk never uses cannot cap it (no far-seed stamp); a room is re…
 - `test/fast-check-policy.test.ts` — The fast-check run policy (docs/testing.md § 3, "Property tests without a seed").
 - `test/fault-injection.test.ts` — fault-injection gate — the L1 deterministic pipeline heals seeded defects; fault-injection gate — a clean plan is untouched.
 - `test/fence.test.ts` — The `fence` element.
-- `test/finish-furnish.test.ts` — furnish — the corpus is not empty; furnish law — placement is relative: `against wall` or `in <room> anchor`, never `at (x,y)`.
-- `test/finish-levels.test.ts` — finish on `level` blocks — the issue's plans; finish on `level` blocks — the floor a piece stands on.
-- `test/finish.test.ts` — finish — the corpus is not empty; finish law 1 — fixpoint: finishing a finished plan changes nothing.
+- `test/finish-furnish.test.ts` — furnish — the corpus is not empty; furnish law — placement is relative: `against wall` or `in <room> anchor`, never `at (x,y)`; furnish law — fill only: a room…
+- `test/finish-levels.test.ts` — finish on `level` blocks — the issue's plans; finish on `level` blocks — the floor a piece stands on; finish on `level` blocks — the same id on several levels;…
+- `test/finish.test.ts` — finish — the corpus is not empty; finish law 1 — fixpoint: finishing a finished plan changes nothing; finish law 2 — never worse: no error and no new diagnostic…
 - `test/fix-apply.test.ts` — Data (piece table); applyFixes.
 - `test/fix-commute.test.ts` — Property-based laws over `applyFixes` (`src/fix-apply.ts`), generalising the example-based cases already pinned in `test/fix-apply.test.ts` to fast-check permutations/ranges: - **Disjoint admissible fixes commute**: h...
 - `test/fix-printer.test.ts` — `emitOpening` (W4b) rebuilds a whole door/window/opening statement through the shared printer (`printDoc(statementText(...))`) instead of a second, hand-written enumeration of clauses, precisely so a rebuild never sil...
-- `test/fix-producers.test.ts` — off-wall opening fix (W_*_OFF_WALL → attachment form); opening width fix (E_*_WIDTH → has-placeholders).
+- `test/fix-producers.test.ts` — off-wall opening fix (W_*_OFF_WALL → attachment form); opening width fix (E_*_WIDTH → has-placeholders); attach-position clamp fix (E_ATTACH_POS_RANGE → machine…
 - `test/fix-pullback.test.ts` — Lint fixes pulled back through the instance frame (backlog E.1, `fix-pullback`).
 - `test/fixture-byte-identity.test.ts` — Full-SVG pins for the fixture-symbol layer.
 - `test/fixture-classifier-drift.test.ts` — Drift guards for the fixture classifier lists.
-- `test/fixture-orientation.test.ts` — the shared back-edge ⇄ quarter-turn mapping; backingWallForRoomEdge / wallBackedEdges.
+- `test/fixture-orientation.test.ts` — the shared back-edge ⇄ quarter-turn mapping; backingWallForRoomEdge / wallBackedEdges; backCandidateEdges — the footprint's aspect constrains the back; derived…
 - `test/format.test.ts` — T5.2 — `arch fmt` formatter.
-- `test/frame.test.ts` — frame algebra — signed permutation + translation; tp — mapping a point local → global.
+- `test/frame.test.ts` — frame algebra — signed permutation + translation; tp — mapping a point local → global; transformRect — a top-left + size box; transformDeg — carrying a fixture'…
 - `test/furniture-against.test.ts` — furniture against wall.
 - `test/furniture-curves-backends.test.ts` — Do all four backends actually DRAW a curve that lands on the `furniture` pass?
-- `test/furniture-flush.test.ts` — innerFaceOfRoomEdge — the geometry `flush` measures from; flush arithmetic — the four edge anchors.
+- `test/furniture-flush.test.ts` — innerFaceOfRoomEdge — the geometry `flush` measures from; flush arithmetic — the four edge anchors; flush arithmetic — corners apply the rule per edge; flush an…
 - `test/furniture-footprint.test.ts` — catalogued default footprints.
-- `test/furniture-lint.test.ts` — furniture lint; furniture `in <room>` ownership.
+- `test/furniture-lint.test.ts` — furniture lint; furniture `in <room>` ownership; furniture `in <room>` ownership is measured by FOOTPRINT, not centre; furniture-vs-wall collision lint; furnitu…
 - `test/furniture-mirror.test.ts` — `furniture … mirror` (issue #405): one piece's left and right swap, and its back stays.
 - `test/furniture-place.test.ts` — T1c — furniture in <room> centered; T1c — furniture in <room> anchor.
 - `test/furniture-relations-digests.test.ts` — The furniture-relation digest table (ADR 0029; card PS3.7): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/furniture-relations-plans.ts`, pinned in it...
 - `test/furniture-relations.test.ts` — Furniture relations (ADR 0029, plan-soundness card PS3.7): `facing <id>`, `against <room>.<edge>` and `clear front|sides <mm>`.
 - `test/furniture-rotate.test.ts` — furniture rotate; rotateNode — the curved primitives.
-- `test/fuzz.test.ts` — compile — hostile input; the grammar-aware arbitrary is honest about what it emits.
-- `test/g1.test.ts` — G1 generate — the user prompt is the brief verbatim; G1 generate — oracle isolation of the system prompt.
+- `test/fuzz.test.ts` — compile — hostile input; the grammar-aware arbitrary is honest about what it emits; compile — determinism on rendering plans; byte-identity under an unrelated a…
+- `test/g1.test.ts` — G1 generate — the user prompt is the brief verbatim; G1 generate — oracle isolation of the system prompt; G1 generate — extractJson; G1 generate — the worked ex…
 - `test/gaps-byte-identity.test.ts` — `hidden`, a piece's `mirror` and a room's `floor` (issue #405): the byte-identity law.
 - `test/garage-byte-identity.test.ts` — The byte-identity law for the outdoor tranche: **a plan that uses none of it renders, describes and lints exactly as it did before it existed.** Every new language form ships with this law, and the form it takes here...
 - `test/garage.test.ts` — `uses garage` — the thirteenth room use, its label vocabulary, and the one advisory rule that reads it.
@@ -391,24 +391,24 @@ The first sentence of each file's header comment.
 - `test/grammar-drift.test.ts` — T5.4 — one grammar source of truth: drift guard.
 - `test/grammar.test.ts` — tmLanguage grammar highlights .arch.
 - `test/graph-check.test.ts` — checkGraph.
-- `test/grid-index.test.ts` — GridIndex; room-overlap grid ≡ O(n²) (T3.7).
+- `test/grid-index.test.ts` — GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents.
 - `test/grid-overlap-hint.test.ts` — `W_ROOM_OVERLAP` names the grid when the grid can be the cause (issue #405).
 - `test/gridsnap.test.ts` — grid-snap rounding.
 - `test/height-byte-identity.test.ts` — The byte-identity law for the **vertical datum layer**.
-- `test/huge-coordinates.test.ts` — huge finite coordinates never throw; the same shapes at the edge of the modelling range are drawn and measured.
+- `test/huge-coordinates.test.ts` — huge finite coordinates never throw; the same shapes at the edge of the modelling range are drawn and measured; huge on one axis, thin on the other (nav and occ…
 - `test/impact-contacts.test.ts` — Contact dependency (plan-soundness card PS4.5): an authored wall or a furniture piece written at fixed coordinates that lies ON a rectangular room's edge records that contact in `describe --facts depends` (`elements[]...
 - `test/impact.test.ts` — `impact()` and `arch impact` (plan-soundness PS4.2): what changed and why, what held, what broke or healed, when one number changes.
 - `test/imperial-input.test.ts` — Imperial input literals (preview-and-remodel card B5, decision D8): `12ft`, `6in` and `12ft6in` are length literals, converted exactly (1 in = 25.4 mm) and rounded half away from zero to a whole millimetre PER LITERAL...
 - `test/import-module-lets.test.ts` — An imported component sees its OWN module's plan-level `let`s (backlog M.5, owner decision: the old `E_UNKNOWN_REF` was a defect).
 - `test/import-openplan3d.test.ts` — `openPlan3dToArch` (`arch import --from openplan3d`): an OpenPlan3D plan in, ArchLang source and a report out.
-- `test/import-rooted.test.ts` — a module outside the import root is refused, never read; only `.arch`, only up to the cap.
+- `test/import-rooted.test.ts` — a module outside the import root is refused, never read; only `.arch`, only up to the cap; what the root allows; the CLI: default root is the working directory;…
 - `test/import-world-fuzz.test.ts` — S-FZ-2 — hostile import specs against a rooted Node World.
-- `test/import.test.ts` — T4.3 — import in a virtual-FS (browser-like) World; T4.3 — import in a Node (real-fs) World.
+- `test/import.test.ts` — T4.3 — import in a virtual-FS (browser-like) World; T4.3 — import in a Node (real-fs) World; T4.3 — diagnostics.
 - `test/indexnow-script.test.ts` — `scripts/indexnow.mjs` — the post-deploy IndexNow ping.
 - `test/input-limit.test.ts` — `inputTooLarge()` and `rateLimited()` — a host's refusals as catalogued diagnostics.
 - `test/intent-all-storeys.test.ts` — Issue #365: on a plan with `level` blocks the intent's `rooms`, `roomsInclude` and `totalAreaM2` read the whole building, as `grossInternalAreaM2` and `roomDimensions` always did.
 - `test/intent-schema-drift.test.ts` — intent.schema.json drift.
-- `test/intent.test.ts` — validateIntent — corpus round-trip (goldens satisfy their own intent); validateIntent — determinism.
+- `test/intent.test.ts` — validateIntent — corpus round-trip (goldens satisfy their own intent); validateIntent — determinism; validateIntent — per-kind gating; validateIntent — window f…
 - `test/interner-oracle.test.ts` — `PointInterner` against its previous implementation, kept here VERBATIM as the oracle.
 - `test/intersect.test.ts` — `src/geometry/intersect.ts` — the closed-form meeting and ray-crossing primitives the wall-joinery layer is built on.
 - `test/iso-byte-identity.test.ts` — **The byte-identity law for the axonometric view.** Every new form ships with one: a plan that does not use it renders, describes and lints exactly as before.
@@ -433,9 +433,9 @@ The first sentence of each file's header comment.
 - `test/l2.test.ts` — runLoopArm — the diagnostic feedback loop; runControlArm — equal-budget i.i.d.
 - `test/label-fit.test.ts` — A room's label that does not fit shrinks (`fitLabels`, `src/label-fit.ts`).
 - `test/label-placement-oracle.test.ts` — The label-relocation pass (`relocateLabels`, `src/label-placement.ts`) against the form it replaced, kept here VERBATIM as the oracle and compared BIT FOR BIT (`docs/backlog.md` M.19, M.15).
-- `test/label-placement.test.ts` — label placement — a clear label never moves; label placement — a buried label moves.
+- `test/label-placement.test.ts` — label placement — a clear label never moves; label placement — a buried label moves; label placement — what it is not allowed to touch; label placement — an `ou…
 - `test/label-wrap.test.ts` — A room name too wide for its room on one line is drawn on several (`wrapLabels`, `src/label-placement.ts`) — and nothing else about any drawing moves.
-- `test/lang.test.ts` — let bindings; components.
+- `test/lang.test.ts` — let bindings; components; control flow (T2.3); scope chain (T2.4); value-functions / closures (T2.5); built-ins (T2.6); set rules (T2.7); string-interpolated la…
 - `test/level-filename-lockstep.test.ts` — ONE per-storey file-naming scheme, two implementations — welded here.
 - `test/levels.test.ts` — Multi-storey `level` blocks: one drawing per storey.
 - `test/lint-accessible-wc-side-wall.test.ts` — `W_ACCESSIBLE_WC_SIDE_WALL` (plan-soundness PS2.74, `src/lint/rules/clearances.ts`): a WC in a room whose label says accessible, with its centreline farther than `wcAccessibleSideWallMaxMm` (500 mm, Approved Document...
@@ -446,37 +446,37 @@ The first sentence of each file's header comment.
 - `test/lint-clearances-kitchen-doors.test.ts` — Plan-soundness PS2.11e (the kitchen and door half) and PS2.46, PS2.54: `W_HOB_UNDER_WINDOW`, `W_HOB_FRIDGE_GAP`, `W_LEAF_TOO_WIDE`, `W_DOORWAY_BLOCKED` read for a leaf-less opening, and the one datum for a doorway's a...
 - `test/lint-clearances-transposed-leaf.test.ts` — Plan-soundness PS2.11c (`W_FOOTPRINT_TRANSPOSED`) and PS2.11d (`W_LEAF_ACROSS_DOORWAY`): what each fires on, what it must not fire on, its boundaries, its fix, its words, and that a `place` turn or mirror moves neithe...
 - `test/lint-clearances-wc-window.test.ts` — The clearance family of plan-soundness PS2.11a/b: `W_WC_SIDE_CLEARANCE` and `W_FURNITURE_OVER_WINDOW` (`src/lint/rules/clearances.ts`, measures in `src/lint/clearance-measure.ts`), and the placement check every quoted...
-- `test/lint-coverage.test.ts` — lint coverage: beside lint(), never inside it; lint coverage: the seam.
-- `test/lint-deficits.test.ts` — W_SWING_OBSTRUCTED states the measured deficit; W_SWING_OBSTRUCTED on a double door (backlog 6.8).
-- `test/lint-dwelling-reading.test.ts` — dwellingReading; W_WET_ROOM_DOOR on a plan that reads as non-residential.
+- `test/lint-coverage.test.ts` — lint coverage: beside lint(), never inside it; lint coverage: the seam; lint coverage: the skips rules declare; lint coverage: review round 1 (the reviewer's re…
+- `test/lint-deficits.test.ts` — W_SWING_OBSTRUCTED states the measured deficit; W_SWING_OBSTRUCTED on a double door (backlog 6.8); W_SWING_OBSTRUCTED's hinge-flip fix; W_DOORWAY_BLOCKED / W_FU…
+- `test/lint-dwelling-reading.test.ts` — dwellingReading; W_WET_ROOM_DOOR on a plan that reads as non-residential; W_HABITABLE_NO_WINDOW's kitchen arm; W_ENTRANCE_INTO_PRIVATE; the non-dwelling reason;…
 - `test/lint-exterior-ring.test.ts` — `W_EXTERIOR_RING_OPEN` (issues #346 and #370): exterior walls that should enclose a room and do not, read end by end (`src/analyze/open-shell.ts`), so a ring closing elsewhere hides nothing.
 - `test/lint-file-provenance.test.ts` — Lint-raised fixes must carry the FILE their spans are measured in.
-- `test/lint-fix-texts.test.ts` — W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and raises nothing new; W_FIXTURE_BACK_TO_ROOM — the size's aspect decides the wall; the hint swaps it.
+- `test/lint-fix-texts.test.ts` — W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and raises nothing new; W_FIXTURE_BACK_TO_ROOM — the size's aspect decides the wall; the hint swap…
 - `test/lint-furniture-on-stair.test.ts` — Issue #364, part 1 (`W_FURNITURE_ON_STAIR`, G9): a piece on a flight's footprint or on a landing the flight owes, and `finish`'s furnish stage keeping off both.
 - `test/lint-furniture-on-void.test.ts` — CR2 group D: `W_FURNITURE_ON_VOID`, a piece standing on a void, a lift shaft or an escalator of its own storey, and `finish` keeping a single-storey plan's pieces off a void (it used to read voids only on a plan of `l...
 - `test/lint-hint-paste.test.ts` — A quoted fixture hint never warns when pasted (plan-soundness PS2.17, PR #216 review rounds 2 and 3).
 - `test/lint-layers.test.ts` — Every lint rule declares its soundness LAYER and the codes it may emit (ADR 0032).
-- `test/lint-measure.test.ts` — mm — millimetre rounding into diagnostic prose; shortfall — how far `required` exceeds `available`.
-- `test/lint-messages-id-free.test.ts` — no message over the corpus quotes an internal id (PS2.22, PS2.29); makeNaming — what an unlabelled room is called (src/naming.ts).
-- `test/lint-openings.test.ts` — W_OPENING_AT_JUNCTION; W_OPENING_OVERLAP.
-- `test/lint-profiles-residential.test.ts` — the residential-advisory profiles; the catalog example.
+- `test/lint-measure.test.ts` — mm — millimetre rounding into diagnostic prose; shortfall — how far `required` exceeds `available`; deficitMm — a requirement, an availability and a shortfall t…
+- `test/lint-messages-id-free.test.ts` — no message over the corpus quotes an internal id (PS2.22, PS2.29); makeNaming — what an unlabelled room is called (src/naming.ts); the storey is named only on a…
+- `test/lint-openings.test.ts` — W_OPENING_AT_JUNCTION; W_OPENING_OVERLAP; W_CONNECTOR_AMBIGUOUS.
+- `test/lint-profiles-residential.test.ts` — the residential-advisory profiles; the catalog example; single or double: read from the bed, never the label (ADR 0005); areas are net floor under every residen…
 - `test/lint-profiles.test.ts` — lint profiles.
-- `test/lint-room-contents.test.ts` — W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING.
+- `test/lint-room-contents.test.ts` — W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING; finish with the room-contents rule: the review's probes; PS2.17: a kitchen's worktop, written by finish.
 - `test/lint-rule-order.test.ts` — a lint rule is registered in every place a rule is listed.
-- `test/lint-space-enclosure.test.ts` — W_BOUNDARY_NO_WALL; W_FLOOR_UNASSIGNED.
+- `test/lint-space-enclosure.test.ts` — W_BOUNDARY_NO_WALL; W_FLOOR_UNASSIGNED; W_ROOM_OUTSIDE_SHELL; circulation-reachable implies access-reachable, on the corpus; review round 1 — W_BOUNDARY_NO_WALL…
 - `test/lint-stairs.test.ts` — Plan-soundness PS2.11e (the stair bullets), PS2.34 and PS2.15: the six stair-safety codes.
 - `test/lint-storey-way-in.test.ts` — `W_NO_ENTRANCE` on a multi-storey plan (#404): each storey it fires on is told which storey it is and what is missing there, because the building may have a front door on another floor.
-- `test/lint-summary.test.ts` — diagnosticsSummary; the diagnostics are what lint() returns.
-- `test/lint.test.ts` — lint — clean plans; lint — rules fire on the right violation.
+- `test/lint-summary.test.ts` — diagnosticsSummary; the diagnostics are what lint() returns; a wide summary and a failing later tier; the text report opens with the line; withoutSummary (the d…
+- `test/lint.test.ts` — lint — clean plans; lint — rules fire on the right violation; lint — architectural-soundness rules (v1.1); lint — configurable ruleset; lint — W_NO_ENTRANCE ask…
 - `test/llm-spec-drift.test.ts` — Drift guard for `spec.llm.md` (the one-prompt agent spec).
 - `test/llms-full-drift.test.ts` — Drift guard for `llms-full.txt` (the bundled full agent context).
-- `test/local-gate-hook.test.ts` — .claude/hooks/local-gate.mjs.
+- `test/local-gate-hook.test.ts` — .claude/hooks/local-gate.mjs; .claude/hooks/local-gate.mjs RULES.
 - `test/lock.test.ts` — The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`.
 - `test/lsp-codeactions.test.ts` — codeActions.
 - `test/lsp-diagnostics.test.ts` — LSP diagnostics mapping.
 - `test/lsp-features.test.ts` — T5.3 — full LSP feature core (pure functions over source + offset).
 - `test/main-entrance.test.ts` — PS0.10 — the main entrance.
-- `test/markdown.test.ts` — extractArchBlocks; rewriteMarkdown.
+- `test/markdown.test.ts` — extractArchBlocks; rewriteMarkdown; CLI — md format handling.
 - `test/material-vocabulary.test.ts` — The material vocabulary is written twice — the core's `FIXTURE_MATERIALS` (what the `rendered` theme tints by, `src/elements/fixtures-glyphs.ts`) and archlang-3d's `MATERIAL_SLOTS` (what the GLB writer and the viewer...
 - `test/meter-headers.test.ts` — Every `src/` module that charges the evaluation-step meter says so in its header comment (engineering-health A-F13, cards EH2.2/EH2.7).
 - `test/min-rect.test.ts` — The law of `src/geometry/min-rect.ts` (plan-soundness PS5.1b): the exact minimum-area enclosing rectangle against a brute-force ROTATION ORACLE that lives here only.
@@ -484,7 +484,7 @@ The first sentence of each file's header comment.
 - `test/model-range.test.ts` — The modelling range: every resolved coordinate and length lies within ±2^25 mm (`MODEL_RANGE_MM`, the bound under which ADR 0020 measured plain-double `orient2d` exact).
 - `test/module-map.test.ts` — `docs/agents/module-map.md` names every source module (engineering-health EH3.1).
 - `test/nav-grid-residual.test.ts` — G.11 — the nav grid's walls agree with the drawn walls; C.1 — a wall thinner than a cell still blocks (the centreline cover).
-- `test/nav-grid-scale.test.ts` — nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one.
+- `test/nav-grid-scale.test.ts` — nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one; a fixture across part of a wide threshold narrows it, never sea…
 - `test/net-area-once.test.ts` — net internal area — once per room per compile on a `schedule rooms` plan.
 - `test/net-area-oracle-corpus.test.ts` — NET internal area over the whole corpus (examples, fixtures, recovery plans, eval goldens, fidelity plans and faults; the docs gallery is left out, `agent-gallery.test.ts` owns it): the closed-form figure agrees with...
 - `test/net-area-stamp.test.ts` — `schedule rooms net`: the room stamp prints the schedule's NET AREA figure, named.
@@ -505,7 +505,7 @@ The first sentence of each file's header comment.
 - `test/openai-plugin-zip.test.ts` — The OpenAI plugin directory ZIP (`npm run build:openai-plugin`).
 - `test/opening-host-on-edge.test.ts` — `door|window|opening … on <room>.<edge>` on an edge that carries several walls (issue #401; ADR 0028 §5 as amended 2026-11-02).
 - `test/opening-tags-corpus.test.ts` — The corpus guard for `schedule openings` tags: inject the statement into every shipped example that has a door or a window, draw every storey, and look at what each tag's frame covers.
-- `test/opening.test.ts` — opening element; cased opening rendering — never repaint the void the wall union opened.
+- `test/opening.test.ts` — opening element; cased opening rendering — never repaint the void the wall union opened; interior doorway rendering — the same white-band fix.
 - `test/openings-between-digests.test.ts` — The relational-opening digest table (ADR 0028 §5; card PS3.4): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/openings-between-plans.ts`, pinned in it...
 - `test/openings-between.test.ts` — Openings by relation (ADR 0028 §5; card PS3.4): - `door|opening … between <A> and <B> [at <pos>]` and `door|window|opening … on <room>.<edge> [at <pos>]`, with `<pos>` one of `center`, `<mm> from start|end`, `<mm> fro...
 - `test/openplan3d-malformed.test.ts` — malformed OpenPlan3D input.
@@ -517,16 +517,16 @@ The first sentence of each file's header comment.
 - `test/parser-recovery-metric.test.ts` — The parser's error-recovery METRIC, pinned as floors over a FROZEN corpus.
 - `test/parser-recovery.test.ts` — T5.1 — lossless + error-recovering parse tree.
 - `test/parser-trailing-content.test.ts` — Trailing content after the plan's closing `}`.
-- `test/path-algebra.test.ts` — bestPaths equals brute force on random digraphs; neighbours4 lists W, E, N, S and stays in bounds.
-- `test/path-monotonic.test.ts` — W_PATH_TOO_NARROW is monotone in an obstacle's depth; the reported clear width is the width a body passes through.
+- `test/path-algebra.test.ts` — bestPaths equals brute force on random digraphs; neighbours4 lists W, E, N, S and stays in bounds; the nav-grid searches equal the engine on random grids up to…
+- `test/path-monotonic.test.ts` — W_PATH_TOO_NARROW is monotone in an obstacle's depth; the reported clear width is the width a body passes through; a blocked room is a claim about FURNITURE, an…
 - `test/place.test.ts` — Component v2 — `place <component>(…) as <name> at (x,y) [rotate] [mirror]`.
-- `test/plan-a11y.test.ts` — data-arch-label (annotate); data-arch-primary (annotate).
-- `test/plan-json-arcs-paper.test.ts` — Cases: writes the arc on the point it arrives at, and the paper beside the scale; comes back byte for byte, `bbox_outer` and `sheet` included.
-- `test/plan-json-dropped.test.ts` — every clause is reported on the plan that has it, and alone; a multi-storey plan answers for the export in hand.
+- `test/plan-a11y.test.ts` — data-arch-label (annotate); data-arch-primary (annotate); accessible + annotate — the element roles; accessible idPrefix — the <title>/<desc> ids.
+- `test/plan-json-arcs-paper.test.ts` — Cases: writes the arc on the point it arrives at, and the paper beside the scale; comes back byte for byte, `bbox_outer` and `sheet` included; does the same thr…
+- `test/plan-json-dropped.test.ts` — every clause is reported on the plan that has it, and alone; a multi-storey plan answers for the export in hand; the keep path is the same path, and unchanged;…
 - `test/plan-json-instances.test.ts` — PS3.9 — Plan JSON for a component that derives its walls.
 - `test/plan-json-malformed.test.ts` — malformed Plan JSON.
 - `test/plan-json-uses-roundtrip.test.ts` — A room's uses survive a Plan JSON round trip (checker-reach CR2 group B).
-- `test/plan-json.test.ts` — plan-json — round-trip byte-identity (SVG); plan-json — derived furniture positions.
+- `test/plan-json.test.ts` — plan-json — round-trip byte-identity (SVG); plan-json — derived furniture positions; plan-json — planToJson projection & enrichments; plan-json — `dims auto` is…
 - `test/plan-schema-drift.test.ts` — plan.schema.json drift.
 - `test/playground-example-image.test.ts` — The playground's Embed → Markdown snippet points an unedited example at the docs gallery's drawing: `https://archlang.uk/examples/<name>.svg`, or one storey's `<name>.L<n>.svg`.
 - `test/playground-examples-rows.test.ts` — The playground's example table — welded to `examples/` in BOTH directions.
@@ -534,7 +534,7 @@ The first sentence of each file's header comment.
 - `test/plugins.test.ts` — T4.1 — cache key reflects plugin identity.
 - `test/png.test.ts` — PNG backend (T6.3).
 - `test/polygon-overlap-oracle.test.ts` — `polygonsOverlap` (`src/geometry/polygon.ts`) against the form it replaced, kept here VERBATIM as the oracle (`docs/backlog.md` M.19): every edge pair, then every vertex and midpoint against the whole other ring.
-- `test/polygon-rooms.test.ts` — polygon rooms — parsing and shape; polygon rooms — exact area (shoelace).
+- `test/polygon-rooms.test.ts` — polygon rooms — parsing and shape; polygon rooms — exact area (shoelace); polygon rooms — rejected rings; polygon rooms — label placement; polygon rooms — the l…
 - `test/print-roundtrip.test.ts` — The central law motivating this task: **a printer is a section of the parser**.
 - `test/public-surface.test.ts` — the public type surface is closed; resolvePlan from the package root keeps linked content.
 - `test/rank-fixes.test.ts` — rankFixes; cmdFix pick-one reduction (rankFixes + applyFixes).
@@ -546,15 +546,15 @@ The first sentence of each file's header comment.
 - `test/rectilinear-rooms.test.ts` — A rectilinear `room polygon` inside `walls from rooms` (issue #363, card L1; ADR 0028 §3 as amended).
 - `test/rectilinear-sides.test.ts` — The sides of a rectilinear `room polygon` (issue #363, cards L3 and L4; the G10 addendum of 2026-11-02): `right-of` and friends, the edge datums and everything that reads one, anchored furniture, and `finish`.
 - `test/relational-readers.test.ts` — Backlog PS0.5: an element that READS a relationally placed room — `furniture … against wall … in <room>` (side inference), `furniture … in <room> centered|anchor`, a door's `swing into <room>` and a garage door's floo...
-- `test/relational.test.ts` — relational placement — equivalence with manual coords; relational placement — determinism.
+- `test/relational.test.ts` — relational placement — equivalence with manual coords; relational placement — determinism; relational placement — diagnostics; relational placement — the align/…
 - `test/release-compat.test.ts` — Release compatibility: this checkout against the LAST PUBLISHED `@chanmeng666/archlang` and `@chanmeng666/archlang-mcp`, additive-only, over the four surfaces downstream code is keyed on (public types, MCP tool input...
 - `test/rendered-theme.test.ts` — The `rendered` theme (visual-assets card V4; ADR 0023, the 2026-11-04 amendment).
 - `test/repair-circulation.test.ts` — repair — circulation guard.
-- `test/repair-coverage.test.ts` — repair — scripted statements are reported, not skipped; repair — a single resolved instance is rewritten however it is nested.
-- `test/repair-no-worse.test.ts` — repair — the villa witness; repair — the no-worse law.
+- `test/repair-coverage.test.ts` — repair — scripted statements are reported, not skipped; repair — a single resolved instance is rewritten however it is nested; repair — `in <room>` placements;…
+- `test/repair-no-worse.test.ts` — repair — the villa witness; repair — the no-worse law; repair — order dependence, stated rather than hidden.
 - `test/repair.test.ts` — arch repair.
 - `test/reroll-findrun-oracle.test.ts` — `findRun` (`src/reroll.ts`) went from a shrinking search — try every length from the maximal same-kind window down to 3, re-running `collectSlots` over the whole prefix each time, cubic on a long NON-progression windo...
-- `test/reroll.test.ts` — reroll — the flat parametric row; reroll — nested statement lists.
+- `test/reroll.test.ts` — reroll — the flat parametric row; reroll — nested statement lists; reroll — loop-variable collision; reroll — world passthrough (a plan with imports); reroll —…
 - `test/resolve-order-byte-identity.test.ts` — The byte-identity law for the resolve order (ADR 0028 §1, card PS3.2): `resolve()` places every room first, freezes a datum table, then resolves walls, then openings — and a plan that uses no new form resolves, draws,...
 - `test/risk-tier.test.ts` — scripts/risk-tier.mjs.
 - `test/roof-void-byte-identity.test.ts` — The byte-identity law for `roof` and `void`.
@@ -572,7 +572,7 @@ The first sentence of each file's header comment.
 - `test/scene-memo.test.ts` — The Scene memo (`src/scene-memo.ts`, engineering-health EH2.6): `lint()`'s `annotation-overlap` reads the annotated Scene the compile already drew, and nothing a caller does to `compile().scene` can reach lint through...
 - `test/scene-path-prim.test.ts` — The `path` Scene primitive reaches every backend.
 - `test/scene.test.ts` — Scene IR.
-- `test/schedule.test.ts` — sheet tables — a plan that opts out is byte-identical; schedule — derived rows (numbering, names, areas).
+- `test/schedule.test.ts` — sheet tables — a plan that opts out is byte-identical; schedule — derived rows (numbering, names, areas); legend — derived closed-form from what the drawing pai…
 - `test/security.test.ts` — SVG output is XSS-safe.
 - `test/segment-select-digests.test.ts` — The segment-selector digest table (plan card PS3.5): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/segment-select-plans.ts`, pinned in its own commit...
 - `test/segment-select.test.ts` — Segment selectors (plan card PS3.5): `segment north|south|east|west` and `segment containing <room>.<edge>` alias `segment <n>`.
@@ -594,18 +594,18 @@ The first sentence of each file's header comment.
 - `test/site.test.ts` — The site & orientation layer — `site { street … [hemisphere …] }`, its five derived direction NAMES, the one lint rule that reads them, and the intent channel's symbolic `windows.facing`.
 - `test/snapshot.test.ts` — golden SVG snapshots.
 - `test/spec-forms.test.ts` — The EXECUTABLE-SPEC gate — every form `spec.llm.md` teaches must actually compile, and every illegality it names must actually be refused.
-- `test/stage-cache.test.ts` — T4.5 — stage memo: lex; T4.5 — stage memo: parse.
-- `test/stages.test.ts` — the stage ladder and the per-rule table; a keep's stage is the stage of its measure.
+- `test/stage-cache.test.ts` — T4.5 — stage memo: lex; T4.5 — stage memo: parse; T4.5 — stage memo: resolve; T4.5 — memos are transparent (determinism intact).
+- `test/stages.test.ts` — the stage ladder and the per-rule table; a keep's stage is the stage of its measure; validate --json without --stage: one stage key per diagnostic, last; valida…
 - `test/stair-bounds.test.ts` — A stair's `bounds()` covers its ink (D27).
 - `test/step-budget.test.ts` — The evaluation-step budget (`MAX_EVAL_STEPS`, `src/expr.ts`): one deterministic counter across a whole resolution, every storey, instance, call and loop iteration.
 - `test/stepped-facade-dims.test.ts` — `dims auto all` on a STEPPED facade: no opening may drop out of the chains without a diagnostic.
 - `test/strip.test.ts` — T1e — room strip.
-- `test/style.test.ts` — Scene style metadata (T3.1); AIA layers (T3.2).
-- `test/suggest.test.ts` — suggestTopology; suggestTopology — W_NO_ENTRANCE.
+- `test/style.test.ts` — Scene style metadata (T3.1); AIA layers (T3.2); openings void walls (T3.3).
+- `test/suggest.test.ts` — suggestTopology; suggestTopology — W_NO_ENTRANCE; suggestTopology — W_BATH_VIA_BEDROOM; suggestTopology — W_BATH_VIA_BEDROOM spares an en-suite beside a bathroo…
 - `test/swing-building-digests.test.ts` — The building-relative swing digest table (card PS3.8): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/swing-building-plans.ts`, pinned in its own comm...
 - `test/swing-building.test.ts` — Building-relative swing (plan-soundness card PS3.8): `swing inward|outward`.
-- `test/swing-exact.test.ts` — 6.12 — an overlap with no sampled point in it collides; a separating gap is never contact.
-- `test/swing.test.ts` — doorSwing; sectorIntersectsRect.
+- `test/swing-exact.test.ts` — 6.12 — an overlap with no sampled point in it collides; a separating gap is never contact; the superset law: every collision the old sampler found is still a co…
+- `test/swing.test.ts` — doorSwing; sectorIntersectsRect; swingsCollide; largestPerimeterGap.
 - `test/symmetry.test.ts` — `describe(src, { facts: ["symmetry"] })` — the plan's symmetry group per layer, and its repeated rooms.
 - `test/syntax.test.ts` — `describe(src, { facts: ["syntax"] })` — space syntax (Hillier & Hanson 1984) on the access graph.
 - `test/task-skills.test.ts` — The skills under `skills/<name>/SKILL.md`: the umbrella skill `archlang` and the task skills beside it.
@@ -618,13 +618,13 @@ The first sentence of each file's header comment.
 - `test/test-index.test.ts` — `test/INDEX.md` lists every `src` module and every root test file, and nothing that is not tracked.
 - `test/text-layout.test.ts` — The line breaker a room name wraps with (`src/text-layout.ts`): where it may break, how many lines it takes, and which of the equal-count breaks it picks.
 - `test/text-metrics.test.ts` — `inkWidth` (`src/text-metrics.ts`) against the two faces it says it reads.
-- `test/theme-cascade.test.ts` — T4.4 — named theme bases; T4.4 — per-element style overrides.
+- `test/theme-cascade.test.ts` — T4.4 — named theme bases; T4.4 — per-element style overrides; T4.4 — opt-in poché derivation (`theme from`); T4.4 — registered themes.
 - `test/theme.test.ts` — theme directive; CompileOptions.theme.
 - `test/tools-mask-to-plan.test.ts` — The mask-to-plan recipe (card G3, `docs/import.md`), held without Python: the committed outputs of `tools/mask-to-plan/` on its worked example.
 - `test/tools-plan-to-geojson.test.ts` — The converter recipe (`tools/plan-to-geojson/`, language reference § Convert Plan JSON to another format): the committed example is what the two commands write, the output keeps the rules of RFC 7946, and the script's...
 - `test/transform-seam.test.ts` — ElementDef.transform — the seam.
 - `test/unified-diff.test.ts` — unifiedDiff.
-- `test/union.test.ts` — rectUnionOutline; wall rendering — clean joins.
+- `test/union.test.ts` — rectUnionOutline; wall rendering — clean joins; wall materials; hatch as data (T3.5); wall joinery — no geometry engine is consulted; wall joinery — a registere…
 - `test/unit-suffix.test.ts` — Optional metric unit suffixes on numeric literals (Tranche 6 Track B): `3m`→3000, `3.5m`→3500, `3cm`→30, `3mm`→3 (a no-op), folded at lex time into millimetres by exact decimal-point shifting (never float multiply).
 - `test/v129-cross.test.ts` — The roof/void CROSS-FEATURE gate — the two tracks that shipped together, exercised TOGETHER rather than each against its own fixtures.
 - `test/v131-cross.test.ts` — The outdoor/garage CROSS-FEATURE gate — the cases neither track could produce on its own.
@@ -653,7 +653,7 @@ The first sentence of each file's header comment.
 - `test/while-byte-identity.test.ts` — M3 of the W7 red-team verdict: the byte-identity law for **`compile().diagnostics` itself**, over every shipped example (every storey) plus every `test/fixtures/*.arch`.
 - `test/while-deprecation.test.ts` — W7 — `W_WHILE_DEPRECATED` / `W_REASSIGN_DEPRECATED` (`src/while-deprecation.ts`).
 - `test/while-fix.test.ts` — W7's machine-applicable `while`→`for` fix (`src/while-fix.ts`'s `proveWhileFixes`), proved and attached ENTIRELY OUTSIDE `compile()` — see that module's header.
-- `test/window-facing-probe.test.ts` — Cases: a courtyard window with no host room faces the courtyard, not the plan centre; a window on a re-entrant polygon room's courtyard wall faces the courtyard.
+- `test/window-facing-probe.test.ts` — Cases: a courtyard window with no host room faces the courtyard, not the plan centre; a window on a re-entrant polygon room's courtyard wall faces the courtyard…
 - `test/window-kinds-byte-identity.test.ts` — Window kinds and the glazed sliding door (issue #369): the byte-identity law.
 - `test/window-kinds.test.ts` — Window kinds and the glazed sliding door (issue #369): what each form draws, states and refuses.
 - `test/windows-furniture.test.ts` — window — placement & hosting; furniture — rect + label (the uncatalogued fallback).
@@ -661,12 +661,12 @@ The first sentence of each file's header comment.
 - `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, as COUNTS.
 - `test/workspace-seams.test.ts` — Boundary: a workspace reaches the core (or another workspace) only through a declared package name, except at the seams listed in ALLOW (`workspace-seams.allow.ts`).
 - `test/world.test.ts` — T4.2 — World seam.
-- `test/zones.test.ts` — zone — byte identity (a zone draws nothing and moves nothing); zone — declared membership and nesting paths.
+- `test/zones.test.ts` — zone — byte identity (a zone draws nothing and moves nothing); zone — declared membership and nesting paths; zone — inside `level` blocks; zone — the grouped RO…
 
 ## `src` modules no test imports
 
-Reached only through `compile()` (or not at all by the root `test/` suite). A reviewable list: a module here
-is covered by a pipeline test or by none; adding a direct test removes it.
+Imported directly by no test of the root `test/` suite (it may still run through `src/index.ts` or another `src`
+module); adding a test that imports it removes it from this list.
 
 - `src/analyze/connectors.ts`
 - `src/analyze/depends.ts`

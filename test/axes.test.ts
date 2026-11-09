@@ -1,4 +1,4 @@
-/** axes — GB/T 50001 numbering (derived, never authored); axes — parsing. */
+/** axes — GB/T 50001 numbering (derived, never authored); axes — parsing; axes — render pass; axes — the `dims auto` middle chain becomes the axis chain; axes — de… */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";

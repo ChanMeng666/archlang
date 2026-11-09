@@ -1,4 +1,4 @@
-/** diffPlans — structural; diffPlans — summary & circulation. */
+/** diffPlans — structural; diffPlans — summary & circulation; diffPlans — circulation deltas (entrance-bearing fixtures); diffPlans — auto-id rooms pair by unique… */
 
 import { readFileSync } from "node:fs";
 import { join } from "node:path";

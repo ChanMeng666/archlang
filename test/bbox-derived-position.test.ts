@@ -1,4 +1,4 @@
-/** door `swing into <room>` asks the room's floor, not its bounding box; `furniture … against wall <w> in <room>` probes the floor, not the bounding box. */
+/** door `swing into <room>` asks the room's floor, not its bounding box; `furniture … against wall <w> in <room>` probes the floor, not the bounding box; dimReach'… */
 
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
@@ -24,7 +24,7 @@ import type { SceneNode } from "../src/scene.js";
 const L_RING = "polygon (0,0) (2000,0) (2000,6000) (8000,6000) (8000,8000) (0,8000)";
 const L_SHELL = "(0,0) (2000,0) (2000,6000) (8000,6000) (8000,8000) (0,8000)";
 
-// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile(), leaves the memo cache on.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), leaves the memo cache on.
 const codes = (src: string): string[] => compile(src).diagnostics.map((d) => d.code ?? "");
 
 /**

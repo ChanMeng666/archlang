@@ -1,4 +1,4 @@
-/** --expected-hash: a stale read refuses before anything is computed or written; --expected-hash: a matching read writes, and reports the revisions. */
+/** --expected-hash: a stale read refuses before anything is computed or written; --expected-hash: a matching read writes, and reports the revisions; --expected-has… */
 
 import { sha256 as sha } from "./helpers/digest.js";
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";

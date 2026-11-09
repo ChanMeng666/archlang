@@ -285,16 +285,23 @@ function scanningGuards(dirs) {
 // ---- 3. the plan -----------------------------------------------------------------------------
 const steps = [];
 const lintFiles = changed.filter((f) => LINTABLE.test(f));
-// One command line per at most 100 files: Windows refuses a command line past ~32k characters, which a
-// large branch (400 changed files) exceeds.
-const BIOME_CHUNK = 100;
-for (let i = 0; i < lintFiles.length; i += BIOME_CHUNK) {
-  const chunk = lintFiles.slice(i, i + BIOME_CHUNK);
+// One command line per chunk of files whose names total under 6000 characters: cmd.exe refuses a command
+// line past 8191 characters, which a large branch (400 changed files) exceeds.
+const BIOME_CHUNK_CHARS = 6000;
+const biomeChunks = [];
+for (const f of lintFiles) {
+  const last = biomeChunks[biomeChunks.length - 1];
+  if (last && last.join(" ").length + f.length + 1 < BIOME_CHUNK_CHARS) last.push(f);
+  else biomeChunks.push([f]);
+}
+let biomeDone = 0;
+for (const chunk of biomeChunks) {
   steps.push({
-    name: `biome (${chunk.length} files${lintFiles.length > BIOME_CHUNK ? `, ${i + 1}-${i + chunk.length} of ${lintFiles.length}` : ""})`,
+    name: `biome (${chunk.length} files${biomeChunks.length > 1 ? `, ${biomeDone + 1}-${biomeDone + chunk.length} of ${lintFiles.length}` : ""})`,
     cmd: "npx",
     args: ["biome", "check", ...(flag("--fix") ? ["--write"] : []), ...chunk],
   });
+  biomeDone += chunk.length;
 }
 
 const codeChanged = changed.filter((f) => CODE.test(f));

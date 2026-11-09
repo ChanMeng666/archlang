@@ -2,7 +2,7 @@
  * The `rendered` theme (visual-assets card V4; ADR 0023, the 2026-11-04 amendment).
  *
  * 1. **The byte-identity law.** Every shipped example and the inline rows of
- *    `./rendered-theme-law.ts`, under the default and each of the four themes that existed before
+ *    `test/helpers/rendered-theme-law.ts`, under the default and each of the four themes that existed before
  *    `rendered`, draw, describe, lint and diagnose exactly as they did. Each row is
  *    {@link themeLawDigest}, **measured against `src/` at `241fbfc3`** (`main` before the theme) by
  *    the law's own body, run with that tree's compiler and themes. A digest moving is a finding to

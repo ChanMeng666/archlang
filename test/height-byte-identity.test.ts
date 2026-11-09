@@ -46,7 +46,7 @@
  * ## No baseline row was retired to make room
  *
  * `two-storey`'s pre-datum rows in both tables are still checked, against its **height-free
- * derivation** (`./height-free-source.ts`) rather than against the file as written. The
+ * derivation** (`test/helpers/height-free-source.ts`) rather than against the file as written. The
  * derivation is behaviourally the text that shipped, so the measurement keeps its full
  * force: it still says that everything about that plan other than the datum is where
  * the baseline left it. Nothing was re-measured, re-typed or dropped.

@@ -1,4 +1,4 @@
-/** furniture lint; furniture `in <room>` ownership. */
+/** furniture lint; furniture `in <room>` ownership; furniture `in <room>` ownership is measured by FOOTPRINT, not centre; furniture-vs-wall collision lint; furnitu… */
 
 import { lintCodes as codes } from "./helpers/diag.js";
 import { describe, expect, it } from "vitest";

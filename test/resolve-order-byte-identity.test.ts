@@ -13,7 +13,7 @@
  * placement errors; readers of a relational room (backlog PS0.5); instances that diagnose
  * under a turn and a mirror; an axes block that diagnoses beside its elements.
  *
- * Each row is `allStoreysDigestWithDiagnostics` (`./byte-identity-digest.ts`: every storey's
+ * Each row is `allStoreysDigestWithDiagnostics` (`test/helpers/byte-identity-digest.ts`: every storey's
  * SVG + `describe()` + `lint()` + `compile().diagnostics`) and, readable beside it, the
  * diagnostic sequence `code@span.start`. Both were measured on `main` at `60be6a4` — a
  * `git archive` of that commit's `src/` and digest modules, through this test's own digest

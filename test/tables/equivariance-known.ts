@@ -13,7 +13,7 @@
  *    must go, turning the tripwire into the law it was waiting for.
  *
  * A row stands for the cross product of its `where`, `g` and (optional) `ids` with its one
- * `path` (`d4-oracle.ts`'s `generalize` drops element ids from the path: `rooms[].bbox`;
+ * `path` (`test/helpers/d4-oracle.ts`'s `generalize` drops element ids from the path: `rooms[].bbox`;
  * `ids` names the elements). `g` is a group element's name (`r90`, `mx`, `r90mx` =
  * `rotate 90 mirror x`, `t` = the translation), `+N` when north turned with it, and `T0` for
  * the wrapper-faithfulness tier. `maxDelta` bounds the SIZE a row absorbs (mm, or the unit

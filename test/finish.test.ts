@@ -1,4 +1,4 @@
-/** finish — the corpus is not empty; finish law 1 — fixpoint: finishing a finished plan changes nothing. */
+/** finish — the corpus is not empty; finish law 1 — fixpoint: finishing a finished plan changes nothing; finish law 2 — never worse: no error and no new diagnostic… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync } from "node:fs";
@@ -52,7 +52,7 @@ const NAMES = exampleNames()
 const srcOf = (name: string): string => readFileSync(join(EXAMPLES, `${name}.arch`), "utf8");
 
 /** compile + lint diagnostic codes as a multiset — re-derived here, not read from `finish`. */
-// TODO(EH3.4): differs from test/helpers/diag.ts by returns counts or a set.
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it returns counts or a set.
 function codes(src: string): Map<string, number> {
   const out = new Map<string, number>();
   for (const d of [...compile(src, { world, noCache: true }).diagnostics, ...lint(src, { world })])

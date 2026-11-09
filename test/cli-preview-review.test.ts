@@ -1,4 +1,4 @@
-/** preview --review: the fixture's five warnings; preview --review: clean plans, storeys and the corpus. */
+/** preview --review: the fixture's five warnings; preview --review: clean plans, storeys and the corpus; preview --review: one mark per warning, and no ring on a g… */
 
 import { exampleNames } from "./helpers/corpus.js";
 import { sha256 as sha } from "./helpers/digest.js";
