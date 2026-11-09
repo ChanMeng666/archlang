@@ -4,6 +4,9 @@
  * sits between `<!-- doors:start -->` and `<!-- doors:end -->`. On the first run (no markers yet) it
  * is inserted before the surface's anchor heading. {@link renderDoorsBlock} and {@link applyDoors}
  * are pure so `test/site-doors.test.ts` can regenerate in memory.
+ *
+ * `site-shared/doors.json` holds every way in (ChatGPT app, claude.ai connector, agent prompt and
+ * commands, VS Code, playground) with a per-surface order; both sites import it.
  */
 
 import { readFileSync, writeFileSync } from "node:fs";

@@ -5,6 +5,9 @@
  * (`packages/mcp-worker`) register the same tools from this one module. What differs between
  * them is passed in: the resource texts (read from disk by the stdio server, bundled at build
  * time by the Worker), the link minter, and whether `png` can render there.
+ *
+ * The tool set is transport-agnostic: `server.ts` (stdio, npm) and `packages/mcp-worker` (the hosted
+ * Worker, ADR 0026) both register it.
  */
 import {
   applyFixes,

@@ -24,6 +24,9 @@
  * id on two `level` blocks is the same shaft ({@link verticalConnections}). Nothing is
  * inferred from geometry, so two unrelated stairs never fuse and a mis-typed id shows up
  * as `W_STAIR_UNMATCHED` instead of silently doing nothing.
+ *
+ * `arrivalRuns` says a run's neighbouring stop is an arrival side when it is reachable with that
+ * storey removed.
  */
 
 import type { ElementKind, Point, VerticalDir } from "./ast.js";

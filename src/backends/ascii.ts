@@ -28,6 +28,8 @@
  * it is the only way to recover a fixture's category/identity from the otherwise
  * geometry-only Scene. Without it the renderer still draws walls, openings, room
  * rectangles/labels, and *labelled* furniture; fixture glyphs are simply omitted.
+ *
+ * Pass 2 carves an opening from its one unstroked cover polygon only.
  */
 
 import type { Point } from "../ast.js";

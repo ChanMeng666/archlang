@@ -33,6 +33,10 @@
  * The fit is decided with the compiler's own rule ({@link fitsOnSheet}, on
  * {@link sheetExtents}, {@link planTableRows} and {@link titleRows}) — the numbers
  * `resolve()` decides `sheet.fits` with — never by reading a diagnostic's message.
+ *
+ * It runs the stages in `FINISH_STAGE_ORDER` until a round changes nothing; the sheet stage inserts
+ * spans through `fix-apply.ts`'s `Data`, the fit decided by `sheet.ts` `fitsOnSheet` on
+ * `ir/sheet.ts` `sheetExtents`.
  */
 
 import type { PlanNode, TitleNode } from "./ast.js";

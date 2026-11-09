@@ -18,6 +18,9 @@
  * `lexicographic(MAX_MIN, MIN_PLUS)`, is not isotone; do not solve it here.
  *
  * A leaf module: it imports only `./semiring.js`.
+ *
+ * This is the one label-setting best-path engine over any of the semirings
+ * (`docs/adr/0020-algebraic-core.md`).
  */
 
 import type { OrderedSemiring } from "./semiring.js";

@@ -1,4 +1,10 @@
-/** Pure geometry helpers. All coordinates in millimetres. Deterministic. */
+/**
+ * Pure geometry helpers. All coordinates in millimetres. Deterministic.
+ *
+ * `doorLeaves` gives each leaf's sector (a `double` door's two) and is shared by `door.render()`
+ * and every swing measure; `doorSwing` is the hinged leaf and returns null for a `double`.
+ * `sectorsObstruct` is the exact two-sector test (separating axes, no sampling).
+ */
 
 import { wallPhraseOf } from "./wall-ref.js";
 import type { Point } from "./ast.js";

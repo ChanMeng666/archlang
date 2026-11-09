@@ -39,6 +39,8 @@
  * reprinted from the AST — so a fix never has to reconcile a comment against a rebuilt
  * tree; it only ever has to decide whether one sits somewhere it cannot faithfully keep it
  * (see {@link buildCandidateEdit}), and declines rather than silently drop it.
+ *
+ * It is kept out of `compile()` itself on purpose.
  */
 
 import type { AssignNode, LetNode, PlanNode, Statement, WhileNode } from "./ast.js";

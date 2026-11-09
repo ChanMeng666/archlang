@@ -202,6 +202,8 @@ function render(): string {
     '`Pick<typeof import("pkg"), "a" | "b">`). Not read: `require`, markdown, a module object handed to a',
     "function and read there; a variable read counts file-wide.",
     "",
+    "Every module, not only the entry, is in the sibling [`module-map.md`](module-map.md).",
+    "",
     "The total counts every name the checker sees as exported, including those pulled in by",
     '`export type * from "./ast.js"`; a count of the names written in `index.ts`\' export statements is lower.',
     "",

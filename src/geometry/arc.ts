@@ -34,6 +34,8 @@
  *
  * Nothing here reads a geometry backend, so an arc renders and measures IDENTICALLY
  * with and without the optional `clipper2-wasm` dependency.
+ *
+ * An arc's radius check is decided exactly, in `BigInt` on the 0.001 mm lattice, never on `hypot`.
  */
 
 import type { ArcDirWord, Point } from "../ast.js";
