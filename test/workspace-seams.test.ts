@@ -305,9 +305,10 @@ describe("workspace seams are an allow-list", () => {
   it("workspace-seams.md's seam table is ALLOW, row for row", () => {
     const doc = readFileSync(join(ROOT, "docs/agents/workspace-seams.md"), "utf8");
     const at = doc.indexOf("## Seams between workspaces and the core");
-    expect(at, "docs/agents/workspace-seams.md lacks the 'Seams between workspaces and the core' section").toBeGreaterThan(
-      -1,
-    );
+    expect(
+      at,
+      "docs/agents/workspace-seams.md lacks the 'Seams between workspaces and the core' section",
+    ).toBeGreaterThan(-1);
     const section = doc.slice(at).split(/\n## /)[0] ?? "";
     const rows = section.split("\n").filter((l) => l.startsWith("| "));
     expect(rows.join("\n"), "regenerate: npx tsx test/workspace-seams.allow.ts").toBe(seamTable());

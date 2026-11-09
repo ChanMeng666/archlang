@@ -34,7 +34,11 @@ export const MODULE_GLOBS = [
 const IMPORTER_GLOBS = ["*.ts", "*.tsx", "*.mts", "*.mjs", "*.js", "*.vue"] as const;
 
 function lsFiles(globs: readonly string[]): string[] {
-  const out = execFileSync("git", ["ls-files", "-z", "--", ...globs], { cwd: ROOT, encoding: "utf8", maxBuffer: 1 << 28 });
+  const out = execFileSync("git", ["ls-files", "-z", "--", ...globs], {
+    cwd: ROOT,
+    encoding: "utf8",
+    maxBuffer: 1 << 28,
+  });
   return out.split("\0").filter(Boolean).sort();
 }
 
@@ -107,7 +111,16 @@ const SPEC_RE = /\b(?:from|import|require)\s*\(?\s*["'](\.[^"']*)["']/g;
 function resolveSpec(file: string, spec: string, known: ReadonlySet<string>): string | null {
   const base = posix.normalize(posix.join(posix.dirname(file), spec));
   const stem = base.replace(/\.(js|mjs|ts|tsx)$/, "");
-  for (const c of [base, `${stem}.ts`, `${stem}.tsx`, `${stem}.mts`, `${stem}.mjs`, `${stem}.js`, `${base}/index.ts`, `${base}/index.js`]) {
+  for (const c of [
+    base,
+    `${stem}.ts`,
+    `${stem}.tsx`,
+    `${stem}.mts`,
+    `${stem}.mjs`,
+    `${stem}.js`,
+    `${base}/index.ts`,
+    `${base}/index.js`,
+  ]) {
     if (known.has(c)) return c;
   }
   return null;
@@ -147,7 +160,9 @@ function render(): { text: string; count: number } {
     (byDir.get(dir) ?? byDir.set(dir, []).get(dir)!).push(row);
   }
   if (failures.length) {
-    throw new Error(`gen-module-map: no header paragraph (give each a one-sentence header comment):\n  ${failures.join("\n  ")}`);
+    throw new Error(
+      `gen-module-map: no header paragraph (give each a one-sentence header comment):\n  ${failures.join("\n  ")}`,
+    );
   }
 
   const out: string[] = [
@@ -174,7 +189,14 @@ function render(): { text: string; count: number } {
     "",
   ];
   for (const dir of [...byDir.keys()].sort()) {
-    out.push(`## \`${dir}/\``, "", "| Module | Lines | Importers | Summary | Budget |", "| --- | ---: | ---: | --- | --- |", ...byDir.get(dir)!, "");
+    out.push(
+      `## \`${dir}/\``,
+      "",
+      "| Module | Lines | Importers | Summary | Budget |",
+      "| --- | ---: | ---: | --- | --- |",
+      ...byDir.get(dir)!,
+      "",
+    );
   }
   return { text: out.join("\n"), count: modules.length };
 }
