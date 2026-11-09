@@ -396,10 +396,11 @@ describe("V5, V6: the catalogue's names", () => {
     join(dirname(fileURLToPath(import.meta.url)), "../../../src/elements/fixtures-glyphs.ts"),
     "utf8",
   );
-  const table = src.slice(
-    src.indexOf("const FIXTURE_FAMILIES"),
-    src.indexOf("\n];", src.indexOf("const FIXTURE_FAMILIES")),
-  );
+  const tableStart = src.indexOf("const FIXTURE_FAMILIES");
+  // The table ends at `] as const satisfies …` (or a bare `];`); a missing end must fail, not slice to EOF.
+  const tableLen = src.slice(tableStart).search(/\n\](?: as const|;)/);
+  if (tableStart < 0 || tableLen < 0) throw new Error("cannot find the end of FIXTURE_FAMILIES in the core source");
+  const table = src.slice(tableStart, tableStart + tableLen);
   const rows = [...table.matchAll(/^\s*\[("[a-z0-9_]+"(?:,\s*"[a-z0-9_]+")*)\],/gm)].map((m) =>
     [...(m[1] as string).matchAll(/"([a-z0-9_]+)"/g)].map((w) => w[1] as string),
   );

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildManifest, FINISH_STAGES, FINISH_STAGES_AVAILABLE, MANIFEST_COMMAND_NAMES } from "../src/index.js";
-import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
+import { FIXTURE_CATEGORIES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { CLI_NAME } from "../src/manifest.js";
 
 /**
@@ -132,16 +132,10 @@ describe("manifest — examples", () => {
 });
 
 describe("manifest — fixture categories match the glyph renderer", () => {
-  it("FIXTURE_CATEGORIES equals the fixtureGlyph switch cases", () => {
-    const src = readFileSync("src/elements/fixtures-glyphs.ts", "utf8");
-    const region = src.slice(src.indexOf("switch (category)"));
-    const cases = new Set<string>();
-    // `[a-z0-9_]`, not `[a-z_]`: a category name may carry a DIGIT (`sofa_2`, the loveseat's
-    // alias, is the first that does), and the narrower class silently skipped that arm — so the
-    // guard reported a category advertised by `arch manifest` and "not drawn" when it was drawn
-    // three lines away. A scrape that under-matches makes a set-equality gate lie in the
-    // direction that looks like a real defect, which is the worst way for one to fail.
-    for (const m of region.matchAll(/case "([a-z0-9_]+)":/g)) cases.add(m[1]!);
-    expect([...new Set(FIXTURE_CATEGORIES)].sort()).toEqual([...cases].sort());
+  it("every advertised fixture category draws a symbol", () => {
+    // Asks the renderer instead of scraping its source: a word the manifest advertises but the
+    // dispatch cannot draw is the defect; the table type makes the converse unrepresentable.
+    const undrawn = FIXTURE_CATEGORIES.filter((c) => !hasFixtureGlyph(c));
+    expect(undrawn).toEqual([]);
   });
 });

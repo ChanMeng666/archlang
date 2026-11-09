@@ -127,6 +127,84 @@ describe("sanitizeSvg leaves a compiled drawing as it was", () => {
   it.skip.each(NEEDS_WORLD)("%s: needs a file-system World to compile; not in this round trip", () => {});
 });
 
+/**
+ * The fast path's negatives, built the way a real regression would arrive: a form the compiler
+ * never writes, injected into a real compiled drawing (`examples/studio.arch`), not a toy string.
+ * Each must leave the fast path, and after `sanitizeSvg` the serialisation must hold none of it
+ * (a document the full path refuses outright, `undefined`, holds none of it either; none throws).
+ *
+ * Not covered, by design: CSS. `url(` in a `style` attribute or a `<style>` body is not
+ * inspected by the fast path (the full path drops `<style>` elements, not `style="..."` values);
+ * it is defence in depth behind the compiler's escaping, and a script cannot run from it.
+ */
+describe("the fast path refuses what the compiler never writes", () => {
+  const { svg } = compile(readFileSync("examples/studio.arch", "utf8"));
+  const open = svg.indexOf(">") + 1;
+  const inject = (frag: string) => svg.slice(0, open) + frag + svg.slice(open);
+  /** `refused`: malformed XML, so the full path returns undefined; otherwise a defined, cleaned result. */
+  const FORMS: { name: string; frag: string; gone: RegExp; refused?: true }[] = [
+    // The full path leaves only elements and text: a comment and a processing instruction are
+    // removed, a CDATA section becomes plain text (so it neither throws nor survives as CDATA).
+    { name: "comment", frag: "<!--x-->", gone: /<!--/ },
+    { name: "CDATA", frag: "<![CDATA[x]]>", gone: /CDATA/ },
+    { name: "processing instruction", frag: `<?xml-stylesheet href="x"?>`, gone: /xml-stylesheet|<\?/ },
+    { name: "DOCTYPE", frag: "<!DOCTYPE svg>", gone: /DOCTYPE/i, refused: true },
+    { name: "upper-case SCRIPT", frag: "<SCRIPT>x</SCRIPT>", gone: /script/i },
+    { name: "slash-separated handler", frag: "<rect/onload=x>", gone: /onload/i, refused: true },
+    { name: "SMIL set on href", frag: `<set attributeName="href" to="javascript:1"/>`, gone: /<set|javascript/ },
+    { name: "XHTML iframe", frag: `<h:iframe xmlns:h="http://www.w3.org/1999/xhtml"/>`, gone: /iframe|xhtml/ },
+  ];
+
+  it("the unmodified drawing is on the fast path (the injections below are the only difference)", () => {
+    expect(isPlainSvg(svg)).toBe(true);
+  });
+
+  it.each(FORMS)("$name fails isPlainSvg and does not survive sanitizeSvg", ({ frag, gone, refused }) => {
+    const evil = inject(frag);
+    expect(isPlainSvg(evil), evil.slice(0, open + frag.length)).toBe(false);
+    const out = clean(evil); // never throws
+    if (refused) return expect(out, "malformed XML is refused").toBeUndefined();
+    expect(out, "well-formed: cleaned, not refused").toBeDefined();
+    expect(serialize(out!)).not.toMatch(gone);
+  });
+
+  it("a CDATA section's text stays as a text node", () => {
+    const out = clean(inject("<![CDATA[kept <&>]]>"))!;
+    const texts = Array.from(out.childNodes).filter((n) => n.nodeType === 3);
+    expect(texts.some((n) => n.nodeValue === "kept <&>")).toBe(true);
+    expect(Array.from(out.childNodes).some((n) => n.nodeType === 4)).toBe(false);
+  });
+
+  it("a DOM refusal on import is undefined; any other error is not swallowed", () => {
+    const refusing = (err: unknown) => ({
+      parser: env.parser,
+      doc: new Proxy(env.doc, {
+        get: (d, k) =>
+          k === "importNode"
+            ? () => {
+                throw err;
+              }
+            : Reflect.get(d, k, d),
+      }) as Document,
+    });
+    const text = `<svg ${NS}><g/><!--x--></svg>`;
+    const dom = Object.assign(new Error("no"), { name: "NotSupportedError" });
+    expect(sanitizeSvg(text, refusing(dom))).toBeUndefined();
+    expect(() => sanitizeSvg(text, refusing(new TypeError("bug")))).toThrow("bug");
+  });
+
+  it("a malformed document is repaired leniently on the fast path and refused on the full path", () => {
+    // Same shape (the compiler's vocabulary only), so the fast path takes it and the HTML parser repairs it;
+    // the full path is a strict XML parse. The fast path trusts the compiler to be well-formed.
+    const broken = `<svg ${NS}><rect></svg>`;
+    expect(isPlainSvg(broken)).toBe(true);
+    expect(clean(broken)).toBeDefined();
+    const full = `<svg ${NS} ${H}><rect></svg>`;
+    expect(isPlainSvg(full)).toBe(false);
+    expect(clean(full)).toBeUndefined();
+  });
+});
+
 describe("the three copies are one file", () => {
   it("playground, web component and MCP viewer hold identical bytes", () => {
     const home = readFileSync("playground/src/svg-sanitize.ts", "utf8");
