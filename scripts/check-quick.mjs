@@ -20,8 +20,9 @@
  * (print the plan, run nothing). Exit code is the first failing step's.
  */
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
-import { dirname, join, posix, resolve } from "node:path";
+import { existsSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { CODE, nearestTests as nearestTestsOf, TEST_DIRS } from "./nearest-tests.mjs";
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")), "..");
 const argv = process.argv.slice(2);
@@ -63,10 +64,7 @@ if (changed.length === 0) {
   process.exit(0);
 }
 
-const TEST_DIRS = /^(test|playground\/test|packages\/[^/]+\/test|editors\/vscode\/test)\//;
-const isTest = (f) => TEST_DIRS.test(f) && f.endsWith(".test.ts");
 const isTestDirFile = (f) => TEST_DIRS.test(f);
-const CODE = /\.(ts|tsx|mts|cts|js|mjs|cjs)$/;
 const LINTABLE = /\.(ts|tsx|mts|cts|js|mjs|cjs|json|jsonc|css)$/;
 
 const WORKSPACES = [
@@ -81,129 +79,7 @@ const WORKSPACES = [
 const DEV_ROOTS = /^(test|eval|dataset|scripts|bench)\//;
 
 // ---- 2. the import graph, for the nearest tests ----------------------------------------------
-// Static and regex-based on purpose: it only RANKS tests for a local run, CI runs them all.
-const ALIAS = {
-  archlang: "src/index.ts",
-  "@chanmeng666/archlang": "src/index.ts",
-  "@chanmeng666/archlang/link": "src/cli/link.ts",
-};
-const SPEC = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)["']([^"']+)["']/g;
-
-function resolveSpec(fromFile, spec) {
-  if (ALIAS[spec]) return ALIAS[spec];
-  if (!spec.startsWith(".")) return null;
-  const base = posix.normalize(posix.join(posix.dirname(fromFile), spec));
-  const stem = base.replace(/\.(js|mjs|cjs|ts)$/, "");
-  for (const cand of [
-    base,
-    `${stem}.ts`,
-    `${stem}.tsx`,
-    `${stem}.mts`,
-    `${stem}.mjs`,
-    `${stem}.js`,
-    `${base}/index.ts`,
-  ]) {
-    if (existsSync(join(ROOT, cand))) return cand;
-  }
-  return null;
-}
-
-/** The folder of the nearest `package.json` above `file` ("" for the repository root). */
-function workspaceOf(file) {
-  let dir = posix.dirname(file);
-  while (dir !== "." && dir !== "") {
-    if (existsSync(join(ROOT, dir, "package.json"))) return dir;
-    dir = posix.dirname(dir);
-  }
-  return "";
-}
-
-/** A single- or double-quoted literal with no space in it: a path a test may open. */
-const QUOTED = /["']([^"'\s]+)["']/g;
-
-/**
- * Whether test `t` reads the changed file `f` whose name (`README.md`, `CHANGELOG.md`, …) is too
- * common to match on alone. A quoted literal ending in the name counts when it resolves to `f`: a
- * `./`/`../` path from the test's folder, any other path from the repository root, and a bare name
- * when `f` sits at the root of the test's own workspace (a `join(ROOT, "README.md")`).
- */
-function readsGeneric(t, text, f, name) {
-  // Plain quotes only: a name in backticks is a comment's, not a path the test opens.
-  for (const m of text.matchAll(QUOTED)) {
-    const p = m[1];
-    if (p !== name && !p.endsWith(`/${name}`)) continue;
-    if (p === name) {
-      const ws = workspaceOf(t);
-      if (f === (ws ? `${ws}/${name}` : name)) return true;
-    } else if (p.startsWith("./") || p.startsWith("../")) {
-      if (posix.normalize(posix.join(posix.dirname(t), p)) === f) return true;
-    } else if (posix.normalize(p.replace(/^\//, "")) === f) {
-      return true;
-    }
-  }
-  return false;
-}
-
-function nearestTests() {
-  const tracked = lines(git("ls-files", "--cached", "--others", "--exclude-standard"))
-    .map((f) => f.replace(/\\/g, "/"))
-    .filter((f) => CODE.test(f) && !f.includes("node_modules/") && !f.startsWith(".claude/"));
-  const importers = new Map(); // file -> files that import it
-  for (const f of tracked) {
-    let text;
-    try {
-      text = readFileSync(join(ROOT, f), "utf8");
-    } catch {
-      continue;
-    }
-    for (const m of text.matchAll(SPEC)) {
-      const target = resolveSpec(f, m[1]);
-      if (!target) continue;
-      if (!importers.has(target)) importers.set(target, new Set());
-      importers.get(target).add(f);
-    }
-  }
-  // A test that reads a changed non-code file (a doc, an example, AGENTS.md) names it rather than
-  // importing it: a test with a string literal ending in the file's name counts as one import away
-  // (a mention in a comment does not).
-  const testTexts = tracked.filter(isTest).map((t) => [t, readFileSync(join(ROOT, t), "utf8")]);
-  // A name too common to say which file a test reads (every package has a README.md) counts only
-  // when the test's literal resolves to the changed file itself: see `readsGeneric`.
-  const GENERIC = new Set(["package.json", "package-lock.json", "README.md", "CHANGELOG.md", "tsconfig.json"]);
-  for (const f of changed) {
-    if (CODE.test(f)) continue;
-    const name = posix.basename(f);
-    const generic = GENERIC.has(name);
-    for (const [t, text] of testTexts) {
-      if (generic ? readsGeneric(t, text, f, name) : text.includes(`${name}"`) || text.includes(`${name}'`)) {
-        if (!importers.has(f)) importers.set(f, new Set());
-        importers.get(f).add(t);
-      }
-    }
-  }
-  // Breadth-first from the changed files: a test's distance is how many imports away it sits.
-  const order = [];
-  const seen = new Set();
-  let frontier = [];
-  for (const f of changed) {
-    seen.add(f);
-    if (isTest(f)) order.push(f);
-    frontier.push(f);
-  }
-  while (frontier.length > 0) {
-    const next = [];
-    for (const f of frontier.sort()) {
-      for (const imp of [...(importers.get(f) ?? [])].sort()) {
-        if (seen.has(imp)) continue;
-        seen.add(imp);
-        if (isTest(imp)) order.push(imp);
-        next.push(imp);
-      }
-    }
-    frontier = next;
-  }
-  return order;
-}
+// `scripts/nearest-tests.mjs` (shared with the nightly mutant sampler, `scripts/mutants.mjs`).
 
 // ---- 3. the plan -----------------------------------------------------------------------------
 const steps = [];
@@ -238,7 +114,7 @@ if (!flag("--no-drift") && !changed.every(isTestDirFile)) {
 
 let cutNote = "";
 if (!flag("--no-tests")) {
-  const related = nearestTests();
+  const related = nearestTestsOf(ROOT, changed);
   const picked = related.slice(0, MAX);
   if (related.length > picked.length) {
     cutNote = `ran the ${picked.length} nearest of ${related.length} related tests; CI runs the rest`;
