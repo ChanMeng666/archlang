@@ -672,6 +672,22 @@ The module's own `component`s stay available to its body, so a file may call its
 private helpers even though the importer knows only the file's name. Parametric
 components keep the named form: `import "lib/fixtures.arch": wc, basin`.
 
+#### Where the CLI reads a module from
+
+The `archlang` CLI reads an imported module only from under its **import root** (the
+directory it was started in, or the one `archlang compile plan.arch --import-root ..` names;
+every command that compiles a file takes the flag) or from under the plan's own directory. The
+path is resolved with symbolic links and junctions followed, so `..`, an absolute path or a link
+cannot leave them, while a library beside the plan, or in a sibling directory under the root,
+still imports. Only a `.arch` file of at most
+1 MiB is read. Anything else is refused at the `import`, never read:
+[`E_IMPORT_OUTSIDE_ROOT`](error-codes.md#e_import_outside_root),
+[`E_IMPORT_NOT_ARCH`](error-codes.md#e_import_not_arch),
+[`E_IMPORT_TOO_LARGE`](error-codes.md#e_import_too_large). A module that does not parse is
+[`E_IMPORT_PARSE`](error-codes.md#e_import_parse), which gives the module's own error code and
+`<path>:<line>:<col>` but none of its text; `archlang lint` on the module shows the error in full.
+The playground, the MCP servers and `compile()` with a virtual World read no files at all.
+
 #### A module keeps its own `let`s
 
 A component imported by name
