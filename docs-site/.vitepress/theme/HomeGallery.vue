@@ -86,7 +86,9 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
             {{ EXAMPLE_FACTS[p.example].floor_area_m2 }} m²
           </p>
           <p v-if="PAGES.get(p.example)" class="home-gallery__page">
-            <a class="example-page" :href="PAGES.get(p.example)">Plan and source</a>
+            <a class="example-page" :href="PAGES.get(p.example)" :aria-label="`Plan and source: ${p.example}.arch`"
+              >Plan and source</a
+            >
           </p>
         </li>
       </ul>

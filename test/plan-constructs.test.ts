@@ -7,8 +7,8 @@
  * id there is VitePress's slug of the heading's text (markdown-it-anchor's text and code tokens, a
  * repeated slug suffixed `-1`, `-2` …). The slug function is not retyped here: it is read out of the
  * installed VitePress and evaluated, so a VitePress that slugs differently fails this test rather than
- * quietly breaking every link. The installed VitePress is a docs-site dependency; without it the test
- * skips visibly locally and fails under `CI`.
+ * quietly breaking every link. VitePress is a docs-site dependency hoisted to the root `node_modules`,
+ * so the check runs after any `npm ci`; it skips only on an un-installed checkout, and fails under `CI`.
  *
  * THE ROWS. Each must fire on at least one EXAMPLE_ROWS plan (a row that fires nowhere is a detector
  * nothing has checked), and a construct written only in a comment must not fire.
@@ -87,7 +87,7 @@ describe("every construct anchor is a heading of the language reference", () => 
   const slugify = vitepressSlugify();
   const required = !!process.env.CI;
 
-  it("VitePress's slug function is available (skips locally without it, fails under CI)", (ctx) => {
+  it("VitePress's slug function is available (skips only on an un-installed checkout; fails under CI)", (ctx) => {
     if (slugify === null) {
       if (required) throw new Error("node_modules/vitepress is missing under CI: the anchor check cannot run.");
       ctx.skip();

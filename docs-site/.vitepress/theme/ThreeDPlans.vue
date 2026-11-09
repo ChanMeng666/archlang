@@ -104,7 +104,7 @@ function press(e: MouseEvent, name: string): void {
         <a :href="a.link3d" target="_blank" rel="noopener">Open in the playground (3D)</a> ·
         <a :href="`/examples/${a.name}.arch`">Plan source</a>
         <template v-if="PAGES.get(a.name)">
-          · <a class="example-page" :href="PAGES.get(a.name)">Example page</a></template
+          · <a class="example-page" :href="PAGES.get(a.name)" :aria-label="`Example page: ${a.name}.arch`">Example page</a></template
         >
       </p>
     </li>

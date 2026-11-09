@@ -152,13 +152,26 @@ function later(a, b) {
 }
 
 /**
- * `name → ISO date` for every example page: its `.arch` file's last commit, floored by this
- * generator's own (a change here changes every page's bytes). An example git cannot date gets no
- * entry, so its page and sitemap row carry no date: a build-time date on unchanged content is
- * noise every crawler discounts.
+ * The files every example page's bytes depend on besides its own `.arch`: this generator, the
+ * construct table ("What this plan uses"), the row parser, and the row table itself (the other
+ * rows' labels and blurbs fill "More in <group>" and the pager). A change to any of them changes
+ * every page, so each page's date is floored by the newest of their commits.
+ */
+const PAGE_INPUTS = [
+  "playground/scripts/gen-static.mjs",
+  "playground/scripts/plan-constructs.mjs",
+  "playground/scripts/example-rows.mjs",
+  "playground/src/examples.ts",
+];
+
+/**
+ * `name → ISO date` for every example page: its `.arch` file's last commit, floored by the newest
+ * commit of `PAGE_INPUTS`. An example git cannot date gets no entry, so its page and sitemap row
+ * carry no date: a build-time date on unchanged content is noise every crawler discounts.
  */
 function exampleDates(rows) {
-  const floor = commitDate("playground/scripts/gen-static.mjs");
+  let floor = null;
+  for (const path of PAGE_INPUTS) floor = later(floor, commitDate(path));
   const dates = new Map();
   for (const r of rows) {
     const own = commitDate(`examples/${r.name}.arch`);
@@ -895,10 +908,10 @@ function pager(row, rows) {
   const { prev, next } = rowNeighbours(rows, row.name);
   const links = [
     prev
-      ? `<a class="pager__prev" rel="prev" href="/examples/${prev.name}.html">← Previous: ${escapeHtml(prev.label)}</a>`
+      ? `<a class="pager__prev" rel="prev" href="/examples/${prev.name}.html"><span aria-hidden="true">←</span> Previous: ${escapeHtml(prev.label)}</a>`
       : "",
     next
-      ? `<a class="pager__next" rel="next" href="/examples/${next.name}.html">Next: ${escapeHtml(next.label)} →</a>`
+      ? `<a class="pager__next" rel="next" href="/examples/${next.name}.html">Next: ${escapeHtml(next.label)} <span aria-hidden="true">→</span></a>`
       : "",
   ].filter(Boolean);
   return `      <nav class="pager" aria-label="Previous and next example plan">

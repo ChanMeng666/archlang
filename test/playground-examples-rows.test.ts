@@ -497,7 +497,7 @@ describe("the two hosts link each example plan both ways", () => {
       // The link is rendered only under the guard (the next tag after the guarded one's own), and
       // its href is the map's, never built from the name.
       const guard = vue.indexOf(`v-if="PAGES.get(${name})"`);
-      const link = vue.indexOf(`<a class="example-page" :href="PAGES.get(${name})">`);
+      const link = vue.indexOf(`<a class="example-page" :href="PAGES.get(${name})"`);
       expect(guard, `${file}: the link's v-if guard`).toBeGreaterThan(0);
       expect(link, `${file}: the link`).toBeGreaterThan(guard);
       expect(vue.slice(guard, link).includes("<"), `${file}: the guard wraps the link`).toBe(false);
@@ -537,6 +537,21 @@ describe("the two hosts link each example plan both ways", () => {
     expect(gen).toMatch(/execFileSync\("git", \["log", "-1", "--format=%cI", "--", path\]/);
     expect(gen, "a build-time date on unchanged content").not.toMatch(/new Date\(\)/);
     expect(gen).toMatch(/<lastmod>\$\{escapeHtml\(lastmod\)\}<\/lastmod>/);
+  });
+
+  it("each page's date is floored by every file its bytes depend on", () => {
+    // The generator, the construct table, the row parser and the row table (the other rows fill
+    // "More in <group>" and the pager): a change to any of them changes every page.
+    const at = gen.indexOf("\nconst PAGE_INPUTS = [");
+    expect(at, "gen-static.mjs declares `const PAGE_INPUTS = [ … ];`").toBeGreaterThan(0);
+    const block = gen.slice(at, gen.indexOf("];", at));
+    const inputs = [...block.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
+    expect([...inputs].sort()).toEqual(
+      [GEN_STATIC, "playground/scripts/plan-constructs.mjs", ROWS_MJS, EXAMPLES_TS].sort(),
+    );
+    for (const p of inputs) expect(statSync(p).isFile(), p).toBe(true);
+    expect(gen).toMatch(/for \(const path of PAGE_INPUTS\) floor = later\(floor, commitDate\(path\)\);/);
+    expect(gen).toMatch(/dates\.set\(r\.name, later\(own, floor\)\)/);
   });
 });
 
