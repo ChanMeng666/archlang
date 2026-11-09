@@ -262,7 +262,7 @@ Follow-up card (not this one): `resolveBody` steps 3b–8 as named functions, on
 Proof: `git diff -M --stat` moved counts equal; `tsc`; CI digests unchanged; `check:quick`'s nearest
 tests for `ir/*` listed in the PR body.
 
-### EH2.3 · `describe/`, `plan-json/`, `analyze/circulation` splits — `todo` · S–M each · medium · sonnet · A-F6 · depends EH1.6
+### EH2.3 · `describe/`, `plan-json/`, `analyze/circulation` splits — `in progress` · S–M each · medium · sonnet · A-F6 · depends EH1.6
 One PR per module, along the section dividers the audit lists: `describe/types.ts` + per-kind
 `summarize` blocks; `plan-json/{types,to-json,from-json,emit,ast-json,check-graph,schema}.ts`
 (`scripts/gen-plan-schema.ts:14` reads the moved constant); `analyze/{nav-grid,circulation,
@@ -277,7 +277,7 @@ included). Replace the ~22 inline TL→TR→BR→BL ring literals with `rectRing
 `naming.ts`'s `Bounds` to `RoomBounds`. One commit per replacement, each proven by digests. Glyph
 files follow `.claude/rules/glyphs.md`.
 
-### EH2.5 · one share codec, typed LSP seam — `in progress` · M · medium · sonnet · A-F9, W-F3, W-F9
+### EH2.5 · one share codec, typed LSP seam — `in review (#623)` · M · medium · sonnet · A-F9, W-F3, W-F9
 Expose the web decoder + `inflateCapped` + the id regex as a core subpath (`./share`); import it
 from `playground/src/share.ts`, `playground/worker/share-core.ts`, `mcp-worker`, `ArchLive.vue`.
 Encoders stay per environment. Reconcile `PAYLOAD_CAP_CHARS` (65,536 vs 88,406): rename if they
@@ -285,7 +285,7 @@ mean different things, else derive one from `SOURCE_CAP_BYTES`. `editors/vscode`
 derived from `typeof import("@chanmeng666/archlang")`, cast removed. Hash pins stay. Proof:
 `share-codec` tests green; every example's share link decodes to the same source.
 
-### EH2.6 · one Scene per lint — `in progress` · M · medium · opus · P-F3 · depends EH1.6
+### EH2.6 · one Scene per lint — `in review (#624)` · M · medium · opus · P-F3 · depends EH1.6
 A one-slot Scene memo keyed by `(ResolvedPlan identity, annotate, theme identity, runtime identity)`
 shared by `pipeline.ts` and `lint/rules/annotations.ts:161`; hand out a frozen or cloned Scene
 (`CompileResult.scene` is public). Check whether `accessible` belongs in the key. Test: mutate a
@@ -312,6 +312,22 @@ the new table; `npm run build` time before/after.
 `fixtureGlyph` dispatches through `FAMILY_OF.get(category)` into `Record<CanonicalFamily, DrawFn>`;
 a script proves every category maps to the same draw function before and after;
 `fixture-byte-identity` group 1 is the CI proof. Follow `.claude/rules/glyphs.md`.
+
+### EH2.5b · one bounded inflater — `todo` · S · medium · sonnet · from #623's review
+The `./share` subpath ships two bounded inflaters that behave differently: `decodePlanHashWeb` pipes one
+`Blob.stream()` with no 1 KiB write slicing and throws, while `inflateCapped` feeds slices and returns codes; the
+hosted MCP Worker uses the unsliced one, so the bomb protection exists only where the short-link Worker reads.
+Build `decodePlanHashWeb` on top of `inflateCapped` (same cap, same refusal codes), keep every existing link
+decoding identically (the 37-example identity test and the at-cap/over-cap cases from #623), and add a test that
+the browser-safe module imports no `node:` API (it lives under `src/cli/`, where Node APIs are allowed). A refusal
+that used to throw now returns a code: say so in the CHANGELOG. Proof: `share-codec` and the Worker tests green.
+
+### EH2.10 · lint rule costs after the shared Scene — `todo` · M · medium · opus · from #624's measurements
+With the Scene shared, lint's time sits in rules: BALANCED `leaf-across-doorway` 44.9 ms and `boundary-no-wall`
+29.1 ms of 163 ms; MUSEUM `path-too-narrow` 75.2 ms of 108 ms. Profile each (what is quadratic or repeated),
+cut the cost without moving a byte of `lint()` output (the corpus digest and the K1 table are the proof),
+and pin the work with counters in `test/tables/work-counts.json` (EH1.6 tranche 2's geometry counters: nav cells,
+split candidates, label relocations) so a regression turns red. Timing is informational only.
 
 ## Wave 3 · agent navigation
 

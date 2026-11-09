@@ -10,8 +10,9 @@ five sampled files 82.5 s → 5.7 s) · EH1.10 (#593) · EH1.11 (#597) · EH1.12
 CLI's world is rooted under a lockstep table) · EH2.1 (#614) · EH2.9 (#611) · policy #615 · records #582, #596, #600,
 #602, #609, #612, #616.
 
-**In flight:** EH0.8 (#620; review round landed, CI pending) · EH2.5 (share codec subpath + typed `CoreLsp`) · EH2.6
-(one Scene per lint). Also landed since the last note: EH1.9 (#619), EH2.2 (#618: `src/ir/` six modules, 137/137
+**In flight:** EH0.8 (#620; CodeQL fix landed, CI pending) · EH2.5 (#623; review round landing) · EH2.6 (#624; lint reuses
+the compile's Scene via `src/scene-memo.ts`; BALANCED warm lint 152 → 113 ms; review pending) · EH2.3 (three split PRs:
+describe, plan-json, circulation; running). New cards: EH2.5b (one bounded inflater), EH2.10 (lint rule costs). Also landed since the last note: EH1.9 (#619), EH2.2 (#618: `src/ir/` six modules, 137/137
 declarations byte-identical, `test/meter-headers.test.ts`).
 
 **Owner queue:** none (standing approval; releases, paid eval and the npmjs account stay owner-only). Tomorrow's
