@@ -1,3 +1,5 @@
+/** hostInfoForWalls — equivalence with the original two functions; WallGrid — equivalence with brute-force hostInfoForWalls (T3.7). */
+
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { hostInfoForWalls, hostSegmentForWalls, isOnSomeWall, WallGrid, type WallLike } from "../src/geometry.js";

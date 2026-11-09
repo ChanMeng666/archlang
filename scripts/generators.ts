@@ -50,6 +50,8 @@ export const GENERATORS: readonly { script: string; artifacts: readonly string[]
   { script: "gen:docs-headers", artifacts: ["docs-site/public/_headers"] },
   // The topmost-`todo` finder for the /loop driver, derived from the `### ` headings of docs/backlog.md.
   { script: "gen:backlog-index", artifacts: ["docs/backlog-index.md"] },
+  // Which tests import each src module and what each test file is for, derived from the imports and the test headers.
+  { script: "gen:test-index", artifacts: ["test/INDEX.md"] },
   { script: "gen:agent-manifests", artifacts: allOutputs() },
   // The `<arch-plan>` element the docs site serves, built by packages/web-component/scripts/build.ts.
   { script: "gen:arch-plan", artifacts: ["docs-site/public/arch-plan.js"] },

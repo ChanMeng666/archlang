@@ -1,3 +1,5 @@
+/** diagnosticsSummary; the diagnostics are what lint() returns; a wide summary and a failing later tier; the text report opens with the line; withoutSummary (the d… */
+
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -8,7 +10,7 @@ import { diagnosticsSummary, validateSummary } from "../src/cli/summary.js";
 import { ERROR_CODES } from "../src/error-catalog.js";
 import { diagnosticToJson, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
-import { validateJsonFiles, withoutSummary } from "./validate-json-run.js";
+import { validateJsonFiles, withoutSummary } from "./helpers/validate-json-run.js";
 import { runArch } from "./helpers/cli.js";
 
 /**

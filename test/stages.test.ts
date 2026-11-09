@@ -1,4 +1,7 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+/** the stage ladder and the per-rule table; a keep's stage is the stage of its measure; validate --json without --stage: one stage key per diagnostic, last; valida… */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -20,8 +23,8 @@ import { LINT_RULES } from "../src/lint.js";
 import type { KeepNode } from "../src/ast.js";
 import { cmdValidate } from "../src/cli/commands-analyze.js";
 import { nodeIo, parseArgs } from "../src/cli/io.js";
-import { DECIDED } from "./stage-decisions.js";
-import { runValidate, withoutStageKeys } from "./validate-json-run.js";
+import { DECIDED } from "./tables/stage-decisions.js";
+import { runValidate, withoutStageKeys } from "./helpers/validate-json-run.js";
 
 /**
  * Stages as a first-class idea (plan-soundness PS7.1): the ladder, every rule's stage, and
@@ -59,7 +62,7 @@ describe("the stage ladder and the per-rule table", () => {
     }
   });
 
-  it("each lint code has exactly one stage, the one decided for it (a new code adds its row to test/stage-decisions.ts)", () => {
+  it("each lint code has exactly one stage, the one decided for it (a new code adds its row to test/tables/stage-decisions.ts)", () => {
     expect(Object.keys(LINT_CODE_STAGES).sort()).toEqual(Object.keys(LINT_CODE_LAYERS).sort());
     const decided = new Map<string, AuthoringStage>();
     for (const [s, codes] of Object.entries(DECIDED) as Array<[AuthoringStage, string[]]>)
@@ -185,8 +188,7 @@ describe("a keep's stage is the stage of its measure", () => {
 });
 
 /** The examples, sorted. */
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
+const EXAMPLES = exampleNames()
   .sort()
   .map((f) => `examples/${f}`);
 

@@ -4,7 +4,7 @@
  * reader of the footprint, the drawing, and `place`. What lint reads of the form only in part is
  * pinned at the end, so a change there is a decision and not a surprise.
  *
- * The expected values are derived from `test/block-stair-plans.ts`'s numbers, by hand or by a
+ * The expected values are derived from `test/tables/block-stair-plans.ts`'s numbers, by hand or by a
  * lattice of its own: nothing here reads the resolver's own idea of a flight to check itself.
  */
 
@@ -63,7 +63,7 @@ import {
   stairBlock,
   THREE_FLIGHTS,
   U_STAIR,
-} from "./block-stair-plans.js";
+} from "./tables/block-stair-plans.js";
 
 const OPPOSITE: Record<Side, Side> = { top: "bottom", bottom: "top", left: "right", right: "left" };
 
@@ -71,6 +71,7 @@ const stairOf = (src: string): RStair => {
   const { ir } = resolvePlan(src);
   return verticalsOf(ir!).find((v) => v.kind === "stair") as RStair;
 };
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), keeps only errors.
 const codes = (src: string): string[] =>
   compile(src, { noCache: true })
     .diagnostics.filter((d: Diagnostic) => d.severity === "error")

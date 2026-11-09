@@ -3,7 +3,7 @@
  *
  *     npx tsx test/cli-envelopes-gen.ts "<why, and on which commit>" [--allow-removal]
  *
- * It runs the inputs of `./cli-contract-cases.ts` (the same ones `cli-contract.test.ts` runs) and
+ * It runs the inputs of `test/tables/cli-contract-cases.ts` (the same ones `cli-contract.test.ts` runs) and
  * records the top-level `--json` key set of each, with the reason in `_reason`. The table is
  * additive-only: a key that disappeared from an envelope is a breaking change for every agent that
  * reads it, so the generator refuses to write it unless `--allow-removal` says the removal is meant
@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { type CliIo, RESIDENT } from "../src/cli/io.js";
 import { runCli } from "../src/cli/run.js";
 import { buildManifest } from "../src/index.js";
-import { type Run, SCENARIOS, observe, setup } from "./cli-contract-cases.js";
+import { type Run, SCENARIOS, observe, setup } from "./tables/cli-contract-cases.js";
 
 const TABLE = "test/tables/cli-envelopes.json";
 const why = process.argv[2];

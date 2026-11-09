@@ -6,7 +6,7 @@
  * and `lint()`, which do not carry a door's swing, hinge or position, a window's position,
  * or the roof at all (drawing-only). This suite compares what each storey DRAWS, with the
  * single-storey tier's own machinery (`test/equivariance-scene.test.ts`): every storey
- * of P₀ and of gP built by the same byte surgery (`storeyWrapper`, `test/d4-oracle.ts`),
+ * of P₀ and of gP built by the same byte surgery (`storeyWrapper`, `test/helpers/d4-oracle.ts`),
  * drawn on the same fixed sheet (`withFixedSheetStoreys` — `FIXED_SHEET`), and compared
  * storey by storey through `compareScenes` — the same `sceneGroups` split (the label pass,
  * hatches, texts but a hand-written dim's number, and the `dims auto` chains left out, for
@@ -19,7 +19,7 @@
  *    bytes, the instance's zone on a schedule row).
  *  - T3 — `runBuildingScenes`.
  *
- * Every violation is held to `test/equivariance-known.ts` in both directions, by scope
+ * Every violation is held to `test/tables/equivariance-known.ts` in both directions, by scope
  * (`hillside-villa.arch@L1`), and audited by its class predicate. The buildings are the
  * facts suites' sixteen: the shipped `level` examples and every shaft model, 1×, scaled
  * and with something at the stair head — drawing a storey is cheap, so one file holds them.
@@ -45,7 +45,7 @@ import {
   toObserved,
   type Violation,
   withFixedSheetStoreys,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 import {
   assertBuildingPinned,
   HEAD_MODEL_CASES,
@@ -55,8 +55,8 @@ import {
   SHIPPED_BUILDINGS,
   STOREY_BUILDING_NAMES,
   type StoreyCase,
-} from "./equivariance-storeys-cases.js";
-import { KNOWN } from "./equivariance-known.js";
+} from "./tables/equivariance-storeys-cases.js";
+import { KNOWN } from "./tables/equivariance-known.js";
 
 /** Generous: a building draws every storey nine times. */
 const SLOW = 120_000;

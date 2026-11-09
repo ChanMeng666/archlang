@@ -35,9 +35,9 @@ import {
 import { LINT_CODE_STAGES } from "../src/lint.js";
 import { STAIR_SAFETY_CODES, SWING_SHORTFALL_CODES } from "../src/next.js";
 import { AUTHORS_HEIGHT, BASELINE } from "./byte-identity-baseline.js";
-import { type CompilerApi, allStoreysDigestWith } from "./byte-identity-digest.js";
-import { heightFreeSource } from "./height-free-source.js";
-import { DEFECT_SOURCES, EXAMPLE_SOURCES, TASTE_WORLD, headerOf } from "./taste-sources.js";
+import { type CompilerApi, allStoreysDigestWith } from "./helpers/byte-identity-digest.js";
+import { heightFreeSource } from "./helpers/height-free-source.js";
+import { DEFECT_SOURCES, EXAMPLE_SOURCES, TASTE_WORLD, headerOf } from "./helpers/taste-sources.js";
 
 const W = (code: string, start = 0, extra: Partial<Diagnostic> = {}): Diagnostic => ({
   severity: "warning",

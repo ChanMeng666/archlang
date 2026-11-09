@@ -46,7 +46,7 @@ import { CANONICAL_FIXTURES, fixtureGlyph } from "../src/elements/fixtures-glyph
 import { defaultFootprint } from "../src/fixtures-catalog.js";
 import { rotateNode } from "../src/elements/furniture.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
-import { arcEdgeSweep, arcEdgesOf } from "./glyph-extent.js";
+import { arcEdgeSweep, arcEdgesOf } from "./helpers/glyph-extent.js";
 
 const SRC = `plan "G" { units mm room id=r at (0,0) size 4000x3000 label "R" }`;
 const sceneOf = (): Scene => toScene(resolve(parse(SRC).plan!).ir);

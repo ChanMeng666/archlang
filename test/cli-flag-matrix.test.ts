@@ -1,3 +1,5 @@
+/** the flag matrix — every (command, flag) has an exercising test; import; batch; compile; md; preview; new; spec; fix and repair. */
+
 import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

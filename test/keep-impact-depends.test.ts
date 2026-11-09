@@ -20,7 +20,7 @@ import { cmdCompile } from "../src/cli/commands-render.js";
 import { type CliIo, nodeIo, parseArgs } from "../src/cli/io.js";
 import { applyLetOverride, describe, impact, planToJson } from "../src/index.js";
 import type { ImpactReport, KeepFact, KeepImpact } from "../src/index.js";
-import { KEEP_CORPUS_DIR, keepCorpus } from "./keep-harness.js";
+import { KEEP_CORPUS_DIR, keepCorpus } from "./helpers/keep-harness.js";
 
 const read = (p: string): string => readFileSync(p, "utf8");
 const plan = (body: string, grid = 50): string => `plan "t" {\n  units mm\n  grid ${grid}\n${body}\n}\n`;

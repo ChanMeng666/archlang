@@ -17,7 +17,7 @@
 
 **新语言形式的通用清单：** `research/2026-11-02-repo-feasibility.md` §F.4，手改源、测试、生成物都列全了。特别注意 `src/lsp.ts:38-60` 是手写目录，没有漂移门禁。
 
-**字节恒等载荷：** SVG + `describe()` + `lint()` + `compile().diagnostics`（解析器可达时必须含后者），基线用 `test/byte-identity-digest.ts` 的 digest 本体。
+**字节恒等载荷：** SVG + `describe()` + `lint()` + `compile().diagnostics`（解析器可达时必须含后者），基线用 `test/helpers/byte-identity-digest.ts` 的 digest 本体。
 
 **消息规则：** lint 的 `message` 不含 id，用 `src/naming.ts`；id 只在 `hint`。
 

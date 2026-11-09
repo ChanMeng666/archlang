@@ -1,5 +1,8 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+/** the public type surface is closed; resolvePlan from the package root keeps linked content. */
+
+import { walkFiles as walk } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
+import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
@@ -318,13 +321,6 @@ describe("the public type surface is closed", () => {
  *  `import` resolves it. */
 function exampleFiles(): Record<string, string> {
   const root = resolve(REPO, "examples");
-  const walk = (dir: string): string[] =>
-    readdirSync(dir)
-      .sort()
-      .flatMap((f) => {
-        const p = join(dir, f);
-        return statSync(p).isDirectory() ? walk(p) : p.endsWith(".arch") ? [p] : [];
-      });
   return Object.fromEntries(walk(root).map((p) => [relative(root, p).replace(/\\/g, "/"), readFileSync(p, "utf8")]));
 }
 

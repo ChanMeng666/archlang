@@ -14,7 +14,15 @@ import { compile, describe as describePlan, type Diagnostic, format, lint } from
 import { resolvePlan } from "../src/analyze.js";
 import type { RStair } from "../src/ir.js";
 import { verticalsOf } from "../src/vertical.js";
-import { CLEAR_L, hallBody, hallPlan, L_STAIR, U_STAIR, upperBody, type BlockStair } from "./block-stair-plans.js";
+import {
+  CLEAR_L,
+  hallBody,
+  hallPlan,
+  L_STAIR,
+  U_STAIR,
+  upperBody,
+  type BlockStair,
+} from "./tables/block-stair-plans.js";
 
 /** The block of `s` with `winders` on its first landing. */
 function winderBlock(s: BlockStair, winders: string, id = "s"): string {

@@ -36,7 +36,7 @@ import {
   requiresWall,
 } from "../src/fixtures-catalog.js";
 import { DEFAULT_THEME, mergeTheme, THEMES } from "../src/theme.js";
-import { arcEdgeSweep, arcEdgesOf, pathExtentPoints } from "./glyph-extent.js";
+import { arcEdgeSweep, arcEdgesOf, pathExtentPoints } from "./helpers/glyph-extent.js";
 
 /** Real pen sizes, taken from a real scene. */
 const SIZES = compile(`plan "G" { units mm room id=r at (0,0) size 6000x5000 label "R" }`, { noCache: true }).scene!

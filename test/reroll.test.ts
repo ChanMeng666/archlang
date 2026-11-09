@@ -1,3 +1,5 @@
+/** reroll — the flat parametric row; reroll — nested statement lists; reroll — loop-variable collision; reroll — world passthrough (a plan with imports); reroll —… */
+
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

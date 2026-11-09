@@ -1,3 +1,5 @@
+/** S-FZ-2 — hostile import specs against a rooted Node World. */
+
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

@@ -1,3 +1,5 @@
+/** huge finite coordinates never throw; the same shapes at the edge of the modelling range are drawn and measured; huge on one axis, thin on the other (nav and occ… */
+
 import { describe as suite, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { compile, describe, lint } from "../src/index.js";

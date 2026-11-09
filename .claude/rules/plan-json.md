@@ -24,7 +24,7 @@ the real parser), `planToJson` (a resolved plan out, with output-only facts) and
   needs a `BREAKING: plan-schema: item` line under `[Unreleased]` and a major.
 - **The round-trip law.** For a non-scripting, grouped plan, `planFromJson(planToJson(src))` compiles to
   byte-identical SVG (`test/plan-json.test.ts`; the CLI half `test/cli-plan-json-roundtrip.test.ts`). A
-  shipped example that cannot round-trip is named in `CANNOT_ROUND_TRIP` (`test/plan-json-gaps.ts`)
+  shipped example that cannot round-trip is named in `CANNOT_ROUND_TRIP` (`test/tables/plan-json-gaps.ts`)
   with the language surface it loses and a `proof` pattern that must still match the file. What the
   format has no field for is reported, never silently lost: `dropped` on `planToJson` (`src/plan-json/to-json.ts`; the words are in
   `DROPPED_WORDS`, `src/cli/serialize.ts`), pinned by `test/plan-json-dropped.test.ts`.

@@ -1,3 +1,5 @@
+/** importing a src module has no side effect beyond the known ones. */
+
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

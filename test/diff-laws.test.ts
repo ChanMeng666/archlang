@@ -37,7 +37,7 @@ import {
   type WallChange,
 } from "../src/diff.js";
 import { describe as describePlan } from "../src/describe.js";
-import { planSpec, renderPlan, type PlanSpec } from "./arbitrary-plan.js";
+import { planSpec, renderPlan, type PlanSpec } from "./helpers/arbitrary-plan.js";
 import { runs } from "./setup/fast-check.js";
 
 const fx = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf8");

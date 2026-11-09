@@ -10,7 +10,7 @@
  * Each digest is {@link allStoreysDigestWithDiagnostics} (every storey's SVG, `describe()`,
  * `lint()` and `compile().diagnostics`), **measured against `src/` at `5593484d`** (`main`
  * before the clause), that tree extracted by `git archive`, handed to this suite's own digest body
- * (`./byte-identity-digest.ts`) and to these very rows (`./block-stair-winders-law.ts`), never a
+ * (`test/helpers/byte-identity-digest.ts`) and to these very rows (`test/helpers/block-stair-winders-law.ts`), never a
  * rebuilt working tree. The rows: `examples/turning-stair.arch`; every `BLOCK_STAIRS` fixture,
  * `dir up` and `dir down`, without and with `height 2750`; and the quarter-turn drawn in a
  * `component` and placed once `mirror x` and once `rotate 90`. None writes `winders`; none moved.
@@ -27,8 +27,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./byte-identity-digest.js";
-import { winderLawRows } from "./block-stair-winders-law.js";
+import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
+import { winderLawRows } from "./helpers/block-stair-winders-law.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };

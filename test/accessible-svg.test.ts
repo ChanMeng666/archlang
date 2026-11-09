@@ -1,3 +1,5 @@
+/** Cases: default output carries no accessibility metadata (byte-identical); accessible:true emits <title>, <desc>, role and aria-labelledby; the <desc> text is ex… */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

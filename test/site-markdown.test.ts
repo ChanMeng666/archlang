@@ -6,7 +6,8 @@
  * real compiler and holds the contract: no throw, a real body, no markup left at a line start,
  * and the two pages whose copies once came out hollow keep their content.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe } from "../src/index.js";
 
@@ -40,9 +41,7 @@ const excluded = new Set(
     (m) => m[1]!,
   ),
 );
-const EXAMPLE_COUNT = readdirSync("examples").filter(
-  (f) => f.endsWith(".arch") && statSync(`examples/${f}`).isFile() && !excluded.has(f),
-).length;
+const EXAMPLE_COUNT = exampleNames().filter((f) => !excluded.has(f)).length;
 
 /**
  * The home hero sync-docs would inject. The real one is an agent-gallery pair, which no test may

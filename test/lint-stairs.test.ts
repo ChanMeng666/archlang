@@ -2,7 +2,7 @@
  * Plan-soundness PS2.11e (the stair bullets), PS2.34 and PS2.15: the six stair-safety codes. What
  * each fires on, what it must not fire on, its boundaries, its words (no id in a message, the ids in
  * the hints) and that a `place` turn moves none of them (each is classified `invariant` in
- * `test/d4-oracle.ts`).
+ * `test/helpers/d4-oracle.ts`).
  */
 
 import { describe as suite, expect, it } from "vitest";

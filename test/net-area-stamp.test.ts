@@ -3,8 +3,8 @@
  *
  * The byte law: a plan that does not write the word renders, describes, lints and reports exactly as
  * it did before it existed. The pins below were measured at `90cee401` by running
- * `allStoreysDigestWithDiagnostics` (the SAME body, `test/byte-identity-digest.ts`) against a
- * `git archive` of that commit's `src/`, over the fixtures of `net-area-stamp-fixtures.ts`.
+ * `allStoreysDigestWithDiagnostics` (the SAME body, `test/helpers/byte-identity-digest.ts`) against a
+ * `git archive` of that commit's `src/`, over the fixtures of `test/helpers/net-area-stamp-fixtures.ts`.
  * The shipped examples are held by their own laws; the sweep that crossed them with the word
  * is in the design note.
  */
@@ -16,8 +16,17 @@ import { fmtTenthsOf2dp } from "../src/num-format.js";
 import type { RRoom } from "../src/ir.js";
 import { renderSizes } from "../src/sheet.js";
 import { DEFAULT_THEME } from "../src/theme.js";
-import { allStoreysDigestWithDiagnostics } from "./byte-identity-digest.js";
-import { MACRO, NET, NO_SCHEDULE, NO_WALLS, ROUND, SHAPES_NET, SHAPES_TWIN, TWIN } from "./net-area-stamp-fixtures.js";
+import { allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
+import {
+  MACRO,
+  NET,
+  NO_SCHEDULE,
+  NO_WALLS,
+  ROUND,
+  SHAPES_NET,
+  SHAPES_TWIN,
+  TWIN,
+} from "./helpers/net-area-stamp-fixtures.js";
 
 const api = { compile, describe: describePlan, lint };
 

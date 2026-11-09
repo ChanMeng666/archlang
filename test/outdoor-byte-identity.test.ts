@@ -79,11 +79,11 @@
  * (substitution check reproduces the old digests).
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./helpers/digest.js";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, planToJson } from "../src/index.js";
-import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js";
+import { type CompilerApi, semanticDigestWith } from "./helpers/byte-identity-digest.js";
 
 /** SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured at `5298b99`.*
  *
@@ -243,7 +243,7 @@ const API: CompilerApi = { compile, describe: describePlan, lint };
 function digest(src: string): string {
   const { svg } = compile(src, { noCache: true });
   const payload = [svg, JSON.stringify(describePlan(src)), JSON.stringify(lint(src))].join("\n \n");
-  return createHash("sha256").update(payload).digest("hex");
+  return sha256(payload);
 }
 
 describe("outdoor/fence/boundary byte-identity — a plan that uses none of them is unchanged", () => {

@@ -13,8 +13,17 @@ import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint } from "../src/index.js";
 import type { RStair } from "../src/ir.js";
 import { entryEdges, flightsOf, piecesOf, travelVector, verticalsOf } from "../src/vertical.js";
-import { canonPrim, D4_ELEMENTS, frameFor, lin, observe, sceneOf, transformPrim, witnessPair } from "./d4-oracle.js";
-import { BLOCK_STAIRS, type BlockStair, hallBody, L_STAIR, stairBlock, U_STAIR } from "./block-stair-plans.js";
+import {
+  canonPrim,
+  D4_ELEMENTS,
+  frameFor,
+  lin,
+  observe,
+  sceneOf,
+  transformPrim,
+  witnessPair,
+} from "./helpers/d4-oracle.js";
+import { BLOCK_STAIRS, type BlockStair, hallBody, L_STAIR, stairBlock, U_STAIR } from "./tables/block-stair-plans.js";
 
 type Edge = "top" | "right" | "bottom" | "left";
 const NORMAL: Record<Edge, { x: number; y: number }> = {

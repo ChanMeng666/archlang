@@ -1,3 +1,5 @@
+/** no message over the corpus quotes an internal id (PS2.22, PS2.29); makeNaming — what an unlabelled room is called (src/naming.ts); the storey is named only on a… */
+
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -6,7 +8,7 @@ import { resolvePlan } from "../src/analyze.js";
 import type { ResolvedPlan } from "../src/ir.js";
 import { makeNaming, type NameableRoom, nameableOf } from "../src/naming.js";
 import { DOOR_HINGE_NEAR, DOOR_KINDS, DOOR_SWING_BUILDING, KEYWORDS } from "../src/grammar/tokens.js";
-import { EXAMPLE_FILES, EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./d4-oracle.js";
+import { EXAMPLE_FILES, EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./helpers/d4-oracle.js";
 
 /**
  * PS2.22 + PS2.29 — a message never quotes an internal id (iron law, `docs/agents/iron-laws.md`).

@@ -1,3 +1,5 @@
+/** .claude/hooks/local-gate.mjs; .claude/hooks/local-gate.mjs RULES. */
+
 import { execFileSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync, unlinkSync } from "node:fs";
 import { tmpdir } from "node:os";

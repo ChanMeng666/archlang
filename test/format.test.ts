@@ -6,7 +6,8 @@
  * and it must wrap long point lists. It must never corrupt broken input.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { exampleNames, libNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
 import { parse } from "../src/parser.js";
@@ -14,10 +15,8 @@ import { planFromJson, planToJson } from "../src/plan-json.js";
 import type { Theme } from "../src/theme.js";
 import { DEFAULT_THEME, resolveStyleKey, STYLE_KEYS, STYLE_KINDS, styleKeyFor } from "../src/theme.js";
 
-const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
-const LIBS = readdirSync("examples/lib")
-  .filter((f) => f.endsWith(".arch"))
-  .map((f) => `lib/${f}`);
+const EXAMPLES = exampleNames();
+const LIBS = libNames().map((f) => `lib/${f}`);
 const ALL = [...EXAMPLES, ...LIBS.map((f) => f.replace("lib/", ""))];
 const readExample = (name: string): string =>
   readFileSync(EXAMPLES.includes(name) ? `examples/${name}` : `examples/lib/${name}`, "utf8");

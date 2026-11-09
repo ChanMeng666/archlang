@@ -52,6 +52,7 @@ import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.
 import { openingCount, type OpeningRow } from "./opening-schedule.js";
 import { PLAIN_SHEET_TEXT, type SheetText } from "./sheet-text.js";
 import { inkWidth, textWidth } from "./text-metrics.js";
+import { rectRing } from "./geometry/polygon.js";
 
 /** Round to 2 decimals, deterministically — the same rounding `describe()` applies. */
 const r2 = (n: number): number => Math.round(n * 100) / 100;
@@ -957,12 +958,7 @@ function drawer(theme: Theme, sizes: RenderSizes, out: SceneNode[]) {
         layer: "annotations",
         prim: {
           t: "polygon",
-          pts: [
-            { x: x0, y: y0 },
-            { x: x0 + w, y: y0 },
-            { x: x0 + w, y: y0 + h },
-            { x: x0, y: y0 + h },
-          ],
+          pts: rectRing({ x: x0, y: y0, w: w, h: h }),
         },
         paint: { fill: "none", stroke: ink, width: sizes.thin },
         lineWeight: "thin",
@@ -1195,12 +1191,7 @@ function legendNodes(t: LegendTableBox, theme: Theme, sizes: RenderSizes, out: S
     const top = y0 + rowH * (1 + i);
     if (i > 0) d.rule({ x: x0, y: top }, { x: x0 + w, y: top }, true);
     const box = { x: x0 + pad, y: top + inset, w: swatchW - pad * 2, h: rowH - inset * 2 };
-    const loop: Point[] = [
-      { x: box.x, y: box.y },
-      { x: box.x + box.w, y: box.y },
-      { x: box.x + box.w, y: box.y + box.h },
-      { x: box.x, y: box.y + box.h },
-    ];
+    const loop: Point[] = rectRing(box);
     if (e.kind === "material" && e.hatch) {
       // Fill with the very pattern the walls use (the id is already in `scene.hatches`,
       // so the SVG `<defs>` carries it and the DXF gets a real HATCH entity).

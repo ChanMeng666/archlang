@@ -1,3 +1,6 @@
+/** innerFaceOfRoomEdge — the geometry `flush` measures from; flush arithmetic — the four edge anchors; flush arithmetic — corners apply the rule per edge; flush an… */
+
+import { lintCodes as codes } from "./helpers/diag.js";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, format, lint } from "../src/index.js";
@@ -39,7 +42,6 @@ const furnOf = (src: string): RFurniture =>
 const atOf = (furn: string, opts?: { south?: boolean }) => furnOf(walled(furn, opts)).at;
 
 const diags = (src: string) => compile(src, { noCache: true }).diagnostics;
-const codes = (src: string) => lint(src).map((d) => d.code ?? "");
 
 describe("innerFaceOfRoomEdge — the geometry `flush` measures from", () => {
   const walls = resolve(parse(walled("")).plan!).ir.walls;

@@ -20,6 +20,7 @@ import { doorLeaves, segmentsOfWall, type DoorSwing, type WallSegment } from "./
 import type { RDoor, RFurniture, RWall } from "./ir.js";
 import { solidFurniture } from "./fixtures-catalog.js";
 import type { BBox } from "./geometry/rect.js";
+import { rectRing } from "./geometry/polygon.js";
 import type { RectEdge } from "./fixture-orientation.js";
 
 /** The four quarter-turns, the only output `facing` has (D4's rotations). */
@@ -202,15 +203,8 @@ export function polygonStandoff(s: Strip, poly: Point[]): number | null {
   return Math.max(0, m);
 }
 
-/** The corners of a rectangle as a polygon. */
-export function rectPoly(r: BBox): Point[] {
-  return [
-    { x: r.x, y: r.y },
-    { x: r.x + r.w, y: r.y },
-    { x: r.x + r.w, y: r.y + r.h },
-    { x: r.x, y: r.y + r.h },
-  ];
-}
+/** @deprecated The same ring as `rectRing` (`src/geometry/polygon.ts`). */
+export const rectPoly: (r: BBox) => Point[] = rectRing;
 
 /** A straight wall segment's body (centreline +/- half thickness), or `null` for an arc. */
 export function wallBody(seg: WallSegment): Point[] | null {

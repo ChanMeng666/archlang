@@ -6,7 +6,7 @@
  * so a `level` plan had no oracle but its circulation's (`test/shaft-equivariance.test.ts`).
  * Here every storey's body becomes an inline component and every storey places it with the
  * SAME frame, `place storey_N() as g at t rotate r mirror m` — one building turned or
- * flipped, the shafts keeping their ids (`g.<id>`) on every storey. See `test/d4-oracle.ts`,
+ * flipped, the shafts keeping their ids (`g.<id>`) on every storey. See `test/helpers/d4-oracle.ts`,
  * "Multi-storey buildings", for the construction (byte-preserving surgery on the source) and
  * why it is not the corpus's.
  *
@@ -18,7 +18,7 @@
  *    `compareObservations`; plus the building's facts. All eight elements of D4 and the
  *    translation, and, for a plan with a `site`, the three rotations with north turned too.
  *
- * Every violation is held to `test/equivariance-known.ts` in both directions, by scope
+ * Every violation is held to `test/tables/equivariance-known.ts` in both directions, by scope
  * (`townhouse.arch@L2`, `townhouse.arch@building`), and audited by its class predicate.
  * The scaled shaft models are `test/equivariance-storeys-{scaled,head}.test.ts` (split for wall time);
  * each storey's DRAWING (T0 and T3) is `test/equivariance-storeys-scene.test.ts`.
@@ -43,7 +43,7 @@ import {
   storeyWrapper,
   t0BuildingViolations,
   toObserved,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 import {
   assertBuildingPinned,
   FIXTURE_BUILDINGS,
@@ -52,9 +52,9 @@ import {
   SHIPPED_BUILDINGS,
   type StoreyCase,
   t0Runs,
-} from "./equivariance-storeys-cases.js";
-import { KNOWN } from "./equivariance-known.js";
-import { placed } from "./shaft-equivariance-models.js";
+} from "./tables/equivariance-storeys-cases.js";
+import { KNOWN } from "./tables/equivariance-known.js";
+import { placed } from "./helpers/shaft-equivariance-models.js";
 
 /** Generous: a building runs a dozen full describe() + lint() passes over every storey. */
 const SLOW = 120_000;

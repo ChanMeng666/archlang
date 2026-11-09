@@ -2,13 +2,13 @@
  * Plan-soundness PS2.67 (`W_BED_UNDERSIZED`): a `bed`, `double_bed` or `bunk_bed` drawn under the
  * smallest standard UK bed (1900 × 750 mm, Which? 2026, graded [M]); never a `crib` or a `cot`. What
  * it fires on, its boundaries, its words, the ruleset override, and that no shipped example warns
- * under the default profile (the rule is classified `invariant` in `test/d4-oracle.ts`).
+ * under the default profile (the rule is classified `invariant` in `test/helpers/d4-oracle.ts`).
  */
 
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { type Diagnostic, DEFAULT_RULESET, lint, type LintRuleset } from "../src/index.js";
-import { EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./d4-oracle.js";
+import { EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./helpers/d4-oracle.js";
 
 const B = "W_BED_UNDERSIZED";
 const bedroom = (piece: string): string => `plan "P" {

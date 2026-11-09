@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** DXF export; AIA CAD layers; DXF units and wall layers; DXF text placement and encoding. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -416,9 +419,7 @@ function plain(scene: AnyScene): AnyScene {
   return Object.defineProperty(rest, "parts", { value: scene.parts });
 }
 
-const EXAMPLES = readdirSync(join(__dirname, "..", "examples"))
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLES = exampleNames().sort();
 const exampleSrc = (f: string): string => readFileSync(join(__dirname, "..", "examples", f), "utf8");
 
 /**

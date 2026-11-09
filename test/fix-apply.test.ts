@@ -1,3 +1,5 @@
+/** Data (piece table); applyFixes. */
+
 import { describe, expect, it } from "vitest";
 import { applyFixes } from "../src/index.js";
 import { Data } from "../src/fix-apply.js";

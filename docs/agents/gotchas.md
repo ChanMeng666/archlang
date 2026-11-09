@@ -47,7 +47,7 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **Room-label classification goes through `src/vocabulary.ts`**; the corpus classification is pinned
   by `test/vocabulary-equivalence.test.ts`. A red pin means fix the vocabulary, never regenerate it.
 - **A new handed/oriented fact crosses `place` only through the element's own `transform`**; the
-  equivariance oracle (`test/d4-oracle.ts`) will pin it `NEW` otherwise, not fail silently.
+  equivariance oracle (`test/helpers/d4-oracle.ts`) will pin it `NEW` otherwise, not fail silently.
 - **A lint fix inside a turned or mirrored `place` must pull its value back through the instance
   frame before writing it** (`LintContext.frameOf`, `src/lint.ts`), or the machine-applicable edit
   is correct in plan coordinates and wrong once `arch fix` writes it back into the component body.
@@ -81,7 +81,7 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **A PR whose branch conflicts with `main` gets no CI run** (GitHub cannot build the merge ref).
   A PR sitting with no checks is in conflict: resolve first, then CI starts.
 - **Select hashing tests by transitive import closure, not by a grep of `*.test.ts`.** `test/block-stair-byte-identity.test.ts`
-  hashes through `test/block-stair-law.ts`, so a word search misses it, and only that law hashes the accessibility profile:
+  hashes through `test/helpers/block-stair-law.ts`, so a word search misses it, and only that law hashes the accessibility profile:
   a hint change went red in CI alone (#432). `packages/archlang-3d` and `packages/mcp-worker` hold hashing tests too.
 - **Two PRs that both move digest tables can each be green and red together**: required checks are not
   up-to-date-with-`main`. Merge the first, merge `main` into the second, re-take, then pin it.
@@ -94,7 +94,7 @@ coordinator's own notes (merging, registries, browser and social automation, the
   `hillside-villa` budget), and line endings or path handling.
 - **A new lint rule is registered beyond its module**: `.claude/commands/new-lint-rule.md` is the
   checklist and `test/lint-rule-order.test.ts` fails with every derivable place named (the full
-  order list, `test/d4-oracle.ts` `RULE_CLASS`, the catalogue, `test/stage-decisions.ts`); then the
+  order list, `test/helpers/d4-oracle.ts` `RULE_CLASS`, the catalogue, `test/tables/stage-decisions.ts`); then the
   per-stage counts in `test/stages.test.ts`, `test/defect-corpus/README.md`, the totals in
   `test/rooms-tiling-probe.test.ts` (#308), and `test/walls-from-rooms.test.ts`, which walks the
   `space-not-enclosed` corpus (a case that already says `walls from rooms` is skipped there; G5).
