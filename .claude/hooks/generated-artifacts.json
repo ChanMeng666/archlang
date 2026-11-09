@@ -42,6 +42,7 @@
     "plugins/archlang/.claude-plugin/plugin.json": "gen:plugin",
     "docs-site/public/_headers": "gen:docs-headers",
     "docs/backlog-index.md": "gen:backlog-index",
+    "test/INDEX.md": "gen:test-index",
     "plugins/archlang/plugin.json": "gen:agent-manifests",
     "plugins/archlang/mcp.json": "gen:agent-manifests",
     "plugins/archlang/.cursor-plugin/plugin.json": "gen:agent-manifests",

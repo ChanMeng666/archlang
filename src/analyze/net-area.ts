@@ -47,7 +47,7 @@ import type { Arc } from "../geometry/arc.js";
 import { type BandWall, type EdgeLoop, PointInterner, loopBBox, loopsContain, wallBand } from "../geometry/band.js";
 import type { GridBox } from "../geometry/grid-index.js";
 import { circleCircle, lineCircleParams, lineLineParams, meetLines } from "../geometry/intersect.js";
-import { polygonArea, polygonInsideTest } from "../geometry/polygon.js";
+import { polygonArea, polygonInsideTest, rectRing } from "../geometry/polygon.js";
 
 /**
  * The most room-and-band edges one room's measurement may read. Past it the pair loop
@@ -392,14 +392,7 @@ export function roomRegion(r: NetAreaRoom): RoomRegion {
       gross: Math.PI * rad * rad,
     };
   }
-  const ring: Point[] = r.poly
-    ? [...r.poly]
-    : [
-        { x: r.at.x, y: r.at.y },
-        { x: r.at.x + r.size.w, y: r.at.y },
-        { x: r.at.x + r.size.w, y: r.at.y + r.size.h },
-        { x: r.at.x, y: r.at.y + r.size.h },
-      ];
+  const ring: Point[] = r.poly ? [...r.poly] : rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
   // The ring binned by y-band once, so each of the many probes reads only its band's edges;
   // exactly `pointInPolygon(p.x, p.y, ring, 0)` on every point (`polygonInsideTest`).
   const test = polygonInsideTest(ring, 0);

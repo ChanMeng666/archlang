@@ -5,7 +5,6 @@
  * monolithic `src/cli.ts` (mechanical; behavior unchanged).
  */
 
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import {
   compile,
@@ -39,9 +38,8 @@ import {
   emitDiagnosticsHuman,
   emitJson,
   hasErrors,
-  ioError,
   makeNodeWorld,
-  writeOutput,
+  writeBack,
   usageError,
   usageErrorFor,
   withSource,
@@ -115,9 +113,8 @@ export function cmdFmt(args: Args, io: CliIo): number {
     const changed = formatted !== source;
     if (args.write && input !== "-") {
       if (changed) {
-        const stop = read.recheck();
-        if (stop !== undefined) return stop;
-        writeFileSync(resolvePath(input), formatted, "utf8");
+        const w = writeBack({ io, args, read, target: resolvePath(input), bytes: formatted });
+        if ("code" in w) return w.code;
       }
       if (args.json)
         emitJson(io, {
@@ -160,13 +157,8 @@ export function cmdRepair(args: Args, io: CliIo): number {
     }
     const target = args.o;
     if (target && target !== "-") {
-      const stop = read.recheck();
-      if (stop !== undefined) return stop;
-      try {
-        writeOutput(target, r.source);
-      } catch (e) {
-        return ioError(io, (e as Error).message, args.json);
-      }
+      const w = writeBack({ io, args, read, target, bytes: r.source });
+      if ("code" in w) return w.code;
       if (!args.quiet)
         io.stderr.write(`✓ ${input} → ${target} (${r.changes.length} change${r.changes.length === 1 ? "" : "s"})\n`);
     } else {
@@ -326,34 +318,12 @@ export async function cmdFix(args: Args, io: CliIo): Promise<number> {
     ? unifiedDiff(source, current, `a/${input === "-" ? "stdin" : input}`, `b/${target === "-" ? "stdout" : target}`)
     : "";
 
-  // `--expected-hash`: the input must still be the bytes this result was computed from,
-  // checked again just before the first byte (the `.bak` included) is written.
-  if (wrote && target !== "-") {
-    const stop = read.recheck();
-    if (stop !== undefined) return stop;
-  }
-
-  // `--backup`: preserve what is about to be clobbered. Only a real file that already
-  // exists has anything to lose, so `-o new-file.arch` and stdout write no `.bak`.
+  // `--expected-hash` re-check, `--backup` (a real file that already exists), then the write.
   let backup: string | undefined;
-  if (wrote && target !== "-" && args.backup) {
-    const path = resolvePath(target);
-    if (existsSync(path)) {
-      try {
-        writeFileSync(`${path}.bak`, readFileSync(path, "utf8"), "utf8");
-        backup = `${target}.bak`;
-      } catch (e) {
-        return ioError(io, (e as Error).message, args.json);
-      }
-    }
-  }
-
   if (wrote && target !== "-") {
-    try {
-      writeOutput(target, current);
-    } catch (e) {
-      return ioError(io, (e as Error).message, args.json);
-    }
+    const w = writeBack({ io, args, read, target, bytes: current, backup: args.backup });
+    if ("code" in w) return w.code;
+    backup = w.backup;
   }
 
   if (args.json) {
@@ -441,31 +411,12 @@ export function cmdFinish(args: Args, io: CliIo): number {
     ? unifiedDiff(source, r.source, `a/${input === "-" ? "stdin" : input}`, `b/${target === "-" ? "stdout" : target}`)
     : "";
 
-  // `--expected-hash`: re-checked just before the first byte (the `.bak` included) is written.
-  if (wrote && target !== "-") {
-    const stop = read.recheck();
-    if (stop !== undefined) return stop;
-  }
-
-  // `--backup`: only a real file that already exists has anything to lose.
+  // `--expected-hash` re-check, `--backup` (a real file that already exists), then the write.
   let backup: string | undefined;
-  if (wrote && target !== "-" && args.backup) {
-    const path = resolvePath(target);
-    if (existsSync(path)) {
-      try {
-        writeFileSync(`${path}.bak`, readFileSync(path, "utf8"), "utf8");
-        backup = `${target}.bak`;
-      } catch (e) {
-        return ioError(io, (e as Error).message, args.json);
-      }
-    }
-  }
   if (wrote && target !== "-") {
-    try {
-      writeOutput(target, r.source);
-    } catch (e) {
-      return ioError(io, (e as Error).message, args.json);
-    }
+    const w = writeBack({ io, args, read, target, bytes: r.source, backup: args.backup });
+    if ("code" in w) return w.code;
+    backup = w.backup;
   }
 
   if (args.json) {
@@ -565,13 +516,8 @@ export function cmdReroll(args: Args, io: CliIo): number {
           beforePages.every((svg, i) => svg === afterPages![i]));
 
       if (changed && verified) {
-        const stop = read.recheck();
-        if (stop !== undefined) return stop;
-        try {
-          writeFileSync(resolvePath(input), report.output, "utf8");
-        } catch (e) {
-          return ioError(io, (e as Error).message, args.json);
-        }
+        const w = writeBack({ io, args, read, target: resolvePath(input), bytes: report.output });
+        if ("code" in w) return w.code;
       }
 
       const wrote = changed && verified;

@@ -13,7 +13,7 @@
  *    round, a straight wall tangent to a circle, an arc bulging into a room.
  * 3. A property over every room of the corpus (`net-area-oracle-corpus.test.ts`; examples, fixtures, recovery plans, eval goldens,
  *    fidelity plans and faults; the docs gallery is left out, `agent-gallery.test.ts` owns it):
- *    the closed-form figure agrees with a GRID ORACLE (`./net-area-oracle.ts`, which shares
+ *    the closed-form figure agrees with a GRID ORACLE (`test/helpers/net-area-oracle.ts`, which shares
  *    nothing with the code under test but the band and the room's own area) within the
  *    oracle's own error bound, on every room, so a wall standing on a floor cannot hide again.
  *    The figure is read UNCLAMPED (`netAreaDetail`): `covered` must lie in `[0, area]` on its
@@ -28,7 +28,7 @@ import { resolvePlan } from "../src/analyze.js";
 import { MAX_NET_CURVES, MAX_NET_PROBE_WORK, netAreaBands, netAreaDetail } from "../src/analyze/net-area.js";
 import { pointInPolygon, polygonInsideTest, VERTEX_EPS } from "../src/geometry/polygon.js";
 import type { RRoom } from "../src/ir.js";
-import { oracleNetArea } from "./net-area-oracle.js";
+import { oracleNetArea } from "./helpers/net-area-oracle.js";
 import { runs } from "./setup/fast-check.js";
 
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;

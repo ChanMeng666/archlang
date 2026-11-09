@@ -1,3 +1,5 @@
+/** arch validate --intent; arch score; arch validate --intent: brief-bound measures (PS4.4); arch validate --intent: every storey. */
+
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

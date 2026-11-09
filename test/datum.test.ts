@@ -25,6 +25,7 @@
  *     point is the property that actually matters.
  */
 
+import { codes } from "./helpers/diag.js";
 import { describe as suite, expect, it } from "vitest";
 import {
   buildManifest,
@@ -59,9 +60,6 @@ function ir(src: string) {
 }
 
 /** Every `E_*`/`W_*` code a source raises, in order. */
-function codes(src: string): string[] {
-  return compile(src, { noCache: true }).diagnostics.map((d) => d.code ?? "");
-}
 
 // ---------------------------------------------------------------------------
 // 1. The constants, and the one rule that is a function

@@ -4,13 +4,13 @@
  * A `from start` on `between` counts from the shared run, which the source alone does not show:
  * #370's door landed at x 7000 with nothing to say so. The field is appended, read off the resolved
  * position, printed through `num-format`, and appears on no other row, so a plan with no `between`
- * opening keeps its `describe()` bytes. The D4 oracle reads it as a point (`test/d4-oracle.ts`).
+ * opening keeps its `describe()` bytes. The D4 oracle reads it as a point (`test/helpers/d4-oracle.ts`).
  */
 
 import { describe as suite, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { compile, describe, planToJson, type RDoor } from "../src/index.js";
-import { D4_ELEMENTS, witnessCase } from "./d4-oracle.js";
+import { D4_ELEMENTS, witnessCase } from "./helpers/d4-oracle.js";
 
 const plan = (body: string): string => `plan "t" {\n  units mm\n${body}}\n`;
 const W = "  walls from rooms exterior 300 partition 100\n";

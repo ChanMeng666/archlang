@@ -84,7 +84,7 @@ level 2..5 "Typical" [height <h>] [as n] { … }
   3. 每层一个文件（`--level` 外，`<stem>.L<n>`）：30 层出 30 个几乎相同的文件。标准层图一张图的绘图惯例本轮不解决。
 - **规模**：范围语法 2.5 日，别名插值 1 日（估算）。
 - **字节恒等证明**：
-  - 弱律：`test/level-range-byte-identity.test.ts`，语料 SHA-256（SVG + `describe` + `lint` + `compile().diagnostics`，resolver 可达故必须含后者），基线用 `test/byte-identity-digest.ts` 的 digest 本体。
+  - 弱律：`test/level-range-byte-identity.test.ts`，语料 SHA-256（SVG + `describe` + `lint` + `compile().diagnostics`，resolver 可达故必须含后者），基线用 `test/helpers/byte-identity-digest.ts` 的 digest 本体。
   - **强律**（这个形式才有的好东西）：`level a..b { B }` 与手写展开成字面量的同一计划，逐页 SVG、`describe`、`lint` 完全相等，span 归一后比较。
 
 ---
@@ -146,7 +146,7 @@ building [id=<name>] from <importAlias> at (x,y) [angle <deg>] [label "…"]    
 | "Never build the wall joinery to answer a `describe()` question"（iron-laws:122-123，语境是派生位置） | 第三档用于绘图，不是回答 describe，但要在 ADR 里写明，GIA 是先例 |
 | Heights draw nothing（AGENTS.md；iron-laws:97-98；ADR 0021 决定 4） | `storeys`/`height` 只进数据。图上打印 "6F 19.8 m" 见 §C.4 |
 | 元素规则：`drawCost`、`bounds()`、`measures()` | 第二档全满足 |
-| 等变预言机 | `test/d4-oracle.ts` 按元素枚举事实（outdoor 在 758-765）。新事实要加；`test/drawing-budget.test.ts`、`test/element-keyword-drift.test.ts`、`test/plan-json-dropped.test.ts` 都按注册表遍历，新元素自动进入，需要各自补期望 |
+| 等变预言机 | `test/helpers/d4-oracle.ts` 按元素枚举事实（outdoor 在 758-765）。新事实要加；`test/drawing-budget.test.ts`、`test/element-keyword-drift.test.ts`、`test/plan-json-dropped.test.ts` 都按注册表遍历，新元素自动进入，需要各自补期望 |
 | T6（iron-laws:14-16：无 `area` token） | `building` 不能有 `area` 子句 |
 | 派生位置来自形状 | 标签用 `polygonLabelPoint` |
 
@@ -378,7 +378,7 @@ outdoor track polygon …
 - [ ] `src/cursor.ts`：光标节点（`:179` fence 先例）
 - [ ] `src/stages.ts`：`ELEMENT_KIND_STAGES`（`Record` 穷尽，`:177`）
 - [ ] `src/describe.ts`：摘要接口与事实；`src/cli/serialize.ts:118`（文本摘要）
-- [ ] `src/plan-json.ts`：丢弃清单 `:889`、校验；`test/plan-json-gaps.ts`
+- [ ] `src/plan-json.ts`：丢弃清单 `:889`、校验；`test/tables/plan-json-gaps.ts`
 - [ ] `src/analyze/symmetry.ts:637-671`（画出的边）；`src/backends/ascii.ts:284-293`（ASCII 通道）
 - [ ] `src/label-placement.ts:611, 622`（环形跨全图的图层必须跳过）
 - [ ] `src/sheet.ts`（`drawn` 范围注释/fit）；`src/draw-budget.ts`（平面级 pass）
@@ -397,8 +397,8 @@ outdoor track polygon …
 
 **测试**
 
-- [ ] `test/<x>-byte-identity.test.ts`（基线用 `test/byte-identity-digest.ts`，含 `compile().diagnostics`）
-- [ ] `test/spec-forms.test.ts`、`test/gbnf-drift.test.ts`、`test/llm-spec-drift.test.ts`、`test/element-keyword-drift.test.ts`、`test/drawing-budget.test.ts`、`test/model-range.test.ts`、`test/step-budget.test.ts`、`test/plan-json-dropped.test.ts`、`test/d4-oracle.ts`、`test/equivariance-*`、`test/lint-messages-id-free.test.ts`、`test/visual.test.ts`（金样）、`test/site-lockstep.test.ts`
+- [ ] `test/<x>-byte-identity.test.ts`（基线用 `test/helpers/byte-identity-digest.ts`，含 `compile().diagnostics`）
+- [ ] `test/spec-forms.test.ts`、`test/gbnf-drift.test.ts`、`test/llm-spec-drift.test.ts`、`test/element-keyword-drift.test.ts`、`test/drawing-budget.test.ts`、`test/model-range.test.ts`、`test/step-budget.test.ts`、`test/plan-json-dropped.test.ts`、`test/helpers/d4-oracle.ts`、`test/equivariance-*`、`test/lint-messages-id-free.test.ts`、`test/visual.test.ts`（金样）、`test/site-lockstep.test.ts`
 - [ ] 新示例进入 `test/byte-identity-baseline.ts`、`test/while-byte-identity-baseline.ts`
 
 **`check:drift` 自动重生成**（`scripts/check-drift.ts:25-61`，不可手改）

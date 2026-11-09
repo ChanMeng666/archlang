@@ -83,7 +83,7 @@ old SVG back into the new payload and reproducing the old digest, then re-measur
 **Re-measuring the handedness baselines** is legitimate only when the instrument changes (the
 handedness key in `src/elements/glyph-chirality.ts`), never because a glyph moved. Read both sides
 with the same key: `git archive` the baseline tree, patch only that file's key to the new one,
-and run `npx tsx test/handedness-survey.ts <extract>` (add `--grid` for the grid); it prints the
+and run `npx tsx test/helpers/handedness-survey.ts <extract>` (add `--grid` for the grid); it prints the
 table literal. Record the measured tree and the patch in the baseline's header.
 
 ## 4. Adding a test
@@ -94,6 +94,18 @@ table literal. Record the measured tree and the patch in the baseline's header.
 - **A byte-identity law for every new language form**, and a cross-feature test whenever two
   branches edit a shared literal or predicate — with a control case on the identical geometry, so the
   test can tell "it works" from "the check never ran".
+- **Find the test first, then use the shared helpers.** `test/INDEX.md` (generated; `npm run gen:test-index`) lists,
+  per `src` module, the tests that import it, and per test file its header's first sentence; the last section lists
+  the modules no test imports. A new test file starts with a header comment whose first sentence says what it pins
+  (the generator fails without one). Do not paste a local copy of what `test/helpers/` provides:
+  `corpus.ts` (`corpusFiles()` returns the `.arch` files under `CORPUS_DIRS`; the § 5 sweep adds the Markdown
+  fences, via `extractArchBlocks`; `exampleNames()` / `libNames()` the examples, `walkFiles()` the recursive listing), `world.ts` (`worldFor(dir)`, the on-disk World for imports), `digest.ts`
+  (`sha256`), `diag.ts` (`codes` / `lintCodes` / `codesOf`), `tmp.ts` (`mkTmp`, `withTmpDir`), `cli.ts` (below).
+  A test that needs a different set says why beside it. `test/no-duplicate-helpers.test.ts` fails a new local
+  `worldFor`, `createHash("sha256")` or `readdirSync("examples")` unless it is on that file's allow-list.
+- **Where shared code lives.** Pure helpers under `test/helpers/`; data tables (plan sources, case lists, decided
+  rows) under `test/tables/`; neither is collected (only `*.test.ts` is). Byte-identity baselines stay beside the
+  tests that pin them (`test/*baseline*.ts`, risk tier high).
 - **CLI: run it in-process** with `runArch(args, { input?, cwd? })` from `test/helpers/cli.ts`
   (`{ status, stdout, stderr }`, through `runCli` and a capturing `CliIo`): no child process, so it
   costs milliseconds and coverage sees the commands. `spawnArch` (same shape) is only for what a
@@ -130,8 +142,8 @@ table literal. Record the measured tree and the patch in the baseline's header.
   plan): hash EACH payload separately per storey and per corpus row — the SVG, `compile().diagnostics`,
   `describe()`, `lint()` with the default ruleset, `lint()` with `profile: "accessibility-advisory"`,
   and the `--overlay circulation` SVG — so a move names the payload that moved. Also compute the
-  repo's combined digest, `allStoreysDigestWithDiagnostics` in `test/byte-identity-digest.ts` (over
-  `allStoreysDiagnosticsPayload` in `test/byte-identity-payload.ts`), which is what the baseline files
+  repo's combined digest, `allStoreysDigestWithDiagnostics` in `test/helpers/byte-identity-digest.ts` (over
+  `allStoreysDiagnosticsPayload` in `test/helpers/byte-identity-payload.ts`), which is what the baseline files
   pin. It hashes only: every page's SVG in `pages[]` order, `describe()`, `lint()` (default ruleset)
   and `compile().diagnostics`, joined by single spaces — not the accessibility profile or the
   overlay. Corpus: `examples/` (incl. `lib`), `test/fixtures`, `test/recovery-corpus`, the eval

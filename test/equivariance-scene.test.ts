@@ -4,12 +4,12 @@
  * Per element id (annotate mode stamps one on every node an element renders), gP's
  * primitive multiset must equal g · P₀'s — every polygon, line, region, curved path, arc
  * and circle carried through the frame, compared orientation-free at a 1e-6 mm quantum
- * (`test/d4-oracle.ts`: `canonPrim`). The wall fabric, unioned across statements, is one
+ * (`test/helpers/d4-oracle.ts`: `canonPrim`). The wall fabric, unioned across statements, is one
  * group; a hand-written dimension is three (`.line`, `.ticks`, `.text`), because under a
  * reflection its tick hand is a declared convention and its text side a defect, and one
  * pin must not absorb the other. Both sides are drawn on one fixed sheet so every render
  * size is a constant and a violation names the element that caused it. Violations are held
- * to `test/equivariance-known.ts` in both directions, and audited against their class, as
+ * to `test/tables/equivariance-known.ts` in both directions, and audited against their class, as
  * T0–T2 are.
  */
 
@@ -30,8 +30,8 @@ import {
   toObserved,
   transformPrim,
   wrapperSource,
-} from "./d4-oracle.js";
-import { KNOWN, KNOWN_CLASSES } from "./equivariance-known.js";
+} from "./helpers/d4-oracle.js";
+import { KNOWN, KNOWN_CLASSES } from "./tables/equivariance-known.js";
 import type { PathEdge } from "../src/scene.js";
 import { fixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { mapSceneNode } from "../src/elements/glyph-lib.js";
@@ -162,7 +162,7 @@ describe("T3 — the drawn scene, under the group", () => {
         .join("\n");
       expect(
         added,
-        `NEW equivariance violation — pin it in test/equivariance-known.ts with a class, a witness and a why:\n${detail}`,
+        `NEW equivariance violation — pin it in test/tables/equivariance-known.ts with a class, a witness and a why:\n${detail}`,
       ).toEqual([]);
       expect(vanished, `FIXED: delete the pin and its witness:\n${vanished.join("\n")}`).toEqual([]);
       expect(pinAudit(KNOWN, KNOWN_CLASSES, rel, runs), "a pin whose class does not account for it").toEqual([]);

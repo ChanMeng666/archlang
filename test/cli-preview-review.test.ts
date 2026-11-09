@@ -1,5 +1,8 @@
-import { createHash } from "node:crypto";
-import { existsSync, mkdtempSync, readdirSync, readFileSync } from "node:fs";
+/** preview --review: the fixture's five warnings; preview --review: clean plans, storeys and the corpus; preview --review: one mark per warning, and no ring on a g… */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { sha256 as sha } from "./helpers/digest.js";
+import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -50,8 +53,6 @@ const sheetOf = (source: string, level?: number): ReviewSheet => {
   if ("kind" in s) throw new Error(`no sheet: ${s.kind}`);
   return s;
 };
-
-const sha = (s: string): string => createHash("sha256").update(s).digest("hex");
 
 describe("preview --review: the fixture's five warnings", () => {
   const source = readFileSync(FIXTURE, "utf8");
@@ -147,7 +148,7 @@ describe("preview --review: clean plans, storeys and the corpus", () => {
   it("over the examples, every warning that names an element is ringed; the rest name the whole sheet", () => {
     const unringed = new Set<string>();
     let ringed = 0;
-    const files = readdirSync("examples").filter((n) => n.endsWith(".arch") && n !== "imports.arch");
+    const files = exampleNames().filter((n) => n !== "imports.arch");
     const sources = [...files.map((f) => readFileSync(`examples/${f}`, "utf8")), ...Object.keys(AS_WAS).map(asWas)];
     for (const source of sources) {
       if (source.includes("import ")) continue;

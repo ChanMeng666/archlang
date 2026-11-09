@@ -34,7 +34,7 @@
 - `npm run digest:engines` (ADVISORY, always exits 0, last line `status=` clean, diverged, incomplete or
   baseline-stale) measures cross-engine determinism: the built `dist/` is run in Playwright chromium,
   firefox and webkit over examples, fixtures, recovery and eval plans plus transcendental probes, and
-  each engine's `byte-identity-payload.ts` digest is compared with Node's and the pinned
+  each engine's `test/helpers/byte-identity-payload.ts` digest is compared with Node's and the pinned
   `while-byte-identity` baseline; a mismatch names the first differing payload part. It compares the
   agent-facing OUTPUT bytes (SVG, `describe()`, `lint()`, diagnostics, after 2-dp rounding), not
   transcendental agreement: a 1-ulp `Math.cos` difference is invisible by design, and `hypot` is

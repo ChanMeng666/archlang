@@ -16,14 +16,15 @@
  * an `Expr` the reflective walk found that `statementExprs` did not return.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames, libNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { parse } from "../src/parser.js";
 import { eachExpr, eachStatement, statementExprs } from "../src/cursor.js";
 import type { PlanNode, Statement } from "../src/ast.js";
 import type { Expr } from "../src/expr.js";
-import { archPlan } from "./arbitrary-plan.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
 import { runs } from "./setup/fast-check.js";
 
 // `Expr`'s own discriminant (`src/expr.ts`) — a type union, so there is no runtime
@@ -136,10 +137,8 @@ function checkSource(src: string): void {
   checkPlanLevelExprs(plan!);
 }
 
-const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
-const LIBS = readdirSync("examples/lib")
-  .filter((f) => f.endsWith(".arch"))
-  .map((f) => `lib/${f}`);
+const EXAMPLES = exampleNames();
+const LIBS = libNames().map((f) => `lib/${f}`);
 const ALL = [...EXAMPLES, ...LIBS];
 const readExample = (name: string): string => readFileSync(`examples/${name}`, "utf8");
 

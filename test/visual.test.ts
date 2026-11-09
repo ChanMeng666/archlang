@@ -1,3 +1,5 @@
+/** visual regression — golden PNG pixel-diff. */
+
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

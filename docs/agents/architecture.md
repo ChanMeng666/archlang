@@ -81,6 +81,6 @@ way in, written into marked "Try it" blocks by `scripts/gen-doors.ts` (`gen:door
 Worker (`playground/worker/`, ADR 0034) runs only for `/s/*` and `/api/*`; a plain playground visit
 compiles nothing at boot (the default plan is in the served HTML, `scripts/gen-static.mjs`).
 Test harness modules importable without vitest, so an older `src/` can be measured with the same
-body: `test/byte-identity-payload.ts`, `test/byte-identity-digest.ts`, `test/recovery-metric.ts`,
-`test/shaft-equivariance-models.ts`; `scripts/engine-digests.ts` measures cross-engine determinism.
+body: `test/helpers/byte-identity-payload.ts`, `test/helpers/byte-identity-digest.ts`, `test/helpers/recovery-metric.ts`,
+`test/helpers/shaft-equivariance-models.ts`; `scripts/engine-digests.ts` measures cross-engine determinism.
 

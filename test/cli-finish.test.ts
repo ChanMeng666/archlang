@@ -1,5 +1,7 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
+/** arch finish — the write boundary; arch finish — exit codes; arch finish — a plan with `level` blocks. */
+
+import { mkTmp } from "./helpers/tmp.js";
+import { existsSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runArch } from "./helpers/cli.js";
@@ -34,7 +36,7 @@ let dir: string;
 let file: string;
 
 beforeEach(() => {
-  dir = mkdtempSync(join(tmpdir(), "arch-finish-"));
+  dir = mkTmp("arch-finish-");
   file = join(dir, "bare.arch");
   writeFileSync(file, BARE, "utf8");
 });

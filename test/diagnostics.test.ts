@@ -1,3 +1,5 @@
+/** lexer — byte-offset spans; offsetToLineCol; formatDiagnostic — codespan frames; parser — error recovery + multi-error collection; compile — warnings never block… */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { lex } from "../src/lexer.js";

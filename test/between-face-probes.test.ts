@@ -1,3 +1,5 @@
+/** between is read off the host wall's faces. */
+
 import { describe, expect, it } from "vitest";
 import { connectorConnection, DEFAULT_TOL, pointInRoomBox, resolvePlan, roomBox } from "../src/analyze.js";
 import { pointInRect } from "../src/geometry/rect.js";
@@ -16,6 +18,7 @@ import type { RDoor, RRoom } from "../src/ir.js";
  */
 
 const edgeOf = (src: string, id: string) => describePlan(src).access.edges.find((e) => e.doorId === id);
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads lint(), keeps an undefined code as `undefined`.
 const codes = (src: string): Array<string | undefined> => lint(src).map((d) => d.code);
 
 /** `door-on-tee.arch`, reduced: a door centred where partition `p` meets the shell. */

@@ -1,3 +1,5 @@
+/** PS0.12 — a window on an arc edge is attributed from the shape. */
+
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,6 +32,7 @@ const bay = (extra = "", room = `room id=r_live at (0,0) size 6000x4000 label "L
 }`;
 
 const windowRoom = (src: string, id: string) => describePlan(src).windows.find((w) => w.id === id)?.room;
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads lint(), keeps an undefined code as `undefined`.
 const codes = (src: string) => lint(src).map((d) => d.code);
 
 describe("PS0.12 — a window on an arc edge is attributed from the shape", () => {

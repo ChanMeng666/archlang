@@ -21,6 +21,7 @@ const plan = (...lines: string[]): string => `plan "t" {\n  units mm\n${lines.jo
 const WALL = `  wall id=w partition thickness 200 { (axis.2, axis.A) (axis.2, axis.B) }`;
 
 const diags = (src: string): Diagnostic[] => compile(src, { noCache: true }).diagnostics;
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it has its own shape.
 const codes = (src: string): string[] => diags(src).map((d) => d.code ?? "");
 const errors = (src: string): Diagnostic[] => diags(src).filter((d) => d.severity === "error");
 const quoted = (src: string, d: Diagnostic): string => src.slice(d.span!.start, d.span!.end);

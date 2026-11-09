@@ -1,4 +1,7 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+/** every clause is reported on the plan that has it, and alone; a multi-storey plan answers for the export in hand; the keep path is the same path, and unchanged;… */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -8,7 +11,7 @@ import { type Args, makeNodeWorld, nodeIo, parseArgs } from "../src/cli/io.js";
 import { renderArtifact } from "../src/cli/serialize.js";
 import { BUILTIN_DEFS } from "../src/elements/defs.js";
 import { UNPROJECTED_KINDS } from "../src/plan-json.js";
-import { CANNOT_ROUND_TRIP } from "./plan-json-gaps.js";
+import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
 
 /**
  * Issue #366: `compile -f json` says what the format could not carry, the way it has always said
@@ -294,7 +297,7 @@ describe("the CLI", () => {
 
 describe("the report over the corpus", () => {
   const world = makeNodeWorld("examples");
-  const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
+  const EXAMPLES = exampleNames();
   const report = (name: string) => planToJson(readFileSync(`examples/${name}`, "utf8"), { world });
 
   it("the report leaves the document alone: `dropped` is not in it", () => {

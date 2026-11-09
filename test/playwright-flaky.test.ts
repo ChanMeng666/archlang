@@ -1,3 +1,5 @@
+/** findFlaky; main. */
+
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

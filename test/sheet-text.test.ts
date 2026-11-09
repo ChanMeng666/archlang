@@ -25,7 +25,7 @@ import { GROUND_MATERIALS, KNOWN_MATERIALS } from "../src/hatches.js";
 import { fmt2, drawnDecimal, plainDecimal } from "../src/num-format.js";
 import { MAX_SHEET_WORD, PLAIN_SHEET_TEXT, SHEET_WORDS, sheetText, sheetTextKeys } from "../src/sheet-text.js";
 import { inkWidth } from "../src/text-metrics.js";
-import { everyWord } from "./sheet-text-plans.js";
+import { everyWord } from "./tables/sheet-text-plans.js";
 
 const FIXTURE = readFileSync("test/fixtures/sheet-text/sheet-text.arch", "utf8");
 const block = (...lines: string[]): string => `  sheet text {\n${lines.map((l) => `    ${l}\n`).join("")}  }`;

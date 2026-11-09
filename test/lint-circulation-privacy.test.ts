@@ -7,11 +7,11 @@
  * never retyped; the variants below change one statement of them (`replaceOnce`) or are small
  * plans of their own.
  */
+import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync } from "node:fs";
-import { join, resolve as resolvePath } from "node:path";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint, lintWithCoverage } from "../src/index.js";
-import type { World } from "../src/world.js";
 
 const CODES = ["W_ROOM_VIA_PRIVATE", "W_WET_ROOM_DOOR", "W_ENTRANCE_INTO_PRIVATE"] as const;
 const CORPUS = "test/defect-corpus/circulation-privacy";
@@ -434,16 +434,6 @@ describe("review fixes (PR #199)", () => {
 });
 
 describe("the three rules' texts", () => {
-  const worldFor = (dir: string): World => ({
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-    now: () => new Date(0),
-  });
   const plans = ["examples", "test/fixtures", CORPUS].flatMap((dir) =>
     readdirSync(dir)
       .filter((f) => f.endsWith(".arch"))

@@ -1,3 +1,5 @@
+/** eval — committed goldens still author correctly; L1 deterministic-dividend overlay. */
+
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { RoomSummary } from "../src/index.js";

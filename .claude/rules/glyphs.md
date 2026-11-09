@@ -32,7 +32,7 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
   (`src/mesh/t0*.ts`): every catalogued family has a generator (`test/t0.test.ts` fails on a grey
   box for a catalogued word), fitted exactly to the footprint, quarter turns only, integer µm.
 - All ink stays inside the footprint at every aspect and quarter-turn (the containment checks in
-  `test/glyphs-*.test.ts`, path extents via `test/glyph-extent.ts`).
+  `test/glyphs-*.test.ts`, path extents via `test/helpers/glyph-extent.ts`).
 - Curves are `g.path` loops from `roundedRectPath`/`ovalPath`/`bulgeArc`/`scallopPath`, every arc
   edge ≤ 120°; a bare `arcSeg` is a minor arc. Dashes only for hidden or above the cut plane.
 - Reuse `glyph-lib.ts` (`chairAt`, `polar`, `clampCount`, the shape builders); a helper moves there

@@ -28,10 +28,11 @@ import {
   THREE_FLIGHTS,
   U_STAIR,
   upperBody,
-} from "./block-stair-plans.js";
+} from "./tables/block-stair-plans.js";
 
 const MISMATCH = "W_SHAFT_FOOTPRINT_MISMATCH";
 const of = (src: string, code: string): Diagnostic[] => lint(src).filter((d) => d.code === code);
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), keeps an undefined code as `undefined`.
 const codes = (src: string) => compile(src, { noCache: true }).diagnostics.map((d) => d.code);
 
 /** A plan of the storeys given, ascending from level 1. */

@@ -19,7 +19,7 @@
 import { describe, expect, it } from "vitest";
 import { taste, TASTE_BUDGET } from "../src/index.js";
 import { tasteCharges, tasteWork } from "../src/taste/index.js";
-import { TASTE_SOURCES, TASTE_WORLD } from "./taste-sources.js";
+import { TASTE_SOURCES, TASTE_WORLD } from "./helpers/taste-sources.js";
 
 /** The largest per-call charge over the corpus when the budget was set. */
 const MEASURED_MAX = { charge: 6163, file: "examples/terrace-row.arch" };

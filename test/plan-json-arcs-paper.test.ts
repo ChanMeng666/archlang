@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** Cases: writes the arc on the point it arrives at, and the paper beside the scale; comes back byte for byte, `bbox_outer` and `sheet` included; does the same thr… */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe as group, expect, it } from "vitest";
 import {
   compile,
@@ -222,7 +225,7 @@ group("what was there before stays", () => {
   const world = makeNodeWorld("examples");
 
   it("no document gains a key unless the plan has an arc or a paper", () => {
-    for (const name of readdirSync("examples").filter((f) => f.endsWith(".arch"))) {
+    for (const name of exampleNames()) {
       const src = readFileSync(`examples/${name}`, "utf8");
       const curved = /\barc\s*\(/.test(src);
       const sheet = /^\s*paper\b/m.test(src);

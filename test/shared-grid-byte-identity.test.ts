@@ -5,7 +5,7 @@
  * come out as two grids resolves, draws, describes and lints exactly as before, down to its Scene
  * and the steps its resolution spends, in the accessibility profile and on the circulation overlay
  * too. Each digest is {@link stairLawDigest}, the widest law body the repository has
- * (`test/block-stair-law.ts`), **measured against `src/` at `3f3060a3`** (`main` before the form),
+ * (`test/helpers/block-stair-law.ts`), **measured against `src/` at `3f3060a3`** (`main` before the form),
  * that tree extracted by `git archive`, the body and the rows imported from this branch and handed
  * that tree's compiler. The rows are every plan the block-stair law pins, then
  * {@link GRID_INLINE_ROWS}: the near misses on each path the form forks from.
@@ -36,9 +36,9 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { axisRead } from "../src/room-datums.js";
 import { NULL_WORLD, type World } from "../src/world.js";
-import { type StairLawApi, stairLawDigest, stairLawRows } from "./block-stair-law.js";
-import { ROOT } from "./rectilinear-rooms-law.js";
-import { GRID_FIXTURE, GRID_INLINE_ROWS } from "./shared-grid-plans.js";
+import { type StairLawApi, stairLawDigest, stairLawRows } from "./helpers/block-stair-law.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
+import { GRID_FIXTURE, GRID_INLINE_ROWS } from "./tables/shared-grid-plans.js";
 
 const stepsOf = (src: string, world: World | undefined): number => {
   clearResolveCache();

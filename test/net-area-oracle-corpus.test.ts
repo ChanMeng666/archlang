@@ -1,7 +1,7 @@
 /**
  * NET internal area over the whole corpus (examples, fixtures, recovery plans, eval goldens,
  * fidelity plans and faults; the docs gallery is left out, `agent-gallery.test.ts` owns it): the
- * closed-form figure agrees with the GRID ORACLE (`./net-area-oracle.ts`, which shares nothing
+ * closed-form figure agrees with the GRID ORACLE (`test/helpers/net-area-oracle.ts`, which shares nothing
  * with the code under test but the band and the room's own area) within the oracle's own error
  * bound, on every room. The figure is read UNCLAMPED (`netAreaDetail`): `covered` must lie in
  * `[0, area]` on its own. See `net-area.test.ts` for the rule and the hand-derived evidence.
@@ -10,15 +10,17 @@
  * scheduled alone (`test/.durations.json`), and `it.each` over the corpus files shows its progress
  * per case. The aggregate figures are asserted by the last test, after every case has run.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, resolve as resolvePath } from "node:path";
+import { walkFiles as archFiles } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
+import { readFileSync } from "node:fs";
+import { dirname, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { resolvePlan, roomAreaMm2 } from "../src/analyze.js";
 import { MAX_NET_PROBE_WORK, netAreaBands, netAreaDetail, roomNetAreaMm2 } from "../src/analyze/net-area.js";
 import type { RRoom, RWall } from "../src/ir.js";
-import type { World } from "../src/world.js";
-import { oracleNetArea } from "./net-area-oracle.js";
+import { oracleNetArea } from "./helpers/net-area-oracle.js";
 
+// EH3.4: not CORPUS_DIRS (test/helpers/corpus.ts): the corpus plus test/callout-fixtures and test/finish-fixtures, which hold the net-area cases.
 const CORPUS_DIRS = [
   "examples",
   "test/fixtures",
@@ -29,27 +31,6 @@ const CORPUS_DIRS = [
   "eval/fidelity-plans",
   "eval/faults",
 ];
-
-function archFiles(dir: string): string[] {
-  const out: string[] = [];
-  for (const name of readdirSync(dir).sort()) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) out.push(...archFiles(p));
-    else if (name.endsWith(".arch")) out.push(p);
-  }
-  return out;
-}
-
-const worldFor = (dir: string): World => ({
-  read: (p) => {
-    try {
-      return readFileSync(resolvePath(dir, p), "utf8");
-    } catch {
-      return null;
-    }
-  },
-  now: () => new Date(0),
-});
 
 const root = resolvePath(".");
 const files = CORPUS_DIRS.flatMap((d) => archFiles(resolvePath(d)));

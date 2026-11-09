@@ -46,7 +46,7 @@
  * ## No baseline row was retired to make room
  *
  * `two-storey`'s pre-datum rows in both tables are still checked, against its **height-free
- * derivation** (`./height-free-source.ts`) rather than against the file as written. The
+ * derivation** (`test/helpers/height-free-source.ts`) rather than against the file as written. The
  * derivation is behaviourally the text that shipped, so the measurement keeps its full
  * force: it still says that everything about that plan other than the datum is where
  * the baseline left it. Nothing was re-measured, re-typed or dropped.
@@ -64,7 +64,7 @@
  *
  * They were measured **before a single line of `src/` changed**, on `f4548db` (the tree
  * before the datum layer), by a script that imported these very digest bodies from
- * `test/byte-identity-digest.ts` — never a lookalike. That is the lesson
+ * `test/helpers/byte-identity-digest.ts` — never a lookalike. That is the lesson
  * `test/roof-void-byte-identity.test.ts` records: its first attempt measured its baseline
  * with a scratch script whose payload separator differed by one character, and reported
  * four "failures" over artifacts that were in fact byte-identical.
@@ -76,42 +76,30 @@
  * the body is the sanctioned one.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import type { World } from "../src/world.js";
 // The two tables moved to a module of their own when `iso-byte-identity.test.ts` began
 // making the same corpus-wide claim: one measurement, two laws, no retyped hash.
 import { AUTHORS_HEIGHT, BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
-import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./byte-identity-digest.js";
-import { authorsVerticalDatum, heightFreeSource } from "./height-free-source.js";
+import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./helpers/byte-identity-digest.js";
+import { authorsVerticalDatum, heightFreeSource } from "./helpers/height-free-source.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 const EXAMPLES = resolvePath("examples");
 
 /** A World that reads the examples directory, so the two plans that `import` are covered
  *  by the law rather than quietly skipped — a gate is only as strong as its corpus. */
-function worldFor(dir: string): World {
-  return {
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-    now: () => new Date(0),
-  };
-}
 
 const srcOf = (name: string): string => readFileSync(join(EXAMPLES, `${name}.arch`), "utf8");
 const worldOfExamples = worldFor(EXAMPLES);
 
 const authorsHeight = new Set(AUTHORS_HEIGHT);
 const shippedExamples = (): string[] =>
-  readdirSync(EXAMPLES)
-    .filter((f) => f.endsWith(".arch"))
+  exampleNames()
     .map((f) => f.replace(/\.arch$/, ""))
     .sort();
 

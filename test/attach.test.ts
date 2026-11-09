@@ -1,3 +1,5 @@
+/** T1a — opening attachment; T1b — swing into / hinge near; S.2 — an attachment position is an expression; S.2 — every refusal in the slot is coded; PS0.19 — `at <… */
+
 import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
 import { parse } from "../src/parser.js";

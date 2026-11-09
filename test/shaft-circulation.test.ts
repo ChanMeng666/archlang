@@ -19,6 +19,8 @@
  * storeys the arrivals reach; equivariance under every element of D4; and repair's guard.
  */
 
+import { exampleNames } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -435,22 +437,8 @@ describe("arrival sides come from the building with the storey taken out", () =>
 const EXAMPLES = resolvePath("examples");
 const FIXTURES = resolvePath("test/fixtures");
 
-function worldFor(dir: string): World {
-  return {
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-    now: () => new Date(0),
-  };
-}
-
 const corpus = (): Array<{ name: string; path: string; world: World }> => [
-  ...readdirSync(EXAMPLES)
-    .filter((f) => f.endsWith(".arch"))
+  ...exampleNames()
     .sort()
     .map((f) => ({ name: `examples/${f}`, path: join(EXAMPLES, f), world: worldFor(EXAMPLES) })),
   ...readdirSync(FIXTURES)

@@ -1,3 +1,5 @@
+/** opening element; cased opening rendering — never repaint the void the wall union opened; interior doorway rendering — the same white-band fix. */
+
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint, compile } from "../src/index.js";
 import { format } from "../src/format.js";
@@ -5,7 +7,7 @@ import { aiaLayer } from "../src/scene.js";
 import type { Scene, SceneNode } from "../src/scene.js";
 import { renderAscii } from "../src/backends/ascii.js";
 import { toDxf } from "../src/export/dxf.js";
-import { outlineSegments } from "./path-prim.js";
+import { outlineSegments } from "./helpers/path-prim.js";
 
 /**
  * Cased `opening` — a leaf-less gap in a wall that still connects two spaces. It

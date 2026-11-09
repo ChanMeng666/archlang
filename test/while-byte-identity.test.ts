@@ -12,13 +12,15 @@
  * See `test/while-byte-identity-baseline.ts` for how the baseline was measured.
  */
 
+import { exampleNames } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import type { World } from "../src/world.js";
 import { BASELINE } from "./while-byte-identity-baseline.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 const EXAMPLES = resolvePath("examples");
@@ -26,22 +28,9 @@ const FIXTURES = resolvePath("test/fixtures");
 
 /** A World that reads the given directory, so the examples that `import` (`imports.arch`,
  *  `museum-wings.arch`) are covered rather than silently skipped. */
-function worldFor(dir: string): World {
-  return {
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-    now: () => new Date(0),
-  };
-}
 
 const shippedExamples = (): string[] =>
-  readdirSync(EXAMPLES)
-    .filter((f) => f.endsWith(".arch"))
+  exampleNames()
     .map((f) => `examples/${f}`)
     .sort();
 

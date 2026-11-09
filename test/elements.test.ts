@@ -1,3 +1,5 @@
+/** element registry; column — extensibility proof; computed dimensions (T3.6); render passes — global draw order is independent of source order. */
+
 import { describe, expect, it } from "vitest";
 import { compile, toDxf } from "../src/index.js";
 import { registry, registryOrder } from "../src/elements/index.js";

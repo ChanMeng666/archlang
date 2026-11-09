@@ -6,7 +6,9 @@
  * has none. Everything else reads the Scene the compiler draws, never a position worked out here.
  */
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { walkFiles as walk } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
+import { readFileSync } from "node:fs";
 import { dirname, join, relative, resolve as resolvePath, sep } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
@@ -327,25 +329,9 @@ describe("CJK and other names", () => {
 
 const nameOf = (p: string): string => relative(ROOT, p).split(sep).join("/");
 
+// EH3.4: not CORPUS_DIRS (test/helpers/corpus.ts): this corpus adds test/defect-corpus and test/plans, drops test/recovery-corpus, and takes only docs pages outside docs/plans.
 function corpus(): { name: string; src: string; world: World }[] {
   const out: { name: string; src: string; world: World }[] = [];
-  const worldFor = (dir: string): World => ({
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-  });
-  const walk = (dir: string, keep: (f: string) => boolean, files: string[] = []): string[] => {
-    for (const f of readdirSync(dir).sort()) {
-      const p = join(dir, f);
-      if (statSync(p).isDirectory()) walk(p, keep, files);
-      else if (keep(f)) files.push(p);
-    }
-    return files;
-  };
   const arch = (f: string): boolean => f.endsWith(".arch");
   for (const d of [
     "examples",

@@ -1,7 +1,7 @@
 /**
  * The furniture-relation digest table (ADR 0029; card PS3.7): SHA-256 over SVG, `describe()`,
  * `lint()` and `compile().diagnostics` of every storey of each plan in
- * `test/furniture-relations-plans.ts`, pinned in its own commit after the byte-identity law held
+ * `test/tables/furniture-relations-plans.ts`, pinned in its own commit after the byte-identity law held
  * (with the seat rule off, every existing digest suite was unchanged by the new forms; the rows
  * the turned chairs moved are explained in `test/byte-identity-baseline.ts`'s header) and after
  * the twins in `test/furniture-relations.test.ts`. Measured with the test's own digest body
@@ -11,8 +11,8 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
-import { FURNITURE_RELATION_PLANS } from "./furniture-relations-plans.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
+import { FURNITURE_RELATION_PLANS } from "./tables/furniture-relations-plans.js";
 
 const API: CompilerApi = { compile, describe, lint };
 

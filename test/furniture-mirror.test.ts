@@ -22,7 +22,7 @@ import { tp } from "../src/frame.js";
 import { parse } from "../src/parser.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
 import { DEFAULT_THEME } from "../src/theme.js";
-import { D4_ELEMENTS, frameFor } from "./d4-oracle.js";
+import { D4_ELEMENTS, frameFor } from "./helpers/d4-oracle.js";
 
 const W = 6000;
 const H = 6000;

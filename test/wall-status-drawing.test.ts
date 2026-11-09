@@ -15,7 +15,7 @@
  * - **`examples/remodel.arch` is pinned**: its SVG, DXF, `describe()` and `lint()` by SHA-256.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 as sha } from "./helpers/digest.js";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -28,7 +28,6 @@ import { legendRowCount, planTableRows, scheduleRowCount } from "../src/sheet-ta
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const REMODEL = readFileSync(join(ROOT, "examples", "remodel.arch"), "utf8");
-const sha = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
 
 const plan = (head: string, body: string) => `plan "p" {\n  units mm\n  grid 1\n${head}${body}\n}\n`;
 const SHELL = `  wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,5000) (0,5000) close }`;

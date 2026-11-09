@@ -1,3 +1,5 @@
+/** arch repair. */
+
 import { describe, expect, it } from "vitest";
 import { format, repair, lint } from "../src/index.js";
 import { resolvePlan } from "../src/analyze.js";

@@ -1,3 +1,5 @@
+/** wilson95; live report intervals. */
+
 import { describe, expect, it } from "vitest";
 import { wilson95 } from "../eval/stats.js";
 import { renderDelta, renderResults } from "../eval/run.js";

@@ -2,8 +2,8 @@
  * `scripts/bump-lockstep.ts` rewrites exactly the pinned release fields and nothing else:
  * run on a tmp copy of the manifests and the lock, undo exactly the expected edits, compare every byte.
  */
-import { cpSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
+import { mkTmp } from "./helpers/tmp.js";
+import { cpSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { pinLockstep } from "../scripts/bump-lockstep.js";
@@ -14,7 +14,7 @@ const SERVER = "packages/mcp/server.json";
 const VSCODE = "editors/vscode/package.json";
 const LOCK = "package-lock.json";
 const FILES = [MCP, SERVER, VSCODE, LOCK];
-const tmp = mkdtempSync(join(tmpdir(), "bump-lockstep-"));
+const tmp = mkTmp("bump-lockstep-");
 afterAll(() => rmSync(tmp, { recursive: true, force: true }));
 
 function copyTo(name: string): string {

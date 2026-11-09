@@ -1,3 +1,5 @@
+/** malformed OpenPlan3D input. */
+
 import { readFileSync, readdirSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import { join } from "node:path";
@@ -6,14 +8,20 @@ import { describe, expect, it } from "vitest";
 import { compile, openPlan3dToArch } from "../src/index.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { MAX_IMPORT_LEVELS } from "../src/import/limits.js";
-import { MUTATION_KINDS, type MutationKind, applyMutations, mutationsArb, protoSnapshot } from "./json-mutate.js";
+import {
+  MUTATION_KINDS,
+  type MutationKind,
+  applyMutations,
+  mutationsArb,
+  protoSnapshot,
+} from "./helpers/json-mutate.js";
 import { runs as scaledRuns } from "./setup/fast-check.js";
 
 /**
  * Malformed OpenPlan3D input never throws (EH1.10, T-F3 / S-FZ-5).
  *
  * The fixtures in `test/fixtures/openplan3d` are mutated by the shared seeded mutators
- * (`test/json-mutate.ts`), plus two shape attacks: nesting 500 deep and arrays of 10k empty
+ * (`test/helpers/json-mutate.ts`), plus two shape attacks: nesting 500 deep and arrays of 10k empty
  * objects. Laws: `openPlan3dToArch` never throws; every diagnostic carries a catalogued code; a
  * result with `source` has no error diagnostic and that source compiles without throwing; no
  * prototype gains an own key; the big inputs end in a result (the step meter / level cap), not a hang.

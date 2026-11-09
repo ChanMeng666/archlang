@@ -22,7 +22,7 @@ import { describe as suite, expect, it } from "vitest";
 import { actOnSide, fromSpelling } from "../src/algebra/d4.js";
 import { type DependsEntry, type DependsFacts, describe, type SceneSummary } from "../src/index.js";
 import { buildManifest } from "../src/manifest.js";
-import { planSpec, withInstance } from "./arbitrary-plan.js";
+import { planSpec, withInstance } from "./helpers/arbitrary-plan.js";
 import {
   corpusElements,
   D4_TEST_ELEMENTS,
@@ -31,7 +31,7 @@ import {
   EXAMPLES_WORLD,
   translationFor,
   wrapperSource,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 import { runs } from "./setup/fast-check.js";
 
 const plan = (body: string, head = "grid 50"): string => `plan "t" {\n  units mm\n  ${head}\n${body}\n}\n`;

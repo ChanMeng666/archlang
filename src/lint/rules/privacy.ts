@@ -49,7 +49,7 @@ import type { Digraph } from "../../algebra/paths.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { canonicalFixture } from "../../elements/fixtures-glyphs.js";
 import type { WallSegment } from "../../geometry.js";
-import { collinearOverlapLength, distPointToSegment, polygonEdges } from "../../geometry/polygon.js";
+import { collinearOverlapLength, distPointToSegment, polygonEdges, rectRing } from "../../geometry/polygon.js";
 import type { RDoor, RRoom } from "../../ir.js";
 import { fmt0, fmt2 } from "../../num-format.js";
 import { judgesAsDwelling, type LintContext, type LintRule } from "../context.js";
@@ -273,12 +273,7 @@ function segmentsCross(a: Point, b: Point, c: Point, d: Point): boolean {
  * pair is an endpoint of one side against a segment of the other.
  */
 function pathToRectMm(path: readonly Point[], r: { x: number; y: number; w: number; h: number }): number {
-  const corners = [
-    { x: r.x, y: r.y },
-    { x: r.x + r.w, y: r.y },
-    { x: r.x + r.w, y: r.y + r.h },
-    { x: r.x, y: r.y + r.h },
-  ];
+  const corners = rectRing(r);
   const inside = (p: Point): boolean => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
   if (path.some(inside)) return 0;
   let best = Number.POSITIVE_INFINITY;

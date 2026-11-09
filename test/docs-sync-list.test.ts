@@ -30,9 +30,9 @@
  *    its generated `_headers` rule).
  */
 
+import { exampleNames } from "./helpers/corpus.js";
 import { execFileSync } from "node:child_process";
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join } from "node:path";
+import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const SYNC = "docs-site/sync-docs.mjs";
@@ -78,10 +78,7 @@ function tupleTable(name: string): Array<[string, string]> {
 }
 
 /** Every `examples/*.arch` (top level only — `examples/lib/` holds component libraries). */
-const exampleFiles = (): string[] =>
-  readdirSync("examples")
-    .filter((f) => f.endsWith(".arch") && statSync(join("examples", f)).isFile())
-    .sort();
+const exampleFiles = (): string[] => exampleNames();
 
 /** The gallery sync-docs derives: every top-level example minus the excluded ones. */
 function galleryExamples(): string[] {
@@ -175,6 +172,7 @@ describe("no sync-docs output is tracked by git", () => {
       "docs-site/.vitepress/theme/examples-data.js",
       "docs-site/.vitepress/theme/home-data.js",
       "docs-site/.vitepress/theme/three-d-data.js",
+      "docs-site/.vitepress/theme/example-pages-data.js",
     ];
   }
 

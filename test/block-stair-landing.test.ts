@@ -28,8 +28,8 @@ import {
   stairBlock,
   THREE_FLIGHTS,
   upperBody,
-} from "./block-stair-plans.js";
-import { D4_ELEMENTS, witnessPair } from "./d4-oracle.js";
+} from "./tables/block-stair-plans.js";
+import { D4_ELEMENTS, witnessPair } from "./helpers/d4-oracle.js";
 
 const HEIGHT = "  height 2750\n";
 const NO_LANDING = "W_STAIR_NO_LANDING";

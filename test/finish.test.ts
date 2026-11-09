@@ -1,4 +1,7 @@
-import { readFileSync, readdirSync } from "node:fs";
+/** finish — the corpus is not empty; finish law 1 — fixpoint: finishing a finished plan changes nothing; finish law 2 — never worse: no error and no new diagnostic… */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import {
@@ -19,8 +22,8 @@ import { sourceConflicts } from "../src/repair.js";
 import { PAPER_SIZES } from "../src/sheet.js";
 import type { World } from "../src/world.js";
 import { AUTHORS_HEIGHT, BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
-import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./byte-identity-digest.js";
-import { heightFreeSource } from "./height-free-source.js";
+import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./helpers/byte-identity-digest.js";
+import { heightFreeSource } from "./helpers/height-free-source.js";
 
 /**
  * `finish()` — the sheet stage (`docs/adr/0024-finish-as-explicit-transform.md`). The
@@ -43,13 +46,13 @@ const world: World = {
   },
   now: () => new Date(0),
 };
-const NAMES = readdirSync(EXAMPLES)
-  .filter((f) => f.endsWith(".arch"))
+const NAMES = exampleNames()
   .map((f) => f.slice(0, -".arch".length))
   .sort();
 const srcOf = (name: string): string => readFileSync(join(EXAMPLES, `${name}.arch`), "utf8");
 
 /** compile + lint diagnostic codes as a multiset — re-derived here, not read from `finish`. */
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it returns counts or a set.
 function codes(src: string): Map<string, number> {
   const out = new Map<string, number>();
   for (const d of [...compile(src, { world, noCache: true }).diagnostics, ...lint(src, { world })])

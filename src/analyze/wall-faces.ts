@@ -44,7 +44,7 @@ import { arcExtremes, distPointToArc } from "../geometry/arc.js";
 import { type EdgeLoop, edgeMid, loopArea, loopBBox, loopWinding } from "../geometry/band.js";
 import { type GridBox, GridIndex } from "../geometry/grid-index.js";
 import { segmentsOfWall } from "../geometry.js";
-import { distPointToSegment } from "../geometry/polygon.js";
+import { distPointToSegment, rectRing } from "../geometry/polygon.js";
 import type { RRoom, RWall } from "../ir.js";
 import { joinWallSet } from "../wall-lowering.js";
 import {
@@ -511,12 +511,7 @@ export function roomOutside(wf: WallFaces, r: FaceRoom): RoomOutside | null {
   for (const v of [area, inFaces]) if (!Number.isFinite(v) || v < -eps || v > reg.gross + eps) return null;
   let depth = 0;
   if (!r.circle) {
-    const ring = r.poly ?? [
-      { x: r.at.x, y: r.at.y },
-      { x: r.at.x + r.size.w, y: r.at.y },
-      { x: r.at.x + r.size.w, y: r.at.y + r.size.h },
-      { x: r.at.x, y: r.at.y + r.size.h },
-    ];
+    const ring = r.poly ?? rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
     for (const v of ring) {
       if (!off(v)) continue;
       let d = Number.POSITIVE_INFINITY;
