@@ -38,6 +38,7 @@
 
 import type { SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
+import { rectRing } from "../geometry/polygon.js";
 import { clamp, insetRect, ovalPath, rectPoly, roundedRectPath, shortSide } from "./glyph-lib.js";
 
 /**
@@ -164,12 +165,7 @@ export function drawShower(r: Rect, g: GlyphCtx): SceneNode[] {
   const ringR = s * 0.055;
   // Each fall runs from just inside a floor corner to the waste's ring, along the diagonal.
   const lead = s * 0.03;
-  for (const [fx, fy] of [
-    [floor.x, floor.y],
-    [floor.x + floor.w, floor.y],
-    [floor.x + floor.w, floor.y + floor.h],
-    [floor.x, floor.y + floor.h],
-  ] as const) {
+  for (const { x: fx, y: fy } of rectRing(floor)) {
     const dx = cx - fx;
     const dy = cy - fy;
     const len = Math.hypot(dx, dy);

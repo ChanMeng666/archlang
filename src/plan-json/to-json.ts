@@ -69,7 +69,7 @@ import { num, q } from "./emit.js";
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
 /** Rectangle corners of a resolved sized element, clockwise from top-left. */
-function rectPolygon(x: number, y: number, w: number, h: number): PointJson[] {
+export function rectPolygon(x: number, y: number, w: number, h: number): PointJson[] {
   return rectRing({ x, y, w, h });
 }
 

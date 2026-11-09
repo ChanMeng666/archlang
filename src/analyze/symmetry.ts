@@ -477,12 +477,7 @@ function floorRec(r: RRoom): Rec<Point> {
   return {
     form: "ring",
     label,
-    pts: [
-      { x, y },
-      { x: x + w, y },
-      { x: x + w, y: y + h },
-      { x, y: y + h },
-    ],
+    pts: rectRing({ x, y, w, h }),
   };
 }
 
@@ -627,19 +622,14 @@ function verticalRec(v: RVertical): Rec<Point> {
   return {
     form: "set",
     label,
-    pts: [
-      { x, y },
-      { x: x + w, y },
-      { x: x + w, y: y + h },
-      { x, y: y + h },
-    ],
+    pts: rectRing({ x, y, w, h }),
     vec: { x: vec.x, y: vec.y },
     ...(v.kind === "stair" ? { hand: v._mirror ? -1 : 1 } : {}),
   };
 }
 
 /** An axis-aligned rectangle (top-left + size) as a closed ring. */
-const boxRing = (at: Point, size: { w: number; h: number }): Point[] =>
+export const boxRing = (at: Point, size: { w: number; h: number }): Point[] =>
   rectRing({ x: at.x, y: at.y, w: size.w, h: size.h });
 
 /**
@@ -755,12 +745,7 @@ function furnitureRec(f: RFurniture): Rec<Point> {
   return {
     form: "set",
     label: `furniture ${f.category}`,
-    pts: [
-      { x, y },
-      { x: x + w, y },
-      { x: x + w, y: y + h },
-      { x, y: y + h },
-    ],
+    pts: rectRing({ x, y, w, h }),
     ...(spec && spec.symmetric !== true ? { vec: backVectorOfDeg(f.rotate ?? 0) } : {}),
     ...(handed(f) ? { hand: f._mirror ? -1 : 1 } : {}),
   };

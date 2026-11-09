@@ -66,8 +66,6 @@ export interface ArcBandHit {
   runs: Array<[number, number]>;
 }
 
-const corners = rectRing;
-
 const inBox = (p: Point, r: BBox): boolean => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
 
 /**
@@ -129,7 +127,7 @@ function sweptRuns(fr: BBox, arc: Arc, mag: number): Array<[number, number]> {
     keep(0, mag);
     return out;
   }
-  const offs = corners(fr)
+  const offs = rectRing(fr)
     .map((p) => arcAngleOffset(arc, p))
     .sort((x, y) => x - y);
   let gap = offs[0]! + TAU - offs[3]!;
@@ -160,7 +158,7 @@ export function arcBandIntrusion(fr: BBox, arc: Arc, thickness: number): ArcBand
 
   const c = arc.center;
   const radii: number[] = [];
-  const cs = corners(fr);
+  const cs = rectRing(fr);
   if (inBox(c, fr)) radii.push(0);
   for (const p of cs) if (arcContainsRay(arc, p)) radii.push(Math.hypot(p.x - c.x, p.y - c.y));
   for (const end of [arc.a, arc.b]) {
