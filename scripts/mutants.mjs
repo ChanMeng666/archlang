@@ -446,22 +446,37 @@ export function markdown(r) {
 
 // ---- main ------------------------------------------------------------------------------------
 
-/** The characters a RegExp reads as syntax; each is escaped by itself, character by character. */
-const REGEX_META = new Set(Array.from(".+^{}$()|[]\\/?*"));
-
-function globToRegExp(g) {
-  let re = "";
-  for (let i = 0; i < g.length; i++) {
-    const ch = g[i];
-    if (ch === "*" && g[i + 1] === "*") {
-      re += ".*";
-      i++;
-      if (g[i + 1] === "/") i++;
-    } else if (ch === "*") re += "[^/]*";
-    else if (ch === "?") re += "[^/]";
-    else re += REGEX_META.has(ch) ? `\\${ch}` : ch;
-  }
-  return new RegExp(`^${re}$`);
+/**
+ * Whether a `/`-separated `path` matches the glob `pattern`, walking both strings (no RegExp is
+ * ever built from the argument). `*` is any run of characters except `/`, `**` any run including
+ * `/` (and `**\/` also matches no folder at all, so `src/**\/*.ts` takes `src/a.ts`), `?` one
+ * character except `/`; every other character is itself. Each (pattern, path) position pair is
+ * decided once, so the walk is at most pattern length × path length steps whatever the input.
+ */
+export function globMatch(pattern, path) {
+  const memo = new Map();
+  const at = (p, s) => {
+    const key = p * (path.length + 1) + s;
+    const known = memo.get(key);
+    if (known !== undefined) return known;
+    let r = false;
+    const c = pattern[p];
+    if (p === pattern.length) r = s === path.length;
+    else if (c === "*" && pattern[p + 1] === "*") {
+      const q = p + 2;
+      for (let k = s; k <= path.length && !r; k++) r = at(q, k);
+      if (!r && pattern[q] === "/") r = at(q + 1, s);
+    } else if (c === "*") {
+      for (let k = s; !r; k++) {
+        r = at(p + 1, k);
+        if (k === path.length || path[k] === "/") break;
+      }
+    } else if (c === "?") r = s < path.length && path[s] !== "/" && at(p + 1, s + 1);
+    else r = s < path.length && path[s] === c && at(p + 1, s + 1);
+    memo.set(key, r);
+    return r;
+  };
+  return at(0, 0);
 }
 
 const gitOut = (root, ...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
@@ -469,12 +484,12 @@ const gitOut = (root, ...args) => execFileSync("git", args, { cwd: root, encodin
 function resolveFiles(root, list) {
   const out = [];
   let tracked;
-  for (const p of list) {
-    if (/[*?]/.test(p)) {
+  for (const raw of list) {
+    const p = raw.replace(/\\/g, "/");
+    if (p.includes("*") || p.includes("?")) {
       tracked ??= gitOut(root, "ls-files").split("\n").filter(Boolean);
-      const re = globToRegExp(p);
-      out.push(...tracked.filter((f) => re.test(f)));
-    } else out.push(p.replace(/\\/g, "/"));
+      out.push(...tracked.filter((f) => globMatch(p, f)));
+    } else out.push(p);
   }
   return [...new Set(out)];
 }

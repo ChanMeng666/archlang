@@ -22,6 +22,7 @@ const {
   classify,
   dateSeed,
   enumerateSites,
+  globMatch,
   main,
   markdown,
   mulberry32,
@@ -202,6 +203,30 @@ describe("the summary table", () => {
     expect(row).toContain("test/a.test.ts › p\\|q");
     // No unescaped pipe inside a cell: splitting on the unescaped ones gives exactly the 7 columns.
     expect(row.split(/(?<!\\)\|/).length).toBe(9);
+  });
+
+  it("globMatch: `*` stops at `/`, `**` crosses it (and `**/` may match no folder), `?` is one non-`/` character", () => {
+    const yes = (p: string, f: string) => expect(globMatch(p, f), `${p} ~ ${f}`).toBe(true);
+    const no = (p: string, f: string) => expect(globMatch(p, f), `${p} !~ ${f}`).toBe(false);
+    yes("src/*.ts", "src/num-format.ts");
+    no("src/*.ts", "src/geometry/polygon.ts");
+    yes("src/**/*.ts", "src/geometry/polygon.ts");
+    yes("src/**/*.ts", "src/a/b/c.ts");
+    yes("src/**/*.ts", "src/num-format.ts");
+    no("src/**/x.ts", "src/ax.ts");
+    yes("src/**", "src/a/b.ts");
+    yes("src/num-form?t.ts", "src/num-format.ts");
+    no("src?num-format.ts", "src/num-format.ts");
+    no("src/num-form?t.ts", "src/num-formt.ts");
+    // Every other character is itself: regex syntax means nothing here.
+    no("src/num.format.ts", "src/num-format.ts");
+    yes("a+(b)[c]{d}$^|.ts", "a+(b)[c]{d}$^|.ts");
+    no("a+(b).ts", "aa(b).ts");
+    // Bounded on a hostile pattern: each position pair is decided once.
+    const t0 = Date.now();
+    no(`${"*".repeat(40)}x`, "a".repeat(200));
+    no(`${"**/".repeat(20)}x`, "a/".repeat(100));
+    expect(Date.now() - t0).toBeLessThan(2000);
   });
 
   it("a glob in --files matches tracked paths, its regex metacharacters taken literally", async () => {
