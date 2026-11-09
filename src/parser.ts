@@ -3,7 +3,7 @@
 import type { Token } from "./lexer.js";
 import { lex } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
-import { capDiagnostics, MAX_DIAGNOSTICS } from "./diagnostics.js";
+import { capDiagnostics, isLimitClass, MAX_DIAGNOSTICS } from "./diagnostics.js";
 import type {
   AssignNode,
   AxesNode,
@@ -157,7 +157,7 @@ class Parser {
   /** Collect one diagnostic — at most one past {@link MAX_DIAGNOSTICS}, so a flood stops
    *  costing anything while `capDiagnostics` can still tell that some were dropped. */
   private report(d: Diagnostic): void {
-    if (this.diagnostics.length <= MAX_DIAGNOSTICS) this.diagnostics.push(d);
+    if (this.diagnostics.length <= MAX_DIAGNOSTICS || isLimitClass(d)) this.diagnostics.push(d);
     else if (d.severity === "error") this.droppedError = true;
   }
   /** Facade passed to element parse functions (see registry.ts). */

@@ -429,7 +429,7 @@ wall interior thickness 100 { (a.left, 0) (a.left, 3000) }   # error: a could no
 
 *error* — More than 500 diagnostics; further diagnostics were not collected.
 
-**Cause.** One compile reports at most 500 diagnostics. Past that the lexer and parser stop collecting and every later stage's are dropped, and this one closes the list, at the byte just past the last diagnostic kept. A page of stray characters, thousands of repeated declarations or one bad statement inside a long loop would otherwise cost more to report than the plan costs to compile. It is the error form, raised when any diagnostic, kept or dropped, is an error, so the plan draws nothing; when every one is a warning the limit is `W_DIAGNOSTIC_LIMIT` instead.
+**Cause.** One compile reports at most 500 diagnostics. Past that the lexer and parser stop collecting and every later stage's are dropped, except a budget or cap that stopped the work (`E_STEP_LIMIT`, `E_DRAWING_LIMIT`, `E_ELEMENT_LIMIT` and the other `*_LIMIT` codes), which are always kept, and this one closes the list, at the byte just past the 500th diagnostic kept. A page of stray characters, thousands of repeated declarations or one bad statement inside a long loop would otherwise cost more to report than the plan costs to compile. It is the error form, raised when any diagnostic, kept or dropped, is an error, so the plan draws nothing; when every one is a warning the limit is `W_DIAGNOSTIC_LIMIT` instead.
 
 **Fix.** Fix the first problems reported (they usually share one cause: a pasted binary file, a block that never closes, one bad line inside a loop) and compile again.
 

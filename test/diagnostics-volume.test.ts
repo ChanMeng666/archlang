@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { capDiagnostics, MAX_DIAGNOSTICS, offsetToLineCol } from "../src/diagnostics.js";
+import { capDiagnostics, LIMIT_CODES, MAX_DIAGNOSTICS, offsetToLineCol } from "../src/diagnostics.js";
+import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 import type { Diagnostic } from "../src/diagnostics.js";
 import { compile, describe as describePlan, ERROR_CATALOG, lint } from "../src/index.js";
 import { parse } from "../src/parser.js";
@@ -216,6 +217,58 @@ describe("diagnostics are capped at MAX_DIAGNOSTICS, then one E_DIAGNOSTIC_LIMIT
     expect(r.diagnostics.at(-1)).toMatchObject({ code: "E_DIAGNOSTIC_LIMIT", severity: "error" });
     expect(r.svg).toBe("");
     expect(describePlan(src).ok).toBe(false);
+  });
+
+  it("LIMIT_CODES is every catalogue code naming a LIMIT or BUDGET, bar the marker", () => {
+    const named = Object.keys(ERROR_CATALOG)
+      .filter((c) => /LIMIT|BUDGET/.test(c) && !c.endsWith("_DIAGNOSTIC_LIMIT"))
+      .sort();
+    expect([...LIMIT_CODES].sort()).toEqual(named);
+  });
+
+  it("a limit-class diagnostic is never dropped: kept in order, the marker last", () => {
+    const ord = (i: number): Diagnostic => ({
+      severity: "error",
+      message: "e",
+      code: "E_UNKNOWN_REF",
+      span: { start: i, end: i + 1 },
+    });
+    const step: Diagnostic = { severity: "error", message: "s", code: "E_STEP_LIMIT", span: { start: 3, end: 4 } };
+    const list = [...Array.from({ length: 700 }, (_, i) => ord(i)), step];
+    const capped = capDiagnostics(list, 1000);
+    expect(capped).toHaveLength(MAX_DIAGNOSTICS + 2);
+    expect(capped.at(-2)).toBe(step);
+    expect(capped.at(-1)!.code).toBe("E_DIAGNOSTIC_LIMIT");
+    expect(capped.at(-1)!.span).toEqual({ start: MAX_DIAGNOSTICS, end: MAX_DIAGNOSTICS + 1 });
+    // 500 ordinary diagnostics plus limit-class ones is not over the cap: the same array.
+    const atCap = [...Array.from({ length: MAX_DIAGNOSTICS }, (_, i) => ord(i)), step, step];
+    expect(capDiagnostics(atCap, 1000)).toBe(atCap);
+    // A marker from upstream moves to the end, after a later limit-class diagnostic.
+    expect(capDiagnostics([...capped.slice(0, -2), capped.at(-1)!, step], 1000).slice(-2)).toEqual([
+      step,
+      capped.at(-1),
+    ]);
+  });
+
+  it("M.2's nested loops with an unknown name: E_STEP_LIMIT survives the flood, then the marker", () => {
+    const src = plan("room id=a at (0,0) size 3000x3000\n  for i in 0..100000 { for j in 0..1000 { let x = nope } }");
+    const r = compile(src, { noCache: true });
+    const codes = r.diagnostics.map((d) => d.code);
+    expect(codes).toContain("E_STEP_LIMIT");
+    expect(codes.at(-1)).toBe("E_DIAGNOSTIC_LIMIT");
+    expect(codes.filter((c) => c === "E_DIAGNOSTIC_LIMIT")).toHaveLength(1);
+  });
+
+  it("a warning flood and a drawing past the budget: E_DRAWING_LIMIT survives, and the marker is the error", () => {
+    const run = MAX_RUN_TREADS * TREAD_GOING_MM;
+    const src = plan(
+      `${'accTitle "a"\n'.repeat(600)}  for i in 0..500 { escalator at (0, 10000 + i * 2000) size ${run}x1200 dir up }`,
+    );
+    const r = compile(src, { noCache: true });
+    const codes = r.diagnostics.map((d) => d.code);
+    expect(codes).toContain("E_DRAWING_LIMIT");
+    expect(codes.at(-1)).toBe("E_DIAGNOSTIC_LIMIT");
+    expect(r.svg).toBe("");
   });
 
   it("a plan with exactly 500 errors is reported in full, with no limit", () => {

@@ -197,32 +197,74 @@ export function offsetToLineCol(source: string, offset: number): { line: number;
  */
 export const MAX_DIAGNOSTICS = 500;
 
-const isLimit = (d: Diagnostic): boolean => d.code === "E_DIAGNOSTIC_LIMIT" || d.code === "W_DIAGNOSTIC_LIMIT";
+/** The cap's own marker, in either severity. */
+const isMarker = (d: Diagnostic): boolean => d.code === "E_DIAGNOSTIC_LIMIT" || d.code === "W_DIAGNOSTIC_LIMIT";
 
 /**
- * `list` with at most {@link MAX_DIAGNOSTICS} entries, then one limit diagnostic when any were
- * dropped. Its severity follows the diagnostics (EH-D8 as amended): `E_DIAGNOSTIC_LIMIT` when
+ * The budget and cap codes: each says why work STOPPED, so the cap never drops one (a flood of
+ * `E_UNKNOWN_REF` must not hide the `E_STEP_LIMIT` that ended it). Every catalogue code naming a
+ * LIMIT or BUDGET, bar the marker itself (pinned in test/diagnostics-volume.test.ts). Each is
+ * raised once per budget or loop and charged to the step meter, so keeping them all stays bounded.
+ */
+export const LIMIT_CODES: ReadonlySet<string> = new Set([
+  "E_DRAWING_LIMIT",
+  "E_ELEMENT_LIMIT",
+  "E_IMPORT_LIMIT",
+  "E_KEEP_LIMIT",
+  "E_RANGE_LIMIT",
+  "E_RATE_LIMITED",
+  "E_STEP_LIMIT",
+  "E_WHILE_LIMIT",
+]);
+
+/** A diagnostic the cap always keeps (see {@link LIMIT_CODES}). */
+export const isLimitClass = (d: Diagnostic): boolean => d.code !== undefined && LIMIT_CODES.has(d.code);
+
+/**
+ * `list` with its first {@link MAX_DIAGNOSTICS} ordinary diagnostics plus EVERY limit-class one
+ * ({@link LIMIT_CODES}), in their original order, then one marker last when any were dropped.
+ * The marker's severity follows the diagnostics (EH-D8 as amended): `E_DIAGNOSTIC_LIMIT` when
  * there is an error ANYWHERE — in the whole uncapped `list`, kept or dropped, or among what a
  * producer stopped collecting (`droppedError`, the parser's flag) — and `W_DIAGNOSTIC_LIMIT`
  * otherwise, so a plan that only floods warnings still draws, lints and describes.
  *
- * A list at or under the cap is returned AS IS (the same array), so sub-cap output is
- * byte-identical. Idempotent: a list already capped upstream (the parse stage) keeps its
- * limit's span and loses what followed, and an `E_DIAGNOSTIC_LIMIT` there stays an error (it
- * stands for an error the parser dropped). The span is the byte just past the last kept
+ * A list with at most 500 ordinary diagnostics and no marker is returned AS IS (the same array),
+ * so sub-cap output is byte-identical. Idempotent: a marker from upstream (the parse stage) is
+ * moved to the end, keeps its span, and an `E_DIAGNOSTIC_LIMIT` there stays an error (it stands
+ * for an error the parser dropped). A new marker's span is the byte just past the 500th ordinary
  * diagnostic's span, or the end of the source when that one has no span or is measured in
  * another file.
  */
 export function capDiagnostics(list: Diagnostic[], sourceLength: number, droppedError = false): Diagnostic[] {
   if (list.length <= MAX_DIAGNOSTICS) return list;
+  let ordinary = 0;
+  let upstream: Diagnostic | undefined;
+  for (const d of list) {
+    if (isMarker(d)) upstream ??= d;
+    else if (!isLimitClass(d)) ordinary++;
+  }
+  if (ordinary <= MAX_DIAGNOSTICS && upstream === undefined) return list;
   const anyError =
-    droppedError || list.some((d) => d.code === "E_DIAGNOSTIC_LIMIT" || (d.severity === "error" && !isLimit(d)));
-  const upstream = list[MAX_DIAGNOSTICS]!;
+    droppedError || list.some((d) => d.code === "E_DIAGNOSTIC_LIMIT" || (d.severity === "error" && !isMarker(d)));
+  const kept: Diagnostic[] = [];
+  let lastOrdinary: Diagnostic | undefined;
+  let count = 0;
+  for (const d of list) {
+    if (isMarker(d)) continue;
+    if (isLimitClass(d)) kept.push(d);
+    else if (count < MAX_DIAGNOSTICS) {
+      kept.push(d);
+      lastOrdinary = d;
+      count++;
+    }
+  }
   let span: Span;
-  if (isLimit(upstream) && upstream.span) span = upstream.span;
+  if (upstream?.span) span = upstream.span;
   else {
-    const last = list[MAX_DIAGNOSTICS - 1]!;
-    const at = last.span && last.file === undefined ? Math.min(Math.max(0, last.span.end), sourceLength) : sourceLength;
+    const at =
+      lastOrdinary?.span && lastOrdinary.file === undefined
+        ? Math.min(Math.max(0, lastOrdinary.span.end), sourceLength)
+        : sourceLength;
     span = { start: at, end: Math.min(at + 1, sourceLength) };
   }
   const message = `More than ${MAX_DIAGNOSTICS} diagnostics; further diagnostics were not collected`;
@@ -230,7 +272,7 @@ export function capDiagnostics(list: Diagnostic[], sourceLength: number, dropped
   const limit: Diagnostic = anyError
     ? { severity: "error", message, code: "E_DIAGNOSTIC_LIMIT", span, hints }
     : { severity: "warning", message, code: "W_DIAGNOSTIC_LIMIT", span, hints };
-  return [...list.slice(0, MAX_DIAGNOSTICS), limit];
+  return [...kept, limit];
 }
 
 /** Byte offset of the start of the line containing `offset`. */
