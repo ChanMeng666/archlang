@@ -784,6 +784,7 @@ export const leafAcrossDoorway: LintRule = {
         if (b === a || warned.has(`${a.id}|${b.id}`)) continue;
         const eb = edgeOf.get(b.id);
         if (!eb) continue;
+        ctx.work.leafDoorPairs++;
         if (doorLeaves(b).some((sb) => swingsCollide(sa, sb, rules.swingClearanceMm))) continue;
         const hit = leafOverApproach(sa, b, depth);
         if (!hit) continue;

@@ -121,7 +121,7 @@ function circulationOf(ctx: LintContext, from: "walk" | "nearest" = "walk"): Cir
     // landings as the storey's way in.
     ctx.building.arrivalShafts,
     // The nearest-entrance model, when it is a second one, is read for its rooms alone.
-    { navCache: shared(ctx), routes: from === "walk" },
+    { navCache: shared(ctx), routes: from === "walk", stats: ctx.work },
   );
   cache.set(ctx, model);
   return model;
@@ -475,6 +475,7 @@ function attributeBottlenecks(
       ctx.voids,
       ctx.building.arrivalShafts,
       { request, result },
+      ctx.work,
     );
     return { readings, own: result };
   };

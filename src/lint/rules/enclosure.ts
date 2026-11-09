@@ -292,6 +292,7 @@ function openStretches(ctx: LintContext, run: SharedRun): OpenStretch[] {
   const along = (x: Point): number => (x.x - p.x) * u.x + (x.y - p.y) * u.y;
   const across = (x: Point): number => (x.x - p.x) * n.x + (x.y - p.y) * n.y;
   const straight = ctx.wallSegs.filter((s) => !s.arc);
+  ctx.work.boundaryRunTests += straight.length;
   const covered = edgeWallCover(p, q, straight, ctx.rules.tolMm, { halfGap: sep / 2, slack: WALL_BODY_SLACK_MM });
   // A wall CROSSING the run (not parallel to it) stands on it where its body spans the gap
   // between the room edges: its body is clipped to that strip and its extent along the run
@@ -325,6 +326,7 @@ function openStretches(ctx: LintContext, run: SharedRun): OpenStretch[] {
   let connector = false;
   // A run a demolished wall leaves open (B3a) joins the two rooms as an opening does.
   for (const c of [...ctx.connectors, ...ctx.openRuns]) {
+    ctx.work.boundaryRunTests++;
     const half = (c.host?.thickness ?? 0) / 2;
     if (Math.abs(across(c.at)) - half - WALL_BODY_SLACK_MM > sep / 2) continue;
     const s = along(c.at);
@@ -335,6 +337,7 @@ function openStretches(ctx: LintContext, run: SharedRun): OpenStretch[] {
   const counters: Array<[number, number]> = [];
   for (const f of ctx.furniture) {
     if (!BOUNDARY_FIXTURES.has(f.category)) continue;
+    ctx.work.boundaryRunTests++;
     const r = rectOf(f);
     const corners = rectRing(r);
     const ns = corners.map(across);
