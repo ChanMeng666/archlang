@@ -5,21 +5,27 @@ import ts from "typescript";
 import { describe, expect, it } from "vitest";
 
 /**
- * Which `src/` modules do something when they are merely imported? A package may declare
- * `"sideEffects": false` only if the answer is none: a bundler is then free to drop an import whose
- * exports go unused, and any module that registers itself somewhere on load would silently stop
- * working. This scan, over every `src/**\/*.ts` (never a list), pins the answer.
+ * A ratchet on import-time effects in `src/`, the precondition for declaring `"sideEffects": false`
+ * (a bundler may then drop an import whose exports go unused, so a module that registers itself on
+ * load would silently stop working). It scans every `src/**\/*.ts` (never a list) and checks
+ * EXACTLY two things, read from the syntax tree:
+ *  - top-level bare expression statements (`f();`, `x = 1;`, `void main();`): each must be in
+ *    KNOWN_LOAD_EFFECTS below, with its reason;
+ *  - calls to a registry mutator (`register*`, `set*Backend`, `setBuiltinDispatch`) anywhere that
+ *    runs at module evaluation, i.e. outside function-like bodies (this includes `const X = f()`
+ *    initialisers whose callee is one of those names), except the known one.
  *
- * Rules, read from the syntax tree:
- *  - a top-level statement that is a bare expression (a call, an assignment) runs on load, so each
- *    one must be in KNOWN_LOAD_EFFECTS below, with its reason;
- *  - no registry mutator (`register*`, `set*Backend`, `setBuiltinDispatch`) is called while a module
- *    evaluates (outside function bodies), except the known ones.
+ * KNOWN LIMIT, so this is not a proof of purity: an ordinary initialiser such as
+ * `const VERSION = readVersion()` (`src/cli/io.ts`) or `const BUILTIN_REGISTRY = createRegistry()`
+ * is NOT inspected beyond the mutator names (about 45 such initialisers exist); a helper that mutates
+ * foreign state when called from an initialiser, an IIFE doing the same under a different name, and
+ * class static blocks are all invisible here.
  *
- * Finding that stands behind the root `package.json` NOT declaring `sideEffects`: `src/builtins.ts`
- * injects its dispatch table into `src/expr.ts` on load (it breaks an import cycle), so dropping an
- * "unused" `import "./builtins.js"` would leave the evaluator without built-in functions. When that
- * becomes an explicit call from the pipeline, delete the entry here and declare `sideEffects: false`.
+ * Why the root `package.json` does not declare `sideEffects`: `src/builtins.ts` injects its dispatch
+ * into `src/expr.ts` on load (it breaks an import cycle). The hazard is real only if the value import
+ * of `BUILTIN_NAMES` (`src/ir.ts`, `src/analyze/depends.ts`) ever disappears. The way out is to make
+ * the registration an explicit call from the pipeline, drop the entry below, then declare
+ * `sideEffects: false`.
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
