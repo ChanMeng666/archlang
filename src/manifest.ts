@@ -605,7 +605,7 @@ const COMMANDS: ManifestCommand[] = [
     flags: [JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output:
-      "the playground URL; --json gives { ok, playground, embed, bytes } (embed: the plan alone, for an iframe; bytes: the compressed plan). A plan that does not compile still gets a link: ok false with an errors count, one warning on stderr, exit 0",
+      "the playground URL; --json gives { ok, playground, embed, bytes } (embed: the plan alone, for an iframe; bytes: the compressed plan). A plan that does not compile still gets a link: ok false with an errors count, one warning on stderr; exits 0 on a plan that does not parse, and `errors` is the diagnostic count (`archlang validate --json` lists them)",
     examples: [
       { cmd: "archlang link plan.arch", note: "a URL to give the user: it opens the plan in the hosted playground" },
       {
@@ -838,7 +838,8 @@ const COMMANDS: ManifestCommand[] = [
     summary: "completion items in scope at a source byte offset (the LSP completion() core)",
     flags: [AT_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
-    output: "{ items: [...] } completion items",
+    output:
+      "{ items: [...] } completion items; exits 0 on a plan that does not parse (items are still offered; run `archlang validate --json` for the diagnostics)",
     examples: [
       { cmd: "archlang complete plan.arch --at 120 --json", note: "what may legally be written at byte offset 120" },
       { cmd: "archlang complete - --at 0 --json < plan.arch", note: "completions for source on stdin" },
@@ -849,7 +850,8 @@ const COMMANDS: ManifestCommand[] = [
     summary: "canonical formatting",
     flags: [{ flag: "--write", description: "format the file in place" }, EXPECTED_HASH_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
-    output: "formatted source (or in place with --write)",
+    output:
+      "formatted source (or in place with --write); exits 0 and returns the source verbatim when it does not parse; `fmt --write` leaves the file untouched",
     examples: [
       { cmd: "archlang fmt plan.arch --json", note: "canonical source plus a `changed` flag, nothing written" },
       { cmd: "archlang fmt plan.arch --write", note: "rewrite the file in canonical form" },
@@ -868,7 +870,8 @@ const COMMANDS: ManifestCommand[] = [
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
-    output: "corrected source + change log on stderr",
+    output:
+      "corrected source + change log on stderr; exits 0 on a plan that does not parse (nothing is changed; the reason is in `unresolved[]` of --json)",
     examples: [
       {
         cmd: "archlang repair plan.arch --json",
@@ -990,7 +993,8 @@ const COMMANDS: ManifestCommand[] = [
       QUIET_FLAG,
     ],
     input: "<file.arch|->",
-    output: "suggestions (JSON or a summary), or the rewritten file with --write",
+    output:
+      "suggestions (JSON or a summary), or the rewritten file with --write; exits 0 on a plan that does not parse, with `suggestions: []` (run `archlang validate --json` for the diagnostics)",
     examples: [
       {
         cmd: "archlang reroll plan.arch --json",
@@ -1022,7 +1026,7 @@ const COMMANDS: ManifestCommand[] = [
         flag: "--lock",
         arg: "<id[,id…]>",
         description:
-          "elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]`",
+          "elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]`. A side that does not parse is exit 2 with `{ ok: false, diagnostics }` and no `lock` key: nothing is checked",
       },
       IMPORT_ROOT_FLAG,
       JSON_FLAG,
@@ -1030,7 +1034,7 @@ const COMMANDS: ManifestCommand[] = [
     ],
     input: "<file.arch|->",
     output:
-      "{ ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a refused --set or a lock that changed, was refused or could not be checked)",
+      "{ ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a plan that does not parse (`{ ok: false, diagnostics }`), a refused --set, or a lock that changed, was refused or could not be checked)",
     examples: [
       {
         cmd: "archlang impact plan.arch --set W=4500 --json",
@@ -1051,7 +1055,8 @@ const COMMANDS: ManifestCommand[] = [
     summary: "advisory door/window statements for unreachable or windowless rooms",
     flags: [IMPORT_ROOT_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
-    output: "suggestions (JSON or a summary)",
+    output:
+      "suggestions (JSON or a summary); exits 0 on a plan that does not parse, with `suggestions: []` (run `archlang validate --json` for the diagnostics)",
     examples: [
       {
         cmd: "archlang suggest plan.arch --json",

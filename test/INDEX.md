@@ -43,10 +43,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (70) — `block-stair-byte-identity`, `cli-contract`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip`, `cli-storey-names` (+62)
+- `src/cli/io.ts` (71) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+63)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (42) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-expected-hash`, `cli-finish`, `cli-fix-backup` (+34)
+- `src/cli/run.ts` (43) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+35)
 - `src/cli/serialize.ts` (7) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -242,6 +242,7 @@ The first sentence of each file's header comment.
 - `test/cli-commands.test.ts` — CLI — fmt; CLI — watch; CLI — manifest / capabilities.
 - `test/cli-context.test.ts` — `arch context --section` — bounded agent context.
 - `test/cli-contract.test.ts` — the contract table covers the manifest.
+- `test/cli-exit-parse.test.ts` — impact exits 2 on a plan that does not parse; fmt returns it verbatim with exit 0 (EH1.18).
 - `test/cli-expected-hash.test.ts` — --expected-hash: a stale read refuses before anything is computed or written; --expected-hash: a matching read writes, and reports the revisions; --expected-has…
 - `test/cli-finish.test.ts` — arch finish — the write boundary; arch finish — exit codes; arch finish — a plan with `level` blocks.
 - `test/cli-fix-backup.test.ts` — arch fix — safe retries (--backup / diff preview).
