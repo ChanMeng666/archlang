@@ -1,3 +1,5 @@
+/** arch fix — safe retries (--backup / diff preview). */
+
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

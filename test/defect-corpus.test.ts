@@ -1,3 +1,5 @@
+/** defect corpus: shape. */
+
 import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

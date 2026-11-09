@@ -17,7 +17,8 @@
  * model (sampled primitives, not boxes), so the two cannot agree by construction.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
@@ -175,8 +176,7 @@ function tagsOf(nodes: readonly SceneNode[], page: string): Tag[] {
 }
 
 const examplesWithOpenings = (): string[] =>
-  readdirSync(EXAMPLES)
-    .filter((f) => f.endsWith(".arch"))
+  exampleNames()
     .filter((f) => /^\s*(door|window)\b/m.test(readFileSync(join(EXAMPLES, f), "utf8")))
     .sort();
 

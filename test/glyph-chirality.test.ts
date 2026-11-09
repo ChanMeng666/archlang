@@ -37,9 +37,15 @@ import { resolve } from "../src/ir.js";
 import { toScene } from "../src/scene-build.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
 import { mapSceneNode } from "../src/elements/glyph-lib.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { pathExtentPoints } from "./helpers/glyph-extent.js";
 import { GRID_ON_MAIN } from "./handedness-grid-baseline.js";
-import { GRID_SIDES, SURVEY_FOOTPRINTS, SURVEY_OFFSETS, surveyGrid, surveyHandedness } from "./handedness-survey.js";
+import {
+  GRID_SIDES,
+  SURVEY_FOOTPRINTS,
+  SURVEY_OFFSETS,
+  surveyGrid,
+  surveyHandedness,
+} from "./helpers/handedness-survey.js";
 
 /** Real pen sizes, taken from a real scene rather than invented — as the glyph suites do. */
 const SIZES: RenderSizes = toScene(
@@ -338,7 +344,7 @@ describe("the handedness survey", () => {
  * The EXTENDED handedness survey, pinned against `main`.
  *
  * Measured on `main` @ 22bce44 (v1.38.0 + agent docs) — the checkout every visual-polish branch
- * forks from — with `npx tsx test/handedness-survey.ts <a git archive of it>`, and re-measured
+ * forks from — with `npx tsx test/helpers/handedness-survey.ts <a git archive of it>`, and re-measured
  * there with the TIE-ROBUST key this branch ships (that extract with only `glyph-chirality.ts`'s
  * key changed: `fmt4` after a 1e-7 mm nudge off the `x.xxxx5` rounding ties), so main and the
  * tip are read by the same instrument; on main the table came out identical to the first

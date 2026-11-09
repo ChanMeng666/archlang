@@ -24,10 +24,10 @@ lists. The list comes from commit `974d9981` (`W_FURNITURE_ON_VOID`).
    says otherwise (order is contract). Red without the next step:
    `test/lint-rule-order.test.ts` (order).
 5. **Pin its name** at the same position in `EXPECTED_ORDER` in `test/lint-rule-order.test.ts`.
-6. **Classify it** in `RULE_CLASS` in `test/d4-oracle.ts` ("invariant" unless the doc comment above
+6. **Classify it** in `RULE_CLASS` in `test/helpers/d4-oracle.ts` ("invariant" unless the doc comment above
    the table says the rule reads the sheet or a compass fact). Red without it:
    `test/lint-rule-order.test.ts` (classified), `test/equivariance-corpus.test.ts`.
-7. **Give each code its stage row** in `DECIDED` in `test/stage-decisions.ts`, and bump the
+7. **Give each code its stage row** in `DECIDED` in `test/tables/stage-decisions.ts`, and bump the
    per-stage counts in `test/stages.test.ts`. Red without it: `test/lint-rule-order.test.ts`
    (stage rows), `test/stages.test.ts` (decided table and counts).
 8. **Tests for the rule itself**: a `test/lint-<name>.test.ts` with a firing case and a clean case.

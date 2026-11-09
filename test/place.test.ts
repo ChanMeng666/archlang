@@ -17,7 +17,7 @@
 
 import { describe, expect, it } from "vitest";
 import { applyFixes, compile, describe as describePlan, lint, makeVirtualWorld } from "../src/index.js";
-import { canonPrim, elementNamed, frameFor, sceneOf, transformPrim } from "./d4-oracle.js";
+import { canonPrim, elementNamed, frameFor, sceneOf, transformPrim } from "./helpers/d4-oracle.js";
 
 /** The gallery wing used by most cases: one room inside a closed shell, with a door. */
 const WING = `component wing() {

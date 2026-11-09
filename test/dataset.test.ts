@@ -1,3 +1,5 @@
+/** Cases: emits the requested rows; no row's brief or source contains any holdout prompt's normalized 8-gram; no row source contains a holdout golden source (white… */
+
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

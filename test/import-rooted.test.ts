@@ -1,3 +1,5 @@
+/** a module outside the import root is refused, never read; only `.arch`, only up to the cap; what the root allows; the CLI: default root is the working directory;… */
+
 import {
   mkdirSync,
   mkdtempSync,
@@ -53,6 +55,7 @@ function run(src: string, root = ROOT): Diagnostic[] {
   }).diagnostics;
 }
 const errors = (ds: Diagnostic[]): Diagnostic[] => ds.filter((d) => d.severity === "error");
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it has its own shape.
 const codes = (ds: Diagnostic[]): string[] => errors(ds).map((d) => d.code ?? "");
 const noContent = (ds: Diagnostic[]): void => {
   const all = JSON.stringify(ds);

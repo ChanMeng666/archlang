@@ -1,3 +1,5 @@
+/** T4.2 — World seam. */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

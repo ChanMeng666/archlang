@@ -67,7 +67,9 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { encodePlanHash } from "../../scripts/gen-permalink.mjs";
 import { factsLine } from "../src/facts-line.js";
 import { cardText, splitLabel } from "../src/plan-label.js";
+import { readExampleRows, rowNeighbours } from "./example-rows.mjs";
 import { leanThumb, THUMB_MAX_BYTES } from "./lean-thumb.mjs";
+import { planConstructs } from "./plan-constructs.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const playground = join(here, "..");
@@ -88,32 +90,16 @@ const THUMB_W = 480;
 // ───────────────────────────────────────────────────────────────────────────────
 
 /**
- * Read `EXAMPLE_ROWS` out of `src/examples.ts` with a plain regex. That file is a
- * TypeScript module full of Vite `?raw` import specifiers, so it cannot be
- * imported from Node — but its table is declared literal and uniformly shaped for
- * exactly this reason, the same convention `docs-site/sync-docs.mjs` uses for its
- * three tables. `test/playground-examples-rows.test.ts` parses it identically and
- * fails if the shape moves, so the two parsers cannot drift apart silently.
- *
- * The optional trailing comma in the pattern is not cosmetic: Biome's 120-column
- * formatter breaks these rows across four lines and adds one, so a pattern that
- * demanded `"]` would match zero rows the moment anyone ran `npm run lint:fix`.
+ * The rows of `EXAMPLE_ROWS` in `src/examples.ts`, read by the one parser of that table
+ * (`example-rows.mjs`, which `docs-site/sync-docs.mjs` reads it with too). A table that lost its
+ * shape stops the build: it is the single source of the menu, these pages and the sitemap.
  */
 function readRows() {
-  const src = readFileSync(join(playground, "src", "examples.ts"), "utf8");
-  const block = /const EXAMPLE_ROWS = \[([\s\S]*?)\n\] as const;/.exec(src);
-  if (!block) {
-    fail(
-      "playground/src/examples.ts no longer declares `const EXAMPLE_ROWS = [ … ] as const;` as a " +
-        "literal table. That table is the single source of the menu, these pages and the sitemap; " +
-        "restore the shape, or update this parser and test/playground-examples-rows.test.ts together.",
-    );
+  try {
+    return readExampleRows(repo);
+  } catch (err) {
+    fail(err instanceof Error ? err.message : String(err));
   }
-  const rows = [...block[1].matchAll(/\[\s*"([^"]+)",\s*"([^"]+)",\s*"([^"]+)",\s*"((?:[^"\\]|\\.)*)"\s*,?\s*\]/g)].map(
-    (m) => ({ name: m[1], label: m[2], group: m[3], blurb: m[4] }),
-  );
-  if (rows.length === 0) fail("playground/src/examples.ts: EXAMPLE_ROWS parsed to zero rows.");
-  return rows;
 }
 
 /**
@@ -166,13 +152,26 @@ function later(a, b) {
 }
 
 /**
- * `name → ISO date` for every example page: its `.arch` file's last commit, floored by this
- * generator's own (a change here changes every page's bytes). An example git cannot date gets no
- * entry, so its page and sitemap row carry no date: a build-time date on unchanged content is
- * noise every crawler discounts.
+ * The files every example page's bytes depend on besides its own `.arch`: this generator, the
+ * construct table ("What this plan uses"), the row parser, and the row table itself (the other
+ * rows' labels and blurbs fill "More in <group>" and the pager). A change to any of them changes
+ * every page, so each page's date is floored by the newest of their commits.
+ */
+const PAGE_INPUTS = [
+  "playground/scripts/gen-static.mjs",
+  "playground/scripts/plan-constructs.mjs",
+  "playground/scripts/example-rows.mjs",
+  "playground/src/examples.ts",
+];
+
+/**
+ * `name → ISO date` for every example page: its `.arch` file's last commit, floored by the newest
+ * commit of `PAGE_INPUTS`. An example git cannot date gets no entry, so its page and sitemap row
+ * carry no date: a build-time date on unchanged content is noise every crawler discounts.
  */
 function exampleDates(rows) {
-  const floor = commitDate("playground/scripts/gen-static.mjs");
+  let floor = null;
+  for (const path of PAGE_INPUTS) floor = later(floor, commitDate(path));
   const dates = new Map();
   for (const r of rows) {
     const own = commitDate(`examples/${r.name}.arch`);
@@ -586,6 +585,18 @@ ${TOKEN_BLOCK}
   ul.storeys { padding-left: 1.1rem; margin: 0 0 var(--s6); color: var(--syn-operator); }
   ul.storeys li { padding: var(--s1) 0; }
 
+  /* ── An example page's way round the set: what it uses, its group, its neighbours ── */
+  ul.uses { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s3); list-style: none; padding: 0; margin: 0 0 var(--s6); }
+  ul.uses a {
+    display: inline-block; padding: var(--s1) var(--s3);
+    border: 1px solid var(--src-rule); border-radius: 2px; background: var(--src-surface);
+    font-size: .875rem; text-decoration: none;
+  }
+  ul.uses a:hover, ul.uses a:focus-visible { border-color: var(--plum-deep); }
+  nav.pager { display: flex; flex-wrap: wrap; gap: var(--s3) var(--s5); margin: var(--s7) 0 0; }
+  nav.pager a { text-underline-offset: 2px; }
+  nav.pager .pager__next { margin-left: auto; text-align: right; }
+
   /* ── The index gallery. \`ul.plans\` keeps its class (the e2e counts links through
      it) and becomes a grid; the art box owns the height via aspect-ratio, so the
      geometry is settled before a single lazy thumbnail arrives. */
@@ -833,9 +844,11 @@ ${siteHeader(`<a href="/">Playground</a> › <a href="/examples/">Example plans<
       </figure>
       ${storeyNote}
       <a class="cta" href="${escapeHtml(permalink)}">Open in the editor</a>
+${usesSection(result.ast)}
       <h2>The source</h2>
       <p>This is the whole plan. The drawing above is what the compiler produced from it — nothing was drawn by hand.</p>
       <pre class="source" tabindex="0"><code>${escapeHtml(source)}</code></pre>
+${groupSection(row, ctx.rows)}
       <h2>Read more</h2>
       <ul class="links">
         <li><a href="/examples/">All ArchLang example plans</a></li>
@@ -843,11 +856,67 @@ ${siteHeader(`<a href="/">Playground</a> › <a href="/examples/">Example plans<
         <li><a href="${DOCS}/spec">The one-page specification</a></li>
         <li><a href="${DOCS}/examples">The example plans, live and editable, on the documentation site</a></li>
       </ul>
+${pager(row, ctx.rows)}
     </main>
 ${siteFooter({ sheet: ctx.sheet, plans: ctx.plans })}
   </body>
 </html>
 `;
+}
+
+/**
+ * "What this plan uses": the language constructs this plan's source writes, read off its parse
+ * tree and each linked to its section of the language reference (`plan-constructs.mjs`, whose
+ * anchors `test/plan-constructs.test.ts` holds to the reference's headings). It is the part of the
+ * page that differs most between two plans laid out by the same template.
+ */
+function usesSection(ast) {
+  const used = planConstructs(ast);
+  const items = used
+    .map(
+      (c) =>
+        `        <li><a href="${escapeHtml(c.href)}" data-construct="${escapeHtml(c.key)}">${escapeHtml(c.label)}</a></li>`,
+    )
+    .join("\n");
+  return `      <h2 id="uses">What this plan uses</h2>
+      <p>The parts of the language this plan's source writes, each linked to its section of the language reference.</p>
+      <ul class="uses">
+${items}
+      </ul>`;
+}
+
+/**
+ * "More in <group>": the other plans of this plan's gallery group (EXAMPLE_ROWS' third column), in
+ * table order, each with its blurb. A group of one (the showpiece) has no such section.
+ */
+function groupSection(row, rows) {
+  const { siblings } = rowNeighbours(rows, row.name);
+  if (siblings.length === 0) return "";
+  const items = siblings
+    .map(
+      (r) => `        <li><a href="/examples/${r.name}.html">${escapeHtml(r.label)}</a>: ${escapeHtml(r.blurb)}</li>`,
+    )
+    .join("\n");
+  return `      <h2 id="group">More in ${escapeHtml(row.group)}</h2>
+      <ul class="links group">
+${items}
+      </ul>`;
+}
+
+/** The previous and next plans in EXAMPLE_ROWS order: none before the first row or after the last. */
+function pager(row, rows) {
+  const { prev, next } = rowNeighbours(rows, row.name);
+  const links = [
+    prev
+      ? `<a class="pager__prev" rel="prev" href="/examples/${prev.name}.html"><span aria-hidden="true">←</span> Previous: ${escapeHtml(prev.label)}</a>`
+      : "",
+    next
+      ? `<a class="pager__next" rel="next" href="/examples/${next.name}.html">Next: ${escapeHtml(next.label)} <span aria-hidden="true">→</span></a>`
+      : "",
+  ].filter(Boolean);
+  return `      <nav class="pager" aria-label="Previous and next example plan">
+        ${links.join("\n        ")}
+      </nav>`;
 }
 
 // ───────────────────────────────────────────────────────────────────────────────
@@ -1200,6 +1269,7 @@ for (const row of rows) {
 
   const ctx = {
     fonts,
+    rows,
     sheet: `${written + 1} of ${rows.length}`,
     plans: rows.length,
     dateModified: dates.get(row.name),

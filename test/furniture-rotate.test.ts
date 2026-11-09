@@ -1,3 +1,5 @@
+/** furniture rotate; rotateNode — the curved primitives. */
+
 import { describe, expect, it } from "vitest";
 import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";
@@ -6,7 +8,7 @@ import { compile } from "../src/index.js";
 import { format } from "../src/format.js";
 import { rotateNode } from "../src/elements/furniture.js";
 import type { SceneNode } from "../src/scene.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { pathExtentPoints } from "./helpers/glyph-extent.js";
 
 /**
  * Quarter-turn furniture rotation. The symbol is drawn in its "back-on-top" frame

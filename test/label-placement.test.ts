@@ -1,3 +1,5 @@
+/** label placement — a clear label never moves; label placement — a buried label moves; label placement — what it is not allowed to touch; label placement — an `ou… */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

@@ -41,7 +41,7 @@ import { resolve } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import type { Scene, SceneNode } from "../src/scene.js";
-import { arcEdgeSweep, arcEdgesOf, pathExtentPoints } from "./glyph-extent.js";
+import { arcEdgeSweep, arcEdgesOf, pathExtentPoints } from "./helpers/glyph-extent.js";
 import { weightWidth } from "../src/scene.js";
 import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { fixtureSpec } from "../src/fixtures-catalog.js";
@@ -240,7 +240,7 @@ function boundingPoints(n: SceneNode): Point[] {
       }
       return out;
     }
-    // A curved outline: its vertices and its arcs' axis extremes, exactly (`glyph-extent.ts`).
+    // A curved outline: its vertices and its arcs' axis extremes, exactly (`test/helpers/glyph-extent.ts`).
     case "path":
       return pathExtentPoints(p);
     default:

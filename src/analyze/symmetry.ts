@@ -81,6 +81,7 @@
  */
 
 import type { Point } from "../ast.js";
+import { rectRing } from "../geometry/polygon.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow, ResolvedPlan } from "../ir.js";
 import { D4_ELEMENTS, type D4, det, toMatrix, toSpelling, backVectorOfDeg, SIDE_NORMAL } from "../algebra/d4.js";
 import { fmt4 } from "../num-format.js";
@@ -476,12 +477,7 @@ function floorRec(r: RRoom): Rec<Point> {
   return {
     form: "ring",
     label,
-    pts: [
-      { x, y },
-      { x: x + w, y },
-      { x: x + w, y: y + h },
-      { x, y: y + h },
-    ],
+    pts: rectRing({ x, y, w, h }),
   };
 }
 
@@ -626,24 +622,15 @@ function verticalRec(v: RVertical): Rec<Point> {
   return {
     form: "set",
     label,
-    pts: [
-      { x, y },
-      { x: x + w, y },
-      { x: x + w, y: y + h },
-      { x, y: y + h },
-    ],
+    pts: rectRing({ x, y, w, h }),
     vec: { x: vec.x, y: vec.y },
     ...(v.kind === "stair" ? { hand: v._mirror ? -1 : 1 } : {}),
   };
 }
 
 /** An axis-aligned rectangle (top-left + size) as a closed ring. */
-const boxRing = (at: Point, size: { w: number; h: number }): Point[] => [
-  { x: at.x, y: at.y },
-  { x: at.x + size.w, y: at.y },
-  { x: at.x + size.w, y: at.y + size.h },
-  { x: at.x, y: at.y + size.h },
-];
+export const boxRing = (at: Point, size: { w: number; h: number }): Point[] =>
+  rectRing({ x: at.x, y: at.y, w: size.w, h: size.h });
 
 /**
  * The rest of what the plan draws as building, each as its footprint — like a piece of
@@ -758,12 +745,7 @@ function furnitureRec(f: RFurniture): Rec<Point> {
   return {
     form: "set",
     label: `furniture ${f.category}`,
-    pts: [
-      { x, y },
-      { x: x + w, y },
-      { x: x + w, y: y + h },
-      { x, y: y + h },
-    ],
+    pts: rectRing({ x, y, w, h }),
     ...(spec && spec.symmetric !== true ? { vec: backVectorOfDeg(f.rotate ?? 0) } : {}),
     ...(handed(f) ? { hand: f._mirror ? -1 : 1 } : {}),
   };

@@ -50,7 +50,7 @@ const USE_NOUN: Readonly<Record<string, string>> = {
 };
 
 /** An axis-aligned extent. */
-export interface Bounds {
+export interface RoomBounds {
   x0: number;
   y0: number;
   x1: number;
@@ -66,7 +66,7 @@ export interface NameableRoom {
   /** A point inside the room's floor: the label point. */
   point: Point;
   /** The extent of the room's floor (for the storey's outline and nothing else). */
-  bounds: Bounds;
+  bounds: RoomBounds;
   /** The room's own size in words: "3.2 × 2.4 m", or "20 m²" for a floor that is not a rectangle. */
   size: string;
 }
@@ -101,7 +101,7 @@ export function sizeWords(rect: { w: number; h: number } | null, areaMm2: number
 
 /** A resolved room as the builder reads it. `uses` is the caller's classification of the room. */
 export function nameableOf(r: RoomShape, uses: readonly string[]): NameableRoom {
-  let bounds: Bounds;
+  let bounds: RoomBounds;
   let size: string;
   if (r.circle) {
     bounds = {

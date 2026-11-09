@@ -1,3 +1,5 @@
+/** CLI — agent contract; CLI — compile file-writing side effects. */
+
 import { copyFileSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";

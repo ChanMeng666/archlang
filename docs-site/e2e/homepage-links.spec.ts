@@ -21,7 +21,16 @@ import { expect, type Page, test } from "@playwright/test";
 // The playground's canonical decoder, run here in Node (Node ≥ 21.2 for deflate-raw; the
 // e2e-docs CI job pins Node 22).
 import { srcFromHash } from "../../playground/src/share.js";
-import { HOME_3D_PLAN, homeHero, previewLines, ROOT, threeDAssets, VIEW3D_PARAM } from "./fixtures.js";
+import {
+  examplePageUrl,
+  HOME_3D_PLAN,
+  homeHero,
+  previewLines,
+  ROOT,
+  readExampleRows,
+  threeDAssets,
+  VIEW3D_PARAM,
+} from "./fixtures.js";
 
 const read = (...p: string[]) => readFileSync(join(ROOT, ...p), "utf8").replace(/\r\n/g, "\n");
 const THEME = ["docs-site", ".vitepress", "theme"];
@@ -113,6 +122,37 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
       expect(await img.getAttribute("src"), "every drawing is served from the site's own routes").toMatch(
         /^\/(examples|gallery|home)\//,
       );
+    }
+  });
+
+  test("a card links its plan's static playground page, only when the playground publishes one", async ({ page }) => {
+    // The static pages are EXAMPLE_ROWS (playground/src/examples.ts), read by gen-static's own
+    // parser: a link to a page that does not exist fails here, and so does a missing one.
+    const published = new Set(readExampleRows(ROOT).map((r: { name: string }) => r.name));
+    expect(
+      GALLERY_PLANS.some((p) => published.has(p)),
+      "no card to check",
+    ).toBe(true);
+    await page.goto("/");
+    const items = page.locator(".home-gallery__item");
+    await expect(items).toHaveCount(GALLERY_PLANS.length);
+    for (let i = 0; i < GALLERY_PLANS.length; i++) {
+      const name = GALLERY_PLANS[i]!;
+      const link = items.nth(i).locator("a.example-page");
+      if (!published.has(name)) {
+        await expect(link, `${name} has no static page, so no link`).toHaveCount(0);
+        continue;
+      }
+      await expect(link).toHaveCount(1);
+      await expect(link).toHaveAttribute("href", examplePageUrl(name));
+      await expect(link).toHaveText("Plan and source");
+    }
+    // Every static-page link on the home page is a card's, and names a published page.
+    for (const href of await page
+      .locator('a[href^="https://playground.archlang.uk/examples/"]')
+      .evaluateAll((els) => els.map((el) => el.getAttribute("href") ?? ""))) {
+      const name = /\/examples\/([a-z0-9-]+)\.html$/.exec(href)?.[1] ?? "";
+      expect(published.has(name), `${href} is not a published static page`).toBe(true);
     }
   });
 

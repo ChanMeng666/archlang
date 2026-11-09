@@ -27,7 +27,7 @@ import { type LatticePoint, latticeArea2, minAreaRect, minRectCost } from "../ge
 import type { RDoor, ResolvedPlan, RFurniture, RRoom, RWindow } from "../ir.js";
 import { definingItems } from "../lint/defining.js";
 import { capFirst, makeNaming, type NameableRoom, sizeWords } from "../naming.js";
-import { polygonLabelPoint } from "../geometry/polygon.js";
+import { polygonLabelPoint, rectRing } from "../geometry/polygon.js";
 import { type CompassLetter, FACINGS, oppositeLetter, type SiteFacts } from "../site.js";
 import { fmtRatio, lattice, meanPermyriad, ONE, type Ratio, ramp } from "./arith.js";
 import { adviceOf } from "./advice.js";
@@ -512,12 +512,7 @@ const ringSize = (r: RRoom): number => r.poly?.length ?? 4;
  * its floor, not a box around one). One unit of work per vertex.
  */
 function latticeRing(r: RRoom, work: Work): LatticePoint[] {
-  const pts = r.poly ?? [
-    { x: r.at.x, y: r.at.y },
-    { x: r.at.x + r.size.w, y: r.at.y },
-    { x: r.at.x + r.size.w, y: r.at.y + r.size.h },
-    { x: r.at.x, y: r.at.y + r.size.h },
-  ];
+  const pts = r.poly ?? rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
   work.n += pts.length;
   return pts.map((p) => ({ x: lattice(p.x), y: lattice(p.y) }));
 }

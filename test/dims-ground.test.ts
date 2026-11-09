@@ -1,3 +1,5 @@
+/** `dims auto` chains clear the ground attached to the facade they measure. */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import type { SceneNode } from "../src/scene.js";

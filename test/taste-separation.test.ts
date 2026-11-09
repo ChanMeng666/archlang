@@ -38,7 +38,7 @@
 import { describe, expect, it } from "vitest";
 import { LINT_CODE_LAYERS, lint, taste, type TasteReport, type TasteSubscore } from "../src/index.js";
 import { TASTE_CRITERIA } from "../src/taste/criteria.js";
-import { defectPairs, type TastePair, tasteCorpusPairs, TASTE_WORLD } from "./taste-sources.js";
+import { defectPairs, type TastePair, tasteCorpusPairs, TASTE_WORLD } from "./helpers/taste-sources.js";
 
 type Rel = "<" | "=" | ">" | "n/a";
 

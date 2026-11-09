@@ -1,3 +1,5 @@
+/** window — placement & hosting; furniture — rect + label (the uncatalogued fallback). */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 

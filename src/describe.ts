@@ -37,7 +37,7 @@ import type {
   OpeningPlacement,
 } from "./ir.js";
 import type { PlanNode, Point } from "./ast.js";
-import { polygonArea, polygonBounds } from "./geometry/polygon.js";
+import { polygonArea, polygonBounds, rectRing } from "./geometry/polygon.js";
 import { voidPieces } from "./elements/void.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { grossInternalArea } from "./analyze/gross-area.js";
@@ -514,16 +514,7 @@ function summarize(
       // and dumping it would bloat an agent's context with numbers that are not the
       // truth about the floor. `area_m2` above is πR², exact.
       ...(r.circle ? { floor_circle: { cx: r.circle.c.x, cy: r.circle.c.y, r: r.circle.r } } : {}),
-      floor_polygon: r.circle
-        ? []
-        : r.poly
-          ? r.poly.map((p) => ({ x: p.x, y: p.y }))
-          : [
-              { x: rect.x, y: rect.y },
-              { x: rect.x + rect.w, y: rect.y },
-              { x: rect.x + rect.w, y: rect.y + rect.h },
-              { x: rect.x, y: rect.y + rect.h },
-            ],
+      floor_polygon: r.circle ? [] : r.poly ? r.poly.map((p) => ({ x: p.x, y: p.y })) : rectRing(rect),
       adjacent,
       ...instanceOf(r),
     };

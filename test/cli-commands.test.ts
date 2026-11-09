@@ -1,3 +1,5 @@
+/** CLI — fmt; CLI — watch; CLI — manifest / capabilities. */
+
 import { spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";

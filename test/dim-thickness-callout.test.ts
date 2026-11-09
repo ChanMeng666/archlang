@@ -1,3 +1,6 @@
+/** wall-thickness call-outs are never drawn in the poché; wall-thickness call-outs stay off doorways and fixtures. */
+
+import { exampleNames as listExamples } from "./helpers/corpus.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -103,9 +106,7 @@ function scene(src: string, world?: { read: (p: string) => string }): Scene {
 }
 
 /** The examples read straight off disk, so a new one is covered the day it lands. */
-const exampleNames = readdirSync(examplesDir)
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const exampleNames = listExamples().sort();
 /** `imports.arch` / `museum-wings.arch` link sibling modules; give them a reader. */
 const exampleWorld = { read: (p: string): string => readFileSync(join(examplesDir, p), "utf8") };
 

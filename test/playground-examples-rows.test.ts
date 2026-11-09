@@ -23,7 +23,8 @@
  * the build reads, and a generator's template cannot go stale behind it.
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile, lint } from "../src/index.js";
@@ -31,6 +32,8 @@ import { compile, lint } from "../src/index.js";
 const EXAMPLES_TS = "playground/src/examples.ts";
 const GEN_STATIC = "playground/scripts/gen-static.mjs";
 const SYNC = "docs-site/sync-docs.mjs";
+/** The one parser of the table the builds share: gen-static.mjs, docs-site/sync-docs.mjs and the e2e. */
+const ROWS_MJS = "playground/scripts/example-rows.mjs";
 
 interface Row {
   name: string;
@@ -40,7 +43,7 @@ interface Row {
 }
 
 /**
- * The row pattern, character-for-character the one `gen-static.mjs` uses. It is
+ * The row pattern, character-for-character the one `example-rows.mjs` uses. It is
  * duplicated on purpose and asserted below to be identical: this test's whole
  * value is that it reads what the generator reads, and a parser that had drifted
  * would pass over a table the build could not parse.
@@ -78,9 +81,7 @@ function excludedExamples(): string[] {
 
 /** Every top-level `examples/*.arch` (`examples/lib/` holds component libraries). */
 function exampleFiles(): string[] {
-  return readdirSync("examples")
-    .filter((f) => f.endsWith(".arch") && statSync(join("examples", f)).isFile())
-    .sort();
+  return exampleNames();
 }
 
 const rows = readRows();
@@ -184,14 +185,29 @@ describe("the static page generator reads this table, and nothing else hand-list
    */
   const genCode = gen.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
-  it("gen-static.mjs parses EXAMPLE_ROWS with the same pattern this test does", () => {
+  it("the builds parse EXAMPLE_ROWS with the same pattern this test does, through one module", () => {
+    const parser = readFileSync(ROWS_MJS, "utf8");
     expect(
-      gen.includes(ROW_RE.source),
-      `${GEN_STATIC} no longer carries the row pattern this test asserts against. The two parsers are ` +
+      parser.includes(ROW_RE.source),
+      `${ROWS_MJS} no longer carries the row pattern this test asserts against. The two parsers are ` +
         `deliberately identical: a test that reads a DIFFERENT shape than the build would pass over a ` +
         `table the deploy cannot read. Change both in one commit.`,
     ).toBe(true);
-    expect(gen).toMatch(/const EXAMPLE_ROWS = \\\[\(\[\\s\\S\]\*\?\)\\n\\\] as const;/);
+    expect(parser).toMatch(/const EXAMPLE_ROWS = \\\[\(\[\\s\\S\]\*\?\)\\n\\\] as const;/);
+    // Every build reads the table through that module, never through a parser of its own.
+    const sync = readFileSync(SYNC, "utf8");
+    expect(gen).toMatch(/import \{[^}]*\breadExampleRows\b[^}]*\} from "\.\/example-rows\.mjs"/);
+    expect(sync).toMatch(/await import\("\.\.\/playground\/scripts\/example-rows\.mjs"\)/);
+    expect(gen.includes(ROW_RE.source), `${GEN_STATIC} carries a row parser of its own`).toBe(false);
+    expect(sync.includes(ROW_RE.source), `${SYNC} carries a row parser of its own`).toBe(false);
+  });
+
+  it("the shared parser reads exactly the rows this test reads", async () => {
+    // @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
+    const shared = (await import("../playground/scripts/example-rows.mjs")) as {
+      readExampleRows(repo: string): Row[];
+    };
+    expect(shared.readExampleRows(".")).toEqual(rows);
   });
 
   it("gen-static.mjs reuses the shared share-hash codec instead of re-implementing it", () => {
@@ -451,10 +467,90 @@ describe("the two hosts link each example plan both ways", () => {
     expect(page).toMatch(/href="\$\{DOCS\}\/spec"/);
   });
 
+  it("the docs home gallery and /3d link a plan's static page only when EXAMPLE_ROWS publishes one", async () => {
+    // The docs host's other cards linked only `#z=` permalinks, which no crawler follows into a page.
+    // The set of pages is EXAMPLE_ROWS read by the shared parser (sync-docs.mjs), never a list here or
+    // in the components, so a card for a plan with no static page renders no link at all.
+    // @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
+    const shared = (await import("../playground/scripts/example-rows.mjs")) as {
+      examplePageLinks(rows: Row[]): Record<string, string>;
+    };
+    const pages = shared.examplePageLinks(rows);
+    expect(Object.keys(pages)).toEqual(rows.map((r) => r.name));
+    for (const r of rows) expect(pages[r.name]).toBe(`https://playground.archlang.uk/examples/${r.name}.html`);
+    // A plan with no row gets no link: the e2e (homepage-links.spec.ts, three-d.spec.ts) holds the rendered cards to this.
+    expect(pages["museum-wing"], "an excluded example has no static page").toBeUndefined();
+
+    const sync = readFileSync(SYNC, "utf8");
+    expect(sync).toMatch(/const examplePages = examplePageLinks\(readExampleRows\(repo\)\);/);
+    expect(sync).toMatch(/export const EXAMPLE_PAGES = \$\{JSON\.stringify\(examplePages, null, 2\)\}/);
+    for (const [file, name] of [
+      ["HomeGallery.vue", "p.example"],
+      ["ThreeDPlans.vue", "a.name"],
+    ] as const) {
+      const vue = readFileSync(`docs-site/.vitepress/theme/${file}`, "utf8");
+      expect(vue, file).toMatch(/import \{ EXAMPLE_PAGES \} from "\.\/example-pages-data\.js";/);
+      expect(vue, file).toMatch(
+        /const PAGES: ReadonlyMap<string, string> = new Map\(Object\.entries\(EXAMPLE_PAGES\)\);/,
+      );
+      // The link is rendered only under the guard (the next tag after the guarded one's own), and
+      // its href is the map's, never built from the name.
+      const guard = vue.indexOf(`v-if="PAGES.get(${name})"`);
+      const link = vue.indexOf(`<a class="example-page" :href="PAGES.get(${name})"`);
+      expect(guard, `${file}: the link's v-if guard`).toBeGreaterThan(0);
+      expect(link, `${file}: the link`).toBeGreaterThan(guard);
+      expect(vue.slice(guard, link).includes("<"), `${file}: the guard wraps the link`).toBe(false);
+      expect(vue.match(/class="example-page"/g) ?? [], file).toHaveLength(1);
+      expect(vue, `${file} builds a static-page URL of its own`).not.toMatch(/playground\.archlang\.uk\/examples\//);
+    }
+  });
+
+  it("each static page carries what it uses, its group and its neighbours", () => {
+    const page = /\nfunction examplePage\([\s\S]*?\n}\n/.exec(gen)?.[0] ?? "";
+    expect(page).toMatch(/\$\{usesSection\(result\.ast\)\}/);
+    expect(page).toMatch(/\$\{groupSection\(row, ctx\.rows\)\}/);
+    expect(page).toMatch(/\$\{pager\(row, ctx\.rows\)\}/);
+    expect(gen).toMatch(/import \{ planConstructs \} from "\.\/plan-constructs\.mjs";/);
+    // Exactly one <h1> stays on the page: the new sections open with h2s.
+    expect(page.match(/<h1\b/g) ?? []).toHaveLength(1);
+  });
+
+  it("the neighbours are EXAMPLE_ROWS' order and its group column", async () => {
+    // @ts-expect-error — the root typecheck has no allowJs, so it has no declarations for it.
+    const shared = (await import("../playground/scripts/example-rows.mjs")) as {
+      rowNeighbours(rows: Row[], name: string): { prev: Row | null; next: Row | null; siblings: Row[] };
+    };
+    rows.forEach((r, i) => {
+      const n = shared.rowNeighbours(rows, r.name);
+      expect(n.prev?.name ?? null, r.name).toBe(i > 0 ? rows[i - 1]!.name : null);
+      expect(n.next?.name ?? null, r.name).toBe(i < rows.length - 1 ? rows[i + 1]!.name : null);
+      expect(
+        n.siblings.map((s) => s.name),
+        r.name,
+      ).toEqual(rows.filter((s) => s.group === r.group && s.name !== r.name).map((s) => s.name));
+    });
+    expect(() => shared.rowNeighbours(rows, "no-such-plan")).toThrow();
+  });
+
   it("the sitemap's dates come from git, and a failed git call emits none", () => {
     expect(gen).toMatch(/execFileSync\("git", \["log", "-1", "--format=%cI", "--", path\]/);
     expect(gen, "a build-time date on unchanged content").not.toMatch(/new Date\(\)/);
     expect(gen).toMatch(/<lastmod>\$\{escapeHtml\(lastmod\)\}<\/lastmod>/);
+  });
+
+  it("each page's date is floored by every file its bytes depend on", () => {
+    // The generator, the construct table, the row parser and the row table (the other rows fill
+    // "More in <group>" and the pager): a change to any of them changes every page.
+    const at = gen.indexOf("\nconst PAGE_INPUTS = [");
+    expect(at, "gen-static.mjs declares `const PAGE_INPUTS = [ … ];`").toBeGreaterThan(0);
+    const block = gen.slice(at, gen.indexOf("];", at));
+    const inputs = [...block.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
+    expect([...inputs].sort()).toEqual(
+      [GEN_STATIC, "playground/scripts/plan-constructs.mjs", ROWS_MJS, EXAMPLES_TS].sort(),
+    );
+    for (const p of inputs) expect(statSync(p).isFile(), p).toBe(true);
+    expect(gen).toMatch(/for \(const path of PAGE_INPUTS\) floor = later\(floor, commitDate\(path\)\);/);
+    expect(gen).toMatch(/dates\.set\(r\.name, later\(own, floor\)\)/);
   });
 });
 

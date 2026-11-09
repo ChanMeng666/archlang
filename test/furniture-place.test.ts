@@ -1,3 +1,5 @@
+/** T1c — furniture in <room> centered; T1c — furniture in <room> anchor. */
+
 import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
 import { parse } from "../src/parser.js";

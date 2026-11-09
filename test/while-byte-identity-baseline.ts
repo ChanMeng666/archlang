@@ -4,7 +4,7 @@
  * for SVG/`describe()`/`lint()` (which a PARSE-stage diagnostic never reaches).
  *
  * Every row is `allStoreysDigestWithDiagnostics(API, src, { world })` from
- * `./byte-identity-digest.ts`, taken with the test's own digest body (never a lookalike;
+ * `test/helpers/byte-identity-digest.ts`, taken with the test's own digest body (never a lookalike;
  * see that module's header for why this split exists) over the whole corpus: every
  * shipped `examples/*.arch` plus every `test/fixtures/*.arch`. None of these plans uses
  * `while` or a bare reassignment, so the measurement is the same on the tree before W7

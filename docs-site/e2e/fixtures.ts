@@ -83,6 +83,12 @@ export function homeHero(): HomeHero {
  */
 export { HOME_3D_PLAN, previewLines, threeDAssets, VIEW3D_PARAM } from "../three-d.mjs";
 
+/**
+ * The playground's static example pages, read the way sync-docs.mjs reads them: `EXAMPLE_ROWS`
+ * through the parser gen-static.mjs builds those pages with, and the URL each page is served at.
+ */
+export { examplePageUrl, readExampleRows } from "../../playground/scripts/example-rows.mjs";
+
 /** The repo-root artifacts copied verbatim into `public/`, as site routes. */
 export const ROOT_COPY_ROUTES: readonly string[] = tupleTable("ROOT_COPIES").map(([, dest]) => `/${dest}`);
 

@@ -15,7 +15,7 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { DESCRIBE_FACTS, describe, type SceneSummary } from "../src/index.js";
-import { EXAMPLE_FILES, EXAMPLES_WORLD } from "./d4-oracle.js";
+import { EXAMPLE_FILES, EXAMPLES_WORLD } from "./helpers/d4-oracle.js";
 
 const FACT_KEYS: readonly string[] = DESCRIBE_FACTS;
 

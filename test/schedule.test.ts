@@ -1,3 +1,5 @@
+/** sheet tables — a plan that opts out is byte-identical; schedule — derived rows (numbering, names, areas); legend — derived closed-form from what the drawing pai… */
+
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, join } from "node:path";

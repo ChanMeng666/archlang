@@ -1,7 +1,7 @@
 /**
  * Plan-soundness PS2.11c (`W_FOOTPRINT_TRANSPOSED`) and PS2.11d (`W_LEAF_ACROSS_DOORWAY`): what
  * each fires on, what it must not fire on, its boundaries, its fix, its words, and that a `place`
- * turn or mirror moves neither (both are classified `invariant` in `test/d4-oracle.ts`).
+ * turn or mirror moves neither (both are classified `invariant` in `test/helpers/d4-oracle.ts`).
  */
 
 import { describe as suite, expect, it } from "vitest";

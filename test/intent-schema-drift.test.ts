@@ -1,3 +1,5 @@
+/** intent.schema.json drift. */
+
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { renderIntentSchema } from "../scripts/gen-intent-schema.js";

@@ -11,7 +11,7 @@
  * edited to go green.
  *
  * Both numbers were measured on `f4548db` — the last tree before the datum layer — by a script that
- * imported the digest bodies in `./byte-identity-digest.ts`, never a lookalike. See
+ * imported the digest bodies in `test/helpers/byte-identity-digest.ts`, never a lookalike. See
  * `height-byte-identity.test.ts`'s header for why that matters and what to do if one moves.
  *
  * ## Every row still stands, including the one whose example now authors heights
@@ -19,7 +19,7 @@
  * A shipped example gaining a `height` clause looks, at first, like a row that must be
  * retired: the plan's surfaces are no longer what the baseline measured, because `describe()`
  * grows a `heights` block and a `head`/`sill` on every opening. It is not. The row is
- * honoured against that plan's **height-free derivation** (`./height-free-source.ts`) —
+ * honoured against that plan's **height-free derivation** (`test/helpers/height-free-source.ts`) —
  * the same file with its datum clauses mechanically removed — which is behaviourally the
  * text that shipped. So the measurement keeps its full force: nothing about the plan moved
  * except what authoring the datum is supposed to move, and no hash was re-measured or
@@ -573,7 +573,7 @@
  * the new; under `accessibility-advisory` the four diagnostics below it — `W_SWING_OBSTRUCTED`
  * and `W_DOOR_CLEARANCE` on lines 257 and 258 — shift by exactly −87 bytes and −1 line, every
  * other field unchanged (case (2)). Both rows were re-measured with a script that imports
- * `./byte-identity-digest.ts` and that first reproduced the old values on the tree before the
+ * `test/helpers/byte-identity-digest.ts` and that first reproduced the old values on the tree before the
  * fix: whole surface f93556cb… → 80285cb2…, summary 0bce7b7b… → 759c93ef….
  *
  * ## A far seed's width is the minimum of every constraint on it — no row moved
@@ -650,7 +650,7 @@
  *     cell, whose limiting cell is another of the door's equal-width cells. No walk or route
  *     polyline moves.
  *
- * Both rows were re-measured with a script that imports `./byte-identity-digest.ts` and first
+ * Both rows were re-measured with a script that imports `test/helpers/byte-identity-digest.ts` and first
  * reproduced the old values on the tree before: whole surface 80285cb2… → 8bc280e3…, summary
  * 759c93ef… → 3d977524….
  *

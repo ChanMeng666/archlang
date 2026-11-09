@@ -26,8 +26,8 @@ import { clearResolveCache, datumTablesOf, evaluationSteps, resolve, resolveAll,
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { NULL_WORLD } from "../src/world.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
-import { allStoreysDiagnosticsPayload } from "./byte-identity-payload.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
+import { allStoreysDiagnosticsPayload } from "./helpers/byte-identity-payload.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 

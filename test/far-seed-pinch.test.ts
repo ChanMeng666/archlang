@@ -1,8 +1,12 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, resolve as resolvePath, sep } from "node:path";
+/** a doorway's far seed keeps the room's own clearance (the route reads min(door, pinch)); a door a walk never uses cannot cap it (no far-seed stamp); a room is re… */
+
+import { worldFor } from "./helpers/world.js";
+import { CORPUS_DIRS, walkFiles as walk } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
+import { relative, resolve as resolvePath, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import { centreFreedomToClearWidth, DEFAULT_BODY_RADIUS_MM } from "../src/analyze/circulation.js";
-import { describe as describePlan, type World } from "../src/index.js";
+import { describe as describePlan } from "../src/index.js";
 
 /**
  * A door's width lives on the cells its carve OPENS, and a room cell keeps its own clearance —
@@ -211,35 +215,6 @@ describe("a room is reached on its FLOOR, not on the doorway cells inside its re
 // The corpus invariant: no walk or route is wider than the doors it must pass.
 // ---------------------------------------------------------------------------------------
 
-const CORPUS_DIRS = [
-  "examples",
-  "test/fixtures",
-  "test/recovery-corpus",
-  "eval/goldens",
-  "eval/fidelity-plans",
-  "eval/faults",
-];
-
-function walk(dir: string): string[] {
-  return readdirSync(dir)
-    .sort()
-    .flatMap((f) => {
-      const p = join(dir, f);
-      return statSync(p).isDirectory() ? walk(p) : p.endsWith(".arch") ? [p] : [];
-    });
-}
-
-const worldAt = (dir: string): World => ({
-  read: (p) => {
-    try {
-      return readFileSync(resolvePath(dir, p), "utf8");
-    } catch {
-      return null;
-    }
-  },
-  now: () => new Date(0),
-});
-
 type Summary = ReturnType<typeof describePlan>;
 type Edge = NonNullable<Summary["access"]>["edges"][number];
 
@@ -314,7 +289,7 @@ describe("corpus invariant: a walk's or route's bottleneck never exceeds the doo
     for (const dir of CORPUS_DIRS) {
       for (const file of walk(resolvePath(dir))) {
         const name = relative(root, file).split(sep).join("/");
-        const s = describePlan(readFileSync(file, "utf8"), { world: worldAt(resolvePath(file, "..")) });
+        const s = describePlan(readFileSync(file, "utf8"), { world: worldFor(resolvePath(file, "..")) });
         const storeys = s.levels ?? [s];
         storeys.forEach((lv, i) => {
           const c = lv.circulation;

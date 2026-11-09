@@ -286,7 +286,7 @@ clause, so after a round trip `describe().freedom` reports it absolute instead o
 `compile --from-json` reads back, and `test/cli-plan-json-roundtrip.test.ts` holds every example
 to byte-identical SVG, equal `describe()` facts (bar `freedom`, which flattens to absolute by
 design) and equal `lint()` codes through that pipe, except exactly the list `CANNOT_ROUND_TRIP`
-in `test/plan-json-gaps.ts`, minus `imports.arch`, which the CLI's file World flattens:
+in `test/tables/plan-json-gaps.ts`, minus `imports.arch`, which the CLI's file World flattens:
 
 - refused with `E_JSON_MIRROR` (a reflecting `place`): `clinic`, `museum-wings`, `terrace-row`, and
   `hillside-villa`'s level 2;
@@ -324,8 +324,8 @@ say how a per-category rule composes with the existing per-kind one.
 ## Equivariance findings
 
 `place … rotate r mirror m` must carry every fact through the frame's D4 ⋉ Z² action. The oracle
-(`test/d4-oracle.ts`; suites `test/equivariance-{corpus,scene,fuzz}.test.ts`) measures that law, and
-every violation it finds is pinned in `test/equivariance-known.ts`, per element and, for the raster,
+(`test/helpers/d4-oracle.ts`; suites `test/equivariance-{corpus,scene,fuzz}.test.ts`) measures that law, and
+every violation it finds is pinned in `test/tables/equivariance-known.ts`, per element and, for the raster,
 with a size bound: a new one fails as `NEW`, a closed one as `FIXED` until its pin and its `STILL …`
 witness are deleted, and each pin's class predicate must account for what it pins. Each entry below
 is one pinned class; the gate for closing it is that suite going `FIXED` for exactly that class.

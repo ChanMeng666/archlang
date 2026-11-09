@@ -4,11 +4,11 @@
  *
  * `place c() as g at t rotate r mirror m` must carry every fact through g's action: that is
  * the premise of the whole `place` design (`src/frame.ts`). This suite measures it on the
- * real corpus and holds the result to `test/equivariance-known.ts` in BOTH directions — a
+ * real corpus and holds the result to `test/tables/equivariance-known.ts` in BOTH directions — a
  * violation that is not pinned (by element, within its row's size bound) is a regression
  * or a new finding; a pin that no longer reproduces is a fix whose pin (and witness) must
  * now be deleted. Every pinned violation is also AUDITED: its row's class predicate must
- * account for it. See `test/d4-oracle.ts` for the construction (P₀ vs gP, both whole-file
+ * account for it. See `test/helpers/d4-oracle.ts` for the construction (P₀ vs gP, both whole-file
  * imports of the example) and for what is compared, gated or excluded, each with its
  * reason.
  *
@@ -77,9 +77,9 @@ import {
   witnessCase,
   witnessPair,
   wrapperSource,
-} from "./d4-oracle.js";
-import { type ClassName, KNOWN, KNOWN_CLASSES } from "./equivariance-known.js";
-import { scopeBuilding, STOREY_BUILDING_NAMES } from "./equivariance-storeys-cases.js";
+} from "./helpers/d4-oracle.js";
+import { type ClassName, KNOWN, KNOWN_CLASSES } from "./tables/equivariance-known.js";
+import { scopeBuilding, STOREY_BUILDING_NAMES } from "./tables/equivariance-storeys-cases.js";
 
 /** Generous: the heaviest example runs a dozen full describe() + lint() passes. */
 const SLOW = 120_000;
@@ -102,7 +102,7 @@ function assertPinned(
     .join("\n");
   expect(
     added,
-    `NEW equivariance violation — pin it in test/equivariance-known.ts with a class, a witness and a why:\n${detail}`,
+    `NEW equivariance violation — pin it in test/tables/equivariance-known.ts with a class, a witness and a why:\n${detail}`,
   ).toEqual([]);
   expect(vanished, `FIXED: delete the pin and its witness:\n${vanished.join("\n")}`).toEqual([]);
   const scoped = runs.map((r) => ({

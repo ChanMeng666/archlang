@@ -40,6 +40,7 @@ import { DEFAULT_MATERIAL } from "../hatches.js";
 import { openRunsOf } from "../analyze.js";
 import { type KindsWith, kindsWith } from "../elements/facets.js";
 import type { Arc } from "../geometry/arc.js";
+import { rectRing } from "../geometry/polygon.js";
 import type { ResolvedSheet } from "../sheet.js";
 import type { RoomType } from "./room-types.js";
 import { roomTypeForUses } from "./room-types.js";
@@ -83,13 +84,8 @@ function pairsJson(stmt: RWallsFromRooms): Pick<WallsFromRoomsJson, "open" | "be
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
 /** Rectangle corners of a resolved sized element, clockwise from top-left. */
-function rectPolygon(x: number, y: number, w: number, h: number): PointJson[] {
-  return [
-    { x, y },
-    { x: x + w, y },
-    { x: x + w, y: y + h },
-    { x, y: y + h },
-  ];
+export function rectPolygon(x: number, y: number, w: number, h: number): PointJson[] {
+  return rectRing({ x, y, w, h });
 }
 
 /**
