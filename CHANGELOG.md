@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - A `#z=` link, or a short link, that inflates past 1 MiB is refused instead of hanging the playground or the embed page: the page shows "This link is too large to open". The playground, the `<arch-plan>` element and the MCP viewer put a compiled SVG on the page through one sanitiser that parses it and drops `<script>`, `<foreignObject>`, `on*` attributes and `javascript:` links; a compiled drawing is unchanged.
+- Plan JSON: a wrong-typed label or title field, or an unsafe identifier, is now a pathed `E_JSON` diagnostic instead of a throw or unparsable source. `planFromJson` checks that every id, category, wall, room or edge reference, `material` and `facing` is one word as the lexer reads it, that an `on.at` or `relation.at` position is exactly one position, and that `grid`, `north` and every printed number are typed; a number below 1e-6 is written without an exponent.
+- `planFromJson` returns at most 500 validation diagnostics, then one `E_DIAGNOSTIC_LIMIT`, so a payload of thousands of empty rows no longer returns one error per field.
 
 ## [1.57.0] - 2026-11-06
 
