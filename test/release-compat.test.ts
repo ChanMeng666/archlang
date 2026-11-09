@@ -6,8 +6,9 @@
  * in the suite with no build. `public-surface` pins only nameability and `plan-schema-drift` only
  * file == generator; neither sees what the last release promised.
  *
- * A failure is a breaking change: restore the surface, or add a `BREAKING:` line naming it under
- * CHANGELOG's `## [Unreleased]` and plan a MAJOR. It needs the npm registry: offline it skips with
+ * Types are compared by variance (inputs may only widen, outputs only narrow). A failure is a
+ * breaking change: restore the surface, or waive it under CHANGELOG's `## [Unreleased]` with
+ * `BREAKING: <surface>: item, item` (or `BREAKING: <surface> (all)`) and plan a MAJOR. It needs the npm registry: offline it skips with
  * the reason locally and fails under `CI`.
  */
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
@@ -26,6 +27,8 @@ interface Finding {
   path?: string;
   old?: string;
   new?: string;
+  role?: string;
+  why?: string;
 }
 interface Check {
   findings: Finding[];
@@ -45,12 +48,13 @@ const compat = compatModule as {
   checkErrorCodes: (r: Release, codes: readonly string[]) => Promise<Check>;
   repoBreakingLines: () => string[];
   breakingLines: (changelog: string) => string[];
+  parseWaiver: (line: string) => { surface: string; all: boolean; items: string[] } | null;
   applyOverrides: (f: Finding[], lines: string[]) => { failures: Finding[]; accepted: (Finding & { by: string })[] };
   formatFinding: (f: Finding) => string;
   typeSurface: (entry: string) => Record<string, Record<string, string>>;
   compareTypeSurfaces: (o: unknown, n: unknown) => Finding[];
   compareMcpTools: (o: unknown, n: unknown) => Finding[];
-  compareJsonSchemas: (o: unknown, n: unknown, opts: { surface: string; name: string }) => Finding[];
+  compareJsonSchemas: (o: unknown, n: unknown, opts: { surface: string; name: string; path?: string }) => Finding[];
   compareErrorCodes: (o: readonly string[], n: readonly string[]) => Finding[];
 };
 
@@ -91,7 +95,7 @@ function expectAdditive(surface: string, check: Check): void {
 
 describe("release compatibility (against the last published release)", () => {
   it(
-    "public types: no export, member or required-parameter change narrows the published declarations",
+    "public types: no export removed, no input narrowed or newly required, no output widened",
     (ctx) => {
       const r = needRelease(ctx);
       const check = compat.checkPublicTypes(r);
@@ -138,7 +142,7 @@ describe("release compatibility: the comparisons are not vacuous", () => {
   afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
   it(
-    "reports a removed export, a new required parameter, a narrowed enum and a removed code by name",
+    "types: inputs may only widen and outputs only narrow, and each finding names its export and role",
     () => {
       const oldDts = join(dir, "old.d.ts");
       const newDts = join(dir, "new.d.ts");
@@ -148,7 +152,12 @@ describe("release compatibility: the comparisons are not vacuous", () => {
           "export declare function compileThing(src: string): string;",
           "export declare function keptFn(a: number, opts?: { strict?: boolean }): void;",
           'export type Mode = "fast" | "slow";',
-          "export interface Opts { width: number; label?: string }",
+          "export declare function run(mode: Mode): void;",
+          "export interface RenderOptions { width: number; label?: string }",
+          "export interface Summary { area: number; rooms: string[] }",
+          "export declare function measure(): Summary;",
+          "export declare function find(id: string): string;",
+          "export declare function pick(): string | number;",
           'export declare const KEYWORDS: readonly ["room", "wall"];',
           "export declare function goneExport(): void;",
         ].join("\n"),
@@ -156,77 +165,142 @@ describe("release compatibility: the comparisons are not vacuous", () => {
       writeFileSync(
         newDts,
         [
-          // Added: a REQUIRED second parameter (breaking).
+          // A REQUIRED second parameter: breaking.
           "export declare function compileThing(src: string, world: object): string;",
-          // Widened: a union parameter, an optional option and an optional third parameter are fine.
+          // Parameter WIDENED (a union, an optional option field, an optional third parameter): passes.
           "export declare function keptFn(a: number | string, opts?: { strict?: boolean; extra?: number }, more?: number): void;",
+          // An input (a parameter type of `run`) narrowed: breaking.
           'export type Mode = "fast";',
-          "export interface Opts { width: number; label?: string; added?: boolean }",
+          "export declare function run(mode: Mode): void;",
+          // An input type (by its name) gains a REQUIRED member: breaking; an optional one passes.
+          "export interface RenderOptions { width: number; label?: string; added?: boolean; dpi: number }",
+          // An output type: a member became optional (breaking); a new member passes.
+          "export interface Summary { area?: number; rooms: string[]; extra: boolean }",
+          "export declare function measure(): Summary;",
+          // Return WIDENED to `| undefined`: breaking.
+          "export declare function find(id: string): string | undefined;",
+          // Return NARROWED: passes.
+          "export declare function pick(): string;",
           'export declare const KEYWORDS: readonly ["room", "door", "wall"];',
           "export declare function brandNew(): void;",
         ].join("\n"),
       );
       const types = compat.compareTypeSurfaces(compat.typeSurface(oldDts), compat.typeSurface(newDts));
       const said = types.map(compat.formatFinding).join("\n");
-      expect(types.find((f) => f.kind === "removed export")?.name).toBe("goneExport");
-      expect(types.find((f) => f.kind === "new required parameter")?.name).toBe("compileThing");
-      expect(types.find((f) => f.name === "Mode")?.kind).toBe("changed type");
-      // Exactly those three: the widened, optional and inserted additions pass.
-      expect(types.length, said).toBe(3);
-
-      const tool = (mode: string[], required: string[]) => ({
-        type: "object",
-        properties: { source: { type: "string" }, mode: { type: "string", enum: mode } },
-        required,
-      });
-      const mcp = compat.compareMcpTools(
-        { compile: tool(["svg", "png"], ["source"]), lint: tool(["svg"], []) },
-        { compile: tool(["svg"], ["source", "mode"]) },
-      );
-      expect(mcp.map((f) => `${f.kind} ${f.name}${f.path ?? ""}`).sort()).toEqual([
-        "narrowed enum compile/mode",
-        "new required property compile/mode",
-        "removed tool lint",
+      expect(types.map((f) => `${f.kind} ${f.name}${f.path ? ` ${f.path}` : ""} (${f.role})`).sort(), said).toEqual([
+        "member became optional Summary .?area (output)",
+        "narrowed input type Mode type (input)",
+        // The same narrowing seen at its use: a one-member alias prints as its literal.
+        "narrowed input type run sig0.p0 (input)",
+        "new required member RenderOptions .dpi (input)",
+        "new required parameter compileThing sig0.required (input)",
+        "removed export goneExport (value)",
+        "widened output type find sig0.returns (output)",
       ]);
-
-      const plan = compat.compareJsonSchemas(
-        { properties: { version: { const: 1 }, rooms: { type: "array" } } },
-        { properties: { version: { const: 2 } } },
-        { surface: "plan-schema", name: "plan.schema.json" },
-      );
-      expect(plan.map((f) => `${f.kind} ${f.path}`).sort()).toEqual([
-        "changed const /version",
-        "removed property /rooms",
-      ]);
-
-      expect(compat.compareErrorCodes(["E_A", "W_B", "E_C"], ["E_A", "E_C", "E_D"])).toEqual([
-        { surface: "error-codes", kind: "removed code", name: "W_B" },
-      ]);
+      // The classification each finding used is printed with it, derived from the checker.
+      const why = (name: string) => types.find((f) => f.name === name)?.why;
+      expect(why("Mode")).toBe("input: a parameter type of run");
+      expect(why("RenderOptions")).toBe("input by its name");
+      expect(why("Summary")).toBe("output: no exported function takes it");
+      expect(said).toContain("(input; input: a parameter type of run)");
     },
     TIMEOUT,
   );
 
-  it("a BREAKING: line under [Unreleased] accepts only what it names", () => {
+  it("schemas and codes: removed, newly required, narrowed and tightened are each reported", () => {
+    const str = { type: "string" };
+    const mcp = compat.compareMcpTools(
+      {
+        compile: {
+          inputSchema: {
+            type: "object",
+            properties: { source: str, mode: { type: "string", enum: ["svg", "png"] }, extra: {} },
+            required: ["source"],
+          },
+        },
+        lint: { inputSchema: { type: "object", properties: {} } },
+        describe: {
+          inputSchema: { type: "object" },
+          outputSchema: { type: "object", properties: { a: str, b: { type: "integer", minimum: 0 } } },
+        },
+      },
+      {
+        compile: {
+          inputSchema: {
+            type: "object",
+            additionalProperties: false,
+            properties: {
+              source: { type: "string", maxLength: 1000 },
+              mode: { type: "string", enum: ["svg"] },
+              extra: str,
+            },
+            required: ["source", "mode"],
+          },
+          // An outputSchema that appears passes.
+          outputSchema: { type: "object", properties: { ok: { type: "boolean" } } },
+        },
+        describe: {
+          inputSchema: { type: "object", properties: { added: str } },
+          outputSchema: { type: "object", properties: { b: { type: "integer", minimum: 1 } } },
+        },
+      },
+    );
+    expect(mcp.map((f) => `${f.kind} ${f.name}${f.path ?? ""}`).sort()).toEqual([
+      "closed additionalProperties compile/",
+      "narrowed enum compile/mode",
+      "narrowed to a type compile/extra",
+      "new required property compile/mode",
+      "removed property describe/outputSchema/a",
+      "removed tool lint",
+      "tightened maxLength compile/source",
+      "tightened minimum describe/outputSchema/b",
+    ]);
+
+    const plan = compat.compareJsonSchemas(
+      { properties: { version: { const: 1 }, rooms: { type: "array" }, id: { type: "string" } } },
+      { properties: { version: { const: 2 }, id: { type: "string", pattern: "^[a-z]+$" } } },
+      { surface: "plan-schema", name: "plan.schema.json" },
+    );
+    expect(plan.map((f) => `${f.kind} ${f.path}`).sort()).toEqual([
+      "changed const /version",
+      "changed pattern /id",
+      "removed property /rooms",
+    ]);
+
+    expect(compat.compareErrorCodes(["E_A", "W_B", "E_C"], ["E_A", "E_C", "E_D"])).toEqual([
+      { surface: "error-codes", kind: "removed code", name: "W_B" },
+    ]);
+  });
+
+  it("a BREAKING: waiver under [Unreleased] accepts only the items it names, or a surface with (all)", () => {
     const changelog = [
       "# Changelog",
       "## [Unreleased]",
       "### Removed",
-      "- BREAKING: `goneExport` is removed; use `brandNew`.",
-      "- BREAKING: error-codes: `W_B` is retired.",
+      "- BREAKING: public-types: goneExport, `compileThing` — replaced by `brandNew`.",
+      "- BREAKING: error-codes (all)",
+      "- BREAKING: the `run` tool and `Mode` are gone (prose without a `<surface>:` prefix waives nothing).",
       "## [1.0.0] - 2026-01-01",
-      "BREAKING: Mode narrowed (an old release's line never counts).",
+      "BREAKING: mcp-schemas (all)",
     ].join("\n");
     const lines = compat.breakingLines(changelog);
-    expect(lines).toHaveLength(2);
+    expect(lines).toHaveLength(3);
+    expect(compat.parseWaiver(lines[0] ?? "")).toEqual({
+      surface: "public-types",
+      all: false,
+      items: ["goneExport", "compileThing"],
+    });
     const findings: Finding[] = [
       { surface: "public-types", kind: "removed export", name: "goneExport" },
-      { surface: "public-types", kind: "changed type", name: "Mode" },
+      { surface: "public-types", kind: "new required parameter", name: "compileThing" },
+      { surface: "public-types", kind: "narrowed input type", name: "Mode" },
       { surface: "error-codes", kind: "removed code", name: "W_B" },
       { surface: "error-codes", kind: "removed code", name: "W_C" },
+      { surface: "mcp-schemas", kind: "removed tool", name: "run" },
     ];
     const { failures, accepted } = compat.applyOverrides(findings, lines);
-    // `W_C` is accepted through the surface id `error-codes`; `Mode` is named nowhere current.
-    expect(accepted.map((a) => a.name)).toEqual(["goneExport", "W_B", "W_C"]);
-    expect(failures.map((f) => f.name)).toEqual(["Mode"]);
+    expect(accepted.map((a) => a.name)).toEqual(["goneExport", "compileThing", "W_B", "W_C"]);
+    // `Mode` and `run` appear only in prose, and the `(all)` for mcp-schemas is an old release's.
+    expect(failures.map((f) => f.name)).toEqual(["Mode", "run"]);
   });
 });

@@ -6,17 +6,19 @@
  *
  *   public-types   the declarations `@chanmeng666/archlang` exports (`dist/index.d.ts` of the
  *                  tarball vs `src/index.ts` now, both read with the TypeScript checker)
- *   mcp-schemas    every MCP tool's `inputSchema` (`tools/list` of the published shim vs the
- *                  current `packages/mcp/src`)
+ *   mcp-schemas    every MCP tool's `inputSchema` and `outputSchema` (`tools/list` of the
+ *                  published shim vs the current `packages/mcp/src`)
  *   plan-schema    the Plan JSON schema (the tarball's `PLAN_JSON_SCHEMA` vs
  *                  `schemas/plan.schema.json`)
  *   error-codes    the `ERROR_CODES` set (a deprecation keeps its key)
  *
- * Removing or narrowing something fails; adding passes. A failure is accepted only when
- * `CHANGELOG.md`'s `## [Unreleased]` section has a line starting `BREAKING:` that names the
- * surface id above or the thing itself (the export, tool, property or code); what was accepted is
- * printed. `public-surface.test.ts` pins nameability and `plan-schema-drift` pins file == generator;
- * neither looks at the previous release, which is what this does.
+ * Types are compared by variance: what a caller BUILDS (a parameter, an input type's member) may
+ * only widen, what it READS (a return, an output type's member) may only narrow; each finding
+ * prints the classification it used. Schemas and code sets are additive-only. A failure is
+ * accepted only by a line under `CHANGELOG.md`'s `## [Unreleased]` of the form
+ * `BREAKING: <surface>: item, item` (the items it names) or `BREAKING: <surface> (all)`; what was
+ * accepted is printed. `public-surface.test.ts` pins nameability and `plan-schema-drift` pins
+ * file == generator; neither looks at the previous release, which is what this does.
  *
  *   node scripts/compat-check.mjs                     # against @latest of both packages
  *   node scripts/compat-check.mjs --against 1.56.0 --against-mcp 0.2.39
@@ -182,15 +184,33 @@ export function breakingLines(changelog) {
   return out;
 }
 
-const word = (s) => new RegExp(`(^|[^A-Za-z0-9_$])${s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}($|[^A-Za-z0-9_$])`);
+/**
+ * One `BREAKING:` line as a waiver: `BREAKING: <surface>: a, b` waives the items it names (an
+ * export, tool, code, or a schema path such as `/rooms`); `BREAKING: <surface> (all)` waives the
+ * whole surface. A line without a `<surface>` prefix waives nothing: prose that happens to mention
+ * a name is not a waiver. Text after an item's first word (` — why`) is ignored.
+ */
+export function parseWaiver(line) {
+  const m = new RegExp(`^BREAKING:\\s*\`?(${SURFACES.join("|")})\`?\\s*(\\(all\\)|:(.*))`).exec(line);
+  if (!m) return null;
+  if (m[2] === "(all)") return { surface: m[1], all: true, items: [] };
+  const items = m[3]
+    .split(",")
+    .map((s) => /^\s*`?([^\s`,;]+?)`?(?:[\s.;:]|$)/.exec(s)?.[1])
+    .filter(Boolean);
+  return { surface: m[1], all: false, items };
+}
 
-/** Split findings into failures and those a `BREAKING:` line accepts (surface id or the thing's name). */
+/** Split findings into failures and those a `BREAKING:` waiver accepts ({@link parseWaiver}). */
 export function applyOverrides(findings, lines) {
+  const waivers = lines.map((l) => ({ line: l, w: parseWaiver(l) })).filter((x) => x.w);
   const failures = [];
   const accepted = [];
   for (const f of findings) {
-    const by = lines.find((l) => word(f.surface).test(l) || word(f.name).test(l));
-    if (by) accepted.push({ ...f, by });
+    const hit = waivers.find(
+      ({ w }) => w.surface === f.surface && (w.all || w.items.includes(f.name) || (f.path && w.items.includes(f.path))),
+    );
+    if (hit) accepted.push({ ...f, by: hit.line });
     else failures.push(f);
   }
   return { failures, accepted };
@@ -202,7 +222,8 @@ export function formatFinding(f) {
     f.old !== undefined || f.new !== undefined
       ? `\n      old: ${f.old ?? "(none)"}\n      new: ${f.new ?? "(none)"}`
       : "";
-  return `[${f.surface}] ${f.kind}: ${where}${diff}`;
+  const role = f.role ? ` (${f.role}; ${f.why})` : "";
+  return `[${f.surface}] ${f.kind}: ${where}${role}${diff}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -430,95 +451,210 @@ export function typeSurface(entryFile) {
     }
     surface[exp.getName()] = out;
   }
+
+  // Variance. A caller BUILDS an input type and READS an output type. An interface or object alias
+  // is an input when its name says so (`…Options`, `…Opts`, `…Input`, `…Params`) or when the
+  // checker finds it named by a parameter of an exported function or constructor (through unions,
+  // intersections, type arguments and array elements); every other one is an output. Functions,
+  // constants, classes and enums are `value`: parameters are inputs, everything else an output.
+  const paramOf = new Map();
+  const collect = (t, fn, depth) => {
+    if (!t || depth > 4) return;
+    for (const s of [t.aliasSymbol, t.symbol]) {
+      const nm = s?.getName().replace(/\$\d+$/, "");
+      if (nm && !paramOf.has(nm)) paramOf.set(nm, fn);
+    }
+    if (t.isUnionOrIntersection()) for (const u of t.types) collect(u, fn, depth + 1);
+    for (const a of t.aliasTypeArguments ?? []) collect(a, fn, depth + 1);
+    if (t.flags & ts.TypeFlags.Object && t.objectFlags & ts.ObjectFlags.Reference) {
+      for (const a of checker.getTypeArguments(t)) collect(a, fn, depth + 1);
+    }
+  };
+  for (const exp of checker.getExportsOfModule(mod)) {
+    const sym = exp.flags & ts.SymbolFlags.Alias ? checker.getAliasedSymbol(exp) : exp;
+    if (!(sym.flags & (ts.SymbolFlags.Function | ts.SymbolFlags.Variable | ts.SymbolFlags.Class))) continue;
+    const vt = checker.getTypeOfSymbol(sym);
+    for (const sig of [...vt.getCallSignatures(), ...vt.getConstructSignatures()]) {
+      for (const p of sig.getParameters()) collect(checker.getTypeOfSymbol(p), exp.getName(), 0);
+    }
+  }
+  for (const [name, out] of Object.entries(surface)) {
+    const typeLike = /(^|,)(interface|type)(,|$)/.test(out.kind) && !/(function|const|class|enum)/.test(out.kind);
+    if (!typeLike) {
+      out["@role"] = "value";
+      out["@why"] = "a value: its parameters are inputs, the rest outputs";
+    } else if (/(Options|Opts|Input|Params)$/.test(name)) {
+      out["@role"] = "input";
+      out["@why"] = "input by its name";
+    } else if (paramOf.has(name)) {
+      out["@role"] = "input";
+      out["@why"] = `input: a parameter type of ${paramOf.get(name)}`;
+    } else {
+      out["@role"] = "output";
+      out["@why"] = "output: no exported function takes it";
+    }
+  }
   return surface;
 }
 
-/** A leaf that only widened: equal, or every old union member is a member of the new one. */
-function widened(oldS, newS) {
-  if (oldS === newS) return true;
-  const nm = unionMembers(newS);
-  const n = new Set(nm);
-  return unionMembers(oldS).every((m) => n.has(m) || nm.some((x) => arrayWidened(m, x) || objectWidened(m, x)));
+/**
+ * `sub` ⊆ `sup` for two canonical printed types: equal, or every union member of `sub` is covered by
+ * a member of `sup` (an array whose element is covered, an object whose fields are). Objects:
+ * every required field of `sup` is a required field of `sub`, every shared field covered; fields
+ * only `sub` has are allowed when `extraOk` (an output may gain fields; an input may not lose any).
+ */
+function subsumes(sub, sup, extraOk) {
+  if (sub === sup) return true;
+  const supM = unionMembers(sup);
+  const supSet = new Set(supM);
+  return unionMembers(sub).every(
+    (m) => supSet.has(m) || supM.some((x) => arraySubsumes(m, x, extraOk) || objectSubsumes(m, x, extraOk)),
+  );
 }
 
-/** `{a: X; b: Y;}` → `{a: X; b: Y; c?: Z;}`: every old field kept (widened), every new one optional. */
-function objectWidened(o, n) {
-  const fields = (s) => {
-    if (!s.startsWith("{") || !s.endsWith("}")) return null;
-    const m = new Map();
-    for (const f of splitTop(s.slice(1, -1), ";")) {
-      const at = splitTop(f, ":");
-      if (at.length < 2) return null;
-      m.set(at[0], at.slice(1).join(": "));
-    }
-    return m;
-  };
-  const a = fields(o);
-  const b = fields(n);
+function arraySubsumes(sub, sup, extraOk) {
+  const el = (s) => /^(readonly )?(?:\((.+)\)|([^\s|()]+))\[\]$/.exec(s);
+  const a = el(sub);
+  const b = el(sup);
+  return !!a && !!b && (a[1] ?? "") === (b[1] ?? "") && subsumes(a[2] ?? a[3], b[2] ?? b[3], extraOk);
+}
+
+function objectFields(s) {
+  if (!s.startsWith("{") || !s.endsWith("}")) return null;
+  const m = new Map();
+  for (const f of splitTop(s.slice(1, -1), ";")) {
+    const at = splitTop(f, ":");
+    if (at.length < 2) return null;
+    const optional = at[0].endsWith("?");
+    m.set(optional ? at[0].slice(0, -1) : at[0], { optional, type: at.slice(1).join(": ") });
+  }
+  return m;
+}
+
+function objectSubsumes(sub, sup, extraOk) {
+  const a = objectFields(sub);
+  const b = objectFields(sup);
   if (!a || !b) return false;
-  for (const [k, t] of a) if (!b.has(k) || !widened(t, b.get(k))) return false;
-  for (const k of b.keys()) if (!a.has(k) && !k.endsWith("?")) return false;
+  for (const [k, f] of b) {
+    const g = a.get(k);
+    if (!g) {
+      if (!f.optional) return false;
+      continue;
+    }
+    if (g.optional && !f.optional) return false;
+    if (!subsumes(g.type, f.type, extraOk)) return false;
+  }
+  for (const k of a.keys()) if (!b.has(k) && !extraOk) return false;
   return true;
 }
 
-/** `readonly (A | B)[]` → `readonly (A | B | C)[]` (or `A[]` → `(A | B)[]`): the element type widened. */
-function arrayWidened(o, n) {
-  const el = (s) => /^(readonly )?(?:\((.+)\)|([^\s|()]+))\[\]$/.exec(s);
-  const a = el(o);
-  const b = el(n);
-  return !!a && !!b && (a[1] ?? "") === (b[1] ?? "") && widened(a[2] ?? a[3], b[2] ?? b[3]);
+/**
+ * Did the leaf change compatibly? An input (a parameter, an input type's member) may only widen:
+ * old ⊆ new. An output (a return, an output type's member, a constant) may only narrow: new ⊆ old.
+ */
+export function compatible(oldT, newT, role) {
+  return role === "input" ? subsumes(oldT, newT, false) : subsumes(newT, oldT, true);
 }
 
 /** A single string/number literal type (`"…"`, `1`), the value of a `const` member. */
 const isLiteral = (s) => /^("([^"\\]|\\.)*"|-?\d+(\.\d+)?|true|false)$/.test(s);
 
-/** Additive-only diff of two {@link typeSurface} results. */
+const optionals = (s) => (s.match(/\.\?/g) ?? []).length;
+const unq = (k) => k.replace(/\.\?/g, ".");
+const bare = (s) => s.replace(/^(\?|\.\.\.)/, "");
+
+/**
+ * Variance-aware diff of two {@link typeSurface} results (see the `@role` notes there). Every
+ * finding carries `role` (`input` / `output`) and `why` (how its export was classified). An
+ * `as const` list (`[]` keys) is compared as a set, additive-only, in both roles; a constant's
+ * literal value, generic constraints and `readonly` are not compared.
+ */
 export function compareTypeSurfaces(oldS, newS) {
   const findings = [];
   const surface = "public-types";
   for (const name of Object.keys(oldS).sort()) {
     const o = oldS[name];
     const n = newS[name];
+    const exportRole = n?.["@role"] === "input" || o["@role"] === "input" ? "input" : (n?.["@role"] ?? o["@role"]);
+    const why = (exportRole === "input" && n?.["@role"] !== "input" ? o["@why"] : n?.["@why"]) ?? o["@why"];
     if (!n) {
-      findings.push({ surface, kind: "removed export", name, old: o.kind });
+      findings.push({ surface, kind: "removed export", name, role: exportRole, why, old: o.kind });
       continue;
     }
-    // An optional member keeps its key under `?name`; became-optional is a widening.
-    const nKeys = new Map(Object.keys(n).map((k) => [k.replace(/\.\?/g, "."), k]));
+    const roleOf = (k) => {
+      if (/^(sig|new)\d+\.(p\d+|required)$/.test(k)) return "input";
+      if (exportRole === "value") return "output";
+      return exportRole;
+    };
+    const push = (k, f) => findings.push({ surface, name, role: roleOf(k), why, ...f });
+    const nKeys = new Map(Object.keys(n).map((k) => [unq(k), k]));
     for (const k of Object.keys(o)) {
-      const nk = k in n ? k : nKeys.get(k.replace(/\.\?/g, "."));
+      if (k.startsWith("@")) continue;
+      const role = roleOf(k);
+      const nk = k in n ? k : nKeys.get(unq(k));
       if (nk === undefined) {
-        findings.push({ surface, kind: k === "kind" ? "removed kind" : "removed member", name, path: k, old: o[k] });
+        push(k, { kind: k === "kind" ? "removed kind" : "removed member", path: k, old: o[k] });
         continue;
       }
-      const optionals = (s) => (s.match(/\.\?/g) ?? []).length;
-      if (optionals(nk) < optionals(k)) {
-        findings.push({ surface, kind: "member became required", name, path: nk, old: o[k], new: n[nk] });
+      if (optionals(nk) < optionals(k) && role === "input") {
+        push(k, { kind: "member became required", path: nk, old: o[k], new: n[nk] });
+        continue;
+      }
+      if (optionals(nk) > optionals(k) && role === "output") {
+        push(k, { kind: "member became optional", path: nk, old: o[k], new: n[nk] });
         continue;
       }
       if (k === "kind") {
         // `interface X` ↔ `type X = {…}` is one kind to a consumer (its members are compared).
         const kinds = (s) => s.split(",").map((x) => (x === "interface" ? "type" : x));
         const nk2 = new Set(kinds(n.kind));
-        const lost = kinds(o.kind).filter((x) => x && !nk2.has(x));
-        if (lost.length) findings.push({ surface, kind: "removed kind", name, old: o.kind, new: n.kind });
+        if (kinds(o.kind).some((x) => x && !nk2.has(x))) push(k, { kind: "removed kind", old: o.kind, new: n.kind });
       } else if (/\.required$/.test(k)) {
-        if (Number(n[nk]) > Number(o[k])) {
-          findings.push({ surface, kind: "new required parameter", name, path: k, old: o[k], new: n[nk] });
-        }
+        if (Number(n[nk]) > Number(o[k])) push(k, { kind: "new required parameter", path: k, old: o[k], new: n[nk] });
+      } else if (k.endsWith("[]")) {
+        // An `as const` list (keyword tables, enum values): entries may be added, not removed.
+        if (!subsumes(o[k], n[nk], false)) push(k, { kind: "removed list entry", path: k, old: o[k], new: n[nk] });
       } else if (o.kind === "const" && n.kind === "const" && isLiteral(o[k]) && isLiteral(n[nk])) {
         // A constant's VALUE changed (a schema description, a version string): not a type
         // contract. The Plan schema's own `const`s are checked as JSON by `plan-schema`.
-      } else if (!widened(o[k].replace(/^(\?|\.\.\.)/, ""), n[nk].replace(/^(\?|\.\.\.)/, ""))) {
-        // (A parameter's `?` / `...` marker is compared by the loop below.)
-        findings.push({ surface, kind: "changed type", name, path: k, old: o[k], new: n[nk] });
+      } else if (!compatible(bare(o[k]), bare(n[nk]), role)) {
+        // (A parameter's `?` / `...` marker is compared below.)
+        push(k, {
+          kind: role === "input" ? "narrowed input type" : "widened output type",
+          path: k,
+          old: o[k],
+          new: n[nk],
+        });
       }
     }
     // A parameter that was optional and is now required at the same position.
     for (const k of Object.keys(o)) {
       const m = /^(sig|new)(\d+)\.p(\d+)$/.exec(k);
       if (m && o[k].startsWith("?") && n[k] && !n[k].startsWith("?") && !n[k].startsWith("...")) {
-        findings.push({ surface, kind: "parameter became required", name, path: k, old: o[k], new: n[k] });
+        push(k, { kind: "parameter became required", path: k, old: o[k], new: n[k] });
+      }
+    }
+    // NEW members of an input type: a caller's existing object lacks them, so a required one breaks.
+    if (exportRole === "input") {
+      const oldPrefixes = new Set();
+      for (const k of Object.keys(o)) {
+        const segs = unq(k).split(".");
+        for (let i = 1; i <= segs.length; i++) oldPrefixes.add(segs.slice(0, i).join("."));
+      }
+      const seen = new Set();
+      for (const nk of Object.keys(n)) {
+        if (!nk.startsWith(".") || oldPrefixes.has(unq(nk))) continue;
+        const raw = nk.split(".");
+        let i = 1;
+        while (i < raw.length - 1 && oldPrefixes.has(unq(raw.slice(0, i + 1).join(".")))) i++;
+        const member = raw.slice(0, i + 1).join(".");
+        if (seen.has(member)) continue;
+        seen.add(member);
+        const last = raw[i] ?? "";
+        const leafUndefined = member === nk && unionMembers(n[nk]).includes("undefined");
+        if (!last.startsWith("?") && !leafUndefined) {
+          findings.push({ surface, name, role: "input", why, kind: "new required member", path: member, new: n[nk] });
+        }
       }
     }
   }
@@ -548,6 +684,28 @@ export function compareJsonSchemas(oldS, newS, { surface, name, path = "" }) {
         ![...asSet(o.type)].every((t) => nt.has(t) || (t === "integer" && nt.has("number")))
       ) {
         out.push({ surface, kind: "changed type", name, path: p || "/", old: show(o.type), new: show(n.type) });
+      }
+    } else if (
+      n.type !== undefined &&
+      ["$ref", "anyOf", "oneOf", "allOf", "enum", "const"].every((key) => o[key] === undefined)
+    ) {
+      // `{}` (anything) → `{ type: … }` is a narrowing.
+      out.push({ surface, kind: "narrowed to a type", name, path: p || "/", old: "(any)", new: show(n.type) });
+    }
+    // Bounds and formats: a tightened (or newly added) one rejects what the old schema accepted.
+    for (const key of ["minimum", "exclusiveMinimum", "minLength", "minItems", "minProperties"]) {
+      if (n[key] !== undefined && (o[key] === undefined || n[key] > o[key])) {
+        out.push({ surface, kind: `tightened ${key}`, name, path: p || "/", old: show(o[key]), new: show(n[key]) });
+      }
+    }
+    for (const key of ["maximum", "exclusiveMaximum", "maxLength", "maxItems", "maxProperties"]) {
+      if (n[key] !== undefined && (o[key] === undefined || n[key] < o[key])) {
+        out.push({ surface, kind: `tightened ${key}`, name, path: p || "/", old: show(o[key]), new: show(n[key]) });
+      }
+    }
+    for (const key of ["pattern", "format"]) {
+      if (n[key] !== undefined && n[key] !== o[key]) {
+        out.push({ surface, kind: `changed ${key}`, name, path: p || "/", old: show(o[key]), new: show(n[key]) });
       }
     }
     if (Array.isArray(o.enum)) {
@@ -587,7 +745,7 @@ export function compareJsonSchemas(oldS, newS, { surface, name, path = "" }) {
     for (const key of ["items", "additionalProperties", "not", "contains"]) {
       if (o[key] && typeof o[key] === "object") walk(o[key], n[key], `${p}/${key}`);
     }
-    if (o.additionalProperties !== false && n.additionalProperties === false && o.additionalProperties !== undefined) {
+    if (o.additionalProperties !== false && n.additionalProperties === false) {
       out.push({ surface, kind: "closed additionalProperties", name, path: p || "/" });
     }
     for (const key of ["anyOf", "oneOf", "allOf"]) {
@@ -622,19 +780,35 @@ export async function listMcpTools(createServer) {
   await client.connect(clientT);
   try {
     const { tools } = await client.listTools();
-    return Object.fromEntries(tools.map((t) => [t.name, t.inputSchema ?? {}]));
+    return Object.fromEntries(
+      tools.map((t) => [t.name, { inputSchema: t.inputSchema ?? {}, outputSchema: t.outputSchema }]),
+    );
   } finally {
     await client.close();
     await server.close();
   }
 }
 
-/** Additive-only diff of two `{ toolName: inputSchema }` maps. */
+/**
+ * Additive-only diff of two `{ toolName: { inputSchema, outputSchema? } }` maps. An `outputSchema`
+ * that appears passes; one that changes is held to the same rules as the input; one that
+ * disappears fails.
+ */
 export function compareMcpTools(oldT, newT) {
+  const surface = "mcp-schemas";
   const out = [];
   for (const name of Object.keys(oldT).sort()) {
-    if (!(name in newT)) out.push({ surface: "mcp-schemas", kind: "removed tool", name });
-    else out.push(...compareJsonSchemas(oldT[name], newT[name], { surface: "mcp-schemas", name }));
+    if (!(name in newT)) {
+      out.push({ surface, kind: "removed tool", name });
+      continue;
+    }
+    const o = oldT[name];
+    const n = newT[name];
+    out.push(...compareJsonSchemas(o.inputSchema, n.inputSchema, { surface, name }));
+    if (o.outputSchema && !n.outputSchema) out.push({ surface, kind: "removed outputSchema", name });
+    else if (o.outputSchema) {
+      out.push(...compareJsonSchemas(o.outputSchema, n.outputSchema, { surface, name, path: "/outputSchema" }));
+    }
   }
   return out;
 }
