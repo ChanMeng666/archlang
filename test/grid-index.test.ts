@@ -147,14 +147,35 @@ describe("GridIndex extreme extents", () => {
     expect(seen).toEqual(["wall"]);
   });
 
-  it("still drops a NaN, infinite or inverted box exactly as before", () => {
+  it("keeps a NaN or infinite box in the overflow list (every query returns it) and drops an inverted one", () => {
+    // EH2.10 review: a box reaching to infinity (an `Infinity` ruleset depth) meets every query, so
+    // dropping it lost a scan's answer. It is returned after the bucketed items; the caller's exact
+    // test decides. A finite inverted box meets nothing and is still dropped.
     const g = new GridIndex<string>(100);
     g.insert({ minX: NaN, minY: 0, maxX: 10, maxY: 10 }, "nan");
     g.insert({ minX: 0, minY: 0, maxX: Infinity, maxY: 10 }, "inf");
     g.insert({ minX: 500, minY: 0, maxX: 10, maxY: 10 }, "inverted");
     g.insert({ minX: 0, minY: 0, maxX: 10, maxY: 10 }, "ok");
-    expect(g.queryBox({ minX: 0, minY: 0, maxX: 5, maxY: 5 })).toEqual(["ok"]);
-    expect(g.queryBox({ minX: -1e12, minY: -1e12, maxX: 1e12, maxY: 1e12 })).toEqual(["ok"]);
+    expect(g.queryBox({ minX: 0, minY: 0, maxX: 5, maxY: 5 })).toEqual(["ok", "nan", "inf"]);
+    expect(g.queryBox({ minX: 9e5, minY: 9e5, maxX: 9e5 + 1, maxY: 9e5 + 1 })).toEqual(["nan", "inf"]);
+    expect(g.queryBox({ minX: -1e12, minY: -1e12, maxX: 1e12, maxY: 1e12 })).toEqual(["ok", "nan", "inf"]);
+    const seen: string[] = [];
+    g.forEach({ minX: 9e5, minY: 9e5, maxX: 9e5 + 1, maxY: 9e5 + 1 }, (i) => seen.push(i));
+    expect(seen).toEqual(["nan", "inf"]);
+  });
+
+  it("overlapIndex returns a non-finite box for every query, and every box for a non-finite query", () => {
+    const query = overlapIndex([
+      { minX: 0, minY: 0, maxX: 10, maxY: 10 },
+      { minX: 0, minY: -Infinity, maxX: 10, maxY: Infinity },
+      null,
+      { minX: NaN, minY: 0, maxX: 10, maxY: 10 },
+      { minX: 500, minY: 500, maxX: 510, maxY: 510 },
+    ]);
+    expect(query({ minX: 1e6, minY: 1e6, maxX: 1e6 + 1, maxY: 1e6 + 1 })).toEqual([1, 3]);
+    expect(query({ minX: 2, minY: 2, maxX: 3, maxY: 3 })).toEqual([0, 1, 3]);
+    expect(query({ minX: 0, minY: 0, maxX: Infinity, maxY: 1 })).toEqual([0, 1, 3, 4]);
+    expect(query({ minX: NaN, minY: 0, maxX: 1, maxY: 1 })).toEqual([0, 1, 3, 4]);
   });
 
   it("a huge query box returns the populated buckets in the same order as a cell walk", () => {

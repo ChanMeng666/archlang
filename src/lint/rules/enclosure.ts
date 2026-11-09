@@ -131,7 +131,7 @@ function runWords(p: Point, q: Point): string {
 const SAME_LINE_MM = 1;
 
 /** One run two rooms share, measured along the line midway between their edges. */
-interface SharedRun {
+export interface SharedRun {
   /** The run's ends on the midline. */
   p: Point;
   q: Point;
@@ -141,7 +141,7 @@ interface SharedRun {
 }
 
 /** One stretch of a run with nothing standing on it, and what the run holds besides. */
-interface OpenStretch {
+export interface OpenStretch {
   run: SharedRun;
   /** Along-run interval (mm from `run.p`). */
   lo: number;
@@ -213,21 +213,25 @@ function gapsOf(covered: Array<[number, number]>, len: number): Array<[number, n
  * the run's query box (`runBox`) the run's bounding box grown by half the gap; each grown by
  * {@link RUN_BOX_PAD_MM} more. Counters are not indexed: one standing across the run's LINE
  * anywhere along it decides whether the run is `bare`, so every counter is read.
+ *
+ * @internal Exported, with {@link runCandidates}, {@link sharedRuns} and {@link openStretches},
+ * for `test/lint-index-superset.test.ts`.
  */
-interface RunCandidates {
+export interface RunCandidates {
   straight: WallSegment[];
-  segsNear: (box: GridBox) => number[];
   links: Array<RDoor | ROpening | AccessConnector>;
-  linksNear: (box: GridBox) => number[];
+  /** The positions in {@link straight} and {@link links} a run is measured against, ascending. */
+  hits(run: SharedRun): { segs: number[]; links: number[] };
   counters: Point[][];
 }
 
 /** How far (mm) the {@link RunCandidates} boxes are padded beyond their exact bounds: far above
- *  the float dust of a projection (a "parallel" wall drifts at most 1e-9 of its length). */
-const RUN_BOX_PAD_MM = 1;
+ *  the float dust of a projection (a "parallel" wall drifts at most 1e-9 of its length). Exported
+ *  for the superset test, which shows a pad 2 mm smaller drops a wall or connector that counts. */
+export const RUN_BOX_PAD_MM = 1;
 
-/** {@link RunCandidates} for one storey. */
-function runCandidates(ctx: LintContext): RunCandidates {
+/** {@link RunCandidates} for one storey; `pad` is {@link RUN_BOX_PAD_MM} in the rule. */
+export function runCandidates(ctx: LintContext, pad: number = RUN_BOX_PAD_MM): RunCandidates {
   const straight = ctx.wallSegs.filter((s) => !s.arc);
   const links = [...ctx.connectors, ...ctx.openRuns];
   const grow = (minX: number, minY: number, maxX: number, maxY: number, by: number): GridBox => ({
@@ -242,7 +246,7 @@ function runCandidates(ctx: LintContext): RunCandidates {
       Math.min(s.a.y, s.b.y),
       Math.max(s.a.x, s.b.x),
       Math.max(s.a.y, s.b.y),
-      s.thickness / 2 + WALL_BODY_SLACK_MM + RUN_BOX_PAD_MM,
+      s.thickness / 2 + WALL_BODY_SLACK_MM + pad,
     ),
   );
   const linkBoxes = links.map((c) =>
@@ -251,21 +255,25 @@ function runCandidates(ctx: LintContext): RunCandidates {
       c.at.y,
       c.at.x,
       c.at.y,
-      Math.abs(c.width) / 2 + (c.host?.thickness ?? 0) / 2 + WALL_BODY_SLACK_MM + RUN_BOX_PAD_MM,
+      Math.abs(c.width) / 2 + (c.host?.thickness ?? 0) / 2 + WALL_BODY_SLACK_MM + pad,
     ),
   );
+  const segsNear = overlapIndex(segBoxes);
+  const linksNear = overlapIndex(linkBoxes);
   return {
     straight,
-    segsNear: overlapIndex(segBoxes),
     links,
-    linksNear: overlapIndex(linkBoxes),
+    hits: (run) => {
+      const box = runBox(run, pad);
+      return { segs: segsNear(box), links: linksNear(box) };
+    },
     counters: ctx.furniture.filter((f) => BOUNDARY_FIXTURES.has(f.category)).map((f) => rectRing(rectOf(f))),
   };
 }
 
 /** The box a run's {@link RunCandidates} query reads: its bounding box grown by half the gap. */
-function runBox(run: SharedRun): GridBox {
-  const by = run.sep / 2 + RUN_BOX_PAD_MM;
+function runBox(run: SharedRun, pad: number): GridBox {
+  const by = run.sep / 2 + pad;
   return {
     minX: Math.min(run.p.x, run.q.x) - by,
     minY: Math.min(run.p.y, run.q.y) - by,
@@ -281,7 +289,7 @@ function runBox(run: SharedRun): GridBox {
  * on one line are then merged where they meet, so a vertex on a ring (an edge split in two)
  * does not split the run and hide a gap across it.
  */
-function sharedRuns(ctx: LintContext, a: RRoom, b: RRoom): SharedRun[] {
+export function sharedRuns(ctx: LintContext, a: RRoom, b: RRoom): SharedRun[] {
   const ba = ctx.roomRects.get(a.id)!;
   const bb = ctx.roomRects.get(b.id)!;
   const tol = ctx.rules.tolMm;
@@ -371,16 +379,16 @@ function sharedRuns(ctx: LintContext, a: RRoom, b: RRoom): SharedRun[] {
  * leave is compared with the doorway (two stubs leaving 950 mm in all, the longest 400 mm, are
  * silent).
  */
-function openStretches(ctx: LintContext, run: SharedRun, near: RunCandidates): OpenStretch[] {
+export function openStretches(ctx: LintContext, run: SharedRun, near: RunCandidates): OpenStretch[] {
   const { p, q, len, sep } = run;
   const u = { x: (q.x - p.x) / len, y: (q.y - p.y) / len };
   const n = { x: -u.y, y: u.x };
   const along = (x: Point): number => (x.x - p.x) * u.x + (x.y - p.y) * u.y;
   const across = (x: Point): number => (x.x - p.x) * n.x + (x.y - p.y) * n.y;
   // Only what stands within reach of the run can cover it (see {@link RunCandidates}).
-  const reach = runBox(run);
-  const straight = near.segsNear(reach).map((i) => near.straight[i]!);
-  const links = near.linksNear(reach).map((i) => near.links[i]!);
+  const hit = near.hits(run);
+  const straight = hit.segs.map((i) => near.straight[i]!);
+  const links = hit.links.map((i) => near.links[i]!);
   ctx.work.boundaryRunTests += straight.length + links.length + near.counters.length;
   const covered = edgeWallCover(p, q, straight, ctx.rules.tolMm, { halfGap: sep / 2, slack: WALL_BODY_SLACK_MM });
   // A wall CROSSING the run (not parallel to it) stands on it where its body spans the gap

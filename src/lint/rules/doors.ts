@@ -783,13 +783,14 @@ export const leafAcrossDoorway: LintRule = {
     const depth = rules.doorwayLandingMm;
     // Only a leaf that reaches door b's approach zone can stand in it (`leafOverApproach` clips the
     // leaf to that zone and is null otherwise), so each leaf is measured against the doors whose
-    // zone box its own box meets, in door order: the doors a full scan would warn on, in its order.
-    const approachOf = overlapIndex(doors.map((b) => (edgeOf.has(b.id) ? approachBox(b, depth) : null)));
+    // zone box its own box meets, in door order: the same pairs a full scan warns on, in its
+    // order, for any finite ruleset (a non-finite depth makes every zone box match every leaf).
+    const approachOf = leafApproachIndex(doors, (id) => edgeOf.has(id), depth);
     const out: Diagnostic[] = [];
     for (const { d: a, s: sa } of swings) {
       const ea = edgeOf.get(a.id);
       if (!ea || !orthogonalHost(a)) continue;
-      for (const bi of approachOf(segmentBox(sa.hinge, sa.leafEnd))) {
+      for (const bi of approachOf(sa)) {
         const b = doors[bi]!;
         if (b === a || warned.has(`${a.id}|${b.id}`)) continue;
         const eb = edgeOf.get(b.id);
@@ -860,8 +861,14 @@ export const leafAcrossDoorway: LintRule = {
  * open at `depth` (a leaf exactly `depth` from the face stands outside it). `null` for a door
  * with no orthogonal host. The leaf is axis-parallel (its own door's host is orthogonal, which
  * the caller checks), so the clip is an interval intersection: exact, no division.
+ *
+ * @internal Exported for `test/lint-index-superset.test.ts` (the exhaustive predicate).
  */
-function leafOverApproach(s: DoorSwing, b: RDoor, depth: number): { depth: number; free: number; mid: Point } | null {
+export function leafOverApproach(
+  s: DoorSwing,
+  b: RDoor,
+  depth: number,
+): { depth: number; free: number; mid: Point } | null {
   const seg = b.host;
   if (!seg || !orthogonalHost(b)) return null;
   const horiz = seg.a.y === seg.b.y;
@@ -892,16 +899,16 @@ function leafOverApproach(s: DoorSwing, b: RDoor, depth: number): { depth: numbe
 /**
  * A box holding door `b`'s approach zone on BOTH faces of its wall (the zones
  * {@link leafOverApproach} clips a leaf to: the span jamb to jamb, by `depth` off each face, so
- * within `half + depth` of the centreline), padded by {@link ZONE_BOX_PAD_MM}; `null` for a door
+ * within `half + depth` of the centreline), padded by `pad` ({@link ZONE_BOX_PAD_MM}); `null` for a door
  * with no orthogonal host, which no leaf is measured against. A leaf whose box misses it cannot
  * stand in either zone. A filter only: the clip decides.
  */
-function approachBox(b: RDoor, depth: number): GridBox | null {
+function approachBox(b: RDoor, depth: number, pad: number): GridBox | null {
   const seg = b.host;
   if (!seg || !orthogonalHost(b)) return null;
-  const reach = seg.thickness / 2 + depth + ZONE_BOX_PAD_MM;
-  const lo = (seg.a.y === seg.b.y ? b.at.x : b.at.y) - b.width / 2 - ZONE_BOX_PAD_MM;
-  const hi = lo + b.width + 2 * ZONE_BOX_PAD_MM;
+  const reach = seg.thickness / 2 + depth + pad;
+  const lo = (seg.a.y === seg.b.y ? b.at.x : b.at.y) - b.width / 2 - pad;
+  const hi = lo + b.width + 2 * pad;
   return seg.a.y === seg.b.y
     ? { minX: lo, maxX: hi, minY: b.at.y - reach, maxY: b.at.y + reach }
     : { minX: b.at.x - reach, maxX: b.at.x + reach, minY: lo, maxY: hi };
@@ -916,8 +923,26 @@ const segmentBox = (p: Point, q: Point): GridBox => ({
 });
 
 /** How far (mm) {@link approachBox} pads its zone box: far above the float dust of the clip's
- *  frame change, so the filter can never drop a leaf the clip would keep. */
-const ZONE_BOX_PAD_MM = 1;
+ *  frame change, so the filter can never drop a leaf the clip would keep. Exported for the
+ *  superset test (`test/lint-index-superset.test.ts`), which shows a pad 2 mm smaller does. */
+export const ZONE_BOX_PAD_MM = 1;
+
+/**
+ * The doors `W_LEAF_ACROSS_DOORWAY` measures a leaf against: the positions in `doors` of every
+ * door that has an access edge (`hasEdge`) and whose {@link approachBox} meets the leaf's box, in
+ * ascending order. `pad` is {@link ZONE_BOX_PAD_MM} in the rule; a test passes a smaller one.
+ *
+ * @internal Exported for `test/lint-index-superset.test.ts`, with {@link leafOverApproach}.
+ */
+export function leafApproachIndex(
+  doors: readonly RDoor[],
+  hasEdge: (doorId: string) => boolean,
+  depth: number,
+  pad: number = ZONE_BOX_PAD_MM,
+): (leaf: DoorSwing) => number[] {
+  const query = overlapIndex(doors.map((b) => (hasEdge(b.id) ? approachBox(b, depth, pad) : null)));
+  return (leaf) => query(segmentBox(leaf.hinge, leaf.leafEnd));
+}
 
 /** A door hosted on a straight, axis-aligned wall segment. */
 function orthogonalHost(d: RDoor): boolean {
