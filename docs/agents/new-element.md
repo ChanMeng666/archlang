@@ -47,7 +47,8 @@ that table is a `Record` over `PlanJsonDroppedClause`.
 
 ## Not caught by any check
 
-- `src/describe.ts`: a summary row for the kind, when `describe()` should report it.
+- `src/describe.ts` (`summarize`) and its row type in `src/describe/types.ts`: a summary row for the
+  kind, when `describe()` should report it.
 - `src/error-catalog/<family>.ts` (the family the element belongs to, e.g. `openings.ts`, `walls.ts`,
   `site.ts`; a new file is imported and spread in `src/error-catalog.ts`): an entry per new
   `E_*`/`W_*` code (`test/error-catalog-*.test.ts` catch a
