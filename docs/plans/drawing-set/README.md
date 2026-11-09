@@ -154,4 +154,4 @@ D1–D8、D11–D13 是程序决定，除非所有者反对即有效。D9、D10 
 
 ## 9. 相关文档
 
-`research/` 五份报告；`spike/` Band Envelope 探针；`docs/adr/0021`、`0030`、`0031`、`0024`；`docs/agents/iron-laws.md`；`../preview-and-remodel/README.md` D5、D23、D29；`../archlang-3d/development-plan.md`。
+`research/` 五份报告；`spike/` Band Envelope 探针；`docs/adr/0021`、`0030`、`0031`、`0024`；`docs/agents/iron-laws.md`；`../preview-and-remodel/README.md` D5、D23、D29；`archlang-lab/plans/archlang-3d/development-plan.md`。

@@ -285,12 +285,22 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
-| `AxesSummary` | type | none |
-| `AxisSummary` | type | none |
-| `ClearFact` | type | none |
 | `DESCRIBE_FACTS` | value | `src/cli`, `test` |
 | `DescribeFact` | type | `src/cli` |
 | `DescribeOptions` | type | `playground` |
+| `MAX_WASTE_PCT` | value | `playground` |
+| `PER_STOREY_OPTIONAL_KEYS` | value | `test` |
+| `describe` | value | `dataset`, `docs-site`, `eval`, `packages/archlang-3d`, `packages/mcp`, `playground`, `scripts`, `src/cli`, `test`, `tools` |
+| `describeLevel` | value | `packages/archlang-3d`, `playground`, `src/cli`, `test` |
+| `instanceTransform` | value | `test` |
+
+## `src/describe/types.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `AxesSummary` | type | none |
+| `AxisSummary` | type | none |
+| `ClearFact` | type | none |
 | `DoorSummary` | type | none |
 | `FenceSummary` | type | none |
 | `FreedomElement` | type | `src/cli` |
@@ -299,10 +309,8 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `HeightFacts` | type | none |
 | `InstanceSummary` | type | none |
 | `LevelSummary` | type | none |
-| `MAX_WASTE_PCT` | value | `playground` |
 | `OpeningSummary` | type | none |
 | `OutdoorSummary` | type | none |
-| `PER_STOREY_OPTIONAL_KEYS` | value | `test` |
 | `RoomSummary` | type | `eval`, `playground`, `test` |
 | `SceneSummary` | type | `eval`, `playground`, `src/cli`, `test` |
 | `SheetSummary` | type | none |
@@ -314,9 +322,6 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `WallStatusFacts` | type | none |
 | `WindowSummary` | type | none |
 | `ZoneSummary` | type | none |
-| `describe` | value | `dataset`, `docs-site`, `eval`, `packages/archlang-3d`, `packages/mcp`, `playground`, `scripts`, `src/cli`, `test`, `tools` |
-| `describeLevel` | value | `packages/archlang-3d`, `playground`, `src/cli`, `test` |
-| `instanceTransform` | value | `test` |
 
 ## `src/diagnostic-json.ts`
 
