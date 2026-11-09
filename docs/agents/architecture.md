@@ -182,7 +182,8 @@ source (.arch)
 - `cli/summary.ts` the one-line count-and-codes summary `lint`/`validate` open with (CLI only, so
   no corpus digest moves) · `cli/review.ts` `arch preview --review`, the review sheet: consumes
   `compile()`/`describe()`/`lint()`, feeds none of them
-- `plan-json.ts` Plan JSON · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
+- `plan-json.ts` Plan JSON, re-exporting `plan-json/` (room types, wire types, `to-json`, the
+  `from-json` validator, `.arch` `emit`, `ast-json`, `check-graph`, `schema`) · `diagnostic-json.ts` · `repair.ts` (geometric corrector) vs
   `fix-apply.ts` (`arch fix`; skips a fix carrying `file`) · `manifest.ts` the CLI contract
 - `input-limit.ts` `inputTooLarge()` / `rateLimited()`: a HOST's refusals (`E_INPUT_TOO_LARGE`,
   `E_RATE_LIMITED`), which `compile()` never calls · `cli/share-codec.mjs` (Node) and `cli/share-codec.web.mjs`

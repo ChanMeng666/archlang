@@ -4,7 +4,7 @@
  *
  * Before the refactor the two pairs were hand-kept in six places: the parser's inline
  * check and the resolver's `set door(…)` allow-list (`src/elements/door.ts`), the Plan
- * JSON validator and the Plan JSON schema (`src/plan-json.ts`), `scripts/gen-gbnf.ts`'s
+ * JSON validator and the Plan JSON schema (`src/plan-json/`), `scripts/gen-gbnf.ts`'s
  * door productions and `scripts/gen-llm-spec.ts`'s door grammar line. The last two are
  * the dangerous ones and the reason this test exists: a literal typed INSIDE a generator
  * reproduces the same wrong text forever while `npm run check:drift` stays green, because
@@ -54,18 +54,29 @@ const IR_MODULES = [
     .sort()
     .map((f) => `../src/ir/${f}`),
 ];
-/** The call sites outside the resolver that used to keep their own copy. */
+/** Plan JSON: `src/plan-json.ts` and every module under `src/plan-json/`, read from the
+ *  directory, so a module split out of it stays under the scan. */
+const PLAN_JSON_MODULES = [
+  "../src/plan-json.ts",
+  ...readdirSync(join(__dirname, "../src/plan-json"))
+    .filter((f) => f.endsWith(".ts"))
+    .sort()
+    .map((f) => `../src/plan-json/${f}`),
+];
+/** The call sites outside the resolver that used to keep their own copy (Plan JSON's: its
+ *  validator and its schema). */
 const CALL_SITES = [
   "../src/elements/door.ts",
-  "../src/plan-json.ts",
+  "../src/plan-json/from-json.ts",
+  "../src/plan-json/schema.ts",
   "../scripts/gen-gbnf.ts",
   "../scripts/gen-llm-spec.ts",
   "../src/ast.ts",
   "../src/geometry.ts",
   "../src/fix-producers.ts",
 ];
-/** Every file the copy scan reads: the source, the call sites and the resolver. */
-const FILES = [SOURCE, ...CALL_SITES, ...IR_MODULES];
+/** Every file the copy scan reads: the source, the call sites, the resolver and Plan JSON. */
+const FILES = [...new Set([SOURCE, ...CALL_SITES, ...IR_MODULES, ...PLAN_JSON_MODULES])];
 /** The scanned files that import the table (`grammar/tokens`), the source excepted. */
 const IMPORTERS = FILES.filter((f) => f !== SOURCE && /grammar\/tokens\.js/.test(read(f)));
 
