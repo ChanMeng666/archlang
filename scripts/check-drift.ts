@@ -54,6 +54,8 @@ const GENERATORS: readonly { script: string; artifacts: readonly string[] }[] = 
   { script: "gen:plugin", artifacts: [...pluginSkillFiles().map((f) => f.dest), PLUGIN_MANIFEST] },
   // The per-route `.md` Content-Type rules, derived from the PAGES + SITE_PAGES tables in docs-site/sync-docs.mjs.
   { script: "gen:docs-headers", artifacts: ["docs-site/public/_headers"] },
+  // The topmost-`todo` finder for the /loop driver, derived from the `### ` headings of docs/backlog.md.
+  { script: "gen:backlog-index", artifacts: ["docs/backlog-index.md"] },
   { script: "gen:agent-manifests", artifacts: allOutputs() },
   // The `<arch-plan>` element the docs site serves, built by packages/web-component/scripts/build.ts.
   { script: "gen:arch-plan", artifacts: ["docs-site/public/arch-plan.js"] },
