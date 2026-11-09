@@ -139,7 +139,7 @@ default 1, `0.25` under `check:quick`; nightly `fuzz-deep` job at `FC_SCALE=10` 
 `fuzz|escape-fuzz|equivariance-fuzz|frame|reroll-findrun-oracle`, seed printed. A non-vacuity
 assertion must be seeded (lint check). Proof: suite green at scale 1; the nightly job added.
 
-### EH1.8 · the CLI runs in-process — `in progress` · M · medium · opus · T-F1
+### EH1.8 · the CLI runs in-process — `in review (#613)` · M · medium · opus · T-F1
 `src/cli/run.ts` exports `runCli(argv, io: {stdout, stderr, stdin, cwd, env}) → Promise<number>`;
 `src/cli.ts` becomes `exitFlushed(await runCli(process.argv.slice(2), nodeIo))`. Thread `io`
 through the `cmd*` functions (about 120 `process.stdout/stderr` sites; `watch` keeps its handle).
@@ -225,14 +225,14 @@ to `KIND_FACETS` by a test. (c) `scripts/compat-check.mjs` does not compare gene
 zod and MCP SDK (after a major bump of either, pin the old versions in the cache). Proof: each item a
 test or a doc sentence; no `src/` change except (b) if a derivation is cheap.
 
-### EH1.17 · residue of the second review batch — `todo` · S · low · sonnet
+### EH1.17 · residue of the second review batch — `in progress` · S · low · sonnet
 (a) `scripts/compat-check.mjs` reports a member whose printed type is a NON-EXPORTED alias (e.g. `readonly KindsWith<"opening">[]`) as "new: (none)"; resolve such aliases structurally (print the apparent type with `typeToString` flags that expand aliases, or fall back to the alias's declared type) so a derived literal union compares as its members (#608 had to cast to a hand-written tuple). (b) Root `packages/archlang-3d/src/node.ts`'s `makeNodeWorld` like `src/cli/io.ts` (realpath containment, `.arch` only, size cap; EH1.16d's allow-list row then goes). (c) `hasFixtureGlyph`/the manifest guard: a drawer returning `[]` passes — pin per-family non-empty output (the alias golden table from #611 already does; confirm and drop the redundancy or keep both with a sentence). Proof: tests; no `src/` change except (b).
 
 ## Wave 2 · structure, by pure moves
 
 Every move PR also repoints the source-text guards: tests that read a module's bytes (`readFileSync("src/analyze.ts")`-style, e.g. `test/arc-tessellation-error.test.ts`, `test/iso-describe-blind.test.ts`'s module list) follow the code to its new file (EH1.4 learned this on CI).
 
-### EH2.1 · error catalogue by family, typed once — `in progress` · M · medium · opus · A-F3, P-F4 · depends EH1.1
+### EH2.1 · error catalogue by family, typed once — `done (#614; the fix-table half dropped after measurement)` · M · medium · opus · A-F3, P-F4 · depends EH1.1
 `src/error-catalog/` with one file per family (`parse`, `resolve`, `openings`, `lint-doors`,
 `lint-stairs`, `intent`, `json`, …), each `defineEntries({ E_X: e("msg", "cause", "fix", "ex") })`
 filling `code` from the key; `error-catalog.ts` spreads them in today's key order into the same
@@ -242,7 +242,7 @@ new sites; public `Diagnostic.code: string` unchanged. Second commit: `error-fix
 `explain`/CLI/docs; a test asserts the two agree per code. Proof (amended 2026-11-09 by #614's review: key ORDER is not part of the contract — nothing in `src/`, the generators or the packages reads it; entries must be identical BY CODE): per-code JSON identical before/after; `gen:errors`, `gen:llms` no drift; corpus `--json`
 diagnostics digest unchanged; playground compiler chunk size before/after from its own build.
 
-### EH2.2 · `src/ir/` — `todo` · M · medium · opus · A-F2 · depends EH1.4, EH1.6
+### EH2.2 · `src/ir/` — `in progress` · M · medium · opus · A-F2 · depends EH1.4, EH1.6
 Verbatim moves, `ir.ts` re-exports: `ir/types.ts` (R* interfaces, `ResolvedPlan`), `ir/expand.ts`
 (`Scope`, `expandScope*`, zones, `placeFrame`, `stripRooms`), `ir/side-tables.ts` (the 9 WeakMaps
 and accessors), `ir/groups.ts` (partition, `assignIds`, `markPlacement`, demolition,
