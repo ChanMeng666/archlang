@@ -1,6 +1,8 @@
 {
-  "_reason": "2026-11-09 first taken on main@d0c710e8 (EH1.6 tranche 1)",
+  "_reason": "2026-11-09 EH1.6 review round: totals 3 %, floor 8, elements asserted",
   "_tolerance": 0.1,
+  "_totalTolerance": 0.03,
+  "_floor": 8,
   "rows": {
     "examples/accessible.arch": {
       "steps": 221,

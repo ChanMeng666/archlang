@@ -10,7 +10,14 @@
  */
 
 import { writeFileSync } from "node:fs";
-import { TABLE, type WorkCounts, type WorkCountsTable, workCountPlans, workCounts } from "./work-counts.js";
+import {
+  rowProblems,
+  TABLE,
+  type WorkCounts,
+  type WorkCountsTable,
+  workCountPlans,
+  workCounts,
+} from "./work-counts.js";
 
 const why = process.argv[2];
 if (!why) {
@@ -19,7 +26,17 @@ if (!why) {
 }
 
 const rows: Record<string, WorkCounts> = {};
-for (const p of workCountPlans()) rows[p.key] = workCounts(p.src, p.world);
-const table: WorkCountsTable = { _reason: why, _tolerance: 0.1, rows };
+const refused: string[] = [];
+for (const p of workCountPlans()) {
+  const m = workCounts(p.src, p.world);
+  const problems = rowProblems(m);
+  if (problems.length > 0) refused.push(`${p.key}: ${problems.join("; ")}`);
+  rows[p.key] = m.counts;
+}
+if (refused.length > 0) {
+  process.stderr.write(`refusing to write the table; these plans cannot be rows:\n  ${refused.join("\n  ")}\n`);
+  process.exit(1);
+}
+const table: WorkCountsTable = { _reason: why, _tolerance: 0.1, _totalTolerance: 0.03, _floor: 8, rows };
 writeFileSync(TABLE, `${JSON.stringify(table, null, 2)}\n`);
 process.stderr.write(`wrote ${Object.keys(rows).length} rows to test/tables/work-counts.json\n`);

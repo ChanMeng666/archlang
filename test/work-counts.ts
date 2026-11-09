@@ -12,6 +12,8 @@
  *    element plus `storeyPassUnits()` of the storey (`./drawing-budget.test.ts`'s `estimate`).
  *  - `elements`: the resolved elements over every storey (what the drawing budget is charged for).
  *
+ * Every row must be a clean resolution with work in it ({@link rowProblems}).
+ *
  * The plans are every `examples/*.arch` (imports read beside it, as the corpus suites do) and the
  * three bench plans of `bench/gen.ts`, which are generated in memory with no I/O.
  */
@@ -39,7 +41,12 @@ export interface WorkCounts {
 
 export interface WorkCountsTable {
   _reason: string;
+  /** Per row, each count may move by at most `max(recorded × _tolerance, _floor)` either way. */
   _tolerance: number;
+  /** The corpus totals may move by at most `recorded × _totalTolerance` either way. */
+  _totalTolerance: number;
+  /** The absolute slack per row, so a small plan does not trip on a few steps. */
+  _floor: number;
   rows: Record<string, WorkCounts>;
 }
 
@@ -70,12 +77,24 @@ export function workCountPlans(): { key: string; src: string; world: World }[] {
   return [...examples, ...bench];
 }
 
-/** The three counts of one plan. A plan that does not parse counts nothing. */
-export function workCounts(src: string, world: World = NULL_WORLD): WorkCounts {
-  const { plan: ast } = parse(src, BUILTIN_REGISTRY);
-  if (!ast) return { steps: 0, drawUnits: 0, elements: 0 };
+/** The three counts of one plan, and the codes of every error its parse, link or resolve raised. */
+export interface WorkMeasure {
+  counts: WorkCounts;
+  errors: string[];
+}
+
+/** Measures one plan. A plan that does not parse counts nothing (and has its parse errors). */
+export function workCounts(src: string, world: World = NULL_WORLD): WorkMeasure {
+  const parsed = parse(src, BUILTIN_REGISTRY);
+  const codes = (ds: readonly { severity: string; code?: string }[]): string[] =>
+    ds.filter((d) => d.severity === "error").map((d) => d.code ?? "<uncoded>");
+  const errors = codes(parsed.diagnostics);
+  const ast = parsed.plan;
+  if (!ast) return { counts: { steps: 0, drawUnits: 0, elements: 0 }, errors };
   const linked = link(ast, world, BUILTIN_REGISTRY);
   const res = resolveAll(linked.plan, BUILTIN_REGISTRY, world);
+  errors.push(...codes(linked.diagnostics), ...codes(res.diagnostics));
+  for (const l of res.levels) errors.push(...codes(l.diagnostics));
   const storeys = res.levels.length > 0 ? res.levels.map((l) => l.ir) : [res.ir];
   let units = 0;
   let elements = 0;
@@ -84,5 +103,18 @@ export function workCounts(src: string, world: World = NULL_WORLD): WorkCounts {
     units += storeyPassUnits(s, BUILTIN_REGISTRY);
     elements += s.elements.length;
   }
-  return { steps: evaluationSteps(res), drawUnits: units, elements };
+  return { counts: { steps: evaluationSteps(res), drawUnits: units, elements }, errors: [...new Set(errors)] };
+}
+
+/**
+ * Why a measure cannot be a row, or `[]`: a zero count measures nothing, and a plan with an error
+ * stopped part-way, so its counts pin a broken resolution. The generator refuses to write such a
+ * row and the test fails on it.
+ */
+export function rowProblems(m: WorkMeasure): string[] {
+  const out: string[] = [];
+  if (!(m.counts.steps > 0)) out.push("steps is 0");
+  if (!(m.counts.drawUnits > 0)) out.push("drawUnits is 0");
+  if (m.errors.length > 0) out.push(`errors ${m.errors.join(", ")}`);
+  return out;
 }

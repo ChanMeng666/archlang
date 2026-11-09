@@ -120,7 +120,7 @@ specifier a workspace reaches outside the `exports` map (`archlang/review` alias
 in an allow-list with its reason; a new one fails. Add the seam table to
 `docs/agents/architecture.md`. Proof: both tests green on `main`; a scratch import turns each red.
 
-### EH1.6 · work-count golden — `todo` · S (steps + draw) then M (geometry) · low · opus · P-F2, T-F8 item 6
+### EH1.6 · work-count golden — `in review` · S (steps + draw) then M (geometry) · low · opus · P-F2, T-F8 item 6
 `test/work-counts.test.ts` + `test/tables/work-counts.json`: per `examples/*.arch` and the bench
 plans, `{steps: evaluationSteps(), drawUnits: drawUnits()}`; fail on a rise above 10 % without a
 reason line in the table's header. Tranche 2 adds counters returned by `splitAll`
