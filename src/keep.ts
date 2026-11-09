@@ -50,6 +50,7 @@ import { axisRead, COMPASS_DATUM_ALIASES, type DatumWord } from "./room-datums.j
 import { keepFormText, keepRefText } from "./statement-print.js";
 import { boardedFlight, isVertical } from "./vertical.js";
 import { classifyLabelUses } from "./vocabulary.js";
+import { kindsWith } from "./elements/facets.js";
 
 /** Most keeps one plan may declare: 12 × the 80 that would pin every edge of the largest example. */
 export const MAX_KEEPS = 1_000;
@@ -1559,7 +1560,8 @@ export interface StackedStorey {
   authored(id: string): boolean;
 }
 
-const STACKED_KINDS = new Set(["room", "stair", "elevator", "escalator", "void"]);
+/** The kinds `keep stacked` can name (`KIND_FACETS.stacked`). */
+const STACKED_KINDS: ReadonlySet<string> = new Set(kindsWith("stacked"));
 const KIND_NOUN: Record<string, string> = {
   stair: "stair",
   elevator: "lift shaft",

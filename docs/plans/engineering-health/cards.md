@@ -82,7 +82,7 @@ export names + the `.d.ts` of the tarball against a drift-gated `api/archlang.ap
 `[Unreleased]`. Skips loudly offline, fails under `CI`. Proof: the script run against `main` passes;
 with a deleted export it fails naming the export.
 
-### EH1.2 · a new element kind fails loudly everywhere it must be handled — `todo` · M · medium · opus · A-F1, A-F11
+### EH1.2 · a new element kind fails loudly everywhere it must be handled — `in review` · M · medium · opus · A-F1, A-F11
 Convert the per-kind switches at `analyze/depends.ts:195`, `analyze/symmetry.ts:665`,
 `datum.ts:348`, `ir.ts:4115`, `cursor.ts:257` into exhaustive forms (`Record<ElementKind, …>`
 `satisfies`, or `const _x: never`), with explicit `case "x": return false` where not applicable.
@@ -93,6 +93,7 @@ in, `CROPPED` (`cli/review.ts:288`), `SHELL_KINDS` (`furnish.ts:1593`), `STACKED
 Write `docs/agents/new-element.md` as the derived checklist (each place + the test that catches it).
 Proof: digests unchanged (CI); a scratch `kind: "zzz"` added to `BUILTIN_DEFS` makes `tsc` or the
 test fail at every listed site (list them in the PR body).
+Design: one table `KIND_FACETS` (`src/elements/facets.ts`, `satisfies Record<ElementKind, KindFacets>`) builds `CROPPED`/`SHELL_KINDS`/`STACKED_KINDS`/`UNPROJECTED_KINDS`/`OPENING_KINDS` and the scene label fallback, and holds `VERTICAL_KINDS`/`STYLE_KEYS`; `Statement` switches end in `nonElementKind(s.kind)`, element switches in `const unhandled: never`.
 
 ### EH1.3 · lint-rule registration is one test — `done (#589)` · S · low · sonnet · A-F4, N-F6
 `test/lint-rule-order.test.ts` pins the full `LINT_RULES` name list once and replaces the three
@@ -155,7 +156,7 @@ shows `src/cli/**` above 0; Node 22 shard total down (report the number).
 `--json` envelope key set against `test/tables/cli-envelopes.json`, additive-only. Proof: both
 tests green; the `TODO` count in the PR body.
 
-### EH1.10 · malformed input never throws — `todo` · M · low · sonnet · T-F3, S-FZ-5
+### EH1.10 · malformed input never throws — `in review` · M · low · sonnet · T-F3, S-FZ-5
 Seeded fast-check mutators over valid `planToJson` output (drop key, wrong type, NaN, ±1e12,
 empty array, extra key, `__proto__`) into `planFromJson`; laws: never throws, result is a plan or
 ≥ 1 catalogued `E_JSON_*` with a JSON path, `Object.prototype` unchanged, round-trip law intact for
@@ -179,7 +180,7 @@ Tests for `..`, absolute, symlink, `.txt`, and a sibling-directory library that 
 `test/import-world-fuzz.test.ts` (S-FZ-2) over hostile specs. CHANGELOG line. Proof: the probe
 from the audit (`import "../../secret.txt"`) returns a diagnostic with no file content.
 
-### EH1.13 · browser surfaces: capped inflate, one sanitiser, a CSP — `todo` · S · low · sonnet · S-F4, S-F5, S-FZ-3
+### EH1.13 · browser surfaces: capped inflate, one sanitiser, a CSP — `in review` · S · low · sonnet · S-F4, S-F5, S-FZ-3
 `playground/src/share.ts` uses `inflateCapped` (1 MiB) with a visible "link too large" notice,
 also for `#s=`. `svgElement` from `mcp-worker/src/viewer/viewer.ts:114-128` becomes a shared
 helper used by `packages/web-component/src/arch-plan.ts:193` and `playground/src/viewer.ts:31`.

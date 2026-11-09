@@ -9,6 +9,7 @@
  * result's `content` stays the text fallback the spec requires for every host.
  */
 import { App } from "@modelcontextprotocol/ext-apps";
+import { svgElement } from "./svg-element.js";
 
 interface DiagnosticJson {
   code?: string;
@@ -110,29 +111,6 @@ stage.addEventListener("keydown", (e) => {
 // ---------------------------------------------------------------------------
 // rendering
 // ---------------------------------------------------------------------------
-
-/** Parse the compiler's SVG and drop anything that could run (it never has any; belt and braces). */
-function svgElement(text: string): SVGSVGElement | undefined {
-  const doc = new DOMParser().parseFromString(text, "image/svg+xml");
-  const root = doc.documentElement;
-  if (root.nodeName !== "svg" || doc.getElementsByTagName("parsererror").length > 0) return undefined;
-  for (const s of Array.from(root.querySelectorAll("script, foreignObject"))) s.remove();
-  for (const el of Array.from(root.querySelectorAll("*")).concat(root)) {
-    for (const a of Array.from(el.attributes)) if (/^on/i.test(a.name)) el.removeAttribute(a.name);
-  }
-  // The compiler sizes its drawings by `viewBox` alone; give the element that size in user units
-  // so fit() scales a known box (an unsized <svg> lays out at the browser's 300×150 default).
-  const vb = root
-    .getAttribute("viewBox")
-    ?.trim()
-    .split(/[\s,]+/)
-    .map(Number);
-  if (vb && vb.length === 4 && vb.every(Number.isFinite)) {
-    if (!root.hasAttribute("width")) root.setAttribute("width", String(vb[2]));
-    if (!root.hasAttribute("height")) root.setAttribute("height", String(vb[3]));
-  }
-  return document.importNode(root, true) as unknown as SVGSVGElement;
-}
 
 function listDiagnostics(title: string, ds: DiagnosticJson[]): void {
   findingsTitle.textContent = title;

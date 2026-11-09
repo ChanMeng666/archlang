@@ -14,7 +14,7 @@
 import { compile } from "archlang";
 import { embedCompileOptions, hashParam, isEditable, renderDecision } from "./embed-params.js";
 import { createPanZoom } from "./pan-zoom.js";
-import { shareIdFromHash, sharedSource } from "./share.js";
+import { LINK_TOO_LARGE_NOTICE, readShared, shareIdFromHash } from "./share.js";
 import { createSharedNotice, SHARED_PLAN_NOTICE_SHORT, shouldShowSharedNotice } from "./shared-notice.js";
 // The fallback plan for a hash-less embed: the canonical smallest complete plan,
 // imported verbatim (`?raw`) so it can never drift from examples/one-room.arch.
@@ -66,7 +66,13 @@ toolbar?.addEventListener("click", (e) => {
 });
 
 async function init() {
-  const shared = await sharedSource();
+  const read = await readShared();
+  if (read && "refused" in read) {
+    errEl.hidden = false;
+    errEl.textContent = LINK_TOO_LARGE_NOTICE;
+    return;
+  }
+  const shared = read ? read.src : null;
   // A short link that names no stored plan says so, rather than drawing the fallback as if it were the plan.
   if (shared === null && shareIdFromHash(location.hash) !== null) {
     errEl.hidden = false;

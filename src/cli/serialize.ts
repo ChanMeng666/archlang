@@ -79,7 +79,7 @@ export async function runWithInstall<T>(fn: () => Promise<T>, pkg: string, args:
 /**
  * Serialize a built Scene to the requested format (auto-installing optional deps if
  * asked). This is the output-format seam: adding a DRAWING format = a row in
- * `EXPORT_FORMATS` (`src/manifest.ts`) + a serializer line here. `json` is the one row that
+ * `EXPORT_FORMATS` (`src/manifest.ts`) + a `case` here (`tsc` fails on a row without one). `json` is the one row that
  * is not a drawing: it is projected from the source by {@link planJsonArtifact}, which
  * {@link renderArtifact} calls before any Scene is serialized, so it never reaches this seam.
  */
@@ -95,26 +95,39 @@ async function serialize(
   const onDiagnostic = (d: Diagnostic): void => {
     if (!warnings.some((w) => w.code === d.code && w.message === d.message)) warnings.push(d);
   };
-  if (format === "dxf") return toDxf(scene);
-  if (format === "txt") return renderAscii(scene, { cols: args.cols, charset: asciiCharset(args) });
-  if (format === "pdf") return runWithInstall(() => toPdf(scene, { onDiagnostic }), "pdfkit", args);
-  if (format === "png")
-    return runWithInstall(
-      () => renderPng(scene, { width: args.width, scale: args.scale, onDiagnostic }),
-      "@resvg/resvg-js",
-      args,
-    );
-  // Internal invariant, not a user-source error: a caller that bypassed `renderArtifact` would
-  // otherwise write SVG bytes under a `.json` name.
-  if (format === "json") throw new Error("internal: -f json is projected from the source, not serialized from a Scene");
-  return svg;
+  switch (format) {
+    case "svg":
+      return svg;
+    case "dxf":
+      return toDxf(scene);
+    case "txt":
+      return renderAscii(scene, { cols: args.cols, charset: asciiCharset(args) });
+    case "pdf":
+      return runWithInstall(() => toPdf(scene, { onDiagnostic }), "pdfkit", args);
+    case "png":
+      return runWithInstall(
+        () => renderPng(scene, { width: args.width, scale: args.scale, onDiagnostic }),
+        "@resvg/resvg-js",
+        args,
+      );
+    // Internal invariant, not a user-source error: a caller that bypassed `renderArtifact` would
+    // otherwise write SVG bytes under a `.json` name.
+    case "json":
+      throw new Error("internal: -f json is projected from the source, not serialized from a Scene");
+    default: {
+      // A new `EXPORT_FORMATS` row with no serializer fails the typecheck here, instead of
+      // writing SVG bytes under the new extension.
+      const unhandled: never = format;
+      throw new Error(`internal: no serializer for format ${String(unhandled)}`);
+    }
+  }
 }
 
 /** The bytes `-f json` writes: one Plan-JSON document, two-space indented, newline-terminated. */
 const planJsonText = (json: PlanJson): string => `${JSON.stringify(json, null, 2)}\n`;
 
 /** The note's words for one dropped clause: what the format lacks, the thing counted, its plural. */
-const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, string, string]> = {
+export const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [string, string, string]> = {
   "poche hatch": ["hatch scale or angle on `poche` walls", "wall's hatch setting", "walls' hatch settings"],
   circle: ["circular rooms", "circular room", "circular rooms"],
   "label at": ["room label positions", "`label … at` position", "`label … at` positions"],

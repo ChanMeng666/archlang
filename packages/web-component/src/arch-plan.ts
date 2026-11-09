@@ -18,6 +18,7 @@
  * is the only place a custom element exists; the core itself never defines one.
  */
 import type * as Core from "@chanmeng666/archlang";
+import { sanitizeSvg } from "./svg-sanitize.js";
 
 type CoreModule = typeof Core;
 
@@ -190,7 +191,8 @@ export class ArchPlanElement extends Base {
       const plan = document.createElement("div");
       plan.className = "plan";
       plan.setAttribute("part", "plan");
-      plan.innerHTML = result.svg; // the compiler's own SVG; every label in it is escaped
+      const svg = sanitizeSvg(result.svg); // the compiler's own SVG, parsed again with nothing executable kept
+      if (svg) plan.append(svg);
       this.#root.replaceChildren(style, plan);
     } else {
       const pre = document.createElement("pre");

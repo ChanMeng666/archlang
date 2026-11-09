@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Reporting diagnostics cost time quadratic in their number: `offsetToLineCol` scanned the source from byte 0 for each one, so 64 KiB of `@` took about 4 s and 64 KiB of NUL about 8.5 s to compile. It now reads a line-start table built once per source; the same inputs take about 50 ms, with the same line and column numbers.
+- A `#z=` link, or a short link, that inflates past 1 MiB is refused instead of hanging the playground or the embed page: the page shows "This link is too large to open". The playground, the `<arch-plan>` element and the MCP viewer put a compiled SVG on the page through one sanitiser that parses it and drops `<script>`, `<foreignObject>`, `on*` attributes and `javascript:` links; a compiled drawing is unchanged.
 
 ## [1.57.0] - 2026-11-06
 
