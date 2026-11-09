@@ -76,7 +76,7 @@ function measuredCirculationOf(ctx: LintContext, from: "walk" | "nearest" = "wal
   const circ = circulationOf(ctx, from);
   if (!circ && ctx.rooms.length > 0 && !ctx.access().hasEntrance) ctx.skip("no-entrance");
   // TODO(coverage): the model is also null for a degenerate extent (zero-width or non-finite
-  // room bounds, `navExtent` in `src/analyze/circulation.ts`) and when `buildGrid` returns null
+  // room bounds, `navExtent` in `src/analyze/nav-grid.ts`) and when `buildGrid` returns null
   // (`buildNav`'s "none"). Neither is reached by a real plan; when one is, declare it here with
   // its own reason rather than leave it silent.
   return circ;

@@ -20,7 +20,6 @@ paths:
 # Drawing a symbol
 
 The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
-
 - Outline first: the first node is the symbol's `thin` outline, which `annotate` marks
   `data-arch-primary`. Detail follows in `extraThin`. Tone follows weight (`GlyphCtx.tone`); never
   pass a colour that bypasses it.
@@ -28,6 +27,10 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
   `insetRectSides`); a door's or window's, of the wall thickness. Every repeat count is a clamped
   function of the geometry alone (`clampCount`), never of a pen, so it is the same on every sheet
   and theme — the drawing budget counts it once (`test/drawing-budget.test.ts`).
+- A new fixture family is a `FIXTURE_FAMILIES` row + a `CATALOG` entry + a drawer + a 3D generator:
+  the checklist is `.claude/commands/new-fixture-family.md`. Furniture is T0 in the 3D package
+  (`src/mesh/t0*.ts`): every catalogued family has a generator (`test/t0.test.ts` fails on a grey
+  box for a catalogued word), fitted exactly to the footprint, quarter turns only, integer µm.
 - All ink stays inside the footprint at every aspect and quarter-turn (the containment checks in
   `test/glyphs-*.test.ts`, path extents via `test/glyph-extent.ts`).
 - Curves are `g.path` loops from `roundedRectPath`/`ovalPath`/`bulgeArc`/`scallopPath`, every arc
@@ -49,3 +52,18 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
   byte-identical (the symmetry-fact exception: ADR 0023, decision 7). The goldens
   it moves and how to update them: `docs/testing.md` §2–3. Never `-u` group 1 of
   `test/fixture-byte-identity.test.ts`.
+
+## Traps
+
+- **A docs example may not name a new fixture family.** `test/new-families-byte-identity.test.ts` scans
+  every shipped plan, Markdown fences in `docs/` included, for `furniture <new word>`: the byte-identity
+  law's corpus must not change. Show new families in prose, and examples with existing families.
+  `check:quick` cannot see this guard (it scans directories, never names the file); CI does.
+- **A drawing-only change moves `describe --facts symmetry`.** A piece's `hand` is read off its
+  drawn symbol. Unless it is an allow-listed loss of handedness, fix the glyph, never the fact
+  (`docs/adr/0023-plan-symbol-drawing-language.md`, decision 7).
+- **A symmetric glyph reads handed at one footprint or position and not another.** Cause: a
+  structure decided by an ulp, or a mark and its mirror straddling a `fmt4` tie (compounded
+  fractions of the footprint land on `x.xxxx5`). Remedy: § Drawing a symbol above (exact reflection, structure from radii and extents) and the fixture rows of `docs/testing.md` § 3; why: ADR 0023.
+- **Changing the default `furnitureStroke`/`furnitureFill` turns group 1 of
+  `test/fixture-byte-identity.test.ts` red** — always a bug (ADR 0023, decision 6).

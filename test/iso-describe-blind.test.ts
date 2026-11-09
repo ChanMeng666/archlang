@@ -43,6 +43,7 @@ const SUMMARY_MODULES = [
   "src/analyze/rooms.ts",
   "src/analyze/connectors.ts",
   "src/analyze/circulation.ts",
+  "src/analyze/nav-grid.ts",
   "src/analyze/occupancy.ts",
 ];
 
