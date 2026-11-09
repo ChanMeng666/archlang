@@ -117,6 +117,11 @@ coordinator's own notes (merging, registries, browser and social automation, the
   `\2…` became a control byte in a handoff, #335). Write such text with the Write/Edit tools, then
   `LC_ALL=C grep -c $'[\x01-\x08]' <file>` must print 0. (guarded: `test/no-control-bytes.test.ts`, every
   tracked `*.md`)
+- **An escaper written with `String.replace` (Markdown table cells, GitHub annotation `::warning` text, regex
+  builders) trips CodeQL `js/incomplete-sanitization` (high) when its class omits `\`**, and `CodeQL` is a
+  required check since 2026-11-09: write escapers as a character map
+  (`Array.from(s, c => TABLE[c] ?? c).join("")`), never a replace chain. Three PRs (#620, #629, #639) each
+  lost a CI round to this.
 
 ## Tooling & process
 
