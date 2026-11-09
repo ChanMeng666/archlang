@@ -129,8 +129,9 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
    `REVIEW.md`, not the author's conclusion; two rounds at most. **High** (the review policy itself,
    workflows, root `package.json`, `vitest.config.ts`, `scripts/check-*`, baselines,
    `.gitleaksignore`, `.claude/settings.json` and hooks, owner rules, frozen artifacts, manifests,
-   deploy config): also the owner's approval in words; an agent never merges it. An agent's review
-   never counts as the owner's approval.
+   deploy config): also one fresh-context review, and the coordinator's own judgement that the diff is
+   safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
+   never merges its own PR. Releases (`v*` tags), paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
 2. `gh pr merge <n> --auto --merge --match-head-commit <full 40-character sha>`: GitHub merges (a merge
    commit; a squash or rebase re-creates allowlisted gitleaks lines) once the seven required checks
