@@ -38,7 +38,9 @@ const GALLERY_PLANS = [
 const FACTS_PLAN = /const PLAN = "([^"]+)"/.exec(read(...THEME, "FactsSection.vue"))![1]!;
 /** The hero as the build emitted it (home-data.js): an agent-gallery pair, or its fallback. The
  *  gallery is not pinned corpus, so the hero is checked against the build, never its files. */
-const HERO = homeHero();
+// A function, not a constant: the generated home-data.js exists only after a docs build, and the
+// nightly `@prod` job builds nothing yet Playwright loads this file before it applies `--grep`.
+const HERO = () => homeHero();
 /** The 3D preview's plans (public/3d/manifest.json), and the home band's. */
 const ASSETS_3D = threeDAssets(ROOT);
 const BAND = ASSETS_3D.find((a) => a.name === HOME_3D_PLAN)!;
@@ -46,7 +48,7 @@ const BAND = ASSETS_3D.find((a) => a.name === HOME_3D_PLAN)!;
 const SWAP_PLANS = GALLERY_PLANS.filter((p) => ASSETS_3D.some((a) => a.name === p));
 
 const exampleSource = (name: string) => read("examples", `${name}.arch`);
-const heroSource = () => HERO.source.replace(/\r\n/g, "\n");
+const heroSource = () => HERO().source.replace(/\r\n/g, "\n");
 
 async function decode(href: string | null): Promise<string | null> {
   expect(href, "a playground link must be a real href, not a click handler").toBeTruthy();
@@ -58,7 +60,7 @@ test.describe("every home-page drawing opens its own plan in the playground", ()
   test("the derived tables are real", () => {
     expect(GALLERY_PLANS.length).toBeGreaterThanOrEqual(6);
     expect(GALLERY_PLANS.length).toBeLessThanOrEqual(8);
-    expect(HERO.id).toBeTruthy();
+    expect(HERO().id).toBeTruthy();
     expect(FACTS_PLAN).toBeTruthy();
   });
 
