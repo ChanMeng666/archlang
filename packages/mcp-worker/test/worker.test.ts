@@ -542,6 +542,19 @@ describe.skipIf(!HAS_DEFLATE_RAW)("GET /svg/<payload> and the pinned /v/<render 
     });
   });
 
+  it("a payload one byte over the cap is 413 with the E_INPUT_TOO_LARGE envelope; at the cap it opens", async () => {
+    const over = await get(`/svg/${encodePlanHash("#".repeat(SOURCE_CAP_BYTES + 1))}`);
+    expect(over.status).toBe(413);
+    const body = (await over.json()) as Record<string, any>;
+    expect(body.ok).toBe(false);
+    expect(body.diagnostics[0]).toMatchObject({
+      code: "E_INPUT_TOO_LARGE",
+      message: `source is more than ${SOURCE_CAP_BYTES} bytes; this host accepts at most ${SOURCE_CAP_BYTES}`,
+    });
+    // At the cap the payload is read (a run of `#` is not a plan, so it is a 422, never a 413).
+    expect((await get(`/svg/${encodePlanHash("#".repeat(SOURCE_CAP_BYTES))}`)).status).toBe(422);
+  });
+
   it("If-None-Match uses the weak comparison: W/ tags, lists and * all give 304", async () => {
     const etag = (await get(`/svg/${P}`)).headers.get("etag")!;
     for (const inm of [`W/${etag}`, `"zzz", ${etag}`, `"zzz",W/${etag}`, "*"]) {

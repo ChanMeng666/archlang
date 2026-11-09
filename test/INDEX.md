@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-483 test files in `test/`, 268 `src` modules, 99 modules no test imports.
+484 test files in `test/`, 268 `src` modules, 99 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -587,6 +587,7 @@ The first sentence of each file's header comment.
 - `test/semiring.test.ts` — shortest-widest is NOT isotone, so bestPaths must not be used for it; lexicographic: a pair whose first component is zero is no path.
 - `test/shaft-circulation.test.ts` — Circulation on a storey reached only by a shaft (ADR 0008, `computeCirculation`'s `arrivals`).
 - `test/shaft-equivariance.test.ts` — The multi-storey equivariance law for circulation on storeys reached only by a shaft.
+- `test/share-browser-safe.test.ts` — The `./share` import graph holds no Node built-in and no CLI I/O module (browser-safe).
 - `test/share-codec-web.test.ts` — The two `#z=` decoders agree: `share-codec.mjs` (Node `zlib`, the one encoder `archlang link` and the MCP `link` tool mint with) and `share-codec.web.mjs` (`DecompressionStream`, what the hosted MCP Worker's `GET /svg...
 - `test/share-codec.test.ts` — `#z=` share-codec lockstep gate — three encoders, one decoder, one scheme.
 - `test/shared-grid-byte-identity.test.ts` — The shared grid (issue #345): the byte-identity law.
