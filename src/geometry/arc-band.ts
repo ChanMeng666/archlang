@@ -49,6 +49,7 @@
 import type { Point } from "../ast.js";
 import { type Arc, arcAngleOffset, arcContainsRay } from "./arc.js";
 import type { BBox } from "./rect.js";
+import { rectRing } from "./polygon.js";
 
 const TAU = Math.PI * 2;
 
@@ -65,12 +66,7 @@ export interface ArcBandHit {
   runs: Array<[number, number]>;
 }
 
-const corners = (r: BBox): Point[] => [
-  { x: r.x, y: r.y },
-  { x: r.x + r.w, y: r.y },
-  { x: r.x + r.w, y: r.y + r.h },
-  { x: r.x, y: r.y + r.h },
-];
+const corners = rectRing;
 
 const inBox = (p: Point, r: BBox): boolean => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
 

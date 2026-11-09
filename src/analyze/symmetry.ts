@@ -81,6 +81,7 @@
  */
 
 import type { Point } from "../ast.js";
+import { rectRing } from "../geometry/polygon.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow, ResolvedPlan } from "../ir.js";
 import { D4_ELEMENTS, type D4, det, toMatrix, toSpelling, backVectorOfDeg, SIDE_NORMAL } from "../algebra/d4.js";
 import { fmt4 } from "../num-format.js";
@@ -638,12 +639,8 @@ function verticalRec(v: RVertical): Rec<Point> {
 }
 
 /** An axis-aligned rectangle (top-left + size) as a closed ring. */
-const boxRing = (at: Point, size: { w: number; h: number }): Point[] => [
-  { x: at.x, y: at.y },
-  { x: at.x + size.w, y: at.y },
-  { x: at.x + size.w, y: at.y + size.h },
-  { x: at.x, y: at.y + size.h },
-];
+const boxRing = (at: Point, size: { w: number; h: number }): Point[] =>
+  rectRing({ x: at.x, y: at.y, w: size.w, h: size.h });
 
 /**
  * The rest of what the plan draws as building, each as its footprint — like a piece of
