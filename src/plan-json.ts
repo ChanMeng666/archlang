@@ -25,6 +25,13 @@
  *
  * Plus {@link checkGraph} (T3b) — compare an intended adjacency dict against a
  * plan's compiled interior-door connectivity.
+ *
+ * This module is the entry point and declares nothing itself: the room-type tables live in
+ * `plan-json/room-types.ts`, the wire types in `plan-json/types.ts`, `planToJson` in
+ * `plan-json/to-json.ts`, the validator in `plan-json/from-json.ts`, the `.arch` emission and
+ * `planFromJson` in `plan-json/emit.ts`, `astToJson` in `plan-json/ast-json.ts`, `checkGraph` in
+ * `plan-json/check-graph.ts` and the schema in `plan-json/schema.ts`. Nothing here charges the
+ * step meter.
  */
 
 import type {
@@ -110,137 +117,17 @@ import { openRunsOf } from "./analyze.js";
 import { type KindsWith, kindsWith } from "./elements/facets.js";
 import type { Arc } from "./geometry/arc.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES, type PaperOrientation, type PaperSize, type ResolvedSheet } from "./sheet.js";
+import type { RoomType } from "./plan-json/room-types.js";
+import { ROOM_TYPES, roomTypeForUses, usesForRoomType } from "./plan-json/room-types.js";
 
-// ---------------------------------------------------------------------------
-// Room-type mapping (uses ⇄ RPLAN-style room_type) — ONE source of truth.
-// ---------------------------------------------------------------------------
-
-/** Canonical RPLAN-style room category. `Room` is the catch-all fallback. */
-export type RoomType =
-  | "LivingRoom"
-  | "MasterRoom"
-  | "Kitchen"
-  | "Bathroom"
-  | "DiningRoom"
-  | "ChildRoom"
-  | "StudyRoom"
-  | "SecondRoom"
-  | "GuestRoom"
-  | "Balcony"
-  | "Entrance"
-  | "Storage"
-  | "Room";
-
-/** Every {@link RoomType} in canonical order (the enum the JSON schema advertises). */
-export const ROOM_TYPES: readonly RoomType[] = [
-  "LivingRoom",
-  "MasterRoom",
-  "Kitchen",
-  "Bathroom",
-  "DiningRoom",
-  "ChildRoom",
-  "StudyRoom",
-  "SecondRoom",
-  "GuestRoom",
-  "Balcony",
-  "Entrance",
-  "Storage",
-  "Room",
-];
-
-/**
- * The canonical `room_type` for each ArchLang `uses` tag. Several uses collapse to
- * one room_type (wet rooms → `Bathroom`; hall/circulation/entry → `Entrance`;
- * storage/utility → `Storage`), so the mapping is deliberately many-to-one in this
- * direction. See {@link ROOM_TYPE_TO_USE} for the (lossy) inverse.
- */
-export const USE_TO_ROOM_TYPE: Readonly<Record<UseKind, RoomType>> = Object.freeze({
-  living: "LivingRoom",
-  kitchen: "Kitchen",
-  dining: "DiningRoom",
-  bedroom: "MasterRoom",
-  bath: "Bathroom",
-  wc: "Bathroom",
-  hall: "Entrance",
-  circulation: "Entrance",
-  storage: "Storage",
-  utility: "Storage",
-  office: "StudyRoom",
-  entry: "Entrance",
-  // RPLAN has no garage category, and inventing one would put a value in the wire format
-  // that the schema's own enum (and therefore every consumer validating against it) does
-  // not know. `Storage` is where the many-to-one collapse already sends `utility`, and it
-  // is the honest neighbour: a garage is the unconditioned store attached to the house.
-  // The inverse is lossy in exactly the way `utility`'s already is — `ROOM_TYPE_TO_USE`
-  // maps `Storage` back to `storage`, so a JSON round trip returns `uses storage`. That
-  // costs no geometry (a `uses` tag is classification only, so the SVG is byte-identical)
-  // and the alternative — a new `Garage` room_type — would be a breaking schema change
-  // for a word the format cannot carry back to any other tool.
-  garage: "Storage",
-});
-
-/**
- * Priority order used to pick a single dominant `room_type` when a room has several
- * `uses` (e.g. a studio is `living kitchen` → `LivingRoom`). The first use present
- * in this order wins.
- */
-const USE_PRIORITY: readonly UseKind[] = [
-  "living",
-  "bedroom",
-  "kitchen",
-  "dining",
-  "office",
-  "bath",
-  "wc",
-  "entry",
-  "hall",
-  "circulation",
-  "storage",
-  "utility",
-  // Last, beside the other unconditioned stores: a room that is a garage AND something
-  // else (`uses garage utility`) reads as the something else on the wire, which is the
-  // more informative of the two.
-  "garage",
-];
-
-/**
- * The primary `uses` tag for each `room_type` — the inverse of {@link USE_TO_ROOM_TYPE}.
- * The RPLAN bedroom variants (`MasterRoom`/`ChildRoom`/`SecondRoom`/`GuestRoom`) all
- * map back to `bedroom`; `Balcony` has no direct ArchLang use so it maps to `utility`;
- * `Room` (the fallback) maps to `null` (no `uses` tag emitted).
- */
-export const ROOM_TYPE_TO_USE: Readonly<Record<RoomType, UseKind | null>> = Object.freeze({
-  LivingRoom: "living",
-  MasterRoom: "bedroom",
-  Kitchen: "kitchen",
-  Bathroom: "bath",
-  DiningRoom: "dining",
-  ChildRoom: "bedroom",
-  StudyRoom: "office",
-  SecondRoom: "bedroom",
-  GuestRoom: "bedroom",
-  Balcony: "utility",
-  Entrance: "entry",
-  Storage: "storage",
-  Room: null,
-});
-
-/** The single canonical `room_type` for a set of `uses` tags (`Room` when empty). */
-export function roomTypeForUses(uses: Iterable<UseKind>): RoomType {
-  const set = new Set<UseKind>(uses);
-  for (const u of USE_PRIORITY) if (set.has(u)) return USE_TO_ROOM_TYPE[u];
-  return "Room";
-}
-
-/** The `uses` tag(s) a `room_type` implies (empty for `Room` / unknown). */
-export function usesForRoomType(roomType: string): UseKind[] {
-  const u = (ROOM_TYPE_TO_USE as Record<string, UseKind | null | undefined>)[roomType];
-  return u ? [u] : [];
-}
-
-// ---------------------------------------------------------------------------
-// JSON shape (the wire format). All coordinates are millimetres; areas m².
-// ---------------------------------------------------------------------------
+export type { RoomType } from "./plan-json/room-types.js";
+export {
+  ROOM_TYPES,
+  USE_TO_ROOM_TYPE,
+  ROOM_TYPE_TO_USE,
+  roomTypeForUses,
+  usesForRoomType,
+} from "./plan-json/room-types.js";
 
 export interface PointJson {
   x: number;
@@ -619,10 +506,6 @@ export interface PlanJson {
   /** Output-only: interior-door adjacency dict, keyed by room id. */
   input_graph?: Record<string, string[]>;
 }
-
-// ---------------------------------------------------------------------------
-// planToJson — parse + resolve, then project OUT (with enrichments).
-// ---------------------------------------------------------------------------
 
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 
@@ -1226,10 +1109,6 @@ function bodyJson(ir: ResolvedPlan, local: readonly ResolvedElement[]): PlanBody
     ...(j.columns ? { columns: j.columns } : {}),
   };
 }
-
-// ---------------------------------------------------------------------------
-// planFromJson — validate the shape, emit canonical .arch, run the real parser.
-// ---------------------------------------------------------------------------
 
 /**
  * Diagnostic collector that stamps JSON paths onto shape/kind problems. It keeps one past
@@ -1900,8 +1779,6 @@ function validateColumn(c: unknown, path: string, val: Validator): void {
   reqWord(c.id, `${path}/id`, "a column id", val, true);
 }
 
-// ---- canonical .arch emission ---------------------------------------------
-
 /** Deterministic number → source token (no scientific notation; normalize -0).
  *  Deliberately full-precision `String(n)`, NOT `src/num-format.ts`'s 3-dp `fmt3`
  *  (`statement-print.ts`'s `numStr`): Plan JSON round-trips a RESOLVED, already-rounded
@@ -2192,10 +2069,6 @@ export function planFromJson(json: unknown): { ast?: PlanNode; source?: string; 
   return { ast: plan, source, diagnostics: [...diagnostics, ...parseDiags] };
 }
 
-// ---------------------------------------------------------------------------
-// astToJson — faithful, span-bearing projection of a parsed AST (no expansion).
-// ---------------------------------------------------------------------------
-
 /**
  * Project a parsed {@link PlanNode} to a plain, JSON-serializable tree, preserving
  * source spans and leaving scripting nodes (`let`/`for`/`if`/`while`/instances/
@@ -2229,10 +2102,6 @@ export function astToJson(ast: PlanNode): object {
     ...(ast.bodyStart !== undefined ? { bodyStart: ast.bodyStart } : {}),
   };
 }
-
-// ---------------------------------------------------------------------------
-// checkGraph (T3b) — compare an intended adjacency dict to the compiled plan.
-// ---------------------------------------------------------------------------
 
 /** The result of comparing an intended adjacency graph against a compiled plan. */
 export interface GraphCheck {
@@ -2376,10 +2245,6 @@ export function checkGraph(source: string, intent: Record<string, string[]>, opt
     extra_connections: extra,
   };
 }
-
-// ---------------------------------------------------------------------------
-// JSON Schema (2020-12) — ONE source of truth (the gen script just writes it).
-// ---------------------------------------------------------------------------
 
 const POINT_SCHEMA = {
   type: "object",
