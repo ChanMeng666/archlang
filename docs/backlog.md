@@ -58,6 +58,7 @@ at it. Its cards follow the same rules as entries here: stable ids, deleted when
 | Plan soundness (`PS*` cards) | `docs/plans/plan-soundness/` | Professional rules and taste: relation-first authoring, validity checks that read existing facts, a change model (`impact`, `keep`), a taste score. Takes over G.12 as card PS3 |
 | Preview and remodel (A–F cards) | `docs/plans/preview-and-remodel/` | The downstream `packages/archlang-3d` reader of a resolved plan (ADR 0030, plan `docs/plans/archlang-3d/`) and the renovation wedge (wall status, a lock check, quantities, imperial input) |
 | Drawing set (`DS*` cards) | `docs/plans/drawing-set/` | A scheme-stage drawing set from one model: derived indicators, a site layer, sections and elevations in `packages/archlang-3d`, analysis diagrams, a sheet pack |
+| Engineering health (`EH*` cards) | `docs/plans/engineering-health/` | Mechanical guards for every breakage class the 2026-11-09 audits found, CI/release/deploy signal, pure-move splits of the churn hotspots, generated maps, the backlog split |
 | Checker reach (`CR*` cards, follow-ups `CRF*`) | `docs/plans/checker-reach/` | Interop (OpenPlan3D import, later OAS), short share links and preview cards, free 3D orbit, a write guard (`--expected-hash`), a public check suite and a versioned language spec before and after Show HN |
 
 ---
