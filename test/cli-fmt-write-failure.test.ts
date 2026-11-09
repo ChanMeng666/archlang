@@ -1,3 +1,5 @@
+/** fmt --write when the write fails: a CLI error with exit 1, never a thrown crash. */
+
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

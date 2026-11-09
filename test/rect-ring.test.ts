@@ -1,3 +1,5 @@
+/** rectRing: the one rectangle ring that rectPoly, boxRing, corners and rectPolygon delegate to. */
+
 import { describe, expect, it } from "vitest";
 import { rectRing } from "../src/geometry/polygon.js";
 import { rectCorners } from "../src/geometry.js";

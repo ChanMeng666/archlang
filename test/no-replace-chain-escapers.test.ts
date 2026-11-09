@@ -36,7 +36,10 @@ interface EscaperHit {
 function findReplaceEscapers(file: string, source: string): EscaperHit[] {
   const calls: { line: number; safe: boolean; text: string }[] = [];
   for (const m of source.matchAll(REPLACE)) {
-    const [text, pattern, flags, , replacement] = m;
+    const text = m[0];
+    const pattern = m[1] ?? "";
+    const flags = m[2] ?? "";
+    const replacement = m[4] ?? "";
     if (!flags.includes("g") || !ESCAPE_REPLACEMENT.test(replacement)) continue;
     const line = source.slice(0, m.index ?? 0).split("\n").length;
     const safe = pattern.includes("\\\\") || (pattern === "&" && replacement === "&amp;");
@@ -51,7 +54,7 @@ function findReplaceEscapers(file: string, source: string): EscaperHit[] {
     group = [];
   };
   for (const c of calls) {
-    if (group.length > 0 && c.line - group[group.length - 1].line > CHAIN_WINDOW_LINES) flush();
+    if (group.length > 0 && c.line - (group[group.length - 1]?.line ?? 0) > CHAIN_WINDOW_LINES) flush();
     group.push(c);
   }
   flush();
