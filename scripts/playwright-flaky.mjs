@@ -57,10 +57,15 @@ export function findFlaky(report, repoRoot = process.cwd()) {
 
 // GitHub workflow-command escaping: message data escapes % CR LF; a property also escapes : and ,.
 // A backslash is percent-encoded too (one map, one pass), so no input character survives unescaped.
-const ESC = { "%": "%25", "\r": "%0D", "\n": "%0A", "\\": "%5C", ":": "%3A", ",": "%2C" };
-const esc = (s) => s.replace(/[%\r\n\\]/g, (c) => ESC[c]);
-const escProp = (s) => s.replace(/[%\r\n\\:,]/g, (c) => ESC[c]);
-const cell = (s) => s.replace(/\|/g, "\\|");
+// Table-driven, character by character: no regex class to leave a character out.
+const MESSAGE_ESC = Object.freeze({ "%": "%25", "\r": "%0D", "\n": "%0A", "\\": "%5C" });
+const PROPERTY_ESC = Object.freeze({ ...MESSAGE_ESC, ":": "%3A", ",": "%2C" });
+// A Markdown table cell: the pipe ends the cell, so it and the backslash that would escape it are escaped.
+const CELL_ESC = Object.freeze({ "|": "\\|", "\\": "\\\\", "\r": " ", "\n": " " });
+const encode = (s, table) => Array.from(s, (c) => table[c] ?? c).join("");
+const esc = (s) => encode(s, MESSAGE_ESC);
+const escProp = (s) => encode(s, PROPERTY_ESC);
+const cell = (s) => encode(s, CELL_ESC);
 
 export function main(argv, env = process.env) {
   const failOn = argv.includes("--fail-on-flaky");
