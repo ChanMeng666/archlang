@@ -1,3 +1,5 @@
+/** the residential-advisory profiles; the catalog example; single or double: read from the bed, never the label (ADR 0005); areas are net floor under every residen… */
+
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import {
@@ -12,7 +14,7 @@ import {
   taste,
 } from "../src/index.js";
 import { ADVISORY_CODE_PROFILES, DEFERRED_PROFILE_NUMBERS } from "../src/lint/ruleset.js";
-import { EXAMPLE_SOURCES, TASTE_WORLD } from "./taste-sources.js";
+import { EXAMPLE_SOURCES, TASTE_WORLD } from "./helpers/taste-sources.js";
 
 /**
  * The residential-advisory profiles (plan-soundness PS5.2): `cn-`, `uk-` and

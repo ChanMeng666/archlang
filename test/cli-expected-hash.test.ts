@@ -1,4 +1,6 @@
-import { createHash } from "node:crypto";
+/** --expected-hash: a stale read refuses before anything is computed or written; --expected-hash: a matching read writes, and reports the revisions; --expected-has… */
+
+import { sha256 as sha } from "./helpers/digest.js";
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -18,8 +20,6 @@ import { spawnArch } from "./helpers/cli.js";
  * reads and again just before it writes. The commands are driven in-process (fast, and the race
  * needs the seam), and once through the real binary so the exit code is the process's own.
  */
-
-const sha = (b: string | Uint8Array): string => createHash("sha256").update(b).digest("hex");
 
 // A door floating off the wall and a sofa through it: `fix` and `finish` rewrite it, `fmt`
 // reformats it (the extra spaces), `repair` moves the sofa, and `repair -o` always writes.

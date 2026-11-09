@@ -1,3 +1,5 @@
+/** diagnosticToJson. */
+
 import { describe, expect, it } from "vitest";
 import { compile, diagnosticToJson, offsetToLineCol, ERROR_CATALOG, renderErrorSvg } from "../src/index.js";
 import type { Diagnostic, FixSuggestion } from "../src/index.js";

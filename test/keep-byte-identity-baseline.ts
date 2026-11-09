@@ -1,6 +1,6 @@
 /**
  * The weak `keep` law's baseline (ADR 0033 decision 7; PS4.3 design §7 K1): per file, SHA-256 of
- * `keepWeakLawPayload` (`./keep-weak-law.ts`: every storey's SVG, `describe()` with and without
+ * `keepWeakLawPayload` (`test/helpers/keep-weak-law.ts`: every storey's SVG, `describe()` with and without
  * `--facts depends`, `lint()`, `compile().diagnostics`, `validate --json`, `impact --json`) and the
  * resolution's evaluation-step count.
  *

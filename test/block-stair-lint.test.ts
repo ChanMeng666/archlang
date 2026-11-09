@@ -31,7 +31,7 @@ import {
   stairBlock,
   THREE_FLIGHTS,
   U_STAIR,
-} from "./block-stair-plans.js";
+} from "./tables/block-stair-plans.js";
 import {
   canonFacts,
   D4_ELEMENTS,
@@ -42,7 +42,7 @@ import {
   observe,
   summaryFacts,
   witnessPair,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 
 const HEIGHT = "  height 2750\n";
 const of = (src: string, code: string): Diagnostic[] => lint(src).filter((d) => d.code === code);

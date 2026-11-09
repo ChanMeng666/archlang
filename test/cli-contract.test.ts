@@ -1,10 +1,11 @@
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+/** the contract table covers the manifest. */
+
+import { mkTmp } from "./helpers/tmp.js";
+import { readFileSync, rmSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EXIT } from "../src/cli/io.js";
 import { buildManifest } from "../src/index.js";
-import { CASES, observe, setup } from "./cli-contract-cases.js";
+import { CASES, observe, setup } from "./tables/cli-contract-cases.js";
 import { runArch } from "./helpers/cli.js";
 
 /**
@@ -18,7 +19,7 @@ import { runArch } from "./helpers/cli.js";
  *   `npx tsx test/cli-envelopes-gen.ts "<why>"`; the generator refuses to drop a key.
  * - The commands and runs that cannot be made are in `CASES` with a reason (`watch` is resident).
  *
- * The inputs live in `./cli-contract-cases.ts`, shared with the generator.
+ * The inputs live in `test/tables/cli-contract-cases.ts`, shared with the generator.
  */
 
 const TABLE = JSON.parse(readFileSync("test/tables/cli-envelopes.json", "utf8")) as { rows: Record<string, string[]> };
@@ -26,7 +27,7 @@ const COMMANDS = buildManifest("0.0.0").commands.map((c) => c.name);
 
 let dir = "";
 beforeAll(() => {
-  dir = mkdtempSync(join(tmpdir(), "arch-contract-"));
+  dir = mkTmp("arch-contract-");
   setup(dir);
 });
 afterAll(() => rmSync(dir, { recursive: true, force: true }));

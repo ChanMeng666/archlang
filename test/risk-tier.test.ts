@@ -1,3 +1,5 @@
+/** scripts/risk-tier.mjs. */
+
 import { describe, expect, it } from "vitest";
 // @ts-expect-error — a zero-dep .mjs script with no type declarations.
 import { classify } from "../scripts/risk-tier.mjs";

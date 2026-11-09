@@ -1,3 +1,5 @@
+/** src/algebra/ is a leaf. */
+
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

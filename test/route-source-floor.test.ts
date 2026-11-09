@@ -1,3 +1,5 @@
+/** a key route is capped by the door it crosses, whatever the source order or frame. */
+
 import { describe, expect, it } from "vitest";
 import { describe as describePlan } from "../src/index.js";
 

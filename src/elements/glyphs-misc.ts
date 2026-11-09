@@ -37,6 +37,7 @@
 import type { Point } from "../ast.js";
 import type { PathEdge, PathLoop, SceneNode } from "../scene.js";
 import type { GlyphCtx, Rect } from "./glyph-lib.js";
+import { rectRing } from "../geometry/polygon.js";
 import {
   bulgeArc,
   centerOf,
@@ -655,13 +656,7 @@ export function drawPoolTable(r: Rect, g: GlyphCtx): SceneNode[] {
           [cloth.x, cy],
           [cloth.x + cloth.w, cy],
         ];
-  for (const [px, py] of [
-    [cloth.x, cloth.y],
-    [cloth.x + cloth.w, cloth.y],
-    [cloth.x + cloth.w, cloth.y + cloth.h],
-    [cloth.x, cloth.y + cloth.h],
-    ...mids,
-  ] as const) {
+  for (const [px, py] of [...rectRing(cloth).map((p): [number, number] => [p.x, p.y]), ...mids]) {
     g.dot({ x: px, y: py }, pocket, undefined, "extraThin");
   }
   return g.nodes;

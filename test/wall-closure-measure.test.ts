@@ -23,6 +23,7 @@ import { compile, describe, DEFAULT_RULESET, lint, type LintRuleset } from "../s
 import { MAX_WALL_GAP_SCAN_MM } from "../src/lint/rules/enclosure.js";
 
 const read = (p: string): string => readFileSync(new URL(`./${p}`, import.meta.url), "utf8");
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads lint().
 const codes = (src: string, ruleset?: Partial<LintRuleset>): string[] =>
   lint(src, ruleset ? { ruleset } : {}).map((d) => d.code as string);
 const svgOf = (src: string): string => {

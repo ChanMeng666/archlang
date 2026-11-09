@@ -11,7 +11,7 @@ import { codesOf } from "../src/finish.js";
 import { furnishStage } from "../src/furnish.js";
 import { resolvePlan } from "../src/analyze.js";
 import type { RFurniture, RStair } from "../src/ir.js";
-import { TASTE_SOURCES, TASTE_WORLD } from "./taste-sources.js";
+import { TASTE_SOURCES, TASTE_WORLD } from "./helpers/taste-sources.js";
 
 const CODE = "W_FURNITURE_ON_STAIR";
 const on = (src: string, profile?: string): Diagnostic[] =>

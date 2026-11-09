@@ -1,3 +1,5 @@
+/** fmt and impact exit 2 on a plan that does not parse (EH1.18). */
+
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

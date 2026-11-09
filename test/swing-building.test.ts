@@ -35,13 +35,14 @@ import { type RDoor, type RRoom, resolveAll } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { NULL_WORLD } from "../src/world.js";
-import { FRAMES, framed, loop, plan, ring, SWING_BUILDING_PLANS, southWall } from "./swing-building-plans.js";
+import { FRAMES, framed, loop, plan, ring, SWING_BUILDING_PLANS, southWall } from "./tables/swing-building-plans.js";
 
 const svg = (src: string): string => {
   const out = compile(src, { noCache: true });
   expect(out.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
   return out.svg;
 };
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), maps a missing code to "?".
 const codes = (src: string): string[] => compile(src, { noCache: true }).diagnostics.map((d) => d.code ?? "?");
 
 /** The resolved IR of a source, in plan space. */

@@ -139,11 +139,11 @@ moves. Zones, the caption and Plan JSON are unchanged.
   its right moves right by that width. No page size in the corpus moved.
 - `area_m2` remains the centreline figure, so `dataset/dedup.ts` and `eval/fidelity.ts` read
   the same numbers as before.
-- `test/net-area.test.ts` holds every corpus room to a grid oracle (`test/net-area-oracle.ts`)
+- `test/net-area.test.ts` holds every corpus room to a grid oracle (`test/helpers/net-area-oracle.ts`)
   within the oracle's own error bound. The oracle shares only the band and the room's own area
   with the code. The same test shows the oracle rejects the old inset-only figure on
   hexagon-pavilion, so an intrusion like that one cannot hide again.
-- The D4 equivariance oracle (`test/d4-oracle.ts`) holds net area invariant under every turn
+- The D4 equivariance oracle (`test/helpers/d4-oracle.ts`) holds net area invariant under every turn
   and mirror of a placed plan.
 - The measurement is quadratic in the band edges near one room. It is capped per room by
   `MAX_NET_CURVES` and, inside `compile()`, charged to the drawing budget before it runs.

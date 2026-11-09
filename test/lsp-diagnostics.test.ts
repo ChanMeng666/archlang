@@ -1,3 +1,5 @@
+/** LSP diagnostics mapping. */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { lspDiagnostics, offsetToPosition, Severity } from "../editors/vscode/src/diagnostics.js";

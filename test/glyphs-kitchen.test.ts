@@ -24,7 +24,7 @@ import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
 import { toScene } from "../src/scene-build.js";
 import type { Point } from "../src/ast.js";
 import type { SceneNode } from "../src/scene.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { pathExtentPoints } from "./helpers/glyph-extent.js";
 import { glyphCtx } from "../src/elements/glyph-lib.js";
 import type { GlyphCtx, Rect } from "../src/elements/glyph-lib.js";
 import {

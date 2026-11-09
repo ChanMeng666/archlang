@@ -30,7 +30,7 @@ import {
   TRANSLATION,
   witnessPair,
   wrapperSource,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 
 function syntax(src: string): SyntaxFacts {
   const s = describe(src, { world: EXAMPLES_WORLD, facts: ["syntax"] });

@@ -9,7 +9,8 @@
  * in `test/defect-corpus/clearances/accessible-wc-pan-far*.arch`.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { lint, lintWithCoverage } from "../src/index.js";
 import { labelSaysAccessible } from "../src/lint/rules/clearances.js";
@@ -184,9 +185,6 @@ describe("W_ACCESSIBLE_WC_SIDE_WALL: which rooms are read", () => {
 
 describe("W_ACCESSIBLE_WC_SIDE_WALL over the shipped examples", () => {
   it("every example is silent", () => {
-    for (const file of readdirSync("examples")
-      .filter((f) => f.endsWith(".arch"))
-      .sort())
-      expect(of(readFileSync(`examples/${file}`, "utf8")), file).toEqual([]);
+    for (const file of exampleNames().sort()) expect(of(readFileSync(`examples/${file}`, "utf8")), file).toEqual([]);
   });
 });

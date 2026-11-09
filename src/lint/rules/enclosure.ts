@@ -61,7 +61,7 @@ import {
 import type { Diagnostic } from "../../diagnostics.js";
 import { distPointToWallSegment, type WallSegment, wallFaceProbes } from "../../geometry.js";
 import { edgeMid, edgeTangentAt } from "../../geometry/band.js";
-import { collinearOverlapLength } from "../../geometry/polygon.js";
+import { collinearOverlapLength, rectRing } from "../../geometry/polygon.js";
 import type { ResolvedPlan, RRoom, RWall } from "../../ir.js";
 import { fmt2 } from "../../num-format.js";
 import { piecesOf } from "../../vertical.js";
@@ -336,12 +336,7 @@ function openStretches(ctx: LintContext, run: SharedRun): OpenStretch[] {
   for (const f of ctx.furniture) {
     if (!BOUNDARY_FIXTURES.has(f.category)) continue;
     const r = rectOf(f);
-    const corners = [
-      { x: r.x, y: r.y },
-      { x: r.x + r.w, y: r.y },
-      { x: r.x + r.w, y: r.y + r.h },
-      { x: r.x, y: r.y + r.h },
-    ];
+    const corners = rectRing(r);
     const ns = corners.map(across);
     if (!(Math.min(...ns) < 0 && Math.max(...ns) > 0)) continue;
     const ss = corners.map(along);

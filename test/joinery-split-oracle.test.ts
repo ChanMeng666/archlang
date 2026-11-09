@@ -55,7 +55,7 @@ import { resolveAll } from "../src/ir.js";
 import type { RWall } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { makeVirtualWorld } from "../src/index.js";
-import { angledWalls, rectilinearWalls, renderWalls } from "./arbitrary-joinery.js";
+import { angledWalls, rectilinearWalls, renderWalls } from "./helpers/arbitrary-joinery.js";
 import { floorAt, runs } from "./setup/fast-check.js";
 
 /* ---------------------------------------------------------------------------

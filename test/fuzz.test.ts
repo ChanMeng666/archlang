@@ -1,3 +1,5 @@
+/** compile — hostile input; the grammar-aware arbitrary is honest about what it emits; compile — determinism on rendering plans; byte-identity under an unrelated a… */
+
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import {
@@ -26,7 +28,7 @@ import {
   withSite,
   withZone,
   zoneId,
-} from "./arbitrary-plan.js";
+} from "./helpers/arbitrary-plan.js";
 import { runs } from "./setup/fast-check.js";
 
 /**
@@ -41,7 +43,7 @@ import { runs } from "./setup/fast-check.js";
  * produce a single geometry element. That is the right corpus for "never throws" and
  * the wrong one for anything else.
  *
- * **{@link archPlan}** (`test/arbitrary-plan.ts`) is the RENDERING corpus: grammar-aware,
+ * **{@link archPlan}** (`test/helpers/arbitrary-plan.ts`) is the RENDERING corpus: grammar-aware,
  * valid by construction, ~160 geometry elements per plan. Every law below that is about
  * what the compiler *produces* — determinism, cache transparency, byte-identity under an
  * inert addition, the round-trips — is stated over it. Before it existed, the flagship

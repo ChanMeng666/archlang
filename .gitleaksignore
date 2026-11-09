@@ -76,7 +76,7 @@ ba3bbc4c98f4a7be21139a3963e4dcd34c6476f4:paper/experiments/ecosystem/results-202
 #           law proved by a SHA-256 sweep over the shipped examples, and these digests ARE
 #           the law. Each is a hash OF PUBLIC OUTPUT — the SVG, `describe()` and `lint()`
 #           of a `.arch` file committed in `examples/` — so anyone can recompute every one
-#           of them from this repository; the digest body is `test/byte-identity-digest.ts`.
+#           of them from this repository; the digest body is `test/helpers/byte-identity-digest.ts`.
 #           They grant access to nothing and are not secret in any sense.
 #
 #           WHY ONLY TWO ROWS OF EACH THIRTY-ROW TABLE TRIP: the row is keyed by example
@@ -164,7 +164,7 @@ aa6da412c4355a333198e3d6c94bebb4478b2aa7:test/height-byte-identity.test.ts:gener
 #           `lint()`, with `compile().diagnostics` in the last two files), keyed by a plan whose
 #           name contains the rule's key-ish word "access": `examples/accessible.arch` and
 #           `eval/goldens/accessible-{bath,flat}.arch`. Recomputable by anyone from this
-#           repository (`test/byte-identity-digest.ts`); they grant access to nothing.
+#           repository (`test/helpers/byte-identity-digest.ts`); they grant access to nothing.
 #
 #           `test/import-module-lets.test.ts` is new to this file: its corpus-wide table covers
 #           the eval goldens too, so it holds two more `accessible` rows than the others. It
@@ -194,7 +194,7 @@ aa6da412c4355a333198e3d6c94bebb4478b2aa7:test/height-byte-identity.test.ts:gener
 #           `["examples/accessible.arch", "37750afd…<56 more hex>"]` and their kin — MEASURED
 #           SHA-256 BYTE-IDENTITY BASELINES of public output, keyed by a plan whose name
 #           contains the rule's key-ish word "access". Recomputable from this repository
-#           (`test/byte-identity-digest.ts`); they grant access to nothing.
+#           (`test/helpers/byte-identity-digest.ts`); they grant access to nothing.
 # ---------------------------------------------------------------------------------------
 8d8530da5e1c6b68df25ac66fdef0d133c3cc814:test/import-module-lets.test.ts:generic-api-key:519
 c82d5dd89bdd450a64c9160064fefaa97bfe3f20:test/import-module-lets.test.ts:generic-api-key:527
@@ -232,7 +232,7 @@ c82d5dd89bdd450a64c9160064fefaa97bfe3f20:test/import-module-lets.test.ts:generic
 #           `["examples/accessible.arch", "5f69fe78…<56 more hex>"]`, the first row of the
 #           double-door byte-identity BASELINE: a MEASURED SHA-256 digest of public output,
 #           keyed by a plan whose name contains the rule's key-ish word "access". Recomputable
-#           from this repository (`test/byte-identity-digest.ts`); it grants access to nothing.
+#           from this repository (`test/helpers/byte-identity-digest.ts`); it grants access to nothing.
 #           `gitleaks detect` 8.24.3 over the full history at adbf0dbb reported exactly this one.
 # ---------------------------------------------------------------------------------------
 c2978a477cf30cf228233c5707d5ddfb9e9c45ea:test/double-door-byte-identity.test.ts:generic-api-key:49

@@ -17,8 +17,8 @@
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
-import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./byte-identity-digest.js";
-import { NIB, NIB_HOSTS, NIB_PLACED } from "./open-crossing-plans.js";
+import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
+import { NIB, NIB_HOSTS, NIB_PLACED } from "./tables/open-crossing-plans.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 

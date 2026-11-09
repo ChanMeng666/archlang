@@ -1,3 +1,5 @@
+/** compile — valid studio; compile — determinism; compile — grid snap; compile — string escaping; compile — error cases. */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

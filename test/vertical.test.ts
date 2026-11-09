@@ -15,6 +15,7 @@
  *  - a plan with none of the three is byte-identical, and every plan is deterministic.
  */
 
+import { exampleNames } from "./helpers/corpus.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
@@ -495,7 +496,7 @@ suite("vertical circulation — byte identity and determinism", () => {
   it("every shipped example that draws none of the three is byte-identical", () => {
     // The example corpus is the strongest available proof that nothing on the default
     // path moved: only two-storey.arch uses the new elements.
-    for (const f of readdirSync("examples").filter((n) => n.endsWith(".arch"))) {
+    for (const f of exampleNames()) {
       const src = readFileSync(`examples/${f}`, "utf8");
       if (/\b(stair|elevator|escalator)\s/.test(src)) continue;
       const a = compile(src, { noCache: true });

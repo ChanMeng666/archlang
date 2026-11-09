@@ -58,7 +58,7 @@ import type { Point } from "../ast.js";
 import { roomBox, roomRing } from "../analyze.js";
 import { PointInterner, openingCut, tessellateLoop } from "../geometry/band.js";
 import type { EdgeLoop } from "../geometry/band.js";
-import { pointInPolygon } from "../geometry/polygon.js";
+import { pointInPolygon, rectRing } from "../geometry/polygon.js";
 import type { RRoom, RVoid, RWall, ResolvedPlan } from "../ir.js";
 import { fmt2 } from "../num-format.js";
 import { joinWallSet } from "../wall-lowering.js";
@@ -256,12 +256,7 @@ function extrudeFloors(st: Storey, out: Face[]): void {
     for (const v of voids) {
       const c = { x: v.at.x + v.size.w / 2, y: v.at.y + v.size.h / 2 };
       if (!pointInPolygon(c.x, c.y, ring)) continue;
-      const rect: Point[] = [
-        { x: v.at.x, y: v.at.y },
-        { x: v.at.x + v.size.w, y: v.at.y },
-        { x: v.at.x + v.size.w, y: v.at.y + v.size.h },
-        { x: v.at.x, y: v.at.y + v.size.h },
-      ];
+      const rect: Point[] = rectRing({ x: v.at.x, y: v.at.y, w: v.size.w, h: v.size.h });
       // A hole must wind against its boundary for the `nonzero` rule to cut it.
       if (Math.sign(ringArea2(rect)) === sign) rect.reverse();
       loops.push(rect.map((p) => lift(p, z)));

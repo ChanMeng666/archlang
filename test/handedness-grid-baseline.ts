@@ -5,7 +5,7 @@
  *
  * Measured on a `git archive` of `main` @ 22bce44 with ONLY `src/elements/glyph-chirality.ts`'s
  * key changed to the tie-robust one this branch ships (`keyNum`: `fmt4` after a 1e-7 mm nudge off
- * the `x.xxxx5` rounding ties), by `npx tsx test/handedness-survey.ts <that extract> --grid` — the
+ * the `x.xxxx5` rounding ties), by `npx tsx test/helpers/handedness-survey.ts <that extract> --grid` — the
  * survey's own predicate, so the two sides are read by the same instrument. Main's own key gives
  * the same table on main (it has no tie-sensitive glyph); the tip's redrawn glyphs do have them,
  * which is why the comparison must not mix the two keys.

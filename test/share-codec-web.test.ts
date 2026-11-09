@@ -4,7 +4,8 @@
  * hosted MCP Worker's `GET /svg/<payload>` reads). One encoding, so a link and an image URL
  * minted from the same plan carry the same payload and decode to the same source.
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { decodePlanHash, encodePlanHash } from "../src/cli/share-codec.mjs";
@@ -25,8 +26,7 @@ const HAS_DEFLATE_RAW = (() => {
 })();
 
 /** Every top-level example, read from disk rather than listed. */
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
+const EXAMPLES = exampleNames()
   .sort()
   .map((f) => [f, readFileSync(join("examples", f), "utf8")] as const);
 

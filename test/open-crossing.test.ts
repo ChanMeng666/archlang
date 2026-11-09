@@ -13,7 +13,7 @@
  * never a re-pin.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./helpers/digest.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,12 +21,15 @@ import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, joinWallSet, lint, resolvePlan, toScene } from "../src/index.js";
 import { loopWinding } from "../src/geometry/band.js";
 import { classifyWallSet } from "../src/wall-lowering.js";
-import { type CompilerApi, allStoreysDigestWithDiagnostics, semanticDigestWith } from "./byte-identity-digest.js";
-import { FLUSH, FOUR_OPEN, FOUR_OPEN_PLACED, THREE_OPEN_PLACED, UNMOVED } from "./open-crossing-plans.js";
+import {
+  type CompilerApi,
+  allStoreysDigestWithDiagnostics,
+  semanticDigestWith,
+} from "./helpers/byte-identity-digest.js";
+import { FLUSH, FOUR_OPEN, FOUR_OPEN_PLACED, THREE_OPEN_PLACED, UNMOVED } from "./tables/open-crossing-plans.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };
-const sha256 = (s: string): string => createHash("sha256").update(s).digest("hex");
 
 const wallsOf = (src: string) => {
   const ir = resolvePlan(src).ir;

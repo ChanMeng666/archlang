@@ -24,7 +24,7 @@ import { EXTERIOR_NODE, resolvePlan } from "../analyze.js";
 import { roomLabelAnchor } from "../elements/room.js";
 import type { Point } from "../ast.js";
 import type { RDoor, ROpening, RRoom, RWall, RWindow, ResolvedElement } from "../ir.js";
-import { distToPolygonEdge, pointInPolygon } from "../geometry/polygon.js";
+import { distToPolygonEdge, pointInPolygon, rectRing } from "../geometry/polygon.js";
 import { fmt2 } from "../num-format.js";
 import { textWidth } from "../text-metrics.js";
 import { xmlText } from "../text-safe.js";
@@ -185,12 +185,7 @@ const overlaps = (a: ReviewBox, b: ReviewBox): boolean =>
 /** A room's floor ring, from its shape: the polygon, else its rectangle. */
 function roomRing(r: RRoom): Point[] {
   if (r.poly) return r.poly;
-  return [
-    { x: r.at.x, y: r.at.y },
-    { x: r.at.x + r.size.w, y: r.at.y },
-    { x: r.at.x + r.size.w, y: r.at.y + r.size.h },
-    { x: r.at.x, y: r.at.y + r.size.h },
-  ];
+  return rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
 }
 
 /** What a diagnostic's span resolves to on this storey. */

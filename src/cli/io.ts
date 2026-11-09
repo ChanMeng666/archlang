@@ -16,6 +16,7 @@ import { closest } from "../expr.js";
 import { MODULE_CAP_BYTES, utf8ByteLength } from "../input-limit.js";
 import { CLI_NAME } from "../manifest.js";
 import { findCommand, usageLine } from "./help.js";
+import type { GuardedSource } from "./source-hash.js";
 
 export type Format = ExportFormat;
 /** Known `-f` ids and the "svg, dxf, pdf, or png" usage phrasing, from the one table. */
@@ -808,6 +809,43 @@ export function writeOutput(target: string, data: string | Uint8Array): void {
   const why = ensureOutputDir(target);
   if (why !== undefined) throw new Error(why);
   writeFileSync(resolvePath(target), data);
+}
+
+/**
+ * The one write-back sequence of the authoring commands (`fmt --write`, `repair -o`, `fix`, `finish`,
+ * `suggest --write`): re-check the input is unchanged BEFORE the first byte (`--expected-hash`),
+ * then, when `backup` is set and the target already exists, save it to `<target>.bak`, then write.
+ * Returns `{ code }` when the command must stop with that exit code (stale source, IO error), else
+ * `{ backup }` (the `.bak` path as given, when one was written).
+ */
+export function writeBack(o: {
+  io: CliIo;
+  args: { json?: boolean };
+  read: Pick<GuardedSource, "recheck">;
+  target: string;
+  bytes: string;
+  backup?: boolean;
+}): { code: number } | { backup?: string } {
+  const stop = o.read.recheck();
+  if (stop !== undefined) return { code: stop };
+  let backup: string | undefined;
+  if (o.backup) {
+    const path = resolvePath(o.target);
+    if (existsSync(path)) {
+      try {
+        writeFileSync(`${path}.bak`, readFileSync(path, "utf8"), "utf8");
+        backup = `${o.target}.bak`;
+      } catch (e) {
+        return { code: ioError(o.io, (e as Error).message, o.args.json) };
+      }
+    }
+  }
+  try {
+    writeOutput(o.target, o.bytes);
+  } catch (e) {
+    return { code: ioError(o.io, (e as Error).message, o.args.json) };
+  }
+  return backup === undefined ? {} : { backup };
 }
 
 export function ioError(io: CliIo, msg: string, json?: boolean, extra?: Record<string, unknown>): number {

@@ -24,7 +24,8 @@
  * so it reports as a NAMED SKIP on 18/20 instead of an early `return` that read as a pass.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { inflateRawSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
@@ -81,9 +82,7 @@ describe("playground permalinks stay in sync with examples/", () => {
   const links = DOCS.flatMap((f) => permalinks(f, readFileSync(f, "utf8")));
 
   const examples = Object.fromEntries(
-    readdirSync("examples")
-      .filter((f) => f.endsWith(".arch"))
-      .map((f) => [f, readFileSync(resolve("examples", f), "utf8").replace(/\r\n/g, "\n")]),
+    exampleNames().map((f) => [f, readFileSync(resolve("examples", f), "utf8").replace(/\r\n/g, "\n")]),
   );
 
   it("has at least one permalink (the README hero — its stand-in for an embed)", () => {

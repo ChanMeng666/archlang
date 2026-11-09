@@ -1,17 +1,20 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+/** repair — the villa witness; repair — the no-worse law; repair — order dependence, stated rather than hidden. */
+
+import { CORPUS_DIRS, walkFiles as walk } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { lint, repair } from "../src/index.js";
-import { archPlan } from "./arbitrary-plan.js";
-import { HARD_CODES, hardConflicts, newConflicts } from "./repair-conflicts.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
+import { HARD_CODES, hardConflicts, newConflicts } from "./helpers/repair-conflicts.js";
 import { runs } from "./setup/fast-check.js";
 
 /**
  * **`repair()` never returns a source that is worse than its input.**
  *
  * "Worse" means: the repaired source holds a hard conflict — an instance of a fault
- * `repair()` itself exists to clear (`./repair-conflicts.ts`: two pieces overlapping, a
+ * `repair()` itself exists to clear (`test/helpers/repair-conflicts.ts`: two pieces overlapping, a
  * piece through a wall, a piece in a door's landing, a piece in a door's swing) — that
  * the input did not hold, identified by WHO is in it (the pair of pieces, the piece, the
  * door and the piece). A subset, not a count: trading the overlap the author drew for a
@@ -50,21 +53,9 @@ function expectNoWorse(name: string, src: string): void {
 
 /** Every `.arch` the repo's corpus oracles iterate (`room-overlap-oracle.test.ts`). */
 function corpus(): { name: string; src: string }[] {
-  const walk = (dir: string): string[] =>
-    readdirSync(dir)
-      .sort()
-      .flatMap((f) => {
-        const p = join(dir, f);
-        return statSync(p).isDirectory() ? walk(p) : f.endsWith(".arch") ? [p] : [];
-      });
-  return [
-    "examples",
-    "test/fixtures",
-    "test/recovery-corpus",
-    "eval/goldens",
-    "eval/faults",
-    "eval/fidelity-plans",
-  ].flatMap((d) => walk(join(ROOT, d)).map((p) => ({ name: p.slice(ROOT.length + 1), src: readFileSync(p, "utf8") })));
+  return CORPUS_DIRS.flatMap((d) =>
+    walk(join(ROOT, d)).map((p) => ({ name: p.slice(ROOT.length + 1), src: readFileSync(p, "utf8") })),
+  );
 }
 
 const VILLA = readFileSync(join(ROOT, "examples/hillside-villa.arch"), "utf8");

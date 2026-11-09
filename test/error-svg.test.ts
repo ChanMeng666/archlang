@@ -1,3 +1,5 @@
+/** onError: 'svg' (opt-in error card). */
+
 import { describe, expect, it } from "vitest";
 import { compile, renderErrorSvg } from "../src/index.js";
 

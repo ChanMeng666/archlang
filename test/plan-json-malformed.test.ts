@@ -1,18 +1,27 @@
-import { readFileSync, readdirSync } from "node:fs";
+/** malformed Plan JSON. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { compile, describe as describePlan, planFromJson, planToJson } from "../src/index.js";
-import { MUTATION_KINDS, type MutationKind, applyMutations, mutationsArb, protoSnapshot } from "./json-mutate.js";
-import { CANNOT_ROUND_TRIP } from "./plan-json-gaps.js";
+import {
+  MUTATION_KINDS,
+  type MutationKind,
+  applyMutations,
+  mutationsArb,
+  protoSnapshot,
+} from "./helpers/json-mutate.js";
+import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
 import { runs as scaledRuns } from "./setup/fast-check.js";
 
 /**
  * Malformed Plan JSON never throws (EH1.10, T-F3 / S-FZ-5).
  *
  * Start from `planToJson(<example>)` for EVERY shipped example and apply 1-3 seeded mutations
- * (`test/json-mutate.ts`: drop a key, wrong type, NaN / +-Infinity / +-1e12 / -0 / 1e-9, empty
+ * (`test/helpers/json-mutate.ts`: drop a key, wrong type, NaN / +-Infinity / +-1e12 / -0 / 1e-9, empty
  * array, extra key, `__proto__` / `constructor` / `prototype` keys, swap siblings, duplicate an
  * element, empty a string). Laws: (a) `planFromJson` never throws; (b) every diagnostic code is
  * catalogued, and the result is either a plan whose emitted `.arch` compiles with NO `E_PARSE`
@@ -30,9 +39,7 @@ import { runs as scaledRuns } from "./setup/fast-check.js";
 
 const SEED = 20261109;
 const NUM_RUNS = 400;
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLES = exampleNames().sort();
 const docs = EXAMPLES.flatMap((file) => {
   const src = readFileSync(`examples/${file}`, "utf8");
   const r = planToJson(src);

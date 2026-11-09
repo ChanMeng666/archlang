@@ -1,8 +1,10 @@
+/** roomBottlenecks reads exactly what computeCirculation measures. */
+
+import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import type { CirculationModel } from "../src/analyze/circulation.js";
-import type { World } from "../src/world.js";
 
 /**
  * `roomBottlenecks` is `computeCirculation`'s opening steps written out again for the lint
@@ -41,17 +43,6 @@ vi.mock("../src/analyze/circulation.js", async (importOriginal) => {
 });
 
 const { lint } = await import("../src/index.js");
-
-const worldFor = (dir: string): World => ({
-  read: (p) => {
-    try {
-      return readFileSync(resolvePath(dir, p), "utf8");
-    } catch {
-      return null;
-    }
-  },
-  now: () => new Date(0),
-});
 
 describe("roomBottlenecks reads exactly what computeCirculation measures", () => {
   it("over every example and fixture, every measured room", () => {

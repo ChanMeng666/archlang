@@ -1,3 +1,5 @@
+/** W_ROOM_TOO_SMALL — the floor follows the room's use. */
+
 import { describe, expect, it } from "vitest";
 import { DEFAULT_RULESET, lint } from "../src/index.js";
 

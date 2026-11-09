@@ -1,3 +1,5 @@
+/** zone — byte identity (a zone draws nothing and moves nothing); zone — declared membership and nesting paths; zone — inside `level` blocks; zone — the grouped RO… */
+
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, format, lint, repair } from "../src/index.js";

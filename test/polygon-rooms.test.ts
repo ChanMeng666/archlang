@@ -1,3 +1,6 @@
+/** polygon rooms — parsing and shape; polygon rooms — exact area (shoelace); polygon rooms — rejected rings; polygon rooms — label placement; polygon rooms — the l… */
+
+import { codes } from "./helpers/diag.js";
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -34,7 +37,6 @@ import { fmt2 } from "../src/num-format.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const example = (name: string) => readFileSync(join(__dirname, "..", "examples", name), "utf8");
 
-const codes = (src: string): string[] => compile(src, { noCache: true }).diagnostics.map((d) => d.code ?? "");
 const rooms = (src: string): RRoom[] =>
   resolve(parse(src).plan!).ir.elements.filter((e): e is RRoom => e.kind === "room");
 

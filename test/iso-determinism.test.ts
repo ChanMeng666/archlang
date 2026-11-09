@@ -8,7 +8,7 @@
  * two properties rather than one:
  *
  *  - over the whole shipped corpus, in both presets, compiling twice gives the same bytes;
- *  - over 200 machine-generated plans from `test/arbitrary-plan.ts` — which emit walls,
+ *  - over 200 machine-generated plans from `test/helpers/arbitrary-plan.ts` — which emit walls,
  *    rooms, openings and fixtures **by construction** rather than the `fc.string()` bodies
  *    that once produced zero geometry across 5000 samples — the same.
  *
@@ -18,13 +18,14 @@
  * implementation's untied sort gets wrong.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe as suite, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import type { World } from "../src/world.js";
-import { archPlan } from "./arbitrary-plan.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
 import { floorAt, runs } from "./setup/fast-check.js";
 
 const EXAMPLES = resolvePath("examples");
@@ -39,9 +40,7 @@ const world: World = {
   now: () => new Date(0),
 };
 
-const EXAMPLE_NAMES = readdirSync(EXAMPLES)
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLE_NAMES = exampleNames().sort();
 
 suite("iso determinism — the shipped corpus", () => {
   it("has examples to run over", () => {

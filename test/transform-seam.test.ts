@@ -1,3 +1,5 @@
+/** ElementDef.transform — the seam. */
+
 import { describe, expect, it } from "vitest";
 import { compile, createRegistry, describe as describePlan, lint, registerElement } from "../src/index.js";
 import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../src/index.js";

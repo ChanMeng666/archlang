@@ -17,7 +17,8 @@
  * The byte-identity law for plans that write no `status` is `wall-status-byte-identity.test.ts`.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
@@ -41,8 +42,7 @@ import { PLAN_JSON_SCHEMA } from "../src/plan-json.js";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 /** The examples that write no `status` (the sweeps below write one into each); `remodel.arch`
  *  writes its own and is pinned by `wall-status-drawing.test.ts`. */
-const EXAMPLES = readdirSync(join(ROOT, "examples"))
-  .filter((f) => f.endsWith(".arch"))
+const EXAMPLES = exampleNames()
   .filter((f) => !/\bstatus\s+(existing|demolish|new)\b/.test(readFileSync(join(ROOT, "examples", f), "utf8")))
   .sort();
 

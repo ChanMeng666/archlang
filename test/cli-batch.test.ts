@@ -1,3 +1,5 @@
+/** CLI — batch; runPool — bounded concurrency; aggregateExit — one code for many files; perFileJson — the agent-facing per-file shape. */
+
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

@@ -14,7 +14,7 @@
  * arc by `[start, end, center]`, so a glyph arc whose centre sat outside its box would drag the
  * ASCII plan's extents with it. A `path` (the curved outlines) contributes its vertices and its
  * arcs' axis extremes but NOT its centres — on a closed outline the centre is a construction
- * point, and ascii's `pointsOf` reads a path's curve, not its centres (`test/glyph-extent.ts`).
+ * point, and ascii's `pointsOf` reads a path's curve, not its centres (`test/helpers/glyph-extent.ts`).
  *
  * **2. Repeat counts are clamped, at absurd aspects included.** A sofa's cushion divisions
  * and a dining table's chairs are derived from the footprint's aspect, which is unbounded.
@@ -46,7 +46,7 @@ import { glyphCtx } from "../src/elements/glyph-lib.js";
 import { fixtureSpec } from "../src/fixtures-catalog.js";
 import { rotateNode } from "../src/elements/furniture.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { pathExtentPoints } from "./helpers/glyph-extent.js";
 
 /** Real pen sizes, taken from a real scene rather than invented. */
 const SIZES: RenderSizes = toScene(

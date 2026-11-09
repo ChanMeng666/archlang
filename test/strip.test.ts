@@ -1,3 +1,5 @@
+/** T1e — room strip. */
+
 import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
 import { parse } from "../src/parser.js";

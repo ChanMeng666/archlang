@@ -1,7 +1,7 @@
 /**
  * The relational-opening digest table (ADR 0028 §5; card PS3.4): SHA-256 over SVG,
  * `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in
- * `test/openings-between-plans.ts`, pinned in its own commit after the byte-identity law held
+ * `test/tables/openings-between-plans.ts`, pinned in its own commit after the byte-identity law held
  * (every existing digest suite unchanged, no re-pin; a corpus sweep against `main` moved only
  * the new language-reference fence; the twins in `test/openings-between.test.ts`). Measured
  * with the test's own digest body (`allStoreysDigestWithDiagnostics`). A moved row is a
@@ -10,8 +10,8 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
-import { OPENINGS_BETWEEN_PLANS } from "./openings-between-plans.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
+import { OPENINGS_BETWEEN_PLANS } from "./tables/openings-between-plans.js";
 
 const API: CompilerApi = { compile, describe, lint };
 

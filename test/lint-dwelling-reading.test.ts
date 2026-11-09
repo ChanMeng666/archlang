@@ -1,3 +1,5 @@
+/** dwellingReading; W_WET_ROOM_DOOR on a plan that reads as non-residential; W_HABITABLE_NO_WINDOW's kitchen arm; W_ENTRANCE_INTO_PRIVATE; the non-dwelling reason;… */
+
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -20,6 +22,7 @@ import { runArch } from "./helpers/cli.js";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FIRST_CONTACT = join(ROOT, "test", "plans", "plan-soundness", "audits", "first-contact-plans");
 const read = (...p: string[]): string => readFileSync(join(...p), "utf8");
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads lint(), takes options.
 const codes = (src: string, profile?: string): string[] =>
   lint(src, profile ? { profile } : {}).map((d) => d.code ?? "");
 const skipsOf = (c: LintCoverage | null, family: string): string[] =>

@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** finish on `level` blocks — the issue's plans; finish on `level` blocks — the floor a piece stands on; finish on `level` blocks — the same id on several levels;… */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe as suite, expect, it } from "vitest";
@@ -31,8 +34,7 @@ const world: World = {
   },
   now: () => new Date(0),
 };
-const MULTI = readdirSync(EXAMPLES)
-  .filter((f) => f.endsWith(".arch"))
+const MULTI = exampleNames()
   .map((f) => f.slice(0, -".arch".length))
   .filter((n) => /^\s*level -?\d/m.test(readFileSync(join(EXAMPLES, `${n}.arch`), "utf8")))
   .sort();

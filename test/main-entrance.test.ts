@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** PS0.10 — the main entrance. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -349,7 +352,7 @@ describe("PS0.10 — the main entrance", () => {
   // Over every example storey: the fact is present exactly when there is a choice, the walk's
   // graph reaches exactly the rooms the full graph reaches (so W_ROOM_UNREACHABLE cannot move),
   // and `depthFromEntrance` is untouched.
-  const examples = readdirSync(join(root, "examples")).filter((f) => f.endsWith(".arch"));
+  const examples = exampleNames();
   it.each(examples)("%s: the walk's ways in reach every room the doors reach", (name) => {
     const src = read(`examples/${name}`);
     const { ir, levels } = resolvePlan(src, {
