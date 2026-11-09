@@ -50,7 +50,7 @@ import { keepResultsOf } from "../ir.js";
 import { cell, takeoffCsv, takeoffStoreys } from "../analyze/takeoff.js";
 import { MAX_WASTE_PCT } from "../describe.js";
 import type { QuantityFacts } from "../index.js";
-import { diagnosticsSummary, validateSummary } from "./summary.js";
+import { diagnosticsSummary, plural, validateSummary } from "./summary.js";
 import { type KeepResult, keepValidateRow } from "../keep.js";
 import {
   AUTHORING_STAGES,
@@ -721,8 +721,6 @@ interface Staged {
 function withStage<T extends object>(j: T, stage: AuthoringStage | undefined): T {
   return stage === undefined ? j : { ...j, stage };
 }
-
-const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** The summary under `--stage`: the stage first, the held-back count last; unchanged without it. */
 function stagedSummary(line: string, staged: Staged | undefined): string {

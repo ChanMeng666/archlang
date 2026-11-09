@@ -69,7 +69,7 @@ import {
   unit,
   type WallSegment,
 } from "../../geometry.js";
-import { VERTEX_EPS } from "../../geometry/polygon.js";
+import { VERTEX_EPS, rectRing } from "../../geometry/polygon.js";
 import { type BBox, rectOverlapAmounts, rectsOverlap } from "../../geometry/rect.js";
 import type { RDoor, ROpening, RStair, RStairPiece, RVoid } from "../../ir.js";
 import {
@@ -720,15 +720,7 @@ function landingBlock(
   for (const p of pieces) consider(rectCorners(p.x, p.y, p.w, p.h), { ownPiece: true });
   if (l.end === "foot")
     for (const vd of ctx.voids)
-      consider(
-        [
-          { x: vd.at.x, y: vd.at.y },
-          { x: vd.at.x + vd.size.w, y: vd.at.y },
-          { x: vd.at.x + vd.size.w, y: vd.at.y + vd.size.h },
-          { x: vd.at.x, y: vd.at.y + vd.size.h },
-        ],
-        { void: vd },
-      );
+      consider(rectRing({ x: vd.at.x, y: vd.at.y, w: vd.size.w, h: vd.size.h }), { void: vd });
   // The floor: halfway to the measured depth, on the flight's centreline, must be in a room.
   const blocked = best as LandingBlock | null;
   const clear = blocked === null ? need : blocked.depth;

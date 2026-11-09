@@ -60,6 +60,7 @@
  */
 
 import type { Point } from "../ast.js";
+import { rectRing } from "../geometry/polygon.js";
 import type { LineWeight, PathEdge, PathLoop, RenderSizes, SceneNode } from "../scene.js";
 import { weightWidth } from "../scene.js";
 import type { Theme } from "../theme.js";
@@ -469,15 +470,8 @@ export function easedRing(pts: readonly Point[], ease: readonly boolean[], rad: 
   return out;
 }
 
-/** The four corners of a rect as a closed polygon, clockwise from the top-left. */
-export function rectPoly(r: Rect): Point[] {
-  return [
-    { x: r.x, y: r.y },
-    { x: r.x + r.w, y: r.y },
-    { x: r.x + r.w, y: r.y + r.h },
-    { x: r.x, y: r.y + r.h },
-  ];
-}
+/** @deprecated The same ring as `rectRing` (`src/geometry/polygon.ts`); kept so the glyph modules' imports stay. */
+export const rectPoly: (r: Rect) => Point[] = rectRing;
 
 // ---------------------------------------------------------------------------
 // Curves: closed `path` loops of straight edges and MINOR arcs of at most 120° each, drawn

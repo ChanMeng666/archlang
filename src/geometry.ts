@@ -22,6 +22,7 @@ import {
 import type { GridBox } from "./geometry/grid-index.js";
 import { GridIndex } from "./geometry/grid-index.js";
 import { VERTEX_EPS, distPointToSegment } from "./geometry/polygon.js";
+import { rectRing } from "./geometry/polygon.js";
 
 export { distPointToSegment };
 
@@ -483,15 +484,8 @@ function contactLength(a: DoorSwing, d: Vec, ha: number, b: DoorSwing, nd: Vec, 
   return Math.min(ahi, bhi) - Math.max(alo, blo);
 }
 
-/** Axis-aligned rectangle corners (clockwise) from origin + size. */
-export function rectCorners(x: number, y: number, w: number, h: number): Point[] {
-  return [
-    { x, y },
-    { x: x + w, y },
-    { x: x + w, y: y + h },
-    { x, y: y + h },
-  ];
-}
+/** @deprecated The same ring as `rectRing` (`src/geometry/polygon.ts`), from origin + size. */
+export const rectCorners = (x: number, y: number, w: number, h: number): Point[] => rectRing({ x, y, w, h });
 
 /**
  * Square-capped offset rectangle for a wall segment: the segment is widened by
