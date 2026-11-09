@@ -40,8 +40,8 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
 - A local `UPDATE_KEYFRAMES` re-take rewrites `e2e/fixtures/keyframe-baseline.json` without the Linux
   environment entry and in a layout Biome rejects: compare CI's printed hashes, add the Linux entry
   back, `biome format` the file, and cite the run in `e2e/fixtures/README.md`.
-- `npm run check:3d` runs the heavy tests (Chromium through `playwright-core`, ffmpeg, glTF-Validator);
-  CI runs it on Linux as `3D package (check:3d)`, not a required check. `playwright-core` is imported
+- CI runs `npm run check:3d`, the heavy tests (Chromium through `playwright-core`, ffmpeg, glTF-Validator);
+  it runs on Linux as `3D package (check:3d)`, not a required check. `playwright-core` is imported
   lazily (CI's Node 18 leg runs the light tests).
 - A new runtime dependency passes the licence gate (`licences.json`, `npm -w packages/archlang-3d run
   notices` for `THIRD_PARTY_NOTICES`); the deny-list wins over the allow-list.

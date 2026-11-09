@@ -10,14 +10,14 @@
   base with `origin/main` (`--base`); `--list` prints the plan. The full suite runs in CI, never locally.
   It cannot see a guard that scans a directory rather than naming a file (the corpus and byte-identity
   laws over `examples/` and `docs/`), so a quick pass is never merge evidence.
-- `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`. Its `typecheck` covers
-  `src/` only; `npm run typecheck:all` adds `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and
+- CI runs `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`. Its `typecheck` covers
+  `src/` only; CI runs `npm run typecheck:all`, which adds `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and
   the four workspaces. Run `npm run build` first: without `dist/` the playground resolves the bare
   `archlang` specifier to the wrong package and reports dozens of spurious "no exported member" errors.
-- `npm run check:drift` is separate from `check` and is a CI gate. `gen:all` orders `gen:spec`
+- CI runs `npm run check:drift`, separate from `check` (`check:quick` runs it too). `gen:all` orders `gen:spec`
   before `gen:llms` before `gen:cli` (the CLI reference states the bundle size `gen:llms`
   measures). Run `gen:example-svgs` after any rendering change.
-- `npm test` runs the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`,
+- CI runs `npm test`, the vitest include list in `vitest.config.ts` — `test/`, `playground/test/`,
   `packages/*/test/`, `editors/vscode/test/`. `check:test-wiring` fails on a test outside it.
 - `*:build:only` scripts skip the core rebuild; `npm run build` must have run.
 - `e2e:playground` / `e2e:docs` run Playwright against the BUILT site. `E2E_BASE_URL=<origin>` drops
@@ -89,7 +89,7 @@ a PR too.
 **A break on a main-only leg appears after the merge**, and nothing blocks on it. It is seen in three
 places: the red push run on `main`, with GitHub's failed-run notification to whoever merged;
 nightly's `report`, which lists a failed `full-matrix` job in the pinned issue, by the next 03:00 UTC;
-and `/release-check` item 5, which refuses a release on either. Both alarms label their issue
+and `.claude/commands/release-check.md` item 5, which refuses a release on either. Both alarms label their issue
 `ci-red` and comment on every red run, so `gh issue list -l ci-red` is the first thing a session
 checks; a green run closes the issue with a comment.
 
@@ -99,14 +99,14 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | Job (check name) | Runs | Min |
 |---|---|---|
 | `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
-| `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
+| `build` (Node 18, Node 20) | CI runs, push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
-| `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
+| `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | CI runs `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
 | `node-22` (Node 22) | gates on the two above; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
-| `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
+| `windows` | CI runs, push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
-| `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | 2.0 (PR #336, browser cache cold) |
+| `check-3d` (3D package (check:3d)) | CI runs `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | 2.0 (PR #336, browser cache cold) |
 | `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates; skipped on a record-only PR | 0.9 |
 
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs
@@ -144,7 +144,7 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
 
 `codeql.yml` `analyze` gates too (and runs weekly). `nightly.yml`: `prod-smoke`
 (`scripts/smoke.mjs`), `audit` (report-only), `secrets` (gitleaks over full history),
-`full-matrix` (`npm test` + `check:drift`), `coverage` (`test:coverage`, the coverage summary and artifact; report-only, `continue-on-error`, outside `report`), `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
+`full-matrix` (CI runs `npm test` + `check:drift`), `coverage` (`test:coverage`, the coverage summary and artifact; report-only, `continue-on-error`, outside `report`), `cross-engine` (`digest:engines`, advisory: never fails the night, a divergence updates
 the pinned issue; its report is an
 artifact), `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
 detects a stale deploy), and `report` (the single writer of the pinned issue; a fully green night comments on it and closes it). `deploy.yml` deploys
@@ -156,11 +156,11 @@ workflows are manual and owner-only — never dispatch `eval-l2.yml`.
 
 ## Release
 
-`/release-check` (`.claude/commands/release-check.md`) is the checklist and holds the human steps.
+`.claude/commands/release-check.md` is the checklist and holds the human steps.
 Two things it pins:
 
 - **Gate order in the PRIMARY checkout**: `npm run build`, `npm run mcp:build:only`,
-  `npm run vscode:build:only`, then `npm run check`. `check` runs
+  `npm run vscode:build:only`, then `npm run check` (the owner-sanctioned release gate, with `#allow-local-heavy`). `check` runs
   `editors/vscode/test/stdio.test.ts`, which compares the bundled server's stamped core version with
   the workspace version, so a stale `editors/vscode/dist/server.js` fails it after a version bump.
 - **npm shows a just-published version only about 3 minutes after `npm publish` returns.** The

@@ -22,7 +22,7 @@ there, never on the owner's machine (`docs/agents/iron-laws.md`). Items list onl
 function another had *modified*, and taking "theirs" would have silently reverted the fix with a
 green suite): one worktree per item, never two concurrent items on the same file; diff moved or
 renamed bodies against the newer version, not just the conflict set; run both branches' fixtures
-together before merging; `npm run typecheck:all` after **every** merge.
+together before merging; read the PR's CI `typecheck:all` after **every** merge.
 
 **Read an entry's observations as evidence and its diagnosis as a hypothesis.** Symptoms here have
 been reliable; stated causes have been wrong about as often as right. Check the arithmetic of a
@@ -107,8 +107,8 @@ seven residuals is a DEV dependency. That is not an aside: `nightly.yml`'s depen
 exactly `npm audit --omit=dev --audit-level=high`, which now exits 0, so the residuals do not appear
 in this project's own security gate at all. Neither critical ships: `vitest` and
 `@vitest/coverage-v8` are the test runner, absent from every published artifact, and the `vitest`
-advisory itself is against the **UI server** (`--ui`), which nothing here starts — CI runs
-`vitest run`.
+advisory itself is against the **UI server** (`--ui`), which nothing here starts —
+CI runs `vitest run`.
 
 Against that, (b) costs more than it first looked: it is `vitest` **2.1.9 → 5.0.0, three majors**,
 across 281 test files (re-measured 2026-10-03; 203 when written) and four workspaces, with the snapshot-format risk that carries in a repository
@@ -160,7 +160,7 @@ after:   13 vulnerabilities (2 critical, 7 high, 4 moderate)          --omit=dev
 Moves, all patch or minor: `brace-expansion` 2.1.4→2.1.7 and 5.0.9→5.0.12 (three nodes),
 `dompurify` 3.4.14→3.4.16, `fast-uri` 3.1.7→3.1.8, `hono` 4.13.5→4.13.12, `ip-address`
 10.7.0→10.7.3, `markdown-it` 14.2.0→14.3.2, `undici` 7.29.0→7.30.0. No output byte moved: the
-byte-identity suites in `npm run check` pass unchanged. The vsce chain in the table below is new and
+byte-identity suites in CI's `npm run check` pass unchanged. The vsce chain in the table below is new and
 is **not** (a) despite npm's `fixAvailable: true`: `braces` has no fixed release (`<=3.0.3` is every
 version), and the only route around it is `@vscode/vsce` 4.0.0, outside the manifest's `^3.2.1` —
 3.9.2 is the newest stable 3.x.
@@ -1320,7 +1320,7 @@ storey coordinates, outside the component a `place` frame would carry; none ship
 pin is added. The suites show they can fail: r270 observed against r90's prediction is red on every
 storey; one storey placed `rotate 90` in a building placed `rotate 180` is red on that storey
 alone and fails the pin table as `NEW`; a P₀ with one storey's door widened fails T0 on that
-storey alone. Re-run: `npx vitest run test/equivariance-storeys.test.ts
+storey alone. Re-run (the owner's command; CI runs it): `npx vitest run test/equivariance-storeys.test.ts
 test/equivariance-storeys-scaled.test.ts test/equivariance-storeys-head.test.ts`.
 
 **What it cannot see, because `describe()` does not carry it.** A door's entry is `id`,
@@ -1378,7 +1378,7 @@ shipped storeys. The ninth was a finding, E.17, since closed: T0 is now clean on
 this tier landed; the second is now closed:
 
 - `dim-tick-hand` (E.15, `declared`): `hillside-villa.arch@L1`, `g.dim_1`'s ticks under the
-  four reflections. Re-run with `npx vitest run test/equivariance-storeys-scene.test.ts -t
+  four reflections. Re-run (the owner's command; CI runs it) with `npx vitest run test/equivariance-storeys-scene.test.ts -t
   hillside`.
 - `facade-probe-order` (E.17, a composition defect, since closed): `hillside-villa.arch@L2`,
   `T0`, `scene.dims`. The `dims auto` chains ended on a different wall once the storey was
@@ -2350,7 +2350,7 @@ what remains of this card.
 **Hypothesis.** The playground cannot load pdfkit; the core already produces the sheet SVG.
 Whether a vector path is worth the bundle is open.
 
-**Gate:** `npm run e2e:playground` covers the chosen behaviour; the playground bundle size
+**Gate:** CI's `npm run e2e:playground` covers the chosen behaviour; the playground bundle size
 before and after is quoted. **Size:** M.
 
 ### U.19 · A global install can fail on the `arch` alias bin where npm's prefix is `/usr` — `todo`
@@ -2404,7 +2404,7 @@ show a sum.
 The strip is a reader-facing surface, so the wording follows `docs/adr/0027-net-internal-area.md`.
 
 **Gate:** the strip and tooltip name which figure they show; `playground/test` and
-`npm run e2e:playground` cover the new text. **Size:** S.
+CI's `npm run e2e:playground` cover the new text. **Size:** S.
 
 ### U.22 · `describe()` is unbudgeted, and the net-area term is quadratic per room — `todo`
 
@@ -2515,7 +2515,7 @@ per-IP 100 requests per 10 s, block 10 s), so it covers `/svg/` too.
 
 **Done 2026-10-16:** `@chanmeng666/archlang-mcp` 0.2.26 (released with core 1.43.1) ships the annotations to local installs.
 
-The next `@chanmeng666/archlang-mcp` release (bumped by `/release-check` item 2, not before) ships the
+The next `@chanmeng666/archlang-mcp` release (bumped by `.claude/commands/release-check.md` item 2, not before) ships the
 tools' `annotations` (read-only, not destructive, idempotent, closed-world) that the OpenAI directory's
 tool scan requires; the hosted Worker already serves them once they reach `main` (`deploy-mcp`
 redeploys on a tool-set change), so the OpenAI/Codex draft (state in `docs/seo.md` section 8) already
@@ -2951,7 +2951,7 @@ runner can do. The other two explanations were ruled out. The payloads differ in
 change is visible to `size` alone. `cmdCompile` writes synchronously before it emits, and `peek`
 re-reads the file. In every reproduced failure the banner was already on stderr.
 
-**Reproduction**, by running the single test with `npx vitest run … -t "still writes the artifact"`
+**Reproduction**, by the owner running the single test with `npx vitest run … -t "still writes the artifact"`
 on an unmodified `HEAD`, Node 22.22.0, in 8 concurrent copies at a time, alongside 24 busy-loop
 `node` processes on 4 cores:
 

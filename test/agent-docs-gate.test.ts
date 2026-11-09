@@ -1,0 +1,120 @@
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join, relative } from "node:path";
+import { describe, expect, it } from "vitest";
+
+/**
+ * Agent-facing docs never tell an agent to run a command the local-gate hook blocks.
+ *
+ * The blocked patterns are `HEAVY` in `.claude/hooks/local-gate.mjs`. The hook does not export
+ * them (exporting is a hook edit, high tier), so this test PARSES the regex literals out of the
+ * hook's source: every `[/pattern/flags, "label"],` row of the `const HEAVY = [ … ];` block. A new
+ * row in the hook is enforced here with no second edit; a changed hook shape fails
+ * `parseHeavy` loudly rather than passing on an empty list.
+ *
+ * A line that names a blocked command passes only when the same line says whose job it is:
+ * `#allow-local-heavy`, "CI runs", "CI's", "CI only" or "owner". Rewrite the sentence as "CI runs X;
+ * read its result" rather than adding the words to a bare instruction.
+ *
+ * Recipes are referred to as files to read (`.claude/commands/x.md`), never as `/x` (EH-D3: the
+ * owner's settings turn skills off), so a `/<recipe>` slash-invocation is a hit too.
+ */
+
+const ROOT = join(__dirname, "..");
+const HOOK = join(ROOT, ".claude", "hooks", "local-gate.mjs");
+
+function parseHeavy(source: string): [RegExp, string][] {
+  const start = source.indexOf("const HEAVY = [");
+  const end = source.indexOf("\n];", start);
+  expect(start, "`const HEAVY = [` not found in the hook").toBeGreaterThanOrEqual(0);
+  expect(end, "end of the HEAVY block not found in the hook").toBeGreaterThan(start);
+  const rows: [RegExp, string][] = [];
+  for (const line of source.slice(start, end).split("\n")) {
+    const m = /^\s*\[\/(.+)\/([a-z]*),\s*"([^"]+)"\],?\s*$/.exec(line);
+    if (m) rows.push([new RegExp(m[1] as string, m[2]), m[3] as string]);
+  }
+  return rows;
+}
+
+function markdownUnder(dir: string, out: string[] = []): string[] {
+  for (const name of readdirSync(dir)) {
+    if (name === "worktrees" || name === "node_modules") continue;
+    const p = join(dir, name);
+    if (statSync(p).isDirectory()) markdownUnder(p, out);
+    else if (name.endsWith(".md")) out.push(p);
+  }
+  return out;
+}
+
+const SCANNED = [
+  ...markdownUnder(join(ROOT, "docs", "agents")),
+  ...markdownUnder(join(ROOT, ".claude")),
+  join(ROOT, "docs", "backlog.md"),
+  join(ROOT, "REVIEW.md"),
+];
+// Not scanned: CONTRIBUTING.md (written for human contributors, who may run the suite) and
+// AGENTS.md (high tier, owner-edited; it states the CI-only rule itself).
+
+/**
+ * The command invocations on a line: inline code spans (or the unclosed tail of one that wraps)
+ * and lines of a fenced block that start like a shell command. A bare mention such as "`check:drift`
+ * is green" is prose, not an instruction, and is not a hit; `npm run check:drift` is.
+ */
+const COMMAND = /^(?:\$ )?(?:[A-Z_]+=\S+ )*(?:npm|npx|pnpm|yarn|vitest|playwright|node|tsx)(?=\s+\S)/;
+function invocations(line: string, fenced: boolean): string[] {
+  const spans = [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1] as string);
+  const open = /`([^`]*)$/.exec(line.replace(/`[^`]*`/g, ""));
+  if (open?.[1]) spans.push(open[1]);
+  if (fenced && COMMAND.test(line.trim())) spans.push(line.trim());
+  return spans.filter((s) => COMMAND.test(s.trim()));
+}
+
+const OWNED = /#allow-local-heavy|CI runs|CI's|CI only|owner/;
+
+describe("agent docs name no blocked command", () => {
+  const heavy = parseHeavy(readFileSync(HOOK, "utf8"));
+
+  it("parses every HEAVY row of the hook", () => {
+    expect(heavy.length).toBeGreaterThanOrEqual(7);
+    expect(heavy.map(([, label]) => label)).toContain("typecheck:all");
+  });
+
+  it("a blocked command in an agent doc says it is CI's or the owner's", () => {
+    const hits: string[] = [];
+    for (const file of SCANNED) {
+      let fenced = false;
+      readFileSync(file, "utf8")
+        .split("\n")
+        .forEach((text, i) => {
+          if (/^\s*```/.test(text)) fenced = !fenced;
+          if (OWNED.test(text)) return;
+          const hit = invocations(text, fenced)
+            .map((cmd) => heavy.find(([re]) => re.test(cmd)))
+            .find(Boolean);
+          if (hit)
+            hits.push(`${relative(ROOT, file).replace(/\\/g, "/")}:${i + 1} [${hit[1]}] ${text.trim().slice(0, 100)}`);
+        });
+    }
+    expect(
+      hits,
+      `blocked command without "CI runs"/"CI's"/"owner"/#allow-local-heavy on the line:\n${hits.join("\n")}`,
+    ).toEqual([]);
+  });
+
+  it("recipes are named as files, never as a /slash invocation", () => {
+    const recipes = readdirSync(join(ROOT, ".claude", "commands"))
+      .filter((n) => n.endsWith(".md"))
+      .map((n) => n.slice(0, -3));
+    expect(recipes.length).toBeGreaterThan(0);
+    const slash = new RegExp(`(?<![\\w./-])/(?:${recipes.join("|")})(?![\\w-])`);
+    const hits: string[] = [];
+    for (const file of SCANNED) {
+      readFileSync(file, "utf8")
+        .split("\n")
+        .forEach((text, i) => {
+          if (slash.test(text))
+            hits.push(`${relative(ROOT, file).replace(/\\/g, "/")}:${i + 1} ${text.trim().slice(0, 100)}`);
+        });
+    }
+    expect(hits, `read \`.claude/commands/x.md\` instead of \`/x\`:\n${hits.join("\n")}`).toEqual([]);
+  });
+});

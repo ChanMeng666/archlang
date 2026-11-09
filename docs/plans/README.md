@@ -5,7 +5,7 @@ work, dated evidence, and (where the programme is running) a `handoff.md` that i
 A plan small enough for one page is a single file here.
 Closed programme research (audits, studies, spikes) lives in the private sibling repository `archlang-lab`.
 
-| Folder | What | Status (2026-11-01) |
+| Folder | What | Status (see each row) |
 |---|---|---|
 | `plan-soundness/` | Professional rules and taste for AI-written plans: validity lint, relation-first forms, the change model, the taste layer | open; §7 rows 1–5 and 3a met, row 6 closed in part (PS4.6 remains), row 7 parked; start at `plan-soundness/handoff.md` |
 | `ci-throughput.md` | Options to shorten the PR cycle (auto-merge, concurrency, path filters, coverage off the PR path, merge queue, changelog fragments, PR legs and shards) | A–D and G live; E, F open, the owner decides |
