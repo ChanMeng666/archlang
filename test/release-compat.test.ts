@@ -159,6 +159,12 @@ describe("release compatibility: the comparisons are not vacuous", () => {
           "export declare function find(id: string): string;",
           "export declare function pick(): string | number;",
           'export declare const KEYWORDS: readonly ["room", "wall"];',
+          'export type Shade = "red" | "green";',
+          'export type Finish = "matt" | "gloss";',
+          'export type Unit = "mm" | "m";',
+          "export declare function setUnit(u: Unit): void;",
+          'export type Axis = "x" | "y";',
+          "export declare function flip(a: Axis): void;",
           "export declare function goneExport(): void;",
         ].join("\n"),
       );
@@ -182,14 +188,25 @@ describe("release compatibility: the comparisons are not vacuous", () => {
           // Return NARROWED: passes.
           "export declare function pick(): string;",
           'export declare const KEYWORDS: readonly ["room", "door", "wall"];',
+          // Enum-like literal unions are append-only sets in BOTH roles (owner ruling on #599):
+          // an output gaining a literal passes, losing one fails…
+          'export type Shade = "red" | "green" | "blue";',
+          'export type Finish = "matt" | "satin";',
+          // …and so does an input (a parameter type of setUnit / flip).
+          'export type Unit = "mm" | "m" | "cm";',
+          "export declare function setUnit(u: Unit): void;",
+          'export type Axis = "x" | "z";',
+          "export declare function flip(a: Axis): void;",
           "export declare function brandNew(): void;",
         ].join("\n"),
       );
       const types = compat.compareTypeSurfaces(compat.typeSurface(oldDts), compat.typeSurface(newDts));
       const said = types.map(compat.formatFinding).join("\n");
       expect(types.map((f) => `${f.kind} ${f.name}${f.path ? ` ${f.path}` : ""} (${f.role})`).sort(), said).toEqual([
+        "enum member removed Axis type (input)",
+        "enum member removed Finish type (output)",
+        "enum member removed Mode type (input)",
         "member became optional Summary .?area (output)",
-        "narrowed input type Mode type (input)",
         // The same narrowing seen at its use: a one-member alias prints as its literal.
         "narrowed input type run sig0.p0 (input)",
         "new required member RenderOptions .dpi (input)",

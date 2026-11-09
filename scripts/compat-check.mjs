@@ -559,15 +559,40 @@ export function compatible(oldT, newT, role) {
 /** A single string/number literal type (`"…"`, `1`), the value of a `const` member. */
 const isLiteral = (s) => /^("([^"\\]|\\.)*"|-?\d+(\.\d+)?|true|false)$/.test(s);
 
+/**
+ * An ENUM-LIKE pair: both sides a union of literals (an array of one too), give or take `undefined`
+ * / `null`. Such a set is append-only in BOTH roles (owner ruling on #599): a new element kind,
+ * door kind, export format or code is a minor release and an exhaustive `switch` must handle
+ * unknown members, so an added literal passes and a removed one fails. The `undefined`/`null`
+ * part keeps the strict variance of `role`. `null` when the pair is not enum-like.
+ */
+function enumDiff(o, n, role) {
+  const arr = (s) => /^(readonly )?\((.+)\)\[\]$/.exec(s);
+  const ao = arr(o);
+  const an = arr(n);
+  if (ao && an) return ao[1] === an[1] ? enumDiff(ao[2], an[2], role) : null;
+  const om = unionMembers(o);
+  const nm = unionMembers(n);
+  const nullish = (x) => x === "undefined" || x === "null";
+  const ol = om.filter(isLiteral);
+  const nl = nm.filter(isLiteral);
+  if (!ol.length || !nl.length) return null;
+  if (![...om, ...nm].every((m) => isLiteral(m) || nullish(m))) return null;
+  const kept = new Set(nl);
+  const rest = (ms) => ms.filter(nullish).sort().join(" | ") || "never";
+  return { removed: ol.filter((m) => !kept.has(m)), restOk: compatible(rest(om), rest(nm), role) };
+}
+
 const optionals = (s) => (s.match(/\.\?/g) ?? []).length;
 const unq = (k) => k.replace(/\.\?/g, ".");
 const bare = (s) => s.replace(/^(\?|\.\.\.)/, "");
 
 /**
  * Variance-aware diff of two {@link typeSurface} results (see the `@role` notes there). Every
- * finding carries `role` (`input` / `output`) and `why` (how its export was classified). An
- * `as const` list (`[]` keys) is compared as a set, additive-only, in both roles; a constant's
- * literal value, generic constraints and `readonly` are not compared.
+ * finding carries `role` (`input` / `output`) and `why` (how its export was classified). A
+ * union of literals and an `as const` list (`[]` keys) are enum-like sets, additive-only, in both
+ * roles ({@link enumDiff}); a constant's literal value, generic constraints and `readonly` are
+ * not compared.
  */
 export function compareTypeSurfaces(oldS, newS) {
   const findings = [];
@@ -613,10 +638,24 @@ export function compareTypeSurfaces(oldS, newS) {
         if (Number(n[nk]) > Number(o[k])) push(k, { kind: "new required parameter", path: k, old: o[k], new: n[nk] });
       } else if (k.endsWith("[]")) {
         // An `as const` list (keyword tables, enum values): entries may be added, not removed.
-        if (!subsumes(o[k], n[nk], false)) push(k, { kind: "removed list entry", path: k, old: o[k], new: n[nk] });
+        const en = enumDiff(o[k], n[nk], "input");
+        if (en ? en.removed.length > 0 : !subsumes(o[k], n[nk], false)) {
+          push(k, { kind: en ? "enum member removed" : "removed list entry", path: k, old: o[k], new: n[nk] });
+        }
       } else if (o.kind === "const" && n.kind === "const" && isLiteral(o[k]) && isLiteral(n[nk])) {
         // A constant's VALUE changed (a schema description, a version string): not a type
         // contract. The Plan schema's own `const`s are checked as JSON by `plan-schema`.
+      } else if (enumDiff(bare(o[k]), bare(n[nk]), role)) {
+        const en = enumDiff(bare(o[k]), bare(n[nk]), role);
+        if (en.removed.length) push(k, { kind: "enum member removed", path: k, old: o[k], new: n[nk] });
+        else if (!en.restOk) {
+          push(k, {
+            kind: role === "input" ? "narrowed input type" : "widened output type",
+            path: k,
+            old: o[k],
+            new: n[nk],
+          });
+        }
       } else if (!compatible(bare(o[k]), bare(n[nk]), role)) {
         // (A parameter's `?` / `...` marker is compared below.)
         push(k, {
