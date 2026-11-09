@@ -69,8 +69,11 @@ describe("the Plan JSON projector is a leaf", () => {
     const parser = resolve(SRC, "parser.ts");
     const analyze = resolve(SRC, "analyze.ts");
     const imp = resolve(SRC, "import.ts");
-    expect(runtimeImports(resolve(SRC, "plan-json/to-json.ts"))).not.toContain(parser);
+    const direct = runtimeImports(resolve(SRC, "plan-json/to-json.ts"));
+    expect(direct).not.toContain(parser);
+    expect(direct).toContain(resolve(SRC, "ir.ts"));
     expect(mods.has(analyze)).toBe(true);
+    expect(mods.has(imp)).toBe(true);
     expect(closure(resolve(SRC, "plan-json/to-json.ts"), new Set([analyze, imp])).has(parser)).toBe(false);
   });
 
