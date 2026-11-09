@@ -8,6 +8,8 @@
  * caret-framed snippet — zero dependencies, pure, isomorphic.
  */
 
+import type { CatalogCode } from "./error-catalog.js";
+
 /** A half-open byte range `[start, end)` into the source string. */
 export interface Span {
   start: number;
@@ -139,6 +141,28 @@ export interface Diagnostic {
   instance?: string;
   /** The component the {@link instance} was made from. Append-only field. */
   component?: string;
+}
+
+/**
+ * A diagnostic whose code the compiler checks against the catalogue: write NEW call sites with
+ * it (`diag(code, message, span)`), so a misspelt or uncatalogued code fails `tsc`. Existing
+ * sites keep their `code: "…"` literals; `Diagnostic.code` stays `string`. The severity follows
+ * the code's prefix (`E_` error, `W_` warning), which every catalogue entry obeys (pinned in
+ * `test/error-catalog-families.test.ts`), so this module never loads the catalogue's prose.
+ */
+export function diag(
+  code: CatalogCode,
+  message: string,
+  span?: Span,
+  extra?: Omit<Diagnostic, "severity" | "message" | "span" | "code">,
+): Diagnostic {
+  return {
+    severity: code.startsWith("E_") ? "error" : "warning",
+    message,
+    ...(span ? { span } : {}),
+    code,
+    ...extra,
+  };
 }
 
 /**

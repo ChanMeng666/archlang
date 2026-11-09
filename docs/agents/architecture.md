@@ -32,7 +32,8 @@ source (.arch)
 - **Numbers print through `src/num-format.ts`** (`fmt2`/`fmt3`/`fmt4`); output is byte-pinned.
 - **The memoised parse-stage `PlanNode` is shared** — anything downstream clones before mutating.
 - **Errors are returned, never thrown**, for user-source problems: push a `Diagnostic` with a byte
-  `span` and an `E_*`/`W_*` code catalogued in `src/error-catalog.ts`.
+  `span` and an `E_*`/`W_*` code catalogued in its family file, `src/error-catalog/<family>.ts`
+  (`src/error-catalog.ts` merges them); a new site writes `diag(code, …)` (`src/diagnostics.ts`).
 - **Adding an element = one module** in `src/elements/` exporting an `ElementDef`, registered in
   `src/elements/defs.ts`; parse/resolve/render dispatch through the registry, never a switch.
   The per-kind code outside it is exhaustive (`tsc` fails on a kind it does not name) and the kind
