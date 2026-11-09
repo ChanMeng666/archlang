@@ -48,6 +48,10 @@ public/home/
 public/examples/
 .vitepress/theme/examples-data.js
 
+# The playground's static example page of each example that has one (EXAMPLE_ROWS in
+# playground/src/examples.ts), the links the home gallery and /3d render, from sync-docs.mjs.
+.vitepress/theme/example-pages-data.js
+
 # llms.txt map + full-context bundle, copied from the repo root by sync-docs.mjs.
 public/llms.txt
 public/llms-full.txt

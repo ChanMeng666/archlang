@@ -10,9 +10,11 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { expect, test } from "@playwright/test";
 import { srcFromHash } from "../../playground/src/share.js";
-import { previewLines, ROOT, threeDAssets, VIEW3D_PARAM } from "./fixtures.js";
+import { examplePageUrl, previewLines, ROOT, readExampleRows, threeDAssets, VIEW3D_PARAM } from "./fixtures.js";
 
 const ASSETS = threeDAssets(ROOT);
+/** The plans with a static playground page: EXAMPLE_ROWS, as gen-static.mjs reads it. */
+const PUBLISHED = new Set(readExampleRows(ROOT).map((r: { name: string }) => r.name));
 const source = (name: string) => readFileSync(join(ROOT, "examples", `${name}.arch`), "utf8").replace(/\r\n/g, "\n");
 
 test.describe("the /3d page", () => {
@@ -52,7 +54,18 @@ test.describe("the /3d page", () => {
       expect(href.endsWith(`&${VIEW3D_PARAM}`)).toBe(true);
       expect((await srcFromHash(href.slice(href.indexOf("#"))))?.replace(/\r\n/g, "\n")).toBe(source(a.name));
       await expect(item.getByRole("link", { name: "Plan source" })).toHaveAttribute("href", `/examples/${a.name}.arch`);
+      // Its static playground page, when EXAMPLE_ROWS publishes one (gen-static's own parser).
+      const pageLink = item.locator("a.example-page");
+      if (PUBLISHED.has(a.name)) {
+        await expect(pageLink).toHaveCount(1);
+        await expect(pageLink).toHaveAttribute("href", examplePageUrl(a.name));
+        await expect(pageLink).toHaveText("Example page");
+      } else await expect(pageLink, `${a.name} has no static page, so no link`).toHaveCount(0);
     }
+    expect(
+      ASSETS.some((a) => PUBLISHED.has(a.name)),
+      "no plan with a static page to check",
+    ).toBe(true);
   });
 
   test("pressing play puts the replay in place of its poster", async ({ page }) => {

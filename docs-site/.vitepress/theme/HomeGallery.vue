@@ -9,7 +9,12 @@
 // drawing for the preview's poster on hover or focus of its link, and its "3D" badge toggles the
 // swap for a tap or a key. The drawing stays the card's picture; the poster lies over it, lazy.
 // When any card has a poster, the limits line (PS-D12, `PREVIEW_LIMITS`) sits under the grid.
+//
+// A card whose plan has a static page on the playground (EXAMPLE_PAGES, from EXAMPLE_ROWS through
+// sync-docs.mjs) also links that page as a plain href: the drawing, its source and its facts in
+// served bytes, which a crawler can follow and a `#z=` link is not.
 import { reactive } from "vue";
+import { EXAMPLE_PAGES } from "./example-pages-data.js";
 import { EXAMPLE_LINKS } from "./examples-data.js";
 import { EXAMPLE_FACTS } from "./home-data.js";
 import { ASSETS_3D, PREVIEW } from "./three-d-data.js";
@@ -18,6 +23,7 @@ type ExampleName = keyof typeof EXAMPLE_LINKS;
 type Poster = (typeof ASSETS_3D)[number]["poster"];
 
 const POSTERS: ReadonlyMap<string, Poster> = new Map(ASSETS_3D.map((a) => [a.name, a.poster]));
+const PAGES: ReadonlyMap<string, string> = new Map(Object.entries(EXAMPLE_PAGES));
 /** The cards whose badge is pressed. */
 const shown = reactive<Record<string, boolean>>({});
 
@@ -78,6 +84,9 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
           <p class="home-gallery__facts">
             {{ p.example }}.arch · {{ EXAMPLE_FACTS[p.example].rooms }} rooms ·
             {{ EXAMPLE_FACTS[p.example].floor_area_m2 }} m²
+          </p>
+          <p v-if="PAGES.get(p.example)" class="home-gallery__page">
+            <a class="example-page" :href="PAGES.get(p.example)">Plan and source</a>
           </p>
         </li>
       </ul>
@@ -238,6 +247,10 @@ const PLANS: ReadonlyArray<{ example: ExampleName; caption: string }> = [
   font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--ink-muted);
+}
+.home-gallery__page {
+  margin: 2px 0 0;
+  font-size: 13px;
 }
 @media (prefers-reduced-motion: reduce) {
   .home-gallery__open,
