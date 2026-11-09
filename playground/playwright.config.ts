@@ -36,7 +36,17 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   workers: process.env.CI ? 2 : undefined,
-  reporter: process.env.CI ? [["html", { open: "never" }], ["list"]] : [["list"]],
+  // The `json` report is what scripts/playwright-flaky.mjs reads: a retry keeps the job green, so a
+  // case that passed only on its retry is invisible in the html report. It lives in test-results/
+  // (cleared only when a run STARTS, unlike the html folder, which is rewritten at the end); a run
+  // with its own --output folder names its own file through PLAYWRIGHT_JSON_OUTPUT_NAME.
+  reporter: process.env.CI
+    ? [
+        ["html", { open: "never" }],
+        ["json", { outputFile: process.env.PLAYWRIGHT_JSON_OUTPUT_NAME ?? "test-results/results.json" }],
+        ["list"],
+      ]
+    : [["list"]],
   use: {
     baseURL: externalBaseUrl ?? "http://localhost:4173",
     trace: "retain-on-failure",

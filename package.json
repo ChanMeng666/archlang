@@ -41,6 +41,10 @@
     "./link": {
       "types": "./dist/cli/link.d.ts",
       "import": "./dist/cli/link.js"
+    },
+    "./share": {
+      "types": "./dist/share.d.ts",
+      "import": "./dist/share.js"
     }
   },
   "bin": {

@@ -28,7 +28,8 @@ const corePkg = JSON.parse(readFileSync(join(REPO, "package.json"), "utf8"));
 
 const coreEntry = join(REPO, "dist", "index.js");
 const linkEntry = join(REPO, "dist", "cli", "link.js");
-if (!existsSync(coreEntry) || !existsSync(linkEntry)) {
+const shareEntry = join(REPO, "dist", "share.js");
+if (!existsSync(coreEntry) || !existsSync(linkEntry) || !existsSync(shareEntry)) {
   console.error("mcp-worker build: ../../dist is missing — run `npm run build` at the repo root first");
   process.exit(1);
 }
@@ -143,6 +144,7 @@ await build({
   external: ["node:*", "cloudflare:*"],
   alias: {
     "@chanmeng666/archlang/link": linkEntry,
+    "@chanmeng666/archlang/share": shareEntry,
     "@chanmeng666/archlang": coreEntry,
   },
   nodePaths,

@@ -18,11 +18,11 @@
  */
 import { compile, type Diagnostic, diagnosticToJson, inputTooLarge, rateLimited } from "@chanmeng666/archlang";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { decodePlanHashWeb, PlanHashTooLarge } from "../../../src/cli/share-codec.web.mjs";
+import { decodePlanHashWeb, PlanHashTooLarge } from "@chanmeng666/archlang/share";
 import {
   BODY_CAP_BYTES,
   MCP_PER_PERIOD,
-  PAYLOAD_CAP_CHARS,
+  MCP_PAYLOAD_CAP_CHARS,
   RATE_PERIOD_SECONDS,
   SOURCE_CAP_BYTES,
   SVG_PER_PERIOD,
@@ -432,7 +432,7 @@ async function handleSvg(
       headers: { location: `/svg/${payload}`, "cache-control": "public, max-age=300", ...CORS },
     });
 
-  const oversize = inputTooLarge(payload.length, PAYLOAD_CAP_CHARS, "payload");
+  const oversize = inputTooLarge(payload.length, MCP_PAYLOAD_CAP_CHARS, "payload");
   if (oversize) {
     countRefusal(env, "too-large payload");
     return jsonResponse(envelope(oversize), 413);

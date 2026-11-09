@@ -12,7 +12,7 @@
  */
 import { createConnection, TextDocuments, ProposedFeatures, type InitializeResult } from "vscode-languageserver/node";
 import { TextDocument } from "vscode-languageserver-textdocument";
-import { createHandlers, SERVER_CAPABILITIES, type CoreLsp, type Handlers } from "./handlers.js";
+import { createHandlers, SERVER_CAPABILITIES, type Handlers } from "./handlers.js";
 
 /**
  * The core version esbuild bundled into this file, injected by `esbuild.mjs` as
@@ -30,7 +30,7 @@ const ARCHLANG_CORE_VERSION: string = __CORE_VERSION__;
 
 let handlers: Promise<Handlers> | null = null;
 function getHandlers(): Promise<Handlers> {
-  handlers ??= import("@chanmeng666/archlang").then((core) => createHandlers(core as unknown as CoreLsp));
+  handlers ??= import("@chanmeng666/archlang").then((core) => createHandlers(core));
   return handlers;
 }
 
