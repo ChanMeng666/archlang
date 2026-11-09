@@ -1,5 +1,12 @@
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+import { readExampleRows, rowNeighbours } from "../scripts/example-rows.mjs";
+import { CONSTRUCTS, REFERENCE_URL } from "../scripts/plan-constructs.mjs";
 import { watchForProblems } from "./fixtures.js";
+
+/** `EXAMPLE_ROWS`, read by the parser gen-static.mjs builds these pages with. */
+const ROWS = readExampleRows(fileURLToPath(new URL("../..", import.meta.url)));
+const ANCHORS = CONSTRUCTS.map(([key, , anchor]) => ({ key, href: `${REFERENCE_URL}#${anchor}` }));
 
 /**
  * The STATIC half of this site: `/examples/<name>.html`, written by
@@ -14,11 +21,12 @@ import { watchForProblems } from "./fixtures.js";
  * generator's output), and the unit gate parses the generator's SOURCE rather than
  * its product.
  *
- * TAG `@prod` — WHOLE FILE. `.github/workflows/nightly.yml` re-runs the tagged
+ * TAG `@prod` — the first describe. `.github/workflows/nightly.yml` re-runs the tagged
  * subset against the LIVE https://playground.archlang.uk, so a tag here is a
- * promise about production. Every case below keeps it: they navigate, read the DOM
+ * promise about production. Every case in it keeps it: they navigate, read the DOM
  * and assert — nothing downloads, writes the clipboard, or depends on persisted
- * state.
+ * state. The last describe compares every page with this checkout's tables, which a
+ * deploy lags, so it is untagged.
  *
  * NB the `.html` in every URL is load-bearing. The site is served with
  * `html_handling: "none"` (exact-path lookup), so `/examples/studio` 404s and a
@@ -79,6 +87,34 @@ test.describe("static example pages", { tag: "@prod" }, () => {
     expect(graph["@graph"].map((n) => n["@type"])).toContain("SoftwareSourceCode");
   });
 
+  test("an example page lists what its plan uses, each linked to the language reference", async ({ page }) => {
+    await page.goto("/examples/studio.html", { waitUntil: "commit" });
+    await expect(page.locator("h2#uses")).toHaveText("What this plan uses");
+    const links = page.locator("ul.uses a");
+    expect(await links.count()).toBeGreaterThan(0);
+    // The shape only: which rows and anchors is this build's table, checked below, untagged.
+    const got = await links.evaluateAll((els) =>
+      els.map((el) => ({ key: el.getAttribute("data-construct") ?? "", href: el.getAttribute("href") ?? "" })),
+    );
+    for (const g of got) {
+      expect(g.key).toMatch(/^[a-z-]+$/);
+      expect(g.href.startsWith(`${REFERENCE_URL}#`), g.href).toBe(true);
+    }
+  });
+
+  test("an example page links the rest of its group and its neighbours, keeping one h1", async ({ page }) => {
+    await page.goto("/examples/studio.html", { waitUntil: "commit" });
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("h2#group")).toHaveText(/^More in .+/);
+    const group = await page.locator("ul.group a").evaluateAll((els) => els.map((el) => el.getAttribute("href")));
+    expect(group.length).toBeGreaterThan(0);
+    for (const href of group) expect(href).toMatch(/^\/examples\/[a-z0-9-]+\.html$/);
+    expect(group).not.toContain("/examples/studio.html");
+    for (const rel of ["prev", "next"]) {
+      await expect(page.locator(`nav.pager a[rel="${rel}"]`)).toHaveAttribute("href", /^\/examples\/[a-z0-9-]+\.html$/);
+    }
+  });
+
   test("the index lists every example page and links back to the editor", async ({ page }) => {
     await page.goto("/examples/", { waitUntil: "commit" });
     await expect(page.locator("h1")).toHaveCount(1);
@@ -128,6 +164,61 @@ test.describe("static example pages", { tag: "@prod" }, () => {
     });
     for (const family of ["Archivo Variable", "Public Sans Variable", "IBM Plex Mono"]) {
       expect(loaded, `${family} is named by the stylesheet but never actually loaded`).toContain(family);
+    }
+  });
+});
+
+/**
+ * Every example page against THIS build's `EXAMPLE_ROWS`: its neighbours are the table's previous
+ * and next rows, its group section the rest of its group, and every page it links is one the
+ * generator wrote. UNTAGGED, unlike the file's other cases: a row added on `main` and not yet
+ * deployed would fail it against production for a reason that is not a bug.
+ */
+test.describe("static example pages follow EXAMPLE_ROWS", () => {
+  const hrefs = (html: string, re: RegExp) => [...html.matchAll(re)].map((m) => m[1]!);
+  const published = new Set(ROWS.map((r) => `/examples/${r.name}.html`));
+
+  test("each page links its table neighbours and its group, and only pages that exist", async ({ request }) => {
+    expect(ROWS.length).toBeGreaterThan(20);
+    for (const row of ROWS) {
+      const res = await request.get(`/examples/${row.name}.html`);
+      expect(res.status(), row.name).toBe(200);
+      const html = await res.text();
+      expect(html.match(/<h1\b/g) ?? [], `${row.name}: one h1`).toHaveLength(1);
+      const { prev, next, siblings } = rowNeighbours(ROWS, row.name);
+      const pager = html.slice(
+        html.indexOf('<nav class="pager"'),
+        html.indexOf("</nav>", html.indexOf('<nav class="pager"')),
+      );
+      expect(hrefs(pager, /rel="prev" href="([^"]+)"/g), row.name).toEqual(prev ? [`/examples/${prev.name}.html`] : []);
+      expect(hrefs(pager, /rel="next" href="([^"]+)"/g), row.name).toEqual(next ? [`/examples/${next.name}.html`] : []);
+      const start = html.indexOf('<ul class="links group">');
+      const group = start < 0 ? [] : hrefs(html.slice(start, html.indexOf("</ul>", start)), /href="([^"]+)"/g);
+      expect(group, row.name).toEqual(siblings.map((s) => `/examples/${s.name}.html`));
+      expect(html.includes('<h2 id="group">'), `${row.name}: a group heading iff the group has others`).toBe(
+        siblings.length > 0,
+      );
+      for (const href of hrefs(html, /href="(\/examples\/[^"]+\.html)"/g)) {
+        expect(published.has(href), `${row.name} links ${href}, which no row publishes`).toBe(true);
+      }
+      // What it uses: rows of the construct table, each with that row's anchor, in the table's order.
+      const uses = html.slice(
+        html.indexOf('<ul class="uses">'),
+        html.indexOf("</ul>", html.indexOf('<ul class="uses">')),
+      );
+      const got = [...uses.matchAll(/<a href="([^"]+)" data-construct="([^"]+)">/g)].map((m) => ({
+        key: m[2]!,
+        href: m[1]!.replace(/&amp;/g, "&"),
+      }));
+      expect(got.length, `${row.name}: what it uses`).toBeGreaterThan(0);
+      for (const g of got) expect(ANCHORS, `${row.name}: ${g.key} → ${g.href}`).toContainEqual(g);
+      const at = got.map((g) => ANCHORS.findIndex((a) => a.key === g.key));
+      expect(at, `${row.name}: table order`).toEqual([...at].sort((a, b) => a - b));
+      // The JSON-LD stays one parseable block.
+      const open = '<script type="application/ld+json">';
+      expect(html.split(open).length - 1, `${row.name}: one JSON-LD block`).toBe(1);
+      const body = html.slice(html.indexOf(open) + open.length, html.indexOf("</script>", html.indexOf(open)));
+      expect(() => JSON.parse(body), row.name).not.toThrow();
     }
   });
 });
