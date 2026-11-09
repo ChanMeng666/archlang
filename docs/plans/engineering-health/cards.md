@@ -262,7 +262,7 @@ Follow-up card (not this one): `resolveBody` steps 3b–8 as named functions, on
 Proof: `git diff -M --stat` moved counts equal; `tsc`; CI digests unchanged; `check:quick`'s nearest
 tests for `ir/*` listed in the PR body.
 
-### EH2.3 · `describe/`, `plan-json/`, `analyze/circulation` splits — `in progress` · S–M each · medium · sonnet · A-F6 · depends EH1.6
+### EH2.3 · `describe/`, `plan-json/`, `analyze/circulation` splits — `in review (#626 describe/, #630 plan-json/, #634 circulation; rooms.ts/openings.ts not created: summarize is one function)` · S–M each · medium · sonnet · A-F6 · depends EH1.6
 One PR per module, along the section dividers the audit lists: `describe/types.ts` + per-kind
 `summarize` blocks; `plan-json/{types,to-json,from-json,emit,ast-json,check-graph,schema}.ts`
 (`scripts/gen-plan-schema.ts:14` reads the moved constant); `analyze/{nav-grid,circulation,
@@ -285,7 +285,7 @@ mean different things, else derive one from `SOURCE_CAP_BYTES`. `editors/vscode`
 derived from `typeof import("@chanmeng666/archlang")`, cast removed. Hash pins stay. Proof:
 `share-codec` tests green; every example's share link decodes to the same source.
 
-### EH2.6 · one Scene per lint — `in review (#624)` · M · medium · opus · P-F3 · depends EH1.6
+### EH2.6 · one Scene per lint — `done (#624)` · M · medium · opus · P-F3 · depends EH1.6
 A one-slot Scene memo keyed by `(ResolvedPlan identity, annotate, theme identity, runtime identity)`
 shared by `pipeline.ts` and `lint/rules/annotations.ts:161`; hand out a frozen or cloned Scene
 (`CompileResult.scene` is public). Check whether `accessible` belongs in the key. Test: mutate a
@@ -293,14 +293,14 @@ returned scene, recompile, bytes unchanged. Playground worker reuses the scene a
 compile/lint/paths passes where the key matches. Proof: digests unchanged; `lint` bench row and
 work counts reported before/after.
 
-### EH2.7 · release pins from one source; public-surface map — `in review (#627)` · M · medium · sonnet · W-F5, A-F10, A-F13
+### EH2.7 · release pins from one source; public-surface map — `done (#627)` · M · medium · sonnet · W-F5, A-F10, A-F13
 `scripts/bump-lockstep.ts` (`npm run release:pin`) rewrites the mcp range + version, both
 `server.json` versions, the VS Code range, the font pin from the root version; the red lockstep
 tests stay as the verifier. `gen:surface` writes `docs/agents/public-surface.md` (export, module,
 kind, in-repo consumers, none flagged), drift-gated. `index.ts` header gains a "state" section
 (caches, side tables, `_` fields: which to use). `test/meter-headers.test.ts` and the missing header sentences landed with #618 (nine, not seven); only `src/cli.ts`'s header remains here. Proof: drift green; `release:pin --dry-run` prints the eight edits for a scratch version.
 
-### EH2.8 · bench honesty, incremental tsc, packaging — `todo` · S · low+high · sonnet · P-F1, P-F5, P-F10
+### EH2.8 · bench honesty, incremental tsc, packaging — `in review (#631 bench vs merge base, #635 incremental tsc; sideEffects not declared: builtins.ts registers on import)` · S · low+high · sonnet · P-F1, P-F5, P-F10
 Bench job builds the merge base and the head in the same job, runs each twice, reports the ratio;
 flags only rows > 5 ms and > 50 %; `lint` reported as its own row class. Both tsconfigs
 `incremental: true` with `tsBuildInfoFile` under `node_modules/.cache`. `"sideEffects": false` only
@@ -329,9 +329,19 @@ cut the cost without moving a byte of `lint()` output (the corpus digest and the
 and pin the work with counters in `test/tables/work-counts.json` (EH1.6 tranche 2's geometry counters: nav cells,
 split candidates, label relocations) so a regression turns red. Timing is informational only.
 
+### EH2.8b · `sideEffects: false` after an explicit builtins registration — `todo` · S · medium · sonnet · from #635
+`src/builtins.ts` ends with `setBuiltinDispatch(dispatch)`, an import-time registration into `src/expr.ts`; it is
+kept today only because `ir.ts` and `analyze/depends.ts` import `BUILTIN_NAMES` as a value. Make the registration an
+explicit call from the pipeline (or have `expr.ts` import the table directly), drop the allow-list entry in
+`test/no-import-side-effects.test.ts`, then declare `"sideEffects": false` in the root `package.json` (HIGH tier) with a
+CHANGELOG `### Changed` line (consumers' bundlers tree-shake differently). Also try `tsc --emitDeclarationOnly
+--incremental` for the 31 s DTS step (#635 did not); keep it only if `dist/*.d.ts` stay byte-identical. Proof: the
+side-effect scan green with one pinned entry (`src/cli.ts`'s `void main()`), digests unchanged, the playground bundle
+size before/after.
+
 ## Wave 3 · agent navigation
 
-### EH3.1 · generated module map — `todo` · M · medium+high · sonnet · N-F5
+### EH3.1 · generated module map — `in progress` · M · medium+high · sonnet · N-F5
 `scripts/gen-module-map.ts` walks `src/**/*.ts`, `packages/*/src/**/*.ts`, `playground/src/*.ts`;
 takes each header's first paragraph (≤ 200 chars) and the optional tags `@budget`, `@reads`,
 `@readBy`; emits `docs/agents/module-map.md` grouped by directory; fails on a module with no first
@@ -339,7 +349,7 @@ paragraph. `GENERATORS` row (high tier, own PR). `.ignore` lists the artifact. T
 `docs/agents/architecture.md` to pipeline + conventions + cross-module invariants, pointing at the
 map. Proof: `check:drift` green; the map names 100 % of modules.
 
-### EH3.2 · backlog and plans fit in a context window — `in progress` · M · low · sonnet · N-F7 · EH-D4
+### EH3.2 · backlog and plans fit in a context window — `done (#629; backlog 220 KB → 142 KB, 45 entries in archlang-lab/backlog-archive.md, docs/backlog-index.md generated; the four done programmes stay: their files are small or cited)` · M · low · sonnet · N-F7 · EH-D4
 `scripts/backlog-archive.mjs` moves every `closed|done|won't fix|decided|measured` entry verbatim
 to `archlang-lab/backlog-archive.md`, leaving a one-line tombstone only where another doc cites the
 id. Normalise open headings to `### <id> · <title> — \`<status>\``. `scripts/gen-backlog-index.ts`
@@ -349,7 +359,7 @@ resolves. Archive `visual-assets/`, `playground-minimal/`, `playground-mobile-pe
 `public-surfaces/` and `archlang-3d/{development-plan,adr-draft-*}.md` to the lab repo, one README
 row each. Proof: `wc -c docs/backlog.md` and the index in the PR body.
 
-### EH3.3 · docs by audience and path — `todo` · M · medium+high · sonnet · N-F4, N-F6, N-F9
+### EH3.3 · docs by audience and path — `in progress` · M · medium+high · sonnet · N-F4, N-F6, N-F9
 `gotchas.md` splits: drawing → `glyphs.md`, sites/e2e → `sites.md`, CLI → `cli.md`, 3D →
 `archlang-3d.md`, "examples move suites" → new `.claude/rules/examples.md`; orchestrator-only items
 → `docs/agents/orchestration.md` (including the executor brief limits and "worktree agents start

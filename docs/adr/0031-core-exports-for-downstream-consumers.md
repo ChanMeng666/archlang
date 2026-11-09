@@ -2,7 +2,7 @@
 
 - **Status:** Accepted 2026-10-28 with the PR that adds the exports (preview-and-remodel card A0;
   decision D10 of `docs/plans/preview-and-remodel/README.md`). Drafted as
-  `docs/plans/archlang-3d/adr-draft-0031-core-exports-for-downstream-3d.md` (v0.6, 2026-10-24); the
+  `archlang-lab/plans/archlang-3d/adr-draft-0031-core-exports-for-downstream-3d.md` (v0.6, 2026-10-24); the
   numbers below were re-measured on `main@00b7e7ec`.
 - **Date:** 2026-10
 - **Owner decisions recorded:** Q10, Q11, Q18 of the archlang-3d plan (2026-10-23/24: the additive
@@ -14,7 +14,7 @@
 - **Relates to:** [ADR 0021](0021-plan-first-view-deprecated.md) (plan-first; the third dimension is
   data, never a drawing in the core), [ADR 0028](0028-rooms-primary-derived-walls.md) (derived walls
   exist in the resolved IR, not in Plan JSON), [ADR 0015](0015-cli-as-agent-interface.md). The
-  downstream package's own record is the ADR 0030 draft, `docs/plans/archlang-3d/adr-draft-0030-3d-as-downstream-package.md`.
+  downstream package's own record is the ADR 0030 draft, `archlang-lab/plans/archlang-3d/adr-draft-0030-3d-as-downstream-package.md`.
 - **Scope:** `src/index.ts` gains five value exports, the 14 types their signatures reach and eight
   element type names (27 names, 549 → 576); `test/public-surface.test.ts` derives the closure of the
   signatures; a stability sentence in each function's JSDoc; a CHANGELOG entry. **Not in scope:** any

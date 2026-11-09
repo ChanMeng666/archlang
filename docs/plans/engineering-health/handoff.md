@@ -1,7 +1,8 @@
 # Resume point
 
-**Where (2026-11-09, end):** waves 0 and 1 DONE. Wave 2: EH2.1, EH2.2, EH2.5, EH2.9 done; EH2.6 (#624) and
-EH2.7 (#627) in review; EH2.3 running. Wave 3 started: EH3.2 (backlog split) running.
+**Where (2026-11-09, end):** waves 0 and 1 DONE. Wave 2: EH2.1, EH2.2, EH2.5, EH2.6, EH2.7, EH2.9 done; EH2.3 (#626,
+#630, #634) and EH2.8 (#631, #635) in review. Wave 3: EH3.2 done (#629); EH3.1 (module map) and EH3.3 (docs by audience)
+running.
 
 **Landed today (34 PRs):** EH0.1–EH0.7, EH0.9 (#581, #583–#588) · EH1.1 (#599) · EH1.2 (#598) · EH1.3 (#589) · EH1.4
 (#590) · EH1.5 (#591) · EH1.6 tranche 1 (#592) · EH1.7 (#610) · EH1.8 (#613; `runCli` + `CliIo`, 40 spawn copies gone,
@@ -10,17 +11,16 @@ five sampled files 82.5 s → 5.7 s) · EH1.10 (#593) · EH1.11 (#597) · EH1.12
 CLI's world is rooted under a lockstep table) · EH2.1 (#614) · EH2.9 (#611) · policy #615 · records #582, #596, #600,
 #602, #609, #612, #616.
 
-**In flight:** EH2.6 (#624; lint reuses the compile's Scene via `src/scene-memo.ts`, weight-bounded; BALANCED warm lint
-152 → 113 ms; round landed) · EH2.7 (#627; `release:pin`, `gen:surface`, the index header's state paragraph; round
-running) · EH2.3 (three split PRs: describe, plan-json, circulation) · EH3.2 (backlog split to the lab repo, generated index).
-Also landed since the last note: EH0.8 (#620), EH2.5 (#623; `@chanmeng666/archlang/share`). Also landed since the last note: EH1.9 (#619), EH2.2 (#618: `src/ir/` six modules, 137/137
-declarations byte-identical, `test/meter-headers.test.ts`).
+**In flight:** EH2.3 (three pure-move PRs, digest identical, reviews running) · EH2.8 (#631 bench against the merge base,
+noise floor 23 %; #635 incremental tsc, local-only gain) · EH3.1 (`gen:module-map` → `docs/agents/module-map.md`, trims
+architecture.md) · EH3.3 (gotchas split into path rules + `docs/agents/orchestration.md`, three new recipes, two new rules;
+its high-tier pointer PR separately). Landed since the last note: EH3.2 (#629). New card: EH2.8b.
 
 **Owner queue:** none (standing approval; releases, paid eval and the npmjs account stay owner-only). Tomorrow's
 reads: the nightly's `ci-red` behaviour (#584) and its new `fuzz-deep` job (#610) and `test-durations` artifact (#586).
 
-**Next cards:** EH2.3 (describe/plan-json/circulation splits), EH2.4, EH2.7, EH2.8, EH1.18; wave 3 from EH3.1 (module map)
-and EH3.2 (backlog split).
+**Next cards:** EH2.4 (after EH2.3 lands: ring literals live in the moved modules), EH1.18, EH2.5b, EH2.8b, EH2.10, EH3.4,
+EH3.5, EH3.6.
 
 **Process notes from this day:** executors must NOT edit `cards.md` (adjacent card headings conflict
 on every merge; the coordinator records status in a records PR); every pure-move PR repoints the

@@ -170,6 +170,9 @@ state behind it is described in the `src/index.ts` header.
   element's own `resolve()` fix text and Plan JSON's decompiler
 - `analyze/symmetry.ts` a plan's D4 ⋉ Z² stabiliser and its repeats · `analyze/syntax.ts`
   space-syntax depths/RA/RRA/integration on the access graph — both opt-in `describe --facts`
+- `scene-memo.ts` one Scene per (`ResolvedPlan` identity, registry, `themes`, annotate/accessible/
+  circulation): `annotation-overlap` reads it, `compile()` offers a copy of what it drew; never
+  the public `compile().scene`; `clearCache()` empties it
 - `analyze/net-area-memo.ts` memoises each storey's wall bands and each room's exact net internal
   area, keyed on their exact inputs (ADR 0027's figures, output byte-identical); `clearCache()`
   empties it

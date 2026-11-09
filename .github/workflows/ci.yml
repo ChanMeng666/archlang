@@ -280,6 +280,7 @@ jobs:
           test/vocabulary-living-dining.test.ts
           test/vocabulary-matcher-oracle.test.ts
           test/npm-tarball.test.ts
+          test/backlog-index.test.ts
 
       - name: "Docs leg: build the docs site"
         if: env.FULL_CI != 'true'

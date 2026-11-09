@@ -25,7 +25,7 @@ drawing-set 的证据仍然有效，但没有一位外部用户提出过这些�
 
 ### 2.1 3D 视图自由旋转（CR4）
 
-**现状（已核实）。** playground 的“3D preview”标签页是 `@chanmeng666/archlang-3d/browser` 的 `mountReplay`。它是一段按时间轴播放的回放，结束时停在固定的“终点机位”（`packages/archlang-3d/src/replay/camera.ts`，方位角 −32°）。用户只能播放或拖动进度条，**不能转动视角**（`mount.ts`、`preview3d.ts` 里没有指针或滚轮处理）。3D 计划 §6.1（`docs/plans/archlang-3d/development-plan.md:839`）早就规定了 OrbitControls 和预设视角，但它属于 M2/M3，原定等 N10 读数。
+**现状（已核实）。** playground 的“3D preview”标签页是 `@chanmeng666/archlang-3d/browser` 的 `mountReplay`。它是一段按时间轴播放的回放，结束时停在固定的“终点机位”（`packages/archlang-3d/src/replay/camera.ts`，方位角 −32°）。用户只能播放或拖动进度条，**不能转动视角**（`mount.ts`、`preview3d.ts` 里没有指针或滚轮处理）。3D 计划 §6.1（`archlang-lab/plans/archlang-3d/development-plan.md:839`）早就规定了 OrbitControls 和预设视角，但它属于 M2/M3，原定等 N10 读数。
 
 **CR-D2：所有者 2026-11-05 的明确要求，把查看器规格 §6.1 中的“相机”一行提前做，只限现有的 Tier A 范围**（playground 标签页 + 包自带的 HTML 回放）。Tier B 曝光（ArchCanvas、定位第 8 行）仍然等 N10。
 
