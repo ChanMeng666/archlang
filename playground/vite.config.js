@@ -100,6 +100,8 @@ export default defineConfig({
       // The review sheet (`arch preview --review`), for the Checks overlay: its own built file,
       // listed before the bare name, which would otherwise match it as a prefix.
       "archlang/review": resolve(__dirname, "../dist/cli/review.js"),
+      // The share-link decoder (`@chanmeng666/archlang/share`), likewise before the bare name.
+      "archlang/share": resolve(__dirname, "../dist/share.js"),
       archlang: resolve(__dirname, "../dist/index.js"),
       // archlang-3d is read from its source, as it always was: its published `exports` name a
       // dist/ this build has no reason to need. The longer key goes first (prefix match).

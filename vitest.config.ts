@@ -10,10 +10,13 @@ export default defineConfig({
   // runs the suite without `npm run build`) and never see a stale artifact.
   resolve: {
     alias: {
+      // The browser-safe share-link subpath, BEFORE the bare name (an alias also matches `name/…`).
+      "archlang/share": resolve(__dirname, "src/share.ts"),
       archlang: resolve(__dirname, "src/index.ts"),
       // The Node-only subpath, listed BEFORE the bare name: an alias also matches `name/…`, so
       // the bare entry would otherwise rewrite this one to `src/index.ts/link`.
       "@chanmeng666/archlang/link": resolve(__dirname, "src/cli/link.ts"),
+      "@chanmeng666/archlang/share": resolve(__dirname, "src/share.ts"),
       // The MCP shim (packages/mcp) imports the core by its published name; alias it
       // to the SOURCE entry too so its smoke test runs against src/ with no prior
       // build (CI runs the suite without `npm run build`) — same rationale as above.

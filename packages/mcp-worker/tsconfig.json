@@ -21,7 +21,8 @@
     // types come from the same build: `npm run build` at the root first, as for typecheck:all.
     "paths": {
       "@chanmeng666/archlang": ["../../dist/index.d.ts"],
-      "@chanmeng666/archlang/link": ["../../dist/cli/link.d.ts"]
+      "@chanmeng666/archlang/link": ["../../dist/cli/link.d.ts"],
+      "@chanmeng666/archlang/share": ["../../dist/share.d.ts"]
     }
   },
   "include": ["src", "test"]
