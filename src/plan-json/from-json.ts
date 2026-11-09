@@ -19,7 +19,6 @@ import {
 import { isLexWord } from "../lexer.js";
 import { isEdgeName } from "../attach.js";
 import { EDGE_WORDS } from "../room-datums.js";
-import type { RWallsFromRooms } from "../ir.js";
 import { capDiagnostics, type Diagnostic, MAX_DIAGNOSTICS } from "../diagnostics.js";
 import type { DoorEnumClause, WindowKind } from "../grammar/tokens.js";
 import {
@@ -38,7 +37,7 @@ import { SEGMENT_SELECT_RE } from "../segment-select.js";
 import { type KindsWith, kindsWith } from "../elements/facets.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES } from "../sheet.js";
 import { ROOM_TYPES } from "./room-types.js";
-import type { PointJson, WallsFromRoomsJson, PlanJson } from "./types.js";
+import type { PointJson, PlanJson } from "./types.js";
 
 /**
  * Diagnostic collector that stamps JSON paths onto shape/kind problems. It keeps one past
@@ -427,22 +426,6 @@ function validateWall(w: unknown, path: string, val: Validator): void {
 function validateWallStatus(v: unknown, path: string, val: Validator): void {
   if (v !== undefined && !(isStr(v) && (WALL_STATUSES as readonly string[]).includes(v)))
     val.err(path, `expected ${enumList(WALL_STATUSES)}`);
-}
-
-/** The pair clauses of a `walls from rooms` statement, as Plan JSON (absent when none). */
-export function pairsJson(stmt: RWallsFromRooms): Pick<WallsFromRoomsJson, "open" | "between"> {
-  const open: NonNullable<WallsFromRoomsJson["open"]> = [];
-  const between: NonNullable<WallsFromRoomsJson["between"]> = [];
-  for (const c of stmt.pairs ?? []) {
-    if (c.kind === "open")
-      open.push({
-        between: [c.between[0], c.between[1]],
-        ...(c.id !== undefined ? { id: c.id } : {}),
-        ...(c.width !== undefined ? { width: c.width } : {}),
-      });
-    else between.push({ between: [c.between[0], c.between[1]], thickness: c.thickness });
-  }
-  return { ...(open.length > 0 ? { open } : {}), ...(between.length > 0 ? { between } : {}) };
 }
 
 /** `walls_from_rooms`: two positive thicknesses and an optional list of room ids (identifiers,
