@@ -1,4 +1,4 @@
-/** fmt and impact exit 2 on a plan that does not parse (EH1.18). */
+/** impact exits 2 on a plan that does not parse; fmt returns it verbatim with exit 0 (EH1.18). */
 
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -7,7 +7,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EXIT } from "../src/cli/io.js";
 import { runArch } from "./helpers/cli.js";
 
-/** EH1.18: `fmt` and `impact` cannot do their job on a plan that does not parse, so they exit 2. */
+/** EH1.18: `impact` cannot compare a broken side, so it exits 2; `fmt` keeps its verbatim exit-0 contract. */
 const BAD = 'plan "B" { units mm room at (0,0) size 4000x3000 label "R" @ }\n';
 const GOOD = 'plan "A" { units mm room at (0,0) size 4000x3000 label "R" }\n';
 let dir = "";
@@ -19,19 +19,13 @@ beforeAll(() => {
 afterAll(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("a plan that does not parse", () => {
-  it("fmt --write exits 2 and does not touch the file", async () => {
+  it("fmt --write exits 0, reports changed: false and does not touch the file", async () => {
     const r = await runArch(["fmt", join(dir, "bad.arch"), "--write", "--json"]);
-    expect(r.status).toBe(EXIT.USER);
-    const j = JSON.parse(r.stdout) as { ok: boolean; diagnostics: Array<{ code: string }> };
-    expect(j.ok).toBe(false);
-    expect(j.diagnostics[0]!.code).toBe("E_PARSE");
+    expect(r.status).toBe(EXIT.OK);
+    const j = JSON.parse(r.stdout) as { ok: boolean; changed: boolean };
+    expect(j.ok).toBe(true);
+    expect(j.changed).toBe(false);
     expect(readFileSync(join(dir, "bad.arch"), "utf8")).toBe(BAD);
-  });
-
-  it("fmt in human mode exits 2 with the diagnostic", async () => {
-    const r = await runArch(["fmt", join(dir, "bad.arch")]);
-    expect(r.status).toBe(EXIT.USER);
-    expect(r.stderr + r.stdout).toContain("E_PARSE");
   });
 
   it("impact exits 2 whichever side is broken", async () => {
@@ -81,11 +75,11 @@ describe("a plan that does not parse", () => {
     expect(r.stderr + r.stdout).toContain("E_PARSE");
   });
 
-  it("fmt - (stdin) exits 2 with the diagnostics", async () => {
+  it("fmt - (stdin) exits 0 and returns the source verbatim", async () => {
     const r = await runArch(["fmt", "-", "--json"], { input: BAD });
-    expect(r.status).toBe(EXIT.USER);
-    const j = JSON.parse(r.stdout) as { ok: boolean; diagnostics: Array<{ code: string }> };
-    expect(j.ok).toBe(false);
-    expect(j.diagnostics[0]!.code).toBe("E_PARSE");
+    expect(r.status).toBe(EXIT.OK);
+    const j = JSON.parse(r.stdout) as { formatted: string; changed: boolean };
+    expect(j.formatted).toBe(BAD);
+    expect(j.changed).toBe(false);
   });
 });

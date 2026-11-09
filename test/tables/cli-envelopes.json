@@ -1,5 +1,5 @@
 {
-  "_reason": "EH1.18: fmt and impact exit 2 with { ok, diagnostics } on a plan that does not parse (fmt user, impact user rows)",
+  "_reason": "EH1.9 initial take of the CLI envelope key sets, on main@21c718b5",
   "rows": {
     "compile ok": ["bytes", "diagnostics", "format", "ok", "output", "summary"],
     "compile user": ["diagnostics", "format", "ok"],
@@ -74,7 +74,7 @@
     "complete ok": ["items", "ok"],
     "complete user": ["items", "ok"],
     "fmt ok": ["changed", "formatted", "ok", "output_hash", "source_hash"],
-    "fmt user": ["diagnostics", "ok"],
+    "fmt user": ["changed", "formatted", "ok", "output_hash", "source_hash"],
     "repair ok": ["changed", "changes", "ok", "output_hash", "source", "source_hash", "unresolved"],
     "repair user": ["changed", "changes", "ok", "output_hash", "source", "source_hash", "unresolved"],
     "fix ok": ["applied", "ok", "output_hash", "passes", "skipped", "source_hash", "target", "unresolved", "wrote"],
@@ -106,7 +106,7 @@
     "reroll ok": ["ok", "source_hash", "suggestions"],
     "reroll user": ["ok", "source_hash", "suggestions"],
     "impact ok": ["changed", "diagnostics", "held", "lets", "ok", "summary"],
-    "impact user": ["diagnostics", "ok"],
+    "impact user": ["changed", "diagnostics", "held", "lets", "ok", "summary"],
     "suggest ok": ["ok", "suggestions"],
     "suggest user": ["ok", "suggestions"],
     "manifest ok": [

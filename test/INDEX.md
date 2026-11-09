@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-482 test files in `test/`, 267 `src` modules, 98 modules no test imports.
+483 test files in `test/`, 267 `src` modules, 98 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -242,7 +242,7 @@ The first sentence of each file's header comment.
 - `test/cli-commands.test.ts` — CLI — fmt; CLI — watch; CLI — manifest / capabilities.
 - `test/cli-context.test.ts` — `arch context --section` — bounded agent context.
 - `test/cli-contract.test.ts` — the contract table covers the manifest.
-- `test/cli-exit-parse.test.ts` — fmt and impact exit 2 on a plan that does not parse (EH1.18).
+- `test/cli-exit-parse.test.ts` — impact exits 2 on a plan that does not parse; fmt returns it verbatim with exit 0 (EH1.18).
 - `test/cli-expected-hash.test.ts` — --expected-hash: a stale read refuses before anything is computed or written; --expected-hash: a matching read writes, and reports the revisions; --expected-has…
 - `test/cli-finish.test.ts` — arch finish — the write boundary; arch finish — exit codes; arch finish — a plan with `level` blocks.
 - `test/cli-fix-backup.test.ts` — arch fix — safe retries (--backup / diff preview).

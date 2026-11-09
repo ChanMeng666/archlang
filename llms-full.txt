@@ -798,7 +798,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang complete plan.arch --at 120 --json` — what may legally be written at byte offset 120
 
 **`archlang fmt`** — canonical formatting
-  - input: <file.arch|-> → output: formatted source (or in place with --write); exits 2 with `{ ok: false, diagnostics }` on a plan that does not parse, and --write leaves the file untouched
+  - input: <file.arch|-> → output: formatted source (or in place with --write); exits 0 and returns the source verbatim when it does not parse; `fmt --write` leaves the file untouched
   - flags: `--write` format the file in place · `--expected-hash <sha256>` refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang fmt plan.arch --json` — canonical source plus a `changed` flag, nothing written
 

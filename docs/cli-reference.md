@@ -486,7 +486,7 @@ $ archlang complete - --at 0 --json < plan.arch
 
 canonical formatting
 
-**Input:** `<file.arch|->` · **Output:** formatted source (or in place with --write); exits 2 with `{ ok: false, diagnostics }` on a plan that does not parse, and --write leaves the file untouched
+**Input:** `<file.arch|->` · **Output:** formatted source (or in place with --write); exits 0 and returns the source verbatim when it does not parse; `fmt --write` leaves the file untouched
 
 | Flag | Does |
 | --- | --- |

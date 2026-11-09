@@ -104,20 +104,11 @@ export function cmdComplete(args: Args, io: CliIo): number {
 /**
  * `fmt` — print the canonical formatting, or with `--write` rewrite the input in place.
  * `--expected-hash` guards that rewrite (`src/cli/source-hash.ts`); `--json` reports
- * `source_hash`, and `written_hash` when bytes were written. A plan that does not parse exits 2
- * with `{ ok: false, diagnostics }` and writes nothing.
+ * `source_hash`, and `written_hash` when bytes were written.
  */
 export function cmdFmt(args: Args, io: CliIo): number {
   return withGuardedSource(io, args, "fmt", (read, input) => {
     const { source } = read;
-    // Nothing to format in a plan that does not parse: exit 2 with the diagnostics, and `--write`
-    // never reaches the file.
-    const parsed = parse(source).diagnostics.filter((d) => d.severity === "error");
-    if (parsed.length > 0) {
-      if (args.json) emitJson(io, { ok: false, diagnostics: parsed.map((d) => diagnosticToJson(source, d)) });
-      else emitDiagnosticsHuman(io, source, parsed, args.quiet);
-      return EXIT.USER;
-    }
     const formatted = format(source);
     const changed = formatted !== source;
     if (args.write && input !== "-") {
