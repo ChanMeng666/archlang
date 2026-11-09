@@ -282,7 +282,7 @@ one.
 
 ## Deploy pipeline
 
-Push to `main` triggers **`.github/workflows/deploy.yml`** (the "Deploy (Cloudflare)" workflow),
+A green CI run on a push to `main` triggers (`workflow_run`) **`.github/workflows/deploy.yml`** (the "Deploy (Cloudflare)" workflow),
 which runs a two-site matrix: `npm ci` → `npm run docs:build` / `npm run playground:build` (each
 builds the **core first**, then the site) → `wrangler deploy` from the site's directory → the
 unchanged `scripts/smoke.mjs` check against the live origin. Merging a PR to `main` is what ships
