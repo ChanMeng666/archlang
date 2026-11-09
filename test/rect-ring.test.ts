@@ -1,5 +1,4 @@
-/** rectRing: the one rectangle ring that rectPoly, boxRing, corners and rectPolygon delegate to. */
-
+// `rectRing` and every alias (`rectPoly`, `rectCorners`, `boxRing`, `rectPolygon`) equal a hand-written TL→TR→BR→BL ring over a grid of sizes.
 import { describe, expect, it } from "vitest";
 import { rectRing } from "../src/geometry/polygon.js";
 import { rectCorners } from "../src/geometry.js";

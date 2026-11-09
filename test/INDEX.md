@@ -248,7 +248,7 @@ The first sentence of each file's header comment.
 - `test/cli-fix-suggest.test.ts` — arch fix; arch suggest.
 - `test/cli-flag-matrix.test.ts` — the flag matrix — every (command, flag) has an exercising test; import; batch; compile; md; preview; new; spec; fix and repair.
 - `test/cli-flush.test.ts` — CLI — stdout is flushed before the process exits.
-- `test/cli-fmt-write-failure.test.ts` — fmt --write when the write fails: a CLI error with exit 1, never a thrown crash.
+- `test/cli-fmt-write-failure.test.ts` — `fmt --write` on a read-only target reports an `ok:false` CLI error with exit 1 and leaves the file untouched.
 - `test/cli-help.test.ts` — FLAG_KEYS — no drift vs the manifest; help renderers (pure); CLI — help & version; CLI — unknown command / unknown flag; CLI — `-o -` conflicts with --json.
 - `test/cli-human-fix.test.ts` — CLI — human-mode diagnostics carry the catalog fix.
 - `test/cli-intent.test.ts` — arch validate --intent; arch score; arch validate --intent: brief-bound measures (PS4.4); arch validate --intent: every storey.
@@ -547,7 +547,7 @@ The first sentence of each file's header comment.
 - `test/readme-3d.test.ts` — The 3D preview on the READMEs (public-surfaces card X7): the PS-D12 line and the limits line are carried verbatim, the page they point at is linked, every poster image is a shipped asset the manifest lists, each 3D li...
 - `test/readme-permalink.test.ts` — Drift guard for the playground permalinks in the hand-written docs.
 - `test/rect-label-anchor.test.ts` — A RECTANGULAR room's `label "…" at (x,y)` — the explicit label/area anchor.
-- `test/rect-ring.test.ts` — rectRing: the one rectangle ring that rectPoly, boxRing, corners and rectPolygon delegate to.
+- `test/rect-ring.test.ts` — `rectRing` and every alias (`rectPoly`, `rectCorners`, `boxRing`, `rectPolygon`) equal a hand-written TL→TR→BR→BL ring over a grid of sizes.
 - `test/rectilinear-doors.test.ts` — `door|opening between` on a rectilinear `room polygon` (issue #363, card L2; ADR 0028 §5 as amended).
 - `test/rectilinear-rooms-byte-identity.test.ts` — Rectilinear rooms in `walls from rooms` and `door|opening between` (issue #363, cards L1, L2): the byte-identity law.
 - `test/rectilinear-rooms.test.ts` — A rectilinear `room polygon` inside `walls from rooms` (issue #363, card L1; ADR 0028 §3 as amended).
