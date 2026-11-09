@@ -228,7 +228,7 @@ test or a doc sentence; no `src/` change except (b) if a derivation is cheap.
 ### EH1.17 · residue of the second review batch — `done (#617)` · S · low · sonnet
 (a) `scripts/compat-check.mjs` reports a member whose printed type is a NON-EXPORTED alias (e.g. `readonly KindsWith<"opening">[]`) as "new: (none)"; resolve such aliases structurally (print the apparent type with `typeToString` flags that expand aliases, or fall back to the alias's declared type) so a derived literal union compares as its members (#608 had to cast to a hand-written tuple). (b) Root `packages/archlang-3d/src/node.ts`'s `makeNodeWorld` like `src/cli/io.ts` (realpath containment, `.arch` only, size cap; EH1.16d's allow-list row then goes). (c) `hasFixtureGlyph`/the manifest guard: a drawer returning `[]` passes — pin per-family non-empty output (the alias golden table from #611 already does; confirm and drop the redundancy or keep both with a sentence). Proof: tests; no `src/` change except (b).
 
-### EH1.18 · CLI exit codes on a plan that does not parse — `in review (#648)` · S · medium · sonnet · from #619's review
+### EH1.18 · CLI exit codes on a plan that does not parse — `done (#648: impact exits 2; fmt stays 0 by pinned contract (MCP hash parity) and is documented with repair/reroll/suggest/complete/link)` · S · medium · sonnet · from #619's review
 `fmt`, `repair`, `reroll`, `suggest`, `complete` and `impact` exit 0 on a plan with `E_PARSE` (pinned as-is in
 `test/cli-contract-cases.ts`); `link` does so by documented contract (`docs/cli-reference.md`: a plan that does
 not compile still gets a link). `impact` is the one that matters: a CI gate on `impact` passes on a broken plan
@@ -237,7 +237,7 @@ diagnostic), update `docs/cli-reference.md` through `gen:cli` and the manifest d
 contract table rows with the generator and a reason. CHANGELOG for any exit-code change (a breaking change for
 scripts: say so). Proof: `cli-contract` green with the new rows; `docs-flags`/`cli-help` green.
 
-### EH1.19 · clear the open CodeQL alerts on main — `todo` · S · medium · sonnet · from #645's CodeQL red
+### EH1.19 · clear the open CodeQL alerts on main — `done (#653; zero open alerts on main; guard test for replace-chain escapers)` · S · medium · sonnet · from #645's CodeQL red
 Code scanning holds four open non-test alerts: `actions/missing-workflow-permissions` on
 `.github/workflows/plugin-validate.yml` (add `permissions: contents: read`), and `js/incomplete-sanitization` in
 `eval/fidelity-run.ts:77`, `scripts/gen-cli-reference.ts:39` and `scripts/gen-grammars.ts:248` (replace-chain
@@ -322,7 +322,7 @@ the new table; `npm run build` time before/after.
 a script proves every category maps to the same draw function before and after;
 `fixture-byte-identity` group 1 is the CI proof. Follow `.claude/rules/glyphs.md`.
 
-### EH2.5b · one bounded inflater — `in review (#647)` · S · medium · sonnet · from #623's review
+### EH2.5b · one bounded inflater — `done (#647; decodePlanHashWeb returns a discriminated result)` · S · medium · sonnet · from #623's review
 The `./share` subpath ships two bounded inflaters that behave differently: `decodePlanHashWeb` pipes one
 `Blob.stream()` with no 1 KiB write slicing and throws, while `inflateCapped` feeds slices and returns codes; the
 hosted MCP Worker uses the unsliced one, so the bomb protection exists only where the short-link Worker reads.
@@ -331,14 +331,14 @@ decoding identically (the 37-example identity test and the at-cap/over-cap cases
 the browser-safe module imports no `node:` API (it lives under `src/cli/`, where Node APIs are allowed). A refusal
 that used to throw now returns a code: say so in the CHANGELOG. Proof: `share-codec` and the Worker tests green.
 
-### EH2.10 · lint rule costs after the shared Scene — `todo` · M · medium · opus · from #624's measurements
+### EH2.10 · lint rule costs after the shared Scene — `in review (#656; leaf-across-doorway and boundary-no-wall indexed, path-too-narrow inherent and pinned only — partial)` · M · medium · opus · from #624's measurements
 With the Scene shared, lint's time sits in rules: BALANCED `leaf-across-doorway` 44.9 ms and `boundary-no-wall`
 29.1 ms of 163 ms; MUSEUM `path-too-narrow` 75.2 ms of 108 ms. Profile each (what is quadratic or repeated),
 cut the cost without moving a byte of `lint()` output (the corpus digest and the K1 table are the proof),
 and pin the work with counters in `test/tables/work-counts.json` (EH1.6 tranche 2's geometry counters: nav cells,
 split candidates, label relocations) so a regression turns red. Timing is informational only.
 
-### EH2.8b · `sideEffects: false` after an explicit builtins registration — `in progress` · S · medium · sonnet · from #635
+### EH2.8b · `sideEffects: false` after an explicit builtins registration — `done (#649; sideEffects false; DTS experiment not comparable with tsup, reverted)` · S · medium · sonnet · from #635
 `src/builtins.ts` ends with `setBuiltinDispatch(dispatch)`, an import-time registration into `src/expr.ts`; it is
 kept today only because `ir.ts` and `analyze/depends.ts` import `BUILTIN_NAMES` as a value. Make the registration an
 explicit call from the pipeline (or have `expr.ts` import the table directly), drop the allow-list entry in
@@ -348,7 +348,7 @@ CHANGELOG `### Changed` line (consumers' bundlers tree-shake differently). Also 
 side-effect scan green with one pinned entry (`src/cli.ts`'s `void main()`), digests unchanged, the playground bundle
 size before/after.
 
-### EH2.3b · residue of the splits — `in progress` · S · medium · sonnet · from #626/#630/#634's review
+### EH2.3b · residue of the splits — `done (#652: parts a and b; part c (summarize per kind) still open — see EH2.3c)` · S · medium · sonnet · from #626/#630/#634's review
 (a) `pairsJson` sits in `src/plan-json/from-json.ts` but its only caller is `to-json.ts`; `to-json` imports `num`/`q`
 from `emit.ts` for one use, pulling `emit` → `from-json` → the parser into the projector: move `pairsJson` to
 `to-json.ts` (pure move) and give the one `num`/`q` use a tiny shared helper, so the projector no longer loads the
@@ -356,6 +356,29 @@ validator. (b) `SUMMARY_MODULES` in `test/iso-describe-blind.test.ts` is a hand-
 `plan-json/*` modules `describe()` now loads: derive it by an import-closure walk, as `test/describe-overlay-blind.test.ts`
 does. (c) Later, with a body edit and its own byte-identity proof: `summarize` (446 lines) into per-kind functions
 (`describe/rooms.ts`, `describe/openings.ts`). Proof: digests unchanged; `no-value-cycles` green.
+
+### EH2.3c · `summarize` per kind — `todo` · S · medium · sonnet · part c of EH2.3b
+`summarize` (446 lines) into per-kind functions (`describe/rooms.ts`, `describe/openings.ts`), a body edit with its own
+byte-identity proof: digests unchanged; `no-value-cycles` green; `iso-describe-blind` (now a closure walk) green.
+
+### EH2.11 · the projector without the parser — `todo` · S · low · sonnet · from #652's review
+`src/plan-json/to-json.ts` still loads `src/parser.ts` through `src/ir.ts`, whose only parser value import is
+`idSpanOf` (one call). Move `idSpanOf` to a leaf and tighten `test/plan-json-projector-leaf.test.ts` to assert the
+parser is absent from the projector's closure. Proof: digests unchanged.
+
+### EH3.7 · merge queue, or CI on the merged result — `todo` · S · high · sonnet · from 2026-11-10
+Twice today two PRs that were each green merged blind and broke main (#643+#645: a `statSync` import; #645+#646: the
+generated `test/INDEX.md` and two header-less tests) and every later PR paid a re-merge round for the generated
+files. Enable GitHub's merge queue on `main` (`merge_group` trigger on `ci.yml`, `codeql.yml` and the required
+jobs; the aggregator job must run under `merge_group` too) so CI runs on the merged result, or at least set
+`strict` on the required checks. Document the queue in `docs/agents/commands.md` § Merging a PR and the
+`gh pr merge --auto` form. Proof: a records-only PR merges through the queue; a PR behind a drift-moving PR is
+re-run on the merged tree.
+
+### EH2.12 · lint index superset for every ruleset value — `todo` · S · low · sonnet · from #656's review
+`resolveRuleset` validates no numbers: a non-finite `doorwayLandingMm` reaches the index. #656 keeps non-finite
+boxes in the overflow list; add validation (`E_RULESET_VALUE`, finite and within `MODEL_RANGE_MM`) so the rule never
+sees one. Pin with a test.
 
 ## Wave 3 · agent navigation
 
@@ -387,7 +410,7 @@ recipes `new-fixture-family.md`, `new-cli-flag.md`, `new-mcp-tool.md`, each deri
 commit and paired with a registration test (docs-site `mcp.md` tool table pinned to `tools/list`).
 Proof: executor read-first bytes before/after in the PR body (target ≤ 40 KB).
 
-### EH3.4 · test helpers and a generated test index — `in review (#645)` · M · low · sonnet · T-F7
+### EH3.4 · test helpers and a generated test index — `done (#645 + hotfix #651; 50 modules re-homed, five helpers, generated test/INDEX.md; biome chunked by command length)` · M · low · sonnet · T-F7
 `test/helpers/{cli,corpus,world,digest,diag,tmp}.ts`; `corpus.ts` is the one `corpusFiles({dirs})`
 the byte-identity sweep uses, with named subsets. Move the 51 helper/table modules under
 `test/helpers/` and `test/tables/`. Migrate opportunistically; a grep guard blocks new copies of the
@@ -404,7 +427,7 @@ delete whose target contains a reparse point → deny. CI step: added CHANGELOG 
 (derived by scanning tests for `readdirSync("examples")`). PR template rows for moved digests and
 CHANGELOG placement. Proof: each hook exercised once with the denied command in the PR body.
 
-### EH3.6 · nightly sampled mutants (report-only) — `in review (#644)` · M · low · sonnet · T-F9
+### EH3.6 · nightly sampled mutants (report-only) — `done (#644; six operators, incremental report, 85-min budget; first nightly run is the real proof)` · M · low · sonnet · T-F9
 `scripts/mutants.mjs`: seeded sample of 40 mutants per night from `src/num-format.ts` and
 `src/expr.ts` (relational boundary, sign, negation, early return); each runs only the nearest tests
 (≤ 20 files, 3 min); survivors in the job summary; allow-list of equivalent mutants with reasons.
