@@ -9,7 +9,7 @@ Run every single-source generator and inspect exactly what moved.
 ## Steps
 
 1. **`npm run gen:all`** runs every generator. The list, its order and each generator's artifacts
-   are `GENERATORS` in `scripts/check-drift.ts`; read it there, never from a copy here.
+   are `GENERATORS` in `scripts/generators.ts` (which `check:drift` runs); read it there, never from a copy here.
 
 2. **Show the diff** over the artifacts `GENERATORS` names:
 
