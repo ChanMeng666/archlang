@@ -255,3 +255,37 @@ through `./browser`, with a free orbit camera (`camera.ts` `presetCamera`; `view
 Reset and storey buttons); `video.ts` Playwright + ffmpeg) and `src/glb` + `src/check` (the GLB and its
 checks). `src/cli` is `archlang3d view|build|check|manifest|schema|doctor`. Laws:
 `.claude/rules/archlang-3d.md`.
+
+
+## Seams between workspaces and the core
+
+The root `exports` map has only `.` and `./link`, yet workspaces reach past it. Each reach by relative path
+into a `src/` or `dist/` of the core or another workspace, and each alias or `paths` entry to one, is a row in
+`ALLOW` in `test/workspace-seams.test.ts` (the source of truth; a new one fails, a stale row fails; test code
+is not scanned). `test/core-no-3d.test.ts` pins the other direction: `src/` never imports `archlang-3d` or `three`.
+
+| File | Specifier | Why |
+| --- | --- | --- |
+| `playground/src/glb-export.ts` | `../../packages/archlang-3d/src/glb/write.js` | writeGlb is exported only from archlang-3d's Node entry, but the writer is browser-agnostic; read from source |
+| `playground/tsconfig.json` | `paths archlang` | mirrors the Vite alias: a root node_modules/archlang symlink points at the vscode extension |
+| `playground/tsconfig.json` | `paths archlang/review` | types for the review sheet come from src/: the build emits no declaration for dist/cli/review.js |
+| `playground/tsconfig.json` | `paths @chanmeng666/archlang-3d` | mirrors the Vite alias: archlang-3d is read from source, its published exports name a dist/ that may not be built |
+| `playground/tsconfig.json` | `paths @chanmeng666/archlang-3d/browser` | mirrors the Vite alias for the browser entry |
+| `playground/vite.config.js` | `alias archlang` | the playground consumes the built core (dist/index.js), keeping one import path |
+| `playground/vite.config.js` | `alias archlang/review` | Checks overlay reads the review sheet, a CLI file with no export; listed before the bare name (prefix match) |
+| `playground/vite.config.js` | `alias @chanmeng666/archlang` | archlang-3d imports the core by its published name; same built file so the lazy chunk shares the core |
+| `playground/vite.config.js` | `alias @chanmeng666/archlang-3d` | archlang-3d is read from source: its published exports name a dist/ the build has no reason to need |
+| `playground/vite.config.js` | `alias @chanmeng666/archlang-3d/browser` | the browser entry of archlang-3d, from source; longer key first |
+| `playground/wrangler.jsonc` | `alias archlang` | the short-link Worker bundles the built core by name |
+| `docs-site/.vitepress/config.ts` | `alias archlang` | examples compile client-side against the built core, the same alias the playground uses |
+| `docs-site/tsconfig.json` | `paths archlang` | mirrors the VitePress alias to the built core |
+| `packages/archlang-3d/vitest.e2e.config.ts` | `alias @chanmeng666/archlang` | heavy e2e tests run against the core's source, as the root vitest config does |
+| `packages/mcp-worker/scripts/build.mjs` | `alias @chanmeng666/archlang` | the Worker bundles THIS checkout's built core, so a stale installed core cannot ship |
+| `packages/mcp-worker/scripts/build.mjs` | `alias @chanmeng666/archlang/link` | the same, for the link helper (the root exports map's ./link, built to dist/cli/link.js) |
+| `packages/mcp-worker/scripts/measure-cpu.mjs` | `../../../src/cli/share-codec.mjs` | CPU measurement script encodes a plan hash; the shared-link codec is a core CLI file with no package export |
+| `packages/mcp-worker/src/app.ts` | `../../../src/cli/share-codec.web.mjs` | the Worker decodes #z= payloads with the Web-stream codec; the shared-link codec is a core CLI file with no package export |
+| `packages/mcp-worker/src/env.d.ts` | `../../mcp/src/tools.js` | types the virtual:archlang-resources module by the stdio server's ResourceName |
+| `packages/mcp-worker/src/server.ts` | `../../mcp/src/tools.js` | the hosted server serves the stdio server's tool set, so it registers the same tools from source (mcp is not published as a library) |
+| `packages/mcp-worker/tsconfig.json` | `paths @chanmeng666/archlang` | types come from the same built core that scripts/build.mjs bundles |
+| `packages/mcp-worker/tsconfig.json` | `paths @chanmeng666/archlang/link` | types for the link helper, from the built core |
+| `packages/web-component/tsconfig.json` | `paths @chanmeng666/archlang` | the core is a peer dependency; in the monorepo it is the root's source, typechecking without a build |
