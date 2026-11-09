@@ -46,7 +46,7 @@ jobs:
   # in the push run on `main` and in nightly's `full-matrix`; `/release-check` reads both.
   #
   # Node 22 is an aggregator: its check gates on `node-22-checks` (typecheck, lint, drift,
-  # eval) and on the three `node-22-tests` shards, on PRs and pushes alike, and it also
+  # eval) and on the five `node-22-tests` shards, on PRs and pushes alike, and it also
   # carries the docs leg. A push therefore still runs the whole suite on Node 22, split
   # across the shards: `vitest --shard` puts every test file in exactly one shard.
   # ---------------------------------------------------------------------------
@@ -96,7 +96,7 @@ jobs:
           if [ "$code" = "false" ]; then
             echo "Record-only change: the gating legs report green without running; Node 22 runs the docs leg." >> "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "pull_request" ]; then
-            echo "Code change: Node 22 (three shards), the builds and the E2E legs run; Node 18, Node 20 and Windows run on main and nightly." >> "$GITHUB_STEP_SUMMARY"
+            echo "Code change: Node 22 (five shards), the builds and the E2E legs run; Node 18, Node 20 and Windows run on main and nightly." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Push: every leg runs in full." >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -189,17 +189,17 @@ jobs:
 
   # The suite on Node 22, one job per shard. Files carry no state to one another: a test
   # writes to the repository only under an UPDATE flag and otherwise to a mkdtemp directory.
-  # That has to stay true: `vitest --shard` assigns files by sorted hash, so a new file can
-  # move others between shards.
+  # That has to stay true: `vitest --shard` assigns files by recorded duration
+  # (test/sequencer.ts), so a new file can move others between shards.
   node-22-tests:
-    name: Node 22 tests ${{ matrix.shard }}/3
+    name: Node 22 tests ${{ matrix.shard }}/5
     runs-on: ubuntu-latest
     needs: changes
     if: ${{ !cancelled() && needs.changes.outputs.code != 'false' }}
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -214,7 +214,7 @@ jobs:
         run: npm ci
 
       - name: Test
-        run: npx vitest run --shard=${{ matrix.shard }}/3
+        run: npx vitest run --shard=${{ matrix.shard }}/5
 
   # The required `Node 22` check. It decides from its needs' results, so a shard that failed,
   # was cancelled or was skipped when it had work to do turns it red. `always()`, not
