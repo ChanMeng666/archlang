@@ -23,6 +23,10 @@
  * labelled at its centroid moves by a byte.
  *
  * A room polygon is **implicitly closed** and stored WITHOUT a repeated last vertex.
+ *
+ * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): the self-intersection test is charged one step
+ * per segment pair, and an exact ring test its edge reads ({@link RING_READS_PER_STEP} to a
+ * step), before each runs.
  */
 
 import type { Point } from "../ast.js";

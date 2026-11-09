@@ -19,7 +19,7 @@ A row with no failing check is a gap; say so in the PR rather than relying on re
 | Place | What it holds | Caught by |
 | --- | --- | --- |
 | `src/ast.ts` `ElementKind` + `AstElement` | the kind literal and its `…Node` | `tsc` at every exhaustive site below |
-| `src/ir.ts` `ResolvedElement` | its `R…` type (extends `RBase`) | `tsc` at every exhaustive site below |
+| `src/ir/types.ts` `ResolvedElement` | its `R…` type (extends `RBase`) | `tsc` at every exhaustive site below |
 
 ## Per-kind dispatch outside the registry (each exhaustive at the type level)
 
@@ -33,7 +33,7 @@ A row with no failing check is a gap; say so in the PR rather than relying on re
 | `src/analyze/depends.ts` `readsOf` | the ids/axes it reads beyond its expressions (`describe --facts depends`, `impact`) | `tsc` (`nonElementKind`) |
 | `src/analyze/symmetry.ts` `drawnRecs` | its footprint records, or why another record covers it | `tsc` (`const unhandled: never`) |
 | `src/datum.ts` `statementAuthorsHeights` | whether its source authors a height (`_heightsAuthored`) | `tsc` (`nonElementKind`) |
-| `src/ir.ts` `markPlacement` | its `_placement` (`describe().freedom`), or none | `tsc` (`const unhandled: never`) |
+| `src/ir/groups.ts` `markPlacement` | its `_placement` (`describe().freedom`), or none | `tsc` (`const unhandled: never`) |
 
 ## Sets built from, or held to, `KIND_FACETS`
 
