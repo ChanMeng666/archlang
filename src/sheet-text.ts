@@ -12,6 +12,9 @@
  * these strings, as they see any other drawn text (`W_ANNOTATION_OVERLAP`, `W_TITLE_OVERFLOW`).
  *
  * Pure: what it reads is the source. No environment, `Intl` or `toLocaleString`.
+ *
+ * The plan's decimal mark is `num-format.ts` `drawnDecimal`; only `toScene` reads the words, and
+ * `PLAIN_SHEET_TEXT` is a plan with none.
  */
 
 import type { Span } from "./diagnostics.js";

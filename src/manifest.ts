@@ -8,6 +8,9 @@
  * `ERROR_CODES`, `LINT_PROFILES`, `FIXTURE_CATEGORIES`) — there is **no new source
  * of truth** here except the command/flag table, which a drift test
  * (`test/cli-manifest.test.ts`) keeps in sync with the CLI's command dispatch.
+ *
+ * It is the CLI contract; a new output format is a row in `EXPORT_FORMATS` plus a `case` in
+ * `serialize()` (`src/cli/serialize.ts`), which `tsc` demands.
  */
 
 import { PNG_PREVIEW_WIDTH } from "./backends/png-defaults.js";

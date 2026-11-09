@@ -12,6 +12,11 @@
  * to {@link MODEL_RANGE_MM} and drops an element beyond it, so no backend or glyph ever forms a
  * product from an absurd magnitude. `fmt3`'s `"0"` for NaN/±Infinity is a byte-pinned backstop,
  * NOT a way to represent an overflow, and must not be removed.
+ *
+ * Also owns `MODEL_RANGE_MM` and `fmtSource`, which prints a number so it re-parses to the same
+ * double; `ir/checks.ts` `checkNumberDomain` (elements' `bounds()` and `measures()`) and
+ * `checkDrawnSizes` hold the resolved plan to the range once, after frames are carried, and an
+ * element past it is reported once and dropped.
  */
 
 import type { Diagnostic, Span } from "./diagnostics.js";

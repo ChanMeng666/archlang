@@ -34,6 +34,11 @@
  * Determinism: pure integer arithmetic on the matrix; the only division is the `/ 2`
  * already present in the resolved geometry. `transform(transform(p, f), inverse(f)) === p`
  * byte-for-byte.
+ *
+ * Each element carries itself across through `ElementDef.transform` (a `TransformCtx` facade); a
+ * plugin kind without one is refused inside a `place` (`E_INSTANCE_NO_TRANSFORM`), never thrown.
+ * `place` resolves an instance in its own frame, then this carries it into plan coordinates; never
+ * pre-transform a resolver's input.
  */
 
 import type { Point } from "./ast.js";

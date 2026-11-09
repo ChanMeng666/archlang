@@ -28,6 +28,9 @@
  * The refDim formulas run unchanged and output is byte-identical (`scale` alone stays
  * annotation-only, exactly as before). `paper` is the opt-in that makes `scale`
  * operative.
+ *
+ * `drawingBounds` and `renderSizes` are shared by `scene-build.ts` and the resolver, so a size is
+ * checked on the drawing that is drawn.
  */
 
 import { chromeBandDepth, tableBandDepth } from "./chrome-layout.js";

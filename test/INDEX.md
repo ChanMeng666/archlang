@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-472 test files in `test/`, 267 `src` modules, 101 modules no test imports.
+475 test files in `test/`, 267 `src` modules, 100 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -112,7 +112,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (29) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+21)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (362) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+354)
+- `src/index.ts` (364) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+356)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -170,6 +170,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/text-layout.ts` (5) — `escape-fuzz`, `label-placement-oracle`, `label-wrap`, `text-layout`, `text-metrics`
 - `src/text-metrics.ts` (6) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `sheet-text`, `text-layout`, `text-metrics`
 - `src/theme.ts` (16) — `element-facets`, `equivariance-scene`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib`, `glyphs-batch2` (+8)
+- `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
 - `src/vertical.ts` (50) — `block-stair-frames`, `block-stair-shaft`, `block-stair-winders`, `block-stair`, `circulation-concave`, `circulation-translation`, `element-facets`, `equivariance-corpus` (+42)
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
 - `src/view/extrude.ts` (4) — `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`
@@ -178,7 +179,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (79) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+71)
+- `src/world.ts` (98) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+90)
 
 ## Test files
 
@@ -480,6 +481,7 @@ The first sentence of each file's header comment.
 - `test/min-rect.test.ts` — The law of `src/geometry/min-rect.ts` (plan-soundness PS5.1b): the exact minimum-area enclosing rectangle against a brute-force ROTATION ORACLE that lives here only.
 - `test/miter-limit.test.ts` — acute wall joints — the mitre cap.
 - `test/model-range.test.ts` — The modelling range: every resolved coordinate and length lies within ±2^25 mm (`MODEL_RANGE_MM`, the bound under which ADR 0020 measured plain-double `orient2d` exact).
+- `test/module-map.test.ts` — `docs/agents/module-map.md` names every source module (engineering-health EH3.1).
 - `test/nav-grid-residual.test.ts` — G.11 — the nav grid's walls agree with the drawn walls; C.1 — a wall thinner than a cell still blocks (the centreline cover).
 - `test/nav-grid-scale.test.ts` — nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one.
 - `test/net-area-once.test.ts` — net internal area — once per room per compile on a `schedule rooms` plan.
@@ -490,6 +492,7 @@ The first sentence of each file's header comment.
 - `test/next.test.ts` — `nextDiagnostic()` (plan-soundness PS5.3): the one item to fix first, by fixed precedence — error → compile warning → validity → drafting → intent (gating, graph, advisory) → profile → taste — and, within a tier, emis...
 - `test/no-cli-spawn.test.ts` — no test spawns the CLI unless it is about the process.
 - `test/no-clock-assertions.test.ts` — Counts, not clocks (AGENTS.md: "budgets are counts, never time").
+- `test/no-duplicate-helpers.test.ts` — No new local copy of a helper `test/helpers/` already provides.
 - `test/no-import-side-effects.test.ts` — importing a src module has no side effect beyond the known ones.
 - `test/no-value-cycles.test.ts` — No runtime import cycles in `src/`.
 - `test/non-finite.test.ts` — The number domain is closed and nesting is bounded: no non-finite value and no deep nesting can make `compile()` / `describe()` / `lint()` throw.
@@ -610,6 +613,7 @@ The first sentence of each file's header comment.
 - `test/taste-invisible.test.ts` — Laws L1 and L2 of the taste layer (ADR 0032; design §5): **taste is invisible** and **taste draws nothing**.
 - `test/taste-separation.test.ts` — The row-5 law (plan-soundness §7 row 5; ADR 0032; design §4): the taste score separates the corpus's known-bad from its known-good plans MONOTONICALLY — on the comparisons the corpus knows, never as a ranking of unrel...
 - `test/taste.test.ts` — `taste()` and `arch score --taste` (ADR 0032, plan-soundness PS5.1a): the exact arithmetic, the report's shape and key order, the advice table, the validity cap and its layers, the counted budget, each criterion's acc...
+- `test/test-index.test.ts` — `test/INDEX.md` lists every `src` module and every root test file, and nothing that is not tracked.
 - `test/text-layout.test.ts` — The line breaker a room name wraps with (`src/text-layout.ts`): where it may break, how many lines it takes, and which of the equal-count breaks it picks.
 - `test/text-metrics.test.ts` — `inkWidth` (`src/text-metrics.ts`) against the two faces it says it reads.
 - `test/theme-cascade.test.ts` — T4.4 — named theme bases; T4.4 — per-element style overrides.
@@ -758,7 +762,6 @@ is covered by a pipeline test or by none; adding a direct test removes it.
 - `src/taste/profiles.ts`
 - `src/taste/report.ts`
 - `src/text-safe.ts`
-- `src/types.ts`
 - `src/unified-diff.ts`
 - `src/view/iso.ts`
 - `src/wall-relation.ts`

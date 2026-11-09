@@ -22,6 +22,9 @@
  * house, flat and studio (`uses living bedroom`) lints exactly as it did. The reading is
  * lint-only: `describe()` never reads it, and it adds no {@link UseKind}. One pass over the
  * rooms, each label matched against a fixed word list, so no step meter is needed.
+ *
+ * This is the gate of the home-only lint arms: a rule that applies to dwellings asks here, never
+ * re-derives it.
  */
 
 import type { UseKind } from "../ast.js";

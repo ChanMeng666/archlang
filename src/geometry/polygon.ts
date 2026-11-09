@@ -27,6 +27,9 @@
  * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): the self-intersection test is charged one step
  * per segment pair, and an exact ring test its edge reads ({@link RING_READS_PER_STEP} to a
  * step), before each runs.
+ *
+ * `polygonsOverlapCost` is the same count as the meter's charge, for a pass that runs outside the
+ * meter (`lint/rules/outdoor.ts`).
  */
 
 import type { Point } from "../ast.js";

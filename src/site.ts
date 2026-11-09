@@ -23,6 +23,8 @@
  * `Math.floor` in {@link northQuarterTurns} (which lives in `src/algebra/d4.ts` with the
  * rest of the four-direction arithmetic, is re-exported by `describe.ts`, and is passed in
  * here as `turns`).
+ *
+ * `windowFacingPage` probes the window's own wall.
  */
 
 import type { CompassWord, Hemisphere, SiteNode } from "./ast.js";
