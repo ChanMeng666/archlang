@@ -27,7 +27,8 @@
  * values of `W_OPENING_AT_JUNCTION`, `src/opening-junctions.ts`), runs into a meeting wall,
  * or runs past the end of its run or its host, is refused with `E_OPENING_NIB` naming the
  * nearest legal position. An `open between` boundary voided over its whole clear span is no
- * meeting wall ({@link standingJunctionSpans}). Steps are charged before every scan.
+ * meeting wall ({@link standingJunctionSpans}). Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`):
+ * every scan is charged before it runs, one step per wall segment, wall point, run or axis it reads.
  *
  * `window on <room>.<edge> at corner <room>.<edge>` ({@link placeCorner}) runs a window out to a
  * corner of the two walls. Its span ends on the other wall's outer face, so `at ± width / 2` is

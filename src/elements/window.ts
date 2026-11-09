@@ -1,6 +1,9 @@
 /**
  * `window [id=] [<kind>] at (x,y) width N [wall ref] [hinge <side>]` — opening + double glazing +
  * exterior sill, plus the kind's mark (see {@link kindMarks}).
+ *
+ * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): a corner window's settle pass is charged five
+ * steps per element of its group, plus one, before its first pass over the group.
  */
 
 import type { Point, WindowNode } from "../ast.js";

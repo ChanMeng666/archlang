@@ -10,6 +10,9 @@
  *
  * Pure and deterministic: the derived point is grid-snapped through the same
  * `snapPt` the rest of resolve uses, so output is byte-stable.
+ *
+ * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): only when a named wall is `status demolish`, the
+ * copy of the named walls is charged one step per wall before it is made (`wallsNamed`).
  */
 
 import type { AttachFrom, AttachPos, ExprPoint, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";

@@ -18,7 +18,7 @@ that catches it, is `docs/agents/new-element.md`: work down it.
 
 2. **Register it in `src/elements/defs.ts`.** Add it to the registry so parse, resolve, and
    render all dispatch to it automatically, and append its keyword to `KEYWORDS.element`. Then
-   add the kind to `ElementKind`/`AstElement` (`src/ast.ts`) and `ResolvedElement` (`src/ir.ts`)
+   add the kind to `ElementKind`/`AstElement` (`src/ast.ts`) and `ResolvedElement` (`src/ir/types.ts`)
    and answer every `tsc` error that raises (the rows of `docs/agents/new-element.md`). Do not add
    a new per-kind `switch` or kind list; a yes/no question about kinds is a `KIND_FACETS` field
    (`src/elements/facets.ts`).

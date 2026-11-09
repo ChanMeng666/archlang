@@ -13,7 +13,9 @@ source (.arch)
                          (src/room-datums.ts; read by `hall.top`-style datums through the
                          evaluator's reader, `withDatumReader`), walls, host openings → ResolvedPlan
                          (`walls from rooms` derives a group's walls from its rooms,
-                         src/room-tiling.ts, ADR 0028)
+                         src/room-tiling.ts, ADR 0028); ir.ts keeps the entry points and
+                         `resolveBody`, its stages live in src/ir/ (types, expand,
+                         side-tables, groups, checks, sheet), re-exported by ir.ts
   └─ src/scene-build.ts  toScene() → Scene (src/scene.ts)
        └─ src/wall-lowering.ts  every wall in one joinery pass (geometry/band, intersect, joinery)
   └─ src/view/           toIso(): the axonometric, a sibling of toScene (DEPRECATED, ADR 0021)
@@ -131,7 +133,7 @@ source (.arch)
   binding copied, per item compared, taken before the allocation it pays for; `ir.ts` stops the
   resolution at the crossing with one `E_STEP_LIMIT`
 - `num-format.ts` also owns `MODEL_RANGE_MM` and `fmtSource` (prints a number so it re-parses to the same double);
-  `ir.ts` `checkNumberDomain` (elements' `bounds()` + `measures()`) and `checkDrawnSizes` (hatch tile,
+  `ir/checks.ts` `checkNumberDomain` (elements' `bounds()` + `measures()`) and `checkDrawnSizes` (hatch tile,
   pen) hold the resolved plan to the range once, after frames are carried; an element past it is
   reported once and dropped
 - `draw-budget.ts` pre-render drawing estimate over every storey (`MAX_DRAW_UNITS`, each element's
@@ -197,7 +199,7 @@ source (.arch)
 - `finish.ts` the completion transform (`arch finish`): runs the stages in `FINISH_STAGE_ORDER`
   until a round changes nothing, and holds the `sheet` stage (`docs/adr/0024-finish-as-explicit-transform.md`):
   span inserts through `fix-apply.ts`'s `Data`, the fit decided by `sheet.ts` `fitsOnSheet` on
-  `ir.ts` `sheetExtents`
+  `ir/sheet.ts` `sheetExtents`
 - `furnish.ts` the `furnish` stage (`docs/adr/0025-furnish-as-explicit-transform.md`): `FURNISH_TABLE`
   by `roomUses()`, relative placement only, one compile check per room in the common case, one run
   of statements per storey, each in its own `level` block; it imports nothing from

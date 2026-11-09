@@ -1,7 +1,7 @@
 # Resume point
 
-**Where (2026-11-09, end):** wave 0 done except EH0.8 (#620 in review); wave 1 done except EH1.9 (#619 in review);
-wave 2 running: EH2.1, EH2.9 done; EH2.2 (#618) in review; EH2.5 running.
+**Where (2026-11-09, end):** wave 1 DONE (EH1.1–EH1.17); wave 0 done except EH0.8 (#620 in review); wave 2 running:
+EH2.1, EH2.2, EH2.9 done; EH2.5 and EH2.6 running.
 
 **Landed today (34 PRs):** EH0.1–EH0.7, EH0.9 (#581, #583–#588) · EH1.1 (#599) · EH1.2 (#598) · EH1.3 (#589) · EH1.4
 (#590) · EH1.5 (#591) · EH1.6 tranche 1 (#592) · EH1.7 (#610) · EH1.8 (#613; `runCli` + `CliIo`, 40 spawn copies gone,
@@ -10,14 +10,15 @@ five sampled files 82.5 s → 5.7 s) · EH1.10 (#593) · EH1.11 (#597) · EH1.12
 CLI's world is rooted under a lockstep table) · EH2.1 (#614) · EH2.9 (#611) · policy #615 · records #582, #596, #600,
 #602, #609, #612, #616.
 
-**In flight:** EH0.8 (#620) · EH1.9 (#619) · EH2.2 (#618; 137/137 declarations moved, digest identical) · EH2.5 (share
-codec subpath + typed `CoreLsp`). New residue card EH1.18 (exit codes on `E_PARSE`).
+**In flight:** EH0.8 (#620; review round landed, CI pending) · EH2.5 (share codec subpath + typed `CoreLsp`) · EH2.6
+(one Scene per lint). Also landed since the last note: EH1.9 (#619), EH2.2 (#618: `src/ir/` six modules, 137/137
+declarations byte-identical, `test/meter-headers.test.ts`).
 
 **Owner queue:** none (standing approval; releases, paid eval and the npmjs account stay owner-only). Tomorrow's
 reads: the nightly's `ci-red` behaviour (#584) and its new `fuzz-deep` job (#610) and `test-durations` artifact (#586).
 
-**Next cards:** EH2.3 (after #618), EH2.4, EH2.6, EH2.7, EH2.8, EH1.18; wave 3 from EH3.1 (module map, after #618 so the
-map is taken on the split tree) and EH3.2 (backlog split).
+**Next cards:** EH2.3 (describe/plan-json/circulation splits), EH2.4, EH2.7, EH2.8, EH1.18; wave 3 from EH3.1 (module map)
+and EH3.2 (backlog split).
 
 **Process notes from this day:** executors must NOT edit `cards.md` (adjacent card headings conflict
 on every merge; the coordinator records status in a records PR); every pure-move PR repoints the

@@ -1214,7 +1214,7 @@ class Parser {
           const vt = this.peek();
           (theme as Record<string, unknown>)[resolved] = this.eatNumber();
           // Where the value was written: the drawn pen it scales is held to the modelling
-          // range after resolve (`checkDrawnSizes`, `src/ir.ts`), which blames this literal.
+          // range after resolve (`checkDrawnSizes`, `src/ir/checks.ts`), which blames this literal.
           this.lineWeightSpan = { start: vt.start, end: vt.end };
         } else {
           (theme as Record<string, unknown>)[resolved] = this.sanitizedStringValue(keyTok, "theme");

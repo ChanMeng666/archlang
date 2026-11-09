@@ -22,7 +22,7 @@
  *      round one).
  *   2. Applies a NON-VACUITY gate: a candidate is considered only if its `while` actually
  *      ran at least one iteration in THIS compile of THIS file — recorded by the resolver
- *      itself as it expands (`ResolvedPlan._executedWhileSpans`, `src/ir.ts`), which for
+ *      itself as it expands (`ResolvedPlan._executedWhileSpans`, `src/ir/types.ts`), which for
  *      free also declines a site inside a component this file never instantiates (a
  *      library compiled standalone, or one behind a dead `if` branch: `expandScope` never
  *      visits either, so nothing is ever recorded for them) and a plan that resolved to

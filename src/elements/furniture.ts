@@ -1,4 +1,10 @@
-/** `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label. */
+/**
+ * `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label.
+ *
+ * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): the wall searches are charged before they read,
+ * per wall and wall point scanned (`anchor`, `against`, an edge against the walls), the copy of
+ * the standing walls per wall, and `facing` per element of its group it reads.
+ */
 
 import type {
   FurnitureAgainstEdge,

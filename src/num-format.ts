@@ -20,7 +20,7 @@ import type { Diagnostic, Span } from "./diagnostics.js";
  * The modelling range: every resolved coordinate and length of a plan lies within
  * ±2²⁵ mm (33,554,432 mm, about 33.5 km), the bound under which ADR 0020 measured plain-double
  * `orient2d` exact on integer coordinates. An element outside it is `E_OUT_OF_RANGE`
- * (`checkNumberDomain`, `src/ir.ts`). Defined once; the docs and the catalogue quote it.
+ * (`checkNumberDomain`, `src/ir/checks.ts`). Defined once; the docs and the catalogue quote it.
  */
 export const MODEL_RANGE_MM = 33_554_432;
 
@@ -30,7 +30,7 @@ export const MODEL_RANGE_MM = 33_554_432;
  * Two settings scale a DRAWN length without bound — a wall's hatch `scale` (the pattern tile)
  * and the theme `lineWeight` (every pen). They are not capped as inputs: the resolver measures
  * the tile and the pen on the drawing they belong to and refuses only one that leaves the
- * range (`checkDrawnSizes`, `src/ir.ts`), so a coarse `scale 10` on a house is legal. The
+ * range (`checkDrawnSizes`, `src/ir/checks.ts`), so a coarse `scale 10` on a house is legal. The
  * three below are held as values, because no legitimate plan comes near them.
  */
 
