@@ -213,7 +213,7 @@ Totals: 378 modules in 34 directories.
 | `ast.ts` | 1626 | 213 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 445 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
-| `builtins.ts` | 125 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
+| `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
 | `chrome-layout.ts` | 374 | 15 | Shared page-chrome layout — the deterministic geometry of the **scale bar** and **title block** in the bottom page margin, and how far the bottom margin must grow to contain them. Both the SVG and PDF backends build their chrome from this… | none |
 | `cli.ts` | 91 | 0 | ArchLang CLI — agent-native. | none |
 | `command-name.ts` | 11 | 4 | The command name every help line, example and doc writes. `package.json` installs two bins, `archlang` and `arch`, for the same `dist/cli.js`; `arch` stays as an alias, but coreutils ships an `arch` on Linux, macOS and Git Bash, so a bare… | none |
@@ -251,7 +251,7 @@ Totals: 378 modules in 34 directories.
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1588 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
-| `ir.ts` | 1722 | 243 | Intermediate representation + `resolve(ast)`. | charges the step meter |
+| `ir.ts` | 1723 | 243 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1833 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 744 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
