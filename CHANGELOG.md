@@ -47,6 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `planFromJson` returns at most 500 validation diagnostics, then one `E_DIAGNOSTIC_LIMIT`, so a payload of thousands of empty rows no longer returns one error per field.
 - A `scale` whose number is below 1e-6 (`scale 0.0000001:1`) is kept as written, so it reads back as its denominator (1:10,000,000) in the sheet and in `describe().scale`; it used to be stored as `1e-7:1`, which could not be read, and the scale was dropped without a word.
 - The web component and playground SVG sanitiser no longer throws on a CDATA section; comments and processing instructions are dropped.
+- `planFromJson` refuses a negative magnitude (a size, width, thickness or radius) with a pathed `E_JSON_SCHEMA` instead of emitting source the parser cannot read; so is a negative `north` bearing, which `north` cannot spell (write 330, not -30).
 
 ## [1.57.0] - 2026-11-06
 

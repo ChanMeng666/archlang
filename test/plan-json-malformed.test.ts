@@ -152,10 +152,16 @@ const STRING_FIELDS: Array<{
     read: (src) => describePlan(src).furniture[0]?.id,
   },
   {
+    // The door stands `on` the wall by id, so a renamed wall renames that reference too, or the
+    // plan carries `E_ATTACH_WALL_REF` and `planToJson` returns no walls to read (EH1.20, defect 2).
+    // An empty id is no id at all, so the door keeps naming `w1` and the read is skipped below.
     name: "walls/0/id",
     kind: "word",
-    set: (d, s) => (d.walls[0].id = s),
-    read: (src) => back(src).walls[0]?.id,
+    set: (d, s) => {
+      d.walls[0].id = s;
+      if (s !== "") d.openings[0].on.wall = s;
+    },
+    read: (src) => back(src)?.walls?.[0]?.id,
   },
   {
     name: "walls/0/category",
@@ -281,6 +287,63 @@ describe("malformed Plan JSON", () => {
     expect(r.diagnostics.find((x) => x.code === "E_JSON_SCHEMA")?.message).toMatch(/^plan JSON \/openings\/0\/id:/);
   });
 
+  it("EH1.20 defect 1: a negative furniture width is refused with a pathed E_JSON_SCHEMA, not emitted as `size -1000000000000x400`", () => {
+    // The nightly's counterexample (FC_SCALE=10, seed 20261109): [0,[{"kind":"special-number","pick":96862,"aux":13}]].
+    const doc = docs[0]!;
+    expect(doc.name).toBe("accessible.arch");
+    const { value, applied } = applyMutations(doc.json, [{ kind: "special-number", pick: 96862, aux: 13 } as any]);
+    expect(applied).toEqual(["special-number -1000000000000 @ /furniture/1/width"]);
+    expect(check(value)).toBeUndefined();
+    const r = planFromJson(value);
+    expect(r.source).toBeUndefined();
+    expect(r.diagnostics.map((d) => [d.code, d.message.split(":")[0]])).toEqual([
+      ["E_JSON_SCHEMA", "plan JSON /furniture/1/width"],
+    ]);
+    // Every magnitude the emitter prints is held the same way; `-0` prints `0` and is the compiler's to refuse.
+    for (const [set, path] of [
+      [(d: any) => (d.rooms[0].width = -1), "/rooms/0/width"],
+      [(d: any) => (d.rooms[0].height = -1), "/rooms/0/height"],
+      [(d: any) => (d.walls[0].thickness = -1), "/walls/0/thickness"],
+      [(d: any) => (d.openings[0].width = -1), "/openings/0/width"],
+      [(d: any) => (d.furniture[0].height = -1), "/furniture/0/height"],
+      [(d: any) => (d.columns = [{ x: 0, y: 0, width: -1, height: 300 }]), "/columns/0/width"],
+      [(d: any) => (d.north = { deg: -30 }), "/north/deg"],
+    ] as const) {
+      const d = stringBase();
+      set(d);
+      expect(
+        planFromJson(d).diagnostics.map((x) => [x.code, x.message.split(":")[0]]),
+        path,
+      ).toEqual([["E_JSON_SCHEMA", `plan JSON ${path}`]]);
+    }
+    const zero = stringBase();
+    zero.furniture[0].width = -0;
+    const z = planFromJson(zero);
+    expect(z.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(z.source).toContain("size 0x2000");
+    expect(compile(z.source!).diagnostics.filter((d) => d.code === "E_PARSE")).toEqual([]);
+  });
+
+  it('EH1.20 defect 2: a wall renamed "a" (and the door on it) round-trips its id', () => {
+    const field = STRING_FIELDS.find((f) => f.name === "walls/0/id")!;
+    const doc = stringBase();
+    field.set(doc, "a");
+    expect(doc.openings[0].on.wall).toBe("a");
+    const r = planFromJson(doc);
+    expect(r.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(compile(r.source!).diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(field.read!(r.source!)).toBe("a");
+  });
+
+  it("EH1.20: a dotted declared id is law (e)'s one non-JSON refusal, the parser's E_DOTTED_DECL", () => {
+    // Found behind defect 2 at FC_SCALE=10: `furniture/0/id = "a.A"`. A dotted id is a flattened
+    // `place` row's, refused by the parser on purpose (pinned in test/plan-json.test.ts).
+    const doc = stringBase();
+    doc.furniture[0].id = "a.A";
+    const errors = planFromJson(doc).diagnostics.filter((d) => d.severity === "error");
+    expect(errors.map((d) => d.code)).toEqual(["E_DOTTED_DECL"]);
+  });
+
   it(`law (e): a hostile string in any string field is refused or round-trips (seed ${STRING_SEED}, ${STRING_RUNS} runs)`, () => {
     const tally = { refused: 0, literal: 0, word: 0, position: 0 };
     fc.assert(
@@ -296,11 +359,17 @@ describe("malformed Plan JSON", () => {
         }
         const errors = r.diagnostics.filter((d) => d.severity === "error");
         if (errors.length > 0) {
-          // Refused: only pathed E_JSON_* errors, never a parse error on generated text.
+          // Refused: only pathed E_JSON_* errors, never a parse error on generated text. The one
+          // sanctioned exception is a dotted DECLARED id (`a.A`): it names a flattened `place` row,
+          // and `planFromJson` refuses it with the parser's `E_DOTTED_DECL` by design (the tripwire
+          // "is MASKED because a `place`d plan cannot round-trip at all", `test/plan-json.test.ts`).
+          const dottedDecl = (d: { code?: string }): boolean =>
+            d.code === "E_DOTTED_DECL" && field.kind === "word" && field.name.endsWith("/id") && s.includes(".");
           for (const d of errors)
-            expect(d.code?.startsWith("E_JSON") && PATHED.test(d.message), `${where}: ${d.code} ${d.message}`).toBe(
-              true,
-            );
+            expect(
+              (d.code?.startsWith("E_JSON") && PATHED.test(d.message)) || dottedDecl(d),
+              `${where}: ${d.code} ${d.message}`,
+            ).toBe(true);
           tally.refused++;
           return;
         }
@@ -338,11 +407,11 @@ describe("malformed Plan JSON", () => {
           field.name,
         ).toEqual(["r1"]);
       } else {
-        expect(
-          errors.map((d) => d.code),
-          field.name,
-        ).toEqual(["E_JSON_SCHEMA"]);
-        expect(errors[0]!.message, field.name).toMatch(PATHED);
+        // One refusal at the field's own path, first; a renamed wall is refused again where the
+        // door names it (`/openings/0/on/wall`).
+        expect([...new Set(errors.map((d) => d.code))], field.name).toEqual(["E_JSON_SCHEMA"]);
+        expect(errors[0]!.message.startsWith(`plan JSON /${field.name}:`), field.name).toBe(true);
+        for (const d of errors) expect(d.message, field.name).toMatch(PATHED);
       }
     }
   });
