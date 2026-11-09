@@ -149,7 +149,10 @@ describe("trailing content inside an imported module — E_IMPORT_PARSE at the i
     const world = makeVirtualWorld({ "lib.arch": LIB });
     const errs = compile(PLAN, { world, noCache: true }).diagnostics.filter((d) => d.severity === "error");
     expect(errs.map((d) => d.code)).toEqual(["E_IMPORT_PARSE"]);
-    expect(errs[0]!.message).toMatch(/^In module "lib\.arch": A second "plan" block after the plan was closed/);
+    // The module's position and its own code, never its message: a parse message quotes the
+    // offending token, which would read a file the import reached back to the importer (EH-D7).
+    expect(errs[0]!.message).toMatch(/^In module "lib\.arch": E_[A-Z_]+ at lib\.arch:4:1 /);
+    expect(errs[0]!.message).not.toContain("plan");
     expect(errs[0]!.span).toEqual(spanOf(PLAN, 'import "lib.arch": box'));
   });
 });

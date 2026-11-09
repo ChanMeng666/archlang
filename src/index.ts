@@ -635,7 +635,7 @@ export type { SheetText, SheetTextEntry } from "./sheet-text.js";
 // World seam: the compiler's window onto its environment (import reads,
 // `now`). Pass `compile(src, { world })`; default is a pure no-op World.
 export { NULL_WORLD, makeVirtualWorld } from "./world.js";
-export type { World } from "./world.js";
+export type { World, WorldRefusal } from "./world.js";
 // Theming: named bases (`theme <name>`), per-element `style`, and opt-in
 // one-colour poché derivation. THEMES are the built-in named bases.
 export { THEMES, DEFAULT_THEME, mergeTheme, derivePoche, hexToHsl, hslToHex } from "./theme.js";

@@ -73,6 +73,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG, or to Plan JSON
 | `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
 | `--from-json` | read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 | `--view <iso\|axon>` | DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
@@ -131,6 +132,7 @@ render many .arch files in one call, concurrently
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
 | `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -161,6 +163,7 @@ render every ```arch block in a Markdown file and rewrite to image links
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
 | `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -194,6 +197,7 @@ render a PNG you can look at (zero-install where the optional binary is present)
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--install` | auto-install @resvg/resvg-js if missing, then render |
 | `--view <iso\|axon>` | DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -258,6 +262,7 @@ recompile on save (interactive)
 | `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
 | `--from-json` | read the input as Plan JSON (RPLAN shape) instead of .arch, convert it, then compile |
 | `--install` | auto-install the optional dep for the chosen format if missing (PNG/PDF) |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -285,6 +290,7 @@ parse + resolve + lint, no render (is it valid & sound?)
 | `--stage <brief\|rooms\|walls\|openings\|fixtures\|drafting>` | only the findings meaningful up to this authoring stage (errors always); `next`, `ok` and --strict read that set, `summary` says how many later-stage findings are held back; taste only at drafting |
 | `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
 | `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -324,6 +330,7 @@ semantic facts: rooms, areas, adjacency, what doors connect
 | `--level <n>` | report this storey of a multi-storey plan as the top-level facts (a DISPLAY filter — `ok` and the exit code still weigh the whole plan) |
 | `--facts <symmetry\|syntax\|depends\|clearances\|quantities[,…]>` | also compute these opt-in facts: `symmetry` (the plan's symmetry group per layer — shell, rooms, full — and its repeated rooms), `syntax` (space-syntax depth, mean depth, RA, integration and control on the access graph), `depends` (per element, the ids it derives from and the `let`/parameter names it reads) and `clearances` (what each clearance rule measured, per storey under the default ruleset: a WC's sides, a tall unit's and a hob's cover of a window, a hob's nearest tall unit, a doorway's clear width and approach, a stair's run and landings) and `quantities` (per storey, geometry only: wall length per category on the centreline and on the faces, room perimeters on the centreline and net, the net floor area, door and window counts by kind and width, wall face areas when the plan authors heights); absent by default |
 | `--waste <pct>` | with the `quantities` fact, also report `floor_area_with_waste_m2` = the net floor area × (1 + pct/100), pct from 0 to 100; absent unless given |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -368,6 +375,7 @@ quantities as csv or md
 | --- | --- |
 | `--format, -f <csv\|md>` | csv: one row per figure (`level,section,item,width_mm,field,value`, the field named as in `describe`); md: one table per section and storey (default md) |
 | `--waste <pct>` | with the `quantities` fact, also report `floor_area_with_waste_m2` = the net floor area × (1 + pct/100), pct from 0 to 100; absent unless given |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -391,6 +399,7 @@ continuous intent satisfaction (satisfied/total) as data — the refine-loop rew
 | --- | --- |
 | `--brief <intent.json>` | the intent JSON to measure satisfaction against (this or --taste) |
 | `--taste <generic\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | score taste instead (ADR 0032): sourced criteria in [0,1], capped at 0.5 while a validity lint warning stands; never gates (not with --brief) |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -416,6 +425,7 @@ architectural soundness warnings
 | `--strict, --fail-on-warning` | warnings fail (exit 2) |
 | `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
 | `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -532,6 +542,7 @@ apply the machine-applicable fix suggestions on a plan's diagnostics (bounded fi
 | `--backup` | before rewriting a file in place, save the original bytes to &lt;file&gt;.bak |
 | `--force` | keep a pass even if it raises the error count |
 | `--expected-hash <sha256>` | refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -568,6 +579,7 @@ furnish the rooms that hold no furniture, then add the sheet statements a plan l
 | `--dry-run` | compute the result but do not write it (the diff preview still prints) |
 | `--backup` | before rewriting a file in place, save the original bytes to &lt;file&gt;.bak |
 | `--expected-hash <sha256>` | refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -597,6 +609,7 @@ offer a proven-equivalent `for` loop for a repeated statement run
 | --- | --- |
 | `--write` | apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes nothing, and every suggestion is already proven byte-for-byte before it is offered) |
 | `--expected-hash <sha256>` | refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -621,6 +634,7 @@ change one number: what moved and why, what held, what broke
 | `--set <NAME=value>` | override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let |
 | `--against <old.arch>` | compare the input (the new version) against this older file instead; exactly one of --set and --against |
 | `--lock <id[,id…]>` | elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]` |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -645,6 +659,7 @@ advisory door/window statements for unreachable or windowless rooms
 
 | Flag | Does |
 | --- | --- |
+| `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
 | `--json` | structured result on stdout, messages on stderr |
 | `--quiet, -q` | suppress human messages on stderr |
 
@@ -697,8 +712,8 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 165 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 165 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 31 KB; errors = the diagnostic catalog, 69 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 168 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 168 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 34 KB; errors = the diagnostic catalog, 70 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -710,7 +725,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (69 KB) — read one section instead of paying for the whole 165 KB bundle
+# just the diagnostic catalog (70 KB) — read one section instead of paying for the whole 168 KB bundle
 $ archlang context --section errors
 ```
 

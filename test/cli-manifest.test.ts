@@ -72,6 +72,8 @@ describe("manifest — content", () => {
       "--backup",
       // The revision guard every in-place writer takes (`--expected-hash`, `E_STALE_SOURCE`).
       "--expected-hash",
+      // Where an `import` may read from (EH-D7): every command that compiles with its imports.
+      "--import-root",
       "--json",
       "--quiet",
     ]);

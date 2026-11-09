@@ -41,6 +41,7 @@ import {
   VERSION,
   allowedFlags,
   parseArgs,
+  setImportRoot,
   usageError,
   usageErrorFor,
 } from "./cli/io.js";
@@ -160,6 +161,11 @@ async function main(): Promise<void> {
     const mean = hint ? ` — did you mean \`${hint}\`?` : "";
     return finish(usageErrorFor(command.name, `unknown flag "${bad}" for \`${CLI_NAME} ${command.name}\`${mean}`));
   }
+
+  // 7. `--import-root <dir>`: set once for the process, so every command that compiles honours it
+  // through `makeNodeWorld` (EH-D7). A missing directory is a usage error, before anything runs.
+  const rootError = setImportRoot(args.importRoot);
+  if (rootError) return finish(usageErrorFor(command.name, rootError));
 
   switch (cmd) {
     case "compile":

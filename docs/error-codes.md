@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**157 errors** · **95 warnings**
+**160 errors** · **95 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -56,9 +56,12 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_IMPORT_CYCLE`](#e_import_cycle) | error | Cyclic import. |
 | [`E_IMPORT_FORMAT`](#e_import_format) | error | A file given to `archlang import` is not a valid plan in the format it was read as. |
 | [`E_IMPORT_LIMIT`](#e_import_limit) | error | A file given to `archlang import` needs more work to convert than any plan does. |
+| [`E_IMPORT_NOT_ARCH`](#e_import_not_arch) | error | An imported module is not a `.arch` file. |
 | [`E_IMPORT_NOT_EXPORTED`](#e_import_not_exported) | error | Imported name is not exported by the module. |
 | [`E_IMPORT_NOT_FOUND`](#e_import_not_found) | error | Import path could not be resolved. |
+| [`E_IMPORT_OUTSIDE_ROOT`](#e_import_outside_root) | error | An imported module lies outside the import root. |
 | [`E_IMPORT_PARSE`](#e_import_parse) | error | Imported module has a parse error. |
+| [`E_IMPORT_TOO_LARGE`](#e_import_too_large) | error | An imported module is larger than the CLI reads. |
 | [`E_INDEX`](#e_index) | error | Array index out of range. |
 | [`E_INPUT_TOO_LARGE`](#e_input_too_large) | error | The source is larger than this host accepts. |
 | [`E_INSTANCE_NO_TRANSFORM`](#e_instance_no_transform) | error | A plugin element inside a `place`d component has no `transform()`. |
@@ -842,6 +845,18 @@ archlang import --from openplan3d plan.json   # error: Invalid project: floors[0
 archlang import --from openplan3d huge.json   # error: one floor with 100,000 walls
 ```
 
+## E_IMPORT_NOT_ARCH
+
+*error* — An imported module is not a `.arch` file.
+
+**Cause.** The `archlang` CLI reads an `import` only from a file whose name ends in `.arch` (in any case). Any other file is refused before it is opened, so an `import` cannot pull a text, config or system file into a drawing, nor learn what it holds from the parse error it would raise. A symbolic link whose target is not `.arch` is refused the same way. Hosts with no file system (the playground, the hosted MCP server) never read files at all.
+
+**Fix.** Import the `.arch` module itself; rename the file to end in `.arch` if it is one.
+
+```arch static
+import "notes.txt" as n   # error: not an .arch file
+```
+
 ## E_IMPORT_NOT_EXPORTED
 
 *error* — Imported name is not exported by the module.
@@ -866,16 +881,40 @@ import "lib.arch": nope   # error if lib.arch has no `component nope`
 import "lib/missing.arch": a   # error
 ```
 
+## E_IMPORT_OUTSIDE_ROOT
+
+*error* — An imported module lies outside the import root.
+
+**Cause.** The `archlang` CLI reads an `import` only from inside its import root (the directory it was started in, or the directory `--import-root <dir>` names) or from under the compiled plan's own directory. The path is resolved with symbolic links and junctions followed, so a `..`, an absolute path, a drive letter or a link cannot leave the root. A library beside or below the plan, or in a sibling directory under the root, still imports; one above both does not.
+
+**Fix.** Run `archlang` from a directory that contains both the plan and the library, or pass `--import-root <dir>` naming a directory that contains them.
+
+```arch static
+import "lib.arch" as lib   # error when lib.arch resolves outside the import root (e.g. through a link)
+```
+
 ## E_IMPORT_PARSE
 
 *error* — Imported module has a parse error.
 
-**Cause.** The module referenced by `import` does not itself parse.
+**Cause.** The module referenced by `import` does not itself parse. The message gives the module's own error code and its `<path>:<line>:<col>`, never the module's text, so an `import` cannot read a file it reached by quoting it back.
 
-**Fix.** Fix the syntax error in the imported module.
+**Fix.** Fix the syntax error in the imported module at the line and column given; `archlang lint <module>.arch` shows it in full.
 
 ```arch static
 # error originates in the imported file
+```
+
+## E_IMPORT_TOO_LARGE
+
+*error* — An imported module is larger than the CLI reads.
+
+**Cause.** The `archlang` CLI reads an imported `.arch` module of at most 1048576 bytes (`MODULE_CAP_BYTES`) and refuses a larger file without reading it. No plan library comes near it; the cap stops an `import` from pulling a huge file into memory.
+
+**Fix.** Split the module into several smaller `.arch` files and import each.
+
+```arch static
+import "huge.arch" as h   # error: the module is larger than the cap
 ```
 
 ## E_INDEX

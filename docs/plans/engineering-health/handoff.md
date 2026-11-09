@@ -1,24 +1,28 @@
 # Resume point
 
-**Where (2026-11-09, night):** wave 0 done except EH0.8; wave 1 two-thirds landed.
-Rulings EH-D1…D9 taken by delegation (`README.md` § 6; EH-D8 amended by #597: severity follows the
-list, budget-class codes survive the cap), owner may overturn.
+**Where (2026-11-09, late):** wave 0 done except EH0.8; wave 1 almost done.
 
-**Landed:** EH0.1 (#581) · EH1.2 (#598, squash: `KIND_FACETS`, five exhaustive switches, the
-new-element checklist) · EH1.3 (#589) · EH1.4 (#590; `LintContext.lintRules`; `no-value-cycles`) ·
-EH1.5 (#591; 41 seam rows) · EH1.6 tranche 1 (#592) · EH1.10 (#593; three pinned defects → EH1.15) ·
-EH1.11 (#597; line-start table, cap 500, `E_/W_DIAGNOSTIC_LIMIT`, `LIMIT_CODES`) · EH1.13 PR 1 (#594;
-inflate cap, `sanitizeSvg` ×3 under a lockstep pin, `isPlainSvg` fast path).
+**Landed:** EH0.1–EH0.7, EH0.9 (#581, #583–#588) · EH1.1 (#599; `scripts/compat-check.mjs` + `test/release-compat.test.ts`,
+four surfaces vs the published core and shim, literal unions as append-only sets in both roles) · EH1.2 (#598) ·
+EH1.3 (#589) · EH1.4 (#590) · EH1.5 (#591) · EH1.6 tranche 1 (#592) · EH1.10 (#593) · EH1.11 (#597) · EH1.13
+(#594, #595) · EH1.14 (#605; `test/agent-docs-gate.test.ts`, the renamed agents `executor-senior`,
+`executor-mechanical`, `redteam`, `verifier`) · EH1.15 (#607; every Plan JSON field validated before emission,
+validator capped, four defects fixed).
 
-**In review:** EH1.1 (#599; variance rules per role; literal unions compared as sets in both roles
-by the coordinator's ruling). **In progress:** EH1.12 (`import` rooted), EH1.15 (`planFromJson`
-hardening, waits on nothing now that #597 is in).
+**In review:** EH1.12 (#601, `import` rooted: cwd or `--import-root` plus the plan's directory, `.arch` only,
+1 MiB, token-free `E_IMPORT_PARSE`; review done, Linux CI fixes landed) · EH1.16 (#608; sanitiser fix: CDATA no
+longer throws, comments/PIs dropped). **In progress:** EH1.7 (counts not clocks, FC_SCALE, nightly fuzz-deep;
+HIGH tier: `vitest.config.ts` + `nightly.yml`) · EH2.9 (glyph dispatch by family).
 
-**Owner queue:** empty. The owner approved the wave-0 set on 2026-11-09 ("merge the EH high-tier set"): #583–#588 and #595 merged, EH0.5 applied (ten required checks). First things to read tomorrow: the nightly's `ci-red` behaviour (#584), the first `workflow_run` deploy (#585), the five-shard times on the next code PR (#586), and the release guard on the next tag (#583).
+**Owner queue:** #606 (one AGENTS.md line: `/release-check` → "follow `.claude/commands/release-check.md`");
+EH1.7's PR when it opens. Confirmed today: the first `workflow_run` deploy fired after `main`'s CI (#585 works);
+main requires ten checks. To read tomorrow: the nightly's `ci-red` behaviour (#584) and the fuzz-deep job if
+EH1.7 lands.
 
-**Next cards:** EH1.14 (agent docs, stale recipes), EH1.16 (review residue), EH1.8 (`runCli`) then
-EH1.9, EH1.7 after #586 lands (it edits `vitest.config.ts`); then wave 2 (EH2.1 error catalogue
-first: it is the churn hotspot and the browser-bundle lever).
+**Next cards:** EH1.8 (`runCli`) then EH1.9; EH0.8 (flaky reporter); then wave 2 (EH2.1 error catalogue first:
+it is the churn hotspot and the browser-bundle lever; EH2.2 `src/ir/`; EH2.4–EH2.8). Residue cards to file:
+root `packages/archlang-3d/src/node.ts`'s `makeNodeWorld` (EH1.16d); pin the old zod/MCP SDK in the compat cache
+after a major bump; `OpeningJson.kind` type still hand-written (tied by a type assertion).
 
 **Process notes from this day:** executors must NOT edit `cards.md` (adjacent card headings conflict
 on every merge; the coordinator records status in a records PR); every pure-move PR repoints the

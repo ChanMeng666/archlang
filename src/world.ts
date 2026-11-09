@@ -19,8 +19,21 @@
 export interface World {
   /** Resolve a (already canonicalized) module path to its source, or `null` if absent. */
   read(path: string): string | null;
+  /**
+   * Why the last {@link World.read} of `path` returned `null`, when the World REFUSED it rather
+   * than not finding it (the Node CLI's World refuses a module outside its import root, one that
+   * is not `.arch`, or one above its size cap). Optional: a World without it reports every `null`
+   * as `E_IMPORT_NOT_FOUND`.
+   */
+  refusal?(path: string): WorldRefusal | undefined;
   /** The current time, when the caller wants time-dependent output to be injectable. */
   now?(): Date;
+}
+
+/** A World's reason for not serving a module: a catalogued `E_IMPORT_*` code and its message. */
+export interface WorldRefusal {
+  code: string;
+  message: string;
 }
 
 /** The default World: nothing readable, no clock. Keeps import-free compiles pure. */
