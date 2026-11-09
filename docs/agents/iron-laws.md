@@ -14,10 +14,10 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 - **T6 (area-syntax sugar) is parked**: no `area` token and no `m2` unit suffix unless one of the
   frozen G2 reversal triggers fires (archived as `research/2026-07-g2-verdict.md` in the
   archcanvas-growth docs archive). Area ships only as an intent-channel assertion.
-- **Dataset contamination** (`test/dataset.test.ts`): the eval corpus/goldens are a public regression
-  fixture, not a holdout (no number on them is called held-out); `dataset/` imports only
-  `../src/index.js`, never `eval/`; rows are deduplicated against that corpus by text and `describe()`; the canary GUID in `dataset/canary.ts` is never
-  regenerated; `repair`-split sources stay fully literal.
+- **Dataset contamination** (`test/dataset.test.ts`; the public-fixture and canary rules are in
+  AGENTS.md § Hard rules): no number on the eval corpus is called held-out; `dataset/` imports only
+  `../src/index.js`, never `eval/`; rows are deduplicated against that corpus by text and `describe()`;
+  `repair`-split sources stay fully literal.
 - **Judge comparability**: never compare eval rates across a `JUDGE_VERSION`/`SYNONYMS_VERSION`
   change. Regenerate `eval/judge-fixture.json` only for an approved bump, never to green a suite.
   Its `lintWarnings` counts are a side count, not a judgment: a lint PR whose new rule fires on an
@@ -27,14 +27,13 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   the offline `eval:ci` gate compares every golden with the fixture, never requires all to pass, and
   prints how many are recorded as failing (`fixtureVerdict`, `eval/run.ts`; D25's gate bullet,
   ratified 2026-10-27).
-- **`eval/rubric.md` is frozen; `npm run eval:live` is paid and owner-only.** CI runs `eval:ci`.
+- **`eval/rubric.md` is frozen.** `eval:live` is paid and owner-only (hard rule: AGENTS.md § Hard rules); CI runs `eval:ci`.
 
 ## Releases
 
-- **Tokenless OIDC trusted publishing only** (`v*` tag → `release.yml`). Never add an npm token; an
-  auth failure means redo the npmjs trusted-publisher registration. Never automate npmjs account,
-  2FA or publisher management (human only). `repository.url`'s owner must be `ChanMeng666`
-  byte-for-byte or provenance fails with E422. Recipe: `docs/npm-oidc-publishing-playbook.md`.
+- **Tokenless OIDC trusted publishing only** (hard rule: AGENTS.md § Hard rules). An auth failure means redo the npmjs
+  trusted-publisher registration; publisher management is human only. `repository.url`'s owner must be
+  `ChanMeng666` byte-for-byte or provenance fails with E422. Recipe: `docs/npm-oidc-publishing-playbook.md`.
 - **A `packages/mcp` change — even prose — publishes only with a version bump** in
   `packages/mcp/package.json` AND both `server.json` `version` fields; `release.yml` skips a version
   already on npm.
@@ -45,10 +44,9 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 ## Brand & hosting
 
-- **Brand assets are byte-sacred.** `brand/archlang-logo-master.svg` is the one source; every
-  variant is a fill-swap only. The brand token block is duplicated byte-identically in both sites
-  (`test/site-lockstep.test.ts`).
-- **Both sites are light-only** (ADR 0014). No dark mode, no dark surface.
+- **Brand assets are byte-sacred** (hard rule: AGENTS.md § Hard rules). Every variant of the logo master is a fill-swap only.
+  The brand token block is duplicated byte-identically in both sites (`test/site-lockstep.test.ts`).
+- **Both sites are light-only** (hard rule: AGENTS.md § Hard rules; ADR 0014). No dark surface.
 - **Hosting is Cloudflare Workers static assets** (ADR 0019, `docs/hosting-and-domains.md`): docs at
   `archlang.uk`, playground at `playground.archlang.uk`. The Worker and workspace names
   `archlang-docs`/`archlang-playground` are not URLs — never rename them. The DNS records are
@@ -70,8 +68,8 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 - **The modelling range is 2^25 mm** (`MODEL_RANGE_MM`, `docs/adr/0022-exact-decisions-and-bounded-input.md`):
   past it an element is `E_OUT_OF_RANGE`. Do not widen it to suit an input.
-- **Budgets are counts, never time, and every input returns a diagnostic**, never a hang or a throw
-  (`E_STEP_LIMIT`, `E_DRAWING_LIMIT`). Never replace one with a wall-clock timeout.
+- **Budgets are counts, never time** (hard rule: AGENTS.md § Hard rules: `compile()` is bounded). Never replace
+  `E_STEP_LIMIT` or `E_DRAWING_LIMIT` with a wall-clock timeout.
 - **Ring work is charged** (`polygonSelfIntersects`, `polygonsOverlap`): the owner reopened M.19 on a
   376 s measurement. The label-placement residual stays kept.
 - **No structural attribute on walls and no load-bearing check** (D25): cross-storey wall checks go
@@ -98,15 +96,13 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   `while`/reassignment, and that deletion is already prepared (see `docs/backlog.md`) — rebase it,
   don't redo it. Heights are data (`describe()`, Plan JSON, a future data export such as IFC), never
   a drawing.
-- **A generator's template can go stale while `check:drift` is green** — the gate proves
-  reproducibility, not correctness. Derive from `KEYWORDS`/`RULES`/`buildManifest()`, never retype,
-  and give each generator a guard that fails when a source-of-truth entry has no rendering.
-- **Every new language form ships a byte-identity law, pinned by test**: a plan not using it
-  renders, describes and lints exactly as before. Prove it with a SHA-256 sweep whose payload is SVG
+- **A generator's template can go stale while `check:drift` is green** (hard rule: AGENTS.md § Hard rules). Derive from
+  `KEYWORDS`/`RULES`/`buildManifest()`, and give each generator a guard that fails when a
+  source-of-truth entry has no rendering.
+- **Every new language form ships a byte-identity law** (hard rule: AGENTS.md § Hard rules). Prove it with a SHA-256 sweep whose payload is SVG
   + `describe()` + `lint()` (add `compile().diagnostics` when the resolver is reachable), taking the
   baseline with the test's own digest body. A moved golden is a finding to explain first.
-- **A drawing change never moves `describe()`, and moves `lint()` only through its drafting-layer
-  rules** (ADR 0032; owner decision taken by delegation, `docs/plans/plan-soundness/README.md` § 3
+- **Drafting-layer lint rules read the sheet** (hard rule: AGENTS.md § Hard rules; ADR 0032; owner decision taken by delegation, `docs/plans/plan-soundness/README.md` § 3
   D17/D18). `W_ANNOTATION_OVERLAP` and `W_TITLE_OVERFLOW` (PS2.12,
   `src/lint/rules/annotations.ts`) read the drawn sheet, because the defect they report (text
   printed over a symbol, a wall, a door swing or a label, or off its room; a title value wider than
@@ -118,7 +114,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   `test/byte-identity-baseline.ts`'s header). Every other rule still reads only the plan's facts.
   Drafting-layer codes are also excepted from `finish`'s never-worse law (`NOT_GATED_DRAFTING`,
   read from `LINT_CODE_LAYERS`; ADR 0024 §6, ADR 0025 §7).
-- **A derived position comes from the shape, never its bounding box or centroid.** This is a defect
+- **A derived position comes from the shape** (hard rule: AGENTS.md § Hard rules). This is a defect
   class that `arch lint` cannot see. The grep that finds a new instance: `room\.size`/`r\.size\.w`
   without a nearby `r.poly` branch. Fix locally: probe one wall thickness off each face and ask
   which side has floor (`pointInRoomBox`/`pointInPolygon`), or use `polygonLabelPoint`. Never build
@@ -143,10 +139,9 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 - **Listings**: an agent may drive a submission form or a publish step through the owner's logged-in
   browser or CLI when the owner has asked for that listing; the final submit of anything that
   accepts terms, and Cloudflare dashboard edits, are the owner's (`docs/seo.md` section 8).
-- **The full test suite runs on GitHub CI, never on the owner's machine** (owner, 2026-11-04): locally
-  `npm run check:quick` (changed files, nearest tests, about a minute) and the builds that must happen
-  in the primary checkout; then push, set auto-merge, and start the next item. A CI red is read from
-  CI's log, not reproduced by a local full run. Only the PR's CI green is merge evidence.
+- **The full test suite runs on GitHub CI, never on the owner's machine** (owner, 2026-11-04; the local
+  gate is AGENTS.md § How to work): then push, set auto-merge, and start the next item. A CI red is read
+  from CI's log, not reproduced by a local full run.
 - **Distribution first**: ArchLang exists for distribution and credibility; revenue is secondary.
 - **ArchCanvas is in maintenance** (D26, the day-90 verdict) and stays on its pinned core (D28): its prompts
   inject `spec.llm.md` verbatim, so a core bump changes what the model writes, and only a paid run can price
