@@ -32,7 +32,8 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(HERE, "..");
 const SRC = resolve(REPO, "src").replace(/\\/g, "/");
 const INDEX = resolve(SRC, "index.ts");
-const DESCRIBE = resolve(SRC, "describe.ts");
+// `SceneSummary` is declared in `describe/types.ts` and re-exported by `describe.ts`.
+const DESCRIBE = resolve(SRC, "describe/types.ts");
 
 /**
  * The resolved-plan seam a downstream consumer reads (ADR 0031): each value and the module
@@ -169,7 +170,7 @@ describe("the public type surface is closed", () => {
   const indexFile = program.getSourceFile(INDEX);
 
   it("finds the two source files the surface is defined by", () => {
-    expect(describeFile, "src/describe.ts must be in the program").toBeDefined();
+    expect(describeFile, "src/describe/types.ts must be in the program").toBeDefined();
     expect(indexFile, "src/index.ts must be in the program").toBeDefined();
   });
 
@@ -196,7 +197,7 @@ describe("the public type surface is closed", () => {
 
   // ——— The machinery has to be doing real work before its verdict means anything. ———
   it("actually resolves SceneSummary and the index's exports", () => {
-    expect(sceneSummary, "SceneSummary must be declared in src/describe.ts").toBeDefined();
+    expect(sceneSummary, "SceneSummary must be declared in src/describe/types.ts").toBeDefined();
     // A collapsed walk (0 or a handful of names) would pass the closure check vacuously.
     expect(reachable.size).toBeGreaterThan(20);
     // Likewise a failed module read would make every name "missing" — or, if the sets
