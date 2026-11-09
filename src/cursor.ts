@@ -10,6 +10,7 @@
  */
 
 import type { ComponentDef, ExprPoint, OpeningAttach, PlanNode, Statement } from "./ast.js";
+import { nonElementKind } from "./elements/facets.js";
 import type { Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import { exprSpan } from "./expr.js";
@@ -268,7 +269,27 @@ export function statementBodies(s: Statement): Statement[][] {
       return [s.body];
     case "if":
       return s.else ? [s.then, s.else] : [s.then];
+    // No element statement nests a statement list (a stair's `pieces` are clauses, not
+    // statements).
+    case "wall":
+    case "room":
+    case "door":
+    case "window":
+    case "opening":
+    case "furniture":
+    case "dim":
+    case "column":
+    case "stair":
+    case "elevator":
+    case "escalator":
+    case "roof":
+    case "void":
+    case "outdoor":
+    case "fence":
+    case "walls":
+      return [];
     default:
+      nonElementKind(s.kind);
       return [];
   }
 }
@@ -294,8 +315,16 @@ export function exprChildren(e: Expr): Expr[] {
       return [e.body];
     case "if":
       return [e.cond, e.then, e.else];
-    default:
+    case "num":
+    case "bool":
+    case "ref":
       return [];
+    default: {
+      // A new `Expr` form with no case fails the typecheck here.
+      const unhandled: never = e;
+      void unhandled;
+      return [];
+    }
   }
 }
 

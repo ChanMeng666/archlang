@@ -691,8 +691,27 @@ function drawnRecs(ir: ResolvedPlan): Rec<Point>[] {
         for (const [a, b] of segs) if (a.x !== b.x || a.y !== b.y) out.push({ form: "set", label, pts: [a, b] });
         break;
       }
-      default:
+      // Recorded by {@link symmetryFacts} itself (walls, rooms, doors, windows, openings,
+      // furniture; the stairs and lifts through `verticalsOf`; a `walls from rooms` statement
+      // through the walls it derives), or not building (a dimension).
+      case "wall":
+      case "room":
+      case "door":
+      case "window":
+      case "opening":
+      case "furniture":
+      case "dim":
+      case "stair":
+      case "elevator":
+      case "escalator":
+      case "walls":
         break;
+      default: {
+        // A new element kind with no case fails the typecheck here.
+        const unhandled: never = e;
+        void unhandled;
+        break;
+      }
     }
   }
   return out;

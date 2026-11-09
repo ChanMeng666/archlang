@@ -35,8 +35,10 @@ source (.arch)
   `span` and an `E_*`/`W_*` code catalogued in `src/error-catalog.ts`.
 - **Adding an element = one module** in `src/elements/` exporting an `ElementDef`, registered in
   `src/elements/defs.ts`; parse/resolve/render dispatch through the registry, never a switch.
+  The per-kind code outside it is exhaustive (`tsc` fails on a kind it does not name) and the kind
+  sets come from `KIND_FACETS` (`src/elements/facets.ts`); the checklist is `docs/agents/new-element.md`.
 - **Output formats are not a registry seam**: a new one is a row in `EXPORT_FORMATS`
-  (`src/manifest.ts`) plus a line in `serialize()` (`src/cli/serialize.ts`).
+  (`src/manifest.ts`) plus a `case` in `serialize()` (`src/cli/serialize.ts`), which `tsc` demands.
 - **`CompileResult` is append-only** — add fields, never remove or rename.
 - **Zero runtime dependencies.** Heavy/native deps are `optionalDependencies`, lazily `import()`ed
   with `/* webpackIgnore: true */ /* @vite-ignore */` so downstream bundlers don't resolve them.
