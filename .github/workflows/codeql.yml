@@ -17,6 +17,8 @@ on:
     paths-ignore:
       - "dist/**"
       - "docs-site/.vitepress/cache/**"
+  # Required checks on main must also report under the merge queue, or it would wait forever.
+  merge_group:
   schedule:
     # Weekly, Monday 04:27 UTC (off the hour so it doesn't queue with the crowd).
     - cron: "27 4 * * 1"

@@ -64,12 +64,22 @@
 
 ## CI
 
-`ci.yml` (push to `main` + PRs), all gating except `bench` and `check-3d`; the jobs behind the
+`ci.yml` (push to `main`, PRs and the merge queue's `merge_group`), all gating except `bench`; the jobs behind the
 `Node 22` check are not required by name, the `Node 22` aggregator gates on them. `main` is protected: its
-required checks are the seven gating check names below (not up-to-date-with-`main`, no reviews); `check-3d`
-is not one of them (adding it is the owner's branch-protection setting), and repository
+required checks are the ten names `Node 18`, `Node 20`, `Node 22`, `Workspace builds`, `Windows (tests + drift)`, the two E2E legs, `3D package (check:3d)` and CodeQL's two `Analyze` legs (not up-to-date-with-`main`, no reviews), and repository
 auto-merge is on. A new push to a PR cancels that PR's running CI (`concurrency`, per PR number); each
 push to `main` runs in a group of its own and is never cancelled.
+
+**Merge queue (`merge_group`).** Every workflow that produces a required check (`ci.yml`, `codeql.yml`)
+also triggers on `merge_group`; a required check that did not would block the queue forever. Under it
+`changes` classifies nothing (`code=true`), so every leg runs in full, Node 18, Node 20 and Windows
+included (the queue is the last gate: `FULL_LEG` is true for any event but `pull_request`); `changelog`
+runs and `Node 22` expects it to succeed. The queue's checkout is the merge commit on `main` (or on
+the PR queued ahead), so `HEAD^1` is still the base. There is no `pull_request` payload: the PR number
+is parsed from `merge_group.head_ref` (`gh-readonly-queue/main/pr-<n>-<sha>`) and `changelog-exempt` is
+read live from the PR, so the label must be on the PR when it enters the queue. `bench` and the PR
+comment stay PR-only; `deploy.yml` and `main-red.yml` act on `push` runs only. `plugin-validate.yml`
+and `arch-render-selftest.yml` are not required and do not run in the queue.
 
 **Record-only PRs.** The `changes` job sets `code=false` when every changed path is a record: the
 negated globs in its `dorny/paths-filter` step (Markdown under `docs/plans/`, `docs/agents/`, a few
@@ -104,12 +114,12 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
 | `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
-| `changelog` (CHANGELOG under [Unreleased]) | PR only, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success | not yet measured |
-| `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR, `changelog`; on a record-only PR, runs the docs leg | < 0.2 |
+| `changelog` (CHANGELOG under [Unreleased]) | PR and merge queue, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success (on a PR and in the queue) | not yet measured |
+| `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR or in the queue, `changelog`; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
 | `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
-| `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | 2.0 (PR #336, browser cache cold) |
+| `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; required | 2.0 (PR #336, browser cache cold) |
 | `bench` | informational PR-head vs merge-base timings, two runs each (order B H H B), ratios and a noise floor in the job summary (+ a PR comment on same-repo PRs); never gates (the gate is `test/work-counts.test.ts`); skipped on a record-only PR | 2.8 |
 
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs
@@ -134,9 +144,12 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
    safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
    never merges its own PR. Releases (`v*` tags), paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
-2. `gh pr merge <n> --auto --merge --match-head-commit <full 40-character sha>`: GitHub merges (a merge
-   commit; a squash or rebase re-creates allowlisted gitleaks lines) once the seven required checks
-   pass, and deletes the branch. A later push voids the pin: re-review, re-run step 2.
+2. `gh pr merge <n> --auto --merge --match-head-commit <full 40-character sha>`: with the merge queue
+   on, this enqueues the PR once its checks pass; GitHub then re-runs the required checks on the PR
+   merged onto `main` (and the PRs ahead of it, § CI, Merge queue) and only then fast-forwards `main`,
+   so a PR ahead of yours that moves a generated file or an import no longer breaks `main`. The queue
+   merges with a merge commit (a squash or rebase re-creates allowlisted gitleaks lines) and deletes
+   the branch. A later push voids the pin: re-review, re-run step 2.
    A PR already green and in clean status refuses `--auto` ("clean status"): merge it directly,
    `gh pr merge <n> --merge --match-head-commit <full sha>`. After `gh pr merge --disable-auto` and a
    new push, re-run step 2.
