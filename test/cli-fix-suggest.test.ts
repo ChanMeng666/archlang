@@ -1,9 +1,9 @@
-import { spawnSync } from "node:child_process";
 import { describe, expect, it } from "vitest";
+import { runArch } from "./helpers/cli.js";
 
 /**
- * CLI integration for `arch fix` (T2d) and `arch suggest` (T2f). Spawns the real
- * CLI via the tsx loader (no build) and checks the agent contract: `--json` is
+ * CLI integration for `arch fix` (T2d) and `arch suggest` (T2f). Runs the CLI
+ * in-process (`test/helpers/cli.ts`) and checks the agent contract: `--json` is
  * parseable on stdout, exit codes match the documented convention, `--dry-run`
  * never writes, and both stream through stdin (`-`).
  */
@@ -13,13 +13,8 @@ interface Run {
   stdout: string;
   stderr: string;
 }
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 // A door floating off the wall (W_DOOR_OFF_WALL) — a machine-applicable fix.
@@ -55,8 +50,8 @@ const NO_ENTRANCE = `plan "NoEntrance" {
 }`;
 
 describe("arch fix", () => {
-  it("`fix - --dry-run --json` reports the applied fixes and streams to stdout, exit 0", () => {
-    const r = run(["fix", "-", "--dry-run", "--json"], OFF_WALL);
+  it("`fix - --dry-run --json` reports the applied fixes and streams to stdout, exit 0", async () => {
+    const r = await run(["fix", "-", "--dry-run", "--json"], OFF_WALL);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -66,15 +61,15 @@ describe("arch fix", () => {
     expect(j.applied[0].applicability).toBe("machine-applicable");
   }, 30000);
 
-  it("`fix - -o -` emits the corrected source with the door attached", () => {
-    const r = run(["fix", "-", "-o", "-"], OFF_WALL);
+  it("`fix - -o -` emits the corrected source with the door attached", async () => {
+    const r = await run(["fix", "-", "-o", "-"], OFF_WALL);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("door id=d on w1 at 63.889% width 900");
   }, 30000);
 
-  it("is a no-op (exit 0) on an already-clean plan", () => {
+  it("is a no-op (exit 0) on an already-clean plan", async () => {
     const clean = 'plan "C" { units mm room at (0,0) size 4000x3000 label "R" }';
-    const r = run(["fix", "-", "--dry-run", "--json"], clean);
+    const r = await run(["fix", "-", "--dry-run", "--json"], clean);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.passes).toBe(0);
@@ -83,8 +78,8 @@ describe("arch fix", () => {
 });
 
 describe("arch suggest", () => {
-  it("`suggest - --json` returns candidate statements for the topology faults, exit 0", () => {
-    const r = run(["suggest", "-", "--json"], TOPO);
+  it("`suggest - --json` returns candidate statements for the topology faults, exit 0", async () => {
+    const r = await run(["suggest", "-", "--json"], TOPO);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -95,8 +90,8 @@ describe("arch suggest", () => {
     expect(unreach.candidates[0].insertText).toMatch(/^door on \w+ at [\d.]+% width \d+$/);
   }, 30000);
 
-  it("`suggest - --json` surfaces the new W_NO_ENTRANCE kind, exit 0", () => {
-    const r = run(["suggest", "-", "--json"], NO_ENTRANCE);
+  it("`suggest - --json` surfaces the new W_NO_ENTRANCE kind, exit 0", async () => {
+    const r = await run(["suggest", "-", "--json"], NO_ENTRANCE);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);

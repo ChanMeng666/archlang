@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -13,6 +12,7 @@ import {
 } from "../src/index.js";
 import { LINT_RULES } from "../src/lint.js";
 import { coverageLine, FAMILY_NOUN, SKIP_WHY } from "../src/lint/coverage.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * The lint coverage report (plan-soundness PS2.13, `src/lint/coverage.ts`).
@@ -280,11 +280,10 @@ describe("lint coverage: review round 1 (the reviewer's repro shapes)", () => {
 });
 
 describe("lint coverage: the CLI appends it", () => {
-  const cli = (args: string[]) =>
-    spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], { cwd: ROOT, encoding: "utf8" });
+  const cli = (args: string[]) => runArch(args, { cwd: ROOT });
 
-  it("--json: `coverage` is the last key, and every key before it is the report without it", () => {
-    const r = cli(["lint", "examples/hillside-villa.arch", "--json"]);
+  it("--json: `coverage` is the last key, and every key before it is the report without it", async () => {
+    const r = await cli(["lint", "examples/hillside-villa.arch", "--json"]);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout) as Record<string, unknown>;
     expect(Object.keys(o)).toEqual(["summary", "ok", "strict", "diagnostics", "coverage"]);
@@ -296,8 +295,8 @@ describe("lint coverage: the CLI appends it", () => {
     expect(r.stdout.startsWith(JSON.stringify(rest, null, 2).slice(0, -2))).toBe(true);
   });
 
-  it("--json with a display filter: coverage still follows the filter fields", () => {
-    const r = cli(["lint", "examples/hillside-villa.arch", "--json", "--code", "W_PATH_TOO_NARROW"]);
+  it("--json with a display filter: coverage still follows the filter fields", async () => {
+    const r = await cli(["lint", "examples/hillside-villa.arch", "--json", "--code", "W_PATH_TOO_NARROW"]);
     expect(Object.keys(JSON.parse(r.stdout))).toEqual([
       "summary",
       "ok",
@@ -309,20 +308,20 @@ describe("lint coverage: the CLI appends it", () => {
     ]);
   });
 
-  it("human: exactly one stderr line when something was skipped, none when nothing was, stdout unchanged", () => {
-    const skipped = cli(["lint", "examples/two-bed.arch"]);
+  it("human: exactly one stderr line when something was skipped, none when nothing was, stdout unchanged", async () => {
+    const skipped = await cli(["lint", "examples/two-bed.arch"]);
     expect(skipped.stderr.split("\n").filter((l) => l.includes("lint coverage:"))).toEqual([
       "  lint coverage: skipped orientation (the plan declares no site).",
     ]);
-    const none = cli(["lint", "examples/bungalow.arch"]);
+    const none = await cli(["lint", "examples/bungalow.arch"]);
     expect(coverageLine(lintCoverage(example("bungalow.arch"))!)).toBeNull();
     expect(none.stderr).not.toContain("lint coverage");
-    expect(cli(["lint", "examples/two-bed.arch", "--quiet"]).stderr).not.toContain("lint coverage");
+    expect((await cli(["lint", "examples/two-bed.arch", "--quiet"])).stderr).not.toContain("lint coverage");
   });
 
-  it("validate never prints it", () => {
-    const r = cli(["validate", "examples/two-bed.arch", "--json"]);
+  it("validate never prints it", async () => {
+    const r = await cli(["validate", "examples/two-bed.arch", "--json"]);
     expect(Object.keys(JSON.parse(r.stdout))).not.toContain("coverage");
-    expect(cli(["validate", "examples/two-bed.arch"]).stderr).not.toContain("lint coverage");
+    expect((await cli(["validate", "examples/two-bed.arch"])).stderr).not.toContain("lint coverage");
   });
 });

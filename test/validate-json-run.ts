@@ -7,7 +7,7 @@
 
 import { readdirSync, statSync } from "node:fs";
 import { cmdValidate } from "../src/cli/commands-analyze.js";
-import { parseArgs } from "../src/cli/io.js";
+import { nodeIo, parseArgs } from "../src/cli/io.js";
 
 /** Every `.arch` file the law covers, as forward-slash paths from the repository root, sorted. */
 export function validateJsonFiles(): string[] {
@@ -60,7 +60,7 @@ export function runValidate(argv: string[]): { exit: number; stdout: string } {
   }) as typeof process.stdout.write;
   process.stderr.write = (() => true) as typeof process.stderr.write;
   try {
-    return { exit: cmdValidate(parseArgs(argv)), stdout };
+    return { exit: cmdValidate(parseArgs(argv), nodeIo()), stdout };
   } finally {
     process.stdout.write = write;
     process.stderr.write = writeErr;

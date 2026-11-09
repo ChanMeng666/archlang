@@ -10,7 +10,6 @@
  * fails loudly instead of the CLI silently slicing garbage.
  */
 
-import { spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -18,6 +17,7 @@ import { renderLlmsFull, SKILL_SOURCE } from "../scripts/gen-llms-full.js";
 import { splitContext } from "../src/cli/commands-meta.js";
 import { ERROR_CATALOG, ERROR_CODES } from "../src/error-catalog.js";
 import { buildManifest } from "../src/manifest.js";
+import { runArch } from "./helpers/cli.js";
 
 interface Run {
   status: number | null;
@@ -25,13 +25,8 @@ interface Run {
   stderr: string;
 }
 
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 /** The bundle as the generator renders it right now (not the possibly-stale file). */
@@ -82,8 +77,8 @@ describe("splitContext is welded to the generator", () => {
 });
 
 describe("CLI — `arch context --section`", () => {
-  it("prints only the diagnostic catalog for --section errors", () => {
-    const r = run(["context", "--section", "errors"]);
+  it("prints only the diagnostic catalog for --section errors", async () => {
+    const r = await run(["context", "--section", "errors"]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("## 4. Diagnostic catalog");
     expect(r.stdout).toContain("E_ROOM_SIZE");
@@ -92,23 +87,23 @@ describe("CLI — `arch context --section`", () => {
     expect(r.stdout).not.toContain("## 3. CLI reference");
   }, 30000);
 
-  it("is a fraction of the whole bundle", () => {
-    const whole = run(["context"]);
-    const errors = run(["context", "--section", "errors"]);
+  it("is a fraction of the whole bundle", async () => {
+    const whole = await run(["context"]);
+    const errors = await run(["context", "--section", "errors"]);
     expect(whole.status).toBe(0);
     expect(whole.stdout.length).toBeGreaterThan(40000);
     expect(errors.stdout.length).toBeLessThan(whole.stdout.length / 2);
   }, 30000);
 
-  it("without --section, prints the whole bundle exactly as before", () => {
-    const r = run(["context"]);
+  it("without --section, prints the whole bundle exactly as before", async () => {
+    const r = await run(["context"]);
     const file = readFileSync("llms-full.txt", "utf8").replace(/\r\n/g, "\n");
     expect(r.status).toBe(0);
     expect(r.stdout.replace(/\r\n/g, "\n")).toBe(file);
   }, 30000);
 
-  it("--json carries the section name alongside the text (append-only shape)", () => {
-    const r = run(["context", "--section", "cli", "--json"]);
+  it("--json carries the section name alongside the text (append-only shape)", async () => {
+    const r = await run(["context", "--section", "cli", "--json"]);
     expect(r.status).toBe(0);
     const out = JSON.parse(r.stdout);
     expect(out.ok).toBe(true);
@@ -117,8 +112,8 @@ describe("CLI — `arch context --section`", () => {
     expect(out.context).not.toContain("## 4. Diagnostic catalog");
   }, 30000);
 
-  it("--json without --section keeps the old { ok, context } shape", () => {
-    const r = run(["context", "--json"]);
+  it("--json without --section keeps the old { ok, context } shape", async () => {
+    const r = await run(["context", "--json"]);
     expect(r.status).toBe(0);
     const out = JSON.parse(r.stdout);
     expect(out.ok).toBe(true);
@@ -127,8 +122,8 @@ describe("CLI — `arch context --section`", () => {
     expect(out.context).toContain("## 4. Diagnostic catalog");
   }, 30000);
 
-  it("an unknown section is a usage error (exit 3) with a did-you-mean", () => {
-    const r = run(["context", "--section", "error"]);
+  it("an unknown section is a usage error (exit 3) with a did-you-mean", async () => {
+    const r = await run(["context", "--section", "error"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('unknown section "error"');
     expect(r.stderr).toContain("spec, workflow, cli, errors");

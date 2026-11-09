@@ -1,13 +1,13 @@
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cmdFinish, cmdFix, cmdFmt, cmdRepair, cmdReroll } from "../src/cli/commands-author.js";
-import { parseArgs } from "../src/cli/io.js";
+import { nodeIo, parseArgs } from "../src/cli/io.js";
 import { writeGuardSeam } from "../src/cli/source-hash.js";
 import { buildManifest, format } from "../src/index.js";
+import { spawnArch } from "./helpers/cli.js";
 
 /**
  * The write-back revision guard, `--expected-hash` (card CR5, `src/cli/source-hash.ts`).
@@ -83,11 +83,11 @@ async function inProcess(run: (argv: string[]) => number | Promise<number>, argv
 type Runner = (argv: string[]) => number | Promise<number>;
 const manifest = buildManifest("0.0.0");
 const command = (name: string) => manifest.commands.find((c) => c.name === name)!;
-const fix = (argv: string[]) => cmdFix(parseArgs(argv, command("fix")));
-const finish = (argv: string[]) => cmdFinish(parseArgs(argv, command("finish")));
-const fmt = (argv: string[]) => cmdFmt(parseArgs(argv, command("fmt")));
-const repair = (argv: string[]) => cmdRepair(parseArgs(argv, command("repair")));
-const reroll = (argv: string[]) => cmdReroll(parseArgs(argv, command("reroll")));
+const fix = (argv: string[]) => cmdFix(parseArgs(argv, command("fix")), nodeIo());
+const finish = (argv: string[]) => cmdFinish(parseArgs(argv, command("finish")), nodeIo());
+const fmt = (argv: string[]) => cmdFmt(parseArgs(argv, command("fmt")), nodeIo());
+const repair = (argv: string[]) => cmdRepair(parseArgs(argv, command("repair")), nodeIo());
+const reroll = (argv: string[]) => cmdReroll(parseArgs(argv, command("reroll")), nodeIo());
 
 let dir: string;
 let file: string;
@@ -385,10 +385,9 @@ describe("--expected-hash: a change made while the command computed is caught, n
 
 describe("--expected-hash through the real binary", () => {
   it("exits 4 and leaves the file untouched", () => {
-    const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", "fix", file, "--expected-hash", STALE], {
-      encoding: "utf8",
-      cwd: process.cwd(),
-    });
+    // Spawned on purpose: every other case here calls the commands in-process; this one proves the exit code
+    // reaches the real process.
+    const r = spawnArch(["fix", file, "--expected-hash", STALE]);
     expect(r.status).toBe(4);
     expect(r.stderr).toContain("E_STALE_SOURCE");
     untouched(OFF_WALL);

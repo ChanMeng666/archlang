@@ -1,7 +1,7 @@
-import { spawnSync } from "node:child_process";
 import { describe as suite, expect, it } from "vitest";
 import { DESCRIBE_FACTS, describe } from "../src/index.js";
 import { DESCRIBE_KEYS } from "../src/cli/commands-analyze.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * Bounded output — the narrowing filters.
@@ -19,13 +19,8 @@ interface Run {
   stderr: string;
 }
 
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 /** Two rooms joined by an interior door, plus an entrance door and a window on `liv`. */
@@ -166,53 +161,56 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
 });
 
 suite("describe --facts", () => {
-  it("adds only the named opt-in facts, and composes with --select", () => {
-    const plain = JSON.parse(run(["describe", "-", "--json"], TWO_ROOM).stdout);
+  it("adds only the named opt-in facts, and composes with --select", async () => {
+    const plain = JSON.parse((await run(["describe", "-", "--json"], TWO_ROOM)).stdout);
     expect(plain.symmetry).toBeUndefined();
     expect(plain.syntax).toBeUndefined();
-    const r = run(["describe", "-", "--facts", "symmetry,syntax", "--select", "symmetry,syntax", "--json"], TWO_ROOM);
+    const r = await run(
+      ["describe", "-", "--facts", "symmetry,syntax", "--select", "symmetry,syntax", "--json"],
+      TWO_ROOM,
+    );
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
     expect(Object.keys(o).sort()).toEqual(["diagnostics", "ok", "plan", "symmetry", "syntax", "units"]);
     expect(o.syntax.k).toBeGreaterThan(0);
   }, 30000);
 
-  it("--select of an opt-in fact without --facts is a usage error naming the fix, never a silent absence", () => {
+  it("--select of an opt-in fact without --facts is a usage error naming the fix, never a silent absence", async () => {
     for (const k of DESCRIBE_FACTS) {
-      const r = run(["describe", "-", "--select", k, "--json"], TWO_ROOM);
+      const r = await run(["describe", "-", "--select", k, "--json"], TWO_ROOM);
       expect(r.status, k).toBe(3);
       expect(r.stderr).toContain(`add --facts ${k}`);
     }
   }, 30000);
 
-  it("--facts without --json prints one compact line per fact", () => {
-    const r = run(["describe", "-", "--facts", "symmetry,syntax"], TWO_ROOM);
+  it("--facts without --json prints one compact line per fact", async () => {
+    const r = await run(["describe", "-", "--facts", "symmetry,syntax"], TWO_ROOM);
     expect(r.status).toBe(0);
     const lines = r.stdout.trim().split("\n");
     expect(lines.at(-2)).toMatch(/^symmetry: shell \S.* · rooms \S.* · full \S.*; repeats \d+$/);
     expect(lines.at(-1)).toMatch(/^syntax: k=\d+ cycleRank=\d+$/);
     // …and nothing of the sort without --facts.
-    expect(run(["describe", "-"], TWO_ROOM).stdout).not.toMatch(/^(symmetry|syntax):/m);
+    expect((await run(["describe", "-"], TWO_ROOM)).stdout).not.toMatch(/^(symmetry|syntax):/m);
   }, 30000);
 
-  it("an unknown fact name is a usage error (exit 3) with a did-you-mean", () => {
-    const r = run(["describe", "-", "--facts", "symetry", "--json"], TWO_ROOM);
+  it("an unknown fact name is a usage error (exit 3) with a did-you-mean", async () => {
+    const r = await run(["describe", "-", "--facts", "symetry", "--json"], TWO_ROOM);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain('did you mean "symmetry"');
   }, 30000);
 });
 
 suite("describe --select", () => {
-  it("emits only the envelope + the chosen keys", () => {
-    const r = run(["describe", "-", "--select", "totals", "--json"], TWO_ROOM);
+  it("emits only the envelope + the chosen keys", async () => {
+    const r = await run(["describe", "-", "--select", "totals", "--json"], TWO_ROOM);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
     expect(Object.keys(o).sort()).toEqual(["diagnostics", "ok", "plan", "totals", "units"]);
     expect(o.totals.rooms).toBe(2);
   }, 30000);
 
-  it("accepts several keys and keeps the summary's own key order", () => {
-    const r = run(["describe", "-", "--select", "totals,rooms", "--json"], TWO_ROOM);
+  it("accepts several keys and keeps the summary's own key order", async () => {
+    const r = await run(["describe", "-", "--select", "totals,rooms", "--json"], TWO_ROOM);
     expect(r.status).toBe(0);
     const keys = Object.keys(JSON.parse(r.stdout));
     expect(keys).toContain("rooms");
@@ -222,8 +220,8 @@ suite("describe --select", () => {
     expect(keys.indexOf("rooms")).toBeLessThan(keys.indexOf("totals"));
   }, 30000);
 
-  it("rejects an unknown key with a did-you-mean, exit 3", () => {
-    const r = run(["describe", "-", "--select", "romes", "--json"], TWO_ROOM);
+  it("rejects an unknown key with a did-you-mean, exit 3", async () => {
+    const r = await run(["describe", "-", "--select", "romes", "--json"], TWO_ROOM);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("error:");
     expect(r.stderr).toContain('unknown --select key "romes"');
@@ -233,8 +231,8 @@ suite("describe --select", () => {
 });
 
 suite("describe --room", () => {
-  it("keeps only the named room and the elements touching it", () => {
-    const r = run(["describe", "-", "--room", "liv", "--json"], TWO_ROOM);
+  it("keeps only the named room and the elements touching it", async () => {
+    const r = await run(["describe", "-", "--room", "liv", "--json"], TWO_ROOM);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
 
@@ -255,8 +253,8 @@ suite("describe --room", () => {
     expect(o.totals.rooms).toBe(2);
   }, 30000);
 
-  it("drops the doors that do not touch the kept room", () => {
-    const r = run(["describe", "-", "--room", "bed", "--json"], TWO_ROOM);
+  it("drops the doors that do not touch the kept room", async () => {
+    const r = await run(["describe", "-", "--room", "bed", "--json"], TWO_ROOM);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
     const doors = o.doors.map((x: { id: string }) => x.id);
@@ -267,16 +265,16 @@ suite("describe --room", () => {
     expect(o.furniture.map((x: { category: string }) => x.category)).toEqual(["wardrobe"]);
   }, 30000);
 
-  it("takes a comma list", () => {
-    const r = run(["describe", "-", "--room", "liv,bed", "--json"], TWO_ROOM);
+  it("takes a comma list", async () => {
+    const r = await run(["describe", "-", "--room", "liv,bed", "--json"], TWO_ROOM);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
     expect(o.rooms).toHaveLength(2);
     expect(o.doors).toHaveLength(2);
   }, 30000);
 
-  it("rejects an unknown room id, listing the ids the plan has, exit 3", () => {
-    const r = run(["describe", "-", "--room", "lvi", "--json"], TWO_ROOM);
+  it("rejects an unknown room id, listing the ids the plan has, exit 3", async () => {
+    const r = await run(["describe", "-", "--room", "lvi", "--json"], TWO_ROOM);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("error:");
     expect(r.stderr).toContain('unknown room "lvi"');
@@ -285,16 +283,16 @@ suite("describe --room", () => {
     expect(r.stdout).toBe("");
   }, 30000);
 
-  it("narrows the human summary too", () => {
-    const r = run(["describe", "-", "--room", "liv"], TWO_ROOM);
+  it("narrows the human summary too", async () => {
+    const r = await run(["describe", "-", "--room", "liv"], TWO_ROOM);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("(showing 1)");
     expect(r.stdout).toContain("liv");
     expect(r.stdout).not.toContain("Bedroom");
   }, 30000);
 
-  it("composes with --select", () => {
-    const r = run(["describe", "-", "--room", "liv", "--select", "rooms", "--json"], TWO_ROOM);
+  it("composes with --select", async () => {
+    const r = await run(["describe", "-", "--room", "liv", "--select", "rooms", "--json"], TWO_ROOM);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
     expect(o.rooms).toHaveLength(1);
@@ -305,11 +303,11 @@ suite("describe --room", () => {
 });
 
 suite("lint/validate --code, --severity — display filters, never gates", () => {
-  it("GATING: an unmatched --code still exits non-zero on a plan with a real error", () => {
+  it("GATING: an unmatched --code still exits non-zero on a plan with a real error", async () => {
     // The plan's only diagnostic is an E_* error; we ask to SEE only a warning code.
     // Nothing is displayed — and the command still fails, because the exit code comes
     // from the unfiltered set. This is the property the whole feature hangs on.
-    const r = run(["lint", "-", "--code", WARN_CODE, "--json"], HAS_ERROR);
+    const r = await run(["lint", "-", "--code", WARN_CODE, "--json"], HAS_ERROR);
     expect(r.status).toBe(2);
     const o = JSON.parse(r.stdout);
     expect(o.ok).toBe(false);
@@ -318,8 +316,8 @@ suite("lint/validate --code, --severity — display filters, never gates", () =>
     expect(o.total_diagnostics).toBeGreaterThan(0);
   }, 30000);
 
-  it("GATING: --severity warning does not hide an error from the exit code", () => {
-    const r = run(["validate", "-", "--severity", "warning", "--json"], HAS_ERROR);
+  it("GATING: --severity warning does not hide an error from the exit code", async () => {
+    const r = await run(["validate", "-", "--severity", "warning", "--json"], HAS_ERROR);
     expect(r.status).toBe(2);
     const o = JSON.parse(r.stdout);
     expect(o.ok).toBe(false);
@@ -327,8 +325,8 @@ suite("lint/validate --code, --severity — display filters, never gates", () =>
     expect(o.total_diagnostics).toBeGreaterThan(o.diagnostics.length);
   }, 30000);
 
-  it("GATING: --strict + a filter that hides every warning still fails", () => {
-    const r = run(["lint", "-", "--strict", "--severity", "error", "--json"], WARNS);
+  it("GATING: --strict + a filter that hides every warning still fails", async () => {
+    const r = await run(["lint", "-", "--strict", "--severity", "error", "--json"], WARNS);
     expect(r.status).toBe(2); // warnings exist and --strict gates on them…
     const o = JSON.parse(r.stdout);
     expect(o.ok).toBe(false);
@@ -336,8 +334,8 @@ suite("lint/validate --code, --severity — display filters, never gates", () =>
     expect(o.total_diagnostics).toBeGreaterThan(0);
   }, 30000);
 
-  it("keeps only the requested code", () => {
-    const r = run(["lint", "-", "--code", WARN_CODE, "--json"], WARNS);
+  it("keeps only the requested code", async () => {
+    const r = await run(["lint", "-", "--code", WARN_CODE, "--json"], WARNS);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
     expect(o.diagnostics.length).toBeGreaterThan(0);
@@ -346,31 +344,31 @@ suite("lint/validate --code, --severity — display filters, never gates", () =>
     expect(o.total_diagnostics).toBeGreaterThan(o.diagnostics.length);
   }, 30000);
 
-  it("an unfiltered run carries neither marker (the default JSON is unchanged)", () => {
-    const r = run(["lint", "-", "--json"], WARNS);
+  it("an unfiltered run carries neither marker (the default JSON is unchanged)", async () => {
+    const r = await run(["lint", "-", "--json"], WARNS);
     expect(r.status).toBe(0);
     const o = JSON.parse(r.stdout);
     expect(o).not.toHaveProperty("filtered");
     expect(o).not.toHaveProperty("total_diagnostics");
   }, 30000);
 
-  it("rejects an unknown code with a did-you-mean, exit 3", () => {
-    const r = run(["lint", "-", "--code", "W_ROOM_DISCONECTED", "--json"], WARNS);
+  it("rejects an unknown code with a did-you-mean, exit 3", async () => {
+    const r = await run(["lint", "-", "--code", "W_ROOM_DISCONECTED", "--json"], WARNS);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("error:");
     expect(r.stderr).toContain('unknown diagnostic code "W_ROOM_DISCONECTED"');
     expect(r.stderr).toContain(`did you mean "${WARN_CODE}"`);
   }, 30000);
 
-  it("rejects an unknown severity, exit 3", () => {
-    const r = run(["lint", "-", "--severity", "fatal", "--json"], WARNS);
+  it("rejects an unknown severity, exit 3", async () => {
+    const r = await run(["lint", "-", "--severity", "fatal", "--json"], WARNS);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("error:");
     expect(r.stderr).toContain("available: error, warning");
   }, 30000);
 
-  it("tells a human reader that what they see is a filtered subset", () => {
-    const r = run(["lint", "-", "--code", WARN_CODE], WARNS);
+  it("tells a human reader that what they see is a filtered subset", async () => {
+    const r = await run(["lint", "-", "--code", WARN_CODE], WARNS);
     expect(r.status).toBe(0);
     expect(r.stderr).toContain("display filter: showing");
     expect(r.stdout).toContain("✓ ok"); // the verdict still counts every warning
@@ -378,8 +376,8 @@ suite("lint/validate --code, --severity — display filters, never gates", () =>
 });
 
 suite("lint --profile", () => {
-  it("an unknown profile is a usage error with the `error:` prefix and the real names", () => {
-    const r = run(["lint", "-", "--profile", "bogus", "--json"], WARNS);
+  it("an unknown profile is a usage error with the `error:` prefix and the real names", async () => {
+    const r = await run(["lint", "-", "--profile", "bogus", "--json"], WARNS);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("error:");
     expect(r.stderr).toContain('unknown lint profile "bogus"');
@@ -387,8 +385,8 @@ suite("lint --profile", () => {
     expect(r.stdout).toBe("");
   }, 30000);
 
-  it("still accepts a real profile", () => {
-    const r = run(["lint", "-", "--profile", "accessibility-advisory", "--json"], WARNS);
+  it("still accepts a real profile", async () => {
+    const r = await run(["lint", "-", "--profile", "accessibility-advisory", "--json"], WARNS);
     expect(r.status).toBe(0);
     expect(() => JSON.parse(r.stdout)).not.toThrow();
   }, 30000);

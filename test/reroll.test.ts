@@ -1,5 +1,4 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
-import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -20,6 +19,7 @@ import {
 // WRONG replacement, not just observe reroll()'s own always-correct ones.
 import { compileForProof, proves } from "../src/reroll.js";
 import type { CompileOptions, Span } from "../src/index.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * `reroll(source)` (W6b): detect ≥3 consecutive statements in arithmetic
@@ -622,13 +622,8 @@ interface Run {
   stdout: string;
   stderr: string;
 }
-function run(args: string[], input?: string): Run {
-  const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-    input,
-    encoding: "utf8",
-    cwd: process.cwd(),
-  });
-  return { status: r.status, stdout: r.stdout, stderr: r.stderr };
+function run(args: string[], input?: string): Promise<Run> {
+  return runArch(args, { input });
 }
 
 let dir: string;
@@ -642,8 +637,8 @@ beforeEach(() => {
 afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
 describe("arch reroll — CLI", () => {
-  it("--json prints the suggestion shape", () => {
-    const r = run(["reroll", file, "--json"]);
+  it("--json prints the suggestion shape", async () => {
+    const r = await run(["reroll", file, "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -659,9 +654,9 @@ describe("arch reroll — CLI", () => {
     }
   }, 30000);
 
-  it("--write applies every suggestion in place, and the result compiles equal", () => {
+  it("--write applies every suggestion in place, and the result compiles equal", async () => {
     const before = readFileSync(file, "utf8");
-    const r = run(["reroll", file, "--write", "--json"]);
+    const r = await run(["reroll", file, "--write", "--json"]);
     expect(r.status).toBe(0);
     const j = JSON.parse(r.stdout);
     expect(j.ok).toBe(true);
@@ -679,25 +674,25 @@ describe("arch reroll — CLI", () => {
     expect(afterCompile.svg).toBe(beforeCompile.svg);
   }, 30000);
 
-  it("--write is idempotent (no reroll suggestions left after writing)", () => {
-    run(["reroll", file, "--write"]);
-    const r2 = run(["reroll", file, "--json"]);
+  it("--write is idempotent (no reroll suggestions left after writing)", async () => {
+    await run(["reroll", file, "--write"]);
+    const r2 = await run(["reroll", file, "--json"]);
     const j2 = JSON.parse(r2.stdout);
     expect(j2.suggestions).toEqual([]);
   }, 30000);
 
-  it("human mode without --write only prints, never touches the file", () => {
+  it("human mode without --write only prints, never touches the file", async () => {
     const before = readFileSync(file, "utf8");
-    const r = run(["reroll", file]);
+    const r = await run(["reroll", file]);
     expect(r.status).toBe(0);
     expect(r.stdout).toContain("for i in 0..3 {");
     expect(readFileSync(file, "utf8")).toBe(before);
   }, 30000);
 
-  it("reports no suggestions on a plan with none", () => {
+  it("reports no suggestions on a plan with none", async () => {
     const clean = join(dir, "clean.arch");
     writeFileSync(clean, 'plan "C" { units mm room at (0,0) size 4000x3000 label "R" }', "utf8");
-    const r = run(["reroll", clean, "--json"]);
+    const r = await run(["reroll", clean, "--json"]);
     expect(r.status).toBe(0);
     expect(JSON.parse(r.stdout).suggestions).toEqual([]);
   }, 30000);

@@ -36,7 +36,16 @@ import { readFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
 import { diagnosticToJson } from "../index.js";
 import type { Diagnostic } from "../index.js";
-import { type Args, EXIT, emitDiagnosticsHuman, emitJson, ioError, usageError, usageErrorFor } from "./io.js";
+import {
+  type Args,
+  type CliIo,
+  EXIT,
+  emitDiagnosticsHuman,
+  emitJson,
+  ioError,
+  usageError,
+  usageErrorFor,
+} from "./io.js";
 
 /** SHA-256 of `data` as lowercase hex. A string is hashed as its UTF-8 encoding. */
 export function sha256Hex(data: Uint8Array | string): string {
@@ -74,6 +83,7 @@ const short = (hash: string): string => `${hash.slice(0, 12)}…`;
  * It names both hashes and never prints the file's contents.
  */
 function staleSource(
+  io: CliIo,
   args: Args,
   input: string,
   expected: string,
@@ -88,7 +98,7 @@ function staleSource(
       : `${name} changed while the command ran: expected sha256 ${short(expected)}, the file now hashes to ${short(actual)}; nothing was written`;
   const d: Diagnostic = { severity: "error", code: "E_STALE_SOURCE", message };
   if (args.json)
-    emitJson({
+    emitJson(io, {
       ok: false,
       code: "E_STALE_SOURCE",
       error: message,
@@ -97,7 +107,7 @@ function staleSource(
       source_hash: read,
       diagnostics: [diagnosticToJson("", d)],
     });
-  else emitDiagnosticsHuman("", [d], args.quiet);
+  else emitDiagnosticsHuman(io, "", [d], args.quiet);
   return EXIT.STALE;
 }
 
@@ -108,7 +118,7 @@ function staleSource(
  * unreadable input is an IO error (exit 1, the message `withSource` gives), and a mismatch is
  * `E_STALE_SOURCE` (exit 4).
  */
-export function readGuarded(args: Args, command: string, input: string): GuardedSource | { code: number } {
+export function readGuarded(io: CliIo, args: Args, command: string, input: string): GuardedSource | { code: number } {
   let expected: string | undefined;
   // `--expected-hash` with no value after it parses to an own `undefined`; refusing it keeps a
   // guard the caller asked for from silently not running.
@@ -118,6 +128,7 @@ export function readGuarded(args: Args, command: string, input: string): Guarded
     if (input === "-")
       return {
         code: usageErrorFor(
+          io,
           command,
           "--expected-hash guards a file read and rewritten by path, and stdin (`-`) is not one — pass the file's path instead",
         ),
@@ -126,6 +137,7 @@ export function readGuarded(args: Args, command: string, input: string): Guarded
     if (!HEX64.test(raw))
       return {
         code: usageErrorFor(
+          io,
           command,
           `--expected-hash takes the SHA-256 of the input file's bytes as 64 hex digits (the \`source_hash\` a --json run reports), got "${raw}"`,
         ),
@@ -134,13 +146,13 @@ export function readGuarded(args: Args, command: string, input: string): Guarded
   }
   let bytes: Buffer;
   try {
-    bytes = input === "-" ? readFileSync(0) : readFileSync(resolvePath(input));
+    bytes = input === "-" ? io.readStdin() : readFileSync(resolvePath(input));
   } catch {
-    return { code: ioError(`cannot read ${input}`, args.json) };
+    return { code: ioError(io, `cannot read ${input}`, args.json) };
   }
   const hash = sha256Hex(bytes);
   if (expected !== undefined && expected !== hash)
-    return { code: staleSource(args, input, expected, hash, hash, "read") };
+    return { code: staleSource(io, args, input, expected, hash, hash, "read") };
   const recheck = (): number | undefined => {
     if (expected === undefined || input === "-") return undefined;
     const path = resolvePath(input);
@@ -149,21 +161,22 @@ export function readGuarded(args: Args, command: string, input: string): Guarded
     try {
       now = sha256Hex(readFileSync(path));
     } catch {
-      return ioError(`cannot re-read ${input} before writing; nothing was written`, args.json);
+      return ioError(io, `cannot re-read ${input} before writing; nothing was written`, args.json);
     }
-    return now === expected ? undefined : staleSource(args, input, expected, now, hash, "write");
+    return now === expected ? undefined : staleSource(io, args, input, expected, now, hash, "write");
   };
   return { source: bytes.toString("utf8"), hash, recheck };
 }
 
 /** `withSource` (`src/cli/io.ts`) for an in-place writer: the same entry ladder, through {@link readGuarded}. */
 export function withGuardedSource(
+  io: CliIo,
   args: Args,
   command: string,
   run: (read: GuardedSource, input: string) => number,
 ): number {
   const input = args._[0];
-  if (!input) return usageError("missing input file (use a path or `-` for stdin)");
-  const read = readGuarded(args, command, input);
+  if (!input) return usageError(io, "missing input file (use a path or `-` for stdin)");
+  const read = readGuarded(io, args, command, input);
   return "code" in read ? read.code : run(read, input);
 }

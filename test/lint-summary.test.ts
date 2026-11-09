@@ -1,15 +1,15 @@
-import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { cmdLint, cmdValidate } from "../src/cli/commands-analyze.js";
-import { parseArgs } from "../src/cli/io.js";
+import { type CliIo, nodeIo, parseArgs } from "../src/cli/io.js";
 import { diagnosticsSummary, validateSummary } from "../src/cli/summary.js";
 import { ERROR_CODES } from "../src/error-catalog.js";
 import { diagnosticToJson, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
 import { validateJsonFiles, withoutSummary } from "./validate-json-run.js";
+import { runArch } from "./helpers/cli.js";
 
 /**
  * `lint` and `validate` open with a one-line summary (plan-soundness PS7.6).
@@ -73,7 +73,7 @@ describe("diagnosticsSummary", () => {
 });
 
 /** Run a command in-process; return exit code, stdout and stderr. */
-function runIn(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[]) {
+function runIn(cmd: (a: ReturnType<typeof parseArgs>, io: CliIo) => number, argv: string[]) {
   let stdout = "";
   let stderr = "";
   const out = process.stdout.write.bind(process.stdout);
@@ -88,7 +88,7 @@ function runIn(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[])
     return true;
   }) as typeof process.stderr.write;
   try {
-    return { exit: cmd(parseArgs(argv)), stdout, stderr };
+    return { exit: cmd(parseArgs(argv), nodeIo()), stdout, stderr };
   } finally {
     process.stdout.write = out;
     process.stderr.write = err;
@@ -184,33 +184,20 @@ describe("a wide summary and a failing later tier", () => {
     }
   });
 
-  it("score --taste --json on a plan that does not compile also opens with the summary", () => {
-    const r = spawnSync(
-      process.execPath,
-      ["--import", "tsx", "src/cli.ts", "score", "-", "--taste", "generic", "--json"],
-      {
-        input: 'plan "B" { units mm room at (0,0) size 0x3000 }',
-        encoding: "utf8",
-        cwd: process.cwd(),
-      },
-    );
+  it("score --taste --json on a plan that does not compile also opens with the summary", async () => {
+    const r = await runArch(["score", "-", "--taste", "generic", "--json"], {
+      input: 'plan "B" { units mm room at (0,0) size 0x3000 }',
+    });
     expect(r.stdout.startsWith(`${FIRST_KEY}1 error in 1 code: E_ROOM_SIZE ×1`)).toBe(true);
   }, 60_000);
 
-  it("a filtered text run prints the display-filter note right under the summary line", () => {
-    const r = spawnSync(
-      process.execPath,
-      [
-        "--import",
-        "tsx",
-        "src/cli.ts",
-        "lint",
-        "test/defect-corpus/space-not-enclosed/bath-open-side.arch",
-        "--code",
-        "W_ROOM_NOT_ENCLOSED",
-      ],
-      { encoding: "utf8", cwd: process.cwd() },
-    );
+  it("a filtered text run prints the display-filter note right under the summary line", async () => {
+    const r = await runArch([
+      "lint",
+      "test/defect-corpus/space-not-enclosed/bath-open-side.arch",
+      "--code",
+      "W_ROOM_NOT_ENCLOSED",
+    ]);
     const lines = r.stderr.split("\n");
     expect(lines[0]).toMatch(/^4 warnings in 4 codes: /);
     expect(lines[1]).toBe("  (display filter: showing 1 of 4 diagnostics)");
@@ -221,26 +208,19 @@ describe("a wide summary and a failing later tier", () => {
 describe("the text report opens with the line", () => {
   const WARN =
     'plan "W" { units mm wall exterior thickness 200 { (0,0) (2000,0) (2000,2000) (0,2000) close } room id=r at (0,0) size 2000x2000 label "R" }';
-  const cli = (args: string[], input?: string) => {
-    const r = spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
-      input,
-      encoding: "utf8",
-      cwd: process.cwd(),
-    });
-    return { status: r.status, stdout: r.stdout, stderr: r.stderr };
-  };
+  const cli = (args: string[], input?: string) => runArch(args, { input });
 
-  it("lint: the first line of the report is the summary, before the first diagnostic", () => {
-    const r = cli(["lint", "-"], WARN);
+  it("lint: the first line of the report is the summary, before the first diagnostic", async () => {
+    const r = await cli(["lint", "-"], WARN);
     const lines = r.stderr.split("\n");
     expect(lines[0]).toMatch(/^\d+ warnings? in \d+ codes?: W_[A-Z_]+ ×\d+/);
     expect(lines[1]).toBe("");
     expect(lines[2]).toMatch(/^warning/);
   }, 60_000);
 
-  it("--quiet drops it, and a clean plan prints no summary line (the ok line says it)", () => {
-    expect(cli(["lint", "-", "--quiet"], WARN).stderr).toBe("");
-    const clean = cli(["lint", "examples/two-bed.arch"]);
+  it("--quiet drops it, and a clean plan prints no summary line (the ok line says it)", async () => {
+    expect((await cli(["lint", "-", "--quiet"], WARN)).stderr).toBe("");
+    const clean = await cli(["lint", "examples/two-bed.arch"]);
     expect(clean.stderr).not.toMatch(/warning/);
     expect(clean.stdout).toBe("✓ ok\n");
   }, 60_000);

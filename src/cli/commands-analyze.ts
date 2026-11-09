@@ -72,6 +72,7 @@ import { closest } from "../expr.js";
 import { CLI_NAME } from "../manifest.js";
 import {
   type Args,
+  type CliIo,
   EXIT,
   baseDirOf,
   emitDiagnosticsHuman,
@@ -293,7 +294,7 @@ function selectKeys(obj: Record<string, unknown>, keys: string[]): Record<string
   return out;
 }
 
-export function cmdDescribe(args: Args): number {
+export function cmdDescribe(args: Args, io: CliIo): number {
   // Both narrowing flags are validated BEFORE any work: a typo'd room id or key is a
   // usage error (exit 3), not a silently empty result.
   const selected = args.select === undefined ? null : csv(args.select);
@@ -301,6 +302,7 @@ export function cmdDescribe(args: Args): number {
     for (const k of selected) {
       if (!DESCRIBE_KEYS.includes(k)) {
         return usageError(
+          io,
           `unknown --select key "${k}"${didYouMean(k, DESCRIBE_KEYS)} (available: ${echoList(DESCRIBE_KEYS)})`,
         );
       }
@@ -313,6 +315,7 @@ export function cmdDescribe(args: Args): number {
   for (const f of facts) {
     if (!(DESCRIBE_FACTS as readonly string[]).includes(f)) {
       return usageError(
+        io,
         `unknown --facts name "${f}"${didYouMean(f, DESCRIBE_FACTS)} (available: ${echoList(DESCRIBE_FACTS)})`,
       );
     }
@@ -321,19 +324,20 @@ export function cmdDescribe(args: Args): number {
   // silently print nothing — a usage error with the fix, rather than an empty answer.
   for (const k of selected ?? []) {
     if ((DESCRIBE_FACTS as readonly string[]).includes(k) && !facts.includes(k)) {
-      return usageError(`--select ${k} needs the fact computed: add --facts ${k}`);
+      return usageError(io, `--select ${k} needs the fact computed: add --facts ${k}`);
     }
   }
   // `--waste` feeds the quantities fact alone; asked for without it, it would silently do nothing.
   if (args.waste !== undefined) {
-    if (!facts.includes("quantities")) return usageError("--waste needs the quantities fact: add --facts quantities");
+    if (!facts.includes("quantities"))
+      return usageError(io, "--waste needs the quantities fact: add --facts quantities");
     const bad = wasteError(args.waste);
-    if (bad) return usageError(bad);
+    if (bad) return usageError(io, bad);
   }
 
-  return withSource(args, (source, input) => {
+  return withSource(io, args, (source, input) => {
     const full = describe(source, {
-      world: makeNodeWorld(baseDirOf(input)),
+      world: makeNodeWorld(baseDirOf(io, input)),
       ...(facts.length > 0 ? { facts: facts as DescribeFact[] } : {}),
       ...(args.waste !== undefined ? { wastePct: args.waste } : {}),
     });
@@ -348,6 +352,7 @@ export function cmdDescribe(args: Args): number {
       const have = (full.levels ?? []).map((l) => l.level);
       if (!have.includes(args.level)) {
         return usageError(
+          io,
           have.length === 0
             ? `--level ${args.level} was given but this plan declares no \`level\` blocks (it is single-storey) — drop --level`
             : `unknown --level ${args.level} (plan has ${echoList(have.map(String))})`,
@@ -363,6 +368,7 @@ export function cmdDescribe(args: Args): number {
       for (const p of wantZones) {
         if (!have.includes(p)) {
           return usageError(
+            io,
             have.length === 0
               ? `--zone ${p} was given but this plan declares no \`zone\` blocks — drop --zone`
               : `unknown zone "${p}"${didYouMean(p, have)} (plan has ${have.length}: ${echoList(have)})`,
@@ -379,7 +385,10 @@ export function cmdDescribe(args: Args): number {
       const have = summary.rooms.map((r) => r.id);
       for (const id of wantRooms) {
         if (!have.includes(id)) {
-          return usageError(`unknown room "${id}"${didYouMean(id, have)} (plan has ${have.length}: ${echoList(have)})`);
+          return usageError(
+            io,
+            `unknown room "${id}"${didYouMean(id, have)} (plan has ${have.length}: ${echoList(have)})`,
+          );
         }
       }
       summary = narrowToRooms(summary, wantRooms);
@@ -395,6 +404,7 @@ export function cmdDescribe(args: Args): number {
       // The markers ride OUTSIDE `--select` — a narrowed read must always be able to
       // tell that it is narrowed.
       emitJson(
+        io,
         filtered
           ? {
               ...shaped,
@@ -406,8 +416,8 @@ export function cmdDescribe(args: Args): number {
           : shaped,
       );
     } else if (!summary.ok) {
-      emitDiagnosticsHuman(source, summary.diagnostics, args.quiet);
-      if (!args.quiet) process.stderr.write("✗ could not describe (plan has errors)\n");
+      emitDiagnosticsHuman(io, source, summary.diagnostics, args.quiet);
+      if (!args.quiet) io.stderr.write("✗ could not describe (plan has errors)\n");
     } else {
       const storey = args.level !== undefined ? ` [level ${args.level}]` : "";
       const lines = [
@@ -418,7 +428,7 @@ export function cmdDescribe(args: Args): number {
         ),
         ...factLines(summary),
       ];
-      process.stdout.write(lines.join("\n") + "\n");
+      io.stdout.write(lines.join("\n") + "\n");
     }
     return summary.ok ? EXIT.OK : EXIT.USER;
   });
@@ -513,37 +523,42 @@ function takeoffMd(plan: string, storeys: ReadonlyArray<{ title?: string; q: Qua
   return `${out.join("\n")}\n`;
 }
 
-export function cmdTakeoff(args: Args): number {
+export function cmdTakeoff(args: Args, io: CliIo): number {
   const format = args.format ?? "md";
   if (args.json && args.format !== undefined)
-    return usageErrorFor("takeoff", "--json writes the quantities as JSON; --format picks a table — give one of them");
+    return usageErrorFor(
+      io,
+      "takeoff",
+      "--json writes the quantities as JSON; --format picks a table — give one of them",
+    );
   if (!(TAKEOFF_FORMATS as readonly string[]).includes(format))
     return usageErrorFor(
+      io,
       "takeoff",
       `unknown --format "${format}"${didYouMean(format, TAKEOFF_FORMATS)} (available: ${TAKEOFF_FORMATS.join(", ")})`,
     );
   if (args.waste !== undefined) {
     const bad = wasteError(args.waste);
-    if (bad) return usageErrorFor("takeoff", bad);
+    if (bad) return usageErrorFor(io, "takeoff", bad);
   }
-  return withSource(args, (source, input) => {
+  return withSource(io, args, (source, input) => {
     const s = describe(source, {
-      world: makeNodeWorld(baseDirOf(input)),
+      world: makeNodeWorld(baseDirOf(io, input)),
       facts: ["quantities"],
       ...(args.waste !== undefined ? { wastePct: args.waste } : {}),
     });
     if (!s.ok || !s.quantities) {
       if (args.json)
-        emitJson({ ok: false, plan: s.plan, diagnostics: s.diagnostics.map((d) => diagnosticToJson(source, d)) });
+        emitJson(io, { ok: false, plan: s.plan, diagnostics: s.diagnostics.map((d) => diagnosticToJson(source, d)) });
       else {
-        emitDiagnosticsHuman(source, s.diagnostics, args.quiet);
-        if (!args.quiet) process.stderr.write("✗ could not take off (plan has errors)\n");
+        emitDiagnosticsHuman(io, source, s.diagnostics, args.quiet);
+        if (!args.quiet) io.stderr.write("✗ could not take off (plan has errors)\n");
       }
       return EXIT.USER;
     }
     const storeys = takeoffStoreys(s);
     if (args.json) {
-      emitJson({
+      emitJson(io, {
         ok: true,
         plan: s.plan,
         units: s.units,
@@ -560,9 +575,9 @@ export function cmdTakeoff(args: Args): number {
         diagnostics: s.diagnostics.map((d) => diagnosticToJson(source, d)),
       });
     } else if (format === "csv") {
-      process.stdout.write(takeoffCsv(s));
+      io.stdout.write(takeoffCsv(s));
     } else {
-      process.stdout.write(
+      io.stdout.write(
         takeoffMd(
           s.plan,
           storeys.map((st) => ({
@@ -596,7 +611,7 @@ const applyDiagFilter = (diags: Diagnostic[], f: DiagFilter): Diagnostic[] =>
   );
 
 /** Parse + validate `--code`/`--severity`, or return the emitted usage exit code. */
-function parseDiagFilter(args: Args): DiagFilter | CheckError {
+function parseDiagFilter(io: CliIo, args: Args): DiagFilter | CheckError {
   const f: DiagFilter = {};
   if (args.code !== undefined) {
     const codes = csv(args.code).map((c) => c.toUpperCase());
@@ -604,6 +619,7 @@ function parseDiagFilter(args: Args): DiagFilter | CheckError {
       if (!ERROR_CODES.includes(c)) {
         return {
           exit: usageError(
+            io,
             `unknown diagnostic code "${c}"${didYouMean(c, ERROR_CODES)} — see \`${CLI_NAME} explain <CODE>\` or \`${CLI_NAME} manifest --json\` for all ${ERROR_CODES.length}`,
           ),
         };
@@ -613,7 +629,7 @@ function parseDiagFilter(args: Args): DiagFilter | CheckError {
   }
   if (args.severity !== undefined) {
     if (args.severity !== "error" && args.severity !== "warning") {
-      return { exit: usageError(`unknown --severity "${args.severity}" (available: error, warning)`) };
+      return { exit: usageError(io, `unknown --severity "${args.severity}" (available: error, warning)`) };
     }
     f.severity = args.severity;
   }
@@ -633,6 +649,7 @@ function parseDiagFilter(args: Args): DiagFilter | CheckError {
  * skipped, nothing otherwise. Every byte before it is what it was without it.
  */
 function report(
+  io: CliIo,
   source: string,
   diags: Diagnostic[],
   args: Args,
@@ -653,7 +670,7 @@ function report(
   const summary = stagedSummary(diagnosticsSummary(diags), staged);
 
   if (args.json) {
-    emitJson({
+    emitJson(io, {
       // First, so a reader who cuts the output short still sees the count and the codes.
       summary,
       ok,
@@ -673,18 +690,18 @@ function report(
     // note sits under it too, so the line cannot be read as describing the shown set.
     if ((diags.length || staged?.at) && !args.quiet) {
       const shownNote = active ? `  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n` : "";
-      process.stderr.write(`${summary}\n${shownNote}\n`);
+      io.stderr.write(`${summary}\n${shownNote}\n`);
     }
-    emitDiagnosticsHuman(source, shown, args.quiet);
+    emitDiagnosticsHuman(io, source, shown, args.quiet);
     if (!args.quiet) {
-      if (active) process.stderr.write(`  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n`);
+      if (active) io.stderr.write(`  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n`);
       const skipped = coverage ? coverageLine(coverage) : null;
-      if (skipped) process.stderr.write(`  ${skipped}\n`);
-      if (next) process.stderr.write(`${nextLine(source, next)}\n`);
-      if (staged?.at) process.stderr.write(`${stageLine(staged.at)}\n`);
-      if (ok) process.stdout.write(`✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}\n`);
-      else if (e === 0) process.stdout.write(`✗ ${w} warning${w === 1 ? "" : "s"} (--strict)\n`);
-      else process.stdout.write(`✗ ${e} error${e === 1 ? "" : "s"}, ${w} warning${w === 1 ? "" : "s"}\n`);
+      if (skipped) io.stderr.write(`  ${skipped}\n`);
+      if (next) io.stderr.write(`${nextLine(source, next)}\n`);
+      if (staged?.at) io.stderr.write(`${stageLine(staged.at)}\n`);
+      if (ok) io.stdout.write(`✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}\n`);
+      else if (e === 0) io.stdout.write(`✗ ${w} warning${w === 1 ? "" : "s"} (--strict)\n`);
+      else io.stdout.write(`✗ ${e} error${e === 1 ? "" : "s"}, ${w} warning${w === 1 ? "" : "s"}\n`);
     }
   }
   return ok ? EXIT.OK : EXIT.USER;
@@ -753,32 +770,35 @@ function nextLine(source: string, n: NextItem): string {
   return n.hint ? `${head}\n  = help: ${n.hint}` : head;
 }
 
-export function cmdValidate(args: Args): number {
+export function cmdValidate(args: Args, io: CliIo): number {
   // Unknown profile names are bad usage (exit 3) before any work, as on `lint` and `score`.
   if (args.profile !== undefined && !LINT_PROFILE_NAMES.includes(args.profile)) {
     return usageError(
+      io,
       `unknown lint profile "${args.profile}"${didYouMean(args.profile, LINT_PROFILE_NAMES)} (available: ${echoList(LINT_PROFILE_NAMES)})`,
     );
   }
   if (args.taste !== undefined && !TASTE_PROFILE_NAMES.includes(args.taste)) {
     return usageError(
+      io,
       `unknown taste profile "${args.taste}"${didYouMean(args.taste, TASTE_PROFILE_NAMES)} (available: ${echoList(TASTE_PROFILE_NAMES)})`,
     );
   }
   // `--stage` with no value parses to no value at all: refused, never read as "no stage".
   if (Object.hasOwn(args, "stage") && (args.stage === undefined || args.stage === "")) {
-    return usageError(`--stage needs a value: ${echoList(AUTHORING_STAGES)}`);
+    return usageError(io, `--stage needs a value: ${echoList(AUTHORING_STAGES)}`);
   }
   if (args.stage !== undefined && !isAuthoringStage(args.stage)) {
     return usageError(
+      io,
       `unknown stage "${args.stage}"${didYouMean(args.stage, AUTHORING_STAGES)} (available: ${echoList(AUTHORING_STAGES)})`,
     );
   }
   const stage = args.stage as AuthoringStage | undefined;
-  const filter = parseDiagFilter(args);
+  const filter = parseDiagFilter(io, args);
   if (isCheckError(filter)) return filter.exit;
-  return withSource(args, (source, input) => {
-    const world = makeNodeWorld(baseDirOf(input));
+  return withSource(io, args, (source, input) => {
+    const world = makeNodeWorld(baseDirOf(io, input));
     // resolvePlan yields exactly compile()'s diagnostics (toScene/renderSvg never
     // emit any) without paying for the render; lint() then reuses the warm
     // parse/resolve stage memos, so the whole command resolves once, renders never.
@@ -809,13 +829,13 @@ export function cmdValidate(args: Args): number {
     const kindOf = kindsOf(levels.length > 0 ? levels.map((l) => l.ir) : ir ? [ir] : []);
     const stageOf = (d: Diagnostic): AuthoringStage => diagnosticStage(d, keeps, kindOf);
     if (args.graph !== undefined || args.intent !== undefined)
-      return reportWithChecks(source, diags, args, world, filter, nextInput, keeps, { stage, stageOf, kindOf });
+      return reportWithChecks(io, source, diags, args, world, filter, nextInput, keeps, { stage, stageOf, kindOf });
     if (stage === undefined)
-      return report(source, diags, args, filter, undefined, nextDiagnostic(nextInput), keeps, { stageOf });
+      return report(io, source, diags, args, filter, undefined, nextDiagnostic(nextInput), keeps, { stageOf });
     // `--stage`: the report, `next` and `ok` read the stage's view; errors always stay.
     const view = atStage(stage, diags, nextInput, kindOf);
     const at = { stage, held: view.held, clean: isClean(view.input) };
-    return report(source, view.diagnostics, args, filter, undefined, nextDiagnostic(view.input), keeps, {
+    return report(io, source, view.diagnostics, args, filter, undefined, nextDiagnostic(view.input), keeps, {
       stageOf,
       at,
     });
@@ -835,24 +855,30 @@ const isCheckError = (v: unknown): v is CheckError => isRecord(v) && typeof v.ex
  * or wrapped under `input_graph`. On an IO/usage problem the message is written and the
  * exit code returned (as {@link CheckError}); otherwise the {@link GraphCheck} block.
  */
-function loadGraphCheck(source: string, graphPath: string, args: Args, world: World): GraphCheck | CheckError {
+function loadGraphCheck(
+  io: CliIo,
+  source: string,
+  graphPath: string,
+  args: Args,
+  world: World,
+): GraphCheck | CheckError {
   let graphText: string;
   try {
     graphText = readFileSync(resolvePath(graphPath), "utf8");
   } catch {
-    return { exit: ioError(`cannot read graph file ${graphPath}`, args.json) };
+    return { exit: ioError(io, `cannot read graph file ${graphPath}`, args.json) };
   }
   let raw: unknown;
   try {
     raw = JSON.parse(graphText);
   } catch (e) {
-    return { exit: usageError(`invalid --graph JSON: ${(e as Error).message}`) };
+    return { exit: usageError(io, `invalid --graph JSON: ${(e as Error).message}`) };
   }
   // Accept a bare adjacency dict or a `{ input_graph: {…} }` wrapper.
   const intentRaw = isRecord(raw) && isRecord(raw.input_graph) ? raw.input_graph : raw;
   if (!isRecord(intentRaw)) {
     return {
-      exit: usageError("--graph must be an adjacency object { room: [neighbours] } (optionally under input_graph)"),
+      exit: usageError(io, "--graph must be an adjacency object { room: [neighbours] } (optionally under input_graph)"),
     };
   }
   const intent: Record<string, string[]> = {};
@@ -868,21 +894,21 @@ function loadGraphCheck(source: string, graphPath: string, args: Args, world: Wo
  * JSON syntax error or an `intentFromJson` shape error → usage error (exit 3) listing the
  * pathed messages. `flag` names the option in the messages.
  */
-function loadIntent(intentPath: string, flag: string, args: Args): Intent | CheckError {
+function loadIntent(io: CliIo, intentPath: string, flag: string, args: Args): Intent | CheckError {
   let text: string;
   try {
     text = readFileSync(resolvePath(intentPath), "utf8");
   } catch {
-    return { exit: ioError(`cannot read intent file ${intentPath}`, args.json) };
+    return { exit: ioError(io, `cannot read intent file ${intentPath}`, args.json) };
   }
   let raw: unknown;
   try {
     raw = JSON.parse(text);
   } catch (e) {
-    return { exit: usageError(`invalid ${flag} JSON: ${(e as Error).message}`) };
+    return { exit: usageError(io, `invalid ${flag} JSON: ${(e as Error).message}`) };
   }
   const { intent, errors } = intentFromJson(raw);
-  if (intent === null) return { exit: usageError(`invalid ${flag}: ${errors.join("; ")}`) };
+  if (intent === null) return { exit: usageError(io, `invalid ${flag}: ${errors.join("; ")}`) };
   return intent;
 }
 
@@ -920,6 +946,7 @@ function measureLine(m: NonNullable<IntentCheckResult["measures"]>[number]): str
  * counts that feed `ok` and the exit code are taken from the unfiltered `diags`.
  */
 function reportWithChecks(
+  io: CliIo,
   source: string,
   diags: Diagnostic[],
   args: Args,
@@ -929,13 +956,13 @@ function reportWithChecks(
   keeps: readonly KeepResult[] | undefined,
   stages: { stage?: AuthoringStage; stageOf: (d: Diagnostic) => AuthoringStage; kindOf: KindOf },
 ): number {
-  const loaded = args.graph !== undefined ? loadGraphCheck(source, args.graph, args, world) : undefined;
+  const loaded = args.graph !== undefined ? loadGraphCheck(io, source, args.graph, args, world) : undefined;
   if (isCheckError(loaded)) return loaded.exit;
   let graph: GraphCheck | undefined = loaded;
 
   let intentResult: IntentCheckResult | undefined;
   if (args.intent !== undefined) {
-    const it = loadIntent(args.intent, "--intent", args);
+    const it = loadIntent(io, args.intent, "--intent", args);
     if (isCheckError(it)) return it.exit;
     intentResult = validateIntent(source, it, { world });
   }
@@ -1013,35 +1040,33 @@ function reportWithChecks(
     if (keeps) o.keeps = keeps.map(keepValidateRow);
     // PS5.3: appended LAST, so every byte before it is what it was.
     o.next = next;
-    emitJson(o);
+    emitJson(io, o);
   } else {
     // As in `report`: under `--stage` the summary line is always printed, so the stage is said.
     if ((diags.length || at) && !args.quiet) {
       const shownNote = active ? `  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n` : "";
-      process.stderr.write(`${summary}\n${shownNote}\n`);
+      io.stderr.write(`${summary}\n${shownNote}\n`);
     }
-    emitDiagnosticsHuman(source, shown, args.quiet);
+    emitDiagnosticsHuman(io, source, shown, args.quiet);
     if (!args.quiet) {
-      if (active) process.stderr.write(`  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n`);
+      if (active) io.stderr.write(`  (display filter: showing ${shown.length} of ${diags.length} diagnostics)\n`);
       if (graph) {
-        for (const rm of graph.missing_rooms) process.stderr.write(`  graph: room "${rm}" not found in plan\n`);
-        for (const [a, b] of graph.missing_connections)
-          process.stderr.write(`  graph: missing connection ${a} — ${b}\n`);
-        for (const [a, b] of graph.extra_connections)
-          process.stderr.write(`  graph: unexpected connection ${a} — ${b}\n`);
+        for (const rm of graph.missing_rooms) io.stderr.write(`  graph: room "${rm}" not found in plan\n`);
+        for (const [a, b] of graph.missing_connections) io.stderr.write(`  graph: missing connection ${a} — ${b}\n`);
+        for (const [a, b] of graph.extra_connections) io.stderr.write(`  graph: unexpected connection ${a} — ${b}\n`);
       }
       if (intentResult) {
-        for (const m of intentResult.measures ?? []) process.stderr.write(measureLine(m));
-        for (const v of intentResult.violations) process.stderr.write(`  ${v.code}: ${v.message}\n`);
-        if (feedback) for (const f of feedback) process.stderr.write(`  ${f}\n`);
+        for (const m of intentResult.measures ?? []) io.stderr.write(measureLine(m));
+        for (const v of intentResult.violations) io.stderr.write(`  ${v.code}: ${v.message}\n`);
+        if (feedback) for (const f of feedback) io.stderr.write(`  ${f}\n`);
       }
-      if (next) process.stderr.write(`${nextLine(source, next)}\n`);
-      if (at) process.stderr.write(`${stageLine(at)}\n`);
+      if (next) io.stderr.write(`${nextLine(source, next)}\n`);
+      if (at) io.stderr.write(`${stageLine(at)}\n`);
       if (ok) {
         const extras: string[] = [];
         if (graph) extras.push("graph matches");
         if (intentResult) extras.push("intent satisfied");
-        process.stdout.write(
+        io.stdout.write(
           `✓ ok${w ? ` (${w} warning${w === 1 ? "" : "s"})` : ""}${extras.length ? `, ${extras.join(", ")}` : ""}\n`,
         );
       } else {
@@ -1050,7 +1075,7 @@ function reportWithChecks(
         if (w) parts.push(`${w} warning${w === 1 ? "" : "s"}`);
         if (graph && !graph.ok) parts.push("graph mismatch");
         if (intentResult && !intentResult.ok) parts.push("intent violated");
-        process.stdout.write(`✗ ${parts.join(", ")}\n`);
+        io.stdout.write(`✗ ${parts.join(", ")}\n`);
       }
     }
   }
@@ -1065,20 +1090,20 @@ function reportWithChecks(
  * IO/usage problems still exit 1/3. `ok` mirrors the intent gate so a caller can still
  * read pass/fail, but never changes the exit code.
  */
-export function cmdScore(args: Args): number {
+export function cmdScore(args: Args, io: CliIo): number {
   if (args.taste !== undefined && args.brief !== undefined)
-    return usageError("score takes one of --brief <intent.json> and --taste <profile>, not both");
-  if (args.taste !== undefined) return cmdScoreTaste(args, args.taste);
-  if (args.brief === undefined) return usageError("score needs --brief <intent.json> or --taste <profile>");
-  return withSource(args, (source, input) => {
-    const it = loadIntent(args.brief!, "--brief", args);
+    return usageError(io, "score takes one of --brief <intent.json> and --taste <profile>, not both");
+  if (args.taste !== undefined) return cmdScoreTaste(io, args, args.taste);
+  if (args.brief === undefined) return usageError(io, "score needs --brief <intent.json> or --taste <profile>");
+  return withSource(io, args, (source, input) => {
+    const it = loadIntent(io, args.brief!, "--brief", args);
     if (isCheckError(it)) return it.exit;
-    const result = validateIntent(source, it, { world: makeNodeWorld(baseDirOf(input)) });
+    const result = validateIntent(source, it, { world: makeNodeWorld(baseDirOf(io, input)) });
     // score = fraction of assertions satisfied (an empty intent scores a perfect 1),
     // rounded to 4 decimals so the meter is deterministic across runs.
     const score = result.total === 0 ? 1 : Math.round((result.satisfied / result.total) * 10000) / 10000;
     if (args.json) {
-      emitJson({
+      emitJson(io, {
         ok: result.ok,
         satisfied: result.satisfied,
         total: result.total,
@@ -1089,8 +1114,8 @@ export function cmdScore(args: Args): number {
       });
     } else if (!args.quiet) {
       const pct = Math.round(score * 100);
-      process.stdout.write(`score ${result.satisfied}/${result.total} (${pct}%) · ${result.ok ? "ok" : "gated"}\n`);
-      for (const v of result.violations) process.stderr.write(`  ${v.code}: ${v.message}\n`);
+      io.stdout.write(`score ${result.satisfied}/${result.total} (${pct}%) · ${result.ok ? "ok" : "gated"}\n`);
+      for (const v of result.violations) io.stderr.write(`  ${v.code}: ${v.message}\n`);
     }
     // The meter always exits 0 on a successful measurement, gated or not.
     return EXIT.OK;
@@ -1103,68 +1128,70 @@ export function cmdScore(args: Args): number {
  * intent meter it measures and never gates: a measurement exits 0 whatever the score. A plan
  * with compile errors exits 2 and prints them (the `lint` path); an unknown profile exits 3.
  */
-function cmdScoreTaste(args: Args, profile: string): number {
+function cmdScoreTaste(io: CliIo, args: Args, profile: string): number {
   if (!TASTE_PROFILE_NAMES.includes(profile)) {
     return usageError(
+      io,
       `unknown taste profile "${profile}"${didYouMean(profile, TASTE_PROFILE_NAMES)} (available: ${echoList(TASTE_PROFILE_NAMES)})`,
     );
   }
-  return withSource(args, (source, input) => {
-    const world = makeNodeWorld(baseDirOf(input));
+  return withSource(io, args, (source, input) => {
+    const world = makeNodeWorld(baseDirOf(io, input));
     const { diagnostics } = resolvePlan(source, { world });
     const errs = diagnostics.filter((d) => d.severity === "error");
-    if (errs.length) return report(source, errs, args);
+    if (errs.length) return report(io, source, errs, args);
     const r = taste(source, { profile, world });
-    if (args.json) emitJson(r);
-    else if (!args.quiet) printTaste(r);
+    if (args.json) emitJson(io, r);
+    else if (!args.quiet) printTaste(io, r);
     // The meter always exits 0 on a successful measurement: taste never gates.
     return EXIT.OK;
   });
 }
 
 /** The human taste report: one summary line on stdout, one line per criterion on stderr. */
-function printTaste(r: TasteReport): void {
+function printTaste(io: CliIo, r: TasteReport): void {
   const w = r.coverage.weight;
   const score =
     r.score === null ? "not assessable" : `${r.score}${r.capped ? ` (capped; uncapped ${r.uncapped})` : ""}`;
-  process.stdout.write(`taste ${r.profile}: ${score} · judged ${w.assessable}/${w.total} of the weight\n`);
+  io.stdout.write(`taste ${r.profile}: ${score} · judged ${w.assessable}/${w.total} of the weight\n`);
   if (!r.validity.pass)
-    process.stderr.write(
+    io.stderr.write(
       `  validity: ${r.validity.warnings} warning${r.validity.warnings === 1 ? "" : "s"} (${r.validity.codes.join(", ")}) cap the score at 0.5\n`,
     );
   if (r.validity.drafting.warnings > 0)
-    process.stderr.write(`  drafting (does not cap): ${r.validity.drafting.codes.join(", ")}\n`);
+    io.stderr.write(`  drafting (does not cap): ${r.validity.drafting.codes.join(", ")}\n`);
   if (r.advisory.length > 0)
-    process.stderr.write(
+    io.stderr.write(
       `  advisory, ${r.profile} only (does not cap): ${r.advisory.map((a) => `${a.code} ×${a.warnings}`).join(", ")} (see \`lint --profile ${r.profile}\`)\n`,
     );
   for (const c of r.criteria) {
     const head = `${c.id} ${c.name} ${c.score === null ? "—" : c.score}${c.advice ? ` ${c.advice}` : ""}`;
-    process.stderr.write(`  ${head}: ${c.message}\n`);
+    io.stderr.write(`  ${head}: ${c.message}\n`);
   }
 }
 
-export function cmdLint(args: Args): number {
+export function cmdLint(args: Args, io: CliIo): number {
   // An unknown profile is a bad-usage error like every other one: `error: …` on stderr,
   // exit 3, with a did-you-mean and the real profile names from LINT_PROFILE_NAMES (this
   // path used to hand-roll its own message and a bare `return 3`).
   if (args.profile !== undefined && !LINT_PROFILE_NAMES.includes(args.profile)) {
     return usageError(
+      io,
       `unknown lint profile "${args.profile}"${didYouMean(args.profile, LINT_PROFILE_NAMES)} (available: ${echoList(LINT_PROFILE_NAMES)})`,
     );
   }
-  const filter = parseDiagFilter(args);
+  const filter = parseDiagFilter(io, args);
   if (isCheckError(filter)) return filter.exit;
-  return withSource(args, (source, input) => {
-    const world = makeNodeWorld(baseDirOf(input));
+  return withSource(io, args, (source, input) => {
+    const world = makeNodeWorld(baseDirOf(io, input));
     // Surface fatal errors too (lint() is silent on an unresolvable plan).
     // Render-free: resolvePlan carries every diagnostic compile() would.
     const { diagnostics } = resolvePlan(source, { world });
     const errs = diagnostics.filter((d) => d.severity === "error");
-    if (errs.length) return report(source, errs, args, filter);
+    if (errs.length) return report(io, source, errs, args, filter);
     // One run of the rules gives the diagnostics `lint()` returns and the coverage report.
     const linted = lintWithCoverage(source, { world, profile: args.profile });
-    return report(source, linted.diagnostics, args, filter, linted.coverage ?? undefined);
+    return report(io, source, linted.diagnostics, args, filter, linted.coverage ?? undefined);
   });
 }
 
@@ -1180,11 +1207,11 @@ export function cmdLint(args: Args): number {
  * (`E_LOCKED_ELEMENT_CHANGED`), a lock was refused (`E_LOCK_UNNAMED`) or a side does not
  * resolve, so nothing could be checked. The check itself is `impact`'s (`src/lock.ts`).
  */
-export function cmdImpact(args: Args): number {
+export function cmdImpact(args: Args, io: CliIo): number {
   const hasSet = args.set !== undefined;
   const hasAgainst = args.against !== undefined;
   if (hasSet === hasAgainst)
-    return usageErrorFor("impact", "impact needs exactly one of --set NAME=value and --against <old.arch>");
+    return usageErrorFor(io, "impact", "impact needs exactly one of --set NAME=value and --against <old.arch>");
   let setName = "";
   let setValue = "";
   if (hasSet) {
@@ -1192,37 +1219,41 @@ export function cmdImpact(args: Args): number {
     setName = eq > 0 ? args.set!.slice(0, eq).trim() : "";
     setValue = eq > 0 ? args.set!.slice(eq + 1).trim() : "";
     if (setName === "" || setValue === "")
-      return usageErrorFor("impact", `--set takes NAME=value (e.g. --set W=4500), got "${args.set}"`);
+      return usageErrorFor(io, "impact", `--set takes NAME=value (e.g. --set W=4500), got "${args.set}"`);
   }
   const lock = args.lock !== undefined ? parseLockList(args.lock) : undefined;
   if (lock && lock.length === 0)
-    return usageErrorFor("impact", `--lock takes ids separated by commas (e.g. --lock entry,w1), got "${args.lock}"`);
-  return withSource(args, (source, input) => {
-    const world = makeNodeWorld(baseDirOf(input));
+    return usageErrorFor(
+      io,
+      "impact",
+      `--lock takes ids separated by commas (e.g. --lock entry,w1), got "${args.lock}"`,
+    );
+  return withSource(io, args, (source, input) => {
+    const world = makeNodeWorld(baseDirOf(io, input));
     let before = source;
     let after = source;
     let set: { name: string; before: string; after: string } | undefined;
     if (hasSet) {
       const o = applyLetOverride(source, setName, setValue);
       if (!o.ok) {
-        if (args.json) emitJson({ ok: false, diagnostics: o.diagnostics.map((d) => diagnosticToJson(source, d)) });
-        else emitDiagnosticsHuman(source, o.diagnostics, args.quiet);
+        if (args.json) emitJson(io, { ok: false, diagnostics: o.diagnostics.map((d) => diagnosticToJson(source, d)) });
+        else emitDiagnosticsHuman(io, source, o.diagnostics, args.quiet);
         return EXIT.USER;
       }
       after = o.source;
       set = { name: o.name, before: o.before, after: o.after };
     } else {
       try {
-        before = readInput(args.against!);
+        before = readInput(io, args.against!);
       } catch {
-        return ioError(`cannot read ${args.against}`, args.json);
+        return ioError(io, `cannot read ${args.against}`, args.json);
       }
     }
     // Each file resolves its `import`s against its own directory.
-    const beforeWorld = hasAgainst ? makeNodeWorld(baseDirOf(args.against!)) : world;
+    const beforeWorld = hasAgainst ? makeNodeWorld(baseDirOf(io, args.against!)) : world;
     const report = impact(before, after, { world, beforeWorld, ...(lock ? { lock } : {}) });
     const { ok, ...rest } = report;
-    if (args.json) emitJson({ ok, ...(set ? { set } : {}), ...rest });
+    if (args.json) emitJson(io, { ok, ...(set ? { set } : {}), ...rest });
     else if (!args.quiet) {
       const head = set ? `${set.name}: ${set.before} → ${set.after}` : `${args.against} → ${input}`;
       // Where each changed locked element's statement stands on each side (line:col in its file).
@@ -1239,7 +1270,7 @@ export function cmdImpact(args: Args): number {
       );
       const lines = [head, ...report.summary];
       if (spans.length > 0) lines.push("Locked elements that changed, before → after:", ...spans);
-      process.stdout.write(`${lines.join("\n")}\n`);
+      io.stdout.write(`${lines.join("\n")}\n`);
     }
     return report.lock && !report.lock.ok ? EXIT.USER : EXIT.OK;
   });

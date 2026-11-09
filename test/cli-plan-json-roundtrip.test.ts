@@ -1,10 +1,10 @@
-import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import { describe, expect, it } from "vitest";
 import { type Diagnostic, describe as describePlan, lint, planToJson } from "../src/index.js";
 import { type Args, makeNodeWorld, sourceFromJson } from "../src/cli/io.js";
 import { renderArtifact } from "../src/cli/serialize.js";
+import { runArch, spawnArch } from "./helpers/cli.js";
 import { CANNOT_ROUND_TRIP } from "./plan-json-gaps.js";
 
 /**
@@ -155,33 +155,33 @@ describe("compile -f json writes the existing projection", () => {
   });
 });
 
-describe("the real binary: stdin pipe and refusals", () => {
-  const run = (args: string[], input?: string) =>
-    spawnSync(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], { input, encoding: "utf8" });
+describe("the stdin pipe (the real binary) and the refusals", () => {
+  // The pipe case spawns the binary: what it proves is a real stdin pipe between two processes.
+  const spawn = (args: string[], input?: string) => spawnArch(args, { input });
 
   it("compile -f json -o - | compile --from-json - -o - draws the same SVG as compile -o -", () => {
-    const json = run(["compile", "examples/studio.arch", "-f", "json", "-o", "-"]);
+    const json = spawn(["compile", "examples/studio.arch", "-f", "json", "-o", "-"]);
     expect(json.status).toBe(0);
-    const back = run(["compile", "--from-json", "-", "-o", "-"], json.stdout);
-    const direct = run(["compile", "examples/studio.arch", "-o", "-"]);
+    const back = spawn(["compile", "--from-json", "-", "-o", "-"], json.stdout);
+    const direct = spawn(["compile", "examples/studio.arch", "-o", "-"]);
     expect(back.status).toBe(0);
     expect(direct.status).toBe(0);
     expect(back.stdout).toBe(direct.stdout);
   }, 60_000);
 
-  it("--view with -f json is a usage error (exit 3): Plan JSON is not a drawing", () => {
-    const r = run(["compile", "examples/studio.arch", "-f", "json", "--view", "iso", "-o", "-"]);
+  it("--view with -f json is a usage error (exit 3): Plan JSON is not a drawing", async () => {
+    const r = await runArch(["compile", "examples/studio.arch", "-f", "json", "--view", "iso", "-o", "-"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toContain("-f json");
   }, 60_000);
 
-  it("so are the drawing-only flags, named in one message (exit 3), for compile and batch", () => {
+  it("so are the drawing-only flags, named in one message (exit 3), for compile and batch", async () => {
     const flags = ["--accessible", "--overlay", "circulation", "--width", "800", "--scale", "2"];
-    const c = run(["compile", "examples/studio.arch", "-f", "json", ...flags, "-o", "-"]);
+    const c = await runArch(["compile", "examples/studio.arch", "-f", "json", ...flags, "-o", "-"]);
     expect(c.status).toBe(3);
     expect(c.stdout).toBe("");
     expect(c.stderr).toContain("--accessible, --overlay, --width, --scale cannot be combined with -f json");
-    const b = run(["batch", "examples/studio.arch", "-f", "json", "--width", "800"]);
+    const b = await runArch(["batch", "examples/studio.arch", "-f", "json", "--width", "800"]);
     expect(b.status).toBe(3);
     expect(b.stderr).toContain("--width cannot be combined with -f json");
   }, 60_000);

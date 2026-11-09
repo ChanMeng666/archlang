@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
 import { planToJson, type PlanJsonDropped, type PlanJsonDroppedClause } from "../src/index.js";
 import { cmdCompile } from "../src/cli/commands-render.js";
-import { type Args, makeNodeWorld, parseArgs } from "../src/cli/io.js";
+import { type Args, makeNodeWorld, nodeIo, parseArgs } from "../src/cli/io.js";
 import { renderArtifact } from "../src/cli/serialize.js";
 import { BUILTIN_DEFS } from "../src/elements/defs.js";
 import { UNPROJECTED_KINDS } from "../src/plan-json.js";
@@ -76,7 +76,7 @@ async function compileCli(argv: string[]): Promise<{ exit: number; stdout: strin
   process.stdout.write = sink("out") as typeof process.stdout.write;
   process.stderr.write = sink("err") as typeof process.stderr.write;
   try {
-    const exit = await cmdCompile(parseArgs(argv));
+    const exit = await cmdCompile(parseArgs(argv), nodeIo());
     return { exit, stdout, stderr };
   } finally {
     process.stdout.write = out;
