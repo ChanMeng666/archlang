@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { cmdFinish, cmdFix, cmdFmt, cmdRepair, cmdReroll } from "../src/cli/commands-author.js";
-import { parseArgs } from "../src/cli/io.js";
+import { nodeIo, parseArgs } from "../src/cli/io.js";
 import { writeGuardSeam } from "../src/cli/source-hash.js";
 import { buildManifest, format } from "../src/index.js";
 
@@ -83,11 +83,11 @@ async function inProcess(run: (argv: string[]) => number | Promise<number>, argv
 type Runner = (argv: string[]) => number | Promise<number>;
 const manifest = buildManifest("0.0.0");
 const command = (name: string) => manifest.commands.find((c) => c.name === name)!;
-const fix = (argv: string[]) => cmdFix(parseArgs(argv, command("fix")));
-const finish = (argv: string[]) => cmdFinish(parseArgs(argv, command("finish")));
-const fmt = (argv: string[]) => cmdFmt(parseArgs(argv, command("fmt")));
-const repair = (argv: string[]) => cmdRepair(parseArgs(argv, command("repair")));
-const reroll = (argv: string[]) => cmdReroll(parseArgs(argv, command("reroll")));
+const fix = (argv: string[]) => cmdFix(parseArgs(argv, command("fix")), nodeIo());
+const finish = (argv: string[]) => cmdFinish(parseArgs(argv, command("finish")), nodeIo());
+const fmt = (argv: string[]) => cmdFmt(parseArgs(argv, command("fmt")), nodeIo());
+const repair = (argv: string[]) => cmdRepair(parseArgs(argv, command("repair")), nodeIo());
+const reroll = (argv: string[]) => cmdReroll(parseArgs(argv, command("reroll")), nodeIo());
 
 let dir: string;
 let file: string;

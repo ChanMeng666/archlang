@@ -17,7 +17,7 @@ import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { cmdImpact } from "../src/cli/commands-analyze.js";
 import { cmdCompile } from "../src/cli/commands-render.js";
-import { parseArgs } from "../src/cli/io.js";
+import { type CliIo, nodeIo, parseArgs } from "../src/cli/io.js";
 import { applyLetOverride, describe, impact, planToJson } from "../src/index.js";
 import type { ImpactReport, KeepFact, KeepImpact } from "../src/index.js";
 import { KEEP_CORPUS_DIR, keepCorpus } from "./keep-harness.js";
@@ -27,7 +27,7 @@ const plan = (body: string, grid = 50): string => `plan "t" {\n  units mm\n  gri
 
 /** Run a CLI command in-process: exit code, stdout and stderr. */
 async function run(
-  cmd: (a: ReturnType<typeof parseArgs>) => number | Promise<number>,
+  cmd: (a: ReturnType<typeof parseArgs>, io: CliIo) => number | Promise<number>,
   argv: string[],
 ): Promise<{ exit: number; stdout: string; stderr: string }> {
   let stdout = "";
@@ -45,7 +45,7 @@ async function run(
   process.stdout.write = sink("out") as typeof process.stdout.write;
   process.stderr.write = sink("err") as typeof process.stderr.write;
   try {
-    const exit = await cmd(parseArgs(argv));
+    const exit = await cmd(parseArgs(argv), nodeIo());
     return { exit, stdout, stderr };
   } finally {
     process.stdout.write = write;

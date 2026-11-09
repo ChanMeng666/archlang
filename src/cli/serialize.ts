@@ -25,6 +25,7 @@ import type { Diagnostic, PlanJson, PlanJsonDropped, PlanJsonDroppedClause, Scen
 import { fmt3 } from "../num-format.js";
 import {
   type Args,
+  type CliIo,
   type Format,
   EXIT,
   asciiCharset,
@@ -49,7 +50,9 @@ function detectPackageManager(): string {
  * Auto-install an optional render dependency into the current working directory
  * (the one impure, networked CLI action — opt-in via `--install`). Best-effort:
  * Node resolves the dep from the package's own location, so this works when `arch`
- * runs as a project dependency; an `npx`-ephemeral install may not be found.
+ * runs as a project dependency; an `npx`-ephemeral install may not be found. It talks to the REAL
+ * process (its banner on `process.stderr`, the installer inheriting the process stdio), never a
+ * `CliIo`: the installer's own output cannot be captured, so its banner stays beside it.
  */
 function autoInstall(pkg: string, quiet?: boolean): void {
   const pm = detectPackageManager();
@@ -410,14 +413,20 @@ export interface PerFile {
 }
 
 /** Read a `.arch` file, render it, and write the artifact to `targetPath`. */
-export async function compileToFile(input: string, format: Format, args: Args, targetPath: string): Promise<PerFile> {
+export async function compileToFile(
+  io: CliIo,
+  input: string,
+  format: Format,
+  args: Args,
+  targetPath: string,
+): Promise<PerFile> {
   let source: string;
   try {
-    source = readInput(input);
+    source = readInput(io, input);
   } catch {
     return { input, ok: false, format, error: `cannot read ${input}`, diagnostics: [], source: "" };
   }
-  const r = await renderArtifact(source, format, args, baseDirOf(input));
+  const r = await renderArtifact(source, format, args, baseDirOf(io, input));
   if (r.error || r.bytes === undefined) {
     return { input, ok: false, format, error: r.error, errorCode: r.errorCode, diagnostics: r.diagnostics, source };
   }

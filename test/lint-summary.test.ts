@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { cmdLint, cmdValidate } from "../src/cli/commands-analyze.js";
-import { parseArgs } from "../src/cli/io.js";
+import { type CliIo, nodeIo, parseArgs } from "../src/cli/io.js";
 import { diagnosticsSummary, validateSummary } from "../src/cli/summary.js";
 import { ERROR_CODES } from "../src/error-catalog.js";
 import { diagnosticToJson, lint } from "../src/index.js";
@@ -73,7 +73,7 @@ describe("diagnosticsSummary", () => {
 });
 
 /** Run a command in-process; return exit code, stdout and stderr. */
-function runIn(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[]) {
+function runIn(cmd: (a: ReturnType<typeof parseArgs>, io: CliIo) => number, argv: string[]) {
   let stdout = "";
   let stderr = "";
   const out = process.stdout.write.bind(process.stdout);
@@ -88,7 +88,7 @@ function runIn(cmd: (a: ReturnType<typeof parseArgs>) => number, argv: string[])
     return true;
   }) as typeof process.stderr.write;
   try {
-    return { exit: cmd(parseArgs(argv)), stdout, stderr };
+    return { exit: cmd(parseArgs(argv), nodeIo()), stdout, stderr };
   } finally {
     process.stdout.write = out;
     process.stderr.write = err;

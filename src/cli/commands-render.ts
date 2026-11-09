@@ -20,6 +20,7 @@ import {
 import type { Diagnostic, PlanJsonDropped } from "../index.js";
 import {
   type Args,
+  type CliIo,
   type CommandResult,
   type Format,
   EXIT,
@@ -104,27 +105,27 @@ const jsonNamesNoFile = (args: Args): boolean => args.json === true && args.o ==
 // compile
 // ---------------------------------------------------------------------------
 
-export async function cmdCompile(args: Args): Promise<number> {
+export async function cmdCompile(args: Args, io: CliIo): Promise<number> {
   const input = args._[0];
-  if (!input) return usageError("missing input file (use a path or `-` for stdin)");
+  if (!input) return usageError(io, "missing input file (use a path or `-` for stdin)");
 
   const format = parseFormat({ ...args, format: args.format ?? formatOfOutput(args.o) });
-  if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
-  const jsonRefusal = refuseJsonDrawingFlags(args, format, "compile");
+  if (!format) return usageError(io, `unknown format "${args.format}" (use ${FORMAT_LIST})`);
+  const jsonRefusal = refuseJsonDrawingFlags(io, args, format, "compile");
   if (jsonRefusal !== undefined) return jsonRefusal;
   // Checked before any read: two writers for one stdout is a usage error, not a silent
   // redirect to `out.svg` (see `stdoutJsonConflict`).
-  if (args.json && args.o === "-") return stdoutJsonConflict("compile");
+  if (args.json && args.o === "-") return stdoutJsonConflict(io, "compile");
   // `-o dir/` names a directory; a multi-storey compile would otherwise derive `dir/.L1.svg`-style
   // names from it, so it is refused here, before anything is read or written.
   if (args.o !== undefined && args.o !== "-" && endsInSeparator(args.o))
-    return ioError(separatorRefusal(args.o), args.json, { format });
+    return ioError(io, separatorRefusal(args.o), args.json, { format });
 
   let source: string;
   try {
-    source = readInput(input);
+    source = readInput(io, input);
   } catch {
-    return ioError(`cannot read ${input}`, args.json, { format });
+    return ioError(io, `cannot read ${input}`, args.json, { format });
   }
 
   // `--from-json`: the input is Plan JSON (RPLAN shape), not `.arch`. Convert it to
@@ -135,10 +136,10 @@ export async function cmdCompile(args: Args): Promise<number> {
     if ("error" in conv) {
       const projSrc = conv.generated ?? source;
       if (args.json) {
-        emitJson({ ok: false, format, diagnostics: conv.error.map((d) => diagnosticToJson(projSrc, d)) });
+        emitJson(io, { ok: false, format, diagnostics: conv.error.map((d) => diagnosticToJson(projSrc, d)) });
       } else {
-        emitDiagnosticsHuman(projSrc, conv.error, args.quiet);
-        if (!args.quiet) process.stderr.write("✗ plan JSON is invalid\n");
+        emitDiagnosticsHuman(io, projSrc, conv.error, args.quiet);
+        if (!args.quiet) io.stderr.write("✗ plan JSON is invalid\n");
       }
       return EXIT.USER;
     }
@@ -150,13 +151,13 @@ export async function cmdCompile(args: Args): Promise<number> {
   // no `pages` for it, and `-o <file>` therefore writes exactly the file it names rather
   // than one `<stem>.L<n>` per level. Validated here so a bad value or `-f txt` is an
   // exit-3 usage error before anything is read.
-  const rv = resolveView(args, format, "compile");
+  const rv = resolveView(io, args, format, "compile");
   if ("code" in rv) return rv.code;
 
   // A multi-storey plan (`level` blocks) renders one artifact per storey unless `--level`
   // narrows it to one; a single-storey plan is unaffected by either.
-  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "all"), rv.view);
-  if (r.badLevel) return unknownLevel("compile", args.level!, r.levels);
+  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "all"), rv.view);
+  if (r.badLevel) return unknownLevel(io, "compile", args.level!, r.levels);
 
   if (r.error) {
     // A serialize / missing-optional-dependency failure (compile succeeded). In
@@ -168,10 +169,10 @@ export async function cmdCompile(args: Args): Promise<number> {
         const fix = ERROR_CATALOG[r.errorCode]?.fix;
         if (fix) o.fix = fix;
       }
-      emitJson(o);
+      emitJson(io, o);
       return EXIT.INTERNAL;
     }
-    return ioError(r.error, false, { format });
+    return ioError(io, r.error, false, { format });
   }
 
   const errored = hasErrors(r.diagnostics);
@@ -179,7 +180,7 @@ export async function cmdCompile(args: Args): Promise<number> {
   // once the export has succeeded, and `dropped` in the `--json` envelope. Never a diagnostic: it
   // moves no exit code.
   const noted = (code: number): number => {
-    if (code === EXIT.OK && !args.quiet) for (const n of r.notes ?? []) process.stderr.write(`${n}\n`);
+    if (code === EXIT.OK && !args.quiet) for (const n of r.notes ?? []) io.stderr.write(`${n}\n`);
     return code;
   };
 
@@ -187,18 +188,18 @@ export async function cmdCompile(args: Args): Promise<number> {
   // `-o -` cannot mean "several drawings on one stream", so it is a usage error (exit 3)
   // unless `--level` picked a single storey — the same doctrine as `-o -` + `--json`.
   if (r.pages) {
-    if (args.o === "-") return stdoutMultiPage("compile", r.levels);
-    return noted(await writePages(r.pages, r.diagnostics, source, input, format, args, r.dropped));
+    if (args.o === "-") return stdoutMultiPage(io, "compile", r.levels);
+    return noted(await writePages(io, r.pages, r.diagnostics, source, input, format, args, r.dropped));
   }
 
   if (r.bytes === undefined) {
     const diagnostics = r.diagnostics;
     if (args.json) {
-      emitJson({ ok: false, format, diagnostics: diagnostics.map((d) => diagnosticToJson(source, d)) });
+      emitJson(io, { ok: false, format, diagnostics: diagnostics.map((d) => diagnosticToJson(source, d)) });
     } else {
-      emitDiagnosticsHuman(source, diagnostics, args.quiet);
+      emitDiagnosticsHuman(io, source, diagnostics, args.quiet);
       const n = diagnostics.filter((d) => d.severity === "error").length;
-      if (!args.quiet) process.stderr.write(`✗ compilation failed (${n} error${n === 1 ? "" : "s"})\n`);
+      if (!args.quiet) io.stderr.write(`✗ compilation failed (${n} error${n === 1 ? "" : "s"})\n`);
     }
     return EXIT.USER;
   }
@@ -211,6 +212,7 @@ export async function cmdCompile(args: Args): Promise<number> {
   // A plan past the multi-storey branch above with no `--level` draws one drawing, of no storey.
   if (args.level === undefined && args.o?.includes("{level}"))
     return usageErrorFor(
+      io,
       "compile",
       "`{level}` in -o names a storey's file, and this compile writes one drawing of no storey (no `level` blocks, or --view): name the file",
     );
@@ -227,12 +229,12 @@ export async function cmdCompile(args: Args): Promise<number> {
     if (noWrite) {
       // nothing on disk: the invocation named no output file
     } else if (target === "-") {
-      process.stdout.write(bytes);
+      io.stdout.write(bytes);
     } else {
       try {
         writeOutput(target, bytes);
       } catch (e) {
-        return ioError((e as Error).message, args.json, { format });
+        return ioError(io, (e as Error).message, args.json, { format });
       }
     }
     if (args.json) {
@@ -248,33 +250,33 @@ export async function cmdCompile(args: Args): Promise<number> {
         o.output = resolvePath(target);
         o.bytes = byteLen(bytes);
       }
-      emitJson(o);
+      emitJson(io, o);
     } else {
-      emitDiagnosticsHuman(source, diagnostics, args.quiet);
+      emitDiagnosticsHuman(io, source, diagnostics, args.quiet);
       const n = diagnostics.filter((d) => d.severity === "error").length;
       if (!args.quiet && target !== "-")
-        process.stderr.write(`✗ compilation failed (${n} error${n === 1 ? "" : "s"}); wrote error card → ${target}\n`);
+        io.stderr.write(`✗ compilation failed (${n} error${n === 1 ? "" : "s"}); wrote error card → ${target}\n`);
     }
     return EXIT.USER;
   }
 
   if (!noWrite) {
     if (target === "-") {
-      process.stdout.write(bytes);
+      io.stdout.write(bytes);
       return noted(EXIT.OK);
     }
     try {
       writeOutput(target, bytes);
     } catch (e) {
-      return ioError((e as Error).message, args.json, { format });
+      return ioError(io, (e as Error).message, args.json, { format });
     }
   }
 
   const warnings = diagnostics.filter((d) => d.severity === "warning");
   if (args.json) {
-    const s = describe(source, { world: makeNodeWorld(baseDirOf(input)) });
+    const s = describe(source, { world: makeNodeWorld(baseDirOf(io, input)) });
     const { ok: _ok, diagnostics: _d, ...summary } = s;
-    emitJson({
+    emitJson(io, {
       ok: true,
       format,
       // `written: false` takes `output`'s slot when the invocation named no file.
@@ -285,9 +287,9 @@ export async function cmdCompile(args: Args): Promise<number> {
       summary,
     });
   } else {
-    emitDiagnosticsHuman(source, warnings, args.quiet);
+    emitDiagnosticsHuman(io, source, warnings, args.quiet);
     const len = typeof bytes === "string" ? Buffer.byteLength(bytes) : bytes.length;
-    if (!args.quiet) process.stdout.write(`✓ ${input} → ${target} (${len} bytes, ${format.toUpperCase()})\n`);
+    if (!args.quiet) io.stdout.write(`✓ ${input} → ${target} (${len} bytes, ${format.toUpperCase()})\n`);
   }
   return noted(EXIT.OK);
 }
@@ -307,6 +309,7 @@ export async function cmdCompile(args: Args): Promise<number> {
  * envelope says `written: false` instead.
  */
 function writePages(
+  io: CliIo,
   pages: NonNullable<Awaited<ReturnType<typeof renderArtifact>>["pages"]>,
   diagnostics: Diagnostic[],
   source: string,
@@ -324,7 +327,7 @@ function writePages(
       try {
         writeOutput(target, p.bytes);
       } catch (e) {
-        return ioError((e as Error).message, args.json, { format });
+        return ioError(io, (e as Error).message, args.json, { format });
       }
     }
     written.push({
@@ -339,9 +342,9 @@ function writePages(
   // set exactly once — a page is not a separate compile.
   const warnings = diagnostics.filter((d) => d.severity === "warning");
   if (args.json) {
-    const s = describe(source, { world: makeNodeWorld(baseDirOf(input)) });
+    const s = describe(source, { world: makeNodeWorld(baseDirOf(io, input)) });
     const { ok: _ok, diagnostics: _d, ...summary } = s;
-    emitJson({
+    emitJson(io, {
       ok: true,
       format,
       // `written: false` takes `outputs[]`'s slot when the invocation named no file.
@@ -352,10 +355,10 @@ function writePages(
       summary,
     });
   } else {
-    emitDiagnosticsHuman(source, warnings, args.quiet);
+    emitDiagnosticsHuman(io, source, warnings, args.quiet);
     if (!args.quiet) {
       for (const w of written) {
-        process.stdout.write(
+        io.stdout.write(
           `✓ ${input} → ${w.output as string} (level ${w.level as number}, ${w.bytes as number} bytes, ${format.toUpperCase()})\n`,
         );
       }
@@ -388,12 +391,12 @@ function writePages(
  * Ctrl+C) and SIGTERM both end the process promptly, and no handler is installed that
  * could swallow either.
  */
-export async function cmdWatch(args: Args): Promise<CommandResult> {
+export async function cmdWatch(args: Args, io: CliIo): Promise<CommandResult> {
   const input = args._[0];
   // Still a usage error, and still exits 3 — `-` cannot be re-read on every save, and
   // becoming resident over a path that does not exist would watch nothing forever.
-  if (!input || input === "-") return usageError("watch needs a file path");
-  await cmdCompile(args);
+  if (!input || input === "-") return usageError(io, "watch needs a file path");
+  await cmdCompile(args, io);
   // ARM THE WATCHER BEFORE ANNOUNCING IT. A save landing between the banner and the
   // watcher's baseline `stat` is folded into that baseline and never produces a change
   // event — silently, and only for the first save. The banner is what a human (and this
@@ -413,11 +416,11 @@ export async function cmdWatch(args: Args): Promise<CommandResult> {
   watchPath(resolvePath(input), 300, () => {
     // Nothing reads a re-compile's exit code — the process's own code is decided by the
     // signal that ends it — so the failure is reported and the watch continues.
-    void cmdCompile(args).catch((e: unknown) => {
-      process.stderr.write(`✗ recompile failed: ${e instanceof Error ? e.message : String(e)}\n`);
+    void cmdCompile(args, io).catch((e: unknown) => {
+      io.stderr.write(`✗ recompile failed: ${e instanceof Error ? e.message : String(e)}\n`);
     });
   });
-  process.stderr.write(`watching ${input} … (Ctrl+C to stop)\n`);
+  io.stderr.write(`watching ${input} … (Ctrl+C to stop)\n`);
   return RESIDENT;
 }
 
@@ -493,41 +496,42 @@ export function watchPath(
  * result shape as the PNG preview. Zero dependency: an agent gets a legible plan
  * with no raster binary at all.
  */
-async function cmdPreviewAscii(args: Args, input: string): Promise<number> {
+async function cmdPreviewAscii(io: CliIo, args: Args, input: string): Promise<number> {
   const format: Format = "txt";
   // `--ascii` IS the txt backend, so `--view` is refused here for the same reason
   // `-f txt` is: a projection has no plan for the ASCII room pass to read.
-  const rv = resolveView(args, format, "preview");
+  const rv = resolveView(io, args, format, "preview");
   if ("code" in rv) return rv.code;
   let source: string;
   try {
-    source = readInput(input);
+    source = readInput(io, input);
   } catch {
-    return ioError(`cannot read ${input}`, args.json, { format });
+    return ioError(io, `cannot read ${input}`, args.json, { format });
   }
-  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "first"));
-  if (r.badLevel) return unknownLevel("preview", args.level!, r.levels);
+  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "first"));
+  if (r.badLevel) return unknownLevel(io, "preview", args.level!, r.levels);
   if (r.bytes === undefined) {
-    if (args.json) emitJson({ ok: false, format, diagnostics: r.diagnostics.map((d) => diagnosticToJson(source, d)) });
+    if (args.json)
+      emitJson(io, { ok: false, format, diagnostics: r.diagnostics.map((d) => diagnosticToJson(source, d)) });
     else {
-      emitDiagnosticsHuman(source, r.diagnostics, args.quiet);
-      if (!args.quiet) process.stderr.write("✗ compilation failed\n");
+      emitDiagnosticsHuman(io, source, r.diagnostics, args.quiet);
+      if (!args.quiet) io.stderr.write("✗ compilation failed\n");
     }
     return EXIT.USER;
   }
   const ascii = typeof r.bytes === "string" ? r.bytes : Buffer.from(r.bytes).toString("utf8");
   const warnings = r.diagnostics.filter((d) => d.severity === "warning");
   if (args.json) {
-    emitJson({ ok: true, format, ascii, diagnostics: warnings.map((d) => diagnosticToJson(source, d)) });
+    emitJson(io, { ok: true, format, ascii, diagnostics: warnings.map((d) => diagnosticToJson(source, d)) });
   } else {
-    process.stdout.write(ascii);
+    io.stdout.write(ascii);
   }
   return EXIT.OK;
 }
 
-export async function cmdPreview(args: Args, preread?: string): Promise<number> {
+export async function cmdPreview(args: Args, io: CliIo, preread?: string): Promise<number> {
   const input = args._[0];
-  if (!input) return usageError("preview needs an input file (use a path or `-` for stdin)");
+  if (!input) return usageError(io, "preview needs an input file (use a path or `-` for stdin)");
 
   if (args.review) {
     // The review sheet draws its own overlay and is a raster of the PLAN, so each of these
@@ -541,18 +545,19 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
           : undefined;
     if (clash)
       return usageErrorFor(
+        io,
         "preview",
         `--review cannot be combined with ${clash} — the review sheet is a PNG of the plan with its own access-graph overlay`,
       );
-    return cmdPreviewReview(args, input);
+    return cmdPreviewReview(io, args, input);
   }
   // `--ascii`: a zero-install text preview an agent can read straight from stdout,
   // no raster dependency. Reuses the same `renderAscii` backend as `-f txt`.
-  if (args.ascii) return cmdPreviewAscii(args, input);
+  if (args.ascii) return cmdPreviewAscii(io, args, input);
 
   const format: Format = "png";
-  if (args.json && args.o === "-") return stdoutJsonConflict("preview");
-  const rv = resolveView(args, format, "preview");
+  if (args.json && args.o === "-") return stdoutJsonConflict(io, "preview");
+  const rv = resolveView(io, args, format, "preview");
   if ("code" in rv) return rv.code;
   // Target a sensible on-screen size by default: the native render is high-res
   // (thousands of px), so render the page at PNG_PREVIEW_WIDTH px wide unless the caller set
@@ -564,15 +569,15 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
   let source: string;
   try {
     // `--review` hands over the source it already read: stdin cannot be read twice.
-    source = preread ?? readInput(input);
+    source = preread ?? readInput(io, input);
   } catch {
-    return ioError(`cannot read ${input}`, args.json, { format });
+    return ioError(io, `cannot read ${input}`, args.json, { format });
   }
 
   // Multi-storey: preview the storey `--level` names, else the lowest (page 1). With
   // `--view` there is one page — the whole building — so `--level` has nothing to narrow.
-  const r = await renderArtifact(source, format, args, baseDirOf(input), pageSelect(args, "first"), rv.view);
-  if (r.badLevel) return unknownLevel("preview", args.level!, r.levels);
+  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "first"), rv.view);
+  if (r.badLevel) return unknownLevel(io, "preview", args.level!, r.levels);
 
   if (r.error) {
     if (args.json) {
@@ -582,17 +587,18 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
         const fix = ERROR_CATALOG[r.errorCode]?.fix;
         if (fix) o.fix = fix;
       }
-      emitJson(o);
+      emitJson(io, o);
       return EXIT.INTERNAL;
     }
-    return ioError(r.error, false, { format });
+    return ioError(io, r.error, false, { format });
   }
 
   if (r.bytes === undefined) {
-    if (args.json) emitJson({ ok: false, format, diagnostics: r.diagnostics.map((d) => diagnosticToJson(source, d)) });
+    if (args.json)
+      emitJson(io, { ok: false, format, diagnostics: r.diagnostics.map((d) => diagnosticToJson(source, d)) });
     else {
-      emitDiagnosticsHuman(source, r.diagnostics, args.quiet);
-      if (!args.quiet) process.stderr.write("✗ compilation failed\n");
+      emitDiagnosticsHuman(io, source, r.diagnostics, args.quiet);
+      if (!args.quiet) io.stderr.write("✗ compilation failed\n");
     }
     return EXIT.USER;
   }
@@ -605,12 +611,12 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
   // the user-source exit code and report the diagnostics.
   if (errored) {
     if (target === "-") {
-      process.stdout.write(r.bytes);
+      io.stdout.write(r.bytes);
     } else {
       try {
         writeOutput(target, r.bytes);
       } catch (e) {
-        return ioError((e as Error).message, args.json, { format });
+        return ioError(io, (e as Error).message, args.json, { format });
       }
     }
     if (args.json) {
@@ -623,28 +629,28 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
         o.output = resolvePath(target);
         o.bytes = typeof r.bytes === "string" ? Buffer.byteLength(r.bytes) : r.bytes.length;
       }
-      emitJson(o);
+      emitJson(io, o);
     } else {
-      emitDiagnosticsHuman(source, r.diagnostics, args.quiet);
-      if (!args.quiet && target !== "-") process.stderr.write(`✗ compilation failed; wrote error card → ${target}\n`);
+      emitDiagnosticsHuman(io, source, r.diagnostics, args.quiet);
+      if (!args.quiet && target !== "-") io.stderr.write(`✗ compilation failed; wrote error card → ${target}\n`);
     }
     return EXIT.USER;
   }
 
   if (target === "-") {
-    process.stdout.write(r.bytes);
+    io.stdout.write(r.bytes);
     return EXIT.OK;
   }
   try {
     writeOutput(target, r.bytes);
   } catch (e) {
-    return ioError((e as Error).message, args.json, { format });
+    return ioError(io, (e as Error).message, args.json, { format });
   }
 
   const bytes = typeof r.bytes === "string" ? Buffer.byteLength(r.bytes) : r.bytes.length;
   const warnings = r.diagnostics.filter((d) => d.severity === "warning");
   if (args.json) {
-    emitJson({
+    emitJson(io, {
       ok: true,
       format,
       output: resolvePath(target),
@@ -654,9 +660,9 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
       diagnostics: warnings.map((d) => diagnosticToJson(source, d)),
     });
   } else {
-    emitDiagnosticsHuman(source, warnings, args.quiet);
+    emitDiagnosticsHuman(io, source, warnings, args.quiet);
     if (!args.quiet)
-      process.stdout.write(
+      io.stdout.write(
         `✓ ${input} → ${target} (${bytes} bytes, PNG${args.width ? ` ${args.width}px` : ""}@${args.scale}x)\n`,
       );
   }
@@ -670,16 +676,16 @@ export async function cmdPreview(args: Args, preread?: string): Promise<number> 
  * `preview` path above is untouched. A broken plan takes `preview`'s own failure path (with
  * `--error-svg`, its error card). Default output `<name>.review.png`, beside the plain preview.
  */
-async function cmdPreviewReview(args: Args, input: string): Promise<number> {
+async function cmdPreviewReview(io: CliIo, args: Args, input: string): Promise<number> {
   const format: Format = "png";
-  if (args.json && args.o === "-") return stdoutJsonConflict("preview");
+  if (args.json && args.o === "-") return stdoutJsonConflict(io, "preview");
   let source: string;
   try {
-    source = readInput(input);
+    source = readInput(io, input);
   } catch {
-    return ioError(`cannot read ${input}`, args.json, { format });
+    return ioError(io, `cannot read ${input}`, args.json, { format });
   }
-  const world = makeNodeWorld(baseDirOf(input));
+  const world = makeNodeWorld(baseDirOf(io, input));
   const width = args.width !== undefined && args.width > 0 ? args.width : undefined;
   const sheet = buildReviewSheet(source, {
     world,
@@ -688,9 +694,9 @@ async function cmdPreviewReview(args: Args, input: string): Promise<number> {
   });
   const target = args.o ?? defaultOut(input, format).replace(/\.png$/, ".review.png");
   if ("kind" in sheet) {
-    if (sheet.kind === "badLevel") return unknownLevel("preview", args.level!, sheet.levels);
+    if (sheet.kind === "badLevel") return unknownLevel(io, "preview", args.level!, sheet.levels);
     // A broken plan: exactly what `preview` does with it (diagnostics, exit 2, the error card).
-    return cmdPreview({ ...args, review: false, o: target }, source);
+    return cmdPreview({ ...args, review: false, o: target }, io, source);
   }
   const scale = args.scale !== undefined && args.scale > 0 ? args.scale : 1;
   const warnings: Diagnostic[] = [];
@@ -712,26 +718,26 @@ async function cmdPreviewReview(args: Args, input: string): Promise<number> {
     if (isOptionalDepError(e)) {
       if (args.json) {
         const fix = ERROR_CATALOG.E_PNG_DEPENDENCY?.fix;
-        emitJson({ ok: false, format, error: message, code: "E_PNG_DEPENDENCY", ...(fix ? { fix } : {}) });
+        emitJson(io, { ok: false, format, error: message, code: "E_PNG_DEPENDENCY", ...(fix ? { fix } : {}) });
         return EXIT.INTERNAL;
       }
     }
-    return ioError(message, args.json, { format });
+    return ioError(io, message, args.json, { format });
   }
   if (target === "-") {
-    process.stdout.write(bytes);
+    io.stdout.write(bytes);
     return EXIT.OK;
   }
   try {
     writeOutput(target, bytes);
   } catch (e) {
-    return ioError((e as Error).message, args.json, { format });
+    return ioError(io, (e as Error).message, args.json, { format });
   }
   const ringed = sheet.marks.filter((m) => m.ringed.length > 0).length;
   // What plain `preview` reports: compile()'s warnings (every storey), then the render's own.
   const reported = [...sheet.diagnostics, ...warnings].filter((d) => d.severity === "warning");
   if (args.json) {
-    emitJson({
+    emitJson(io, {
       ok: true,
       format,
       review: true,
@@ -747,9 +753,9 @@ async function cmdPreviewReview(args: Args, input: string): Promise<number> {
       diagnostics: reported.map((d) => diagnosticToJson(source, d)),
     });
   } else {
-    emitDiagnosticsHuman(source, reported, args.quiet);
+    emitDiagnosticsHuman(io, source, reported, args.quiet);
     if (!args.quiet)
-      process.stdout.write(
+      io.stdout.write(
         `✓ ${input} → ${target} (review sheet: ${sheet.marks.length} flagged, ${ringed} ringed, ${sheet.crops.length} close-up${sheet.crops.length === 1 ? "" : "s"}; ${bytes.length} bytes)\n`,
       );
   }
@@ -762,18 +768,19 @@ async function cmdPreviewReview(args: Args, input: string): Promise<number> {
  * read every outcome at once. `-o <dir>` directs outputs into a directory; `-j`
  * caps concurrency (default: CPU count).
  */
-export async function cmdBatch(args: Args): Promise<number> {
+export async function cmdBatch(args: Args, io: CliIo): Promise<number> {
   const inputs = args._;
-  if (inputs.length === 0) return usageError("batch needs at least one input file");
+  if (inputs.length === 0) return usageError(io, "batch needs at least one input file");
   const format = parseFormat(args);
-  if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
-  const jsonRefusal = refuseJsonDrawingFlags(args, format, "batch");
+  if (!format) return usageError(io, `unknown format "${args.format}" (use ${FORMAT_LIST})`);
+  const jsonRefusal = refuseJsonDrawingFlags(io, args, format, "batch");
   if (jsonRefusal !== undefined) return jsonRefusal;
   // `batch -o` is an output DIRECTORY and `batch` writes one file per input, so there is
   // no single stream `-` could mean — with or without `--json`. It used to be dropped on
   // the floor (outputs landing next to each input, unannounced); say so instead.
   if (args.o === "-")
     return usageErrorFor(
+      io,
       "batch",
       "`-o -` is not a batch target: -o takes an output DIRECTORY and batch writes one file per input — give a directory, or omit -o to write alongside each input",
     );
@@ -794,6 +801,7 @@ export async function cmdBatch(args: Args): Promise<number> {
     const first = claimed.get(key);
     if (first !== undefined)
       return usageErrorFor(
+        io,
         "batch",
         `${first} and ${input} would both write ${target}, and the second would replace the first — rename one of them, or render them in separate batch runs with different -o directories`,
       );
@@ -802,20 +810,20 @@ export async function cmdBatch(args: Args): Promise<number> {
 
   const jobs = args.jobs && args.jobs > 0 ? args.jobs : Math.min(cpus().length, inputs.length);
   const results = await runPool(
-    inputs.map((input) => () => compileToFile(input, format, args, targetFor(input))),
+    inputs.map((input) => () => compileToFile(io, input, format, args, targetFor(input))),
     jobs,
   );
 
   if (args.json) {
-    emitJson({ ok: results.every((r) => r.ok), results: results.map(perFileJson) });
+    emitJson(io, { ok: results.every((r) => r.ok), results: results.map(perFileJson) });
   } else if (!args.quiet) {
     for (const r of results) {
-      if (r.ok) process.stdout.write(`✓ ${r.input} → ${r.output} (${r.bytes} bytes, ${format.toUpperCase()})\n`);
-      else process.stderr.write(`✗ ${r.input}: ${r.error ?? "compilation failed"}\n`);
+      if (r.ok) io.stdout.write(`✓ ${r.input} → ${r.output} (${r.bytes} bytes, ${format.toUpperCase()})\n`);
+      else io.stderr.write(`✗ ${r.input}: ${r.error ?? "compilation failed"}\n`);
     }
   }
   // What `-f json` left out, as `compile` says it: one stderr line each, never a diagnostic.
-  if (!args.quiet) for (const r of results) if (r.ok) for (const n of r.notes ?? []) process.stderr.write(`${n}\n`);
+  if (!args.quiet) for (const r of results) if (r.ok) for (const n of r.notes ?? []) io.stderr.write(`${n}\n`);
   return aggregateExit(results);
 }
 
@@ -830,33 +838,33 @@ function blockAlt(index: number): string {
  * next to the output `.md` as `<name>-<n>.<ext>`. A block that fails to render is
  * left untouched in the output.
  */
-export async function cmdMd(args: Args): Promise<number> {
+export async function cmdMd(args: Args, io: CliIo): Promise<number> {
   const input = args._[0];
-  if (!input) return usageError("md needs a Markdown file");
+  if (!input) return usageError(io, "md needs a Markdown file");
   // Route through the one shared `-f` parser (so an unknown id gets the same
   // full-format-list error every other command gives), then narrow to the subset
   // `md` can actually embed as an image link.
   const format = parseFormat(args);
-  if (!format) return usageError(`unknown format "${args.format}" (use ${FORMAT_LIST})`);
-  if (format !== "svg" && format !== "png") return usageError(`md supports -f svg or png (got "${format}")`);
-  if (args.json && args.o === "-") return stdoutJsonConflict("md");
+  if (!format) return usageError(io, `unknown format "${args.format}" (use ${FORMAT_LIST})`);
+  if (format !== "svg" && format !== "png") return usageError(io, `md supports -f svg or png (got "${format}")`);
+  if (args.json && args.o === "-") return stdoutJsonConflict(io, "md");
 
   let md: string;
   try {
-    md = readInput(input);
+    md = readInput(io, input);
   } catch {
-    return ioError(`cannot read ${input}`, args.json);
+    return ioError(io, `cannot read ${input}`, args.json);
   }
 
   // Output target: default `<name>.out.md` (`-o -` streams it, and cannot be combined
   // with `--json` — rejected above).
   const target = args.o ?? (input === "-" ? "out.md" : resolvePath(input).replace(/\.md$/i, "") + ".out.md");
   // Resolving drops a trailing separator, so `-o dir/` is refused before any image is written.
-  if (target !== "-" && endsInSeparator(target)) return ioError(separatorRefusal(target), args.json);
+  if (target !== "-" && endsInSeparator(target)) return ioError(io, separatorRefusal(target), args.json);
   const outAbs = target === "-" ? resolvePath("out.md") : resolvePath(target);
   const outDir = dirname(outAbs);
   const outBase = basename(outAbs).replace(/\.[^.]+$/, "");
-  const baseDir = baseDirOf(input);
+  const baseDir = baseDirOf(io, input);
 
   const blocks = extractArchBlocks(md);
   const replacements: Array<string | undefined> = [];
@@ -910,17 +918,17 @@ export async function cmdMd(args: Args): Promise<number> {
 
   const rewritten = rewriteMarkdown(md, blocks, replacements);
   if (target === "-") {
-    process.stdout.write(rewritten);
+    io.stdout.write(rewritten);
   } else {
     try {
       writeOutput(outAbs, rewritten);
     } catch (e) {
-      return ioError((e as Error).message, args.json);
+      return ioError(io, (e as Error).message, args.json);
     }
   }
 
   if (args.json) {
-    emitJson({
+    emitJson(io, {
       ok: images.every((i) => i.ok),
       output: target === "-" ? null : outAbs,
       blocks: blocks.length,
@@ -928,7 +936,7 @@ export async function cmdMd(args: Args): Promise<number> {
     });
   } else if (!args.quiet) {
     const rendered = images.filter((i) => i.ok).length;
-    process.stdout.write(
+    io.stdout.write(
       `✓ ${input} → ${target} (${blocks.length} block${blocks.length === 1 ? "" : "s"}, ${rendered} rendered)\n`,
     );
   }

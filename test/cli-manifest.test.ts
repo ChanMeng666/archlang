@@ -13,7 +13,7 @@ import { CLI_NAME } from "../src/manifest.js";
 
 describe("manifest — no drift vs the CLI dispatch", () => {
   it("documents exactly the commands (and aliases) the CLI dispatches", () => {
-    const src = readFileSync("src/cli.ts", "utf8");
+    const src = readFileSync("src/cli/run.ts", "utf8");
     const region = src.slice(src.indexOf("switch (cmd)"));
     const dispatched = new Set<string>();
     for (const m of region.matchAll(/case "([a-z]+)":/g)) dispatched.add(m[1]!);

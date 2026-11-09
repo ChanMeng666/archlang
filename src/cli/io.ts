@@ -53,6 +53,45 @@ export const RESIDENT = Symbol("resident");
 /** What a command hands back: an exit code, or {@link RESIDENT} to keep the process alive. */
 export type CommandResult = number | typeof RESIDENT;
 
+/** A sink a command writes to: text, or the bytes of a binary artifact streamed with `-o -`. */
+export interface CliWriter {
+  write(chunk: string | Uint8Array): void;
+}
+
+/**
+ * Everything a command reads from or writes to its process, as one value (`runCli`,
+ * `src/cli/run.ts`). Commands write through `stdout`/`stderr` and read `-` input through
+ * `readStdin`, never through `process.*`, so the whole CLI runs in-process with capturing
+ * writers (`test/helpers/cli.ts`) as well as on the real process ({@link nodeIo}).
+ *
+ * `cwd` is the directory relative paths resolve against; Node's file system resolves them
+ * against the process working directory, so the two must agree (the in-process runner changes
+ * directory for a run that names another one).
+ */
+export interface CliIo {
+  stdout: CliWriter;
+  stderr: CliWriter;
+  /** The whole of standard input, as bytes (the `-` input operand; read it once). */
+  readStdin(): Buffer;
+  cwd(): string;
+  env: Readonly<Record<string, string | undefined>>;
+}
+
+/**
+ * The real process as a {@link CliIo}. Each write goes to `process.stdout`/`process.stderr` as
+ * it is made (looked up per call, so a caller that swaps `process.stdout.write` still sees it);
+ * this and `src/cli.ts` are the only places the CLI touches those streams.
+ */
+export function nodeIo(): CliIo {
+  return {
+    stdout: { write: (chunk) => void process.stdout.write(chunk) },
+    stderr: { write: (chunk) => void process.stderr.write(chunk) },
+    readStdin: () => readFileSync(0),
+    cwd: () => process.cwd(),
+    env: process.env,
+  };
+}
+
 export const HERE = dirname(fileURLToPath(import.meta.url));
 
 export interface Args {
@@ -311,8 +350,8 @@ function readVersion(): string {
 export const VERSION = readVersion();
 
 /** Read source from a file, or from stdin when `path` is `-`. */
-export function readInput(path: string): string {
-  return path === "-" ? readFileSync(0, "utf8") : readFileSync(resolvePath(path), "utf8");
+export function readInput(io: CliIo, path: string): string {
+  return path === "-" ? io.readStdin().toString("utf8") : readFileSync(resolvePath(path), "utf8");
 }
 
 /**
@@ -452,10 +491,10 @@ export function makeNodeWorld(baseDir: string, root?: string): World {
 }
 
 /** Base dir for import resolution given the input path (cwd for stdin). */
-export const baseDirOf = (input: string): string => (input === "-" ? process.cwd() : dirname(resolvePath(input)));
+export const baseDirOf = (io: CliIo, input: string): string => (input === "-" ? io.cwd() : dirname(resolvePath(input)));
 
-export function emitJson(obj: unknown): void {
-  process.stdout.write(JSON.stringify(obj, null, 2) + "\n");
+export function emitJson(io: CliIo, obj: unknown): void {
+  io.stdout.write(JSON.stringify(obj, null, 2) + "\n");
 }
 
 /**
@@ -472,9 +511,9 @@ function catalogFixLine(d: Diagnostic): string {
 
 /** Print diagnostics as framed snippets to stderr (unless quiet), each followed by
  *  the error catalog's `fix` line when the code has one. */
-export function emitDiagnosticsHuman(source: string, diags: Diagnostic[], quiet?: boolean): void {
+export function emitDiagnosticsHuman(io: CliIo, source: string, diags: Diagnostic[], quiet?: boolean): void {
   if (quiet) return;
-  for (const d of diags) process.stderr.write(`${formatDiagnostic(source, d)}${catalogFixLine(d)}\n\n`);
+  for (const d of diags) io.stderr.write(`${formatDiagnostic(source, d)}${catalogFixLine(d)}\n\n`);
 }
 
 export const hasErrors = (diags: Diagnostic[]): boolean => diags.some((d) => d.severity === "error");
@@ -537,8 +576,9 @@ export function storeyTarget(target: string, level: number): string {
  * only compose with `--level <n>`. Same doctrine as {@link stdoutJsonConflict}: refuse
  * loudly (exit 3) instead of silently picking a page or writing files nobody asked for.
  */
-export function stdoutMultiPage(command: string, levels: readonly number[]): number {
+export function stdoutMultiPage(io: CliIo, command: string, levels: readonly number[]): number {
   return usageErrorFor(
+    io,
     command,
     `\`-o -\` streams a single drawing, but this plan has ${levels.length} levels (${levels.join(", ")}) and renders one file per level — ` +
       `add \`--level <n>\` to stream one storey, or give \`-o <file>\` to write <stem>.L<level> files`,
@@ -546,14 +586,15 @@ export function stdoutMultiPage(command: string, levels: readonly number[]): num
 }
 
 /** The exit-3 usage error for a `--level <n>` that the plan does not declare. */
-export function unknownLevel(command: string, want: number, levels: readonly number[]): number {
+export function unknownLevel(io: CliIo, command: string, want: number, levels: readonly number[]): number {
   if (levels.length === 0) {
     return usageErrorFor(
+      io,
       command,
       `--level ${want} was given but this plan declares no \`level\` blocks (it is single-storey) — drop --level`,
     );
   }
-  return usageErrorFor(command, `unknown --level ${want} (plan has ${levels.join(", ")})`);
+  return usageErrorFor(io, command, `unknown --level ${want} (plan has ${levels.join(", ")})`);
 }
 
 /** Parse + validate the `-f` format, or `null` if it's not a known format. */
@@ -597,13 +638,19 @@ export function parseFormat(args: Args): Format | null {
  *
  * Returns `{ view: undefined }` when the flag is absent, which is every existing call.
  */
-export function resolveView(args: Args, format: Format, command: string): { view?: ViewName } | { code: number } {
+export function resolveView(
+  io: CliIo,
+  args: Args,
+  format: Format,
+  command: string,
+): { view?: ViewName } | { code: number } {
   if (args.view === undefined) return {};
   const name = args.view;
   if (!isViewName(name)) {
     const hint = closest(name, [...VIEW_NAMES]);
     return {
       code: usageErrorFor(
+        io,
         command,
         `unknown view "${name}" — expected one of: ${VIEW_NAMES.join(", ")}` +
           (hint === null ? "" : ` (did you mean "${hint}"?)`),
@@ -613,6 +660,7 @@ export function resolveView(args: Args, format: Format, command: string): { view
   if (format === "txt") {
     return {
       code: usageErrorFor(
+        io,
         command,
         "--view cannot be combined with -f txt — the ASCII backend draws a PLAN, not a projection (use svg, pdf, png or dxf)",
       ),
@@ -621,6 +669,7 @@ export function resolveView(args: Args, format: Format, command: string): { view
   if (format === "json") {
     return {
       code: usageErrorFor(
+        io,
         command,
         "--view cannot be combined with -f json — Plan JSON is the plan's model, not a drawing of it (drop --view)",
       ),
@@ -629,6 +678,7 @@ export function resolveView(args: Args, format: Format, command: string): { view
   if (args.level !== undefined) {
     return {
       code: usageErrorFor(
+        io,
         command,
         `--view draws ONE picture of the whole building, with every storey stacked, so --level ${args.level} has nothing to narrow — drop one of the two (\`--level\` alone renders that storey's PLAN)`,
       ),
@@ -637,13 +687,14 @@ export function resolveView(args: Args, format: Format, command: string): { view
   if (args.overlay !== undefined) {
     return {
       code: usageErrorFor(
+        io,
         command,
         `--view cannot be combined with --overlay ${args.overlay} — an overlay draws a MEASUREMENT (routes, bottlenecks) and nothing measured is drawn on a projection`,
       ),
     };
   }
   if (!args.quiet)
-    process.stderr.write("note: --view is deprecated — illustrative only; removed in 2.0 (ArchLang draws plans)\n");
+    io.stderr.write("note: --view is deprecated — illustrative only; removed in 2.0 (ArchLang draws plans)\n");
   return { view: name };
 }
 
@@ -654,7 +705,7 @@ export function resolveView(args: Args, format: Format, command: string): { view
  * raster scale, accessibility markup or a diagnostic overlay has nothing in it to change.
  * Returns the exit code to stop with, or `undefined` to go on.
  */
-export function refuseJsonDrawingFlags(args: Args, format: Format, command: string): number | undefined {
+export function refuseJsonDrawingFlags(io: CliIo, args: Args, format: Format, command: string): number | undefined {
   if (format !== "json") return undefined;
   const given = [
     args.accessible ? "--accessible" : undefined,
@@ -664,6 +715,7 @@ export function refuseJsonDrawingFlags(args: Args, format: Format, command: stri
   ].filter((f): f is string => f !== undefined);
   if (given.length === 0) return undefined;
   return usageErrorFor(
+    io,
     command,
     `${given.join(", ")} cannot be combined with -f json — ${given.length === 1 ? "it changes" : "they change"} a drawing, and Plan JSON is the plan's model, not a drawing of it (drop ${given.length === 1 ? "it" : "them"})`,
   );
@@ -672,8 +724,8 @@ export function refuseJsonDrawingFlags(args: Args, format: Format, command: stri
 /** Normalize the `--charset` flag to the text backend's union (unknown → unicode). */
 export const asciiCharset = (args: Args): "unicode" | "ascii" => (args.charset === "ascii" ? "ascii" : "unicode");
 
-export function usageError(msg: string): number {
-  process.stderr.write(`error: ${msg}\n`);
+export function usageError(io: CliIo, msg: string): number {
+  io.stderr.write(`error: ${msg}\n`);
   return EXIT.USAGE;
 }
 
@@ -683,10 +735,10 @@ export function usageError(msg: string): number {
  * rejects a flag *combination* (which `main` cannot see, because it is not an unknown
  * token) reports it in exactly the same way — one usage-error path, not two.
  */
-export function usageErrorFor(command: string, msg: string): number {
-  const code = usageError(msg);
+export function usageErrorFor(io: CliIo, command: string, msg: string): number {
+  const code = usageError(io, msg);
   const c = findCommand(buildManifest(VERSION), command);
-  if (c) process.stderr.write(`usage: ${usageLine(c)}   (try \`${CLI_NAME} ${c.name} --help\`)\n`);
+  if (c) io.stderr.write(`usage: ${usageLine(c)}   (try \`${CLI_NAME} ${c.name} --help\`)\n`);
   return code;
 }
 
@@ -697,8 +749,9 @@ export function usageErrorFor(command: string, msg: string): number {
  * and never hears about. So it is a loud usage error (exit 3) instead: silent misuse is
  * exactly what the self-describing CLI surface exists to prevent.
  */
-export function stdoutJsonConflict(command: string): number {
+export function stdoutJsonConflict(io: CliIo, command: string): number {
   return usageErrorFor(
+    io,
     command,
     "`-o -` (stream to stdout) conflicts with --json (the JSON envelope owns stdout) — drop --json or give `-o <file>`",
   );
@@ -753,22 +806,22 @@ export function writeOutput(target: string, data: string | Uint8Array): void {
   writeFileSync(resolvePath(target), data);
 }
 
-export function ioError(msg: string, json?: boolean, extra?: Record<string, unknown>): number {
-  if (json) emitJson({ ok: false, error: msg, ...extra });
-  else process.stderr.write(`error: ${msg}\n`);
+export function ioError(io: CliIo, msg: string, json?: boolean, extra?: Record<string, unknown>): number {
+  if (json) emitJson(io, { ok: false, error: msg, ...extra });
+  else io.stderr.write(`error: ${msg}\n`);
   return EXIT.INTERNAL;
 }
 
 /** Read source for a command from a file (or stdin `-`), then run `run`; the shared
  *  entry ladder for the single-source commands (describe/lint/fmt/…). */
-export function withSource(args: Args, run: (source: string, input: string) => number): number {
+export function withSource(io: CliIo, args: Args, run: (source: string, input: string) => number): number {
   const input = args._[0];
-  if (!input) return usageError("missing input file (use a path or `-` for stdin)");
+  if (!input) return usageError(io, "missing input file (use a path or `-` for stdin)");
   let source: string;
   try {
-    source = readInput(input);
+    source = readInput(io, input);
   } catch {
-    return ioError(`cannot read ${input}`, args.json);
+    return ioError(io, `cannot read ${input}`, args.json);
   }
   return run(source, input);
 }

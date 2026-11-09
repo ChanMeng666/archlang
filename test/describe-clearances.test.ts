@@ -17,7 +17,7 @@ import { dirname, join, relative } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
 import { cmdDescribe } from "../src/cli/commands-analyze.js";
-import { parseArgs } from "../src/cli/io.js";
+import { nodeIo, parseArgs } from "../src/cli/io.js";
 import { type ClearanceFacts, describe, lint } from "../src/index.js";
 import { EXAMPLE_FILES, EXAMPLES_WORLD } from "./d4-oracle.js";
 
@@ -141,7 +141,7 @@ suite("describe --facts clearances: low units", () => {
         return true;
       }) as typeof process.stdout.write;
       try {
-        cmdDescribe(parseArgs([file, "--facts", "clearances"]));
+        cmdDescribe(parseArgs([file, "--facts", "clearances"]), nodeIo());
       } finally {
         process.stdout.write = write;
       }

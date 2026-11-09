@@ -8,7 +8,17 @@
 import { basename } from "node:path";
 import { diagnosticToJson, openPlan3dToArch } from "../index.js";
 import type { Diagnostic, OpenPlan3dImportResult } from "../index.js";
-import { type Args, EXIT, emitJson, ioError, readInput, stdoutJsonConflict, usageErrorFor, writeOutput } from "./io.js";
+import {
+  type Args,
+  type CliIo,
+  EXIT,
+  emitJson,
+  ioError,
+  readInput,
+  stdoutJsonConflict,
+  usageErrorFor,
+  writeOutput,
+} from "./io.js";
 
 const FORMATS = ["openplan3d"] as const;
 
@@ -17,22 +27,22 @@ function line(d: Diagnostic): string {
   return `${d.severity}${d.code ? `[${d.code}]` : ""}: ${d.message}`;
 }
 
-export function cmdImport(args: Args): number {
+export function cmdImport(args: Args, io: CliIo): number {
   if (args.from === undefined)
-    return usageErrorFor("import", `missing --from <${FORMATS.join("|")}> (the format of the input file)`);
+    return usageErrorFor(io, "import", `missing --from <${FORMATS.join("|")}> (the format of the input file)`);
   if (!(FORMATS as readonly string[]).includes(args.from))
-    return usageErrorFor("import", `unknown --from "${args.from}" (supported: ${FORMATS.join(", ")})`);
+    return usageErrorFor(io, "import", `unknown --from "${args.from}" (supported: ${FORMATS.join(", ")})`);
   if (args.format !== undefined && args.format !== "web" && args.format !== "handoff")
-    return usageErrorFor("import", `unknown --format "${args.format}" (web or handoff)`);
+    return usageErrorFor(io, "import", `unknown --format "${args.format}" (web or handoff)`);
   const input = args._[0];
-  if (!input) return usageErrorFor("import", "missing input file (use a path or `-` for stdin)");
-  if (args.json && args.o === "-") return stdoutJsonConflict("import");
+  if (!input) return usageErrorFor(io, "import", "missing input file (use a path or `-` for stdin)");
+  if (args.json && args.o === "-") return stdoutJsonConflict(io, "import");
 
   let text: string;
   try {
-    text = readInput(input);
+    text = readInput(io, input);
   } catch {
-    return ioError(`cannot read ${input}`, args.json);
+    return ioError(io, `cannot read ${input}`, args.json);
   }
   let parsed: unknown;
   let result: OpenPlan3dImportResult | undefined;
@@ -60,13 +70,13 @@ export function cmdImport(args: Args): number {
       writeOutput(target, result.source);
       written = target;
     } catch (e) {
-      return ioError((e as Error).message, args.json);
+      return ioError(io, (e as Error).message, args.json);
     }
   }
 
   if (args.json) {
     const r = result.report;
-    emitJson({
+    emitJson(io, {
       ok: result.ok,
       ...(r
         ? {
@@ -87,14 +97,14 @@ export function cmdImport(args: Args): number {
     return result.ok ? EXIT.OK : EXIT.USER;
   }
 
-  if (result.source !== undefined && written === undefined) process.stdout.write(result.source);
+  if (result.source !== undefined && written === undefined) io.stdout.write(result.source);
   if (!args.quiet) {
-    for (const d of result.diagnostics) process.stderr.write(`${line(d)}\n`);
+    for (const d of result.diagnostics) io.stderr.write(`${line(d)}\n`);
     const r = result.report;
     if (r && written !== undefined) {
       const mapped = Object.values(r.counts).reduce((s, c) => s + c.mapped, 0);
       const dropped = Object.values(r.counts).reduce((s, c) => s + c.dropped, 0);
-      process.stderr.write(
+      io.stderr.write(
         `✓ ${input} → ${written} (OpenPlan3D ${r.format}: ${mapped} imported, ${dropped} left out, ${r.rooms.detected} room${r.rooms.detected === 1 ? "" : "s"}; next: archlang lint ${written})\n`,
       );
     }
