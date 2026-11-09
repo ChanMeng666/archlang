@@ -139,14 +139,16 @@ export function fmtSource(n: number): string {
 /**
  * `String(n)` — the shortest decimal that reads back as `n` — with a positive exponent
  * expanded into zeros (`1e+24` → a 1 and 24 zeros), so the lexer, which has no exponent form,
- * reads it back as the same double. Below 1e21 it is `String(n)` unchanged.
+ * reads it back as the same double; a negative exponent (below 1e-6) likewise expanded into
+ * leading zeros (`1e-9` → `0.000000001`). From 1e-6 to below 1e21 it is `String(n)` unchanged.
  */
 export function plainDigits(n: number): string {
   const s = String(n);
-  const m = /^(-?)(\d)(?:\.(\d+))?e\+(\d+)$/.exec(s);
+  const m = /^(-?)(\d)(?:\.(\d+))?e([+-])(\d+)$/.exec(s);
   if (!m) return s;
   const frac = m[3] ?? "";
-  return `${m[1]}${m[2]}${frac}${"0".repeat(Number(m[4]) - frac.length)}`;
+  if (m[4] === "-") return `${m[1]}0.${"0".repeat(Number(m[5]) - 1)}${m[2]}${frac}`;
+  return `${m[1]}${m[2]}${frac}${"0".repeat(Number(m[5]) - frac.length)}`;
 }
 
 /** The decimal digit string `d` (no sign, no dot) times the small non-negative integer `k`.
