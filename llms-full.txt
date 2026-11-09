@@ -753,7 +753,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang preview plan.arch --ascii --json` — a zero-dependency text plan an agent can read on stdout
 
 **`archlang link`** — print a playground URL that opens the plan, rendered, with nothing to install
-  - input: <file.arch|-> → output: the playground URL; --json gives { ok, playground, embed, bytes } (embed: the plan alone, for an iframe; bytes: the compressed plan). A plan that does not compile still gets a link: ok false with an errors count, one warning on stderr, exit 0
+  - input: <file.arch|-> → output: the playground URL; --json gives { ok, playground, embed, bytes } (embed: the plan alone, for an iframe; bytes: the compressed plan). A plan that does not compile still gets a link: ok false with an errors count, one warning on stderr; exits 0 on a plan that does not parse, and `errors` is the diagnostic count (`archlang validate --json` lists them)
   - flags: `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang link plan.arch` — a URL to give the user: it opens the plan in the hosted playground
 
@@ -793,17 +793,17 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang ast plan.arch --json` — span-bearing parse tree with no resolve or render — locate a statement by byte offset
 
 **`archlang complete`** — completion items in scope at a source byte offset (the LSP completion() core)
-  - input: <file.arch|-> → output: { items: [...] } completion items
+  - input: <file.arch|-> → output: { items: [...] } completion items; exits 0 on a plan that does not parse (items are still offered; run `archlang validate --json` for the diagnostics)
   - flags: `--at <byteOffset>` source byte offset to list completions at (required) · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang complete plan.arch --at 120 --json` — what may legally be written at byte offset 120
 
 **`archlang fmt`** — canonical formatting
-  - input: <file.arch|-> → output: formatted source (or in place with --write)
+  - input: <file.arch|-> → output: formatted source (or in place with --write); exits 0 and returns the source verbatim when it does not parse; `fmt --write` leaves the file untouched
   - flags: `--write` format the file in place · `--expected-hash <sha256>` refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang fmt plan.arch --json` — canonical source plus a `changed` flag, nothing written
 
 **`archlang repair`** — explicit source-to-source corrector (furniture out of walls) + change log
-  - input: <file.arch|-> → output: corrected source + change log on stderr
+  - input: <file.arch|-> → output: corrected source + change log on stderr; exits 0 on a plan that does not parse (nothing is changed; the reason is in `unresolved[]` of --json)
   - flags: `--out|-o <file|->` output file for the corrected source, or '-' for stdout (default: stdout) · `--expected-hash <sha256>` refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang repair plan.arch --json` — the geometric corrector: `source` + a `changes[]` log of every furniture move
 
@@ -818,17 +818,17 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
   - example: `archlang finish plan.arch --dry-run --json` — preview the furniture and sheet statements `finish` would add: `changes[]`, `unresolved[]` and the `diff`
 
 **`archlang reroll`** — offer a proven-equivalent `for` loop for a repeated statement run
-  - input: <file.arch|-> → output: suggestions (JSON or a summary), or the rewritten file with --write
+  - input: <file.arch|-> → output: suggestions (JSON or a summary), or the rewritten file with --write; exits 0 on a plan that does not parse, with `suggestions: []` (run `archlang validate --json` for the diagnostics)
   - flags: `--write` apply every non-overlapping suggestion and re-verify the combined result's compiled SVG is byte-identical to the original before writing (no --dry-run/--backup: a failed re-verify writes nothing, and every suggestion is already proven byte-for-byte before it is offered) · `--expected-hash <sha256>` refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock · `--import-root <dir>` read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang reroll plan.arch --json` — each candidate run as { span, replacement, count, loopVar, tokensBefore, tokensAfter }
 
 **`archlang impact`** — change one number: what moved and why, what held, what broke
-  - input: <file.arch|-> → output: { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a refused --set or a lock that changed, was refused or could not be checked)
-  - flags: `--set <NAME=value>` override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let · `--against <old.arch>` compare the input (the new version) against this older file instead; exactly one of --set and --against · `--lock <id[,id…]>` elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]` · `--import-root <dir>` read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
+  - input: <file.arch|-> → output: { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a plan that does not parse (`{ ok: false, diagnostics }`), a refused --set, or a lock that changed, was refused or could not be checked)
+  - flags: `--set <NAME=value>` override the root plan's top-level `let NAME` with a numeric literal (`4500` is mm, `4.5m`) and compare the plan before and after; refused with E_SET_OVERRIDE when NAME is not exactly one top-level let · `--against <old.arch>` compare the input (the new version) against this older file instead; exactly one of --set and --against · `--lock <id[,id…]>` elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]`. A side that does not parse is exit 2 with `{ ok: false, diagnostics }` and no `lock` key: nothing is checked · `--import-root <dir>` read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang impact plan.arch --set W=4500 --json` — widen by one number: every moved/resized/re-hosted element with the chain that moved it, what held, what broke
 
 **`archlang suggest`** — advisory door/window statements for unreachable or windowless rooms
-  - input: <file.arch|-> → output: suggestions (JSON or a summary)
+  - input: <file.arch|-> → output: suggestions (JSON or a summary); exits 0 on a plan that does not parse, with `suggestions: []` (run `archlang validate --json` for the diagnostics)
   - flags: `--import-root <dir>` read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read · `--json` structured result on stdout, messages on stderr · `--quiet|-q` suppress human messages on stderr
   - example: `archlang suggest plan.arch --json` — ready-to-paste door/window statements for unreachable rooms, no entrance, or a windowless bedroom
 
@@ -844,7 +844,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 168 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 168 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 34 KB; errors = the diagnostic catalog, 70 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 169 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 169 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 35 KB; errors = the diagnostic catalog, 70 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
