@@ -34,6 +34,15 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
+      # Same ref guard as release.yml: only a vX.Y.Z tag whose commit is on main.
+      - name: Guard the ref
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          [[ "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "::error::ref '$GITHUB_REF_NAME' is not a vX.Y.Z tag; dispatch with --ref v<core>."; exit 1; }
+          rel=$(gh api "repos/$GITHUB_REPOSITORY/compare/main...$GITHUB_SHA" --jq .status)
+          case "$rel" in identical | behind) ;; *) echo "::error::commit $GITHUB_SHA is not on main ($rel)."; exit 1 ;; esac
+
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:

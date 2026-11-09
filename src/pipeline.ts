@@ -21,7 +21,7 @@ import type { PlanNode } from "./ast.js";
 import { toIso } from "./view/iso.js";
 import { renderSvg } from "./backends/svg.js";
 import { renderErrorSvg } from "./backends/error-svg.js";
-import { offsetToLineCol } from "./diagnostics.js";
+import { capDiagnostics, offsetToLineCol } from "./diagnostics.js";
 import { createRegistry, BUILTIN_REGISTRY } from "./registry.js";
 import type { Runtime } from "./registry.js";
 import { NULL_WORLD } from "./world.js";
@@ -80,18 +80,20 @@ export function compileUncached(source: string, opts: CompileOptions): CompileRe
   // level-aware resolve: one ResolvedPlan per `level` block (none → one plan, as before).
   const linked = plan ? link(plan, world, registry) : null;
   const resolved = linked ? resolveAll(linked.plan, registry, world) : null;
-  const diagnostics: Diagnostic[] = [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])];
+  const all: Diagnostic[] = [...parseDiags, ...(linked?.diagnostics ?? []), ...(resolved?.diagnostics ?? [])];
   // A `lineWeight` that comes from the compile options is held to the drawn-pen rule the
   // source's is; only the compile draws, so only the compile checks it.
   const pen = plan && resolved ? apiLineWeightOutOfRange(plan, resolved, opts, runtime) : undefined;
-  if (pen) diagnostics.push(pen);
+  if (pen) all.push(pen);
   // The drawing budget, before anything is drawn: estimated over every storey, and only for a
   // plan that would otherwise be drawn (an error already draws nothing).
-  if (plan && resolved && !diagnostics.some((d) => d.severity === "error")) {
+  if (plan && resolved && !all.some((d) => d.severity === "error")) {
     const storeys = resolved.levels.length > 0 ? resolved.levels : [{ ir: resolved.ir }];
     const over = drawBudgetDiagnostic(storeys, registry, plan.headerSpan);
-    if (over) diagnostics.push(over);
+    if (over) all.push(over);
   }
+  // At most MAX_DIAGNOSTICS, then one `E_DIAGNOSTIC_LIMIT` (EH-D8); a sub-cap list is `all` itself.
+  const diagnostics = capDiagnostics(all, source.length);
 
   const errs = diagnostics.filter((d) => d.severity === "error");
   const errors = errs.map((d) => toLegacy(source, d));

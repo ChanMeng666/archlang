@@ -31,7 +31,6 @@ import type {
   ArcDirWord,
   AutoDimsMode,
   CompassWord,
-  ElementKind,
   FurnitureAnchor,
   Hemisphere,
   NorthDir,
@@ -102,6 +101,7 @@ import { SEGMENT_SELECT_RE } from "./segment-select.js";
 import { SHEET_DECIMAL_KEY } from "./sheet-text.js";
 import { DEFAULT_MATERIAL } from "./hatches.js";
 import { openRunsOf } from "./analyze.js";
+import { type KindsWith, kindsWith } from "./elements/facets.js";
 import type { Arc } from "./geometry/arc.js";
 import { PAPER_ORIENTATIONS, PAPER_SIZES, type PaperOrientation, type PaperSize, type ResolvedSheet } from "./sheet.js";
 
@@ -945,16 +945,9 @@ function titleToJson(t: TitleNode): TitleJson {
   return out;
 }
 
-/** The element kinds Plan JSON has no row for. Every other kind is projected. */
-export const UNPROJECTED_KINDS = [
-  "stair",
-  "elevator",
-  "escalator",
-  "roof",
-  "void",
-  "outdoor",
-  "fence",
-] as const satisfies readonly ElementKind[];
+/** The element kinds Plan JSON has no row for (`KIND_FACETS.unprojected`), in registration order.
+ *  Every other kind is projected. */
+export const UNPROJECTED_KINDS: readonly KindsWith<"unprojected">[] = kindsWith("unprojected");
 
 /**
  * A clause of a plan that its Plan JSON does not carry, spelled as the language spells it. `circle`
@@ -1276,7 +1269,7 @@ function reqPoint(v: unknown, path: string, val: Validator): PointJson | null {
  */
 const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
 const ROOM_TYPE_SET: ReadonlySet<string> = new Set<string>(ROOM_TYPES);
-const OPENING_KINDS: ReadonlySet<string> = new Set(["door", "window", "opening"]);
+const OPENING_KINDS: ReadonlySet<string> = new Set(kindsWith("opening"));
 
 /**
  * Validate `json` against the plan shape (no throw). Returns the value cast to

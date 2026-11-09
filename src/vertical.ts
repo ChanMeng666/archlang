@@ -26,7 +26,7 @@
  * as `W_STAIR_UNMATCHED` instead of silently doing nothing.
  */
 
-import type { Point, VerticalDir } from "./ast.js";
+import type { ElementKind, Point, VerticalDir } from "./ast.js";
 import type {
   RElevator,
   REscalator,
@@ -43,8 +43,9 @@ import { oppositeSide, SIDE_NORMAL, type Side } from "./algebra/d4.js";
 import { pointInPolygon } from "./geometry/polygon.js";
 import { pointInRect } from "./geometry/rect.js";
 
-/** The element kinds that model vertical circulation, in registration order. */
-export const VERTICAL_KINDS = ["stair", "elevator", "escalator"] as const;
+/** The element kinds that model vertical circulation, in registration order (`KIND_FACETS.vertical`,
+ *  which `test/element-facets.test.ts` holds this list to). */
+export const VERTICAL_KINDS = ["stair", "elevator", "escalator"] as const satisfies readonly ElementKind[];
 export type VerticalKind = (typeof VERTICAL_KINDS)[number];
 
 /** Any resolved vertical-circulation element. */

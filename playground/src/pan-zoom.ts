@@ -2,7 +2,7 @@
  * Pan / zoom / fit for the SVG preview — a tiny zero-dependency controller.
  *
  * Why a CSS-transform wrapper instead of a library (e.g. svg-pan-zoom): the
- * preview SVG is replaced wholesale on every recompile (`stage.innerHTML = svg`),
+ * preview SVG is replaced wholesale on every recompile (`showSvgInStage` swaps the stage's child),
  * and a library that owns the <svg> node would have to be torn down and
  * re-instantiated each keystroke. Driving a persistent wrapper's `transform`
  * keeps the view state (scale + translation) decoupled from the document, so it

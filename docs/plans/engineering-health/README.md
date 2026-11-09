@@ -105,7 +105,7 @@ contract foundations" and these guards are its engineering half.
 | EH-D5 | Deploy waits for CI (about 13 min) | Yes. A red `main` must not deploy. |
 | EH-D6 | High-tier edits in this programme (workflows, AGENTS.md pointers, `GENERATORS` rows, hooks) | Prepared as PRs with the diff in the PR body; merged only after the owner's "merge" for each, or a standing "merge the EH high-tier set once CI is green". |
 | EH-D7 | CLI `import` containment (S-F2) | Resolve with `realpath`; allow files under the process's working directory (not only the entry file's directory, so a shared library beside the plan still imports); `--import-root <dir>` widens it; `.arch` only; the parse error of an imported file reports line:col, never the token. |
-| EH-D8 | Diagnostic cap (S-F1) | 500 diagnostics per compile, then one `E_DIAGNOSTIC_LIMIT`. Sub-cap output is byte-identical (pinned). |
+| EH-D8 | Diagnostic cap (S-F1) | 500 diagnostics per compile, then one limit. Sub-cap output is byte-identical (pinned). Amended at the #597 review: severity follows the list, `E_DIAGNOSTIC_LIMIT` when any diagnostic of the full uncapped list is an error or the parser's dropped-error flag is set, else `W_DIAGNOSTIC_LIMIT` (the plan still renders, lints and describes). Budget and cap codes (`LIMIT_CODES`, `src/diagnostics.ts`) are never dropped; the 500 counts the others. |
 | EH-D9 | Shard count | Five, duration-balanced, after `net-area`'s oracle moves to its own file. |
 
 ## 7. Relation to other plans
