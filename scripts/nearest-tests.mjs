@@ -29,9 +29,9 @@ const ALIAS = {
   "@chanmeng666/archlang": "src/index.ts",
   "@chanmeng666/archlang/link": "src/cli/link.ts",
 };
-const SPEC = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)["']([^"']+)["']/g;
+export const SPEC = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+)["']([^"']+)["']/g;
 
-function resolveSpec(ROOT, fromFile, spec) {
+export function resolveSpec(ROOT, fromFile, spec) {
   if (ALIAS[spec]) return ALIAS[spec];
   if (!spec.startsWith(".")) return null;
   const base = posix.normalize(posix.join(posix.dirname(fromFile), spec));
@@ -61,7 +61,7 @@ function workspaceOf(ROOT, file) {
 }
 
 /** A single- or double-quoted literal with no space in it: a path a test may open. */
-const QUOTED = /["']([^"'\s]+)["']/g;
+export const QUOTED = /["']([^"'\s]+)["']/g;
 
 /**
  * Whether test `t` reads the changed file `f` whose name (`README.md`, `CHANGELOG.md`, …) is too
