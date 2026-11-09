@@ -224,6 +224,58 @@ describe("release compatibility: the comparisons are not vacuous", () => {
     TIMEOUT,
   );
 
+  it(
+    "types: a non-exported literal-union alias compares as its literals (and a derived list as the tuple)",
+    () => {
+      // `KindsWith<"opening">` in `src/elements/facets.ts` is such an alias: a mapped type over a
+      // table, not exported from `src/index.ts`, so a consumer reads it as its literals.
+      const table = [
+        "declare const FLAGS: { a: { f: true }; b: { f: true }; c: { f: false } };",
+        "type With<F extends 'f'> = { [K in keyof typeof FLAGS]: (typeof FLAGS)[K][F] extends true ? K : never }[keyof typeof FLAGS];",
+      ];
+      const write = (name: string, lines: string[]) => {
+        const file = join(dir, `${name}.ts`);
+        writeFileSync(file, lines.join("\n"));
+        return file;
+      };
+      const literal = write("literal", [
+        'export interface Thing { v: "a" | "b"; w: readonly ("a" | "b")[] }',
+        'export interface ThingOptions { v: "a" | "b" }',
+        'export declare const SCHEMA: { readonly enum: readonly ["a", "b"] };',
+      ]);
+      const aliased = write("aliased", [
+        ...table,
+        'type Hidden = "a" | "b";',
+        "export interface Thing { v: Hidden; w: readonly With<'f'>[] }",
+        "export interface ThingOptions { v: With<'f'> }",
+        "export declare const SCHEMA: { readonly enum: readonly With<'f'>[] };",
+      ]);
+      const narrowed = write("narrowed", [
+        'type Hidden = "a";',
+        "export interface Thing { v: Hidden; w: readonly Hidden[] }",
+        "export interface ThingOptions { v: Hidden }",
+        "export declare const SCHEMA: { readonly enum: readonly Hidden[] };",
+      ]);
+      const a = compat.typeSurface(aliased);
+      expect(a.Thing?.[".v"]).toBe('"a" | "b"');
+      expect(a.Thing?.[".w"]).toBe('readonly ("a" | "b")[]');
+      const l = compat.typeSurface(literal);
+      const both = [...compat.compareTypeSurfaces(l, a), ...compat.compareTypeSurfaces(a, l)];
+      expect(both.map(compat.formatFinding)).toEqual([]);
+      // Not vacuous: the alias losing a literal is still a removed enum member, everywhere.
+      const lost = compat.compareTypeSurfaces(a, compat.typeSurface(narrowed));
+      expect(lost.map((f) => `${f.kind} ${f.name} ${f.path}`).sort()).toEqual([
+        "enum member removed SCHEMA .enum",
+        "enum member removed Thing .v",
+        "enum member removed Thing .w",
+        "enum member removed ThingOptions .v",
+      ]);
+      const lostTuple = compat.compareTypeSurfaces(l, compat.typeSurface(narrowed));
+      expect(lostTuple.map((f) => `${f.kind} ${f.name} ${f.path}`)).toContain("enum member removed SCHEMA .enum[]");
+    },
+    TIMEOUT,
+  );
+
   it("schemas and codes: removed, newly required, narrowed and tightened are each reported", () => {
     const str = { type: "string" };
     const mcp = compat.compareMcpTools(

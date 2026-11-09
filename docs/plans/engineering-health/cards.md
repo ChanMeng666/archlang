@@ -59,7 +59,7 @@ it; not drift-gated: a stale table costs balance, never correctness). (c) `ci.ym
 `shard: [1..5]` and the `Node 22` aggregator's expectations. Proof: two code PRs after merge show
 the five shard times in the PR body; the longest is under 6 min.
 
-### EH0.8 · retries no longer hide flakes — `todo` · S · low · sonnet · C-F8
+### EH0.8 · retries no longer hide flakes — `in review (#620)` · S · low · sonnet · C-F8
 Both Playwright configs add the `json` reporter; a step parses it for status `flaky`, prints
 `::warning::` and a job-summary line per flaky case; nightly `e2e-prod` fails on any flaky.
 Proof: the parser run on a saved report with one flaky case prints the warning.
@@ -139,7 +139,7 @@ default 1, `0.25` under `check:quick`; nightly `fuzz-deep` job at `FC_SCALE=10` 
 `fuzz|escape-fuzz|equivariance-fuzz|frame|reroll-findrun-oracle`, seed printed. A non-vacuity
 assertion must be seeded (lint check). Proof: suite green at scale 1; the nightly job added.
 
-### EH1.8 · the CLI runs in-process — `in review (#613)` · M · medium · opus · T-F1
+### EH1.8 · the CLI runs in-process — `done (#613)` · M · medium · opus · T-F1
 `src/cli/run.ts` exports `runCli(argv, io: {stdout, stderr, stdin, cwd, env}) → Promise<number>`;
 `src/cli.ts` becomes `exitFlushed(await runCli(process.argv.slice(2), nodeIo))`. Thread `io`
 through the `cmd*` functions (about 120 `process.stdout/stderr` sites; `watch` keeps its handle).
@@ -148,7 +148,7 @@ and `spawnArch` for `cli-flush`, `watch` and exit-flush cases. Migrate the 40 sp
 guard refuses a new `spawnSync(… "src/cli.ts")`. Proof: every `cli-*` test green; nightly coverage
 shows `src/cli/**` above 0; Node 22 shard total down (report the number).
 
-### EH1.9 · CLI flag matrix and contract table — `todo` · S+M · low · sonnet · T-F2, T-F8 item 4 · depends EH1.8
+### EH1.9 · CLI flag matrix and contract table — `in review (#619)` · S+M · low · sonnet · T-F2, T-F8 item 4 · depends EH1.8
 `test/cli-flag-matrix.test.ts` derives (command × flag) from `buildManifest()`; each pair needs an
 `EXERCISED` row naming its test, seeded with today's gaps as `TODO` rows; close `arch import` (exit
 0/2/3, `--json`, `--out`) and `batch --jobs` (jobs 1 = jobs 4 bytes) first.
@@ -225,8 +225,17 @@ to `KIND_FACETS` by a test. (c) `scripts/compat-check.mjs` does not compare gene
 zod and MCP SDK (after a major bump of either, pin the old versions in the cache). Proof: each item a
 test or a doc sentence; no `src/` change except (b) if a derivation is cheap.
 
-### EH1.17 · residue of the second review batch — `in progress` · S · low · sonnet
+### EH1.17 · residue of the second review batch — `done (#617)` · S · low · sonnet
 (a) `scripts/compat-check.mjs` reports a member whose printed type is a NON-EXPORTED alias (e.g. `readonly KindsWith<"opening">[]`) as "new: (none)"; resolve such aliases structurally (print the apparent type with `typeToString` flags that expand aliases, or fall back to the alias's declared type) so a derived literal union compares as its members (#608 had to cast to a hand-written tuple). (b) Root `packages/archlang-3d/src/node.ts`'s `makeNodeWorld` like `src/cli/io.ts` (realpath containment, `.arch` only, size cap; EH1.16d's allow-list row then goes). (c) `hasFixtureGlyph`/the manifest guard: a drawer returning `[]` passes — pin per-family non-empty output (the alias golden table from #611 already does; confirm and drop the redundancy or keep both with a sentence). Proof: tests; no `src/` change except (b).
+
+### EH1.18 · CLI exit codes on a plan that does not parse — `todo` · S · medium · sonnet · from #619's review
+`fmt`, `repair`, `reroll`, `suggest`, `complete` and `impact` exit 0 on a plan with `E_PARSE` (pinned as-is in
+`test/cli-contract-cases.ts`); `link` does so by documented contract (`docs/cli-reference.md`: a plan that does
+not compile still gets a link). `impact` is the one that matters: a CI gate on `impact` passes on a broken plan
+while its docs say "what broke". Decide per command (document the exit-0 contract, or exit 2 with the
+diagnostic), update `docs/cli-reference.md` through `gen:cli` and the manifest descriptions, and move the
+contract table rows with the generator and a reason. CHANGELOG for any exit-code change (a breaking change for
+scripts: say so). Proof: `cli-contract` green with the new rows; `docs-flags`/`cli-help` green.
 
 ## Wave 2 · structure, by pure moves
 
@@ -242,7 +251,7 @@ new sites; public `Diagnostic.code: string` unchanged. Second commit: `error-fix
 `explain`/CLI/docs; a test asserts the two agree per code. Proof (amended 2026-11-09 by #614's review: key ORDER is not part of the contract — nothing in `src/`, the generators or the packages reads it; entries must be identical BY CODE): per-code JSON identical before/after; `gen:errors`, `gen:llms` no drift; corpus `--json`
 diagnostics digest unchanged; playground compiler chunk size before/after from its own build.
 
-### EH2.2 · `src/ir/` — `in progress` · M · medium · opus · A-F2 · depends EH1.4, EH1.6
+### EH2.2 · `src/ir/` — `in review (#618)` · M · medium · opus · A-F2 · depends EH1.4, EH1.6
 Verbatim moves, `ir.ts` re-exports: `ir/types.ts` (R* interfaces, `ResolvedPlan`), `ir/expand.ts`
 (`Scope`, `expandScope*`, zones, `placeFrame`, `stripRooms`), `ir/side-tables.ts` (the 9 WeakMaps
 and accessors), `ir/groups.ts` (partition, `assignIds`, `markPlacement`, demolition,
@@ -268,7 +277,7 @@ included). Replace the ~22 inline TL→TR→BR→BL ring literals with `rectRing
 `naming.ts`'s `Bounds` to `RoomBounds`. One commit per replacement, each proven by digests. Glyph
 files follow `.claude/rules/glyphs.md`.
 
-### EH2.5 · one share codec, typed LSP seam — `todo` · M · medium · sonnet · A-F9, W-F3, W-F9
+### EH2.5 · one share codec, typed LSP seam — `in progress` · M · medium · sonnet · A-F9, W-F3, W-F9
 Expose the web decoder + `inflateCapped` + the id regex as a core subpath (`./share`); import it
 from `playground/src/share.ts`, `playground/worker/share-core.ts`, `mcp-worker`, `ArchLive.vue`.
 Encoders stay per environment. Reconcile `PAYLOAD_CAP_CHARS` (65,536 vs 88,406): rename if they
@@ -289,9 +298,7 @@ work counts reported before/after.
 `server.json` versions, the VS Code range, the font pin from the root version; the red lockstep
 tests stay as the verifier. `gen:surface` writes `docs/agents/public-surface.md` (export, module,
 kind, in-repo consumers, none flagged), drift-gated. `index.ts` header gains a "state" section
-(caches, side tables, `_` fields: which to use). `test/meter-headers.test.ts`: every module calling
-`chargeSteps` names the meter in its header; write the seven missing sentences; give `src/cli.ts` a
-header. Proof: drift green; `release:pin --dry-run` prints the eight edits for a scratch version.
+(caches, side tables, `_` fields: which to use). `test/meter-headers.test.ts` and the missing header sentences landed with #618 (nine, not seven); only `src/cli.ts`'s header remains here. Proof: drift green; `release:pin --dry-run` prints the eight edits for a scratch version.
 
 ### EH2.8 · bench honesty, incremental tsc, packaging — `todo` · S · low+high · sonnet · P-F1, P-F5, P-F10
 Bench job builds the merge base and the head in the same job, runs each twice, reports the ratio;
