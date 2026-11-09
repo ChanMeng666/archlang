@@ -27,7 +27,7 @@
  * against a lagging production deploy a red here would mean nothing.
  */
 import { expect, test } from "@playwright/test";
-import { homeHero } from "./fixtures.js";
+import { type HomeHero, homeHero } from "./fixtures.js";
 
 /** Desktop widths where the aside is displayed at all (VitePress shows it from 1280). */
 const WIDE = [
@@ -128,8 +128,14 @@ test.describe("the On this page outline is bounded by its own column", () => {
 test.describe("the hero tells brief → source → plan, and finishes inside eight seconds", () => {
   // The pair the hero streams, as the build emitted it (home-data.js). The gallery behind it is not
   // pinned corpus, so this compares the page with the build, never with the gallery's files.
-  const HERO = homeHero();
-  const SOURCE = HERO.source.replace(/\r\n/g, "\n");
+  // Read when the block runs, not at collection: home-data.js exists only after a docs build, and
+  // the nightly `@prod` job builds nothing yet Playwright loads this file before it applies `--grep`.
+  let HERO!: HomeHero;
+  let SOURCE!: string;
+  test.beforeAll(() => {
+    HERO = homeHero();
+    SOURCE = HERO.source.replace(/\r\n/g, "\n");
+  });
 
   test("the final state is server-rendered: the brief, the whole plan, the drawing", async ({ page }) => {
     // Reduced motion is the state a visitor who asked for no motion sees, and it is also the

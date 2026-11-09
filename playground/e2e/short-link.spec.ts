@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import * as core from "../../dist/index.js";
+import type * as Core from "../../dist/index.js";
 import { decodePlanHash } from "../../src/cli/share-codec.mjs";
 import { makeShareWorker } from "../worker/app.js";
 import type { Env, ShareMeta } from "../worker/types.js";
@@ -43,6 +43,8 @@ async function serveShortLinks(page: Page): Promise<Map<string, { value: string;
       },
     },
   };
+  // Lazy: the nightly `@prod` job builds nothing, and Playwright loads every spec before `--grep`.
+  const core = (await import(new URL("../../dist/index.js", import.meta.url).href)) as typeof Core;
   const worker = makeShareWorker(core);
   await page.route(
     (url) => url.pathname === "/api/share" || url.pathname.startsWith("/api/share/") || url.pathname.startsWith("/s/"),

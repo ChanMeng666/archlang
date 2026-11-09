@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
-import * as core from "../../dist/index.js";
+import type * as Core from "../../dist/index.js";
 import type { buildReviewSheet as BuildReviewSheet } from "../../src/cli/review.js";
 import { CHECKS_SAMPLE, SAMPLE_GROUP, sampleSource } from "../src/samples.js";
 import {
@@ -37,6 +37,11 @@ const CHECKS_FIXED = CHECKS_PLAN.replace("width 600", "width 900").replace(
   "  window at",
   "  door at (4000,2000) width 900 wall interior hinge left swing in\n  window at",
 );
+
+/** The built core, loaded when a case runs, never at collection: the nightly `@prod` job builds nothing
+ *  and Playwright loads every spec file before it applies `--grep`. */
+const loadCore = async (): Promise<typeof Core> =>
+  (await import(new URL("../../dist/index.js", import.meta.url).href)) as typeof Core;
 
 const review = async (): Promise<typeof BuildReviewSheet> =>
   (
@@ -135,6 +140,7 @@ test.describe("checks", () => {
 
   test("the rings are the review sheet's, one finding per compile or lint warning", async ({ page }) => {
     const buildReviewSheet = await review();
+    const core = await loadCore();
     const sheet = buildReviewSheet(CHECKS_PLAN);
     if ("kind" in sheet) throw new Error(`the fixture has no review sheet: ${sheet.kind}`);
     const warnings = [...(core.compile(CHECKS_PLAN).diagnostics ?? []), ...core.lint(CHECKS_PLAN)].filter(
