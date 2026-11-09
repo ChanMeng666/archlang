@@ -216,6 +216,28 @@ jobs:
       - name: Test
         run: npx vitest run --shard=${{ matrix.shard }}/5
 
+  # A PR's CHANGELOG lines land under `## [Unreleased]` and it deletes no released line; a release
+  # PR (it adds `## [x.y.z]`) is exempt. Runs on record-only PRs too: CHANGELOG.md is a record. The
+  # checkout is the PR's merge commit, so `HEAD^1` is the base tip and the diff is what merging adds.
+  # Not a required check itself: the `Node 22` aggregator below requires its success on a PR.
+  changelog:
+    name: CHANGELOG under [Unreleased]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+
+      - name: Every added CHANGELOG line sits under [Unreleased]
+        run: node scripts/check-changelog-unreleased.mjs HEAD^1
+
   # The required `Node 22` check. It decides from its needs' results, so a shard that failed,
   # was cancelled or was skipped when it had work to do turns it red. `always()`, not
   # `!cancelled()`: a job skipped by its `if` satisfies a required check, so a cancelled
@@ -223,7 +245,7 @@ jobs:
   node-22:
     name: Node 22
     runs-on: ubuntu-latest
-    needs: [changes, node-22-checks, node-22-tests]
+    needs: [changes, node-22-checks, node-22-tests, changelog]
     if: ${{ always() }}
     env:
       FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
@@ -233,11 +255,18 @@ jobs:
         env:
           CHECKS: ${{ needs.node-22-checks.result }}
           TESTS: ${{ needs.node-22-tests.result }}
+          CHANGELOG: ${{ needs.changelog.result }}
+          EVENT: ${{ github.event_name }}
         run: |
           if [ "$FULL_CI" = "true" ]; then want=success; else want=skipped; fi
-          echo "Node 22 checks: $CHECKS. Node 22 tests: $TESTS. Expected: $want." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$EVENT" = "pull_request" ]; then changelog_want=success; else changelog_want=skipped; fi
+          echo "Node 22 checks: $CHECKS. Node 22 tests: $TESTS. Expected: $want. CHANGELOG: $CHANGELOG (expected $changelog_want)." | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$CHECKS" != "$want" ] || [ "$TESTS" != "$want" ]; then
             echo "::error::A Node 22 job did not give the expected result ($want)."
+            exit 1
+          fi
+          if [ "$CHANGELOG" != "$changelog_want" ]; then
+            echo "::error::The CHANGELOG check did not give the expected result ($changelog_want)."
             exit 1
           fi
 

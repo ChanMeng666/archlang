@@ -33,5 +33,7 @@ regenerated artifact, a site deploy).
 
 - [ ] My commits follow the [Conventional Commits](https://www.conventionalcommits.org/) style
 - [ ] `npm run check:quick` is green locally; CI green is the merge gate
+- [ ] Moved goldens/digests are listed with reasons (none moved, or each one explained)
+- [ ] My CHANGELOG line is under `[Unreleased]` only (CI checks it), or this PR needs none
 - [ ] I have updated documentation where needed
 - [ ] I agree to follow this project's [Code of Conduct](../CODE_OF_CONDUCT.md)
