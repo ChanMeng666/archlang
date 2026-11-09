@@ -119,17 +119,17 @@ describe("main", () => {
     expect(main(["--fail-on-flaky", p], {})).toBe(1);
   });
 
-  it("escapes , : and % in the file property and % and newlines in the message", () => {
+  it("escapes , : % and a backslash in the file property, and % and a backslash in the message", () => {
     const odd = spec(
       "100% sure",
       7,
-      [test("flaky", [{ status: "failed", error: { message: "bad 50%: a,b" } }, { status: "passed" }])],
-      "we,ird:100%.spec.ts",
+      [test("flaky", [{ status: "failed", error: { message: "bad 50%: a,b\\c" } }, { status: "passed" }])],
+      "we,ird:100%\\x.spec.ts",
     );
     const p = write("odd.json", report(undefined, odd));
     main([p], {});
     expect(out).toContain(
-      "::warning file=we%2Cird%3A100%25.spec.ts,line=7::flaky: share › 100%25 sure (bad 50%25: a,b)",
+      "::warning file=we%2Cird%3A100%25%5Cx.spec.ts,line=7::flaky: share › 100%25 sure (bad 50%25: a,b%5Cc)",
     );
   });
 

@@ -56,8 +56,10 @@ export function findFlaky(report, repoRoot = process.cwd()) {
 }
 
 // GitHub workflow-command escaping: message data escapes % CR LF; a property also escapes : and ,.
-const esc = (s) => s.replace(/%/g, "%25").replace(/\r/g, "%0D").replace(/\n/g, "%0A");
-const escProp = (s) => esc(s).replace(/:/g, "%3A").replace(/,/g, "%2C");
+// A backslash is percent-encoded too (one map, one pass), so no input character survives unescaped.
+const ESC = { "%": "%25", "\r": "%0D", "\n": "%0A", "\\": "%5C", ":": "%3A", ",": "%2C" };
+const esc = (s) => s.replace(/[%\r\n\\]/g, (c) => ESC[c]);
+const escProp = (s) => s.replace(/[%\r\n\\:,]/g, (c) => ESC[c]);
 const cell = (s) => s.replace(/\|/g, "\\|");
 
 export function main(argv, env = process.env) {
