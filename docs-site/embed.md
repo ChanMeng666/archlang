@@ -96,7 +96,7 @@ or the inline text redraws it. After each render the element dispatches a `rende
 `detail` is `{ ok, problems }`, and the drawing and the error list are styleable from the page as
 `arch-plan::part(plan)` and `arch-plan::part(diagnostics)`.
 
-[See three elements on a plain HTML page](/arch-plan-demo.html): a plan loaded by URL, a plan
+[See three elements on a plain HTML page](/arch-plan-demo): a plan loaded by URL, a plan
 written inline, and a plan with an error.
 
 ## In a bundled app

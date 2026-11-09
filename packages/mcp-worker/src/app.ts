@@ -514,7 +514,12 @@ async function route(req: Request, env: Env, ctx: ExecutionContext, assets: Host
     if (svg) return await handleSvg(req, url, env, ctx, assets, svg);
     if (url.pathname === "/" && (req.method === "GET" || req.method === "HEAD"))
       return new Response(req.method === "HEAD" ? null : readMe(url.origin), {
-        headers: { "content-type": "text/markdown; charset=utf-8", "cache-control": "no-cache", ...CORS },
+        headers: {
+          "content-type": "text/markdown; charset=utf-8",
+          "cache-control": "no-cache",
+          "x-robots-tag": "noindex",
+          ...CORS,
+        },
       });
     if (url.pathname === OPENAI_CHALLENGE_PATH && (req.method === "GET" || req.method === "HEAD")) {
       const token = env.OPENAI_APPS_CHALLENGE;

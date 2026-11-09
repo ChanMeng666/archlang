@@ -67,7 +67,7 @@ representative, annotated example:
 | `roomsInclude[].concept` | a room concept the plan must contain, on any storey, matched against produced rooms by label → `room_type` → `uses` |
 | `roomsInclude[].count` | how many rooms of the concept (`{ min, max }`; default at least 1), over every storey |
 | `roomsInclude[].areaM2` | a per-room floor-area band, with a `source` quote from the brief that licensed the number |
-| `roomsInclude[].windows` | a required window count for the concept's rooms; optional `facing` (`N`/`S`/`E`/`W`) restricts the count to windows whose host wall faces that **true compass** direction (`describe().windows[].facing` — the page direction read against the plan's [`north`](language-reference.md#plan-settings), so `facing: "S"` means compass south, not "toward the bottom of the page"). `facing` also accepts the five **names** a plan's [`site` block](language-reference.md#site-and-orientation) derives — `street`, `back`, `equator_side`, `sunrise_side`, `sunset_side` — each of which resolves to one of those letters through that plan's own site; see [Symbolic facings](#symbolic-facings-naming-a-direction-instead-of-a-letter) |
+| `roomsInclude[].windows` | a required window count for the concept's rooms; optional `facing` (`N`/`S`/`E`/`W`) restricts the count to windows whose host wall faces that **true compass** direction (`describe().windows[].facing` — the page direction read against the plan's [`north`](language-reference.md#plan-level-settings), so `facing: "S"` means compass south, not "toward the bottom of the page"). `facing` also accepts the five **names** a plan's [`site` block](language-reference.md#site-and-orientation) derives — `street`, `back`, `equator_side`, `sunrise_side`, `sunset_side` — each of which resolves to one of those letters through that plan's own site; see [Symbolic facings](#symbolic-facings-naming-a-direction-instead-of-a-letter) |
 | `totalAreaM2` | a total floor-area band, again with a `source` quote; on a plan with `level` blocks, the sum over every storey |
 | `adjacency` | interior-door adjacency the brief licenses, `{ conceptA: [conceptB, …] }`, on any one storey — **advisory** |
 | `grossInternalAreaM2` | a band on the plan's **gross internal area** — the floor inside the exterior walls' inner faces (`describe().totals.gross_internal_area_m2`), which is what a client's "about 70 m²" means; `totalAreaM2` runs to wall centrelines and reads several per cent larger. On a plan with `level` blocks it binds the building: the sum over every storey (`totals.gross_internal_area_all_levels_m2`). Same band rules and `source` |
@@ -81,7 +81,7 @@ value and the words that set the target.
 A brief describes a building, so the intent reads every storey: two bedrooms upstairs count
 toward `rooms` and `roomsInclude`, and their windows toward `windows`. `describe --json` reports
 it differently: its top-level `rooms` and `totals` are the lowest storey, and `levels[]` holds
-each storey's own ([multi-storey plans](analysis.md#levels--)).
+each storey's own ([multi-storey plans](analysis.md#levels--one-storeys-facts-at-a-time-v121)).
 
 ### Brief-bound sizes
 

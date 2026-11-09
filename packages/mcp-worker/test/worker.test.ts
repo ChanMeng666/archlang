@@ -190,6 +190,13 @@ describe("hosted MCP over Streamable HTTP", () => {
     expect(res.headers.get("mcp-session-id")).toBeNull();
     expect(res.headers.get("cache-control")).toBe("no-store");
   });
+
+  it("the root README is served as markdown and kept out of search results", async () => {
+    const res = await worker.fetch(new Request(`${ORIGIN}/`), env, ctx);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toBe("text/markdown; charset=utf-8");
+    expect(res.headers.get("x-robots-tag")).toBe("noindex");
+  });
 });
 
 describe("the input cap: a Diagnostic envelope before any compile work, never a 5xx", () => {
