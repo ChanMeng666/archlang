@@ -10,7 +10,7 @@
 import { ERROR_CODES } from "../error-catalog.js";
 import type { Diagnostic } from "../index.js";
 
-const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
+export const plural = (n: number, word: string): string => `${n} ${word}${n === 1 ? "" : "s"}`;
 
 /** Position of a code in `ERROR_CODES` (alphabetical); an uncatalogued code sorts after them. */
 const rank = (code: string): number => {
