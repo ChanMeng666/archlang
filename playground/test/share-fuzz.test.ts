@@ -10,7 +10,7 @@
 import { deflateRawSync } from "node:zlib";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { PlanHashTooLarge, decodePlanHashWeb } from "archlang/share";
+import { decodePlanHashWeb } from "archlang/share";
 import { LINK_INFLATE_CAP_BYTES, bytesToB64url, readHash, srcFromHash } from "../src/share.js";
 import { decodePayload } from "../worker/share-core.js";
 import { supportsDeflateRaw } from "./helpers.js";
@@ -50,16 +50,13 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
     );
   });
 
-  it("the web decoder resolves within maxBytes or rejects with an Error, never anything else", async () => {
+  it("the web decoder resolves within maxBytes or returns a code, never throws", async () => {
     const maxBytes = 4096;
     await fc.assert(
       fc.asyncProperty(b64url, async (s) => {
-        try {
-          const out = await decodePlanHashWeb(s, { maxBytes });
+        const out = await decodePlanHashWeb(s, { maxBytes });
+        if (out !== "bad_payload" && out !== "source_too_large")
           expect(new TextEncoder().encode(out).length).toBeLessThanOrEqual(maxBytes);
-        } catch (e) {
-          expect(e).toBeInstanceOf(Error);
-        }
       }),
       RUNS,
     );
@@ -81,9 +78,9 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
     it("the web decoder opens up to maxBytes and refuses past it", async () => {
       await fc.assert(
         fc.asyncProperty(around(cap), async (n) => {
-          const run = decodePlanHashWeb(bomb(n), { maxBytes: cap });
-          if (n <= cap) expect((await run).length).toBe(n);
-          else await expect(run).rejects.toBeInstanceOf(PlanHashTooLarge);
+          const out = await decodePlanHashWeb(bomb(n), { maxBytes: cap });
+          if (n <= cap) expect(out.length).toBe(n);
+          else expect(out).toBe("source_too_large");
         }),
         RUNS,
       );
@@ -114,9 +111,7 @@ describe.skipIf(!supportsDeflateRaw)("share decoders on arbitrary input", () => 
         expect(await readHash(`#z=${z}`)).toEqual({ refused: "too_large" });
         expect(await srcFromHash(`#z=${z}`)).toBeNull();
         expect(await decodePayload(z)).toBe("source_too_large");
-        await expect(decodePlanHashWeb(z, { maxBytes: LINK_INFLATE_CAP_BYTES })).rejects.toBeInstanceOf(
-          PlanHashTooLarge,
-        );
+        expect(await decodePlanHashWeb(z, { maxBytes: LINK_INFLATE_CAP_BYTES })).toBe("source_too_large");
       }),
       { numRuns: runs(4), seed: SEED },
     );

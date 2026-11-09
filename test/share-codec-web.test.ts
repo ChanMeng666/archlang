@@ -8,7 +8,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { decodePlanHash, encodePlanHash } from "../src/cli/share-codec.mjs";
-import { decodePlanHashWeb, PlanHashTooLarge } from "../src/cli/share-codec.web.mjs";
+import { decodePlanHashWeb } from "../src/cli/share-codec.web.mjs";
 
 /**
  * `DecompressionStream("deflate-raw")` is missing from Node 18 (a CI leg) and from early Node 20
@@ -62,13 +62,13 @@ describe.skipIf(!HAS_DEFLATE_RAW)("share-codec.web.mjs ↔ share-codec.mjs", () 
   it("stops at maxBytes: a small payload that inflates past the cap is refused, not inflated", async () => {
     const bomb = encodePlanHash("x".repeat(1_000_000));
     expect(bomb.length).toBeLessThan(2_000);
-    await expect(decodePlanHashWeb(bomb, { maxBytes: 65_536 })).rejects.toBeInstanceOf(PlanHashTooLarge);
+    expect(await decodePlanHashWeb(bomb, { maxBytes: 65_536 })).toBe("source_too_large");
     // At the cap exactly, it decodes.
     expect(await decodePlanHashWeb(encodePlanHash("y".repeat(65_536)), { maxBytes: 65_536 })).toHaveLength(65_536);
   });
 
   it("rejects a payload that is not base64url deflate-raw (never returns garbage as source)", async () => {
-    await expect(decodePlanHashWeb("!!!not-base64!!!")).rejects.toThrow();
-    await expect(decodePlanHashWeb("AAAA")).rejects.toThrow();
+    expect(await decodePlanHashWeb("!!!not-base64!!!")).toBe("bad_payload");
+    expect(await decodePlanHashWeb("AAAA")).toBe("bad_payload");
   });
 });

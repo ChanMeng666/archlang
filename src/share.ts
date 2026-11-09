@@ -25,8 +25,8 @@
 export {
   decodePlanHashWeb,
   fromBase64Url,
+  inflateCapped,
   PLAYGROUND_EDIT_FLAG,
-  PlanHashTooLarge,
   toBase64Url,
 } from "./cli/share-codec.web.mjs";
 
@@ -69,58 +69,4 @@ export const SHARE_ID = /^[0-9A-Za-z]{8,43}$/;
 export const isShareId = (s: string): boolean => SHARE_ID.test(s);
 
 /** Why a payload was refused, before any plan is read. */
-export type PayloadFault = "bad_payload" | "source_too_large";
-
-/** The compressed input is fed to the inflater this many bytes at a time. */
-const WRITE_SLICE = 1024;
-
-/**
- * Inflate a raw-deflate stream, stopping as soon as the output passes `cap` bytes. Returns the
- * bytes, `"source_too_large"` past the cap, or `"bad_payload"` for a stream that does not inflate.
- *
- * The input goes in as ~1 KiB slices, each awaited, rather than one write: a browser's
- * `DecompressionStream` may inflate a whole written chunk in one step, so one write of a 200 KB
- * bomb could expand to its full 200 MB before the read loop below sees a byte. Node's zlib
- * applies backpressure either way, which is why the Node tests cannot show the difference.
- */
-export async function inflateCapped(bytes: Uint8Array, cap: number): Promise<Uint8Array | PayloadFault> {
-  const ds = new DecompressionStream("deflate-raw");
-  const writer = ds.writable.getWriter();
-  // Runs beside the read loop (an awaited write waits for the reader to drain). Its writes reject
-  // with the read side when the stream is corrupt or the reader cancels at the cap; the read loop
-  // reports that, so the rejection is only kept from becoming unhandled.
-  void (async () => {
-    try {
-      for (let at = 0; at < bytes.length; at += WRITE_SLICE) {
-        await writer.write(bytes.subarray(at, at + WRITE_SLICE) as BufferSource);
-      }
-      await writer.close();
-    } catch {
-      /* reported by the reader */
-    }
-  })();
-  const reader = ds.readable.getReader();
-  const chunks: Uint8Array[] = [];
-  let total = 0;
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.byteLength;
-      if (total > cap) {
-        await reader.cancel().catch(() => {});
-        return "source_too_large";
-      }
-      chunks.push(value);
-    }
-  } catch {
-    return "bad_payload";
-  }
-  const out = new Uint8Array(total);
-  let at = 0;
-  for (const c of chunks) {
-    out.set(c, at);
-    at += c.byteLength;
-  }
-  return out;
-}
+export type { PayloadFault } from "./cli/share-codec.web.mjs";

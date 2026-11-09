@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Share decoding: an over-cap payload now returns `source_too_large` instead of throwing. `decodePlanHashWeb` from `@chanmeng666/archlang/share` is built on `inflateCapped` (one bounded inflater, the 1 KiB write slices included) and returns `string | PayloadFault` (`"bad_payload"` or `"source_too_large"`) instead of throwing; `PlanHashTooLarge` is gone. The hosted MCP Worker's `GET /svg/<payload>` now has the same bomb protection as the short-link Worker. Every link decodes as before.
 - `lint()` reuses the compile's Scene; large plans lint faster. `annotation-overlap` reads the annotated Scene of each storey from a small memo that `compile()` fills with a copy of what it drew (once a lint has asked for that Scene) and that a repeated lint of the same source reuses, instead of drawing it again. Output is byte-identical, and a caller's changes to `compile().scene` never reach lint.
 - The product film on archlang.uk (`/` and `/start`) and in the README is "ArchLang, from plan to 3D" (3:16, [YouTube](https://youtu.be/oCg3tBTlVvI)), in place of the 1:09 film; the home page carries it as a schema.org `VideoObject`.
 

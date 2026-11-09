@@ -61,7 +61,6 @@ import {
   fromBase64Url,
   inflateCapped,
   PLAYGROUND_EDIT_FLAG,
-  PlanHashTooLarge,
   SOURCE_CAP_BYTES,
   toBase64Url,
 } from "../src/share.js";
@@ -332,11 +331,10 @@ describe.skipIf(!HAS_DEFLATE_RAW)(
  * The caps, at the edge, for every reader. A payload that inflates to exactly the cap opens; one
  * byte more is refused, and inflation stops at the cap rather than at the end of the stream.
  *
- * The readers refuse in two shapes (card EH2.5b decides whether to unify them; this pins today's):
- *   - THROWS: `decodePlanHashWeb` (the hosted MCP Worker), a `PlanHashTooLarge`.
- *   - RETURNS A CODE: `inflateCapped` and the short-link Worker's `decodePayload` return
- *     `"source_too_large"`; the playground's `readHash` returns `{ refused: "too_large" }` and
- *     `srcFromHash` returns `null`.
+ * Every reader refuses by RETURNING, never throwing: `decodePlanHashWeb` (the hosted MCP Worker,
+ * built on `inflateCapped`), `inflateCapped` and the short-link Worker's `decodePayload` return
+ * `"source_too_large"`; the playground's `readHash` returns `{ refused: "too_large" }` and
+ * `srcFromHash` returns `null`.
  * The playground page's own cap is `LINK_INFLATE_CAP_BYTES` (1 MiB), not `SOURCE_CAP_BYTES`: a
  * link a reader opens in their own tab costs no host anything, so it is held to its own edge.
  */
@@ -346,9 +344,9 @@ describe.skipIf(!HAS_DEFLATE_RAW)("the source caps hold at the byte for every re
   const atCap = spaces(SOURCE_CAP_BYTES);
   const overCap = spaces(SOURCE_CAP_BYTES + 1);
 
-  it("decodePlanHashWeb (throws): opens at SOURCE_CAP_BYTES, throws PlanHashTooLarge one byte over", async () => {
+  it("decodePlanHashWeb (returns a code): opens at SOURCE_CAP_BYTES, source_too_large one byte over", async () => {
     expect(await decodePlanHashWeb(atCap, { maxBytes: SOURCE_CAP_BYTES })).toHaveLength(SOURCE_CAP_BYTES);
-    await expect(decodePlanHashWeb(overCap, { maxBytes: SOURCE_CAP_BYTES })).rejects.toBeInstanceOf(PlanHashTooLarge);
+    expect(await decodePlanHashWeb(overCap, { maxBytes: SOURCE_CAP_BYTES })).toBe("source_too_large");
   });
 
   it("inflateCapped (returns a code): opens at SOURCE_CAP_BYTES, source_too_large one byte over", async () => {
