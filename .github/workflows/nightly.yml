@@ -169,6 +169,23 @@ jobs:
       - run: npm ci
 
       - run: npm test
+        if: ${{ !(matrix.os == 'ubuntu-latest' && matrix.node == 22) }}
+
+      # The Node 22 ubuntu leg also records per-file durations: download the `test-durations`
+      # artifact and keep it as test/.durations.json (test/.durations.README.md).
+      - name: Test (with the duration report)
+        if: ${{ matrix.os == 'ubuntu-latest' && matrix.node == 22 }}
+        run: |
+          npx vitest run --reporter=default --reporter=json --outputFile.json=vitest-report.json
+          node scripts/gen-test-durations.mjs vitest-report.json test-durations.json
+
+      - name: Upload the regenerated durations
+        if: ${{ always() && matrix.os == 'ubuntu-latest' && matrix.node == 22 }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: test-durations
+          path: test-durations.json
+          if-no-files-found: ignore
 
       - name: Generated artifacts are in sync
         run: npm run check:drift
