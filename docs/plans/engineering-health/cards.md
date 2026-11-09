@@ -262,7 +262,7 @@ Follow-up card (not this one): `resolveBody` steps 3b–8 as named functions, on
 Proof: `git diff -M --stat` moved counts equal; `tsc`; CI digests unchanged; `check:quick`'s nearest
 tests for `ir/*` listed in the PR body.
 
-### EH2.3 · `describe/`, `plan-json/`, `analyze/circulation` splits — `in review (#626 describe/, #630 plan-json/, #634 circulation; rooms.ts/openings.ts not created: summarize is one function)` · S–M each · medium · sonnet · A-F6 · depends EH1.6
+### EH2.3 · `describe/`, `plan-json/`, `analyze/circulation` splits — `done (#626 describe/, #630 plan-json/, #634 circulation + nav-grid + overlay; summarize stays one function)` · S–M each · medium · sonnet · A-F6 · depends EH1.6
 One PR per module, along the section dividers the audit lists: `describe/types.ts` + per-kind
 `summarize` blocks; `plan-json/{types,to-json,from-json,emit,ast-json,check-graph,schema}.ts`
 (`scripts/gen-plan-schema.ts:14` reads the moved constant); `analyze/{nav-grid,circulation,
@@ -300,7 +300,7 @@ tests stay as the verifier. `gen:surface` writes `docs/agents/public-surface.md`
 kind, in-repo consumers, none flagged), drift-gated. `index.ts` header gains a "state" section
 (caches, side tables, `_` fields: which to use). `test/meter-headers.test.ts` and the missing header sentences landed with #618 (nine, not seven); only `src/cli.ts`'s header remains here. Proof: drift green; `release:pin --dry-run` prints the eight edits for a scratch version.
 
-### EH2.8 · bench honesty, incremental tsc, packaging — `in review (#631 bench vs merge base, #635 incremental tsc; sideEffects not declared: builtins.ts registers on import)` · S · low+high · sonnet · P-F1, P-F5, P-F10
+### EH2.8 · bench honesty, incremental tsc, packaging — `done (#631 bench vs merge base; #635 incremental tsc; sideEffects → EH2.8b)` · S · low+high · sonnet · P-F1, P-F5, P-F10
 Bench job builds the merge base and the head in the same job, runs each twice, reports the ratio;
 flags only rows > 5 ms and > 50 %; `lint` reported as its own row class. Both tsconfigs
 `incremental: true` with `tsBuildInfoFile` under `node_modules/.cache`. `"sideEffects": false` only
@@ -339,9 +339,18 @@ CHANGELOG `### Changed` line (consumers' bundlers tree-shake differently). Also 
 side-effect scan green with one pinned entry (`src/cli.ts`'s `void main()`), digests unchanged, the playground bundle
 size before/after.
 
+### EH2.3b · residue of the splits — `todo` · S · medium · sonnet · from #626/#630/#634's review
+(a) `pairsJson` sits in `src/plan-json/from-json.ts` but its only caller is `to-json.ts`; `to-json` imports `num`/`q`
+from `emit.ts` for one use, pulling `emit` → `from-json` → the parser into the projector: move `pairsJson` to
+`to-json.ts` (pure move) and give the one `num`/`q` use a tiny shared helper, so the projector no longer loads the
+validator. (b) `SUMMARY_MODULES` in `test/iso-describe-blind.test.ts` is a hand-written list that misses the eight
+`plan-json/*` modules `describe()` now loads: derive it by an import-closure walk, as `test/describe-overlay-blind.test.ts`
+does. (c) Later, with a body edit and its own byte-identity proof: `summarize` (446 lines) into per-kind functions
+(`describe/rooms.ts`, `describe/openings.ts`). Proof: digests unchanged; `no-value-cycles` green.
+
 ## Wave 3 · agent navigation
 
-### EH3.1 · generated module map — `in progress` · M · medium+high · sonnet · N-F5
+### EH3.1 · generated module map — `in review (#639)` · M · medium+high · sonnet · N-F5
 `scripts/gen-module-map.ts` walks `src/**/*.ts`, `packages/*/src/**/*.ts`, `playground/src/*.ts`;
 takes each header's first paragraph (≤ 200 chars) and the optional tags `@budget`, `@reads`,
 `@readBy`; emits `docs/agents/module-map.md` grouped by directory; fails on a module with no first
@@ -359,7 +368,7 @@ resolves. Archive `visual-assets/`, `playground-minimal/`, `playground-mobile-pe
 `public-surfaces/` and `archlang-3d/{development-plan,adr-draft-*}.md` to the lab repo, one README
 row each. Proof: `wc -c docs/backlog.md` and the index in the PR body.
 
-### EH3.3 · docs by audience and path — `in progress` · M · medium+high · sonnet · N-F4, N-F6, N-F9
+### EH3.3 · docs by audience and path — `in review (#637, #638)` · M · medium+high · sonnet · N-F4, N-F6, N-F9
 `gotchas.md` splits: drawing → `glyphs.md`, sites/e2e → `sites.md`, CLI → `cli.md`, 3D →
 `archlang-3d.md`, "examples move suites" → new `.claude/rules/examples.md`; orchestrator-only items
 → `docs/agents/orchestration.md` (including the executor brief limits and "worktree agents start
@@ -377,7 +386,7 @@ runner, `worldFor`, sha256 one-liners. `gen:test-index` → `test/INDEX.md`: per
 tests that import it (directly or transitively, reusing `check-quick.mjs`'s distance), per test its
 header's first sentence; the 66 unimported modules listed. Proof: drift green; suite green.
 
-### EH3.5 · hooks for the recurring mistakes — `todo` · S · high · sonnet · N-F8
+### EH3.5 · hooks for the recurring mistakes — `in progress` · S · high · sonnet · N-F8
 `local-gate.mjs` grows: Edit/Write on a `GENERATORS` artifact or `dist/` → deny with
 "run `gen:<script>`"; `vitest -u` together with `-t` → deny except the documented scope; recursive
 delete whose target contains a reparse point → deny. CI step: added CHANGELOG lines must sit under
