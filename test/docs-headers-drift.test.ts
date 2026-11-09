@@ -6,7 +6,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { markdownRoutes, renderHeaders } from "../scripts/gen-docs-headers.js";
+import { markdownRoutes, RAW_FILE_RULES, renderHeaders } from "../scripts/gen-docs-headers.js";
 
 const HEADERS = "docs-site/public/_headers";
 const routes = markdownRoutes(readFileSync("docs-site/sync-docs.mjs", "utf8"));
@@ -24,12 +24,12 @@ describe("docs-site/public/_headers", () => {
     }
   });
 
-  it("de-indexes every raw .md copy and nothing else (GS-D7, docs/seo.md § 5)", () => {
+  it("de-indexes every raw .md copy and the raw .arch/.glb files, nothing else (GS-D7, docs/seo.md § 5)", () => {
     for (const r of routes) {
       expect(headers).toContain(`/${r}\n  Content-Type: text/markdown; charset=utf-8\n  X-Robots-Tag: noindex\n`);
     }
-    // Closed-world, as below: only the generated `.md` rules carry the header, so /llms.txt,
-    // /llms-full.txt and every HTML route stay indexable.
+    // Closed-world, as below: only the generated `.md` rules and the raw plan/model file rules carry
+    // the header, so /llms.txt, /llms-full.txt, the JSON schemas and every HTML route stay indexable.
     const tagged: string[] = [];
     let path: string | null = null;
     for (const line of headers.split("\n")) {
@@ -37,7 +37,11 @@ describe("docs-site/public/_headers", () => {
       if (!/^\s/.test(line)) path = line.trim();
       else if (path && /^\s+X-Robots-Tag:/i.test(line)) tagged.push(path);
     }
-    expect(tagged.sort()).toEqual(routes.map((r) => `/${r}`).sort());
+    expect(tagged.sort()).toEqual([...routes.map((r) => `/${r}`), ...RAW_FILE_RULES.map((r) => r.path)].sort());
+    expect(RAW_FILE_RULES.map((r) => r.path)).toEqual(["/examples/*.arch", "/gallery/*.arch", "/3d/*.glb"]);
+    // One splat per path (Cloudflare `_headers`), and a rule cap of 100.
+    for (const r of RAW_FILE_RULES) expect(r.path.split("*").length - 1).toBe(1);
+    expect(headers.split("\n").filter((l) => l.startsWith("/")).length).toBeLessThan(100);
   });
 
   it("serves the gallery plans' `.arch` sources as UTF-8 text (an unknown extension otherwise downloads)", () => {

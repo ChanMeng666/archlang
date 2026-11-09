@@ -10,7 +10,8 @@
  *
  * Each rule also sends `X-Robots-Tag: noindex` (GS-D7): the HTML page, not its raw markdown
  * twin, is the search result. The copy stays fetchable and the page's `rel=alternate` link stays;
- * `/llms.txt`, `/llms-full.txt` and every HTML route have no rule here, so they carry no such header.
+ * `/llms.txt`, `/llms-full.txt`, the JSON schemas and every HTML route have no rule here, so they carry
+ * no such header. The raw `.arch` and `.glb` files get the same header ({@link RAW_FILE_RULES}).
  *
  * One exact-path rule per page means the rule count grows with the site; Cloudflare documents
  * a cap on rules per `_headers` file (100 at the time of writing), so watch it.
@@ -45,11 +46,29 @@ export function markdownRoutes(syncSrc: string): string[] {
   return [...tableDests(syncSrc, "PAGES"), ...tableDests(syncSrc, "SITE_PAGES")];
 }
 
+/**
+ * The raw plan and model files the docs host publishes (`sync-docs.mjs` writes `public/examples/*.arch`
+ * and `public/gallery/*.arch`; `npm run gen:3d-assets` writes `public/3d/*.glb`), de-indexed like the `.md`
+ * copies (GSC listed them "Crawled - currently not indexed", 2026-11-09). One single-splat rule per
+ * directory and extension: Cloudflare's `_headers` allows ONE splat per path, which matches greedily
+ * (`/examples/*.arch` is the rule smoke-tested since the gallery shipped). A `.arch` source is also
+ * typed UTF-8 text, since the extension is unknown to the host and would download. The `.glb` is already
+ * typed `model/gltf-binary` by the host, so it gets the robots header only.
+ */
+export const RAW_FILE_RULES: ReadonlyArray<{ path: string; contentType?: string }> = [
+  { path: "/examples/*.arch", contentType: "text/plain; charset=utf-8" },
+  { path: "/gallery/*.arch", contentType: "text/plain; charset=utf-8" },
+  { path: "/3d/*.glb" },
+];
+
 /** The generated region, markers included. */
 export function renderSection(routes: readonly string[]): string {
-  const rules = routes
-    .map((r) => `/${r}\n  Content-Type: text/markdown; charset=utf-8\n  X-Robots-Tag: noindex`)
-    .join("\n\n");
+  const rules = [
+    ...routes.map((r) => `/${r}\n  Content-Type: text/markdown; charset=utf-8\n  X-Robots-Tag: noindex`),
+    ...RAW_FILE_RULES.map(
+      (r) => `${r.path}\n${r.contentType ? `  Content-Type: ${r.contentType}\n` : ""}  X-Robots-Tag: noindex`,
+    ),
+  ].join("\n\n");
   return `${BEGIN}\n\n${rules}\n\n${END}`;
 }
 
