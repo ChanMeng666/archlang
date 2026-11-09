@@ -17,7 +17,8 @@ lists. The list comes from commit `974d9981` (`W_FURNITURE_ON_VOID`).
 2. **The family**, only if new: `LintFamily` and `FAMILY_NOUN` in `src/lint/coverage.ts`. Red
    without it: `tsc`, and `test/lint-rule-order.test.ts` (family words).
 3. **The catalogue entry** for every code in `rule.codes`, with a firing example:
-   `src/error-catalog.ts`. Red without it: `test/lint-rule-order.test.ts` (catalogued codes) and
+   the family file `src/error-catalog/<family>.ts` whose header names the rule's `LintFamily`
+   (a new family file is imported and spread in `src/error-catalog.ts`). Red without it: `test/lint-rule-order.test.ts` (catalogued codes) and
    the catalogue tests.
 4. **Append the rule to `LINT_RULES`** in `src/lint/rules/index.ts`, last unless the reading order
    says otherwise (order is contract). Red without the next step:

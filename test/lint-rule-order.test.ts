@@ -111,7 +111,7 @@ describe("a lint rule is registered in every place a rule is listed", () => {
       LINT_RULES.flatMap((r) =>
         r.codes.filter((c) => ERROR_CATALOG[c] === undefined).map((c) => `${c} (rule ${r.name})`),
       ),
-      `add a catalogue entry (with a firing example) for each code in src/error-catalog.ts, then npm run gen:all`,
+      `add a catalogue entry (with a firing example) for each code in its family file src/error-catalog/<family>.ts, then npm run gen:all`,
     );
   });
 

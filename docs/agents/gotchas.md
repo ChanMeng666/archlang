@@ -148,7 +148,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   `test/rooms-tiling-probe.test.ts` (#308), and `test/walls-from-rooms.test.ts`, which walks the
   `space-not-enclosed` corpus (a case that already says `walls from rooms` is skipped there; G5).
 - **Two rule PRs in parallel conflict on all of those** plus `src/lint/rules/index.ts`,
-  `src/error-catalog.ts` and `src/lint/ruleset.ts`: keep main's entry first, then the PR's; bump the
+  the catalogue family file (`src/error-catalog/<family>.ts`; two rules of different families no
+  longer share one) and `src/lint/ruleset.ts`: keep main's entry first, then the PR's; bump the
   windows and counts; re-take K1 and `gen:*` by their generators; re-insert catalogue and ruleset
   entries as whole blocks (a hunk-level merge split entries and broke the build, #315).
 - **`validate`'s `next` and lint output feed the K1 keep digests**: a change to `next` or a new rule
