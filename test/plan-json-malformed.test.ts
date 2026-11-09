@@ -32,7 +32,7 @@ const docs = EXAMPLES.flatMap((file) => {
 });
 
 /** An E_JSON message names its path: `plan JSON /rooms/0/width: ...` (the root path is empty). */
-const PATHED = /^plan JSON (\/[^\s:]*)*:/;
+const PATHED = /^plan JSON (?:\/[^\s:/]*)*:/;
 
 /**
  * DEFECT 1 (EH1.10; `src/` is out of scope for this card, so it is pinned, not fixed):
