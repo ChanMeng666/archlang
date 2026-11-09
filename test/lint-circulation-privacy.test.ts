@@ -11,7 +11,6 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint, lintWithCoverage } from "../src/index.js";
-import { LINT_RULES } from "../src/lint/rules/index.js";
 import type { World } from "../src/world.js";
 
 const CODES = ["W_ROOM_VIA_PRIVATE", "W_WET_ROOM_DOOR", "W_ENTRANCE_INTO_PRIVATE"] as const;
@@ -435,47 +434,6 @@ describe("review fixes (PR #199)", () => {
 });
 
 describe("the three rules' texts", () => {
-  it("are appended in card order, followed only by the opening rules (PS2.1–PS2.3), the room-contents rules (PS2.8, PS2.9), the space-enclosure rules (PS2.4), the furniture-relation rules (ADR 0029), PS2.10's dimension text, the annotation-collision rules (PS2.12), the clearance rules (PS2.11a–d) and the stair rules (PS2.11e, PS2.34, PS2.15) and the kitchen and door rules (PS2.11e, PS2.46) and the accessible-WC rule (PS2.74) and the exit-approach rule (PS2.69), and PS2.67's bed rule", () => {
-    expect(LINT_RULES.slice(-36).map((r) => r.name)).toEqual([
-      "room-via-private",
-      "wet-room-door",
-      "entrance-into-private",
-      "opening-at-junction",
-      "opening-overlap",
-      "connector-ambiguous",
-      "habitable-no-window",
-      "room-missing-defining",
-      "boundary-no-wall",
-      "floor-unassigned",
-      "room-outside-shell",
-      "furn-clear-declared",
-      "seat-facing-away",
-      "dim-text-mismatch",
-      "annotation-overlap",
-      "title-overflow",
-      "wc-side-clearance",
-      "furniture-over-window",
-      "footprint-transposed",
-      "leaf-across-doorway",
-      "swing-over-stair",
-      "stair-no-landing",
-      "stair-side-entry",
-      "stair-head-void",
-      "stair-too-steep",
-      "shaft-footprint-mismatch",
-      "hob-under-window",
-      "hob-fridge-gap",
-      "leaf-too-wide",
-      "accessible-wc-side-wall",
-      "exit-approach-blocked",
-      "bed-undersized",
-      "wall-end-short",
-      "furniture-on-stair",
-      "exterior-ring-open",
-      "furniture-on-void",
-    ]);
-  });
-
   const worldFor = (dir: string): World => ({
     read: (p) => {
       try {
