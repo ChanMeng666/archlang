@@ -5,12 +5,18 @@
 // gen:3d-assets reaches this page with no edit here. site-markdown.mjs renders the same list for
 // the raw /3d.md.
 //
+// A plan with a static page on the playground (EXAMPLE_PAGES, from EXAMPLE_ROWS through
+// sync-docs.mjs) links it beside the plan's other links, as a plain href a crawler follows.
+//
 // Each replay is behind its poster: nothing of the video loads until the visitor presses play,
 // and with no JavaScript the poster is a plain link to the MP4. "Play the replay (MP4)" stays under
 // the frame: before the first press it plays in place, after it (or once the video has failed to
 // play, which puts the poster back) it is a plain link to the file.
 import { reactive } from "vue";
+import { EXAMPLE_PAGES } from "./example-pages-data.js";
 import { ASSETS_3D } from "./three-d-data.js";
+
+const PAGES: ReadonlyMap<string, string> = new Map(Object.entries(EXAMPLE_PAGES));
 
 /** Per plan: `video` once play was pressed, `failed` once that video could not play. */
 const mode = reactive<Record<string, "video" | "failed">>({});
@@ -97,6 +103,9 @@ function press(e: MouseEvent, name: string): void {
         <a :href="a.glb.href" :download="`${a.name}.glb`">Download GLB ({{ a.glbSize }})</a> ·
         <a :href="a.link3d" target="_blank" rel="noopener">Open in the playground (3D)</a> ·
         <a :href="`/examples/${a.name}.arch`">Plan source</a>
+        <template v-if="PAGES.get(a.name)">
+          · <a class="example-page" :href="PAGES.get(a.name)" :aria-label="`Example page: ${a.name}.arch`">Example page</a></template
+        >
       </p>
     </li>
   </ul>
