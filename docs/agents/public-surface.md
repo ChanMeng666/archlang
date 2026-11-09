@@ -9,8 +9,14 @@ or a relative path to `src/index`. Consumer buckets: `src/cli`, `src`, `packages
 
 A flagged export (consumers `none`) is NOT dead: the public surface is a contract and the
 release-compat gate pins it. It only has no in-repo exerciser, so a change to it is proven by
-nothing here but that gate. The consumer scan is a regex over import statements (named, re-export
-and `import * as ns` forms); dynamic `import()`, `require` and markdown are not read.
+nothing here but that gate. The consumer scan is a set of regexes over source text: static imports
+(named, re-export, `import * as ns`) and the dynamic and type-level forms (`import("pkg").name`,
+`await import`, destructuring, `x.name` on a variable bound to the import, `typeof import("pkg")["name"]`,
+`Pick<typeof import("pkg"), "a" | "b">`). Not read: `require`, markdown, a module object handed to a
+function and read there; a variable read counts file-wide.
+
+The total counts every name the checker sees as exported, including those pulled in by
+`export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
 Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 
@@ -325,12 +331,12 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `Applicability` | type | `test` |
-| `Diagnostic` | type | `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `playground`, `src/cli`, `test` |
+| `Diagnostic` | type | `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `playground`, `scripts`, `src/cli`, `test` |
 | `FixEdit` | type | `test` |
 | `FixSuggestion` | type | `packages/mcp`, `src/cli`, `test` |
 | `RelatedSpan` | type | none |
 | `Severity` | type | none |
-| `Span` | type | `test` |
+| `Span` | type | `editors`, `test` |
 | `formatDiagnostic` | value | `src/cli`, `test` |
 | `offsetToLineCol` | value | `playground`, `src/cli`, `test` |
 
@@ -549,7 +555,7 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `clearCache` | value | `test` |
-| `compile` | value | `bench`, `dataset`, `docs-site`, `editors`, `eval`, `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `playground`, `scripts`, `src`, `src/cli`, `test`, `tools` |
+| `compile` | value | `bench`, `dataset`, `docs-site`, `editors`, `eval`, `packages/archlang-3d`, `packages/mcp`, `packages/mcp-worker`, `packages/web-component`, `playground`, `scripts`, `src`, `src/cli`, `test`, `tools` |
 
 ## `src/input-limit.ts`
 
@@ -718,18 +724,18 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `COMPLETION_KINDS` | value | `playground` |
 | `CodeAction` | type | none |
 | `CompletionItem` | type | none |
-| `CompletionKind` | type | `playground` |
+| `CompletionKind` | type | `editors`, `playground` |
 | `HoverResult` | type | none |
 | `RefactorAction` | type | none |
 | `SignatureResult` | type | none |
 | `TextEdit` | type | none |
 | `codeActions` | value | `editors`, `test` |
-| `completion` | value | `packages/mcp`, `playground`, `src/cli`, `test` |
-| `definition` | value | `test` |
-| `hover` | value | `test` |
-| `refactorActions` | value | `test` |
-| `rename` | value | `test` |
-| `signatureHelp` | value | `test` |
+| `completion` | value | `editors`, `packages/mcp`, `playground`, `src/cli`, `test` |
+| `definition` | value | `editors`, `test` |
+| `hover` | value | `editors`, `test` |
+| `refactorActions` | value | `editors`, `test` |
+| `rename` | value | `editors`, `test` |
+| `signatureHelp` | value | `editors`, `test` |
 
 ## `src/manifest.ts`
 

@@ -29,7 +29,9 @@ you observed. Do NOT push anything — this command only verifies.
    - After the root `package.json` version bump run `npm run release:pin` (`scripts/bump-lockstep.ts`;
      `-- <core version>` to name one, `--dry-run` to preview, `--shim-version x.y.z` to override). It
      sets the shim's core range, the shim's version (patch + 1 when the range moves) and both
-     `server.json` versions, and the VS Code core range, printing each edit; it leaves the font pin
+     `server.json` versions, the VS Code core range, and the matching `package-lock.json` workspace
+     entries (`packages/mcp` version and range, `editors/vscode` range; edited in place, no
+     `npm install`), printing each edit; it leaves the font pin
      (`packages/font-cjk`'s own version), the extension's own version and the generated pins
      (below) alone. Then run the lockstep tests, which stay the verifier. The bullets that follow say what
      each pin is and why; the script replaces the hand edits, not the judgement about whether the

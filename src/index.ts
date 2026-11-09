@@ -13,14 +13,15 @@
  *    (below), and the lex, line-table, parse, resolve, net-area and `reroll` baseline memos
  *    (`src/lexer.ts`, `src/diagnostics.ts`, `src/parser.ts`, `src/ir.ts`,
  *    `src/analyze/net-area-memo.ts`, `src/reroll.ts`). Results are keyed by content, so a hit is
- *    byte-identical to a miss.
+ *    byte-identical to a miss. Not cleared by it: the font caches in `src/backends/font.ts` (the
+ *    resolved font path, the CJK face, per-file glyph coverage), which only the PDF/PNG backends use.
  *  - Per-resolution side tables: `WeakMap`s keyed on the `ResolvedPlan` in `src/ir/side-tables.ts`
  *    (datum tables, instance bodies, steps spent, keep state); `src/ir.ts` writes them while it
  *    resolves, everything else reads through accessors, and no serialisation can see them.
  *  - Internal IR facts: `_`-prefixed fields on the resolved IR types (`src/ir/types.ts`). They are
  *    not public API.
- *  - Global registries: `setGeometryBackend` (`src/geometry/backend.ts`), `registerHatch` and
- *    `registerBackend` (`src/registry.ts`) mutate process-wide state. The per-call `plugins`,
+ *  - Global registries: `setGeometryBackend` (`src/geometry/backend.ts`), `registerElement`,
+ *    `registerTheme`, `registerHatch` and `registerBackend` (`src/registry.ts`) mutate process-wide state. The per-call `plugins`,
  *    `hatches`, `themes` and `backend` options of {@link compile} do not; prefer them.
  *  - A new internal fact: a side table keyed on the `ResolvedPlan` (ADR 0033's keep precedent),
  *    never a new `_` field and never a new global.

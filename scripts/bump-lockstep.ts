@@ -8,7 +8,9 @@
  *     changes, the shim's own `version` (patch + 1, or `--shim-version`): the shim's baked
  *     resources refresh only with a version bump (`.claude/commands/release-check.md` § 2);
  *   - `packages/mcp/server.json`: BOTH `version` fields, set to the shim's version;
- *   - `editors/vscode/package.json`: the core dep range.
+ *   - `editors/vscode/package.json`: the core dep range;
+ *   - `package-lock.json`: the `packages/mcp` entry (version, core range) and the `editors/vscode`
+ *     entry (core range), edited in place, no `npm install` (the 1.57.0 release commit made these edits by hand).
  * NOT moved, by design: the root `package.json` version (the release PR's own edit), the
  * `@chanmeng666/archlang-font-cjk` exact pin (it equals `packages/font-cjk`'s version, which moves
  * only on a font release, never with the core; `release.yml` refuses a mismatch), `editors/vscode`'s
@@ -99,6 +101,36 @@ export function pinLockstep(
     edits.push({ file: vsRel, field: `devDependencies["${CORE}"]`, from: oldVs, to: range });
   }
   save(vsRel, vs);
+
+  // package-lock.json: the two workspace entries mirror the manifests (the 1.57.0 release commit
+  // edited them). Text edits inside each entry's block, so the rest of the lock is untouched;
+  // `npm ci` tolerates a stale lock, so only this edit and the test keep it right.
+  const lockRel = "package-lock.json";
+  let lock = read(lockRel);
+  const lockEntry = (key: string, versionTo: string | undefined, field: string): void => {
+    const start = lock.indexOf(`\n    "${key}": {`);
+    if (start < 0) throw new Error(`${lockRel}: workspace entry ${key} not found`);
+    const end = lock.indexOf("\n    }", start + 1);
+    let block = lock.slice(start, end);
+    if (versionTo !== undefined) {
+      const m = /("version": ")([^"]*)(")/.exec(block);
+      if (!m) throw new Error(`${lockRel}: ${key} has no version`);
+      if (m[2] !== versionTo) {
+        block = block.replace(/("version": ")([^"]*)(")/, `$1${versionTo}$3`);
+        edits.push({ file: lockRel, field: `${key} version`, from: m[2]!, to: versionTo });
+      }
+    }
+    const r = rangeRe.exec(block);
+    if (!r) throw new Error(`${lockRel}: ${key} has no core range`);
+    if (r[2] !== range) {
+      block = block.replace(rangeRe, `$1${range}$3`);
+      edits.push({ file: lockRel, field: `${key} ${field}`, from: r[2]!, to: range });
+    }
+    lock = lock.slice(0, start) + block + lock.slice(end);
+  };
+  lockEntry("packages/mcp", shim, "dependencies range");
+  lockEntry("editors/vscode", undefined, "devDependencies range");
+  save(lockRel, lock);
   return edits;
 }
 
@@ -110,15 +142,28 @@ function main(argv: string[]): number {
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]!;
     if (a === "--dry-run") dry = true;
-    else if (a === "--root") root = resolve(argv[++i] ?? "");
-    else if (a === "--shim-version") shimVersion = argv[++i];
-    else if (a.startsWith("-")) {
+    else if (a === "--root" || a === "--shim-version") {
+      const v = argv[++i];
+      if (v === undefined || v.startsWith("-")) {
+        process.stderr.write(`${a} needs a value\n`);
+        return 3;
+      }
+      if (a === "--root") root = resolve(v);
+      else shimVersion = v;
+    } else if (a.startsWith("-")) {
       process.stderr.write(`unknown flag ${a}\n`);
       return 3;
     } else version = a;
   }
   version ??= (JSON.parse(readFileSync(resolve(root, "package.json"), "utf8")) as { version: string }).version;
-  const edits = pinLockstep(root, version, { write: !dry, shimVersion });
+  let edits: PinEdit[];
+  try {
+    edits = pinLockstep(root, version, { write: !dry, shimVersion });
+  } catch (e) {
+    process.stderr.write(`${(e as Error).message}
+`);
+    return 3;
+  }
   for (const e of edits) {
     process.stdout.write(`${dry ? "would set" : "set"} ${e.file} ${e.field}: ${e.from} -> ${e.to}\n`);
   }
