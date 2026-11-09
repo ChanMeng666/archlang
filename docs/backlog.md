@@ -1661,6 +1661,57 @@ drawing's share of a 1280×720 viewport would fall to about 0.66, under `boot.sp
 the line into the output pane's status row first keeps both. **Gate:** the stage box is the same
 before and after the first compile; `boot.spec`'s no-JS share holds.
 
+## Website residue (Search Console fixes #640, #643, #655, 2026-11-10)
+
+Nothing here is wrong on the live site today; each is a rule that would fail on input the corpus
+does not yet hold.
+
+### WS.1 · Three copies of the fence rule, none quite CommonMark — `todo`
+
+`fenceStep` (`docs-site/link-rewrite.mjs`), the link scan in `test/docs-site-links.test.ts` and
+`headingIds` in `test/plan-constructs.test.ts` each restate the fence rule, and they differ: the
+first two accept any leading whitespace (`^\s*`), so a line indented 4+ spaces (indented code)
+opens a fence; none rejects a backtick in a backtick opener's info string, which CommonMark does.
+`test/docs-fences.test.ts` states the rule. One way: one exported rule (`^ {0,3}`, the info-string
+check) that the rewriter imports and both tests import or pin against. **Gate:** unit cases for an
+indented ```` ``` ```` and for ```` ``` a`b ````; the rewritten output of every docs page unchanged.
+
+### WS.2 · The rewriter's heading ids skip neither HTML comments nor `{#id}` — `todo`
+
+`headingIds` in `docs-site/link-rewrite.mjs` treats a `#` line inside `<!-- … -->` as a heading
+and slugs `## Title {#custom-id}` from its whole text, while the test's copy
+(`test/plan-constructs.test.ts`) does both the way VitePress 1.6.4 does. A link to an explicit id
+would be rewritten to a GitHub anchor that does not exist. Port the test's two rules (and share
+them, with WS.1). An attribute block holding more than an id (`{#a .b}`) and an explicit id that
+repeats an earlier slug are the corner cases to pin. **Gate:** unit cases for both; rewritten
+output over the docs unchanged.
+
+### WS.3 · Example-page `lastmod` misses some of what the page shows — `todo`
+
+`PAGE_INPUTS` (`playground/scripts/gen-static.mjs`) dates an example page by its newest input, but
+`playground/src/facts-line.js`, `playground/src/plan-label.js`, `playground/scripts/lean-thumb.mjs` and the compiler
+itself (`src/`, through the drawing and facts the page embeds) also change the page and are not
+listed. Adding `src/` would move every page's date at every core change, so decide first whether
+the compiler belongs (the package version may be the better signal). **Gate:** the
+`test/playground-examples-rows.test.ts` pin lists the new inputs.
+
+### WS.4 · "What this plan uses" has no row for `keep`, `import` or `style` — `todo`
+
+`playground/scripts/plan-constructs.mjs` detects constructs from `compile().ast`. No example page
+uses `keep` or `import` yet, so a detector could not be checked against a real page, and
+`docs/language-reference.md` has no heading for `style` to link to. Add each row when an example
+uses it (and, for `style`, when the reference gains its section). **Gate:**
+`test/plan-constructs.test.ts`'s anchor check covers the new rows.
+
+### WS.5 · The sidebar does not highlight "Architecture decisions" on `/adr` — `todo`
+
+The ADR index is generated as `docs-site/adr/index.md` (`docs-site/sync-docs.mjs`) and served at
+`/adr` (`html_handling: drop-trailing-slash`); the sidebar item `link: "/adr"`
+(`docs-site/.vitepress/config.ts`) is not marked active there under VitePress 1.6.4. Measure first
+which layout makes it active: if only a URL change does, that is an SEO route move needing a 301
+in `docs-site/public/_redirects`, the canonical, the breadcrumb and the sitemap updated together.
+**Gate:** an e2e case finds the item active on `/adr`; `scripts/smoke.mjs` checks the old URL.
+
 ## Stairs in the 3D preview (public-surfaces card X3, 2026-11-06)
 
 ### ST.1 · No lint compares a stair's drawn treads with its storey height — `todo`
