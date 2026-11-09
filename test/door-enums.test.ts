@@ -77,8 +77,15 @@ const CALL_SITES = [
 ];
 /** Every file the copy scan reads: the source, the call sites, the resolver and Plan JSON. */
 const FILES = [...new Set([SOURCE, ...CALL_SITES, ...IR_MODULES, ...PLAN_JSON_MODULES])];
-/** The scanned files that import the table (`grammar/tokens`), the source excepted. */
-const IMPORTERS = FILES.filter((f) => f !== SOURCE && /grammar\/tokens\.js/.test(read(f)));
+/** The scanned files that import the table (`grammar/tokens`), the source excepted. A Plan JSON
+ *  module other than its two call sites is scanned for copies but not asked to read a door value:
+ *  it may import the table for another token list (`emit.ts` reads `TITLE_FIELDS`). */
+const IMPORTERS = FILES.filter(
+  (f) =>
+    f !== SOURCE &&
+    (!PLAN_JSON_MODULES.includes(f) || CALL_SITES.includes(f)) &&
+    /grammar\/tokens\.js/.test(read(f)),
+);
 
 /**
  * The spellings a copy of a two-value set takes in this tree: a TS union or a literal
