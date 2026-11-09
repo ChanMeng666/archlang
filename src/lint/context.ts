@@ -23,6 +23,7 @@ import { makeNaming, type NameableRoom, type Naming, nameableOf } from "../namin
 import type { LintRuleset } from "./ruleset.js";
 import { voidPieces } from "../elements/void.js";
 import type { AuthoringStage } from "../stages.js";
+import { type LintWork, newLintWork } from "./work.js";
 
 /**
  * What one storey's rules need to know about the BUILDING around it. A
@@ -214,6 +215,12 @@ export interface LintContext {
    * `enclosure-budget` skip, so the report's words can say which one tripped.
    */
   skip(reason: LintSkipReason, room?: RRoom, cap?: EnclosureBudgetCap): void;
+  /**
+   * The run's work counters ({@link LintWork}, `src/lint/work.ts`): a rule adds the geometric
+   * tests it makes. An out-parameter only: what a rule returns never depends on it. A context
+   * built outside `lint()` counts into a fresh set nobody reads.
+   */
+  work: LintWork;
 }
 
 /** What {@link LintContext.at} needs off an element: where it is, and in which file. */
@@ -290,6 +297,7 @@ export function buildLintContext(
   lintRules: readonly LintRule[],
   building: BuildingContext = NO_BUILDING,
   onSkip: SkipSink = DROP_SKIP,
+  work: LintWork = newLintWork(),
 ): LintContext {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
@@ -382,5 +390,6 @@ export function buildLintContext(
       return framesMemo.get(el._instance) ?? null;
     },
     skip: onSkip,
+    work,
   };
 }

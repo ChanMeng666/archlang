@@ -1,6 +1,6 @@
 /**
  * The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing
- * budget's units and the resolved elements, as COUNTS. The budgets (`MAX_EVAL_STEPS`,
+ * budget's units and the resolved elements, and the work counters of one `lint()` run (EH2.10), as COUNTS. The budgets (`MAX_EVAL_STEPS`,
  * `MAX_DRAW_UNITS`) sit hundreds of times above every shipped plan, so an algorithmic regression of
  * several hundred times still passes them, and the bench job is time and noise. This table pins the
  * corpus's real work instead.
@@ -28,7 +28,14 @@ const table = JSON.parse(readFileSync(TABLE, "utf8")) as WorkCountsTable;
 const plans = workCountPlans();
 const RETAKE = 'with its reason: npx tsx test/work-counts-gen.ts "<why>"';
 
-const COUNTS: readonly (keyof WorkCounts)[] = ["steps", "drawUnits", "elements"];
+const COUNTS: readonly (keyof WorkCounts)[] = [
+  "steps",
+  "drawUnits",
+  "elements",
+  "leafDoorPairs",
+  "boundaryRunTests",
+  "navCells",
+];
 
 /** Holds `actual` within `recorded ± slack`; a drop inside the slack is only reported. */
 function within(name: string, count: string, actual: number, recorded: number, slack: number): void {
