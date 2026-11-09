@@ -123,7 +123,7 @@ suite("the key holds every option that changes the Scene", () => {
     lint(variant(STAR, "ask"));
     compile(STAR, { noCache: true });
     compile(STAR, { ...ANNOTATED, overlays: ["circulation"] });
-    compile(STAR, { ...ANNOTATED, theme: { wall: "#123456" } });
+    compile(STAR, { ...ANNOTATED, theme: { wallStroke: "#123456" } });
     expect(sceneMemoStats().size).toBe(1);
     const before = hits();
     expect(overlapCount(STAR)).toBe(31);

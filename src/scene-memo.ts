@@ -118,9 +118,10 @@ export function offerScene(ir: ResolvedPlan, opts: CompileOptions, runtime: Runt
  * first read: copying it would run that projection on the caller's Scene, which no lint reads.
  */
 function copyScene(scene: Scene): SharedScene {
+  const data = scene as unknown as Record<string, unknown>;
   const out: Record<string, unknown> = {};
-  for (const k of Object.keys(scene)) if (k !== "walls") out[k] = copyData((scene as Record<string, unknown>)[k]);
-  return out as SharedScene;
+  for (const k of Object.keys(data)) if (k !== "walls") out[k] = copyData(data[k]);
+  return out as unknown as SharedScene;
 }
 
 /** A deep copy of plain data (objects, arrays, primitives: all a Scene holds). */
