@@ -69,6 +69,7 @@ import { resolvePlan } from "../analyze.js";
 import { coverageLine } from "../lint/coverage.js";
 // The zero-dep levenshtein behind every "did you mean" hint the CLI prints.
 import { closest } from "../expr.js";
+import { parse } from "../parser.js";
 import { CLI_NAME } from "../manifest.js";
 import {
   type Args,
@@ -1201,7 +1202,8 @@ export function cmdLint(args: Args, io: CliIo): number {
  * plan with one top-level `let` overridden (`applyLetOverride`); with `--against` the plan is
  * the after side and the named file the before side. Exactly one is required (exit 3).
  *
- * A report is a measurement, so it exits 0 whatever broke (like `score`); a refused `--set`
+ * A report is a measurement, so it exits 0 whatever broke (like `score`), except that a side that
+ * does not parse exits 2 with its diagnostics; a refused `--set`
  * is a deterministic user error (exit 2, `E_SET_OVERRIDE`); an unreadable file exits 1.
  * `--lock <id,…>` (card B1) turns the report into a gate: exit 2 when a locked element changed
  * (`E_LOCKED_ELEMENT_CHANGED`), a lock was refused (`E_LOCK_UNNAMED`) or a side does not
@@ -1251,6 +1253,15 @@ export function cmdImpact(args: Args, io: CliIo): number {
     }
     // Each file resolves its `import`s against its own directory.
     const beforeWorld = hasAgainst ? makeNodeWorld(baseDirOf(io, args.against!)) : world;
+    // A side that does not parse cannot be compared: exit 2 with its diagnostics, so a CI gate on
+    // `impact` fails on a broken plan. (Resolve errors stay in `diagnostics.broke`.)
+    for (const side of [before, after]) {
+      const parseErrors = parse(side).diagnostics.filter((d) => d.severity === "error");
+      if (parseErrors.length === 0) continue;
+      if (args.json) emitJson(io, { ok: false, diagnostics: parseErrors.map((d) => diagnosticToJson(side, d)) });
+      else emitDiagnosticsHuman(io, side, parseErrors, args.quiet);
+      return EXIT.USER;
+    }
     const report = impact(before, after, { world, beforeWorld, ...(lock ? { lock } : {}) });
     const { ok, ...rest } = report;
     if (args.json) emitJson(io, { ok, ...(set ? { set } : {}), ...rest });

@@ -31,8 +31,8 @@ const OP3D = "test/fixtures/openplan3d/two-room-web-project.json";
 /**
  * One row per manifest command (the test checks the set equals the manifest's). `exit` for a
  * user-error input is the code the command ends with TODAY: most analysers end `EXIT.USER`; the
- * authoring and sharing commands (`fmt`, `repair`, `reroll`, `suggest`, `link`, `md`, `impact`,
- * `complete`) answer a plan that does not parse with exit 0 and say so in the envelope, and this
+ * authoring and sharing commands (`repair`, `reroll`, `suggest`, `link`, `complete`) answer a plan
+ * that does not parse with exit 0 (documented in the manifest; `fmt` and `impact` exit 2), and this
  * table pins that (`note`) so a change to either side is a finding, not an accident.
  */
 export const CASES: Record<string, Case> = {
@@ -103,8 +103,9 @@ export const CASES: Record<string, Case> = {
     ok: () => ["fmt", STUDIO, "--json"],
     user: {
       argv: (d) => ["fmt", join(d, "bad.arch"), "--json"],
-      exit: EXIT.OK,
-      note: "an unparseable source is returned unchanged",
+      // EH1.18: nothing to format in a plan that does not parse; moved 0 -> 2 so a CI step fails on it.
+      exit: EXIT.USER,
+      note: "an unparseable source is a user error: diagnostics in the envelope, nothing written",
     },
   },
   repair: {
@@ -135,8 +136,9 @@ export const CASES: Record<string, Case> = {
     ok: () => ["impact", STUDIO, "--against", STUDIO, "--json"],
     user: {
       argv: (d) => ["impact", STUDIO, "--against", join(d, "bad.arch"), "--json"],
-      exit: EXIT.OK,
-      note: "the broken side is reported in `diagnostics`",
+      // EH1.18: a CI gate on `impact` must not pass on a plan that does not parse; moved 0 -> 2.
+      exit: EXIT.USER,
+      note: "a side that does not parse is a user error: its diagnostics in the envelope",
     },
   },
   suggest: {

@@ -260,7 +260,7 @@ Totals: 378 modules in 34 directories.
 | `lint.ts` | 292 | 28 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 684 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
-| `manifest.ts` | 1212 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
+| `manifest.ts` | 1217 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
 | `markdown.ts` | 106 | 8 | Markdown embedding helpers — extract ` ```arch ` fenced blocks from a Markdown document and rewrite each to an image reference, mirroring mermaid-cli's markdown mode. | none |
 | `naming.ts` | 336 | 20 | How a lint, taste or resolver MESSAGE names a room that has no label (plan-soundness PS2.22, PS2.29), and where a thing stands on the storey. | none |
 | `next.ts` | 255 | 4 | `nextDiagnostic(input)` — the ONE thing to fix first (plan-soundness PS5.3), chosen by a fixed precedence over everything `arch validate` knows about a plan: | none |
@@ -268,7 +268,7 @@ Totals: 378 modules in 34 directories.
 | `opening-junctions.ts` | 204 | 6 | Where other walls meet a host wall's run: the measure `W_OPENING_AT_JUNCTION` reports with (`src/lint/rules/openings.ts`) and a relational opening is refused by (`E_OPENING_NIB`, ADR 0028 §5), so the warning and the refusal can never… | none |
 | `opening-relation.ts` | 1425 | 11 | Openings by relation (ADR 0028 §5): where a `door\|window\|opening` stands when its position is written against the rooms rather than against a wall. | charges the step meter |
 | `opening-schedule.ts` | 610 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
-| `parser.ts` | 1948 | 128 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
+| `parser.ts` | 1948 | 129 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
 | `pipeline.ts` | 147 | 4 | The one `compile()` pipeline: parse → link → resolve → render. | none |
 | `plan-json.ts` | 73 | 13 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
 | `registry.ts` | 504 | 81 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
@@ -353,8 +353,8 @@ Totals: 378 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `commands-analyze.ts` | 1277 | 10 | The analysis commands — `describe`, `validate` (incl. `--graph`/`--intent`), `lint`, and `score`. Render-free: they resolve/lint the plan and report facts or gate on an intent contract. Split out of the former monolithic `src/cli.ts`… | none |
-| `commands-author.ts` | 640 | 3 | The authoring/transform commands — `ast`, `complete`, `fmt`, `repair`, `fix`, `finish`, `suggest`. They parse/format/correct source (the syntactic `fix` and the geometric `repair` are a hard boundary; see ADR 0006/0011). Split out of the… | none |
+| `commands-analyze.ts` | 1288 | 10 | The analysis commands — `describe`, `validate` (incl. `--graph`/`--intent`), `lint`, and `score`. Render-free: they resolve/lint the plan and report facts or gate on an intent contract. Split out of the former monolithic `src/cli.ts`… | none |
+| `commands-author.ts` | 649 | 3 | The authoring/transform commands — `ast`, `complete`, `fmt`, `repair`, `fix`, `finish`, `suggest`. They parse/format/correct source (the syntactic `fix` and the geometric `repair` are a hard boundary; see ADR 0006/0011). Split out of the… | none |
 | `commands-import.ts` | 113 | 1 | `import` — a plan in another tool's format, as `.arch` source. One format today: `--from openplan3d` (an OpenPlan3D web project or prepared RoomPlan interchange JSON), converted by the core's pure `openPlan3dToArch()`. This file only… | none |
 | `commands-meta.ts` | 229 | 5 | The metadata / info commands — `manifest`, `spec`, `context`, `new`, `explain`. They print the CLI's own surface (manifest), the shipped language docs (spec / context), scaffold a starter plan (new), or look up an error code (explain).… | none |
 | `commands-render.ts` | 945 | 4 | The file-producing commands — `compile`, `watch`, `preview`, `batch`, `md`. They share the render/serialize core in {@link ./serialize.js}. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). | none |

@@ -224,7 +224,7 @@ $ archlang preview house.arch --view axon -o house-axon.png --json
 
 print a playground URL that opens the plan, rendered, with nothing to install
 
-**Input:** `<file.arch|->` · **Output:** the playground URL; --json gives { ok, playground, embed, bytes } (embed: the plan alone, for an iframe; bytes: the compressed plan). A plan that does not compile still gets a link: ok false with an errors count, one warning on stderr, exit 0
+**Input:** `<file.arch|->` · **Output:** the playground URL; --json gives { ok, playground, embed, bytes } (embed: the plan alone, for an iframe; bytes: the compressed plan). A plan that does not compile still gets a link: ok false with an errors count, one warning on stderr; exits 0 on a plan that does not parse, and `errors` is the diagnostic count (`archlang validate --json` lists them)
 
 | Flag | Does |
 | --- | --- |
@@ -464,7 +464,7 @@ $ archlang ast plan.arch --json
 
 completion items in scope at a source byte offset (the LSP completion() core)
 
-**Input:** `<file.arch|->` · **Output:** { items: [...] } completion items
+**Input:** `<file.arch|->` · **Output:** { items: [...] } completion items; exits 0 on a plan that does not parse (items are still offered; run `archlang validate --json` for the diagnostics)
 
 | Flag | Does |
 | --- | --- |
@@ -486,7 +486,7 @@ $ archlang complete - --at 0 --json < plan.arch
 
 canonical formatting
 
-**Input:** `<file.arch|->` · **Output:** formatted source (or in place with --write)
+**Input:** `<file.arch|->` · **Output:** formatted source (or in place with --write); exits 2 with `{ ok: false, diagnostics }` on a plan that does not parse, and --write leaves the file untouched
 
 | Flag | Does |
 | --- | --- |
@@ -509,7 +509,7 @@ $ archlang fmt plan.arch --write
 
 explicit source-to-source corrector (furniture out of walls) + change log
 
-**Input:** `<file.arch|->` · **Output:** corrected source + change log on stderr
+**Input:** `<file.arch|->` · **Output:** corrected source + change log on stderr; exits 0 on a plan that does not parse (nothing is changed; the reason is in `unresolved[]` of --json)
 
 | Flag | Does |
 | --- | --- |
@@ -603,7 +603,7 @@ $ archlang finish plan.arch --reissue -o issued.arch
 
 offer a proven-equivalent `for` loop for a repeated statement run
 
-**Input:** `<file.arch|->` · **Output:** suggestions (JSON or a summary), or the rewritten file with --write
+**Input:** `<file.arch|->` · **Output:** suggestions (JSON or a summary), or the rewritten file with --write; exits 0 on a plan that does not parse, with `suggestions: []` (run `archlang validate --json` for the diagnostics)
 
 | Flag | Does |
 | --- | --- |
@@ -627,7 +627,7 @@ $ archlang reroll plan.arch --write --json
 
 change one number: what moved and why, what held, what broke
 
-**Input:** `<file.arch|->` · **Output:** { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a refused --set or a lock that changed, was refused or could not be checked)
+**Input:** `<file.arch|->` · **Output:** { ok, set?, lets, changed[] (each with its `why` dependency chain and `root`), held[], diagnostics: { broke, healed, unchanged_count }, keeps? (when either side declares a keep: { broke, held, healed, added, removed, unchanged_count }, each { keep, grade (or { before, after } when an edit changed it), level?, occurrence, residual_mm: { before, after }, at?, changed, span }; a broken hard keep is reported here, never also under diagnostics), lock? (with --lock: { ok, checked, locked, violations[] { code, id, kind, change, detail, message, before?, after? (each { span, file? }) }, refused[] { code, id, message, hint, before?, after? } }), summary } (exit 0 on a report, 2 on a plan that does not parse (`{ ok: false, diagnostics }`), a refused --set, or a lock that changed, was refused or could not be checked)
 
 | Flag | Does |
 | --- | --- |
@@ -655,7 +655,7 @@ $ archlang impact plan.arch --against old.arch --lock shell,entry,w1,w2 --json
 
 advisory door/window statements for unreachable or windowless rooms
 
-**Input:** `<file.arch|->` · **Output:** suggestions (JSON or a summary)
+**Input:** `<file.arch|->` · **Output:** suggestions (JSON or a summary); exits 0 on a plan that does not parse, with `suggestions: []` (run `archlang validate --json` for the diagnostics)
 
 | Flag | Does |
 | --- | --- |
@@ -712,8 +712,8 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 168 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 168 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 34 KB; errors = the diagnostic catalog, 70 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 169 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 169 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 35 KB; errors = the diagnostic catalog, 70 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -725,7 +725,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (70 KB) — read one section instead of paying for the whole 168 KB bundle
+# just the diagnostic catalog (70 KB) — read one section instead of paying for the whole 169 KB bundle
 $ archlang context --section errors
 ```
 
