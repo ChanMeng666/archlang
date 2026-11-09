@@ -294,3 +294,35 @@ describe("workspace seams are an allow-list", () => {
     expect(rows.join("\n"), "regenerate: npx tsx test/workspace-seams.allow.ts").toBe(seamTable());
   });
 });
+
+/**
+ * A second `makeNodeWorld` (a `World` over the file system) is a second import-read policy: the
+ * core CLI's (`src/cli/io.ts`) is rooted, and a copy that is not roots nothing. The ones known to
+ * be unrooted are listed here with the reason, so the gap stays visible; a new copy fails until it
+ * is rooted or listed, and a listed one that is gone or renamed fails until its row is deleted.
+ */
+const CORE_WORLD = "src/cli/io.ts";
+const KNOWN_UNROOTED_WORLDS: { file: string; why: string }[] = [
+  { file: "packages/archlang-3d/src/node.ts", why: "follow-up: root it like src/cli/io.ts (EH1.16d)" },
+];
+
+describe("every makeNodeWorld is rooted or listed", () => {
+  const declares = walk(ROOT)
+    .map((f) => relative(ROOT, f).split(sep).join("/"))
+    .filter((f) => /\.(ts|mts|js|mjs)$/.test(f))
+    .filter((f) => /\bfunction\s+makeNodeWorld\b/.test(readFileSync(join(ROOT, f), "utf8")))
+    .sort();
+
+  it("the core CLI's is the one rooted copy; every other copy is in KNOWN_UNROOTED_WORLDS", () => {
+    expect(declares).toContain(CORE_WORLD);
+    expect(
+      declares.filter((f) => f !== CORE_WORLD),
+      "a makeNodeWorld outside src/cli/io.ts: root it like src/cli/io.ts or list it in KNOWN_UNROOTED_WORLDS",
+    ).toEqual(KNOWN_UNROOTED_WORLDS.map((w) => w.file).sort());
+  });
+
+  it("the 3D package's unrooted copy is listed with its follow-up", () => {
+    const row = KNOWN_UNROOTED_WORLDS.find((w) => w.file === "packages/archlang-3d/src/node.ts");
+    expect(row?.why).toBe("follow-up: root it like src/cli/io.ts (EH1.16d)");
+  });
+});

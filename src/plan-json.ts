@@ -2547,7 +2547,7 @@ export const PLAN_JSON_SCHEMA = {
         required: ["kind", "width"],
         properties: {
           instance: INSTANCE_MARKER,
-          kind: { enum: ["door", "window", "opening"], description: "Opening kind." },
+          kind: { enum: [...kindsWith("opening")], description: "Opening kind." },
           id: { type: "string", description: "Unique opening id." },
           x: { type: "number", description: "Center X in millimetres (on the wall centerline)." },
           y: { type: "number", description: "Center Y in millimetres (on the wall centerline)." },
