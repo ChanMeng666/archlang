@@ -24,8 +24,13 @@ name: Deploy (Cloudflare)
 #                            kept as one so the workflow reads the same way).
 # Then push to main (or run this workflow manually) to deploy.
 
+# Deploys wait for CI: the trigger is the completed CI run on a push to main, and a red CI
+# deploys nothing (Node 18, Node 20 and Windows run only on main pushes, so before this a red
+# there still deployed). A manual run still deploys the ref it is dispatched from.
 on:
-  push:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
     branches: [main]
   workflow_dispatch:
 
@@ -39,6 +44,7 @@ permissions:
 jobs:
   deploy:
     name: Deploy ${{ matrix.name }}
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -69,6 +75,7 @@ jobs:
       # silently collapse to the deploy commit.
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
@@ -134,6 +141,7 @@ jobs:
   # ---------------------------------------------------------------------------
   deploy-mcp:
     name: Deploy mcp (scripted Worker)
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.event == 'push' && github.event.workflow_run.conclusion == 'success') }}
     runs-on: ubuntu-latest
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -148,18 +156,21 @@ jobs:
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           fetch-depth: 0
 
       - name: Did anything the hosted MCP server bundles change?
         id: changed
         env:
           EVENT: ${{ github.event_name }}
-          BEFORE: ${{ github.event.before }}
-          AFTER: ${{ github.sha }}
+          AFTER: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           if [ "$EVENT" = "workflow_dispatch" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "manual run: deploying"; exit 0
           fi
+          # A workflow_run event carries no push `before`. Merges to main are single merge or
+          # squash commits, so the first parent is the previous main; an unresolvable parent deploys.
+          BEFORE=$(git rev-parse --verify --quiet "$AFTER^1" || true)
           if [ -z "$BEFORE" ] || ! git cat-file -e "$BEFORE^{commit}" 2>/dev/null; then
             echo "run=true" >> "$GITHUB_OUTPUT"; echo "no comparable previous commit: deploying"; exit 0
           fi
