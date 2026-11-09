@@ -16,6 +16,7 @@ import { emitOpening } from "../src/fix-producers.js";
 import { statementText } from "../src/statement-print.js";
 import { printDoc } from "../src/doc.js";
 import { archPlan } from "./arbitrary-plan.js";
+import { runs } from "./setup/fast-check.js";
 
 type OpeningLikeNode = DoorNode | WindowNode | OpeningNode;
 
@@ -60,7 +61,7 @@ function allOpenings(plan: PlanNode): OpeningLikeNode[] {
 // collect-time for an identical `fc.sample(archPlan, ...)` (vitest isolates test
 // files, so a shared cache module would not actually be shared) — 100 is still
 // comfortably enough to keep `HEIGHTS_OPENINGS` non-empty.
-const FUZZ_PLANS = fc.sample(archPlan, { numRuns: 100, seed: 20260927 });
+const FUZZ_PLANS = fc.sample(archPlan, { numRuns: runs(100), seed: 20260927 });
 const HEIGHTS_OPENINGS: OpeningLikeNode[] = FUZZ_PLANS.flatMap((src) => {
   const { plan } = parse(src);
   return plan ? allOpenings(plan) : [];

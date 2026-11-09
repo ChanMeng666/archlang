@@ -107,9 +107,10 @@ suite("wall closure, measured (G5, issue #346)", () => {
 
   it("a huge wallGapMm is clamped: the scan is a count, not the ruleset's figure", () => {
     const src = read(`${SHORT}.arch`).replace("(4000,230)", "(4000,2500)");
-    const t0 = Date.now();
+    // A scan that honoured 1e7 would walk the 2500 mm slit and report it; the clamp
+    // (MAX_WALL_GAP_SCAN_MM, 500 steps per end, not exported) stops it first. The finding's
+    // absence is the count bound; no clock is read (AGENTS.md: budgets are counts, never time).
     expect(codes(src, { wallGapMm: 1e7 })).not.toContain("W_WALL_END_SHORT");
-    expect(Date.now() - t0).toBeLessThan(2000);
     // A slit inside the clamp is still found at a huge setting.
     expect(codes(read(`${SHORT}.arch`), { wallGapMm: 1e7 })).toEqual(["W_WALL_END_SHORT"]);
   });

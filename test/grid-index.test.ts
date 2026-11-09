@@ -6,6 +6,7 @@ import { resolvePlan } from "../src/analyze.js";
 import { MAX_OVERLAP_PAIRS_LISTED, type RRoom } from "../src/ir.js";
 import { roomOverlapNamer } from "../src/naming.js";
 import { classifyLabelUses } from "../src/vocabulary.js";
+import { runs } from "./setup/fast-check.js";
 
 /** The wording of a pair, from the one builder `checkRoomOverlaps` uses (since PS2.29 a message
  *  names rooms by what the plan knows of them, never by id). These tests are about WHICH pairs
@@ -86,7 +87,7 @@ describe("room-overlap grid ≡ O(n²) (T3.7)", () => {
         }
         expect(got).toEqual(want);
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
   });
 });

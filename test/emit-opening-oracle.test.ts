@@ -23,6 +23,7 @@ import { exprToSource } from "../src/expr-source.js";
 import type { DoorHinge } from "../src/grammar/tokens.js";
 import { fmt3 as numStr } from "../src/num-format.js";
 import { archPlan } from "./arbitrary-plan.js";
+import { runs } from "./setup/fast-check.js";
 
 type OpeningKind = "door" | "window" | "opening";
 type OpeningLikeNode = DoorNode | WindowNode | OpeningNode;
@@ -169,7 +170,7 @@ const CORPUS_SOURCES: string[] = [...EXAMPLES, ...LIB, ...FIXTURES].map((p) => r
 // an identical `fc.sample(archPlan, ...)` (vitest isolates test files, so a shared
 // cache module would not actually be shared) — 100 plus the corpus below is still
 // comfortably over the non-trivial-corpus floor this file asserts.
-const FUZZ_SOURCES: string[] = fc.sample(archPlan, { numRuns: 100, seed: 20260927 });
+const FUZZ_SOURCES: string[] = fc.sample(archPlan, { numRuns: runs(100), seed: 20260927 });
 
 const ALL_OPENINGS: OpeningLikeNode[] = [...CORPUS_SOURCES, ...HAND_WRITTEN_SOURCES, ...FUZZ_SOURCES].flatMap(
   openingsIn,

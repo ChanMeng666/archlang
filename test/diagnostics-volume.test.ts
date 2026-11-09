@@ -6,6 +6,7 @@ import type { Diagnostic } from "../src/diagnostics.js";
 import { compile, describe as describePlan, ERROR_CATALOG, lint } from "../src/index.js";
 import { parse } from "../src/parser.js";
 import { lex } from "../src/lexer.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * The oracle: `offsetToLineCol` as it was before the line-start table (EH1.11) — a scan
@@ -46,7 +47,7 @@ describe("offsetToLineCol — line-start table agrees with the scan", () => {
           for (const o of offsets) expect(offsetToLineCol(src, o)).toEqual(oracle(src, o));
         },
       ),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 

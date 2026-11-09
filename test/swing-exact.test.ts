@@ -11,6 +11,7 @@ import {
 import { lint } from "../src/index.js";
 import { widestClearingWidth } from "../src/lint/rules/doors.js";
 import { swingsCollideV1 } from "./swing-predicate-v1.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 /**
  * Backlog 6.12: `swingsCollide` DECIDES whether two door swings obstruct each other, with an
@@ -154,10 +155,10 @@ describe("the superset law: every collision the old sampler found is still a col
         }
         return true;
       }),
-      { numRuns: 4000, seed: 20261001 },
+      { numRuns: runs(4000), seed: 20261001 },
     );
     // The law is not vacuous: the old predicate fired on a good share of the draws.
-    expect(oldHits).toBeGreaterThan(200);
+    expect(oldHits).toBeGreaterThan(floorAt(200));
   });
 });
 
@@ -267,10 +268,10 @@ describe("the decision agrees with an independent oracle (polygon clipping + edg
         const inner = polygonArea(clipConvex(sectorPolygon(a, false), sectorPolygon(b, false)));
         return inner < 1e-2 && contact <= 1e-6;
       }),
-      { numRuns: 1500, seed: 20261001 },
+      { numRuns: runs(1500), seed: 20261001 },
     );
-    expect(obstruct).toBeGreaterThan(100);
-    expect(clear).toBeGreaterThan(100);
+    expect(obstruct).toBeGreaterThan(floorAt(100));
+    expect(clear).toBeGreaterThan(floorAt(100));
   });
 });
 
@@ -314,7 +315,7 @@ describe("the narrowing hint's bisection equals a brute force over every width",
           return monotone && widestClearingWidth(d, grid, clears) === expected;
         },
       ),
-      { numRuns: 400, seed: 20261001 },
+      { numRuns: runs(400), seed: 20261001 },
     );
   });
 

@@ -38,6 +38,7 @@ import {
 } from "../src/diff.js";
 import { describe as describePlan } from "../src/describe.js";
 import { planSpec, renderPlan, type PlanSpec } from "./arbitrary-plan.js";
+import { runs } from "./setup/fast-check.js";
 
 const fx = (name: string) => readFileSync(join(__dirname, "fixtures", name), "utf8");
 const A = fx("diff-a.arch");
@@ -268,7 +269,7 @@ describe("diffPlans — reflexivity", () => {
   }
 
   it("holds over fc.sample(planSpec)", () => {
-    for (const spec of fc.sample(planSpec, { numRuns: 40, seed: 20260927 })) {
+    for (const spec of fc.sample(planSpec, { numRuns: runs(40), seed: 20260927 })) {
       const src = renderPlan(spec);
       const d = diffPlans(src, src);
       expect(d.ok).toBe(true);
@@ -347,7 +348,7 @@ describe("diffPlans — antisymmetry over fast-check-mutated pairs", () => {
         fc.pre(ab.ok && ba.ok);
         assertAntisymmetric(ab, ba);
       }),
-      { numRuns: 60 },
+      { numRuns: runs(60) },
     );
   });
 
@@ -371,7 +372,7 @@ describe("diffPlans — antisymmetry over fast-check-mutated pairs", () => {
           checkAntisymmetry(a, b);
         },
       ),
-      { numRuns: 30 },
+      { numRuns: runs(30) },
     );
   });
 });
@@ -520,7 +521,7 @@ describe("diffPlans — auto-id rooms under insertion, deletion and permutation"
           }),
         );
       }),
-      { numRuns: 120, seed: 20261001 },
+      { numRuns: runs(120), seed: 20261001 },
     );
   });
 
@@ -538,7 +539,7 @@ describe("diffPlans — auto-id rooms under insertion, deletion and permutation"
           expect(d.summary).toEqual([]);
         },
       ),
-      { numRuns: 60, seed: 20261001 },
+      { numRuns: runs(60), seed: 20261001 },
     );
   });
 
@@ -556,7 +557,7 @@ describe("diffPlans — auto-id rooms under insertion, deletion and permutation"
           expect(d.summary).toEqual([]);
         }
       }),
-      { numRuns: 40, seed: 20261001 },
+      { numRuns: runs(40), seed: 20261001 },
     );
   });
 
@@ -570,7 +571,7 @@ describe("diffPlans — auto-id rooms under insertion, deletion and permutation"
         const back = diffPlans(autoIdPlan(withNew), autoIdPlan(rest));
         expect(back.rooms).toEqual([{ id: "room_1", label: "R0", change: "removed", areaBeforeM2: 9 }]);
       }),
-      { numRuns: 30, seed: 20261001 },
+      { numRuns: runs(30), seed: 20261001 },
     );
   });
 });
@@ -683,7 +684,7 @@ describe("diffPlans — mixed authored/auto ids, unique and repeated labels", ()
           }),
         );
       }),
-      { numRuns: 200, seed: 20261003 },
+      { numRuns: runs(200), seed: 20261003 },
     );
   });
 
@@ -698,7 +699,7 @@ describe("diffPlans — mixed authored/auto ids, unique and repeated labels", ()
           expect(d.summary).toEqual([]);
         }
       }),
-      { numRuns: 60, seed: 20261003 },
+      { numRuns: runs(60), seed: 20261003 },
     );
   });
 
@@ -732,7 +733,7 @@ describe("diffPlans — mixed authored/auto ids, unique and repeated labels", ()
         expect(touched).toEqual([]);
         expect(d.rooms.length).toBeLessThanOrEqual(p.a.length + p.b.length - 2 * kept.size);
       }),
-      { numRuns: 120, seed: 20261003 },
+      { numRuns: runs(120), seed: 20261003 },
     );
   });
 });

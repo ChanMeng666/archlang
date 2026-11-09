@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { hostInfoForWalls, hostSegmentForWalls, isOnSomeWall, WallGrid, type WallLike } from "../src/geometry.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * The fused single-pass hostInfoForWalls() must stay byte-identical to the
@@ -31,7 +32,7 @@ describe("hostInfoForWalls — equivalence with the original two functions", () 
           expect(fused.onWall).toBe(isOnSomeWall(walls, at, ref));
         },
       ),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -63,7 +64,7 @@ describe("WallGrid — equivalence with brute-force hostInfoForWalls (T3.7)", ()
           expect(viaGrid.host).toEqual(brute.host);
         },
       ),
-      { numRuns: 600 },
+      { numRuns: runs(600) },
     );
   });
 

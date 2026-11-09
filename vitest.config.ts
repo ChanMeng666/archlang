@@ -31,6 +31,8 @@ export default defineConfig({
       "editors/vscode/test/**/*.test.ts",
     ],
     environment: "node",
+    // fast-check run policy: `FC_SCALE` scales every property's run count (header of the file).
+    setupFiles: ["./test/setup/fast-check.ts"],
     // `--shard` balances by recorded duration, not by path hash (header of test/sequencer.ts).
     sequence: { sequencer: DurationSequencer },
     // Coverage is REPORT-ONLY and deliberately has NO thresholds: it is a map of

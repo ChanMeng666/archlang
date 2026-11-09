@@ -6,6 +6,7 @@ import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { compile, planFromJson, planToJson } from "../src/index.js";
 import { MUTATION_KINDS, type MutationKind, applyMutations, mutationsArb, protoSnapshot } from "./json-mutate.js";
 import { CANNOT_ROUND_TRIP } from "./plan-json-gaps.js";
+import { runs as scaledRuns } from "./setup/fast-check.js";
 
 /**
  * Malformed Plan JSON never throws (EH1.10, T-F3 / S-FZ-5).
@@ -157,7 +158,7 @@ describe("malformed Plan JSON", () => {
         const bad = check(value);
         if (bad) throw new Error(`${doc.name}: ${applied.join("; ")}\n${bad}`);
       }),
-      { seed: SEED, numRuns: NUM_RUNS },
+      { seed: SEED, numRuns: scaledRuns(NUM_RUNS) },
     );
     console.info(`plan-json-malformed mutation histogram: ${JSON.stringify(Object.fromEntries(histogram))}`);
     console.info(

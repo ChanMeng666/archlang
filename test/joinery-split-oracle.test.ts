@@ -56,6 +56,7 @@ import type { RWall } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { makeVirtualWorld } from "../src/index.js";
 import { angledWalls, rectilinearWalls, renderWalls } from "./arbitrary-joinery.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 /* ---------------------------------------------------------------------------
  * The oracles: the replaced code, verbatim
@@ -223,7 +224,7 @@ const boxesOverlap = (a: Edge, b: Edge): boolean => {
 const generated = (seed: number): Input[] =>
   [rectilinearWalls, angledWalls].flatMap((arb, k) =>
     fc
-      .sample(arb, { numRuns: 300, seed: seed + k })
+      .sample(arb, { numRuns: runs(300), seed: seed + k })
       .map((specs, i) => ({ name: `gen ${k}:${i}`, ...renderWalls(specs) })),
   );
 const GENERATED = generated(41);
@@ -300,9 +301,9 @@ describe("crossPoints with the axis-aligned shortcut equals crossPoints without 
         if (takesShortcut(a, b)) shortcut++;
         expect(bitDiff(crossPoints(a, b), crossPointsBefore(a, b))).toBeNull();
       }),
-      { numRuns: 20_000, seed: 7 },
+      { numRuns: runs(20_000), seed: 7 },
     );
-    expect(shortcut).toBeGreaterThan(2000);
+    expect(shortcut).toBeGreaterThan(floorAt(2000));
   });
 });
 
@@ -424,7 +425,7 @@ describe("a fill that reads as the outline reuses its loops, and they are the ge
         reused++;
       }
     }
-    expect(reused).toBeGreaterThan(100);
+    expect(reused).toBeGreaterThan(floorAt(100));
   });
 
   it("leaves a multi-material plan's fills on the general pass", () => {

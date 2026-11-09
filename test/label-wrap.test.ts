@@ -39,6 +39,7 @@ import type { RenderSizes, SceneNode, ScenePrim } from "../src/scene.js";
 import { textExtent, textLines } from "../src/text-layout.js";
 import { toDxf } from "../src/export/dxf.js";
 import { NULL_WORLD, type World } from "../src/world.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 type Text = Extract<ScenePrim, { t: "text" }>;
 
@@ -314,11 +315,11 @@ describe("room-name wrapping against the previous implementation", () => {
           law("generated", src, NULL_WORLD, t);
         },
       ),
-      { numRuns: 120, seed: 4242 },
+      { numRuns: runs(120), seed: 4242 },
     );
     // Not vacuous: plenty of names wrapped, and plenty did not.
-    expect(t.wrapped).toBeGreaterThan(40);
-    expect(t.plans).toBe(120);
+    expect(t.wrapped).toBeGreaterThan(floorAt(40));
+    expect(t.plans).toBe(runs(120));
   }, 600_000);
 
   it("polygon and circle rooms: the law holds", () => {

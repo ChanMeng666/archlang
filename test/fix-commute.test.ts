@@ -21,6 +21,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { applyFixes } from "../src/index.js";
 import type { Applicability, FixSuggestion } from "../src/index.js";
+import { runs } from "./setup/fast-check.js";
 
 /** Build a single-edit, machine-applicable suggestion (the `test/fix-apply.test.ts`
  *  helper, repeated here so this file has no cross-file coupling). */
@@ -79,7 +80,7 @@ describe("applyFixes — disjoint fixes commute", () => {
           expect(new Set(r.applied)).toEqual(new Set(suggestions));
         },
       ),
-      { numRuns: 100 },
+      { numRuns: runs(100) },
     );
   });
 });
@@ -113,7 +114,7 @@ describe("applyFixes — an identical duplicate is idempotent", () => {
           expect(reversed.skipped).toEqual([]);
         },
       ),
-      { numRuns: 100 },
+      { numRuns: runs(100) },
     );
   });
 });
@@ -153,7 +154,7 @@ describe("applyFixes — of two overlapping fixes, exactly one applies, determin
           }
         },
       ),
-      { numRuns: 100 },
+      { numRuns: runs(100) },
     );
   });
 });

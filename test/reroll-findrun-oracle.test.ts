@@ -31,6 +31,7 @@ import {
   isArithmeticProgression as newIsArithmeticProgression,
   rerollWith,
 } from "../src/reroll.js";
+import { runs } from "./setup/fast-check.js";
 
 // ======================================================================================
 // ORACLE — verbatim from src/reroll.ts before the linear findRun (feat/math-robustness
@@ -483,7 +484,7 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
           }
         }
       }),
-      { numRuns: 300 },
+      { numRuns: runs(300) },
     );
     // Not vacuous: runs were found, and some only after the old search shrank the window.
     expect(found).toBeGreaterThan(0);
@@ -502,7 +503,7 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
           if (want) found++;
         }
       }),
-      { numRuns: 5000 },
+      { numRuns: runs(5000) },
     );
     expect(found).toBeGreaterThan(0);
   });
@@ -521,7 +522,7 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
         for (const p of pairs) expect(p!.length).toBe(whole.length);
         expect(rebuilt).toEqual(whole);
       }),
-      { numRuns: 5000 },
+      { numRuns: runs(5000) },
     );
   });
 
@@ -546,7 +547,7 @@ describe("findRun — linear forward pass equals the old shrinking search", () =
         ap++;
         for (let m = 2; m <= vs.length; m++) expect(newIsArithmeticProgression(vs.slice(0, m))).toBe(true);
       }),
-      { numRuns: 5000 },
+      { numRuns: runs(5000) },
     );
     expect(ap).toBeGreaterThan(0);
   });
@@ -559,7 +560,7 @@ describe("reroll() — identical suggestions with the new finder and with the or
       fc.property(archSource, (src) => {
         expect(reroll(src)).toEqual(rerollWith(src, {}, oracleFindRun));
       }),
-      { numRuns: 60 },
+      { numRuns: runs(60) },
     );
   });
 
@@ -573,7 +574,7 @@ describe("reroll() — identical suggestions with the new finder and with the or
         expect(got).toEqual(rerollWith(src, {}, oracleFindRun));
         offered += got.length;
       }),
-      { numRuns: 60, seed: 20261027 },
+      { numRuns: runs(60), seed: 20261027 },
     );
     expect(offered).toBeGreaterThan(0);
   });

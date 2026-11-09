@@ -191,6 +191,46 @@ jobs:
         run: npm run check:drift
 
   # ---------------------------------------------------------------------------
+  # The deep property pass. A PR runs every fast-check property at its pinned count; here the
+  # fuzz and oracle files run at ten times that (`FC_SCALE`, test/setup/fast-check.ts) with NO
+  # seed override: an unseeded property draws a fresh seed, fast-check prints it with the path,
+  # and a counterexample becomes a pinned regression case (docs/testing.md § 3). Seeded
+  # properties keep their seed and just run more cases. Among `report`'s needs, so a red reaches
+  # the `ci-red` issue.
+  # ---------------------------------------------------------------------------
+  fuzz-deep:
+    name: Deep fuzz (FC_SCALE=10)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+          cache: npm
+
+      - run: npm ci
+
+      - name: Property tests at ten times the runs
+        env:
+          FC_SCALE: "10"
+        run: >
+          npx vitest run --reporter=default --reporter=json --outputFile.json=fuzz-deep-report.json
+          test/fuzz.test.ts test/escape-fuzz.test.ts test/equivariance-fuzz.test.ts
+          test/frame.test.ts test/reroll-findrun-oracle.test.ts test/plan-json-malformed.test.ts
+          test/openplan3d-malformed.test.ts
+
+      - name: Upload the report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: fuzz-deep-report
+          path: fuzz-deep-report.json
+          if-no-files-found: ignore
+
+  # ---------------------------------------------------------------------------
   # Coverage of `src/` (REPORT-ONLY). It used to run on ci.yml's Node 22 leg, where the
   # instrumented suite (≈ 43 min) was every PR's long pole; the uninstrumented `npm test`
   # there and in `full-matrix` above stays the pass/fail signal. Nothing here gates:
@@ -438,7 +478,7 @@ jobs:
   # ---------------------------------------------------------------------------
   report:
     name: Report
-    needs: [prod-smoke, audit, secrets, full-matrix, e2e-prod, cross-engine]
+    needs: [prod-smoke, audit, secrets, full-matrix, fuzz-deep, e2e-prod, cross-engine]
     if: always()
     runs-on: ubuntu-latest
     permissions:

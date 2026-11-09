@@ -44,6 +44,7 @@ import type { World } from "../src/world.js";
 import { treadCount, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 import { symbolInk } from "../src/elements/glyph-lib.js";
 import { DEFAULT_THEME } from "../src/theme.js";
+import { runs } from "./setup/fast-check.js";
 
 const SHELL = `wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }`;
 
@@ -814,7 +815,7 @@ suite("verticalReach — the room-aware fixpoint refines the storey-level one", 
         const { levels, grounded } = synth(specs, base);
         expect(shape(verticalReach(levels, grounded))).toEqual(shape(oracleVerticalReach(levels, grounded)));
       }),
-      { numRuns: 400 },
+      { numRuns: runs(400) },
     );
   });
 
@@ -826,7 +827,7 @@ suite("verticalReach — the room-aware fixpoint refines the storey-level one", 
           shape(oracleVerticalReach(levels, grounded)),
         );
       }),
-      { numRuns: 400 },
+      { numRuns: runs(400) },
     );
   });
 
@@ -848,7 +849,7 @@ suite("verticalReach — the room-aware fixpoint refines the storey-level one", 
         for (const [n, rooms] of got.arrivalRooms) for (const r of rooms) expect(old.arrivalRooms.get(n)).toContain(r);
         if (got.reachable.size < old.reachable.size) pruned++;
       }),
-      { numRuns: 400 },
+      { numRuns: runs(400) },
     );
     expect(pruned).toBeGreaterThan(0); // the generator really produced dead stops
   });

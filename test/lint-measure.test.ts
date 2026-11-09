@@ -3,6 +3,7 @@ import fc from "fast-check";
 import { approachGapMm, deficitMm, distPointToRect, frontGapMm, mm, shortfall } from "../src/lint/measure.js";
 import { frontClearanceRect } from "../src/analyze.js";
 import type { BBox } from "../src/geometry/rect.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * Direct coverage of `src/lint/measure.ts` — the measured half of the four advisory
@@ -69,7 +70,7 @@ describe("mm — millimetre rounding into diagnostic prose", () => {
       fc.property(fc.double({ min: -1e9, max: 1e9, noNaN: true, noDefaultInfinity: true }), (n) => {
         expect(mm(n)).toMatch(/^(0|-?[1-9]\d*)$/);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -80,7 +81,7 @@ describe("mm — millimetre rounding into diagnostic prose", () => {
         // instead of failing on the sign of zero, which mm() has deliberately erased.
         expect(Number(mm(n)) === Math.round(n)).toBe(true);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -111,7 +112,7 @@ describe("shortfall — how far `required` exceeds `available`", () => {
       fc.property(mmInt(), mmInt(), (required, available) => {
         expect(shortfall(required, available)).toBeGreaterThanOrEqual(0);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -120,7 +121,7 @@ describe("shortfall — how far `required` exceeds `available`", () => {
       fc.property(mmInt(), mmInt(), (required, available) => {
         expect(shortfall(required, available) === 0).toBe(available >= required);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -133,7 +134,7 @@ describe("shortfall — how far `required` exceeds `available`", () => {
       fc.property(mmInt(), mmInt(), (r, a) => {
         expect(shortfall(r, a) - shortfall(a, r)).toBe(r - a);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -142,7 +143,7 @@ describe("shortfall — how far `required` exceeds `available`", () => {
       fc.property(extent(), extent(), (required, available) => {
         expect(required - shortfall(required, available)).toBe(Math.min(required, available));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -152,7 +153,7 @@ describe("shortfall — how far `required` exceeds `available`", () => {
         const [lo, hi] = a1 <= a2 ? [a1, a2] : [a2, a1];
         expect(shortfall(required, lo)).toBeGreaterThanOrEqual(shortfall(required, hi));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -223,7 +224,7 @@ describe("distPointToRect — point to the nearest point of an axis-aligned rect
       fc.property(mmInt(), mmInt(), box(), (x, y, r) => {
         expect(distPointToRect({ x, y }, r)).toBeGreaterThanOrEqual(0);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -233,7 +234,7 @@ describe("distPointToRect — point to the nearest point of an axis-aligned rect
         const inside = x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h;
         expect(distPointToRect({ x, y }, r) === 0).toBe(inside);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -243,7 +244,7 @@ describe("distPointToRect — point to the nearest point of an axis-aligned rect
         const moved: BBox = { ...r, x: r.x + dx, y: r.y + dy };
         expect(distPointToRect({ x: x + dx, y: y + dy }, moved)).toBe(distPointToRect({ x, y }, r));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -255,7 +256,7 @@ describe("distPointToRect — point to the nearest point of an axis-aligned rect
         const flipped: BBox = { ...r, x: -(r.x + r.w) };
         expect(distPointToRect({ x: -x, y }, flipped)).toBe(distPointToRect({ x, y }, r));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -268,7 +269,7 @@ describe("distPointToRect — point to the nearest point of an axis-aligned rect
         const b = distPointToRect({ x: r.x + r.w + far, y }, r);
         expect(b).toBeGreaterThanOrEqual(a);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });
@@ -315,7 +316,7 @@ describe("approachGapMm — clear landing depth on one side of an opening", () =
         expect(gap).toBeGreaterThanOrEqual(0);
         expect(gap).toBeLessThanOrEqual(depth);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -326,7 +327,7 @@ describe("approachGapMm — clear landing depth on one side of an opening", () =
         const hi = lo + span;
         expect(approachGapMm(line, 0, lo, hi, depth + 1) === 0).toBe(lo <= line && line <= hi);
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -338,7 +339,7 @@ describe("approachGapMm — clear landing depth on one side of an opening", () =
         const hi = lo + span;
         expect(approachGapMm(-line, 0, -hi, -lo, depth)).toBe(approachGapMm(line, 0, lo, hi, depth));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 
@@ -350,7 +351,7 @@ describe("approachGapMm — clear landing depth on one side of an opening", () =
         const at = (d: number) => approachGapMm(line, 0, line + d, line + d + span, 1_000);
         expect(at(far)).toBeGreaterThanOrEqual(at(near));
       }),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });
@@ -424,7 +425,7 @@ describe("frontGapMm — clear depth in a fixture's frontal use-space", () => {
           expect(frontGapMm(fixture, zone, blocker, clearance)).toBe(Math.min(d, clearance));
         },
       ),
-      { numRuns: 600 },
+      { numRuns: runs(600) },
     );
   });
 
@@ -446,7 +447,7 @@ describe("frontGapMm — clear depth in a fixture's frontal use-space", () => {
           expect(gap).toBeLessThanOrEqual(clearance);
         },
       ),
-      { numRuns: 500 },
+      { numRuns: runs(500) },
     );
   });
 });

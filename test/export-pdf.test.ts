@@ -65,7 +65,7 @@
  */
 
 import { inflateSync } from "node:zlib";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { layoutChrome } from "../src/chrome-layout.js";
 import { compile } from "../src/index.js";
 import { resolve } from "../src/ir.js";
@@ -217,12 +217,18 @@ function mediaBox(pdf: Uint8Array): [number, number] {
  */
 const pdfBytes = (pdf: Uint8Array) => new TextDecoder("latin1").decode(pdf);
 
-/** Busy-wait until the wall clock crosses into the next second (bounded by 1s). */
-function crossSecondBoundary(): void {
-  const start = Math.floor(Date.now() / 1000);
-  while (Math.floor(Date.now() / 1000) === start) {
-    /* spin — pdfkit's default CreationDate has second granularity, so this is the
-       separation that used to make two renders differ in the Info dict as well as /ID */
+/**
+ * Run `f` with `Date` frozen at `iso`: two renders at distinct instants without waiting for a
+ * clock to move (pdfkit's default CreationDate has second granularity, so a second apart is the
+ * separation that used to make two renders differ in the Info dict as well as /ID).
+ */
+async function atInstant<T>(iso: string, f: () => Promise<T>): Promise<T> {
+  vi.useFakeTimers({ toFake: ["Date"] });
+  vi.setSystemTime(new Date(iso));
+  try {
+    return await f();
+  } finally {
+    vi.useRealTimers();
   }
 }
 
@@ -373,12 +379,11 @@ describe("PDF export", () => {
 
   describe("determinism", () => {
     it("the WHOLE FILE is byte-identical across two renders, over a wall-clock second", async () => {
-      const a = await toPdf(scene);
+      const a = await atInstant("2024-03-05T10:00:00.400Z", () => toPdf(scene));
       // The separation that used to break this: pdfkit's default `Info /CreationDate`
       // has second granularity, so two renders inside one second differed only in the
       // ms-derived trailer `/ID`. Crossing the boundary moves BOTH fields.
-      crossSecondBoundary();
-      const b = await toPdf(scene);
+      const b = await atInstant("2024-03-05T10:00:01.700Z", () => toPdf(scene));
 
       expect(a.length).toBe(b.length);
       const differing: number[] = [];
