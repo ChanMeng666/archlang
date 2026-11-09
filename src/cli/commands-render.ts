@@ -156,7 +156,7 @@ export async function cmdCompile(args: Args, io: CliIo): Promise<number> {
 
   // A multi-storey plan (`level` blocks) renders one artifact per storey unless `--level`
   // narrows it to one; a single-storey plan is unaffected by either.
-  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "all"), rv.view);
+  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "all"), rv.view, io);
   if (r.badLevel) return unknownLevel(io, "compile", args.level!, r.levels);
 
   if (r.error) {
@@ -508,7 +508,7 @@ async function cmdPreviewAscii(io: CliIo, args: Args, input: string): Promise<nu
   } catch {
     return ioError(io, `cannot read ${input}`, args.json, { format });
   }
-  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "first"));
+  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "first"), undefined, io);
   if (r.badLevel) return unknownLevel(io, "preview", args.level!, r.levels);
   if (r.bytes === undefined) {
     if (args.json)
@@ -576,7 +576,7 @@ export async function cmdPreview(args: Args, io: CliIo, preread?: string): Promi
 
   // Multi-storey: preview the storey `--level` names, else the lowest (page 1). With
   // `--view` there is one page — the whole building — so `--level` has nothing to narrow.
-  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "first"), rv.view);
+  const r = await renderArtifact(source, format, args, baseDirOf(io, input), pageSelect(args, "first"), rv.view, io);
   if (r.badLevel) return unknownLevel(io, "preview", args.level!, r.levels);
 
   if (r.error) {
@@ -703,6 +703,7 @@ async function cmdPreviewReview(io: CliIo, args: Args, input: string): Promise<n
   let bytes: Uint8Array;
   try {
     bytes = await runWithInstall(
+      io,
       () =>
         renderPngFromSvg(sheet.svg, {
           scale,
@@ -872,7 +873,7 @@ export async function cmdMd(args: Args, io: CliIo): Promise<number> {
 
   for (const b of blocks) {
     const imgName = `${outBase}-${b.index + 1}.${format}`;
-    const r = await renderArtifact(b.source, format, args, baseDir);
+    const r = await renderArtifact(b.source, format, args, baseDir, "first", undefined, io);
     if (r.error || r.bytes === undefined) {
       images.push({
         input: `block ${b.index + 1}`,

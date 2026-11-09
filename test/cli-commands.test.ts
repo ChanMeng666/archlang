@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildManifest, compile, describe as describePlan } from "../src/index.js";
-import { runArch } from "./helpers/cli.js";
+import { ARCH_ARGV, type CliRun, runArch, spawnArch } from "./helpers/cli.js";
 
 /**
  * End-to-end execution of the three shipped commands no test ever invoked:
@@ -21,20 +21,13 @@ import { runArch } from "./helpers/cli.js";
  * for twenty-five releases. It is the one RESIDENT command, so it is driven with an
  * async `spawn` and bounded polls rather than `spawnSync` — see that block's docblock.
  *
- * `fmt`, `manifest` and `watch`'s usage errors run the CLI in-process (`test/helpers/cli.ts`);
- * the resident `watch` cases spawn the real binary, because only a process can stay alive.
+ * `fmt` and `manifest` run the CLI in-process (`test/helpers/cli.ts`); every `watch` case spawns the
+ * real binary, because what it proves is the process: that it stays alive, or that it exits.
  */
 
-interface Run {
-  status: number | null;
-  signal: NodeJS.Signals | null;
-  stdout: string;
-  stderr: string;
-}
-
-/** In-process, so no signal can end a run: `signal` is always `null` (a run that stayed resident throws instead). */
-async function run(args: string[], input?: string): Promise<Run> {
-  return { ...(await runArch(args, { input })), signal: null };
+/** In-process (`test/helpers/cli.ts`). */
+function run(args: string[], input?: string): Promise<CliRun> {
+  return runArch(args, { input });
 }
 
 const tmpDir = (): string => mkdtempSync(join(tmpdir(), "arch-cmd-"));
@@ -153,7 +146,7 @@ interface Child {
  * observed with `spawnSync`, which by definition only returns once it is over.
  */
 function start(args: string[]): Child {
-  const child = spawn(process.execPath, ["--import", "tsx", "src/cli.ts", ...args], {
+  const child = spawn(process.execPath, [...ARCH_ARGV, ...args], {
     cwd: process.cwd(),
     stdio: ["ignore", "pipe", "pipe"],
   });
@@ -461,14 +454,16 @@ describe("CLI — watch", () => {
     }
   }, 240000);
 
-  it("refuses a missing path and stdin with exit 3", async () => {
-    const none = await run(["watch"]);
+  it("refuses a missing path and stdin with exit 3", () => {
+    // Spawned, with a timeout: what this proves is that a refused `watch` EXITS the process. A run
+    // that stayed resident is killed at the timeout and comes back with a signal, not exit 3.
+    const none = spawnArch(["watch"], { timeout: 30_000 });
     expect(none.status).toBe(3);
     expect(none.stderr).toContain("watch needs a file path");
 
     // `-` cannot be re-read on every save, so it is a usage error, not a one-shot compile.
     // This is the path that must STILL exit even though the command is resident on success.
-    const stdin = await run(["watch", "-"], MESSY);
+    const stdin = spawnArch(["watch", "-"], { input: MESSY, timeout: 30_000 });
     expect(stdin.status).toBe(3);
     expect(stdin.stderr).toContain("watch needs a file path");
     expect(stdin.signal).toBe(null);

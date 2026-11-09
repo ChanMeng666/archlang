@@ -17,6 +17,7 @@ paths:
   after a large `--json` write truncates piped stdout (Node 22 on Linux cut `context --json` at ~145 KB).
 - A manifest edit moves `docs/cli-reference.md` and `llms-full.txt` — `npm run gen:all` (`gen:llms`
   measures the bundle size the `context` help states, then `gen:cli`), never hand-edit.
-- Commands write through the `CliIo` they are handed (`io.stdout`/`io.stderr`/`io.readStdin()`), never
-  `process.stdout`/`stderr`/`stdin`/`exit`: only `src/cli.ts` and `nodeIo()` touch the process
-  (`test/cli-io-seam.test.ts`). Tests run the CLI with `runArch` (`test/helpers/cli.ts`), not a spawn.
+- Commands and helpers write through `CliIo` (`io.stdout`/`stderr`/`readStdin()`/`env`/`cwd()`);
+  only `nodeIo()`, the `--install` banner and `makeNodeWorld`'s default root touch the process,
+  allow-listed in `test/cli-io-seam.test.ts`. Tests run the CLI with `runArch`
+  (`test/helpers/cli.ts`), not a spawn.

@@ -32,10 +32,10 @@ export const EXIT = { OK: 0, INTERNAL: 1, USER: 2, USAGE: 3, STALE: 4 } as const
  * The one non-exit-code a command may return: "I have installed a handle and the
  * process is now MINE — do not exit."
  *
- * Every dispatch arm in `src/cli.ts` ends in `process.exit(...)`, which is right for
- * a one-shot command and fatal for a resident one: `watch` would announce itself and
- * then be killed by its own dispatcher if "returned `EXIT.OK`" and "finished" were
- * the same thing.
+ * Every dispatch arm of `runCli` (`src/cli/run.ts`) hands its code to `src/cli.ts`, which
+ * ends the process with it — right for a one-shot command and fatal for a resident one:
+ * `watch` would announce itself and then be killed by its own entry point if "returned
+ * `EXIT.OK`" and "finished" were the same thing.
  *
  * This sentinel separates them at the only moment the distinction is known — inside
  * the command, right after the handle is installed — instead of leaving the caller to
@@ -80,7 +80,8 @@ export interface CliIo {
 /**
  * The real process as a {@link CliIo}. Each write goes to `process.stdout`/`process.stderr` as
  * it is made (looked up per call, so a caller that swaps `process.stdout.write` still sees it);
- * this and `src/cli.ts` are the only places the CLI touches those streams.
+ * with `src/cli.ts` and the `--install` banner, the only places the CLI touches the process
+ * (`test/cli-io-seam.test.ts` holds the list).
  */
 export function nodeIo(): CliIo {
   return {
@@ -187,7 +188,7 @@ export interface Args {
   view?: string;
   /** `--import-root <dir>`: the directory an `import` may read from (default: the working directory). */
   importRoot?: string;
-  /** `--help`/`-h`: print the command's help instead of running it (handled in `main`). */
+  /** `--help`/`-h`: print the command's help instead of running it (handled in `runCli`). */
   help?: boolean;
   /** Tokens that look like flags but this command does not accept — `main` exits 3 on any. */
   unknownFlags?: string[];
@@ -355,15 +356,16 @@ export function readInput(io: CliIo, path: string): string {
 }
 
 /**
- * The directory `--import-root` named for this process, set once by `main()` before any command
- * runs (so every command that compiles honours it without threading it through each call site);
- * `undefined` means the working directory.
+ * The directory `--import-root` named for this run, set by `runCli` (`src/cli/run.ts`) before
+ * the command runs and cleared after a run that does not stay resident (so every command that
+ * compiles honours it without threading it through each call site); `undefined` means the
+ * working directory.
  */
 let importRootFlag: string | undefined;
 
 /**
  * Set the import root from `--import-root` (EH-D7). Returns an error message when `dir` is not an
- * existing directory, so `main()` can refuse it as a usage error before anything compiles.
+ * existing directory, so `runCli` can refuse it as a usage error before anything compiles.
  */
 export function setImportRoot(dir: string | undefined): string | null {
   if (dir === undefined) {
@@ -411,7 +413,9 @@ function nearestRealAncestor(p: string): string | null {
 
 /**
  * A real-filesystem {@link World}: imports resolve against `baseDir`; `now` is the wall clock.
- * The one spot Node APIs + real time are allowed.
+ * The one spot Node APIs + real time are allowed. Tests and scripts build one with no `CliIo`, so
+ * the default root is the process directory, read here (allow-listed in
+ * `test/cli-io-seam.test.ts`); `runArch` keeps the process directory equal to `io.cwd()`.
  *
  * An import is ROOTED (EH-D7): it is read only when its real path (symbolic links and junctions
  * followed) lies under `root` (`--import-root`, else the working directory) or under `baseDir`
@@ -730,9 +734,9 @@ export function usageError(io: CliIo, msg: string): number {
 }
 
 /**
- * The exit-3 shape `main` uses for a rejected flag: `error: <msg>` followed by the
+ * The exit-3 shape `runCli` uses for a rejected flag: `error: <msg>` followed by the
  * manifest-derived `usage:` echo and the `--help` pointer. Exported so a command that
- * rejects a flag *combination* (which `main` cannot see, because it is not an unknown
+ * rejects a flag *combination* (which `runCli` cannot see, because it is not an unknown
  * token) reports it in exactly the same way — one usage-error path, not two.
  */
 export function usageErrorFor(io: CliIo, command: string, msg: string): number {
