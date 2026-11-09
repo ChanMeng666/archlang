@@ -62,6 +62,10 @@ source (.arch)
 
 ## Module map (`src/`)
 
+The public surface (every export of `src/index.ts`, its declaring module and in-repo consumers) is
+the generated [`public-surface.md`](public-surface.md) (`npm run gen:surface`); the process-wide
+state behind it is described in the `src/index.ts` header.
+
 - `describe.ts` semantic summary · `lint.ts` + `lint/` soundness rules · `analyze.ts` +
   `analyze/` shared resolve + circulation/occupancy grids
 - `analyze/rooms.ts` room box/ring/area, point-in-room and room-use leaves · `analyze/connectors.ts` which rooms a door or opening joins and which room a window serves; both import no `ir.ts` value (`test/no-value-cycles.test.ts`), re-exported from `analyze.ts`
