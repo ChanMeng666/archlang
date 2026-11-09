@@ -108,6 +108,8 @@ export function runCompileJob(req: CompileRequest): CompileResult {
   const ok = errors.length === 0;
   const whole = describe(req.source, { noCache: true } as DescribeOptions & { noCache?: boolean });
   // Lint runs over the WHOLE plan, always (edit-mode.ts narrows the rows to the storey on screen).
+  // After the compile above, so its `annotation-overlap` reads the Scene the compile drew
+  // (`src/scene-memo.ts`) when the render has no theme and no a11y; otherwise it draws its own.
   const lintDiags =
     ok && req.lintProfile !== null
       ? lint(req.source, { profile: req.lintProfile, noCache: true } as LintOptions & { noCache?: boolean })
