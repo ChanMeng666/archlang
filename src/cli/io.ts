@@ -5,13 +5,15 @@
  * and real time are allowed here — and across `src/cli/` — the one place they are.
  */
 
-import { readFileSync, existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
-import { resolve as resolvePath, dirname, sep } from "node:path";
+import { readFileSync, existsSync, mkdirSync, realpathSync, statSync, writeFileSync } from "node:fs";
+import { resolve as resolvePath, dirname, isAbsolute, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest, ERROR_CATALOG } from "../index.js";
 import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag, ViewName } from "../index.js";
+import type { WorldRefusal } from "../world.js";
 import { VIEW_NAMES, isViewName } from "../index.js";
 import { closest } from "../expr.js";
+import { MODULE_CAP_BYTES, utf8ByteLength } from "../input-limit.js";
 import { CLI_NAME } from "../manifest.js";
 import { findCommand, usageLine } from "./help.js";
 
@@ -144,6 +146,8 @@ export interface Args {
   level?: number;
   /** `--view <iso|axon>`: (compile/preview) render the illustrative axonometric instead of the plan. */
   view?: string;
+  /** `--import-root <dir>`: the directory an `import` may read from (default: the working directory). */
+  importRoot?: string;
   /** `--help`/`-h`: print the command's help instead of running it (handled in `main`). */
   help?: boolean;
   /** Tokens that look like flags but this command does not accept — `main` exits 3 on any. */
@@ -208,6 +212,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--only": { key: "only", kind: "string" },
   "--reissue": { key: "reissue", kind: "boolean" },
   "--expected-hash": { key: "expectedHash", kind: "string" },
+  "--import-root": { key: "importRoot", kind: "string" },
   "--from-json": { key: "fromJson", kind: "boolean" },
   "--from": { key: "from", kind: "string" },
   "--feedback": { key: "feedback", kind: "boolean" },
@@ -310,17 +315,138 @@ export function readInput(path: string): string {
   return path === "-" ? readFileSync(0, "utf8") : readFileSync(resolvePath(path), "utf8");
 }
 
-/** A real-filesystem {@link World}: imports resolve against `baseDir`; `now` is the
- *  wall clock. The one spot Node APIs + real time are allowed. */
-export function makeNodeWorld(baseDir: string): World {
+/**
+ * The directory `--import-root` named for this process, set once by `main()` before any command
+ * runs (so every command that compiles honours it without threading it through each call site);
+ * `undefined` means the working directory.
+ */
+let importRootFlag: string | undefined;
+
+/**
+ * Set the import root from `--import-root` (EH-D7). Returns an error message when `dir` is not an
+ * existing directory, so `main()` can refuse it as a usage error before anything compiles.
+ */
+export function setImportRoot(dir: string | undefined): string | null {
+  if (dir === undefined) {
+    importRootFlag = undefined;
+    return null;
+  }
+  try {
+    if (dir !== "" && statSync(dir).isDirectory()) {
+      importRootFlag = resolvePath(dir);
+      return null;
+    }
+  } catch {
+    /* fall through */
+  }
+  return `--import-root "${dir}" is not a directory`;
+}
+
+/**
+ * `child` is `root` itself or lies under it (both absolute; case-insensitive on Windows via
+ * `relative`). Only a whole `..` segment leaves the root: `..evil.arch` is a file inside it, and
+ * `D:\proj2` is not under `D:\proj`.
+ */
+function isWithin(root: string, child: string): boolean {
+  const rel = relative(root, child);
+  if (rel === "") return true;
+  return rel !== ".." && !rel.startsWith("../") && !rel.startsWith("..\\") && !isAbsolute(rel);
+}
+
+const realOrNull = (p: string): string | null => {
+  try {
+    return realpathSync(p);
+  } catch {
+    return null;
+  }
+};
+
+/** The real path of `p`'s nearest existing ancestor (or of `p`), or `null` when none resolves. */
+function nearestRealAncestor(p: string): string | null {
+  for (let at = dirname(p); ; at = dirname(at)) {
+    const real = realOrNull(at);
+    if (real !== null) return real;
+    if (dirname(at) === at) return null;
+  }
+}
+
+/**
+ * A real-filesystem {@link World}: imports resolve against `baseDir`; `now` is the wall clock.
+ * The one spot Node APIs + real time are allowed.
+ *
+ * An import is ROOTED (EH-D7): it is read only when its real path (symbolic links and junctions
+ * followed) lies under `root` (`--import-root`, else the working directory) or under `baseDir`
+ * (the entry file's own directory), and ends in `.arch`, and only up to {@link MODULE_CAP_BYTES}.
+ * A refusal is not thrown: `read` returns `null` and `refusal` names the catalogued code, which
+ * the importer reports at the `import`.
+ *
+ * No existence oracle outside the roots: a path whose written form leaves them is refused before
+ * the file system is touched. A path written inside them that a link carries out is judged on
+ * real paths: the file's own when it exists, else its nearest existing ancestor's. So a missing
+ * and an existing file beyond a link both read `E_IMPORT_OUTSIDE_ROOT`; only a file missing
+ * INSIDE the roots is `E_IMPORT_NOT_FOUND`.
+ */
+export function makeNodeWorld(baseDir: string, root?: string): World {
+  const rootLexical = resolvePath(root ?? importRootFlag ?? process.cwd());
+  // The entry file's own directory is always a root too: a plan may import what sits beside or
+  // below it wherever it was started from. Each root is held as written and as its real path.
+  const roots = [rootLexical, resolvePath(baseDir)].flatMap((r) => {
+    const real = realOrNull(r);
+    return real === null ? [] : [{ lexical: r, real }];
+  });
+  const refusals = new Map<string, WorldRefusal>();
+  const outside = (path: string): WorldRefusal => ({
+    code: "E_IMPORT_OUTSIDE_ROOT",
+    message: `Imported module "${path}" is outside the import root (the working directory, or --import-root) and the plan's own directory; pass --import-root <dir> naming a directory that contains it`,
+  });
+  const notArch = (path: string): WorldRefusal => ({
+    code: "E_IMPORT_NOT_ARCH",
+    message: `Imported module "${path}" is not an .arch file`,
+  });
+  const inRoot = (abs: string): boolean => roots.some((r) => isWithin(r.lexical, abs) || isWithin(r.real, abs));
+  const inRealRoot = (real: string): boolean => roots.some((r) => isWithin(r.real, real));
+  const isArch = (p: string): boolean => /\.arch$/i.test(p);
+  const attempt = (path: string): string | WorldRefusal | null => {
+    // A NUL cannot name a file; refusing it here keeps `fs` from throwing on it.
+    if (path.includes("\0")) return null;
+    const abs = resolvePath(baseDir, path);
+    if (!inRoot(abs)) return outside(path);
+    if (!isArch(abs)) return notArch(path);
+    const real = realOrNull(abs);
+    if (real === null) {
+      const ancestor = nearestRealAncestor(abs);
+      return ancestor !== null && inRealRoot(ancestor) ? null : outside(path);
+    }
+    if (!inRealRoot(real)) return outside(path);
+    if (!isArch(real)) return notArch(path);
+    const st = statSync(real);
+    if (!st.isFile()) return null;
+    const tooLarge = (): WorldRefusal => ({
+      code: "E_IMPORT_TOO_LARGE",
+      message: `Imported module "${path}" is larger than ${String(MODULE_CAP_BYTES)} bytes`,
+    });
+    if (st.size > MODULE_CAP_BYTES) return tooLarge();
+    const text = readFileSync(real, "utf8");
+    // The file may have grown since the stat.
+    return utf8ByteLength(text) > MODULE_CAP_BYTES ? tooLarge() : text;
+  };
   return {
     read(path: string): string | null {
+      let r: string | WorldRefusal | null;
       try {
-        return readFileSync(resolvePath(baseDir, path), "utf8");
+        r = attempt(path);
       } catch {
-        return null;
+        r = null;
       }
+      if (typeof r === "string") {
+        refusals.delete(path);
+        return r;
+      }
+      if (r) refusals.set(path, r);
+      else refusals.delete(path);
+      return null;
     },
+    refusal: (path: string) => refusals.get(path),
     now: () => new Date(),
   };
 }
