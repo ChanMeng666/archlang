@@ -12,7 +12,16 @@ import { readFileSync, readdirSync } from "node:fs";
 import { afterEach, beforeEach, describe as suite, expect, it } from "vitest";
 import { clearCache, compile, lint } from "../src/index.js";
 import { resolvePlan } from "../src/analyze.js";
-import { memoScene, sceneMemoStats } from "../src/scene-memo.js";
+import type { ResolvedPlan } from "../src/ir.js";
+import { BUILTIN_RUNTIME } from "../src/registry.js";
+import {
+  memoScene,
+  offerScene,
+  SCENE_MEMO_MAX,
+  SCENE_MEMO_MAX_NODES,
+  SCENE_MEMO_MAX_SCENE_NODES,
+  sceneMemoStats,
+} from "../src/scene-memo.js";
 import { toScene } from "../src/scene-build.js";
 import type { Scene } from "../src/scene.js";
 
@@ -86,18 +95,21 @@ suite("a caller's Scene never reaches lint", () => {
     const cold = lint(STAR);
     clearCache();
     lint(variant(STAR, "ask")); // ask, as the playground's previous render did
-    const scene = compile(STAR, ANNOTATED).scene as Scene;
-    // Everything annotation-overlap reads: the nodes, their text, their shapes, the sizes.
+    const first = compile(STAR, ANNOTATED);
+    const svg = first.svg;
+    const scene = first.scene as Scene;
+    // What annotation-overlap reads of the nodes: their text, their shapes, their element.
     for (const n of scene.nodes) {
       if (n.prim.t === "text") n.prim.value = "";
       if (n.prim.t === "hatch") n.prim.region.length = 0;
       n.elementId = undefined;
     }
     scene.nodes.length = 0;
-    (scene.sizes as unknown as Record<string, number>).refDim = 1;
     const before = hits();
     expect(lint(STAR)).toEqual(cold);
     expect(hits(), "the lint read the memo, so the mutation was really tested").toBe(before + 1);
+    // And a recompile draws the same bytes.
+    expect(compile(STAR, ANNOTATED).svg).toBe(svg);
   });
 
   it("mutating a lint's own diagnostics changes nothing in the next lint", () => {
@@ -133,13 +145,60 @@ suite("the key holds every option that changes the Scene", () => {
   it("clearCache() empties it, and a fresh resolve reads no Scene drawn for another plan object", () => {
     lint(STAR);
     clearCache();
-    expect(sceneMemoStats()).toEqual({ size: 0, hits: 0 });
+    expect(sceneMemoStats()).toEqual({ size: 0, nodes: 0, hits: 0 });
     lint(STAR);
     expect(hits()).toBe(0);
   });
+});
 
-  it("is bounded", () => {
+suite("the memo is bounded by count and by weight (hosted isolates have 128 MB)", () => {
+  const ANNOTATE = { annotate: true } as const;
+  /** A storey of its own (a new IR object) and a synthetic Scene of `n` nodes drawn for it. */
+  const heavy = (tag: string, n: number): { ir: ResolvedPlan; scene: Scene } => {
+    const ir = resolvePlan(variant(STAR, tag)).ir!;
+    const drawn = toScene(ir, ANNOTATE);
+    return {
+      ir,
+      scene: { ...drawn, nodes: Array.from({ length: n }, (_, i) => drawn.nodes[i % drawn.nodes.length]!) },
+    };
+  };
+
+  it("keeps at most SCENE_MEMO_MAX Scenes", () => {
+    expect(SCENE_MEMO_MAX).toBe(4);
     for (let i = 0; i < 12; i++) lint(variant(STAR, `n${i}`));
-    expect(sceneMemoStats().size).toBe(8);
+    expect(sceneMemoStats().size).toBe(SCENE_MEMO_MAX);
+  });
+
+  it("never keeps a Scene of more than SCENE_MEMO_MAX_SCENE_NODES nodes", () => {
+    expect(SCENE_MEMO_MAX_SCENE_NODES).toBe(60_000);
+    lint(variant(STAR, "ask"));
+    const kept = sceneMemoStats();
+    const over = heavy("over", SCENE_MEMO_MAX_SCENE_NODES + 1);
+    offerScene(over.ir, ANNOTATE, BUILTIN_RUNTIME, over.scene);
+    expect(sceneMemoStats()).toEqual(kept);
+    const at = heavy("at", SCENE_MEMO_MAX_SCENE_NODES);
+    offerScene(at.ir, ANNOTATE, BUILTIN_RUNTIME, at.scene);
+    expect(sceneMemoStats().size).toBe(kept.size + 1);
+    expect(sceneMemoStats().nodes).toBe(kept.nodes + SCENE_MEMO_MAX_SCENE_NODES);
+  });
+
+  it("drops the oldest until the nodes kept are at most SCENE_MEMO_MAX_NODES", () => {
+    expect(SCENE_MEMO_MAX_NODES).toBe(150_000);
+    lint(variant(STAR, "ask")); // the oldest entry: a real Scene of a few hundred nodes
+    const ask = sceneMemoStats().nodes;
+    expect(ask).toBeGreaterThan(0);
+    const parts = ["a", "b", "c"].map((tag) => heavy(tag, 50_000));
+    for (const p of parts) offerScene(p.ir, ANNOTATE, BUILTIN_RUNTIME, p.scene);
+    // 3 × 50,000 + the ask's: over by the ask's, so the ask's Scene went first.
+    expect(sceneMemoStats()).toMatchObject({ size: 3, nodes: 150_000 });
+    const d = heavy("d", 10);
+    offerScene(d.ir, ANNOTATE, BUILTIN_RUNTIME, d.scene);
+    expect(sceneMemoStats()).toMatchObject({ size: 3, nodes: 100_010 });
+    // "a" was the oldest: asking for it again draws it afresh.
+    const before = hits();
+    memoScene(parts[0]!.ir, ANNOTATE);
+    expect(hits()).toBe(before);
+    memoScene(parts[1]!.ir, ANNOTATE);
+    expect(hits()).toBe(before + 1);
   });
 });

@@ -22,9 +22,16 @@
  * {@link SharedScene}. Copying costs about a tenth of drawing, so the pipeline pays it only for
  * options some `memoScene` call has asked for in this process: a compile-only caller never pays it.
  *
- * Bounded like the other stage memos: {@link SCENE_MEMO_MAX} Scenes, oldest out first.
- * `clearCache()` (`src/index.ts`) empties it. A hit changes no budget: the drawing budget is
- * estimated from the IR before anything is drawn, by `compile()` and by the rule alike.
+ * Bounded by count AND weight, because the hosted MCP tools call `lint()` with no compile before
+ * it, in 128 MB isolates: at most {@link SCENE_MEMO_MAX} Scenes and {@link SCENE_MEMO_MAX_NODES}
+ * Scene nodes across them, oldest out first until both hold; a Scene of more than
+ * {@link SCENE_MEMO_MAX_SCENE_NODES} nodes is never kept (it is drawn, read and dropped, as before).
+ * Weight is `scene.nodes.length`, which costs nothing to read. `clearCache()` (`src/index.ts`)
+ * empties it. A hit changes no budget: the drawing budget is estimated from the IR before anything
+ * is drawn, by `compile()` and by the rule alike.
+ *
+ * The memo assumes `toScene` is a pure function of its key; a test that swaps a drawing module by
+ * mock must `clearCache()` around the swap.
  */
 
 import type { ResolvedPlan } from "./ir.js";
@@ -38,7 +45,14 @@ import type { CompileOptions } from "./types.js";
 export type SharedScene = Omit<Scene, "walls" | "parts">;
 
 /** Scenes kept: the storeys of the last plan or two. */
-export const SCENE_MEMO_MAX = 8;
+export const SCENE_MEMO_MAX = 4;
+/** The most Scene nodes kept across all entries (a hosted isolate has 128 MB). */
+export const SCENE_MEMO_MAX_NODES = 150_000;
+/** A Scene with more nodes than this is never kept. */
+export const SCENE_MEMO_MAX_SCENE_NODES = 60_000;
+
+/** Distinct draw keys remembered as asked for (each is two references and a string). */
+const ASKED_MAX = 8;
 
 /** Everything but the plan that a Scene's key holds. */
 interface DrawKey {
@@ -54,6 +68,8 @@ interface Entry extends DrawKey {
 }
 
 const entries: Entry[] = [];
+/** `scene.nodes.length` summed over {@link entries}. */
+let nodesKept = 0;
 let hits = 0;
 /** The draw keys {@link memoScene} has been asked for, so an offer copies only what may be read. */
 const asked: DrawKey[] = [];
@@ -72,9 +88,17 @@ function find(ir: ResolvedPlan, key: DrawKey): Entry | undefined {
   return entries.find((e) => e.ir === ir && sameKey(e, key));
 }
 
+/** Too heavy to keep on its own: {@link SCENE_MEMO_MAX_SCENE_NODES}. */
+const tooHeavy = (scene: { nodes: readonly unknown[] }): boolean => scene.nodes.length > SCENE_MEMO_MAX_SCENE_NODES;
+
+/** Keep `scene`, then drop the oldest until both bounds hold (the newest always fits on its own). */
 function keep(ir: ResolvedPlan, key: DrawKey, scene: SharedScene): void {
-  if (entries.length >= SCENE_MEMO_MAX) entries.shift();
+  if (tooHeavy(scene)) return;
   entries.push({ ...key, ir, scene });
+  nodesKept += scene.nodes.length;
+  while (entries.length > SCENE_MEMO_MAX || nodesKept > SCENE_MEMO_MAX_NODES) {
+    nodesKept -= entries.shift()!.scene.nodes.length;
+  }
 }
 
 /**
@@ -89,7 +113,7 @@ export function memoScene(
   const key = drawKey(opts, runtime);
   if (key === undefined) return toScene(ir, opts, runtime);
   if (!asked.some((k) => sameKey(k, key))) {
-    if (asked.length >= SCENE_MEMO_MAX) asked.shift();
+    if (asked.length >= ASKED_MAX) asked.shift();
     asked.push(key);
   }
   const hit = find(ir, key);
@@ -109,7 +133,7 @@ export function memoScene(
  */
 export function offerScene(ir: ResolvedPlan, opts: CompileOptions, runtime: Runtime, scene: Scene): void {
   const key = drawKey(opts, runtime);
-  if (key === undefined || !asked.some((k) => sameKey(k, key)) || find(ir, key)) return;
+  if (key === undefined || tooHeavy(scene) || !asked.some((k) => sameKey(k, key)) || find(ir, key)) return;
   keep(ir, key, copyScene(scene));
 }
 
@@ -140,11 +164,12 @@ function copyData<T>(v: T): T {
 /** Empty the memo and its record of asked keys (`clearCache()`). */
 export function clearSceneMemo(): void {
   entries.length = 0;
+  nodesKept = 0;
   asked.length = 0;
   hits = 0;
 }
 
-/** Test seam: how many Scenes are kept, and how many `memoScene` calls were answered from them. */
-export function sceneMemoStats(): { size: number; hits: number } {
-  return { size: entries.length, hits };
+/** Test seam: the Scenes kept, their nodes, and how many `memoScene` calls were answered from them. */
+export function sceneMemoStats(): { size: number; nodes: number; hits: number } {
+  return { size: entries.length, nodes: nodesKept, hits };
 }
