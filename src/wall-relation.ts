@@ -18,6 +18,9 @@
  * refused, never chosen (ADR 0005). Afterwards the wall is an ordinary authored wall: its
  * id, category, thickness, material and height are the author's, and it hosts, lints and
  * coexists with `walls from rooms` exactly as the same wall typed as points does.
+ *
+ * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): one step per room name read, as a datum read
+ * costs (`roomOf`).
  */
 
 import type { Point, WallRelationNode, WallsPairRoom } from "./ast.js";

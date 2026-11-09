@@ -1,5 +1,5 @@
 /**
- * `W_ROOM_OVERLAP` (`checkRoomOverlaps`, `src/ir.ts`) against the two forms it replaced, kept
+ * `W_ROOM_OVERLAP` (`checkRoomOverlaps`, `src/ir/checks.ts`) against the two forms it replaced, kept
  * here VERBATIM as the oracles (`docs/backlog.md` M.19):
  *
  *  - **The double loop** over every pair `a < b`, the rule's first form and the definition.

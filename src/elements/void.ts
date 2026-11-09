@@ -6,6 +6,9 @@
  * is no floor. Drawn as the conventional dashed outline crossed by both diagonals (of each
  * rectangle it is made of), on `A-FLOR-OVHD`.
  *
+ * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): a polygon void's grid cells are charged before
+ * they are allocated, for the corner sort and per slab cut (`piecesOfRing`).
+ *
  * ## Three decisions worth stating, because each one could have gone the other way
  *
  * **It rides the `furniture` pass.** Not for want of an annotation layer, but because the

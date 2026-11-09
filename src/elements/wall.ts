@@ -215,7 +215,7 @@ export const wall: ElementDef = {
       hatchScale = 1;
     }
     // A positive scale is held by the TILE it draws, which depends on the whole drawing's
-    // size, so that check runs after resolve (`checkDrawnSizes`, `src/ir.ts`); this is where
+    // size, so that check runs after resolve (`checkDrawnSizes`, `src/ir/checks.ts`); this is where
     // it points when the scale was an expression with a span of its own.
     const hatchScaleSpan = n.materialScale ? exprSpan(n.materialScale) : undefined;
     let hatchAngle = n.materialAngle !== undefined ? ctx.eval(n.materialAngle) : 0;
