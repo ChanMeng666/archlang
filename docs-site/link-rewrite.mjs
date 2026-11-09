@@ -34,6 +34,7 @@ const headingText = (h) =>
   h
     .replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1")
     .replace(/<[^>]+>/g, "")
+    .replace(/[<>]/g, "")
     .replace(/[`*]/g, "");
 
 /** GitHub's anchor for a heading text (what the canonical docs' fragments are written in). */
