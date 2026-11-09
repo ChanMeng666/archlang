@@ -56,6 +56,10 @@
  * edge draws the balcony's railing symbol ({@link railRun}) on the hole's side of the slab
  * edge, so its ink stays inside the ring and {@link voidEl}`.bounds()` stays the ring. It
  * has no height and makes no structural claim.
+ *
+ * `voidPieces` is the one path for a reader of a floor hole written on rectangles: a `polygon` void
+ * is its ring's grid cells (`parts`, a set a frame carries onto itself), a rectangle void itself. A
+ * reader that takes a ring reads `poly` (`roomBox` does); never read `at`/`size` as the hole.
  */
 
 import type { ExprPoint, Point, RailEdge, RailSide, VoidNode } from "../ast.js";

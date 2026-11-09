@@ -11,7 +11,7 @@ import { type RVertical, verticalsOf } from "../src/vertical.js";
  * non-integer one, which re-rounds every coordinate it touches (`x + 0.3` is not exact).
  *
  * The nav grid samples every input relative to its extent's min corner, snapped to a
- * 2⁻¹⁰ mm lattice (`toExtentFrame`, `src/analyze/circulation.ts`), so the few ulps a
+ * 2⁻¹⁰ mm lattice (`toExtentFrame`, `src/analyze/nav-grid.ts`), so the few ulps a
  * translation costs never reach a fact. The claim is not "bit-for-bit under ANY vector":
  * a relative residue within about an ulp of a half-quantum could still round the other way.
  * This pins the measured reality on the two shipped examples with curves — the plans whose

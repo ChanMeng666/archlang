@@ -7,9 +7,9 @@
 - `npm run check:quick` (`scripts/check-quick.mjs`) is the local pre-push check: Biome on the
   changed files, the typecheck they need, `check:drift` (skipped when only tests changed) and the
   nearest tests by import distance, capped at `--max` (20) with the cut printed. The base is the merge
-  base with `origin/main` (`--base`); `--list` prints the plan. The full suite runs in CI, never locally.
+  base with `origin/main` (`--base`); `--list` prints the plan. What runs where: AGENTS.md § How to work.
   It cannot see a guard that scans a directory rather than naming a file (the corpus and byte-identity
-  laws over `examples/` and `docs/`), so a quick pass is never merge evidence.
+  laws over `examples/` and `docs/`), which is why a quick pass is never merge evidence.
 - `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`, and it is the owner's release
   gate only: ci.yml runs its parts (typecheck, `lint:ci`, `check:drift`, the vitest shards, `check:test-wiring`),
   never the script. Its `typecheck` covers `src/` only; CI runs `npm run typecheck:all`, which adds `test/`,
@@ -104,12 +104,13 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
 | `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
-| `node-22` (Node 22) | gates on the two above; on a record-only PR, runs the docs leg | < 0.2 |
+| `changelog` (CHANGELOG under [Unreleased]) | PR only, record-only PRs too: `scripts/check-changelog-unreleased.mjs HEAD^1` (every added CHANGELOG line under `[Unreleased]` or under the `## [x.y.z]` heading a release PR adds, no released line deleted). A deliberate edit of released history carries the PR label `changelog-exempt` (then `--exempt`: reported, not refused); label, then re-run the job. Not a required check; `node-22` requires its success | not yet measured |
+| `node-22` (Node 22) | gates on `node-22-checks`, `node-22-tests` and, on a PR, `changelog`; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
 | `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
 | `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | 2.0 (PR #336, browser cache cold) |
-| `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates; skipped on a record-only PR | 0.9 |
+| `bench` | informational PR-head vs merge-base timings, two runs each (order B H H B), ratios and a noise floor in the job summary (+ a PR comment on same-repo PRs); never gates (the gate is `test/work-counts.test.ts`); skipped on a record-only PR | 2.8 |
 
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs
 vary most: their "Install Chromium system deps only" step runs on every run (it installs fonts the

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
-import { computeCirculationOverlay } from "../src/analyze/circulation.js";
+import { computeCirculationOverlay } from "../src/analyze/circulation-overlay.js";
 import type { RDoor, RFurniture, ROpening, RRoom } from "../src/ir.js";
 import { describe as describePlan } from "../src/index.js";
 import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";

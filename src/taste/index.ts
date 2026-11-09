@@ -19,6 +19,9 @@
  *
  * Pure, sync, deterministic: it reads `describe()`, `lintWithCoverage()` and the resolved IR
  * through the shared parse/resolve memos and mutates none of them.
+ *
+ * The score reads `describe()`, `lintWithCoverage()` and the IR, and is never read by them; scores
+ * are integer permyriads, and the validity cap reads each rule's `layer`.
  */
 
 import { resolvePlan } from "../analyze.js";

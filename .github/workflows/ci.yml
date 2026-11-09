@@ -216,6 +216,46 @@ jobs:
       - name: Test
         run: npx vitest run --shard=${{ matrix.shard }}/5
 
+  # A PR's CHANGELOG lines land under `## [Unreleased]` and it deletes no released line; a release
+  # PR (it adds `## [x.y.z]`) is exempt. Runs on record-only PRs too: CHANGELOG.md is a record. The
+  # checkout is the PR's merge commit, so `HEAD^1` is the base tip and the diff is what merging adds.
+  # Not a required check itself: the `Node 22` aggregator below requires its success on a PR.
+  # Escape: the PR label `changelog-exempt` (a deliberate edit of released history) passes
+  # `--exempt`. The label is read from the event AND live, so labelling a red PR and re-running this
+  # job is enough (a re-run replays the original event, whose label list is stale).
+  changelog:
+    name: CHANGELOG under [Unreleased]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 2
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+
+      - name: Every added CHANGELOG line sits under [Unreleased]
+        env:
+          EVENT_EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'changelog-exempt') }}
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          live=$(gh pr view "$PR" --repo "$REPO" --json labels --jq '[.labels[].name] | index("changelog-exempt") != null' || echo false)
+          if [ "$EVENT_EXEMPT" = "true" ] || [ "$live" = "true" ]; then
+            echo "PR labelled changelog-exempt: violations are reported, not refused." | tee -a "$GITHUB_STEP_SUMMARY"
+            node scripts/check-changelog-unreleased.mjs HEAD^1 --exempt
+          else
+            node scripts/check-changelog-unreleased.mjs HEAD^1
+          fi
+
   # The required `Node 22` check. It decides from its needs' results, so a shard that failed,
   # was cancelled or was skipped when it had work to do turns it red. `always()`, not
   # `!cancelled()`: a job skipped by its `if` satisfies a required check, so a cancelled
@@ -223,7 +263,7 @@ jobs:
   node-22:
     name: Node 22
     runs-on: ubuntu-latest
-    needs: [changes, node-22-checks, node-22-tests]
+    needs: [changes, node-22-checks, node-22-tests, changelog]
     if: ${{ always() }}
     env:
       FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
@@ -233,11 +273,18 @@ jobs:
         env:
           CHECKS: ${{ needs.node-22-checks.result }}
           TESTS: ${{ needs.node-22-tests.result }}
+          CHANGELOG: ${{ needs.changelog.result }}
+          EVENT: ${{ github.event_name }}
         run: |
           if [ "$FULL_CI" = "true" ]; then want=success; else want=skipped; fi
-          echo "Node 22 checks: $CHECKS. Node 22 tests: $TESTS. Expected: $want." | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$EVENT" = "pull_request" ]; then changelog_want=success; else changelog_want=skipped; fi
+          echo "Node 22 checks: $CHECKS. Node 22 tests: $TESTS. Expected: $want. CHANGELOG: $CHANGELOG (expected $changelog_want)." | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$CHECKS" != "$want" ] || [ "$TESTS" != "$want" ]; then
             echo "::error::A Node 22 job did not give the expected result ($want)."
+            exit 1
+          fi
+          if [ "$CHANGELOG" != "$changelog_want" ]; then
+            echo "::error::The CHANGELOG check did not give the expected result ($changelog_want)."
             exit 1
           fi
 
@@ -443,10 +490,12 @@ jobs:
   bench:
     name: Benchmark (informational)
     runs-on: ubuntu-latest
-    # Timings are runner-dependent — this never gates the build; it writes the
-    # median per-stage deltas vs. bench/baseline.json to the job summary and, on
-    # same-repo PRs (a fork's GITHUB_TOKEN is read-only), posts them as a comment.
-    # Not a required check, so on a record-only PR the whole job is skipped.
+    # Timings are runner-dependent, so this never gates the build (the deterministic gate for work
+    # done is test/work-counts.test.ts). It times the PR's merge commit against that commit's first
+    # parent (the base branch tip the PR lands on) in this one job, two runs each in the order base, head, head, base, and
+    # reports the per-row ratio plus the noise floor between the two base runs; on same-repo PRs
+    # (a fork's GITHUB_TOKEN is read-only) it posts that as a comment. Not a required check, so on
+    # a record-only PR the whole job is skipped.
     needs: changes
     if: ${{ !cancelled() && github.event_name == 'pull_request' && needs.changes.outputs.code != 'false' }}
     permissions:
@@ -454,15 +503,29 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The merge commit and its first parent (the base tip); two commits are enough.
+          fetch-depth: 2
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 20
+          # 22, like every other PR job (the core is zero-dependency and tsx runs src directly, so
+          # the Node major only changes the engine's speed; one runtime across the job is simplest).
+          node-version: 22
           cache: npm
       - run: npm ci
-      - name: Run benchmark
+      - name: Check out the base next to the head
+        run: git worktree add --detach ../bench-base HEAD^1
+      - name: Run benchmark (base, head, head, base)
+        # bench/run.ts imports ../src directly (no build), so the base tree needs no install of its
+        # own; each side runs its own bench/run.ts, and a row only one side has is shown without a ratio.
         run: |
-          npx tsx bench/run.ts --json > bench-current.json
-          node bench/compare.mjs bench-current.json bench-comment.md
+          TSX="$PWD/node_modules/.bin/tsx"
+          HERE="$PWD"
+          (cd ../bench-base && "$TSX" bench/run.ts --json > "$HERE/base1.json")
+          "$TSX" bench/run.ts --json > head1.json
+          "$TSX" bench/run.ts --json > head2.json
+          (cd ../bench-base && "$TSX" bench/run.ts --json > "$HERE/base2.json")
+          node bench/compare.mjs --base base1.json base2.json --head head1.json head2.json --out bench-comment.md
       - name: Write benchmark summary
         run: cat bench-comment.md >> "$GITHUB_STEP_SUMMARY"
       - name: Post benchmark comment
@@ -477,7 +540,7 @@ jobs:
             const issue_number = context.issue.number;
             const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number });
             const existing = comments.find((c) => c.body.includes(marker));
-            const payload = `${marker}\n${body}`;
+            const payload = body; // starts with the marker
             if (existing) {
               await github.rest.issues.updateComment({ owner, repo, comment_id: existing.id, body: payload });
             } else {

@@ -34,6 +34,8 @@
  *
  * Pure data and pure functions; nothing here reads or moves `compile()`, `describe()` or
  * `lint()`.
+ *
+ * Each code's stage (`LintRule.stage`, `codeStage`) is what `validate --stage` reads.
  */
 
 import type { KeepNode, KeepRef } from "./ast.js";

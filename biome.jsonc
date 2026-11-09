@@ -33,7 +33,6 @@
       "!tools/mask-to-plan/example/*.json",
       // The same for the Plan JSON → GeoJSON recipe (`tools/plan-to-geojson/README.md`).
       "!tools/plan-to-geojson/example/*.json",
-      "!bench/baseline.json",
       // OpenPlan3D's own sample files, copied byte for byte (test/fixtures/openplan3d/README.md).
       "!test/fixtures/openplan3d/*.json",
       "!test/__snapshots__",

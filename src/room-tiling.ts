@@ -64,6 +64,9 @@
  * `A|B#3`, … for the later runs of a pair that shares several, numbered by start point. A derived
  * wall that an authored wall splits keeps its name on the first remaining run, and the later
  * runs are `<name>~2`, `<name>~3`, ….
+ *
+ * `extremeRuns` is what a side of a rectilinear room means, and `runPicks` and `pickAt` say which
+ * shared run a position selects.
  */
 
 import type { Point } from "./ast.js";

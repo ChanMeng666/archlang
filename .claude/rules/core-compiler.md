@@ -17,4 +17,4 @@ paths:
 - A new language form needs a byte-identity test: plans not using it are unchanged in SVG,
   `describe()` and `lint()` (SHA-256 over the examples). Take the baseline with the test's own digest.
 - An SVG+`describe()`+`lint()` corpus sweep cannot see parse/resolve diagnostics; add
-  `compile().diagnostics` when a change reaches the resolver. Module map: `docs/agents/architecture.md`.
+  `compile().diagnostics` when a change reaches the resolver. Module map: `docs/agents/module-map.md` (pipeline: `architecture.md`).

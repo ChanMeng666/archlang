@@ -6,7 +6,7 @@
 # Release history
 CHANGELOG.md
 
-# Generated artifacts (sources: scripts/check-drift.ts GENERATORS; regenerate with `npm run gen:*`)
+# Generated artifacts (sources: scripts/generators.ts GENERATORS; regenerate with `npm run gen:*`)
 spec.llm.md
 llms-full.txt
 src/context-size.ts
@@ -14,6 +14,7 @@ docs/cli-reference.md
 docs/error-codes.md
 docs/backlog-index.md
 docs/agents/public-surface.md
+docs/agents/module-map.md
 grammars/archlang.gbnf
 schemas/*.schema.json
 editors/archlang.tmLanguage.json

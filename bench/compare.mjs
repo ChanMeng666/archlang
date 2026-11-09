@@ -1,60 +1,184 @@
 /**
- * Bench regression reporter for CI (informational only — never fails the build).
+ * Bench comparison for CI (informational only: never fails the build).
  *
- * Usage:  node bench/compare.mjs <current.json> [out.md]
- *   <current.json>  results from `npx tsx bench/run.ts --json`
- *   [out.md]        optional file to also write the Markdown table to
+ *   node bench/compare.mjs --base b1.json b2.json --head h1.json h2.json [--out report.md]
  *
- * Compares the current median timings against the committed `bench/baseline.json`
- * and writes a Markdown table to stdout for posting as a PR comment. Timings are
- * noisy across runners, so this is a signal, not a gate: a stage that regresses
- * past WARN_PCT is flagged with ⚠️, but the script always exits 0. Refresh the
- * baseline intentionally with `npx tsx bench/run.ts --json > bench/baseline.json`.
+ * Each file is the output of `tsx bench/run.ts --json` (`{ plan: { stage: medianMs } }`). The base
+ * runs come from the PR's merge base and the head runs from its tip, measured in the same job on
+ * the same machine, alternating (base, head, head, base), so a row's ratio head/base cancels most of the runner's speed.
+ * Per row the median over the runs of each side is taken. A row is flagged only when its base time
+ * is above MIN_BASE_MS and it moved by more than THRESHOLD_PCT; the "noise floor" is the largest
+ * spread between the base runs themselves (over the same rows), so a reader sees how far a row
+ * moves with no code change at all. The script always exits 0; the deterministic gate for work
+ * done is `test/work-counts.test.ts`.
  */
-import { readFileSync, writeFileSync, existsSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-const here = dirname(fileURLToPath(import.meta.url));
-const WARN_PCT = 25; // flag a stage that is >25% slower than baseline
+export const MIN_BASE_MS = 5; // below this a row is mostly timer and scheduler noise
+export const THRESHOLD_PCT = 50; // flag |delta| beyond this
 
-const currentPath = process.argv[2];
-if (!currentPath) {
-  console.error("usage: node bench/compare.mjs <current.json> [out.md]");
-  process.exit(0); // informational tool — never fail CI
+/** @param {number[]} xs */
+export function median(xs) {
+  const s = [...xs].sort((a, b) => a - b);
+  const n = s.length;
+  if (n === 0) return Number.NaN;
+  return n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2;
 }
-const current = JSON.parse(readFileSync(currentPath, "utf8"));
-const baselinePath = join(here, "baseline.json");
-const baseline = existsSync(baselinePath) ? JSON.parse(readFileSync(baselinePath, "utf8")) : null;
 
-const lines = [];
-lines.push("### ⏱️ Benchmark (median ms, informational — not a gate)");
-lines.push("");
-lines.push("| Plan | Stage | Current | Baseline | Δ |");
-lines.push("|------|-------|--------:|---------:|--:|");
-let regressed = false;
-for (const [plan, stages] of Object.entries(current)) {
-  for (const [stage, cur] of Object.entries(stages)) {
-    const base = baseline?.[plan]?.[stage];
-    let delta = "—";
-    if (typeof base === "number" && base > 0.05) {
-      const pct = ((cur - base) / base) * 100;
-      const flag = pct > WARN_PCT ? " ⚠️" : "";
-      if (pct > WARN_PCT) regressed = true;
-      delta = `${pct >= 0 ? "+" : ""}${pct.toFixed(0)}%${flag}`;
+/** @param {Record<string, Record<string, number>>[]} runs */
+function collect(runs) {
+  /** @type {Map<string, number[]>} */
+  const out = new Map();
+  for (const run of runs) {
+    for (const [plan, stages] of Object.entries(run)) {
+      for (const [stage, v] of Object.entries(stages)) {
+        if (typeof v !== "number" || !Number.isFinite(v)) continue;
+        const k = `${plan}|${stage}`;
+        if (!out.has(k)) out.set(k, []);
+        out.get(k).push(v);
+      }
     }
-    lines.push(`| ${plan} | ${stage} | ${cur.toFixed(2)} | ${base?.toFixed?.(2) ?? "—"} | ${delta} |`);
   }
+  return out;
 }
-lines.push("");
-lines.push(
-  regressed
-    ? "> ⚠️ One or more stages regressed past the warning threshold. Timings are runner-dependent — confirm locally before acting."
-    : "> No stage regressed past the warning threshold.",
-);
 
-const md = lines.join("\n") + "\n";
-process.stdout.write(md);
-const outFile = process.argv[3];
-if (outFile) writeFileSync(outFile, md);
-// Always succeed — this is a signal, not a gate.
+/**
+ * @param {Record<string, Record<string, number>>[]} baseRuns
+ * @param {Record<string, Record<string, number>>[]} headRuns
+ */
+export function compareRuns(baseRuns, headRuns) {
+  const base = collect(baseRuns);
+  const head = collect(headRuns);
+  const rows = [];
+  let noiseFloor = 0;
+  const keys = [...head.keys(), ...[...base.keys()].filter((k) => !head.has(k))];
+  for (const k of keys) {
+    const [plan, stage] = k.split("|");
+    const hv = head.get(k);
+    const bv = base.get(k);
+    if (!hv) {
+      // Only the base has the row: the PR removed or renamed it. Show it, with no ratio.
+      rows.push({
+        plan,
+        stage,
+        base: median(bv),
+        head: null,
+        ratio: null,
+        deltaPct: null,
+        flagged: false,
+        removed: true,
+      });
+      continue;
+    }
+    const h = median(hv);
+    if (!bv) {
+      rows.push({ plan, stage, base: null, head: h, ratio: null, deltaPct: null, flagged: false });
+      continue;
+    }
+    const b = median(bv);
+    const ratio = b > 0 ? h / b : null;
+    const deltaPct = ratio === null ? null : (ratio - 1) * 100;
+    const measurable = b > MIN_BASE_MS;
+    const flagged = measurable && deltaPct !== null && Math.abs(deltaPct) > THRESHOLD_PCT;
+    if (measurable && bv.length >= 2) {
+      const lo = Math.min(...bv);
+      const hi = Math.max(...bv);
+      if (lo > 0) noiseFloor = Math.max(noiseFloor, ((hi - lo) / lo) * 100);
+    }
+    rows.push({ plan, stage, base: b, head: h, ratio, deltaPct, flagged });
+  }
+  return { rows, noiseFloor, flagged: rows.filter((r) => r.flagged) };
+}
+
+/** The class a stage row belongs to, by its name: lint rows are reported on their own. */
+export function stageClass(stage) {
+  if (stage.startsWith("lint")) return "lint";
+  if (["compile", "parse", "resolve", "toScene", "renderSvg"].includes(stage)) return "pipeline";
+  return "analysis";
+}
+const CLASS_TITLES = {
+  pipeline: "Pipeline stages",
+  lint: "Lint",
+  analysis: "Other analysis (describe, circulation, occupancy)",
+};
+
+const fmtPct = (p) => (p === null ? "-" : `${p >= 0 ? "+" : ""}${p.toFixed(0)}%`);
+
+/** @param {ReturnType<typeof compareRuns>} result */
+export function render(result) {
+  const { rows, noiseFloor, flagged } = result;
+  const lines = [];
+  lines.push("<!-- archlang-bench -->");
+  lines.push("### Benchmark: PR head vs its merge base (median ms)");
+  lines.push("");
+  lines.push(
+    "Informational, not a gate. Both sides were timed in this one job (nothing is built), two runs each, in the order base, head, head, base so a systematic first-run bias cancels; " +
+      "a row shows the median of the runs and the ratio head/base. " +
+      `Flagged only when the base is above ${MIN_BASE_MS} ms and the change exceeds ${THRESHOLD_PCT} %. ` +
+      "The deterministic gate for work done is `test/work-counts.test.ts`.",
+  );
+  lines.push("");
+  lines.push(
+    `Noise floor (largest spread between the two base runs, rows above ${MIN_BASE_MS} ms): **${noiseFloor.toFixed(0)}%**.`,
+  );
+  lines.push("");
+  for (const cls of ["pipeline", "lint", "analysis"]) {
+    const group = rows.filter((r) => stageClass(r.stage) === cls);
+    if (!group.length) continue;
+    lines.push(`**${CLASS_TITLES[cls]}**`);
+    lines.push("");
+    lines.push("| Plan | Stage | Base | Head | Ratio | Delta |");
+    lines.push("|------|-------|-----:|-----:|------:|------:|");
+    for (const r of group) {
+      const ratio = r.ratio === null ? "-" : `${r.ratio.toFixed(2)}x`;
+      const flag = r.flagged ? " ⚠️" : "";
+      const delta = r.removed ? "removed" : fmtPct(r.deltaPct);
+      lines.push(
+        `| ${r.plan} | ${r.stage} | ${r.base === null ? "-" : r.base.toFixed(2)} | ${r.head === null ? "-" : r.head.toFixed(2)} | ${ratio} | ${delta}${flag} |`,
+      );
+    }
+    lines.push("");
+  }
+  lines.push("");
+  lines.push(
+    flagged.length
+      ? `> ⚠️ ${flagged.length} row(s) moved beyond ${THRESHOLD_PCT} % on a base above ${MIN_BASE_MS} ms: ${flagged
+          .map((r) => `${r.plan}/${r.stage}`)
+          .join(", ")}. Compare with the noise floor above before acting.`
+      : `> No row above ${MIN_BASE_MS} ms moved by more than ${THRESHOLD_PCT} %.`,
+  );
+  return `${lines.join("\n")}\n`;
+}
+
+/** @param {string[]} argv */
+export function parseArgs(argv) {
+  /** @type {{ base: string[], head: string[], out?: string }} */
+  const a = { base: [], head: [] };
+  let cur = null;
+  for (let i = 0; i < argv.length; i++) {
+    const t = argv[i];
+    if (t === "--base") cur = "base";
+    else if (t === "--head") cur = "head";
+    else if (t === "--out") a.out = argv[++i];
+    else if (cur) a[cur].push(t);
+  }
+  return a;
+}
+
+/** @param {string[]} argv */
+export function main(argv) {
+  const a = parseArgs(argv);
+  if (!a.base.length || !a.head.length) {
+    console.error("usage: node bench/compare.mjs --base b1.json [b2.json] --head h1.json [h2.json] [--out report.md]");
+    return 0; // informational tool: never fail CI
+  }
+  const read = (p) => JSON.parse(readFileSync(p, "utf8"));
+  const md = render(compareRuns(a.base.map(read), a.head.map(read)));
+  process.stdout.write(md);
+  if (a.out) writeFileSync(a.out, md);
+  return 0;
+}
+
+const isMain = process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));
+if (isMain) process.exit(main(process.argv.slice(2)));
