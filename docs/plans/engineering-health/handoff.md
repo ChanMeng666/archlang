@@ -1,8 +1,7 @@
 # Resume point
 
 **Where (2026-11-10, evening):** waves 0–3 DONE (EH2.10 #656 partial by design). Residue cards
-EH1.18, EH1.19, EH2.3b, EH2.5b, EH2.8b done today. Open cards: EH2.3c, EH2.11, EH2.12, EH3.7 (merge queue — do this
-first next time), then the programme's closing audit.
+EH1.18, EH1.19, EH2.3b, EH2.5b, EH2.8b done today. Open cards: EH2.3c, EH2.11, EH2.12, then the programme's closing audit.
 
 **Landed today (34 PRs):** EH0.1–EH0.7, EH0.9 (#581, #583–#588) · EH1.1 (#599) · EH1.2 (#598) · EH1.3 (#589) · EH1.4
 (#590) · EH1.5 (#591) · EH1.6 tranche 1 (#592) · EH1.7 (#610) · EH1.8 (#613; `runCli` + `CliIo`, 40 spawn copies gone,
@@ -11,7 +10,8 @@ five sampled files 82.5 s → 5.7 s) · EH1.10 (#593) · EH1.11 (#597) · EH1.12
 CLI's world is rooted under a lockstep table) · EH2.1 (#614) · EH2.9 (#611) · policy #615 · records #582, #596, #600,
 #602, #609, #612, #616.
 
-**In flight:** nothing from the programme; EH3.7 (merge queue) executing. 72 PRs merged since 2026-11-09.
+**In flight:** nothing. 74 PRs merged since 2026-11-09. Since EH3.7 main's required checks are strict: a PR
+behind main shows `BEHIND`; `gh pr update-branch`, wait for CI on the new head, re-pin (`commands.md` § Merging a PR).
 Lessons of 2026-11-10: (1) CodeQL is required and fails on `String.replace` escaper chains and argv-built RegExps —
 five PRs lost a round; the gotcha and `test/no-replace-chain-escapers.test.ts` now guard it. (2) A 400-file PR shifts
 every pre-existing CodeQL alert into its diff: triage main first (22 test-only alerts dismissed as 'used in tests').
@@ -23,8 +23,8 @@ parity) — read the contract table before deciding an exit code.
 **Owner queue:** none (standing approval; releases, paid eval and the npmjs account stay owner-only). Tomorrow's
 reads: the nightly's `ci-red` behaviour (#584) and its new `fuzz-deep` job (#610) and `test-durations` artifact (#586).
 
-**Next cards:** EH3.7 (merge queue) first; then EH2.11, EH2.12, EH2.3c; then the closing audit (re-run the seven
-audits' measurements against README § Findings and record the deltas).
+**Next cards:** EH2.11, EH2.12, EH2.3c (all S); then the closing audit (re-run the seven audits' measurements against
+README § Findings and record the deltas; one read-only agent per audit, as on 2026-11-09).
 
 **Process notes from this day:** executors must NOT edit `cards.md` (adjacent card headings conflict
 on every merge; the coordinator records status in a records PR); every pure-move PR repoints the

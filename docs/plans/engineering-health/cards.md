@@ -366,7 +366,7 @@ byte-identity proof: digests unchanged; `no-value-cycles` green; `iso-describe-b
 `idSpanOf` (one call). Move `idSpanOf` to a leaf and tighten `test/plan-json-projector-leaf.test.ts` to assert the
 parser is absent from the projector's closure. Proof: digests unchanged.
 
-### EH3.7 · merge queue, or CI on the merged result — `todo` · S · high · sonnet · from 2026-11-10
+### EH3.7 · merge queue, or CI on the merged result — `done (#658: merge_group triggers on every required workflow; a merge-queue ruleset is rejected on a user-owned repo, so main's required checks are strict (up to date) since 2026-11-10 and allow_update_branch is on)` · S · high · sonnet · from 2026-11-10
 Twice today two PRs that were each green merged blind and broke main (#643+#645: a `statSync` import; #645+#646: the
 generated `test/INDEX.md` and two header-less tests) and every later PR paid a re-merge round for the generated
 files. Enable GitHub's merge queue on `main` (`merge_group` trigger on `ci.yml`, `codeql.yml` and the required
