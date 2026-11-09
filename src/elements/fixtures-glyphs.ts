@@ -145,7 +145,7 @@ export type { Rect } from "./glyph-lib.js";
 
 /**
  * One fixture FAMILY: a canonical category name followed by its aliases. Aliases are
- * synonyms all the way down — they share a case arm here and carry a duplicate catalog row,
+ * synonyms all the way down — they share a drawer in {@link DRAW_BY_FAMILY} and carry a duplicate catalog row,
  * the pattern `wc`/`toilet` has used since the first symbol shipped.
  *
  * Declaration ORDER is meaningful: {@link FIXTURE_CATEGORIES} is this table flattened, and
@@ -153,7 +153,7 @@ export type { Rect } from "./glyph-lib.js";
  * order). **Append new families at the END** — inserting one in the middle re-orders the
  * legend of every plan that draws one.
  */
-const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
+const FIXTURE_FAMILIES = [
   // ---- bath (glyphs-bath.ts) ----
   ["wc", "toilet"],
   ["basin", "lavatory"],
@@ -291,13 +291,16 @@ const FIXTURE_FAMILIES: readonly (readonly [string, ...string[]])[] = [
   ["server_rack"],
   ["hospital_bed"],
   ["workstation", "desk_pod"],
-];
+] as const satisfies readonly (readonly [string, ...string[]])[];
+
+/** The canonical name of a family: the first word of a {@link FIXTURE_FAMILIES} row. */
+type CanonicalFamily = (typeof FIXTURE_FAMILIES)[number][0];
 
 /**
- * The fixture categories the language knows (every `case` below, aliases included). Exported
+ * The fixture categories the language knows (every alias of {@link FIXTURE_FAMILIES}). Exported
  * as the single source of truth so the CLI capability manifest (`arch manifest`) can
  * advertise them without re-listing; the `test/cli-manifest.test.ts` drift guard asserts they
- * match the dispatch switch exactly.
+ * match the family table and its drawers exactly.
  *
  * "Known" is not the same as "drawn": a family whose symbol is not written yet is still in
  * this list, because the catalog gives it a footprint, a wall requirement and lint
@@ -324,8 +327,10 @@ export const CANONICAL_FIXTURES: readonly string[] = FIXTURE_FAMILIES.map((f) =>
  * a fact only this table holds — the catalog stores a duplicate row per alias and so cannot
  * say which of the three is the canonical one.
  */
-const FAMILY_OF: ReadonlyMap<string, string> = new Map(
-  FIXTURE_FAMILIES.flatMap((f) => f.map((word) => [word, f[0]] as const)),
+const FAMILY_OF: ReadonlyMap<string, CanonicalFamily> = new Map<string, CanonicalFamily>(
+  FIXTURE_FAMILIES.flatMap((f): [string, CanonicalFamily][] =>
+    f.map((word): [string, CanonicalFamily] => [word, f[0]]),
+  ),
 );
 
 /** The canonical name of `category`'s family, or `undefined` if it is not catalogued. */
@@ -521,294 +526,125 @@ export function familyMaterials(category: string): FamilyMaterials | undefined {
 }
 
 /**
+ * The drawer of each canonical family, in the order of {@link FIXTURE_FAMILIES}. Typed over
+ * {@link CanonicalFamily}, so a family added to that table without a drawer here fails `tsc`;
+ * an alias reaches its drawer through {@link FAMILY_OF}, never through a second list of names.
+ */
+type DrawFn = (r: Rect, g: GlyphCtx) => SceneNode[];
+const DRAW_BY_FAMILY: Readonly<Record<CanonicalFamily, DrawFn>> = {
+  wc: drawWc,
+  basin: drawBasin,
+  shower: drawShower,
+  bathtub: drawBathtub,
+  kitchen_sink: drawKitchenSink,
+  counter: drawCounter,
+  stove: drawStove,
+  fridge: drawFridge,
+  bed: drawBed,
+  double_bed: drawDoubleBed,
+  nightstand: drawNightstand,
+  wardrobe: drawWardrobe,
+  sofa: drawSofa,
+  armchair: drawArmchair,
+  coffee_table: drawCoffeeTable,
+  tv_unit: drawTvUnit,
+  table: drawTable,
+  dining_table: drawDiningTable,
+  chair: drawChair,
+  stool: drawStool,
+  bench: drawBench,
+  desk: drawDesk,
+  office_chair: drawOfficeChair,
+  bookshelf: drawBookshelf,
+  oven: drawOven,
+  dishwasher: drawDishwasher,
+  island: drawIsland,
+  upper_cabinet: drawUpperCabinet,
+  washer: drawWasher,
+  dryer: drawDryer,
+  plant: drawPlant,
+  car: drawCar,
+  rug: drawRug,
+  sofa_l: drawSofaL,
+  piano: drawPiano,
+  sun_lounger: drawSunLounger,
+  tree: drawTree,
+  conifer: drawConifer,
+  shrub: drawShrub,
+  hedge: drawHedge,
+  bbq: drawBbq,
+  outdoor_table: drawOutdoorTable,
+  outdoor_chair: drawOutdoorChair,
+  umbrella: drawUmbrella,
+  bicycle: drawBicycle,
+  motorcycle: drawMotorcycle,
+  hot_tub: drawHotTub,
+  swing: drawSwing,
+  trampoline: drawTrampoline,
+  bin: drawBin,
+  mailbox: drawMailbox,
+  ev_charger: drawEvCharger,
+  pergola: drawPergola,
+  sandpit: drawSandpit,
+  fire_pit: drawFirePit,
+  shed: drawShed,
+  clothesline: drawClothesline,
+  bidet: drawBidet,
+  urinal: drawUrinal,
+  laundry_sink: drawLaundrySink,
+  water_heater: drawWaterHeater,
+  mirror: drawMirror,
+  range_hood: drawRangeHood,
+  microwave: drawMicrowave,
+  bar_counter: drawBarCounter,
+  bunk_bed: drawBunkBed,
+  crib: drawCrib,
+  dresser: drawDresser,
+  vanity: drawVanity,
+  fireplace: drawFireplace,
+  radiator: drawRadiator,
+  sideboard: drawSideboard,
+  loveseat: drawLoveseat,
+  chaise: drawChaise,
+  tv: drawTv,
+  coat_rack: drawCoatRack,
+  shoe_cabinet: drawShoeCabinet,
+  meeting_table: drawMeetingTable,
+  reception_desk: drawReceptionDesk,
+  filing_cabinet: drawFilingCabinet,
+  locker: drawLocker,
+  pool_table: drawPoolTable,
+  treadmill: drawTreadmill,
+  floor_lamp: drawFloorLamp,
+  side_table: drawSideTable,
+  console_table: drawConsoleTable,
+  ottoman: drawOttoman,
+  bean_bag: drawBeanBag,
+  pantry: drawPantry,
+  towel_rail: drawTowelRail,
+  palm: drawPalm,
+  flower_bed: drawFlowerBed,
+  boulder: drawBoulder,
+  picnic_table: drawPicnicTable,
+  slide: drawSlide,
+  bollard: drawBollard,
+  bike_rack: drawBikeRack,
+  raised_bed: drawRaisedBed,
+  whiteboard: drawWhiteboard,
+  printer: drawPrinter,
+  server_rack: drawServerRack,
+  hospital_bed: drawHospitalBed,
+  workstation: drawWorkstation,
+};
+
+/**
  * Scene primitives drawing a plan symbol for fixture `category` inside footprint `r`, or
  * `null` if the category has no special symbol (the caller draws a labelled rectangle).
  */
 export function fixtureGlyph(category: string, r: Rect, theme: Theme, sizes: RenderSizes): SceneNode[] | null {
-  const g: GlyphCtx = glyphCtx(theme, sizes, familyMaterials(category));
-  switch (category) {
-    // ---- bath ----
-    case "wc":
-    case "toilet":
-      return drawWc(r, g);
-    case "basin":
-    case "lavatory":
-      return drawBasin(r, g);
-    case "shower":
-      return drawShower(r, g);
-    case "bathtub":
-    case "tub":
-    case "bath":
-      return drawBathtub(r, g);
-    // ---- kitchen ----
-    case "kitchen_sink":
-    case "sink":
-      return drawKitchenSink(r, g);
-    case "counter":
-    case "worktop":
-      return drawCounter(r, g);
-    case "stove":
-    case "hob":
-    case "cooktop":
-      return drawStove(r, g);
-    case "fridge":
-    case "refrigerator":
-      return drawFridge(r, g);
-    // ---- bedroom ----
-    case "bed":
-      return drawBed(r, g);
-    case "double_bed":
-      return drawDoubleBed(r, g);
-    case "nightstand":
-    case "bedside_table":
-      return drawNightstand(r, g);
-    case "wardrobe":
-    case "robe":
-    case "closet":
-      return drawWardrobe(r, g);
-    // ---- living ----
-    case "sofa":
-    case "couch":
-      return drawSofa(r, g);
-    case "armchair":
-      return drawArmchair(r, g);
-    case "coffee_table":
-      return drawCoffeeTable(r, g);
-    case "tv_unit":
-      return drawTvUnit(r, g);
-    // ---- dining & seating ----
-    case "table":
-      return drawTable(r, g);
-    case "dining_table":
-      return drawDiningTable(r, g);
-    case "chair":
-      return drawChair(r, g);
-    case "stool":
-    case "barstool":
-      return drawStool(r, g);
-    case "bench":
-      return drawBench(r, g);
-    // ---- office ----
-    case "desk":
-      return drawDesk(r, g);
-    case "office_chair":
-      return drawOfficeChair(r, g);
-    case "bookshelf":
-    case "bookcase":
-    case "shelf":
-      return drawBookshelf(r, g);
-    // ---- kitchen appliances & utility ----
-    case "oven":
-      return drawOven(r, g);
-    case "dishwasher":
-      return drawDishwasher(r, g);
-    case "island":
-      return drawIsland(r, g);
-    case "upper_cabinet":
-    case "wall_cabinet":
-      return drawUpperCabinet(r, g);
-    case "washer":
-    case "washing_machine":
-      return drawWasher(r, g);
-    case "dryer":
-      return drawDryer(r, g);
-    // ---- misc ----
-    case "plant":
-    case "planter":
-      return drawPlant(r, g);
-    case "car":
-      return drawCar(r, g);
-    // ---- the second furniture tranche ----
-    case "rug":
-    case "carpet":
-      return drawRug(r, g);
-    case "sofa_l":
-    case "corner_sofa":
-      return drawSofaL(r, g);
-    case "piano":
-    case "grand_piano":
-      return drawPiano(r, g);
-    case "sun_lounger":
-    case "lounger":
-      return drawSunLounger(r, g);
-    // ---- the outdoor tranche ----
-    case "tree":
-    case "deciduous_tree":
-      return drawTree(r, g);
-    case "conifer":
-    case "pine":
-      return drawConifer(r, g);
-    case "shrub":
-    case "bush":
-      return drawShrub(r, g);
-    case "hedge":
-      return drawHedge(r, g);
-    case "bbq":
-    case "grill":
-    case "barbecue":
-      return drawBbq(r, g);
-    case "outdoor_table":
-    case "patio_table":
-      return drawOutdoorTable(r, g);
-    case "outdoor_chair":
-    case "patio_chair":
-      return drawOutdoorChair(r, g);
-    case "umbrella":
-    case "parasol":
-      return drawUmbrella(r, g);
-    case "bicycle":
-    case "bike":
-      return drawBicycle(r, g);
-    case "motorcycle":
-      return drawMotorcycle(r, g);
-    case "hot_tub":
-    case "spa":
-      return drawHotTub(r, g);
-    case "swing":
-    case "swing_set":
-      return drawSwing(r, g);
-    case "trampoline":
-      return drawTrampoline(r, g);
-    case "bin":
-    case "wheelie_bin":
-      return drawBin(r, g);
-    case "mailbox":
-    case "letterbox":
-      return drawMailbox(r, g);
-    case "ev_charger":
-      return drawEvCharger(r, g);
-    case "pergola":
-      return drawPergola(r, g);
-    case "sandpit":
-    case "sandbox":
-      return drawSandpit(r, g);
-    case "fire_pit":
-      return drawFirePit(r, g);
-    case "shed":
-    case "garden_shed":
-      return drawShed(r, g);
-    case "clothesline":
-    case "washing_line":
-      return drawClothesline(r, g);
-    // ── kitchen & bath ──
-    case "bidet":
-      return drawBidet(r, g);
-    case "urinal":
-      return drawUrinal(r, g);
-    case "laundry_sink":
-    case "laundry_tub":
-      return drawLaundrySink(r, g);
-    case "water_heater":
-    case "boiler":
-      return drawWaterHeater(r, g);
-    case "mirror":
-      return drawMirror(r, g);
-    case "range_hood":
-      return drawRangeHood(r, g);
-    case "microwave":
-      return drawMicrowave(r, g);
-    case "bar_counter":
-      return drawBarCounter(r, g);
-    // ── living, bedroom, office ──
-    case "bunk_bed":
-      return drawBunkBed(r, g);
-    case "crib":
-    case "cot":
-      return drawCrib(r, g);
-    case "dresser":
-    case "chest_of_drawers":
-      return drawDresser(r, g);
-    case "vanity":
-    case "dressing_table":
-      return drawVanity(r, g);
-    case "fireplace":
-      return drawFireplace(r, g);
-    case "radiator":
-      return drawRadiator(r, g);
-    case "sideboard":
-    case "buffet":
-      return drawSideboard(r, g);
-    case "loveseat":
-    case "sofa_2":
-      return drawLoveseat(r, g);
-    case "chaise":
-      return drawChaise(r, g);
-    case "tv":
-      return drawTv(r, g);
-    case "coat_rack":
-      return drawCoatRack(r, g);
-    case "shoe_cabinet":
-      return drawShoeCabinet(r, g);
-    case "meeting_table":
-      return drawMeetingTable(r, g);
-    case "reception_desk":
-      return drawReceptionDesk(r, g);
-    case "filing_cabinet":
-      return drawFilingCabinet(r, g);
-    case "locker":
-      return drawLocker(r, g);
-    case "pool_table":
-      return drawPoolTable(r, g);
-    case "treadmill":
-      return drawTreadmill(r, g);
-    // ── the visual-assets tranche (V8) ──
-    case "floor_lamp":
-      return drawFloorLamp(r, g);
-    case "side_table":
-    case "end_table":
-      return drawSideTable(r, g);
-    case "console_table":
-      return drawConsoleTable(r, g);
-    case "ottoman":
-    case "pouf":
-    case "footstool":
-      return drawOttoman(r, g);
-    case "bean_bag":
-      return drawBeanBag(r, g);
-    case "pantry":
-    case "tall_cabinet":
-    case "larder":
-      return drawPantry(r, g);
-    case "towel_rail":
-    case "towel_radiator":
-      return drawTowelRail(r, g);
-    case "palm":
-    case "palm_tree":
-      return drawPalm(r, g);
-    case "flower_bed":
-    case "planting_bed":
-      return drawFlowerBed(r, g);
-    case "boulder":
-    case "rock":
-      return drawBoulder(r, g);
-    case "picnic_table":
-      return drawPicnicTable(r, g);
-    case "slide":
-    case "playground_slide":
-      return drawSlide(r, g);
-    case "bollard":
-      return drawBollard(r, g);
-    case "bike_rack":
-    case "cycle_stand":
-      return drawBikeRack(r, g);
-    case "raised_bed":
-    case "vegetable_bed":
-      return drawRaisedBed(r, g);
-    case "whiteboard":
-      return drawWhiteboard(r, g);
-    case "printer":
-    case "copier":
-      return drawPrinter(r, g);
-    case "server_rack":
-      return drawServerRack(r, g);
-    case "hospital_bed":
-      return drawHospitalBed(r, g);
-    case "workstation":
-    case "desk_pod":
-      return drawWorkstation(r, g);
-    default:
-      return null;
-  }
+  const family = FAMILY_OF.get(category);
+  if (family === undefined) return null;
+  return DRAW_BY_FAMILY[family](r, glyphCtx(theme, sizes, FIXTURE_FAMILY_MATERIALS[family]));
 }
 
 /** A unit footprint and unit pen sizes — enough to ask a glyph whether it draws at all. */
