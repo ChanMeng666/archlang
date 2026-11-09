@@ -15,7 +15,7 @@ import { distPointToSegment } from "../geometry/polygon.js";
 import type { BBox } from "../geometry/rect.js";
 import type { RFurniture, RRoom } from "../ir.js";
 import { verticalObstacles } from "../vertical.js";
-import { LINT_RULES } from "./rules/index.js";
+import { hintRuleList } from "./hint-rules.js";
 import type { LintContext, LintRule } from "./context.js";
 import { type PasteFailure, pasteFixture } from "./fixture-paste.js";
 import { distPointToRect } from "./measure.js";
@@ -209,7 +209,7 @@ export function pasteSet(
     run.used++;
     run.walked += walkCost;
     const wet = nearWetRoom(ctx, room);
-    const rules = LINT_RULES.filter(
+    const rules = hintRuleList().filter(
       (r) =>
         r.readsFurniture === true || (walk && r.readsFurniture === "walk") || (wet && r.readsFurniture === "wet-door"),
     );

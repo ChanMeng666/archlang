@@ -18,21 +18,10 @@ import { NULL_WORLD } from "./world.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
-import { distPointToWallSegment, segmentsOfWall, wallFaceProbes, type WallLike, type WallSegment } from "./geometry.js";
-import { mergedLength, overlap1d, pointInRect, type BBox } from "./geometry/rect.js";
-import {
-  collinearOverlapLength,
-  pointInPolygon,
-  polygonArea,
-  pointOnPolygonEdge,
-  polygonEdges,
-  rectInsidePolygon,
-  rectRing,
-  ringsAdjacent,
-  VERTEX_EPS,
-} from "./geometry/polygon.js";
-import { arcAngleOffset, arcLength, arcParamAt, arcPointAt, fullCircleArc } from "./geometry/arc.js";
-import { classifyLabelUses, namesOpenAir } from "./vocabulary.js";
+import { segmentsOfWall, wallFaceProbes, type WallLike, type WallSegment } from "./geometry.js";
+import { mergedLength, overlap1d, type BBox } from "./geometry/rect.js";
+import { collinearOverlapLength, pointInPolygon, polygonEdges, rectRing, VERTEX_EPS } from "./geometry/polygon.js";
+import { arcAngleOffset, fullCircleArc } from "./geometry/arc.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
 // Type-only (erased): a value import of `vertical.ts` from here is harmless, but the
@@ -52,6 +41,80 @@ import {
   rotateForBackEdge,
   wallBackedEdges,
 } from "./fixture-orientation.js";
+
+// Room geometry and connector helpers live in `analyze/rooms.ts` and `analyze/connectors.ts` —
+// leaves below the resolver, so the sheet modules can read them without a runtime import
+// cycle. Re-exported here: this is the analysis surface every importer reads from.
+import {
+  DEFAULT_TOL,
+  rectOf,
+  roomBox,
+  roomRing,
+  roomAreaMm2,
+  pointInRoomBox,
+  ROOM_CONTAINMENT_SLACK_MM,
+  rectInRoomBox,
+  roomUses,
+  isOpenAir,
+  isBedroom,
+  isWetRoom,
+  isKitchen,
+  isGarage,
+  isCirculation,
+  roomsAdjacent,
+  pointOnRoomEdge,
+  roomsAtPoint,
+  doorConnections,
+} from "./analyze/rooms.js";
+import type { RoomBox } from "./analyze/rooms.js";
+import {
+  EXTERIOR_NODE,
+  DEFAULT_CLEAR_ALLOWANCE_MM,
+  activeLeafWidth,
+  JAMB_PROBE_INSET_MM,
+  faceLengthInRoom,
+  connectorFaces,
+  connectorFacePath,
+  connectorConnection,
+  windowServesRoom,
+  arcWindowRoom,
+} from "./analyze/connectors.js";
+import type { AccessConnector, AmbiguityPolicy, FaceReading } from "./analyze/connectors.js";
+export {
+  DEFAULT_TOL,
+  rectOf,
+  roomBox,
+  roomRing,
+  roomAreaMm2,
+  pointInRoomBox,
+  ROOM_CONTAINMENT_SLACK_MM,
+  rectInRoomBox,
+  roomUses,
+  isOpenAir,
+  isBedroom,
+  isWetRoom,
+  isKitchen,
+  isGarage,
+  isCirculation,
+  roomsAdjacent,
+  pointOnRoomEdge,
+  roomsAtPoint,
+  doorConnections,
+};
+export type { RoomBox };
+export {
+  EXTERIOR_NODE,
+  DEFAULT_CLEAR_ALLOWANCE_MM,
+  activeLeafWidth,
+  JAMB_PROBE_INSET_MM,
+  faceLengthInRoom,
+  connectorFaces,
+  connectorFacePath,
+  connectorConnection,
+  windowServesRoom,
+  arcWindowRoom,
+};
+export type { AccessConnector, AmbiguityPolicy, FaceReading };
 
 /** Options shared by the analysis tools: a subset of {@link CompileOptions}. */
 export type AnalyzeOptions = Pick<CompileOptions, "plugins" | "world">;
@@ -79,9 +142,6 @@ export {
   wallBackedEdges,
 };
 export type { EdgeBacking, RectEdge } from "./fixture-orientation.js";
-
-/** Default mm tolerance for edge-touch / point-on-edge tests (≈ one partition wall). */
-export const DEFAULT_TOL = 200;
 
 /**
  * Run parse → link → resolve (the same pipeline as `compile`, semantics live in
@@ -123,50 +183,6 @@ export function resolvePlan(
   };
 }
 
-/** Axis-aligned rectangle of a sized element. */
-export function rectOf(e: { at: Point; size: { w: number; h: number } }): BBox {
-  return { x: e.at.x, y: e.at.y, w: e.size.w, h: e.size.h };
-}
-
-/**
- * A room's extent for the analysis layer: its bounding box, plus the floor RING when
- * the room is polygonal. Carrying the ring on the box — rather than threading a
- * second map through a dozen signatures — is what keeps a rectangular plan's behaviour
- * (and its bytes) untouched: `poly` is simply absent, and every `x/y/w/h` reader is
- * unchanged. The shape-aware helpers below (`roomsAdjacent`, `pointOnRoomEdge`,
- * `pointInRoomBox`) check `poly` first and fall back to the historical rect arithmetic.
- */
-export type RoomBox = BBox & { poly?: Point[] };
-
-/** The {@link RoomBox} of a resolved room — bbox for a rect, bbox + ring for a polygon. */
-export function roomBox(r: { at: Point; size: { w: number; h: number }; poly?: Point[] }): RoomBox {
-  const box: RoomBox = { x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h };
-  if (r.poly) box.poly = r.poly;
-  return box;
-}
-
-/** The room's floor as a ring: its polygon, or its rectangle's four corners. */
-export const roomRing = (b: RoomBox): Point[] => b.poly ?? rectRing(b);
-
-/**
- * A room's floor area in mm² — the ONE expression every area reader shares
- * (`describe().rooms[].area_m2`, the room schedule, Plan JSON, the too-small lint, the
- * drawn area label). A rectangle keeps the exact historical product; a polygon is
- * measured by the shoelace formula, which is exact (not sampled) for any simple ring; a
- * circle by πR², exact.
- */
-export function roomAreaMm2(r: {
-  size: { w: number; h: number };
-  poly?: Point[];
-  circle?: { c: Point; r: number };
-}): number {
-  // A CIRCLE is measured in closed form (πR²) — never from the 48-gon tessellation it
-  // also carries for the grid layer, which understates the area by 0.29%. See the
-  // exact-vs-chordal note in docs/analysis.md.
-  if (r.circle) return Math.PI * r.circle.r * r.circle.r;
-  return r.poly ? polygonArea(r.poly) : r.size.w * r.size.h;
-}
-
 /**
  * A room's NET internal area in mm²: its own shape less every part of it a wall's band
  * covers (`describe().rooms[].net_area_m2`, the room schedule's NET AREA column), or
@@ -174,600 +190,6 @@ export function roomAreaMm2(r: {
  * lives in `analyze/net-area.ts`, and takes the storey's bands from `netAreaBands`.
  */
 export { netAreaBands, roomNetAreaMm2 } from "./analyze/net-area.js";
-
-/** Is the point inside the room's floor (closed bounds — the boundary counts)? */
-export function pointInRoomBox(p: Point, b: RoomBox): boolean {
-  return b.poly ? pointInPolygon(p.x, p.y, b.poly) : pointInRect(p.x, p.y, b);
-}
-
-/**
- * How far (mm) a fixture's footprint may hang outside the room it declares before the
- * `in <room>` reads as wrong.
- *
- * A room's outline is drawn on wall CENTRELINES, so a piece pushed against a room edge
- * legitimately shares the wall band with whatever is on the other side: 100 mm is half
- * the 200 mm shell every shipped example draws, which is the deepest such overlap an
- * honest placement produces. Well above grid-snap noise, and far below "this piece is
- * standing in the next room".
- */
-export const ROOM_CONTAINMENT_SLACK_MM = 100;
-
-/**
- * Is the footprint `fr` on the room's floor, allowing {@link ROOM_CONTAINMENT_SLACK_MM}
- * of overhang on every side? The footprint question behind `W_FIXTURE_WRONG_ROOM` — and
- * the same predicate `repair` uses to decide it has moved a piece home, so what repair
- * clears is exactly what lint flags.
- *
- * Asking about the footprint rather than the centre matters most at a CORNER: crossing
- * both the x and the y edge leaves as little as a quarter of the area inside while the
- * centre stays comfortably in, which is how a bed with three quarters of itself in three
- * other rooms used to lint clean. Furniture rotation is a quarter-turn
- * (`E_FURN_ROTATE`), so the AABB is the true footprint and no oriented-box machinery is
- * needed. A piece smaller than twice the slack shrinks to its own centre, degrading
- * gracefully to the historical point test rather than becoming impossible to place.
- */
-export function rectInRoomBox(fr: BBox, b: RoomBox, slack: number = ROOM_CONTAINMENT_SLACK_MM): boolean {
-  const m = Math.min(slack, fr.w / 2, fr.h / 2);
-  return rectInsidePolygon({ x: fr.x + m, y: fr.y + m, w: fr.w - 2 * m, h: fr.h - 2 * m }, roomRing(b));
-}
-
-/**
- * The function(s) a room is classified as. Explicit `uses …` are authored intent
- * and win; otherwise we fall back to a conservative keyword match on the label (or
- * id). Returns a set (a studio is `living kitchen`).
- *
- * The keyword match is the shared closed vocabulary in `src/vocabulary.ts`
- * ({@link classifyLabelUses}) — the token-bounded, data-driven form of the label
- * regexes that used to live here, and the only label classifier: it emits every kind
- * it has a row for, `living` and `dining` included. Behaviour on the committed corpus
- * is pinned by `test/vocabulary-equivalence.test.ts`.
- */
-export function roomUses(room: { label?: string; id: string; uses?: UseKind[] }): Set<UseKind> {
-  if (room.uses && room.uses.length > 0) return new Set(room.uses);
-  return new Set(classifyLabelUses(room.label ?? room.id).uses);
-}
-
-/** Does the room read as open to the sky (a terrace, a yard)? As {@link roomUses} reads: an authored
- *  `uses` wins, else its label, else its id. */
-export const isOpenAir = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
-  !(room.uses && room.uses.length > 0) && namesOpenAir(room.label ?? room.id);
-
-/** Does the room read as a bedroom? */
-export const isBedroom = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
-  roomUses(room).has("bedroom");
-/** Does the room read as a wet room (full bath or WC)? */
-export const isWetRoom = (room: { label?: string; id: string; uses?: UseKind[] }): boolean => {
-  const u = roomUses(room);
-  return u.has("bath") || u.has("wc");
-};
-/** Does the room read as a kitchen? */
-export const isKitchen = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
-  roomUses(room).has("kitchen");
-/** Does the room read as a garage (or a carport / parking space)? */
-export const isGarage = (room: { label?: string; id: string; uses?: UseKind[] }): boolean =>
-  roomUses(room).has("garage");
-/** Does the room read as circulation (hall) or an entry/foyer? */
-export const isCirculation = (room: { label?: string; id: string; uses?: UseKind[] }): boolean => {
-  const u = roomUses(room);
-  return u.has("hall") || u.has("circulation") || u.has("entry");
-};
-
-/** Do two room rectangles share an edge (touch) within tolerance? A shared corner
- *  alone does not count — the perpendicular overlap must be positive.
- *
- *  With a polygon room on either side the same question is asked of the two RINGS
- *  ({@link ringsAdjacent}): a shared boundary run of positive length, with the two
- *  edges no more than `tol` apart (a partition thickness). Two rectangles keep the
- *  closed-form test below, exactly as before. */
-export function roomsAdjacent(a: RoomBox, b: RoomBox, tol: number): boolean {
-  if (a.poly || b.poly) return ringsAdjacent(roomRing(a), roomRing(b), tol);
-  const vTouch = Math.abs(a.x + a.w - b.x) <= tol || Math.abs(b.x + b.w - a.x) <= tol;
-  if (vTouch && overlap1d(a.y, a.y + a.h, b.y, b.y + b.h) > 0) return true;
-  const hTouch = Math.abs(a.y + a.h - b.y) <= tol || Math.abs(b.y + b.h - a.y) <= tol;
-  if (hTouch && overlap1d(a.x, a.x + a.w, b.x, b.x + b.w) > 0) return true;
-  return false;
-}
-
-/** Does point `p` lie on the perimeter of a room (within tolerance)? A polygon room
- *  is measured against its own edges; a rectangle keeps the historical test. This is
- *  what attributes a door/window to the room(s) it opens onto, so a door on a polygon
- *  room's wall connects that room exactly as it would a rectangular one. */
-export function pointOnRoomEdge(p: Point, r: RoomBox, tol: number): boolean {
-  if (r.poly) return pointOnPolygonEdge(p, r.poly, tol);
-  const onLeftRight =
-    (Math.abs(p.x - r.x) <= tol || Math.abs(p.x - (r.x + r.w)) <= tol) && p.y >= r.y - tol && p.y <= r.y + r.h + tol;
-  const onTopBottom =
-    (Math.abs(p.y - r.y) <= tol || Math.abs(p.y - (r.y + r.h)) <= tol) && p.x >= r.x - tol && p.x <= r.x + r.w + tol;
-  return onLeftRight || onTopBottom;
-}
-
-/**
- * Ids of the rooms whose perimeter point `p` sits on (within tolerance). Iterates
- * `roomRects` in insertion order so callers get a stable, element-ordered list:
- * ≤2 ids for a door on a shared partition, 1 for a window on an exterior wall.
- */
-export function roomsAtPoint(p: Point, roomRects: Map<string, RoomBox>, tol: number): string[] {
-  const out: string[] = [];
-  for (const [id, rect] of roomRects) {
-    if (pointOnRoomEdge(p, rect, tol)) out.push(id);
-  }
-  return out;
-}
-
-/**
- * The one or two spaces a door connects: room ids, and/or the literal `"exterior"`
- * when the door sits on an outer wall with open space on one side. This is the
- * adjacency-via-doors edge that both {@link import("./describe.js").describe} (for its
- * `between` field) and the connectivity lint rules build their room graph from.
- */
-export function doorConnections(
-  d: { at: Point; host: { category: string } | null },
-  roomRects: Map<string, RoomBox>,
-  tol: number,
-): string[] {
-  const touching = roomsAtPoint(d.at, roomRects, tol);
-  const onExterior = d.host?.category === "exterior";
-  return touching.length >= 2 ? touching.slice(0, 2) : onExterior ? ["exterior", ...touching] : touching;
-}
-
-/** The synthetic graph node standing for the world outside the building. */
-export const EXTERIOR_NODE = "exterior";
-
-/**
- * Default mm subtracted from a door's *nominal* width to estimate its *clear*
- * opening (leaf thickness, stop, frame projection). A coarse advisory assumption —
- * a real clear width depends on door type and hardware, which ArchLang doesn't model
- * yet — so the access graph exposes BOTH the nominal and the estimate.
- */
-export const DEFAULT_CLEAR_ALLOWANCE_MM = 60;
-
-/**
- * What a connector with three or more rooms at its point joins. The point is on
- * several room edges, so the edge-touch test alone does not say which two rooms it
- * connects.
- *
- *  - `"probe"` asks the connector's HOST WALL: one wall thickness either side of its
- *    centreline ({@link wallFaceProbes}), which room's floor holds the probe point
- *    ({@link pointInRoomBox}, shape-aware)? A probe on no floor is the `exterior` side
- *    when the host is an exterior wall. When both faces resolve, to two different
- *    spaces, the connector joins exactly those. When either face cannot be decided —
- *    the probe lies on a room boundary (in two floors at once), or in no floor behind a
- *    non-exterior host — the edge is `ambiguous` and joins nothing. Every surface uses
- *    it: `describe().access`, Plan JSON, circulation, lint reachability,
- *    `suggestTopology` and the intent channel's `reachable`
- *    (`test/access-policy.test.ts` is the agreement law).
- *  - `"drop"` joins nothing: every such connector is `ambiguous`. The reference the
- *    probe degrades to when it cannot decide.
- *
- * A connector touching two rooms or fewer is never `ambiguous` and is answered the same
- * under either policy: by its host wall's two faces when it has a host
- * ({@link connectorConnection}), else by {@link doorConnections}.
- */
-export type AmbiguityPolicy = "probe" | "drop";
-
-/** What {@link connectorEdges} reads off a door or cased opening. `RDoor` and
- *  `ROpening` satisfy it as they are. */
-export interface AccessConnector {
-  id: string;
-  at: Point;
-  width: number;
-  host: (Pick<WallSegment, "a" | "b" | "arc" | "thickness"> & { category: string; wallId: string }) | null;
-  kind: "door" | "opening";
-  /** A door's kind when it is not hinged ({@link RDoor.doorKind}); a `double` or
-   *  `glazed_sliding` door passes through one leaf ({@link activeLeafWidth}). */
-  doorKind?: string;
-}
-
-/**
- * The width a person passes through: a `double` door's one active leaf, half its width (the
- * ADA 2010 Standards 404.2.3: "for a pair of doors, at least one of the active leaves" gives the
- * clear width), or the half a `glazed_sliding` door's one moving panel leaves when it parks over
- * the fixed one, else the whole width. Read by `W_DOOR_CLEARANCE` and by every connector's clear
- * width ({@link connectorClearWidth}), so `W_PATH_TOO_NARROW` reads the leaf too.
- */
-export function activeLeafWidth(d: { width: number; doorKind?: string }): number {
-  return d.doorKind === "double" || d.doorKind === "glazed_sliding" ? d.width / 2 : d.width;
-}
-
-/**
- * How far (mm) a connector's jamb probes stand inside each end of its opening, along the
- * host run: `min(JAMB_PROBE_INSET_MM, width / 4)`. 50 mm is half the thinnest partition
- * the examples draw, so a partition whose FACE meets a jamb (the honest way to hang a door
- * beside a T) is not read as running into the opening, while one whose centreline is any
- * further inside is. The quarter-width cap keeps a very narrow connector's probes apart.
- */
-export const JAMB_PROBE_INSET_MM = 50;
-
-/** What one side of a connector's host wall holds, probed one wall thickness from the
- *  host's CENTRELINE ({@link wallFaceProbes}) — half a thickness past that face. Exported
- *  for `W_CONNECTOR_AMBIGUOUS`, which names the rooms on each side from this reading. */
-export interface FaceReading {
-  /** Rooms whose floor holds the CENTRE probe (closed bounds), in `roomRects` order. */
-  holders: string[];
-  /** Every room covering a positive length (mm) of the face's clear span — the path
-   *  jamb probe → centre probe → jamb probe — in `roomRects` order. */
-  cover: Array<{ id: string; mm: number }>;
-}
-
-/**
- * Length (mm) of the polyline `path` lying on the room's floor, from the shape: each leg
- * is cut at every crossing with the room's ring (and at the ring's vertices where an edge
- * runs along it), and each piece counts when its midpoint is on the floor
- * ({@link pointInRoomBox}, closed bounds). Exact for any simple ring; never a bounding box.
- */
-function pathLengthInRoom(path: readonly Point[], box: RoomBox): number {
-  const ring = roomRing(box);
-  let total = 0;
-  for (let k = 0; k + 1 < path.length; k++) {
-    const p = path[k]!;
-    const q = path[k + 1]!;
-    const dx = q.x - p.x;
-    const dy = q.y - p.y;
-    const len2 = dx * dx + dy * dy;
-    if (len2 === 0) continue;
-    const cuts = [0, 1];
-    for (const [u, v] of polygonEdges(ring)) {
-      const ex = v.x - u.x;
-      const ey = v.y - u.y;
-      const wx = u.x - p.x;
-      const wy = u.y - p.y;
-      const den = dx * ey - dy * ex;
-      if (den !== 0) {
-        const t = (wx * ey - wy * ex) / den;
-        const s = (wx * dy - wy * dx) / den;
-        if (t > 0 && t < 1 && s >= 0 && s <= 1) cuts.push(t);
-      } else if (wx * dy - wy * dx === 0) {
-        // Collinear with the leg: its two ends are where the floor may start or stop.
-        for (const e of [u, v]) {
-          const t = ((e.x - p.x) * dx + (e.y - p.y) * dy) / len2;
-          if (t > 0 && t < 1) cuts.push(t);
-        }
-      }
-    }
-    cuts.sort((a, b) => a - b);
-    for (let i = 0; i + 1 < cuts.length; i++) {
-      const t0 = cuts[i]!;
-      const t1 = cuts[i + 1]!;
-      if (t1 <= t0) continue;
-      const tm = (t0 + t1) / 2;
-      if (pointInRoomBox({ x: p.x + dx * tm, y: p.y + dy * tm }, box)) total += (t1 - t0) * Math.sqrt(len2);
-    }
-  }
-  return total;
-}
-
-/** The point `along` mm from `at` along the host run: on the arc itself for a curved host
- *  (clamped to its ends), along the chord direction for a straight one. */
-function alongHost(host: NonNullable<AccessConnector["host"]>, at: Point, along: number): Point {
-  if (host.arc) {
-    const total = arcLength(host.arc);
-    const t = total === 0 ? 0 : Math.min(1, Math.max(0, arcParamAt(host.arc, at) + along / total));
-    return arcPointAt(host.arc, t);
-  }
-  const ux = host.b.x - host.a.x;
-  const uy = host.b.y - host.a.y;
-  const l = Math.hypot(ux, uy) || 1;
-  return { x: at.x + (ux / l) * along, y: at.y + (uy / l) * along };
-}
-
-/**
- * The length (mm) of `box`'s floor along one face of a connector's host, between the run
- * offsets `from` and `to` (mm from `at`): the probe path {@link connectorFaces} measures a
- * face's `cover` over, cut to a sub-range of it. `W_CONNECTOR_AMBIGUOUS` uses it to take a
- * meeting wall's body out of a straddled room's cover.
- */
-export function faceLengthInRoom(
-  host: NonNullable<AccessConnector["host"]>,
-  at: Point,
-  from: number,
-  to: number,
-  side: "minus" | "plus",
-  box: RoomBox,
-): number {
-  const dist = Math.max(host.thickness, 1);
-  const path = [from, (from + to) / 2, to].map((s) => wallFaceProbes(host, alongHost(host, at, s), dist)[side]);
-  return pathLengthInRoom(path, box);
-}
-
-/**
- * The two sides of a connector's host wall, `[minus, plus]` ({@link wallFaceProbes}),
- * each probed one wall thickness from the host's centreline (half a thickness past the
- * face) at the centre and a little inside both jambs ({@link JAMB_PROBE_INSET_MM}). `null`
- * for a connector with no host.
- *
- * A room whose bounding box, grown by the host's thickness, misses the probe path's box is
- * skipped before its shape is asked: a room's box holds its whole floor, so this only
- * FILTERS candidates — every answer still comes from the shape.
- */
-export function connectorFaces(
-  c: Pick<AccessConnector, "at" | "host"> & { width?: number },
-  roomRects: Map<string, RoomBox>,
-): [FaceReading, FaceReading] | null {
-  const host = c.host;
-  if (!host) return null;
-  const dist = Math.max(host.thickness, 1);
-  const width = c.width ?? 0;
-  const half = Math.max(0, width / 2 - Math.min(JAMB_PROBE_INSET_MM, width / 4));
-  const centre = wallFaceProbes(host, c.at, dist);
-  const jambLo = wallFaceProbes(host, alongHost(host, c.at, -half), dist);
-  const jambHi = wallFaceProbes(host, alongHost(host, c.at, half), dist);
-  const read = (side: "minus" | "plus"): FaceReading => {
-    const mid = centre[side];
-    const path = [jambLo[side], mid, jambHi[side]];
-    const x0 = Math.min(path[0]!.x, mid.x, path[2]!.x) - dist;
-    const x1 = Math.max(path[0]!.x, mid.x, path[2]!.x) + dist;
-    const y0 = Math.min(path[0]!.y, mid.y, path[2]!.y) - dist;
-    const y1 = Math.max(path[0]!.y, mid.y, path[2]!.y) + dist;
-    const holders: string[] = [];
-    const cover: FaceReading["cover"] = [];
-    for (const [id, box] of roomRects) {
-      if (box.x > x1 || box.x + box.w < x0 || box.y > y1 || box.y + box.h < y0) continue;
-      if (pointInRoomBox(mid, box)) holders.push(id);
-      const mm = pathLengthInRoom(path, box);
-      if (mm > 0) cover.push({ id, mm });
-    }
-    return { holders, cover };
-  };
-  return [read("minus"), read("plus")];
-}
-
-/**
- * The doorway's face on one side of its host wall, half the host's thickness from the
- * centreline: `[jamb, centre, jamb]`, the jambs at the ends of the connector's width along
- * the host run (on the arc itself for a curved host). The same three stations
- * {@link connectorFaces} probes, set on the face rather than past it; a distance from the
- * doorway into a room is measured from this path.
- */
-export function connectorFacePath(
-  c: Pick<AccessConnector, "at"> & { host: NonNullable<AccessConnector["host"]>; width: number },
-  side: "minus" | "plus",
-): [Point, Point, Point] {
-  const d = c.host.thickness / 2;
-  const half = c.width / 2;
-  return [
-    wallFaceProbes(c.host, alongHost(c.host, c.at, -half), d)[side],
-    wallFaceProbes(c.host, c.at, d)[side],
-    wallFaceProbes(c.host, alongHost(c.host, c.at, half), d)[side],
-  ];
-}
-
-/** The pair `a`/`b` in `roomRects` order with `exterior` first — the order
- *  {@link doorConnections} uses — so it depends on no page direction. */
-function orderedPair(a: string, b: string, roomRects: Map<string, RoomBox>): [string, string] {
-  const order = [EXTERIOR_NODE, ...roomRects.keys()];
-  return order.indexOf(a) <= order.indexOf(b) ? [a, b] : [b, a];
-}
-
-/**
- * The two spaces a connector touching 3+ rooms joins under the `"probe"`
- * {@link AmbiguityPolicy}, or `null` when the probe cannot decide: a centre probe on a
- * room boundary, or on no floor behind a non-exterior host, decides nothing.
- */
-function probeConnection(
-  faces: [FaceReading, FaceReading],
-  hostCategory: string,
-  roomRects: Map<string, RoomBox>,
-): [string, string] | null {
-  const face = (f: FaceReading): string | null => {
-    if (f.holders.length === 1) return f.holders[0]!;
-    if (f.holders.length === 0 && hostCategory === "exterior") return EXTERIOR_NODE;
-    return null; // on a room boundary, or in no floor behind an interior wall
-  };
-  const a = face(faces[0]);
-  const b = face(faces[1]);
-  if (a === null || b === null || a === b) return null;
-  return orderedPair(a, b, roomRects);
-}
-
-/**
- * The two spaces a hosted connector touching ≤2 rooms joins, read off its host wall's
- * faces, or `null` when they do not name two different spaces. A face whose centre probe
- * is on one floor is that room; on no floor, `exterior` behind an exterior host (else
- * undecided); on a boundary two floors share, the room covering more of that face's
- * clear span — a measured length, ties to `roomRects` order.
- *
- * A face's room counts only when it is one of the rooms the connector's point `touching`
- * (`exterior` always counts). The probe stands half a thickness past the face, so behind a
- * thick wall and a room shallower than that it lands in the room beyond, which the
- * connector does not open into; such a face decides nothing.
- */
-function faceConnection(
-  faces: [FaceReading, FaceReading],
-  hostCategory: string,
-  touching: readonly string[],
-  roomRects: Map<string, RoomBox>,
-): [string, string] | null {
-  const face = (f: FaceReading): string | null => {
-    if (f.holders.length === 0) return hostCategory === "exterior" ? EXTERIOR_NODE : null;
-    let best = f.holders[0]!;
-    let bestMm = -1;
-    for (const id of f.holders) {
-      const mm = f.cover.find((x) => x.id === id)?.mm ?? 0;
-      if (mm > bestMm) {
-        best = id;
-        bestMm = mm;
-      }
-    }
-    return touching.includes(best) ? best : null;
-  };
-  const a = face(faces[0]);
-  const b = face(faces[1]);
-  if (a === null || b === null || a === b) return null;
-  return orderedPair(a, b, roomRects);
-}
-
-/**
- * Every room a face's clear span covers, over each face that covers more than one, in
- * `roomRects` order — or `undefined` when no face does. Never suppressed for equalling
- * `between`: a wall running into the opening is the fact, whichever rooms it divides.
- */
-function straddledRooms(faces: [FaceReading, FaceReading], roomRects: Map<string, RoomBox>): string[] | undefined {
-  const covered = new Set<string>();
-  for (const f of faces) if (f.cover.length > 1) for (const x of f.cover) covered.add(x.id);
-  if (covered.size === 0) return undefined;
-  return [...roomRects.keys()].filter((id) => covered.has(id));
-}
-
-/**
- * The spaces one connector joins, whether it is `ambiguous`, and the rooms its opening
- * `straddles` — the ONE answer every access surface reads (`describe().doors[]`/
- * `openings[]` `between`, `describe().access`, circulation, lint reachability,
- * `suggestTopology`).
- *
- *  - No host wall: {@link doorConnections}, `ambiguous` when 3+ rooms touch its point.
- *  - A host, ≤2 rooms touching: the room on each face of the host wall
- *    ({@link faceConnection}) — never the centre point's edge touch alone, which hands an
- *    exterior door on a T-junction or beside a partition's end to the two rooms inside.
- *    A face's room counts only if the point touches it. When the faces do not name two
- *    different spaces, {@link doorConnections}' answer.
- *  - A host, 3+ rooms touching: resolved by `policy` ({@link AmbiguityPolicy}); when that
- *    cannot decide it keeps {@link doorConnections}' pair for display and is `ambiguous`.
- *
- * `straddles` ({@link AccessEdge.straddles}) is present only for a hosted connector whose
- * clear span on a face covers more than one room.
- */
-export function connectorConnection(
-  c: Pick<AccessConnector, "at" | "host"> & { width?: number },
-  roomRects: Map<string, RoomBox>,
-  tol: number,
-  policy: AmbiguityPolicy = "probe",
-): { between: string[]; ambiguous: boolean; straddles?: string[] } {
-  const touching = roomsAtPoint(c.at, roomRects, tol);
-  const faces = connectorFaces(c, roomRects);
-  const hostCategory = c.host?.category ?? "";
-  // A connector that is not ON its host — a free `door at` far from every wall is still
-  // given the nearest segment — has no faces of its own: it keeps the edge-touch answer and
-  // straddles nothing. The tolerance is `hostInfoForWalls`' own on-wall test. (The 3+-room
-  // policy probes it as it always has.)
-  const onHost =
-    c.host !== null && distPointToWallSegment(c.at, c.host) <= c.host.thickness / 2 + Math.max(c.host.thickness, 1);
-  let between: string[];
-  let ambiguous = false;
-  if (touching.length < 3) {
-    between =
-      (faces && onHost && faceConnection(faces, hostCategory, touching, roomRects)) ||
-      doorConnections(c, roomRects, tol);
-  } else {
-    const probed = faces && policy === "probe" ? probeConnection(faces, hostCategory, roomRects) : null;
-    between = probed ?? doorConnections(c, roomRects, tol);
-    ambiguous = probed === null;
-  }
-  const straddles = faces && onHost ? straddledRooms(faces, roomRects) : undefined;
-  return straddles ? { between, ambiguous, straddles } : { between, ambiguous };
-}
-
-/** Do the open segments p1–p2 and q1–q2 cross (a proper crossing, not a touch)? */
-function segmentsCross(p1: Point, p2: Point, q1: Point, q2: Point): boolean {
-  const d1 = (q2.x - q1.x) * (p1.y - q1.y) - (q2.y - q1.y) * (p1.x - q1.x);
-  const d2 = (q2.x - q1.x) * (p2.y - q1.y) - (q2.y - q1.y) * (p2.x - q1.x);
-  const d3 = (p2.x - p1.x) * (q1.y - p1.y) - (p2.y - p1.y) * (q1.x - p1.x);
-  const d4 = (p2.x - p1.x) * (q2.y - p1.y) - (p2.y - p1.y) * (q2.x - p1.x);
-  return ((d1 > 0 && d2 < 0) || (d1 < 0 && d2 > 0)) && ((d3 > 0 && d4 < 0) || (d3 < 0 && d4 > 0));
-}
-
-/**
- * Does window `w` serve room `id`: on that room's perimeter (every room it touches, so a
- * window on a shared straight wall serves both, as the daylight rules always read it), or,
- * on an arc edge no room touches, attributed to it by {@link arcWindowRoom}? The lint side of
- * `describe().windows[].room`, which is the first room the window's point touches
- * ({@link roomsAtPoint}) or else that same {@link arcWindowRoom} answer.
- */
-export function windowServesRoom(
-  w: { at: Point; width: number; host: WallSegment | null },
-  id: string,
-  roomRects: Map<string, RoomBox>,
-  tol: number,
-  segs: readonly WallSegment[] = [],
-): boolean {
-  const box = roomRects.get(id);
-  if (!box) return false;
-  if (pointOnRoomEdge(w.at, box, tol)) return true;
-  if (!w.host?.arc || roomsAtPoint(w.at, roomRects, tol).length > 0) return false;
-  return arcWindowRoom({ at: w.at, width: w.width, host: w.host }, roomRects, tol, segs) === id;
-}
-
-/**
- * The room a window on an ARC wall edge serves, from the shape — or `null` (plan-soundness
- * PS0.12). Asked only for a window whose point no room's edge touches: one that a room edge
- * touches keeps the first such room, as every window always has.
- *
- * 1. **The faces.** One wall thickness off the arc's concave and convex faces at the window
- *    centre and just inside its jambs ({@link connectorFaces}, PS0.1's probes, which walk the
- *    arc's own normal): a face whose centre probe is on a floor names that room, a boundary
- *    two floors share going to the room covering more of the face's span (ties to
- *    `roomRects` order). One face naming a room is the answer; both naming rooms (an interior
- *    curved wall) gives the first in `roomRects` order, the order {@link roomsAtPoint} uses.
- *    This is the case of a room whose floor follows the curve (a `room circle`, or a polygon
- *    traced along the arc).
- * 2. **The bay.** A room drawn to the arc's CHORD leaves the bay between chord and curve on
- *    no room's floor, so neither probe lands anywhere. Then the probe is carried on along the
- *    concave normal (towards the arc's centre) to where it crosses the chord, and one wall
- *    thickness past it. The first room in `roomRects` order whose floor holds that point and
- *    whose edge holds the crossing serves the window (the bay opens into it there), provided
- *    no other wall runs between the window and the probe: a wall standing on the chord at the
- *    crossing, or crossing the way in, closes the bay off, and the window then serves no
- *    room. The window's CENTRE decides, as it does on a straight wall: a bay whose chord two
- *    rooms share goes to the room in front of the window's centre.
- *
- * `null` when neither step names a room. A room's bounding box only filters candidates in the
- * face probes; every answer comes from `pointInRoomBox`/`pointOnRoomEdge` on the shape.
- */
-export function arcWindowRoom(
-  w: { at: Point; width: number; host: WallSegment },
-  roomRects: Map<string, RoomBox>,
-  tol: number,
-  segs: readonly WallSegment[],
-): string | null {
-  const host = w.host;
-  const arc = host.arc;
-  if (!arc) return null;
-  const faces = connectorFaces(w, roomRects);
-  if (faces) {
-    const named = (f: FaceReading): string | null => {
-      if (f.holders.length === 0) return null;
-      let best = f.holders[0]!;
-      let bestMm = -1;
-      for (const id of f.holders) {
-        const mm = f.cover.find((x) => x.id === id)?.mm ?? 0;
-        if (mm > bestMm) {
-          best = id;
-          bestMm = mm;
-        }
-      }
-      return best;
-    };
-    const a = named(faces[0]);
-    const b = named(faces[1]);
-    if (a !== null || b !== null) {
-      if (a === null || b === null) return (a ?? b)!;
-      return [...roomRects.keys()].find((id) => id === a || id === b) ?? a;
-    }
-  }
-  // The bay: along the concave normal from the window centre to the chord a–b.
-  const ux0 = arc.center.x - w.at.x;
-  const uy0 = arc.center.y - w.at.y;
-  const ul = Math.hypot(ux0, uy0);
-  if (ul === 0) return null;
-  const u = { x: ux0 / ul, y: uy0 / ul };
-  const cx = arc.b.x - arc.a.x;
-  const cy = arc.b.y - arc.a.y;
-  const den = u.x * cy - u.y * cx;
-  if (den === 0) return null; // the normal runs along the chord
-  const t = ((arc.a.x - w.at.x) * cy - (arc.a.y - w.at.y) * cx) / den;
-  const s = ((arc.a.x - w.at.x) * u.y - (arc.a.y - w.at.y) * u.x) / den;
-  if (!(t > 0) || s < 0 || s > 1) return null; // the chord is not ahead of the window
-  const crossing = { x: w.at.x + u.x * t, y: w.at.y + u.y * t };
-  const reach = t + Math.max(host.thickness, 1);
-  const probe = { x: w.at.x + u.x * reach, y: w.at.y + u.y * reach };
-  // No other wall between the window and the probe: crossing it, or standing on the chord.
-  for (const g of segs) {
-    if (g.wallId === host.wallId && g.index === host.index) continue;
-    if (distPointToWallSegment(crossing, g) <= g.thickness / 2) return null;
-    if (!g.arc && segmentsCross(w.at, probe, g.a, g.b)) return null;
-  }
-  for (const [id, box] of roomRects) if (pointInRoomBox(probe, box) && pointOnRoomEdge(crossing, box, tol)) return id;
-  return null;
-}
 
 /** One connector (door or cased opening) as a graph edge between two spaces. */
 export interface AccessEdge {

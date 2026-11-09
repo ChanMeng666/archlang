@@ -47,7 +47,7 @@ import type { RenderSizes, SceneNode } from "./scene.js";
 import type { Theme } from "./theme.js";
 import { FIXTURE_CATEGORIES, fixtureGlyph, hasFixtureGlyph } from "./elements/fixtures-glyphs.js";
 import { fmt2 } from "./num-format.js";
-import { roomAreaMm2 } from "./analyze.js";
+import { roomAreaMm2 } from "./analyze/rooms.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { openingCount, type OpeningRow } from "./opening-schedule.js";
 import { PLAIN_SHEET_TEXT, type SheetText } from "./sheet-text.js";

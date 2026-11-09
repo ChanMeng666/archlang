@@ -69,7 +69,8 @@ import {
   sub,
   wallFaceProbes,
 } from "./geometry.js";
-import { connectorConnection, DEFAULT_TOL, EXTERIOR_NODE, pointInRoomBox, type RoomBox, roomBox } from "./analyze.js";
+import { connectorConnection, EXTERIOR_NODE } from "./analyze/connectors.js";
+import { DEFAULT_TOL, pointInRoomBox, type RoomBox, roomBox } from "./analyze/rooms.js";
 import { textWidth } from "./text-metrics.js";
 import { primBBox } from "./label-placement.js";
 import { ROOF_LAYER } from "./elements/roof.js";

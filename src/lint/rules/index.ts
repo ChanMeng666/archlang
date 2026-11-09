@@ -5,6 +5,7 @@
  */
 
 import type { LintRule } from "../context.js";
+import { registerHintRules } from "../hint-rules.js";
 import { aliasMatch } from "./alias-match.js";
 import { annotationOverlap, titleOverflow } from "./annotations.js";
 import { roomNoClearPath } from "./circulation.js";
@@ -202,5 +203,8 @@ export const LINT_RULES: readonly LintRule[] = [
   // no existing diagnostic moves within the array.
   furnitureOnVoid,
 ];
+
+// `lint/defining.ts` re-lints placements against these; it cannot import this list (a cycle).
+registerHintRules(LINT_RULES);
 
 export type { LintContext, LintRule } from "../context.js";

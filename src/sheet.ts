@@ -38,13 +38,13 @@ import { emptyBounds, extendBounds } from "./geometry.js";
 import type { ResolvedElement } from "./ir.js";
 import type { Registry } from "./registry.js";
 
-/** The paper sizes ArchLang can draw on. */
-export const PAPER_SIZES = ["A4", "A3", "A2", "A1", "A0"] as const;
-export type PaperSize = (typeof PAPER_SIZES)[number];
+import { PAPER_ORIENTATIONS, PAPER_SIZES } from "./grammar/tokens.js";
+import type { PaperOrientation, PaperSize } from "./grammar/tokens.js";
 
-/** Sheet orientation. Floor plans are wide, so `landscape` is the default. */
-export const PAPER_ORIENTATIONS = ["landscape", "portrait"] as const;
-export type PaperOrientation = (typeof PAPER_ORIENTATIONS)[number];
+// The paper vocabulary is grammar (the parser reads it), so it lives in `grammar/tokens.ts`;
+// re-exported here, where the sheet that draws on it and every importer already look.
+export { PAPER_ORIENTATIONS, PAPER_SIZES };
+export type { PaperOrientation, PaperSize };
 
 /** ISO 216 trimmed sizes in millimetres, PORTRAIT (short × long). One table, once. */
 export const PAPER_MM: Record<PaperSize, { w: number; h: number }> = {
