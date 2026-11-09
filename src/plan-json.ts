@@ -1326,12 +1326,12 @@ const USE_SET: ReadonlySet<string> = new Set<string>(USE_KINDS);
 const ROOM_TYPE_SET: ReadonlySet<string> = new Set<string>(ROOM_TYPES);
 const OPENING_KINDS: ReadonlySet<string> = new Set(kindsWith("opening"));
 /**
- * The schema's `openings[].kind` enum: the table's `opening` kinds at run time, printed as the
- * literal tuple in the published types (an alias such as `KindsWith` is not part of the public
- * surface, and the release-compat gate reads the printed type). `test/element-facets.test.ts`
+ * The schema's `openings[].kind` enum: the table's `opening` kinds, typed by the same derivation
+ * (the release-compat gate reads the non-exported `KindsWith` alias as its literals, so this
+ * compares equal to the literal tuple an earlier release published). `test/element-facets.test.ts`
  * holds this, the `OpeningJson.kind` union and the table equal.
  */
-const OPENING_KIND_ENUM = [...kindsWith("opening")] as unknown as readonly ["door", "window", "opening"];
+const OPENING_KIND_ENUM: readonly KindsWith<"opening">[] = [...kindsWith("opening")];
 
 /**
  * Validate `json` against the plan shape (no throw). Returns the value cast to
