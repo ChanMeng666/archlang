@@ -156,6 +156,9 @@ export function diag(
   span?: Span,
   extra?: Omit<Diagnostic, "severity" | "message" | "span" | "code">,
 ): Diagnostic {
+  // Keys in the order severity, message, span, code: existing sites that write
+  // `{ severity, code, … }` would have their raw keys reordered by moving to diag(), so a
+  // migration is NOT a pure move (JSON output of a diagnostic follows its key order).
   return {
     severity: code.startsWith("E_") ? "error" : "warning",
     message,

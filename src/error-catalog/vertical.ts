@@ -1,6 +1,6 @@
 /**
- * Error catalogue: the vertical family. Stairs, voids and shafts, and the `stairs` and `vertical`
- * (storey-matching) lint families.
+ * Error catalogue: the vertical family. Storeys (`level` blocks), stairs, voids and shafts, and
+ * the `stairs` and `vertical` (storey-matching) lint families.
  *
  * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
  */
@@ -49,6 +49,24 @@ export const VERTICAL_ENTRIES = defineEntries({
     "A rectangle `void` names its railed edges by side (`top|bottom|left|right`, or `all`/`none`); a `polygon` void numbers them, edge n running from point n to point n+1, counted from 0 like a wall's `segment <n>`. A side word on a ring (an L has two edges facing the same way), a number on a rectangle, or a number that is not one of the ring's edges is refused rather than guessed.",
     "On a rectangle write side words; on a ring write `all`, `none` or edge numbers from 0 to one less than its point count.",
     "void id=well polygon (0,0) (3000,0) (3000,1000) (1000,1000) (1000,3000) (0,3000) rail 6   # error: edges are 0 to 5",
+  ),
+  E_LEVEL_DUP: e(
+    "Two `level` blocks declare the same storey number.",
+    "Level numbers identify the storeys of one building, so each may be declared once; two `level 1` blocks would produce two pages both claiming to be level 1.",
+    "Renumber one of them, or merge the two bodies into a single `level` block.",
+    "level 1 { room at (0,0) size 3000x3000 }\nlevel 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice",
+  ),
+  E_LEVEL_MIX: e(
+    "A drawable statement sits beside `level` blocks.",
+    "A plan is either single-storey (no `level` block) or entirely made of them: anything that draws belongs to exactly one storey, so a room/wall/door/`for`/`strip`/component call at plan level next to a `level` block has no storey to belong to.",
+    "Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.",
+    'plan "H" {\n  room at (0,0) size 3000x3000   # error: move it into a level\n  level 1 { wall exterior thickness 200 { (0,0) (3000,0) close } }\n}',
+  ),
+  E_LEVEL_NEST: e(
+    "`level` used inside a block or component.",
+    "A `level` block is a plan-level statement: it partitions the whole plan into storeys, so it cannot be nested inside another `level`, a `for`/`if`/`while` body, a `strip`, or a component definition.",
+    "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
+    "component c() { level 1 { } }   # error: only allowed at plan level",
   ),
   W_SWING_OVER_STAIR: w(
     "A door's swing sweeps a stair or the landing at its end.",

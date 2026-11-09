@@ -8,6 +8,12 @@
  * The entries live by family in `src/error-catalog/<family>.ts` (one `defineEntries({...})`
  * each, the code written once as its key); this file spreads the families into one frozen
  * object. Key order reaches no output: `ERROR_CODES` is sorted, and every reader indexes by code.
+ *
+ * Where a NEW code goes: a lint rule's code goes in the family file whose header names its
+ * `LintRule.family` (`test/error-catalog-families.test.ts` enforces it). Any other code goes in
+ * the family whose prefix or subject it shares (`E_IMPORT_*` → `import.ts`, `E_*_LIMIT` →
+ * `limits.ts`, storey/`level` codes → `vertical.ts`, parse/grammar → `language.ts`); when unsure,
+ * the file an agent would open first. A new family file is imported and spread below.
  */
 
 import { CIRCULATION_ENTRIES } from "./error-catalog/circulation.js";

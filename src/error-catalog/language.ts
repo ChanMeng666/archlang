@@ -1,6 +1,6 @@
 /**
  * Error catalogue: the language family. The language itself: lexing, parsing, names, components,
- * the evaluator, storeys and plan-level metadata.
+ * the evaluator and plan-level metadata.
  *
  * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
  */
@@ -85,24 +85,6 @@ export const LANGUAGE_ENTRIES = defineEntries({
     "A `place` carries every element of its component from the component's own frame into plan coordinates, and each element kind supplies that action as `ElementDef.transform`. A third-party element kind registered through `compile(src, { plugins })` without one cannot be turned, mirrored or moved, so the instance's copy is dropped from the drawing (never drawn at its local coordinates) and this is reported once per instance and kind, at the `place` statement. A plugin that REPLACES a built-in kind without its own `transform()` inherits the built-in's; when that inherited action cannot read the plugin's resolved shape (its `resolve` returns a different shape from the built-in's), the element is refused the same way.",
     "Give the plugin's `ElementDef` a `transform(el, t)` that maps its geometry with the `TransformCtx` it is handed (`t.point`, `t.rect`, `t.side`, `t.id`, …) — or write the element at plan level instead of inside the component.",
     "component c() { gazebo at (0,0) }   # `gazebo` is a plugin kind with no transform()\nplace c() as g at (5000,0)   # error: cannot be placed",
-  ),
-  E_LEVEL_DUP: e(
-    "Two `level` blocks declare the same storey number.",
-    "Level numbers identify the storeys of one building, so each may be declared once; two `level 1` blocks would produce two pages both claiming to be level 1.",
-    "Renumber one of them, or merge the two bodies into a single `level` block.",
-    "level 1 { room at (0,0) size 3000x3000 }\nlevel 1 { room at (0,0) size 3000x3000 }   # error: level 1 twice",
-  ),
-  E_LEVEL_MIX: e(
-    "A drawable statement sits beside `level` blocks.",
-    "A plan is either single-storey (no `level` block) or entirely made of them: anything that draws belongs to exactly one storey, so a room/wall/door/`for`/`strip`/component call at plan level next to a `level` block has no storey to belong to.",
-    "Move the statement inside the `level` block it belongs to. Only settings (`units`/`grid`/`paper`/`scale`/`north`/`site`/`dims`/`title`/`axes`/`schedule`/`legend`), `component`/`import` declarations, and the plan-global `let`/`set` stay outside — they apply to every level.",
-    'plan "H" {\n  room at (0,0) size 3000x3000   # error: move it into a level\n  level 1 { wall exterior thickness 200 { (0,0) (3000,0) close } }\n}',
-  ),
-  E_LEVEL_NEST: e(
-    "`level` used inside a block or component.",
-    "A `level` block is a plan-level statement: it partitions the whole plan into storeys, so it cannot be nested inside another `level`, a `for`/`if`/`while` body, a `strip`, or a component definition.",
-    "Move the `level` block out to the plan body. To draw the same content on several storeys, put it in a `component` and call it from each level.",
-    "component c() { level 1 { } }   # error: only allowed at plan level",
   ),
   E_NON_FINITE: e(
     "A number is too large to be finite.",
