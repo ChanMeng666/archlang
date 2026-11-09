@@ -4,6 +4,18 @@
  * `resolve` is the single place semantics live: it grid-snaps coordinates,
  * assigns ids, hosts openings, and runs semantic checks — producing a NEW
  * immutable IR (the input AST is never mutated). `render` consumes IR only.
+ *
+ * This file holds the entry points and the orchestration: `resolve`, `resolveAll`, the stage
+ * memo, the multi-storey pass (`resolveLevelsImpl`) and `resolveBody`'s numbered steps. The
+ * stages it calls live in `src/ir/` (`types`, `expand`, `side-tables`, `groups`, `checks`,
+ * `sheet`), and this module re-exports their public names, so importers read them from here.
+ *
+ * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): each resolution runs under `withStepMeter`,
+ * starting where the storey below it stopped. `resolveBody` charges one step per root `keep`,
+ * `DIAGNOSTIC_STEPS` per diagnostic it records, and the size of each id set or element list it
+ * builds (an instance's ids, `ctx.group()`, a deriver's audit, the authored ids) before building
+ * it; the plan's `stacked` keeps charge `DIAGNOSTIC_STEPS` per report. A crossing is
+ * `E_STEP_LIMIT`, and the plan then resolves to no elements.
  */
 
 import type { ExprPoint, LevelNode, PlanNode, Point } from "./ast.js";
