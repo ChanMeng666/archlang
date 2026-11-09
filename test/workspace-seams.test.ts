@@ -312,7 +312,9 @@ describe("every makeNodeWorld is rooted or listed", () => {
   const declares = walk(ROOT)
     .map((f) => relative(ROOT, f).split(sep).join("/"))
     .filter((f) => /\.(ts|mts|js|mjs)$/.test(f))
-    .filter((f) => /\b(?:function|(?:export\s+)?(?:const|let|var))\s+makeNodeWorld\b/.test(readFileSync(join(ROOT, f), "utf8")))
+    .filter((f) =>
+      /\b(?:function|(?:export\s+)?(?:const|let|var))\s+makeNodeWorld\b/.test(readFileSync(join(ROOT, f), "utf8")),
+    )
     .sort();
 
   it("the core CLI's is the one rooted copy; every other copy is in KNOWN_UNROOTED_WORLDS", () => {
