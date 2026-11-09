@@ -21,7 +21,8 @@ import { offsetToPosition } from "../src/diagnostics.js";
 import { COMPLETION_KIND, createHandlers, type CoreCodeAction, type CoreLsp } from "../src/handlers.js";
 
 const { COMPLETION_KINDS } = archlang;
-const h = createHandlers(archlang as unknown as CoreLsp);
+// The real core, uncast: `CoreLsp` is derived from its declarations, so this line is the type check.
+const h = createHandlers(archlang);
 
 /** Position of a source offset — the same conversion the editor would do. */
 const pos = (text: string, offset: number) => offsetToPosition(text, offset);
@@ -44,13 +45,20 @@ const SRC = [
   "}",
 ].join("\n");
 
+/**
+ * A `compile` stub that returns only `diagnostics`, the one field the adapter reads. The cast is
+ * the stub's, not the seam's: a real `CompileResult` carries the SVG and more that no handler needs.
+ */
+const compileReturning = (diagnostics: unknown[]): CoreLsp["compile"] =>
+  (() => ({ diagnostics })) as unknown as CoreLsp["compile"];
+
 /** A minimal CoreLsp whose every member throws unless overridden. */
 function stubCore(over: Partial<CoreLsp>): CoreLsp {
   const nope = (name: string) => () => {
     throw new Error(`stub core: ${name} not stubbed`);
   };
   return {
-    compile: () => ({ diagnostics: [] }),
+    compile: compileReturning([]),
     hover: nope("hover"),
     completion: nope("completion"),
     definition: nope("definition"),
@@ -339,17 +347,15 @@ describe("codeAction — never edits another file", () => {
     const stub = createHandlers(
       stubCore({
         // compile() DOES carry `file` — that is where the provenance comes from.
-        compile: () => ({
-          diagnostics: [
-            {
-              severity: "warning",
-              message: "door does not lie on any wall",
-              code: "W_DOOR_OFF_WALL",
-              span: { start: 10, end: 30 },
-              file: "lib.arch",
-            },
-          ],
-        }),
+        compile: compileReturning([
+          {
+            severity: "warning",
+            message: "door does not lie on any wall",
+            code: "W_DOOR_OFF_WALL",
+            span: { start: 10, end: 30 },
+            file: "lib.arch",
+          },
+        ]),
         codeActions: () => [foreignAction],
       }),
     );
@@ -359,16 +365,14 @@ describe("codeAction — never edits another file", () => {
   it("keeps the identical action when the diagnostic belongs to THIS document", () => {
     const stub = createHandlers(
       stubCore({
-        compile: () => ({
-          diagnostics: [
-            {
-              severity: "warning",
-              message: "door does not lie on any wall",
-              code: "W_DOOR_OFF_WALL",
-              span: { start: 10, end: 30 },
-            },
-          ],
-        }),
+        compile: compileReturning([
+          {
+            severity: "warning",
+            message: "door does not lie on any wall",
+            code: "W_DOOR_OFF_WALL",
+            span: { start: 10, end: 30 },
+          },
+        ]),
         codeActions: () => [foreignAction],
       }),
     );

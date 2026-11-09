@@ -32,52 +32,28 @@ import {
   type SignatureHelp,
   type WorkspaceEdit,
 } from "vscode-languageserver-protocol";
-import { lspDiagnostics, positionToOffset, spanToRange, type CompileFn } from "./diagnostics.js";
+import { lspDiagnostics, positionToOffset, spanToRange } from "./diagnostics.js";
 
-// Type-only reference into the (ESM) core from this CJS module: typing the icon
-// map Record<CompletionKind, …> makes a newly added completion kind a compile
-// error here, not a silent fallback-to-Text icon.
+// Type-only references into the (ESM) core from this CJS module. The adapter's view of the core
+// is DERIVED from the core's own declarations, never retyped: a changed core signature is a
+// compile error here (and in `server.ts`, which hands the real module in uncast), not a runtime
+// fault. Typing the icon map Record<CompletionKind, …> likewise makes a newly added completion
+// kind a compile error, not a silent fallback-to-Text icon.
+type Core = typeof import("@chanmeng666/archlang", { with: { "resolution-mode": "import" }});
 type CoreCompletionKind = import("@chanmeng666/archlang", { with: { "resolution-mode": "import" }}).CompletionKind;
 
-// Minimal structural types for the core language-service functions (the core is
-// dynamically imported by the server, so we describe just what we call).
-export interface Span {
-  start: number;
-  end: number;
-}
-/** The agent-facing JSON projection of a diagnostic (subset the adapter reads). */
-export interface CoreDiagnosticJson {
-  code?: string;
-  severity: "error" | "warning";
-  message: string;
-  span?: [number, number];
-}
-/** A core quickfix code action (see the core `codeActions`). */
-export interface CoreCodeAction {
-  title: string;
-  kind: "quickfix";
-  diagnostic: CoreDiagnosticJson;
-  edits: { span: Span; newText: string }[];
-  isPreferred: boolean;
-}
-/** A core refactor action (see the core `refactorActions`): a `reroll` suggestion,
+/** A byte span in the source (the core's `Span`). */
+export type Span = import("@chanmeng666/archlang", { with: { "resolution-mode": "import" }}).Span;
+/** The slice of `@chanmeng666/archlang` this adapter uses: the core's own functions, by name. */
+export type CoreLsp = Pick<
+  Core,
+  "compile" | "hover" | "completion" | "definition" | "rename" | "signatureHelp" | "codeActions" | "refactorActions"
+>;
+/** A core quickfix code action (what the core `codeActions` returns). */
+export type CoreCodeAction = ReturnType<CoreLsp["codeActions"]>[number];
+/** A core refactor action (what the core `refactorActions` returns): a `reroll` suggestion,
  *  bound to no diagnostic. */
-export interface CoreRefactorAction {
-  title: string;
-  kind: "refactor.rewrite";
-  edits: { span: Span; newText: string }[];
-}
-/** The slice of `@chanmeng666/archlang` this adapter uses. */
-export interface CoreLsp {
-  compile: CompileFn;
-  hover(src: string, off: number): { contents: string; span?: Span } | null;
-  completion(src: string, off: number): { label: string; kind: CoreCompletionKind; detail?: string; doc?: string }[];
-  definition(src: string, off: number): Span | null;
-  rename(src: string, off: number, newName: string): { span: Span; newText: string }[] | null;
-  signatureHelp(src: string, off: number): { label: string; params: string[]; activeParameter: number } | null;
-  codeActions(src: string, range: Span): CoreCodeAction[];
-  refactorActions(src: string, range: Span): CoreRefactorAction[];
-}
+export type CoreRefactorAction = ReturnType<CoreLsp["refactorActions"]>[number];
 
 /** Core completion kind → the editor's icon enum. Total by construction. */
 export const COMPLETION_KIND: Record<CoreCompletionKind, CompletionItemKind> = {
