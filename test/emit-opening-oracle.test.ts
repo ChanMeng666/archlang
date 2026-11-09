@@ -22,7 +22,7 @@ import { emitOpening } from "../src/fix-producers.js";
 import { exprToSource } from "../src/expr-source.js";
 import type { DoorHinge } from "../src/grammar/tokens.js";
 import { fmt3 as numStr } from "../src/num-format.js";
-import { archPlan } from "./arbitrary-plan.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
 import { runs } from "./setup/fast-check.js";
 
 type OpeningKind = "door" | "window" | "opening";

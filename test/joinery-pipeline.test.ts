@@ -28,7 +28,7 @@ import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile, makeVirtualWorld } from "../src/index.js";
 import type { SceneNode } from "../src/scene.js";
-import { crossesInterior, primToLoops } from "./joinery-laws.js";
+import { crossesInterior, primToLoops } from "./helpers/joinery-laws.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const EXAMPLES = join(__dirname, "..", "examples");

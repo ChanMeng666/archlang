@@ -22,7 +22,7 @@ import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolvePlan } from "../src/analyze.js";
 import { LINT_CODE_LAYERS, LINT_RULES, lint, lintWithCoverage } from "../src/lint.js";
-import { EXAMPLES_WORLD, EXAMPLE_FILES, lintByRule, SHIPPED_EXAMPLES } from "./d4-oracle.js";
+import { EXAMPLES_WORLD, EXAMPLE_FILES, lintByRule, SHIPPED_EXAMPLES } from "./helpers/d4-oracle.js";
 
 const RULES_DIR = resolvePath("src/lint/rules");
 

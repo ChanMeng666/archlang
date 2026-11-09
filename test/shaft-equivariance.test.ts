@@ -44,7 +44,7 @@ import {
   shell,
   townhouse,
   turningTower,
-} from "./shaft-equivariance-models.js";
+} from "./helpers/shaft-equivariance-models.js";
 
 /** How far one frame may differ from the identity, for one building. */
 interface Bound {

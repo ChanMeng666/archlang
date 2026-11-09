@@ -21,8 +21,12 @@ import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, joinWallSet, lint, resolvePlan, toScene } from "../src/index.js";
 import { loopWinding } from "../src/geometry/band.js";
 import { classifyWallSet } from "../src/wall-lowering.js";
-import { type CompilerApi, allStoreysDigestWithDiagnostics, semanticDigestWith } from "./byte-identity-digest.js";
-import { FLUSH, FOUR_OPEN, FOUR_OPEN_PLACED, THREE_OPEN_PLACED, UNMOVED } from "./open-crossing-plans.js";
+import {
+  type CompilerApi,
+  allStoreysDigestWithDiagnostics,
+  semanticDigestWith,
+} from "./helpers/byte-identity-digest.js";
+import { FLUSH, FOUR_OPEN, FOUR_OPEN_PLACED, THREE_OPEN_PLACED, UNMOVED } from "./tables/open-crossing-plans.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };

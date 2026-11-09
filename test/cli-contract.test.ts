@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { EXIT } from "../src/cli/io.js";
 import { buildManifest } from "../src/index.js";
-import { CASES, observe, setup } from "./cli-contract-cases.js";
+import { CASES, observe, setup } from "./tables/cli-contract-cases.js";
 import { runArch } from "./helpers/cli.js";
 
 /**

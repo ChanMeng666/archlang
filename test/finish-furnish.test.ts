@@ -34,7 +34,7 @@ import { sourceConflicts } from "../src/repair.js";
 import type { World } from "../src/world.js";
 import { canonicalFixture } from "../src/elements/fixtures-glyphs.js";
 import { countsByClass, GATED, sweep } from "../scripts/probe-finish-wet-rooms.js";
-import { finishDigest, PARTLY } from "./finish-digest.js";
+import { finishDigest, PARTLY } from "./helpers/finish-digest.js";
 import { floorAt, runs } from "./setup/fast-check.js";
 
 /**
@@ -520,7 +520,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
    * and a full run — measured on the stage
    * BEFORE the partly-furnished note and the shape test existed (base a18dcca) and unchanged
    * since: neither may move what `finish` writes or how it reports an empty room. Re-measure
-   * only for a change you can explain row by row (`test/finish-digest.ts`).
+   * only for a change you can explain row by row (`test/helpers/finish-digest.ts`).
    *
    * Six rows re-measured 2026-10-18 (plan-soundness PS2.1–PS2.3): courtyard-house,
    * furnished-flat, hillside-villa, library, terrace-row and two-storey had openings at wall

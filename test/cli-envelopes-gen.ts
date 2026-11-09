@@ -16,7 +16,7 @@ import { join } from "node:path";
 import { type CliIo, RESIDENT } from "../src/cli/io.js";
 import { runCli } from "../src/cli/run.js";
 import { buildManifest } from "../src/index.js";
-import { type Run, SCENARIOS, observe, setup } from "./cli-contract-cases.js";
+import { type Run, SCENARIOS, observe, setup } from "./tables/cli-contract-cases.js";
 
 const TABLE = "test/tables/cli-envelopes.json";
 const why = process.argv[2];

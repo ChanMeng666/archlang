@@ -1,9 +1,9 @@
 /**
- * The D4 ⋉ Z² equivariance oracle over RANDOM plans (`test/arbitrary-plan.ts`).
+ * The D4 ⋉ Z² equivariance oracle over RANDOM plans (`test/helpers/arbitrary-plan.ts`).
  *
  * The corpus suites pin violations per example; a random plan has no name to pin, so here
  * whole CLASSES are excluded — each through its own `covers` predicate in
- * `test/equivariance-known.ts` — and any violation no class accounts for fails with the
+ * `test/tables/equivariance-known.ts` — and any violation no class accounts for fails with the
  * shrunk plan printed. The instance variant of the arbitrary (`RenderOptions.instance`)
  * draws the whole plan as ONE placed component, so a spec renders as P₀ and as gP for any
  * element g.
@@ -50,7 +50,7 @@ import { describe, expect, it } from "vitest";
 import type { PlaceRotate } from "../src/ast.js";
 import { composeFrame, makeFrame } from "../src/frame.js";
 import { compile, type Diagnostic, describe as describePlan, lint } from "../src/index.js";
-import { type PlanSpec, planSpec, withInstance } from "./arbitrary-plan.js";
+import { type PlanSpec, planSpec, withInstance } from "./helpers/arbitrary-plan.js";
 import {
   D4_ELEMENTS,
   D4_TEST_ELEMENTS,
@@ -62,8 +62,8 @@ import {
   stable,
   translationFor,
   windowOnTie,
-} from "./d4-oracle.js";
-import { KNOWN_CLASSES } from "./equivariance-known.js";
+} from "./helpers/d4-oracle.js";
+import { KNOWN_CLASSES } from "./tables/equivariance-known.js";
 import { runs } from "./setup/fast-check.js";
 
 /** Every non-identity element (P₀ is the identity). */

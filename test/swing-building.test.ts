@@ -35,7 +35,7 @@ import { type RDoor, type RRoom, resolveAll } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { NULL_WORLD } from "../src/world.js";
-import { FRAMES, framed, loop, plan, ring, SWING_BUILDING_PLANS, southWall } from "./swing-building-plans.js";
+import { FRAMES, framed, loop, plan, ring, SWING_BUILDING_PLANS, southWall } from "./tables/swing-building-plans.js";
 
 const svg = (src: string): string => {
   const out = compile(src, { noCache: true });

@@ -3,8 +3,8 @@ import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { lint, repair } from "../src/index.js";
-import { archPlan } from "./arbitrary-plan.js";
-import { HARD_CODES, hardConflicts, newConflicts } from "./repair-conflicts.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
+import { HARD_CODES, hardConflicts, newConflicts } from "./helpers/repair-conflicts.js";
 import { runs } from "./setup/fast-check.js";
 
 /**

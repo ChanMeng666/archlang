@@ -32,8 +32,8 @@ import {
   type TileRoom,
 } from "../src/room-tiling.js";
 import { NULL_WORLD } from "../src/world.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
-import { compareScenes, D4_ELEMENTS, frameFor, sceneOf, witnessCase, witnessPair } from "./d4-oracle.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
+import { compareScenes, D4_ELEMENTS, frameFor, sceneOf, witnessCase, witnessPair } from "./helpers/d4-oracle.js";
 import {
   BED,
   COMB_PLAN,
@@ -44,7 +44,7 @@ import {
   RECTILINEAR_PLANS,
   STATEMENT,
   U_PLAN,
-} from "./rectilinear-rooms-plans.js";
+} from "./tables/rectilinear-rooms-plans.js";
 
 const API: CompilerApi = { compile, describe, lint };
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;
@@ -920,7 +920,7 @@ suite("Plan JSON", () => {
   });
 });
 
-/** Measured on this branch, with `test/rectilinear-rooms-plans.ts` as it stands. */
+/** Measured on this branch, with `test/tables/rectilinear-rooms-plans.ts` as it stands. */
 const DIGESTS: [string, string][] = [
   ["5f2d0bbf572d77201d96558db8174abb57341f30f79bffbf477b9a3f3c24c03a", "issue"],
   ["0e3c48a4d685c6528428b2e24859d2761c73794f5ede7e0dc122a7a3d391a330", "issue-tiled"],

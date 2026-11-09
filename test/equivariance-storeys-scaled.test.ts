@@ -6,6 +6,6 @@
  * `test/equivariance-storeys-head.test.ts`.
  */
 
-import { defineScaledSuite, SCALED_MODEL_CASES } from "./equivariance-storeys-cases.js";
+import { defineScaledSuite, SCALED_MODEL_CASES } from "./tables/equivariance-storeys-cases.js";
 
 defineScaledSuite("scaled shaft models", SCALED_MODEL_CASES);

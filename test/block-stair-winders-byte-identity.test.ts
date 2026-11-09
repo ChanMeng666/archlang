@@ -27,8 +27,8 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./byte-identity-digest.js";
-import { winderLawRows } from "./block-stair-winders-law.js";
+import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
+import { winderLawRows } from "./helpers/block-stair-winders-law.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };

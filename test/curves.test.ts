@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { afterAll, describe as suite, expect, it } from "vitest";
-import { arcSweepAngle, pathArcs, pathLines } from "./path-prim.js";
+import { arcSweepAngle, pathArcs, pathLines } from "./helpers/path-prim.js";
 import {
   applyFixes,
   compile,

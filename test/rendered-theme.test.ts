@@ -37,7 +37,7 @@ import { glyphCtx, parseHexColor, symbolInk } from "../src/elements/glyph-lib.js
 import type { SceneNode } from "../src/scene.js";
 import { DEFAULT_THEME, mergeTheme, sanitizeTheme, THEMES, type Theme } from "../src/theme.js";
 import type { World } from "../src/world.js";
-import { ROOT } from "./rectilinear-rooms-law.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 import {
   LEGACY_THEMES,
   MEASURED_FAMILIES,
@@ -45,7 +45,7 @@ import {
   type ThemeLawApi,
   themeLawDigest,
   themeLawRows,
-} from "./rendered-theme-law.js";
+} from "./helpers/rendered-theme-law.js";
 
 const sceneOf = () =>
   compile(`plan "G" { units mm room id=r at (0,0) size 4000x3000 label "R" }`, { noCache: true }).scene!;

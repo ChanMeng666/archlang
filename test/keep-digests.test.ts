@@ -21,7 +21,7 @@
  */
 
 import { describe as suite, expect, it } from "vitest";
-import { k3bDigestOf, k3DigestOf, keepCorpus } from "./keep-harness.js";
+import { k3bDigestOf, k3DigestOf, keepCorpus } from "./helpers/keep-harness.js";
 
 const K3_DIGESTS: [string, string][] = [
   ["align-equal", "55af8ab086b4e78bb06062cd549ff704d3a94728a8e06e04a3b70c63bbeb2b52"],

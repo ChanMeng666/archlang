@@ -1,7 +1,7 @@
 /**
  * The parser's error-recovery METRIC, pinned as floors over a FROZEN corpus.
  *
- * `test/recovery-metric.ts` defines it (statement-fingerprint survival over deterministic
+ * `test/helpers/recovery-metric.ts` defines it (statement-fingerprint survival over deterministic
  * mutants). The corpus is `test/recovery-corpus/`: verbatim copies of eight examples,
  * chosen for statement-form coverage (walls' point blocks, `theme`/`style` blocks,
  * `for`/`if`/`let`, `component`/`place`, `zone`, `level`, `strip`). It is a SNAPSHOT, not
@@ -66,7 +66,7 @@ import {
   statementFingerprints,
   type MetricApi,
   type MutationClass,
-} from "./recovery-metric.js";
+} from "./helpers/recovery-metric.js";
 
 const API: MetricApi = { lex, parse };
 const CORPUS = resolvePath("test/recovery-corpus");

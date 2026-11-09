@@ -19,8 +19,8 @@ import { sourceConflicts } from "../src/repair.js";
 import { PAPER_SIZES } from "../src/sheet.js";
 import type { World } from "../src/world.js";
 import { AUTHORS_HEIGHT, BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
-import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./byte-identity-digest.js";
-import { heightFreeSource } from "./height-free-source.js";
+import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./helpers/byte-identity-digest.js";
+import { heightFreeSource } from "./helpers/height-free-source.js";
 
 /**
  * `finish()` — the sheet stage (`docs/adr/0024-finish-as-explicit-transform.md`). The

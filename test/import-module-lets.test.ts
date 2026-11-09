@@ -22,7 +22,7 @@ import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, makeVirtualWorld } from "../src/index.js";
 import type { Diagnostic, World } from "../src/index.js";
 import { MAX_EVAL_STEPS } from "../src/expr.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 

@@ -23,8 +23,8 @@ import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { KEEP_WEAK_BASELINE } from "./keep-byte-identity-baseline.js";
 import { compile, describe } from "../src/index.js";
-import { blankKeeps, k2Parts, keepCorpus, keepNodes } from "./keep-harness.js";
-import { keepWeakLawDigest, keepWeakLawFiles, keepWeakLawSteps } from "./keep-weak-law.js";
+import { blankKeeps, k2Parts, keepCorpus, keepNodes } from "./helpers/keep-harness.js";
+import { keepWeakLawDigest, keepWeakLawFiles, keepWeakLawSteps } from "./helpers/keep-weak-law.js";
 
 suite("keep · K1, the weak law: a plan with no keep is unchanged", () => {
   it("the baseline covers the corpus as it stood, and no baseline file declares a keep", () => {

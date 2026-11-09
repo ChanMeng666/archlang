@@ -16,7 +16,7 @@
  *    for any face rule; this one pins the rule itself.
  *
  * All four run over every storey of every shipped example, over the joinery fuzz generator
- * (`test/arbitrary-joinery.ts`, the same pinned seed convention as
+ * (`test/helpers/arbitrary-joinery.ts`, the same pinned seed convention as
  * `test/joinery-oracle.test.ts`), and over 20 deterministic T-junction ties. Points are a
  * 41 x 41 grid plus probes a quarter-thickness off every band vertex (where junction squares
  * are; a grid alone rarely lands in one). Every quantity is read off the exact `EdgeLoop`s —
@@ -40,7 +40,7 @@ import { compile } from "../src/index.js";
 import type { SceneWall } from "../src/scene.js";
 import { classifyWallSet, joinWallSet } from "../src/wall-lowering.js";
 import type { World } from "../src/world.js";
-import { type WallSpec, angledWalls, rectilinearWalls, renderWalls } from "./arbitrary-joinery.js";
+import { type WallSpec, angledWalls, rectilinearWalls, renderWalls } from "./helpers/arbitrary-joinery.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SEED = 20261013;

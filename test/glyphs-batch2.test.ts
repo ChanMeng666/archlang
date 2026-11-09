@@ -44,7 +44,7 @@ import { toScene } from "../src/scene-build.js";
 import { DEFAULT_THEME } from "../src/theme.js";
 import type { Point } from "../src/ast.js";
 import type { PathEdge, RenderSizes, SceneNode } from "../src/scene.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { pathExtentPoints } from "./helpers/glyph-extent.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { fixtureGlyph, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { defaultFootprint, isUnderlay, solidFurniture } from "../src/fixtures-catalog.js";

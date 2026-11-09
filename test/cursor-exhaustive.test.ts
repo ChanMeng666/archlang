@@ -23,7 +23,7 @@ import { parse } from "../src/parser.js";
 import { eachExpr, eachStatement, statementExprs } from "../src/cursor.js";
 import type { PlanNode, Statement } from "../src/ast.js";
 import type { Expr } from "../src/expr.js";
-import { archPlan } from "./arbitrary-plan.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
 import { runs } from "./setup/fast-check.js";
 
 // `Expr`'s own discriminant (`src/expr.ts`) — a type union, so there is no runtime

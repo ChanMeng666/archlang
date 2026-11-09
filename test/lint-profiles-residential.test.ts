@@ -12,7 +12,7 @@ import {
   taste,
 } from "../src/index.js";
 import { ADVISORY_CODE_PROFILES, DEFERRED_PROFILE_NUMBERS } from "../src/lint/ruleset.js";
-import { EXAMPLE_SOURCES, TASTE_WORLD } from "./taste-sources.js";
+import { EXAMPLE_SOURCES, TASTE_WORLD } from "./helpers/taste-sources.js";
 
 /**
  * The residential-advisory profiles (plan-soundness PS5.2): `cn-`, `uk-` and

@@ -15,7 +15,7 @@ import { compile, describe, makeVirtualWorld, type RWindow } from "../src/index.
 import { evaluationSteps, resolveAll } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
-import { D4_ELEMENTS, witnessCase } from "./d4-oracle.js";
+import { D4_ELEMENTS, witnessCase } from "./helpers/d4-oracle.js";
 
 const plan = (body: string, head = ""): string => `plan "t" {\n  units mm\n${head}${body}}\n`;
 const W = "  walls from rooms exterior 300 partition 100\n";

@@ -3,7 +3,7 @@ import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.j
 import { computeCirculationOverlay } from "../src/analyze/circulation-overlay.js";
 import type { RDoor, RFurniture, ROpening, RRoom } from "../src/ir.js";
 import { describe as describePlan } from "../src/index.js";
-import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
+import { censusOf, EPS_MM, shippedStoreys, type Census } from "./helpers/wall-solid.js";
 
 /**
  * The GEOMETRIC RESIDUAL: the nav grid's wall mask against the DRAWN wall solid, over
@@ -21,7 +21,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  *
  * This gate is the missing cross-check: the model against the DRAWING. The comparands, the
  * two structural exclusions and the argument for why there is **no magnitude tolerance at
- * all** are documented in `test/wall-solid.ts`; read that header before touching this one.
+ * all** are documented in `test/helpers/wall-solid.ts`; read that header before touching this one.
  *
  * ## The census, measured BEFORE any assertion existed (30 examples)
  *
@@ -86,7 +86,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  * corpus it adds nothing either: the census above is unchanged, and no cell falls in the
  * new class. A thinner wall's covered cells are blocked though the drawn solid misses
  * their centres; the census counts them as `centrelineCover`, from the segment geometry in
- * `test/wall-solid.ts`, never as a residual. The class is shown non-vacuous below on a
+ * `test/helpers/wall-solid.ts`, never as a residual. The class is shown non-vacuous below on a
  * planted 80 mm partition: the leak law is red on the centre-only rule and green with the
  * cover, and the census names the covered cells.
  *
@@ -103,7 +103,7 @@ import { censusOf, EPS_MM, shippedStoreys, type Census } from "./wall-solid.js";
  * class). A small one is a structural difference that has escaped the two exclusions — name
  * the class and excise it BY GEOMETRY, exactly as the vertex disc and the boundary tie are
  * excised. **Never enlarge the vertex radius, add a magnitude tolerance, or drop an example
- * to go green**: `test/wall-solid.ts` explains why any tolerance large enough to admit a
+ * to go green**: `test/helpers/wall-solid.ts` explains why any tolerance large enough to admit a
  * legitimate mitre would already swallow a curved wall's whole under-direction residual.
  */
 

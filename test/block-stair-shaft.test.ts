@@ -28,7 +28,7 @@ import {
   THREE_FLIGHTS,
   U_STAIR,
   upperBody,
-} from "./block-stair-plans.js";
+} from "./tables/block-stair-plans.js";
 
 const MISMATCH = "W_SHAFT_FOOTPRINT_MISMATCH";
 const of = (src: string, code: string): Diagnostic[] => lint(src).filter((d) => d.code === code);

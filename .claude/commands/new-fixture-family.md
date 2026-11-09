@@ -40,7 +40,7 @@ the new word only: plans that do not stay byte-identical.
    every aspect and turn, the repeat counts clamped), plus `test/fixture-byte-identity.test.ts`'s
    groups 2–4 where the family joins a redrawn set; group 1 is never touched.
 7. **Byte identity**: the law that a plan naming none of the new words renders, describes and lints as
-   before (`test/new-families-byte-identity.test.ts`, with `test/new-families-law.ts`). No shipped
+   before (`test/new-families-byte-identity.test.ts`, with `test/helpers/new-families-law.ts`). No shipped
    `.arch` or docs fence may name the new word: show it in prose
    (`.claude/rules/glyphs.md` § Traps). `check:quick` cannot see that guard; CI does.
 8. **3D**: in `packages/archlang-3d`, a generator in `src/mesh/t0-<group>.ts`, its height in

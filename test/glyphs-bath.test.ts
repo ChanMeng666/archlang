@@ -31,7 +31,7 @@ import { resolve } from "../src/ir.js";
 import { toScene } from "../src/scene-build.js";
 import { compile } from "../src/index.js";
 import type { Scene, SceneNode } from "../src/scene.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { pathExtentPoints } from "./helpers/glyph-extent.js";
 import type { Rect } from "../src/elements/glyph-lib.js";
 import { glyphCtx } from "../src/elements/glyph-lib.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";

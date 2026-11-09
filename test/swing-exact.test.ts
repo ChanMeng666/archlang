@@ -10,7 +10,7 @@ import {
 } from "../src/geometry.js";
 import { lint } from "../src/index.js";
 import { widestClearingWidth } from "../src/lint/rules/doors.js";
-import { swingsCollideV1 } from "./swing-predicate-v1.js";
+import { swingsCollideV1 } from "./helpers/swing-predicate-v1.js";
 import { floorAt, runs } from "./setup/fast-check.js";
 
 /**

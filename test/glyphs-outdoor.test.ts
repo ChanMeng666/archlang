@@ -41,7 +41,7 @@ import { resolve } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import type { Scene, SceneNode } from "../src/scene.js";
-import { arcEdgeSweep, arcEdgesOf, pathExtentPoints } from "./glyph-extent.js";
+import { arcEdgeSweep, arcEdgesOf, pathExtentPoints } from "./helpers/glyph-extent.js";
 import { weightWidth } from "../src/scene.js";
 import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { fixtureSpec } from "../src/fixtures-catalog.js";

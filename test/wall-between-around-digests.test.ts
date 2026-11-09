@@ -1,7 +1,7 @@
 /**
  * The pairwise-wall digest table (ADR 0028 §4; card PS3.3): SHA-256 over SVG, `describe()`,
  * `lint()` and `compile().diagnostics` of every storey of each plan in
- * `test/wall-between-around-plans.ts`, pinned in its own commit after the byte-identity law
+ * `test/tables/wall-between-around-plans.ts`, pinned in its own commit after the byte-identity law
  * held (every existing digest suite unchanged, no re-pin; a corpus sweep against `main` moved
  * only the new language-reference fence; the twins in `test/wall-between-around.test.ts`).
  * Measured with the test's own digest body (`allStoreysDigestWithDiagnostics`). A moved row is
@@ -10,8 +10,8 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
-import { WALL_BETWEEN_AROUND_PLANS } from "./wall-between-around-plans.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
+import { WALL_BETWEEN_AROUND_PLANS } from "./tables/wall-between-around-plans.js";
 
 const API: CompilerApi = { compile, describe, lint };
 

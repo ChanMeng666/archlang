@@ -11,7 +11,7 @@ import {
 } from "../src/analyze.js";
 import { describe as describePlan, lint, suggestTopology, validateIntent } from "../src/index.js";
 import type { RDoor, ROpening, RRoom } from "../src/ir.js";
-import { archPlan } from "./arbitrary-plan.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
 import { runs } from "./setup/fast-check.js";
 
 /**

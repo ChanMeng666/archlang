@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
-import { arcMidpoint, arcSweepAngle, pathArcs } from "./path-prim.js";
+import { arcMidpoint, arcSweepAngle, pathArcs } from "./helpers/path-prim.js";
 import {
   IDENTITY,
   composeFrame,

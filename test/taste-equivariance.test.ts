@@ -31,7 +31,7 @@ import {
   EXAMPLES_WORLD,
   rotateNorth,
   wrapperSource,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 
 const report = (src: string): TasteReport => taste(src, { world: EXAMPLES_WORLD });
 

@@ -20,7 +20,7 @@ import type { RWall } from "../src/ir.js";
 import { buildDatumTable } from "../src/room-datums.js";
 import { MAX_EVAL_STEPS, withStepMeter } from "../src/expr.js";
 import { selectSegment } from "../src/segment-select.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 import {
   DERIVED_PIECES,
   DERIVED_ROOMS,
@@ -31,7 +31,7 @@ import {
   OPEN_WALL,
   RING_PIECES,
   SEGMENT_SELECT_PLANS,
-} from "./segment-select-plans.js";
+} from "./tables/segment-select-plans.js";
 
 const API: CompilerApi = { compile, describe, lint };
 const plan = (body: string, head = ""): string => `plan "p" {\n  units mm\n  grid 50\n${head}${body}\n}\n`;

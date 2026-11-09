@@ -35,7 +35,7 @@ import { resolve } from "../src/ir.js";
 import { parse } from "../src/parser.js";
 import { toScene } from "../src/scene-build.js";
 import type { Scene, SceneNode } from "../src/scene.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { pathExtentPoints } from "./helpers/glyph-extent.js";
 import { weightWidth } from "../src/scene.js";
 import { CANONICAL_FIXTURES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import type { Rect } from "../src/elements/glyph-lib.js";

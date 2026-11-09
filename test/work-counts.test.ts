@@ -22,7 +22,7 @@ import {
   type WorkCountsTable,
   workCountPlans,
   workCounts,
-} from "./work-counts.js";
+} from "./helpers/work-counts.js";
 
 const table = JSON.parse(readFileSync(TABLE, "utf8")) as WorkCountsTable;
 const plans = workCountPlans();

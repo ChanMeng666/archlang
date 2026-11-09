@@ -8,7 +8,7 @@ import { diagnosticsSummary, validateSummary } from "../src/cli/summary.js";
 import { ERROR_CODES } from "../src/error-catalog.js";
 import { diagnosticToJson, lint } from "../src/index.js";
 import type { Diagnostic } from "../src/index.js";
-import { validateJsonFiles, withoutSummary } from "./validate-json-run.js";
+import { validateJsonFiles, withoutSummary } from "./helpers/validate-json-run.js";
 import { runArch } from "./helpers/cli.js";
 
 /**

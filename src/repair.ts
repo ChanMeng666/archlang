@@ -916,7 +916,7 @@ const isGarageDoor = (d: RDoor | ROpening): boolean => d.kind === "door" && d.do
  *     an opening wider than a doorway only while it is blocked, `openingBlock`);
  *   * `swing|d|a` — a piece in door `d`'s swing, with clearance (`W_SWING_OBSTRUCTED`).
  *
- * `test/repair-conflicts.ts` re-derives the same census from the lint side, independently.
+ * `test/helpers/repair-conflicts.ts` re-derives the same census from the lint side, independently.
  */
 function hardConflictsOf(
   furniture: RFurniture[],

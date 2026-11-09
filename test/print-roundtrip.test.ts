@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { format } from "../src/format.js";
 import { parse } from "../src/parser.js";
-import { archPlan } from "./arbitrary-plan.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
 import { runs } from "./setup/fast-check.js";
 
 /** Field names that are pure position/trivia, not semantics: every `*Span` field

@@ -6,7 +6,7 @@ import { resolve } from "../src/ir.js";
 import { arcFromChord, arcSteps, arcTessellate } from "../src/geometry/arc.js";
 import type { Point } from "../src/ast.js";
 import type { SceneNode } from "../src/scene.js";
-import { pathArcs } from "./path-prim.js";
+import { pathArcs } from "./helpers/path-prim.js";
 
 /**
  * The `arc … radius R` validity test is decided EXACTLY — `4·R²` against `DX² + DY²` in

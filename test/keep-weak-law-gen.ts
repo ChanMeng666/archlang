@@ -12,7 +12,7 @@
  */
 
 import { writeFileSync } from "node:fs";
-import { keepWeakLawDigest, keepWeakLawFiles, keepWeakLawSteps } from "./keep-weak-law.js";
+import { keepWeakLawDigest, keepWeakLawFiles, keepWeakLawSteps } from "./helpers/keep-weak-law.js";
 
 const why = process.argv[2];
 if (!why) {

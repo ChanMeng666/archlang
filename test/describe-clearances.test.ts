@@ -19,7 +19,7 @@ import { describe as suite, expect, it } from "vitest";
 import { cmdDescribe } from "../src/cli/commands-analyze.js";
 import { nodeIo, parseArgs } from "../src/cli/io.js";
 import { type ClearanceFacts, describe, lint } from "../src/index.js";
-import { EXAMPLE_FILES, EXAMPLES_WORLD } from "./d4-oracle.js";
+import { EXAMPLE_FILES, EXAMPLES_WORLD } from "./helpers/d4-oracle.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const PLANS = join(ROOT, "test/plans/plan-soundness/audits/first-contact-plans");

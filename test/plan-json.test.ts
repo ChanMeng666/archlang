@@ -18,8 +18,8 @@ import {
 // The parser's own accept-list, imported rather than retyped — the same law the
 // projection itself follows, so a fifth `dims auto` mode cannot pass this suite unnoticed.
 import { AUTO_DIMS_MODES } from "../src/ast.js";
-import { CANNOT_ROUND_TRIP } from "./plan-json-gaps.js";
-import { WALLS_FROM_ROOMS_PLANS } from "./walls-from-rooms-plans.js";
+import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
+import { WALLS_FROM_ROOMS_PLANS } from "./tables/walls-from-rooms-plans.js";
 
 /**
  * Structured JSON I/O: planFromJson / planToJson / astToJson.

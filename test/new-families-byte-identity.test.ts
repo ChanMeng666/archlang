@@ -9,7 +9,7 @@
  * Measured on `main` at `8233acc4` (the tip before the tranche), with `src/` and `examples/`
  * extracted by `git archive`, by THIS law's body (`./new-families-law.ts`) handed that tree's
  * `compile`/`describe`/`lint`, its `rendered` theme, its family table and its `makeNodeWorld` —
- * not a lookalike (see `test/byte-identity-digest.ts`). The branch measured the same table, row
+ * not a lookalike (see `test/helpers/byte-identity-digest.ts`). The branch measured the same table, row
  * for row. The sweep was proved able to fail first: a planted 0.05 → 0.051 corner radius on the
  * treadmill (a family no example draws) moved exactly `inline:families-before-legend`, and no
  * other row.
@@ -41,7 +41,7 @@ import { makeNodeWorld } from "../src/cli/io.js";
 import { CANONICAL_FIXTURES, FIXTURE_CATEGORIES, hasFixtureGlyph } from "../src/elements/fixtures-glyphs.js";
 import { THEMES } from "../src/theme.js";
 import type { World } from "../src/world.js";
-import { ROOT } from "./rectilinear-rooms-law.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 import {
   FAMILIES_BEFORE,
   type FamiliesLawApi,
@@ -49,7 +49,7 @@ import {
   familiesLawRows,
   NEAR_WORDS,
   perThemeDigests,
-} from "./new-families-law.js";
+} from "./helpers/new-families-law.js";
 
 const API: FamiliesLawApi = { compile, describe, lint, rendered: THEMES.rendered! };
 const ROWS = familiesLawRows(ROOT, CANONICAL_FIXTURES);

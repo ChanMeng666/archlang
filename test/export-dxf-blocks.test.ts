@@ -5,7 +5,7 @@ import { compile, describe, type Scene, toDxf } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
 import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
-import { everyWord } from "./sheet-text-plans.js";
+import { everyWord } from "./tables/sheet-text-plans.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 
 /**

@@ -83,7 +83,7 @@ import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, planToJson } from "../src/index.js";
-import { type CompilerApi, semanticDigestWith } from "./byte-identity-digest.js";
+import { type CompilerApi, semanticDigestWith } from "./helpers/byte-identity-digest.js";
 
 /** SHA-256 over the SVG + `describe()` + `lint()` of one example, as measured at `5298b99`.*
  *

@@ -23,7 +23,14 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { ringParts, runPicks, sharedRuns, type TileRoom } from "../src/room-tiling.js";
 import { NULL_WORLD } from "../src/world.js";
-import { BED, INTERLOCKED_PLAN, L_RING, RECTILINEAR_PLANS, STATEMENT, U_PLAN } from "./rectilinear-rooms-plans.js";
+import {
+  BED,
+  INTERLOCKED_PLAN,
+  L_RING,
+  RECTILINEAR_PLANS,
+  STATEMENT,
+  U_PLAN,
+} from "./tables/rectilinear-rooms-plans.js";
 
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;
 const LIV = `  room id=liv polygon ${L_RING} label "Living" uses living`;

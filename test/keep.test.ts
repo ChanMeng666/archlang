@@ -23,15 +23,15 @@ import { link } from "../src/import.js";
 import { compile, describe, format, lint, planToJson, repair } from "../src/index.js";
 import { evaluationSteps, resolveAll } from "../src/ir.js";
 import { MAX_EVAL_STEPS } from "../src/expr.js";
-import { residualSign, transformKeep } from "./keep-d4.js";
+import { residualSign, transformKeep } from "./helpers/keep-d4.js";
 import { fmtHalfLattice } from "../src/num-format.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { proves } from "../src/reroll.js";
 import { keepFormText, statementText } from "../src/statement-print.js";
 import { NULL_WORLD } from "../src/world.js";
-import { blankKeeps, escapeRegExp, KEEP_CORPUS_DIR, keepCorpus, keepNodes } from "./keep-harness.js";
-import { runValidate } from "./validate-json-run.js";
+import { blankKeeps, escapeRegExp, KEEP_CORPUS_DIR, keepCorpus, keepNodes } from "./helpers/keep-harness.js";
+import { runValidate } from "./helpers/validate-json-run.js";
 
 const plan = (body: string, head = ""): string => `plan "K" {\n  units mm\n${head}${body}\n}\n`;
 const keepsOf = (src: string) => describe(src).keeps ?? [];

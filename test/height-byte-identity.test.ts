@@ -64,7 +64,7 @@
  *
  * They were measured **before a single line of `src/` changed**, on `f4548db` (the tree
  * before the datum layer), by a script that imported these very digest bodies from
- * `test/byte-identity-digest.ts` — never a lookalike. That is the lesson
+ * `test/helpers/byte-identity-digest.ts` — never a lookalike. That is the lesson
  * `test/roof-void-byte-identity.test.ts` records: its first attempt measured its baseline
  * with a scratch script whose payload separator differed by one character, and reported
  * four "failures" over artifacts that were in fact byte-identical.
@@ -84,8 +84,8 @@ import type { World } from "../src/world.js";
 // The two tables moved to a module of their own when `iso-byte-identity.test.ts` began
 // making the same corpus-wide claim: one measurement, two laws, no retyped hash.
 import { AUTHORS_HEIGHT, BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
-import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./byte-identity-digest.js";
-import { authorsVerticalDatum, heightFreeSource } from "./height-free-source.js";
+import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./helpers/byte-identity-digest.js";
+import { authorsVerticalDatum, heightFreeSource } from "./helpers/height-free-source.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 const EXAMPLES = resolvePath("examples");

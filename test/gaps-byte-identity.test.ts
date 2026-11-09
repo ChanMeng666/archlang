@@ -4,7 +4,7 @@
  * A plan that writes none of the three resolves, draws, describes and lints exactly as before, down to
  * its Scene and the steps its resolution spends, in the accessibility profile and on the circulation
  * overlay too. Each digest is {@link stairLawDigest}, the widest law body the repository has
- * (`test/block-stair-law.ts`), **measured against `src/` at `cac37af4`** (`main` before the forms), that
+ * (`test/helpers/block-stair-law.ts`), **measured against `src/` at `cac37af4`** (`main` before the forms), that
  * tree extracted by `git archive`, the body and the rows imported from this branch and handed that
  * tree's compiler. The rows are every plan the block-stair law pins, then the `sheet text` law's inline
  * rows (every table and the chrome around it), then {@link GAPS_INLINE_ROWS}: each word as the names it
@@ -39,10 +39,10 @@ import { link } from "../src/import.js";
 import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { NULL_WORLD, type World } from "../src/world.js";
-import { type StairLawApi, stairLawDigest, stairLawRows } from "./block-stair-law.js";
-import { GAPS_INLINE_ROWS } from "./gaps-plans.js";
-import { ROOT } from "./rectilinear-rooms-law.js";
-import { SHEET_INLINE_ROWS } from "./sheet-text-plans.js";
+import { type StairLawApi, stairLawDigest, stairLawRows } from "./helpers/block-stair-law.js";
+import { GAPS_INLINE_ROWS } from "./tables/gaps-plans.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
+import { SHEET_INLINE_ROWS } from "./tables/sheet-text-plans.js";
 
 const stepsOf = (src: string, world: World | undefined): number => {
   clearResolveCache();

@@ -28,8 +28,8 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { extremeRuns, rectInRing } from "../src/room-tiling.js";
 import { NULL_WORLD } from "../src/world.js";
-import { compareScenes, D4_ELEMENTS, frameFor, sceneOf, witnessCase, witnessPair } from "./d4-oracle.js";
-import { BED, L_RING, L_RING_REVERSED, SIDES_BODY, SIDES_PLAN, STATEMENT } from "./rectilinear-rooms-plans.js";
+import { compareScenes, D4_ELEMENTS, frameFor, sceneOf, witnessCase, witnessPair } from "./helpers/d4-oracle.js";
+import { BED, L_RING, L_RING_REVERSED, SIDES_BODY, SIDES_PLAN, STATEMENT } from "./tables/rectilinear-rooms-plans.js";
 
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;
 const LIV = `  room id=liv polygon ${L_RING} label "Living" uses living`;

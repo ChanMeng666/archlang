@@ -17,7 +17,7 @@ import { resolvePlan, roomAreaMm2 } from "../src/analyze.js";
 import { MAX_NET_PROBE_WORK, netAreaBands, netAreaDetail, roomNetAreaMm2 } from "../src/analyze/net-area.js";
 import type { RRoom, RWall } from "../src/ir.js";
 import type { World } from "../src/world.js";
-import { oracleNetArea } from "./net-area-oracle.js";
+import { oracleNetArea } from "./helpers/net-area-oracle.js";
 
 const CORPUS_DIRS = [
   "examples",

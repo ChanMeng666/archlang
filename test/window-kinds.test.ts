@@ -32,7 +32,7 @@ import {
   sceneOf,
   witnessPair,
   witnessViolations,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 import { door } from "../src/elements/door.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
 import { doorLeaves, doorSwing } from "../src/geometry.js";
@@ -218,7 +218,7 @@ suite("`hinge`: authored or absent, never defaulted", () => {
   });
 });
 
-/** Every form, on and off a curve, through the equivariance oracle (`test/d4-oracle.ts`). */
+/** Every form, on and off a curve, through the equivariance oracle (`test/helpers/d4-oracle.ts`). */
 const WITNESS = `    wall id=w exterior thickness 300 { (0,0) (8000,0) (8000,5000) (0,5000) close }
     wall id=c exterior thickness 200 { (0,7000) arc (8000,7000) radius 6000 }
     room id=a at (0,0) size 8000x5000 label "Living" uses living

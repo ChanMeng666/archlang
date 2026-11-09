@@ -49,8 +49,8 @@ import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import type { World } from "../src/world.js";
 import { AUTHORS_HEIGHT, BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
-import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./byte-identity-digest.js";
-import { heightFreeSource } from "./height-free-source.js";
+import { type CompilerApi, allStoreysDigestWith, semanticDigestWith } from "./helpers/byte-identity-digest.js";
+import { heightFreeSource } from "./helpers/height-free-source.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 const EXAMPLES = resolvePath("examples");

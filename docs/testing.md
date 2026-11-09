@@ -82,7 +82,7 @@ old SVG back into the new payload and reproducing the old digest, then re-measur
 **Re-measuring the handedness baselines** is legitimate only when the instrument changes (the
 handedness key in `src/elements/glyph-chirality.ts`), never because a glyph moved. Read both sides
 with the same key: `git archive` the baseline tree, patch only that file's key to the new one,
-and run `npx tsx test/handedness-survey.ts <extract>` (add `--grid` for the grid); it prints the
+and run `npx tsx test/helpers/handedness-survey.ts <extract>` (add `--grid` for the grid); it prints the
 table literal. Record the measured tree and the patch in the baseline's header.
 
 ## 4. Adding a test
@@ -129,8 +129,8 @@ table literal. Record the measured tree and the patch in the baseline's header.
   plan): hash EACH payload separately per storey and per corpus row — the SVG, `compile().diagnostics`,
   `describe()`, `lint()` with the default ruleset, `lint()` with `profile: "accessibility-advisory"`,
   and the `--overlay circulation` SVG — so a move names the payload that moved. Also compute the
-  repo's combined digest, `allStoreysDigestWithDiagnostics` in `test/byte-identity-digest.ts` (over
-  `allStoreysDiagnosticsPayload` in `test/byte-identity-payload.ts`), which is what the baseline files
+  repo's combined digest, `allStoreysDigestWithDiagnostics` in `test/helpers/byte-identity-digest.ts` (over
+  `allStoreysDiagnosticsPayload` in `test/helpers/byte-identity-payload.ts`), which is what the baseline files
   pin. It hashes only: every page's SVG in `pages[]` order, `describe()`, `lint()` (default ruleset)
   and `compile().diagnostics`, joined by single spaces — not the accessibility profile or the
   overlay. Corpus: `examples/` (incl. `lib`), `test/fixtures`, `test/recovery-corpus`, the eval

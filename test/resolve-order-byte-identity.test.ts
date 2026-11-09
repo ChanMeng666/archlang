@@ -38,7 +38,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
 const DIR = resolvePath("test/resolve-order");

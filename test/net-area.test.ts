@@ -28,7 +28,7 @@ import { resolvePlan } from "../src/analyze.js";
 import { MAX_NET_CURVES, MAX_NET_PROBE_WORK, netAreaBands, netAreaDetail } from "../src/analyze/net-area.js";
 import { pointInPolygon, polygonInsideTest, VERTEX_EPS } from "../src/geometry/polygon.js";
 import type { RRoom } from "../src/ir.js";
-import { oracleNetArea } from "./net-area-oracle.js";
+import { oracleNetArea } from "./helpers/net-area-oracle.js";
 import { runs } from "./setup/fast-check.js";
 
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;

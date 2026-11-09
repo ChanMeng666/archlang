@@ -8,7 +8,7 @@
  * every storey's SVG, `describe()` and `lint()`, plus `compile().diagnostics`), **measured against
  * `src/` at `e432c24a`** (`main` with PR #280's stair rules, which has no `double` kind; first taken
  * at `8c2d6150`, re-taken when PR #280's example edits moved `two-storey`) with that tree extracted
- * by `git archive` and this suite's own digest body (`test/byte-identity-digest.ts`) run against it.
+ * by `git archive` and this suite's own digest body (`test/helpers/byte-identity-digest.ts`) run against it.
  *
  * The set is every plan of `examples/` and `test/fixtures/` that writes no `double` door and whose
  * payload the same PR left byte-identical: 23 of the 40 (28 examples and 12 fixtures) that write
@@ -58,7 +58,7 @@ import {
   planToJson,
 } from "../src/index.js";
 import { doorLeaves } from "../src/geometry.js";
-import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./byte-identity-digest.js";
+import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };

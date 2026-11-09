@@ -38,7 +38,7 @@ import {
   transformPrim,
   witnessPair,
   witnessViolations,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 import {
   ABSOLUTE,
   CORNER,
@@ -54,8 +54,8 @@ import {
   SHORT_OF_THE_CORNER,
   UNEVEN,
   UNEVEN_BODY,
-} from "./corner-window-plans.js";
-import { ROOT } from "./rectilinear-rooms-law.js";
+} from "./tables/corner-window-plans.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 
 const codes = (src: string): string[] => compile(src).diagnostics.map((d) => d.code!);
 const errors = (src: string): string[] =>

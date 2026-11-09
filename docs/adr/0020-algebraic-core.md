@@ -31,11 +31,11 @@ each face of its host wall and leaves it `ambiguous` only when a probe lands on 
 boundary, so `describe().access`, circulation, lint reachability, `suggestTopology` and
 the intent channel give one reachability answer (`test/access-policy.test.ts`).
 
-The equivariance oracle built to check the first row (`test/d4-oracle.ts`; every example and
+The equivariance oracle built to check the first row (`test/helpers/d4-oracle.ts`; every example and
 random plan placed under each of the eight group elements, every fact checked to transform
 by the group's action) is what turned "probably fine" into a enumerated, falsifiable list:
 16 violation classes, most closed over the course of this work and recorded in
-`test/equivariance-known.ts` and `docs/backlog.md` ("Equivariance
+`test/tables/equivariance-known.ts` and `docs/backlog.md` ("Equivariance
 findings"). None of the five rows above was a hypothetical risk; each had a shipped,
 reproduced defect, cited against the commit that closed it.
 
@@ -78,10 +78,10 @@ a fact some central switch has to keep in sync with every new element.
 
 ### 3. The equivariance oracle is a permanent gate
 
-`test/d4-oracle.ts` places every shipped example and a fuzz corpus under each of the eight
+`test/helpers/d4-oracle.ts` places every shipped example and a fuzz corpus under each of the eight
 group elements and asserts every fact — geometry, `describe()`, `lint()` — transforms by the
 group's action. It stays in the suite after this work lands, not only during it. **Pin
-discipline:** a violation is data, not prose — `test/equivariance-known.ts` carries one entry
+discipline:** a violation is data, not prose — `test/tables/equivariance-known.ts` carries one entry
 per class, each with a predicate that decides which fact instances it covers; a new
 violation the predicate doesn't already cover fails as `NEW`; closing a class deletes its pin
 and the oracle itself becomes the witness (`FIXED` is a transitional state, kept only long
@@ -188,7 +188,7 @@ one layer up.
   the west one, and its main door a mirror pair of leaves on a shared jamb, so `full` is D1 x;
   `W_SWING_OBSTRUCTED` exempts single-point contact, so that pair lints clean (backlog
   6.8, 6.9).
-- **Open.** What `test/equivariance-known.ts` still pins: `float-translation` (E.11's lint
+- **Open.** What `test/tables/equivariance-known.ts` still pins: `float-translation` (E.11's lint
   half: an exact comparison on a resolved coordinate, `W_POCKET_RUN`'s `>= need`, flips under
   a pure translation), and the two declared conventions, `facing-tie` (a corner or 45°
   window resolves N/S first) and `dim-tick-hand` (the tick convention). Outside the oracle:

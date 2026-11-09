@@ -6,6 +6,6 @@
  * `test/equivariance-storeys-scaled.test.ts`.
  */
 
-import { defineScaledSuite, HEAD_MODEL_CASES } from "./equivariance-storeys-cases.js";
+import { defineScaledSuite, HEAD_MODEL_CASES } from "./tables/equivariance-storeys-cases.js";
 
 defineScaledSuite("220 mm shells with something at the stair head", HEAD_MODEL_CASES);

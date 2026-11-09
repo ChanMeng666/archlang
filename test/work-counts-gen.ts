@@ -17,7 +17,7 @@ import {
   type WorkCountsTable,
   workCountPlans,
   workCounts,
-} from "./work-counts.js";
+} from "./helpers/work-counts.js";
 
 const why = process.argv[2];
 if (!why) {

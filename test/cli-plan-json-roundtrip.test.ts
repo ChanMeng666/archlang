@@ -5,7 +5,7 @@ import { type Diagnostic, describe as describePlan, lint, planToJson } from "../
 import { type Args, makeNodeWorld, sourceFromJson } from "../src/cli/io.js";
 import { renderArtifact } from "../src/cli/serialize.js";
 import { runArch, spawnArch } from "./helpers/cli.js";
-import { CANNOT_ROUND_TRIP } from "./plan-json-gaps.js";
+import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
 
 /**
  * `archlang compile -f json` writes the Plan JSON that `archlang compile --from-json` reads.

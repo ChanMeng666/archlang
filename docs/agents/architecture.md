@@ -225,9 +225,9 @@ state behind it is described in the `src/index.ts` header.
 - `scripts/engine-digests.ts` (`npm run digest:engines`) cross-engine determinism measurement;
   `eval/stats.ts` Wilson intervals, used by live reports only
 - Test harness modules importable without vitest, so an older `src/` can be measured with the same
-  body: `test/byte-identity-payload.ts` (the payload builders, also shipped into browsers by the
-  engine script), `test/byte-identity-digest.ts` (hashes them), `test/recovery-metric.ts` (parser
-  recovery survival), `test/shaft-equivariance-models.ts` (multi-storey buildings placed in a D4 frame)
+  body: `test/helpers/byte-identity-payload.ts` (the payload builders, also shipped into browsers by the
+  engine script), `test/helpers/byte-identity-digest.ts` (hashes them), `test/helpers/recovery-metric.ts` (parser
+  recovery survival), `test/helpers/shaft-equivariance-models.ts` (multi-storey buildings placed in a D4 frame)
 
 ## Layout
 

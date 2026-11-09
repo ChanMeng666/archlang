@@ -20,8 +20,8 @@ import { LINT_RULES } from "../src/lint.js";
 import type { KeepNode } from "../src/ast.js";
 import { cmdValidate } from "../src/cli/commands-analyze.js";
 import { nodeIo, parseArgs } from "../src/cli/io.js";
-import { DECIDED } from "./stage-decisions.js";
-import { runValidate, withoutStageKeys } from "./validate-json-run.js";
+import { DECIDED } from "./tables/stage-decisions.js";
+import { runValidate, withoutStageKeys } from "./helpers/validate-json-run.js";
 
 /**
  * Stages as a first-class idea (plan-soundness PS7.1): the ladder, every rule's stage, and
@@ -59,7 +59,7 @@ describe("the stage ladder and the per-rule table", () => {
     }
   });
 
-  it("each lint code has exactly one stage, the one decided for it (a new code adds its row to test/stage-decisions.ts)", () => {
+  it("each lint code has exactly one stage, the one decided for it (a new code adds its row to test/tables/stage-decisions.ts)", () => {
     expect(Object.keys(LINT_CODE_STAGES).sort()).toEqual(Object.keys(LINT_CODE_LAYERS).sort());
     const decided = new Map<string, AuthoringStage>();
     for (const [s, codes] of Object.entries(DECIDED) as Array<[AuthoringStage, string[]]>)

@@ -28,7 +28,7 @@ import {
   sceneOf,
   transformPrim,
   witnessPair,
-} from "./d4-oracle.js";
+} from "./helpers/d4-oracle.js";
 
 type Edge = "top" | "right" | "bottom" | "left";
 const NORMAL: Record<Edge, { x: number; y: number }> = {

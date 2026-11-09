@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint } from "../src/index.js";
-import { D4_ELEMENTS, witnessCase } from "./d4-oracle.js";
+import { D4_ELEMENTS, witnessCase } from "./helpers/d4-oracle.js";
 
 /**
  * Circulation from the NEAREST entrance (backlog G.5, ADR 0008 addendum).

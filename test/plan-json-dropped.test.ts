@@ -8,7 +8,7 @@ import { type Args, makeNodeWorld, nodeIo, parseArgs } from "../src/cli/io.js";
 import { renderArtifact } from "../src/cli/serialize.js";
 import { BUILTIN_DEFS } from "../src/elements/defs.js";
 import { UNPROJECTED_KINDS } from "../src/plan-json.js";
-import { CANNOT_ROUND_TRIP } from "./plan-json-gaps.js";
+import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
 
 /**
  * Issue #366: `compile -f json` says what the format could not carry, the way it has always said

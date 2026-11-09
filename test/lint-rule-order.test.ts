@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { FAMILY_NOUN } from "../src/lint/coverage.js";
 import { LINT_RULES } from "../src/lint/rules/index.js";
-import { RULE_CLASS } from "./d4-oracle.js";
-import { DECIDED } from "./stage-decisions.js";
+import { RULE_CLASS } from "./helpers/d4-oracle.js";
+import { DECIDED } from "./tables/stage-decisions.js";
 
 /**
  * Where a lint rule is registered beyond its module, as one test per place (`.claude/commands/new-lint-rule.md`
@@ -99,10 +99,10 @@ describe("a lint rule is registered in every place a rule is listed", () => {
     ).toEqual(EXPECTED_ORDER);
   });
 
-  it("every rule is classified in RULE_CLASS (test/d4-oracle.ts)", () => {
+  it("every rule is classified in RULE_CLASS (test/helpers/d4-oracle.ts)", () => {
     none(
       LINT_RULES.filter((r) => RULE_CLASS[r.name] === undefined).map((r) => r.name),
-      `add the rule to RULE_CLASS in test/d4-oracle.ts ("invariant" unless its doc comment says otherwise)`,
+      `add the rule to RULE_CLASS in test/helpers/d4-oracle.ts ("invariant" unless its doc comment says otherwise)`,
     );
   });
 
@@ -115,10 +115,10 @@ describe("a lint rule is registered in every place a rule is listed", () => {
     );
   });
 
-  it("every code a rule may emit has a stage row in DECIDED (test/stage-decisions.ts)", () => {
+  it("every code a rule may emit has a stage row in DECIDED (test/tables/stage-decisions.ts)", () => {
     none(
       LINT_RULES.flatMap((r) => r.codes.filter((c) => !decidedCodes.has(c)).map((c) => `${c} (rule ${r.name})`)),
-      `add the code to its stage's row in DECIDED in test/stage-decisions.ts, and bump the per-stage counts in test/stages.test.ts`,
+      `add the code to its stage's row in DECIDED in test/tables/stage-decisions.ts, and bump the per-stage counts in test/stages.test.ts`,
     );
   });
 

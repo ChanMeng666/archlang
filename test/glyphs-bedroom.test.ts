@@ -45,7 +45,7 @@ import { dashedPattern } from "../src/elements/glyph-lib.js";
 import { marksEqual, mirrorNode } from "../src/elements/glyph-chirality.js";
 import type { SceneNode } from "../src/scene.js";
 import { DEFAULT_THEME } from "../src/theme.js";
-import { pathExtentPoints } from "./glyph-extent.js";
+import { pathExtentPoints } from "./helpers/glyph-extent.js";
 
 const BASE = toScene(resolve(parse(`plan "G" { units mm room id=r at (0,0) size 8000x8000 label "R" }`).plan!).ir);
 
