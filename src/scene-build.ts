@@ -26,6 +26,7 @@ import type { Bounds, Vec, WallSegment } from "./geometry.js";
 import { add, mul, normal, segmentsOfWall, sub, unit } from "./geometry.js";
 import { arcPointAt, diameterText, radiusText } from "./geometry/arc.js";
 import type { Point } from "./ast.js";
+import { facetsOf } from "./elements/facets.js";
 import { floorMaterialsUsed, hatchesUsed } from "./hatches.js";
 import { attachSceneWalls, lowerWallSet } from "./wall-lowering.js";
 import type { FacadeOpening, SideGeom } from "./facade.js";
@@ -723,9 +724,21 @@ function roomLabelIndex(ir: ResolvedPlan): ReadonlyMap<string, string> {
 function elementLabelOf(el: ResolvedPlan["elements"][number]): { label: string; derived: boolean } | undefined {
   const authored = (el as { label?: unknown }).label;
   if (typeof authored === "string" && authored !== "") return { label: authored, derived: false };
-  if (el.kind === "furniture") return { label: (el as RFurniture).category, derived: true };
-  if (el.kind === "outdoor") return { label: (el as ROutdoor).surface, derived: true };
-  return undefined;
+  // Which field names an unlabelled element is a per-kind row of `KIND_FACETS.label`.
+  const field = facetsOf(el.kind)?.label;
+  switch (field) {
+    case "category":
+      return { label: (el as RFurniture).category, derived: true };
+    case "surface":
+      return { label: (el as ROutdoor).surface, derived: true };
+    case null:
+    case undefined:
+      return undefined;
+    default: {
+      const unhandled: never = field;
+      return unhandled;
+    }
+  }
 }
 
 /**

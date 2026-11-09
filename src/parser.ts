@@ -3,6 +3,7 @@
 import type { Token } from "./lexer.js";
 import { lex } from "./lexer.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
+import { capDiagnostics, isLimitClass, MAX_DIAGNOSTICS } from "./diagnostics.js";
 import type {
   AssignNode,
   AxesNode,
@@ -140,7 +141,9 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
   // W7: `while`/reassignment soft-deprecation — purely syntactic, over the plan body
   // and every locally-declared component; see `src/while-deprecation.ts`'s header.
   checkWhileDeprecation(plan, (d) => diagnostics.push(d));
-  return { plan, diagnostics };
+  // The lexer needs no such flag: its diagnostics are all errors, so one that dropped any
+  // has kept errors, and the cap sees them.
+  return { plan, diagnostics: capDiagnostics(diagnostics, src.length, p.droppedError) };
 }
 
 class Parser {
@@ -148,6 +151,15 @@ class Parser {
   /** How many `{ … }` statement blocks enclose the cursor (see {@link MAX_NEST_DEPTH}). */
   private blockDepth = 0;
   public diagnostics: Diagnostic[] = [];
+  /** Sticky: an ERROR was discarded past the cap, so the limit must be `E_DIAGNOSTIC_LIMIT`
+   *  even when every diagnostic kept is a warning (EH-D8 as amended). */
+  public droppedError = false;
+  /** Collect one diagnostic — at most one past {@link MAX_DIAGNOSTICS}, so a flood stops
+   *  costing anything while `capDiagnostics` can still tell that some were dropped. */
+  private report(d: Diagnostic): void {
+    if (this.diagnostics.length <= MAX_DIAGNOSTICS || isLimitClass(d)) this.diagnostics.push(d);
+    else if (d.severity === "error") this.droppedError = true;
+  }
   /** Facade passed to element parse functions (see registry.ts). */
   private readonly ctx: ParseCtx & Pick<ExprTokens, "report">;
   /** Statement-start keywords for recovery resync — fixed keywords + this
@@ -180,7 +192,7 @@ class Parser {
       parseIdOpt: () => this.parseIdOpt(),
       spanFrom: (start) => this.spanFrom(start),
       fail: (msg, t) => this.fail(msg, t),
-      report: (code, message, span) => this.diagnostics.push({ severity: "error", message, code, span }),
+      report: (code, message, span) => this.report({ severity: "error", message, code, span }),
     };
   }
 
@@ -343,7 +355,7 @@ class Parser {
     const t = this.peek();
     const message = `Expected rcurly but found ${describe(t)}`;
     if (this.diagnostics.some((d) => d.message === message && d.span?.start === t.start)) return;
-    this.diagnostics.push({ severity: "error", message, code: "E_PARSE", span: { start: t.start, end: t.end } });
+    this.report({ severity: "error", message, code: "E_PARSE", span: { start: t.start, end: t.end } });
   }
 
   private isKeyword(kw: string, o = 0): boolean {
@@ -395,7 +407,7 @@ class Parser {
       plan.bodyStart = this.eat("lcurly").end;
     } catch (e) {
       if (!(e instanceof ParseError)) throw e;
-      this.diagnostics.push({
+      this.report({
         severity: "error",
         message: e.message,
         code: "E_PARSE",
@@ -431,7 +443,7 @@ class Parser {
             // to 0 or past the range. Reported here (the setting has no later span) and
             // neutralised to "no grid".
             if (grid > MODEL_RANGE_MM) {
-              this.diagnostics.push(
+              this.report(
                 outOfRangeDiagnostic(
                   `The \`grid\` of ${fmt3(grid)} mm is outside the modelling range of ±${fmt3(MODEL_RANGE_MM)} mm (2^25 mm, about 33.5 km)`,
                   { start: gt.start, end: gt.end },
@@ -555,7 +567,7 @@ class Parser {
         }
       } catch (e) {
         if (e instanceof ParseError) {
-          this.diagnostics.push({
+          this.report({
             severity: "error",
             message: e.message,
             code: "E_PARSE",
@@ -580,7 +592,7 @@ class Parser {
       if (!(e instanceof ParseError)) throw e;
       if (this.isType("eof")) this.missingClose();
       else
-        this.diagnostics.push({
+        this.report({
           severity: "error",
           message: e.message,
           code: "E_PARSE",
@@ -606,7 +618,7 @@ class Parser {
         ? `A second "plan" block after the plan was closed — a file holds one plan, and nothing after its closing "}" is read`
         : `Unexpected ${describe(t)} after the plan was closed — nothing after the plan's closing "}" is read` +
           (laterClose ? ` (an extra "}" may have closed it early)` : "");
-    this.diagnostics.push({
+    this.report({
       severity: "error",
       message,
       code: "E_PARSE",
@@ -637,7 +649,7 @@ class Parser {
     for (const l of levels) {
       const first = seen.get(l.level);
       if (first) {
-        this.diagnostics.push({
+        this.report({
           severity: "error",
           code: "E_LEVEL_DUP",
           message: `Level ${l.level} is already declared — each level number may appear once`,
@@ -653,7 +665,7 @@ class Parser {
 
     for (const s of plan.body) {
       if (LEVEL_SHARED_KINDS.includes(s.kind)) continue;
-      this.diagnostics.push({
+      this.report({
         severity: "error",
         code: "E_LEVEL_MIX",
         message:
@@ -729,7 +741,7 @@ class Parser {
   /** A repeated `accTitle`/`accDescr` at plan level: last value wins, but flag it
    *  (catalogued warning) since a duplicate metadata line is almost always a mistake. */
   private warnDupAcc(kw: string, t: Token): void {
-    this.diagnostics.push({
+    this.report({
       severity: "warning",
       message: `Duplicate "${kw}" — the last one wins`,
       code: "W_DUP_ACC_METADATA",
@@ -1002,7 +1014,7 @@ class Parser {
     this.eat("rcurly");
     const span = this.spanFrom(t.start);
     if (street === undefined) {
-      this.diagnostics.push({
+      this.report({
         severity: "error",
         code: "E_SITE_NO_STREET",
         message: "`site` needs a `street` direction — a site with no street derives nothing",
@@ -1012,7 +1024,7 @@ class Parser {
       return;
     }
     if (plan.site !== undefined) {
-      this.diagnostics.push({
+      this.report({
         severity: "error",
         code: "E_SITE_DUP",
         message: "`site` is already declared — one building sits on one site",
@@ -1057,7 +1069,7 @@ class Parser {
     const dot = t.value.indexOf(".");
     if (dot < 0) return t.value;
     const tail = t.value.slice(t.value.lastIndexOf(".") + 1);
-    this.diagnostics.push({
+    this.report({
       severity: "error",
       code: "E_DOTTED_DECL",
       message: `"${t.value}" cannot be DECLARED — a dotted name addresses an element inside a \`place\`d instance, so it is a reference only`,
@@ -1073,7 +1085,7 @@ class Parser {
       this.next();
       // Past MAX_ANGLE_DEG a bearing's `deg × π` overflows and the north arrow draws `NaN`.
       if (Math.abs(t.num!) > MAX_ANGLE_DEG) {
-        this.diagnostics.push(
+        this.report(
           outOfRangeDiagnostic(
             `\`north ${fmt3(t.num!)}\` is a bearing of ${fmt3(t.num!)} degrees, outside ±${fmt3(MAX_ANGLE_DEG)} (2^25, so its sine and cosine stay finite)`,
             { start: t.start, end: t.end },
@@ -1178,7 +1190,7 @@ class Parser {
         if (this.isType("colon")) this.next();
         const resolved = resolveThemeKey(keyTok.value);
         if (!resolved) {
-          this.diagnostics.push({
+          this.report({
             severity: "warning",
             message: `Unknown theme key "${keyTok.value}"`,
             code: "W_UNKNOWN_THEME_KEY",
@@ -1208,7 +1220,7 @@ class Parser {
   private sanitizedStringValue(keyTok: Token, what: string): string {
     const val = this.eatString();
     if (isDisallowedConfigValue(val)) {
-      this.diagnostics.push({
+      this.report({
         severity: "warning",
         message: `Disallowed value for ${what} key "${keyTok.value}" stripped`,
         code: "W_SANITIZED_CONFIG",
@@ -1234,7 +1246,7 @@ class Parser {
       if (this.isType("colon")) this.next();
       const resolved = resolveStyleKey(kind, keyTok.value);
       if (!resolved) {
-        this.diagnostics.push({
+        this.report({
           severity: "warning",
           message: `Unknown style key "${keyTok.value}" for "${kind}"`,
           code: "W_UNKNOWN_STYLE_KEY",
@@ -1513,7 +1525,7 @@ class Parser {
       this.next();
       if (this.isType("string")) this.next();
       const msg = `"${t.value}" is only allowed at plan level, not inside a block or component`;
-      this.diagnostics.push({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
+      this.report({ severity: "error", message: msg, code: "E_ACC_PLACEMENT", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     // `sheet text` words the whole sheet, so it is plan-level only. Reaching here means one appeared
@@ -1523,7 +1535,7 @@ class Parser {
       while (!this.isType("rcurly") && !this.isType("eof")) this.next();
       if (this.isType("rcurly")) this.next();
       const msg = "`sheet text` is a plan-level statement: write it once, outside any `level`, `component` or block";
-      this.diagnostics.push({ severity: "error", message: msg, code: "E_PARSE", span: this.spanFrom(start) });
+      this.report({ severity: "error", message: msg, code: "E_PARSE", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     // `level` partitions the WHOLE plan into storeys, so it is a plan-level block only.
@@ -1532,7 +1544,7 @@ class Parser {
     if (t.value === "level") {
       this.parseLevel(components);
       const msg = `"level" is only allowed at plan level, not inside a block, component, or another level`;
-      this.diagnostics.push({ severity: "error", message: msg, code: "E_LEVEL_NEST", span: this.spanFrom(start) });
+      this.report({ severity: "error", message: msg, code: "E_LEVEL_NEST", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     // `strip` is a plan-level block only. Inside a component/control-flow block (or
@@ -1540,7 +1552,7 @@ class Parser {
     if (t.value === "strip") {
       this.parseStrip();
       const msg = `"strip" is only allowed at plan level, not inside a block, component, or another strip`;
-      this.diagnostics.push({ severity: "error", message: msg, code: "E_STRIP_NEST", span: this.spanFrom(start) });
+      this.report({ severity: "error", message: msg, code: "E_STRIP_NEST", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     // A `roof` belongs to a BUILDING, not to a reusable part of one. Its `overhang` sugar
@@ -1555,7 +1567,7 @@ class Parser {
       const msg =
         `"roof" is only allowed at plan level (or inside a \`level\` block), not inside a component — ` +
         `an overhang is offset from the BUILDING's wall ring, which a component does not have`;
-      this.diagnostics.push({ severity: "error", message: msg, code: "E_ROOF_PLACEMENT", span: this.spanFrom(start) });
+      this.report({ severity: "error", message: msg, code: "E_ROOF_PLACEMENT", span: this.spanFrom(start) });
       return { kind: "error", id: "", line: t.line, message: msg };
     }
     let node: Statement;
@@ -1574,7 +1586,7 @@ class Parser {
       // refused where it is written, placed or not. Consumed for clean recovery, as `roof` is.
       this.parseKeep();
       const msg = "A keep inside a component would be checked once per instance in its own frame; write it in the plan";
-      this.diagnostics.push({
+      this.report({
         severity: "error",
         message: msg,
         code: "E_KEEP_PLACEMENT",
@@ -1620,7 +1632,7 @@ class Parser {
    *  the parser recurses no further however deep the source goes. */
   private skipTooDeepBlock(): Statement[] {
     const open = this.next();
-    this.diagnostics.push({
+    this.report({
       severity: "error",
       message: `Blocks are nested too deeply (limit ${MAX_NEST_DEPTH}); this block was not read`,
       code: "E_PARSE",
@@ -1645,7 +1657,7 @@ class Parser {
         body.push(this.parseOneBodyStatement(components, selfName));
       } catch (e) {
         if (e instanceof ParseError) {
-          this.diagnostics.push({
+          this.report({
             severity: "error",
             message: e.message,
             code: "E_PARSE",
@@ -1845,7 +1857,7 @@ class Parser {
       if (this.isKeyword("strip")) {
         const nestStart = this.peek().start;
         this.parseStrip();
-        this.diagnostics.push({
+        this.report({
           severity: "error",
           message: `"strip" is only allowed at plan level, not inside another strip`,
           code: "E_STRIP_NEST",

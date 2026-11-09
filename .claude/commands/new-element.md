@@ -5,7 +5,9 @@ description: Add a new ArchLang element via the registry convention
 # Add a new element
 
 Elements are added through the registry, never a `switch`. Dispatch (parse / resolve / render)
-goes through `src/elements/defs.ts`.
+goes through `src/elements/defs.ts`. The checklist of every OTHER place a kind must be named (the
+types, the exhaustive per-kind switches, the `KIND_FACETS` row), each with the `tsc` error or test
+that catches it, is `docs/agents/new-element.md`: work down it.
 
 ## Steps
 
@@ -15,11 +17,15 @@ goes through `src/elements/defs.ts`.
    built-in); flip any handed fact when `t.reflected`.
 
 2. **Register it in `src/elements/defs.ts`.** Add it to the registry so parse, resolve, and
-   render all dispatch to it automatically. Do not add a `switch` branch anywhere.
+   render all dispatch to it automatically, and append its keyword to `KEYWORDS.element`. Then
+   add the kind to `ElementKind`/`AstElement` (`src/ast.ts`) and `ResolvedElement` (`src/ir.ts`)
+   and answer every `tsc` error that raises (the rows of `docs/agents/new-element.md`). Do not add
+   a new per-kind `switch` or kind list; a yes/no question about kinds is a `KIND_FACETS` field
+   (`src/elements/facets.ts`).
 
 3. **Keep the compiler pure.** No I/O, no `Date.now()`, no `Math.random()` in the element module.
    Coordinates are millimetres; origin top-left, +x right, +y down. Route number formatting
-   through `fmt()` so output stays byte-stable. Errors for bad user source are **returned** as a
+   through `fmt0`–`fmt4` (`src/num-format.ts`) so output stays byte-stable. Errors for bad user source are **returned** as a
    `Diagnostic` with a byte `span` and a catalogued `E_*`/`W_*` code in `src/error-catalog.ts`
    (a test enforces every raised code has an entry), never thrown.
 
@@ -35,9 +41,10 @@ goes through `src/elements/defs.ts`.
 
 6. **`npm run gen:all`** — if the element introduces new tokens/keywords, the generated spec,
    grammars, GBNF, and schemas must pick them up. (Regeneration is source-driven; never hand-edit
-   the generated artifacts — see `/regen`.)
+   the generated artifacts — the recipe is `.claude/commands/regen.md`.)
 
-7. **Run `/verify-loop`** — `npm run check:quick` green locally, then the PR's CI green.
+7. **Follow `.claude/commands/verify-loop.md`** — `npm run check:quick` green locally, then the
+   PR's CI green.
 
 ## Remember
 

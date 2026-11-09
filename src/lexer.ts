@@ -2,6 +2,7 @@
 
 import { fnv1a } from "./hash.js";
 import { imperialToMm } from "./num-format.js";
+import { MAX_DIAGNOSTICS } from "./diagnostics.js";
 
 /** `E_IMPERIAL_FORM`'s message: it names every accepted imperial form (B5, D8). */
 export const IMPERIAL_MESSAGE =
@@ -151,6 +152,11 @@ function lexImpl(src: string): LexResult {
   const tokens: Token[] = [];
   const errors: LexError[] = [];
   const comments: Comment[] = [];
+  // At most one past the cap is kept, so `parse` knows to say the rest were not collected
+  // (`capDiagnostics`, `E_DIAGNOSTIC_LIMIT`); lexing itself goes on to the end.
+  const report = (e: LexError): void => {
+    if (errors.length <= MAX_DIAGNOSTICS) errors.push(e);
+  };
   let i = 0;
   let line = 1;
   let col = 1;
@@ -225,7 +231,7 @@ function lexImpl(src: string): LexResult {
   // Refuse a malformed imperial literal as ONE diagnostic, never a cascade of stray tokens.
   const refuseImperial = (from: number, swallow = true): void => {
     if (swallow) swallowWord();
-    errors.push({ message: IMPERIAL_MESSAGE, span: { start: from, end: i }, code: "E_IMPERIAL_FORM" });
+    report({ message: IMPERIAL_MESSAGE, span: { start: from, end: i }, code: "E_IMPERIAL_FORM" });
   };
   // After the digits: an imperial suffix (`ft`, `in`, `<ft>ft<in>in`, B5 / D8) folded to whole mm
   // through `imperialToMm`, or a refused imperial shape (`12'6"`, `12'`, `6"`, `12ft6`, `6in12ft`).
@@ -287,7 +293,7 @@ function lexImpl(src: string): LexResult {
     // A literal too large for a double (after the unit shift) parses to Infinity; diagnose it
     // and substitute 0 so no non-finite number ever enters the expression language.
     if (!Number.isFinite(value)) {
-      errors.push({
+      report({
         message: "Number literal is too large (it does not fit a finite number)",
         span: { start: from, end: i },
         code: "E_NON_FINITE",
@@ -343,7 +349,7 @@ function lexImpl(src: string): LexResult {
         terminated = true;
       }
       if (!terminated) {
-        errors.push({ message: "Unterminated string literal", span: { start: startIdx, end: i } });
+        report({ message: "Unterminated string literal", span: { start: startIdx, end: i } });
       }
       push("string", value, startLine, startCol, startIdx, { raw });
       continue;
@@ -511,7 +517,7 @@ function lexImpl(src: string): LexResult {
       ) {
         swallowWord();
         errors.length = errorsBefore; // the fraction is ONE refusal, whatever its tail did
-        errors.push({ message: IMPERIAL_MESSAGE, span: { start: numer.start, end: i }, code: "E_IMPERIAL_FORM" });
+        report({ message: IMPERIAL_MESSAGE, span: { start: numer.start, end: i }, code: "E_IMPERIAL_FORM" });
         tokens.length -= 2;
         first = 0;
         from = numer.start;
@@ -591,7 +597,7 @@ function lexImpl(src: string): LexResult {
     if (c === ";" && /^[ \t]*(#[^\n]*)?(\r?\n|$)/.test(src.slice(startIdx + 1))) {
       unexpected.hints = ["statements end at the line break; delete the `;`"];
     }
-    errors.push(unexpected);
+    report(unexpected);
     advance();
   }
 

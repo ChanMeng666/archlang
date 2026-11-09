@@ -4135,6 +4135,24 @@ function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: boolean)
               : "absolute";
       return;
     }
+    // Kinds `describe().freedom` does not place: no `_placement`.
+    case "wall":
+    case "dim":
+    case "column":
+    case "stair":
+    case "elevator":
+    case "escalator":
+    case "roof":
+    case "void":
+    case "outdoor":
+    case "fence":
+    case "walls":
+      return;
+    default: {
+      // A new element kind with no case fails the typecheck here.
+      const unhandled: never = r;
+      void unhandled;
+    }
   }
 }
 

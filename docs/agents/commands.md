@@ -89,8 +89,9 @@ a PR too.
 **A break on a main-only leg appears after the merge**, and nothing blocks on it. It is seen in three
 places: the red push run on `main`, with GitHub's failed-run notification to whoever merged;
 nightly's `report`, which lists a failed `full-matrix` job in the pinned issue, by the next 03:00 UTC;
-and `/release-check` item 5, which refuses a release on either. An open pinned issue is only edited,
-which notifies nobody, so close it once triaged or the next bad night is silent.
+and `/release-check` item 5, which refuses a release on either. Both alarms label their issue
+`ci-red` and comment on every red run, so `gh issue list -l ci-red` is the first thing a session
+checks; a green run closes the issue with a comment.
 
 Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock
 22.7), the Node 22 rows on PR #385 at cd730b85:
@@ -102,7 +103,7 @@ Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
 | `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
 | `node-22` (Node 22) | gates on the two above; on a record-only PR, runs the docs leg | < 0.2 |
-| `builds` (Workspace builds) | `build`, `typecheck:all`, all four workspace builds, MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
+| `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
 | `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
 | `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | 2.0 (PR #336, browser cache cold) |
@@ -147,7 +148,7 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
 the pinned issue; its report is an
 artifact), `e2e-prod` (the read-only `@prod` subset against the live sites; its docs half also
 detects a stale deploy), and `report` (the single writer of the pinned issue; a fully green night comments on it and closes it). `deploy.yml` deploys
-both sites on every push to `main` (the playground with its Worker, KV namespace and rate limits from
+both sites after a green CI run on every push to `main` (the playground with its Worker, KV namespace and rate limits from
 `playground/wrangler.jsonc`; the CI token `CLOUDFLARE_API_TOKEN` needs Workers KV Storage: Edit; a Workers
 usage alert is an owner step in the Cloudflare dashboard, outside the repo); `main-red.yml` turns a red CI run on `main` into one pinned issue and closes it on the next green run (post-merge detection: PRs need not be up to date with `main`); `release.yml` publishes on a `v*` tag; `publish-openvsx.yml` (manual, dispatched by the agent after each Marketplace upload) publishes the VS Code
 extension to Open VSX. The `eval-*.yml`

@@ -11,7 +11,7 @@
  *    on the edge (the inset), an open side, an L, a shared partition, a T, a free wall end's
  *    cap, a wall through the room, a wall off the edge, a triangle, circles walled all or half
  *    round, a straight wall tangent to a circle, an arc bulging into a room.
- * 3. A property over every room of the corpus (examples, fixtures, recovery plans, eval goldens,
+ * 3. A property over every room of the corpus (`net-area-oracle-corpus.test.ts`; examples, fixtures, recovery plans, eval goldens,
  *    fidelity plans and faults; the docs gallery is left out, `agent-gallery.test.ts` owns it):
  *    the closed-form figure agrees with a GRID ORACLE (`./net-area-oracle.ts`, which shares
  *    nothing with the code under test but the band and the room's own area) within the
@@ -19,22 +19,15 @@
  *    The figure is read UNCLAMPED (`netAreaDetail`): `covered` must lie in `[0, area]` on its
  *    own.
  */
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { dirname, join, resolve as resolvePath } from "node:path";
+import { readFileSync } from "node:fs";
+import { resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, roomSchedule } from "../src/index.js";
-import { resolvePlan, roomAreaMm2 } from "../src/analyze.js";
-import {
-  MAX_NET_CURVES,
-  MAX_NET_PROBE_WORK,
-  netAreaBands,
-  netAreaDetail,
-  roomNetAreaMm2,
-} from "../src/analyze/net-area.js";
+import { resolvePlan } from "../src/analyze.js";
+import { MAX_NET_CURVES, MAX_NET_PROBE_WORK, netAreaBands, netAreaDetail } from "../src/analyze/net-area.js";
 import { pointInPolygon, polygonInsideTest, VERTEX_EPS } from "../src/geometry/polygon.js";
-import type { RRoom, RWall } from "../src/ir.js";
-import type { World } from "../src/world.js";
+import type { RRoom } from "../src/ir.js";
 import { oracleNetArea } from "./net-area-oracle.js";
 
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;
@@ -419,98 +412,4 @@ suite("net area — the probe walk is charged before it runs (PS0.14)", () => {
       { numRuns: 300 },
     );
   });
-});
-
-// ---------------------------------------------------------------------------
-
-const CORPUS_DIRS = [
-  "examples",
-  "test/fixtures",
-  "test/callout-fixtures",
-  "test/finish-fixtures",
-  "test/recovery-corpus",
-  "eval/goldens",
-  "eval/fidelity-plans",
-  "eval/faults",
-];
-
-function archFiles(dir: string): string[] {
-  const out: string[] = [];
-  for (const name of readdirSync(dir).sort()) {
-    const p = join(dir, name);
-    if (statSync(p).isDirectory()) out.push(...archFiles(p));
-    else if (name.endsWith(".arch")) out.push(p);
-  }
-  return out;
-}
-
-const worldFor = (dir: string): World => ({
-  read: (p) => {
-    try {
-      return readFileSync(resolvePath(dir, p), "utf8");
-    } catch {
-      return null;
-    }
-  },
-  now: () => new Date(0),
-});
-
-suite("net area — every room of the corpus against the grid oracle", () => {
-  const files = CORPUS_DIRS.flatMap((d) => archFiles(resolvePath(d)));
-  const storeys = files.flatMap((f) => {
-    const { ir, levels } = resolvePlan(readFileSync(f, "utf8"), { world: worldFor(dirname(f)) });
-    if (!ir) return [];
-    const where = f.slice(resolvePath(".").length + 1);
-    return (levels.length > 0 ? levels.map((l) => l.ir) : [ir]).map((st) => ({
-      where,
-      walls: st.walls as RWall[],
-      rooms: st.elements.filter((e): e is RRoom => e.kind === "room"),
-    }));
-  });
-
-  it("is a real corpus: hundreds of rooms, most of them losing floor to a wall, every shape", () => {
-    const rooms = storeys.flatMap((s) => s.rooms.map((r) => ({ r, bands: netAreaBands(s.walls) })));
-    expect(files.length).toBeGreaterThan(90);
-    expect(rooms.length).toBeGreaterThan(500);
-    const lose = rooms.filter(
-      ({ r, bands }) => (roomNetAreaMm2(r, bands) ?? Number.POSITIVE_INFINITY) < roomAreaMm2(r),
-    );
-    expect(lose.length).toBeGreaterThan(450);
-    expect(rooms.some(({ r }) => r.circle)).toBe(true);
-    expect(rooms.some(({ r }) => r.poly && !r.circle)).toBe(true);
-  });
-
-  it("every room is measured (none omitted), covered ∈ [0, area] unclamped, and agrees with the oracle within its bound", () => {
-    const bad: string[] = [];
-    let rooms = 0;
-    let worst = 0;
-    let maxWork = 0;
-    for (const s of storeys) {
-      const bands = netAreaBands(s.walls);
-      for (const r of s.rooms) {
-        rooms++;
-        const d = netAreaDetail(r, bands);
-        if (!d.ok) {
-          bad.push(`${s.where} ${r.id}: omitted (${d.reason})`);
-          continue;
-        }
-        maxWork = Math.max(maxWork, d.work);
-        if (!(d.covered >= 0 && d.covered <= d.gross))
-          bad.push(`${s.where} ${r.id}: covered ${d.covered} of ${d.gross}`);
-        if (d.gross > 0 && !(d.gross - d.covered > 0)) bad.push(`${s.where} ${r.id}: no floor left`);
-        const o = oracleNetArea(r, s.walls);
-        const diff = Math.abs(d.covered - o.covered);
-        worst = Math.max(worst, diff);
-        if (diff > o.bound) bad.push(`${s.where} ${r.id}: covered ${d.covered} vs oracle ${o.covered} ± ${o.bound}`);
-      }
-    }
-    expect(rooms).toBeGreaterThan(500);
-    expect(bad).toEqual([]);
-    // Measured when written: 2,412 mm² (0.0024 m²) at worst over 586 rooms.
-    expect(worst).toBeLessThan(10_000);
-    // The probe-work charge (PS0.14): measured when written, 174,720 at most (the star30
-    // fixture's corridor), more than a hundred times inside MAX_NET_PROBE_WORK.
-    expect(maxWork).toBe(174_720);
-    expect(maxWork * 100).toBeLessThan(MAX_NET_PROBE_WORK);
-  }, 600_000);
 });

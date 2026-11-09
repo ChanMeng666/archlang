@@ -141,20 +141,138 @@ export interface Diagnostic {
   component?: string;
 }
 
-/** Convert a byte offset into a 1-based `{line, col}`. Offsets are clamped. */
+/**
+ * The line-start table of a source: `starts[i]` is the offset of the first byte of line
+ * `i + 1`, so `starts[0]` is `0` and every `\n` at offset `k` adds `k + 1`. Only `\n` ends a
+ * line (a `\r` is an ordinary column, as it always was). Built once per source and kept in
+ * a small count-bounded FIFO, newest first, so the many `offsetToLineCol` calls one compile
+ * makes for its diagnostics share one O(n) scan.
+ */
+const lineTables: { src: string; starts: Uint32Array }[] = [];
+const LINE_TABLE_MAX = 8;
+
+function lineStartsOf(source: string): Uint32Array {
+  for (const t of lineTables) if (t.src === source) return t.starts;
+  let count = 1;
+  for (let k = source.indexOf("\n"); k !== -1; k = source.indexOf("\n", k + 1)) count++;
+  const starts = new Uint32Array(count);
+  let i = 1;
+  for (let k = source.indexOf("\n"); k !== -1; k = source.indexOf("\n", k + 1)) starts[i++] = k + 1;
+  if (lineTables.length >= LINE_TABLE_MAX) lineTables.pop();
+  lineTables.unshift({ src: source, starts });
+  return starts;
+}
+
+/** Clear the line-start tables (called by `clearCache`). */
+export function clearLineTableCache(): void {
+  lineTables.length = 0;
+}
+
+/**
+ * Convert a byte offset into a 1-based `{line, col}`. Offsets are clamped. `line` is one
+ * more than the `\n`s before the offset; `col` one more than the bytes since the last of
+ * them. O(log lines) per call after the source's first (see {@link lineStartsOf}).
+ */
 export function offsetToLineCol(source: string, offset: number): { line: number; col: number } {
-  const o = Math.max(0, Math.min(offset, source.length));
-  let line = 1;
-  let col = 1;
-  for (let k = 0; k < o; k++) {
-    if (source[k] === "\n") {
-      line++;
-      col = 1;
-    } else {
-      col++;
+  const clamped = Math.max(0, Math.min(offset, source.length));
+  if (!(clamped > 0)) return { line: 1, col: 1 }; // 0, and NaN (which counts no bytes)
+  const o = Math.ceil(clamped); // a fractional offset counts the bytes below it
+  const starts = lineStartsOf(source);
+  // The last line start at or before `o`.
+  let lo = 0;
+  let hi = starts.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >>> 1;
+    if (starts[mid]! <= o) lo = mid;
+    else hi = mid - 1;
+  }
+  return { line: lo + 1, col: o - starts[lo]! + 1 };
+}
+
+/**
+ * The most diagnostics one compile reports (ruling EH-D8). Past it the producers stop
+ * collecting and {@link capDiagnostics} appends ONE limit diagnostic, so a source that floods
+ * them (a page of stray characters, thousands of re-declared names) costs a bounded amount of
+ * reporting. A count, never a time; no example plan comes near it.
+ */
+export const MAX_DIAGNOSTICS = 500;
+
+/** The cap's own marker, in either severity. */
+const isMarker = (d: Diagnostic): boolean => d.code === "E_DIAGNOSTIC_LIMIT" || d.code === "W_DIAGNOSTIC_LIMIT";
+
+/**
+ * The budget and cap codes: each says why work STOPPED, so the cap never drops one (a flood of
+ * `E_UNKNOWN_REF` must not hide the `E_STEP_LIMIT` that ended it). Every catalogue code naming a
+ * LIMIT or BUDGET, bar the marker itself (pinned in test/diagnostics-volume.test.ts). Each is
+ * raised once per budget or loop and charged to the step meter, so keeping them all stays bounded.
+ */
+export const LIMIT_CODES: ReadonlySet<string> = new Set([
+  "E_DRAWING_LIMIT",
+  "E_ELEMENT_LIMIT",
+  "E_IMPORT_LIMIT",
+  "E_KEEP_LIMIT",
+  "E_RANGE_LIMIT",
+  "E_RATE_LIMITED",
+  "E_STEP_LIMIT",
+  "E_WHILE_LIMIT",
+]);
+
+/** A diagnostic the cap always keeps (see {@link LIMIT_CODES}). */
+export const isLimitClass = (d: Diagnostic): boolean => d.code !== undefined && LIMIT_CODES.has(d.code);
+
+/**
+ * `list` with its first {@link MAX_DIAGNOSTICS} ordinary diagnostics plus EVERY limit-class one
+ * ({@link LIMIT_CODES}), in their original order, then one marker last when any were dropped.
+ * The marker's severity follows the diagnostics (EH-D8 as amended): `E_DIAGNOSTIC_LIMIT` when
+ * there is an error ANYWHERE — in the whole uncapped `list`, kept or dropped, or among what a
+ * producer stopped collecting (`droppedError`, the parser's flag) — and `W_DIAGNOSTIC_LIMIT`
+ * otherwise, so a plan that only floods warnings still draws, lints and describes.
+ *
+ * A list with at most 500 ordinary diagnostics and no marker is returned AS IS (the same array),
+ * so sub-cap output is byte-identical. Idempotent: a marker from upstream (the parse stage) is
+ * moved to the end, keeps its span, and an `E_DIAGNOSTIC_LIMIT` there stays an error (it stands
+ * for an error the parser dropped). A new marker's span is the byte just past the 500th ordinary
+ * diagnostic's span, or the end of the source when that one has no span or is measured in
+ * another file.
+ */
+export function capDiagnostics(list: Diagnostic[], sourceLength: number, droppedError = false): Diagnostic[] {
+  if (list.length <= MAX_DIAGNOSTICS) return list;
+  let ordinary = 0;
+  let upstream: Diagnostic | undefined;
+  for (const d of list) {
+    if (isMarker(d)) upstream ??= d;
+    else if (!isLimitClass(d)) ordinary++;
+  }
+  if (ordinary <= MAX_DIAGNOSTICS && upstream === undefined) return list;
+  const anyError =
+    droppedError || list.some((d) => d.code === "E_DIAGNOSTIC_LIMIT" || (d.severity === "error" && !isMarker(d)));
+  const kept: Diagnostic[] = [];
+  let lastOrdinary: Diagnostic | undefined;
+  let count = 0;
+  for (const d of list) {
+    if (isMarker(d)) continue;
+    if (isLimitClass(d)) kept.push(d);
+    else if (count < MAX_DIAGNOSTICS) {
+      kept.push(d);
+      lastOrdinary = d;
+      count++;
     }
   }
-  return { line, col };
+  let span: Span;
+  if (upstream?.span) span = upstream.span;
+  else {
+    const at =
+      lastOrdinary?.span && lastOrdinary.file === undefined
+        ? Math.min(Math.max(0, lastOrdinary.span.end), sourceLength)
+        : sourceLength;
+    span = { start: at, end: Math.min(at + 1, sourceLength) };
+  }
+  const message = `More than ${MAX_DIAGNOSTICS} diagnostics; further diagnostics were not collected`;
+  const hints = ["fix the first problems reported and compile again"];
+  const limit: Diagnostic = anyError
+    ? { severity: "error", message, code: "E_DIAGNOSTIC_LIMIT", span, hints }
+    : { severity: "warning", message, code: "W_DIAGNOSTIC_LIMIT", span, hints };
+  return [...kept, limit];
 }
 
 /** Byte offset of the start of the line containing `offset`. */

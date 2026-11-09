@@ -107,6 +107,8 @@ describe("the stage ladder and the per-rule table", () => {
       W_WHILE_DEPRECATED: "brief",
       W_REASSIGN_DEPRECATED: "brief",
       W_AXES_DIFFER: "brief",
+      // EH-D8's cap: about the whole report, a budget like `E_STEP_LIMIT` (brief), so every stage shows it.
+      W_DIAGNOSTIC_LIMIT: "brief",
       W_KEEP_VIOLATED: "brief",
       W_ROOM_OVERLAP: "rooms",
       W_DOOR_OFF_WALL: "openings",

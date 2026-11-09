@@ -17,6 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `packages/mcp/Dockerfile`: an image that installs the published `@chanmeng666/archlang-mcp` at its `package.json` version on Node 22 Alpine and runs `archlang-mcp` on stdio, for the Docker MCP Catalog. It is not in the npm package.
 - Four docs pages: `/floor-plan-tools-for-ai-agents` (what each floor-plan tool for agents takes in, exports and costs, from each tool's own pages), `/floor-plan-with-a-coding-agent`, `/text-to-dxf-floor-plan` and `/check-a-floor-plan`. Each carries a plan that compiles and lints clean and ends with a FAQ.
 - The docs `/examples` page links each plan to its static page on the playground, and each static example page links back to `/examples`.
+- `E_DIAGNOSTIC_LIMIT` and `W_DIAGNOSTIC_LIMIT`: `compile()` and `describe()` report at most 500 diagnostics, then one limit at the byte past the last kept; the lexer and parser stop collecting there. A budget or cap code that stopped the work (`E_STEP_LIMIT`, `E_DRAWING_LIMIT` and the other `*_LIMIT` codes) is never dropped. The limit is the error when any diagnostic, kept or dropped, is an error, and otherwise the warning, so a plan that only floods warnings still draws. A plan with 500 or fewer is reported exactly as before.
 
 ### Changed
 
@@ -30,6 +31,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Reporting diagnostics cost time quadratic in their number: `offsetToLineCol` scanned the source from byte 0 for each one, so 64 KiB of `@` took about 4 s and 64 KiB of NUL about 8.5 s to compile. It now reads a line-start table built once per source; the same inputs take about 50 ms, with the same line and column numbers.
 - A `#z=` link, or a short link, that inflates past 1 MiB is refused instead of hanging the playground or the embed page: the page shows "This link is too large to open". The playground, the `<arch-plan>` element and the MCP viewer put a compiled SVG on the page through one sanitiser that parses it and drops `<script>`, `<foreignObject>`, `on*` attributes and `javascript:` links; a compiled drawing is unchanged.
 - Plan JSON: a wrong-typed label or title field, or an unsafe identifier, is now a pathed `E_JSON` diagnostic instead of a throw or unparsable source. `planFromJson` checks that every id, category, wall, room or edge reference, `material` and `facing` is one word as the lexer reads it, that an `on.at` or `relation.at` position is exactly one position, and that `grid`, `north` and every printed number are typed; a number below 1e-6 is written without an exponent.
 - `planFromJson` returns at most 500 validation diagnostics, then one `E_DIAGNOSTIC_LIMIT`, so a payload of thousands of empty rows no longer returns one error per field.

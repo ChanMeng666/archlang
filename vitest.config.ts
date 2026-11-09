@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
+import DurationSequencer from "./test/sequencer.js";
 
 export default defineConfig({
   // Mirror the playground's Vite alias so its tests (and the modules they import)
@@ -30,6 +31,8 @@ export default defineConfig({
       "editors/vscode/test/**/*.test.ts",
     ],
     environment: "node",
+    // `--shard` balances by recorded duration, not by path hash (header of test/sequencer.ts).
+    sequence: { sequencer: DurationSequencer },
     // Coverage is REPORT-ONLY and deliberately has NO thresholds: it is a map of
     // what the suite reaches, not a gate. Nothing fails on a coverage number, so
     // `npm test` stays the single pass/fail signal and nobody games a percentage.
