@@ -539,14 +539,28 @@ describe("the two hosts link each example plan both ways", () => {
   });
 
   it("each page's date is floored by every file its bytes depend on", () => {
-    // The generator, the construct table, the row parser and the row table (the other rows fill
-    // "More in <group>" and the pager): a change to any of them changes every page.
+    // The generator, the construct table, the row parser, the row table (the other rows fill
+    // "More in <group>" and the pager) and the `#z=` permalink encoder (gen-permalink.mjs and the
+    // codec it re-exports): a change to any of them changes every page.
     const at = gen.indexOf("\nconst PAGE_INPUTS = [");
     expect(at, "gen-static.mjs declares `const PAGE_INPUTS = [ … ];`").toBeGreaterThan(0);
     const block = gen.slice(at, gen.indexOf("];", at));
     const inputs = [...block.matchAll(/"([^"]+)"/g)].map((m) => m[1]!);
     expect([...inputs].sort()).toEqual(
-      [GEN_STATIC, "playground/scripts/plan-constructs.mjs", ROWS_MJS, EXAMPLES_TS].sort(),
+      [
+        GEN_STATIC,
+        "playground/scripts/plan-constructs.mjs",
+        ROWS_MJS,
+        EXAMPLES_TS,
+        "scripts/gen-permalink.mjs",
+        "src/cli/share-codec.mjs",
+      ].sort(),
+    );
+    // The permalink input is the module the generator really imports its encoder from, and that
+    // module takes it from the codec listed beside it.
+    expect(gen).toMatch(/import \{ encodePlanHash \} from "\.\.\/\.\.\/scripts\/gen-permalink\.mjs";/);
+    expect(readFileSync("scripts/gen-permalink.mjs", "utf8")).toMatch(
+      /import \{[^}]*\bencodePlanHash\b[^}]*\} from "\.\.\/src\/cli\/share-codec\.mjs";/,
     );
     for (const p of inputs) expect(statSync(p).isFile(), p).toBe(true);
     expect(gen).toMatch(/for \(const path of PAGE_INPUTS\) floor = later\(floor, commitDate\(path\)\);/);
