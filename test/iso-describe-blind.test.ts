@@ -58,7 +58,9 @@ function closure(entries: string[]): Set<string> {
 }
 
 /** Every module the two summary surfaces load: the runtime import closure of `describe()` and
- *  of `lint()`, so a module added under either is scanned without anyone listing it. */
+ *  of `lint()`, so a module added under either is scanned without anyone listing it. The old hand list
+ *  also named `src/ir/types.ts` and `src/describe/types.ts`; they are type-only (erased), so they are
+ *  not in the runtime closure and cannot read the view. */
 const SUMMARY_MODULES = [...closure([resolvePath("src/describe.ts"), resolvePath("src/lint.ts")])]
   .map((f) => relative(process.cwd(), f).split(sep).join("/"))
   .sort();
