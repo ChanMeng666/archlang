@@ -10,7 +10,7 @@
 import { deflateRawSync } from "node:zlib";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { PlanHashTooLarge, decodePlanHashWeb } from "../../src/cli/share-codec.web.mjs";
+import { PlanHashTooLarge, decodePlanHashWeb } from "archlang/share";
 import { LINK_INFLATE_CAP_BYTES, bytesToB64url, readHash, srcFromHash } from "../src/share.js";
 import { decodePayload } from "../worker/share-core.js";
 import { supportsDeflateRaw } from "./helpers.js";

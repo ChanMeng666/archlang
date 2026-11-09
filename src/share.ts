@@ -4,6 +4,11 @@
  * its short-link Worker, the hosted MCP Worker, the docs widget). Web-standard APIs only
  * (`atob`/`btoa`, `DecompressionStream`); nothing here is reached by `compile()`.
  *
+ * The decoders need a runtime with `DecompressionStream("deflate-raw")`: a modern browser, a
+ * Worker, or a current Node 20 or later. On Node 18 that constructor throws, so both
+ * `decodePlanHashWeb` and `inflateCapped` reject; the CLI's sync Node decoder
+ * (`cli/share-codec.mjs`) has no such need.
+ *
  * It holds the base64url pair, the bounded decoders (`decodePlanHashWeb`, `inflateCapped`), the
  * edit flag, the short-link id shape and the hosts' size caps. It holds no encoder: deflate output
  * depends on the implementation (Node's zlib at level 9 in `cli/share-codec.mjs`, a browser's

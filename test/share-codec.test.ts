@@ -49,6 +49,7 @@ import {
   bytesToB64url,
   encodeSrc,
   hasEditFlag,
+  LINK_INFLATE_CAP_BYTES,
   readHash,
   setEditFlag,
   srcFromHash,
@@ -60,6 +61,7 @@ import {
   fromBase64Url,
   inflateCapped,
   PLAYGROUND_EDIT_FLAG,
+  PlanHashTooLarge,
   SOURCE_CAP_BYTES,
   toBase64Url,
 } from "../src/share.js";
@@ -265,27 +267,109 @@ const EXAMPLES = readdirSync("examples")
   .sort()
   .map((f) => [f, readFileSync(join("examples", f), "utf8")] as const);
 
-describe.skipIf(!HAS_DEFLATE_RAW)("every example's share link decodes the same through every reader", () => {
-  it("reads the corpus (the list is not empty)", () => {
-    expect(EXAMPLES.length).toBeGreaterThan(30);
+/**
+ * Every encoder that mints a `#z=` link, as the payload after `#z=`: the Node one (zlib level 9:
+ * `archlang link`, the README generator), the playground's `encodeSrc` and the docs widget's
+ * `playgroundUrl()` (both `CompressionStream` at its default level, so a long plan's payload
+ * differs from Node's byte for byte; the contract is that every reader gets the same source).
+ */
+const ENCODERS: ReadonlyArray<readonly [string, (source: string) => Promise<string>]> = [
+  ["the Node encoder", async (s) => encodePlanHash(s)],
+  ["playground encodeSrc", async (s) => (await encodeSrc(s)).replace(/^#z=/, "")],
+  [
+    "the docs widget",
+    async (s) => {
+      const url = await archLiveCodec()(s);
+      return url.slice(url.indexOf("#z=") + "#z=".length).replace(/&.*$/, "");
+    },
+  ],
+];
+
+/** `source` read back through every reader the share subpath serves, each as its consumer calls it. */
+async function everyReader(payload: string): Promise<Record<string, unknown>> {
+  const raw = await inflateCapped(fromBase64Url(payload), SOURCE_CAP_BYTES);
+  return {
+    "decodePlanHash (Node)": decodePlanHash(payload),
+    "decodePlanHashWeb (MCP Worker)": await decodePlanHashWeb(payload, { maxBytes: SOURCE_CAP_BYTES }),
+    inflateCapped: typeof raw === "string" ? raw : new TextDecoder().decode(raw),
+    "decodePayload (short-link Worker)": await decodePayload(payload),
+    "readHash (playground)": await readHash(`#z=${payload}`),
+    "srcFromHash + &edit (playground)": await srcFromHash(`#z=${payload}&${PLAYGROUND_EDIT_FLAG}`),
+  };
+}
+const expectedReads = (source: string): Record<string, unknown> => ({
+  "decodePlanHash (Node)": source,
+  "decodePlanHashWeb (MCP Worker)": source,
+  inflateCapped: source,
+  "decodePayload (short-link Worker)": source,
+  "readHash (playground)": { src: source },
+  "srcFromHash + &edit (playground)": source,
+});
+
+// Node 18's `CompressionStream` has no "deflate-raw" (it arrived in Node 21.2 and current 20.x), so
+// there the browser encoders fall back to `#src=` and the subpath's readers cannot inflate: skipped.
+describe.skipIf(!HAS_DEFLATE_RAW)(
+  "every example's share link decodes the same through every reader (skipped where the runtime lacks deflate-raw streams)",
+  () => {
+    it("reads the corpus (the list is not empty)", () => {
+      expect(EXAMPLES.length).toBeGreaterThan(30);
+    });
+
+    for (const [encoder, encode] of ENCODERS) {
+      it.each(EXAMPLES)(`%s, minted by ${encoder}: every reader returns its source`, async (_name, source) => {
+        const payload = await encode(source);
+        expect(payload).toMatch(/^[A-Za-z0-9_-]+$/);
+        expect(await everyReader(payload)).toEqual(expectedReads(source));
+        // The base64url pair round-trips the payload, and agrees with Node's Buffer byte for byte.
+        expect(toBase64Url(fromBase64Url(payload))).toBe(payload);
+        expect(Buffer.from(fromBase64Url(payload)).equals(Buffer.from(payload, "base64url"))).toBe(true);
+      });
+    }
+  },
+);
+
+/**
+ * The caps, at the edge, for every reader. A payload that inflates to exactly the cap opens; one
+ * byte more is refused, and inflation stops at the cap rather than at the end of the stream.
+ *
+ * The readers refuse in two shapes (card EH2.5b decides whether to unify them; this pins today's):
+ *   - THROWS: `decodePlanHashWeb` (the hosted MCP Worker), a `PlanHashTooLarge`.
+ *   - RETURNS A CODE: `inflateCapped` and the short-link Worker's `decodePayload` return
+ *     `"source_too_large"`; the playground's `readHash` returns `{ refused: "too_large" }` and
+ *     `srcFromHash` returns `null`.
+ * The playground page's own cap is `LINK_INFLATE_CAP_BYTES` (1 MiB), not `SOURCE_CAP_BYTES`: a
+ * link a reader opens in their own tab costs no host anything, so it is held to its own edge.
+ */
+describe.skipIf(!HAS_DEFLATE_RAW)("the source caps hold at the byte for every reader", () => {
+  /** A valid deflate stream that inflates to `n` spaces (minted by the Node encoder). */
+  const spaces = (n: number) => encodePlanHash(" ".repeat(n));
+  const atCap = spaces(SOURCE_CAP_BYTES);
+  const overCap = spaces(SOURCE_CAP_BYTES + 1);
+
+  it("decodePlanHashWeb (throws): opens at SOURCE_CAP_BYTES, throws PlanHashTooLarge one byte over", async () => {
+    expect(await decodePlanHashWeb(atCap, { maxBytes: SOURCE_CAP_BYTES })).toHaveLength(SOURCE_CAP_BYTES);
+    await expect(decodePlanHashWeb(overCap, { maxBytes: SOURCE_CAP_BYTES })).rejects.toBeInstanceOf(PlanHashTooLarge);
   });
 
-  it.each(EXAMPLES)("%s: the Node decoder and every share-subpath reader return its source", async (_name, source) => {
-    // The link `archlang link` and the README generator mint: the Node encoder, zlib level 9.
-    const payload = encodePlanHash(source);
-    const node = decodePlanHash(payload);
-    expect(node).toBe(source);
-    // The share subpath, as each consumer calls it: the MCP Worker's decoder with its cap, the
-    // bounded inflater over the shared base64url, the short-link Worker's payload check, and the
-    // playground page's own hash reader (with and without the edit flag after the token).
-    expect(await decodePlanHashWeb(payload, { maxBytes: SOURCE_CAP_BYTES })).toBe(node);
-    const raw = await inflateCapped(fromBase64Url(payload), SOURCE_CAP_BYTES);
-    expect(typeof raw === "string" ? raw : new TextDecoder().decode(raw)).toBe(node);
-    expect(await decodePayload(payload)).toBe(node);
-    expect(await readHash(`#z=${payload}`)).toEqual({ src: node });
-    expect(await srcFromHash(`#z=${payload}&${PLAYGROUND_EDIT_FLAG}`)).toBe(node);
-    // The base64url pair round-trips the payload, and agrees with Node's Buffer byte for byte.
-    expect(toBase64Url(fromBase64Url(payload))).toBe(payload);
-    expect(Buffer.from(fromBase64Url(payload)).equals(Buffer.from(payload, "base64url"))).toBe(true);
+  it("inflateCapped (returns a code): opens at SOURCE_CAP_BYTES, source_too_large one byte over", async () => {
+    const ok = await inflateCapped(fromBase64Url(atCap), SOURCE_CAP_BYTES);
+    expect(typeof ok === "string" ? ok : ok.byteLength).toBe(SOURCE_CAP_BYTES);
+    expect(await inflateCapped(fromBase64Url(overCap), SOURCE_CAP_BYTES)).toBe("source_too_large");
+  });
+
+  it("decodePayload, the short-link Worker (returns a code): opens at SOURCE_CAP_BYTES, source_too_large one over", async () => {
+    expect(await decodePayload(atCap)).toBe(" ".repeat(SOURCE_CAP_BYTES));
+    expect(await decodePayload(overCap)).toBe("source_too_large");
+  });
+
+  it("readHash / srcFromHash, the playground (return a refusal / null): opens at LINK_INFLATE_CAP_BYTES, refuses one over", async () => {
+    // Under the page's own cap, a payload past SOURCE_CAP_BYTES still opens.
+    expect(await readHash(`#z=${overCap}`)).toEqual({ src: " ".repeat(SOURCE_CAP_BYTES + 1) });
+    const pageAt = spaces(LINK_INFLATE_CAP_BYTES);
+    const pageOver = spaces(LINK_INFLATE_CAP_BYTES + 1);
+    expect(await readHash(`#z=${pageAt}`)).toEqual({ src: " ".repeat(LINK_INFLATE_CAP_BYTES) });
+    expect(await srcFromHash(`#z=${pageAt}`)).toHaveLength(LINK_INFLATE_CAP_BYTES);
+    expect(await readHash(`#z=${pageOver}`)).toEqual({ refused: "too_large" });
+    expect(await srcFromHash(`#z=${pageOver}`)).toBeNull();
   });
 });

@@ -44,7 +44,8 @@ export async function activate(context: ExtensionContext) {
   );
   let compile: CoreCompile;
   try {
-    compile = ((await import("@chanmeng666/archlang")) as unknown as { compile: CoreCompile }).compile;
+    // Uncast: the real `compile` must be assignable to the slice the markdown plugin reads.
+    compile = (await import("@chanmeng666/archlang")).compile;
   } catch (e) {
     const reason = e instanceof Error ? e.message : String(e);
     compile = () => ({

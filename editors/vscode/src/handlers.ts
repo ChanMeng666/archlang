@@ -35,10 +35,13 @@ import {
 import { lspDiagnostics, positionToOffset, spanToRange } from "./diagnostics.js";
 
 // Type-only references into the (ESM) core from this CJS module. The adapter's view of the core
-// is DERIVED from the core's own declarations, never retyped: a changed core signature is a
-// compile error here (and in `server.ts`, which hands the real module in uncast), not a runtime
-// fault. Typing the icon map Record<CompletionKind, …> likewise makes a newly added completion
-// kind a compile error, not a silent fallback-to-Text icon.
+// is DERIVED from the core's own declarations, never retyped: `CoreLsp` here and `CompileFn` in
+// `diagnostics.ts` (whose `Diagnostic` is the core's), so a changed core signature or a renamed
+// field is a compile error here and in `server.ts`, which hands the real module in uncast. No
+// cast is left on this seam in src/; the one cast is the `compileReturning` stub helper in
+// `test/handlers.test.ts`, whose stubs return only `diagnostics`. Typing the icon map
+// Record<CompletionKind, …> likewise makes a newly added completion kind a compile error, not a
+// silent fallback-to-Text icon.
 type Core = typeof import("@chanmeng666/archlang", { with: { "resolution-mode": "import" }});
 type CoreCompletionKind = import("@chanmeng666/archlang", { with: { "resolution-mode": "import" }}).CompletionKind;
 
@@ -166,8 +169,8 @@ export function createHandlers(core: CoreLsp): Handlers {
     capabilities: SERVER_CAPABILITIES,
 
     diagnostics(text) {
-      // lspDiagnostics is structurally a Diagnostic[] (range/severity/message/code/source).
-      return lspDiagnostics(core.compile, text) as unknown as Diagnostic[];
+      // lspDiagnostics returns LSP-shaped diagnostics (range/severity/message/code/source).
+      return lspDiagnostics(core.compile, text);
     },
 
     hover(text, position) {
