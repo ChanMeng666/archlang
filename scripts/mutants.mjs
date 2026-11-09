@@ -8,12 +8,15 @@
  * the dev dep `typescript` (its compiler API finds the sites) and vitest (it runs the tests).
  *
  *   node scripts/mutants.mjs [--files <path|glob,...>] [--mutants N] [--seed <int>] [--timeout <s>]
- *                            [--max-tests N] [--allow <path>] [--report <out.json>] [--dry-run]
- *                            [--fail-on-survivor]
+ *                            [--max-tests N] [--budget-minutes N] [--allow <path>] [--report <out.json>]
+ *                            [--dry-run] [--fail-on-survivor]
  *
- * Defaults: `--files src/num-format.ts,src/expr.ts`, `--mutants 40`, `--seed` the UTC date as
- * `YYYYMMDD` (each night samples differently, and a night is reproducible from its seed),
- * `--timeout 180` seconds per mutant, `--max-tests 20`, `--allow test/mutants.allow.json`.
+ * Run from the repository root (paths are relative to the working directory). Defaults:
+ * `--files src/num-format.ts,src/expr.ts`, `--mutants 40`, `--seed` the UTC date as `YYYYMMDD`
+ * (each night samples differently, and a night is reproducible from its seed), `--timeout 180`
+ * seconds per mutant (a baseline gets twice that), `--max-tests 20`, `--budget-minutes 85` (no new
+ * run STARTS once the budget is spent; the rest are `not run (budget)`, so the whole night fits
+ * inside the job's timeout), `--allow test/mutants.allow.json`.
  *
  * Operators (sites found syntactically, no type information):
  *   boundary      `<` ↔ `<=`, `>` ↔ `>=`
@@ -29,26 +32,27 @@
  * distance (`scripts/nearest-tests.mjs`, the graph `check:quick` uses; capped at `--max-tests`) run
  * under vitest with two workers and `--bail=1`, and the original bytes are put back in a `finally`
  * and verified. Each target file's tests first run once unmutated: a red or timed-out baseline
- * skips that file's mutants rather than calling them killed. Verdicts: `killed` (a test failed),
- * `survived`, `equivalent (allow-listed)` (a survivor with a row in the allow-list:
- * `{ file, line, operator, before, after, reason }`, `before`/`after` the trimmed source line),
- * `timeout`, `error` (vitest wrote no report), `skipped` (baseline red, or no nearest test).
+ * skips that file's mutants rather than calling them killed. Verdicts: `killed` (a test failed, or
+ * a test file failed to load), `survived`, `equivalent (allow-listed)` (a survivor with a row in the
+ * allow-list: `{ file, line, operator, before, after, reason }`, `before`/`after` the trimmed source
+ * line), `timeout`, `error` (the mutant does not compile, vitest failed outside any test, wrote no
+ * report or could not start: never a kill), `skipped` (baseline red, or no nearest test),
+ * `not run (budget)`, `interrupted` (a signal or a runner fault stopped it).
  *
- * Output: a Markdown table on stdout (and appended to `$GITHUB_STEP_SUMMARY` when set), the JSON
- * report at `--report`. Exit 0 always — report-only — except 1 under `--fail-on-survivor` when a
+ * Output: the JSON report at `--report` and the Markdown table in `$GITHUB_STEP_SUMMARY` (when set),
+ * both REWRITTEN after every run and on SIGINT/SIGTERM/SIGHUP, so a cancelled job keeps the
+ * verdicts it reached; the final table on stdout. Exit 0 always — report-only — except 1 under `--fail-on-survivor` when a
  * survivor is not allow-listed, and 2 for a refusal: bad arguments, an unreadable allow-list, or a
  * target file with uncommitted changes (the sampler writes target files in place, so it refuses
  * to start on a dirty one rather than risk mixing its bytes into real work).
  */
 import { execFileSync, spawn } from "node:child_process";
-import { appendFileSync, existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { dirname, join, relative, resolve } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import ts from "typescript";
 import { nearestTests } from "./nearest-tests.mjs";
-
-const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 export const DEFAULT_FILES = ["src/num-format.ts", "src/expr.ts"];
 export const OPERATORS = ["boundary", "sign", "negation", "equality", "early-return", "constant"];
@@ -221,13 +225,44 @@ export const allowRow = (site, rows) =>
 
 // ---- running ---------------------------------------------------------------------------------
 
-/** Run vitest on `tests`; resolves `{ status: "pass"|"fail"|"timeout"|"error", killer?, seconds, tail? }`. */
-export function runVitest(tests, timeoutSec) {
+/** esbuild's and Node's words for a source that does not parse: a mutant that broke the syntax. */
+const NO_COMPILE = /Transform failed|SyntaxError|Unexpected token|ERROR: Expected|Parse failure/;
+
+/**
+ * What one vitest run says about a mutant, from its exit code and JSON report (`undefined` when it
+ * wrote none). A failed test is a kill. A test file that failed to load is a kill too, unless it
+ * failed because the mutant does not compile: that, and a red exit with no failed test or file (an
+ * unhandled error), is `error`, never a kill: no test detected anything.
+ * @returns {{ status: "pass"|"fail"|"error", killer?: string, reason?: string }}
+ */
+export function classify(code, report, root = process.cwd()) {
+  if (code === 0) return { status: "pass" };
+  if (!report) return { status: "error", reason: "vitest wrote no report" };
+  const rel = (f) => relative(root, f.name ?? "").replace(/\\/g, "/");
+  for (const f of report.testResults ?? []) {
+    const a = (f.assertionResults ?? []).find((x) => x.status === "failed");
+    if (a) return { status: "fail", killer: `${rel(f)} › ${a.fullName ?? a.title}` };
+  }
+  for (const f of report.testResults ?? []) {
+    if (f.status !== "failed") continue;
+    const msg = String(f.message ?? "");
+    if (NO_COMPILE.test(msg)) {
+      return { status: "error", reason: `does not compile: ${msg.split("\n").find((l) => l.trim()) ?? ""}`.trim() };
+    }
+    return { status: "fail", killer: `${rel(f)} (failed to load)` };
+  }
+  return { status: "error", reason: "unhandled error outside any test" };
+}
+
+/**
+ * Run vitest on `tests` from `root`; resolves `{ status: "pass"|"fail"|"timeout"|"error", killer?,
+ * reason?, seconds, tail? }` and never rejects (a process that cannot start is `error`).
+ */
+export function runVitest(tests, timeoutSec, root = process.cwd(), node = process.execPath) {
   const out = mkdtempSync(join(tmpdir(), "archlang-mutants-"));
   const reportFile = join(out, "report.json");
-  const bin = join(ROOT, "node_modules", "vitest", "vitest.mjs");
   const args = [
-    bin,
+    join(root, "node_modules", "vitest", "vitest.mjs"),
     "run",
     ...tests,
     "--poolOptions.forks.maxForks=2",
@@ -239,50 +274,43 @@ export function runVitest(tests, timeoutSec) {
   ];
   const t0 = Date.now();
   return new Promise((done) => {
+    let settled = false;
+    let timer;
+    const finish = (r) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      activeChild = undefined;
+      rmSync(out, { recursive: true, force: true });
+      done({ ...r, seconds: Math.round((Date.now() - t0) / 100) / 10 });
+    };
     // Its own process group on POSIX, so a timeout kills the workers too, not only the parent.
-    const child = spawn(process.execPath, args, { cwd: ROOT, detached: process.platform !== "win32" });
+    const child = spawn(node, args, { cwd: root, detached: process.platform !== "win32" });
     activeChild = child;
     let tail = "";
     const keep = (b) => {
       tail = (tail + b.toString()).slice(-4000);
     };
-    child.stdout.on("data", keep);
-    child.stderr.on("data", keep);
+    child.stdout?.on("data", keep);
+    child.stderr?.on("data", keep);
     let timedOut = false;
-    const timer = setTimeout(() => {
+    timer = setTimeout(() => {
       timedOut = true;
       killTree(child);
     }, timeoutSec * 1000);
+    child.on("error", (e) => finish({ status: "error", reason: `cannot run vitest: ${e.message}`, tail }));
     child.on("close", (code) => {
-      clearTimeout(timer);
-      activeChild = undefined;
-      const seconds = Math.round((Date.now() - t0) / 100) / 10;
+      if (timedOut) return finish({ status: "timeout" });
       let report;
       try {
         report = JSON.parse(readFileSync(reportFile, "utf8"));
       } catch {
         report = undefined;
       }
-      rmSync(out, { recursive: true, force: true });
-      if (timedOut) return done({ status: "timeout", seconds });
-      if (code === 0) return done({ status: "pass", seconds });
-      if (!report) return done({ status: "error", seconds, tail });
-      done({ status: "fail", killer: killerOf(report), seconds });
+      const r = classify(code, report, root);
+      finish(r.status === "error" ? { ...r, tail } : r);
     });
   });
-}
-
-/** The first failing test (`file › name`), else the first failing file, from a vitest JSON report. */
-export function killerOf(report) {
-  for (const f of report.testResults ?? []) {
-    const file = relative(ROOT, f.name ?? "").replace(/\\/g, "/");
-    const a = (f.assertionResults ?? []).find((x) => x.status === "failed");
-    if (a) return `${file} › ${a.fullName ?? a.title}`;
-  }
-  for (const f of report.testResults ?? []) {
-    if (f.status === "failed") return relative(ROOT, f.name ?? "").replace(/\\/g, "/");
-  }
-  return "an unhandled error";
 }
 
 let activeChild;
@@ -299,6 +327,8 @@ function killTree(child) {
 
 // The one file currently holding a mutation and its original bytes: every exit path puts them back.
 let pending;
+// The running sampler's report writer, so a signal still leaves the night's verdicts behind.
+let onSignal;
 function restore() {
   if (!pending) return;
   const { path, bytes } = pending;
@@ -315,6 +345,7 @@ function guardExit() {
     process.on(sig, () => {
       killTree(activeChild);
       restore();
+      onSignal?.(sig);
       process.exit(130);
     });
   }
@@ -339,16 +370,46 @@ const firstDiff = (a, b) => {
   return i;
 };
 
+/** The verdict tallies; `score` is killed + timeout over killed + timeout + survived. */
+export function tally(results) {
+  const counts = {
+    killed: 0,
+    survived: 0,
+    equivalent: 0,
+    timeout: 0,
+    error: 0,
+    skipped: 0,
+    budget: 0,
+    interrupted: 0,
+    pending: 0,
+  };
+  for (const r of results) {
+    if (r.verdict === "equivalent (allow-listed)") counts.equivalent++;
+    else if (r.verdict === "not run (budget)") counts.budget++;
+    else if (r.verdict === "not run" || r.verdict === "running") counts.pending++;
+    else if (r.verdict in counts) counts[r.verdict]++;
+  }
+  const scored = counts.killed + counts.timeout + counts.survived;
+  return { counts, score: scored ? Math.round(((counts.killed + counts.timeout) / scored) * 1000) / 10 : null };
+}
+
 export function markdown(r) {
   const c = r.counts;
   const head = r.dryRun
     ? `## Sampled mutants — dry run (seed ${r.seed})`
-    : `## Sampled mutants (report-only, never gates) — seed ${r.seed}`;
+    : `## Sampled mutants (report-only, never gates) — seed ${r.seed}${r.final ? "" : " — IN PROGRESS"}`;
+  const extra = [
+    c.budget ? `${c.budget} not run (the ${r.budgetMinutes}-minute budget ran out)` : "",
+    c.interrupted ? `${c.interrupted} interrupted` : "",
+    c.pending ? `${c.pending} not yet run` : "",
+  ].filter(Boolean);
   const summary = r.dryRun
     ? `${r.results.length} of ${r.sitesTotal} sites sampled; nothing run.`
     : `${r.results.length} of ${r.sitesTotal} sites: ${c.killed} killed, ${c.survived} survived, ` +
-      `${c.equivalent} equivalent (allow-listed), ${c.timeout} timeout, ${c.error} error, ${c.skipped} skipped. ` +
-      `Mutation score ${r.score === null ? "n/a" : `${r.score}%`} (killed + timeout over killed + timeout + survived).`;
+      `${c.equivalent} equivalent (allow-listed), ${c.timeout} timeout, ${c.error} error, ${c.skipped} skipped` +
+      `${extra.length ? `, ${extra.join(", ")}` : ""}. ` +
+      `Mutation score ${r.score === null ? "n/a" : `${r.score}%`} (killed + timeout over killed + timeout + survived). ` +
+      "`error` is a mutant that did not compile, or a run that failed outside any test: never counted as killed.";
   const rows = r.results.map((x, i) => {
     const at = firstDiff(x.before, x.after);
     return (
@@ -358,8 +419,8 @@ export function markdown(r) {
   });
   const tests = Object.entries(r.tests).map(
     ([f, t]) =>
-      `- \`${f}\`: ${t.list.length} nearest test files` +
-      (t.baseline ? `, unmutated baseline ${t.baseline.status} in ${t.baseline.seconds}s` : ""),
+      `- \`${f}\`: ${t.list.length < t.related ? `the ${t.list.length} nearest of ${t.related}` : `all ${t.related}`} related test files` +
+      (t.baseline ? `; unmutated baseline ${t.baseline.status} in ${t.baseline.seconds}s` : ""),
   );
   const stale = r.staleAllow.map(
     (a) => `- \`${a.file}:${a.line}\` ${a.operator}: ${cell(a.before)} (matches no site now)`,
@@ -396,14 +457,14 @@ function globToRegExp(g) {
   return new RegExp(`^${re}$`);
 }
 
-const gitOut = (...args) => execFileSync("git", args, { cwd: ROOT, encoding: "utf8" });
+const gitOut = (root, ...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" });
 
-function resolveFiles(list) {
+function resolveFiles(root, list) {
   const out = [];
   let tracked;
   for (const p of list) {
     if (/[*?]/.test(p)) {
-      tracked ??= gitOut("ls-files").split("\n").filter(Boolean);
+      tracked ??= gitOut(root, "ls-files").split("\n").filter(Boolean);
       const re = globToRegExp(p);
       out.push(...tracked.filter((f) => re.test(f)));
     } else out.push(p.replace(/\\/g, "/"));
@@ -413,12 +474,17 @@ function resolveFiles(list) {
 
 /**
  * @param {string[]} argv
- * @param {{ log?: (s: string) => void, run?: typeof runVitest }} [deps]
+ * @param {{ root?: string, log?: (s: string) => void, run?: (tests: string[], timeoutSec: number) => Promise<any>,
+ *   now?: () => number, env?: Record<string, string | undefined> }} [deps] `root` is the repository
+ *   (default the working directory); `run` replaces vitest, `now` the clock, `env` `process.env`
  * @returns {Promise<number>} the exit code
  */
 export async function main(argv, deps = {}) {
+  const root = resolve(deps.root ?? process.cwd());
   const log = deps.log ?? ((s) => console.log(s));
-  const run = deps.run ?? runVitest;
+  const run = deps.run ?? ((tests, timeoutSec) => runVitest(tests, timeoutSec, root));
+  const now = deps.now ?? Date.now;
+  const env = deps.env ?? process.env;
   const refuse = (msg) => {
     log(`mutants: ${msg}`);
     return 2;
@@ -432,27 +498,26 @@ export async function main(argv, deps = {}) {
     if (v === undefined) return dflt;
     return /^\d+$/.test(v) ? Number(v) : Number.NaN;
   };
-  const files = resolveFiles((opt("--files", undefined) ?? DEFAULT_FILES.join(",")).split(",").filter(Boolean));
+  const files = resolveFiles(root, (opt("--files", undefined) ?? DEFAULT_FILES.join(",")).split(",").filter(Boolean));
   const n = int("--mutants", 40);
   const seed = int("--seed", dateSeed());
   const timeout = int("--timeout", 180);
   const maxTests = int("--max-tests", 20);
+  const budgetMinutes = int("--budget-minutes", 85);
   const allowPath = opt("--allow", "test/mutants.allow.json");
   const reportPath = opt("--report", undefined);
   const dryRun = argv.includes("--dry-run");
-  for (const [k, v] of Object.entries({
-    "--mutants": n,
-    "--seed": seed,
-    "--timeout": timeout,
-    "--max-tests": maxTests,
-  })) {
-    if (!Number.isInteger(v) || (k !== "--seed" && v < 1)) return refuse(`${k} needs a positive integer`);
+  for (const [k, v] of Object.entries({ "--mutants": n, "--timeout": timeout, "--max-tests": maxTests })) {
+    if (!Number.isInteger(v) || v < 1) return refuse(`${k} needs a positive integer`);
+  }
+  for (const [k, v] of Object.entries({ "--seed": seed, "--budget-minutes": budgetMinutes })) {
+    if (!Number.isInteger(v)) return refuse(`${k} needs a non-negative integer`);
   }
   if (files.length === 0) return refuse("--files matched nothing");
-  for (const f of files) if (!existsSync(join(ROOT, f))) return refuse(`no such file: ${f}`);
+  for (const f of files) if (!existsSync(join(root, f))) return refuse(`no such file: ${f}`);
 
   let allow = [];
-  const allowFile = join(ROOT, allowPath);
+  const allowFile = resolve(root, allowPath);
   if (existsSync(allowFile)) {
     try {
       allow = parseAllow(readFileSync(allowFile, "utf8"));
@@ -462,91 +527,126 @@ export async function main(argv, deps = {}) {
   } else if (opt("--allow", undefined) !== undefined) return refuse(`no such allow-list: ${allowPath}`);
 
   if (!dryRun) {
-    const dirty = gitOut("status", "--porcelain", "--", ...files).trim();
+    const dirty = gitOut(root, "status", "--porcelain", "--", ...files).trim();
     if (dirty) return refuse(`refusing to mutate files with uncommitted changes:\n${dirty}`);
   }
 
-  const originals = new Map(files.map((f) => [f, readFileSync(join(ROOT, f))]));
+  const originals = new Map(files.map((f) => [f, readFileSync(join(root, f))]));
   const all = files.flatMap((f) => enumerateSites(f, originals.get(f).toString("utf8")));
   const sampled = sampleSites(all, n, seed);
   const tests = {};
-  for (const f of new Set(sampled.map((s) => s.file))) tests[f] = { list: nearestTests(ROOT, [f]).slice(0, maxTests) };
+  for (const f of new Set(sampled.map((s) => s.file))) {
+    const related = nearestTests(root, [f]);
+    tests[f] = { list: related.slice(0, maxTests), related: related.length };
+  }
   const staleAllow = allow.filter((a) => !all.some((s) => allowRow(s, [a])));
+  const results = sampled.map((site) => ({ ...site, verdict: "not run" }));
+  const t0 = now();
 
-  const results = [];
-  const t0 = Date.now();
-  for (const site of sampled) {
-    const t = tests[site.file];
-    const row = { ...site, verdict: "not run" };
-    results.push(row);
-    if (dryRun) continue;
-    if (t.list.length === 0) {
-      row.verdict = "skipped";
-      row.reason = "no nearest test";
-      continue;
-    }
-    if (!t.baseline) {
-      t.baseline = await run(t.list, timeout * 2);
-      log(
-        `mutants: baseline for ${site.file} (${t.list.length} test files): ${t.baseline.status} in ${t.baseline.seconds}s`,
-      );
-    }
-    if (t.baseline.status !== "pass") {
-      row.verdict = "skipped";
-      row.reason = `baseline ${t.baseline.status}`;
-      continue;
-    }
-    const path = join(ROOT, site.file);
-    const bytes = originals.get(site.file);
-    let res;
-    guardExit();
-    try {
-      pending = { path, bytes };
-      writeFileSync(path, applySite(bytes.toString("utf8"), site));
-      res = await run(t.list, timeout);
-    } finally {
-      restore();
-    }
-    row.seconds = res.seconds;
-    if (res.status === "fail") {
-      row.verdict = "killed";
-      row.killer = res.killer;
-    } else if (res.status === "pass") {
-      const a = allowRow(site, allow);
-      row.verdict = a ? "equivalent (allow-listed)" : "survived";
-      if (a) row.reason = a.reason;
-    } else {
-      row.verdict = res.status;
-      if (res.tail) row.tail = res.tail;
-    }
-    log(`mutants: ${site.file}:${site.line} ${site.operator} → ${row.verdict} (${res.seconds}s)`);
-  }
-
-  const counts = { killed: 0, survived: 0, equivalent: 0, timeout: 0, error: 0, skipped: 0 };
-  for (const r of results) {
-    if (r.verdict === "equivalent (allow-listed)") counts.equivalent++;
-    else if (r.verdict in counts) counts[r.verdict]++;
-  }
-  const scored = counts.killed + counts.timeout + counts.survived;
-  const report = {
-    seed,
-    files,
-    operators: OPERATORS,
-    sitesTotal: all.length,
-    timeoutSec: timeout,
-    dryRun,
-    seconds: Math.round((Date.now() - t0) / 1000),
-    counts,
-    score: scored ? Math.round(((counts.killed + counts.timeout) / scored) * 1000) / 10 : null,
-    tests,
-    results: results.map(({ start, end, ...r }) => r),
-    staleAllow,
+  // The report and the step summary are rewritten after every run, so a cancelled or timed-out
+  // job still leaves every verdict reached so far.
+  const write = (final) => {
+    const { counts, score } = tally(results);
+    const report = {
+      seed,
+      files,
+      operators: OPERATORS,
+      sitesTotal: all.length,
+      timeoutSec: timeout,
+      budgetMinutes,
+      dryRun,
+      final,
+      seconds: Math.round((now() - t0) / 1000),
+      counts,
+      score,
+      tests,
+      results: results.map(({ start, end, ...r }) => r),
+      staleAllow,
+    };
+    const md = markdown(report);
+    if (env.GITHUB_STEP_SUMMARY && !dryRun) writeFileSync(env.GITHUB_STEP_SUMMARY, `${md}\n`);
+    if (reportPath) writeFileSync(resolve(root, reportPath), `${JSON.stringify(report, null, 2)}\n`);
+    return md;
   };
-  const md = markdown(report);
-  log(md);
-  if (process.env.GITHUB_STEP_SUMMARY && !dryRun) appendFileSync(process.env.GITHUB_STEP_SUMMARY, `${md}\n`);
-  if (reportPath) writeFileSync(resolve(reportPath), `${JSON.stringify(report, null, 2)}\n`);
-  return argv.includes("--fail-on-survivor") && counts.survived > 0 ? 1 : 0;
+  onSignal = (sig) => {
+    for (const r of results) if (r.verdict === "running") r.verdict = "interrupted";
+    log(`mutants: ${sig}; the report keeps the verdicts reached so far`);
+    write(false);
+  };
+
+  let outOfBudget = false;
+  const spent = () => {
+    outOfBudget ||= now() - t0 >= budgetMinutes * 60_000;
+    return outOfBudget;
+  };
+  try {
+    for (const row of results) {
+      if (dryRun) continue;
+      const t = tests[row.file];
+      if (t.list.length === 0) {
+        row.verdict = "skipped";
+        row.reason = "no nearest test";
+        continue;
+      }
+      if (spent()) {
+        row.verdict = "not run (budget)";
+        continue;
+      }
+      if (!t.baseline) {
+        t.baseline = await run(t.list, timeout * 2);
+        log(
+          `mutants: baseline for ${row.file} (${t.list.length} test files): ${t.baseline.status} in ${t.baseline.seconds}s`,
+        );
+        write(false);
+        if (t.baseline.status === "pass" && spent()) {
+          row.verdict = "not run (budget)";
+          continue;
+        }
+      }
+      if (t.baseline.status !== "pass") {
+        row.verdict = "skipped";
+        row.reason = `baseline ${t.baseline.status}`;
+        continue;
+      }
+      const path = join(root, row.file);
+      const bytes = originals.get(row.file);
+      let res;
+      guardExit();
+      row.verdict = "running";
+      try {
+        pending = { path, bytes };
+        writeFileSync(path, applySite(bytes.toString("utf8"), row));
+        res = await run(t.list, timeout);
+      } catch (e) {
+        row.verdict = "interrupted";
+        row.reason = `the runner threw: ${e?.message ?? e}`;
+        throw e;
+      } finally {
+        restore();
+      }
+      row.seconds = res.seconds;
+      if (res.status === "fail") {
+        row.verdict = "killed";
+        row.killer = res.killer;
+      } else if (res.status === "pass") {
+        const a = allowRow(row, allow);
+        row.verdict = a ? "equivalent (allow-listed)" : "survived";
+        if (a) row.reason = a.reason;
+      } else {
+        row.verdict = res.status;
+        if (res.reason) row.reason = res.reason;
+        if (res.tail) row.tail = res.tail;
+      }
+      log(`mutants: ${row.file}:${row.line} ${row.operator} → ${row.verdict} (${res.seconds}s)`);
+      write(false);
+    }
+  } finally {
+    onSignal = undefined;
+    // Also on a throw: the row that was running says so, and the rest stay `not run`.
+    const md = write(true);
+    log(md);
+  }
+  return argv.includes("--fail-on-survivor") && tally(results).counts.survived > 0 ? 1 : 0;
 }
 
 const isMain = process.argv[1] && realpathSync(process.argv[1]) === realpathSync(fileURLToPath(import.meta.url));

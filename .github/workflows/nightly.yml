@@ -319,18 +319,21 @@ jobs:
 
       - run: npm ci
 
-      # Writes its table to $GITHUB_STEP_SUMMARY itself; the JSON report is the artifact.
+      # Writes its table to $GITHUB_STEP_SUMMARY itself and rewrites it, with the JSON report (the
+      # artifact), after every mutant. `--budget-minutes 85` stops it STARTING a run once 85 minutes
+      # are spent (the rest are `not run (budget)`), so one run in flight (at most 2 × 180 s for a
+      # baseline) still ends inside `timeout-minutes`; a cancel keeps the verdicts reached so far.
       - name: Sample and run mutants
-        run: node scripts/mutants.mjs --mutants 40 --report mutants-report.json
+        run: node scripts/mutants.mjs --mutants 40 --budget-minutes 85 --report mutants-report.json
 
       - name: Upload the report
-        if: ${{ !cancelled() }}
+        if: ${{ always() }} # also after a timeout or cancel: the report is rewritten per mutant
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: mutants-report
           path: mutants-report.json
           retention-days: 14
-          if-no-files-found: ignore
+          if-no-files-found: warn
 
   # ---------------------------------------------------------------------------
   # Read-only end-to-end checks against PRODUCTION (Playwright).
