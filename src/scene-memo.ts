@@ -81,7 +81,11 @@ function keep(ir: ResolvedPlan, key: DrawKey, scene: SharedScene): void {
  * `toScene(ir, opts, runtime)`, drawn once per key. The result is the memo's own: read it, never
  * mutate it, never return it to a caller.
  */
-export function memoScene(ir: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): SharedScene {
+export function memoScene(
+  ir: ResolvedPlan,
+  opts: CompileOptions = {},
+  runtime: Runtime = BUILTIN_RUNTIME,
+): SharedScene {
   const key = drawKey(opts, runtime);
   if (key === undefined) return toScene(ir, opts, runtime);
   if (!asked.some((k) => sameKey(k, key))) {
