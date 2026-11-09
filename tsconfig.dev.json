@@ -11,6 +11,7 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsc/dev.tsbuildinfo",
     "declaration": false,
     // Tests import playground modules that read the core's share subpath by name, as
     // vitest.config.ts aliases it: to its source, so this check needs no build.
