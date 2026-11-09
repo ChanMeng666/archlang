@@ -18,7 +18,8 @@
  * implementation's untied sort gets wrong.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe as suite, expect, it } from "vitest";
@@ -39,9 +40,7 @@ const world: World = {
   now: () => new Date(0),
 };
 
-const EXAMPLE_NAMES = readdirSync(EXAMPLES)
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLE_NAMES = exampleNames().sort();
 
 suite("iso determinism — the shipped corpus", () => {
   it("has examples to run over", () => {

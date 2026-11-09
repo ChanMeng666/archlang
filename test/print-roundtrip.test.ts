@@ -9,7 +9,8 @@
  * field `parse()` would have produced differently.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames, libNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { format } from "../src/format.js";
@@ -54,10 +55,8 @@ function checkRoundtrip(src: string): void {
   expect(stripTrivia(after.plan)).toEqual(stripTrivia(before.plan));
 }
 
-const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
-const LIBS = readdirSync("examples/lib")
-  .filter((f) => f.endsWith(".arch"))
-  .map((f) => `lib/${f}`);
+const EXAMPLES = exampleNames();
+const LIBS = libNames().map((f) => `lib/${f}`);
 const ALL = [...EXAMPLES, ...LIBS];
 const readExample = (name: string): string => readFileSync(`examples/${name}`, "utf8");
 

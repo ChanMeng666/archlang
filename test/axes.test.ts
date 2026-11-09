@@ -1,3 +1,5 @@
+/** axes — GB/T 50001 numbering (derived, never authored); axes — parsing. */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

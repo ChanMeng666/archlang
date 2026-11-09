@@ -1,3 +1,5 @@
+/** T1a — opening attachment; T1b — swing into / hinge near. */
+
 import { describe, expect, it } from "vitest";
 import { compile, format } from "../src/index.js";
 import { parse } from "../src/parser.js";

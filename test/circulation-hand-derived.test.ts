@@ -1,3 +1,5 @@
+/** G.11 — a curved walk, derived by hand: the drum; G.11 — a second shape class: an open arc with a free end. */
+
 import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan } from "../src/index.js";
 

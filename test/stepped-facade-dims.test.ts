@@ -92,6 +92,7 @@ function allChains(src: string): string[][] {
   return [...rows.values()].map((r) => r.sort((a, b) => (a.vertical ? a.y - b.y : a.x - b.x)).map((t) => t.value));
 }
 
+// TODO(EH3.4): differs from test/helpers/diag.ts by reads lint(), returns counts or a set.
 const codes = (src: string): string[] => lint(src).flatMap((d) => (d.code ? [d.code] : []));
 
 suite("dims auto all on a stepped facade (#109)", () => {

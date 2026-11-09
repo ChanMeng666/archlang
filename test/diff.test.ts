@@ -1,3 +1,5 @@
+/** diffPlans — structural; diffPlans — summary & circulation. */
+
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";

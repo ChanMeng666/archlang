@@ -1,3 +1,5 @@
+/** CLI — batch; runPool — bounded concurrency. */
+
 import { mkdtempSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

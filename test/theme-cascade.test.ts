@@ -1,3 +1,5 @@
+/** T4.4 — named theme bases; T4.4 — per-element style overrides. */
+
 import { describe, expect, it } from "vitest";
 import { compile, clearCache, registerTheme, derivePoche, hexToHsl, hslToHex } from "../src/index.js";
 

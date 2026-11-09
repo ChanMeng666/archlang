@@ -1,3 +1,5 @@
+/** circulation is invariant under a non-integer translation of the resolved plan. */
+
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import type { Point } from "../src/ast.js";

@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** one access policy: every surface agrees on reachability; one access policy across storeys: a shaft relays only from a reachable room. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import {
@@ -198,9 +201,7 @@ describe("one access policy: every surface agrees on reachability", () => {
   });
 
   it("every shipped single-file example — incl. relational's open plan, whose open pairs are openings", () => {
-    const files = readdirSync("examples").filter(
-      (f) => f.endsWith(".arch") && f !== "imports.arch" && f !== "museum-wings.arch",
-    );
+    const files = exampleNames().filter((f) => f !== "imports.arch" && f !== "museum-wings.arch");
     for (const f of files) assertAgree(readFileSync(`examples/${f}`, "utf8"));
     // relational's kitchen, bedroom and bath once had no door (no interior wall at all), and
     // circulation reported them `no_door_route`. Since PS3.6 its walls are derived and its

@@ -1,3 +1,5 @@
+/** mm — millimetre rounding into diagnostic prose; shortfall — how far `required` exceeds `available`. */
+
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { approachGapMm, deficitMm, distPointToRect, frontGapMm, mm, shortfall } from "../src/lint/measure.js";

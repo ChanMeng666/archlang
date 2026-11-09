@@ -1,3 +1,5 @@
+/** D4 — the group; D4 — faithful actions agree with the matrix. */
+
 import { describe, expect, it } from "vitest";
 import {
   actOnLetter,

@@ -14,7 +14,8 @@
  *  - `repair()` recurses into level bodies (a fault on the top floor is never silent).
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint, repair, resolve, resolveAll, levelBlocks } from "../src/index.js";
 import { parse } from "../src/parser.js";
@@ -312,7 +313,7 @@ suite("v1.21 levels — repair recurses into storeys", () => {
  */
 const HAS_LEVEL = /^\s*level\s+-?\d+/m;
 
-const ALL_EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
+const ALL_EXAMPLES = exampleNames();
 
 suite("v1.21 levels — the level-free corpus is byte-identical", () => {
   const EXAMPLES = ALL_EXAMPLES.filter((f) => !HAS_LEVEL.test(readFileSync(`examples/${f}`, "utf8")));

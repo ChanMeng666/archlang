@@ -1,4 +1,7 @@
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+/** every clause is reported on the plan that has it, and alone; a multi-storey plan answers for the export in hand. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
@@ -294,7 +297,7 @@ describe("the CLI", () => {
 
 describe("the report over the corpus", () => {
   const world = makeNodeWorld("examples");
-  const EXAMPLES = readdirSync("examples").filter((f) => f.endsWith(".arch"));
+  const EXAMPLES = exampleNames();
   const report = (name: string) => planToJson(readFileSync(`examples/${name}`, "utf8"), { world });
 
   it("the report leaves the document alone: `dropped` is not in it", () => {

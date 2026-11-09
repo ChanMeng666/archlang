@@ -1,3 +1,5 @@
+/** 6.12 — an overlap with no sampled point in it collides; a separating gap is never contact. */
+
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import type { Point } from "../src/ast.js";

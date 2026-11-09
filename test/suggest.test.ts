@@ -1,3 +1,5 @@
+/** suggestTopology; suggestTopology — W_NO_ENTRANCE. */
+
 import { describe, expect, it } from "vitest";
 import { suggestTopology } from "../src/suggest.js";
 import { lint, compile } from "../src/index.js";

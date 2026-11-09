@@ -26,6 +26,7 @@ import { EXAMPLES_WORLD, EXAMPLE_FILES, lintByRule, SHIPPED_EXAMPLES } from "./h
 
 const RULES_DIR = resolvePath("src/lint/rules");
 
+// EH3.4: pairs each path with its source; the walk is walkFiles (test/helpers/corpus.ts) with forward-slash names.
 /** Every `.arch` under a folder, sorted, as [relative name, source]. */
 function archFiles(dir: string): Array<[string, string]> {
   const out: Array<[string, string]> = [];

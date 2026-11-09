@@ -1,3 +1,5 @@
+/** a lint rule is registered in every place a rule is listed. */
+
 import { describe, expect, it } from "vitest";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { FAMILY_NOUN } from "../src/lint/coverage.js";

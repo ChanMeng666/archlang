@@ -1,3 +1,5 @@
+/** rankFixes; cmdFix pick-one reduction (rankFixes + applyFixes). */
+
 import { describe, expect, it } from "vitest";
 import { applyFixes, rankFixes } from "../src/index.js";
 import type { Applicability, Diagnostic, FixEdit, FixSuggestion } from "../src/index.js";

@@ -1,4 +1,7 @@
-import { readFileSync, readdirSync } from "node:fs";
+/** W_SWING_OBSTRUCTED states the measured deficit; W_SWING_OBSTRUCTED on a double door (backlog 6.8). */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
 import { applyFixes, lint } from "../src/index.js";
@@ -322,7 +325,7 @@ describe("W_SWING_OBSTRUCTED's quoted width holds across the shipped examples", 
     let applied = 0;
     let imported = 0;
     let offered = 0;
-    for (const f of readdirSync(EXAMPLES).filter((x) => x.endsWith(".arch"))) {
+    for (const f of exampleNames()) {
       const src = readFileSync(join(EXAMPLES, f), "utf8");
       for (const profile of [undefined, "accessibility-advisory"]) {
         const before = lint(src, { world: worldWith(), profile });

@@ -1,3 +1,6 @@
+/** W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING. */
+
+import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -5,7 +8,6 @@ import { USE_KINDS } from "../src/ast.js";
 import { describe as describePlan, finish, FURNISH_TABLE, lint } from "../src/index.js";
 import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
 import { DEFINING, definingItems, WASH_WITH, washItems } from "../src/lint/defining.js";
-import type { World } from "../src/world.js";
 
 /** Every note but the ones on a room outside the furnish table (these plans' companion halls). */
 const refused = (r: ReturnType<typeof finish>): ReturnType<typeof finish>["unresolved"] =>
@@ -145,15 +147,6 @@ ${glazed ? "  window id=win_bay on shell at 13000 width 1200\n" : ""}}
   });
 
   it("reads the window fact describe reads: a room describe gives a window is never reported", () => {
-    const worldFor = (dir: string): World => ({
-      read: (p) => {
-        try {
-          return readFileSync(resolvePath(dir, p), "utf8");
-        } catch {
-          return null;
-        }
-      },
-    });
     let checked = 0;
     for (const dir of ["examples", "test/fixtures", "test/defect-corpus/daylight"]) {
       const abs = resolvePath(dir);

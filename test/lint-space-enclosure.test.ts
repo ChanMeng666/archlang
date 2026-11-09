@@ -1,5 +1,8 @@
+/** W_BOUNDARY_NO_WALL; W_FLOOR_UNASSIGNED. */
+
+import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { dirname, join, resolve as resolvePath } from "node:path";
+import { dirname, join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
 import { computeCirculation } from "../src/analyze/circulation.js";
@@ -281,17 +284,7 @@ describe("W_ROOM_OUTSIDE_SHELL", () => {
 
 // ─── circulation-reachable implies access-reachable ────────────────────────────────────
 
-const worldFor = (dir: string): World => ({
-  read: (p) => {
-    try {
-      return readFileSync(resolvePath(dir, p), "utf8");
-    } catch {
-      return null;
-    }
-  },
-  now: () => new Date(0),
-});
-
+// EH3.4: like walkFiles (test/helpers/corpus.ts) but returns forward-slash paths.
 function archFiles(dir: string): string[] {
   const out: string[] = [];
   for (const name of readdirSync(dir).sort()) {

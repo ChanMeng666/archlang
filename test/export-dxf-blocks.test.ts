@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** the Scene is the Scene it was; a Scene with no parts is the flat file. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, type Scene, toDxf } from "../src/index.js";
@@ -197,9 +200,7 @@ suite("a Scene with no parts is the flat file", () => {
 
 suite("over the corpus", () => {
   const world = makeNodeWorld("examples");
-  const NAMES = readdirSync("examples")
-    .filter((f) => f.endsWith(".arch"))
-    .sort();
+  const NAMES = exampleNames().sort();
 
   type Counted = Pick<ReturnType<typeof describe>, "doors" | "windows" | "furniture">;
   const pagesOf = (src: string): Array<{ scene: Scene; facts: Counted }> => {

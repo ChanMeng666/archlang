@@ -48,7 +48,9 @@
  * words reach the generated labels through `USE_WORDS`.
  */
 
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { walkFiles as walk } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
+import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve as resolvePath, dirname } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -224,25 +226,8 @@ function compareSynonyms(syns: readonly string[], label: string): number {
 }
 
 /** Every room label and id of every storey of the corpus (the room-overlap oracle's corpus). */
+// EH3.4: not CORPUS_DIRS (test/helpers/corpus.ts): this oracle walks the whole of eval/, not just goldens, faults and fidelity-plans.
 function corpusLabels(): string[] {
-  const worldFor = (dir: string): World => ({
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-  });
-  const walk = (dir: string, keep: (f: string) => boolean): string[] => {
-    const files: string[] = [];
-    for (const f of readdirSync(dir).sort()) {
-      const p = join(dir, f);
-      if (statSync(p).isDirectory()) files.push(...walk(p, keep));
-      else if (keep(f)) files.push(p);
-    }
-    return files;
-  };
   const sources: { src: string; world: World }[] = [];
   for (const d of ["examples", "test/fixtures", "test/recovery-corpus", "eval"])
     for (const p of walk(join(ROOT, d), (f) => f.endsWith(".arch")))

@@ -1,4 +1,7 @@
-import { mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
+/** the stage ladder and the per-rule table; a keep's stage is the stage of its measure. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -185,8 +188,7 @@ describe("a keep's stage is the stage of its measure", () => {
 });
 
 /** The examples, sorted. */
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
+const EXAMPLES = exampleNames()
   .sort()
   .map((f) => `examples/${f}`);
 

@@ -1,3 +1,5 @@
+/** doorSwing; sectorIntersectsRect. */
+
 import { describe, expect, it } from "vitest";
 import { doorSwing, isDoubleDoorPair, sectorIntersectsRect, swingsCollide } from "../src/geometry.js";
 import { largestPerimeterGap } from "../src/analyze.js";

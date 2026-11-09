@@ -1,3 +1,5 @@
+/** expressions; Value coercions (errors-as-data, never thrown). */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { parse } from "../src/parser.js";

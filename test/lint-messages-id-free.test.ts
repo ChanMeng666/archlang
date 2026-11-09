@@ -1,3 +1,5 @@
+/** no message over the corpus quotes an internal id (PS2.22, PS2.29); makeNaming — what an unlabelled room is called (src/naming.ts). */
+
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";

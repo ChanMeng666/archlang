@@ -1,3 +1,5 @@
+/** offsetToLineCol — line-start table agrees with the scan; diagnostics are capped at MAX_DIAGNOSTICS, then one E_DIAGNOSTIC_LIMIT (EH-D8). */
+
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { capDiagnostics, LIMIT_CODES, MAX_DIAGNOSTICS, offsetToLineCol } from "../src/diagnostics.js";

@@ -1,3 +1,5 @@
+/** circulation — facts on the nav grid. */
+
 import { describe, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
 import { compile, describe as describePlan } from "../src/index.js";

@@ -1,3 +1,5 @@
+/** G.11 — the nav grid's walls agree with the drawn walls; C.1 — a wall thinner than a cell still blocks (the centreline cover). */
+
 import { describe, expect, it } from "vitest";
 import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../src/analyze.js";
 import { computeCirculationOverlay } from "../src/analyze/circulation-overlay.js";

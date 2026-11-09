@@ -12,7 +12,7 @@
  * per-theme digests joined by a comma.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./digest.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { allStoreysDiagnosticsPayload, type CompilerApi, type DigestOptions } from "./byte-identity-payload.js";
@@ -42,8 +42,6 @@ export const FAMILIES_BEFORE = 83;
  * twenty families' exact words would move this row.
  */
 export const NEAR_WORDS: readonly string[] = ["rack", "lamp", "table_lamp", "stand", "trunk", "planter_box", "stone"];
-
-const sha256 = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
 
 /** One digest per theme: the default (no theme option), then `rendered`. */
 export function perThemeDigests(api: FamiliesLawApi, src: string, world: World | undefined): string[] {

@@ -23,7 +23,8 @@
  * arcs included — so there is no tessellation in the tolerances.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import fc from "fast-check";
@@ -178,9 +179,7 @@ const examplesWorld: World = {
   now: () => new Date(0),
 };
 
-const EXAMPLES = readdirSync(join(__dirname, "..", "examples"))
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLES = exampleNames().sort();
 
 describe("joinery split mode — laws over every shipped example", () => {
   for (const f of EXAMPLES) {

@@ -86,12 +86,13 @@
  * `uses` and `room_type`. Edited by hand to what `describe()` measures, nothing else.
  */
 
+import { exampleNames } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
 import { describe as describePlan } from "../src/index.js";
-import type { World } from "../src/index.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
@@ -109,23 +110,11 @@ const EXPECTED = JSON.parse(readFileSync(join(HERE, "fixtures", "vocabulary-equi
 >;
 
 /** A Node-fs World for import resolution, mirroring the CLI's `makeNodeWorld`. */
-function worldFor(dir: string): World {
-  return {
-    read: (p) => {
-      try {
-        return readFileSync(resolve(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-    now: () => new Date(0),
-  };
-}
 
 /** Every classifiable `.arch` source, keyed by its repo-relative POSIX path. */
 function corpusFiles(): string[] {
   const out: string[] = [];
-  for (const f of readdirSync(join(ROOT, "examples"))) if (f.endsWith(".arch")) out.push(`examples/${f}`);
+  for (const f of exampleNames()) out.push(`examples/${f}`);
   for (const f of readdirSync(join(ROOT, "eval", "goldens"))) if (f.endsWith(".arch")) out.push(`eval/goldens/${f}`);
   return out.sort();
 }

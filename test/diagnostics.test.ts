@@ -1,3 +1,5 @@
+/** lexer — byte-offset spans; offsetToLineCol. */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { lex } from "../src/lexer.js";

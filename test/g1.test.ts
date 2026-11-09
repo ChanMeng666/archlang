@@ -1,3 +1,5 @@
+/** G1 generate — the user prompt is the brief verbatim; G1 generate — oracle isolation of the system prompt. */
+
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

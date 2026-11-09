@@ -1,3 +1,5 @@
+/** lint profiles. */
+
 import { describe, expect, it } from "vitest";
 import { lint, LINT_PROFILES, LINT_PROFILE_NAMES } from "../src/index.js";
 
@@ -7,6 +9,7 @@ import { lint, LINT_PROFILES, LINT_PROFILE_NAMES } from "../src/index.js";
  * an advisory check, not a compliance guarantee.
  */
 
+// TODO(EH3.4): differs from test/helpers/diag.ts by reads lint(), takes options.
 const codes = (src: string, profile?: string): string[] =>
   lint(src, profile ? { profile } : {}).map((d) => d.code ?? "");
 

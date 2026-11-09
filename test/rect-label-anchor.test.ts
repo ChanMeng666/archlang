@@ -46,6 +46,7 @@ const sceneOf = (src: string): Scene => {
 const roomsOf = (src: string): RRoom[] =>
   resolve(parse(src).plan!).ir.elements.filter((e): e is RRoom => e.kind === "room");
 
+// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile(), keeps an undefined code as `undefined`.
 const codes = (src: string): (string | undefined)[] => compile(src, { noCache: true }).diagnostics.map((d) => d.code);
 
 /** The drawn position of one `labels`-pass text node, by its exact string. */

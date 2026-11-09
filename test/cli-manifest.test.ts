@@ -1,3 +1,5 @@
+/** manifest — no drift vs the CLI dispatch; package.json bins. */
+
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { buildManifest, FINISH_STAGES, FINISH_STAGES_AVAILABLE, MANIFEST_COMMAND_NAMES } from "../src/index.js";

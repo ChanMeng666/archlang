@@ -1,3 +1,5 @@
+/** DESCRIBE_KEYS — no drift vs the real describe() result; describe --facts. */
+
 import { describe as suite, expect, it } from "vitest";
 import { DESCRIBE_FACTS, describe } from "../src/index.js";
 import { DESCRIBE_KEYS } from "../src/cli/commands-analyze.js";

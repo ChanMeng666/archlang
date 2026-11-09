@@ -1,4 +1,7 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
+/** repair — the villa witness; repair — the no-worse law. */
+
+import { CORPUS_DIRS, walkFiles as walk } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -50,21 +53,9 @@ function expectNoWorse(name: string, src: string): void {
 
 /** Every `.arch` the repo's corpus oracles iterate (`room-overlap-oracle.test.ts`). */
 function corpus(): { name: string; src: string }[] {
-  const walk = (dir: string): string[] =>
-    readdirSync(dir)
-      .sort()
-      .flatMap((f) => {
-        const p = join(dir, f);
-        return statSync(p).isDirectory() ? walk(p) : f.endsWith(".arch") ? [p] : [];
-      });
-  return [
-    "examples",
-    "test/fixtures",
-    "test/recovery-corpus",
-    "eval/goldens",
-    "eval/faults",
-    "eval/fidelity-plans",
-  ].flatMap((d) => walk(join(ROOT, d)).map((p) => ({ name: p.slice(ROOT.length + 1), src: readFileSync(p, "utf8") })));
+  return CORPUS_DIRS.flatMap((d) =>
+    walk(join(ROOT, d)).map((p) => ({ name: p.slice(ROOT.length + 1), src: readFileSync(p, "utf8") })),
+  );
 }
 
 const VILLA = readFileSync(join(ROOT, "examples/hillside-villa.arch"), "utf8");

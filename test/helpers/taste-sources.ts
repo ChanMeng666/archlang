@@ -5,7 +5,7 @@
  * their `import`s through the examples' virtual World; the corpora import nothing.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./digest.js";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { taste } from "../../src/index.js";
@@ -70,9 +70,7 @@ export function headerOf(src: string): Record<string, string> {
  * {@link TASTE_WORLD}. The one body both the table and its measurement use.
  */
 export function tasteDigest(src: string, profile: string): string {
-  return createHash("sha256")
-    .update(JSON.stringify(taste(src, { profile, world: TASTE_WORLD })), "utf8")
-    .digest("hex");
+  return sha256(JSON.stringify(taste(src, { profile, world: TASTE_WORLD })));
 }
 
 /** One case and its better twin. */

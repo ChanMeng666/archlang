@@ -1,3 +1,5 @@
+/** dims auto — number staggering on a crowded chain; text width — one estimate, one place. */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

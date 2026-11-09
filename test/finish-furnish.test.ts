@@ -1,4 +1,7 @@
-import { readFileSync, readdirSync } from "node:fs";
+/** furnish — the corpus is not empty; furnish law — placement is relative: `against wall` or `in <room> anchor`, never `at (x,y)`. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import fc from "fast-check";
 import { describe as suite, expect, it } from "vitest";
@@ -58,12 +61,12 @@ const world: World = {
   },
   now: () => new Date(0),
 };
-const NAMES = readdirSync(EXAMPLES)
-  .filter((f) => f.endsWith(".arch"))
+const NAMES = exampleNames()
   .map((f) => f.slice(0, -".arch".length))
   .sort();
 const srcOf = (name: string): string => readFileSync(join(EXAMPLES, `${name}.arch`), "utf8");
 
+// TODO(EH3.4): differs from test/helpers/diag.ts by takes options, returns counts or a set.
 function codes(src: string, w: World | undefined = world): Map<string, number> {
   const out = new Map<string, number>();
   const env = w ? { world: w } : {};

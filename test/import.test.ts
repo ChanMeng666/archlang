@@ -1,3 +1,5 @@
+/** T4.3 — import in a virtual-FS (browser-like) World; T4.3 — import in a Node (real-fs) World. */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve as resolvePath } from "node:path";

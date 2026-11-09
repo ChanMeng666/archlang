@@ -1,3 +1,5 @@
+/** readDimText — what reads as a length; W_DIM_TEXT_MISMATCH — the rounding rule. */
+
 import { describe, expect, it } from "vitest";
 import { applyFixes, compile, lint } from "../src/index.js";
 import { readDimText } from "../src/lint/rules/dims.js";

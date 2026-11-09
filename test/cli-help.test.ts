@@ -1,3 +1,5 @@
+/** FLAG_KEYS — no drift vs the manifest; help renderers (pure). */
+
 import { existsSync, mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

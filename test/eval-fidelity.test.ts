@@ -1,3 +1,5 @@
+/** fidelity corpus — shape and brief-groundedness; infeasibility is DERIVED, never asserted in prose. */
+
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";

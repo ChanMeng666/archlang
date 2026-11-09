@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** lint coverage: beside lint(), never inside it; lint coverage: the seam. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
@@ -23,9 +26,7 @@ import { runArch } from "./helpers/cli.js";
  */
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-const EXAMPLES = readdirSync(join(ROOT, "examples"))
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLES = exampleNames().sort();
 const read = (p: string): string => readFileSync(p, "utf8");
 const example = (f: string): string => read(join(ROOT, "examples", f));
 

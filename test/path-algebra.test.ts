@@ -1,3 +1,5 @@
+/** bestPaths equals brute force on random digraphs; neighbours4 lists W, E, N, S and stays in bounds. */
+
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { bestPaths, type Digraph } from "../src/algebra/paths.js";

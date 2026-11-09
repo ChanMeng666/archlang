@@ -1,3 +1,5 @@
+/** escaping fuzz — SVG; escaping fuzz — error-card SVG. */
+
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile, renderAscii, renderErrorSvg, toDxf } from "../src/index.js";

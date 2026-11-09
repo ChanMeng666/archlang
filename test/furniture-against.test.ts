@@ -1,3 +1,5 @@
+/** furniture against wall. */
+
 import { describe, expect, it } from "vitest";
 import { parse } from "../src/parser.js";
 import { resolve } from "../src/ir.js";

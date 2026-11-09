@@ -76,11 +76,12 @@
  * the body is the sanctioned one.
  */
 
-import { readFileSync, readdirSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import type { World } from "../src/world.js";
 // The two tables moved to a module of their own when `iso-byte-identity.test.ts` began
 // making the same corpus-wide claim: one measurement, two laws, no retyped hash.
 import { AUTHORS_HEIGHT, BASELINE, SEMANTIC_BASELINE } from "./byte-identity-baseline.js";
@@ -92,26 +93,13 @@ const EXAMPLES = resolvePath("examples");
 
 /** A World that reads the examples directory, so the two plans that `import` are covered
  *  by the law rather than quietly skipped — a gate is only as strong as its corpus. */
-function worldFor(dir: string): World {
-  return {
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-    now: () => new Date(0),
-  };
-}
 
 const srcOf = (name: string): string => readFileSync(join(EXAMPLES, `${name}.arch`), "utf8");
 const worldOfExamples = worldFor(EXAMPLES);
 
 const authorsHeight = new Set(AUTHORS_HEIGHT);
 const shippedExamples = (): string[] =>
-  readdirSync(EXAMPLES)
-    .filter((f) => f.endsWith(".arch"))
+  exampleNames()
     .map((f) => f.replace(/\.arch$/, ""))
     .sort();
 

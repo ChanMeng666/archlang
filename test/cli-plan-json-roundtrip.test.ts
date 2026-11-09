@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** compile -f json → compile --from-json (the whole corpus); compile -f json writes the existing projection. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import { describe, expect, it } from "vitest";
 import { type Diagnostic, describe as describePlan, lint, planToJson } from "../src/index.js";
@@ -23,9 +26,7 @@ import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
  * does not round-trip turns this red, and so does a gap that quietly closes.
  */
 
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLES = exampleNames().sort();
 const ARGS: Args = { _: [] };
 
 /**

@@ -1,5 +1,8 @@
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, resolve as resolvePath, sep } from "node:path";
+/** a doorway's far seed keeps the room's own clearance (the route reads min(door, pinch)); a door a walk never uses cannot cap it (no far-seed stamp). */
+
+import { CORPUS_DIRS, walkFiles as walk } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
+import { relative, resolve as resolvePath, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import { centreFreedomToClearWidth, DEFAULT_BODY_RADIUS_MM } from "../src/analyze/circulation.js";
 import { describe as describePlan, type World } from "../src/index.js";
@@ -210,24 +213,6 @@ describe("a room is reached on its FLOOR, not on the doorway cells inside its re
 // ---------------------------------------------------------------------------------------
 // The corpus invariant: no walk or route is wider than the doors it must pass.
 // ---------------------------------------------------------------------------------------
-
-const CORPUS_DIRS = [
-  "examples",
-  "test/fixtures",
-  "test/recovery-corpus",
-  "eval/goldens",
-  "eval/fidelity-plans",
-  "eval/faults",
-];
-
-function walk(dir: string): string[] {
-  return readdirSync(dir)
-    .sort()
-    .flatMap((f) => {
-      const p = join(dir, f);
-      return statSync(p).isDirectory() ? walk(p) : p.endsWith(".arch") ? [p] : [];
-    });
-}
 
 const worldAt = (dir: string): World => ({
   read: (p) => {

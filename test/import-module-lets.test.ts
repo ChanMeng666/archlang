@@ -16,6 +16,7 @@
  * `allStoreysDigestWithDiagnostics` body this test runs).
  */
 
+import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
@@ -676,6 +677,7 @@ const BASELINE: [string, string][] = [
 ];
 
 const ROOT = resolvePath(__dirname, "..");
+// EH3.4: not corpusFiles(): the corpus plus examples/lib, each directory listed non-recursively (the byte-identity table pins this exact set).
 const CORPUS_DIRS = [
   "examples",
   "examples/lib",
@@ -685,19 +687,6 @@ const CORPUS_DIRS = [
   "eval/fidelity-plans",
   "eval/faults",
 ];
-
-function worldFor(dir: string): World {
-  return {
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-    now: () => new Date(0),
-  };
-}
 
 suite("byte identity — every corpus plan, every storey, with compile().diagnostics", () => {
   it("covers the whole corpus — it cannot silently shrink", () => {

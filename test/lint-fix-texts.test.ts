@@ -1,3 +1,6 @@
+/** W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and raises nothing new; W_FIXTURE_BACK_TO_ROOM — the size's aspect decides the wall; the hint swaps it. */
+
+import { worldFor } from "./helpers/world.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -31,6 +34,7 @@ const minOf = (p: Profile) =>
 const of = (src: string, code: string, p?: Profile) => lint(src, opts(p)).filter((d) => d.code === code);
 
 /** Every code the plan raises, compile and lint, as a multiset. */
+// TODO(EH3.4): differs from test/helpers/diag.ts by returns counts or a set.
 function codes(src: string, p: Profile): Map<string, number> {
   const m = new Map<string, number>();
   for (const d of [...compile(src, { noCache: true }).diagnostics, ...lint(src, opts(p))])
@@ -67,18 +71,8 @@ const insert = (src: string, stmt: string): string => src.replace(/\}\s*$/, `  $
 
 const errorsOf = (src: string) => compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
 
-const worldFor = (dir: string): World => ({
-  read: (p) => {
-    try {
-      return readFileSync(resolvePath(dir, p), "utf8");
-    } catch {
-      return null;
-    }
-  },
-  now: () => new Date(0),
-});
-
 /** Every `.arch` file in the given repo directories, with the World its own directory needs. */
+// EH3.4: a caller-chosen subset of directories, listed non-recursively; the callers name why.
 const corpus = (dirs: readonly string[]) =>
   dirs.flatMap((dir) => {
     const abs = resolvePath(dir);

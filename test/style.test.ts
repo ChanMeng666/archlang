@@ -1,3 +1,5 @@
+/** Scene style metadata (T3.1); AIA layers (T3.2). */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 import { renderSvg } from "../src/backends/svg.js";

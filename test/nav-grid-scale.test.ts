@@ -1,3 +1,5 @@
+/** nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one. */
+
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_TOL } from "../src/analyze.js";

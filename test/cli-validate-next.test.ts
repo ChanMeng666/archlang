@@ -1,3 +1,5 @@
+/** validate --json · next is purely additive; validate · next tiers through the CLI. */
+
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

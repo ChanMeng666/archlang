@@ -1,3 +1,5 @@
+/** data-arch-label (annotate); data-arch-primary (annotate). */
+
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

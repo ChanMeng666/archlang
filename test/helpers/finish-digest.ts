@@ -10,7 +10,7 @@
  * means the stage now writes something else, or reports differently a room it could have furnished.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./digest.js";
 import { finish } from "../../src/index.js";
 import type { World } from "../../src/world.js";
 
@@ -24,5 +24,5 @@ export function finishDigest(src: string, world: World): string {
     changes: r.changes,
     unresolved: r.unresolved.filter((u) => !u.reason.includes(PARTLY) && u.scope === undefined),
   }));
-  return createHash("sha256").update(JSON.stringify(runs)).digest("hex");
+  return sha256(JSON.stringify(runs));
 }

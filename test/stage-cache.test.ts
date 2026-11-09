@@ -1,3 +1,5 @@
+/** T4.5 — stage memo: lex; T4.5 — stage memo: parse. */
+
 import { describe, expect, it } from "vitest";
 import { compile, clearCache, createRegistry, BUILTIN_REGISTRY, registerElement } from "../src/index.js";
 import type { ElementDef } from "../src/index.js";

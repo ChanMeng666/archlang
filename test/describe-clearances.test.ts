@@ -61,6 +61,7 @@ suite("describe --facts clearances: the row-6 Part 1 figures (PS2.72 acceptance)
   });
 });
 
+// EH3.4: returns paths relative to `dir`, which walkFiles (test/helpers/corpus.ts) does not.
 /** Every `.arch` file under `dir`, sorted, as paths relative to it. */
 function archFiles(dir: string): string[] {
   return readdirSync(dir)

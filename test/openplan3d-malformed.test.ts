@@ -1,3 +1,5 @@
+/** malformed OpenPlan3D input. */
+
 import { readFileSync, readdirSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import { join } from "node:path";

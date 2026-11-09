@@ -5,6 +5,7 @@
  * lands.
  */
 
+import { exampleNames } from "./corpus.js";
 import { readdirSync, statSync } from "node:fs";
 import { cmdValidate } from "../../src/cli/commands-analyze.js";
 import { nodeIo, parseArgs } from "../../src/cli/io.js";
@@ -18,8 +19,7 @@ export function validateJsonFiles(): string[] {
         const p = `${dir}/${f}`;
         return statSync(p).isDirectory() ? walk(p) : f.endsWith(".arch") ? [p] : [];
       });
-  const examples = readdirSync("examples")
-    .filter((f) => f.endsWith(".arch"))
+  const examples = exampleNames()
     .sort()
     .map((f) => `examples/${f}`);
   return [...examples, ...walk("test/defect-corpus")];

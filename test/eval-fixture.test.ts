@@ -1,3 +1,5 @@
+/** judge fixture — byte-equivalence proof across the intent lift. */
+
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";

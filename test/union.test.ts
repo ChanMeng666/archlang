@@ -1,3 +1,5 @@
+/** rectUnionOutline; wall rendering — clean joins. */
+
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compile, getGeometryBackend, loadClipperBackend, setGeometryBackend } from "../src/index.js";
 import { rectUnionOutline } from "../src/geometry/union.js";

@@ -86,8 +86,9 @@
  * Geometric facts compare at a 1e-6 mm quantum (see `quantise`); invariant facts exactly.
  */
 
-import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, relative, resolve as resolvePath, sep } from "node:path";
+import { walkFiles as walk } from "./corpus.js";
+import { readFileSync } from "node:fs";
+import { relative, resolve as resolvePath, sep } from "node:path";
 import type { LevelNode, NorthDir, PlaceNode, PlaceRotate, PlanNode, Point, RoofNode } from "../../src/ast.js";
 import { buildDoorAccessGraph, DEFAULT_TOL, resolvePlan } from "../../src/analyze.js";
 import { navExtent } from "../../src/analyze/circulation.js";
@@ -124,15 +125,6 @@ import { parse } from "../../src/parser.js";
 
 /** `examples/`, resolved against the repo root (vitest's cwd). */
 export const EXAMPLES_DIR = resolvePath("examples");
-
-function walk(dir: string): string[] {
-  return readdirSync(dir)
-    .sort()
-    .flatMap((f) => {
-      const p = join(dir, f);
-      return statSync(p).isDirectory() ? walk(p) : p.endsWith(".arch") ? [p] : [];
-    });
-}
 
 /** Every `examples/**\/*.arch`, keyed by its forward-slash path relative to `examples/` —
  *  the keys a whole-file `import` resolves against, so `imports.arch`'s own

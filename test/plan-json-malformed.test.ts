@@ -1,4 +1,7 @@
-import { readFileSync, readdirSync } from "node:fs";
+/** malformed Plan JSON. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { isDeepStrictEqual } from "node:util";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
@@ -36,9 +39,7 @@ import { runs as scaledRuns } from "./setup/fast-check.js";
 
 const SEED = 20261109;
 const NUM_RUNS = 400;
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLES = exampleNames().sort();
 const docs = EXAMPLES.flatMap((file) => {
   const src = readFileSync(`examples/${file}`, "utf8");
   const r = planToJson(src);

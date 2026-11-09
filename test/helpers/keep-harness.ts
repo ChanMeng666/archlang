@@ -4,7 +4,7 @@
  * the payloads with the keep rows taken out.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./digest.js";
 import { readdirSync, readFileSync } from "node:fs";
 import type { KeepNode, Statement } from "../../src/ast.js";
 import { compile, describe, lint } from "../../src/index.js";
@@ -98,7 +98,7 @@ export function k3DigestOf(name: string, src: string): string {
     JSON.stringify(compile(src, { noCache: true }).diagnostics),
     String(v.exit) + String.fromCharCode(10) + validateDigestView(v.stdout),
   ].join(" ");
-  return createHash("sha256").update(payload, "utf8").digest("hex");
+  return sha256(payload);
 }
 
 /** K3's second table (PS4.3b): SHA-256 of one corpus plan's keep rows in the surfaces PS4.3b
@@ -115,5 +115,5 @@ export function k3bDigestOf(src: string): string {
     JSON.stringify(impact(src, src).keeps ?? null),
     JSON.stringify(set?.ok ? (impact(src, set.source).keeps ?? null) : null),
   ].join(" ");
-  return createHash("sha256").update(payload, "utf8").digest("hex");
+  return sha256(payload);
 }

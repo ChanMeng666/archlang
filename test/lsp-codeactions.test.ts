@@ -1,3 +1,5 @@
+/** codeActions. */
+
 import { describe, expect, it } from "vitest";
 import { codeActions } from "../src/lsp.js";
 

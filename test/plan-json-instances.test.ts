@@ -14,8 +14,8 @@
  * JSON → arch → JSON is stable. A plan that places first round-trips to the grouped order: the
  * limit is pinned below, not hidden.
  */
+import { sha256 as sha } from "./helpers/digest.js";
 import { describe as suite, expect, it } from "vitest";
-import { createHash } from "node:crypto";
 import { compile, describe, lint, makeVirtualWorld } from "../src/index.js";
 import {
   PLAN_JSON_SCHEMA,
@@ -50,7 +50,6 @@ const plan = (body: string): string => `plan "Twin units" {\n  units mm\n${body}
 /** The law's form: root statements, then the component, then the `place`s. */
 const TWINS = plan(ROOT + UNIT + PLACES);
 
-const sha = (s: string): string => createHash("sha256").update(s).digest("hex");
 const noSpans = (src: string): unknown => lint(src).map(({ span: _s, fixes: _f, relatedSpans: _r, ...d }) => d);
 const facts = (src: string) => ({
   svg: sha(compile(src).svg ?? ""),

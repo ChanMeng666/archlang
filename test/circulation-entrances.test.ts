@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** each room walks from its nearest entrance; two entrances that seed one cell (the fuzz gate's seed 1438601647). */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint } from "../src/index.js";
 import { D4_ELEMENTS, witnessCase } from "./helpers/d4-oracle.js";
@@ -62,7 +65,7 @@ describe("each room walks from its nearest entrance", () => {
   });
 
   it("a single-entrance plan carries no per-room `entranceId` — its bytes are unchanged", () => {
-    const files = readdirSync("examples").filter((f) => f.endsWith(".arch"));
+    const files = exampleNames();
     let single = 0;
     let multi = 0;
     for (const f of files) {

@@ -18,6 +18,7 @@
  * three bench plans of `bench/gen.ts`, which are generated in memory with no I/O.
  */
 
+import { worldFor } from "./world.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -49,16 +50,6 @@ export interface WorkCountsTable {
   _floor: number;
   rows: Record<string, WorkCounts>;
 }
-
-const worldFor = (dir: string): World => ({
-  read: (p) => {
-    try {
-      return readFileSync(resolvePath(dir, p), "utf8");
-    } catch {
-      return null;
-    }
-  },
-});
 
 /** Every measured plan, keyed by its row name: `examples/<f>.arch` (sorted), then `bench:<SPEC>`. */
 export function workCountPlans(): { key: string; src: string; world: World }[] {

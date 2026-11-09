@@ -32,6 +32,7 @@ import {
 
 const MISMATCH = "W_SHAFT_FOOTPRINT_MISMATCH";
 const of = (src: string, code: string): Diagnostic[] => lint(src).filter((d) => d.code === code);
+// TODO(EH3.4): differs from test/helpers/diag.ts by reads compile(), keeps an undefined code as `undefined`.
 const codes = (src: string) => compile(src, { noCache: true }).diagnostics.map((d) => d.code);
 
 /** A plan of the storeys given, ascending from level 1. */

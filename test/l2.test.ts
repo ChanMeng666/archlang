@@ -1,3 +1,5 @@
+/** runLoopArm — the diagnostic feedback loop; runControlArm — equal-budget i.i.d. resampling. */
+
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";

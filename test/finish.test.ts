@@ -1,4 +1,7 @@
-import { readFileSync, readdirSync } from "node:fs";
+/** finish — the corpus is not empty; finish law 1 — fixpoint: finishing a finished plan changes nothing. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import {
@@ -43,13 +46,13 @@ const world: World = {
   },
   now: () => new Date(0),
 };
-const NAMES = readdirSync(EXAMPLES)
-  .filter((f) => f.endsWith(".arch"))
+const NAMES = exampleNames()
   .map((f) => f.slice(0, -".arch".length))
   .sort();
 const srcOf = (name: string): string => readFileSync(join(EXAMPLES, `${name}.arch`), "utf8");
 
 /** compile + lint diagnostic codes as a multiset — re-derived here, not read from `finish`. */
+// TODO(EH3.4): differs from test/helpers/diag.ts by returns counts or a set.
 function codes(src: string): Map<string, number> {
   const out = new Map<string, number>();
   for (const d of [...compile(src, { world, noCache: true }).diagnostics, ...lint(src, { world })])

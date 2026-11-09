@@ -5,7 +5,7 @@
  * top-level facts are the lowest storey), and a single-storey plan is judged exactly as before.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./helpers/digest.js";
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { makeNodeWorld } from "../src/cli/io.js";
@@ -59,6 +59,7 @@ const SAME_ID_PLAN = `plan "same id" {
   }
 }`;
 
+// TODO(EH3.4): differs from test/helpers/diag.ts by keeps an undefined code as `undefined`.
 const codes = (src: string, intent: Intent): string[] => validateIntent(src, intent).violations.map((v) => v.code);
 
 suite("the intent reads every storey (#365)", () => {
@@ -283,7 +284,7 @@ suite("a single-storey plan is judged byte for byte as before (#365)", () => {
     const source = readFileSync(`examples/${file}.arch`, "utf8");
     const world = makeNodeWorld("examples");
     const results = PROBES.map((p) => validateIntent(source, p, { world }));
-    return createHash("sha256").update(JSON.stringify(results)).digest("hex");
+    return sha256(JSON.stringify(results));
   };
 
   const BASELINE: Record<string, string> = {

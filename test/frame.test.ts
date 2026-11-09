@@ -1,3 +1,5 @@
+/** frame algebra — signed permutation + translation; tp — mapping a point local → global. */
+
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { arcMidpoint, arcSweepAngle, pathArcs } from "./helpers/path-prim.js";

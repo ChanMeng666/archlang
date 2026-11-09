@@ -10,8 +10,8 @@
  * moves where `E_STEP_LIMIT` lands.
  */
 
+import { sha256 } from "./digest.js";
 import { readdirSync, readFileSync } from "node:fs";
-import { createHash } from "node:crypto";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { allStoreysDiagnosticsPayload, type CompilerApi } from "./byte-identity-payload.js";
@@ -36,7 +36,7 @@ export function lawDigest(api: LawApi, src: string, world: World | undefined): s
     JSON.stringify(scenes),
     String(api.stepsOf(src, world)),
   ].join(" ");
-  return createHash("sha256").update(payload, "utf8").digest("hex");
+  return sha256(payload);
 }
 
 /** A plan the law pins: `dir` is what an `import` of its is read against. */

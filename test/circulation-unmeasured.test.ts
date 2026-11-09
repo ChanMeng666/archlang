@@ -1,4 +1,7 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** G.5 — circulation reports every room it cannot measure; G.5 — a curved wall obstructs the arc it is drawn as. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, describe as describePlan, type SceneSummary } from "../src/index.js";
 import { NULL_WORLD, type World } from "../src/world.js";
@@ -40,9 +43,7 @@ import { NULL_WORLD, type World } from "../src/world.js";
  */
 
 /** Every shipped example, read with a World so the importing ones resolve. */
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLES = exampleNames().sort();
 
 const exampleWorld: World = {
   read: (p) => {

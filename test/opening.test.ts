@@ -1,3 +1,5 @@
+/** opening element; cased opening rendering — never repaint the void the wall union opened. */
+
 import { describe, expect, it } from "vitest";
 import { describe as describePlan, lint, compile } from "../src/index.js";
 import { format } from "../src/format.js";

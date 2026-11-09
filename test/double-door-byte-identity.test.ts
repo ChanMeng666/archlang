@@ -43,7 +43,7 @@
  * A digest here moving is a finding to explain before it is a diff to re-measure.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./helpers/digest.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -337,7 +337,6 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
 const NO_LINT: CompilerApi = { compile, describe: describePlan, lint: () => [] };
 /** A `door … double …` statement (a comment's "double-height" or a `double_bed` is not one). */
 const WRITES_DOUBLE = /^\s*door\b[^#\n]*\bdouble\b/m;
-const sha256 = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
 
 suite("`double` door kind — the plans its lint rules moved still draw and describe as on main", () => {
   it.each(MAIN_SOURCES)("%s: SVG, describe() and diagnostics of main's source", (path, payload, source, undo) => {

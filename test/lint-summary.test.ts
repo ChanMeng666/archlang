@@ -1,3 +1,5 @@
+/** diagnosticsSummary; the diagnostics are what lint() returns. */
+
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

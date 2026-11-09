@@ -23,7 +23,7 @@
  * which a keep-free plan must not move either.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./digest.js";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
 import { cmdImpact, cmdValidate } from "../../src/cli/commands-analyze.js";
@@ -181,7 +181,7 @@ export function keepWeakLawPayload(file: string): string {
 
 /** SHA-256 of {@link keepWeakLawPayload}. */
 export function keepWeakLawDigest(file: string): string {
-  return createHash("sha256").update(keepWeakLawPayload(file), "utf8").digest("hex");
+  return sha256(keepWeakLawPayload(file));
 }
 
 /** The evaluation steps one file's whole resolution spends (every storey). */

@@ -1,5 +1,8 @@
+/** plan-json — round-trip byte-identity (SVG); plan-json — derived furniture positions. */
+
+import { exampleNames } from "./helpers/corpus.js";
 import { describe, expect, it } from "vitest";
-import { readdirSync, readFileSync } from "node:fs";
+import { readFileSync } from "node:fs";
 import {
   planFromJson,
   planToJson,
@@ -204,9 +207,7 @@ describe("plan-json — round-trip byte-identity (SVG)", () => {
    * a defect in its own reason string.
    */
 
-  const EXAMPLES = readdirSync("examples")
-    .filter((f) => f.endsWith(".arch"))
-    .sort();
+  const EXAMPLES = exampleNames().sort();
   const COVERED = EXAMPLES.filter((f) => !(f in CANNOT_ROUND_TRIP));
 
   it("names only exclusions that exist and still use the feature their reason cites", () => {
@@ -337,11 +338,7 @@ describe("plan-json — derived furniture positions", () => {
    * this test shipped with, 30 fixtures across `two-bed`, `garden-house`,
    * `hillside-villa` and `materials` came back somewhere else.
    */
-  it.each(
-    readdirSync("examples")
-      .filter((f) => f.endsWith(".arch"))
-      .sort(),
-  )("keeps every fixture of examples/%s where the source put it", (name) => {
+  it.each(exampleNames().sort())("keeps every fixture of examples/%s where the source put it", (name) => {
     const src = readFileSync(`examples/${name}`, "utf8");
     const { json, diagnostics } = planToJson(src);
     // `import`/`place` plans are refused by the projection itself, by design; they have

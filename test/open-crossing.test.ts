@@ -13,7 +13,7 @@
  * never a re-pin.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./helpers/digest.js";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -30,7 +30,6 @@ import { FLUSH, FOUR_OPEN, FOUR_OPEN_PLACED, THREE_OPEN_PLACED, UNMOVED } from "
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };
-const sha256 = (s: string): string => createHash("sha256").update(s).digest("hex");
 
 const wallsOf = (src: string) => {
   const ir = resolvePlan(src).ir;

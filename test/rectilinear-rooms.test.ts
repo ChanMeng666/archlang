@@ -52,6 +52,7 @@ const LIV = `  room id=liv polygon ${L_RING} label "Living" uses living`;
 const LIV_BED = `${LIV}\n${BED}\n`;
 
 const errors = (src: string) => compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+// TODO(EH3.4): differs from test/helpers/diag.ts by asserts the code with `!`.
 const codes = (src: string): string[] => errors(src).map((d) => d.code!);
 
 const wallsOf = (src: string) => {

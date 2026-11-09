@@ -1,3 +1,6 @@
+/** furniture lint; furniture `in <room>` ownership. */
+
+import { lintCodes as codes } from "./helpers/diag.js";
 import { describe, expect, it } from "vitest";
 import { lint, compile, describe as describePlan } from "../src/index.js";
 import { format } from "../src/format.js";
@@ -9,8 +12,6 @@ import { arcFromChord } from "../src/geometry/arc.js";
  * (`W_FURNITURE_OVERLAP`) and wall-requiring fixtures that float in the middle of a
  * room (`W_FIXTURE_FLOATING`). Advisory, deterministic, over the resolved IR.
  */
-
-const codes = (src: string): string[] => lint(src).map((d) => d.code ?? "");
 
 const room = (furniture: string) =>
   `plan "P" {

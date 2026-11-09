@@ -12,7 +12,7 @@
  * order, so a row names the plan and the per-theme hexes name the theme when one moves.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./digest.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { allStoreysDiagnosticsPayload, type CompilerApi, type DigestOptions } from "./byte-identity-payload.js";
@@ -34,8 +34,6 @@ export interface ThemeLawRow {
   src: string;
   dir?: string;
 }
-
-const sha256 = (s: string): string => createHash("sha256").update(s, "utf8").digest("hex");
 
 /** One digest per sweep entry: the default (no theme option), then each of {@link LEGACY_THEMES}. */
 export function perThemeDigests(api: ThemeLawApi, src: string, world: World | undefined): string[] {

@@ -1,3 +1,5 @@
+/** net internal area — once per room per compile on a `schedule rooms` plan. */
+
 import { readFileSync } from "node:fs";
 import { beforeEach, describe as suite, expect, it, vi } from "vitest";
 

@@ -1,3 +1,5 @@
+/** lint — clean plans; lint — rules fire on the right violation. */
+
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
@@ -15,6 +17,7 @@ const example = (name: string) => readFileSync(join(__dirname, "..", "examples",
  * has fatal errors (nothing sound to check).
  */
 
+// TODO(EH3.4): differs from test/helpers/diag.ts by reads lint(), takes options, keeps an undefined code as `undefined`.
 const codes = (src: string, opts?: Parameters<typeof lint>[1]) => lint(src, opts).map((d) => d.code);
 
 // A sound one-room cottage: enterable, a window, a wide door, an entrance.

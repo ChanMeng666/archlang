@@ -38,8 +38,9 @@
  * fixtures do agree byte-for-byte and are asserted as such.
  */
 
+import { exampleNames } from "./helpers/corpus.js";
 import { spawnSync } from "node:child_process";
-import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { inflateRawSync } from "node:zlib";
@@ -262,8 +263,7 @@ describe(`${ARCHLIVE}'s inline codec matches the canonical one`, () => {
 });
 
 /** Every top-level example, read from disk rather than listed. */
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
+const EXAMPLES = exampleNames()
   .sort()
   .map((f) => [f, readFileSync(join("examples", f), "utf8")] as const);
 

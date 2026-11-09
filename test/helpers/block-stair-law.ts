@@ -9,7 +9,7 @@
  * stairs through other limits, and the circulation overlay, which draws the walking grid.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./digest.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { lawDigest, type LawApi, type LawRow, lawRows } from "./rectilinear-rooms-law.js";
@@ -28,7 +28,7 @@ export function stairLawDigest(api: StairLawApi, src: string, world: World | und
     JSON.stringify(api.lintA11y(src, world)),
     JSON.stringify(api.overlaySvgs(src, world)),
   ].join(" ");
-  return createHash("sha256").update(payload, "utf8").digest("hex");
+  return sha256(payload);
 }
 
 const plan = (body: string): string => `plan "S" {\n  units mm\n${body}\n}\n`;

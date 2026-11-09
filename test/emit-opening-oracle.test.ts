@@ -13,6 +13,7 @@
  * call `legacyEmitOpening` outside this file, and never "fix" a diff here by editing it —
  * a diff here for a heights-free statement is a real regression in the new printer.
  */
+import { exampleNames, libNames } from "./helpers/corpus.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
@@ -126,12 +127,8 @@ function openingsIn(src: string): OpeningLikeNode[] {
 // The corpus: examples + lib + fixtures + a fast-check sample of `archPlan`.
 // ---------------------------------------------------------------------------
 
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
-  .map((f) => `examples/${f}`);
-const LIB = readdirSync("examples/lib")
-  .filter((f) => f.endsWith(".arch"))
-  .map((f) => `examples/lib/${f}`);
+const EXAMPLES = exampleNames().map((f) => `examples/${f}`);
+const LIB = libNames().map((f) => `examples/lib/${f}`);
 const FIXTURES = readdirSync("test/fixtures")
   .filter((f) => f.endsWith(".arch"))
   .map((f) => `test/fixtures/${f}`);

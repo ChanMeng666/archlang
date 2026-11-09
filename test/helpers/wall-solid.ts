@@ -1,4 +1,5 @@
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames } from "./corpus.js";
+import { readFileSync } from "node:fs";
 import { resolvePlan } from "../../src/analyze.js";
 import { navExtent, rasteriseWallSegments } from "../../src/analyze/circulation.js";
 import type { Point } from "../../src/ast.js";
@@ -96,9 +97,7 @@ const world: World = {
 /** Every shipped example, one entry per storey. */
 export function shippedStoreys(): Storey[] {
   const out: Storey[] = [];
-  for (const f of readdirSync("examples")
-    .filter((x) => x.endsWith(".arch"))
-    .sort()) {
+  for (const f of exampleNames().sort()) {
     const { ir, levels } = resolvePlan(readFileSync(`examples/${f}`, "utf8"), { world });
     if (!ir) continue;
     const name = f.replace(/\.arch$/, "");
