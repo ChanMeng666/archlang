@@ -12,6 +12,7 @@ llms-full.txt
 src/context-size.ts
 docs/cli-reference.md
 docs/error-codes.md
+docs/backlog-index.md
 grammars/archlang.gbnf
 schemas/*.schema.json
 editors/archlang.tmLanguage.json
