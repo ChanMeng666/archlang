@@ -11,7 +11,10 @@
   "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "declaration": false
+    "declaration": false,
+    // Tests import playground modules that read the core's share subpath by name, as
+    // vitest.config.ts aliases it: to its source, so this check needs no build.
+    "paths": { "archlang/share": ["./src/share.ts"] }
   },
   "include": ["src", "test", "eval", "dataset", "scripts", "bench"],
   "exclude": ["node_modules", "dist", "playground", "docs-site", "packages", "editors"]
