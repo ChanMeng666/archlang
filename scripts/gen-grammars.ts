@@ -19,7 +19,11 @@ import { KEYWORDS, OPERATORS, RULES } from "../src/grammar/tokens.js";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(HERE, "..");
 
-const escapeRegex = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+/** The regex metacharacters, the one source for `escapeRegex` and `escapeRegexLiteral`. */
+const REGEX_META = ".*+?^${}()|[]\\";
+const escapeWith = (meta: string, s: string): string =>
+  Array.from(s, (c) => (meta.includes(c) ? `\\${c}` : c)).join("");
+const escapeRegex = (s: string): string => escapeWith(REGEX_META, s);
 const alt = (words: readonly string[]): string => words.join("|");
 
 /** The TextMate grammar JSON (string), generated from the token source. */
@@ -245,7 +249,7 @@ const HL_IDENT = "([A-Za-z_][A-Za-z0-9_]*)";
  * inside a character class. (Caught by the generated file failing to parse at all,
  * which is the good failure mode.)
  */
-const escapeRegexLiteral = (s: string): string => escapeRegex(s).replace(/\//g, "\\/");
+const escapeRegexLiteral = (s: string): string => escapeWith(`${REGEX_META}/`, s);
 
 /**
  * The framework-free ArchLang → HTML highlighter the DOCS SITE paints source with
