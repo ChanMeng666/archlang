@@ -82,6 +82,7 @@ import { BUILTIN_REGISTRY, createRegistry } from "./registry.js";
 import { sourceConflicts } from "./repair.js";
 import { type EdgeLine, extremeRuns, rectilinear, rectInRing, ringParts, runRect } from "./room-tiling.js";
 import { piecesOf, verticalsOf } from "./vertical.js";
+import { kindsWith } from "./elements/facets.js";
 
 // ---------------------------------------------------------------------------
 // the table
@@ -1589,8 +1590,9 @@ function wallRef(seg: WallSegment, walls: readonly RWall[], edge: RectEdge): Edg
 
 const BLANK = /^[ \t]*$/;
 const BLANK_OR_COMMENT = /^[ \t]*(#.*)?$/;
-/** The statements furniture is written after, when the plan body has no furniture of its own. */
-const SHELL_KINDS: ReadonlySet<string> = new Set(["room", "wall", "door", "window", "opening"]);
+/** The statements furniture is written after, when the plan body has no furniture of its own
+ *  (`KIND_FACETS.shell`). */
+const SHELL_KINDS: ReadonlySet<string> = new Set(kindsWith("shell"));
 
 /** Where a storey's statements go, and how they are laid out there. */
 interface Insertion {

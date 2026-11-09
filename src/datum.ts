@@ -47,6 +47,7 @@
  */
 
 import type { DoorNode, LevelNode, OpeningNode, PlanNode, Statement, WallNode, WindowNode } from "./ast.js";
+import { nonElementKind } from "./elements/facets.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import type { WallSegment } from "./geometry.js";
@@ -367,7 +368,22 @@ function statementAuthorsHeights(s: Statement): boolean {
       return bodyAuthorsHeights(s.body);
     case "if":
       return bodyAuthorsHeights(s.then) || (s.else !== undefined && bodyAuthorsHeights(s.else));
+    // Element kinds whose grammar has no height clause. A kind that gains one moves up.
+    case "room":
+    case "furniture":
+    case "dim":
+    case "column":
+    case "stair":
+    case "elevator":
+    case "escalator":
+    case "roof":
+    case "void":
+    case "outdoor":
+    case "fence":
+    case "walls":
+      return false;
     default:
+      nonElementKind(s.kind);
       return false;
   }
 }

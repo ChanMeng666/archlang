@@ -82,7 +82,7 @@ export names + the `.d.ts` of the tarball against a drift-gated `api/archlang.ap
 `[Unreleased]`. Skips loudly offline, fails under `CI`. Proof: the script run against `main` passes;
 with a deleted export it fails naming the export.
 
-### EH1.2 · a new element kind fails loudly everywhere it must be handled — `todo` · M · medium · opus · A-F1, A-F11
+### EH1.2 · a new element kind fails loudly everywhere it must be handled — `in review` · M · medium · opus · A-F1, A-F11
 Convert the per-kind switches at `analyze/depends.ts:195`, `analyze/symmetry.ts:665`,
 `datum.ts:348`, `ir.ts:4115`, `cursor.ts:257` into exhaustive forms (`Record<ElementKind, …>`
 `satisfies`, or `const _x: never`), with explicit `case "x": return false` where not applicable.
@@ -93,6 +93,7 @@ in, `CROPPED` (`cli/review.ts:288`), `SHELL_KINDS` (`furnish.ts:1593`), `STACKED
 Write `docs/agents/new-element.md` as the derived checklist (each place + the test that catches it).
 Proof: digests unchanged (CI); a scratch `kind: "zzz"` added to `BUILTIN_DEFS` makes `tsc` or the
 test fail at every listed site (list them in the PR body).
+Design: one table `KIND_FACETS` (`src/elements/facets.ts`, `satisfies Record<ElementKind, KindFacets>`) builds `CROPPED`/`SHELL_KINDS`/`STACKED_KINDS`/`UNPROJECTED_KINDS`/`OPENING_KINDS` and the scene label fallback, and holds `VERTICAL_KINDS`/`STYLE_KEYS`; `Statement` switches end in `nonElementKind(s.kind)`, element switches in `const unhandled: never`.
 
 ### EH1.3 · lint-rule registration is one test — `done (#589)` · S · low · sonnet · A-F4, N-F6
 `test/lint-rule-order.test.ts` pins the full `LINT_RULES` name list once and replaces the three
