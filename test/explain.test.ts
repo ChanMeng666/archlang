@@ -11,7 +11,11 @@ import { describe, expect, it } from "vitest";
 import { compile, explain, ERROR_CATALOG, ERROR_CODES, formatDiagnostic } from "../src/index.js";
 import { renderErrorCodes } from "../scripts/gen-error-codes.js";
 
-/** Read every `code: "E_…"/"W_…"` literal raised under src/. */
+/**
+ * Read every `code: "E_…"/"W_…"` literal, and every `diag("E_…", …)` call (the typed helper new
+ * sites use, `src/diagnostics.ts`), raised under src/. The catalogue itself (`src/error-catalog/`)
+ * writes its codes as keys, `E_X: e(…)`, which neither form matches, so it never counts as raising.
+ */
 function codesInSource(dir: string): Set<string> {
   const found = new Set<string>();
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -19,7 +23,7 @@ function codesInSource(dir: string): Set<string> {
     if (entry.isDirectory()) for (const c of codesInSource(p)) found.add(c);
     else if (entry.name.endsWith(".ts")) {
       const text = readFileSync(p, "utf8");
-      for (const m of text.matchAll(/code:\s*"((?:E|W)_[A-Z_]+)"/g)) found.add(m[1]!);
+      for (const m of text.matchAll(/(?:code:\s*|\bdiag\(\s*)"((?:E|W)_[A-Z_]+)"/g)) found.add(m[1]!);
     }
   }
   return found;
