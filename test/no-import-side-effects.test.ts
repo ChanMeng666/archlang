@@ -15,7 +15,7 @@ import { describe, expect, it } from "vitest";
  *    KNOWN_LOAD_EFFECTS below, with its reason;
  *  - calls to a registry mutator (`register*`, `set*Backend`, `setBuiltinDispatch`) anywhere that
  *    runs at module evaluation, i.e. outside function-like bodies (this includes `const X = f()`
- *    initialisers whose callee is one of those names), except the known one.
+ *    initialisers whose callee is one of those names); none is allowed.
  *
  * KNOWN LIMIT, so this is not a proof of purity: an ordinary initialiser such as
  * `const VERSION = readVersion()` (`src/cli/io.ts`) or `const BUILTIN_REGISTRY = createRegistry()`
@@ -23,11 +23,11 @@ import { describe, expect, it } from "vitest";
  * foreign state when called from an initialiser, an IIFE doing the same under a different name, and
  * class static blocks are all invisible here.
  *
- * Why the root `package.json` does not declare `sideEffects`: `src/builtins.ts` injects its dispatch
- * into `src/expr.ts` on load (it breaks an import cycle). The hazard is real only if the value import
- * of `BUILTIN_NAMES` (`src/ir.ts`, `src/analyze/depends.ts`) ever disappears. The way out is to make
- * the registration an explicit call from the pipeline, drop the entry below, then declare
- * `sideEffects: false`.
+ * Why the root `package.json` may declare `"sideEffects": false`: the built-in dispatch used to be
+ * injected into `src/expr.ts` when `src/builtins.ts` loaded. It is now an explicit
+ * `registerBuiltins()` call in `src/ir.ts`, where the `builtin` Values are created.
+ * Read it as: no src module registers into another module at load; initialiser-time I/O in src/cli
+ * (`export const VERSION = readVersion()`, `src/cli/io.ts`) is out of this scan's reach.
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -35,8 +35,6 @@ const SRC = resolve(HERE, "..", "src");
 
 /** `file: [first line of the statement]`, the only expression statements allowed at the top level. */
 const KNOWN_LOAD_EFFECTS: Record<string, string[]> = {
-  // Injects the built-in dispatch into the evaluator when the module loads (cycle break).
-  "src/builtins.ts": ["setBuiltinDispatch(dispatch);"],
   // The `arch` binary's entry point; not part of the library entries or their import graph.
   "src/cli.ts": ["void main();"],
 };
@@ -101,6 +99,6 @@ describe("importing a src module has no side effect beyond the known ones", () =
       const { mutatorCalls } = scan(f);
       if (mutatorCalls.length) actual[rel(f)] = mutatorCalls;
     }
-    expect(actual).toEqual({ "src/builtins.ts": ["setBuiltinDispatch(dispatch)"] });
+    expect(actual).toEqual({});
   });
 });

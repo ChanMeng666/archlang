@@ -153,15 +153,19 @@ function later(a, b) {
 
 /**
  * The files every example page's bytes depend on besides its own `.arch`: this generator, the
- * construct table ("What this plan uses"), the row parser, and the row table itself (the other
- * rows' labels and blurbs fill "More in <group>" and the pager). A change to any of them changes
- * every page, so each page's date is floored by the newest of their commits.
+ * construct table ("What this plan uses"), the row parser, the row table itself (the other
+ * rows' labels and blurbs fill "More in <group>" and the pager), and the permalink encoder that
+ * writes each page's "Open in the editor" `#z=` link (`gen-permalink.mjs`, which re-exports the
+ * codec in `src/cli/share-codec.mjs`). A change to any of them changes every page, so each page's
+ * date is floored by the newest of their commits.
  */
 const PAGE_INPUTS = [
   "playground/scripts/gen-static.mjs",
   "playground/scripts/plan-constructs.mjs",
   "playground/scripts/example-rows.mjs",
   "playground/src/examples.ts",
+  "scripts/gen-permalink.mjs",
+  "src/cli/share-codec.mjs",
 ];
 
 /**
