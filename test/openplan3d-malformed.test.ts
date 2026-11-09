@@ -1,11 +1,12 @@
 import { readFileSync, readdirSync } from "node:fs";
+import { isDeepStrictEqual } from "node:util";
 import { join } from "node:path";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { compile, openPlan3dToArch } from "../src/index.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { MAX_IMPORT_LEVELS } from "../src/import/limits.js";
-import { type MutationKind, applyMutations, mutationsArb, protoSnapshot } from "./json-mutate.js";
+import { MUTATION_KINDS, type MutationKind, applyMutations, mutationsArb, protoSnapshot } from "./json-mutate.js";
 
 /**
  * Malformed OpenPlan3D input never throws (EH1.10, T-F3 / S-FZ-5).
@@ -58,9 +59,13 @@ describe("malformed OpenPlan3D input", () => {
 
   it(`1-3 seeded mutations of each fixture (seed ${SEED}, ${NUM_RUNS} runs)`, () => {
     const histogram = new Map<MutationKind, number>();
+    let runs = 0;
+    let changed = 0;
     fc.assert(
       fc.property(fc.nat(FIXTURES.length - 1), mutationsArb(1, 3), (fi, ms) => {
         const { value, applied, kinds } = applyMutations(FIXTURES[fi]!.json, ms);
+        runs++;
+        if (!isDeepStrictEqual(value, FIXTURES[fi]!.json)) changed++;
         for (const k of kinds) histogram.set(k, (histogram.get(k) ?? 0) + 1);
         const bad = check(value);
         if (bad) throw new Error(`${FIXTURES[fi]!.name}: ${applied.join("; ")}\n${bad}`);
@@ -68,7 +73,8 @@ describe("malformed OpenPlan3D input", () => {
       { seed: SEED, numRuns: NUM_RUNS },
     );
     console.info(`openplan3d-malformed mutation histogram: ${JSON.stringify(Object.fromEntries(histogram))}`);
-    expect(histogram.size).toBe(9);
+    expect(changed / runs).toBeGreaterThanOrEqual(0.9);
+    expect(histogram.size).toBe(MUTATION_KINDS.length);
   });
 
   it("hostile roots", () => {
@@ -90,13 +96,35 @@ describe("malformed OpenPlan3D input", () => {
     }
   });
 
-  it("nesting 500 deep does not throw", () => {
-    let deep: unknown = {};
-    for (let i = 0; i < 500; i++) deep = { floors: [{ walls: [], x: deep }], nested: deep };
-    expect(check(deep)).toBeUndefined();
-    let chain: unknown = {};
-    for (let i = 0; i < 500; i++) chain = { child: chain };
-    expect(check({ id: "p", name: "p", floors: [{ id: "g", name: "G", level: 0, extra: chain }] })).toBeUndefined();
+  it("nesting 500 deep inside fields the converter walks gives a result", () => {
+    const nest = (wrap: (inner: unknown) => unknown): unknown => {
+      let v: unknown = {};
+      for (let n = 0; n < 500; n++) v = wrap(v);
+      return v;
+    };
+    const objChain = nest((x) => ({ child: x }));
+    const arrChain = nest((x) => [x]);
+    const base = FIXTURES.find((f) => f.name === "two-room-web-project.json")!.json as any;
+    // Where the converter reads: a wall's own fields, a room's `walls` and `details`, a floor's
+    // arrays and its unknown fields (all walked by `leftover`/`elements`).
+    const sites: Record<string, (d: any) => void> = {
+      "wall.start": (d) => (d.floors[0].walls[0].start = objChain),
+      "wall.thickness": (d) => (d.floors[0].walls[0].thickness = arrChain),
+      "wall unknown field": (d) => (d.floors[0].walls[0].extra = objChain),
+      "room.walls": (d) => (d.floors[0].rooms[0].walls = arrChain),
+      "room.details": (d) => (d.floors[0].rooms[0].details = { roomType: "indoor", deep: objChain, deep2: arrChain }),
+      "floor unknown field": (d) => (d.floors[0].extra = arrChain),
+      "floor.walls entry": (d) => d.floors[0].walls.push(arrChain),
+      "floors entry": (d) => d.floors.push(objChain),
+      "floors itself": (d) => (d.floors = arrChain),
+    };
+    for (const [site, apply] of Object.entries(sites)) {
+      const d = JSON.parse(JSON.stringify(base));
+      apply(d);
+      expect(check(d), site).toBeUndefined();
+      const r = openPlan3dToArch(d);
+      expect(r.source !== undefined || r.diagnostics.length > 0, site).toBe(true);
+    }
   });
 
   it("10k empty objects per array end in a result, not a hang", () => {
