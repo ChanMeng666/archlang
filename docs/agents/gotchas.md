@@ -91,8 +91,8 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **`vitest -u` (the owner's update command) on `test/fixture-byte-identity.test.ts` rewrites every failing inline snapshot in
   the file, group 1 included.** Scope it: `-u -t "re-blessed when redrawn"`, then confirm group 1
   is untouched in the diff.
-- **CI's `check:drift` (and `check:quick`) regenerates in place.** A red run leaves the regenerated artifacts
-  (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
+- **CI runs `check:drift` and fails on drift; the local `check:quick` regenerates in place** and leaves the
+  artifacts (`examples/*.svg` after any rendering change) modified in the working tree. Read the diff, then
   commit them or `git checkout --` them; do not mistake them for your own edits.
 
 ## PRs & CI
@@ -106,7 +106,7 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   its own route, and show that putting the old count back reproduces the pinned digest.
 - **A new example moves more than the example tables**: the corpus counts in `packages/archlang-3d`
   (`e2e/glb.e2e.ts`, `e2e/replay.e2e.ts`, `test/adapter-corpus.test.ts`, `test/mesh.test.ts`) and the digest
-  rows naming it. CI runs `npm run check`, which does not run the e2e half; CI's `check-3d` job runs `check:3d`.
+  rows naming it. CI's `check` parts (ci.yml) do not run the e2e half; CI's `check-3d` job runs `check:3d`.
 - **The playground's startup budget is a sum, not a per-PR limit**: ordinary core growth reaches it
   eventually. Confirm no 3D marker is in the chunks, then re-take `playground/e2e/startup-chunks.baseline.json`
   with the reason in the commit. The budget stays.
@@ -153,7 +153,7 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
   entries as whole blocks (a hunk-level merge split entries and broke the build, #315).
 - **`validate`'s `next` and lint output feed the K1 keep digests**: a change to `next` or a new rule
   moves K1 rows. After merging `main`, re-run `npx tsx test/keep-weak-law-gen.ts` (D24); never
-  hand-merge the table (#314). `keep-byte-identity` times out under a parallel local run; CI runs it, so read its result there.
+  hand-merge the table (#314). `keep-byte-identity` times out under a parallel local run (CI runs it alone).
 - **Editing `examples/` moves the playground e2e specs** (actions, layout and levels read
   `examples/hillside-villa.arch`) and the docs e2e: CI runs `npm run e2e:playground`; read its result on an
   examples PR (#305).

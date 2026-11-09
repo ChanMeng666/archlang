@@ -14,7 +14,7 @@ Run every single-source generator and inspect exactly what moved.
 2. **Show the diff** over the artifacts `GENERATORS` names:
 
    ```bash
-   git diff --stat
+   git diff --stat -- <every path in the `artifacts` of each GENERATORS row>
    ```
 
    Every changed path must be an artifact of some `GENERATORS` row.

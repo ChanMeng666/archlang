@@ -48,9 +48,9 @@ is not (a targeted subset misses the corpus-wide guards, `docs/agents/gotchas.md
      (the stdio + bundle-freshness tests SKIP without a built bundle).
 
 5. **If tests fail, fix the root cause.** Do not paper over a red suite.
-   - The owner's golden updates (`vitest -u`, `UPDATE_GOLDENS=1 vitest run test/visual.test.ts` or
-     `ASCII_UPDATE=1 vitest run test/ascii.test.ts` without first reviewing the diff and being able
-     to justify **every changed byte**. `compile()` output is byte-for-byte stable and
+   - These are the owner's commands: never run a golden update (`vitest -u`,
+     `UPDATE_GOLDENS=1 vitest run test/visual.test.ts`, `ASCII_UPDATE=1 vitest run test/ascii.test.ts`)
+     without first reviewing the diff. Be able to justify **every changed byte**. `compile()` output is byte-for-byte stable and
      snapshot/golden-tested; an unexplained golden change is a real regression, not a snapshot to
      bless.
    - For any other red guard — a lockstep pin, a docs tripwire, an MCP gate — look up its row in

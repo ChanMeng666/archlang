@@ -10,10 +10,12 @@
   base with `origin/main` (`--base`); `--list` prints the plan. The full suite runs in CI, never locally.
   It cannot see a guard that scans a directory rather than naming a file (the corpus and byte-identity
   laws over `examples/` and `docs/`), so a quick pass is never merge evidence.
-- CI runs `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`. Its `typecheck` covers
-  `src/` only; CI runs `npm run typecheck:all`, which adds `test/`, `eval/`, `dataset/`, `scripts/`, `bench/` and
-  the four workspaces. Run `npm run build` first: without `dist/` the playground resolves the bare
-  `archlang` specifier to the wrong package and reports dozens of spurious "no exported member" errors.
+- `npm run check` = `typecheck` + `lint` + `check:test-wiring` + `npm test`, and it is the owner's release
+  gate only: ci.yml runs its parts (typecheck, `lint:ci`, `check:drift`, the vitest shards, `check:test-wiring`),
+  never the script. Its `typecheck` covers `src/` only; CI runs `npm run typecheck:all`, which adds `test/`,
+  `eval/`, `dataset/`, `scripts/`, `bench/` and the four workspaces, and needs `dist/` (from `npm run build`):
+  without it the playground resolves the bare `archlang` specifier to the wrong package and reports dozens
+  of spurious "no exported member" errors.
 - CI runs `npm run check:drift`, separate from `check` (`check:quick` runs it too). `gen:all` orders `gen:spec`
   before `gen:llms` before `gen:cli` (the CLI reference states the bundle size `gen:llms`
   measures). Run `gen:example-svgs` after any rendering change.
@@ -96,17 +98,17 @@ checks; a green run closes the issue with a comment.
 Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock
 22.7), the Node 22 rows on PR #385 at cd730b85:
 
-| Job (check name) | Runs | Min |
+| Job (CI's check name) | Runs | Min |
 |---|---|---|
 | `changes` (Changed paths) | classifies the PR's paths (not a required check) | < 0.1 |
-| `build` (Node 18, Node 20) | CI runs, push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
+| `build` (Node 18, Node 20) | push only: typecheck, `lint:ci`, `check:drift`, `npm test`, `eval:ci` | 20.7, 19.9 |
 | `node-22-checks` (Node 22 checks) | typecheck, `lint:ci`, `check:drift`, `eval:ci` | 0.7 |
-| `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | CI runs `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
+| `node-22-tests` (Node 22 tests 1/3, 2/3, 3/3) | `vitest run --shard=N/3` | 5.8, 4.8, 9.6 |
 | `node-22` (Node 22) | gates on the two above; on a record-only PR, runs the docs leg | < 0.2 |
 | `builds` (Workspace builds) | `build`, `typecheck:all`, all five workspace builds (docs, playground, MCP shim, hosted MCP Worker, VS Code), MCP `check-dist-resources.mjs`, VS Code bundle tests, `check:test-wiring`, `check:dxf` with ezdxf in a virtualenv (each only here) | 2.0 |
-| `windows` | CI runs, push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
+| `windows` | push only: `npm test` + `check:drift` at the runner's default line endings (no `eval:ci`) | 21.1 |
 | `e2e-playground`, `e2e-docs` | Playwright against the built sites | 4.7, 4.7 |
-| `check-3d` (3D package (check:3d)) | CI runs `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | 2.0 (PR #336, browser cache cold) |
+| `check-3d` (3D package (check:3d)) | `npm run check:3d` on Linux: `packages/archlang-3d`'s heavy tests (GLB through glTF-Validator, determinism over the corpus, CLI exit codes, the tarball through `npm pack`, the replay in Playwright's Chromium on SwiftShader with ffmpeg, the key-frame pixel baseline pinned to this job's Chromium); browsers in `PLAYWRIGHT_BROWSERS_PATH`, cached by the `playwright-core` version; not a required check | 2.0 (PR #336, browser cache cold) |
 | `bench` | informational per-stage timings in the job summary (+ a PR comment on same-repo PRs); never gates; skipped on a record-only PR | 0.9 |
 
 Coverage is not in `ci.yml`: nightly's `coverage` job runs `test:coverage` (report-only). The E2E legs

@@ -59,7 +59,7 @@ const SCANNED = [
  * and lines of a fenced block that start like a shell command. A bare mention such as "`check:drift`
  * is green" is prose, not an instruction, and is not a hit; `npm run check:drift` is.
  */
-const COMMAND = /^(?:\$ )?(?:[A-Z_]+=\S+ )*(?:npm|npx|pnpm|yarn|vitest|playwright|node|tsx)(?=\s+\S)/;
+const COMMAND = /^(?:\$ )?(?:[A-Z0-9_]+=\S+ )*(?:npm|npx|pnpm|yarn|vitest|playwright|node|tsx)(?=\s+\S)/;
 function invocations(line: string, fenced: boolean): string[] {
   const spans = [...line.matchAll(/`([^`]+)`/g)].map((m) => m[1] as string);
   const open = /`([^`]*)$/.exec(line.replace(/`[^`]*`/g, ""));
@@ -70,6 +70,16 @@ function invocations(line: string, fenced: boolean): string[] {
 
 const OWNED = /#allow-local-heavy|CI runs|CI's|CI only|owner/;
 
+/** The HEAVY label a line invokes without saying whose job it is, or undefined. */
+function flagged(text: string, fenced: boolean, heavy: [RegExp, string][]): string | undefined {
+  if (OWNED.test(text)) return undefined;
+  for (const cmd of invocations(text, fenced)) {
+    const hit = heavy.find(([re]) => re.test(cmd));
+    if (hit) return hit[1];
+  }
+  return undefined;
+}
+
 describe("agent docs name no blocked command", () => {
   const heavy = parseHeavy(readFileSync(HOOK, "utf8"));
 
@@ -78,20 +88,43 @@ describe("agent docs name no blocked command", () => {
     expect(heavy.map(([, label]) => label)).toContain("typecheck:all");
   });
 
+  it("positive control: every HEAVY form is flagged, and the owned or mention-only forms are not", () => {
+    const forms = [
+      "run `npx vitest run test/x.test.ts` now",
+      "run `npm test` now",
+      "run `npm run check` now",
+      "run `npm run check:drift` now",
+      "run `npm run typecheck:all` now",
+      "run `npm run check:3d` now",
+      "run `npm run e2e:playground` now",
+      "run `npm run bench` now",
+      "run `E2E_PROD=1 E2E_BASE_URL=https://x npx playwright test -c docs-site` now",
+    ];
+    for (const form of forms) expect(flagged(form, false, heavy), form).toBeDefined();
+    expect(flagged("npm test", true, heavy), "fenced line").toBeDefined();
+    expect(flagged("CI runs `npm run check:drift`", false, heavy)).toBeUndefined();
+    expect(flagged("the owner runs `npx vitest run x` #allow-local-heavy", false, heavy)).toBeUndefined();
+    expect(flagged("`check:drift` is green", false, heavy), "a bare mention").toBeUndefined();
+  });
+
   it("a blocked command in an agent doc says it is CI's or the owner's", () => {
     const hits: string[] = [];
     for (const file of SCANNED) {
       let fenced = false;
+      let ownedTable = false;
+      let prevTable = false;
       readFileSync(file, "utf8")
         .split("\n")
         .forEach((text, i) => {
           if (/^\s*```/.test(text)) fenced = !fenced;
-          if (OWNED.test(text)) return;
-          const hit = invocations(text, fenced)
-            .map((cmd) => heavy.find(([re]) => re.test(cmd)))
-            .find(Boolean);
-          if (hit)
-            hits.push(`${relative(ROOT, file).replace(/\\/g, "/")}:${i + 1} [${hit[1]}] ${text.trim().slice(0, 100)}`);
+          // A table whose header row says whose job it is covers every row below it.
+          const table = text.startsWith("|");
+          if (table && !prevTable) ownedTable = OWNED.test(text);
+          prevTable = table;
+          if (table && ownedTable) return;
+          const label = flagged(text, fenced, heavy);
+          if (label)
+            hits.push(`${relative(ROOT, file).replace(/\\/g, "/")}:${i + 1} [${label}] ${text.trim().slice(0, 100)}`);
         });
     }
     expect(

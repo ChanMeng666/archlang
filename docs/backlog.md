@@ -2951,7 +2951,7 @@ runner can do. The other two explanations were ruled out. The payloads differ in
 change is visible to `size` alone. `cmdCompile` writes synchronously before it emits, and `peek`
 re-reads the file. In every reproduced failure the banner was already on stderr.
 
-**Reproduction**, by the owner running the single test with `npx vitest run … -t "still writes the artifact"`
+**Reproduction**, by running the single test with `npx vitest run … -t "still writes the artifact"` #allow-local-heavy (historical record)
 on an unmodified `HEAD`, Node 22.22.0, in 8 concurrent copies at a time, alongside 24 busy-loop
 `node` processes on 4 cores:
 
