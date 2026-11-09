@@ -19,38 +19,68 @@
  * passing an option.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
-import { resolve as resolvePath } from "node:path";
+import { readFileSync } from "node:fs";
+import { dirname, relative, resolve as resolvePath, sep } from "node:path";
+import ts from "typescript";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 
-/** Every module the two summary surfaces are built from: the resolver (`src/ir.ts` and every
- *  stage under `src/ir/`, read from the directory), `src/describe.ts` and every module under
- *  `src/describe/` (read the same way), and the analyses on top of it. */
-const SUMMARY_MODULES = [
-  "src/ir.ts",
-  ...readdirSync(resolvePath("src/ir"))
-    .filter((f) => f.endsWith(".ts"))
-    .sort()
-    .map((f) => `src/ir/${f}`),
-  "src/describe.ts",
-  ...readdirSync(resolvePath("src/describe"))
-    .filter((f) => f.endsWith(".ts"))
-    .sort()
-    .map((f) => `src/describe/${f}`),
-  "src/lint.ts",
-  "src/analyze.ts",
-  "src/analyze/rooms.ts",
-  "src/analyze/connectors.ts",
-  "src/analyze/circulation.ts",
-  "src/analyze/nav-grid.ts",
-  "src/analyze/occupancy.ts",
-];
+/** Every relative module a source file loads at runtime (type-only statements are erased). */
+function runtimeImports(file: string): string[] {
+  const sf = ts.createSourceFile(file, readFileSync(file, "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+  const out: string[] = [];
+  const visit = (node: ts.Node): void => {
+    if (ts.isImportDeclaration(node) && ts.isStringLiteral(node.moduleSpecifier)) {
+      if (node.importClause?.isTypeOnly !== true) out.push(node.moduleSpecifier.text);
+    } else if (ts.isExportDeclaration(node) && node.moduleSpecifier && ts.isStringLiteral(node.moduleSpecifier)) {
+      if (!node.isTypeOnly) out.push(node.moduleSpecifier.text);
+    } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
+      const a = node.arguments[0];
+      if (a && ts.isStringLiteral(a)) out.push(a.text);
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(sf);
+  return out.filter((s) => s.startsWith(".")).map((s) => resolvePath(dirname(file), s).replace(/\.js$/, ".ts"));
+}
+
+/** The modules the entries load, transitively. */
+function closure(entries: string[]): Set<string> {
+  const seen = new Set<string>();
+  const stack = [...entries];
+  while (stack.length) {
+    const f = stack.pop()!;
+    if (seen.has(f)) continue;
+    seen.add(f);
+    for (const g of runtimeImports(f)) stack.push(g);
+  }
+  return seen;
+}
+
+/** Every module the two summary surfaces load: the runtime import closure of `describe()` and
+ *  of `lint()`, so a module added under either is scanned without anyone listing it. The old hand list
+ *  also named `src/ir/types.ts` and `src/describe/types.ts`; they are type-only (erased), so they are
+ *  not in the runtime closure and cannot read the view. */
+const SUMMARY_MODULES = [...closure([resolvePath("src/describe.ts"), resolvePath("src/lint.ts")])]
+  .map((f) => relative(process.cwd(), f).split(sep).join("/"))
+  .sort();
+
+/** How many modules the hand-written list this walk replaced named. */
+const OLD_LIST_LENGTH = 19;
+
+/** A type-position `import("…")` is erased, so it is a name, not a load: `Scene.view` is typed
+ *  `ViewName` and no code under `describe()`/`lint()` reads it. Listed by module, exact text. */
+const TYPE_ONLY_VIEW_REFERENCE = new Map<string, string[]>([["src/scene.ts", ['import("./view/camera.js"']]]);
 
 /** Any import that reaches the view layer, however it is spelled. */
 const VIEW_IMPORT = /from\s+["'][^"']*\bview\/[^"']*["']|import\s*\(\s*["'][^"']*\bview\/[^"']*["']/g;
 
 suite("describe()/lint() are blind to the axonometric", () => {
+  it("the walk is not vacuous: it reaches the plan-json modules and outgrows the old hand list", () => {
+    expect(SUMMARY_MODULES.length).toBeGreaterThan(OLD_LIST_LENGTH);
+    expect(SUMMARY_MODULES.filter((m) => m.startsWith("src/plan-json/")).length).toBeGreaterThanOrEqual(8);
+  });
+
   it("the module list is real — a grep over missing files passes vacuously", () => {
     for (const m of SUMMARY_MODULES) expect(readFileSync(resolvePath(m), "utf8").length).toBeGreaterThan(0);
   });
@@ -58,9 +88,16 @@ suite("describe()/lint() are blind to the axonometric", () => {
   for (const m of SUMMARY_MODULES) {
     it(`${m} imports nothing from src/view/`, () => {
       const hits = [...readFileSync(resolvePath(m), "utf8").matchAll(VIEW_IMPORT)].map((h) => h[0]);
-      expect(hits).toEqual([]);
+      expect(hits.filter((h) => !(TYPE_ONLY_VIEW_REFERENCE.get(m) ?? []).includes(h))).toEqual([]);
     });
   }
+
+  it("the one allowed reference is a type (erased), so it loads nothing at runtime", () => {
+    expect(runtimeImports(resolvePath("src/scene.ts"))).not.toContain(resolvePath("src/view/camera.ts"));
+    expect(readFileSync(resolvePath("src/scene.ts"), "utf8")).toMatch(
+      /view\?: import\("\.\/view\/camera\.js"\)\.ViewName;/,
+    );
+  });
 
   it("catches a planted import — the pattern is not inert", () => {
     const planted = 'import { cameraFor } from "./view/camera.js";';
