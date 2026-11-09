@@ -19,6 +19,8 @@
  * `netAreaWorkUnits` separately), so a hit changes no budget. The band cache is bounded
  * ({@link BANDS_MAX}, oldest out first, like the compile cache); each storey's room areas hang
  * off its bands in a weak map and go with them.
+ *
+ * The output is byte-identical to the unmemoised figures; `clearCache()` empties it.
  */
 
 import type { BandWall } from "../geometry/band.js";

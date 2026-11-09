@@ -7,6 +7,9 @@
  *
  * Keyed by the same `furniture <category>` names the renderer's fixture glyphs use
  * (see `elements/fixtures-glyphs.ts`); aliases share one entry. Pure data — no I/O.
+ *
+ * `requiresWall` is services only, `directional` means a symbol has a back to turn to a wall, and
+ * `underlay` means it lies flat and is read only through `solidFurniture()`.
  */
 
 export interface FixtureSpec {

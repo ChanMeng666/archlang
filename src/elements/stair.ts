@@ -17,6 +17,11 @@
  *
  * Step meter (`MAX_EVAL_STEPS`, `src/expr.ts`): a block's pairwise overlap test is charged one
  * step per pair of pieces before it runs.
+ *
+ * Readers reach a stair's pieces only through `piecesOf`, `flightsOf` and `isBlockStair`.
+ * `vertical.ts` `boardedFlight` and `arrivalOn` say where a stop is boarded and stepped off, and
+ * `describe` gives `steps_off` when those are two rooms; `sameBlock` is the shaft rule's test. Only
+ * the id joins two stops, never geometry.
  */
 
 import type { Point, StairNode, StairPiece, VerticalDir } from "../ast.js";

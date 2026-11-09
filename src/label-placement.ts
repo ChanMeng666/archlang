@@ -50,6 +50,10 @@
  * drawing. Its `estimate_text_width` is not borrowed: widths here go through the one
  * shared {@link textWidth}, the same estimate `W_DIM_OVERLAP` and the `dims auto` number
  * stagger measure with, so all three agree about what collides.
+ *
+ * It wraps a room name too wide for its room, then moves room labels off obstacles, after walls and
+ * dims; `label-fit.ts` then shrinks what still does not fit, by the test `W_ANNOTATION_OVERLAP`
+ * reads.
  */
 
 import type { Point } from "./ast.js";

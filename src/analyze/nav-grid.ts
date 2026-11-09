@@ -9,6 +9,11 @@
  * Invariant: integer cell coordinates, source-ordered seeds, row-major iteration, never a float
  * as a key, so the same plan always grids and walks the same way. It charges nothing to the step
  * meter: the grid is bounded by its cell budget (`MAX_CELLS`, `MAX_GRID_CELLS`), not by steps.
+ *
+ * A door's width lives only on the cells its carve opened; routes start, and rooms are reached, on
+ * the room's floor (the cells walkable before any carve). A storey with no front door is seeded at
+ * the arrival head of each arriving run, and whether a landing exists is decided on the plan's
+ * geometry (`landingProbe`), not on cells.
  */
 
 import type { RRoom, RDoor, ROpening, RFurniture, RVoid, RWall } from "../ir.js";

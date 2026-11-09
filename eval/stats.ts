@@ -1,5 +1,6 @@
 /**
- * Pure statistics for the eval reports. No I/O; safe to import anywhere in `eval/`.
+ * Pure statistics for the eval reports: Wilson intervals, used by live reports only. No I/O; safe to
+ * import anywhere in `eval/`.
  */
 
 /** Two-sided 95 % normal quantile. */

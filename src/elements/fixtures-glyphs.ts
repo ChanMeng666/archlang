@@ -17,6 +17,9 @@
  * Symbols are drawn with their "back" (the side placed against a wall) along the top edge of
  * the footprint, which matches the standard library sizes in `examples/lib/fixtures.arch`.
  * Pure and deterministic (no clock, no randomness).
+ *
+ * Dispatch, plus the single-source `FIXTURE_FAMILIES`; `glyph-lib.ts` holds the shared drawing
+ * helpers, `glyphs-*.ts` the art by domain and `fixtures-catalog.ts` the semantics.
  */
 
 import type { SceneNode } from "../scene.js";
