@@ -17,7 +17,9 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
-    "outDir": "dist"
+    "outDir": "dist",
+    "incremental": true,
+    "tsBuildInfoFile": "node_modules/.cache/tsc/src.tsbuildinfo"
   },
   "include": ["src"],
   "exclude": ["node_modules", "dist", "playground", "test"]
