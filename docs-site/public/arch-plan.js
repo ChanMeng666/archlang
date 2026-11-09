@@ -50,15 +50,21 @@ function sanitizeSvg(text, env = { parser: new DOMParser(), doc: document }) {
   plainNodes(root, parsed);
   try {
     return env.doc.importNode(root, true);
-  } catch {
-    return void 0;
+  } catch (e) {
+    if (isDomRefusal(e)) return void 0;
+    throw e;
   }
 }
-function plainNodes(node, parsed) {
-  for (const child of Array.from(node.childNodes)) {
-    if (child.nodeType === 1) plainNodes(child, parsed);
-    else if (child.nodeType === 4) node.replaceChild(parsed.createTextNode(child.nodeValue ?? ""), child);
-    else if (child.nodeType !== 3) node.removeChild(child);
+var DOM_REFUSALS = /* @__PURE__ */ new Set(["NotSupportedError", "HierarchyRequestError", "InvalidStateError", "WrongDocumentError"]);
+var isDomRefusal = (e) => typeof e === "object" && e !== null && DOM_REFUSALS.has(e.name);
+function plainNodes(root, parsed) {
+  const stack = [root];
+  for (let node = stack.pop(); node; node = stack.pop()) {
+    for (const child of Array.from(node.childNodes)) {
+      if (child.nodeType === 1) stack.push(child);
+      else if (child.nodeType === 4) node.replaceChild(parsed.createTextNode(child.nodeValue ?? ""), child);
+      else if (child.nodeType !== 3) node.removeChild(child);
+    }
   }
 }
 
