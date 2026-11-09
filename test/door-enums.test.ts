@@ -53,7 +53,7 @@ const FILES = [
   "../scripts/gen-gbnf.ts",
   "../scripts/gen-llm-spec.ts",
   "../src/ast.ts",
-  "../src/ir.ts",
+  "../src/ir/types.ts",
   "../src/geometry.ts",
   "../src/fix-producers.ts",
 ];
