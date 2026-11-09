@@ -1,0 +1,208 @@
+{
+  "_reason": "2026-11-09 EH1.6 review round: totals 3 %, floor 8, elements asserted",
+  "_tolerance": 0.1,
+  "_totalTolerance": 0.03,
+  "_floor": 8,
+  "rows": {
+    "examples/accessible.arch": {
+      "steps": 221,
+      "drawUnits": 121,
+      "elements": 14
+    },
+    "examples/aquarium.arch": {
+      "steps": 3350,
+      "drawUnits": 1740,
+      "elements": 46
+    },
+    "examples/attached.arch": {
+      "steps": 264,
+      "drawUnits": 110,
+      "elements": 13
+    },
+    "examples/bungalow.arch": {
+      "steps": 777,
+      "drawUnits": 924,
+      "elements": 46
+    },
+    "examples/classroom-block.arch": {
+      "steps": 2413,
+      "drawUnits": 1559,
+      "elements": 90
+    },
+    "examples/clinic.arch": {
+      "steps": 2066,
+      "drawUnits": 2307,
+      "elements": 96
+    },
+    "examples/corner-cafe.arch": {
+      "steps": 1394,
+      "drawUnits": 1905,
+      "elements": 65
+    },
+    "examples/courtyard-house.arch": {
+      "steps": 1277,
+      "drawUnits": 2728,
+      "elements": 74
+    },
+    "examples/furnished-flat.arch": {
+      "steps": 969,
+      "drawUnits": 906,
+      "elements": 69
+    },
+    "examples/gallery-l.arch": {
+      "steps": 294,
+      "drawUnits": 265,
+      "elements": 15
+    },
+    "examples/garden-house.arch": {
+      "steps": 3876,
+      "drawUnits": 4659,
+      "elements": 115
+    },
+    "examples/garden-loft.arch": {
+      "steps": 411,
+      "drawUnits": 432,
+      "elements": 27
+    },
+    "examples/hexagon-pavilion.arch": {
+      "steps": 773,
+      "drawUnits": 347,
+      "elements": 36
+    },
+    "examples/hillside-villa.arch": {
+      "steps": 5294,
+      "drawUnits": 5882,
+      "elements": 152
+    },
+    "examples/imports.arch": {
+      "steps": 261,
+      "drawUnits": 86,
+      "elements": 8
+    },
+    "examples/knob-flat.arch": {
+      "steps": 965,
+      "drawUnits": 374,
+      "elements": 20
+    },
+    "examples/laneway-house.arch": {
+      "steps": 535,
+      "drawUnits": 525,
+      "elements": 29
+    },
+    "examples/library.arch": {
+      "steps": 2687,
+      "drawUnits": 3573,
+      "elements": 133
+    },
+    "examples/materials.arch": {
+      "steps": 687,
+      "drawUnits": 1425,
+      "elements": 38
+    },
+    "examples/museum-wing.arch": {
+      "steps": 291,
+      "drawUnits": 304,
+      "elements": 17
+    },
+    "examples/museum-wings.arch": {
+      "steps": 781,
+      "drawUnits": 930,
+      "elements": 42
+    },
+    "examples/museum.arch": {
+      "steps": 1868,
+      "drawUnits": 1299,
+      "elements": 105
+    },
+    "examples/one-room.arch": {
+      "steps": 63,
+      "drawUnits": 52,
+      "elements": 4
+    },
+    "examples/parametric.arch": {
+      "steps": 1015,
+      "drawUnits": 175,
+      "elements": 20
+    },
+    "examples/practice-office.arch": {
+      "steps": 1001,
+      "drawUnits": 1335,
+      "elements": 55
+    },
+    "examples/relational.arch": {
+      "steps": 1020,
+      "drawUnits": 281,
+      "elements": 26
+    },
+    "examples/remodel.arch": {
+      "steps": 1291,
+      "drawUnits": 1477,
+      "elements": 37
+    },
+    "examples/sheet-notes.arch": {
+      "steps": 192,
+      "drawUnits": 451,
+      "elements": 12
+    },
+    "examples/studio.arch": {
+      "steps": 484,
+      "drawUnits": 239,
+      "elements": 28
+    },
+    "examples/terrace-row.arch": {
+      "steps": 5198,
+      "drawUnits": 952,
+      "elements": 110
+    },
+    "examples/themed.arch": {
+      "steps": 256,
+      "drawUnits": 118,
+      "elements": 13
+    },
+    "examples/tiny-house.arch": {
+      "steps": 485,
+      "drawUnits": 274,
+      "elements": 29
+    },
+    "examples/townhouse.arch": {
+      "steps": 3824,
+      "drawUnits": 1218,
+      "elements": 72
+    },
+    "examples/transit-hall.arch": {
+      "steps": 2678,
+      "drawUnits": 1974,
+      "elements": 116
+    },
+    "examples/turning-stair.arch": {
+      "steps": 1186,
+      "drawUnits": 484,
+      "elements": 16
+    },
+    "examples/two-bed.arch": {
+      "steps": 1310,
+      "drawUnits": 333,
+      "elements": 31
+    },
+    "examples/two-storey.arch": {
+      "steps": 1822,
+      "drawUnits": 750,
+      "elements": 39
+    },
+    "bench:BALANCED": {
+      "steps": 15880,
+      "drawUnits": 6900,
+      "elements": 1000
+    },
+    "bench:OPENING_HEAVY": {
+      "steps": 13872,
+      "drawUnits": 7328,
+      "elements": 1004
+    },
+    "bench:ROOM_HEAVY": {
+      "steps": 19950,
+      "drawUnits": 7040,
+      "elements": 1004
+    }
+  }
+}
