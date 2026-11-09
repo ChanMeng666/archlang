@@ -10,10 +10,11 @@
  *
  * State (everything below is invisible from the export list):
  *  - Process-wide memo caches, all cleared by {@link clearCache}: the compile result cache
- *    (below), and the lex, line-table, parse, resolve, net-area and `reroll` baseline memos
+ *    (below), and the lex, line-table, parse, resolve, net-area, Scene and `reroll` baseline memos
  *    (`src/lexer.ts`, `src/diagnostics.ts`, `src/parser.ts`, `src/ir.ts`,
- *    `src/analyze/net-area-memo.ts`, `src/reroll.ts`). Results are keyed by content, so a hit is
- *    byte-identical to a miss. Not cleared by it: the font caches in `src/backends/font.ts` (the
+ *    `src/analyze/net-area-memo.ts`, `src/scene-memo.ts`, `src/reroll.ts`). Results are keyed by
+ *    content (the Scene memo by the `ResolvedPlan`'s identity and its drawing flags, weight-bounded),
+ *    so a hit is byte-identical to a miss. Not cleared by it: the font caches in `src/backends/font.ts` (the
  *    resolved font path, the CJK face, per-file glyph coverage), which only the PDF/PNG backends use.
  *  - Per-resolution side tables: `WeakMap`s keyed on the `ResolvedPlan` in `src/ir/side-tables.ts`
  *    (datum tables, instance bodies, steps spent, keep state); `src/ir.ts` writes them while it
