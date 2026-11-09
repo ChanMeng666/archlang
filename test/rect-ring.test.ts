@@ -1,3 +1,6 @@
+/** `rectRing` is the one rectangle ring: clockwise from the top-left (TL, TR, BR, BL). The
+ *  deprecated `rectPoly` aliases and the helpers that now delegate to it must equal a HAND-WRITTEN
+ *  ring exactly, not a re-run of the same formula. */
 import { describe, expect, it } from "vitest";
 import { rectRing } from "../src/geometry/polygon.js";
 import { rectCorners } from "../src/geometry.js";
@@ -6,9 +9,6 @@ import { rectPoly as relationRectPoly } from "../src/furniture-relation.js";
 import { boxRing } from "../src/analyze/symmetry.js";
 import { rectPolygon } from "../src/plan-json/to-json.js";
 
-/** `rectRing` is the one rectangle ring: clockwise from the top-left (TL, TR, BR, BL). The
- *  deprecated `rectPoly` aliases and the helpers that now delegate to it must equal a HAND-WRITTEN
- *  ring exactly, not a re-run of the same formula. */
 const VALUES = [-1234.5, -10, -0.25, 0, 0.1, 3, 17.75, 4000];
 
 describe("rectRing and every helper that delegates to it", () => {

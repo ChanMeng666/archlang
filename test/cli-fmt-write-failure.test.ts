@@ -1,13 +1,13 @@
+/**
+ * `fmt --write` whose write fails (a read-only file) is a CLI error, exit 1 with the `ok:false`
+ * envelope, not an uncaught throw. The file stays as it was.
+ */
 import { chmodSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { runArch } from "./helpers/cli.js";
 
-/**
- * `fmt --write` whose write fails (a read-only file) is a CLI error, exit 1 with the `ok:false`
- * envelope, not an uncaught throw. The file stays as it was.
- */
 const UNFORMATTED = 'plan "P" {\nunits mm\n   grid 50\n}\n';
 
 let dir: string;
