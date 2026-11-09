@@ -89,8 +89,9 @@ a PR too.
 **A break on a main-only leg appears after the merge**, and nothing blocks on it. It is seen in three
 places: the red push run on `main`, with GitHub's failed-run notification to whoever merged;
 nightly's `report`, which lists a failed `full-matrix` job in the pinned issue, by the next 03:00 UTC;
-and `/release-check` item 5, which refuses a release on either. An open pinned issue is only edited,
-which notifies nobody, so close it once triaged or the next bad night is silent.
+and `/release-check` item 5, which refuses a release on either. Both alarms label their issue
+`ci-red` and comment on every red run, so `gh issue list -l ci-red` is the first thing a session
+checks; a green run closes the issue with a comment.
 
 Minutes, a full run measured 2026-10-27 (PR #290 at 2ed9d70e, `gh run view 40416348158`; wall clock
 22.7), the Node 22 rows on PR #385 at cd730b85:

@@ -20,6 +20,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      actions: read # list the failed jobs of the CI run
     steps:
       - name: Open, update or close the main-red issue
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
@@ -46,14 +47,21 @@ jobs:
             }
             if (wr.conclusion !== 'failure') return core.info(`CI on main: ${wr.conclusion}; no action`);
 
-            const line = `- ${sha} "${wr.head_commit?.message?.split('\n')[0] ?? ''}": ${wr.html_url}`;
+            const jobs = await github.paginate(github.rest.actions.listJobsForWorkflowRun, { owner, repo, run_id: wr.id, per_page: 100 });
+            const failedJobs = jobs.filter((j) => j.conclusion === 'failure').map((j) => j.name).join(', ') || 'unknown';
+            const line = `- ${sha} "${wr.head_commit?.message?.split('\n')[0] ?? ''}": ${wr.html_url}\n  Failed jobs: ${failedJobs}`;
+            // `ci-red` is what a session checks first (`gh issue list -l ci-red`).
+            await github.rest.issues.createLabel({ owner, repo, name: 'ci-red', color: 'b60205', description: 'CI or nightly is red' }).catch(() => {});
             if (open) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number: open.number, labels: ['ci-red'] });
               await github.rest.issues.createComment({ owner, repo, issue_number: open.number, body: `Still red:\n${line}` });
               return core.info(`main still red; commented on #${open.number}`);
             }
             const created = await github.rest.issues.create({
               owner, repo,
               title: 'main is red after a merge',
+              labels: ['ci-red'],
               body: `${marker}\nCI failed on a push to main. Fix forward (or revert the merge) before the next merge.\n\n${line}`,
             });
+            await github.rest.issues.createComment({ owner, repo, issue_number: created.data.number, body: `Red: ${wr.html_url}\nFailed jobs: ${failedJobs}` });
             core.info(`main red; opened #${created.data.number}`);
