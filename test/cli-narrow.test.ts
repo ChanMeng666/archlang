@@ -1,3 +1,5 @@
+/** DESCRIBE_KEYS — no drift vs the real describe() result; describe --facts; describe --select; describe --room; lint/validate --code, --severity — display filters… */
+
 import { describe as suite, expect, it } from "vitest";
 import { DESCRIBE_FACTS, describe } from "../src/index.js";
 import { DESCRIBE_KEYS } from "../src/cli/commands-analyze.js";

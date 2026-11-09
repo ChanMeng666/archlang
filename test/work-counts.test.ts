@@ -11,7 +11,7 @@
  * because a silent drop can hide a pass that stopped running. A drop inside it is reported, not
  * failed. Every row must be a clean resolution with work in it. A legitimate move is explained and
  * the table re-taken with `npx tsx test/work-counts-gen.ts "<why>"`, never by hand
- * (`docs/testing.md` §3). The measurement is `./work-counts.ts`, shared with the generator.
+ * (`docs/testing.md` §3). The measurement is `test/helpers/work-counts.ts`, shared with the generator.
  */
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
@@ -22,7 +22,7 @@ import {
   type WorkCountsTable,
   workCountPlans,
   workCounts,
-} from "./work-counts.js";
+} from "./helpers/work-counts.js";
 
 const table = JSON.parse(readFileSync(TABLE, "utf8")) as WorkCountsTable;
 const plans = workCountPlans();

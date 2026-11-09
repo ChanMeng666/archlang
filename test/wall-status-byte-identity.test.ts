@@ -6,7 +6,7 @@
  * ({@link allStoreysDigestWithDiagnostics}: every storey's SVG, `describe()` and `lint()`, plus
  * `compile().diagnostics`, since the clause reaches the resolver), **measured against `src/` at
  * `88d83823`** (`main` before the clause), with that tree extracted by `git archive` and its own
- * copy of this suite's digest body (`test/byte-identity-digest.ts`) run against it — never a
+ * copy of this suite's digest body (`test/helpers/byte-identity-digest.ts`) run against it — never a
  * rebuilt working tree. The set is every plan of `examples/` and `test/fixtures/`: all 47 write no
  * `status`, and none moved. Cross-check that the body is the sanctioned one: the rows for
  * `examples/accessible.arch` and `test/fixtures/zones-levels.arch` are character for character the
@@ -26,7 +26,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./byte-identity-digest.js";
+import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const API: CompilerApi = { compile, describe: describePlan, lint };

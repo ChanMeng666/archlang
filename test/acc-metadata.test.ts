@@ -1,3 +1,5 @@
+/** T4.1b — parsing accTitle/accDescr; T4.1b — accessible override; T4.1b — default-output invariant; T4.1b — describe() surfaces the explicit values; T4.1b — arch… */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

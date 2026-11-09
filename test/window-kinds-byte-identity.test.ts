@@ -4,7 +4,7 @@
  * A plan that writes neither form resolves, draws, describes and lints exactly as before, down to
  * its Scene and the steps its resolution spends, in the accessibility profile and on the circulation
  * overlay too. Each digest is {@link stairLawDigest}, the widest law body the repository has
- * (`test/block-stair-law.ts`), **measured against `src/` at `c46cbc81`** (`main` before the forms),
+ * (`test/helpers/block-stair-law.ts`), **measured against `src/` at `c46cbc81`** (`main` before the forms),
  * that tree extracted by `git archive`, the body and the rows imported from this branch and handed
  * that tree's compiler. The rows are every plan the block-stair law pins, then
  * {@link WINDOW_INLINE_ROWS}: plain windows and the older door kinds on each path the forms fork from.
@@ -37,9 +37,9 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
 import { NULL_WORLD, type World } from "../src/world.js";
-import { type StairLawApi, stairLawDigest, stairLawRows } from "./block-stair-law.js";
-import { ROOT } from "./rectilinear-rooms-law.js";
-import { WINDOW_INLINE_ROWS } from "./window-kinds-plans.js";
+import { type StairLawApi, stairLawDigest, stairLawRows } from "./helpers/block-stair-law.js";
+import { ROOT } from "./helpers/rectilinear-rooms-law.js";
+import { WINDOW_INLINE_ROWS } from "./tables/window-kinds-plans.js";
 
 const stepsOf = (src: string, world: World | undefined): number => {
   clearResolveCache();

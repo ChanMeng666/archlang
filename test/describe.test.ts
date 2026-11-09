@@ -1,3 +1,5 @@
+/** describe — semantic facts; describe — window facing is read against the plan's `north`; describe — freedom (degrees-of-freedom placement report); describe — err… */
+
 import { describe, expect, it } from "vitest";
 import { describe as describePlan } from "../src/index.js";
 import { northQuarterTurns } from "../src/describe.js";

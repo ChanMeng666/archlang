@@ -1,7 +1,7 @@
 /**
  * The `walls from rooms` digest table (ADR 0028 §3; card PS3.0 part B): SHA-256 over SVG,
  * `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in
- * `test/walls-from-rooms-plans.ts`, pinned in its own commit after the byte-identity law held
+ * `test/tables/walls-from-rooms-plans.ts`, pinned in its own commit after the byte-identity law held
  * (every existing digest suite unchanged, the twins byte-identical in SVG and lint,
  * `test/walls-from-rooms.test.ts`). Measured with the test's own digest body
  * (`allStoreysDigestWithDiagnostics`). A moved row is a finding to explain
@@ -10,8 +10,8 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
-import { WALLS_FROM_ROOMS_PLANS } from "./walls-from-rooms-plans.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
+import { WALLS_FROM_ROOMS_PLANS } from "./tables/walls-from-rooms-plans.js";
 
 const API: CompilerApi = { compile, describe, lint };
 

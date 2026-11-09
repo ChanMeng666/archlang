@@ -13,7 +13,9 @@
  * shapes, every fixture category and every corpus plan the primitives drawn never exceed the
  * estimate, and over the corpus the estimate's primitive part is at most four times them.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { corpusFiles } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
+import { readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, ERROR_CATALOG, lint } from "../src/index.js";
@@ -242,43 +244,19 @@ suite("the estimate is an upper bound on what is drawn", () => {
   }, 120_000);
 
   it("over the corpus: never under what is drawn, never more than four times it, far below the budget", () => {
-    const worldFor = (dir: string): World => ({
-      read: (p) => {
-        try {
-          return readFileSync(resolvePath(dir, p), "utf8");
-        } catch {
-          return null;
-        }
-      },
-    });
-    const walk = (dir: string): string[] =>
-      readdirSync(dir)
-        .sort()
-        .flatMap((f) => {
-          const p = join(dir, f);
-          return statSync(p).isDirectory() ? walk(p) : f.endsWith(".arch") ? [p] : [];
-        });
     let max = 0;
     let n = 0;
     let loosest = 0;
-    for (const d of [
-      "examples",
-      "test/fixtures",
-      "test/recovery-corpus",
-      "eval/goldens",
-      "eval/faults",
-      "eval/fidelity-plans",
-    ])
-      for (const p of walk(join(ROOT, d))) {
-        const m = measure(readFileSync(p, "utf8"), worldFor(dirname(p)));
-        expect(m.errors, p).not.toContain("E_DRAWING_LIMIT");
-        if (m.drawn === 0) continue; // a plan with an error draws nothing to compare against
-        expect(m.drawn, p).toBeLessThanOrEqual(m.primitives);
-        expect(m.primitives, p).toBeLessThanOrEqual(4 * m.drawn);
-        loosest = Math.max(loosest, m.primitives / m.drawn);
-        max = Math.max(max, m.estimate);
-        n++;
-      }
+    for (const p of corpusFiles({ absolute: true })) {
+      const m = measure(readFileSync(p, "utf8"), worldFor(dirname(p)));
+      expect(m.errors, p).not.toContain("E_DRAWING_LIMIT");
+      if (m.drawn === 0) continue; // a plan with an error draws nothing to compare against
+      expect(m.drawn, p).toBeLessThanOrEqual(m.primitives);
+      expect(m.primitives, p).toBeLessThanOrEqual(4 * m.drawn);
+      loosest = Math.max(loosest, m.primitives / m.drawn);
+      max = Math.max(max, m.estimate);
+      n++;
+    }
     expect(n).toBeGreaterThan(80);
     expect(loosest).toBeGreaterThan(1); // not vacuous: the bound is not simply what is drawn
     // Far below it: the largest shipped plan is estimated at under a tenth of the budget.

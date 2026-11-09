@@ -1,3 +1,5 @@
+/** checkGraph. */
+
 import { describe, expect, it } from "vitest";
 import { checkGraph } from "../src/index.js";
 

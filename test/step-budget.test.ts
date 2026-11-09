@@ -8,7 +8,9 @@
  * loops and the branching recursion were still running after 40 s (killed), and the doubling
  * strings threw `RangeError: Invalid string length` out of `compile()`.
  */
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { corpusFiles, walkFiles as walk } from "./helpers/corpus.js";
+import { worldFor } from "./helpers/world.js";
+import { readdirSync, readFileSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import * as A from "../src/index.js";
@@ -36,6 +38,7 @@ function stepsOf(src: string, world: World = NULL_WORLD): number {
 }
 
 /** compile()'s diagnostics, checked never to throw; describe() and lint() must not throw either. */
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it reads compile(), takes options.
 function codes(src: string, world?: World): string[] {
   const r = compile(src, { noCache: true, ...(world ? { world } : {}) });
   expect(() => describe(src, world ? { world } : {})).not.toThrow();
@@ -552,34 +555,8 @@ suite("one counter across the whole resolution", () => {
 /** Every `.arch` file of the corpus, and every ```arch fence of every Markdown page. */
 function corpus(): { name: string; src: string; world: World }[] {
   const out: { name: string; src: string; world: World }[] = [];
-  const worldFor = (dir: string): World => ({
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-  });
-  const walk = (dir: string, keep: (f: string) => boolean): string[] => {
-    const files: string[] = [];
-    for (const f of readdirSync(dir).sort()) {
-      const p = join(dir, f);
-      if (statSync(p).isDirectory()) files.push(...walk(p, keep));
-      else if (keep(f)) files.push(p);
-    }
-    return files;
-  };
-  for (const d of [
-    "examples",
-    "test/fixtures",
-    "test/recovery-corpus",
-    "eval/goldens",
-    "eval/faults",
-    "eval/fidelity-plans",
-  ])
-    for (const p of walk(join(ROOT, d), (f) => f.endsWith(".arch")))
-      out.push({ name: p, src: readFileSync(p, "utf8"), world: worldFor(dirname(p)) });
+  for (const p of corpusFiles({ absolute: true }))
+    out.push({ name: p, src: readFileSync(p, "utf8"), world: worldFor(dirname(p)) });
   const md = [
     ...walk(join(ROOT, "docs"), (f) => f.endsWith(".md")),
     ...readdirSync(ROOT)

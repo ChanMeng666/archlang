@@ -1,3 +1,5 @@
+/** shortest-widest is NOT isotone, so bestPaths must not be used for it; lexicographic: a pair whose first component is zero is no path. */
+
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { BOOLEAN, lexicographic, MAX_MIN, MIN_PLUS, type OrderedSemiring } from "../src/algebra/semiring.js";

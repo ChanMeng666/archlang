@@ -8,7 +8,8 @@
  * `docs-site/sync-docs.mjs` to, so the snippet, the gallery and `arch compile` agree.
  */
 
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { EXAMPLE_IMAGE_BASE, exampleImageUrl } from "../playground/src/embed-snippets.js";
 import { levelTarget } from "../src/cli/io.js";
@@ -22,8 +23,8 @@ function galleryExamples(): string[] {
   const block = /const EXCLUDED_EXAMPLES = \[([\s\S]*?)\n\];/.exec(readFileSync(SYNC, "utf8"));
   expect(block, `${SYNC} no longer declares EXCLUDED_EXAMPLES — update this extractor`).toBeTruthy();
   const excluded = new Set([...block![1]!.matchAll(/\["([^"]+\.arch)"/g)].map((m) => m[1]));
-  return readdirSync("examples")
-    .filter((f) => f.endsWith(".arch") && !excluded.has(f))
+  return exampleNames()
+    .filter((f) => !excluded.has(f))
     .map((f) => f.replace(/\.arch$/, ""))
     .sort();
 }

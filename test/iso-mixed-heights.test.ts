@@ -240,7 +240,7 @@ suite("mixed wall heights: every band is drawn, at its own height", () => {
 });
 
 // ---------------------------------------------------------------------------
-// The generated property. A LOCAL arbitrary on purpose: `test/arbitrary-plan.ts` gets its
+// The generated property. A LOCAL arbitrary on purpose: `test/helpers/arbitrary-plan.ts` gets its
 // wall-height option back separately; this one only has to reach the configurations that
 // threw — a closed shell and up to three partitions, each at its own height or none, each
 // with up to three openings whose widths may exceed the wall.

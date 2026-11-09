@@ -21,7 +21,7 @@
  *  - the committed font matches the SHA-256 its generator recorded beside it.
  */
 
-import { createHash } from "node:crypto";
+import { sha256 } from "./helpers/digest.js";
 import { readFileSync } from "node:fs";
 import { inflateSync } from "node:zlib";
 import { afterEach, describe, expect, it } from "vitest";
@@ -189,7 +189,7 @@ describe("font coverage (cmap)", () => {
 describe("the CJK font package", () => {
   it("ships the font its generator recorded (SHA-256 beside it)", () => {
     const recorded = readFileSync(`${fontPkg.fontPath}.sha256`, "utf8").split(/\s+/)[0];
-    const actual = createHash("sha256").update(readFileSync(fontPkg.fontPath)).digest("hex");
+    const actual = sha256(readFileSync(fontPkg.fontPath));
     expect(actual).toBe(recorded);
     expect(fontPkg.fontFamily).toBe("ArchLang CJK Sans");
   });

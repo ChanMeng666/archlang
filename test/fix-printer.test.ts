@@ -15,7 +15,7 @@ import { parse } from "../src/parser.js";
 import { emitOpening } from "../src/fix-producers.js";
 import { statementText } from "../src/statement-print.js";
 import { printDoc } from "../src/doc.js";
-import { archPlan } from "./arbitrary-plan.js";
+import { archPlan } from "./helpers/arbitrary-plan.js";
 import { runs } from "./setup/fast-check.js";
 
 type OpeningLikeNode = DoorNode | WindowNode | OpeningNode;

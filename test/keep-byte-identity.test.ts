@@ -6,7 +6,7 @@
  * `--facts depends`), lints, validates and reports impact byte for byte as it did on the tree
  * before the statement existed, and its resolution spends the same evaluation steps. The baseline
  * (`./keep-byte-identity-baseline.ts`) was measured with this file's own body
- * (`./keep-weak-law.ts`) and committed before any code landed.
+ * (`test/helpers/keep-weak-law.ts`) and committed before any code landed.
  *
  * **K2, strong: an accepted keep draws nothing and moves nothing** (R8, R9, R13). Every plan of
  * the keep corpus (`test/keep-corpus/`) whose keeps are all accepted is compiled as written and
@@ -23,8 +23,8 @@ import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
 import { KEEP_WEAK_BASELINE } from "./keep-byte-identity-baseline.js";
 import { compile, describe } from "../src/index.js";
-import { blankKeeps, k2Parts, keepCorpus, keepNodes } from "./keep-harness.js";
-import { keepWeakLawDigest, keepWeakLawFiles, keepWeakLawSteps } from "./keep-weak-law.js";
+import { blankKeeps, k2Parts, keepCorpus, keepNodes } from "./helpers/keep-harness.js";
+import { keepWeakLawDigest, keepWeakLawFiles, keepWeakLawSteps } from "./helpers/keep-weak-law.js";
 
 suite("keep · K1, the weak law: a plan with no keep is unchanged", () => {
   it("the baseline covers the corpus as it stood, and no baseline file declares a keep", () => {

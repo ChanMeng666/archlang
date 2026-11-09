@@ -16,7 +16,7 @@ import { curvesOfLoop } from "../src/analyze/net-area.js";
 import { MAX_FACE_CURVES } from "../src/analyze/quantities.js";
 import { PointInterner, wallBand } from "../src/geometry/band.js";
 import { describe, type QuantityFacts, type SceneSummary } from "../src/index.js";
-import { EXAMPLE_FILES, EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./d4-oracle.js";
+import { EXAMPLE_FILES, EXAMPLES_WORLD, SHIPPED_EXAMPLES } from "./helpers/d4-oracle.js";
 import { runArch } from "./helpers/cli.js";
 
 const src = (name: string): string => readFileSync(`examples/${name}`, "utf8");

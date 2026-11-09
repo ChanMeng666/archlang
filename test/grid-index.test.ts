@@ -1,3 +1,5 @@
+/** GridIndex; room-overlap grid ≡ O(n²) (T3.7); room-overlap listing cap; GridIndex extreme extents. */
+
 import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { compile } from "../src/index.js";

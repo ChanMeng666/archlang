@@ -35,7 +35,7 @@ import { ARC_STEP_DEG, arcTessellate } from "../src/geometry/arc.js";
 /** Degrees to radians — the sagitta term below needs the tessellation step in radians. */
 const rad = (deg: number): number => (deg * Math.PI) / 180;
 import { distPointToArc } from "../src/geometry/arc.js";
-import { crossesInterior } from "./joinery-laws.js";
+import { crossesInterior } from "./helpers/joinery-laws.js";
 import { distPointToSegment, segmentRectangle, segmentsOfWall } from "../src/geometry.js";
 import { loadClipperBackend } from "../src/geometry/clipper.js";
 import type { GeometryBackend } from "../src/geometry/backend.js";
@@ -57,7 +57,7 @@ import {
 } from "../src/geometry/band.js";
 import { type JoineryWall, joinWalls } from "../src/geometry/joinery.js";
 import { perp } from "../src/geometry/intersect.js";
-import { type WallSpec, angledWalls, renderWalls, rectilinearWalls } from "./arbitrary-joinery.js";
+import { type WallSpec, angledWalls, renderWalls, rectilinearWalls } from "./helpers/arbitrary-joinery.js";
 
 const P = (x: number, y: number): Point => ({ x, y });
 

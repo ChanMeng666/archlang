@@ -1,6 +1,8 @@
+/** arcFromChord — the closed-form centre solve; the tessellator — one fixed angular step, integer vertex count; closed-form arc queries (never sampled from the tes… */
+
 import { readFileSync } from "node:fs";
 import { afterAll, describe as suite, expect, it } from "vitest";
-import { arcSweepAngle, pathArcs, pathLines } from "./path-prim.js";
+import { arcSweepAngle, pathArcs, pathLines } from "./helpers/path-prim.js";
 import {
   applyFixes,
   compile,

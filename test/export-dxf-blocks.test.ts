@@ -1,11 +1,14 @@
-import { readdirSync, readFileSync } from "node:fs";
+/** the Scene is the Scene it was; a Scene with no parts is the flat file; over the corpus; a block; a dimension; the drawing budget; the wiring. */
+
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, type Scene, toDxf } from "../src/index.js";
 import { makeNodeWorld } from "../src/cli/io.js";
 import { CATALOG_CATEGORIES } from "../src/fixtures-catalog.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
-import { everyWord } from "./sheet-text-plans.js";
+import { everyWord } from "./tables/sheet-text-plans.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 
 /**
@@ -197,9 +200,7 @@ suite("a Scene with no parts is the flat file", () => {
 
 suite("over the corpus", () => {
   const world = makeNodeWorld("examples");
-  const NAMES = readdirSync("examples")
-    .filter((f) => f.endsWith(".arch"))
-    .sort();
+  const NAMES = exampleNames().sort();
 
   type Counted = Pick<ReturnType<typeof describe>, "doors" | "windows" | "furniture">;
   const pagesOf = (src: string): Array<{ scene: Scene; facts: Counted }> => {

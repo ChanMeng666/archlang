@@ -1,3 +1,4 @@
+/** The `./share` import graph holds no Node built-in and no CLI I/O module (browser-safe). */
 import { existsSync, readFileSync } from "node:fs";
 import { builtinModules } from "node:module";
 import { dirname, relative, resolve } from "node:path";

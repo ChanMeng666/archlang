@@ -1,6 +1,6 @@
 /**
  * The segment-selector digest table (plan card PS3.5): SHA-256 over SVG, `describe()`, `lint()`
- * and `compile().diagnostics` of every storey of each plan in `test/segment-select-plans.ts`,
+ * and `compile().diagnostics` of every storey of each plan in `test/tables/segment-select-plans.ts`,
  * pinned in its own commit after the byte-identity law held (every existing digest suite was
  * unchanged by the selectors) and after the twins in `test/segment-select.test.ts`. Measured
  * with the test's own digest body (`allStoreysDigestWithDiagnostics`). A moved row is a finding
@@ -9,8 +9,8 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
-import { SEGMENT_SELECT_PLANS } from "./segment-select-plans.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
+import { SEGMENT_SELECT_PLANS } from "./tables/segment-select-plans.js";
 
 const API: CompilerApi = { compile, describe, lint };
 

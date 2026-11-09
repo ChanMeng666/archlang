@@ -53,7 +53,7 @@ or is circulation, storage, a garage or `utility`, is left alone and is not repo
 > only such notes means finished; a consumer reads the field to tell them apart, never `reason`. A
 > room of any use whose only pieces are declared `in` it but stand elsewhere is a defect, not scope,
 > and gets the `W_FIXTURE_WRONG_ROOM` note a room with a row gets. Nothing the stage writes moved.
-> These notes are out of the digest in `test/finish-digest.ts`, and the `Named` law below holds them.
+> These notes are out of the digest in `test/helpers/finish-digest.ts`, and the `Named` law below holds them.
 
 **4. What goes in a room is a small public table.** `FURNISH_TABLE` (`src/furnish.ts`) is keyed
 by use and holds only words `src/fixtures-catalog.ts` already has. The wet-room and kitchen

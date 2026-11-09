@@ -1,3 +1,5 @@
+/** theme directive; CompileOptions.theme. */
+
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
 

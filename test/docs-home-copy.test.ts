@@ -11,7 +11,8 @@
  * The hero displays an agent-gallery pair, but the gallery is not pinned corpus (the isolation
  * law in test/agent-gallery.test.ts): nothing here reads it, only the hero's wiring.
  */
-import { readdirSync, readFileSync } from "node:fs";
+import { exampleNames } from "./helpers/corpus.js";
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 
 const read = (p: string): string => readFileSync(p, "utf8").replace(/\r\n/g, "\n");
@@ -82,7 +83,7 @@ describe("the hero", () => {
     expect(seam).toContain('<figure v-if="PAIR.brief" class="chat">');
     const sync = read("docs-site/sync-docs.mjs");
     const fallback = /hero: \{ gallery: "[^"]+", fallback: "([^"]+)" \}/.exec(sync)?.[1];
-    expect(readdirSync("examples"), "HOME_PROOFS.hero's fallback must be an example").toContain(`${fallback}.arch`);
+    expect(exampleNames(), "HOME_PROOFS.hero's fallback must be an example").toContain(`${fallback}.arch`);
   });
 });
 
@@ -130,7 +131,7 @@ describe("the home gallery", () => {
   it("shows six to eight plans from examples/, each caption at most 20 words", () => {
     expect(plans.length).toBeGreaterThanOrEqual(6);
     expect(plans.length).toBeLessThanOrEqual(8);
-    const files = new Set(readdirSync("examples"));
+    const files = new Set(exampleNames());
     for (const p of plans) {
       expect(files.has(`${p.example}.arch`), p.example).toBe(true);
       expect(p.caption.split(/\s+/).length, `${p.example}: "${p.caption}"`).toBeLessThanOrEqual(20);

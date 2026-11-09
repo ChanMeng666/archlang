@@ -32,6 +32,7 @@
  * this to `grown` on the strength of the one case where it happens to coincide.
  */
 
+import { worldFor } from "./helpers/world.js";
 import { describe as suite, expect, it } from "vitest";
 import { readFileSync, readdirSync } from "node:fs";
 import { dirname, join, resolve as resolvePath } from "node:path";
@@ -41,18 +42,6 @@ import type { World } from "../src/world.js";
 const ROOT = resolvePath(__dirname, "..");
 
 /** A Node-fs World for import resolution, mirroring the CLI's `makeNodeWorld`. */
-function worldFor(dir: string): World {
-  return {
-    read: (p) => {
-      try {
-        return readFileSync(resolvePath(dir, p), "utf8");
-      } catch {
-        return null;
-      }
-    },
-    now: () => new Date(0),
-  };
-}
 
 /** The original reproduction, verbatim. */
 const REPRO = `plan "g" { units mm paper A4 portrait scale 1:100

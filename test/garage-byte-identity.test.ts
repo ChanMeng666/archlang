@@ -12,7 +12,7 @@
  *
  * So the digests below are **hardcoded, and measured against `src/` at `5298b99`** — the
  * last commit before the outdoor tranche — by extracting that tree with `git archive` and running the SAME
- * {@link digestWith} against it. That helper lives in `test/byte-identity-digest.ts` rather
+ * {@link digestWith} against it. That helper lives in `test/helpers/byte-identity-digest.ts` rather
  * than in this file for exactly that reason: a baseline generator has to load the OLD `src/`,
  * so it cannot import a test file (which pulls in vitest and runs its own suite the moment it
  * is imported), and the alternative — a lookalike copy of the digest body in a scratch script
@@ -72,7 +72,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, lint } from "../src/index.js";
-import { type CompilerApi, digestWith, semanticDigestWith } from "./byte-identity-digest.js";
+import { type CompilerApi, digestWith, semanticDigestWith } from "./helpers/byte-identity-digest.js";
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ROOT = join(HERE, "..");

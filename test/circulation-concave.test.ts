@@ -1,3 +1,5 @@
+/** circulation — a concave room's routing anchor is on the room, not on its notch lip. */
+
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";

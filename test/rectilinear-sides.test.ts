@@ -28,14 +28,15 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { extremeRuns, rectInRing } from "../src/room-tiling.js";
 import { NULL_WORLD } from "../src/world.js";
-import { compareScenes, D4_ELEMENTS, frameFor, sceneOf, witnessCase, witnessPair } from "./d4-oracle.js";
-import { BED, L_RING, L_RING_REVERSED, SIDES_BODY, SIDES_PLAN, STATEMENT } from "./rectilinear-rooms-plans.js";
+import { compareScenes, D4_ELEMENTS, frameFor, sceneOf, witnessCase, witnessPair } from "./helpers/d4-oracle.js";
+import { BED, L_RING, L_RING_REVERSED, SIDES_BODY, SIDES_PLAN, STATEMENT } from "./tables/rectilinear-rooms-plans.js";
 
 const plan = (body: string): string => `plan "P" {\n  units mm\n${body}\n}\n`;
 const LIV = `  room id=liv polygon ${L_RING} label "Living" uses living`;
 const U = "(0,0) (2000,0) (2000,3000) (4000,3000) (4000,0) (6000,0) (6000,6000) (0,6000)";
 
 const errors = (src: string) => compile(src, { noCache: true }).diagnostics.filter((d) => d.severity === "error");
+// TODO(EH3.4): differs from test/helpers/diag.ts in that it asserts the code with `!`.
 const codes = (src: string): string[] => errors(src).map((d) => d.code!);
 
 const element = (src: string, id: string) => {

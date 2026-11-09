@@ -1,6 +1,6 @@
 /**
  * The building-relative swing digest table (card PS3.8): SHA-256 over SVG, `describe()`, `lint()`
- * and `compile().diagnostics` of every storey of each plan in `test/swing-building-plans.ts`,
+ * and `compile().diagnostics` of every storey of each plan in `test/tables/swing-building-plans.ts`,
  * pinned in its own commit after every existing digest suite was unchanged by the form and after
  * the twins, frames and refusals in `test/swing-building.test.ts`. Measured with the test's own
  * digest body (`allStoreysDigestWithDiagnostics`). A moved row is a finding to explain
@@ -9,8 +9,8 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, lint } from "../src/index.js";
-import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./byte-identity-digest.js";
-import { SWING_BUILDING_PLANS } from "./swing-building-plans.js";
+import { allStoreysDigestWithDiagnostics, type CompilerApi } from "./helpers/byte-identity-digest.js";
+import { SWING_BUILDING_PLANS } from "./tables/swing-building-plans.js";
 
 const API: CompilerApi = { compile, describe, lint };
 

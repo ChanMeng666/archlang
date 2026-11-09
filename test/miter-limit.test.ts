@@ -1,3 +1,5 @@
+/** acute wall joints — the mitre cap. */
+
 import { describe, expect, it } from "vitest";
 import { compile, getGeometryBackend, loadClipperBackend, setGeometryBackend } from "../src/index.js";
 import { MITER_LIMIT } from "../src/scene.js";

@@ -1,3 +1,5 @@
+/** compile cache — hits & eviction. */
+
 import { describe, expect, it } from "vitest";
 import { compile, clearCache } from "../src/index.js";
 

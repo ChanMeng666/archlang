@@ -1,3 +1,5 @@
+/** W_PATH_TOO_NARROW's door attribution spends a bounded COUNT of re-measures. */
+
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";

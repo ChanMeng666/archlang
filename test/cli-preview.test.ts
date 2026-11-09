@@ -1,3 +1,5 @@
+/** CLI — preview (PNG you can look at). */
+
 import { mkdtempSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";

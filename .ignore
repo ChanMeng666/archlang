@@ -13,6 +13,7 @@ src/context-size.ts
 docs/cli-reference.md
 docs/error-codes.md
 docs/backlog-index.md
+test/INDEX.md
 docs/agents/public-surface.md
 docs/agents/module-map.md
 grammars/archlang.gbnf

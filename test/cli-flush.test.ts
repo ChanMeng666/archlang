@@ -1,3 +1,5 @@
+/** CLI — stdout is flushed before the process exits. */
+
 import { spawn } from "node:child_process";
 import { describe, expect, it } from "vitest";
 

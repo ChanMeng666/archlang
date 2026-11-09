@@ -18,6 +18,7 @@
  * editor — is `playground/e2e/cli-link.spec.ts`.
  */
 
+import { exampleNames } from "./helpers/corpus.js";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -47,9 +48,7 @@ const HAS_DEFLATE_RAW = (() => {
   }
 })();
 
-const EXAMPLES = readdirSync("examples")
-  .filter((f) => f.endsWith(".arch"))
-  .sort();
+const EXAMPLES = exampleNames().sort();
 const read = (name: string): string => readFileSync(join("examples", name), "utf8");
 /** The `#z=` payload of a minted URL (the playground link carries `&edit` after it). */
 const payloadOf = (url: string): string => /^#z=([A-Za-z0-9_-]+)/.exec(new URL(url).hash)?.[1] ?? "";
