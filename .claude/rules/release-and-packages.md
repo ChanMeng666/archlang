@@ -15,4 +15,4 @@ paths:
   version fields; its baked resources refresh only on a bump. Never relax the lockstep dep-range pin.
 - Build and package the VS Code extension and the shim in the PRIMARY checkout, after root
   `npm run build`. The CI job map is `docs/agents/commands.md`.
-- Before a tag, run `/release-check` (it holds the human steps).
+- Before a tag, follow `.claude/commands/release-check.md` (it holds the human steps).

@@ -25,7 +25,7 @@ that catches it, is `docs/agents/new-element.md`: work down it.
 
 3. **Keep the compiler pure.** No I/O, no `Date.now()`, no `Math.random()` in the element module.
    Coordinates are millimetres; origin top-left, +x right, +y down. Route number formatting
-   through `fmt0`–`fmt4` (`src/num-format.ts`) so output stays byte-stable. Errors for bad user source are **returned** as a
+   through `fmt0`, `fmt2`, `fmt3`, `fmt4` (`src/num-format.ts`) so output stays byte-stable. Errors for bad user source are **returned** as a
    `Diagnostic` with a byte `span` and a catalogued `E_*`/`W_*` code in `src/error-catalog.ts`
    (a test enforces every raised code has an entry), never thrown.
 

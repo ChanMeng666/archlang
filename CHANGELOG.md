@@ -33,6 +33,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Reporting diagnostics cost time quadratic in their number: `offsetToLineCol` scanned the source from byte 0 for each one, so 64 KiB of `@` took about 4 s and 64 KiB of NUL about 8.5 s to compile. It now reads a line-start table built once per source; the same inputs take about 50 ms, with the same line and column numbers.
 - A `#z=` link, or a short link, that inflates past 1 MiB is refused instead of hanging the playground or the embed page: the page shows "This link is too large to open". The playground, the `<arch-plan>` element and the MCP viewer put a compiled SVG on the page through one sanitiser that parses it and drops `<script>`, `<foreignObject>`, `on*` attributes and `javascript:` links; a compiled drawing is unchanged.
+- Plan JSON: a wrong-typed label or title field, or an unsafe identifier, is now a pathed `E_JSON` diagnostic instead of a throw or unparsable source. `planFromJson` checks that every id, category, wall, room or edge reference, `material` and `facing` is one word as the lexer reads it, that an `on.at` or `relation.at` position is exactly one position, and that `grid`, `north` and every printed number are typed; a number below 1e-6 is written without an exponent.
+- `planFromJson` returns at most 500 validation diagnostics, then one `E_DIAGNOSTIC_LIMIT`, so a payload of thousands of empty rows no longer returns one error per field.
+- A `scale` whose number is below 1e-6 (`scale 0.0000001:1`) is kept as written, so it reads back as its denominator (1:10,000,000) in the sheet and in `describe().scale`; it used to be stored as `1e-7:1`, which could not be read, and the scale was dropped without a word.
 
 ## [1.57.0] - 2026-11-06
 

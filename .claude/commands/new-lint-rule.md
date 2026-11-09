@@ -41,6 +41,6 @@ lists. The list comes from commit `974d9981` (`W_FURNITURE_ON_VOID`).
 10. **`CHANGELOG.md`**: an `### Added` line under `[Unreleased]` naming the code (required; the
     release narrative lives only there).
 11. **Regenerate**: `npm run gen:all` (error-code docs, `llms-full.txt`, the context-size figure);
-    never hand-edit the outputs. Red without it: `npm run check:drift` in CI.
+    never hand-edit the outputs. Red without it: CI runs `npm run check:drift`.
 12. **Prove it through the CLI** (`arch lint --json` on a plan that fires it and on the examples,
     which must not move), then `npm run check:quick`, push, and read the PR's CI.
