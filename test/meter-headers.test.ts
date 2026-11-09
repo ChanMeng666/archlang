@@ -3,7 +3,9 @@
  * (engineering-health A-F13, cards EH2.2/EH2.7). The meter (`MAX_EVAL_STEPS`, `chargeSteps`,
  * `src/expr.ts`) is what keeps `compile()` bounded, and a charge site a reader cannot find from
  * the top of the file is one a refactor drops. The header is the module's leading comment (a
- * block comment or a run of `//` lines before any code); it must name "step" or "meter".
+ * block comment or a run of `//` lines before any code); it must name the meter itself: "step
+ * meter", `MAX_EVAL_STEPS`, `chargeSteps`, or "charges <n> step(s)". A header that only says
+ * "numbered steps" or "parameter" does not count.
  * A module counts as charging when its code, comments stripped, calls `chargeSteps(`.
  */
 import { readdirSync, readFileSync, statSync } from "node:fs";
@@ -43,9 +45,10 @@ function charges(text: string): boolean {
   return /\bchargeSteps\(/.test(text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/\/\/[^\n]*/g, ""));
 }
 
-/** Does a header name the meter? */
+/** Does a header name the meter? Read as prose: comment markers dropped, a line break is a space. */
 function namesMeter(header: string): boolean {
-  return /\b(steps?|meter)\b/i.test(header);
+  const prose = header.replace(/^\s*(\/\*+|\*\/|\*|\/\/)/gm, " ").replace(/\s+/g, " ");
+  return /step meter|MAX_EVAL_STEPS|chargeSteps|charges? \w+ steps?/i.test(prose);
 }
 
 const charging = listTs(SRC)
@@ -71,9 +74,13 @@ suite("a module that charges the step meter says so in its header", () => {
     const planted = '/**\n * Rooms.\n */\nimport { chargeSteps } from "./expr.js";\nchargeSteps(1);\n';
     expect(charges(planted)).toBe(true);
     expect(namesMeter(headerOf(planted))).toBe(false);
-    // `stepSite` is not the word "step", and a commented-out call is not a charge.
+    // A header that only happens to say "steps", "stepSite" or "parameter" names no meter, and a
+    // commented-out call is not a charge.
+    expect(namesMeter("/** `resolveBody`'s numbered steps. */")).toBe(false);
     expect(namesMeter("/** Sets the stepSite. */")).toBe(false);
+    expect(namesMeter("/** Bindings of every parameter. */")).toBe(false);
     expect(charges("// chargeSteps(1)\nconst x = 1;")).toBe(false);
     expect(namesMeter(headerOf("// Line one.\n// Charges one step per room.\nconst x = 1;"))).toBe(true);
+    expect(namesMeter("/** Step meter (`MAX_EVAL_STEPS`): one per room. */")).toBe(true);
   });
 });
