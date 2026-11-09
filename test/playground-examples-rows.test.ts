@@ -24,7 +24,7 @@
  */
 
 import { exampleNames } from "./helpers/corpus.js";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { compile, lint } from "../src/index.js";
