@@ -46,7 +46,10 @@ describe("a plan that does not parse", () => {
   });
 
   it("impact --set on a plan that does not parse exits 2 with the parse diagnostics", async () => {
-    writeFileSync(join(dir, "badlet.arch"), 'plan "B" { units mm let W = 4000 room at (0,0) size Wx3000 label "R" @ }\n');
+    writeFileSync(
+      join(dir, "badlet.arch"),
+      'plan "B" { units mm let W = 4000 room at (0,0) size Wx3000 label "R" @ }\n',
+    );
     const r = await runArch(["impact", join(dir, "badlet.arch"), "--set", "W=5000", "--json"]);
     expect(r.status).toBe(EXIT.USER);
     const j = JSON.parse(r.stdout) as { ok: boolean; diagnostics: Array<{ code: string }> };
