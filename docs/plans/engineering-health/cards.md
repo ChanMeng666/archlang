@@ -285,7 +285,7 @@ mean different things, else derive one from `SOURCE_CAP_BYTES`. `editors/vscode`
 derived from `typeof import("@chanmeng666/archlang")`, cast removed. Hash pins stay. Proof:
 `share-codec` tests green; every example's share link decodes to the same source.
 
-### EH2.6 · one Scene per lint — `in review (#624)` · M · medium · opus · P-F3 · depends EH1.6
+### EH2.6 · one Scene per lint — `done (#624)` · M · medium · opus · P-F3 · depends EH1.6
 A one-slot Scene memo keyed by `(ResolvedPlan identity, annotate, theme identity, runtime identity)`
 shared by `pipeline.ts` and `lint/rules/annotations.ts:161`; hand out a frozen or cloned Scene
 (`CompileResult.scene` is public). Check whether `accessible` belongs in the key. Test: mutate a
@@ -293,14 +293,14 @@ returned scene, recompile, bytes unchanged. Playground worker reuses the scene a
 compile/lint/paths passes where the key matches. Proof: digests unchanged; `lint` bench row and
 work counts reported before/after.
 
-### EH2.7 · release pins from one source; public-surface map — `in review (#627)` · M · medium · sonnet · W-F5, A-F10, A-F13
+### EH2.7 · release pins from one source; public-surface map — `done (#627)` · M · medium · sonnet · W-F5, A-F10, A-F13
 `scripts/bump-lockstep.ts` (`npm run release:pin`) rewrites the mcp range + version, both
 `server.json` versions, the VS Code range, the font pin from the root version; the red lockstep
 tests stay as the verifier. `gen:surface` writes `docs/agents/public-surface.md` (export, module,
 kind, in-repo consumers, none flagged), drift-gated. `index.ts` header gains a "state" section
 (caches, side tables, `_` fields: which to use). `test/meter-headers.test.ts` and the missing header sentences landed with #618 (nine, not seven); only `src/cli.ts`'s header remains here. Proof: drift green; `release:pin --dry-run` prints the eight edits for a scratch version.
 
-### EH2.8 · bench honesty, incremental tsc, packaging — `todo` · S · low+high · sonnet · P-F1, P-F5, P-F10
+### EH2.8 · bench honesty, incremental tsc, packaging — `in progress` · S · low+high · sonnet · P-F1, P-F5, P-F10
 Bench job builds the merge base and the head in the same job, runs each twice, reports the ratio;
 flags only rows > 5 ms and > 50 %; `lint` reported as its own row class. Both tsconfigs
 `incremental: true` with `tsBuildInfoFile` under `node_modules/.cache`. `"sideEffects": false` only
@@ -339,7 +339,7 @@ paragraph. `GENERATORS` row (high tier, own PR). `.ignore` lists the artifact. T
 `docs/agents/architecture.md` to pipeline + conventions + cross-module invariants, pointing at the
 map. Proof: `check:drift` green; the map names 100 % of modules.
 
-### EH3.2 · backlog and plans fit in a context window — `in progress` · M · low · sonnet · N-F7 · EH-D4
+### EH3.2 · backlog and plans fit in a context window — `in review (#629)` · M · low · sonnet · N-F7 · EH-D4
 `scripts/backlog-archive.mjs` moves every `closed|done|won't fix|decided|measured` entry verbatim
 to `archlang-lab/backlog-archive.md`, leaving a one-line tombstone only where another doc cites the
 id. Normalise open headings to `### <id> · <title> — \`<status>\``. `scripts/gen-backlog-index.ts`
