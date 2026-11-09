@@ -68,3 +68,10 @@ export function rateLimited(scope: string, limit: number, periodSeconds: number)
     message: `too many ${scope} requests from this address: this host answers at most ${plainDigits(limit)} every ${plainDigits(periodSeconds)} s`,
   };
 }
+
+/**
+ * The most UTF-8 bytes of one imported `.arch` module the Node CLI's World reads (1 MiB). A larger
+ * file is refused with `E_IMPORT_TOO_LARGE` before it is read: an `import` must not pull an
+ * arbitrary file into memory. The largest `.arch` file in the repository is about 34 KB.
+ */
+export const MODULE_CAP_BYTES = 1024 * 1024;

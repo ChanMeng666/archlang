@@ -71,7 +71,7 @@ updates on, `cooldown: default-days: 7`. Proof: the PR body lists each diff hunk
 
 ## Wave 1 · every breakage class has a guard
 
-### EH1.1 · release-compatibility gate — `in review (#599)` · M · medium · opus · T-F8 items 1–3, 5
+### EH1.1 · release-compatibility gate — `done (#599)` · M · medium · opus · T-F8 items 1–3, 5
 `scripts/compat-check.mjs`, run in the `Node 22 checks` job: fetch the last published core and MCP
 tarballs (`npm pack <pkg>@latest` into a tmp dir) and compare, additive-only: (1) the sorted
 declaration list of `dist/index.d.ts` (needs `npm run build` in that job, or compare `src/index.ts`
@@ -130,7 +130,7 @@ reason line in the table's header. Tranche 2 adds counters returned by `splitAll
 return or a test-only seam, never through the memoised `PlanNode`. Proof: tranche 1 pins 30 rows;
 a scratch extra loop in `expr.ts` turns the test red.
 
-### EH1.7 · counts not clocks; fast-check policy — `todo` · S · low · sonnet · T-F5, T-F6
+### EH1.7 · counts not clocks; fast-check policy — `in progress` · S · low · sonnet · T-F5, T-F6
 Replace `wall-closure-measure.test.ts:110-112`'s `Date.now()` bound with the scan's probe count.
 Guard test: no `Date.now()`/`performance.now()` inside an `expect(` in `test/**`, allow-list named.
 Per-test timeouts above 120 s need an allow-list row. `test/setup/fast-check.ts` (vitest
@@ -172,7 +172,7 @@ NUL, `zone "a" {`, `let a = 1` each produce ≤ 501 diagnostics; a counter seam 
 corpus. Add the four inputs to `scripts/measure-cpu.mjs`. CHANGELOG line under `[Unreleased]`.
 Proof: digests unchanged; the four inputs under 1 s in the test.
 
-### EH1.12 · `import` is rooted — `in progress` · S · medium · opus · S-F2 · EH-D7
+### EH1.12 · `import` is rooted — `in review (#601)` · S · medium · opus · S-F2 · EH-D7
 `makeNodeWorld` (`src/cli/io.ts:315-326`) resolves with `realpath`, refuses a result outside the
 working directory unless `--import-root <dir>` names an ancestor, refuses non-`.arch`, caps module
 size at the input limit. `E_IMPORT_PARSE` for an imported file reports line:col, never the token.
@@ -189,7 +189,7 @@ Codec fuzz: arbitrary base64url and high-ratio deflate through `decodePayload`,
 `decodePlanHashWeb`, `srcFromHash`: size cap holds, no throw. Proof: playground unit tests + e2e
 green; the 204 KB bomb from the audit is refused.
 
-### EH1.14 · agent docs name no blocked command; stale recipes fixed — `todo` · S · low+high · sonnet · N-F1, N-F2, N-F3 · EH-D3
+### EH1.14 · agent docs name no blocked command; stale recipes fixed — `done (#605); the AGENTS.md line is #606 (owner queue)` · S · low+high · sonnet · N-F1, N-F2, N-F3 · EH-D3
 Rewrite as "CI runs X; read its result": `gotchas.md:57-62,107-109,156-159,311-317`,
 `.claude/commands/verify-loop.md` step 2, `docs/backlog.md:26`. `test/agent-docs-gate.test.ts`
 scans `docs/agents`, `.claude/**/*.md`, `docs/backlog.md` for the hook's `HEAVY` patterns
@@ -201,7 +201,7 @@ integration branch as a parameter; `gotchas.md:333` matches `:255`; plans README
 split into its own PR). Proof: the new test green; `grep -rn '^/\|`/release-check`'` finds no
 slash-invocation in agent docs.
 
-### EH1.15 · `planFromJson` hardening — `in progress` · M · medium · opus · from EH1.10's findings and #597's review
+### EH1.15 · `planFromJson` hardening — `done (#607)` · M · medium · opus · from EH1.10's findings and #597's review
 Three defects #593 pinned as `it.fails`: a non-string furniture `label` and a non-string `title.*` field
 throw `TypeError` from the emitter (should be a pathed `E_JSON_SCHEMA`); identifier-like strings (an
 empty `category`, a number in an opening `id`) are emitted unchecked and the source then fails to
@@ -214,7 +214,7 @@ diagnostics with `capDiagnostics`; flip the three pins to plain tests and remove
 property test over hostile strings in every string field. CHANGELOG `### Fixed` ×2. Proof: the former
 pins green; the 64 KiB probe ≤ 501 diagnostics; corpus digests unchanged.
 
-### EH1.16 · review residue of wave 1 — `todo` · S · low · sonnet
+### EH1.16 · review residue of wave 1 — `in review (#608)` · S · low · sonnet
 From the fresh-context reviews of #594, #598, #599: (a) `svg-sanitize` fast-path negatives built by
 injecting `<!--`, `<![CDATA[`, `<?`, `<!DOCTYPE`, `<SCRIPT>`, `<rect/onload=x>` into a real example's SVG
 (each must fail `isPlainSvg` and clean to nothing removable); document that the fast path repairs
@@ -299,7 +299,7 @@ after a test proves every `src/` module is import-side-effect-free; DTS build ti
 faster path tried (`tsc --emitDeclarationOnly --incremental`). Proof: two PR bench comments with
 the new table; `npm run build` time before/after.
 
-### EH2.9 · fixture glyph dispatch by family — `todo` · S · low · sonnet · A-F12
+### EH2.9 · fixture glyph dispatch by family — `in progress` · S · low · sonnet · A-F12
 `fixtureGlyph` dispatches through `FAMILY_OF.get(category)` into `Record<CanonicalFamily, DrawFn>`;
 a script proves every category maps to the same draw function before and after;
 `fixture-byte-identity` group 1 is the CI proof. Follow `.claude/rules/glyphs.md`.

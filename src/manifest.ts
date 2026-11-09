@@ -149,6 +149,17 @@ const EXPECTED_HASH_FLAG: ManifestFlag = {
     "refuse with E_STALE_SOURCE (exit 4) unless the input file's bytes hash to this SHA-256 (`source_hash` in a --json result); checked first, under --dry-run and -o too, and again just before writing: a narrower race, not a lock",
 };
 /**
+ * The import root (EH-D7): the CLI's file-system World reads an `import` only from under this
+ * directory. Every command that compiles a file with its imports declares it; it is applied once
+ * for the process (`setImportRoot`, `src/cli/io.ts`), so the commands share one behaviour.
+ */
+const IMPORT_ROOT_FLAG: ManifestFlag = {
+  flag: "--import-root",
+  arg: "<dir>",
+  description:
+    "read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read",
+};
+/**
  * `-o/--out` is deliberately overloaded across commands (kept for backward compat):
  * a FILE for compile/watch/preview/md/repair/fix/new, a DIRECTORY for batch. Each
  * command therefore declares its own `--out` with its real semantics rather than
@@ -392,6 +403,7 @@ const COMPILE_FLAGS: ManifestFlag[] = [
   ACC_ID_PREFIX_FLAG,
   FROM_JSON_FLAG,
   INSTALL_FLAG,
+  IMPORT_ROOT_FLAG,
   JSON_FLAG,
   QUIET_FLAG,
 ];
@@ -471,6 +483,7 @@ const COMMANDS: ManifestCommand[] = [
       ACCESSIBLE_FLAG,
       ACC_ID_PREFIX_FLAG,
       INSTALL_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -506,6 +519,7 @@ const COMMANDS: ManifestCommand[] = [
       ACCESSIBLE_FLAG,
       ACC_ID_PREFIX_FLAG,
       INSTALL_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -553,6 +567,7 @@ const COMMANDS: ManifestCommand[] = [
       ERROR_SVG_FLAG,
       { ...INSTALL_FLAG, description: "auto-install @resvg/resvg-js if missing, then render" },
       VIEW_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -636,6 +651,7 @@ const COMMANDS: ManifestCommand[] = [
       },
       CODE_FLAG,
       SEVERITY_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -683,6 +699,7 @@ const COMMANDS: ManifestCommand[] = [
       },
       FACTS_FLAG,
       WASTE_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -736,6 +753,7 @@ const COMMANDS: ManifestCommand[] = [
           "csv: one row per figure (`level,section,item,width_mm,field,value`, the field named as in `describe`); md: one table per section and storey (default md)",
       },
       WASTE_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -757,7 +775,7 @@ const COMMANDS: ManifestCommand[] = [
     name: "score",
     summary:
       "continuous intent satisfaction (satisfied/total) as data — the refine-loop reward — or, with --taste, the plan's taste score. Measures, never gates (validate --intent is the gate).",
-    flags: [BRIEF_FLAG, TASTE_FLAG, JSON_FLAG, QUIET_FLAG],
+    flags: [BRIEF_FLAG, TASTE_FLAG, IMPORT_ROOT_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output:
       "--brief: { ok, satisfied, total, score, subscores, violations, measures? }; --taste: { profile, ok, score, uncapped, capped, validity, advisory, coverage, subscores, criteria } (exit 0 on a successful measurement, whatever the score)",
@@ -780,6 +798,7 @@ const COMMANDS: ManifestCommand[] = [
       { flag: "--strict", alias: "--fail-on-warning", description: "warnings fail (exit 2)" },
       CODE_FLAG,
       SEVERITY_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -871,6 +890,7 @@ const COMMANDS: ManifestCommand[] = [
       },
       { flag: "--force", description: "keep a pass even if it raises the error count" },
       EXPECTED_HASH_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -925,6 +945,7 @@ const COMMANDS: ManifestCommand[] = [
         description: "before rewriting a file in place, save the original bytes to <file>.bak",
       },
       EXPECTED_HASH_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -961,6 +982,7 @@ const COMMANDS: ManifestCommand[] = [
           "nothing, and every suggestion is already proven byte-for-byte before it is offered)",
       },
       EXPECTED_HASH_FLAG,
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -999,6 +1021,7 @@ const COMMANDS: ManifestCommand[] = [
         description:
           "elements that must not change: exit 2 with E_LOCKED_ELEMENT_CHANGED for each that moved, resized, was re-hosted, re-thickened, changed swing or kind, vanished or appeared (a relabel is not a change), with its span on both sides; a lock on an id not written as `id=` (an assigned `room_3` shifts) is refused with E_LOCK_UNNAMED. Lowest storey only, as `changed[]`",
       },
+      IMPORT_ROOT_FLAG,
       JSON_FLAG,
       QUIET_FLAG,
     ],
@@ -1023,7 +1046,7 @@ const COMMANDS: ManifestCommand[] = [
   {
     name: "suggest",
     summary: "advisory door/window statements for unreachable or windowless rooms",
-    flags: [JSON_FLAG, QUIET_FLAG],
+    flags: [IMPORT_ROOT_FLAG, JSON_FLAG, QUIET_FLAG],
     input: "<file.arch|->",
     output: "suggestions (JSON or a summary)",
     examples: [

@@ -66,6 +66,8 @@ const PLUGIN =
   "needs a third-party `ElementDef` passed through `compile(src, { plugins })`, which a bare snippet cannot have; pinned in test/transform-seam.test.ts";
 const RENDER =
   "raised by the PDF/PNG backends at render time (a glyph no embedded font covers), never by compile()/lint(); pinned in test/export-font-cjk.test.ts";
+const ROOTED =
+  "raised by the CLI's file-system World (`makeNodeWorld`, src/cli/io.ts) when it refuses an `import`, never by compile() over a virtual World; pinned in test/import-rooted.test.ts";
 const HOSTED =
   "raised by a HOST before compile() runs (the hosted MCP Worker's byte cap and rate limit, `inputTooLarge()`/`rateLimited()`), never by compile()/lint(), which have neither; pinned in test/input-limit.test.ts";
 const IMPACT =
@@ -125,6 +127,9 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
 
   ["E_PNG_DEPENDENCY", DEP],
   ["E_INPUT_TOO_LARGE", HOSTED],
+  ["E_IMPORT_NOT_ARCH", ROOTED],
+  ["E_IMPORT_OUTSIDE_ROOT", ROOTED],
+  ["E_IMPORT_TOO_LARGE", ROOTED],
   ["E_RATE_LIMITED", HOSTED],
   ["W_CJK_FONT_MISSING", RENDER],
   ["W_GLYPH_UNSUPPORTED", RENDER],
@@ -246,7 +251,9 @@ suite("error catalog — every example that can raise its code does", () => {
     // test/import-openplan3d.test.ts. W_DIAGNOSTIC_LIMIT took it to 62: it needs more than 500
     // warnings and no error, hundreds of lines no example can carry (a loop raising an error
     // per pass gives the E_ form, which IS executed here); raised in
-    // test/diagnostics-volume.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(62);
+    // test/diagnostics-volume.test.ts. E_IMPORT_NOT_ARCH, E_IMPORT_OUTSIDE_ROOT and E_IMPORT_TOO_LARGE
+    // took it to 65: the CLI's file-system World raises them when it refuses an `import` (EH-D7), and
+    // no virtual World a snippet runs under can; each is raised in test/import-rooted.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(65);
   });
 });
