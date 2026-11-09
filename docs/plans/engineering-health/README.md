@@ -80,7 +80,7 @@ contract foundations" and these guards are its engineering half.
 
 - No StrykerJS over the suite (T-F9: every mutant reaches the corpus-wide digests; 53 CPU-min per
   run). A sampled nightly mutant job over two modules is EH3.6, report-only.
-- No merge queue (C-F10: the recurring conflicts are textual; a queue adds a full CI run per merge).
+- No merge queue (C-F10: the recurring conflicts are textual; a queue adds a full CI run per merge). Reversed 2026-11-10 (EH3.7): two pairs of green PRs merged blind and broke main; the queue is unavailable on a user-owned repo, so strict up-to-date checks enforce the same guarantee.
 - No test subdirectories by stage (T-F7: moves 508 files, breaks every path in `docs/testing.md`;
   a generated index gives the reader more).
 - No vitest major upgrade (backlog 3.1's triggers have not fired).

@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # The merge queue: GitHub builds the PR merged onto main (and onto the PRs queued ahead of
+  # it) and runs the required checks on THAT tree before fast-forwarding main. Every job below
+  # runs in full on it (EVENT is neither `pull_request` nor a filtered path): the queue is the
+  # last gate, so Node 18/20/Windows run too and the path filter never skips anything.
+  merge_group:
 
 permissions:
   contents: read
@@ -97,6 +102,8 @@ jobs:
             echo "Record-only change: the gating legs report green without running; Node 22 runs the docs leg." >> "$GITHUB_STEP_SUMMARY"
           elif [ "$EVENT" = "pull_request" ]; then
             echo "Code change: Node 22 (five shards), the builds and the E2E legs run; Node 18, Node 20 and Windows run on main and nightly." >> "$GITHUB_STEP_SUMMARY"
+          elif [ "$EVENT" = "merge_group" ]; then
+            echo "Merge queue: every leg runs in full on the merged result." >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Push: every leg runs in full." >> "$GITHUB_STEP_SUMMARY"
           fi
@@ -226,7 +233,7 @@ jobs:
   changelog:
     name: CHANGELOG under [Unreleased]
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'merge_group'
     permissions:
       contents: read
       pull-requests: read
@@ -246,8 +253,15 @@ jobs:
           EVENT_EXEMPT: ${{ contains(github.event.pull_request.labels.*.name, 'changelog-exempt') }}
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
+          # merge_group has no pull_request payload (no labels, no number); its head_ref is
+          # refs/heads/gh-readonly-queue/main/pr-<n>-<sha>, so the number is parsed from it and the
+          # label is read live (the `live` lookup below), as for a re-run.
+          MG_REF: ${{ github.event.merge_group.head_ref }}
           REPO: ${{ github.repository }}
         run: |
+          if [ -z "$PR" ] && [ -n "$MG_REF" ]; then
+            PR=$(printf '%s' "$MG_REF" | sed -n 's|.*/pr-\([0-9][0-9]*\)-.*|\1|p')
+          fi
           live=$(gh pr view "$PR" --repo "$REPO" --json labels --jq '[.labels[].name] | index("changelog-exempt") != null' || echo false)
           if [ "$EVENT_EXEMPT" = "true" ] || [ "$live" = "true" ]; then
             echo "PR labelled changelog-exempt: violations are reported, not refused." | tee -a "$GITHUB_STEP_SUMMARY"
@@ -277,7 +291,7 @@ jobs:
           EVENT: ${{ github.event_name }}
         run: |
           if [ "$FULL_CI" = "true" ]; then want=success; else want=skipped; fi
-          if [ "$EVENT" = "pull_request" ]; then changelog_want=success; else changelog_want=skipped; fi
+          if [ "$EVENT" = "pull_request" ] || [ "$EVENT" = "merge_group" ]; then changelog_want=success; else changelog_want=skipped; fi
           echo "Node 22 checks: $CHECKS. Node 22 tests: $TESTS. Expected: $want. CHANGELOG: $CHANGELOG (expected $changelog_want)." | tee -a "$GITHUB_STEP_SUMMARY"
           if [ "$CHECKS" != "$want" ] || [ "$TESTS" != "$want" ]; then
             echo "::error::A Node 22 job did not give the expected result ($want)."
