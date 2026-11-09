@@ -55,6 +55,47 @@ describe("element facets (src/elements/facets.ts)", () => {
     });
   }
 
+  // Today's members of every set BUILT from the table, pinned as literals: the rows above only
+  // prove each kind answers, not that it answers right, so a flipped flag would pass them.
+  const CHANGED = "a changed facet is a behaviour change: say why in the PR";
+  it("the sets built from KIND_FACETS have today's members", () => {
+    expect(kindsWith("cropped"), `src/cli/review.ts CROPPED: ${CHANGED}`).toEqual([
+      "door",
+      "window",
+      "opening",
+      "furniture",
+    ]);
+    expect(kindsWith("shell"), `src/furnish.ts SHELL_KINDS: ${CHANGED}`).toEqual([
+      "wall",
+      "room",
+      "door",
+      "window",
+      "opening",
+    ]);
+    expect(kindsWith("stacked"), `src/keep.ts STACKED_KINDS: ${CHANGED}`).toEqual([
+      "room",
+      "stair",
+      "elevator",
+      "escalator",
+      "void",
+    ]);
+    expect([...UNPROJECTED_KINDS], `src/plan-json.ts UNPROJECTED_KINDS (in order): ${CHANGED}`).toEqual([
+      "stair",
+      "elevator",
+      "escalator",
+      "roof",
+      "void",
+      "outdoor",
+      "fence",
+    ]);
+    expect(kindsWith("opening"), `src/plan-json.ts OPENING_KINDS: ${CHANGED}`).toEqual(["door", "window", "opening"]);
+    const labels = Object.fromEntries(KINDS.flatMap((k) => (rowOf(k)?.label ? [[k, rowOf(k)?.label]] : [])));
+    expect(labels, `src/scene-build.ts elementLabelOf fallback: ${CHANGED}`).toEqual({
+      furniture: "category",
+      outdoor: "surface",
+    });
+  });
+
   it("src/plan-json.ts UNPROJECTED_KINDS is the table's `unprojected` kinds, in order", () => {
     expect([...UNPROJECTED_KINDS]).toEqual(KINDS.filter((k) => rowOf(k)?.unprojected === true));
   });

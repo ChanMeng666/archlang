@@ -51,5 +51,9 @@ that table is a `Record` over `PlanJsonDroppedClause`.
 - `src/error-catalog.ts`: an entry per new `E_*`/`W_*` code (`test/error-catalog-*.test.ts` catch a
   raised code with no entry, not a missing diagnostic).
 - `src/lint/rules/`: any rule the kind needs (the lint-rule recipe is `.claude/commands/new-lint-rule.md`).
+- The two hand-written opening-kind literals of Plan JSON in `src/plan-json.ts`: the
+  `OpeningJson.kind` type (`"door"`, `"window"`, `"opening"`) and the `openings[].kind` enum of
+  `PLAN_JSON_SCHEMA` (which `schemas/plan.schema.json` is generated from). A kind marked `opening`
+  in `KIND_FACETS` also needs both.
 - Generated artifacts (grammars, spec, GBNF, schemas): `npm run gen:all`, then `check:drift` (the
   recipe is `.claude/commands/regen.md`).
