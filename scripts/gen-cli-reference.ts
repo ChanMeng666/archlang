@@ -37,7 +37,8 @@ const prose = (s: string): string => Array.from(s, (c) => PROSE_ESC[c] ?? c).joi
  * Angle brackets are NOT touched here — inside a code span markdown escapes them for us,
  * and escaping them again would render a literal `&lt;`.
  */
-const CELL_ESC: Record<string, string> = { "|": "\\|", "\\": "\\\\" };
+// Pipe only: the cell text lands inside backticks, where `\` is literal and a doubled one would render doubled.
+const CELL_ESC: Record<string, string> = { "|": "\\|" };
 const codeCell = (s: string): string => Array.from(s, (c) => CELL_ESC[c] ?? c).join("");
 
 /** A prose table cell: needs the pipe escape *and* the angle-bracket escape. */

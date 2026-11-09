@@ -19,7 +19,7 @@ import { describe, expect, it } from "vitest";
  */
 
 const ROOT = join(__dirname, "..");
-const SCANNED = /^(?:(?:scripts|src|eval)\/.+\.ts|\.claude\/hooks\/[^/]+\.mjs)$/;
+const SCANNED = /^(?:scripts\/.+\.(?:ts|mjs)|(?:src|eval)\/.+\.ts|\.claude\/hooks\/[^/]+\.mjs)$/;
 
 // `.replace(/PATTERN/flags, "REPLACEMENT")` with a string-literal replacement; the groups are the source text.
 const REPLACE =
