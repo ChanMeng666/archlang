@@ -26,6 +26,8 @@ import { describe, expect, it } from "vitest";
  * Why the root `package.json` may declare `"sideEffects": false`: the built-in dispatch used to be
  * injected into `src/expr.ts` when `src/builtins.ts` loaded. It is now an explicit
  * `registerBuiltins()` call in `src/ir.ts`, where the `builtin` Values are created.
+ * Read it as: no src module registers into another module at load; initialiser-time I/O in src/cli
+ * (`export const VERSION = readVersion()`, `src/cli/io.ts`) is out of this scan's reach.
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
