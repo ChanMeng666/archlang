@@ -169,7 +169,9 @@ source (.arch)
 - `analyze/net-area-memo.ts` memoises each storey's wall bands and each room's exact net internal
   area, keyed on their exact inputs (ADR 0027's figures, output byte-identical); `clearCache()`
   empties it
-- `analyze/circulation.ts` the walking model on a nav grid. A door's width lives only on the cells
+- `analyze/circulation.ts` the walking model on a nav grid (the facts; `analyze/nav-grid.ts` the grid
+  and the walking primitives; `analyze/circulation-overlay.ts` the opt-in overlay geometry, which
+  `describe()` never loads, `test/describe-overlay-blind.test.ts`). A door's width lives only on the cells
   its carve opened; routes start, and rooms are reached, on the room's floor (the cells walkable
   before any carve). A storey with no front door is seeded at the arrival head of each arriving
   run; whether a landing exists is decided on the plan's geometry (`landingProbe`), not on cells.

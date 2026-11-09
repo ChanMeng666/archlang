@@ -390,7 +390,7 @@ function mayPinch(ctx: LintContext, room: RRoom, quoted: readonly RFurniture[], 
 
 /**
  * What the walk's nav grid blocks inside a rectangular room besides furniture (`buildGrid`,
- * `src/analyze/circulation.ts`, built from `ctx.ir.walls`, `ctx.verticals` and `ctx.voids`), each
+ * `src/analyze/nav-grid.ts`, built from `ctx.ir.walls`, `ctx.verticals` and `ctx.voids`), each
  * as the distance from a piece's rectangle to it: every wall segment that reaches the room's
  * interior farther than `half` from its edges (a stub, a nib, a partition run into the room; a
  * wall along an edge is the edge, which {@link mayPinch} reads through its face), and every
