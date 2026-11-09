@@ -10,7 +10,6 @@ paths:
 A separate, downstream reader of a resolved plan (ADRs 0030, 0031): adapter → Scene3D → Mesh3D →
 the replay (HTML, video), the GLB and their checks. The plan and its cards:
 `docs/plans/archlang-3d/`, `docs/plans/preview-and-remodel/`. A map of the code: `DEVELOPMENT.md`.
-
 - It reads the core only through the core's public exports (the seam, ADR 0031); it never becomes a
   core dependency, and the core never gains a 3D option, command or drawing. Need a core fact? Add
   an additive export with its own byte-identity proof, never a deep import.
@@ -47,3 +46,16 @@ the replay (HTML, video), the GLB and their checks. The plan and its cards:
   notices` for `THIRD_PARTY_NOTICES`); the deny-list wins over the allow-list.
 - The playground tab is lazy: the startup chunks carry no 3D code (`playground/e2e/preview3d.spec.ts`
   says what it guards and why its size budget is what it is).
+
+## Traps
+
+- **archlang-3d key frames are pinned from CI's printed hashes.** A change that moves frames leaves
+  `e2e/fixtures/keyframe-baseline.json` alone, `check-3d` prints the new hashes, and a follow-up
+  commit on the same PR pins them with the run link (`e2e/fixtures/README.md`). `check-3d` is not a
+  required check, so never merge with it red.
+- **`packages/archlang-3d` imports `playwright-core` lazily** (inside the function that launches a
+  browser): 1.64 calls `process.exit(1)` on import under Node < 20, and CI's Node 18 leg runs the
+  package's light tests. After a dependency lands in a workspace, a checkout whose `node_modules`
+  predates it needs `npm ci`, or every junctioned worktree fails to resolve it.
+- **`tsx` honours a workspace `tsconfig` `paths` entry that points at a `.d.ts`** and then loads a
+  file with no runtime exports; `packages/archlang-3d` resolves the core through the workspace link.
