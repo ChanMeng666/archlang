@@ -26,6 +26,14 @@ you observed. Do NOT push anything — this command only verifies.
    at least. Diff that log against `[Unreleased]` so no merged change is missing from the notes.
 
 2. **Versions consistent.**
+   - After the root `package.json` version bump run `npm run release:pin` (`scripts/bump-lockstep.ts`;
+     `-- <core version>` to name one, `--dry-run` to preview, `--shim-version x.y.z` to override). It
+     sets the shim's core range, the shim's version (patch + 1 when the range moves) and both
+     `server.json` versions, and the VS Code core range, printing each edit; it leaves the font pin
+     (`packages/font-cjk`'s own version), the extension's own version and the generated pins
+     (below) alone. Then run the lockstep tests, which stay the verifier. The bullets that follow say what
+     each pin is and why; the script replaces the hand edits, not the judgement about whether the
+     extension needs a rebundle.
    - Root `package.json` `version` matches the newest `CHANGELOG.md` heading.
    - Ask whether the shim changed: `git diff <lasttag>..main -- packages/mcp`. ANY mcp-visible
      change (including a tool description, its README, a `server.json` field) needs a bump in
