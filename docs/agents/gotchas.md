@@ -141,10 +141,10 @@ Non-obvious traps that no test catches, or whose symptom points the wrong way. E
 - **A test file must not read what another test file wrote.** `vitest --shard` assigns files by sorted
   hash, so a new file can move others into another shard, on another runner. Symptom: a red shard on a
   PR that touched neither file. Write to a `mkdtemp` directory.
-- **A new lint rule is registered beyond its module**: `test/d4-oracle.ts` `RULE_CLASS`, the
-  append-only order windows (`slice(-N)` in `test/doors.test.ts`,
-  `test/lint-circulation-privacy.test.ts`, `test/lint-space-enclosure.test.ts`), the per-stage counts
-  in `test/stages.test.ts`, `test/defect-corpus/README.md`, the totals in
+- **A new lint rule is registered beyond its module**: `.claude/commands/new-lint-rule.md` is the
+  checklist and `test/lint-rule-order.test.ts` fails with every derivable place named (the full
+  order list, `test/d4-oracle.ts` `RULE_CLASS`, the catalogue, `test/stage-decisions.ts`); then the
+  per-stage counts in `test/stages.test.ts`, `test/defect-corpus/README.md`, the totals in
   `test/rooms-tiling-probe.test.ts` (#308), and `test/walls-from-rooms.test.ts`, which walks the
   `space-not-enclosed` corpus (a case that already says `walls from rooms` is skipped there; G5).
 - **Two rule PRs in parallel conflict on all of those** plus `src/lint/rules/index.ts`,

@@ -17,7 +17,6 @@ import {
 import { lint } from "../src/index.js";
 import { lintCoverage } from "../src/lint.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid } from "../src/ir.js";
-import { LINT_RULES } from "../src/lint/rules/index.js";
 import { verticalsOf } from "../src/vertical.js";
 import type { World } from "../src/world.js";
 
@@ -277,41 +276,6 @@ describe("W_ROOM_OUTSIDE_SHELL", () => {
     const [d] = only(src, "W_ROOM_OUTSIDE_SHELL");
     // The circle's part past x 6100: a circular segment of sagitta 900 on R 2000.
     expect(d!.message).toMatch(/^Room "Drum" has 2\.\d\d m² of its floor outside the building's walls\. /);
-  });
-});
-
-describe("the three rules' place in LINT_RULES", () => {
-  it("are appended in card order, followed only by the furniture-relation rules (ADR 0029), PS2.10's dimension text, the annotation-collision rules (PS2.12), the clearance rules (PS2.11a–d) and the stair rules (PS2.11e, PS2.34, PS2.15) and the kitchen and door rules (PS2.11e, PS2.46) and the accessible-WC rule (PS2.74) and the exit-approach rule (PS2.69), and PS2.67's bed rule", () => {
-    expect(LINT_RULES.slice(-28).map((r) => r.name)).toEqual([
-      "boundary-no-wall",
-      "floor-unassigned",
-      "room-outside-shell",
-      "furn-clear-declared",
-      "seat-facing-away",
-      "dim-text-mismatch",
-      "annotation-overlap",
-      "title-overflow",
-      "wc-side-clearance",
-      "furniture-over-window",
-      "footprint-transposed",
-      "leaf-across-doorway",
-      "swing-over-stair",
-      "stair-no-landing",
-      "stair-side-entry",
-      "stair-head-void",
-      "stair-too-steep",
-      "shaft-footprint-mismatch",
-      "hob-under-window",
-      "hob-fridge-gap",
-      "leaf-too-wide",
-      "accessible-wc-side-wall",
-      "exit-approach-blocked",
-      "bed-undersized",
-      "wall-end-short",
-      "furniture-on-stair",
-      "exterior-ring-open",
-      "furniture-on-void",
-    ]);
   });
 });
 
