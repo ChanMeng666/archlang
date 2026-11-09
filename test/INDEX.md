@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-484 test files in `test/`, 268 `src` modules, 99 modules no test imports.
+485 test files in `test/`, 268 `src` modules, 99 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -487,6 +487,7 @@ The first sentence of each file's header comment.
 - `test/miter-limit.test.ts` — acute wall joints — the mitre cap.
 - `test/model-range.test.ts` — The modelling range: every resolved coordinate and length lies within ±2^25 mm (`MODEL_RANGE_MM`, the bound under which ADR 0020 measured plain-double `orient2d` exact).
 - `test/module-map.test.ts` — `docs/agents/module-map.md` names every source module (engineering-health EH3.1).
+- `test/mutants-sampler.test.ts` — The nightly mutant sampler (`scripts/mutants.mjs`, nightly.yml `mutants`, report-only): each operator rewrites a synthetic source the way its header says, the PRNG and the sample are fixed by the seed, the allow-list...
 - `test/nav-grid-residual.test.ts` — G.11 — the nav grid's walls agree with the drawn walls; C.1 — a wall thinner than a cell still blocks (the centreline cover).
 - `test/nav-grid-scale.test.ts` — nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one; a fixture across part of a wide threshold narrows it, never sea…
 - `test/net-area-once.test.ts` — net internal area — once per room per compile on a `schedule rooms` plan.
