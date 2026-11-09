@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**160 errors** · **95 warnings**
+**161 errors** · **95 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -133,6 +133,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOM_POLY_SELF_INTERSECT`](#e_room_poly_self_intersect) | error | Polygon room intersects itself. |
 | [`E_ROOM_RADIUS`](#e_room_radius) | error | Circular room needs a positive radius. |
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
+| [`E_RULESET_VALUE`](#e_ruleset_value) | error | A lint ruleset number is not finite, or is outside the modelling range. |
 | [`E_RUN_TOO_LONG`](#e_run_too_long) | error | A stair or escalator run is longer than any run the plan draws. |
 | [`E_SEGMENT_SELECT`](#e_segment_select) | error | A segment selector (`segment north`, `segment containing <room>.<edge>`) does not name exactly one segment. |
 | [`E_SET_OVERRIDE`](#e_set_override) | error | `archlang impact --set NAME=value` cannot override that name with that value. |
@@ -1840,6 +1841,18 @@ room circle at (5000,5000) radius 0   # error: no floor
 
 ```arch static
 room at (0,0) size 0x4000   # error: width is 0
+```
+
+## E_RULESET_VALUE
+
+*error* — A lint ruleset number is not finite, or is outside the modelling range.
+
+**Cause.** `lint(source, { ruleset })` (and `lintWithCoverage`) lays the caller's overrides over the defaults and the named profile, then checks every number of the result before the plan is resolved: each must be a finite number within ±33,554,432 (2^25, the modelling range `E_OUT_OF_RANGE` holds coordinates to), whatever its unit (mm, m² or a ratio). `NaN`, `Infinity` or a value like `1e300` would otherwise reach the rules and their spatial grids. The per-use tables (`minRoomAreaByUseM2`, `minRoomShortSideByUseMm`, `minPathClearWidthByUseMm`) are checked entry by entry, each named by a dotted key (`minRoomAreaByUseM2.bedroom`). `null`, where a field allows it (a rule turned off, a use exempted), passes. One error per bad number, in key order, at byte 0, since the fault is the option and not the source; no rule runs, so the coverage report is `null`. The CLI and the MCP servers pass only named profiles, so only a library caller can raise it.
+
+**Fix.** Pass a finite number within the range, or leave the key out to keep its default; `null` turns off a rule whose field allows it.
+
+```arch static
+lint(source, { ruleset: { doorwayLandingMm: Number.NaN } })   # error: `doorwayLandingMm` is NaN, and no rule runs
 ```
 
 ## E_RUN_TOO_LONG

@@ -8,7 +8,9 @@
 import type { AnalyzeOptions } from "../analyze.js";
 import type { UseKind } from "../ast.js";
 import { DEFAULT_TOL } from "../analyze.js";
+import { type Diagnostic, diag } from "../diagnostics.js";
 import { FIXTURE_WALL_TOL_MM } from "../fixture-orientation.js";
+import { fmt3, MODEL_RANGE_MM } from "../num-format.js";
 import { JUNCTION_NIB_DEFAULTS } from "../opening-junctions.js";
 
 /** Tunable thresholds for the lint rules. All distances in mm, areas in m². */
@@ -732,9 +734,53 @@ export function resolveRuleset(profile: Partial<LintRuleset> = {}, ruleset: Part
   };
 }
 
+/** A ruleset number as given: `NaN`, `Infinity` and `-Infinity` by name, a finite one through
+ *  `fmt3` (which would print a non-finite one as `0`). */
+const shownValue = (v: number): string =>
+  Number.isNaN(v) ? "NaN" : v === Infinity ? "Infinity" : v === -Infinity ? "-Infinity" : fmt3(v);
+
+/**
+ * The `E_RULESET_VALUE` errors of a resolved ruleset ({@link resolveRuleset}): one per number that
+ * is not finite or lies beyond ±{@link MODEL_RANGE_MM}, whatever its unit, in key order. Read by
+ * runtime type over the ruleset's own keys, so a field added later is held without being listed
+ * here; a per-use table (a key whose {@link DEFAULT_RULESET} value is an object) is read entry by
+ * entry, in its own key order, under a dotted key (`minRoomAreaByUseM2.bedroom`). `null` (a rule
+ * turned off, a use exempted) and the non-numeric fields are not numbers and pass. Each error is at
+ * byte 0 (`{ start: 0, end: 0 }`): the fault is the caller's option, not the source. Empty when
+ * every number is in range. Pure.
+ */
+export function validateRuleset(rules: LintRuleset): Diagnostic[] {
+  const out: Diagnostic[] = [];
+  const checkNumber = (key: string, v: unknown): void => {
+    if (typeof v === "number" && (!Number.isFinite(v) || Math.abs(v) > MODEL_RANGE_MM))
+      out.push(
+        diag(
+          "E_RULESET_VALUE",
+          `The lint ruleset's \`${key}\` is ${shownValue(v)}; a ruleset number must be finite and within ` +
+            `±${fmt3(MODEL_RANGE_MM)} (the modelling range, 2^25), so no rule ran`,
+          { start: 0, end: 0 },
+        ),
+      );
+  };
+  const defaults = DEFAULT_RULESET as unknown as Readonly<Record<string, unknown>>;
+  const given = rules as unknown as Readonly<Record<string, unknown>>;
+  for (const key of Object.keys(given)) {
+    const v = given[key];
+    const isTable = typeof defaults[key] === "object" && defaults[key] !== null;
+    if (isTable && typeof v === "object" && v !== null) {
+      const table = v as Readonly<Record<string, unknown>>;
+      for (const use of Object.keys(table)) checkNumber(`${key}.${use}`, table[use]);
+    } else checkNumber(key, v);
+  }
+  return out;
+}
+
 export interface LintOptions extends AnalyzeOptions {
   /** A named profile from {@link LINT_PROFILES} (applied before `ruleset`). */
   profile?: string;
-  /** Override any subset of {@link DEFAULT_RULESET} (wins over `profile`). */
+  /** Override any subset of {@link DEFAULT_RULESET} (wins over `profile`). Every number of the
+   *  resolved ruleset must be finite and within ±{@link MODEL_RANGE_MM} (the modelling range),
+   *  whatever its unit; otherwise `lint()` runs no rule and returns one `E_RULESET_VALUE` per bad
+   *  number ({@link validateRuleset}). */
   ruleset?: Partial<LintRuleset>;
 }

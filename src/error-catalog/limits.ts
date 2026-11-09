@@ -1,7 +1,7 @@
 /**
  * Error catalogue: the limits family. Budgets and caps: the step, element, drawing, range, input
- * and diagnostic limits, and the hosted rate limit (the import and keep caps live with their
- * families).
+ * and diagnostic limits, the hosted rate limit, and the range a lint ruleset's numbers are held to
+ * (the import and keep caps live with their families).
  *
  * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
  */
@@ -50,6 +50,12 @@ export const LIMITS_ENTRIES = defineEntries({
     "The hosted MCP server pays for every request it computes, so it answers each address at most a fixed number of times a minute and refuses the rest before compiling anything. It is a property of the host, not of the plan: the same source compiles locally with no limit.",
     "Wait a minute and retry, or compile locally, where there is no limit: `npx -y @chanmeng666/archlang compile plan.arch`, or the stdio MCP server `npx -y @chanmeng666/archlang-mcp`.",
     "tools/call compile { … }   # one call past the per-minute limit from one address: error on the hosted MCP server",
+  ),
+  E_RULESET_VALUE: e(
+    "A lint ruleset number is not finite, or is outside the modelling range.",
+    "`lint(source, { ruleset })` (and `lintWithCoverage`) lays the caller's overrides over the defaults and the named profile, then checks every number of the result before the plan is resolved: each must be a finite number within ±33,554,432 (2^25, the modelling range `E_OUT_OF_RANGE` holds coordinates to), whatever its unit (mm, m² or a ratio). `NaN`, `Infinity` or a value like `1e300` would otherwise reach the rules and their spatial grids. The per-use tables (`minRoomAreaByUseM2`, `minRoomShortSideByUseMm`, `minPathClearWidthByUseMm`) are checked entry by entry, each named by a dotted key (`minRoomAreaByUseM2.bedroom`). `null`, where a field allows it (a rule turned off, a use exempted), passes. One error per bad number, in key order, at byte 0, since the fault is the option and not the source; no rule runs, so the coverage report is `null`. The CLI and the MCP servers pass only named profiles, so only a library caller can raise it.",
+    "Pass a finite number within the range, or leave the key out to keep its default; `null` turns off a rule whose field allows it.",
+    "lint(source, { ruleset: { doorwayLandingMm: Number.NaN } })   # error: `doorwayLandingMm` is NaN, and no rule runs",
   ),
   E_STEP_LIMIT: e(
     "Evaluation did more work than any plan needs.",
