@@ -844,7 +844,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 164 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 164 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 31 KB; errors = the diagnostic catalog, 69 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 165 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 165 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 31 KB; errors = the diagnostic catalog, 69 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch
@@ -867,7 +867,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**157 errors** (abort rendering) · **94 warnings** (advisory; `validate --strict` fails on them too).
+**157 errors** (abort rendering) · **95 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1043,6 +1043,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_CIRCUITOUS_PATH` — A room is reached by a very roundabout path. **Fix:** Add a more direct connection — a door or a hall — so the room is not reached the long way round.
 - `W_CJK_FONT_MISSING` — PDF/PNG text has CJK characters, but the optional CJK font package is not installed. **Fix:** Install the font package (`npm install @chanmeng666/archlang-font-cjk`), or render to SVG, which uses the viewer's fonts.
 - `W_CONNECTOR_AMBIGUOUS` — A door or cased opening does not join two rooms cleanly. **Fix:** Move the connector so each side lies in one room. The hints quote each direction with a checked position (each side in one of the rooms it touches now, no straddle, no room left unreachable, the junction nib and mullions kept), the two spaces it then opens between, and its source clause. Accept it only if the rooms it spans are one open space with no wall between them, so the doorway serves both. There is no machine-applicable fix.
+- `W_DIAGNOSTIC_LIMIT` — More than 500 diagnostics, all warnings; further diagnostics were not collected. **Fix:** Fix the first warnings reported (a flood of them usually has one cause, such as a line repeated hundreds of times) and compile again.
 - `W_DIM_INSIDE` — A hand-written dimension line lands inside the building. **Fix:** Swap the two endpoints — the machine-applicable fix does it for you, but only when the swap actually moves the line out. Swapping mirrors the line across the segment being measured (negating the `offset` does the same thing), so it reaches the outside only when that segment is at the building's edge. A dimension whose measured run cuts THROUGH the plan reads inside either way and carries no automatic fix: measure along a facade instead, or raise the `offset` until the line clears the building.
 - `W_DIM_NO_WALL` — A `dim faces`/`dim clear` endpoint has no wall to measure to. **Fix:** Put the endpoint on the centerline of the wall the dimension runs into (the room-rectangle corner coordinate), or drop the `faces`/`clear` keyword and write the face coordinate yourself.
 - `W_DIM_OVERLAP` — Two hand-written dimensions are drawn on top of each other. **Fix:** Move one of them out a tier: raise the magnitude of its `offset` (keeping its sign, which is the side it reads on). The machine-applicable fix computes the smallest whole number of chain tiers that clears the other dimension's line and text.

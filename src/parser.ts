@@ -141,7 +141,9 @@ function parseImpl(src: string, registry: Registry): ParseOutcome {
   // W7: `while`/reassignment soft-deprecation — purely syntactic, over the plan body
   // and every locally-declared component; see `src/while-deprecation.ts`'s header.
   checkWhileDeprecation(plan, (d) => diagnostics.push(d));
-  return { plan, diagnostics: capDiagnostics(diagnostics, src.length) };
+  // The lexer needs no such flag: its diagnostics are all errors, so one that dropped any
+  // has kept errors, and the cap sees them.
+  return { plan, diagnostics: capDiagnostics(diagnostics, src.length, p.droppedError) };
 }
 
 class Parser {
@@ -149,10 +151,14 @@ class Parser {
   /** How many `{ … }` statement blocks enclose the cursor (see {@link MAX_NEST_DEPTH}). */
   private blockDepth = 0;
   public diagnostics: Diagnostic[] = [];
+  /** Sticky: an ERROR was discarded past the cap, so the limit must be `E_DIAGNOSTIC_LIMIT`
+   *  even when every diagnostic kept is a warning (EH-D8 as amended). */
+  public droppedError = false;
   /** Collect one diagnostic — at most one past {@link MAX_DIAGNOSTICS}, so a flood stops
    *  costing anything while `capDiagnostics` can still tell that some were dropped. */
   private report(d: Diagnostic): void {
     if (this.diagnostics.length <= MAX_DIAGNOSTICS) this.diagnostics.push(d);
+    else if (d.severity === "error") this.droppedError = true;
   }
   /** Facade passed to element parse functions (see registry.ts). */
   private readonly ctx: ParseCtx & Pick<ExprTokens, "report">;

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import fc from "fast-check";
 import { capDiagnostics, MAX_DIAGNOSTICS, offsetToLineCol } from "../src/diagnostics.js";
 import type { Diagnostic } from "../src/diagnostics.js";
-import { compile, describe as describePlan, ERROR_CATALOG } from "../src/index.js";
+import { compile, describe as describePlan, ERROR_CATALOG, lint } from "../src/index.js";
 import { parse } from "../src/parser.js";
 import { lex } from "../src/lexer.js";
 
@@ -84,6 +84,23 @@ describe("offsetToLineCol — line-start table agrees with the scan", () => {
       expect(offsetToLineCol(src, o)).toEqual({ line, col });
     }
   });
+
+  // The ONE time-based smoke for the uncapped path: callers outside compile() (the CLI, the LSP,
+  // `formatDiagnostic`) call offsetToLineCol without the 500 cap. 200,000 calls over 1 MB are
+  // about 2·10^11 byte reads for the old from-byte-0 scan (minutes); the line table takes well
+  // under a second. Reverting commit 1 turns this red.
+  it("smoke: 200,000 calls over a 1 MB source finish within 10 s", () => {
+    const src = "abcdefghi\n".repeat(100_000); // 1,000,000 bytes, 100,000 lines
+    let seed = 987654321;
+    let sum = 0;
+    const t0 = performance.now();
+    for (let n = 0; n < 200_000; n++) {
+      seed = (seed * 1103515245 + 12345) >>> 0;
+      sum += offsetToLineCol(src, seed % (src.length + 1)).line;
+    }
+    expect(performance.now() - t0).toBeLessThan(10_000);
+    expect(sum).toBeGreaterThan(0);
+  });
 });
 
 const K = 64 * 1024;
@@ -152,6 +169,53 @@ describe("diagnostics are capped at MAX_DIAGNOSTICS, then one E_DIAGNOSTIC_LIMIT
     expect(capped.at(-1)!.span).toEqual({ start: MAX_DIAGNOSTICS, end: MAX_DIAGNOSTICS + 1 });
     // Idempotent: capping a capped list (parse, then compile) keeps its one limit.
     expect(capDiagnostics([...capped, list[1]!], 1000)).toEqual(capped);
+  });
+
+  it("an error past the cap still makes the limit an error (it is not the kept list's severity)", () => {
+    const warn = (i: number): Diagnostic => ({
+      severity: "warning",
+      message: "w",
+      code: "W_DUP_ACC_METADATA",
+      span: { start: i, end: i + 1 },
+    });
+    const warnings = Array.from({ length: 600 }, (_, i) => warn(i));
+    expect(capDiagnostics(warnings, 1000).at(-1)!.code).toBe("W_DIAGNOSTIC_LIMIT");
+    // An error appended after the warnings (the drawing budget, the API pen check) is cut, but counts.
+    const late: Diagnostic = { severity: "error", message: "e", code: "E_DRAW_BUDGET" };
+    expect(capDiagnostics([...warnings, late], 1000).at(-1)!.code).toBe("E_DIAGNOSTIC_LIMIT");
+    // A producer's dropped error counts too.
+    expect(capDiagnostics(warnings, 1000, true).at(-1)!.code).toBe("E_DIAGNOSTIC_LIMIT");
+    // An upstream W_ limit is upgraded when a later stage adds an error, and keeps its span.
+    const parsed = capDiagnostics(warnings, 1000);
+    const merged = capDiagnostics([...parsed, late], 1000);
+    expect(merged.at(-1)).toMatchObject({ code: "E_DIAGNOSTIC_LIMIT", severity: "error", span: parsed.at(-1)!.span });
+    expect(capDiagnostics([...parsed, warn(0)], 1000)).toEqual(parsed);
+  });
+
+  it("600 warnings only: W_DIAGNOSTIC_LIMIT, and the plan still draws, describes and lints", () => {
+    const src = plan(`room id=a at (0,0) size 3000x3000\n${'accTitle "a"\n'.repeat(600)}`);
+    const r = compile(src, { noCache: true });
+    expect(r.diagnostics).toHaveLength(MAX_DIAGNOSTICS + 1);
+    expect(r.diagnostics.at(-1)).toMatchObject({ code: "W_DIAGNOSTIC_LIMIT", severity: "warning" });
+    expect(r.errors).toEqual([]);
+    expect(r.warnings).toHaveLength(MAX_DIAGNOSTICS + 1);
+    expect(r.svg.length).toBeGreaterThan(0);
+    const d = describePlan(src);
+    expect(d.ok).toBe(true);
+    expect(d.diagnostics.at(-1)!.code).toBe("W_DIAGNOSTIC_LIMIT");
+    expect(Array.isArray(lint(src))).toBe(true);
+  });
+
+  it("the same 600 warnings and then a parse error past the cap: E_DIAGNOSTIC_LIMIT", () => {
+    const src = plan(`room id=a at (0,0) size 3000x3000\n${'accTitle "a"\n'.repeat(600)}room at (0,0) size\n`);
+    const p = parse(src);
+    expect(p.diagnostics.slice(0, MAX_DIAGNOSTICS).every((x) => x.severity === "warning")).toBe(true);
+    expect(p.diagnostics.at(-1)!.code).toBe("E_DIAGNOSTIC_LIMIT");
+    const r = compile(src, { noCache: true });
+    expect(r.diagnostics).toHaveLength(MAX_DIAGNOSTICS + 1);
+    expect(r.diagnostics.at(-1)).toMatchObject({ code: "E_DIAGNOSTIC_LIMIT", severity: "error" });
+    expect(r.svg).toBe("");
+    expect(describePlan(src).ok).toBe(false);
   });
 
   it("a plan with exactly 500 errors is reported in full, with no limit", () => {

@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `packages/mcp/Dockerfile`: an image that installs the published `@chanmeng666/archlang-mcp` at its `package.json` version on Node 22 Alpine and runs `archlang-mcp` on stdio, for the Docker MCP Catalog. It is not in the npm package.
 - Four docs pages: `/floor-plan-tools-for-ai-agents` (what each floor-plan tool for agents takes in, exports and costs, from each tool's own pages), `/floor-plan-with-a-coding-agent`, `/text-to-dxf-floor-plan` and `/check-a-floor-plan`. Each carries a plan that compiles and lints clean and ends with a FAQ.
 - The docs `/examples` page links each plan to its static page on the playground, and each static example page links back to `/examples`.
-- `E_DIAGNOSTIC_LIMIT`: `compile()` and `describe()` report at most 500 diagnostics, then this one error, at the byte past the last kept; the lexer and parser stop collecting there. A plan with 500 or fewer is reported exactly as before.
+- `E_DIAGNOSTIC_LIMIT` and `W_DIAGNOSTIC_LIMIT`: `compile()` and `describe()` report at most 500 diagnostics, then one limit at the byte past the last kept; the lexer and parser stop collecting there. The limit is the error when any diagnostic, kept or dropped, is an error, and otherwise the warning, so a plan that only floods warnings still draws. A plan with 500 or fewer is reported exactly as before.
 
 ### Changed
 

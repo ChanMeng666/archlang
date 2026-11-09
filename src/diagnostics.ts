@@ -191,32 +191,45 @@ export function offsetToLineCol(source: string, offset: number): { line: number;
 
 /**
  * The most diagnostics one compile reports (ruling EH-D8). Past it the producers stop
- * collecting and {@link capDiagnostics} appends ONE `E_DIAGNOSTIC_LIMIT`, so a source that
- * floods them (a page of stray characters, thousands of re-declared names) costs a bounded
- * amount of reporting. A count, never a time; no example plan comes near it.
+ * collecting and {@link capDiagnostics} appends ONE limit diagnostic, so a source that floods
+ * them (a page of stray characters, thousands of re-declared names) costs a bounded amount of
+ * reporting. A count, never a time; no example plan comes near it.
  */
 export const MAX_DIAGNOSTICS = 500;
 
+const isLimit = (d: Diagnostic): boolean => d.code === "E_DIAGNOSTIC_LIMIT" || d.code === "W_DIAGNOSTIC_LIMIT";
+
 /**
- * `list` with at most {@link MAX_DIAGNOSTICS} entries, then one `E_DIAGNOSTIC_LIMIT` when any
- * were dropped. A list at or under the cap is returned AS IS (the same array), so sub-cap
- * output is byte-identical. Idempotent: a list already capped upstream (the parse stage)
- * keeps its `E_DIAGNOSTIC_LIMIT` and loses what followed. The limit's span is the byte just
- * past the last kept diagnostic's span, or the end of the source when that one has no span
- * or is measured in another file.
+ * `list` with at most {@link MAX_DIAGNOSTICS} entries, then one limit diagnostic when any were
+ * dropped. Its severity follows the diagnostics (EH-D8 as amended): `E_DIAGNOSTIC_LIMIT` when
+ * there is an error ANYWHERE — in the whole uncapped `list`, kept or dropped, or among what a
+ * producer stopped collecting (`droppedError`, the parser's flag) — and `W_DIAGNOSTIC_LIMIT`
+ * otherwise, so a plan that only floods warnings still draws, lints and describes.
+ *
+ * A list at or under the cap is returned AS IS (the same array), so sub-cap output is
+ * byte-identical. Idempotent: a list already capped upstream (the parse stage) keeps its
+ * limit's span and loses what followed, and an `E_DIAGNOSTIC_LIMIT` there stays an error (it
+ * stands for an error the parser dropped). The span is the byte just past the last kept
+ * diagnostic's span, or the end of the source when that one has no span or is measured in
+ * another file.
  */
-export function capDiagnostics(list: Diagnostic[], sourceLength: number): Diagnostic[] {
+export function capDiagnostics(list: Diagnostic[], sourceLength: number, droppedError = false): Diagnostic[] {
   if (list.length <= MAX_DIAGNOSTICS) return list;
-  if (list[MAX_DIAGNOSTICS]!.code === "E_DIAGNOSTIC_LIMIT") return list.slice(0, MAX_DIAGNOSTICS + 1);
-  const last = list[MAX_DIAGNOSTICS - 1]!;
-  const at = last.span && last.file === undefined ? Math.min(Math.max(0, last.span.end), sourceLength) : sourceLength;
-  const limit: Diagnostic = {
-    severity: "error",
-    message: `More than ${MAX_DIAGNOSTICS} diagnostics; further diagnostics were not collected`,
-    code: "E_DIAGNOSTIC_LIMIT",
-    span: { start: at, end: Math.min(at + 1, sourceLength) },
-    hints: ["fix the first problems reported and compile again"],
-  };
+  const anyError =
+    droppedError || list.some((d) => d.code === "E_DIAGNOSTIC_LIMIT" || (d.severity === "error" && !isLimit(d)));
+  const upstream = list[MAX_DIAGNOSTICS]!;
+  let span: Span;
+  if (isLimit(upstream) && upstream.span) span = upstream.span;
+  else {
+    const last = list[MAX_DIAGNOSTICS - 1]!;
+    const at = last.span && last.file === undefined ? Math.min(Math.max(0, last.span.end), sourceLength) : sourceLength;
+    span = { start: at, end: Math.min(at + 1, sourceLength) };
+  }
+  const message = `More than ${MAX_DIAGNOSTICS} diagnostics; further diagnostics were not collected`;
+  const hints = ["fix the first problems reported and compile again"];
+  const limit: Diagnostic = anyError
+    ? { severity: "error", message, code: "E_DIAGNOSTIC_LIMIT", span, hints }
+    : { severity: "warning", message, code: "W_DIAGNOSTIC_LIMIT", span, hints };
   return [...list.slice(0, MAX_DIAGNOSTICS), limit];
 }
 
