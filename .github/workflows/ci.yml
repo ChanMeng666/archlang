@@ -294,7 +294,7 @@ jobs:
       FULL_CI: ${{ needs.changes.outputs.code != 'false' }}
     # The core suite never compiles the downstream workspaces, so a change that
     # breaks the docs site, the playground, the MCP shim or the VS Code extension
-    # used to reach `main` green. This job compiles all four.
+    # used to reach `main` green. This job compiles all five (docs, playground, MCP shim, hosted MCP Worker, VS Code).
     steps:
       - name: Record-only change, nothing to run on this leg
         if: env.FULL_CI != 'true'
@@ -345,6 +345,11 @@ jobs:
       - name: Build MCP shim
         if: env.FULL_CI == 'true'
         run: npm run mcp:build:only
+
+      # Deploy used to be the first place this Worker bundle was built (deploy.yml, after the merge).
+      - name: Build hosted MCP Worker
+        if: env.FULL_CI == 'true'
+        run: npm run mcp-worker:build:only
 
       - name: Build VS Code extension
         if: env.FULL_CI == 'true'
