@@ -293,6 +293,49 @@ jobs:
           if-no-files-found: error
 
   # ---------------------------------------------------------------------------
+  # Sampled mutants (REPORT-ONLY). `scripts/mutants.mjs` draws 40 mutation sites a night (seeded
+  # by the UTC date, so a night is reproducible) from `src/num-format.ts` and `src/expr.ts` —
+  # boundary, sign, negation, equality, early-return and constant mutants — and runs each against
+  # only the nearest tests by import distance (check:quick's graph, at most 20 files, 3 minutes a
+  # mutant). A survivor is what the byte-identity suites cannot see: it is triaged into a new test
+  # or an allow-list row with a reason (`test/mutants.allow.json`). Like `coverage`: the script
+  # exits 0 whatever survives, the job is `continue-on-error` and NOT among `report`'s needs, so it
+  # can neither turn the night red nor write the pinned issue. Read the job summary and the
+  # `mutants-report` artifact. See `docs/testing.md` §1.
+  # ---------------------------------------------------------------------------
+  mutants:
+    name: Sampled mutants (report-only)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    timeout-minutes: 100
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          check-latest: true
+          cache: npm
+
+      - run: npm ci
+
+      # Writes its table to $GITHUB_STEP_SUMMARY itself and rewrites it, with the JSON report (the
+      # artifact), after every mutant. `--budget-minutes 85` stops it STARTING a run once 85 minutes
+      # are spent (the rest are `not run (budget)`), so one run in flight (at most 2 × 180 s for a
+      # baseline) still ends inside `timeout-minutes`; a cancel keeps the verdicts reached so far.
+      - name: Sample and run mutants
+        run: node scripts/mutants.mjs --mutants 40 --budget-minutes 85 --report mutants-report.json
+
+      - name: Upload the report
+        if: ${{ always() }} # also after a timeout or cancel: the report is rewritten per mutant
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: mutants-report
+          path: mutants-report.json
+          retention-days: 14
+          if-no-files-found: warn
+
+  # ---------------------------------------------------------------------------
   # Read-only end-to-end checks against PRODUCTION (Playwright).
   #
   # `prod-smoke` above proves the routes answer; this proves the sites still WORK —

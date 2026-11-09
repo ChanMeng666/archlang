@@ -63,8 +63,23 @@ import type {
   InstanceJson,
   PlanJson,
 } from "./types.js";
-import { pairsJson } from "./from-json.js";
-import { num, q } from "./emit.js";
+import { num, q } from "./source-tokens.js";
+
+/** The pair clauses of a `walls from rooms` statement, as Plan JSON (absent when none). */
+function pairsJson(stmt: RWallsFromRooms): Pick<WallsFromRoomsJson, "open" | "between"> {
+  const open: NonNullable<WallsFromRoomsJson["open"]> = [];
+  const between: NonNullable<WallsFromRoomsJson["between"]> = [];
+  for (const c of stmt.pairs ?? []) {
+    if (c.kind === "open")
+      open.push({
+        between: [c.between[0], c.between[1]],
+        ...(c.id !== undefined ? { id: c.id } : {}),
+        ...(c.width !== undefined ? { width: c.width } : {}),
+      });
+    else between.push({ between: [c.between[0], c.between[1]], thickness: c.thickness });
+  }
+  return { ...(open.length > 0 ? { open } : {}), ...(between.length > 0 ? { between } : {}) };
+}
 
 const r2 = (n: number): number => Math.round(n * 100) / 100;
 

@@ -18,7 +18,7 @@
  */
 import { compile, type Diagnostic, diagnosticToJson, inputTooLarge, rateLimited } from "@chanmeng666/archlang";
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
-import { decodePlanHashWeb, PlanHashTooLarge } from "@chanmeng666/archlang/share";
+import { decodePlanHashWeb } from "@chanmeng666/archlang/share";
 import {
   BODY_CAP_BYTES,
   MCP_PER_PERIOD,
@@ -464,16 +464,15 @@ async function handleSvg(
     return jsonResponse(envelope(d), 429, { "retry-after": String(RATE_PERIOD_SECONDS) });
   }
 
-  let source: string;
-  try {
-    source = await decodePlanHashWeb(payload, { maxBytes: SOURCE_CAP_BYTES });
-  } catch (e) {
-    if (e instanceof PlanHashTooLarge) {
+  const decoded = await decodePlanHashWeb(payload, { maxBytes: SOURCE_CAP_BYTES });
+  if (!decoded.ok) {
+    if (decoded.code === "source_too_large") {
       countRefusal(env, "too-large payload");
       return jsonResponse(envelope(inputTooLarge(SOURCE_CAP_BYTES + 1, SOURCE_CAP_BYTES, "source", false)!), 413);
     }
     return jsonResponse({ ok: false, error: "not a #z= payload: it does not inflate (deflate-raw)" }, 400);
   }
+  const source = decoded.source;
 
   const { svg, diagnostics } = compile(source, { noCache: true });
   if (diagnostics.some((d) => d.severity === "error"))
