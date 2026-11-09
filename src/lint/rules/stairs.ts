@@ -720,10 +720,7 @@ function landingBlock(
   for (const p of pieces) consider(rectCorners(p.x, p.y, p.w, p.h), { ownPiece: true });
   if (l.end === "foot")
     for (const vd of ctx.voids)
-      consider(
-        rectRing({ x: vd.at.x, y: vd.at.y, w: vd.size.w, h: vd.size.h }),
-        { void: vd },
-      );
+      consider(rectRing({ x: vd.at.x, y: vd.at.y, w: vd.size.w, h: vd.size.h }), { void: vd });
   // The floor: halfway to the measured depth, on the flight's centreline, must be in a room.
   const blocked = best as LandingBlock | null;
   const clear = blocked === null ? need : blocked.depth;

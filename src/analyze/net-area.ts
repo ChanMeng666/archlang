@@ -392,9 +392,7 @@ export function roomRegion(r: NetAreaRoom): RoomRegion {
       gross: Math.PI * rad * rad,
     };
   }
-  const ring: Point[] = r.poly
-    ? [...r.poly]
-    : rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
+  const ring: Point[] = r.poly ? [...r.poly] : rectRing({ x: r.at.x, y: r.at.y, w: r.size.w, h: r.size.h });
   // The ring binned by y-band once, so each of the many probes reads only its band's edges;
   // exactly `pointInPolygon(p.x, p.y, ring, 0)` on every point (`polygonInsideTest`).
   const test = polygonInsideTest(ring, 0);

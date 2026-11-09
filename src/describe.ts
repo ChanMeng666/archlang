@@ -514,11 +514,7 @@ function summarize(
       // and dumping it would bloat an agent's context with numbers that are not the
       // truth about the floor. `area_m2` above is πR², exact.
       ...(r.circle ? { floor_circle: { cx: r.circle.c.x, cy: r.circle.c.y, r: r.circle.r } } : {}),
-      floor_polygon: r.circle
-        ? []
-        : r.poly
-          ? r.poly.map((p) => ({ x: p.x, y: p.y }))
-          : rectRing(rect),
+      floor_polygon: r.circle ? [] : r.poly ? r.poly.map((p) => ({ x: p.x, y: p.y })) : rectRing(rect),
       adjacent,
       ...instanceOf(r),
     };

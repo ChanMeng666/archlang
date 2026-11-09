@@ -321,7 +321,10 @@ export interface WindowCover {
  */
 export function windowCover(band: WindowBand, r: BBox, tol: number): WindowCover | null {
   const { w, c, d, n } = band;
-  const local = rectRing(r).map((p) => ({ x: (p.x - c.x) * d.x + (p.y - c.y) * d.y, y: (p.x - c.x) * n.x + (p.y - c.y) * n.y }));
+  const local = rectRing(r).map((p) => ({
+    x: (p.x - c.x) * d.x + (p.y - c.y) * d.y,
+    y: (p.x - c.x) * n.x + (p.y - c.y) * n.y,
+  }));
   const clipped = clipToRect(local, { x: -w.width / 2, y: -tol, w: w.width, h: 2 * tol });
   if (clipped.length < 3 || Math.abs(area2(clipped)) <= 1e-9) return null;
   const xs = clipped.map((p) => p.x);
