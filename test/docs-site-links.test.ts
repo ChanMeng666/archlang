@@ -58,17 +58,25 @@ const publicFile = (route: string) => {
   }
 };
 
-/** Every inline/reference link target outside fenced code and inline code spans. */
+/**
+ * Every inline/reference link target outside fenced code and inline code spans. A fence opens on a
+ * run of >= 3 backticks or tildes and closes only on a bare run of the SAME character at least as
+ * long (the rule `test/docs-fences.test.ts` states), restated here rather than imported, so the
+ * rewriter's own scan is checked against a second copy.
+ */
 function linksOf(md: string): string[] {
   const out: string[] = [];
   let fence: string | null = null;
   for (const line of md.split("\n")) {
-    const f = /^\s*(`{3,}|~{3,})/.exec(line);
-    if (f) {
-      fence = fence === null ? f[1]![0]! : f[1]![0] === fence ? null : fence;
+    const f = /^\s*(`{3,}|~{3,})(.*)$/.exec(line);
+    if (fence === null && f) {
+      fence = f[1]!;
       continue;
     }
-    if (fence !== null) continue;
+    if (fence !== null) {
+      if (f && f[1]![0] === fence[0] && f[1]!.length >= fence.length && !f[2]!.trim()) fence = null;
+      continue;
+    }
     const plain = line
       .split(/(`+[^`]*`+)/)
       .filter((_, i) => i % 2 === 0)
@@ -151,5 +159,35 @@ describe("site copies of the canonical docs", () => {
     expect(rewriteLinks("`[a](../x.md)`\n```\n[a](../CHANGELOG.md)\n```", "docs/a.md", ctx)).toBe(
       "`[a](../x.md)`\n```\n[a](../CHANGELOG.md)\n```",
     );
+  });
+
+  it("a fence closes only on a bare run of its own character at least as long", () => {
+    // A four-backtick block quoting a three-backtick fence is ONE block: the inner ``` lines are
+    // its content, so the link-like line between them stays literal, and the link after the
+    // closing ```` is rewritten.
+    const md = "````md\n```\n[a](error-codes.md)\n```\n````\n[b](error-codes.md)";
+    expect(rewriteLinks(md, "docs/a.md", ctx)).toBe("````md\n```\n[a](error-codes.md)\n```\n````\n[b](/errors)");
+    expect(linksOf(md)).toEqual(["error-codes.md"]);
+    // A tilde run does not close a backtick fence; a marker with an info string closes nothing.
+    const mixed = "```\n~~~\n[a](error-codes.md)\n``` x\n```\n[b](error-codes.md)";
+    expect(rewriteLinks(mixed, "docs/a.md", ctx)).toBe("```\n~~~\n[a](error-codes.md)\n``` x\n```\n[b](/errors)");
+    expect(linksOf(mixed)).toEqual(["error-codes.md"]);
+    // A fenced `## heading` is not a heading.
+    expect(headingIds("````\n```\n## Not a heading\n```\n````\n## Real").map((h: { vp: string }) => h.vp)).toEqual([
+      "real",
+    ]);
+  });
+
+  it("keeps a ?query, between the new path and the #fragment", () => {
+    const r = (t: string, from = "docs/adr/0010-x.md") => rewriteLinks(`[a](${t})`, from, ctx);
+    expect(r("../error-codes.md?x=1#W_SCALE_OVERFLOW")).toBe("[a](/errors?x=1#w-scale-overflow)");
+    expect(r("../error-codes.md?x=1")).toBe("[a](/errors?x=1)");
+    expect(r("0001-handwritten-parser-vs-lezer.md?x=1#frag")).toBe(
+      "[a](/adr/0001-handwritten-parser-vs-lezer?x=1#frag)",
+    );
+    expect(r("../../CHANGELOG.md?plain=1#frag")).toBe(
+      "[a](https://github.com/ChanMeng666/archlang/blob/main/CHANGELOG.md?plain=1#frag)",
+    );
+    expect(r("../../schemas/plan.schema.json?x=1")).toBe("[a](/plan.schema.json?x=1)");
   });
 });
