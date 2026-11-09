@@ -6,7 +6,6 @@ paths:
 ---
 
 # Eval harness and dataset
-
 - Never trigger `eval-l2.yml` live and never claim a loop gain or its absence (T3 is declined for
   good). `npm run eval:live` is paid and owner-only; CI runs the offline `eval:ci`.
 - Never compare rates across a `JUDGE_VERSION`/`SYNONYMS_VERSION` change; regenerate
@@ -15,3 +14,6 @@ paths:
   stays disjoint from them; `dataset/` imports only `../src/index.js`; the
   canary in `dataset/canary.ts` is never regenerated (`test/dataset.test.ts`).
 - `eval:fidelity` has its own corpus and scorecard — never compare it with `eval:ci`.
+- **(Dataset) `dataset/out/` is gitignored and HF-only.** On re-upload the card's
+  `task_categories` must come from HF's official list (`text-generation`), under the `ChanMeng666`
+  namespace. See `dataset/README.md`.

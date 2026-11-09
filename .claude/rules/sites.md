@@ -6,7 +6,6 @@ paths:
 ---
 
 # Working on the brand or either public site
-
 - Both sites are LIGHT only: no dark mode, no `.dark` rule; keep `appearance: false` and
   `color-scheme: only light` (ADR 0014).
 - `brand/archlang-logo-master.svg` is byte-sacred; every variant is a fill-swap, never a re-trace.
@@ -32,3 +31,27 @@ paths:
   `&edit`.
 - The 3D pictures on the sites (`docs-site/public/3d/`) come only from `npm run gen:3d-assets`;
   they change only when what they show changes (`packages/archlang-3d/DEVELOPMENT.md`).
+
+## Traps
+- **VitePress `.vp-doc a:hover` (0,2,1) outranks a two-class rule (0,2,0).** A control whose colour
+  must survive hover re-asserts `color` in its own `:hover` rule. Check hover/focus/active states.
+- **A fixed hex in the site CSS is a fossil** — convert it to a token. The one legitimate literal is
+  the CodeMirror lint squiggle's data-URI hex (a `var()` cannot enter an SVG data URI).
+- **Changing a public host**: grep the host prefix without dots (`archlang-playground`), because some
+  references are regexes with escaped dots. Schema `$id`s live in `src/plan-json.ts`/`src/intent.ts`
+  (regenerate with `gen:*-schema`), agent-context URLs in `skills/archlang/SKILL.md` (`gen:llms`).
+- **SEO** (`docs/seo.md`): crawlers execute no JavaScript, so only static bytes count; the
+  killed-claim regexes on `PAGE_META`/`EXAMPLE_ROWS` are never widened — fix the copy; `/embed.html`
+  is de-indexed by an `X-Robots-Tag` header, not a `robots.txt` Disallow; `_headers` binds to the
+  request path, so `/` and `/index.html` each need their own rule.
+- **`vitepress preview` caches its file index at startup.** Symptom: after a rebuild the page is 200
+  but its hashed CSS 404s, and every measurement reads plausible and wrong. Restart the preview after
+  every build, give a measurement server its own port (a parallel worktree may hold the fixed one),
+  and gate on a marker only the new build has, never a status code.
+- **`check:quick` picks the nearest tests**, so `docs-page-meta`, `docs-sync-list`, `docs-fences`
+  and `docs-topics` may run only in CI for a docs-site PR; read its CI before calling it green.
+- **Cloudflare static assets answer a `Range` request with 200, not 206**, so an MP4 may not play
+  on Safari: every replay on the sites keeps its poster and an MP4 link as the fallback.
+- **The playground's startup budget is a sum, not a per-PR limit**: ordinary core growth reaches it
+  eventually. Confirm no 3D marker is in the chunks, then re-take `playground/e2e/startup-chunks.baseline.json`
+  with the reason in the commit. The budget stays.
