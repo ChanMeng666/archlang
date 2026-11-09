@@ -768,7 +768,55 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `NextTier` | type | none |
 | `nextDiagnostic` | value | `src/cli`, `test` |
 
-## `src/plan-json.ts`
+## `src/plan-json/ast-json.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `astToJson` | value | `src/cli`, `test` |
+
+## `src/plan-json/check-graph.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `GraphCheck` | type | `src/cli` |
+| `checkGraph` | value | `packages/mcp`, `src/cli`, `test` |
+
+## `src/plan-json/emit.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `planFromJson` | value | `packages/mcp`, `src/cli`, `test` |
+| `planJsonToArch` | value | `test`, `tools` |
+
+## `src/plan-json/room-types.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `ROOM_TYPES` | value | `test` |
+| `ROOM_TYPE_TO_USE` | value | `test` |
+| `RoomType` | type | none |
+| `USE_TO_ROOM_TYPE` | value | `test` |
+| `roomTypeForUses` | value | `test` |
+| `usesForRoomType` | value | `test` |
+
+## `src/plan-json/schema.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `PLAN_JSON_SCHEMA` | value | `packages/mcp`, `test` |
+
+## `src/plan-json/to-json.ts`
+
+| Export | Kind | In-repo consumers |
+| --- | --- | --- |
+| `PlanJsonDropped` | type | `src/cli`, `test` |
+| `PlanJsonDroppedClause` | type | `src/cli`, `test` |
+| `PlanJsonPage` | type | none |
+| `buildInputGraph` | value | none |
+| `planToJson` | value | `packages/mcp`, `src/cli`, `test` |
+| `resolvedToJson` | value | none |
+
+## `src/plan-json/types.ts`
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
@@ -776,35 +824,17 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | `DimJson` | type | none |
 | `EdgeJson` | type | none |
 | `FurnitureJson` | type | none |
-| `GraphCheck` | type | `src/cli` |
 | `OpeningJson` | type | none |
 | `OpeningOnJson` | type | none |
-| `PLAN_JSON_SCHEMA` | value | `packages/mcp`, `test` |
 | `PaperJson` | type | none |
 | `PlanJson` | type | `src/cli`, `test` |
-| `PlanJsonDropped` | type | `src/cli`, `test` |
-| `PlanJsonDroppedClause` | type | `src/cli`, `test` |
-| `PlanJsonPage` | type | none |
 | `PointJson` | type | none |
-| `ROOM_TYPES` | value | `test` |
-| `ROOM_TYPE_TO_USE` | value | `test` |
 | `RoomJson` | type | none |
-| `RoomType` | type | none |
 | `TitleJson` | type | none |
-| `USE_TO_ROOM_TYPE` | value | `test` |
 | `WallArcJson` | type | none |
 | `WallJson` | type | none |
 | `WallPointJson` | type | none |
 | `WallsFromRoomsJson` | type | none |
-| `astToJson` | value | `src/cli`, `test` |
-| `buildInputGraph` | value | none |
-| `checkGraph` | value | `packages/mcp`, `src/cli`, `test` |
-| `planFromJson` | value | `packages/mcp`, `src/cli`, `test` |
-| `planJsonToArch` | value | `test`, `tools` |
-| `planToJson` | value | `packages/mcp`, `src/cli`, `test` |
-| `resolvedToJson` | value | none |
-| `roomTypeForUses` | value | `test` |
-| `usesForRoomType` | value | `test` |
 
 ## `src/registry.ts`
 
