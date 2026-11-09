@@ -995,7 +995,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `E_ROOM_POLY_SELF_INTERSECT` — Polygon room intersects itself. **Fix:** Reorder the vertices so the ring is traced once around the room without crossing itself (a bow-tie usually means two vertices are swapped).
 - `E_ROOM_RADIUS` — Circular room needs a positive radius. **Fix:** Give the room a positive radius in millimetres.
 - `E_ROOM_SIZE` — Room must have a positive size. **Fix:** Give the room a positive `size W x H`.
-- `E_RULESET_VALUE` — A lint ruleset number is not finite, or is outside the modelling range. **Fix:** Pass a finite number within the range, or leave the key out to keep its default; `null` turns off a rule whose field allows it.
+- `E_RULESET_VALUE` — A lint ruleset value is not a finite number within the modelling range. **Fix:** Pass a finite number within the range, or leave the key out to keep its default; `null` turns off a rule whose field allows it.
 - `E_RUN_TOO_LONG` — A stair or escalator run is longer than any run the plan draws. **Fix:** Check the footprint's long side; a real run is a few metres. Model a long concourse as a `room` with several runs in it.
 - `E_SEGMENT_SELECT` — A segment selector (`segment north`, `segment containing <room>.<edge>`) does not name exactly one segment. **Fix:** Type one of the `segment <n>` numbers the message lists, or name a different edge or direction.
 - `E_SET_OVERRIDE` — `archlang impact --set NAME=value` cannot override that name with that value. **Fix:** Name a top-level `let` the message lists, give a plain number, or compare two whole files with `archlang impact plan.arch --against old.arch`.

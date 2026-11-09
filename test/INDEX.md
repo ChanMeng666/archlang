@@ -54,7 +54,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
 - `src/describe.ts` (48) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `window-facing-probe` (+40)
-- `src/diagnostics.ts` (49) — `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance`, `room-overlap-oracle` (+41)
+- `src/diagnostics.ts` (50) — `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance`, `lint-ruleset-values` (+42)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (1) — `fix-printer`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
@@ -469,7 +469,7 @@ The first sentence of each file's header comment.
 - `test/lint-profiles.test.ts` — lint profiles.
 - `test/lint-room-contents.test.ts` — W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING; finish with the room-contents rule: the review's probes; PS2.17: a kitchen's worktop, written by finish.
 - `test/lint-rule-order.test.ts` — a lint rule is registered in every place a rule is listed.
-- `test/lint-ruleset-values.test.ts` — A lint ruleset number that is not finite, or lies beyond the modelling range, is refused with `E_RULESET_VALUE` before any rule runs (engineering-health EH2.12).
+- `test/lint-ruleset-values.test.ts` — A lint ruleset value that is not a finite number within the modelling range (or `null` where the field allows it) is refused with `E_RULESET_VALUE` before any rule runs (engineering-health EH2.12).
 - `test/lint-space-enclosure.test.ts` — W_BOUNDARY_NO_WALL; W_FLOOR_UNASSIGNED; W_ROOM_OUTSIDE_SHELL; circulation-reachable implies access-reachable, on the corpus; review round 1 — W_BOUNDARY_NO_WALL…
 - `test/lint-stairs.test.ts` — Plan-soundness PS2.11e (the stair bullets), PS2.34 and PS2.15: the six stair-safety codes.
 - `test/lint-storey-way-in.test.ts` — `W_NO_ENTRANCE` on a multi-storey plan (#404): each storey it fires on is told which storey it is and what is missing there, because the building may have a front door on another floor.
