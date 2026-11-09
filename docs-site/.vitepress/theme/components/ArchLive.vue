@@ -8,6 +8,7 @@
 // is what makes the code readable AND editable without shipping an editor.
 import { ref, computed, onMounted, useSlots } from "vue";
 import { compile, describe } from "archlang";
+import { PLAYGROUND_EDIT_FLAG, toBase64Url } from "archlang/share";
 // The tokenizer is GENERATED from src/grammar/tokens.ts by scripts/gen-grammars.ts, from
 // the same tables as the VS Code grammar and the playground's CodeMirror mode — so this
 // widget can never colour a keyword the parser doesn't have, or miss one it does.
@@ -83,16 +84,17 @@ function syncScroll(): void {
   }
 }
 
-// base64url(deflate-raw(utf8)) — the playground's `#z=` share scheme (duplicated
-// here so docs stay self-contained; ~byte-identical to playground/src/share.js).
+// base64url(deflate-raw(utf8)) — the playground's `#z=` share scheme. The base64url step and
+// the edit flag are the core's `archlang/share` subpath (the same ones the playground reads);
+// the deflate step is this widget's own `CompressionStream` call, because an encoder's output is
+// its implementation's (the share subpath holds no encoder; playground/src/share.ts keeps its own).
 //
 // TWO CONSTRAINTS ON EDITS HERE. (1) test/share-codec.test.ts extracts this body by
-// its `async function playgroundUrl` anchor and runs it through `new Function`, so it
-// must stay PLAIN JS — no `as`, no `!`, no type annotations inside. (2) the docs E2E
+// its `async function playgroundUrl` anchor and runs it through `new Function` (with `source`,
+// `toBase64Url` and `PLAYGROUND_EDIT_FLAG` handed in), so it must stay PLAIN JS — no `as`, no
+// `!`, no type annotations inside, and no other free name. (2) the docs E2E
 // (`docs-site/e2e/archlive.spec.ts`) decodes the button's real href through
-// `playground/src/share.ts`, so the scheme is checked at runtime too. The byte loops
-// are `for…of` rather than indexed precisely because that satisfies
-// `noUncheckedIndexedAccess` without TS-only syntax.
+// `playground/src/share.ts`, so the scheme is checked at runtime too.
 //
 // `&edit` after the plan opens the playground in edit mode, the source beside the drawing:
 // a reader who presses "Open in playground" under a code pane came to change it. The
@@ -107,17 +109,12 @@ async function playgroundUrl(): Promise<string> {
       writer.write(utf8);
       writer.close();
       const bytes = new Uint8Array(await new Response(w.readable).arrayBuffer());
-      let bin = "";
-      for (const b of bytes) bin += String.fromCharCode(b);
-      const b64 = btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-      return `${base}#z=${b64}&edit`;
+      return `${base}#z=${toBase64Url(bytes)}&${PLAYGROUND_EDIT_FLAG}`;
     }
   } catch {
     /* fall through */
   }
-  let bin = "";
-  for (const b of utf8) bin += String.fromCharCode(b);
-  return `${base}#src=${btoa(bin).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "")}&edit`;
+  return `${base}#src=${toBase64Url(utf8)}&${PLAYGROUND_EDIT_FLAG}`;
 }
 
 async function openInPlayground() {

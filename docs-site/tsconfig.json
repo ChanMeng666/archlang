@@ -39,7 +39,10 @@
     // symlink points at the VS Code extension, so without this the bare specifier
     // resolves to the wrong package. Requires `npm run build` first.
     "baseUrl": ".",
-    "paths": { "archlang": ["../dist/index.d.ts"] }
+    "paths": {
+      "archlang": ["../dist/index.d.ts"],
+      "archlang/share": ["../dist/share.d.ts"]
+    }
   },
   "include": [
     ".vitepress/config.ts",

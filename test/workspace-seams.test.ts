@@ -1,7 +1,7 @@
 /**
  * Boundary: a workspace reaches the core (or another workspace) only through a declared package
  * name, except at the seams listed in ALLOW (`workspace-seams.allow.ts`). The root `exports` map has
- * only `.` and `./link`, yet workspaces reach past it. This scans every workspace for a reach into
+ * only `.`, `./link` and `./share`, yet workspaces reach past it. This scans every workspace for a reach into
  * the core's `src/`/`dist/` or ANOTHER workspace's `src/`/`dist/` by
  *   - a relative import/export/`import(` specifier (a template literal too, constants substituted);
  *   - an alias entry (`alias: {}` in a Vite/vitest/esbuild/wrangler config, `paths` in a tsconfig),

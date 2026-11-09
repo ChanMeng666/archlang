@@ -20,7 +20,7 @@ import {
   escapeHtml,
   ID_MAX,
   ID_MIN,
-  PAYLOAD_CAP_CHARS,
+  SHORT_LINK_PAYLOAD_CAP_CHARS,
   planTitle,
   RATE_PERIOD_SECONDS,
   SHARE_PER_PERIOD,
@@ -161,7 +161,7 @@ describe.skipIf(!supportsDeflateRaw)("short links: what POST /api/share refuses"
 
   it("a body over the payload cap, before reading it all", async () => {
     const { env, kv } = fakeEnv();
-    const res = await worker.fetch(post("A".repeat(PAYLOAD_CAP_CHARS + 1)), env);
+    const res = await worker.fetch(post("A".repeat(SHORT_LINK_PAYLOAD_CAP_CHARS + 1)), env);
     expect(res.status).toBe(413);
     const body = (await res.json()) as { error: { code: string; diagnostic: { code: string } } };
     expect(body.error.code).toBe("payload_too_large");
