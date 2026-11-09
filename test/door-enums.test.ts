@@ -82,9 +82,7 @@ const FILES = [...new Set([SOURCE, ...CALL_SITES, ...IR_MODULES, ...PLAN_JSON_MO
  *  it may import the table for another token list (`emit.ts` reads `TITLE_FIELDS`). */
 const IMPORTERS = FILES.filter(
   (f) =>
-    f !== SOURCE &&
-    (!PLAN_JSON_MODULES.includes(f) || CALL_SITES.includes(f)) &&
-    /grammar\/tokens\.js/.test(read(f)),
+    f !== SOURCE && (!PLAN_JSON_MODULES.includes(f) || CALL_SITES.includes(f)) && /grammar\/tokens\.js/.test(read(f)),
 );
 
 /**

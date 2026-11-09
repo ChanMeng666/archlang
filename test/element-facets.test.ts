@@ -88,7 +88,11 @@ describe("element facets (src/elements/facets.ts)", () => {
       "outdoor",
       "fence",
     ]);
-    expect(kindsWith("opening"), `src/plan-json/from-json.ts OPENING_KINDS: ${CHANGED}`).toEqual(["door", "window", "opening"]);
+    expect(kindsWith("opening"), `src/plan-json/from-json.ts OPENING_KINDS: ${CHANGED}`).toEqual([
+      "door",
+      "window",
+      "opening",
+    ]);
     const labels = Object.fromEntries(KINDS.flatMap((k) => (rowOf(k)?.label ? [[k, rowOf(k)?.label]] : [])));
     expect(labels, `src/scene-build.ts elementLabelOf fallback: ${CHANGED}`).toEqual({
       furniture: "category",
