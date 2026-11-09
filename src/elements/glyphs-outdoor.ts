@@ -69,6 +69,7 @@ import {
   scallopPath,
   shortSide,
 } from "./glyph-lib.js";
+import { rectRing } from "../geometry/polygon.js";
 
 /**
  * A closed star ring: `lobes` outer points at `rOuter` alternating with `lobes` inner points at
@@ -781,12 +782,7 @@ export function drawPergola(r: Rect, g: GlyphCtx): SceneNode[] {
   }
   const posts = insetRect(r, 0.08);
   const half = s * 0.03;
-  for (const p of [
-    { x: posts.x, y: posts.y },
-    { x: posts.x + posts.w, y: posts.y },
-    { x: posts.x + posts.w, y: posts.y + posts.h },
-    { x: posts.x, y: posts.y + posts.h },
-  ]) {
+  for (const p of rectRing(posts)) {
     g.poly(rectPoly({ x: p.x - half, y: p.y - half, w: 2 * half, h: 2 * half }), g.ink);
   }
   return g.nodes;

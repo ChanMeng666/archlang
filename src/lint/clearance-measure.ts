@@ -30,6 +30,7 @@ import { pointInRoomBox } from "../analyze.js";
 import type { RFurniture, RRoom, RWindow } from "../ir.js";
 import type { LintContext } from "./context.js";
 import { WALL_COLLISION_SLACK_MM } from "./measure.js";
+import { rectRing } from "../geometry/polygon.js";
 
 /** Is this category a WC (the `wc` family: `wc`, `toilet`)? */
 export const isWc = (category: string): boolean => canonicalFixture(category) === "wc";
@@ -163,12 +164,7 @@ export function curvedNear(wallSegs: readonly WallSegment[], strips: readonly St
 export function rectToArc(r: BBox, arc: Arc): number {
   const inRect = (p: Point): boolean => p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h;
   if (inRect(arc.a) || inRect(arc.b)) return 0;
-  const corners: Point[] = [
-    { x: r.x, y: r.y },
-    { x: r.x + r.w, y: r.y },
-    { x: r.x + r.w, y: r.y + r.h },
-    { x: r.x, y: r.y + r.h },
-  ];
+  const corners: Point[] = rectRing(r);
   let best = Math.min(...corners.map((p) => distPointToArc(p, arc)), distToRect(arc.a, r), distToRect(arc.b, r));
   const { center: c, r: R } = arc;
   for (let i = 0; i < 4; i++) {
@@ -325,12 +321,7 @@ export interface WindowCover {
  */
 export function windowCover(band: WindowBand, r: BBox, tol: number): WindowCover | null {
   const { w, c, d, n } = band;
-  const local = [
-    { x: r.x, y: r.y },
-    { x: r.x + r.w, y: r.y },
-    { x: r.x + r.w, y: r.y + r.h },
-    { x: r.x, y: r.y + r.h },
-  ].map((p) => ({ x: (p.x - c.x) * d.x + (p.y - c.y) * d.y, y: (p.x - c.x) * n.x + (p.y - c.y) * n.y }));
+  const local = rectRing(r).map((p) => ({ x: (p.x - c.x) * d.x + (p.y - c.y) * d.y, y: (p.x - c.x) * n.x + (p.y - c.y) * n.y }));
   const clipped = clipToRect(local, { x: -w.width / 2, y: -tol, w: w.width, h: 2 * tol });
   if (clipped.length < 3 || Math.abs(area2(clipped)) <= 1e-9) return null;
   const xs = clipped.map((p) => p.x);
@@ -385,12 +376,7 @@ export const lowUnitCover = hobWindowCover;
  *  (0 when the footprint straddles it): the distance {@link hobWindowCover} judges. */
 export function hobNearHost(band: WindowBand, r: BBox): number {
   const { c, n } = band;
-  const ys = [
-    { x: r.x, y: r.y },
-    { x: r.x + r.w, y: r.y },
-    { x: r.x + r.w, y: r.y + r.h },
-    { x: r.x, y: r.y + r.h },
-  ].map((p) => (p.x - c.x) * n.x + (p.y - c.y) * n.y);
+  const ys = rectRing(r).map((p) => (p.x - c.x) * n.x + (p.y - c.y) * n.y);
   return ys.every((y) => y >= 0) || ys.every((y) => y <= 0) ? Math.min(...ys.map(Math.abs)) : 0;
 }
 

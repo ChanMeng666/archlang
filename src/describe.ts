@@ -37,7 +37,7 @@ import type {
   OpeningPlacement,
 } from "./ir.js";
 import type { PlanNode, Point } from "./ast.js";
-import { polygonArea, polygonBounds } from "./geometry/polygon.js";
+import { polygonArea, polygonBounds, rectRing } from "./geometry/polygon.js";
 import { voidPieces } from "./elements/void.js";
 import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { grossInternalArea } from "./analyze/gross-area.js";
@@ -518,12 +518,7 @@ function summarize(
         ? []
         : r.poly
           ? r.poly.map((p) => ({ x: p.x, y: p.y }))
-          : [
-              { x: rect.x, y: rect.y },
-              { x: rect.x + rect.w, y: rect.y },
-              { x: rect.x + rect.w, y: rect.y + rect.h },
-              { x: rect.x, y: rect.y + rect.h },
-            ],
+          : rectRing(rect),
       adjacent,
       ...instanceOf(r),
     };

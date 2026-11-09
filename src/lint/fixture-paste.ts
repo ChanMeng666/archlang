@@ -38,7 +38,7 @@ import {
 import type { FurnitureAnchor } from "../ast.js";
 import { defaultFootprint, frontClearanceMm, requiresWall } from "../fixtures-catalog.js";
 import { doorLeaves, sectorIntersectsRect } from "../geometry.js";
-import { pointInPolygon } from "../geometry/polygon.js";
+import { pointInPolygon, rectRing } from "../geometry/polygon.js";
 import { type BBox, doorLandingRect, rectsOverlap, wallIntrusionDepth } from "../geometry/rect.js";
 import type { RFurniture, RRoom } from "../ir.js";
 import { fmt2 } from "../num-format.js";
@@ -198,12 +198,7 @@ export function pasteFixture(
   }
 
   // A ring the room's own: a polygon's vertices, or a relational room's resolved rectangle.
-  const ring = room.poly ?? [
-    { x: room.at.x, y: room.at.y },
-    { x: room.at.x + room.size.w, y: room.at.y },
-    { x: room.at.x + room.size.w, y: room.at.y + room.size.h },
-    { x: room.at.x, y: room.at.y + room.size.h },
-  ];
+  const ring = room.poly ?? rectRing({ x: room.at.x, y: room.at.y, w: room.size.w, h: room.size.h });
   // `at` is snapped by the resolver; try the face rounded to the nearest module and then
   // rounded into the room, and let the checks pick.
   const onGrid = (v: number, mode: "near" | "up" | "down") =>
