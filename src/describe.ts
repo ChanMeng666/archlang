@@ -23,7 +23,6 @@
 import { relationText } from "./opening-relation.js";
 import { wallPhraseOf } from "./wall-ref.js";
 import type {
-  ResolvedLevel,
   ResolvedPlan,
   RRoom,
   RDoor,
@@ -58,14 +57,12 @@ import {
   roomUses,
   buildDoorAccessGraph,
   DEFAULT_TOL,
-  storeyGrounded,
-  buildingRoomReach,
   type AnalyzeOptions,
   type RoomBox,
 } from "./analyze.js";
 import { outerFaceBounds, segmentsOfWall, type WallSegment } from "./geometry.js";
 import { computeCirculation } from "./analyze/circulation.js";
-import { entranceInputs, storeyHasEntranceCandidate, withMainEntrance } from "./analyze/entrance.js";
+import { entranceInputs, withMainEntrance } from "./analyze/entrance.js";
 import { symmetryFacts } from "./analyze/symmetry.js";
 import { syntaxFacts } from "./analyze/syntax.js";
 import { dependsFacts, indexStatements, type StatementIndex } from "./analyze/depends.js";
@@ -78,19 +75,10 @@ import { roomSchedule } from "./sheet-tables.js";
 import { deriveSite, planCenterOfRooms, type SiteFacts, toCompass, windowFacingPage } from "./site.js";
 import {
   type ArrivingRun,
-  arrivalRuns,
-  flightRun,
-  flightsOf,
   isBlockStair,
-  levelsEnteredFromBelow,
-  type RBlockStair,
   type RVertical,
   roomOfVertical,
-  stairTurns,
-  tailEdge,
-  verticalConnections,
   type VerticalKind,
-  verticalReach,
   verticalsOf,
 } from "./vertical.js";
 import { fmt2, fmt3 } from "./num-format.js";
@@ -113,7 +101,6 @@ import type {
   VoidSummary,
   OutdoorSummary,
   FenceSummary,
-  VerticalReport,
   InstanceSummary,
   FreedomElement,
   FreedomReport,
@@ -122,6 +109,7 @@ import type {
   SceneSummary,
 } from "./describe/types.js";
 import { roomAdjacency } from "./describe/adjacency.js";
+import { blockStairFacts, buildVerticalReport } from "./describe/verticals.js";
 
 export type { ScheduleRow } from "./sheet-tables.js";
 
@@ -440,21 +428,6 @@ function buildFreedom(
   }
 
   return f;
-}
-
-/** Spreadable instance stamp for a resolved element — nothing at all at plan level. */
-/** What only a block stair reports (`VerticalSummary`): the pieces its `bbox` cannot say. */
-function blockStairFacts(v: RBlockStair): Pick<VerticalSummary, "flights" | "landings" | "turn"> {
-  const turns = stairTurns(v);
-  return {
-    flights: flightsOf(v).map((f) => ({ bbox: rectOf(f), run_mm: flightRun(f), entry: tailEdge(f) })),
-    landings: v.landings.map((l, i) =>
-      l.winders === undefined
-        ? { bbox: rectOf(l), turn: turns.landings[i]! }
-        : { bbox: rectOf(l), turn: turns.landings[i]!, winders: l.winders },
-    ),
-    turn: turns.whole,
-  };
 }
 
 function instanceOf(e: { _instance?: string; _component?: string }): { instance?: string; component?: string } {
@@ -924,46 +897,6 @@ function summarize(
  */
 function inZone(member: string | undefined, path: string): boolean {
   return member !== undefined && (member === path || member.startsWith(`${path}.`));
-}
-
-/**
- * The building-level vertical report for a multi-storey plan, or `undefined` when no run
- * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
- * a real arrival point — {@link storeyGrounded}, the same predicate `lint` builds its
- * `grounded()` callback from, discounting a door that opens onto an `outdoor balcony`.
- * Reachability then spreads along the shafts — room-aware: a shaft carries you on only
- * from a stop whose room is walkable on its storey ({@link buildingRoomReach}, the same
- * probe access graph `access` reports), so a stair in a door-less store reaches nothing.
- * This is deliberately NOT the same thing as this storey's own `access.hasEntrance`
- * below, which stays the honest, undiscounted fact that the floor has an exterior door.
- */
-function buildVerticalReport(
-  levels: readonly ResolvedLevel[],
-  tol: number,
-):
-  | {
-      report: VerticalReport;
-      arrivals: ReadonlyMap<number, readonly ArrivingRun[]>;
-      fromBelow: ReadonlySet<number>;
-    }
-  | undefined {
-  const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
-  const connections = verticalConnections(inputs);
-  if (connections.length === 0) return undefined;
-  const grounded = (n: number): boolean => {
-    const l = levels.find((x) => x.level === n);
-    return l ? storeyGrounded(l.ir, tol) : false;
-  };
-  const roomReach = buildingRoomReach(inputs, tol);
-  const reach = verticalReach(inputs, grounded, roomReach);
-  return {
-    report: { connections, reachable_levels: [...reach.reachable].sort((a, b) => a - b) },
-    arrivals: arrivalRuns(inputs, grounded, roomReach),
-    fromBelow: levelsEnteredFromBelow(connections, (n) => {
-      const l = levels.find((x) => x.level === n);
-      return l ? storeyHasEntranceCandidate(l.ir, tol) : false;
-    }),
-  };
 }
 
 /**
