@@ -50,6 +50,7 @@ import type { RenderSizes, SceneNode, ScenePrim } from "../src/scene.js";
 import { inkExtent, textExtent } from "../src/text-layout.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 /** One call the compiler made: the input as it was handed in, and what the pass left. */
 interface Call {
@@ -642,8 +643,8 @@ describe("BoxSums against the plain loop", () => {
           }
         },
       ),
-      { numRuns: 1000, seed: 1519 },
+      { numRuns: runs(1000), seed: 1519 },
     );
-    expect(nonzero).toBeGreaterThan(250);
+    expect(nonzero).toBeGreaterThan(floorAt(250));
   });
 });

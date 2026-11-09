@@ -29,6 +29,7 @@ import { parse } from "../src/parser.js";
 import { BUILTIN_REGISTRY } from "../src/registry.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 const ROOT = resolvePath(__dirname, "..");
 
@@ -294,9 +295,9 @@ describe("room adjacency: the broad-phase pass against every ordered pair", () =
       fc.property(pile, tol, (rooms, t) => {
         if (compare(rooms, t) > 0) withPairs++;
       }),
-      { numRuns: 600, seed: 1923 },
+      { numRuns: runs(600), seed: 1923 },
     );
-    expect(withPairs).toBeGreaterThan(150);
+    expect(withPairs).toBeGreaterThan(floorAt(150));
   }, 120_000);
 
   it("5,000 coincident rooms: no pair asked, none adjacent", () => {

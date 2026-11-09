@@ -64,6 +64,7 @@ import {
   windowOnTie,
 } from "./d4-oracle.js";
 import { KNOWN_CLASSES } from "./equivariance-known.js";
+import { runs } from "./setup/fast-check.js";
 
 /** Every non-identity element (P₀ is the identity). */
 const element: fc.Arbitrary<GroupElement> = fc.constantFrom(...D4_TEST_ELEMENTS.filter((g) => g.name !== "e"));
@@ -100,7 +101,7 @@ describe("the instance variant of the arbitrary", () => {
         ).toEqual([]);
         expect(geometryCount(out.svg)).toBeGreaterThan(10);
       }),
-      { numRuns: 60 },
+      { numRuns: runs(60) },
     );
   });
 });
@@ -116,7 +117,7 @@ describe("facts(gP) = g · facts(P₀) over random plans, modulo the pinned clas
           `NEW equivariance violation under ${g.name} — no pinned class accounts for it:\n${explain(uncovered, 4)}\n\n${ctx.src}`,
         ).toEqual([]);
       }),
-      { numRuns: 60 },
+      { numRuns: runs(60) },
     );
   }, 120_000);
 });
@@ -173,7 +174,7 @@ describe("nested `place` is frame composition", () => {
         expect(stable(a.lint), `lint() differs:\n${nested}`).toBe(stable(b.lint));
         expect(a.svg === b.svg, `the SVG differs:\n${nested}`).toBe(true);
       }),
-      { numRuns: 30 },
+      { numRuns: runs(30) },
     );
   }, 120_000);
 });

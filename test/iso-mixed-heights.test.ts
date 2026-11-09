@@ -24,6 +24,7 @@ import { BUILTIN_REGISTRY } from "../src/registry.js";
 import { cameraFor } from "../src/view/camera.js";
 import { type Face, facesOf } from "../src/view/extrude.js";
 import { orderFaces } from "../src/view/paint.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 const VIEWS = ["iso", "axon"] as const;
 
@@ -303,9 +304,9 @@ suite("mixed wall heights — generated", () => {
           expectWellFormed(faces(src));
         }
       }),
-      { numRuns: 200, seed: 20260927 },
+      { numRuns: runs(200), seed: 20260927 },
     );
     // The property is over drawings, not over refusals.
-    expect(clean).toBeGreaterThan(150);
+    expect(clean).toBeGreaterThan(floorAt(150));
   });
 });

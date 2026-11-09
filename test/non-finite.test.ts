@@ -9,6 +9,7 @@ import fc from "fast-check";
 import { compile, describe as describePlan, lint } from "../src/index.js";
 import { MAX_NEST_DEPTH } from "../src/expr.js";
 import { fmt2, fmt3, fmt4 } from "../src/num-format.js";
+import { runs } from "./setup/fast-check.js";
 
 const wrap = (body: string): string => `plan "p" {\n${body}\n}\n`;
 const ROOM = "room id=r at (0,0) size 900x900";
@@ -280,7 +281,7 @@ describe("arithmetic is closed over the finite numbers", () => {
         // Fixed seed: CI is reproducible. The example is the finite ~-1.8e305 value whose
         // interpolation printed "-Infinity" (fmt3 scaled it past the double range).
         seed: 20261001,
-        numRuns: 300,
+        numRuns: runs(300),
         examples: [[`(377 * -(477 * 1${"0".repeat(300)}))`]],
       },
     );

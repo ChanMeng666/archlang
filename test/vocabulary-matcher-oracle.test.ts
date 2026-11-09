@@ -71,6 +71,7 @@ import {
 } from "../src/vocabulary.js";
 import type { World } from "../src/world.js";
 import { NULL_WORLD } from "../src/world.js";
+import { floorAt, runs } from "./setup/fast-check.js";
 
 const ROOT = resolvePath(__dirname, "..");
 
@@ -460,12 +461,12 @@ describe("label classification: the one-split matcher against the per-word one",
         if (compareLabel(p.l).uses.length > 0) classified++;
         generatedSynHits += compareSynonyms([p.s, `${p.s}2`, `${p.s} x`], p.l);
       }),
-      { numRuns: 1500, seed: 1922 },
+      { numRuns: runs(1500), seed: 1922 },
     );
     // 1,071 classified, 808 generated-synonym hits, 52 fused-suffix hits when written.
-    expect(classified).toBeGreaterThan(800);
-    expect(generatedSynHits).toBeGreaterThan(600);
-    expect(tally.suffix).toBeGreaterThan(40);
+    expect(classified).toBeGreaterThan(floorAt(800));
+    expect(generatedSynHits).toBeGreaterThan(floorAt(600));
+    expect(tally.suffix).toBeGreaterThan(floorAt(40));
   }, 120_000);
 
   it("empty, whitespace-only and separator-only labels", () => {

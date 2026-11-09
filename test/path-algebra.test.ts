@@ -11,6 +11,7 @@ import {
   widestBottleneck,
 } from "../src/analyze/circulation.js";
 import { neighbours4 } from "../src/analyze/grid.js";
+import { runs } from "./setup/fast-check.js";
 
 /**
  * The path-algebra ORACLE: one engine, `bestPaths`, against every specialised search.
@@ -100,7 +101,7 @@ describe("bestPaths equals brute force on random digraphs", () => {
           expect(s.compare(got, want[k]!)).toBe(0);
         }
       }),
-      { numRuns: 400 },
+      { numRuns: runs(400) },
     );
   };
   it("BOOLEAN: reachability", () => check(BOOLEAN, () => true, true));
@@ -142,7 +143,7 @@ describe("bestPaths equals brute force on random digraphs", () => {
           new Map([...parent].sort((a, b) => a[0] - b[0])),
         );
       }),
-      { numRuns: 400 },
+      { numRuns: runs(400) },
     );
   });
 
@@ -260,7 +261,7 @@ const gridDigraph = (r: RandomGrid): Digraph<number, number> => ({
   },
 });
 
-const GRID_RUNS = { numRuns: 300 };
+const GRID_RUNS = { numRuns: runs(300) };
 
 describe("the nav-grid searches equal the engine on random grids up to 12 × 12", () => {
   it("bfs: distance and parent ≡ unit MIN_PLUS, constant rank, W,E,N,S", () => {

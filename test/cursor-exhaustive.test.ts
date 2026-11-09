@@ -24,6 +24,7 @@ import { eachExpr, eachStatement, statementExprs } from "../src/cursor.js";
 import type { PlanNode, Statement } from "../src/ast.js";
 import type { Expr } from "../src/expr.js";
 import { archPlan } from "./arbitrary-plan.js";
+import { runs } from "./setup/fast-check.js";
 
 // `Expr`'s own discriminant (`src/expr.ts`) — a type union, so there is no runtime
 // table to derive this from; it is exhaustively listed there via a switch with no
@@ -151,7 +152,7 @@ describe("cursor.ts — statementExprs matches a reflective AST walk", () => {
   }
 
   it("also holds over fc.sample(archPlan) — wall/room/door/window/opening/furniture/dim/column", () => {
-    for (const src of fc.sample(archPlan, { numRuns: 200, seed: 20260927 })) checkSource(src);
+    for (const src of fc.sample(archPlan, { numRuns: runs(200), seed: 20260927 })) checkSource(src);
   });
 });
 
