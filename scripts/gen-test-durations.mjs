@@ -41,7 +41,7 @@ if (Array.isArray(input.testResults)) {
     } else dropped++;
   }
   for (const [file, seconds] of Object.entries(input)) if (Number.isFinite(seconds)) table[file] = seconds;
-  console.log(`map: ${Object.keys(input).length} rows replaced or added, ${kept} old rows kept, ${dropped} dropped (deleted files)`);
+  console.log(`map: ${Object.keys(input).length} rows, ${kept} kept, ${dropped} dropped`);
 }
 const sorted = Object.fromEntries(Object.entries(table).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)));
 writeFileSync(out, `${JSON.stringify(sorted, null, 2)}\n`);
