@@ -421,8 +421,8 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`；§A 与 
 | 裁定 | 一手出处 |
 |---|---|
 | RM-D21 | 所有者 2026-11-11 的原话（本会话，全文录在 `README.md` §6.3） |
-| RM-D22（提请） | `../engineering-health/README.md` EH-D1（"Two, each running `check:quick` once with 2 vitest workers"）；`docs/agents/orchestration.md`；V1 §D.4 与 V2 §E 列的文件范围（视觉卡只动 `packages/archlang-3d`、资产与文档，RM8.4、RM8.7、RM8.9 除外） |
-| RM-D23（提请） | `docs/backlog.md` VA.5；`mount.ts` 灯光处的注释；`packages/archlang-3d/src/replay/payload.ts`（`PREVIEW_LIMITS`）；ADR 0023 决定 5 |
+| RM-D22（所有者 2026-11-11 批准） | `../engineering-health/README.md` EH-D1（"Two, each running `check:quick` once with 2 vitest workers"）；`docs/agents/orchestration.md`；V1 §D.4 与 V2 §E 列的文件范围（视觉卡只动 `packages/archlang-3d`、资产与文档，RM8.4、RM8.7、RM8.9 除外） |
+| RM-D23（所有者 2026-11-11 批准） | `docs/backlog.md` VA.5；`mount.ts` 灯光处的注释；`packages/archlang-3d/src/replay/payload.ts`（`PREVIEW_LIMITS`）；ADR 0023 决定 5 |
 | T 形阴角线的设计默认 | V1 §B.4（阴角线是真实折角，无论交叉块判给谁都在）与 §D.5（线稿惯例） |
 | 关键帧重钉 | `.claude/rules/archlang-3d.md`；`packages/archlang-3d/e2e/fixtures/README.md` |
 
