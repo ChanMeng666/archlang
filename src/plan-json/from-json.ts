@@ -84,6 +84,23 @@ function reqWord(v: unknown, path: string, what: string, val: Validator, emptyOk
   if (!(isStr(v) && isLexWord(v))) val.err(path, `expected ${what}: ${WORD_SHAPE}`);
 }
 
+/**
+ * A DECLARED id (`id=<ident>`: room, wall, opening, fixture, column, a wall's `open` clause) may
+ * not be dotted: the parser's `declName` refuses any name holding a `.` with `E_DOTTED_DECL`
+ * (a dotted name addresses an element inside a `place`d instance, so it is a reference only).
+ * The same predicate (`includes(".")`) is applied here so the document is refused with a pathed
+ * `E_JSON_SCHEMA` before any source is emitted. REFERENCE fields (`on.wall`, `room`, `between`,
+ * `wall`) keep using {@link reqWord}: they may name a dotted instance id.
+ */
+function declId(v: unknown, path: string, what: string, val: Validator): void {
+  reqWord(v, path, what, val, true);
+  if (isStr(v) && isLexWord(v) && v.includes("."))
+    val.err(
+      path,
+      `expected ${what} that is not dotted: a declared id cannot be dotted (a dotted name addresses an element inside a \`place\`d instance)`,
+    );
+}
+
 /** A position string (`on.at`, `relation.at`) as `parseAttachPos` reads it: probed through the real
  *  parser, and accepted only when the position it reads ends exactly where the string does, so
  *  no clause (`width 1 hinge left`) and no comment rides in behind it. */
@@ -401,7 +418,7 @@ function validateRoom(r: unknown, path: string, val: Validator): void {
     }
     for (const key of ["width", "height"]) nonNegative(r[key], `${path}/${key}`, val);
   }
-  reqWord(r.id, `${path}/id`, "a room id", val, true);
+  declId(r.id, `${path}/id`, "a room id", val);
   if (r.label !== undefined && !isStr(r.label)) val.err(`${path}/label`, "expected a string");
   if (r.room_type !== undefined && !(isStr(r.room_type) && ROOM_TYPE_SET.has(r.room_type)))
     val.err(`${path}/room_type`, `expected one of ${ROOM_TYPES.join(", ")}`);
@@ -430,7 +447,7 @@ function validateWall(w: unknown, path: string, val: Validator): void {
   }
   if (w.thickness !== undefined && !isNum(w.thickness)) val.err(`${path}/thickness`, "expected a number");
   nonNegative(w.thickness, `${path}/thickness`, val);
-  reqWord(w.id, `${path}/id`, "a wall id", val, true);
+  declId(w.id, `${path}/id`, "a wall id", val);
   reqWord(w.category, `${path}/category`, "a wall category", val);
   reqWord(w.material, `${path}/material`, "a material name", val);
   optNum(w.material_scale, `${path}/material_scale`, val);
@@ -486,7 +503,10 @@ function validateWallsFromRooms(w: unknown, path: string, val: Validator): void 
       }
       pair(c, at);
       if (key === "open") {
-        if (c.id !== undefined && !ident(c.id)) val.err(`${at}/id`, "expected an id");
+        if (c.id !== undefined) {
+          if (!ident(c.id)) val.err(`${at}/id`, "expected an id");
+          else declId(c.id, `${at}/id`, "an id", val);
+        }
         if (c.width !== undefined && !(isNum(c.width) && (c.width as number) > 0))
           val.err(`${at}/width`, "expected a number greater than 0");
       } else if (!(isNum(c.thickness) && (c.thickness as number) > 0))
@@ -561,7 +581,7 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
     val.kindErr(`${path}/kind`, `expected "door", "window", or "opening"${isStr(o.kind) ? ` (got "${o.kind}")` : ""}`);
   if (!isNum(o.width)) val.err(`${path}/width`, "expected a number");
   nonNegative(o.width, `${path}/width`, val);
-  reqWord(o.id, `${path}/id`, "an opening id", val, true);
+  declId(o.id, `${path}/id`, "an opening id", val);
   reqWord(o.wall, `${path}/wall`, "a wall id or category", val);
   // `on` is printed whenever it is present (`on <wall> at <pos>`), so a present one is checked
   // whole, not only when it is the placement that counts.
@@ -637,7 +657,9 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   }
   if (f.category === undefined) val.err(`${path}/category`, "expected a fixture category");
   else reqWord(f.category, `${path}/category`, "a fixture category", val);
-  reqWord(f.id, `${path}/id`, "a fixture id", val, true);
+  // A reflected dotted piece is refused below with its own, more specific `E_JSON_MIRROR`.
+  if (f.mirror === true && isStr(f.id) && f.id.includes(".")) reqWord(f.id, `${path}/id`, "a fixture id", val, true);
+  else declId(f.id, `${path}/id`, "a fixture id", val);
   reqWord(f.room, `${path}/room`, "a room id", val);
   reqWord(f.against_wall, `${path}/against_wall`, "a wall id or category", val);
   reqWord(f.facing, `${path}/facing`, "a facing target", val);
@@ -711,5 +733,5 @@ function validateColumn(c: unknown, path: string, val: Validator): void {
     if (!isNum(c[key])) val.err(`${path}/${key}`, "expected a number");
   }
   for (const key of ["width", "height"]) nonNegative(c[key], `${path}/${key}`, val);
-  reqWord(c.id, `${path}/id`, "a column id", val, true);
+  declId(c.id, `${path}/id`, "a column id", val);
 }

@@ -334,13 +334,16 @@ describe("malformed Plan JSON", () => {
     expect(field.read!(r.source!)).toBe("a");
   });
 
-  it("EH1.20: a dotted declared id is law (e)'s one non-JSON refusal, the parser's E_DOTTED_DECL", () => {
+  it("EH1.24: a dotted declared id is refused with a pathed E_JSON_SCHEMA, not the parser's E_DOTTED_DECL", () => {
     // Found behind defect 2 at FC_SCALE=10: `furniture/0/id = "a.A"`. A dotted id is a flattened
-    // `place` row's, refused by the parser on purpose (pinned in test/plan-json.test.ts).
+    // `place` row's; the parser refuses it on purpose, so the validator refuses it first.
     const doc = stringBase();
     doc.furniture[0].id = "a.A";
-    const errors = planFromJson(doc).diagnostics.filter((d) => d.severity === "error");
-    expect(errors.map((d) => d.code)).toEqual(["E_DOTTED_DECL"]);
+    const r = planFromJson(doc);
+    const errors = r.diagnostics.filter((d) => d.severity === "error");
+    expect(errors.map((d) => d.code)).toEqual(["E_JSON_SCHEMA"]);
+    expect(errors[0]?.message).toMatch(/^plan JSON \/furniture\/0\/id: /);
+    expect(r.source).toBeUndefined();
   });
 
   it(`law (e): a hostile string in any string field is refused or round-trips (seed ${STRING_SEED}, ${STRING_RUNS} runs)`, () => {
@@ -358,17 +361,11 @@ describe("malformed Plan JSON", () => {
         }
         const errors = r.diagnostics.filter((d) => d.severity === "error");
         if (errors.length > 0) {
-          // Refused: only pathed E_JSON_* errors, never a parse error on generated text. The one
-          // sanctioned exception is a dotted DECLARED id (`a.A`): it names a flattened `place` row,
-          // and `planFromJson` refuses it with the parser's `E_DOTTED_DECL` by design (the tripwire
-          // "is MASKED because a `place`d plan cannot round-trip at all", `test/plan-json.test.ts`).
-          const dottedDecl = (d: { code?: string }): boolean =>
-            d.code === "E_DOTTED_DECL" && field.kind === "word" && field.name.endsWith("/id") && s.includes(".");
+          // Refused: only pathed E_JSON_* errors, never a parse error on generated text.
           for (const d of errors)
-            expect(
-              (d.code?.startsWith("E_JSON") && PATHED.test(d.message)) || dottedDecl(d),
-              `${where}: ${d.code} ${d.message}`,
-            ).toBe(true);
+            expect(d.code?.startsWith("E_JSON") && PATHED.test(d.message), `${where}: ${d.code} ${d.message}`).toBe(
+              true,
+            );
           tally.refused++;
           return;
         }

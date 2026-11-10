@@ -591,7 +591,7 @@ describe("plan-json — schema object", () => {
  * `E_JSON_MIRROR`, as a door or a dimension does (the next block).
  *
  * The second test is still a TRIPWIRE, armed on purpose: a plan containing `place` does
- * not round-trip at all (`planFromJson` refuses a namespaced id with `E_DOTTED_DECL`).
+ * not round-trip at all (`planFromJson` refuses a namespaced id with a pathed `E_JSON_SCHEMA`).
  * When someone makes a placed plan round-trip, it goes red here and names the work left:
  * the reflection is projected, but nothing in source can yet receive it.
  *
@@ -658,23 +658,40 @@ describe("plan-json — G.10: a frame's reflection is projected", () => {
       planFromJson({ ...planToJson(placed(" mirror x")).json, furniture: [b] }).diagnostics.map((d) => d.code),
     ).not.toContain("E_DOTTED_DECL");
     // A piece the document holds as written prints its own clause.
-    const own = planJsonToArch({ ...planToJson(placed(" mirror x")).json, furniture: [{ ...b, id: "d" }] });
+    // (The flattened walls and rooms carry dotted ids too, which the validator refuses (EH1.24), so
+    // the document is held as written: each declared id is reduced to its tail.)
+    const written = (m: string) => {
+      const j = planToJson(placed(m)).json;
+      if (!j) throw new Error("expected the plan to project");
+      const tail = (id = ""): string => id.slice(id.lastIndexOf(".") + 1);
+      return {
+        ...j,
+        rooms: j.rooms.map((r) => ({ ...r, id: tail(r.id) })),
+        walls: (j.walls ?? []).map((w) => ({ ...w, id: tail(w.id) })),
+      };
+    };
+    const own = planJsonToArch({ ...written(" mirror x"), furniture: [{ ...b, id: "d" }] });
     expect(own.diagnostics.map((d) => d.code)).not.toContain("E_JSON_MIRROR");
     expect(own.source).toContain("size 1400x700 mirror");
     // `mirror: false` is the absent key spelled out, and prints nothing.
-    const spelled = planJsonToArch({ ...planToJson(placed("")).json, furniture: [{ ...a, mirror: false }] });
+    const spelled = planJsonToArch({ ...written(""), furniture: [{ ...a, id: "d", mirror: false }] });
     expect(spelled.source).not.toContain("mirror");
   });
 
-  it("is MASKED because a `place`d plan cannot round-trip at all (E_DOTTED_DECL)", () => {
+  it("is MASKED because a `place`d plan cannot round-trip at all (pathed E_JSON_SCHEMA)", () => {
     const payload = planToJson(placed("")).json;
     if (!payload) throw new Error("expected the plan to project");
     const back = planFromJson(payload);
-    const codes = back.diagnostics.map((d) => d.code);
-    expect(codes).toContain("E_DOTTED_DECL");
+    const errors = back.diagnostics.filter((d) => d.severity === "error");
+    expect(errors.length).toBeGreaterThan(0);
+    for (const d of errors) {
+      expect(d.code).toBe("E_JSON_SCHEMA");
+      expect(d.message).toMatch(/^plan JSON \/[a-z]+\/\d+\/id: /);
+    }
+    expect(back.source).toBeUndefined();
 
     // WHEN THIS FAILS: someone taught `planFromJson` to accept a namespaced id. Lift the dotted-id
-    // refusal in `validateFurniture` then, and a mirrored fixture round-trips by its `mirror` clause.
+    // refusal (`declId` in `src/plan-json/from-json.ts`) then, and a mirrored fixture round-trips by its `mirror` clause.
   });
 });
 
