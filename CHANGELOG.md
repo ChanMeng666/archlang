@@ -42,8 +42,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The playground sitemap gives each example page a `lastmod`, the date of the last commit to its `.arch` file or to the page generator, whichever is newer; `/` and `/examples/` take the newest.
 - Both `robots.txt` files name `ShapBot` and `DuckDuckBot`, allowed like every other crawler. `/error-codes` redirects to `/errors` and `/language-reference` to `/reference` (301), and the docs sitemap lists `/adr` in place of `/adr/`, which redirects.
 - The raw `/<page>.md` copies on archlang.uk are served with `X-Robots-Tag: noindex`, so search engines index the HTML page; `rel=alternate` still points to them, and `/llms.txt`, `/llms-full.txt` and the HTML pages are unchanged.
+- The 3D preview's posters and replay videos on archlang.uk and in the README are anti-aliased: `gen:3d-assets` draws each poster pixel from 3 × 3 samples and each video pixel from 2 × 2 (`supersample` on `renderStill` and `renderReplay` in `@chanmeng666/archlang-3d`, off by default), and the outlines keep their weight. The live 3D preview (the playground's 3D tab, `archlang3d view --replay`) draws as before.
 
 ### Fixed
+
+- The 3D preview no longer draws a line on a flat wall surface where two wall pieces meet. Beside a door or a window only the reveal between sill and head is outlined, not the wall above and below it; the flat back of a T junction, the outer face of an L corner made of two walls and the joint of two walls in line carry no line; and no line cuts across a wall top at those places. The inside corners of a T or an X junction keep their lines. The outline of a storey's walls and columns is now worked out across all of them (`@chanmeng666/archlang-3d`, `src/replay/wall-lines.ts`), and the faces two pieces share inside a wall are no longer drawn, so the seams do not show through a wall seen at a grazing angle either. The playground's 3D tab, the replay HTML and the posters and videos all draw this way; Mesh3D, the GLB and Scene3D are unchanged.
 
 - `planFromJson` refuses a dotted declared id with a pathed `E_JSON_SCHEMA` (the parser's `E_DOTTED_DECL`, caught before any source is emitted).
 - `fmt --write` and `reroll --write` report a write failure as a CLI error (exit 1) instead of crashing with a stack trace; the parent directory is created like other writers.
