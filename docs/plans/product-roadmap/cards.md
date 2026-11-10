@@ -2,7 +2,7 @@
 
 规则同 `../drawing-set/cards.md`：选依赖已完成、阶段已开放的第一张 `todo` 卡；同一阶段先做"线"以上的卡。状态词：`todo`、`doing`、`done`（裁成 id、标题、状态、PR、commit）、`blocked`（等 `README.md` §6 裁定）、`parked`。规模是 AI 协作日，±50%，是估算不是测量；没有估算的写"未估"。"模型"是建议执行者，主会话可改。每张卡都写明不许做什么。
 
-**v2 的卡全部 `todo`，没有一张开工。** RM-D9…D16 已由所有者 2026-11-11 批准（`README.md` §6.1），RM-D17…D20 是同日的受托裁定（§6.2）；下面的阶段划分生效。
+**v2 的卡全部 `todo`，没有一张开工。** RM-D9…D16 已由所有者 2026-11-11 批准（`README.md` §6.1），RM-D17…D20 是同日的受托裁定（§6.2）；下面的阶段划分生效。**第 8 轨"视觉质感"（RM8.1…RM8.9，2026-11-11 增补）** 的卡也全部 `todo`：RM-D21 是所有者的方向；RM-D22（第二条车道）与 RM-D23（接触阴影）是提请，等所有者，未裁定（`README.md` §6.3）。视觉卡各自放在所在阶段的末尾，排法以 `README.md` §3 为准（单车道或双车道）。估时标"主会话估"的是主会话的估算，±50%。`[语法：词表]` 标记的卡只给已有形式加闭集里的词，不加新子句，但同样依赖 PS7.9、带字节恒等律。
 
 大多数 RM 卡是对 backlog / 各计划已有卡的**打包与排序**。打包卡 `done` 时，被打包的原卡同一 PR 裁掉，并在原处留一行"由 RMx.y 完成，PR #n"。`[语法]` 标记的卡新增语言形式：依赖 PS7.9（spec 腾空）先完成；遵守 `AGENTS.md` 硬规则与 `docs/agents/iron-laws.md`"每个新形式带字节恒等律"；`gen:*` 的闭集从源头派生。由 profile 数字驱动的新规则还依赖 RM1.6a（`README.md` 原则 10）。
 
@@ -14,7 +14,7 @@
 |---|---|
 | 本地，永远 | `npm run check:quick`（文档另加 `npm run docs:build`），别的都不跑（`AGENTS.md` § How to work） |
 | 只在 CI 跑 | `check`、`check:drift`、`typecheck:all`、e2e、`check:3d`、bench |
-| 执行者 | 一个执行者、一张卡一个 worktree、一次一个重命令（`docs/agents/orchestration.md`）；只有纯文档卡可以由第二个执行者并行（EH-D1 的上限是两个） |
+| 执行者 | 一个执行者、一张卡一个 worktree、一次一个重命令（`docs/agents/orchestration.md`）；只有纯文档卡可以由第二个执行者并行（EH-D1 的上限是两个）；RM-D22 获批后，第 8 轨的视觉卡也由第二个执行者并行，一次一个重命令对两个执行者合起来生效 |
 | 每个 PR | 从 `main` 建 worktree，分支 `feat/<card>-<slug>`（文档卡 `docs/<card>-<slug>`）；红队最多两轮；合并串行，按风险层级走 `docs/agents/commands.md` § Merging a PR |
 | 规则卡（RM1.2a/b、RM1.7） | 另加：每条规则一对公开夹具（合法图零报、缺陷图必报）进 `test/defect-corpus/`；留出的一对只写进私有 `archlang-lab`，PR 只报它的计数；PR 里写出该规则用 `arch lint --json` 跑过全部 `examples/**` 的报出数 |
 | 冻结期 11-24 → 12-01 | 只合 bug 修复、测量与文档；不发 minor |
@@ -143,7 +143,7 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 ### 发布 1.59.0 · 约 11-21 · 1 日
 
-线上合并项切一个 minor（tag 归所有者），含 RM5.1 的 `packages/mcp` bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。切点后合并的 minor 内容等 12-02。
+线上合并项切一个 minor（tag 归所有者），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。切点后合并的 minor 内容等 12-02。
 
 ### ── 线（8 日）──
 
@@ -177,6 +177,69 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 线下的卡在 1.59.0 切点前合并的，随 1.59.0 发布；切点后合并的等 12-02。
 
+### 第 8 轨（视觉）· 阶段 B
+
+排法见 `README.md` §3 阶段 B：单车道（RM-D22 未获批）时 RM8.1 进线上首位、线成 9 日、RM1.4 退到线下首位；双车道（RM-D22 获批）时视觉车道 RM8.1 → RM8.2 → RM8.3。三张卡都动 `packages/archlang-3d` 与 `docs-site/public/3d/`，不碰 `src/`。
+
+### RM8.1 · 3D 假缝：按楼层、按平面求墙的特征线 — `todo` · 3 日（调查估 2.5–3.5） · opus · 依赖无 · 查看器缺陷修复
+
+**根因**（`README.md` §1.1d 第 1 条）：`packages/archlang-3d/src/replay/mount.ts` 的 `add()` 对每个 Mesh3D 节点单独做 `new EdgesGeometry(geo, 30)` 加 `LineSegments`（楼板与玻璃除外），面片用 `polygonOffset` 后推，所以画在共面表面上的线总能通过深度测试。墙在 Mesh3D 里是逐块的闭合棱柱：`src/mesh/build.ts` 的 `w.body.map((p) => prism(p, e, top, splits))` 每块墙体一个，每个洞口的窗台（`o.sill > 0`）和过梁（`o.head < height`）各一个；`splitAt` 只在窗台高与门窗顶高处加顶点，不去掉折角。于是：门窗边那条棱从地面到墙顶都出线（只有 `[sill, head]` 一段是真实阳角）；T 形交接的交叉块判给一面墙时（核心的 `joinWallSet`，经 `src/walls/ownership.ts`），贯通墙背面平整的墙面上多出两条相距一个墙厚的线；两段独立墙组成的 L 角、共线墙段的接头同理；墙节点的压顶三角形被单独拆出画、不加边，墙身顶面的边因此都未配对，`EdgesGeometry` 照样输出，压顶上每个块缝多一条横线。GLB 没有线（只有 `POSITION` 与索引），线是查看器加的；playground 的 3D 页签与回放 HTML 共用 `mountReplay`，两处都有。
+
+内容（调查的方案 F1，按楼层跨节点）：
+- 新增一个纯函数模块（例如 `src/replay/wall-lines.ts`，浏览器安全，由 `replayPayload` 或 `mount.ts` 调用），只用于墙节点与柱节点，替换它们上面的 `EdgesGeometry`。门、窗、家具、地面、楼梯保持 `EdgesGeometry`（楼梯可第二步纳入，见 `README.md` §5 的视觉信号）。
+- 收集同一楼层所有墙节点与柱节点的三角形，按所在平面分组。墙的侧面都是竖直面：平面键由平面内线段的整数方向（除以 gcd）加偏移给出；坐标是整数 µm，判断精确。顶面按 z 分组。
+- 每个平面建一张压缩网格：沿线方向取所有出现过的坐标，竖向取所有出现过的高度。一个格子"可见"：被一个朝 +n 的三角形覆盖，且没有被一个朝 −n 的三角形覆盖（朝 −n 的就是两块之间重合的内部面）。
+- 可见与不可见格子之间的边界就是要画的线，共线的段合并。顶面同法（平面内区间相减），压顶的横缝消失。
+- 两个平面共用一条竖棱、且夹角小于 30° 时（曲墙的弦段之间）不出线，保持今天曲墙不出线的行为。
+- T 形交接处保留 stem 两侧真实的阴角线，只去掉平面上的假缝（`README.md` §6.3 的设计默认）。
+- 每条线归属到它所在面的那个节点，逐墙升起的动画仍按节点出线；部分升起时两墙之间的缝短暂不画，可以接受，结束帧正确。
+- 确定性：用整数键全序排序，不依赖 `Map`/`Set` 的迭代顺序；不读时钟或随机源，回放仍是 `t` 的纯函数（`stateAt`），`window.__seek`/`__frameHash` 不变。
+- 随卡重生成 `docs-site/public/3d/` 的全部海报（png、webp）与回放视频：`npm run gen:3d-assets -- --videos`（几何没变，但回放画面变了，视频要显式重编）。README 首屏的两张图（`docs-site/public/3d/laneway-house.poster.png`、`studio.poster.png`）在其中，`editors/vscode/README.md` 与 `packages/mcp/README.md` 引用的 laneway 海报同一文件。与 RM8.2 合并一次重生成（同 PR 或紧接的 PR）。
+- `packages/archlang-3d` 的版本 bump 搭 1.59.0；发布按 `.claude/rules/archlang-3d.md`（bump 合并后 `gh workflow run release.yml --ref main`）。
+
+**不动的**（逐项在 PR 里写明）：Scene3D 合同与 `src/scene3d/scene3d.schema.json`；Mesh3D（`LANEWAY_MESH_SHA256`，`test/mesh.test.ts`）；GLB 字节（`LANEWAY_GLB_SHA256`，`test/pins.ts`）；事件表（`LANEWAY_EVENTS_SHA256`，`test/replay.test.ts`，时间线由 Mesh3D 算出）；核心的 SVG、`describe()`、`lint()`；playground 的启动 chunk（3D 页签仍懒加载，`playground/e2e/preview3d.spec.ts`）。
+
+**会动的，怎样重钉**：
+- 关键帧像素基线 `e2e/fixtures/keyframe-baseline.json`（`e2e/keyframes.e2e.ts`：laneway-house 与 two-storey 的无文字帧，从墙脚线出现起）。按 `.claude/rules/archlang-3d.md` 的 Traps 第 1 条："A change that moves frames leaves `e2e/fixtures/keyframe-baseline.json` alone, `check-3d` prints the new hashes, and a follow-up commit on the same PR pins them with the run link (`e2e/fixtures/README.md`). `check-3d` is not a required check, so never merge with it red." 同文件的另一条："A local `UPDATE_KEYFRAMES` re-take rewrites `e2e/fixtures/keyframe-baseline.json` without the Linux environment entry and in a layout Biome rejects: compare CI's printed hashes, add the Linux entry back, `biome format` the file, and cite the run in `e2e/fixtures/README.md`." 原因（修的正是画错的线）写进重钉的提交与 `e2e/fixtures/README.md`，逐帧列出旧哈希与新哈希；先例是同一 README 里 public-surfaces X4 的楼层接缝重钉。规则正文说默认路径的改动"must leave them"，本卡改的正是默认路径的画面，所以这是带理由的重钉，不是为了变绿（`README.md` §6.3）。
+- `docs-site/public/3d/` 的海报、视频与 `manifest.json`：`e2e/assets.e2e.ts` 在重生成之前会红，重生成后在 CI 的 `check:3d` 绿。
+
+证明（`packages/archlang-3d/test/` 下的轻量单测，CI 跑）：
+- laneway：所有门窗边在过梁段与窗台段不出线，只剩 `[sill, head]` 的真实阳角；压顶没有横缝。
+- 探针 T（stem 先写，交叉块判给 stem）：贯通墙背面没有线；stem 两侧的阴角线在。
+- 两段独立墙组成的 L 角：外表面距角一个墙厚处没有线。
+- 曲墙宿主（`test/fixtures/stress/s5-door-on-arc.arch` 一类）：弦段之间不出线。
+- X 形交接：阴角线保留。
+- 确定性：打乱输入三角形的次序，输出的线集逐字节相同。
+- 上面"不动的"三个 SHA-256 测试原样绿；PR 附前后对照的裁图（只作说明，不进测试）。
+
+不许：碰 `src/mesh/build.ts` 或核心的墙体拼接与归属规则（`joinWallSet`；改归属会改语料的 SVG，是核心行为变更）；把每层的墙合成一个网格或一个外壳（会去掉 `wall:<id>` 节点，动 GLB 合同与 Mesh3D、GLB 钉子，也破坏 DS13 在 `prism` 外加旁路的前提）；在本地 bless 基线（本地 `UPDATE_KEYFRAMES` 的结果不能当钉子）；`check-3d` 红着合并；手修海报（PS-D11："Compiler output only"）；顺带改灯光、色调映射或 `antialias`（那是 RM8.2 与 RM8.8）；在任何文案里说 render、walkthrough、photoreal、model。
+
+### RM8.2 · 海报与视频抗锯齿 — `todo` · 1 日（主会话估） · sonnet · 依赖 RM8.1（同一次重生成）
+
+今天 `mount.ts` 用 `new WebGLRenderer({ … antialias: false, preserveDrawingBuffer: true })` 与 `setPixelRatio(1)`（为了确定性和 SwiftShader），1600 × 900 的海报（`scripts/gen-3d-assets.ts` 的 `POSTER`）上斜线呈阶梯状。
+
+- 只改资产的出图路径：`src/replay/video.ts` 的 `renderStill`、`renderReplay` 加一个默认关闭的超采样选项（画 k 倍尺寸，再确定性地缩小，例如整数盒式滤波），只有 `scripts/gen-3d-assets.ts` 传它。
+- 实时查看器不动：`mount.ts` 的 `antialias: false`、像素比与帧时间预算原样；playground 与回放 HTML 的画面不变。
+- 关键帧不动：`e2e/keyframes.e2e.ts` 走 `renderReplay` 的默认（480 × 270），不传这个选项，基线不因本卡移动。
+- 和 RM8.1 合并一次资产重生成（`npm run gen:3d-assets -- --videos`）；`archlang-3d` 的 bump 与 RM8.1 共用一次。
+
+证明：同输入同字节（同一环境里重跑 `gen:3d-assets -- --check` 零差，CI 的 `e2e/assets.e2e.ts` 绿）；关键帧基线零差；PR 写明海报 PNG 的体积变化（backlog 3D.2：海报今天没有体积预算）与 CI `check:3d` 的耗时变化。
+
+不许：改 `mount.ts` 的 `antialias`、像素比或帧时间预算（实时查看器的抗锯齿在阶段 F，MP7 之后）；改默认的 `renderStill`/`renderReplay` 输出；手修或在别的工具里后处理海报；读时钟或随机源。
+
+### RM8.3 · 3D 画出庭院（backlog VA.2） — `todo` · 4 日（主会话估） · opus · 依赖无 · **不是缺陷修复**：赶不上约 11-21 的切点就等 12-02
+
+Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf`、`fenceOf`），Mesh3D 今天不建它们，并记账本 `m1-omits-outdoor-fences`（`src/mesh/build.ts`）。本卡：
+- 9 种 `outdoor` 地面（`OUTDOOR_KINDS`：lawn、planting、paving、deck、gravel、water、driveway、patio、balcony）各建一块薄板，每种一个带账本的默认颜色。颜色取自 2D 主题：核心的 `GROUND` 表（`src/elements/outdoor.ts`）让每个种类读三个主题键之一（`tint`：`lawn`、`paving`、`water`），所以 9 种今天只对应 3 个底色；3D 先照这张表取色（经核心公开导出的 `THEMES`，ADR 0031 的缝），种类之间要不要再分色（例如 deck 与 gravel），在 PR 里论证，分出来的每一个都是 3D 调色板里的一项并进账本。
+- 围栏（`picket`、`panel`、`post`）各建一个按样式的低面数剖面，高度是带账本的默认值。
+- 建筑之外的地面平面：一个带账本的默认尺寸与颜色。它放进 Mesh3D（每张图的 GLB 都会变，含 laneway 的 Mesh3D 与 GLB 钉子），还是只在查看器里画（只动关键帧与海报），在 PR 里选一种并写明理由。
+- 去掉账本里的 `m1-omits-outdoor-fences`，换成每项默认值的条目（ADR 0030 决定 5，V-D4）。
+- 重生成 `docs-site/public/3d/`（`npm run gen:3d-assets`；有 `outdoor` 的图会变，例如 hillside-villa）。
+
+证明：每种地面和每种围栏样式一个最小夹具，Mesh3D 里有对应节点、GLB 过 glTF-Validator（V-GLTF-01，CI）；没有 `outdoor`、`fence` 的图 Mesh3D 与 GLB 零差（laneway 与 two-storey 没有，除非选了"地面平面进 Mesh3D"）；钉子只按 V-D5 带理由移动，理由写进提交与测试注释；核心的 SVG、`describe()`、`lint()` 零差。
+
+不许：在冻结期（11-24 → 12-01）合并；为地面加位图纹理、UV 或 `TEXCOORD_0`；给 3D 加核心没有的地面种类；读 `label` 决定地面；没写理由就移动钉子；改核心的主题值或 `GROUND` 表。
+
 ---
 
 ## 阶段 C · 冻结期（11-24 → 12-01）：只修 bug，加测量与文档
@@ -205,13 +268,19 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 
 不许：手抄 SKILL 或安装说明；页里出现"first/only"、合规、IFC 或 3D 能力承诺；加 `.mcp.json`；示例 fence 用活编译的 `arch`（片段用 `arch static`）；示例里出现新的 fixture 家族名（`.claude/rules/docs-prose.md`）。
 
-### 冻结期设计稿（四份，纯文档，可由第二个执行者并行）
+### 冻结期设计稿（五份，纯文档，可由第二个执行者并行；第五份 `visual-language.md` 于 2026-11-11 随第 8 轨加入）
 
 放 `design/`（本目录下，冻结期才建）。每份是对应卡开工前要读的设计，不是实现：
 - `schema-policy.md` → CR11a：`$id` 与变更、弃用政策草案。
 - `walls-facts.md` → RM7.2：字段按 `_derivedWalls` 的真实形状（`points[]`、`closed`、`between` 或 `ring`、厚度、类别、状态，`src/elements/walls-from-rooms.ts`）；按墙 `id`（即 piece 名）与 `heights.walls[]`（`src/describe.ts` 的 `{ id, height }`）、`describe --facts quantities`（`src/analyze/quantities.ts` 按 `id`）对齐；已有的 `describe().derived_walls[].name` 是 spec 名，CR8 切分后一个 spec 对应多个 piece，设计稿要交代新事实与默认 `derived_walls` 的关系；写明"段的粒度在 CRF1 之后才稳定"；新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`）；消费者一栏照实写。
 - `slab-and-section.md` → RM6.1：DS11 并入时的四件事（拼写取 DS11 的 `section A (x,y)->(x,y)` 还是 #544 的 `from … to …`；进 `describe` 主体还是 opt-in 事实；多层平面上剖切符号画在哪一页；`section` 写进日后 DS5 的 `level a..b` 时 id 怎么不重复，定不下来就保留对 DS5 的依赖）；净高子句的拼写，按 RM-D17（MF-D11 的受托裁定，`README.md` §6.2）。
-- `plan-json-scope.md` → RM3.1：范围表，逐个顶层语句对 `src/plan-json*`；列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，待所有者裁定，未裁则标 `dropped`）。
+- `plan-json-scope.md` → RM3.1：范围表，逐个顶层语句对 `src/plan-json*`；列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，待所有者裁定，未裁则标 `dropped`）。RM8.7 的"3D 读 `floor`"在这张表里一起定（`floor` 今天在 `PlanJsonDroppedClause` 里，`src/plan-json/to-json.ts`）。
+- `visual-language.md` → 第 8 轨（RM8.5–RM8.9）。写明：
+  - RM8.8：接触阴影与环境遮蔽怎样从几何确定性地烘焙（不用实时阴影图）；帧时间预算的数字与量法（backlog VA.5 的条件；V9 的阴影图实测在 SwiftShader 上多约 55% 帧时间，超过当时约 30% 的预算，`mount.ts` 灯光处的注释）；它进 Mesh3D 与 GLB 还是只在查看器里。
+  - RM8.6：门框与门套、窗台板、楼梯踏步与栏杆的默认尺寸（每个都进账本），各取墙厚或洞口的哪个比例。
+  - RM8.7：新地面词与 `outdoor` 种类的名字与图案（裸图案，线色跟主题，不重画墙材料的图案：`.claude/rules/glyphs.md`）；`carpet` 今天是 `rug` 家族的别名，`stone` 是 `NEAR_WORDS` 里的词，也是 `FIXTURE_MATERIALS` 的材质名，取名时逐个说明会不会混淆；每个词的 `spec.llm.md` 成本。
+  - RM8.9：新家族清单、canonical 名与别名（避开 `test/helpers/new-families-law.ts` 的 `NEAR_WORDS`：`rack`、`lamp`、`table_lamp`、`stand`、`trunk`、`planter_box`、`stone`；`screen` 已是材质名；"院门"与 `fence` 头注释按名字推迟的 gate 怎样不冲突）；哪些有目录占地（决定 spec 成本）；挂墙物的默认挂高。
+  - RM8.5：展示示例怎样合法进入 `test/new-families-byte-identity.test.ts` 扫描的语料（它扫描所有已发布平面与 `docs/` 的 Markdown 围栏）：一份带理由的名单，法则本身不放宽；新示例对其他字节恒等律语料的影响。
 
 ### RM1.8 · 读 GB 55038-2025 原文（#684） — `todo` · 未估 · sonnet · 依赖无
 
@@ -220,6 +289,10 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 证明：#684 下的评论引条文号、版本与读到的文本来源；本卡不改代码。
 
 不许：在本卡里改任何规则数字（动默认规则集的两个数另开卡，带语料扫描与字节变化说明）；把镜像标成 `V`；写"合规"。
+
+### 第 8 轨（视觉）· 冻结期
+
+RM8.1 是查看器缺陷修复，冻结期允许合并；但海报要在 Show HN（12-01）前部署，关键帧重钉还要一轮 CI，所以目标是冻结前合并。RM8.2、RM8.3 不是缺陷修复，冻结期不合。`visual-language.md` 见上面的设计稿列表。
 
 ---
 
@@ -318,6 +391,46 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 证明：CI 的 "Workspace builds" 绿；托管 app 的资源在部署后能取到并渲染（记录请求与截图在 PR 说明，不进测试）；MCP 工具的输出除 bump 外不变。
 
 不许：2026-12-02 之前开工或合并；在没读 release notes 的情况下改代码；为了绿而降低 TypeScript 检查；与 RM1.6b 以外的 MCP 改动另做一次 bump。
+
+### 第 8 轨（视觉）· 阶段 D
+
+双车道（RM-D22 获批）时视觉车道 RM8.3（若阶段 B 没做完）→ RM8.4 → RM8.5 → RM8.6，合计 8.5 日（RM8.3 顺延过来时 12.5 日）；单车道时它们全部在线下，排在 RM4.3 之后（`README.md` §3 阶段 D）。
+
+### RM8.4 · 把色彩主题亮出来 — `todo` · 1.5 日（主会话估） · sonnet · 依赖无（backlog VA.4，从 RM5.2 提前到这里）
+
+`rendered` 主题今天只能由源文件里的 `theme rendered` 或库调用的 `CompileOptions.theme` 选中；CLI 没有 `--theme`（`src/manifest.ts` 与 `docs/cli-reference.md` 都没有）。
+- CLI `--theme <name>`：按 `.claude/commands/new-cli-flag.md` 注册，`src/manifest.ts` 一行，`npm run gen:cli` 重生成 `docs/cli-reference.md`。可选名从核心公开导出的 `THEMES` 派生，不重抄。CLI 把选中的主题作为 `CompileOptions.theme` 传入；按 `src/types.ts` 的说明，这个选项压过源文件的 `theme { … }`，帮助文本照实写出这一点。未知的名字给出可选名列表。
+- playground：主题下拉框已有（`playground/index.html` 的 `#theme`，含 Rendered，`playground/src/main.ts` 读写它）。本卡只核对它在手机宽度下能不能被找到，找不到就调位置，不另做一个切换入口。
+- docs 的示例页与 gallery 提供 `rendered` 版本：由生成器出图（扩 `scripts/gen-example-svgs.ts` 或同类生成器，`check:drift` 守着），不手做；站点仍只用浅色（`AGENTS.md`）。
+
+证明：不带标志时，语料上每个 CLI 命令的输出逐字节不变（字节恒等，测试取 digest）；`arch compile <plan> --theme rendered` 与 `compile(src, { theme: THEMES.rendered })` 的 SVG 逐字节相同（测试）；`describe()` 与 `lint()` 不接主题（`src/types.ts`），零差；生成的 `docs/cli-reference.md` 与示例图在 CI 的 `check:drift` 绿；`docs:build` 绿。
+
+不许：改默认主题或任何现有主题的值（`test/fixture-byte-identity.test.ts` 第 1 组红就是缺陷，ADR 0023 决定 6）；手改 `docs/cli-reference.md`；新增主题名；在本卡给 MCP 工具加主题参数；让站点出现深色页面。
+
+### RM8.5 · 把词表亮出来 — `todo` · 3 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（展示示例一节）；backlog D.8
+
+`docs/furniture.md` 的符号目录（"The symbol catalogue" 一节）只有文字，没有一张图；评审用的前后对照样张工具从未提交（backlog D.8："`scripts/` has no equivalent"）；103 个家族里 42 个从未以 `furniture <词>` 出现在 `examples/**`（`README.md` §1.1d 第 2 条）。
+- 提交样张工具（D.8）：从 `CANONICAL_FIXTURES`（`FIXTURE_FAMILIES` 的派生，`src/elements/fixtures-glyphs.ts`）与 `CATALOG`（`src/fixtures-catalog.ts` 的占地）生成每个家族的 2D 符号图，在 `scale 1:50` 与 `1:100`、各主题（默认、`blueprint`、`mono`、`dark`、`presentation`、`rendered`）下；D.8 的前后对照模式（两份检出，一张 PNG）一并做。按 D.8，它不进 `check:drift`。
+- 3D 小图：每个家族一张，由 `packages/archlang-3d` 的 T0 生成器出（脚本在 `packages/archlang-3d/scripts/`，与 `gen:3d-assets` 同法），放在它的 2D 符号旁边（3D 永远配对平面，PS-D11）。核心不因此获得任何 3D 输出。
+- `docs/furniture.md` 的目录配图；图由工具生成并提交，一条轻测试从 `CANONICAL_FIXTURES` 派生清单，断言每个家族都有图（不比像素）。
+- 一到两个"带庭院的住宅"展示示例，用上从未露面的家族。它们怎样合法进入 `test/new-families-byte-identity.test.ts` 扫描的语料，按 `visual-language.md` 的带理由名单；法则本身不放宽。新示例同时进其他按示例取 digest 的语料，PR 里列出哪些测试多了行。
+
+证明：样张工具对同一检出两次出图逐字节相同；"每个家族都有图"的测试绿；展示示例零 E，`arch lint --json` 的报出贴进 PR；字节恒等律在 CI 绿；`docs:build` 绿。
+
+不许：手画或手修任何图；用 AI 图像；放宽字节恒等律，或在设计稿没写理由时改 `FAMILIES_BEFORE`、`NEAR_WORDS`；在 `docs/` 的 Markdown 围栏里写 2026-11-04 那一批的家族词（`.claude/rules/docs-prose.md`，用文字说明）；把样张工具放进 `check:drift`；让 3D 小图离开它的 2D 符号单独出现。
+
+### RM8.6 · 门窗与楼梯的 3D 细部 — `todo` · 4 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（细部尺寸一节）；backlog VA.1
+
+今天：门是放在墙厚中央的一块 40 mm 门扇，洞口侧面是光秃的墙体；窗是 40 × 60 mm 的框和 16 mm 的玻璃（`GLASS_MM`），都在切口中线上，没有窗台板（`src/mesh/build.ts` 头注释）；楼梯是实心阶梯体（账本 `stair-solid-default`）；`bean_bag` 由堆叠的圆角层构成，轮廓呈阶梯（VA.1），树冠同类。
+- 门框与门套；窗台板与洞口侧面；楼梯做出踏步与栏杆（不再是实心体块）；树冠与 `bean_bag` 用 `profile` 平滑截面（`src/mesh/t0.ts`）。
+- 每个默认尺寸进 `assumptions[]` 账本（ADR 0030 决定 5，V-D4），尺寸按 `visual-language.md` 取墙厚或洞口的比例。
+- 只做四分之一转，整数 µm，每个壳体封闭（V-GEO-02，`src/check/verify.ts`）。
+- 手性：符号"永不新增手性"的规则只管 2D（`test/glyph-chirality.test.ts`）；3D 里镜像跟核心走：有手性的部件按核心 Plan JSON 的 `mirror` 反射（V-D3、`T0_HANDED`、`handedAt`），门的细部按核心画出的开启侧，不另行推断。
+- 动的钉子：门、窗、楼梯出现在 laneway 与 two-storey 里，所以 laneway 的 Mesh3D 与 GLB SHA-256、事件表若有变化、关键帧基线都会动：Mesh3D 与 GLB 按 V-D5 带理由移动（提交与测试注释）；关键帧按 RM8.1 写的 CI 打印值流程重钉；资产重生成（`npm run gen:3d-assets -- --videos`）。
+
+证明：每类细部一个最小夹具；`packages/archlang-3d/test/t0.test.ts` 绿；GLB 过 glTF-Validator（CI）；核心的 SVG、`describe()`、`lint()` 零差；每个移动的钉子在 PR 里列出旧值、新值与理由。
+
+不许：碰核心（`src/`）或 2D 符号；不带理由移动钉子，或在本地 bless 关键帧；做任意角度旋转；用 PBR、位图纹理或 UV；让一个对称家族在 3D 里变成有手性（手性只从核心的 `mirror` 来）；漏记任何默认值。
 
 ---
 
@@ -475,7 +588,7 @@ P2-10：`dimension_units standard` 或等价词（由 `gen:*` 的闭集决定）
 
 ### RM5.2 · CLI 日常 — `todo` · 3 日 · sonnet · 依赖 RM5.1
 
-U.15 `arch doctor`（Node 版本、可选依赖、字体、`arch` 别名 bin 的 U.19）、U.16 第二套起手模板（`arch new --template remodel`，与 CRF11 的起手同源）、U.8 `compile --json=brief` 可选瘦身（**不改默认**：`compile --json` 的形状是代理契约，ADR 0015）、VA.4 `--theme`。同 PR 在 `docs/cli-reference.md` 顶部加一段"动词边界"（`validate` 对 `lint`、`describe` 对 `takeoff`），把 28 个动词按阶段分组列出；不设动词数上限。MCP 工具分组在阶段 F。
+U.15 `arch doctor`（Node 版本、可选依赖、字体、`arch` 别名 bin 的 U.19）、U.16 第二套起手模板（`arch new --template remodel`，与 CRF11 的起手同源）、U.8 `compile --json=brief` 可选瘦身（**不改默认**：`compile --json` 的形状是代理契约，ADR 0015）。VA.4 `--theme` 已于 2026-11-11 移到 RM8.4（第 8 轨，阶段 D），本卡不再做。同 PR 在 `docs/cli-reference.md` 顶部加一段"动词边界"（`validate` 对 `lint`、`describe` 对 `takeoff`），把 28 个动词按阶段分组列出；不设动词数上限。MCP 工具分组在阶段 F。
 
 不许：改任何现有动词的默认输出。
 
@@ -499,6 +612,55 @@ bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这�
 证明：每项一个最小夹具；绘图项列 SVG 字节变化，`describe()`/`lint()` 零差；语法项带字节恒等律。
 
 不许：为本卡向 bobsch-io 提问或等他的答复（Daniel 规则）；`paper auto`（ADR 0024 已拒）；为一项而改变不用它的图的输出；`finish` 被说成 "designs"、"arranges"。
+
+### 第 8 轨（视觉）· 阶段 E
+
+双车道时视觉车道 RM8.7 → RM8.8 → RM8.9，合计 13 日（RM8.8 等 RM-D23，未获批时 10 日）；单车道时三张都在线下，排在 RM4.1 之后（`README.md` §3 阶段 E）。要进 1.61.0 的，在约 01-05 的切点前合并。
+
+**词表卡的 spec 成本**（RM8.7、RM8.9 共用，2026-11-11 对 `scripts/gen-llm-spec.ts` 核过）：`spec.llm.md` 今天 29,856 UTF-16 单位，`test/llm-spec-drift.test.ts` 要求 `< 30_000`，余量 143。`room` 行用 `FLOOR_MATERIALS.join("|")` 列出地面词，`outdoor` 行用 `OUTDOOR_KINDS.join("|")` 列出地面种类，所以每个新词花"词长 + 1"。家族词只有一条路进 spec：`furniture` 行的 `SIZE_OPTIONAL_FIXTURES`（`CANONICAL_FIXTURES` 中有目录占地的，用 `/` 连接），所以**只有带目录占地的 canonical 家族**花"词长 + 1"，别名和没有占地的家族花 0。RM8.7 按暂定名的六个词花 39 单位；RM8.9 的十二个家族若都带占地，按平均词长约 9–10 计约 120 单位。两张合起来超过余量，所以 PS7.9 的目标要先算进它们。
+
+### RM8.7 · 地面材质 — `todo` · 4 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（地面一节）与 `plan-json-scope.md` · `[语法：词表]`
+
+今天：`room … floor tile|paving|deck|concrete`（`FLOOR_MATERIALS`，`src/hatches.ts`）只画一层单色的裸图案，不进 `describe()`、`lint()`（`test/room-floor.test.ts` 的孪生律），Plan JSON 把它列为 `dropped`（`src/plan-json/to-json.ts`），3D 完全看不到它；3D 的地面颜色由 `floorFinish(uses)` 按 `FLOOR_FINISH_RULES` 猜（`packages/archlang-3d/src/materials.ts`，账本 `floor-finish-default`）。`examples/**` 里没有一张图写 `floor` 子句。
+- 2D：`floor` 加 `timber`、`carpet`、`stone`（名字按设计稿）。每个词一个裸图案（`src/hatches.ts` 的 `META`，线色跟主题，冻结的分数表，不用随机数）；`rendered` 主题下带浅色块，其他主题与默认主题逐字节不变（色块走 `rendered` 的 `materialTints` 还是一个默认值等于今天行为的新主题键，按设计稿）。DXF 写对应的 `HATCH` 名，PDF 平涂。
+- 2D：`outdoor` 加 `sand`、`soil`、`stepping`（名字按设计稿）：`OUTDOOR_KINDS`（`src/ast.ts`）、`GROUND` 表一行（`src/elements/outdoor.ts`，底色取现有三个主题键之一）、需要时的新图案；`gen:*` 重生成语法、GBNF、TextMate 与 spec（闭集从源头派生）。
+- 3D 读作者写的 `floor`：经核心新增的**加性公开导出**取数（`.claude/rules/archlang-3d.md`：带自己的字节恒等证明，不深 import），或在 RM3.1 的范围表把 `floor` 移进 Plan JSON 且往返律成立；两条路在 `plan-json-scope.md` 里与 RM3.1 一起定。作者写了 `floor` 就用它，没写时才用 `FLOOR_FINISH_RULES` 的默认，并照旧记账本。新的 3D 地面词与新 `outdoor` 种类的 3D 颜色在同一张卡里交付（V-D6 的同卡规则，用于地面），RM8.3 已建的地面按种类补上新词。
+- 法则：字节恒等律，不用新词的图 SVG、`describe()`、`lint()`、诊断逐字节不变（AGENTS.md 硬规则；V-D7 的"语料上 `describe()`/`lint()`/诊断不变"）；`floor` 的孪生律（`test/room-floor.test.ts`）对新词也成立。
+- 取名：`carpet` 今天是 `rug` 家族的别名，`stone` 在 `NEAR_WORDS`（`test/helpers/new-families-law.ts`，钉的是"不是家具词"）里，也是 `FIXTURE_MATERIALS` 的材质名；两者在语法上位置不同，但设计稿要逐个写明会不会混淆，必要时换名。
+- 成本：见上面"词表卡的 spec 成本"。
+
+证明：每个新词一个最小夹具；字节恒等律与孪生律（CI）；`gen:*` 的产物在 `check:drift` 绿；一张写了 `floor timber` 的图在 3D 里是作者的地面，同一张图去掉 `floor` 后回到按 `uses` 的默认（测试）；没有 `floor` 的图 Mesh3D 与 GLB 零差，laneway 的钉子不动。
+
+不许：加新子句（给 `floor` 加颜色、`scale`、`angle`，或 `finish …` 一类新写法，那是另一种语言形式）；重画或改动墙材料的图案（`.claude/rules/glyphs.md`："Ground-material work never re-frames or restyles a wall material's hatch."）；读 `label` 决定地面（VA.3 仍是所有者的 `decision`）；改 `FLOOR_FINISH_RULES` 的默认（会动每张有房间的图的 Mesh3D 与 GLB）；从 3D 包深 import 核心；不先削重复就提高 spec 上限；用位图纹理。
+
+### RM8.8 · 接触阴影与环境遮蔽 — `todo` · 3 日（主会话估） · opus · 依赖 **RM-D23（提请，等所有者）**、冻结期的 `visual-language.md`（阴影一节）
+
+RM-D23 获批前不开工。backlog VA.5："Revisit only with a cheaper technique (baked contact shadows) and a frame-time budget." V9 的阴影图在 SwiftShader 上多约 55% 帧时间，超过当时约 30% 的预算（`mount.ts` 灯光处的注释）。
+- 由几何确定性烘焙的地面接触阴影，和墙脚、墙角的环境遮蔽；不用实时阴影图。放进 Mesh3D 与 GLB 还是只在查看器里，按设计稿。
+- 帧时间预算：数字与量法按设计稿（SwiftShader，1600 × 900，与 V9 同法），超出预算不合并。
+- 确定性：同输入同字节、同帧哈希；不读时钟或随机源。
+- 只在 `packages/archlang-3d` 里。2D 符号的"无阴影"（ADR 0023 决定 5）不动。
+- **公开的那句话同 PR 改**：`PREVIEW_LIMITS`（`packages/archlang-3d/src/replay/payload.ts`）今天是 "3D preview: walls, openings, floors, stairs and furniture in flat colours; no pitched roofs yet, and no sections, elevations or BIM."。要求同一句话的测试与面：`packages/archlang-3d/test/package-meta.test.ts`（包 README）、`packages/archlang-3d/test/replay.test.ts`（回放 HTML）、`packages/archlang-3d/test/docs-site.test.ts`（`docs-site/three-d.mjs`，以及 `docs/plans/public-surfaces/3d.md` 里引用的那句）、仓库根的 `test/readme-3d.test.ts`（`README.md`、`packages/mcp/README.md`、`editors/vscode/README.md`）、`playground/e2e/preview3d.spec.ts`（逐字抄了一份）。另有手写的同义说法：README 两张海报的 alt 文本（"in flat colours"）、`docs-site/3d.md` 的正文。新句子仍用"3D preview"，不出现 render、photoreal、walkthrough、model。
+- 动的钉子：关键帧基线按 RM8.1 写的 CI 打印值流程重钉；若进了 Mesh3D 与 GLB，laneway 的两个 SHA-256 按 V-D5 带理由移动；资产重生成。
+
+证明：帧时间实测在预算内（数字进 PR）；上面每个测试改成新句子后绿，`grep "in flat colours"` 在仓库的公开面上不再命中旧句；同一环境两次出图逐字节相同；每个移动的钉子带理由。
+
+不许：RM-D23 获批前开工或合并；实时阴影图；PBR、位图纹理、HDR 天空或昼夜；让任何物体发光（MF-D2：照明不做）；只改一部分公开面的句子；把阴影说成 photoreal 或 render；动 2D 的符号或主题。
+
+### RM8.9 · 新家族首批 — `todo` · 6 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（家族一节） · `[语法：词表]`
+
+十二个家族（名字按设计稿）：空调内机、空调外机、冷柜、酒柜、展示柜、屏风、贵妃榻或日床、泳池、院门、凉亭、温室、墙上挂画。每个家族的 2D 符号与 3D 生成器同卡交付（V-D6），按 `.claude/commands/new-fixture-family.md` 逐步：
+- 2D：`src/elements/glyphs-<group>.ts` 的画法（先画轮廓、尺寸取占地分数、墨不出占地、四分之一转，`.claude/rules/glyphs.md`）；`FIXTURE_FAMILIES` **末尾**追加（V-D7，中间插入会改写所有含家具的图的图例顺序）；`DRAW_BY_FAMILY`、`FIXTURE_FAMILY_MATERIALS`（`src/elements/fixtures-glyphs.ts`）；每个词一行 `CATALOG`（`src/fixtures-catalog.ts`）；`test/tables/glyph-dispatch.json` 的行；对称家族在 `test/handedness-grid-baseline.ts` 记 `"none"`，不新增手性（`test/glyph-chirality.test.ts`）。
+- 3D：`packages/archlang-3d/src/mesh/t0-*.ts` 各一个 T0 生成器（贴合占地、四分之一转、整数 µm、默认关于宽度对称；有手性的按核心 `mirror` 反射），每个默认（高度、挂高 `T0_MOUNT_MM`、材质、饰面）进账本；目录内的词没有生成器就是灰盒，`packages/archlang-3d/test/t0.test.ts` 会红。需要新材质时核心的 `FIXTURE_MATERIALS` 先行（`test/material-vocabulary.test.ts`）。
+- 字节恒等律：不用新词的图 SVG、`describe()`、`lint()`、诊断逐字节不变；已发布的 `.arch` 与 `docs/` 的 Markdown 围栏里都不出现新词（展示走文字，或按 RM8.5 设计稿的名单）。现有的 `test/new-families-byte-identity.test.ts` 断言 `CANONICAL_FIXTURES.length` 等于 `FAMILIES_BEFORE + 20`（`FAMILIES_BEFORE = 83`）、最后一个新词是 `desk_pod`：第 104 个家族一加它就红。本批带自己的律（按 103 个家族重量），并在 PR 写明理由；不许只改数字让它变绿，也不放宽旧律。
+- 取名避开 `NEAR_WORDS`（`rack`、`lamp`、`table_lamp`、`stand`、`trunk`、`planter_box`、`stone`），否则要带理由改这个名单；`screen` 已是材质名。
+- 边界：凉亭的顶是生成器的一部分（家具几何），不是屋顶元素（3D 坡屋顶是 backlog 3D.4）；泳池是一个家族（带池沿的物体），`outdoor water` 照旧是水面；院门是独立家族，不让 `door` 宿主到 `fence` 上（`fence` 的门按名字推迟）；挂顶物与窗帘不在本批（MF14、MF15）。
+- 手写的计数跟着改：`docs/furniture.md` 的 "A hundred and three families, a hundred and sixty-three names"、`docs/overview.md` 的 "163 words across 103 families"；`docs/furniture.md` 的符号表行。
+- 成本：见上面"词表卡的 spec 成本"；`npm run gen:all` 重生成 `spec.llm.md`、`llms-full.txt` 等。
+
+证明：`.claude/commands/new-fixture-family.md` 列的守卫全绿（CI）：`tsc`、`test/glyph-dispatch-table.test.ts`、`test/rendered-theme.test.ts`、包含性检查、`test/drawing-budget.test.ts`、`test/glyph-chirality.test.ts`、`t0.test.ts`、新批次的字节恒等律；laneway 的 Mesh3D、GLB 钉子与关键帧不动（现有示例不出现新词）；`check:drift` 绿。
+
+不许：在 `FIXTURE_FAMILIES` 中间插入；让符号读 `label`；新增手性；留灰盒；材质不经核心就进 3D；在 docs 围栏里写新词；放宽或改写旧的字节恒等律来变绿；冻结期合并；让任何家族发光（MF-D2）。
 
 ---
 
@@ -534,6 +696,8 @@ A.6/A.7（CLI `--accessible --annotate` 与 MCP 对应参数）、A.1（`dims au
 
 波次 2′ 线下没做完的卡；剖面本体（DS12 → DS13，在 `archlang-3d`）与 MF17–MF19；MF12、MF14、MF15（等 MF-D3(b)）；NZ/AU advisory profile（带 RM1.6 的出处）；`lint --brief`；FLOORA 导入；Cron 巡检；Workers AI 读图探针设计；#344；DS3–DS9；CRF4、CRF6、CRF8；IFC 下游包（只在触发后）；MCP 工具分组（工具数到二十个以上再议，今天 11 个）。
 
+第 8 轨的候选（不排序）：3D 坡屋顶（backlog 3D.4，先写设计）；窗帘与吊灯、吊扇等挂顶物（MF14、MF15，等 MF-D3(b)）；新家族第二批；家具转到斜墙（backlog 5.6）；预览图的 CJK 字体（CRF9，仍 parked，见下表）；实时查看器的抗锯齿（MP7 之后）。
+
 ---
 
 ## 等待触发（不排期）
@@ -550,5 +714,7 @@ A.6/A.7（CLI `--accessible --annotate` 与 MCP 对应参数）、A.1（`dims au
 | 电气布置 overlay | 2027-01-31 前 Floorcraft 的电气功能显出用户反响（`README.md` §4） |
 | PS0.16 升 E、无宿主门洞升 E | 2.0 major（与 V.5、V.6、6.7 同桶；RM-D16） |
 | CRF9 预览图 CJK 字体 | parked（Worker 体积，ADR 0034 的已知缺口） |
+| RM8.8 接触阴影与环境遮蔽 | 所有者批准 RM-D23（`README.md` §6.3，提请中） |
+| RM8.1 后的同类位置（楼梯梯段与平台、地面在门洞下的交界） | RM8.1 合并后仍有人指出 3D 的线或缝（`README.md` §5） |
 
 残留卡（CRF3–CRF13、RM4.4、v1 波次 3 的既定项）的去向表在 `README.md` §7.1。
