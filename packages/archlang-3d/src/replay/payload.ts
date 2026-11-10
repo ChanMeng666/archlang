@@ -46,6 +46,12 @@ export interface ReplayPayload {
   facts?: ReplayFacts;
   nodes: ReplayNode[];
   events: ReplayEvent[];
+  /**
+   * The generated posters and videos only (`video.ts`'s `supersample`, product-roadmap card RM8.2):
+   * each frame is the mean of k × k renders. Absent (1) everywhere else: `replayPayload` never sets
+   * it, and the live 3D preview draws as it always has.
+   */
+  supersample?: number;
 }
 
 /**

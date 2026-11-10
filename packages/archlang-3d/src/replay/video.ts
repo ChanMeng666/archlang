@@ -53,6 +53,8 @@ export interface VideoOptions {
   ffmpeg?: string;
   /** libx264's constant rate factor for the MP4 (default 18; 0 is lossless: a master to re-encode). */
   crf?: number;
+  /** {@link withSupersample}: 1 (off) unless given; the key-frame baseline is taken without it. */
+  supersample?: number;
 }
 
 /** The page the browser opens: the replay with its own playback off, so every frame is chosen by `__seek`. */
@@ -64,6 +66,28 @@ function seekOnly(html: string): string {
   );
 }
 
+const PAYLOAD_OPEN = '<script type="application/json" id="archlang-replay-payload">';
+
+/**
+ * Supersampling (product-roadmap card RM8.2), for the generated posters and videos only: the replay
+ * page with `supersample: k` in its payload, so every frame is the rounded mean of k × k renders
+ * shifted by fractions of a pixel (`mountReplay`): the samples of a render at k times the size,
+ * box-filtered back, in integers, so the same frame gives the same bytes. `k` is a whole number
+ * from 1 to 4; 1 returns the page as it is, and the live 3D preview never sees the field.
+ */
+export function withSupersample(html: string, k = 1): string {
+  if (!Number.isInteger(k) || k < 1 || k > 4)
+    throw new Error(`supersample must be a whole number from 1 to 4 (got ${k})`);
+  if (k === 1) return html;
+  const at = html.indexOf(PAYLOAD_OPEN);
+  const end = at < 0 ? -1 : html.indexOf("</script>", at);
+  if (end < 0) throw new Error("the replay page carries no payload to supersample");
+  const p = JSON.parse(html.slice(at + PAYLOAD_OPEN.length, end)) as Record<string, unknown>;
+  // Escaped as `html.ts` escapes it: `</` never appears inside the inline JSON.
+  const json = JSON.stringify({ ...p, supersample: k }).replace(/</g, "\\u003c");
+  return html.slice(0, at + PAYLOAD_OPEN.length) + json + html.slice(end);
+}
+
 /** Render key frames (and, given `mp4`, every frame) of a replay HTML in headless Chromium. */
 export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
   const fps = o.fps ?? 30;
@@ -71,7 +95,7 @@ export async function renderReplay(o: VideoOptions): Promise<VideoReport> {
   const frames = Math.round(fps * seconds);
   const dir = mkdtempSync(join(tmpdir(), "archlang3d-replay-"));
   const file = join(dir, "replay.html");
-  writeFileSync(file, seekOnly(o.html));
+  writeFileSync(file, seekOnly(withSupersample(o.html, o.supersample)));
   // Loaded only here: playwright-core exits the process on import under Node < 20, and the light
   // tests (which run on CI's Node 18 leg) import this module's neighbours, never a browser.
   const { chromium } = await import("playwright-core");
@@ -207,6 +231,8 @@ export interface StillOptions {
   reference?: Uint8Array;
   /** A reference pixel differs when one channel is further than this from the frame's (default 24). */
   threshold?: number;
+  /** {@link withSupersample}: 1 (off) unless given. */
+  supersample?: number;
 }
 
 export interface Still {
@@ -225,7 +251,7 @@ export async function renderStill(o: StillOptions): Promise<Still> {
   const t = o.t ?? 1;
   const dir = mkdtempSync(join(tmpdir(), "archlang3d-still-"));
   const file = join(dir, "replay.html");
-  writeFileSync(file, seekOnly(o.html));
+  writeFileSync(file, seekOnly(withSupersample(o.html, o.supersample)));
   const { chromium } = await import("playwright-core");
   const browser = await chromium.launch({ args: SWIFTSHADER_ARGS });
   const bytesOf = (url: string, type: string): Uint8Array => {

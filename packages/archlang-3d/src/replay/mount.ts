@@ -499,6 +499,37 @@ export function mountReplay(
     for (const fn of listeners) fn();
   };
 
+  /**
+   * The generated posters' and videos' supersampling (`ReplayPayload.supersample`, card RM8.2): `k`
+   * × `k` samples per pixel. 1 (every live 3D preview) draws exactly as before.
+   */
+  const samples = Math.max(1, Math.min(4, Math.floor(p.supersample ?? 1)));
+  /**
+   * Draw the scene from `cam` supersampled: `samples` × `samples` renders, each shifted by a fraction
+   * of a pixel on a regular grid (`setViewOffset`), and each pixel the rounded mean of its samples,
+   * in integers. The samples are those of a render at `samples` times the size box-filtered back,
+   * but every render draws its outlines one pixel wide, so they keep their weight (WebGL draws no
+   * wider line: SwiftShader takes no `linewidth` but 1).
+   */
+  function supersampled(cam: OrthographicCamera | PerspectiveCamera): void {
+    const n = samples * samples;
+    const sum = new Uint32Array(W * H * 4);
+    ctx.globalAlpha = 1;
+    for (let j = 0; j < samples; j++) {
+      for (let i = 0; i < samples; i++) {
+        cam.setViewOffset(W, H, (i + 0.5) / samples - 0.5, (j + 0.5) / samples - 0.5, W, H);
+        renderer.render(scene, cam);
+        ctx.drawImage(gl, 0, 0);
+        const d = ctx.getImageData(0, 0, W, H).data;
+        for (let q = 0; q < d.length; q++) sum[q] = (sum[q] as number) + (d[q] as number);
+      }
+    }
+    cam.clearViewOffset();
+    const mean = ctx.createImageData(W, H);
+    for (let q = 0; q < sum.length; q++) mean.data[q] = Math.floor(((sum[q] as number) + (n >> 1)) / n);
+    ctx.putImageData(mean, 0, 0);
+  }
+
   /** Draw replay time `t` from whoever holds the camera. */
   function draw(t: number): void {
     tNow = t;
@@ -528,9 +559,11 @@ export function mountReplay(
       place(frameCamera(s, fits, frameView), s.settle > 0 ? endRadius : radius);
       cam = persp;
     }
-    renderer.render(scene, cam);
-    ctx.globalAlpha = 1;
-    ctx.drawImage(gl, 0, 0);
+    if (samples === 1) {
+      renderer.render(scene, cam);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(gl, 0, 0);
+    } else supersampled(cam);
     // The core's drawing is laid over the replay's own camera only (it matches the top-down frame).
     if (holder === "replay" && s.svg > 0 && img.complete && img.naturalWidth > 0) {
       const k = Math.min(W / vw, H / vh);

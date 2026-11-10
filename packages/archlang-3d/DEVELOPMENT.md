@@ -56,7 +56,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   camera's presets and limits, `presetCamera`, all pure), `view-dom.ts` (the presets', Reset's and
   the storeys' buttons, `viewToolbar`), `viewer.ts` (the HTML's host:
   `__seek`/`__frameHash`), `viewer-bundle.ts` (`viewer.ts` plus three.js as one script), `html.ts`
-  (one offline file), `video.ts` (Playwright's Chromium on SwiftShader + ffmpeg).
+  (one offline file), `video.ts` (Playwright's Chromium on SwiftShader + ffmpeg; `supersample`, off
+  by default, anti-aliases the generated posters and videos: k × k sub-pixel renders a frame).
 - `src/glb/write.ts`: the GLB (M1b), written with glTF-Transform from the same Mesh3D: a
   `level:L<n>` node per storey, under it one node per Mesh3D node named `<kind>:<id>[:<part>]`, its
   facts in `extras.archlang`; deterministic bytes.
