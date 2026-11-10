@@ -21,7 +21,7 @@ growth 路径缩写（与报告 B 一致）：
 
 频次是研究者对约 31 个外联线程（偏 X）的判断，主题有重叠；一个用户不是 traction。
 
-§A–§F 是 v1（2026-11-06）的对照，原样保留；v2（2026-11-10）新增的说法在 §G。
+§A–§F 是 v1（2026-11-06）的对照，原样保留；v2（2026-11-10）新增的说法在 §G；2026-11-11 增补的第 8 轨"视觉质感"在 §H。
 
 ---
 
@@ -354,3 +354,96 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 | RM-D18 | growth `AGENTS.md` 第 44 行（Daniel 规则）；#362（bobsch-io 的楼梯 issue）；#544；#532 |
 | RM-D19 | #603（主版本，CI 红在 "Workspace builds"）；`docs/agents/iron-laws.md` 的 Dependabot 规则（主版本等所有者） |
 | RM-D20 | `origin/ChanMeng666-patch-1` 的 commit `6c86203a`（没有 PR） |
+
+---
+
+## §H 第 8 轨"视觉质感"的证据对照（2026-11-11）
+
+第 8 轨（`README.md` §1.1d、原则 13–14、§3 的 RM8.1…RM8.9、§4 第 1 行、§5 的四条视觉信号、§6.3）出自三份只读调查（V1 3D 竖线根因、V2 元素清单与新增规则、V3 视觉需求，2026-11-11）和主会话据此写的增补规格。三份调查与规格不进本仓库，将归档在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\`；本节只保留它们引用的一手出处。调查是二手的：下列本仓库路径、符号、测试名与 backlog id 2026-11-11 在 `main@4adceabc` 上逐条 grep 或读过；数字（家族数、生成器数、未露面的家族、spec 长度）用只读脚本从源码重算过；growth 路径逐条 `Test-Path` 核过，全部存在。与调查或规格不符之处列在 §H.5。
+
+growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`；§A 与 §G 的缩写照用）：
+
+| 缩写 | 路径 |
+|---|---|
+| VP1 | `research/2026-11-04-viral-post-analysis-and-content-playbook/01-post-corpus-and-metrics.md`（同目录的 `02-why-they-worked.md`、`03-user-pain-points.md` 即 VP） |
+| SP | `data/social-posts.json` |
+| X28 | `strategy/decisions/2026-10-28-3d-preview-exposure-and-positioning-row-8.md` |
+| D3P | `strategy/decisions/2026-11-06-archlang-3d-on-public-surfaces.md` |
+| XM | `research/2026-10-25-x-ai-cad-market-research-and-strategy.md` |
+| TR | `research/2026-11-08-competitor-hands-on-trials/`、`research/2026-11-10-hands-on-trials-MODE-C-batch1/` |
+| VOICE | `marketing/content/voice.md` |
+| C6、CW、IA、OL10 | 同 §A 与 §G 的表 |
+
+### H.1 §1.1d 的事实
+
+| # | 说法 | 一手出处 |
+|---|---|---|
+| 1a | 查看器对每个节点单独描边 | `packages/archlang-3d/src/replay/mount.ts`：`add()` 里的 `new EdgesGeometry(geo, 30)` 与 `LineSegments`（楼板、玻璃除外，约第 309–314 行）；面片的 `polygonOffset`（约第 303–305 行）；墙的压顶单独拆出、不加边（约第 334 行的注释） |
+| 1b | 每个墙块、窗台块、过梁块是独立的闭合棱柱 | `packages/archlang-3d/src/mesh/build.ts`（`w.body.map((p) => prism(p, e, top, splits))`；`o.sill > 0`、`o.head < height` 各一个 `prism`，约第 514–523 行）；`src/mesh/extrude.ts:90`（`prism`）；`src/check/verify.ts`（V-GEO-02：每个壳体封闭）；交叉块的归属来自核心的 `joinWallSet`（`src/walls/ownership.ts`） |
+| 1c | GLB 没有线 | `packages/archlang-3d/src/glb/write.ts`（只写 `POSITION` 与索引）；V1 对已提交的 `docs-site/public/3d/studio.glb` 的实测 |
+| 1d | 门窗每个 4 条；39 个示例里可见的墙间假缝 81 处 | V1 的草稿脚本（读 `archlang3d build --format scene3d` 的输出），**未入仓库**，本节未复算；机理由 1a、1b 推出 |
+| 2a | 103 个家族、163 个词；2D 每个家族专门画 | `src/elements/fixtures-glyphs.ts`（`CANONICAL_FIXTURES`、`FIXTURE_CATEGORIES`、`DRAW_BY_FAMILY`）；`test/glyph-dispatch-table.test.ts`；`docs/furniture.md:122` 的手写计数 |
+| 2b | 3D 101 个专属生成器，2 个共用，目录内无灰盒 | `packages/archlang-3d/src/mesh/t0.ts`（`T0_FAMILIES` 101 个键，只读脚本重算）；`packages/archlang-3d/test/t0.test.ts` |
+| 2c | 42 个家族从未以 `furniture <词>` 出现在 `examples/**`，其中 20 个是 2026-11-04 那一批 | 只读脚本对 40 个 `examples/**/*.arch` 的统计（未解析组件导入）；那一批 = `CANONICAL_FIXTURES` 第 84–103 个（`test/helpers/new-families-law.ts:36`，`FAMILIES_BEFORE = 83`），字节恒等律禁止已发布平面用它们（`test/new-families-byte-identity.test.ts`；`.claude/rules/glyphs.md` § Traps） |
+| 2d | 符号目录只有文字；样张工具从未提交 | `docs/furniture.md` "The symbol catalogue" 一节；`docs/backlog.md` D.8 |
+| 3a | `outdoor` 地面与围栏 3D 都不建 | `docs/backlog.md` VA.2；`packages/archlang-3d/src/mesh/build.ts` 的账本 `m1-omits-outdoor-fences`；Scene3D 已带 `outdoor`、`fences`（`src/scene3d/build.ts` 的 `outdoorOf`、`fenceOf`） |
+| 3b | `floor` 子句 3D 不读；Plan JSON 列为 `dropped` | `src/plan-json/to-json.ts`（`PlanJsonDroppedClause` 的 `"floor"` 与 `add("floor", …)`）；`test/room-floor.test.ts`；`packages/archlang-3d/src/materials.ts`（`FLOOR_FINISH_RULES`、`floorFinish`、账本 `floor-finish-default`） |
+| 3c | 没有地面平面 | `mount.ts`（无地面片、网格或雾；V2 的 grep） |
+| 4a | 无阴影（阴影图多约 55% 帧时间） | `mount.ts` 灯光处的注释（"a 2048² PCF map for the key cost ~55% more per frame … over the card's ~30% budget"）；`docs/backlog.md` VA.5 |
+| 4b | 关闭了抗锯齿 | `mount.ts`：`new WebGLRenderer({ canvas: gl, antialias: false, preserveDrawingBuffer: true })`、`setPixelRatio(1)` |
+| 4c | 门无门框，窗无窗台板，楼梯实心 | `packages/archlang-3d/src/mesh/build.ts` 头注释（门扇 40 mm；窗 16 mm 玻璃与 40 × 60 mm 框，`GLASS_MM`）；账本 `stair-solid-default` |
+| 5a | CLI 没有 `--theme` | `docs/backlog.md` VA.4；`src/manifest.ts` 与 `docs/cli-reference.md` 无该旗标；`src/types.ts`（`CompileOptions.theme`） |
+| 5b | playground 已有主题下拉框 | `playground/index.html` 的 `<select id="theme">`（含 `rendered`）；`playground/src/main.ts`（`themeSelect`） |
+| 6 | 地面词只有四个；缺的家族与装饰 | `src/hatches.ts:72`（`FLOOR_MATERIALS`）；`src/ast.ts:863`（`OUTDOOR_KINDS`）；V2 §D 按 `CATALOG` 的对照（缺口的排序是调查者的判断） |
+| 7a | 平面升 3D 的帖子曝光最大（1,978,574；372,742；185,750；795,219） | VP1 语料表（Solvaix、akokoi1、SammmAing、Maketplans 四行）；X28 的触发条件 |
+| 7b | ArchLang 自己的 3D 帖子 15–38 次曝光，账号 7 个粉丝 | SP（各帖的 `impressions`）；IA；`strategy/archlang-archcanvas-strategy.html`（"At 7 followers"） |
+| 7c | 指出门放错的回复 34,613 次曝光 | VP1 回复表（@jk_tech_stuff） |
+| 7d | ArchLang 2D 高于多数竞品，3D 最弱 | TR 的截图（V3 §B 逐张列出路径）；**调查者看图的判断**，不是测量 |
+
+### H.2 第 8 轨的卡
+
+| 卡 | 一手出处 |
+|---|---|
+| RM8.1 | 同 H.1 第 1a–1c 行；`packages/archlang-3d/test/mesh.test.ts:391`（`LANEWAY_MESH_SHA256`）、`test/pins.ts:39`（`LANEWAY_GLB_SHA256`）、`test/replay.test.ts:464`（`LANEWAY_EVENTS_SHA256`）；`src/scene3d/scene3d.schema.json`；`e2e/keyframes.e2e.ts`、`e2e/fixtures/keyframe-baseline.json`、`e2e/fixtures/README.md`（X4 的重钉先例）、`e2e/assets.e2e.ts`；`.claude/rules/archlang-3d.md`（Pins 一条与 Traps 第 1 条，卡里逐字引用）；`scripts/gen-3d-assets.ts`（`--videos`）；仓库根 `README.md` 第 50、54 行的两张海报；`test/fixtures/stress/s5-door-on-arc.arch`；`../drawing-set/cards.md` DS13（`lines.ts`，`prism` 外的旁路） |
+| RM8.2 | `mount.ts`（`antialias: false`、`setPixelRatio(1)`）；`packages/archlang-3d/src/replay/video.ts`（`renderStill`、`renderReplay`）；`scripts/gen-3d-assets.ts`（`POSTER` 1600 × 900，`--check`）；`e2e/keyframes.e2e.ts`（480 × 270，`renderReplay`）；`docs/backlog.md` 3D.2；`../playground-mobile-perf/README.md` §5（MP7） |
+| RM8.3 | `docs/backlog.md` VA.2；账本 `m1-omits-outdoor-fences`；`src/elements/outdoor.ts`（`GROUND` 的 `tint`：`lawn`、`paving`、`water`）；`src/index.ts`（`THEMES` 公开导出）；`src/ast.ts`（`OUTDOOR_KINDS`、`FENCE_STYLES`）；`../visual-assets/README.md` V-D4、V-D5；`../checker-reach/README.md` §3 与本计划 `cards.md` §0（冻结只合缺陷修复） |
+| RM8.4 | `docs/backlog.md` VA.4；`src/manifest.ts`；`.claude/commands/new-cli-flag.md`；`scripts/generators.ts`（`gen:cli` → `docs/cli-reference.md`）；`src/types.ts`（`CompileOptions.theme` 压过源文件的 `theme`）；`playground/index.html`（`#theme`）；`scripts/gen-example-svgs.ts`；`test/fixture-byte-identity.test.ts`（`.claude/rules/glyphs.md` § Traps）；本计划 `cards.md` RM5.2 |
+| RM8.5 | `docs/backlog.md` D.8；`src/elements/fixtures-glyphs.ts`、`src/fixtures-catalog.ts`；`docs/furniture.md`；`test/new-families-byte-identity.test.ts`、`test/helpers/new-families-law.ts`；`.claude/rules/docs-prose.md`；`../public-surfaces/3d.md` §1（配对、只用编译器输出） |
+| RM8.6 | `docs/backlog.md` VA.1；`packages/archlang-3d/src/mesh/build.ts` 头注释与 `GLASS_MM`；账本 `stair-solid-default`；`src/mesh/t0.ts`（`profile`、`T0_HANDED`、`handedAt`）；`src/check/verify.ts`（V-GEO-02）；`../visual-assets/README.md` V-D3、V-D4、V-D5；`test/glyph-chirality.test.ts` |
+| RM8.7 | `src/hatches.ts`（`FLOOR_MATERIALS`、`META`）；`src/elements/outdoor.ts`（`GROUND`）；`src/ast.ts`（`OUTDOOR_KINDS`）；`scripts/gen-llm-spec.ts`（`room` 行的 `FLOOR_MATERIALS.join("\|")`，`outdoor` 行的 `OUTDOOR_KINDS.join("\|")`）；`test/llm-spec-drift.test.ts`（`< 30_000`）；`spec.llm.md`（29,856 UTF-16 单位，2026-11-11 重算）；`test/room-floor.test.ts`；`src/plan-json/to-json.ts`；`packages/archlang-3d/src/materials.ts`；`.claude/rules/archlang-3d.md`（加性导出）；`.claude/rules/glyphs.md`（不改墙材料图案）；`test/helpers/new-families-law.ts`（`NEAR_WORDS` 含 `stone`）；`src/elements/fixtures-glyphs.ts`（`carpet` 是 `rug` 的别名） |
+| RM8.8 | `docs/backlog.md` VA.5；`mount.ts` 灯光处的注释；`packages/archlang-3d/src/replay/payload.ts:71`（`PREVIEW_LIMITS`）；要求同句的测试：`packages/archlang-3d/test/package-meta.test.ts`、`replay.test.ts`、`docs-site.test.ts`，仓库根 `test/readme-3d.test.ts`，`playground/e2e/preview3d.spec.ts:44`；同句或同义的面：`README.md`、`packages/mcp/README.md`、`editors/vscode/README.md`、`packages/archlang-3d/README.md`、`docs-site/3d.md`、`docs/plans/public-surfaces/3d.md`；ADR 0023 决定 5（2D 无阴影）；`../math-foundations/README.md` §6.2（MF-D2） |
+| RM8.9 | `.claude/commands/new-fixture-family.md`；`src/elements/fixtures-glyphs.ts`；`src/fixtures-catalog.ts`；`test/tables/glyph-dispatch.json`；`test/handedness-grid-baseline.ts`；`test/glyph-chirality.test.ts`；`packages/archlang-3d/src/mesh/t0.ts`（`T0_MOUNT_MM`）与 `test/t0.test.ts`；仓库根 `test/material-vocabulary.test.ts`；`test/new-families-byte-identity.test.ts:123`、`:125`（`FAMILIES_BEFORE + 20`、`desk_pod`）；`scripts/gen-llm-spec.ts:115`（`SIZE_OPTIONAL_FIXTURES`）；`docs/furniture.md:122`、`docs/overview.md:272`（手写计数）；`../visual-assets/README.md` V-D6、V-D7；`docs/backlog.md` 3D.4 |
+| `visual-language.md` | 上面各行；`../visual-assets/README.md` V-D1…V-D7 |
+| RM5.2 去掉 `--theme` | `docs/backlog.md` VA.4；本计划 `cards.md` RM5.2 |
+
+### H.3 裁定
+
+| 裁定 | 一手出处 |
+|---|---|
+| RM-D21 | 所有者 2026-11-11 的原话（本会话，全文录在 `README.md` §6.3） |
+| RM-D22（提请） | `../engineering-health/README.md` EH-D1（"Two, each running `check:quick` once with 2 vitest workers"）；`docs/agents/orchestration.md`；V1 §D.4 与 V2 §E 列的文件范围（视觉卡只动 `packages/archlang-3d`、资产与文档，RM8.4、RM8.7、RM8.9 除外） |
+| RM-D23（提请） | `docs/backlog.md` VA.5；`mount.ts` 灯光处的注释；`packages/archlang-3d/src/replay/payload.ts`（`PREVIEW_LIMITS`）；ADR 0023 决定 5 |
+| T 形阴角线的设计默认 | V1 §B.4（阴角线是真实折角，无论交叉块判给谁都在）与 §D.5（线稿惯例） |
+| 关键帧重钉 | `.claude/rules/archlang-3d.md`；`packages/archlang-3d/e2e/fixtures/README.md` |
+
+### H.4 §4 第 1 行的改写与 §5 的视觉信号
+
+| 项 | 一手出处 |
+|---|---|
+| 仍然不做：漫游、PBR、照片级、AI 图像、发光 | `../public-surfaces/3d.md` §1（PS-D11 用词禁令与 "Compiler output only"）；`.claude/rules/archlang-3d.md`；D3P；`../math-foundations/README.md` §6.2（MF-D2）；CW（"Do not chase parity on AR, PBR or photoreal"） |
+| 现在允许的三项 | RM-D21；VA.1、VA.2 的门禁（`docs/backlog.md`） |
+| "好看但画错"会被嘲讽 | VP1 回复表；OL10（@MitchellWallAD）；VP `03-user-pain-points.md` P7 |
+| 用访问量检验 | `docs-site/privacy.md`（两个站点用 Cloudflare Web Analytics 计访问） |
+
+### H.5 核对中改正的说法
+
+- 规格说 playground 没有主题切换入口；仓库里已有 `playground/index.html` 的 `#theme` 下拉框（含 Rendered）。RM8.4 的 playground 一项改为"核对能否被找到，不另做"，§1.1d 第 5 条照实写。
+- 规格说 RM8.3 的每种地面"取自 2D 主题的同名键"；2D 主题只有三个地面键（`lawn`、`paving`、`water`），`GROUND` 表让 9 个种类各读其一。卡里写成"按 `GROUND` 的 `tint` 取色，再分色要论证"。
+- 规格把接触阴影写在 RM8.5 名下（设计稿列表）；接触阴影是 RM8.8，RM8.5 在设计稿里的一节是展示示例怎样进入字节恒等律的语料。已按卡号改正。
+- 规格的单车道排法把 RM8.2 写成"随 RM8.1"，但它的 1 日不在 9 日的线里；README 照实写成线下（RM1.4 之后），与 RM8.1 同一次重生成只在时间允许时成立。
+- 规格把 CRF9 列为阶段 F 候选；本计划 §7.1 与 `cards.md` 的等待表记它为 parked。候选里注明它仍 parked，不改状态。
+- backlog D.8 是"两份检出的前后对照样张"，并写明工具不进 `check:drift`；RM8.5 的"每个家族一张图"是它的扩展，卡里两样都写，并保留"不进 `check:drift`"。
+- `.claude/rules/archlang-3d.md` 的正文说默认路径的改动 "must leave them"（含关键帧基线），RM8.1 改的正是默认路径的画面。卡与 `README.md` §6.3 写成带理由的重钉，并引 `e2e/fixtures/README.md` 里 X4 的先例；是否需要所有者对此另说一句，交主会话判断。
+- 要求 `PREVIEW_LIMITS` 同句的不止包 README：还有回放 HTML、docs 站（含 `docs/plans/public-surfaces/3d.md` 的引文）、三个 README 与 playground 的 e2e 逐字副本；README 海报的 alt 文本也写着 "in flat colours"。RM8.8 全部列出。
+- 规格写"39 个示例"；`examples/**` 下今天有 40 个 `.arch` 文件。81 处假缝是 V1 对它导出的 39 份 Scene3D 的统计，本节未复算。
+- V2 引的 `material-vocabulary.test.ts` 在仓库根的 `test/`，不在 `packages/archlang-3d/test/`。
