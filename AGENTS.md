@@ -18,9 +18,9 @@ npm run gen:all       # every gen:* generator
 ## How to work
 
 - Prove a change through the CLI (`arch compile|describe|lint --json`), not by eyeballing SVG.
-- Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. `check`, drift,
+- Local gate is exactly `check:quick` (+ `docs:build` for docs), then push. Executor briefs list only that. `check`, drift,
   `typecheck:all`, vitest runs, e2e and bench are CI's; only CI green is merge evidence. A hook
-  blocks them (`.claude/hooks/local-gate.mjs`). Executor briefs list only the local gate.
+  blocks them (`.claude/hooks/local-gate.mjs`).
 - Commit or push only when asked. Merge by risk tier (`docs/agents/commands.md` § Merging a PR).
 
 ## Hard rules
@@ -47,9 +47,7 @@ npm run gen:all       # every gen:* generator
 - A drawing change never moves `describe()`/`lint()` over the corpus, except drafting-layer lint
   rules, which read the sheet (ADR 0032; `docs/agents/iron-laws.md`); a glyph never gains
   handedness and a loss is allow-listed (`test/glyph-chirality.test.ts`).
-- `npm run check` does not typecheck `test/`; `typecheck:all` does.
-- A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved
-  body, run both branches' fixtures together.
+- A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved body (`docs/agents/gotchas.md` § PRs & CI).
 - Releases are tokenless OIDC (`v*` tag); never an npm token, never automate npmjs account/2FA.
   Pushing `main` deploys the sites. Before a tag: follow `.claude/commands/release-check.md`.
 - Eval: T3 live run declined forever; `eval:live` is paid, owner-only; the eval corpus is a public fixture, never a holdout;
@@ -60,11 +58,9 @@ npm run gen:all       # every gen:* generator
 
 ## Where to look
 
-`src/index.ts` public surface · `REVIEW.md` what a bad diff looks like · `docs/adr/` decisions · `docs/backlog.md` open work · `docs/plans/` programmes · `.claude/rules/` path-scoped rules (auto-loaded).
-`docs/agents/`: `architecture.md` (pipeline) · `gotchas.md` (traps) · `iron-laws.md`
-(owner decisions) · `commands.md` (CI, scripts) · `orchestration.md` (coordinator). `docs/testing.md`: red guards, golden policy.
-`docs/seo.md` § 8: where the project is listed and who may submit.
-A root `.ignore` hides CHANGELOG, generated files and goldens from ripgrep; name the path to search them.
+`src/index.ts` public surface · `REVIEW.md` bad-diff checklist · `docs/adr/` · `docs/backlog.md` · `docs/plans/` · `.claude/rules/` (path-scoped).
+`docs/agents/`: `architecture.md` · `gotchas.md` (traps; the root `.ignore`) · `iron-laws.md` (owner decisions) ·
+`commands.md` · `orchestration.md`. `docs/testing.md`: red guards, golden policy. `docs/seo.md` § 8: listings.
 Authoring `.arch` (not contributing): `spec.llm.md`, `skills/archlang/SKILL.md`.
 
 Conventional Commits. This is the only root instruction file; `CLAUDE.md` just imports it;
