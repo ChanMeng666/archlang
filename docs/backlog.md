@@ -65,6 +65,7 @@ at it. Its cards follow the same rules as entries here: stable ids, deleted when
 | Preview and remodel (A–F cards) | `docs/plans/preview-and-remodel/` | The downstream `packages/archlang-3d` reader of a resolved plan (ADR 0030, plan `docs/plans/archlang-3d/`) and the renovation wedge (wall status, a lock check, quantities, imperial input) |
 | Drawing set (`DS*` cards) | `docs/plans/drawing-set/` | A scheme-stage drawing set from one model: derived indicators, a site layer, sections and elevations in `packages/archlang-3d`, analysis diagrams, a sheet pack |
 | Engineering health (`EH*` cards) | `docs/plans/engineering-health/` | Mechanical guards for every breakage class the 2026-11-09 audits found, CI/release/deploy signal, pure-move splits of the churn hotspots, generated maps, the backlog split |
+| Math foundations (`MF*` cards) | `docs/plans/math-foundations/` | Exact clear width, walking distance, a footprint × height-interval model (wall-hung, ceiling-hung, curtains; `mount` as pure data in MF12, while 5.5's "above the cut" spelling stays its own question, MF-D3(a)), and the groundwork for drawing-set sections. Takes in M.12 as MF5 and M.16's clear-width item as MF1 |
 | Checker reach (`CR*` cards, follow-ups `CRF*`) | `docs/plans/checker-reach/` | Interop (OpenPlan3D import, later OAS), short share links and preview cards, free 3D orbit, a write guard (`--expected-hash`), a public check suite and a versioned language spec before and after Show HN |
 
 ---

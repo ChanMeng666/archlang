@@ -164,7 +164,7 @@ growth 里已有两份 ArchLang 路线图：11-04 版把**格式与契约**（OA
 | 在 `compile()` 里放求解器 / CP-SAT / 辖区条文库 | ADR 0004/0005/0006；`arch solve` 等 `keep` 有真实使用 | PS6.1 |
 | 合规、报批、"符合某规范" | 五个 profile 全是 advisory；禁用词 | positioning 规则 3 |
 | 托管付费层（11-04 P2-3） | 与"收入其次"、无遥测冲突；路线图自己要求先写决策备忘 | 2026-10-09 |
-| 灯具/照明图层、luminaire schedule | 一条回复的诉求；核心不画灯光；`schedule fixtures` 已够 | C6 floorcraft-chiro |
+| 灯具/照明图层、luminaire schedule、照度与发光（**改写于 2026-11-10，MF-D2**：吊灯、吊扇等挂顶物和窗帘允许**作为物体**进入，即占地、高度区间、碰撞、3D 几何，见 `../math-foundations/` §6.2；照明专业本身仍然不做） | 一条回复的诉求；核心不画灯光；`schedule fixtures` 已够 | C6 floorcraft-chiro；MF-D2 |
 | 拖拽画布 GUI | 代码即产物；playground 的 knobs 是边界（public-surfaces）；code-is-cheap 的教训是"画布与代码合并"，那是 playground 的事，不是语言的 | public-surfaces README |
 | "门浮在空中、没有台阶"的检查 | 立面层面；核心只画平面（ADR 0021） | B §B |
 | 阳台所需的"墙高" | `height` 已存在，核心不画它；3D 预览已显示它 | spec |

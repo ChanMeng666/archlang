@@ -234,7 +234,7 @@ M.9/PS0.26（吸附舍入半值远离零，镜像等变）、E.11（浮点平移
 外部用户（#532，`gerontec/archlang-section`）只用 `describe --json` 与 `compile -f json` 画出了剖面，缺两件事，都是 `describe()` 的数据，不是核心的绘图：
 
 1. **平面剖切符号**（DS11 提前）：`section A from (700, 0) to (700, 9000) look east`。平面图元素（`src/elements/section.ts`，注册在 `defs.ts`，带 `drawCost`/`bounds()`/`measures()`）：画剖切线两端的符号与编号，这是 GB/T 50001 和 ISO 128 都有的平面图要素，核心允许。`describe().sections` 带出线段与观察方向。只允许轴对齐（与 #532 的工具一致；斜切等第二个用例）。
-2. **楼板构造 datum**：在 `level` 上一个由 `gen:*` 闭集定的子句（候选 `slab <mm>`，或 `floor { structure <mm> finish <mm> }`），**核心不画它**（铁律：高度不画），只进 `describe().heights`，使每层净高 = 层高 − 楼板可派生；无声明时 `describe()` 省略并在"跳过了什么"里说（ADR 0027）。
+2. **楼板构造 datum**（2026-11-10 MF-D1 已裁定采纳。另需给出顶层和单层的天花来源 MF-D11，见 `../math-foundations/` §6.1）：在 `level` 上一个由 `gen:*` 闭集定的子句（候选 `slab <mm>`，或 `floor { structure <mm> finish <mm> }`），**核心不画它**（铁律：高度不画），只进 `describe().heights`，使每层净高 = 层高 − 楼板可派生；无声明时 `describe()` 省略并在"跳过了什么"里说（ADR 0027）。
 
 证明：两条各自的字节恒等律；`describe()` 变化只在用了新子句的图上；`archlang-section` 的示例 `haus_winders.arch` 加剖切线后 `describe --json` 能喂给它（在 PR 里跑一次该工具作说明，不进测试）。
 
