@@ -88,6 +88,15 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **Parallel PRs conflict on the records** (`CHANGELOG.md` `[Unreleased]`, a programme's
   `handoff.md` and `cards.md`) after nearly every merge. Resolve by keeping both entries; counts in
   those records are recounted only at a stage end, never per PR.
+- **`gh pr update-branch` stales the generated artifacts.** GitHub's textual merge of `test/INDEX.md`
+  (its header count) and `docs/agents/module-map.md` is not the generator's output, so the updated head
+  fails `check:drift`/`test-index` (#669, 2026-11-10). When `main` moved a generated file since the branch,
+  merge `main` locally, run `npm run gen:all`, commit, push, re-pin (`commands.md` § Merging a PR).
+- **The PR-scale fuzz passes while the nightly's `FC_SCALE=10` fails.** A seeded property replays the same
+  first runs, so a counterexample at run 494+ only ever appears in `fuzz-deep` (#664). Download its
+  `fuzz-deep-report.json`, reproduce with a `tsx` probe, then card the real defect; never widen the seed.
+- **A user-facing message never prints `Infinity`, `NaN` or an exponent** (`test/lint-stairs.test.ts`
+  pins `/Infinity|NaN|e\+\d/`): classify the value in words ("not a finite number"), do not echo it.
 - **Node 18, Node 20 and Windows do not run on a PR**, so a green PR proves only Node 22 on Linux.
   A break on the others first shows in the push run on `main` (`commands.md` § CI). Suspect them for
   a `node:` API newer than Node 18, a dependency that drops an old Node, deflate output (the

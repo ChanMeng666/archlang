@@ -65,6 +65,7 @@ number quoted here.
 
 Waves run in order; cards inside a wave are independent unless `depends` says otherwise. Each card
 is one worktree, one PR. Cards and their acceptance checks: `cards.md`. Resume point: `handoff.md`.
+Waves 0–4 closed 2026-11-10 (86 programme PRs, #582 to the records PR after #674); the re-measurement of § 1 is `closing-audit.md`; its open list is the only residue.
 
 | Wave | Goal | Cards | Window |
 |---|---|---|---|
@@ -72,6 +73,7 @@ is one worktree, one PR. Cards and their acceptance checks: `cards.md`. Resume p
 | 1 | Every "change one, break another" class has a mechanical guard; the three reproduced security gaps close | EH1.1–EH1.14 | 2026-11-10 → 11-21 (before the Show HN freeze, ADR/roadmap wave 0) |
 | 2 | Structure: pure-move splits of the churn hotspots, the duplicated helpers merged, one Scene per lint | EH2.1–EH2.9 | 2026-11-16 → 12-05 (moves are safe inside the freeze: no user-visible change) |
 | 3 | Agent navigation: generated module and test maps, the backlog split, docs by audience, recipes, hooks | EH3.1–EH3.6 | 2026-11-20 → 12-12 |
+| 4 | Residue of the closing audit (`closing-audit.md`): the nightly's deep-fuzz counterexamples, the stale durations table, the geometry work counters, four small guards, three doc alignments | EH1.20–EH1.23, EH2.13, EH2.14, EH3.8–EH3.10, EH0.10 | 2026-11-11 → 11-14 |
 
 Wave 1 before the freeze is the point of the programme: the roadmap's wave 0 is "credibility and
 contract foundations" and these guards are its engineering half.
