@@ -126,6 +126,8 @@ coordinator's own notes (merging, registries, browser and social automation, the
 
 ## Tooling & process
 
+- **A root `.ignore` hides `CHANGELOG`, generated files and goldens from ripgrep** (and the Grep tool);
+  name the path to search them.
 - **A new `.gitleaksignore` fingerprint on a live file needs a rule in `test/opaque-literal-guard.test.ts`.**
 - **gitleaks `generic-api-key` flags SHA-256 digest tables keyed by a name containing a key-ish word**
   (e.g. `accessible`). Allowlist the exact fingerprint per `.gitleaksignore`'s header and hold the

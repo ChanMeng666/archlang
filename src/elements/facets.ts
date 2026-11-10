@@ -8,7 +8,7 @@
  * `test/element-facets.test.ts` fails on a `BUILTIN_DEFS` kind the table does not list. The
  * sets the compiler reads are built from this table ({@link kindsWith}), in this table's key
  * order, which is `BUILTIN_DEFS` order. The checklist of every place a new kind registers is
- * `docs/agents/new-element.md`.
+ * `.claude/commands/new-element.md`.
  *
  * A leaf module: it imports only types, so any module may read it without an import cycle.
  */
@@ -77,7 +77,7 @@ export function facetsOf(kind: string): KindFacets | undefined {
 
 /**
  * The `default` of a `switch` over a {@link Statement}'s kind that must name every element kind
- * (the per-kind dispatch outside the registry, `docs/agents/new-element.md`): it type-checks only
+ * (the per-kind dispatch outside the registry, `.claude/commands/new-element.md`): it type-checks only
  * while `kind` can no longer be an {@link ElementKind}, so a new kind with no `case` fails `tsc`
  * here. It does nothing at run time; the `default` keeps its own result.
  */
