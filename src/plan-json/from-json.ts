@@ -106,6 +106,20 @@ function optNum(v: unknown, path: string, val: Validator): void {
   if (v !== undefined && !isNum(v)) val.err(path, "expected a number");
 }
 
+/**
+ * A magnitude the emitter prints (a room's, column's or piece's `size`, a wall's `thickness`, an
+ * opening's `width`) must not be negative (EH1.20, defect 1). A negative width printed
+ * `size -1000000000000x400`, which the parser cannot read (the lexer's `WxH` literal is unsigned and
+ * a unary minus takes no dimension); a negative height, thickness or opening width parsed and was
+ * refused later, with a span into generated text. Refused here with its path instead. `-0` passes:
+ * it prints `0` (`num`, `source-tokens.ts`), and the compiler refuses a zero size with its own
+ * code. A value that is not a number is the caller's `expected a number` error, so this adds
+ * nothing for it.
+ */
+function nonNegative(v: unknown, path: string, val: Validator): void {
+  if (isNum(v) && v < 0) val.err(path, "expected a number of 0 or more: a size, width or thickness cannot be negative");
+}
+
 /** Validate a `{x,y}` point at `path`; returns it (or null on error). */
 function reqPoint(v: unknown, path: string, val: Validator): PointJson | null {
   if (!isObj(v)) {
@@ -170,6 +184,9 @@ export function validatePlanJson(json: unknown, val: Validator): PlanJson | null
     !(isObj(json.north) && isNum(json.north.deg))
   )
     val.err("/north", `expected ${enumList(NORTH_DIRS)} or { "deg": <number> }`);
+  // `north <deg>` reads one number token, which is unsigned: `north -30` was an `E_PARSE` (EH1.20).
+  else if (isObj(json.north) && isNum(json.north.deg) && json.north.deg < 0)
+    val.err("/north/deg", "expected a bearing of 0 or more degrees: `north` reads an unsigned number (330, not -30)");
   if (json.title !== undefined) {
     if (!isObj(json.title)) val.err("/title", "expected an object");
     else
@@ -382,6 +399,7 @@ function validateRoom(r: unknown, path: string, val: Validator): void {
     for (const key of ["x", "y", "width", "height"]) {
       if (!isNum(r[key])) val.err(`${path}/${key}`, "expected a number");
     }
+    for (const key of ["width", "height"]) nonNegative(r[key], `${path}/${key}`, val);
   }
   reqWord(r.id, `${path}/id`, "a room id", val, true);
   if (r.label !== undefined && !isStr(r.label)) val.err(`${path}/label`, "expected a string");
@@ -411,6 +429,7 @@ function validateWall(w: unknown, path: string, val: Validator): void {
     });
   }
   if (w.thickness !== undefined && !isNum(w.thickness)) val.err(`${path}/thickness`, "expected a number");
+  nonNegative(w.thickness, `${path}/thickness`, val);
   reqWord(w.id, `${path}/id`, "a wall id", val, true);
   reqWord(w.category, `${path}/category`, "a wall category", val);
   reqWord(w.material, `${path}/material`, "a material name", val);
@@ -541,6 +560,7 @@ function validateOpening(o: unknown, path: string, val: Validator): void {
   if (!(isStr(o.kind) && OPENING_KINDS.has(o.kind)))
     val.kindErr(`${path}/kind`, `expected "door", "window", or "opening"${isStr(o.kind) ? ` (got "${o.kind}")` : ""}`);
   if (!isNum(o.width)) val.err(`${path}/width`, "expected a number");
+  nonNegative(o.width, `${path}/width`, val);
   reqWord(o.id, `${path}/id`, "an opening id", val, true);
   reqWord(o.wall, `${path}/wall`, "a wall id or category", val);
   // `on` is printed whenever it is present (`on <wall> at <pos>`), so a present one is checked
@@ -624,6 +644,7 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   // Printed with `q`, which iterates it: a number threw `TypeError: s is not iterable` (defect 1).
   if (f.label !== undefined && !isStr(f.label)) val.err(`${path}/label`, "expected a string");
   for (const k of ["width", "height", "segment", "offset", "inset"] as const) optNum(f[k], `${path}/${k}`, val);
+  for (const k of ["width", "height"] as const) nonNegative(f[k], `${path}/${k}`, val);
   const hasAt = isNum(f.x) && isNum(f.y);
   const hasAgainst = isStr(f.against_wall) || isStr(f.against_edge);
   const hasInPlace = (f.centered === true || isStr(f.anchor)) && isStr(f.room);
@@ -689,5 +710,6 @@ function validateColumn(c: unknown, path: string, val: Validator): void {
   for (const key of ["x", "y", "width", "height"]) {
     if (!isNum(c[key])) val.err(`${path}/${key}`, "expected a number");
   }
+  for (const key of ["width", "height"]) nonNegative(c[key], `${path}/${key}`, val);
   reqWord(c.id, `${path}/id`, "a column id", val, true);
 }
