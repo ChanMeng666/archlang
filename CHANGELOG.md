@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `test/font-cjk-pins.test.ts` pins the CJK font package's version and pins on every PR (was release-time only).
 - Test-duration table refreshed from the nightly; `gen-test-durations.mjs` merges an artifact map.
 - `idSpanOf` moved to the leaf `src/id-spans.ts`; `src/ir.ts` no longer imports the parser (the projector reaches it only through `analyze.ts`'s `resolvePlan` and `import.ts`).
 - `arch impact` now exits 2 on a plan that does not parse (breaking for scripts that relied on exit 0), with `{ ok: false, diagnostics }` under `--json`. `fmt`, `repair`, `reroll`, `suggest`, `complete` and `link` keep exit 0 on such a plan, now documented in `docs/cli-reference.md`; `fmt` returns the source verbatim and `fmt --write` leaves the file untouched.

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-489 test files in `test/`, 270 `src` modules, 101 modules no test imports.
+490 test files in `test/`, 270 `src` modules, 101 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -113,7 +113,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (29) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+21)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (366) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+358)
+- `src/index.ts` (367) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+359)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -181,7 +181,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (100) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+92)
+- `src/world.ts` (101) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+93)
 
 ## Test files
 
@@ -363,6 +363,7 @@ The first sentence of each file's header comment.
 - `test/fixture-byte-identity.test.ts` — Full-SVG pins for the fixture-symbol layer.
 - `test/fixture-classifier-drift.test.ts` — Drift guards for the fixture classifier lists.
 - `test/fixture-orientation.test.ts` — the shared back-edge ⇄ quarter-turn mapping; backingWallForRoomEdge / wallBackedEdges; backCandidateEdges — the footprint's aspect constrains the back; derived…
+- `test/font-cjk-pins.test.ts` — the CJK font package's version, its exact pin in the core, its files and its recorded SHA-256 are pinned on every PR (release.yml only checked the version at tag time)
 - `test/format.test.ts` — T5.2 — `arch fmt` formatter.
 - `test/frame.test.ts` — frame algebra — signed permutation + translation; tp — mapping a point local → global; transformRect — a top-left + size box; transformDeg — carrying a fixture'…
 - `test/furniture-against.test.ts` — furniture against wall.

@@ -104,11 +104,8 @@ jobs:
 
           # The core pins the font EXACTLY in optionalDependencies; a mismatch would publish a
           # core whose CJK font can never resolve. Fail before anything reaches npm.
-          pinned_font=$(node -p "require('./package.json').optionalDependencies['@chanmeng666/archlang-font-cjk']")
-          if [ "$pinned_font" != "$font_version" ]; then
-            echo "::error::package.json pins @chanmeng666/archlang-font-cjk@$pinned_font but packages/font-cjk is $font_version."
-            exit 1
-          fi
+          # The comparison is scripts/check-font-pin.mjs (also run by test/font-cjk-pins.test.ts).
+          node scripts/check-font-pin.mjs
           font_on_registry=$(npm view "@chanmeng666/archlang-font-cjk@$font_version" version 2>/dev/null || true)
           if [ "$font_on_registry" = "$font_version" ]; then
             echo "font_exists=true" >> "$GITHUB_OUTPUT"
