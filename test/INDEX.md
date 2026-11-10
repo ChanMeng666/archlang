@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-488 test files in `test/`, 270 `src` modules, 101 modules no test imports.
+488 test files in `test/`, 274 `src` modules, 105 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -700,6 +700,10 @@ module); adding a test that imports it removes it from this list.
 - `src/context-levels.ts`
 - `src/describe/adjacency.ts`
 - `src/describe/fabric.ts`
+- `src/describe/furniture.ts`
+- `src/describe/openings.ts`
+- `src/describe/rooms.ts`
+- `src/describe/shared.ts`
 - `src/describe/types.ts`
 - `src/describe/verticals.ts`
 - `src/diagnostic-json.ts`
