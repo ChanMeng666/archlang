@@ -24,14 +24,14 @@
 ### MF1 · 精确净宽 — `todo` · 3 日 · opus
 栅格（`src/analyze/nav-grid.ts`）继续负责"能否到达"。"有多宽"改为取路线上任意两个障碍物之间的精确最近距离，障碍物包括门洞、墙面和家具，比较时用平方距离。栅格的结果保留下来作对照。
 
-- 精确性有前提：要做到零误差，坐标必须先落到 MF3 的整数格点上。MF3 之前，用双精度平方比较，误差界写进 PR。
+- 精确性有前提：要做到零误差，坐标必须是整数格点。RM1.5b 没有承诺统一格点，所以本卡在比较时自己把坐标换算到 0.001 mm 格点，用 `BigInt` 做平方比较，和 `src/taste/arith.ts` 的做法一样。
 - 这张卡吸收 backlog M.16 里"clear-width decision by squared comparison"那一条。
 - 验收：在语料上列出所有宽度类结论（如 `W_PATH_TOO_NARROW`）的变化清单，每一处变化给出几何理由。
 
 ### MF5 · 可见性图步行距离 — `todo` · 3 日 · opus
 新增一个 opt-in 事实：在障碍角点之间建可见性图，用 `src/algebra/paths.ts` 的 min-plus 求最短路。这张卡吸收 backlog M.12，原有的四连通结果保留作对照。
 
-- **精确性**：边长是平方根。平局一律用整数键打破，不靠浮点数的大小顺序。
+- **精确性**：边长是平方根。平局一律用整数键打破，不靠浮点数的大小顺序。整数键管不到浮点舍入造成的"近平局"，这类情况要靠下面的不变性验收来抓。
 - **验收**：平移整张图、施加 D4 的 8 种对称后，结果都不变（E.11 那一类问题）。
 - 这张卡不是 M.16 egress 事实（支配点、不相交路线、最大流、最小割）的前提。
 
@@ -56,7 +56,7 @@ DS3 已经有 `footprint_outer_m2` 和 `gross_floor_area_outer_m2`，按 D5 走 
 ## 波次 C：语法（全部 `[语法]`，依赖 PS7.9）
 
 ### MF12 · `mount` 数据子句 + 两条区间检查 — `blocked`（MF-D3(b)、PS7.9） · 5 日 · opus
-作者可以给任意靠墙家具写 `mount <mm>`。它是纯数据，**不画任何东西，也不决定虚线**。还要新增搁板、挂墙电视这类家族。
+作者可以给任意靠墙家具写 `mount <mm>`。它是纯数据，**不画任何东西，也不决定虚线**。`shelf` 和 `tv` 已经在目录里（`src/fixtures-catalog.ts`），本卡只让它们能写 `mount`，不另建家族。
 
 - 原 MF4 的两条检查在这里实现，只在作者写了相关高度时才触发，和 `isFloorLength` 的先例一致。
 - 3D 包：作者写的 `mount` 优先于账本里的默认值。
@@ -69,6 +69,7 @@ DS3 已经有 `footprint_outer_m2` 和 `gross_floor_area_outer_m2`，按 D5 走 
 新增写法 `above <id> drop <mm>`。位置取目标形状的对称中心，没有唯一对称中心时拒绝。
 
 - 得不到天花高度时（没写楼板，或单层、顶层），碰头检查跳过并给出 coverage 原因；在通行栅格上仍按障碍物处理。
+- 碰头检查只读作者写出的高度（`drop`、楼板，以及 MF-D11 的天花）。
 - `test/overhead-furniture.test.ts` 会故意变红。正确做法是补上 `W_FURN_CLEARANCE` 的 overhead 分支，不要删除这个测试。
 - 3D 造型：吸顶盘 + 吊杆 + 16 边形叠层灯罩。
 - 回放时的显隐规则（一直隐藏，还是相机抬起后出现）在本卡决定。
@@ -110,7 +111,7 @@ DS3 已经有 `footprint_outer_m2` 和 `gross_floor_area_outer_m2`，按 D5 走 
 与 roadmap RM1.5b 完全重叠（E.11、M.9），本卡只给 RM1.5b 补数学说明，跟着它一起做。
 
 ### MF6 · 上下层对位说明 — `todo` · 0.5 日 · sonnet
-只写文档：在 `skills/archlang/SKILL.md` 或 `docs/` 里说明怎样用 `keep stacked` 锁住管井、楼梯间、电梯和空洞的上下贯通。
+先查 `skills/archlang/SKILL.md` 和 `docs/edit-one-room.md`，那里可能已经写了 `keep stacked`。写了就把本卡删掉。否则只写文档：在 `skills/archlang/SKILL.md` 或 `docs/` 里说明怎样用 `keep stacked` 锁住管井、楼梯间、电梯和空洞的上下贯通。
 
 - 湿区叠放归 RM1.2b（taste `A_*` + `keep stacked` 写法）。
 - 承重墙对齐不做（D25）。
