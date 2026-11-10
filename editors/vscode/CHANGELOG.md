@@ -14,6 +14,16 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.46.0] - 2026-11-11
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.58.0`** (`winders` on a quarter-turn landing of a
+  block `stair`, which highlighting and diagnostics now know, and at most 500 diagnostics per
+  plan, then one `E_DIAGNOSTIC_LIMIT` or `W_DIAGNOSTIC_LIMIT`).
+- The listing's 3D preview line says what "checked against the plan" means: every 3D element comes
+  from the plan's elements, and every solid is closed.
+
 ## [0.45.0] - 2026-11-06
 
 ### Changed

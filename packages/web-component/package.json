@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/arch-plan",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "<arch-plan>: a custom element that compiles an ArchLang (.arch) floor plan to SVG in the browser and renders the drawing, or its diagnostics.",
   "keywords": [
     "archlang",

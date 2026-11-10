@@ -2,6 +2,20 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-11
+
+The core peer range stays `^1.57.0`. The rooted `import` below works with any core in it; with
+1.58.0 or later a refused module reports the core's own refusal code.
+
+### Breaking
+
+- `archlang3d build`, `check` and `view` can now refuse a plan they built under 0.4.0: an `import`
+  outside both the working directory and the plan's own directory, one that is not a `.arch` file,
+  or one over 1 MiB is refused (exit 2, the refusal under `E3D_PLAN_ERRORS`; Fixed, below). The
+  CLI has no flag to widen the root: run it from a directory that contains the module. A program
+  can pass a wider root as the second argument of `makeNodeWorld(baseDir, root)` from
+  `@chanmeng666/archlang-3d/node`. Nothing widens the `.arch` or 1 MiB rule.
+
 ### Added
 
 - For a host page whose canvas follows its container (the playground's 3D stage):
@@ -19,6 +33,8 @@
 - The line every surface carries (`PREVIEW_LABEL`) now says what "checked against the plan" means:
   every 3D element comes from the plan's elements, and every solid is closed. The package
   description says the same; the npm page shows the new README at the next publish.
+- A `winders` landing (core 1.58.0) is built as a level landing for now: its tapered steps are not
+  built yet.
 
 ### Fixed
 

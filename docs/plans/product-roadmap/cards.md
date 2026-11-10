@@ -2,7 +2,7 @@
 
 规则同 `../drawing-set/cards.md`：选依赖已完成、阶段已开放的第一张 `todo` 卡；同一阶段先做"线"以上的卡。状态词：`todo`、`doing`、`done`（裁成 id、标题、状态、PR、commit）、`blocked`（等 `README.md` §6 裁定）、`parked`。规模是 AI 协作日，±50%，是估算不是测量；没有估算的写"未估"。"模型"是建议执行者，主会话可改。每张卡都写明不许做什么。
 
-**v2 的卡全部 `todo`，没有一张开工。** RM-D9…D16 已由所有者 2026-11-11 批准（`README.md` §6.1），RM-D17…D20 是同日的受托裁定（§6.2）；下面的阶段划分生效。**第 8 轨"视觉质感"（RM8.1…RM8.9，2026-11-11 增补）** 的卡也全部 `todo`：RM-D21 是所有者的方向；RM-D22（第二条车道）与 RM-D23（接触阴影）是提请，等所有者，未裁定（`README.md` §6.3）。视觉卡各自放在所在阶段的末尾，排法以 `README.md` §3 为准（单车道或双车道）。估时标"主会话估"的是主会话的估算，±50%。`[语法：词表]` 标记的卡只给已有形式加闭集里的词，不加新子句，但同样依赖 PS7.9、带字节恒等律。
+**v2 的卡全部 `todo`，没有一张开工。** RM-D9…D16 已由所有者 2026-11-11 批准（`README.md` §6.1），RM-D17…D20 是同日的受托裁定（§6.2）；下面的阶段划分生效。**第 8 轨"视觉质感"（RM8.1…RM8.9，2026-11-11 增补）** 的卡也全部 `todo`：RM-D21 是所有者的方向；RM-D22（第二条车道）与 RM-D23（接触阴影）已由所有者 2026-11-11 批准（`README.md` §6.3）。视觉卡各自放在所在阶段的末尾，排法以 `README.md` §3 为准（两条车道）。估时标"主会话估"的是主会话的估算，±50%。`[语法：词表]` 标记的卡只给已有形式加闭集里的词，不加新子句，但同样依赖 PS7.9、带字节恒等律。
 
 大多数 RM 卡是对 backlog / 各计划已有卡的**打包与排序**。打包卡 `done` 时，被打包的原卡同一 PR 裁掉，并在原处留一行"由 RMx.y 完成，PR #n"。`[语法]` 标记的卡新增语言形式：依赖 PS7.9（spec 腾空）先完成；遵守 `AGENTS.md` 硬规则与 `docs/agents/iron-laws.md`"每个新形式带字节恒等律"；`gen:*` 的闭集从源头派生。由 profile 数字驱动的新规则还依赖 RM1.6a（`README.md` 原则 10）。
 
@@ -14,7 +14,7 @@
 |---|---|
 | 本地，永远 | `npm run check:quick`（文档另加 `npm run docs:build`），别的都不跑（`AGENTS.md` § How to work） |
 | 只在 CI 跑 | `check`、`check:drift`、`typecheck:all`、e2e、`check:3d`、bench |
-| 执行者 | 一个执行者、一张卡一个 worktree、一次一个重命令（`docs/agents/orchestration.md`）；只有纯文档卡可以由第二个执行者并行（EH-D1 的上限是两个）；RM-D22 获批后，第 8 轨的视觉卡也由第二个执行者并行，一次一个重命令对两个执行者合起来生效 |
+| 执行者 | 两条车道（RM-D22，所有者 2026-11-11 批准）：一个核心执行者、一个视觉执行者（第 8 轨），外加纯文档卡；每张卡一个 worktree（`docs/agents/orchestration.md`）；一次一个重命令对整台机器生效，重的门禁交给 CI |
 | 每个 PR | 从 `main` 建 worktree，分支 `feat/<card>-<slug>`（文档卡 `docs/<card>-<slug>`）；红队最多两轮；合并串行，按风险层级走 `docs/agents/commands.md` § Merging a PR |
 | 规则卡（RM1.2a/b、RM1.7） | 另加：每条规则一对公开夹具（合法图零报、缺陷图必报）进 `test/defect-corpus/`；留出的一对只写进私有 `archlang-lab`，PR 只报它的计数；PR 里写出该规则用 `arch lint --json` 跑过全部 `examples/**` 的报出数 |
 | 冻结期 11-24 → 12-01 | 只合 bug 修复、测量与文档；不发 minor |
@@ -179,7 +179,7 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 ### 第 8 轨（视觉）· 阶段 B
 
-排法见 `README.md` §3 阶段 B：单车道（RM-D22 未获批）时 RM8.1 进线上首位、线成 9 日、RM1.4 退到线下首位；双车道（RM-D22 获批）时视觉车道 RM8.1 → RM8.2 → RM8.3。三张卡都动 `packages/archlang-3d` 与 `docs-site/public/3d/`，不碰 `src/`。
+排法见 `README.md` §3 阶段 B：视觉车道 RM8.1 → RM8.2 → RM8.3，核心车道的线不变。三张卡都动 `packages/archlang-3d` 与 `docs-site/public/3d/`，不碰 `src/`。
 
 ### RM8.1 · 3D 假缝：按楼层、按平面求墙的特征线 — `todo` · 3 日（调查估 2.5–3.5） · opus · 依赖无 · 查看器缺陷修复
 
@@ -394,7 +394,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 ### 第 8 轨（视觉）· 阶段 D
 
-双车道（RM-D22 获批）时视觉车道 RM8.3（若阶段 B 没做完）→ RM8.4 → RM8.5 → RM8.6，合计 8.5 日（RM8.3 顺延过来时 12.5 日）；单车道时它们全部在线下，排在 RM4.3 之后（`README.md` §3 阶段 D）。
+视觉车道 RM8.3（若阶段 B 没做完）→ RM8.4 → RM8.5 → RM8.6，合计 8.5 日（RM8.3 顺延过来时 12.5 日）（`README.md` §3 阶段 D）。
 
 ### RM8.4 · 把色彩主题亮出来 — `todo` · 1.5 日（主会话估） · sonnet · 依赖无（backlog VA.4，从 RM5.2 提前到这里）
 
@@ -615,7 +615,7 @@ bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这�
 
 ### 第 8 轨（视觉）· 阶段 E
 
-双车道时视觉车道 RM8.7 → RM8.8 → RM8.9，合计 13 日（RM8.8 等 RM-D23，未获批时 10 日）；单车道时三张都在线下，排在 RM4.1 之后（`README.md` §3 阶段 E）。要进 1.61.0 的，在约 01-05 的切点前合并。
+视觉车道 RM8.7 → RM8.8 → RM8.9，合计 13 日（`README.md` §3 阶段 E）。要进 1.61.0 的，在约 01-05 的切点前合并。
 
 **词表卡的 spec 成本**（RM8.7、RM8.9 共用，2026-11-11 对 `scripts/gen-llm-spec.ts` 核过）：`spec.llm.md` 今天 29,856 UTF-16 单位，`test/llm-spec-drift.test.ts` 要求 `< 30_000`，余量 143。`room` 行用 `FLOOR_MATERIALS.join("|")` 列出地面词，`outdoor` 行用 `OUTDOOR_KINDS.join("|")` 列出地面种类，所以每个新词花"词长 + 1"。家族词只有一条路进 spec：`furniture` 行的 `SIZE_OPTIONAL_FIXTURES`（`CANONICAL_FIXTURES` 中有目录占地的，用 `/` 连接），所以**只有带目录占地的 canonical 家族**花"词长 + 1"，别名和没有占地的家族花 0。RM8.7 按暂定名的六个词花 39 单位；RM8.9 的十二个家族若都带占地，按平均词长约 9–10 计约 120 单位。两张合起来超过余量，所以 PS7.9 的目标要先算进它们。
 
@@ -633,9 +633,9 @@ bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这�
 
 不许：加新子句（给 `floor` 加颜色、`scale`、`angle`，或 `finish …` 一类新写法，那是另一种语言形式）；重画或改动墙材料的图案（`.claude/rules/glyphs.md`："Ground-material work never re-frames or restyles a wall material's hatch."）；读 `label` 决定地面（VA.3 仍是所有者的 `decision`）；改 `FLOOR_FINISH_RULES` 的默认（会动每张有房间的图的 Mesh3D 与 GLB）；从 3D 包深 import 核心；不先削重复就提高 spec 上限；用位图纹理。
 
-### RM8.8 · 接触阴影与环境遮蔽 — `todo` · 3 日（主会话估） · opus · 依赖 **RM-D23（提请，等所有者）**、冻结期的 `visual-language.md`（阴影一节）
+### RM8.8 · 接触阴影与环境遮蔽 — `todo` · 3 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（阴影一节）
 
-RM-D23 获批前不开工。backlog VA.5："Revisit only with a cheaper technique (baked contact shadows) and a frame-time budget." V9 的阴影图在 SwiftShader 上多约 55% 帧时间，超过当时约 30% 的预算（`mount.ts` 灯光处的注释）。
+RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with a cheaper technique (baked contact shadows) and a frame-time budget." V9 的阴影图在 SwiftShader 上多约 55% 帧时间，超过当时约 30% 的预算（`mount.ts` 灯光处的注释）。
 - 由几何确定性烘焙的地面接触阴影，和墙脚、墙角的环境遮蔽；不用实时阴影图。放进 Mesh3D 与 GLB 还是只在查看器里，按设计稿。
 - 帧时间预算：数字与量法按设计稿（SwiftShader，1600 × 900，与 V9 同法），超出预算不合并。
 - 确定性：同输入同字节、同帧哈希；不读时钟或随机源。
@@ -645,7 +645,7 @@ RM-D23 获批前不开工。backlog VA.5："Revisit only with a cheaper techniqu
 
 证明：帧时间实测在预算内（数字进 PR）；上面每个测试改成新句子后绿，`grep "in flat colours"` 在仓库的公开面上不再命中旧句；同一环境两次出图逐字节相同；每个移动的钉子带理由。
 
-不许：RM-D23 获批前开工或合并；实时阴影图；PBR、位图纹理、HDR 天空或昼夜；让任何物体发光（MF-D2：照明不做）；只改一部分公开面的句子；把阴影说成 photoreal 或 render；动 2D 的符号或主题。
+不许：实时阴影图；PBR、位图纹理、HDR 天空或昼夜；让任何物体发光（MF-D2：照明不做）；只改一部分公开面的句子；把阴影说成 photoreal 或 render；动 2D 的符号或主题。
 
 ### RM8.9 · 新家族首批 — `todo` · 6 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（家族一节） · `[语法：词表]`
 
@@ -714,7 +714,6 @@ A.6/A.7（CLI `--accessible --annotate` 与 MCP 对应参数）、A.1（`dims au
 | 电气布置 overlay | 2027-01-31 前 Floorcraft 的电气功能显出用户反响（`README.md` §4） |
 | PS0.16 升 E、无宿主门洞升 E | 2.0 major（与 V.5、V.6、6.7 同桶；RM-D16） |
 | CRF9 预览图 CJK 字体 | parked（Worker 体积，ADR 0034 的已知缺口） |
-| RM8.8 接触阴影与环境遮蔽 | 所有者批准 RM-D23（`README.md` §6.3，提请中） |
 | RM8.1 后的同类位置（楼梯梯段与平台、地面在门洞下的交界） | RM8.1 合并后仍有人指出 3D 的线或缝（`README.md` §5） |
 
 残留卡（CRF3–CRF13、RM4.4、v1 波次 3 的既定项）的去向表在 `README.md` §7.1。
