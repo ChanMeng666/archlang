@@ -266,8 +266,8 @@ a `place … mirror x|y` frame reflects a symbol — so `planJsonToArch`/`planFr
 is accepted as the absent key.
 
 **Still open: a placed plan does not round-trip at all.** `planFromJson` refuses the namespaced ids
-with `E_DOTTED_DECL` (×3 on the minimal fixture). The tripwire stays armed (`test/plan-json.test.ts`,
-"G.10"): its second test pins `E_DOTTED_DECL` on an UNMIRRORED placement (a mirrored one is now
+with a pathed `E_JSON_SCHEMA` (×3 on the minimal fixture). The tripwire stays armed (`test/plan-json.test.ts`,
+"G.10"): its second test pins a pathed `E_JSON_SCHEMA` on an UNMIRRORED placement (a mirrored one is now
 refused earlier, by `E_JSON_MIRROR`) and goes red when a placed plan starts round-tripping. Whoever
 fixes that still has to decide what a mirrored fixture becomes on the way back, since source has no
 word for it outside a `place`.

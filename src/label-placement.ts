@@ -57,6 +57,7 @@
  */
 
 import type { Point } from "./ast.js";
+import type { CompileWork } from "./compile-work.js";
 import { segmentRectangle, segmentsOfWall } from "./geometry.js";
 import { arcTessellate } from "./geometry/arc.js";
 import type { BBox } from "./geometry/rect.js";
@@ -604,12 +605,16 @@ export function underLabels(n: SceneNode): boolean {
  * labels can never be relocated onto each other — and an `outdoor` surface takes its turn
  * among the rooms rather than after them, which is what keeps a plan with no ground on
  * exactly the group list, and therefore exactly the bytes, it would have without ground.
+ *
+ * `work`, when given, counts every place scored (`labelRelocations`, `src/compile-work.ts`); an
+ * out-parameter only.
  */
 export function relocateLabels(
   nodes: SceneNode[],
   groups: readonly LabelGroup[],
   ir: ResolvedPlan,
   sizes: RenderSizes,
+  work?: CompileWork,
 ): void {
   if (groups.length === 0) return;
   const clear = sizes.roomFont * CLEARANCE;
@@ -699,6 +704,7 @@ export function relocateLabels(
     const diag = Math.max(1, Math.hypot(bb.w, bb.h));
     const rectAt = (p: Point): BBox => shiftBBox(rect0, p.x - anchor.x, p.y - anchor.y);
     const score = (p: Point, preference: number, k: number): number => {
+      if (work) work.labelRelocations++;
       const rect = rectAt(p);
       return preference + (rectInsidePolygon(rect, ring) ? 0 : W_OUTSIDE) + crowding(crowd(rect, probe(k)));
     };

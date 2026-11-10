@@ -35,6 +35,7 @@ import {
   SPEC,
   TEST_DIRS,
 } from "./nearest-tests.mjs";
+import { checkQuickWorkspaces } from "./workspaces.mjs";
 
 const ROOT = resolve(dirname(new URL(import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1")), "..");
 const argv = process.argv.slice(2);
@@ -79,15 +80,7 @@ if (changed.length === 0) {
 const isTestDirFile = (f) => TEST_DIRS.test(f);
 const LINTABLE = /\.(ts|tsx|mts|cts|js|mjs|cjs|json|jsonc|css)$/;
 
-const WORKSPACES = [
-  "playground",
-  "docs-site",
-  "packages/mcp",
-  "packages/mcp-worker",
-  "packages/web-component",
-  "packages/archlang-3d",
-  "editors/vscode",
-];
+const WORKSPACES = checkQuickWorkspaces(ROOT); // package.json `workspaces`, scripts/workspaces.mjs
 const DEV_ROOTS = /^(test|eval|dataset|scripts|bench)\//;
 
 // ---- 2. the import graph, for the nearest tests ----------------------------------------------

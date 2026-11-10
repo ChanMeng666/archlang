@@ -25,7 +25,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `describe()`'s `summarize` is split per kind (`src/describe/rooms.ts`, `openings.ts`, `furniture.ts`); output byte-identical.
+- `core-no-3d` and the projector-leaf test share an AST import walk (`test/helpers/imports.ts`); `check:quick` derives its workspace list from `package.json`.
+- `decodePlanHashWeb` (the `archlang/share` subpath) refuses a payload that inflates past 1 MiB unless the caller passes a larger `maxBytes`; `SHARE_INFLATE_CAP_BYTES` is exported. The Node `decodePlanHash` (`@chanmeng666/archlang/link`, from `src/cli/share-codec.mjs`) had no cap either and now throws a `RangeError` past the same 1 MiB by default (`opts.maxBytes` raises it).
+- `test/font-cjk-pins.test.ts` pins the CJK font package's version and pins on every PR (was release-time only).
 - Test-duration table refreshed from the nightly; `gen-test-durations.mjs` merges an artifact map.
+- Work-count table gains `joinerySplitTests` and `labelRelocations` (counts), so a joinery or label-placement algorithmic regression is pinned.
 - `idSpanOf` moved to the leaf `src/id-spans.ts`; `src/ir.ts` no longer imports the parser (the projector reaches it only through `analyze.ts`'s `resolvePlan` and `import.ts`).
 - `arch impact` now exits 2 on a plan that does not parse (breaking for scripts that relied on exit 0), with `{ ok: false, diagnostics }` under `--json`. `fmt`, `repair`, `reroll`, `suggest`, `complete` and `link` keep exit 0 on such a plan, now documented in `docs/cli-reference.md`; `fmt` returns the source verbatim and `fmt --write` leaves the file untouched.
 - Share decoding: an over-cap payload now returns `source_too_large` instead of throwing. `decodePlanHashWeb` from `@chanmeng666/archlang/share` is built on `inflateCapped` (one bounded inflater, the 1 KiB write slices included) and returns `{ ok: true, source }` or `{ ok: false, code }` (`code` is `"bad_payload"` or `"source_too_large"`, the `PayloadFault` type) instead of throwing; `PlanHashTooLarge` is gone. The hosted MCP Worker's `GET /svg/<payload>` now has the same bomb protection as the short-link Worker. Every link decodes as before.
@@ -41,6 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- `planFromJson` refuses a dotted declared id with a pathed `E_JSON_SCHEMA` (the parser's `E_DOTTED_DECL`, caught before any source is emitted).
 - `fmt --write` and `reroll --write` report a write failure as a CLI error (exit 1) instead of crashing with a stack trace; the parent directory is created like other writers.
 - The archlang-3d CLI's `import` is rooted like the core CLI's: `archlang3d build`, `check` and `view` (and `makeNodeWorld` from `@chanmeng666/archlang-3d/node`, which takes the root as an optional second argument, default the working directory) read an imported module only from under the working directory or the plan's own directory, with links and junctions followed, only a `.arch` file, and only up to 1 MiB; a refusal is `E_IMPORT_OUTSIDE_ROOT`, `E_IMPORT_NOT_ARCH` or `E_IMPORT_TOO_LARGE` at the `import` (with `archlang3d`, under `E3D_PLAN_ERRORS`); with a core older than 1.58 the refusal reads as `E_IMPORT_NOT_FOUND`; the file is still never read. Before, it read any path an `import` named.
 - The CLI reads an `import`ed module only from under the import root (the working directory, or `--import-root`) or the plan's own directory, with symbolic links and junctions followed, only a `.arch` file, and only up to 1 MiB. Before, `import "../../secret.txt"`, an absolute path or `C:/Windows/win.ini` was read, and its parse error quoted the file's first tokens. A refusal is `E_IMPORT_OUTSIDE_ROOT`, `E_IMPORT_NOT_ARCH` or `E_IMPORT_TOO_LARGE` at the `import`. The playground, the MCP servers and the `<arch-plan>` element read no files, so they refuse no import.

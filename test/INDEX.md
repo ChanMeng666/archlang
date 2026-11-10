@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-489 test files in `test/`, 274 `src` modules, 105 modules no test imports.
+491 test files in `test/`, 271 `src` modules, 101 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -113,7 +113,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (29) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+21)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (366) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+358)
+- `src/index.ts` (367) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+359)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -148,6 +148,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
 - `src/parser.ts` (142) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+134)
+- `src/pipeline.ts` (1) — `work-counts`
 - `src/plan-json.ts` (9) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `sheet-annotations`, `site` (+1)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
 - `src/registry.ts` (41) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations` (+33)
@@ -181,7 +182,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (100) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+92)
+- `src/world.ts` (101) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+93)
 
 ## Test files
 
@@ -227,6 +228,7 @@ The first sentence of each file's header comment.
 - `test/cache.test.ts` — compile cache — hits & eviction.
 - `test/carve-inward-walk.test.ts` — a far seed past a stair no longer takes the doorway's width (hillside-villa's landing); furniture within R + δ of a doorway's face blocks it: the threshold, fro…
 - `test/changelog-unreleased.test.ts` — CHANGELOG lines land under Unreleased, no released line is deleted, and a release PR is exempt.
+- `test/check-quick-workspaces.test.ts` — `check:quick` and `typecheck:all` name the same workspaces.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
 - `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`.
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.
@@ -363,6 +365,7 @@ The first sentence of each file's header comment.
 - `test/fixture-byte-identity.test.ts` — Full-SVG pins for the fixture-symbol layer.
 - `test/fixture-classifier-drift.test.ts` — Drift guards for the fixture classifier lists.
 - `test/fixture-orientation.test.ts` — the shared back-edge ⇄ quarter-turn mapping; backingWallForRoomEdge / wallBackedEdges; backCandidateEdges — the footprint's aspect constrains the back; derived…
+- `test/font-cjk-pins.test.ts` — the CJK font package's version, its exact pin in the core, its files and its recorded SHA-256 are pinned on every PR (release.yml only checked the version at tag time)
 - `test/format.test.ts` — T5.2 — `arch fmt` formatter.
 - `test/frame.test.ts` — frame algebra — signed permutation + translation; tp — mapping a point local → global; transformRect — a top-left + size box; transformDeg — carrying a fixture'…
 - `test/furniture-against.test.ts` — furniture against wall.
@@ -672,7 +675,7 @@ The first sentence of each file's header comment.
 - `test/window-kinds.test.ts` — Window kinds and the glazed sliding door (issue #369): what each form draws, states and refuses.
 - `test/windows-furniture.test.ts` — window — placement & hosting; furniture — rect + label (the uncatalogued fallback).
 - `test/witness-lines.test.ts` — dims auto — witness lines terminate on the facade.
-- `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, and the work counters of one `lint()` run (EH2.10), as COUNTS.
+- `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, the work counters of one `lint()` run (EH2.10) and of one drawing (EH2.14), as C...
 - `test/workspace-seams.test.ts` — Boundary: a workspace reaches the core (or another workspace) only through a declared package name, except at the seams listed in ALLOW (`workspace-seams.allow.ts`).
 - `test/world.test.ts` — T4.2 — World seam.
 - `test/zones.test.ts` — zone — byte identity (a zone draws nothing and moves nothing); zone — declared membership and nesting paths; zone — inside `level` blocks; zone — the grouped RO…
@@ -698,13 +701,10 @@ module); adding a test that imports it removes it from this list.
 - `src/cli/commands-import.ts`
 - `src/cli/commands-share.ts`
 - `src/command-name.ts`
+- `src/compile-work.ts`
 - `src/context-levels.ts`
 - `src/describe/adjacency.ts`
 - `src/describe/fabric.ts`
-- `src/describe/furniture.ts`
-- `src/describe/openings.ts`
-- `src/describe/rooms.ts`
-- `src/describe/shared.ts`
 - `src/describe/types.ts`
 - `src/describe/verticals.ts`
 - `src/diagnostic-json.ts`
@@ -768,7 +768,6 @@ module); adding a test that imports it removes it from this list.
 - `src/lock.ts`
 - `src/opening-junctions.ts`
 - `src/overlays/circulation.ts`
-- `src/pipeline.ts`
 - `src/plan-json/ast-json.ts`
 - `src/plan-json/check-graph.ts`
 - `src/plan-json/emit.ts`
