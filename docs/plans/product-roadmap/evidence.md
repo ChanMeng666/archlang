@@ -280,14 +280,14 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 
 | 卡 | 一手出处 |
 |---|---|
-| RM0.3 发布 1.58.0 | 本仓库 `CHANGELOG.md` `[Unreleased]`（`winders`、`--import-root`、import 限根、`#z=` 解压上限、`arch impact` 退出 2）；`git rev-list --count v1.57.0..main` = 529；`git diff --stat v1.57.0 main -- packages/mcp`（8 个文件）、`-- editors/vscode`（6 个文件）；`packages/mcp/server.json`（0.2.40，两处）；`.claude/commands/release-check.md`；`.github/workflows/nightly.yml`（`Deep fuzz (FC_SCALE=10)`）；#497、#664、#648；`docs/whats-new.md` 标题 "What's new in 1.44 to 1.55" |
+| RM0.3 发布 1.58.0 | 本仓库 `CHANGELOG.md` `[Unreleased]`（`winders`、`--import-root`、import 限根、`#z=` 解压上限、`arch impact` 退出 2）；`git rev-list --count v1.57.0..main` = 529；`git diff --stat v1.57.0 main -- packages/mcp`（8 个文件）、`-- editors/vscode`（6 个文件）；`packages/mcp/server.json`（0.2.40，两处）；`.claude/commands/release-check.md`；`.github/workflows/nightly.yml`（`Deep fuzz (FC_SCALE=10)`）；nightly run 42801157907（`main@69fa5864`：`Deep fuzz (FC_SCALE=10)` 与四个 `Test …` job 均 success，`gh run view 42801157907`）；#497（`gh issue view 497`：CLOSED，2026-11-10T11:07:17Z）；#664、#648；`docs/whats-new.md` 标题 "What's new in 1.44 to 1.55" |
 | RM0.1 扩大 | `../drawing-set/cards.md`（DS0、DS1、DS2 仍 `todo`；#451、#480、#482、#483 已合并）；`../plan-soundness/cards.md`（PS0.16、PS0.20、PS0.21）；`docs/backlog.md`（U.4、U.7 仍 `decision`；O.10；5.2 对照 #493；H.1 对照 `test/lint-messages-id-free.test.ts`；V.5、V.6、6.7）；`../archlang-3d/amendment-v0.7.md`（"Proposed"）；`../plan-soundness/handoff.md`（29,977 / 23）对照 `spec.llm.md` 实测 29,856；#618（`src/ir.ts` 拆分，CRF13） |
-| RM0.4 欠外部的跟进 | #532、#533、#544（gerontec 的同意与承诺"I will post here when the section-line card has a PR"）；#405（L 形洞口栏杆由 #493 在 1.55.0 交付，issue 未更新）；#362–#370 |
+| RM0.4 欠外部的跟进 | #532 的评论（gerontec 2026-11-06 的同意，以及所有者的承诺"I will post here when the section-line card has a PR"；#544 没有评论）；#533；#544（剖面的两个事实）；不向 bobsch-io 提问：growth `AGENTS.md` 第 44 行的 Daniel 规则，DD 的 2026-11-09 附记（所有者 11-07 亲自回复；代理起草的 IFC 跟进已取消，问题由所有者拿着）；#405（L 形洞口栏杆由 #493 在 1.55.0 交付，issue 未更新）；#362–#370 |
 | RM0.5 依赖与悬空状态 | #603、#604、#675、#676、#677、#678；`docs/agents/iron-laws.md` 的 Dependabot 规则；`origin/ChanMeng666-patch-1` |
 | RM0.2 加三项 | #683；`examples/studio.arch` 第 3–5 行；`src/cli/commands-analyze.ts` 的 `--strict` 说明（警告计入失败）；`src/lint/ruleset.ts`（`LINT_PROFILES`） |
 | RM5.1 加两行 | `docs/from-an-image.md`、`docs/edit-one-room.md`；C §G.6 的建议（出处 N4 S1、OL9 §6） |
 | RM1.6a | #680；DEC10 决定 1；P10 `professionalisation-roadmap.md` P0-A；`src/index.ts:358`（`DEFAULT_RULESET`、`LINT_PROFILES` 公开导出）；`src/lint/ruleset.ts`（`[V]`/`[S]`/`[M]` 注释、`wallGapMm` 无文献）；`../drawing-set/README.md` D13；XRC |
-| RM1.6b | #680；`src/diagnostic-json.ts:67`（`diagnosticToJson(source, d)`）；`test/lint-summary.test.ts`；`test/helpers/byte-identity-payload.ts`（`JSON.stringify(api.lint(...))`）；`src/lint/ruleset.ts:261`（`minDoubleBedroomAreaM2`）；`src/lint/rules/per-room.ts`（同一码多键） |
+| RM1.6b | #680；`src/diagnostic-json.ts:67`（`diagnosticToJson(source, d)`）；`test/lint-summary.test.ts`；`test/helpers/byte-identity-payload.ts`（`JSON.stringify(api.lint(...))`）；`src/lint/ruleset.ts:261`（`minDoubleBedroomAreaM2`）；`src/lint/rules/per-room.ts`（同一码多键）；`diagnosticToJson` 的调用方（grep）：`src/cli/commands-analyze.ts`、`packages/mcp/src/tools.ts`、`packages/mcp-worker/src/server.ts`（注册同一组工具）与 `app.ts`、`packages/web-component/src/arch-plan.ts`、`playground/src/actions.ts`、`playground/src/checks-panel.ts`、`playground/worker/app.ts`、`dataset/generate.ts`、`eval/l2.ts`；`AGENTS.md`（dataset 金丝雀永不重新生成） |
 | PS7.9 目标 | `spec.llm.md` 29,856 UTF-16 单位；`test/llm-spec-drift.test.ts`（`< 30_000`）；`../plan-soundness/cards.md`（PS7.9） |
 | RM1.1a / RM1.1b 改记录处 | `../plan-soundness/handoff.md` §4（现有表）；本计划 `handoff.md` 的测量表 |
 | RM5.3 一条 URL 的代理入门 | B §F4 引 CC 与 CMP 的 Cogram、Lini 条目（"skill.md 零账号上手"）；本仓库 `skills/archlang/SKILL.md`、`llms-install.md` |
@@ -300,8 +300,9 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 | RM1.2b 加可开启值 | P10 `professionalisation-roadmap.md` P1-F；`docs/agents/iron-laws.md:14`（T6）；`src/lint/ruleset.ts`（`DEFERRED_PROFILE_NUMBERS`）；`../plan-soundness/cards.md` PS2.16 |
 | MF1 → RM1.7 | P10 `professionalisation-roadmap.md` P1-E；`src/finish.ts:287`、`:317`（`STRICTER_PROFILES`）；`../engineering-health/closing-audit.md` §1（06-F3）；`../math-foundations/cards.md` MF1 |
 | RM7.3 读数自检 | AR（11-09 行：1,451 次，按工具拆分，无来源拆分）；RUL（RM-D2 的四项与窗口）；ARD 决策 6；IA §1 |
-| RM4.4 | #362、#364、#367、#369、#405 |
-| RM6.1 时间不变 | `../math-foundations/README.md:307`（"排期不变"）；#544 |
+| RM4.4 | #362、#364、#367、#369、#405（关闭时写明的未做项）；触发只按 growth `AGENTS.md` 第 44 行的 Daniel 规则 |
+| RM6.1 时间不变，等 MF-D11 | `../math-foundations/README.md:307`（"排期不变"）；同文件 §6.1 第 2 条（一层楼板都没写时 `describe()` 一字不变、不加跳过说明）、第 3 条（MF-D11 必须在 RM6.1 的 PR 里解决）、第 1 条（Plan JSON 已承载的高度字段）；#544 |
+| RM4.3 不等 D.7 | `docs/backlog.md` D.7；#682（正文要求线宽值与 SVG/PDF 已画的线宽同表） |
 
 ### G.4 §4 新增的九行"不做"
 
@@ -325,7 +326,7 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 | 读数三项自检 | AR；RUL；ARD 决策 6 |
 | `compile` 多于 `validate` + `lint` | AR（11-02：validate 114、compile 88；11-09：compile 430、validate 362、lint 311）；RUL（RM-D1 的证伪条件） |
 | `--facts walls` 八周无读者 | DEC10（IFC 的前置）；原则 9 |
-| Daniel 答复或下一批 issue | DD（11-03、11-06 私信段） |
+| Daniel 的下一批 issue，或所有者一句话 | DD（11-03、11-06 私信段与 11-09 附记）；growth `AGENTS.md` 第 44 行（不提问，不按答复排期） |
 | 第三个外部仓库 | IA §1；RUL（RM-D2 信号 1） |
 | MF-D11 未裁 | `../math-foundations/README.md`（MF-D11 行） |
 | 批次 C′ 12-09 前三张未合 | 本计划排期（推断，无外部出处） |
@@ -337,4 +338,8 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 - MP7 不在 `docs/backlog.md`，仍记在 `../playground-mobile-perf/README.md` §5（deferred）。
 - 外联日志里"退界、FAR、分区的范围裁定 open"一行在 OL9 第 123 行；RM-D5 已于 2026-11-06 裁过（v1 `README.md` §6）。更正记为 growth 待办（`handoff.md`）。
 - RM-D2 的读数窗口是截至 2027-01-28 的四周；11-09 那周不在窗口里（RUL）。
-- 11-10 晚一次定时 nightly（run 42801157907）已开始，2026-11-10 写本文时结果未出；#664 之后还没有一次完成的 nightly。
+- nightly run 42801157907（`main@69fa5864`，2026-11-10 的定时运行）里 `Deep fuzz (FC_SCALE=10)` 与四个 `Test …` job 全部 success；#497 已于 2026-11-10T11:07Z 关闭。第一版写"还没有一次完成的 nightly"，第二轮红队指出它已过时，已更正（2026-11-11 用 `gh` 复核）。
+- `W_INNER_ROOM` 不在 `src/` 里，是 PS2.16 拟议的码；文中都写成"拟议的"。
+- 推导墙的 `id` 是 piece 名（`src/elements/walls-from-rooms.ts`），`heights.walls[]`（`src/describe.ts`）与 quantities 的行（`src/analyze/quantities.ts`）都按 `id`；`describe().derived_walls[].name` 是 spec 名，一对多。第一版写"按 `name` 对齐"，已更正。
+- backlog O.10 写的是 #119、#121（2026-10-19 关闭）；后继的 #206–#208 于 2026-11-09 关闭。
+- 托管 MCP 的工具由 `packages/mcp-worker/src/server.ts` 从 `packages/mcp/src/tools.ts` 注册，是同一组工具。

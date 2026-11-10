@@ -30,11 +30,11 @@
 
 执行顺序以 `README.md` §3 的表为准：RM0.3 → RM0.1 → RM0.4 → RM0.5。RM0.4、RM0.5 中的纯文档部分可以由第二个执行者并行。
 
-### RM0.3 · 发布 1.58.0 — `todo` · 1 日 · opus · 依赖 RM-D9（所有者）、一次绿的 nightly
+### RM0.3 · 发布 1.58.0 — `todo` · 1 日 · opus · 依赖 RM-D9（所有者）
 
 `v*` tag 由所有者打（RM-D9）；发布链的其余步骤由代理端到端执行。
 
-- 前置：一次绿的 nightly，含 `Deep fuzz (FC_SCALE=10)`（`.github/workflows/nightly.yml`；它在 11-09 两次落在 `test/plan-json-malformed.test.ts`，修复 #664 合并后还没有夜跑证实过）；或者在 #497 写明接受它红着发布的理由，由所有者认可。
+- nightly 前置已满足：run 42801157907（`main@69fa5864`，2026-11-10）里 `Deep fuzz (FC_SCALE=10)`（`.github/workflows/nightly.yml`；11-09 两次红在 `test/plan-json-malformed.test.ts`，由 #664 修复）与四个 `Test …` job 全部 success；#497 已于 2026-11-10T11:07Z 关闭。发布前按 release-check 第 5 项再读一次最新的 nightly；若它又红，停下交所有者。
 - 步骤按 `.claude/commands/release-check.md` 全走：先确认真实的最新版本（第 1 项）；bump `packages/mcp`（`packages/mcp/server.json` 两处 `version` 同步）与 `packages/archlang-3d`（`prove:pack`、`check:3d` 是重命令，在 CI 跑）；`winders` 是新关键字，`editors/vscode` 自 v1.57.0 改了 6 个文件，重打 `.vsix` 并上传、派发 `publish-openvsx.yml`；OpenAI 插件 ZIP、ClawHub、Docker Catalog 的 `source.commit`。
 - `docs/whats-new.md` 现在的标题是 "What's new in 1.44 to 1.55"：补 1.56、1.57、1.58（源文件；`docs-site/` 的副本由 `sync-docs.mjs` 生成）。
 - CHANGELOG：把 `arch impact` 遇到无法解析的方案退出 2（#648，`[Unreleased]` 已标 breaking）放在 1.58.0 段落的显眼处。
@@ -51,21 +51,19 @@ v1 的条目（已做的标出）：
 - `../plan-soundness/`：PS0.2 裁掉（1.52 已带弧）。
 - `docs/backlog.md`：U.17 去掉会漂移的码数，改为指向 `ERROR_CATALOG`；"N.1" 双义处改名。
 - `docs/whats-new.md` 补版本：并入 RM0.3（补到 1.58）。`playground/README.md` profile 数改为与 `LINT_PROFILES` 一致的写法（不写数字）。
-- #497 nightly 红：分诊成一行原因 + 指向的 backlog 项，不修。
+- #497 nightly 红的分诊：不再需要。#664 修复了它，run 42801157907 全绿，#497 已于 2026-11-10 关闭。
 - `docs/plans/README.md` 加本计划一行：已由 #540 完成。
 - growth 仓库 `category.md` §5、`master-plan.md` §1 刷新稿：已由 growth PR #56 完成。
 
 v2 加上：
 - `../drawing-set/cards.md`：DS0 改 `done`（#451）。
 - PS0.16、PS0.20、PS0.21（`../plan-soundness/cards.md`）与 backlog 的 U.4、U.7：标为已裁（RM-D6），指向 RM1.4、RM3.1、RM4.2。
-- backlog O.10 里过时的 PR 号（条目还写旧 PR，#206–#208 已于 2026-11-10 关闭）；5.2（CR8 #493 已交付直角多边形 `void`，只剩非直角）；H.1（`test/lint-messages-id-free.test.ts` 已守住，核对后关闭）。
+- backlog O.10：条目写的 #119、#121 已于 2026-10-19 关闭，后继的 #206–#208 也已于 2026-11-09 关闭；核对是否还有待裁的主版本升级（#603 另由所有者定），没有就关闭 O.10；5.2（CR8 #493 已交付直角多边形 `void`，只剩非直角）；H.1（`test/lint-messages-id-free.test.ts` 已守住，核对后关闭）。
 - `../archlang-3d/amendment-v0.7.md` 的 "Proposed" 改为 superseded（已被交付的包取代）。
 - `../plan-soundness/handoff.md` 的 spec 余量数字（写的是 29,977 / 23；2026-11-10 实测 29,856，余量按 `< 30_000` 算是 143）。
 - 2.0 桶（V.5、V.6、6.7、PS0.16 升 E、`origin/feat/remove-view`）在 backlog 里写明"不在任何排期，2.0 时一起做"。
 - CRF13：`src/ir.ts` 已拆分（#618），重新核对那条注释，过时则关。
 - **单一队列的落地**（RM-D15 获批后）：`docs/plans/README.md` 状态列按 `README.md` §7 改；各计划 handoff 顶部加一行指向 `../product-roadmap/handoff.md`。
-- #497：确认一次绿夜后关闭（夜间 issue 在下一次坏夜会重开新的）。
-
 证明：每处改动在 PR 里列出它依据的 PR 号或 commit；`docs:build` 绿。
 
 不许：改任何代码；改 `AGENTS.md`；碰 `/3d` 页（public-surfaces 的面）；碰 `/axonometric`（它不在导航里，页面留到 2.0）；RM-D15 未获批时改其他计划的状态列。
@@ -74,13 +72,13 @@ v2 加上：
 
 主会话起草，英文、具体；所有者过目后才发（对外动作）。
 - gerontec（#544，相关 #532、#533）：1.58 带上了 `winders`；#544 的两个事实排在哪里（RM6.1，批次 D 首位，起点 2027-01-10，设计稿在冻结期）；欢迎他做 ST.2（折线行走线画成弧）。
-- bobsch-io：告知 1.54–1.58 的交付，并问他 #362–#370、#405 里明说未做的几项（见 RM4.4）哪些对他那 28 张平面还要紧。
+- bobsch-io（Daniel）：本卡不给他发任何东西。growth `AGENTS.md` 第 44 行的 Daniel 规则："The founder holds the follow-up question; do not post it or plan on its answer." 要不要告诉他 1.54–1.58 的交付、问不问、怎么问，都归所有者（列在 `handoff.md` 的所有者待办）。
 - #405：补记 L 形洞口栏杆已在 1.55.0 交付（issue 里仍写 "left open"）。
 - docs：加"建在 ArchLang 上的工具"一行，只列作者已同意的 `gerontec/archlang-section`（他 2026-11-06 在 #532 同意，并给了描述）。放哪一页按 ADR 0031 的下游读者口径定。
 
 证明：每条回复的链接记进 `handoff.md`；docs 一行 `docs:build` 绿。
 
-不许：承诺 IFC；承诺剖面进核心（核心不画高度）；承诺日期以外的范围；列出未同意的仓库（`AI-Building-Floor-Planner-SaaS` 尚无对话，不列）；在回复里写"first/only"或合规。
+不许：向 bobsch-io 提问；未经所有者要求起草给他的消息（Daniel 规则）；承诺 IFC；承诺剖面进核心（核心不画高度）；承诺日期以外的范围；列出未同意的仓库（`AI-Building-Floor-Planner-SaaS` 尚无对话，不列）；在回复里写"first/only"或合规。
 
 ### RM0.5 · 依赖与悬空状态 — `todo` · 0.5 日 · sonnet · 依赖无；#603、`origin/ChanMeng666-patch-1` 依赖所有者
 
@@ -99,7 +97,7 @@ v2 加上：
 
 ## 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：不加语法
 
-执行顺序以 `README.md` §3 的表为准：RM1.3a → RM5.1 → RM1.4 → RM0.2，线（8.5 日）以下 RM2.1 → RM1.6a → PS7.9。切点前合不完的进阶段 D，不挤进冻结期。
+执行顺序以 `README.md` §3 的表为准：RM1.3a → RM5.1 → RM1.4 → 发布 1.59.0，线（8 日 = 3 + 2 + 2 + 发布 1，9 个日历日）以下 RM2.1 → RM1.6a → PS7.9。RM0.2 是纯文档卡，也在线上，但由第二个（只做文档的）执行者并行，不计入 8 日。切点前合不完的进阶段 D，不挤进冻结期。
 
 ### RM1.3a · 可达性盲点第一批 — `todo` · 3 日 · opus · 依赖无
 
@@ -129,7 +127,7 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 不许：改吸附行为本身（M.9/PS0.26 是所有者的）；改 `fmt` 精度（M.8）；碰 PS0.27 词法（新形式，RM1.5b）。
 
-### RM0.2 · "编译器说不、并说为什么" — `todo` · 1.5 日 · sonnet · 依赖无
+### RM0.2 · "编译器说不、并说为什么" — `todo` · 1.5 日（第二个执行者，不计入线） · sonnet · 依赖无 · 纯文档
 
 新文档页 `docs/says-no.md`（名字可改，进 `sync-docs.mjs` 的 PAGES 和 sidebar）：6–8 个最小 `.arch`，每个配 `arch lint --json` 的真实输出和一句人话解释。候选：门扇撞家具（`W_SWING_OBSTRUCTED`）、房间不可达（`W_ROOM_UNREACHABLE`）、卧室无窗、车库过窄、家具进墙、被 `keep` 锁住的元素被改（`E_LOCKED_ELEMENT_CHANGED`）、`impact --lock` 报出"什么动了"。fence 用 `arch static`（错误演示不能活编译）。X9 的 Show HN 回答稿引用这页。
 
@@ -142,7 +140,11 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 不许：出现"first/only/唯一"；写"合规"或"passes"某辖区；提模型名或分数；对照表里出现仓库 profile 以外的数。
 
-### ── 线（8.5 日）──
+### 发布 1.59.0 · 约 11-21 · 1 日
+
+线上合并项切一个 minor（tag 归所有者），含 RM5.1 的 `packages/mcp` bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。切点后合并的 minor 内容等 12-02。
+
+### ── 线（8 日）──
 
 ### RM2.1 · 编辑模型的剩余可见性 — `todo` · 1 日 · sonnet · 依赖无
 
@@ -172,9 +174,7 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 不许：提高上限而不先削掉可证明的重复（铁律）；删掉 spec 里仍在用的事实。
 
-### 发布切点 · 约 11-21（1.59.0）
-
-以上合并项切一个 minor（tag 归所有者）。切点后合并的 minor 内容等 12-02。
+线下的卡在 1.59.0 切点前合并的，随 1.59.0 发布；切点后合并的等 12-02。
 
 ---
 
@@ -182,17 +182,21 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 不合任何功能代码。
 
-### RM1.1a · 首次接触复测（第一次） — `todo` · 1 日 · opus · 依赖 1.59.0 发布
+### RM1.1a · 首次接触复测（第一次） — `todo` · 1 日 · opus · 依赖 1.59.0 发布（兜底见下）
 
 纯测量，不改代码。按 plan-soundness D7/D15 的六份 brief 与冻结提示，在 1.59.0 上跑一次；记录"N 个缺陷、最终 lint 报出 k 个"。**v2：** 结果记在本计划 `handoff.md` 的测量表；`../plan-soundness/handoff.md` §4 只留一行指针。这个数字是 CR10 发布说明引用的覆盖数字（RM-D3 的措辞），也是 RM7.3 的自检项。
 
-不许：改提示；改 brief；把数字叫 benchmark 或与模型分数并列；在 1.59.0 以外的版本上量。
+兜底：1.59.0 到 2026-11-23 还没打 tag，就在冻结时 `main` 的提交上量，把完整 SHA 记进测量表；CR10 的发布说明引这个 SHA 和第一个包含它的版本。
+
+不许：改提示；改 brief；把数字叫 benchmark 或与模型分数并列；在 1.59.0 以外的版本上量，除非是上面的兜底并在测量表里写明 SHA。
 
 ### X9 · Show HN 回答稿 — 见 `../public-surfaces/3d.md`
 
 本计划只加一项：growth 仓库里过期的 Show HN 物料另开 PR（`marketing/launches/show-hn/anticipated-comments.md` 还写 "no winders"，`marketing/launches/runbook-2026-09.md` 对 "It does 3D now." 还答 "It does not"，日期还是 09-16，`marketing/launches/show-hn/draft.md` 还写 "Not scheduled"）。回答稿只写 1.59.0 里已发布的事实。
 
-### RM5.3 · 代理入门一条 URL — `todo` · 未估（报告 B 引来源估 2–4 日） · sonnet · 依赖 RM5.1 · 纯文档
+### RM5.3 · 代理入门一条 URL — `todo` · 未估（报告 B 引来源估 2–4 日） · sonnet · 依赖 RM5.1
+
+它含一个生成器和一条 drift 测试，还要改 `sync-docs.mjs` 的 PAGES，所以不是纯文档卡：由主执行者做，不由第二个执行者并行；冻结期只合 bug 修复、测量与文档，合不了就顺延到阶段 D。
 
 docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理从这一个 URL 出发就能装好、写一张平面、编译、lint。内容由 `skills/archlang/SKILL.md` 与 `llms-install.md` 同步生成（生成器从这两个源派生，不重抄），带 drift 测试。
 
@@ -204,7 +208,7 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 
 放 `design/`（本目录下，冻结期才建）。每份是对应卡开工前要读的设计，不是实现：
 - `schema-policy.md` → CR11a：`$id` 与变更、弃用政策草案。
-- `walls-facts.md` → RM7.2：字段按 `_derivedWalls` 的真实形状（`points[]`、`closed`、`between` 或 `ring`、厚度、类别、状态，`src/elements/walls-from-rooms.ts`）；与 `heights.walls[]`、`describe --facts quantities` 按 `name` 对齐；写明"段的粒度在 CRF1 之后才稳定"；新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`）；消费者一栏照实写。
+- `walls-facts.md` → RM7.2：字段按 `_derivedWalls` 的真实形状（`points[]`、`closed`、`between` 或 `ring`、厚度、类别、状态，`src/elements/walls-from-rooms.ts`）；按墙 `id`（即 piece 名）与 `heights.walls[]`（`src/describe.ts` 的 `{ id, height }`）、`describe --facts quantities`（`src/analyze/quantities.ts` 按 `id`）对齐；已有的 `describe().derived_walls[].name` 是 spec 名，CR8 切分后一个 spec 对应多个 piece，设计稿要交代新事实与默认 `derived_walls` 的关系；写明"段的粒度在 CRF1 之后才稳定"；新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`）；消费者一栏照实写。
 - `slab-and-section.md` → RM6.1：DS11 并入时的四件事（拼写取 DS11 的 `section A (x,y)->(x,y)` 还是 #544 的 `from … to …`；进 `describe` 主体还是 opt-in 事实；多层平面上剖切符号画在哪一页；`section` 写进日后 DS5 的 `level a..b` 时 id 怎么不重复，定不下来就保留对 DS5 的依赖）；MF-D11 的提案（`README.md` §6.1 的倾向）供所有者裁定。
 - `plan-json-scope.md` → RM3.1：范围表，逐个顶层语句对 `src/plan-json*`；列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，待所有者裁定，未裁则标 `dropped`）。
 
@@ -220,7 +224,7 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 
 ## 阶段 D · 批次 C′（12-02 → 12-16；1.60.0 约 12-21 切）：契约、出处、公开检查集、无损
 
-执行顺序以 `README.md` §3 的表为准：CR11a → RM1.6a（若阶段 B 没做完）→ RM1.6b → CR10 → RM3.1 前半，线（11–13.5 日）以下 RM3.1 后半 → PS7.9（若没做完）→ CR11b + RM3.2 → RM4.3。CR9、CR12、RM2.2 在阶段 E 线下。1.60.0 避开 Product Hunt 那一周。
+执行顺序以 `README.md` §3 的表为准：CR11a → RM1.6a（若阶段 B 没做完）→ RM1.6b → CR10 → RM3.1 前半 → 发布 1.60.0，线（12–14.5 日 = 11–13.5 + 发布 1）以下 RM3.1 后半 → PS7.9（若没做完）→ CR11b + RM3.2 → RM4.3。CR9、CR12、RM2.2 在阶段 E 线下。1.60.0 避开 Product Hunt 那一周。RM3.1 的拆分只在 RM-D10 获批后生效；未获批时 RM-D4 照旧，RM3.1 按 v1 的整张卡排。
 
 ### CR11a · schema `$id` 与变更政策 — `todo` · 1 日 · sonnet · 依赖冻结期的 `schema-policy.md`
 
@@ -237,16 +241,20 @@ CR11（`../checker-reach/README.md` §3）的政策那一半：schema 用带版�
 - **载体：** 同一个码可能来自几个键（`W_ROOM_TOO_SMALL` 可能出自 `minRoomAreaM2`、`minRoomAreaByUseM2[use]` 或 `minDoubleBedroomAreaM2`，由规则内部当场选），所以不能按码查表。规则推入诊断时附一个不进 `JSON.stringify` 的引用（Symbol 键或 WeakMap）；`diagnosticToJson(source, d)`（`src/diagnostic-json.ts`，公开导出）追加一个可选参数读它，原有两个参数的行为不变。
 - `lint(src)` 的序列化一字不变（字节恒等律对它取 digest）；同步改 `test/lint-summary.test.ts` 的断言（它要求 CLI 的 `diagnostics` 与 `lint(src).map((d) => diagnosticToJson(src, d))` 逐字节相等）。
 - 已有的 hint 文本（例如默认 WC/卫浴下限的 hint 里的 GB 50096 引文）不删，结构化字段只增不替。
+- **跨进程：** Symbol 键或 WeakMap 的引用过不了 `structuredClone` 与 `postMessage`。所以解析成 JSON 必须在跑 `lint()` 的那一侧完成；在 playground 里就是编译 worker 内部、发消息之前。任何先拷贝诊断再交给 `diagnosticToJson` 的路径都拿不到 `rule`。
+- **哪些调用方打开这个可选参数：** CLI 的 `lint --json` 与 `validate --json`（`src/cli/commands-analyze.ts`）；MCP 的 `lint` 与 `validate` 工具（`packages/mcp/src/tools.ts`；托管服务器经 `packages/mcp-worker/src/server.ts` 注册同一组工具；会改 MCP 输出，所以要搭一次 `packages/mcp` 的版本 bump）；CR10 的 `POST /check`（将建在 `packages/mcp-worker`，今天还没有）。`packages/mcp-worker/src/app.ts` 里现有的两处（错误信封与短链接的编译错误）不打开。**不许打开的：** `dataset/generate.ts`（dataset 金丝雀永不重新生成）与 `eval/l2.ts`（公开 eval 语料）。playground（`playground/src/actions.ts`、`playground/src/checks-panel.ts`、`playground/worker/app.ts`）与 web component（`packages/web-component/src/arch-plan.ts`）默认不打开，除非本卡的 PR 论证要打开它，并按上一条在 worker 一侧序列化。其余调用方（`src/cli/` 的其他命令、`src/lsp.ts` 等）不打开。
 
 证明：语料上 SVG + `describe()` + `lint()` 的 digest 不变；反向测试：由 `minDoubleBedroomAreaM2` 触发的 `W_ROOM_TOO_SMALL`，`rule.key` 必须是这个键，不是按码查表得到的 `minRoomAreaByUseM2`；不由规则数字驱动的诊断没有 `rule`；`arch lint examples/two-bed.arch --profile uk-residential-advisory --json` 的前后对照贴进 PR。
 
-不许：改 `lint(src)` 的返回值或它的 `JSON.stringify` 结果；改 `diagnosticToJson` 现有参数的含义；删任何已有 hint 文本；在 `message` 里引条文号或 id；给不由数字驱动的诊断编出处。
+不许：改 `lint(src)` 的返回值或它的 `JSON.stringify` 结果；改 `diagnosticToJson` 现有参数的含义；在 `dataset/generate.ts` 或 `eval/l2.ts` 里打开新参数；改 MCP 输出却不 bump `packages/mcp`；删任何已有 hint 文本；在 `message` 里引条文号或 id；给不由数字驱动的诊断编出处。
 
 ### CR10 · 公开检查集 + `POST /check` — `todo` · 5 日 · opus · 依赖 RM1.1a、RM1.6a
 
 `../checker-reach/README.md` §3：50 个夹具，每个都写明必须产生的诊断，按通过/失败判定；托管 `POST /check`。用词只叫"公开检查集"（A2）。v1 的追加：发布说明附 RM1.1a 的数字和"lint 跳过了什么"（无解析、无 `site`、无 `level`、无 `height`）；一个最小 GitHub Action 示例（`npx archlang lint --json` 跑夹具，失败即红）。
 
 **v2 加：** 一列跨辖区夹具，只用核实等级 `V` 与 `S-full` 的规则，profile 限定，不进默认规则。`us-residential-advisory` 现有的数来自讲义转述（`S-secondary`），重读原文之前不进这一列。
+
+RM1.1a 若走了兜底（量的是冻结时 `main` 的 SHA），发布说明引这个 SHA 和第一个包含它的版本。
 
 证明：每个夹具的期望诊断由测试判定；跨辖区一列的每条规则在 RM1.6a 的平行表里是 `V` 或 `S-full`（测试从表派生）；`POST /check` 与 CLI 对同一输入的 `lint --json` 一致。
 
@@ -263,7 +271,11 @@ v1 的 RM3.1 拆成两半（RM-D10，待所有者）。前半：
 
 不许：给 Plan JSON 加任何 3D 字段或只出不进的字段；自己定 `$id` 版本；为了绿而把形式移出范围表却不标 `dropped`。
 
-### ── 线（11–13.5 日）──
+### 发布 1.60.0 · 约 12-21 · 1 日
+
+线上合并项切一个 minor（tag 归所有者），步骤同 RM0.3；避开 Product Hunt 那一周。
+
+### ── 线（12–14.5 日）──
 
 ### RM3.1 后半 · Plan JSON 无损：`place` 往返及其余 — `todo` · 3 日 · opus · 依赖 RM3.1 前半
 
@@ -285,19 +297,19 @@ CR11 的其余一半：语言规范独立版本 `lang-1.0`。RM3.2：SBOM（Cycl
 
 不许：改 tag 与 OIDC 发布流程的权限；在 `GOVERNANCE.md` 里写具体的人名而所有者没有同意。
 
-### RM4.3 · DXF 图层线宽（#682） — `todo` · 1 日 · opus · 依赖 backlog D.7 的裁定（未裁则按现有线宽表）
+### RM4.3 · DXF 图层线宽（#682） — `todo` · 1 日 · opus · 依赖无（相关：backlog D.7）
 
-`src/export/dxf.ts` 的每个 LAYER 写线宽（组码 370）。取值映射到 370 允许的枚举值（DXF 只接受一组固定的线宽值），由 SVG/PDF 已画的线宽同一张表派生，映射写成一个函数并有测试。颜色不变。`--layers ncs6` 不在本卡。
+`src/export/dxf.ts` 的每个 LAYER 写线宽（组码 370）。取值映射到 370 允许的枚举值（DXF 只接受一组固定的线宽值），由 SVG/PDF 已画的线宽同一张表派生，映射写成一个函数并有测试。所以 D.7（一种细线）日后怎么裁，DXF 都随这张表变；D.7 是相关项，不是依赖。颜色不变。`--layers ncs6` 不在本卡。
 
 证明：DXF 字节的变化逐示例列出，SVG/PDF 零差，`describe()`/`lint()` 零差；一条测试断言每个图层都有 370 且值在允许的枚举里；QCAD 或 LibreCAD 打开，加 ezdxf 读回线宽（记录在 PR）；AutoCAD 的检查交给所有者。
 
-不许：改 SVG/PDF 的线宽；在 D.7 裁定之前合并线宽；改图层名（NCS v6 的命名是另一件事）；写 `--layers iso13567`（§4 不做）。
+不许：改 SVG/PDF 的线宽；在 DXF 里另立一张线宽表（只能从 SVG/PDF 的表派生）；改图层名（NCS v6 的命名是另一件事）；写 `--layers iso13567`（§4 不做）。
 
 ---
 
 ## 阶段 E · 波次 2′（12-17 → 2027-01-09；1.61.0 约 01-05 切）：深度
 
-先按 Show HN 评论重排（`README.md` §5）。默认顺序：RM3.1 后半（若没做完）→ PS7.9（若没做完）→ RM1.2a → CRF1 → RM7.2 → RM1.1b，线（14.5 日）以下 RM4.1 → RM1.2b → MF1 → RM1.7 → 其余。
+先按 Show HN 评论重排（`README.md` §5）。RM1.1b 量的工作必须在 1.61.0 里，所以有效窗口是 12-17 → 约 01-05，19 个日历日，跨圣诞与新年。默认顺序：RM3.1 后半（若没做完）→ PS7.9（若没做完）→ RM1.2a → 发布 1.61.0 → RM1.1b（01-06 → 01-08），线（9.5 日 = 3 + 1.5 + 3 + 1 + 1，前两项只在没做完时计）以下 CRF1 → RM7.2（线下首位）→ RM4.1 → RM1.2b → MF1 → RM1.7 → 其余。RM7.3 在读数日做，不计入线。
 
 ### RM1.2a · 行家规则，不加语法的三条 — `todo` · 3 日 · opus · 依赖 RM1.3a；第 2 条依赖 RM1.6a
 
@@ -313,34 +325,17 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 
 不许：第 1 条加默认 W；第 2 条加 `risers` 之类新语法；在 `message` 里引条文号；第 2 条用 `S-secondary` 的数。
 
-### CRF1 · 洞口旁的墙段合并 — 见 `../checker-reach/README.md`，`todo` · 与 RM7.2 合计 6 日 · opus · 依赖无
+### 发布 1.61.0 · 约 01-05 · 1 日
 
-CR8 的网格单元切分让洞口旁的墙面碎成多段：合并共线相邻段，且保持转动不变。v1 把它放在 RM1.5a；v2 把它提到 RM7.2 之前，因为它会改变墙段的切分，RM7.2 公开的段要在它之后才稳定。若它改变 `describe().derived_walls`，按分析修正论证并逐图列出，不按绘图修正。
-
-证明：等变预言机（D4 帧）在语料上零差；SVG 与 `describe()` 的字节变化逐图列出并解释。
-
-不许：碰 M.9/PS0.26；为了合并而构建墙体接合。
-
-### RM7.2 · `describe --facts walls`（#681） — `todo` · 与 CRF1 合计 6 日 · opus · 依赖 CRF1、冻结期的 `walls-facts.md`
-
-opt-in 的 `describe --facts walls`（加进 `DESCRIBE_FACTS`，`src/describe.ts`）：输出 `walls from rooms` 推导的墙段。字段按 `_derivedWalls` 的真实形状：`points[]`、`closed`、`between` 或 `ring`（外圈只带 `ring`）、厚度、类别、状态；按 `name` 与 `heights.walls[]`、`describe --facts quantities` 对齐。算第 7 轨（RM-D12，待所有者）。
-
-- 消费者照实写：没有具名读者；`archlang-section` 自己从 `walls_from_rooms` 的厚度重建墙，是**可能的读者**；排进来是因为 growth 2026-11-10 决策把它定为 IFC 下游包的前置。
-- 新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`），让跨引擎探针读到它。
-- 工程量已有 `describe --facts quantities` 与 `arch takeoff`（`src/analyze/quantities.ts`），本卡不重复它们。
-- PR 动 `src/` 超过约 500 行就停下，回到主会话重划范围（growth 决策的规模门）。
-
-证明：默认 `describe()` 在语料上一字不变（字节恒等律）；没有 `walls from rooms` 的图，`--facts walls` 输出为空并说明；一条测试断言段的并集与绘出的墙芯一致（从同一份 `_derivedWalls` 派生，不重算）；`arch describe examples/two-bed.arch --facts walls --json` 贴进 PR。
-
-不许：构建墙体接合来回答这个问题（铁律）；改默认 `describe()`；给 Plan JSON 加只出不进的字段；加语法；写任何 IFC 承诺或"IFC-ready"。
+线上合并项切一个 minor（tag 归所有者），步骤同 RM0.3。RM1.1b 量的就是它。
 
 ### RM1.1b · 首次接触复测（第二次） — `todo` · 1 日 · opus · 依赖 1.61.0 发布、RM1.2a
 
-同 RM1.1a，量 1.61.0。RM1.2b 没合就只量 RM1.2a 与 RM1.3a 的效果，并在测量表里照实写明。结果记在本计划 `handoff.md` 的测量表。报出数不高于 RM1.1a 时，`README.md` §5 的对应行生效：轨 1 停止加规则，转向对账与"跳过了什么"。必须在 agent-reach 窗口（01-05）结束前量到一个已发布版本。
+同 RM1.1a，2027-01-06 → 01-08 在 1.61.0 上量，数字附在 01-09 的 agent-reach 读数里。RM1.2b 没合就只量 RM1.2a 与 RM1.3a 的效果，并在测量表里照实写明。结果记在本计划 `handoff.md` 的测量表。报出数不高于 RM1.1a 时，`README.md` §5 的对应行生效：轨 1 停止加规则，转向对账与"跳过了什么"。
 
 不许：改提示或 brief；把数字叫 benchmark；在 1.61.0 以外的版本上量而不写明。
 
-### RM7.3 · 读数的三项自检 — `todo` · 未估 · sonnet · 依赖 RM1.1a、RM1.1b；读数日 2027-01-09、2027-01-31
+### RM7.3 · 读数的三项自检 — `todo` · 未估（读数日做，不计入线） · sonnet · 依赖 RM1.1a、RM1.1b；读数日 2027-01-09、2027-01-31
 
 agent-reach 读数（01-09，窗口到 01-05）与 RM-D2 读数（01-31，窗口到 01-28）时一并写出三项：
 1. Worker 调用的来源分布（若 Analytics Engine 有；没有就写"没有来源拆分"）；
@@ -353,7 +348,30 @@ agent-reach 读数（01-09，窗口到 01-05）与 RM-D2 读数（01-31，窗口
 
 不许：改门槛；把下载量或安装量写成 traction；把一周的数当窗口的数；跳过一项而不写明。
 
-### ── 线（14.5 日）──
+### ── 线（9.5 日）──
+
+### CRF1 · 洞口旁的墙段合并 — 见 `../checker-reach/README.md`，`todo` · 与 RM7.2 合计 6 日 · opus · 依赖无 · **线下首位**
+
+赶得上就进 1.61.0，否则进下一个 minor。CR8 的网格单元切分让洞口旁的墙面碎成多段：合并共线相邻段，且保持转动不变。v1 把它放在 RM1.5a；v2 把它提到 RM7.2 之前，因为它会改变墙段的切分，RM7.2 公开的段要在它之后才稳定。若它改变 `describe().derived_walls`，按分析修正论证并逐图列出，不按绘图修正。
+
+证明：等变预言机（D4 帧）在语料上零差；SVG 与 `describe()` 的字节变化逐图列出并解释。
+
+不许：碰 M.9/PS0.26；为了合并而构建墙体接合。
+
+### RM7.2 · `describe --facts walls`（#681） — `todo` · 与 CRF1 合计 6 日 · opus · 依赖 CRF1、冻结期的 `walls-facts.md` · 线下首位（紧接 CRF1）
+
+赶得上就进 1.61.0，否则进下一个 minor。
+
+opt-in 的 `describe --facts walls`（加进 `DESCRIBE_FACTS`，`src/describe.ts`）：输出 `walls from rooms` 推导的墙段。字段按 `_derivedWalls` 的真实形状：`points[]`、`closed`、`between` 或 `ring`（外圈只带 `ring`）、厚度、类别、状态；按墙 `id`（即 piece 名）与 `heights.walls[]`、`describe --facts quantities` 对齐。已有的 `describe().derived_walls[].name` 是 spec 名，一个 spec 对应多个 piece，两者不是一一对应；新事实与默认 `derived_walls` 的关系按设计稿写明。算第 7 轨（RM-D12，待所有者；这样归类会让它不受 RM-D2 收缩的约束）。
+
+- 消费者照实写：没有具名读者；`archlang-section` 自己从 `walls_from_rooms` 的厚度重建墙，是**可能的读者**；排进来是因为 growth 2026-11-10 决策把它定为 IFC 下游包的前置。
+- 新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`），让跨引擎探针读到它。
+- 工程量已有 `describe --facts quantities` 与 `arch takeoff`（`src/analyze/quantities.ts`），本卡不重复它们。
+- PR 动 `src/` 超过约 500 行就停下，回到主会话重划范围（growth 决策的规模门）。
+
+证明：默认 `describe()` 在语料上一字不变（字节恒等律）；没有 `walls from rooms` 的图，`--facts walls` 输出为空并说明；一条测试断言段的并集与绘出的墙芯一致（从同一份 `_derivedWalls` 派生，不重算）；`arch describe examples/two-bed.arch --facts walls --json` 贴进 PR。
+
+不许：构建墙体接合来回答这个问题（铁律）；改默认 `describe()`；给 Plan JSON 加只出不进的字段；加语法；写任何 IFC 承诺或"IFC-ready"。
 
 ### RM4.1 · 图纸第一批 — `todo` · 2 日 · opus · 依赖无
 
@@ -365,10 +383,10 @@ U.11（10 m 图上 0–1 m 比例尺 → 按图幅与比例选 2/5/10 m 档）�
 
 ### RM1.2b · 行家规则，有效性与声明 — `todo` · 9+ 日 · opus · 依赖 RM1.2a、PS7.9、RM1.6a；`[语法]` 第 3、4 条
 
-1. **第二疏散口**：与 PS2.16（`W_INNER_ROOM`，UK）合并为一张。先建 M.16 的 egress 事实为 opt-in `describe --facts egress`（支配点、门不相交的第二路径），这是该事实的第一个消费者；再加 advisory W，只对 `uses` 为居住且满足读过的条文条件的图。条文只取读过的文本：Approved Document B 第 1 卷（`S-full` 第三方全文副本可接受，写明版本）；读不到则本条 `parked`。`examples/studio.arch` 的内房读法（#683）在这里判。
+1. **第二疏散口**：与 PS2.16（拟议的 `W_INNER_ROOM`，UK）合并为一张。先建 M.16 的 egress 事实为 opt-in `describe --facts egress`（支配点、门不相交的第二路径），这是该事实的第一个消费者；再加 advisory W，只对 `uses` 为居住且满足读过的条文条件的图。条文只取读过的文本：Approved Document B 第 1 卷（`S-full` 第三方全文副本可接受，写明版本）；读不到则本条 `parked`。`examples/studio.arch` 的内房读法（#683）在这里判。
 2. **湿区叠放**：不做默认 W（不叠放是合法的，且语言没有"管道墙"事实）。做两件事：`score --taste` 加一条 `A_*` 建议行（跨 `level` 的湿房间投影不重叠）；`docs/edit-one-room.md` 或 keep 文档加 `keep stacked` 的配方。跨层墙检查只经 `keep stacked`（iron-laws）。
 3. `[语法]` **作者自报的场地约束，走 `keep`**（RM-D5）：`keep site setback front 5m side 1.5m rear 3m`、`keep site coverage max 40%`、`keep site far max 1.2`。三个新的 `keep` 度量进 PS4.9 的卡位，默认 advisory 等级（作者可写 `hard`），触发现有 `W_KEEP_VIOLATED`，**不新开 W 码族，不给 `site` 加字段**。`front/side/rear` 按 `site.street` 给地块边分类；coverage 读外壳投影，FAR 读各 `level` 的毛面积（ADR 0027 口径，算不准的层省略并说明）。事实模块 `src/analyze/site-metrics.ts` 与 DS3 共用，谁先做谁建。同 PR 在 `../drawing-set/README.md` 加一条 D 记录：作者声明的 `keep` 不是 D5 说的"指标判限值"，D4 不动。
-4. **（v2 加）**`[语法]` **作者写出的窗可开启值**：只收作者值，不按窗种猜（§4 不做）。写成毫米的净宽与净高，或比值，拼写由 `gen:*` 闭集定；不用 `m2`、`area`（T6）。`fixed` 窗写了可开启值要有诊断（E 或 W，在 PR 里论证）。它是逃生窗"通过"与豁免判断的前提（`DEFERRED_PROFILE_NUMBERS` 里的逃生窗数字），`W_INNER_ROOM` 报失败不需要它。
+4. **（v2 加）**`[语法]` **作者写出的窗可开启值**：只收作者值，不按窗种猜（§4 不做）。写成毫米的净宽与净高，或比值，拼写由 `gen:*` 闭集定；不用 `m2`、`area`（T6）。`fixed` 窗写了可开启值要有诊断（E 或 W，在 PR 里论证）。它是逃生窗"通过"与豁免判断的前提（`DEFERRED_PROFILE_NUMBERS` 里的逃生窗数字），拟议的 `W_INNER_ROOM`（PS2.16，今天 `src/` 里没有这个码）报失败不需要它。
 
 证明：§0 规则卡门禁；第 3、4 条另加各自的字节恒等律与 `gen:*`；`keep` 的 hard/soft/advisory 三档各一个夹具；第 4 条：不写可开启值的图字节不变。
 
@@ -453,20 +471,20 @@ M.9/PS0.26（吸附舍入半值远离零，镜像等变）、E.11（浮点平移
 
 证明：等变预言机加平移轨道。会动输出，PR 列全。
 
-### RM4.4 · Daniel 明说未做的项 — `todo` · 未估 · opus · 依赖 RM0.4 的答复（排序依据）
+### RM4.4 · Daniel 明说未做的项 — `todo` · 未估 · opus · 依赖无（触发见下）
 
-bobsch-io 在 #362–#370、#405 里明说未做的项，可拆成多张 PR：
+bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这些 issue 里已有的文字），可拆成多张 PR：
 - #364：`place` 组件内的房间不被 `finish` 装家具；
 - #367：小房间里的长房名没有引线，也不在词内断行；
 - #369：窗扇开启弧；`takeoff` 按窗类型计；
 - #362：`shape quarter-turn` 一类的楼梯简写；
 - #405 余下的：`fence`、`outdoor` 高度；洞口宽高标注；玻璃栏杆；天窗；`finish` 同时给浴缸和淋浴。
 
-按他对 RM0.4 的答复排序；他答复哪几项还要紧，或他的下一批 issue 到来时，那几项提到当期线上（`README.md` §5）。加语法的项标 `[语法]` 并依赖 PS7.9；绘图项不得移动语料的 `describe()`/`lint()`。
+本卡默认在波次 2′ 线下。提到当期线上的触发只有两个：他的下一批 issue 到来，或所有者说一句（`README.md` §5）。不向他提问，也不按他的答复排期：growth `AGENTS.md` 第 44 行的 Daniel 规则（"The founder holds the follow-up question; do not post it or plan on its answer."）。加语法的项标 `[语法]` 并依赖 PS7.9；绘图项不得移动语料的 `describe()`/`lint()`。
 
 证明：每项一个最小夹具；绘图项列 SVG 字节变化，`describe()`/`lint()` 零差；语法项带字节恒等律。
 
-不许：`paper auto`（ADR 0024 已拒）；为一项而改变不用它的图的输出；`finish` 被说成 "designs"、"arranges"。
+不许：为本卡向 bobsch-io 提问或等他的答复（Daniel 规则）；`paper auto`（ADR 0024 已拒）；为一项而改变不用它的图的输出；`finish` 被说成 "designs"、"arranges"。
 
 ---
 
@@ -474,15 +492,17 @@ bobsch-io 在 #362–#370、#405 里明说未做的项，可拆成多张 PR：
 
 ### RM6.1 · 剖面所需的两个事实 — `todo` · 5 日 · opus · 依赖 PS7.9、MF-D11（所有者）、冻结期的 `slab-and-section.md` · `[语法]` · **批次 D 首位（#532 触发）**
 
+MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本卡的 PR 里解决，所以没有所有者对 MF-D11 的裁定，本卡不合并。2027-01-10 时 MF-D11 还没裁，本卡标 `blocked`，阶段 F 从其余候选开始。本卡不改 MF-D1。
+
 外部用户（#532，`gerontec/archlang-section`）只用 `describe --json` 与 `compile -f json` 画出了剖面，缺两件事，都是 `describe()` 的数据，不是核心的绘图：
 
 1. **平面剖切符号**（DS11 提前）：`section A from (700, 0) to (700, 9000) look east`（拼写按设计稿定：DS11 的写法与 #544 的不同）。平面图元素（`src/elements/section.ts`，注册在 `defs.ts`，带 `drawCost`/`bounds()`/`measures()`）：画剖切线两端的符号与编号，这是 GB/T 50001 和 ISO 128 都有的平面图要素，核心允许。`describe().sections` 带出线段与观察方向，或按设计稿改为 opt-in 事实。只允许轴对齐（与 #532 的工具一致；斜切等第二个用例）。多层平面上画在哪一页、与 DS5 的 id 是否冲突，按设计稿。
-2. **楼板构造 datum**（2026-11-10 MF-D1 已裁定采纳。另需给出顶层和单层的天花来源 MF-D11，见 `../math-foundations/` §6.1）：在 `level` 上一个由 `gen:*` 闭集定的子句（候选 `slab <mm>`，或 `floor { structure <mm> finish <mm> }`），**核心不画它**（铁律：高度不画），只进 `describe().heights`，使每层净高 = 层高 − 楼板可派生；无声明时 `describe()` 省略并在"跳过了什么"里说（ADR 0027）。
-3. 净高子句若获 MF-D11 裁定，是第三个 `[语法]` 形式，带自己的字节恒等律；作者写的净高与推算值不一致时有一条诊断。MF-D11 未裁则只做中间层净高与剖切符号，顶层与单层净高不报并给出原因。
+2. **楼板构造 datum**（2026-11-10 MF-D1 已裁定采纳。另需给出顶层和单层的天花来源 MF-D11，见 `../math-foundations/` §6.1）：在 `level` 上一个由 `gen:*` 闭集定的子句（候选 `slab <mm>`，或 `floor { structure <mm> finish <mm> }`），**核心不画它**（铁律：高度不画），只进 `describe().heights`（以及 Plan JSON 已承载的高度字段，MF-D1 第 1 条），使第 n 层净高 = 第 n 层的 `height` − 第 n+1 层的楼板可派生。Plan JSON：楼板子句进 Plan JSON，或在 RM3.1 的范围表里标 `dropped`。没写时按 MF-D1 第 2 条：全图一层楼板都没写时，`describe()` 一字不变，不输出板厚和净高，也不加跳过说明；只有至少一层写了楼板时，没写的层才在"跳过了什么"里注明（ADR 0027）。
+3. 净高子句若获 MF-D11 裁定，是第三个 `[语法]` 形式，带自己的字节恒等律；作者写的净高与推算值不一致时有一条诊断。顶层与单层的天花按 MF-D11 的裁定做。
 
-证明：每个形式各自的字节恒等律（一层楼板都没写的图，`describe()` 一字不变）；`describe()` 变化只在用了新子句的图上；`archlang-section` 的示例 `haus_winders.arch` 加剖切线后 `describe --json` 能喂给它（在 PR 里跑一次该工具作说明，不进测试）。
+证明：每个形式各自的字节恒等律（一层楼板都没写的图，SVG、`describe()`、`lint()` 三处都逐字节不变，MF-D1 第 2 条）；`describe()` 变化只在用了新子句的图上；`archlang-section` 的示例 `haus_winders.arch` 加剖切线后 `describe --json` 能喂给它（在 PR 里跑一次该工具作说明，不进测试）。
 
-不许：在核心画任何高度或剖面；把剖面放进 `describe()` 以外的核心输出；碰 DS13（它在 `archlang-3d`，按 D3 等 Show HN 之后）；在 MF-D11 未裁时推算顶层或单层的净高。
+不许：在核心画任何高度或剖面；把剖面放进 `describe()` 以外的核心输出；碰 DS13（它在 `archlang-3d`，按 D3 等 Show HN 之后）；在 MF-D11 未裁时合并本卡；给没写楼板的图加跳过说明；用默认值去猜板厚。
 
 ### RM3.3 · mask 导入 — `todo` · 3 日 · opus · **触发：第二个独立来源带样本**
 
@@ -508,7 +528,7 @@ A.6/A.7（CLI `--accessible --annotate` 与 MCP 对应参数）、A.1（`dims au
 |---|---|
 | IFC 下游包（archlang-3d M5） | 三个外部用户在格式之前先要它，或 Show HN 评论要它；先过 M5 spike 判据；RM7.2 先于它 |
 | DS10–DS15 剖面立面 | N10 读过（记为受干扰即可）+ Show HN 之后（D3） |
-| 3D 能力 M2+ | 由 `../archlang-3d/` 自定节奏；PS-D11 后 ArchLang 一侧不再等 N10 |
+| 3D 能力 M2+ | 由 `packages/archlang-3d` 的维护自定节奏（`../archlang-3d/` 计划已归档）；N10 读数的结论不挡它 |
 | RM3.3 mask 导入 | 第二个独立样本 |
 | NZ/AU profile、`lint --brief`、FLOORA、MCP 工具分组 | 阶段 F，按 Show HN 评论与读数重排 |
 | 组件接缝单一所有者规则 | 两个 `place` 实例在共享边上对门洞冲突的真实用例 |
