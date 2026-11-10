@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-490 test files in `test/`, 270 `src` modules, 101 modules no test imports.
+491 test files in `test/`, 270 `src` modules, 101 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -227,6 +227,7 @@ The first sentence of each file's header comment.
 - `test/cache.test.ts` — compile cache — hits & eviction.
 - `test/carve-inward-walk.test.ts` — a far seed past a stair no longer takes the doorway's width (hillside-villa's landing); furniture within R + δ of a doorway's face blocks it: the threshold, fro…
 - `test/changelog-unreleased.test.ts` — CHANGELOG lines land under Unreleased, no released line is deleted, and a release PR is exempt.
+- `test/check-quick-workspaces.test.ts` — `check:quick` and `typecheck:all` name the same workspaces.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
 - `test/circle-enclosure.test.ts` — W_ROOM_NOT_ENCLOSED on a circle room enclosed by arc walls; straight walls never back a circle room (documented); the verdict is D4-equivariant under `place`.
 - `test/circulation-concave.test.ts` — circulation — a concave room's routing anchor is on the room, not on its notch lip.
