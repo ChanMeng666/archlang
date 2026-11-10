@@ -1,6 +1,6 @@
 /**
  * The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing
- * budget's units and the resolved elements, and the work counters of one `lint()` run (EH2.10), as COUNTS. The budgets (`MAX_EVAL_STEPS`,
+ * budget's units and the resolved elements, the work counters of one `lint()` run (EH2.10) and of one drawing (EH2.14), as COUNTS. The budgets (`MAX_EVAL_STEPS`,
  * `MAX_DRAW_UNITS`) sit hundreds of times above every shipped plan, so an algorithmic regression of
  * several hundred times still passes them, and the bench job is time and noise. This table pins the
  * corpus's real work instead.
@@ -15,6 +15,7 @@
  */
 import { readFileSync } from "node:fs";
 import { describe as suite, expect, it } from "vitest";
+import { compileWork } from "../src/pipeline.js";
 import {
   rowProblems,
   TABLE,
@@ -35,6 +36,8 @@ const COUNTS: readonly (keyof WorkCounts)[] = [
   "leafDoorPairs",
   "boundaryRunTests",
   "navCells",
+  "joinerySplitTests",
+  "labelRelocations",
 ];
 
 /** Holds `actual` within `recorded ± slack`; a drop inside the slack is only reported. */
@@ -92,4 +95,27 @@ suite("no plan's work moved past its bound", () => {
       within("the corpus total", c, actual, recorded, recorded * table._totalTolerance);
     }
   }, 120_000);
+});
+
+suite("the joinery's split scan stays below all pairs", () => {
+  // N straight walls meeting at one junction (a star): every band reaches the centre, so the scan
+  // is inherently quadratic there, but the grid index must still hand it fewer pairs than every
+  // pair of the universe's 4N band edges, C(4N, 2) = 8N² - 2N. Measured 4,627 at N = 32 (about
+  // 4.5 N²); the bound 5 N² = 5,120 sits under the all-pairs 8,128, so a scan that slips back to
+  // testing every pair turns this red. Counts, never time.
+  it("N walls at one junction: joinerySplitTests <= 5 N²", () => {
+    const n = 32;
+    const lines = ['plan "Star" {', "  units mm"];
+    for (let k = 0; k < n; k++) {
+      const a = (2 * Math.PI * k) / n;
+      const x = Math.round(5000 * Math.cos(a));
+      const y = Math.round(5000 * Math.sin(a));
+      lines.push(`  wall partition thickness 100 { (0,0) (${x},${y}) }`);
+    }
+    lines.push("}");
+    const work = compileWork(lines.join("\n"));
+    expect(work.joinerySplitTests, "the scan measured nothing").toBeGreaterThan(0);
+    expect(work.joinerySplitTests).toBeLessThanOrEqual(5 * n * n);
+    expect(5 * n * n).toBeLessThan(8 * n * n - 2 * n);
+  });
 });

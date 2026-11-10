@@ -27,6 +27,7 @@
  */
 
 import type { Point } from "./ast.js";
+import type { CompileWork } from "./compile-work.js";
 import type { Opening, RWall } from "./ir.js";
 import type { RenderCtx } from "./registry.js";
 import type { LineType, PathLoop, Scene, SceneNode, ScenePrim, SceneWall } from "./scene.js";
@@ -251,6 +252,16 @@ export function joinWallSet<W extends JoinableWall>(
   groupKeys: readonly string[],
   split?: { faceOf: (w: W) => string; faces: readonly string[] },
 ): JoinedWallSet | null {
+  return joinCounted(walls, groupKeys, split, undefined);
+}
+
+/** {@link joinWallSet}, counting the joinery's work into `work` when given (`src/compile-work.ts`). */
+function joinCounted<W extends JoinableWall>(
+  walls: readonly W[],
+  groupKeys: readonly string[],
+  split: { faceOf: (w: W) => string; faces: readonly string[] } | undefined,
+  work: CompileWork | undefined,
+): JoinedWallSet | null {
   if (walls.length === 0) return null;
   const intern = new PointInterner();
   const jwalls: JoineryWall[] = [];
@@ -286,7 +297,7 @@ export function joinWallSet<W extends JoinableWall>(
   for (const loop of freeCrossingCuts(walls, jwalls, intern)) {
     cuts.push({ index: cuts.length, loop, bbox: loopBBox(loop) });
   }
-  return { result: joinWalls(jwalls, cuts, groupKeys, split?.faces), cuts: joined };
+  return { result: joinWalls(jwalls, cuts, groupKeys, split?.faces, work), cuts: joined };
 }
 
 /**
@@ -366,15 +377,17 @@ export function classifyWallSet(
  * other caller's nodes are what they always were.
  *
  * Pure and deterministic: one {@link PointInterner} for the whole call (see `joinWalls`
- * for why that matters), no clock, no randomness, no Map-order dependence.
+ * for why that matters), no clock, no randomness, no Map-order dependence. `work`, when given,
+ * counts the joinery's work (`src/compile-work.ts`); an out-parameter only.
  */
 export function lowerWallSet(
   walls: readonly RWall[],
   hatches: readonly HatchSpec[],
   ctx: RenderCtx,
   lineType?: LineType,
+  work?: CompileWork,
 ): SceneNode[] {
-  const joined = joinWallSet(walls, hatches.map(hatchKey));
+  const joined = joinCounted(walls, hatches.map(hatchKey), undefined, work);
   if (!joined) return [];
   const result = joined.result;
   const nodes: SceneNode[] = [];

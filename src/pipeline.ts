@@ -10,12 +10,15 @@
  *
  * Pure, synchronous and isomorphic — see `compile()`'s own doc comment in
  * `index.ts` for the full contract; nothing here differs from what it always was.
+ * {@link compileWork} runs the same pipeline with the drawing's work counters
+ * (`src/compile-work.ts`) handed down; the result is the same with or without them.
  */
 
 import { parse } from "./parser.js";
 import { drawnView, lineWeightOutOfRange, resolveAll } from "./ir.js";
 import type { PlanResolution } from "./ir.js";
-import { planTheme, toScene } from "./scene-build.js";
+import { drawScene, planTheme } from "./scene-build.js";
+import { type CompileWork, newCompileWork } from "./compile-work.js";
 import { offerScene } from "./scene-memo.js";
 import { drawBudgetDiagnostic } from "./draw-budget.js";
 import type { PlanNode } from "./ast.js";
@@ -65,7 +68,23 @@ function apiLineWeightOutOfRange(
   return lineWeightOutOfRange(storeys, lw, plan.headerSpan, runtime.registry, from);
 }
 
-export function compileUncached(source: string, opts: CompileOptions): CompileResult {
+/**
+ * The drawing's work counters of one uncached {@link compileUncached} run over `source`
+ * ({@link CompileWork}, summed over every storey drawn): counts of the geometric tests the
+ * costliest drawing loops make, never a time. Read by the pinned work-count table
+ * (`test/tables/work-counts.json`) only; `compile()` itself never reads them. Pure: a fresh set
+ * of counters per call. A plan that does not draw (an error, or `view`) counts nothing.
+ *
+ * @internal Not part of the package surface (`src/index.ts` does not export it).
+ */
+export function compileWork(source: string, opts: CompileOptions = {}): CompileWork {
+  const work = newCompileWork();
+  compileUncached(source, opts, work);
+  return work;
+}
+
+/** One compile, uncached; `work`, when given, counts the drawing's work (see {@link compileWork}). */
+export function compileUncached(source: string, opts: CompileOptions, work?: CompileWork): CompileResult {
   // Per-call registry (built-ins + plugins) and runtime — fresh each compile, no
   // global mutation. Absent plugins/backend collapse to the built-in behavior.
   // Plugin-free compiles reuse the stable BUILTIN_REGISTRY so the parse/resolve
@@ -123,14 +142,14 @@ export function compileUncached(source: string, opts: CompileOptions): CompileRe
       svg = renderSvg(scene, opts);
     } else if (resolved.levels.length > 0) {
       pages = resolved.levels.map((l) => {
-        const s = toScene(l.ir, opts, runtime);
+        const s = drawScene(l.ir, opts, runtime, work);
         offerScene(l.ir, opts, runtime, s);
         return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), svg: renderSvg(s, opts), scene: s };
       });
       scene = pages[0]!.scene;
       svg = pages[0]!.svg;
     } else {
-      scene = toScene(resolved.ir, opts, runtime);
+      scene = drawScene(resolved.ir, opts, runtime, work);
       // `lint()` reads this storey's annotated Scene; it keeps a copy when it has asked for one.
       offerScene(resolved.ir, opts, runtime, scene);
       svg = renderSvg(scene, opts);

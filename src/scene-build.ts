@@ -15,6 +15,7 @@
  */
 
 import type { CompileOptions } from "./types.js";
+import type { CompileWork } from "./compile-work.js";
 import {
   drawnView,
   type ResolvedPlan,
@@ -773,6 +774,22 @@ export function planTheme(ir: ResolvedPlan, opts: CompileOptions, runtime: Runti
  * drawn this way make 1.1 million nodes and about 240 MB. Use `compile().scene`.
  */
 export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
+  return drawScene(plan, opts, runtime, undefined);
+}
+
+/**
+ * {@link toScene}, counting the drawing's geometric work into `work` when given (the joinery's
+ * split candidates and the label places scored, `src/compile-work.ts`). An out-parameter only:
+ * the Scene is the same with or without it. Read by `compileWork()` (`src/pipeline.ts`).
+ *
+ * @internal Not part of the package surface (`src/index.ts` does not export it).
+ */
+export function drawScene(
+  plan: ResolvedPlan,
+  opts: CompileOptions,
+  runtime: Runtime,
+  work: CompileWork | undefined,
+): Scene {
   // The storey as drawn (B3a): every wall, a `status demolish` one included, which is lowered in
   // a call of its own and drawn dashed (B3b). What the sheet MEASURES (the room schedule's net
   // area, the circulation overlay) reads `plan`, the plan after the demolition, as describe() does.
@@ -991,10 +1008,10 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
     groundMaterialsUsed(outdoorEls),
     floorMaterialsUsed(ir.elements.filter((e): e is RRoom => e.kind === "room")),
   );
-  for (const pushed of lowerWallSet(demolished, [], ctxFor("wall"), "dashed")) {
+  for (const pushed of lowerWallSet(demolished, [], ctxFor("wall"), "dashed", work)) {
     nodes.push({ ...pushed, layer: "wallFill" });
   }
-  for (const pushed of lowerWallSet(standing, wallHatches, ctxFor("wall"))) nodes.push(pushed);
+  for (const pushed of lowerWallSet(standing, wallHatches, ctxFor("wall"), undefined, work)) nodes.push(pushed);
 
   // `dims auto …` — synthesize dimension strings (presentation only; never touches
   // the IR, bounds, describe() or lint()). Every chain sits OUTSIDE the building,
@@ -1059,7 +1076,7 @@ export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: 
   // lettering of that label alone, so it is measured after every other label has landed. It
   // reads the storey after the demolition, as `W_ANNOTATION_OVERLAP` does.
   wrapLabels(nodes, labelGroups, ir, sizes);
-  relocateLabels(nodes, labelGroups, ir, sizes);
+  relocateLabels(nodes, labelGroups, ir, sizes, work);
   fitLabels(nodes, labelGroups, drawnElements, plan, sizes);
 
   // Opt-in sheet tables (`schedule rooms` / `legend`) — derived closed-form from the plan

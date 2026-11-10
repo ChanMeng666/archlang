@@ -56,6 +56,7 @@
  */
 
 import type { Point } from "../ast.js";
+import type { CompileWork } from "../compile-work.js";
 import type { Arc } from "./arc.js";
 import { arcPieces, arcPointAt, distPointToArc } from "./arc.js";
 import { distPointToSegment } from "../geometry.js";
@@ -332,8 +333,12 @@ function addSplit(t: Tagged, p: Point): void {
   t.splits.push({ t: param, p });
 }
 
-/** The universe's sub-edges after every mutual crossing has been cut in. */
-function splitAll(universe: Tagged[], intern: PointInterner): Tagged[] {
+/**
+ * The universe's sub-edges after every mutual crossing has been cut in. Each candidate pair the
+ * grid index hands the scan is counted into `work.joinerySplitTests` when a counter is given
+ * (`src/compile-work.ts`); nothing returned depends on it.
+ */
+function splitAll(universe: Tagged[], intern: PointInterner, work: CompileWork | undefined): Tagged[] {
   const index = new GridIndex<number>(spanCell(universe.map((t) => t.bbox)));
   for (let i = 0; i < universe.length; i++) index.insert(universe[i]!.bbox, i);
 
@@ -352,6 +357,7 @@ function splitAll(universe: Tagged[], intern: PointInterner): Tagged[] {
       candidates.push(j);
     });
     candidates.sort((x, y) => x - y);
+    if (work) work.joinerySplitTests += candidates.length;
     for (const j of candidates) {
       const b = universe[j]!;
       if (!boxesOverlap(a.bbox, b.bbox)) continue;
@@ -801,13 +807,15 @@ function finishLoops(chains: Chain[], key: KeyOf): EdgeLoop[] {
  *
  * Pure: no I/O, no clock, no randomness, and no dependence on the ORDER of the `walls`
  * or `cuts` arrays — every decision keys off their `index` fields. See the module header
- * for the four movements.
+ * for the four movements. `work`, when given, counts the split phase's candidate pairs
+ * (`src/compile-work.ts`); an out-parameter only.
  */
 export function joinWalls(
   walls: readonly JoineryWall[],
   cuts: readonly JoineryCut[],
   groups: readonly string[],
   faces?: readonly string[],
+  work?: CompileWork,
 ): JoineryResult {
   const empty: JoineryResult = { outline: [], fills: groups.map((group) => ({ group, loops: [] })) };
   if (walls.length === 0) return empty;
@@ -866,7 +874,7 @@ export function joinWalls(
   universe.sort(byTag);
   if (universe.length === 0) return empty;
 
-  const pieces = splitAll(universe, intern);
+  const pieces = splitAll(universe, intern, work);
   const key = keyMemo();
 
   // GROUP the sub-edges by canonical key. This is the deduplication (a face two walls

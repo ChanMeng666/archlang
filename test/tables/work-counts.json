@@ -1,5 +1,5 @@
 {
-  "_reason": "2026-11-10 EH2.10 boundary-no-wall: each shared run measured only against the wall segments and connectors within reach (overlapIndex); counters and room uses read once; boundaryRunTests falls",
+  "_reason": "2026-11-10 EH2.14: rows gain the drawing's work counters joinerySplitTests (joinery split-scan candidate pairs) and labelRelocations (label places scored), from compileWork(); every other count unchanged",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -10,7 +10,9 @@
       "elements": 14,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
-      "navCells": 2400
+      "navCells": 2400,
+      "joinerySplitTests": 78,
+      "labelRelocations": 36
     },
     "examples/aquarium.arch": {
       "steps": 3350,
@@ -18,7 +20,9 @@
       "elements": 46,
       "leafDoorPairs": 0,
       "boundaryRunTests": 41,
-      "navCells": 240000
+      "navCells": 240000,
+      "joinerySplitTests": 346,
+      "labelRelocations": 0
     },
     "examples/attached.arch": {
       "steps": 264,
@@ -26,7 +30,9 @@
       "elements": 13,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
-      "navCells": 2800
+      "navCells": 2800,
+      "joinerySplitTests": 115,
+      "labelRelocations": 36
     },
     "examples/bungalow.arch": {
       "steps": 777,
@@ -34,7 +40,9 @@
       "elements": 46,
       "leafDoorPairs": 0,
       "boundaryRunTests": 67,
-      "navCells": 10200
+      "navCells": 10200,
+      "joinerySplitTests": 369,
+      "labelRelocations": 163
     },
     "examples/classroom-block.arch": {
       "steps": 2413,
@@ -42,7 +50,9 @@
       "elements": 90,
       "leafDoorPairs": 0,
       "boundaryRunTests": 57,
-      "navCells": 31500
+      "navCells": 31500,
+      "joinerySplitTests": 400,
+      "labelRelocations": 114
     },
     "examples/clinic.arch": {
       "steps": 2066,
@@ -50,7 +60,9 @@
       "elements": 96,
       "leafDoorPairs": 0,
       "boundaryRunTests": 152,
-      "navCells": 29412
+      "navCells": 29412,
+      "joinerySplitTests": 805,
+      "labelRelocations": 154
     },
     "examples/corner-cafe.arch": {
       "steps": 1394,
@@ -58,7 +70,9 @@
       "elements": 65,
       "leafDoorPairs": 0,
       "boundaryRunTests": 46,
-      "navCells": 15000
+      "navCells": 15000,
+      "joinerySplitTests": 293,
+      "labelRelocations": 88
     },
     "examples/courtyard-house.arch": {
       "steps": 1277,
@@ -66,7 +80,9 @@
       "elements": 74,
       "leafDoorPairs": 0,
       "boundaryRunTests": 96,
-      "navCells": 18400
+      "navCells": 18400,
+      "joinerySplitTests": 702,
+      "labelRelocations": 136
     },
     "examples/furnished-flat.arch": {
       "steps": 969,
@@ -74,7 +90,9 @@
       "elements": 69,
       "leafDoorPairs": 0,
       "boundaryRunTests": 52,
-      "navCells": 9072
+      "navCells": 9072,
+      "joinerySplitTests": 367,
+      "labelRelocations": 158
     },
     "examples/gallery-l.arch": {
       "steps": 294,
@@ -82,7 +100,9 @@
       "elements": 15,
       "leafDoorPairs": 0,
       "boundaryRunTests": 8,
-      "navCells": 16800
+      "navCells": 16800,
+      "joinerySplitTests": 108,
+      "labelRelocations": 0
     },
     "examples/garden-house.arch": {
       "steps": 3876,
@@ -90,7 +110,9 @@
       "elements": 115,
       "leafDoorPairs": 0,
       "boundaryRunTests": 60,
-      "navCells": 25650
+      "navCells": 25650,
+      "joinerySplitTests": 462,
+      "labelRelocations": 687
     },
     "examples/garden-loft.arch": {
       "steps": 411,
@@ -98,7 +120,9 @@
       "elements": 27,
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
-      "navCells": 3500
+      "navCells": 3500,
+      "joinerySplitTests": 180,
+      "labelRelocations": 115
     },
     "examples/hexagon-pavilion.arch": {
       "steps": 773,
@@ -106,7 +130,9 @@
       "elements": 36,
       "leafDoorPairs": 0,
       "boundaryRunTests": 25,
-      "navCells": 18000
+      "navCells": 18000,
+      "joinerySplitTests": 433,
+      "labelRelocations": 0
     },
     "examples/hillside-villa.arch": {
       "steps": 5294,
@@ -114,7 +140,9 @@
       "elements": 152,
       "leafDoorPairs": 0,
       "boundaryRunTests": 206,
-      "navCells": 33762
+      "navCells": 33762,
+      "joinerySplitTests": 1365,
+      "labelRelocations": 473
     },
     "examples/imports.arch": {
       "steps": 261,
@@ -122,7 +150,9 @@
       "elements": 8,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
-      "navCells": 2000
+      "navCells": 2000,
+      "joinerySplitTests": 46,
+      "labelRelocations": 50
     },
     "examples/knob-flat.arch": {
       "steps": 965,
@@ -130,7 +160,9 @@
       "elements": 20,
       "leafDoorPairs": 0,
       "boundaryRunTests": 30,
-      "navCells": 5850
+      "navCells": 5850,
+      "joinerySplitTests": 267,
+      "labelRelocations": 86
     },
     "examples/laneway-house.arch": {
       "steps": 535,
@@ -138,7 +170,9 @@
       "elements": 29,
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
-      "navCells": 4875
+      "navCells": 4875,
+      "joinerySplitTests": 180,
+      "labelRelocations": 58
     },
     "examples/library.arch": {
       "steps": 2687,
@@ -146,7 +180,9 @@
       "elements": 133,
       "leafDoorPairs": 0,
       "boundaryRunTests": 110,
-      "navCells": 160000
+      "navCells": 160000,
+      "joinerySplitTests": 988,
+      "labelRelocations": 99
     },
     "examples/materials.arch": {
       "steps": 687,
@@ -154,7 +190,9 @@
       "elements": 38,
       "leafDoorPairs": 0,
       "boundaryRunTests": 44,
-      "navCells": 12800
+      "navCells": 12800,
+      "joinerySplitTests": 259,
+      "labelRelocations": 100
     },
     "examples/museum-wing.arch": {
       "steps": 291,
@@ -162,7 +200,9 @@
       "elements": 17,
       "leafDoorPairs": 0,
       "boundaryRunTests": 12,
-      "navCells": 21600
+      "navCells": 21600,
+      "joinerySplitTests": 168,
+      "labelRelocations": 0
     },
     "examples/museum-wings.arch": {
       "steps": 781,
@@ -170,7 +210,9 @@
       "elements": 42,
       "leafDoorPairs": 0,
       "boundaryRunTests": 42,
-      "navCells": 50400
+      "navCells": 50400,
+      "joinerySplitTests": 473,
+      "labelRelocations": 0
     },
     "examples/museum.arch": {
       "steps": 1868,
@@ -178,7 +220,9 @@
       "elements": 105,
       "leafDoorPairs": 0,
       "boundaryRunTests": 130,
-      "navCells": 250648
+      "navCells": 250648,
+      "joinerySplitTests": 551,
+      "labelRelocations": 55
     },
     "examples/one-room.arch": {
       "steps": 63,
@@ -186,7 +230,9 @@
       "elements": 4,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
-      "navCells": 2000
+      "navCells": 2000,
+      "joinerySplitTests": 46,
+      "labelRelocations": 0
     },
     "examples/parametric.arch": {
       "steps": 1015,
@@ -194,7 +240,9 @@
       "elements": 20,
       "leafDoorPairs": 0,
       "boundaryRunTests": 12,
-      "navCells": 6000
+      "navCells": 6000,
+      "joinerySplitTests": 278,
+      "labelRelocations": 108
     },
     "examples/practice-office.arch": {
       "steps": 1001,
@@ -202,7 +250,9 @@
       "elements": 55,
       "leafDoorPairs": 0,
       "boundaryRunTests": 64,
-      "navCells": 22500
+      "navCells": 22500,
+      "joinerySplitTests": 405,
+      "labelRelocations": 116
     },
     "examples/relational.arch": {
       "steps": 1020,
@@ -210,7 +260,9 @@
       "elements": 26,
       "leafDoorPairs": 0,
       "boundaryRunTests": 32,
-      "navCells": 6000
+      "navCells": 6000,
+      "joinerySplitTests": 289,
+      "labelRelocations": 36
     },
     "examples/remodel.arch": {
       "steps": 1291,
@@ -218,7 +270,9 @@
       "elements": 37,
       "leafDoorPairs": 1,
       "boundaryRunTests": 41,
-      "navCells": 8360
+      "navCells": 8360,
+      "joinerySplitTests": 300,
+      "labelRelocations": 16
     },
     "examples/sheet-notes.arch": {
       "steps": 192,
@@ -226,7 +280,9 @@
       "elements": 12,
       "leafDoorPairs": 0,
       "boundaryRunTests": 11,
-      "navCells": 5400
+      "navCells": 5400,
+      "joinerySplitTests": 105,
+      "labelRelocations": 0
     },
     "examples/studio.arch": {
       "steps": 484,
@@ -234,7 +290,9 @@
       "elements": 28,
       "leafDoorPairs": 0,
       "boundaryRunTests": 23,
-      "navCells": 4200
+      "navCells": 4200,
+      "joinerySplitTests": 179,
+      "labelRelocations": 36
     },
     "examples/terrace-row.arch": {
       "steps": 5198,
@@ -242,7 +300,9 @@
       "elements": 110,
       "leafDoorPairs": 0,
       "boundaryRunTests": 232,
-      "navCells": 21312
+      "navCells": 21312,
+      "joinerySplitTests": 1067,
+      "labelRelocations": 44
     },
     "examples/themed.arch": {
       "steps": 256,
@@ -250,7 +310,9 @@
       "elements": 13,
       "leafDoorPairs": 0,
       "boundaryRunTests": 4,
-      "navCells": 2400
+      "navCells": 2400,
+      "joinerySplitTests": 81,
+      "labelRelocations": 36
     },
     "examples/tiny-house.arch": {
       "steps": 485,
@@ -258,7 +320,9 @@
       "elements": 29,
       "leafDoorPairs": 0,
       "boundaryRunTests": 5,
-      "navCells": 1960
+      "navCells": 1960,
+      "joinerySplitTests": 204,
+      "labelRelocations": 0
     },
     "examples/townhouse.arch": {
       "steps": 3824,
@@ -266,7 +330,9 @@
       "elements": 72,
       "leafDoorPairs": 0,
       "boundaryRunTests": 59,
-      "navCells": 16692
+      "navCells": 16692,
+      "joinerySplitTests": 472,
+      "labelRelocations": 144
     },
     "examples/transit-hall.arch": {
       "steps": 2678,
@@ -274,7 +340,9 @@
       "elements": 116,
       "leafDoorPairs": 0,
       "boundaryRunTests": 125,
-      "navCells": 250500
+      "navCells": 250500,
+      "joinerySplitTests": 629,
+      "labelRelocations": 84
     },
     "examples/turning-stair.arch": {
       "steps": 1186,
@@ -282,7 +350,9 @@
       "elements": 16,
       "leafDoorPairs": 0,
       "boundaryRunTests": 8,
-      "navCells": 6080
+      "navCells": 6080,
+      "joinerySplitTests": 149,
+      "labelRelocations": 0
     },
     "examples/two-bed.arch": {
       "steps": 1310,
@@ -290,7 +360,9 @@
       "elements": 31,
       "leafDoorPairs": 0,
       "boundaryRunTests": 45,
-      "navCells": 8000
+      "navCells": 8000,
+      "joinerySplitTests": 310,
+      "labelRelocations": 57
     },
     "examples/two-storey.arch": {
       "steps": 1822,
@@ -298,7 +370,9 @@
       "elements": 39,
       "leafDoorPairs": 0,
       "boundaryRunTests": 28,
-      "navCells": 11200
+      "navCells": 11200,
+      "joinerySplitTests": 241,
+      "labelRelocations": 179
     },
     "bench:BALANCED": {
       "steps": 15880,
@@ -306,7 +380,9 @@
       "elements": 1000,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
-      "navCells": 0
+      "navCells": 0,
+      "joinerySplitTests": 4800,
+      "labelRelocations": 0
     },
     "bench:OPENING_HEAVY": {
       "steps": 13872,
@@ -314,7 +390,9 @@
       "elements": 1004,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
-      "navCells": 0
+      "navCells": 0,
+      "joinerySplitTests": 7600,
+      "labelRelocations": 0
     },
     "bench:ROOM_HEAVY": {
       "steps": 19950,
@@ -322,7 +400,9 @@
       "elements": 1004,
       "leafDoorPairs": 0,
       "boundaryRunTests": 0,
-      "navCells": 0
+      "navCells": 0,
+      "joinerySplitTests": 18,
+      "labelRelocations": 0
     }
   }
 }
