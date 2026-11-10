@@ -78,15 +78,18 @@ describe.skipIf(!HAS_DEFLATE_RAW)("share-codec.web.mjs ↔ share-codec.mjs", () 
     expect(await decodePlanHashWeb(bomb, { maxBytes: 2 * SHARE_INFLATE_CAP_BYTES })).toEqual({ ok: true, source });
   });
 
-  it("the Node decoder is bounded the same way: throws past 1 MiB unless maxBytes is raised", () => {
-    const source = "z".repeat(1_200_000);
-    const bomb = encodePlanHash(source);
-    expect(() => decodePlanHash(bomb)).toThrow();
-    expect(decodePlanHash(bomb, { maxBytes: 2 * SHARE_INFLATE_CAP_BYTES })).toBe(source);
-  });
-
   it("rejects a payload that is not base64url deflate-raw (never returns garbage as source)", async () => {
     expect(await decodePlanHashWeb("!!!not-base64!!!")).toEqual({ ok: false, code: "bad_payload" });
     expect(await decodePlanHashWeb("AAAA")).toEqual({ ok: false, code: "bad_payload" });
+  });
+});
+
+describe("decodePlanHash (Node) is bounded by default", () => {
+  it("throws a RangeError past 1 MiB unless maxBytes is raised", () => {
+    const source = "z".repeat(1_200_000);
+    const bomb = encodePlanHash(source);
+    expect(() => decodePlanHash(bomb)).toThrow(RangeError);
+    expect(() => decodePlanHash(bomb)).toThrow(/ERR_BUFFER_TOO_LARGE|Cannot create a Buffer larger than/);
+    expect(decodePlanHash(bomb, { maxBytes: 2 * SHARE_INFLATE_CAP_BYTES })).toBe(source);
   });
 });

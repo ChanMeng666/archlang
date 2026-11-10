@@ -34,7 +34,8 @@ async function pipeStream(stream: CompressionStream, bytes: Uint8Array): Promise
 }
 
 /**
- * The most UTF-8 bytes a link may inflate to in the browser. A deflate stream expands a
+ * Equal to the core's `SHARE_INFLATE_CAP_BYTES`: the most UTF-8 bytes a link may inflate to in the
+ * browser. A deflate stream expands a
  * thousandfold, so inflation stops here, not at the end of the stream (200 MB of spaces is a
  * 272 KB fragment). Sixty times the largest bundled example; the share Worker holds its own,
  * lower `SOURCE_CAP_BYTES`.
