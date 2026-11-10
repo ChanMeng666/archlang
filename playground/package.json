@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@chanmeng666/archlang-3d": "*",
-    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/autocomplete": "^6.20.4",
     "@codemirror/commands": "^6.11.1",
     "@codemirror/language": "^6.10.8",
     "@codemirror/lint": "^6.8.4",
