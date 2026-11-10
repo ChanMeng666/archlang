@@ -54,7 +54,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cursor.ts` (3) — `block-stair`, `cursor-exhaustive`, `reroll-findrun-oracle`
 - `src/datum.ts` (11) — `access-policy`, `cursor-exhaustive`, `describe-depends`, `diff-laws`, `emit-opening-oracle`, `equivariance-fuzz`, `fix-printer`, `fuzz` (+3)
 - `src/describe.ts` (48) — `acc-metadata`, `accessible-svg`, `d4`, `describe`, `diff-laws`, `diff`, `room-adjacency-oracle`, `window-facing-probe` (+40)
-- `src/diagnostics.ts` (49) — `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance`, `room-overlap-oracle` (+41)
+- `src/diagnostics.ts` (50) — `diagnostics-volume`, `diagnostics`, `error-catalog-families`, `export-font-cjk`, `expr`, `fix-pullback`, `lint-file-provenance`, `lint-ruleset-values` (+42)
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (1) — `fix-printer`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
@@ -113,7 +113,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (29) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+21)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (365) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+357)
+- `src/index.ts` (366) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+358)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -137,14 +137,14 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/rules/index.ts` (12) — `block-stair-landing`, `block-stair-lint`, `error-catalog-families`, `lint-back-to-room-side-on`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+4)
 - `src/lint/rules/per-room.ts` (2) — `fixture-classifier-drift`, `lint-fix-texts`
 - `src/lint/rules/stairs.ts` (3) — `block-stair-landing`, `block-stair-lint`, `lint-stairs`
-- `src/lint/ruleset.ts` (12) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+4)
+- `src/lint/ruleset.ts` (13) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+5)
 - `src/lint/storeys.ts` (5) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`
 - `src/lsp.ts` (2) — `block-stair-lint`, `lsp-codeactions`
 - `src/manifest.ts` (9) — `cli-context`, `cli-manifest`, `cli-storey-names`, `context-starter`, `describe-depends`, `docs-flags`, `llms-full-drift`, `site-doors` (+1)
 - `src/markdown.ts` (7) — `label-fit`, `label-placement-oracle`, `label-wrap`, `room-adjacency-oracle`, `room-overlap-oracle`, `step-budget`, `vocabulary-matcher-oracle`
 - `src/naming.ts` (3) — `grid-index`, `lint-messages-id-free`, `room-overlap-oracle`
 - `src/next.ts` (2) — `cli-validate-next`, `next`
-- `src/num-format.ts` (13) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `model-range`, `net-area-stamp`, `non-finite` (+5)
+- `src/num-format.ts` (14) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range`, `net-area-stamp` (+6)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
 - `src/parser.ts` (142) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+134)
@@ -470,6 +470,7 @@ The first sentence of each file's header comment.
 - `test/lint-profiles.test.ts` — lint profiles.
 - `test/lint-room-contents.test.ts` — W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING; finish with the room-contents rule: the review's probes; PS2.17: a kitchen's worktop, written by finish.
 - `test/lint-rule-order.test.ts` — a lint rule is registered in every place a rule is listed.
+- `test/lint-ruleset-values.test.ts` — A lint ruleset value that is not a finite number within the modelling range (or `null` where the field allows it) is refused with `E_RULESET_VALUE` before any rule runs (engineering-health EH2.12).
 - `test/lint-space-enclosure.test.ts` — W_BOUNDARY_NO_WALL; W_FLOOR_UNASSIGNED; W_ROOM_OUTSIDE_SHELL; circulation-reachable implies access-reachable, on the corpus; review round 1 — W_BOUNDARY_NO_WALL…
 - `test/lint-stairs.test.ts` — Plan-soundness PS2.11e (the stair bullets), PS2.34 and PS2.15: the six stair-safety codes.
 - `test/lint-storey-way-in.test.ts` — `W_NO_ENTRANCE` on a multi-storey plan (#404): each storey it fires on is told which storey it is and what is missing there, because the building may have a front door on another floor.
