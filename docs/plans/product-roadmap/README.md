@@ -1,36 +1,67 @@
-# 产品开发规划：让 ArchLang 成为"会说不、会解释、改一处不动全局"的开放平面语言（2026-11-06）
+# 产品开发规划 v2：会说不、说得出出处、事实读得出来、改一处不动全局（2026-11-10 修订）
 
-**状态：** 已规划，未开工。基线 `main@5593484d`（core 1.57.0）。本轮只有文档，没有实现。卡片在 `cards.md`，证据对照在 `evidence.md`，恢复点在 `handoff.md`。初稿经一轮独立红队（13 条发现）修订。
+**状态：** v2 已规划，未开工。基线 `main@69fa5864`（core 1.57.0 已发布；`v1.57.0..main` 有 529 个提交未发布）。v1 的波次 0 一张卡都没开工：11-07 到 11-10 用在了 engineering-health（86 个 PR，已关闭）和 math-foundations 规划上。v1 的裁定 RM-D1…D8 保留，其中 RM-D4 的主裁定已由 RM-D10 推翻。本次新提的 RM-D9…D16 由所有者 2026-11-11 全部批准；同日另有四项受托裁定 RM-D17…D20（§6.2）。初稿经一轮独立红队（2 个 blocker、12 个 should-fix、20 个 minor）修订。卡片在 `cards.md`，证据对照在 `evidence.md`（v2 的部分在 §G），恢复点在 `handoff.md`。
 
-**一句话：** 把 growth 仓库到 2026-11-06 为止的全部调研、决策和竞品分析，折成一份 ArchLang 自己的开发排期。它不替代已有的计划（checker-reach、drawing-set、plan-soundness、preview-and-remodel、public-surfaces、visual-assets、geo-seo），而是给它们排序、补缺、划界：哪些先做，哪些等信号，哪些永远不做。
+**一句话：** v1 的判断"先可信，再可达"不变。v2 加一条：已经有人把 ArchLang 接进自己的工具，11-10 的调研也指出专业度的缺口"更多在可追溯与数据，而不在新规则"。所以把排期从"多补规则"挪向"出处、读得出来的事实、契约、按时发布"，并把四份互相过期的 handoff 并成一个队列。
 
-**起因：** 所有者 2026-11-06 要求"按 archcanvas-growth 的调研、分析、思考、策略，做 archlang 后续的产品开发规划，目标是有竞争力、吸引用户、满足痛点、有独特优势、设计上专业优雅且克制"。
+**起因：** 所有者 2026-11-06 要求"按 archcanvas-growth 的调研、分析、思考、策略，做 archlang 后续的产品开发规划，目标是有竞争力、吸引用户、满足痛点、有独特优势、设计上专业优雅且克制"。v2 是 2026-11-10 按六份只读报告（A 专业化包与影响力审计、B 竞品、C 需求与战略、D 仓库计划状态、E issue 与采用、F 红队）做的修订，出处见 `evidence.md` §G。
 
 ## 如何使用本文（给新会话）
 
-1. 先读 `handoff.md`，确认当前位置。
-2. 读 §1–§4，约十五分钟。动某张卡前，读它在 `evidence.md` 里引用的 growth 报告段落。
-3. 选 `cards.md` 里依赖已完成、所在波次已开放的第一张 `todo` 卡。
+1. 先读 `handoff.md`，确认当前位置。按 RM-D15，全部开发排期的恢复点都在这里，其他计划的 handoff 只留一行指向它（RM0.1 落地这些指针）。
+2. 读 §0、§1–§4，约二十分钟。动某张卡前，读它在 `evidence.md` 里引用的出处。
+3. 选 `cards.md` 里依赖已完成、所在阶段已开放的第一张 `todo` 卡；同一阶段先做"线"以上的卡。
 4. 本计划的卡大多是**对已有卡的排序和打包**。打包卡落地时，被打包的原卡（backlog 的 `U.*`、`PS*`、`CRF*` 等）同时裁掉，不要留两份记录。
-5. 法则照旧：`AGENTS.md`、`docs/agents/*`。各卡门禁见 `cards.md` §0。
+5. 法则照旧：`AGENTS.md`、`docs/agents/*`。各卡门禁见 `cards.md` §0。执行节律见 §3 开头：一个执行者，只有纯文档卡可以由第二个执行者并行。
+
+---
+
+## 0. 这次修订改了什么
+
+| # | v1（11-06） | v2（11-10） | 为什么 |
+|---|---|---|---|
+| 1 | 约 11-21 才发下一个 minor | **立刻发 1.58.0**（RM-D9），约 11-21 再发 1.59.0 | 外部贡献者的 `winders`（#533）、import 限根与解压上限两项安全修复、registry `remotes` 都只在 `main` 上；`packages/mcp` 改了 8 个文件没 bump（D §A、E §B） |
+| 2 | 波次 0 七张卡，含 RM3.1（6 日），17 个日历日 | 冻结前线上三张卡加 1.59.0 的发布（8 日，9 个日历日），另有纯文档的 RM0.2 由第二个执行者并行；线下三张有余量才做；**RM3.1 移出冻结前**（RM-D10 推翻了 RM-D4 的主裁定） | 少了四天；一个执行者装不下 v1 的量（F §S4） |
+| 3 | #680–#684 没有卡 | 全部分诊成卡：#680 → RM1.6a/b，#681 → RM7.2，#682 → RM4.3，#683 → RM0.2 附带，#684 → RM1.8 | growth 2026-11-10 决策要求所有者在冻结前分诊 #680–#682，并把 #680、#681 定为 IFC 的前置（C §D.1）；#683、#684 一并处理 |
+| 4 | 批次 C = CR9 + CR10 + CR11 + CR12 + RM2.2 | 批次 C′ 线上 = `$id` 与变更政策 → 出处进输出 → CR10 → RM3.1 前半；CR9、CR12、RM2.2 移到波次 2′ 线下 | v1 自认批次 C 是 4–6 周的活；OAS 的需求证据最弱；CR9、CR12 建在 RM3.1 上（B §F6、C §F6） |
+| 5 | RM6.1 在批次 D 首位，批次 D 写的是"2027 Q1" | **RM6.1 仍在批次 D 首位**（MF-D1 的"排期不变"不改），批次 D 的起点定为 2027-01-10；设计稿在冻结期写好，MF-D11 由 RM-D17 受托裁定 | 报告 A、B、C 都建议不提前；波次 2′ 按一个执行者已经排满。Show HN 评论要剖面时，v1 §5 的既有规则会把它提前 |
+| 6 | 七个计划各有 handoff | **一个队列、一个 handoff**（RM-D15）；其余计划关闭或搁置并写明门；残留卡列表见 §7 | 四份 handoff 三份过期；CRF1 的位置、DS11 对 DS5 的依赖两处冲突出自多队列（D §E1、§I2） |
+| 7 | 两次读数（01-09、01-31） | 读数照读，后果按 RM-D2 与 agent-reach 决策 6 执行，不改；读数时附三项自检；在约束之内，卡按"有没有具名消费者"排序 | 11-09 那一周的 Worker 调用已过门槛，但只是一周、未复核、来源未拆分；自检防止读数"继续"却什么也没学到（C §C、F §B2） |
+| 8 | "不做"清单 | 追加九行 | 11-10 专业化包里与铁律或既有裁定冲突的建议（A §D） |
 
 ---
 
 ## 1. 证据一页纸
 
-三份只读报告（2026-11-06，`D:\.claude-scratch\2026-11-06\archlang-roadmap\`，归档后见 `evidence.md`）：A 战略综合、B 用户与竞品证据、C 仓库现状审计；加一份红队 D。下面只写结论和出处，细节在 `evidence.md`。
+三份只读报告（2026-11-06，`D:\.claude-scratch\2026-11-06\archlang-roadmap\`，归档后见 `evidence.md`）：A 战略综合、B 用户与竞品证据、C 仓库现状审计；加一份红队 D。下面只写结论和出处，细节在 `evidence.md`。§1.1b、§1.1c 和 §1.5 的追加项出自 2026-11-10 的六份报告，出处在 `evidence.md` §G。
 
 ### 1.1 用户要什么（growth N4 的约 31 个外联线程，加 N5、X25、C6 的零散样本；频次是研究者的判断）
 
 | 诉求 | 频次 | ArchLang 今天 | 本计划的回答 |
 |---|---|---|---|
-| 从已有图片 / PDF / 草图 / 房源页出图 | ~12 线程 + 2 竞品帖下的建造商提问，**最高** | `docs/from-an-image.md` 工作流（CR7 ①）；OpenPlan3D JSON 导入；一个实验性 mask→Plan JSON 工具 | 不把读图做进语言；把实验工具推进到"输出可 lint 的 `.arch`"，但只在第二个独立样本到来时开工（RM3.3） |
-| "看着对、其实错"，能不能验证 | ~10 线程 + 7 条行家嘲讽 | 250 个诊断码，69 条 lint；缺陷语料 77/84；**首次接触复测：61 个缺陷中最终 lint 报出 12 个** | 第 1 轨：公开 check suite（CR10）+ 诚实的覆盖数字 + 行家点名而我们没有的规则（RM1.*） |
+| 从已有图片 / PDF / 草图 / 房源页出图 | ~12 线程 + 2 竞品帖下的建造商提问，**最高** | `docs/from-an-image.md` 工作流（CR7 ①）；OpenPlan3D JSON 导入；一个实验性 mask→Plan JSON 工具 | 不把读图做进语言；让 Plan JSON 成为识别器可以写、`arch lint` 可以查的交接格式（RM3.1 无损 + 一页说明）；RM3.3 的触发不变 |
+| "看着对、其实错"，能不能验证 | ~10 线程 + 7 条行家嘲讽 | 250 个诊断码，69 条 lint；缺陷语料 77/84；**首次接触复测：61 个缺陷中最终 lint 报出 12 个** | 第 1 轨：公开 check suite（CR10）+ 诚实的覆盖数字 + 行家点名而我们没有的规则（RM1.*）；出处进输出（RM1.6a/b） |
 | 改一处全重画；楼层对不上；"在原有外壳里改" | ~5 + 3 | `keep`、`impact --lock`、`status existing\|demolish\|new`、`docs/edit-one-room.md` 都有（CR7 ②） | 第 2 轨：剩余的可见性（CRF11、技能循环顺序）、`arch diff`、编辑模型补全（RM2.*） |
 | 3D / 漫游 / 渲染 | ~9 | `archlang-3d` 0.4.0；PS-D11（2026-11-06）：3D 预览配对平面出现在所有公开面 | 不新增 3D 能力；展示按 public-surfaces `3d.md` 走，本计划不碰 |
-| 导出进既有流水线（IFC、DCjson、BOQ、英制） | ~6；IFC 仅 1 人 | SVG/PNG/PDF/DXF/Plan JSON/CSV；无 IFC | 英尺英寸显示（RM3.4）；IFC 只定触发，不承诺（§4、§5） |
+| 导出进既有流水线（IFC、DCjson、BOQ、英制） | ~6；IFC 仅 1 人 | SVG/PNG/PDF/DXF/Plan JSON/CSV；无 IFC | 英尺英寸显示（RM3.4）；IFC 只定触发，不承诺（§4、§5）；解析后的墙段（RM7.2）是 IFC 下游包的前置（growth 2026-11-10 决策） |
 | 家具放不放得下、门撞不撞 | ~5 | 间距、门扇、碰撞规则已有（`W_FURN_CLEAR_*`、`W_SWING_OBSTRUCTED`、`W_FURNITURE_WALL_COLLISION`） | 已覆盖；RM0.2 用它们写"编译器说不"的示例 |
-| "我的代理不知道这个工具能做什么" | 1 个真实用户 + 2 条旁证 | CR7 ③ 加了能力摘要与常见错误页；`spec.llm.md` 29,695/30,000，MCP `INSTRUCTIONS` 879/900 | 第 5 轨：腾空间、把能力摘要放进 MCP 资源（RM5.1、PS7.9） |
+| "我的代理不知道这个工具能做什么" | 1 个真实用户 + 2 条旁证 | CR7 ③ 加了能力摘要与常见错误页；`spec.llm.md` 29,856/30,000（2026-11-10 实测），MCP `INSTRUCTIONS` 879/900 | 第 5 轨：腾空间、把能力摘要放进 MCP 资源（RM5.1、PS7.9） |
+
+### 1.1b 11-06 之后新增的事实
+
+1. **有人建在上面了，人数是两到三个。** `gerontec/archlang-section`（用 `describe --json` 画建筑剖面，作者另有已合并的 PR #533，已同意被列入 docs）；`harshalsankala18-stack/AI-Building-Floor-Planner-SaaS`（把核心包当编译器，尚无对话）；一个工程量 POC 的意向（已 fork，样本未到）。外联里回复的都是工具作者（C §A.2、A §A.2）。gerontec 与最早的 issue 作者是否同一人，未证实。
+2. **调研指出的缺口在可追溯与数据。** `walls from rooms` 推导的墙在机读输出里没有坐标（IFC 探针对 `two-bed.arch` 产出 0 面墙）；规则出处主要在 `src/lint/ruleset.ts` 的注释和 `explain` 的散文里，只有少数默认下限的 hint 带了条文；没有 `lint --rules`；没有楼板 datum；DXF 不写线宽（A §E1–E6，已对 `main` 核实；F minor 3）。
+3. **硬拒不可能的几何，同类工具里做的不多。** 实测的 7 个工具里 2 个会硬拒；ArchLang 的非正尺寸是 E，门或洞口不在任何墙上是 W。这是在一份单层 12×8 的 brief 上比的，区分度低，不能写成领先（B §C、§E）。
+4. **开源同类工具已有带洞口的 IFC 导出。** BIMCraft、debim、Aedifex、ifc-lite 都导出 IFC4。所有者 2026-11-03 的"不承诺 IFC"不变。2026-11-10 新入库 20 个同类工具，这是对搜索结果的观察，不是计数（B §D、§E）。
+5. **调研包的规则目录有错，不能直接用。** 62 条里至少四处与仓库不符：1219 mm 门扇被标成 2021 IBC（仓库注释写明出自 2018 及更早版本）；WC 1.1 m²、卫浴 2.0 m² 在默认规则集而不在 cn profile；GB 50352 的 175 mm 是公共楼梯；采光筛查的触发数主要来自假设的 1200 mm 玻璃高度（A §E8、E13、E14、E17）。
+
+### 1.1c 需求的两种排序
+
+| 按独立人数（C §A.2） | 按离真实使用多近 |
+|---|---|
+| 读图出图（12–14）、看着对其实错（12–13）、3D 下游（约 10）、导出进流水线（约 10） | Daniel（bobsch-io，用 1.53 重画 28 张平面，9 个 issue）：非直跑楼梯、IFC、代理不知道能力，以及 #362–#370、#405 里明说未做的几项；gerontec：楼板 datum 与剖切线（#544）；Dhruv（工具作者）：规则出处、退界与容积率 |
+
+两列不一样。v2 在既有约束之内取右列排序。左列前两名由已有能力回答（读图走工作流和 Plan JSON 交接；"其实错"走检查器），不为它们新开语言能力。
 
 ### 1.2 行家怎么嘲讽 AI 平面图（Solvaix 197 万次曝光帖下的回复、Troche 的建筑师审稿、Opus 5.5 测试）
 
@@ -40,26 +71,29 @@
 
 - ArchLang 以**分发与可信度**衡量，收入其次（2026-10-09）。可以按价值新增语言形式（2026-11-01 D29）。
 - 消费者产品已 STOP（2026-11-01）；ArchCanvas 维护态、钉在 core 1.48；不做消费者功能。
-- **3D（PS-D11，所有者 2026-11-06，`docs/plans/public-surfaces/3d.md` §1）：** 3D 预览出现在 ArchLang 的每个公开面，永远配对平面、同一源文件、由 `archlang-3d` 生成。它取代了"Show HN 保持 2D"和 Tier C 门。仍然有效的：用词禁令（永不"3D CAD / BIM / render / walkthrough / photoreal / model"，产品词是"3D 预览"）；3D 代码只在 `packages/archlang-3d`；核心不画高度。N10 读数照读，但**记为受干扰，没有人等它**。
+- **3D（PS-D11，所有者 2026-11-06，`docs/plans/public-surfaces/3d.md` §1）：** 3D 预览出现在 ArchLang 的每个公开面，永远配对平面、同一源文件、由 `archlang-3d` 生成。它取代了"Show HN 保持 2D"和 Tier C 门。仍然有效的：用词禁令（永不"3D CAD / BIM / render / walkthrough / photoreal / model"，产品词是"3D 预览"）；3D 代码只在 `packages/archlang-3d`；核心不画高度。N10 读数照读，但**记为受干扰，读数的结论不挡任何 ArchLang 卡**（drawing-set D3 只要求它已读）；ArchCanvas 一侧不在 PS-D11 范围内，CR-D2 的 Tier B 仍等 N10，D29 的 wave 4、6 也仍等 N10（§7）。
 - 可以作为**度量**声明的只有三件：可达性、精确面积、字节恒等。间距、宽度、步行距离永远是 advisory。禁止"first/only"、"code beats CAD"、合规/报批、"设计/布置/家具"、任何 IFC 承诺。
 - "public check suite" 永不叫 benchmark 或 leaderboard（A2）；导入是功能事实不是标题（A3）。
 - 没有遥测；eval 语料和 `test/defect-corpus/` 是公开夹具，不是留出集；新留出集只在私有 `archlang-lab` 里写；T3 永久拒绝。
 - Show HN 冻结 2026-11-24 → 12-01：只修 bug、只发 patch、不加语言形式（checker-reach §3）。
 
-### 1.4 两份先行路线图的分歧，本计划如何裁
+### 1.4 三份路线图的 P0 怎么裁
 
-growth 里已有两份 ArchLang 路线图：11-04 版把**格式与契约**（OAS/OpenPlan3D 互操作、规范版本、conformance、check suite）列为 P0；11-06 版把**规则与事实深度**（家具当碰撞几何、建筑师点名的规则、派生表格）列为 P0。两者都没列对方的 P0。
-
-裁决：**两条都做，但顺序由"可信度先于可达范围"决定。** 一个会漏掉"走廊通向无处"的检查器，接入再多格式也不会被引用。所以第 1 轨（检查器可信度）和第 2 轨（编辑模型）排在 Show HN 前的空档里能做多少做多少；互操作批次 C 保持 checker-reach 已排的 12-02 → 12-16，日期不动；但它的前置——**Plan JSON 无损**（RM3.1）——放进波次 0，因为 OpenPlan3D 导出、OAS 和 conformance 语料都建在 Plan JSON 上，而它今天丢 `place`、丢 `outdoor`、默许矛盾的门扇方向。RM3.1 不加语法，冻结规则允许它在 11-24 前合并。
+11-04 版的 P0 是格式与契约，11-06 版是规则与事实深度，11-10 专业化包是可追溯与数据。v1 裁了前两份：先可信，再可达。v2 把第三份接进来：**出处排在新规则之前；有具名消费者的事实排在新格式之前。** 一条说不出出处的规则行家不信；这两件都不加语法，冻结规则不挡它们。
 
 ### 1.5 证据的薄弱处（照实写）
 
-- 所有用户信号都小：外联回复 5–36 次浏览；唯一的外部 issue 作者是一个人；GitHub 30 星。
+- 所有用户信号都小：外联回复 5–36 次浏览；外部 issue 作者只有 bobsch-io 与 gerontec 两个账号（是否同一人未证实）；GitHub 30 星（11-10 为 34 星）。
 - 11-04 的"验证过的需求"是竞品的投入，不是用户的付费。11-06 的 P0 建在一条帖子下的 11 条回复上。
 - 前沿模型可能自检得够好（Opus 5.5 首稿尺寸全对，三处小错一轮改完）。若如此，外部检查器的需求会缩。反证：同一测试仍需人工红线；另一个模型漏了第二疏散口。
 - 3D 的诉求与检查的诉求一样多，最火的内容是奇观。PS-D11 已把 3D 展示放到所有公开面；本计划不再追加 3D 能力（光影、漫游），这条写进 §4。
 - 检查这件事存在三十年（CORENET、Solibri）没有绑定行业。LLM 作者是否改变这点，是在测的假设。
-- 首次接触复测（plan-soundness D7）是本计划衡量"可信度"的唯一尺子，而它最近一次是 2026-10-27。本计划排了两次复测（RM1.1）。
+- 首次接触复测（plan-soundness D7）是本计划衡量"可信度"的尺子，别的尺子还没有，而它最近一次是 2026-10-27。本计划排了两次复测（RM1.1a、RM1.1b）。
+- 下游使用者是两到三个人，其中一个尚无对话。
+- Worker 周调用 1,451 次只是一周的 csv 数字，没有按来源拆开；Open VSX 下载可能含镜像和自动更新。下载量与安装量不是 traction（既有禁令）。
+- 竞品实测的 brief 是单层 12×8，多层、剖面、家具碰撞没有被覆盖；Chiro、FloorGen 从未实测；新入库工具的威胁级别是桌面判断。
+- RM7.2 的读者是推断的：`archlang-section` 自己从 `walls_from_rooms` 的厚度重建墙，没有提过这个需求。它排进来的理由是 growth 决策把它定为 IFC 的前置。
+- Daniel 对剖面说的是"likes that ArchLang is moving towards section views"，是赞同，不是请求。
 
 ---
 
@@ -69,18 +103,24 @@ growth 里已有两份 ArchLang 路线图：11-04 版把**格式与契约**（OA
 2. **克制的工具会说话。** 凡是改了作者输入的地方（单位猜测、网格吸附、默认值、丢弃的标签）都要出声；凡是算不准的地方省略并说明（ADR 0027）。本计划把所有"静默接受"当缺陷，但 Show HN 前只加 W，不把今天能编译的图变成 E（那是 2.0 的事）。
 3. **一个编辑原语。** `keep` / `impact --lock` / `status` / `diff` 是同一件事的四个面：改一处、其余不动、看得见什么动了。它们在 README、docs、playground 起手、技能循环、MCP 说明里以同一组词出现。
 4. **互操作去除反对意见，不做标题。** 导入导出是功能事实。IFC 不承诺，只定触发。读图永远不进语言，只进工作流和一个输出可 lint 文本的导入工具。
-5. **语法只在非做不可时加。** 每张加语法的卡都标 `[语法]`，依赖 PS7.9（spec 腾空）先完成，带字节恒等律。本计划新增语法只有三处（RM1.2b 的 `keep site …` 度量、RM4.2 的 `schedule fixtures`、RM3.4 的尺寸单位显示），都可拒。波次 0 不加任何语法。
+5. **语法只在非做不可时加。** 每张加语法的卡都标 `[语法]`，依赖 PS7.9（spec 腾空）先完成，带字节恒等律。本计划排到的 `[语法]` 形式：RM6.1 两个（剖切符号、楼板 datum）、RM-D17（MF-D11）定下的净高子句一个、RM1.2b 的 `keep site …` 度量与窗的可开启值两个（PS7.9 按这五个算）；线下另有 RM4.2 的 `schedule fixtures`、RM3.4 的尺寸单位显示。都可拒。阶段 A、B、C（冻结前与冻结期）不加任何语法。
 6. **图纸先像图纸。** 比例尺、图例、细线、净尺寸这些小而可见的缺陷，排在任何新能力之前；但会动金样的绘图修正不排在 Show HN 截图之前。
 7. **记录不说谎。** 卡片状态、whats-new、README 里的数字与代码一致，不一致先改记录；红的 nightly（#497）先分诊。
 8. **不做的事写明。** §4 的"不做"清单与"做"清单同等重要，这是"克制"的定义。
+9. **每个事实要有具名消费者。** 新的 `describe` 事实、导出字段、数据子句，卡里写出谁在读它（一个仓库、一个工具、一条规则）；只有推断的读者时照实写"可能的读者"，并排在有具名消费者的卡之后（backlog M.16 的既有规则，提升为排序依据）。
+10. **出处先于规则。** 出处的数据结构（RM1.6a）落地之前，不新增由 profile 数字驱动的规则。出处的核实等级取五值之一：`V`（读过官方原文）、`S-full`（读过全文第三方副本）、`S-secondary`（转述、摘要、讲义）、`M`（杂志）、`convention`（无文献的约定）。进新规则或公开夹具的只有 `V` 和 `S-full`（drawing-set D13）。
+11. **合并不等于交付。** 外部贡献或安全修复在 `main` 上停留超过七天，就提请所有者发布。建议节奏（tag 归所有者）：1.58.0 立刻、1.59.0 约 11-21、1.60.0 约 12-21（避开 Product Hunt 那一周）、1.61.0 约 2027-01-05。
+12. **一个队列（RM-D15）。** 排期和恢复点只在本计划；其他计划的 README 留作设计和裁定的出处。
 
 ---
 
-## 3. 排期
+## 3. 排期 v2
 
-六条轨加一条基础轨，四个波次。时间锚点：Show HN 冻结 2026-11-24 → 12-01；**波次 0 的 minor 发布切点约 11-21**（冻结期只发 patch，切点后合并的 minor 内容等到 12-02）；checker-reach 批次 C 12-02 → 12-16；agent-reach 读数 2027-01-09；批次 D 2027 Q1。执行节律：一个执行者、一张卡一个 worktree、一次一个重命令（`one heavy process at a time`）。
+时间锚点不变：冻结 2026-11-24 → 12-01；Show HN 12-01（所有者亲自发）；Product Hunt 约 12-15；agent-reach 读数 2027-01-09（窗口到 01-05）；RM-D2 读数 2027-01-31。
 
-### 轨
+执行节律：**一个执行者、一张卡一个 worktree、一次一个重命令**（`docs/agents/orchestration.md`）；只有纯文档卡可以由第二个执行者并行。本地只跑 `check:quick`（文档加 `docs:build`）。合并串行（required checks 是 strict 的），每个 PR 至多两轮红队。每个阶段有一条"线"：线上的量按一个执行者配，线下的有余量才做，做不完进下一阶段，不挤进冻结期。
+
+轨沿用 v1：
 
 | 轨 | 名字 | 回答的痛点 | 优势（不用"唯一"） |
 |---|---|---|---|
@@ -92,65 +132,85 @@ growth 里已有两份 ArchLang 路线图：11-04 版把**格式与契约**（OA
 | 6 | **图纸集与 3D 能力（守门）** | 剖面、立面、指标 | 全部按既定触发，不在本计划内提前 |
 | 7 | **基础：记录、无障碍、性能** | 可信度的地基 | 记录与代码一致；图纸可读屏；拼接不慢 |
 
-### 波次 0 · 冻结前（2026-11-07 → 11-21 切点 → 11-23）：可信度与契约地基，不加语法
-
-按序执行；切点前合不完的顺延到波次 2，不挤进冻结期。
+### 阶段 A · 立刻（11-10 → 11-12）：发布与对账（3 日）
 
 | 序 | 卡 | 内容 | 轨 | 估 |
 |---|---|---|---|---|
-| 1 | RM0.1 | 记录修正：DS1/DS2、D1、PS0.2 裁掉；U.17 去掉会漂移的数字；`docs/whats-new.md` 到 1.57；playground README profile 数；#497 nightly 分诊；`docs/plans/README.md` 加本计划一行；growth `category.md`/`master-plan.md` 刷新稿记为另一仓库待办 | 7 | 0.5 |
-| 2 | RM0.2 | "编译器说不、并说为什么"示例页：6–8 个最小 `.arch`，每个配 lint 输出与一句解释（门扇撞家具、房间不可达、卧室无窗、车库过窄、被 `keep` 锁住的元素被改）；给 X9 Show HN 回答稿复用 | 1 | 1 |
-| 3 | RM1.4 | 静默接受改出声（只加 W）：U.2 裸米值、U.3 类别拼写、PS0.25/6.10 吸附（同一 PR 裁两条）、PS0.16 `set` 字串化 W（2.0 升 E，RM-D6）；U.4 不加诊断，label 由 `describe()` 与 `schedule fixtures` 带出（RM4.2） | 1 | 2 |
-| 4 | RM1.3a | 可达性盲点第一批：PS0.3 多层经楼梯 `reachable:false`、U.1 阳台门算到达、6.11 双开门读成两窄门 | 1 | 3 |
-| 5 | RM5.1 | MCP 能力摘要：`INSTRUCTIONS` 留一句能力句 + 指向新资源 `archlang://capabilities`（由 `manifest.ts`、`packages/mcp/src/tools.ts`、`EXPORT_FORMATS` 生成）；PS5.3a `validate` 返回 `next`；一次 `packages/mcp` 版本 bump（必须搭 11-21 的 minor，RM-D4） | 5 | 1.5 |
-| 6 | RM3.1 | **Plan JSON 无损**：G.10/PS3.12/PS3.13 `place` 往返、PS0.21 `outdoor`/`fence`、PS0.20 门扇矛盾 W、U.7 导入改名 W；法则范围限定为 Plan JSON 声称承载的形式（PR 里列全）。RM-D4/D6 已裁，不再 blocked | 3 | 6 |
-| 7 | RM2.1 | 编辑模型的剩余可见性：CRF11 playground 起手"改一个房间"；`skills/archlang/SKILL.md` 的 loop 把 `impact --lock` 提到编辑路径第一步 | 2 | 1 |
-| — | **发布** | 约 11-21 切 minor（含以上已合并项） | | |
+| 1 | RM0.3（新） | **发布 1.58.0**（tag 由所有者打，RM-D9）。nightly 前置已满足：run 42801157907（`main@69fa5864`）里 `Deep fuzz (FC_SCALE=10)` 与四个 `Test …` job 全部 success，#497 已于 2026-11-10 关闭；发布前按 release-check 第 5 项再读一次最新的 nightly。步骤按 `.claude/commands/release-check.md` 走全：bump `packages/mcp`（`server.json` 两处同步）与 `archlang-3d`（`prove:pack`、`check:3d`）；`winders` 是新关键字，重打 `.vsix` 并上传、派发 `publish-openvsx.yml`；OpenAI 插件 ZIP、ClawHub、Docker Catalog；`docs/whats-new.md` 补到 1.58；CHANGELOG 把 `arch impact` 的退出码变更放在显眼处 | 7 | 1 |
+| 2 | RM0.1（扩大） | v1 的记录修正，加上：DS0、DS1、DS2、D1、PS0.2 改 `done`；PS0.16、PS0.20、PS0.21、U.4、U.7 标为已裁（RM-D6）；backlog O.10（它的 #119、#121 与后继的 #206–#208 都已关闭：核对是否还有待裁的主版本升级，没有就关闭）、5.2、H.1 的过时状态；`archlang-3d/amendment-v0.7.md` 的 "Proposed" 改 superseded；plan-soundness handoff 的 spec 余量数字；2.0 桶（V.5、V.6、6.7、PS0.16 升 E、`feat/remove-view`）在 backlog 里写明"不在任何排期，2.0 时一起做"；**单一队列的落地**（RM-D15）：`docs/plans/README.md` 状态列、各计划 handoff 顶部一行指向本计划 | 7 | 1 |
+| 3 | RM0.4（新） | **欠外部的跟进**（英文、具体、不承诺 IFC 与剖面进核心；按 RM-D18 受托裁定，主会话起草并发出，在 RM0.3 发布 1.58.0 之后）：docs 加"建在 ArchLang 上的工具"一行，只列作者已同意的 `archlang-section`；在 #544 回复 gerontec 一次（`winders` 已发布；两个事实在批次 D 首位，2027-01-10 起，设计稿在冻结期写；欢迎 ST.2 的 PR；`archlang-section` 已列进 docs）；在 bobsch-io 自己的 #362 下留一条事实说明（非直跑楼梯以 `winders` 在 1.58.0 发布），不含任何问题（growth `AGENTS.md` 第 44 行的 Daniel 规则）；#405 补记 L 形洞口栏杆已在 1.55.0 交付 | 7 | 0.5 |
+| 4 | RM0.5（新） | 依赖与悬空状态：合 #675、#677、#678；修 #604（biome 的 lint 差异）；#676（three 0.187）单独评估帧哈希与 GLB 字节；#603 主版本在 Show HN 之前不合并、PR 保持打开，12-02 之后成为 RM5.4（RM-D19）；清掉 13 个已合并 PR 的远程分支与过期本地分支；`origin/ChanMeng666-patch-1`（commit `6c86203a`）落地：先确认新的影片资源 URL 能打开，再 cherry-pick 到从 `main` 新建的分支，经 PR 合并（RM-D20） | 7 | 0.5 |
 
-合计约 14.5 AI 日，±50%，17 个日历日。顺延优先级：RM2.1 → RM5.1 → RM3.1 的后半。
+### 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：不加语法
 
-**冻结期（11-24 → 12-01）：** 只修 bug；X9 Show HN 回答稿；**RM1.1a 首次接触复测**（纯测量，不改代码：六份 brief、冻结提示，报出数写进 plan-soundness handoff §4，作为 CR10 发布时引用的数字）；收集 Show HN 评论作为 §5 的信号。
+| 序 | 卡 | 内容 | 轨 | 估 |
+|---|---|---|---|---|
+| 1 | RM1.3a | 可达性盲点第一批（v1 不变） | 1 | 3 |
+| 2 | RM5.1 | MCP 能力摘要 + PS5.3a（v1 不变）；能力资源里另加指向 `docs/from-an-image.md` 与"改一个房间"的两行。一次 `packages/mcp` bump，搭 1.59.0 | 5 | 2 |
+| 3 | RM1.4 | 静默接受改出声，只加 W（v1 不变） | 1 | 2 |
+| 4 | RM0.2（加三项；纯文档，由第二个执行者并行，不计入线的合计） | "编译器说不、并说为什么"页（v1 不变）；**加**：`examples/studio.arch` 头注释改正（#683）：去掉无条件的 "Architecturally sound"，改正"每个房间都开向门厅"，写明"默认 profile 下 lint 无报；`uk-residential-advisory` 下报一条 `W_ROOM_TOO_SMALL`"；一张"过默认检查不等于过任何辖区"的对照表，只列仓库 profile 里已有的数；一段 `validate --strict`：它把警告也当失败（退出码 2），适合放进 CI | 1 | (1.5) |
+| 5 | 发布 1.59.0 | 约 11-21 切（tag 归所有者），含 RM5.1 的 `packages/mcp` bump | 7 | 1 |
+| ── | ── 线（8 日 = RM1.3a 3 + RM5.1 2 + RM1.4 2 + 发布 1，9 个日历日；RM0.2 在线上但由第二个执行者做，不计入）── | | | |
+| 6 | RM2.1 | 编辑模型的剩余可见性（v1 不变） | 2 | 1 |
+| 7 | RM1.6a（新，#680 前半） | **出处成为数据**：一张按 `profile + key` 索引的平行表，记每个规则数字的 document、clause、edition、核实等级（原则 10 的五值）；默认规则集的数也在内；`LINT_PROFILES`、`DEFAULT_RULESET` 这两个公开导出的形状不变。`lint --rules [--profile X] --json` 导出生效规则集，schema 标为 `$id` 未定的草案（等 CR11a）。不改 `lint()` 的返回值。目录勘误另记在 growth 仓库 `research/cross-report-corrections.md` | 1 | 2.5 |
+| 8 | PS7.9 | spec 腾空。今天可用余量 143 单位；目标按后面排到的 `[语法]` 形式重算：RM6.1 两个、RM-D17 的净高子句一个、RM1.2b 的 `keep site` 与可开启值两个，共五个 | 5 | 1.5 |
 
-### 波次 1 · 批次 C（2026-12-02 → 12-16）：契约
+### 阶段 C · 冻结期（11-24 → 12-01）：只修 bug，加测量与文档
 
-| 卡 | 内容 | 轨 |
-|---|---|---|
-| CR9 | OAS 导入 + OpenPlan3D 导出（既定，建在 RM3.1 上） | 3 |
-| CR10 | 公开 check suite（50 夹具）+ 托管 `POST /check`（既定）。**追加**：发布说明附 RM1.1a 的首次接触数字和"lint 跳过了什么"；一个最小 GitHub Action 示例（`npx archlang lint --json` 跑夹具），因为"第三方在 CI 里跑"是 CR10 自己的成功指标 | 1 |
-| CR11 | `lang-1.0`、schema `$id`、GOVERNANCE 变更/弃用政策（既定）。**追加 RM3.2**：SBOM（CycloneDX）进发布流程；GOVERNANCE 加继任/第二维护者一行（11-04 专业度清单仅剩的两项 N） | 3 |
-| CR12 | conformance 语料 100 例（既定，第一条法则就是 RM3.1 的往返律） | 3 |
-| RM2.2 | `arch diff`（U.14）；先修 `diffPlans` 的 PS0.22/0.23；不依赖 RM3.1 | 2 |
+不合任何功能代码。
 
-批次 C 本身按 11-04 的规模估是 4–6 周的活，窄进 15 天；RM2.2 排在最后，批次 C 顺延时它先让。
+- **RM1.1a** 首次接触复测（量 1.59.0）。结果记在本计划 handoff 的测量表；`plan-soundness/handoff.md` §4 留一行指针。兜底：1.59.0 到 2026-11-23 还没打 tag，就量冻结时 `main` 的提交，把 SHA 记进测量表；CR10 的发布说明引这个 SHA 和第一个包含它的版本。
+- **X9** Show HN 回答稿；growth 仓库里过期的 Show HN 物料（回答稿还写 "no winders"，runbook 还写"不做 3D"和 09-16 的日期）另开 PR。
+- **RM5.3（新）代理入门一条 URL**：docs 站一页，由 `skills/archlang/SKILL.md` 与 `llms-install.md` 同步生成。验收：全新会话只给这个 URL，能编译并 lint 一张 12×8 的平面（B §F4）。它含一个生成器和一条 drift 测试，不是纯文档卡，由主执行者做；冻结期合不了就顺延到阶段 D。
+- **四份设计稿**，放 `docs/plans/product-roadmap/design/`（冻结期才建这个目录）：
+  - `schema-policy.md`：CR11a 的 `$id` 与变更、弃用政策草案；
+  - `walls-facts.md`：RM7.2。字段按 `_derivedWalls` 的真实形状（`points[]`、`closed`、`between` 或 `ring`、厚度、类别、状态）；与 `heights.walls[]`、`describe --facts quantities` 按墙 `id`（即 piece 名）对齐，已有的 `describe().derived_walls[].name` 是 spec 名，一个 spec 对应多个 piece，设计稿交代新事实与默认 `derived_walls` 的关系；写明"段的粒度在 CRF1 之后才稳定"；新事实进 `engineProbeParts`；消费者一栏照实写；
+  - `slab-and-section.md`：RM6.1。定下 DS11 并入时的四件事（拼写取 DS11 还是 #544 的；进 `describe` 主体还是 opt-in 事实；多层平面上剖切符号画在哪一页；`section` 写进日后 DS5 的 `level a..b` 时 id 怎么不重复，定不下来就保留对 DS5 的依赖）；按 RM-D17（MF-D11 的受托裁定）定下净高子句的拼写；
+  - `plan-json-scope.md`：RM3.1 的范围表，列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，待所有者裁定，未裁则标 `dropped`）。
+- **RM1.8（新，#684）**：读 GB 55038-2025 官方原文，结论写回 issue。动不动默认规则集的两个数，另开卡。
+- 收集 Show HN 评论，作为 §5 的信号。
 
-### 波次 2 · Show HN 之后到 agent-reach 读数（2026-12-17 → 2027-01-09）：深度
+### 阶段 D · 批次 C′（12-02 → 12-16；1.60.0 约 12-21 切）：契约、出处、公开检查集、无损
 
-按 Show HN 评论重排（§5）。默认顺序：
+| 序 | 卡 | 内容 | 轨 | 估 |
+|---|---|---|---|---|
+| 1 | CR11a | CR11 的政策那一半：schema `$id`、变更与弃用政策（冻结期的草案落地）。排在任何新 schema 发布之前 | 3 | 1 |
+| 2 | RM1.6a | 若阶段 B 没做完 | 1 | (2.5) |
+| 3 | RM1.6b（新，#680 后半） | 诊断的 JSON 输出带结构化 `rule`（profile、key、value、units、document、clause、edition、核实等级），只加在由规则数字驱动的诊断上。**载体**：规则推入诊断时附一个不进 `JSON.stringify` 的引用（Symbol 键或 WeakMap），`diagnosticToJson` 追加一个可选参数读它；`lint(src)` 的序列化一字不变（字节恒等律对它取 digest）；同步改 `test/lint-summary.test.ts` 的断言。已有的 hint 文本不删，结构化字段只增不替。反向测试：由 `minDoubleBedroomAreaM2` 触发的 `W_ROOM_TOO_SMALL`，`rule.key` 必须是这个键。这类引用过不了 `structuredClone`，所以在跑 `lint()` 的一侧解析成 JSON（playground 在编译 worker 里）。打开新参数的只有 CLI `lint --json`、`validate --json`，MCP 的 `lint`、`validate` 工具，与 CR10 的 `POST /check`；`dataset/generate.ts`、`eval/l2.ts` 不打开，playground 默认不打开 | 1 | 2 |
+| 4 | CR10（加一项） | 公开检查集 + 托管 `POST /check`（既定），附 RM1.1a 的数字、"lint 跳过了什么"、最小 GitHub Action 示例。**加**：一列跨辖区夹具，只用 `V` 与 `S-full` 的规则，profile 限定，不进默认规则；US profile 现有的数是讲义转述，重读原文之前不进这一列 | 1 | 5 |
+| 5 | RM3.1 前半 | Plan JSON 无损的范围表、往返律、`outdoor` 与 `fence`（按冻结期设计稿；RM-D10） | 3 | 3 |
+| 6 | 发布 1.60.0 | 约 12-21 切（tag 归所有者），避开 Product Hunt 那一周 | 7 | 1 |
+| ── | ── 线（12–14.5 日 = 11–13.5 + 发布 1）── | | | |
+| 7 | RM3.1 后半 | `place` 往返及其余；加一页"把识别结果写成 Plan JSON"，说明识别器输出 Plan JSON、再 `arch lint` 的路径 | 3 | 3 |
+| 8 | PS7.9 | 若阶段 B 没做完 | 5 | (1.5) |
+| 9 | CR11b + RM3.2 | `lang-1.0`、SBOM、GOVERNANCE 继任一行 | 3 | 2 |
+| 10 | RM4.3（新，#682） | DXF 每个图层写线宽（组码 370），取值映射到 370 允许的枚举值，与 SVG/PDF 的线宽同表派生：D.7 日后怎么裁，DXF 都随这张表变（D.7 相关，不是依赖）。验收：QCAD 或 LibreCAD 打开，加 ezdxf 读回；AutoCAD 的检查交给所有者 | 4 | 1 |
+| 11 | RM5.4（新，RM-D19） | `@modelcontextprotocol/ext-apps` 2.x 迁移（#603）：12-02 之后才开工；与 RM1.6b 共用一次 `packages/mcp` bump | 5 | 未估 |
 
-| 卡 | 内容 | 轨 |
-|---|---|---|
-| RM1.2a | 行家规则，不加语法的三条：**指北针缺失** → `finish sheet` 填充 + `validate --stage drafting` 提示（不是默认 W）；**级高对层高**（ST.1：层高 ÷ 画出的踏步数推算级高，超 `[S]` 数值报，无 `height` 跳过并说明；会命中四个示例，同一 PR 修示例并列出）；**"标签无实物"** 复核 `W_ROOM_MISSING_DEFINING`（只加夹具） | 1 |
-| PS7.9 | spec 腾空（≥ 三张 `[语法]` 卡的估算字数），波次 2 所有 `[语法]` 卡的前置 | 5 |
-| RM1.2b | 行家规则，有效性与声明的三条：**第二疏散口**（与 PS2.16 `W_INNER_ROOM` 合并，消费 M.16 的 egress 事实，先建事实再建规则；阈值只取读过的条文，`[S]` 标注来源）；**湿区叠放** → taste `A_*` 行 + `keep stacked` 的文档配方（iron-laws：跨层墙检查只经 `keep stacked`）；`[语法]` **作者自报的场地约束走 `keep`**（RM-D5）：`keep site setback front 5m …`、`keep site coverage max 40%`、`keep site far max 1.2`，默认 advisory，触发现有 `W_KEEP_VIOLATED`，不新开 W 码族；度量进 PS4.9 的卡位；与 DS3 共用 `site-metrics` 事实模块 | 1 |
-| RM1.1b | 第二次首次接触复测，量 RM1.2a/b 的效果 | 1 |
-| RM1.3b | 可达性盲点第二批：4.5 草坪水面可走、M.4 竖井到达层叠加、U.22/PS0.15 `describe` 预算、PS0.6 `suggest` 经卧室连门 | 1 |
-| RM1.5a | 确定性泄漏第一批：CRF1 墙面碎片（若动 `derived_walls` 则按分析修正论证）、CRF2、J16 `relocateLabels` 次序 | 1 |
-| RM4.1 | 图纸第一批：U.11 比例尺、U.10 图例墙类型、N.6 宽字形、M.23 大图 PNG；D.7 等所有者 | 4 |
-| RM2.3 | 编辑模型补全：PS4.6/4.7 impact 键控、PS4.8 组件内 `keep`、PS4.10 `keep` 过 Plan JSON 与 MCP | 2 |
-| RM4.2 | 图纸第二批：U.9 净尺寸、D.9、PS2.39、J18 PDF 地面与 DXF 残留、D.5、U.18 playground 矢量 PDF（只允许浏览器内懒加载后端）；`[语法]` `schedule fixtures` | 4 |
-| RM3.4 | `[语法]` 英尺英寸显示（P2-10） | 3 |
-| RM5.2 | `arch doctor`（U.15）、第二套起手模板（U.16）、`compile --json=brief` 可选瘦身（U.8，不改默认）、`--theme`（VA.4）；同 PR 写一页"动词边界"说明（`validate` 与 `lint`），不做动词数上限 | 5 |
-| RM1.5b | M.9/PS0.26 吸附舍入（所有者裁定后）、E.11 平移改事实、PS0.27 `1e30` 词法 | 1 |
+### 阶段 E · 波次 2′（12-17 → 2027-01-09；1.61.0 约 01-05 切）：深度
 
-### 波次 3 · 2027 Q1：按证据重排的批次 D
+先按 Show HN 评论重排（§5）。RM1.1b 量的工作必须在 1.61.0 里，所以要进 1.61.0 的工作的有效窗口是 12-17 → 约 01-05，19 个日历日，跨圣诞与新年；线上按 9.5 日配。RM1.1b 在 01-06 → 01-08 量 1.61.0，数字附在 01-09 的读数里。
 
-既定内容不变：NZ/AU advisory、`lint --brief`（它与 11-06 的"最小房间尺寸"重叠，RM1.2 不取，留给它）、FLOORA 导入、MCP 工具分组、DS3–DS9（DS5 `level 2..5` 先）、3D M2+、Cron 巡检、Workers AI 读图探针设计、#344 mask 导入。本计划加两条：
+| 序 | 卡 | 内容 | 轨 | 估 |
+|---|---|---|---|---|
+| 1 | RM3.1 后半 | 若批次 C′ 没做完 | 3 | (3) |
+| 2 | PS7.9 | 若还没做；批次 D 首位的 RM6.1 等它 | 5 | (1.5) |
+| 3 | RM1.2a | 行家规则，不加语法的三条（v1 不变） | 1 | 3 |
+| 4 | 发布 1.61.0 | 约 01-05 切（tag 归所有者） | 7 | 1 |
+| 5 | RM1.1b | 第二次首次接触复测，01-06 → 01-08 量 1.61.0，数字附在 01-09 的读数里。RM1.2b 没合就只量 RM1.2a 与 RM1.3a 的效果，并照实写明 | 1 | 1 |
+| 6 | RM7.3（新） | 读数的三项自检（§5），在 01-09 与 01-31 读数时写；不计入线的合计 | 7 | 未估 |
+| ── | ── 线（9.5 日 = RM3.1 后半 3〔仅当没做完〕+ PS7.9 1.5〔仅当没做完〕+ RM1.2a 3 + 发布 1 + RM1.1b 1）── | | | |
+| 7 | CRF1 → RM7.2（新，#681） | 线下首位。先做 CRF1（洞口旁被网格切碎的墙段合并），再做 `describe --facts walls`（opt-in，按设计稿）：不构建墙体接合；默认 `describe()` 一字不变；Plan JSON 不加只出不进的字段；`src/` 超过约 500 行就停下重划范围。赶得上就进 1.61.0，否则进下一个 minor | 7 | 6 |
+| 8 | RM4.1 | 图纸第一批（v1 不变） | 4 | 2 |
+| 9 | RM1.2b（加一项） | v1 的三条；**加** `[语法]` 作者写出的窗可开启值：只收作者值；写成毫米的净宽与净高或比值，不用 `m2`、`area`（T6）；`fixed` 窗写了可开启值要有诊断。它是逃生窗"通过"与豁免判断的前提，拟议的 `W_INNER_ROOM`（PS2.16）报失败不需要它 | 1 | 9+ |
+| 10 | MF1 → RM1.7（新） | 精确净宽；随后转身空间检查。RM1.7 开工前要先定：条文读原文（ADA 304.3.1、AD M M4(3)）；`accessibility-advisory` 在 `finish` 的 never-worse 比较集里，新规则要么让 `finish` 学会，要么另开一个不进比较集的 profile；步数记账 | 1 | 3 + M |
+| 11 | 其余 | CR12、RM2.2、CR9（只在 OpenPlan3D 导入有使用迹象或有人来问时做）、RM1.3b、RM1.5a 余下部分、RM2.3、RM4.2、RM3.4、RM5.2、RM1.5b、MF5、MF8、MF10、RM4.4 | — | — |
 
-| 卡 | 内容 | 轨 |
-|---|---|---|
-| RM3.3 | 读图工作流的下一步：把实验性 mask→Plan JSON 工具推进为 `import --from mask`，输出可 lint 的 `.arch`，丢弃物进 `W_IMPORT_DROPPED`；只在第二个独立来源带样本时开工。`docs/from-an-image.md` 已有，不重写 | 3 |
-| RM7.1 | 无障碍与性能：A.6/A.7 CLI 与 MCP 的 `annotate`+`accessible` 开关、A.1/A.3 朗读、PG.1–PG.3、4.1 拼接 3× 性能（字节不动） | 7 |
-| RM6.1 | **剖面所需的两个事实**（#532 触发，批次 D 首位）：`[语法]` DS11 平面剖切符号 `section A from (x,y) to (x,y) look east`（平面图元素，核心允许画它；`describe().sections` 带出）；`[语法]` 楼板构造 datum（`level n … slab 320` 或 `floor { … }` 之类，由 `gen:*` 闭集定），**核心不画它**，只进 `describe().heights`，使净高可派生；两者都是 DS13 剖面的输入，剖面本身仍在 `archlang-3d`，按 D3 等 Show HN 之后 | 6 |
+### 阶段 F · 批次 D（2027-01-10 起）：按证据重排
+
+**首位不变：RM6.1** `[语法]`（剖切符号 + 楼板 datum + 净高子句，三个形式，按设计稿）。前提：PS7.9 已合并；`slab-and-section.md` 已写。MF-D1 要求在 RM6.1 的 PR 里解决的 MF-D11，已由 RM-D17 受托裁定（§6.2）：顶层与单层有作者写的净高就用，没有就不报并给出 coverage 原因。
+
+其余候选，不排序：波次 2′ 线下的卡；剖面本体（DS12 → DS13，在 `archlang-3d`）与 MF17–MF19；挂墙物、挂顶物、窗帘（MF12、MF14、MF15，等 MF-D3(b)）；NZ/AU advisory profile（带 RM1.6 的出处）；`lint --brief`；FLOORA 导入；Cron 巡检；Workers AI 读图探针设计；#344 与 RM3.3；DS3–DS9；RM7.1；IFC 下游包（**只在触发后**：三个外部用户先要它）；MCP 工具分组（工具数到二十个以上再议，今天 11 个）。
 
 ---
 
@@ -176,6 +236,15 @@ growth 里已有两份 ArchLang 路线图：11-04 版把**格式与契约**（OA
 | 组件接缝的"单一所有者"规则（城堡启发） | 证据极低（他领域一条评论）；记为触发：两个 `place` 实例在共享边上对门洞冲突的真实用例出现时再议 | N5 |
 | AECBench 提交、OAS/OpenPlan3D 上游联络（11-04 P2-2/P2-4） | 前者未发布；后者是所有者的对外动作，代理起草 issue 文本即可 | 11-04 路线图 |
 | 把 OAS 叫"行业标准"、把下载量叫 traction、"first/only"、"唯一" | 禁用 | positioning |
+| 墙上的结构标签（`loadbearing`、`shear`、`fire-rated`），哪怕只作标注 | 铁律 D25：墙没有结构属性；改它只能所有者亲口批准 | 专业化包 P2-B；A §D1 |
+| 按窗种猜可开启比例 | "精确或省略"（ADR 0005/0027）；只收作者写出的值（RM1.2b） | 专业化包 P1-F；A §D2 |
+| 把拼接后的墙几何放进默认 `describe()` 或 Plan JSON | 铁律：不为回答 `describe()` 的问题去构建墙体接合；默认输出被语料 digest 钉住；Plan JSON 是往返格式 | #681 原文；A §D4 |
+| 占用分类、喷淋、地理锚点等建筑标志（挂起，不是永拒） | 与 RM-D5（不扩 `site` 字段）方向相反；没有非住宅疏散或室内地图的外部请求。出现请求时单独提裁定 | 专业化包 P1-B；A §D3 |
+| Wi-Fi 覆盖、电气布置、通风量表、IMDF/IndoorGML/ROS 导出进核心 | 都是 overlay；核心不放辖区条文库。电气按调研包自己的门：2027-01-31 前 Floorcraft 的电气功能显出用户反响再议 | 专业化包 use-case；A §F |
+| 任何 IFC "保证"措辞、IDS 文件 | "不承诺 IFC"不变；触发前不写 | 专业化包 P1-G；A §D8 |
+| `--layers iso13567` | 没读到原文，没有需求 | 专业化包 P1-C |
+| 公开的 ResPlan 指标报告、任何叫 benchmark 的东西 | RM-D3 与 A2 的措辞限制；可以内部做 | 专业化包 P2-E；A §D7 |
+| PyPI 包装、付费目录、中文社区推广 | 前者等真实的 Python 用户；后两者是所有者的决定，2026-10-22 的政策是不做中文社区营销 | 影响力审计；C §E.2 |
 
 ---
 
@@ -184,22 +253,29 @@ growth 里已有两份 ArchLang 路线图：11-04 版把**格式与契约**（OA
 | 信号 | 动作 |
 |---|---|
 | Show HN 评论要图纸集 / 剖面 / IFC | 批次 D 把对应项提前（checker-reach §5 既定） |
-| **已触发（2026-11-06，#532）：** 外部用户 gerontec（GitHub 账号与 #362 的 bobsch-io 不同，是否同一人未确认；若不是，这就是 D24/D41 等的"第二个人的提问"）用 `describe --json` 和 `compile -f json` 的公开输出，在自己的 MIT 工具（`gerontec/archlang-section`）里画出了剖面，并提出两件 `describe()` 缺的事：楼板构造层（层高是唯一竖向基准）、平面上的剖切线元素 | 这是 D24 "a landing cannot stand in for" 和 M.16 "每个能力要有消费者" 的触发。动作：RM6.1 进批次 D 首位（DS11 剖切符号 + 楼板构造 datum 只进 `describe()`）；DS13 自己的剖面仍按 D3 等 Show HN 之后；`archlang-section` 作为下游读者进 docs 的生态一行（ADR 0031） |
+| **已触发（2026-11-06，#532）：** 外部用户 gerontec（GitHub 账号与 #362 的 bobsch-io 不同，是否同一人未确认；若不是，这就是 D24/D41 等的"第二个人的提问"）用 `describe --json` 和 `compile -f json` 的公开输出，在自己的 MIT 工具（`gerontec/archlang-section`）里画出了剖面，并提出两件 `describe()` 缺的事：楼板构造层（层高是唯一竖向基准）、平面上的剖切线元素 | 这是 D24 "a landing cannot stand in for" 和 M.16 "每个能力要有消费者" 的触发。动作：RM6.1 进批次 D 首位（DS11 剖切符号 + 楼板构造 datum 只进 `describe()`）；DS13 自己的剖面仍按 D3 等 Show HN 之后；`archlang-section` 作为下游读者进 docs 的生态一行（ADR 0031；落在 RM0.4） |
 | 第二个独立来源带 mask 或 PDF 样本来问导入 | RM3.3 从"等待"变"开工" |
-| 三个外部用户在格式之前先要 IFC | 11-04 的交换触发：IFC 以下游包形式进入批次 D 第一位，先过 archlang-3d M5 的 spike 判据 |
-| N10 读数 | 照读，记为受干扰（PS-D11）；不再是任何卡的门；3D 能力节奏由 archlang-3d 计划自定 |
+| 三个外部用户在格式之前先要 IFC | 11-04 的交换触发：IFC 以下游包形式进入批次 D 第一位，先过 archlang-3d M5 的 spike 判据；RM7.2 先于它（growth 2026-11-10 决策） |
+| N10 读数 | 照读，记为受干扰（PS-D11）；N10 只作为"已读"的门（drawing-set D3），读数的结论不挡任何 ArchLang 卡；CR-D2 的 Tier B 与 D29 的 wave 4、6 仍等它；3D 能力的节奏由 `packages/archlang-3d` 的维护自定 |
 | RM1.2 某条有效性规则在合法图上误报或在私有留出集上漏报 | 该条不合并 |
 | RM1.1b 复测的报出数没有比 RM1.1a 高 | 轨 1 从"补规则"转向"对账与说明跳过了什么"，不再加规则 |
 | OpenPlan3D 导入 8 周无人用（issue、Worker 调用、无遥测的来源） | OAS 降级（既定） |
 | check suite 到 2027-03-31 无外部运行 | 留作内部测试，不再推广（既定） |
-| agent-reach 四项 2027-01-09 有两项动 | 继续；否则 2026-10-09 反向条件 4："(c) 是一句话不是战略"，波次 3 收缩到轨 1 与轨 4 |
+| agent-reach 四项 2027-01-09 有两项动 | 继续；否则 2026-10-09 反向条件 4："(c) 是一句话不是战略"，阶段 F 收缩到轨 1 与轨 4 |
 | 前沿模型连续多次运行近零可检错误 | 轨 1 转向公开覆盖数字 + 对账，仍不停 |
+| Show HN 评论明确要剖面 | 按 v1 既有规则，RM6.1 提前到波次 2′：占 CRF1 → RM7.2 在线下首位的位置；所有者说一句，就放到线上 |
+| **读数的三项自检（RM7.3，新）**：Worker 调用的来源分布（若 Analytics Engine 有）；外部仓库清单及链接；RM1.1a 与 RM1.1b 的"N 个缺陷、lint 报出 k 个" | 01-09 与 01-31 读数时一并写出。门槛与后果不改。来源集中在一两个时，写明"读数不能当独立使用的证据" |
+| `compile` 调用连续四周多于 `validate` + `lint`（RM-D1 自带的证伪条件；11-09 那周是 430 对 673，未触发；但 RM-D1 当初引的 "validate 114 > compile 88" 已倒过来） | 触发时把 RM-D1 的证明句交所有者重议 |
+| `describe --facts walls` 发布八周内没有外部读者（issue、仓库、对话） | 留着不删；IFC 下游包不再以它为由提前 |
+| Daniel 的下一批 issue 到了，或所有者说一句（不向他提问，也不等他的答复：growth `AGENTS.md` 的 Daniel 规则） | RM4.4 提到当期线上 |
+| 第三个外部仓库出现 | 记进读数（RM-D2 信号 1）；不改排期 |
+| 批次 C′ 到 12-09 还没合完前三张 | RM3.1 前半移到波次 2′ 首位，不等 12-16 |
 
 ---
 
 ## 6. 需要所有者裁定的事
 
-已在 backlog 顶部的：M.8、M.9、M.14、D.7、3.1(b)、CI 吞吐 E/F、O.10，仍等所有者。
+已在 backlog 顶部的：M.8、M.9、M.14、D.7、3.1(b)、CI 吞吐 E/F，仍等所有者。O.10 列的 #119、#121 与后继的 #206–#208 都已关闭：RM0.1 核对是否还有待裁的主版本升级，没有就关闭 O.10。
 
 本计划提出的 Q1–Q7，所有者 2026-11-06 说"请你帮我做出最佳决策"，以下为**受托裁定（RM-D1…D8）**；所有者同日复核后说"我全部同意"，自此为所有者裁定。它们不改任何铁律；涉及 growth 仓库的记录在 growth PR #56。
 
@@ -208,22 +284,73 @@ growth 里已有两份 ArchLang 路线图：11-04 版把**格式与契约**（OA
 | Q1 → RM-D1 | "检查器 + 编辑模型"是否与"代理写的格式"并列为开发室主线 | **是，合成一句**："代理用它写平面，也用它核对平面"。标题仍是 floor plans as code，检查器是证明句，不是第二个标题 | Worker 基线 `validate` 114 > `compile` 88；06-synthesis 把检查器角度打分最高；同一套代码。落地：growth `positioning.md` 开发室段 + 一条决策记录（另一仓库） |
 | Q2 → RM-D2 | 是否采纳 2027-01-31 的继续/收缩判据 | **采纳为收缩触发，不是停止。** 四项：≥3 个外部仓库或工具使用 ArchLang 或其检查器；≥1 篇论文、基准或工具作者的引用或对话；**Worker 某周总调用 ≥ 2026-11-02 基线（389）的 2 倍**；1 次入站集成询问。到 2027-01-31 不足两项：暂停新语法，收缩到轨 1、4、7，直到有信号 | 所有者 2026-11-01："想建的东西，不是需求判断"，所以不设停止。原判据"compile ≥ validate"与 RM-D1 矛盾，换掉。写成 growth 决策记录，与 agent-reach 读数并列 |
 | Q3 → RM-D3 | 是否公开首次接触复测的覆盖数字 | **允许，措辞与位置受限。** 固定句："六份 brief 写成的平面里有 N 个缺陷，最终 lint 报出 k 个。"不提模型名。只出现在 check suite 发布说明和"编译器说不"页；永不进标题、README 徽章、首页、包描述。缺陷语料的 77/84 只在 suite README 里标注为"规则对着写的夹具"，不与前者并排 | 它量的是检查器；但首次接触的图是模型写的，并排或进标题就会被读成模型分数（positioning 规则 5） |
-| Q4 → RM-D4 | RM3.1 Plan JSON 无损进波次 0 | **是。** 顺序调整：RM5.1 排到 RM3.1 之前，因为 RM5.1 的 MCP 版本 bump 必须搭 11-21 的 minor | schema 修复不是新语法，冻结规则允许；RM3.1 是最大的卡，不能压住小而必须发布的卡 |
+| Q4 → RM-D4 | RM3.1 Plan JSON 无损进波次 0 | **是。** 顺序调整：RM5.1 排到 RM3.1 之前，因为 RM5.1 的 MCP 版本 bump 必须搭 11-21 的 minor。（主裁定已由 RM-D10 推翻，所有者 2026-11-11；顺序调整的那一半由 v2 的阶段 B 保留） | schema 修复不是新语法，冻结规则允许；RM3.1 是最大的卡，不能压住小而必须发布的卡 |
 | Q5 → RM-D5 | 作者自报的退界/覆盖率/容积率 | **允许，但不加 `site` 字段，走 `keep`。** 写法 `keep site setback front 5m side 1.5m rear 3m`、`keep site coverage max 40%`、`keep site far max 1.2`；默认 advisory 等级；触发现有 `W_KEEP_VIOLATED`，不新开 W 码族。度量进 PS4.9（"keep 的更多度量"）的卡位。事实模块仍与 DS3 共用 | 作者声明的不变量、只检查不求解，正是 `keep` 的定义（ADR 0033）。D4 不动（不开新顶层形式），D5 不动（它说派生指标不判限值；`keep` 判的是作者自己的数）。drawing-set 仍加一条 D 记录说明边界 |
 | Q6 → RM-D6 | 六个被打包的待裁项 | PS0.16：**W 现在，2.0 升 E**。PS0.20：**W**，消息说明哪个 `swing` 被画出。PS0.21：**做**，可选新键不破坏，按 CR11 政策记录。U.4：**不加诊断**；label 是数据不是图，确保 `describe().furniture[].label` 与 `schedule fixtures` 带出它，`docs/furniture.md` 写明。U.7：导入时**确定性改名加后缀** + 一条 W 列出改名（`W_IMPORT_DROPPED` 同族）。PS3.13：**并入 RM3.1**，往返律即证明；证明写不出就把 `place` 标 `dropped` | 原则 2（Show HN 前只加 W）；AGENTS.md"画出的符号忽略 label"是设计，不是缺陷；导入的名字冲突与丢弃同类 |
 | Q7 → RM-D7 | growth `category.md`、`master-plan.md` 刷新稿 | **是，代理起草，所有者审。** 已开 growth PR #56 | 两份是 living 文档，growth 自己的规则要求"写现在为真的事"；过期的边界表会让公开文案低估已发布的事实 |
 | （新）RM-D8 | 外部 PR #533 的 `winders` 子句与 preview-and-remodel D41 的"no winders" | **接受该形式**（记为 preview-and-remodel D46；所有者 2026-11-06 当天批准）：D24 的触发已到（真实的、平台顶替不了的楼梯）；D41 的"残缺形式更糟"用几何回答：lint 只按行走线弧长能容纳的级数记梯级，`min(n, floor(arc / going))`，不引任何 DIN 数字。合并前提：评审的四项修改 + CI 绿 | 不读标准就不写标准数字（D13/D25 的做法）；几何记法让 `winders 8` 无法让 `W_STAIR_TOO_STEEP` 沉默，评审已实测这一漏洞 |
 
+### 6.1 v2 的裁定（RM-D9…D16，所有者 2026-11-11 批准）
+
+2026-11-10 作为提议写出，所有者 2026-11-11 说"RM-D9 到 D16 我全部同意。"，自此为所有者裁定。右列是当时的建议，所有者照此批准。
+
+| # | 问题 | 裁定 |
+|---|---|---|
+| RM-D9 | 现在发 1.58.0 吗；`arch impact` 遇到无法解析的方案退出码改为 2（#648，CHANGELOG 已标 breaking）能不能放进 minor | **发；放进 minor**，CHANGELOG 显著标出。它修的是"解析失败却以 0 退出"。CLI 退出码在 minor 里改没有先例（类型层面有过一次，v1.27.0）；另一种做法是这次发布先回退它、留到 2.0，代价是脚本继续拿到错的 0 |
+| RM-D10 | **推翻 RM-D4 的主裁定**：RM3.1 不进冻结前，前半进批次 C′ 线上、后半线下；CR9、CR12、RM2.2 移到波次 2′ 线下 | **同意。** v1 排了 14.5 日对 17 天，现在冻结前只剩 9 天，RM3.1 一张就要 6 日；硬塞进去会挤掉 RM1.3a 与 RM5.1 |
+| RM-D11 | #680–#682 的分诊（growth 决策要求所有者在冻结前做）；#683、#684 一并处理 | #680 接受，分两段（RM1.6a、RM1.6b）；#681 接受，改形态与时间（RM-D12）；#682 接受（RM4.3，批次 C′ 线下）；#683 现在改注释（RM0.2）；#684 先读官方原文（RM1.8） |
+| RM-D12 | #681 做成什么、算哪一轨、什么时候做 | **opt-in 的 `describe --facts walls`，不拼接，不进默认输出；算第 7 轨**（RM-D2 收缩时不暂停）。注意：一个新的 `describe` 事实按内容属于第 3 轨，这样归类会让 #681 不受 RM-D2 收缩的约束。排在 CRF1 之后，因为 CRF1 会改变墙段的切分：CRF1 → RM7.2 在波次 2′ 线下首位，赶得上就进 1.61.0，否则进下一个 minor。它没有具名的读者，排进来是因为 growth 决策把它定为 IFC 的前置 |
+| RM-D13 | RM6.1 的时间 | **维持批次 D 首位（MF-D1 不改），批次 D 起点定为 2027-01-10**；设计稿在冻结期写好（MF-D11 已由 RM-D17 受托裁定，见 §6.2）。报告 A、B、C 都建议不提前。若所有者想更早给 gerontec 这两个事实，说一句，它会占 CRF1 → RM7.2 在波次 2′ 线下首位的位置，或按所有者的话放到线上 |
+| RM-D14 | §4 新增的九行"不做" | **同意。** 其中建筑标志一行是挂起 |
+| RM-D15 | 单一队列：排期与恢复点只在本计划；public-surfaces、playground-minimal、playground-mobile-perf、visual-assets、ci-throughput 关闭；drawing-set、preview-and-remodel、plan-soundness 搁置并写明门；math-foundations 与 checker-reach 的卡按本计划的阶段取用；残留卡见 §7 的表 | **同意。** 各计划的 README、裁定与门原样保留（含 CR-D2 的 Tier B 等 N10、D29 的 wave 4 与 6 等 N10） |
+| RM-D16 | 无宿主的门和洞口要不要现在升为 E | **不升，维持 RM-D6**（1.x 只加 W，2.0 升 E）。要把警告当失败的人用 `validate --strict` |
+
+### 6.2 受托裁定（2026-11-11）
+
+所有者 2026-11-11 对当时"仍等所有者"的四项（MF-D11、对外回复、Dependabot #603、`origin/ChanMeng666-patch-1`）说"请你帮我做出最佳决策。"以下为**受托裁定**：只是对这一天这四项的委托，不是长期委托；所有者一句话可推翻任何一条。它们不改任何铁律。
+
+| # | 问题 | 裁定（2026-11-11，受托） | 理由 |
+|---|---|---|---|
+| RM-D17 = MF-D11 | 顶层与单层平面的天花从哪里来 | 一个 `level` 可以写一个净高值，作者写了就用作者的值；中间层没写的，取本层层高减上一层写的楼板；顶层或单层没有作者值的，什么也不报，并给出 coverage 原因；作者的值与推算值不一致时出一条诊断。拼写由 `gen:*` 闭集定，在冻结期的设计稿 `slab-and-section.md` 里定下。它是 RM6.1 之外的第三个 `[语法]` 形式，带自己的字节恒等律 | #532 的房子自己写了顶层净高（2.34 m），作者直接知道这个数；"没写就不报"守住 MF-D1 不猜的规则。不改任何铁律 |
+| RM-D18 | 对外回复 | **gerontec：** 1.58.0 发布后，在 #544 回复一次：`winders` 已发布；两个事实排在批次 D 首位，2027-01-10 起，设计稿在冻结期写；欢迎他为 ST.2 提 PR；`archlang-section` 已列进 docs。**bobsch-io：** 1.58.0 发布后，在他自己的 #362 下告知一次，只写事实（非直跑楼梯以 `winders` 在 1.58.0 发布），不含任何问题。两条都由主会话按本受托裁定起草并发出。不承诺 IFC，不承诺剖面进核心 | growth `AGENTS.md` 禁止发出所有者拿着的后续问题，也禁止按它的答复排期；一条只讲交付的事实说明两样都不碰 |
+| RM-D19 | Dependabot #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本，CI 在 "Workspace builds" 上红） | Show HN 之前不合并；PR 保持打开；2026-12-02 之后成为迁移卡 RM5.4，在阶段 D 线下，与 RM1.6b 共用一次 `packages/mcp` bump | 它动的是 ChatGPT app 的 UI 层，离一次公开发布只有三周 |
+| RM-D20 | `origin/ChanMeng666-patch-1`（所有者 2026-11-08 网页上改的 README 影片链接，一行，commit `6c86203a`，没有 PR） | 落地：RM0.5 先确认新的资源 URL 能打开，再把这次改动 cherry-pick 到一个从 `main` 新建的分支上，经 PR 合并 | 这是所有者自己说过的改动，只是没走 PR |
+
+另外仍等所有者、不由本计划代裁的：
+
+- **PS0.18**（Hall 往返成 `uses entry`），RM3.1 的范围表用到。
+- MF-D3(b)（挂墙挂顶的语法）；backlog D.7（RM4.1 用到；RM4.3 的 DXF 线宽随同一张表变，不等它）、M.9（RM1.5b）。
+- 仓库根的 `.mcp.json`（cursor.directory 靠它发现仓库）：它属于高风险层的根配置，还会让每个在本仓库打开 Claude Code 或 Cursor 的会话收到启用项目级 MCP 的提示。做不做由所有者定，默认不做。
+
 ---
 
 ## 7. 与已有计划的关系
 
-- **checker-reach**：批次 C 不动，RM3.1 在它之前；CRF10/CRF11 并入波次 0；CRF1/2 并入 RM1.5a；MCP 工具分组留在批次 D。
-- **plan-soundness**：PS0 的 bug 按主题并入 RM1.3/RM1.4/RM1.5；PS2 的 46 条规则不在本计划逐条排，RM1.2 只取行家点名而 PS2 没有的，PS2.16 并入 RM1.2b；PS4.6–4.8、4.10 并入 RM2.3，PS4.9、PS4.12 留在原处；PS7.9 成为波次 2 的前置；首次接触复测 RM1.1 写回其 handoff §4。
-- **drawing-set**：不动；DS3 指标与 RM1.2b 的场地声明共用事实模块，先做的一方建模块；Q5 若允许，加一条 D 记录。
-- **preview-and-remodel**：G11/H9/J16–J18 残留按主题进 RM1.5a 与 RM4.2。
-- **public-surfaces**：X9、V2（PR #529 在飞）不动；3D 展示全部按 `3d.md`；PG.1–3 进 RM7.1。
-- **visual-assets**：VA.4 进 RM5.2；其余不动。
-- **geo-seo（另一会话，2026-11-06 在 `plan/geo-seo-wave3` 上规划中）**：分发侧，与本计划不重叠；两边都要在 `docs/plans/README.md` 加一行，后合并的一方解决冲突。
+RM-D15（所有者 2026-11-11 批准）之后，下面各条成立。其他计划文件里的记录由 RM0.1 落地（`docs/plans/README.md` 状态列、各计划 handoff 顶部的指针）。
 
-退出条件：波次 2 结束（2027-01-09）时，`evidence.md` §A 的每条用户诉求都能指向一张 `done` 卡、一条等待中的触发，或一条写明理由的"不做"。
+- **product-roadmap（本计划）**：排期表和 handoff 都只在这里。
+- **checker-reach**：CR10、CR11a 在批次 C′ 线上，CR11b 线下；CR9、CR12 在波次 2′ 线下；CRF1 在波次 2′ 线下首位（RM7.2 之前），CRF2 留在 RM1.5a；它 handoff 里"冻结前先做 CRF1"一句作废；批次 D 的候选并入阶段 F。CR-D2 不动。
+- **math-foundations**：MF1 在波次 2′ 线下；MF5、MF8、MF10 同；MF6、MF11 是文档，执行者空档时做；MF12、MF14、MF15、MF16 等各自的裁定，在阶段 F。MF-D1、MF-D2 原样有效，RM6.1 的排期不变；MF-D11 由 RM-D17 受托裁定（§6.2）。
+- **drawing-set**：搁置。门不变（D3）。DS11 是否并入 RM6.1，由 `slab-and-section.md` 定。
+- **plan-soundness**：作为计划搁置；卡留作规则池，按首次接触复测的证据取用；PS7.9 在本计划排期；§7 第 7 行与 PS6.1 仍 parked。
+- **preview-and-remodel**：搁置，门不变（wave 4、6 等 N10，不早于 11-27 读）。J16–J18 的残留已拆进 RM1.5a、RM4.2 和 RM3.1 的范围表。
+- **public-surfaces、playground-minimal、playground-mobile-perf、visual-assets、ci-throughput**：按 RM-D15 关闭。**engineering-health、archlang-3d**：已关闭或已归档（`docs/plans/README.md`），不在 RM-D15 的名单里；3D 能力的节奏交给 `packages/archlang-3d` 的维护。残留：VA.1–VA.5、PG.1–PG.3 与 CI throughput 的待裁行在 `docs/backlog.md`；MP7 仍记在 `../playground-mobile-perf/README.md` §5（deferred）；engineering-health 的在 `../engineering-health/closing-audit.md` §1。
+- **geo-seo**：运营节奏，不是开发队列；下次面板 2026-12-01 与 Show HN 同日，建议挪到 12-02。
+
+### 7.1 移入本队列的残留卡
+
+| 卡 | 内容 | 去向 |
+|---|---|---|
+| CRF3 | `W_FURNITURE_ON_VOID` 消息里的坐标随帧变化 | 波次 2′ 线下，并入 RM1.5a |
+| CRF4 | 3D 多段洞口编号与 2D 对齐 | 阶段 F，随 `archlang-3d` 的下一次发布 |
+| CRF5 | 楼梯井同时报两条警告 | 波次 2′ 线下，并入 RM1.2a 的同一 PR 若碰到，否则阶段 F |
+| CRF6 | `r.left + 500` 类偏移写法的语义 | 阶段 F，先写成一条说明 |
+| CRF7 | `schedule openings` 缺直接测试 | 执行者空档时做 |
+| CRF8 | MCP 可选工具 `short_link` | 阶段 F，搭下一次 MCP bump |
+| CRF9 | 预览图的 CJK 字体 | parked（Worker 体积，ADR 0034 的已知缺口） |
+| CRF12 | `impact --lock --json` 的 `ok` 与 `lock.ok` 不一致 | 并入 RM2.3 |
+| CRF13 | `src/ir.ts` 一条过时注释 | RM0.1 里重新核对，过时则关 |
+| RM4.4（新） | Daniel 明说未做的项：#364 组件内的房间不被 `finish` 装家具；#367 引线；#369 窗扇开启弧与 `takeoff` 按类型计；#362 的 `shape quarter-turn`；#405 余下的（`fence`、`outdoor` 高度，洞口宽高，玻璃栏杆，天窗，浴缸加淋浴） | 波次 2′ 线下；他答复或下一批 issue 到来时提到线上（§5） |
+| v1 波次 3 的既定项 | NZ/AU advisory、`lint --brief`、FLOORA 导入、Cron 巡检、Workers AI 读图探针设计、#344、DS3–DS9、3D M2+ | 阶段 F 候选，原样保留 |
+
+退出条件：波次 2′ 结束（2027-01-09）时，v1 `evidence.md` §A 的每条用户诉求、§1.1b 的每个事实、#680–#684 每个 issue，都能指向一张 `done` 卡、一条等待中的触发，或一条写明理由的"不做"。
