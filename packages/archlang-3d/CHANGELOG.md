@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-11
+
+The core peer range stays `^1.57.0`. The rooted `import` below works with any core in it; with
+1.58.0 or later a refused module reports the core's own refusal code.
+
 ### Added
 
 - For a host page whose canvas follows its container (the playground's 3D stage):

@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/archlang-mcp",
-  "version": "0.2.40",
+  "version": "0.2.41",
   "mcpName": "io.github.ChanMeng666/archlang-mcp",
   "description": "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
   "keywords": [
@@ -44,7 +44,7 @@
     "prepack": "npm run build"
   },
   "dependencies": {
-    "@chanmeng666/archlang": "^1.57.0",
+    "@chanmeng666/archlang": "^1.58.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "zod": "^4.6.6"
   },
