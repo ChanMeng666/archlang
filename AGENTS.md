@@ -47,7 +47,7 @@ npm run gen:all       # every gen:* generator
 - A drawing change never moves `describe()`/`lint()` over the corpus, except drafting-layer lint
   rules, which read the sheet (ADR 0032; `docs/agents/iron-laws.md`); a glyph never gains
   handedness and a loss is allow-listed (`test/glyph-chirality.test.ts`).
-- A clean auto-merge of a MOVED function another branch MODIFIED is not evidence (`docs/agents/gotchas.md` § PRs & CI).
+- A clean auto-merge of a MOVED function another branch MODIFIED is not evidence: diff the moved body (`docs/agents/gotchas.md` § PRs & CI).
 - Releases are tokenless OIDC (`v*` tag); never an npm token, never automate npmjs account/2FA.
   Pushing `main` deploys the sites. Before a tag: follow `.claude/commands/release-check.md`.
 - Eval: T3 live run declined forever; `eval:live` is paid, owner-only; the eval corpus is a public fixture, never a holdout;
