@@ -78,6 +78,8 @@ const STALE =
   "raised by the CLI's write-back guard (`--expected-hash`, `src/cli/source-hash.ts`) on a file's bytes, never by compile()/lint(); pinned in test/cli-expected-hash.test.ts";
 const FLOOD =
   "needs more than 500 warnings and no error, which takes hundreds of lines (a loop of overlapping rooms stops at 201 `W_ROOM_OVERLAP`), so the example shows two of the 600; the full flood is pinned in test/diagnostics-volume.test.ts";
+const RULESET_OPTION =
+  "raised by `lint()` on a caller's `ruleset` option before the plan is resolved, never by `.arch` source (a profile, all a comment can name, holds no bad number); pinned in test/lint-ruleset-values.test.ts";
 const FRAGMENT =
   "a one-line fragment: the code needs a building around it (a wall to be off, rooms to be unreachable between, a sheet to overflow), and the whole-plan spatial rules are owned by test/lint.test.ts";
 
@@ -131,6 +133,7 @@ const NOT_REPRODUCED: ReadonlyMap<string, string> = new Map([
   ["E_IMPORT_OUTSIDE_ROOT", ROOTED],
   ["E_IMPORT_TOO_LARGE", ROOTED],
   ["E_RATE_LIMITED", HOSTED],
+  ["E_RULESET_VALUE", RULESET_OPTION],
   ["W_CJK_FONT_MISSING", RENDER],
   ["W_GLYPH_UNSUPPORTED", RENDER],
 
@@ -254,6 +257,9 @@ suite("error catalog — every example that can raise its code does", () => {
     // test/diagnostics-volume.test.ts. E_IMPORT_NOT_ARCH, E_IMPORT_OUTSIDE_ROOT and E_IMPORT_TOO_LARGE
     // took it to 65: the CLI's file-system World raises them when it refuses an `import` (EH-D7), and
     // no virtual World a snippet runs under can; each is raised in test/import-rooted.test.ts.
-    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(65);
+    // E_RULESET_VALUE took it to 66: `lint()` raises it on the caller's `ruleset` option before
+    // the plan resolves, and no source compiled here carries one; raised in
+    // test/lint-ruleset-values.test.ts.
+    expect(NOT_REPRODUCED.size).toBeLessThanOrEqual(66);
   });
 });
