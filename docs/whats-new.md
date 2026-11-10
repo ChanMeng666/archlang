@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.55
+# What's new in 1.44 to 1.58
 
-The features that arrived in 1.44.0 to 1.55.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.58.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -35,6 +35,13 @@ Every command and code name below is the one `archlang <command> --help` and the
 | An L-shaped void with a railing | 1.55.0 | [Railed voids](#railed-voids) |
 | An OpenPlan3D plan read as `.arch` | 1.55.0 | [Import a plan](import.md#check-an-openplan3d-plan) |
 | A rewrite refused when the file changed underneath | 1.55.0 | [Change one room](edit-one-room.md#make-the-assistant-do-it-this-way) |
+| Sliders on a plan's numbers, in the playground | 1.56.0 | [Playground knobs](#playground-knobs) |
+| The review sheet's rings over the playground's drawing | 1.56.0 | [Playground checks](#playground-checks) |
+| The 3D preview beside its plan | 1.57.0 | [Plan and 3D preview](#plan-and-3d-preview) |
+| Winders on a quarter-turn landing | 1.58.0 | [Winders](#winders) |
+| An `import` read only from under a root | 1.58.0 | [The import root](#the-import-root) |
+| At most 500 diagnostics per plan | 1.58.0 | [The diagnostic limit](#the-diagnostic-limit) |
+| `archlang impact` exits 2 on a plan that does not parse | 1.58.0 | [Impact on a broken plan](#impact-on-a-broken-plan) |
 
 ## Quantities and takeoff
 
@@ -359,7 +366,7 @@ plan "Quarter-turn stair" {
 }
 ```
 
-It draws as one stair, with one label, one walking line and one break line. `W_STAIR_TOO_STEEP` reads the block as one climb, with a landing replacing one going, and `describe --json` lists `flights`, `landings` and `turn`. Write the same block on two storeys and it is one shaft. `examples/turning-stair.arch` is a worked house. Winders are not in the language; draw a landing, and lint reads the stair strictly.
+It draws as one stair, with one label, one walking line and one break line. `W_STAIR_TOO_STEEP` reads the block as one climb, with a landing replacing one going, and `describe --json` lists `flights`, `landings` and `turn`. Write the same block on two storeys and it is one shaft. `examples/turning-stair.arch` is a worked house. From 1.58.0 a quarter-turn landing may be a run of winders instead: see [Winders](#winders).
 
 ## Window kinds
 
@@ -591,3 +598,83 @@ plan "Railed well" {
 ```
 
 A rectangle names its sides instead, as a balcony does: `void at (5000,2000) size 2000x3000 rail top left`. The outline is one dashed line with a cross in each cell of the grid the ring's corners make (three for an L), and the walk, the stair checks and `finish` read the hole as those cells. The railing is a drawing: it has no height, and a void with no `rail` draws none. See [Void](language-reference.md#void--a-hole-in-the-floor-v1-29).
+
+## Playground knobs
+
+In the [playground](https://playground.archlang.uk/), every top-level `let` whose value is a positive number literal gets a slider, from 40 % below to 40 % above the written value, on the plan's grid. Moving it rewrites that number and no other byte of the source, and the drawing follows the drag. A value that does not compile snaps back. `examples/knob-flat.arch` is written for it: three `let`s size the whole flat, the rooms are placed by relation and the walls come from the rooms, so every combination of the three compiles with no error and no lint finding.
+
+```arch
+plan "Knob room" {
+  units mm
+  let W = 4000
+  let D = 3000
+  room id=r at (0,0) size W x D label "Room" uses living
+  walls from rooms exterior 200 partition 100
+  door id=d on r.bottom at center width 900 swing inward
+  window on r.top at center width 1200
+}
+```
+
+Open this plan in the playground and it shows two sliders, `W` and `D`.
+
+## Playground checks
+
+**Checks** on the stage's toolbar draws, over the drawing, the rings `archlang preview --review` draws: every warning of `compile()` and of `lint()`'s default checks, with a list of the findings, each with its code, message and fix hint. Choosing one highlights its ring and, with the source open, puts the caret on its statement. It is off by default, and downloads and copies are the same with it on or off. The "Try Checks" plan in the gallery has one thing to fix.
+
+```bash
+archlang preview plan.arch --review
+```
+
+## Plan and 3D preview
+
+The separate `@chanmeng666/archlang-3d` package builds a 3D preview from the same `.arch` source, checked against the plan: every 3D element comes from the plan's elements, and every solid is closed. In the playground, the **Plan | 3D** switch on the stage flips the drawing to its 3D preview, `&3d` in a link (`#z=…&3d`) opens on it, and **Share → Export → GLB** writes the same bytes as the command line. [The 3D preview page](https://archlang.uk/3d) shows the gallery's plans beside their previews and says what the preview shows and does not: walls, openings, floors, stairs and furniture in flat colours, no pitched roofs, sections or elevations.
+
+```bash
+npx archlang3d build plan.arch -o plan.glb --json
+npx archlang3d view plan.arch --replay -o plan.html
+```
+
+## Winders
+
+A quarter-turn landing of a block `stair`, exactly `width` × `width`, may end `winders <2–8>`: that many tapered steps fanning from its inner corner, in place of a level landing.
+
+```arch
+plan "Winder stair" {
+  units mm
+  height 2750
+  room id=hall at (0,0) size 3800x4300 label "Stair hall" uses hall
+  walls from rooms exterior 200 partition 100
+  door on hall.bottom at 800 from start width 900 swing inward
+  stair id=s dir up width 1000 {
+    flight at (2700,1630) size 1000x1530
+    landing at (2700,630) size 1000x1000 winders 4
+    flight at (1170,630) size 1530x1000
+  }
+}
+```
+
+The winders draw as tread lines, and `describe --json` reports them as `verticals[].landings[].winders`. `W_STAIR_TOO_STEEP` credits a winder landing only with the goings that fit on the quarter arc of radius `width / 2` round its inner corner, never more than it has winders: geometry only, no standard's figure, so writing more winders cannot quieten a steep stair. A landing that is not square, does not turn a quarter, or counts outside 2 to 8 is `E_STAIR_PIECES`. On a shaft, the same block on each storey must carry the same `winders` (`W_SHAFT_FOOTPRINT_MISMATCH`). The 3D preview builds a winder landing as a level landing for now.
+
+## The import root
+
+The command line reads an `import`ed module only from under the import root (the working directory, or `--import-root <dir>`) or the plan's own directory, with symbolic links and junctions followed, only a `.arch` file, and only up to 1 MiB. Before 1.58.0, any path an `import` named was read. A refused module is never opened, and the refusal is at the `import`: `E_IMPORT_OUTSIDE_ROOT`, `E_IMPORT_NOT_ARCH` or `E_IMPORT_TOO_LARGE`. `archlang3d` reads imports the same way.
+
+```bash
+# run inside plans/: plan.arch imports "../lib/furniture.arch", which is outside plans/
+archlang validate plan.arch --json                     # E_IMPORT_OUTSIDE_ROOT, exit 2
+archlang validate plan.arch --import-root .. --json    # the module is read
+```
+
+The playground, the MCP servers and the `<arch-plan>` element read no files, so they refuse no import. `E_IMPORT_PARSE` now gives the module's own error code and `<path>:<line>:<col>`, never the module's message, which quoted its text.
+
+## The diagnostic limit
+
+`compile()` and `describe()` report at most 500 diagnostics, then one `E_DIAGNOSTIC_LIMIT` or `W_DIAGNOSTIC_LIMIT` at the byte past the last one kept; the lexer and parser stop collecting there. The limit is the error when any diagnostic, kept or dropped, is an error, so a plan that only floods warnings still draws. A code that stopped the work, such as `E_STEP_LIMIT` or `E_DRAWING_LIMIT`, is never dropped. A plan with 500 or fewer diagnostics is reported exactly as before.
+
+## Impact on a broken plan
+
+`archlang impact` exits 2 on a plan that does not parse, with `{ ok: false, diagnostics }` under `--json`; it used to exit 0. A script that runs `impact` and reads exit 0 as "nothing broke" now sees the parse failure. `fmt`, `repair`, `reroll`, `suggest`, `complete` and `link` still exit 0 on such a plan, as [the CLI reference](cli-reference.md) says.
+
+```bash
+archlang impact plan.arch --set W=4500 --json   # exit 2 when plan.arch does not parse
+```
