@@ -13,7 +13,7 @@ the real parser), `planToJson` (a resolved plan out, with output-only facts) and
 (`arch ast --json`). `src/plan-json.ts` is the entry point and its header the contract; the parts are
 `src/plan-json/`: `types.ts`, `schema.ts`, `from-json.ts` (the validator), `emit.ts` (`.arch` emission),
 `to-json.ts`, `ast-json.ts`, `check-graph.ts`. A new element kind must also be named in Plan JSON
-(see `docs/agents/new-element.md`).
+(see `.claude/commands/new-element.md`).
 
 - **`version: 1` is append-only.** A field is only added, optional, and never renamed, retyped or
   removed. The schema `schemas/plan.schema.json` is generated from `PLAN_JSON_SCHEMA` in
