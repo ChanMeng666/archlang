@@ -21,7 +21,9 @@
  *    (`compileWork()`, `src/compile-work.ts`; engineering-health EH2.14): the (edge, edge)
  *    candidate pairs the joinery's split phase tested, over every wall set drawn, and the places
  *    the label placer scored for colliding labels. Summed over every storey drawn; 0 on a plan
- *    whose labels are all clear, which a row may be.
+ *    whose labels are all clear, which a row may be. 12 of the 40 rows (all three bench rows
+ *    among them) pin `labelRelocations` at 0, inside the table's `_floor` of 8, so those rows
+ *    carry no label-placement signal: the bench rows pin the joinery only.
  *
  * Every row must be a clean resolution with work in it ({@link rowProblems}).
  *
@@ -64,7 +66,8 @@ export interface WorkCountsTable {
   _tolerance: number;
   /** The corpus totals may move by at most `recorded × _totalTolerance` either way. */
   _totalTolerance: number;
-  /** The absolute slack per row, so a small plan does not trip on a few steps. */
+  /** The absolute slack per row, so a small plan does not trip on a few steps. A row pinned at 0
+   *  (12 rows' `labelRelocations`, every bench row's among them) may rise to it unseen. */
   _floor: number;
   rows: Record<string, WorkCounts>;
 }

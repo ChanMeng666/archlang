@@ -73,7 +73,8 @@ function apiLineWeightOutOfRange(
  * ({@link CompileWork}, summed over every storey drawn): counts of the geometric tests the
  * costliest drawing loops make, never a time. Read by the pinned work-count table
  * (`test/tables/work-counts.json`) only; `compile()` itself never reads them. Pure: a fresh set
- * of counters per call. A plan that does not draw (an error, or `view`) counts nothing.
+ * of counters per call. An error draws nothing and counts nothing; a `view` compile draws but
+ * is not counted.
  *
  * @internal Not part of the package surface (`src/index.ts` does not export it).
  */

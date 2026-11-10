@@ -17,12 +17,16 @@ export interface CompileWork {
   /**
    * The joinery's split phase (`splitAll`, `src/geometry/joinery.ts`): the (edge, edge) candidate
    * pairs the grid index handed it, each a box test and, when the boxes meet, an intersection.
-   * Summed over every wall set the drawing joins (standing walls and demolished walls).
+   * A pair is counted once, unordered: after the scan's `j <= i` filter and its stamp dedupe, so
+   * the count does not depend on the order the index visits cells in and is deterministic. An
+   * edge met again in another shared cell without a new pair is invisible to it. Summed over
+   * every wall set the drawing joins (standing walls and demolished walls).
    */
   joinerySplitTests: number;
   /**
    * Label relocation (`relocateLabels`, `src/label-placement.ts`): the places scored for a label
-   * whose text box collides, the incumbent anchor and every lattice point on the label's floor.
+   * whose text box collides: the incumbent anchor, and every lattice point on the label's floor
+   * that passes the off-floor filter.
    * A plan whose labels are clear scores none.
    */
   labelRelocations: number;
