@@ -601,7 +601,7 @@ A rectangle names its sides instead, as a balcony does: `void at (5000,2000) siz
 
 ## Playground knobs
 
-In the [playground](https://playground.archlang.uk/), every top-level `let` whose value is a positive number gets a slider, from 40 % below to 40 % above the written value, on the plan's grid. Moving it rewrites that number and no other byte of the source, and the drawing follows the drag. A value that does not compile snaps back. `examples/knob-flat.arch` is written for it: three `let`s size the whole flat, the rooms are placed by relation and the walls come from the rooms, so every combination of the three compiles with no error and no lint finding.
+In the [playground](https://playground.archlang.uk/), every top-level `let` whose value is a positive number literal gets a slider, from 40 % below to 40 % above the written value, on the plan's grid. Moving it rewrites that number and no other byte of the source, and the drawing follows the drag. A value that does not compile snaps back. `examples/knob-flat.arch` is written for it: three `let`s size the whole flat, the rooms are placed by relation and the walls come from the rooms, so every combination of the three compiles with no error and no lint finding.
 
 ```arch
 plan "Knob room" {
@@ -653,7 +653,7 @@ plan "Winder stair" {
 }
 ```
 
-The winders draw as tread lines, and `describe --json` reports them as `verticals[].landings[].winders`. `W_STAIR_TOO_STEEP` credits a winder landing only with the goings that fit on the quarter arc of radius `width / 2` round its inner corner, never more than it has winders: geometry only, no standard's figure, so writing more winders cannot quieten a steep stair. A landing that is not square, does not turn a quarter, or counts outside 2 to 8 is `E_STAIR_PIECES`. On a shaft, the same block on each storey must carry the same `winders` (`W_SHAFT_FOOTPRINT_MISMATCH`).
+The winders draw as tread lines, and `describe --json` reports them as `verticals[].landings[].winders`. `W_STAIR_TOO_STEEP` credits a winder landing only with the goings that fit on the quarter arc of radius `width / 2` round its inner corner, never more than it has winders: geometry only, no standard's figure, so writing more winders cannot quieten a steep stair. A landing that is not square, does not turn a quarter, or counts outside 2 to 8 is `E_STAIR_PIECES`. On a shaft, the same block on each storey must carry the same `winders` (`W_SHAFT_FOOTPRINT_MISMATCH`). The 3D preview builds a winder landing as a level landing for now.
 
 ## The import root
 
