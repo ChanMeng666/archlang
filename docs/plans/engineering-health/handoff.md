@@ -1,30 +1,32 @@
 # Resume point
 
-**Where (2026-11-10, evening):** waves 0–3 DONE (EH2.10 #656 partial by design). Residue cards
-EH1.18, EH1.19, EH2.3b, EH2.5b, EH2.8b done today. Open cards: EH2.3c, EH2.11, EH2.12, then the programme's closing audit.
+**Where (2026-11-10, late night; PROGRAMME CLOSED):** waves 0–3 DONE and re-measured: `closing-audit.md` (7 audits, 41 findings closed,
+25 improved, 13 open, 11 new; reports archived at `claude-kept/2026-11-09-archlang-health-audit/closing-2026-11-10/`).
+Wave 4 (the residue) DONE: EH2.11, EH2.12, EH1.20, EH2.13, EH1.21, EH1.23, EH3.8, EH3.9, EH3.10, EH0.10, EH1.22, EH1.24, EH2.14 and EH2.3c landed (PRs #662–#674); the programme is closed. The nightly's `fuzz-deep` red (two counterexamples) is fixed by #664; the next nightly proves it. Dependabot #206–#208 closed under README § 4 (EH0.10).
 
-**Landed today (34 PRs):** EH0.1–EH0.7, EH0.9 (#581, #583–#588) · EH1.1 (#599) · EH1.2 (#598) · EH1.3 (#589) · EH1.4
-(#590) · EH1.5 (#591) · EH1.6 tranche 1 (#592) · EH1.7 (#610) · EH1.8 (#613; `runCli` + `CliIo`, 40 spawn copies gone,
-five sampled files 82.5 s → 5.7 s) · EH1.10 (#593) · EH1.11 (#597) · EH1.12 (#601) · EH1.13 (#594, #595) · EH1.14 (#605,
-#606) · EH1.15 (#607) · EH1.16 (#608) · EH1.17 (#617; the compat gate expands non-exported literal aliases; the 3D
-CLI's world is rooted under a lockstep table) · EH2.1 (#614) · EH2.9 (#611) · policy #615 · records #582, #596, #600,
-#602, #609, #612, #616.
+**Landed 2026-11-10 (36 PRs):** EH1.9 (#634) · EH2.2 (#631) · EH2.3 (#635) · EH2.4 (#637) · EH2.5 (#638) · EH3.1 (#639)
+· EH3.2 (#642) · EH3.3 (#644) · EH3.4 (#645) · EH3.5 (#646) · EH3.6 (#647) · EH1.18 (#648) · EH2.6 (#649) · EH2.7 (#650)
+· hotfix #651 · EH2.8 (#652) · EH1.19 (#653) · EH2.3b (#656) · EH2.10 (#656) · EH3.7 (#658) · EH2.11 (#663) · EH2.12
+(#662) · EH1.20 (#664) · EH2.13 (#665) · EH1.21 (#666) · EH1.23 (#667) · EH3.8 (#668) · EH3.10 (#669) · EH3.9 (#670) · EH0.10 + EH1.22 (#671) · EH1.24 (#672) · EH2.14 (#673) · EH2.3c (#674) · records #641, #650, #657, #660 and this one. 2026-11-09's 34 PRs are listed in the previous handoff
+(git history of this file).
 
-**In flight:** nothing. 74 PRs merged since 2026-11-09. Since EH3.7 main's required checks are strict: a PR
-behind main shows `BEHIND`; `gh pr update-branch`, wait for CI on the new head, re-pin (`commands.md` § Merging a PR).
+**In flight:** nothing. Since EH3.7 main's required checks are strict: a PR behind main shows `BEHIND`;
+`gh pr update-branch`, wait for CI on the new head, re-pin (`commands.md` § Merging a PR).
 Lessons of 2026-11-10: (1) CodeQL is required and fails on `String.replace` escaper chains and argv-built RegExps —
 five PRs lost a round; the gotcha and `test/no-replace-chain-escapers.test.ts` now guard it. (2) A 400-file PR shifts
 every pre-existing CodeQL alert into its diff: triage main first (22 test-only alerts dismissed as 'used in tests').
 (3) Generated artifacts couple PRs: once `test/INDEX.md` and the module map exist, every merge invalidates every
-open PR's copy; merge serially (one re-merge each) and land EH3.7. (4) A reviewer must never `git checkout` in
-the primary; it detached it once today. (5) `fmt`'s exit 0 on an unparseable plan is a pinned contract (MCP hash
-parity) — read the contract table before deciding an exit code.
+open PR's copy; merge serially (one re-merge each); EH3.7's strict checks now enforce it. (4) A reviewer must never
+`git checkout` in the primary; it detached it once today. (5) `fmt`'s exit 0 on an unparseable plan is a pinned
+contract (MCP hash parity) — read the contract table before deciding an exit code. (6) The PR-scale fuzz (400 runs)
+passes while `FC_SCALE=10` fails: a property's seed is fixed, so only the nightly reaches run 494+; when the nightly
+is red, download `fuzz-deep-report.json` and reproduce the counterexample with a tsx probe before carding.
 
 **Owner queue:** none (standing approval; releases, paid eval and the npmjs account stay owner-only). Tomorrow's
-reads: the nightly's `ci-red` behaviour (#584) and its new `fuzz-deep` job (#610) and `test-durations` artifact (#586).
+read: the nightly dispatched 2026-11-10 (run 42719118317): `fuzz-deep` (expected red until EH1.20) and the first `mutants` report.
 
-**Next cards:** EH2.11, EH2.12, EH2.3c (all S); then the closing audit (re-run the seven audits' measurements against
-README § Findings and record the deltas; one read-only agent per audit, as on 2026-11-09).
+**Next cards:** none. The programme is closed; `closing-audit.md` § 1's open list is the only residue, and it is
+carded only when a signal in README § 5 asks for it.
 
 **Process notes from this day:** executors must NOT edit `cards.md` (adjacent card headings conflict
 on every merge; the coordinator records status in a records PR); every pure-move PR repoints the

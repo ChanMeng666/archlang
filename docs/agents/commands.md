@@ -153,8 +153,9 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
    safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
    never merges its own PR. Releases (`v*` tags), paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
-2. When GitHub reports the PR behind (`mergeStateStatus: BEHIND`), `gh pr update-branch <n>`, wait for
-   CI on the new head, re-read what the update brought in (`git diff <old-head> <new-head> -- .
+2. When GitHub reports the PR behind (`mergeStateStatus: BEHIND`), `gh pr update-branch <n>` (or, when
+   `main` moved a generated file since the branch, merge `main` locally and `npm run gen:all`: GitHub's
+   textual merge stales `test/INDEX.md`'s count), wait for CI on the new head, re-read what the update brought in (`git diff <old-head> <new-head> -- .
    ':!test/INDEX.md' ':!docs/agents/module-map.md'` must be empty apart from the merge), then
    `gh pr merge <n> --merge --match-head-commit <new full 40-character sha>`: a merge commit (a squash
    or rebase re-creates allowlisted gitleaks lines) once the required checks pass; the branch is

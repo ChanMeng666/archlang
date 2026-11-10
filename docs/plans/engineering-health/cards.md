@@ -357,11 +357,11 @@ validator. (b) `SUMMARY_MODULES` in `test/iso-describe-blind.test.ts` is a hand-
 does. (c) Later, with a body edit and its own byte-identity proof: `summarize` (446 lines) into per-kind functions
 (`describe/rooms.ts`, `describe/openings.ts`). Proof: digests unchanged; `no-value-cycles` green.
 
-### EH2.3c · `summarize` per kind — `todo` · S · medium · sonnet · part c of EH2.3b
+### EH2.3c · `summarize` per kind — `done (#674: src/describe/{rooms,openings,furniture,shared}.ts; describe.ts 1,140 → 1,022 lines; describe() byte-identical over 419 .arch files × 3 option sets)` · S · medium · sonnet · part c of EH2.3b
 `summarize` (446 lines) into per-kind functions (`describe/rooms.ts`, `describe/openings.ts`), a body edit with its own
 byte-identity proof: digests unchanged; `no-value-cycles` green; `iso-describe-blind` (now a closure walk) green.
 
-### EH2.11 · the projector without the parser — `todo` · S · low · sonnet · from #652's review
+### EH2.11 · the projector without the parser — `done (#663: idSpanOf in the leaf src/id-spans.ts; ir.ts no longer imports the parser; the parser legitimately stays behind analyze.ts (resolvePlan parses the projector's source) and import.ts (imported files), and the leaf test names exactly those two edges)` · S · low · sonnet · from #652's review
 `src/plan-json/to-json.ts` still loads `src/parser.ts` through `src/ir.ts`, whose only parser value import is
 `idSpanOf` (one call). Move `idSpanOf` to a leaf and tighten `test/plan-json-projector-leaf.test.ts` to assert the
 parser is absent from the projector's closure. Proof: digests unchanged.
@@ -375,7 +375,7 @@ jobs; the aggregator job must run under `merge_group` too) so CI runs on the mer
 `gh pr merge --auto` form. Proof: a records-only PR merges through the queue; a PR behind a drift-moving PR is
 re-run on the merged tree.
 
-### EH2.12 · lint index superset for every ruleset value — `todo` · S · low · sonnet · from #656's review
+### EH2.12 · lint index superset for every ruleset value — `done (#662: E_RULESET_VALUE; validateRuleset gates by the default's type, so undefined and non-number overrides are refused too; lint() returns the diagnostics at span 0..0 before any rule runs)` · S · low · sonnet · from #656's review
 `resolveRuleset` validates no numbers: a non-finite `doorwayLandingMm` reaches the index. #656 keeps non-finite
 boxes in the overflow list; add validation (`E_RULESET_VALUE`, finite and within `MODEL_RANGE_MM`) so the rule never
 sees one. Pin with a test.
@@ -432,6 +432,79 @@ CHANGELOG placement. Proof: each hook exercised once with the denied command in 
 `src/expr.ts` (relational boundary, sign, negation, early return); each runs only the nearest tests
 (≤ 20 files, 3 min); survivors in the job summary; allow-list of equivalent mutants with reasons.
 Never gates merge. Proof: one nightly run's summary linked in the handoff.
+
+---
+
+## Wave 4 · residue of the closing audit (2026-11-10)
+
+Source: `closing-audit.md` § 2. All S unless marked; same rules as above.
+
+### EH1.20 · deep-fuzz counterexamples in `plan-json-malformed` — `done (#664: the validator refuses negative room/column/furniture sizes, wall thickness, opening width and north.deg with a pathed E_JSON_SCHEMA; the law (e) harness renames the door's wall reference with the wall; both properties green at FC_SCALE=10; a third counterexample, a dotted declared id, is accepted as E_DOTTED_DECL by the harness and carded as EH1.24)` · S · medium · opus · closing § 2.1
+The nightly `fuzz-deep` job (FC_SCALE=10) is red on two properties of `test/plan-json-malformed.test.ts`.
+(a) `planFromJson` accepts a negative dimension (`/furniture/1/width = -1e12`) and emits `size -1000000000000x400`,
+which the parser refuses with `E_PARSE`: make the validator refuse every magnitude field the grammar reads as
+unsigned (sizes, widths, thicknesses, radii; audit `src/plan-json/from-json.ts` field by field) with a pathed
+`E_JSON_SCHEMA`, and pin the counterexample as a regression case. (b) Law (e)'s `walls/0/id` setter renames the
+wall but not `openings[0].on.wall`, so the plan carries `E_ATTACH_WALL_REF` and the projector returns no walls:
+fix the harness field (rename both) and pin `walls/0/id = "a"`. Proof: both seeds green at `FC_SCALE=10`
+(one vitest file, 2 workers, locally allowed once) and the next nightly's `fuzz-deep` green.
+
+### EH1.21 · `archlang/share` decodes bounded by default — `done (#666: SHARE_INFLATE_CAP_BYTES = 1 MiB is the default of decodePlanHashWeb and of the Node decodePlanHash; the playground's LINK_INFLATE_CAP_BYTES aliases it)` · S · low · sonnet · closing § 2.4
+`decodePlanHashWeb`/`inflateCapped` fall back to `Number.POSITIVE_INFINITY` when no cap is passed; only the
+playground passes 1 MiB. Make 1 MiB the default (`SHARE_INFLATE_CAP`), keep an explicit larger cap possible, pin
+with a test that a 204 KB bomb is refused through the default path. Byte-identity: no example uses `#z=`.
+
+### EH1.22 · `npm ci --ignore-scripts` in every token-bearing workflow — `done (#671: publish-openvsx and the three eval workflows use release.yml's install form)` · S · high · sonnet · closing § 2.5
+`publish-openvsx.yml` (`id-token: write`) and `eval-g1/l2/live.yml` (`OPENAI_API_KEY`) still run plain `npm ci`;
+copy `release.yml`'s `npm ci --ignore-scripts && npm rebuild esbuild` form. Proof: the workflows lint
+(`actionlint` via CodeQL `actions`) and `publish-openvsx` runs on the next tag.
+
+### EH1.23 · two guard holes — `done (#667: test/helpers/imports.ts AST walk shared by core-no-3d and the projector-leaf test; scripts/workspaces.mjs derives check:quick's workspaces from package.json, pinned against typecheck:all)` · S · low · sonnet · closing § 2.6
+`test/core-no-3d.test.ts` reads imports by line and misses one after a `//` inside a string literal: use the
+TypeScript AST walk `test/plan-json-projector-leaf.test.ts` already has (`runtimeImports`), shared through a
+helper. `scripts/check-quick.mjs` keeps its workspace list by hand: derive it from `package.json` `workspaces`
+and pin by test that it equals the `typecheck:all` list.
+
+### EH2.13 · `test/.durations.json` refreshed from the nightly — `done (#665: gen-test-durations.mjs merges an artifact map; table 512 → 544 rows, 3,168 → 1,856 s; procedure in commands.md § CI)` · S · low · sonnet · closing § 2.2
+The LPT sequencer balances on a table that sums 3,168 s over 512 files while the nightly measured 1,856 s over
+544. Add `scripts/refresh-durations.mjs <test-durations.json>` (merge: keep rows for files the artifact lacks,
+drop rows for files gone) and a `docs/agents/commands.md` § CI line saying when to run it (after a shard shows
+> 1.5× the lightest); refresh now from run 42603828253's artifact. Proof: table sums within 5 % of the artifact.
+
+### EH2.14 · geometry work counters (EH2.10 residue) — `done (#673: CompileWork out-parameter; joinerySplitTests and labelRelocations in test/tables/work-counts.json; 32-wall star bounded at 5·N²; no existing count moved)` · M · medium · opus · closing § 2.3
+`test/tables/work-counts.json` pins lint scale (`steps`, `drawUnits`, `elements`, `leafDoorPairs`,
+`boundaryRunTests`, `navCells`) but not the joinery split candidates or label relocations EH2.10 named; a
+`splitAll` regression stays green. Add the two counters through the step-meter seam (counts, never time), extend
+the table, and pin. Byte-identity: counters read, never write.
+
+### EH3.8 · `CONTRIBUTING.md` agrees with the local gate — `done (#668: check:quick is the recommended gate, heavy commands marked CI's/optional; test/agent-docs-gate.test.ts scans CONTRIBUTING.md)` · S · low · sonnet · closing § 2.7
+Lines 50, 56, 71–75 prescribe `npm test`, `npm run check`, `check:drift` as the always-run gate. Rewrite to the
+`check:quick` (+ `docs:build`) local gate with "CI runs the rest", point at `docs/agents/commands.md`, and extend
+`test/agent-docs-gate.test.ts` so the contributor doc is covered by the same blocked-command scan.
+
+### EH3.9 · instruction-file budget pinned — `done (#670: test/instruction-budget.test.ts parses the cap from AGENTS.md; AGENTS.md + CLAUDE.md 4,992 → ~4,700 bytes; one new-element recipe in .claude/commands/; three repo-root paths)` · S · low · sonnet · closing § 2.8
+`AGENTS.md` + `CLAUDE.md` = 4,992 of 5,000 bytes and nothing tests it: add the byte test (AGENTS.md + CLAUDE.md
++ `.claude/rules/*.md` ≤ the budget AGENTS.md states), then earn headroom by moving one paragraph into
+`docs/agents/`. Merge the two `new-element` recipes (`docs/agents/new-element.md`, `.claude/commands/new-element.md`)
+into one; make the three package-relative doc paths repo-root paths (`playground/src/compile-worker.ts`,
+`playground/scripts/gen-static.mjs`, `plugins/archlang/.cursor-plugin/plugin.json`).
+
+### EH3.10 · font-cjk gets a PR-time check — `done (#669: scripts/check-font-pin.mjs shared by release.yml and test/font-cjk-pins.test.ts; files/exports exist; .sha256 matches the .otf)` · S · low · sonnet · closing § 2.9
+`packages/font-cjk` has 0 tests and no CI job; only `release.yml` refuses a version/pin mismatch. Add a unit test
+that the pin table, the package version and the file list agree (no network), wired into the root vitest include.
+
+### EH1.24 · dotted declared ids refused by the validator — `done (#672: declId in from-json.ts mirrors the parser's rule for six id fields; law (e)'s E_DOTTED_DECL exception removed; the MASKED place-plan case now expects pathed E_JSON_SCHEMA)` · S · medium · sonnet · from #664
+`planFromJson` accepts `furniture/0/id = "a.A"` and the parser then says `E_DOTTED_DECL` (a declared id may not be
+dotted; `place` composes dotted names). Refuse a dotted string in any declared `/id` word field with a pathed
+`E_JSON_SCHEMA`, then drop the `E_DOTTED_DECL` exception #664 added to law (e) in `test/plan-json-malformed.test.ts`.
+`test/plan-json.test.ts` "is MASKED because a `place`d plan cannot round-trip at all (E_DOTTED_DECL)" pins the
+code for a `place`d plan projected to JSON: keep that behaviour (the projector's output, not a caller's id) and
+re-point the test's expectation only if the validator now refuses first. Proof: law (e) green at `FC_SCALE=10`.
+
+### EH0.10 · dependabot ignores the vitest 5 line — `done (#671; #206–#208 closed 2026-11-10)` · S · high · sonnet · closing § 2.10
+#206–#208 (vitest 5, coverage-v8 5, `@types/node` 26) were closed 2026-11-10 under README § 4. Add `ignore`
+entries for `vitest` and `@vitest/coverage-v8` semver-major (with the README § 4 reason as the comment) so the
+line stops reopening; leave `@types/node` to the weekly group. Reopen the migration when backlog 3.1's triggers fire.
 
 ---
 
