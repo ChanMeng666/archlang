@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-488 test files in `test/`, 274 `src` modules, 105 modules no test imports.
+489 test files in `test/`, 274 `src` modules, 105 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -411,6 +411,7 @@ The first sentence of each file's header comment.
 - `test/import.test.ts` — T4.3 — import in a virtual-FS (browser-like) World; T4.3 — import in a Node (real-fs) World; T4.3 — diagnostics.
 - `test/indexnow-script.test.ts` — `scripts/indexnow.mjs` — the post-deploy IndexNow ping.
 - `test/input-limit.test.ts` — `inputTooLarge()` and `rateLimited()` — a host's refusals as catalogued diagnostics.
+- `test/instruction-budget.test.ts` — the instruction files stay inside their byte budget (EH3.9).
 - `test/intent-all-storeys.test.ts` — Issue #365: on a plan with `level` blocks the intent's `rooms`, `roomsInclude` and `totalAreaM2` read the whole building, as `grossInternalAreaM2` and `roomDimensions` always did.
 - `test/intent-schema-drift.test.ts` — intent.schema.json drift.
 - `test/intent.test.ts` — validateIntent — corpus round-trip (goldens satisfy their own intent); validateIntent — determinism; validateIntent — per-kind gating; validateIntent — window f…

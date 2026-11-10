@@ -46,7 +46,7 @@ source (.arch)
 - **Adding an element = one module** in `src/elements/` exporting an `ElementDef`, registered in
   `src/elements/defs.ts`; parse/resolve/render dispatch through the registry, never a switch.
   The per-kind code outside it is exhaustive (`tsc` fails on a kind it does not name) and the kind
-  sets come from `KIND_FACETS` (`src/elements/facets.ts`); the checklist is `docs/agents/new-element.md`.
+  sets come from `KIND_FACETS` (`src/elements/facets.ts`); the checklist is `.claude/commands/new-element.md`.
 - **Output formats are not a registry seam**: a new one is a row in `EXPORT_FORMATS`
   (`src/manifest.ts`) plus a `case` in `serialize()` (`src/cli/serialize.ts`), which `tsc` demands.
 - **`CompileResult` is append-only** — add fields, never remove or rename.
@@ -79,7 +79,7 @@ The docs site (`docs-site/`, outside the module map's globs) has a home built fr
 public seam (ADRs 0030/0031; `.claude/rules/archlang-3d.md`). `site-shared/doors.json` holds every
 way in, written into marked "Try it" blocks by `scripts/gen-doors.ts` (`gen:doors`). The playground
 Worker (`playground/worker/`, ADR 0034) runs only for `/s/*` and `/api/*`; a plain playground visit
-compiles nothing at boot (the default plan is in the served HTML, `scripts/gen-static.mjs`).
+compiles nothing at boot (the default plan is in the served HTML, `playground/scripts/gen-static.mjs`).
 Test harness modules importable without vitest, so an older `src/` can be measured with the same
 body: `test/helpers/byte-identity-payload.ts`, `test/helpers/byte-identity-digest.ts`, `test/helpers/recovery-metric.ts`,
 `test/helpers/shaft-equivariance-models.ts`; `scripts/engine-digests.ts` measures cross-engine determinism.
