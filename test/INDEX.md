@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-491 test files in `test/`, 270 `src` modules, 101 modules no test imports.
+491 test files in `test/`, 271 `src` modules, 101 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -148,6 +148,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
 - `src/parser.ts` (142) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+134)
+- `src/pipeline.ts` (1) — `work-counts`
 - `src/plan-json.ts` (9) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `sheet-annotations`, `site` (+1)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
 - `src/registry.ts` (41) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations` (+33)
@@ -674,7 +675,7 @@ The first sentence of each file's header comment.
 - `test/window-kinds.test.ts` — Window kinds and the glazed sliding door (issue #369): what each form draws, states and refuses.
 - `test/windows-furniture.test.ts` — window — placement & hosting; furniture — rect + label (the uncatalogued fallback).
 - `test/witness-lines.test.ts` — dims auto — witness lines terminate on the facade.
-- `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, and the work counters of one `lint()` run (EH2.10), as COUNTS.
+- `test/work-counts.test.ts` — The work-count golden (engineering-health EH1.6): per plan, the evaluator's steps, the drawing budget's units and the resolved elements, the work counters of one `lint()` run (EH2.10) and of one drawing (EH2.14), as C...
 - `test/workspace-seams.test.ts` — Boundary: a workspace reaches the core (or another workspace) only through a declared package name, except at the seams listed in ALLOW (`workspace-seams.allow.ts`).
 - `test/world.test.ts` — T4.2 — World seam.
 - `test/zones.test.ts` — zone — byte identity (a zone draws nothing and moves nothing); zone — declared membership and nesting paths; zone — inside `level` blocks; zone — the grouped RO…
@@ -700,6 +701,7 @@ module); adding a test that imports it removes it from this list.
 - `src/cli/commands-import.ts`
 - `src/cli/commands-share.ts`
 - `src/command-name.ts`
+- `src/compile-work.ts`
 - `src/context-levels.ts`
 - `src/describe/adjacency.ts`
 - `src/describe/fabric.ts`
@@ -766,7 +768,6 @@ module); adding a test that imports it removes it from this list.
 - `src/lock.ts`
 - `src/opening-junctions.ts`
 - `src/overlays/circulation.ts`
-- `src/pipeline.ts`
 - `src/plan-json/ast-json.ts`
 - `src/plan-json/check-graph.ts`
 - `src/plan-json/emit.ts`
