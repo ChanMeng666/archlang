@@ -19,6 +19,10 @@
  * wall) nothing is drawn, as `EdgesGeometry`'s 30° threshold did. The true inside corners at a T or
  * an X junction stay (README §6.3 of the product roadmap).
  *
+ * The faces those prisms share inside a wall (a lintel's end against its jamb) are left out of what
+ * is drawn (`wallFaces`): drawn, they leak through a flat face seen at a grazing angle along the
+ * very seams the outline no longer draws. The outline is read off the faces as drawn (`wallOutline`).
+ *
  * Each line goes to one node whose face it bounds (the lowest node index among those whose edges
  * make it), so the wall-by-wall replay still raises a wall with its own lines. Coordinates are
  * integer micrometres (Mesh3D's contract): every comparison is exact (a product too large for a
@@ -132,14 +136,8 @@ const sortedUnique = (xs: number[]): number[] => {
   return s.filter((x, i) => i === 0 || x !== s[i - 1]);
 };
 
-/**
- * The outlines of every standing wall and column of `nodes`, storey by storey (a node's storey is
- * its key's `L<level>/` prefix): for node `i`, `out[i]` is its segments as flat `[x, y, z, x, y, z, …]`
- * in µm (sorted), or `undefined` for a node this does not outline (`takesWallLines`), which keeps
- * its own outline.
- */
-export function wallLines(nodes: readonly LineSource[]): Array<number[] | undefined> {
-  const out: Array<number[] | undefined> = nodes.map((n) => (takesWallLines(n) ? [] : undefined));
+/** The indices of the nodes this module draws, storey by storey (a key's `L<level>/` prefix), storeys in key order. */
+function byStorey(nodes: readonly LineSource[]): number[][] {
   const storeys = new Map<string, number[]>();
   nodes.forEach((n, i) => {
     if (!takesWallLines(n)) return;
@@ -148,8 +146,37 @@ export function wallLines(nodes: readonly LineSource[]): Array<number[] | undefi
     if (members) members.push(i);
     else storeys.set(level, [i]);
   });
+  return sortedKeys(storeys).map((k) => storeys.get(k) ?? []);
+}
+
+/**
+ * The outlines of every standing wall and column of `nodes`, storey by storey (a node's storey is
+ * its key's `L<level>/` prefix): for node `i`, `out[i]` is its segments as flat `[x, y, z, x, y, z, …]`
+ * in µm (sorted), or `undefined` for a node this does not outline (`takesWallLines`), which keeps
+ * its own outline. Read off the faces as they are drawn (`wallOutline`).
+ */
+export function wallLines(nodes: readonly LineSource[]): Array<number[] | undefined> {
+  return wallOutline(nodes).lines;
+}
+
+/**
+ * The walls' and columns' faces as the 3D preview draws them (`wallFaces`) and the outline of those
+ * faces (`wallLines`): the outline is read off the drawn faces, where no inner face remains, so the
+ * facing of every face a line bounds is the one seen (it decides the 30° test).
+ */
+export function wallOutline(nodes: readonly LineSource[]): {
+  faces: Array<FaceFix | undefined>;
+  lines: Array<number[] | undefined>;
+} {
+  const faces = wallFaces(nodes);
+  const drawn = nodes.map((n, i) => (takesWallLines(n) ? { ...n, ...withFaces(n, faces[i]) } : n));
+  return { faces, lines: linesOf(drawn) };
+}
+
+function linesOf(nodes: readonly LineSource[]): Array<number[] | undefined> {
+  const out: Array<number[] | undefined> = nodes.map((n) => (takesWallLines(n) ? [] : undefined));
   const segs: Seg[][] = nodes.map(() => []);
-  for (const level of sortedKeys(storeys)) storeyLines(nodes, storeys.get(level) ?? [], segs);
+  for (const members of byStorey(nodes)) storeyLines(nodes, members, segs);
   segs.forEach((list, i) => {
     if (!out[i]) return;
     const sorted = list
@@ -331,5 +358,175 @@ function storeyLines(nodes: readonly LineSource[], members: readonly number[], s
     const { a, b, net, nodes: by } = pairs.get(key) as { a: number[]; b: number[]; net: number; nodes: number[] };
     if (net === 0) continue;
     (segs[Math.min(...by)] as Seg[]).push([...a, ...b] as Seg);
+  }
+}
+
+/**
+ * What the 3D preview draws of a wall or column node's faces in place of its own (`withFaces`):
+ * `hide`, its triangles not to draw (numbers into `indices` / 3, ascending), and `add`, triangles to
+ * draw instead, flat `[x, y, z]` in µm, three corners each, counter-clockwise seen from outside.
+ */
+export interface FaceFix {
+  hide: number[];
+  add: number[];
+}
+
+/**
+ * The walls' inner faces left out (card RM8.1). Where two prisms meet, each one's face there lies
+ * inside the other (a lintel's end on its jamb, a stem's end on the wall it meets): never seen, but
+ * drawn it leaks: every face is pushed back in depth by its own slope (the outline's polygon offset,
+ * `mount.ts`), so where a flat face is seen at a grazing angle the inner face behind it wins the
+ * depth test near their common edge, a faint seam along the very line the outline no longer draws.
+ *
+ * In each vertical plane where faces of the two facings overlap (and only there), the plane's
+ * triangles are replaced by the plane's visible part: on the grid of the plane's own corners, a
+ * cell is drawn, facing as the plane's faces wind there, when the faces' winding (the vertical
+ * edges' running sum, exact) is not zero; inner cells (the two facings cancel) are not. Each cell
+ * goes to the lowest-indexed node whose own faces wind it so. The surface seen is the same; only
+ * what lay inside the walls is gone. A plane with no such overlap (every outer face of a wall run,
+ * every top) keeps its triangles. Deterministic as `wallLines` is.
+ */
+export function wallFaces(nodes: readonly LineSource[]): Array<FaceFix | undefined> {
+  const out: Array<FaceFix | undefined> = nodes.map((n) => (takesWallLines(n) ? { hide: [], add: [] } : undefined));
+  for (const members of byStorey(nodes)) storeyFaces(nodes, members, out);
+  for (const f of out) f?.hide.sort((a, b) => a - b);
+  return out;
+}
+
+/** The node's positions and triangles with its `FaceFix` applied (as they are drawn). */
+export function withFaces(
+  n: LineSource,
+  fix: FaceFix | undefined,
+): { positions: readonly number[]; indices: readonly number[] } {
+  if (!fix || (fix.hide.length === 0 && fix.add.length === 0)) return { positions: n.positions, indices: n.indices };
+  const hidden = new Set(fix.hide);
+  const indices: number[] = [];
+  for (let i = 0; i + 2 < n.indices.length; i += 3) {
+    if (!hidden.has(i / 3))
+      indices.push(n.indices[i] as number, n.indices[i + 1] as number, n.indices[i + 2] as number);
+  }
+  const first = n.positions.length / 3;
+  for (let v = 0; v < fix.add.length / 3; v++) indices.push(first + v);
+  return { positions: n.positions.concat(fix.add), indices };
+}
+
+/** A triangle of a vertical plane: its node, its number in the node's `indices`, corners, facing, places along. */
+interface PlaneTri {
+  node: number;
+  tri: number;
+  p: number[][];
+  f: number;
+  s: number[];
+}
+
+function storeyFaces(nodes: readonly LineSource[], members: readonly number[], out: Array<FaceFix | undefined>): void {
+  const planes = new Map<string, { pl: PlanLine; tris: PlaneTri[] }>();
+  for (const ni of members) {
+    const n = nodes[ni] as LineSource;
+    const P = (v: number): number[] => [
+      Math.round(n.positions[v * 3] as number),
+      Math.round(n.positions[v * 3 + 1] as number),
+      Math.round(n.positions[v * 3 + 2] as number),
+    ];
+    for (let i = 0; i + 2 < n.indices.length; i += 3) {
+      const a = P(n.indices[i] as number);
+      const b = P(n.indices[i + 1] as number);
+      const c = P(n.indices[i + 2] as number);
+      const ax = a[0] as number;
+      const ay = a[1] as number;
+      const az = a[2] as number;
+      if (ay === b[1] && ay === c[1]) continue;
+      if (det((b[0] as number) - ax, (b[2] as number) - az, (c[0] as number) - ax, (c[2] as number) - az) !== 0)
+        continue;
+      const far = a[0] !== b[0] || a[2] !== b[2] ? b : c;
+      if (far[0] === ax && far[2] === az) continue;
+      const pl = planLine(ax, az, far[0] as number, far[2] as number);
+      const along = (p: number[]): number => (pl.dx !== 0 ? (p[0] as number) : (p[2] as number));
+      const s = [along(a), along(b), along(c)];
+      const turn = det(
+        (s[1] as number) - (s[0] as number),
+        (b[1] as number) - ay,
+        (s[2] as number) - (s[0] as number),
+        (c[1] as number) - ay,
+      );
+      if (turn === 0) continue;
+      const key = `V${pl.key}`;
+      const t: PlaneTri = { node: ni, tri: i / 3, p: [a, b, c], f: turn > 0 ? 1 : -1, s };
+      const plane = planes.get(key);
+      if (plane) plane.tris.push(t);
+      else planes.set(key, { pl, tris: [t] });
+    }
+  }
+
+  for (const key of sortedKeys(planes)) {
+    const { tris } = planes.get(key) as { pl: PlanLine; tris: PlaneTri[] };
+    const box = (t: PlaneTri): number[] => [
+      Math.min(...t.s),
+      Math.max(...t.s),
+      Math.min(...t.p.map((q) => q[1] as number)),
+      Math.max(...t.p.map((q) => q[1] as number)),
+    ];
+    const boxes = tris.map(box);
+    const meet = (u: number[], v: number[]): boolean =>
+      Math.min(u[1] as number, v[1] as number) > Math.max(u[0] as number, v[0] as number) &&
+      Math.min(u[3] as number, v[3] as number) > Math.max(u[2] as number, v[2] as number);
+    const contested = tris.some((t, i) =>
+      tris.some((u, j) => j > i && u.f !== t.f && meet(boxes[i] as number[], boxes[j] as number[])),
+    );
+    if (!contested) continue;
+
+    // The plane's grid: every place along it and every height its corners have.
+    const S = sortedUnique(tris.flatMap((t) => t.s));
+    const Y = sortedUnique(tris.flatMap((t) => t.p.map((q) => q[1] as number)));
+    const where = new Map<number, number[]>();
+    for (const t of tris) for (let k = 0; k < 3; k++) where.set(t.s[k] as number, t.p[k] as number[]);
+    const sAt = new Map(S.map((s, i) => [s, i] as const));
+    const yAt = new Map(Y.map((y, j) => [y, j] as const));
+    const ny = Y.length - 1;
+    // Per node, its upward edges' net count on each vertical line, per row of the grid.
+    const owners = sortedUnique(tris.map((t) => t.node));
+    const net = new Map(owners.map((o) => [o, new Int32Array(S.length * ny)] as const));
+    for (const t of tris) {
+      const m = net.get(t.node) as Int32Array;
+      for (let k = 0; k < 3; k++) {
+        const p = t.p[k] as number[];
+        const q = t.p[(k + 1) % 3] as number[];
+        if (p[0] !== q[0] || p[2] !== q[2] || p[1] === q[1]) continue;
+        const i = sAt.get(t.s[k] as number) as number;
+        const up = (q[1] as number) > (p[1] as number);
+        const j0 = yAt.get(Math.min(p[1] as number, q[1] as number)) as number;
+        const j1 = yAt.get(Math.max(p[1] as number, q[1] as number)) as number;
+        for (let j = j0; j < j1; j++) m[i * ny + j] = (m[i * ny + j] as number) + (up ? 1 : -1);
+      }
+    }
+    // Sweep along the plane: crossing a line, a node's winding falls by its upward edges there.
+    const wind = new Map(owners.map((o) => [o, new Int32Array(ny)] as const));
+    for (let i = 0; i + 1 < S.length; i++) {
+      for (const o of owners) {
+        const w = wind.get(o) as Int32Array;
+        const m = net.get(o) as Int32Array;
+        for (let j = 0; j < ny; j++) w[j] = (w[j] as number) - (m[i * ny + j] as number);
+      }
+      const s0 = S[i] as number;
+      const s1 = S[i + 1] as number;
+      for (let j = 0; j < ny; j++) {
+        let total = 0;
+        for (const o of owners) total += (wind.get(o) as Int32Array)[j] as number;
+        if (total === 0) continue;
+        const owner = owners.find((o) => Math.sign((wind.get(o) as Int32Array)[j] as number) === Math.sign(total));
+        const add = (out[owner ?? (owners[0] as number)] as FaceFix).add;
+        const y0 = Y[j] as number;
+        const y1 = Y[j + 1] as number;
+        const at = (s: number, y: number): number[] => {
+          const q = where.get(s) as number[];
+          return [q[0] as number, y, q[2] as number];
+        };
+        const [p00, p10, p11, p01] = [at(s0, y0), at(s1, y0), at(s1, y1), at(s0, y1)];
+        // Counter-clockwise along the plane and up faces the plane's + side.
+        if (total > 0) add.push(...p00, ...p10, ...p11, ...p00, ...p11, ...p01);
+        else add.push(...p00, ...p11, ...p10, ...p00, ...p01, ...p11);
+      }
+    }
+    for (const t of tris) (out[t.node] as FaceFix).hide.push(t.tri);
   }
 }

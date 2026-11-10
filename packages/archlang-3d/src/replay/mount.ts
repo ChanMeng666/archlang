@@ -54,7 +54,7 @@ import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
 
 import { stateAt } from "./timeline.js";
-import { wallLines } from "./wall-lines.js";
+import { wallOutline, withFaces } from "./wall-lines.js";
 
 export type { ReplayNode, ReplayPayload } from "./payload.js";
 
@@ -252,10 +252,13 @@ export function mountReplay(
   const owned: Array<{ dispose: () => void }> = [];
   // The standing walls' and the columns' outlines, worked out across each storey (card RM8.1): a
   // line only where the surface turns, none on the seam between two flat pieces. `undefined` for
-  // every other node, which keeps its own outline (`EdgesGeometry`).
-  const outlines = wallLines(p.nodes);
-  for (const [ni, n] of p.nodes.entries()) {
+  // every other node, which keeps its own outline (`EdgesGeometry`). Their faces are drawn without
+  // the inner ones where two prisms meet (`wallFaces`), which would leak along those seams.
+  const { faces, lines: outlines } = wallOutline(p.nodes);
+  for (const [ni, node] of p.nodes.entries()) {
     const outline = outlines[ni];
+    const drawn = withFaces(node, faces[ni]);
+    const n = { ...node, positions: drawn.positions as number[], indices: drawn.indices as number[] };
     const pos = new Float32Array(n.positions.length);
     let base = Infinity;
     let topY = -Infinity;
