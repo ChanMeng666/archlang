@@ -46,14 +46,12 @@ npm run dev
 # Production build of the core (dist/) — every workspace consumes it
 npm run build
 
-# The whole vitest suite: test/, playground/test/, packages/*/test/, editors/vscode/test/
-npm test
-
-# Quick pre-push check on the files you changed (under a minute; CI runs the rest)
+# Quick pre-push check on the files you changed (under a minute): the recommended local gate.
+# CI runs the full suite, drift, typecheck:all, e2e and bench on your PR.
 npm run check:quick
 
-# The full gate CI runs: typecheck + lint + test in one shot (about 14 min on a laptop)
-npm run check
+# Optional, slow (about 14 min on a laptop): typecheck + lint + the whole suite, the way CI runs it
+npm run check   # optional, slow; CI runs it too
 ```
 
 The sites are separate Vite apps: `npm run playground:dev` and `npm run docs:dev` (each builds the
@@ -62,20 +60,23 @@ the core itself still supports Node 18.
 
 ## Quality gates
 
-**Before you open a PR**, `npm run check:quick` is enough: CI runs every check below on the PR, and a
-PR merges only on green CI. Run a full gate locally only to chase a CI failure:
+**Before you open a PR**, `npm run check:quick` is the local gate (plus `npm run docs:build` after a
+`docs/*.md` or `docs-site/` edit). CI runs the full suite, drift, typecheck:all, e2e and bench on the PR;
+only CI green is merge evidence. The job list is in [docs/agents/commands.md](docs/agents/commands.md)
+§ CI. Run the heavier commands below locally only to chase a CI failure (they are optional and slow):
 
 | Command | Covers | Run it when |
 |---------|--------|-------------|
 | `npm run check:quick` | Biome, typecheck, drift and the nearest tests, for the files you changed | before every push |
-| `npm run check` | typecheck + Biome + the full test suite | always |
-| `npm run check:drift` | every generator re-run and byte-compared against its artifact | always — **`npm run check` does NOT include it** |
-| `npm run typecheck:all` | the four workspaces too (playground, docs-site via vue-tsc, MCP shim, VS Code extension) | you touched anything outside `src/` + `test/` |
-| `npm run docs:build` | the VitePress site actually builds | any `docs/*.md` or `docs-site/` edit — **the core suite never compiles the site** |
-| `npm run e2e:playground` / `npm run e2e:docs` | Playwright (chromium) against the BUILT app | you touched `playground/` or `docs-site/` |
+| `npm run docs:build` | the VitePress site actually builds | any `docs/*.md` or `docs-site/` edit: **the core suite never compiles the site** |
+| `npm run check` | typecheck + Biome + the full test suite (CI runs it too) | optional, slow: to reproduce a CI failure |
+| `npm test` | the whole vitest suite: `test/`, `playground/test/`, `packages/*/test/`, `editors/vscode/test/` (CI runs it too) | optional, slow: to reproduce a CI failure |
+| `npm run check:drift` | every generator re-run and byte-compared against its artifact (CI runs it too; `check:quick` covers the files you changed) | optional: **`npm run check` does NOT include it** |
+| `npm run typecheck:all` | the four workspaces too (playground, docs-site via vue-tsc, MCP shim, VS Code extension) | optional: you touched anything outside `src/` + `test/` (CI runs it in the `builds` job) |
+| `npm run e2e:playground` / `npm run e2e:docs` | Playwright (chromium) against the BUILT app (CI runs both) | optional: you touched `playground/` or `docs-site/` |
 
-The E2E suites serve the built output, so build first — e.g.
-`npm run build && npm run playground:build:only && npm run e2e:playground`. Setting
+The E2E suites (CI runs both) serve the built output, so build first — e.g.
+`npm run build && npm run playground:build:only && npm run e2e:playground` (CI runs it). Setting
 `E2E_BASE_URL=<origin>` makes either suite drive that origin instead, with no build and no preview
 server (that is how the nightly workflow re-runs the read-only `@prod` subset against production).
 
@@ -106,10 +107,10 @@ token anywhere; do not add one. The full transferable recipe (for this or any ot
 in [docs/npm-oidc-publishing-playbook.md](docs/npm-oidc-publishing-playbook.md).
 
 1. Update `CHANGELOG.md` and bump `version` in the root `package.json`.
-2. `npm run check` (typecheck + lint + test) **and `npm run check:drift`** must both be green.
-   `check:drift` is a **separate hard CI gate** that `npm run check` does not cover — it
+2. The owner runs `npm run check` (typecheck + lint + test) **and `npm run check:drift`**; both must be green.
+   `check:drift` is a **separate hard gate that CI runs**, and that `npm run check` does not cover — it
    regenerates every artifact and fails if one drifted (see [CI drift gates](#ci-drift-gates-regenerate-before-you-push)).
-   `npm run build && npm test` also run inside the publish via `prepublishOnly`, but they will
+   `npm run build && npm test` also run inside the publish via `prepublishOnly` (the owner's release), but they will
    **not** catch a `src/manifest.ts` edit whose `docs/cli-reference.md` was never regenerated.
 3. Commit, push, then tag: `git tag vX.Y.Z && git push origin vX.Y.Z`. The tag push triggers
    `release.yml`, which publishes the core, then the MCP shim (if its version moved), then syncs
@@ -242,7 +243,7 @@ alter a compiled plan, its diagnostics, or `describe()` facts) means a new `arch
 
 1. Regenerate at the pinned seed: `npm run dataset:gen` (defaults `--repair-rows 1200
    --authoring-rows 400 --seed 20260712`).
-2. Verify: `npm test` — the contamination/determinism guard `test/dataset.test.ts` must stay green.
+2. Verify (the owner runs `npm test`): the contamination/determinism guard `test/dataset.test.ts` must stay green.
 3. Bump `archlang_version` in `dataset/CARD.md` to the new core version.
 4. Re-upload the three artifacts **and** the card (below).
 
@@ -289,8 +290,8 @@ low.
 
 ### CI drift gates (regenerate before you push)
 
-The generators produce the artifacts below, and CI drift-checks all of them in a single
-`npm run check:drift` step. The run prints its own total (`✓ all N generated artifacts are in sync
+The generators produce the artifacts below, and CI runs a drift check of all of them in a single
+`npm run check:drift` step (CI runs it). The run prints its own total (`✓ all N generated artifacts are in sync
 with their sources`), so read the count there rather than from this page. The authoritative list is
 the `GENERATORS` table in `scripts/generators.ts` (which `check:drift` runs) — this table mirrors it:
 
@@ -311,7 +312,7 @@ the `GENERATORS` table in `scripts/generators.ts` (which `check:drift` runs) —
 Whenever a generator's source changes, run `npm run gen:all` to regenerate every artifact in
 dependency order (`gen:spec` before `gen:llms`, which consumes it, and `gen:llms` before `gen:cli`,
 which states the bundle size it measures) and commit the output;
-**generated files must never be hand-edited.** `npm run check:drift` reproduces the CI gate locally.
+**generated files must never be hand-edited.** `npm run check:drift` (optional, slow; CI runs it) reproduces the CI gate locally.
 
 ### The CLI surface lives in `src/manifest.ts`
 
