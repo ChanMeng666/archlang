@@ -23,7 +23,7 @@ import { type BuildingContext, buildLintContext, type LintLayer, type LintStage 
 import { foldCoverage, type LintCoverage, type LintUnclassifiedRoom, type SkipNote } from "./lint/coverage.js";
 import { ONCE_PER_PLACEMENT_CODES } from "./lint/rules/dims.js";
 import { LINT_RULES } from "./lint/rules/index.js";
-import { LINT_PROFILES, type LintOptions, type LintRuleset, resolveRuleset } from "./lint/ruleset.js";
+import { LINT_PROFILES, type LintOptions, type LintRuleset, resolveRuleset, validateRuleset } from "./lint/ruleset.js";
 import { lintStoreys } from "./lint/storeys.js";
 import { type LintWork, newLintWork } from "./lint/work.js";
 
@@ -130,6 +130,10 @@ function lintRun(
   // Ruleset cascade: defaults → named profile → explicit per-call overrides.
   const profileRules = opts.profile ? (LINT_PROFILES[opts.profile] ?? {}) : {};
   const rules: LintRuleset = resolveRuleset(profileRules, opts.ruleset);
+  // A non-finite or out-of-range number would reach the rules and their grids: refuse the
+  // ruleset before the plan is resolved, so no rule ever reads one (`E_RULESET_VALUE`).
+  const bad = validateRuleset(rules);
+  if (bad.length > 0) return { diagnostics: bad, coverage: null, layers: LINT_CODE_LAYERS };
   const { ir, levels } = resolvePlan(source, opts);
   if (!ir) return { diagnostics: [], coverage: null, layers: LINT_CODE_LAYERS };
 

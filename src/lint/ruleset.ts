@@ -8,7 +8,9 @@
 import type { AnalyzeOptions } from "../analyze.js";
 import type { UseKind } from "../ast.js";
 import { DEFAULT_TOL } from "../analyze.js";
+import { type Diagnostic, diag } from "../diagnostics.js";
 import { FIXTURE_WALL_TOL_MM } from "../fixture-orientation.js";
+import { fmt3, MODEL_RANGE_MM } from "../num-format.js";
 import { JUNCTION_NIB_DEFAULTS } from "../opening-junctions.js";
 
 /** Tunable thresholds for the lint rules. All distances in mm, areas in m². */
@@ -732,9 +734,130 @@ export function resolveRuleset(profile: Partial<LintRuleset> = {}, ruleset: Part
   };
 }
 
+/** The ruleset keys typed `number | null`: `null` turns their rule off. */
+type NullableKey = { [K in keyof LintRuleset]: null extends LintRuleset[K] ? K : never }[keyof LintRuleset];
+/** The ruleset keys that hold a per-use table (every key not typed as a scalar). */
+type TableKey = {
+  [K in keyof LintRuleset]: LintRuleset[K] extends string | number | boolean | null ? never : K;
+}[keyof LintRuleset];
+
+/**
+ * Which numeric ruleset fields accept `null`. Typed as a mapped type over {@link NullableKey}, so
+ * `tsc` refuses this literal when a `number | null` field is missing from it or a key here is not
+ * one: the interface is the source of truth, since a field's default (`914`, `null`) cannot say.
+ */
+const NULLABLE: { readonly [K in NullableKey]: true } = {
+  seatTableReachMm: true,
+  minDoubleBedroomAreaM2: true,
+  minDoubleBedroomShortSideMm: true,
+  minMainDoubleBedroomShortSideMm: true,
+  minEntryPassageWidthMm: true,
+  wcSideClearanceMm: true,
+  wcAccessibleSideWallMaxMm: true,
+  stairMaxPitchRatio: true,
+  hobLandingMm: true,
+  maxHingedLeafMm: true,
+  garageDepthMm: true,
+  exitApproachMm: true,
+  exitApproachPullMm: true,
+  bedMinLengthMm: true,
+  bedMinWidthMm: true,
+  wallGapMm: true,
+};
+
+/** Whether each per-use table's entries accept `null` (an exempt use), checked by `tsc` against
+ *  the table's entry type, as {@link NULLABLE} is. */
+const NULLABLE_ENTRIES: {
+  readonly [K in TableKey]: LintRuleset[K] extends Readonly<Partial<Record<UseKind, infer V>>>
+    ? null extends V
+      ? true
+      : false
+    : never;
+} = {
+  minRoomAreaByUseM2: true,
+  minRoomShortSideByUseMm: false,
+  minPathClearWidthByUseMm: false,
+};
+
+/**
+ * What is wrong with a ruleset value, for the message: a classification, never the value itself,
+ * because no message prints a non-finite or exponent-formatted number (`test/lint-stairs.test.ts`
+ * holds every lint message to that) and an object or a string the caller passed is not ours to
+ * echo. `NaN` is "not a number", `±Infinity` "not finite", a finite number past the range "beyond
+ * the modelling range"; anything else is named by its `typeof` (`null` and `undefined` by name).
+ */
+function whatItIs(v: unknown): string {
+  if (typeof v === "number")
+    return Number.isNaN(v) ? "not a number" : !Number.isFinite(v) ? "not finite" : "beyond the modelling range";
+  if (v === null) return "null";
+  if (v === undefined) return "undefined";
+  const t = typeof v;
+  return t === "object" ? "an object" : `a ${t}`;
+}
+
+/** Code-unit order (never `localeCompare`, whose collation is host data). */
+const byCodeUnit = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+
+/**
+ * The `E_RULESET_VALUE` errors of a resolved ruleset ({@link resolveRuleset}). A field whose
+ * {@link DEFAULT_RULESET} value is a number or `null` must hold a finite number within
+ * ±{@link MODEL_RANGE_MM}, whatever its unit, or `null` where its type allows it
+ * ({@link NULLABLE}); anything else (`undefined`, which a caller's `{ key: undefined }` spreads
+ * over the default, a string, an object, a boolean, `NaN`, `Infinity`, a value past the range) is
+ * one error. A per-use table (a field whose default is an object) is read entry by entry under a
+ * dotted key (`minRoomAreaByUseM2.bedroom`), each entry a number in range, or `null` in a table
+ * that exempts uses ({@link NULLABLE_ENTRIES}); an `undefined` entry is read as no entry, as the
+ * rules read it (`src/lint/rules/per-room.ts`), and passes. The non-numeric fields and keys the
+ * defaults do not have are not read. Gated by the DEFAULT's type, never the value's, so a field
+ * added later is held without being listed here. The errors are in code-unit order of their
+ * dotted keys, so the caller's key order never moves them, each at byte 0 (`{ start: 0, end: 0 }`):
+ * the fault is the caller's option, not the source. Empty when every value is valid. Pure.
+ */
+export function validateRuleset(rules: LintRuleset): Diagnostic[] {
+  const bad: [key: string, v: unknown, nullable: boolean][] = [];
+  const ok = (v: unknown, nullable: boolean): boolean =>
+    (v === null && nullable) || (typeof v === "number" && Number.isFinite(v) && Math.abs(v) <= MODEL_RANGE_MM);
+  const defaults = DEFAULT_RULESET as unknown as Readonly<Record<string, unknown>>;
+  const given = rules as unknown as Readonly<Record<string, unknown>>;
+  for (const key of Object.keys(given)) {
+    const d = defaults[key];
+    const v = given[key];
+    if (typeof d === "number" || d === null) {
+      const nullable = Object.hasOwn(NULLABLE, key);
+      if (!ok(v, nullable)) bad.push([key, v, nullable]);
+    } else if (typeof d === "object") {
+      const nullable = (NULLABLE_ENTRIES as Readonly<Record<string, boolean>>)[key] === true;
+      if (typeof v !== "object" || v === null) {
+        bad.push([key, v, nullable]);
+        continue;
+      }
+      const table = v as Readonly<Record<string, unknown>>;
+      for (const use of Object.keys(table)) {
+        const e = table[use];
+        if (e !== undefined && !ok(e, nullable)) bad.push([`${key}.${use}`, e, nullable]);
+      }
+    }
+  }
+  return bad
+    .sort((a, b) => byCodeUnit(a[0], b[0]))
+    .map(([key, v, nullable]) =>
+      diag(
+        "E_RULESET_VALUE",
+        `The lint ruleset's \`${key}\` must be a finite number within ±${fmt3(MODEL_RANGE_MM)} ` +
+          `(the modelling range, in the field's own unit)${nullable ? " or null" : ""}; it is ${whatItIs(v)}, ` +
+          "so no rule ran",
+        { start: 0, end: 0 },
+      ),
+    );
+}
+
 export interface LintOptions extends AnalyzeOptions {
   /** A named profile from {@link LINT_PROFILES} (applied before `ruleset`). */
   profile?: string;
-  /** Override any subset of {@link DEFAULT_RULESET} (wins over `profile`). */
+  /** Override any subset of {@link DEFAULT_RULESET} (wins over `profile`). Every number of the
+   *  resolved ruleset must be a finite number within ±{@link MODEL_RANGE_MM} (the modelling
+   *  range), whatever its unit, or `null` where its type allows it; otherwise (`undefined`, a
+   *  string, `NaN`, …) `lint()` runs no rule and returns one `E_RULESET_VALUE` per bad value
+   *  ({@link validateRuleset}). */
   ruleset?: Partial<LintRuleset>;
 }
