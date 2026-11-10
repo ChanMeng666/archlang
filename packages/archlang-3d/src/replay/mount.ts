@@ -54,6 +54,7 @@ import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
 
 import { stateAt } from "./timeline.js";
+import { wallLines } from "./wall-lines.js";
 
 export type { ReplayNode, ReplayPayload } from "./payload.js";
 
@@ -249,7 +250,12 @@ export function mountReplay(
   // exploded storey (`lift`) comes down by it as the storeys settle (`stateAt`'s `settle`).
   const nodes = new Map<string, { g: Group; flat: number; base: number; lift: number }>();
   const owned: Array<{ dispose: () => void }> = [];
-  for (const n of p.nodes) {
+  // The standing walls' and the columns' outlines, worked out across each storey (card RM8.1): a
+  // line only where the surface turns, none on the seam between two flat pieces. `undefined` for
+  // every other node, which keeps its own outline (`EdgesGeometry`).
+  const outlines = wallLines(p.nodes);
+  for (const [ni, n] of p.nodes.entries()) {
+    const outline = outlines[ni];
     const pos = new Float32Array(n.positions.length);
     let base = Infinity;
     let topY = -Infinity;
@@ -332,7 +338,8 @@ export function mountReplay(
       add(attr, n.indices, finishColour(n.finish, p.theme, THEMES.dark.colors.floor as string), false, 1, true);
     } else if (key === "wall") {
       // A standing wall: its faces at full height (its cut top, the triangles whose three corners
-      // all lie there) drawn apart in the cap colour, edgeless (the body's outline already rims it).
+      // all lie there) drawn apart in the cap colour. Both are edgeless: the wall's outline is
+      // `outlines`' (it rims the cap too).
       // The same division as `topY`'s, so the comparison is exact.
       const atTop = (v: number) => (n.positions[v * 3 + 1] as number) / 1000 === topY;
       const cap: number[] = [];
@@ -341,12 +348,35 @@ export function mountReplay(
         const tri = n.indices.slice(i, i + 3);
         (tri.every(atTop) ? cap : body).push(...tri);
       }
-      add(attr, body, theme.colors.wall ?? furniture, false, 1, true);
+      add(attr, body, theme.colors.wall ?? furniture, false, 1, true, outline === undefined);
       if (cap.length) add(attr, cap, theme.cap, false, 1, true, false);
     } else {
-      // Every other node exactly as before the slots (normals computed, though never read).
+      // Every other node exactly as before the slots (normals computed, though never read); a
+      // column's outline is `outlines`'.
       const glass = key === "window:glass";
-      add(attr, n.indices, theme.colors[key] ?? furniture, glass, glass ? KIND_PALETTE["window:glass"].alpha : 1, true);
+      add(
+        attr,
+        n.indices,
+        theme.colors[key] ?? furniture,
+        glass,
+        glass ? KIND_PALETTE["window:glass"].alpha : 1,
+        true,
+        outline === undefined,
+      );
+    }
+    if (outline && outline.length > 0) {
+      // In the node's own frame, as its faces are (`pos`): the same divisions, the same base.
+      const at = new Float32Array(outline.length);
+      for (let i = 0; i < outline.length; i += 3) {
+        at[i] = (outline[i] as number) / 1000;
+        at[i + 1] = (outline[i + 1] as number) / 1000 - base;
+        at[i + 2] = (outline[i + 2] as number) / 1000;
+      }
+      const geo = new BufferGeometry();
+      geo.setAttribute("position", new BufferAttribute(at, 3));
+      const line = new LineBasicMaterial({ color: new Color(theme.edge) });
+      owned.push(geo, line);
+      g.add(new LineSegments(geo, line));
     }
     g.visible = false;
     scene.add(g);

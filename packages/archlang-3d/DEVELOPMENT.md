@@ -50,7 +50,9 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   storeys rise exploded and settle to their real heights by the end),
   `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js 0.186.1,
   `mountReplay(canvas, payload)` → `seek`/`frameHash`; with `interactive: true` the free camera,
-  three.js's `OrbitControls`, → `view`), `camera.ts` (the end camera and the stops, and the free
+  three.js's `OrbitControls`, → `view`), `wall-lines.ts` (the walls' and columns' outlines, worked
+  out across each storey so a seam between two flat pieces draws no line; pure, browser-safe; every
+  other node keeps three.js's `EdgesGeometry`), `camera.ts` (the end camera and the stops, and the free
   camera's presets and limits, `presetCamera`, all pure), `view-dom.ts` (the presets', Reset's and
   the storeys' buttons, `viewToolbar`), `viewer.ts` (the HTML's host:
   `__seek`/`__frameHash`), `viewer-bundle.ts` (`viewer.ts` plus three.js as one script), `html.ts`
