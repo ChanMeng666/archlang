@@ -21,6 +21,8 @@ growth 路径缩写（与报告 B 一致）：
 
 频次是研究者对约 31 个外联线程（偏 X）的判断，主题有重叠；一个用户不是 traction。
 
+§A–§F 是 v1（2026-11-06）的对照，原样保留；v2（2026-11-10）新增的说法在 §G。
+
 ---
 
 ## §A 用户诉求 → 卡片
@@ -216,3 +218,123 @@ README 退出条件（"每条诉求都能指向一张 `done` 卡、一条等待�
 | RM1.5b | 低 | 无人问，等所有者 M.9 |
 | RM3.3 | 诉求高 / 导入器低 | 读图是最高频诉求（~12+2）；触发门控，只有一个沉默的线索（CX2：需第二个带样本的来源） |
 | RM7.1 | 低 | 无外部点名；属原则 6 与铁律"shape, never bbox" |
+
+---
+
+## §G v2 的证据对照（2026-11-10）
+
+v2 的说法出自六份只读报告（A 专业化包与影响力审计、B 竞品、C 需求与战略、D 仓库计划状态、E issue 与采用、F 红队，2026-11-10）。报告本体不进本仓库，将归档在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\`；本节只保留它们引用的一手出处。报告是二手的：下列 growth 路径 2026-11-10 逐条 `Test-Path` 核过，全部存在；本仓库路径、id 与 issue/PR 号逐条 grep 或 `gh` 查过。核对中发现的与报告或规格不符之处列在 §G.6。
+
+growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
+
+| 缩写 | 路径 |
+|---|---|
+| P10 | `research/2026-11-10-archlang-professionalisation-and-use-case-expansion/`（`README.md`、`professionalisation-roadmap.md`、`current-capability-audit.md`、`codes-rules-catalog.json`、`building-codes-and-standards.md`、`drawing-and-data-standards.md`、`use-case-expansion.md`、`handoff.md`、`spikes/`） |
+| IA | `research/2026-11-10-influence-audit/README.md`（另 `listings.csv`、`TODO-submissions.md`） |
+| DEC10 | `strategy/decisions/2026-11-10-rule-provenance-and-resolved-walls-precede-ifc.md` |
+| RUL | `strategy/decisions/2026-11-06-archlang-roadmap-rulings.md`（RM-D1、RM-D2、RM-D7） |
+| ARD | `strategy/decisions/2026-10-13-agent-reach-decisions.md`（决策 5：Show HN 日期；决策 6：读数门槛） |
+| CC | `research/2026-11-10-competitor-cycle-handoff/`（`analysis.md`、`owner-decisions-pending.md`） |
+| CW | `research/2026-11-10-competitor-watch-deltas/README.md` |
+| MA10 | `research/2026-11-10-discovery-session-MODE-A/README.md` |
+| OL9 / OL10 | `research/2026-11-09-outreach-session-log.md` / `research/2026-11-10-outreach-session-log.md` |
+| AR | `data/agent-reach.csv` |
+| CMP | `data/competitors.json` |
+| CAMP | `data/community-campaigns.json` |
+| SHN | `marketing/launches/show-hn/`（`draft.md`、`anticipated-comments.md`）；`marketing/launches/runbook-2026-09.md` |
+| XRC | `research/cross-report-corrections.md` |
+| DD、N4、N5 | 同本文开头的表 |
+
+### G.1 §1.1b 的事实
+
+| # | 说法 | 一手出处 |
+|---|---|---|
+| 1a | `gerontec/archlang-section` 用 `describe --json` 画剖面；作者同意列入 docs | #532 正文与 2026-11-06 的评论（"Rudimentary building sections (Schnitte)…"）；IA §1 的使用表；作者另有 PR #533（已合并） |
+| 1b | `harshalsankala18-stack/AI-Building-Floor-Planner-SaaS` 把核心包当编译器，尚无对话 | IA §1 第 5 条与使用表（"created 2026-11-10; code-level dependency"） |
+| 1c | 工程量 POC 的意向（已 fork，样本未到） | IA §1 第 6 条（@SiddarthaDevops）；OL9 |
+| 1d | 外联里回复的都是工具作者 | OL9 "Which angles got answers"；N4 `README.md` §5 |
+| 1e | gerontec 与 bobsch-io 是否同一人未证实 | 本仓库 v1 `README.md` §5；无反证 |
+| 2a | `walls from rooms` 的墙在机读输出里没有坐标；IFC 探针 `two-bed.arch` 0 面墙 | P10 `spikes/ifc_spike_result.json`；DEC10 Context；本仓库 `src/ir/types.ts`（`DerivedWallRow`）、`src/plan-json/types.ts`；#681 |
+| 2b | 出处主要在 `src/lint/ruleset.ts` 注释与 `explain` 散文；少数默认下限的 hint 带条文；`DiagnosticJson` 无规则字段 | P10 `README.md` Top findings；本仓库 `src/lint/ruleset.ts`、`src/lint/rules/per-room.ts`、`src/diagnostic-json.ts`；#680 |
+| 2c | 没有 `lint --rules` | `docs/cli-reference.md`（无该旗标）；#680 |
+| 2d | 没有楼板 datum | #544；`../math-foundations/README.md` §6.1（MF-D1） |
+| 2e | DXF 不写线宽 | `src/export/dxf.ts`（无组码 370）；#682；P10 `drawing-and-data-standards.md` §2 |
+| 3 | 7 个实测工具里 2 个硬拒；brief 单层 12×8 | CC `analysis.md` 第一张表（BIMCraft、3D New Era AI 硬拒；Lini、Aedifex 等放行）；ArchLang 侧：`docs/error-codes.md`（`E_DOOR_WIDTH`、`E_WALL_THICKNESS`、`E_ROOM_SIZE`；`W_DOOR_OFF_WALL`、`W_OPENING_OFF_WALL`） |
+| 4a | BIMCraft、debim、Aedifex、ifc-lite 导出 IFC4 | CC `analysis.md`；CMP 的对应行 |
+| 4b | 2026-11-10 新入库 20 个同类工具（观察，不是计数） | MA10（"20 new entities … 68 → 88 entries"）；CMP |
+| 4c | 所有者 2026-11-03 不承诺 IFC | DD（2026-11-03 附记） |
+| 5 | 规则目录至少四处与仓库不符 | P10 `codes-rules-catalog.json`（目录本身）对照本仓库 `src/lint/ruleset.ts`（1219 mm 门扇注释写明 IBC 2018 及更早；WC 1.1 m²、卫浴 2.0 m² 在 `DEFAULT_RULESET`；cn 套内楼梯 200/220）；P10 `spikes/rules_screen_spike.py`（玻璃高度缺省 900/2100）。勘误将记入 XRC（RM1.6a） |
+
+### G.2 §1.1c 的排序
+
+| 说法 | 一手出处 |
+|---|---|
+| 按独立人数：读图 12–14、其实错 12–13、3D 下游约 10、导出约 10 | N4 `README.md` §2–§3（11-04 的线程计数）加 OL9 §3、§6 与 OL10 的新增（计数方法是报告 C 的推断） |
+| Daniel 用 1.53 重画 28 张平面、9 个 issue | DD 第 4、6 条与 2026-11-03 私信段（"So glad 1.53 worked for your 28 plans"）；本仓库 #362–#370 |
+| Daniel：非直跑楼梯、IFC、代理不知道能力 | DD 第 4 条（"agent not fully knowing archlang's capabilities"）、第 6 条（"transform it to IFC"）；#362 |
+| Daniel 明说未做的项 | #364、#367、#369、#362、#405 的 issue 正文与评论 |
+| gerontec：楼板 datum 与剖切线 | #532、#544 |
+| Dhruv：规则出处、退界与容积率 | N5 `dhruv-kapri-bylaw-engine-insight.md`；OL9 "Rules and provenance" |
+
+### G.3 新卡与改动的卡
+
+| 卡 | 一手出处 |
+|---|---|
+| RM0.3 发布 1.58.0 | 本仓库 `CHANGELOG.md` `[Unreleased]`（`winders`、`--import-root`、import 限根、`#z=` 解压上限、`arch impact` 退出 2）；`git rev-list --count v1.57.0..main` = 529；`git diff --stat v1.57.0 main -- packages/mcp`（8 个文件）、`-- editors/vscode`（6 个文件）；`packages/mcp/server.json`（0.2.40，两处）；`.claude/commands/release-check.md`；`.github/workflows/nightly.yml`（`Deep fuzz (FC_SCALE=10)`）；#497、#664、#648；`docs/whats-new.md` 标题 "What's new in 1.44 to 1.55" |
+| RM0.1 扩大 | `../drawing-set/cards.md`（DS0、DS1、DS2 仍 `todo`；#451、#480、#482、#483 已合并）；`../plan-soundness/cards.md`（PS0.16、PS0.20、PS0.21）；`docs/backlog.md`（U.4、U.7 仍 `decision`；O.10；5.2 对照 #493；H.1 对照 `test/lint-messages-id-free.test.ts`；V.5、V.6、6.7）；`../archlang-3d/amendment-v0.7.md`（"Proposed"）；`../plan-soundness/handoff.md`（29,977 / 23）对照 `spec.llm.md` 实测 29,856；#618（`src/ir.ts` 拆分，CRF13） |
+| RM0.4 欠外部的跟进 | #532、#533、#544（gerontec 的同意与承诺"I will post here when the section-line card has a PR"）；#405（L 形洞口栏杆由 #493 在 1.55.0 交付，issue 未更新）；#362–#370 |
+| RM0.5 依赖与悬空状态 | #603、#604、#675、#676、#677、#678；`docs/agents/iron-laws.md` 的 Dependabot 规则；`origin/ChanMeng666-patch-1` |
+| RM0.2 加三项 | #683；`examples/studio.arch` 第 3–5 行；`src/cli/commands-analyze.ts` 的 `--strict` 说明（警告计入失败）；`src/lint/ruleset.ts`（`LINT_PROFILES`） |
+| RM5.1 加两行 | `docs/from-an-image.md`、`docs/edit-one-room.md`；C §G.6 的建议（出处 N4 S1、OL9 §6） |
+| RM1.6a | #680；DEC10 决定 1；P10 `professionalisation-roadmap.md` P0-A；`src/index.ts:358`（`DEFAULT_RULESET`、`LINT_PROFILES` 公开导出）；`src/lint/ruleset.ts`（`[V]`/`[S]`/`[M]` 注释、`wallGapMm` 无文献）；`../drawing-set/README.md` D13；XRC |
+| RM1.6b | #680；`src/diagnostic-json.ts:67`（`diagnosticToJson(source, d)`）；`test/lint-summary.test.ts`；`test/helpers/byte-identity-payload.ts`（`JSON.stringify(api.lint(...))`）；`src/lint/ruleset.ts:261`（`minDoubleBedroomAreaM2`）；`src/lint/rules/per-room.ts`（同一码多键） |
+| PS7.9 目标 | `spec.llm.md` 29,856 UTF-16 单位；`test/llm-spec-drift.test.ts`（`< 30_000`）；`../plan-soundness/cards.md`（PS7.9） |
+| RM1.1a / RM1.1b 改记录处 | `../plan-soundness/handoff.md` §4（现有表）；本计划 `handoff.md` 的测量表 |
+| RM5.3 一条 URL 的代理入门 | B §F4 引 CC 与 CMP 的 Cogram、Lini 条目（"skill.md 零账号上手"）；本仓库 `skills/archlang/SKILL.md`、`llms-install.md` |
+| RM1.8 | #684；P10 `building-codes-and-standards.md`；`src/lint/ruleset.ts`（两个数在 `DEFAULT_RULESET`） |
+| CR11a / CR11b | `../checker-reach/README.md` §3 CR11；F §S5（schema 先于政策）；`GOVERNANCE.md` |
+| CR10 加跨辖区一列 | P10 `professionalisation-roadmap.md` P0-B；`src/lint/ruleset.ts`（`us-residential-advisory` 的 handouts 注释）；`../drawing-set/README.md` D13 |
+| RM3.1 拆半 | v1 `cards.md` RM3.1；`../plan-soundness/cards.md` PS0.18；`../preview-and-remodel/cards.md` J16；RM-D10 |
+| RM4.3 | #682；DEC10 决定 1（独立的导出项）；`src/export/dxf.ts`；`docs/backlog.md` D.7 |
+| CRF1 → RM7.2 | #681；DEC10 决定 1 与规模门（"more than about 500 lines of `src/`"）；`../checker-reach/README.md` CRF1；`src/elements/walls-from-rooms.ts`（`_derivedWalls`）；`src/describe.ts`（`DESCRIBE_FACTS`）；`src/analyze/quantities.ts`；`test/helpers/byte-identity-payload.ts`（`engineProbeParts`）；`docs/agents/iron-laws.md:121-122`（不为 `describe()` 构建墙体接合） |
+| RM1.2b 加可开启值 | P10 `professionalisation-roadmap.md` P1-F；`docs/agents/iron-laws.md:14`（T6）；`src/lint/ruleset.ts`（`DEFERRED_PROFILE_NUMBERS`）；`../plan-soundness/cards.md` PS2.16 |
+| MF1 → RM1.7 | P10 `professionalisation-roadmap.md` P1-E；`src/finish.ts:287`、`:317`（`STRICTER_PROFILES`）；`../engineering-health/closing-audit.md` §1（06-F3）；`../math-foundations/cards.md` MF1 |
+| RM7.3 读数自检 | AR（11-09 行：1,451 次，按工具拆分，无来源拆分）；RUL（RM-D2 的四项与窗口）；ARD 决策 6；IA §1 |
+| RM4.4 | #362、#364、#367、#369、#405 |
+| RM6.1 时间不变 | `../math-foundations/README.md:307`（"排期不变"）；#544 |
+
+### G.4 §4 新增的九行"不做"
+
+| 行 | 一手出处 |
+|---|---|
+| 墙上的结构标签 | P10 `professionalisation-roadmap.md` P2-B；`docs/agents/iron-laws.md:75`（D25） |
+| 按窗种猜可开启比例 | P10 P1-F（"per-kind defaults"）；ADR 0005、ADR 0027 |
+| 拼接后的墙几何进默认输出 | #681 正文；`docs/agents/iron-laws.md:121-122` |
+| 建筑标志（挂起） | P10 P1-B；v1 `README.md` §6 RM-D5 |
+| Wi-Fi、电气、通风、室内地图导出 | P10 `use-case-expansion.md`（"Recommended top 4 (plus one conditional)"，电气的 Floorcraft 门） |
+| IFC 保证措辞、IDS | P10 P1-G；DD（2026-11-03） |
+| `--layers iso13567` | P10 P1-C；P10 `drawing-and-data-standards.md` §1 |
+| ResPlan 指标报告、benchmark | P10 P2-E；`DEC/2026-11-04-positioning-proposals-and-competitor-registry.md` A2 |
+| PyPI、付费目录、中文社区推广 | IA `listings.csv`（GAP-PYPI 行）与 IA `TODO-submissions.md`（付费目录）；CAMP（"Excluded by owner policy of 2026-10-22: no V2EX, Zhihu or Xiaohongshu marketing"） |
+
+### G.5 §5 新增的信号
+
+| 信号 | 一手出处 |
+|---|---|
+| Show HN 评论要剖面 | v1 `README.md` §5 第 1 行（既有规则） |
+| 读数三项自检 | AR；RUL；ARD 决策 6 |
+| `compile` 多于 `validate` + `lint` | AR（11-02：validate 114、compile 88；11-09：compile 430、validate 362、lint 311）；RUL（RM-D1 的证伪条件） |
+| `--facts walls` 八周无读者 | DEC10（IFC 的前置）；原则 9 |
+| Daniel 答复或下一批 issue | DD（11-03、11-06 私信段） |
+| 第三个外部仓库 | IA §1；RUL（RM-D2 信号 1） |
+| MF-D11 未裁 | `../math-foundations/README.md`（MF-D11 行） |
+| 批次 C′ 12-09 前三张未合 | 本计划排期（推断，无外部出处） |
+
+### G.6 核对中改正的说法
+
+- XRC 是 growth `research/cross-report-corrections.md` 一个文件（`research/README.md` 只链接它），RM1.6a 写的是这个文件。
+- Show HN 的 runbook 在 `marketing/launches/runbook-2026-09.md`，不在 `marketing/launches/show-hn/` 下。
+- MP7 不在 `docs/backlog.md`，仍记在 `../playground-mobile-perf/README.md` §5（deferred）。
+- 外联日志里"退界、FAR、分区的范围裁定 open"一行在 OL9 第 123 行；RM-D5 已于 2026-11-06 裁过（v1 `README.md` §6）。更正记为 growth 待办（`handoff.md`）。
+- RM-D2 的读数窗口是截至 2027-01-28 的四周；11-09 那周不在窗口里（RUL）。
+- 11-10 晚一次定时 nightly（run 42801157907）已开始，2026-11-10 写本文时结果未出；#664 之后还没有一次完成的 nightly。
