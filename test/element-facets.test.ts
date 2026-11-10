@@ -6,7 +6,7 @@
  * or held to it here (`VERTICAL_KINDS`, `STYLE_KEYS`, `DROPPED_WORDS`, `KEYWORDS.element`). Both
  * sides are derived: the kinds come from `BUILTIN_DEFS`, the members from the sets themselves. A
  * new kind fails here, naming the file and the kind, until its row is written. The checklist of
- * every place a kind registers is `docs/agents/new-element.md`.
+ * every place a kind registers is `.claude/commands/new-element.md`.
  */
 
 import { describe, expect, it } from "vitest";

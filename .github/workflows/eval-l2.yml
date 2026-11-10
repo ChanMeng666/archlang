@@ -66,7 +66,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts && npm rebuild esbuild
 
       - name: Warn when the API key secret is missing
         if: ${{ env.OPENAI_API_KEY == '' }}
