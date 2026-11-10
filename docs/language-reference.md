@@ -621,7 +621,7 @@ derives from it — so nudging a wing is one edit, not N.
 
 **Plan JSON.** A placed plan is exported *flattened*: every instance row sits in
 `rooms`/`walls`/`openings`/`furniture` under its dotted id, in plan coordinates, and such a
-payload does not round-trip (the dotted ids are `E_DOTTED_DECL` on the way back). The one
+payload does not round-trip (the dotted ids are a pathed `E_JSON_SCHEMA` on the way back). The one
 exception is a storey where a placed component derives its walls with `walls from rooms`:
 only there does the payload gain `components` (each component's body, in its own frame and
 names, with the statement as written) and `instances` (`name`, `component`, `at`, `rotate`,

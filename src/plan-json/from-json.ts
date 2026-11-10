@@ -658,7 +658,8 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   if (f.category === undefined) val.err(`${path}/category`, "expected a fixture category");
   else reqWord(f.category, `${path}/category`, "a fixture category", val);
   // A reflected dotted piece is refused below with its own, more specific `E_JSON_MIRROR`.
-  if (f.mirror === true && isStr(f.id) && f.id.includes(".")) reqWord(f.id, `${path}/id`, "a fixture id", val, true);
+  const reflectedFlattened = f.mirror === true && isStr(f.id) && f.id.includes(".");
+  if (reflectedFlattened) reqWord(f.id, `${path}/id`, "a fixture id", val, true);
   else declId(f.id, `${path}/id`, "a fixture id", val);
   reqWord(f.room, `${path}/room`, "a room id", val);
   reqWord(f.against_wall, `${path}/against_wall`, "a wall id or category", val);
@@ -691,7 +692,7 @@ function validateFurniture(f: unknown, path: string, val: Validator): void {
   // piece flattened out of a `place`: source cannot declare it, and only that `place` states the
   // reflection, so it is refused here with its door's code rather than reach the parser.
   if (f.mirror !== undefined && typeof f.mirror !== "boolean") val.err(`${path}/mirror`, "expected a boolean");
-  if (f.mirror === true && isStr(f.id) && f.id.includes("."))
+  if (reflectedFlattened)
     val.push({
       severity: "error",
       message: `plan JSON ${path}/mirror: a fixture reflected by a \`place\` frame cannot be written as source — "${f.id}" is an instance's piece, flattened, and only its \`place … mirror x|y\` states the reflection`,

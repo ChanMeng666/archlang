@@ -344,6 +344,13 @@ describe("malformed Plan JSON", () => {
     expect(errors.map((d) => d.code)).toEqual(["E_JSON_SCHEMA"]);
     expect(errors[0]?.message).toMatch(/^plan JSON \/furniture\/0\/id: /);
     expect(r.source).toBeUndefined();
+
+    // A reflected dotted piece keeps its more specific door's code, and only that one.
+    const mirrored = stringBase();
+    mirrored.furniture[0].id = "a.A";
+    mirrored.furniture[0].mirror = true;
+    const m = planFromJson(mirrored).diagnostics.filter((d) => d.severity === "error");
+    expect(m.map((d) => d.code)).toEqual(["E_JSON_MIRROR"]);
   });
 
   it(`law (e): a hostile string in any string field is refused or round-trips (seed ${STRING_SEED}, ${STRING_RUNS} runs)`, () => {

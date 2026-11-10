@@ -675,6 +675,7 @@ describe("plan-json — G.10: a frame's reflection is projected", () => {
     expect(own.source).toContain("size 1400x700 mirror");
     // `mirror: false` is the absent key spelled out, and prints nothing.
     const spelled = planJsonToArch({ ...written(""), furniture: [{ ...a, id: "d", mirror: false }] });
+    expect(spelled.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
     expect(spelled.source).not.toContain("mirror");
   });
 
