@@ -3,6 +3,9 @@
 /** The hash param that opens the playground in edit mode, as `#z=<payload>&edit`. */
 export declare const PLAYGROUND_EDIT_FLAG: "edit";
 
+/** The default cap on the inflated size of a payload, 1 MiB: what {@link decodePlanHashWeb} allows without `maxBytes`. */
+export declare const SHARE_INFLATE_CAP_BYTES: 1048576;
+
 /** Why a payload was refused, before any plan is read. */
 export type PayloadFault = "bad_payload" | "source_too_large";
 
@@ -24,6 +27,7 @@ export type DecodedPlanHash = { ok: true; source: string } | { ok: false; code: 
 /**
  * Decode a `#z=` payload back to plan source with `DecompressionStream` (no Node built-ins), on
  * {@link inflateCapped}. A refusal is a returned `{ ok: false, code }`, never a throw on a
- * supported runtime (one with `DecompressionStream`).
+ * supported runtime (one with `DecompressionStream`). `opts.maxBytes` defaults to
+ * {@link SHARE_INFLATE_CAP_BYTES} (1 MiB); pass a larger value to open a bigger plan.
  */
 export declare function decodePlanHashWeb(hash: string, opts?: { maxBytes?: number }): Promise<DecodedPlanHash>;
