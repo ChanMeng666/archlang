@@ -16,11 +16,11 @@
  * This module keeps the options, `describe`/`describeLevel`/`summarize` and the helpers they
  * share; the summary's types live in `describe/types.ts`, room adjacency in
  * `describe/adjacency.ts`, the vertical facts in `describe/verticals.ts` and the diff fabric in
- * `describe/fabric.ts`. Every name that moved is re-exported from here. Nothing here charges the
- * step meter; the resolve it calls does.
+ * `describe/fabric.ts`; the per-kind lists (rooms, doors/windows/openings, furniture) are built in
+ * `describe/rooms.ts`, `openings.ts`, `furniture.ts`. Every name that moved is re-exported from here.
+ * Nothing here charges the step meter; the resolve it calls does.
  */
 
-import { relationText } from "./opening-relation.js";
 import type {
   ResolvedPlan,
   RRoom,
@@ -37,9 +37,9 @@ import type {
   OpeningPlacement,
 } from "./ir.js";
 import type { PlanNode, Point } from "./ast.js";
-import { polygonArea, polygonBounds, rectRing } from "./geometry/polygon.js";
+import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { voidPieces } from "./elements/void.js";
-import { memoRoomNetAreaMm2, storeyNetAreaBands } from "./analyze/net-area-memo.js";
+import { storeyNetAreaBands } from "./analyze/net-area-memo.js";
 import { grossInternalArea } from "./analyze/gross-area.js";
 import { openShells } from "./analyze/open-shell.js";
 import { WALL_STATUSES, type WallStatus } from "./grammar/tokens.js";
@@ -48,12 +48,7 @@ import {
   resolvePlan,
   rectOf,
   pointInRoomBox,
-  roomAreaMm2,
   roomBox,
-  roomsAtPoint,
-  arcWindowRoom,
-  connectorConnection,
-  roomUses,
   buildDoorAccessGraph,
   DEFAULT_TOL,
   type AnalyzeOptions,
@@ -66,12 +61,12 @@ import { symmetryFacts } from "./analyze/symmetry.js";
 import { syntaxFacts } from "./analyze/syntax.js";
 import { dependsFacts, indexStatements, type StatementIndex } from "./analyze/depends.js";
 import { keepFacts } from "./analyze/keep-facts.js";
-import { roomTypeForUses, buildInputGraph } from "./plan-json.js";
+import { buildInputGraph } from "./plan-json.js";
 import { roomSchedule } from "./sheet-tables.js";
 // The page→compass conversion and the `site` derivation live in ONE module: the site
 // layer's lint rule asks the same question of the same windows, and a second place to
 // apply the north rotation is a second place to get it wrong.
-import { deriveSite, planCenterOfRooms, type SiteFacts, toCompass, windowFacingPage } from "./site.js";
+import { deriveSite, planCenterOfRooms, type SiteFacts } from "./site.js";
 import {
   type ArrivingRun,
   isBlockStair,
@@ -80,11 +75,10 @@ import {
   type VerticalKind,
   verticalsOf,
 } from "./vertical.js";
-import { fmt2, fmt3 } from "./num-format.js";
+import { fmt2 } from "./num-format.js";
 import { keepSummary } from "./keep.js";
 import { drawnView, keepResultsOf } from "./ir.js";
 import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
-import { type ClearWorld, clearWorldOf, measureClear } from "./furniture-relation.js";
 import { clearanceFacts } from "./lint/clearance-facts.js";
 import { openRunsOf } from "./analyze.js";
 import { quantityFacts } from "./analyze/quantities.js";
@@ -95,7 +89,6 @@ import type {
   OpeningSummary,
   WallStatusFacts,
   FurnitureSummary,
-  ClearFact,
   VerticalSummary,
   VoidSummary,
   OutdoorSummary,
@@ -108,6 +101,10 @@ import type {
   SceneSummary,
 } from "./describe/types.js";
 import { roomAdjacency } from "./describe/adjacency.js";
+import { roomSummaries } from "./describe/rooms.js";
+import { doorSummaries, openingSummaries, windowSummaries } from "./describe/openings.js";
+import { furnitureSummaries } from "./describe/furniture.js";
+import { r2 } from "./describe/shared.js";
 import { blockStairFacts, buildVerticalReport } from "./describe/verticals.js";
 import type { DiffFabric } from "./describe/fabric.js";
 import { diffFabricOf } from "./describe/fabric.js";
@@ -283,9 +280,6 @@ function lotFacts(ring: readonly Point[] | undefined): Pick<SiteFacts, "lot_area
   };
 }
 
-/** Round to 2 decimals, deterministically (avoids float drift in output). */
-const r2 = (n: number): number => Math.round(n * 100) / 100;
-
 /** Compass north as page quarter-turns — D4 arithmetic, so it lives in `src/algebra/d4.ts`;
  *  re-exported here, its historical home, where `lint` and the tests import it from. */
 export { northQuarterTurns };
@@ -432,23 +426,10 @@ function buildFreedom(
   return f;
 }
 
-function instanceOf(e: { _instance?: string; _component?: string }): { instance?: string; component?: string } {
-  return e._instance === undefined ? {} : { instance: e._instance, component: e._component };
-}
-
-/** Spreadable {@link DoorSummary.centreline_at}: the resolved point of an opening placed `between`. */
-function centrelineAt(o: RDoor | ROpening): { centreline_at?: Point } {
-  return o._relation?.between ? { centreline_at: { x: Number(fmt3(o.at.x)), y: Number(fmt3(o.at.y)) } } : {};
-}
-
 /** Spreadable instance stamp for a {@link FreedomElement}. */
 function inst(instance: string | undefined): { instance?: string } {
   return instance === undefined ? {} : { instance };
 }
-
-/** A room's `net_area_m2` key: the rounded figure, or no key at all when it is omitted. */
-const netField = (mm2: number | undefined): { net_area_m2?: number } =>
-  mm2 === undefined ? {} : { net_area_m2: r2(mm2 / 1_000_000) };
 
 /** Build the summary from a fully resolved plan. */
 function summarize(
@@ -495,30 +476,7 @@ function summarize(
   // The storey's wall bands, once: every room's net area reads them.
   const bands = storeyNetAreaBands(ir.walls);
 
-  const rooms: RoomSummary[] = roomEls.map((r, i) => {
-    const rect = roomRects.get(r.id)!;
-    const adjacent = adjacency[i]!;
-    const uses = roomUses(r);
-    return {
-      id: r.id,
-      ...(r.label !== undefined ? { label: r.label } : {}),
-      uses: [...uses],
-      room_type: roomTypeForUses(uses),
-      area_m2: r2(roomAreaMm2(r) / 1_000_000),
-      ...netField(memoRoomNetAreaMm2(r, bands)),
-      // `bbox` stays a plain {x,y,w,h} — never the RoomBox, whose `poly` would leak a
-      // fifth key into the JSON. A polygon room's true floor is `floor_polygon`.
-      bbox: { x: rect.x, y: rect.y, w: rect.w, h: rect.h },
-      // A CIRCULAR room reports its exact centre + radius (append-only) INSTEAD of a
-      // 48-vertex ring: the tessellation is an implementation detail of the grid layer,
-      // and dumping it would bloat an agent's context with numbers that are not the
-      // truth about the floor. `area_m2` above is πR², exact.
-      ...(r.circle ? { floor_circle: { cx: r.circle.c.x, cy: r.circle.c.y, r: r.circle.r } } : {}),
-      floor_polygon: r.circle ? [] : r.poly ? r.poly.map((p) => ({ x: p.x, y: p.y })) : rectRing(rect),
-      adjacent,
-      ...instanceOf(r),
-    };
-  });
+  const rooms: RoomSummary[] = roomSummaries(roomEls, roomRects, adjacency, bands);
 
   // Which rooms' perimeters does this opening sit on? (≤2 for a door, 1 for a window.)
   // Shared with the lint connectivity rules — see analyze.ts.
@@ -531,20 +489,7 @@ function summarize(
   // The walls' remodel status (B3a): a per-storey block, absent unless a wall here writes one.
   const wallStatus = wallStatusFacts(ir);
 
-  const doors: DoorSummary[] = doorEls.map((d) => {
-    const { between, straddles } = connectorConnection(d, roomRects, tol);
-    return {
-      id: d.id,
-      ...(d._instance !== undefined ? { instance: d._instance } : {}),
-      between,
-      ...(straddles ? { straddles } : {}),
-      width: d.width,
-      ...(d._relation ? { relation: relationText(d._relation) } : {}),
-      ...(d.doorKind !== undefined ? { kind: d.doorKind } : {}),
-      ...(heights ? { head: d.head } : {}),
-      ...centrelineAt(d),
-    };
-  });
+  const doors: DoorSummary[] = doorSummaries(doorEls, roomRects, tol, heights);
 
   // Plan centre (bounding-box midpoint of the union of room rectangles). Its ONLY reader
   // is `windowFacingPage`, and only as the stated tie-break for when the outward-face
@@ -565,60 +510,11 @@ function summarize(
     if (segsMemo === null) segsMemo = ir.walls.flatMap((x) => segmentsOfWall(x));
     return segsMemo;
   };
-  const windows: WindowSummary[] = windowEls.map((w) => {
-    const touching = roomsAtPoint(w.at, roomRects, tol);
-    const edgeRoom = touching[0] ?? null;
-    // A window on an arc edge no room touches is attributed from the shape (`windowRoom`'s rule
-    // in analyze.ts, PS0.12). Its facing is asked exactly as before, of the edge room only.
-    const room =
-      edgeRoom ??
-      (w.host?.arc ? arcWindowRoom({ at: w.at, width: w.width, host: w.host }, roomRects, tol, segs()) : null);
-    const box = edgeRoom ? (roomRects.get(edgeRoom) ?? null) : null;
-    // A POLYGON/CIRCLE room has no four sides to pick the nearest of, and its bounding box
-    // would answer for an edge the window is not on — `windowFacingPage` drops it and falls
-    // through to the outward-face probe, which is exact at any wall angle and reads the
-    // ring, not the box.
-    const facingPage = windowFacingPage(w.at, box, w.host, planCenter, roomRects);
-    return {
-      id: w.id,
-      room,
-      width: w.width,
-      ...(w._relation ? { relation: relationText(w._relation) } : {}),
-      ...(w.windowKind !== undefined ? { kind: w.windowKind } : {}),
-      ...(w._corner?.with !== undefined ? { corner_with: w._corner.with } : {}),
-      facing: toCompass(facingPage, northTurns),
-      ...(northTurns !== 0 ? { facingPage } : {}),
-      ...(heights ? { sill: w.sill, head: w.head } : {}),
-    };
-  });
+  const windows: WindowSummary[] = windowSummaries(windowEls, roomRects, tol, heights, planCenter, northTurns, segs);
 
-  const openings: OpeningSummary[] = openingEls.map((o) => {
-    const { between, straddles } = connectorConnection(o, roomRects, tol);
-    return {
-      id: o.id,
-      between,
-      ...(straddles ? { straddles } : {}),
-      width: o.width,
-      ...(o._relation ? { relation: relationText(o._relation) } : {}),
-      ...(heights ? { head: o.head } : {}),
-      ...centrelineAt(o),
-    };
-  });
+  const openings: OpeningSummary[] = openingSummaries(openingEls, roomRects, tol, heights);
 
-  // The `clear` measure's obstacle world, built only when a piece declares a zone, so a plan
-  // without one does no new work.
-  const clearWorld = furnEls.some((f) => f._clear) ? clearWorldOf(furnEls, ir.walls, doorEls) : undefined;
-  const furniture: FurnitureSummary[] = furnEls.map((f) => ({
-    id: f.id,
-    category: f.category,
-    ...(f.label !== undefined ? { label: f.label } : {}),
-    ...(f.room !== undefined ? { room: f.room } : {}),
-    ...(f.rotate ? { rotate: f.rotate } : {}),
-    ...instanceOf(f),
-    ...(f._relation !== undefined ? { relation: f._relation } : {}),
-    ...(f._facing !== undefined ? { facing: f._facing } : {}),
-    ...(f._clear && clearWorld ? { clear: clearFacts(f, f._clear, clearWorld) } : {}),
-  }));
+  const furniture: FurnitureSummary[] = furnitureSummaries(furnEls, ir.walls, doorEls);
 
   const verticals: VerticalSummary[] = verticalEls.map((v) => ({
     id: v.id,
@@ -1122,19 +1018,5 @@ export function describeLevel(summary: SceneSummary, level: number): SceneSummar
   for (const k of PER_STOREY_OPTIONAL_KEYS) {
     if (facts[k] === undefined) delete out[k];
   }
-  return out;
-}
-
-/** The declared clear zones of one piece, each with its measured free depth (ADR 0029 §4). */
-function clearFacts(
-  f: RFurniture,
-  c: { front?: number; sides?: number },
-  world: ClearWorld,
-): { front?: ClearFact; sides?: ClearFact } {
-  const out: { front?: ClearFact; sides?: ClearFact } = {};
-  if (c.front !== undefined)
-    out.front = { declared: c.front, measured: measureClear(f, "front", c.front, world).measured };
-  if (c.sides !== undefined)
-    out.sides = { declared: c.sides, measured: measureClear(f, "sides", c.sides, world).measured };
   return out;
 }

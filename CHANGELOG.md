@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- `describe()`'s `summarize` is split per kind (`src/describe/rooms.ts`, `openings.ts`, `furniture.ts`); output byte-identical.
 - `core-no-3d` and the projector-leaf test share an AST import walk (`test/helpers/imports.ts`); `check:quick` derives its workspace list from `package.json`.
 - `decodePlanHashWeb` (the `archlang/share` subpath) refuses a payload that inflates past 1 MiB unless the caller passes a larger `maxBytes`; `SHARE_INFLATE_CAP_BYTES` is exported. The Node `decodePlanHash` (`@chanmeng666/archlang/link`, from `src/cli/share-codec.mjs`) had no cap either and now throws a `RangeError` past the same 1 MiB by default (`opts.maxBytes` raises it).
 - `test/font-cjk-pins.test.ts` pins the CJK font package's version and pins on every PR (was release-time only).
