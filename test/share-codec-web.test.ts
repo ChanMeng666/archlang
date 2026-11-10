@@ -9,7 +9,7 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { decodePlanHash, encodePlanHash } from "../src/cli/share-codec.mjs";
-import { decodePlanHashWeb } from "../src/cli/share-codec.web.mjs";
+import { decodePlanHashWeb, SHARE_INFLATE_CAP_BYTES } from "../src/cli/share-codec.web.mjs";
 
 /**
  * `DecompressionStream("deflate-raw")` is missing from Node 18 (a CI leg) and from early Node 20
@@ -70,8 +70,26 @@ describe.skipIf(!HAS_DEFLATE_RAW)("share-codec.web.mjs ↔ share-codec.mjs", () 
     });
   });
 
+  it("bounds at SHARE_INFLATE_CAP_BYTES by default; a larger maxBytes opens it", async () => {
+    const source = "z".repeat(1_200_000);
+    const bomb = encodePlanHash(source);
+    expect(SHARE_INFLATE_CAP_BYTES).toBe(1_048_576);
+    expect(await decodePlanHashWeb(bomb)).toEqual({ ok: false, code: "source_too_large" });
+    expect(await decodePlanHashWeb(bomb, { maxBytes: 2 * SHARE_INFLATE_CAP_BYTES })).toEqual({ ok: true, source });
+  });
+
   it("rejects a payload that is not base64url deflate-raw (never returns garbage as source)", async () => {
     expect(await decodePlanHashWeb("!!!not-base64!!!")).toEqual({ ok: false, code: "bad_payload" });
     expect(await decodePlanHashWeb("AAAA")).toEqual({ ok: false, code: "bad_payload" });
+  });
+});
+
+describe("decodePlanHash (Node) is bounded by default", () => {
+  it("throws a RangeError past 1 MiB unless maxBytes is raised", () => {
+    const source = "z".repeat(1_200_000);
+    const bomb = encodePlanHash(source);
+    expect(() => decodePlanHash(bomb)).toThrow(RangeError);
+    expect(() => decodePlanHash(bomb)).toThrow(/ERR_BUFFER_TOO_LARGE|Cannot create a Buffer larger than/);
+    expect(decodePlanHash(bomb, { maxBytes: 2 * SHARE_INFLATE_CAP_BYTES })).toBe(source);
   });
 });

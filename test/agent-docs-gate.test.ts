@@ -52,9 +52,11 @@ const SCANNED = [
   ...markdownUnder(join(ROOT, ".claude")),
   join(ROOT, "docs", "backlog.md"),
   join(ROOT, "REVIEW.md"),
+  join(ROOT, "CONTRIBUTING.md"),
 ];
-// Not scanned: CONTRIBUTING.md (written for human contributors, who may run the suite) and
-// AGENTS.md (high tier, owner-edited; it states the CI-only rule itself).
+// CONTRIBUTING.md is scanned too: a human may run the suite, but the file must recommend
+// `check:quick` and say on the line that a heavy command is CI's or optional ("CI runs it too").
+// Not scanned: AGENTS.md (high tier, owner-edited; it states the CI-only rule itself).
 
 /**
  * The command invocations on a line: inline code spans (or the unclosed tail of one that wraps)

@@ -9,6 +9,9 @@
  * from the constructor, so both `decodePlanHashWeb` and `inflateCapped` reject there; the CLI's
  * sync Node decoder (`cli/share-codec.mjs`) has no such need.
  *
+ * `decodePlanHashWeb` is bounded by default: it refuses a payload that inflates past
+ * `SHARE_INFLATE_CAP_BYTES` (1 MiB) unless the caller passes a larger `maxBytes`.
+ *
  * It holds the base64url pair, the bounded decoders (`decodePlanHashWeb`, `inflateCapped`), the
  * edit flag, the short-link id shape and the hosts' size caps. It holds no encoder: deflate output
  * depends on the implementation (Node's zlib at level 9 in `cli/share-codec.mjs`, a browser's
@@ -27,6 +30,7 @@ export {
   fromBase64Url,
   inflateCapped,
   PLAYGROUND_EDIT_FLAG,
+  SHARE_INFLATE_CAP_BYTES,
   toBase64Url,
 } from "./cli/share-codec.web.mjs";
 

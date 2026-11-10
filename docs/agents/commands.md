@@ -41,7 +41,7 @@
   caught only where it feeds an exact comparison. It measures, it fixes nothing. Set `PLAYWRIGHT_BROWSERS_PATH` to keep the browsers off the default cache.
 - `gen:plugin` (in `gen:all`, drift-gated) writes `plugins/archlang/`: the Claude Code plugin's
   manifest and its copies of the skills. Edit `skills/` (the umbrella `skills/archlang/` included), never the copies.
-- `gen:agent-manifests` (in `gen:all`, drift-gated) writes the other hosts' files: `plugins/archlang/plugin.json`, `.cursor-plugin/plugin.json`, `rules/archlang.mdc`, `integrations/copilot/*` and the root `gemini-extension.json` (the core's version: rerun after a bump). Details: `docs/integrations.md`.
+- `gen:agent-manifests` (in `gen:all`, drift-gated) writes the other hosts' files: `plugins/archlang/plugin.json`, `plugins/archlang/.cursor-plugin/plugin.json`, `rules/archlang.mdc`, `integrations/copilot/*` and the root `gemini-extension.json` (the core's version: rerun after a bump). Details: `docs/integrations.md`.
 - `build:mcpb` rebuilds the core, then writes both `.mcpb` bundles to the gitignored `dist-mcpb/`;
   `prove:mcpb` unpacks one outside the repo and drives it over stdio. Neither runs in `ci.yml`: only
   `release.yml` runs them, last and best-effort, so a broken bundle shows as a yellow step on a
@@ -104,6 +104,8 @@ over `Node 22 checks` and the shards `Node 22 tests 1/3` to `3/3`, and fails if 
 was cancelled, or was skipped when `changes` did not call the PR a record. A push to `main` runs
 every leg, the suite on Node 22 split across those shards. A failed `changes` job runs every leg on
 a PR too.
+
+**Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json`; nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) uploads a fresh table as the `test-durations` artifact. Refresh with `gh run download <nightly run id> -n test-durations -D <dir> && node scripts/gen-test-durations.mjs <dir>/test-durations.json` (it merges: rows for files in the artifact are replaced, rows for deleted files dropped), after a nightly whose shard walls differ by more than 1.5× or about once a month.
 
 **A break on a main-only leg appears after the merge**, and nothing blocks on it. It is seen in three
 places: the red push run on `main`, with GitHub's failed-run notification to whoever merged;

@@ -26,7 +26,7 @@ paths:
 - The playground opens in view mode: the drawing first, the header at ≤ 5 controls (the brand's
   two links are its name, not controls), the editor and compiler lazy
   (`e2e/startup-chunks.baseline.json`). A plain visit compiles nothing at boot (the drawing and
-  `#planData` are in the HTML); renders compile in `src/compile-worker.ts`, the page the fallback.
+  `#planData` are in the HTML); renders compile in `playground/src/compile-worker.ts`, the page the fallback.
   Hash flags `&edit` and `&3d` follow the `#z=`/`#src=` token; a copied link keeps `&3d`, never
   `&edit`.
 - The 3D pictures on the sites (`docs-site/public/3d/`) come only from `npm run gen:3d-assets`;
