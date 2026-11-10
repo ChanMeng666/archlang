@@ -283,7 +283,8 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 | RM0.3 发布 1.58.0 | 本仓库 `CHANGELOG.md` `[Unreleased]`（`winders`、`--import-root`、import 限根、`#z=` 解压上限、`arch impact` 退出 2）；`git rev-list --count v1.57.0..main` = 529；`git diff --stat v1.57.0 main -- packages/mcp`（8 个文件）、`-- editors/vscode`（6 个文件）；`packages/mcp/server.json`（0.2.40，两处）；`.claude/commands/release-check.md`；`.github/workflows/nightly.yml`（`Deep fuzz (FC_SCALE=10)`）；nightly run 42801157907（`main@69fa5864`：`Deep fuzz (FC_SCALE=10)` 与四个 `Test …` job 均 success，`gh run view 42801157907`）；#497（`gh issue view 497`：CLOSED，2026-11-10T11:07:17Z）；#664、#648；`docs/whats-new.md` 标题 "What's new in 1.44 to 1.55" |
 | RM0.1 扩大 | `../drawing-set/cards.md`（DS0、DS1、DS2 仍 `todo`；#451、#480、#482、#483 已合并）；`../plan-soundness/cards.md`（PS0.16、PS0.20、PS0.21）；`docs/backlog.md`（U.4、U.7 仍 `decision`；O.10；5.2 对照 #493；H.1 对照 `test/lint-messages-id-free.test.ts`；V.5、V.6、6.7）；`../archlang-3d/amendment-v0.7.md`（"Proposed"）；`../plan-soundness/handoff.md`（29,977 / 23）对照 `spec.llm.md` 实测 29,856；#618（`src/ir.ts` 拆分，CRF13） |
 | RM0.4 欠外部的跟进 | #532 的评论（gerontec 2026-11-06 的同意，以及所有者的承诺"I will post here when the section-line card has a PR"；#544 没有评论）；#533；#544（剖面的两个事实）；不向 bobsch-io 提问：growth `AGENTS.md` 第 44 行的 Daniel 规则，DD 的 2026-11-09 附记（所有者 11-07 亲自回复；代理起草的 IFC 跟进已取消，问题由所有者拿着）；#405（L 形洞口栏杆由 #493 在 1.55.0 交付，issue 未更新）；#362–#370 |
-| RM0.5 依赖与悬空状态 | #603、#604、#675、#676、#677、#678；`docs/agents/iron-laws.md` 的 Dependabot 规则；`origin/ChanMeng666-patch-1` |
+| RM0.5 依赖与悬空状态 | #603、#604、#675、#676、#677、#678；`docs/agents/iron-laws.md` 的 Dependabot 规则；`origin/ChanMeng666-patch-1`（`git log origin/ChanMeng666-patch-1`：commit `6c86203a`，2026-11-08，"Change video link to new asset URL"，只改 `README.md`）；RM-D19、RM-D20 |
+| RM5.4 ext-apps 2.x 迁移 | #603（CI 红在 "Workspace builds"：`packages/mcp-worker/src/server.ts` 的 `TS2353`）；RM-D19 |
 | RM0.2 加三项 | #683；`examples/studio.arch` 第 3–5 行；`src/cli/commands-analyze.ts` 的 `--strict` 说明（警告计入失败）；`src/lint/ruleset.ts`（`LINT_PROFILES`） |
 | RM5.1 加两行 | `docs/from-an-image.md`、`docs/edit-one-room.md`；C §G.6 的建议（出处 N4 S1、OL9 §6） |
 | RM1.6a | #680；DEC10 决定 1；P10 `professionalisation-roadmap.md` P0-A；`src/index.ts:358`（`DEFAULT_RULESET`、`LINT_PROFILES` 公开导出）；`src/lint/ruleset.ts`（`[V]`/`[S]`/`[M]` 注释、`wallGapMm` 无文献）；`../drawing-set/README.md` D13；XRC |
@@ -301,7 +302,7 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 | MF1 → RM1.7 | P10 `professionalisation-roadmap.md` P1-E；`src/finish.ts:287`、`:317`（`STRICTER_PROFILES`）；`../engineering-health/closing-audit.md` §1（06-F3）；`../math-foundations/cards.md` MF1 |
 | RM7.3 读数自检 | AR（11-09 行：1,451 次，按工具拆分，无来源拆分）；RUL（RM-D2 的四项与窗口）；ARD 决策 6；IA §1 |
 | RM4.4 | #362、#364、#367、#369、#405（关闭时写明的未做项）；触发只按 growth `AGENTS.md` 第 44 行的 Daniel 规则 |
-| RM6.1 时间不变，等 MF-D11 | `../math-foundations/README.md:307`（"排期不变"）；同文件 §6.1 第 2 条（一层楼板都没写时 `describe()` 一字不变、不加跳过说明）、第 3 条（MF-D11 必须在 RM6.1 的 PR 里解决）、第 1 条（Plan JSON 已承载的高度字段）；#544 |
+| RM6.1 时间不变；MF-D11 由 RM-D17 裁定 | `../math-foundations/README.md:307`（"排期不变"）；同文件 §6.1 第 2 条（一层楼板都没写时 `describe()` 一字不变、不加跳过说明）、第 3 条（MF-D11 必须在 RM6.1 的 PR 里解决）、第 1 条（Plan JSON 已承载的高度字段）；#544 |
 | RM4.3 不等 D.7 | `docs/backlog.md` D.7；#682（正文要求线宽值与 SVG/PDF 已画的线宽同表） |
 
 ### G.4 §4 新增的九行"不做"
@@ -328,7 +329,6 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 | `--facts walls` 八周无读者 | DEC10（IFC 的前置）；原则 9 |
 | Daniel 的下一批 issue，或所有者一句话 | DD（11-03、11-06 私信段与 11-09 附记）；growth `AGENTS.md` 第 44 行（不提问，不按答复排期） |
 | 第三个外部仓库 | IA §1；RUL（RM-D2 信号 1） |
-| MF-D11 未裁 | `../math-foundations/README.md`（MF-D11 行） |
 | 批次 C′ 12-09 前三张未合 | 本计划排期（推断，无外部出处） |
 
 ### G.6 核对中改正的说法
@@ -343,3 +343,14 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 - 推导墙的 `id` 是 piece 名（`src/elements/walls-from-rooms.ts`），`heights.walls[]`（`src/describe.ts`）与 quantities 的行（`src/analyze/quantities.ts`）都按 `id`；`describe().derived_walls[].name` 是 spec 名，一对多。第一版写"按 `name` 对齐"，已更正。
 - backlog O.10 写的是 #119、#121（2026-10-19 关闭）；后继的 #206–#208 于 2026-11-09 关闭。
 - 托管 MCP 的工具由 `packages/mcp-worker/src/server.ts` 从 `packages/mcp/src/tools.ts` 注册，是同一组工具。
+
+### G.7 2026-11-11 的裁定
+
+| 裁定 | 一手出处 |
+|---|---|
+| RM-D9…D16 批准 | 所有者 2026-11-11 原话："RM-D9 到 D16 我全部同意。"（本会话，记入本计划 `README.md` §6.1） |
+| RM-D17…D20 受托 | 所有者 2026-11-11 原话："请你帮我做出最佳决策。"（针对当时"仍等所有者"的四项；当日委托，不是长期委托） |
+| RM-D17 = MF-D11 | `../math-foundations/README.md` §6.1（MF-D1 第 2、3 条）；#532（房子写了顶层净高 OG 2,34 m，同文件第 3 条引） |
+| RM-D18 | growth `AGENTS.md` 第 44 行（Daniel 规则）；#362（bobsch-io 的楼梯 issue）；#544；#532 |
+| RM-D19 | #603（主版本，CI 红在 "Workspace builds"）；`docs/agents/iron-laws.md` 的 Dependabot 规则（主版本等所有者） |
+| RM-D20 | `origin/ChanMeng666-patch-1` 的 commit `6c86203a`（没有 PR） |

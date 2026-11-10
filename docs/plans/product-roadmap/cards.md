@@ -2,7 +2,7 @@
 
 规则同 `../drawing-set/cards.md`：选依赖已完成、阶段已开放的第一张 `todo` 卡；同一阶段先做"线"以上的卡。状态词：`todo`、`doing`、`done`（裁成 id、标题、状态、PR、commit）、`blocked`（等 `README.md` §6 裁定）、`parked`。规模是 AI 协作日，±50%，是估算不是测量；没有估算的写"未估"。"模型"是建议执行者，主会话可改。每张卡都写明不许做什么。
 
-**v2 的卡全部 `todo`，没有一张开工。** RM-D9…D16 是待所有者裁定的提议（`README.md` §6.1）；未裁之前，下面的阶段划分不生效，任何一张卡都不开工。
+**v2 的卡全部 `todo`，没有一张开工。** RM-D9…D16 已由所有者 2026-11-11 批准（`README.md` §6.1），RM-D17…D20 是同日的受托裁定（§6.2）；下面的阶段划分生效。
 
 大多数 RM 卡是对 backlog / 各计划已有卡的**打包与排序**。打包卡 `done` 时，被打包的原卡同一 PR 裁掉，并在原处留一行"由 RMx.y 完成，PR #n"。`[语法]` 标记的卡新增语言形式：依赖 PS7.9（spec 腾空）先完成；遵守 `AGENTS.md` 硬规则与 `docs/agents/iron-laws.md`"每个新形式带字节恒等律"；`gen:*` 的闭集从源头派生。由 profile 数字驱动的新规则还依赖 RM1.6a（`README.md` 原则 10）。
 
@@ -43,7 +43,7 @@
 
 不许：代理自己打 tag；收窄 `prepublishOnly`；跳过 release-check 的任何一项；在发布说明里写"first/only"、合规或任何 IFC 承诺；把下载量写成 traction。
 
-### RM0.1 · 记录修正（扩大） — `todo` · 1 日 · sonnet · 依赖无；"单一队列"一项依赖 RM-D15（所有者）
+### RM0.1 · 记录修正（扩大） — `todo` · 1 日 · sonnet · 依赖无
 
 v1 的条目（已做的标出）：
 - `../drawing-set/cards.md`：DS1、DS2 改 `done`，指向 CR1/CR2b 的 PR。
@@ -58,40 +58,41 @@ v1 的条目（已做的标出）：
 v2 加上：
 - `../drawing-set/cards.md`：DS0 改 `done`（#451）。
 - PS0.16、PS0.20、PS0.21（`../plan-soundness/cards.md`）与 backlog 的 U.4、U.7：标为已裁（RM-D6），指向 RM1.4、RM3.1、RM4.2。
-- backlog O.10：条目写的 #119、#121 已于 2026-10-19 关闭，后继的 #206–#208 也已于 2026-11-09 关闭；核对是否还有待裁的主版本升级（#603 另由所有者定），没有就关闭 O.10；5.2（CR8 #493 已交付直角多边形 `void`，只剩非直角）；H.1（`test/lint-messages-id-free.test.ts` 已守住，核对后关闭）。
+- backlog O.10：条目写的 #119、#121 已于 2026-10-19 关闭，后继的 #206–#208 也已于 2026-11-09 关闭；核对是否还有待裁的主版本升级（#603 已由 RM-D19 裁定），没有就关闭 O.10；5.2（CR8 #493 已交付直角多边形 `void`，只剩非直角）；H.1（`test/lint-messages-id-free.test.ts` 已守住，核对后关闭）。
 - `../archlang-3d/amendment-v0.7.md` 的 "Proposed" 改为 superseded（已被交付的包取代）。
 - `../plan-soundness/handoff.md` 的 spec 余量数字（写的是 29,977 / 23；2026-11-10 实测 29,856，余量按 `< 30_000` 算是 143）。
 - 2.0 桶（V.5、V.6、6.7、PS0.16 升 E、`origin/feat/remove-view`）在 backlog 里写明"不在任何排期，2.0 时一起做"。
 - CRF13：`src/ir.ts` 已拆分（#618），重新核对那条注释，过时则关。
-- **单一队列的落地**（RM-D15 获批后）：`docs/plans/README.md` 状态列按 `README.md` §7 改；各计划 handoff 顶部加一行指向 `../product-roadmap/handoff.md`。
+- **单一队列的落地**（RM-D15）：`docs/plans/README.md` 状态列按 `README.md` §7 改；各计划 handoff 顶部加一行指向 `../product-roadmap/handoff.md`。
+
 证明：每处改动在 PR 里列出它依据的 PR 号或 commit；`docs:build` 绿。
 
-不许：改任何代码；改 `AGENTS.md`；碰 `/3d` 页（public-surfaces 的面）；碰 `/axonometric`（它不在导航里，页面留到 2.0）；RM-D15 未获批时改其他计划的状态列。
+不许：改任何代码；改 `AGENTS.md`；碰 `/3d` 页（public-surfaces 的面）；碰 `/axonometric`（它不在导航里，页面留到 2.0）。
 
-### RM0.4 · 欠外部的跟进 — `todo` · 0.5 日 · sonnet · 依赖 RM0.3；发出前所有者过目
+### RM0.4 · 欠外部的跟进 — `todo` · 0.5 日 · sonnet · 依赖 RM0.3（1.58.0 已发布）
 
-主会话起草，英文、具体；所有者过目后才发（对外动作）。
-- gerontec（#544，相关 #532、#533）：1.58 带上了 `winders`；#544 的两个事实排在哪里（RM6.1，批次 D 首位，起点 2027-01-10，设计稿在冻结期）；欢迎他做 ST.2（折线行走线画成弧）。
-- bobsch-io（Daniel）：本卡不给他发任何东西。growth `AGENTS.md` 第 44 行的 Daniel 规则："The founder holds the follow-up question; do not post it or plan on its answer." 要不要告诉他 1.54–1.58 的交付、问不问、怎么问，都归所有者（列在 `handoff.md` 的所有者待办）。
+按 RM-D18 受托裁定（`README.md` §6.2），主会话起草并发出，英文、具体，都在 RM0.3 发布 1.58.0 之后：
+- docs：先加"建在 ArchLang 上的工具"一行，只列作者已同意的 `gerontec/archlang-section`（他 2026-11-06 在 #532 同意，并给了描述）。放哪一页按 ADR 0031 的下游读者口径定。
+- gerontec：在 #544 回复一次：`winders` 已在 1.58.0 发布；两个事实（剖切符号、楼板 datum）在批次 D 首位，2027-01-10 起，设计稿在冻结期写；欢迎他为 ST.2（折线行走线画成弧）提 PR；`archlang-section` 已列进 docs。
+- bobsch-io（Daniel）：在他自己的 #362 下留一条事实说明：非直跑楼梯以 `winders` 在 1.58.0 发布。只告知一次，不含任何问题。growth `AGENTS.md` 第 44 行的 Daniel 规则（"The founder holds the follow-up question; do not post it or plan on its answer."）禁止的是发出所有者拿着的后续问题和按它的答复排期，一条只讲交付的事实说明两样都不碰。
 - #405：补记 L 形洞口栏杆已在 1.55.0 交付（issue 里仍写 "left open"）。
-- docs：加"建在 ArchLang 上的工具"一行，只列作者已同意的 `gerontec/archlang-section`（他 2026-11-06 在 #532 同意，并给了描述）。放哪一页按 ADR 0031 的下游读者口径定。
 
 证明：每条回复的链接记进 `handoff.md`；docs 一行 `docs:build` 绿。
 
-不许：向 bobsch-io 提问；未经所有者要求起草给他的消息（Daniel 规则）；承诺 IFC；承诺剖面进核心（核心不画高度）；承诺日期以外的范围；列出未同意的仓库（`AI-Building-Floor-Planner-SaaS` 尚无对话，不列）；在回复里写"first/only"或合规。
+不许：向 bobsch-io 提任何问题，或按他的回应排任何卡（Daniel 规则）；给 bobsch-io 发第二条；在 1.58.0 发布之前发出；承诺 IFC；承诺剖面进核心（核心不画高度）；承诺日期以外的范围；列出未同意的仓库（`AI-Building-Floor-Planner-SaaS` 尚无对话，不列）；在回复里写"first/only"或合规。
 
-### RM0.5 · 依赖与悬空状态 — `todo` · 0.5 日 · sonnet · 依赖无；#603、`origin/ChanMeng666-patch-1` 依赖所有者
+### RM0.5 · 依赖与悬空状态 — `todo` · 0.5 日 · sonnet · 依赖无
 
 - 合 #675（codeql-action，workflow 属高风险层）、#677、#678：`@dependabot rebase` 到新 `main`，CI 绿后按层级合并（`docs/agents/iron-laws.md` 的 Dependabot 规则）。
 - #604：先修 biome 2.6 的 lint 差异，再合。
 - #676（`three` 0.187）：单独评估 3D 的帧哈希与 GLB 字节、许可白名单与 THIRD_PARTY_NOTICES；不与别的升级同 PR。
-- #603（`@modelcontextprotocol/ext-apps` 主版本）：等所有者。
+- #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本）：按 RM-D19，Show HN 之前不合并，PR 保持打开；12-02 之后由 RM5.4 迁移。
 - 清掉 13 个已合并 PR 的远程分支、`refs/remotes/pr308` 和过期的本地分支（例如 `refactor/exhaustive-element-kinds`）；保留 `feat/remove-view`。
-- `origin/ChanMeng666-patch-1`（所有者网页上改的影片链接，没有 PR）：等所有者一句话。
+- `origin/ChanMeng666-patch-1`（所有者 2026-11-08 网页上改的 README 影片链接，一行，commit `6c86203a`，没有 PR）：按 RM-D20 落地。先确认新的资源 URL 能打开；再从 `main` 新建分支，cherry-pick `6c86203a`，经 PR 合并（README 改动按风险层级走）。
 
-证明：每个 PR 合并时钉的完整 SHA；分支清理前后的 `git branch -r` 计数。
+证明：每个 PR 合并时钉的完整 SHA；分支清理前后的 `git branch -r` 计数；patch-1 的新资源 URL 的 HTTP 状态记在 PR 里。
 
-不许：合并主版本升级；为了让 #676 绿而重新钉帧哈希或 GLB digest（字节移动要逐项解释）；删 `feat/remove-view`。
+不许：合并主版本升级（#603 留给 RM5.4）；直接推 `origin/ChanMeng666-patch-1` 或把它当 PR 合并（cherry-pick 到新分支）；新资源 URL 打不开时落地 patch-1；为了让 #676 绿而重新钉帧哈希或 GLB digest（字节移动要逐项解释）；删 `feat/remove-view`。
 
 ---
 
@@ -170,7 +171,7 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 ### PS7.9 · spec 腾空 — 见 `../plan-soundness/cards.md`，`todo` · 1.5 日 · opus · 依赖无
 
-本计划把它提为所有 `[语法]` 卡的前置。今天 `spec.llm.md` 是 29,856 UTF-16 单位，测试是 `< 30_000`（`test/llm-spec-drift.test.ts`），可用余量 143。目标按后面排到的 `[语法]` 形式重算：RM6.1 两个（剖切符号、楼板 datum）、MF-D11 的净高子句一个、RM1.2b 的 `keep site` 与可开启值两个，共五个；线下的 RM4.2 `schedule fixtures`、RM3.4 另计。
+本计划把它提为所有 `[语法]` 卡的前置。今天 `spec.llm.md` 是 29,856 UTF-16 单位，测试是 `< 30_000`（`test/llm-spec-drift.test.ts`），可用余量 143。目标按后面排到的 `[语法]` 形式重算：RM6.1 两个（剖切符号、楼板 datum）、RM-D17（MF-D11）的净高子句一个、RM1.2b 的 `keep site` 与可开启值两个，共五个；线下的 RM4.2 `schedule fixtures`、RM3.4 另计。
 
 不许：提高上限而不先削掉可证明的重复（铁律）；删掉 spec 里仍在用的事实。
 
@@ -209,7 +210,7 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 放 `design/`（本目录下，冻结期才建）。每份是对应卡开工前要读的设计，不是实现：
 - `schema-policy.md` → CR11a：`$id` 与变更、弃用政策草案。
 - `walls-facts.md` → RM7.2：字段按 `_derivedWalls` 的真实形状（`points[]`、`closed`、`between` 或 `ring`、厚度、类别、状态，`src/elements/walls-from-rooms.ts`）；按墙 `id`（即 piece 名）与 `heights.walls[]`（`src/describe.ts` 的 `{ id, height }`）、`describe --facts quantities`（`src/analyze/quantities.ts` 按 `id`）对齐；已有的 `describe().derived_walls[].name` 是 spec 名，CR8 切分后一个 spec 对应多个 piece，设计稿要交代新事实与默认 `derived_walls` 的关系；写明"段的粒度在 CRF1 之后才稳定"；新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`）；消费者一栏照实写。
-- `slab-and-section.md` → RM6.1：DS11 并入时的四件事（拼写取 DS11 的 `section A (x,y)->(x,y)` 还是 #544 的 `from … to …`；进 `describe` 主体还是 opt-in 事实；多层平面上剖切符号画在哪一页；`section` 写进日后 DS5 的 `level a..b` 时 id 怎么不重复，定不下来就保留对 DS5 的依赖）；MF-D11 的提案（`README.md` §6.1 的倾向）供所有者裁定。
+- `slab-and-section.md` → RM6.1：DS11 并入时的四件事（拼写取 DS11 的 `section A (x,y)->(x,y)` 还是 #544 的 `from … to …`；进 `describe` 主体还是 opt-in 事实；多层平面上剖切符号画在哪一页；`section` 写进日后 DS5 的 `level a..b` 时 id 怎么不重复，定不下来就保留对 DS5 的依赖）；净高子句的拼写，按 RM-D17（MF-D11 的受托裁定，`README.md` §6.2）。
 - `plan-json-scope.md` → RM3.1：范围表，逐个顶层语句对 `src/plan-json*`；列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，待所有者裁定，未裁则标 `dropped`）。
 
 ### RM1.8 · 读 GB 55038-2025 原文（#684） — `todo` · 未估 · sonnet · 依赖无
@@ -224,7 +225,7 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 
 ## 阶段 D · 批次 C′（12-02 → 12-16；1.60.0 约 12-21 切）：契约、出处、公开检查集、无损
 
-执行顺序以 `README.md` §3 的表为准：CR11a → RM1.6a（若阶段 B 没做完）→ RM1.6b → CR10 → RM3.1 前半 → 发布 1.60.0，线（12–14.5 日 = 11–13.5 + 发布 1）以下 RM3.1 后半 → PS7.9（若没做完）→ CR11b + RM3.2 → RM4.3。CR9、CR12、RM2.2 在阶段 E 线下。1.60.0 避开 Product Hunt 那一周。RM3.1 的拆分只在 RM-D10 获批后生效；未获批时 RM-D4 照旧，RM3.1 按 v1 的整张卡排。
+执行顺序以 `README.md` §3 的表为准：CR11a → RM1.6a（若阶段 B 没做完）→ RM1.6b → CR10 → RM3.1 前半 → 发布 1.60.0，线（12–14.5 日 = 11–13.5 + 发布 1）以下 RM3.1 后半 → PS7.9（若没做完）→ CR11b + RM3.2 → RM4.3。CR9、CR12、RM2.2 在阶段 E 线下。1.60.0 避开 Product Hunt 那一周。RM3.1 按 RM-D10 拆成两半。RM5.4 在线下，12-02 之后才开工。
 
 ### CR11a · schema `$id` 与变更政策 — `todo` · 1 日 · sonnet · 依赖冻结期的 `schema-policy.md`
 
@@ -262,7 +263,7 @@ RM1.1a 若走了兜底（量的是冻结时 `main` 的 SHA），发布说明引�
 
 ### RM3.1 前半 · Plan JSON 无损：范围表、往返律、`outdoor` 与 `fence` — `todo` · 3 日 · opus · 依赖 CR11a、冻结期的 `plan-json-scope.md` · **批次 C′ 线上**
 
-v1 的 RM3.1 拆成两半（RM-D10，待所有者）。前半：
+v1 的 RM3.1 拆成两半（RM-D10，所有者 2026-11-11 批准）。前半：
 - 范围表：按设计稿列出 Plan JSON **声称承载**的形式（逐个顶层语句对 `src/plan-json*`），含 J16（每扇窗写 `sill`）与 PS0.18（待所有者裁定，未裁则标 `dropped`）。
 - 往返律：新增 `test/plan-json-roundtrip-law.test.ts`：范围内的每个示例 `-f json` → `--from-json` → SVG + `describe()` + `lint()` 字节恒等；范围外的形式在 Plan JSON 里显式标 `dropped`。`place` 在后半做完之前标 `dropped`。
 - PS0.21：`outdoor`、`fence` 进 Plan JSON（可选新键，不破坏）；schema 变更按 CR11a 的政策记录。
@@ -304,6 +305,19 @@ CR11 的其余一半：语言规范独立版本 `lang-1.0`。RM3.2：SBOM（Cycl
 证明：DXF 字节的变化逐示例列出，SVG/PDF 零差，`describe()`/`lint()` 零差；一条测试断言每个图层都有 370 且值在允许的枚举里；QCAD 或 LibreCAD 打开，加 ezdxf 读回线宽（记录在 PR）；AutoCAD 的检查交给所有者。
 
 不许：改 SVG/PDF 的线宽；在 DXF 里另立一张线宽表（只能从 SVG/PDF 的表派生）；改图层名（NCS v6 的命名是另一件事）；写 `--layers iso13567`（§4 不做）。
+
+### RM5.4 · `@modelcontextprotocol/ext-apps` 2.x 迁移（#603） — `todo` · 未估 · opus · 依赖 2026-12-02 之后；与 RM1.6b 共用一次 `packages/mcp` bump · 高风险层
+
+RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 "Workspace builds" 上红，`packages/mcp-worker/src/server.ts` 的 `TS2353 'title' does not exist in type 'McpUiAppResourceConfig'`）Show HN 之前不合并，之后由本卡迁移。
+- 先读 `ext-apps` 2.0 的 release notes，列出影响本仓库的破坏性变更。
+- 修好 workspace 构建（`packages/mcp-worker`）。
+- 证明托管的 app 仍能渲染（ChatGPT app 的 UI 层）。
+- 与 RM1.6b 共用一次 `packages/mcp` 版本 bump（`packages/mcp/server.json` 两处同步）。
+- 风险层是 high：评审 + 协调者判断后合并（`docs/agents/commands.md` § Merging a PR）。
+
+证明：CI 的 "Workspace builds" 绿；托管 app 的资源在部署后能取到并渲染（记录请求与截图在 PR 说明，不进测试）；MCP 工具的输出除 bump 外不变。
+
+不许：2026-12-02 之前开工或合并；在没读 release notes 的情况下改代码；为了绿而降低 TypeScript 检查；与 RM1.6b 以外的 MCP 改动另做一次 bump。
 
 ---
 
@@ -362,7 +376,7 @@ agent-reach 读数（01-09，窗口到 01-05）与 RM-D2 读数（01-31，窗口
 
 赶得上就进 1.61.0，否则进下一个 minor。
 
-opt-in 的 `describe --facts walls`（加进 `DESCRIBE_FACTS`，`src/describe.ts`）：输出 `walls from rooms` 推导的墙段。字段按 `_derivedWalls` 的真实形状：`points[]`、`closed`、`between` 或 `ring`（外圈只带 `ring`）、厚度、类别、状态；按墙 `id`（即 piece 名）与 `heights.walls[]`、`describe --facts quantities` 对齐。已有的 `describe().derived_walls[].name` 是 spec 名，一个 spec 对应多个 piece，两者不是一一对应；新事实与默认 `derived_walls` 的关系按设计稿写明。算第 7 轨（RM-D12，待所有者；这样归类会让它不受 RM-D2 收缩的约束）。
+opt-in 的 `describe --facts walls`（加进 `DESCRIBE_FACTS`，`src/describe.ts`）：输出 `walls from rooms` 推导的墙段。字段按 `_derivedWalls` 的真实形状：`points[]`、`closed`、`between` 或 `ring`（外圈只带 `ring`）、厚度、类别、状态；按墙 `id`（即 piece 名）与 `heights.walls[]`、`describe --facts quantities` 对齐。已有的 `describe().derived_walls[].name` 是 spec 名，一个 spec 对应多个 piece，两者不是一一对应；新事实与默认 `derived_walls` 的关系按设计稿写明。算第 7 轨（RM-D12，所有者 2026-11-11 批准；这样归类会让它不受 RM-D2 收缩的约束）。
 
 - 消费者照实写：没有具名读者；`archlang-section` 自己从 `walls_from_rooms` 的厚度重建墙，是**可能的读者**；排进来是因为 growth 2026-11-10 决策把它定为 IFC 下游包的前置。
 - 新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`），让跨引擎探针读到它。
@@ -490,19 +504,19 @@ bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这�
 
 ## 阶段 F · 批次 D（2027-01-10 起）：按证据重排
 
-### RM6.1 · 剖面所需的两个事实 — `todo` · 5 日 · opus · 依赖 PS7.9、MF-D11（所有者）、冻结期的 `slab-and-section.md` · `[语法]` · **批次 D 首位（#532 触发）**
+### RM6.1 · 剖面所需的两个事实 — `todo` · 5 日 · opus · 依赖 PS7.9、冻结期的 `slab-and-section.md` · `[语法]` ×3 · **批次 D 首位（#532 触发）**
 
-MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本卡的 PR 里解决，所以没有所有者对 MF-D11 的裁定，本卡不合并。2027-01-10 时 MF-D11 还没裁，本卡标 `blocked`，阶段 F 从其余候选开始。本卡不改 MF-D1。
+MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本卡的 PR 里解决；MF-D11 已由 RM-D17 受托裁定（`README.md` §6.2，2026-11-11），本卡按它落地，不再等它。本卡不改 MF-D1。
 
 外部用户（#532，`gerontec/archlang-section`）只用 `describe --json` 与 `compile -f json` 画出了剖面，缺两件事，都是 `describe()` 的数据，不是核心的绘图：
 
 1. **平面剖切符号**（DS11 提前）：`section A from (700, 0) to (700, 9000) look east`（拼写按设计稿定：DS11 的写法与 #544 的不同）。平面图元素（`src/elements/section.ts`，注册在 `defs.ts`，带 `drawCost`/`bounds()`/`measures()`）：画剖切线两端的符号与编号，这是 GB/T 50001 和 ISO 128 都有的平面图要素，核心允许。`describe().sections` 带出线段与观察方向，或按设计稿改为 opt-in 事实。只允许轴对齐（与 #532 的工具一致；斜切等第二个用例）。多层平面上画在哪一页、与 DS5 的 id 是否冲突，按设计稿。
-2. **楼板构造 datum**（2026-11-10 MF-D1 已裁定采纳。另需给出顶层和单层的天花来源 MF-D11，见 `../math-foundations/` §6.1）：在 `level` 上一个由 `gen:*` 闭集定的子句（候选 `slab <mm>`，或 `floor { structure <mm> finish <mm> }`），**核心不画它**（铁律：高度不画），只进 `describe().heights`（以及 Plan JSON 已承载的高度字段，MF-D1 第 1 条），使第 n 层净高 = 第 n 层的 `height` − 第 n+1 层的楼板可派生。Plan JSON：楼板子句进 Plan JSON，或在 RM3.1 的范围表里标 `dropped`。没写时按 MF-D1 第 2 条：全图一层楼板都没写时，`describe()` 一字不变，不输出板厚和净高，也不加跳过说明；只有至少一层写了楼板时，没写的层才在"跳过了什么"里注明（ADR 0027）。
-3. 净高子句若获 MF-D11 裁定，是第三个 `[语法]` 形式，带自己的字节恒等律；作者写的净高与推算值不一致时有一条诊断。顶层与单层的天花按 MF-D11 的裁定做。
+2. **楼板构造 datum**（2026-11-10 MF-D1 已裁定采纳，见 `../math-foundations/` §6.1；顶层和单层的天花来源 MF-D11 由 RM-D17 裁定，见第 3 条）：在 `level` 上一个由 `gen:*` 闭集定的子句（候选 `slab <mm>`，或 `floor { structure <mm> finish <mm> }`），**核心不画它**（铁律：高度不画），只进 `describe().heights`（以及 Plan JSON 已承载的高度字段，MF-D1 第 1 条），使第 n 层净高 = 第 n 层的 `height` − 第 n+1 层的楼板可派生。Plan JSON：楼板子句进 Plan JSON，或在 RM3.1 的范围表里标 `dropped`。没写时按 MF-D1 第 2 条：全图一层楼板都没写时，`describe()` 一字不变，不输出板厚和净高，也不加跳过说明；只有至少一层写了楼板时，没写的层才在"跳过了什么"里注明（ADR 0027）。
+3. **净高子句**（RM-D17）：第三个 `[语法]` 形式，带自己的字节恒等律。一个 `level` 可以写一个净高值，作者写了就用；中间层没写的，取本层层高减上一层写的楼板；顶层或单层没有作者值的，什么也不报，并给出 coverage 原因；作者的值与推算值不一致时出一条诊断。拼写由 `gen:*` 闭集定，在 `slab-and-section.md` 里定下。
 
 证明：每个形式各自的字节恒等律（一层楼板都没写的图，SVG、`describe()`、`lint()` 三处都逐字节不变，MF-D1 第 2 条）；`describe()` 变化只在用了新子句的图上；`archlang-section` 的示例 `haus_winders.arch` 加剖切线后 `describe --json` 能喂给它（在 PR 里跑一次该工具作说明，不进测试）。
 
-不许：在核心画任何高度或剖面；把剖面放进 `describe()` 以外的核心输出；碰 DS13（它在 `archlang-3d`，按 D3 等 Show HN 之后）；在 MF-D11 未裁时合并本卡；给没写楼板的图加跳过说明；用默认值去猜板厚。
+不许：在核心画任何高度或剖面；把剖面放进 `describe()` 以外的核心输出；碰 DS13（它在 `archlang-3d`，按 D3 等 Show HN 之后）；给没写楼板的图加跳过说明；用默认值去猜板厚或顶层净高；不写作者值时推算顶层或单层的净高。
 
 ### RM3.3 · mask 导入 — `todo` · 3 日 · opus · **触发：第二个独立来源带样本**
 
@@ -534,7 +548,7 @@ A.6/A.7（CLI `--accessible --annotate` 与 MCP 对应参数）、A.1（`dims au
 | 组件接缝单一所有者规则 | 两个 `place` 实例在共享边上对门洞冲突的真实用例 |
 | 占用分类、喷淋、地理锚点等建筑标志 | 非住宅疏散或室内地图的外部请求；届时单独提所有者裁定（`README.md` §4，挂起） |
 | 电气布置 overlay | 2027-01-31 前 Floorcraft 的电气功能显出用户反响（`README.md` §4） |
-| PS0.16 升 E、无宿主门洞升 E | 2.0 major（与 V.5、V.6、6.7 同桶；RM-D16 待所有者） |
+| PS0.16 升 E、无宿主门洞升 E | 2.0 major（与 V.5、V.6、6.7 同桶；RM-D16） |
 | CRF9 预览图 CJK 字体 | parked（Worker 体积，ADR 0034 的已知缺口） |
 
 残留卡（CRF3–CRF13、RM4.4、v1 波次 3 的既定项）的去向表在 `README.md` §7.1。
