@@ -105,6 +105,8 @@ was cancelled, or was skipped when `changes` did not call the PR a record. A pus
 every leg, the suite on Node 22 split across those shards. A failed `changes` job runs every leg on
 a PR too.
 
+**Shard balance.** `test/sequencer.ts` splits the shards by the seconds per file in `test/.durations.json`; nightly's `full-matrix` job (the `Test ubuntu-latest / Node 22` leg) uploads a fresh table as the `test-durations` artifact. Refresh with `gh run download <nightly run id> -n test-durations -D <dir> && node scripts/gen-test-durations.mjs <dir>/test-durations.json` (it merges: rows for files in the artifact are replaced, rows for deleted files dropped), after a nightly whose shard walls differ by more than 1.5× or about once a month.
+
 **A break on a main-only leg appears after the merge**, and nothing blocks on it. It is seen in three
 places: the red push run on `main`, with GitHub's failed-run notification to whoever merged;
 nightly's `report`, which lists a failed `full-matrix` job in the pinned issue, by the next 03:00 UTC;
