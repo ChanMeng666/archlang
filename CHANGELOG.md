@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Four docs pages: `/floor-plan-tools-for-ai-agents` (what each floor-plan tool for agents takes in, exports and costs, from each tool's own pages), `/floor-plan-with-a-coding-agent`, `/text-to-dxf-floor-plan` and `/check-a-floor-plan`. Each carries a plan that compiles and lints clean and ends with a FAQ.
 - The docs `/examples` page links each plan to its static page on the playground, and each static example page links back to `/examples`.
 - `E_DIAGNOSTIC_LIMIT` and `W_DIAGNOSTIC_LIMIT`: `compile()` and `describe()` report at most 500 diagnostics, then one limit at the byte past the last kept; the lexer and parser stop collecting there. A budget or cap code that stopped the work (`E_STEP_LIMIT`, `E_DRAWING_LIMIT` and the other `*_LIMIT` codes) is never dropped. The limit is the error when any diagnostic, kept or dropped, is an error, and otherwise the warning, so a plan that only floods warnings still draws. A plan with 500 or fewer is reported exactly as before.
+- `lint()` rejects a non-finite or out-of-range ruleset number with `E_RULESET_VALUE` instead of running the rules on it.
 - `@chanmeng666/archlang/share`: the browser-safe share-link decoder. `decodePlanHashWeb(payload, { maxBytes })` reads a `#z=` payload with `DecompressionStream` (no Node built-ins), `inflateCapped` stops inflating at a byte cap, `toBase64Url`/`fromBase64Url` are the payload's base64url, and `PLAYGROUND_EDIT_FLAG`, `isShareId` and the hosts' caps (`SOURCE_CAP_BYTES`, `SHORT_LINK_PAYLOAD_CAP_CHARS`, `MCP_PAYLOAD_CAP_CHARS`) come with it. The playground, its short-link Worker, the hosted MCP Worker and the docs widget now read this one copy. The decoders need `DecompressionStream("deflate-raw")`: a modern browser, a Worker, or a current Node 20 or later (on Node 18 the constructor throws).
 
 ### Changed
@@ -49,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `planFromJson` returns at most 500 validation diagnostics, then one `E_DIAGNOSTIC_LIMIT`, so a payload of thousands of empty rows no longer returns one error per field.
 - A `scale` whose number is below 1e-6 (`scale 0.0000001:1`) is kept as written, so it reads back as its denominator (1:10,000,000) in the sheet and in `describe().scale`; it used to be stored as `1e-7:1`, which could not be read, and the scale was dropped without a word.
 - The web component and playground SVG sanitiser no longer throws on a CDATA section; comments and processing instructions are dropped.
+- `planFromJson` refuses a negative magnitude (a size, width, thickness or north bearing) with a pathed `E_JSON_SCHEMA` instead of emitting source the parser cannot read (`north` reads an unsigned bearing: write 330, not -30).
 
 ## [1.57.0] - 2026-11-06
 
