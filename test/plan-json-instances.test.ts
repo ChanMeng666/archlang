@@ -6,7 +6,7 @@
  * `instances` (the `place` frames), and marks every flattened instance row with `instance`.
  * `planJsonToArch` prints a `component` per body and a `place` per instance, and skips the
  * marked rows. Every other payload is unchanged (the gate), so a placed plan without the
- * statement still projects flattened and still does not round-trip (`E_DOTTED_DECL`, pinned in
+ * statement still projects flattened and still does not round-trip (a pathed `E_JSON_SCHEMA`, pinned in
  * test/plan-json.test.ts).
  *
  * The law: for a plan whose `place`s follow its root statements, JSON → arch compiles to the
