@@ -13,7 +13,14 @@
  * ENCODER stays here: `CompressionStream` output is the browser's own, and
  * `test/share-codec.test.ts` pins it to the scheme.
  */
-import { fromBase64Url, inflateCapped, isShareId, PLAYGROUND_EDIT_FLAG, toBase64Url } from "archlang/share";
+import {
+  fromBase64Url,
+  inflateCapped,
+  isShareId,
+  PLAYGROUND_EDIT_FLAG,
+  SHARE_INFLATE_CAP_BYTES,
+  toBase64Url,
+} from "archlang/share";
 
 /** base64url ⇄ bytes (UTF-8-safe; no `escape`/`unescape`), the core's pair under this module's names. */
 export const bytesToB64url: (bytes: Uint8Array) => string = toBase64Url;
@@ -27,12 +34,13 @@ async function pipeStream(stream: CompressionStream, bytes: Uint8Array): Promise
 }
 
 /**
- * The most UTF-8 bytes a link may inflate to in the browser. A deflate stream expands a
+ * Equal to the core's `SHARE_INFLATE_CAP_BYTES`: the most UTF-8 bytes a link may inflate to in the
+ * browser. A deflate stream expands a
  * thousandfold, so inflation stops here, not at the end of the stream (200 MB of spaces is a
  * 272 KB fragment). Sixty times the largest bundled example; the share Worker holds its own,
  * lower `SOURCE_CAP_BYTES`.
  */
-export const LINK_INFLATE_CAP_BYTES = 1024 * 1024;
+export const LINK_INFLATE_CAP_BYTES = SHARE_INFLATE_CAP_BYTES;
 
 /** What the page says when a link is refused for its size. */
 export const LINK_TOO_LARGE_NOTICE = "This link is too large to open";
