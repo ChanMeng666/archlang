@@ -24,6 +24,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Test-duration table refreshed from the nightly; `gen-test-durations.mjs` merges an artifact map.
 - `idSpanOf` moved to the leaf `src/id-spans.ts`; `src/ir.ts` no longer imports the parser (the projector reaches it only through `analyze.ts`'s `resolvePlan` and `import.ts`).
 - `arch impact` now exits 2 on a plan that does not parse (breaking for scripts that relied on exit 0), with `{ ok: false, diagnostics }` under `--json`. `fmt`, `repair`, `reroll`, `suggest`, `complete` and `link` keep exit 0 on such a plan, now documented in `docs/cli-reference.md`; `fmt` returns the source verbatim and `fmt --write` leaves the file untouched.
 - Share decoding: an over-cap payload now returns `source_too_large` instead of throwing. `decodePlanHashWeb` from `@chanmeng666/archlang/share` is built on `inflateCapped` (one bounded inflater, the 1 KiB write slices included) and returns `{ ok: true, source }` or `{ ok: false, code }` (`code` is `"bad_payload"` or `"source_too_large"`, the `PayloadFault` type) instead of throwing; `PlanHashTooLarge` is gone. The hosted MCP Worker's `GET /svg/<payload>` now has the same bomb protection as the short-link Worker. Every link decodes as before.
@@ -49,6 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `planFromJson` returns at most 500 validation diagnostics, then one `E_DIAGNOSTIC_LIMIT`, so a payload of thousands of empty rows no longer returns one error per field.
 - A `scale` whose number is below 1e-6 (`scale 0.0000001:1`) is kept as written, so it reads back as its denominator (1:10,000,000) in the sheet and in `describe().scale`; it used to be stored as `1e-7:1`, which could not be read, and the scale was dropped without a word.
 - The web component and playground SVG sanitiser no longer throws on a CDATA section; comments and processing instructions are dropped.
+- `planFromJson` refuses a negative magnitude (a size, width, thickness or north bearing) with a pathed `E_JSON_SCHEMA` instead of emitting source the parser cannot read (`north` reads an unsigned bearing: write 330, not -30).
 
 ## [1.57.0] - 2026-11-06
 
