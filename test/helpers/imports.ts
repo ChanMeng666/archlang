@@ -21,7 +21,16 @@ export interface ImportRef {
 export function importRefs(file: string, text: string): ImportRef[] {
   const sf = ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
   const out: ImportRef[] = [];
-  const add = (lit: ts.Node, typeOnly: boolean): void => {
+  const add = (node: ts.Node, typeOnly: boolean): void => {
+    let lit = node;
+    // `import(/* @vite-ignore */ "x" as string)`: the core's lazy-import idiom wraps the specifier.
+    while (
+      ts.isAsExpression(lit) ||
+      ts.isParenthesizedExpression(lit) ||
+      ts.isSatisfiesExpression(lit) ||
+      ts.isTypeAssertionExpression(lit)
+    )
+      lit = lit.expression;
     if (ts.isStringLiteralLike(lit))
       out.push({ spec: lit.text, line: sf.getLineAndCharacterOfPosition(lit.getStart(sf)).line + 1, typeOnly });
   };

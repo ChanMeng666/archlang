@@ -13,7 +13,8 @@ import { describe, expect, it } from "vitest";
 import { importRefs } from "./helpers/imports.js";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
-const FORBIDDEN = /^(?:@[\w-]+\/archlang-3d|archlang-3d|@types\/three|three(?:-[\w-]+)?)(?:\/.*)?$/;
+const FORBIDDEN =
+  /^(?:(?:@[\w-]+\/archlang-3d|archlang-3d|@types\/three|three(?:-[\w-]+)?)(?:\/.*)?|(?:\.\.?\/)+(?:[\w.-]+\/)*packages\/archlang-3d(?:\/.*)?)$/;
 const SOURCE = /\.(?:ts|mts|cts|mjs|cjs|js)$/;
 
 function walk(dir: string, out: string[] = []): string[] {
@@ -71,11 +72,16 @@ describe("the core never imports 3D", () => {
     expect(hit(`import x from "./three-way.js"; import y from "threshold";`)).toBe(false);
     expect(hit(`// import x from "three"\n/* import("archlang-3d") */`)).toBe(false);
     expect(hit(`import x from "./three-way.js";`)).toBe(false);
+    expect(hit(`await import(/* @vite-ignore */ "three" as string)`)).toBe(true);
+    expect(hit('await import("three" as string)')).toBe(true);
+    expect(hit(`import x from "../packages/archlang-3d/src/index.js";`)).toBe(true);
+    expect(hit(`import x from "./packages-archlang-3d.js";`)).toBe(false);
   });
 
   it("an import after a // inside a string literal on the same line is still seen", () => {
     const text = `const s = "x // y"; import "../packages/archlang-3d/src/index.js";`;
     expect(specifiersOf(text).map((x) => x.spec)).toContain("../packages/archlang-3d/src/index.js");
+    expect(specifiersOf(text).some((x) => FORBIDDEN.test(x.spec))).toBe(true);
     expect(specifiersOf(`const s = "x // y"; import "three";`).some((x) => FORBIDDEN.test(x.spec))).toBe(true);
   });
 });

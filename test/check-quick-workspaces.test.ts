@@ -7,13 +7,15 @@
  * (`npm -w <dir> run typecheck`), so a workspace added to one and not the other goes red. Workspaces
  * with no typecheck are listed, with a reason, in `EXCLUDED`.
  */
-import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 // @ts-expect-error — a zero-dep .mjs script with no type declarations.
 import { checkQuickWorkspaces, EXCLUDED } from "../scripts/workspaces.mjs";
 
-const ROOT = resolve(import.meta.dirname, "..");
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(ROOT, "package.json"), "utf8")) as { scripts: Record<string, string> };
 
 describe("check:quick workspaces", () => {
@@ -28,6 +30,12 @@ describe("check:quick workspaces", () => {
 
   it("the derived list equals the workspaces typecheck:all names, minus the exclusions", () => {
     expect([...checkQuickWorkspaces(ROOT)].sort()).toEqual([...named].filter((w) => !EXCLUDED.has(w)).sort());
+  });
+
+  it("a workspace glob it cannot expand throws instead of shrinking the list", () => {
+    const dir = mkdtempSync(join(tmpdir(), "ws-"));
+    writeFileSync(join(dir, "package.json"), JSON.stringify({ workspaces: ["pkgs/**"] }));
+    expect(() => checkQuickWorkspaces(dir)).toThrow(/glob/);
   });
 
   it("every exclusion has a reason and typecheck:all does not name it", () => {

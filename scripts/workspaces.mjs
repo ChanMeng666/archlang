@@ -20,6 +20,8 @@ export function checkQuickWorkspaces(root) {
       const base = join(root, parent);
       if (!existsSync(base)) continue;
       for (const name of readdirSync(base).sort()) dirs.push(`${parent}/${name}`);
+    } else if (/[*?[\]{}!]/.test(pattern)) {
+      throw new Error(`check:quick: unsupported workspaces glob "${pattern}" (only a trailing "/*" is expanded)`);
     } else dirs.push(pattern);
   }
   return dirs.filter(
