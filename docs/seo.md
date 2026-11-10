@@ -208,14 +208,14 @@ account, awaiting maintainers (except where marked):
 | semlinker/awesome-typescript | [#192](https://github.com/semlinker/awesome-typescript/pull/192) |
 | BehiSecc/awesome-claude-skills | [#1212](https://github.com/BehiSecc/awesome-claude-skills/pull/1212) — opened 2026-11-06 |
 | THUCBIMS/Awesome-AIGC4AEC | [#21](https://github.com/THUCBIMS/Awesome-AIGC4AEC/pull/21) — opened 2026-11-06; a papers list, so ArchLang is offered as a project and may be declined |
-| hashgraph-online/awesome-ai-plugins | [#1209](https://github.com/hashgraph-online/awesome-ai-plugins/pull/1209) — opened 2026-11-07 at the owner's word, answering their outreach issue [archlang#554](https://github.com/ChanMeng666/archlang/issues/554); Agent Skills section; their source scan must reach 75 to merge and `main` scored 70, so #558 (plugin-bundle LICENSE/SECURITY.md, pinned actions) raises it to 80 locally |
+| hashgraph-online/awesome-ai-plugins | [#1209](https://github.com/hashgraph-online/awesome-ai-plugins/pull/1209) — merged 2026-11-07 (opened at the owner's word on their outreach issue [archlang#554](https://github.com/ChanMeng666/archlang/issues/554); Agent Skills section; their source scan passed at 80 after #558); listed in the [HOL Registry](https://hol.org/registry/plugins); the fork is deleted. HOL Guard ownership verification (owner's GitHub OAuth, `read:user` + `user:email`) is optional and not done; its bot sends reminders until then |
 
 On 2026-11-06, with the owner's approval in chat, an agent rebased #14383 and #1375 (both had
 conflicts; the re-added lines no longer claim DXF/PDF from the MCP server), left one short comment
 on #1375, #192 and aec-mcp #1, and opened the two new entries above, every text disclosing the
 maintainer's account and the AI draft. `mlightcad/awesome-cad` was skipped (no merge since
 2026-06-05); `punkpeye/awesome-remote-mcp-servers` waits for the registry `remotes` to publish at
-the next release; `VoltAgent/awesome-openclaw-skills` waits for a ClawHub publish (owner login).
+the next release; `VoltAgent/awesome-openclaw-skills` #610 is recorded under ClawHub below.
 
 **One exception on record, 2026-11-03.** A SERP study run from the owner's `serpdata-api-test`
 repository (`reports/arch-projects-analysis.md`, with an errata block at its head) led an agent,
