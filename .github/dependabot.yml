@@ -23,6 +23,12 @@ updates:
       # refuses @types/vscode newer than the engine, and no CI job runs `vsce package`.
       - dependency-name: "@types/vscode"
         update-types: ["version-update:semver-minor", "version-update:semver-major"]
+      # No vitest major upgrade (docs/plans/engineering-health/README.md § 4: backlog 3.1's
+      # triggers have not fired). The two move together. Reopen when backlog 3.1's triggers fire.
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@vitest/coverage-v8"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"

@@ -51,7 +51,7 @@ jobs:
           cache: npm
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts && npm rebuild esbuild
 
       # The public API answers 404 for a version it does not have.
       - name: Decide whether this version is already on Open VSX
