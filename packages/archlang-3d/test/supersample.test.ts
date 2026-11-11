@@ -47,6 +47,18 @@ describe("supersampling (RM8.2)", () => {
     expect(withoutPayload(three)).toBe(withoutPayload(html));
   });
 
+  it("writes the payload back as the replay page writes it (`html.ts`): only the field is added", async () => {
+    // A re-serialised payload is the page's own bytes, `<` escaped the same way, so the page
+    // `withSupersample` writes differs from what `replayHtml` would write only by `supersample`.
+    const html = await page;
+    const at = html.indexOf(OPEN) + OPEN.length;
+    const raw = html.slice(at, html.indexOf("</script>", at));
+    // The payload carries the core's SVG, so it has a `<` to escape, and none is left.
+    expect(raw.includes("\\u003c")).toBe(true);
+    expect(raw.includes("<")).toBe(false);
+    expect(JSON.stringify(payloadOf(html)).replace(/</g, "\\u003c")).toBe(raw);
+  });
+
   it("takes a whole number from 1 to 4", async () => {
     const html = await page;
     for (const k of [0, 5, 1.5, -1]) expect(() => withSupersample(html, k), String(k)).toThrow(/whole number/);

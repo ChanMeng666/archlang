@@ -72,7 +72,8 @@ const PAYLOAD_OPEN = '<script type="application/json" id="archlang-replay-payloa
  * Supersampling (product-roadmap card RM8.2), for the generated posters and videos only: the replay
  * page with `supersample: k` in its payload, so every frame is the rounded mean of k × k renders
  * shifted by fractions of a pixel (`mountReplay`): the samples of a render at k times the size,
- * box-filtered back, in integers, so the same frame gives the same bytes. `k` is a whole number
+ * box-filtered back, in integers, so in one environment the same frame gives the same bytes (the
+ * key-frame baseline is kept per environment, `e2e/fixtures/README.md`). `k` is a whole number
  * from 1 to 4; 1 returns the page as it is, and the live 3D preview never sees the field.
  */
 export function withSupersample(html: string, k = 1): string {
