@@ -91,7 +91,8 @@ export function noteSnap(
   span: Span | undefined,
   point = false,
 ): void {
-  if (!(ctx.grid > 0)) return;
+  // The common case, a value already on the grid, returns here having allocated nothing.
+  if (!(ctx.grid > 0) || written.every((v, i) => v === drawn[i])) return;
   if (!written.every(quotable) || !drawn.every(quotable)) return;
   const a = written.map(fmt3);
   const b = drawn.map(fmt3);
