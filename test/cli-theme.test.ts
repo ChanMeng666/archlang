@@ -61,26 +61,26 @@ describe("--theme: without the flag the render is what it was", () => {
     expect(compared).toBeGreaterThanOrEqual(30);
   }, 120000);
 
-  it("every multi-storey example: the per-level files are the library pages, with and without the flag", async () => {
-    const dir = scratch();
-    let multi = 0;
-    for (const file of EXAMPLES) {
-      for (const theme of [undefined, "rendered"] as const) {
+  // One test per theme setting, so neither comes near the 120 s per-test ceiling (`test/no-clock-assertions.test.ts`).
+  const MULTI_STOREY = [undefined, "rendered"] as const;
+  for (const theme of MULTI_STOREY) {
+    it(`every multi-storey example: the per-level files are the library pages (${theme ? "--theme " + theme : "no flag"})`, async () => {
+      const dir = scratch();
+      let multi = 0;
+      for (const file of EXAMPLES) {
         const lib = libraryResult(file, theme ? THEMES[theme] : undefined);
         if (lib.errors.length > 0 || !lib.pages) continue;
-        const stem = join(dir, `${theme ?? "none"}-${file.replace(/[^a-z0-9]/g, "_")}`);
+        const stem = join(dir, file.replace(/[^a-z0-9]/g, "_"));
         const r = await runArch(["compile", file, ...(theme ? ["--theme", theme] : []), "-o", `${stem}-{level}.svg`]);
         expect(r.status, file).toBe(0);
         for (const p of lib.pages) {
-          expect(sha256(readFileSync(`${stem}-${p.level}.svg`, "utf8")), `${file} L${p.level} ${theme}`).toBe(
-            sha256(p.svg),
-          );
+          expect(sha256(readFileSync(`${stem}-${p.level}.svg`, "utf8")), `${file} L${p.level}`).toBe(sha256(p.svg));
         }
-        if (!theme) multi++;
+        multi++;
       }
-    }
-    expect(multi).toBeGreaterThanOrEqual(5);
-  }, 180000);
+      expect(multi).toBeGreaterThanOrEqual(5);
+    }, 100000);
+  }
 
   it("the committed README drawings are still what the CLI writes without the flag", async () => {
     for (const name of ["studio", "laneway-house", "courtyard-house"]) {

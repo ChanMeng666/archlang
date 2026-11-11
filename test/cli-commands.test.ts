@@ -5,7 +5,7 @@ import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } fro
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { describe, expect, it } from "vitest";
-import { buildManifest, compile, describe as describePlan } from "../src/index.js";
+import { THEMES, buildManifest, compile, describe as describePlan } from "../src/index.js";
 import { ARCH_ARGV, type CliRun, runArch, spawnArch } from "./helpers/cli.js";
 
 /**
@@ -455,6 +455,38 @@ describe("CLI — watch", () => {
       if (w.exit() === null) w.kill("SIGKILL");
     }
   }, 240000);
+
+  /**
+   * `watch --theme <name>` draws every save in the named theme: the first compile and a recompile
+   * carry the bytes `compile(src, { theme })` gives, and a name `cmdCompile` would refuse is refused
+   * before the watcher starts (it discards `cmdCompile`'s exit code, so it would otherwise run on).
+   */
+  it("`watch --theme rendered` writes the themed drawing on the first compile and on save", async () => {
+    const budget = 90000;
+    const dir = tmpDir();
+    const file = tmp("w.arch", labelled("Alpha"), dir);
+    const out = join(dir, "w.svg");
+    const themed = (label: string): string => compile(labelled(label), { theme: THEMES.rendered! }).svg;
+    const w = start(["watch", file, "--theme", "rendered", "-o", out]);
+    try {
+      await until("the first compile to write the themed output", () => peek(out) === themed("Alpha"), budget);
+      await until("the watching banner on stderr", () => w.stderr().includes("Ctrl+C to stop"), budget);
+      writeFileSync(file, labelled("Bravissimo"), "utf8");
+      await until("a recompile in the same theme", () => peek(out) === themed("Bravissimo"), budget);
+      expect(w.exit()).toBe(null);
+      w.kill("SIGTERM");
+      await until("the process to exit after SIGTERM", () => w.exit() !== null, 15000);
+    } finally {
+      if (w.exit() === null) w.kill("SIGKILL");
+    }
+  }, 240000);
+
+  it("`watch --theme` with an unknown name exits 3 instead of watching", () => {
+    const file = tmp("w.arch", labelled("Alpha"));
+    const bad = spawnArch(["watch", file, "--theme", "nope"], { timeout: 30_000 });
+    expect(bad.status).toBe(3);
+    expect(bad.stderr).toContain('unknown theme "nope"');
+  }, 60000);
 
   it("refuses a missing path and stdin with exit 3", () => {
     // Spawned, with a timeout: what this proves is that a refused `watch` EXITS the process. A run
