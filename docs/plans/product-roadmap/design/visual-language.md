@@ -1,6 +1,6 @@
 # 第 8 轨的视觉语言设计稿（RM8.5–RM8.9）
 
-本文是 `../cards.md` "冻结期设计稿"列表的第五份，是 RM8.5、RM8.6、RM8.7、RM8.8、RM8.9 开工前要读的设计，不是实现。2026-11-11 在 `main@bb912513` 上写成：下文的符号、行号、表项与数字逐条读过源码；词长、spec 余量、未露面的家族与候选词的冲突用一个只读脚本从源码重算（脚本放在仓库外的草稿目录，不入仓库）。所有者 2026-11-11 裁定路线图的日期与 Show HN 冻结不再卡工作，卡在真实依赖满足后即可开工；本文就是 RM8.5–RM8.9 的那个依赖。
+本文是 `../cards.md` "冻结期设计稿"列表的第五份，是 RM8.5、RM8.6、RM8.7、RM8.8、RM8.9 开工前要读的设计，不是实现。2026-11-11 在 `main@bb912513` 上写成：下文的符号、行号、表项与数字逐条读过源码；词长、spec 余量、未露面的家族与候选词的冲突用一个只读脚本从源码重算（脚本放在仓库外的草稿目录，不入仓库）。同日按协调者对 #715 的核对修订一轮（在合并了 `main@fcd56b27` 的分支上：§3.2 的去处、§4.4 的律模块、§1.5 的漏列面、§3.3 的完整理由，以及 §0、§1.2、§1.3、§2.2、§3.4、§4.1 的几处）。所有者 2026-11-11 裁定路线图的日期与 Show HN 冻结不再卡工作，卡在真实依赖满足后即可开工；本文就是 RM8.5–RM8.9 的那个依赖。
 
 标记：**【所有者裁定】** 是会动铁律或 ADR 的选择，要所有者一句话；**【协调者定】** 是其余的开放选择，本文给出推荐与理由，协调者可直接采用或改。每节末尾列出"与卡不符之处"，即卡的前提在代码里不成立或已经变了的地方。
 
@@ -10,7 +10,7 @@
 |---|---|
 | 103 个家族、163 个词；67 个 canonical 家族有目录占地，`furniture` 行列出它们共 609 个 UTF-16 单位 | `src/elements/fixtures-glyphs.ts:159`（`FIXTURE_FAMILIES`）、`:321`（`CANONICAL_FIXTURES`）；`src/fixtures-catalog.ts:956`（`defaultFootprint`）；`scripts/gen-llm-spec.ts:115`（`SIZE_OPTIONAL_FIXTURES`） |
 | `spec.llm.md` 今天 29,856 UTF-16 单位，上限 `< 30_000`，余量 143 | `test/llm-spec-drift.test.ts:82`；2026-11-11 在 `bb912513` 上重算 |
-| 地面词 4 个：`tile`、`paving`、`deck`、`concrete`；前两个之外的词分属墙材料表与地面图案表 | `src/hatches.ts:36`（`KNOWN_MATERIALS`）、`:61`（`GROUND_MATERIALS`）、`:72`（`FLOOR_MATERIALS`）、`:104`（`floorHatch`：墙材料名画成无底色的裸图案） |
+| 地面词 4 个：`tile`、`paving`、`deck`、`concrete`。`tile` 与 `concrete` 是墙材料（`KNOWN_MATERIALS`），用在地面时画成无底色的裸图案；`paving` 与 `deck` 是 `outdoor` 的地面图案（`GROUND_MATERIALS`），本来就不画底色 | `src/hatches.ts:36`（`KNOWN_MATERIALS`）、`:61`（`GROUND_MATERIALS`）、`:72`（`FLOOR_MATERIALS`）、`:104`（`floorHatch`：墙材料名加 `bare`） |
 | `outdoor` 9 种，各读三个主题底色之一 | `src/ast.ts:871`（`OUTDOOR_KINDS`）；`src/elements/outdoor.ts:133`（`GROUND` 的 `tint`：`lawn`、`paving`、`water`） |
 | 图案线色一律是主题的 `pocheHatch` | `src/backends/svg.ts:263`（`hatchCtx`） |
 | 材质名闭集含 `stone`、`soil`、`screen`、`wood`、`wool`，不是语言关键字 | `src/elements/fixtures-glyphs.ts:351`（`FIXTURE_MATERIALS`，`stone` 在 :359，`screen` 在 :363，`soil` 在 :368）；ADR 0023 2026-11-04 修订 |
@@ -49,14 +49,14 @@
 
 **常量**（与 `LIGHT` 并列放在 `mount.ts` 或 `materials.ts`，冻结的数）：亮主题 `A_floor = 0.20`、`A_corner = 0.12`、`A_furniture = 0.18`；暗主题各乘 1.5（深底上同样的黑要更浓才看得见）。数值在 PR 里看海报调一次，此后冻结；调的过程只看 CI 打印的关键帧，不在本地 bless。
 
-### 1.2 进 Mesh3D 与 GLB，还是只在查看器里：**只在查看器里**（【协调者定】，推荐）
+### 1.2 进 Mesh3D 与 GLB，还是只在查看器里：**只在查看器里**（【协调者定】）
 
 - ADR 0030 决定 4：Mesh3D 是"一个几何真相"，喂所有后端。阴影带不是建筑的几何；进了 GLB，Blender 等查看器会再按自己的灯光算一遍阴影，结果是双重阴影。
 - GLB 今天只有 `POSITION` 与索引（`glb/write.ts:179`）。带渐变的阴影要 `COLOR_0` 或贴图；贴图要 UV（`TEXCOORD_0`，第 8 轨对地面已明确不许）；逐顶点 AO 还要把只有几个顶点的大楼板细分。三样都是新的输出面。
 - RM8.3 的先例：地面平面只在查看器里画（`materials.ts:224`）。
-- 好处：laneway 的 Mesh3D 与 GLB 两个 SHA-256、事件表都不动；动的只有关键帧基线（按 `.claude/rules/archlang-3d.md` Traps 第 1 条的 CI 打印值流程重钉）与海报、视频（`npm run gen:3d-assets -- --videos`）。
+- 好处：GLB 的字节、事件表都不动；动的是关键帧基线（按 `.claude/rules/archlang-3d.md` Traps 第 1 条的 CI 打印值流程重钉）、海报与视频（`npm run gen:3d-assets -- --videos`），以及下面账本那一行带来的 Mesh3D 钉子。
 
-**账本**：推荐**不**在 Mesh3D 里加行。理由：阴影是灯光的属性，三盏灯（`mount.ts` 的 `LIGHT`）从来不进账本；ADR 0030 决定 5 管的是"平面没写、模型却给了的值"。地面平面进了账本，是因为它是一个画出来的东西而文件里没有。若协调者认为阴影同属此类，加一行 `contact-shadows-viewer-only` 会让每份 Mesh3D（与带 `extras.archlang` 的 GLB）都变，laneway 两个钉子按 V-D5 带理由移动；本文不推荐。
+**账本：每份 Mesh3D 加一行 `contact-shadows-viewer-only`**（协调者 2026-11-11 定）。先例就是 `ground-plane-viewer-only`（`src/mesh/build.ts:978`–`:990`）：一个只由查看器画、文件里没有的东西，照样在账本里说明，让读文件的人知道预览比文件多画了什么（ADR 0030 决定 5 的"surfaced in every output"）。这一行的 `value` 记三类带的宽度规则与亮、暗两套 alpha，`provenance: "default"`。代价：账本是 Mesh3D 的一部分，所以每份 Mesh3D 都变，laneway 的 Mesh3D SHA-256 按 V-D5 带理由移动；GLB 不写账本（`glb/write.ts` 只写节点、几何与材质），laneway 的 GLB SHA-256 不动。初稿推荐"不进账本、按灯光处理"，理由是三盏灯从来不进账本；协调者按地面平面的先例改为进账本，本稿照此。
 
 ### 1.3 帧时间预算与量法
 
@@ -67,7 +67,7 @@
 2. 三张图：`laneway-house`（钉住的那张）、`courtyard-house`（室外地面多、带最多）、`two-storey`（两层）。
 3. 同一浏览器进程里开两页，载荷只差一个 `shadows: false|true` 开关；先各渲 10 帧预热，再交替 A、B 各 60 帧（每帧在 `t_end` 与 `t_end − 1 ms` 之间来回 `seek`，强制重画，以 `__frameHash` 的读回作为帧结束）。
 4. 取每页的中位数，报 B/A 比值；预算对三张图中最大的比值。挂载耗时同法量 15 次中位数（与 RM8.1 报挂载耗时的口径相同）。
-5. 只在 CI 量：脚本放 `packages/archlang-3d/scripts/`，由 `check-3d` 任务跑一次并打印，不断言（计时断言会抖），数字抄进 PR。本地不跑（一次一个重命令，CI 是完整门禁）。
+5. 只在 CI 量，而且要接进 `check:3d` 的入口：`check:3d` 就是 `npm -w packages/archlang-3d run e2e`（根 `package.json:118`），即 `vitest.e2e.config.ts` 只收 `e2e/**/*.e2e.ts`。所以量法写成一个 e2e 文件（例如 `e2e/frame-budget.e2e.ts`；放 `scripts/` 的脚本 CI 不会跑）。它打印每张图的 A、B 中位数与比值，不断言比值（计时断言会抖），只断言量到了数（三张图都有 60 对样本）；数字从 `3D package (check:3d)` 任务的日志抄进 PR。本地不跑（一次一个重命令，CI 是完整门禁）。
 6. 另加一条确定性的结构测试（轻测试，Node 下跑同一个纯函数）：阴影三角形数 ≤ `4·轮廓边数 + 8·凸角数 + 8·落地家具数 + 4·围栏段数`，三张图各一条；这是能每次都断言的那一半。
 
 ### 1.4 确定性
@@ -82,7 +82,17 @@
 
 用词：没有 render、photoreal、walkthrough、model。同 PR 改卡里列的全部测试与面；README 两张海报的 alt 文本里的 "in flat colours" 改成 "in plain colours with soft contact shadows"。2D 的"无阴影"（ADR 0023 决定 5）不动。
 
-**与卡不符之处**：卡引的 `PREVIEW_LIMITS` 是 RM8.3 之前的旧句；要改的是 `payload.ts:88` 的现文。
+卡的清单之外，还有三处手写的同义说法（2026-11-11 在 `main@fcd56b27` 上 grep "flat colour"）：
+
+| 面 | 现文 | 处理 |
+|---|---|---|
+| `docs-site/.vitepress/theme/IsIsntTable.vue:8` | "the 3D preview is a separate package's flat-colour preview" | 改成 "a separate package's 3D preview in plain colours"；`site-markdown.mjs` 读这张表，站点的 Markdown 副本随 `docs:build` 重生成 |
+| `docs-site/.vitepress/theme/IsIsntTable.vue:11` | "… outdoor surfaces and fences in flat colours." | 与新的 `PREVIEW_LIMITS` 同一措辞："… in plain colours, with soft contact shadows the viewer draws." |
+| `docs-site/3d.md:52` | "every catalogued piece of furniture, in flat colours from the package's own palette" | 改成 "in plain colours from the package's own palette"；同一个 "Shown" 列表末尾加一条：接触阴影由查看器画，文件里没有（与下面 "The ground" 那条同一说法） |
+
+历史记录，不改，也不算进 grep 证明：`docs/whats-new.md:630`（某次发布时说过的话）与 `packages/archlang-3d/CHANGELOG.md:145`（0.x 某版的变更说明）照录当时的句子；`CHANGELOG.md:5683` 的 "one flat colour" 说的是源码高亮，与 3D 无关。生成的副本（`docs-site/public/`、`docs-site/.vitepress/dist/`、`docs-site/whats-new.md`）由 `docs:build` 重写，不手改。所以卡里"`grep "in flat colours"` 在公开面上不再命中旧句"的证明，范围是手写的源面，排除上面两个历史文件与生成的副本。
+
+**与卡不符之处**：卡引的 `PREVIEW_LIMITS` 是 RM8.3 之前的旧句；要改的是 `payload.ts:88` 的现文；卡的面清单漏了 `IsIsntTable.vue` 的两处与 `docs-site/3d.md:52`。
 
 ---
 
@@ -110,6 +120,8 @@
 | 外窗台（无楼面的一侧） | 厚 `clamp(round(0.15·t), 20, 40)`；伸出外墙面 `0.2·t`、两端各越过门洞 `0.2·t`，与核心 2D 的窗台（`src/elements/window.ts:43`–`:44`，`SILL_PROJECTION`、`SILL_HORN`）同比例；进深从窗框外面（中线外 30 mm）到外墙面外 `0.2·t`；坐在墙的窗台块上，`[sill, sill + 厚]` | `window-sill-exterior` |
 | 内窗台板（有楼面的一侧） | 厚 `clamp(round(0.1·t), 18, 30)`；伸出内墙面与两端越过门洞各 `clamp(round(0.1·t), 15, 30)`；进深从窗框内面到内墙面外伸出量；`[sill, sill + 厚]` | `window-board-interior` |
 | 洞口侧面（内半边的两侧与顶） | 厚 `clamp(round(0.075·t), 10, 20)`，从窗框内面到内墙面，颜色同窗框 | `window-reveal-lining` |
+
+越过门洞的宽度跟核心**画出来的**那一个：`window.ts:549`–`:551` 用宿主墙自己的 `t`（`SILL_HORN * t`）；`:492` 的 `max(t, corner.other.thickness)` 是 `measures()` 报给预算与范围检查的上界，不是画出的宽度，3D 不跟它。转角窗（`_corner`）在转角那一端不越过门洞，止于两墙内外角连线（核心 `:551`–`:555` 的 "past the jamb by the horn, or on the mitre"），另一端照常越过 `0.2·t`；内窗台板同理。
 
 哪一侧是"外"：与核心画 2D 窗台同一条规则，离墙两面各一个墙厚处探点，看落不落在本层某个房间的环或 `void` 里（`window.ts:182` 的 `exteriorNormal`，`src/geometry.ts:619` 的 `wallFaceProbes`），3D 用 Scene3D 的楼面与空洞多边形照做。恰有一侧有楼面才有内外窗台；两侧都有（室内窗）只做两侧的洞口侧面，没有窗台；两侧都没有（独立墙）什么都不加。`sill 0`（落地窗）不做外窗台与内窗台板。弧墙上：洞口侧面沿 `sectorBand` 做，窗台只做切口以内的部分，不伸出、不越过门洞（`window-sill-curved-inside-cut`）。RM8.6 不碰核心，所以这条规则在 3D 里重写一份；为防两边分家，加一条测试：对语料里每扇窗，3D 认定的外侧与核心 SVG 里窗台鼻子所在的一侧一致。
 
@@ -163,7 +175,12 @@
 
 ### 3.2 图案（裸图案，线色是主题的 `pocheHatch`）
 
-新图案进一张新的"仅地面"图案表（与 `KNOWN_MATERIALS`、`GROUND_MATERIALS` 并列，共用 `META`，`hatches.ts:280`），`FLOOR_MATERIALS` 追加三个词。为什么不放进 `KNOWN_MATERIALS`：那会让 `wall … material stone` 合法，并让 `wall` 行的 spec 也变长。为什么不直接并进 `GROUND_MATERIALS`：那张表的意思是"`outdoor` 种类用的图案"。新表也进 `sheet-text.ts` 的 `vocabularyKeys`（图例行可以改名），并给图例小样一个取景行（`GROUND_SWATCH_FRAME` 的键类型扩到新表）。所有新图案：不画底色，不读随机数（位置都是冻结的分数表），每个尺寸是 `c.gap · k · c.scale`，`test/model-range.test.ts` 的瓦片上限照样覆盖。墙材料（`poche`、`concrete`、`brick`、`insulation`、`tile`）的图案一个字节都不动（`.claude/rules/glyphs.md`）。
+五个新图案分两处去，都与已有的图案共用一张 `META`（`hatches.ts:280`）：
+
+- **`sand`、`soil` 进 `GROUND_MATERIALS`**，各加一行 `GROUND_SWATCH_FRAME`（图例小样的取景）。这是 `outdoor` 的本来路子：`GROUND` 表的 `material` 一栏写的就是 `GROUND_MATERIALS` 里的名字（`outdoor.ts:133`），图例与 DXF 都从那里来。它们不进 `FLOOR_MATERIALS`。
+- **只有 `timber`、`carpeting`、`stone` 进 `FLOOR_MATERIALS`**。它们的图案既不是墙材料，也不是任何 `outdoor` 种类的填充，所以放在 `META` 旁边的一张"仅地面"小表里（例如 `FLOOR_PATTERNS`），各带一行图例取景（`GROUND_SWATCH_FRAME` 的键类型扩到这张表）。不放进 `KNOWN_MATERIALS`：那会让 `wall … material stone` 合法，并让 `wall` 行的 spec 变长。不放进 `GROUND_MATERIALS`：那张表的意思是"某个 `outdoor` 种类的填充"，测试按这个意思数它（`test/outdoor.test.ts:427` 断言一张写满各种类的图，图例小样恰为 `GROUND_MATERIALS.length + 1`），三个室内地面词放进去，这个计数就不再是种类的计数。`:340`、`:354` 两处扫的是图案本身的性质（不画底色、瓦片首尾相接），"仅地面"小表也该满足，RM8.7 把这两处扩到它。`sand`、`soil` 进 `GROUND_MATERIALS` 后，`:420` 那张图的种类清单要加上这两个种类，计数才仍然成立。
+
+两处都进 `sheet-text.ts` 的 `vocabularyKeys`（`GROUND_MATERIALS` 已在，"仅地面"小表新加），图例行可以改名。所有新图案：不画底色，不读随机数（位置都是冻结的分数表），每个尺寸是 `c.gap · k · c.scale`，`test/model-range.test.ts` 的瓦片上限照样覆盖。墙材料（`poche`、`concrete`、`brick`、`insulation`、`tile`）的图案一个字节都不动（`.claude/rules/glyphs.md`）。
 
 | 词 | 图案 | 与相近图案的区别 | DXF 名（提议，执行者对照 `acad.pat` 核） |
 |---|---|---|---|
@@ -177,9 +194,18 @@
 
 ### 3.3 `rendered` 主题下的浅色块 —— **【所有者裁定】**
 
-推荐：只在 `rendered` 主题下、只对作者写了新地面词的房间，把房间楼面多边形自己的填色从 `theme.roomFill` 换成 `materialTints` 里同名材质的颜色：`timber` → `wood`，`carpeting` → `wool`，`stone` → `stone`（这张对照表放核心，与 `FIXTURE_FAMILY_MATERIALS` 同理，3D 也读它）。不加新的主题键（ADR 0023 修订明说"no new theme directive key"），不加图元（换的是已有楼面多边形的填色，房间的 `drawCost` 不变）；旧的四个词不上色，所以任何主题下已有的图都逐字节不变。
+**状态：待所有者裁定。** 2026-11-11 已问所有者，尚未答复。裁定之前 RM8.7 只做图案，三个新词在所有主题下（含 `rendered`）都不上色。
 
-为什么要所有者：ADR 0023 的"不采纳"一栏写着 "Floor-material tints under furniture or rooms"，2026-11-04 的修订（所有者的 V-D1）只放开了家具符号的填色。本推荐不碰那条反对的理由（"a fill implies a material the source never named"，这里材料是作者写出来的），但它扩大了修订的范围，要所有者一句话。没裁之前 RM8.7 照做图案，三个词在所有主题下都不上色。
+**要裁的做法**：只在 `rendered` 主题下、只对作者写了新地面词的房间，把房间楼面多边形自己的填色从 `theme.roomFill` 换成 `materialTints` 里同名材质的颜色：`timber` → `wood`，`carpeting` → `wool`，`stone` → `stone`（对照表放核心，与 `FIXTURE_FAMILY_MATERIALS` 同理，3D 也读它）。不加新的主题键（ADR 0023 修订写明 "no new theme directive key"），不加图元（换的是已有楼面多边形的填色，房间的 `drawCost` 不变）；旧的四个词不上色，所以任何主题下已有的图都逐字节不变。
+
+**ADR 0023 反对它的完整理由**（"Alternatives rejected" 一栏）是两条："Floor-material tints under furniture or rooms: a fill implies a material the source never named, **and it competes with the ground textures that do name one**." 2026-11-04 的修订（所有者的 V-D1）在 "Why only one theme" 里重复了第二条："The ground textures that name a material compete with any fill, and a construction or line print reads best untinted"。这里要裁的浅色正好铺在一个地面图案的下面，就是第二条说的那种互相争抢。
+
+两种读法，并列给所有者：
+
+- **读法甲：可以做。** 第一条不成立：材料是作者用 `floor` 写出来的。第二条在 `rendered` 里本来就已接受：`rendered` 是唯一允许填色的主题，修订放开它，正是因为"给客户的展示板是颜色有帮助的地方"；`outdoor` 的地面今天在每个主题下都是"底色加图案"（`GROUND` 的 `tint`），室内地面在 `rendered` 里同样做，是同一种画法。图案线色与底色的对比用下面的检查守住。
+- **读法乙：不做。** 第二条是针对任何主题的：图案已经说出了材料，再铺一层颜色，图案的线就被底色吃掉一部分，图纸更难读；修订放开的只是家具符号，没有放开地面；`outdoor` 的底色是地面元素自己的颜色，不是"材料的色"。按这个读法，三个词在 `rendered` 下也只画图案。
+
+**若采用读法甲，同 PR 加一条对比检查**（与 `test/rendered-theme.test.ts` 量家具符号描边对填色"至少 3:1"同法，按 WCAG 相对亮度算）：`rendered` 的图案线色 `pocheHatch` 在每个地面浅色上的对比，不低于它在 `roomFill` 上的对比的某个比例。2026-11-11 用 `src/theme.ts` 的 `rendered` 值算的现状：`pocheHatch` `#b9a98f` 在 `roomFill` `#fffefb` 上是 2.28:1；在 `wood` `#ead9c0` 上 1.66:1，`wool` `#efe7da` 上 1.87:1，`stone` `#e6e3dd` 上 1.79:1。也就是说，按今天的色值，图案线的对比下降 18–27%。检查的门槛（例如"不低于 `roomFill` 上的 80%"，今天 `wood` 不过；或"不低于 1.5:1"，今天三个都过）连同是否为地面另调一组更浅的色值，也是所有者裁定的一部分。这里的对比是地面纹理（ADR 0023 决定 1 的第五级，最淡的一层），不是文字，WCAG 的 4.5:1 不适用。
 
 ### 3.4 3D 的颜色来源
 
@@ -192,8 +218,10 @@
 | `carpeting` | `PALETTE.wool` | 与 `rendered` 的 `wool` 同一材质名（V-D2） |
 | `stone` | `PALETTE.stone` | `materials.ts:69` |
 | `deck` | `PALETTE.wood` | 与室外 `deck` 的 `GROUND_SPLITS` 同 |
-| `paving` | 主题的 `paving` 底色按 `GROUND_WASH` 叠六次（与室外 `paving` 同算法） | `materials.ts:176`、`mesh/outdoor.ts` |
+| `paving` | 与室外 `paving` 同色：默认主题的 `paving` 底色按 `GROUND_WASH` 叠六次（`#ab9f87`），在模块加载时算一次，写成 `FINISH_PALETTE` 的一个静态项 | `materials.ts:176`、`mesh/outdoor.ts`；见下面 GLB 一段 |
 | `concrete` | 新的饰面色一项，PR 里定值 | 进账本 |
+
+**GLB 里的地面颜色只能是静态的饰面表。** 室外地面在 GLB 里读节点自带的 `extras.colour`（`glb/write.ts:70`–`:80`），楼面不读：楼面的材质名是 `floor:<finish>`（`:57`），颜色直接取 `FINISH_PALETTE[finish]`（`:81`）。所以每个地面词都要映射到 `FLOOR_FINISHES` 里的一项，`FINISH_PALETTE` 有它的静态颜色；`paving` 不能像室外那样把主题算出的颜色挂在节点上，只能把那个算出的值在加载时冻结进 `FINISH_PALETTE.paving`，查看器与 GLB 于是读同一个数。`carpeting`、`stone`、`deck` 同理：`FINISH_PALETTE` 新增的项直接引用 `PALETTE.wool`、`PALETTE.stone`、`PALETTE.wood` 的值。暗主题下查看器照旧经 `finishColour` 变暗（`materials.ts:276`），GLB 只有亮色一套。
 
 新 `outdoor` 种类：`GROUND_TINT` 各加一行（都是 `paving`），`GROUND_SPLITS` 加 `sand` → `SITE_PALETTE` 新增的 `sand` 色，`soil` → `PALETTE.soil`（已有槽位，与沙坑、种植池的土同色）。每项按 `outdoor-colour-3d` 进账本。没写 `floor` 的房间照旧按 `FLOOR_FINISH_RULES`；规则本身不改（会动每张有房间的图的 Mesh3D 与 GLB）。GLB 的 `floor:<finish>` 材质随 `FLOOR_FINISHES` 增加（`glb/write.ts:57`）。
 
@@ -243,6 +271,8 @@
 
 ### 4.3 绿植与庭院的补充 —— **提案，交所有者选**
 
+**状态：待所有者裁定。** 2026-11-11 已问所有者，尚未答复。裁定之前这四个家族**不在** RM8.9 的清单里，RM8.9 只做 §4.1 的十二个。
+
 所有者 2026-11-11 问到更多绿植。现有的植物家族（`CANONICAL_FIXTURES`）：`plant`（别名 `planter`，3D 是 1.1 m 高的盆栽，`t0-outdoor.ts:281`）、`tree`、`conifer`、`shrub`、`hedge`、`palm`、`flower_bed`、`raised_bed`，加上地面的 `lawn` 与 `planting`。缺的是：
 
 | 提案 | canonical（别名） | 缺什么 | 目录占地 | spec 成本 | 3D 默认 | 材质 |
@@ -252,13 +282,26 @@
 | 大型室内盆栽树 | `potted_tree`（`indoor_tree`） | `plant` 的高度固定 1.1 m，不随占地变，客厅里 2 m 的琴叶榕一类今天画不出 | 无 | 0 | 2000：盆、可见的树干、树冠（§2.4 的放样） | foliage、ceramic |
 | 踏步石小路 | `stepping_stones`（无） | 从 RM8.7 移来（§3.1）：石块是占地的分数，个数是长度的夹取函数，2D 与 3D 同源 | 无 | 0 | 30 mm 厚的石板 | stone |
 
+若采纳 `climber`：它是第七个 `wallMounted` 家族，`src/fixtures-catalog.ts:187`–`:195` 那段注释（"a radiator, a fireplace, a TV, an EV charger, a towel rail or a whiteboard … Set on exactly those six families"）要同 PR 改成七个并列出它，否则注释与表不符。§4.1 的十二个都不设 `wallMounted`（`wall_ac`、`wall_art` 照 `mirror` 设 `requiresWall` 与 `overhead`），所以那段注释只在 `climber` 进来时才动。
+
 不提议：挂顶的吊篮（挂顶物不在本批，MF14）；`planter_box`（在 `NEAR_WORDS` 里，钉的就是"它不是家具词"）；`vine`（与 `pine` 只差 2 个字符，又可指葡萄藤）。提案的四个都只用现有材质，都按对称画。
 
 **提案的 spec 成本：15**（只有前两个带占地）。
 
 ### 4.4 本批的字节恒等律怎样与 V8 的律共存（【协调者定】）
 
-`test/new-families-byte-identity.test.ts:123`–`:125` 断言 `CANONICAL_FIXTURES.length` 等于 103、最后一个新词是 `desk_pod`，第 104 个家族一加就红。推荐的改法，比原断言更强而不是更松：把计数换成"第 84–103 个家族逐个等于一张冻结的 20 个名字的表"，`NEW_WORDS` 截到这 20 个家族的词为止，其余（行、基线、扫描）一字不改。本批另立一条律：`FAMILIES_BEFORE = 103`，内联一张 103 个家族带图例的图，加本批的近义词（`gate`、`freezer`、`screen`、`divider`、`art`，各是带 `label` 的矩形）。近义词都带 `label`，所以 RM1.4 的拼写提示不会在那一行出现；PR 另用脚本证明语料里没有一个没写 `label` 的未知家具词离新词在提示距离以内（2026-11-11 的扫描：没有）。另一个要写进律的说明：`sheet text` 的可写键含全部家具词（`sheet-text.ts:81`），一张在 `sheet text` 里写了新词作键的图，诊断会变；语料里没有。
+**V8 律的测试文件只改一处。** `test/new-families-byte-identity.test.ts:123`–`:125` 断言 `CANONICAL_FIXTURES.length` 等于 103、最后一个新词是 `desk_pod`，第 104 个家族一加就红。改法比原断言更强而不是更松：把计数换成"第 84–103 个家族逐个等于一张冻结的 20 个名字的表"，`NEW_WORDS` 截到这 20 个家族的词为止。行、基线、扫描一字不改。
+
+**V8 的取行代码一个字节都不动。** `test/helpers/new-families-law.ts` 的 `inlineRows` 与 `familiesLawRows` 读的是模块常量（`FAMILIES_BEFORE = 83`，`:36`；`NEAR_WORDS`，`:44`；`inlineRows` 在 `:66` 用前者截表，在 `:79` 用后者），不能直接拿来量 103 个家族；而 V8 测试的头注释写明基线是"by THIS law's body (`test/helpers/new-families-law.ts`)"在 `8233acc4` 上量出来的，改这段代码就等于换了量具。所以本批的律放在一个**新模块**（例如 `test/helpers/families-law-rm89.ts`），它：
+
+1. 照旧 import V8 模块里与家族数无关的部分：`perThemeDigests`、`familiesLawDigest`（摘要算法，两条律用同一个摘要体，不另写一个长得像的）与 `FamiliesLawApi`、`FamiliesLawRow` 类型。
+2. 示例行复用 V8 的 `familiesLawRows(root, CANONICAL_FIXTURES)`，只取其中 `examples/` 开头的行（V8 的两条内联行丢掉），这样两条律的示例行是同一段代码列出的同一组文件。
+3. 自己定义参数化的内联行：`inlineRowsFor(families, before, nearWords, tag)`，用 `before = 103`、本批的近义词（`gate`、`freezer`、`screen`、`divider`、`art`，各是带 `label` 的矩形），生成 `inline:families-before-rm89-legend`（103 个家族在一张带图例的图上：每行 12 个，`paper A1`、`scale 1:50`，与 V8 同一排法）与 `inline:rm89-near-words`。参数化只在新模块里；V8 模块不改成调用它，免得它的函数体变了。
+4. 自己的测试文件（例如 `test/rm89-families-byte-identity.test.ts`）照 V8 测试的结构：一条前提用例（扫描同一组目录，找本批新词，读 §5.2 的同一张展示图名单），一条"表钉住每一行"，每行一条用例。
+
+**103 个家族的基线怎样量**，照 V8 头注释的做法：在 RM8.9 合并之前，用 `git archive` 取出 `main` 的 `src/`、`examples/` 与 `test/helpers/`（那一刻的 `main` 就是"本批之前"），把那棵树的 `compile`、`describe`、`lint`、`THEMES.rendered`、`CANONICAL_FIXTURES` 与 `makeNodeWorld` 交给**新模块的这段代码**（不是一段看起来一样的代码，`test/helpers/byte-identity-digest.ts` 说了为什么），逐行量；分支上再量一次，两表逐行相同。先证明它能红：在一个没有示例画到的旧家族上种一个改动（V8 用的是把 `treadmill` 的圆角 0.05 改成 0.051），只有 `inline:families-before-rm89-legend` 一行动，其余不动；把这次试验写进新测试的头注释，与 V8 一样。基线所在的提交 SHA 也写进头注释。
+
+近义词都带 `label`，所以 RM1.4 的拼写提示不会在那一行出现；PR 另用脚本证明语料里没有一个没写 `label` 的未知家具词离新词在提示距离以内（2026-11-11 的扫描：没有）。另一个要写进律的说明：`sheet text` 的可写键含全部家具词（`sheet-text.ts:81`），一张在 `sheet text` 里写了新词作键的图，诊断会变；语料里没有。
 
 ### 4.5 spec 成本合计与 PS7.9
 
@@ -266,11 +309,12 @@
 |---|---|
 | RM8.7（`timber`、`carpeting`、`stone`；`sand`、`soil`） | 33 |
 | RM8.9 的十二个家族（只有七个带占地：`wall_ac` 8、`condenser` 10、`chest_freezer` 14、`wine_fridge` 12、`display_cabinet` 16、`daybed` 7、`wall_art` 9） | 76 |
-| 绿植提案（`climber` 8、`bamboo` 7） | 15 |
-| **合计** | **124** |
+| **已定的合计**（RM8.7 + RM8.9） | **109** |
+| 绿植提案（`climber` 8、`bamboo` 7；待所有者裁定，裁定前不计入 RM8.9） | 15 |
+| **若提案获准的合计** | **124** |
 | 今天的余量 | 143 |
 
-卡按"十二个都带占地、平均词长 9–10"估约 120，实际按占地只有 76；三张词表卡合起来 124，单看放得进今天的 143，只剩 19。但 PS7.9 的目标本来就要先算进五个 `[语法]` 形式（RM6.1 两个、RM-D17 的净高子句一个、RM1.2b 两个，`../cards.md` PS7.9），它们排在同一份余量上。所以 **PS7.9 至少要腾出 `C₅ + 124 − 143 + 余量`**，`C₅` 是那五个形式各自 spec 行的长度（由各卡在设计时给出），余量建议 150，留给日后的修正句。词表卡仍然依赖 PS7.9：谁先合谁先占余量，后来的形式卡会无路可走。若要再省：`display_cabinet` 换成 `vitrine` 作 canonical（原名作别名）省 8；绿植提案只取 `bamboo` 省 8。
+卡按"十二个都带占地、平均词长 9–10"估约 120，实际按占地只有 76；两张词表卡已定的部分合起来 109，算上提案 124，单看都放得进今天的 143（剩 34 或 19）。但 PS7.9 的目标本来就要先算进五个 `[语法]` 形式（RM6.1 两个、RM-D17 的净高子句一个、RM1.2b 两个，`../cards.md` PS7.9），它们排在同一份余量上。所以 **PS7.9 至少要腾出 `C₅ + 124 − 143 + 余量`**（按提案获准的 124 留，裁定为否时多出 15），`C₅` 是那五个形式各自 spec 行的长度（由各卡在设计时给出），余量建议 150，留给日后的修正句。词表卡仍然依赖 PS7.9：谁先合谁先占余量，后来的形式卡会无路可走。若要再省：`display_cabinet` 换成 `vitrine` 作 canonical（原名作别名）省 8；绿植提案只取 `bamboo` 省 8。
 
 **与卡不符之处**：`chaise` 已存在；卡对 RM8.9 成本的估算按"都带占地"，偏高。
 
@@ -307,20 +351,22 @@ V8 律有两样东西，要分开看：**律本身**是"一张不写那 20 个�
 
 ### 6.1 需所有者裁定的事
 
-| # | 事 | 推荐 | 不裁时的默认 |
+两项都**待裁定**：2026-11-11 已问所有者，尚未答复。裁定之前按右栏执行。
+
+| # | 事 | 摆给所有者的 | 裁定之前（默认） |
 |---|---|---|---|
-| 1 | §3.3：`rendered` 主题下，作者写了 `timber`、`carpeting`、`stone` 的房间楼面用同名材质的浅色（扩大 ADR 0023 2026-11-04 修订的范围；动 ADR 的"不采纳"一栏） | 同意：材料是作者写的，不触 ADR 反对的理由；不加主题键、不加图元；其他主题与已有的图逐字节不变 | 三个词在所有主题下只画图案 |
-| 2 | §4.3：绿植与庭院的补充（`climber`、`bamboo`、`potted_tree`、`stepping_stones`）要不要进 RM8.9 | 四个都进，spec 15 | RM8.9 只做十二个 |
+| 1 | §3.3：`rendered` 主题下，作者写了 `timber`、`carpeting`、`stone` 的房间楼面用同名材质的浅色（扩大 ADR 0023 2026-11-04 修订的范围；ADR 的"不采纳"一栏两条理由都要面对，第二条"与说出材料的地面图案争抢"正是这里的情形） | 读法甲（做，加图案线对比检查）与读法乙（不做）并列；对比的现状数字与门槛选项在 §3.3 | 不上色：三个词在所有主题下只画图案 |
+| 2 | §4.3：绿植与庭院的补充（`climber`、`bamboo`、`potted_tree`、`stepping_stones`）要不要进 RM8.9 | 四个的缺口、成本（spec 15）与默认值 | 不进：RM8.9 只做 §4.1 的十二个 |
 
 （§5.2 的豁免名单在协调者的读法下不需要所有者；若读作改律，就是第 3 项。）
 
 ### 6.2 交协调者的选择（本文的推荐）
 
-阴影只在查看器里、不进账本（§1.2）；预算 +30% 帧时间与挂载耗时，CI 里量（§1.3）；门框分两半、门扇不变（§2.1）；窗台的内外按核心同一条探测规则在 3D 重写并加对照测试（§2.2）；开敞踢面、按探测定栏杆边（§2.3）；放样代替 `profile` 做回转体，`conifer` 不改（§2.4）；`carpet` 改名 `carpeting`、`stepping` 不做种类（§3.1）；新图案进单独的"仅地面"表（§3.2）；十二个家族的终名与占地（§4.1）；`garden_gate` 不占裸词 `gate`（§4.2）；V8 律的计数断言换成名字表（§4.4）；展示示例 A 在顶层、B 在子目录加豁免名单（§5.2）。
+阴影只在查看器里，账本加一行 `contact-shadows-viewer-only`（协调者已定，§1.2）；预算 +30% 帧时间与挂载耗时，量法是接进 `check:3d` 的 e2e 文件（§1.3）；门框分两半、门扇不变（§2.1）；窗台的内外按核心同一条探测规则在 3D 重写并加对照测试，越过门洞的宽度跟画出的 `SILL_HORN * t`（§2.2）；开敞踢面、按探测定栏杆边（§2.3）；放样代替 `profile` 做回转体，`conifer` 不改（§2.4）；`carpet` 改名 `carpeting`、`stepping` 不做种类（§3.1）；`sand`、`soil` 进 `GROUND_MATERIALS`，三个室内地面词进 `FLOOR_MATERIALS` 与一张"仅地面"图案表（§3.2）；地面颜色在 GLB 里走静态的 `FINISH_PALETTE`（§3.4）；十二个家族的终名与占地（§4.1）；`garden_gate` 不占裸词 `gate`（§4.2）；V8 律的计数断言换成名字表，本批的律放新模块、V8 的取行代码不动（§4.4）；展示示例 A 在顶层、B 在子目录加豁免名单（§5.2）。
 
 ### 6.3 与卡不符之处（集中）
 
-- `PREVIEW_LIMITS` 已被 RM8.3 改写（§1.5）。
+- `PREVIEW_LIMITS` 已被 RM8.3 改写；卡的面清单漏了 `IsIsntTable.vue` 两处与 `docs-site/3d.md:52`（§1.5）。
 - `profile` 是拉伸截面，做不出树冠（§2.4）。
 - `soil` 也是 `FIXTURE_MATERIALS` 的材质名（§3.1）。
 - `stepping` 作为地面种类，3D 画不出与 2D 一致的石头（§3.1）。
