@@ -240,7 +240,9 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/studio.arch",
     "db6313cfbaecbf55d2e78fac0c1de44a6973b4106497cb7700f3b4b40a94808f",
-    "c9c1f50e159d4b8860578c7dbdfe183adbfa2886ae7ed75333ae27e7e33f7ac6",
+    // RM0.2b: the source hash moved c9c1f50e… -> 48afb13e… because the header comment was corrected (comment only);
+    // the payload digest above is unchanged, so SVG, describe() and lint() did not move.
+    "48afb13e721e070327ffcdd58c486abd4b115e101c6b29271dd9be1c217e86f8",
     [
       [
         "  # Kitchen run along the north wall: sink · stove · counter · fridge (drawn as symbols).",
