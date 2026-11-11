@@ -392,6 +392,9 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/accessible.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 8.93 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     'examples/accessible.arch W_ROOM_TOO_NARROW Room "Bedroom" is 2350 mm wide between its wall faces, under the 2750 mm the profile asks of one double bedroom of every home (none here is that wide) — 400 mm short.',
     'examples/attached.arch W_ROOM_TOO_SMALL Room "Bedroom" is only 10.83 m² of net floor (under 11.5 m², the floor for a double bedroom).',
+    // RM8.5: 5500 drawn less half of each wall it runs between (the 300 exterior, the 100 partition
+    // to the bath); measured 5300 mm in CI on the branch that added the example.
+    'examples/courtyard-family.arch W_GARAGE_TOO_NARROW Garage "Garage" is 5300 mm deep from its vehicle door, between its wall faces, under the 6000 mm of clear depth a parked car needs — 700 mm short.',
     'examples/furnished-flat.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 10.4 m² of net floor (under 11.5 m², the floor for a double bedroom).',
     // PS2.70: a garage's clear internal length is 6000 mm here (Monmouthshire SPG 2013 ¶12, citing
     // Manual for Streets); this one is 6000 drawn less two 150 mm half-walls.

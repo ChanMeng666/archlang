@@ -137,7 +137,7 @@ const EXAMPLE_ROWS = [
     "courtyard-family",
     "Courtyard Family House",
     "Homes",
-    "A family house round a courtyard, furnished with pieces no other example draws: bunk beds, a crib, a hot tub, a swing, a fire pit.",
+    "A family house round an open courtyard, furnished with pieces no other example draws: bunk beds and a crib, a hot tub and a fire pit.",
   ],
   [
     "townhouse",

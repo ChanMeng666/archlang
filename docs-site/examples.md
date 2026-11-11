@@ -340,6 +340,24 @@ centroid falls outside it, its name is pinned by hand in the south arm.
 
 <ArchLive :src="EXAMPLES['courtyard-house']" page="courtyard-house" :rows="30" />
 
+### Courtyard Family House
+
+_A family house round a courtyard, furnished with pieces no other example draws._
+
+A 20 × 16 m single-storey house wrapped round an open courtyard, with a garden to the south —
+**11 rooms, 296 m², 14 doors, 15 windows** at `scale 1:100`. It exists to furnish a whole
+family with the words the rest of the gallery never uses: bunk beds and a crib, a games room
+with a pool table, a gym with a treadmill, a fireplace and a TV the seats face, a garage with
+a motorcycle, a hot tub in the courtyard, and a swing, a sandpit and a fire pit in the garden.
+
+Every room is a rectangle except the hall, one [polygon room](/reference#polygonal-rooms-v1-23)
+that rings the courtyard on three sides, and `walls from rooms` derives every wall. Rooms
+round a hole do not tile one floor, so the hole is covered exactly by an `outdoor patio`: that
+tells the compiler the courtyard is open ground, and its ring becomes a second exterior wall,
+which the courtyard's windows and sliding doors stand in.
+
+<ArchLive :src="EXAMPLES['courtyard-family']" page="courtyard-family" :rows="30" />
+
 ### Townhouse (three storeys)
 
 _A narrow terrace house on three storeys, one drawing per storey._

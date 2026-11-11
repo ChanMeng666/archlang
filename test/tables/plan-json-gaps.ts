@@ -49,6 +49,13 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
   "tiny-house.arch": { because: "`roof` is deliberately absent from the projection", proof: /^\s*roof\b/m },
   "bungalow.arch": { because: "`roof`; and the sheet layer — `schedule`", proof: /^\s*roof\b/m },
   "courtyard-house.arch": { because: "`roof`; and the sheet layer + `zone`", proof: /^\s*roof\b/m },
+  // `walls from rooms` and its polygon hall DO travel; the `outdoor patio` that covers the
+  // courtyard hole does not, so the plan that comes back has an uncovered hole and refuses
+  // (`E_ROOMS_NOT_TILING`, then every opening `E_OPENING_NO_SHARED_WALL`). `dropped` names it.
+  "courtyard-family.arch": {
+    because: "`outdoor` (the courtyard cover `walls from rooms` needs); and the sheet layer, a room's `label … at`",
+    proof: /^\s*outdoor\b/m,
+  },
   // --- storeys and composition -----------------------------------------------------
   "two-storey.arch": {
     because: "`level` — each storey projects alone and draws differently from its sheet; also `roof`/`void`/`stair`",

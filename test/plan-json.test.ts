@@ -346,6 +346,19 @@ describe("plan-json — derived furniture positions", () => {
     if (!json || diagnostics.some((d) => d.severity === "error")) return;
     const { source, diagnostics: back } = planFromJson(json);
     if (!source || back.some((d) => d.severity === "error")) return;
+    // One by-design loss leaves no plan to measure: a courtyard's `outdoor` cover does not travel,
+    // so `walls from rooms` round the hole refuses on the way back. Only that loss is let through,
+    // only on a listed gap, and only when the projection's own `dropped` names `outdoor`.
+    const again = planToJson(source);
+    if (!again.json || again.diagnostics.some((d) => d.severity === "error")) {
+      expect(CANNOT_ROUND_TRIP, `${name} comes back unresolvable but is not a listed gap`).toHaveProperty([name]);
+      expect(planToJson(src).dropped?.map((d) => d.clause) ?? [], name).toContain("outdoor");
+      expect(
+        again.diagnostics.filter((d) => d.severity === "error").map((d) => d.code),
+        `${name}: the way back refuses for a reason other than the lost courtyard cover`,
+      ).toContain("E_ROOMS_NOT_TILING");
+      return;
+    }
     const pos = (s: string): Record<string, string> => {
       const out: Record<string, string> = {};
       for (const f of planToJson(s).json?.furniture ?? [])

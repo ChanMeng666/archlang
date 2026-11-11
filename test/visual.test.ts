@@ -111,6 +111,9 @@ const EXAMPLES = [
   "remodel.arch",
   // The turning stair (S2): the block form's walking line, landing and one break line.
   "turning-stair.arch",
+  // RM8.5's vocabulary plan: it opts into `schedule` + `legend` (so it needs a golden that pins its
+  // tables), and it is the one golden that draws the nineteen families no other example uses.
+  "courtyard-family.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {

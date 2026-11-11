@@ -13,6 +13,8 @@
  * - north fixed (PS5.1b): the report with R12 and what it feeds (the `light` subscore, the total,
  *   the coverage weight) set aside, on every example and every turn and mirror; the validity
  *   verdict (and so the cap) is set aside too, because lint reads the compass on a `site` plan.
+ *   R12 is not quite the only reader: R3 walks from the main entrance, which on a `site` plan the
+ *   street may name, so R3 is set aside too on the plans named in `STREET_ENTRANCE_R3` below.
  *
  * One part of the report is compared under the translation only: `validity.drafting`, the
  * drafting-layer lint findings. `W_ANNOTATION_OVERLAP` (PS2.12) reads the drawn sheet, whose text
@@ -21,8 +23,9 @@
  * score, the criteria and the validity verdict are still compared under every frame.
  */
 
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { taste, type TasteReport } from "../src/index.js";
+import { describe as describePlan, taste, type TasteReport } from "../src/index.js";
 import {
   astOf,
   corpusElements,
@@ -90,15 +93,49 @@ describe("taste() is invariant under translation and D4 (north carried)", () => 
   }
 });
 
+/**
+ * The examples where R3 reads the compass too, by name, each compared with R3 (and the `zoning`
+ * subscore it feeds) set aside under a fixed north. R3 measures door depth from the storey's MAIN
+ * entrance, and on a `site` plan with several ways in that door is the one hinged door facing
+ * `site.street` (PS0.10 step 2, `src/analyze/entrance.ts`): turn the building under a fixed north
+ * and another door faces the street, or none does and the walk starts from every way in. Where
+ * that changes a depth R3 compares, R3 moves. `bungalow` and `laneway-house` are named by the
+ * street as well and keep their R3, so they are not here. A case below holds each name to it:
+ * its entrance has basis `street`, and R3 moves (so the entry is not stale) and nothing else does.
+ */
+const STREET_ENTRANCE_R3 = ["courtyard-family.arch"];
+const withoutR3 = (r: TasteReport): TasteReport => ({
+  ...r,
+  subscores: { ...r.subscores, zoning: null },
+  criteria: r.criteria.filter((c) => c.id !== "R3"),
+});
+
 describe("with north fixed, every criterion but R12 is invariant under D4", () => {
   for (const rel of ELIGIBLE_EXAMPLES) {
     it(rel, () => {
       const ast = astOf(rel);
-      const p0 = view(report(wrapperSource(rel, null)), false, "none");
+      const set = (r: TasteReport): TasteReport => (STREET_ENTRANCE_R3.includes(rel) ? withoutR3(r) : r);
+      const p0 = view(set(report(wrapperSource(rel, null))), false, "none");
       const moved: string[] = [];
       for (const g of D4_TEST_ELEMENTS.filter((x) => x.name !== "e" && !x.translate))
-        if (view(report(wrapperSource(rel, g, { north: ast.north })), false, "none") !== p0) moved.push(g.name);
+        if (view(set(report(wrapperSource(rel, g, { north: ast.north }))), false, "none") !== p0) moved.push(g.name);
       expect(moved).toEqual([]);
     }, 120_000);
   }
+
+  it("each plan R3 is set aside for is named by the street, and R3 does move there", () => {
+    for (const rel of STREET_ENTRANCE_R3) {
+      expect(ELIGIBLE_EXAMPLES, `${rel} is not an eligible example`).toContain(rel);
+      expect(
+        describePlan(readFileSync(`examples/${rel}`, "utf8"), { world: EXAMPLES_WORLD }).access.mainEntrance?.basis,
+        rel,
+      ).toBe("street");
+      const ast = astOf(rel);
+      const p0 = view(report(wrapperSource(rel, null)), false, "none");
+      const moved = D4_TEST_ELEMENTS.filter((x) => x.name !== "e" && !x.translate).filter(
+        (g) => view(report(wrapperSource(rel, g, { north: ast.north })), false, "none") !== p0,
+      );
+      expect(moved.length, `${rel}: R3 no longer moves, so drop it from STREET_ENTRANCE_R3`).toBeGreaterThan(0);
+    }
+  }, 120_000);
 });
