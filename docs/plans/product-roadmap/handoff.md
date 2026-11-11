@@ -1,25 +1,41 @@
 # 恢复点
 
-本文件是本计划的恢复点，按 RM-D15 也是全部开发排期的恢复点：其他计划的 handoff 顶部只留一行指向这里（RM0.1 已落地这些指针）。新会话从本节开始读，再按 `README.md` 的"如何使用本文"走。本文的每个状态都是 2026-11-11 01:18Z → 01:46Z 用 `git`、`gh`、`npm view` 与各登记处的 API 读出的（#695、#405 与 worktree 一项在 01:45Z 复读）；动手前重新读一次，状态可能已经变了。
+本文件是本计划的恢复点，按 RM-D15 也是全部开发排期的恢复点：其他计划的 handoff 顶部只留一行指向这里（RM0.1 已落地这些指针）。新会话从本节开始读，再按 `README.md` 的"如何使用本文"走。§1.1、§1.1b 是 2026-11-11 08:07Z 用 `git`、`gh` 读出的；§1.2 的渠道表是 01:20Z 读的（本场没有发布，只重读了 npm：核心 1.58.0、`archlang-mcp` 0.2.41、`archlang-3d` 0.5.0）；动手前重新读一次，状态可能已经变了。
 
-## 1. 位置（2026-11-11 01:46Z）
+## 1. 位置（2026-11-11 08:07Z）
 
-### 1.1 已合并（`main` 头 `6683c788`）
+### 1.1 已合并（`main` 头 `0c12ac58`，08:07Z 读）
+
+上一场（01:46Z 之前）合并的 #687–#695 见 `git log`；下表是 2026-11-11 第二场合并的，合并时间、合并提交都是 `gh pr view` 读出的。
 
 | PR | 内容 | 合并时间（UTC） | 合并提交 |
 |---|---|---|---|
-| #687 | 路线图 v2 | 2026-11-10 12:17 | `4adceabc` |
-| #688 | 第 8 轨"视觉质感" | 2026-11-10 12:47 | `919a8b7a` |
-| #690 | 记下 RM-D22、RM-D23 的批准 | 2026-11-10 13:09 | `5ea5406d` |
-| #689 | 发布 1.58.0（RM0.3） | 2026-11-10 13:55 | `e68fd576` |
-| #692 | 记录修正、单一队列落地、1.58.0 的发布记录（RM0.1） | 2026-11-11 00:21 | `41150b53` |
-| #678、#677、#675 | Dependabot：`@codemirror/autocomplete`、`@codemirror/language`、codeql-action（RM0.5 的一部分） | 00:36、00:46、00:56 | `dfd126b6`、`644a390c`、`aa639f5b` |
-| #694 | `docs/agents/iron-laws.md`：发布的决定归所有者，决定之后发布链含 tag 由代理执行 | 00:59 | `c5513950` |
-| #691 | 3D 墙的轮廓线只画在表面转折处，海报与视频抗锯齿（RM8.1、RM8.2） | 01:09 | `6d1680e5` |
-| #693 | "编译器说不"页 `docs/says-no.md` 与 docs 的 `archlang-section` 一行（RM0.2、RM0.4 的 docs 一项） | 01:25 | `8f9ca2bb` |
-| #695 | CLI `--theme <name>`（RM8.4 的前半，backlog VA.4）；三轮之后合并：重复 helper 守卫、单测超时守卫与 flag 矩阵的棘轮都满足了，没有动任何允许名单 | 01:44 | `6683c788` |
+| #697 | RM0.1 余项：VA.4 已归档，O.10、H.1 的归档块追加到 `archlang-lab`；CRF13 经协调者核对后以"不可复现"关闭（依据本 PR 的证据） | 2026-11-11 03:26 | `47c7bc68` |
+| #699 | RM0.2b（关 #683）：studio 头注释按原字节长度重写，没有 span 移动；移动三处钉值（double-door 的源哈希、finish-furnish 的 studio 行、manifest 的 `source.sha256`） | 03:59 | `b04cbd07` |
+| #700 | RM0.5：biome 2.6.4、vue-tsc 3.3.14，取代 Dependabot #604（GitHub 随后标为已合并，`d13f6509`）；只关 2.6 新增的三条规则，backlog 3.3 记采纳 | 04:21 | `b6edfd8f` |
+| #698 | RM1.3a：PS0.3 与 U.1；188 个钉值带理由重钉，两轮红队修了两个种子 | 04:57 | `b385685c` |
+| #702 | RM8.4b：`/examples` 与 `/gallery` 每图一个 "Rendered colours" 开关；没有 `GENERATORS` 行（`test/agent-gallery.test.ts` 禁止脚本读 `docs/gallery`，rendered 图在站点构建时生成、不提交）；RM8.4 至此 `done` | 05:20 | `1d5f46a4` |
+| #703 | RM5.1：`archlang://capabilities` 资源由真源生成，`INSTRUCTIONS` 891/900，`validate` 返回 `next`；**有意不 bump `packages/mcp`**（`release:pin` 在 1.59.0 bump shim，`scripts/bump-lockstep.ts`；插件清单钉 shim 的精确版本，`scripts/gen-plugin.ts`） | 05:56 | `07ac9554` |
+| #701 | RM8.3：3D 室外地面与围栏；地面平面只由查看器画、不进 GLB；室外地面抬高 0.5 mm；增加 courtyard-house 关键帧 | 06:12 | `594ba1c7` |
+| #706 | RM8.1b：一个 `joinedGroups` 开关、由平面建出的近共面夹具、CHANGELOG 措辞（RM8.1b `done`） | 06:56 | `8fdfc05c` |
+| #708 | 修 `main` 的红（#705）：tsx 的 tsconfig 加载器在跟随 `extends` 时用了 `toReversed`（Node 20+），#703 的 `packages/mcp/scripts/tsconfig.gen.json` 带 `extends`；该文件现在自包含。**有意没有新上下文评审**（为了赶紧）：主会话在 Node 18 下用旧配置复现了失败，并确认修后输出不变 | 07:16 | `edaf76c2` |
+| #709 | RM0.5：`three` 0.187 与 `@types/three` 0.187，取代 Dependabot #676（GitHub 随后标为已合并，`fa704a6c`，07:39:08Z）；零个钉值移动；许可白名单与 NOTICES 已更新（RM0.5 `done`） | 07:39 | `0c12ac58` |
 
-`main` 的推送 run（Deploy、Main red alarm）在 `6d1680e5` 上 success（01:17Z 起的一轮）；`6683c788` 的推送 run（CI、CodeQL）01:46Z 读时还在跑。最近一次 nightly 是 run 42801157907（`69fa5864`，2026-11-10，success）。
+**`main` 红过，已修：** 连续三个 `main` 提交的 CI 红：`07ac9554`（#703，CI 完成于 06:23:09Z）、`594ba1c7`（#701，06:38:46Z）、`8fdfc05c`（#706，07:23:46Z），都是 Node 18 job 失败（`gen:mcp-capabilities` 报 `TypeError: E.toReversed is not a function`）；自动开了 issue #705；#708 修复，#705 于 2026-11-11T07:16:25Z 关闭。（前两次失败的 run 是 42969029371、42970758650。）`edaf76c2` 上 CI 全绿（run 42978286502，Node 18 success）；`0c12ac58` 上 CI 也是 success（run 42981046374，07:39:08Z 起）。**Deploy (Cloudflare)（08:07Z 读，来源：协调者的核对 + `gh run list`）：** 三次 `skipped` 的 Deploy 各自跟在一次红的 CI 之后（run 42979192966 是 07:23:49Z 的那次）；Deploy run 42981717789（07:44:38Z）在绿的 CI 之后部署了 `edaf76c2`（checkout ref），success；run 42984350767（08:05:59Z）在 08:07Z 仍是 `in_progress`，它部署哪个提交我没有核对。`Main red alarm`、CodeQL、Plugin validate 在 `0c12ac58` 上 success。最近一次 nightly 是 run 42801157907（2026-11-10T10:40Z，success）。
+
+### 1.1b 开着的 PR、分支与 worktree（08:07Z 读）
+
+| PR / 分支 | 头 | 内容 | 合并前还要什么 | worktree |
+|---|---|---|---|---|
+| #704 `feat/rm1.4-silent-accepts` | `b0dedb9e` | RM1.4 与 RM1.4b（静默接受改出声，只加 W） | 第一轮评审的修复在做（第一位执行者的上下文被压缩，新的执行者接手；WIP 提交 `bb97de35`）；`W_GRID_SNAPPED` 的几类遗漏记为 RM1.4c；playground 编译器路径预算只剩 145 B（457,855 / 458,000） | `.claude/worktrees/agent-acf8540b3bde012cd` |
+| #603 Dependabot `ext-apps` 2.0.4 | `ec89bbad` | 主版本 | 按 RM-D19 保持打开，12-02 之后由 RM5.4 迁移 | — |
+| #707 `docs/roadmap-state-2026-11-11b` | `f059d3a9`（本记录；推送新提交后以 `gh pr view 707` 为准） | 本文与 `cards.md` 的更新 | CI 的 docs 构建 | `.claude/worktrees/agent-a11ac765b8aaaab6c`（锁定） |
+| 分支 `fix/rm8.1d-dropped-wall-piece`（无 PR） | 基 `0c12ac58` | RM8.1d（`doing`，先调查） | 定位缺陷在核心还是网格 | `.claude/worktrees/agent-a2bc7674bda946156`（锁定） |
+| 分支 `origin/feat/remove-view` | — | 2.0 才做的移除 `view` | 保留，不在任何排期 | — |
+
+`git branch -r` 在 06:50Z 只剩开着的 PR 的分支、`origin/feat/remove-view` 与 `origin/main`。RM0.5 删了 12 个已合并 PR 的远程分支（逐个核对是 `main` 的祖先且 PR 为 MERGED）与 `refs/remotes/pr308`；`origin/ChanMeng666-patch-1`（旧 SHA `6c86203a0044838a94150e26ff3178b7dd209d03`）的内容早已由 #568（`02851c1f`）落地，经所有者同意于 2026-11-11 删除；`origin/docs/rm0.2-studio-comment` 在 #699 后删除。
+
+**worktree（`git worktree list`，08:07Z）：** 主检出 `D:/github_repository/archlang`（`main` 在 `0c12ac58`）；上表三个 worktree（#704、#707、RM8.1d）。**移除任何 worktree 之前**，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`；否则删除会顺着 junction 删进主检出（`docs/agents/gotchas.md` § Tooling & process）。被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。开着的 issue：#344、#405、#544、#680、#681、#682、#684（#705 已关）。
 
 ### 1.2 已发布（1.58.0）
 
@@ -38,21 +54,7 @@
 | OpenAI 插件目录 | 1.58.0：所有者 2026-11-11 报告她已提交并显示为已发布；公开页面靠客户端渲染，没有读到 | 所有者的报告 |
 | Docker MCP Catalog | docker/mcp-registry#6704 仍开着（00:24Z 更新），`servers/archlang/server.yaml` 的 `commit` 已指向 `e68fd576`，等 Docker 合并 | `gh pr view 6704 --repo docker/mcp-registry` |
 
-上架表的权威版本在 `docs/seo.md` § 8。`packages/archlang-3d` 在 `main` 上仍是 0.5.0：RM8.1、RM8.2 的改动要等 1.59.0 时一次 bump 才发到 npm。
-
-### 1.3 开着的 PR 与没合并的分支
-
-| PR / 分支 | 头 | 内容 | 合并前还要什么 | worktree |
-|---|---|---|---|---|
-| 分支 `fix/rm1.3a-reachability-blind-spots`（无 PR） | `fef92a70`，基 `e68fd576`，落后 `main`（合并前先合入 `main`） | RM1.3a 的 PS0.3、U.1 | 约 100 个 digest 钉值带理由重量与一次新上下文评审；合并 `main`；开 PR（`cards.md` RM1.3a 的状态行） | `.claude/worktrees/agent-a7037ea87974db09b`（锁定） |
-| 分支 `docs/rm0.2-studio-comment`（无 PR） | `e42184a9` | 改好的 `examples/studio.arch` 头注释与 CHANGELOG 一行（RM0.2b 的起点） | 两处钉值的带理由移动、`playground/src/examples.ts` 的同句、门禁、PR（`cards.md` RM0.2b） | 没有 worktree；分支在 `origin` 上 |
-| #604 Dependabot dev-dependencies | `3d7ef9a1` | biome 2.6 等 | 先修 biome 的 lint 差异（RM0.5） | — |
-| #676 Dependabot `three` 0.187 | `d8aa945e` | 3D 依赖 | 单独评估帧哈希与 GLB 字节、许可白名单（RM0.5） | — |
-| #603 Dependabot `@modelcontextprotocol/ext-apps` 2.0.4 | `6f9a0d20` | 主版本 | 按 RM-D19 保持打开，12-02 之后由 RM5.4 迁移 | — |
-| 分支 `origin/ChanMeng666-patch-1`（无 PR） | `6c86203a` | 所有者 2026-11-08 网页上改的 README 影片链接 | 按 RM-D20：先确认新 URL 能打开，再 cherry-pick 到从 `main` 新建的分支，经 PR 合并（RM0.5） | — |
-| 分支 `origin/feat/remove-view` | `9f0bff38` | 2.0 才做的移除 `view` | 保留，不在任何排期（backlog 的 2.0 桶） | — |
-
-**worktree（01:45Z `git worktree list`）：** 剩下两个。`.claude/worktrees/agent-a7037ea87974db09b`（RM1.3a，保留，锁定）；`.claude/worktrees/agent-a5678cfb59a1109a0`（本记录的分支 `docs/roadmap-state-2026-11-11`；它的 `node_modules` 是 2026-11-11 为跑门禁建的、指向主检出的 junction，移除前先解开）。#693 与 #695 合并之后，`agent-a8b2b1e76f593f189`（#693）与 `agent-aa8baf006b845fe4a`（#695）已由主会话移除（先解开了 junction），`git worktree list` 里已经没有它们。**移除任何 worktree 之前**，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`；否则删除会顺着 junction 删进主检出（`docs/agents/gotchas.md` § Tooling & process）。被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`，留到那个会话结束（`docs/agents/orchestration.md`）。旧的远程分支与本地分支的清单在 `cards.md` RM0.5 的状态行。
+上架表的权威版本在 `docs/seo.md` § 8。`packages/archlang-3d` 在 `main` 上仍是 0.5.0：RM8.1、RM8.2、RM8.3 的改动要等 1.59.0 时一次 bump 才发到 npm。
 
 ### 1.4 裁定
 
@@ -60,30 +62,25 @@
 - **RM-D9…D16** 所有者 2026-11-11 批准（`README.md` §6.1）。
 - **RM-D17…D20** 是 2026-11-11 的受托裁定（§6.2），**RM-D24…D26** 是同日夜间的受托裁定（§6.4）：都只是那一次的委托，不是长期委托，所有者一句话可推翻任何一条。
 - **RM-D21** 是所有者的方向，**RM-D22、RM-D23** 所有者 2026-11-11 批准，T 形交接保留真实阴角线的设计默认同日确认（§6.3）。
+- **所有者 2026-11-11 决定发布 1.59.0**（原话"我同意发布"，所有者在会话里说的，由协调者转述，我没有核对原始消息）。代理在路线图切点（约 11-21，路线图的日期；"所有者明说才提前"是协调者的读法）跑整条发布链含 tag。bump：核心 minor；`packages/mcp` 的 shim 经 `release:pin`；`packages/archlang-3d`（RM8.1–RM8.3 自 0.5.0 以来）。tag 前的每一项证明在版本号 PR 的分支头上跑完再合并该 PR（§11）。1.60.0、1.61.0 仍要所有者各自的决定。
+- **本场的受托裁定（§4 列出，所有者一句话可推翻）：** 见 §4。
 - 发布的措辞已由 #694 写进 `docs/agents/iron-laws.md` § Owner policies："once the owner has decided that release: no decision, no tag, and neither a schedule nor an earlier release's decision is one"。每次发布都要所有者对那一次的决定。
 
 ## 2. 下一步（按车道）
 
 排期以 `README.md` §3 为准；下面是从实际位置出发的顺序，每条车道从第 1 项做起，前一项合并后再开下一项。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。
 
-**核心车道（阶段 B，约 11-21 切 1.59.0）：**
-1. RM1.3a 的余下部分：对移动了的 digest 行做带理由的重量（`test/byte-identity-baseline.ts` 头注释，逐行写出为什么这个移动就是修复本身），再做一次新上下文评审确认新事实正确；然后合并 `main`、开 PR，写出三个最小夹具的前后对照（`cards.md` RM1.3a 的状态行）。
-2. RM5.1（MCP 能力摘要，带 `packages/mcp` bump，搭 1.59.0）。
-3. RM1.4（静默接受改出声，只加 W），与 RM1.4b（写错大小写的主题名）一起做。
-4. 发布 1.59.0：要所有者对这一次发布的决定（`docs/agents/iron-laws.md` § Owner policies）；含 RM5.1 的 `packages/mcp` bump 与 `packages/archlang-3d` 的 bump（RM8.1、RM8.2 已在 `main`）；步骤按 `.claude/commands/release-check.md`，tag 前的所有证明在发布分支头上跑完再合并版本号 PR（§11 的事故）。
-5. 线下，有余量才做，按此顺序：RM2.1 → RM1.6a → PS7.9。另有 RM7.4（小件）；RM1.3c 先要设计裁定。
+**核心车道（阶段 B，约 11-21 切 1.59.0）：** RM1.3a、RM5.1 已合并（§1.1）。
+1. RM1.4 + RM1.4b（#704，第一轮评审的修复在做）→ 合并。
+2. 线下，有余量才做，按此顺序：RM2.1 → RM1.6a → PS7.9。另有 RM1.3b（含本场加的余项）、RM1.4c、RM5.1b、RM0.6、RM7.4；RM1.3c 先要设计裁定。
+3. 发布 1.59.0：**所有者已决定**（§1.4）；约 11-21 由代理跑整条链含 tag，步骤按 `.claude/commands/release-check.md`，tag 前的所有证明在版本号 PR 的分支头上跑完再合并（§11）。bump 三处：核心 minor、`packages/mcp` shim 经 `release:pin`、`packages/archlang-3d`。
 
-**视觉车道：**
-1. RM0.2b（`studio.arch` 头注释；从 `origin/docs/rm0.2-studio-comment` 出发，该分支落后 `main` 且改了 `CHANGELOG.md`，先合入 `main` 并把条目留在 `[Unreleased]`；要跑 `gen:3d-assets -- --only studio`，是重命令，避开别的重命令）。
-2. RM8.3（3D 画出庭院；不是缺陷修复，赶不上约 11-21 的切点就等 12-02）。
-3. RM8.4b（示例页与 gallery 的 `rendered` 版本，加 playground `#theme` 在手机宽度下的核对）。
-4. RM8.1b（#691 的后续，小件）。
-5. 之后按 `README.md` §3：阶段 D 的 RM8.5 → RM8.6，RM8.10 先要设计裁定；阶段 E 的 RM8.7 → RM8.8 → RM8.9（两张 `[语法：词表]` 卡等 PS7.9）。
+**视觉车道：** RM0.2b、RM8.1b、RM8.3、RM8.4、RM8.4b、RM0.5（#709）都已合并，车道上暂时没有开着的卡。
+1. RM8.1d（`doing`，先调查：共线对接墙的窗位拓扑，缺陷在核心还是网格）。
+2. 小件，空档里做：RM8.1c（`wallOutline` 的耗时）、RM8.3b（庭院地面的深度精度）。
+3. 之后按 `README.md` §3：阶段 D 的 RM8.5 → RM8.6（冻结之后；RM8.10 先要设计裁定）；阶段 E 的 RM8.7 → RM8.8 → RM8.9（两张 `[语法：词表]` 卡等 PS7.9）。
 
-**卡与卡之间的杂项（小件，插在空档里做）：**
-- RM0.5 的余下部分：#604（先修 biome 的 lint 差异）、#676（`three` 0.187，单独评估帧哈希与 GLB 字节）、`origin/ChanMeng666-patch-1`（按 RM-D20 落地）、旧的远程分支（清单在 `cards.md` RM0.5 的状态行）。
-- O.10 与 H.1 的归档块（VA.4 已由 #695 做完，可以一起归档）追加到私有的 `archlang-lab/backlog-archive.md`（另一仓库，`scripts/backlog-archive.mjs`）。
-- CRF13（`src/ir.ts` 那条过时注释，#618 拆分后要重新定位，过时则关）。
+**卡与卡之间的杂项：** RM0.5 已 `done`（#709）；O.10、H.1 的归档与 CRF13 已由 #697 处理；RM0.6 修归档脚本；RM8.1d 在调查（worktree 见 §1.1b）。
 
 **给执行者的简报加一行：** 执行者写的状态文件按卡命名（例如 `state-rm1.3a.md`），不叫 `state.md`：同一会话的代理共用一个 scratchpad，2026-11-11 有两个代理互相覆盖了对方的 `state.md`。
 
@@ -95,7 +92,7 @@
 
 | 日期 | 事 | 规则 |
 |---|---|---|
-| 约 2026-11-21 | 切 1.59.0 | 所有者对这一次发布的决定；决定之后发布链含 tag 由代理跑。切点后合并的 minor 内容等 12-02 |
+| 约 2026-11-21 | 切 1.59.0 | **所有者已决定（2026-11-11，所有者在会话里的原话"我同意发布"，协调者转述）**；代理在切点跑整条链含 tag，"所有者明说才提前"是协调者的读法。切点后合并的 minor 内容等 12-02 |
 | 2026-11-24 → 12-01 | Show HN 冻结 | 只合 bug 修复、测量与文档，只发 patch，不加语言形式，不发 minor（`cards.md` §0；`README.md` §1.3）。RM8.1 这类查看器缺陷修复可以合；RM8.2、RM8.3 这类不是缺陷修复的不合 |
 | 2026-12-01 | Show HN，所有者亲自发 | growth 的 Show HN 物料已由 growth PR #68 刷新；X9 的回答稿只写 1.59.0 里已发布的事实。geo-seo 的面板同日，路线图建议挪到 12-02 |
 | 2026-12-02 → 12-16 | 批次 C′（阶段 D） | 1.60.0 约 12-21 切，避开 Product Hunt（约 12-15）那一周；所有者对那一次发布的决定 |
@@ -106,12 +103,13 @@
 
 ## 4. 只有所有者能做的事，与仍等所有者的裁定
 
-- 决定 1.59.0、1.60.0、1.61.0 是否、何时发布（建议节奏见 `README.md` 原则 11）。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌或 secret 的创建、条款与声明的确认、本机文件选择器处停下。
+- 决定 1.60.0、1.61.0 是否、何时发布（1.59.0 已于 2026-11-11 决定，见 §1.4）（建议节奏见 `README.md` 原则 11）。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌或 secret 的创建、条款与声明的确认、本机文件选择器处停下。
 - 2026-12-01 亲自发 Show HN。
 - 需要接受条款或声明的提交（例如 OpenAI 插件目录的每次提交），以及 Cloudflare 控制台的改动（`docs/seo.md` § 8 的提交政策）。
 - 仍等所有者的裁定（`README.md` §6 与 §6.2 末尾）：PS0.18（Hall 往返成 `uses entry`，RM3.1 的范围表用到，未裁则标 `dropped`）；MF-D3(b)；backlog D.7（RM4.1 用到）、M.9（RM1.5b）、M.8、M.14、3.1(b)、CI throughput 的 E 与 F；仓库根的 `.mcp.json` 做不做（默认不做）；VA.3。
 - 新卡里要先有设计裁定的两张：RM1.3c（6.11，双开门）与 RM8.10（两种墙高的 T 形缺口，涉及 ADR 0030 决定 3、5）。由主会话起草设计，裁定的归属按 `README.md` §6 的惯例：动铁律或 ADR 的要所有者。
 - 任何一条受托裁定（RM-D17…D20、RM-D24…D26），所有者都可以一句话推翻。
+- **2026-11-11 第二场的受托裁定（协调者的记录，我无从核对；同样可一句话推翻）：** 3D 的地面是查看器的背景，不是元素，不进 GLB（`../public-surfaces/3d.md` §2 的固定句不改）；MCP 能力页保持派生的 `repair` 标题 "Repair furniture placement"（是标题，不是承诺）；MCP 的版本在发布时 bump，不在 #703；RM1.4：触发 `W_GRID_SNAPPED` 的已发布示例改写成吸附后的值（图字节恒等），`W_UNKNOWN_THEME` 也由 CLI 的 `validate`、`lint` 报出；biome：只关 2.6 里真正新增的规则；CRF13 以"不可复现"关闭（协调者 2026-11-11 关闭，依据 #697 的核对证据）。
 
 ## 5. 怎样合并
 
@@ -164,6 +162,7 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量冻结时 `main` 
   - `visual-track\`：第 8 轨的三份调查 V1–V3、规格、#691 的两轮评审 R1、R2，修复前的图 `img\` 与修复前后（含升墙中途）的对照图 `after\`；
   - `release-1.58.0\`：#689、#692、#693、#694、#695 的评审 H、I、J、K、L；
   - `rm1.3a\`：RM1.3a 执行者的字段级差异、两次全语料对比与门禁日志；
+  - **2026-11-11 第二场（#697–#709）的评审报告在会话 scratchpad 里，没有保留。** 可查的只有各 PR 的评论与提交、本文与 `cards.md`；若要保留，须在会话结束前移进 `claude-kept`。
   - 目录根上还有 `session-state-2026-11-11.md`（主会话的状态记录，中文）与 `mq.sh`。
 - `evidence.md` 把计划用到的每条结论回指到 growth 仓库的文件路径、issue/PR 号或本仓库路径（v2 在 §G，第 8 轨在 §H，2026-11-11 新增的卡在 §I），报告本体不进本仓库。
 
@@ -172,3 +171,9 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量冻结时 `main` 
 版本号 PR #689 在 2026-11-10 13:55Z 合并，`v1.58.0` 在 23:33Z 才推出。这 9 小时 38 分里，`https://archlang.uk/arch-plan.js` 指向 npm 上还没有的核心版本，`<arch-plan>` 嵌入加载失败。停滞的原因没有查清，这里不写。
 
 教训：tag 之前的每一项证明（例如 `prove:pack`、各检查）都在发布分支的头上跑完，再合并版本号 PR；这样合并之后只剩 pull、tag、push。停顿的原因没有查明；作为一般做法，无人值守的关键路径上不放任何可能弹出权限确认的命令（`rm` 在内）。同一条记在 `docs/agents/gotchas.md` § PRs & CI。
+
+## 12. 过程教训（2026-11-11 第二场；协调者转述的记录，我没有独立核对）
+
+- **重门禁锁被覆盖过一次：** 一个代理无条件地写了 `free`，把别人的持锁行抹掉。释放锁只在锁里仍是自己写的那一行时才写 `free`。
+- **新 worktree 的 `node_modules` 是指向主检出的 junction。** 依赖 PR 合并之后，要在主检出里跑 `npm install`，否则每个 worktree 的门禁都用着旧工具（2026-11-11 的 biome：worktree 里还是 2.5，`main` 已是 2.6）。
+- **PR 的 CI 只跑 Node 22，所以只在 Node 18 上才红的失败要到 `main` 上才第一次出现**（#703 → #705）。改生成器或 tsx 配置这类工具链的 PR，合并前先在 Node 18 下跑一遍那个生成器。本次的原因：tsx 的 tsconfig 加载器跟随 `extends` 时用 `toReversed`（Node 20+），见 #708。
