@@ -106,7 +106,7 @@ export interface LintRuleset {
    * **Source.** 100 mm is the low end of the trade practice (100-150 mm) for the return a
    * frame and architrave or a lining need beside a jamb, recorded with its source in
    * `archlang-lab/plans/plan-soundness/research/associativity.md` (the door-nib row, BuildHub
-   * "architrave offset") and `research/prior-art.md` (T5: an opening's span stays clear of
+   * "architrave offset", a forum thread [S]) and `research/prior-art.md` (T5: an opening's span stays clear of
    * wall junctions by at least a nib).
    */
   minJunctionNibMm: number;
@@ -164,7 +164,7 @@ export interface LintRuleset {
    *
    * **Why 1500.** It is the clear width GB 50096-2011 5.3.5 gives a kitchen with one row of
    * fixtures (at least 1.50 m, cited as advice; `archlang-lab/plans/plan-soundness/research/
-   * design-taste.md` R23): the band a kitchen run needs in front of it. A door inside that band
+   * design-taste.md` R23, read in the full text's third-party copy, `prior-art.md` §3.1 [S-full]): the band a kitchen run needs in front of it. A door inside that band
    * opens into the kitchen itself; one beyond it opens into the living or dining end of the
    * room, which the taste layer grades and no rule warns.
    */
@@ -207,15 +207,15 @@ export interface LintRuleset {
    * be the size of a kitchen; repairing against it, an author inflated a café's staff WC to
    * 1.6 × 3.4 m and deleted a house's linen store (plan-soundness audit, first contact,
    * "repair pressure"). The defaults:
-   *  - `wc` 1.1: GB 50096-2011 5.4.2 item 5, a room with a WC alone, at least 1.10 m².
+   *  - `wc` 1.1: GB 50096-2011 5.4.2 item 5, a room with a WC alone, at least 1.10 m² [S-full].
    *  - `bath` 2.0: GB 50096-2011 5.4.2 items 2 and 3, the smallest combinations with a
-   *    shower or bath (WC + shower, basin + shower), at least 2.00 m². A three-fixture
+   *    shower or bath (WC + shower, basin + shower), at least 2.00 m² [S-full]. A three-fixture
    *    bathroom wants 2.50 m² (5.4.1); the rule does not count fixtures, so it asks the lower.
    *  - `storage`, `utility`, `hall`, `circulation`, `entry` exempt: the standard sets no area
    *    for a store, a laundry or a lobby, and a cupboard is a room. A passage is judged by its
    *    width (`W_PATH_TOO_NARROW`), never its area.
    * Clauses as read in `archlang-lab/plans/plan-soundness/research/prior-art.md` §3.1 (full text
-   * extracted), applied as advice, never as compliance (ADR 0005).
+   * extracted from a third-party copy), applied as advice, never as compliance (ADR 0005).
    *
    * Merged PER USE ({@link resolveRuleset}): a profile or a caller that sets `{ wc: 1.5 }` changes
    * the WC's floor and keeps every other default, exemptions included.
@@ -381,7 +381,7 @@ export interface LintRuleset {
    * A `door` with no kind, or `hinged`, is one leaf its full `width` wide. `null` turns the rule
    * off.
    *
-   * **Default 1219:** the International Building Code (2018 and earlier editions) 1010.1.1, "The
+   * **Default 1219:** the International Building Code (the 2018 text; other editions not read) 1010.1.1, "The
    * maximum width of a swinging door leaf shall be 48 inches (1219 mm) nominal", because, its
    * commentary says, larger doors are difficult to handle and are of sizes not typically fire
    * tested (quoted by the door-hardware reference iDigHardware, 2018 [S]; the 2021 edition dropped
@@ -552,7 +552,7 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
     // (406–457 mm, 2010 Standards 604.2) [V for ADM, S for the ADA].
     wcSideClearanceMm: 450,
     // The 2010 ADA Standards' Table 404.2.4.1 front approach: 48 in (1220 mm) of clear floor on a
-    // door's push side, 60 in (1525 mm) on its pull side, perpendicular to the doorway [V, a
+    // door's push side, 60 in (1525 mm) on its pull side, perpendicular to the doorway [S-full, a
     // transcription of the Standards] (`W_EXIT_APPROACH_BLOCKED`, PS2.69).
     exitApproachMm: 1220,
     exitApproachPullMm: 1525,
@@ -560,27 +560,28 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
   /**
    * Room sizes and passage widths read from China's residential design code, as ADVICE (ADR
    * 0005: the name is not the standard's, and passing is not compliance). Source: GB 50096-2011
-   * 住宅设计规范, full text read (`archlang-lab/plans/plan-soundness/research/prior-art.md` §3.1) [V].
+   * 住宅设计规范, full text read in a third-party copy, a university-hosted PDF
+   * (`archlang-lab/plans/plan-soundness/research/prior-art.md` §3.1) [S-full].
    * Areas are net floor (使用面积, the clauses' measure; {@link LintRuleset.roomAreaMeasure}), and
    * widths are clear, between wall faces (净宽). GB 50096-2011 gives no WC side clearance, so R10
    * keeps the default {@link LintRuleset.wcSideClearanceMm}; and no number for R37 (escape window).
    */
   "cn-residential-advisory": {
-    roomAreaMeasure: "net", // GB 50096-2011 5.2–5.4 give room areas as 使用面积, the usable floor inside the walls [V]
+    roomAreaMeasure: "net", // GB 50096-2011 5.2–5.4 give room areas as 使用面积, the usable floor inside the walls [S-full]
     minRoomAreaByUseM2: {
-      bedroom: 5, // GB 50096-2011 5.2.1: a single bedroom at least 5 m², which every bedroom meets [V]
-      living: 10, // GB 50096-2011 5.2.2: a living room (起居室) at least 10 m² [V]
-      kitchen: 4, // GB 50096-2011 5.3.1: a kitchen at least 4.0 m² (3.5 in the smallest dwelling type, not modelled) [V]
+      bedroom: 5, // GB 50096-2011 5.2.1: a single bedroom at least 5 m², which every bedroom meets [S-full]
+      living: 10, // GB 50096-2011 5.2.2: a living room (起居室) at least 10 m² [S-full]
+      kitchen: 4, // GB 50096-2011 5.3.1: a kitchen at least 4.0 m² (3.5 in the smallest dwelling type, not modelled) [S-full]
     },
-    minDoubleBedroomAreaM2: 9, // GB 50096-2011 5.2.1: a double bedroom at least 9 m² [V]
-    minEntryPassageWidthMm: 1200, // GB 50096-2011 5.7.1: the entry passage 宜 (should) be at least 1.20 m clear [V]
+    minDoubleBedroomAreaM2: 9, // GB 50096-2011 5.2.1: a double bedroom at least 9 m² [S-full]
+    minEntryPassageWidthMm: 1200, // GB 50096-2011 5.7.1: the entry passage 宜 (should) be at least 1.20 m clear [S-full]
     minPathClearWidthByUseMm: {
-      bedroom: 1000, // GB 50096-2011 5.7.1: a passage to a bedroom or living room at least 1.00 m clear [V]
-      living: 1000, // GB 50096-2011 5.7.1 (起居室（厅）) [V]
-      kitchen: 900, // GB 50096-2011 5.7.1: a passage to a kitchen, bathroom or store at least 0.90 m clear [V]
-      bath: 900, // GB 50096-2011 5.7.1 (卫生间) [V]
-      wc: 900, // GB 50096-2011 5.7.1 (卫生间: a WC is one) [V]
-      storage: 900, // GB 50096-2011 5.7.1 (贮藏室) [V]
+      bedroom: 1000, // GB 50096-2011 5.7.1: a passage to a bedroom or living room at least 1.00 m clear [S-full]
+      living: 1000, // GB 50096-2011 5.7.1 (起居室（厅）) [S-full]
+      kitchen: 900, // GB 50096-2011 5.7.1: a passage to a kitchen, bathroom or store at least 0.90 m clear [S-full]
+      bath: 900, // GB 50096-2011 5.7.1 (卫生间) [S-full]
+      wc: 900, // GB 50096-2011 5.7.1 (卫生间: a WC is one) [S-full]
+      storage: 900, // GB 50096-2011 5.7.1 (贮藏室) [S-full]
     },
     stairMaxRiseMm: 200, // GB 50096-2011 5.7.4: a stair inside a dwelling (套内楼梯), riser at most 0.20 m [S, gf.cabr-fire.com article-7235]
     stairMinGoingMm: 220, // GB 50096-2011 5.7.4: tread (踏步宽度) at least 0.22 m [S, same]
@@ -619,7 +620,8 @@ export const LINT_PROFILES: Readonly<Record<string, Partial<LintRuleset>>> = Obj
   /**
    * Room sizes and hallway widths read from the US model residential code, as ADVICE (ADR
    * 0005). Source: IRC (2021), second-hand: the primary text was not reachable and the figures
-   * come from jurisdiction handouts (`prior-art.md` §3.2) [S]. "Habitable" is the IRC's own
+   * come from jurisdiction handouts, trade articles, state training copies and, for R304, a forum
+   * quote of the 2012 text (`prior-art.md` §3.2, `design-taste.md` §2.5) [S]. "Habitable" is the IRC's own
    * definition (living, sleeping, eating or cooking), so `living`, `dining` and `bedroom`: the
    * kitchen is excepted from both R304 limits and keeps the default floor, and an `office` is
    * not in the definition and is not asked. R10's side clearance is `W_WC_SIDE_CLEARANCE`'s
