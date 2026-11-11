@@ -25,6 +25,7 @@ export const EXERCISED: Record<string, string> = {
   "compile --json": "test/cli-output-paths.test.ts",
   "compile --quiet": "test/cli-human-fix.test.ts",
   "compile --view": "test/cli-plan-json-roundtrip.test.ts",
+  "compile --theme": "test/cli-theme.test.ts",
   "batch --out": "test/cli-flag-matrix.test.ts",
   "batch --format": "test/cli-flag-matrix.test.ts",
   "batch --jobs": "test/cli-flag-matrix.test.ts",
@@ -42,6 +43,7 @@ export const EXERCISED: Record<string, string> = {
     "TODO: parsed for every compiling command (import-rooted.test.ts drives compile and lint only); no test passes it here",
   "batch --json": "test/cli-batch.test.ts",
   "batch --quiet": "test/cli-flag-matrix.test.ts",
+  "batch --theme": "test/cli-theme.test.ts",
   "md --out": "test/cli-flag-matrix.test.ts",
   "md --format": "test/cli-flag-matrix.test.ts",
   "md --width": "TODO: no test passes this flag to this command and asserts its effect",
@@ -55,6 +57,7 @@ export const EXERCISED: Record<string, string> = {
     "TODO: parsed for every compiling command (import-rooted.test.ts drives compile and lint only); no test passes it here",
   "md --json": "test/cli-output-paths.test.ts",
   "md --quiet": "TODO: no test passes --quiet to this command and asserts the stderr summary is gone",
+  "md --theme": "test/cli-theme.test.ts",
   "preview --out": "test/cli-flag-matrix.test.ts",
   "preview --scale": "test/cli-flag-matrix.test.ts",
   "preview --width": "test/cli-flag-matrix.test.ts",
@@ -72,6 +75,7 @@ export const EXERCISED: Record<string, string> = {
     "TODO: parsed for every compiling command (import-rooted.test.ts drives compile and lint only); no test passes it here",
   "preview --json": "test/cli-preview-review.test.ts",
   "preview --quiet": "TODO: no test passes --quiet to this command and asserts the stderr summary is gone",
+  "preview --theme": "test/cli-theme.test.ts",
   "link --json": "test/cli-link.test.ts",
   "link --quiet": "test/cli-link.test.ts",
   "watch --out":
@@ -103,6 +107,7 @@ export const EXERCISED: Record<string, string> = {
   "watch --import-root":
     "TODO: watch is resident (runArch refuses it); the spawn tests in cli-commands.test.ts never pass this flag",
   "watch --json": "test/cli-commands.test.ts",
+  "watch --theme": "test/cli-commands.test.ts",
   "watch --quiet":
     "TODO: watch is resident (runArch refuses it); the spawn tests in cli-commands.test.ts never pass this flag",
   "validate --strict": "test/cli-validate-next.test.ts",
