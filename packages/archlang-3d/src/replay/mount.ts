@@ -62,7 +62,7 @@ import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
 
 import { stateAt } from "./timeline.js";
-import { faceParts, wallOutline } from "./wall-lines.js";
+import { faceParts, joinedGroups, wallOutline } from "./wall-lines.js";
 
 export type { ReplayNode, ReplayPayload } from "./payload.js";
 
@@ -637,15 +637,14 @@ export function mountReplay(
     }
     // Nodes leave out the faces they share only while their whole group stands at full height
     // (`patched`).
-    const up = new Map<number, boolean>();
-    for (const { key, group } of patched) {
-      const full = nodes.get(key)?.g.visible === true && (s.nodes.get(key)?.rise ?? 0) >= 1;
-      up.set(group, (up.get(group) ?? true) && full);
-    }
+    const together = joinedGroups(faces, (i) => {
+      const key = p.nodes[i]?.key ?? "";
+      return nodes.get(key)?.g.visible === true && (s.nodes.get(key)?.rise ?? 0) >= 1;
+    });
     for (const { group, alone, joined } of patched) {
-      const together = up.get(group) === true;
-      if (alone) alone.visible = !together;
-      if (joined) joined.visible = together;
+      const t = together.has(group);
+      if (alone) alone.visible = !t;
+      if (joined) joined.visible = t;
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
     if (holder === "free" && controls) {

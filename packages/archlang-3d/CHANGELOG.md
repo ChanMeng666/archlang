@@ -48,8 +48,10 @@
   junction keep their lines. The walls' and columns' outlines are worked out across each storey
   (`src/replay/wall-lines.ts`) in place of three.js's `EdgesGeometry` per node, which every other
   node keeps. The faces two pieces share are not drawn either (they showed through a flat wall at
-  a grazing angle): inside one wall always, and between two nodes once every node meeting them is
-  up, so while the replay raises the walls each is drawn whole and no frame shows a gap. The
+  a grazing angle): inside one wall always, and between two nodes once the walls and columns connected
+  to it on the same storey are all up, so while the replay raises the walls each is drawn whole and no
+  frame shows a gap. Known limit: during the rise, a face two walls share can still show a faint
+  seam at a grazing angle; the finished storey has none. The
   playground's 3D tab, the replay HTML and the generated posters and videos all draw this way;
   Mesh3D, the GLB and Scene3D are unchanged.
 

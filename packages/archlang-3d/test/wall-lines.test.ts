@@ -10,6 +10,7 @@ import { adaptPlan, buildMesh } from "../src/index.js";
 import { replayPayload } from "../src/node.js";
 import {
   type FaceFix,
+  joinedGroups,
   type LineSource,
   nearlyFlat,
   takesWallLines,
@@ -620,24 +621,20 @@ function openEdges(tris: readonly V3[][]): string[] {
  * The outlined nodes' triangles as the 3D preview draws them when node `i` stands at `rise(i)` of
  * its height (scaled about its own foot, as `mount.ts` does) or is not shown yet (`undefined`): a
  * node leaves out the faces it shares only while its whole group stands at full height, as
- * `mount.ts`'s `draw` picks `alone` or `joined`.
+ * `joinedGroups` (the function `mount.ts`'s `draw` calls) picks `alone` or `joined`.
  */
 function drawnAt(
   nodes: readonly LineSource[],
   fixes: ReadonlyArray<FaceFix | undefined>,
   rise: (i: number) => number | undefined,
 ): V3[][] {
-  const up = new Map<number, boolean>();
-  nodes.forEach((_, i) => {
-    const f = fixes[i];
-    if (f && f.group >= 0) up.set(f.group, (up.get(f.group) ?? true) && rise(i) === 1);
-  });
+  const joined = joinedGroups(fixes, (i) => rise(i) === 1);
   const tris: V3[][] = [];
   nodes.forEach((n, i) => {
     const r = rise(i);
     if (!takesWallLines(n) || r === undefined) return;
     const f = fixes[i];
-    const d = withFaces(n, f, f && f.group >= 0 && up.get(f.group) !== true ? "alone" : "joined");
+    const d = withFaces(n, f, f && f.group >= 0 && !joined.has(f.group) ? "alone" : "joined");
     let base = Infinity;
     for (let v = 1; v < d.positions.length; v += 3) base = Math.min(base, d.positions[v] as number);
     for (let t = 0; t + 2 < d.indices.length; t += 3) {
@@ -746,6 +743,116 @@ describe("wall faces: every frame of the rise is closed (no slot through a wall,
     const groups = new Set(fixes.map((f) => f?.group ?? -1).filter((g) => g >= 0));
     expect(groups.size).toBeGreaterThanOrEqual(2);
     expect(grouped).toBeGreaterThan(4);
+  });
+});
+
+describe("wall faces: the switch to the finished storey is one function (card RM8.1b)", () => {
+  const fix = (group: number): FaceFix => ({ hide: [], add: [], alone: [], joined: [], group });
+
+  it("a group is joined only when every node in it stands; never node by node", () => {
+    // Nodes 0, 1 and 3 are one group (0), node 2 is another (2), node 4 meets nothing.
+    const fixes = [fix(0), fix(0), fix(2), fix(0), undefined, fix(-1)];
+    const up = (...stands: number[]) => joinedGroups(fixes, (i) => stands.includes(i));
+    expect([...up(0, 1, 2, 3, 4, 5)].sort()).toEqual([0, 2]);
+    expect([...up(0, 1, 2, 4)].sort(), "node 3 is not up: group 0 stays alone").toEqual([2]);
+    expect([...up(0, 1, 3)].sort(), "node 2 is not up: group 2 stays alone").toEqual([0]);
+    expect([...up(0, 3)], "node 1 is not up").toEqual([]);
+    expect([...up(4, 5)], "nodes outside any group name no group").toEqual([]);
+  });
+
+  it("over a laneway plan, one node short of full height keeps its whole group alone", () => {
+    const { nodes } = outlined(sourceOf("laneway-house.arch"));
+    const fixes = wallFaces(nodes);
+    const grouped = fixes.flatMap((f, i) => (f && f.group >= 0 ? [i] : []));
+    const all = joinedGroups(fixes, () => true);
+    expect(all.size).toBeGreaterThanOrEqual(1);
+    const g = fixes[grouped[0] as number]?.group as number;
+    const members = grouped.filter((i) => fixes[i]?.group === g);
+    expect(members.length).toBeGreaterThanOrEqual(2);
+    for (const short of members)
+      expect(joinedGroups(fixes, (i) => i !== short).has(g), `node ${short} short`).toBe(false);
+  });
+});
+
+describe("wall faces: near-coplanar pieces built from a plan (card RM8.1b)", () => {
+  // What a plan can make of two walls a µm from coplanar (probed): a parallel duplicate collapses to
+  // one node, and the stem variants give ordinary shared faces, so there are two cases.
+  //
+  // Slant: wall b is 0.001 mm (1 µm) off the line of wall a. The compiler trims b to a's corners, so
+  // at x = 3100 mm their end faces are exactly equal (z = -100000 .. 100000) and b's long faces run
+  // 1 µm out of line over 800 mm (b's far end is at z = -99999 .. 100001). That is not a pair of
+  // parallel planes; it is a turn of a millionth of a degree between a's face and b's, which
+  // `nearlyFlat` must read as flat. wb's window is 600 mm wide, so its reveal is off the joint.
+  const slant = `plan "N" {
+  units mm
+  height 3000
+  wall id=a exterior thickness 200 { (0,0) (3000,0) }
+  wall id=b exterior thickness 200 { (2000,0.001) (5000,0.001) }
+  window id=wa on a at center width 800 sill 900 head 2100
+  window id=wb on b at center width 600 sill 600 head 1800
+}
+`;
+  // Step: a 200 mm wall meets a 200.002 mm one in line, so the long faces are parallel and 1 µm
+  // apart in depth (z = -100000 against -100001): the only plan-built pair of near-coplanar planes.
+  const step = `plan "N" {
+  units mm
+  height 3000
+  wall id=a exterior thickness 200 { (0,0) (3000,0) }
+  wall id=b exterior thickness 200.002 { (3000,0) (6000,0) }
+  window id=wa on a at 1000 width 800 sill 900 head 2100
+  window id=wb on b at 2000 width 800 sill 600 head 1800
+}
+`;
+
+  /** Every rise state of the plan is closed, each wall alone is, and so is the finished storey. */
+  function closedEverywhere(src: string): { fixes: Array<FaceFix | undefined>; walls: number[] } {
+    const { nodes } = outlined(src);
+    const fixes = wallFaces(nodes);
+    const walls = nodes.flatMap((n, i) => (takesWallLines(n) ? [i] : []));
+    for (const [state, rise] of riseStates(nodes)) {
+      expect(openEdges(drawnAt(nodes, fixes, rise)).slice(0, 4), state).toEqual([]);
+    }
+    for (const i of walls) {
+      expect(openEdges(drawnAt(nodes, fixes, (j) => (j === i ? 1 : undefined))).slice(0, 4), nodes[i]?.key).toEqual([]);
+    }
+    expect(openEdges(drawnAt(nodes, fixes, () => 1)).slice(0, 4), "the finished storey").toEqual([]);
+    return { fixes, walls };
+  }
+  const counts = (f: FaceFix | undefined) => [
+    f?.group,
+    f?.hide.length,
+    f?.add.length,
+    f?.alone.length,
+    f?.joined.length,
+  ];
+
+  it("slant: the end faces are shared (one group), every rise state is closed", () => {
+    const { fixes, walls } = closedEverywhere(slant);
+    expect(walls.length).toBe(2);
+    // The shared end face is hidden on both; each keeps the same triangles (group 1, hide 22, add 36,
+    // alone 18, joined 0: the equal end faces cancel, so the finished storey adds nothing).
+    expect(walls.map((i) => counts(fixes[i]))).toEqual([
+      [1, 22, 36, 18, 0],
+      [1, 22, 36, 18, 0],
+    ]);
+  });
+
+  it("slant: the 1 µm turn is flat, so no line stands at the joint (x = 3100 mm)", () => {
+    const { segs } = outlined(slant);
+    expect(segs.length).toBeGreaterThan(0);
+    for (const g of segs) for (const v of [...g.a, ...g.b]) expect(Number.isInteger(v), g.node).toBe(true);
+    // Neither face carries a vertical line at the joint (wb's reveal is 100 mm further along).
+    const atJoint = segs.filter((g) => g.a[0] === 3_100_000 && g.b[0] === 3_100_000 && g.a[1] !== g.b[1]);
+    expect(atJoint, "a vertical line at the joint").toEqual([]);
+  });
+
+  it("step: parallel faces 1 µm apart in depth are not one surface; every rise state is closed", () => {
+    const { fixes, walls } = closedEverywhere(step);
+    expect(walls.length).toBe(2);
+    expect(walls.map((i) => counts(fixes[i]))).toEqual([
+      [1, 22, 36, 18, 0],
+      [1, 22, 36, 18, 0],
+    ]);
   });
 });
 
