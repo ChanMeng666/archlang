@@ -75,7 +75,7 @@ consumes the built core (`../dist/index.js`). Deployed at
   same permalink. `embed.html` reads `#s=<id>` too.
 - **Export (Share ▾):** **copy** SVG/PNG to the clipboard, or **download** SVG / PNG / PDF / DXF /
   TXT / GLB. Exports strip the `data-span` annotations, so downloaded files stay clean.
-- **Layout:** draggable resizable split, 5 render themes, 2 lint profiles; responsive —
+- **Layout:** draggable resizable split, 5 render themes, every lint profile `LINT_PROFILES` lists (`src/lint/ruleset.ts`); responsive —
   at ≤900px view mode is the drawing full screen, and edit mode shows one of
   **Code / Plan / 3D / Facts / Checks** at a time under a sticky switcher, its one view control
   there (Checks: the diagnostics over the Checks tab's content), with 44 px touch targets and no
