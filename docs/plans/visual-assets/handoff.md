@@ -1,5 +1,7 @@
 # Visual assets: handoff
 
+> **One queue (RM-D15, 2026-11-11):** scheduling, and the resume point for all development, are only in `../product-roadmap/handoff.md`. This file keeps this programme's own history and rulings; the programme is closed; its residue VA.1, VA.2, VA.4 and VA.5 is carried by the track-8 cards (`../product-roadmap/README.md` § 7); VA.3 stays an owner decision.
+
 The resume point. The programme's nine cards landed on 2026-11-04 and were released the same day;
 what is left is the residue below, also filed as backlog VA.1–VA.5.
 
