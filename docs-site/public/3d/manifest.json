@@ -64,7 +64,7 @@
         },
         {
           "path": "studio.replay.mp4",
-          "bytes": 445742,
+          "bytes": 448705,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
@@ -145,7 +145,7 @@
         },
         {
           "path": "furnished-flat.replay.mp4",
-          "bytes": 537386,
+          "bytes": 543904,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
@@ -226,7 +226,7 @@
         },
         {
           "path": "laneway-house.replay.mp4",
-          "bytes": 524702,
+          "bytes": 528713,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
@@ -307,7 +307,7 @@
         },
         {
           "path": "knob-flat.replay.mp4",
-          "bytes": 430308,
+          "bytes": 432135,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
@@ -417,7 +417,7 @@
         },
         {
           "path": "two-storey.replay.mp4",
-          "bytes": 425003,
+          "bytes": 423532,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
@@ -527,7 +527,7 @@
         },
         {
           "path": "turning-stair.replay.mp4",
-          "bytes": 330232,
+          "bytes": 329819,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
@@ -627,7 +627,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "509a27ae26b725f8d217ee8ce563a3660f89f84be9e802a13d1603dcaec1a2aa",
+          "frameSha256": "afbb68bb34ab158bf5285e76bf7edbf06a989011eb2314e2bce50f0bb377b762",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -637,8 +637,8 @@
         }
       ],
       "glb": {
-        "sha256": "d6192efd3c7be416efe6d5b4e3d5e918b04359d97fa576dea1ecbf861a243c3f",
-        "contentSha256": "2607ec3816e423f2b674c67050c05f72f967b25e51e69fb32dc7f0e97b525818",
+        "sha256": "8aff2637a70ea391aeeda125835c029550be1ad91b1ded258ec300b67da35de2",
+        "contentSha256": "31f449af8a9fdfac7b29b88e77456bc313e708a30660c788efada240b98917a4",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -655,19 +655,19 @@
       "files": [
         {
           "path": "courtyard-house.poster.webp",
-          "bytes": 58212,
+          "bytes": 58262,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
         {
           "path": "courtyard-house.poster.png",
-          "bytes": 204898,
+          "bytes": 204747,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
         {
           "path": "courtyard-house.glb",
-          "bytes": 235832,
+          "bytes": 235864,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
@@ -694,7 +694,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "6dec0bb9cb8de1beae3da35c90b785937749998962f82d4d1b24394613d2437c",
+          "frameSha256": "56e3cfe7a48499c109fb1a37074def27c4b45bfea6a21373ac38580987821075",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -720,8 +720,8 @@
         }
       ],
       "glb": {
-        "sha256": "75a198ef11ff493c19da132974c11def8b851af499e048570a11a47f09dbbe7f",
-        "contentSha256": "cf8e425f0ac44850c928408ac9cb1f64862cebe891f0a2e32bfbc99ddcbde8b8",
+        "sha256": "956cb6b865d365985d904b6c97d78310f8bddbbd24abccab17ef7d557e19b0fd",
+        "contentSha256": "a3d5c24ed10be9766f9fc94dafb5d859ce43109fa69082b1dff386848c94672d",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -745,7 +745,7 @@
         },
         {
           "path": "hillside-villa.poster.png",
-          "bytes": 209524,
+          "bytes": 209534,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
@@ -763,7 +763,7 @@
         },
         {
           "path": "hillside-villa.glb",
-          "bytes": 564600,
+          "bytes": 564632,
           "archlang": "1.58.0",
           "archlang3d": "0.5.0"
         },
