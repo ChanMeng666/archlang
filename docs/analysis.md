@@ -696,15 +696,21 @@ Two lint rules read that, per storey:
   the shaft lands on no room there, or the shaft starts in a room nobody can walk to.
 - **`W_ROOM_UNREACHABLE`** starts from the arrival rooms, so the same BFS answers the same
   question one floor up. Such a storey's doors onto a balcony are walked through (out of one
-  room and in at another), never started from: a balcony is no way in from the street.
+  room and in at another), never started from: a balcony is no way in from the street. The
+  storey's balconies are read as one outside, so this names a room only a balcony door leads to
+  as long as no room reached from the shafts also opens onto a balcony; a room entered only from
+  a second balcony, on a storey where a reached room opens onto the first, still counts as
+  reached.
 
 Each storey's own `access.entrances` and `access.hasEntrance` stay **honest** — they report
 that floor's doors, so the upper storey of a house with one front door reads `false`. Its
 `access.rooms[]` count from where a person arrives: on a storey with arrival rooms, each arrival
-room is `reachable` at `depthFromEntrance: 1`, its `bottleneckClearWidth` the width of the flight
-stepped off (the width the circulation walk seeds there), and every other room is counted
-through the doors from those, so `reachable: false` there is exactly the room
-`W_ROOM_UNREACHABLE` names. The cross-storey answer is `vertical.reachable_levels`.
+room an arriving run lands in (below) is `reachable` at `depthFromEntrance: 1`, its
+`bottleneckClearWidth` the width of the flight stepped off (the width the circulation walk seeds
+there), and every other room is counted through the doors from those, so `reachable: false` there
+is exactly the room `W_ROOM_UNREACHABLE` names. A room that only holds a flight boarded on that
+storey (a stair on up to a floor reached only through it) is no arrival: it is counted through its
+doors. The cross-storey answer is `vertical.reachable_levels`.
 
 **`W_STAIR_UNMATCHED`** is the other side of the identity rule: a run whose id appears on
 exactly *one* storey of a multi-storey plan connects nothing — usually a typo. It is
@@ -729,7 +735,9 @@ A storey with no door from the ground of its own is **walked from the runs that 
 each arriving run is an entrance whose walk starts in the row of cells in front of the edge a
 person steps off at, seeded at the run's width, and the rooms the doors reach are those
 walkable from the arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts from. Its doors
-onto a balcony start no walk. `levels[i].circulation` carries the run's id as `entranceId`, and
+onto a balcony start no walk. (The `--overlay circulation` drawing is not walked from the
+arriving runs yet: on such a storey with a balcony door it still draws the walks from that door.)
+`levels[i].circulation` carries the run's id as `entranceId`, and
 `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` measure that floor as they measure a ground floor. A
 storey with a door from the ground walks from its doors, whatever shafts land there.
 

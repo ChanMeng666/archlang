@@ -85,25 +85,28 @@ export function buildVerticalReport(
 }
 
 /**
- * Where `describe().access` counts a shaft-reached storey's rooms from (PS0.3): each room a shaft
- * delivers a person into (`arrivalRooms`, the sources `lint`'s reachability rule adds), with the
- * width they arrive by. That width is the widest arriving run landing in the room, measured as
- * the circulation model seeds its landing (`runWidth` across the edge stepped off, `landedOn`),
- * or `null` when no arriving run lands there. Empty when the storey has no arrival room, so the
- * access graph is then the one it always was.
+ * Where `describe().access` counts a shaft-reached storey's rooms from (PS0.3): each room an
+ * ARRIVING run lands in (`landedOn(arrivals)`, the runs `computeCirculation` walks the storey
+ * from), with the width a person arrives by: the widest such run, measured as the circulation
+ * model seeds its landing (`runWidth` across the edge stepped off). Only rooms that are also among
+ * `arrivalRooms` (the sources `lint`'s reachability rule adds) are kept, in that order. A room
+ * that only holds a flight BOARDED on this storey (a stair on up to a floor reached only through
+ * this one) is in `arrivalRooms` but is no arrival: nobody steps off into it, so it is counted
+ * through the doors from the rooms a person does arrive in. Empty when no arriving run lands in
+ * an arrival room, so the access graph is then the one it always was.
  */
 export function shaftArrivalSeeds(
   arrivalRooms: readonly string[],
   arrivals: readonly ArrivingRun[],
   rooms: readonly RRoom[],
 ): ShaftArrivalSeed[] {
-  const known = new Set(rooms.map((r) => r.id));
-  const ids = arrivalRooms.filter((id) => known.has(id));
-  if (ids.length === 0) return [];
+  if (arrivalRooms.length === 0) return [];
+  const sources = new Set(arrivalRooms);
   const widths = new Map<string, number>();
   for (const a of landedOn(arrivals, rooms)) {
+    if (!sources.has(a.roomId)) continue;
     const w = runWidth(a.flight, a.edges[0]!);
     if (w > (widths.get(a.roomId) ?? Number.NEGATIVE_INFINITY)) widths.set(a.roomId, w);
   }
-  return ids.map((id) => [id, widths.get(id) ?? null] as const);
+  return arrivalRooms.filter((id) => widths.has(id)).map((id) => [id, widths.get(id)!] as const);
 }

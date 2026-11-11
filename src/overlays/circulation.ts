@@ -31,8 +31,11 @@ export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: R
   const voids = ir.elements.filter((e): e is RVoid => e.kind === "void").flatMap(voidPieces);
   // The runs a `status demolish` wall leaves open (B3a): `ir` is the plan after the demolition,
   // so the walk crosses them as describe()'s does. Empty without one, so the graph is unchanged.
-  // Walked from the ways a person arrives by, as `describe().circulation` is (U.1: a balcony door
-  // is none for a room a door from the ground reaches); the graph itself on every other plan.
+  // Walked from the doors a person arrives by (U.1: a balcony door is none for a room a door from
+  // the ground reaches), as `describe().circulation` is on a storey with a door from the ground;
+  // the graph itself on every other plan. It is handed no shaft arrivals, so on a storey a stair
+  // reaches that has a balcony door (`garden-house`'s upper floor) it still walks from that door,
+  // where `describe().circulation` walks from the stair (PS0.3): a known gap, not yet closed.
   const access = arrivalAccess(
     buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL)),
     entranceInputs(ir, new Map(rooms.map((r) => [r.id, roomBox(r)]))),

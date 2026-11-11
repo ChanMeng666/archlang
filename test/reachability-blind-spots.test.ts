@@ -92,6 +92,47 @@ describe("PS0.3 — a storey a stair reaches", () => {
     ]);
   });
 
+  it("counts a room that only holds a flight boarded on this storey through its door, not as an arrival", () => {
+    // s1 climbs from the ground into the landing; s2 stands in the study and climbs on to a floor
+    // reached only through this one, so on this storey s2 is boarded, never stepped off. Before,
+    // the study was seeded at depth 1 like the landing; it is reached through the 740 mm door.
+    const src = `plan "Board" {
+  units mm
+  grid 50
+  level 1 "G" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=hall at (0,0) size 8000x6000 label "Hall" uses hall
+    door id=front on shell at 1000 width 1000 swing into hall
+    stair id=s1 at (500,1500) size 900x2900 dir up
+  }
+  level 2 "One" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=mid partition thickness 100 { (4000,0) (4000,6000) }
+    room id=landing at (0,0) size 4000x6000 label "Landing" uses circulation
+    room id=study at (4000,0) size 4000x6000 label "Study" uses office
+    door id=d_st on mid at 3000 width 740 swing into study
+    stair id=s1 at (500,1500) size 900x2900 dir down
+    stair id=s2 at (6500,1500) size 1100x2900 dir up
+  }
+  level 3 "Two" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=top at (0,0) size 8000x6000 label "Top" uses bedroom
+    stair id=s2 at (6500,1500) size 1100x2900 dir down
+  }
+}
+`;
+    const levels = describePlan(src).levels!;
+    expect(levels[1]!.access.rooms).toEqual([
+      { id: "landing", depthFromEntrance: 1, reachable: true, bottleneckClearWidth: 900 },
+      { id: "study", depthFromEntrance: 2, reachable: true, bottleneckClearWidth: 690 },
+    ]);
+    expect(levels[1]!.circulation!.entranceId).toBe("s1");
+    // On the floor above, s2 IS the way in.
+    expect(levels[2]!.access.rooms).toEqual([
+      { id: "top", depthFromEntrance: 1, reachable: true, bottleneckClearWidth: 1100 },
+    ]);
+  });
+
   it("reads a room whose only door opens onto a balcony as unreachable, in describe and lint alike", () => {
     // A wider upper storey: a second bedroom whose one door opens onto its own balcony. Before,
     // that slider was the storey's way in: the landing and the first bedroom read unreachable
