@@ -1,6 +1,6 @@
 # 产品规划卡片（RM），v2
 
-规则同 `../drawing-set/cards.md`：选依赖已完成、阶段已开放的第一张 `todo` 卡；同一阶段先做"线"以上的卡。状态词：`todo`、`doing`、`done`（裁成 id、标题、状态、PR、commit）、`blocked`（等 `README.md` §6 裁定）、`parked`。规模是 AI 协作日，±50%，是估算不是测量；没有估算的写"未估"。"模型"是建议执行者，主会话可改。每张卡都写明不许做什么。
+规则同 `../drawing-set/cards.md`：选依赖已完成的第一张 `todo` 卡（按阶段的先后排）；同一阶段先做"线"以上的卡。**阶段标题里的日期是参考日期，不是门（RM-D27，所有者 2026-11-11，`README.md` §6.5）：** 卡在真实依赖满足时开工、CI 绿了就合并，不等某个日期或某个阶段"开放"，冻结期也不挡。状态词：`todo`、`doing`、`done`（裁成 id、标题、状态、PR、commit）、`blocked`（等 `README.md` §6 裁定）、`parked`。规模是 AI 协作日，±50%，是估算不是测量；没有估算的写"未估"。"模型"是建议执行者，主会话可改。每张卡都写明不许做什么。
 
 **状态（2026-11-11 01:18Z → 01:46Z 按 `git` 与 `gh` 读）：** `done` 的有 RM0.3（#689）、RM0.1（#692）、RM8.1 与 RM8.2（#691）、RM0.2（#693，头注释一项拆成 RM0.2b）、RM0.4（三条回复与 #693 的 docs 一行）；做了一部分的有 RM0.5、RM8.4（CLI 一项由 #695 合并，只剩 RM8.4b）、RM1.3a（分支，没有 PR，没绿）；其余全部 `todo`。逐卡的状态行写在各卡下面，恢复点是 `handoff.md`。2026-11-11 新增的卡：RM0.2b、RM1.3c、RM1.4b、RM7.4、RM8.1b、RM8.4b、RM8.10（各在所在阶段）。RM-D9…D16 已由所有者 2026-11-11 批准（`README.md` §6.1），RM-D17…D20 是同日的受托裁定（§6.2）；下面的阶段划分生效。**第 8 轨"视觉质感"（RM8.1…RM8.9，2026-11-11 增补）** 的卡也全部 `todo`：RM-D21 是所有者的方向；RM-D22（第二条车道）与 RM-D23（接触阴影）已由所有者 2026-11-11 批准（`README.md` §6.3）。视觉卡各自放在所在阶段的末尾，排法以 `README.md` §3 为准（两条车道）。估时标"主会话估"的是主会话的估算，±50%。`[语法：词表]` 标记的卡只给已有形式加闭集里的词，不加新子句，但同样依赖 PS7.9、带字节恒等律。
 
@@ -17,7 +17,7 @@
 | 执行者 | 两条车道（RM-D22，所有者 2026-11-11 批准）：一个核心执行者、一个视觉执行者（第 8 轨），外加纯文档卡；每张卡一个 worktree（`docs/agents/orchestration.md`）；一次一个重命令对整台机器生效，重的门禁交给 CI |
 | 每个 PR | 从 `main` 建 worktree，分支 `feat/<card>-<slug>`（文档卡 `docs/<card>-<slug>`）；红队最多两轮；合并串行，按风险层级走 `docs/agents/commands.md` § Merging a PR |
 | 规则卡（RM1.2a/b、RM1.7） | 另加：每条规则一对公开夹具（合法图零报、缺陷图必报）进 `test/defect-corpus/`；留出的一对只写进私有 `archlang-lab`，PR 只报它的计数；PR 里写出该规则用 `arch lint --json` 跑过全部 `examples/**` 的报出数 |
-| 冻结期 11-24 → 12-01 | 只合 bug 修复、测量与文档；不发 minor |
+| ~~冻结期 11-24 → 12-01~~ | ~~只合 bug 修复、测量与文档；不发 minor~~ 已由所有者 2026-11-11 取消（RM-D27，`README.md` §6.5）：这一周照常合并，不再是门。仍然成立：Show HN（12-01）之前 `main` 保持绿；任何一次发布（minor 或 patch）都要所有者对那一次的决定 |
 | 3D 回放的改动（2026-11-11 加） | 除终帧与海报外，还要比对墙升起过程中的帧（例如回放的 6.75 s、6.80 s 处）。#691 的终帧与海报都对，透缝只在升墙中途出现，是第一轮评审逐帧比对视频时抓到的（`docs/agents/gotchas.md` § PRs & CI） |
 | 执行者的长等待（2026-11-11 加） | 简报写明：可能长时间等待（等资产生成、等机器空闲）之前，先在自己的 scratchpad 写一个状态文件（已做什么、还剩什么），文件按卡命名（例如 `state-rm1.3a.md`，不叫 `state.md`：同一会话的代理共用 scratchpad，2026-11-11 有两个代理互相覆盖过）；机器忙时，小改动先提交，报告写"门禁未跑"，不在长循环里等。两个执行者在长等待中丢过任务卡（`docs/agents/orchestration.md`） |
 
@@ -73,7 +73,7 @@
 
 ## 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：不加语法
 
-执行顺序以 `README.md` §3 的表为准：RM1.3a → RM5.1 → RM1.4 → 发布 1.59.0，线（8 日 = 3 + 2 + 2 + 发布 1，9 个日历日）以下 RM2.1 → RM1.6a → PS7.9。RM0.2 是纯文档卡，也在线上，但由第二个（只做文档的）执行者并行，不计入 8 日。切点前合不完的进阶段 D，不挤进冻结期。
+执行顺序以 `README.md` §3 的表为准：RM1.3a → RM5.1 → RM1.4 → 发布 1.59.0，线（8 日 = 3 + 2 + 2 + 发布 1，9 个日历日）以下 RM2.1 → RM1.6a → PS7.9。RM0.2 是纯文档卡，也在线上，但由第二个（只做文档的）执行者并行，不计入 8 日。~~切点前合不完的进阶段 D，不挤进冻结期。~~ RM-D27 之后：切点前合不完的卡接着做、绿了就合并，进下一次所有者决定的发布；没有冻结期要躲。
 
 ### RM1.3a · 可达性盲点第一批 — `done` · #698 · `b385685c`（2026-11-11T04:57:27Z）
 
@@ -158,9 +158,11 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 ### 发布 1.59.0 · 约 11-21 · 1 日
 
-线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。切点后合并的 minor 内容等 12-02。
+线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。~~切点后合并的 minor 内容等 12-02。~~ RM-D27 之后：切点后合并的内容进下一次所有者决定的发布，合并本身不等日期。
 
 **所有者已决定（2026-11-11，所有者在会话里的原话"我同意发布"，协调者转述）：** 发布 1.59.0。代理在路线图切点（约 11-21，路线图的日期）跑整条发布链，含 tag；"所有者明说才提前"是协调者的读法。bump 三处：核心 minor；`packages/mcp` 的 shim 经 `release:pin`；`packages/archlang-3d`（自 0.5.0 以来含 RM8.1、RM8.2、RM8.3）。tag 前的每一项证明在版本号 PR 的分支头上跑完，再合并该 PR。
+
+**RM-D27（2026-11-11）之后：** 约 11-21 是参考日期；1.59.0 的决定不变，切点由协调者按线上卡的实际进度定。
 
 ### ── 线（8 日）──
 
@@ -186,13 +188,15 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 不许：改 `lint()` 的返回值；改 `LINT_PROFILES`、`DEFAULT_RULESET` 的形状；删已有的 hint 文本；把 `S-secondary` 写成 `S-full`；在 `message` 里引条文号；自己定 `$id`。
 
+**设计稿已写（2026-11-11）：** `design/schema-policy.md` §2.2 建议规则集 schema 的 `$id` 为 `https://archlang.uk/schemas/lint-rules/v0.schema.json`（草案 `v0`，协调者的决定）；CR11a 落地之前本卡仍按"`$id` 未定的草案"交付。
+
 ### PS7.9 · spec 腾空 — 见 `../plan-soundness/cards.md`，`todo` · 1.5 日 · opus · 依赖无
 
 本计划把它提为所有 `[语法]` 卡的前置。今天 `spec.llm.md` 是 29,856 UTF-16 单位，测试是 `< 30_000`（`test/llm-spec-drift.test.ts`），可用余量 143。目标按后面排到的 `[语法]` 形式重算：RM6.1 两个（剖切符号、楼板 datum）、RM-D17（MF-D11）的净高子句一个、RM1.2b 的 `keep site` 与可开启值两个，共五个；线下的 RM4.2 `schedule fixtures`、RM3.4 另计。
 
 不许：提高上限而不先削掉可证明的重复（铁律）；删掉 spec 里仍在用的事实。
 
-线下的卡在 1.59.0 切点前合并的，随 1.59.0 发布；切点后合并的等 12-02。
+线下的卡在 1.59.0 切点前合并的，随 1.59.0 发布；~~切点后合并的等 12-02~~ 切点后合并的进下一次所有者决定的发布（RM-D27：合并不等日期）。
 
 ### RM1.4b · 写错大小写的主题名静默无效 — `doing` · #704（与 RM1.4 同一个 PR） · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #695 的评审 L，M6）
 
@@ -284,9 +288,9 @@ Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf
 
 ---
 
-## 阶段 C · 冻结期（11-24 → 12-01）：只修 bug，加测量与文档
+## 阶段 C · 原"冻结期"（11-24 → 12-01，日期现为参考）：测量与文档
 
-不合任何功能代码。
+~~不合任何功能代码。~~ RM-D27（所有者 2026-11-11，`README.md` §6.5）取消了冻结期：本阶段的卡依赖满足就开工，功能代码在这一周也照常合并，只要 `main` 在 Show HN（12-01）之前保持绿。
 
 ### RM1.1a · 首次接触复测（第一次） — `todo` · 1 日 · opus · 依赖 1.59.0 发布（兜底见下）
 
@@ -302,7 +306,7 @@ Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf
 
 ### RM5.3 · 代理入门一条 URL — `todo` · 未估（报告 B 引来源估 2–4 日） · sonnet · 依赖 RM5.1
 
-它含一个生成器和一条 drift 测试，还要改 `sync-docs.mjs` 的 PAGES，所以不是纯文档卡：由主执行者做，不由第二个执行者并行；冻结期只合 bug 修复、测量与文档，合不了就顺延到阶段 D。
+它含一个生成器和一条 drift 测试，还要改 `sync-docs.mjs` 的 PAGES，所以不是纯文档卡：由主执行者做，不由第二个执行者并行；~~冻结期只合 bug 修复、测量与文档，合不了就顺延到阶段 D。~~ RM-D27 之后：依赖 RM5.1 已合并（#703），按核心车道的顺序做，绿了就合并。
 
 docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理从这一个 URL 出发就能装好、写一张平面、编译、lint。内容由 `skills/archlang/SKILL.md` 与 `llms-install.md` 同步生成（生成器从这两个源派生，不重抄），带 drift 测试。
 
@@ -312,7 +316,7 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 
 ### 冻结期设计稿（五份，纯文档，可由第二个执行者并行；第五份 `visual-language.md` 于 2026-11-11 随第 8 轨加入）
 
-放 `design/`（本目录下，冻结期才建）。每份是对应卡开工前要读的设计，不是实现：
+放 `design/`（本目录下；原定冻结期才建，RM-D27 之后提前建了）。每份是对应卡开工前要读的设计，不是实现。**2026-11-11 已写成四份**：`design/schema-policy.md`、`design/walls-facts.md`、`design/slab-and-section.md`、`design/plan-json-scope.md`；各卡的依赖行已注明。原来的要求：
 - `schema-policy.md` → CR11a：`$id` 与变更、弃用政策草案。
 - `walls-facts.md` → RM7.2：字段按 `_derivedWalls` 的真实形状（`points[]`、`closed`、`between` 或 `ring`、厚度、类别、状态，`src/elements/walls-from-rooms.ts`）；按墙 `id`（即 piece 名）与 `heights.walls[]`（`src/describe.ts` 的 `{ id, height }`）、`describe --facts quantities`（`src/analyze/quantities.ts` 按 `id`）对齐；已有的 `describe().derived_walls[].name` 是 spec 名，CR8 切分后一个 spec 对应多个 piece，设计稿要交代新事实与默认 `derived_walls` 的关系；写明"段的粒度在 CRF1 之后才稳定"；新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`）；消费者一栏照实写。
 - `slab-and-section.md` → RM6.1：DS11 并入时的四件事（拼写取 DS11 的 `section A (x,y)->(x,y)` 还是 #544 的 `from … to …`；进 `describe` 主体还是 opt-in 事实；多层平面上剖切符号画在哪一页；`section` 写进日后 DS5 的 `level a..b` 时 id 怎么不重复，定不下来就保留对 DS5 的依赖）；净高子句的拼写，按 RM-D17（MF-D11 的受托裁定，`README.md` §6.2）。
@@ -334,15 +338,17 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 
 ### 第 8 轨（视觉）· 冻结期
 
-RM8.1 是查看器缺陷修复，冻结期允许合并；但海报要在 Show HN（12-01）前部署，关键帧重钉还要一轮 CI，所以目标是冻结前合并。（2026-11-11：RM8.1 与 RM8.2 已由 #691 合并，`main` 推送即部署了新海报；Deploy run 42937898404 success。）RM8.2、RM8.3 不是缺陷修复，冻结期不合。`visual-language.md` 见上面的设计稿列表。
+RM8.1 是查看器缺陷修复，冻结期允许合并；但海报要在 Show HN（12-01）前部署，关键帧重钉还要一轮 CI，所以目标是冻结前合并。（2026-11-11：RM8.1 与 RM8.2 已由 #691 合并，`main` 推送即部署了新海报；Deploy run 42937898404 success。）~~RM8.2、RM8.3 不是缺陷修复，冻结期不合。~~（RM-D27 之后不再有冻结期；两张卡都已合并。）`visual-language.md` 见上面的设计稿列表。
 
 ---
 
 ## 阶段 D · 批次 C′（12-02 → 12-16；1.60.0 约 12-21 切）：契约、出处、公开检查集、无损
 
-执行顺序以 `README.md` §3 的表为准：CR11a → RM1.6a（若阶段 B 没做完）→ RM1.6b → CR10 → RM3.1 前半 → 发布 1.60.0，线（12–14.5 日 = 11–13.5 + 发布 1）以下 RM3.1 后半 → PS7.9（若没做完）→ CR11b + RM3.2 → RM4.3。CR9、CR12、RM2.2 在阶段 E 线下。1.60.0 避开 Product Hunt 那一周。RM3.1 按 RM-D10 拆成两半。RM5.4 在线下，12-02 之后才开工。
+执行顺序以 `README.md` §3 的表为准：CR11a → RM1.6a（若阶段 B 没做完）→ RM1.6b → CR10 → RM3.1 前半 → 发布 1.60.0，线（12–14.5 日 = 11–13.5 + 发布 1）以下 RM3.1 后半 → PS7.9（若没做完）→ CR11b + RM3.2 → RM4.3。CR9、CR12、RM2.2 在阶段 E 线下。1.60.0 避开 Product Hunt 那一周。RM3.1 按 RM-D10 拆成两半。RM5.4 在线下，~~12-02 之后才开工~~（RM-D27 作废了这个日期；主版本升级仍等所有者）。
 
 ### CR11a · schema `$id` 与变更政策 — `todo` · 1 日 · sonnet · 依赖冻结期的 `schema-policy.md`
+
+**设计稿已写（2026-11-11）：** `design/schema-policy.md`，依赖满足。要点：现有两个 `$id` 不改；`$id` 跟格式主版本走；`GOVERNANCE.md` 的变更与弃用条文；门禁 `compareJsonSchemas` 加 `$id`。改现有 `$id` 的值才需要所有者裁定（本稿建议不改）。
 
 CR11（`../checker-reach/README.md` §3）的政策那一半：schema 用带版本的 `$id`；`GOVERNANCE.md` 写清 schema 与语言形式的变更和弃用政策。排在任何新 schema 发布之前（RM1.6a 的规则集 schema、RM1.6b 的 `rule` 字段、RM3.1 的 Plan JSON 新键）。
 
@@ -377,6 +383,8 @@ RM1.1a 若走了兜底（量的是冻结时 `main` 的 SHA），发布说明引�
 不许：叫 benchmark 或 leaderboard；与模型分数并列；把覆盖数字放进标题、README 徽章、首页、包描述（RM-D3）；跨辖区一列用 `S-secondary`、`M`、`convention` 的数；把跨辖区规则放进默认规则集。
 
 ### RM3.1 前半 · Plan JSON 无损：范围表、往返律、`outdoor` 与 `fence` — `todo` · 3 日 · opus · 依赖 CR11a、冻结期的 `plan-json-scope.md` · **批次 C′ 线上**
+
+**设计稿已写（2026-11-11）：** `design/plan-json-scope.md`，范围表的依赖满足（仍依赖 CR11a）。它另建议：前半同时把 `floor` 搬进 Plan JSON、修 J16（只在作者写了 `sill` 时写它）；PS0.18 在表里标 `dropped`，但报告它已由 `78e0b7f9` 在回程一侧修掉，是否关闭要所有者裁定。
 
 v1 的 RM3.1 拆成两半（RM-D10，所有者 2026-11-11 批准）。前半：
 - 范围表：按设计稿列出 Plan JSON **声称承载**的形式（逐个顶层语句对 `src/plan-json*`），含 J16（每扇窗写 `sill`）与 PS0.18（待所有者裁定，未裁则标 `dropped`）。
@@ -423,7 +431,7 @@ CR11 的其余一半：语言规范独立版本 `lang-1.0`。RM3.2：SBOM（Cycl
 
 ### RM5.4 · `@modelcontextprotocol/ext-apps` 2.x 迁移（#603） — `todo` · 未估 · opus · 依赖 2026-12-02 之后；与 RM1.6b 共用一次 `packages/mcp` bump · 高风险层
 
-RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 "Workspace builds" 上红，`packages/mcp-worker/src/server.ts` 的 `TS2353 'title' does not exist in type 'McpUiAppResourceConfig'`）Show HN 之前不合并，之后由本卡迁移。
+RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 "Workspace builds" 上红，`packages/mcp-worker/src/server.ts` 的 `TS2353 'title' does not exist in type 'McpUiAppResourceConfig'`）Show HN 之前不合并，之后由本卡迁移。**RM-D27（2026-11-11）之后：** "2026-12-02 之后""Show HN 之前不合并"这两个日期条件作废；本卡仍是主版本升级，按 `docs/agents/iron-laws.md` § Owner policies（"a major bump waits for the owner"）等所有者的同意，并与 RM1.6b 共用一次 bump。
 - 先读 `ext-apps` 2.0 的 release notes，列出影响本仓库的破坏性变更。
 - 修好 workspace 构建（`packages/mcp-worker`）。
 - 证明托管的 app 仍能渲染（ChatGPT app 的 UI 层）。
@@ -432,7 +440,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 证明：CI 的 "Workspace builds" 绿；托管 app 的资源在部署后能取到并渲染（记录请求与截图在 PR 说明，不进测试）；MCP 工具的输出除 bump 外不变。
 
-不许：2026-12-02 之前开工或合并；在没读 release notes 的情况下改代码；为了绿而降低 TypeScript 检查；与 RM1.6b 以外的 MCP 改动另做一次 bump。
+不许：~~2026-12-02 之前开工或合并~~（RM-D27 作废）没有所有者对这次主版本升级的同意就合并；在没读 release notes 的情况下改代码；为了绿而降低 TypeScript 检查；与 RM1.6b 以外的 MCP 改动另做一次 bump。
 
 ### 第 8 轨（视觉）· 阶段 D
 
@@ -558,6 +566,8 @@ agent-reach 读数（01-09，窗口到 01-05）与 RM-D2 读数（01-31，窗口
 不许：碰 M.9/PS0.26；为了合并而构建墙体接合。
 
 ### RM7.2 · `describe --facts walls`（#681） — `todo` · 与 CRF1 合计 6 日 · opus · 依赖 CRF1、冻结期的 `walls-facts.md` · 线下首位（紧接 CRF1）
+
+**设计稿已写（2026-11-11）：** `design/walls-facts.md`，设计稿一项的依赖满足（仍依赖 CRF1）。设计稿的发现：`describe --facts quantities` 的墙是按 `category` 汇总的行，不按 `id`（`src/analyze/quantities.ts:236-256`），所以与 quantities 只能按类别对齐，下面"按墙 `id` 与 … `describe --facts quantities` 对齐"一句按设计稿 §2.4 读。它建议新事实列每面绘出的墙（与 `heights.walls[]` 同集合、同顺序），推导段另带 `spec` 指回 `derived_walls[].name`；只列推导段（本卡原文）是备选。
 
 赶得上就进 1.61.0，否则进下一个 minor。
 
@@ -712,6 +722,8 @@ bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这�
 
 不许：加新子句（给 `floor` 加颜色、`scale`、`angle`，或 `finish …` 一类新写法，那是另一种语言形式）；重画或改动墙材料的图案（`.claude/rules/glyphs.md`："Ground-material work never re-frames or restyles a wall material's hatch."）；读 `label` 决定地面（VA.3 仍是所有者的 `decision`）；改 `FLOOR_FINISH_RULES` 的默认（会动每张有房间的图的 Mesh3D 与 GLB）；从 3D 包深 import 核心；不先削重复就提高 spec 上限；用位图纹理。
 
+**`plan-json-scope.md` 已写（2026-11-11）：** `design/plan-json-scope.md` §4 定下"3D 读 `floor`"：走第三条路，3D 经 `resolvePlan` 读已经公开的 `RRoom.floor`（`RRoom` 是 ADR 0031 公开的元素类型，`floor` 不是下划线字段），不新增导出，也不依赖 RM3.1；所以本卡对 `plan-json-scope.md` 的依赖已满足（仍依赖 PS7.9 与 `visual-language.md`）。上面"经核心新增的加性公开导出取数"一句按此读。
+
 ### RM8.8 · 接触阴影与环境遮蔽 — `todo` · 3 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（阴影一节）
 
 RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with a cheaper technique (baked contact shadows) and a frame-time budget." V9 的阴影图在 SwiftShader 上多约 55% 帧时间，超过当时约 30% 的预算（`mount.ts` 灯光处的注释）。
@@ -739,13 +751,17 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 证明：`.claude/commands/new-fixture-family.md` 列的守卫全绿（CI）：`tsc`、`test/glyph-dispatch-table.test.ts`、`test/rendered-theme.test.ts`、包含性检查、`test/drawing-budget.test.ts`、`test/glyph-chirality.test.ts`、`t0.test.ts`、新批次的字节恒等律；laneway 的 Mesh3D、GLB 钉子与关键帧不动（现有示例不出现新词）；`check:drift` 绿。
 
-不许：在 `FIXTURE_FAMILIES` 中间插入；让符号读 `label`；新增手性；留灰盒；材质不经核心就进 3D；在 docs 围栏里写新词；放宽或改写旧的字节恒等律来变绿；冻结期合并；让任何家族发光（MF-D2）。
+不许：在 `FIXTURE_FAMILIES` 中间插入；让符号读 `label`；新增手性；留灰盒；材质不经核心就进 3D；在 docs 围栏里写新词；放宽或改写旧的字节恒等律来变绿；~~冻结期合并~~（RM-D27 作废）；让任何家族发光（MF-D2）。
 
 ---
 
 ## 阶段 F · 批次 D（2027-01-10 起）：按证据重排
 
+（RM-D27 之后 2027-01-10 是参考日期：本阶段的卡依赖满足就开工，不等这一天。）
+
 ### RM6.1 · 剖面所需的两个事实 — `todo` · 5 日 · opus · 依赖 PS7.9、冻结期的 `slab-and-section.md` · `[语法]` ×3 · **批次 D 首位（#532 触发）**
+
+**设计稿已写（2026-11-11）：** `design/slab-and-section.md`，设计稿一项的依赖满足；剩下的依赖是 PS7.9，不再等 2027-01-10（RM-D27）。它定下：`section A (x,y)->(x,y) look east`（DS11 的写法）；`sections` 进 `describe` 主体，只在写了时出现；画在最低层那一页；`section` 只能写在 plan 层，所以不必依赖 DS5；楼板 `slab <mm>`、净高 `clear <mm>`，都在 `level` 头部（单层平面的 `clear` 在 `height` 那行）。按 `handoff.md` §8 的承诺，要在 #544 贴设计稿链接。
 
 MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本卡的 PR 里解决；MF-D11 已由 RM-D17 受托裁定（`README.md` §6.2，2026-11-11），本卡按它落地，不再等它。本卡不改 MF-D1。
 
