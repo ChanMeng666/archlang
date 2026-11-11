@@ -6,11 +6,18 @@
 // The drawing is a pre-rendered `/gallery/<id>.svg` in a lazy <img>, and the source sits in a
 // closed <details>. Nothing compiles in the reader's browser, so the page costs a phone one
 // small HTML document plus the sheets it actually scrolls to.
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { highlightArch } from "../arch-highlight.js";
 import { GALLERY } from "../gallery-data.js";
 
 const props = defineProps<{ id: string }>();
+
+// The `rendered` colour scheme of the same sheets (pre-rendered by sync-docs through the core's
+// `compile()` with a theme). One checkbox per plan, off by default; the rendered files are not
+// requested until it is ticked. It restyles these drawings only, never the page.
+const rendered = ref(false);
+const sheetFile = (sheet: { file: string; rendered?: string }) =>
+  rendered.value && sheet.rendered ? sheet.rendered : sheet.file;
 
 const plan = computed(() => GALLERY.find((p) => p.id === props.id));
 const lines = computed(() => (plan.value ? plan.value.source.trimEnd().split("\n").length : 0));
@@ -24,9 +31,9 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
     <p class="agent-plan-label">The brief, as given to {{ plan.model }}</p>
     <blockquote class="agent-plan-brief">{{ plan.brief }}</blockquote>
     <figure v-for="(sheet, i) in plan.sheets" :key="sheet.file" class="agent-plan-sheet">
-      <a :href="`/gallery/${sheet.file}`" target="_blank" rel="noopener">
+      <a :href="`/gallery/${sheetFile(sheet)}`" target="_blank" rel="noopener">
         <img
-          :src="`/gallery/${sheet.file}`"
+          :src="`/gallery/${sheetFile(sheet)}`"
           :width="sheet.width"
           :height="sheet.height"
           :alt="
@@ -40,6 +47,9 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
       </a>
       <figcaption v-if="plan.sheets.length > 1">Sheet {{ i + 1 }} of {{ plan.sheets.length }}, one per storey</figcaption>
     </figure>
+    <p class="agent-plan-theme">
+      <label><input v-model="rendered" type="checkbox" /> Show the drawing in the rendered colours</label>
+    </p>
     <p class="agent-plan-open">
       <a class="agent-plan-open__btn" :href="plan.link" target="_blank" rel="noopener">Open in Playground ↗</a>
     </p>
@@ -86,6 +96,14 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
   color: var(--ink);
   font-size: 15px;
   line-height: 1.6;
+}
+.agent-plan-theme {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--ink-muted);
+}
+.agent-plan-theme label {
+  cursor: pointer;
 }
 .agent-plan-open {
   margin: 0 0 8px;

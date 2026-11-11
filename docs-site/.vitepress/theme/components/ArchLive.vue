@@ -7,7 +7,7 @@
 // a transparent-text <textarea> on top, sharing every metric that can move a glyph. That
 // is what makes the code readable AND editable without shipping an editor.
 import { ref, computed, onMounted, useSlots } from "vue";
-import { compile, describe } from "archlang";
+import { compile, describe, THEMES } from "archlang";
 import { PLAYGROUND_EDIT_FLAG, toBase64Url } from "archlang/share";
 // The tokenizer is GENERATED from src/grammar/tokens.ts by scripts/gen-grammars.ts, from
 // the same tables as the VS Code grammar and the playground's CodeMirror mode — so this
@@ -49,8 +49,20 @@ onMounted(() => {
   mounted.value = true;
 });
 
-const result = computed(() => compile(source.value, { noCache: true }));
+// "Rendered colours" restyles THIS drawing only (one image's colour scheme, not a site mode): the
+// same `compile()` with `CompileOptions.theme`, the path `arch compile --theme rendered` takes.
+// Off by default, and then the options are exactly what they were.
+const rendered = ref(false);
+const result = computed(() =>
+  compile(source.value, rendered.value ? { noCache: true, theme: THEMES.rendered } : { noCache: true }),
+);
 const svg = computed(() => (result.value.errors.length ? "" : result.value.svg));
+// The rendered drawing is shown as an <img> over a data URI: every plan's SVG defines `id="poche"`
+// and the rendered one defines it differently, so inlined beside default widgets the first
+// definition in the page would win and restyle the walls. An <img> is its own document.
+const renderedSrc = computed(() =>
+  rendered.value && svg.value ? `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg.value)}` : "",
+);
 const errorMsg = computed(() => result.value.errors[0]?.message ?? "");
 const facts = computed(() => {
   if (result.value.errors.length) return null;
@@ -149,11 +161,18 @@ async function openInPlayground() {
     </div>
     <div class="archlive-preview">
       <!-- eslint-disable-next-line vue/no-v-html -->
-      <div v-if="svg" class="archlive-svg" v-html="svg"></div>
+      <div v-if="renderedSrc" class="archlive-svg">
+        <img :src="renderedSrc" alt="The plan, drawn in the rendered colour scheme" />
+      </div>
+      <!-- eslint-disable-next-line vue/no-v-html -->
+      <div v-else-if="svg" class="archlive-svg" v-html="svg"></div>
       <div v-else class="archlive-error">{{ errorMsg }}</div>
       <div class="archlive-bar">
         <span class="archlive-facts">{{ facts ?? "—" }}</span>
         <span class="archlive-actions">
+          <label v-if="mounted" class="archlive-theme">
+            <input v-model="rendered" type="checkbox" /> Rendered colours
+          </label>
           <a v-if="staticPage" class="archlive-page" :href="staticPage">Static page ↗</a>
           <button type="button" class="archlive-open" @click="openInPlayground">
             Open in Playground ↗
@@ -299,12 +318,22 @@ async function openInPlayground() {
   background-color: var(--paper);
 }
 /* the compiled plan floats as a small sheet on the drafting grid */
-.archlive-svg :deep(svg) {
+.archlive-svg :deep(svg),
+.archlive-svg > img {
   max-width: 100%;
   height: auto;
   background: #fff;
   border: 1px solid var(--hairline);
   box-shadow: 0 1px 6px rgb(28 36 48 / 12%);
+}
+.archlive-theme {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-muted);
+  cursor: pointer;
 }
 .archlive-error {
   flex: 1;
