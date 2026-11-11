@@ -3,12 +3,14 @@
  *
  * Every file in `examples/` stays warning-free (fix/examples-sound, 2026-10-27: a warned plan is a
  * test fixture, never a shipped example), so the plan that demonstrates Checks, which has to raise
- * a finding, lives here instead. It is offered in the gallery under its own group ("Try Checks"),
- * as a button, never as a link: not in the static example pages or the sitemap (those are
- * `EXAMPLE_ROWS`'), and the Checks panel points at it when the plan on screen has nothing to ring.
+ * a finding, lives here instead, beside the edit-one-room plan. They are offered in the gallery
+ * under their own group ("Try Checks"), as buttons, never as links: not in the static example pages
+ * or the sitemap (those are `EXAMPLE_ROWS`'), and the Checks panel points at the Checks one when
+ * the plan on screen has nothing to ring.
  *
  * A lazy module, loaded with the example sources. `playground/test/samples.test.ts` holds each
- * sample to its promise: it compiles, and raises exactly the finding it is for.
+ * sample to its promise: it compiles, and raises exactly the finding it is for (the edit-one-room
+ * one stays clean, and its header's lock command holds or fails as it says).
  */
 
 /** The gallery group the samples are listed under. */
@@ -54,6 +56,45 @@ plan "Flat with one thing to fix" {
 }
 `;
 
+/** The label of the plan that shows editing one room without moving the others. */
+export const EDIT_ONE_ROOM_SAMPLE = "Edit one room";
+
+/**
+ * The sketch-studio plan of docs/edit-one-room.md, clean under the default rules. `split` is the
+ * one knob: moving it resizes the entry and the bath, and `archlang impact --lock` proves the
+ * living room and its window did not move. Elements carry `id=` because a lock names them.
+ */
+const EDIT_ONE_ROOM = `# Edit one room, keep the rest. Move the split knob (or change let split): the entry and the
+# bath resize, the living room does not. Outside the playground, ask the compiler to prove it:
+#   archlang impact plan.arch --set split=3200 --lock r_main,w_main
+# exits 0 while r_main and w_main are unchanged, and 2 with E_LOCKED_ELEMENT_CHANGED if they move.
+# A lock names elements by the id= written here, so give every room you care about one.
+plan "Edit one room" {
+  units mm
+  grid 100
+  scale 1:50
+  north up
+
+  let w = 5400
+  let d = 4500
+  let hall_d = 1500
+  let split = 3000
+
+  room id=r_main at (0,0)                size w x (d - hall_d)       label "Living / Bed"
+  room id=r_hall at (0,d - hall_d)       size split x hall_d         label "Entry"
+  room id=r_bath at (split,d - hall_d)   size (w - split) x hall_d   label "Bath"
+
+  walls from rooms exterior 300 partition 100
+
+  door id=d_front on r_hall.bottom at center width 900 swing into r_hall
+  door between r_hall and r_main at 1500 from start width 900 swing into r_main
+  door between r_hall and r_bath at center width 800 swing into r_bath
+  window id=w_main on r_main.top width 1800
+
+  furniture shower in r_bath anchor right flush size 900x900
+}
+`;
+
 /** One sample: its gallery label and its source. */
 export interface Sample {
   label: string;
@@ -61,7 +102,10 @@ export interface Sample {
 }
 
 /** The samples, in gallery order. */
-export const SAMPLES: readonly Sample[] = [{ label: CHECKS_SAMPLE, source: FLAT_ONE_FIX }];
+export const SAMPLES: readonly Sample[] = [
+  { label: CHECKS_SAMPLE, source: FLAT_ONE_FIX },
+  { label: EDIT_ONE_ROOM_SAMPLE, source: EDIT_ONE_ROOM },
+];
 
 /** The source of the sample labelled `label`, if there is one. */
 export const sampleSource = (label: string): string | undefined => SAMPLES.find((s) => s.label === label)?.source;
