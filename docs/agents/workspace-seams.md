@@ -42,6 +42,7 @@ other direction: `src/` never imports `archlang-3d` or `three`.
 | `packages/mcp-worker/tsconfig.json` | `paths @chanmeng666/archlang` | types come from the same built core that scripts/build.mjs bundles |
 | `packages/mcp-worker/tsconfig.json` | `paths @chanmeng666/archlang/link` | tsc must type the Worker's /link import from the same build the bundler inlines (scripts/build.mjs), not an installed copy that could differ |
 | `packages/mcp-worker/tsconfig.json` | `paths @chanmeng666/archlang/share` | types the Worker's ./share import from the same build the bundler inlines, as for /link |
+| `packages/mcp/scripts/tsconfig.gen.json` | `paths @chanmeng666/archlang` | gen:mcp-capabilities runs the tool registry under tsx with the core's source, as the root vitest alias does, so check:drift needs no build |
 | `packages/web-component/tsconfig.json` | `paths @chanmeng666/archlang` | the core is a peer dependency; in the monorepo it is the root's source, typechecking without a build |
 | `packages/web-component/scripts/build.ts` | `path dist/index.js` | the standalone build inlines the repo's built core, and refuses to build when it is missing or stale |
 | `packages/web-component/scripts/build.ts` | `path src` | freshness check: dist/ must be newer than every core source file, or the standalone would inline a stale compiler |

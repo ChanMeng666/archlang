@@ -306,6 +306,7 @@ the `GENERATORS` table in `scripts/generators.ts` (which `check:drift` runs) —
 | `grammars/archlang.gbnf` | `gen:gbnf` | `src/grammar/tokens.ts` |
 | `schemas/plan.schema.json` | `gen:plan-schema` | `PLAN_JSON_SCHEMA` |
 | `schemas/intent.schema.json` | `gen:intent-schema` | `INTENT_JSON_SCHEMA` |
+| `packages/mcp/capabilities.md` (the `archlang://capabilities` MCP resource) | `gen:mcp-capabilities` | the MCP tool registry (`packages/mcp/src/tools.ts`), `buildManifest()` and `EXPORT_FORMATS` (`src/manifest.ts`) |
 | the `examples/*.svg` the README embeds, plus the axonometric renders | `gen:example-svgs` | the matching `examples/*.arch` (lists: `README_SVGS`, `VIEW_SVGS`) |
 | `.claude/hooks/generated-artifacts.json` (the local-gate hook refuses a hand edit of any file it lists) | `gen:generated-artifacts` | the `GENERATORS` table itself |
 

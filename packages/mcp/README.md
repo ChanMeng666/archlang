@@ -78,7 +78,7 @@ ends included) the MCP hash and the CLI's agree.
 | `compile` | Render source (or `plan_json`) to SVG, or to zero-dep ASCII (`format:"txt"`), Plan JSON as an object (`format:"json"`, the shape `plan_json` takes) or a PNG image (`format:"png"`, at `archlang preview`'s width unless `width` overrides it, within a clamped range; needs the optional `@resvg/resvg-js`, which the `.mcpb` bundle leaves out). `accessible`, `overlay:"circulation"` opt-ins. Returns output + diagnostics. A multi-storey plan returns every storey in `pages[]`; `level` renders one. |
 | `describe` | Semantic facts (rooms, areas, adjacency, doors, circulation, zones, storeys, the exact `floor_polygon`/`floor_circle` shape, and a `freedom` report of which positions are hand-authored vs resolver-derived) — verify intent without an image. |
 | `lint` | Advisory `W_*` soundness warnings (may include the fix-carrying `W_ALIAS_MATCH` for a room use inferred from an indirect label alias); `profile` selects a ruleset. |
-| `validate` | Parse + resolve + lint, the ship gate. `strict` fails on warnings; `graph` checks interior-door adjacency against an intended room graph; `intent` gates on a brief's contract (per `archlang://intent-schema`). |
+| `validate` | Parse + resolve + lint, the ship gate. `strict` fails on warnings; `graph` checks interior-door adjacency against an intended room graph; `intent` gates on a brief's contract (per `archlang://intent-schema`); `profile` and `taste` add a lint ruleset and a taste score; `next` names the one item to fix first. |
 | `score` | The continuous intent METER: how much of a brief a plan satisfies (`satisfied`/`total`/`score`/`subscores`). Measures, never gates. |
 | `repair` | Explicit corrector: furniture out of walls/doorways/swings → new `.arch` source + change log. Never adds doors/windows. |
 | `finish` | Complete the drawing: furnish the rooms that hold no furniture, then add the missing `paper`, `scale`, `dims auto`, `title`, `schedule rooms` and `legend` → new `.arch` source + change log. Fills only what is missing; `only` runs one stage (`furnish` or `sheet`); `reissue` may replace `paper`/`scale`. |
@@ -117,6 +117,7 @@ the [language reference](https://archlang.uk/reference#keyboard-and-screen-reade
 | `archlang://schema` | JSON Schema (2020-12) for the Plan-JSON compile input. |
 | `archlang://grammar` | GBNF constrained-decoding grammar for guaranteed-parseable generation. |
 | `archlang://intent-schema` | JSON Schema (2020-12) for a brief's Intent — the shape `validate`'s `intent` and `score`'s `brief` take. |
+| `archlang://capabilities` | Every tool and CLI command, the export formats, what ArchLang does not do, and the authoring loop, generated from the tool list and the CLI manifest. |
 
 ## Install
 

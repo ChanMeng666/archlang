@@ -164,6 +164,11 @@ export const ALLOW: readonly Seam[] = [
     why: "types the Worker's ./share import from the same build the bundler inlines, as for /link",
   },
   {
+    file: "packages/mcp/scripts/tsconfig.gen.json",
+    specifier: "paths @chanmeng666/archlang",
+    why: "gen:mcp-capabilities runs the tool registry under tsx with the core's source, as the root vitest alias does, so check:drift needs no build",
+  },
+  {
     file: "packages/web-component/tsconfig.json",
     specifier: "paths @chanmeng666/archlang",
     why: "the core is a peer dependency; in the monorepo it is the root's source, typechecking without a build",

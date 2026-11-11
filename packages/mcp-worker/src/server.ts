@@ -19,7 +19,7 @@ import { MCP_PER_PERIOD, RATE_PERIOD_SECONDS, SOURCE_CAP_BYTES, SVG_PER_PERIOD }
 
 /** What the Worker serves that it cannot read at run time (it has no filesystem): bundled at build. */
 export interface HostedAssets {
-  /** The five `archlang://` resource texts, keyed by name. */
+  /** The six `archlang://` resource texts, keyed by name. */
   resources: Readonly<Record<ResourceName, string>>;
   /** The viewer page, one self-contained HTML document. */
   viewerHtml: string;

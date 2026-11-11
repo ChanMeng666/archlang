@@ -1,0 +1,7 @@
+{
+  "//": "For tsx only (gen-capabilities.ts): resolve the core by its package name to its source entry, as vitest.config.ts aliases it, so the generator needs no build.",
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "paths": { "@chanmeng666/archlang": ["../../../src/index.ts"] }
+  }
+}
