@@ -57,7 +57,8 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
 
 - **A docs example may not name a new fixture family.** `test/new-families-byte-identity.test.ts` scans
   every shipped plan, Markdown fences in `docs/` included, for `furniture <new word>`: the byte-identity
-  law's corpus must not change. Show new families in prose, and examples with existing families.
+  law's corpus must not change. Show new families in prose, and examples with existing families,
+  except the showcase plans in `SHOWCASE_PLANS` (`test/helpers/showcase-plans.ts`, `examples/showcase/`).
   `check:quick` cannot see this guard (it scans directories, never names the file); CI does.
 - **A drawing-only change moves `describe --facts symmetry`.** A piece's `hand` is read off its
   drawn symbol. Unless it is an allow-listed loss of handedness, fix the glyph, never the fact

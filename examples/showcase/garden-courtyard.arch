@@ -1,0 +1,133 @@
+# A single-storey family house wrapped round a garden courtyard, drawn to show the twenty
+# furniture families of the visual-assets tranche, each one at least once.
+#
+# It lives in examples/showcase/ on purpose. It names the twenty families, and the
+# byte-identity law of test/new-families-byte-identity.test.ts keeps those words out of the
+# top-level corpus, so this plan is listed in that test's showcase list instead.
+#
+# The brief: a home office with a comms cupboard, a ground-floor care room for a grandparent
+# with its own accessible bath, a living room, a kitchen with a larder, a family bath and a
+# bedroom. The courtyard is NOT a room: it is `outdoor` ground the U of rooms is wrapped
+# round, open to the garden on the south, so it is in no schedule and no access graph.
+plan "Garden Courtyard House" {
+  units mm
+  grid 50
+  paper A2 portrait
+  scale 1:100
+  north up
+  dims auto overall
+  schedule rooms
+  legend
+
+  # ---- rooms: a north band and two wings, the courtyard between the wings ----
+  room id=r_office at (0,0)        size 5000x5000 label "Office"    uses office
+  room id=r_hall   at (5000,0)     size 3000x5000 label "Hall"      uses entry hall
+  room id=r_living at (8000,0)     size 6000x5000 label "Living"    uses living
+  room id=r_kitch  at (14000,0)    size 5000x5000 label "Kitchen"   uses kitchen dining
+  room id=r_care   at (0,5000)     size 5000x4500 label "Care room" uses bedroom
+  room id=r_cbath  at (0,9500)     size 3000x2500 label "Care bath" uses bath
+  room id=r_comms  at (3000,9500)  size 2000x2500 label "Comms"     uses storage
+  room id=r_wcorr  at (5000,5000)  size 1500x7000 label "Link"      uses circulation
+  room id=r_ecorr  at (12500,5000) size 1500x7000 label "Link"      uses circulation
+  room id=r_bath   at (14000,5000) size 5000x2500 label "Bathroom"  uses bath
+  room id=r_bed    at (14000,7500) size 5000x4500 label "Bedroom"   uses bedroom
+
+  walls from rooms exterior 300 partition 100 {
+    open between r_hall and r_wcorr width 1000
+    open between r_living and r_ecorr width 1000
+  }
+
+  # ---- doors ----
+  door id=d_front on r_hall.top at center width 1000 swing into r_hall
+  door id=d_office between r_hall and r_office at 3500 from start width 900 swing into r_office
+  opening id=o_living between r_hall and r_living at 2500 from start width 1200
+  opening id=o_kitch between r_living and r_kitch at 2500 from start width 1600
+  door id=d_care between r_wcorr and r_care at 3500 from start width 900 swing into r_care
+  door id=d_cbath between r_care and r_cbath at 1500 from start width 900 swing into r_care
+  door id=d_comms between r_wcorr and r_comms at 800 from start width 800 swing into r_comms
+  door id=d_bath between r_ecorr and r_bath at 1250 from start width 800 swing into r_bath
+  door id=d_bed between r_ecorr and r_bed at 800 from start width 900 swing into r_bed
+  # Sliders onto the courtyard: a swinging leaf would sweep the link or the paving.
+  door id=d_court_l sliding on r_living.bottom at 2250 from start width 2400 slide left
+  door id=d_court_w sliding on r_wcorr.right at 3500 from start width 1200 slide left
+  door id=d_garden on r_ecorr.bottom at center width 900 swing into r_ecorr
+
+  # ---- windows ----
+  window on r_office.top width 1600
+  window on r_living.top at 3000 from start width 2000
+  window on r_kitch.top at 2500 from start width 1200
+  window on r_care.left width 1500
+  window on r_cbath.bottom at 800 from start width 600
+  window on r_bath.right width 900
+  window on r_bed.bottom width 1600
+  window on r_bed.right at 800 from start width 900
+  window on r_ecorr.left at 2000 from start width 1500
+
+  # ---- the office and the comms cupboard ----
+  furniture workstation in r_office centered size 2400x1600
+  furniture whiteboard against r_office.left offset 2500 in r_office
+  furniture printer against r_office.bottom offset 4200 in r_office
+  furniture server_rack against r_comms.bottom offset 1000 in r_comms
+
+  # ---- the care room and its accessible bath ----
+  furniture hospital_bed against r_care.top offset 2000 in r_care
+  furniture wardrobe against r_care.right offset 1200 size 1200x600 in r_care
+  furniture wc against r_cbath.left offset 1700 size 400x700 in r_cbath
+  furniture basin against r_cbath.right offset 700 size 600x450 in r_cbath
+  furniture shower against r_cbath.bottom offset 2300 size 1200x1200 in r_cbath
+  furniture towel_rail against r_cbath.top offset 600 in r_cbath
+
+  # ---- hall, living, kitchen ----
+  furniture console_table against r_hall.left offset 1500 in r_hall
+  furniture sofa against r_living.top offset 3000 size 2400x900 in r_living
+  furniture side_table at (9200,300) size 500x500 in r_living
+  furniture floor_lamp at (12400,300) size 450x450 in r_living
+  furniture ottoman at (10700,1800) size 600x600 in r_living
+  furniture bean_bag at (12700,2800) size 900x900 in r_living
+
+  # Fridge, worktop, sink under the window, worktop, hob, worktop: 305 mm either side of the hob.
+  furniture fridge against r_kitch.top offset 500 size 700x700 in r_kitch
+  furniture counter against r_kitch.top offset 1425 size 1150x600 in r_kitch
+  furniture kitchen_sink against r_kitch.top offset 2500 size 1000x600 in r_kitch
+  furniture counter against r_kitch.top offset 3300 size 600x600 in r_kitch
+  furniture stove against r_kitch.top offset 3900 size 600x600 in r_kitch
+  furniture counter against r_kitch.top offset 4525 size 650x600 in r_kitch
+  furniture pantry against r_kitch.right offset 2500 size 1200x600 in r_kitch
+  furniture table in r_kitch anchor bottom inset 900 size 1600x900 label "Table"
+
+  # ---- the family bath and the bedroom ----
+  furniture bathtub against r_bath.right offset 1250 size 1700x700 in r_bath
+  furniture shower against r_bath.top offset 1600 size 900x900 in r_bath
+  furniture basin against r_bath.top offset 2800 size 600x450 in r_bath
+  furniture wc against r_bath.bottom offset 2500 size 400x700 in r_bath
+  furniture bed against r_bed.right offset 2250 size 1600x2000 in r_bed
+  furniture wardrobe against r_bed.top offset 2800 size 1600x600 in r_bed
+
+  # ---- the ground: front yard on the street, the courtyard, the back garden ----
+  outdoor id=g_drive driveway at (13000,-6000) size 6000x5850 label "Drive"
+  outdoor id=g_path paving at (6000,-6000) size 1000x5850
+  outdoor id=g_front lawn at (0,-6000) size 6000x5850
+  outdoor id=g_side lawn at (7000,-6000) size 6000x5850
+  outdoor id=g_court patio at (6650,5150) size 5700x7000 label "Courtyard"
+  outdoor id=g_garden lawn at (0,12150) size 19000x4000 label "Garden"
+
+  furniture bollard at (12650,-5000) size 200x200
+  furniture bollard at (12650,-3500) size 200x200
+  furniture bollard at (12650,-2000) size 200x200
+  furniture bike_rack at (7300,-2000) size 2000x800
+
+  furniture picnic_table at (8500,7300) size 1800x1500
+  furniture palm at (10700,9900) size 1500x1500
+  furniture boulder at (11500,6300) size 700x600
+  furniture flower_bed at (6800,5300) size 800x2000
+  furniture flower_bed at (11400,7900) size 800x1800
+  furniture raised_bed at (1000,13000) size 2400x1200
+  furniture raised_bed at (1000,14600) size 2400x1200
+  furniture slide at (16000,12600) size 800x3000
+
+  title {
+    project "Garden Courtyard House"
+    drawn_by "ArchLang"
+    date "2026-11-12"
+  }
+}
