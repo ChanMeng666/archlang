@@ -56,7 +56,7 @@
 - #604：先修 biome 2.6 的 lint 差异，再合。
 - #676（`three` 0.187）：单独评估 3D 的帧哈希与 GLB 字节、许可白名单与 THIRD_PARTY_NOTICES；不与别的升级同 PR。
 - #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本）：按 RM-D19，Show HN 之前不合并，PR 保持打开；12-02 之后由 RM5.4 迁移。
-- 清掉 13 个已合并 PR 的远程分支、`refs/remotes/pr308` 和过期的本地分支（例如 `refactor/exhaustive-element-kinds`）；保留 `feat/remove-view`。
+- 清掉 12 个已合并 PR 的远程分支、`refs/remotes/pr308` 和过期的本地分支（例如 `refactor/exhaustive-element-kinds`）；保留 `feat/remove-view`。
 - `origin/ChanMeng666-patch-1`（所有者 2026-11-08 网页上改的 README 影片链接，一行，commit `6c86203a`，没有 PR）：按 RM-D20 落地。先确认新的资源 URL 能打开；再从 `main` 新建分支，cherry-pick `6c86203a`，经 PR 合并（README 改动按风险层级走）。
 
 证明：每个 PR 合并时钉的完整 SHA；分支清理前后的 `git branch -r` 计数；patch-1 的新资源 URL 的 HTTP 状态记在 PR 里。
@@ -104,19 +104,21 @@ PS0.3（上层经楼梯 `reachable:false`）、U.1（阳台门算到达）、6.1
 
 CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句（客户端很少主动读资源），工具清单与"能做/不能做/编辑循环/导出清单"移入新资源 `archlang://capabilities`。PS5.3a：`validate` 返回 `next`（`NEXT_TIERS` 同序）。**v2 加：** 能力资源里另加两行，分别指向 `docs/from-an-image.md`（读图的工作流）与 `docs/edit-one-room.md`（改一个房间）。一次 `packages/mcp` 版本 bump，搭 1.59.0 发布。
 
-**实际交付（#703）：** 资源 `archlang://capabilities` 由真源生成（CLI 半边 `src/manifest.ts`、工具半边 `packages/mcp/src/tools.ts`、`EXPORT_FORMATS`），`INSTRUCTIONS` 891/900；`validate` 返回 `next`。**PR 里有意没有 bump `packages/mcp` 的版本**：`release:pin` 在 1.59.0 时 bump 这个 shim（`scripts/bump-lockstep.ts`），插件清单钉的是 shim 的精确版本（`scripts/gen-plugin.ts`），提前 bump 会让两处不同步。受托裁定：派生的 `repair` 标题保持 "Repair furniture placement"（是标题，不是能力承诺）。评审留下的文字小项记为 RM5.1b。**合并后 `main` 红过：** #703 的合并提交 `07ac9554` 与 #701 的 `594ba1c7` 上 CI 的 Node 18 job 失败，步骤 "Generated artifacts are in sync" 里 `npm run gen:mcp-capabilities` 报 `TypeError: E.toReversed is not a function`（`Array.prototype.toReversed` Node 18 没有；run 42969029371、42970758650）；自动开了 issue #705 "main is red after a merge"。**已由 #708 修复**（`edaf76c2`，2026-11-11T07:16:23Z）：根因是 tsx 的 tsconfig 加载器跟随 `extends` 时用 `toReversed`（Node 20+），`packages/mcp/scripts/tsconfig.gen.json` 带 `extends`，现改为自包含；#705 已关；`edaf76c2` 上 CI 绿。#708 有意没有新上下文评审。
+**实际交付（#703）：** 资源 `archlang://capabilities` 由真源生成（CLI 半边 `src/manifest.ts`、工具半边 `packages/mcp/src/tools.ts`、`EXPORT_FORMATS`），`INSTRUCTIONS` 891/900；`validate` 返回 `next`。**PR 里有意没有 bump `packages/mcp` 的版本**：`release:pin` 在 1.59.0 时 bump 这个 shim（`scripts/bump-lockstep.ts`），插件清单钉的是 shim 的精确版本（`scripts/gen-plugin.ts`），提前 bump 会让两处不同步。受托裁定：派生的 `repair` 标题保持 "Repair furniture placement"（是标题，不是能力承诺）。评审留下的文字小项记为 RM5.1b。**合并后 `main` 红过：** 连续三个提交（`07ac9554`、`594ba1c7`、`8fdfc05c`）上 CI 的 Node 18 job 失败，步骤 "Generated artifacts are in sync" 里 `npm run gen:mcp-capabilities` 报 `TypeError: E.toReversed is not a function`（`Array.prototype.toReversed` Node 18 没有；run 42969029371、42970758650）；自动开了 issue #705 "main is red after a merge"。**已由 #708 修复**（`edaf76c2`，2026-11-11T07:16:23Z）：根因是 tsx 的 tsconfig 加载器跟随 `extends` 时用 `toReversed`（Node 20+），`packages/mcp/scripts/tsconfig.gen.json` 带 `extends`，现改为自包含；#705 已关；`edaf76c2` 上 CI 绿。#708 有意没有新上下文评审。
 
-### RM5.1b · MCP 能力页的文字小项（从 #703 的评审留下） — `todo` · 未估 · sonnet · 依赖无（线下）
+证明：`INSTRUCTIONS.length` 上限测试不变；资源内容由 `src/manifest.ts`（CLI 半边）、`packages/mcp/src/tools.ts`（工具半边）、`EXPORT_FORMATS` 生成，带 drift 测试。
+
+不许：在摘要里写"设计/布置/家具"、IFC、任何 3D 能力承诺（展示用词按 `../public-surfaces/3d.md` §2 的固定句）；手写清单；在仓库根加 `.mcp.json`（高风险层的根配置，所有者待定，默认不做）。
+
+### RM5.1b · MCP 能力页的文字小项（出自 #703 的第二轮评审，报告没有保留） — `todo` · 未估 · sonnet · 依赖无（线下）
 
 - `archlang manifest` 的摘要 "this document: the whole CLI API"（在 `src/manifest.ts`）读起来像是能力页本身，改成只指 CLI 清单。
 - 生成器里手写了 `npx -y @chanmeng666/archlang`，应当从真源派生，不重抄。
 - 托管端的 CPU 上限没有在能力页里点名。
 
-证明：能力页由生成器出，drift 绿；`INSTRUCTIONS.length` 上限测试不变。不许：手写清单；在摘要里加能力承诺（`../public-surfaces/3d.md` §2）。
+证明：能力页由生成器出，drift 绿；`INSTRUCTIONS.length` 上限测试不变。
 
-证明：`INSTRUCTIONS.length` 上限测试不变；资源内容由 `src/manifest.ts`（CLI 半边）、`packages/mcp/src/tools.ts`（工具半边）、`EXPORT_FORMATS` 生成，带 drift 测试。
-
-不许：在摘要里写"设计/布置/家具"、IFC、任何 3D 能力承诺（展示用词按 `../public-surfaces/3d.md` §2 的固定句）；手写清单；在仓库根加 `.mcp.json`（高风险层的根配置，所有者待定，默认不做）。
+不许：手写清单；在摘要里加能力承诺（`../public-surfaces/3d.md` §2）。
 
 ### RM1.4 · 静默接受改出声（只加 W） — `doing` · #704（评审中，与 RM1.4b 同一个 PR） · 2 日 · opus · 依赖无
 
@@ -138,7 +140,7 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 ### RM0.2b · `examples/studio.arch` 头注释改正（#683，从 RM0.2 拆出） — `done` · #699 · `b04cbd07`（2026-11-11T03:59:31Z）
 
-**实际交付与卡不同之处：** 头注释按原字节长度重写，所以没有 span 移动。移动的钉值：`test/double-door-byte-identity.test.ts` 里 studio 的源文本哈希、finish-furnish 的 studio 一行、`docs-site/public/3d/manifest.json` 的 `source.sha256`（重生成，没手改）。**卡里写错了一处：** `db6313cf…` 不是移动的钉值，它是载荷 digest，没有动。#683 随 PR 关闭。
+**实际交付与卡不同之处：** 头注释按原字节长度重写，所以没有 span 移动。移动的钉值：`test/double-door-byte-identity.test.ts` 里 studio 的源文本哈希、finish-furnish 的 studio 一行、`docs-site/public/3d/manifest.json` 的 `source.sha256`（重生成，没手改）。移动的钉值还包括 README 第 53–54 行与 `docs/overview.md:474` 里指向这份文件的永久链接（协调者补记）。**卡里写错了一处：** `db6313cf…` 不是移动的钉值，它是载荷 digest，没有动。#683 随 PR 关闭。
 
 （以下为原卡。）
 
@@ -158,7 +160,7 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。切点后合并的 minor 内容等 12-02。
 
-**所有者已决定（2026-11-11，"我同意发布"）：** 发布 1.59.0。代理在路线图切点（约 11-21）跑整条发布链，含 tag；所有者明说提前才提前。bump 三处：核心 minor；`packages/mcp` 的 shim 经 `release:pin`；`packages/archlang-3d`（自 0.5.0 以来含 RM8.1、RM8.2、RM8.3）。tag 前的每一项证明在版本号 PR 的分支头上跑完，再合并该 PR。
+**所有者已决定（2026-11-11，所有者在会话里的原话"我同意发布"，协调者转述）：** 发布 1.59.0。代理在路线图切点（约 11-21，路线图的日期）跑整条发布链，含 tag；"所有者明说才提前"是协调者的读法。bump 三处：核心 minor；`packages/mcp` 的 shim 经 `release:pin`；`packages/archlang-3d`（自 0.5.0 以来含 RM8.1、RM8.2、RM8.3）。tag 前的每一项证明在版本号 PR 的分支头上跑完，再合并该 PR。
 
 ### ── 线（8 日）──
 
@@ -242,17 +244,17 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 不许：移动任何钉子；碰 `src/mesh/build.ts`；在本地 bless 关键帧；顺带改灯光或 `antialias`。
 
-### RM8.1d · 共线对接的两面墙，一面深度偏 1 µm 时，窗的位置改变墙的拓扑（2026-11-11 加，出自 #706 执行者的报告；先调查） — `todo` · 未估 · opus · 依赖无
+### RM8.1d · 共线对接的两面墙，一面深度偏 1 µm 时，窗的位置改变墙的拓扑（2026-11-11 加，出自 #706 执行者的报告；先调查） — `doing`（worktree `.claude/worktrees/agent-a2bc7674bda946156`，分支 `fix/rm8.1d-dropped-wall-piece`） · 未估 · opus · 依赖无
 
-现象：两面共线的 200 mm 墙 `a` 与 `b` 在 x = 3100 mm 处对接，`b` 的深度偏 0.001 mm；在 `b` 上放一扇 800 mm 的窗，窗在 `b` 局部坐标 2000 或 2500 mm 处时，墙不再被修到 `a` 的墙角：`b` 失去接缝与窗之间的一段，`a` 留下一条 1 µm 的斜边。窗改成 600 mm 且更靠近接缝时，拓扑正常。**不知道缺陷在核心（斜接或洞口）还是在网格（`packages/archlang-3d`）。**
+现象（窗位 2000/2500 mm、800 mm 窗等数字由 #706 的执行者报告，PR 正文里没有）：两面共线的 200 mm 墙 `a` 与 `b` 在 x = 3100 mm 处对接，`b` 的深度偏 0.001 mm；在 `b` 上放一扇 800 mm 的窗，窗在 `b` 局部坐标 2000 或 2500 mm 处时，墙不再被修到 `a` 的墙角：`b` 失去接缝与窗之间的一段，`a` 留下一条 1 µm 的斜边。窗改成 600 mm 且更靠近接缝时，拓扑正常。**不知道缺陷在核心（斜接或洞口）还是在网格（`packages/archlang-3d`）。**
 
 内容：用最小平面复现；比较核心解出的墙多边形与 Mesh3D，找出哪一级丢了那一段；然后修，或在不可修时记录原因。
 
 证明：最小平面的前后对照；定位结论（核心还是网格）写进 PR；若修核心，SVG 字节恒等律；若修网格，关键帧、GLB 的移动逐项带理由。不许：本地 bless 关键帧；在没定位之前两边都改。
 
-### RM8.1c · 墙线通道 `linesOf` 在长而窗多的墙上占挂载耗时（2026-11-11 加，出自 #706） — `todo` · 未估 · sonnet · 依赖 #706 已合并（线下）
+### RM8.1c · 墙线通道 `linesOf` 在长而窗多的墙上占挂载耗时（2026-11-11 加，出自 #706 执行者的报告） — `todo` · 未估 · sonnet · 依赖 #706 已合并（线下）
 
-#706 量出：一面墙上有 80 扇窗时，线通道 `linesOf` 约 170 ms，是挂载耗时的大头。先用合成的窗多的长墙量出耗时与内存，超出可接受范围才改算法；改了的话 `wall-lines` 在语料上的输出逐字节不变。
+#706 的执行者报告（PR 正文里没有）：一面墙上有 80 扇窗时 `wallOutline` 要 173–265 ms，线通道（`linesOf`）占大头。先用合成的窗多的长墙量出耗时与内存，超出可接受范围才改算法；改了的话 `wall-lines` 在语料上的输出逐字节不变。
 
 证明：量法与数字进 PR；关键帧、Mesh3D、GLB、事件表零差。不许：移动任何钉子；本地 bless 关键帧。
 
@@ -625,11 +627,11 @@ CR9：OAS 导入 + OpenPlan3D 导出，建在 RM3.1 上；只在 OpenPlan3D 导�
 4.5（草坪、水面当可走 → `outdoor` 地面种类决定可走性）、M.4（竖井到达层的叠加与行进方向）、U.22/PS0.15（`describe()` 步数预算与净面积项的二次复杂度）、PS0.6（`suggest` 经卧室给房间连门）。**2026-11-11 加（RM1.3a 执行者的发现）：** `accessibility-advisory` 下瓶颈是楼梯梯段本身时，`W_PATH_TOO_NARROW` 不指名任何门，hint 却说加宽最窄的门或洞口；它应当说瓶颈是梯段。
 
 **2026-11-11 加（RM1.3a 合并后的余项）：**
-- 楼梯可达的楼层上，每个阳台要各有一个独立的室外节点（`src/analyze.ts:536`，`src/lint/rules/reachability.ts:68`）。
+- 楼梯可达的楼层上，每个阳台要各有一个独立的室外节点（单一 exterior 的警告在 `src/analyze.ts:368`；`src/lint/rules/reachability.ts:68`）。
 - circulation 叠加层要拿到该层的竖井到达点（`src/overlays/circulation.ts`），使 garden-house 的 L2 与 `describe()` 一致。
-- 去掉 `test/far-seed-pinch.test.ts:297` 的 skip。
+- 去掉 `test/far-seed-pinch.test.ts:299` 的 skip。
 - 多楼梯、多阳台的楼层补深度测试。
-- garden-house 在 `accessibility-advisory` 下的 `W_PATH_TOO_NARROW` hint 不再指名门（正确：800 的楼梯才是瓶颈）；核对措辞。
+- garden-house 在 `accessibility-advisory` 下的 `W_PATH_TOO_NARROW` hint 不再指名门。**两种读法，来源不同：** #698 的执行者称之为提示质量的退步（消息只说瓶颈，不说怎么办）；#698 第一轮的对抗评审判定"不指名门"是对的，因为 800 mm 的楼梯低于 900 mm 的下限，加宽任何一扇门都解不开这条路（楼梯改成 1100 mm 时，hint 仍然指名门）。**本卡的任务：** 核对哪一种成立，必要时改措辞。
 
 证明：预算是计数不是时间（`E_STEP_LIMIT` 同路）；`describe()` 变化逐图列出。
 
