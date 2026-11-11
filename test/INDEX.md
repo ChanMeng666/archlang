@@ -420,7 +420,7 @@ The first sentence of each file's header comment.
 - `test/intent-all-storeys.test.ts` — Issue #365: on a plan with `level` blocks the intent's `rooms`, `roomsInclude` and `totalAreaM2` read the whole building, as `grossInternalAreaM2` and `roomDimensions` always did.
 - `test/intent-schema-drift.test.ts` — intent.schema.json drift.
 - `test/intent.test.ts` — validateIntent — corpus round-trip (goldens satisfy their own intent); validateIntent — determinism; validateIntent — per-kind gating; validateIntent — window f…
-- `test/interner-oracle.test.ts` — `PointInterner` against its previous implementation, kept here VERBATIM as the oracle.
+- `test/interner-oracle.test.ts` — `PointInterner` against a brute-force reference of its documented contract.
 - `test/intersect.test.ts` — `src/geometry/intersect.ts` — the closed-form meeting and ray-crossing primitives the wall-joinery layer is built on.
 - `test/iso-byte-identity.test.ts` — **The byte-identity law for the axonometric view.** Every new form ships with one: a plan that does not use it renders, describes and lints exactly as before.
 - `test/iso-camera.test.ts` — **No trigonometry under `src/view/`** — the one structural guard the axonometric layer has, and the reason its constants are square roots.
