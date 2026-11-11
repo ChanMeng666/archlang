@@ -123,7 +123,7 @@ CR3 和 CR4 不发核心版本，随 `main` 部署（CR4 另发 archlang-3d）�
 | CRF10 | MCP `INSTRUCTIONS` 已用 879/900 字符，能力摘要没放进去：腾空间或改放资源 |
 | CRF11 | playground 起始模板加“只改一个房间”的例子（CR7 ② 的剩余部分） |
 | CRF12 | `impact --lock --json` 的顶层 `ok` 与 `lock.ok` 不一致 |
-| CRF13 | `src/ir.ts` 里一条过时注释 |
+| CRF13 | `src/ir.ts` 里一条过时注释——以"不可复现"关闭（协调者 2026-11-11 关闭，依据 #697 的核对证据）：#618 拆分之后 `src/ir.ts` 与 `src/ir/*.ts` 里找不到过时注释 |
 
 ### 冻结期 · 11-24 → 12-01（Show HN）
 
