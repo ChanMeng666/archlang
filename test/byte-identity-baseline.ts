@@ -1664,6 +1664,86 @@
  * `test/taste-corpus/r14-living-off-to-one-side` (both twins) pinned "Bedroom 2" against the east
  * wall, which the wider reading reports; the pin is gone, the label pass places it, and no taste
  * digest moved.
+ *
+ * ## RM1.3a: a storey's rooms counted from where a person arrives — `describe()` only
+ *
+ * Case (1), the compiler changed, deliberately (RM1.3a: PS0.3 and backlog U.1). Two analysis
+ * fixes, both in `describe()`:
+ *
+ *   - **PS0.3.** On a storey a stair or lift reaches and no door from the ground does,
+ *     `access.rooms[]` read every room `reachable: false` with `depthFromEntrance` and
+ *     `bottleneckClearWidth` `null`, while `lint()`'s reachability rule already walked that
+ *     storey from the room the shaft lands in. The rooms a shaft lands in are now reachable at
+ *     depth 1, at the width of the flight stepped off (the width the circulation walk already
+ *     seeds there), and the other rooms through the doors from them. `access.entrances` and
+ *     `hasEntrance` are unchanged. On such a storey the walk starts at the shaft even when it
+ *     has a balcony door (`garden-house`'s upper floor, below).
+ *   - **U.1.** A door onto an `outdoor balcony` was a place a walk arrives from: a room was
+ *     measured from the balcony slider, and its widest way in was the slider's width. It is
+ *     now no arrival for a room a door from the ground reaches without going outside, in
+ *     `access.rooms[]` (depth, bottleneck) and `circulation` (where each walk starts; a plan left
+ *     with one way in names no per-room `entranceId`). A balcony door into a room nothing else
+ *     reaches stays its way in, so which rooms are reachable does not change.
+ *
+ * Swept on the merged tree (`origin/main` d489628d + this branch) against a `git archive` of
+ * `origin/main`'s `src/`, 839 rows (every tracked `.arch` and every `arch` fence in tracked
+ * Markdown), per payload: every storey's SVG, `compile().diagnostics`, `describe()`, default
+ * `lint()`, `lint()` under `accessibility-advisory`, the `--overlay circulation` SVG, `taste()`
+ * under every profile and the Scene, plus these tables' four digest bodies. A planted label on
+ * `examples/studio.arch` moved exactly that row first. The result: SVG, diagnostics, default
+ * `lint()`, `taste()` and the Scene byte-identical on all 839 rows; `describe()` moved on 41;
+ * the overlay on 11 (the U.1 plans: the walks drawn from the front door); the accessibility
+ * `lint()` on `garden-house` only (below). The inline law plans `inline:stair-arrival` and
+ * `inline:every-table` move the same way (`describe()` only: each upper storey's landing
+ * `unreachable` → depth 1 at the flight's width, 1500 and 1000). Every pinned row that moved,
+ * field by field (access as depth/bottleneck, circulation as walk/bottleneck in mm):
+ *
+ *   - PS0.3, `access.rooms[]` of the shaft-reached storeys, every other field byte-identical:
+ *     - `hillside-villa` L2 (the stair, 800 mm wide, lands in r_gallery): r_gallery 1/800,
+ *       r_landing 2/800 (through `o_gallery`), r_study, r_studio, r_bed2, r_dress 3/800, r_linen,
+ *       en2.room 3/740, r_master 4/800, en_b2.room, en_m.room 4/740.
+ *     - `townhouse` L2: r_landing 1/900, r_bed1, r_bath, r_bed2 2/740; L3: r_landing 1/900,
+ *       r_study, r_bath 2/740, r_master 2/840.
+ *     - `two-storey` L2 (and its copy `test/recovery-corpus/two-storey`, and
+ *       `test/fixtures/storeys-eaves-overflow`, its building with a roof overhang): landing
+ *       1/900, bath 2/740, bed1, bed2 2/840.
+ *     - `turning-stair` L2: gallery 1/1000, bed 2/840.
+ *     - `test/defect-corpus/stair-safety/` (each case and its clean twin): head-against-wall and
+ *       shaft-footprint-mismatch landing 1/1000, bed 2/840; stair-too-steep landing 1/900, store
+ *       2/740; void-at-stair-head landing 1/900, bed1 2/840.
+ *     Each was `unreachable` before.
+ *   - PS0.3 and U.1 together, `garden-house` L2 (a stair-reached storey with a balcony slider
+ *     `d_balcony` off Bedroom 1): the walk starts at `st`, not `d_balcony`. access: r_landing
+ *     2/740 → 1/800 (the 800 mm flight), r_study2, r_bed2, r_bath 3/740 → 2/740, r_bed1 1/1740
+ *     → 2/740 (now through its 800 mm door, not from the slider). circulation: r_landing
+ *     7000/740 → 4700/800, r_study2 12800 → 4200, r_bed2 7900 → 8300, r_bath 11800 → 3900 (each
+ *     740), r_bed1 2800/1740 → 8600/740, with their detours. L1 is byte-identical.
+ *   - U.1, `test/defect-corpus/clearances/masked-route-balcony-door` (its subject): r_liv 1/1940 →
+ *     2/840 and r_laun 2 → 3; circulation measures from `d_front` alone, so r_liv's walk keeps
+ *     6400 at 840 (not the slider's 1940) and r_laun, which only the slider's walk reached, is
+ *     `blocked` (widest way in 500): what default `lint()` already says, since PS0.10 judges the
+ *     walk from the main entrance ("squeezes to 500 mm and stops there"; byte-identical). Its
+ *     clean twin: the same access change, r_laun 5700 → 6500 from `d_front`, r_liv 840.
+ *   - The accessibility `lint()` of `garden-house` (no digest here covers it; the block-stair
+ *     family's tables do): level 2's walk warnings are taken from the stair, so "Landing"
+ *     squeezes to 800 (was 740 through Bedroom 1), Bedroom 1 gains its own 740 warning, and the
+ *     Landing, Study, Bedroom 2 and Bathroom warnings no longer name the doors to widen (generic
+ *     hints instead), an open message-quality item for RM1.3b. The diagnostics after them shift
+ *     index only.
+ *
+ * Re-pinned with values from the compiler itself: the four standard bodies from the sweep
+ * script, which imports `test/helpers/byte-identity-digest.ts` and first reproduced
+ * `hillside-villa`'s two old rows here on `origin/main`; the other bodies from the received
+ * values of CI's own run of each test on this tree (the 13 values both sources measured agree).
+ * Rows, by table: `BASELINE` and `SEMANTIC_BASELINE` here, 5 each (`garden-house`,
+ * `hillside-villa`, `townhouse`, and the height-free derivations of `turning-stair` and
+ * `two-storey`); `while-byte-identity-baseline.ts` 6; `import-module-lets` 7; `open-crossing` 6;
+ * `wall-status-byte-identity` 5; `double-door-byte-identity` 6; `block-stair-byte-identity`,
+ * `corner-window-`, `shared-grid-`, `window-kinds-byte-identity` 14 each; `gaps-`, `sheet-text-`,
+ * `void-rail-byte-identity` 15 each; `rectilinear-rooms-byte-identity` 6;
+ * `block-stair-winders-byte-identity` 1; `new-families-byte-identity` 5; `rendered-theme` 5; and
+ * `keep-byte-identity-baseline.ts` re-taken by its generator (30 rows, every step count
+ * unchanged). Each re-pinned row carries `RM1.3a` beside it.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -1678,10 +1758,10 @@ export const BASELINE: [string, string][] = [
   ["courtyard-house", "3984a002996a4d4aba0c1bdd462474f710a87ecc50848093435573f4bd4d6c2e"], // re-measured for PS2.4, see header; PS2.11e, see header
   ["furnished-flat", "52b8bee1afff224fca393b2fd77bf7a4720009b91d0a625da434648220a5eb87"], // PS2.11e, see header
   ["gallery-l", "9c21788039e6844add835cfa386e822c5f093475d8d5b4ff7cccc40551f8233f"], // PS2.10 dim fixed, see header; PS2.11e, see header
-  ["garden-house", "e28a6fff19ae87bd61f4d8bde18dbbc4707dbaf66ebc1a9529a5630d3dbcec34"], // re-measured, see header
+  ["garden-house", "907ff471731f32f76ecf90b8358c781a287b8ed7b0a67f384549ad16c66d8e18"], // re-measured, see header; RM1.3a, see header
   ["garden-loft", "bb63052829092bf42cd5b611c9edf81d6364d9a32b5c1cc91b14fa485fddc560"], // PS2.11e, see header
   ["hexagon-pavilion", "c9feff36e36022353398608901b0b508a737c27eca89e4e2c2becd3a5723e0b5"],
-  ["hillside-villa", "3f80c4312c849bac7bd109b4eeb95a59b775741b33940d8cff5ec6f62aec2de5"], // re-measured, see header; PS2.11e, see header
+  ["hillside-villa", "4df4f2f233ba6e3fa27d15e5a171b8914ac0111f94611b8a07e92c75e8efab59"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header
   ["imports", "1de644a1f7abfb2b5cc67269fac11a191810d959379f7b04e14c259014d1e9f4"],
   ["knob-flat", "1844e64f6fda7da8b8cd66a89979c17934ada812ccea5f24f763731a3ecc7c8d"], // added with the example, see header
   ["laneway-house", "40f81577eb4e641b4fd5cd0bd750c6a9021fb91d9a9b54f7dc09e563382368fd"], // PS2.11e, see header
@@ -1700,11 +1780,11 @@ export const BASELINE: [string, string][] = [
   ["terrace-row", "ec839a417cb57b6bce80a592a144bd98a216b175edb92c67df3260ab5ce9c33d"], // re-measured, see header
   ["themed", "24c18315c2fcc753391aa01a506f69f611f6d9ac8512053981dc8ce75f36f746"], // PS2.11e, see header
   ["tiny-house", "8236b2c882cc2ff9f21a7b0d5a715f773d300b7432e5746987f2e3809e430ce9"], // PS2.11e, see header
-  ["townhouse", "d17dfbff4905c3f6a1beb59c8a5be55cfa4c8227b0acf04639c2851c71edaf03"], // re-measured, see header; PS2.11e, see header
+  ["townhouse", "8768888167f1af9f23512b2e42f94b36bb4d6fc6135a2fc8252d461f756171c0"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header
   ["transit-hall", "084cfa94f152b75ecee1786602569b6f008c3b3d3071d655d2d6711306ccea97"], // PS2.11e, see header
-  ["turning-stair", "2d3e7a34b2e54592f90c65b7d4248462fe862c98b4516deb5e196c59b85aedc7"], // added with the example, see header; `centreline_at`, see header
+  ["turning-stair", "f37558ce60ac89d02c93e59c0cf0233a63c356725c5b9b4dcecf6aab63869247"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header
   ["two-bed", "21101fea33b149201d58eddfc32d024b4a939a682cf7e4f37c859d717a8e8eca"], // PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
-  ["two-storey", "3bf63c38e58121d55f65e405fa85ec53eb59e968ec781bd085a857ebcaca5e1e"], // re-measured, see header
+  ["two-storey", "6ee8ed38477f2e7cc6915b75cecda97f24ea75cce4054a9c41aad568511b2aa1"], // re-measured, see header; RM1.3a, see header
 ];
 
 /**
@@ -1729,10 +1809,10 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["courtyard-house", "cbbeb130a02d8dd2a3065e2f95fcf7bd83b3ec5e2f972bef17d201deab16ebd9"], // re-measured for PS2.4, see header
   ["furnished-flat", "d4f5194c4a9f26337646b7bf28a05645fc083fe1e1ec7eb4b6e3cd93b0f32641"],
   ["gallery-l", "5dec4904ac00c1d5a20747336ec0acaa4b6682f40b02008aad554ccfa87f0025"], // PS2.11e, see header
-  ["garden-house", "348eb668cf18db4f37d800b1241acda2bc252c4f1de97d544d208f183aa99f64"], // re-measured, see header
+  ["garden-house", "bc99edab90873cc20b040605eee0a3d52c447c843a9659872ea6090b7a0d37cc"], // re-measured, see header; RM1.3a, see header
   ["garden-loft", "d37d7f678f65473d7f0b023a1cb6caca96fc92da9db5f412e66db2726071c5e8"],
   ["hexagon-pavilion", "435b9fb0cc07194798fde23c5528f869a07ad02ee3842b4d4d87775a76b6f36a"],
-  ["hillside-villa", "e863c47547396426ddcabb231fcb2aae2c82482a0a94034042cc0a5c5faee6c6"], // re-measured, see header; PS2.11e, see header
+  ["hillside-villa", "a154ec8558cac0c1e8c99b4a6d9de974dd96220b83172cfba6f18d76d26ec511"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header
   ["imports", "85b77c3fa1a9961a884cf5966ae5f87af436edf6adf3c16f2e426f72ed2b1b2f"],
   ["knob-flat", "0649d38e9f1df5f91c531d84b75d19e3268df59b4e7e9220471c9ed4419eb6c7"], // added with the example, see header
   ["laneway-house", "55f68cc66a633508a2442aafa4dcf60d38076c2f54470c3a56ad3107493839d0"],
@@ -1751,11 +1831,11 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["terrace-row", "0c37d23bb8dfa83ce746869724ff62952637f1acb8a6ca353bfe8f7a440941a7"],
   ["themed", "7e222ca408876d502b7e8662d90b695bfa3e8712c855023a6dacc3d21a3bbacd"],
   ["tiny-house", "3513ef53a1064ff6b4435f4a8f05db2578aa258a1bb6c55c90df0517a638190b"], // PS2.11e, see header
-  ["townhouse", "3577f336430ef832625c19b90bb79771177e65b298be10b6cde18cec1fdb9c60"], // re-measured, see header
+  ["townhouse", "91ef4082802dc106577ebf4e4a24aa46a115cb0e3fb539d475cb8d207a6e588f"], // re-measured, see header; RM1.3a, see header
   ["transit-hall", "4092fd0a7d88401cc49781d8021f0863300e8cbe65804d5735a9271a0c6c3eff"], // PS2.11e, see header
-  ["turning-stair", "2629386bd8d59f0c4725e705f4c13395a969e61f27c07fb15e09b886fe891798"], // added with the example, see header; `centreline_at`, see header
+  ["turning-stair", "0446ae43be57df9772213db26611c18caa2f13f7a1f604ed4c878d620ddc334a"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header
   ["two-bed", "436fadbabbba67d12d667cfca3dc435a7be1e5d131d27f5a523caf9584b26454"], // PS3.6 source rewrite, see header; `centreline_at`, see header
-  ["two-storey", "72a5fa1109dae69897fa073851fee0b5d601605aaf254efcbd309bf5dac33a8c"], // re-measured, see header
+  ["two-storey", "0b68b8bd79d3bde0fa503bf64fb3bf1b6c16a51925d1f0394a8d3b38022c7450"], // re-measured, see header; RM1.3a, see header
 ];
 
 /**

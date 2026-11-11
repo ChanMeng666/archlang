@@ -33,7 +33,8 @@
  *  3. One candidate left: it is the only door from the ground (`sole`).
  *  4. Otherwise refused: `tie` (the candidates are listed), or `no-candidate`.
  * A storey a shaft arrives on from a storey below that has a candidate of its own names none
- * (`upper-storey`): which of its exterior doors is a way in at all is PS0.3's question. A
+ * (`upper-storey`): its exterior doors open onto decks, terraces and balconies, and none is
+ * named the front door (with no door from the ground there, its walk starts at its shafts). A
  * basement with no door from the ground does not demote the floor above it; a walk-out basement
  * does. A refusal keeps every way in, exactly as before, and
  * the fact still says why.
@@ -62,6 +63,7 @@ import {
   EXTERIOR_NODE,
   type MainEntranceFact,
   pointInRoomBox,
+  reachFrom,
   type RoomBox,
   roomBox,
   roomUses,
@@ -243,8 +245,8 @@ export function storeyHasEntranceCandidate(ir: ResolvedPlan, tolMm: number): boo
  */
 export function mainEntranceOf(graph: AccessGraph, inp: EntranceInputs): MainEntranceFact | null {
   if (graph.entrances.length <= 1) return null;
-  // PS0.3: an upper storey's exterior doors open onto decks and terraces; which of them is a
-  // way in at all is that card's question, so the fact is not asked here.
+  // An upper storey's exterior doors open onto decks and terraces: none of them is its front
+  // door, so the fact is not asked here.
   if (inp.upperStorey === true) return { door: null, basis: "upper-storey", candidates: [] };
   const rooms = new Map(inp.rooms.map((r) => [r.id, r]));
   const cands = entranceCandidates(graph, inp);
@@ -322,6 +324,45 @@ export function walkWays(
   for (const w of entranceWays(graph, inp))
     if (w.doorId === fact.door || garage.has(w.doorId) || !depth.has(w.room)) keep.add(w.doorId);
   return keep;
+}
+
+/**
+ * The ways a person ARRIVES by on a storey with a door from the ground (backlog U.1): every
+ * entrance, except a door onto an `outdoor balcony` ({@link doorFacesBalcony}) whose room a door
+ * from the ground reaches without going outside. A balcony is a slab off a room, not the ground:
+ * nobody arrives in the living room from it, so the walk to the living room starts at the front
+ * door. A balcony door into a room nothing else reaches is kept, so every room the doors reach is
+ * still reached from the ways kept (the same construction as {@link walkWays}), and
+ * `W_ROOM_UNREACHABLE` cannot move. `null` (every way in) when no balcony door is dropped, and on
+ * a storey with no door from the ground at all: its balcony doors are all it has, or a shaft
+ * arrives on it and the walk starts there (PS0.3, `computeCirculation`).
+ *
+ * It decides where the circulation walk starts (`describe().circulation`, the nearest-entrance
+ * model of the circulation rules, the circulation overlay, `repair`) and where
+ * `describe().access` counts each room's depth and bottleneck from. It never removes a door from
+ * `access.entrances` or `access.edges`: those stay the storey's doors to the outside.
+ */
+export function arrivalWays(graph: AccessGraph, inp: EntranceInputs): ReadonlySet<string> | null {
+  const ways = entranceWays(graph, inp);
+  if (!ways.some((w) => w.balcony)) return null;
+  const ground = ways.filter((w) => !w.balcony);
+  if (ground.length === 0) return null;
+  // The rooms the doors from the ground reach without going outside.
+  const inside = reachFrom(
+    accessDigraph(
+      graph.rooms.map((r) => r.id),
+      graph.edges,
+    ),
+    { exterior: false, extraSources: ground.map((w) => w.room), avoid: (id) => id === EXTERIOR_NODE },
+  );
+  const keep = new Set<string>();
+  for (const w of ways) if (!w.balcony || !inside.has(w.room)) keep.add(w.doorId);
+  return keep.size === new Set(ways.map((w) => w.doorId)).size ? null : keep;
+}
+
+/** {@link walkAccessGraph} over {@link arrivalWays}: `graph` itself when no way is dropped. */
+export function arrivalAccess(graph: AccessGraph, inp: EntranceInputs): AccessGraph {
+  return walkAccessGraph(graph, arrivalWays(graph, inp));
 }
 
 /**

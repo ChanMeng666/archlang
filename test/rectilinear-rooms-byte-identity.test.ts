@@ -103,10 +103,10 @@ const BASELINE: [string, string][] = [
   ["2fa285ac0a1406f1c19a4f5b8cd6405b9435f3192b681642f9f90add9c479fc8", "examples/courtyard-house.arch"], // H10: +34 ring scan, +0 overlap
   ["d4c16e520cd04dc9f2f2598e37cd9405e158c0c2bd5eba42b81ff7a5e81fe36c", "examples/furnished-flat.arch"],
   ["969fe0c639c3e332de2045feda5a3300b521e1964214ea9bf6bbca79c29ee9f4", "examples/gallery-l.arch"], // H10: +21 ring scan, +8 overlap
-  ["890ddc4c43eee8321c202addcb421ac12ddc6c4b681e2956c30128245054e918", "examples/garden-house.arch"], // H10: +36 ring scan, +0 overlap
+  ["89ea32363cf8a3370151edbb546505318b081ba6148b87709fdf344b51c7e8a8", "examples/garden-house.arch"], // H10: +36 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
   ["df359e005849a18fc1d8e83823066f09da02733314120bef6d20af6e184fae01", "examples/garden-loft.arch"],
   ["d9a3b8c66ec2f242d2938dccecddd0553b964d72735d42ee005c33f003182968", "examples/hexagon-pavilion.arch"], // H10: +36 ring scan, +92 overlap
-  ["be82d0e9243363c83bb31abddb46768357365ecdd9c4a6c2ca34ca4c27244949", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap
+  ["c0385530fabf6843d672dbadb71265ca0942d8a81b0ddc7d007d30b380f2bc72", "examples/hillside-villa.arch"], // H10: +32 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
   ["7d331b6506b22f2f3b347f7cd69066691419d8ce179543e995880159f3fd9781", "examples/imports.arch"],
   ["58c936f9c43e85d632a9af54000e307199b4f36fab26f4a5ad35f6f427042c34", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["d96d19caeabce46e47c45e8c0e3ce20dd1c578b6cc789b04fbe96fa437ef6995", "examples/laneway-house.arch"],
@@ -125,11 +125,11 @@ const BASELINE: [string, string][] = [
   ["2177671f90a2b15d52e9448a4d53d0d8378ff9d2f8ad609843f598ca6f0287da", "examples/terrace-row.arch"],
   ["581409daa1ba3e4a05cf5faf0e9b88b139941b6c33ae4d9cbc89a1b44d690f01", "examples/themed.arch"],
   ["d3dbf4f8bf57cb0b7b5f0a1e7aba17ca7513e2da8a007f31d6259c60dbde6269", "examples/tiny-house.arch"], // H10: +6 ring scan, +0 overlap
-  ["f5d178bb9bb656c091c877b221077ff67974ac40d04c83e9b20c5236b22c5554", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap
+  ["1e7bc2febd96e53c82c6a3fb52dce11afe0fe642435b261fce1f145f7663824c", "examples/townhouse.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
   ["8fb90ee449d4117eccc0d2a31d5d58a6eeb9856e8a2b08048c388ac1742d18a6", "examples/transit-hall.arch"],
-  ["bc5b729bb277403c9944455138d357e1f783fb2b5e0d0062a24e735d8bbceb58", "examples/turning-stair.arch"], // new example (S2): no rectilinear room; `centreline_at`, see ./byte-identity-baseline.ts
+  ["9c530c54e6929446d4a324735d9d656a02e9d44ede5e29c7dac19b2f15211382", "examples/turning-stair.arch"], // new example (S2): no rectilinear room; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts
   ["8f5ccdac7528e0374d50a2c05664c90704bdb22b1da8ee129b6c3a8e1b754af1", "examples/two-bed.arch"], // H10: +6 ring scan, +0 overlap; `centreline_at`, see ./byte-identity-baseline.ts
-  ["6ee6d812bb6895cc36f98c26b46d58b9e04556f65b72a5c835f30440d409387e", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap
+  ["f9510075613355309c87fec4e2e0f1638a10723ff287c23c036ef540ac698990", "examples/two-storey.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
   ["449c5ed8dd295c5962225440d46ebac117ee2258e17e05f8ab42ade1ee6e804c", "test/fixtures/axes-grid.arch"],
   ["5336af359d30144ea7f14a069b605773dab5615c8a72f5182a07dfd03d318ada", "test/fixtures/chain30.arch"], // #367, see test/byte-identity-baseline.ts
   ["cbfb99f4c6105f1dc4686f8c90aae852f5c78f87bbf40cfdcf3271bbf3e1bb04", "test/fixtures/dense-bays.arch"],
@@ -143,7 +143,7 @@ const BASELINE: [string, string][] = [
   ["947c91d438bd4507e84c02e9f1a15cd7417b32717d867d41261599049befdfa9", "test/fixtures/off-path-bypass.arch"],
   ["f6031de45dc54fe15b0c22019de5123543e6aade443518347c48d3373892c9bd", "test/fixtures/schedule-sheet.arch"],
   ["2f0c4e2b63425468b46263ab7a6581dfd15bd12fadc36db828f97f6fc079a17c", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
-  ["114ea8bb6ef0556a294603caad1d316ff8bde8732bb63122c52dbd9fcc6c4bd1", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap
+  ["1ab0909608bf304fbe4c3886359fc7f30564a64916b52be2d98b972d76f65276", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
   // was 5c3ce8b3. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["d1fe5439746f56e5b976a260257aaeb1b9cb2bacb5a9ee3a197222d66b00f6e2", "test/fixtures/zones-levels.arch"],

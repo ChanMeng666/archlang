@@ -15,8 +15,10 @@
  * (the carrier included). A room outside it — one no modeled connector reaches from
  * outside — has every metric `null`, never `NaN`. For a room in it:
  *
- *  - `depth` — steps from `exterior`; exactly `access.rooms[].depthFromEntrance`, reused
- *    rather than recomputed;
+ *  - `depth` — steps from `exterior`, over every connector (the carrier is the outside, so a
+ *    balcony door counts here); `access.rooms[].depthFromEntrance` counts from where a person
+ *    arrives instead, and the two agree on a plan with no balcony door and no stair-reached
+ *    storey;
  *  - `meanDepth` MD = (Σ over the other k − 1 system nodes of the step distance) / (k − 1);
  *  - `ra` (relative asymmetry) RA = 2(MD − 1) / (k − 2), in [0, 1]; `null` when k ≤ 2;
  *  - `rra` (real relative asymmetry) RRA = RA / D_k, where D_k is the RA of the root of a
@@ -93,15 +95,25 @@ export function syntaxFacts(access: AccessGraph): SyntaxFacts {
     for (const m of reach.keys()) seen.add(m);
   }
 
-  // The system: `exterior` and the rooms the access graph says it reaches.
+  // The system: `exterior` and the rooms its steps reach. Measured here from `exterior`, the
+  // carrier, rather than read off `access.rooms[].depthFromEntrance`, which counts from where a
+  // person ARRIVES (a balcony door is no arrival, and on a storey a stair reaches the arrival
+  // rooms are depth 1); on a plan with neither the two are the same numbers.
+  const fromCarrier = bestPaths(g, {
+    s: MIN_PLUS,
+    weight: () => 1,
+    sources: [[EXTERIOR_NODE, 0]],
+    rank: () => 0,
+  }).value;
   const system = new Set<string>([EXTERIOR_NODE]);
-  for (const r of access.rooms) if (r.depthFromEntrance !== null) system.add(r.id);
+  for (const r of access.rooms) if (fromCarrier.has(r.id)) system.add(r.id);
   const k = system.size;
   // The diamond D-value (see the module header); defined for k ≥ 3, where it is positive.
   const dk = k > 2 ? (2 * (k * (Math.log2((k + 2) / 3) - 1) + 1)) / ((k - 1) * (k - 2)) : null;
 
   const rooms: SyntaxRoom[] = access.rooms.map((r) => {
-    if (r.depthFromEntrance === null) {
+    const depth = fromCarrier.get(r.id);
+    if (depth === undefined) {
       return { id: r.id, depth: null, meanDepth: null, ra: null, rra: null, integration: null, control: null };
     }
     const dist = bestPaths(g, { s: MIN_PLUS, weight: () => 1, sources: [[r.id, 0]], rank: () => 0 }).value;
@@ -114,7 +126,7 @@ export function syntaxFacts(access: AccessGraph): SyntaxFacts {
     for (const j of nbrs.get(r.id)!) control += 1 / nbrs.get(j)!.length;
     return {
       id: r.id,
-      depth: r.depthFromEntrance,
+      depth,
       meanDepth: r4(md),
       ra: ra === null ? null : r4(ra),
       rra: rra === null ? null : r4(rra),

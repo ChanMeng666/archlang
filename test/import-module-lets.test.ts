@@ -536,13 +536,13 @@ const BASELINE: [string, string][] = [
   // Re-measured because the EXAMPLE changed (backlog D.1, its doubled chairs removed), and again
   // for the legend's ground swatches (backlog D.3, level 1's SVG only): the same row, with the
   // same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/garden-house.arch", "2ebce59ad2ade8fd181400ff73c88b9e6ab3af4217c1341a63745bb64ca4243d"],
+  ["examples/garden-house.arch", "55ad2593f768d91a282b6cde6e8a06f6ee5dbd5701fe1858aa8905431432767a"], // RM1.3a, see ./byte-identity-baseline.ts
   ["examples/garden-loft.arch", "f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0"], // PS2.11e, see header
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
   // Re-measured for the facade-probe fix (level 2's `dims auto` chains only), and again because
   // the EXAMPLE changed (backlog D.2, its piano turned and moved): the same row, with the same
   // digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
-  ["examples/hillside-villa.arch", "9f493e8903437b74f50eb72fd227871d17c13a17b6bc9ccf7592d423f6908572"], // re-measured, see header; PS2.11e, see header
+  ["examples/hillside-villa.arch", "36397208c3c6ea06f9bbc3efba156b33de2189455086852e290890f3c8784884"], // re-measured, see header; PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
   ["examples/knob-flat.arch", "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5"], // new example (P4, the knobs example), see header
   ["examples/laneway-house.arch", "21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e"], // PS2.11e, see header
@@ -568,13 +568,13 @@ const BASELINE: [string, string][] = [
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
   ["examples/themed.arch", "edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf"], // PS2.11e, see header
   ["examples/tiny-house.arch", "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17"], // PS2.11e, see header
-  ["examples/townhouse.arch", "2ba4f5c6510c8c1c5b0dce5fda946532a49aa27d9d14668e8398903af71f3612"], // PS2.11e, see header
+  ["examples/townhouse.arch", "4ebf99f3ba158cc7652424c413c94f9f837f6afd24546d8bbac0f080bb281652"], // PS2.11e, see header; RM1.3a, see ./byte-identity-baseline.ts
   ["examples/transit-hall.arch", "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5"], // PS2.11e, see header
-  ["examples/turning-stair.arch", "34b5b4344ca81803a4b3f94513cd947adc0749f6e7e20dbf72c918244ee4c99c"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts
+  ["examples/turning-stair.arch", "7a197ff651fd6ee9e785088ecefd9147d15e29cfd098013624ffbd8698c4dd56"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts
   // Re-measured 2026-10-18 (PS0.7, the label classifier emits living; `describe()` only): the
   // same row, with the same digest body, as `./while-byte-identity-baseline.ts`, whose header has the reasons.
   ["examples/two-bed.arch", "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd"], // PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e, see header; `centreline_at`, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "30fea74236f151947c7fec764e66b2f5a860ce6f71908a5a60fc68e87566837a"],
+  ["examples/two-storey.arch", "03f9dd06253ad4bda8937efbc428093b671524340dbdc3254061061d20f67c24"], // RM1.3a, see ./byte-identity-baseline.ts
   ["examples/lib/doors.arch", "f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804"],
   ["examples/lib/fixtures.arch", "57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310"],
   ["examples/lib/furniture.arch", "adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b"],
@@ -591,7 +591,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"], // new fixture, see header; PS2.11e, see header
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"], // re-measured, see header; PS2.29: message text only, same code, same span
   ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // new fixture, see header; #367, see test/byte-identity-baseline.ts
-  ["test/fixtures/storeys-eaves-overflow.arch", "e29b5e34735306051eeea8215d258873db2935ed3c7ebaf575a4b7af5cb89a6d"], // new fixture (PS2.77), see header
+  ["test/fixtures/storeys-eaves-overflow.arch", "7fd83cafe8059c3c80a5da4475b6206e126876b30d98114ce8a126e472ccd23f"], // new fixture (PS2.77), see header; RM1.3a, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["test/fixtures/zones-levels.arch", "543c732b812f10c5f40822c085740e4a3c7093add2f9c2663cff28396c4192e7"], // re-measured for PS2.4, see header
@@ -604,7 +604,7 @@ const BASELINE: [string, string][] = [
   ["test/recovery-corpus/terrace-row.arch", "776d912f42b22e335c57392e9edb02c9207b20c53c6c6db0c118484a68cda4d0"],
   // Re-measured 2026-10-18 (PS0.7): a copy of `examples/themed.arch`, the same cause and value.
   ["test/recovery-corpus/themed.arch", "ad274a10c13b1aa035e3e32fed8b6aecc0b0d6a1b2e5112008a647f5fde638e3"], // PS2.11e, see header
-  ["test/recovery-corpus/two-storey.arch", "db2cbde429ffc47cad0d358763626405d673525be3cb1797e88ed5492fc740e7"], // re-measured for S2 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was 2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99
+  ["test/recovery-corpus/two-storey.arch", "9b63c2cc4721eb92597ade4a8c1dd611aadadbcc0b180b0b322c0b877c1581cc"], // re-measured for S2 (#362): `W_STAIR_TOO_STEEP`'s hint reworded, nothing else; was 2102a710477b9a23e3eb5a99256840119629b128297515d9603ec459c800ff99; RM1.3a, see ./byte-identity-baseline.ts
   ["eval/goldens/accessible-bath.arch", "d92fb8bf1dafde517a579409ff32602a06687a29149d3c2e7e1de69bd4cc4fce"],
   ["eval/goldens/accessible-flat.arch", "3809f58573d9685eb190389ae026bdbafa161dd57bdbf109a90048f4bb3e802a"],
   ["eval/goldens/against-wall-bath.arch", "731d8f1fc40ba19a5f431d54a643f236d70e4ae92aca19368cea2a38f29d734e"], // PS2.11e, see header
