@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 388 modules in 34 directories.
+Totals: 389 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
