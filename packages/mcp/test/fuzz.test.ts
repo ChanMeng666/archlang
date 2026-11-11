@@ -32,7 +32,7 @@ const TOOLS: Array<{ name: string; params: string[] }> = [
   { name: "compile", params: ["source", "plan_json", "format", "accessible", "overlay", "level"] },
   { name: "describe", params: ["source"] },
   { name: "lint", params: ["source", "profile"] },
-  { name: "validate", params: ["source", "strict", "graph", "intent"] },
+  { name: "validate", params: ["source", "strict", "graph", "intent", "profile", "taste"] },
   { name: "score", params: ["source", "brief"] },
   { name: "repair", params: ["source"] },
   { name: "finish", params: ["source", "only", "reissue"] },

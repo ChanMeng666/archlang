@@ -10,7 +10,7 @@
  * MCP-speaking hosts can *discover* ArchLang through the registry; it is the
  * discoverability channel, not a replacement for the CLI.
  *
- * This file is the stdio host: it reads the five resources from disk and starts the stdio
+ * This file is the stdio host: it reads the six resources from disk and starts the stdio
  * transport. The tools themselves live in `tools.ts`, which the hosted HTTP Worker
  * (`packages/mcp-worker`) registers too.
  */
@@ -121,6 +121,7 @@ export function createServer(): McpServer {
     schema: readResource("plan.schema.json", "schemas/plan.schema.json"),
     grammar: readResource("archlang.gbnf", "grammars/archlang.gbnf"),
     "intent-schema": readResource("intent.schema.json", "schemas/intent.schema.json"),
+    capabilities: readResource("capabilities.md", "packages/mcp/capabilities.md"),
   });
   return server;
 }

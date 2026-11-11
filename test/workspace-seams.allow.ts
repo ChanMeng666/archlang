@@ -164,6 +164,26 @@ export const ALLOW: readonly Seam[] = [
     why: "types the Worker's ./share import from the same build the bundler inlines, as for /link",
   },
   {
+    file: "packages/mcp/scripts/gen-capabilities.ts",
+    specifier: "../../mcp-worker/src/limits.js",
+    why: "the capabilities resource states the hosted caps from the Worker's own constants, not a retyped copy",
+  },
+  {
+    file: "packages/mcp/scripts/gen-capabilities.ts",
+    specifier: "../../mcp-worker/src/server.js",
+    why: "the capabilities resource lists the tools only the hosted server adds, read off createHostedServer's tools/list",
+  },
+  {
+    file: "packages/mcp/scripts/tsconfig.gen.json",
+    specifier: "paths @chanmeng666/archlang",
+    why: "gen:mcp-capabilities runs the tool registry under tsx with the core's source, as the root vitest alias does, so check:drift needs no build",
+  },
+  {
+    file: "packages/mcp/scripts/tsconfig.gen.json",
+    specifier: "paths @chanmeng666/archlang/share",
+    why: "the Worker's limits, which gen:mcp-capabilities reads, import the core's ./share; resolved to its source as the root vitest alias does",
+  },
+  {
     file: "packages/web-component/tsconfig.json",
     specifier: "paths @chanmeng666/archlang",
     why: "the core is a peer dependency; in the monorepo it is the root's source, typechecking without a build",

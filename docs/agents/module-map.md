@@ -115,8 +115,8 @@ Totals: 387 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `app.ts` | 538 | 2 | The hosted ArchLang MCP Worker's request handler (docs/adr/0026-hosted-mcp-worker.md); `worker.ts` is the entry that hands it the assets bundled at build time. | none |
-| `limits.ts` | 46 | 3 | The hosted server's caps — byte counts and request counts, checked BEFORE any compile work, never a clock (docs/adr/0026-hosted-mcp-worker.md). | none |
-| `server.ts` | 109 | 2 | The hosted server's `McpServer`: the stdio server's tool set and resources (one registry, `packages/mcp/src/tools.ts`), plus what only a hosted, HTTP-reachable server has — the `read_me` tool, the MCP App viewer that `compile` links to… | none |
+| `limits.ts` | 46 | 5 | The hosted server's caps — byte counts and request counts, checked BEFORE any compile work, never a clock (docs/adr/0026-hosted-mcp-worker.md). | none |
+| `server.ts` | 109 | 4 | The hosted server's `McpServer`: the stdio server's tool set and resources (one registry, `packages/mcp/src/tools.ts`), plus what only a hosted, HTTP-reachable server has — the `read_me` tool, the MCP App viewer that `compile` links to… | none |
 | `worker.ts` | 15 | 0 | The Worker entry: the request handler (`app.ts`) over the assets the build inlined — the five `archlang://` resources and the viewer page — because a Worker has no filesystem to read them from at run time (scripts/build.mjs). | none |
 
 ## `packages/mcp-worker/src/viewer/`
@@ -132,8 +132,8 @@ Totals: 387 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `png.ts` | 78 | 5 | What `compile` says about `format:"png"`, written once. | none |
-| `server.ts` | 144 | 7 | ArchLang MCP server — a thin stdio Model Context Protocol shim over the `@chanmeng666/archlang` LIBRARY (never a subprocess of the CLI). Every tool wraps one pure, exported function; the core stays zero-dependency — the MCP SDK lives ONLY… | none |
-| `tools.ts` | 784 | 6 | The ArchLang MCP TOOL SET, transport-agnostic: every tool and resource the server offers, registered on any `McpServer` the caller built. It reads nothing from disk and starts no transport, so the stdio server (`server.ts`, the npm bin)… | none |
+| `server.ts` | 145 | 7 | ArchLang MCP server — a thin stdio Model Context Protocol shim over the `@chanmeng666/archlang` LIBRARY (never a subprocess of the CLI). Every tool wraps one pure, exported function; the core stays zero-dependency — the MCP SDK lives ONLY… | none |
+| `tools.ts` | 840 | 9 | The ArchLang MCP TOOL SET, transport-agnostic: every tool and resource the server offers, registered on any `McpServer` the caller built. It reads nothing from disk and starts no transport, so the stdio server (`server.ts`, the npm bin)… | none |
 
 ## `packages/web-component/src/`
 

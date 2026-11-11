@@ -23,6 +23,9 @@ import {
   intentFromJson,
   type IntentCheckResult,
   lint,
+  LINT_PROFILE_NAMES,
+  type NextInput,
+  nextDiagnostic,
   PLAN_JSON_SCHEMA,
   planFromJson,
   planToJson,
@@ -31,6 +34,8 @@ import {
   repair,
   type Scene,
   suggestTopology,
+  TASTE_PROFILE_NAMES,
+  taste,
   validateIntent,
 } from "@chanmeng666/archlang";
 import * as coreNamespace from "@chanmeng666/archlang";
@@ -144,6 +149,11 @@ const hashingSource =
     const result = await handler(a);
     return typeof a.source === "string" ? withHashFields(result, a.source) : result;
   };
+
+/** The longest refused name echoed back in an error: a stray paste stays a short message. */
+export const ECHO_NAME_MAX = 200;
+/** A caller's unknown name as an error quotes it, cut at {@link ECHO_NAME_MAX} characters. */
+const echoName = (name: string): string => (name.length > ECHO_NAME_MAX ? `${name.slice(0, ECHO_NAME_MAX)}…` : name);
 
 const errorCount = (ds: Diagnostic[]): number => ds.filter((d) => d.severity === "error").length;
 const toJson = (source: string, ds: Diagnostic[]) => ds.map((d) => diagnosticToJson(source, d));
@@ -286,14 +296,14 @@ export const INSTRUCTIONS = [
   "2. `compile` it. Errors are diagnostics, usually with a byte span, often a fix; `fix` applies the " +
     "machine-applicable ones, edit the rest by hand.",
   "3. `describe` it; check rooms, areas and doors against the brief.",
-  "4. `validate` with strict:true (parse, resolve, `lint`); fix every warning, then back to 2.",
-  "5. `finish` once lint is clean, before export: it furnishes empty rectangular rooms on every storey " +
-    "and adds the missing sheet statements (paper, scale, dimensions, title, room schedule, legend).",
+  "4. `validate` with strict:true (parse, resolve, `lint`); fix its next item first, then every warning, then back to 2.",
+  "5. `finish` once lint is clean, before export: it adds what the plan lacks and deletes nothing.",
   "With a shell, the CLI runs the same loop at no context cost: `archlang <cmd>`, " +
     "or `npx -y @chanmeng666/archlang <cmd>` without a global install.",
+  "Every tool, command, limit and export format: the `archlang://capabilities` resource.",
 ].join("\n");
 
-/** The five `archlang://` context resources: [name, uri, title, description, mimeType]. */
+/** The six `archlang://` context resources: [name, uri, title, description, mimeType]. */
 export const RESOURCE_DEFS = [
   [
     "spec",
@@ -330,12 +340,19 @@ export const RESOURCE_DEFS = [
     "JSON Schema (2020-12) for a brief's Intent — the shape `validate`'s `intent` and `score`'s `brief` take.",
     "application/schema+json",
   ],
+  [
+    "capabilities",
+    "archlang://capabilities",
+    "What ArchLang can and cannot do",
+    "Every tool both servers serve and the ones only the hosted server adds, every CLI command, the export formats, the limits, what it does not do, and the authoring loop, generated from the tool lists and the CLI manifest.",
+    "text/markdown",
+  ],
 ] as const;
 
 /** A resource's name in {@link RESOURCE_DEFS}: the key its text is passed under. */
 export type ResourceName = (typeof RESOURCE_DEFS)[number][0];
 
-/** Register the five context resources, each serving the text the caller supplies for it. */
+/** Register the six context resources, each serving the text the caller supplies for it. */
 export function registerResources(server: McpServer, texts: Readonly<Record<ResourceName, string>>): void {
   for (const [name, uri, title, description, mimeType] of RESOURCE_DEFS) {
     const text = texts[name];
@@ -556,7 +573,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       title: "Validate (parse + resolve + lint)",
       annotations: TOOL_ANNOTATIONS,
       description:
-        "Check a plan in one pass without returning a drawing (parse, resolve and lint): the gate a plan passes before it ships. `strict:true` makes advisory warnings fail too. Optional `graph` checks the plan's interior-door adjacency against an intended room graph (`{ room: [neighbours] }`); a mismatch fails. Optional `intent` (a brief's expectations, shaped as the `archlang://intent-schema` resource describes) is checked against the plan: a missed gating assertion (room count, existence, area, total area, windows) fails, while adjacency and reachability are advisory and only score. A malformed intent returns `{ ok:false, intentErrors }` as data, never an exception. Returns { ok, diagnostics, graph?, intent? }.",
+        "Check a plan in one pass without returning a drawing (parse, resolve and lint): the gate a plan passes before it ships. `strict:true` makes advisory warnings fail too. Optional `graph` checks the plan's interior-door adjacency against an intended room graph (`{ room: [neighbours] }`); a mismatch fails. Optional `intent` (a brief's expectations, shaped as the `archlang://intent-schema` resource describes) is checked against the plan: a missed gating assertion (room count, existence, area, total area, windows) fails, while adjacency and reachability are advisory and only score. `profile` lints under a named ruleset as well, and its warnings are the ones reported; `taste` scores the plan under a taste profile, which never fails it. `next` is the one item to fix first, chosen in a fixed order (an error, a compile warning, a validity warning, a drafting warning, the brief and the graph, a profile-only warning, then the lowest taste score), or null when nothing is left; a broken `soft` keep is not weighed here yet, so where the CLI's `validate` names it this returns a later item, or null. A malformed intent returns `{ ok:false, intentErrors }` and an unknown profile `{ ok:false, error }` as data, never an exception. Returns { ok, diagnostics, graph?, intent?, next }.",
       inputSchema: {
         source: z.string().describe("ArchLang source."),
         strict: z.boolean().optional().describe("Advisory warnings fail too."),
@@ -568,17 +585,53 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
           .record(z.string(), z.any())
           .optional()
           .describe("A brief's intent JSON (shape: the archlang://intent-schema resource); gating assertions fail."),
+        profile: z
+          .string()
+          .optional()
+          .describe(
+            'Advisory lint ruleset to report under ("residential-basic", "accessibility-advisory", …); default: the built-in ruleset.',
+          ),
+        taste: z
+          .string()
+          .optional()
+          .describe('Taste profile that ranks `next`\'s last tier (for example "generic"); it never fails the plan.'),
       },
     },
-    hashingSource(async ({ source, strict, graph, intent }) => {
+    hashingSource(async ({ source, strict, graph, intent, profile, taste: tasteProfile }) => {
+      // Unknown names are refused before any work, as the CLI's `validate --profile/--taste` refuses them.
+      if (profile !== undefined && !LINT_PROFILE_NAMES.includes(profile))
+        return json({
+          ok: false,
+          error: `unknown lint profile "${echoName(profile)}" (available: ${LINT_PROFILE_NAMES.join(", ")})`,
+        });
+      if (tasteProfile !== undefined && !TASTE_PROFILE_NAMES.includes(tasteProfile))
+        return json({
+          ok: false,
+          error: `unknown taste profile "${echoName(tasteProfile)}" (available: ${TASTE_PROFILE_NAMES.join(", ")})`,
+        });
       const { diagnostics } = compile(source, { noCache: true });
-      const all = [...diagnostics, ...lint(source)];
+      const lintDiags = lint(source);
+      // As the CLI does: under `profile` its warnings are the ones reported; the default run still ranks `next`.
+      const profileLint = profile !== undefined ? lint(source, { profile }) : undefined;
+      const all = [...diagnostics, ...(profileLint ?? lintDiags)];
       const errs = errorCount(all);
       const warns = all.length - errs;
+      // A plan with compile errors is never scored.
+      const tasteReport =
+        tasteProfile !== undefined && errorCount(diagnostics) === 0
+          ? taste(source, { profile: tasteProfile })
+          : undefined;
+      const nextInput: NextInput = {
+        diagnostics,
+        lint: lintDiags,
+        ...(profileLint ? { profileLint } : {}),
+        ...(tasteReport ? { taste: tasteReport } : {}),
+      };
       let graphReport: unknown;
       let graphOk = true;
       if (graph) {
         const gc = checkGraph(source, graph);
+        nextInput.graph = gc;
         graphOk = gc.ok;
         graphReport = {
           ok: gc.ok,
@@ -597,6 +650,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
           intentOk = false;
         } else {
           const { result, feedback } = checked;
+          nextInput.intent = result;
           intentOk = result.ok;
           intentBlock = {
             ok: result.ok,
@@ -616,6 +670,8 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         diagnostics: toJson(source, all),
         ...(graph ? { graph: graphReport } : {}),
         ...(intentBlock ? { intent: intentBlock } : {}),
+        // Last, as `validate --json` puts it: the item to fix first, or null.
+        next: nextDiagnostic(nextInput),
       });
     }),
   );

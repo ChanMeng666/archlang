@@ -6,7 +6,7 @@
 // the workers.dev measurement is in, and CI supplies the account through CLOUDFLARE_ACCOUNT_ID.
 {
   "name": "archlang-mcp",
-  // Bundled by scripts/build.mjs (the core, the MCP SDK, the viewer and the five resources in
+  // Bundled by scripts/build.mjs (the core, the MCP SDK, the viewer and the six resources in
   // one module), so wrangler uploads it as-is.
   "main": "dist/worker.js",
   "no_bundle": true,

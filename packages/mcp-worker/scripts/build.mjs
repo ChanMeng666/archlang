@@ -3,7 +3,7 @@
 //
 //   1. the MCP App viewer (src/viewer/viewer.ts + @modelcontextprotocol/ext-apps) → one inline
 //      <script> inside src/viewer/viewer.html → dist/viewer.html, a single self-contained page;
-//   2. the Worker (src/worker.ts), with the viewer page and the five `archlang://` resources
+//   2. the Worker (src/worker.ts), with the viewer page and the six `archlang://` resources
 //      inlined as strings — the Worker has no filesystem, so they are bundled at BUILD time.
 //
 // What is bundled is DERIVED, never retyped: the resource set is parsed out of
