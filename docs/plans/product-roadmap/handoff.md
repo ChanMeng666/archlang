@@ -1,10 +1,10 @@
 # 恢复点
 
-本文件是本计划的恢复点，按 RM-D15 也是全部开发排期的恢复点：其他计划的 handoff 顶部只留一行指向这里（RM0.1 已落地这些指针）。新会话从本节开始读，再按 `README.md` 的"如何使用本文"走。本文的每个状态都是 2026-11-11 01:18Z → 01:29Z 用 `git`、`gh`、`npm view` 与各登记处的 API 读出的；动手前重新读一次，状态可能已经变了。
+本文件是本计划的恢复点，按 RM-D15 也是全部开发排期的恢复点：其他计划的 handoff 顶部只留一行指向这里（RM0.1 已落地这些指针）。新会话从本节开始读，再按 `README.md` 的"如何使用本文"走。本文的每个状态都是 2026-11-11 01:18Z → 01:46Z 用 `git`、`gh`、`npm view` 与各登记处的 API 读出的（#695、#405 与 worktree 一项在 01:45Z 复读）；动手前重新读一次，状态可能已经变了。
 
-## 1. 位置（2026-11-11 01:29Z）
+## 1. 位置（2026-11-11 01:46Z）
 
-### 1.1 已合并（`main` 头 `8f9ca2bb`）
+### 1.1 已合并（`main` 头 `6683c788`）
 
 | PR | 内容 | 合并时间（UTC） | 合并提交 |
 |---|---|---|---|
@@ -17,8 +17,9 @@
 | #694 | `docs/agents/iron-laws.md`：发布的决定归所有者，决定之后发布链含 tag 由代理执行 | 00:59 | `c5513950` |
 | #691 | 3D 墙的轮廓线只画在表面转折处，海报与视频抗锯齿（RM8.1、RM8.2） | 01:09 | `6d1680e5` |
 | #693 | "编译器说不"页 `docs/says-no.md` 与 docs 的 `archlang-section` 一行（RM0.2、RM0.4 的 docs 一项） | 01:25 | `8f9ca2bb` |
+| #695 | CLI `--theme <name>`（RM8.4 的前半，backlog VA.4）；三轮之后合并：重复 helper 守卫、单测超时守卫与 flag 矩阵的棘轮都满足了，没有动任何允许名单 | 01:44 | `6683c788` |
 
-`main` 的推送 run（Deploy、Main red alarm）在 `6d1680e5` 上 success（01:17Z 起的一轮）；`8f9ca2bb` 的推送 run 读时还没有结果。最近一次 nightly 是 run 42801157907（`69fa5864`，2026-11-10，success）。
+`main` 的推送 run（Deploy、Main red alarm）在 `6d1680e5` 上 success（01:17Z 起的一轮）；`6683c788` 的推送 run（CI、CodeQL）01:46Z 读时还在跑。最近一次 nightly 是 run 42801157907（`69fa5864`，2026-11-10，success）。
 
 ### 1.2 已发布（1.58.0）
 
@@ -43,16 +44,15 @@
 
 | PR / 分支 | 头 | 内容 | 合并前还要什么 | worktree |
 |---|---|---|---|---|
-| #695 `feat/rm8.4-cli-theme` | `63903a94` | CLI `--theme <name>`（RM8.4 的前半） | 评审 L 的 blocker（`test/no-duplicate-helpers.test.ts`）与 S1、S2 在返工；读时 `DIRTY`（#693 合并后冲突），CI 红在 `Node 22 tests 1/5`、`3/5`；要在本地合并 `main` 并 `gen:all`，CI 全绿，再按层级合并 | `.claude/worktrees/agent-aa8baf006b845fe4a`（锁定；`node_modules` 是指向主检出的 junction） |
 | 分支 `fix/rm1.3a-reachability-blind-spots`（无 PR） | `fef92a70`，基 `e68fd576`，落后 `main` 35 个提交 | RM1.3a 的 PS0.3、U.1 | 约 100 个 digest 钉值带理由重量与一次新上下文评审；合并 `main`；开 PR（`cards.md` RM1.3a 的状态行） | `.claude/worktrees/agent-a7037ea87974db09b`（锁定） |
-| 分支 `docs/rm0.2-studio-comment`（无 PR） | `e42184a9` | 改好的 `examples/studio.arch` 头注释与 CHANGELOG 一行（RM0.2b 的起点） | 两处钉值的带理由移动、`playground/src/examples.ts` 的同句、门禁、PR（`cards.md` RM0.2b） | 没有单独的 worktree；分支在本地与 `origin` 都有 |
+| 分支 `docs/rm0.2-studio-comment`（无 PR） | `e42184a9` | 改好的 `examples/studio.arch` 头注释与 CHANGELOG 一行（RM0.2b 的起点） | 两处钉值的带理由移动、`playground/src/examples.ts` 的同句、门禁、PR（`cards.md` RM0.2b） | 没有 worktree；分支在 `origin` 上 |
 | #604 Dependabot dev-dependencies | `3d7ef9a1` | biome 2.6 等 | 先修 biome 的 lint 差异（RM0.5） | — |
 | #676 Dependabot `three` 0.187 | `d8aa945e` | 3D 依赖 | 单独评估帧哈希与 GLB 字节、许可白名单（RM0.5） | — |
 | #603 Dependabot `@modelcontextprotocol/ext-apps` 2.0.4 | `6f9a0d20` | 主版本 | 按 RM-D19 保持打开，12-02 之后由 RM5.4 迁移 | — |
 | 分支 `origin/ChanMeng666-patch-1`（无 PR） | `6c86203a` | 所有者 2026-11-08 网页上改的 README 影片链接 | 按 RM-D20：先确认新 URL 能打开，再 cherry-pick 到从 `main` 新建的分支，经 PR 合并（RM0.5） | — |
 | 分支 `origin/feat/remove-view` | `9f0bff38` | 2.0 才做的移除 `view` | 保留，不在任何排期（backlog 的 2.0 桶） | — |
 
-另有一个 worktree `.claude/worktrees/agent-a8b2b1e76f593f189`（分支 `docs/rm0.2-says-no`，#693 已合并，可以清理），它的 `node_modules` 也是指向主检出的 junction。**移除任何 worktree 之前**，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`；否则删除会顺着 junction 删进主检出（`docs/agents/gotchas.md` § Tooling & process）。被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`，留到那个会话结束（`docs/agents/orchestration.md`）。旧的远程分支与本地分支的清单在 `cards.md` RM0.5 的状态行。
+**worktree（01:45Z `git worktree list`）：** 剩下两个。`.claude/worktrees/agent-a7037ea87974db09b`（RM1.3a，保留，锁定）；`.claude/worktrees/agent-a5678cfb59a1109a0`（本记录的分支 `docs/roadmap-state-2026-11-11`；它的 `node_modules` 是 2026-11-11 为跑门禁建的、指向主检出的 junction，移除前先解开）。#693 与 #695 合并之后，`agent-a8b2b1e76f593f189`（#693）与 `agent-aa8baf006b845fe4a`（#695）已由主会话移除（先解开了 junction），`git worktree list` 里已经没有它们。**移除任何 worktree 之前**，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`；否则删除会顺着 junction 删进主检出（`docs/agents/gotchas.md` § Tooling & process）。被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`，留到那个会话结束（`docs/agents/orchestration.md`）。旧的远程分支与本地分支的清单在 `cards.md` RM0.5 的状态行。
 
 ### 1.4 裁定
 
@@ -64,25 +64,28 @@
 
 ## 2. 下一步（按车道）
 
-排期以 `README.md` §3 为准；下面是从实际位置出发的顺序。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。
+排期以 `README.md` §3 为准；下面是从实际位置出发的顺序，每条车道从第 1 项做起，前一项合并后再开下一项。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。
 
 **核心车道（阶段 B，约 11-21 切 1.59.0）：**
-1. RM1.3a 的余下部分：带理由重量 digest 钉值（`test/byte-identity-baseline.ts` 头注释、逐行理由）、新上下文评审确认新事实正确、合并 `main`、开 PR 并写前后对照。在 RM5.1 之前。
+1. RM1.3a 的余下部分：对移动了的 digest 行做带理由的重量（`test/byte-identity-baseline.ts` 头注释，逐行写出为什么这个移动就是修复本身），再做一次新上下文评审确认新事实正确；然后合并 `main`、开 PR，写出三个最小夹具的前后对照（`cards.md` RM1.3a 的状态行）。
 2. RM5.1（MCP 能力摘要，带 `packages/mcp` bump，搭 1.59.0）。
-3. RM1.4（静默接受改出声，只加 W）。
-4. 发布 1.59.0：要所有者对这一次发布的决定（`docs/agents/iron-laws.md` § Owner policies）；含 RM5.1 的 `packages/mcp` bump 与 `packages/archlang-3d` 的 bump（RM8.1、RM8.2 已在 `main`）；步骤按 `.claude/commands/release-check.md`，tag 前的所有证明在发布分支头上跑完再合并版本号 PR（§9 的事故）。
-5. 线下，有余量才做：RM2.1 → RM1.6a → PS7.9；小件 RM1.4b、RM7.4；RM1.3c 先要设计裁定。
-
-**文档与杂项（第二个执行者或主会话）：**
-- RM0.4：在 #405 补记 L 形洞口栏杆已在 1.55.0 交付（#493），由主会话按 RM-D18 的口径发出。
-- RM0.2b：`studio.arch` 头注释（从 `origin/docs/rm0.2-studio-comment` 出发；要跑 `gen:3d-assets -- --only studio`，是重命令，避开别的重命令）。
-- RM0.5 的余下部分：#604、#676、patch-1、分支清理。
+3. RM1.4（静默接受改出声，只加 W），与 RM1.4b（写错大小写的主题名）一起做。
+4. 发布 1.59.0：要所有者对这一次发布的决定（`docs/agents/iron-laws.md` § Owner policies）；含 RM5.1 的 `packages/mcp` bump 与 `packages/archlang-3d` 的 bump（RM8.1、RM8.2 已在 `main`）；步骤按 `.claude/commands/release-check.md`，tag 前的所有证明在发布分支头上跑完再合并版本号 PR（§11 的事故）。
+5. 线下，有余量才做，按此顺序：RM2.1 → RM1.6a → PS7.9。另有 RM7.4（小件）；RM1.3c 先要设计裁定。
 
 **视觉车道：**
-1. #695 返工完成后合并（RM8.4 的前半）。
-2. RM8.1b（#691 的后续，小件）。
-3. RM8.3（3D 画出庭院；不是缺陷修复，赶不上约 11-21 的切点就等 12-02）。
-4. 阶段 D：RM8.4b → RM8.5 → RM8.6；RM8.10 先要设计裁定。阶段 E：RM8.7 → RM8.8 → RM8.9（两张 `[语法：词表]` 卡等 PS7.9）。
+1. RM0.2b（`studio.arch` 头注释；从 `origin/docs/rm0.2-studio-comment` 出发；要跑 `gen:3d-assets -- --only studio`，是重命令，避开别的重命令）。
+2. RM8.3（3D 画出庭院；不是缺陷修复，赶不上约 11-21 的切点就等 12-02）。
+3. RM8.4b（示例页与 gallery 的 `rendered` 版本，加 playground `#theme` 在手机宽度下的核对）。
+4. RM8.1b（#691 的后续，小件）。
+5. 之后按 `README.md` §3：阶段 D 的 RM8.5 → RM8.6，RM8.10 先要设计裁定；阶段 E 的 RM8.7 → RM8.8 → RM8.9（两张 `[语法：词表]` 卡等 PS7.9）。
+
+**卡与卡之间的杂项（小件，插在空档里做）：**
+- RM0.5 的余下部分：#604（先修 biome 的 lint 差异）、#676（`three` 0.187，单独评估帧哈希与 GLB 字节）、`origin/ChanMeng666-patch-1`（按 RM-D20 落地）、旧的远程分支（清单在 `cards.md` RM0.5 的状态行）。
+- O.10 与 H.1 的归档块（VA.4 已由 #695 做完，可以一起归档）追加到私有的 `archlang-lab/backlog-archive.md`（另一仓库，`scripts/backlog-archive.mjs`）。
+- CRF13（`src/ir.ts` 那条过时注释，#618 拆分后要重新定位，过时则关）。
+
+**给执行者的简报加一行：** 执行者写的状态文件按卡命名（例如 `state-rm1.3a.md`），不叫 `state.md`：同一会话的代理共用一个 scratchpad，2026-11-11 有两个代理互相覆盖了对方的 `state.md`。
 
 **冻结期（11-24 → 12-01）：** RM1.1a（量 1.59.0；到 11-23 没打 tag 就量冻结时 `main` 的提交并记下完整 SHA）、X9、RM5.3（冻结期合不了就顺延到阶段 D）、五份设计稿（`design/` 冻结期才建，含第 8 轨的 `visual-language.md`；`slab-and-section.md` 按 RM-D17 定净高子句的拼写）、RM1.8。
 
@@ -139,7 +142,7 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量冻结时 `main` 
 
 - **gerontec**（#532、#533、#544）：PR #533（`winders`）已合并（`0617d272`）并随 1.58.0 发布。#544 的回复已发出（<https://github.com/ChanMeng666/archlang/issues/544#issuecomment-6782842533>，2026-11-11T00:06:55Z）：`winders` 已发布；两个事实排在 2027-01-10 起的批次首位，设计稿在 11 月最后一周，会在 #544 贴链接请他看；欢迎 ST.2 的 PR；`archlang-section` 列进 docs（随 #693 合并）。**承诺了要做的：** 设计稿 `slab-and-section.md` 写成后在 #544 贴链接；RM6.1 开 PR 时在 #532 留言。他以 MIT 给的 `haus_winders.arch` 还没有当夹具用。跟进项 backlog ST.2（行走线画成弧）、ST.3（3D 把 winder 平台建成平的）。fork PR 的每次推送都要 `gh api -X POST .../actions/runs/<id>/approve` 才跑 CI。
 - **bobsch-io（Daniel）**：#362 的事实说明已发出（<https://github.com/ChanMeng666/archlang/issues/362#issuecomment-6782843000>，00:06:56Z），没有提问。按 Daniel 规则不再发第二条，不向他提问，不按他的答复排期；RM4.4 的触发只有他的下一批 issue 或所有者一句话。
-- **#405**：L 形洞口栏杆已在 1.55.0 交付（#493），补记还没发（RM0.4 的余项）。
+- **#405**：补记已发出（<https://github.com/ChanMeng666/archlang/issues/405#issuecomment-6784462072>，2026-11-11T01:40:06Z，01:45Z 读）：L 形洞口栏杆已在 1.55.0 交付；清单其余各项是卡 RM4.4。RM0.4 至此做完。
 - **#344**：在等提问者给样本 mask 和类别名，不是欠。
 - 开着的 issue（01:24Z）：#344、#405、#544、#680–#684。#683 由 RM0.2b 关闭；#684 由 RM1.8 回答；#680、#681、#682 分别是 RM1.6a/b、RM7.2、RM4.3。
 

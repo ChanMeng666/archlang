@@ -23,6 +23,8 @@ merge procedure and the CI job map in `commands.md`.
 - **An executor that may wait long writes a state file first** (in its scratchpad: what is done, what
   remains) before it waits on an asset build or an idle machine; two executors lost their card that way on
   2026-11-11 and reported having none. When one says so, take over from raw `git`, not its judgement.
+  Name the file after the card (`state-rm1.3a.md`, never `state.md`): one session's agents share the
+  scratchpad, and two overwrote each other's `state.md` the same day.
 - **When the machine is busy, a small edit is committed and reported "gate not run"** rather than held in a
   long wait loop; the coordinator runs the gate later or leaves it to CI.
 - **How a day's work continues**: take the first `todo` card of the lowest open wave, honour

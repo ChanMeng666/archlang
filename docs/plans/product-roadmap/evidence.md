@@ -462,7 +462,7 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`；§A 与 
 | RM1.4b | 评审 L 的 M6（"将来可补一条 `W_*`。不要在本 PR 做。"） | 写了 `theme Rendered` 的最小平面，`compile --json` 的 `diagnostics` 为 `[]` |
 | RM7.4 | 评审 L"逐项检查"第 1 条（`clinic` 的差异"与本 PR 无关"）与"未能检查" | `compile examples/clinic.arch -o -` 与 `examples/clinic.svg` 第 20 行起不同；`scripts/gen-example-svgs.ts` 的 `README_SVGS` 不含 `clinic`；`git grep "clinic.svg"` 无引用 |
 | RM8.1b | 评审 R2 的 SF2（"如果本轮不改，就开一张卡"）、m1（"也可以开卡"）、m2、m5；#691 正文 "Known limits, carded as follow-ups" | `packages/archlang-3d/test/wall-lines.test.ts` 与 `src/replay/mount.ts` 在 `main` 上 |
-| RM8.4 的状态行、RM8.4b | 评审 L 的 M3（"把剩余两条拆成新卡或明确挂在 RM8.4 下"） | `gh pr view 695`（开着，`63903a94`，`DIRTY`） |
+| RM8.4 的状态行、RM8.4b | 评审 L 的 M3（"把剩余两条拆成新卡或明确挂在 RM8.4 下"） | `gh pr view 695`（01:29Z 开着、`DIRTY`；01:45Z 已合并，`6683c788`） |
 | RM8.10 | #691 期间的报告（主会话的任务卡转述；评审 R1、R2 与 #691 的正文、提交说明里都没有这条） | `archlang3d build --json`（0.5.0）对 `wall-lines.test.ts` 的夹具 "a T of two heights" 报 `W3D_MIXED_HEIGHT_JOINT`（22,500 mm²）；ADR 0030 决定 3、5；`packages/archlang-3d/src/walls/ownership.ts` 的 `mixedHeightJoints`；`test/h1-ownership.test.ts`（已发布示例无一触发） |
 | `cards.md` §0 的两条执行规则 | 评审 R1 的 B1（终帧与海报对、升墙中途透缝）；两个执行者在长等待中丢了任务卡（主会话 2026-11-11 的记录，归档在同一目录的 `session-state-2026-11-11.md` §5） | `git log` 中 #691 的提交说明（"Review R1 (B1)"） |
 

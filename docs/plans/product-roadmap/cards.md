@@ -2,7 +2,7 @@
 
 规则同 `../drawing-set/cards.md`：选依赖已完成、阶段已开放的第一张 `todo` 卡；同一阶段先做"线"以上的卡。状态词：`todo`、`doing`、`done`（裁成 id、标题、状态、PR、commit）、`blocked`（等 `README.md` §6 裁定）、`parked`。规模是 AI 协作日，±50%，是估算不是测量；没有估算的写"未估"。"模型"是建议执行者，主会话可改。每张卡都写明不许做什么。
 
-**状态（2026-11-11 01:18Z → 01:29Z 按 `git` 与 `gh` 读）：** `done` 的有 RM0.3（#689）、RM0.1（#692）、RM8.1 与 RM8.2（#691）、RM0.2（#693，头注释一项拆成 RM0.2b）；做了一部分的有 RM0.4（只剩 #405）、RM0.5、RM8.4（#695 开着）、RM1.3a（分支，没有 PR，没绿）；其余全部 `todo`。逐卡的状态行写在各卡下面，恢复点是 `handoff.md`。2026-11-11 新增的卡：RM0.2b、RM1.3c、RM1.4b、RM7.4、RM8.1b、RM8.4b、RM8.10（各在所在阶段）。RM-D9…D16 已由所有者 2026-11-11 批准（`README.md` §6.1），RM-D17…D20 是同日的受托裁定（§6.2）；下面的阶段划分生效。**第 8 轨"视觉质感"（RM8.1…RM8.9，2026-11-11 增补）** 的卡也全部 `todo`：RM-D21 是所有者的方向；RM-D22（第二条车道）与 RM-D23（接触阴影）已由所有者 2026-11-11 批准（`README.md` §6.3）。视觉卡各自放在所在阶段的末尾，排法以 `README.md` §3 为准（两条车道）。估时标"主会话估"的是主会话的估算，±50%。`[语法：词表]` 标记的卡只给已有形式加闭集里的词，不加新子句，但同样依赖 PS7.9、带字节恒等律。
+**状态（2026-11-11 01:18Z → 01:46Z 按 `git` 与 `gh` 读）：** `done` 的有 RM0.3（#689）、RM0.1（#692）、RM8.1 与 RM8.2（#691）、RM0.2（#693，头注释一项拆成 RM0.2b）、RM0.4（三条回复与 #693 的 docs 一行）；做了一部分的有 RM0.5、RM8.4（CLI 一项由 #695 合并，只剩 RM8.4b）、RM1.3a（分支，没有 PR，没绿）；其余全部 `todo`。逐卡的状态行写在各卡下面，恢复点是 `handoff.md`。2026-11-11 新增的卡：RM0.2b、RM1.3c、RM1.4b、RM7.4、RM8.1b、RM8.4b、RM8.10（各在所在阶段）。RM-D9…D16 已由所有者 2026-11-11 批准（`README.md` §6.1），RM-D17…D20 是同日的受托裁定（§6.2）；下面的阶段划分生效。**第 8 轨"视觉质感"（RM8.1…RM8.9，2026-11-11 增补）** 的卡也全部 `todo`：RM-D21 是所有者的方向；RM-D22（第二条车道）与 RM-D23（接触阴影）已由所有者 2026-11-11 批准（`README.md` §6.3）。视觉卡各自放在所在阶段的末尾，排法以 `README.md` §3 为准（两条车道）。估时标"主会话估"的是主会话的估算，±50%。`[语法：词表]` 标记的卡只给已有形式加闭集里的词，不加新子句，但同样依赖 PS7.9、带字节恒等律。
 
 大多数 RM 卡是对 backlog / 各计划已有卡的**打包与排序**。打包卡 `done` 时，被打包的原卡同一 PR 裁掉，并在原处留一行"由 RMx.y 完成，PR #n"。`[语法]` 标记的卡新增语言形式：依赖 PS7.9（spec 腾空）先完成；遵守 `AGENTS.md` 硬规则与 `docs/agents/iron-laws.md`"每个新形式带字节恒等律"；`gen:*` 的闭集从源头派生。由 profile 数字驱动的新规则还依赖 RM1.6a（`README.md` 原则 10）。
 
@@ -19,7 +19,7 @@
 | 规则卡（RM1.2a/b、RM1.7） | 另加：每条规则一对公开夹具（合法图零报、缺陷图必报）进 `test/defect-corpus/`；留出的一对只写进私有 `archlang-lab`，PR 只报它的计数；PR 里写出该规则用 `arch lint --json` 跑过全部 `examples/**` 的报出数 |
 | 冻结期 11-24 → 12-01 | 只合 bug 修复、测量与文档；不发 minor |
 | 3D 回放的改动（2026-11-11 加） | 除终帧与海报外，还要比对墙升起过程中的帧（例如回放的 6.75 s、6.80 s 处）。#691 的终帧与海报都对，透缝只在升墙中途出现，是第一轮评审逐帧比对视频时抓到的（`docs/agents/gotchas.md` § PRs & CI） |
-| 执行者的长等待（2026-11-11 加） | 简报写明：可能长时间等待（等资产生成、等机器空闲）之前，先在自己的 scratchpad 写一个状态文件（已做什么、还剩什么）；机器忙时，小改动先提交，报告写"门禁未跑"，不在长循环里等。两个执行者在长等待中丢过任务卡（`docs/agents/orchestration.md`） |
+| 执行者的长等待（2026-11-11 加） | 简报写明：可能长时间等待（等资产生成、等机器空闲）之前，先在自己的 scratchpad 写一个状态文件（已做什么、还剩什么），文件按卡命名（例如 `state-rm1.3a.md`，不叫 `state.md`：同一会话的代理共用 scratchpad，2026-11-11 有两个代理互相覆盖过）；机器忙时，小改动先提交，报告写"门禁未跑"，不在长循环里等。两个执行者在长等待中丢过任务卡（`docs/agents/orchestration.md`） |
 
 **字节恒等载荷：** SVG + `describe()` + `lint()` + `compile().diagnostics`。
 **消息规则：** lint 的 `message` 不含 id；id 只在 `hint`。条文出处的结构化字段（RM1.6a/b）只增不替：已有的 hint 文本不删，新字段不进 `lint()` 的序列化。
@@ -40,19 +40,9 @@
 
 实际交付与卡不同之处：同一 PR 还记下了 RM-D24…D26、1.58.0 的发布状态、事故条目（`docs/agents/gotchas.md` § PRs & CI）与 backlog O.19。**没做完的两件**：CRF13（`src/ir.ts` 那条过时注释）在 #618 拆分之后找不到对应位置，没有关；O.10、H.1 的归档块还没有追加到私有的 `archlang-lab/backlog-archive.md`（另一仓库，`scripts/backlog-archive.mjs`；2026-11-11 在本机的 `archlang-lab` 检出里查不到这两个 id）。PR 里留给所有者的措辞问题已由 #694 解决（`c5513950`）。
 
-### RM0.4 · 欠外部的跟进 — `doing` · 0.5 日 · sonnet · 依赖 RM0.3（1.58.0 已发布）
+### RM0.4 · 欠外部的跟进 — `done` · #693 · `8f9ca2bb`（docs 一行）；三条回复是 issue 评论
 
-**状态（2026-11-11 01:19Z 读）：** 两条回复已发出：#544 给 gerontec（<https://github.com/ChanMeng666/archlang/issues/544#issuecomment-6782842533>，2026-11-11T00:06:55Z），#362 给 bobsch-io（<https://github.com/ChanMeng666/archlang/issues/362#issuecomment-6782843000>，00:06:56Z，只有事实、没有提问）。#544 的回复写的是 `archlang-section`"is being added to the docs"。docs 的"建在 ArchLang 上的工具"一行随 #693 于 01:25Z 合并（`8f9ca2bb`，`docs/analysis.md` 的 "Tools built on `describe`"）。**还剩：** #405 的补记没有发出（01:19Z 读：它的最后一条评论仍是 2026-11-02 的，"L-shaped voids with a railing" 仍列在 "Left open here"；L 形洞口栏杆由 #493 在 1.55.0 交付）。发出后本卡改 `done`。
-
-按 RM-D18 受托裁定（`README.md` §6.2），主会话起草并发出，英文、具体，都在 RM0.3 发布 1.58.0 之后：
-- docs：先加"建在 ArchLang 上的工具"一行，只列作者已同意的 `gerontec/archlang-section`（他 2026-11-06 在 #532 同意，并给了描述）。放哪一页按 ADR 0031 的下游读者口径定。
-- gerontec：在 #544 回复一次：`winders` 已在 1.58.0 发布；两个事实（剖切符号、楼板 datum）在批次 D 首位，2027-01-10 起，设计稿在冻结期写；欢迎他为 ST.2（折线行走线画成弧）提 PR；`archlang-section` 已列进 docs。
-- bobsch-io（Daniel）：在他自己的 #362 下留一条事实说明：非直跑楼梯以 `winders` 在 1.58.0 发布。只告知一次，不含任何问题。growth `AGENTS.md` 第 44 行的 Daniel 规则（"The founder holds the follow-up question; do not post it or plan on its answer."）禁止的是发出所有者拿着的后续问题和按它的答复排期，一条只讲交付的事实说明两样都不碰。
-- #405：补记 L 形洞口栏杆已在 1.55.0 交付（issue 里仍写 "left open"）。
-
-证明：每条回复的链接记进 `handoff.md`；docs 一行 `docs:build` 绿。
-
-不许：向 bobsch-io 提任何问题，或按他的回应排任何卡（Daniel 规则）；给 bobsch-io 发第二条；在 1.58.0 发布之前发出；承诺 IFC；承诺剖面进核心（核心不画高度）；承诺日期以外的范围；列出未同意的仓库（`AI-Building-Floor-Planner-SaaS` 尚无对话，不列）；在回复里写"first/only"或合规。
+实际交付（2026-11-11 01:45Z 读）：#544 给 gerontec（<https://github.com/ChanMeng666/archlang/issues/544#issuecomment-6782842533>，00:06:55Z）；#362 给 bobsch-io（<https://github.com/ChanMeng666/archlang/issues/362#issuecomment-6782843000>，00:06:56Z，只有事实、没有提问）；#405 的补记（<https://github.com/ChanMeng666/archlang/issues/405#issuecomment-6784462072>，01:40:06Z：L 形洞口栏杆已在 1.55.0 交付，清单其余各项是 RM4.4）；docs 的 `archlang-section` 一行随 #693 合并（`docs/analysis.md` 的 "Tools built on `describe`"）。与卡不同之处：#544 的回复还承诺了设计稿 `slab-and-section.md` 写成后在 #544 贴链接（`handoff.md` §8）。
 
 ### RM0.5 · 依赖与悬空状态 — `doing` · 0.5 日 · sonnet · 依赖无
 
@@ -387,7 +377,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 ### RM8.4 · 把色彩主题亮出来 — `doing` · 1.5 日（主会话估） · sonnet · 依赖无（backlog VA.4，从 RM5.2 提前到这里）
 
-**状态（2026-11-11 01:29Z 读）：** 实际在阶段 B 就开工了（排期把它放在阶段 D）。CLI `--theme <name>` 是 #695（分支 `feat/rm8.4-cli-theme`，头 `63903a94`，worktree `.claude/worktrees/agent-aa8baf006b845fe4a`）；接受它的命令是 `compile`、`batch`、`md`、`preview`、`watch`，`-f json|txt|dxf` 退出 3。评审 L 的 blocker（`test/cli-theme.test.ts` 违反 `test/no-duplicate-helpers.test.ts`）与 S1、S2 在返工；读时 `mergeStateStatus` 是 `DIRTY`（#693 合并后与 `main` 冲突），CI 的 `Node 22 tests 1/5`、`3/5` 失败，Playground E2E 还在跑。合并前：合并 `main` 并 `gen:all`（不手解生成文件）、CI 全绿。**本卡的另外两项不在 #695 里**：docs 示例页与 gallery 的 `rendered` 版本拆成下面的 RM8.4b；playground `#theme` 下拉框在手机宽度下能否被找到的核对没有做，也归 RM8.4b。#695 合并后 CLI 一项算交付，但本卡要等 RM8.4b 做完才改 `done`（评审 L 的 M3）。
+**状态（2026-11-11 01:45Z 读）：CLI 一项已交付，只剩 RM8.4b。** 实际在阶段 B 就做了（排期把它放在阶段 D）。CLI `--theme <name>` 由 #695 合并（2026-11-11T01:44:52Z，合并提交 `6683c788`）：接受它的命令是 `compile`、`batch`、`md`、`preview`、`watch`，`-f json|txt|dxf` 退出 3。#695 经三轮才合并：评审 L 的 blocker（`test/cli-theme.test.ts` 违反 `test/no-duplicate-helpers.test.ts`）、单测超时守卫与 flag 矩阵的棘轮都满足了，没有动任何允许名单。**本卡剩下的都在 RM8.4b**：docs 示例页与 gallery 的 `rendered` 版本，以及 playground `#theme` 下拉框在手机宽度下的核对。RM8.4b 做完时本卡改 `done`（评审 L 的 M3）。
 
 `rendered` 主题今天只能由源文件里的 `theme rendered` 或库调用的 `CompileOptions.theme` 选中；CLI 没有 `--theme`（`src/manifest.ts` 与 `docs/cli-reference.md` 都没有）。
 - CLI `--theme <name>`：按 `.claude/commands/new-cli-flag.md` 注册，`src/manifest.ts` 一行，`npm run gen:cli` 重生成 `docs/cli-reference.md`。可选名从核心公开导出的 `THEMES` 派生，不重抄。CLI 把选中的主题作为 `CompileOptions.theme` 传入；按 `src/types.ts` 的说明，这个选项压过源文件的 `theme { … }`，帮助文本照实写出这一点。未知的名字给出可选名列表。
@@ -398,7 +388,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 不许：改默认主题或任何现有主题的值（`test/fixture-byte-identity.test.ts` 第 1 组红就是缺陷，ADR 0023 决定 6）；手改 `docs/cli-reference.md`；新增主题名；在本卡给 MCP 工具加主题参数；让站点出现深色页面。
 
-### RM8.4b · 示例页与 gallery 的 `rendered` 版本（RM8.4 的后半） — `todo` · 未估 · sonnet · 依赖 #695 已合并（2026-11-11 加，出自评审 L 的 M3）
+### RM8.4b · 示例页与 gallery 的 `rendered` 版本（RM8.4 的后半） — `todo` · 未估 · sonnet · 依赖 #695 已合并（已满足，`6683c788`）（2026-11-11 加，出自评审 L 的 M3）
 
 内容：
 - 扩 `scripts/gen-example-svgs.ts`，或写一个同类的生成器，为 docs 的示例页与 gallery 出 `rendered` 主题的图；生成器经核心公开的 `compile(src, { theme: THEMES.rendered })`，与 #695 的 `--theme rendered` 同一条路，不重抄主题值。
