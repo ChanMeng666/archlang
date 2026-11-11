@@ -14,6 +14,15 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.47.0] - 2026-11-12
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.59.0`**: five new warnings in the editor's
+  diagnostics (`W_LENGTH_IN_METRES`, `W_GRID_SNAPPED`, `W_SET_VALUE_WORD`, `W_UNKNOWN_FURNITURE`,
+  `W_UNKNOWN_THEME`), and the core's fixes to reachability on upper storeys and to walls that come
+  within 0.015 mm of meeting.
+
 ## [0.46.0] - 2026-11-11
 
 ### Changed
