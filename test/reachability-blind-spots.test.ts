@@ -222,7 +222,8 @@ describe("RM1.3a laws over the corpus", () => {
           for (const r of s.access.rooms) {
             const room = mine.rooms.find((x) => x.id === r.id);
             const joined = s.access.edges.some((e) => !e.ambiguous && e.between.includes(r.id));
-            if (!r.reachable && joined && room?._file === undefined) expect(flagged.has(r.id), `${file} ${r.id}`).toBe(true);
+            if (!r.reachable && joined && room?._file === undefined)
+              expect(flagged.has(r.id), `${file} ${r.id}`).toBe(true);
           }
         }
         if (mine.level !== undefined && mine.level > 1) upper += s.access.rooms.filter((r) => r.reachable).length;

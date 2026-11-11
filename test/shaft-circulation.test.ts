@@ -523,9 +523,7 @@ describe("law: a storey no shaft arrives on measures exactly as before", () => {
         const arrivals = runs.get(st.level) ?? [];
         const got =
           levels.length > 0 ? summary.levels!.find((l) => l.level === st.level)!.circulation : summary.circulation;
-        expect(JSON.stringify(got), `${name} L${st.level}`).toBe(
-          JSON.stringify(circulationOf(st.ir, arrivals, true)),
-        );
+        expect(JSON.stringify(got), `${name} L${st.level}`).toBe(JSON.stringify(circulationOf(st.ir, arrivals, true)));
         if (JSON.stringify(got) !== without) reached.push(`${name} L${st.level}`);
       }
     }
