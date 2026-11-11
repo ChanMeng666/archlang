@@ -1,9 +1,9 @@
 # A compact studio apartment — the canonical ArchLang example.
 #
-# Architecturally sound (passes `arch lint`): every room opens off a central hall,
-# so the bath is never reached through the bedroom; the bath is fully enclosed and
-# fitted with real fixtures; and no door leaf sweeps onto furniture. Self-contained
-# (no imports) so it compiles from a single file.
+# Under the default rules `arch lint` reports nothing; under `uk-residential-advisory` it reports
+# one W_ROOM_TOO_SMALL (the bedroom). The front door opens into the living space, a cased opening
+# joins it to the hall, and the bedroom and bath each have a door off the hall, so the bath is not
+# reached through the bedroom. No door leaf sweeps onto furniture. Self-contained (no imports).
 plan "Studio 1BR" {
   units mm
   grid 50
