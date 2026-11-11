@@ -278,9 +278,9 @@ openings) and walks it from the exterior. For the studio:
 | `edges[].exterior` | whether this connector reaches the outside |
 | `edges[].straddles` | as `doors[].straddles` |
 | `edges[].ambiguous` | the connector sits where three or more rooms meet, and probing one wall thickness either side of its host wall's centreline could not say which two it joins (a probe landed on a room boundary). It is listed but joins nothing, so it counts for no room's reachability. When the probe does decide, `between` is the room on each face, and lint, circulation and `suggest` all read that same pair |
-| `rooms[].depthFromEntrance` | how many connectors you pass through from the nearest entrance (`1` = opens straight off it); `null` if you can't get there |
-| `rooms[].reachable` | can this room be reached from the exterior at all? |
-| `rooms[].bottleneckClearWidth` | the **narrowest clear width** along the widest path in from the entrance — the real constraint for moving furniture or a wheelchair (a widest-path search, so it reports the best route's worst pinch) |
+| `rooms[].depthFromEntrance` | how many connectors you pass through from the nearest way a person arrives by (`1` = opens straight off it); `null` if you can't get there. A door onto an `outdoor balcony` is no such way for a room a door from the ground reaches; on a storey a stair or lift reaches and no door from the ground does, the rooms it lands in are `1` ([shafts](#vertical-circulation--the-building-graph-v121)) |
+| `rooms[].reachable` | can a person get to this room at all, from outside or, on such a storey, from where a shaft lands? |
+| `rooms[].bottleneckClearWidth` | the **narrowest clear width** along the widest path in from where a person arrives — the real constraint for moving furniture or a wheelchair (a widest-path search, so it reports the best route's worst pinch). A balcony door counts only where it is the room's one way in |
 | `mainEntrance` | which entrance is the **front door**: `{ door, basis, candidates }`. **Present only on a storey with more than one entrance.** The candidates are the exterior doors with a leaf that are not a `garage` door, do not open onto an `outdoor balcony`, and do not open into a private room (a bedroom, bath or WC with no living, dining, kitchen, entry, hall or circulation use beside it, so a studio's door stays one); width never decides. In order, each step must single out exactly one door: the one door into an entry, hall or circulation room, of any leaf, but only when every other candidate opens into a service room (utility, storage, garage) (`basis: "entry-room"`); else, with `site`, the one **hinged** door not into a service room whose wall faces `site.street` (`"street"`; a wall at 45° faces no single side, and a street side with only service doors is refused); else the only candidate (`"sole"`). Otherwise the choice is refused, `door: null`: `"tie"` (the candidates are listed) or `"no-candidate"`. A storey a stair or lift arrives on from a storey below that has a candidate of its own names none (`"upper-storey"`) |
 | `rooms[].depthFromMainEntrance` | connectors passed from the main entrance (its room is `1`) **without going outside**; `null` for a room reached only through another door from outside. Present only when `mainEntrance.door` names a door. `depthFromEntrance` is unchanged beside it |
 
@@ -334,8 +334,14 @@ tie rules too: `r_bath` and the route were already 4600 mm / 740 mm / 2.27 and 5
 | `rooms[].walkDistanceMm` | walking distance to the room from its **nearest** entrance, over the eroded grid |
 | `rooms[].bottleneckClearWidthMm` | the narrowest unavoidable clear width on the widest way in from **any** entrance (a door width, or a furniture pinch) |
 | `rooms[].detourRatio` | `walkDistance ÷ straight-line` from the room's own entrance (the walk-nearest one, not the straightest) — how far the route wanders from a beeline (`≥ ~1`) |
-| `rooms[].entranceId` | the entrance this room's walk starts at: its nearest, ties to the one written first. **Present only when the plan has more than one entrance** |
+| `rooms[].entranceId` | the entrance this room's walk starts at: its nearest, ties to the one written first. **Present only when the walk has more than one entrance** |
 | `routes[]` | key functional routes (kitchen → nearest living/dining, bedroom → nearest bath), same three metrics |
+
+The entrances here are the ways a person **arrives** by. A door onto an `outdoor balcony` is
+not one for a room a door from the ground reaches without going outside: nobody arrives in the
+living room from its balcony, so its walk, and the hall's widest way in, start at the front door.
+A balcony door into a room nothing else reaches stays that room's way in. (Which rooms are
+reachable does not change; `access.entrances` still lists the balcony door.)
 
 A plan with several front doors — a terrace of houses on one sheet, a building with a
 street door and a garden door — is walked from all of them at once: every room is measured
@@ -688,12 +694,17 @@ Two lint rules read that, per storey:
   does. On a storey with no arrival room, when another storey has a way in, its message says
   which storey and why: no shaft joins it to another storey, its run stops on no other storey,
   the shaft lands on no room there, or the shaft starts in a room nobody can walk to.
-- **`W_ROOM_UNREACHABLE`** treats each arrival room as joined to `exterior`, so the same
-  BFS answers the same question one floor up.
+- **`W_ROOM_UNREACHABLE`** starts from the arrival rooms, so the same BFS answers the same
+  question one floor up. Such a storey's doors onto a balcony are walked through (out of one
+  room and in at another), never started from: a balcony is no way in from the street.
 
-Each storey's own `access.hasEntrance` stays **honest** — it reports that floor's doors, so
-the upper storey of a house with one front door reads `false`. The cross-storey answer is
-`vertical.reachable_levels`, never a doctored per-storey graph.
+Each storey's own `access.entrances` and `access.hasEntrance` stay **honest** — they report
+that floor's doors, so the upper storey of a house with one front door reads `false`. Its
+`access.rooms[]` count from where a person arrives: on a storey with arrival rooms, each arrival
+room is `reachable` at `depthFromEntrance: 1`, its `bottleneckClearWidth` the width of the flight
+stepped off (the width the circulation walk seeds there), and every other room is counted
+through the doors from those, so `reachable: false` there is exactly the room
+`W_ROOM_UNREACHABLE` names. The cross-storey answer is `vertical.reachable_levels`.
 
 **`W_STAIR_UNMATCHED`** is the other side of the identity rule: a run whose id appears on
 exactly *one* storey of a multi-storey plan connects nothing — usually a typo. It is
@@ -714,14 +725,13 @@ the foot of a `dir up` flight and the head of a `dir down` one, so the same shaf
 approached from opposite ends on the two storeys it joins. An escalator has both narrow
 ends; a lift car its south edge.
 
-A storey with no exterior door of its own is **walked from the runs that arrive on it**: each
-arriving run is an entrance whose walk starts in the row of cells in front of the edge a
+A storey with no door from the ground of its own is **walked from the runs that arrive on it**:
+each arriving run is an entrance whose walk starts in the row of cells in front of the edge a
 person steps off at, seeded at the run's width, and the rooms the doors reach are those
-walkable from the arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts from.
-`levels[i].circulation` carries the run's id as `entranceId`, and
+walkable from the arrival rooms — the same rooms `W_ROOM_UNREACHABLE` starts from. Its doors
+onto a balcony start no walk. `levels[i].circulation` carries the run's id as `entranceId`, and
 `W_PATH_TOO_NARROW`/`W_CIRCUITOUS_PATH` measure that floor as they measure a ground floor. A
-storey with a front door — a balcony door included — walks from it, whatever shafts land
-there.
+storey with a door from the ground walks from its doors, whatever shafts land there.
 
 Which runs a person **arrives** by is a property of the building's connectivity, not of
 declaration order: a run's neighbouring stop (on the storey below, or above, along its shaft)
@@ -939,7 +949,7 @@ are all-pairs shortest paths at unit cost.
 |-------|------------|
 | `k` | nodes in the system |
 | `cycleRank` | E − V + C over the whole graph (every room and `exterior`; C counts its connected pieces): the number of independent rings — `0` is tree-like |
-| `rooms[].depth` | steps from `exterior` — exactly `access.rooms[].depthFromEntrance` |
+| `rooms[].depth` | steps from `exterior`, the carrier, through every connector (a balcony door included) — `access.rooms[].depthFromEntrance` unless a balcony door or a stair-reached storey makes them differ |
 | `rooms[].meanDepth` | MD = the sum of steps to the other k − 1 nodes, over k − 1 |
 | `rooms[].ra` | relative asymmetry RA = 2(MD − 1) / (k − 2), from 0 (adjacent to everything) to 1 (the end of a corridor); `null` when k ≤ 2 |
 | `rooms[].rra` | real relative asymmetry RRA = RA / D_k, where D_k = 2(k(log₂((k + 2) / 3) − 1) + 1) / ((k − 1)(k − 2)) is the RA of the root of a k-node **diamond**, the reference graph Hillier and Hanson normalise by (the definition depthmapX uses). It makes systems of different sizes comparable; `null` when RA is |

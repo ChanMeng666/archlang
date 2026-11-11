@@ -40,6 +40,7 @@ import {
   roomBox,
 } from "../../analyze.js";
 import { entranceInputs, entranceWays, walkAccessGraph } from "../../analyze/entrance.js";
+import { landedOn } from "../../analyze/nav-grid.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { openingName } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -55,8 +56,10 @@ const gridCache = new WeakMap<LintContext, NavCache>();
 /**
  * Which access graph a judgement reads (PS0.10): the WALK view — the ways in the main entrance
  * keeps (`LintContext.walkAccess()`), judged from the front door — or the FULL view, every way
- * in, each room from its nearest. The full view is what a room that has its own door from
- * outside is judged by (that door is a way into it), and what `W_CIRCUITOUS_PATH` reads.
+ * a person arrives by (`LintContext.arrivalAccess()`: a balcony door is none for a room a door
+ * from the ground reaches, U.1), each room from its nearest. The full view is what a room that
+ * has its own door from outside is judged by (that door is a way into it), and what
+ * `W_CIRCUITOUS_PATH` reads.
  */
 interface View {
   from: "walk" | "nearest";
@@ -65,7 +68,7 @@ interface View {
 }
 
 const walkView = (ctx: LintContext): View => ({ from: "walk", access: ctx.walkAccess(), ways: ctx.walkWays() });
-const fullView = (ctx: LintContext): View => ({ from: "nearest", access: ctx.access(), ways: null });
+const fullView = (ctx: LintContext): View => ({ from: "nearest", access: ctx.arrivalAccess(), ways: null });
 
 /**
  * {@link circulationOf} for a rule, declaring to the coverage report (PS2.13) a storey whose
@@ -80,6 +83,16 @@ function measuredCirculationOf(ctx: LintContext, from: "walk" | "nearest" = "wal
   // (`buildNav`'s "none"). Neither is reached by a real plan; when one is, declare it here with
   // its own reason rather than leave it silent.
   return circ;
+}
+
+/**
+ * A storey with exterior doors that the circulation model nonetheless walks from its arriving
+ * shafts (PS0.3, `computeCirculation`'s `walkedFrom`): a shaft lands in one of its rooms, and the
+ * storey has no door from the ground, so those doors open onto balconies. The door-graph helpers
+ * below start from the arrival rooms there, as the model does, and not from the exterior.
+ */
+function balconiesOnlyWalkedFromShafts(ctx: LintContext): boolean {
+  return ctx.access().hasEntrance && landedOn(ctx.building.arrivalShafts, ctx.rooms).length > 0;
 }
 
 function shared(ctx: LintContext): NavCache {
@@ -101,7 +114,7 @@ function shared(ctx: LintContext): NavCache {
  * in; otherwise two, sharing one nav grid.
  */
 function circulationOf(ctx: LintContext, from: "walk" | "nearest" = "walk"): CirculationModel | null {
-  const access = from === "walk" ? ctx.walkAccess() : ctx.access();
+  const access = from === "walk" ? ctx.walkAccess() : ctx.arrivalAccess();
   if (from === "nearest" && access === ctx.walkAccess()) return circulationOf(ctx, "walk");
   const cache = from === "walk" ? modelCache : nearestCache;
   if (cache.has(ctx)) return cache.get(ctx) ?? null;
@@ -281,12 +294,13 @@ function bottleneckDoors(
   const hops = new Map<string, number>();
   const via = new Map<string, AccessEdge>();
   const prev = new Map<string, string>();
-  if (edges.some((e) => e.between.includes(EXTERIOR_NODE))) {
+  const viaShaft = balconiesOnlyWalkedFromShafts(ctx);
+  if (!viaShaft && edges.some((e) => e.between.includes(EXTERIOR_NODE))) {
     cap.set(EXTERIOR_NODE, Number.POSITIVE_INFINITY);
     hops.set(EXTERIOR_NODE, 0);
   }
   // Arrival rooms are a source only where the circulation model makes them one.
-  for (const id of ctx.access().hasEntrance ? [] : ctx.building.arrivalRooms) {
+  for (const id of ctx.access().hasEntrance && !viaShaft ? [] : ctx.building.arrivalRooms) {
     const w = widthOf.get(id);
     if (w !== undefined && !cap.has(id)) {
       cap.set(id, w);
@@ -452,10 +466,12 @@ function attributeBottlenecks(
   const measure = (wider: ReadonlyMap<string, number>, own: ReadonlyMap<string, readonly AccessEdge[]>): Measured => {
     const doors = ctx.doors.map((d) => (wider.has(d.id) ? { ...d, width: wider.get(d.id)! } : d));
     const openings = ctx.openings.map((o) => (wider.has(o.id) ? { ...o, width: wider.get(o.id)! } : o));
-    // Judged from the same ways in as the reading it re-measures (PS0.10).
+    // Judged from the same ways in as the reading it re-measures (PS0.10; the arrival ways, U.1,
+    // when the view keeps fewer than every entrance without naming a main entrance): widening a
+    // door moves no door off its wall, so the ways kept are the same.
     const access = walkAccessGraph(
       buildDoorAccessGraph(ctx.rooms, doors, ctx.rules.tolMm, undefined, openings, ctx.openRuns),
-      view.ways,
+      view.ways ?? (view.access === ctx.access() ? null : new Set(view.access.entrances)),
     );
     const request = new Map<string, Set<string>>();
     for (const [roomId, set] of own) {
@@ -527,7 +543,8 @@ function doorCapacity(
 ): Map<string, number> {
   const cap = new Map<string, number>();
   if (from !== undefined) cap.set(from, Number.POSITIVE_INFINITY);
-  else if (ctx.access().hasEntrance) cap.set(EXTERIOR_NODE, Number.POSITIVE_INFINITY);
+  else if (ctx.access().hasEntrance && !balconiesOnlyWalkedFromShafts(ctx))
+    cap.set(EXTERIOR_NODE, Number.POSITIVE_INFINITY);
   // An arrival room is a source at an unbounded width here: this is an UPPER bound.
   else for (const id of ctx.building.arrivalRooms) cap.set(id, Number.POSITIVE_INFINITY);
   const done = new Set<string>();
@@ -620,7 +637,8 @@ function hopsOf(ctx: LintContext, view: View): ReadonlyMap<string, number> {
   if (memo) return memo;
   const edges = view.access.edges.filter((e) => !e.ambiguous);
   const hops = new Map<string, number>();
-  let frontier = ctx.access().hasEntrance ? [EXTERIOR_NODE] : [...ctx.building.arrivalRooms];
+  let frontier =
+    ctx.access().hasEntrance && !balconiesOnlyWalkedFromShafts(ctx) ? [EXTERIOR_NODE] : [...ctx.building.arrivalRooms];
   for (const n of frontier) hops.set(n, 0);
   for (let d = 1; frontier.length > 0; d++) {
     const next: string[] = [];
