@@ -20,6 +20,7 @@ import {
   ERROR_CATALOG,
   isOptionalDepError,
   planToJson,
+  THEMES,
 } from "../index.js";
 import type { Diagnostic, PlanJson, PlanJsonDropped, PlanJsonDroppedClause, Scene, ViewName, World } from "../index.js";
 import { fmt3 } from "../num-format.js";
@@ -336,6 +337,10 @@ export async function renderArtifact(
     // before it gets here, and absent on every ordinary render — so the compile options,
     // and therefore the bytes, are what they were.
     ...(view ? { view } : {}),
+    // `--theme <name>`: the named theme as `CompileOptions.theme`, which wins over the source's
+    // `theme` key by key (`planTheme`, `src/scene-build.ts`). The commands validated the name
+    // (`resolveTheme`); absent, no option is passed and the bytes are what they were.
+    ...(args.theme !== undefined && Object.hasOwn(THEMES, args.theme) ? { theme: THEMES[args.theme]! } : {}),
   });
   const levels = pages?.map((p) => p.level) ?? [];
   if (hasErrors(diagnostics) || !scene) {

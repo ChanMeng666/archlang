@@ -13,6 +13,28 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-pinned by product-roadmap card RM8.1 (2026-11-11, PR #691, the walls' outlines): the walls and
+columns are no longer outlined node by node (three.js's `EdgesGeometry` on each prism), which drew
+a line wherever two pieces met on one flat surface; their outline is worked out across each storey
+and drawn only where the surface turns (`src/replay/wall-lines.ts`). The faces two pieces share are
+left out: inside one wall always, and between two walls (or a wall and a column) once the walls
+meeting there are all up; while the replay raises them each is drawn whole, so no frame shows a
+slot (review R1, B1). Mesh3D, the GLB and the event table are unchanged; only the viewer moved.
+Exactly 13 frames moved, every frame in which a wall is shown: laneway-house `stage:walls`
+(`8b624649…` → `fc9b26f9…`), `stage:openings` (`7ff8995d…` → `a7ecb187…`), `stage:fixtures`
+(`06853432…` → `11b9a693…`), `tilted` (`df6661df…` → `4ee99c61…`) and `end` (`c4517a8e…` →
+`6c71b020…`); two-storey `stage:walls` (`164f78b8…` → `6322f00b…`), `stage:openings` (`1d3dabce…` →
+`2ac49bb5…`), `stage:fixtures` (`48c287a3…` → `aed4a38a…`), `stop:1` (`0d781879…` → `f413d540…`),
+`tilted` (`92324745…` → `60be5619…`), `storey:2` (`52bdc549…` → `f12761a3…`), `stop:2`
+(`60d5fc32…` → `1d01b28a…`) and `end` (`c029568d…` → `70a864cb…`). From `stage:walls` on the walls'
+footprints are drawn, flat, and their outlines no longer cut across a wall's top where two pieces
+join, so those frames move with the rest. `stage:brief` and `stage:rooms` of both plans (the slab
+and the floors, no wall yet) keep their hashes. The 13 new hashes are the ones CI's `check-3d` job
+printed for the PR's head `d1038441` (GitHub Actions run
+https://github.com/ChanMeng666/archlang/actions/runs/42931433003, job 130230923132, ubuntu-26.04
+x64), where the key-frame comparison was the only failing test; they were not rendered locally.
+Every other hash and both `taken` entries are unchanged, as in card X2's re-pin.
+
 Re-pinned by public-surfaces card X4's follow-up (2026-11-06, the storey joint): a wall or column
 wholly under the slab of the storey above now stops at that slab's underside
 (`stops-under-slab-above`, `src/mesh/build.ts`). Before, storey 1's walls rose to storey 2's floor level, through the 200 mm

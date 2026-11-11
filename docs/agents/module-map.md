@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 386 modules in 34 directories.
+Totals: 387 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -27,9 +27,9 @@ Totals: 386 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `browser.ts` | 32 | 0 | The browser entry for a host page that shows the replay (card A5, the playground's 3D preview tab): build the payload in the page (`replayPayload`) and mount it on a canvas (`mountReplay`). It bundles three.js, so it is a separate entry… | none |
 | `curves.ts` | 45 | 2 | Arc discretisation to a chord tolerance (archlang-3d plan §4.1, `--curve-tol`). The core keeps every arc exact (`Edge` `{ t: "arc", arc }`) and tessellates at a fixed 7.5° step for the drawing; a raised wall is seen up close, so the 3D… | none |
-| `index.ts` | 104 | 23 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
+| `index.ts` | 104 | 25 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
 | `materials.ts` | 205 | 10 | Material slots (visual-assets card V1): the ONE palette both the GLB writer (`glb/write.ts`) and the replay viewer (`replay/mount.ts`) read, so a piece's oak or ceramic is the same colour in both. A T0 part names its slot (`Part.mat`… | none |
-| `node.ts` | 46 | 21 | The Node-only entry: a `World` over the file system. Kept out of `src/index.ts` so the browser bundle (adapter + Scene3D) never pulls a `node:*` module (`test/browser-safety.test.ts`). | none |
+| `node.ts` | 46 | 23 | The Node-only entry: a `World` over the file system. Kept out of `src/index.ts` so the browser bundle (adapter + Scene3D) never pulls a `node:*` module (`test/browser-safety.test.ts`). | none |
 | `units.ts` | 16 | 2 | Scene3D lengths are integer micrometres (plan §3.4): a plan coordinate in millimetres is multiplied by 1000 and rounded ONCE, at the adapter's edge, so every later stage works on integers and a last-ulp difference between engines is… | none |
 | `world.ts` | 124 | 3 | The Node `World` the CLI compiles through: an `import` is read only from under a root, only a `.arch` file, only up to {@link MODULE_CAP_BYTES}. Node-only (it reads `node:fs`): reached from `node.ts` and the CLI, never from `index.ts`… | none |
 
@@ -83,16 +83,17 @@ Totals: 386 modules in 34 directories.
 | `camera.ts` | 394 | 6 | The replay's end camera as plain maths (card A3, look notes round 1): the viewer and the tests read the same functions, so "the end frame fills the canvas" is a property a test can check without a browser. Millimetres, the exporters' axes… | none |
 | `facts.ts` | 57 | 3 | The metrics strip's numbers (card G4), read from the core's public `describe()` and `lint()` for the same source the replay was built from: nothing is measured here and nothing is guessed. The strip itself (`strip.ts`) is browser-safe and… | none |
 | `html.ts` | 113 | 3 | The single-file replay HTML (card A3): the viewer and three.js 0.186.1 as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON payload… | none |
-| `mount.ts` | 792 | 5 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
-| `payload.ts` | 151 | 7 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
+| `mount.ts` | 896 | 5 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
+| `payload.ts` | 158 | 7 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
 | `strip-dom.ts` | 20 | 2 | The strip's DOM half, apart from `strip.ts` so that the types of `.` and `./node` need no DOM lib. | none |
 | `strip.ts` | 73 | 8 | The replay's metrics strip (card G4): a line of plain facts under the picture, each shown when the replay reaches the stage that draws it. Browser-safe and free of the core: the facts come in as numbers (`facts.ts` reads them from the… | none |
 | `swiftshader.ts` | 7 | 4 | The flags that make Chromium render WebGL in software, the same on every machine (plan §6.5). | none |
 | `timeline.ts` | 436 | 9 | The replay as a pure function of time (card A3; archlang-3d plan §6.5; decision D3). The plan draws itself in its authoring order, then rises: | none |
-| `video.ts` | 293 | 5 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
+| `video.ts` | 320 | 6 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
 | `view-dom.ts` | 168 | 4 | The free camera's buttons (card CR4), browser-only DOM shared by both hosts of the replay: the single-file replay HTML (`viewer.ts`) and the playground's 3D preview tab. The presets and Reset (`ViewControl`), the storeys shown, and a line… | none |
 | `viewer-bundle.ts` | 21 | 3 | The viewer and the parts of three.js it uses as one minified browser script. Run by `tsup.config.ts` for `dist/viewer.iife.js`, and from the source tree by `html.ts` (this repository's tests and `npm run archlang3d`); never by an… | none |
 | `viewer.ts` | 77 | 2 | The replay viewer's browser code (card A3), bundled with three.js into the single HTML file `replay.ts` writes. It reads the payload the file carries and mounts it (`mountReplay`): `window.__seek(t)` renders the frame at `t` synchronously… | none |
+| `wall-lines.ts` | 739 | 2 | The walls' outlines in the 3D preview (product-roadmap card RM8.1), browser-safe and pure: a line is drawn only where the visible surface of a storey's walls really turns. | none |
 
 ## `packages/archlang-3d/src/scene3d/`
 
@@ -100,7 +101,7 @@ Totals: 386 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `build.ts` | 442 | 7 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
 | `overlap.ts` | 132 | 3 | V-GEO-05 (archlang-3d plan §4.2, §8.1; card A2b): rooms whose floors overlap by more than 1 cm² would draw two coplanar floor finishes that fight in depth. Each such pair is reported (`W3D_FLOOR_OVERLAP`; the core warns `W_ROOM_OVERLAP`… | none |
-| `types.ts` | 234 | 12 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
+| `types.ts` | 234 | 13 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
 | `validate.ts` | 226 | 2 | The Scene3D v0 validator: zero dependencies, so it runs in the browser bundle. It checks what `scene3d.schema.json` states (shapes, integer micrometres, enums, no unknown keys) and what a JSON Schema cannot (ids unique per collection and… | none |
 
 ## `packages/archlang-3d/src/walls/`
@@ -249,7 +250,7 @@ Totals: 386 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 335 | 30 | Module linking — the `import` system. | none |
-| `index.ts` | 754 | 403 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 754 | 405 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1588 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
@@ -262,7 +263,7 @@ Totals: 386 modules in 34 directories.
 | `lint.ts` | 327 | 29 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 684 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
-| `manifest.ts` | 1217 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
+| `manifest.ts` | 1239 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
 | `markdown.ts` | 106 | 8 | Markdown embedding helpers — extract ` ```arch ` fenced blocks from a Markdown document and rewrite each to an image reference, mirroring mermaid-cli's markdown mode. | none |
 | `naming.ts` | 336 | 20 | How a lint, taste or resolver MESSAGE names a room that has no label (plan-soundness PS2.22, PS2.29), and where a thing stands on the storey. | none |
 | `next.ts` | 255 | 4 | `nextDiagnostic(input)` — the ONE thing to fix first (plan-soundness PS5.3), chosen by a fixed precedence over everything `arch validate` knows about a plan: | none |
@@ -294,7 +295,7 @@ Totals: 386 modules in 34 directories.
 | `text-layout.ts` | 170 | 12 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 18 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
-| `theme.ts` | 486 | 47 | Theme: colours, line-weight, and font for the rendered drawing. | none |
+| `theme.ts` | 486 | 48 | Theme: colours, line-weight, and font for the rendered drawing. | none |
 | `types.ts` | 203 | 12 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
 | `vertical.ts` | 843 | 42 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
@@ -359,15 +360,15 @@ Totals: 386 modules in 34 directories.
 | `commands-author.ts` | 586 | 3 | The authoring/transform commands — `ast`, `complete`, `fmt`, `repair`, `fix`, `finish`, `suggest`. They parse/format/correct source (the syntactic `fix` and the geometric `repair` are a hard boundary; see ADR 0006/0011). Split out of the… | none |
 | `commands-import.ts` | 113 | 1 | `import` — a plan in another tool's format, as `.arch` source. One format today: `--from openplan3d` (an OpenPlan3D web project or prepared RoomPlan interchange JSON), converted by the core's pure `openPlan3dToArch()`. This file only… | none |
 | `commands-meta.ts` | 229 | 5 | The metadata / info commands — `manifest`, `spec`, `context`, `new`, `explain`. They print the CLI's own surface (manifest), the shipped language docs (spec / context), scaffold a starter plan (new), or look up an error code (explain).… | none |
-| `commands-render.ts` | 945 | 4 | The file-producing commands — `compile`, `watch`, `preview`, `batch`, `md`. They share the render/serialize core in {@link ./serialize.js}. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). | none |
+| `commands-render.ts` | 967 | 4 | The file-producing commands — `compile`, `watch`, `preview`, `batch`, `md`. They share the render/serialize core in {@link ./serialize.js}. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). | none |
 | `commands-share.ts` | 35 | 1 | `link` — print a URL that opens the plan in the hosted playground, so an agent can hand a person a rendered plan with nothing to install. The plan travels in the URL fragment; the minting and the `--json` shape are `linkResult`… | none |
 | `context-starter.ts` | 204 | 2 | `archlang context --level starter` — the one-screen starter for a weak model: the same truth as the full context (`llms-full.txt`), less of it (PS7.2). | none |
 | `help.ts` | 146 | 3 | `archlang --help` / `archlang <cmd> --help`, rendered from the capability manifest. | none |
-| `io.ts` | 869 | 55 | Shared CLI infrastructure — argument parsing, the {@link World}/IO seam, exit codes, and the small emit/format helpers every command module reuses. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). Node… | none |
+| `io.ts` | 916 | 57 | Shared CLI infrastructure — argument parsing, the {@link World}/IO seam, exit codes, and the small emit/format helpers every command module reuses. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). Node… | none |
 | `link.ts` | 50 | 3 | Share links for a plan: the playground URL that opens it in the editor, and the chrome-less embed URL that only draws it. Published as `@chanmeng666/archlang/link` (Node only: it compresses with `zlib`) so the MCP shim mints the same… | none |
 | `review.ts` | 731 | 5 | `arch preview --review` (plan-soundness PS5.4): the review sheet. One picture a reviewer (or an agent's vision) reads in a single look: the plan as `preview` draws it, the access graph laid over it, every element a warning names ringed… | none |
-| `run.ts` | 172 | 3 | The CLI as a function: argument parse + dispatch over a {@link CliIo}, returning the exit code (or {@link RESIDENT}) instead of ending the process. `src/cli.ts` runs it on the real process and exits through `exitFlushed`… | none |
-| `serialize.ts` | 502 | 8 | The render/serialize core shared by the file-producing commands (compile/preview/batch/md): compile a source to bytes, the format seam that turns a built {@link Scene} into the requested output, and the optional-dependency auto-install… | none |
+| `run.ts` | 172 | 4 | The CLI as a function: argument parse + dispatch over a {@link CliIo}, returning the exit code (or {@link RESIDENT}) instead of ending the process. `src/cli.ts` runs it on the real process and exits through `exitFlushed`… | none |
+| `serialize.ts` | 507 | 8 | The render/serialize core shared by the file-producing commands (compile/preview/batch/md): compile a source to bytes, the format seam that turns a built {@link Scene} into the requested output, and the optional-dependency auto-install… | none |
 | `share-codec.mjs` | 45 | 12 | The Node side of the playground's `#z=` share link: `#z=<base64url(deflate-raw(utf8))>`, the scheme `playground/src/share.ts` reads (the browser copy, which has `CompressionStream` and no `zlib`). | none |
 | `share-codec.web.mjs` | 130 | 4 | The Web-standard decoder of the playground's `#z=` share payload, beside the Node one in `share-codec.mjs`: `#z=<base64url(deflate-raw(utf8))>`, read with `DecompressionStream` and `atob` instead of `zlib` and `Buffer`, so a runtime with… | none |
 | `source-hash.ts` | 182 | 3 | The write-back revision guard, `--expected-hash <sha256>` (card CR5). | none |
@@ -505,7 +506,7 @@ Totals: 386 modules in 34 directories.
 | `element-phrases.ts` | 96 | 6 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
 | `fixture-paste.ts` | 254 | 5 | A pasteable fixture statement for an empty wet room or kitchen (`W_ROOM_NO_FIXTURE`'s hint), placed from the room's own shape and CHECKED before it is quoted. | none |
 | `measure.ts` | 95 | 19 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
-| `ruleset.ts` | 863 | 19 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
+| `ruleset.ts` | 863 | 20 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 118 | 8 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
 | `work.ts` | 33 | 2 | Work counters for one `lint()` run: how many geometric tests the costliest rules made, as COUNTS (engineering-health EH2.10). They are an out-parameter on the per-run {@link import("./context.js").LintContext}, never module state, so… | none |
 

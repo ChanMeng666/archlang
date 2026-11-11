@@ -16,23 +16,23 @@
     "laneway-house.arch": {
       "stage:brief": "53319b3d5d0d7fa01eb5fbcb8837b1d6efdffa3c16d079a7f0d29f37fdb84538",
       "stage:rooms": "884694b7e28f28ee7048fe302b42ba7ff402230ca5339a4a30fe45b4bb467658",
-      "stage:walls": "8b624649456b8e964cc7a7097acfcb31f6ba25d6515c678c81d786f2a6cba6ce",
-      "stage:openings": "7ff8995dd7f9d8b5040f3a243bd92cfbfb6f3b3c43bd3c857246c60308eaf2e4",
-      "stage:fixtures": "06853432e730c2f72c1ea413a47a756c4e1c86bb8c42c554a29cad64c36cf180",
-      "tilted": "df6661dfd766d093a87f1e08e865f30058851f77cfca960f6ee42a0f1ef836ba",
-      "end": "c4517a8e2bce335633de4f251254ea078818732bbd544c9f3687b5a2d83513f8"
+      "stage:walls": "fc9b26f9e629dc92cf56c062803b54415902f71f9ec431141abc4bbb7ea49688",
+      "stage:openings": "a7ecb1876fbfd4250812195e9fadfc531742d881270bc9b9bb1a4faf9172edd2",
+      "stage:fixtures": "11b9a693d586f55634a70bf75cf3d3bf19a56fe358bd980acf3bdefc32ebf29c",
+      "tilted": "4ee99c61070be45d8bdda9c27d8c48387a203bd4fbcb719f7487d067bc888ded",
+      "end": "6c71b0205a29692ce66758d66915489f2f508d8b1bf698e22e1754f7286d2bd9"
     },
     "two-storey.arch": {
       "stage:brief": "81f9acfd0706792f84121b5261bece104e63aa7d319a70295bbb12a2f74043eb",
       "stage:rooms": "6f88461365f13026acbddb5a4630e3c1aa06f61a4d720e26e839fff0f6cf6d17",
-      "stage:walls": "164f78b8ac488eb7d95eb14aa6b70180316330c1f8ee19d7a6f48387836b2805",
-      "stage:openings": "1d3dabce865d44e5f74dd97656c382809bdee8d5282f9b82c9b9147cfeaf4a4a",
-      "stage:fixtures": "48c287a369faad493e17c97ca80a1c2e4320e6bed50521af627ff57544331f7b",
-      "stop:1": "0d781879f380e3f39576eeb1a6365e0d3d3c463b2aedfd7020d6195fc483f7a2",
-      "tilted": "923247450140cc7787f8995cd7432b7e1fe8e7efb1d53ec17d35e6ebadcd63fd",
-      "storey:2": "52bdc549dab6c24c0b67405cc611826629385e3e18d7e3861ed5f5e7c0e061dc",
-      "stop:2": "60d5fc3210d32396fb4ad47783747c235f59d82ce91ac1bd50b4632888c53f21",
-      "end": "c029568d554ffdcd2126806b11137308abd85b2ae4103a1803beb148ecb779c6"
+      "stage:walls": "6322f00b3696d983543a37e523908347ed3c3012c1d6385e077a8035f64efb48",
+      "stage:openings": "2ac49bb58e9fe6b73861cd6f882aa2806038c6b00abb04b6656d974b00010026",
+      "stage:fixtures": "aed4a38ab8a270fd11eab1c293df07cce53ecf83f415a768cb32c36fbbf35b18",
+      "stop:1": "f413d54029ec499e3e129d4ef15c9a23ca57d7e9e80e534917d6b7caf8cdbf69",
+      "tilted": "60be5619c035eeba870a67393870fd81972ab2d950107da77ebc9d25de0d76e1",
+      "storey:2": "f12761a36aa22e48e70f01ae17a23b564f43f2b864b2fbad43fc9aacf783f51d",
+      "stop:2": "1d01b28a3325c9d808b5cf2db084904e73c0d5069fa055306dc1b0c31628c53a",
+      "end": "70a864cb59a9658b9508c89511cdfad110993c04e59e0e3fd48040a6fd2d661c"
     }
   }
 }

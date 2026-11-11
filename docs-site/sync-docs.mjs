@@ -52,6 +52,7 @@ const PAGES = [
   ["docs/from-an-image.md", "from-an-image.md"],
   ["docs/edit-one-room.md", "edit-one-room.md"],
   ["docs/common-mistakes.md", "common-mistakes.md"],
+  ["docs/says-no.md", "says-no.md"],
   ["docs/whats-new.md", "whats-new.md"],
   ["spec.llm.md", "spec.md"],
 ];

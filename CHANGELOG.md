@@ -7,9 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--theme <blueprint|mono|dark|presentation|rendered>` on `compile`, `watch`, `batch`, `md` and `preview`: draw with a named colour theme without writing `theme <name>` into the source. It is `CompileOptions.theme`, so it wins over the source's `theme` statement, `theme from`, `style` blocks and a single `furniture` colour for every key the named theme sets, and a key the theme leaves unset (a `lineWeight`, a `font`) keeps the source's value. The names are read from `THEMES`. An unknown name exits 3 with the list; it is refused (exit 3) with `-f json`, `-f txt`, `-f dxf`, `preview --ascii` and `preview --review`, which carry no theme colours. Without the flag every output is byte-identical to before; `describe` and `lint` do not take it.
+- A docs page, `/says-no` ("When the compiler says no, and why"): seven small plans the checks flag, with the real `lint`, `validate` and `impact --lock` output, what `validate --strict` does, and a table of the numbers the lint profiles set, read from `LINT_PROFILES`. `scripts/says-no.ts` renders every output on the page and `test/docs-says-no.test.ts` fails when the page differs.
+- `/analysis` names `gerontec/archlang-section`, which reads `describe --json`, with its author's description.
+
 ### Changed
 
 - The header comment of `examples/studio.arch` no longer says the plan is "architecturally sound" or that every room opens off the hall. It states what the plan measures: no warning under the default rules, one `W_ROOM_TOO_SMALL` under `uk-residential-advisory`. Comment only; the drawing, `describe()` and `lint()` are unchanged.
+- The 3D preview's posters and replay videos on archlang.uk and in the README are anti-aliased: `gen:3d-assets` draws each poster pixel from 3 × 3 samples and each video pixel from 2 × 2 (`renderReplay({ supersample })` in `@chanmeng666/archlang-3d/node`, off by default), and the outlines keep their weight. The live 3D preview (the playground's 3D tab, `archlang3d view --replay`) is not anti-aliased, as before.
+
+### Fixed
+
+- The 3D preview no longer draws a line on a flat wall surface where two wall pieces meet. Beside a door or a window only the reveal between sill and head is outlined, not the wall above and below it; the flat back of a T junction, the outer face of an L corner made of two walls and the joint of two walls in line carry no line; and no line cuts across a wall top at those places. The inside corners of a T or an X junction keep their lines. The outline of a storey's walls and columns is now worked out across all of them (`@chanmeng666/archlang-3d`, `src/replay/wall-lines.ts`), and the faces two pieces share are no longer drawn, so the seams do not show through a wall seen at a grazing angle either: inside one wall always, and between two walls (or a wall and a column) once the walls meeting there are all up, so while the replay raises them each one is drawn whole and no frame shows a gap. The playground's 3D tab, the replay HTML and the posters and videos all draw this way; Mesh3D, the GLB and Scene3D are unchanged.
 
 ## [1.58.0] - 2026-11-11
 
