@@ -297,6 +297,10 @@ export interface ElementDef {
   /** Keys `set <kind>(…)` refuses, each with why: a fact only the element's own statement may
    *  state. Every other key parses, whether or not anything reads it. */
   setRefuses?: Readonly<Record<string, string>>;
+  /** The bare words `set <kind>(key: word)` reads, by key: the defaults the element applies.
+   *  A bare word for any other key, or outside its list, is read as text and does nothing, and
+   *  the parser says so (`W_SET_VALUE_WORD`). Absent: the kind reads no bare word. */
+  setWords?: Readonly<Record<string, readonly string[]>>;
   /** One-line summary of what the element draws (for hover). */
   doc?: string;
   /**

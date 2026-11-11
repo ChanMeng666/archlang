@@ -1608,6 +1608,9 @@ export interface PlanNode {
   headerSpan?: Span;
   /** Named theme base from `theme <name> { … }` (resolved at lowering). */
   themeBase?: string;
+  /** Byte span of the `theme <name>` word, present only when that name is no built-in theme
+   *  (`W_UNKNOWN_THEME`, raised by `compile()`, which knows the themes the call registers). */
+  themeBaseSpan?: Span;
   /** Wall colour for `theme from "#color"` — opt-in poché derivation. */
   themeFrom?: string;
   /** Per-element style overrides (`style <kind> { … }`), by kind → Theme partial. */

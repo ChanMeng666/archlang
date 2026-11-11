@@ -1,0 +1,9 @@
+# W_UNKNOWN_FURNITURE (RM1.4, backlog U.3): a misspelt kind, and one in the wrong case. The labelled
+# `hammock` is a custom piece by intent and stays silent.
+plan "Furniture words" {
+  units mm
+  room id=main at (0,0) size 6000x4000 label "Music room"
+  furniture grand_pianno at (500,500) size 1500x1500 in main
+  furniture WC at (3000,500) size 400x700 in main
+  furniture hammock at (4000,2000) size 1800x800 label "Hammock" in main
+}

@@ -29,6 +29,7 @@ import { exprToSource } from "../expr-source.js";
 import { DEFAULT_MATERIAL } from "../hatches.js";
 import { segmentsOfWall } from "../geometry.js";
 import { fmt3 as numStr } from "../num-format.js";
+import { noteThickness } from "../ir/silent-accepts.js";
 import { JUNCTION_NIB_DEFAULTS } from "../opening-junctions.js";
 import { attachPosStr } from "../statement-print.js";
 import {
@@ -128,6 +129,7 @@ export const wallsFromRooms: ElementDef = {
           span,
         });
       }
+      noteThickness(ctx, "`walls from rooms`", v, t, span, what);
       return t;
     };
     const tExt = thick(n.exterior, "exterior");

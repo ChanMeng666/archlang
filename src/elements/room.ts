@@ -36,6 +36,7 @@ import {
   polygonSelfIntersects,
 } from "../geometry/polygon.js";
 import { fmtTenthsOf2dp } from "../num-format.js";
+import { noteMetres, noteSnap, roomSizeLooksMetric } from "../ir/silent-accepts.js";
 import { FLOOR_MATERIALS, floorHatch, hatchId, isFloorMaterial } from "../hatches.js";
 import { LABEL_AREA_DROP, LABEL_NAME_RISE } from "../text-layout.js";
 
@@ -164,6 +165,23 @@ export function parseFloorClause(ctx: ParseCtx, node: { floor?: FloorClause }): 
   ctx.next();
   ctx.next();
   node.floor = { word: value.value, span: { start: value.start, end: value.end } };
+}
+
+/**
+ * A rectangle room's written `size`, said out loud when it is not what is drawn (RM1.4): sides
+ * that read as metres (`size 4x3`, `W_LENGTH_IN_METRES`), else a side `grid` moved
+ * (`W_GRID_SNAPPED`). Reports only; the room keeps the snapped size it always had.
+ */
+function noteRoomSize(
+  ctx: ResolveCtx,
+  id: string,
+  written: { w: number; h: number },
+  size: { w: number; h: number },
+  span: Span | undefined,
+): void {
+  const metric = roomSizeLooksMetric(written.w, written.h);
+  if (metric && noteMetres(ctx, `Room "${id}"`, "size", [written.w, written.h], span)) return;
+  noteSnap(ctx, `Room "${id}"`, "size", [written.w, written.h], [size.w, size.h], span);
 }
 
 /** A room's `floor` word held to the patterns; another is `W_UNKNOWN_MATERIAL` and draws none. */
@@ -330,7 +348,8 @@ export const room: ElementDef = {
     if (n.at) {
       // —— Absolute / "manual" path — no constraint, never moved by the solver. ——
       const at = ctx.snapPt(ctx.evalPt(n.at));
-      const size = { w: ctx.snap(ctx.eval(n.size!.w)), h: ctx.snap(ctx.eval(n.size!.h)) };
+      const written = { w: ctx.eval(n.size!.w), h: ctx.eval(n.size!.h) };
+      const size = { w: ctx.snap(written.w), h: ctx.snap(written.h) };
       if (size.w <= 0 || size.h <= 0) {
         ctx.diag({
           severity: "error",
@@ -339,6 +358,7 @@ export const room: ElementDef = {
           span: n.span,
         });
       }
+      noteRoomSize(ctx, id, written, size, n.span);
       // An explicit `label … at (x,y)` is recorded here exactly as the `polygon` and
       // `circle` forms record theirs. Parsing the clause and then dropping it would make
       // the anchor silently do nothing and leave `W_ROOM_LABEL_OUTSIDE` unable to fire on
@@ -411,7 +431,8 @@ export const room: ElementDef = {
       });
     }
     const gap = rel.gap !== undefined ? ctx.eval(rel.gap) : 0;
-    const size = { w: ctx.snap(ctx.eval(n.size!.w)), h: ctx.snap(ctx.eval(n.size!.h)) };
+    const written = { w: ctx.eval(n.size!.w), h: ctx.eval(n.size!.h) };
+    const size = { w: ctx.snap(written.w), h: ctx.snap(written.h) };
     if (size.w <= 0 || size.h <= 0) {
       ctx.diag({
         severity: "error",
@@ -420,6 +441,7 @@ export const room: ElementDef = {
         span: n.span,
       });
     }
+    noteRoomSize(ctx, id, written, size, n.span);
     // The anchor is an absolute plan coordinate even here — `label … at` says WHERE the
     // name is drawn, it is not an offset from a room whose corner is not yet known. So it
     // is recorded now and CHECKED later: `placeRelational` calls `rectLabelOutsideDiag`

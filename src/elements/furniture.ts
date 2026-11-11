@@ -22,11 +22,12 @@ import type { FurnitureAuthored, ResolvedElement, RFurniture, RRoom, RWall } fro
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length, type WallSegment } from "../geometry.js";
 import type { BBox } from "../geometry/rect.js";
 import { pointInPolygon } from "../geometry/polygon.js";
-import { fixtureGlyph } from "./fixtures-glyphs.js";
+import { FIXTURE_CATEGORIES, fixtureGlyph } from "./fixtures-glyphs.js";
+import { noteSnap } from "../ir/silent-accepts.js";
 import { mirrorGlyph } from "./glyph-chirality.js";
 import { mapSceneNode } from "./glyph-lib.js";
-import { defaultFootprint, fixtureSpec, orientationMatters } from "../fixtures-catalog.js";
-import { chargeSteps } from "../expr.js";
+import { CATALOG_CATEGORIES, defaultFootprint, fixtureSpec, orientationMatters } from "../fixtures-catalog.js";
+import { chargeSteps, closest } from "../expr.js";
 import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "../room-datums.js";
 import { rectilinear, rectInRing, runRect } from "../room-tiling.js";
 import { parseSegmentSelect, segmentSelectText, selectSegment } from "../segment-select.js";
@@ -264,8 +265,11 @@ export const furniture: ElementDef = {
     let dw: number;
     let dh: number;
     if (n.size) {
-      dw = ctx.snap(ctx.eval(n.size.w));
-      dh = ctx.snap(ctx.eval(n.size.h));
+      const ww = ctx.eval(n.size.w);
+      dw = ctx.snap(ww);
+      const wh = ctx.eval(n.size.h);
+      dh = ctx.snap(wh);
+      noteSnap(ctx, `Furniture "${id}"`, "size", [ww, wh], [dw, dh], n.sizeSpan ?? n.span);
     } else {
       const fp = n.against || n.againstEdge ? defaultFootprint(n.category) : null;
       if (!fp) {
@@ -440,6 +444,7 @@ export const furniture: ElementDef = {
     } else {
       at = ctx.snapPt(ctx.evalPt(n.at!));
     }
+    if (n.label === undefined) noteUnknownCategory(ctx, id, n.category, n.span);
     return {
       kind: "furniture",
       id,
@@ -1224,4 +1229,40 @@ export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
   // A rotation preserves orientation: every `sweep` (an arc prim's, a path's arc edges')
   // is unchanged, and only the POINTS move.
   return mapSceneNode(n, rp, false);
+}
+
+/** Every word `furniture` knows: the drawn families and the catalogue, aliases included. Built
+ *  on first use, never at module load (the two tables are imported, and import order is not
+ *  this module's to rely on). */
+let knownFurniture: { list: string[]; set: ReadonlySet<string> } | undefined;
+const known = (): { list: string[]; set: ReadonlySet<string> } => {
+  if (!knownFurniture) {
+    const set = new Set([...FIXTURE_CATEGORIES, ...CATALOG_CATEGORIES]);
+    knownFurniture = { list: [...set], set };
+  }
+  return knownFurniture;
+};
+
+/**
+ * `W_UNKNOWN_FURNITURE` (RM1.4, backlog U.3): an unlabelled piece whose word is no catalogued
+ * kind but is close to one (`grand_pianno`, `WC`). Furniture is open on purpose, so an unknown
+ * word stays legal and still draws its rectangle; this only says so when the word looks like a
+ * slip. A piece with a `label` is a custom one by intent and is never reported. The nearest
+ * word comes from {@link closest}, which charges its search to the step meter.
+ */
+function noteUnknownCategory(ctx: ResolveCtx, id: string, category: string, span: Span | undefined): void {
+  const { list, set } = known();
+  if (set.has(category)) return;
+  const lower = category.toLowerCase();
+  const near = set.has(lower) ? lower : closest(category, list);
+  if (near === null) return;
+  ctx.diag({
+    severity: "warning",
+    code: "W_UNKNOWN_FURNITURE",
+    message: `Furniture "${id}" is a "${category}", which is not a catalogued kind, so it draws as a blank rectangle — did you mean "${near}"?`,
+    hints: [
+      `Write \`furniture ${near} …\` for the catalogued symbol, or add a \`label\` if "${category}" is a piece of your own.`,
+    ],
+    ...(span ? { span } : {}),
+  });
 }

@@ -5,7 +5,7 @@
  * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
  */
 
-import { defineEntries, e } from "./entry.js";
+import { defineEntries, e, w } from "./entry.js";
 
 export const FURNITURE_ENTRIES = defineEntries({
   E_FURN_SIZE: e(
@@ -85,5 +85,11 @@ export const FURNITURE_ENTRIES = defineEntries({
     "A catalogued piece with a non-square footprint has a back on a long side (a wardrobe is 1800 along x 600 deep). When the turn that faces the target would put the back on a short side, the `size` was written the wrong way round, and the symbol would be drawn stretched (ADR 0029 §3).",
     "Swap the `size` (the message gives it), so that the footprint's long side runs across the direction the piece faces.",
     "furniture id=b bed at (0,0) size 1500x2000\nfurniture tv_unit at (2500,800) size 1500x450 facing b   # error: write size 450x1500",
+  ),
+  W_UNKNOWN_FURNITURE: w(
+    "A furniture word is not a catalogued kind but is close to one.",
+    "Furniture is open on purpose: a word the catalogue does not know (`furniture hammock …`) is legal and draws a plain rectangle, with its `label` in it when it has one. So a misspelt kind (`grand_pianno`, `WC`) used to compile, pass `validate --strict` and draw an empty box without a word. This warning fires for an UNLABELLED piece whose word is no catalogued kind or alias but is within a small edit distance of one (the same nearest-name test as every did-you-mean hint), or is one in another case, and names that kind. A piece with a `label` is a custom piece by intent and is never reported, and a word near no kind stays silent.",
+    "Write the catalogued word the message names, or add a `label` to say the piece is your own.",
+    "furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean \"grand_piano\"?",
   ),
 });

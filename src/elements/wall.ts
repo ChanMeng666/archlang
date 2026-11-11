@@ -14,6 +14,7 @@ import { PointInterner, wallBand } from "../geometry/band.js";
 import { DEFAULT_MATERIAL, hatchesUsed, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
 import { lowerWallSet } from "../wall-lowering.js";
 import { fmt3, MAX_ANGLE_DEG, outOfRangeDiagnostic } from "../num-format.js";
+import { noteThickness } from "../ir/silent-accepts.js";
 import { exprSpan } from "../expr.js";
 import { resolveWallRelation } from "../wall-relation.js";
 import { enumList, WALL_STATUSES, type WallStatus } from "../grammar/tokens.js";
@@ -192,6 +193,7 @@ export const wall: ElementDef = {
         span: n.span,
       });
     }
+    noteThickness(ctx, `Wall "${id}"`, tv, thickness, n.span);
     let material = DEFAULT_MATERIAL as string;
     if (n.material !== undefined) {
       if (isKnownMaterial(n.material)) material = n.material;
