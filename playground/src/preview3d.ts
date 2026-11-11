@@ -96,7 +96,7 @@ const PLAYED_KEY = "archlang.pg.played3d";
 /** What the coach mark says (the hint, `VIEW_HINT`, is the full text, keys included). */
 export const COACH_TEXT = "Drag to turn · scroll to zoom · right-drag to pan";
 /**
- * The same on a touch screen (ruling MP-D2). The words are what three.js's `OrbitControls` (0.186)
+ * The same on a touch screen (ruling MP-D2). The words are what three.js's `OrbitControls`
  * does with fingers: `touches = { ONE: ROTATE, TWO: DOLLY_PAN }`, so one finger turns, and two
  * fingers zoom by their spread and pan by moving together.
  */

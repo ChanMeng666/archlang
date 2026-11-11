@@ -30,7 +30,7 @@ cp node_modules/@chanmeng666/archlang/examples/laneway-house.arch plan.arch
 npx archlang3d view plan.arch --replay -o plan.html
 ```
 
-`plan.html` opens offline. three.js 0.186.1 is inside the file with its licence notice, and nothing
+`plan.html` opens offline. The pinned three.js is inside the file with its licence notice, and nothing
 is fetched from a network. `--theme dark` and `--storey <n>` change what it shows.
 
 A plan of several storeys rises storey by storey, each lifted clear of the one below so the floor

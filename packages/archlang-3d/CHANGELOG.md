@@ -39,6 +39,11 @@
 - `PREVIEW_LIMITS` names outdoor surfaces and fences, the ground backdrop and the balcony railings
   that are not built.
 
+### Changed
+
+- three.js 0.187.0 (was 0.186.1), pinned exactly and inlined into the replay HTML with its MIT
+  notice, as before.
+
 ### Fixed
 
 - `mountReplay` no longer draws a line on a flat wall surface where two wall pieces meet: beside a

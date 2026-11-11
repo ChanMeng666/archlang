@@ -434,7 +434,12 @@ describe("replay HTML", () => {
     const { src, mesh } = meshOf("laneway-house.arch");
     const html = await replayHtml(mesh, { title: "Laneway House", svg: compile(src, { world: WORLD }).svg });
     expect(html.startsWith("<!doctype html>")).toBe(true);
-    expect(html).toMatch(/three\.js 0\.186\.1/);
+    // The notice names the three.js the manifest pins (`html.ts` reads the installed one's version).
+    const pinned = (
+      JSON.parse(readFileSync(join(HERE, "../package.json"), "utf8")) as { dependencies: { three: string } }
+    ).dependencies.three;
+    expect(pinned).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(html).toContain(`three.js ${pinned}\n`);
     expect(html).toMatch(/MIT License/);
     expect(html).toContain(PREVIEW_LABEL);
     expect(html).toContain(PREVIEW_LIMITS);
