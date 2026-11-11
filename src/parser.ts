@@ -1785,7 +1785,8 @@ class Parser {
       const valueTok = this.peek();
       const value = this.parseSetValue();
       over.push({ key, value });
-      if (this.peek(-1) === valueTok && valueTok.type === "ident") this.warnSetWord(targetTok.value, key, valueTok, def);
+      if (this.peek(-1) === valueTok && valueTok.type === "ident")
+        this.warnSetWord(targetTok.value, key, valueTok, def);
       if (this.isType("comma")) this.next();
       else break;
     }

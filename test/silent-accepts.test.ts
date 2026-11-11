@@ -38,7 +38,13 @@ import { runArch } from "./helpers/cli.js";
 import { EXIT } from "../src/cli/io.js";
 
 const API: CompilerApi = { compile, describe: describePlan, lint };
-const NEW_CODES = ["W_LENGTH_IN_METRES", "W_GRID_SNAPPED", "W_SET_VALUE_WORD", "W_UNKNOWN_FURNITURE", "W_UNKNOWN_THEME"];
+const NEW_CODES = [
+  "W_LENGTH_IN_METRES",
+  "W_GRID_SNAPPED",
+  "W_SET_VALUE_WORD",
+  "W_UNKNOWN_FURNITURE",
+  "W_UNKNOWN_THEME",
+];
 
 const read = (rel: string): string => readFileSync(join(REPO_ROOT, rel), "utf8");
 const plan = (body: string): string => `plan "T" {\n  units mm\n${body}\n}\n`;
@@ -55,7 +61,10 @@ const messages = (src: string, code: string): string[] =>
 suite("each warning fires on its fixture, through compile() and validate --strict", () => {
   const FIXTURES: [file: string, codes: string[]][] = [
     ["test/silent-accepts/length-in-metres.arch", ["W_LENGTH_IN_METRES", "W_LENGTH_IN_METRES"]],
-    ["test/silent-accepts/grid-snapped.arch", ["W_GRID_SNAPPED", "W_GRID_SNAPPED", "W_GRID_SNAPPED", "W_GRID_SNAPPED", "W_GRID_SNAPPED"]],
+    [
+      "test/silent-accepts/grid-snapped.arch",
+      ["W_GRID_SNAPPED", "W_GRID_SNAPPED", "W_GRID_SNAPPED", "W_GRID_SNAPPED", "W_GRID_SNAPPED"],
+    ],
     ["test/silent-accepts/set-value-word.arch", ["W_SET_VALUE_WORD", "W_SET_VALUE_WORD"]],
     ["test/silent-accepts/unknown-furniture.arch", ["W_UNKNOWN_FURNITURE", "W_UNKNOWN_FURNITURE"]],
     ["test/silent-accepts/unknown-theme.arch", ["W_UNKNOWN_THEME"]],
@@ -141,7 +150,9 @@ suite("W_GRID_SNAPPED (PS0.25, 6.10)", () => {
     const src = plan(
       "  grid 100\n  wall id=w exterior thickness 200 { (0,0) (30000,0) }\n  door at (20550,0) width 900 wall w",
     );
-    expect(messages(src, "W_GRID_SNAPPED")).toEqual(['Door "door_1" at (20550, 0) was snapped to (20600, 0) by `grid 100`']);
+    expect(messages(src, "W_GRID_SNAPPED")).toEqual([
+      'Door "door_1" at (20550, 0) was snapped to (20600, 0) by `grid 100`',
+    ]);
   });
 
   it("is quiet when every value is on the grid, and with no grid at all", () => {
@@ -222,7 +233,9 @@ suite("W_UNKNOWN_THEME (RM1.4b)", () => {
 
 suite("U.4: a furniture label is data, carried by describe()", () => {
   it("a drawn symbol's label reaches describe().furniture[].label", () => {
-    const d = describePlan(plan('  room id=r at (0,0) size 4000x3000\n  furniture bed at (500,500) size 1500x2000 label "Guest bed" in r'));
+    const d = describePlan(
+      plan('  room id=r at (0,0) size 4000x3000\n  furniture bed at (500,500) size 1500x2000 label "Guest bed" in r'),
+    );
     expect(d.furniture.map((f) => f.label)).toEqual(["Guest bed"]);
   });
 });
@@ -274,10 +287,18 @@ const BASELINE: [string, string][] = [
  * of a component placed three times, so it is reported once per instance.
  */
 const SNAPPED_EXAMPLES: [string, string[]][] = [
-  ["examples/aquarium.arch", ["bench_1", "bench_2", "bench_3", "bench_4"].map((id) => `Furniture "${id}" size 1200 x 450 was snapped to 1200 x 500 by \`grid 100\``)],
+  [
+    "examples/aquarium.arch",
+    ["bench_1", "bench_2", "bench_3", "bench_4"].map(
+      (id) => `Furniture "${id}" size 1200 x 450 was snapped to 1200 x 500 by \`grid 100\``,
+    ),
+  ],
   [
     "examples/gallery-l.arch",
-    ['Wall "spine" thickness 150 was snapped to 200 by `grid 100`', 'Wall "north_face" thickness 150 was snapped to 200 by `grid 100`'],
+    [
+      'Wall "spine" thickness 150 was snapped to 200 by `grid 100`',
+      'Wall "north_face" thickness 150 was snapped to 200 by `grid 100`',
+    ],
   ],
   [
     "examples/garden-house.arch",
@@ -291,8 +312,12 @@ const SNAPPED_EXAMPLES: [string, string[]][] = [
   [
     "examples/hillside-villa.arch",
     [
-      ...["shell", "w_wing_n", "w_wing_w", "w_wing_s"].map((id) => `Wall "${id}" thickness 250 was snapped to 300 by \`grid 100\``),
-      ...["w_util", "w_liv_din", "w_din_terr"].map((id) => `Wall "${id}" thickness 150 was snapped to 200 by \`grid 100\``),
+      ...["shell", "w_wing_n", "w_wing_w", "w_wing_s"].map(
+        (id) => `Wall "${id}" thickness 250 was snapped to 300 by \`grid 100\``,
+      ),
+      ...["w_util", "w_liv_din", "w_din_terr"].map(
+        (id) => `Wall "${id}" thickness 150 was snapped to 200 by \`grid 100\``,
+      ),
       'Door "d_garage" at (-2750, 0) was snapped to (-2700, 0) by `grid 100`',
       'Door "d_utility_ext" at (-2750, 10200) was snapped to (-2700, 10200) by `grid 100`',
       'Furniture "armchair_7" size 900 x 850 was snapped to 900 x 900 by `grid 100`',

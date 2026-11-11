@@ -172,8 +172,8 @@ export const LANGUAGE_ENTRIES = defineEntries({
   ),
   W_SET_VALUE_WORD: w(
     "A bare word in `set <kind>(…)` was taken as text and does nothing.",
-    "In a `set` rule a bare word before `,` or `)` is read as text, the way `set door(swing: out)` reads the word `out`; it is never read as the value of a name. So `set door(width: W)` sets `width` to the text \"W\", not to the value of `W`, and `set door(swing: inward)` sets a word `swing` does not read. Neither has any effect, and before this warning neither said so. A `set` rule reads a word only for the keys its element applies (`set door(…)`: `hinge` left or right, `swing` in or out); the message names the word taken as text. This is a warning in 1.x; the 2.0 release makes it an error.",
+    'In a `set` rule a bare word before `,` or `)` is read as text, the way `set door(swing: out)` reads the word `out`; it is never read as the value of a name. So `set door(width: W)` sets `width` to the text "W", not to the value of `W`, and `set door(swing: inward)` sets a word `swing` does not read. Neither has any effect, and before this warning neither said so. A `set` rule reads a word only for the keys its element applies (`set door(…)`: `hinge` left or right, `swing` in or out); the message names the word taken as text. This is a warning in 1.x; the 2.0 release makes it an error.',
     "Write the value on each element instead (a door's `width` is its own clause), or use a word the key reads (`set door(swing: out)`).",
-    "let W = 900\nset door(width: W)   # warning: takes `W` as the text \"W\"; the rule does nothing",
+    'let W = 900\nset door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing',
   ),
 });

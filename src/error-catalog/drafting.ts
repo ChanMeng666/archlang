@@ -67,7 +67,7 @@ export const DRAFTING_ENTRIES = defineEntries({
     "Unknown theme name; the plan is drawn in the default theme.",
     "`theme <name>` names no built-in theme and no theme the compile registers (`compile(src, { themes })`), so it selects nothing: the plan is drawn in the default theme, as it always was. A built-in name in another case is not that theme (`theme Rendered` is not `rendered`; theme names match exactly, as `--theme` does). The hint lists the known names and the message names the nearest one. Only `compile()` raises it, because only the compile knows which themes the call registers.",
     "Write a known theme name (the message names the nearest: the same word in another case first), or register the theme through the compile options.",
-    "theme Rendered   # warning: did you mean \"rendered\"?",
+    'theme Rendered   # warning: did you mean "rendered"?',
   ),
   W_ROOM_LABEL_OUTSIDE: w(
     "A room's explicit label anchor falls outside the room.",
