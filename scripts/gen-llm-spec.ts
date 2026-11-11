@@ -43,8 +43,11 @@ import { defaultFootprint } from "../src/fixtures-catalog.js";
 import {
   DOOR_ENUMS,
   DOOR_HINGE_NEAR,
+  DOOR_KIND_CLAUSES,
   DOOR_KINDS,
   DOOR_SWING_BUILDING,
+  type DoorClauseName,
+  type DoorKind,
   KEEP_GRADES,
   KEEP_WORDS,
   KEYWORDS,
@@ -115,30 +118,52 @@ const dirsOn = (axis: "v" | "h"): string => REL_DIRS.filter((d) => REL_DIR_AXIS[
 const SIZE_OPTIONAL_FIXTURES: readonly string[] = CANONICAL_FIXTURES.filter((c) => defaultFootprint(c) !== null);
 
 /**
+ * Which kind-dependent clauses each door kind takes, rendered from `DOOR_KIND_CLAUSES` — the
+ * table the resolver raises `E_DOOR_KIND_CLAUSE` from — with kinds that take the same clauses
+ * grouped (`barn/bifold: swing slide open`), in `DOOR_KINDS` order of each group's first kind.
+ *
+ * It replaced four sentences of the door line that said the same thing in prose (PS7.9):
+ * "`hinge` is hinged-only and `slide`/`open` sliding-family-only", "sliding/pocket take none"
+ * (of `swing`), and "`garage` takes NO clause". Derived, the statement is true by construction —
+ * the prose's "sliding-family" never said that `barn`/`bifold` take `slide` and `open` too.
+ */
+export function doorKindClauses(
+  kinds: readonly DoorKind[] = DOOR_KINDS,
+  table: Readonly<Record<DoorKind, Readonly<Record<DoorClauseName, boolean>>>> = DOOR_KIND_CLAUSES,
+): string {
+  const groups = new Map<string, DoorKind[]>();
+  for (const k of kinds) {
+    const clauses = (Object.keys(table[k]) as DoorClauseName[]).filter((c) => table[k][c]).join(" ") || "none";
+    groups.set(clauses, [...(groups.get(clauses) ?? []), k]);
+  }
+  return [...groups].map(([clauses, ks]) => `${ks.join("/")}: ${clauses}`).join("; ");
+}
+
+/**
  * One-line grammar for each built-in element, keyed by element keyword. Keys MUST
  * match `KEYWORDS.element` exactly — {@link renderLlmSpec} throws otherwise, so a
  * new element can't ship without a spec line (the drift guard).
  */
 export const ELEMENT_GRAMMAR: Record<string, string> = {
-  wall: `wall [id=<name>] <category> thickness <mm> [material ${KNOWN_MATERIALS.join("|")} [scale <n>] [angle <deg>]] [height <mm>] [status ${WALL_STATUSES.join("|")}] { (x,y) (x,y) … [arc (x,y) radius <mm> [${ARC_DIRS.join("|")}] [major]] … [close] } | between <A> and <B> | around [<A> …]   # category e.g. exterior/partition. An unlisted material is W_UNKNOWN_MATERIAL + the default hatch; \`scale\`/\`angle\`: either order, each once. \`close\` makes a loop. An \`arc\` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning \`ccw\` AS DRAWN, bulging left of travel; \`cw\`/\`major\` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS). A closed curve is two arcs. Faces draw as TRUE arcs. Openings work: \`on <wall> at <pos>\` walks RUN length (an arc contributes R·θ, not its chord) and a door's leaf/swing take the TANGENT there; \`furniture … against wall\` on an arc = E_FURN_AGAINST (use at+rotate). \`between\`/\`around\`: points from rooms (their shared edge; their outline, one ring cw from top-left vertex, no hole). \`status demolish\`: drawn; encloses, hosts (E_OPENING_ON_DEMOLISHED_WALL), measures nothing`,
-  room: `room [id=<name>] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses ${USE_KINDS.join("|")} …] [floor ${FLOOR_MATERIALS.join("|")}]   # \`floor\`: a hatch, drawn only. OR relational: room [id=…] (${REL_DIRS.join("|")}) <roomId> [align <edge>] [gap <mm>] size <W>x<H> — align: ${AXIS_ALIGNS.v.join("|")} after ${dirsOn("v")}, ${AXIS_ALIGNS.h.join("|")} after ${dirsOn("h")} (middle=center, both OK); wrong axis = E_ROOM_ALIGN_AXIS +fix, non-edge = E_ROOM_ALIGN. OR POLYGONAL: room [id=…] polygon (x,y) (x,y) (x,y) … — an implicitly-closed SIMPLE polygon (>=3 vertices): exact shoelace area, label at the CENTROID. A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); a slanted one REFUSES relational placement and \`anchor\` (E_PLACE_POLY): \`at (x,y)\` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR², reported as \`floor_circle\`; grids/overlap use a 48-gon ring. DATUMS: a rectangular room r has r.${DATUM_WORDS.join("|")}: numbers for walls, openings, furniture, dims; not in a \`let\` or a room's own at/size (E_DATUM_BEFORE_ROOMS). ${Object.keys(COMPASS_DATUM_ALIASES).join("|")} only at a \`north up\` root (E_DATUM_COMPASS); circle, slanted polygon: E_ROOM_NOT_RECTANGLE`,
+  wall: `wall [id=…] <category> thickness <mm> [material ${KNOWN_MATERIALS.join("|")} [scale <n>] [angle <deg>]] [height <mm>] [status ${WALL_STATUSES.join("|")}] { (x,y) (x,y) … [arc (x,y) radius <mm> [${ARC_DIRS.join("|")}] [major]] … [close] } | between <A> and <B> | around [<A> …]   # category e.g. exterior/partition. An unlisted material is W_UNKNOWN_MATERIAL; \`scale\`/\`angle\`: either order, each once. \`close\` makes a loop. An \`arc\` clause makes THAT edge a circular arc from the PREVIOUS vertex (default: the minor arc turning \`ccw\` AS DRAWN, bulging left of travel; \`cw\`/\`major\` pick the other circle / the long way round; R < chord/2 = E_ARC_RADIUS). A closed curve is two arcs. Openings work: \`on <wall> at <pos>\` walks RUN length (an arc contributes R·θ, not its chord); \`furniture … against wall\` on an arc = E_FURN_AGAINST (use at+rotate). \`between\`/\`around\`: points from rooms (their shared edge; their outline, one ring cw from top-left vertex, no hole). \`status demolish\`: drawn; encloses, hosts (E_OPENING_ON_DEMOLISHED_WALL), measures nothing`,
+  room: `room [id=…] at (x,y) size <W>x<H> [label "…" [at (x,y)]] [uses ${USE_KINDS.join("|")} …] [floor ${FLOOR_MATERIALS.join("|")}]   # \`floor\`: a hatch, drawn only. OR relational: room [id=…] (${REL_DIRS.join("|")}) <roomId> [align <edge>] [gap <mm>] size <W>x<H> — align: ${AXIS_ALIGNS.v.join("|")} after ${dirsOn("v")}, ${AXIS_ALIGNS.h.join("|")} after ${dirsOn("h")} (middle=center, both OK); wrong axis = E_ROOM_ALIGN_AXIS +fix, non-edge = E_ROOM_ALIGN. OR POLYGONAL: room [id=…] polygon (x,y)… — an implicitly-closed SIMPLE polygon (>=3 vertices): exact shoelace area. A crossing or all-collinear ring errors (E_ROOM_POLY_SELF_INTERSECT/E_ROOM_POLY_DEGENERATE); a slanted one REFUSES relational placement and \`anchor\` (E_PLACE_POLY): \`at (x,y)\` [+ rotate]. OR CIRCULAR: room [id=…] circle at (cx,cy) radius <mm> — area is EXACT πR², reported as \`floor_circle\`; grids/overlap use a 48-gon ring. DATUMS: a rectangular room r has r.${DATUM_WORDS.join("|")}: numbers for walls, openings, furniture, dims; not in a \`let\` or a room's own at/size (E_DATUM_BEFORE_ROOMS). ${Object.keys(COMPASS_DATUM_ALIASES).join("|")} only at a \`north up\` root (E_DATUM_COMPASS); circle, slanted polygon: E_ROOM_NOT_RECTANGLE`,
   // The two value lists are INTERPOLATED from `DOOR_ENUMS` (+ `DOOR_HINGE_NEAR`), never
   // typed out: this line is prose inside a generator, so a retyped list would document a
   // language that no longer exists while `check:drift` stayed green. `assertDoorEnumsRendered`
   // below is the guard that keeps it interpolated.
-  door: `door [id=<name>] [${DOOR_KINDS.join("|")}] (at (x,y) | on <wall|room.edge> at <pos> | between <A> and <B> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|${DOOR_SWING_BUILDING.join("|")}|into <roomId>] [slide ${DOOR_ENUMS.slide.join("|")}] [open <0..1>] [head <mm>]   # <pos>: mm along the wall (an EXPRESSION; a \`%\` suffix ENDS it — parenthesise a modulo), \`center\`, \`<mm> from start\`/\`end\`/\`<room>.<edge>\` (to the CENTRE; start = smaller x/y, on a wall its first point), \`axis <label>\`; by rooms only the last three, required for a door. \`between\`: the wall on the rooms' shared edge; \`on <room>.<edge>\`: its exterior wall. There a jamb < max(100, t/2) from a meeting wall's face REFUSES (E_OPENING_NIB). \`wall …\` pairs with \`at (x,y)\` only (else PARSE ERROR). No kind = \`hinged\`; only \`hinged\` and \`double\` (two leaves of width/2, one per jamb) draw a swing arc. \`swing\` BY KIND: hinged/double = the side the leaf sweeps (\`in\` = RIGHT of the wall's drawn direction; \`out\` = LEFT: a south wall drawn \`{ (0,4000) (6000,4000) }\` with \`swing out\` opens INTO the building; so prefer \`${DOOR_SWING_BUILDING.join("|")}\` = towards/away from the one face with floor, E_SWING_SIDE if both or neither, or \`into <room>\`); barn/bifold = the FACE the panel hangs on / folds toward; sliding/pocket take none. \`garage\` takes NO clause: it parks overhead. \`glazed_sliding\`: half \`width\` passes; \`width\` = wall opening. \`hinge\` is hinged-only and \`slide\`/\`open\` sliding-family-only; a wrong pairing REFUSES (E_DOOR_KIND_CLAUSE), as does any kind but hinged/double on an \`arc\` wall (E_DOOR_KIND_CURVED). \`slide\` reads along the wall like \`hinge\`; \`open\` is DRAWING-only (E_DOOR_OPEN_RANGE). A \`pocket\` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN. A jamb nearer a wall CORNER than the wall's thickness: W_DOOR_NEAR_CORNER. No \`sill\``,
-  window: `window [id=<name>] [${WINDOW_KINDS.join("|")}] <placement as door, no between> width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}] [sill <mm>] [head <mm>]   # \`hinge\`: casement/tilt_turn only; omit if unknown. \`on <room>.<edge>\` may omit \`at\` (centre). No pier: \`on r.top at corner r.right\` + \`on r.right at corner r.top\`; \`width\` to the outer face. \`sill\`/\`head\` bound the glazing; \`sill 0\` is legal (floor-length), sill >= head is E_SILL_ABOVE_HEAD. Drawn as double glazing + a sill nose on the face with NO floor (none when both or neither face has floor)`,
-  opening: `opening [id=<name>] <placement as door> width <mm> [wall <id|category>] [head <mm>]   # a leaf-less cased opening that still connects the two spaces in the access graph. \`head\` defaults to the HOST WALL's height; no \`sill\``,
-  furniture: `furniture [id=<name>] <category> (at (x,y) | against wall <id|category> [segment <n>] [offset <mm>] [side left|right] | against <room>.<edge> [offset <mm>] | in <roomId> (centered | anchor <a> [flush] [inset <mm>])) [size <W>x<H>] [label "…"] [rotate 0|90|180|270 | facing <id>] [mirror] [clear front|sides <mm>] [in <roomId>]   # \`at\` size is plan W×H, a fixture's depth running AWAY from its wall (a WC is 400x700 on a N/S wall, 700x400 on E/W); \`against\` size is along×depth, \`offset\` = mm along the wall to the piece's CENTRE (default: midpoint); it derives position+rotation (\`side\` inferred from \`in <roomId>\`); \`rotate\` is \`at\`/\`in\`-only (E_FURN_AGAINST; multi-segment wall ⇒ \`segment <n>\`, or \`segment north|…\` (closed ring, outward face; north-up root only) or \`segment containing r.left\`; not exactly one match = E_SEGMENT_SELECT). \`against\` may omit \`size\` for these + aliases (catalogued footprint): ${SIZE_OPTIONAL_FIXTURES.join("/")}. \`anchor <a>\` is ${FURNITURE_ANCHORS.join("|")}; \`inset\` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE); \`flush\` measures from the backing wall's inner FACE instead (needs an anchored edge: E_FURN_FLUSH on \`centered\`/\`anchor center\`). \`against r.left\`: back on that edge's wall face, like \`against wall\`. \`facing <id>\` (a piece, rect room or opening) derives the turn whose front (rotate 0 = back north) points at it; no hit = E_FACING_MISS. A chair at a table facing away: W_SEAT_FACING_AWAY. \`clear\` = depth to keep free, lint-checked. \`mirror\`: left↔right, back stays`,
-  dim: `dim [${DIM_REFS.join("|")}] (x,y)->(x,y) [offset <mm>] [text "…"]   # \`offset\` defaults to 300 (0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — \`W_DIM_INSIDE\`. \`faces\` pushes each endpoint out onto the wall it runs into (outside-to-outside); \`clear\` pulls both in to the inner faces. \`dims auto all\` instead draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: \`dim radius <wallId> [segment <n>]\` (an R leader) and \`dim diameter <roomId>\` (a φ call-out) DERIVE both geometry and text from the named element and also take \`[offset <mm>] [text "…"]\`; \`dims auto\` adds one R per distinct arc + one φ per circular room; chains stay off curved facades`,
-  column: "column [id=<name>] at (x,y) size <W>x<H>",
-  stair: `stair [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")} [width <mm>]   # a flight. \`at\` = footprint TOP-LEFT; the flight runs along the LONG axis; \`dir up\` is entered at that axis's larger-coordinate end (arrow points N/W), \`dir down\` at the opposite end (arrow S/E). A stair has that ONE entry; to swap ends, draw it at (0,0) in a \`component\` and \`place\` it \`mirror y\` if portrait (\`dir up\` entered from the north; \`at\` = its bottom-left), \`mirror x\` if landscape (from the west; \`at\` = its top-right). \`dir\` is declared per storey. MULTI-STOREY (\`elevator\`, \`escalator\` too): the SAME id on two \`level\` blocks is ONE SHAFT — a \`describe().vertical\` connection: from a room you can reach, it reaches the other storey with no front door (an id on one storey only = \`W_STAIR_UNMATCHED\`). OR TURNING: stair [id=…] dir ${VERTICAL_DIRS.join("|")} width <mm> { flight at (x,y) size <W>x<H> landing at (x,y) size <W>x<H> flight … } — pieces in climbing order on every storey, each touching the next; a landing replaces one going (E_STAIR_PIECES). A quarter-turn landing exactly \`width\` × \`width\` may end \`winders <2–8>\`: that many tapered steps fanning from its inner corner, each one going (never a helix)`,
-  elevator: "elevator [id=<name>] at (x,y) size <W>x<H>   # a lift shaft: car rectangle + crossed diagonals",
-  escalator: `escalator [id=<name>] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")}   # a moving stair: chevrons along the run + an UP/DN arrow; both narrow ends are entries`,
-  roof: `roof (overhang <mm> [wall <id>] | polygon (x,y) (x,y) (x,y) …)   # the eaves line: ONE dashed outline of what oversails. DRAWING-ONLY, though it grows the page. \`overhang\` offsets a CLOSED wall ring outward by thickness/2 + <mm>, mitred: the named \`wall\`, else the plan's one closed \`exterior\` wall (none/several = E_ROOF_AMBIGUOUS, unknown/unclosed = E_ROOF_WALL, <= 0 = E_ROOF_OVERHANG). REFUSES rather than approximating — an \`arc\` edge is E_ROOF_CURVED, an offset that crosses itself E_ROOF_SELF_INTERSECT — so write \`polygon\` instead: the ring verbatim, implicitly closed, >= 3 effective vertices (E_ROOF_POLY_DEGENERATE). Not inside a \`component\` (E_ROOF_PLACEMENT)`,
-  void: `void [id=<name>] (at (x,y) size <W>x<H> | polygon (x,y)…) [rail …]   # a hole in THIS storey's floor (stair well, atrium, double-height room): dashed outline + diagonals, \`at\` = TOP-LEFT. It OBSTRUCTS circulation (not walkable; its edge is) and does NOT reduce the containing room's area; \`describe --json\`'s \`voids[]\` gives the extent (\`area_m2\` on a polygon) to subtract. polygon: only horizontal/vertical edges (E_VOID_POLY). rail: a balustrade on the named edges, sides (rectangle) or 0-based numbers, n = point n→n+1 (polygon), all|none; omit the stair's arrival edge (E_VOID_RAIL). E_VOID_SIZE`,
-  outdoor: `outdoor [id=<name>] ${OUTDOOR_KINDS.join("|")} (at (x,y) size <W>x<H> | polygon (x,y) (x,y) (x,y) …) [label "…"] [rail ${RAIL_EDGES.join("|")} …]   # GROUND outside the building. NOT a room — absent from \`rooms[]\`, \`totals.floor_area_m2\`, \`schedule rooms\`, the access graph and Plan JSON — and it obstructs NOTHING (water included). Its facts are \`describe --json\`'s \`outdoor[]\` + \`totals.outdoor_area_m2\`, area by exact shoelace on the ring form. \`label\` draws the name AND the m²; unlabelled ground draws neither. \`rail\` is \`balcony\`-only (E_OUTDOOR_RAIL) and rectangle-only (E_OUTDOOR_POLY_DEGENERATE); omitted, it is DERIVED — every edge with no wall one thickness behind it. W_OUTDOOR_OVERLAPS_ROOM covers a surface over a room's floor, W_BALCONY_NO_DOOR a balcony with no opening within a wall thickness. It grows the page, so a site plan wants \`paper\` (E_OUTDOOR_SIZE, E_OUTDOOR_POLY_SELF_INTERSECT)`,
-  fence: `fence [id=<name>] [${FENCE_STYLES.join("|")}] { (x,y) (x,y) … [close] }   # a posted boundary line — dense ticks / a double line / sparse ticks; the style word defaults to the first. NOT a thin wall: no thickness, no poché, hosts NO opening, absent from \`describe().walls\` and the access graph (a gate is deferred by name). It measures (\`fences[]\`: \`length_mm\` + \`closed\`) and grows the page. An \`arc\` edge is E_FENCE_CURVED — write short straight runs`,
+  door: `door [id=…] [${DOOR_KINDS.join("|")}] (at (x,y) | on <wall|room.edge> at <pos> | between <A> and <B> at <pos>) width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}|${DOOR_HINGE_NEAR.map((v) => `near ${v}`).join("|")}] [swing ${DOOR_ENUMS.swing.join("|")}|${DOOR_SWING_BUILDING.join("|")}|into <roomId>] [slide ${DOOR_ENUMS.slide.join("|")}] [open <0..1>] [head <mm>]   # <pos>: mm along the wall (an EXPRESSION; a \`%\` suffix ENDS it — parenthesise a modulo), \`center\`, \`<mm> from start\`/\`end\`/\`<room>.<edge>\` (to the CENTRE; start = smaller x/y, on a wall its first point), \`axis <label>\`; by rooms only the last three, required for a door. \`between\`: the wall on the rooms' shared edge; \`on <room>.<edge>\`: its exterior wall. There a jamb < max(100, t/2) from a meeting wall's face REFUSES (E_OPENING_NIB). \`wall …\` pairs with \`at (x,y)\` only (else PARSE ERROR). No kind = \`hinged\`; \`double\` = two leaves of width/2, one per jamb. Clauses BY KIND, any other REFUSES (E_DOOR_KIND_CLAUSE): ${doorKindClauses()}; on an \`arc\` wall only hinged/double (E_DOOR_KIND_CURVED). \`swing\`: hinged/double = the side the leaf sweeps (\`in\` = RIGHT of the wall's drawn direction; \`out\` = LEFT: a south wall drawn \`{ (0,4000) (6000,4000) }\` with \`swing out\` opens INTO the building; so prefer \`${DOOR_SWING_BUILDING.join("|")}\` = towards/away from the one face with floor, E_SWING_SIDE if both or neither, or \`into <room>\`); barn/bifold = the FACE the panel hangs on / folds toward. \`glazed_sliding\`: half \`width\` passes; \`width\` = wall opening. \`slide\` reads along the wall like \`hinge\`; \`open\` is DRAWING-only (E_DOOR_OPEN_RANGE). A \`pocket\` needs its own width + clearance of wall past the slide-side jamb, or W_POCKET_RUN. A jamb nearer a wall CORNER than the wall's thickness: W_DOOR_NEAR_CORNER. No \`sill\``,
+  window: `window [id=…] [${WINDOW_KINDS.join("|")}] <placement as door, no between> width <mm> [wall <id|category>] [hinge ${DOOR_ENUMS.hinge.join("|")}] [sill <mm>] [head <mm>]   # \`hinge\`: casement/tilt_turn only; omit if unknown. \`on <room>.<edge>\` may omit \`at\` (centre). No pier: \`on r.top at corner r.right\` + \`on r.right at corner r.top\`; \`width\` to the outer face. \`sill\`/\`head\` bound the glazing; \`sill 0\` is legal (floor-length), sill >= head is E_SILL_ABOVE_HEAD`,
+  opening: `opening [id=…] <placement as door> width <mm> [wall <id|category>] [head <mm>]   # a leaf-less cased opening that still connects the two spaces in the access graph. \`head\` defaults to the HOST WALL's height; no \`sill\``,
+  furniture: `furniture [id=…] <category> (at (x,y) | against wall <id|category> [segment <n>] [offset <mm>] [side left|right] | against <room>.<edge> [offset <mm>] | in <roomId> (centered | anchor <a> [flush] [inset <mm>])) [size <W>x<H>] [label "…"] [rotate 0|90|180|270 | facing <id>] [mirror] [clear front|sides <mm>] [in <roomId>]   # \`at\` size is plan W×H, a fixture's depth running AWAY from its wall (a WC is 400x700 on a N/S wall, 700x400 on E/W); \`against\` size is along×depth, \`offset\` = mm along the wall to the piece's CENTRE (default: midpoint); it derives position+rotation (\`side\` inferred from \`in <roomId>\`); \`rotate\` is \`at\`/\`in\`-only (E_FURN_AGAINST; multi-segment wall ⇒ \`segment <n>\`, or \`segment north|…\` (closed ring, outward face; north-up root only) or \`segment containing r.left\`; not exactly one match = E_SEGMENT_SELECT). \`against\` may omit \`size\` for these + aliases (catalogued footprint): ${SIZE_OPTIONAL_FIXTURES.join("/")}. \`anchor <a>\` is ${FURNITURE_ANCHORS.join("|")}; \`inset\` (default 0) pulls it in from that edge, measured from the room rectangle (a wall CENTERLINE); \`flush\` measures from the backing wall's inner FACE instead (needs an anchored edge: E_FURN_FLUSH on \`centered\`/\`anchor center\`). \`against r.left\`: back on that edge's wall face, like \`against wall\`. \`facing <id>\` (a piece, rect room or opening) derives the turn whose front (rotate 0 = back north) points at it; no hit = E_FACING_MISS. A chair at a table facing away: W_SEAT_FACING_AWAY. \`clear\` = depth to keep free, lint-checked. \`mirror\`: left↔right, back stays`,
+  dim: `dim [${DIM_REFS.join("|")}] (x,y)->(x,y) [offset <mm>] [text "…"]   # \`offset\` defaults to 300 (0 on the curve forms). Endpoint ORDER + the offset sign choose which side it lands on (the offset runs along the LEFT normal of from→to), so a reversed pair draws it INSIDE the building — \`W_DIM_INSIDE\`. \`faces\` pushes each endpoint out onto the wall it runs into (outside-to-outside); \`clear\` pulls both in to the inner faces. \`dims auto all\` instead draws the GB/T openings + axis + overall chains outside every dimensioned facade. CURVES: \`dim radius <wallId> [segment <n>]\` (an R leader) and \`dim diameter <roomId>\` (a φ call-out) DERIVE both geometry and text from the named element and also take \`[offset <mm>] [text "…"]\`; \`dims auto\` adds one R per distinct arc + one φ per circular room`,
+  column: "column [id=…] at (x,y) size <W>x<H>",
+  stair: `stair [id=…] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")} [width <mm>]   # a flight. \`at\` = footprint TOP-LEFT; the flight runs along the LONG axis; \`dir up\` is entered at that axis's larger-coordinate end (arrow points N/W), \`dir down\` at the opposite end (arrow S/E). A stair has that ONE entry; to swap ends, draw it at (0,0) in a \`component\` and \`place\` it \`mirror y\` if portrait (\`dir up\` entered from the north; \`at\` = its bottom-left), \`mirror x\` if landscape (from the west; \`at\` = its top-right). \`dir\` is declared per storey. MULTI-STOREY (\`elevator\`, \`escalator\` too): the SAME id on two \`level\` blocks is ONE SHAFT — a \`describe().vertical\` connection: from a room you can reach, it reaches the other storey with no front door (an id on one storey only = \`W_STAIR_UNMATCHED\`). OR TURNING: stair [id=…] dir ${VERTICAL_DIRS.join("|")} width <mm> { flight at (x,y) size <W>x<H> landing at (x,y) size <W>x<H> flight … } — pieces in climbing order on every storey, each touching the next; a landing replaces one going (E_STAIR_PIECES). A quarter-turn landing exactly \`width\` × \`width\` may end \`winders <2–8>\`: that many tapered steps fanning from its inner corner, each one going (never a helix)`,
+  elevator: "elevator [id=…] at (x,y) size <W>x<H>   # a lift shaft",
+  escalator: `escalator [id=…] at (x,y) size <W>x<H> dir ${VERTICAL_DIRS.join("|")}   # a moving stair; both narrow ends are entries`,
+  roof: `roof (overhang <mm> [wall <id>] | polygon (x,y)…)   # the eaves line: ONE outline of what oversails. DRAWING-ONLY, though it grows the page. \`overhang\` offsets a CLOSED wall ring outward by thickness/2 + <mm>, mitred: the named \`wall\`, else the plan's one closed \`exterior\` wall (none/several = E_ROOF_AMBIGUOUS, unknown/unclosed = E_ROOF_WALL, <= 0 = E_ROOF_OVERHANG). REFUSES rather than approximating — an \`arc\` edge is E_ROOF_CURVED, an offset that crosses itself E_ROOF_SELF_INTERSECT — so write \`polygon\` instead: the ring verbatim, implicitly closed, >= 3 effective vertices (E_ROOF_POLY_DEGENERATE). Not inside a \`component\` (E_ROOF_PLACEMENT)`,
+  void: `void [id=…] (at (x,y) size <W>x<H> | polygon (x,y)…) [rail …]   # a hole in THIS storey's floor (stair well, atrium, double-height room), \`at\` = TOP-LEFT. It OBSTRUCTS circulation (not walkable; its edge is) and does NOT reduce the containing room's area; \`describe --json\`'s \`voids[]\` gives the extent (\`area_m2\` on a polygon) to subtract. polygon: only horizontal/vertical edges (E_VOID_POLY). rail: a balustrade on the named edges, sides (rectangle) or 0-based numbers, n = point n→n+1 (polygon), all|none; omit the stair's arrival edge (E_VOID_RAIL). E_VOID_SIZE`,
+  outdoor: `outdoor [id=…] ${OUTDOOR_KINDS.join("|")} (at (x,y) size <W>x<H> | polygon (x,y) (x,y) (x,y) …) [label "…"] [rail ${RAIL_EDGES.join("|")} …]   # GROUND outside the building. NOT a room — absent from \`rooms[]\`, \`totals.floor_area_m2\`, \`schedule rooms\`, the access graph and Plan JSON — and it obstructs NOTHING (water included). Its facts are \`describe --json\`'s \`outdoor[]\` + \`totals.outdoor_area_m2\`, area by exact shoelace on the ring form. \`label\` draws the name AND the m²; unlabelled ground draws neither. \`rail\` is \`balcony\`-only (E_OUTDOOR_RAIL) and rectangle-only (E_OUTDOOR_POLY_DEGENERATE); omitted, it is DERIVED — every edge with no wall one thickness behind it. W_OUTDOOR_OVERLAPS_ROOM covers a surface over a room's floor, W_BALCONY_NO_DOOR a balcony with no opening within a wall thickness. It grows the page, so a site plan wants \`paper\` (E_OUTDOOR_SIZE, E_OUTDOOR_POLY_SELF_INTERSECT)`,
+  fence: `fence [id=…] [${FENCE_STYLES.join("|")}] { (x,y) (x,y) … [close] }   # a posted boundary line; the style word defaults to the first. NOT a thin wall: no thickness, no poché, hosts NO opening, absent from \`describe().walls\` and the access graph (a gate is deferred by name). It measures (\`fences[]\`: \`length_mm\` + \`closed\`) and grows the page. An \`arc\` edge is E_FENCE_CURVED — write short straight runs`,
   walls: `walls from rooms exterior <mm> partition <mm> [status <s>] [{ except <room>… | open [id=] between <A> and <B> [width <mm>] | between … thickness <mm> }]   # a ring + a partition per shared edge (\`open\`: an opening across it, centred; else \`opening between\`); rooms: rectangles or rectilinear polygons tiling one floor. Openings: never \`on <wall>\``,
 };
 
@@ -148,17 +173,16 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
  * structural keywords, which the Structure + Scripting sections cover).
  */
 export const STATEMENT_GRAMMAR: Record<string, string> = {
-  axes: "axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning axes (定位轴线): dash-dot datum lines with a labelled bubble. `x` are vertical (numbered 1,2,3… left-to-right), `y` horizontal (lettered A,B,C… BOTTOM-to-top, skipping I/O/Z). Positions are expressions; labels are DERIVED. `dims auto rooms|all`'s middle chain measures them. Plan-level; statements read `axis.3`, `axis.B` as coordinates (no arithmetic in an opening's `at`), not in a `let`/`place`/component",
+  axes: "axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning axes (定位轴线): datum lines. `x` are vertical (numbered 1,2,3… left-to-right), `y` horizontal (lettered A,B,C… BOTTOM-to-top, skipping I/O/Z). Positions are expressions; labels are DERIVED. `dims auto rooms|all`'s middle chain measures them. Plan-level; statements read `axis.3`, `axis.B` as coordinates (no arithmetic in an opening's `at`), not in a `let`/`place`/component",
   level:
     'level <int> ["Name"] [height <mm>] { … }   # ONE STOREY = one whole drawing. `height` in the body: E_LEVEL_MIX; `heights.elevation` ACCUMULATES the storeys below, so it is NOT level × height. A plan is single-storey or ALL levels (a drawable statement beside them = E_LEVEL_MIX); settings/`component`/`import`/plan-global `let`/`set` stay OUTSIDE, applying to every level. Integers, unique, 0/negative legal, ASCENDING — lowest = page 1. Ids unique WITHIN a level (see `stair`). `arch compile` writes plan.L1.svg, plan.L2.svg … (`--level <n>` = one); `describe --json` adds `levels[]`. Plan-level only',
-  strip: `strip <${STRIP_DIRS.join("|")}> at (x,y) gap <mm> [height|width <mm>] { room [id=<id>] size <main>[x<cross>] [label "…"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only`,
+  strip: `strip <${STRIP_DIRS.join("|")}> at (x,y) gap <mm> [height|width <mm>] { room [id=…] size <main>[x<cross>] [label "…"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only`,
   zone: 'zone <id> ["Label"] { … }   # a WING/DEPARTMENT grouping, pure metadata: every statement inside resolves as if the wrapper were deleted. Membership is DECLARED, never inferred from position. Nests (`zone west { zone galleries { … } }` → path `west.galleries`, innermost wins) and is legal wherever a statement is, incl. inside `level`. `describe --json` adds `zones[]` (path/rooms/floor_area_m2; nested rooms roll UP, so summing zones double-counts) + `describe --zone <path>` to read one wing',
-  schedule: `schedule ${SCHEDULE_SUBJECTS.join("|")}   # DERIVED tables under the title block, either or both. \`rooms [net]\`: NO. · NAME (label, else id) · AREA · NET AREA (m²) + TOTALs = \`describe --json\`'s \`schedule[]\`, grouped by \`zone\` with SUBTOTALs; \`net\` also stamps each room. \`openings\`: D01…/W01… tags + a DOOR & WINDOW SCHEDULE: room(s) · width · kind · hinged hand (EN/DIN: seen from the side it opens into; ANSI reverses inswing)`,
-  legend:
-    "legend   # draw the LEGEND table beside the schedule: a row per hatch, plan-symbol fixture and window kind used, each with a swatch",
+  schedule: `schedule ${SCHEDULE_SUBJECTS.join("|")}   # DERIVED tables, either or both. \`rooms [net]\`: each room's NAME (label, else id), AREA, NET AREA + TOTALs = \`describe --json\`'s \`schedule[]\`, grouped by \`zone\` with SUBTOTALs; \`net\` also stamps each room. \`openings\`: D01…/W01… tags + a DOOR & WINDOW SCHEDULE`,
+  legend: "legend   # draw the LEGEND table: a row per hatch, plan-symbol fixture and window kind used",
   notes:
-    'notes "…" ["…" …]   # a numbered NOTES table, wrapped to its column; repeats append. Drawing-only, like `legend` and title `number`/`revision`',
-  site: `site { street ${COMPASS_DIRECTIONS.join("|")} [hemisphere ${HEMISPHERES.join("|")}] [boundary (x,y) (x,y) (x,y) …] }   # \`street\`/\`hemisphere\` draw NOTHING; \`boundary\` is the LOT LINE, a dash-dot property line that grows the page, adding \`site.lot_area_m2\` (exact shoelace) + \`site.lot_bbox\` (E_SITE_BOUNDARY_DEGENERATE, E_SITE_BOUNDARY_SELF_INTERSECT). \`street\` is a TRUE compass direction (read WITH \`north\`, not instead of it) and names five on \`describe --json\`'s \`site\`: \`street\`, \`back\` (opposite), \`equator_side\` (S north of the equator, N south of it), \`sunrise_side\` (E), \`sunset_side\` (W). An intent's \`windows.facing\` may assert those NAMES instead of a letter (no \`site\` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect: there is no sun model. \`street\` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only`,
+    'notes "…" ["…" …]   # a numbered NOTES table; repeats append. Drawing-only, like `legend` and title `number`/`revision`',
+  site: `site { street ${COMPASS_DIRECTIONS.join("|")} [hemisphere ${HEMISPHERES.join("|")}] [boundary (x,y) (x,y) (x,y) …] }   # \`street\`/\`hemisphere\` draw NOTHING; \`boundary\` is the LOT LINE, which grows the page, adding \`site.lot_area_m2\` (exact shoelace) + \`site.lot_bbox\` (E_SITE_BOUNDARY_DEGENERATE, E_SITE_BOUNDARY_SELF_INTERSECT). \`street\` is a TRUE compass direction (read WITH \`north\`, not instead of it) and names five on \`describe --json\`'s \`site\`: \`street\`, \`back\` (opposite), \`equator_side\` (S north of the equator, N south of it), \`sunrise_side\` (E), \`sunset_side\` (W). An intent's \`windows.facing\` may assert those NAMES instead of a letter (no \`site\` = E_INTENT_NO_SITE). They are a DRAFTING HEURISTIC for an aspect: there is no sun model. \`street\` required (E_SITE_NO_STREET), one block (E_SITE_DUP), plan-level only`,
   // ADR 0033: every form, measure, level and grade word interpolated from `KEEP_WORDS`/`KEEP_GRADES`
   // (guarded in `renderLlmSpec`). The spec says what each grade does; the measures are the reference's.
   keep: `keep (${KEEP_WORDS.forms.align[0]} <d>… | ${KEEP_WORDS.forms.equal[0]} ${KEEP_WORDS.measures.join("|")} <id>… | ${KEEP_WORDS.forms.offset[0]} <d|id> from <d> <mm> | ${KEEP_WORDS.forms["min-clear"].join(" ")} <room> <mm> | ${KEEP_WORDS.forms["on-axis"].join(" ")} <label> <wall|column> | ${KEEP_WORDS.forms.stacked[0]} <room|stair|elevator|void> ${KEEP_WORDS.levels.join(" ")} <n>… | ${KEEP_WORDS.forms.fixed[0]} <d> at <mm>) [${KEEP_GRADES.join("|")}]   # CHECKED, never solved: draws/moves nothing. <d>: r.left…, axis <label>, straight wall; authored ids; stacked: plan root; others in their level. Broken: hard (default) W_KEEP_VIOLATED ±mm, fails --strict; soft in next; advisory in describe/validate/impact`,
@@ -207,7 +231,7 @@ export const SETTING_GRAMMAR: Record<string, string> = {
   // `KEYWORDS.attribute`, so it can sit in exactly one. Its clause roles are taught by the
   // grammar lines of the elements that take it, which is the same argument that keeps
   // `overhang` and `rail` on the other side of the line.
-  height: `height ${STOREY_HEIGHT}   # OPTIONAL storey floor-to-floor — the VERTICAL DATUM, and it DRAWS NOTHING. Overridden per storey then per wall; never grid-snapped, E_HEIGHT_RANGE outside 0–${MAX_HEIGHT}, and an opening's \`head\` above its wall is E_OPENING_ABOVE_WALL. Defaults: ${STOREY_HEIGHT} storey, ${DOOR_HEAD} door head, ${WINDOW_SILL}/${WINDOW_HEAD} window sill/head. \`describe --json\` reports \`heights\` (storey_height/elevation/per-wall) + \`head\`/\`sill\` on the openings, but ONLY if the source wrote one of these clauses somewhere; \`arch manifest\`'s \`datum\` has the defaults either way`,
+  height: `height ${STOREY_HEIGHT}   # OPTIONAL storey floor-to-floor — the VERTICAL DATUM, and it DRAWS NOTHING. Overridden per storey then per wall; never grid-snapped, E_HEIGHT_RANGE outside 0–${MAX_HEIGHT}, and an opening's \`head\` above its wall is E_OPENING_ABOVE_WALL. Defaults: ${STOREY_HEIGHT} storey, ${DOOR_HEAD} door head, ${WINDOW_SILL}/${WINDOW_HEAD} window sill/head. \`describe --json\` reports \`heights\` (storey_height/elevation/per-wall) + \`head\`/\`sill\` on the openings, but ONLY if the source wrote one of these clauses somewhere`,
   north: `north up   # ${NORTH_DIRS.join("|")}; \`north|scale … hidden\`, \`title hidden\`: no arrow, bar, box; facts stay, a freed band may fit a finer auto scale`,
   dims: `dims auto all   # OPTIONAL: ${AUTO_DIMS_MODES.join("|")}`,
   accTitle: `accTitle "…"   # OPTIONAL a11y name → SVG <title> under \`compile --accessible\``,
@@ -591,6 +615,8 @@ export function renderLlmSpec(examples: Record<string, string>): string {
 
   // Drift guard #3: the door line must still RENDER every door enum from the one table.
   assertDoorEnumsRendered(ELEMENT_GRAMMAR.door ?? "", DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS, DOOR_SWING_BUILDING);
+  // …and the kind → clause table, which replaced the door line's per-kind refusal prose (PS7.9).
+  assertVocabRendered(ELEMENT_GRAMMAR.door ?? "", "door kind → clause table", [doorKindClauses()], "");
 
   // Drift guard #4: every OTHER closed value set the spec spells out must still come
   // from its source array, on the very line that teaches it. One call per set — a value
@@ -641,20 +667,26 @@ export function renderLlmSpec(examples: Record<string, string>): string {
 
   // A fenced block (not a bullet list) so the `<placeholder>` angle brackets are
   // safe everywhere they render (GitHub, npm, and the Vue-compiled docs site).
+  // The tables keep their `\s{3,}#` separator (it is what `clauseAtoms` splits on); the page
+  // prints two spaces before the `#`, the CLI blocks' convention, since every extra space on
+  // ~40 lines is paid for on every request (PS7.9).
+  const printed = (line: string | undefined): string => (line ?? "").replace(/\s{3,}#/, "  #");
   const statementLines = KEYWORDS.control.filter((k) => k in STATEMENT_GRAMMAR).map((k) => STATEMENT_GRAMMAR[k]);
   const elementLines =
-    "```text\n" + [...KEYWORDS.element.map((k) => ELEMENT_GRAMMAR[k]), ...statementLines].join("\n") + "\n```";
+    "```text\n" +
+    [...KEYWORDS.element.map((k) => ELEMENT_GRAMMAR[k]), ...statementLines].map(printed).join("\n") +
+    "\n```";
 
   // The Structure block's settings, rendered FROM `SETTING_GRAMMAR` in `KEYWORDS.attribute`
   // order. Splitting on the table's own `\s{3,}#` convention is what lets `clauseAtoms` read
-  // these lines exactly like the other two tables'. The note follows its form after the
-  // minimum three spaces — column alignment is whitespace the prompt budget pays for.
+  // these lines exactly like the other two tables'. The note follows its form after two
+  // spaces, as on the element lines — column alignment is whitespace the prompt budget pays for.
   const settingKeys = KEYWORDS.attribute.filter((k) => k in SETTING_GRAMMAR);
   const settingParts = settingKeys.map((k) => {
     const [form = "", note = ""] = (SETTING_GRAMMAR[k] ?? "").split(/\s{3,}#\s*/);
     return { form, note };
   });
-  const settingLines = settingParts.map((p) => `  ${p.form}   # ${p.note}`).join("\n");
+  const settingLines = settingParts.map((p) => `  ${p.form}  # ${p.note}`).join("\n");
 
   // `style <kind>` takes every element kind but two (`opening`, and `walls`, whose derived walls
   // take `style wall`). Printing the RULE rather than the
@@ -696,7 +728,7 @@ export function renderLlmSpec(examples: Record<string, string>): string {
 
 ArchLang is a tiny declarative language that compiles a \`.arch\` source file into a professional
 floor-plan drawing. It is built for AI agents: deterministic (same source →
-identical output), pure (no runtime/IO), and self-correcting (every error carries a machine code and
+identical output) and self-correcting (every error carries a machine code and
 a \`fix\`).
 
 ## The 7 rules that matter
@@ -733,10 +765,9 @@ ${settingLines}
 }
 \`\`\`
 
-**\`paper\` is what makes \`scale\` real.** Without it every drawn size is a fraction of the drawing's own size, so a 100 m building gets 3 m labels;
-\`scale\` is then just a title-block row. With \`paper\`, every annotation is a fixed number of
-millimetres ON THE SHEET (3.5 mm room labels, 0.5 mm wall lines, 15 mm margins) × the scale
-denominator. Write \`paper\` and omit \`scale\` to auto-fit the
+**\`paper\` is what makes \`scale\` real.** Without it \`scale\` is just a title-block row and every
+drawn size grows with the building. With \`paper\`, every annotation is a fixed number of
+millimetres ON THE SHEET × the scale denominator. Write \`paper\` and omit \`scale\` to auto-fit the
 finest of ${SCALE_LADDER.join(" / ")} that fits; declare both and a plan too big for the sheet
 warns \`W_SCALE_OVERFLOW\` (your scale is never silently overridden). \`arch describe --json\`
 reports the result as \`sheet\`. Big plan? \`paper A1\` + \`dims auto all\` is the professional default.
@@ -749,7 +780,7 @@ ${elementLines}
 
 - \`let NAME = expr\` — bind a constant. \`NAME = expr\` — reassign an existing binding
   (**deprecated**: \`W_REASSIGN_DEPRECATED\`; bind a new name instead).
-- \`let f(a, b) = expr\` — a pure value-function. Built-ins: \`${BUILTIN_NAMES.join(" ")}\`.
+- \`let f(a, b) = expr\` — a pure value-function; only yours and the built-ins are callable: \`${BUILTIN_NAMES.join(" ")}\`.
 - \`for i in lo..hi { … }\` — loop over a half-open integer range.
 - \`if cond { … } else { … }\` · \`while cond { … }\` (**deprecated**: \`W_WHILE_DEPRECATED\`;
   use \`for\` instead).
@@ -773,12 +804,11 @@ ${cliLines}
 The flags that matter:
 
 \`\`\`bash
-arch compile plan.arch -o out.svg --json  # JSON: { ok, diagnostics, summary }.  -f txt = zero-dep ASCII plan, dxf = blocks
+arch compile plan.arch -o out.svg --json  # JSON: { ok, diagnostics, summary }. -f txt = zero-dep ASCII plan, dxf = blocks
 arch validate plan.arch --strict --json  # ship-gate: --strict fails on warnings too
-arch fix plan.arch --dry-run --json  # preview/apply diagnostics[].fixes
+arch fix plan.arch --dry-run --json  # preview
 arch validate plan.arch --intent brief.json --feedback --json  # gate on a brief's intent contract (miss → exit 2)
-arch score plan.arch --brief brief.json --json  # measures, never gates
-arch score plan.arch --taste generic --json  # 0–1, never gates
+arch score plan.arch --brief brief.json --json  # or --taste generic (0–1); measures, never gates
 arch impact new.arch --against old.arch --lock a,b
 \`\`\`
 
@@ -800,8 +830,6 @@ space beats routing a bath through a bedroom — then re-\`repair\`. Full recipe
 | Mistake | Fix |
 | --- | --- |
 | Furniture floated at a guessed \`at\`, or an \`inset\` hand-computed from a wall thickness | Place it \`in <room> anchor <9-point> [flush] [inset]\` or \`against wall <id>\` — closed-form, never names a thickness. |
-| String math without interpolation | Rule 5. Only the built-ins above and your own \`let f(…)\` are callable — \`aream2\` is NOT built in. |
-
 ## Worked examples
 
 ${exampleBlocks}

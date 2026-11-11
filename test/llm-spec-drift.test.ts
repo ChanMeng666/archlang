@@ -69,9 +69,14 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // behaviours that are invisible in the output or refused rather than approximated. The
     // `furniture` line's size-optional list INTERPOLATES every catalogued footprint from
     // `CANONICAL_FIXTURES`, so each new fixture family with a footprint costs ~10 characters
-    // on its own, and that list makes it the longest line in the document. The next real lever
-    // is the `door` line, the second longest, whose per-kind clause prose a machine-readable
-    // table would carry better than a sentence.
+    // on its own, and that list makes it the longest line in the document. The `door` line's
+    // per-kind clause prose is now a table rendered from `DOOR_KIND_CLAUSES` (PS7.9).
+    //
+    // PS7.9 (29,856 → 28,652) cut what the page said twice or what only says how a thing is
+    // drawn, each fact kept in `docs/language-reference.md` (the PR lists every cut). The
+    // headroom it bought is spent by the queued syntax: five `[语法]` forms and two
+    // vocabulary cards (`docs/plans/product-roadmap/cards.md`), so the next form still pays by
+    // cuts or names its cost in a raise.
     //
     // The cap is asserted on the in-memory render, in UTF-16 code units, so neither a CRLF
     // checkout nor multi-byte characters count against it. Headroom came from trimming
