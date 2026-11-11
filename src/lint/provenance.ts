@@ -14,10 +14,12 @@
  * **Grades** ({@link VERIFICATION_GRADES}). `V`: the official text was read. `S-full`: the full
  * text was read in a third-party copy. `S-secondary`: a paraphrase, a summary, a handout, a forum
  * or an article quoting the clause. `M`: a magazine. `convention`: ArchLang's own choice, with no
- * literature behind the number. Each row restates the tag of the source comment in
- * `src/lint/ruleset.ts`, read against the research record that comment names: a `[V]` read in a
- * university's or a transcriber's copy is `S-full`, and an `[S]` stays `S-secondary` until the full
- * text is read. Advisory, never compliance (ADR 0005).
+ * literature behind the number. Each row's grade is the tag of its source comment in
+ * `src/lint/ruleset.ts` (`[V]`, `[S-full]`, `[S]` for `S-secondary`, `[M]`; no tag: `convention`),
+ * read against the research record that comment names, and the test holds the two equal: a text read
+ * in a university's or a transcriber's copy is `S-full`, and an `[S]` stays `S-secondary` until the
+ * full text is read. A `null` value is never a number, so its row is a `convention` whose note says
+ * what `null` means for that key. Advisory, never compliance (ADR 0005).
  */
 
 import { DEFAULT_RULESET, LINT_PROFILES, type LintRuleset, resolveRuleset } from "./ruleset.js";
@@ -44,7 +46,10 @@ export interface RuleConvention {
   note?: string;
 }
 
-/** One row: the source the number is taken from, and any further sources that agree with it. */
+/**
+ * One row: the source the number is taken from, and `also`, further sources that give the SAME
+ * number. A related source that gives a different figure goes in the `note`, never in `also`.
+ */
 export type RuleProvenance = (RuleSource & { also?: readonly RuleSource[] }) | RuleConvention;
 
 const CONVENTION: RuleConvention = { verification: "convention" };
@@ -72,16 +77,16 @@ const ndss = (clause: string): RuleSource => ({
   edition: "2015",
   verification: "V",
 });
-const adm = (clause: string, edition = "2015"): RuleSource => ({
+const adm = (clause: string | null, edition = "2015"): RuleSource => ({
   document: "Approved Document M, Volume 1: Dwellings",
   clause,
   edition,
   verification: "V",
 });
 const admHall: RuleSource = {
-  ...adm("M4(2), hall width"),
+  ...adm(null),
   verification: "S-secondary",
-  note: "second-hand: guidance summaries, not the Approved Document's text",
+  note: "the hall width of a category M4(2) dwelling, clause not named; second-hand: guidance summaries (designingbuildings.co.uk, LABC), not the Approved Document's text",
 };
 const adk = (clause: string): RuleSource => ({
   document: "Approved Document K",
@@ -89,11 +94,11 @@ const adk = (clause: string): RuleSource => ({
   edition: "2013",
   verification: "V",
 });
-/** IRC 2021: the ICC text was not readable; every figure is from a jurisdiction handout or summary. */
-const irc = (clause: string, note = "read in jurisdiction handouts, not the ICC text"): RuleSource => ({
+/** The IRC: the ICC text was not readable (`prior-art.md` §3.2); each row's note says what was read instead. */
+const irc = (clause: string, note: string, edition = "2021"): RuleSource => ({
   document: "International Residential Code",
   clause,
-  edition: "2021",
+  edition,
   verification: "S-secondary",
   note,
 });
@@ -123,8 +128,17 @@ const which = (): RuleSource => ({
   verification: "M",
 });
 
-const GB_NO_AREA = conv("exempt: GB 50096-2011 sets no area for it, and a passage is judged by its width");
+// A row whose value is `null` says in its note what `null` means for that key: the text output
+// prints it beside the value (`test/lint-provenance.test.ts` holds every null row to a note).
+const NO_STORE_AREA = conv("exempt, no floor: GB 50096-2011 sets no area for a store or a laundry");
+const NO_PASSAGE_AREA = conv("exempt, no floor: a passage is judged by its width, never its area");
 const OFF = conv("off by default; a profile sets it");
+/** IRC R304, as read: a forum quote of the 2012 text (`prior-art.md` §3.2, `design-taste.md` §2.5). */
+const R304_NOTE = "second-hand: a forum quote of the 2012 text (thebuildingcodeforum.com); the 2021 text was not read";
+const R311_6_NOTE = "second-hand, the source not named in the research record; the ICC text was not read";
+const R311_3_NOTE = "read verbatim in two state training copies (Indiana DHS, Montana DLI), not the ICC text";
+const R311_7_NOTE = 'read in jurisdiction handouts (e.g. Placer County "Residential Stairs"), not the ICC text';
+const P2705_NOTE = "read in trade articles (supplyht.com, hunker.com), not the ICC text";
 
 /** The provenance of every number of {@link DEFAULT_RULESET}, in its key order. */
 const DEFAULTS: Readonly<Record<string, RuleProvenance>> = {
@@ -157,11 +171,11 @@ const DEFAULTS: Readonly<Record<string, RuleProvenance>> = {
   minOutsideShellM2: CONVENTION,
   "minRoomAreaByUseM2.wc": gb50096("5.4.2 item 5"),
   "minRoomAreaByUseM2.bath": gb50096("5.4.2 items 2 and 3"),
-  "minRoomAreaByUseM2.storage": GB_NO_AREA,
-  "minRoomAreaByUseM2.utility": GB_NO_AREA,
-  "minRoomAreaByUseM2.hall": GB_NO_AREA,
-  "minRoomAreaByUseM2.circulation": GB_NO_AREA,
-  "minRoomAreaByUseM2.entry": GB_NO_AREA,
+  "minRoomAreaByUseM2.storage": NO_STORE_AREA,
+  "minRoomAreaByUseM2.utility": NO_STORE_AREA,
+  "minRoomAreaByUseM2.hall": NO_PASSAGE_AREA,
+  "minRoomAreaByUseM2.circulation": NO_PASSAGE_AREA,
+  "minRoomAreaByUseM2.entry": NO_PASSAGE_AREA,
   roomAreaFloorMode: conv('"at-least-generic" whenever a profile or the caller sets minRoomAreaM2'),
   assumeDwelling: CONVENTION,
   seatTableReachMm: CONVENTION,
@@ -172,39 +186,32 @@ const DEFAULTS: Readonly<Record<string, RuleProvenance>> = {
   roomAreaMeasure: CONVENTION,
   wcSideClearanceMm: {
     ...adm("M4(2) Diagram 2.5"),
-    note: "the low end of its 400-500 mm",
-    also: [irc("P2705.1", "15 in (381 mm), the code minimum; read in a trade article, not the ICC text")],
+    note: "the low end of its 400-500 mm; between the IRC P2705.1 minimum of 15 in (381 mm) and the NKBA's recommended 18 in (457 mm), both second-hand",
   },
   wcAccessibleSideWallMaxMm: {
     ...adm("M4(2) Diagram 2.5"),
-    note: "the high end of its 400-500 mm",
-    also: [
-      adm("M4(3) Diagrams 3.11 and 3.16", "2015, 2016 corrections"),
-      ada("604.2", "S-secondary", "16-18 in (406-457 mm), second-hand"),
-    ],
+    note: "the high end of its 400-500 mm; the 2010 ADA Standards 604.2 give 16-18 in (406-457 mm), second-hand: a lower maximum",
+    also: [adm("M4(3) Diagrams 3.11 and 3.16", "2015, 2016 corrections")],
   },
   stairMaxRiseMm: adk("Table 1.1, private stair"),
   stairMinGoingMm: adk("Table 1.1, private stair"),
-  stairMaxPitchRatio: conv("no pitch cap by default"),
+  stairMaxPitchRatio: conv("no pitch cap by default; a profile sets one"),
   hobLandingMm: {
     document: "NKBA Kitchen Planning Guidelines with Access Standards",
     clause: "guideline 17",
     edition: null,
     verification: "V",
-    note: "12 in (305 mm), the lesser of its two landing figures",
+    note: "12 in (305 mm), the lesser of its two landing figures; read in NKBA's own PDF (kb.nkba.org, uploaded 2022-05), which names no edition",
   },
   maxHingedLeafMm: {
     document: "International Building Code",
     clause: "1010.1.1",
-    edition: "2018 and earlier",
+    edition: "2018",
     verification: "S-secondary",
-    note: "quoted by the door-hardware reference iDigHardware (2018); the 2021 edition dropped the sentence",
+    note: "the 2018 text, quoted by the door-hardware reference iDigHardware (2018); the 2021 edition dropped the sentence; other editions not read",
   },
   garageDepthMm: { ...buckinghamshire("§8 Table 9"), also: [monmouthshire("¶21")] },
-  exitApproachMm: irc(
-    "R311.3",
-    "read verbatim in two state training copies (Indiana DHS, Montana DLI), not the ICC text",
-  ),
+  exitApproachMm: irc("R311.3", R311_3_NOTE),
   exitApproachPullMm: conv("the same as exitApproachMm"),
   bedMinLengthMm: which(),
   bedMinWidthMm: which(),
@@ -217,15 +224,16 @@ const PROFILES: Readonly<Record<string, Readonly<Record<string, RuleProvenance>>
     assumeDwelling: conv("the profile judges every plan as a dwelling, as its name asserts"),
   },
   "accessibility-advisory": {
-    minDoorWidthMm: conv("a nominal width giving roughly the ADA's 815 mm (32 in) clear opening"),
+    minDoorWidthMm: conv(
+      "no document gives 850: a nominal door width chosen to leave about the 815 mm (32 in) clear opening accessibility guidance asks",
+    ),
     minRoomAreaM2: CONVENTION,
     swingClearanceMm: CONVENTION,
     doorwayLandingMm: CONVENTION,
     minPathClearWidthMm: conv("a continuous clear width for wheelchair passage"),
     wcSideClearanceMm: {
       ...adm("M4(3) Diagrams 3.11 and 3.16", "2015, 2016 corrections"),
-      note: "the low end of its 450-500 mm",
-      also: [ada("604.2", "S-secondary", "16-18 in (406-457 mm), second-hand")],
+      note: "the low end of its 450-500 mm; the 2010 ADA Standards 604.2 give 16-18 in (406-457 mm), second-hand: a lower minimum",
     },
     exitApproachMm: ada(
       "404.2.4.1, Table 404.2.4.1 (front approach, push side)",
@@ -275,23 +283,23 @@ const PROFILES: Readonly<Record<string, Readonly<Record<string, RuleProvenance>>
     garageDepthMm: { ...monmouthshire("¶12, ¶25"), also: [buckinghamshire("§9 Table 11")] },
   },
   "us-residential-advisory": {
-    roomAreaMeasure: irc("R304.1"),
-    "minRoomAreaByUseM2.living": irc("R304.1"),
-    "minRoomAreaByUseM2.dining": irc("R304.1"),
-    "minRoomAreaByUseM2.bedroom": irc("R304.1"),
-    "minRoomShortSideByUseMm.living": irc("R304.2"),
-    "minRoomShortSideByUseMm.dining": irc("R304.2"),
-    "minRoomShortSideByUseMm.bedroom": irc("R304.2"),
-    "minRoomShortSideByUseMm.hall": irc("R311.6"),
-    "minRoomShortSideByUseMm.circulation": irc("R311.6"),
-    "minRoomShortSideByUseMm.entry": irc("R311.6"),
-    wcSideClearanceMm: irc("P2705.1", "read in a trade article, not the ICC text"),
-    stairMaxRiseMm: irc("R311.7.5.1"),
-    stairMinGoingMm: irc("R311.7.5.2"),
-    exitApproachMm: irc(
-      "R311.3",
-      "read verbatim in two state training copies (Indiana DHS, Montana DLI), not the ICC text",
+    roomAreaMeasure: irc(
+      "R304.1",
+      "that R304.1 measures net floor area is a review's reading (the PS5.2 review), not quoted from the clause",
     ),
+    "minRoomAreaByUseM2.living": irc("R304.1", R304_NOTE, "2012"),
+    "minRoomAreaByUseM2.dining": irc("R304.1", R304_NOTE, "2012"),
+    "minRoomAreaByUseM2.bedroom": irc("R304.1", R304_NOTE, "2012"),
+    "minRoomShortSideByUseMm.living": irc("R304.2", R304_NOTE, "2012"),
+    "minRoomShortSideByUseMm.dining": irc("R304.2", R304_NOTE, "2012"),
+    "minRoomShortSideByUseMm.bedroom": irc("R304.2", R304_NOTE, "2012"),
+    "minRoomShortSideByUseMm.hall": irc("R311.6", R311_6_NOTE),
+    "minRoomShortSideByUseMm.circulation": irc("R311.6", R311_6_NOTE),
+    "minRoomShortSideByUseMm.entry": irc("R311.6", R311_6_NOTE),
+    wcSideClearanceMm: irc("P2705.1", P2705_NOTE),
+    stairMaxRiseMm: irc("R311.7.5.1", R311_7_NOTE),
+    stairMinGoingMm: irc("R311.7.5.2", R311_7_NOTE),
+    exitApproachMm: irc("R311.3", R311_3_NOTE),
   },
 };
 

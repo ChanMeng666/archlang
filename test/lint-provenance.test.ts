@@ -81,52 +81,153 @@ describe("rule provenance — the grades", () => {
   });
 
   /**
-   * Each profile number in `src/lint/ruleset.ts` that carries an inline source comment is read
-   * here, its tag (`[V`, `[S`, `[M`) against its row: an `[S]` is `S-secondary`, never `S-full`
-   * or `V`, until the full text is read; a `[V]` is `V`, or `S-full` where the copy read was a
-   * third party's; an `[M]` is `M`; an inline comment with no tag is a `convention`. The profile
-   * and the per-use table a line sits in are read from the block it is in.
+   * Every row against the source comment in `src/lint/ruleset.ts` that documents its number: the
+   * row's grade is the comment's FIRST tag, exactly (`[V` → `V`, `[S-full` → `S-full`, `[S` →
+   * `S-secondary`, `[M` → `M`), and a comment with no tag, or no comment, is a `convention`. So an
+   * `[S]` row can never be graded `S-full` or `V` here without its comment saying so first, and a
+   * comment cannot be raised without its row. A key whose value is `null` is a `convention`
+   * whatever its comment says (a `null` cites no number; the comment's tag is then a profile's).
+   *
+   * Where the comment is, by ruleset:
+   *  - `DEFAULT_RULESET`: the JSDoc block of the field in `interface LintRuleset`; for a per-use
+   *    table's entry, the block's bullet that names the use (`` - `wc` 1.1: … ``).
+   *  - a profile: the key's inline `//` comment, else the `//` block above it (which covers every
+   *    key after it until the next comment), else none.
    */
-  it("every tagged profile line in ruleset.ts maps onto its row's grade", () => {
-    const src = readFileSync(join(ROOT, "src/lint/ruleset.ts"), "utf8");
-    const start = src.indexOf("export const LINT_PROFILES");
-    const end = src.indexOf("export const DEFERRED_PROFILE_NUMBERS");
+  const RULESET_SRC = readFileSync(join(ROOT, "src/lint/ruleset.ts"), "utf8");
+  const gradeOfTag = (text: string): string => {
+    const t = /\[(S-full|V|S|M)(?![\w-])/.exec(text)?.[1];
+    return t === undefined ? "convention" : t === "S" ? "S-secondary" : t;
+  };
+
+  it("every DEFAULT_RULESET row's grade is the first tag of its field's JSDoc in ruleset.ts", () => {
+    const start = RULESET_SRC.indexOf("export interface LintRuleset {");
+    const end = RULESET_SRC.indexOf("\n}\n", start);
+    expect(start).toBeGreaterThan(0);
+    expect(end).toBeGreaterThan(start);
+    const docs = new Map<string, string>();
+    let doc: string[] = [];
+    let inDoc = false;
+    for (const line of RULESET_SRC.slice(start, end).split("\n")) {
+      if (/^\s*\/\*\*/.test(line)) {
+        doc = [line];
+        inDoc = !line.includes("*/");
+        continue;
+      }
+      if (inDoc) {
+        doc.push(line);
+        if (line.includes("*/")) inDoc = false;
+        continue;
+      }
+      const field = /^ {2}(\w+)\??:/.exec(line);
+      if (field) {
+        docs.set(field[1]!, doc.join("\n"));
+        doc = [];
+      }
+    }
+    // The bullet of a per-use table's JSDoc that names `use`, with its continuation lines.
+    const bullet = (block: string, use: string): string | undefined => {
+      const lines = block.split("\n");
+      const i = lines.findIndex((l) => l.includes(`- \`${use}\``));
+      if (i < 0) return undefined;
+      const out = [lines[i]!];
+      for (const l of lines.slice(i + 1)) {
+        if (!/^\s*\*\s{4,}\S/.test(l)) break;
+        out.push(l);
+      }
+      return out.join("\n");
+    };
+    let checked = 0;
+    for (const key of rulesetKeys(DEFAULT_RULESET)) {
+      const [field, use] = key.split(".") as [string, string | undefined];
+      const block = docs.get(field);
+      expect(block, `${field} has a JSDoc block`).toBeDefined();
+      const at = (DEFAULT_RULESET as unknown as Record<string, unknown>)[field];
+      const value = use === undefined ? at : (at as Record<string, unknown>)[use];
+      let expected: string;
+      if (value === null) expected = "convention";
+      else if (use === undefined) expected = gradeOfTag(block!);
+      else {
+        const text = bullet(block!, use);
+        expect(text, `${key}: the ${field} JSDoc has a bullet for \`${use}\``).toBeDefined();
+        expected = gradeOfTag(text!);
+      }
+      expect(RULE_PROVENANCE.defaults[key]!.verification, `default ${key}`).toBe(expected);
+      checked++;
+    }
+    expect(checked).toBe(Object.keys(RULE_PROVENANCE.defaults).length);
+  });
+
+  it("every profile row's grade is the first tag of its source comment in ruleset.ts", () => {
+    const start = RULESET_SRC.indexOf("export const LINT_PROFILES");
+    const end = RULESET_SRC.indexOf("export const DEFERRED_PROFILE_NUMBERS");
     expect(start).toBeGreaterThan(0);
     expect(end).toBeGreaterThan(start);
     let profile: string | undefined;
     let table: string | undefined;
-    let checked = 0;
-    for (const line of src.slice(start, end).split("\n")) {
+    let pending: string | undefined;
+    let afterKey = false;
+    const seen: string[] = [];
+    const check = (key: string, comment: string | undefined) => {
+      expect(profile, `${key} sits in a profile`).toBeDefined();
+      const row = RULE_PROVENANCE.profiles[profile!]?.[key];
+      expect(row, `${profile} ${key}`).toBeDefined();
+      expect(row!.verification, `${profile} ${key}: "${comment ?? ""}"`).toBe(gradeOfTag(comment ?? ""));
+      seen.push(`${profile} ${key}`);
+    };
+    for (const line of RULESET_SRC.slice(start, end).split("\n")) {
+      const oneLine = /^ {2}"([a-z-]+)": \{ (\w+): [^}]*\},\s*$/.exec(line);
+      if (oneLine) {
+        profile = oneLine[1];
+        check(oneLine[2]!, undefined);
+        profile = undefined;
+        continue;
+      }
       const head = /^ {2}"([a-z-]+)": \{\s*$/.exec(line);
       if (head) {
-        profile = head[1];
-        table = undefined;
+        [profile, table, pending, afterKey] = [head[1], undefined, undefined, false];
+        continue;
+      }
+      if (/^ {2}\},\s*$/.test(line)) {
+        [profile, table, pending] = [undefined, undefined, undefined];
+        continue;
+      }
+      const comment = /^\s+\/\/ ?(.*)$/.exec(line);
+      if (comment && profile !== undefined) {
+        pending = afterKey || pending === undefined ? comment[1] : `${pending} ${comment[1]}`;
+        afterKey = false;
         continue;
       }
       const open = /^ {4}(\w+): \{\s*$/.exec(line);
       if (open) {
-        table = open[1];
+        [table, pending] = [open[1], undefined];
         continue;
       }
       if (/^ {4}\},\s*$/.test(line)) {
-        table = undefined;
+        [table, pending] = [undefined, undefined];
         continue;
       }
-      const entry = /^ +(\w+): [^/]+,\s*\/\/(.*)$/.exec(line);
-      if (!entry || profile === undefined) continue;
+      // `key: value, // comment`, split at the `//` (no backtracking regex over the line).
+      const slash = line.indexOf("//");
+      const code = slash < 0 ? line : line.slice(0, slash);
+      const entry = /^ +(\w+): \S/.exec(code);
+      if (!entry || !code.trimEnd().endsWith(",") || profile === undefined) continue;
       const key = table !== undefined ? `${table}.${entry[1]}` : entry[1]!;
-      const row = RULE_PROVENANCE.profiles[profile]?.[key];
-      expect(row, `${profile} ${key}`).toBeDefined();
-      const tag = /\[([VSM])\b/.exec(entry[2]!)?.[1];
-      const allowed =
-        tag === "S" ? ["S-secondary"] : tag === "V" ? ["V", "S-full"] : tag === "M" ? ["M"] : ["convention"];
-      expect(allowed, `${profile} ${key} is tagged ${tag ?? "nothing"}, graded ${row!.verification}`).toContain(
-        row!.verification,
-      );
-      checked++;
+      if (slash >= 0) {
+        check(key, line.slice(slash + 2));
+        pending = undefined;
+      } else check(key, pending);
+      afterKey = true;
     }
-    // Every number of the three advisory-code profiles carries a tag, and a few others do.
-    expect(checked).toBeGreaterThan(40);
+    // Every profile row was read, once: none is graded without a source line to hold it to.
+    const rows = Object.entries(RULE_PROVENANCE.profiles).flatMap(([p, t]) => Object.keys(t).map((k) => `${p} ${k}`));
+    expect([...seen].sort()).toEqual(rows.sort());
+  });
+
+  it("every row whose value is null says in its note what null means for that key", () => {
+    for (const profile of [undefined, ...LINT_PROFILE_NAMES])
+      for (const row of effectiveRuleset(profile).rules)
+        if (row.value === null) expect(row.note, `${profile ?? "default"} ${row.key}`).toBeTruthy();
   });
 
   it("a key's units come from its field name, and every numeric default has one", () => {
@@ -272,7 +373,23 @@ describe("lint --rules", () => {
     expect(lines.length).toBe(effectiveRuleset().rules.length + 1);
     expect(r.stdout).toContain("  minRoomAreaByUseM2.wc = 1.1 m2 [S-full, default] · GB 50096-2011");
     expect(r.stdout).toContain("  wallGapMm = 100 mm [convention, default]\n");
-    expect(r.stdout).toContain("  minDoubleBedroomAreaM2 = off [convention, default]\n");
+    expect(r.stdout).toContain(
+      "  minDoubleBedroomAreaM2 = null (off by default; a profile sets it) [convention, default]\n",
+    );
+  });
+
+  it("a null value is printed with what it means for that key, never as a bare 'off'", async () => {
+    for (const profile of [undefined, ...LINT_PROFILE_NAMES]) {
+      const r = await runArch(["lint", "--rules", ...(profile ? ["--profile", profile] : [])]);
+      for (const row of effectiveRuleset(profile).rules.filter((x) => x.value === null))
+        expect(r.stdout, `${profile ?? "default"} ${row.key}`).toContain(`  ${row.key} = null (${row.note}) [`);
+      expect(r.stdout).not.toMatch(/ = off\b/);
+    }
+    const text = (await runArch(["lint", "--rules"])).stdout;
+    // `null` here means "the same as exitApproachMm", not "off" (src/lint/ruleset.ts).
+    expect(text).toContain("  exitApproachPullMm = null (the same as exitApproachMm) [convention, default]\n");
+    expect(text).toContain("  stairMaxPitchRatio = null (no pitch cap by default; a profile sets one) [");
+    expect(text).toContain("  minRoomAreaByUseM2.storage = null (exempt, no floor: ");
   });
 
   it("--quiet (stderr only) leaves the list, which is the result, on stdout", async () => {
@@ -301,26 +418,36 @@ describe("lint --rules", () => {
   });
 });
 
-/** Every `.ts` file under `src/`, as a forward-slash path from the repository root. */
-function srcFiles(dir = join(ROOT, "src")): string[] {
+/** Every source file under `dir` (`.ts`, `.mts`, `.js`, `.mjs`, `.vue`), as a forward-slash path from the repository root. */
+function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((f) => {
     const p = join(dir, f);
-    if (statSync(p).isDirectory()) return srcFiles(p);
-    return f.endsWith(".ts") ? [relative(ROOT, p).replace(/\\/g, "/")] : [];
+    if (statSync(p).isDirectory()) return f === "node_modules" || f === "dist" ? [] : sourceFiles(p);
+    return /\.(?:m?ts|m?js|vue)$/.test(f) ? [relative(ROOT, p).replace(/\\/g, "/")] : [];
   });
 }
+
+/** A static (`from "…provenance.js"`) or dynamic (`import("…provenance.js")`) import of the table. */
+const IMPORTS_PROVENANCE = /(?:\bfrom\s*|\bimport\s*\(\s*)["'`][^"'`]*\bprovenance(?:\.[mc]?[jt]s)?["'`]/;
 
 describe("rule provenance — off the compile path", () => {
   // The table is text the browser bundle must not carry (the playground's startup budget), and
   // lint() must not learn it (its return value is pinned by the byte-identity laws). Only the CLI
   // imports it.
-  it("no module outside src/cli/ imports src/lint/provenance.ts", () => {
-    const files = srcFiles();
-    expect(files.length).toBeGreaterThan(100);
-    const importers = files.filter(
-      (f) =>
-        f !== "src/lint/provenance.ts" &&
-        /from "[./]*(?:lint\/)?provenance\.js"/.test(readFileSync(join(ROOT, f), "utf8")),
+  it("the import matcher sees both forms", () => {
+    expect(IMPORTS_PROVENANCE.test('import { x } from "../lint/provenance.js";')).toBe(true);
+    expect(IMPORTS_PROVENANCE.test('const m = await import("./lint/provenance.js");')).toBe(true);
+    expect(IMPORTS_PROVENANCE.test('import("archlang/src/lint/provenance")')).toBe(true);
+    expect(IMPORTS_PROVENANCE.test('import { x } from "../lint/ruleset.js";')).toBe(false);
+  });
+
+  it("no module of src/ outside src/cli/, and none of playground/src/, imports src/lint/provenance.ts", () => {
+    const core = sourceFiles(join(ROOT, "src"));
+    const playground = sourceFiles(join(ROOT, "playground", "src"));
+    expect(core.length).toBeGreaterThan(100);
+    expect(playground.length).toBeGreaterThan(10);
+    const importers = [...core, ...playground].filter(
+      (f) => f !== "src/lint/provenance.ts" && IMPORTS_PROVENANCE.test(readFileSync(join(ROOT, f), "utf8")),
     );
     expect(importers).toEqual(["src/cli/commands-analyze.ts"]);
   });

@@ -1245,12 +1245,18 @@ function cmdLintRules(args: Args, io: CliIo): number {
     return 0;
   }
   // The list is the result, so it goes to stdout, and `--quiet` (stderr only) leaves it.
-  const shown = (v: EffectiveRule["value"]): string =>
-    typeof v === "number" ? fmtWritten(v) : v === null ? "off" : String(v);
+  // A `null` means something different per key (off, exempt, "the same as exitApproachMm"), and
+  // its row's note says which (every null row has one), so the line prints the note beside it.
+  const shown = (row: EffectiveRule): string =>
+    typeof row.value === "number"
+      ? fmtWritten(row.value)
+      : row.value === null
+        ? `null (${row.note ?? "no value"})`
+        : String(row.value);
   io.stdout.write(`lint rules: ${r.profile ?? "default ruleset"} (${r.advisory})\n`);
   for (const row of r.rules) {
     const unit = row.units === "mm" || row.units === "m2" ? row.units : null;
-    const value = `${shown(row.value)}${unit !== null && row.value !== null ? ` ${unit}` : ""}`;
+    const value = `${shown(row)}${unit !== null && row.value !== null ? ` ${unit}` : ""}`;
     const where = row.document !== null ? ` · ${row.document}${row.clause !== null ? ` ${row.clause}` : ""}` : "";
     const edition = row.edition !== null ? ` (${row.edition})` : "";
     io.stdout.write(`  ${row.key} = ${value} [${row.verification}, ${row.from}]${where}${edition}\n`);
