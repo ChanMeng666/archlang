@@ -226,6 +226,15 @@ Re-export `PLAYGROUND_ORIGIN` (`src/cli/share-codec.mjs`) from `scripts/gen-perm
 for the hard-coded copies at `docs-site/sync-docs.mjs:25` and `playground/scripts/gen-static.mjs:73`,
 after C6 merges (it edits those build scripts).
 
+### 3.3 · Adopt the two biome 2.6 rules switched off by the upgrade — `todo`
+
+The 2.6 upgrade (RM0.5) switched these off in `biome.jsonc` so the bump changes no behaviour; adopt
+each deliberately, one PR each, proving the fix is behaviour-neutral: `useMathMinMax` (34 warnings;
+`Math.min`/`max` differ from the ternary on NaN and -0) and `useDomNodeTextContent` (2 warnings;
+`innerText` is not `textContent`). `usePlaywrightValidDescribeCallback` (255 errors) stays off for
+good: a false positive on our own `describe()`. Biome 2.6 also formats Markdown and YAML; both stay
+excluded in `files.includes`.
+
 ## Found while redrawing the showcase
 
 Five things the twelve new examples ran into. None is a regression and none blocked an example from
@@ -1640,15 +1649,7 @@ Lawn, paving and deck areas are not built in 3D, so a garden is bare ground in t
 `floorFinish` reads `uses` only; the label is deliberately not read. Decide whether a label should
 ever pick a finish before building anything.
 
-### VA.4 · `--theme` on the CLI: done by #695, waiting to be archived — `note`
-
-`rendered` is reached only by `theme rendered` in the source or `CompileOptions.theme`. A flag is a
-manifest row (`src/manifest.ts`) and regenerates `docs/cli-reference.md`. **Gate:** the default output
-byte-identical without the flag.
-**Done by PR #695** (card RM8.4, `docs/plans/product-roadmap/cards.md`), merged 2026-11-11T01:44Z
-as `6683c788`: `--theme <name>` on `compile`, `batch`, `md`, `preview` and `watch`. The entry is closed
-and waits to be archived to `archlang-lab` with `scripts/backlog-archive.mjs` (with O.10 and H.1). The
-`rendered` example pages and gallery are RM8.4b.
+- VA.4 · `--theme` on the CLI — done by #695 → archived (lab)
 
 ### VA.5 · Shadows in the replay (measure first) — `todo`
 

@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     // Generated files (edit the source + `npm run gen:*` instead), goldens, and
@@ -40,7 +40,11 @@
       "!docs-site/.vitepress/cache",
       "!docs-site/.vitepress/theme/shims.d.ts",
       "!**/*.svg",
-      "!**/*.vue"
+      "!**/*.vue",
+      // Markdown and YAML were never formatted or linted; biome 2.6 started to, so keep them out.
+      "!**/*.md",
+      "!**/*.yml",
+      "!**/*.yaml"
     ]
   },
   "formatter": {
@@ -69,7 +73,19 @@
       // `any` is confined to the untyped optional-dep seam (pdfkit).
       "suspicious": { "noExplicitAny": "off" },
       // Existing site CSS uses !important on purpose in a few overrides.
-      "complexity": { "noImportantStyles": "off" },
+      "complexity": {
+        "noImportantStyles": "off",
+        // New in biome 2.6, off until adopted deliberately (Math.min/max differ from the
+        // ternary on NaN and -0); see backlog 3.3.
+        "useMathMinMax": "off"
+      },
+      "correctness": {
+        // New in biome 2.6; a permanent false positive on our own `describe()`.
+        "usePlaywrightValidDescribeCallback": "off"
+      },
+      // New in biome 2.6, off until adopted deliberately (`innerText` is not `textContent`);
+      // see backlog 3.3.
+      "performance": { "useDomNodeTextContent": "off" },
       // Deferred: playground/index.html button types get fixed in the playground
       // TypeScript migration; brand SVGs are art assets, not documents.
       "a11y": "off"

@@ -268,7 +268,7 @@ describe("lint — W_NO_ENTRANCE asks the geometric question, not the wall's cat
 });
 
 describe("lint — shipped examples", () => {
-  it("the canonical studio is architecturally sound (no warnings)", () => {
+  it("the canonical studio has no default-profile warnings", () => {
     expect(lint(example("studio.arch"))).toEqual([]);
   });
 
