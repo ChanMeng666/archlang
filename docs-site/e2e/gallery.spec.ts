@@ -87,3 +87,43 @@ test.describe("the agent gallery", () => {
     expect(overflow).toBe(0);
   });
 });
+
+test.describe("the rendered colour scheme on the gallery", () => {
+  test("requests no rendered sheet before the box is ticked, exactly one after, and swaps the image", async ({
+    page,
+  }) => {
+    const rendered: string[] = [];
+    page.on("request", (req) => {
+      if (/\.rendered\.svg$/.test(new URL(req.url()).pathname)) rendered.push(req.url());
+    });
+    await page.goto("/gallery");
+    const plan = page.locator(".agent-plan").first();
+    await plan.scrollIntoViewIfNeeded();
+    const img = plan.locator("img").first();
+    await expect(img).toBeVisible();
+    const plainSrc = await img.getAttribute("src");
+    expect(plainSrc).not.toContain(".rendered.");
+    await page.waitForLoadState("networkidle");
+    expect(rendered, "no rendered sheet is fetched before the box is ticked").toEqual([]);
+
+    const sheets = await plan.locator("img").count();
+    // Only the first plan's first sheet is on screen, so only it loads (lazy); a plan with more
+    // storeys than that would load more, which this first entry (a single sheet) does not.
+    expect(sheets).toBe(1);
+    await plan.locator(".agent-plan-theme input").check();
+    await expect(img).toHaveAttribute("src", /\.rendered\.svg$/);
+    await expect.poll(() => rendered.length).toBe(1);
+    await page.waitForLoadState("networkidle");
+    expect(rendered, "exactly one rendered sheet is fetched after ticking").toHaveLength(1);
+  });
+
+  test("the checkbox's row does not move the bar-less layout at phone width", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/gallery");
+    const row = page.locator(".agent-plan-theme").first();
+    const reserved = (await row.boundingBox())!.height;
+    expect(reserved).toBeGreaterThanOrEqual(24);
+    await expect(row.locator("input")).toBeVisible();
+    expect((await row.boundingBox())!.height, "the row keeps its height once the box appears").toBe(reserved);
+  });
+});
