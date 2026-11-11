@@ -1,5 +1,5 @@
 {
-  "_reason": "2026-11-10 EH2.14: rows gain the drawing's work counters joinerySplitTests (joinery split-scan candidate pairs) and labelRelocations (label places scored), from compileWork(); every other count unchanged",
+  "_reason": "RM8.1d: the joinery's split scan also tests edge pairs within SNAP_MM (0.015 mm) of each other and of a grid-cell line, which is needed to find a crossing one side of a sub-snap offset would otherwise miss; corpus total +0.45%, star bound 4,715/5,120",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -71,7 +71,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 46,
       "navCells": 15000,
-      "joinerySplitTests": 293,
+      "joinerySplitTests": 295,
       "labelRelocations": 88
     },
     "examples/courtyard-house.arch": {
@@ -81,7 +81,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 96,
       "navCells": 18400,
-      "joinerySplitTests": 702,
+      "joinerySplitTests": 712,
       "labelRelocations": 136
     },
     "examples/furnished-flat.arch": {
@@ -141,7 +141,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 206,
       "navCells": 33762,
-      "joinerySplitTests": 1365,
+      "joinerySplitTests": 1374,
       "labelRelocations": 473
     },
     "examples/imports.arch": {
@@ -171,7 +171,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 14,
       "navCells": 4875,
-      "joinerySplitTests": 180,
+      "joinerySplitTests": 202,
       "labelRelocations": 58
     },
     "examples/library.arch": {
@@ -181,7 +181,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 110,
       "navCells": 160000,
-      "joinerySplitTests": 988,
+      "joinerySplitTests": 995,
       "labelRelocations": 99
     },
     "examples/materials.arch": {
@@ -191,7 +191,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 44,
       "navCells": 12800,
-      "joinerySplitTests": 259,
+      "joinerySplitTests": 260,
       "labelRelocations": 100
     },
     "examples/museum-wing.arch": {
@@ -261,7 +261,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 32,
       "navCells": 6000,
-      "joinerySplitTests": 289,
+      "joinerySplitTests": 301,
       "labelRelocations": 36
     },
     "examples/remodel.arch": {
@@ -281,7 +281,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 11,
       "navCells": 5400,
-      "joinerySplitTests": 105,
+      "joinerySplitTests": 106,
       "labelRelocations": 0
     },
     "examples/studio.arch": {
@@ -301,7 +301,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 232,
       "navCells": 21312,
-      "joinerySplitTests": 1067,
+      "joinerySplitTests": 1068,
       "labelRelocations": 44
     },
     "examples/themed.arch": {
@@ -321,7 +321,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 5,
       "navCells": 1960,
-      "joinerySplitTests": 204,
+      "joinerySplitTests": 233,
       "labelRelocations": 0
     },
     "examples/townhouse.arch": {
@@ -331,7 +331,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 59,
       "navCells": 16692,
-      "joinerySplitTests": 472,
+      "joinerySplitTests": 473,
       "labelRelocations": 144
     },
     "examples/transit-hall.arch": {
@@ -341,7 +341,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 125,
       "navCells": 250500,
-      "joinerySplitTests": 629,
+      "joinerySplitTests": 637,
       "labelRelocations": 84
     },
     "examples/turning-stair.arch": {
@@ -351,7 +351,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 8,
       "navCells": 6080,
-      "joinerySplitTests": 149,
+      "joinerySplitTests": 154,
       "labelRelocations": 0
     },
     "examples/two-bed.arch": {
@@ -361,7 +361,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 45,
       "navCells": 8000,
-      "joinerySplitTests": 310,
+      "joinerySplitTests": 311,
       "labelRelocations": 57
     },
     "examples/two-storey.arch": {
@@ -371,7 +371,7 @@
       "leafDoorPairs": 0,
       "boundaryRunTests": 28,
       "navCells": 11200,
-      "joinerySplitTests": 241,
+      "joinerySplitTests": 249,
       "labelRelocations": 179
     },
     "bench:BALANCED": {
