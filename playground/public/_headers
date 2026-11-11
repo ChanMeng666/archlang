@@ -88,10 +88,10 @@
 # If index.html's inline script changes, its hash changes: SHA-256 of the text between
 # <script> and </script>, base64.
 /
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-zfNPC5WmwYdUMhFa4qsZuHjS0JQkqrb25lHXHg4gxsg='; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-HhCeic+OjGk30+D7ysWzn4ddg3FhFRx9klsXYYgY1Dk='; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
 
 /index.html
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-zfNPC5WmwYdUMhFa4qsZuHjS0JQkqrb25lHXHg4gxsg='; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'sha256-HhCeic+OjGk30+D7ysWzn4ddg3FhFRx9klsXYYgY1Dk='; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
 
 /embed.html
   Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self'; worker-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'

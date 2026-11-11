@@ -9,7 +9,7 @@ The `/loop` driver takes the topmost `todo` row and opens that one entry through
 |---|---|---|---|---|
 | 3.1 | Nightly is red — and NOT for the reason this entry said (issue #66) | `todo` | Wave 3 — hygiene, freshness, and the missing example | [↗](backlog.md#31--nightly-is-red--and-not-for-the-reason-this-entry-said-issue-66--todo) |
 | 3.2 | One playground origin constant | `todo` | Wave 3 — hygiene, freshness, and the missing example | [↗](backlog.md#32--one-playground-origin-constant--todo) |
-| 3.3 | Adopt the biome 2.6 rules turned off by the upgrade | `todo` | Wave 3 — hygiene, freshness, and the missing example | [↗](backlog.md#33--adopt-the-biome-26-rules-turned-off-by-the-upgrade--todo) |
+| 3.3 | Adopt the two biome 2.6 rules switched off by the upgrade | `todo` | Wave 3 — hygiene, freshness, and the missing example | [↗](backlog.md#33--adopt-the-two-biome-26-rules-switched-off-by-the-upgrade--todo) |
 | S.3 | `strip` cannot nest inside `zone`, so strip rooms fall out of the schedule | `todo` | Found while redrawing the showcase | [↗](backlog.md#s3--strip-cannot-nest-inside-zone-so-strip-rooms-fall-out-of-the-schedule--todo) |
 | G.10 | A `place`d plan does not round-trip through Plan JSON (the projection half is done) | `todo` | Found while burning down the gallery items (2026-09-02) | [↗](backlog.md#g10--a-placed-plan-does-not-round-trip-through-plan-json-the-projection-half-is-done--todo) |
 | G.8 | A per-category `style` | `todo` | Found while burning down the gallery items (2026-09-02) | [↗](backlog.md#g8--a-per-category-style--todo) |

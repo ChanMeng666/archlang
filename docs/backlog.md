@@ -226,16 +226,14 @@ Re-export `PLAYGROUND_ORIGIN` (`src/cli/share-codec.mjs`) from `scripts/gen-perm
 for the hard-coded copies at `docs-site/sync-docs.mjs:25` and `playground/scripts/gen-static.mjs:73`,
 after C6 merges (it edits those build scripts).
 
-### 3.3 · Adopt the biome 2.6 rules turned off by the upgrade — `todo`
+### 3.3 · Adopt the two biome 2.6 rules switched off by the upgrade — `todo`
 
 The 2.6 upgrade (RM0.5) switched these off in `biome.jsonc` so the bump changes no behaviour; adopt
-each deliberately, one PR per rule, proving the fix is behaviour-neutral: `useMathMinMax`
-(`Math.min`/`max` differ from the ternary on NaN and -0), `noDescendingSpecificity` (reordering CSS
-changes rendering), `useDomNodeTextContent` (`innerText` is not `textContent`),
-`noTemplateCurlyInString`, `useOptionalChain`, `useArrowFunction`, `noPrototypeBuiltins`
-(`Object.hasOwn` needs ES2022), and `usePlaywrightValidDescribeCallback` (a false positive on our own
-`describe()`; keep off). Biome 2.6 also formats Markdown and YAML; both stay excluded in
-`files.includes`.
+each deliberately, one PR each, proving the fix is behaviour-neutral: `useMathMinMax` (34 warnings;
+`Math.min`/`max` differ from the ternary on NaN and -0) and `useDomNodeTextContent` (2 warnings;
+`innerText` is not `textContent`). `usePlaywrightValidDescribeCallback` (255 errors) stays off for
+good: a false positive on our own `describe()`. Biome 2.6 also formats Markdown and YAML; both stay
+excluded in `files.includes`.
 
 ## Found while redrawing the showcase
 
