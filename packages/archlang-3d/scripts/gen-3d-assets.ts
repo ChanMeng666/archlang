@@ -4,7 +4,8 @@
  * hand. For each plan it writes into `docs-site/public/3d/` (or `--out`):
  *
  *   <name>.poster.webp   1600×900, the settled iso end frame (`__seek(1)`), light theme, the canvas
- *                        alone (no page, caption or strip), ≤ 200 KB
+ *                        alone (no page, caption or strip), ≤ 200 KB; 3 × 3 samples a pixel
+ *                        (`POSTER.supersample`; the MP4 2 × 2)
  *   <name>.poster.png    the same frame, lossless: the fallback, and the reference the freshness
  *                        check compares a re-render with
  *   <name>.poster-full.* the assembled end frame too, when the poster shows one storey (`PLANS`)
@@ -115,8 +116,14 @@ export const PLANS: readonly PlanSpec[] = [
   { name: "library", path: "examples/library.arch", video: false },
 ];
 
-export const POSTER = { width: 1600, height: 900, t: 1, theme: "light" as const };
-export const VIDEO = { width: 1280, height: 720, seconds: 10, fps: 30, crfs: [24, 27, 30, 33, 36] };
+/**
+ * `supersample` (product-roadmap card RM8.2, `withSupersample`): each poster pixel is the mean of
+ * 3 × 3 samples and each video pixel of 2 × 2, so edges are anti-aliased; the live 3D preview and
+ * the key-frame baseline draw one sample. The H.264 encode softens a video anyway, and a video is
+ * 300 frames.
+ */
+export const POSTER = { width: 1600, height: 900, t: 1, theme: "light" as const, supersample: 3 };
+export const VIDEO = { width: 1280, height: 720, seconds: 10, fps: 30, crfs: [24, 27, 30, 33, 36], supersample: 2 };
 /** The replay length the poster's HTML carries (it draws `t = 1`, so it changes no pixel). */
 const POSTER_SECONDS = VIDEO.seconds;
 export const BUDGET = { webp: 200_000, mp4: 1_500_000, glb: 1_000_000 };
@@ -139,6 +146,8 @@ export interface PosterEntry {
   height: number;
   t: number;
   theme: "light";
+  /** Samples per pixel along each axis (`POSTER.supersample`); absent in an entry from before: 1. */
+  supersample?: number;
   frameSha256: string;
   webpQuality: number;
   /** Where it was rendered: the check holds a re-render here to the exact hash. */
@@ -158,7 +167,8 @@ export interface AssetEntry {
   source: { path: string; sha256: string; external?: true; imports?: Array<{ path: string; sha256: string }> };
   /** `poster` (the view `PLANS` names), then, when that is one storey, `poster-full` (all of them). */
   posters: PosterEntry[];
-  video?: { width: number; height: number; seconds: number; fps: number; crf: number };
+  /** `supersample`: as `VIDEO.supersample`; absent in an entry from before: 1. */
+  video?: { width: number; height: number; seconds: number; fps: number; crf: number; supersample?: number };
   /**
    * `sha256`: the file's; `contentSha256`: the same Mesh3D written with {@link CONTENT_GENERATOR},
    * which a version bump leaves alone.
@@ -369,6 +379,7 @@ async function writeVideo(mesh: Mesh3D, title: string, svg: string, out: string)
       seconds: VIDEO.seconds,
       mp4: master,
       crf: 0,
+      supersample: VIDEO.supersample,
     });
     for (const crf of VIDEO.crfs) {
       await ffmpeg([
@@ -451,6 +462,7 @@ export async function generateOne(
       height: POSTER.height,
       t: POSTER.t,
       webp: { maxBytes: BUDGET.webp, qualities: WEBP_QUALITIES },
+      supersample: POSTER.supersample,
     });
     if (!still.webp || still.webp.bytes.byteLength > BUDGET.webp)
       throw new Error(`${name}: the WebP ${file} is over ${BUDGET.webp} bytes at every quality tried`);
@@ -463,7 +475,8 @@ export async function generateOne(
         x.width === POSTER.width &&
         x.height === POSTER.height &&
         x.t === POSTER.t &&
-        x.theme === POSTER.theme,
+        x.theme === POSTER.theme &&
+        (x.supersample ?? 1) === POSTER.supersample,
     );
     const keptWebp = kept(`${name}.${file}.webp`);
     const keptPng = kept(`${name}.${file}.png`);
@@ -494,7 +507,8 @@ export async function generateOne(
       was?.width === VIDEO.width &&
       was.height === VIDEO.height &&
       was.seconds === VIDEO.seconds &&
-      was.fps === VIDEO.fps;
+      was.fps === VIDEO.fps &&
+      (was.supersample ?? 1) === VIDEO.supersample;
     if (!opts.videos && sourceSame && sameShape && was && keptMp4) {
       files.push(keptMp4);
       video = was;
@@ -502,7 +516,14 @@ export async function generateOne(
       const crf = await writeVideo(p.mesh, p.title, p.svg, join(out, file));
       files.push({ path: file, bytes: statSync(join(out, file)).size, ...now });
       written.push(file);
-      video = { width: VIDEO.width, height: VIDEO.height, seconds: VIDEO.seconds, fps: VIDEO.fps, crf };
+      video = {
+        width: VIDEO.width,
+        height: VIDEO.height,
+        seconds: VIDEO.seconds,
+        fps: VIDEO.fps,
+        crf,
+        supersample: VIDEO.supersample,
+      };
     }
   }
 
@@ -704,6 +725,7 @@ export async function checkAssets(dir: string, opts: { render: boolean }): Promi
         t: poster.t,
         reference: new Uint8Array(readFileSync(png)),
         threshold: TOLERANCE.threshold,
+        supersample: poster.supersample ?? 1,
       });
       const d = still.diff;
       const fraction = d ? d.differing / d.total : 1;
