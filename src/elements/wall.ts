@@ -22,6 +22,8 @@ import { enumList, WALL_STATUSES, type WallStatus } from "../grammar/tokens.js";
 export const wall: ElementDef = {
   kind: "wall",
   keyword: "wall",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A wall: a poché-filled polyline with crisp face lines; hosts doors/windows.",
   params: [
     { name: "category", type: "name", doc: "Category, e.g. exterior or partition (also a door/window host)." },

@@ -35,6 +35,7 @@ import { dirname, join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, ERROR_CATALOG, lint } from "../src/index.js";
 import type { ElementDef, ParseCtx, ResolveCtx } from "../src/index.js";
+import { BUILTIN_DEFS } from "../src/elements/defs.js";
 import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
 import { examples, libNames, REPO_ROOT } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
@@ -240,6 +241,38 @@ suite("W_SET_VALUE_WORD (PS0.16)", () => {
     expect(raised(plan("  set door(hinge: right, swing: out)"))).toEqual([]);
     expect(raised(plan('  set room(label: "X")'))).toEqual([]);
     expect(raised(plan("  let W = 900\n  set door(width: W + 0)"))).toEqual([]);
+  });
+
+  // RM1.4 review round 2 (S1): every built-in declares `setWords`, `{}` when its resolver reads no
+  // bare word from `ctx.defaults` (only the door's reads any), so these are reported again.
+  it.each([
+    "set window(width: W)",
+    "set opening(width: W)",
+    "set wall(material: brick)",
+    "set window(kind: casement)",
+    "set furniture(colour: red)",
+  ])("warns on a built-in kind that reads no bare word: %s", (stmt) => {
+    expect(raised(plan(`  ${stmt}`))).toEqual(["W_SET_VALUE_WORD"]);
+  });
+
+  it("a word the door reads is quiet and changes the drawing; a word the window does not read warns and changes nothing", () => {
+    const body = [
+      "  wall id=w exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }",
+      '  room id=r at (0,0) size 6000x4000 label "Living" uses living',
+      "  door at (1000,4000) width 900 wall w",
+      "  window at (3000,0) width 1500 wall w",
+    ].join("\n");
+    const svg = (src: string): string => compile(src, { noCache: true }).svg;
+    const reads = plan(`  set door(hinge: right)\n${body}`);
+    const unread = plan(`  set window(kind: fixed)\n${body}`);
+    expect(raised(reads)).toEqual([]);
+    expect(svg(reads)).not.toBe(svg(plan(body)));
+    expect(raised(unread)).toEqual(["W_SET_VALUE_WORD"]);
+    expect(svg(unread)).toBe(svg(plan(body)));
+  });
+
+  it("every built-in element declares setWords (only a plugin kind is exempt)", () => {
+    expect(BUILTIN_DEFS.filter((d) => d.setWords === undefined).map((d) => d.kind)).toEqual([]);
   });
 
   it("names the word a key reads when the written one is it in another case (hinge: Left)", () => {

@@ -83,6 +83,8 @@ function eatFlushOpt(ctx: ParseCtx): { flush?: true; flushSpan?: Span } {
 export const furniture: ElementDef = {
   kind: "furniture",
   keyword: "furniture",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A furniture item: an outlined rectangle with an optional label.",
   params: [
     { name: "category", type: "name", doc: "Furniture category, e.g. bed or sofa." },

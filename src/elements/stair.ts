@@ -340,6 +340,8 @@ function resolveBlock(n: StairNode, ctx: ResolveCtx): RStair {
 export const stair: ElementDef = {
   kind: "stair",
   keyword: "stair",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A straight flight of stairs: treads, a break line and an UP/DN direction arrow. Or one turning stair, written `stair dir up width 1000 { flight … landing … flight … }`: each `flight` and `landing` takes its own `at` and `size`, in climbing order on every storey, and each touches the next. A quarter-turn landing `width` × `width` may take `winders <n>` (2–8): tapered steps fanning from its inner corner instead of a level landing.",
   params: [
     {

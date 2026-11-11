@@ -594,7 +594,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
         taste: z
           .string()
           .optional()
-          .describe('Taste profile that ranks `next`\'s last tier (for example "generic"); it never fails the plan.'),
+          .describe('Taste profile that ranks `next`\'s taste tier (for example "generic"); it never fails the plan.'),
       },
     },
     hashingSource(async ({ source, strict, graph, intent, profile, taste: tasteProfile }) => {

@@ -299,7 +299,9 @@ export interface ElementDef {
   setRefuses?: Readonly<Record<string, string>>;
   /** The bare words `set <kind>(key: word)` reads, by key: the defaults the element applies.
    *  A bare word for any other key, or outside its list, is read as text and does nothing, and
-   *  the parser says so (`W_SET_VALUE_WORD`). Absent: the kind reads no bare word. */
+   *  the parser says so (`W_SET_VALUE_WORD`). Every built-in declares it (`{}` when its resolver
+   *  reads no bare word from `ctx.defaults`). Absent: a plugin kind, which may read any word, so
+   *  its bare words are not checked. */
   setWords?: Readonly<Record<string, readonly string[]>>;
   /** One-line summary of what the element draws (for hover). */
   doc?: string;

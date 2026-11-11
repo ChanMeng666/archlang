@@ -1818,9 +1818,10 @@ class Parser {
    * `W_SET_VALUE_WORD` (plan-soundness PS0.16, ruled RM-D6: a warning in 1.x, an error at 2.0): a
    * bare word that {@link parseSetValue} took as text where the kind reads no such word, so the
    * rule does nothing (`set door(width: W)` is the text "W", never the value of `W`). The words a
-   * kind reads come from its own `ElementDef.setWords`, never a list kept here. A kind that
-   * declares no `setWords` (a plugin, which may read any word from `ctx.defaults`) is never
-   * reported: only a declared table says which words a kind does not read.
+   * kind reads come from its own `ElementDef.setWords`, never a list kept here. Every built-in
+   * declares one (`{}` when it reads none); a kind that declares none (a plugin, which may read
+   * any word from `ctx.defaults`) is never reported: only a declared table says which words a
+   * kind does not read.
    */
   private warnSetWord(kind: string, key: string, tok: Token, def: ElementDef): void {
     const words = def.setWords;

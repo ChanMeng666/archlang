@@ -166,6 +166,8 @@ export function dimTextPrim(
 export const dim: ElementDef = {
   kind: "dim",
   keyword: "dim",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A dimension: a measured line with ticks; text defaults to the length.",
   params: [
     {

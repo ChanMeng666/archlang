@@ -53,6 +53,8 @@ const BODY_CLAUSES = ["except", "open", "between"] as const;
 export const wallsFromRooms: ElementDef = {
   kind: "walls",
   keyword: "walls",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "Derive every wall of this group from its rooms: the exterior ring on their outline, a partition on each shared edge.",
   params: [
     { name: "exterior", type: "number", doc: "Thickness of the derived exterior ring, in mm." },

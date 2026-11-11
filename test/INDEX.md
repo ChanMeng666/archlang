@@ -58,7 +58,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/diff.ts` (3) — `diff-fabric`, `diff-laws`, `diff`
 - `src/doc.ts` (1) — `fix-printer`
 - `src/draw-budget.ts` (5) — `drawing-budget`, `sheet-annotations`, `walls-from-rooms-clauses`, `window-kinds`, `work-counts`
-- `src/elements/defs.ts` (4) — `element-facets`, `element-keyword-drift`, `plan-json-dropped`, `transform-seam`
+- `src/elements/defs.ts` (5) — `element-facets`, `element-keyword-drift`, `plan-json-dropped`, `silent-accepts`, `transform-seam`
 - `src/elements/dim.ts` (1) — `annotation-collisions`
 - `src/elements/door.ts` (1) — `window-kinds`
 - `src/elements/facets.ts` (1) — `element-facets`

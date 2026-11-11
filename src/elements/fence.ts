@@ -94,6 +94,8 @@ function fenceSegments(f: RFence): Array<[Point, Point]> {
 export const fence: ElementDef = {
   kind: "fence",
   keyword: "fence",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A boundary fence: a posted line on the ground. Not a wall — it hosts nothing.",
   params: [
     {

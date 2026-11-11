@@ -202,6 +202,8 @@ function floorOf(n: RoomNode, ctx: ResolveCtx): Pick<RRoom, "floor"> {
 export const room: ElementDef = {
   kind: "room",
   keyword: "room",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A room: a filled rectangle with a centered label and computed area.",
   params: [
     { name: "at", type: "point", optional: true, doc: "Absolute top-left corner (x, y) in mm." },

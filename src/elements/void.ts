@@ -208,6 +208,8 @@ const railCount = (v: RVoid): number => (v.rail?.length ?? 0) + (v.railEdges?.le
 export const voidEl: ElementDef = {
   kind: "void",
   keyword: "void",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A hole in this storey's floor: a dashed outline crossed by its diagonals, optionally railed.",
   params: [
     { name: "at", type: "point", optional: true, doc: "Top-left corner (x, y) of the opening, in mm, with `size`." },
