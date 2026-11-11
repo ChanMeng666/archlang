@@ -25,6 +25,19 @@ merge procedure and the CI job map in `commands.md`.
   2026-11-11 and reported having none. When one says so, take over from raw `git`, not its judgement.
   Name the file after the card (`state-rm1.3a.md`, never `state.md`): one session's agents share the
   scratchpad, and two overwrote each other's `state.md` the same day.
+- **Heavy lock** (the protocol used on 2026-11-11, one heavy command at a time across agents). The lock is one file,
+  `D:\.claude-scratch\<date>\<task>\heavy.lock`, holding `free` or one line `<owner> <UTC time>`. Before
+  `check:quick`, `docs:build` or any build: read it; if `free`, write your own line (`<card> <UTC>`) and run.
+  When done, write `free` ONLY if the file still holds your line (never unconditionally). If another line
+  holds it, wait up to 15 minutes, then stop, push and report "gate not run". The coordinator, not an executor,
+  frees a stale line, and only after checking that no heavy process is running. A release executor has priority.
+- **Serial merge queue** (`mq.sh`, kept in `claude-kept/2026-11-10-archlang-roadmap-v2/`; run from the primary
+  checkout as `mq.sh <pr> …`). Required checks are strict, so it takes one PR at a time: wait on its own state
+  file (`<MQ_DIR>/state.txt`, `free` or `busy <pid> <prs>`), `gh pr update-branch` when BEHIND, wait for every
+  check on the new head, then `gh pr merge --merge --match-head-commit <full SHA>`; it never deletes anything and
+  stops with the reason when checks fail or the head moved.
+- **Name every scratchpad file uniquely** (card or agent prefix), not just the state file: parallel agents
+  overwrote each other's `pr-body.md`.
 - **When the machine is busy, a small edit is committed and reported "gate not run"** rather than held in a
   long wait loop; the coordinator runs the gate later or leaves it to CI.
 - **How a day's work continues**: take the first `todo` card of the lowest open wave, honour
