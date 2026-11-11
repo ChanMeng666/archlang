@@ -48,11 +48,11 @@ The hosted server (https://mcp.archlang.uk/mcp) adds:
 - No tool writes a file or reaches anything outside the server: each returns text (or, for `png`, an image).
 - `dxf`, `pdf` come only from the CLI, not from `compile`.
 - `pdf`, `png` need an optional dependency the zero-dependency core does not install.
-- Format "png" is unavailable on the hosted server, which has no image renderer: use format "svg", or GET /svg/<payload> on this server for an image URL.
+- Format "png" is unavailable on the hosted server, which has no image renderer: use format "svg", or GET /svg/<payload> on the hosted server for an image URL.
 
 ## Limits
 
-- Work is counted, never timed: past a budget the work stops with a catalogued code, and `archlang explain <code>` gives its numbers:
+- The compiler's work is counted, never timed: past a budget it stops with a catalogued code, and `archlang explain <code>` gives its numbers:
   - `E_DIAGNOSTIC_LIMIT`: More than 500 diagnostics; further diagnostics were not collected.
   - `E_DRAWING_LIMIT`: The drawing is larger than any plan may draw.
   - `E_ELEMENT_LIMIT`: The plan expands to too many elements.
@@ -62,7 +62,7 @@ The hosted server (https://mcp.archlang.uk/mcp) adds:
   - `E_STEP_LIMIT`: Evaluation did more work than any plan needs.
   - `E_WHILE_LIMIT`: `while` exceeded its iteration cap.
   - `W_DIAGNOSTIC_LIMIT`: More than 500 diagnostics, all warnings; further diagnostics were not collected.
-- The hosted server refuses any one tool argument over 64 KB with `E_INPUT_TOO_LARGE` before compiling anything, and answers an address at most 600 requests per 60 s, then `E_RATE_LIMITED`. The npm server and the CLI have neither cap.
+- The hosted server refuses any one tool argument over 64 KB with `E_INPUT_TOO_LARGE` before compiling anything, and an address that sends more than 600 requests in 60 s gets `E_RATE_LIMITED`. The npm server and the CLI have neither cap.
 
 ## CLI commands no tool serves
 

@@ -38,7 +38,7 @@ export const VIEWER_URI = "ui://archlang/viewer";
 
 /** What `compile` says about `format:"png"` here: there is no renderer in a Worker. */
 export const PNG_HOSTED =
-  'format "png" is unavailable on the hosted server, which has no image renderer: use format "svg", or GET /svg/<payload> on this server for an image URL.';
+  'format "png" is unavailable on the hosted server, which has no image renderer: use format "svg", or GET /svg/<payload> on the hosted server for an image URL.';
 
 /** The `read_me` tool's text: what this server is, how to use it, and what it keeps. */
 export function readMe(origin: string): string {

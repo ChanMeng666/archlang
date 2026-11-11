@@ -97,7 +97,7 @@ describe("archlang://capabilities", () => {
     expect(budgets.length).toBeGreaterThan(0);
     for (const c of budgets) expect(text, c).toContain(`- \`${c}\`: ${ERROR_CATALOG[c]!.message}`);
     expect(text).toContain(`over ${SOURCE_CAP_BYTES / 1024} KB with \`E_INPUT_TOO_LARGE\``);
-    expect(text).toContain(`at most ${MCP_PER_PERIOD} requests per ${RATE_PERIOD_SECONDS} s, then \`E_RATE_LIMITED\``);
+    expect(text).toContain(`more than ${MCP_PER_PERIOD} requests in ${RATE_PERIOD_SECONDS} s gets \`E_RATE_LIMITED\``);
     expect(INSTRUCTIONS).toMatch(/\blimit\b/);
     expect(text).toContain("## Limits");
   });
