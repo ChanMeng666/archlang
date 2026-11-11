@@ -149,7 +149,10 @@ suite("visual-assets families — byte-identity law", () => {
     expect(new Set(SHOWCASE_PLANS).size).toBe(SHOWCASE_PLANS.length);
     for (const p of SHOWCASE_PLANS) {
       expect(p, "a showcase plan lives under examples/showcase/").toMatch(/^examples\/showcase\/[^/]+\.arch$/);
-      expect(ROWS.map((r) => r.name), "a showcase plan is never a row of the law").not.toContain(p);
+      expect(
+        ROWS.map((r) => r.name),
+        "a showcase plan is never a row of the law",
+      ).not.toContain(p);
       expect(words.test(readFileSync(join(ROOT, p), "utf8")), `${p} names a new word`).toBe(true);
     }
     const users: string[] = [];
