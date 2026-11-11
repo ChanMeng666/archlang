@@ -45,12 +45,6 @@ owns that name, so the shell runs the wrong program.
 1. **Learn the language first.** Run `archlang spec` and read it — the entire language in one page.
    (`archlang context` prints *everything*: spec + this workflow + CLI reference + error catalog; a small model starts with `archlang context --level starter`, one screen.)
    Do this before writing any `.arch`.
-   **Editing a plan that already exists** takes a different first step: `archlang validate plan.arch
-   --json` to record the starting state, then choose the ids the request does not name and lock
-   them. `archlang impact plan.arch --set NAME=value --lock <ids>` is the pre-edit check (it writes
-   nothing); `archlang impact new.arch --against plan.arch --lock <ids>` is the post-edit check on
-   an edited copy. Exit `2` (`E_LOCKED_ELEMENT_CHANGED`) means the edit moves something it should
-   not: change the edit, not the lock. Then do the edit within steps 2 to 7 below.
 2. **Write the plan** to a `.arch` file (or pipe via stdin with `-`), preferring the **placement
    sugar** below so you never hand-compute a coordinate.
 3. **Render it:** `archlang compile plan.arch -o plan.svg --json`. The JSON is `{ ok, diagnostics,
@@ -104,6 +98,12 @@ owns that name, so the shell runs the wrong program.
    door is the main entrance or that the choice is a tie: check those against the brief. If no one
    reviews for you, run both once after the loop is clean and report the score and its `A_*`
    advice; do not iterate on it.
+   **Editing a plan that already exists** starts differently, before the steps above:
+   `archlang validate plan.arch --json` to record the starting state, then choose the ids the request does not name and lock
+   them. `archlang impact plan.arch --set NAME=value --lock <ids>` is the pre-edit check (it writes
+   nothing); `archlang impact new.arch --against plan.arch --lock <ids>` is the post-edit check on
+   an edited copy. Exit `2` (`E_LOCKED_ELEMENT_CHANGED`) means the edit moves something it should
+   not: change the edit, not the lock. Then make the edit and run steps 3 to 7 on the result.
 8. **Check the plan against the brief.** Write the user's brief as an `intent.json` — its checkable
    expectations as data (room count, per-room concepts with area/window bands, total area, optional
    adjacency/reachability). A stated size binds: "about 70 m²" → `grossInternalAreaM2` (inside the
