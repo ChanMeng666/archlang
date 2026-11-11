@@ -273,7 +273,7 @@ const PAGE_META = [
   [
     "/3d",
     "The 3D preview of a floor plan",
-    "A separate package extrudes the 3D preview from the same .arch file as the floor plan: walls, openings, floors, stairs and furniture, with a replay and a GLB.",
+    "A separate package extrudes a 3D preview from the plan's .arch file: walls, openings, floors, stairs, furniture, outdoor surfaces and fences; a replay and a GLB.",
   ],
   [
     "/adr/",

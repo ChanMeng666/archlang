@@ -9,7 +9,7 @@ const ROWS = [
   },
   {
     is: "A 3D preview from the same source (the separate archlang-3d package): walls, openings, floors, stairs, furniture, outdoor surfaces and fences in flat colours.",
-    isnt: "Not a renderer, not BIM: no pitched roofs yet, no sections or elevations.",
+    isnt: "Not a renderer, not BIM: no pitched roofs or balcony railings yet, no sections or elevations.",
   },
   {
     is: "A compiler from that text to SVG, PDF and DXF offline; PNG with one optional download. The same text gives the same bytes.",
