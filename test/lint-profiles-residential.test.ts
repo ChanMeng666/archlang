@@ -68,7 +68,8 @@ describe("the residential-advisory profiles", () => {
     const numbered = block.split("\n").filter((l) => /:\s*\d/.test(l) && !l.trim().startsWith("*"));
     expect(numbered.length).toBe(39); // cn 13, uk 13, us 13 (the stair figures: PS2.11e; uk's garage depth: PS2.70; us's exit approach: PS2.69)
     for (const l of numbered) {
-      expect(l, l).toMatch(/\/\/ .*\[(V|S)[\],]/);
+      // A literature mark: `[V]`, `[S-full]` (the full text in a third-party copy) or `[S]` (RM1.6a's grades).
+      expect(l, l).toMatch(/\/\/ .*\[(V|S-full|S)[\],]/);
       expect(l, l).not.toContain("[M");
     }
     const taste = readFileSync("src/taste/profiles.ts", "utf8");
