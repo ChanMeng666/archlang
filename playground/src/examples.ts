@@ -100,7 +100,7 @@ const EXAMPLE_ROWS = [
     "studio",
     "Studio (1BR)",
     "Start here",
-    "The canonical example: a compact studio flat that passes arch lint, with every room opening off a central hall.",
+    "The canonical example: a compact studio flat. No warning under the default lint rules; the bath opens off the hall, not through the bedroom.",
   ],
   [
     "hillside-villa",

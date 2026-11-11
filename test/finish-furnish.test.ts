@@ -633,7 +633,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["07f7be657cceb93e260bc39b4015deb802ea847c7ce6400a01970b8d0bf5e159", "remodel"], // first measurement, added with the example (B3b)
         ["d58bfbf0a25a5b70b7bdfdd1a8ef7b0fb8912f88ebb5cf631da3efe8268015e4", "sheet-notes"], // first measurement, added with the example
         ["07fdbb004b13fcea94bbc7969a42f821bbe48f8665f80dd39d093f502415f439", "practice-office"], // first measurement with the example; PS2.9 source edit, see above; PS2.11e source edit, see above; PS2.74 source edit, see above
-        ["f6a934fcb40723366612a6485f93d6f1a306342ced16756d593aff9bd7eed4e7", "studio"], // PS2.11e source edit, see above
+        ["cb0407f5d5cd8881f49a775b48985443227cbdca0129ebefeb9ea0f3cc063d2a", "studio"], // PS2.11e source edit, see above; RM0.2b header comment corrected, `finish` echoes the source: the old comment gives f6a934fc, the row before it
         ["472248c06943a371266767d2db8b12ff4206a1d0c71ea5ab5de82b11277d154f", "terrace-row"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
         ["ed1c51d6484b8ec38f45e16b5706e07ea4318a315138fe9bd57ac2fde2e660d8", "themed"], // PS2.11e source edit, see above
         ["d9d4e8820a66dd416c690161cb107ed6ce9148fd26d160150ef20d72227a3542", "tiny-house"], // PS2.17 source edit (a worktop); PS2.50 comment edit, see above; PS2.11e source edit, see above
