@@ -964,6 +964,15 @@ const NEGATIVE: Negative[] = [
     note: "the nib between a jamb and a corner must be at least the wall's own thickness",
     src: plan(`  wall id=w1 exterior thickness 250 { (0,0) (5000,0) (5000,4000) }\n  door on w1 at 4400 width 900`),
   },
+  {
+    code: "W_OPENING_NOT_DIMENSIONED",
+    channel: "lint",
+    note: "`dims auto all` chains skip an angled facade, so an opening on one is undimensioned until you `dim` it",
+    src: plan(
+      `  dims auto all\n  wall id=w1 exterior thickness 200 { (0,0) (6000,0) (6000,4000) (2000,6000) (0,4000) close }\n` +
+        `  window id=win on w1 at 12000 width 1200`,
+    ),
+  },
   // --- roof + void: every refusal the two new lines name ---------------------
   {
     code: "E_ROOF_OVERHANG",

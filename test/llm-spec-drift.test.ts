@@ -72,7 +72,7 @@ describe("spec.llm.md is in sync with the token source + examples", () => {
     // on its own, and that list makes it the longest line in the document. The `door` line's
     // per-kind clause prose is now a table rendered from `DOOR_KIND_CLAUSES` (PS7.9).
     //
-    // PS7.9 (29,856 → 28,652) cut what the page said twice or what only says how a thing is
+    // PS7.9 (29,856 → 28,605) cut what the page said twice or what only says how a thing is
     // drawn, each fact kept in `docs/language-reference.md` (the PR lists every cut). The
     // headroom it bought is spent by the queued syntax: five `[语法]` forms and two
     // vocabulary cards (`docs/plans/product-roadmap/cards.md`), so the next form still pays by
