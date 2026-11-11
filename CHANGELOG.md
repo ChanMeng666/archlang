@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A docs page, `/says-no` ("When the compiler says no, and why"): seven small plans that each draw one warning, with the real `lint`, `validate` and `impact --lock` output, what `validate --strict` does, and a table of the numbers the lint profiles set, read from `LINT_PROFILES`. `scripts/says-no.ts` renders every output on the page and `test/docs-says-no.test.ts` fails when the page differs.
+- `/analysis` names `gerontec/archlang-section`, which reads `describe --json`, with its author's description.
+
+### Changed
+
+- The header comment of `examples/studio.arch` no longer says the plan is "architecturally sound" or that every room opens off the hall. It states what the plan measures: no warning under the default rules, one `W_ROOM_TOO_SMALL` under `uk-residential-advisory`. Comment only; the drawing, `describe()` and `lint()` are unchanged.
+
 ## [1.58.0] - 2026-11-11
 
 **Two changes are breaking for scripts.** `arch impact` now exits 2 on a plan that does not parse (it exited 0). And the CLI now refuses an `import` that lies outside both the import root and the plan's own directory, is not a `.arch` file, or is over 1 MiB, so a plan that compiled under 1.57.0 can now fail with exit 2; `--import-root <dir>` widens the root. Both ship in this minor release; see Breaking below. **Five security fixes**, under Security: the CLI and `archlang3d` read an `import`ed module only from under a root (before, any path an `import` named was read); `E_IMPORT_PARSE` no longer quotes the module's text; a share link that inflates past 1 MiB is refused instead of hanging the page, and every browser surface puts a compiled SVG on the page through one sanitiser; and the Node `decodePlanHash` stops at 1 MiB.

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-491 test files in `test/`, 275 `src` modules, 105 modules no test imports.
+492 test files in `test/`, 275 `src` modules, 105 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -113,7 +113,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (29) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+21)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (367) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+359)
+- `src/index.ts` (368) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+360)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -311,6 +311,7 @@ The first sentence of each file's header comment.
 - `test/docs-home-copy.test.ts` — The docs home page's copy contract (public-surfaces PS-D1, card D2).
 - `test/docs-level-svgs.test.ts` — The docs gallery's PER-STOREY file names must be the CLI's file names.
 - `test/docs-page-meta.test.ts` — The docs site's PER-PAGE METADATA gate.
+- `test/docs-says-no.test.ts` — `docs/says-no.md` shows the compiler's real answers to small wrong plans.
 - `test/docs-site-links.test.ts` — The site copies of the canonical docs (PAGES + docs/adr/*.md) must not carry repo-relative links: `../CHANGELOG.md` or `README.md` resolve on GitHub and 404 on archlang.uk (GSC "Not found", 2026-11-09).
 - `test/docs-sync-list.test.ts` — Docs-site sync gate — the two things about `docs-site/sync-docs.mjs` that no build step checks: what it deliberately leaves OUT, and what it writes that git must never hold.
 - `test/docs-table-pipes.test.ts` — The bare-`|`-inside-inline-code gate — the one Markdown fault that has actually taken the docs deploy down.
