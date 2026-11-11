@@ -218,7 +218,12 @@ export class PointInterner {
    * not close; a 3 x 3 block left two points 0.005-0.015 mm apart distinct whenever their
    * roundings fell two cells apart. Among the candidates within `SNAP_MM` the
    * EARLIEST-registered wins, so the answer depends on the caller's registration order and
-   * not on which neighbour the scan reached first.
+   * not on which neighbour the scan reached first. That is the earliest, not the NEAREST: the
+   * wider block also changed which point some queries fuse to. With A = (0.0049, 0) registered
+   * before B = (0.0205, 0), the query (0.015, 0) is within SNAP_MM of both; the 3 x 3 block
+   * saw only B and returned it, the 5 x 5 block sees A too and returns A, the farther one.
+   * Still deterministic, and no plan of the corpus moved (RM8.1d), but a plan with points that
+   * close together can join differently than before.
    */
   get(p: Point): Point {
     const cx = Math.round(p.x * KEY_SCALE);
