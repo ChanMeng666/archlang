@@ -100,9 +100,10 @@ suite("no plan's work moved past its bound", () => {
 suite("the joinery's split scan stays below all pairs, and linear where nothing meets", () => {
   // N straight walls meeting at one junction (a star): every band reaches the centre, so the scan
   // is inherently quadratic there, but the grid index must still hand it fewer pairs than every
-  // pair of the universe's 4N band edges, C(4N, 2) = 8N² - 2N. Measured 4,627 at N = 32 (about
-  // 4.5 N²); the bound 5 N² = 5,120 sits under the all-pairs 8,128, so a scan that slips back to
-  // testing every pair turns this red. Counts, never time.
+  // pair of the universe's 4N band edges, C(4N, 2) = 8N² - 2N. Measured 4,715 at N = 32 (about
+  // 4.6 N²; 4,627 before the scan's query grew by SNAP_MM, RM8.1d); the bound 5 N² = 5,120 sits
+  // under the all-pairs 8,128, so a scan that slips back to testing every pair turns this red.
+  // Counts, never time.
   it("N walls at one junction: joinerySplitTests <= 5 N²", () => {
     const n = 32;
     const lines = ['plan "Star" {', "  units mm"];
@@ -131,5 +132,26 @@ suite("the joinery's split scan stays below all pairs, and linear where nothing 
     const work = compileWork(lines.join("\n"));
     expect(work.joinerySplitTests, "the scan measured nothing").toBeGreaterThan(0);
     expect(work.joinerySplitTests).toBeLessThanOrEqual(50 * n);
+  });
+
+  // The scan's worst ordinary case since its query box grew by SNAP_MM (RM8.1d): an N x N grid of
+  // short walls butting end to end, every cap on a cell line (1000 mm cells), so each query also
+  // reaches the neighbouring cells' edges. That is a constant factor per wall, not a power: measured
+  // 23,309 at N = 20 (400 walls, 1,600 band edges; 5,420 before the growth), and the bound
+  // 100 per wall = 40,000 sits two orders under the all-pairs C(1600, 2) = 1,279,200, so a scan that
+  // turns quadratic on aligned geometry turns this red.
+  it("an N x N grid of butting walls on cell lines: joinerySplitTests <= 100 N²", () => {
+    const n = 20;
+    const lines = ['plan "Grid" {', "  units mm"];
+    for (let k = n - 1; k >= 0; k--)
+      for (let m = n - 1; m >= 0; m--)
+        lines.push(
+          `  wall partition thickness 100 { (${m * 1000 + 50},${k * 1000 + 50}) (${m * 1000 + 950},${k * 1000 + 50}) }`,
+        );
+    lines.push("}");
+    const work = compileWork(lines.join("\n"));
+    expect(work.joinerySplitTests, "the scan measured nothing").toBeGreaterThan(0);
+    expect(work.joinerySplitTests).toBeLessThanOrEqual(100 * n * n);
+    expect(100 * n * n).toBeLessThan((4 * n * n * (4 * n * n - 1)) / 2);
   });
 });
