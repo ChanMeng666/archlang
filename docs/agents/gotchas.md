@@ -100,7 +100,16 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **Node 18, Node 20 and Windows do not run on a PR**, so a green PR proves only Node 22 on Linux.
   A break on the others first shows in the push run on `main` (`commands.md` § CI). Suspect them for
   a `node:` API newer than Node 18, a dependency that drops an old Node, deflate output (the
-  `hillside-villa` budget), and line endings or path handling.
+  `hillside-villa` budget), and line endings or path handling. Run a changed generator under Node 18
+  before merging a tooling PR (#703 reached `main` red as #705), and never hand tsx a tsconfig with
+  `extends` there: its loader calls `toReversed` (Node 20+); keep such a config self-contained (#708).
+- **A test's oracle can encode the bug the PR fixes.** After #711 widened the point interner to `SNAP_MM`,
+  `test/interner-oracle.test.ts` went red on `[{x:0,y:0.0949},{x:0,y:0.105}]`: the old string-keyed
+  predecessor did not fuse those two points, the new interner rightly does. When an oracle goes red on a
+  fix, ask whether it guards the old behaviour, and replace it with a brute-force reference; do not re-pin.
+- **A new e2e can be flaky by a race, not by the machine.** #718: a gallery pick schedules a 250 ms debounced
+  render whose stale result overwrote a knob edit. Pin the race deterministically (wait past the debounce
+  window, then assert the state held), never a retry.
 - **A new lint rule is registered beyond its module**: `.claude/commands/new-lint-rule.md` is the
   checklist and `test/lint-rule-order.test.ts` fails with every derivable place named (the full
   order list, `test/helpers/d4-oracle.ts` `RULE_CLASS`, the catalogue, `test/tables/stage-decisions.ts`); then the
@@ -158,6 +167,13 @@ coordinator's own notes (merging, registries, browser and social automation, the
 - **`check:drift` reports the generated `_headers` as drift while a new docs page is uncommitted.** Commit, then run it.
 - **`check:drift` reads committed files.** An uncommitted edit to a file with a generated block
   (`README.md`, `llms.txt`, the MCP and VS Code READMEs) reads as drift: commit, then run it.
+- **After a dependency PR merges, run `npm install` in the primary checkout.** A worktree's `node_modules`
+  is a junction to it, so every worktree gate keeps using the old tool until you do (biome stayed 2.5 in
+  worktrees after 2.6 landed on `main`).
+- **Release the heavy-lock only if it still holds your own line** (`orchestration.md` § Heavy lock). An
+  unconditional `free` wiped another agent's line once.
+- **A reviewer never runs `git checkout` (or `switch`) in the primary checkout**: it moves every session
+  sharing it off `main`. Review from a separate worktree or with `git -C`.
 - **`python3` on this machine is a stub that silently does nothing.** Use `python`.
 - **`2>nul` in the Bash tool on Windows creates files** named `nul`, `nul.L0`, `nul.L1` in the
   working tree (it is cmd syntax). Write `2>/dev/null`.
