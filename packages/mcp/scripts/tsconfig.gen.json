@@ -1,7 +1,16 @@
 {
-  "//": "For tsx only (gen-capabilities.ts): resolve the core by its package name, and its ./share subpath that the hosted Worker's limits import, to its source, as vitest.config.ts aliases them, so the generator needs no build.",
-  "extends": "../tsconfig.json",
+  "//": "For tsx only (gen-capabilities.ts): resolve the core by its package name, and its ./share subpath that the hosted Worker's limits import, to its source, as vitest.config.ts aliases them, so the generator needs no build. Self-contained on purpose: tsx follows an `extends` chain with Array.prototype.toReversed (Node 20+), and CI runs this generator on Node 18.",
   "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
     "paths": {
       "@chanmeng666/archlang/share": ["../../../src/share.ts"],
       "@chanmeng666/archlang": ["../../../src/index.ts"]
