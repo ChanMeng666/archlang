@@ -823,8 +823,7 @@ const COMMANDS: ManifestCommand[] = [
       { flag: "--strict", alias: "--fail-on-warning", description: "warnings fail (exit 2)" },
       {
         flag: "--rules",
-        description:
-          "lint nothing: print the ruleset lint runs (the --profile one, else the default), each number with its units and where it comes from (document, clause, edition, verification grade V|S-full|S-secondary|M|convention); takes no plan; the JSON shape is a draft",
+        description: "print the ruleset in force and each number's source; takes no plan",
       },
       CODE_FLAG,
       SEVERITY_FLAG,
@@ -834,7 +833,7 @@ const COMMANDS: ManifestCommand[] = [
     ],
     input: "<file.arch|->",
     output:
-      "W_* warnings (narrowed by --code/--severity; `filtered`/`total_diagnostics` mark a filtered result), then a `coverage` block naming the rule families skipped and why; with --rules, the ruleset instead",
+      "W_* warnings (narrowed by --code/--severity; `filtered`/`total_diagnostics` mark a filtered result), then a `coverage` block naming the rule families skipped and why",
     examples: [
       { cmd: "archlang lint plan.arch --json", note: "architectural soundness warnings as data, each with a fix" },
       {
@@ -847,7 +846,7 @@ const COMMANDS: ManifestCommand[] = [
       },
       {
         cmd: "archlang lint --rules --profile uk-residential-advisory --json",
-        note: "every threshold of that ruleset with its value and source; advisory, never a compliance claim",
+        note: "that ruleset's numbers with their sources (advisory)",
       },
     ],
   },

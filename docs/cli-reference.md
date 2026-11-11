@@ -425,13 +425,13 @@ $ archlang score plan.arch --taste generic --json
 
 architectural soundness warnings
 
-**Input:** `<file.arch|->` · **Output:** W_* warnings (narrowed by --code/--severity; `filtered`/`total_diagnostics` mark a filtered result), then a `coverage` block naming the rule families skipped and why; with --rules, the ruleset instead
+**Input:** `<file.arch|->` · **Output:** W_* warnings (narrowed by --code/--severity; `filtered`/`total_diagnostics` mark a filtered result), then a `coverage` block naming the rule families skipped and why
 
 | Flag | Does |
 | --- | --- |
 | `--profile <residential-basic\|accessibility-advisory\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | advisory ruleset |
 | `--strict, --fail-on-warning` | warnings fail (exit 2) |
-| `--rules` | lint nothing: print the ruleset lint runs (the --profile one, else the default), each number with its units and where it comes from (document, clause, edition, verification grade V\|S-full\|S-secondary\|M\|convention); takes no plan; the JSON shape is a draft |
+| `--rules` | print the ruleset in force and each number's source; takes no plan |
 | `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
 | `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
 | `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
@@ -450,7 +450,7 @@ $ archlang lint plan.arch --profile accessibility-advisory --strict
 # read only the reachability warnings; the exit code still reflects every diagnostic
 $ archlang lint plan.arch --code W_ROOM_UNREACHABLE,W_NO_ENTRANCE --json
 
-# every threshold of that ruleset with its value and source; advisory, never a compliance claim
+# that ruleset's numbers with their sources (advisory)
 $ archlang lint --rules --profile uk-residential-advisory --json
 ```
 
