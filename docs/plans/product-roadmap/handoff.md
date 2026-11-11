@@ -49,7 +49,7 @@
 
 **worktree**（`git worktree list`，12:23Z）：主检出 `D:/github_repository/archlang`（`main` 在 `9a3be392`）与上表的几个。**移除任何 worktree 之前**，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`（`docs/agents/gotchas.md` § Tooling & process）；被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。
 
-### 1.2 已发布（1.59.0，2026-11-11；渠道在 13:5xZ 逐项重读，VS Code Marketplace 与 OpenAI 目录除外）
+### 1.2 已发布（1.59.0，2026-11-11；渠道在 13:5xZ 逐项重读，VS Code Marketplace 与 OpenAI 目录除外；2026-11-12 补读 Marketplace，OpenAI 目录是协调者的观察）
 
 **发布结果：** 版本号 PR #720 于 2026-11-11T12:31:39Z 合并，合并提交 `e354ddc7`；`v1.59.0` tag 指向 `e354ddc7`，12:33Z 推出。`release.yml` run 43021354774：第 1 次尝试在 "Guard the release" 失败（`scripts/release-guard.sh` 要求被打 tag 的提交的 CI 已绿，当时还在跑）；13:03Z 用 `gh run rerun --failed` 重跑，第 2 次尝试四个 job 全部 success（`gh run view` 读）。GitHub Release `v1.59.0` 发布于 2026-11-11T13:22:29Z，带 `archlang-mcp-0.2.42.mcpb`。同一 tag 之后的列表 PR #724（`5561ebde`）已合并，`docs/seo.md` § 8 与 `release-check.md` 随之更新。
 
@@ -62,10 +62,10 @@
 | 官方 MCP registry | 0.2.42，`isLatest`，带 `remotes`（`https://mcp.archlang.uk/mcp`） | `registry.modelcontextprotocol.io/v0/servers/…/versions/latest` |
 | GitHub Release | `v1.59.0`，`archlang-mcp-0.2.42.mcpb` | `gh release view` |
 | Open VSX | 0.47.0（run 43029942416） | `open-vsx.org/api/ChanMeng/archlang` |
-| VS Code Marketplace | 0.47.0，由协调者经 Claude in Chrome 上传（gallery 的 `vspackage` URL 返回 200，协调者的读数，我没有重读） | 协调者的记录 |
+| VS Code Marketplace | 0.47.0，由协调者经 Claude in Chrome 上传（gallery 的 `vspackage` URL 2026-11-12 重读返回 200） | `curl` 读 `marketplace.visualstudio.com/_apis/public/gallery/publishers/ChanMeng/vsextensions/archlang/0.47.0/vspackage` |
 | ClawHub | 1.59.0 | `clawhub.ai/api/v1/skills/archlang` 的 `latestVersion` |
 | Docker MCP Catalog | docker/mcp-registry#6704 仍开着，头 `cdf14c18`，`source.commit` = `e354ddc7`，等 Docker 合并 | `gh pr view 6704 --repo docker/mcp-registry` |
-| OpenAI 插件目录 | **所有者的一步还没做**（要接受条款，不能代裁）：ZIP 在 `D:\.claude-scratch\2026-11-12\release-1.59\archlang-plugin-1.59.0.zip`（SHA-256 `71e798d2…`，协调者给的前缀）；所有者登录，"Create draft from ZIP"，等扫描，提交（六项声明）并发布（`docs/integrations.md`）。目录里仍是 1.58.0 | 协调者的记录 |
+| OpenAI 插件目录 | **1.59.0 已发布（2026-11-12）**，协调者应所有者的请求经 Claude in Chrome 做的：插件页的 "Create draft from ZIP" 收 `archlang-plugin-1.59.0.zip`，五个 skill 扫描全过，所有者在聊天里确认六项声明之后才勾选，Submit；作为已批准插件的更新它立刻成了 "Ready to publish"（没有人工评审等待），"Publish Version" 替换了 1.58.0；门户列表的 Publication 现为 "Version 1.59.0"。该页面由客户端渲染，curl 读不到，这是协调者在门户里的观察 | 协调者的记录；流程见 `docs/integrations.md` |
 
 **部署：** Deploy run 43025136172（创建于 2026-11-11T12:59:49Z）在 `e354ddc7` 上全部 success。较早的 Deploy 失败（run 43015163598，`Deploy mcp (scripted Worker)` 的 smoke）是版本传播的竞态：固定版本的 URL 在部署后一秒落到了旧的 isolate，不是配置缺口（协调者的判断）；候选卡 RM0.8。嵌入页 `@prod` 的 e2e 通过。**空档：** `<arch-plan>` 嵌入指向一个还没发布的核心版本约 23 分钟（Deploy 13:01Z，npm 13:22Z）；#724 把 `release-check.md` 改成版本号提交的 CI 绿了才打 tag（协调者的记录；run 43021354774 的第 1 次失败就是这一条的直接原因）。
 
@@ -109,7 +109,7 @@
 
 | 日期 | 事 | 规则 |
 |---|---|---|
-| 2026-11-11 | **1.59.0 已发布**（`e354ddc7`，各渠道见 §1.2） | 所有者已决定（"我同意发布"，协调者转述），切点由协调者定：#711 与 #713 合并之后切；OpenAI 目录的提交仍是所有者的一步 |
+| 2026-11-11 | **1.59.0 已发布**（`e354ddc7`，各渠道见 §1.2） | 所有者已决定（"我同意发布"，协调者转述），切点由协调者定：#711 与 #713 合并之后切；OpenAI 目录 1.59.0 于 11-12 发布（所有者在聊天里确认声明） |
 | 2026-12-01 | Show HN，所有者亲自发 | growth 的物料已由 growth PR #68 刷新；X9 只写 1.59.0 里已发布的事实 |
 | 旧参考日期：约 12-21 | 1.60.0：协调者提议在 12-01 Show HN 之前切（`README.md` §3 的约 12-21 是旧参考日期，RM-D27 之后日期不再挡事） | **所有者还没有决定**；没有她对那一次的决定就不切 |
 | 参考：01-05 | 1.61.0（建议） | 要所有者对那一次的决定；RM1.1b 在其发布后量 |
@@ -120,7 +120,7 @@
 
 - 决定 1.60.0、1.61.0 是否、何时发布（1.59.0 已决定，见 §1.4）。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌的创建、条款与声明的确认、本机文件选择器处停下。
 - 2026-12-01 亲自发 Show HN。
-- **OpenAI 插件目录的 1.59.0 提交**（ZIP 已备好，见 §1.2）以及需要接受条款或声明的提交，以及 Cloudflare 控制台的改动（`docs/seo.md` § 8）。
+- **OpenAI 插件目录的提交**（1.59.0 已于 2026-11-12 由协调者在所有者于聊天里确认声明后发布，见 §1.2；以后每次提交仍要所有者的话）以及需要接受条款或声明的提交，以及 Cloudflare 控制台的改动（`docs/seo.md` § 8）。
 - **2026-11-12 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.6）：** RM-D28 `rendered` 地面浅色，批准，条件是图案线对比不低于 2.0:1（草案色值只有 1.66–1.87:1，要另调更浅的一组；ADR 0023 已加修订）；RM-D29 绿植四个全批准（并入 RM8.9，十六个）；RM-D30 CR11a 的 schema 政策与命名空间照 `design/schema-policy.md` §3 采纳（现有两个 `$id` 不改）；RM-D31 PS0.18 关闭（`78e0b7f9`）；RM-D32 RM8.10 选 (a)（显示警告，不改几何），卡已改写、不再等裁定。**仍然不能代裁、仍是所有者的：** OpenAI 插件目录的每次提交（要接受条款；代理准备到最后一步）、`README.md` §6 的较早一批（RM5.4 的主版本升级 #603、MF-D3(b)、backlog D.7、M.9、M.8、M.14、3.1(b)、CI throughput 的 E 与 F、仓库根 `.mcp.json`、VA.3），以及 RM1.3c（6.11，双开门）先要一次设计裁定。
 - 任何一条受托裁定（RM-D17…D20、RM-D24…D26 与下一条），所有者都可以一句话推翻。
 - **第二场的受托裁定（协调者的记录，我无从核对；可一句话推翻）：** 3D 地面是查看器的背景，不是建筑元素，不进 GLB；MCP 能力页保持派生的 `repair` 标题；MCP shim 的版本在发布时经 `release:pin` bump；RM1.4 带出的已发布示例改写成吸附后的值（图字节恒等）；`W_GRID_SNAPPED` 在 `next` 里排最后（新增 `info` 一档）；`W_UNKNOWN_THEME` 也由 CLI 报出；每个内置元素都声明 `setWords`；playground `compilerPathBudget` 458,000 → 458,980（RM1.4）；biome 只关 2.6 里真正新增的三条规则（backlog 3.3）；RM8.1d 的工作计数表重取；RM8.5 的 `AFTER_THE_FORM` 排除名单是测试前提的改动，已同意；RM1.6a 的 +74 B 接受；CRF13 以"不可复现"关闭。
@@ -179,6 +179,7 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
   - `rm1.3a\`：RM1.3a 执行者的字段级差异、两次全语料对比与门禁日志；
   - **2026-11-11 第二场（#697–#709）的评审报告在会话 scratchpad 里，没有保留。** 可查的只有各 PR 的评论与提交、本文与 `cards.md`；若要保留，须在会话结束前移进 `claude-kept`。
   - 目录根上还有 `session-state-2026-11-11.md`（主会话的状态记录，中文）与 `mq.sh`。
+- 2026-11-12 会话的可复用工具（预算分块测量、语料扫描、joinery 模糊测试、可达性 fixture）在本机路径 `D:\github_repository\claude-kept\2026-11-12-archlang-session-record\tools\`（仓库之外）。
 - `evidence.md` 把计划用到的每条结论回指到 growth 仓库的文件路径、issue/PR 号或本仓库路径（v2 在 §G，第 8 轨在 §H，2026-11-11 新增的卡在 §I），报告本体不进本仓库。
 
 ## 11. 事故：1.58.0 的版本号 PR 与 tag 之间隔了 9 小时 38 分（2026-11-10）
@@ -200,3 +201,4 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(i) playground 编译器路径预算是最稀缺的资源。** 每个新语法形式或诊断都让编译器 chunk 变大；#704 把余量吃到 145 B，#713 +74 B，#721 在现在的 `main` 上超出约 920 B。见 §2 的预算卡：诊断目录文字与 CLI manifest 移出编译器路径，先量再重取一次。
 - **(上一场的) 版本号 PR 到 tag 之间不留空档：** tag 之前的每一项证明在发布分支头上跑完，见 §11。
 - **(j) 版本号提交的 CI 绿了才打 tag。** `scripts/release-guard.sh` 要求被打 tag 的提交的 CI 已绿；1.59.0 的 tag 推得太早，第一次发布尝试在 "Guard the release" 失败，重跑才过；同时 Deploy 先于 npm 22 分钟，`<arch-plan>` 嵌入指向未发布的核心。#724 已把这一条写进 `release-check.md`。
+- **(k) OpenAI 门户的流程（2026-11-12）：** 插件列表页的 "Upload new or existing plugin" 拖放区会临时造文件输入并打开原生选择器，代理填不了，要用插件页的 "Create draft from ZIP" 对话框（`file_upload` 可填）；Submit 之后详情页可能仍显示 "Not submitted"，去看插件列表；已批准插件的更新直接到 "Ready to publish"，"Publish Version" 不再问声明；声明仍要所有者的话（这次是在聊天里给的）。见 `docs/integrations.md`。

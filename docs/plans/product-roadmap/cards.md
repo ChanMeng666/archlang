@@ -183,7 +183,7 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 ### 发布 1.59.0 — `done` · #720 · `e354ddc7`（tag `v1.59.0`，2026-11-11） · 1 日
 
-**状态（2026-11-11，发布后重读）：`done`。** 版本号 PR #720（`e354ddc7`，2026-11-11T12:31:39Z）；tag `v1.59.0` 12:33Z；`release.yml` run 43021354774 第 2 次尝试四个 job 全部 success（第 1 次在 "Guard the release" 失败：被打 tag 的提交的 CI 还在跑）；npm：核心 1.59.0、`archlang-mcp` 0.2.42、`archlang-3d` 0.6.0（`arch-plan` 仍是 0.1.2）；GitHub Release 13:22:29Z。各渠道见 `handoff.md` §1.2；OpenAI 目录的提交仍是所有者的一步。
+**状态（2026-11-11，发布后重读）：`done`。** 版本号 PR #720（`e354ddc7`，2026-11-11T12:31:39Z）；tag `v1.59.0` 12:33Z；`release.yml` run 43021354774 第 2 次尝试四个 job 全部 success（第 1 次在 "Guard the release" 失败：被打 tag 的提交的 CI 还在跑）；npm：核心 1.59.0、`archlang-mcp` 0.2.42、`archlang-3d` 0.6.0（`arch-plan` 仍是 0.1.2）；GitHub Release 13:22:29Z。各渠道见 `handoff.md` §1.2；全部渠道已完成：OpenAI 目录 1.59.0 于 2026-11-12 发布（协调者在所有者于聊天里确认声明后做的；门户观察），VS Code Marketplace 0.47.0 在线（`vspackage` 200，2026-11-12 重读）。
 
 线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。~~切点后合并的 minor 内容等 12-02。~~ RM-D27 之后：切点后合并的内容进下一次所有者决定的发布，合并本身不等日期。
 
