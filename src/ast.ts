@@ -89,6 +89,8 @@ export interface WallNode extends NodeBase {
   category: string;
   /** Wall thickness in mm. */
   thickness: Expr;
+  /** The written thickness expression, for `W_GRID_SNAPPED` (RM1.4). No semantics. */
+  thicknessSpan?: Span;
   /** Optional hatch material (e.g. "brick"); defaults to the poché hatch. */
   material?: string;
   /** Optional hatch tile-size multiplier (`material … scale <n>`); defaults to 1. */
@@ -348,6 +350,8 @@ export interface RoomNode extends NodeBase {
   circle?: { c: ExprPoint; r: Expr };
   /** Width × height — absent only on the {@link RoomNode.polygon}/{@link RoomNode.circle} forms. */
   size?: { w: Expr; h: Expr };
+  /** The written `size`, for `W_GRID_SNAPPED` and `W_LENGTH_IN_METRES` (RM1.4). No semantics. */
+  sizeSpan?: Span;
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
   /** Explicit label/area anchor (`label "…" at (x,y)`) — for a concave polygon whose
@@ -419,6 +423,8 @@ export interface DoorNode extends NodeBase {
   doorKind?: DoorKind;
   /** Absolute hinge/center position. Absent when {@link DoorNode.attach} is used. */
   at?: ExprPoint;
+  /** The written `(x, y)` of {@link DoorNode.at}, for `W_GRID_SNAPPED` (RM1.4). No semantics. */
+  atSpan?: Span;
   /** Wall-attached placement (`on <wall> at <pos>`). Exclusive with `at`. */
   attach?: OpeningAttach;
   /** Relational placement (`between <A> and <B> at <pos>`). Exclusive with `at`/`attach`. */
@@ -614,6 +620,8 @@ export interface FurnitureNode extends NodeBase {
    * `describe()` or Plan JSON; like {@link rotateSpan} it does appear in `archlang ast --json`.
    */
   sizeSpan?: Span;
+  /** The written `size` (a literal or an expression pair), for `W_GRID_SNAPPED` (RM1.4). */
+  sizeValueSpan?: Span;
   /** Label as a string-interpolation template, evaluated at resolve. */
   label?: Expr;
   /** Quarter-turn rotation of the drawn symbol (0|90|180|270 degrees), evaluated at resolve. */
@@ -1114,8 +1122,12 @@ export interface WallsFromRoomsNode extends NodeBase {
   kind: "walls";
   /** The exterior ring's thickness. */
   exterior: Expr;
+  /** The written exterior thickness, for `W_GRID_SNAPPED` (RM1.4). No semantics. */
+  exteriorSpan?: Span;
   /** The partitions' thickness. */
   partition: Expr;
+  /** The written partition thickness, for `W_GRID_SNAPPED` (RM1.4). No semantics. */
+  partitionSpan?: Span;
   /** The rooms left out of the derivation, in source order, each with its own span. */
   except: Array<{ id: string; span: Span }>;
   /** The `open between` / `between … thickness` clauses, in source order. Absent when the
@@ -1608,6 +1620,9 @@ export interface PlanNode {
   headerSpan?: Span;
   /** Named theme base from `theme <name> { … }` (resolved at lowering). */
   themeBase?: string;
+  /** Byte span of the `theme <name>` word, present only when that name is no built-in theme
+   *  (`W_UNKNOWN_THEME`, raised by `compile()`, which knows the themes the call registers). */
+  themeBaseSpan?: Span;
   /** Wall colour for `theme from "#color"` — opt-in poché derivation. */
   themeFrom?: string;
   /** Per-element style overrides (`style <kind> { … }`), by kind → Theme partial. */

@@ -682,7 +682,7 @@ const COMMANDS: ManifestCommand[] = [
     ],
     input: "<file.arch|->",
     output:
-      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste). Each diagnostic and intent violation carries its authoring `stage`; with --stage, an `at_stage` { stage, held_back, clean } block precedes `keeps`",
+      "diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste, info). Each diagnostic and intent violation carries its authoring `stage`; with --stage, an `at_stage` { stage, held_back, clean } block precedes `keeps`",
     examples: [
       {
         cmd: "archlang validate plan.arch --strict --json",

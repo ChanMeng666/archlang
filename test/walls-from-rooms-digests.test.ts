@@ -23,7 +23,7 @@ const DIGESTS: [string, string][] = [
   // Re-measured 2026-10-24 (PS2.12): the annotation-collision examples (the twin follows two-bed's bed move); why, and the swap-back proof, in `test/byte-identity-baseline.ts`'s header.
   // Re-measured 2026-10-25 (PS2.11a/b): the twin follows two-bed's window and WC moves; why, and the proof that nothing else moved, in `test/byte-identity-baseline.ts`'s header.
   // Re-measured 2026-10-26 (PS2.11e/PS2.46/PS2.54): the studio and two-bed twins follow their examples' stove moves; open-plan, open-width and open-instances move in hints only (the fixture statements a `W_ROOM_NO_FIXTURE` or `W_ROOM_MISSING_DEFINING` hint quotes are now held clear of a cased opening's approach and a window over a hob, so a different anchor, or a shower for a bathtub, is quoted); SVG, `describe()` and diagnostics unchanged.
-  ["two-bed-twin", "a458ded62de8575a0658145659521b7bd8b0eb5359638b1afbbcfe0cbeb4d8b8"], // PS2.11e, see header
+  ["two-bed-twin", "e481c569e6ef769ee6123b5b35e231163a8824a3082dc4341ca39c922d7fe354"], // PS2.11e, see header; RM1.4: snapping is now reported (the twin's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was a458ded6)
   ["widen-4000", "caaf25e6f0f27dc2409f4d81d2434d83c7c75b62e5bcad55cd8a08d5a8dbce19"],
   ["widen-4500", "5756d730cbb5d2bb27471d50e24023b29b6826aa359bf76a4cd43b2a156afef9"],
   ["courtyard", "ddab523168af17603cb23ef2ade5be2c433e2f48992a8cdf7b6e5e7a71d00d59"], // PS2.29: message text only, same code, same span

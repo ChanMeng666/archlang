@@ -1,0 +1,11 @@
+# W_GRID_SNAPPED (RM1.4, PS0.25 and backlog 6.10): two 2750 mm rooms, a 250 mm exterior ring, a
+# 450 mm chair and a door written off the grid, all moved by `grid 100` and each now reported.
+plan "Snapped" {
+  units mm
+  grid 100
+  room id=a at (0,0) size 2750x3000 label "Study"
+  room id=b at (2800,0) size 2750x3000 label "Office"
+  walls from rooms exterior 250 partition 100
+  furniture chair at (500,500) size 450x450 in a
+  door id=d_front at (1250,0) width 900
+}

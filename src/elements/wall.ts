@@ -14,6 +14,7 @@ import { PointInterner, wallBand } from "../geometry/band.js";
 import { DEFAULT_MATERIAL, hatchesUsed, isKnownMaterial, KNOWN_MATERIALS } from "../hatches.js";
 import { lowerWallSet } from "../wall-lowering.js";
 import { fmt3, MAX_ANGLE_DEG, outOfRangeDiagnostic } from "../num-format.js";
+import { noteThickness } from "../ir/silent-accepts.js";
 import { exprSpan } from "../expr.js";
 import { resolveWallRelation } from "../wall-relation.js";
 import { enumList, WALL_STATUSES, type WallStatus } from "../grammar/tokens.js";
@@ -21,6 +22,8 @@ import { enumList, WALL_STATUSES, type WallStatus } from "../grammar/tokens.js";
 export const wall: ElementDef = {
   kind: "wall",
   keyword: "wall",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A wall: a poché-filled polyline with crisp face lines; hosts doors/windows.",
   params: [
     { name: "category", type: "name", doc: "Category, e.g. exterior or partition (also a door/window host)." },
@@ -47,7 +50,9 @@ export const wall: ElementDef = {
     const id = ctx.parseIdOpt();
     const category = ctx.eatIdent().value;
     ctx.eatKeyword("thickness");
+    const thicknessStart = ctx.peek().start;
     const thickness = ctx.parseExpr();
+    const thicknessSpan = ctx.spanFrom(thicknessStart);
     let material: string | undefined;
     let materialScale: ReturnType<ParseCtx["parseExpr"]> | undefined;
     let materialAngle: ReturnType<ParseCtx["parseExpr"]> | undefined;
@@ -87,6 +92,7 @@ export const wall: ElementDef = {
         id,
         category,
         thickness,
+        thicknessSpan,
         material,
         materialScale,
         materialAngle,
@@ -154,6 +160,7 @@ export const wall: ElementDef = {
       id,
       category,
       thickness,
+      thicknessSpan,
       material,
       materialScale,
       materialAngle,
@@ -192,6 +199,7 @@ export const wall: ElementDef = {
         span: n.span,
       });
     }
+    noteThickness(ctx, `Wall "${id}"`, tv, thickness, n.thicknessSpan ?? n.span);
     let material = DEFAULT_MATERIAL as string;
     if (n.material !== undefined) {
       if (isKnownMaterial(n.material)) material = n.material;

@@ -13,6 +13,8 @@ import { hostWallHeight, parseOpeningHeights, resolveOpeningHeights } from "../d
 export const opening: ElementDef = {
   kind: "opening",
   keyword: "opening",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A cased opening: a leaf-less gap in a wall that connects two spaces.",
   params: [
     { name: "at", type: "point", doc: "Center position (x, y) in mm." },

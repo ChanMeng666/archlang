@@ -158,4 +158,22 @@ export const LANGUAGE_ENTRIES = defineEntries({
     "Bind a new name with `let` instead of reassigning it, or express the surrounding loop as `for NAME in A..B { … }` — `archlang fix` offers this on `W_WHILE_DEPRECATED` for the canonical shape, once proved against this file's own expansion (component sites need `--unsafe`).",
     "let total = 0\ntotal = total + 100   # warning: deprecated reassignment; bind a new name instead",
   ),
+  W_LENGTH_IN_METRES: w(
+    "A length reads as metres where millimetres are the unit.",
+    "Lengths are millimetres. A rectangle room whose `size` has both sides under 100 mm (`size 4x3`), or a wall thickness under 10 mm (`thickness 0.2`), was almost certainly written in metres. The plan draws the value as written.",
+    "Write the length in millimetres; the hint gives the clause times 1000.",
+    "room at (0,0) size 4x3   # warning: read as 4 mm x 3 mm; write `size 4000x3000`",
+  ),
+  W_GRID_SNAPPED: w(
+    "`grid` moved a written size or door position.",
+    "`grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged. Informational: `validate` ranks it last for `next` (tier `info`).",
+    "Write a multiple of the grid, or set a finer `grid`.",
+    "grid 100\nroom at (0,0) size 2750x3000   # warning: size 2750 x 3000 was snapped to 2800 x 3000",
+  ),
+  W_SET_VALUE_WORD: w(
+    "A bare word in `set <kind>(…)` was taken as text and does nothing.",
+    'A bare word in a `set` rule is read as text, never as the value of a name, so `set door(width: W)` sets the text "W" and does nothing; so does a word the key does not read (`set door(swing: inward)`). `set door(…)` reads a word only for `hinge` and `swing`. An error at 2.0.',
+    "Write the value on the element, or a word the key reads.",
+    'let W = 900\nset door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing',
+  ),
 });

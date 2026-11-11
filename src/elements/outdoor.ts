@@ -234,6 +234,8 @@ export function railSides(words: readonly RailEdge[]): RailSide[] {
 export const outdoor: ElementDef = {
   kind: "outdoor",
   keyword: "outdoor",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A ground surface outside the building: lawn, paving, deck, water, a balcony.",
   params: [
     { name: "kind", type: OUTDOOR_KINDS.join("|"), doc: "Which ground surface this is." },

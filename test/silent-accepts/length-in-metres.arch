@@ -1,0 +1,6 @@
+# W_LENGTH_IN_METRES (RM1.4, backlog U.2): the audit's two inputs, metres where millimetres are the unit.
+plan "Metres" {
+  units mm
+  wall id=shell exterior thickness 0.2 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=main at (0,0) size 4x3 label "Living"
+}

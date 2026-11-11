@@ -20,6 +20,8 @@ import { escalatorGlyph, runTooLong, runTreads } from "./vertical-glyphs.js";
 export const escalator: ElementDef = {
   kind: "escalator",
   keyword: "escalator",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "An escalator run: parallel chevrons and an UP/DN direction arrow.",
   params: [
     { name: "at", type: "point", doc: "Top-left corner (x, y) of the footprint, in mm." },

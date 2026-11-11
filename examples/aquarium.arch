@@ -151,10 +151,10 @@ plan "Harbour Aquarium" {
   # (25%/75% north/south on the drum). A ticket desk sits in the foyer, and the
   # cafe gets a few tables, kept west of the curved south-east facade where its floor
   # narrows.
-  furniture bench at (34450,9550)  size 1200x450 in rotunda_r
-  furniture bench at (25550,9550)  size 1200x450 in rotunda_r
-  furniture bench at (25550,18450) size 1200x450 in rotunda_r
-  furniture bench at (34450,18450) size 1200x450 in rotunda_r
+  furniture bench at (34450,9550)  size 1200x500 in rotunda_r
+  furniture bench at (25550,9550)  size 1200x500 in rotunda_r
+  furniture bench at (25550,18450) size 1200x500 in rotunda_r
+  furniture bench at (34450,18450) size 1200x500 in rotunda_r
 
   furniture desk   at (22000,33000) size 1800x800 label "Ticket desk" in foyer
   furniture chair  at (24200,33200) size 500x500  rotate 90 in foyer

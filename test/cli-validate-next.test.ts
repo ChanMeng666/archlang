@@ -56,6 +56,11 @@ function withoutNext(argv: string[]): { exit: number; stdout: string } {
   }
 }
 
+/** A `validate --json` report's codes without the RM1.4 snap warnings, which the compile channel
+ *  lists before every lint finding: the lint findings, in their order. */
+const lintCodes = (out: { diagnostics: { code: string }[] }): string[] =>
+  out.diagnostics.map((d) => d.code).filter((c) => c !== "W_GRID_SNAPPED");
+
 let dir: string;
 const brief = (): string => join(dir, "brief.json");
 const cleanPlan = (): string => join(dir, "clean.arch");
@@ -162,10 +167,10 @@ describe("validate · next tiers through the CLI", () => {
     // it does not yield, so the house no longer exercises PS7.10 (the cafe below does).
     const plan = "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch";
     const out = JSON.parse(runValidate([plan, "--json"]).stdout);
-    expect(out.diagnostics.map((d: { code: string }) => d.code).slice(0, 2)).toEqual([
-      "W_GARAGE_TOO_NARROW",
-      "W_FURNITURE_OVERLAP",
-    ]);
+    // RM1.4: the plan writes `walls from rooms exterior 250` under `grid 100`, so it raises
+    // `W_GRID_SNAPPED`, listed first; it is tier `info` (last), so `next` is still the garage code.
+    expect(out.diagnostics[0].code).toBe("W_GRID_SNAPPED");
+    expect(lintCodes(out).slice(0, 2)).toEqual(["W_GARAGE_TOO_NARROW", "W_FURNITURE_OVERLAP"]);
     expect(out.next).toMatchObject({ tier: "validity", code: "W_GARAGE_TOO_NARROW" });
   });
 
@@ -184,7 +189,8 @@ describe("validate · next tiers through the CLI", () => {
     for (const stage of [[], ["--stage", "fixtures"], ["--stage", "drafting"]]) {
       const argv = [plan, "--json", ...stage];
       const out = JSON.parse(runValidate(argv).stdout);
-      expect(out.diagnostics[0].code, argv.join(" ")).toBe("W_ROOM_MISSING_DEFINING");
+      // RM1.4: four `W_GRID_SNAPPED` come first in the list, and rank last (tier `info`).
+      expect(lintCodes(out)[0], argv.join(" ")).toBe("W_ROOM_MISSING_DEFINING");
       expect(out.next, argv.join(" ")).toMatchObject({ tier: "validity", code: "W_STAIR_NO_LANDING" });
     }
   });

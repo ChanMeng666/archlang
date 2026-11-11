@@ -45,12 +45,12 @@ plan "Two-Bedroom Flat" {
   furniture stove        against wall exterior segment 3 offset 5300 in r_living
   furniture kitchen_sink against wall exterior segment 3 offset 6100 in r_living
   furniture counter      against wall exterior segment 3 offset 6800 in r_living
-  furniture sofa  at (2850,5400) size 850x2000 label "Sofa"  in r_living
+  furniture sofa  at (2850,5400) size 900x2000 label "Sofa"  in r_living
   furniture table at (800,5800)  size 1200x800 label "Table" in r_living
 
   furniture shower in r_bath anchor bottom-left flush size 900x900
   furniture wc     against r_bath.bottom offset 1600 size 400x700
-  furniture basin  in r_bath anchor right flush size 450x600
+  furniture basin  in r_bath anchor right flush size 500x600
 
   # The eaves: the derived shell is the plan's one closed exterior ring.
   roof overhang 500

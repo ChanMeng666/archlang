@@ -23,8 +23,8 @@ plan "Gallery L" {
   wall exterior thickness 300 {
     (0,0) (12000,0) (12000,9000) (6000,14000) (0,14000) close
   }
-  wall id=spine partition thickness 150 { (6000,8000) (6000,14000) }
-  wall id=north_face partition thickness 150 { (6000,8000) (12000,8000) }
+  wall id=spine partition thickness 200 { (6000,8000) (6000,14000) }
+  wall id=north_face partition thickness 200 { (6000,8000) (12000,8000) }
 
   room id=gallery polygon (0,0) (12000,0) (12000,8000) (6000,8000) (6000,14000) (0,14000)
     label "Gallery"

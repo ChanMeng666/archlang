@@ -21,11 +21,13 @@ import {
  * lag on the live site is no bug.
  */
 
-/** A deliberate, fixable plan: a 600 mm entrance door (two findings) and a store with no door. */
+/** A deliberate, fixable plan: a 600 mm entrance door (two findings) and a store with no door. Every
+ *  value is on its `grid 100` (the exterior wall is written 200, as the grid draws it), so no
+ *  finding is a `W_GRID_SNAPPED` (RM1.4). */
 const CHECKS_PLAN = `plan "Checks" {
   units mm
   grid 100
-  wall exterior thickness 150 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  wall exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
   wall interior thickness 100 { (4000,0) (4000,4000) }
   room id=main at (0,0) size 4000x4000 label "Living" uses living
   room id=store at (4000,0) size 2000x4000 label "Store" uses storage

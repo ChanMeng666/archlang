@@ -443,6 +443,8 @@ consume and stop painting an empty ring. None of these throws; each draws or rep
 no-host door and opening warnings to errors (`docs/plans/product-roadmap/README.md` RM-D6, RM-D16), and the
 branch `origin/feat/remove-view` belong to one major release and are done together when 2.0 is decided. No
 card schedules any of them before then; do not pick one up on its own.
+PS0.16's warning is `W_SET_VALUE_WORD` (shipped by RM1.4): at 2.0 it becomes an error, `set <kind>(key: word)`
+then refusing a bare word its kind does not read instead of taking it as text (RM-D6).
 
 - V.1 · Mixed-height joints interpenetrate and draw in the wrong order — won't fix → archived (lab)
 - V.4 · The joinery emits an UNCLOSED chain for a door consuming an arc wall under `grid` — won't fix → archived (lab)

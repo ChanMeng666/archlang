@@ -41,14 +41,14 @@ plan "Hillside Villa" {
     wall id=wall partition thickness 100 { (0,0) (1800,0) (1800,2600) (0,2600) close }
     room id=room at (0,0) size 1800x2600 label "Ensuite" uses bath
     # `inset 150`, not `flush`, on the two NORTH fixtures: every placement backs that edge
-    # onto a THICKER host wall (`shell` 250 mm for en2, `w_l2_band` 200 mm for the suites)
+    # onto a THICKER host wall (`shell` 300 mm for en2, `w_l2_band` 200 mm for the suites)
     # running along the same line as this component's own 100 mm wall — `flush` reads the
     # nearer face and collides with the far one. The shower goes top-RIGHT: each suite's
     # bedroom door lands on the LEFT edge (`at 7500` below), and a shower there
     # would leave it no swing room. The WC sits below it on the EAST wall, 100 mm off (en_m's
     # shell is thicker).
     furniture shower in room anchor top-right   inset 150 size 900x900
-    furniture basin  in room anchor top-left    inset 150 size 600x450
+    furniture basin  in room anchor top-left    inset 150 size 600x500
     furniture wc     at (room.right - 900, room.top + 1400) size 700x400 rotate 90 in room
   }
 
@@ -60,7 +60,7 @@ plan "Hillside Villa" {
     # One closed ring for the main volume, with a bowed bay let into the south (garden)
     # wall behind the living room — a curved arc EDGE, not a separate `room circle`,
     # walked from (4400,10200) to (1600,10200) with `cw` so it bulges OUTWARD.
-    wall id=shell exterior thickness 250 {
+    wall id=shell exterior thickness 300 {
       (0,0) (13800,0)
       (13800,10200)
       (4400,10200)
@@ -71,10 +71,10 @@ plan "Hillside Villa" {
 
     # The garage/utility wing: three sides only (its fourth side is the main shell's own
     # west face, so nothing is drawn twice).
-    wall id=w_wing_n exterior  thickness 250 { (-5500,0) (0,0) }
-    wall id=w_wing_w exterior  thickness 250 { (-5500,0) (-5500,10200) }
-    wall id=w_wing_s exterior  thickness 250 { (-5500,10200) (0,10200) }
-    wall id=w_util   partition thickness 150 { (-5500,6200) (0,6200) }
+    wall id=w_wing_n exterior  thickness 300 { (-5500,0) (0,0) }
+    wall id=w_wing_w exterior  thickness 300 { (-5500,0) (-5500,10200) }
+    wall id=w_wing_s exterior  thickness 300 { (-5500,10200) (0,10200) }
+    wall id=w_util   partition thickness 200 { (-5500,6200) (0,6200) }
 
     # Front-band partitions (street side).
     wall id=w_office_e   partition thickness 100 { (4000,0) (4000,4200) }
@@ -86,9 +86,9 @@ plan "Hillside Villa" {
     # Front/back band spine, and the garden-band partitions.
     wall id=w_l1_band_w partition thickness 200 { (0,4200) (8000,4200) }
     wall id=w_l1_band_e partition thickness 200 { (8000,4200) (13800,4200) }
-    wall id=w_liv_din   partition thickness 150 { (4800,4200) (4800,10200) }
+    wall id=w_liv_din   partition thickness 200 { (4800,4200) (4800,10200) }
     wall id=w_din_kit   partition thickness 100 { (8000,4200) (8000,8200) }
-    wall id=w_din_terr  partition thickness 150 { (8000,8200) (8000,10200) }
+    wall id=w_din_terr  partition thickness 200 { (8000,8200) (8000,10200) }
     wall id=w_kit_terr  exterior  thickness 200 { (8000,8200) (13800,8200) }
 
     # ---- rooms, grouped into wings by `zone` -------------------------------------------
@@ -120,10 +120,10 @@ plan "Hillside Villa" {
     door id=d_office        at (4000,2000) width 900 wall w_office_e hinge left swing into r_office
     # Two cars, so a double-width sectional door (4800, two bays of 2400) and a drive as
     # wide as the garage out to the street.
-    door id=d_garage        garage at (-2750,0) width 4800 wall w_wing_n
+    door id=d_garage        garage at (-2700,0) width 4800 wall w_wing_n
     door id=d_garage_int    at (0,7600) width 900 wall shell swing into r_utility
     door id=d_garage_util   bifold on w_util at 2750 width 1500 swing in
-    door id=d_utility_ext   at (-2750,10200) width 900 wall w_wing_s hinge right swing out
+    door id=d_utility_ext   at (-2700,10200) width 900 wall w_wing_s hinge right swing out
     door id=d_powder        pocket on w_frontsvc_s at 1000 width 800 slide right
     door id=d_pantry        barn on w_frontsvc_s at 3900 width 900 swing in
     door id=d_kit_corr      on w_l1_band_e at 2900 width 1200 hinge right swing into r_kitchen
@@ -156,7 +156,7 @@ plan "Hillside Villa" {
     furniture rug          at (600,5100)  size 3000x2300 in r_living
     furniture sofa_l        at (700,5600)  size 2400x1500 in r_living
     furniture coffee_table  at (1300,7200) size 1000x500  in r_living
-    furniture armchair      at (3200,5750) size 900x850  rotate 270 in r_living
+    furniture armchair      at (3200,5750) size 900x900  rotate 270 in r_living
     furniture plant         at (300,4400)  size 600x600  in r_living
     furniture piano          at (3000,8700) size 1600x1200 rotate 270 in r_living
     furniture tv_unit against wall w_liv_din offset 3000 in r_living
@@ -178,7 +178,7 @@ plan "Hillside Villa" {
     furniture dryer  against wall w_wing_w offset 7400 in r_utility
 
     furniture wc    against r_powder.left offset 1000 size 400x700
-    furniture basin in r_powder anchor top-right   flush size 600x450
+    furniture basin in r_powder anchor top-right   flush size 600x500
 
     outdoor id=g_drive driveway at (-5500,-3000) size 5500x3000 label "Drive"
 
@@ -202,7 +202,7 @@ plan "Hillside Villa" {
     # ---- shell --------------------------------------------------------------------------
     # No garage below this footprint and no bay above it: a plain closed rectangle, so its
     # `roof overhang` below is a simple mitred offset with nothing curved to refuse.
-    wall id=shell exterior thickness 250 { (0,0) (13800,0) (13800,10200) (0,10200) close }
+    wall id=shell exterior thickness 300 { (0,0) (13800,0) (13800,10200) (0,10200) close }
 
     # ---- partitions -----------------------------------------------------------------------
     wall id=w_study_s partition thickness 100 { (0,2600) (4000,2600) }
@@ -273,14 +273,14 @@ plan "Hillside Villa" {
     # Each bed's head is on the suites' shared partition or the east shell, never under a
     # window.
     furniture bed        against wall w_suites offset 1700 size 1500x2000 in r_bed2
-    furniture nightstand against wall w_suites offset 700  size 450x400 in r_bed2
+    furniture nightstand against wall w_suites offset 700  size 500x400 in r_bed2
     furniture wardrobe   against wall w_gallery_e offset 2000 size 1800x600 in r_bed2
 
     furniture double_bed against wall w_suites offset 1700 size 1800x2000 in r_master
-    furniture nightstand against wall w_suites offset 550  size 450x400 in r_master
-    furniture nightstand against wall w_suites offset 2850 size 450x400 in r_master
+    furniture nightstand against wall w_suites offset 550  size 500x400 in r_master
+    furniture nightstand against wall w_suites offset 2850 size 500x400 in r_master
     furniture wardrobe   against wall shell segment 1 offset 9100 size 1800x600 in r_master
-    furniture armchair   at (11000,9000) size 900x850 in r_master
+    furniture armchair   at (11000,9000) size 900x900 in r_master
 
     # The gallery railing looks down into the double-height living room below — a `void`
     # does not reduce this room's own area (`describe --json` reports it under `voids[]`).

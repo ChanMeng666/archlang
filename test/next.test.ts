@@ -218,6 +218,8 @@ describe("nextDiagnostic · precedence between tiers", () => {
     intent: { diagnostics: [], intent: INTENT },
     profile: { diagnostics: [], profileLint: [W("W_DOOR_TOO_NARROW", 40)] },
     taste: { diagnostics: [], taste: tasteWith([0.25]) },
+    // RM1.4 ruling on #704: an informational compile warning, last.
+    info: { diagnostics: [W("W_GRID_SNAPPED", 50)] },
   };
   const merge = (tiers: readonly (typeof NEXT_TIERS)[number][]): NextInput => {
     const m: NextInput = { diagnostics: [] };
@@ -233,7 +235,7 @@ describe("nextDiagnostic · precedence between tiers", () => {
   };
 
   it("the tiers: compile warnings right after errors (upstream causes), drafting after validity", () => {
-    expect(NEXT_TIERS).toEqual(["error", "warning", "validity", "drafting", "intent", "profile", "taste"]);
+    expect(NEXT_TIERS).toEqual(["error", "warning", "validity", "drafting", "intent", "profile", "taste", "info"]);
   });
 
   for (let i = 0; i < NEXT_TIERS.length; i++) {

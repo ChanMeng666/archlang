@@ -47,12 +47,12 @@ import type { Expr } from "./expr.js";
 import type { ExprTokens } from "./expr.js";
 import { closest, MAX_NEST_DEPTH, parseExpr as parseExprPratt } from "./expr.js";
 import type { Theme } from "./theme.js";
-import { isNumericThemeKey, resolveThemeKey, resolveStyleKey } from "./theme.js";
+import { isNumericThemeKey, resolveThemeKey, resolveStyleKey, THEMES } from "./theme.js";
 import { fmt3, MAX_ANGLE_DEG, MODEL_RANGE_MM, outOfRangeDiagnostic, plainDigits } from "./num-format.js";
 import { isDisallowedConfigValue } from "./sanitize.js";
 import { fnv1a } from "./hash.js";
 import { idToken } from "./identity.js";
-import type { ParseCtx, Registry } from "./registry.js";
+import type { ElementDef, ParseCtx, Registry } from "./registry.js";
 import { BUILTIN_REGISTRY } from "./registry.js";
 import { parseFloorClause } from "./elements/room.js";
 import { KEEP_GRADES, KEEP_WORDS, STATEMENT_STARTS, TITLE_FIELDS, type TitleField } from "./grammar/tokens.js";
@@ -514,7 +514,14 @@ class Parser {
             break;
           case "theme": {
             const r = this.parseTheme();
-            if (r.base !== undefined) plan.themeBase = r.base;
+            if (r.base !== undefined) {
+              plan.themeBase = r.base;
+              // Where a name that is no built-in theme was written, for `W_UNKNOWN_THEME` (RM1.4b),
+              // which `compile()` raises once it knows the themes the call registers. A built-in
+              // name records nothing, so its plan's AST is what it was.
+              if (Object.hasOwn(THEMES, r.base) || !r.baseSpan) delete plan.themeBaseSpan;
+              else plan.themeBaseSpan = r.baseSpan;
+            }
             if (r.from !== undefined) plan.themeFrom = r.from;
             plan.theme = { ...plan.theme, ...r.theme };
             if (this.lineWeightSpan) {
@@ -1173,14 +1180,16 @@ class Parser {
    *   - `theme <name> [ { … } ]`                — named base + optional overrides
    *   - `theme from "#color"`                   — derive poché from one wall colour
    */
-  private parseTheme(): { base?: string; from?: string; theme: Partial<Theme> } {
+  private parseTheme(): { base?: string; baseSpan?: Span; from?: string; theme: Partial<Theme> } {
     this.eatKeyword("theme");
     if (this.isKeyword("from")) {
       this.next();
       return { from: this.eatString(), theme: {} };
     }
     // A leading ident is a named base (`theme blueprint { … }` or just `theme blueprint`).
-    const base = this.isType("ident") ? this.eatIdent().value : undefined;
+    const baseTok = this.isType("ident") ? this.eatIdent() : undefined;
+    const base = baseTok?.value;
+    const baseSpan = baseTok ? { start: baseTok.start, end: baseTok.end } : undefined;
     const theme: Partial<Theme> = {};
     if (this.isType("lcurly")) {
       this.eat("lcurly");
@@ -1211,7 +1220,7 @@ class Parser {
       }
       this.eat("rcurly");
     }
-    return { base, theme };
+    return { base, ...(baseSpan ? { baseSpan } : {}), theme };
   }
 
   /** Eat a string value, blanking it (with a diagnostic) if it carries a
@@ -1773,7 +1782,11 @@ class Parser {
       const refused = def.setRefuses?.[key];
       if (refused) this.fail(refused, keyTok);
       this.eat("colon");
-      over.push({ key, value: this.parseSetValue() });
+      const valueTok = this.peek();
+      const value = this.parseSetValue();
+      over.push({ key, value });
+      if (this.peek(-1) === valueTok && valueTok.type === "ident")
+        this.warnSetWord(targetTok.value, key, valueTok, def);
       if (this.isType("comma")) this.next();
       else break;
     }
@@ -1799,6 +1812,41 @@ class Parser {
       return { t: "str", parts: [t.value] };
     }
     return parseExprPratt(this.ctx);
+  }
+
+  /**
+   * `W_SET_VALUE_WORD` (plan-soundness PS0.16, ruled RM-D6: a warning in 1.x, an error at 2.0): a
+   * bare word that {@link parseSetValue} took as text where the kind reads no such word, so the
+   * rule does nothing (`set door(width: W)` is the text "W", never the value of `W`). The words a
+   * kind reads come from its own `ElementDef.setWords`, never a list kept here. Every built-in
+   * declares one (`{}` when it reads none); a kind that declares none (a plugin, which may read
+   * any word from `ctx.defaults`) is never reported: only a declared table says which words a
+   * kind does not read.
+   */
+  private warnSetWord(kind: string, key: string, tok: Token, def: ElementDef): void {
+    const words = def.setWords;
+    if (words === undefined) return;
+    if (Object.hasOwn(words, key) && words[key]!.includes(tok.value)) return;
+    const read = Object.entries(words).map(([k, ws]) => `${k} (${ws.join(", ")})`);
+    // The word in another case (`hinge: Left`): name the one the key reads.
+    const folded = Object.hasOwn(words, key)
+      ? words[key]!.find((w) => w.toLowerCase() === tok.value.toLowerCase())
+      : undefined;
+    this.report({
+      severity: "warning",
+      code: "W_SET_VALUE_WORD",
+      message: Object.hasOwn(words, key)
+        ? `\`set ${kind}(${key}: ${tok.value})\` takes \`${tok.value}\` as the text "${tok.value}", which \`${key}\` does not read, so the rule does nothing`
+        : `\`set ${kind}(${key}: ${tok.value})\` takes \`${tok.value}\` as the text "${tok.value}", not as a value, and \`set ${kind}\` reads no word for \`${key}\`, so the rule does nothing`,
+      span: { start: tok.start, end: tok.end },
+      hints: [
+        ...(folded !== undefined ? [`Write \`set ${kind}(${key}: ${folded})\`: words match exactly.`] : []),
+        read.length > 0
+          ? `\`set ${kind}(…)\` reads a bare word only for ${read.join(" and ")}.`
+          : `\`set ${kind}(…)\` reads no bare word for any key.`,
+        "A bare word is never read as the value of a name; write the value on each element instead.",
+      ],
+    });
   }
 
   /** `while <expr> { body }`. */

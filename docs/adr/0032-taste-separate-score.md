@@ -4,7 +4,9 @@
   0 reversed and an empty ledger), with the caveats of plan-soundness D14 and D15
   (`docs/plans/plan-soundness/README.md` §3), built by PRs #244 (PS5.1a), #247 (PS5.1b), #248
   (PS5.2, the residential-advisory taste profiles) and #246 (PS5.3, taste as the last tier of
-  `validate --json` `next`); D11 records the layer ruling
+  `validate --json` `next`); D11 records the layer ruling. Amended 2026-11-11 by the ruling on PR
+  #704 (RM1.4): an eighth tier, `info` (`W_GRID_SNAPPED`), now follows taste, so taste is the
+  last tier but one (`src/next.ts`)
 - **Date:** 2026-10 (proposed 2026-10-24, accepted 2026-10-25)
 - **Relates to:** [ADR 0005](0005-no-invisible-architect.md) (facts and advisory lint, honestly
   named profiles; this ADR adds a second advisory channel beside lint),

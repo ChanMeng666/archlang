@@ -223,13 +223,15 @@ describe("junctions", () => {
 
 describe("a thin partition on a thick shell's centreline (examples/hillside-villa.arch)", () => {
   // The real case: `component ensuite` draws its own 100 mm ring, and every instance
-  // backs one edge onto the 250 mm `shell` running along the SAME line. Before joinery
-  // that laid two partition faces down inside the shell's poché.
+  // backs one edge onto the 300 mm `shell` running along the SAME line. Before joinery
+  // that laid two partition faces down inside the shell's poché. (RM1.4: the shell was written
+  // `thickness 250` and drawn 300 under `grid 100`; it is now written as drawn. The synthetic join
+  // below keeps the 250 it was taken with: any shell thicker than the partition is this case.)
   const src = readFileSync("examples/hillside-villa.arch", "utf8");
 
   it("the example really does declare that pairing (the fixture is not stale)", () => {
     expect(src).toContain("wall id=wall partition thickness 100");
-    expect(src).toContain("wall id=shell exterior thickness 250");
+    expect(src).toContain("wall id=shell exterior thickness 300");
   });
 
   const r = join([

@@ -1639,6 +1639,7 @@ emission order wins:
 | `intent` | a failing gating assertion, then a `--graph` mismatch, then an advisory assertion | `--intent`, `--graph` |
 | `profile` | a warning only the named lint profile raises | `--profile <name>` |
 | `taste` | the lowest-scoring assessable taste criterion below 1 | `--taste <profile>` |
+| `info` | an informational compile-channel warning (`W_GRID_SNAPPED`: the drawing already is what it draws) | always |
 
 One exception holds inside the `validity` tier: a door-swing shortfall that comes first yields to the first stair-safety warning or to a finding of an earlier authoring stage (`validate --stage`), so a WC door 85 mm short is not named before a stair with no landing.
 
@@ -1666,13 +1667,14 @@ source. `code` is the taste criterion's `A_*` advice code in the taste tier, and
 Compile-channel warnings come right after errors because they are upstream causes: a door that
 did not land on its wall (`W_DOOR_OFF_WALL`) reads to lint as a room with no door, and the fix
 is the door, not the extra door lint would suggest. The cosmetic ones (fonts, hatch scale,
-unknown keys, deprecations) share the tier; they are quick to clear. With `--profile`, a lint
+unknown keys, deprecations) share the tier; they are quick to clear. `W_GRID_SNAPPED` does not:
+it only says the drawing differs from what was written, so it is the `info` tier, last. With `--profile`, a lint
 warning is quoted as the profile run words it, the text the diagnostics show.
 
 `next` adds a key and changes nothing else: every byte before it, `ok` and the exit code are
 what they were, and a display filter (`--code`, `--severity`) never moves it. `--profile`
 reports the diagnostics `lint --profile` reports (so `--strict` gates on them); `--taste` only
-feeds the last tier and never gates. In human mode one `next (<tier>):` line goes to stderr,
+feeds the `taste` tier and never gates. In human mode one `next (<tier>):` line goes to stderr,
 followed by its `= help:` line; `--quiet` drops it. In the library it is
 `nextDiagnostic({ diagnostics, lint, intent?, graph?, profileLint?, taste? })`, pure: it reads
 the results it is handed and measures nothing itself.

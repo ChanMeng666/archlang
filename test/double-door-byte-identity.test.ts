@@ -171,7 +171,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/garden-house.arch",
     "a344c463254cecbd315383b8d58f6611a7e3ad5adfe6c97b02e5f64b09ec9d3c", // RM1.3a, see ./byte-identity-baseline.ts
-    "7b0be7cc59f85d596c632beb990432981f153dd38ce1ae7027d8516f01d807ae",
+    "6ad0c1d88078c4b2df6b28da09d54edc0e2be45053bd26a558ae175e4e319c85", // source: RM1.4 writes the four snapped sizes (same length; was 7b0be7cc)
     [
       [
         "    furniture fridge       against wall w_e1 offset 3200 in r_kitchen\n    furniture counter      against wall w_e1 offset 2500 in r_kitchen",
@@ -193,7 +193,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/hillside-villa.arch",
     "454972020b0a9c632c4ebfe7bc36448c5ce277e50f47519e62a81eed4ec43d6d", // RM1.3a, see ./byte-identity-baseline.ts
-    "8aff5c59e5e4aa5d446e2ea8c9492badf80205167402a29cf7a8e9f02795684c",
+    "743e5cde36c04ef04320e40c555d8121664626102527ecf0b88485438c9e272b", // source: RM1.4 writes the 17 snapped values and its comment of one (same length; was 8aff5c59)
     [
       [
         "    furniture stove          against wall shell segment 1 offset 7400 in r_kitchen\n    furniture dishwasher     against wall shell segment 1 offset 6600 in r_kitchen\n    furniture fridge         against wall w_l1_band_e offset 4700 in r_kitchen",
@@ -317,7 +317,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/two-bed.arch",
     "773304f859e2ecbbb549d24b228cf74022fbfd7d8dfc18a7125ceb2db394edcb", // `centreline_at`, see ./byte-identity-baseline.ts
-    "64900f557e651ec2bfa263284f0fb583a4ca8eece54ec3a8c8335ef7d5d72090",
+    "b200791560ca27c8ed0c07b8ffd09c51f427f4b3d44ce5d1492c0280980765fc", // source: RM1.4 writes the two snapped sizes (same length; was 64900f55)
     [
       [
         "  furniture stove        against wall exterior segment 3 offset 5300 in r_living",
