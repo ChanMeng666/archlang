@@ -182,7 +182,7 @@ on 2026-10-25. Each item names its card; the card holds goal, design, acceptance
    PS2.77, PS7.8 and PS7.10 are done (PRs #305–#315; corpus 77/84). **Next:**
    (a) PS7.8's follow-ups: the next first-contact re-measure runs both arms again (D26's reverse-if is
    read from two); it states every surface changed since `main@134765d1` (tranche 2's four rules,
-   PS7.10's `next`, the examples). PS7.9 (spec headroom, 143 units on 2026-11-10) comes before any spec addition.
+   PS7.10's `next`, the examples). PS7.9 (spec headroom, 143 units on 2026-11-10) came before any spec addition; it freed 1,251 (PR #714, room for 1,394; see below).
    (b) PS2.71 is taste (D27): a taste criterion for a bed head across a window, through PS5's score.
    (c) PS2.68 is blocked on a source (D27); do not start it without one.
    (d) PS2.73 stays gated: start only when a first-contact row shows authors reaching for `against`
@@ -215,8 +215,12 @@ waited for the row-5 re-measure (D19), which ran 2026-10-26: such a card may sta
 
 Facts a reader would otherwise miss: the dwelling reading (D6) now has six consumers (three lint
 arms, taste R6/R11/R12), so D6's reverse-if has fired and is re-stated in D6; spec headroom:
-`spec.llm.md` was 29,977 of 30,000 UTF-16 units (23 free) when this was written; on 2026-11-10 it measured 29,856 (room for 143 more under the `< 30,000` test, after CR1's #480): every spec addition from here pays by cuts
-(D22 R4 precedent; card PS7.9);
+`spec.llm.md` was 29,977 of 30,000 UTF-16 units (23 free) when this was written; on 2026-11-10 it measured 29,856 (room for 143 more under the `< 30,000` test, after CR1's #480).
+PS7.9 (PR #714, 2026-11-11) cut 1,251 units of duplicated or drawing-only prose, each fact kept in
+`docs/language-reference.md` (the PR's cut table), with the cap unchanged: 28,605, room for 1,394. The
+queued syntax is costed at about 1,339 (RM6.1's section mark and slab datum, RM-D17's clear height,
+RM1.2b's `keep site` and openable value, RM8.7 and RM8.9's words, and a 150-unit margin); RM4.2's
+`schedule fixtures` and RM3.4 are not covered and pay by their own cuts (D22 R4 precedent);
 the first-contact hits of the four clearance rules (A8, NT4, NH6, RH3, T5, A1, K4, NH5, RA6, C4, RS4,
 RK4) are in the two 2026-10-25 as-built records and are summed in Part 1 of the 2026-10-26 audit (23
 of the 57, 7 of the 48 and 5 of the 49 now caught, 9 new true findings, 0 false positives); `docs/backlog.md`
