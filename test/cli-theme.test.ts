@@ -69,7 +69,7 @@ describe("--theme: without the flag the render is what it was", () => {
 
 describe("--theme: the flag is CompileOptions.theme", () => {
   it("--theme rendered is compile(src, { theme: THEMES.rendered }), byte for byte", async () => {
-    for (const file of ["examples/studio.arch", "examples/furnished-flat.arch", "examples/garden-house.arch"]) {
+    for (const file of ["examples/studio.arch", "examples/furnished-flat.arch", "examples/bungalow.arch"]) {
       const expected = librarySvg(file, THEMES.rendered!);
       expect(expected, file).not.toBeNull();
       const r = await runArch(["compile", file, "--theme", "rendered", "-o", "-"]);
