@@ -68,7 +68,7 @@ describe("the symbol catalogue's pictures", () => {
       ] as const) {
         const r = compile(specimen(f, scale, theme).source);
         expect(
-          r.errors.map((e) => e.code),
+          r.errors.map((e) => e.message),
           `${f} 1:${scale} ${theme}`,
         ).toEqual([]);
       }

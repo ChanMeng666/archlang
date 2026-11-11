@@ -136,7 +136,7 @@ export function specimen(family: string, scale = 50, theme = "default"): Specime
   return { family, source: lines.join("\n"), crop: [m / 2, m / 2, a + m, d + m] };
 }
 
-type Compile = (src: string) => { svg: string; errors: readonly { code: string; message: string }[] };
+type Compile = (src: string) => { svg: string; errors: readonly { message: string }[] };
 
 /** A checkout's `compile()`, from its source (`src/index.ts`): the core has no runtime dependency. */
 async function compileOf(checkout: string | undefined): Promise<Compile> {
@@ -159,7 +159,7 @@ function cropSvg(svg: string, crop: Specimen["crop"], w: number, h: number): str
 /** A family drawn by `fn` and rasterised by resvg: the PNG's decoded image. */
 async function draw(fn: Compile, s: Specimen, w: number, h: number): Promise<PNG> {
   const r = fn(s.source);
-  if (r.errors.length > 0) throw new Error(`specimen ${s.family}: ${r.errors.map((e) => e.code).join(", ")}`);
+  if (r.errors.length > 0) throw new Error(`specimen ${s.family}: ${r.errors.map((e) => e.message).join("; ")}`);
   return PNG.sync.read(Buffer.from(await renderPngFromSvg(cropSvg(r.svg, s.crop, w, h))));
 }
 
