@@ -4,17 +4,20 @@ ArchLang reads the plan you wrote and measures it. When something is wrong it sa
 what to change, in text a person or an agent can act on. This page shows seven small plans the
 checks flag, each with the command and its real output.
 
-Two kinds of answer come back. An error (`E_*`) means the plan cannot be drawn as written. A warning
-(`W_*`) is advice about a plan that does draw: `archlang lint` exits `0` with warnings unless you ask
-otherwise ([`--strict`](#make-warnings-fail-validate-strict) below). The checks measure the geometry
-you stated. They do not decide whether a building is good, and no profile makes that decision.
+Two kinds of answer come back. An error (`E_*`) makes the command fail with exit code `2`: in
+`compile` and `validate` the plan cannot be drawn as written, and in `impact --lock` an edit broke
+something you locked, on a plan that still draws. A warning (`W_*`) is advice about a plan that
+does draw: `archlang lint` exits `0` with warnings unless you ask otherwise
+([`--strict`](#make-warnings-fail-validate-strict) below). The checks measure the geometry you
+stated. They do not decide whether a building is good, and no profile makes that decision.
 
 How to read the output: each JSON block is the command's `--json` output reduced to the fields
 shown. A diagnostic keeps its `code`, `message` and position (`line`, `col`); the full output also
 carries the byte `span`, a `fix` text, `hints` and a `coverage` block naming the rule families that
-ran or were skipped. For `impact`, `keeps_broke` is the full output's `keeps.broke` and `lock` keeps its `violations`
-with the code, id, kind, change and message. Run the command on the plan to read all of it. The `# exit` line under each
-command is the exit code that run returned.
+ran or were skipped. A family that ran in part is kept, as `coverage_partial`. For `impact`, `ok` is
+the full output's top-level `ok`, `keeps_broke` is its `keeps.broke`, and `lock` keeps its
+`violations` with the code, id, kind, change and message. Run the command on the plan to read all
+of it. The `# exit` line under each command is the exit code that run returned.
 
 Every plan below is saved as `plan.arch` and the command is run in the same folder.
 
@@ -57,7 +60,8 @@ archlang lint plan.arch --json
 ```
 
 The bedroom door needs 800 mm of clear radius to swing and the bed stands 700 mm from the hinge, so
-the leaf would hit it; `archlang repair` computes the smallest shift that clears it.
+the swing check reads the leaf as reaching it. The fixes it offers are to hang the leaf on the other
+jamb, open it the other way, or move the bed.
 The code is [`W_SWING_OBSTRUCTED`](error-codes.md#w_swing_obstructed).
 
 ## A room nobody can reach
@@ -177,12 +181,26 @@ archlang lint plan.arch --json
       "line": 4,
       "col": 3
     }
+  ],
+  "coverage_partial": [
+    {
+      "family": "rooms",
+      "status": "partial",
+      "skipped": [
+        {
+          "reason": "no-vehicle-door",
+          "why": "the garage has no vehicle door to measure its depth from"
+        }
+      ]
+    }
   ]
 }
 ```
 
-One parking bay wants 2700 mm of clear width and this garage is 2500 mm across its short side, so it
-is 200 mm short ([`W_GARAGE_TOO_NARROW`](error-codes.md#w_garage_too_narrow)).
+The rule asks 2700 mm for one parking bay and compares it with the drawn short side of the room,
+2500 mm between the wall centrelines, so it reports 200 mm short
+([`W_GARAGE_TOO_NARROW`](error-codes.md#w_garage_too_narrow)). This garage has no vehicle door, so
+its depth is not measured; `coverage_partial` in the output says so.
 
 ## Furniture through a wall
 
@@ -222,7 +240,7 @@ archlang lint plan.arch --json
 }
 ```
 
-The sofa runs from x 1500 to 3500 and the partition stands at x 3000, so the piece sits inside the
+The sofa runs from x 1500 to 3500 and the partition stands at x 3000, so the piece runs through the
 wall ([`W_FURNITURE_WALL_COLLISION`](error-codes.md#w_furniture_wall_collision)).
 
 ## An edit that moves what you locked
@@ -267,6 +285,7 @@ archlang impact plan.arch --set hall_d=1700 --lock r_main,w_main,d_front --json
 
 ```json
 {
+  "ok": true,
   "keeps_broke": [
     {
       "keep": "fixed r_main.bottom at 3000",
@@ -302,7 +321,9 @@ archlang impact plan.arch --set hall_d=1700 --lock r_main,w_main,d_front --json
 
 The living room shrank by 200 mm at its bottom edge, which the lock reports as
 `E_LOCKED_ELEMENT_CHANGED` (exit `2`); the window and the door stayed where they were, and the
-`keep` broke by the same 200 mm. The full output also lists everything that moved and why. A lock is
+`keep` broke by the same 200 mm. The top-level `ok` is `true` because both versions of the plan
+resolved, so the comparison could be made; the exit code `2` comes from the lock, whose own `ok` is
+`false`. The full output also lists everything that moved and why. A lock is
 a check you run for one edit; see [Change one room](edit-one-room.md) for the whole loop.
 
 ## A keep that does not hold
@@ -401,11 +422,11 @@ archlang validate plan.arch --strict --json
 `lint` takes the same flag. To fail on an advisory profile's warnings, add `--profile` (next
 section).
 
-## Clean under the defaults is not clean under any one jurisdiction's numbers
+## A plan clean under the defaults can be flagged under a profile
 
-Without a profile, `lint` uses the default thresholds. A profile swaps in a different set, taken
-from one jurisdiction's published guidance, so the same plan can be clean under one set and flagged
-under another. Here is `examples/studio.arch` under the defaults:
+Without a profile, `lint` uses the default thresholds. A profile swaps in another set, each number
+read from the source its comment in `src/lint/ruleset.ts` names, so the same plan can be clean under
+one set and flagged under another. Here is `examples/studio.arch` under the defaults:
 
 ```bash
 archlang lint examples/studio.arch --json
@@ -436,6 +457,7 @@ archlang lint examples/studio.arch --profile uk-residential-advisory --json
   "diagnostics": [
     {
       "code": "W_ROOM_TOO_SMALL",
+      "message": "Room \"Bedroom\" is only 8.12 m² of net floor (under 11.5 m², the floor for a double bedroom).",
       "line": 21,
       "col": 3
     }
@@ -443,16 +465,30 @@ archlang lint examples/studio.arch --profile uk-residential-advisory --json
 }
 ```
 
-This block leaves out `message` and keeps the code and position. The message says the bedroom
-measures 8.12 m² of net floor and that profile asks 11.5 m² of a double bedroom
-([`W_ROOM_TOO_SMALL`](error-codes.md#w_room_too_small)). Nothing in the plan changed between the two
-runs; the thresholds did. A profile is advice built from one source's numbers. It does not say a
-design meets a code, and a clean run under one profile says nothing about another or about the local
-rules that apply to a real site.
+The message is the compiler's own. Nothing in the plan changed between the two runs; the thresholds
+did. The same plan under every profile the repository ships:
+
+<!-- says-no:studio:start -->
+
+| Profile | What `lint` reports |
+| --- | --- |
+| default (no profile) | no warnings |
+| `residential-basic` | no warnings |
+| `accessibility-advisory` | 6 warnings in 3 codes: W_DOOR_CLEARANCE ×2, W_PATH_TOO_NARROW ×2, W_ROOM_TOO_SMALL ×2 |
+| `cn-residential-advisory` | 1 warning in 1 code: W_ROOM_TOO_SMALL ×1 |
+| `uk-residential-advisory` | 1 warning in 1 code: W_ROOM_TOO_SMALL ×1 |
+| `us-residential-advisory` | no warnings |
+
+<!-- says-no:studio:end -->
+
+A profile is advice built from the numbers it names. It does not say a design meets a code, a clean
+run under one profile says nothing about another, and no run says anything about the local rules
+that apply to a real site.
 
 The numbers each profile sets for a few settings, read from the ruleset in `src/lint/ruleset.ts`
 (`—` means that profile sets no number for that row; the generic floor above it then applies, and
-`residential-basic` changes how a plan is classified, not these numbers):
+`residential-basic` changes how a plan is classified, not these numbers). The warning above comes
+from the double-bedroom row, not the bedroom row:
 
 <!-- says-no:profiles:start -->
 
@@ -461,6 +497,7 @@ The numbers each profile sets for a few settings, read from the ruleset in `src/
 | Least door width (mm) | 700 | 700 | 850 | 700 | 700 | 700 |
 | Least room area, generic floor (m²) | 4 | 4 | 5 | 4 | 4 | 4 |
 | Least bedroom area, set per use (m²) | — | — | — | 5 | 7.5 | 6.5 |
+| Least double-bedroom area (m²) | — | — | — | 9 | 11.5 | — |
 | Stair riser, at most (mm) | 220 | 220 | 220 | 200 | 220 | 196.85 |
 | Stair going, at least (mm) | 220 | 220 | 220 | 220 | 220 | 254 |
 | WC centre to side wall, at least (mm) | 400 | 400 | 450 | 400 | 400 | 381 |

@@ -148,7 +148,7 @@ const PAGE_META = [
   [
     "/says-no",
     "When the compiler says no, and why",
-    "Seven small plans that draw one warning each, with the real lint, validate and impact output, what validate --strict does, and where profile numbers come from.",
+    "Seven small plans the checks flag, with the real lint, validate and impact output, what validate --strict does, and where the numbers in each lint profile come from.",
   ],
   [
     "/start",

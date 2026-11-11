@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- A docs page, `/says-no` ("When the compiler says no, and why"): seven small plans that each draw one warning, with the real `lint`, `validate` and `impact --lock` output, what `validate --strict` does, and a table of the numbers the lint profiles set, read from `LINT_PROFILES`. `scripts/says-no.ts` renders every output on the page and `test/docs-says-no.test.ts` fails when the page differs.
+- A docs page, `/says-no` ("When the compiler says no, and why"): seven small plans the checks flag, with the real `lint`, `validate` and `impact --lock` output, what `validate --strict` does, and a table of the numbers the lint profiles set, read from `LINT_PROFILES`. `scripts/says-no.ts` renders every output on the page and `test/docs-says-no.test.ts` fails when the page differs.
 - `/analysis` names `gerontec/archlang-section`, which reads `describe --json`, with its author's description.
 
 ## [1.58.0] - 2026-11-11

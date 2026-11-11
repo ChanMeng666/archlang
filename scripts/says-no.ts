@@ -33,6 +33,8 @@ export const PAGE = "docs/says-no.md";
 
 export const PROFILES_START = "<!-- says-no:profiles:start -->";
 export const PROFILES_END = "<!-- says-no:profiles:end -->";
+export const STUDIO_START = "<!-- says-no:studio:start -->";
+export const STUDIO_END = "<!-- says-no:studio:end -->";
 
 /** The profile columns, in the order the repo lists them: the defaults, then `LINT_PROFILES`. */
 const COLUMNS: readonly string[] = ["default", ...Object.keys(LINT_PROFILES)];
@@ -52,6 +54,11 @@ export const PROFILE_ROWS: readonly Row[] = [
     label: "Least bedroom area, set per use (m²)",
     field: "minRoomAreaByUseM2.bedroom",
     read: (r) => r.minRoomAreaByUseM2.bedroom,
+  },
+  {
+    label: "Least double-bedroom area (m²)",
+    field: "minDoubleBedroomAreaM2",
+    read: (r) => r.minDoubleBedroomAreaM2,
   },
   { label: "Stair riser, at most (mm)", field: "stairMaxRiseMm", read: (r) => r.stairMaxRiseMm },
   { label: "Stair going, at least (mm)", field: "stairMinGoingMm", read: (r) => r.stairMinGoingMm },
@@ -84,14 +91,25 @@ const pick = (o: unknown, keys: readonly string[]): Json => {
 /**
  * What the page keeps of a command's `--json` output; the page says so in prose. Diagnostics keep
  * their code, message and position; the byte `span`, the long `fix` text, the `hints` and the
- * `coverage` block are left out. `impact` keeps the broken keeps and the lock.
+ * `coverage` block are left out, except a rule family that ran in part (`coverage_partial`).
+ * `impact` keeps its top-level `ok`, the broken keeps and the lock.
  */
-export function reduce(verb: string, full: Json, args: readonly string[] = []): Json {
+export function reduce(verb: string, full: Json): Json {
   if (verb === "lint" || verb === "validate") {
     const out: Json = pick(full, ["summary", "ok", "strict"]);
-    // A `--profile` run keeps the code and position only: the page quotes the message in prose.
-    const keep = args.includes("--profile") ? ["code", "line", "col"] : ["code", "message", "line", "col"];
-    out.diagnostics = ((full.diagnostics as unknown[]) ?? []).map((d) => pick(d, keep));
+    out.diagnostics = ((full.diagnostics as unknown[]) ?? []).map((d) => pick(d, ["code", "message", "line", "col"]));
+    // A rule family that ran in part (`lint` skipped something) is kept, with its reasons; a
+    // family that ran in full, or one the plan does not use, is left out.
+    const partial = ((full.coverage as Json | undefined)?.families as Json[] | undefined)?.filter(
+      (f) => f.status === "partial",
+    );
+    if (partial && partial.length > 0) {
+      out.coverage_partial = partial.map((f) => ({
+        family: f.family,
+        status: f.status,
+        skipped: ((f.skipped as unknown[]) ?? []).map((k) => pick(k, ["reason", "why"])),
+      }));
+    }
     if (verb === "validate" && Array.isArray(full.keeps)) {
       out.keeps = full.keeps.map((k) => pick(k, ["keep", "grade", "holds", "residual_mm"]));
     }
@@ -100,7 +118,7 @@ export function reduce(verb: string, full: Json, args: readonly string[] = []): 
   if (verb === "impact") {
     const lock = full.lock as Json | undefined;
     const keeps = full.keeps as Json | undefined;
-    const out: Json = {};
+    const out: Json = pick(full, ["ok"]);
     if (keeps) {
       out.keeps_broke = ((keeps.broke as unknown[]) ?? []).map((k) =>
         pick(k, ["keep", "grade", "residual_mm", "changed"]),
@@ -206,7 +224,13 @@ export async function renderSaysNo(md: string): Promise<{ text: string; demos: D
         throw new Error(`says-no: line ${f.open + 1}: plan.arch with no arch static fence above`);
       if (usesPlan) writeFileSync(join(scratch, "plan.arch"), plan!, "utf8");
       const run = await runArchlang(args, usesPlan ? scratch : REPO);
-      const reduced = reduce(verb, JSON.parse(run.stdout) as Json, args);
+      let full: Json;
+      try {
+        full = JSON.parse(run.stdout) as Json;
+      } catch {
+        throw new Error(`says-no: line ${f.open + 1}: \`${command}\` printed no JSON (exit ${run.status})`);
+      }
+      const reduced = reduce(verb, full);
       demos.push({ command, plan: usesPlan ? plan : undefined, status: run.status, reduced });
       edits.push({ from: f.open + 1, to: f.close, replacement: [command, `# exit ${run.status}`] });
       edits.push({ from: next!.open + 1, to: next!.close, replacement: JSON.stringify(reduced, null, 2).split("\n") });
@@ -217,11 +241,29 @@ export async function renderSaysNo(md: string): Promise<{ text: string; demos: D
   // Apply from the bottom up so earlier indexes stay valid.
   for (const e of edits.sort((a, b) => b.from - a.from)) lines.splice(e.from, e.to - e.from, ...e.replacement);
   let text = lines.join("\n");
-  const a = text.indexOf(PROFILES_START);
-  const b = text.indexOf(PROFILES_END);
-  if (a < 0 || b < a) throw new Error(`says-no: ${PAGE} lacks the ${PROFILES_START} … ${PROFILES_END} markers`);
-  text = `${text.slice(0, a + PROFILES_START.length)}\n\n${renderProfileTable()}\n\n${text.slice(b)}`;
+  text = fill(text, PROFILES_START, PROFILES_END, renderProfileTable());
+  text = fill(text, STUDIO_START, STUDIO_END, await renderStudioByProfile());
   return { text, demos };
+}
+
+/** Replace what stands between two marker comments with `body`. */
+function fill(text: string, start: string, end: string, body: string): string {
+  const a = text.indexOf(start);
+  const b = text.indexOf(end);
+  if (a < 0 || b < a) throw new Error(`says-no: ${PAGE} lacks the ${start} … ${end} markers`);
+  return `${text.slice(0, a + start.length)}\n\n${body}\n\n${text.slice(b)}`;
+}
+
+/** What `lint` reports on `examples/studio.arch` under the defaults and under each profile. */
+export async function renderStudioByProfile(): Promise<string> {
+  const rows = ["| Profile | What `lint` reports |", "| --- | --- |"];
+  for (const name of ["default", ...Object.keys(LINT_PROFILES)]) {
+    const args = ["lint", "examples/studio.arch", ...(name === "default" ? [] : ["--profile", name]), "--json"];
+    const run = await runArchlang(args, REPO);
+    const summary = (JSON.parse(run.stdout) as Json).summary;
+    rows.push(`| ${name === "default" ? "default (no profile)" : `\`${name}\``} | ${String(summary)} |`);
+  }
+  return rows.join("\n");
 }
 
 async function main(): Promise<void> {
