@@ -251,9 +251,15 @@ const edgeBBox = (e: Edge): GridBox => loopBBox([e]);
 const inGrownBox = (p: Point, b: GridBox): boolean =>
   p.x >= b.minX - SNAP_MM && p.x <= b.maxX + SNAP_MM && p.y >= b.minY - SNAP_MM && p.y <= b.maxY + SNAP_MM;
 
-/** Do two boxes overlap at all? */
+/**
+ * Do two boxes come within the interner's fusing distance of each other? Grown by `SNAP_MM`
+ * like {@link inGrownBox}: an edge ending a few µm short of another (a wall offset by less
+ * than `SNAP_MM`) has a crossing the interner fuses onto its endpoint, and a strict overlap
+ * test rejected that pair before the crossing was found - one face split, the other not, so
+ * the chain could not close and a wall lost a piece (RM8.1d).
+ */
 const boxesOverlap = (a: GridBox, b: GridBox): boolean =>
-  a.minX <= b.maxX && b.minX <= a.maxX && a.minY <= b.maxY && b.minY <= a.maxY;
+  a.minX <= b.maxX + SNAP_MM && b.minX <= a.maxX + SNAP_MM && a.minY <= b.maxY + SNAP_MM && b.minY <= a.maxY + SNAP_MM;
 
 /** A point's parameter along an edge: the projection for a line, the angle for an arc. */
 function paramOf(e: Edge, p: Point): number {
@@ -348,10 +354,17 @@ function splitAll(universe: Tagged[], intern: PointInterner, work: CompileWork |
   // interner's first-registration-wins rule depends on.
   const stamp = new Int32Array(universe.length).fill(-1);
   const candidates: number[] = [];
+  const grown: GridBox = { minX: 0, minY: 0, maxX: 0, maxY: 0 };
   for (let i = 0; i < universe.length; i++) {
     const a = universe[i]!;
     candidates.length = 0;
-    index.forEach(a.bbox, (j) => {
+    // Queried grown by `SNAP_MM`, as `boxesOverlap` tests: a pair a µm apart on either side of
+    // a cell boundary shares no cell, so the strict box never handed it over (RM8.1d).
+    grown.minX = a.bbox.minX - SNAP_MM;
+    grown.minY = a.bbox.minY - SNAP_MM;
+    grown.maxX = a.bbox.maxX + SNAP_MM;
+    grown.maxY = a.bbox.maxY + SNAP_MM;
+    index.forEach(grown, (j) => {
       if (j <= i || stamp[j] === i) return;
       stamp[j] = i;
       candidates.push(j);
@@ -1151,8 +1164,11 @@ function faceRuns(
  * the same edge appear in more buckets — measured on `bench/`'s opening-heavy set, the
  * finer {@link pointCell} rule cost 40% MORE here. A POINT query is the opposite case,
  * which is why the two indices size their cells differently.
+ *
+ * Exported for `test/joinery-split.test.ts` only, which asserts the cell size its cell-boundary
+ * case relies on.
  */
-function spanCell(boxes: readonly GridBox[]): number {
+export function spanCell(boxes: readonly GridBox[]): number {
   if (boxes.length === 0) return 1;
   const ext = boxes.map((b) => Math.max(b.maxX - b.minX, b.maxY - b.minY)).sort((a, b) => a - b);
   const m = ext[Math.floor(ext.length / 2)]!;

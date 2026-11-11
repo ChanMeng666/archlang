@@ -458,11 +458,11 @@ Totals: 390 modules in 34 directories.
 | `arc-band.ts` | 199 | 4 | How deep a rectangle reaches into a CURVED wall's solid — the radial analogue of the straight-segment frame in `./rect.ts`. | none |
 | `arc.ts` | 444 | 48 | Circular-arc math for **curved geometry** — arc wall edges and circular rooms. | none |
 | `backend.ts` | 73 | 5 | Optional polygon-geometry backend seam. | none |
-| `band.ts` | 771 | 25 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
+| `band.ts` | 787 | 25 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
 | `clipper.ts` | 177 | 2 | Optional {@link GeometryBackend} adapter over `clipper2-wasm`. | none |
 | `grid-index.ts` | 247 | 17 | Uniform-grid bucket spatial index over axis-aligned boxes. | none |
 | `intersect.ts` | 341 | 8 | Closed-form intersection and ray-crossing primitives for **wall joinery**. | none |
-| `joinery.ts` | 1235 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
+| `joinery.ts` | 1251 | 7 | **Wall joinery** — one boundary for a whole set of walls, with no line drawn inside another wall's solid. | none |
 | `min-rect.ts` | 169 | 2 | The exact minimum-area enclosing rectangle of a point set on the 0.001 mm lattice (plan-soundness PS5.1b; design `archlang-lab/plans/plan-soundness/research/2026-10-24-ps5-taste-design.md` §3 R9, R18). | none |
 | `polygon.ts` | 669 | 69 | Simple-polygon math for **polygonal rooms**. | charges the step meter |
 | `rect.ts` | 502 | 37 | Shared axis-aligned rectangle math for the analysis/repair layer. | none |
