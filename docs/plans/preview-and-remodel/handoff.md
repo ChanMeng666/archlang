@@ -1,5 +1,7 @@
 # Preview-and-remodel programme: handoff (state as of 2026-11-02, the J round released)
 
+> **One queue (RM-D15, 2026-11-11):** scheduling, and the resume point for all development, are only in `../product-roadmap/handoff.md`. This file keeps this programme's own history and rulings; the plan is shelved, its gate is unchanged (waves 4 and 6 wait for the N10 read), and its J16-J18 residue is split into RM1.5a, RM4.2 and RM3.1's scope table.
+
 > **Moved:** this programme's `research/` now lives in the private sibling repository, at
 > `archlang-lab/plans/preview-and-remodel/research/`.
 
