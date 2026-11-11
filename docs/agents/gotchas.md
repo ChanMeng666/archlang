@@ -132,6 +132,11 @@ coordinator's own notes (merging, registries, browser and social automation, the
   required check since 2026-11-09: write escapers as a character map
   (`Array.from(s, c => TABLE[c] ?? c).join("")`), never a replace chain. Three PRs (#620, #629, #639) each
   lost a CI round to this.
+- **Run every pre-tag proof on the release branch head before merging the version-bump PR**, so that after the merge only
+  pull, tag and push remain. On 2026-11-10 #689 merged at 13:55Z and `v1.58.0` was pushed at 23:33Z; for those 9 h 38 min
+  `https://archlang.uk/arch-plan.js` pointed at a core version npm did not yet have, and `<arch-plan>` embeds failed (a push to
+  `main` deploys the sites; the tag publishes the packages). The cause of the stall was not established. As general practice, an unattended
+  critical path holds no command that can raise a permission prompt (`rm` among them).
 
 ## Tooling & process
 

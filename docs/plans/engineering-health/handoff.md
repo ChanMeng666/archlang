@@ -1,5 +1,7 @@
 # Resume point
 
+> **One queue (RM-D15, 2026-11-11):** scheduling, and the resume point for all development, are only in `../product-roadmap/handoff.md`. This file keeps this programme's own history and rulings; the programme is closed (waves 0-4), and `closing-audit.md` § 1 is its only residue.
+
 **Where (2026-11-10, late night; PROGRAMME CLOSED):** waves 0–3 DONE and re-measured: `closing-audit.md` (7 audits, 41 findings closed,
 25 improved, 13 open, 11 new; reports archived at `claude-kept/2026-11-09-archlang-health-audit/closing-2026-11-10/`).
 Wave 4 (the residue) DONE: EH2.11, EH2.12, EH1.20, EH2.13, EH1.21, EH1.23, EH3.8, EH3.9, EH3.10, EH0.10, EH1.22, EH1.24, EH2.14 and EH2.3c landed (PRs #662–#674); the programme is closed. The nightly's `fuzz-deep` red (two counterexamples) is fixed by #664; the next nightly proves it. Dependabot #206–#208 closed under README § 4 (EH0.10).

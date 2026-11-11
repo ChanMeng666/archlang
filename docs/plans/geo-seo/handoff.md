@@ -1,5 +1,7 @@
 # GEO / SEO wave 3: handoff
 
+> **One queue (RM-D15, 2026-11-11):** scheduling, and the resume point for all development, are only in `../product-roadmap/handoff.md`. This file keeps this programme's own history and rulings; it is an operating cadence, not a development queue (the next panel run is 2026-12-01; the roadmap suggests 12-02, the day after Show HN).
+
 This is the resume point. Update it at the end of every session.
 
 ## State (2026-11-06, session 1)
