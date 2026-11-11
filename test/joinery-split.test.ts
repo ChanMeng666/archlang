@@ -33,7 +33,17 @@ import type { Point } from "../src/ast.js";
 import { distPointToSegment } from "../src/geometry.js";
 import { distPointToArc } from "../src/geometry/arc.js";
 import type { Edge, EdgeLoop } from "../src/geometry/band.js";
-import { PointInterner, loopArea, loopBBox, loopWinding, openingCut, wallBand } from "../src/geometry/band.js";
+import {
+  PointInterner,
+  SNAP_MM,
+  edgeEnd,
+  edgeStart,
+  loopArea,
+  loopBBox,
+  loopWinding,
+  openingCut,
+  wallBand,
+} from "../src/geometry/band.js";
 import type { JoineryCut, JoineryResult, JoineryWall } from "../src/geometry/joinery.js";
 import { bandBBox, joinWalls } from "../src/geometry/joinery.js";
 import { hatchesUsed, hatchKey, hatchOf } from "../src/hatches.js";
@@ -325,4 +335,75 @@ describe("joinery split mode — the face listed first wins a same-group tie", (
     const scene = compile(`plan "C" { units mm\n${shell}\n${core} }`, { noCache: true }).scene!;
     expect(() => classifyWallSet(scene.walls!, (w) => w.category, ["exterior"])).toThrow(RangeError);
   });
+});
+
+describe("joinery: a wall offset by less than the snap distance keeps every piece (RM8.1d)", () => {
+  // Two collinear 200 mm walls, b `dy` mm off a's line. Under SNAP_MM the interner fuses a's end
+  // corner onto b's face, but the split scan's pair test was a strict box overlap, so a's end cap
+  // (y up to 100) and b's face (y = 100 + dy) were never intersected: one face split, the other
+  // not, an odd vertex, open chains, and b's piece between the joint and its window came out a
+  // triangle (the 3D preview's wall lost it; the SVG carried `M x,y Z` dust). 0.0149 and 0.0151
+  // sit either side of SNAP_MM; 0 and 0.0151 are the controls, already sound before the fix.
+  const OFFSETS = ["0.001", "0.0149", "-0.001", "0", "0.0151"] as const;
+  const plan = (bx: number, dy: string, windows: boolean, y = 0): string => {
+    const yb = y === 0 ? dy : String(y + Number(dy));
+    return `plan "N" {
+  units mm
+  height 3000
+  wall id=a exterior thickness 200 { (0,${y}) (3000,${y}) }
+  wall id=b exterior thickness 200 { (${bx},${yb}) (${bx + 3000},${yb}) }
+${windows ? "  window id=wa on a at center width 800 sill 900 head 2100\n  window id=wb on b at 2000 width 800 sill 600 head 1800\n" : ""}}
+`;
+  };
+  /** b's own share: its 3200 x 200 band, less what a (the earlier wall of the same thickness) owns
+   *  where they overlap, less b's window. Within SNAP_MM the faces are fused, so the overlap is the
+   *  full 200 deep; past it, b keeps the |dy|-deep strip beside a's face. */
+  const bArea = (bx: number, dy: number, windows: boolean): number => {
+    const overlap = 3100 - (bx - 100);
+    const deep = Math.abs(dy) < SNAP_MM ? 200 : 200 - Math.abs(dy);
+    return 3200 * 200 - overlap * deep - (windows ? 800 * 200 : 0);
+  };
+  const isClosed = (l: EdgeLoop): boolean =>
+    l.length > 0 &&
+    l.every((e, i) => {
+      const end = edgeEnd(e);
+      const next = edgeStart(l[(i + 1) % l.length]!);
+      return end.x === next.x && end.y === next.y;
+    });
+
+  it("the offsets bracket the snap distance", () => {
+    expect(Number("0.0149")).toBeLessThan(SNAP_MM);
+    expect(Number("0.0151")).toBeGreaterThan(SNAP_MM);
+  });
+
+  for (const [label, bx, windows, y] of [
+    ["b from 3000 with a window", 3000, true, 0],
+    ["b from 2000 without openings", 2000, false, 0],
+    // The same pair with a grid-index cell boundary (cells are 800 mm here) between a's end cap
+    // and b's face: they share no cell, so the scan's query box is grown by SNAP_MM too.
+    ["b from 3000 with a window, a cell boundary between the faces", 3000, true, 699.9995],
+  ] as const) {
+    for (const dy of OFFSETS) {
+      it(`${label}, dy = ${dy}: closed chains, no SVG dust, b keeps its full piece`, () => {
+        const src = plan(bx, dy, windows, y);
+        const r = compile(src, { noCache: true });
+        expect(r.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+        expect(r.svg).not.toMatch(/M -?[\d.]+,-?[\d.]+ Z/);
+        // One face per wall, by drawing order (a, then b), as the 3D package's ownership reads it.
+        const walls = r.scene!.walls!;
+        expect(walls.length).toBe(2);
+        const faceOf = new Map(walls.map((w, i) => [w, i === 0 ? "a" : "b"] as const));
+        const joined = joinWallSet(walls, hatchesUsed(walls).map(hatchKey), {
+          faceOf: (w) => faceOf.get(w) ?? "",
+          faces: ["a", "b"],
+        })!;
+        const { outline, fills, split } = joined.result;
+        for (const l of outline) expect(isClosed(l), "an outline chain").toBe(true);
+        for (const f of fills) for (const l of f.loops) expect(isClosed(l), "a fill chain").toBe(true);
+        for (const f of split!.fills) for (const l of f.loops) expect(isClosed(l), `wall ${f.face}'s chain`).toBe(true);
+        const b = split!.fills.filter((f) => f.face === "b").reduce((s, f) => s + netArea(f.loops), 0);
+        expect(b).toBeCloseTo(bArea(bx, Number(dy), windows), 2);
+      });
+    }
+  }
 });
