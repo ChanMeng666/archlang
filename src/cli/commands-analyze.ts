@@ -813,7 +813,7 @@ export function cmdValidate(args: Args, io: CliIo): number {
     // reported (as `lint --profile` reports them); the default run still ranks `next`.
     const profileLint = args.profile !== undefined ? lint(source, { world, profile: args.profile }) : undefined;
     const diags = [...diagnostics, ...(profileLint ?? lintDiags)];
-    // `--taste` feeds `next` its last tier only; a plan with compile errors is never scored.
+    // `--taste` feeds `next` its taste tier only; a plan with compile errors is never scored.
     const tasteReport =
       args.taste !== undefined && !diagnostics.some((d) => d.severity === "error")
         ? taste(source, { profile: args.taste, world })
@@ -1209,8 +1209,12 @@ export function cmdLint(args: Args, io: CliIo): number {
     if (errs.length) return report(io, source, errs, args, filter);
     // One run of the rules gives the diagnostics `lint()` returns and the coverage report.
     const linted = lintWithCoverage(source, { world, profile: args.profile });
-    // RM1.4b: a theme name the drawing cannot select, reported first, as `validate` lists it.
-    const diags = withThemeWord(source, [], linted.diagnostics);
+    // RM1.4 review: a furniture word near a catalogued kind is compile()'s, but it is the same
+    // kind of finding as the lint rule `W_ALIAS_MATCH`, so `lint --strict` fails on it as on that
+    // one. Then a theme name the drawing cannot select (RM1.4b). Both are listed before the lint
+    // findings, in the order `validate` lists them.
+    const furniture = diagnostics.filter((d) => d.code === "W_UNKNOWN_FURNITURE");
+    const diags = withThemeWord(source, furniture, linted.diagnostics);
     return report(io, source, diags, args, filter, linted.coverage ?? undefined);
   });
 }

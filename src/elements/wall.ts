@@ -48,7 +48,9 @@ export const wall: ElementDef = {
     const id = ctx.parseIdOpt();
     const category = ctx.eatIdent().value;
     ctx.eatKeyword("thickness");
+    const thicknessStart = ctx.peek().start;
     const thickness = ctx.parseExpr();
+    const thicknessSpan = ctx.spanFrom(thicknessStart);
     let material: string | undefined;
     let materialScale: ReturnType<ParseCtx["parseExpr"]> | undefined;
     let materialAngle: ReturnType<ParseCtx["parseExpr"]> | undefined;
@@ -88,6 +90,7 @@ export const wall: ElementDef = {
         id,
         category,
         thickness,
+        thicknessSpan,
         material,
         materialScale,
         materialAngle,
@@ -155,6 +158,7 @@ export const wall: ElementDef = {
       id,
       category,
       thickness,
+      thicknessSpan,
       material,
       materialScale,
       materialAngle,
@@ -193,7 +197,7 @@ export const wall: ElementDef = {
         span: n.span,
       });
     }
-    noteThickness(ctx, `Wall "${id}"`, tv, thickness, n.span);
+    noteThickness(ctx, `Wall "${id}"`, tv, thickness, n.thicknessSpan ?? n.span);
     let material = DEFAULT_MATERIAL as string;
     if (n.material !== undefined) {
       if (isKnownMaterial(n.material)) material = n.material;

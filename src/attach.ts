@@ -16,7 +16,7 @@
  */
 
 import type { AttachFrom, AttachPos, ExprPoint, OpeningAttach, OpeningBetween, Point, WallsPairRoom } from "./ast.js";
-import type { Diagnostic, FixSuggestion } from "./diagnostics.js";
+import type { Diagnostic, FixSuggestion, Span } from "./diagnostics.js";
 import type { Expr, ParseExprOpts } from "./expr.js";
 import { chargeSteps } from "./expr.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
@@ -158,7 +158,7 @@ export function isEdgeName(name: string): boolean {
 export function parseAttachTarget(
   ctx: ParseCtx,
   between = false,
-): { at?: ExprPoint; attach?: OpeningAttach; between?: OpeningBetween } {
+): { at?: ExprPoint; atSpan?: Span; attach?: OpeningAttach; between?: OpeningBetween } {
   if (ctx.isKeyword("on")) {
     const onTok = ctx.next();
     const wall = ctx.eatIdent().value;
@@ -194,7 +194,9 @@ export function parseAttachTarget(
     return { between: { a, b, pos, span: { start: kw.start, end } } };
   }
   ctx.eatKeyword("at");
-  return { at: ctx.parsePoint() };
+  const start = ctx.peek().start;
+  const at = ctx.parsePoint();
+  return { at, atSpan: ctx.spanFrom(start) };
 }
 
 /**

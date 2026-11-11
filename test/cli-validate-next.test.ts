@@ -1,14 +1,11 @@
 /** validate --json · next is purely additive; validate · next tiers through the CLI. */
 
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { runValidate, validateJsonFiles } from "./helpers/validate-json-run.js";
 import { runArch } from "./helpers/cli.js";
-import { lint } from "../src/index.js";
-import { resolvePlan } from "../src/analyze.js";
-import { nextDiagnostic } from "../src/next.js";
 
 /**
  * `validate` gains `next` (plan-soundness PS5.3).
@@ -59,17 +56,10 @@ function withoutNext(argv: string[]): { exit: number; stdout: string } {
   }
 }
 
-/** A `validate --json` report's codes with the RM1.4 snap warnings left out: the lint findings. */
+/** A `validate --json` report's codes without the RM1.4 snap warnings, which the compile channel
+ *  lists before every lint finding: the lint findings, in their order. */
 const lintCodes = (out: { diagnostics: { code: string }[] }): string[] =>
   out.diagnostics.map((d) => d.code).filter((c) => c !== "W_GRID_SNAPPED");
-
-/** `next` for a plan with its compile-channel `W_GRID_SNAPPED` warnings left out (RM1.4): the
- *  ranking PS7.10 is about, among the lint findings. */
-function nextWithoutSnap(rel: string): ReturnType<typeof nextDiagnostic> {
-  const src = readFileSync(rel, "utf8");
-  const diagnostics = resolvePlan(src).diagnostics.filter((d) => d.code !== "W_GRID_SNAPPED");
-  return nextDiagnostic({ diagnostics, lint: lint(src) });
-}
 
 let dir: string;
 const brief = (): string => join(dir, "brief.json");
@@ -177,14 +167,11 @@ describe("validate · next tiers through the CLI", () => {
     // it does not yield, so the house no longer exercises PS7.10 (the cafe below does).
     const plan = "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch";
     const out = JSON.parse(runValidate([plan, "--json"]).stdout);
-    // RM1.4: snapping is now reported. The plan writes `walls from rooms exterior 250` under
-    // `grid 100`, so a compile-channel `W_GRID_SNAPPED` comes first and is `next` (tier 2, ahead
-    // of every lint finding). The lint findings and their order are as they were, and with the
-    // snap warning left out `next` is still the garage code.
+    // RM1.4: the plan writes `walls from rooms exterior 250` under `grid 100`, so it raises
+    // `W_GRID_SNAPPED`, listed first; it is tier `info` (last), so `next` is still the garage code.
     expect(out.diagnostics[0].code).toBe("W_GRID_SNAPPED");
-    expect(out.next).toMatchObject({ tier: "warning", code: "W_GRID_SNAPPED" });
     expect(lintCodes(out).slice(0, 2)).toEqual(["W_GARAGE_TOO_NARROW", "W_FURNITURE_OVERLAP"]);
-    expect(nextWithoutSnap(plan)).toMatchObject({ tier: "validity", code: "W_GARAGE_TOO_NARROW" });
+    expect(out.next).toMatchObject({ tier: "validity", code: "W_GARAGE_TOO_NARROW" });
   });
 
   it("PS7.10: the walls-first cafe's next is the WC door's swing, not the furniture overlap emitted first", () => {
@@ -199,16 +186,13 @@ describe("validate · next tiers through the CLI", () => {
 
   it("PS7.10: the arm-1 townhouse's next is a stair code, not the missing hob emitted first", () => {
     const plan = "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch";
-    // RM1.4: snapping is now reported. The townhouse writes four sizes `grid 100` moves, so a
-    // compile-channel `W_GRID_SNAPPED` is `next` (tier 2) at every stage it is shown at; the lint
-    // findings are as they were, and with the snap warnings left out `next` is the stair code.
     for (const stage of [[], ["--stage", "fixtures"], ["--stage", "drafting"]]) {
       const argv = [plan, "--json", ...stage];
       const out = JSON.parse(runValidate(argv).stdout);
+      // RM1.4: four `W_GRID_SNAPPED` come first in the list, and rank last (tier `info`).
       expect(lintCodes(out)[0], argv.join(" ")).toBe("W_ROOM_MISSING_DEFINING");
-      expect(out.next, argv.join(" ")).toMatchObject({ tier: "warning", code: "W_GRID_SNAPPED" });
+      expect(out.next, argv.join(" ")).toMatchObject({ tier: "validity", code: "W_STAIR_NO_LANDING" });
     }
-    expect(nextWithoutSnap(plan)).toMatchObject({ tier: "validity", code: "W_STAIR_NO_LANDING" });
   });
 
   it("nothing: null, and no human next line", async () => {

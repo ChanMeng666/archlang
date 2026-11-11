@@ -13,7 +13,7 @@
 
 import type { Span } from "../diagnostics.js";
 import type { ResolveCtx } from "../registry.js";
-import { fmt3, MODEL_RANGE_MM } from "../num-format.js";
+import { fmt3, fmtWritten, MODEL_RANGE_MM } from "../num-format.js";
 
 /** A value a message may quote: finite and inside the modelling range. */
 const quotable = (v: number): boolean => Number.isFinite(v) && Math.abs(v) <= MODEL_RANGE_MM;
@@ -94,9 +94,11 @@ export function noteSnap(
   // The common case, a value already on the grid, returns here having allocated nothing.
   if (!(ctx.grid > 0) || written.every((v, i) => v === drawn[i])) return;
   if (!written.every(quotable) || !drawn.every(quotable)) return;
-  const a = written.map(fmt3);
   const b = drawn.map(fmt3);
-  if (a.every((s, i) => s === b[i])) return;
+  // Reported when the value prints differently once snapped, and then quoted as written: a
+  // value `fmt3` would round (`2749.9999`) is printed in full, never as the `2750` it is not.
+  if (written.every((v, i) => fmt3(v) === b[i])) return;
+  const a = written.map(fmtWritten);
   const show = (xs: string[]): string => (point ? `(${xs.join(", ")})` : xs.join(" x "));
   const g = fmt3(ctx.grid);
   ctx.diag({

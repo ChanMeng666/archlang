@@ -34,6 +34,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe as describePlan, ERROR_CATALOG, lint } from "../src/index.js";
+import type { ElementDef, ParseCtx, ResolveCtx } from "../src/index.js";
 import { type CompilerApi, allStoreysDigestWithDiagnostics } from "./helpers/byte-identity-digest.js";
 import { examples, libNames, REPO_ROOT } from "./helpers/corpus.js";
 import { worldFor } from "./helpers/world.js";
@@ -158,6 +159,47 @@ suite("W_GRID_SNAPPED (PS0.25, 6.10)", () => {
     ]);
   });
 
+  it("points at the value as written, a `let` name included, not at the whole statement", () => {
+    const src = plan(
+      [
+        "  grid 100",
+        "  let D = 450",
+        "  wall id=w exterior thickness 250 { (0,0) (30000,0) }",
+        "  room id=r at (0,0) size 2750x3000",
+        "  furniture chair at (500,500) size D x D",
+        "  door at (20550, 0) width 900 wall w",
+      ].join("\n"),
+    );
+    const spans = compile(src, { noCache: true })
+      .diagnostics.filter((d) => d.code === "W_GRID_SNAPPED")
+      .map((d) => src.slice(d.span!.start, d.span!.end));
+    expect(spans).toEqual(["250", "2750x3000", "D x D", "(20550, 0)"]);
+  });
+
+  it("quotes the written value faithfully: 2749.9999 is not printed as 2750", () => {
+    const src = plan("  grid 100\n  room id=r at (0,0) size 2749.9999x3000");
+    expect(messages(src, "W_GRID_SNAPPED")).toEqual([
+      'Room "r" size 2749.9999 x 3000 was snapped to 2700 x 3000 by `grid 100`',
+    ]);
+  });
+
+  it("ranks last in validate's next (tier info): below every lint finding, and next only when alone", async () => {
+    type Out = { diagnostics: { code: string }[]; next: { tier: string; code: string } | null };
+    const run = async (src: string): Promise<Out> =>
+      JSON.parse((await runArch(["validate", "-", "--json"], { input: src })).stdout) as Out;
+    // A room with no door or window raises lint findings: the first is next, not the snap.
+    const busy = await run(plan('  grid 100\n  room id=r at (0,0) size 2750x3000 label "Living"'));
+    const lintCodes = busy.diagnostics.map((d) => d.code).filter((c) => c !== "W_GRID_SNAPPED");
+    expect(busy.diagnostics[0]!.code).toBe("W_GRID_SNAPPED");
+    expect(lintCodes.length).toBeGreaterThan(0);
+    expect(busy.next!.code).not.toBe("W_GRID_SNAPPED");
+    expect(busy.next!.tier).not.toBe("info");
+    // Alone, it is next, in the info tier.
+    const { nextDiagnostic } = await import("../src/next.js");
+    const d = compile(plan("  grid 100\n  room id=r at (0,0) size 2750x3000"), { noCache: true }).diagnostics;
+    expect(nextDiagnostic({ diagnostics: d, lint: [] })).toMatchObject({ tier: "info", code: "W_GRID_SNAPPED" });
+  });
+
   it("is quiet when every value is on the grid, and with no grid at all", () => {
     const onGrid = read("test/silent-accepts/grid-snapped.arch")
       .replace(/2750x3000/g, "2800x3000")
@@ -192,6 +234,42 @@ suite("W_SET_VALUE_WORD (PS0.16)", () => {
     expect(raised(plan('  set room(label: "X")'))).toEqual([]);
     expect(raised(plan("  let W = 900\n  set door(width: W + 0)"))).toEqual([]);
   });
+
+  it("names the word a key reads when the written one is it in another case (hinge: Left)", () => {
+    const d = compile(plan("  set door(hinge: Left)"), { noCache: true }).diagnostics.find(
+      (x) => x.code === "W_SET_VALUE_WORD",
+    )!;
+    expect(d.hints![0]).toBe("Write `set door(hinge: left)`: words match exactly.");
+  });
+
+  it("is quiet on a plugin kind that declares no setWords, whatever word it reads (RM1.4 review M1)", () => {
+    let seen: unknown;
+    type At = Parameters<ResolveCtx["evalPt"]>[0];
+    const marker: ElementDef = {
+      kind: "marker",
+      keyword: "marker",
+      parse(ctx: ParseCtx) {
+        const kw = ctx.eatKeyword("marker");
+        const at = ctx.parsePoint();
+        return { kind: "marker", id: "", at, line: kw.line } as never;
+      },
+      idPrefix: () => "marker",
+      resolve(node, ctx: ResolveCtx) {
+        seen = ctx.defaults?.get("species");
+        const at = ctx.evalPt((node as unknown as { at: At }).at);
+        return { kind: "marker", id: ctx.id, at } as never;
+      },
+      bounds: (r) => {
+        const { at } = r as unknown as { at: { x: number; y: number } };
+        return [at, at];
+      },
+      render: () => [],
+    };
+    const r = compile(plan("  set marker(species: oak)\n  marker (100,100)"), { plugins: [marker], noCache: true });
+    expect(r.errors).toEqual([]);
+    expect(r.diagnostics.map((d) => d.code)).not.toContain("W_SET_VALUE_WORD");
+    expect(seen).toEqual({ t: "str", v: "oak" });
+  });
 });
 
 suite("W_UNKNOWN_FURNITURE (U.3)", () => {
@@ -205,6 +283,55 @@ suite("W_UNKNOWN_FURNITURE (U.3)", () => {
   it("is quiet on a catalogued word and on a word near no kind", () => {
     expect(raised(plan("  furniture grand_piano at (0,0) size 1500x1500"))).toEqual([]);
     expect(raised(plan("  furniture zzqqxxkk at (0,0) size 1500x1500"))).toEqual([]);
+  });
+
+  /** The kind a lone unlabelled piece of `word` is said to mean, or null when nothing is raised. */
+  const meant = (word: string): string | null => {
+    const d = compile(plan(`  furniture ${word} at (0,0) size 600x600`), { noCache: true }).diagnostics.find(
+      (x) => x.code === "W_UNKNOWN_FURNITURE",
+    );
+    return d ? /did you mean "([^"]+)"/.exec(d.message)![1]! : null;
+  };
+
+  it("a slip is still named: a dropped, doubled or added letter, or another case", () => {
+    expect(meant("grand_pianno")).toBe("grand_piano");
+    expect(meant("WC")).toBe("wc");
+    expect(meant("bath_tub")).toBe("bathtub");
+    expect(meant("tables")).toBe("table");
+  });
+
+  // RM1.4 review M2: each is within two edits of a kind (or one changed letter), and an ordinary word.
+  it.each([
+    ["fan", "car"],
+    ["box", "hob"],
+    ["mat", "bath"],
+    ["safe", "sofa"],
+    ["tank", "sink"],
+    ["cask", "desk"],
+    ["drum", "rug"],
+    ["rack", "rock"],
+    ["urn", "bin"],
+    ["stand", "island"],
+    ["ladder", "larder"],
+  ])("an ordinary word is not a slip: %s (near %s)", (word) => {
+    expect(meant(word)).toBeNull();
+  });
+
+  it("`arch lint --strict` fails on it as it does on W_ALIAS_MATCH (a lint rule)", async () => {
+    const codes = (stdout: string): string[] =>
+      (JSON.parse(stdout) as { diagnostics: { code: string }[] }).diagnostics.map((d) => d.code);
+    const alias = await runArch(["lint", "-", "--strict", "--json"], {
+      input: plan('  room at (0,0) size 2000x1500 label "Powder"'),
+    });
+    expect(codes(alias.stdout)).toContain("W_ALIAS_MATCH");
+    expect(alias.status).toBe(EXIT.USER);
+    const piece = await runArch(["lint", "-", "--strict", "--json"], {
+      input: plan(
+        '  room id=r at (0,0) size 3000x3000 label "Living" uses living\n  furniture grand_pianno at (500,500) size 1500x1500',
+      ),
+    });
+    expect(codes(piece.stdout)[0]).toBe("W_UNKNOWN_FURNITURE");
+    expect(piece.status).toBe(EXIT.USER);
   });
 });
 

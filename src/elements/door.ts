@@ -311,7 +311,7 @@ export const door: ElementDef = {
     // is a kind, so a lookahead against the closed table decides it with no backtrack.
     const doorKind = DOOR_KINDS.find((k) => ctx.isKeyword(k));
     if (doorKind) ctx.next();
-    const { at, attach, between } = parseAttachTarget(ctx, true);
+    const { at, atSpan, attach, between } = parseAttachTarget(ctx, true);
     ctx.eatKeyword("width");
     const width = ctx.parseExpr();
     const node: DoorNode = {
@@ -321,6 +321,7 @@ export const door: ElementDef = {
       width,
       line: kw.line,
       ...(at ? { at } : {}),
+      ...(atSpan ? { atSpan } : {}),
       ...(attach ? { attach } : {}),
       ...(between ? { between } : {}),
     };
@@ -413,7 +414,7 @@ export const door: ElementDef = {
     } else {
       const written = ctx.evalPt(n.at!);
       at = ctx.snapPt(written);
-      noteSnap(ctx, `Door "${id}"`, "at", [written.x, written.y], [at.x, at.y], n.span, true);
+      noteSnap(ctx, `Door "${id}"`, "at", [written.x, written.y], [at.x, at.y], n.atSpan ?? n.span, true);
       host = ctx.hostSegment(at, n.wall);
       if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
         const note = nearestWallNote(at, ctx.walls);

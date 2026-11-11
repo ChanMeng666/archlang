@@ -175,10 +175,13 @@ export const furniture: ElementDef = {
     // footprint; resolve enforces that and errors otherwise.
     let size: FurnitureNode["size"];
     let sizeSpan: Span | undefined;
+    let sizeValueSpan: Span | undefined;
     if (ctx.isKeyword("size")) {
       ctx.next();
-      if (ctx.isType("dimension")) sizeSpan = { start: ctx.peek().start, end: ctx.peek().end };
+      const sizeStart = ctx.peek().start;
+      if (ctx.isType("dimension")) sizeSpan = { start: sizeStart, end: ctx.peek().end };
       size = ctx.parseDimensions();
+      sizeValueSpan = ctx.spanFrom(sizeStart);
     }
     const node: FurnitureNode = {
       kind: "furniture",
@@ -191,6 +194,7 @@ export const furniture: ElementDef = {
       ...(room ? { room } : {}),
       ...(size ? { size } : {}),
       ...(sizeSpan ? { sizeSpan } : {}),
+      ...(sizeValueSpan ? { sizeValueSpan } : {}),
       line: kw.line,
     };
     if (ctx.isKeyword("label")) {
@@ -269,7 +273,7 @@ export const furniture: ElementDef = {
       dw = ctx.snap(ww);
       const wh = ctx.eval(n.size.h);
       dh = ctx.snap(wh);
-      noteSnap(ctx, `Furniture "${id}"`, "size", [ww, wh], [dw, dh], n.sizeSpan ?? n.span);
+      noteSnap(ctx, `Furniture "${id}"`, "size", [ww, wh], [dw, dh], n.sizeValueSpan ?? n.span);
     } else {
       const fp = n.against || n.againstEdge ? defaultFootprint(n.category) : null;
       if (!fp) {
@@ -1231,8 +1235,22 @@ export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
   return mapSceneNode(n, rp, false);
 }
 
-/** The furthest a misspelt furniture word may be from the kind it names (edits). */
+/** The furthest a misspelt furniture word may be from the kind it names, in added or dropped
+ *  characters: the most {@link nearEdits} ever allows, and what the index below is built for. */
 const NEAR_EDITS = 2;
+
+/** The longest word that may be only one added or dropped character from the kind it names. */
+const SHORT_WORD = 6;
+
+/**
+ * How far `word` may be from a kind and still be reported (RM1.4 review M2), relative to its
+ * length, counted in added or dropped characters ({@link indelDistance}, so a changed letter costs
+ * two): one for a word of {@link SHORT_WORD} characters or fewer, {@link NEAR_EDITS} for a longer
+ * one. A changed letter or two turn an ordinary short word into a kind (`rack`/`rock`,
+ * `ladder`/`larder`, `fan`/`car`, `stand`/`island`), which says nothing about a slip; one dropped
+ * or doubled letter is one (`tables`, `bath_tub`, `grand_pianno`).
+ */
+const nearEdits = (word: string): number => (word.length <= SHORT_WORD ? 1 : NEAR_EDITS);
 
 /**
  * Every word `furniture` knows (the drawn families and the catalogue, aliases included), and an
@@ -1282,48 +1300,52 @@ function known(): KnownFurniture {
   return knownFurniture;
 }
 
-/** Edit distance (insert, delete, substitute) between two short words. */
-function editDistance(a: string, b: string): number {
-  let row = Array.from({ length: b.length + 1 }, (_, j) => j);
+/** Added or dropped characters between two short words: `a.length + b.length - 2 * LCS`, so a
+ *  changed letter counts two. */
+function indelDistance(a: string, b: string): number {
+  let row = new Array<number>(b.length + 1).fill(0);
   for (let i = 1; i <= a.length; i++) {
-    const next = [i];
+    const next = [0];
     for (let j = 1; j <= b.length; j++)
-      next[j] = Math.min(row[j]! + 1, next[j - 1]! + 1, row[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+      next[j] = a[i - 1] === b[j - 1] ? row[j - 1]! + 1 : Math.max(row[j]!, next[j - 1]!);
     row = next;
   }
-  return row[b.length]!;
+  return a.length + b.length - 2 * row[b.length]!;
 }
 
 /**
- * The catalogued word nearest `word` within {@link NEAR_EDITS} edits (the first in catalogue order
- * on a tie), or null. A word longer than the longest catalogued one by more than `NEAR_EDITS`
- * is near none and is not searched, so the work per word is bounded by the catalogue: at most
- * a few hundred map lookups and an edit distance per candidate found. That bound is why it is not
- * charged to the step meter, and why a plan whose uncatalogued words are near no kind spends
- * exactly the steps it always did.
+ * The catalogued word nearest `word` within {@link nearEdits} added or dropped characters (the
+ * first in catalogue order on a tie), or null. A word longer than the longest catalogued one by
+ * more than that is near none and is not searched. Otherwise the search is charged to the step
+ * meter BEFORE it runs, at the number of deletion strings it may look up (at most 1 + L, or
+ * 1 + L + L(L-1)/2, for a word of L characters), which bounds the lookups and the distances that
+ * follow.
  */
 function nearestFurniture(word: string): string | null {
   const k = known();
-  if (word.length > k.maxLen + NEAR_EDITS) return null;
+  const limit = nearEdits(word);
+  if (word.length > k.maxLen + limit) return null;
+  const n = word.length;
+  chargeSteps(limit === 1 ? 1 + n : 1 + n + (n * (n - 1)) / 2);
   let best: string | null = null;
-  let bestD = NEAR_EDITS + 1;
+  let bestD = limit + 1;
   const seen = new Set<string>();
-  for (const d of deletions(word, NEAR_EDITS))
+  for (const d of deletions(word, limit))
     for (const w of k.byDeletion.get(d) ?? []) {
       if (seen.has(w)) continue;
       seen.add(w);
-      const dist = editDistance(word, w);
+      const dist = indelDistance(word, w);
       if (dist < bestD || (dist === bestD && best !== null && k.rank.get(w)! < k.rank.get(best)!)) {
         best = w;
         bestD = dist;
       }
     }
-  return bestD <= NEAR_EDITS ? best : null;
+  return bestD <= limit ? best : null;
 }
 
 /**
  * `W_UNKNOWN_FURNITURE` (RM1.4, backlog U.3): an unlabelled piece whose word is no catalogued
- * kind but is one in another case or within {@link NEAR_EDITS} edits of one (`WC`,
+ * kind but is one in another case or within {@link nearEdits} edits of one (`WC`,
  * `grand_pianno`). Furniture is open on purpose, so an unknown word stays legal and still draws
  * its rectangle; this only says so when the word looks like a slip. A piece with a `label` is a
  * custom one by intent and is never reported.

@@ -28,6 +28,10 @@
  *    rank above (tiers 3–4), so this tier is reached only when default `lint()` is empty and
  *    every profile warning is then profile-only.
  * 7. `taste` — the lowest-scoring assessable taste criterion that scored below 1.
+ * 8. `info` — an informational compile-channel warning ({@link INFO_CODES}): it reports what the
+ *    drawing already is, so it is never the first fix while anything above is left. Ruled on PR
+ *    #704 (RM1.4): `W_GRID_SNAPPED` ranks below every validity finding. None of tiers 3–7 fits a
+ *    compile-channel warning, so the tier is added at the end, after `taste`.
  *
  * Within a tier the first in emission order wins (but for tier 3's one exception), which is
  * already deterministic. A tier whose input was not supplied is empty. `null` when nothing in any
@@ -53,7 +57,7 @@ import type { KeepResult } from "./keep.js";
 import { AUTHORING_STAGES } from "./stages.js";
 
 /** The tiers, in precedence order. */
-export const NEXT_TIERS = ["error", "warning", "validity", "drafting", "intent", "profile", "taste"] as const;
+export const NEXT_TIERS = ["error", "warning", "validity", "drafting", "intent", "profile", "taste", "info"] as const;
 export type NextTier = (typeof NEXT_TIERS)[number];
 
 /** The one item to fix first. */
@@ -74,6 +78,10 @@ export interface NextItem {
    *  correction prompt; or the taste criterion, its score and its source. */
   hint?: string;
 }
+
+/** The compile-channel warnings that are informational (tier `info`): the drawing is already what
+ *  it draws, and the warning only says it differs from what was written. */
+export const INFO_CODES: ReadonlySet<string> = new Set(["W_GRID_SNAPPED"]);
 
 /** The door-swing shortfalls: a leaf that cannot open its full arc. Within the validity tier one
  *  yields to a stair-safety code or an earlier-stage finding (PS7.7). */
@@ -173,7 +181,8 @@ export function nextDiagnostic(input: NextInput): NextItem | null {
   const err = input.diagnostics.find((d) => d.severity === "error");
   if (err) return fromDiagnostic("error", err);
 
-  const compileWarning = input.diagnostics.find((d) => d.severity === "warning");
+  const isInfo = (d: Diagnostic): boolean => d.code !== undefined && INFO_CODES.has(d.code);
+  const compileWarning = input.diagnostics.find((d) => d.severity === "warning" && !isInfo(d));
   if (compileWarning) return fromDiagnostic("warning", compileWarning);
 
   const layers = input.layers ?? LINT_CODE_LAYERS;
@@ -227,6 +236,8 @@ export function nextDiagnostic(input: NextInput): NextItem | null {
       };
     }
   }
+  const info = input.diagnostics.find((d) => d.severity === "warning" && isInfo(d));
+  if (info) return fromDiagnostic("info", info);
   return null;
 }
 

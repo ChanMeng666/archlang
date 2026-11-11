@@ -142,6 +142,16 @@ export function fmtSource(n: number): string {
 }
 
 /**
+ * `n` as a message quotes a value the author wrote: {@link fmt3} when that reads back as `n`, else
+ * the shortest decimal that does ({@link plainDigits}). So `2749.9999` is never shown as `2750`
+ * (RM1.4: a value `grid` moved, quoted as written).
+ */
+export function fmtWritten(n: number): string {
+  const s = fmt3(n);
+  return Number(s) === n ? s : plainDigits(n);
+}
+
+/**
  * `String(n)` — the shortest decimal that reads back as `n` — with a positive exponent
  * expanded into zeros (`1e+24` → a 1 and 24 zeros), so the lexer, which has no exponent form,
  * reads it back as the same double; a negative exponent (below 1e-6) likewise expanded into

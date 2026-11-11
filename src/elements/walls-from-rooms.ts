@@ -21,6 +21,7 @@
  */
 
 import type { Point, WallsFromRoomsNode, WallsPairClause, WallsPairRoom } from "../ast.js";
+import type { Span } from "../diagnostics.js";
 import type { Expr } from "../expr.js";
 import type { ElementDef, ParseCtx, ResolveCtx, TransformCtx } from "../registry.js";
 import type { DerivedWallRow, ROpening, ROutdoor, RRoom, RVoid, RWall, RWallsFromRooms } from "../ir.js";
@@ -69,9 +70,13 @@ export const wallsFromRooms: ElementDef = {
     ctx.eatKeyword("from");
     ctx.eatKeyword("rooms");
     ctx.eatKeyword("exterior");
+    const exteriorStart = ctx.peek().start;
     const exterior = ctx.parseExpr();
+    const exteriorSpan = ctx.spanFrom(exteriorStart);
     ctx.eatKeyword("partition");
+    const partitionStart = ctx.peek().start;
     const partition = ctx.parseExpr();
+    const partitionSpan = ctx.spanFrom(partitionStart);
     // `status <s>` (preview-and-remodel B3a): every wall the statement derives takes it.
     const status = parseWallStatus(ctx);
     const except: WallsFromRoomsNode["except"] = [];
@@ -106,7 +111,9 @@ export const wallsFromRooms: ElementDef = {
       kind: "walls",
       id: "",
       exterior,
+      exteriorSpan,
       partition,
+      partitionSpan,
       except,
       ...(pairs ? { pairs } : {}),
       ...(status !== undefined ? { status } : {}),
@@ -118,7 +125,12 @@ export const wallsFromRooms: ElementDef = {
 
   resolve(node, ctx: ResolveCtx): RWallsFromRooms {
     const n = node as WallsFromRoomsNode;
-    const thick = (e: WallsFromRoomsNode["exterior"], what: string, span = n.span): number => {
+    const thick = (
+      e: WallsFromRoomsNode["exterior"],
+      what: string,
+      valueSpan: Span | undefined,
+      span = n.span,
+    ): number => {
       const v = ctx.eval(e);
       const t = ctx.snap(v) || v;
       if (!(t > 0)) {
@@ -129,11 +141,11 @@ export const wallsFromRooms: ElementDef = {
           span,
         });
       }
-      noteThickness(ctx, "`walls from rooms`", v, t, span, what);
+      noteThickness(ctx, "`walls from rooms`", v, t, valueSpan ?? span, what);
       return t;
     };
-    const tExt = thick(n.exterior, "exterior");
-    const tInt = thick(n.partition, "partition");
+    const tExt = thick(n.exterior, "exterior", n.exteriorSpan);
+    const tInt = thick(n.partition, "partition", n.partitionSpan);
     const out: RWallsFromRooms = {
       kind: "walls",
       id: ctx.id,

@@ -1818,12 +1818,19 @@ class Parser {
    * `W_SET_VALUE_WORD` (plan-soundness PS0.16, ruled RM-D6: a warning in 1.x, an error at 2.0): a
    * bare word that {@link parseSetValue} took as text where the kind reads no such word, so the
    * rule does nothing (`set door(width: W)` is the text "W", never the value of `W`). The words a
-   * kind reads come from its own `ElementDef.setWords`, never a list kept here.
+   * kind reads come from its own `ElementDef.setWords`, never a list kept here. A kind that
+   * declares no `setWords` (a plugin, which may read any word from `ctx.defaults`) is never
+   * reported: only a declared table says which words a kind does not read.
    */
   private warnSetWord(kind: string, key: string, tok: Token, def: ElementDef): void {
-    const words = def.setWords ?? {};
+    const words = def.setWords;
+    if (words === undefined) return;
     if (Object.hasOwn(words, key) && words[key]!.includes(tok.value)) return;
     const read = Object.entries(words).map(([k, ws]) => `${k} (${ws.join(", ")})`);
+    // The word in another case (`hinge: Left`): name the one the key reads.
+    const folded = Object.hasOwn(words, key)
+      ? words[key]!.find((w) => w.toLowerCase() === tok.value.toLowerCase())
+      : undefined;
     this.report({
       severity: "warning",
       code: "W_SET_VALUE_WORD",
@@ -1832,6 +1839,7 @@ class Parser {
         : `\`set ${kind}(${key}: ${tok.value})\` takes \`${tok.value}\` as the text "${tok.value}", not as a value, and \`set ${kind}\` reads no word for \`${key}\`, so the rule does nothing`,
       span: { start: tok.start, end: tok.end },
       hints: [
+        ...(folded !== undefined ? [`Write \`set ${kind}(${key}: ${folded})\`: words match exactly.`] : []),
         read.length > 0
           ? `\`set ${kind}(…)\` reads a bare word only for ${read.join(" and ")}.`
           : `\`set ${kind}(…)\` reads no bare word for any key.`,

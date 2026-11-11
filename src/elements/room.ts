@@ -332,8 +332,10 @@ export const room: ElementDef = {
       rel = { dir: dirTok.value as RelDir, ref, align, alignSpan, alignBad, gap };
     }
     ctx.eatKeyword("size");
+    const sizeStart = ctx.peek().start;
     const size = ctx.parseDimensions();
-    const node: RoomNode = { kind: "room", id, at, rel, size, line: kw.line };
+    const sizeSpan = ctx.spanFrom(sizeStart);
+    const node: RoomNode = { kind: "room", id, at, rel, size, sizeSpan, line: kw.line };
     parseTail(ctx, node);
     return node;
   },
@@ -358,7 +360,7 @@ export const room: ElementDef = {
           span: n.span,
         });
       }
-      noteRoomSize(ctx, id, written, size, n.span);
+      noteRoomSize(ctx, id, written, size, n.sizeSpan ?? n.span);
       // An explicit `label … at (x,y)` is recorded here exactly as the `polygon` and
       // `circle` forms record theirs. Parsing the clause and then dropping it would make
       // the anchor silently do nothing and leave `W_ROOM_LABEL_OUTSIDE` unable to fire on
@@ -441,7 +443,7 @@ export const room: ElementDef = {
         span: n.span,
       });
     }
-    noteRoomSize(ctx, id, written, size, n.span);
+    noteRoomSize(ctx, id, written, size, n.sizeSpan ?? n.span);
     // The anchor is an absolute plan coordinate even here — `label … at` says WHERE the
     // name is drawn, it is not an offset from a room whose corner is not yet known. So it
     // is recorded now and CHECKED later: `placeRelational` calls `rectLabelOutsideDiag`
