@@ -124,7 +124,7 @@ const BASELINE: [string, string][] = [
   ["d2e33f0f08e06930824942bb36faf1a439459483a3335cd78063e3ef51b021b6", "test/fixtures/lock-before.arch"],
   ["a5b010590ff37b31382b353c37001f3541ef26e5f9c8bd531f2121dd1a9d4fa2", "test/fixtures/lock-partition-moved.arch"],
   ["bfe79454671a15f63522c0a770453a819328df15f90b01154d028f5161350046", "test/fixtures/lock-window-moved.arch"],
-  ["ff686ab3285ac3d6f30af9607a711627f6f864825a15fef562f19c28700b2753", "test/fixtures/off-path-bypass.arch"],
+  ["d340196f446839ceda4c324efb5c2c29abab79551b673a72b95abeabc64d3fe2", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was ff686ab3)
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
   ["09bb2176c0de1c86892883a1f90aad767353ec78208445724c7a5a38618c12fd", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts
@@ -246,7 +246,7 @@ const BASELINE: [string, string][] = [
   ["ba2f3d4e7bafb03f39e2d0226ac9233e969d2b5cd3f7b9e19d1e110ba5cb41a3", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
-  ["53c5af7d3ab03780609fdf337c2982231831dc2df2b62f40fca6a0681a6656ee", "inline:window-words-as-names"],
+  ["bdda2e03bfff883bb488687a60cb5c3fbcb2b5457e11cc942eb767038e85a81c", "inline:window-words-as-names"], // RM1.4: the unknown-furniture search is charged to the step meter (+46 steps: `tilt_turn`, 107 -> 153) (was 53c5af7d)
   ["d847b604cec5fdd07a0234e04f3b760930f72c2474f4c0bc8ca1f06c16fdfd7f", "inline:window-every-path"],
   ["ba22fde79e6bf00b978a12cf0d002456839cf6e501fa81b7c08d1878c7ba729c", "inline:window-placed-and-curved"],
   ["f4212dfd10a7c3fff934eb02bf28abde3eabe0a1b697c34556fe36942a8a8b9c", "inline:door-every-older-kind"],

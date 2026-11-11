@@ -166,7 +166,7 @@ export const LANGUAGE_ENTRIES = defineEntries({
   ),
   W_GRID_SNAPPED: w(
     "`grid` moved a written size or door position.",
-    "`grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged.",
+    "`grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged. Informational: `validate` ranks it last for `next` (tier `info`).",
     "Write a multiple of the grid, or set a finer `grid`.",
     "grid 100\nroom at (0,0) size 2750x3000   # warning: size 2750 x 3000 was snapped to 2800 x 3000",
   ),

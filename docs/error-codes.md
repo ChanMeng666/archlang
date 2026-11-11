@@ -2900,7 +2900,7 @@ room at (0,0) size 4000x3000 label "ห้องครัว"   # -f pdf / -f pn
 
 *warning* — `grid` moved a written size or door position.
 
-**Cause.** `grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged.
+**Cause.** `grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged. Informational: `validate` ranks it last for `next` (tier `info`).
 
 **Fix.** Write a multiple of the grid, or set a finer `grid`.
 
@@ -3523,7 +3523,7 @@ title {
 
 *warning* — A furniture word is not a catalogued kind but is close to one.
 
-**Cause.** An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is a catalogued kind in another case or, past four letters, one with a letter added or dropped (two, past six); a `label` marks a piece of your own.
+**Cause.** An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is a catalogued kind in another case or, past four letters, one with a letter added or dropped (two, past six; a changed letter counts as two); a `label` marks a piece of your own.
 
 **Fix.** Write the kind the message names, or add a `label`.
 
