@@ -12,7 +12,8 @@ you stated. They do not decide whether a building is good, and no profile makes 
 How to read the output: each JSON block is the command's `--json` output reduced to the fields
 shown. A diagnostic keeps its `code`, `message` and position (`line`, `col`); the full output also
 carries the byte `span`, a `fix` text, `hints` and a `coverage` block naming the rule families that
-ran or were skipped. Run the command on the plan to read all of it. The `# exit` line under each
+ran or were skipped. For `impact`, `keeps_broke` is the full output's `keeps.broke` and `lock` keeps its `violations`
+with the code, id, kind, change and message. Run the command on the plan to read all of it. The `# exit` line under each
 command is the exit code that run returned.
 
 Every plan below is saved as `plan.arch` and the command is run in the same folder.
