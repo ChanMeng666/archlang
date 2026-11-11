@@ -457,7 +457,10 @@ export function mountReplay(
     const m = GROUND_PLANE.marginMm;
     const [x0, z0, x1, z1] = [lo.x - m, lo.z - m, hi.x + m, hi.z + m];
     const geo = new BufferGeometry();
-    geo.setAttribute("position", new BufferAttribute(new Float32Array([x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0]), 3));
+    geo.setAttribute(
+      "position",
+      new BufferAttribute(new Float32Array([x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0]), 3),
+    );
     geo.setIndex([0, 1, 2, 0, 2, 3]);
     const mat = new MeshLambertMaterial({
       color: new Color(p.theme === "light" ? GROUND_PLANE.light : GROUND_PLANE.dark),

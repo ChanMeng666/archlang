@@ -96,17 +96,23 @@ export const fenceColour = (style: string): string =>
   (FENCE_PALETTE[style as keyof typeof FENCE_PALETTE] ?? FENCE_PALETTE.picket).srgb;
 
 /** The point a fraction `f` along a→b, rounded to whole micrometres. */
-const at = (a: Pt, b: Pt, f: number): Pt => [Math.round(a[0] + (b[0] - a[0]) * f), Math.round(a[1] + (b[1] - a[1]) * f)];
+const at = (a: Pt, b: Pt, f: number): Pt => [
+  Math.round(a[0] + (b[0] - a[0]) * f),
+  Math.round(a[1] + (b[1] - a[1]) * f),
+];
 
-const count = (len: number, pitch: number): number =>
-  Math.max(1, Math.min(MAX_FENCE_REPEAT, Math.ceil(len / pitch)));
+const count = (len: number, pitch: number): number => Math.max(1, Math.min(MAX_FENCE_REPEAT, Math.ceil(len / pitch)));
 
 /**
  * A fence's plan pieces, each with its [bottom, top] in mm above its base: per segment its posts (one
  * at its start, then evenly at most `postPitch` apart; the last point of an open fence gets one too),
  * its rails and its pickets, each a box aligned with the segment.
  */
-export function fencePieces(f: Pick<Fence, "points" | "closed">, profile: FenceProfile, height: number): Array<{
+export function fencePieces(
+  f: Pick<Fence, "points" | "closed">,
+  profile: FenceProfile,
+  height: number,
+): Array<{
   poly: Polygon;
   z: readonly [number, number];
 }> {

@@ -176,6 +176,7 @@ function groundOf(mesh: Mesh3D): { ground?: { y: number } } {
   const slab = mesh.nodes.find((n) => n.level === lowest && n.kind === "slab" && !n.hidden);
   if (!slab) return {};
   let y = -Infinity;
-  for (const s of slab.shells) for (let i = 1; i < s.positions.length; i += 3) y = Math.max(y, s.positions[i] as number);
+  for (const s of slab.shells)
+    for (let i = 1; i < s.positions.length; i += 3) y = Math.max(y, s.positions[i] as number);
   return Number.isFinite(y) ? { ground: { y } } : {};
 }

@@ -120,7 +120,10 @@ describe("one fixture per outdoor kind and per fence style", () => {
       expect([Math.min(...ys(f as MeshNode)), Math.max(...ys(f as MeshNode))]).toEqual([e, e + height * 1000]);
       expect(f?.extras).toMatchObject({ style, colour: FENCE_PALETTE[style].srgb, height_mm: height });
       for (const field of [`height_mm(${style})`, `profile(${style})`, `colour(${style})`]) {
-        expect(mesh.assumptions.filter((a) => a.kind === "fence" && a.field === field), field).toHaveLength(1);
+        expect(
+          mesh.assumptions.filter((a) => a.kind === "fence" && a.field === field),
+          field,
+        ).toHaveLength(1);
       }
       expect(bodyMaterialName(f as MeshNode)).toBe(`fence:${style}`);
     });
@@ -218,7 +221,10 @@ describe("overlaps, railings and the ledger", () => {
 });
 
 describe("the replay", () => {
-  const src = fixture("fence-picket").replace("fence id=f", "outdoor id=g lawn at (4500,500) size 3000x2000\n  fence id=f");
+  const src = fixture("fence-picket").replace(
+    "fence id=f",
+    "outdoor id=g lawn at (4500,500) size 3000x2000\n  fence id=f",
+  );
   const { mesh } = built(src);
   const events = timeline(mesh);
   const ev = (key: string) => events.find((e) => e.key === key);
