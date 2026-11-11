@@ -41,7 +41,8 @@ you observed. Do NOT push anything — this command only verifies.
      change (including a tool description, its README, a `server.json` field) needs a bump in
      `packages/mcp/package.json` AND both `version` fields of `packages/mcp/server.json` —
      `release.yml` skips a version already on npm.
-   - The shim's baked resources (`spec.llm.md`, `llms-full.txt`, the GBNF, both schemas) are copied
+   - The shim's baked resources (`spec.llm.md`, `llms-full.txt`, the GBNF, both schemas,
+     `packages/mcp/capabilities.md`) are copied
      at pack time and refresh ONLY with a version bump — a legitimate reason to bump with an empty
      diff. Its core dep range is pinned as the string `^` + the root version, so every core release
      reddens `packages/mcp/test/lockstep.test.ts` on purpose: re-pin, rebuild, bump. Never relax it.

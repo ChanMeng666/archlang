@@ -78,7 +78,7 @@ connector, with no authentication. In claude.ai, and other hosts that support MC
 | `compile` | Source to SVG (or ASCII, Plan JSON, or PNG on the local server), with diagnostics. |
 | `describe` | Rooms, areas, adjacency, what each door connects, reachability from the entrance. |
 | `lint` | Advisory warnings: a windowless bedroom, a bathroom reached through a bedroom, a narrow door. |
-| `validate` | The ship gate: parse, resolve and lint, optionally strict or against a brief. |
+| `validate` | The ship gate: parse, resolve and lint, optionally strict or against a brief, with the one item to fix first. |
 | `score` | How much of a written brief a plan satisfies, as a number. |
 | `fix` | Applies the machine-applicable fixes the diagnostics carry. |
 | `repair` | Moves furniture out of walls, doorways and door swings. |
@@ -89,7 +89,8 @@ connector, with no authentication. In claude.ai, and other hosts that support MC
 
 The hosted server adds `read_me`, which says what the server is and what it keeps. Both servers
 also expose the language as resources: `archlang://spec` (the whole language on one page),
-`archlang://context`, the Plan JSON and intent schemas, and the GBNF grammar.
+`archlang://context`, the Plan JSON and intent schemas, the GBNF grammar, and
+`archlang://capabilities`, which lists every tool and CLI command and the export formats.
 
 ## An AI agent drawing a floor plan
 

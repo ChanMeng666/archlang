@@ -19,7 +19,7 @@ import { MCP_PER_PERIOD, RATE_PERIOD_SECONDS, SOURCE_CAP_BYTES, SVG_PER_PERIOD }
 
 /** What the Worker serves that it cannot read at run time (it has no filesystem): bundled at build. */
 export interface HostedAssets {
-  /** The five `archlang://` resource texts, keyed by name. */
+  /** The six `archlang://` resource texts, keyed by name. */
   resources: Readonly<Record<ResourceName, string>>;
   /** The viewer page, one self-contained HTML document. */
   viewerHtml: string;
@@ -38,7 +38,7 @@ export const VIEWER_URI = "ui://archlang/viewer";
 
 /** What `compile` says about `format:"png"` here: there is no renderer in a Worker. */
 export const PNG_HOSTED =
-  'format "png" is unavailable on the hosted server, which has no image renderer: use format "svg", or GET /svg/<payload> on this server for an image URL.';
+  'format "png" is unavailable on the hosted server, which has no image renderer: use format "svg", or GET /svg/<payload> on the hosted server for an image URL.';
 
 /** The `read_me` tool's text: what this server is, how to use it, and what it keeps. */
 export function readMe(origin: string): string {

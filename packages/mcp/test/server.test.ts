@@ -37,6 +37,7 @@ describe("archlang mcp server", () => {
     for (const tool of tools) expect(readme, `README.md has no row for "${tool}"`).toContain(`| \`${tool}\` |`);
     const resources = (await client.listResources()).resources.map((r) => r.uri).sort();
     expect(resources).toEqual([
+      "archlang://capabilities",
       "archlang://context",
       "archlang://grammar",
       "archlang://intent-schema",

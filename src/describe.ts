@@ -49,14 +49,15 @@ import {
   rectOf,
   pointInRoomBox,
   roomBox,
+  accessGraphOf,
   buildDoorAccessGraph,
   DEFAULT_TOL,
   type AnalyzeOptions,
   type RoomBox,
 } from "./analyze.js";
 import { outerFaceBounds, segmentsOfWall, type WallSegment } from "./geometry.js";
-import { computeCirculation } from "./analyze/circulation.js";
-import { entranceInputs, withMainEntrance } from "./analyze/entrance.js";
+import { computeCirculation, walkedFromShafts } from "./analyze/circulation.js";
+import { arrivalAccess, entranceInputs, withMainEntrance } from "./analyze/entrance.js";
 import { symmetryFacts } from "./analyze/symmetry.js";
 import { syntaxFacts } from "./analyze/syntax.js";
 import { dependsFacts, indexStatements, type StatementIndex } from "./analyze/depends.js";
@@ -105,7 +106,7 @@ import { roomSummaries } from "./describe/rooms.js";
 import { doorSummaries, openingSummaries, windowSummaries } from "./describe/openings.js";
 import { furnitureSummaries } from "./describe/furniture.js";
 import { r2 } from "./describe/shared.js";
-import { blockStairFacts, buildVerticalReport } from "./describe/verticals.js";
+import { blockStairFacts, buildVerticalReport, shaftArrivalSeeds } from "./describe/verticals.js";
 import type { DiffFabric } from "./describe/fabric.js";
 import { diffFabricOf } from "./describe/fabric.js";
 
@@ -444,6 +445,10 @@ function summarize(
   statements?: StatementIndex,
   /** False on the caption path only: the gross internal area is not computed at all. */
   withGrossArea = true,
+  /** The rooms a shaft delivers a person into on a storey with no door from the ground, those of
+   *  `VerticalReach.arrivalRooms` an arriving shaft stops in (`arrivalSeedRooms`,
+   *  `src/describe/verticals.ts`): where `access` counts that storey's rooms from (PS0.3). */
+  arrivalRooms: readonly string[] = [],
 ): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doorEls = ir.elements.filter((e): e is RDoor => e.kind === "door");
@@ -588,17 +593,34 @@ function summarize(
 
   // The main entrance (PS0.10) rides on the access graph, appended, only on a storey with more
   // than one entrance. Circulation keeps measuring each room from its nearest entrance.
-  const access = withMainEntrance(
-    buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls, openRunsOf(ir, tol)),
-    entranceInputs(ir, roomRects, upperStorey),
-  );
+  //
+  // Where a person ARRIVES: each room's depth, reachability and bottleneck are counted
+  // from the ways they arrive by, while `entrances` and `edges` stay the storey's doors. A door
+  // onto a balcony is no arrival for a room a door from the ground reaches (`arrivalWays`, U.1),
+  // and on a storey a shaft reaches and no door from the ground does, the rooms the shafts land
+  // in are where a person arrives (PS0.3: `reachable` is then the answer `W_ROOM_UNREACHABLE`
+  // reads). A plan with neither has the graph it always had, byte for byte.
+  const inputs = entranceInputs(ir, roomRects, upperStorey);
+  const doorGraph = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls, openRunsOf(ir, tol));
+  const arrivalGraph = arrivalAccess(doorGraph, inputs);
+  const seeds = shaftArrivalSeeds(arrivalRooms, arrivals, roomEls);
+  const counted =
+    seeds.length > 0
+      ? accessGraphOf(
+          roomEls.map((r) => r.id),
+          arrivalGraph.edges,
+          seeds,
+        ).rooms
+      : arrivalGraph.rooms;
+  const access = withMainEntrance(counted === doorGraph.rooms ? doorGraph : { ...doorGraph, rooms: counted }, inputs);
   const circulation = computeCirculation(
     roomEls,
     ir.walls,
     doorEls,
     openingEls,
     furnEls,
-    access,
+    // `arrivals` are this storey's own: given only where no door from the ground is (PS0.3).
+    walkedFromShafts(arrivalGraph, arrivals, roomEls),
     tol,
     undefined,
     verticalEls,
@@ -867,6 +889,7 @@ function summarizeResolved(
   const building = levels.length > 0 ? buildVerticalReport(levels, tol) : undefined;
   const vertical = building?.report;
   const arrivalsOn = (level: number): readonly ArrivingRun[] => building?.arrivals.get(level) ?? [];
+  const arrivalRoomsOn = (level: number): readonly string[] => building?.arrivalSeedRooms.get(level) ?? [];
 
   // Multi-storey: the top-level facts are the LOWEST storey (`levels[0].ir === ir`), and
   // `levels` adds one same-shaped summary per storey. `summarize` is reused verbatim per
@@ -883,6 +906,8 @@ function summarizeResolved(
             arrivalsOn(l.level),
             building?.fromBelow.has(l.level) ?? false,
             statements,
+            true,
+            arrivalRoomsOn(l.level),
           ),
         }))
       : undefined;
@@ -895,6 +920,8 @@ function summarizeResolved(
     levels.length > 0 ? arrivalsOn(levels[0]!.level) : [],
     levels.length > 0 ? (building?.fromBelow.has(levels[0]!.level) ?? false) : false,
     statements,
+    true,
+    levels.length > 0 ? arrivalRoomsOn(levels[0]!.level) : [],
   );
   // ADR 0033 / PS4.3b: the keeps as static facts, under `depends` (the plan's every keep on the
   // top-level object, a storey's own on its `levels[]` entry), only when the plan declares one.

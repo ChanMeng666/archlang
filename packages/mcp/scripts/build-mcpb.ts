@@ -5,7 +5,7 @@
  *   npm run build:mcpb          # → dist-mcpb/archlang-mcp-<version>.mcpb
  *
  * Self-contained: `src/server.ts` is bundled with esbuild together with the MCP SDK,
- * zod and the ArchLang core, so the user needs no network and no `npm install`. The five
+ * zod and the ArchLang core, so the user needs no network and no `npm install`. The six
  * baked resources sit beside the entry exactly as in the npm package's `dist/`.
  *
  * Nothing derived is retyped: the version and metadata come from `package.json` /

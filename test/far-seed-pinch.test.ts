@@ -277,7 +277,7 @@ describe("corpus invariant: a walk's or route's bottleneck never exceeds the doo
    * it passes them too. The one way round is open floor: two rooms that meet with no wall
    * between them touch outside any connector ({@link OPEN_FLOOR}). Limits: it bounds by the BEST door
    * path, not the one the walk took, so it cannot see a walk capped by the wrong door of two
-   * parallel ones; a storey walked from a shaft (no exterior entrance) and `blocked[]`'s
+   * parallel ones; a storey walked from a shaft (no door from the ground) and `blocked[]`'s
    * widest way in (a smaller-body re-run, not a door width) are not checked.
    */
   it("holds on every storey of the whole corpus", () => {
@@ -294,7 +294,9 @@ describe("corpus invariant: a walk's or route's bottleneck never exceeds the doo
         storeys.forEach((lv, i) => {
           const c = lv.circulation;
           const acc = lv.access;
-          if (!c || !acc?.hasEntrance) return;
+          // A storey walked from a shaft is not checked: one with no exterior door, or one whose
+          // only exterior doors open onto balconies (its walk names the run, not a door: PS0.3).
+          if (!c || !acc?.hasEntrance || !acc.entrances.includes(c.entranceId)) return;
           const entrances = new Set(acc.entrances);
           const fromOutside = widest(acc.edges, entrances, "exterior");
           for (const r of c.rooms) {
