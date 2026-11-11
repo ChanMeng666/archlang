@@ -335,7 +335,7 @@ suite("W_UNKNOWN_FURNITURE (U.3)", () => {
   it("`arch lint --strict` fails on it as it does on W_ALIAS_MATCH (a lint rule)", async () => {
     // The studio lints clean, so each one-word edit leaves its finding the only one: the exit is
     // that finding's alone (the edits are the same length, a word and its padding).
-    const run = async (src: string): Promise<{ codes: string[]; status: number }> => {
+    const run = async (src: string): Promise<{ codes: string[]; status: number | null }> => {
       const r = await runArch(["lint", "-", "--strict", "--json"], { input: src });
       const codes = (JSON.parse(r.stdout) as { diagnostics: { code: string }[] }).diagnostics.map((d) => d.code);
       return { codes, status: r.status };

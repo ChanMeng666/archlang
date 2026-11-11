@@ -3523,7 +3523,7 @@ title {
 
 *warning* — A furniture word is not a catalogued kind but is close to one.
 
-**Cause.** An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is within two edits of a catalogued kind, or is one in another case; a `label` marks a piece of your own.
+**Cause.** An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is a catalogued kind in another case or, past four letters, one with a letter added or dropped (two, past six); a `label` marks a piece of your own.
 
 **Fix.** Write the kind the message names, or add a `label`.
 

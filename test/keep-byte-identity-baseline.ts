@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM1.4 (PR #704): snapping is now reported; the 30 rows that move are the eval goldens and audit/taste/repro plans that raise W_GRID_SNAPPED (digest: the new compile-channel warning in diagnostics, describe() and validate --json; steps: its DIAGNOSTIC_STEPS charge); every other row unchanged
+ * Taken: RM1.4 review round 1 (PR #704): each W_GRID_SNAPPED span now points at the written value and the code ranks in validate's last next tier (info), so the 30 rows that raise it move again (digest only); the step charge of the near-kind furniture search moves 2026-10-27-rerun-arm1/6-clinic's steps (unlabelled shelving, +37 = 1 + 8 + 28; digest unchanged); every other row unchanged
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -228,7 +228,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/bungalow.arch",
-    "e3bc656ad53b3e36b98e763d34ab173ddadbf9112a3dde2b1da38f550960a25e",
+    "e9c0963725aacb8066eea7b735b65c55bcb348e8fb06b1c229baa6bbe9db71d0",
     593,
   ],
   [
@@ -238,7 +238,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/core-and-shell.arch",
-    "f0979a016bf0571d3c9e408f8f99c323c2f6a74d7fbbeee4739500cda6480eb7",
+    "5b078cfd2cad6f57b89b0b0ff75dbf0237ca47e76ffe1f144c59b2d8ef17b965",
     412,
   ],
   [
@@ -268,7 +268,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/reception-suite.arch",
-    "f502736a578932dacc20f972f0f923f2e1037537c6e5a578ce4c3634be52141d",
+    "492c6989e25ba6a41e785f031b33d6de589c66aff02d99de6ee68900360413f2",
     503,
   ],
   [
@@ -293,7 +293,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/sized-office-mix.arch",
-    "56c8226786757374d8ab9f922f97ba182910c439ee4a8f9aff4b5b83136ebdd2",
+    "18faabdef4eabda1096d35a33c213f2994de54d3b4696e4a3ae7acae8bfc1231",
     389,
   ],
   [
@@ -1248,12 +1248,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/taste-corpus/r14-living-off-to-one-side.arch",
-    "0fdd477931088643d9c575ad5be3c0568a39bc0f90258adb06574c57d7d65826",
+    "e06479b741967595251cae9b2dc25049b7072b26f008fcb231b16a53121f9e50",
     1146,
   ],
   [
     "test/taste-corpus/r14-living-off-to-one-side.good.arch",
-    "798d56fb1106e62098922330128eafc32f55d6257676a0c8562a939afea70bf0",
+    "b8f968731902e2052289b78eea326946f69358d3b019334e876373c499342f07",
     1146,
   ],
   [
@@ -1353,7 +1353,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/2-house.arch",
-    "c5fed5ab65170fcfc6ee8a2f241238e3cbee4021920af3b060247da54dfadf5c",
+    "b8850508559f29819c9ebaa89eacfd2be944dbe2022d48f8fd81152c6e3e10ba",
     4852,
   ],
   [
@@ -1368,7 +1368,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/5-townhouse.arch",
-    "44b3c503e028ae1936d1b9f5820d2740e7afe7b0b70ceb5830bc2f7ff5dd34dd",
+    "c037ec1d511e037f0906035a5309144848068571a64b2d1d8c8f9d10c584866c",
     5274,
   ],
   [
@@ -1383,12 +1383,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/2-house.arch",
-    "ddab8f998ca5236315ebea26dabafe14a5db0e7b3ba0b54d91f40e90c8bfe08a",
+    "331ecfa16efc1ad7eb58e79634797d03b63373c31ff7850804b7fabe91addf24",
     4411,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/3-studio.arch",
-    "dc67167cdf9e6efe8d8d99e992096b2f625734ea36b45e251fa9bb0c10c51b01",
+    "1782ef67361bbfb6d43c23bc8214ca76da4d22beaf7aa5ad72506226b0d7d05e",
     693,
   ],
   [
@@ -1398,7 +1398,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/5-townhouse.arch",
-    "6f3633f02e4a0111788fe478478bc2ef5a2683023a145fe2f22601a69d0ebdaa",
+    "47d8d64fc56953d37154cba694d81c46e68a4fcc9a82c4393ddcce67cd6bdc25",
     5716,
   ],
   [
@@ -1413,17 +1413,17 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/2-house.arch",
-    "98d9f057917ca98d526c8e254d2b91ba8e30156aea97aa8b7103b7bf99997f8b",
+    "348842cfe6dbb22aac758731f425b841cbdd7605476b21593c90b226a51beebe",
     3891,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/3-studio.arch",
-    "1da0f45fba30cf030f5de5b0c9800473a8e7ddd1297f7d869e233b3d1bcbd9b4",
+    "1eb6b99afcdfd94678d5cc4e67747d150fc0c04245f558eb270cbe83f9c7a5b1",
     924,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/4-cafe.arch",
-    "ce01a660926ee3685eeb39def47c1d2f2af0317164d4a7690ebb1e6059f64482",
+    "57e86b70c54d30e075ccd4f9cad2f8f5abe83adb12014c8514607b465e107ca3",
     4058,
   ],
   [
@@ -1443,12 +1443,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/2-house.arch",
-    "0a63e5e0eacf82f500ab668846491c2106d18b794393e7296b67f3c471e8e726",
+    "9437a8304240e26e861428877c1599fc41144751b8827c72b8a8a478bd5d8a8b",
     3250,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armB/3-studio.arch",
-    "540fd9efad4bb5529395dc1f917f27ec8bd3345bb563e4377df4a13b412a6234",
+    "8e0304766015880126cc427cd431814fe724d316f847e34a3f77ce956882ec30",
     945,
   ],
   [
@@ -1468,12 +1468,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/1-apartment.arch",
-    "0879d73a633251cf8bc9ec77b3c1b6b8ccc7a10674d09b84690a65fedf0aef62",
+    "223cbd3e046733683664a10fe763fa204e75b9c2971688921a2644deb7638589",
     1717,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/2-house.arch",
-    "b1bf2545f65dc67ba3fd601bb4e4329bf1e2103abcd37e73b358ddebbf2f841a",
+    "3a59a306b128cab8f7e72fa761928ac70d6f4a1ba41cfe9a178c1209a3f6e455",
     3857,
   ],
   [
@@ -1483,7 +1483,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/4-cafe.arch",
-    "5611cbd8ca9c58e4e3f5a86407d22ef7424a7d9d78460e74ed81dbf434a6e407",
+    "168d70099944178bab07c7f93ce3c725d875acc3ecf13a3f4175a7a123009340",
     4366,
   ],
   [
@@ -1498,17 +1498,17 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/1-apartment.arch",
-    "5b0e4eb7470fc22605d3666c232476d5f046247f41e03b25d7519a9ef6c856e6",
+    "4ad3cef76213670cdcbc0ab1dd1923cd633f1ac5e0c746eba740e815af4038cf",
     784,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/2-house.arch",
-    "81bb43d35f4514f2ed8ff1f5fc8ec6d522683036e5b0933c45995b02cbf35dc9",
+    "efca68435331ae1013aaf27165fef48d73d2e365e7173d4aa356699b56187e04",
     918,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/3-studio.arch",
-    "aaf084336ad1c968946ff430106e2334b0e85cd3e054c14c1361482477dccbd5",
+    "ee4ba9195656a990f20cf63963c3e1fd5d29599c4c1cfa46844602ecc21e97ad",
     341,
   ],
   [
@@ -1528,17 +1528,17 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/1-apartment.arch",
-    "a7a173d6c4c56ffa940a1464bcf5cd75cafad847cd42aff4fa6fece759110d5d",
+    "d2dbc729f4a22b77fd63bb804360a33e47d6c6e92c465de306e8e2712bfe3090",
     1826,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch",
-    "d8ce4c3145c4fb9473dcb636b8d3d6eb42a8af9ced7e5a20b3dbff7eec93385b",
+    "9d5b9d6aab85c96e28d3cbf90dbdf9dfc7e083153382c1161f63d1f96b2a7526",
     4773,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/3-studio.arch",
-    "1241863968b1ddbae3614d0f4eb64e14fc4ba2ce3cd1d232872950125fec97ff",
+    "9eee4b2ac2fefc3dcfee9431a07d383abac63c55d1e1599fa98044661468d1dd",
     1122,
   ],
   [
@@ -1548,22 +1548,22 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch",
-    "47820c2e9897ba6e4c3a928452d0199b7e1479b727397c91f325de2cc678fa82",
+    "a3812fcb088f60182fa3000d77aa6761a6dfc35d866f006a1ba082ad4714de20",
     4982,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/6-clinic.arch",
     "7f6561e65b9f7d7e2398d72f34b85a72b90cc3b6d78036a2440559adfeb3f548",
-    2262,
+    2299,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/1-apartment.arch",
-    "6885c1b13cf18cb7398ecba23ad6ea2e9fb76ea49642182a773ffb7a9bd02f60",
+    "92ba4043d549ba0a8c089d42aaefe215a4df965c3bff8c8d742678f61ed2c072",
     2020,
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/2-house.arch",
-    "ccb7a135d14aa37ea56000272bdf144255064362fcb182068d26de9cafefc981",
+    "67db6d359150d3af336eeacdd0a6d5de82934f2dfc6af51071d56d35313275c9",
     4865,
   ],
   [
@@ -1583,7 +1583,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm2/6-clinic.arch",
-    "76656616b409c3f3b4958d78e39e92c938c30b0a23ae96c408edf0a19e189a27",
+    "b3fa4b46ab9f177f8fe0e875305bad9f915ac7a67b2ef37e8f76ef0d96d056fe",
     2033,
   ],
   [
@@ -1623,7 +1623,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/repro/gallery-bench-pinch.arch",
-    "7abbc16b36a9368ebdb5ddb8d3c911ec2604dcd6b93bb97e5f90c16ba5c6a57b",
+    "bedde52e06861fa727955de8c542feef19369ead3769450587fcd44cd8b0ecb8",
     2039,
   ],
   [
