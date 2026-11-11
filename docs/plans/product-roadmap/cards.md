@@ -90,6 +90,10 @@
 #713 的出处表把 IBC 1219 mm 门扇的版本记为 "2018 and earlier"（iDigHardware 转引，2021 版删了这句；growth 的勘误 (1)），但 `W_LEAF_TOO_WIDE` 的 `arch explain` 文字仍沿用旧说法。内容：让文字与出处表一致（先读表，不重抄）。证明：`arch explain W_LEAF_TOO_WIDE` 与表一致的测试。不许：在 `message` 里引条文号；把 `S-secondary` 写成 `S-full`。
 
 
+### RM0.8 · Deploy mcp 的 smoke：对固定版本的副本，在一次 302 或非 immutable 的响应上重试几秒（2026-11-12 加，出自 run 43015163598） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+run 43015163598（`9a3be392`，11:49:49Z）的 `Deploy mcp (scripted Worker)` smoke 报 `/svg/<studio.arch payload>: the pinned copy is not immutable: public, max-age=300, stale-while-revalidate=86400`。协调者的判断：版本传播的竞态，部署后一秒固定版本的 URL 落到了旧的 isolate，不是配置缺口；之后的 Deploy run 43025136172 全部 success。内容：让 `scripts/smoke.mjs` 在固定版本的取副本上遇到 302 或非 immutable 的头时重试几秒（有上限、有最后一次的真实错误），其余检查不放宽。证明：一个测试用假服务器先返回旧头再返回 immutable 头；真正的缺陷（一直不 immutable）仍然失败。不许：放宽 immutable 的断言；无上限地重试。
+
 ## 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：~~不加语法~~（RM-D27 作废，`README.md` §6.5：`[语法]` 卡在 PS7.9 合并后就开工，不等阶段）
 
 执行顺序以 `README.md` §3 的表为准：RM1.3a → RM5.1 → RM1.4 → 发布 1.59.0，线（8 日 = 3 + 2 + 2 + 发布 1，9 个日历日）以下 RM2.1 → RM1.6a → PS7.9。RM0.2 是纯文档卡，也在线上，但由第二个（只做文档的）执行者并行，不计入 8 日。~~切点前合不完的进阶段 D，不挤进冻结期。~~ RM-D27 之后：切点前合不完的卡接着做、绿了就合并，进下一次所有者决定的发布；没有冻结期要躲。
@@ -177,9 +181,9 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 不许：手改 `manifest.json`；不写理由就改哈希；把注释写成"合规"或 "passes" 某辖区；顺带改平面本身。
 
-### 发布 1.59.0 · 约 11-21 · 1 日
+### 发布 1.59.0 — `done` · #720 · `e354ddc7`（tag `v1.59.0`，2026-11-11） · 1 日
 
-**状态（12:4x Z）：`doing`（tag 已推，发布链结果待协调者补记）。** 版本号 PR #720（头 `f467dfe0`）已于 2026-11-11T12:31:39Z 合并，合并提交 `e354ddc7`，`v1.59.0` tag 指向它；所有者已决定发布并把时机委托给协调者，约定在 #711 与 #713 合并之后切（现已满足）。12:4x Z 时 npm 上核心仍是 1.58.0（发布链在跑）。发布结果由协调者补记。
+**状态（2026-11-11，发布后重读）：`done`。** 版本号 PR #720（`e354ddc7`，2026-11-11T12:31:39Z）；tag `v1.59.0` 12:33Z；`release.yml` run 43021354774 第 2 次尝试四个 job 全部 success（第 1 次在 "Guard the release" 失败：被打 tag 的提交的 CI 还在跑）；npm：核心 1.59.0、`archlang-mcp` 0.2.42、`archlang-3d` 0.6.0（`arch-plan` 仍是 0.1.2）；GitHub Release 13:22:29Z。各渠道见 `handoff.md` §1.2；OpenAI 目录的提交仍是所有者的一步。
 
 线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。~~切点后合并的 minor 内容等 12-02。~~ RM-D27 之后：切点后合并的内容进下一次所有者决定的发布，合并本身不等日期。
 
@@ -330,7 +334,7 @@ Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf
 
 ~~不合任何功能代码。~~ RM-D27（所有者 2026-11-11，`README.md` §6.5）取消了冻结期：本阶段的卡依赖满足就开工，功能代码在这一周也照常合并，只要 `main` 在 Show HN（12-01）之前保持绿。
 
-### RM1.1a · 首次接触复测（第一次） — `todo` · 1 日 · opus · 依赖 1.59.0 发布（兜底见下）
+### RM1.1a · 首次接触复测（第一次） — `todo`（**可以开工**：1.59.0 已于 2026-11-11 发布） · 1 日 · opus · 依赖 1.59.0 发布（已满足；兜底见下）
 
 纯测量，不改代码。按 plan-soundness D7/D15 的六份 brief 与冻结提示，在 1.59.0 上跑一次；记录"N 个缺陷、最终 lint 报出 k 个"。**v2：** 结果记在本计划 `handoff.md` 的测量表；`../plan-soundness/handoff.md` §4 只留一行指针。这个数字是 CR10 发布说明引用的覆盖数字（RM-D3 的措辞），也是 RM7.3 的自检项。
 
