@@ -62,7 +62,7 @@ import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
 
 import { stateAt } from "./timeline.js";
-import { faceParts, wallOutline } from "./wall-lines.js";
+import { faceParts, joinedGroups, wallOutline } from "./wall-lines.js";
 
 export type { ReplayNode, ReplayPayload } from "./payload.js";
 
@@ -274,7 +274,7 @@ export function mountReplay(
    * raises each node on its own), then the finished storey's (`joined`, the faces they share left
    * out). `draw` shows one of the two, for a whole group at once.
    */
-  const patched: Array<{ key: string; group: number; alone?: Mesh; joined?: Mesh }> = [];
+  const patched: Array<{ key: string; ni: number; group: number; alone?: Mesh; joined?: Mesh }> = [];
   for (const [ni, node] of p.nodes.entries()) {
     const outline = outlines[ni];
     const fix = faces[ni];
@@ -412,6 +412,7 @@ export function mountReplay(
       const colour = theme.colors[key] ?? furniture;
       patched.push({
         key: n.key,
+        ni,
         ...(parts.alone.length > 0 ? { alone: add(attr, parts.alone, colour, false, 1, true, false) } : {}),
         ...(parts.joined.length > 0 ? { joined: add(attr, parts.joined, colour, false, 1, true, false) } : {}),
         group: fix.group,
@@ -637,15 +638,14 @@ export function mountReplay(
     }
     // Nodes leave out the faces they share only while their whole group stands at full height
     // (`patched`).
-    const up = new Map<number, boolean>();
-    for (const { key, group } of patched) {
-      const full = nodes.get(key)?.g.visible === true && (s.nodes.get(key)?.rise ?? 0) >= 1;
-      up.set(group, (up.get(group) ?? true) && full);
-    }
+    const stands = new Map<number, boolean>();
+    for (const { key, ni } of patched)
+      stands.set(ni, nodes.get(key)?.g.visible === true && (s.nodes.get(key)?.rise ?? 0) >= 1);
+    const together = joinedGroups(faces, (i) => stands.get(i) === true);
     for (const { group, alone, joined } of patched) {
-      const together = up.get(group) === true;
-      if (alone) alone.visible = !together;
-      if (joined) joined.visible = together;
+      const t = together.has(group);
+      if (alone) alone.visible = !t;
+      if (joined) joined.visible = t;
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
     if (holder === "free" && controls) {

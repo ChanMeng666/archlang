@@ -469,6 +469,22 @@ export interface FaceFix {
 }
 
 /**
+ * The groups to draw `joined` (the finished storey's faces), the rest `alone` (card RM8.1b): a group
+ * switches only when EVERY node in it stands at full height, never node by node, since a node's
+ * `joined` faces rely on its neighbours' being drawn as well. `standing(i)` is whether node `i` is
+ * shown with `rise === 1`. The one place this rule lives: `mount.ts`'s `draw` and the tests call it.
+ */
+export function joinedGroups(fixes: ReadonlyArray<FaceFix | undefined>, standing: (i: number) => boolean): Set<number> {
+  const up = new Map<number, boolean>();
+  fixes.forEach((f, i) => {
+    if (f && f.group >= 0) up.set(f.group, (up.get(f.group) ?? true) && standing(i));
+  });
+  const out = new Set<number>();
+  for (const [g, v] of up) if (v) out.add(g);
+  return out;
+}
+
+/**
  * The walls' inner faces left out (card RM8.1). Where two prisms meet, each one's face there lies
  * inside the other (a lintel's end on its jamb, a stem's end on the wall it meets): never seen, but
  * drawn it leaks: every face is pushed back in depth by its own slope (the outline's polygon offset,
