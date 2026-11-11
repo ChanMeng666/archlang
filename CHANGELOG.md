@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- A docs page, `/says-no` ("When the compiler says no, and why"): seven small plans the checks flag, with the real `lint`, `validate` and `impact --lock` output, what `validate --strict` does, and a table of the numbers the lint profiles set, read from `LINT_PROFILES`. `scripts/says-no.ts` renders every output on the page and `test/docs-says-no.test.ts` fails when the page differs.
+- `/analysis` names `gerontec/archlang-section`, which reads `describe --json`, with its author's description.
+
 ### Changed
 
 - The 3D preview's posters and replay videos on archlang.uk and in the README are anti-aliased: `gen:3d-assets` draws each poster pixel from 3 × 3 samples and each video pixel from 2 × 2 (`renderReplay({ supersample })` in `@chanmeng666/archlang-3d/node`, off by default), and the outlines keep their weight. The live 3D preview (the playground's 3D tab, `archlang3d view --replay`) is not anti-aliased, as before.

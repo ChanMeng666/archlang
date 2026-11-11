@@ -1587,6 +1587,12 @@ warnings its lint profile raises that default `lint` does not under `advisory` a
 default-profile validity warnings do. `archlang score plan.arch --taste cn-residential-advisory`
 prints them on one `advisory … (does not cap)` line; `lint --profile` shows each.
 
+## Tools built on `describe`
+
+[`gerontec/archlang-section`](https://github.com/gerontec/archlang-section) reads
+`archlang describe --json`. Its author describes it as "Rudimentary building sections (Schnitte) for
+ArchLang floor plans: SVG/PNG/DXF". It is maintained by its author, not in this repository.
+
 ## The agent loop
 
 Together, `describe` and `lint` close the author → render → **verify** loop for an AI

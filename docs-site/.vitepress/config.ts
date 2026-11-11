@@ -146,6 +146,11 @@ const PAGE_META = [
     "The diagnostics an AI agent meets most often when writing ArchLang, what each means and how to fix it, from doors off a wall to stale edits and lock errors.",
   ],
   [
+    "/says-no",
+    "When the compiler says no, and why",
+    "Seven small plans the checks flag, with the real lint, validate and impact output, what validate --strict does, and where the numbers in each lint profile come from.",
+  ],
+  [
     "/start",
     "Get a floor plan from your AI",
     "Five ways to get a floor plan from your AI, from no install at all to your own coding agent, each with the exact link, prompt or command to use.",
@@ -851,6 +856,7 @@ export default defineConfig({
               { text: "Draw a plan from an image or PDF", link: "/from-an-image" },
               { text: "Change one room without moving the others", link: "/edit-one-room" },
               { text: "Common mistakes", link: "/common-mistakes" },
+              { text: "When the compiler says no", link: "/says-no" },
               { text: "Error catalog", link: "/errors" },
               { text: "What is new", link: "/whats-new" },
             ],
@@ -904,6 +910,7 @@ export default defineConfig({
           { text: "Draw a plan from an image or PDF", link: "/from-an-image" },
           { text: "Change one room without moving the others", link: "/edit-one-room" },
           { text: "Common mistakes", link: "/common-mistakes" },
+          { text: "When the compiler says no", link: "/says-no" },
           { text: "Import from a mask (experimental)", link: "/import" },
           { text: "One-page spec", link: "/spec" },
         ],

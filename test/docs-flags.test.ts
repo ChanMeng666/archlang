@@ -52,6 +52,7 @@ const DOCS = [
   "docs-site/check-a-floor-plan.md",
   "docs-site/3d.md",
   "docs/analysis.md",
+  "docs/says-no.md",
   "docs/axonometric.md",
   "docs/language-reference.md",
   "docs/showcase.md",
@@ -164,6 +165,7 @@ describe("agent-facing docs never tell an agent to run a bare `arch` or a prompt
     // `arch <cmd>` under its one alias line).
     "docs/language-reference.md",
     "docs/analysis.md",
+    "docs/says-no.md",
     "docs/intent.md",
     "docs/furniture.md",
     "docs/showcase.md",

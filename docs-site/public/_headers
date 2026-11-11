@@ -93,6 +93,10 @@
   Content-Type: text/markdown; charset=utf-8
   X-Robots-Tag: noindex
 
+/says-no.md
+  Content-Type: text/markdown; charset=utf-8
+  X-Robots-Tag: noindex
+
 /whats-new.md
   Content-Type: text/markdown; charset=utf-8
   X-Robots-Tag: noindex
