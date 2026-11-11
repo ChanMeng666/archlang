@@ -32,7 +32,7 @@
 
 ### RM0.3 · 发布 1.58.0 — `todo` · 1 日 · opus · 依赖 RM-D9（所有者）
 
-`v*` tag 由所有者打（RM-D9）；发布链的其余步骤由代理端到端执行。
+发布与否是所有者的决定（RM-D9）。决定之后，发布链（含 `v*` tag）由代理端到端执行，只在 OTP/2FA、登录、账号或令牌或 secret 的创建、条款与声明的确认、本机文件选择器处停下（`docs/agents/iron-laws.md` § Owner policies）。
 
 - nightly 前置已满足：run 42801157907（`main@69fa5864`，2026-11-10）里 `Deep fuzz (FC_SCALE=10)`（`.github/workflows/nightly.yml`；11-09 两次红在 `test/plan-json-malformed.test.ts`，由 #664 修复）与四个 `Test …` job 全部 success；#497 已于 2026-11-10T11:07Z 关闭。发布前按 release-check 第 5 项再读一次最新的 nightly；若它又红，停下交所有者。
 - 步骤按 `.claude/commands/release-check.md` 全走：先确认真实的最新版本（第 1 项）；bump `packages/mcp`（`packages/mcp/server.json` 两处 `version` 同步）与 `packages/archlang-3d`（`prove:pack`、`check:3d` 是重命令，在 CI 跑）；`winders` 是新关键字，`editors/vscode` 自 v1.57.0 改了 6 个文件，重打 `.vsix` 并上传、派发 `publish-openvsx.yml`；OpenAI 插件 ZIP、ClawHub、Docker Catalog 的 `source.commit`。
@@ -41,7 +41,7 @@
 
 证明：`npm view @chanmeng666/archlang version` 为 1.58.0，`gh release view v1.58.0` 存在；`npx -y @chanmeng666/archlang@1.58.0 compile` 一份带 `winders` 的最小平面零 E；`@chanmeng666/archlang-mcp` 与 `archlang-3d` 的新版本 `npm view` 可见；Open VSX API 返回新的扩展版本；release-check 第 2 项的版本一致性全过。
 
-不许：代理自己打 tag；收窄 `prepublishOnly`；跳过 release-check 的任何一项；在发布说明里写"first/only"、合规或任何 IFC 承诺；把下载量写成 traction。
+不许：在所有者尚未决定发布时打 tag；收窄 `prepublishOnly`；跳过 release-check 的任何一项；在发布说明里写"first/only"、合规或任何 IFC 承诺；把下载量写成 traction。
 
 ### RM0.1 · 记录修正（扩大） — `todo` · 1 日 · sonnet · 依赖无
 
@@ -143,7 +143,7 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 ### 发布 1.59.0 · 约 11-21 · 1 日
 
-线上合并项切一个 minor（tag 归所有者），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。切点后合并的 minor 内容等 12-02。
+线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。切点后合并的 minor 内容等 12-02。
 
 ### ── 线（8 日）──
 
@@ -347,7 +347,7 @@ v1 的 RM3.1 拆成两半（RM-D10，所有者 2026-11-11 批准）。前半：
 
 ### 发布 1.60.0 · 约 12-21 · 1 日
 
-线上合并项切一个 minor（tag 归所有者），步骤同 RM0.3；避开 Product Hunt 那一周。
+线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），步骤同 RM0.3；避开 Product Hunt 那一周。
 
 ### ── 线（12–14.5 日）──
 
@@ -454,7 +454,7 @@ CRF5（楼梯井同时报两条警告）若在同一 PR 碰到，一并去重。
 
 ### 发布 1.61.0 · 约 01-05 · 1 日
 
-线上合并项切一个 minor（tag 归所有者），步骤同 RM0.3。RM1.1b 量的就是它。
+线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），步骤同 RM0.3。RM1.1b 量的就是它。
 
 ### RM1.1b · 首次接触复测（第二次） — `todo` · 1 日 · opus · 依赖 1.61.0 发布、RM1.2a
 
