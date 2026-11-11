@@ -458,7 +458,7 @@ Totals: 389 modules in 34 directories.
 | `arc-band.ts` | 199 | 4 | How deep a rectangle reaches into a CURVED wall's solid — the radial analogue of the straight-segment frame in `./rect.ts`. | none |
 | `arc.ts` | 444 | 48 | Circular-arc math for **curved geometry** — arc wall edges and circular rooms. | none |
 | `backend.ts` | 73 | 5 | Optional polygon-geometry backend seam. | none |
-| `band.ts` | 782 | 25 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
+| `band.ts` | 787 | 25 | The **band** of a wall: its two faces, its corners and its caps, as exact edge loops. | none |
 | `clipper.ts` | 177 | 2 | Optional {@link GeometryBackend} adapter over `clipper2-wasm`. | none |
 | `grid-index.ts` | 247 | 17 | Uniform-grid bucket spatial index over axis-aligned boxes. | none |
 | `intersect.ts` | 341 | 8 | Closed-form intersection and ray-crossing primitives for **wall joinery**. | none |
