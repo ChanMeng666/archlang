@@ -83,8 +83,8 @@ Totals: 389 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `camera.ts` | 394 | 6 | The replay's end camera as plain maths (card A3, look notes round 1): the viewer and the tests read the same functions, so "the end frame fills the canvas" is a property a test can check without a browser. Millimetres, the exporters' axes… | none |
 | `facts.ts` | 57 | 3 | The metrics strip's numbers (card G4), read from the core's public `describe()` and `lint()` for the same source the replay was built from: nothing is measured here and nothing is guessed. The strip itself (`strip.ts`) is browser-safe and… | none |
-| `html.ts` | 113 | 3 | The single-file replay HTML (card A3): the viewer and three.js 0.186.1 as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON payload… | none |
-| `mount.ts` | 963 | 5 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
+| `html.ts` | 113 | 3 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
+| `mount.ts` | 962 | 5 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
 | `payload.ts` | 192 | 7 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
 | `strip-dom.ts` | 20 | 2 | The strip's DOM half, apart from `strip.ts` so that the types of `.` and `./node` need no DOM lib. | none |
 | `strip.ts` | 73 | 8 | The replay's metrics strip (card G4): a line of plain facts under the picture, each shown when the replay reaches the stage that draws it. Browser-safe and free of the core: the facts come in as numbers (`facts.ts` reads them from the… | none |
@@ -94,7 +94,7 @@ Totals: 389 modules in 34 directories.
 | `view-dom.ts` | 168 | 4 | The free camera's buttons (card CR4), browser-only DOM shared by both hosts of the replay: the single-file replay HTML (`viewer.ts`) and the playground's 3D preview tab. The presets and Reset (`ViewControl`), the storeys shown, and a line… | none |
 | `viewer-bundle.ts` | 21 | 3 | The viewer and the parts of three.js it uses as one minified browser script. Run by `tsup.config.ts` for `dist/viewer.iife.js`, and from the source tree by `html.ts` (this repository's tests and `npm run archlang3d`); never by an… | none |
 | `viewer.ts` | 77 | 2 | The replay viewer's browser code (card A3), bundled with three.js into the single HTML file `replay.ts` writes. It reads the payload the file carries and mounts it (`mountReplay`): `window.__seek(t)` renders the frame at `t` synchronously… | none |
-| `wall-lines.ts` | 739 | 2 | The walls' outlines in the 3D preview (product-roadmap card RM8.1), browser-safe and pure: a line is drawn only where the visible surface of a storey's walls really turns. | none |
+| `wall-lines.ts` | 755 | 2 | The walls' outlines in the 3D preview (product-roadmap card RM8.1), browser-safe and pure: a line is drawn only where the visible surface of a storey's walls really turns. | none |
 
 ## `packages/archlang-3d/src/scene3d/`
 

@@ -40,8 +40,14 @@ describe("licence gate (Q20)", () => {
 
   it("refuses a package off the list, a changed licence, and anything on the deny list", () => {
     expect(verdict({ name: "left-pad", version: "1.3.0", license: "WTFPL" }, policy)).toMatch(/not on the allow list/);
-    expect(verdict({ name: "three", version: "0.187.0", license: "MIT" }, policy)).toMatch(/not on the allow list/);
-    expect(verdict({ name: "three", version: "0.186.1", license: "GPL-3.0" }, policy)).toMatch(/says GPL-3.0/);
+    // The listed three.js, read from the list so a version bump moves only `licences.json`.
+    const three = policy.allow.find((a) => a.name === "three");
+    expect(three).toBeDefined();
+    const threeAt = three?.version ?? "";
+    expect(verdict({ name: "three", version: `${threeAt}-other`, license: "MIT" }, policy)).toMatch(
+      /not on the allow list/,
+    );
+    expect(verdict({ name: "three", version: threeAt, license: "GPL-3.0" }, policy)).toMatch(/says GPL-3.0/);
     // straight-skeleton@3 says MIT and wraps GPL-3.0+ CGAL: denied even were it allow-listed.
     const trap = { name: "straight-skeleton", version: "3.0.0", license: "MIT" };
     expect(verdict(trap, policy)).toMatch(/denied/);
