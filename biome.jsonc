@@ -1,5 +1,5 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": {
     // Generated files (edit the source + `npm run gen:*` instead), goldens, and
@@ -40,7 +40,11 @@
       "!docs-site/.vitepress/cache",
       "!docs-site/.vitepress/theme/shims.d.ts",
       "!**/*.svg",
-      "!**/*.vue"
+      "!**/*.vue",
+      // Markdown and YAML were never formatted or linted; biome 2.6 started to, so keep them out.
+      "!**/*.md",
+      "!**/*.yml",
+      "!**/*.yaml"
     ]
   },
   "formatter": {
@@ -64,12 +68,34 @@
         // Deliberate idiom: `!` asserts structural invariants the code just checked.
         "noNonNullAssertion": "off",
         // String concat vs template literal is pure preference; not worth the churn.
-        "useTemplate": "off"
+        "useTemplate": "off",
+        // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+        "noDescendingSpecificity": "off"
       },
       // `any` is confined to the untyped optional-dep seam (pdfkit).
-      "suspicious": { "noExplicitAny": "off" },
+      "suspicious": {
+        "noExplicitAny": "off",
+        // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+        "noTemplateCurlyInString": "off",
+        // Already the safe `Object.prototype.hasOwnProperty.call` form; `Object.hasOwn` needs ES2022.
+        "noPrototypeBuiltins": "off"
+      },
+      // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+      // usePlaywrightValidDescribeCallback is a false positive on our own `describe()`.
+      "correctness": { "usePlaywrightValidDescribeCallback": "off" },
+      "performance": { "useDomNodeTextContent": "off" },
       // Existing site CSS uses !important on purpose in a few overrides.
-      "complexity": { "noImportantStyles": "off" },
+      "complexity": {
+        "noImportantStyles": "off",
+        // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+        // `?.` turns a boolean predicate into boolean | undefined; the playground's ES5-style
+        // inline IIFE is deliberate.
+        "useOptionalChain": "off",
+        "useArrowFunction": "off",
+        // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+        // Math.min/max differ from the ternary on NaN and -0.
+        "useMathMinMax": "off"
+      },
       // Deferred: playground/index.html button types get fixed in the playground
       // TypeScript migration; brand SVGs are art assets, not documents.
       "a11y": "off"

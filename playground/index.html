@@ -36,7 +36,7 @@
           try {
             other =
               localStorage.getItem("archlang.pg.source") !== null || !!localStorage.getItem("archlang.pg.theme");
-          } catch (e) {}
+          } catch (_e) {}
         }
         if (other) root.classList.add("pg-other");
       })();
