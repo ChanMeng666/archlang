@@ -357,7 +357,7 @@ Totals: 390 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `commands-analyze.ts` | 1350 | 10 | The analysis commands — `describe`, `validate` (incl. `--graph`/`--intent`), `lint`, and `score`. Render-free: they resolve/lint the plan and report facts or gate on an intent contract. Split out of the former monolithic `src/cli.ts`… | none |
+| `commands-analyze.ts` | 1356 | 10 | The analysis commands — `describe`, `validate` (incl. `--graph`/`--intent`), `lint`, and `score`. Render-free: they resolve/lint the plan and report facts or gate on an intent contract. Split out of the former monolithic `src/cli.ts`… | none |
 | `commands-author.ts` | 586 | 3 | The authoring/transform commands — `ast`, `complete`, `fmt`, `repair`, `fix`, `finish`, `suggest`. They parse/format/correct source (the syntactic `fix` and the geometric `repair` are a hard boundary; see ADR 0006/0011). Split out of the… | none |
 | `commands-import.ts` | 113 | 1 | `import` — a plan in another tool's format, as `.arch` source. One format today: `--from openplan3d` (an OpenPlan3D web project or prepared RoomPlan interchange JSON), converted by the core's pure `openPlan3dToArch()`. This file only… | none |
 | `commands-meta.ts` | 229 | 5 | The metadata / info commands — `manifest`, `spec`, `context`, `new`, `explain`. They print the CLI's own surface (manifest), the shipped language docs (spec / context), scaffold a starter plan (new), or look up an error code (explain).… | none |
@@ -508,8 +508,8 @@ Totals: 390 modules in 34 directories.
 | `element-phrases.ts` | 96 | 6 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
 | `fixture-paste.ts` | 254 | 5 | A pasteable fixture statement for an empty wet room or kitchen (`W_ROOM_NO_FIXTURE`'s hint), placed from the room's own shape and CHECKED before it is quoted. | none |
 | `measure.ts` | 95 | 19 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
-| `provenance.ts` | 452 | 2 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
-| `ruleset.ts` | 863 | 22 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
+| `provenance.ts` | 460 | 2 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
+| `ruleset.ts` | 865 | 22 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 118 | 8 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
 | `work.ts` | 33 | 2 | Work counters for one `lint()` run: how many geometric tests the costliest rules made, as COUNTS (engineering-health EH2.10). They are an out-parameter on the per-run {@link import("./context.js").LintContext}, never module state, so… | none |
 
