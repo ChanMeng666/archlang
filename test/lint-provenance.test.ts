@@ -295,7 +295,7 @@ describe("lint --rules", () => {
   });
 
   it("an unknown profile is bad usage, as without --rules", async () => {
-    const r = await runArch(["lint", "--rules", "--profile", "uk-residential", "--json"]);
+    const r = await runArch(["lint", "--rules", "--profile", "uk-residential-advisor", "--json"]);
     expect(r.status).toBe(3);
     expect(r.stderr).toMatch(/did you mean "uk-residential-advisory"/);
   });
