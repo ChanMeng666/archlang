@@ -38,7 +38,7 @@ import {
   enumList,
 } from "../src/grammar/tokens.js";
 import { assertDoorVocab, renderGbnf } from "../scripts/gen-gbnf.js";
-import { assertDoorEnumsRendered } from "../scripts/gen-llm-spec.js";
+import { assertDoorEnumsRendered, doorKindClauses, ELEMENT_GRAMMAR } from "../scripts/gen-llm-spec.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const read = (...p: string[]): string => readFileSync(join(__dirname, ...p), "utf8");
@@ -247,6 +247,40 @@ suite("door enums — the generators fail loudly, not silently", () => {
     expect(() =>
       assertDoorEnumsRendered(line, DOOR_ENUMS, DOOR_HINGE_NEAR, DOOR_KINDS, [...DOOR_SWING_BUILDING, "upward"]),
     ).toThrow(/building-relative `swing` form/);
+  });
+
+  it("the spec's kind → clause table reads back to DOOR_KIND_CLAUSES, every kind once (PS7.9)", () => {
+    // The door line states which clauses each kind takes as a table rendered from the
+    // resolver's own `DOOR_KIND_CLAUSES`. Parse the rendering back and compare, so a grouping
+    // bug (a kind dropped, two kinds merged that differ) cannot ship a false refusal rule.
+    const readBack = (s: string): Record<string, string[]> =>
+      Object.fromEntries(
+        s.split("; ").flatMap((group) => {
+          const [kinds = "", clauses = ""] = group.split(": ");
+          const list = clauses === "none" ? [] : clauses.split(" ");
+          return kinds.split("/").map((k) => [k, list]);
+        }),
+      );
+    const expected = Object.fromEntries(
+      DOOR_KINDS.map((k) => [
+        k,
+        Object.entries(DOOR_KIND_CLAUSES[k])
+          .filter(([, on]) => on)
+          .map(([c]) => c),
+      ]),
+    );
+    const rendered = doorKindClauses();
+    expect(readBack(rendered)).toEqual(expected);
+    expect(
+      rendered
+        .split(/[;:/ ]+/)
+        .filter((w) => (DOOR_KINDS as readonly string[]).includes(w))
+        .sort(),
+    ).toEqual([...DOOR_KINDS].sort());
+    expect(ELEMENT_GRAMMAR.door).toContain(rendered);
+    // A kind whose clauses change regroups: the planted table must not read back as the real one.
+    const planted = { ...DOOR_KIND_CLAUSES, bifold: { ...DOOR_KIND_CLAUSES.bifold, open: false } };
+    expect(readBack(doorKindClauses(DOOR_KINDS, planted))).not.toEqual(expected);
   });
 });
 
