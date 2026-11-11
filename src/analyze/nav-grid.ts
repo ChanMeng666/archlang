@@ -481,8 +481,9 @@ function landingProbe(
 }
 
 /** The width of a flight across the edge a person arrives over — the flight's width, as a
- *  doorway's clear width is the opening they come in through. */
-function runWidth(f: RVertical, e: RectEdge): number {
+ *  doorway's clear width is the opening they come in through. `describe().access` seeds an
+ *  arrival room at the same width (PS0.3), so the two cannot disagree about it. */
+export function runWidth(f: RVertical, e: RectEdge): number {
   return e === "top" || e === "bottom" ? f.size.w : f.size.h;
 }
 

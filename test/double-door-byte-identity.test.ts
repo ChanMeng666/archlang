@@ -78,8 +78,8 @@ const BASELINE: [string, string][] = [
   ["examples/parametric.arch", "402cf58e4e122164928e6d875320e63b7be5c017396dce026ab8c73d4a0373ef"],
   ["examples/remodel.arch", "f0f4a5aa4758c3f9feb14449b6a9be0b7afd020fb925619c6d83e66f7cb95f2d"], // `centreline_at`, see ./byte-identity-baseline.ts
   ["examples/sheet-notes.arch", "602cfd5f8e34268bf660dcad47b5cbf28332ddf92a119fba7317850ab9f9d798"],
-  ["examples/turning-stair.arch", "34b5b4344ca81803a4b3f94513cd947adc0749f6e7e20dbf72c918244ee4c99c"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "30fea74236f151947c7fec764e66b2f5a860ce6f71908a5a60fc68e87566837a"],
+  ["examples/turning-stair.arch", "7a197ff651fd6ee9e785088ecefd9147d15e29cfd098013624ffbd8698c4dd56"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts
+  ["examples/two-storey.arch", "03f9dd06253ad4bda8937efbc428093b671524340dbdc3254061061d20f67c24"], // RM1.3a, see ./byte-identity-baseline.ts
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
@@ -92,7 +92,7 @@ const BASELINE: [string, string][] = [
   ["test/fixtures/lock-window-moved.arch", "5178ac32070a056b37462b4169b3fbdbbb0ee9a94ca05221cc0c64cedf89dd99"],
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
   ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // #367, see test/byte-identity-baseline.ts
-  ["test/fixtures/storeys-eaves-overflow.arch", "e29b5e34735306051eeea8215d258873db2935ed3c7ebaf575a4b7af5cb89a6d"],
+  ["test/fixtures/storeys-eaves-overflow.arch", "7fd83cafe8059c3c80a5da4475b6206e126876b30d98114ce8a126e472ccd23f"], // RM1.3a, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["test/fixtures/zones-levels.arch", "543c732b812f10c5f40822c085740e4a3c7093add2f9c2663cff28396c4192e7"],
@@ -170,7 +170,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/garden-house.arch",
-    "f4873f9a1f6e68f494a84c913d6f850560f626850cfd071a9fb51784835c5b01",
+    "a344c463254cecbd315383b8d58f6611a7e3ad5adfe6c97b02e5f64b09ec9d3c", // RM1.3a, see ./byte-identity-baseline.ts
     "7b0be7cc59f85d596c632beb990432981f153dd38ce1ae7027d8516f01d807ae",
     [
       [
@@ -192,7 +192,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/hillside-villa.arch",
-    "f5917b29a5789d764d5f87c26c453c41cfd494779aec55d6228d542582650e3c",
+    "454972020b0a9c632c4ebfe7bc36448c5ce277e50f47519e62a81eed4ec43d6d", // RM1.3a, see ./byte-identity-baseline.ts
     "8aff5c59e5e4aa5d446e2ea8c9492badf80205167402a29cf7a8e9f02795684c",
     [
       [
@@ -294,7 +294,7 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   ],
   [
     "examples/townhouse.arch",
-    "dcddd916b6af56d49a6e843c46b4bcd4f3ee5f1711ce3dbe9102a88d9c0a1ef4",
+    "ebaaf82c5685c454f71a07d668d72ea265172da9fa05c667cdc248418ceca6b0", // RM1.3a, see ./byte-identity-baseline.ts
     "6173926c3747eec3b2a679cf4c24c15f463a0638f56bd9d9a5d87fd53b44d091",
     [
       [

@@ -79,10 +79,12 @@ import {
   buildingRoomReach,
   storeyGrounded,
   rotateForBackEdge,
+  roomBox,
   wallBackedEdges,
   type BBox,
 } from "./analyze.js";
-import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
+import { computeCirculation, type CirculationModel, walkedFromShafts } from "./analyze/circulation.js";
+import { arrivalAccess, entranceInputs } from "./analyze/entrance.js";
 import { type ArrivingRun, arrivalRuns, verticalsOf } from "./vertical.js";
 import {
   DOORWAY_WIDTH_MM,
@@ -1581,7 +1583,11 @@ function repairStorey(
   const minPathClear = DEFAULT_RULESET.minPathClearWidthMm;
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const openingEls = ir.elements.filter((e): e is ROpening => e.kind === "opening");
-  const access = buildDoorAccessGraph(roomEls, doors, DEFAULT_TOL, undefined, openingEls, openRunsOf(ir, DEFAULT_TOL));
+  // Walked from the ways a person arrives by, as `describe().circulation` is (U.1).
+  const access = arrivalAccess(
+    buildDoorAccessGraph(roomEls, doors, DEFAULT_TOL, undefined, openingEls, openRunsOf(ir, DEFAULT_TOL)),
+    entranceInputs(ir, new Map(roomEls.map((r) => [r.id, roomBox(r)]))),
+  );
   // Furniture NOT under repair's control (against-wall / scripted / expression-placed)
   // stays put; the movable pieces contribute their live position instead.
   const staticFurniture = occupants.filter((o) => !o.piece).map((o) => irFurniture[o.ord]!);
@@ -1606,7 +1612,8 @@ function repairStorey(
       doors,
       openingEls,
       [...staticFurniture, ...dyn],
-      access,
+      // The storey's own arrivals, given only where no door from the ground is (PS0.3).
+      walkedFromShafts(access, arrivals, roomEls),
       DEFAULT_TOL,
       undefined,
       verticalsOf(ir),

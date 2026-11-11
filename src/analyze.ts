@@ -495,12 +495,34 @@ export function openRunsOf(ir: ResolvedPlan, tol: number): AccessConnector[] {
 }
 
 /**
+ * A room a stair or lift delivers a person into on a storey with no door from the ground
+ * (`VerticalReach.arrivalRooms`, PS0.3), and the clear width they arrive by: the flight's width
+ * across the edge they step off at, as the circulation model seeds that landing (`runWidth`,
+ * `src/analyze/nav-grid.ts`), or `null` when no arriving run lands in the room (it is still a
+ * place a person arrives, so it is a source of reach and depth, but it seeds no width).
+ */
+export type ShaftArrivalSeed = readonly [roomId: string, clearWidthMm: number | null];
+
+/**
  * The {@link AccessGraph} over given connector edges: its entrances, and each room's depth,
  * reachability and bottleneck from {@link EXTERIOR_NODE}. {@link buildDoorAccessGraph} is this
  * over every connector of the storey; the walk's graph (`walkAccessGraph`,
  * `src/analyze/entrance.ts`) is this over the edges it keeps.
+ *
+ * With `arrivals` (non-empty; PS0.3), the storey is one a shaft reaches and no door from the
+ * ground does: the rooms the shafts land in are where a person arrives, each at depth 1 (it is
+ * entered straight from the arriving run, as a room behind a front door is) and at the run's
+ * width, and the exterior is NOT a source. Its exterior connectors (doors onto a balcony) stay
+ * walkable THROUGH, so a room reached by stepping out of one room onto the balcony and in by
+ * another door is reached, as {@link reachFrom}'s `exterior: false` reads it. `edges` and
+ * `entrances` are the same either way: they are the storey's doors, whatever is reached by them.
+ * Without `arrivals` this is exactly the graph it always was.
  */
-export function accessGraphOf(roomIds: readonly string[], edges: AccessEdge[]): AccessGraph {
+export function accessGraphOf(
+  roomIds: readonly string[],
+  edges: AccessEdge[],
+  arrivals: readonly ShaftArrivalSeed[] = [],
+): AccessGraph {
   const g = accessDigraph(roomIds, edges);
   const entrances: string[] = [];
   for (const e of edges) {
@@ -508,15 +530,23 @@ export function accessGraphOf(roomIds: readonly string[], edges: AccessEdge[]): 
     if (joins(e) && e.exterior && (a === EXTERIOR_NODE) !== (b === EXTERIOR_NODE)) entrances.push(e.doorId);
   }
 
-  // Door hops from the exterior (1 = a room opening directly outside).
-  const depth = bestPaths(g, { s: MIN_PLUS, weight: () => 1, sources: [[EXTERIOR_NODE, 0]], rank: () => 0 }).value;
+  const viaShaft = arrivals.length > 0;
+  // Door hops from the exterior (1 = a room opening directly outside), or from the rooms the
+  // shafts land in (1 = the arrival room) on a storey a shaft reaches.
+  const depthSources: Array<readonly [string, number]> = viaShaft
+    ? arrivals.map(([id]) => [id, 1] as const)
+    : [[EXTERIOR_NODE, 0]];
+  const depth = bestPaths(g, { s: MIN_PLUS, weight: () => 1, sources: depthSources, rank: () => 0 }).value;
   // Widest path: the max over paths of the min clear width.
   const order = [EXTERIOR_NODE, ...roomIds];
   const rank = new Map<string, number>(order.map((id, i) => [id, i]));
+  const widthSources: Array<readonly [string, number]> = viaShaft
+    ? arrivals.flatMap(([id, w]) => (w === null ? [] : [[id, w] as const]))
+    : [[EXTERIOR_NODE, Infinity]];
   const best = bestPaths(g, {
     s: MAX_MIN,
     weight: (e) => e.estimatedClearWidth,
-    sources: [[EXTERIOR_NODE, Infinity]],
+    sources: widthSources,
     rank: (id) => rank.get(id) ?? order.length,
   }).value;
 

@@ -188,10 +188,10 @@ const CORPUS: [string, string][] = [
   ["examples/courtyard-house.arch", "e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce"],
   ["examples/furnished-flat.arch", "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a"],
   ["examples/gallery-l.arch", "0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2"],
-  ["examples/garden-house.arch", "2ebce59ad2ade8fd181400ff73c88b9e6ab3af4217c1341a63745bb64ca4243d"],
+  ["examples/garden-house.arch", "55ad2593f768d91a282b6cde6e8a06f6ee5dbd5701fe1858aa8905431432767a"], // RM1.3a, see ./byte-identity-baseline.ts
   ["examples/garden-loft.arch", "f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0"],
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
-  ["examples/hillside-villa.arch", "9f493e8903437b74f50eb72fd227871d17c13a17b6bc9ccf7592d423f6908572"],
+  ["examples/hillside-villa.arch", "36397208c3c6ea06f9bbc3efba156b33de2189455086852e290890f3c8784884"], // RM1.3a, see ./byte-identity-baseline.ts
   ["examples/imports.arch", "a0341285f4e3699b738aa1916bba278eed61e347df4d3a2de139b9f0185d9678"],
   ["examples/knob-flat.arch", "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5"], // new example (P4, the knobs example), see header
   ["examples/laneway-house.arch", "21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e"],
@@ -210,11 +210,11 @@ const CORPUS: [string, string][] = [
   ["examples/terrace-row.arch", "6667da00528cdd4ee4f155586a049ad877f81b83178f5a18c85afef7a76a781d"],
   ["examples/themed.arch", "edd65eb6b725687bb30a7c956132e01bc2b9c57d772afaa9c234745af332f8bf"],
   ["examples/tiny-house.arch", "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17"],
-  ["examples/townhouse.arch", "2ba4f5c6510c8c1c5b0dce5fda946532a49aa27d9d14668e8398903af71f3612"],
+  ["examples/townhouse.arch", "4ebf99f3ba158cc7652424c413c94f9f837f6afd24546d8bbac0f080bb281652"], // RM1.3a, see ./byte-identity-baseline.ts
   ["examples/transit-hall.arch", "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5"],
-  ["examples/turning-stair.arch", "34b5b4344ca81803a4b3f94513cd947adc0749f6e7e20dbf72c918244ee4c99c"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts
+  ["examples/turning-stair.arch", "7a197ff651fd6ee9e785088ecefd9147d15e29cfd098013624ffbd8698c4dd56"], // new example (S2), see header; `centreline_at`, see ./byte-identity-baseline.ts; RM1.3a, see ./byte-identity-baseline.ts
   ["examples/two-bed.arch", "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd"], // `centreline_at`, see ./byte-identity-baseline.ts
-  ["examples/two-storey.arch", "30fea74236f151947c7fec764e66b2f5a860ce6f71908a5a60fc68e87566837a"],
+  ["examples/two-storey.arch", "03f9dd06253ad4bda8937efbc428093b671524340dbdc3254061061d20f67c24"], // RM1.3a, see ./byte-identity-baseline.ts
   ["test/fixtures/axes-grid.arch", "e6be5d70788d931cacaa8cb1db2c2c454c1532d01153b90e2427c125770e5559"],
   ["test/fixtures/chain30.arch", "ce81264ecdc3a086f99708f90aee5dd929c71b9e8ccaaa54a1da5ce5aa213325"], // #367, see test/byte-identity-baseline.ts
   ["test/fixtures/dense-bays.arch", "9f4ad4538851a27b463113cd7e563823d185bc7e18b342fd9eebb45f2887992f"],
@@ -228,7 +228,7 @@ const CORPUS: [string, string][] = [
   ["test/fixtures/off-path-bypass.arch", "81ef92c32f98bc41635428f477b2cf7e59adea520e60892b5e39aa48fcbcaecf"],
   ["test/fixtures/schedule-sheet.arch", "15dc29228ea12dae7240ad843567f88218c5a57bd8838ea950b1a5792c2579a5"],
   ["test/fixtures/star30.arch", "5104211cdd3733a56e18d141c68db6a097b679e484b1b18897e7637dd05d0bbb"], // #367, see test/byte-identity-baseline.ts
-  ["test/fixtures/storeys-eaves-overflow.arch", "e29b5e34735306051eeea8215d258873db2935ed3c7ebaf575a4b7af5cb89a6d"],
+  ["test/fixtures/storeys-eaves-overflow.arch", "7fd83cafe8059c3c80a5da4475b6206e126876b30d98114ce8a126e472ccd23f"], // RM1.3a, see ./byte-identity-baseline.ts
   // was 05693d9e. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["test/fixtures/zones-levels.arch", "543c732b812f10c5f40822c085740e4a3c7093add2f9c2663cff28396c4192e7"],
