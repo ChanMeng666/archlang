@@ -154,7 +154,14 @@ you observed. Do NOT push anything — this command only verifies.
   curl -sI https://cdn.jsdelivr.net/npm/@chanmeng666/archlang@<version>/+esm   # expect 200
   ```
 
-  then open `https://archlang.uk/arch-plan-demo.html` and check that both plans draw and the third
+  The tag's first publish attempt fails by design: `release.yml` starts with `scripts/release-guard.sh`,
+  which refuses until the required CI checks are green on the tagged commit, and `main`'s push run for
+  the merge commit takes about 27 minutes. "Guard the release" fails, nothing is published, and the
+  `verify` job then polls npm for every package (tens of minutes). `deploy.yml` also waits for that CI
+  run, so the embed moves to the new version when it finishes: at that moment cancel the release run
+  if `verify` is still polling and `gh run rerun <id> --failed` (1.59.0: CI green 12:59Z, Deploy 13:01Z,
+  core on npm 13:24Z).
+  When the publish is done, open `https://archlang.uk/arch-plan-demo.html` and check that both plans draw and the third
   element shows its `E_PARSE` box, or run its `@prod` case:
   `E2E_PROD=1 E2E_BASE_URL=https://archlang.uk npx playwright test -c docs-site arch-plan --grep @prod` #allow-local-heavy (a release step against the live site).
 
