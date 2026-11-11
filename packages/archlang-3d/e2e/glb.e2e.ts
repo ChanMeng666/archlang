@@ -97,6 +97,27 @@ describe("GLB over the corpus (§9.2 criteria 1 and 3)", () => {
     }
     expect(failed).toEqual([]);
   });
+
+  it("the site (card RM8.3): each outdoor kind's and fence style's fixture passes S1–S4, glTF-Validator 0/0", async () => {
+    const dir = join(PKG, "test", "fixtures", "outdoor");
+    const names = ["lawn", "planting", "paving", "deck", "gravel", "water", "driveway", "patio", "balcony"]
+      .map((k) => `ground-${k}`)
+      .concat(["picket", "panel", "post"].map((s) => `fence-${s}`))
+      // The edge cases of review R1: overlaps, degenerate fences, an upper storey.
+      .concat(["site-edges"]);
+    const failed: string[] = [];
+    for (const name of names) {
+      const a = await glbOf(readFileSync(join(dir, `${name}.arch`), "utf8"));
+      if (!a.mesh.nodes.some((n) => n.kind === (name.startsWith("fence-") ? "fence" : "outdoor")))
+        failed.push(`${name}: no site node`);
+      const checks = [checkScene(a.scene), checkShells(a.mesh), ...(await checkGlb(a.glb, a.mesh))];
+      for (const c of checks.filter((x) => !x.ok)) failed.push(`${name} ${c.id}: ${c.failures.join("; ")}`);
+      const v = checks.find((c) => c.id === "V-GLTF-01");
+      if (v?.facts?.errors !== 0 || v?.facts?.warnings !== 0)
+        failed.push(`${name}: validator ${JSON.stringify(v?.facts)}`);
+    }
+    expect(failed).toEqual([]);
+  });
 });
 
 describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {

@@ -1,7 +1,7 @@
 /**
  * Resource-wiring pins for the MCP shim.
  *
- * The five `archlang://…` resources are the shim's most silently-rotting surface:
+ * The six `archlang://…` resources are the shim's most silently-rotting surface:
  * they are static text baked in at PACK time, so a wrong repo path or a resource
  * wired to the wrong file cannot be caught by compiling anything. 0.2.2 shipped a
  * v1.19 spec AND a v1.19 GBNF grammar that could not decode half the language while
@@ -33,6 +33,7 @@ const RESOURCES: Array<[string, string, string]> = [
   ["archlang://schema", "schemas/plan.schema.json", "application/schema+json"],
   ["archlang://grammar", "grammars/archlang.gbnf", "text/plain"],
   ["archlang://intent-schema", "schemas/intent.schema.json", "application/schema+json"],
+  ["archlang://capabilities", "packages/mcp/capabilities.md", "text/markdown"],
 ];
 
 describe("resources", () => {
@@ -46,7 +47,7 @@ describe("resources", () => {
     expect(content.uri).toBe(uri);
   });
 
-  it("every registered resource is one of the five pinned above — no unpinned wiring", async () => {
+  it("every registered resource is one of the six pinned above — no unpinned wiring", async () => {
     const client = await connect();
     const listed = (await client.listResources()).resources.map((r) => r.uri).sort();
     expect(listed).toEqual(RESOURCES.map(([uri]) => uri).sort());

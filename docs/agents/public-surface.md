@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
+Totals: 632 exports (222 values, 410 types), 400 flagged (73 values).
 
 ## `src/algebra/d4.ts`
 
@@ -707,7 +707,7 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | --- | --- | --- |
 | `DEFAULT_RULESET` | value | `test` |
 | `LINT_PROFILES` | value | `test` |
-| `LINT_PROFILE_NAMES` | value | `playground`, `src/cli`, `test` |
+| `LINT_PROFILE_NAMES` | value | `packages/mcp`, `playground`, `src/cli`, `test` |
 | `LintOptions` | type | `playground` |
 | `LintRuleset` | type | `test` |
 
@@ -748,7 +748,7 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
-| `EXPORT_FORMATS` | value | `src/cli` |
+| `EXPORT_FORMATS` | value | `packages/mcp`, `src/cli` |
 | `ExportFormat` | type | `src/cli` |
 | `MANIFEST_COMMAND_NAMES` | value | `packages/mcp`, `test` |
 | `Manifest` | type | none |
@@ -769,11 +769,11 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
-| `NEXT_TIERS` | value | `test` |
-| `NextInput` | type | `src/cli`, `test` |
+| `NEXT_TIERS` | value | `packages/mcp`, `test` |
+| `NextInput` | type | `packages/mcp`, `src/cli`, `test` |
 | `NextItem` | type | `src/cli` |
 | `NextTier` | type | none |
-| `nextDiagnostic` | value | `src/cli`, `test` |
+| `nextDiagnostic` | value | `packages/mcp`, `src/cli`, `test` |
 
 ## `src/plan-json/ast-json.ts`
 
@@ -1011,14 +1011,14 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | --- | --- | --- |
 | `TASTE_BUDGET` | value | `test` |
 | `TasteOptions` | type | none |
-| `taste` | value | `src/cli`, `test` |
+| `taste` | value | `packages/mcp`, `src/cli`, `test` |
 
 ## `src/taste/profiles.ts`
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `TASTE_PROFILES` | value | `test` |
-| `TASTE_PROFILE_NAMES` | value | `src/cli`, `test` |
+| `TASTE_PROFILE_NAMES` | value | `packages/mcp`, `src/cli`, `test` |
 
 ## `src/taste/report.ts`
 
@@ -1038,9 +1038,9 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
-| `DEFAULT_THEME` | value | none |
+| `DEFAULT_THEME` | value | `packages/archlang-3d` |
 | `StyleMap` | type | none |
-| `THEMES` | value | `playground`, `src/cli`, `test` |
+| `THEMES` | value | `docs-site`, `playground`, `src/cli`, `test` |
 | `Theme` | type | `packages/web-component`, `src/cli` |
 | `derivePoche` | value | `test` |
 | `hexToHsl` | value | `test` |

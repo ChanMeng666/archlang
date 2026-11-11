@@ -1,4 +1,4 @@
-// Copy the five MCP resource files from the repo tree into dist/ (flat), so the
+// Copy the six MCP resource files from the repo tree into dist/ (flat), so the
 // built server can read them next to itself and they ship via the package "files"
 // (dist/). Deterministic: fixed source→dest list, run after `tsup` in the build
 // script. The server also falls back to reading them from the repo tree when it
@@ -18,13 +18,14 @@ const repo = join(here, "..", "..", ".."); // packages/mcp/scripts → repo root
 const dist = join(here, "..", "dist");
 mkdirSync(dist, { recursive: true });
 
-/** [repo-relative source, flat dest name] — the five `archlang://…` resources. */
+/** [repo-relative source, flat dest name] — the six `archlang://…` resources. */
 const RESOURCES = [
   ["spec.llm.md", "spec.llm.md"],
   ["llms-full.txt", "llms-full.txt"],
   ["schemas/plan.schema.json", "plan.schema.json"],
   ["grammars/archlang.gbnf", "archlang.gbnf"],
   ["schemas/intent.schema.json", "intent.schema.json"],
+  ["packages/mcp/capabilities.md", "capabilities.md"],
 ];
 
 for (const [src, dest] of RESOURCES) {

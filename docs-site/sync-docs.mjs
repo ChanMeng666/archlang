@@ -359,8 +359,9 @@ let lint = null;
 let impact = null;
 let applyLetOverride = null;
 let diagnosticToJson = null;
+let THEMES = null;
 try {
-  ({ compile, describe, lint, impact, applyLetOverride, diagnosticToJson } = await import(
+  ({ compile, describe, lint, impact, applyLetOverride, diagnosticToJson, THEMES } = await import(
     pathToFileURL(join(repo, "dist", "index.js")).href
   ));
 } catch (e) {
@@ -445,10 +446,23 @@ for (const { id, title, model } of JSON.parse(readFileSync(join(gallerySrc, "gal
     const drawn = pages?.length
       ? pages.map((p) => ({ file: levelSvgName(id, p.level), level: p.level, svg: p.svg }))
       : [{ file: `${id}.svg`, level: null, svg }];
+    // The `rendered` colour scheme of the same sheets: the core's own `compile()` with
+    // `CompileOptions.theme` (what `arch compile --theme rendered` passes), never a restyle. The page
+    // fetches these only when a reader presses the toggle, so a plain visit does not pay for them.
+    const themed = compile(source, { noCache: true, theme: THEMES.rendered });
+    const themedDrawn = themed.pages?.length ? themed.pages.map((p) => p.svg) : [themed.svg];
+    if (themedDrawn.length !== drawn.length) {
+      galleryFailures.push(
+        `docs/gallery/${id}.arch: the rendered theme drew ${themedDrawn.length} sheets, the default ${drawn.length}`,
+      );
+      continue;
+    }
     const sheets = [];
-    for (const d of drawn) {
+    for (const [i, d] of drawn.entries()) {
       writeFileSync(join(galleryDest, d.file), d.svg);
-      sheets.push({ file: d.file, level: d.level, ...sheetSize(d.svg) });
+      const rendered = d.file.replace(/\.svg$/, ".rendered.svg");
+      writeFileSync(join(galleryDest, rendered), themedDrawn[i]);
+      sheets.push({ file: d.file, rendered, level: d.level, ...sheetSize(d.svg) });
     }
     if (sheets.some((s) => !s.width || !s.height)) {
       galleryFailures.push(
