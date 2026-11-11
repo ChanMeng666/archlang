@@ -162,17 +162,24 @@ async function openInPlayground() {
     <div class="archlive-preview">
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-if="renderedSrc" class="archlive-svg">
-        <img :src="renderedSrc" alt="The plan, drawn in the rendered colour scheme" />
+        <img
+          :src="renderedSrc"
+          :alt="`Floor plan${facts ? ` (${facts})` : ''}, drawn in the rendered colour scheme`"
+        />
       </div>
       <!-- eslint-disable-next-line vue/no-v-html -->
       <div v-else-if="svg" class="archlive-svg" v-html="svg"></div>
       <div v-else class="archlive-error">{{ errorMsg }}</div>
+      <!-- Its own row, apart from .archlive-bar, so the bar's layout is what it always was. The row
+           is always rendered (the widget itself only appears on mount), so nothing shifts. -->
+      <div class="archlive-themerow">
+        <label class="archlive-theme">
+          <input v-model="rendered" type="checkbox" /> Rendered colours
+        </label>
+      </div>
       <div class="archlive-bar">
         <span class="archlive-facts">{{ facts ?? "—" }}</span>
         <span class="archlive-actions">
-          <label v-if="mounted" class="archlive-theme">
-            <input v-model="rendered" type="checkbox" /> Rendered colours
-          </label>
           <a v-if="staticPage" class="archlive-page" :href="staticPage">Static page ↗</a>
           <button type="button" class="archlive-open" @click="openInPlayground">
             Open in Playground ↗
@@ -325,6 +332,11 @@ async function openInPlayground() {
   background: #fff;
   border: 1px solid var(--hairline);
   box-shadow: 0 1px 6px rgb(28 36 48 / 12%);
+}
+.archlive-themerow {
+  padding: 5px 12px;
+  border-top: 1px solid var(--hairline);
+  background: var(--paper-panel);
 }
 .archlive-theme {
   display: inline-flex;

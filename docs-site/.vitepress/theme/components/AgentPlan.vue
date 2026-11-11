@@ -6,7 +6,7 @@
 // The drawing is a pre-rendered `/gallery/<id>.svg` in a lazy <img>, and the source sits in a
 // closed <details>. Nothing compiles in the reader's browser, so the page costs a phone one
 // small HTML document plus the sheets it actually scrolls to.
-import { computed, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { highlightArch } from "../arch-highlight.js";
 import { GALLERY } from "../gallery-data.js";
 
@@ -16,6 +16,10 @@ const props = defineProps<{ id: string }>();
 // `compile()` with a theme). One checkbox per plan, off by default; the rendered files are not
 // requested until it is ticked. It restyles these drawings only, never the page.
 const rendered = ref(false);
+const mounted = ref(false);
+onMounted(() => {
+  mounted.value = true;
+});
 const sheetFile = (sheet: { file: string; rendered?: string }) =>
   rendered.value && sheet.rendered ? sheet.rendered : sheet.file;
 
@@ -47,8 +51,9 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
       </a>
       <figcaption v-if="plan.sheets.length > 1">Sheet {{ i + 1 }} of {{ plan.sheets.length }}, one per storey</figcaption>
     </figure>
+    <!-- The row is reserved before mount (min-height) and the box appears on mount, so nothing shifts. -->
     <p class="agent-plan-theme">
-      <label><input v-model="rendered" type="checkbox" /> Show the drawing in the rendered colours</label>
+      <label v-if="mounted"><input v-model="rendered" type="checkbox" /> Show the drawing in the rendered colours</label>
     </p>
     <p class="agent-plan-open">
       <a class="agent-plan-open__btn" :href="plan.link" target="_blank" rel="noopener">Open in Playground ↗</a>
@@ -98,8 +103,10 @@ const highlighted = computed(() => (plan.value ? highlightArch(plan.value.source
   line-height: 1.6;
 }
 .agent-plan-theme {
+  min-height: 24px; /* reserved before mount */
   margin: 0 0 8px;
   font-size: 14px;
+  line-height: 24px;
   color: var(--ink-muted);
 }
 .agent-plan-theme label {
