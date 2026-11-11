@@ -107,8 +107,9 @@ you observed. Do NOT push anything — this command only verifies.
    The newest completed push run must be `main`'s head and `success` on every job, with `Node 18`,
    `Node 20` and `Windows (tests + drift)` listed. Every nightly `Test …` job must be `success`
    (a red `Secret scan` is not one of these). A red one blocks the release until it is fixed on
-   `main`. The bump commit's own push run finishes after the tag, since the tag follows the merge at
-   once (below): read it once it finishes, and a red there is owed a patch release.
+   `main`. The bump commit's own push run gates the publish: `release.yml`'s guard
+   (`scripts/release-guard.sh`) refuses a tag whose commit lacks green required checks, so a red
+   there means the tag publishes nothing until a fix lands (below).
 
 6. **Built artifacts** (CI's `builds` job; run locally if it has not run):
 
@@ -144,24 +145,22 @@ you observed. Do NOT push anything — this command only verifies.
 
 ## After the tag (human / external steps)
 
-- **Tag straight after the bump merges, then prove the embed URL.** Pushing `main` deploys
-  `https://archlang.uk/arch-plan.js` and the `/embed` recipe, both pinned to the new version, but
-  npm only has it once the tag's `release.yml` finishes. Until then every embed shows
-  `arch-plan: could not load the ArchLang compiler` (jsDelivr 404s, cached about 30 s). When the
-  publish is done:
+- **Tag when the bump commit's CI is green, then prove the embed URL.** `deploy.yml` runs when
+  `main`'s CI run finishes and deploys `https://archlang.uk/arch-plan.js` and the `/embed` recipe,
+  both pinned to the new version, but npm only has it once the tag's `release.yml` finishes. Until
+  then every embed shows `arch-plan: could not load the ArchLang compiler` (jsDelivr 404s, cached
+  about 30 s), so the tag goes out the moment that CI run is green (about 28 minutes after the
+  merge). It cannot go earlier: `release.yml`'s guard refuses a commit without green required
+  checks, so a tag pushed before then fails "Guard the release", publishes nothing, and its `verify`
+  job polls npm for each missing package for about 10 minutes. If that happens, wait for the CI run
+  to go green and `gh run rerun <id> --failed` (1.59.0 was tagged at the merge and published by its
+  rerun). When the publish is done:
 
   ```bash
   curl -sI https://cdn.jsdelivr.net/npm/@chanmeng666/archlang@<version>/+esm   # expect 200
   ```
 
-  The tag's first publish attempt fails by design: `release.yml` starts with `scripts/release-guard.sh`,
-  which refuses until the required CI checks are green on the tagged commit, and `main`'s push run for
-  the merge commit takes about 27 minutes. "Guard the release" fails, nothing is published, and the
-  `verify` job then polls npm for every package (tens of minutes). `deploy.yml` also waits for that CI
-  run, so the embed moves to the new version when it finishes: at that moment cancel the release run
-  if `verify` is still polling and `gh run rerun <id> --failed` (1.59.0: CI green 12:59Z, Deploy 13:01Z,
-  core on npm 13:24Z).
-  When the publish is done, open `https://archlang.uk/arch-plan-demo.html` and check that both plans draw and the third
+  then open `https://archlang.uk/arch-plan-demo.html` and check that both plans draw and the third
   element shows its `E_PARSE` box, or run its `@prod` case:
   `E2E_PROD=1 E2E_BASE_URL=https://archlang.uk npx playwright test -c docs-site arch-plan --grep @prod` #allow-local-heavy (a release step against the live site).
 
