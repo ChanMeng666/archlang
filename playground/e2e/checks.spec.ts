@@ -2,7 +2,7 @@ import type { Page } from "@playwright/test";
 import { expect, test } from "@playwright/test";
 import type * as Core from "../../dist/index.js";
 import type { buildReviewSheet as BuildReviewSheet } from "../../src/cli/review.js";
-import { CHECKS_SAMPLE, SAMPLE_GROUP, sampleSource } from "../src/samples.js";
+import { CHECKS_SAMPLE, SAMPLE_GROUP, SAMPLES, sampleSource } from "../src/samples.js";
 import {
   downloadFromShare,
   expectPlanNamed,
@@ -126,8 +126,8 @@ test.describe("checks", () => {
     const sampleGroup = page.locator("#gallery .gal-group").last();
     await expect(sampleGroup).toHaveAttribute("data-group", SAMPLE_GROUP);
     await expect(sampleGroup).toHaveAttribute("data-sample", "");
-    await expect(sampleGroup.locator(".gal-card")).toHaveCount(1);
-    await expect(sampleGroup.locator("button.gal-card")).toHaveAttribute("data-label", CHECKS_SAMPLE);
+    await expect(sampleGroup.locator(".gal-card")).toHaveCount(SAMPLES.length);
+    await expect(sampleGroup.locator("button.gal-card").first()).toHaveAttribute("data-label", CHECKS_SAMPLE);
     await expect(page.locator(`#gallery a.gal-card[data-label="${CHECKS_SAMPLE}"]`)).toHaveCount(0);
     await turnOn(page);
     await page.getByRole("button", { name: `Try “${CHECKS_SAMPLE}” →` }).click();

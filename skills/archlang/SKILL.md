@@ -45,6 +45,11 @@ owns that name, so the shell runs the wrong program.
 1. **Learn the language first.** Run `archlang spec` and read it — the entire language in one page.
    (`archlang context` prints *everything*: spec + this workflow + CLI reference + error catalog; a small model starts with `archlang context --level starter`, one screen.)
    Do this before writing any `.arch`.
+   **Editing a plan that already exists** takes a different first step: `archlang validate plan.arch
+   --json` to record the starting state, then `archlang impact plan.arch --set NAME=value --lock <ids>`
+   (or `impact new.arch --against plan.arch --lock <ids>` for an edited copy) with every id the request
+   does not name, before you write anything. Exit `2` (`E_LOCKED_ELEMENT_CHANGED`) means the edit moves
+   something it should not: change the edit, not the lock. Then continue with step 2.
 2. **Write the plan** to a `.arch` file (or pipe via stdin with `-`), preferring the **placement
    sugar** below so you never hand-compute a coordinate.
 3. **Render it:** `archlang compile plan.arch -o plan.svg --json`. The JSON is `{ ok, diagnostics,

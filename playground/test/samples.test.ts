@@ -2,7 +2,14 @@ import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, diagnosticToJson, lint } from "archlang";
 import { buildReviewSheet, reviewSheetAndWarnings } from "../../src/cli/review.js";
-import { CHECKS_SAMPLE, SAMPLE_GROUP, SAMPLES, sampleLabelFor, sampleSource } from "../src/samples.js";
+import {
+  CHECKS_SAMPLE,
+  EDIT_ONE_ROOM_SAMPLE,
+  SAMPLE_GROUP,
+  SAMPLES,
+  sampleLabelFor,
+  sampleSource,
+} from "../src/samples.js";
 
 const sample = sampleSource(CHECKS_SAMPLE)!;
 /** The one line its finding asks for. */
@@ -55,5 +62,15 @@ describe("the playground-only samples", () => {
     }
     // `arch preview --review`'s function is this one's sheet, unchanged.
     expect(buildReviewSheet(sample)).toEqual(r.sheet);
+  });
+
+  it(`"${EDIT_ONE_ROOM_SAMPLE}" is clean, and a lock holds the living room while the split moves`, () => {
+    const src = sampleSource(EDIT_ONE_ROOM_SAMPLE)!;
+    expect(compile(src, { noCache: true }).errors).toEqual([]);
+    expect(lint(src)).toEqual([]);
+    expect(src).toContain("let split = 3000");
+    const moved = src.replace("let split = 3000", "let split = 3200");
+    expect(compile(moved, { noCache: true }).errors).toEqual([]);
+    expect(lint(moved)).toEqual([]);
   });
 });
