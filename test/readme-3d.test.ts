@@ -74,8 +74,9 @@ describe("the root README's plan and 3D pairs", () => {
       expect(source, `${name}'s 3D link opens another plan`).toBe(read(`examples/${name}.arch`));
     }
   });
-  it("states the limits: no pitched roofs yet, no BIM", () => {
-    expect(text).toContain("no pitched roofs yet");
+  it("states the limits: no pitched roofs or balcony railings yet, no BIM", () => {
+    // The limits line names the balcony railings since card RM8.3 built the rest of the site.
+    expect(text).toContain("no pitched roofs or balcony railings yet");
     expect(text).toContain("no BIM or IFC");
     expect(text).not.toContain("no 3D in the core");
   });

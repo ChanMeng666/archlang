@@ -248,16 +248,14 @@ describe("the turning stair (examples/turning-stair.arch)", () => {
     expect(heights.at(-1)).toBe(5_000 + Math.round((2_750_000 * 11) / 12));
   });
 
-  it("ledgers what it derived and what it assumed: risers, material and form; the old rule narrowed", () => {
+  it("ledgers what it derived and what it assumed: risers, material and form; the old rule gone", () => {
     const rules = c.mesh.assumptions.map((a) => a.rule);
     expect(rules).toEqual(
       expect.arrayContaining(["stair-risers-from-treads", "stair-material-default", "stair-solid-default"]),
     );
     expect(rules).not.toContain("m1-omits-stairs-outdoor-fences");
-    expect(c.mesh.assumptions.filter((a) => a.rule === "m1-omits-outdoor-fences").map((a) => a.kind)).toEqual([
-      "outdoor",
-      "fence",
-    ]);
+    // Card RM8.3 builds outdoor surfaces and fences too, so the narrowed rule is gone as well.
+    expect(rules).not.toContain("m1-omits-outdoor-fences");
   });
 });
 
