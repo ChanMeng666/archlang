@@ -83,14 +83,14 @@ Totals: 390 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `camera.ts` | 394 | 6 | The replay's end camera as plain maths (card A3, look notes round 1): the viewer and the tests read the same functions, so "the end frame fills the canvas" is a property a test can check without a browser. Millimetres, the exporters' axes… | none |
 | `facts.ts` | 57 | 3 | The metrics strip's numbers (card G4), read from the core's public `describe()` and `lint()` for the same source the replay was built from: nothing is measured here and nothing is guessed. The strip itself (`strip.ts`) is browser-safe and… | none |
-| `html.ts` | 113 | 3 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
+| `html.ts` | 113 | 4 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
 | `mount.ts` | 962 | 5 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
-| `payload.ts` | 192 | 7 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
+| `payload.ts` | 192 | 8 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
 | `strip-dom.ts` | 20 | 2 | The strip's DOM half, apart from `strip.ts` so that the types of `.` and `./node` need no DOM lib. | none |
 | `strip.ts` | 73 | 8 | The replay's metrics strip (card G4): a line of plain facts under the picture, each shown when the replay reaches the stage that draws it. Browser-safe and free of the core: the facts come in as numbers (`facts.ts` reads them from the… | none |
 | `swiftshader.ts` | 7 | 4 | The flags that make Chromium render WebGL in software, the same on every machine (plan §6.5). | none |
-| `timeline.ts` | 451 | 9 | The replay as a pure function of time (card A3; archlang-3d plan §6.5; decision D3). The plan draws itself in its authoring order, then rises: | none |
-| `video.ts` | 320 | 6 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
+| `timeline.ts` | 451 | 10 | The replay as a pure function of time (card A3; archlang-3d plan §6.5; decision D3). The plan draws itself in its authoring order, then rises: | none |
+| `video.ts` | 320 | 7 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
 | `view-dom.ts` | 168 | 4 | The free camera's buttons (card CR4), browser-only DOM shared by both hosts of the replay: the single-file replay HTML (`viewer.ts`) and the playground's 3D preview tab. The presets and Reset (`ViewControl`), the storeys shown, and a line… | none |
 | `viewer-bundle.ts` | 21 | 3 | The viewer and the parts of three.js it uses as one minified browser script. Run by `tsup.config.ts` for `dist/viewer.iife.js`, and from the source tree by `html.ts` (this repository's tests and `npm run archlang3d`); never by an… | none |
 | `viewer.ts` | 77 | 2 | The replay viewer's browser code (card A3), bundled with three.js into the single HTML file `replay.ts` writes. It reads the payload the file carries and mounts it (`mountReplay`): `window.__seek(t)` renders the frame at `t` synchronously… | none |
@@ -161,7 +161,7 @@ Totals: 390 modules in 34 directories.
 | `embed-snippets.ts` | 46 | 3 | The snippets the Embed dialog offers, built from the playground's base URL and a `#z=` share hash. Pure so it can be unit-tested; the dialog lives in actions.ts. | none |
 | `embed.ts` | 109 | 0 | Chrome-less embed page. Renders an ArchLang plan from the URL hash — the same `#z=` share codec the main playground writes — so a floor plan can be dropped into any blog / Confluence / GitHub-Pages via a single <iframe>. Client-side only… | none |
 | `escape.ts` | 7 | 10 | Minimal HTML-escaping for the innerHTML the playground panels build by hand. | none |
-| `examples.ts` | 385 | 4 | Playground example plans. | none |
+| `examples.ts` | 393 | 4 | Playground example plans. | none |
 | `facts-strip.ts` | 27 | 1 | The facts line under the drawing: one plain sentence of how much source drew how much plan, "57 lines of ArchLang → 3 rooms · 45.05 m² (net)", computed from the source and describe()'s totals of the storey on screen (room-facts.ts… | none |
 | `gallery.ts` | 288 | 1 | The plan gallery (ruling PG-D2): the header's one way to choose a plan. A disclosure (`<details id="gallery">`) whose summary names the plan on screen (`▦ Furnished Flat ▾`) and whose panel is a grid of thumbnail cards, grouped as… | none |
 | `glb-export.ts` | 35 | 3 | Share → Export → GLB (public-surfaces card X5; in the Share menu since card PG4): its own chunk, loaded on the first click (actions.ts imports it dynamically, beside plan3d.ts), so glTF-Transform never reaches the startup chunks or the 3D… | none |
@@ -238,7 +238,7 @@ Totals: 390 modules in 34 directories.
 | `fix-apply.ts` | 251 | 5 | Deterministic, pure application of {@link FixSuggestion}s to source text. | none |
 | `fix-producers.ts` | 583 | 10 | Fix producers — the functions that attach {@link FixSuggestion}s to specific diagnostics at their raise site (T2c). | none |
 | `fixture-orientation.ts` | 341 | 12 | Which way does a fixture face, and which of a rectangle's edges have a wall behind them. | none |
-| `fixtures-catalog.ts` | 958 | 46 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
+| `fixtures-catalog.ts` | 958 | 48 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
 | `format.ts` | 378 | 21 | `arch fmt` — a deterministic, comment-preserving source formatter. | none |
 | `frame.ts` | 405 | 14 | Instance frames — the rigid transform behind `place` (component v2). | none |
 | `furnish-table.ts` | 143 | 3 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
@@ -251,7 +251,7 @@ Totals: 390 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 335 | 30 | Module linking — the `import` system. | none |
-| `index.ts` | 754 | 408 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 754 | 410 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1588 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
@@ -296,7 +296,7 @@ Totals: 390 modules in 34 directories.
 | `text-layout.ts` | 170 | 12 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 18 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
-| `theme.ts` | 486 | 49 | Theme: colours, line-weight, and font for the rendered drawing. | none |
+| `theme.ts` | 486 | 50 | Theme: colours, line-weight, and font for the rendered drawing. | none |
 | `types.ts` | 203 | 12 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
 | `vertical.ts` | 843 | 42 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
@@ -401,7 +401,7 @@ Totals: 390 modules in 34 directories.
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 86 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
 | `fence.ts` | 311 | 1 | `fence [id=] [picket\|panel\|post] { (x,y) (x,y) … [close] }` — a boundary line on the ground. | none |
-| `fixtures-glyphs.ts` | 683 | 35 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
+| `fixtures-glyphs.ts` | 683 | 37 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
 | `furniture.ts` | 1374 | 11 | `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label. | charges the step meter |
 | `glyph-chirality.ts` | 224 | 13 | The handedness of a drawn fixture symbol, and what a mirrored `place` does to it. | none |
 | `glyph-lib.ts` | 917 | 31 | The drawing vocabulary every fixture glyph is built from. | none |
