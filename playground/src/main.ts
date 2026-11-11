@@ -559,6 +559,10 @@ const knobsPanel = mountKnobsPanel({
  * saves the draft, moves the hash and renames the plan.
  */
 function keepKnob(source: string, final: boolean) {
+  // The knob's source is the document now: a plan switch's debounced render (`onDocChanged`) of the
+  // plan before it must neither redraw nor save over it.
+  clearTimeout(debounce);
+  docRenders++;
   if (final) nudge.knobReleased();
   if (edit) {
     if (final) edit.setDoc(source);
