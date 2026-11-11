@@ -10,6 +10,27 @@
   reads it from `ReplayPayload.supersample`, which `replayPayload` never sets: it is for offline
   generation, and a live page that sets it draws every frame k × k times. The posters and replay
   videos on archlang.uk are generated with 3 × 3 and 2 × 2.
+- Outdoor surfaces and fences are built. Each of the nine `outdoor` kinds is a 50 mm slab whose top
+  is its storey's floor level (Mesh3D kind `outdoor`, node `outdoor:<id>`, stage `brief`), in a
+  colour from the core's theme: the tint the drawing fills it with (`lawn`, `paving` or `water`,
+  `GROUND_TINT`) laid on six times over the theme's paper, so lawn is #99b76f, paving #ab9f87 and
+  water #699fc3. Four kinds the drawing tells apart only by hatch get colours of their own
+  (`GROUND_SPLITS`): planting, deck, gravel and driveway. A surface that overlaps an earlier one
+  stands 0.5 mm above it. Each `fence` (kind `fence`, stage `walls`, rising with the walls) is
+  built from its style: a picket fence of posts, two rails and pickets, 1000 mm; a panel fence of
+  posts and one board, 1800 mm; a post-and-rail fence of posts and a top rail, 1100 mm
+  (`FENCE_PROFILES`, `FENCE_HEIGHT_MM`, `FENCE_PALETTE`). The colour rides on the node
+  (`extras.colour`), and the GLB writes it as `outdoor:<kind>` and `fence:<style>`. Every default
+  is in the ledger (`outdoor-thickness-default`, `outdoor-colour-theme`, `outdoor-colour-3d`,
+  `outdoor-overlap-lift`, `outdoor-rail-omitted`, `fence-height-default`, `fence-profile-default`,
+  `fence-colour-default`), in place of the two `m1-omits-outdoor-fences` rows. A balcony's railing
+  is not built.
+- The replay draws a ground plane round the building from the moment the core's drawing starts to
+  fade: its top is the lowest storey's floor level, so a garden lies flush in it, and it reaches
+  6 m past everything drawn (`GROUND_PLANE`, `ReplayPayload.ground`, `ReplayState.ground`). It is
+  in no Mesh3D node and not in the GLB; every Mesh3D says so in one ledger row,
+  `ground-plane-viewer-only`. A plan without outdoor surfaces or fences builds the same nodes and
+  the same GLB as before.
 
 ### Fixed
 

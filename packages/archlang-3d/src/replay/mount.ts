@@ -363,8 +363,18 @@ export function mountReplay(
         }
       }
     } else if (n.colour) {
-      // An outdoor surface or a fence (card RM8.3) in the colour its node carries, the GLB's too.
-      add(attr, n.indices, siteColour(n.colour, p.theme, THEMES.dark.colors.floor as string), false, 1, true);
+      // An outdoor surface or a fence (card RM8.3) in the colour its node carries, the GLB's too. A
+      // fence is edgeless: outlined, a picket fence's dozens of pickets a metre read as one dark
+      // smudge at the preview's scale (rendered); its faces' shading tells its pieces apart.
+      add(
+        attr,
+        n.indices,
+        siteColour(n.colour, p.theme, THEMES.dark.colors.floor as string),
+        false,
+        1,
+        true,
+        n.kind !== "fence",
+      );
     } else if (n.finish) {
       // A floor in its finish (visual-assets V9): timber, tile or the neutral one.
       add(attr, n.indices, finishColour(n.finish, p.theme, THEMES.dark.colors.floor as string), false, 1, true);

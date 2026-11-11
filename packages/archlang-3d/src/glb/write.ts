@@ -5,7 +5,8 @@
  * the global key `L<n>/<name>` IS the Mesh3D key), carrying the node's facts in
  * `extras.archlang`. Each node's shells are one triangle primitive in metres (the µm integers ÷ 10⁶,
  * float32), in glTF axes already (X plan x, Y up, Z plan y). One material per kind, a floor's per
- * finish and a window's frame and glass apart (`bodyMaterialName`, visual-assets V9); a T0 piece's
+ * finish and a window's frame and glass apart (`bodyMaterialName`, visual-assets V9), an outdoor
+ * surface's per kind and a fence's per style in the colour its node carries (card RM8.3); a T0 piece's
  * node keeps its one node and name but writes one primitive per material slot, material
  * `fixture:<slot>`; every colour from the palette the viewer reads too (`materials.ts`).
  *
