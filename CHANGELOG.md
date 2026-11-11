@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- `--theme <blueprint|mono|dark|presentation|rendered>` on `compile`, `watch`, `batch`, `md` and `preview`: draw with a named colour theme without writing `theme <name>` into the source. It is `CompileOptions.theme`, so it wins over the source's `theme` statement, `theme from`, `style` blocks and a single `furniture` colour for every key the named theme sets, and a key the theme leaves unset (a `lineWeight`, a `font`) keeps the source's value. The names are read from `THEMES`. An unknown name exits 3 with the list; it is refused (exit 3) with `-f json`, `-f txt`, `-f dxf`, `preview --ascii` and `preview --review`, which carry no theme colours. Without the flag every output is byte-identical to before; `describe` and `lint` do not take it.
 - A docs page, `/says-no` ("When the compiler says no, and why"): seven small plans the checks flag, with the real `lint`, `validate` and `impact --lock` output, what `validate --strict` does, and a table of the numbers the lint profiles set, read from `LINT_PROFILES`. `scripts/says-no.ts` renders every output on the page and `test/docs-says-no.test.ts` fails when the page differs.
 - `/analysis` names `gerontec/archlang-section`, which reads `describe --json`, with its author's description.
 
