@@ -182,7 +182,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (101) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+93)
+- `src/world.ts` (102) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+94)
 
 ## Test files
 
