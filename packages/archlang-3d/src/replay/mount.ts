@@ -54,6 +54,7 @@ import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
 
 import { stateAt } from "./timeline.js";
+import { faceParts, wallOutline } from "./wall-lines.js";
 
 export type { ReplayNode, ReplayPayload } from "./payload.js";
 
@@ -249,7 +250,28 @@ export function mountReplay(
   // exploded storey (`lift`) comes down by it as the storeys settle (`stateAt`'s `settle`).
   const nodes = new Map<string, { g: Group; flat: number; base: number; lift: number }>();
   const owned: Array<{ dispose: () => void }> = [];
-  for (const n of p.nodes) {
+  // The standing walls' and the columns' outlines, worked out across each storey (card RM8.1): a
+  // line only where the surface turns, none on the seam between two flat pieces. `undefined` for
+  // every other node, which keeps its own outline (`EdgesGeometry`). Their faces are drawn without
+  // the inner ones where two prisms meet (`wallFaces`), which would leak along those seams. A line
+  // where two nodes meet goes to the one raised last (`rank`, the build order).
+  const rankOf = new Map(p.events.map((e) => [e.key, e.rank] as const));
+  const { faces, lines: outlines } = wallOutline(
+    p.nodes,
+    p.nodes.map((n) => rankOf.get(n.key) ?? 0),
+  );
+  /**
+   * The nodes whose faces meet another node's (`FaceFix`): until every node of its `group` stands
+   * at full height its own faces there are drawn (`alone`, a closed solid by itself, as the replay
+   * raises each node on its own), then the finished storey's (`joined`, the faces they share left
+   * out). `draw` shows one of the two, for a whole group at once.
+   */
+  const patched: Array<{ key: string; group: number; alone?: Mesh; joined?: Mesh }> = [];
+  for (const [ni, node] of p.nodes.entries()) {
+    const outline = outlines[ni];
+    const fix = faces[ni];
+    const parts = faceParts(node, fix);
+    const n = { ...node, positions: parts.positions as number[], indices: parts.base };
     const pos = new Float32Array(n.positions.length);
     let base = Infinity;
     let topY = -Infinity;
@@ -305,13 +327,15 @@ export function mountReplay(
         polygonOffsetUnits: flatLaid ? 4 : 1,
       });
       owned.push(geo, mat);
-      g.add(new Mesh(geo, mat));
+      const mesh = new Mesh(geo, mat);
+      g.add(mesh);
       if (n.kind !== "slab" && !glass && edged) {
         const edges = new EdgesGeometry(geo, 30);
         const line = new LineBasicMaterial({ color: new Color(theme.edge) });
         owned.push(edges, line);
         g.add(new LineSegments(edges, line));
       }
+      return mesh;
     };
     const attr = new BufferAttribute(pos, 3);
     if (n.groups) {
@@ -332,7 +356,8 @@ export function mountReplay(
       add(attr, n.indices, finishColour(n.finish, p.theme, THEMES.dark.colors.floor as string), false, 1, true);
     } else if (key === "wall") {
       // A standing wall: its faces at full height (its cut top, the triangles whose three corners
-      // all lie there) drawn apart in the cap colour, edgeless (the body's outline already rims it).
+      // all lie there) drawn apart in the cap colour. Both are edgeless: the wall's outline is
+      // `outlines`' (it rims the cap too).
       // The same division as `topY`'s, so the comparison is exact.
       const atTop = (v: number) => (n.positions[v * 3 + 1] as number) / 1000 === topY;
       const cap: number[] = [];
@@ -341,12 +366,46 @@ export function mountReplay(
         const tri = n.indices.slice(i, i + 3);
         (tri.every(atTop) ? cap : body).push(...tri);
       }
-      add(attr, body, theme.colors.wall ?? furniture, false, 1, true);
+      add(attr, body, theme.colors.wall ?? furniture, false, 1, true, outline === undefined);
       if (cap.length) add(attr, cap, theme.cap, false, 1, true, false);
     } else {
-      // Every other node exactly as before the slots (normals computed, though never read).
+      // Every other node exactly as before the slots (normals computed, though never read); a
+      // column's outline is `outlines`'.
       const glass = key === "window:glass";
-      add(attr, n.indices, theme.colors[key] ?? furniture, glass, glass ? KIND_PALETTE["window:glass"].alpha : 1, true);
+      add(
+        attr,
+        n.indices,
+        theme.colors[key] ?? furniture,
+        glass,
+        glass ? KIND_PALETTE["window:glass"].alpha : 1,
+        true,
+        outline === undefined,
+      );
+    }
+    if (fix && fix.group >= 0) {
+      // A wall's or a column's faces where it meets another node (vertical, so never its cap),
+      // edgeless like its body; `draw` shows one of the two.
+      const colour = theme.colors[key] ?? furniture;
+      patched.push({
+        key: n.key,
+        ...(parts.alone.length > 0 ? { alone: add(attr, parts.alone, colour, false, 1, true, false) } : {}),
+        ...(parts.joined.length > 0 ? { joined: add(attr, parts.joined, colour, false, 1, true, false) } : {}),
+        group: fix.group,
+      });
+    }
+    if (outline && outline.length > 0) {
+      // In the node's own frame, as its faces are (`pos`): the same divisions, the same base.
+      const at = new Float32Array(outline.length);
+      for (let i = 0; i < outline.length; i += 3) {
+        at[i] = (outline[i] as number) / 1000;
+        at[i + 1] = (outline[i + 1] as number) / 1000 - base;
+        at[i + 2] = (outline[i + 2] as number) / 1000;
+      }
+      const geo = new BufferGeometry();
+      geo.setAttribute("position", new BufferAttribute(at, 3));
+      const line = new LineBasicMaterial({ color: new Color(theme.edge) });
+      owned.push(geo, line);
+      g.add(new LineSegments(geo, line));
     }
     g.visible = false;
     scene.add(g);
@@ -466,6 +525,37 @@ export function mountReplay(
     for (const fn of listeners) fn();
   };
 
+  /**
+   * The generated posters' and videos' supersampling (`ReplayPayload.supersample`, card RM8.2): `k`
+   * × `k` samples per pixel. 1 (every live 3D preview) takes one sample, as before.
+   */
+  const samples = Math.max(1, Math.min(4, Math.floor(p.supersample ?? 1)));
+  /**
+   * Draw the scene from `cam` supersampled: `samples` × `samples` renders, each shifted by a fraction
+   * of a pixel on a regular grid (`setViewOffset`), and each pixel the rounded mean of its samples,
+   * in integers. The samples are those of a render at `samples` times the size box-filtered back,
+   * but every render draws its outlines one pixel wide, so they keep their weight (WebGL draws no
+   * wider line: SwiftShader takes no `linewidth` but 1).
+   */
+  function supersampled(cam: OrthographicCamera | PerspectiveCamera): void {
+    const n = samples * samples;
+    const sum = new Uint32Array(W * H * 4);
+    ctx.globalAlpha = 1;
+    for (let j = 0; j < samples; j++) {
+      for (let i = 0; i < samples; i++) {
+        cam.setViewOffset(W, H, (i + 0.5) / samples - 0.5, (j + 0.5) / samples - 0.5, W, H);
+        renderer.render(scene, cam);
+        ctx.drawImage(gl, 0, 0);
+        const d = ctx.getImageData(0, 0, W, H).data;
+        for (let q = 0; q < d.length; q++) sum[q] = (sum[q] as number) + (d[q] as number);
+      }
+    }
+    cam.clearViewOffset();
+    const mean = ctx.createImageData(W, H);
+    for (let q = 0; q < sum.length; q++) mean.data[q] = Math.floor(((sum[q] as number) + (n >> 1)) / n);
+    ctx.putImageData(mean, 0, 0);
+  }
+
   /** Draw replay time `t` from whoever holds the camera. */
   function draw(t: number): void {
     tNow = t;
@@ -477,6 +567,18 @@ export function mountReplay(
       g.visible = st?.visible === true && (storeyOf.get(key) ?? 0) < shown;
       g.scale.y = Math.max(flat, st?.rise ?? 0);
       if (lift !== 0) g.position.y = base + settledLift(lift, s.settle);
+    }
+    // Nodes leave out the faces they share only while their whole group stands at full height
+    // (`patched`).
+    const up = new Map<number, boolean>();
+    for (const { key, group } of patched) {
+      const full = nodes.get(key)?.g.visible === true && (s.nodes.get(key)?.rise ?? 0) >= 1;
+      up.set(group, (up.get(group) ?? true) && full);
+    }
+    for (const { group, alone, joined } of patched) {
+      const together = up.get(group) === true;
+      if (alone) alone.visible = !together;
+      if (joined) joined.visible = together;
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
     if (holder === "free" && controls) {
@@ -495,9 +597,11 @@ export function mountReplay(
       place(frameCamera(s, fits, frameView), s.settle > 0 ? endRadius : radius);
       cam = persp;
     }
-    renderer.render(scene, cam);
-    ctx.globalAlpha = 1;
-    ctx.drawImage(gl, 0, 0);
+    if (samples === 1) {
+      renderer.render(scene, cam);
+      ctx.globalAlpha = 1;
+      ctx.drawImage(gl, 0, 0);
+    } else supersampled(cam);
     // The core's drawing is laid over the replay's own camera only (it matches the top-down frame).
     if (holder === "replay" && s.svg > 0 && img.complete && img.naturalWidth > 0) {
       const k = Math.min(W / vw, H / vh);

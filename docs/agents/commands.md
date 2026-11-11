@@ -151,7 +151,7 @@ Auto-merge (option A of `docs/plans/ci-throughput.md`); nothing waits for CI or 
    `.gitleaksignore`, `.claude/settings.json` and hooks, owner rules, frozen artifacts, manifests,
    deploy config): also one fresh-context review, and the coordinator's own judgement that the diff is
    safe (the owner's standing approval of 2026-11-09: "判断是否能够合并，如果能，那就自动合并"). An executor
-   never merges its own PR. Releases (`v*` tags), paid eval and the npmjs account stay owner-only.
+   never merges its own PR. The decision to release, paid eval and the npmjs account stay owner-only.
 1. Review the diff as soon as the PR opens, never after CI; post `reviewed <full sha>` on the PR.
 2. When GitHub reports the PR behind (`mergeStateStatus: BEHIND`), `gh pr update-branch <n>` (or, when
    `main` moved a generated file since the branch, merge `main` locally and `npm run gen:all`: GitHub's

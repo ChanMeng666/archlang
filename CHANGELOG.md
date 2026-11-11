@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A docs page, `/says-no` ("When the compiler says no, and why"): seven small plans the checks flag, with the real `lint`, `validate` and `impact --lock` output, what `validate --strict` does, and a table of the numbers the lint profiles set, read from `LINT_PROFILES`. `scripts/says-no.ts` renders every output on the page and `test/docs-says-no.test.ts` fails when the page differs.
 - `/analysis` names `gerontec/archlang-section`, which reads `describe --json`, with its author's description.
 
+### Changed
+
+- The 3D preview's posters and replay videos on archlang.uk and in the README are anti-aliased: `gen:3d-assets` draws each poster pixel from 3 × 3 samples and each video pixel from 2 × 2 (`renderReplay({ supersample })` in `@chanmeng666/archlang-3d/node`, off by default), and the outlines keep their weight. The live 3D preview (the playground's 3D tab, `archlang3d view --replay`) is not anti-aliased, as before.
+
+### Fixed
+
+- The 3D preview no longer draws a line on a flat wall surface where two wall pieces meet. Beside a door or a window only the reveal between sill and head is outlined, not the wall above and below it; the flat back of a T junction, the outer face of an L corner made of two walls and the joint of two walls in line carry no line; and no line cuts across a wall top at those places. The inside corners of a T or an X junction keep their lines. The outline of a storey's walls and columns is now worked out across all of them (`@chanmeng666/archlang-3d`, `src/replay/wall-lines.ts`), and the faces two pieces share are no longer drawn, so the seams do not show through a wall seen at a grazing angle either: inside one wall always, and between two walls (or a wall and a column) once the walls meeting there are all up, so while the replay raises them each one is drawn whole and no frame shows a gap. The playground's 3D tab, the replay HTML and the posters and videos all draw this way; Mesh3D, the GLB and Scene3D are unchanged.
+
 ## [1.58.0] - 2026-11-11
 
 **Two changes are breaking for scripts.** `arch impact` now exits 2 on a plan that does not parse (it exited 0). And the CLI now refuses an `import` that lies outside both the import root and the plan's own directory, is not a `.arch` file, or is over 1 MiB, so a plan that compiled under 1.57.0 can now fail with exit 2; `--import-root <dir>` widens the root. Both ship in this minor release; see Breaking below. **Five security fixes**, under Security: the CLI and `archlang3d` read an `import`ed module only from under a root (before, any path an `import` named was read); `E_IMPORT_PARSE` no longer quotes the module's text; a share link that inflates past 1 MiB is refused instead of hanging the page, and every browser surface puts a compiled SVG on the page through one sanitiser; and the Node `decodePlanHash` stops at 1 MiB.
