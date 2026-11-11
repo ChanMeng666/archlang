@@ -821,6 +821,10 @@ const COMMANDS: ManifestCommand[] = [
     flags: [
       { flag: "--profile", arg: `<${LINT_PROFILE_NAMES.join("|")}>`, description: "advisory ruleset" },
       { flag: "--strict", alias: "--fail-on-warning", description: "warnings fail (exit 2)" },
+      {
+        flag: "--rules",
+        description: "print the ruleset in force and each number's source; takes no plan",
+      },
       CODE_FLAG,
       SEVERITY_FLAG,
       IMPORT_ROOT_FLAG,
@@ -839,6 +843,10 @@ const COMMANDS: ManifestCommand[] = [
       {
         cmd: "archlang lint plan.arch --code W_ROOM_UNREACHABLE,W_NO_ENTRANCE --json",
         note: "read only the reachability warnings; the exit code still reflects every diagnostic",
+      },
+      {
+        cmd: "archlang lint --rules --profile uk-residential-advisory --json",
+        note: "that ruleset's numbers with their sources (advisory)",
       },
     ],
   },

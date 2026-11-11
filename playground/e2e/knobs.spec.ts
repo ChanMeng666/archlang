@@ -79,7 +79,13 @@ test.describe("knobs", () => {
     const src = sampleSource(EDIT_ONE_ROOM_SAMPLE)!;
     await expect(knob(page, "split")).toHaveValue("3000");
     await knob(page, "split").fill("3200");
-    await expect.poll(() => hashSource(page)).toBe(src.replace("let split = 3000", "let split = 3200"));
+    const moved = src.replace("let split = 3000", "let split = 3200");
+    await expect.poll(() => hashSource(page)).toBe(moved);
+    // Wait past the 250 ms debounce a plan pick schedules (`onDocChanged`): it is the window the bug
+    // lived in (that stale render of the sample reset the knob and the hash), not a flake retry.
+    await page.waitForTimeout(400);
+    await expect.poll(() => hashSource(page)).toBe(moved);
+    await expect(knob(page, "split")).toHaveValue("3200");
   });
 
   test("a moved knob makes the plan an edited one in the gallery, and a reload agrees", async ({ page }) => {

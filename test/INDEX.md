@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-496 test files in `test/`, 276 `src` modules, 106 modules no test imports.
+496 test files in `test/`, 277 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -43,10 +43,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (73) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+65)
+- `src/cli/io.ts` (74) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+66)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (45) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+37)
+- `src/cli/run.ts` (46) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+38)
 - `src/cli/serialize.ts` (7) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -62,7 +62,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/dim.ts` (1) — `annotation-collisions`
 - `src/elements/door.ts` (1) — `window-kinds`
 - `src/elements/facets.ts` (1) — `element-facets`
-- `src/elements/fixtures-glyphs.ts` (21) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `furniture-mirror`, `glyph-chirality` (+13)
+- `src/elements/fixtures-glyphs.ts` (20) — `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table` (+12)
 - `src/elements/furniture.ts` (10) — `furniture-relations`, `furniture-rotate`, `glyph-chirality`, `glyph-lib`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc`, `glyphs-new-families` (+2)
 - `src/elements/glyph-chirality.ts` (11) — `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-bath`, `glyphs-bedroom`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc` (+3)
 - `src/elements/glyph-lib.ts` (16) — `doors`, `equivariance-scene`, `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-batch2`, `glyphs-bath`, `glyphs-bedroom` (+8)
@@ -90,7 +90,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/fix-apply.ts` (1) — `fix-apply`
 - `src/fix-producers.ts` (2) — `emit-opening-oracle`, `fix-printer`
 - `src/fixture-orientation.ts` (2) — `fixture-orientation`, `rectilinear-sides`
-- `src/fixtures-catalog.ts` (31) — `catalogue-images`, `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror`, `glyph-chirality` (+23)
+- `src/fixtures-catalog.ts` (30) — `equivariance-corpus`, `export-dxf-blocks`, `finish-furnish`, `fixture-classifier-drift`, `fixture-orientation`, `furniture-mirror`, `glyph-chirality`, `glyph-lib` (+22)
 - `src/format.ts` (57) — `axes`, `dim-faces`, `fence`, `furniture-against`, `furniture-lint`, `furniture-rotate`, `opening`, `openings-between` (+49)
 - `src/frame.ts` (43) — `compose-assoc`, `d4`, `equivariance-corpus`, `equivariance-fuzz`, `equivariance-scene`, `frame`, `furniture-mirror`, `symmetry` (+35)
 - `src/furnish.ts` (7) — `finish-furnish`, `finish-levels`, `finish`, `fuzz`, `keep`, `lint-furniture-on-stair`, `lint-hint-paste`
@@ -128,6 +128,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/defining.ts` (2) — `lint-hint-paste`, `lint-room-contents`
 - `src/lint/fixture-paste.ts` (1) — `lint-clearances-wc-window`
 - `src/lint/measure.ts` (1) — `lint-measure`
+- `src/lint/provenance.ts` (1) — `lint-provenance`
 - `src/lint/rules/annotations.ts` (1) — `annotation-collisions`
 - `src/lint/rules/circulation-facts.ts` (1) — `lint-attribution-budget`
 - `src/lint/rules/clearances.ts` (1) — `lint-accessible-wc-side-wall`
@@ -137,7 +138,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/lint/rules/index.ts` (12) — `block-stair-landing`, `block-stair-lint`, `error-catalog-families`, `lint-back-to-room-side-on`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring`, `lint-fix-texts` (+4)
 - `src/lint/rules/per-room.ts` (2) — `fixture-classifier-drift`, `lint-fix-texts`
 - `src/lint/rules/stairs.ts` (3) — `block-stair-landing`, `block-stair-lint`, `lint-stairs`
-- `src/lint/ruleset.ts` (13) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+5)
+- `src/lint/ruleset.ts` (14) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `circle-enclosure`, `lint-clearances-kitchen-doors`, `lint-clearances-wc-window`, `lint-exterior-ring` (+6)
 - `src/lint/storeys.ts` (5) — `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair`, `lint-index-superset`
 - `src/lsp.ts` (2) — `block-stair-lint`, `lsp-codeactions`
 - `src/manifest.ts` (9) — `cli-context`, `cli-manifest`, `cli-storey-names`, `context-starter`, `describe-depends`, `docs-flags`, `llms-full-drift`, `site-doors` (+1)
@@ -227,7 +228,6 @@ The first sentence of each file's header comment.
 - `test/bump-lockstep.test.ts` — `scripts/bump-lockstep.ts` rewrites exactly the pinned release fields and nothing else: run on a tmp copy of the manifests and the lock, undo exactly the expected edits, compare every byte.
 - `test/cache.test.ts` — compile cache — hits & eviction.
 - `test/carve-inward-walk.test.ts` — a far seed past a stair no longer takes the doorway's width (hillside-villa's landing); furniture within R + δ of a doorway's face blocks it: the threshold, fro…
-- `test/catalogue-images.test.ts` — The symbol catalogue's pictures (product-roadmap card RM8.5): every fixture family has its generated image in `docs-site/public/catalogue/` (its 2D symbol and, in the same picture, its 3D preview, by `scripts/specimen...
 - `test/changelog-unreleased.test.ts` — CHANGELOG lines land under Unreleased, no released line is deleted, and a release PR is exempt.
 - `test/check-quick-workspaces.test.ts` — `check:quick` and `typecheck:all` name the same workspaces.
 - `test/chrome-hidden.test.ts` — `north … hidden`, `scale … hidden`, `title hidden` (issue #405): the mark goes, the fact stays.
@@ -474,6 +474,7 @@ The first sentence of each file's header comment.
 - `test/lint-openings.test.ts` — W_OPENING_AT_JUNCTION; W_OPENING_OVERLAP; W_CONNECTOR_AMBIGUOUS.
 - `test/lint-profiles-residential.test.ts` — the residential-advisory profiles; the catalog example; single or double: read from the bed, never the label (ADR 0005); areas are net floor under every residen…
 - `test/lint-profiles.test.ts` — lint profiles.
+- `test/lint-provenance.test.ts` — rule provenance — every ruleset key has a row, grades match the source tags; lint --rules exports the effective ruleset; off the compile path.
 - `test/lint-room-contents.test.ts` — W_HABITABLE_NO_WINDOW; W_ROOM_MISSING_DEFINING; finish with the room-contents rule: the review's probes; PS2.17: a kitchen's worktop, written by finish.
 - `test/lint-rule-order.test.ts` — a lint rule is registered in every place a rule is listed.
 - `test/lint-ruleset-values.test.ts` — A lint ruleset value that is not a finite number within the modelling range (or `null` where the field allows it) is refused with `E_RULESET_VALUE` before any rule runs (engineering-health EH2.12).
