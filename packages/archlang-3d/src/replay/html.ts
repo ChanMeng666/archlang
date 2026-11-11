@@ -1,5 +1,5 @@
 /**
- * The single-file replay HTML (card A3): the viewer and three.js 0.186.1 as one inline script
+ * The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script
  * (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and
  * the core's own SVG as an inline JSON payload, and three.js's MIT notice. It opens offline.
  *

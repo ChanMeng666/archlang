@@ -39,10 +39,10 @@
     },
     {
       "name": "three",
-      "version": "0.186.1",
+      "version": "0.187.0",
       "license": "MIT",
       "source": "https://github.com/mrdoob/three.js",
-      "checked": "LICENSE is MIT (three.js authors). The core build the viewer imports is three.js's own code; its addons (examples/jsm, which carry their own notices) are not imported. Inlined into the replay HTML with its notice."
+      "checked": "LICENSE is MIT (three.js authors). The viewer imports the core build and OrbitControls (examples/jsm/controls), both three.js's own code under this LICENSE; OrbitControls carries no notice of its own (read at 0.187.0). The other addons, some of which carry their own notices, are not imported. Inlined into the replay HTML with its notice."
     }
   ],
   "deny": [

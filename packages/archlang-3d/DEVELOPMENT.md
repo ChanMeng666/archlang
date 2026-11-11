@@ -51,7 +51,7 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   `FENCE_PALETTE`) and the viewer's ground plane (`GROUND_PLANE`: drawn by `mount.ts` only, never a node).
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure; several
   storeys rise exploded and settle to their real heights by the end),
-  `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js 0.186.1,
+  `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js,
   `mountReplay(canvas, payload)` → `seek`/`frameHash`; with `interactive: true` the free camera,
   three.js's `OrbitControls`, → `view`), `wall-lines.ts` (the walls' and columns' outlines, worked
   out across each storey so a seam between two flat pieces draws no line, and their faces without
