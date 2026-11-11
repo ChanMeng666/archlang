@@ -83,7 +83,7 @@ import {
   wallBackedEdges,
   type BBox,
 } from "./analyze.js";
-import { computeCirculation, type CirculationModel } from "./analyze/circulation.js";
+import { computeCirculation, type CirculationModel, walkedFromShafts } from "./analyze/circulation.js";
 import { arrivalAccess, entranceInputs } from "./analyze/entrance.js";
 import { type ArrivingRun, arrivalRuns, verticalsOf } from "./vertical.js";
 import {
@@ -1612,7 +1612,8 @@ function repairStorey(
       doors,
       openingEls,
       [...staticFurniture, ...dyn],
-      access,
+      // The storey's own arrivals, given only where no door from the ground is (PS0.3).
+      walkedFromShafts(access, arrivals, roomEls),
       DEFAULT_TOL,
       undefined,
       verticalsOf(ir),

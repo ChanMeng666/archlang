@@ -222,16 +222,23 @@ export interface BlockedRoom {
 }
 
 /**
- * The access graph a storey's walk starts from, given the runs that arrive on it (PS0.3).
- * `arrivals` are passed only for a storey a shaft reaches and no door from the ground does
- * (`arrivalRuns`, `src/vertical.ts`), so every exterior door it has opens onto a balcony: a
- * slab off a room, not a way anyone arrives. When a run lands in a room there, the walk starts
- * from the runs, and those doors are no entrance to it: `access` with no entrances, every edge
- * kept, so a room reached only by crossing a balcony is still door-reachable and is reported as
- * a room the walk does not reach, not as one no door leads to. `access` itself otherwise, so a
- * storey with a door from the ground, or one no shaft lands on, is walked exactly as before.
+ * The access graph to walk a storey from when `arrivals` are ITS arriving runs (`arrivalRuns`,
+ * `src/vertical.ts`), which exist only for a storey a shaft reaches and no door from the ground
+ * does (PS0.3). Every exterior door such a storey has opens onto a balcony: a slab off a room,
+ * not a way anyone arrives. When a run lands in a room there, the walk starts from the runs and
+ * those doors are no entrance to it: `access` with no entrances, every edge kept (a balcony is
+ * still walked through), so {@link computeCirculation} walks from the runs. `access` itself
+ * otherwise, so a storey no shaft lands on is walked exactly as before.
+ *
+ * The callers that hand a storey its own arrivals apply this (`describe()`, the circulation
+ * rules, `repair`); {@link computeCirculation} itself still walks a storey with an entrance
+ * from its entrances, whatever runs it is given.
  */
-function walkedFrom(access: AccessGraph, arrivals: readonly ArrivingRun[], rooms: readonly RRoom[]): AccessGraph {
+export function walkedFromShafts(
+  access: AccessGraph,
+  arrivals: readonly ArrivingRun[],
+  rooms: readonly RRoom[],
+): AccessGraph {
   if (!access.hasEntrance || landedOn(arrivals, rooms).length === 0) return access;
   return { ...access, entrances: [], hasEntrance: false };
 }
@@ -271,7 +278,6 @@ export function roomBottlenecks(
   stats?: NavStats,
 ): Map<string, number> {
   const out = new Map<string, number>();
-  access = walkedFrom(access, arrivals, rooms);
   const landed = access.hasEntrance ? [] : landedOn(arrivals, rooms);
   if (rooms.length === 0 || (!access.hasEntrance && landed.length === 0)) return out;
   const origin = extentOrigin(rooms);
@@ -399,10 +405,10 @@ export function computeCirculation(
    *  Append-only: omitting it means a storey with no voids. */
   voids: RVoid[] = [],
   /** The vertical runs this storey is REACHED by, each with the edge a person steps off
-   *  across (`arrivalRuns` in `vertical.ts`: the head of the flight they came by). Given only
-   *  for a storey with no door from the ground: each run is then an entrance, walked from the
-   *  landing in front of that edge, and the model is measured from there instead of being
-   *  null, or instead of from the storey's balcony doors ({@link walkedFrom}, PS0.3).
+   *  across (`arrivalRuns` in `vertical.ts`: the head of the flight they came by). Read only
+   *  when `access` has no entrance: each run is then an entrance, walked from the landing in
+   *  front of that edge, and the model is measured from there instead of being null (a storey
+   *  whose only exterior doors open onto balconies is handed {@link walkedFromShafts}' graph).
    *  Append-only: omitting it (or a storey with a front door) changes nothing. */
   arrivals: readonly ArrivingRun[] = [],
   /**
@@ -420,7 +426,6 @@ export function computeCirculation(
   const navCache = share.navCache;
   const stats = share.stats;
   const walkRoutes = share.routes !== false;
-  access = walkedFrom(access, arrivals, rooms);
   // The room each arriving run lands in, read off the plan as given — the same
   // `roomOfVertical` that names `verticalReach`'s arrival rooms. A run standing in no room
   // lands nowhere a walk could start.

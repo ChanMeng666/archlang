@@ -56,7 +56,7 @@ import {
   type RoomBox,
 } from "./analyze.js";
 import { outerFaceBounds, segmentsOfWall, type WallSegment } from "./geometry.js";
-import { computeCirculation } from "./analyze/circulation.js";
+import { computeCirculation, walkedFromShafts } from "./analyze/circulation.js";
 import { arrivalAccess, entranceInputs, withMainEntrance } from "./analyze/entrance.js";
 import { symmetryFacts } from "./analyze/symmetry.js";
 import { syntaxFacts } from "./analyze/syntax.js";
@@ -618,7 +618,8 @@ function summarize(
     doorEls,
     openingEls,
     furnEls,
-    arrivalGraph,
+    // `arrivals` are this storey's own: given only where no door from the ground is (PS0.3).
+    walkedFromShafts(arrivalGraph, arrivals, roomEls),
     tol,
     undefined,
     verticalEls,

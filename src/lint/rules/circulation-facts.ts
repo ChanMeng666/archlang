@@ -30,6 +30,7 @@ import {
   computeCirculation,
   type NavCache,
   roomBottlenecks,
+  walkedFromShafts,
 } from "../../analyze/circulation.js";
 import {
   type AccessEdge,
@@ -124,7 +125,8 @@ function circulationOf(ctx: LintContext, from: "walk" | "nearest" = "walk"): Cir
     ctx.doors,
     ctx.openings,
     ctx.furniture,
-    access,
+    // The storey's own arrivals, given only where no door from the ground is (PS0.3).
+    walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms),
     ctx.rules.tolMm,
     undefined,
     ctx.verticals,
@@ -485,7 +487,7 @@ function attributeBottlenecks(
       doors,
       openings,
       ctx.furniture,
-      access,
+      walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms),
       ctx.rules.tolMm,
       ctx.verticals,
       ctx.voids,

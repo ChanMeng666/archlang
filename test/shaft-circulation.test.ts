@@ -25,7 +25,7 @@ import { readFileSync, readdirSync } from "node:fs";
 import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildDoorAccessGraph, buildingRoomReach, DEFAULT_TOL, resolvePlan, storeyGrounded } from "../src/analyze.js";
-import { type CirculationModel, computeCirculation } from "../src/analyze/circulation.js";
+import { type CirculationModel, computeCirculation, walkedFromShafts } from "../src/analyze/circulation.js";
 import { describe as describePlan, lint, repair } from "../src/index.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, ResolvedPlan } from "../src/ir.js";
 import { type ArrivingRun, arrivalRuns, entryEdges, verticalsOf } from "../src/vertical.js";
@@ -448,13 +448,19 @@ const corpus = (): Array<{ name: string; path: string; world: World }> => [
 ];
 
 /** `computeCirculation` on one resolved storey, exactly as `describe()` calls it. */
-function circulationOf(ir: ResolvedPlan, arrivals?: readonly ArrivingRun[]): CirculationModel | null {
+function circulationOf(
+  ir: ResolvedPlan,
+  arrivals?: readonly ArrivingRun[],
+  /** `arrivals` are the storey's own, as `describe()` hands them: walk from them where they land. */
+  own = false,
+): CirculationModel | null {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   const voids = ir.elements.filter((e): e is RVoid => e.kind === "void");
-  const access = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
+  const graph = buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings);
+  const access = own && arrivals ? walkedFromShafts(graph, arrivals, rooms) : graph;
   const args = [
     rooms,
     ir.walls,
@@ -511,16 +517,22 @@ describe("law: a storey no shaft arrives on measures exactly as before", () => {
             `${name} L${st.level}`,
           ).toBe(without);
         // describe() is that call with the storey's own arrivals; only where some arrive and
-        // the storey has no front door may it differ from the call without them.
+        // the storey has no front door may it differ from the call without them. Its arrivals
+        // exist only where no door from the ground is, so a storey whose exterior doors all open
+        // onto balconies is walked from its shafts (`walkedFromShafts`, PS0.3).
         const arrivals = runs.get(st.level) ?? [];
         const got =
           levels.length > 0 ? summary.levels!.find((l) => l.level === st.level)!.circulation : summary.circulation;
-        expect(JSON.stringify(got), `${name} L${st.level}`).toBe(JSON.stringify(circulationOf(st.ir, arrivals)));
+        expect(JSON.stringify(got), `${name} L${st.level}`).toBe(
+          JSON.stringify(circulationOf(st.ir, arrivals, true)),
+        );
         if (JSON.stringify(got) !== without) reached.push(`${name} L${st.level}`);
       }
     }
-    // The storeys the change reaches — every one was null before (no front door).
+    // The storeys the change reaches — every one was null before (no front door), but for
+    // `garden-house`'s upper storey, which its balcony door walked until PS0.3.
     expect(reached).toEqual([
+      "examples/garden-house.arch L2",
       "examples/hillside-villa.arch L2",
       "examples/townhouse.arch L2",
       "examples/townhouse.arch L3",
