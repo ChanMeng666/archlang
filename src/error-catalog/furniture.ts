@@ -88,7 +88,7 @@ export const FURNITURE_ENTRIES = defineEntries({
   ),
   W_UNKNOWN_FURNITURE: w(
     "A furniture word is not a catalogued kind but is close to one.",
-    "An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is within two edits of a catalogued kind, or is one in another case; a `label` marks a piece of your own.",
+    "An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is a catalogued kind in another case or, past four letters, one with a letter added or dropped (two, past six); a `label` marks a piece of your own.",
     "Write the kind the message names, or add a `label`.",
     'furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean "grand_piano"?',
   ),

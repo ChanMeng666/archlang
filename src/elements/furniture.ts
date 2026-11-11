@@ -1239,18 +1239,22 @@ export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
  *  characters: the most {@link nearEdits} ever allows, and what the index below is built for. */
 const NEAR_EDITS = 2;
 
+/** The longest word that is reported only as a kind in another case (`WC`), never as near one. */
+const TINY_WORD = 4;
+
 /** The longest word that may be only one added or dropped character from the kind it names. */
 const SHORT_WORD = 6;
 
 /**
  * How far `word` may be from a kind and still be reported (RM1.4 review M2), relative to its
  * length, counted in added or dropped characters ({@link indelDistance}, so a changed letter costs
- * two): one for a word of {@link SHORT_WORD} characters or fewer, {@link NEAR_EDITS} for a longer
- * one. A changed letter or two turn an ordinary short word into a kind (`rack`/`rock`,
- * `ladder`/`larder`, `fan`/`car`, `stand`/`island`), which says nothing about a slip; one dropped
- * or doubled letter is one (`tables`, `bath_tub`, `grand_pianno`).
+ * two): none for a word of {@link TINY_WORD} characters or fewer, one up to {@link SHORT_WORD},
+ * {@link NEAR_EDITS} for a longer one. A changed letter turns an ordinary short word into a kind
+ * (`rack`/`rock`, `ladder`/`larder`), and so does one added letter on a word of four (`cart`/`car`),
+ * which says nothing about a slip; one dropped or doubled letter on a longer word is one (`tables`,
+ * `bath_tub`, `grand_pianno`).
  */
-const nearEdits = (word: string): number => (word.length <= SHORT_WORD ? 1 : NEAR_EDITS);
+const nearEdits = (word: string): number => (word.length <= TINY_WORD ? 0 : word.length <= SHORT_WORD ? 1 : NEAR_EDITS);
 
 /**
  * Every word `furniture` knows (the drawn families and the catalogue, aliases included), and an
@@ -1315,8 +1319,8 @@ function indelDistance(a: string, b: string): number {
 
 /**
  * The catalogued word nearest `word` within {@link nearEdits} added or dropped characters (the
- * first in catalogue order on a tie), or null. A word longer than the longest catalogued one by
- * more than that is near none and is not searched. Otherwise the search is charged to the step
+ * first in catalogue order on a tie), or null. A word allowed none, or longer than the longest
+ * catalogued one by more than it is allowed, is near none and is not searched. Otherwise the search is charged to the step
  * meter BEFORE it runs, at the number of deletion strings it may look up (at most 1 + L, or
  * 1 + L + L(L-1)/2, for a word of L characters), which bounds the lookups and the distances that
  * follow.
@@ -1324,7 +1328,7 @@ function indelDistance(a: string, b: string): number {
 function nearestFurniture(word: string): string | null {
   const k = known();
   const limit = nearEdits(word);
-  if (word.length > k.maxLen + limit) return null;
+  if (limit === 0 || word.length > k.maxLen + limit) return null;
   const n = word.length;
   chargeSteps(limit === 1 ? 1 + n : 1 + n + (n * (n - 1)) / 2);
   let best: string | null = null;

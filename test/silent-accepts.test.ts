@@ -160,20 +160,27 @@ suite("W_GRID_SNAPPED (PS0.25, 6.10)", () => {
   });
 
   it("points at the value as written, a `let` name included, not at the whole statement", () => {
-    const src = plan(
-      [
-        "  grid 100",
-        "  let D = 450",
-        "  wall id=w exterior thickness 250 { (0,0) (30000,0) }",
-        "  room id=r at (0,0) size 2750x3000",
-        "  furniture chair at (500,500) size D x D",
-        "  door at (20550, 0) width 900 wall w",
-      ].join("\n"),
-    );
-    const spans = compile(src, { noCache: true })
-      .diagnostics.filter((d) => d.code === "W_GRID_SNAPPED")
-      .map((d) => src.slice(d.span!.start, d.span!.end));
-    expect(spans).toEqual(["250", "2750x3000", "D x D", "(20550, 0)"]);
+    const lines = [
+      "  wall id=w exterior thickness 250 { (0,0) (30000,0) }",
+      "  room id=r at (0,0) size 2750x3000",
+      "  furniture chair at (500,500) size D x D",
+      "  door at (20550, 0) width 900 wall w",
+    ];
+    const written = (body: string[]): string[] => {
+      const src = plan(["  grid 100", "  let D = 450", ...body].join("\n"));
+      return compile(src, { noCache: true })
+        .diagnostics.filter((d) => d.code === "W_GRID_SNAPPED")
+        .map((d) => src.slice(d.span!.start, d.span!.end));
+    };
+    // The order is the resolver's, as for every resolve-time diagnostic: element kinds in registry
+    // order (`BUILTIN_DEFS`: wall, room, door, …, furniture), source order within a kind
+    // (`test/resolve-order-byte-identity.test.ts` pins it). So the door's comes before the
+    // furniture's although it is written after, and the four lines written in reverse give the
+    // same order. Sorting these alone by offset would set them apart from the other resolve-time
+    // diagnostics they are emitted among.
+    const order = ["250", "2750x3000", "(20550, 0)", "D x D"];
+    expect(written(lines)).toEqual(order);
+    expect(written([...lines].reverse())).toEqual(order);
   });
 
   it("quotes the written value faithfully: 2749.9999 is not printed as 2750", () => {
@@ -300,38 +307,47 @@ suite("W_UNKNOWN_FURNITURE (U.3)", () => {
     expect(meant("tables")).toBe("table");
   });
 
-  // RM1.4 review M2: each is within two edits of a kind (or one changed letter), and an ordinary word.
+  // RM1.4 review M2: each is an ordinary word one or two letters from a kind (`cart`/`car`,
+  // `rack`/`rock`, `ladder`/`larder`, `stand`/`island`), so the limit is relative to its length:
+  // a word of four letters or fewer is reported only as a kind in another case.
   it.each([
-    ["fan", "car"],
-    ["box", "hob"],
-    ["mat", "bath"],
-    ["safe", "sofa"],
-    ["tank", "sink"],
-    ["cask", "desk"],
-    ["drum", "rug"],
-    ["rack", "rock"],
-    ["urn", "bin"],
-    ["stand", "island"],
-    ["ladder", "larder"],
-  ])("an ordinary word is not a slip: %s (near %s)", (word) => {
+    "fan",
+    "harp",
+    "bar",
+    "cart",
+    "box",
+    "mat",
+    "vat",
+    "safe",
+    "tank",
+    "cask",
+    "drum",
+    "rack",
+    "bust",
+    "urn",
+    "kiln",
+    "stand",
+    "ladder",
+  ])("an ordinary word is not a slip: %s", (word) => {
     expect(meant(word)).toBeNull();
   });
 
   it("`arch lint --strict` fails on it as it does on W_ALIAS_MATCH (a lint rule)", async () => {
-    const codes = (stdout: string): string[] =>
-      (JSON.parse(stdout) as { diagnostics: { code: string }[] }).diagnostics.map((d) => d.code);
-    const alias = await runArch(["lint", "-", "--strict", "--json"], {
-      input: plan('  room at (0,0) size 2000x1500 label "Powder"'),
-    });
-    expect(codes(alias.stdout)).toContain("W_ALIAS_MATCH");
-    expect(alias.status).toBe(EXIT.USER);
-    const piece = await runArch(["lint", "-", "--strict", "--json"], {
-      input: plan(
-        '  room id=r at (0,0) size 3000x3000 label "Living" uses living\n  furniture grand_pianno at (500,500) size 1500x1500',
-      ),
-    });
-    expect(codes(piece.stdout)[0]).toBe("W_UNKNOWN_FURNITURE");
-    expect(piece.status).toBe(EXIT.USER);
+    // The studio lints clean, so each one-word edit leaves its finding the only one: the exit is
+    // that finding's alone (the edits are the same length, a word and its padding).
+    const run = async (src: string): Promise<{ codes: string[]; status: number }> => {
+      const r = await runArch(["lint", "-", "--strict", "--json"], { input: src });
+      const codes = (JSON.parse(r.stdout) as { diagnostics: { code: string }[] }).diagnostics.map((d) => d.code);
+      return { codes, status: r.status };
+    };
+    const studio = read("examples/studio.arch");
+    const alias = studio.replace('label "Bath"             uses bath', 'label "Powder"                     ');
+    const piece = studio.replace("furniture fridge       at", "furniture fridges      at");
+    expect(alias).not.toBe(studio);
+    expect(piece).not.toBe(studio);
+    expect(await run(studio)).toEqual({ codes: [], status: EXIT.OK });
+    expect(await run(alias)).toEqual({ codes: ["W_ALIAS_MATCH"], status: EXIT.USER });
+    expect(await run(piece)).toEqual({ codes: ["W_UNKNOWN_FURNITURE"], status: EXIT.USER });
   });
 });
 

@@ -610,9 +610,9 @@ const BASELINE: [string, string][] = [
   ["eval/goldens/against-wall-bath.arch", "731d8f1fc40ba19a5f431d54a643f236d70e4ae92aca19368cea2a38f29d734e"], // PS2.11e, see header
   ["eval/goldens/anchor-furniture.arch", "c825ed175012280d8d024156f13d0b5e7bd3d3fca4a8ffde1f8d298b200c897c"],
   ["eval/goldens/attach-openings.arch", "658dd5a6589283292b8269548c0f38d01e57503ed244e40cd1084add86c290c1"], // PS2.11e, see header
-  ["eval/goldens/bungalow.arch", "a85eb29fb2441bb7ee889548d51f2b38b0869e43394e30035ce379ae25b39c72"], // RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was 4271ab6f)
+  ["eval/goldens/bungalow.arch", "8c685c18b9651a339158e040310869881ee190ead53c7309913f86e171c09d71"], // RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was 4271ab6f); RM1.4: the W_GRID_SNAPPED span points at the written value (was a85eb29f); steps 465 -> 593, +128 = two DIAGNOSTIC_STEPS
   ["eval/goldens/compact-studio.arch", "36b588ea8e25c29f6be7523de08b31c41ec63fe4ab8bd1a40a93daca4885f784"], // PS2.11e, see header
-  ["eval/goldens/core-and-shell.arch", "e036e8fc912122ed2bc15eb43d9fa4e8aae0e70ad19d37f2b072fc9bc544610b"], // PS2.11e, see header; RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was b84aa455)
+  ["eval/goldens/core-and-shell.arch", "d9b566a05fda65c88b298d1c764dd1ee8e06404e664621c5695302a3809553f9"], // PS2.11e, see header; RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x2) (was b84aa455); RM1.4: the W_GRID_SNAPPED span points at the written value (was e036e8fc); steps 284 -> 412, +128 = two DIAGNOSTIC_STEPS
   ["eval/goldens/dims-auto-cottage.arch", "81802174915f42a6ccc439d4e39874269621418e877926a862edb47ff890fd15"], // PS2.11e, see header
   ["eval/goldens/galley-kitchen.arch", "34aeb2569136729162f1a17662cb84f988ce243a208e3cb9c83cdc7ab6989979"], // PS2.11e, see header
   ["eval/goldens/l-shaped-flat.arch", "432dd9f0381d4dae484cb2bbcc1a3985abefc72d41a1944b5e228e0f3229652f"], // #367, see test/byte-identity-baseline.ts
@@ -620,12 +620,12 @@ const BASELINE: [string, string][] = [
   // PS2.18 (`lint()` only: the kitchenette's daylight warning declines); see header.
   ["eval/goldens/office.arch", "1a973564c08433ff368642c0bcba6a0e6d0429e15ab299a1a21cccb21cf3ef5d"],
   ["eval/goldens/open-plan-loft.arch", "63b2581c909426a3bc1cda32ae6e2f18ab6b55c054d15ab50cd8854139438440"],
-  ["eval/goldens/reception-suite.arch", "9def9ad2a92cbb911b5837b49af2d50b6bc95c73a602126eea44da7850b1d817"], // #367, see test/byte-identity-baseline.ts; RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x1) (was 01663fc8)
+  ["eval/goldens/reception-suite.arch", "9def9ad2a92cbb911b5837b49af2d50b6bc95c73a602126eea44da7850b1d817"], // #367, see test/byte-identity-baseline.ts; RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x1; steps 439 -> 503, +64 = one DIAGNOSTIC_STEPS) (was 01663fc8)
   ["eval/goldens/relational-studio.arch", "e4eec5ae0421fb401d506e00aeb8caa6f00af6523a88975a5249840c60d0400b"],
   ["eval/goldens/scripting-units.arch", "4278fd060523d0683d10698e5b664ca08c18f1bdef0bc6c5e3502d40cb928396"],
   ["eval/goldens/sized-bedrooms.arch", "d89893bae1e7569300d69f5984e7ef04a959c0fa72081758a247d81d50f959c8"],
   ["eval/goldens/sized-kitchen-flat.arch", "c1426cda7baa416b544ca2fee61c9ca1fd11656e86294d0cf325e0c0c1934cf0"], // PS2.11e, see header
-  ["eval/goldens/sized-office-mix.arch", "8991b39249199e7f751a33ee0d2b837ddac60edcd7641eac2a90dbd3f825f12b"], // RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x1) (was d129cf5e)
+  ["eval/goldens/sized-office-mix.arch", "8991b39249199e7f751a33ee0d2b837ddac60edcd7641eac2a90dbd3f825f12b"], // RM1.4: snapping is now reported (eval golden, not edited: W_GRID_SNAPPED x1; steps 325 -> 389, +64 = one DIAGNOSTIC_STEPS) (was d129cf5e)
   ["eval/goldens/sized-wet-room.arch", "7c6a75b0fdb78471728925e3fb4057fdeee8e1c3ec213cf062b834c644dc7961"], // PS2.11e, see header
   ["eval/goldens/strip-attach-clean.arch", "de82e3e66dcaf656743890891a14e893306fc09e09dad8a72407288388557494"], // re-measured, see header
   ["eval/goldens/strip-corridor.arch", "3f4df475aef8e3fda40bb8371c7550c777eceb2add0639fff5c4a0f8f8a4fee7"],

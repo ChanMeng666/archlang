@@ -78,7 +78,8 @@ const FOUR_OPEN_SVG = "194956c02cebd53cba314bc794cf6bfa2925f016de48dbe1bdf70ef0e
 const FOUR_OPEN_SEMANTIC = "49c3ae1b602ae5e576211825736bcfecf13b1ed34b868e38f96bc0d7f58deb68";
 // was 6680e7767ccf03d14e31beeafec0c9eb502f2234f71ca9b524acfbbfb6d109fa. RM1.4: snapping is now reported: the plan writes
 // `partition 120` under `grid 50` (drawn 100), so describe() carries two W_GRID_SNAPPED; with them removed the old digest returns.
-const PLACED_SEMANTIC = "bb3dce0dd0cfa1685bca2abf1fd3315972ac148ab506cd8d96f1ca0a444b48d8";
+// Then bb3dce0d; RM1.4: the W_GRID_SNAPPED span points at the written value (`120`, not the whole statement).
+const PLACED_SEMANTIC = "90a48e9e9651c24375dab526a75ffe442e7bd0c9ca2ce8717f434065f43f1759";
 
 /** Measured at `2649b9dd` (see the header), the first three at `dff02717`. */
 const UNMOVED_DIGESTS: [string, string][] = [
@@ -178,7 +179,8 @@ const FLUSH_DIGESTS: [string, string, string][] = [
 /** `describe()` + `lint()` of {@link THREE_OPEN_PLACED}, measured at `dff02717`. */
 // was c8fb85b921a2bd06e974356a3e1b065b052d33ca53978a4035b1c4fee609001a. RM1.4: snapping is now reported, as for
 // PLACED_SEMANTIC above (two W_GRID_SNAPPED for `partition 120` under `grid 50`); with them removed the old digest returns.
-const THREE_PLACED_SEMANTIC = "565dff9d69078cb8fcd7aef9ee0d9e6d1e2025195771081a686e67b82f5385eb";
+// Then 565dff9d; RM1.4: the W_GRID_SNAPPED span points at the written value.
+const THREE_PLACED_SEMANTIC = "cf41d12740ec864ba628d374de087bcaf40c68b5c2d336ec02930cb9bc3e8b05";
 
 /** Measured at `2649b9dd` (see the header): every plan of `examples/` and `test/fixtures/`. */
 const CORPUS: [string, string][] = [
