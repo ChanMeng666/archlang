@@ -39,17 +39,19 @@
  *   puts it. A stair on the top storey climbs that storey's height; a `dir down` stair on the lowest
  *   storey has nothing to climb from and is not built; both are ledgered;
  * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3);
- * - outdoor surface (card RM8.3): a thin slab [e - 50 mm, e], its top the floor level; fence: its
- *   style's posts, rails and pickets on the floor level (`outdoor.ts`, every default ledgered).
+ * - outdoor surface (card RM8.3): a thin slab [e - 50 mm, e], its top the floor level, lifted a step
+ *   where it overlaps the slab, a floor or an earlier surface; fence: its style's posts (on the core's
+ *   ticks), rails and pickets on the floor level (`outdoor.ts`, every default ledgered).
  * The ground round the building is the viewer's, never a node (`GROUND_PLANE`, `materials.ts`).
  */
-import { floorFinish, GROUND_PLANE, STAIR_MATERIAL } from "../materials.js";
+import { floorFinish, GROUND_PLANE, GROUND_WASH, STAIR_MATERIAL } from "../materials.js";
 import { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, overlapArea } from "../scene3d/overlap.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { coveredBy, type Rect, rectMinus, slabRegion } from "./slab.js";
 import { stairSolid } from "./stair.js";
 import {
+  CORE_POST_PITCH_MM,
   FENCE_HEIGHT_MM,
   FENCE_PROFILES,
   type FenceProfile,
@@ -801,15 +803,27 @@ function levelNodes(
     );
   }
 
-  // The site (card RM8.3, `outdoor.ts`): each surface a thin slab whose top is the floor level, a
-  // surface overlapping an earlier one lifted a step above it; each fence its style's profile.
+  // The site (card RM8.3, `outdoor.ts`): each surface a thin slab whose top is the floor level; each
+  // fence its style's profile. A surface never lies in the plane of a face it overlaps (review R1,
+  // B1: a courtyard's patio over the slab fought it in depth): over the slab it stands one step
+  // (0.5 mm, V-GEO-05's) above the slab's top; over an earlier surface one step above that one's
+  // top; and it climbs a step more while its top would still meet the top of the slab, or the
+  // bottom or the top of a floor, that it overlaps (> 1 cm²). Each lift is ledgered.
+  const slabHere = slabRegion(lv.footprint, lv.floors, []).flatMap((r) => lessVoids(r.outer, lv.voids, "slab", []));
+  const over = (p: Polygon, q: Polygon): boolean => overlapArea(p, q) > FLOOR_OVERLAP_MIN_UM2;
   const steps = new Map<string, number>();
   lv.outdoor.forEach((o, i) => {
-    const below = lv.outdoor
-      .slice(0, i)
-      .filter((p) => overlapArea(p.polygon, o.polygon) > FLOOR_OVERLAP_MIN_UM2)
-      .map((p) => steps.get(p.id) ?? 0);
-    const step = below.length > 0 ? 1 + Math.max(...below) : 0;
+    const earlier = lv.outdoor.slice(0, i).filter((p) => over(p.polygon, o.polygon));
+    const onSlab = slabHere.some((s) => over(s, o.polygon));
+    const floorsUnder = lv.floors.filter((f) => over(f.polygon, o.polygon));
+    // Heights (µm above e) its top must not take.
+    const taken = new Set<number>([
+      ...(onSlab ? [0] : []),
+      ...floorsUnder.flatMap((f) => [f.lift ?? 0, (f.lift ?? 0) + FLOOR_FINISH_MM * MM]),
+      ...earlier.map((p) => (steps.get(p.id) ?? 0) * FLOOR_LIFT_UM),
+    ]);
+    let step = Math.max(onSlab ? 1 : 0, ...earlier.map((p) => 1 + (steps.get(p.id) ?? 0)));
+    while (taken.has(step * FLOOR_LIFT_UM)) step++;
     steps.set(o.id, step);
     const lift = step * FLOOR_LIFT_UM;
     if (lift > 0) {
@@ -830,6 +844,14 @@ function levelNodes(
         value: OUTDOOR_MM,
         provenance: "default",
         rule: "outdoor-thickness-default",
+      });
+      // How a theme tint becomes a 3D colour (`groundColour`): a drafting default too.
+      ledger.push({
+        kind: "outdoor",
+        field: "wash",
+        value: GROUND_WASH,
+        provenance: "default",
+        rule: "outdoor-colour-wash",
       });
     }
     const colour = outdoorColour(o.surface);
@@ -865,6 +887,20 @@ function levelNodes(
     const style = known ? f.style : "picket";
     const profile = FENCE_PROFILES[style] as FenceProfile;
     const height = FENCE_HEIGHT_MM[style] as number;
+    const pieces = fencePieces({ ...f, style }, profile, height);
+    // No run of positive length (every point the same): the core draws nothing, and nothing is built
+    // (review R1, S4); said so, and its style's defaults are not claimed for it.
+    if (pieces.length === 0) {
+      ledger.push({
+        kind: "fence",
+        id: f.id,
+        field: "geometry",
+        value: "omitted",
+        provenance: "derived",
+        rule: "fence-no-run",
+      });
+      return;
+    }
     if (!defaulted.has(`fence:${f.style}`)) {
       defaulted.add(`fence:${f.style}`);
       ledger.push(
@@ -880,7 +916,8 @@ function levelNodes(
           field: `profile(${f.style})`,
           value: {
             post_mm: profile.post,
-            post_pitch_mm: profile.postPitch,
+            // The core's own spacing: a post on every tick it draws (`fencePosts`).
+            post_pitch_mm: CORE_POST_PITCH_MM[style],
             rails_mm: profile.rails.map((r) => [...r]),
             ...(profile.pickets ? { pickets_mm: [...profile.pickets] } : {}),
           },
@@ -900,7 +937,7 @@ function levelNodes(
       "fence",
       f.id,
       i,
-      fencePieces(f, profile, height).map((p) => prism(p.poly, e + p.z[0] * MM, e + p.z[1] * MM)),
+      pieces.map((p) => prism(p.poly, e + p.z[0] * MM, e + p.z[1] * MM)),
       { style: f.style, colour: fenceColour(f.style), height_mm: height, closed: f.closed },
     );
   });
@@ -942,7 +979,13 @@ export function buildMesh(scene: Scene3D, opts: MeshOptions = {}): Mesh3D {
     {
       kind: "ground",
       field: "plane",
-      value: { drawn: "viewer only", margin_mm: GROUND_PLANE.marginMm, colour: GROUND_PLANE.light },
+      value: {
+        drawn: "viewer only",
+        level: scene.levels[0]?.level ?? 0,
+        margin_mm: GROUND_PLANE.marginMm,
+        colour: GROUND_PLANE.light,
+        colour_dark: GROUND_PLANE.dark,
+      },
       provenance: "default",
       rule: "ground-plane-viewer-only",
     },

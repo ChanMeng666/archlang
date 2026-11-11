@@ -86,7 +86,7 @@ export const PREVIEW_LABEL =
  * (`3d.md` §3): change it when the package changes.
  */
 export const PREVIEW_LIMITS =
-  "3D preview: walls, openings, floors, stairs and furniture in flat colours; no pitched roofs yet, and no sections, elevations or BIM.";
+  "3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in flat colours; the ground is a backdrop the viewer draws, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM.";
 /** The page that says what the 3D preview shows and does not (the docs site's `/3d`). */
 export const PREVIEW_ABOUT_URL = "https://archlang.uk/3d";
 
@@ -170,9 +170,19 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
   };
 }
 
-/** The ground plane's height: the top of the lowest storey's slab (`ReplayPayload.ground`). */
+/**
+ * The ground plane's height (`ReplayPayload.ground`): the top of the slab of the storey the Mesh3D's
+ * ledger names (`ground-plane-viewer-only`, the plan's lowest storey). A view of another storey on
+ * its own (`viewMesh(mesh, n)`, the playground's storey switcher; review R1, S2) draws no ground: at
+ * its own floor level the ground would stand an upper floor (and its balcony) on the earth, and at
+ * the lowest storey's it would hang the floor in the air over a ground with nothing on it. A Mesh3D
+ * without the row (written before card RM8.3) takes its own lowest storey.
+ */
 function groundOf(mesh: Mesh3D): { ground?: { y: number } } {
-  const lowest = storeysOf(mesh)[0];
+  const row = mesh.assumptions.find((a) => a.rule === "ground-plane-viewer-only")?.value as
+    | { level?: unknown }
+    | undefined;
+  const lowest = typeof row?.level === "number" ? row.level : storeysOf(mesh)[0];
   const slab = mesh.nodes.find((n) => n.level === lowest && n.kind === "slab" && !n.hidden);
   if (!slab) return {};
   let y = -Infinity;

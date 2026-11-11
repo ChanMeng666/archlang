@@ -102,7 +102,9 @@ describe("GLB over the corpus (§9.2 criteria 1 and 3)", () => {
     const dir = join(PKG, "test", "fixtures", "outdoor");
     const names = ["lawn", "planting", "paving", "deck", "gravel", "water", "driveway", "patio", "balcony"]
       .map((k) => `ground-${k}`)
-      .concat(["picket", "panel", "post"].map((s) => `fence-${s}`));
+      .concat(["picket", "panel", "post"].map((s) => `fence-${s}`))
+      // The edge cases of review R1: overlaps, degenerate fences, an upper storey.
+      .concat(["site-edges"]);
     const failed: string[] = [];
     for (const name of names) {
       const a = await glbOf(readFileSync(join(dir, `${name}.arch`), "utf8"));

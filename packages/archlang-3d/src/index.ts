@@ -51,6 +51,7 @@ export {
   linearRgb,
   MATERIAL_SLOTS,
   PALETTE,
+  SITE_PALETTE,
   siteColour,
   slotColour,
   slotGroups,
@@ -59,10 +60,15 @@ export {
 } from "./materials.js";
 export type { FloorFinish, GroundTint, KindMaterial, MaterialSlot, SlotMaterial } from "./materials.js";
 export {
+  CORE_POST_PITCH_MM,
+  CORE_POSTS_PER_RUN,
+  corePostCount,
   FENCE_HEIGHT_MM,
   FENCE_PROFILES,
   fenceColour,
   fencePieces,
+  fencePosts,
+  fenceRuns,
   groundColour,
   MAX_FENCE_REPEAT,
   OUTDOOR_MM,

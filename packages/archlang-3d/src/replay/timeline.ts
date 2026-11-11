@@ -346,11 +346,12 @@ export interface ReplayState {
   /** Opacity of the core's drawing over the scene. */
   svg: number;
   /**
-   * Whether the viewer's ground plane shows (card RM8.3, `GROUND_PLANE`): from the moment the core's
-   * drawing starts to fade (`PHASE.rise`, while it still covers the frame), so the top-down phase
-   * draws the plan on the page as before and the building rises on the ground.
+   * The viewer's ground plane's opacity, 0…1 (card RM8.3, `GROUND_PLANE`): 0 until the core's drawing
+   * starts to fade (`PHASE.rise`), then it fades in as the drawing fades out (`1 − svg`), opaque from
+   * `PHASE.svgOut`. So the top-down phase draws the plan on the page as before, and no frame shows
+   * the ground appear at once where the drawing does not cover it (the letterbox bars; review R1, S1).
    */
-  ground: boolean;
+  ground: number;
   nodes: Map<string, NodeState>;
 }
 
@@ -405,7 +406,7 @@ export function stateAt(events: readonly ReplayEvent[], t: number): ReplayState 
     stop,
     settle,
     svg,
-    ground: u >= PHASE.rise,
+    ground: u >= PHASE.rise ? 1 - svg : 0,
     nodes,
   };
 }

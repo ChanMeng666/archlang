@@ -399,10 +399,12 @@ describe("Mesh3D determinism and budget", () => {
  *
  * Moved by product-roadmap card RM8.3 (was 334b7949…) with the ledger alone: outdoor surfaces and
  * fences are built now, so the two `m1-omits-outdoor-fences` rows go, and in their place one row
- * says the viewer draws a ground plane no node holds (`ground-plane-viewer-only`, `GROUND_PLANE`).
+ * says the viewer draws a ground plane no node holds (`ground-plane-viewer-only`, `GROUND_PLANE`:
+ * the storey it stands at, its margin and its light and dark colours; review R1 added the level and
+ * the dark colour, 20d3bc3e… → 944930c9…).
  * A site's own defaults are ledgered only where a plan has a surface or a fence; laneway has
  * neither, so no node moved: with that one row replaced by the two old ones, the Mesh3D hashes to
  * 334b7949… exactly (as every one of the 45 corpus plans without a site does to its old hash). Its
  * GLB (no ledger) and its event table are unchanged.
  */
-const LANEWAY_MESH_SHA256 = "20d3bc3e422eafccf98f88943fe793e5b7d27b92334cb7c726046ea631a5f36d";
+const LANEWAY_MESH_SHA256 = "944930c974a057638c8f690fcd4c825ffcc6a99f59b6ea4ac3726db5048529a1";

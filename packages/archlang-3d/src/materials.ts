@@ -176,6 +176,16 @@ export const GROUND_TINT: Readonly<Record<ROutdoor["surface"], GroundTint>> = {
 export const GROUND_WASH = 6;
 
 /**
+ * The site's own materials, which no fixture is made of: a light gravel and a tarmac drive. Apart
+ * from `PALETTE` on purpose: `PALETTE`'s keys are the material slots, which equal the core's
+ * `FIXTURE_MATERIALS` (`test/material-vocabulary.test.ts`), and a ground is no fixture's material.
+ */
+export const SITE_PALETTE = {
+  gravel: m("#cbc3b4", 0.95),
+  tarmac: m("#8c8984", 0.85),
+} as const satisfies Readonly<Record<string, SlotMaterial>>;
+
+/**
  * The kinds the 3D preview tells apart where the drawing does it by hatch alone (one `paving` tint
  * covers six kinds, one `lawn` tint two; with no hatch they would be one colour): a planted bed in the
  * palette's foliage, a timber deck in its oak, gravel and a tarmac drive in their own greys. Every
@@ -185,8 +195,8 @@ export const GROUND_WASH = 6;
 export const GROUND_SPLITS: Readonly<Partial<Record<ROutdoor["surface"], SlotMaterial>>> = {
   planting: PALETTE.foliage,
   deck: PALETTE.wood,
-  gravel: m("#cbc3b4", 0.95),
-  driveway: m("#8c8984", 0.85),
+  gravel: SITE_PALETTE.gravel,
+  driveway: SITE_PALETTE.tarmac,
 };
 
 /** The GLB roughness of a ground surface in its theme colour, by tint (the viewer reads none). */

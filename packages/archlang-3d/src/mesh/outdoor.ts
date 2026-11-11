@@ -8,11 +8,13 @@
  * Heights, per storey at its elevation `e` (µm):
  * - an outdoor surface is [e − 50 mm, e]: its top is the storey's floor level, the top of the
  *   building's slab, so a garden lies flush with the ground floor's slab and a balcony with its own
- *   storey's (the floor finish stands 5 mm above both). A surface that overlaps an earlier one of its
- *   storey by more than 1 cm² is lifted one step (0.5 mm, `FLOOR_LIFT_UM`) above the highest earlier
- *   one it overlaps, as rooms are (V-GEO-05), so two coplanar tops never fight; ledgered
+ *   storey's (the floor finish stands 5 mm above both). A surface never lies in the plane of a face
+ *   it overlaps by more than 1 cm² (`build.ts`): over the slab it is lifted one step (0.5 mm,
+ *   `FLOOR_LIFT_UM`, V-GEO-05's) above the slab's top, over an earlier surface one step above that
+ *   one, and a step more while its top would meet a floor's bottom or top; ledgered
  *   `outdoor-overlap-lift`. A balcony's railing is not built (ledgered `outdoor-rail-omitted`);
- * - a fence stands on the floor level, [e, e + its style's height].
+ * - a fence stands on the floor level, [e, e + its style's height], a post on every tick the core
+ *   draws (`fencePosts`); a fence with no run of positive length is not built (`fence-no-run`).
  *
  * Its colour is the core's own (ADR 0031's seam: `DEFAULT_THEME` from the core's public exports):
  * the tint the drawing fills the kind with (`GROUND_TINT`), laid on `GROUND_WASH` times
@@ -35,15 +37,23 @@ export const OUTDOOR_MM = 50;
 export const FENCE_HEIGHT_MM: Readonly<Record<string, number>> = { picket: 1000, panel: 1800, post: 1100 };
 
 /**
- * Each style's profile, mm: what stands along a run. Every style has a square post at each of the
- * fence's points and at most `postPitch` apart between them (the core posts a panel and a
- * post-and-rail fence at 1.8 m too). A picket fence adds two rails and its pickets, a panel fence one
- * board the whole height, a post-and-rail fence one rail along the top: the core draws the three as
- * dense ticks, a double line and posts on a single rail.
+ * The core's post spacing per style, mm (`POST_PITCH`, `src/elements/fence.ts`, not exported): it
+ * draws `postCount` = round(run / pitch), clamped to 1…60, divisions on each straight run, a tick at
+ * each division and one at an open fence's far end. The 3D posts stand exactly on those ticks
+ * (`fencePosts`); `test/outdoor.test.ts` holds them to the ticks the core draws, across the corpus.
+ */
+export const CORE_POST_PITCH_MM: Readonly<Record<string, number>> = { picket: 600, panel: 1800, post: 1800 };
+/** The core's clamp on a run's divisions (`MIN_POSTS`, `MAX_POSTS`). */
+export const CORE_POSTS_PER_RUN = [1, 60] as const;
+
+/**
+ * Each style's profile, mm: what stands along a run. A square post stands on every tick the core
+ * draws (`CORE_POST_PITCH_MM`); a picket fence adds two rails and its pickets, a panel fence one board
+ * the whole height, a post-and-rail fence one rail along the top: the core draws the three as dense
+ * ticks, a double line and posts on a single rail.
  */
 export interface FenceProfile {
   post: number;
-  postPitch: number;
   /** Boards along the run: [depth across it, bottom, top], mm above the base. */
   rails: ReadonlyArray<readonly [number, number, number]>;
   /** Pickets: [width along the run, depth across it, pitch], mm, or none. */
@@ -53,22 +63,20 @@ export interface FenceProfile {
 export const FENCE_PROFILES: Readonly<Record<string, FenceProfile>> = {
   picket: {
     post: 80,
-    postPitch: 1800,
     rails: [
       [20, 150, 220],
       [20, 700, 770],
     ],
     pickets: [70, 20, 140],
   },
-  panel: { post: 100, postPitch: 1800, rails: [[40, 0, 1800]] },
-  post: { post: 100, postPitch: 1800, rails: [[60, 1040, 1100]] },
+  panel: { post: 100, rails: [[40, 0, 1800]] },
+  post: { post: 100, rails: [[60, 1040, 1100]] },
 };
 
-/** The most posts or pickets one segment takes, whatever its length. */
+/** The most pickets one run takes, whatever its length. */
 export const MAX_FENCE_REPEAT = 400;
 
 const MM = 1000;
-
 /** A kind's tint, or `paving` for a kind this package does not know (a hand-made Scene3D). */
 export const tintOf = (surface: string): GroundTint | undefined => GROUND_TINT[surface as keyof typeof GROUND_TINT];
 
@@ -101,54 +109,74 @@ const at = (a: Pt, b: Pt, f: number): Pt => [
   Math.round(a[1] + (b[1] - a[1]) * f),
 ];
 
-const count = (len: number, pitch: number): number => Math.max(1, Math.min(MAX_FENCE_REPEAT, Math.ceil(len / pitch)));
+/** The core's `postCount`: a run's divisions for a style (`CORE_POST_PITCH_MM`). */
+export function corePostCount(lenUm: number, style: string): number {
+  const pitch = CORE_POST_PITCH_MM[style] ?? (CORE_POST_PITCH_MM.picket as number);
+  const [lo, hi] = CORE_POSTS_PER_RUN;
+  return Math.max(lo, Math.min(hi, Math.round(lenUm / MM / pitch)));
+}
 
 /**
- * A fence's plan pieces, each with its [bottom, top] in mm above its base: per segment its posts (one
- * at its start, then evenly at most `postPitch` apart; the last point of an open fence gets one too),
- * its rails and its pickets, each a box aligned with the segment.
+ * A fence's runs as the core draws them (`fenceSegments`, then `render`): consecutive points, plus
+ * the closing run of a closed fence of three points or more, zero-length runs left out; and whether
+ * the runs close into a ring (then the last run's far end is the first run's start, and an open
+ * fence's last run takes a post at its far end).
+ */
+export function fenceRuns(f: Pick<Fence, "points" | "closed">): { runs: Array<[Pt, Pt]>; ring: boolean } {
+  const pts = f.points;
+  const all: Array<[Pt, Pt]> = [];
+  for (let i = 0; i + 1 < pts.length; i++) all.push([pts[i] as Pt, pts[i + 1] as Pt]);
+  if (f.closed && pts.length > 2) all.push([pts[pts.length - 1] as Pt, pts[0] as Pt]);
+  const runs = all.filter(([a, b]) => Math.hypot(b[0] - a[0], b[1] - a[1]) > 0);
+  return { runs, ring: f.closed && pts.length > 2 && runs.length > 1 };
+}
+
+/** Where the core draws a fence's ticks, so where its posts stand (µm, the plan point, its run). */
+export function fencePosts(f: Pick<Fence, "points" | "closed" | "style">): Array<{ at: Pt; run: [Pt, Pt] }> {
+  const { runs, ring } = fenceRuns(f);
+  const out: Array<{ at: Pt; run: [Pt, Pt] }> = [];
+  runs.forEach(([a, b], i) => {
+    const n = corePostCount(Math.hypot(b[0] - a[0], b[1] - a[1]), f.style);
+    for (let k = 0; k < n; k++) out.push({ at: at(a, b, k / n), run: [a, b] });
+    if (i === runs.length - 1 && !ring) out.push({ at: b, run: [a, b] });
+  });
+  return out;
+}
+
+/**
+ * A fence's plan pieces, each with its [bottom, top] in mm above its base: a post on every tick the
+ * core draws (`fencePosts`), and per run its rails and its pickets, each a box aligned with the run.
+ * A fence with no run of positive length has no piece.
  */
 export function fencePieces(
-  f: Pick<Fence, "points" | "closed">,
+  f: Pick<Fence, "points" | "closed" | "style">,
   profile: FenceProfile,
   height: number,
 ): Array<{
   poly: Polygon;
   z: readonly [number, number];
 }> {
-  const pts = f.points;
-  const segs: Array<[Pt, Pt]> = [];
-  for (let i = 0; i + 1 < pts.length; i++) segs.push([pts[i] as Pt, pts[i + 1] as Pt]);
-  if (f.closed && pts.length > 2) segs.push([pts[pts.length - 1] as Pt, pts[0] as Pt]);
   const out: Array<{ poly: Polygon; z: readonly [number, number] }> = [];
-  const half = (profile.post * MM) / 2;
-  const post = (c: Pt, a: Pt, b: Pt): void => {
+  // A box `w` long along the run a→b, `d` deep across it, centred on `c`.
+  const box = (c: Pt, [a, b]: [Pt, Pt], w: number, d: number): Polygon => {
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
     const ux = (b[0] - a[0]) / len;
     const uy = (b[1] - a[1]) / len;
     const p = (s: number): Pt => [Math.round(c[0] + ux * s), Math.round(c[1] + uy * s)];
-    out.push({ poly: slab2d(p(-half), p(half), profile.post * MM), z: [0, height] });
+    return slab2d(p(-w / 2), p(w / 2), d);
   };
-  segs.forEach(([a, b], k) => {
+  for (const p of fencePosts(f))
+    out.push({ poly: box(p.at, p.run, profile.post * MM, profile.post * MM), z: [0, height] });
+  for (const [a, b] of fenceRuns(f).runs) {
     const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
-    if (!(len > 0)) return;
-    const n = count(len, profile.postPitch * MM);
-    for (let i = 0; i < n; i++) post(at(a, b, i / n), a, b);
-    if (!f.closed && k === segs.length - 1) post(b, a, b);
     for (const [depth, z0, z1] of profile.rails)
       out.push({ poly: slab2d(a, b, depth * MM), z: [Math.min(z0, height), Math.min(z1, height)] });
     if (profile.pickets) {
       const [w, d, pitch] = profile.pickets;
-      const m = count(len, pitch * MM);
-      const hw = Math.min((w * MM) / 2, len / (2 * m));
-      for (let j = 0; j < m; j++) {
-        const c = at(a, b, (j + 0.5) / m);
-        const ux = (b[0] - a[0]) / len;
-        const uy = (b[1] - a[1]) / len;
-        const p = (s: number): Pt => [Math.round(c[0] + ux * s), Math.round(c[1] + uy * s)];
-        out.push({ poly: slab2d(p(-hw), p(hw), d * MM), z: [0, height] });
-      }
+      const m = Math.max(1, Math.min(MAX_FENCE_REPEAT, Math.ceil(len / (pitch * MM))));
+      const pw = Math.min(w * MM, len / m);
+      for (let j = 0; j < m; j++) out.push({ poly: box(at(a, b, (j + 0.5) / m), [a, b], pw, d * MM), z: [0, height] });
     }
-  });
+  }
   return out;
 }

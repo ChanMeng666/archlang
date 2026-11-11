@@ -447,11 +447,14 @@ export function mountReplay(
   const hi = new Vector3(...box.hi);
   const top = hi.y + 1000;
 
-  // The ground plane (card RM8.3, `GROUND_PLANE`): the viewer's own, in no node. One upward quad at
-  // the lowest storey's floor level, reaching the margin past everything drawn; pushed back behind
-  // every face lying in its plane (the slab's top, a lawn's), edgeless. Shown from `PHASE.rise`
-  // (`ReplayState.ground`), while the core's drawing still covers the frame.
+  // The ground plane (card RM8.3, `GROUND_PLANE`): a backdrop the viewer draws, not an element of the
+  // building and not in the Mesh3D or the GLB. One upward quad at the lowest storey's floor level,
+  // reaching the margin past everything drawn; pushed back behind every face lying in its plane (the
+  // slab's top, a lawn's), edgeless. It fades in as the core's drawing fades out
+  // (`ReplayState.ground`): translucent while it does, so it is drawn with the translucent faces,
+  // first among them (`renderOrder`), and it blends to exactly its own colour once opaque.
   let ground: Mesh | undefined;
+  let groundMat: MeshLambertMaterial | undefined;
   if (p.ground) {
     const y = p.ground.y / 1000;
     const m = GROUND_PLANE.marginMm;
@@ -464,6 +467,9 @@ export function mountReplay(
     geo.setIndex([0, 1, 2, 0, 2, 3]);
     const mat = new MeshLambertMaterial({
       color: new Color(p.theme === "light" ? GROUND_PLANE.light : GROUND_PLANE.dark),
+      transparent: true,
+      opacity: 0,
+      depthWrite: true,
       flatShading: true,
       // Twice the slope term every other face takes, not only more units: seen at a slant a quad this
       // size and a lawn in its plane rasterise to depths that differ by more than a few units, and a
@@ -474,6 +480,8 @@ export function mountReplay(
     });
     owned.push(geo, mat);
     ground = new Mesh(geo, mat);
+    groundMat = mat;
+    ground.renderOrder = -1;
     ground.visible = false;
     scene.add(ground);
   }
@@ -617,7 +625,10 @@ export function mountReplay(
     drawn = true;
     if (strip && p.facts) paintStrip(strip, stripAt(p.facts, p.events, Math.min(1, Math.max(0, t))));
     const s = stateAt(p.events, t);
-    if (ground) ground.visible = s.ground;
+    if (ground && groundMat) {
+      ground.visible = s.ground > 0;
+      groundMat.opacity = s.ground;
+    }
     for (const [key, { g, flat, base, lift }] of nodes) {
       const st = s.nodes.get(key);
       g.visible = st?.visible === true && (storeyOf.get(key) ?? 0) < shown;

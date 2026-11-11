@@ -1638,11 +1638,10 @@ users on ClawHub, then the entry is filed.
 (`profile` in `src/mesh/t0.ts`) would read softer. **Gate:** `t0.test.ts` green; laneway pins unmoved.
 **Carded as RM8.6** (`docs/plans/product-roadmap/cards.md`, stage D, not started on 2026-11-11).
 
-### VA.2 · Outdoor ground surfaces get no 3D finish — `todo`
+### VA.2 · A balcony's railing is not built in 3D — `todo`
 
-Lawn, paving and deck areas are not built in 3D, so a garden is bare ground in the replay and the GLB.
-**Gate:** a ledgered default per surface; pins move only with the reason recorded.
-**Carded as RM8.3** (`docs/plans/product-roadmap/cards.md`, stage B's visual lane, not started on 2026-11-11).
+Product-roadmap RM8.3 (PR #701) builds the rest of this item: each of the nine `outdoor` kinds is a thin slab in a ledgered colour from the core's theme, each `fence` style has its posts (on the core's ticks), rails and pickets at a ledgered height, and the replay stands the building on a ground plane the viewer draws (a backdrop, not in the file). What is not built: the railing the core draws round a `balcony` (its `rail` sides); the 3D preview ledgers it as `outdoor-rail-omitted`.
+**Gate:** a ledgered default height and profile, on the sides the core rails; pins move only with the reason recorded.
 
 ### VA.3 · A room with no `uses` keeps the neutral floor (decision: read the label?) — `decision`
 

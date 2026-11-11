@@ -8,7 +8,7 @@ const ROWS = [
     isnt: "Not CAD software: the compiler draws plans, and the 3D preview is a separate package's flat-colour preview. Heights draw nothing in the plan; there are no sections or elevations.",
   },
   {
-    is: "A 3D preview from the same source (the separate archlang-3d package): walls, openings, floors, stairs and furniture in flat colours.",
+    is: "A 3D preview from the same source (the separate archlang-3d package): walls, openings, floors, stairs, furniture, outdoor surfaces and fences in flat colours.",
     isnt: "Not a renderer, not BIM: no pitched roofs yet, no sections or elevations.",
   },
   {
