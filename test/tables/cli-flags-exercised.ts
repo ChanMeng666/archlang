@@ -107,7 +107,8 @@ export const EXERCISED: Record<string, string> = {
   "watch --import-root":
     "TODO: watch is resident (runArch refuses it); the spawn tests in cli-commands.test.ts never pass this flag",
   "watch --json": "test/cli-commands.test.ts",
-  "watch --theme": "test/cli-theme.test.ts",
+  "watch --theme":
+    "TODO: watch is resident (runArch refuses it); cli-theme.test.ts only passes a bad name, which watch refuses before it starts, so no test shows a themed watch render",
   "watch --quiet":
     "TODO: watch is resident (runArch refuses it); the spawn tests in cli-commands.test.ts never pass this flag",
   "validate --strict": "test/cli-validate-next.test.ts",

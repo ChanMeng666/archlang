@@ -395,7 +395,7 @@ const THEME_FLAG: ManifestFlag = {
   flag: "--theme",
   arg: `<${Object.keys(THEMES).join("|")}>`,
   description:
-    "draw with this named colour theme instead of the plan's own: it wins over a `theme` statement in the source for every colour it sets, and a key it leaves unset (a `lineWeight`, a `font`) keeps the source's value; default: the plan's theme, else the built-in one. Refused (exit 3) with -f json, -f txt and -f dxf, which carry no theme colours",
+    "draw with this named colour theme instead of the plan's own: it wins over the source's `theme` statement, `theme from`, `style` blocks and a single `furniture` colour (which `rendered` replaces with its material tints) for every key it sets, and a key it leaves unset (a `lineWeight`, a `font`) keeps the source's value; default: the plan's theme, else the built-in one. Refused (exit 3) with -f json, -f txt and -f dxf, which carry no theme colours",
 };
 
 /**
@@ -475,7 +475,7 @@ const COMMANDS: ManifestCommand[] = [
       },
       {
         cmd: "archlang compile plan.arch --theme rendered -o plan.svg",
-        note: "draw with the `rendered` colour theme without writing `theme rendered` into the source; the flag wins over the source's own `theme`",
+        note: "draw with the `rendered` colour theme without writing `theme rendered` into the source; the flag wins over the source's own `theme` and `style` blocks",
       },
       {
         cmd: "archlang compile house.arch --view iso -o house-iso.svg",
