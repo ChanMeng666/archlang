@@ -93,10 +93,10 @@ const BASELINE: [string, string][] = [
   ["411fd77e07ded87ca0555dae3f1abb713057a7b63b5e86e712e3a05e2d4fb02a", "examples/courtyard-house.arch"],
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["4090de73163a56b3319477311f2a1d38126aa4861359e38193f897b364e58ef5", "examples/gallery-l.arch"],
-  ["e10ace143d4f48b4009c4454de0252c155593e6214460340a45b6abfcbb05848", "examples/garden-house.arch"],
+  ["df81256b7655199970c53e69a1bfcbb409d59dd368604e2cc83b7482552f830f", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["cc9a04a46e7d09a69aa3f45e3aa9625b66cb8bbc7814658c9aa1f3a5591b891a", "examples/garden-loft.arch"],
   ["6544b4c8a8dd7e8a419f1beb6ab9e3daed19bc6a972a2bb493e361dc29f05b02", "examples/hexagon-pavilion.arch"],
-  ["e8f15a165ec75acb51c00ee208c02a2adee5d6cd2171f11216be8c6e725b4612", "examples/hillside-villa.arch"],
+  ["b188c6d560ee0dc48cac47acdd479c66f31a0c3fd57a55d6c7e32a4fb04e9cb6", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["943cb8dbb7c0438d4f7d62160dafba83a6861b912a5c8cbf70db47e11ec80be7", "examples/imports.arch"],
   ["eba7e921a8695d44326f95ebdb9e22c7b4a9fa5cb311b81055e6359e0cdeafd5", "examples/knob-flat.arch"], // new example (P4, the knobs example), as in ./block-stair-byte-identity.test.ts
   ["312c51d435f0c106b693ccd6c13a1cebb5c41b3217647e4202eef05101f058a1", "examples/laneway-house.arch"],
@@ -115,10 +115,10 @@ const BASELINE: [string, string][] = [
   ["bd6056a84ec5d55dee071e9101fea8d157ce72e0830211a1f66b11291f0e0ef7", "examples/terrace-row.arch"],
   ["503b89ecf0ca78f6c1100f1fd059c0b63080a9bdb3b9401c675c74971816cd21", "examples/themed.arch"],
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"],
-  ["93c6bfea3a6c314a3a9c602a079b64b70593a630f90b3988a7601567e47f9b53", "examples/townhouse.arch"],
+  ["2357bb50624d8aecb9ce28dfa643030e55b29392d45f92a0406b17e2e6ddcab8", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["12a2c3da84bc3fb045fc784bcad3851edaaf6ae0ec539727b52a5d39e58dca2b", "examples/transit-hall.arch"],
   ["f220acec3a66201d974fd3475459a35d52efe4689fc4f76784ccfae1ddc1b92d", "examples/two-bed.arch"],
-  ["33437c49c3e35fcf638c3e37456e0ab9382c91a95aeb46b0d1814905aae8ad0a", "examples/two-storey.arch"],
+  ["85d38d986b32b805b815b7cc7520e88e3acad146b7ae91993db6e83b328f063f", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["2fe38a4ad849ebb8a3192c7cea724d729f659fed022b9a1740b8b96a0e1db1f9", "test/fixtures/axes-grid.arch"],
   ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"],
   ["c08051d0ac804cb6ddbc6d6a073934ce248aab2951f1b3bcbb05e242ec1f4c22", "test/fixtures/dense-bays.arch"],
@@ -132,7 +132,7 @@ const BASELINE: [string, string][] = [
   ["ff686ab3285ac3d6f30af9607a711627f6f864825a15fef562f19c28700b2753", "test/fixtures/off-path-bypass.arch"],
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
-  ["09ac060ad6731b56e40a23bf9b43938ec0c2aa82d38066050eff243c1b86728a", "test/fixtures/storeys-eaves-overflow.arch"],
+  ["09bb2176c0de1c86892883a1f90aad767353ec78208445724c7a5a38618c12fd", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["f003e58744492a4b562ef28436484454401495ad76df042d14c468d3c0533243", "test/fixtures/zones-levels.arch"],
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
   ["edc62a570b76ff9877ab4515a7a83826cc91bf70328a315fe62f42ff17f3a843", "test/walls-from-rooms/relational.arch"],
@@ -196,27 +196,27 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
-    "f752c20553620850a8aa7a08b0e3495c0d78f92089e5c128051aeb62bf29aa41",
+    "c6383deacde2c6dcc29324161286900e379b3a5455d55d666f4eedfe7a34ae0c", // RM1.3a, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/head-against-wall.arch",
   ],
   [
-    "bb473be35000b55796da2047a50081a00b3fb4612da57d633354d2f14924d099",
+    "8006f82586d77cdcbc25604e629d40fbc2bded96324e9215acb81a7fa5080701", // RM1.3a, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
-    "e98bb7790a4ba51994dc2665067797894bbf1466c3f27b1dc86ae38b7f472503",
+    "62561237624e63dc6963d928aba528b086ab20190498b45c03f0a3efdf5195b0", // RM1.3a, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
   ],
   [
-    "bd21b05799d2a7ff933839e3d09e1cdcccfef11d4bf853551d9bf05e9b0a95f4",
+    "9d602f21ac870ab1ff52a11a872cb62969675bbb268856596f77418c32820e58", // RM1.3a, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "c7d7aa66271d6358a56defcee650e305af77b83af7dad3feea0168841bed1af5",
+    "ba1f1cb629de57b4c6b18136428a79f5881f67a3290c7609677fb29d277e1d3c", // RM1.3a, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "5c865bb10d2e390d6f87174cdd4a682a67e8b74a2d34357017bb8deab24f4e55",
+    "7048d5cf94fbf7484f9b3cbb8bbff523c970657ffc20d6c8606a7971a13f05e7", // RM1.3a, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
@@ -236,22 +236,22 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "e15cdc1ea7a1b59f22c2770ed2c6de1d40a0a713cf5298c8e3a1d0b9b8377e7d",
+    "9973266c0262637c62af5e92452aaf6efc7830da88cf81da82d2cecd56da9495", // RM1.3a, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "288139c819a0c58c24960f4714dbebeb2b5b225664b5ba1eb4169b75a9a841e8",
+    "43e1e7b81a86c292b022efcb446fef4f26fb29040082cb96693088bc8f35d3ea", // RM1.3a, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],
   ["803382568b44d2abe330873b5b788636b5dae38beea8416ea9da39a9fb3a12ab", "inline:stair-words-as-names"],
   ["f1497554533ffa39becdfaf8494d14a9d2aa84d8eee0455a4eaf4feffa213aba", "inline:stair-square-and-narrow"],
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
-  ["628b3dc3ea13475086e9be255d9ff6a20cf1632d0a242fd6eaf1ebb2b7fbb492", "inline:stair-arrival"],
+  ["ba2f3d4e7bafb03f39e2d0226ac9233e969d2b5cd3f7b9e19d1e110ba5cb41a3", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["4ee5b0cc65a55f8a21b0dfdbac7c3d3a513cd912f2a54693ad59a1fba85435b2", "inline:sheet-word-as-names"],
   ["77ecc92eac7412e138fc1a1fd3d3541e26b27d9a9497c7d9bb1c7a1b679bdf07", "inline:sheet-macro"],
-  ["37f3cd3ff5c36f3f618f5de12b062c295faeba675cd25146723755dd3d4abd2d", "inline:every-table"],
+  ["98969e09ba72366b19b702e4c596cbb8286539651c5f8ae2f821bf63646feb40", "inline:every-table"], // RM1.3a, see ./byte-identity-baseline.ts
   ["c3bd0b213038578a15a84f8031adaf7461a5a76f1ce406e189e1de434b5954b2", "inline:fractional-sites"],
   ["4df881b97667921f10ebabdc0ef5a593c8f5fbc8724a8fba1bd396d9554b8d05", "inline:curve-call-outs"],
   ["1f92cd16e9aaeaa19f81a01ddd2d74c4fd634dc6ca80f568e815bcab0cde07d8", "inline:sheet-near-miss-0"],

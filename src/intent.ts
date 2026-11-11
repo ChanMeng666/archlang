@@ -518,10 +518,10 @@ function checkOne(
       // also have a way in — its own exterior door, or a shaft from a reachable storey
       // (`vertical.reachable_levels`, the room-aware fixpoint in `src/vertical.ts`).
       // KNOWN LIMIT: per-room reachability on an upper storey is not checked here. Its
-      // `levels[i].access.rooms[].reachable` counts only exterior doors, not shaft arrivals,
-      // so reading it would fail every stair-served upper floor; answering it needs a new
-      // describe fact (rooms reached per storey from the arrival rooms), deliberately not
-      // added. A single-storey summary has no `levels` and is judged exactly as before.
+      // `levels[i].access.rooms[].reachable` counts shaft arrivals (PS0.3), so it
+      // could now be read; doing so changes this judge's verdicts and waits for a judge-version
+      // decision (eval comparability). A single-storey summary has no `levels` and is judged
+      // exactly as before.
       //
       // The storey check runs only when the base check found an entrance. Without one the
       // assertion already fails as "no modeled entrance" (and the lowest storey — the one

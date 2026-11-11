@@ -8,10 +8,12 @@
  * probe cannot decide (see `AmbiguityPolicy` in `analyze.ts`; `test/access-policy.test.ts`
  * holds every surface to one reachability answer).
  *
- * On a storey with no exterior door that a shaft nevertheless reaches, the room
- * the shaft lands in is a source beside "exterior" — coming down the stairs
- * and out of the front door below IS a way out — so the same search answers the same
- * question one storey up. A single-storey plan has no such source and is unchanged.
+ * On a storey with no door from the ground that a shaft nevertheless reaches, the room
+ * the shaft lands in is the source — coming down the stairs and out of the front door
+ * below IS a way out — so the same search answers the same question one storey up. Such a
+ * storey's exterior doors open onto balconies: walked through, never started from (PS0.3,
+ * `describe().access` counts from the same sources). A single-storey plan has no such
+ * source and is unchanged.
  */
 
 import {
@@ -60,8 +62,12 @@ export const reachability: LintRule = {
       return r ? isBedroom(r) : false;
     };
     if (g.out(EXTERIOR_NODE).length > 0 || arrivals.length > 0) {
-      const reachAll = reachFrom(g, { extraSources: arrivals });
-      const reachNoBed = reachFrom(g, { extraSources: arrivals, avoid: isBedroomId });
+      // Where a shaft arrives, the storey has no door from the ground (`arrivalRooms` is empty on
+      // every other storey): its exterior doors open onto balconies, which are ways THROUGH (out
+      // of one room and in at another), not ways in from the street (PS0.3).
+      const exterior = arrivals.length === 0;
+      const reachAll = reachFrom(g, { extraSources: arrivals, exterior });
+      const reachNoBed = reachFrom(g, { extraSources: arrivals, avoid: isBedroomId, exterior });
       // Per storey, as every rule here runs: a wet room on another floor excuses nothing.
       const viaBedroom = wetRoomsOnlyViaBedroom(rooms, reachAll, reachNoBed);
       for (const r of rooms) {

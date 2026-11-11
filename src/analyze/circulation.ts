@@ -222,6 +222,28 @@ export interface BlockedRoom {
 }
 
 /**
+ * The access graph to walk a storey from when `arrivals` are ITS arriving runs (`arrivalRuns`,
+ * `src/vertical.ts`), which exist only for a storey a shaft reaches and no door from the ground
+ * does (PS0.3). Every exterior door such a storey has opens onto a balcony: a slab off a room,
+ * not a way anyone arrives. When a run lands in a room there, the walk starts from the runs and
+ * those doors are no entrance to it: `access` with no entrances, every edge kept (a balcony is
+ * still walked through), so {@link computeCirculation} walks from the runs. `access` itself
+ * otherwise, so a storey no shaft lands on is walked exactly as before.
+ *
+ * The callers that hand a storey its own arrivals apply this (`describe()`, the circulation
+ * rules, `repair`); {@link computeCirculation} itself still walks a storey with an entrance
+ * from its entrances, whatever runs it is given.
+ */
+export function walkedFromShafts(
+  access: AccessGraph,
+  arrivals: readonly ArrivingRun[],
+  rooms: readonly RRoom[],
+): AccessGraph {
+  if (!access.hasEntrance || landedOn(arrivals, rooms).length === 0) return access;
+  return { ...access, entrances: [], hasEntrance: false };
+}
+
+/**
  * Each door-reachable room's `bottleneckClearWidthMm` and nothing else: the opening steps of
  * {@link computeCirculation} (the same arrivals, extent frame, nav grid and widest-route
  * search, written out the same way) without the walks, routes, sealed-room controls or the
@@ -384,10 +406,10 @@ export function computeCirculation(
   voids: RVoid[] = [],
   /** The vertical runs this storey is REACHED by, each with the edge a person steps off
    *  across (`arrivalRuns` in `vertical.ts`: the head of the flight they came by). Read only
-   *  when the storey has no exterior entrance of its own: each run is then an entrance,
-   *  walked from the landing in front of that edge, and the model is measured from there
-   *  instead of being null. Append-only: omitting it (or a storey with a front door)
-   *  changes nothing. */
+   *  when `access` has no entrance: each run is then an entrance, walked from the landing in
+   *  front of that edge, and the model is measured from there instead of being null (a storey
+   *  whose only exterior doors open onto balconies is handed {@link walkedFromShafts}' graph).
+   *  Append-only: omitting it (or a storey with a front door) changes nothing. */
   arrivals: readonly ArrivingRun[] = [],
   /**
    * Shared by two models of ONE storey that differ only in which entrances seed the walk

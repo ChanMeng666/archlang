@@ -12,7 +12,7 @@
 import { type D4, D4_IDENTITY, fromSpelling } from "../algebra/d4.js";
 import type { AccessConnector, AccessGraph, MainEntranceFact, RoomBox } from "../analyze.js";
 import { buildDoorAccessGraph, openRunsOf, roomBox, roomUses } from "../analyze.js";
-import { entranceInputs, mainEntranceOf, walkAccessGraph, walkWays } from "../analyze/entrance.js";
+import { arrivalWays, entranceInputs, mainEntranceOf, walkAccessGraph, walkWays } from "../analyze/entrance.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, RWindow, ResolvedPlan } from "../ir.js";
@@ -156,8 +156,13 @@ export interface LintContext {
    * going outside, or `null` (every way in) when the storey names no main entrance. Memoised.
    */
   walkWays(): ReadonlySet<string> | null;
+  /** {@link access} with only the entrance edges a person ARRIVES by (`arrivalWays`, U.1: a door
+   *  onto a balcony is none for a room a door from the ground reaches): the graph the
+   *  nearest-entrance circulation model walks, as `describe().circulation` does. {@link access}
+   *  itself when no way is dropped. Memoised. */
+  arrivalAccess(): AccessGraph;
   /** {@link access} with only the {@link walkWays} entrance edges: the graph the circulation
-   *  rules walk. {@link access} itself when `walkWays()` is `null`. Memoised. */
+   *  rules walk. {@link arrivalAccess} when `walkWays()` is `null`. Memoised. */
   walkAccess(): AccessGraph;
   /** A room's label, or its id when it has none. For a HINT, where an id is the handle an
    *  agent edits by; a message uses {@link nameOf}. */
@@ -305,8 +310,13 @@ export function buildLintContext(
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const furniture = ir.elements.filter((e): e is RFurniture => e.kind === "furniture");
   let accessMemo: AccessGraph | null = null;
-  let waysMemo: { fact: MainEntranceFact | null; keep: ReadonlySet<string> | null } | null = null;
+  let waysMemo: {
+    fact: MainEntranceFact | null;
+    keep: ReadonlySet<string> | null;
+    arrive: ReadonlySet<string> | null;
+  } | null = null;
   let walkMemo: AccessGraph | null = null;
+  let arrivalMemo: AccessGraph | null = null;
   let framesMemo: Map<string, D4> | null = null;
   // The storey's naming (`src/naming.ts`), built the first time a message names a room. The
   // storey is named only on a plan of several (`building.storeyCount`): one `level` block says
@@ -330,13 +340,27 @@ export function buildLintContext(
     if (waysMemo === null) {
       const inp = entranceInputs(ir, roomRects, building.enteredFromBelow === true);
       const fact = mainEntranceOf(access(), inp);
-      waysMemo = { fact, keep: walkWays(access(), inp, fact) };
+      waysMemo = { fact, keep: walkWays(access(), inp, fact), arrive: arrivalWays(access(), inp) };
     }
     return waysMemo.fact;
   };
   const walkWaysOf = (): ReadonlySet<string> | null => {
     mainOf();
     return waysMemo!.keep;
+  };
+  const arrivalAccessOf = (): AccessGraph => {
+    mainOf();
+    if (arrivalMemo === null) arrivalMemo = walkAccessGraph(access(), waysMemo!.arrive);
+    return arrivalMemo;
+  };
+  // The main entrance's walk already leaves out every balcony door into a room the main entrance
+  // reaches (`walkWays`); with no main entrance named, the walk is the arrival ways' (U.1).
+  const walkAccessOf = (): AccessGraph => {
+    if (walkMemo === null) {
+      const keep = walkWaysOf();
+      walkMemo = keep === null ? arrivalAccessOf() : walkAccessGraph(access(), keep);
+    }
+    return walkMemo;
   };
   return {
     ir,
@@ -358,7 +382,8 @@ export function buildLintContext(
     access,
     mainEntrance: mainOf,
     walkWays: walkWaysOf,
-    walkAccess: () => (walkMemo ??= walkAccessGraph(access(), walkWaysOf())),
+    arrivalAccess: arrivalAccessOf,
+    walkAccess: walkAccessOf,
     labelOf: (r) => r.label ?? r.id,
     nameOf: (r, noun) => {
       // `label ""` draws no name (`room.render`), so it names nothing here either.

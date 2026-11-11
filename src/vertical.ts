@@ -409,8 +409,8 @@ export function verticalConnections(levels: readonly VerticalLevelInput[]): Vert
  * such door does not make the floor above it an upper storey; a walk-out basement does.
  * Identity only, like {@link verticalConnections}. Such a storey names no main
  * entrance (`src/analyze/entrance.ts`, basis `upper-storey`): an exterior door up there opens
- * onto a deck, a terrace or a balcony, not the ground. Whether a person truly arrives there is
- * PS0.3's question (the upper-storey sibling of PS0.10), still open; this is the identity fact.
+ * onto a deck, a terrace or a balcony, not the ground. This is the identity fact; where a person
+ * arrives on a storey with no door from the ground at all is its arrival rooms (PS0.3).
  */
 export function levelsEnteredFromBelow(
   connections: readonly VerticalConnection[],

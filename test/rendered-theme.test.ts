@@ -66,10 +66,10 @@ const BASELINE: [string, string][] = [
   ["70c2e361e02a9ececac0c6d844f923ad0356601466b405dccc112b1e4c984a98", "examples/courtyard-house.arch"],
   ["fe32076533f5e888264999eaafb466ef70adcf4aae03b028b428d747781f51ac", "examples/furnished-flat.arch"],
   ["8dae0c69161c12ec83b99b74dd4a6276f498bd248381e2aa585357038716cb5b", "examples/gallery-l.arch"],
-  ["4ea80299c5a4c2e13ddd4589c9a1791a52abb0b11d08d80f28e60ffa4d934ef3", "examples/garden-house.arch"],
+  ["8be30221a2eb3cb31de4514af2a147cb0d2bbd90e55aefa52cc2cd093ce416a3", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["8c0d7445dd7e0671fe33c2202d9e11b1cbf7edebab44148b883e6eb0350e9975", "examples/garden-loft.arch"],
   ["2184afc6b0048a4c14d14ba1142170fe24567e229b5ba6ef6f353268e6f05c61", "examples/hexagon-pavilion.arch"],
-  ["b83b7c44f2e386cb666e40a284f3ce5bacb7f013741ab1453d9ee3302d46615e", "examples/hillside-villa.arch"],
+  ["21381e946139901bc45248b7e1c0bb07e08dafb4a86f9a47bc000506d0b56056", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["dcc2b4674edc4f74db43a3ad65d1402290786ff9fcf45c21447db95fafae5ac7", "examples/imports.arch"],
   ["1196b1ba548d2bff207dc4ed5b91885292a815e27bab3ec5123190e1802ca708", "examples/knob-flat.arch"], // new example (P4, the knobs example)
   ["9bc78fffc5a8432abe8dc4aa58a9fe0aa92476976771abb207e0b5e869ec206f", "examples/laneway-house.arch"],
@@ -88,11 +88,11 @@ const BASELINE: [string, string][] = [
   ["d311b42fb71dc4b21af2b6d92fcd0c07d8783ffa827533a5868f768fbb898453", "examples/terrace-row.arch"],
   ["fb713c6aa3be4a324d1f2256c817fa787f9a5373d47c7990f21c8eb0ee0956b2", "examples/themed.arch"],
   ["9691a3cc4ffbf7602ba945647cd2453376e39715c55dbd7f7a9934ef15186fc8", "examples/tiny-house.arch"],
-  ["6ef803e7ec1fd10252c5e475146cc97a34cad00194364583288aa7e30460262c", "examples/townhouse.arch"],
+  ["35011d7844c25d84a7f483dbc476a1659e10818e81d9387f3254566522dfe6b5", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["8b08d4eab25f660f4941774f779f8a8729d832e9e04594cc0b041617ee981dad", "examples/transit-hall.arch"],
-  ["aed50f11944ec7cfc945e9de1566ac39b02e0b6002fd8948711fc36f1a14ed5e", "examples/turning-stair.arch"],
+  ["068f58b436f3e6826049b4018102df60e8fb5cec84d883feb3efb69d46fa31d6", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["caf049e313e65045103b6010eebb5244380ddcb5c484b09f522ed1a6128a0331", "examples/two-bed.arch"],
-  ["04d01d271172998112b3db7b4ee779d71676ab481ec12108218e1814d493cae1", "examples/two-storey.arch"],
+  ["101de4f634184fffe58f1cdf0db8a69461e11eeb05031cbdf80451df75201d5b", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["9bf244567364f85ea64f1aa4bc8ee19e63c1edc34ed5fe340ed116a54a8c0c84", "inline:every-family-1:50"],
   ["120aa7ba79080410ded56455aeedc2c16945f0704f0603d74742de93e48e8766", "inline:every-family-unscaled"],
   ["f710bc7958bde0aa45a0543fc9759e169a0a42e2fc122da01cb3fcc8e5f0ad27", "inline:style-furniture"],
