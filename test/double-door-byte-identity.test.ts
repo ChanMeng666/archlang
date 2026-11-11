@@ -120,8 +120,9 @@ suite("`double` door kind — the byte-identity law", () => {
  * of that tree.
  *
  * The test rebuilds `main`'s source from the branch's file by undoing this PR's edits, each a
- * block of whole lines found exactly once, and holds the result to `main`'s own bytes (the
- * source's SHA-256) before it digests it, so an edit table that drifts cannot pass. Two plans
+ * block of whole lines found exactly once, and holds the result to the source SHA-256 recorded in
+ * its row (`main`'s bytes when the row was taken; a later comment-only edit moves it, as the studio
+ * row notes) before it digests it, so an edit table that drifts cannot pass. Two plans
  * need no edit: `examples/relational.arch` (its table inset is back to 300, the ruling on PR
  * #283; it lints clean, so `lint()` adds `[]` either way and this pin is its whole payload) and `test/fixtures/off-path-bypass.arch`, which gains a lint warning only.
  */
