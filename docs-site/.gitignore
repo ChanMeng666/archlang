@@ -16,6 +16,7 @@ import.md
 from-an-image.md
 edit-one-room.md
 common-mistakes.md
+says-no.md
 whats-new.md
 spec.md
 adr/0*.md
@@ -74,6 +75,7 @@ public/import.md
 public/from-an-image.md
 public/edit-one-room.md
 public/common-mistakes.md
+public/says-no.md
 public/whats-new.md
 public/spec.md
 

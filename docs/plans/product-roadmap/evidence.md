@@ -21,7 +21,7 @@ growth 路径缩写（与报告 B 一致）：
 
 频次是研究者对约 31 个外联线程（偏 X）的判断，主题有重叠；一个用户不是 traction。
 
-§A–§F 是 v1（2026-11-06）的对照，原样保留；v2（2026-11-10）新增的说法在 §G；2026-11-11 增补的第 8 轨"视觉质感"在 §H。
+§A–§F 是 v1（2026-11-06）的对照，原样保留；v2（2026-11-10）新增的说法在 §G；2026-11-11 增补的第 8 轨"视觉质感"在 §H；2026-11-11 执行与评审之后新增的卡在 §I。
 
 ---
 
@@ -223,7 +223,7 @@ README 退出条件（"每条诉求都能指向一张 `done` 卡、一条等待�
 
 ## §G v2 的证据对照（2026-11-10）
 
-v2 的说法出自六份只读报告（A 专业化包与影响力审计、B 竞品、C 需求与战略、D 仓库计划状态、E issue 与采用、F 红队，2026-11-10）。报告本体不进本仓库，将归档在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\`；本节只保留它们引用的一手出处。报告是二手的：下列 growth 路径 2026-11-10 逐条 `Test-Path` 核过，全部存在；本仓库路径、id 与 issue/PR 号逐条 grep 或 `gh` 查过。核对中发现的与报告或规格不符之处列在 §G.6。
+v2 的说法出自六份只读报告（A 专业化包与影响力审计、B 竞品、C 需求与战略、D 仓库计划状态、E issue 与采用、F 红队，2026-11-10）。报告本体不进本仓库，已归档在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\plan-refresh\`（`A-professionalisation-and-influence.md`、`B-competitors.md`、`C-demand-and-strategy.md`、`D-repo-plan-state.md`、`E-issues-and-adoption.md`；红队 `F-redteam-v2-draft.md` 与第二轮 `G-redteam-round2.md`；初稿 `README-v2-draft.md` 与修订规格 `README-v2-spec.md`）；本节只保留它们引用的一手出处。报告是二手的：下列 growth 路径 2026-11-10 逐条 `Test-Path` 核过，全部存在；本仓库路径、id 与 issue/PR 号逐条 grep 或 `gh` 查过。核对中发现的与报告或规格不符之处列在 §G.6。
 
 growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 
@@ -359,7 +359,7 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`）：
 
 ## §H 第 8 轨"视觉质感"的证据对照（2026-11-11）
 
-第 8 轨（`README.md` §1.1d、原则 13–14、§3 的 RM8.1…RM8.9、§4 第 1 行、§5 的四条视觉信号、§6.3）出自三份只读调查（V1 3D 竖线根因、V2 元素清单与新增规则、V3 视觉需求，2026-11-11）和主会话据此写的增补规格。三份调查与规格不进本仓库，将归档在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\`；本节只保留它们引用的一手出处。调查是二手的：下列本仓库路径、符号、测试名与 backlog id 2026-11-11 在 `main@4adceabc` 上逐条 grep 或读过；数字（家族数、生成器数、未露面的家族、spec 长度）用只读脚本从源码重算过；growth 路径逐条 `Test-Path` 核过，全部存在。与调查或规格不符之处列在 §H.5。
+第 8 轨（`README.md` §1.1d、原则 13–14、§3 的 RM8.1…RM8.9、§4 第 1 行、§5 的四条视觉信号、§6.3）出自三份只读调查（V1 3D 竖线根因、V2 元素清单与新增规则、V3 视觉需求，2026-11-11）和主会话据此写的增补规格。三份调查与规格不进本仓库，已归档在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\visual-track\`（`V1-3d-seams.md`、`V2-asset-inventory.md`、`V3-visual-demand.md`、`visual-track-spec.md`；修复前的图在 `img\`；#691 的两轮评审 `R1-review-pr691.md`、`R2-review-pr691.md` 与修复前后对照图 `after\` 也在这里）；本节只保留它们引用的一手出处。调查是二手的：下列本仓库路径、符号、测试名与 backlog id 2026-11-11 在 `main@4adceabc` 上逐条 grep 或读过；数字（家族数、生成器数、未露面的家族、spec 长度）用只读脚本从源码重算过；growth 路径逐条 `Test-Path` 核过，全部存在。与调查或规格不符之处列在 §H.5。
 
 growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`；§A 与 §G 的缩写照用）：
 
@@ -447,3 +447,23 @@ growth 路径缩写（相对 `D:\github_repository\archcanvas-growth`；§A 与 
 - 要求 `PREVIEW_LIMITS` 同句的不止包 README：还有回放 HTML、docs 站（含 `docs/plans/public-surfaces/3d.md` 的引文）、三个 README 与 playground 的 e2e 逐字副本；README 海报的 alt 文本也写着 "in flat colours"。RM8.8 全部列出。
 - 规格写"39 个示例"；`examples/**` 下今天有 40 个 `.arch` 文件。81 处假缝是 V1 对它导出的 39 份 Scene3D 的统计，本节未复算。
 - V2 引的 `material-vocabulary.test.ts` 在仓库根的 `test/`，不在 `packages/archlang-3d/test/`。
+
+---
+
+## §I 执行与评审之后新增的卡（2026-11-11）
+
+1.58.0 发布与第一批卡执行期间，五个 PR 各有一份新上下文评审，RM1.3a 的执行者另有一份报告。评审本体不进本仓库，已归档在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\`：`release-1.58.0\`（`H-review-pr689.md`、`I-review-pr692.md`、`J-review-pr693.md`、`K-review-pr694.md`、`L-review-pr695.md`）、`visual-track\`（`R1-review-pr691.md`、`R2-review-pr691.md`）、`rm1.3a\`（`fielddiff-now.txt`、`sweep-base\`、`sweep-after2\`、`check-quick-rm13a-4.log`）。下表的每一行在 2026-11-11 对 `main`（`6d1680e5`）、1.58.0 的 `dist/cli.js` 或 `archlang-3d` 0.5.0 复核过，复核方式写在右列。
+
+| 卡 | 出处 | 复核 |
+|---|---|---|
+| RM0.2b | #683；评审 J"卡片符合度"第 1 条（头注释没在 #693 里做）；分支 `origin/docs/rm0.2-studio-comment`（`e42184a9`） | `examples/studio.arch` 的门与洞口坐标；`arch lint examples/studio.arch` 无报，`--profile uk-residential-advisory` 一条 `W_ROOM_TOO_SMALL`；`test/double-door-byte-identity.test.ts` 的 studio 行；`docs-site/public/3d/manifest.json` 的 studio `source.sha256`；`playground/src/examples.ts` 的 studio 描述 |
+| RM1.3c | `docs/backlog.md` 6.11（"Open: whether (and how) the analysis should recognise a pair"）；RM1.3a 执行者的报告（2026-11-11，经主会话转达） | backlog 条目原文 |
+| RM1.3a 的状态行、RM1.3b 加的一条 | RM1.3a 执行者的报告；`rm1.3a\` 下的证据 | `git log origin/main..origin/fix/rm1.3a-reachability-blind-spots`（四个提交，头 `fef92a70`，基 `e68fd576`）；digest 表与 sweep 的数字未复算 |
+| RM1.4b | 评审 L 的 M6（"将来可补一条 `W_*`。不要在本 PR 做。"） | 写了 `theme Rendered` 的最小平面，`compile --json` 的 `diagnostics` 为 `[]` |
+| RM7.4 | 评审 L"逐项检查"第 1 条（`clinic` 的差异"与本 PR 无关"）与"未能检查" | `compile examples/clinic.arch -o -` 与 `examples/clinic.svg` 第 20 行起不同；`scripts/gen-example-svgs.ts` 的 `README_SVGS` 不含 `clinic`；`git grep "clinic.svg"` 无引用 |
+| RM8.1b | 评审 R2 的 SF2（"如果本轮不改，就开一张卡"）、m1（"也可以开卡"）、m2、m5；#691 正文 "Known limits, carded as follow-ups" | `packages/archlang-3d/test/wall-lines.test.ts` 与 `src/replay/mount.ts` 在 `main` 上 |
+| RM8.4 的状态行、RM8.4b | 评审 L 的 M3（"把剩余两条拆成新卡或明确挂在 RM8.4 下"） | `gh pr view 695`（01:29Z 开着、`DIRTY`；01:45Z 已合并，`6683c788`） |
+| RM8.10 | #691 期间的报告（主会话的任务卡转述；评审 R1、R2 与 #691 的正文、提交说明里都没有这条） | `archlang3d build --json`（0.5.0）对 `wall-lines.test.ts` 的夹具 "a T of two heights" 报 `W3D_MIXED_HEIGHT_JOINT`（22,500 mm²）；ADR 0030 决定 3、5；`packages/archlang-3d/src/walls/ownership.ts` 的 `mixedHeightJoints`；`test/h1-ownership.test.ts`（已发布示例无一触发） |
+| `cards.md` §0 的两条执行规则 | 评审 R1 的 B1（终帧与海报对、升墙中途透缝）；两个执行者在长等待中丢了任务卡（主会话 2026-11-11 的记录，归档在同一目录的 `session-state-2026-11-11.md` §5） | `git log` 中 #691 的提交说明（"Review R1 (B1)"） |
+
+评审里提到、但已有卡或 backlog 条目、所以没有另开卡的：评审 H 的 S2（3D 把 winder 平台建成平的，= backlog ST.3；包 CHANGELOG 0.5.0 已加一行说明）；评审 H 的 M9（`publish-arch-plan` 不测就发，= backlog O.19）；评审 K 的 should-fix 在 #694 里改了（`docs/agents/iron-laws.md` 写成 "once the owner has decided that release: no decision, no tag"）；评审 I 的 should-fix 2（事故条目暗示了原因）在 #692 里改了，should-fix 1 列的普通英语 "only"（例如各计划 handoff 顶部的 "are only in"）没有改：用词禁令针对的是对产品的宣称（"first/only" 式），不针对普通用法，所以不另开卡。

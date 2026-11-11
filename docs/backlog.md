@@ -649,6 +649,9 @@ the analysis should recognise a pair: shared jamb, same host, both hinged on the
 The deferred egress facts (M.16) would settle it as a side effect: a max-flow door capacity
 has to merge a pair (`isDoubleDoorPair`) before it can count one.
 
+**Carded 2026-11-11 as RM1.3c** (`docs/plans/product-roadmap/cards.md`, split out of RM1.3a): a
+design ruling on the open question comes before any code.
+
 - 6.12 · The swing-overlap sampler missed real overlaps — closed → archived (lab)
 
 ## Found in the robustness programme ([ADR 0022](adr/0022-exact-decisions-and-bounded-input.md))
@@ -927,6 +930,8 @@ and in each theme. The tool used for this redraw was never committed; `scripts/`
 equivalent. Consider promoting a `scripts/specimen` that takes two checkouts and writes one PNG
 sheet, kept outside `check:drift`.
 
+**Carded as RM8.5** (`docs/plans/product-roadmap/cards.md`, stage D, not started on 2026-11-11).
+
 ### D.9 · A wall-thickness call-out can sit on a stair, column, elevator or escalator — `todo`
 
 `thicknessStation` (`src/scene-build.ts`) keeps a thickness call-out (`dims auto walls` and
@@ -1200,6 +1205,10 @@ were checked against `main` when filed; the quoted commands and outputs are the 
 were not re-run when filing. Re-measure before building on one.
 
 ### U.1 · The balcony door is treated as a place a walk arrives from — `todo`
+
+**Under way in RM1.3a** (`docs/plans/product-roadmap/cards.md`): fixed on the branch
+`fix/rm1.3a-reachability-blind-spots` (head `fef92a70`, no PR on 2026-11-11), which still needs its
+digest pins re-measured with reasons and a review before it can merge.
 
 **Observed (audit finding 9).** On the audit's 65 m² plan, `circulation.rooms[r_live]` reports
 `entranceId: "d_balc"` and a 2.2 m walk from the street, measured from the balcony slab. The
@@ -1618,27 +1627,27 @@ users on ClawHub, then the entry is filed.
 
 `bean_bag` is built from stacked rounded tiers, so its silhouette steps. A smoother profiled section
 (`profile` in `src/mesh/t0.ts`) would read softer. **Gate:** `t0.test.ts` green; laneway pins unmoved.
+**Carded as RM8.6** (`docs/plans/product-roadmap/cards.md`, stage D, not started on 2026-11-11).
 
 ### VA.2 · Outdoor ground surfaces get no 3D finish — `todo`
 
 Lawn, paving and deck areas are not built in 3D, so a garden is bare ground in the replay and the GLB.
 **Gate:** a ledgered default per surface; pins move only with the reason recorded.
+**Carded as RM8.3** (`docs/plans/product-roadmap/cards.md`, stage B's visual lane, not started on 2026-11-11).
 
 ### VA.3 · A room with no `uses` keeps the neutral floor (decision: read the label?) — `decision`
 
 `floorFinish` reads `uses` only; the label is deliberately not read. Decide whether a label should
 ever pick a finish before building anything.
 
-### VA.4 · The CLI has no `--theme` flag — `todo`
-
-`rendered` is reached only by `theme rendered` in the source or `CompileOptions.theme`. A flag is a
-manifest row (`src/manifest.ts`) and regenerates `docs/cli-reference.md`. **Gate:** the default output
-byte-identical without the flag.
+- VA.4 · `--theme` on the CLI — done by #695 → archived (lab)
 
 ### VA.5 · Shadows in the replay (measure first) — `todo`
 
 Shadow maps cost +55% SwiftShader frame time when measured (V9) and were left out. Revisit only with
 a cheaper technique (baked contact shadows) and a frame-time budget.
+**Carded as RM8.8** (`docs/plans/product-roadmap/cards.md`, stage E; RM-D23 allows baked contact
+shadows, approved by the owner 2026-11-11).
 
 ## Playground residue (public-surfaces cards P2 and P3, 2026-11-06)
 

@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-491 test files in `test/`, 275 `src` modules, 105 modules no test imports.
+493 test files in `test/`, 275 `src` modules, 105 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -43,10 +43,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (71) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+63)
+- `src/cli/io.ts` (72) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+64)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (43) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+35)
+- `src/cli/run.ts` (44) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+36)
 - `src/cli/serialize.ts` (7) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -113,7 +113,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (29) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+21)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (367) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+359)
+- `src/index.ts` (369) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+361)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -182,7 +182,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (101) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+93)
+- `src/world.ts` (102) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+94)
 
 ## Test files
 
@@ -267,6 +267,7 @@ The first sentence of each file's header comment.
 - `test/cli-preview.test.ts` — CLI — preview (PNG you can look at).
 - `test/cli-storey-names.test.ts` — The two small CLI items of issue #405: `{level}` in `-o` and `--flag=value`.
 - `test/cli-structured.test.ts` — arch ast; arch compile --from-json; arch validate --graph; arch complete.
+- `test/cli-theme.test.ts` — **`--theme <name>` on the CLI** (RM8.4, backlog VA.4): the `rendered` theme (and every other named theme) reachable without writing `theme <name>` into the source.
 - `test/cli-validate-next.test.ts` — validate --json · next is purely additive; validate · next tiers through the CLI.
 - `test/cli.test.ts` — CLI — agent contract; CLI — compile file-writing side effects.
 - `test/closed-vocabularies.test.ts` — Every CLOSED value set in the language must be highlightable.
@@ -311,6 +312,7 @@ The first sentence of each file's header comment.
 - `test/docs-home-copy.test.ts` — The docs home page's copy contract (public-surfaces PS-D1, card D2).
 - `test/docs-level-svgs.test.ts` — The docs gallery's PER-STOREY file names must be the CLI's file names.
 - `test/docs-page-meta.test.ts` — The docs site's PER-PAGE METADATA gate.
+- `test/docs-says-no.test.ts` — `docs/says-no.md` shows the compiler's real answers to small wrong plans.
 - `test/docs-site-links.test.ts` — The site copies of the canonical docs (PAGES + docs/adr/*.md) must not carry repo-relative links: `../CHANGELOG.md` or `README.md` resolve on GitHub and 404 on archlang.uk (GSC "Not found", 2026-11-09).
 - `test/docs-sync-list.test.ts` — Docs-site sync gate — the two things about `docs-site/sync-docs.mjs` that no build step checks: what it deliberately leaves OUT, and what it writes that git must never hold.
 - `test/docs-table-pipes.test.ts` — The bare-`|`-inside-inline-code gate — the one Markdown fault that has actually taken the docs deploy down.

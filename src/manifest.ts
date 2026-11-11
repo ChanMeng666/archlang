@@ -17,6 +17,7 @@ import { PNG_PREVIEW_WIDTH } from "./backends/png-defaults.js";
 import { CONTEXT_BUNDLE_KB } from "./context-size.js";
 import { CONTEXT_LEVELS, STARTER_MAX_UNITS } from "./context-levels.js";
 import { KEYWORDS } from "./grammar/tokens.js";
+import { THEMES } from "./theme.js";
 
 // The command name lives in a leaf module so diagnostics can name it without importing this
 // file (which imports `lint.ts`); re-exported here for every existing importer.
@@ -385,6 +386,19 @@ const VIEW_FLAG: ManifestFlag = {
 };
 
 /**
+ * `--theme <name>`: a named colour theme as `CompileOptions.theme` (`resolveTheme`, `src/cli/io.ts`).
+ * The names are the keys of `THEMES`, read here, so a theme added there shows in `--help` with no
+ * edit. The option wins over the source's `theme` directive key by key (`planTheme`,
+ * `src/scene-build.ts`); a key the named theme does not set keeps the source's value.
+ */
+const THEME_FLAG: ManifestFlag = {
+  flag: "--theme",
+  arg: `<${Object.keys(THEMES).join("|")}>`,
+  description:
+    "draw with this named colour theme instead of the plan's own: it wins over the source's `theme` statement, `theme from`, `style` blocks and a single `furniture` colour (which `rendered` replaces with its material tints) for every key it sets, and a key it leaves unset (a `lineWeight`, a `font`) keeps the source's value; default: the plan's theme, else the built-in one. Refused (exit 3) with -f json, -f txt and -f dxf, which carry no theme colours",
+};
+
+/**
  * The render pipeline's flag set. `compile` and `watch` share it byte-for-byte
  * because `cmdWatch` re-enters `cmdCompile` on every save — it honors literally
  * everything compile does, so it must declare it (the parser rejects the rest).
@@ -401,6 +415,7 @@ const COMPILE_FLAGS: ManifestFlag[] = [
   COLS_FLAG,
   CHARSET_FLAG,
   OVERLAY_FLAG,
+  THEME_FLAG,
   ERROR_SVG_FLAG_COMPILE,
   ACCESSIBLE_FLAG,
   ACC_ID_PREFIX_FLAG,
@@ -459,6 +474,10 @@ const COMMANDS: ManifestCommand[] = [
         note: "render just the upper storey of a multi-storey plan to one file",
       },
       {
+        cmd: "archlang compile plan.arch --theme rendered -o plan.svg",
+        note: "draw with the `rendered` colour theme without writing `theme rendered` into the source; the flag wins over the source's own `theme` and `style` blocks",
+      },
+      {
         cmd: "archlang compile house.arch --view iso -o house-iso.svg",
         note: "an illustrative isometric of the whole building (every storey in ONE drawing, so no per-level fan-out)",
       },
@@ -482,6 +501,7 @@ const COMMANDS: ManifestCommand[] = [
       COLS_FLAG,
       CHARSET_FLAG,
       OVERLAY_FLAG,
+      THEME_FLAG,
       ERROR_SVG_FLAG,
       ACCESSIBLE_FLAG,
       ACC_ID_PREFIX_FLAG,
@@ -518,6 +538,7 @@ const COMMANDS: ManifestCommand[] = [
       WIDTH_FLAG,
       SCALE_FLAG,
       OVERLAY_FLAG,
+      THEME_FLAG,
       ERROR_SVG_FLAG,
       ACCESSIBLE_FLAG,
       ACC_ID_PREFIX_FLAG,
@@ -567,6 +588,7 @@ const COMMANDS: ManifestCommand[] = [
       COLS_FLAG,
       CHARSET_FLAG,
       OVERLAY_FLAG,
+      { ...THEME_FLAG, description: `${THEME_FLAG.description}; also with --ascii and --review` },
       ERROR_SVG_FLAG,
       { ...INSTALL_FLAG, description: "auto-install @resvg/resvg-js if missing, then render" },
       VIEW_FLAG,

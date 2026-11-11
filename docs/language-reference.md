@@ -3727,6 +3727,17 @@ plan "Flat" {
 }
 ```
 
+To draw a plan in one of these themes without editing it, pass the name on the command line:
+`archlang compile plan.arch --theme rendered -o plan.svg`. `compile`, `watch`, `batch`, `md` and
+`preview` take `--theme`, and the names are the ones in the table above. It is the same as
+`compile(source, { theme })` in the library, so it wins over everything the source says about a key the
+named theme sets: its `theme` statement, `theme from`, any `style` block, and a single `furniture`
+colour, which `--theme rendered` replaces with the material tints. A key the named theme leaves
+unset (the `lineWeight` or `font` of a source's own `theme`) keeps the source's value, so
+`theme presentation` with `--theme rendered` draws rendered colours in the presentation serif. An unknown name exits 3 with the list. It is
+refused with `-f json`, `-f txt` and `-f dxf`, which carry no theme colours, and `describe` and
+`lint` do not take it.
+
 ## Analysis: `describe` & `lint`
 
 ArchLang doesn't just draw a plan — it can **read it back as facts**. Two pure
