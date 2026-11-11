@@ -5,7 +5,8 @@
  * the global key `L<n>/<name>` IS the Mesh3D key), carrying the node's facts in
  * `extras.archlang`. Each node's shells are one triangle primitive in metres (the µm integers ÷ 10⁶,
  * float32), in glTF axes already (X plan x, Y up, Z plan y). One material per kind, a floor's per
- * finish and a window's frame and glass apart (`bodyMaterialName`, visual-assets V9); a T0 piece's
+ * finish and a window's frame and glass apart (`bodyMaterialName`, visual-assets V9), an outdoor
+ * surface's per kind and a fence's per style in the colour its node carries (card RM8.3); a T0 piece's
  * node keeps its one node and name but writes one primitive per material slot, material
  * `fixture:<slot>`; every colour from the palette the viewer reads too (`materials.ts`).
  *
@@ -26,9 +27,13 @@
  */
 import { Document, Logger, WebIO } from "@gltf-transform/core";
 import {
+  FENCE_PALETTE,
   FINISH_PALETTE,
   FLOOR_FINISHES,
   type FloorFinish,
+  GROUND_ROUGHNESS,
+  GROUND_SPLITS,
+  GROUND_TINT,
   KIND_PALETTE,
   type KindMaterial,
   linearRgb,
@@ -52,11 +57,27 @@ export function bodyMaterialName(n: MeshNode): string {
   if (n.kind === "floor") return `floor:${FLOOR_FINISHES.find((f) => f === n.extras.finish) ?? "neutral"}`;
   if (n.kind === "wall" && n.part === "demolish") return "wall:demolish";
   if (n.kind === "window" && (n.part === "glass" || n.part === "frame")) return `window:${n.part}`;
+  // The site (card RM8.3): a surface per kind, a fence per style, in the colour the node carries.
+  if (n.kind === "outdoor") return `outdoor:${String(n.extras.surface)}`;
+  if (n.kind === "fence") return `fence:${String(n.extras.style)}`;
   return n.kind;
 }
 
-/** The palette entry behind a {@link bodyMaterialName}. */
-function bodyMaterial(name: string): SlotMaterial {
+/**
+ * The palette entry behind a {@link bodyMaterialName}. An outdoor surface's or a fence's colour is
+ * its node's (`extras.colour`, `mesh/outdoor.ts`), its roughness its kind's or style's.
+ */
+function bodyMaterial(name: string, n: MeshNode): SlotMaterial {
+  if (n.kind === "outdoor" || n.kind === "fence") {
+    const own =
+      n.kind === "fence"
+        ? FENCE_PALETTE[String(n.extras.style) as keyof typeof FENCE_PALETTE]
+        : GROUND_SPLITS[String(n.extras.surface) as keyof typeof GROUND_SPLITS];
+    const tint = GROUND_TINT[String(n.extras.surface) as keyof typeof GROUND_TINT] ?? "paving";
+    const roughness = own?.roughness ?? (n.kind === "fence" ? FENCE_PALETTE.picket.roughness : GROUND_ROUGHNESS[tint]);
+    const srgb = typeof n.extras.colour === "string" ? n.extras.colour : KIND_PALETTE.furniture.srgb;
+    return { srgb, alpha: 1, metallic: 0, roughness };
+  }
   if (name.startsWith("floor:")) return FINISH_PALETTE[name.slice("floor:".length) as FloorFinish];
   return KIND_PALETTE[name as KindMaterial] ?? KIND_PALETTE.furniture;
 }
@@ -99,7 +120,7 @@ export async function writeGlb(mesh: Mesh3D, opts: { generator?: string } = {}):
     const key = bodyMaterialName(n);
     let m = materials.get(key);
     if (!m) {
-      const p = bodyMaterial(key);
+      const p = bodyMaterial(key, n);
       m = doc
         .createMaterial(key)
         .setBaseColorFactor([...linearRgb(p.srgb), p.alpha])

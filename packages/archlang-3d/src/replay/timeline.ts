@@ -3,8 +3,9 @@
  * draws itself in its authoring order, then rises:
  *
  *   0.00–0.40  top-down: each node's footprint appears, flat, in stage order
- *              brief (slab) → rooms (floors) → walls (columns, exterior walls, the rest) →
- *              openings (doors, windows) → fixtures (catalogued fixtures, then loose furniture);
+ *              brief (slab, then the site's surfaces) → rooms (floors) → walls (columns,
+ *              exterior walls, the rest, stairs, fences) → openings (doors, windows) → fixtures
+ *              (catalogued fixtures, then loose furniture);
  *              source order inside a group;
  *   0.40–0.55  the core's own drawing (its SVG) fades in over the footprints and holds;
  *   0.55–1.00  the drawing fades out as the camera tilts to a 45° elevation with a narrow-lens
@@ -139,6 +140,12 @@ function groupOf(n: MeshNode): number {
       return 3;
     case "furniture":
       return FIXTURE_FAMILIES.has(String(n.extras.category)) ? 0 : 1;
+    case "outdoor":
+      // The site's surfaces, after the slab (card RM8.3).
+      return 1;
+    case "fence":
+      // After the storey's walls and stairs; it rises across the storey's wall slot.
+      return 4;
   }
 }
 
@@ -146,7 +153,7 @@ function groupOf(n: MeshNode): number {
 export const isGhost = (n: Pick<MeshNode, "part">): boolean => n.part === "demolish";
 
 /** Nodes that are flat from the start and never rise (they are what the plan draws on). */
-const isFlat = (n: MeshNode): boolean => n.kind === "slab" || n.kind === "floor";
+const isFlat = (n: MeshNode): boolean => n.kind === "slab" || n.kind === "floor" || n.kind === "outdoor";
 
 /** The authoring order of the mesh's nodes: stage, sub-group, storey, source order, key. */
 export function authoringOrder(mesh: Mesh3D): MeshNode[] {
@@ -338,6 +345,13 @@ export interface ReplayState {
   settle: number;
   /** Opacity of the core's drawing over the scene. */
   svg: number;
+  /**
+   * The viewer's ground plane's opacity, 0…1 (card RM8.3, `GROUND_PLANE`): 0 until the core's drawing
+   * starts to fade (`PHASE.rise`), then it fades in as the drawing fades out (`1 − svg`), opaque from
+   * `PHASE.svgOut`. So the top-down phase draws the plan on the page as before, and no frame shows
+   * the ground appear at once where the drawing does not cover it (the letterbox bars; review R1, S1).
+   */
+  ground: number;
   nodes: Map<string, NodeState>;
 }
 
@@ -392,6 +406,7 @@ export function stateAt(events: readonly ReplayEvent[], t: number): ReplayState 
     stop,
     settle,
     svg,
+    ground: u >= PHASE.rise ? 1 - svg : 0,
     nodes,
   };
 }

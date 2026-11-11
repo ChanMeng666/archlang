@@ -13,6 +13,34 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Extended by RM8.3's review round 1 (2026-11-11, PR #701, S6): a site plan joins the set,
+`courtyard-house` at two frames only (`ONLY` in `../keyframes.e2e.ts`): `tilted` (`7aa10eed…`, the
+walls still rising) and `end` (`d17207c4…`). Its patio lies over the slab, where a top in the slab's
+plane once fought it in depth (review B1); it now stands a step above it. The two hashes are the ones
+CI's `check-3d` job printed for the PR's head `ecc5a5e8` (GitHub Actions run
+https://github.com/ChanMeng666/archlang/actions/runs/42965016062, job 130340145125, ubuntu x64),
+where the two missing frames were the only failure; they were not rendered locally. The same run
+rendered all 17 hashes of laneway-house and two-storey unchanged: the ground now fades in with the
+drawing (drawn as a translucent face until opaque), and from `PHASE.svgOut` on, which every pinned
+mid-rise and end frame is past, it draws the very pixels it drew before.
+
+Re-pinned by product-roadmap card RM8.3 (2026-11-11, PR #701, the site and the ground plane): the
+replay now stands the building on a ground plane the viewer draws round it (`GROUND_PLANE`,
+`src/materials.ts`; in no Mesh3D node and not in the GLB), its top at the lowest storey's floor
+level, shown from `PHASE.rise` (`ReplayState.ground`), while the core's drawing still covers the
+frame. Neither plan has an outdoor surface or a fence, so their Mesh3D nodes, GLBs and event tables
+are unchanged (laneway's Mesh3D pin moved by its ledger alone, `test/mesh.test.ts`); only the
+viewer moved. Exactly 7 frames moved, every text-free frame from the start of the rise on, in which
+the ground shows: laneway-house `tilted` (`4ee99c61…` → `7eb82778…`) and `end` (`6c71b020…` →
+`e2a98a0e…`); two-storey `stop:1` (`f413d540…` → `697d5887…`), `tilted` (`60be5619…` →
+`e64d4d9b…`), `storey:2` (`f12761a3…` → `f2fab198…`), `stop:2` (`1d01b28a…` → `9ec0b815…`) and
+`end` (`70a864cb…` → `5485e3d0…`). Every `stage:*` frame of both plans (the top-down phase, before
+the ground shows) keeps its hash. The 7 new hashes are the ones CI's `check-3d` job printed for the
+PR's head `f20e56b4` (GitHub Actions run
+https://github.com/ChanMeng666/archlang/actions/runs/42957831251, job 130317092237, ubuntu x64),
+where the key-frame comparison was the only failing test; they were not rendered locally. Every
+other hash and both `taken` entries are unchanged, as in card RM8.1's re-pin.
+
 Re-pinned by product-roadmap card RM8.1 (2026-11-11, PR #691, the walls' outlines): the walls and
 columns are no longer outlined node by node (three.js's `EdgesGeometry` on each prism), which drew
 a line wherever two pieces met on one flat surface; their outline is worked out across each storey

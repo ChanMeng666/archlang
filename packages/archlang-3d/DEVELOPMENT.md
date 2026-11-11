@@ -34,7 +34,9 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   and commercial in `t0-office.ts`, the shared part kit in `t0-kit.ts`: every catalogued family)
   and a grey box for a word outside the catalogue, stairs (`stair.ts`: each flight one stepped
   prism, each landing a box, from the Scene3D's `flights` and `landings`, which carry the core's
-  `treadCount`; built once per climb, on the storey it climbs from), a hidden flat roof; `earcut`
+  `treadCount`; built once per climb, on the storey it climbs from), a hidden flat roof, and the site (`outdoor.ts`:
+  each `outdoor` surface a 50 mm slab at its storey's floor level, coloured from the core's theme;
+  each `fence` its style's posts, rails and pickets; every default ledgered); `earcut`
   (ISC) for caps.
   A wall-hung family hangs at a ledgered mount (`T0_MOUNT_MM`; a television by its top,
   `T0_HUNG_FROM_TOP`); a piece taller than its storey's walls (a tree) is built at its default
@@ -45,7 +47,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
 - `src/materials.ts`: the material slots and the ONE palette the GLB writer and the viewer both
   read (a T0 piece stays one node; one primitive or mesh per slot), the building's kind colours
   (`KIND_PALETTE`) and the floor finishes (`FINISH_PALETTE`; a room's from its `uses`,
-  `floorFinish`, ledgered `floor-finish-default`).
+  `floorFinish`, ledgered `floor-finish-default`), the site's (`GROUND_TINT`, `GROUND_SPLITS`,
+  `FENCE_PALETTE`) and the viewer's ground plane (`GROUND_PLANE`: drawn by `mount.ts` only, never a node).
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure; several
   storeys rise exploded and settle to their real heights by the end),
   `payload.ts` (what a replay carries, browser-safe), `mount.ts` (browser: three.js 0.186.1,

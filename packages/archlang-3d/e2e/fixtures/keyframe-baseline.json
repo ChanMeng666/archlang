@@ -19,8 +19,8 @@
       "stage:walls": "fc9b26f9e629dc92cf56c062803b54415902f71f9ec431141abc4bbb7ea49688",
       "stage:openings": "a7ecb1876fbfd4250812195e9fadfc531742d881270bc9b9bb1a4faf9172edd2",
       "stage:fixtures": "11b9a693d586f55634a70bf75cf3d3bf19a56fe358bd980acf3bdefc32ebf29c",
-      "tilted": "4ee99c61070be45d8bdda9c27d8c48387a203bd4fbcb719f7487d067bc888ded",
-      "end": "6c71b0205a29692ce66758d66915489f2f508d8b1bf698e22e1754f7286d2bd9"
+      "tilted": "7eb827787b1c405c1270dc85deebfde8fab1bbc5ce7bfab9ecd6fda5a75946c8",
+      "end": "e2a98a0edc52e945dbca806c838bc17796cd8a44564a442767dd63e06a15eac8"
     },
     "two-storey.arch": {
       "stage:brief": "81f9acfd0706792f84121b5261bece104e63aa7d319a70295bbb12a2f74043eb",
@@ -28,11 +28,15 @@
       "stage:walls": "6322f00b3696d983543a37e523908347ed3c3012c1d6385e077a8035f64efb48",
       "stage:openings": "2ac49bb58e9fe6b73861cd6f882aa2806038c6b00abb04b6656d974b00010026",
       "stage:fixtures": "aed4a38ab8a270fd11eab1c293df07cce53ecf83f415a768cb32c36fbbf35b18",
-      "stop:1": "f413d54029ec499e3e129d4ef15c9a23ca57d7e9e80e534917d6b7caf8cdbf69",
-      "tilted": "60be5619c035eeba870a67393870fd81972ab2d950107da77ebc9d25de0d76e1",
-      "storey:2": "f12761a36aa22e48e70f01ae17a23b564f43f2b864b2fbad43fc9aacf783f51d",
-      "stop:2": "1d01b28a3325c9d808b5cf2db084904e73c0d5069fa055306dc1b0c31628c53a",
-      "end": "70a864cb59a9658b9508c89511cdfad110993c04e59e0e3fd48040a6fd2d661c"
+      "stop:1": "697d588709c667e7da67fe999fbb17ce20da9066e83802d979f2e90ab57bf29e",
+      "tilted": "e64d4d9b6ab9e48f896988b3153a5ed15655d2bf797097c95acbb2f50463c6d4",
+      "storey:2": "f2fab19802a65733341ecf758586ede602fe3895819373c7aa6a1440152f7bd7",
+      "stop:2": "9ec0b8151b3fcf734d72caf2d1fe0ccf2756cd3cde070d77184fc8e609a225f5",
+      "end": "5485e3d0f740485060d3b4467ff70cdf459ce13f967c316bdd3b1bfd3d4c7fc0"
+    },
+    "courtyard-house.arch": {
+      "tilted": "7aa10eed3f008ae61476cc498f6880d3782723a37d7fffa35000ac503a6a16fe",
+      "end": "d17207c4fa1e67523ab6669a6fd36dd52f507964da26619cf5bc3d07f813e8fb"
     }
   }
 }

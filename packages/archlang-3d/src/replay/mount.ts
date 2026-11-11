@@ -48,7 +48,15 @@ import {
   type Vec3,
   type ViewScene,
 } from "./camera.js";
-import { finishColour, KIND_PALETTE, PALETTE, slotColour, WALL_CAP_SRGB } from "../materials.js";
+import {
+  finishColour,
+  GROUND_PLANE,
+  KIND_PALETTE,
+  PALETTE,
+  siteColour,
+  slotColour,
+  WALL_CAP_SRGB,
+} from "../materials.js";
 import type { ReplayPayload } from "./payload.js";
 import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
@@ -324,7 +332,10 @@ export function mountReplay(
         // perspective.
         polygonOffset: true,
         polygonOffsetFactor: 1,
-        polygonOffsetUnits: flatLaid ? 4 : 1,
+        // A site surface (card RM8.3) lies in the plane of the slab's top and the ground's: pushed
+        // back further still, so the slab wins where a lawn runs under the building, and the ground
+        // (`GROUND_PLANE`) further than both.
+        polygonOffsetUnits: n.kind === "outdoor" ? 8 : flatLaid ? 4 : 1,
       });
       owned.push(geo, mat);
       const mesh = new Mesh(geo, mat);
@@ -351,6 +362,19 @@ export function mountReplay(
           add(attr, run, slotColour(slot, p.theme, furniture), alpha < 1, alpha, false);
         }
       }
+    } else if (n.colour) {
+      // An outdoor surface or a fence (card RM8.3) in the colour its node carries, the GLB's too. A
+      // fence is edgeless: outlined, a picket fence's dozens of pickets a metre read as one dark
+      // smudge at the preview's scale (rendered); its faces' shading tells its pieces apart.
+      add(
+        attr,
+        n.indices,
+        siteColour(n.colour, p.theme, THEMES.dark.colors.floor as string),
+        false,
+        1,
+        true,
+        n.kind !== "fence",
+      );
     } else if (n.finish) {
       // A floor in its finish (visual-assets V9): timber, tile or the neutral one.
       add(attr, n.indices, finishColour(n.finish, p.theme, THEMES.dark.colors.floor as string), false, 1, true);
@@ -422,6 +446,45 @@ export function mountReplay(
   const lo = new Vector3(...box.lo);
   const hi = new Vector3(...box.hi);
   const top = hi.y + 1000;
+
+  // The ground plane (card RM8.3, `GROUND_PLANE`): a backdrop the viewer draws, not an element of the
+  // building and not in the Mesh3D or the GLB. One upward quad at the lowest storey's floor level,
+  // reaching the margin past everything drawn; pushed back behind every face lying in its plane (the
+  // slab's top, a lawn's), edgeless. It fades in as the core's drawing fades out
+  // (`ReplayState.ground`): translucent while it does, so it is drawn with the translucent faces,
+  // first among them (`renderOrder`), and it blends to exactly its own colour once opaque.
+  let ground: Mesh | undefined;
+  let groundMat: MeshLambertMaterial | undefined;
+  if (p.ground) {
+    const y = p.ground.y / 1000;
+    const m = GROUND_PLANE.marginMm;
+    const [x0, z0, x1, z1] = [lo.x - m, lo.z - m, hi.x + m, hi.z + m];
+    const geo = new BufferGeometry();
+    geo.setAttribute(
+      "position",
+      new BufferAttribute(new Float32Array([x0, y, z0, x0, y, z1, x1, y, z1, x1, y, z0]), 3),
+    );
+    geo.setIndex([0, 1, 2, 0, 2, 3]);
+    const mat = new MeshLambertMaterial({
+      color: new Color(p.theme === "light" ? GROUND_PLANE.light : GROUND_PLANE.dark),
+      transparent: true,
+      opacity: 0,
+      depthWrite: true,
+      flatShading: true,
+      // Twice the slope term every other face takes, not only more units: seen at a slant a quad this
+      // size and a lawn in its plane rasterise to depths that differ by more than a few units, and a
+      // units-only margin let the ground win over whole lawns (rendered, card RM8.3).
+      polygonOffset: true,
+      polygonOffsetFactor: 2,
+      polygonOffsetUnits: 16,
+    });
+    owned.push(geo, mat);
+    ground = new Mesh(geo, mat);
+    groundMat = mat;
+    ground.renderOrder = -1;
+    ground.visible = false;
+    scene.add(ground);
+  }
   const ortho = new OrthographicCamera(-ow / 2, ow / 2, oh / 2, -oh / 2, 1, top + 100000);
   ortho.up.set(0, 0, -1);
   ortho.position.set(cx, top + 50000, cz);
@@ -562,6 +625,10 @@ export function mountReplay(
     drawn = true;
     if (strip && p.facts) paintStrip(strip, stripAt(p.facts, p.events, Math.min(1, Math.max(0, t))));
     const s = stateAt(p.events, t);
+    if (ground && groundMat) {
+      ground.visible = s.ground > 0;
+      groundMat.opacity = s.ground;
+    }
     for (const [key, { g, flat, base, lift }] of nodes) {
       const st = s.nodes.get(key);
       g.visible = st?.visible === true && (storeyOf.get(key) ?? 0) < shown;

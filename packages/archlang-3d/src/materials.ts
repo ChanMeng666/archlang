@@ -8,6 +8,7 @@
  * `body` is the untagged part: it carries no slot and keeps its kind's own colour, so a piece that
  * names no slot is drawn exactly as before. Browser-safe and pure: no clock, no random source.
  */
+import type { RFence, ROutdoor } from "@chanmeng666/archlang";
 import type { Shell } from "./mesh/types.js";
 
 /** The closed set of slots, in the order a node's primitives (GLB) and meshes (viewer) are written. */
@@ -143,6 +144,99 @@ export const FLOOR_FINISH_RULES: ReadonlyArray<readonly [FloorFinish, readonly s
 export function floorFinish(uses: readonly string[] | undefined): FloorFinish {
   for (const [finish, kinds] of FLOOR_FINISH_RULES) if (uses?.some((u) => kinds.includes(u))) return finish;
   return "neutral";
+}
+
+/**
+ * The core's ground tints (`Theme.lawn`, `Theme.paving`, `Theme.water`), one of which each `outdoor`
+ * kind is filled with in the drawing: the `tint` column of the core's `GROUND` table
+ * (`src/elements/outdoor.ts`), which the core does not export. Keyed by the core's own kind type, so
+ * a kind the core adds fails the typecheck here; `test/outdoor.test.ts` holds every row to the fill
+ * the core really draws (product-roadmap card RM8.3).
+ */
+export type GroundTint = "lawn" | "paving" | "water";
+export const GROUND_TINT: Readonly<Record<ROutdoor["surface"], GroundTint>> = {
+  lawn: "lawn",
+  planting: "lawn",
+  paving: "paving",
+  deck: "paving",
+  gravel: "paving",
+  water: "water",
+  driveway: "paving",
+  patio: "paving",
+  balcony: "paving",
+};
+
+/**
+ * A drawing tint is a pale wash laid under a hatch; a 3D surface has no hatch, so it carries its
+ * colour alone. Its 3D colour is the wash laid on this many times over the theme's paper (`bg`):
+ * each channel `bg − k·(bg − tint)`, clamped to 0…255 (`groundColour`, `mesh/outdoor.ts`). With the
+ * default theme: lawn #99b76f, paving #ab9f87, water #699fc3. A drafting default, ledgered per kind
+ * (`outdoor-colour-theme`).
+ */
+export const GROUND_WASH = 6;
+
+/**
+ * The site's own materials, which no fixture is made of: a light gravel and a tarmac drive. Apart
+ * from `PALETTE` on purpose: `PALETTE`'s keys are the material slots, which equal the core's
+ * `FIXTURE_MATERIALS` (`test/material-vocabulary.test.ts`), and a ground is no fixture's material.
+ */
+export const SITE_PALETTE = {
+  gravel: m("#cbc3b4", 0.95),
+  tarmac: m("#8c8984", 0.85),
+} as const satisfies Readonly<Record<string, SlotMaterial>>;
+
+/**
+ * The kinds the 3D preview tells apart where the drawing does it by hatch alone (one `paving` tint
+ * covers six kinds, one `lawn` tint two; with no hatch they would be one colour): a planted bed in the
+ * palette's foliage, a timber deck in its oak, gravel and a tarmac drive in their own greys. Every
+ * other kind keeps its theme colour; a patio is paving in the core's own words and a balcony a plain
+ * slab. Ledgered per kind (`outdoor-colour-3d`).
+ */
+export const GROUND_SPLITS: Readonly<Partial<Record<ROutdoor["surface"], SlotMaterial>>> = {
+  planting: PALETTE.foliage,
+  deck: PALETTE.wood,
+  gravel: SITE_PALETTE.gravel,
+  driveway: SITE_PALETTE.tarmac,
+};
+
+/** The GLB roughness of a ground surface in its theme colour, by tint (the viewer reads none). */
+export const GROUND_ROUGHNESS: Readonly<Record<GroundTint, number>> = { lawn: 0.95, paving: 0.85, water: 0.1 };
+
+/**
+ * A fence's colour by style (the core draws a fence in line ink only): white-painted pickets, a
+ * timber panel in the palette's oak, posts and rail in its walnut. Ledgered per style
+ * (`fence-colour-default`).
+ */
+export const FENCE_PALETTE: Readonly<Record<RFence["style"], SlotMaterial>> = {
+  picket: m("#eeebe4", 0.8),
+  panel: PALETTE.wood,
+  post: PALETTE.wood_dark,
+};
+
+/**
+ * The ground plane the replay draws round the building (card RM8.3): in the viewer only, never in
+ * the Mesh3D or the GLB, which hold only what the plan's elements build. Its top is the lowest
+ * storey's floor level (its slab's top), so a garden's surfaces lie flush in it; it reaches
+ * `marginMm` past everything drawn on every side. `light` and `dark` are its colours under the two
+ * replay themes. Ledgered in every Mesh3D (`ground-plane-viewer-only`) so a reader of the file
+ * knows the preview shows a ground the file does not contain.
+ */
+export const GROUND_PLANE = { light: "#e2ddd3", dark: "#16293d", marginMm: 6000 } as const;
+
+/**
+ * An `outdoor` or `fence` colour under a replay theme: its own on the light theme; on the dark one,
+ * 60% of the way to `toward` (the theme's floor colour), the arithmetic of `slotColour`.
+ */
+export function siteColour(own: string, theme: "light" | "dark", toward: string): string {
+  if (theme === "light") return own;
+  const mix = (i: number): string => {
+    const a = Number.parseInt(own.slice(i, i + 2), 16);
+    const b = Number.parseInt(toward.slice(i, i + 2), 16);
+    return Math.round(a * 0.4 + b * 0.6)
+      .toString(16)
+      .padStart(2, "0");
+  };
+  return `#${mix(1)}${mix(3)}${mix(5)}`;
 }
 
 /** sRGB `#rrggbb` → linear RGB, each channel rounded to 4 decimals (glTF base colours are linear). */

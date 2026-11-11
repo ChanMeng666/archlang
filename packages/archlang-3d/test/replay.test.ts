@@ -88,7 +88,9 @@ describe("replay timeline (D3)", () => {
           expect(e.appear, `${n} ${nd.key}`).toBeGreaterThanOrEqual(PHASE.rise);
         }
         const within = (a: number, b: number) => e.riseFrom >= a - 1e-9 && e.riseTo <= b + 1e-9;
-        if (nd.kind !== "slab" && nd.kind !== "floor")
+        // Flat from the start, laid out in phase 1: the slab, the floors and (card RM8.3) the site's
+        // outdoor surfaces.
+        if (nd.kind !== "slab" && nd.kind !== "floor" && nd.kind !== "outdoor")
           expect(within(PHASE.rise, PHASE.done), `${n} ${nd.key}`).toBe(true);
         if (storeysOf(mesh).length === 1) {
           if (nd.kind === "wall") expect(within(PHASE.rise, PHASE.wallsUp), `${n} ${nd.key}`).toBe(true);

@@ -32,7 +32,9 @@ export type NodeKind =
   | "opening"
   | "furniture"
   | "roof"
-  | "stair";
+  | "stair"
+  | "outdoor"
+  | "fence";
 
 export interface MeshNode {
   /** `L<level>/<kind>:<id>[:<part>]`, unique in the mesh (plan §3.6). */

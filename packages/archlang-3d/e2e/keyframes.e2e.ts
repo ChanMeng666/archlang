@@ -22,8 +22,16 @@ import { EXAMPLES_LIST, WORLD } from "../test/corpus.js";
 
 const FIXTURE = join(dirname(fileURLToPath(import.meta.url)), "fixtures", "keyframe-baseline.json");
 
-/** The plans and canvas pinned: one storey, and two storeys combined (its camera stops). */
-const PLANS = ["laneway-house.arch", "two-storey.arch"] as const;
+/**
+ * The plans and canvas pinned: one storey, two storeys combined (its camera stops), and a site plan
+ * (card RM8.3, review R1 S6: courtyard-house's patio lies over the slab, where a coplanar top once
+ * fought it in depth) at two frames only, `tilted` (mid-rise, the walls still rising) and `end`.
+ */
+const PLANS = ["laneway-house.arch", "two-storey.arch", "courtyard-house.arch"] as const;
+/** A plan pinned at some of its text-free key frames only; every other plan at all of them. */
+const ONLY: Readonly<Partial<Record<(typeof PLANS)[number], readonly string[]>>> = {
+  "courtyard-house.arch": ["tilted", "end"],
+};
 const SIZE = { width: 480, height: 270 };
 
 interface Env {
@@ -54,10 +62,12 @@ async function render(name: string) {
   });
   const v = await renderReplay({ html, events, ...SIZE });
   // Text-free key frames only: the drawing (the only text) is invisible at these times.
+  const only = ONLY[name as (typeof PLANS)[number]];
   const textFree = new Set(
     keyFrames(events)
       .filter((k) => stateAt(events, k.t).svg === 0)
-      .map((k) => k.label),
+      .map((k) => k.label)
+      .filter((label) => only === undefined || only.includes(label)),
   );
   return {
     browser: v.browser,
@@ -76,7 +86,9 @@ describe("key-frame pixel baseline (Q21)", () => {
       rendered[name] = r.frames;
       // Most key frames are text-free; "drawing" (the core's SVG at full opacity) never is.
       expect(Object.keys(r.frames), name).not.toContain("drawing");
-      expect(Object.keys(r.frames).length, name).toBeGreaterThanOrEqual(r.all - 1);
+      const only = ONLY[name];
+      if (only) expect(Object.keys(r.frames).sort(), name).toEqual([...only].sort());
+      else expect(Object.keys(r.frames).length, name).toBeGreaterThanOrEqual(r.all - 1);
     }
     const env: Env = { platform: process.platform, arch: process.arch, chromium: browser };
     if (process.env.UPDATE_KEYFRAMES === "1") {
