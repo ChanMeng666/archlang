@@ -5,7 +5,7 @@
  * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
  */
 
-import { defineEntries, e } from "./entry.js";
+import { defineEntries, e, w } from "./entry.js";
 
 export const FURNITURE_ENTRIES = defineEntries({
   E_FURN_SIZE: e(
@@ -85,5 +85,11 @@ export const FURNITURE_ENTRIES = defineEntries({
     "A catalogued piece with a non-square footprint has a back on a long side (a wardrobe is 1800 along x 600 deep). When the turn that faces the target would put the back on a short side, the `size` was written the wrong way round, and the symbol would be drawn stretched (ADR 0029 §3).",
     "Swap the `size` (the message gives it), so that the footprint's long side runs across the direction the piece faces.",
     "furniture id=b bed at (0,0) size 1500x2000\nfurniture tv_unit at (2500,800) size 1500x450 facing b   # error: write size 450x1500",
+  ),
+  W_UNKNOWN_FURNITURE: w(
+    "A furniture word is not a catalogued kind but is close to one.",
+    "An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is a catalogued kind in another case or, past four letters, one with a letter added or dropped (two, past six; a changed letter counts as two); a `label` marks a piece of your own.",
+    "Write the kind the message names, or add a `label`.",
+    'furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean "grand_piano"?',
   ),
 });

@@ -22,10 +22,11 @@ import type { FurnitureAuthored, ResolvedElement, RFurniture, RRoom, RWall } fro
 import { rectCorners, segmentsOfWall, unit, normal, add, mul, sub, length, type WallSegment } from "../geometry.js";
 import type { BBox } from "../geometry/rect.js";
 import { pointInPolygon } from "../geometry/polygon.js";
-import { fixtureGlyph } from "./fixtures-glyphs.js";
+import { FIXTURE_CATEGORIES, fixtureGlyph } from "./fixtures-glyphs.js";
+import { noteSnap } from "../ir/silent-accepts.js";
 import { mirrorGlyph } from "./glyph-chirality.js";
 import { mapSceneNode } from "./glyph-lib.js";
-import { defaultFootprint, fixtureSpec, orientationMatters } from "../fixtures-catalog.js";
+import { CATALOG_CATEGORIES, defaultFootprint, fixtureSpec, orientationMatters } from "../fixtures-catalog.js";
 import { chargeSteps } from "../expr.js";
 import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "../room-datums.js";
 import { rectilinear, rectInRing, runRect } from "../room-tiling.js";
@@ -82,6 +83,8 @@ function eatFlushOpt(ctx: ParseCtx): { flush?: true; flushSpan?: Span } {
 export const furniture: ElementDef = {
   kind: "furniture",
   keyword: "furniture",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A furniture item: an outlined rectangle with an optional label.",
   params: [
     { name: "category", type: "name", doc: "Furniture category, e.g. bed or sofa." },
@@ -174,10 +177,13 @@ export const furniture: ElementDef = {
     // footprint; resolve enforces that and errors otherwise.
     let size: FurnitureNode["size"];
     let sizeSpan: Span | undefined;
+    let sizeValueSpan: Span | undefined;
     if (ctx.isKeyword("size")) {
       ctx.next();
-      if (ctx.isType("dimension")) sizeSpan = { start: ctx.peek().start, end: ctx.peek().end };
+      const sizeStart = ctx.peek().start;
+      if (ctx.isType("dimension")) sizeSpan = { start: sizeStart, end: ctx.peek().end };
       size = ctx.parseDimensions();
+      sizeValueSpan = ctx.spanFrom(sizeStart);
     }
     const node: FurnitureNode = {
       kind: "furniture",
@@ -190,6 +196,7 @@ export const furniture: ElementDef = {
       ...(room ? { room } : {}),
       ...(size ? { size } : {}),
       ...(sizeSpan ? { sizeSpan } : {}),
+      ...(sizeValueSpan ? { sizeValueSpan } : {}),
       line: kw.line,
     };
     if (ctx.isKeyword("label")) {
@@ -264,8 +271,11 @@ export const furniture: ElementDef = {
     let dw: number;
     let dh: number;
     if (n.size) {
-      dw = ctx.snap(ctx.eval(n.size.w));
-      dh = ctx.snap(ctx.eval(n.size.h));
+      const ww = ctx.eval(n.size.w);
+      dw = ctx.snap(ww);
+      const wh = ctx.eval(n.size.h);
+      dh = ctx.snap(wh);
+      noteSnap(ctx, `Furniture "${id}"`, "size", [ww, wh], [dw, dh], n.sizeValueSpan ?? n.span);
     } else {
       const fp = n.against || n.againstEdge ? defaultFootprint(n.category) : null;
       if (!fp) {
@@ -440,6 +450,7 @@ export const furniture: ElementDef = {
     } else {
       at = ctx.snapPt(ctx.evalPt(n.at!));
     }
+    if (n.label === undefined) noteUnknownCategory(ctx, id, n.category, n.span);
     return {
       kind: "furniture",
       id,
@@ -1224,4 +1235,140 @@ export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
   // A rotation preserves orientation: every `sweep` (an arc prim's, a path's arc edges')
   // is unchanged, and only the POINTS move.
   return mapSceneNode(n, rp, false);
+}
+
+/** The furthest a misspelt furniture word may be from the kind it names, in added or dropped
+ *  characters: the most {@link nearEdits} ever allows, and what the index below is built for. */
+const NEAR_EDITS = 2;
+
+/** The longest word that is reported only as a kind in another case (`WC`), never as near one. */
+const TINY_WORD = 4;
+
+/** The longest word that may be only one added or dropped character from the kind it names. */
+const SHORT_WORD = 6;
+
+/**
+ * How far `word` may be from a kind and still be reported (RM1.4 review M2), relative to its
+ * length, counted in added or dropped characters ({@link indelDistance}, so a changed letter costs
+ * two): none for a word of {@link TINY_WORD} characters or fewer, one up to {@link SHORT_WORD},
+ * {@link NEAR_EDITS} for a longer one. A changed letter turns an ordinary short word into a kind
+ * (`rack`/`rock`, `ladder`/`larder`), and so does one added letter on a word of four (`cart`/`car`),
+ * which says nothing about a slip; one dropped or doubled letter on a longer word is one (`tables`,
+ * `bath_tub`, `grand_pianno`).
+ */
+const nearEdits = (word: string): number => (word.length <= TINY_WORD ? 0 : word.length <= SHORT_WORD ? 1 : NEAR_EDITS);
+
+/**
+ * Every word `furniture` knows (the drawn families and the catalogue, aliases included), and an
+ * index from each string reached by deleting at most {@link NEAR_EDITS} characters from one of them
+ * to the words it came from, in catalogue order. Two words within `NEAR_EDITS` edits always share
+ * such a string, so a lookup finds every candidate. Built once, on first use, from the catalogue
+ * alone (never at module load: the two tables are imported, and import order is not this
+ * module's to rely on); no source reaches it.
+ */
+interface KnownFurniture {
+  set: ReadonlySet<string>;
+  /** Each word's place in catalogue order, which breaks a tie between two equally near words. */
+  rank: ReadonlyMap<string, number>;
+  byDeletion: ReadonlyMap<string, readonly string[]>;
+  maxLen: number;
+}
+let knownFurniture: KnownFurniture | undefined;
+
+/** `w` and every string reached from it by deleting up to `n` characters, each once. */
+function deletions(w: string, n: number): Set<string> {
+  let level = new Set([w]);
+  const out = new Set([w]);
+  for (let k = 0; k < n; k++) {
+    const next = new Set<string>();
+    for (const s of level) for (let i = 0; i < s.length; i++) next.add(s.slice(0, i) + s.slice(i + 1));
+    for (const s of next) out.add(s);
+    level = next;
+  }
+  return out;
+}
+
+function known(): KnownFurniture {
+  if (!knownFurniture) {
+    const set = new Set([...FIXTURE_CATEGORIES, ...CATALOG_CATEGORIES]);
+    const byDeletion = new Map<string, string[]>();
+    let maxLen = 0;
+    for (const w of set) {
+      maxLen = Math.max(maxLen, w.length);
+      for (const d of deletions(w, NEAR_EDITS)) {
+        const at = byDeletion.get(d);
+        if (at) at.push(w);
+        else byDeletion.set(d, [w]);
+      }
+    }
+    knownFurniture = { set, rank: new Map([...set].map((w, i) => [w, i])), byDeletion, maxLen };
+  }
+  return knownFurniture;
+}
+
+/** Added or dropped characters between two short words: `a.length + b.length - 2 * LCS`, so a
+ *  changed letter counts two. */
+function indelDistance(a: string, b: string): number {
+  let row = new Array<number>(b.length + 1).fill(0);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [0];
+    for (let j = 1; j <= b.length; j++)
+      next[j] = a[i - 1] === b[j - 1] ? row[j - 1]! + 1 : Math.max(row[j]!, next[j - 1]!);
+    row = next;
+  }
+  return a.length + b.length - 2 * row[b.length]!;
+}
+
+/**
+ * The catalogued word nearest `word` within {@link nearEdits} added or dropped characters (the
+ * first in catalogue order on a tie), or null. A word allowed none, or longer than the longest
+ * catalogued one by more than it is allowed, is near none and is not searched. Otherwise the search is charged to the step
+ * meter BEFORE it runs, at the number of deletion strings it may look up (at most 1 + L, or
+ * 1 + L + L(L-1)/2, for a word of L characters), which bounds the lookups and the distances that
+ * follow.
+ */
+function nearestFurniture(word: string): string | null {
+  const k = known();
+  const limit = nearEdits(word);
+  if (limit === 0 || word.length > k.maxLen + limit) return null;
+  const n = word.length;
+  chargeSteps(limit === 1 ? 1 + n : 1 + n + (n * (n - 1)) / 2);
+  let best: string | null = null;
+  let bestD = limit + 1;
+  const seen = new Set<string>();
+  for (const d of deletions(word, limit))
+    for (const w of k.byDeletion.get(d) ?? []) {
+      if (seen.has(w)) continue;
+      seen.add(w);
+      const dist = indelDistance(word, w);
+      if (dist < bestD || (dist === bestD && best !== null && k.rank.get(w)! < k.rank.get(best)!)) {
+        best = w;
+        bestD = dist;
+      }
+    }
+  return bestD <= limit ? best : null;
+}
+
+/**
+ * `W_UNKNOWN_FURNITURE` (RM1.4, backlog U.3): an unlabelled piece whose word is no catalogued
+ * kind but is one in another case or within {@link nearEdits} edits of one (`WC`,
+ * `grand_pianno`). Furniture is open on purpose, so an unknown word stays legal and still draws
+ * its rectangle; this only says so when the word looks like a slip. A piece with a `label` is a
+ * custom one by intent and is never reported.
+ */
+function noteUnknownCategory(ctx: ResolveCtx, id: string, category: string, span: Span | undefined): void {
+  const { set } = known();
+  if (set.has(category)) return;
+  const lower = category.toLowerCase();
+  const near = set.has(lower) ? lower : nearestFurniture(category);
+  if (near === null) return;
+  ctx.diag({
+    severity: "warning",
+    code: "W_UNKNOWN_FURNITURE",
+    message: `Furniture "${id}" is a "${category}", which is not a catalogued kind, so it draws as a blank rectangle — did you mean "${near}"?`,
+    hints: [
+      `Write \`furniture ${near} …\` for the catalogued symbol, or add a \`label\` if "${category}" is a piece of your own.`,
+    ],
+    ...(span ? { span } : {}),
+  });
 }

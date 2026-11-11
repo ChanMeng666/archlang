@@ -63,6 +63,12 @@ export const DRAFTING_ENTRIES = defineEntries({
     "Use a known theme key (see the language reference / hover).",
     'theme { nope: "#000" }   # warning',
   ),
+  W_UNKNOWN_THEME: w(
+    "Unknown theme name; the plan is drawn in the default theme.",
+    "`theme <name>` names no built-in theme and none the compile registers, so it selects nothing; names match exactly (`theme Rendered` is not `rendered`). Raised by `compile()` and the CLI's `validate` and `lint`, not by the library's `describe()`/`lint()`.",
+    "Write a known theme name, or register the theme in the compile options.",
+    'theme Rendered   # warning: did you mean "rendered"?',
+  ),
   W_ROOM_LABEL_OUTSIDE: w(
     "A room's explicit label anchor falls outside the room.",
     '`label "…" at (x,y)` pins the label and area text at a point that is not inside the room\'s floor, so the text will be drawn over whatever is there instead.',

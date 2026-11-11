@@ -15,6 +15,8 @@ import { rectCorners } from "../geometry.js";
 export const column: ElementDef = {
   kind: "column",
   keyword: "column",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A structural column: a small filled rectangle.",
   params: [
     // TOP-LEFT, not centre: `resolve`/`bounds`/`render` all lay the column out with

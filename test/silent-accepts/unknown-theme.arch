@@ -1,0 +1,6 @@
+# W_UNKNOWN_THEME (RM1.4b, review L's M6): a built-in theme name in the wrong case selects nothing.
+plan "Theme word" {
+  units mm
+  theme Rendered
+  room id=main at (0,0) size 4000x3000 label "Living"
+}

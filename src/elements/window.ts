@@ -328,6 +328,8 @@ function settleCorner(w: RWindow, own: readonly ResolvedElement[], diag: (d: Dia
 export const windowEl: ElementDef = {
   kind: "window",
   keyword: "window",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A window: a glazed opening in its host wall.",
   params: [
     { name: "at", type: "point", doc: "Center position (x, y) in mm." },

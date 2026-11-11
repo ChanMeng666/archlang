@@ -603,7 +603,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
     (
       [
         ["50bfe2d1d4955f0399834c0e436ef5f6308a109552a22a7df3aea13f93cdfdd9", "accessible"], // PS2.9 source edit, see above
-        ["b03a75dc0995ea9a8b6a14b481c67bbd17924ef2ca32e28a1719d2048abb42e2", "aquarium"], // PS2.4 source edit, see above; PS2.10 source edit (byte-identity-baseline.ts); PS2.11e source edit, see above
+        ["a27edda3841828db7983acb43d0ee8ead233008eb2934f908c8a8a092556aa51", "aquarium"], // PS2.4 source edit, see above; PS2.10 source edit (byte-identity-baseline.ts); PS2.11e source edit, see above; RM1.4 source edit (snapped values written as drawn), `finish` echoes the source: the old source still gives the old digest (was b03a75dc)
         ["8894023b744a155aad52d1ca28b7836ad1c9d63d1665e82f6b835c8d8e480f3b", "attached"],
         ["30ec95a6cc6e6689e90c12b19353d4f019e5f89e85c773511bf44a0341824d78", "bungalow"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["f12245a9fa1c1f60c7327ff1bcd2717db121f42e38bd333d8a6dec47f3389abe", "classroom-block"], // first measurement, added with the example; PS2.11e source edit, see above
@@ -611,14 +611,14 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["35c8741f367876f8ad1f7c2111485959f1151cb54da5c015d8bcdc9aea130682", "corner-cafe"], // first measurement with the example; PS2.9 source edit; PS2.17 source edit (a worktop), see above
         ["18fff217420fb03b50b94cbc85bcc6f5d386c74ec21318a98095a080fe04dfc4", "courtyard-house"], // PS2.4 source edit, see above; PS2.11e source edit, see above
         ["45ee887cf4b527976f42af04bbc8deafaa17070747b37acd6bf1d02efef0e79f", "furnished-flat"], // PS2.11e source edit, see above
-        ["62ef4254bd247c67c3bb03919d4c60ff01e5f42f68e7bbe4b63052831b23c228", "gallery-l"], // PS2.10, PS2.11e source edits; the fit-out comment corrected, same length: the old comment gives 4fbdbd13, the row before it
+        ["f66376fd7e87d89a5a3b26746fdd8f48c9e606918fcf5872cc41494e74ac3b1d", "gallery-l"], // PS2.10, PS2.11e source edits; the fit-out comment corrected, same length: the old comment gives 4fbdbd13, the row before it; RM1.4 source edit (snapped values written as drawn), `finish` echoes the source: the old source still gives the old digest (was 62ef4254)
         // Re-measured 2026-10-18 (plan-soundness PS2.6): the example's SOURCE changed, one door
         // re-hosted (`d_gar` onto the kitchen, +3 bytes), and `source` is part of this digest. The
         // pre-edit source still gives the previous row; see ./byte-identity-baseline.ts.
-        ["d0e7d7265c8912215734e7b406fc02490eea5739aba9a60c3edcf130126866bf", "garden-house"], // PS2.17 source edit (a worktop), see above
+        ["732aae32dd5380436d51a074998f5d1110505930423baa4198cb703b34b33631", "garden-house"], // PS2.17 source edit (a worktop), see above; RM1.4 source edit (snapped values written as drawn), `finish` echoes the source: the old source still gives the old digest (was d0e7d726)
         ["2e7ccbfcc9e7f2b3a7fae8d5bd7b28c964f6ffba39f523986ea0d8820a19ae4f", "garden-loft"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["57d4237846d3b666c6806da6ee2bf4cadeb68a2e1d39723c6a024e5b415d5faf", "hexagon-pavilion"],
-        ["79df29d09e0b76ead92a5d5359d2dfb787af5934617aea947e86289e57843553", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above; PS2.11e source edit, see above
+        ["50626c34e236c7513acce00b50eb62ac96608c45300c4b400a365b6b27d4ed36", "hillside-villa"], // PS2.1–PS2.3 and PS2.9 source edits, see above; PS2.11e source edit, see above; RM1.4 source edit (snapped values written as drawn), `finish` echoes the source: the old source still gives the old digest (was 79df29d0)
         ["b43cd18d46e8f1da0e7f97821f75841ec1a252a1c9b99c04f68999821d429a70", "imports"],
         ["86801700bbd9d51ddf1a9611a8c8dfd98a0967bbbcb7045cc2f901fe1c190c6f", "knob-flat"], // first measurement, added with the example (P4)
         ["878f41b12441462bba678bd4dcd3716a2246f174fa58b731bab125b9e44d6189", "laneway-house"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
@@ -640,7 +640,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["f65d780ba8d63321f1a00dfac34b070e2cf6f6ec912c14eda5a4396549966362", "townhouse"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["d444146fdb6b48864dd0523c1013599e72ff7108a16d1e154ecc79dd0e0137e1", "transit-hall"], // PS2.11e source edit, see above
         ["04ad638fbbf260c847bdfae5738006e076f8d4b79f70e4a36357db7ac640ed17", "turning-stair"], // first measurement, added with the example (S2); furnished storey by storey (#364), see above
-        ["16b598f449b4051c4113c1ad9ec92cc0b603cffa0772d51c9d78e6e59490a1e7", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above
+        ["707f5a253046585e84422053e5ab8ea4f1deefef42bf322e7eb1141db8f074ae", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above; RM1.4 source edit (snapped values written as drawn), `finish` echoes the source: the old source still gives the old digest (was 16b598f4)
         ["508fcd552120d23495ad6ed995f93dfa83a94e6a6e90782d36b87ff2b4926e26", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
       ] as const
     ).map(([digest, example]) => [example, digest]),

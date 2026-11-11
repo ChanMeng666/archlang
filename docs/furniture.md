@@ -474,7 +474,10 @@ Writing `furniture bed … label "Bed"` is harmless but inert: the word stays in
 and in `archlang describe --json`, and no text appears in the SVG. The fallback is the escape
 hatch, and it is deliberate: an uncatalogued word (`furniture hammock at … label "Hammock"`)
 still draws a rectangle with its name in it, which is how you annotate something ArchLang
-has no symbol for.
+has no symbol for. In short, a symbol does not draw its `label`: the label is data, carried in
+`describe()` as `furniture[].label`, for a schedule or any other reader to list. An unlabelled
+word that is close to a catalogued kind (`furniture grand_pianno`) raises `W_UNKNOWN_FURNITURE`,
+which names the kind it is near; a `label` marks the piece as your own and keeps it quiet.
 
 **A `rug` is an UNDERLAY, and it is the only kind that is.** An underlay lies flat on the
 floor: furniture stands on it and people walk over it. The drawing honours that in two ways,

@@ -65,7 +65,7 @@ plan "Two-Bedroom Flat" {
   # Bathroom fixtures (along the south end, clear of the door swing)
   furniture shower in r_bath anchor bottom-left  flush size 900x900 label "Shower"
   furniture wc     in r_bath anchor bottom-right flush size 400x700 label "WC"
-  furniture basin  in r_bath anchor left         flush size 450x500 label "Basin"
+  furniture basin  in r_bath anchor left         flush size 500x500 label "Basin"
   furniture sofa in r_living anchor right flush size 900x2000 rotate 90
   furniture coffee_table in r_living anchor right flush inset 1300 size 600x1000 rotate 90
   furniture bed in r_bed1 anchor bottom-left flush size 1500x2000 rotate 180

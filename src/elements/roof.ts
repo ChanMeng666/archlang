@@ -207,6 +207,8 @@ function selectRing(n: RoofNode, id: string, ctx: ResolveCtx): RWall | null {
 export const roof: ElementDef = {
   kind: "roof",
   keyword: "roof",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A roof/eaves projection line: one dashed outline of what oversails the plan.",
   params: [
     {

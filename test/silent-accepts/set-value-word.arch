@@ -1,0 +1,10 @@
+# W_SET_VALUE_WORD (RM1.4, plan-soundness PS0.16): bare words a `set` rule takes as text and never reads.
+plan "Set words" {
+  units mm
+  let W = 900
+  set door(width: W)
+  set door(swing: inward)
+  wall id=shell exterior thickness 200 { (0,0) (4000,0) (4000,3000) (0,3000) close }
+  room id=main at (0,0) size 4000x3000 label "Living"
+  door id=d at (2000,0) width 900 wall shell
+}

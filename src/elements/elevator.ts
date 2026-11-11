@@ -18,6 +18,8 @@ import { elevatorGlyph } from "./vertical-glyphs.js";
 export const elevator: ElementDef = {
   kind: "elevator",
   keyword: "elevator",
+  // `set` applies no bare word to this kind: its resolver reads nothing from `ctx.defaults`.
+  setWords: {},
   doc: "A lift shaft: the car rectangle with crossed diagonals.",
   params: [
     { name: "at", type: "point", doc: "Top-left corner (x, y) of the shaft, in mm." },

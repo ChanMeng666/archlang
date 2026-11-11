@@ -140,7 +140,7 @@ const BASELINE: [string, string][] = [
   ["fba3413f6775161d75a13c20ce352e9db7617cc7c2862c9828dea25b83b0f42a", "test/fixtures/lock-before.arch"],
   ["cb9b414d1452e9c9e6e5091818f7806ae8f249812f91779431a12607c57477ef", "test/fixtures/lock-partition-moved.arch"],
   ["911b2c771e68c9931bab3f95995873a2027f757705140f4bbcd53e4a3fb9df76", "test/fixtures/lock-window-moved.arch"],
-  ["947c91d438bd4507e84c02e9f1a15cd7417b32717d867d41261599049befdfa9", "test/fixtures/off-path-bypass.arch"],
+  ["ffa5f189efd9d7fbaa321a32a24e7942a74be753b443a73bd78b8ea382cbbfe5", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was 947c91d4)
   ["f6031de45dc54fe15b0c22019de5123543e6aade443518347c48d3373892c9bd", "test/fixtures/schedule-sheet.arch"],
   ["2f0c4e2b63425468b46263ab7a6581dfd15bd12fadc36db828f97f6fc079a17c", "test/fixtures/star30.arch"], // #367, see test/byte-identity-baseline.ts
   ["1ab0909608bf304fbe4c3886359fc7f30564a64916b52be2d98b972d76f65276", "test/fixtures/storeys-eaves-overflow.arch"], // H10: +12 ring scan, +0 overlap; RM1.3a, see ./byte-identity-baseline.ts
@@ -150,14 +150,14 @@ const BASELINE: [string, string][] = [
   ["3795021918eab02d38979618173a348100b1b7e0265d3a0308c8ee12dc4fb8dd", "test/fixtures/zones-wings.arch"],
   ["952eaf929d8902442dd0949e6eb4e47e96bd422839f97839d627ced86b92bfab", "test/walls-from-rooms/relational.arch"],
   ["45b54b55b05cb37250a074822e9a8663cbdb30943f9986042e2d9ff73de1e5fe", "test/walls-from-rooms/studio.arch"],
-  ["c37b6759709f6e4cbd71701005e6dd5808c5b24ad4b26e150b6fad32cb70d707", "test/walls-from-rooms/two-bed.arch"], // H10: +6 ring scan, +0 overlap
+  ["23caf64c7d304dae6be7a79b4cc5c9c760ca60d2c86558eb4978965013332519", "test/walls-from-rooms/two-bed.arch"], // H10: +6 ring scan, +0 overlap; RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was c37b6759)
   [
     "e34ebf0bb5db581599908cb00a756d35ca6123585b36cc7bb31cebf1dbe5a6d7",
     "test/walls-from-rooms/widen-after-authored.arch",
   ],
   ["926ffff72612a4181cca6a69c423dd217536149ecb546237451555a9a420ca2b", "test/walls-from-rooms/widen.arch"],
   ["45b54b55b05cb37250a074822e9a8663cbdb30943f9986042e2d9ff73de1e5fe", "plans:studio-twin"],
-  ["c37b6759709f6e4cbd71701005e6dd5808c5b24ad4b26e150b6fad32cb70d707", "plans:two-bed-twin"], // H10: +6 ring scan, +0 overlap
+  ["23caf64c7d304dae6be7a79b4cc5c9c760ca60d2c86558eb4978965013332519", "plans:two-bed-twin"], // H10: +6 ring scan, +0 overlap; RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED; steps 629 -> 757, +128 = two DIAGNOSTIC_STEPS) (was c37b6759)
   ["926ffff72612a4181cca6a69c423dd217536149ecb546237451555a9a420ca2b", "plans:widen-4000"],
   ["c2df8198835d6360cb2895b79d725c4f0516c5f3e118b3d239e9d489132d51cd", "plans:widen-4500"],
   ["4c78ce0c73bc8f9f1cef4703c25c6ad5a1164b13f51abaf6ad1a5a46f026e53e", "plans:courtyard"], // H10: +6 ring scan, +0 overlap

@@ -77,6 +77,13 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
   W_REASSIGN_DEPRECATED: "brief",
   // The plan's own `axes`, which belong to the brief.
   W_AXES_DIFFER: "brief",
+  // What the plan writes and the language reads otherwise (RM1.4): a length in metres, a bare word
+  // a `set` rule takes as text. The plan's units and its rules are the brief's.
+  W_LENGTH_IN_METRES: "brief",
+  W_SET_VALUE_WORD: "brief",
+  // A written size or door position the brief's `grid` moved: reported from the first element it
+  // can move, a room's `size` (a door's position can only appear later, at `openings`).
+  W_GRID_SNAPPED: "rooms",
   // The diagnostic cap (EH-D8) is about the whole report, not an element: a budget, staged as the
   // budget errors are (`E_STEP_LIMIT` falls to `brief`), so it is shown at every stage and a
   // `--stage` view can never hide that the list was cut short.
@@ -88,6 +95,8 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
   W_WINDOW_OFF_WALL: "openings",
   W_OPENING_OFF_WALL: "openings",
   W_SWING_ROOM_NOT_ADJACENT: "openings",
+  // A furniture word that is close to a catalogued kind (RM1.4, U.3).
+  W_UNKNOWN_FURNITURE: "fixtures",
   // The sheet: style, fonts, labels, dimensions, scale, accessibility metadata.
   W_CJK_FONT_MISSING: "drafting",
   W_GLYPH_UNSUPPORTED: "drafting",
@@ -97,6 +106,7 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
   W_UNKNOWN_MATERIAL: "drafting",
   W_UNKNOWN_STYLE_KEY: "drafting",
   W_UNKNOWN_THEME_KEY: "drafting",
+  W_UNKNOWN_THEME: "drafting",
   W_ROOM_LABEL_OUTSIDE: "drafting",
   W_DIM_NO_WALL: "drafting",
   W_SCALE_OVERFLOW: "drafting",

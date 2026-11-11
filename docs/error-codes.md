@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**161 errors** · **95 warnings**
+**161 errors** · **100 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -213,6 +213,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_GARAGE_OPENING_UNDERSIZED`](#w_garage_opening_undersized) | warning | A garage's vehicle door is too narrow to drive a car through. |
 | [`W_GARAGE_TOO_NARROW`](#w_garage_too_narrow) | warning | A garage is too narrow, or too shallow, to park in. |
 | [`W_GLYPH_UNSUPPORTED`](#w_glyph_unsupported) | warning | PDF/PNG text has characters no embedded font can draw. |
+| [`W_GRID_SNAPPED`](#w_grid_snapped) | warning | `grid` moved a written size or door position. |
 | [`W_HABITABLE_NO_WINDOW`](#w_habitable_no_window) | warning | A living room, dining room or kitchen has no window. |
 | [`W_HATCH_SCALE`](#w_hatch_scale) | warning | Hatch scale must be positive; using 1. |
 | [`W_HOB_FRIDGE_GAP`](#w_hob_fridge_gap) | warning | A fridge or other tall unit stands too close beside a hob. |
@@ -222,6 +223,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_KEEP_VIOLATED`](#w_keep_violated) | warning | A hard keep does not hold. |
 | [`W_LEAF_ACROSS_DOORWAY`](#w_leaf_across_doorway) | warning | A door's open leaf parks across another doorway's approach. |
 | [`W_LEAF_TOO_WIDE`](#w_leaf_too_wide) | warning | A swinging door leaf is wider than a door is made. |
+| [`W_LENGTH_IN_METRES`](#w_length_in_metres) | warning | A length reads as metres where millimetres are the unit. |
 | [`W_NO_ENTRANCE`](#w_no_entrance) | warning | The plan has no exterior door. |
 | [`W_OPENING_AT_JUNCTION`](#w_opening_at_junction) | warning | An opening runs into a wall junction, or leaves too short a nib of wall beside a jamb. |
 | [`W_OPENING_NOT_DIMENSIONED`](#w_opening_not_dimensioned) | warning | An opening on the outside of the building is on no `dims auto all` chain. |
@@ -247,6 +249,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SANITIZED_CONFIG`](#w_sanitized_config) | warning | A disallowed config value was stripped. |
 | [`W_SCALE_OVERFLOW`](#w_scale_overflow) | warning | The drawing does not fit the declared paper at the declared scale. |
 | [`W_SEAT_FACING_AWAY`](#w_seat_facing_away) | warning | A chair at a table faces away from it. |
+| [`W_SET_VALUE_WORD`](#w_set_value_word) | warning | A bare word in `set <kind>(…)` was taken as text and does nothing. |
 | [`W_SHAFT_FOOTPRINT_MISMATCH`](#w_shaft_footprint_mismatch) | warning | A shaft's runs on two neighbouring storeys do not stand over each other. |
 | [`W_STAIR_HEAD_VOID`](#w_stair_head_void) | warning | A void opens on the landing at the head of a flight. |
 | [`W_STAIR_NO_LANDING`](#w_stair_no_landing) | warning | A flight has no landing at its foot or head, or a landing between two flights is too short. |
@@ -257,8 +260,10 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SWING_OVER_STAIR`](#w_swing_over_stair) | warning | A door's swing sweeps a stair or the landing at its end. |
 | [`W_SWING_ROOM_NOT_ADJACENT`](#w_swing_room_not_adjacent) | warning | `swing into <room>` names a room the door does not border. |
 | [`W_TITLE_OVERFLOW`](#w_title_overflow) | warning | A title-block value, or a `sheet text` caption with its value, is wider than its row. |
+| [`W_UNKNOWN_FURNITURE`](#w_unknown_furniture) | warning | A furniture word is not a catalogued kind but is close to one. |
 | [`W_UNKNOWN_MATERIAL`](#w_unknown_material) | warning | Unknown wall material or room floor; the wall takes the default hatch, the room none. |
 | [`W_UNKNOWN_STYLE_KEY`](#w_unknown_style_key) | warning | Unknown style key. |
+| [`W_UNKNOWN_THEME`](#w_unknown_theme) | warning | Unknown theme name; the plan is drawn in the default theme. |
 | [`W_UNKNOWN_THEME_KEY`](#w_unknown_theme_key) | warning | Unknown theme key. |
 | [`W_WALL_END_SHORT`](#w_wall_end_short) | warning | A wall stops a few millimetres short of the wall it runs toward. |
 | [`W_WC_SIDE_CLEARANCE`](#w_wc_side_clearance) | warning | A WC's centreline is too close to a wall or fixture at its side. |
@@ -2891,6 +2896,19 @@ furniture car at (300,300) size 1800x4600 in g   # lint: 2500 mm across, one bay
 room at (0,0) size 4000x3000 label "ห้องครัว"   # -f pdf / -f png warns: Thai has no embedded glyphs
 ```
 
+## W_GRID_SNAPPED
+
+*warning* — `grid` moved a written size or door position.
+
+**Cause.** `grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged. Informational: `validate` ranks it last for `next` (tier `info`).
+
+**Fix.** Write a multiple of the grid, or set a finer `grid`.
+
+```arch static
+grid 100
+room at (0,0) size 2750x3000   # warning: size 2750 x 3000 was snapped to 2800 x 3000
+```
+
 ## W_HABITABLE_NO_WINDOW
 
 *warning* — A living room, dining room or kitchen has no window.
@@ -3011,6 +3029,18 @@ door id=bed_door at (3000,650) width 800 wall mid swing into bed
 ```arch static
 wall id=w exterior thickness 200 { (0,0) (8000,0) }
 door at (4000,0) width 2400 wall w   # lint: one 2400 mm leaf; `door double … width 2400` is two of 1200
+```
+
+## W_LENGTH_IN_METRES
+
+*warning* — A length reads as metres where millimetres are the unit.
+
+**Cause.** Lengths are millimetres. A rectangle room whose `size` has both sides under 100 mm (`size 4x3`), or a wall thickness under 10 mm (`thickness 0.2`), was almost certainly written in metres. The plan draws the value as written.
+
+**Fix.** Write the length in millimetres; the hint gives the clause times 1000.
+
+```arch static
+room at (0,0) size 4x3   # warning: read as 4 mm x 3 mm; write `size 4000x3000`
 ```
 
 ## W_NO_ENTRANCE
@@ -3341,6 +3371,19 @@ furniture table at (0,0) size 800x800
 furniture chair at (175,850) size 450x450   # lint: south of the table, facing south
 ```
 
+## W_SET_VALUE_WORD
+
+*warning* — A bare word in `set <kind>(…)` was taken as text and does nothing.
+
+**Cause.** A bare word in a `set` rule is read as text, never as the value of a name, so `set door(width: W)` sets the text "W" and does nothing; so does a word the key does not read (`set door(swing: inward)`). `set door(…)` reads a word only for `hinge` and `swing`. An error at 2.0.
+
+**Fix.** Write the value on the element, or a word the key reads.
+
+```arch static
+let W = 900
+set door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing
+```
+
 ## W_SHAFT_FOOTPRINT_MISMATCH
 
 *warning* — A shaft's runs on two neighbouring storeys do not stand over each other.
@@ -3476,6 +3519,18 @@ title {
 }
 ```
 
+## W_UNKNOWN_FURNITURE
+
+*warning* — A furniture word is not a catalogued kind but is close to one.
+
+**Cause.** An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is a catalogued kind in another case or, past four letters, one with a letter added or dropped (two, past six; a changed letter counts as two); a `label` marks a piece of your own.
+
+**Fix.** Write the kind the message names, or add a `label`.
+
+```arch static
+furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean "grand_piano"?
+```
+
 ## W_UNKNOWN_MATERIAL
 
 *warning* — Unknown wall material or room floor; the wall takes the default hatch, the room none.
@@ -3498,6 +3553,18 @@ wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning
 
 ```arch static
 style room { nope: "#000" }   # warning
+```
+
+## W_UNKNOWN_THEME
+
+*warning* — Unknown theme name; the plan is drawn in the default theme.
+
+**Cause.** `theme <name>` names no built-in theme and none the compile registers, so it selects nothing; names match exactly (`theme Rendered` is not `rendered`). Raised by `compile()` and the CLI's `validate` and `lint`, not by the library's `describe()`/`lint()`.
+
+**Fix.** Write a known theme name, or register the theme in the compile options.
+
+```arch static
+theme Rendered   # warning: did you mean "rendered"?
 ```
 
 ## W_UNKNOWN_THEME_KEY

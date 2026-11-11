@@ -33,12 +33,41 @@ import { link } from "./import.js";
 import type { Scene } from "./scene.js";
 import type { Diagnostic } from "./diagnostics.js";
 import type { CompileError, CompileOptions, CompilePage, CompileResult } from "./types.js";
+import { THEMES } from "./theme.js";
+import { closest } from "./expr.js";
 
 /** Project a span-carrying diagnostic onto the legacy `{message, line, col}` shape. */
 function toLegacy(source: string, d: Diagnostic): CompileError {
   if (!d.span) return { message: d.message };
   const { line, col } = offsetToLineCol(source, d.span.start);
   return { message: d.message, line, col };
+}
+
+/**
+ * `W_UNKNOWN_THEME` (product-roadmap RM1.4b): the plan's `theme <name>` is neither a built-in
+ * theme (`THEMES`) nor one this call registers (`opts.themes`), so it selects nothing and the plan
+ * is drawn in the default theme, as it always was. In the library only `compile()` raises it,
+ * because only the compile knows the registered themes (like {@link apiLineWeightOutOfRange});
+ * `describe()` and `lint()` do not. The CLI's `validate` and `lint`, where no theme is ever
+ * registered, raise it against `THEMES` alone (`src/cli/commands-analyze.ts`). A built-in name
+ * never reaches here (the parser records the span only for a name `THEMES` lacks). The hint names
+ * the nearest known name, read from the same two lists: the same word in another case first, else
+ * {@link closest}'s.
+ */
+export function unknownThemeDiagnostic(plan: PlanNode, themes: Runtime["themes"] | undefined): Diagnostic | undefined {
+  const name = plan.themeBase;
+  if (name === undefined || plan.themeBaseSpan === undefined) return undefined;
+  const registered = (themes ?? []).map((t) => t.name);
+  if (registered.includes(name)) return undefined;
+  const known = [...new Set([...registered, ...Object.keys(THEMES)])];
+  const near = known.find((k) => k.toLowerCase() === name.toLowerCase()) ?? closest(name, known);
+  return {
+    severity: "warning",
+    code: "W_UNKNOWN_THEME",
+    message: `Unknown theme "${name}": it selects nothing, so the plan is drawn in the default theme${near !== null ? ` — did you mean "${near}"?` : ""}`,
+    span: plan.themeBaseSpan,
+    hints: [`The known themes: ${known.join(", ")}.`],
+  };
 }
 
 /**
@@ -106,6 +135,8 @@ export function compileUncached(source: string, opts: CompileOptions, work?: Com
   // source's is; only the compile draws, so only the compile checks it.
   const pen = plan && resolved ? apiLineWeightOutOfRange(plan, resolved, opts, runtime) : undefined;
   if (pen) all.push(pen);
+  const themeWord = plan ? unknownThemeDiagnostic(plan, runtime.themes) : undefined;
+  if (themeWord) all.push(themeWord);
   // The drawing budget, before anything is drawn: estimated over every storey, and only for a
   // plan that would otherwise be drawn (an error already draws nothing).
   if (plan && resolved && !all.some((d) => d.severity === "error")) {

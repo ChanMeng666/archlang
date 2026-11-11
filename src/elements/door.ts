@@ -28,6 +28,14 @@ import {
 } from "../fix-producers.js";
 import { renderDoorPanels } from "./door-panels.js";
 import { DOOR_HEAD, parseOpeningHeights, resolveOpeningHeights } from "../datum.js";
+import { noteSnap } from "../ir/silent-accepts.js";
+
+/**
+ * The words `set door(…)` reads, by key: the only `set` defaults a door applies. The parser holds
+ * a bare-word `set` value to this table (`ElementDef.setWords`, `W_SET_VALUE_WORD`), and the
+ * resolver reads the same two keys from it, so the warning and the behaviour cannot disagree.
+ */
+const DOOR_SET_WORDS = { hinge: DOOR_ENUMS.hinge, swing: DOOR_ENUMS.swing } as const;
 
 /** Read an enum override from the active `set` defaults, if valid. */
 function enumDefault<T extends string>(
@@ -268,6 +276,7 @@ export const door: ElementDef = {
   kind: "door",
   keyword: "door",
   doc: "A door: an opening in its host wall with a leaf and swing arc.",
+  setWords: DOOR_SET_WORDS,
   params: [
     { name: "at", type: "point", doc: "Hinge/center position (x, y) in mm." },
     { name: "width", type: "number", doc: "Door width (leaf length) in mm." },
@@ -302,7 +311,7 @@ export const door: ElementDef = {
     // is a kind, so a lookahead against the closed table decides it with no backtrack.
     const doorKind = DOOR_KINDS.find((k) => ctx.isKeyword(k));
     if (doorKind) ctx.next();
-    const { at, attach, between } = parseAttachTarget(ctx, true);
+    const { at, atSpan, attach, between } = parseAttachTarget(ctx, true);
     ctx.eatKeyword("width");
     const width = ctx.parseExpr();
     const node: DoorNode = {
@@ -312,6 +321,7 @@ export const door: ElementDef = {
       width,
       line: kw.line,
       ...(at ? { at } : {}),
+      ...(atSpan ? { atSpan } : {}),
       ...(attach ? { attach } : {}),
       ...(between ? { between } : {}),
     };
@@ -402,7 +412,9 @@ export const door: ElementDef = {
       at = lead.at;
       host = lead.host;
     } else {
-      at = ctx.snapPt(ctx.evalPt(n.at!));
+      const written = ctx.evalPt(n.at!);
+      at = ctx.snapPt(written);
+      noteSnap(ctx, `Door "${id}"`, "at", [written.x, written.y], [at.x, at.y], n.atSpan ?? n.span, true);
       host = ctx.hostSegment(at, n.wall);
       if (ctx.walls.length > 0 && !ctx.isOnWall(at, n.wall)) {
         const note = nearestWallNote(at, ctx.walls);
@@ -486,7 +498,7 @@ export const door: ElementDef = {
     const open = openRaw === undefined || Number.isNaN(openRaw) ? DEFAULT_OPEN : clamp01(openRaw);
     // Precedence: explicit attribute > derived (`near`/`into`) > `set door(...)` > hard default.
     const hingeNear = n.hingeNear ? (n.hingeNear === "start" ? "left" : "right") : undefined;
-    const hinge = n.hinge ?? hingeNear ?? enumDefault(ctx.defaults, "hinge", DOOR_ENUMS.hinge) ?? "left";
+    const hinge = n.hinge ?? hingeNear ?? enumDefault(ctx.defaults, "hinge", DOOR_SET_WORDS.hinge) ?? "left";
     // A refused placement (`lead.host` null, always after an error) has no wall to read a side
     // of, and that error is the whole story. A door with no host by position still hears this.
     const intoSwing =
@@ -512,7 +524,7 @@ export const door: ElementDef = {
       intoSwing ??
       buildingSwing ??
       garageSide ??
-      enumDefault(ctx.defaults, "swing", DOOR_ENUMS.swing) ??
+      enumDefault(ctx.defaults, "swing", DOOR_SET_WORDS.swing) ??
       "in";
     // Pre-emit the hinge-flipped statement for `W_SWING_OBSTRUCTED`'s fix: lint sees
     // only the IR, and re-emitting here keeps the authored placement/width expressions
