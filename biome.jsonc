@@ -69,30 +69,30 @@
         "noNonNullAssertion": "off",
         // String concat vs template literal is pure preference; not worth the churn.
         "useTemplate": "off",
-        // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+        // New in biome 2.6, off until adopted deliberately; see backlog 3.3.
         "noDescendingSpecificity": "off"
       },
       // `any` is confined to the untyped optional-dep seam (pdfkit).
       "suspicious": {
         "noExplicitAny": "off",
-        // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+        // New in biome 2.6, off until adopted deliberately; see backlog 3.3.
         "noTemplateCurlyInString": "off",
         // Already the safe `Object.prototype.hasOwnProperty.call` form; `Object.hasOwn` needs ES2022.
         "noPrototypeBuiltins": "off"
       },
-      // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+      // New in biome 2.6, off until adopted deliberately; see backlog 3.3.
       // usePlaywrightValidDescribeCallback is a false positive on our own `describe()`.
       "correctness": { "usePlaywrightValidDescribeCallback": "off" },
       "performance": { "useDomNodeTextContent": "off" },
       // Existing site CSS uses !important on purpose in a few overrides.
       "complexity": {
         "noImportantStyles": "off",
-        // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+        // New in biome 2.6, off until adopted deliberately; see backlog 3.3.
         // `?.` turns a boolean predicate into boolean | undefined; the playground's ES5-style
         // inline IIFE is deliberate.
         "useOptionalChain": "off",
         "useArrowFunction": "off",
-        // New in biome 2.6, off until adopted deliberately; see backlog (BIOME26).
+        // New in biome 2.6, off until adopted deliberately; see backlog 3.3.
         // Math.min/max differ from the ternary on NaN and -0.
         "useMathMinMax": "off"
       },
