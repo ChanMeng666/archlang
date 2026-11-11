@@ -33,7 +33,7 @@ import type { Frame } from "./frame.js";
 import { tryTransformElement } from "./frame.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Env, Expr } from "./expr.js";
-import { fmt3, MODEL_RANGE_MM } from "./num-format.js";
+import { fmt0, fmt3, MODEL_RANGE_MM } from "./num-format.js";
 import {
   asNum,
   asStr,
@@ -59,7 +59,16 @@ import type { LevelStamp } from "./chrome-layout.js";
 import { titleRows } from "./chrome-layout.js";
 import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
 import { resolveSheetSpec, usablePlanMm } from "./sheet.js";
-import { elevationOf, heightRangeDiagnostic, isDrawableHeight, plansAuthorHeights, STOREY_HEIGHT } from "./datum.js";
+import {
+  type CeilingFacts,
+  elevationOf,
+  heightRangeDiagnostic,
+  isDrawableHeight,
+  plansAuthorCeiling,
+  plansAuthorHeights,
+  resolveCeiling,
+  STOREY_HEIGHT,
+} from "./datum.js";
 import { planTableRows } from "./sheet-tables.js";
 import { effectiveVertices, polygonSelfIntersects } from "./geometry/polygon.js";
 import { BUILTIN_NAMES, registerBuiltins } from "./builtins.js";
@@ -341,11 +350,28 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): Plan
     // resolver reads ONE field and the fallback chain wall → level → plan → constant has
     // exactly one implementation. A storey that declares none keeps the plan's.
     ...(block.height !== undefined ? { height: block.height, heightSpan: block.heightSpan } : {}),
+    // The clear-height facts (MF-D1, RM-D17), only on a plan that writes a `slab` or a `clear`:
+    // this storey's own clauses (a plan-level `clear` is `E_CLEAR_SCOPE` here and folds into no
+    // storey), and the `slab` of the storey above, from which its clear height is derived.
+    ...(plansAuthorCeiling(ast) ? storeyCeilingOf(ast, block) : {}),
     body: [...shared, ...block.body],
   };
   if (levelPlanCache.size >= RESOLVE_CACHE_MAX * 4) levelPlanCache.clear();
   levelPlanCache.set(key, plan);
   return plan;
+}
+
+/** The {@link levelPlanFor} fields one storey's clear height reads, on a plan that writes one. */
+function storeyCeilingOf(ast: PlanNode, block: LevelNode): Partial<PlanNode> {
+  const blocks = levelBlocks(ast);
+  const above = blocks[blocks.indexOf(block) + 1];
+  return {
+    slab: block.slab,
+    slabSpan: block.slabSpan,
+    clear: block.clear,
+    clearSpan: block.clearSpan,
+    _storey: { top: above === undefined, ...(above?.slab ? { slabAbove: above.slab } : {}) },
+  };
 }
 
 /** The margin-table row count one resolved storey will draw — the second thing (after the
@@ -959,12 +985,41 @@ function resolveBody(
   // other; a height shares no axis with them, and snapping `height 2850` onto a 100 mm
   // grid would silently redraw a section nobody asked for.
   let storeyHeight = STOREY_HEIGHT;
+  let heightWritten = false;
   if (ast.height !== undefined) {
     stepSite(ast.heightSpan);
     activeEnv = globalScope.flatten();
     const h = evalNum(ast.height);
-    if (isDrawableHeight(h)) storeyHeight = h;
-    else diagnostics.push(heightRangeDiagnostic("The plan", "height", h, ast.heightSpan));
+    if (isDrawableHeight(h)) {
+      storeyHeight = h;
+      heightWritten = true;
+    } else diagnostics.push(heightRangeDiagnostic("The plan", "height", h, ast.heightSpan));
+  }
+  // The storey's `slab` and clear height (MF-D1, RM-D17), evaluated as `height` is, only on a plan
+  // that writes a `slab` or a `clear`: on any other plan nothing here runs or is charged.
+  let ceiling: CeilingFacts | undefined;
+  if (plansAuthorCeiling(ast)) {
+    const envBefore = activeEnv;
+    activeEnv = globalScope.flatten();
+    ceiling = resolveCeiling(
+      ast,
+      extras.level ? `Level ${fmt0(extras.level.level)}` : "The plan",
+      { height: storeyHeight, written: heightWritten },
+      {
+        loud: (e, span) => {
+          stepSite(span);
+          return evalNum(e);
+        },
+        quiet: (e) =>
+          asNum(
+            evalExpr(e, activeEnv, () => {}),
+            () => {},
+            exprSpan(e),
+          ),
+        diag: (d) => diagnostics.push(d),
+      },
+    );
+    activeEnv = envBefore;
   }
 
   const ctx: ResolveCtx = {
@@ -1659,6 +1714,8 @@ function resolveBody(
     storeyHeight,
     elevation: extras.elevation ?? 0,
     _heightsAuthored: extras.heightsAuthored ?? plansAuthorHeights(ast),
+    // Only on a plan that writes a `slab` or a `clear`, so every other IR is the one it was.
+    ...(ceiling ? { _ceiling: ceiling } : {}),
     ...((extras.storeyCount ?? 1) > 1 ? { _storeyCount: extras.storeyCount } : {}),
     _executedWhileSpans: executedWhiles,
     // A `status demolish` wall (B3a) is drawn but stands in no analysis: `elements`/`walls` are

@@ -668,6 +668,18 @@ class Parser {
       }
     }
 
+    // A plan-level `height` is every storey's default; a default clear height is nothing the
+    // author said about any one storey (RM-D17).
+    if (plan.clearSpan) {
+      this.report({
+        severity: "error",
+        code: "E_CLEAR_SCOPE",
+        message: "A multi-storey plan writes `clear` in each `level` header, not on the plan's `height` line",
+        span: plan.clearSpan,
+        hints: ['write it after the storey\'s own height: `level 2 "First" height 2750 clear 2400 { … }`'],
+      });
+    }
+
     for (const s of plan.body) {
       if (LEVEL_SHARED_KINDS.includes(s.kind)) continue;
       this.report({
@@ -710,6 +722,10 @@ class Parser {
       height = parseExprPratt(this.ctx);
       heightSpan = { start: hk.start, end: this.peek(-1).end };
     }
+    // `slab <expr>` then `clear <expr>` (MF-D1, RM-D17), in that order after `height`. Both are
+    // read only here, in the header before its `{`, so `slab` is no reserved word.
+    const slab = this.headerClause("slab");
+    const clear = this.headerClause("clear");
     const body = this.parseBlockBody(components, undefined);
     return {
       kind: "level",
@@ -718,6 +734,8 @@ class Parser {
       ...(name !== undefined ? { name } : {}),
       ...(height !== undefined ? { height } : {}),
       ...(heightSpan !== undefined ? { heightSpan } : {}),
+      ...(slab ? { slab: slab.expr, slabSpan: slab.span } : {}),
+      ...(clear ? { clear: clear.expr, clearSpan: clear.span } : {}),
       body,
       line: kw.line,
     };
@@ -773,6 +791,22 @@ class Parser {
     this.next();
     plan.height = parseExprPratt(this.ctx);
     plan.heightSpan = this.spanFrom(t.start);
+    // `height <expr> clear <expr>`: a single-storey plan's clear height (RM-D17). On the same line
+    // and never the first word of an assignment or a macro call, so a `clear` binding keeps its
+    // meaning.
+    const clear = this.isTrailingWord("clear") ? this.headerClause("clear") : undefined;
+    if (clear) {
+      plan.clear = clear.expr;
+      plan.clearSpan = clear.span;
+    }
+  }
+
+  /** `<word> <expr>` when the next token is `word`: the expression and the clause's span. */
+  private headerClause(word: string): { expr: Expr; span: Span } | undefined {
+    if (!this.isKeyword(word)) return undefined;
+    const k = this.next();
+    const expr = parseExprPratt(this.ctx);
+    return { expr, span: { start: k.start, end: this.peek(-1).end } };
   }
 
   /**

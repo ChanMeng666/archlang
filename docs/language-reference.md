@@ -3561,6 +3561,36 @@ Plan JSON gains `storey_height` at the top, `height` on each wall (a **vertical*
 a plan extent like a room's `height`), and `sill`/`head` on the openings. All of it round-trips
 through `compile --from-json`.
 
+### Slab and clear height
+
+Two more header clauses give a section its floor build-up and its ceilings. Like every height,
+they draw nothing.
+
+- `level <n> ["Name"] [height <expr>] [slab <expr>] [clear <expr>] { … }`, in that order.
+  `slab` is the total depth of the floor construction **under** this storey's floor, finish
+  included. `clear` is this storey's clear height, floor to ceiling.
+- `height <expr> clear <expr>` on a single-storey plan's `height` line. In a plan of `level`
+  blocks that line is only every storey's default, so a `clear` there is
+  [`E_CLEAR_SCOPE`](error-codes.md#e_clear_scope).
+
+```arch static
+level 0 "Basement" height 2510 { … }
+level 1 "Ground" height 2750 slab 320 { … }
+level 2 "Upper" height 2750 slab 320 clear 2340 { … }
+```
+
+Once any storey writes a `slab` or a `clear`, each storey's `heights` block gains `slab` (when
+it writes one) and either `clear_height` with `clear_height_source` or a
+`clear_height_omitted` reason. The value is the storey's own `clear` (`authored`); else its
+`height` less the `slab` of the storey above (`derived`). Nothing is guessed: the top storey
+and a single-storey plan without a `clear` report `top-storey` or `single-storey`, and a
+storey whose upper neighbour writes no `slab`, or whose `height` is the 3000 default, reports
+`no-slab-above` or `default-storey-height`, and a `slab` above as deep as the storey reports
+`slab-above-too-thick`. In the example the basement derives 2190 and the
+ground floor 2430. A `clear` that disagrees with the derived value in whole millimetres is
+[`W_CLEAR_HEIGHT_MISMATCH`](error-codes.md#w_clear_height_mismatch), and the written value is
+reported. A plan that writes neither clause describes exactly as before.
+
 ### The three refusals
 
 Each **refuses rather than clamping** — the `E_ROOF_*` precedent. A refused clause still falls
@@ -3569,7 +3599,7 @@ nonsense number.
 
 | Code | When |
 |------|------|
-| `E_HEIGHT_RANGE` | A `height`, `sill` or `head` at zero or below, or above 100 m. A window `sill` of exactly 0 is legal and excluded. |
+| `E_HEIGHT_RANGE` | A `height`, `slab`, `clear`, `sill` or `head` at zero or below, or above 100 m. A window `sill` of exactly 0 is legal and excluded. |
 | `E_SILL_ABOVE_HEAD` | A window whose `sill` is at or above its `head` — there is no opening between them. |
 | `E_OPENING_ABOVE_WALL` | An opening whose `head` exceeds its **host wall's** height. Measured against the wall, not the storey: 2400 is fine in a 3000 storey and wrong in a 2200 parapet. |
 

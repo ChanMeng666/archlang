@@ -37,6 +37,7 @@ import type {
   OpeningPlacement,
 } from "./ir.js";
 import type { PlanNode, Point } from "./ast.js";
+import type { CeilingFacts } from "./datum.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { voidPieces } from "./elements/void.js";
 import { storeyNetAreaBands } from "./analyze/net-area-memo.js";
@@ -89,6 +90,7 @@ import type {
   WindowSummary,
   OpeningSummary,
   WallStatusFacts,
+  HeightFacts,
   FurnitureSummary,
   VerticalSummary,
   VoidSummary,
@@ -238,6 +240,18 @@ export const DESCRIBE_FACTS = ["symmetry", "syntax", "depends", "clearances", "q
 
 /** One opt-in fact of {@link DESCRIBE_FACTS}. */
 export type DescribeFact = (typeof DESCRIBE_FACTS)[number];
+
+/** {@link HeightFacts}' `slab` and clear-height keys, from one storey's resolved facts. */
+function ceilingRows(
+  c: CeilingFacts,
+): Pick<HeightFacts, "slab" | "clear_height" | "clear_height_source" | "clear_height_omitted"> {
+  return {
+    ...(c.slab !== undefined ? { slab: c.slab } : {}),
+    ...(c.clearHeight !== undefined ? { clear_height: c.clearHeight } : {}),
+    ...(c.source !== undefined ? { clear_height_source: c.source } : {}),
+    ...(c.omitted !== undefined ? { clear_height_omitted: c.omitted } : {}),
+  };
+}
 
 /** {@link DescribeSummary.wall_status}: absent unless a wall on the storey writes `status`. */
 function wallStatusFacts(ir: ResolvedPlan): WallStatusFacts | undefined {
@@ -774,6 +788,8 @@ function summarize(
           heights: {
             storey_height: ir.storeyHeight,
             elevation: ir.elevation,
+            // Only when the plan writes a `slab` or a `clear` (MF-D1, RM-D17).
+            ...(ir._ceiling ? ceilingRows(ir._ceiling) : {}),
             // Every wall as drawn: a demolished wall (B3a) still has a height.
             walls: drawnView(ir).walls.map((w) => ({ id: w.id, height: w.height })),
           },

@@ -244,6 +244,18 @@ export interface HeightFacts {
    * plans that bothered to declare per-storey heights.
    */
   elevation: number;
+  /** The storey's own `level … slab <mm>`: the floor construction under its floor, finish
+   *  included. The slab and clear-height keys appear only when the plan writes a `slab` or a
+   *  `clear` somewhere (MF-D1, RM-D17). */
+  slab?: number;
+  /** Floor to ceiling, in mm: the author's `clear`, else this storey's `height` less the `slab`
+   *  of the storey above. Never guessed: absent with {@link clear_height_omitted} instead. */
+  clear_height?: number;
+  /** Where {@link clear_height} came from. */
+  clear_height_source?: "authored" | "derived";
+  /** Why there is no {@link clear_height}: `single-storey` / `top-storey` (no `clear` written),
+   *  `no-slab-above`, `default-storey-height` (no `height` written), `slab-above-too-thick`. */
+  clear_height_omitted?: import("../datum.js").ClearHeightOmitted;
   /** Every wall on this storey, in source order, with the height it resolved to. */
   walls: { id: string; height: number }[];
 }

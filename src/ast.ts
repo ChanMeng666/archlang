@@ -1059,7 +1059,31 @@ export interface LevelNode extends NodeBase {
   height?: Expr;
   /** Byte span of the `height` clause, for `E_HEIGHT_RANGE`. */
   heightSpan?: Span;
+  /**
+   * `slab <expr>` — the total depth of the floor construction UNDER this storey's floor, finish
+   * included, in mm (MF-D1). It sits after `height` in the header. It draws nothing: it is what
+   * the storey BELOW reads to derive its clear height.
+   */
+  slab?: Expr;
+  /** Byte span of the `slab` clause. */
+  slabSpan?: Span;
+  /** `clear <expr>` — this storey's clear height, floor to ceiling, in mm, after `slab` (RM-D17). */
+  clear?: Expr;
+  /** Byte span of the `clear` clause. */
+  clearSpan?: Span;
   body: Statement[];
+}
+
+/**
+ * What a storey needs to know beyond itself for its clear height: whether a storey stands above
+ * it, and that storey's `slab`. Present only on a plan where some `level` writes a `slab` or a
+ * `clear`, which is what turns the clear-height facts on.
+ */
+export interface StoreyCeilingContext {
+  /** This is the highest storey. */
+  top: boolean;
+  /** The `slab` the storey above writes, if any. */
+  slabAbove?: Expr;
 }
 
 /**
@@ -1554,6 +1578,20 @@ export interface PlanNode {
   height?: Expr;
   /** Byte span of the `height` statement, for `E_HEIGHT_RANGE`. */
   heightSpan?: Span;
+  /**
+   * `height <expr> clear <expr>` — a single-storey plan's clear height, floor to ceiling, in mm
+   * (RM-D17). Absent unless written. In a multi-storey plan it is `E_CLEAR_SCOPE`: each `level`
+   * writes its own in its header. Like every height, it draws nothing.
+   */
+  clear?: Expr;
+  /** Byte span of the `clear` clause. */
+  clearSpan?: Span;
+  /** A synthetic per-level plan's `level … slab <expr>` (`levelPlanFor`, `src/ir.ts`); never parsed. */
+  slab?: Expr;
+  /** Byte span of that `slab` clause. */
+  slabSpan?: Span;
+  /** The storey a synthetic per-level plan stands for (`levelPlanFor`); never parsed. */
+  _storey?: StoreyCeilingContext;
   north: NorthDir;
   /** The sheet marks the plan hides (`north … hidden`, `scale … hidden`, `title hidden`). Absent unless written. */
   hide?: ChromeHide;

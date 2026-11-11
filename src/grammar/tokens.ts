@@ -197,6 +197,10 @@ export const KEYWORDS = {
     // `sheet text { … }`: read only when `text {` follows it, so never a `STATEMENT_STARTS` word and
     // not a `control` one: `room id=sheet` keeps parsing. `text` is already here.
     "sheet",
+    // `level <n> … slab <mm>` (MF-D1): read only in a `level` header, so contextual, never a
+    // `STATEMENT_STARTS` word: `room id=slab` and `let slab = 200` keep parsing. Its partner
+    // `clear` (RM-D17) is already here.
+    "slab",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [

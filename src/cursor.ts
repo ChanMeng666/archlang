@@ -217,6 +217,8 @@ const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind
   },
   level: (s, out) => {
     if (s.height !== undefined) out.push(s.height);
+    if (s.slab !== undefined) out.push(s.slab);
+    if (s.clear !== undefined) out.push(s.clear);
   },
   zone: () => {
     // A zone is a pure lexical/metadata wrapper (label is a string, not an Expr) —
@@ -400,6 +402,7 @@ export function eachExpr(plan: PlanNode, visit: (e: Expr) => void): void {
     for (const c of exprChildren(e)) goExpr(c);
   };
   if (plan.height !== undefined) goExpr(plan.height);
+  if (plan.clear !== undefined) goExpr(plan.clear);
   if (plan.axes) {
     for (const e of plan.axes.x) goExpr(e);
     for (const e of plan.axes.y) goExpr(e);

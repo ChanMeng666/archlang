@@ -175,7 +175,7 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
 export const STATEMENT_GRAMMAR: Record<string, string> = {
   axes: "axes { x at <mm>, <mm>, … y at <mm>, <mm>, … }   # GB/T 50001 positioning axes (定位轴线): datum lines. `x` are vertical (numbered 1,2,3… left-to-right), `y` horizontal (lettered A,B,C… BOTTOM-to-top, skipping I/O/Z). Positions are expressions. Plan-level; statements read `axis.3`, `axis.B` as coordinates (no arithmetic in an opening's `at`), not in a `let`/`place`/component",
   level:
-    'level <int> ["Name"] [height <mm>] { … }   # ONE STOREY = one whole drawing. `height` in the body: E_LEVEL_MIX; `heights.elevation` ACCUMULATES the storeys below, so it is NOT level × height. A plan is single-storey or ALL levels (a drawable statement beside them = E_LEVEL_MIX); settings/`component`/`import`/plan-global `let`/`set` stay OUTSIDE, applying to every level. Integers, unique, 0/negative legal, ASCENDING — lowest = page 1. Ids unique WITHIN a level (see `stair`). `arch compile` writes plan.L1.svg, plan.L2.svg … (`--level <n>` = one); `describe --json` adds `levels[]`. Plan-level only',
+    'level <int> ["Name"] [height <mm>] [slab <mm>] [clear <mm>] { … }   # ONE STOREY = one whole drawing. `height` in the body: E_LEVEL_MIX; `heights.elevation` ACCUMULATES the storeys below, so it is NOT level × height. `slab`: floor build-up UNDER this storey; `clear`: its clear height. Neither draws; `heights` adds `slab`, `clear_height` (the `clear`, else height − slab above) or `clear_height_omitted`; W_CLEAR_HEIGHT_MISMATCH. A plan is single-storey or ALL levels (a drawable statement beside them = E_LEVEL_MIX); settings/`component`/`import`/plan-global `let`/`set` stay OUTSIDE, applying to every level. Integers, unique, 0/negative legal, ASCENDING — lowest = page 1. Ids unique WITHIN a level (see `stair`). `arch compile` writes plan.L1.svg, plan.L2.svg … (`--level <n>` = one); `describe --json` adds `levels[]`. Plan-level only',
   strip: `strip <${STRIP_DIRS.join("|")}> at (x,y) gap <mm> [height|width <mm>] { room [id=…] size <main>[x<cross>] [label "…"] [uses …] … }   # a row/column of rooms laid end to end: each room's offset is the running sum of the previous extents + gap, and the shared cross dimension is the strip's height (right/left) or width (down/up). Pure sugar — expands to absolute rooms. Plan-level block only`,
   zone: 'zone <id> ["Label"] { … }   # a WING/DEPARTMENT grouping, pure metadata: every statement inside resolves as if the wrapper were deleted. Membership is DECLARED, never inferred from position. Nests (`zone west { zone galleries { … } }` → path `west.galleries`, innermost wins) and is legal wherever a statement is, incl. inside `level`. `describe --json` adds `zones[]` (path/rooms/floor_area_m2; nested rooms roll UP, so summing zones double-counts) + `describe --zone <path>` to read one wing',
   schedule: `schedule ${SCHEDULE_SUBJECTS.join("|")}   # DERIVED tables, either or both. \`rooms [net]\`: each room's NAME (label, else id), AREA, NET AREA + TOTALs = \`describe --json\`'s \`schedule[]\`, grouped by \`zone\` with SUBTOTALs; \`net\` also stamps each room. \`openings\`: D01…/W01… tags + a DOOR & WINDOW SCHEDULE`,
@@ -231,7 +231,7 @@ export const SETTING_GRAMMAR: Record<string, string> = {
   // `KEYWORDS.attribute`, so it can sit in exactly one. Its clause roles are taught by the
   // grammar lines of the elements that take it, which is the same argument that keeps
   // `overhang` and `rail` on the other side of the line.
-  height: `height ${STOREY_HEIGHT}   # OPTIONAL storey floor-to-floor — the VERTICAL DATUM, and it DRAWS NOTHING. Overridden per storey then per wall; never grid-snapped, E_HEIGHT_RANGE outside 0–${MAX_HEIGHT}, and an opening's \`head\` above its wall is E_OPENING_ABOVE_WALL. Defaults: ${STOREY_HEIGHT} storey, ${DOOR_HEAD} door head, ${WINDOW_SILL}/${WINDOW_HEAD} window sill/head. \`describe --json\` reports \`heights\` (storey_height/elevation/per-wall) + \`head\`/\`sill\` on the openings, but ONLY if the source wrote one of these clauses somewhere`,
+  height: `height ${STOREY_HEIGHT}   # OPTIONAL storey floor-to-floor — the VERTICAL DATUM, and it DRAWS NOTHING. Overridden per storey then per wall; never grid-snapped, E_HEIGHT_RANGE outside 0–${MAX_HEIGHT}, and an opening's \`head\` above its wall is E_OPENING_ABOVE_WALL. Defaults: ${STOREY_HEIGHT} storey, ${DOOR_HEAD} door head, ${WINDOW_SILL}/${WINDOW_HEAD} window sill/head. \`height <mm> clear <mm>\`: a single-storey clear height (levels: E_CLEAR_SCOPE). \`describe --json\` reports \`heights\` (storey_height/elevation/per-wall) + \`head\`/\`sill\` on the openings, but ONLY if the source wrote one of these clauses somewhere`,
   north: `north up   # ${NORTH_DIRS.join("|")}; \`north|scale … hidden\`, \`title hidden\`: no arrow, bar, box; facts stay, a freed band may fit a finer auto scale`,
   dims: `dims auto all   # OPTIONAL: ${AUTO_DIMS_MODES.join("|")}`,
   accTitle: `accTitle "…"   # OPTIONAL a11y name → SVG <title> under \`compile --accessible\``,
@@ -358,6 +358,8 @@ export const CLAUSE_ATTRIBUTES: readonly string[] = [
   "fixed",
   // `wall … status existing|demolish|new` (B3a), taught by `ELEMENT_GRAMMAR.wall` and `.walls`.
   "status",
+  // `level … slab <mm>` (MF-D1), taught by `STATEMENT_GRAMMAR.level`.
+  "slab",
 ];
 
 /**

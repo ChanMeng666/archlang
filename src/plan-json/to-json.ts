@@ -429,6 +429,7 @@ export type PlanJsonDroppedClause =
   | "hidden"
   | "notes"
   | "sheet text"
+  | "clear height"
   | "decimal mark"
   | "theme"
   | "style"
@@ -485,6 +486,15 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
   const zones = (storey.zones ?? []).filter((z) => !z.instance).map((z) => z.path);
   add("zone", zones.length, zones);
   return rows;
+}
+
+/** A storey's written `slab` and `clear`, as its dropped `level` row says them (RM-D17): the
+ *  document has no field for either yet (RM3.1). Empty on a plan that writes neither. */
+function ceilingText(c: ResolvedPlan["_ceiling"]): string {
+  if (!c) return "";
+  const slab = c.slab !== undefined ? ` slab ${num(c.slab)}` : "";
+  const clear = c.source === "authored" ? ` clear ${num(c.clearHeight!)}` : "";
+  return slab + clear;
 }
 
 /** The plan-wide clauses, which every storey's document leaves out alike. */
@@ -567,12 +577,16 @@ export function planToJson(
           {
             clause: "level" as const,
             count: 1,
-            text: `level ${num(l.level)}${l.name !== undefined ? ` ${q(l.name)}` : ""}`,
+            text: `level ${num(l.level)}${l.name !== undefined ? ` ${q(l.name)}` : ""}${ceilingText(l.ir._ceiling)}`,
             level: l.level,
           },
           ...droppedFromStorey(l.ir, l.level),
         ])
       : droppedFromStorey(ir, undefined)),
+    // A single-storey plan's `height … clear <mm>` (RM-D17): no field carries it yet (RM3.1).
+    ...(levels.length === 0 && ir._ceiling?.source === "authored"
+      ? [{ clause: "clear height" as const, count: 1, text: `clear ${num(ir._ceiling.clearHeight!)}` }]
+      : []),
     ...droppedFromPlan(ir),
   ];
   const dropped = { ...(keeps ? { droppedKeeps: keeps.length } : {}), ...(rows.length > 0 ? { dropped: rows } : {}) };

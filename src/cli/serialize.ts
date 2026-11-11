@@ -163,6 +163,7 @@ export const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [stri
   hidden: ["hidden sheet marks", "`hidden` mark", "`hidden` marks"],
   notes: ["sheet notes", "sheet note", "sheet notes"],
   "sheet text": ["sheet words", "sheet word", "sheet words"],
+  "clear height": ["clear heights", "clear height", "clear heights"],
   "decimal mark": ["decimal marks", "decimal mark", "decimal marks"],
   theme: ["themes", "theme", "themes"],
   style: ["styles", "`style` block", "`style` blocks"],

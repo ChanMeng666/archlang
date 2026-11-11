@@ -993,6 +993,12 @@ export interface ResolvedPlan {
    */
   _heightsAuthored: boolean;
   /**
+   * This storey's `slab` and clear height (MF-D1, RM-D17), present only when the plan writes a
+   * `slab` or a `clear` somewhere: what `describe().heights` reports beside the storey height.
+   * Internal: it draws nothing and is never serialized into the Scene/SVG/exports.
+   */
+  _ceiling?: import("../datum.js").CeilingFacts;
+  /**
    * How many storeys the plan has, when it has more than one: what a per-plan count is divided
    * by, since each storey is drawn on its own (`fitWork`, `src/label-fit.ts`). Internal: never
    * serialized into the Scene/SVG/exports.
