@@ -133,6 +133,77 @@ describe("PS0.3 — a storey a stair reaches", () => {
     ]);
   });
 
+  it("seeds both ends of a turning stair arrived on from below and from above", () => {
+    // Levels 1 and 3 each have a door from the ground, level 2 none. The block stair `s` lands in
+    // `a` at one end and `b` at the other on level 2, and people step off it there from both
+    // sides; the arriving run names only one end as its landing, but both rooms are arrivals.
+    const bothSides = `plan "Case bothsides_nodoor" {
+  units mm
+  grid 10
+  level 1 "G" {
+    room id=b at (0,0) size 2600x3800 label "B" uses hall
+    room id=a at (2600,0) size 1100x3800 label "A" uses hall
+    room id=c at (3700,0) size 4300x3800 label "C" uses living
+    walls from rooms exterior 200 partition 100
+    door on c.bottom at 1000 from start width 900 swing inward
+    door between a and c at 3100 from start width 900 swing into c
+    door between b and a at 3100 from start width 900 swing into a
+    stair id=s dir up width 1000 {
+      flight at (2630,1100) size 1000x1530
+      landing at (2630,100) size 1000x1000
+      flight at (1100,100) size 1530x1000
+    }
+  }
+  level 2 "One" {
+    room id=b at (0,0) size 2600x3800 label "B2" uses hall
+    room id=a at (2600,0) size 1100x3800 label "A2" uses hall
+    room id=c at (3700,0) size 4300x3800 label "C2" uses bedroom
+    walls from rooms exterior 200 partition 100
+    door between a and c at 3100 from start width 900 swing into c
+
+    stair id=s dir up width 1000 {
+      flight at (2630,1100) size 1000x1530
+      landing at (2630,100) size 1000x1000
+      flight at (1100,100) size 1530x1000
+    }
+  }
+  level 3 "Two" {
+    room id=b at (0,0) size 2600x3800 label "B3" uses hall
+    room id=a at (2600,0) size 1100x3800 label "A3" uses hall
+    room id=c at (3700,0) size 4300x3800 label "C3" uses living
+    walls from rooms exterior 200 partition 100
+    door between a and c at 3100 from start width 900 swing into c
+    door between b and a at 3100 from start width 900 swing into a
+    door on c.bottom at 1000 from start width 900 swing inward
+    stair id=s dir down width 1000 {
+      flight at (2630,1100) size 1000x1530
+      landing at (2630,100) size 1000x1000
+      flight at (1100,100) size 1530x1000
+    }
+  }
+}
+`;
+    // With no door from `b`, it is reached only by the stair: an arrival at depth 1 that seeds no
+    // width (no arriving run's landing is `b`). Lint, sourced from the same arrival rooms, is silent.
+    expect(upperOf(bothSides).access.rooms).toEqual([
+      { id: "b", depthFromEntrance: 1, reachable: true, bottleneckClearWidth: null },
+      { id: "a", depthFromEntrance: 1, reachable: true, bottleneckClearWidth: 1000 },
+      { id: "c", depthFromEntrance: 2, reachable: true, bottleneckClearWidth: 840 },
+    ]);
+    expect(lint(bothSides).filter((d) => d.code === "W_ROOM_UNREACHABLE")).toEqual([]);
+    // With an 800 mm door from `a`, `b`'s widest way in is that door.
+    const withDoor = bothSides.replace(
+      "swing into c\n\n    stair",
+      "swing into c\n    door between b and a at 3100 from start width 800 swing into a\n    stair",
+    );
+    expect(withDoor).not.toBe(bothSides);
+    expect(upperOf(withDoor).access.rooms).toEqual([
+      { id: "b", depthFromEntrance: 1, reachable: true, bottleneckClearWidth: 740 },
+      { id: "a", depthFromEntrance: 1, reachable: true, bottleneckClearWidth: 1000 },
+      { id: "c", depthFromEntrance: 2, reachable: true, bottleneckClearWidth: 840 },
+    ]);
+  });
+
   it("reads a room whose only door opens onto a balcony as unreachable, in describe and lint alike", () => {
     // A wider upper storey: a second bedroom whose one door opens onto its own balcony. Before,
     // that slider was the storey's way in: the landing and the first bedroom read unreachable

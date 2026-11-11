@@ -445,8 +445,9 @@ function summarize(
   statements?: StatementIndex,
   /** False on the caption path only: the gross internal area is not computed at all. */
   withGrossArea = true,
-  /** The rooms a shaft delivers a person into on a storey with no door from the ground
-   *  (`VerticalReach.arrivalRooms`): where `access` counts that storey's rooms from (PS0.3). */
+  /** The rooms a shaft delivers a person into on a storey with no door from the ground, those of
+   *  `VerticalReach.arrivalRooms` an arriving shaft stops in (`arrivalSeedRooms`,
+   *  `src/describe/verticals.ts`): where `access` counts that storey's rooms from (PS0.3). */
   arrivalRooms: readonly string[] = [],
 ): Omit<SceneSummary, "ok" | "diagnostics"> {
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
@@ -888,7 +889,7 @@ function summarizeResolved(
   const building = levels.length > 0 ? buildVerticalReport(levels, tol) : undefined;
   const vertical = building?.report;
   const arrivalsOn = (level: number): readonly ArrivingRun[] => building?.arrivals.get(level) ?? [];
-  const arrivalRoomsOn = (level: number): readonly string[] => building?.arrivalRooms.get(level) ?? [];
+  const arrivalRoomsOn = (level: number): readonly string[] => building?.arrivalSeedRooms.get(level) ?? [];
 
   // Multi-storey: the top-level facts are the LOWEST storey (`levels[0].ir === ir`), and
   // `levels` adds one same-shaped summary per storey. `summarize` is reused verbatim per

@@ -705,12 +705,14 @@ Two lint rules read that, per storey:
 Each storey's own `access.entrances` and `access.hasEntrance` stay **honest** — they report
 that floor's doors, so the upper storey of a house with one front door reads `false`. Its
 `access.rooms[]` count from where a person arrives: on a storey with arrival rooms, each arrival
-room an arriving run lands in (below) is `reachable` at `depthFromEntrance: 1`, its
-`bottleneckClearWidth` the width of the flight stepped off (the width the circulation walk seeds
-there), and every other room is counted through the doors from those, so `reachable: false` there
-is exactly the room `W_ROOM_UNREACHABLE` names. A room that only holds a flight boarded on that
-storey (a stair on up to a floor reached only through it) is no arrival: it is counted through its
-doors. The cross-storey answer is `vertical.reachable_levels`.
+room that a shaft a person arrives by there (below) stops in, at either end, is `reachable` at
+`depthFromEntrance: 1`, its `bottleneckClearWidth` the width of the flight stepped off into it (the
+width the circulation walk seeds there; `null` for the far end of a turning stair arrived on from
+both above and below, whose landing the walk does not seed), and every other room is counted
+through the doors from those, so `reachable: false` there is exactly the room `W_ROOM_UNREACHABLE`
+names. A room that holds only a shaft boarded on that storey (a stair on up to a floor reached
+only through it, which nobody arrives by there) is no arrival: it is counted through its doors.
+The cross-storey answer is `vertical.reachable_levels`.
 
 **`W_STAIR_UNMATCHED`** is the other side of the identity rule: a run whose id appears on
 exactly *one* storey of a multi-storey plan connects nothing — usually a typo. It is
