@@ -1,6 +1,6 @@
 # 23. The plan-symbol drawing language
 
-- **Status:** Accepted — amended 2026-11-04 (material tints in the `rendered` theme only, below)
+- **Status:** Accepted — amended 2026-11-04 (material tints in the `rendered` theme only, below); amended 2026-11-12 (floor tints in `rendered`, delegated ruling, last section)
 - **Date:** 2026-10
 - **Scope:** how every fixture symbol, door, window, fence, balcony rail and vertical-circulation
   glyph is drawn: pens, tones, curves, dashes and what a redraw may move. No language syntax
@@ -137,3 +137,19 @@ for the default**.
   construction or line print reads best untinted; a board for a client is the one place colour
   helps. Keeping tints in one opt-in theme keeps every existing drawing, golden and example
   byte-identical.
+
+## Amendment (2026-11-12): floor tints in the `rendered` theme, under a contrast floor
+
+**Delegated ruling RM-D28 (2026-11-12).** The owner delegated the decision to the coordinating
+session ("please make the best decision for me"), once, for that occasion; the owner can overturn it
+in one sentence. Scope: only the `rendered` theme, and only a room whose author wrote one of the
+new floor words (`timber`, `carpeting`, `stone`). Such a room's own floor polygon takes a floor
+tint instead of `theme.roomFill`; no new theme key and no new element are added, and every other
+theme and the default stay byte-identical.
+
+**The condition (hard):** the floor tint must keep the floor-hatch lines at or above **2.0:1**
+contrast against it (WCAG relative luminance). `pocheHatch` on `roomFill` measures 2.28:1 today; the
+first draft tints measured 1.66 to 1.87:1 and do not pass, so a lighter set is chosen and a test
+holds the floor. Why the rejection above does not apply: a tint appears only where the author named
+the floor, so it implies no material the source never named; and the contrast floor answers "it
+competes with the ground textures". The design is `docs/plans/product-roadmap/design/visual-language.md` § 3.3.
