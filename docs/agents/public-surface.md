@@ -535,8 +535,8 @@ Totals: 632 exports (222 values, 410 types), 400 flagged (73 values).
 | `KeepImpact` | type | `test` |
 | `LetOverride` | type | none |
 | `MAX_WHY_DEPTH` | value | `test` |
-| `applyLetOverride` | value | `src/cli`, `test` |
-| `impact` | value | `src/cli`, `test` |
+| `applyLetOverride` | value | `playground`, `src/cli`, `test` |
+| `impact` | value | `playground`, `src/cli`, `test` |
 
 ## `src/import/openplan3d-model.ts`
 
