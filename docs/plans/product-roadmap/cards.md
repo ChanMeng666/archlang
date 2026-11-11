@@ -40,13 +40,17 @@
 
 实际交付与卡不同之处：同一 PR 还记下了 RM-D24…D26、1.58.0 的发布状态、事故条目（`docs/agents/gotchas.md` § PRs & CI）与 backlog O.19。**没做完的两件**：CRF13（`src/ir.ts` 那条过时注释）在 #618 拆分之后找不到对应位置，没有关；O.10、H.1 的归档块还没有追加到私有的 `archlang-lab/backlog-archive.md`（另一仓库，`scripts/backlog-archive.mjs`；2026-11-11 在本机的 `archlang-lab` 检出里查不到这两个 id）。PR 里留给所有者的措辞问题已由 #694 解决（`c5513950`）。
 
+**两件余项已由 #697 做完**（2026-11-11T03:26:31Z，合并提交 `47c7bc68`）：VA.4 已归档；O.10、H.1 的归档块已追加到私有的 `archlang-lab/backlog-archive.md`。CRF13 建议关闭，理由"不可复现"：#618 拆分之后在 `src/ir.ts` 与 `src/ir/*.ts` 里找不到过时注释（`../checker-reach/README.md` 的 CRF13 行已记）。附带发现工具缺陷，记入 RM0.6。
+
 ### RM0.4 · 欠外部的跟进 — `done` · #693 · `8f9ca2bb`（docs 一行）；三条回复是 issue 评论
 
 实际交付（2026-11-11 01:45Z 读）：#544 给 gerontec（<https://github.com/ChanMeng666/archlang/issues/544#issuecomment-6782842533>，00:06:55Z）；#362 给 bobsch-io（<https://github.com/ChanMeng666/archlang/issues/362#issuecomment-6782843000>，00:06:56Z，只有事实、没有提问）；#405 的补记（<https://github.com/ChanMeng666/archlang/issues/405#issuecomment-6784462072>，01:40:06Z：L 形洞口栏杆已在 1.55.0 交付，清单其余各项是 RM4.4）；docs 的 `archlang-section` 一行随 #693 合并（`docs/analysis.md` 的 "Tools built on `describe`"）。与卡不同之处：#544 的回复还承诺了设计稿 `slab-and-section.md` 写成后在 #544 贴链接（`handoff.md` §8）。
 
 ### RM0.5 · 依赖与悬空状态 — `doing` · 0.5 日 · sonnet · 依赖无
 
-**状态（2026-11-11 01:18Z 读）：** 已合并：#678（`dfd126b6`，00:36Z）、#677（`644a390c`，00:46Z）、#675（`aa639f5b`，00:56Z）。**还剩：** #604 开着（biome 2.6 的 lint 差异没修）；#676 开着（`three` 0.187，帧哈希与 GLB 字节的评估没做）；#603 按 RM-D19 保持打开，不在本卡；`origin/ChanMeng666-patch-1`（`6c86203a`）没有落地（RM-D20 的 URL 核对与 cherry-pick 都没做）；分支清理没做：`git branch -r` 仍有 12 个 2026-10-17 → 10-24 的旧分支（卡里说的"已合并 PR 的远程分支"，是否每个都已合并本次没有逐个核对；`origin/feat/plan-json-instance-walls`、`origin/fix/analysis-entrance-size-arc`、`origin/feat/lint-space-enclosure`、`origin/feat/lint-room-contents`、`origin/feat/lint-openings-vs-walls`、`origin/feat/lint-coverage-report`、`origin/test/defect-corpus`、`origin/fix/label-living-dining`、`origin/fix/between-face-probes`、`origin/feat/lint-circulation-privacy`、`origin/docs/plan-soundness-programme`、`origin/docs/post-1.43.1-sync`）与 `refs/remotes/pr308`，本地另有 `refactor/exhaustive-element-kinds`、`docs/roadmap-visual-track`（#688 已合并）。清理前逐个确认已合并。
+**状态（2026-11-11 06:45Z 重读）：只剩 #676。** 本会话（第二场）完成：#700（2026-11-11T04:21:20Z，`b6edfd8f`）biome 2.6.4 与 vue-tsc 3.3.14，取代 Dependabot #604（GitHub 随后把 #604 标为已合并，`d13f6509`）；只关掉 2.6 新增的三条规则，backlog 3.3 记着采纳 `useMathMinMax` 与 `useDomNodeTextContent`。12 个已合并 PR 的远程分支逐个核对是 `main` 的祖先且 PR 为 MERGED 之后删除，`refs/remotes/pr308` 与过期的本地分支一并删除；`origin/ChanMeng666-patch-1` 的内容早已由 #568（`02851c1f`）落地，2026-11-11 经所有者同意删除（旧 SHA `6c86203a0044838a94150e26ff3178b7dd209d03`），所以 RM-D20 的 cherry-pick 不再需要；`origin/docs/rm0.2-studio-comment` 在 #699 后删除。#676（`three` 0.187）按顺序等 RM8.1b（#706）合并之后再评估。当前 `git branch -r` 只剩开着的 PR 分支、`origin/feat/remove-view` 与 `origin/main`。
+
+**下面是 01:18Z 的原状态：** 已合并：#678（`dfd126b6`，00:36Z）、#677（`644a390c`，00:46Z）、#675（`aa639f5b`，00:56Z）。**还剩：** #604 开着（biome 2.6 的 lint 差异没修）；#676 开着（`three` 0.187，帧哈希与 GLB 字节的评估没做）；#603 按 RM-D19 保持打开，不在本卡；`origin/ChanMeng666-patch-1`（`6c86203a`）没有落地（RM-D20 的 URL 核对与 cherry-pick 都没做）；分支清理没做：`git branch -r` 仍有 12 个 2026-10-17 → 10-24 的旧分支（卡里说的"已合并 PR 的远程分支"，是否每个都已合并本次没有逐个核对；`origin/feat/plan-json-instance-walls`、`origin/fix/analysis-entrance-size-arc`、`origin/feat/lint-space-enclosure`、`origin/feat/lint-room-contents`、`origin/feat/lint-openings-vs-walls`、`origin/feat/lint-coverage-report`、`origin/test/defect-corpus`、`origin/fix/label-living-dining`、`origin/fix/between-face-probes`、`origin/feat/lint-circulation-privacy`、`origin/docs/plan-soundness-programme`、`origin/docs/post-1.43.1-sync`）与 `refs/remotes/pr308`，本地另有 `refactor/exhaustive-element-kinds`、`docs/roadmap-visual-track`（#688 已合并）。清理前逐个确认已合并。
 
 - 合 #675（codeql-action，workflow 属高风险层）、#677、#678：`@dependabot rebase` 到新 `main`，CI 绿后按层级合并（`docs/agents/iron-laws.md` 的 Dependabot 规则）。
 - #604：先修 biome 2.6 的 lint 差异，再合。
@@ -59,13 +63,19 @@
 
 不许：合并主版本升级（#603 留给 RM5.4）；直接推 `origin/ChanMeng666-patch-1` 或把它当 PR 合并（cherry-pick 到新分支）；新资源 URL 打不开时落地 patch-1；为了让 #676 绿而重新钉帧哈希或 GLB digest（字节移动要逐项解释）；删 `feat/remove-view`。
 
+### RM0.6 · 工具：`scripts/backlog-archive.mjs` 的两处缺陷（2026-11-11 加，出自 RM0.1 余项的真实运行） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+内容：(1) 一次真实运行把 11 个 KEEP 标题上的状态词写了两遍；(2) 它不重生成 `docs/backlog-index.md`，归档之后要手跑 `npm run gen:backlog-index`。修脚本使两件都对，并补一个测试。
+
+证明：对一份含 KEEP 标题的夹具，归档前后标题不重复状态词；归档后 `backlog-index` 与生成器输出一致。不许：手改 `docs/backlog-index.md`；顺带归档任何条目。
+
 ---
 
 ## 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：不加语法
 
 执行顺序以 `README.md` §3 的表为准：RM1.3a → RM5.1 → RM1.4 → 发布 1.59.0，线（8 日 = 3 + 2 + 2 + 发布 1，9 个日历日）以下 RM2.1 → RM1.6a → PS7.9。RM0.2 是纯文档卡，也在线上，但由第二个（只做文档的）执行者并行，不计入 8 日。切点前合不完的进阶段 D，不挤进冻结期。
 
-### RM1.3a · 可达性盲点第一批 — `todo` · 3 日 · opus · 依赖无
+### RM1.3a · 可达性盲点第一批 — `done` · #698 · `b385685c`（2026-11-11T04:57:27Z）
 
 PS0.3（上层经楼梯 `reachable:false`）、U.1（阳台门算到达）、6.11（双开门读成两窄门）。这三条都坐在 README "computed, not estimated" 的声明下面。
 
@@ -73,7 +83,9 @@ PS0.3（上层经楼梯 `reachable:false`）、U.1（阳台门算到达）、6.1
 
 不许：改 `W_PATH_TOO_NARROW` 的阈值（PS0.8 等复测）。
 
-**状态（2026-11-11 01:19Z 读）：做了一半，分支没绿，没有 PR。** 分支 `origin/fix/rm1.3a-reachability-blind-spots`，头 `fef92a70`，基于 `e68fd576`（落后 `main`，合并前先合入），四个提交；worktree `.claude/worktrees/agent-a7037ea87974db09b`。
+**实际交付（PS0.3 与 U.1，#698）：** 188 个 digest 钉值带理由重钉（比 01:19Z 估的约 100 个多），每行理由写在 `test/byte-identity-baseline.ts` 头注释的规则下；两轮红队修了两个种子：登船即止的停靠点（boarding-stop）与双侧转折楼梯（two-sided turning-stair）。6.11 仍是 RM1.3c。执行者发现的后续项并入 RM1.3b。
+
+**下面是合并前 01:19Z 的状态（历史）：做了一半，分支没绿，没有 PR。** 分支 `origin/fix/rm1.3a-reachability-blind-spots`，头 `fef92a70`，基于 `e68fd576`（落后 `main`，合并前先合入），四个提交；worktree `.claude/worktrees/agent-a7037ea87974db09b`。
 - 分支上已做：PS0.3（只经楼梯到达的上层房间不再 `reachable: false`，`describe().levels[].access.rooms[]` 带 `reachable: true`、深度与瓶颈宽度）；U.1（通向阳台或其他室外地面的门不再算入口，房间从前门起走，只经阳台才到的房间进 `circulation.blocked`）。
 - 执行者对 788 份平面相对基线的全语料对比：SVG、`compile().diagnostics`、默认 profile 的 `lint()` 与语法事实无一行移动；`describe()` 动了 40 行，circulation 叠加层 10 行，`accessibility-advisory` 下的 `lint()` 只有 `garden-house`；五个示例做了换回证明（新 SVG 与 lint 配旧 `describe()` 重现钉住的 digest）。证据在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\rm1.3a\`（`fielddiff-now.txt`、`sweep-base\`、`sweep-after2\`、`check-quick-rm13a-4.log`）。
 - **还剩：** (1) 22 张字节恒等表里约 100 个 digest 钉值要移动，全在那 40 行只动 `describe()` 的行里；执行者没有重量。分支上 `check:quick` 红在其中 5 个（`new-families-byte-identity`、五个多层示例），CI 也会红。重钉是带理由的重量：`test/byte-identity-baseline.ts` 头注释，逐行列出哪一行动了、为什么这个移动就是修复本身，再加一次新上下文的评审确认新事实正确；不许为了变绿而重钉。(2) 合并 `main`（生成文件冲突时在本地合并后 `gen:all`，不手解）。(3) 开 PR，写出卡要的三个最小夹具的前后对照（`test/reachability-blind-spots.test.ts` 已断言这些值）。6.11 拆出为 RM1.3c，不在本卡。
@@ -88,15 +100,27 @@ PS0.3（上层经楼梯 `reachable:false`）、U.1（阳台门算到达）、6.1
 
 不许：没有裁定就写代码；改 `door … double` 的画法（`doorLeaves`，`docs/agents/gotchas.md` § Core）；顺带改 `W_PATH_TOO_NARROW` 的阈值。
 
-### RM5.1 · MCP 能力摘要 — `todo` · 2 日 · opus · 依赖无
+### RM5.1 · MCP 能力摘要 — `done` · #703 · `07ac9554`（2026-11-11T05:56:45Z）
 
 CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句（客户端很少主动读资源），工具清单与"能做/不能做/编辑循环/导出清单"移入新资源 `archlang://capabilities`。PS5.3a：`validate` 返回 `next`（`NEXT_TIERS` 同序）。**v2 加：** 能力资源里另加两行，分别指向 `docs/from-an-image.md`（读图的工作流）与 `docs/edit-one-room.md`（改一个房间）。一次 `packages/mcp` 版本 bump，搭 1.59.0 发布。
+
+**实际交付（#703）：** 资源 `archlang://capabilities` 由真源生成（CLI 半边 `src/manifest.ts`、工具半边 `packages/mcp/src/tools.ts`、`EXPORT_FORMATS`），`INSTRUCTIONS` 891/900；`validate` 返回 `next`。**PR 里有意没有 bump `packages/mcp` 的版本**：`release:pin` 在 1.59.0 时 bump 这个 shim（`scripts/bump-lockstep.ts`），插件清单钉的是 shim 的精确版本（`scripts/gen-plugin.ts`），提前 bump 会让两处不同步。受托裁定：派生的 `repair` 标题保持 "Repair furniture placement"（是标题，不是能力承诺）。评审留下的文字小项记为 RM5.1b。**合并后 `main` 红了：** #703 的合并提交 `07ac9554` 与 #701 的 `594ba1c7` 上 CI 的 Node 18 job 失败，步骤 "Generated artifacts are in sync" 里 `npm run gen:mcp-capabilities` 报 `TypeError: E.toReversed is not a function`（`Array.prototype.toReversed` Node 18 没有；run 42969029371、42970758650）；自动开了 issue #705 "main is red after a merge"。合并下一个 PR 前要先 fix-forward（用 `[...a].reverse()` 之类的 Node 18 可用写法）。
+
+### RM5.1b · MCP 能力页的文字小项（从 #703 的评审留下） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+- `archlang manifest` 的摘要 "this document: the whole CLI API"（在 `src/manifest.ts`）读起来像是能力页本身，改成只指 CLI 清单。
+- 生成器里手写了 `npx -y @chanmeng666/archlang`，应当从真源派生，不重抄。
+- 托管端的 CPU 上限没有在能力页里点名。
+
+证明：能力页由生成器出，drift 绿；`INSTRUCTIONS.length` 上限测试不变。不许：手写清单；在摘要里加能力承诺（`../public-surfaces/3d.md` §2）。
 
 证明：`INSTRUCTIONS.length` 上限测试不变；资源内容由 `src/manifest.ts`（CLI 半边）、`packages/mcp/src/tools.ts`（工具半边）、`EXPORT_FORMATS` 生成，带 drift 测试。
 
 不许：在摘要里写"设计/布置/家具"、IFC、任何 3D 能力承诺（展示用词按 `../public-surfaces/3d.md` §2 的固定句）；手写清单；在仓库根加 `.mcp.json`（高风险层的根配置，所有者待定，默认不做）。
 
-### RM1.4 · 静默接受改出声（只加 W） — `todo` · 2 日 · opus · 依赖无
+### RM1.4 · 静默接受改出声（只加 W） — `doing` · #704（评审中，与 RM1.4b 同一个 PR） · 2 日 · opus · 依赖无
+
+受托裁定（2026-11-11，所有者可一句话推翻）：随 PR 带出 `W_GRID_SNAPPED` 的示例，凡触发它的已发布示例，改写成吸附后的值（图字节恒等）；`W_UNKNOWN_THEME` 也由 CLI 的 `validate` 与 `lint` 报出。
 
 - U.2 裸米值静默编译 → 一条 W（带它猜成的毫米值）。**不升 E**：会让今天能编译的图在 Show HN 前变红。
 - U.3 家具类别拼错过 `--strict` → 走 `W_ALIAS_MATCH` 同路，`--strict` 下升级。
@@ -112,7 +136,11 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 实际交付与卡不同之处：页面是 `docs/says-no.md`，七个小平面，输出由 `scripts/says-no.ts` 从示例重新生成、`test/docs-says-no.test.ts` 比对；"过默认检查不等于过任何辖区"的对照表与 `validate --strict` 一段都在页里。同一 PR 带了 RM0.4 的 docs 一行（`docs/analysis.md` 的 "Tools built on `describe`"，只列 `gerontec/archlang-section`）。评审 J 的 1 个 blocker（`archlang repair` 在页面自己的平面上什么也不做）与 5 个 should-fix 合并前已改。**v2 加的第 1 项（`examples/studio.arch` 头注释，#683）没有做**：它会移动两处钉住的源文本哈希，拆成下面的 RM0.2b。#693 于 2026-11-11T01:25:16Z 合并。
 
-### RM0.2b · `examples/studio.arch` 头注释改正（#683，从 RM0.2 拆出） — `todo` · 未估 · sonnet · 依赖 #691 已合并（已满足，`6d1680e5`）
+### RM0.2b · `examples/studio.arch` 头注释改正（#683，从 RM0.2 拆出） — `done` · #699 · `b04cbd07`（2026-11-11T03:59:31Z）
+
+**实际交付与卡不同之处：** 头注释按原字节长度重写，所以没有 span 移动。移动的钉值：`test/double-door-byte-identity.test.ts` 里 studio 的源文本哈希、finish-furnish 的 studio 一行、`docs-site/public/3d/manifest.json` 的 `source.sha256`（重生成，没手改）。**卡里写错了一处：** `db6313cf…` 不是移动的钉值，它是载荷 digest，没有动。#683 随 PR 关闭。
+
+（以下为原卡。）
 
 `examples/studio.arch` 第 3–5 行今天写 "Architecturally sound (passes `arch lint`): every room opens off a central hall"。2026-11-11 用 1.58.0 的 `dist/cli.js` 核过的事实：前门 `d_main` 在 (3000,6000) 的外墙上，开进 "Living / Kitchen"（`r_living`，x 0–4000）；门厅经 `o_living`（x=4000 隔墙上的洞口）从客厅到达；卧室与卫生间各有一扇门开在门厅上；`arch lint examples/studio.arch` 无报（`"summary": "no warnings"`）；`--profile uk-residential-advisory` 下报一条 `W_ROOM_TOO_SMALL`。改好的注释已在分支 `origin/docs/rm0.2-studio-comment`（头 `e42184a9`，两个提交，只改 `examples/studio.arch` 与 `CHANGELOG.md`，没有 PR，没过门禁），从它出发。
 
@@ -129,6 +157,8 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 ### 发布 1.59.0 · 约 11-21 · 1 日
 
 线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。切点后合并的 minor 内容等 12-02。
+
+**所有者已决定（2026-11-11，"我同意发布"）：** 发布 1.59.0。代理在路线图切点（约 11-21）跑整条发布链，含 tag；所有者明说提前才提前。bump 三处：核心 minor；`packages/mcp` 的 shim 经 `release:pin`；`packages/archlang-3d`（自 0.5.0 以来含 RM8.1、RM8.2、RM8.3）。tag 前的每一项证明在版本号 PR 的分支头上跑完，再合并该 PR。
 
 ### ── 线（8 日）──
 
@@ -162,7 +192,7 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 线下的卡在 1.59.0 切点前合并的，随 1.59.0 发布；切点后合并的等 12-02。
 
-### RM1.4b · 写错大小写的主题名静默无效 — `todo` · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #695 的评审 L，M6）
+### RM1.4b · 写错大小写的主题名静默无效 — `doing` · #704（与 RM1.4 同一个 PR） · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #695 的评审 L，M6）
 
 评审 L 的 M6：`--theme Rendered` 退出 3 并提示 `did you mean "rendered"?`，但源文件里写 `theme Rendered`，`compile --json` 的 `diagnostics` 为空，也不按 `rendered` 画。2026-11-11 用 1.58.0 的 `dist/cli.js` 复核：一份写了 `theme Rendered` 的最小平面，`compile --json` 的 `diagnostics` 是 `[]`。这是原则 2 说的"静默接受"，与 RM1.4 同类，只加 W。评审明说不在 #695 里做。
 
@@ -171,6 +201,12 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 证明：最小夹具；字节恒等律（不触发的图 SVG、`describe()`、`lint()`、诊断不变）；`arch explain` 条目。
 
 不许：升 E（Show HN 前只加 W，原则 2）；把大小写不对的名字当成已知名去画；改任何主题的值。
+
+### RM1.4c · `W_GRID_SNAPPED` 没覆盖的几类（2026-11-11 加，出自 #704 的评审） — `todo` · 未估 · opus · 依赖 #704 已合并（线下）
+
+`W_GRID_SNAPPED` 不报：门宽、窗、派生的门位（`on <wall> at …`、`centered`）、多边形顶点、圆半径。要不要报、报哪些，先在 PR 里按"哪些值真的会被吸附"逐类核对再加，只加 W。**另：** playground 的编译器路径预算只剩 145 B 余量（457,855 / 458,000 B），本卡或之后任何动核心的卡先削掉可证明的重复，不抬上限。
+
+证明：每类一个最小夹具；不触发的图字节恒等。不许：改吸附行为本身（M.9/PS0.26 是所有者的）；抬预算。
 
 ### RM7.4 · `examples/clinic.svg` 没有生成器，已与编译器输出不一致 — `todo` · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #695 的评审 L）
 
@@ -194,7 +230,7 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 实际交付与卡不同之处：与 RM8.1 同一个 PR。`renderReplay({ supersample: k })`（`@chanmeng666/archlang-3d/node`，k 取 1–4，默认 1 不变）与 `ReplayPayload.supersample`；archlang.uk 的海报按 3 × 3、回放视频按 2 × 2 生成（`docs-site/public/3d/manifest.json` 的 `supersample`）。`renderStill` 不从任何入口导出，卡里写的"给 `renderStill` 加选项"不成立。体积：海报 PNG 增大 55–86%，WebP 减小 9–16%（例：studio 40,992 → 34,732），MP4 变小（例：studio 577,336 → 438,110）；CI 里 `e2e/assets.e2e.ts` 29.5 s → 54.6 s，`check:3d` 的 vitest 106.6 s → 117.6 s（PR 正文）。实时查看器的 `antialias: false` 未动。
 
-### RM8.1b · #691 的后续：分组切换的纯函数与没测到的情形 — `todo` · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #691 的评审 R2 与 PR 正文的 "Known limits"）
+### RM8.1b · #691 的后续：分组切换的纯函数与没测到的情形 — `doing` · #706（修评审意见中） · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #691 的评审 R2 与 PR 正文的 "Known limits"）
 
 内容：
 - 评审 R2 SF2：`packages/archlang-3d/test/wall-lines.test.ts` 的 `drawnAt` 自己重写了"组内全部 `rise === 1` 才换 `joined`"，所以"每种升起状态都闭合"的测试验证的是这份复刻，不是 `mount.ts` 的 `draw`。把切换写成 `wall-lines.ts` 里一个导出的纯函数（评审的建议：`joinedGroups(fixes, standing)`），`mount.ts` 与测试都调用它。今天 13 个关键帧里只有 laneway 的 `tilted` 处在升墙中途，是唯一能看到这类回归的帧。
@@ -206,7 +242,25 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 不许：移动任何钉子；碰 `src/mesh/build.ts`；在本地 bless 关键帧；顺带改灯光或 `antialias`。
 
-### RM8.3 · 3D 画出庭院（backlog VA.2） — `todo` · 4 日（主会话估） · opus · 依赖无 · **不是缺陷修复**：赶不上约 11-21 的切点就等 12-02
+### RM8.1d · 共线对接的两面墙，一面深度偏 1 µm 时，窗的位置改变墙的拓扑（2026-11-11 加，出自 #706 执行者的报告；先调查） — `todo` · 未估 · opus · 依赖无
+
+现象：两面共线的 200 mm 墙 `a` 与 `b` 在 x = 3100 mm 处对接，`b` 的深度偏 0.001 mm；在 `b` 上放一扇 800 mm 的窗，窗在 `b` 局部坐标 2000 或 2500 mm 处时，墙不再被修到 `a` 的墙角：`b` 失去接缝与窗之间的一段，`a` 留下一条 1 µm 的斜边。窗改成 600 mm 且更靠近接缝时，拓扑正常。**不知道缺陷在核心（斜接或洞口）还是在网格（`packages/archlang-3d`）。**
+
+内容：用最小平面复现；比较核心解出的墙多边形与 Mesh3D，找出哪一级丢了那一段；然后修，或在不可修时记录原因。
+
+证明：最小平面的前后对照；定位结论（核心还是网格）写进 PR；若修核心，SVG 字节恒等律；若修网格，关键帧、GLB 的移动逐项带理由。不许：本地 bless 关键帧；在没定位之前两边都改。
+
+### RM8.1c · 墙线通道 `linesOf` 在长而窗多的墙上占挂载耗时（2026-11-11 加，出自 #706） — `todo` · 未估 · sonnet · 依赖 #706 已合并（线下）
+
+#706 量出：一面墙上有 80 扇窗时，线通道 `linesOf` 约 170 ms，是挂载耗时的大头。先用合成的窗多的长墙量出耗时与内存，超出可接受范围才改算法；改了的话 `wall-lines` 在语料上的输出逐字节不变。
+
+证明：量法与数字进 PR；关键帧、Mesh3D、GLB、事件表零差。不许：移动任何钉子；本地 bless 关键帧。
+
+### RM8.3 · 3D 画出庭院（backlog VA.2） — `done` · #701 · `594ba1c7`（2026-11-11T06:12:04Z） · 4 日（主会话估） · opus · 依赖无 · **不是缺陷修复**：赶不上约 11-21 的切点就等 12-02
+
+**实际交付与卡不同之处：** 9 种 `outdoor` 地面与围栏进 Mesh3D；室外地面比楼板抬高 0.5 mm；增加庭院住宅（courtyard-house）的关键帧。**地面平面只由查看器画，作为背景，不属于建筑，也不进 GLB**（受托裁定，所有者可一句话推翻；`../public-surfaces/3d.md` §2 的固定句因此不改）。账本的 `m1-omits-outdoor-fences` 已换成各默认值的条目。评审留下的两项记为 RM8.3b。`packages/archlang-3d` 的版本 bump 搭 1.59.0。
+
+（以下为原卡。）
 
 Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf`、`fenceOf`），Mesh3D 今天不建它们，并记账本 `m1-omits-outdoor-fences`（`src/mesh/build.ts`）。本卡：
 - 9 种 `outdoor` 地面（`OUTDOOR_KINDS`：lawn、planting、paving、deck、gravel、water、driveway、patio、balcony）各建一块薄板，每种一个带账本的默认颜色。颜色取自 2D 主题：核心的 `GROUND` 表（`src/elements/outdoor.ts`）让每个种类读三个主题键之一（`tint`：`lawn`、`paving`、`water`），所以 9 种今天只对应 3 个底色；3D 先照这张表取色（经核心公开导出的 `THEMES`，ADR 0031 的缝），种类之间要不要再分色（例如 deck 与 gravel），在 PR 里论证，分出来的每一个都是 3D 调色板里的一项并进账本。
@@ -218,6 +272,13 @@ Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf
 证明：每种地面和每种围栏样式一个最小夹具，Mesh3D 里有对应节点、GLB 过 glTF-Validator（V-GLTF-01，CI）；没有 `outdoor`、`fence` 的图 Mesh3D 与 GLB 零差（laneway 与 two-storey 没有，除非选了"地面平面进 Mesh3D"）；钉子只按 V-D5 带理由移动，理由写进提交与测试注释；核心的 SVG、`describe()`、`lint()` 零差。
 
 不许：在冻结期（11-24 → 12-01）合并；为地面加位图纹理、UV 或 `TEXCOORD_0`；给 3D 加核心没有的地面种类；读 `label` 决定地面；没写理由就移动钉子；改核心的主题值或 `GROUND` 表。
+
+### RM8.3b · 庭院地面的深度精度与 `build --json` 的计数（2026-11-11 加，出自 #701 第二轮评审） — `todo` · 未估 · opus · 依赖无（线下）
+
+- 0.5 mm 的抬高小于 Blender 视口与其他 GLB 查看器在建筑尺度下的深度精度，庭院的 patio 在那里仍可能闪烁。三选一并在 PR 里论证：开放天空的地面之下不放楼板进 GLB；室外地面比楼板抬更大一点；或在 `docs-site/3d.md` 写明 GLB 的这条限制。
+- `build --json` 每层的计数不含 outdoor 与 fence 节点，补上或写明。
+
+证明：按所选做法的最小夹具；其余图的 Mesh3D 与 GLB 零差（或钉子带理由移动）。不许：本地 bless 关键帧；改核心。
 
 ---
 
@@ -375,9 +436,11 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 视觉车道 RM8.3（若阶段 B 没做完）→ RM8.4 → RM8.5 → RM8.6，合计 8.5 日（RM8.3 顺延过来时 12.5 日）（`README.md` §3 阶段 D）。
 
-### RM8.4 · 把色彩主题亮出来 — `doing` · 1.5 日（主会话估） · sonnet · 依赖无（backlog VA.4，从 RM5.2 提前到这里）
+### RM8.4 · 把色彩主题亮出来 — `done` · #695（`6683c788`）+ #702（`1d5f46a4`） · 1.5 日（主会话估） · sonnet · 依赖无（backlog VA.4，从 RM5.2 提前到这里）
 
-**状态（2026-11-11 01:45Z 读）：CLI 一项已交付，只剩 RM8.4b。** 实际在阶段 B 就做了（排期把它放在阶段 D）。CLI `--theme <name>` 由 #695 合并（2026-11-11T01:44:52Z，合并提交 `6683c788`）：接受它的命令是 `compile`、`batch`、`md`、`preview`、`watch`，`-f json|txt|dxf` 退出 3。#695 经三轮才合并：评审 L 的 blocker（`test/cli-theme.test.ts` 违反 `test/no-duplicate-helpers.test.ts`）、单测超时守卫与 flag 矩阵的棘轮都满足了，没有动任何允许名单。**本卡剩下的都在 RM8.4b**：docs 示例页与 gallery 的 `rendered` 版本，以及 playground `#theme` 下拉框在手机宽度下的核对。RM8.4b 做完时本卡改 `done`（评审 L 的 M3）。
+**状态（2026-11-11 06:45Z）：两半都已合并。** RM8.4b 由 #702 于 2026-11-11T05:20:29Z 合并。
+
+**下面是 01:45Z 的状态（历史）：CLI 一项已交付，只剩 RM8.4b。** 实际在阶段 B 就做了（排期把它放在阶段 D）。CLI `--theme <name>` 由 #695 合并（2026-11-11T01:44:52Z，合并提交 `6683c788`）：接受它的命令是 `compile`、`batch`、`md`、`preview`、`watch`，`-f json|txt|dxf` 退出 3。#695 经三轮才合并：评审 L 的 blocker（`test/cli-theme.test.ts` 违反 `test/no-duplicate-helpers.test.ts`）、单测超时守卫与 flag 矩阵的棘轮都满足了，没有动任何允许名单。**本卡剩下的都在 RM8.4b**：docs 示例页与 gallery 的 `rendered` 版本，以及 playground `#theme` 下拉框在手机宽度下的核对。RM8.4b 做完时本卡改 `done`（评审 L 的 M3）。
 
 `rendered` 主题今天只能由源文件里的 `theme rendered` 或库调用的 `CompileOptions.theme` 选中；CLI 没有 `--theme`（`src/manifest.ts` 与 `docs/cli-reference.md` 都没有）。
 - CLI `--theme <name>`：按 `.claude/commands/new-cli-flag.md` 注册，`src/manifest.ts` 一行，`npm run gen:cli` 重生成 `docs/cli-reference.md`。可选名从核心公开导出的 `THEMES` 派生，不重抄。CLI 把选中的主题作为 `CompileOptions.theme` 传入；按 `src/types.ts` 的说明，这个选项压过源文件的 `theme { … }`，帮助文本照实写出这一点。未知的名字给出可选名列表。
@@ -388,7 +451,11 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 不许：改默认主题或任何现有主题的值（`test/fixture-byte-identity.test.ts` 第 1 组红就是缺陷，ADR 0023 决定 6）；手改 `docs/cli-reference.md`；新增主题名；在本卡给 MCP 工具加主题参数；让站点出现深色页面。
 
-### RM8.4b · 示例页与 gallery 的 `rendered` 版本（RM8.4 的后半） — `todo` · 未估 · sonnet · 依赖 #695 已合并（已满足，`6683c788`）（2026-11-11 加，出自评审 L 的 M3）
+### RM8.4b · 示例页与 gallery 的 `rendered` 版本（RM8.4 的后半） — `done` · #702 · `1d5f46a4`（2026-11-11T05:20:29Z）（2026-11-11 加，出自评审 L 的 M3）
+
+**实际交付与卡不同之处：** `/examples` 与 `/gallery` 上每张图一个"Rendered colours"开关。**没有登记 `GENERATORS` 一行**：`test/agent-gallery.test.ts` 禁止脚本读 `docs/gallery`，而 gallery 的 rendered 图是站点构建时由 `sync-docs.mjs` 生成的、不提交，所以没有可让 `check:drift` 守的产物。
+
+（以下为原卡。）
 
 内容：
 - 扩 `scripts/gen-example-svgs.ts`，或写一个同类的生成器，为 docs 的示例页与 gallery 出 `rendered` 主题的图；生成器经核心公开的 `compile(src, { theme: THEMES.rendered })`，与 #695 的 `--theme rendered` 同一条路，不重抄主题值。
@@ -556,6 +623,13 @@ CR9：OAS 导入 + OpenPlan3D 导出，建在 RM3.1 上；只在 OpenPlan3D 导�
 ### RM1.3b · 可达性盲点第二批 — `todo` · 4 日 · opus · 依赖 RM1.3a
 
 4.5（草坪、水面当可走 → `outdoor` 地面种类决定可走性）、M.4（竖井到达层的叠加与行进方向）、U.22/PS0.15（`describe()` 步数预算与净面积项的二次复杂度）、PS0.6（`suggest` 经卧室给房间连门）。**2026-11-11 加（RM1.3a 执行者的发现）：** `accessibility-advisory` 下瓶颈是楼梯梯段本身时，`W_PATH_TOO_NARROW` 不指名任何门，hint 却说加宽最窄的门或洞口；它应当说瓶颈是梯段。
+
+**2026-11-11 加（RM1.3a 合并后的余项）：**
+- 楼梯可达的楼层上，每个阳台要各有一个独立的室外节点（`src/analyze.ts:536`，`src/lint/rules/reachability.ts:68`）。
+- circulation 叠加层要拿到该层的竖井到达点（`src/overlays/circulation.ts`），使 garden-house 的 L2 与 `describe()` 一致。
+- 去掉 `test/far-seed-pinch.test.ts:297` 的 skip。
+- 多楼梯、多阳台的楼层补深度测试。
+- garden-house 在 `accessibility-advisory` 下的 `W_PATH_TOO_NARROW` hint 不再指名门（正确：800 的楼梯才是瓶颈）；核对措辞。
 
 证明：预算是计数不是时间（`E_STEP_LIMIT` 同路）；`describe()` 变化逐图列出。
 
