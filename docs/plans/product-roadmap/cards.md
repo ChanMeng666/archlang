@@ -73,7 +73,7 @@ PS0.3（上层经楼梯 `reachable:false`）、U.1（阳台门算到达）、6.1
 
 不许：改 `W_PATH_TOO_NARROW` 的阈值（PS0.8 等复测）。
 
-**状态（2026-11-11 01:19Z 读）：做了一半，分支没绿，没有 PR。** 分支 `origin/fix/rm1.3a-reachability-blind-spots`，头 `fef92a70`，基于 `e68fd576`（落后 `main` 35 个提交），四个提交；worktree `.claude/worktrees/agent-a7037ea87974db09b`。
+**状态（2026-11-11 01:19Z 读）：做了一半，分支没绿，没有 PR。** 分支 `origin/fix/rm1.3a-reachability-blind-spots`，头 `fef92a70`，基于 `e68fd576`（落后 `main`，合并前先合入），四个提交；worktree `.claude/worktrees/agent-a7037ea87974db09b`。
 - 分支上已做：PS0.3（只经楼梯到达的上层房间不再 `reachable: false`，`describe().levels[].access.rooms[]` 带 `reachable: true`、深度与瓶颈宽度）；U.1（通向阳台或其他室外地面的门不再算入口，房间从前门起走，只经阳台才到的房间进 `circulation.blocked`）。
 - 执行者对 788 份平面相对基线的全语料对比：SVG、`compile().diagnostics`、默认 profile 的 `lint()` 与语法事实无一行移动；`describe()` 动了 40 行，circulation 叠加层 10 行，`accessibility-advisory` 下的 `lint()` 只有 `garden-house`；五个示例做了换回证明（新 SVG 与 lint 配旧 `describe()` 重现钉住的 digest）。证据在 `D:\github_repository\claude-kept\2026-11-10-archlang-roadmap-v2\rm1.3a\`（`fielddiff-now.txt`、`sweep-base\`、`sweep-after2\`、`check-quick-rm13a-4.log`）。
 - **还剩：** (1) 22 张字节恒等表里约 100 个 digest 钉值要移动，全在那 40 行只动 `describe()` 的行里；执行者没有重量。分支上 `check:quick` 红在其中 5 个（`new-families-byte-identity`、五个多层示例），CI 也会红。重钉是带理由的重量：`test/byte-identity-baseline.ts` 头注释，逐行列出哪一行动了、为什么这个移动就是修复本身，再加一次新上下文的评审确认新事实正确；不许为了变绿而重钉。(2) 合并 `main`（生成文件冲突时在本地合并后 `gen:all`，不手解）。(3) 开 PR，写出卡要的三个最小夹具的前后对照（`test/reachability-blind-spots.test.ts` 已断言这些值）。6.11 拆出为 RM1.3c，不在本卡。

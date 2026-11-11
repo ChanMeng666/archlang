@@ -171,7 +171,7 @@
 | 1 | RM1.3a | 可达性盲点第一批（v1 不变） | 1 | 3 |
 | 2 | RM5.1 | MCP 能力摘要 + PS5.3a（v1 不变）；能力资源里另加指向 `docs/from-an-image.md` 与"改一个房间"的两行。一次 `packages/mcp` bump，搭 1.59.0 | 5 | 2 |
 | 3 | RM1.4 | 静默接受改出声，只加 W（v1 不变） | 1 | 2 |
-| 4 | RM0.2（加三项；纯文档，由第二个执行者并行，不计入线的合计） | "编译器说不、并说为什么"页（v1 不变）；**加**：`examples/studio.arch` 头注释改正（#683）：去掉无条件的 "Architecturally sound"，改正"每个房间都开向门厅"，写明"默认 profile 下 lint 无报；`uk-residential-advisory` 下报一条 `W_ROOM_TOO_SMALL`"；一张"过默认检查不等于过任何辖区"的对照表，只列仓库 profile 里已有的数；一段 `validate --strict`：它把警告也当失败（退出码 2），适合放进 CI | 1 | (1.5) |
+| 4 | RM0.2（加三项，其中 `studio.arch` 头注释一项已拆成 RM0.2b；纯文档，由第二个执行者并行，不计入线的合计） | "编译器说不、并说为什么"页（v1 不变）；**加**：`examples/studio.arch` 头注释改正（#683）：去掉无条件的 "Architecturally sound"，改正"每个房间都开向门厅"，写明"默认 profile 下 lint 无报；`uk-residential-advisory` 下报一条 `W_ROOM_TOO_SMALL`"；一张"过默认检查不等于过任何辖区"的对照表，只列仓库 profile 里已有的数；一段 `validate --strict`：它把警告也当失败（退出码 2），适合放进 CI | 1 | (1.5) |
 | 5 | 发布 1.59.0 | 约 11-21 切（发布由所有者决定，发布链由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）合并后另需一次 `packages/archlang-3d` 的版本 bump | 7 | 1 |
 | ── | ── 线（8 日 = RM1.3a 3 + RM5.1 2 + RM1.4 2 + 发布 1，9 个日历日；RM0.2 在线上但由文档执行者做，不计入；视觉车道另计，见下）── | | | |
 | 6 | RM2.1 | 编辑模型的剩余可见性（v1 不变） | 2 | 1 |

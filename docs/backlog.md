@@ -1640,7 +1640,7 @@ Lawn, paving and deck areas are not built in 3D, so a garden is bare ground in t
 `floorFinish` reads `uses` only; the label is deliberately not read. Decide whether a label should
 ever pick a finish before building anything.
 
-### VA.4 · The CLI has no `--theme` flag — `todo`
+### VA.4 · `--theme` on the CLI: done by #695, waiting to be archived — `note`
 
 `rendered` is reached only by `theme rendered` in the source or `CompileOptions.theme`. A flag is a
 manifest row (`src/manifest.ts`) and regenerates `docs/cli-reference.md`. **Gate:** the default output

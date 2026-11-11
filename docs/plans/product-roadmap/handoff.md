@@ -44,7 +44,7 @@
 
 | PR / 分支 | 头 | 内容 | 合并前还要什么 | worktree |
 |---|---|---|---|---|
-| 分支 `fix/rm1.3a-reachability-blind-spots`（无 PR） | `fef92a70`，基 `e68fd576`，落后 `main` 35 个提交 | RM1.3a 的 PS0.3、U.1 | 约 100 个 digest 钉值带理由重量与一次新上下文评审；合并 `main`；开 PR（`cards.md` RM1.3a 的状态行） | `.claude/worktrees/agent-a7037ea87974db09b`（锁定） |
+| 分支 `fix/rm1.3a-reachability-blind-spots`（无 PR） | `fef92a70`，基 `e68fd576`，落后 `main`（合并前先合入 `main`） | RM1.3a 的 PS0.3、U.1 | 约 100 个 digest 钉值带理由重量与一次新上下文评审；合并 `main`；开 PR（`cards.md` RM1.3a 的状态行） | `.claude/worktrees/agent-a7037ea87974db09b`（锁定） |
 | 分支 `docs/rm0.2-studio-comment`（无 PR） | `e42184a9` | 改好的 `examples/studio.arch` 头注释与 CHANGELOG 一行（RM0.2b 的起点） | 两处钉值的带理由移动、`playground/src/examples.ts` 的同句、门禁、PR（`cards.md` RM0.2b） | 没有 worktree；分支在 `origin` 上 |
 | #604 Dependabot dev-dependencies | `3d7ef9a1` | biome 2.6 等 | 先修 biome 的 lint 差异（RM0.5） | — |
 | #676 Dependabot `three` 0.187 | `d8aa945e` | 3D 依赖 | 单独评估帧哈希与 GLB 字节、许可白名单（RM0.5） | — |
@@ -74,7 +74,7 @@
 5. 线下，有余量才做，按此顺序：RM2.1 → RM1.6a → PS7.9。另有 RM7.4（小件）；RM1.3c 先要设计裁定。
 
 **视觉车道：**
-1. RM0.2b（`studio.arch` 头注释；从 `origin/docs/rm0.2-studio-comment` 出发；要跑 `gen:3d-assets -- --only studio`，是重命令，避开别的重命令）。
+1. RM0.2b（`studio.arch` 头注释；从 `origin/docs/rm0.2-studio-comment` 出发，该分支落后 `main` 且改了 `CHANGELOG.md`，先合入 `main` 并把条目留在 `[Unreleased]`；要跑 `gen:3d-assets -- --only studio`，是重命令，避开别的重命令）。
 2. RM8.3（3D 画出庭院；不是缺陷修复，赶不上约 11-21 的切点就等 12-02）。
 3. RM8.4b（示例页与 gallery 的 `rendered` 版本，加 playground `#theme` 在手机宽度下的核对）。
 4. RM8.1b（#691 的后续，小件）。
