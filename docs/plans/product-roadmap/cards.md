@@ -55,7 +55,7 @@
 - 合 #675（codeql-action，workflow 属高风险层）、#677、#678：`@dependabot rebase` 到新 `main`，CI 绿后按层级合并（`docs/agents/iron-laws.md` 的 Dependabot 规则）。
 - #604：先修 biome 2.6 的 lint 差异，再合。
 - #676（`three` 0.187）：单独评估 3D 的帧哈希与 GLB 字节、许可白名单与 THIRD_PARTY_NOTICES；不与别的升级同 PR。
-- #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本）：按 RM-D19，Show HN 之前不合并，PR 保持打开；12-02 之后由 RM5.4 迁移。
+- #603（`@modelcontextprotocol/ext-apps` 1.7.5 → 2.0.4，主版本）：按 RM-D19，~~Show HN 之前不合并，PR 保持打开；12-02 之后由 RM5.4 迁移~~。RM-D27（`README.md` §6.5）作废了日期：RM5.4 现在就可以开工；但这是主版本升级，合并仍等所有者（`docs/agents/iron-laws.md` § Owner policies："a major bump waits for the owner"），在那之前 PR 保持打开。
 - 清掉 12 个已合并 PR 的远程分支、`refs/remotes/pr308` 和过期的本地分支（例如 `refactor/exhaustive-element-kinds`）；保留 `feat/remove-view`。
 - `origin/ChanMeng666-patch-1`（所有者 2026-11-08 网页上改的 README 影片链接，一行，commit `6c86203a`，没有 PR）：按 RM-D20 落地。先确认新的资源 URL 能打开；再从 `main` 新建分支，cherry-pick `6c86203a`，经 PR 合并（README 改动按风险层级走）。
 
@@ -71,7 +71,7 @@
 
 ---
 
-## 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：不加语法
+## 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：~~不加语法~~（RM-D27 作废，`README.md` §6.5：`[语法]` 卡在 PS7.9 合并后就开工，不等阶段）
 
 执行顺序以 `README.md` §3 的表为准：RM1.3a → RM5.1 → RM1.4 → 发布 1.59.0，线（8 日 = 3 + 2 + 2 + 发布 1，9 个日历日）以下 RM2.1 → RM1.6a → PS7.9。RM0.2 是纯文档卡，也在线上，但由第二个（只做文档的）执行者并行，不计入 8 日。~~切点前合不完的进阶段 D，不挤进冻结期。~~ RM-D27 之后：切点前合不完的卡接着做、绿了就合并，进下一次所有者决定的发布；没有冻结期要躲。
 
@@ -262,7 +262,7 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 证明：量法与数字进 PR；关键帧、Mesh3D、GLB、事件表零差。不许：移动任何钉子；本地 bless 关键帧。
 
-### RM8.3 · 3D 画出庭院（backlog VA.2） — `done` · #701 · `594ba1c7`（2026-11-11T06:12:04Z） · 4 日（主会话估） · opus · 依赖无 · **不是缺陷修复**：赶不上约 11-21 的切点就等 12-02
+### RM8.3 · 3D 画出庭院（backlog VA.2） — `done` · #701 · `594ba1c7`（2026-11-11T06:12:04Z） · 4 日（主会话估） · opus · 依赖无 · **不是缺陷修复**：~~赶不上约 11-21 的切点就等 12-02~~（已由 #701 合并，这一条随之作废；RM-D27 之后也不再有这个日期门）
 
 **实际交付与卡不同之处：** 9 种 `outdoor` 地面与围栏进 Mesh3D；室外地面比楼板抬高 0.5 mm；增加庭院住宅（courtyard-house）的关键帧。**地面平面只由查看器画，作为背景，不属于建筑，也不进 GLB**（受托裁定，所有者可一句话推翻；`../public-surfaces/3d.md` §2 的固定句因此不改）。账本的 `m1-omits-outdoor-fences` 已换成各默认值的条目。评审留下的两项记为 RM8.3b。`packages/archlang-3d` 的版本 bump 搭 1.59.0。
 
@@ -277,7 +277,7 @@ Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf
 
 证明：每种地面和每种围栏样式一个最小夹具，Mesh3D 里有对应节点、GLB 过 glTF-Validator（V-GLTF-01，CI）；没有 `outdoor`、`fence` 的图 Mesh3D 与 GLB 零差（laneway 与 two-storey 没有，除非选了"地面平面进 Mesh3D"）；钉子只按 V-D5 带理由移动，理由写进提交与测试注释；核心的 SVG、`describe()`、`lint()` 零差。
 
-不许：在冻结期（11-24 → 12-01）合并；为地面加位图纹理、UV 或 `TEXCOORD_0`；给 3D 加核心没有的地面种类；读 `label` 决定地面；没写理由就移动钉子；改核心的主题值或 `GROUND` 表。
+不许：~~在冻结期（11-24 → 12-01）合并~~（RM-D27 作废；本卡已由 #701 合并）；为地面加位图纹理、UV 或 `TEXCOORD_0`；给 3D 加核心没有的地面种类；读 `label` 决定地面；没写理由就移动钉子；改核心的主题值或 `GROUND` 表。
 
 ### RM8.3b · 庭院地面的深度精度与 `build --json` 的计数（2026-11-11 加，出自 #701 第二轮评审） — `todo` · 未估 · opus · 依赖无（线下）
 
@@ -296,7 +296,7 @@ Scene3D 已经带 `outdoor` 与 `fences`（`src/scene3d/build.ts` 的 `outdoorOf
 
 纯测量，不改代码。按 plan-soundness D7/D15 的六份 brief 与冻结提示，在 1.59.0 上跑一次；记录"N 个缺陷、最终 lint 报出 k 个"。**v2：** 结果记在本计划 `handoff.md` 的测量表；`../plan-soundness/handoff.md` §4 只留一行指针。这个数字是 CR10 发布说明引用的覆盖数字（RM-D3 的措辞），也是 RM7.3 的自检项。
 
-兜底：1.59.0 到 2026-11-23 还没打 tag，就在冻结时 `main` 的提交上量，把完整 SHA 记进测量表；CR10 的发布说明引这个 SHA 和第一个包含它的版本。
+兜底：1.59.0 到 2026-11-23 还没打 tag，就在当时 `main` 的提交上量，把完整 SHA 记进测量表；CR10 的发布说明引这个 SHA 和第一个包含它的版本。
 
 不许：改提示；改 brief；把数字叫 benchmark 或与模型分数并列；在 1.59.0 以外的版本上量，除非是上面的兜底并在测量表里写明 SHA。
 
@@ -320,7 +320,7 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 - `schema-policy.md` → CR11a：`$id` 与变更、弃用政策草案。
 - `walls-facts.md` → RM7.2：字段按 `_derivedWalls` 的真实形状（`points[]`、`closed`、`between` 或 `ring`、厚度、类别、状态，`src/elements/walls-from-rooms.ts`）；按墙 `id`（即 piece 名）与 `heights.walls[]`（`src/describe.ts` 的 `{ id, height }`）、`describe --facts quantities`（`src/analyze/quantities.ts` 按 `id`）对齐；已有的 `describe().derived_walls[].name` 是 spec 名，CR8 切分后一个 spec 对应多个 piece，设计稿要交代新事实与默认 `derived_walls` 的关系；写明"段的粒度在 CRF1 之后才稳定"；新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`）；消费者一栏照实写。
 - `slab-and-section.md` → RM6.1：DS11 并入时的四件事（拼写取 DS11 的 `section A (x,y)->(x,y)` 还是 #544 的 `from … to …`；进 `describe` 主体还是 opt-in 事实；多层平面上剖切符号画在哪一页；`section` 写进日后 DS5 的 `level a..b` 时 id 怎么不重复，定不下来就保留对 DS5 的依赖）；净高子句的拼写，按 RM-D17（MF-D11 的受托裁定，`README.md` §6.2）。
-- `plan-json-scope.md` → RM3.1：范围表，逐个顶层语句对 `src/plan-json*`；列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，待所有者裁定，未裁则标 `dropped`）。RM8.7 的"3D 读 `floor`"在这张表里一起定（`floor` 今天在 `PlanJsonDroppedClause` 里，`src/plan-json/to-json.ts`）。
+- `plan-json-scope.md` → RM3.1：范围表，逐个顶层语句对 `src/plan-json*`；列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，~~待所有者裁定，未裁则标 `dropped`~~ 设计稿读到它已由 `78e0b7f9` 修掉，`uses` 一行是"往返"，请所有者关卡）。RM8.7 的"3D 读 `floor`"在这张表里一起定（`floor` 今天在 `PlanJsonDroppedClause` 里，`src/plan-json/to-json.ts`）。
 - `visual-language.md` → 第 8 轨（RM8.5–RM8.9）。写明：
   - RM8.8：接触阴影与环境遮蔽怎样从几何确定性地烘焙（不用实时阴影图）；帧时间预算的数字与量法（backlog VA.5 的条件；V9 的阴影图实测在 SwiftShader 上多约 55% 帧时间，超过当时约 30% 的预算，`mount.ts` 灯光处的注释）；它进 Mesh3D 与 GLB 还是只在查看器里。
   - RM8.6：门框与门套、窗台板、楼梯踏步与栏杆的默认尺寸（每个都进账本），各取墙厚或洞口的哪个比例。
@@ -376,7 +376,7 @@ CR11（`../checker-reach/README.md` §3）的政策那一半：schema 用带版�
 
 **v2 加：** 一列跨辖区夹具，只用核实等级 `V` 与 `S-full` 的规则，profile 限定，不进默认规则。`us-residential-advisory` 现有的数来自讲义转述（`S-secondary`），重读原文之前不进这一列。
 
-RM1.1a 若走了兜底（量的是冻结时 `main` 的 SHA），发布说明引这个 SHA 和第一个包含它的版本。
+RM1.1a 若走了兜底（量的是当时 `main` 的 SHA），发布说明引这个 SHA 和第一个包含它的版本。
 
 证明：每个夹具的期望诊断由测试判定；跨辖区一列的每条规则在 RM1.6a 的平行表里是 `V` 或 `S-full`（测试从表派生）；`POST /check` 与 CLI 对同一输入的 `lint --json` 一致。
 
@@ -384,10 +384,10 @@ RM1.1a 若走了兜底（量的是冻结时 `main` 的 SHA），发布说明引�
 
 ### RM3.1 前半 · Plan JSON 无损：范围表、往返律、`outdoor` 与 `fence` — `todo` · 3 日 · opus · 依赖 CR11a、冻结期的 `plan-json-scope.md` · **批次 C′ 线上**
 
-**设计稿已写（2026-11-11）：** `design/plan-json-scope.md`，范围表的依赖满足（仍依赖 CR11a）。它另建议：前半同时把 `floor` 搬进 Plan JSON、修 J16（只在作者写了 `sill` 时写它）；PS0.18 在表里标 `dropped`，但报告它已由 `78e0b7f9` 在回程一侧修掉，是否关闭要所有者裁定。
+**设计稿已写（2026-11-11）：** `design/plan-json-scope.md`，范围表的依赖满足（仍依赖 CR11a）。它另建议：前半同时把 `floor` 搬进 Plan JSON、修 J16（只在作者写了 `sill` 时写它）；PS0.18 已由 `78e0b7f9` 修掉（根平面与 PS3.9 组件体同走 `emitRows`），表里 `uses` 一行是"往返"，请所有者关闭这张卡。
 
 v1 的 RM3.1 拆成两半（RM-D10，所有者 2026-11-11 批准）。前半：
-- 范围表：按设计稿列出 Plan JSON **声称承载**的形式（逐个顶层语句对 `src/plan-json*`），含 J16（每扇窗写 `sill`）与 PS0.18（待所有者裁定，未裁则标 `dropped`）。
+- 范围表：按设计稿列出 Plan JSON **声称承载**的形式（逐个顶层语句对 `src/plan-json*`），含 J16（每扇窗写 `sill`）与 PS0.18（已由 `78e0b7f9` 修掉，标"往返"；关卡由所有者做）。
 - 往返律：新增 `test/plan-json-roundtrip-law.test.ts`：范围内的每个示例 `-f json` → `--from-json` → SVG + `describe()` + `lint()` 字节恒等；范围外的形式在 Plan JSON 里显式标 `dropped`。`place` 在后半做完之前标 `dropped`。
 - PS0.21：`outdoor`、`fence` 进 Plan JSON（可选新键，不破坏）；schema 变更按 CR11a 的政策记录。
 
@@ -429,7 +429,7 @@ CR11 的其余一半：语言规范独立版本 `lang-1.0`。RM3.2：SBOM（Cycl
 
 不许：改 SVG/PDF 的线宽；在 DXF 里另立一张线宽表（只能从 SVG/PDF 的表派生）；改图层名（NCS v6 的命名是另一件事）；写 `--layers iso13567`（§4 不做）。
 
-### RM5.4 · `@modelcontextprotocol/ext-apps` 2.x 迁移（#603） — `todo` · 未估 · opus · 依赖 2026-12-02 之后；与 RM1.6b 共用一次 `packages/mcp` bump · 高风险层
+### RM5.4 · `@modelcontextprotocol/ext-apps` 2.x 迁移（#603） — `todo` · 未估 · opus · 依赖 ~~2026-12-02 之后~~（RM-D27 作废）所有者对这次主版本升级的同意（合并前要；开工不等）；与 RM1.6b 共用一次 `packages/mcp` bump · 高风险层
 
 RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 "Workspace builds" 上红，`packages/mcp-worker/src/server.ts` 的 `TS2353 'title' does not exist in type 'McpUiAppResourceConfig'`）Show HN 之前不合并，之后由本卡迁移。**RM-D27（2026-11-11）之后：** "2026-12-02 之后""Show HN 之前不合并"这两个日期条件作废；本卡仍是主版本升级，按 `docs/agents/iron-laws.md` § Owner policies（"a major bump waits for the owner"）等所有者的同意，并与 RM1.6b 共用一次 bump。
 - 先读 `ext-apps` 2.0 的 release notes，列出影响本仓库的破坏性变更。

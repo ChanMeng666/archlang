@@ -39,15 +39,15 @@
 
 ### 2.2 `$id` 的值（建议值）
 
-- 新 schema 的格式：`https://archlang.uk/schemas/<name>/v<major>.schema.json`。保留 `.schema.json` 后缀，编辑器按这个后缀认 schema；`schemas/` 一层与仓库目录同名，站点根不再加平铺文件。
-- 规则集 schema（RM1.6a 的 `lint --rules --json`）：`https://archlang.uk/schemas/lint-rules/v0.schema.json`。`v0` 表示草案，形状还可以变；RM1.6b 落地后定为 `v1`。**协调者的决定**（新 URL，不动任何已有 URL）。
+- 新 schema 的格式：`https://archlang.uk/schemas/<name>/v<major>.schema.json`。保留 `.schema.json` 后缀，编辑器按这个后缀认 schema；`schemas/` 一层与仓库目录同名，站点根不再加平铺文件。**这个命名空间需要所有者裁定**（§3）：一旦发布，按 ADR 0019 它就是不能再搬的公开 URL。
+- 规则集 schema（RM1.6a 的 `lint --rules --json`）：`https://archlang.uk/schemas/lint-rules/v0.schema.json`。`v0` 表示草案，形状还可以变；RM1.6b 落地后定为 `v1`。在命名空间裁定之内，取哪个名字是协调者的决定（新 URL，不动任何已有 URL）。
 - Plan JSON 与 Intent：**今天的 `$id` 不改。** 建议把 `https://archlang.uk/plan.schema.json` 记为"Plan JSON 主版本 1 的 `$id`"，同一个文件另放一份在 `https://archlang.uk/schemas/plan/v1.schema.json`（字节相同，`$id` 仍是旧值），这样新旧两条路都能取到，`$id` 一个字节都不动。Intent 同理（`v1`）。**是否把这两个 `$id` 改成带版本的值：需要所有者裁定。** 理由：ADR 0019 把这两个 URL 写成浏览器校验器取用的规范地址，`$id` 又出现在 MCP 的响应里（`packages/mcp/src/tools.ts:462`，改它会动 MCP 输出并要一次 `packages/mcp` bump）；改值等于改 ADR 0019 记下的对外承诺。本稿的建议是不改，所以默认不需要这条裁定，只有想改时才提。
-- Scene3D：`https://archlang.uk/schemas/scene3d/v0.schema.json` 换掉 `example.invalid` 占位。它在另一个包里、0.x 发布、没有对外承诺过 URL，**协调者的决定**；要不要真的把文件放上 docs 站，另由 `packages/archlang-3d` 的维护定，在放上站点之前 `$id` 也可以先改（`$id` 是标识，不要求可取）。
+- Scene3D：`https://archlang.uk/schemas/scene3d/v0.schema.json` 换掉 `example.invalid` 占位。它在另一个包里、0.x 发布、没有对外承诺过 URL，换掉占位是**协调者的决定**，新值的形状随上面命名空间的所有者裁定；要不要真的把文件放上 docs 站，另由 `packages/archlang-3d` 的维护定，在放上站点之前 `$id` 也可以先改（`$id` 是标识，不要求可取）。
 - MCP 工具 schema：不加 `$id`。它们由 MCP 协议在 `tools/list` 里内联传递，没有被别处 `$ref`，`mcp-schemas` 一面已经守住只增。
 
 ### 2.3 变更政策（写进 `GOVERNANCE.md`，CR11a 交付）
 
-`GOVERNANCE.md` 今天只有角色与决策方式两节，没有任何 schema、语言形式或弃用的条文。建议加一节"Compatibility and deprecation"，内容如下（英文写进 `GOVERNANCE.md`，这里给中文要点）：
+`GOVERNANCE.md` 今天有五节（Overview、Roles、Decision Making、Becoming a Maintainer、Changes to Governance），没有任何 schema、语言形式或弃用的条文。建议加一节"Compatibility and deprecation"，内容如下（英文写进 `GOVERNANCE.md`，这里给中文要点）。**这一节是对外承诺，需要所有者裁定（§3）**：`GOVERNANCE.md` 的 "Changes to Governance" 写明治理的改动由 lead maintainer 决定；第 2 条（旧主版本的 schema 文件永不删）和 §2.2 的 `archlang.uk/schemas/<name>/v<n>` 命名空间又是 ADR 0019 意义上不能再搬的公开 URL；第 3 条给了至少一个 minor 的弃用窗口。
 
 1. **同一主版本内只增不改。** 一个 `$id` 之下：只加可选字段、只放宽枚举与界限；不改名、不改型、不删、不收紧。已有工具守着 Plan JSON（`plan-schema`）、MCP 工具（`mcp-schemas`）、公开类型（`public-types`）与错误码（`error-codes`）四面（`scripts/compat-check.mjs:46`）。
 2. **破坏性变更 = 新主版本 = 新 `$id`。** 同一 PR 在 `[Unreleased]` 写 `BREAKING:` 行，核心发 major；旧主版本的 schema 文件继续在旧 URL 上提供，不删。
@@ -63,7 +63,9 @@
 
 - 把 Plan JSON、Intent 两个现有 `$id` 改成带版本的值（§2.2）。本稿建议**不改**；只有决定要改时才需要这条裁定，因为它动 ADR 0019 记下的规范 URL 和 MCP 的输出。
 
-其余（`$id` 跟主版本走、新 schema 的 URL 形状、规则集 `v0`、Scene3D 换掉占位、`GOVERNANCE.md` 的条文、门禁加 `$id`）都是协调者的决定。
+- **写进 `GOVERNANCE.md` 的政策（§2.3）与新 schema 的命名空间（§2.2）。** 三项对外承诺：旧主版本的 schema 文件永不删除（§2.3 第 2 条）；字段弃用至少经过一个 minor（第 3 条）；`https://archlang.uk/schemas/<name>/v<n>.schema.json` 这个命名空间。理由：`GOVERNANCE.md` 的 "Changes to Governance" 写明治理的改动由 lead maintainer 决定；ADR 0019 把 schema 的 `$id` 列为一换就要全仓库重生成的公开 URL，所以命名空间一旦发布就搬不动。所有者裁定之前，CR11a 不写 `GOVERNANCE.md` 这一节，也不发布任何 `/schemas/` 下的 URL。
+
+其余（`$id` 跟主版本走、规则集取 `v0`、Scene3D 的 `$id` 换掉 `example.invalid` 占位〔新值落在上面的命名空间里，随那条裁定〕、门禁加 `$id`）都是协调者的决定。
 
 ## 4. 不做
 

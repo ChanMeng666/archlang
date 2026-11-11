@@ -9,7 +9,7 @@
 - **入口与部件：** `src/plan-json.ts` 是入口，部件在 `src/plan-json/`：`to-json.ts`（投影）、`emit.ts`（JSON 回 `.arch` 文本）、`from-json.ts`（校验）、`types.ts`、`schema.ts`（`.claude/rules/plan-json.md`）。
 - **丢弃从不静默：** 投影不到的子句由 `planToJson` 的 `dropped` 逐条报出，种类是 `PlanJsonDroppedClause`（`src/plan-json/to-json.ts:414-436`），每层的在 `droppedFromStorey`（第 453-488 行），全图的在 `droppedFromPlan`（第 491-519 行），`keep` 与 `level` 在 `planToJson` 里（第 563-573 行）。CLI 把它们印成 stderr 的说明（`DROPPED_WORDS`，`src/cli/serialize.ts:139`），`test/plan-json-dropped.test.ts` 钉住。
 - **没有行的元素种类：** `UNPROJECTED_KINDS` 由 `KIND_FACETS.unprojected` 派生（`src/plan-json/to-json.ts:406-408`；`src/elements/facets.ts:49-55`）：`stair`、`elevator`、`escalator`、`roof`、`void`、`outdoor`、`fence`。
-- **今天的往返律：** 非脚本、分组的平面，`planFromJson(planToJson(src))` 编出逐字节相同的 SVG（`test/plan-json.test.ts:193-232`）；做不到的示例列在 `CANNOT_ROUND_TRIP`（`test/tables/plan-json-gaps.ts`），带丢失的语言面与一个必须仍然匹配文件的 `proof`。基线上 `examples/*.arch` 有 37 个，其中 29 个在 `CANNOT_ROUND_TRIP` 里，8 个往返。今天的律只比 SVG；RM3.1 的新律（`test/plan-json-roundtrip-law.test.ts`）要比 SVG + `describe()` + `lint()`。
+- **今天的往返律：** 非脚本、分组的平面，`planFromJson(planToJson(src))` 编出逐字节相同的 SVG（`test/plan-json.test.ts:193-232`）；做不到的示例列在 `CANNOT_ROUND_TRIP`（`test/tables/plan-json-gaps.ts`），带丢失的语言面与一个必须仍然匹配文件的 `proof`。基线上 `examples/*.arch` 有 37 个，其中 28 个在 `CANNOT_ROUND_TRIP` 里，9 个往返（`attached`、`garden-loft`、`knob-flat`、`laneway-house`、`museum-wing`、`one-room`、`parametric`、`relational`、`studio`）。今天的律只比 SVG；RM3.1 的新律（`test/plan-json-roundtrip-law.test.ts`）要比 SVG + `describe()` + `lint()`。
 
 ## 2. 范围表
 
@@ -75,7 +75,7 @@
 
 **J16（每扇窗写 `sill`）：** `preview-and-remodel` J16 的原文："Plan JSON writes `sill` for every window under the heights gate, so a round trip makes a default window look authored once `outdoor` is projected."（`../../preview-and-remodel/cards.md:229`）。代码：`if (e.kind === "window") base.sill = e.sill;`（`src/plan-json/to-json.ts:273`），`emit.ts:213` 写回 ` sill <n>`。今天的 SVG 往返不受影响（画出的窗台相同），但 `describe()` 与任何区分"作者写的窗台"和"默认窗台"的读者会看到差别。**状态：部分。** 建议前半修掉：投影只在作者写了 `sill` 时写它（解析后的窗要带一个"作者写过"的标记，像 `_idAuthored` 那样；需要在 `RWindow` 上加一个下划线字段，或在 `to-json.ts` 里回读 AST），否则新律在有高度、有窗的图上比 `describe()` 时会红。这是协调者的决定，属于 RM3.1 前半的范围。
 
-**PS0.18（Hall 往返成 `uses entry`）：** 卡原文（`../../plan-soundness/cards.md:37`）描述的现象——只有标签"Hall"的房间回程后写成 `uses entry`——已由 `78e0b7f9`（2026-11-05，"fix(plan-json): a label-inferred use survives the round trip"）在回程一侧修掉：当标签或 id 推出的用途已经对应这个 `room_type` 时，回程不写 `uses`，由标签再推一次（`src/plan-json/emit.ts:166-185`，测试 `test/plan-json-uses-roundtrip.test.ts`，第 37 行就是 `label "Hall"`）。卡里问的"honest mapping"（承载分类出的 `uses`，还是把 `Entrance` 映射回产生它的用途）没有被裁定，PS0.18 在 plan-soundness 里仍是 `todo`。本稿没有跑 CLI 复现，只读了代码与测试。**按简报，PS0.18 在范围表里标 `dropped`（待所有者裁定）**；同时建议 RM3.1 前半在新律里加一例 `label "Hall"` 的房间，若它在 SVG + `describe()` + `lint()` 上都往返，就把这个发现交给所有者，请他确认 PS0.18 可以按 `78e0b7f9` 关闭。是否关闭：**需要所有者裁定**（它在 `../README.md` §6"仍等所有者"的名单里）。
+**PS0.18（Hall 往返成 `uses entry`）：** 卡原文（`../../plan-soundness/cards.md:37`）描述的现象——只有标签"Hall"的房间回程后写成 `uses entry`——已由 `78e0b7f9`（2026-11-05，"fix(plan-json): a label-inferred use survives the round trip"）在回程一侧修掉：当标签或 id 推出的用途已经对应这个 `room_type` 时，回程不写 `uses`，由标签再推一次（`src/plan-json/emit.ts:166-185`，测试 `test/plan-json-uses-roundtrip.test.ts`，第 37 行就是 `label "Hall"`）。卡里问的"honest mapping"由这次修复给了答案：回程写回产生这个 `room_type` 的那个标签，不写 `uses`，读者再推一次就得到同一个用途。卡的第二句（PS3.9 组件体里的房间走同一个投影）也已覆盖：组件体与根平面用同一个 `emitRows`（`src/plan-json/emit.ts:57,60-66`，写 `uses` 的一行在第 139-140 行），所以修复对两处同时成立。**状态：已由 `78e0b7f9` 修掉；`uses` 一行在 §2.2 的范围表里是"往返"，不是 `dropped`。** PS0.18 在 plan-soundness 里仍是 `todo`，因为关卡由所有者做（它在 `../README.md` §6"仍等所有者"的名单里）：**请所有者关闭 PS0.18。** 本稿没有跑 CLI 复现，只读了代码与测试；建议 RM3.1 前半的新律照样带一例 `label "Hall"` 的房间，在 SVG + `describe()` + `lint()` 上钉住这个往返。
 
 ## 4. `floor`：Plan JSON 与 3D（与 RM8.7 一起定）
 
@@ -100,7 +100,7 @@
 
 ## 6. 需要所有者裁定的
 
-- **PS0.18 是否按 `78e0b7f9` 关闭**（§3）。在裁定之前，范围表里标 `dropped`。
+- **关闭 PS0.18**（§3）：它描述的缺陷已由 `78e0b7f9` 修掉（根平面与 PS3.9 组件体同走 `emitRows`），范围表里 `uses` 一行是"往返"。要所有者做的只是关卡；不关，范围表也不变。
 
 其余（J16 前半修、`floor` 进 Plan JSON、3D 走 `RRoom.floor`、`dim` 变体的判定方法）都是协调者的决定，不碰铁律或 ADR：Plan JSON 的加性变更是 `version: 1` 的既定规则，3D 读公开类型的非下划线字段在 ADR 0031 之内。
 

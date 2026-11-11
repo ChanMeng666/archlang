@@ -33,6 +33,7 @@
 - **编号**是一个标识符或一个正整数（`section A …`、`section 1 …`）。常见做法是中国制图用数字（1-1 剖面）、ISO 用字母（A-A）；本稿没有读这两份标准的原文，这一条只是取名参考，不进任何规则。编号同时是这条语句的 id，在剖切符号之间唯一（重复报新码 `E_SECTION_DUP`），与房间、墙的 id 不在同一个命名空间（像轴号一样）。
 - **`look`** 后跟罗盘词，经 `northQuarterTurns` 换成页面方向；换出的方向必须垂直于剖切线，否则报新码 `E_SECTION_LOOK`，消息里写出这条线在本图指北下能取的两个罗盘词。用罗盘词而不是 `left|right`，因为 #532 的工具和建筑师都这样说（"looking north"），而且指北已经是图上的事实。
 - **只允许轴对齐**（两端 `x` 相同或 `y` 相同），斜线报 `E_SECTION_AXIS`，等第二个用例再放开（卡的既定范围）。长度为零的线同样报这个码。
+- **`section`、`look`、`slab` 都是上下文词，不是保留词**（协调者的决定）：三个都不进 `STATEMENT_STARTS`，也不进 `KEYWORDS.control`，照 `sheet text {` 的先例（`src/parser.ts:897-910`）只在位置上认。`section` 只在语句开头、后跟一个编号再跟 `(` 时读作剖切符号；`look` 只在剖切符号的第二个点之后读；`slab` 只在 `level` 头部读。理由：`STATEMENT_STARTS` 里的词会截断子句的扫描，`room id=landing` 就是因此把 `landing` 留在 `STATEMENT_STARTS` 之外的（`src/grammar/tokens.ts:109-110` 的注释；`sheet` 同理，第 197-198 行）；保留词会让已有平面里叫 `section`、`look`、`slab` 的 id 或变量不再解析。基线上 `examples/`、`test/`、`packages/` 的 `.arch` 里这三个词只出现在注释里，但用户的平面里可能有。`clear` 已经是 `control` 关键字（§1），不受影响。RM6.1 的 PR 加一条测试：`room id=section`、`room id=slab`、`let look = 1` 照旧解析，字节不变。
 - 新码都进 `src/error-catalog/`，按 `.claude/commands/` 的流程生成文档。
 
 ### 2.2 进 `describe` 主体，还是 opt-in 事实

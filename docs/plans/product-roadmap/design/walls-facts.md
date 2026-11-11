@@ -95,7 +95,7 @@
 | `gerontec/archlang-section` | **可能的读者**：今天从 `compile -f json` 的 `walls_from_rooms` 厚度自己重建墙 | #532 正文 |
 | IFC 下游包 | **可能的读者**：growth 2026-11-10 决策把本事实定为它的前置；包本身不存在（`../cards.md` "等待触发"表） | #681 "Context" 段 |
 | 射频叠加、疏散叠加 | **可能的读者**：#681 列出，没有具名仓库 | #681 正文 |
-| 本仓库 | 没有读者：`archlang-3d` 经 `resolvePlan` 直接读 `ir.walls`（ADR 0031），不读 `describe()` | `packages/archlang-3d/src/adapter/adapt.ts:82-93` |
+| 本仓库 | 没有读者：`archlang-3d` 经 `resolvePlan` 直接读 `ir.walls`（ADR 0031），不读 `describe()` | `resolvePlan` 在 `packages/archlang-3d/src/adapter/adapt.ts:93`；读 `ir.walls` 在 `adapt.ts:110,127` 与 `packages/archlang-3d/src/scene3d/build.ts:211` |
 
 没有具名消费者。按原则 9，这张卡排进来的理由是 growth 决策的前置关系（RM-D12），不是一个已有的读者。
 

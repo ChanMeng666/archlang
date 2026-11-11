@@ -109,7 +109,7 @@
 - 决定 1.60.0、1.61.0 是否、何时发布（1.59.0 已于 2026-11-11 决定，见 §1.4）（建议节奏见 `README.md` 原则 11）。决定之后 tag 与发布链由代理跑，只在 OTP/2FA、登录、账号或令牌或 secret 的创建、条款与声明的确认、本机文件选择器处停下。
 - 2026-12-01 亲自发 Show HN。
 - 需要接受条款或声明的提交（例如 OpenAI 插件目录的每次提交），以及 Cloudflare 控制台的改动（`docs/seo.md` § 8 的提交政策）。
-- 仍等所有者的裁定（`README.md` §6 与 §6.2 末尾）：PS0.18（Hall 往返成 `uses entry`，RM3.1 的范围表用到，未裁则标 `dropped`；`design/plan-json-scope.md` §3 读到它描述的现象已由 `78e0b7f9` 在回程一侧修掉，请所有者确认可否关闭）；RM5.4 的主版本升级（`ext-apps` 2.x，RM-D27 之后不再等 12-02，但主版本仍等所有者）；MF-D3(b)；backlog D.7（RM4.1 用到）、M.9（RM1.5b）、M.8、M.14、3.1(b)、CI throughput 的 E 与 F；仓库根的 `.mcp.json` 做不做（默认不做）；VA.3。
+- 仍等所有者的裁定（`README.md` §6 与 §6.2 末尾）：PS0.18（Hall 往返成 `uses entry`）：已由 `78e0b7f9` 修掉（根平面与 PS3.9 组件体同走 `emitRows`，`design/plan-json-scope.md` §3），RM3.1 的范围表里 `uses` 一行是"往返"；请所有者关闭这张卡。CR11a 写进 `GOVERNANCE.md` 的政策与 `archlang.uk/schemas/<name>/v<n>` 命名空间（`design/schema-policy.md` §3，对外承诺）；RM5.4 的主版本升级（`ext-apps` 2.x，RM-D27 之后不再等 12-02，但主版本仍等所有者）；MF-D3(b)；backlog D.7（RM4.1 用到）、M.9（RM1.5b）、M.8、M.14、3.1(b)、CI throughput 的 E 与 F；仓库根的 `.mcp.json` 做不做（默认不做）；VA.3。
 - 新卡里要先有设计裁定的两张：RM1.3c（6.11，双开门）与 RM8.10（两种墙高的 T 形缺口，涉及 ADR 0030 决定 3、5）。由主会话起草设计，裁定的归属按 `README.md` §6 的惯例：动铁律或 ADR 的要所有者。
 - 任何一条受托裁定（RM-D17…D20、RM-D24…D26），所有者都可以一句话推翻。
 - **2026-11-11 第二场的受托裁定（协调者的记录，我无从核对；同样可一句话推翻）：** 3D 的地面是查看器的背景，不是元素，不进 GLB（`../public-surfaces/3d.md` §2 的固定句不改）；MCP 能力页保持派生的 `repair` 标题 "Repair furniture placement"（是标题，不是承诺）；MCP 的版本在发布时 bump，不在 #703；RM1.4：触发 `W_GRID_SNAPPED` 的已发布示例改写成吸附后的值（图字节恒等），`W_UNKNOWN_THEME` 也由 CLI 的 `validate`、`lint` 报出；biome：只关 2.6 里真正新增的规则；CRF13 以"不可复现"关闭（协调者 2026-11-11 关闭，依据 #697 的核对证据）。
@@ -126,7 +126,7 @@
 
 固定句（RM-D3）："六份 brief 写成的平面里有 N 个缺陷，最终 lint 报出 k 个。"不提模型名，不叫 benchmark。`../plan-soundness/handoff.md` §4 只留一行指针指向本表；该表里 2026-10-27 及更早的行原样保留。
 
-RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量冻结时 `main` 的提交，"量的版本"一栏写完整 SHA，"说明"一栏写第一个包含它的版本（CR10 的发布说明引这两样）。
+RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的提交，"量的版本"一栏写完整 SHA，"说明"一栏写第一个包含它的版本（CR10 的发布说明引这两样）。
 
 | 卡 | 量的版本（或 SHA） | N 个缺陷 | lint 报出 k 个 | 日期 | 说明 |
 |---|---|---|---|---|---|
