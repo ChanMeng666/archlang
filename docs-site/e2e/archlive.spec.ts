@@ -260,3 +260,38 @@ test.describe("the editor paints ArchLang, in register with the caret", () => {
     expect(problems.pageErrors).toEqual([]);
   });
 });
+
+test.describe("the rendered colour scheme is a per-widget checkbox", () => {
+  test("ticking it swaps the inline drawing for the rendered image, unticking restores it", async ({ page }) => {
+    await page.goto(EXPLICIT_PAGE);
+    const stage = page.locator(".archlive-svg").first();
+    await expect(stage.locator("svg")).toBeVisible();
+    await expect(stage.locator("img")).toHaveCount(0);
+    const before = await archLiveSvg(page, 0);
+
+    const box = page.locator(".archlive-theme input").first();
+    await box.check();
+    const img = stage.locator("img");
+    await expect(img).toBeVisible();
+    expect(await img.getAttribute("src")).toMatch(/^data:image\/svg\+xml/);
+    expect(await img.getAttribute("alt")).toContain("rendered colour scheme");
+    await expect(stage.locator("svg")).toHaveCount(0);
+
+    await box.uncheck();
+    await expect(stage.locator("img")).toHaveCount(0);
+    expect(await archLiveSvg(page, 0), "unticked, the drawing is the default one again").toBe(before);
+  });
+
+  test("the checkbox has its own row: the bar stays one short row at phone width", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto(EXPLICIT_PAGE);
+    await expect(page.locator(".archlive-svg svg").first()).toBeVisible();
+    const bar = page.locator(".archlive-bar").first();
+    const barBox = (await bar.boundingBox())!;
+    // main drew this bar at 87 px at 390 px; a checkbox squeezed into it made it 231.
+    expect(barBox.height).toBeLessThanOrEqual(100);
+    expect(await bar.evaluate((el) => el.scrollWidth - el.clientWidth)).toBeLessThanOrEqual(0);
+    const rowBox = (await page.locator(".archlive-themerow").first().boundingBox())!;
+    expect(rowBox.y, "the checkbox row is outside the bar").toBeLessThan(barBox.y);
+  });
+});
