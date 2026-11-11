@@ -11,7 +11,8 @@
  * `inline:door-` rows are card L2's, measured the same way at `1e29c3af` (`main` before doors). The
  * rows are every plan of `examples/`, `test/fixtures/` and `test/walls-from-rooms/`, the digest-table plans of
  * `test/tables/walls-from-rooms-plans.ts`, and {@link INLINE_ROWS}: a rectilinear polygon that is
- * excepted, or that stands beside typed walls, is on the law's side of the line.
+ * excepted, or that stands beside typed walls, is on the law's side of the line. A plan written
+ * after the form that uses it is left out by name ({@link AFTER_THE_FORM}), and must reach it.
  *
  * In this table the digest comes first: a row keyed by a path holding `access` is the shape the
  * secret scanner reads as a credential, and this order is not that shape.
@@ -88,7 +89,17 @@ function reachesTheForm(src: string, world: World | undefined): boolean {
   );
 }
 
-const ROWS = lawRows(ROOT);
+/**
+ * Plans written after the form that use it: no tree before the form can measure them, so the law
+ * cannot pin them. Each must reach the form (the list cannot hide a plan the law should pin), and
+ * the table pins every other row.
+ */
+const AFTER_THE_FORM: readonly string[] = [
+  // RM8.5: its hall is one U polygon round the courtyard, in `walls from rooms`.
+  "examples/courtyard-family.arch",
+];
+const ALL_ROWS = lawRows(ROOT);
+const ROWS = ALL_ROWS.filter((r) => !AFTER_THE_FORM.includes(r.name));
 const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeWorld(dir) : undefined);
 
 /** Measured at `58c1fc81`, the `H10` rows with those charges applied (see the header): `[digest, row]`. */
@@ -100,7 +111,6 @@ const BASELINE: [string, string][] = [
   ["4776988cf9066c16be109b2ae2e10ae2f845f5e614d9866a1f485aaa0ac41f2e", "examples/classroom-block.arch"],
   ["7cfb19460c7ecbe6d7c8bce669d0d4c268aaef2eefdc9e2a4d0b282810601c4c", "examples/clinic.arch"],
   ["27f314dc30c888074ad300927553aa4ad7bb8f26b2a372ee36579a7a1067ad35", "examples/corner-cafe.arch"], // #367, see test/byte-identity-baseline.ts
-  ["df51baf3597b572c541b4828f942aab1581ea6e6386ae06e7d5c888adda149ba", "examples/courtyard-family.arch"], // new example (RM8.5, the courtyard-family showcase)
   ["2fa285ac0a1406f1c19a4f5b8cd6405b9435f3192b681642f9f90add9c479fc8", "examples/courtyard-house.arch"], // H10: +34 ring scan, +0 overlap
   ["d4c16e520cd04dc9f2f2598e37cd9405e158c0c2bd5eba42b81ff7a5e81fe36c", "examples/furnished-flat.arch"],
   ["969fe0c639c3e332de2045feda5a3300b521e1964214ea9bf6bbca79c29ee9f4", "examples/gallery-l.arch"], // H10: +21 ring scan, +8 overlap
@@ -183,6 +193,14 @@ suite("rectilinear rooms: the byte-identity law", () => {
   it("the table pins every row, and no row reaches the form", () => {
     expect(BASELINE.map((b) => b[1])).toEqual(ROWS.map((r) => r.name));
     expect(ROWS.filter((r) => reachesTheForm(r.src, worldOf(r.dir))).map((r) => r.name)).toEqual([]);
+  });
+
+  it("every plan left out for postdating the form exists and reaches it", () => {
+    for (const name of AFTER_THE_FORM) {
+      const row = ALL_ROWS.find((r) => r.name === name);
+      expect(row, name).toBeDefined();
+      expect(reachesTheForm(row!.src, worldOf(row!.dir)), name).toBe(true);
+    }
   });
 
   it("the premise can fail: the same check sees a plan that does reach the form", () => {

@@ -492,6 +492,12 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
       ["r_treat", "office: `desk`"],
       ["r_staff", "office: `desk`"],
     ],
+    // RM8.5, added with the example: its gym says `uses office` and holds a treadmill, its games
+    // room says `uses living` and holds a pool table. Neither holds what its use defines.
+    "courtyard-family": [
+      ["gym", "office: `desk`"],
+      ["games", "living: `sofa`"],
+    ],
     // 2026-10-18 (PS2.9): corner-cafe's servery no longer says `uses kitchen` (it has no sink
     // or hob; no use describes a bar servery), terrace-row's front room no longer says `dining`
     // (its header calls it living + kitchen), and practice-office's break room and
