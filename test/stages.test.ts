@@ -110,6 +110,10 @@ describe("the stage ladder and the per-rule table", () => {
       W_WHILE_DEPRECATED: "brief",
       W_REASSIGN_DEPRECATED: "brief",
       W_AXES_DIFFER: "brief",
+      // RM1.4: what the plan writes and the language reads otherwise; a size the `grid` moved, from rooms.
+      W_LENGTH_IN_METRES: "brief",
+      W_SET_VALUE_WORD: "brief",
+      W_GRID_SNAPPED: "rooms",
       // EH-D8's cap: about the whole report, a budget like `E_STEP_LIMIT` (brief), so every stage shows it.
       W_DIAGNOSTIC_LIMIT: "brief",
       W_KEEP_VIOLATED: "brief",
@@ -118,6 +122,7 @@ describe("the stage ladder and the per-rule table", () => {
       W_WINDOW_OFF_WALL: "openings",
       W_OPENING_OFF_WALL: "openings",
       W_SWING_ROOM_NOT_ADJACENT: "openings",
+      W_UNKNOWN_FURNITURE: "fixtures",
       W_CJK_FONT_MISSING: "drafting",
       W_GLYPH_UNSUPPORTED: "drafting",
       W_DUP_ACC_METADATA: "drafting",
@@ -126,6 +131,7 @@ describe("the stage ladder and the per-rule table", () => {
       W_UNKNOWN_MATERIAL: "drafting",
       W_UNKNOWN_STYLE_KEY: "drafting",
       W_UNKNOWN_THEME_KEY: "drafting",
+      W_UNKNOWN_THEME: "drafting",
       W_ROOM_LABEL_OUTSIDE: "drafting",
       W_DIM_NO_WALL: "drafting",
       W_SCALE_OVERFLOW: "drafting",

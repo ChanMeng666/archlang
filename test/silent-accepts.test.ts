@@ -19,10 +19,13 @@
  * `lint()` and `compile().diagnostics`) over every `examples/*.arch` and `examples/lib/*.arch`,
  * with a World serving each folder's imports, **measured against `src/` at `b385685c`** (`main`
  * before the warnings) with that tree extracted by `git archive` and its own digest body and helpers
- * imported. 35 of the 40 rows are here. The other five examples raise `W_GRID_SNAPPED` (true
- * positives: `grid 100` really moves what they write), and {@link SNAPPED_EXAMPLES} pins exactly what
- * each one raises. The whole-corpus sweep (every tracked `.arch` and `arch` fence, 839 plans) in the
- * PR found no plan that moved other than by the new codes.
+ * imported. All 40 rows are here. Five of the examples (`aquarium`, `gallery-l`, `garden-house`,
+ * `hillside-villa`, `two-bed`) raised `W_GRID_SNAPPED` as they stood, true positives (`grid 100`
+ * drew their 450 mm pieces at 500, their 150/250 mm walls at 200/300 and two doors at x=-2750 at
+ * -2700); by the coordinator's ruling on #704 their sources now write the values the drawing
+ * already used, every edit the same length, so each row is the digest of the ORIGINAL source at
+ * `b385685c` and holds against the edited one. The whole-corpus sweep (every tracked `.arch` and
+ * `arch` fence) in the PR found no plan that moved other than by the new codes.
  *
  * A digest moving is a finding to explain before it is a diff to re-measure.
  */
@@ -224,6 +227,29 @@ suite("W_UNKNOWN_THEME (RM1.4b)", () => {
     expect(raised(known)).toEqual([]);
   });
 
+  it("the CLI's validate, lint and compile report it against THEMES, so validate --strict fails", async () => {
+    const file = "test/silent-accepts/unknown-theme.arch";
+    const codes = (stdout: string): string[] =>
+      (JSON.parse(stdout) as { diagnostics: { code: string }[] }).diagnostics.map((d) => d.code);
+    const v = await runArch(["validate", file, "--strict", "--json"]);
+    expect(v.status).toBe(EXIT.USER);
+    expect(codes(v.stdout)).toContain("W_UNKNOWN_THEME");
+    const l = await runArch(["lint", file, "--json"]);
+    expect(codes(l.stdout)[0]).toBe("W_UNKNOWN_THEME");
+    const c = await runArch(["compile", file, "--json"]);
+    expect(codes(c.stdout)).toEqual(["W_UNKNOWN_THEME"]);
+    // A built-in name: nothing new on any of the three.
+    const known = await runArch(["validate", "-", "--json"], {
+      input: src.replace("theme Rendered", "theme rendered"),
+    });
+    expect(codes(known.stdout)).not.toContain("W_UNKNOWN_THEME");
+  });
+
+  it("the library's describe() and lint() do not raise it (a host may register the name at compile)", () => {
+    expect(describePlan(src).diagnostics.map((d) => d.code)).not.toContain("W_UNKNOWN_THEME");
+    expect(lint(src).map((d) => d.code)).not.toContain("W_UNKNOWN_THEME");
+  });
+
   it("is quiet on a theme the call registers", () => {
     const own = src.replace("theme Rendered", "theme brand");
     expect(raised(own)).toEqual(["W_UNKNOWN_THEME"]);
@@ -240,9 +266,13 @@ suite("U.4: a furniture label is data, carried by describe()", () => {
   });
 });
 
-/** Measured at `b385685c` (see the header): the 35 examples that raise none of the new codes. */
+/**
+ * Measured at `b385685c` (see the header), every example. The five rows marked RM1.4 are the digests
+ * of their sources as they were then; the sources now write the snapped values, and the rows hold.
+ */
 const BASELINE: [string, string][] = [
   ["examples/accessible.arch", "5f69fe78d45db6b096e3e7f4c44bfcdb537c4201d06fee8780e813112869f20c"],
+  ["examples/aquarium.arch", "e66504b7142257fc5c1c76c6e1b2f04a68be43ce98ea12b5be242d8e29171521"], // RM1.4: benches written 1200x500
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
   ["examples/bungalow.arch", "cda041e6004160bf8b826158202f931b3b6457c88f8edd7dc147282163c1c283"],
   ["examples/classroom-block.arch", "809f674a9d48b528c5e9850768c92afe5d826c22783f1a18df610d8a88adb4f6"],
@@ -250,8 +280,11 @@ const BASELINE: [string, string][] = [
   ["examples/corner-cafe.arch", "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f"],
   ["examples/courtyard-house.arch", "e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce"],
   ["examples/furnished-flat.arch", "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a"],
+  ["examples/gallery-l.arch", "0e8f7696890b8f3e01211ecbc873996f49ba22fff103e349e8f4660b1417a1c2"], // RM1.4: partitions written 200
+  ["examples/garden-house.arch", "55ad2593f768d91a282b6cde6e8a06f6ee5dbd5701fe1858aa8905431432767a"], // RM1.4: four pieces on the grid
   ["examples/garden-loft.arch", "f273e4717a1afae1cd94ae0f62a7390ae603c7418fbe434e061e191aa98231a0"],
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
+  ["examples/hillside-villa.arch", "36397208c3c6ea06f9bbc3efba156b33de2189455086852e290890f3c8784884"], // RM1.4: 17 values on the grid
   ["examples/imports.arch", "3aa7b2d5f953e6df63059c368e391ee3ea58c097cd7dff358197a940f4946252"],
   ["examples/knob-flat.arch", "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5"],
   ["examples/laneway-house.arch", "21459ebc71dbc508de2faae421b59ac48afd068dd1813adb6bf0595b9963fb3e"],
@@ -273,70 +306,11 @@ const BASELINE: [string, string][] = [
   ["examples/townhouse.arch", "4ebf99f3ba158cc7652424c413c94f9f837f6afd24546d8bbac0f080bb281652"],
   ["examples/transit-hall.arch", "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5"],
   ["examples/turning-stair.arch", "7a197ff651fd6ee9e785088ecefd9147d15e29cfd098013624ffbd8698c4dd56"],
+  ["examples/two-bed.arch", "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd"], // RM1.4: sofa and basin on the grid
   ["examples/two-storey.arch", "03f9dd06253ad4bda8937efbc428093b671524340dbdc3254061061d20f67c24"],
   ["examples/lib/doors.arch", "f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804"],
   ["examples/lib/fixtures.arch", "57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310"],
   ["examples/lib/furniture.arch", "adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b"],
-];
-
-/**
- * The five examples `W_GRID_SNAPPED` fires on, with every new-code message each raises, in order
- * (true positives: each value really is drawn snapped). Everything else of their payload is what it
- * was at `b385685c` (the PR's corpus sweep: with the new codes removed from `compile()` and
- * `describe()` diagnostics the base digest returns). hillside-villa's `basin_2` is one statement
- * of a component placed three times, so it is reported once per instance.
- */
-const SNAPPED_EXAMPLES: [string, string[]][] = [
-  [
-    "examples/aquarium.arch",
-    ["bench_1", "bench_2", "bench_3", "bench_4"].map(
-      (id) => `Furniture "${id}" size 1200 x 450 was snapped to 1200 x 500 by \`grid 100\``,
-    ),
-  ],
-  [
-    "examples/gallery-l.arch",
-    [
-      'Wall "spine" thickness 150 was snapped to 200 by `grid 100`',
-      'Wall "north_face" thickness 150 was snapped to 200 by `grid 100`',
-    ],
-  ],
-  [
-    "examples/garden-house.arch",
-    [
-      'Furniture "bookshelf_2" size 1800 x 350 was snapped to 1800 x 400 by `grid 100`',
-      'Furniture "nightstand_3" size 450 x 400 was snapped to 500 x 400 by `grid 100`',
-      'Furniture "bookshelf_7" size 1400 x 350 was snapped to 1400 x 400 by `grid 100`',
-      'Furniture "basin_9" size 600 x 450 was snapped to 600 x 500 by `grid 100`',
-    ],
-  ],
-  [
-    "examples/hillside-villa.arch",
-    [
-      ...["shell", "w_wing_n", "w_wing_w", "w_wing_s"].map(
-        (id) => `Wall "${id}" thickness 250 was snapped to 300 by \`grid 100\``,
-      ),
-      ...["w_util", "w_liv_din", "w_din_terr"].map(
-        (id) => `Wall "${id}" thickness 150 was snapped to 200 by \`grid 100\``,
-      ),
-      'Door "d_garage" at (-2750, 0) was snapped to (-2700, 0) by `grid 100`',
-      'Door "d_utility_ext" at (-2750, 10200) was snapped to (-2700, 10200) by `grid 100`',
-      'Furniture "armchair_7" size 900 x 850 was snapped to 900 x 900 by `grid 100`',
-      'Furniture "basin_25" size 600 x 450 was snapped to 600 x 500 by `grid 100`',
-      ...[1, 2, 3].map(() => 'Furniture "basin_2" size 600 x 450 was snapped to 600 x 500 by `grid 100`'),
-      'Wall "shell" thickness 250 was snapped to 300 by `grid 100`',
-      ...["nightstand_8", "nightstand_11", "nightstand_12"].map(
-        (id) => `Furniture "${id}" size 450 x 400 was snapped to 500 x 400 by \`grid 100\``,
-      ),
-      'Furniture "armchair_14" size 900 x 850 was snapped to 900 x 900 by `grid 100`',
-    ],
-  ],
-  [
-    "examples/two-bed.arch",
-    [
-      'Furniture "sofa_9" size 850 x 2000 was snapped to 900 x 2000 by `grid 100`',
-      'Furniture "basin_13" size 450 x 600 was snapped to 500 x 600 by `grid 100`',
-    ],
-  ],
 ];
 
 suite("the byte-identity law over the examples", () => {
@@ -347,14 +321,8 @@ suite("the byte-identity law over the examples", () => {
     expect(allStoreysDigestWithDiagnostics(API, src, { world })).toBe(digest);
   });
 
-  it.each(SNAPPED_EXAMPLES)("%s raises exactly these new warnings", (path, expected) => {
-    const src = read(path);
-    const ds = compile(src, { noCache: true, world: worldFor(dirname(join(REPO_ROOT, path))) }).diagnostics;
-    expect(ds.filter((d) => NEW_CODES.includes(d.code ?? "")).map((d) => d.message)).toEqual(expected);
-  });
-
   it("covers every example", () => {
-    const listed = [...BASELINE.map((r) => r[0]), ...SNAPPED_EXAMPLES.map((r) => r[0])].sort();
+    const listed = BASELINE.map((r) => r[0]).sort();
     const all = [...examples(), ...libNames().map((f) => `examples/lib/${f}`)].sort();
     expect(listed).toEqual(all);
   });

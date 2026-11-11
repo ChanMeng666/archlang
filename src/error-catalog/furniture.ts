@@ -88,7 +88,7 @@ export const FURNITURE_ENTRIES = defineEntries({
   ),
   W_UNKNOWN_FURNITURE: w(
     "A furniture word is not a catalogued kind but is close to one.",
-    "Furniture is open on purpose: a word the catalogue does not know (`furniture hammock …`) is legal and draws a plain rectangle, with its `label` in it when it has one. So a misspelt kind (`grand_pianno`, `WC`) used to compile, pass `validate --strict` and draw an empty box without a word. This warning fires for an UNLABELLED piece whose word is no catalogued kind or alias but is within a small edit distance of one (the same nearest-name test as every did-you-mean hint), or is one in another case, and names that kind. A piece with a `label` is a custom piece by intent and is never reported, and a word near no kind stays silent.",
+    "Furniture is open on purpose: a word the catalogue does not know (`furniture hammock …`) is legal and draws a plain rectangle, with its `label` in it when it has one. So a misspelt kind (`grand_pianno`, `WC`) used to compile, pass `validate --strict` and draw an empty box without a word. This warning fires for an UNLABELLED piece whose word is no catalogued kind or alias but is within two edits (insert, delete or substitute a character) of one, or is one in another case, and names that kind. A piece with a `label` is a custom piece by intent and is never reported, and a word near no kind stays silent.",
     "Write the catalogued word the message names, or add a `label` to say the piece is your own.",
     'furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean "grand_piano"?',
   ),

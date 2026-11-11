@@ -27,7 +27,7 @@ import { noteSnap } from "../ir/silent-accepts.js";
 import { mirrorGlyph } from "./glyph-chirality.js";
 import { mapSceneNode } from "./glyph-lib.js";
 import { CATALOG_CATEGORIES, defaultFootprint, fixtureSpec, orientationMatters } from "../fixtures-catalog.js";
-import { chargeSteps, closest } from "../expr.js";
+import { chargeSteps } from "../expr.js";
 import { COMPASS_DATUM_ALIASES, edgeOfRoom, splitDatum } from "../room-datums.js";
 import { rectilinear, rectInRing, runRect } from "../room-tiling.js";
 import { parseSegmentSelect, segmentSelectText, selectSegment } from "../segment-select.js";
@@ -1231,30 +1231,108 @@ export function rotateNode(n: SceneNode, c: Point, deg: number): SceneNode {
   return mapSceneNode(n, rp, false);
 }
 
-/** Every word `furniture` knows: the drawn families and the catalogue, aliases included. Built
- *  on first use, never at module load (the two tables are imported, and import order is not
- *  this module's to rely on). */
-let knownFurniture: { list: string[]; set: ReadonlySet<string> } | undefined;
-const known = (): { list: string[]; set: ReadonlySet<string> } => {
+/** The furthest a misspelt furniture word may be from the kind it names (edits). */
+const NEAR_EDITS = 2;
+
+/**
+ * Every word `furniture` knows (the drawn families and the catalogue, aliases included), and an
+ * index from each string reached by deleting at most {@link NEAR_EDITS} characters from one of them
+ * to the words it came from, in catalogue order. Two words within `NEAR_EDITS` edits always share
+ * such a string, so a lookup finds every candidate. Built once, on first use, from the catalogue
+ * alone (never at module load: the two tables are imported, and import order is not this
+ * module's to rely on); no source reaches it.
+ */
+interface KnownFurniture {
+  set: ReadonlySet<string>;
+  /** Each word's place in catalogue order, which breaks a tie between two equally near words. */
+  rank: ReadonlyMap<string, number>;
+  byDeletion: ReadonlyMap<string, readonly string[]>;
+  maxLen: number;
+}
+let knownFurniture: KnownFurniture | undefined;
+
+/** `w` and every string reached from it by deleting up to `n` characters, each once. */
+function deletions(w: string, n: number): Set<string> {
+  let level = new Set([w]);
+  const out = new Set([w]);
+  for (let k = 0; k < n; k++) {
+    const next = new Set<string>();
+    for (const s of level) for (let i = 0; i < s.length; i++) next.add(s.slice(0, i) + s.slice(i + 1));
+    for (const s of next) out.add(s);
+    level = next;
+  }
+  return out;
+}
+
+function known(): KnownFurniture {
   if (!knownFurniture) {
     const set = new Set([...FIXTURE_CATEGORIES, ...CATALOG_CATEGORIES]);
-    knownFurniture = { list: [...set], set };
+    const byDeletion = new Map<string, string[]>();
+    let maxLen = 0;
+    for (const w of set) {
+      maxLen = Math.max(maxLen, w.length);
+      for (const d of deletions(w, NEAR_EDITS)) {
+        const at = byDeletion.get(d);
+        if (at) at.push(w);
+        else byDeletion.set(d, [w]);
+      }
+    }
+    knownFurniture = { set, rank: new Map([...set].map((w, i) => [w, i])), byDeletion, maxLen };
   }
   return knownFurniture;
-};
+}
+
+/** Edit distance (insert, delete, substitute) between two short words. */
+function editDistance(a: string, b: string): number {
+  let row = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const next = [i];
+    for (let j = 1; j <= b.length; j++)
+      next[j] = Math.min(row[j]! + 1, next[j - 1]! + 1, row[j - 1]! + (a[i - 1] === b[j - 1] ? 0 : 1));
+    row = next;
+  }
+  return row[b.length]!;
+}
+
+/**
+ * The catalogued word nearest `word` within {@link NEAR_EDITS} edits (the first in catalogue order
+ * on a tie), or null. A word longer than the longest catalogued one by more than `NEAR_EDITS`
+ * is near none and is not searched, so the work per word is bounded by the catalogue: at most
+ * a few hundred map lookups and an edit distance per candidate found. That bound is why it is not
+ * charged to the step meter, and why a plan whose uncatalogued words are near no kind spends
+ * exactly the steps it always did.
+ */
+function nearestFurniture(word: string): string | null {
+  const k = known();
+  if (word.length > k.maxLen + NEAR_EDITS) return null;
+  let best: string | null = null;
+  let bestD = NEAR_EDITS + 1;
+  const seen = new Set<string>();
+  for (const d of deletions(word, NEAR_EDITS))
+    for (const w of k.byDeletion.get(d) ?? []) {
+      if (seen.has(w)) continue;
+      seen.add(w);
+      const dist = editDistance(word, w);
+      if (dist < bestD || (dist === bestD && best !== null && k.rank.get(w)! < k.rank.get(best)!)) {
+        best = w;
+        bestD = dist;
+      }
+    }
+  return bestD <= NEAR_EDITS ? best : null;
+}
 
 /**
  * `W_UNKNOWN_FURNITURE` (RM1.4, backlog U.3): an unlabelled piece whose word is no catalogued
- * kind but is close to one (`grand_pianno`, `WC`). Furniture is open on purpose, so an unknown
- * word stays legal and still draws its rectangle; this only says so when the word looks like a
- * slip. A piece with a `label` is a custom one by intent and is never reported. The nearest
- * word comes from {@link closest}, which charges its search to the step meter.
+ * kind but is one in another case or within {@link NEAR_EDITS} edits of one (`WC`,
+ * `grand_pianno`). Furniture is open on purpose, so an unknown word stays legal and still draws
+ * its rectangle; this only says so when the word looks like a slip. A piece with a `label` is a
+ * custom one by intent and is never reported.
  */
 function noteUnknownCategory(ctx: ResolveCtx, id: string, category: string, span: Span | undefined): void {
-  const { list, set } = known();
+  const { set } = known();
   if (set.has(category)) return;
   const lower = category.toLowerCase();
-  const near = set.has(lower) ? lower : closest(category, list);
+  const near = set.has(lower) ? lower : nearestFurniture(category);
   if (near === null) return;
   ctx.diag({
     severity: "warning",

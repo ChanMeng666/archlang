@@ -76,7 +76,9 @@ const DIRECTIONS = {
 /** Measured at `2649b9dd` (see the header). */
 const FOUR_OPEN_SVG = "194956c02cebd53cba314bc794cf6bfa2925f016de48dbe1bdf70ef0ef863e54";
 const FOUR_OPEN_SEMANTIC = "49c3ae1b602ae5e576211825736bcfecf13b1ed34b868e38f96bc0d7f58deb68";
-const PLACED_SEMANTIC = "6680e7767ccf03d14e31beeafec0c9eb502f2234f71ca9b524acfbbfb6d109fa";
+// was 6680e7767ccf03d14e31beeafec0c9eb502f2234f71ca9b524acfbbfb6d109fa. RM1.4: snapping is now reported: the plan writes
+// `partition 120` under `grid 50` (drawn 100), so describe() carries two W_GRID_SNAPPED; with them removed the old digest returns.
+const PLACED_SEMANTIC = "bb3dce0dd0cfa1685bca2abf1fd3315972ac148ab506cd8d96f1ca0a444b48d8";
 
 /** Measured at `2649b9dd` (see the header), the first three at `dff02717`. */
 const UNMOVED_DIGESTS: [string, string][] = [
@@ -174,7 +176,9 @@ const FLUSH_DIGESTS: [string, string, string][] = [
 ];
 
 /** `describe()` + `lint()` of {@link THREE_OPEN_PLACED}, measured at `dff02717`. */
-const THREE_PLACED_SEMANTIC = "c8fb85b921a2bd06e974356a3e1b065b052d33ca53978a4035b1c4fee609001a";
+// was c8fb85b921a2bd06e974356a3e1b065b052d33ca53978a4035b1c4fee609001a. RM1.4: snapping is now reported, as for
+// PLACED_SEMANTIC above (two W_GRID_SNAPPED for `partition 120` under `grid 50`); with them removed the old digest returns.
+const THREE_PLACED_SEMANTIC = "565dff9d69078cb8fcd7aef9ee0d9e6d1e2025195771081a686e67b82f5385eb";
 
 /** Measured at `2649b9dd` (see the header): every plan of `examples/` and `test/fixtures/`. */
 const CORPUS: [string, string][] = [

@@ -60,7 +60,11 @@ describe("compile — grid snap", () => {
   it("snaps off-grid coordinates to the module in the IR", () => {
     const { plan } = parse(src);
     const { ir, diagnostics } = resolve(plan!);
-    expect(diagnostics).toEqual([]);
+    // RM1.4: snapping is now reported. The size the grid moved is named, written and drawn; the
+    // snapping itself, below, is what it always was.
+    expect(diagnostics.map((d) => [d.code, d.message])).toEqual([
+      ["W_GRID_SNAPPED", 'Room "r" size 2960 x 1010 was snapped to 3000 x 1000 by `grid 100`'],
+    ]);
     const room = ir.elements.find((e) => e.kind === "room") as { at: unknown; size: unknown };
     expect(room.at).toEqual({ x: 100, y: 100 });
     expect(room.size).toEqual({ w: 3000, h: 1000 });

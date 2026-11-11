@@ -70,6 +70,7 @@ import { coverageLine } from "../lint/coverage.js";
 // The zero-dep levenshtein behind every "did you mean" hint the CLI prints.
 import { closest } from "../expr.js";
 import { parse } from "../parser.js";
+import { unknownThemeDiagnostic } from "../pipeline.js";
 import { CLI_NAME } from "../manifest.js";
 import {
   type Args,
@@ -801,7 +802,10 @@ export function cmdValidate(args: Args, io: CliIo): number {
     // resolvePlan yields exactly compile()'s diagnostics (toScene/renderSvg never
     // emit any) without paying for the render; lint() then reuses the warm
     // parse/resolve stage memos, so the whole command resolves once, renders never.
-    const { diagnostics, ir, levels } = resolvePlan(source, { world });
+    const resolved = resolvePlan(source, { world });
+    const { ir, levels } = resolved;
+    // RM1.4b: `W_UNKNOWN_THEME` is compile()'s, and the CLI registers no theme, so it is THEMES's.
+    const diagnostics = withThemeWord(source, resolved.diagnostics);
     // ADR 0033: the plan's keeps, measured by the same resolve (absent when it declares none).
     const keeps = ir ? keepResultsOf(ir, levels) : undefined;
     const lintDiags = lint(source, { world });
@@ -1169,6 +1173,21 @@ function printTaste(io: CliIo, r: TasteReport): void {
   }
 }
 
+/**
+ * `before`, then `W_UNKNOWN_THEME` when the plan's `theme <name>` is no built-in theme, then
+ * `after` (RM1.4b). `compile()` raises it with the call's registered themes; the CLI registers
+ * none, so `validate` and `lint` hold the name to `THEMES` alone, and `validate --strict` fails
+ * on `theme Rendered` as `compile --json` reports it. The library's `describe()` and `lint()` do
+ * not raise it (a host may register the name at compile). A plan that names a built-in theme, or
+ * none, gets back the very arrays it passed.
+ */
+function withThemeWord(source: string, before: Diagnostic[], after: Diagnostic[] = []): Diagnostic[] {
+  const { plan } = parse(source);
+  const d = plan ? unknownThemeDiagnostic(plan, undefined) : undefined;
+  if (!d) return after.length === 0 ? before : [...before, ...after];
+  return [...before, d, ...after];
+}
+
 export function cmdLint(args: Args, io: CliIo): number {
   // An unknown profile is a bad-usage error like every other one: `error: …` on stderr,
   // exit 3, with a did-you-mean and the real profile names from LINT_PROFILE_NAMES (this
@@ -1190,7 +1209,9 @@ export function cmdLint(args: Args, io: CliIo): number {
     if (errs.length) return report(io, source, errs, args, filter);
     // One run of the rules gives the diagnostics `lint()` returns and the coverage report.
     const linted = lintWithCoverage(source, { world, profile: args.profile });
-    return report(io, source, linted.diagnostics, args, filter, linted.coverage ?? undefined);
+    // RM1.4b: a theme name the drawing cannot select, reported first, as `validate` lists it.
+    const diags = withThemeWord(source, [], linted.diagnostics);
+    return report(io, source, diags, args, filter, linted.coverage ?? undefined);
   });
 }
 
