@@ -9,9 +9,9 @@ import { readFileSync, existsSync, mkdirSync, realpathSync, statSync, writeFileS
 import { resolve as resolvePath, dirname, isAbsolute, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { formatDiagnostic, EXPORT_FORMATS, planFromJson, buildManifest, ERROR_CATALOG } from "../index.js";
-import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag, ViewName } from "../index.js";
+import type { Diagnostic, World, ExportFormat, ManifestCommand, ManifestFlag, ViewName, Theme } from "../index.js";
 import type { WorldRefusal } from "../world.js";
-import { VIEW_NAMES, isViewName } from "../index.js";
+import { VIEW_NAMES, isViewName, THEMES } from "../index.js";
 import { closest } from "../expr.js";
 import { MODULE_CAP_BYTES, utf8ByteLength } from "../input-limit.js";
 import { CLI_NAME } from "../manifest.js";
@@ -187,6 +187,8 @@ export interface Args {
   level?: number;
   /** `--view <iso|axon>`: (compile/preview) render the illustrative axonometric instead of the plan. */
   view?: string;
+  /** `--theme <name>`: (compile/watch/batch/md/preview) draw with this named colour theme (`CompileOptions.theme`). */
+  theme?: string;
   /** `--import-root <dir>`: the directory an `import` may read from (default: the working directory). */
   importRoot?: string;
   /** `--help`/`-h`: print the command's help instead of running it (handled in `runCli`). */
@@ -245,6 +247,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--against": { key: "against", kind: "string" },
   "--lock": { key: "lock", kind: "string" },
   "--view": { key: "view", kind: "string" },
+  "--theme": { key: "theme", kind: "string" },
   "--graph": { key: "graph", kind: "string" },
   "--intent": { key: "intent", kind: "string" },
   "--brief": { key: "brief", kind: "string" },
@@ -701,6 +704,50 @@ export function resolveView(
   if (!args.quiet)
     io.stderr.write("note: --view is deprecated — illustrative only; removed in 2.0 (ArchLang draws plans)\n");
   return { view: name };
+}
+
+/**
+ * `--theme <name>`: the named colour theme as `CompileOptions.theme`, or the exit-3 usage error that
+ * says why not. The names are the keys of `THEMES`, read, never retyped, so a theme added to the
+ * core is accepted here with no edit. An unknown name lists them, with a did-you-mean.
+ *
+ * Refused, not ignored, where the output carries no theme colour (the same reason `--view` and
+ * `refuseJsonDrawingFlags` give): `-f json` is the plan's model, `-f txt` / `--ascii` draws
+ * characters, `-f dxf` colours by fixed AIA layer. Absent flag: `{}`, so the compile options (and
+ * every byte) are what they were.
+ */
+export function resolveTheme(
+  io: CliIo,
+  args: Args,
+  format: Format,
+  command: string,
+): { theme?: Partial<Theme> } | { code: number } {
+  if (args.theme === undefined) return {};
+  const name = args.theme;
+  const names = Object.keys(THEMES);
+  if (!Object.hasOwn(THEMES, name)) {
+    const hint = closest(name, names);
+    return {
+      code: usageErrorFor(
+        io,
+        command,
+        `unknown theme "${name}" — expected one of: ${names.join(", ")}` +
+          (hint === null ? "" : ` (did you mean "${hint}"?)`),
+      ),
+    };
+  }
+  if (format === "json" || format === "txt" || format === "dxf") {
+    const why =
+      format === "json"
+        ? "Plan JSON is the plan's model, not a drawing of it"
+        : format === "txt"
+          ? "the text renderer draws characters, not colours"
+          : "DXF colours its entities by fixed layer, not by theme";
+    return {
+      code: usageErrorFor(io, command, `--theme cannot be combined with -f ${format} — ${why} (use svg, pdf or png)`),
+    };
+  }
+  return { theme: THEMES[name]! };
 }
 
 /**

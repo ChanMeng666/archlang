@@ -68,6 +68,7 @@ render a plan to SVG/DXF/TXT/PDF/PNG, or to Plan JSON
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
+| `--theme <blueprint\|mono\|dark\|presentation\|rendered>` | draw with this named colour theme instead of the plan's own: it wins over a `theme` statement in the source for every colour it sets, and a key it leaves unset (a `lineWeight`, a `font`) keeps the source's value; default: the plan's theme, else the built-in one. Refused (exit 3) with -f json, -f txt and -f dxf, which carry no theme colours |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2); it is an output like any other, so with --json and no -o nothing is written and the card is not in the payload — pass -o &lt;file&gt; to get the image |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
 | `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
@@ -108,6 +109,9 @@ $ archlang compile house.arch -o "storey-{level}.svg"
 # render just the upper storey of a multi-storey plan to one file
 $ archlang compile house.arch --level 2 -o upper.svg
 
+# draw with the `rendered` colour theme without writing `theme rendered` into the source; the flag wins over the source's own `theme`
+$ archlang compile plan.arch --theme rendered -o plan.svg
+
 # an illustrative isometric of the whole building (every storey in ONE drawing, so no per-level fan-out)
 $ archlang compile house.arch --view iso -o house-iso.svg
 ```
@@ -128,6 +132,7 @@ render many .arch files in one call, concurrently
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
+| `--theme <blueprint\|mono\|dark\|presentation\|rendered>` | draw with this named colour theme instead of the plan's own: it wins over a `theme` statement in the source for every colour it sets, and a key it leaves unset (a `lineWeight`, a `font`) keeps the source's value; default: the plan's theme, else the built-in one. Refused (exit 3) with -f json, -f txt and -f dxf, which carry no theme colours |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
 | `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
@@ -159,6 +164,7 @@ render every ```arch block in a Markdown file and rewrite to image links
 | `--width, -w <px>` | page width hint in pixels |
 | `--scale, -s <n>` | raster scale for the PNG backend (ignored by the non-raster formats) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
+| `--theme <blueprint\|mono\|dark\|presentation\|rendered>` | draw with this named colour theme instead of the plan's own: it wins over a `theme` statement in the source for every colour it sets, and a key it leaves unset (a `lineWeight`, a `font`) keeps the source's value; default: the plan's theme, else the built-in one. Refused (exit 3) with -f json, -f txt and -f dxf, which carry no theme colours |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
 | `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
@@ -194,6 +200,7 @@ render a PNG you can look at (zero-install where the optional binary is present)
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
+| `--theme <blueprint\|mono\|dark\|presentation\|rendered>` | draw with this named colour theme instead of the plan's own: it wins over a `theme` statement in the source for every colour it sets, and a key it leaves unset (a `lineWeight`, a `font`) keeps the source's value; default: the plan's theme, else the built-in one. Refused (exit 3) with -f json, -f txt and -f dxf, which carry no theme colours; also with --ascii and --review |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2) |
 | `--install` | auto-install @resvg/resvg-js if missing, then render |
 | `--view <iso\|axon>` | DEPRECATED (removed in 2.0; ArchLang draws plans) — render an illustrative axonometric of the building instead of the plan (iso = true isometric, axon = the 30/60 plan oblique) — a picture, never a measured drawing: no scale, no title block, no dimensions, and `describe`/`lint` are unaffected |
@@ -257,6 +264,7 @@ recompile on save (interactive)
 | `--cols <n>` | text renderer (-f txt / preview --ascii) grid width in characters (default 80) |
 | `--charset <unicode\|ascii>` | text renderer glyph set (default unicode) |
 | `--overlay <circulation>` | draw an opt-in diagnostic overlay (circulation walks + bottleneck markers); default output is unchanged |
+| `--theme <blueprint\|mono\|dark\|presentation\|rendered>` | draw with this named colour theme instead of the plan's own: it wins over a `theme` statement in the source for every colour it sets, and a key it leaves unset (a `lineWeight`, a `font`) keeps the source's value; default: the plan's theme, else the built-in one. Refused (exit 3) with -f json, -f txt and -f dxf, which carry no theme colours |
 | `--error-svg` | on a broken plan, still emit a self-describing error-card image listing the diagnostics (exit code stays 2); it is an output like any other, so with --json and no -o nothing is written and the card is not in the payload — pass -o &lt;file&gt; to get the image |
 | `--accessible` | emit &lt;title&gt;/&lt;desc&gt;/role/aria accessibility metadata (the describe() caption) into the SVG; default output is unchanged |
 | `--acc-id-prefix <prefix>` | with --accessible, prefix the &lt;title&gt;/&lt;desc&gt; element ids (default arch, giving arch-title/arch-desc) so several plans inlined in one HTML page do not share them; ignored without --accessible |
@@ -712,8 +720,8 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 169 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 169 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 35 KB; errors = the diagnostic catalog, 70 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 171 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 171 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 37 KB; errors = the diagnostic catalog, 70 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -725,7 +733,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (70 KB) — read one section instead of paying for the whole 169 KB bundle
+# just the diagnostic catalog (70 KB) — read one section instead of paying for the whole 171 KB bundle
 $ archlang context --section errors
 ```
 

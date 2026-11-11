@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `--theme <blueprint|mono|dark|presentation|rendered>` on `compile`, `watch`, `batch`, `md` and `preview`: draw with a named colour theme without writing `theme <name>` into the source. It is `CompileOptions.theme`, so it wins over the source's `theme` statement for every colour the named theme sets, and a key the theme leaves unset keeps the source's value. The names are read from `THEMES`. An unknown name exits 3 with the list; it is refused (exit 3) with `-f json`, `-f txt`, `-f dxf`, `preview --ascii` and `preview --review`, which carry no theme colours. Without the flag every output is byte-identical to before; `describe` and `lint` do not take it.
+
 ## [1.58.0] - 2026-11-11
 
 **Two changes are breaking for scripts.** `arch impact` now exits 2 on a plan that does not parse (it exited 0). And the CLI now refuses an `import` that lies outside both the import root and the plan's own directory, is not a `.arch` file, or is over 1 MiB, so a plan that compiled under 1.57.0 can now fail with exit 2; `--import-root <dir>` widens the root. Both ship in this minor release; see Breaking below. **Five security fixes**, under Security: the CLI and `archlang3d` read an `import`ed module only from under a root (before, any path an `import` named was read); `E_IMPORT_PARSE` no longer quotes the module's text; a share link that inflates past 1 MiB is refused instead of hanging the page, and every browser surface puts a compiled SVG on the page through one sanitiser; and the Node `decodePlanHash` stops at 1 MiB.

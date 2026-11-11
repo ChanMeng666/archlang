@@ -40,6 +40,7 @@ import {
   writeOutput,
   refuseJsonDrawingFlags,
   resolveView,
+  resolveTheme,
   separatorRefusal,
   sourceFromJson,
   stdoutJsonConflict,
@@ -113,6 +114,8 @@ export async function cmdCompile(args: Args, io: CliIo): Promise<number> {
   if (!format) return usageError(io, `unknown format "${args.format}" (use ${FORMAT_LIST})`);
   const jsonRefusal = refuseJsonDrawingFlags(io, args, format, "compile");
   if (jsonRefusal !== undefined) return jsonRefusal;
+  const th = resolveTheme(io, args, format, "compile");
+  if ("code" in th) return th.code;
   // Checked before any read: two writers for one stdout is a usage error, not a silent
   // redirect to `out.svg` (see `stdoutJsonConflict`).
   if (args.json && args.o === "-") return stdoutJsonConflict(io, "compile");
@@ -396,6 +399,15 @@ export async function cmdWatch(args: Args, io: CliIo): Promise<CommandResult> {
   // Still a usage error, and still exits 3 — `-` cannot be re-read on every save, and
   // becoming resident over a path that does not exist would watch nothing forever.
   if (!input || input === "-") return usageError(io, "watch needs a file path");
+  // A theme `cmdCompile` would refuse is refused here too: its exit code is discarded below, so a
+  // bad `--theme` would otherwise leave a watcher running that can never draw.
+  if (args.theme !== undefined) {
+    const wf = parseFormat({ ...args, format: args.format ?? formatOfOutput(args.o) });
+    if (wf) {
+      const th = resolveTheme(io, args, wf, "watch");
+      if ("code" in th) return th.code;
+    }
+  }
   await cmdCompile(args, io);
   // ARM THE WATCHER BEFORE ANNOUNCING IT. A save landing between the banner and the
   // watcher's baseline `stat` is folded into that baseline and never produces a change
@@ -502,6 +514,8 @@ async function cmdPreviewAscii(io: CliIo, args: Args, input: string): Promise<nu
   // `-f txt` is: a projection has no plan for the ASCII room pass to read.
   const rv = resolveView(io, args, format, "preview");
   if ("code" in rv) return rv.code;
+  const th = resolveTheme(io, args, format, "preview");
+  if ("code" in th) return th.code;
   let source: string;
   try {
     source = readInput(io, input);
@@ -542,7 +556,9 @@ export async function cmdPreview(args: Args, io: CliIo, preread?: string): Promi
         ? "--view"
         : args.overlay !== undefined
           ? "--overlay"
-          : undefined;
+          : args.theme !== undefined
+            ? "--theme"
+            : undefined;
     if (clash)
       return usageErrorFor(
         io,
@@ -559,6 +575,8 @@ export async function cmdPreview(args: Args, io: CliIo, preread?: string): Promi
   if (args.json && args.o === "-") return stdoutJsonConflict(io, "preview");
   const rv = resolveView(io, args, format, "preview");
   if ("code" in rv) return rv.code;
+  const th = resolveTheme(io, args, format, "preview");
+  if ("code" in th) return th.code;
   // Target a sensible on-screen size by default: the native render is high-res
   // (thousands of px), so render the page at PNG_PREVIEW_WIDTH px wide unless the caller set
   // an explicit width/scale. That keeps the PNG legible *and* small enough for an
@@ -776,6 +794,8 @@ export async function cmdBatch(args: Args, io: CliIo): Promise<number> {
   if (!format) return usageError(io, `unknown format "${args.format}" (use ${FORMAT_LIST})`);
   const jsonRefusal = refuseJsonDrawingFlags(io, args, format, "batch");
   if (jsonRefusal !== undefined) return jsonRefusal;
+  const th = resolveTheme(io, args, format, "batch");
+  if ("code" in th) return th.code;
   // `batch -o` is an output DIRECTORY and `batch` writes one file per input, so there is
   // no single stream `-` could mean — with or without `--json`. It used to be dropped on
   // the floor (outputs landing next to each input, unannounced); say so instead.
@@ -848,6 +868,8 @@ export async function cmdMd(args: Args, io: CliIo): Promise<number> {
   const format = parseFormat(args);
   if (!format) return usageError(io, `unknown format "${args.format}" (use ${FORMAT_LIST})`);
   if (format !== "svg" && format !== "png") return usageError(io, `md supports -f svg or png (got "${format}")`);
+  const th = resolveTheme(io, args, format, "md");
+  if ("code" in th) return th.code;
   if (args.json && args.o === "-") return stdoutJsonConflict(io, "md");
 
   let md: string;
