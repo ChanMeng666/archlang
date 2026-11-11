@@ -179,7 +179,7 @@ CRF10：`INSTRUCTIONS` 879/900。做法：`INSTRUCTIONS` 保留一句能力句�
 
 ### 发布 1.59.0 · 约 11-21 · 1 日
 
-**状态（12:23Z）：`doing`。** 版本号 PR #720（头 `f467dfe0`，分支 `release/1.59.0`）在途；所有者已决定发布并把时机委托给协调者，约定在 #711 与 #713 合并之后切（现已满足）。npm 上仍是 1.58.0 / 0.2.41 / 0.5.0。tag 之前不得合并任何 PR 进 `main`。发布结果由协调者补记。
+**状态（12:4x Z）：`doing`（tag 已推，发布链结果待协调者补记）。** 版本号 PR #720（头 `f467dfe0`）已于 2026-11-11T12:31:39Z 合并，合并提交 `e354ddc7`，`v1.59.0` tag 指向它；所有者已决定发布并把时机委托给协调者，约定在 #711 与 #713 合并之后切（现已满足）。12:4x Z 时 npm 上核心仍是 1.58.0（发布链在跑）。发布结果由协调者补记。
 
 线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）带来一次 `packages/archlang-3d` 的版本 bump；步骤同 RM0.3，按 `.claude/commands/release-check.md`。~~切点后合并的 minor 内容等 12-02。~~ RM-D27 之后：切点后合并的内容进下一次所有者决定的发布，合并本身不等日期。
 
@@ -358,7 +358,7 @@ docs 站一页（名字可改，进 `sync-docs.mjs` 的 PAGES）：一个代理�
 - `schema-policy.md` → CR11a：`$id` 与变更、弃用政策草案。
 - `walls-facts.md` → RM7.2：字段按 `_derivedWalls` 的真实形状（`points[]`、`closed`、`between` 或 `ring`、厚度、类别、状态，`src/elements/walls-from-rooms.ts`）；按墙 `id`（即 piece 名）与 `heights.walls[]`（`src/describe.ts` 的 `{ id, height }`）、`describe --facts quantities`（`src/analyze/quantities.ts` 按 `id`）对齐；已有的 `describe().derived_walls[].name` 是 spec 名，CR8 切分后一个 spec 对应多个 piece，设计稿要交代新事实与默认 `derived_walls` 的关系；写明"段的粒度在 CRF1 之后才稳定"；新事实进 `engineProbeParts`（`test/helpers/byte-identity-payload.ts`）；消费者一栏照实写。
 - `slab-and-section.md` → RM6.1：DS11 并入时的四件事（拼写取 DS11 的 `section A (x,y)->(x,y)` 还是 #544 的 `from … to …`；进 `describe` 主体还是 opt-in 事实；多层平面上剖切符号画在哪一页；`section` 写进日后 DS5 的 `level a..b` 时 id 怎么不重复，定不下来就保留对 DS5 的依赖）；净高子句的拼写，按 RM-D17（MF-D11 的受托裁定，`README.md` §6.2）。
-- `plan-json-scope.md` → RM3.1：范围表，逐个顶层语句对 `src/plan-json*`；列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，~~待所有者裁定，未裁则标 `dropped`~~ 设计稿读到它已由 `78e0b7f9` 修掉，`uses` 一行是"往返"，请所有者关卡）。RM8.7 的"3D 读 `floor`"在这张表里一起定（`floor` 今天在 `PlanJsonDroppedClause` 里，`src/plan-json/to-json.ts`）。
+- `plan-json-scope.md` → RM3.1：范围表，逐个顶层语句对 `src/plan-json*`；列出 J16（每扇窗写 `sill`）与 PS0.18（Hall 往返成 `uses entry`，~~待所有者裁定，未裁则标 `dropped`~~ 设计稿读到它已由 `78e0b7f9` 修掉，`uses` 一行是"往返"；PS0.18 已由 RM-D31 于 2026-11-12 关闭）。RM8.7 的"3D 读 `floor`"在这张表里一起定（`floor` 今天在 `PlanJsonDroppedClause` 里，`src/plan-json/to-json.ts`）。
 - `visual-language.md` → 第 8 轨（RM8.5–RM8.9）。写明：
   - RM8.8：接触阴影与环境遮蔽怎样从几何确定性地烘焙（不用实时阴影图）；帧时间预算的数字与量法（backlog VA.5 的条件；V9 的阴影图实测在 SwiftShader 上多约 55% 帧时间，超过当时约 30% 的预算，`mount.ts` 灯光处的注释）；它进 Mesh3D 与 GLB 还是只在查看器里。
   - RM8.6：门框与门套、窗台板、楼梯踏步与栏杆的默认尺寸（每个都进账本），各取墙厚或洞口的哪个比例。
@@ -386,7 +386,7 @@ RM8.1 是查看器缺陷修复，冻结期允许合并；但海报要在 Show HN
 
 ### CR11a · schema `$id` 与变更政策 — `todo` · 1 日 · sonnet · 依赖冻结期的 `schema-policy.md`
 
-**设计稿已写（2026-11-11）：** `design/schema-policy.md`，依赖满足。要点：现有两个 `$id` 不改；`$id` 跟格式主版本走；`GOVERNANCE.md` 的变更与弃用条文；门禁 `compareJsonSchemas` 加 `$id`。改现有 `$id` 的值才需要所有者裁定（本稿建议不改）。
+**设计稿已写（2026-11-11）：** `design/schema-policy.md`，依赖满足。要点：现有两个 `$id` 不改；`$id` 跟格式主版本走；`GOVERNANCE.md` 的变更与弃用条文；门禁 `compareJsonSchemas` 加 `$id`。政策与命名空间已由 RM-D30（2026-11-12，受托，`README.md` §6.6）采纳：现有两个 `$id` 不改；本卡的 PR 把政策写进 `GOVERNANCE.md`。
 
 CR11（`../checker-reach/README.md` §3）的政策那一半：schema 用带版本的 `$id`；`GOVERNANCE.md` 写清 schema 与语言形式的变更和弃用政策。排在任何新 schema 发布之前（RM1.6a 的规则集 schema、RM1.6b 的 `rule` 字段、RM3.1 的 Plan JSON 新键）。
 
@@ -422,7 +422,7 @@ RM1.1a 若走了兜底（量的是当时 `main` 的 SHA），发布说明引这�
 
 ### RM3.1 前半 · Plan JSON 无损：范围表、往返律、`outdoor` 与 `fence` — `todo` · 3 日 · opus · 依赖 CR11a、冻结期的 `plan-json-scope.md` · **批次 C′ 线上**
 
-**设计稿已写（2026-11-11）：** `design/plan-json-scope.md`，范围表的依赖满足（仍依赖 CR11a）。它另建议：前半同时把 `floor` 搬进 Plan JSON、修 J16（只在作者写了 `sill` 时写它）；PS0.18 已由 `78e0b7f9` 修掉（根平面与 PS3.9 组件体同走 `emitRows`），表里 `uses` 一行是"往返"，请所有者关闭这张卡。
+**设计稿已写（2026-11-11）：** `design/plan-json-scope.md`，范围表的依赖满足（仍依赖 CR11a）。它另建议：前半同时把 `floor` 搬进 Plan JSON、修 J16（只在作者写了 `sill` 时写它）；PS0.18 已由 `78e0b7f9` 修掉（根平面与 PS3.9 组件体同走 `emitRows`），表里 `uses` 一行是"往返"，卡已由 RM-D31（2026-11-12）关闭。
 
 v1 的 RM3.1 拆成两半（RM-D10，所有者 2026-11-11 批准）。前半：
 - 范围表：按设计稿列出 Plan JSON **声称承载**的形式（逐个顶层语句对 `src/plan-json*`），含 J16（每扇窗写 `sill`）与 PS0.18（已由 `78e0b7f9` 修掉，标"往返"；关卡由所有者做）。
@@ -542,15 +542,17 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 不许：碰核心（`src/`）或 2D 符号；不带理由移动钉子，或在本地 bless 关键帧；做任意角度旋转；用 PBR、位图纹理或 UV；让一个对称家族在 3D 里变成有手性（手性只从核心的 `mirror` 来）；漏记任何默认值。
 
-### RM8.10 · 两种墙高的 T 形交接：较低的墙拥有交叉块时，较高的墙在其上方有真实缺口 — `todo` · 未估 · opus · 依赖一次设计裁定（ADR 0030 决定 5 的范围内，记入 `README.md` §6）（2026-11-11 加，出自 #691 期间的报告）
+### RM8.10 · 在回放 HTML 与 playground 的 3D 页签里显示 `W3D_MIXED_HEIGHT_JOINT` — `todo` · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #691 期间的报告；2026-11-12 按 RM-D32 改写，不再等设计裁定）
 
-报告：T 形交接处两面墙高度不同，交叉块判给较低的 stem 时，较高的贯通墙在 stem 上方有一个真实的缺口，Mesh3D 与 GLB 里都有（平面图里没有）。2026-11-11 复核属实：`packages/archlang-3d/test/wall-lines.test.ts` 的夹具 "a T of two heights"（stem `s` 高 2000、厚 150，贯通墙 `t` 高 3000）用 `archlang3d build --json`（0.5.0）构建，报出 `W3D_MIXED_HEIGHT_JOINT`："Wall s (2000 mm high) owns 22500 mm² of the taller wall t's footprint (3000 mm), so the taller wall is notched where they meet."。这不是遗漏，是既定做法：ADR 0030 决定 5 写"Mixed wall heights at a joint keep the core's ownership and are reported (`W3D_MIXED_HEIGHT_JOINT`), never silently repaired"，`packages/archlang-3d/src/walls/ownership.ts` 的 `mixedHeightJoints` 注释同此；`test/h1-ownership.test.ts` 断言已发布的示例里没有一处触发。RM8.1 的轮廓线只画看得见的表面，所以缺口在 3D 预览里照实可见。
+报告：T 形交接处两面墙高度不同，交叉块判给较低的 stem 时，较高的贯通墙在 stem 上方有一个真实的缺口，Mesh3D 与 GLB 里都有（平面图里没有）。2026-11-11 复核属实：`packages/archlang-3d/test/wall-lines.test.ts` 的夹具 "a T of two heights"（stem `s` 高 2000、厚 150，贯通墙 `t` 高 3000）用 `archlang3d build --json`（0.5.0）构建，报出 `W3D_MIXED_HEIGHT_JOINT`："Wall s (2000 mm high) owns 22500 mm² of the taller wall t's footprint (3000 mm), so the taller wall is notched where they meet."。这不是遗漏，是既定行为：ADR 0030 决定 5 要求报告、从不静默修补。
 
-内容：先写一页设计，列出做法并交裁定：(a) 保持现状，只让查看器把这条警告显示出来（`../preview-and-remodel/README.md` 第 179 行已提到查看器要显示这条警告）；(b) 3D 包在交叉块上方为较高的墙补一块（等于在 3D 里改写归属，与 ADR 0030 决定 3 "The package writes no second wall joinery" 与决定 5 冲突，需要改 ADR）；(c) 核心改归属的平局规则（会动语料的 SVG，是核心行为变更）。裁定之后再写代码。
+**裁定（RM-D32，2026-11-12，受托，所有者可一句话推翻；`README.md` §6.6）：选 (a)。** 保持 ADR 0030 决定 5 与现状，不改几何、不改核心的归属规则（(b) 与决定 3、5 冲突；(c) 是核心行为变更，会动 SVG；今天没有任何已发布示例触发这条警告）。
 
-证明：裁定的出处；若做 (a)，警告在回放 HTML 与 playground 的 3D 页签里可见，夹具上有测试；任何做法下，已发布示例的 Mesh3D、GLB、关键帧零差（它们今天都不触发这条警告）。
+内容：让查看器把这条警告显示出来：回放 HTML 与 playground 的 3D 页签都要看得到它（`../preview-and-remodel/README.md` 第 179 行已提到查看器要显示这条警告）。文字照警告本身的 `message`，不另写第二份。
 
-不许：没有裁定就改几何；静默修补（ADR 0030 决定 5）；在 3D 包里另写一套墙体拼接；改核心的归属规则而不按核心行为变更论证。
+证明：警告在回放 HTML 与 playground 的 3D 页签里可见，夹具 "a T of two heights" 上有测试（回放 HTML 用 `check-3d` 的方式，playground 用 e2e 或组件测试）；已发布示例的 Mesh3D、GLB、关键帧零差（它们今天都不触发这条警告）。
+
+不许：改几何；静默修补（ADR 0030 决定 5）；在 3D 包里另写一套墙体拼接；改核心的归属规则。
 
 ---
 
@@ -750,7 +752,7 @@ bobsch-io 在 #362–#370、#405 里明说未做的项（排序依据就是这�
 
 ### RM8.7 · 地面材质 — `todo` · 4 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（地面一节）与 `plan-json-scope.md` · `[语法：词表]`
 
-**依赖补充（2026-11-12）：** PS7.9 已满足；本卡再依赖 RM0.7（编译器路径预算）：词表字会让 `KEYWORDS` 与 spec 变大。`rendered` 主题的地面色调与绿植新增（`climber`、`bamboo`、`potted_tree`、`stepping_stones`）仍等所有者（`handoff.md` §4）。
+**依赖补充（2026-11-12）：** PS7.9 已满足；本卡再依赖 RM0.7（编译器路径预算）：词表字会让 `KEYWORDS` 与 spec 变大。**`rendered` 地面浅色已裁定（RM-D28，`README.md` §6.6）：** 批准，条件是图案线对地面浅色的对比不低于 2.0:1；设计稿草案的三个色值只有 1.66–1.87:1，要另调一组更浅的地面色，一条测试守下限；只在 `rendered` 下，其他主题字节不变；ADR 0023 已加修订。
 
 今天：`room … floor tile|paving|deck|concrete`（`FLOOR_MATERIALS`，`src/hatches.ts`）只画一层单色的裸图案，不进 `describe()`、`lint()`（`test/room-floor.test.ts` 的孪生律），Plan JSON 把它列为 `dropped`（`src/plan-json/to-json.ts`），3D 完全看不到它；3D 的地面颜色由 `floorFinish(uses)` 按 `FLOOR_FINISH_RULES` 猜（`packages/archlang-3d/src/materials.ts`，账本 `floor-finish-default`）。`examples/**` 里没有一张图写 `floor` 子句。
 - 2D：`floor` 加 `timber`、`carpet`、`stone`（名字按设计稿）。每个词一个裸图案（`src/hatches.ts` 的 `META`，线色跟主题，冻结的分数表，不用随机数）；`rendered` 主题下带浅色块，其他主题与默认主题逐字节不变（色块走 `rendered` 的 `materialTints` 还是一个默认值等于今天行为的新主题键，按设计稿）。DXF 写对应的 `HATCH` 名，PDF 平涂。
@@ -782,7 +784,7 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 ### RM8.9 · 新家族首批 — `todo` · 6 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（家族一节） · `[语法：词表]`
 
-**依赖补充（2026-11-12）：** PS7.9 已满足；本卡再依赖 RM0.7（编译器路径预算）：词表字会让 `KEYWORDS` 与 spec 变大。`rendered` 主题的地面色调与绿植新增（`climber`、`bamboo`、`potted_tree`、`stepping_stones`）仍等所有者（`handoff.md` §4）。
+**依赖补充（2026-11-12）：** PS7.9 已满足；本卡再依赖 RM0.7（编译器路径预算）：词表字会让 `KEYWORDS` 与 spec 变大。**清单由十二个变十六个（RM-D29，`README.md` §6.6）：** 另加 `climber`（别名 `climbing_plant`）、`bamboo`、`potted_tree`（别名 `indoor_tree`）、`stepping_stones`，spec 15 单位，名字与占地按 `design/visual-language.md` §4.3；`climber` 是第七个 `wallMounted` 家族，`src/fixtures-catalog.ts` 的注释同 PR 改；下面的"十二个"与计数句相应改成十六个。
 
 十二个家族（名字按设计稿）：空调内机、空调外机、冷柜、酒柜、展示柜、屏风、贵妃榻或日床、泳池、院门、凉亭、温室、墙上挂画。每个家族的 2D 符号与 3D 生成器同卡交付（V-D6），按 `.claude/commands/new-fixture-family.md` 逐步：
 - 2D：`src/elements/glyphs-<group>.ts` 的画法（先画轮廓、尺寸取占地分数、墨不出占地、四分之一转，`.claude/rules/glyphs.md`）；`FIXTURE_FAMILIES` **末尾**追加（V-D7，中间插入会改写所有含家具的图的图例顺序）；`DRAW_BY_FAMILY`、`FIXTURE_FAMILY_MATERIALS`（`src/elements/fixtures-glyphs.ts`）；每个词一行 `CATALOG`（`src/fixtures-catalog.ts`）；`test/tables/glyph-dispatch.json` 的行；对称家族在 `test/handedness-grid-baseline.ts` 记 `"none"`，不新增手性（`test/glyph-chirality.test.ts`）。
