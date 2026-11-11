@@ -64,9 +64,9 @@
         },
         {
           "path": "studio.replay.mp4",
-          "bytes": 442248,
-          "archlang": "1.57.0",
-          "archlang3d": "0.4.0"
+          "bytes": 438110,
+          "archlang": "1.58.0",
+          "archlang3d": "0.5.0"
         },
         {
           "path": "studio.glb",
@@ -145,9 +145,9 @@
         },
         {
           "path": "furnished-flat.replay.mp4",
-          "bytes": 512003,
-          "archlang": "1.57.0",
-          "archlang3d": "0.4.0"
+          "bytes": 510527,
+          "archlang": "1.58.0",
+          "archlang3d": "0.5.0"
         },
         {
           "path": "furnished-flat.glb",
@@ -226,9 +226,9 @@
         },
         {
           "path": "laneway-house.replay.mp4",
-          "bytes": 517214,
-          "archlang": "1.57.0",
-          "archlang3d": "0.4.0"
+          "bytes": 515620,
+          "archlang": "1.58.0",
+          "archlang3d": "0.5.0"
         },
         {
           "path": "laneway-house.glb",
@@ -307,9 +307,9 @@
         },
         {
           "path": "knob-flat.replay.mp4",
-          "bytes": 416843,
-          "archlang": "1.57.0",
-          "archlang3d": "0.4.0"
+          "bytes": 414811,
+          "archlang": "1.58.0",
+          "archlang3d": "0.5.0"
         },
         {
           "path": "knob-flat.glb",
@@ -417,9 +417,9 @@
         },
         {
           "path": "two-storey.replay.mp4",
-          "bytes": 414992,
-          "archlang": "1.57.0",
-          "archlang3d": "0.4.0"
+          "bytes": 411481,
+          "archlang": "1.58.0",
+          "archlang3d": "0.5.0"
         },
         {
           "path": "two-storey.glb",
@@ -527,9 +527,9 @@
         },
         {
           "path": "turning-stair.replay.mp4",
-          "bytes": 309072,
-          "archlang": "1.57.0",
-          "archlang3d": "0.4.0"
+          "bytes": 309366,
+          "archlang": "1.58.0",
+          "archlang3d": "0.5.0"
         },
         {
           "path": "turning-stair.glb",
