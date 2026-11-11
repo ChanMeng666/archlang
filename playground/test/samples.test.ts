@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { compile, diagnosticToJson, lint } from "archlang";
+import { applyLetOverride, compile, diagnosticToJson, impact, lint } from "archlang";
 import { buildReviewSheet, reviewSheetAndWarnings } from "../../src/cli/review.js";
 import {
   CHECKS_SAMPLE,
@@ -64,13 +64,24 @@ describe("the playground-only samples", () => {
     expect(buildReviewSheet(sample)).toEqual(r.sheet);
   });
 
-  it(`"${EDIT_ONE_ROOM_SAMPLE}" is clean, and a lock holds the living room while the split moves`, () => {
+  it(`"${EDIT_ONE_ROOM_SAMPLE}" is clean, and its header's lock holds for split and fails for hall_d`, () => {
     const src = sampleSource(EDIT_ONE_ROOM_SAMPLE)!;
     expect(compile(src, { noCache: true }).errors).toEqual([]);
     expect(lint(src)).toEqual([]);
-    expect(src).toContain("let split = 3000");
-    const moved = src.replace("let split = 3000", "let split = 3200");
-    expect(compile(moved, { noCache: true }).errors).toEqual([]);
-    expect(lint(moved)).toEqual([]);
+    const lock = ["r_main", "w_main"];
+    const setLet = (name: string, value: string) => {
+      const r = applyLetOverride(src, name, value);
+      if (!r.ok) throw new Error(r.diagnostics[0]!.message);
+      return r.source;
+    };
+    // `impact plan.arch --set split=3200 --lock r_main,w_main`: nothing locked changed.
+    const held = impact(src, setLet("split", "3200"), { lock }).lock!;
+    expect(held.checked).toBe(true);
+    expect(held.ok).toBe(true);
+    expect(held.violations).toEqual([]);
+    // `--set hall_d=1700` pushes into the living room: E_LOCKED_ELEMENT_CHANGED on r_main.
+    const broke = impact(src, setLet("hall_d", "1700"), { lock }).lock!;
+    expect(broke.ok).toBe(false);
+    expect(broke.violations.map((v) => [v.code, v.id])).toEqual([["E_LOCKED_ELEMENT_CHANGED", "r_main"]]);
   });
 });

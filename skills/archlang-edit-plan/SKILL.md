@@ -27,10 +27,11 @@ This skill is a workflow, not a language reference. Run `archlang spec` for the 
 1. **Record the starting state.** Run `archlang validate plan.arch --json` and
    `archlang describe plan.arch --select rooms,totals --json`. Keep both results: they are what you
    compare against at the end. If the plan already has errors, tell the user before you edit.
-2. **Lock what must not move, before you edit.** List the ids the request does not name and run
-   `archlang impact plan.arch --set NAME=value --lock <ids> --json` for a change to one top-level
-   `let`, or, once you have an edited copy, `archlang impact new.arch --against plan.arch --lock <ids>
-   --json`. Exit `2` with `E_LOCKED_ELEMENT_CHANGED` names an element the edit would move: change the
+2. **Choose the locks, then check the edit.** Before you edit, list the ids the request does not
+   name: those are the locks. For a change to one top-level `let`, ask first, with nothing written:
+   `archlang impact plan.arch --set NAME=value --lock <ids> --json`. For any other edit, make it in a
+   copy `new.arch` and check it after: `archlang impact new.arch --against plan.arch --lock <ids>
+   --json`. Exit `2` with `E_LOCKED_ELEMENT_CHANGED` names a locked element the edit moves: change the
    edit, not the lock. A lock names elements by the `id=` written in the source (an unnamed one is
    refused with `E_LOCK_UNNAMED`).
 3. **Read only what the change touches.** `archlang describe plan.arch --room <ids> --json` returns
@@ -50,8 +51,8 @@ This skill is a workflow, not a language reference. Run `archlang spec` for the 
    or a door swing, `archlang repair plan.arch -o plan.arch` moves it. Read `unresolved` for the pieces
    it could not move.
 8. **Verify the change and nothing else.** Run the two commands from step 1 again, and
-   the `impact` command from step 2 once more. The rooms you meant to change differ as intended. Every other room has the same area and the same
-   connections. No diagnostic is new unless the request causes it; if one is, tell the user.
+   the `impact` check from step 2 on the edited file. The rooms you meant to change differ as
+   intended. Every other room has the same area and the same connections. No diagnostic is new unless the request causes it; if one is, tell the user.
 9. **Refresh the sheet if the drawing grew.** `archlang finish plan.arch --dry-run --json` shows what
    is missing. If it reports that the drawing no longer fits the authored `paper` or `scale`,
    `archlang finish plan.arch --reissue` may replace those two statements and nothing else.

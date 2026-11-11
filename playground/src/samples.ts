@@ -3,12 +3,14 @@
  *
  * Every file in `examples/` stays warning-free (fix/examples-sound, 2026-10-27: a warned plan is a
  * test fixture, never a shipped example), so the plan that demonstrates Checks, which has to raise
- * a finding, lives here instead. It is offered in the gallery under its own group ("Try Checks"),
- * as a button, never as a link: not in the static example pages or the sitemap (those are
- * `EXAMPLE_ROWS`'), and the Checks panel points at it when the plan on screen has nothing to ring.
+ * a finding, lives here instead, beside the edit-one-room plan. They are offered in the gallery
+ * under their own group ("Try Checks"), as buttons, never as links: not in the static example pages
+ * or the sitemap (those are `EXAMPLE_ROWS`'), and the Checks panel points at the Checks one when
+ * the plan on screen has nothing to ring.
  *
  * A lazy module, loaded with the example sources. `playground/test/samples.test.ts` holds each
- * sample to its promise: it compiles, and raises exactly the finding it is for.
+ * sample to its promise: it compiles, and raises exactly the finding it is for (the edit-one-room
+ * one stays clean, and its header's lock command holds or fails as it says).
  */
 
 /** The gallery group the samples are listed under. */

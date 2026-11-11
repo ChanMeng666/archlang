@@ -127,7 +127,9 @@ test.describe("checks", () => {
     await expect(sampleGroup).toHaveAttribute("data-group", SAMPLE_GROUP);
     await expect(sampleGroup).toHaveAttribute("data-sample", "");
     await expect(sampleGroup.locator(".gal-card")).toHaveCount(SAMPLES.length);
-    await expect(sampleGroup.locator("button.gal-card").first()).toHaveAttribute("data-label", CHECKS_SAMPLE);
+    expect(
+      await sampleGroup.locator("button.gal-card").evaluateAll((els) => els.map((e) => e.getAttribute("data-label"))),
+    ).toEqual(SAMPLES.map((s) => s.label));
     await expect(page.locator(`#gallery a.gal-card[data-label="${CHECKS_SAMPLE}"]`)).toHaveCount(0);
     await turnOn(page);
     await page.getByRole("button", { name: `Try “${CHECKS_SAMPLE}” →` }).click();
