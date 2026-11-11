@@ -148,6 +148,7 @@ export const EXERCISED: Record<string, string> = {
   "score --quiet": "TODO: no test passes --quiet to this command and asserts the stderr summary is gone",
   "lint --profile": "test/cli-narrow.test.ts",
   "lint --strict": "test/cli-narrow.test.ts",
+  "lint --rules": "test/lint-provenance.test.ts",
   "lint --code": "test/cli-narrow.test.ts",
   "lint --severity": "test/cli-narrow.test.ts",
   "lint --import-root": "test/import-rooted.test.ts",

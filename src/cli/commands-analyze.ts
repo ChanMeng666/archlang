@@ -7,7 +7,7 @@
 
 import { readFileSync } from "node:fs";
 import { resolve as resolvePath } from "node:path";
-import { fmt2 } from "../num-format.js";
+import { fmt2, fmtWritten } from "../num-format.js";
 import {
   describe,
   describeLevel,
@@ -67,6 +67,8 @@ import {
 import { resolvePlan } from "../analyze.js";
 // The one human line of the lint coverage report (internal: only `lint` prints it).
 import { coverageLine } from "../lint/coverage.js";
+// Where each ruleset number comes from (internal: only `lint --rules` reads it, never the compile path).
+import { type EffectiveRule, effectiveRuleset } from "../lint/provenance.js";
 // The zero-dep levenshtein behind every "did you mean" hint the CLI prints.
 import { closest } from "../expr.js";
 import { parse } from "../parser.js";
@@ -1198,6 +1200,7 @@ export function cmdLint(args: Args, io: CliIo): number {
       `unknown lint profile "${args.profile}"${didYouMean(args.profile, LINT_PROFILE_NAMES)} (available: ${echoList(LINT_PROFILE_NAMES)})`,
     );
   }
+  if (args.rules) return cmdLintRules(args, io);
   const filter = parseDiagFilter(io, args);
   if (isCheckError(filter)) return filter.exit;
   return withSource(io, args, (source, input) => {
@@ -1217,6 +1220,42 @@ export function cmdLint(args: Args, io: CliIo): number {
     const diags = withThemeWord(source, furniture, linted.diagnostics);
     return report(io, source, diags, args, filter, linted.coverage ?? undefined);
   });
+}
+
+/**
+ * `lint --rules [--profile X] [--json]`: the ruleset `lint` runs under that profile (none: the
+ * default one), each key with its value, units and provenance (`effectiveRuleset`,
+ * `src/lint/provenance.ts`). It reads no plan, so an input or a diagnostic option with it is bad
+ * usage (exit 3). The caller has validated the profile. Exits 0.
+ */
+function cmdLintRules(args: Args, io: CliIo): number {
+  const plan = args._.length > 0 ? `the plan ${args._[0]}` : undefined;
+  const extra = [
+    plan,
+    args.code !== undefined ? "--code" : undefined,
+    args.severity !== undefined ? "--severity" : undefined,
+    args.strict ? "--strict" : undefined,
+    args.importRoot !== undefined ? "--import-root" : undefined,
+  ].filter((x): x is string => x !== undefined);
+  if (extra.length > 0)
+    return usageErrorFor(io, "lint", `--rules prints the ruleset and lints nothing; drop ${extra.join(", ")}`);
+  const r = effectiveRuleset(args.profile);
+  if (args.json) {
+    emitJson(io, r);
+    return 0;
+  }
+  // The list is the result, so it goes to stdout, and `--quiet` (stderr only) leaves it.
+  const shown = (v: EffectiveRule["value"]): string =>
+    typeof v === "number" ? fmtWritten(v) : v === null ? "off" : String(v);
+  io.stdout.write(`lint rules: ${r.profile ?? "default ruleset"} (${r.advisory})\n`);
+  for (const row of r.rules) {
+    const unit = row.units === "mm" || row.units === "m2" ? row.units : null;
+    const value = `${shown(row.value)}${unit !== null && row.value !== null ? ` ${unit}` : ""}`;
+    const where = row.document !== null ? ` · ${row.document}${row.clause !== null ? ` ${row.clause}` : ""}` : "";
+    const edition = row.edition !== null ? ` (${row.edition})` : "";
+    io.stdout.write(`  ${row.key} = ${value} [${row.verification}, ${row.from}]${where}${edition}\n`);
+  }
+  return 0;
 }
 
 /**
