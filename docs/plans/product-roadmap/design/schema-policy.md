@@ -61,6 +61,8 @@
 
 ## 3. 需要所有者裁定的
 
+**已裁定（RM-D30，2026-11-12，受托，所有者可一句话推翻）：照本节建议采纳。** 旧主版本的 schema 文件留在原 URL、永不删除；字段弃用至少一个 minor；命名空间 `archlang.uk/schemas/<name>/v<n>`；现有两个 `$id` 不改；CR11a 的 PR 把政策写进 `GOVERNANCE.md`。下面是当时摆出的原文。
+
 - 把 Plan JSON、Intent 两个现有 `$id` 改成带版本的值（§2.2）。本稿建议**不改**；只有决定要改时才需要这条裁定，因为它动 ADR 0019 记下的规范 URL 和 MCP 的输出。
 
 - **写进 `GOVERNANCE.md` 的政策（§2.3）与新 schema 的命名空间（§2.2）。** 三项对外承诺：旧主版本的 schema 文件永不删除（§2.3 第 2 条）；字段弃用至少经过一个 minor（第 3 条）；`https://archlang.uk/schemas/<name>/v<n>.schema.json` 这个命名空间。理由：`GOVERNANCE.md` 的 "Changes to Governance" 写明治理的改动由 lead maintainer 决定；ADR 0019 把 schema 的 `$id` 列为一换就要全仓库重生成的公开 URL，所以命名空间一旦发布就搬不动。所有者裁定之前，CR11a 不写 `GOVERNANCE.md` 这一节，也不发布任何 `/schemas/` 下的 URL。

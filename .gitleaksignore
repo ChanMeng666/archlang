@@ -241,3 +241,5 @@ c2978a477cf30cf228233c5707d5ddfb9e9c45ea:test/double-door-byte-identity.test.ts:
 # 8.24.3 over the full history at origin/main on 2026-10-31 reported exactly these two.
 2574428a96a0eccbb0b0ea1c0bdfda4266236655:test/open-crossing.test.ts:generic-api-key:73
 d6c2ff5ad9267d12b7ec4e207c7467ed4cb41ff4:test/wall-status-byte-identity.test.ts:generic-api-key:36
+# A byte-identity row keyed by `examples/accessible.arch` in the RM1.4 silent-accepts law, added by #704; recomputable, grants access to nothing; flagged by the nightly gitleaks run 43001503825 on 2026-11-11.
+63b337085946f8396e8ae3fdd8badcb3d03bfe70:test/silent-accepts.test.ts:generic-api-key:232
