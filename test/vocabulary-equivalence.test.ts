@@ -34,6 +34,11 @@
  * so a label-only room now agrees with an authored one. No other row, field or order moved. The
  * three rows were edited by hand to the values the corpus sweep measured, nothing else.
  *
+ * ## One example added on 2026-11-12 (product-roadmap RM8.5): `examples/courtyard-family.arch`
+ *
+ * A new file, not a classifier change: its eleven rows were taken from `describe()` when it was
+ * added. No other row moved.
+ *
  * ## One example added on 2026-11-06 (public-surfaces P4): `examples/knob-flat.arch`
  *
  * A new file, not a classifier change: its four rows were taken from `describe()` when it was

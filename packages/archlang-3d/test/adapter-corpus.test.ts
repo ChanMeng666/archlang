@@ -4,7 +4,7 @@ import { EXAMPLES_LIST, WORLD } from "./corpus.js";
 
 describe("every shipped example adapts to a valid Scene3D, or is refused by name", () => {
   it("reads the whole corpus (37 examples)", () => {
-    expect(EXAMPLES_LIST.length).toBe(37); // 36 since S2 added examples/turning-stair.arch; 37 since P4 added examples/knob-flat.arch
+    expect(EXAMPLES_LIST.length).toBe(38); // 36 since S2 added examples/turning-stair.arch; 37 since P4 added examples/knob-flat.arch; 38 since RM8.5 added examples/courtyard-family.arch
   });
 
   for (const [name, source] of EXAMPLES_LIST) {
