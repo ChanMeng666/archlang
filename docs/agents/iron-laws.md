@@ -125,7 +125,7 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
 
 - **High-tier merges (owner, 2026-11-09, in words):** the coordinator judges whether a high-tier PR
   (workflows, root config, hooks, owner rules, policy files) can merge and merges it after a
-  fresh-context review and green CI, without asking per PR. Still owner-only: `v*` tags and releases,
+  fresh-context review and green CI, without asking per PR. Still owner-only: the decision to release,
   `eval:live`, the npmjs account, anything that spends money. An executor never merges its own PR.
 
 - **Merging a PR**: once CI is green and the diff has been read (a code change: adversarially
@@ -135,8 +135,10 @@ listed in the stage report (`docs/plans/plan-soundness/README.md` D18).
   `main` and green CI; a major bump waits for the owner.
   Committing and pushing still happen only when asked.
 - **The release chain** (version-bump PR, tag, `release.yml`, proofs, hand publishes, listings) runs
-  end to end by the agent. The owner pauses it only for OTP/2FA, logins, account/token/secret
-  creation, acceptance of terms and attestations, and native file pickers.
+  end to end by the agent once the owner has decided that release: no decision, no tag, and neither a
+  schedule nor an earlier release's decision is one. The owner pauses it only for OTP/2FA, logins,
+  account/token/secret creation, acceptance of terms and attestations, and native file pickers.
+  *Ratified by the owner in words, 2026-11-11:* "发布的决定归所有者；决定之后，发布链含 tag 由代理执行。"
 - **Listings**: an agent may drive a submission form or a publish step through the owner's logged-in
   browser or CLI when the owner has asked for that listing; the final submit of anything that
   accepts terms, and Cloudflare dashboard edits, are the owner's (`docs/seo.md` section 8).

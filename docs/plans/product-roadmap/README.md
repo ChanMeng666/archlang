@@ -410,7 +410,7 @@
 
 | # | 问题 | 裁定（2026-11-11，受托） | 理由 |
 |---|---|---|---|
-| RM-D24 | 发布 1.58.0 的 `v1.58.0` tag 由谁在什么条件下推 | **代理推了 `v1.58.0` tag**（在 `e68fd576`），条件是全部满足之后：发布评审没有 blocker；发布 PR #689 的所有检查全绿，含不是必需检查的 `check:3d`；`prove:pack --core 1.57.0` 通过；最新的 nightly 绿 | 所有者已经决定发布（RM-D9）；`docs/agents/iron-laws.md` § Owner policies写道："The release chain (version-bump PR, tag, `release.yml`, proofs, hand publishes, listings) runs end to end by the agent. The owner pauses it only for OTP/2FA, logins, account/token/secret creation, acceptance of terms and attestations, and native file pickers."，所以决定之后的发布链归代理。同一节的 High-tier merges 一条还写着 "Still owner-only: `v*` tags and releases"，两条字面不一致，需要所有者在 iron-laws 里统一；这里取发布链一条的字面 |
+| RM-D24 | 发布 1.58.0 的 `v1.58.0` tag 由谁在什么条件下推 | **代理推了 `v1.58.0` tag**（在 `e68fd576`），条件是全部满足之后：发布评审没有 blocker；发布 PR #689 的所有检查全绿，含不是必需检查的 `check:3d`；`prove:pack --core 1.57.0` 通过；最新的 nightly 绿 | 所有者已经决定发布（RM-D9）；`docs/agents/iron-laws.md` § Owner policies写道："The release chain (version-bump PR, tag, `release.yml`, proofs, hand publishes, listings) runs end to end by the agent. The owner pauses it only for OTP/2FA, logins, account/token/secret creation, acceptance of terms and attestations, and native file pickers."，所以决定之后的发布链归代理。所有者已在 2026-11-11 定了措辞：发布的决定归所有者，决定之后发布链含 tag 由代理执行（`docs/agents/iron-laws.md` § Owner policies 已改） |
 | RM-D25 | 发布评审发现的第二个破坏性变更（CLI 拒绝落在 import root 与方案自身目录之外的 `import`、不是 `.arch` 的模块、超过 1 MiB 的模块）放进 1.58.0 这个 minor，还是退回 | **放进 1.58.0 的 minor**，与 `arch impact` 的退出码（RM-D9）一样；CHANGELOG 的 Breaking 一节两条都写明 | 它是安全修复：以前 `import` 写出的任何路径都会被读；`--import-root <dir>` 可以把根放宽，仍要读那个目录的脚本有一条路 |
 | RM-D26 | `@chanmeng666/arch-plan` 随本次发布升到 0.1.2，虽然卡没有要求 | **升到 0.1.2** | 元素现在先把 SVG 过一遍净化器再放上页面（0.1.1 直接设 `innerHTML`）；npm 用户只有升版本才拿得到这个改动 |
 
