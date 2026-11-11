@@ -775,9 +775,11 @@ describe("wall faces: the switch to the finished storey is one function (card RM
 });
 
 describe("wall faces: near-coplanar overlapping pieces built from a plan (card RM8.1b)", () => {
-  // Two collinear 200 mm walls overlapping from 2000 to 3000, the second 0.001 mm (1 µm) off the
-  // line of the first: their outer faces are parallel, overlap and are 1 µm apart in depth, so no
-  // face may be taken for a shared one. A window on each adds sills and lintels.
+  // Two collinear 200 mm walls, the second 0.001 mm (1 µm) off the line of the first. The plan butts
+  // them: wall a ends and wall b starts at x = 3100 mm, so their end faces lie in one plane and
+  // overlap, yet their long faces are 1 µm apart in depth and the end faces differ by a 1 µm sliver
+  // on each side. A window on each adds an opening. Pieces that are not exactly coplanar must not
+  // be taken for one flat surface, nor their slivers dropped.
   const src = `plan "N" {
   units mm
   height 3000
@@ -788,30 +790,35 @@ describe("wall faces: near-coplanar overlapping pieces built from a plan (card R
 }
 `;
 
-  it("leaves out no face between pieces a µm apart, and every rise state is closed", () => {
+  it("the end faces are shared and the 1 µm slivers stay: every rise state is closed", () => {
     const { nodes } = outlined(src);
     const fixes = wallFaces(nodes);
-    const walls = nodes.filter(takesWallLines);
-    expect(walls.length).toBeGreaterThanOrEqual(4);
-    // The two walls' long faces overlap in x yet are 1 µm apart: whatever the pieces share (the ends
-    // of a wall's own sill, lintel and jambs), none of a through face of wall a is left out for b's.
+    const walls = nodes.flatMap((n, i) => (takesWallLines(n) ? [i] : []));
+    expect(walls.length).toBe(2);
+    // The premise: the two walls share their end plane, so they form a group...
+    const fa = fixes[walls[0] as number] as FaceFix;
+    const fb = fixes[walls[1] as number] as FaceFix;
+    expect(fb.group).toBe(fa.group);
+    expect(fa.group).toBeGreaterThanOrEqual(0);
+    // ...and the sliver of each end face that the other does not cover is still drawn (a 1 µm strip).
+    expect(fa.hide.length + fb.hide.length).toBeGreaterThan(0);
+    expect(fa.add.length + fb.add.length + fa.alone.length + fb.alone.length).toBeGreaterThan(0);
     for (const [state, rise] of riseStates(nodes)) {
       expect(openEdges(drawnAt(nodes, fixes, rise)).slice(0, 4), state).toEqual([]);
     }
-    nodes.forEach((n, i) => {
-      if (!takesWallLines(n)) return;
-      expect(openEdges(drawnAt(nodes, fixes, (j) => (j === i ? 1 : undefined))).slice(0, 4), n.key).toEqual([]);
-    });
+    for (const i of walls) {
+      expect(openEdges(drawnAt(nodes, fixes, (j) => (j === i ? 1 : undefined))).slice(0, 4), nodes[i]?.key).toEqual([]);
+    }
     expect(openEdges(drawnAt(nodes, fixes, () => 1)).slice(0, 4), "the finished storey").toEqual([]);
   });
 
-  it("outlines both faces' ends at the overlap: the 1 µm step is a line, not a seam taken away", () => {
+  it("outlines the step between the two faces: every line is on the µm grid and the joint is not one flat seam", () => {
     const { segs } = outlined(src);
-    // Wall b's start (x = 2000) stands in front of a's face by 1 µm: a vertical line at x = 2000 on b's face.
-    const lines = segs.filter(
-      (g) => g.a[0] === 2_000_000 && g.b[0] === 2_000_000 && g.a[2] === g.b[2] && g.a[1] !== g.b[1],
-    );
-    expect(lines.length).toBeGreaterThan(0);
+    expect(segs.length).toBeGreaterThan(0);
+    for (const g of segs) for (const v of [...g.a, ...g.b]) expect(Number.isInteger(v), g.node).toBe(true);
+    // The 1 µm step at the joint is a corner: a vertical line over each end of it, on wall b's face.
+    const atJoint = segs.filter((g) => g.a[0] === 3_100_000 && g.b[0] === 3_100_000 && g.a[1] !== g.b[1]);
+    expect(atJoint.length).toBeGreaterThan(0);
   });
 });
 
