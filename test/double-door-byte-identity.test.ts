@@ -120,8 +120,9 @@ suite("`double` door kind — the byte-identity law", () => {
  * of that tree.
  *
  * The test rebuilds `main`'s source from the branch's file by undoing this PR's edits, each a
- * block of whole lines found exactly once, and holds the result to `main`'s own bytes (the
- * source's SHA-256) before it digests it, so an edit table that drifts cannot pass. Two plans
+ * block of whole lines found exactly once, and holds the result to the source SHA-256 recorded in
+ * its row (`main`'s bytes when the row was taken; a later comment-only edit moves it, as the studio
+ * row notes) before it digests it, so an edit table that drifts cannot pass. Two plans
  * need no edit: `examples/relational.arch` (its table inset is back to 300, the ruling on PR
  * #283; it lints clean, so `lint()` adds `[]` either way and this pin is its whole payload) and `test/fixtures/off-path-bypass.arch`, which gains a lint warning only.
  */
@@ -240,7 +241,9 @@ const MAIN_SOURCES: [path: string, payload: string, source: string, undo: [branc
   [
     "examples/studio.arch",
     "db6313cfbaecbf55d2e78fac0c1de44a6973b4106497cb7700f3b4b40a94808f",
-    "c9c1f50e159d4b8860578c7dbdfe183adbfa2886ae7ed75333ae27e7e33f7ac6",
+    // RM0.2b: the source hash moved c9c1f50e… -> 52ead9d1… because the header comment was corrected (comment only);
+    // the payload digest above is unchanged, so SVG, describe() and lint() did not move.
+    "52ead9d18570bac87fba18b6171e4f544f3603cb44e839fdbbb22be54c79350a",
     [
       [
         "  # Kitchen run along the north wall: sink · stove · counter · fridge (drawn as symbols).",

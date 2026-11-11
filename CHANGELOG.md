@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The header comment of `examples/studio.arch` no longer says the plan is "architecturally sound" or that every room opens off the hall. It states what the plan measures: no warning under the default rules, one `W_ROOM_TOO_SMALL` under `uk-residential-advisory`. Comment only, and the new header has the old one's byte length and line count: the drawing, `describe()`, `lint()` and every byte span are unchanged.
 - The 3D preview's posters and replay videos on archlang.uk and in the README are anti-aliased: `gen:3d-assets` draws each poster pixel from 3 × 3 samples and each video pixel from 2 × 2 (`renderReplay({ supersample })` in `@chanmeng666/archlang-3d/node`, off by default), and the outlines keep their weight. The live 3D preview (the playground's 3D tab, `archlang3d view --replay`) is not anti-aliased, as before.
 
 ### Fixed

@@ -1640,15 +1640,7 @@ Lawn, paving and deck areas are not built in 3D, so a garden is bare ground in t
 `floorFinish` reads `uses` only; the label is deliberately not read. Decide whether a label should
 ever pick a finish before building anything.
 
-### VA.4 · `--theme` on the CLI: done by #695, waiting to be archived — `note`
-
-`rendered` is reached only by `theme rendered` in the source or `CompileOptions.theme`. A flag is a
-manifest row (`src/manifest.ts`) and regenerates `docs/cli-reference.md`. **Gate:** the default output
-byte-identical without the flag.
-**Done by PR #695** (card RM8.4, `docs/plans/product-roadmap/cards.md`), merged 2026-11-11T01:44Z
-as `6683c788`: `--theme <name>` on `compile`, `batch`, `md`, `preview` and `watch`. The entry is closed
-and waits to be archived to `archlang-lab` with `scripts/backlog-archive.mjs` (with O.10 and H.1). The
-`rendered` example pages and gallery are RM8.4b.
+- VA.4 · `--theme` on the CLI — done by #695 → archived (lab)
 
 ### VA.5 · Shadows in the replay (measure first) — `todo`
 
