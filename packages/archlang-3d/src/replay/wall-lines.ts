@@ -472,7 +472,7 @@ export interface FaceFix {
  * The groups to draw `joined` (the finished storey's faces), the rest `alone` (card RM8.1b): a group
  * switches only when EVERY node in it stands at full height, never node by node, since a node's
  * `joined` faces rely on its neighbours' being drawn as well. `standing(i)` is whether node `i` is
- * shown with `rise === 1`. The one place this rule lives: `mount.ts`'s `draw` and the tests call it.
+ * shown and risen to its full height (`rise >= 1`). The one place this rule lives: `mount.ts`'s `draw` and the tests call it.
  */
 export function joinedGroups(fixes: ReadonlyArray<FaceFix | undefined>, standing: (i: number) => boolean): Set<number> {
   const up = new Map<number, boolean>();

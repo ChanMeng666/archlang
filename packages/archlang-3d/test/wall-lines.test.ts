@@ -774,35 +774,41 @@ describe("wall faces: the switch to the finished storey is one function (card RM
   });
 });
 
-describe("wall faces: near-coplanar overlapping pieces built from a plan (card RM8.1b)", () => {
-  // Two collinear 200 mm walls, the second 0.001 mm (1 µm) off the line of the first. The plan butts
-  // them: wall a ends and wall b starts at x = 3100 mm, so their end faces lie in one plane and
-  // overlap, yet their long faces are 1 µm apart in depth and the end faces differ by a 1 µm sliver
-  // on each side. A window on each adds an opening. Pieces that are not exactly coplanar must not
-  // be taken for one flat surface, nor their slivers dropped.
-  const src = `plan "N" {
+describe("wall faces: near-coplanar pieces built from a plan (card RM8.1b)", () => {
+  // What a plan can make of two walls a µm from coplanar (probed): a parallel duplicate collapses to
+  // one node, and the stem variants give ordinary shared faces, so there are two cases.
+  //
+  // Slant: wall b is 0.001 mm (1 µm) off the line of wall a. The compiler trims b to a's corners, so
+  // at x = 3100 mm their end faces are exactly equal (z = -100000 .. 100000) and b's long faces run
+  // 1 µm out of line over 800 mm (b's far end is at z = -99999 .. 100001). That is not a pair of
+  // parallel planes; it is a turn of a millionth of a degree between a's face and b's, which
+  // `nearlyFlat` must read as flat. wb's window is 600 mm wide, so its reveal is off the joint.
+  const slant = `plan "N" {
   units mm
   height 3000
   wall id=a exterior thickness 200 { (0,0) (3000,0) }
   wall id=b exterior thickness 200 { (2000,0.001) (5000,0.001) }
   window id=wa on a at center width 800 sill 900 head 2100
-  window id=wb on b at center width 800 sill 600 head 1800
+  window id=wb on b at center width 600 sill 600 head 1800
+}
+`;
+  // Step: a 200 mm wall meets a 200.002 mm one in line, so the long faces are parallel and 1 µm
+  // apart in depth (z = -100000 against -100001): the only plan-built pair of near-coplanar planes.
+  const step = `plan "N" {
+  units mm
+  height 3000
+  wall id=a exterior thickness 200 { (0,0) (3000,0) }
+  wall id=b exterior thickness 200.002 { (3000,0) (6000,0) }
+  window id=wa on a at 1000 width 800 sill 900 head 2100
+  window id=wb on b at 2000 width 800 sill 600 head 1800
 }
 `;
 
-  it("the end faces are shared and the 1 µm slivers stay: every rise state is closed", () => {
+  /** Every rise state of the plan is closed, each wall alone is, and so is the finished storey. */
+  function closedEverywhere(src: string): { fixes: Array<FaceFix | undefined>; walls: number[] } {
     const { nodes } = outlined(src);
     const fixes = wallFaces(nodes);
     const walls = nodes.flatMap((n, i) => (takesWallLines(n) ? [i] : []));
-    expect(walls.length).toBe(2);
-    // The premise: the two walls share their end plane, so they form a group...
-    const fa = fixes[walls[0] as number] as FaceFix;
-    const fb = fixes[walls[1] as number] as FaceFix;
-    expect(fb.group).toBe(fa.group);
-    expect(fa.group).toBeGreaterThanOrEqual(0);
-    // ...and the sliver of each end face that the other does not cover is still drawn (a 1 µm strip).
-    expect(fa.hide.length + fb.hide.length).toBeGreaterThan(0);
-    expect(fa.add.length + fb.add.length + fa.alone.length + fb.alone.length).toBeGreaterThan(0);
     for (const [state, rise] of riseStates(nodes)) {
       expect(openEdges(drawnAt(nodes, fixes, rise)).slice(0, 4), state).toEqual([]);
     }
@@ -810,15 +816,43 @@ describe("wall faces: near-coplanar overlapping pieces built from a plan (card R
       expect(openEdges(drawnAt(nodes, fixes, (j) => (j === i ? 1 : undefined))).slice(0, 4), nodes[i]?.key).toEqual([]);
     }
     expect(openEdges(drawnAt(nodes, fixes, () => 1)).slice(0, 4), "the finished storey").toEqual([]);
+    return { fixes, walls };
+  }
+  const counts = (f: FaceFix | undefined) => [
+    f?.group,
+    f?.hide.length,
+    f?.add.length,
+    f?.alone.length,
+    f?.joined.length,
+  ];
+
+  it("slant: the end faces are shared (one group), every rise state is closed", () => {
+    const { fixes, walls } = closedEverywhere(slant);
+    expect(walls.length).toBe(2);
+    // The shared end face is hidden on both; each keeps the same triangles (group 1, hide 22, add 36,
+    // alone 18, joined 0: the equal end faces cancel, so the finished storey adds nothing).
+    expect(walls.map((i) => counts(fixes[i]))).toEqual([
+      [1, 22, 36, 18, 0],
+      [1, 22, 36, 18, 0],
+    ]);
   });
 
-  it("outlines the step between the two faces: every line is on the µm grid and the joint is not one flat seam", () => {
-    const { segs } = outlined(src);
+  it("slant: the 1 µm turn is flat, so no line stands at the joint (x = 3100 mm)", () => {
+    const { segs } = outlined(slant);
     expect(segs.length).toBeGreaterThan(0);
     for (const g of segs) for (const v of [...g.a, ...g.b]) expect(Number.isInteger(v), g.node).toBe(true);
-    // The 1 µm step at the joint is a corner: a vertical line over each end of it, on wall b's face.
+    // Neither face carries a vertical line at the joint (wb's reveal is 100 mm further along).
     const atJoint = segs.filter((g) => g.a[0] === 3_100_000 && g.b[0] === 3_100_000 && g.a[1] !== g.b[1]);
-    expect(atJoint.length).toBeGreaterThan(0);
+    expect(atJoint, "a vertical line at the joint").toEqual([]);
+  });
+
+  it("step: parallel faces 1 µm apart in depth are not one surface; every rise state is closed", () => {
+    const { fixes, walls } = closedEverywhere(step);
+    expect(walls.length).toBe(2);
+    expect(walls.map((i) => counts(fixes[i]))).toEqual([
+      [1, 22, 36, 18, 0],
+      [1, 22, 36, 18, 0],
+    ]);
   });
 });
 

@@ -274,7 +274,7 @@ export function mountReplay(
    * raises each node on its own), then the finished storey's (`joined`, the faces they share left
    * out). `draw` shows one of the two, for a whole group at once.
    */
-  const patched: Array<{ key: string; ni: number; group: number; alone?: Mesh; joined?: Mesh }> = [];
+  const patched: Array<{ key: string; group: number; alone?: Mesh; joined?: Mesh }> = [];
   for (const [ni, node] of p.nodes.entries()) {
     const outline = outlines[ni];
     const fix = faces[ni];
@@ -412,7 +412,6 @@ export function mountReplay(
       const colour = theme.colors[key] ?? furniture;
       patched.push({
         key: n.key,
-        ni,
         ...(parts.alone.length > 0 ? { alone: add(attr, parts.alone, colour, false, 1, true, false) } : {}),
         ...(parts.joined.length > 0 ? { joined: add(attr, parts.joined, colour, false, 1, true, false) } : {}),
         group: fix.group,
@@ -638,10 +637,10 @@ export function mountReplay(
     }
     // Nodes leave out the faces they share only while their whole group stands at full height
     // (`patched`).
-    const stands = new Map<number, boolean>();
-    for (const { key, ni } of patched)
-      stands.set(ni, nodes.get(key)?.g.visible === true && (s.nodes.get(key)?.rise ?? 0) >= 1);
-    const together = joinedGroups(faces, (i) => stands.get(i) === true);
+    const together = joinedGroups(faces, (i) => {
+      const key = p.nodes[i]?.key ?? "";
+      return nodes.get(key)?.g.visible === true && (s.nodes.get(key)?.rise ?? 0) >= 1;
+    });
     for (const { group, alone, joined } of patched) {
       const t = together.has(group);
       if (alone) alone.visible = !t;
