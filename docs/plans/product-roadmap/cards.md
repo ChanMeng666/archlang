@@ -75,7 +75,7 @@
 
 ### RM0.7 · playground 编译器路径预算用尽，结构性腾出余量（2026-11-12 加，出自 #721 与 #704、#713） — `todo` · 未估（先量） · opus · 依赖无 · **高优先：挡住 RM6.1（#721 的 e2e）与 RM8.7、RM8.9**
 
-现象：`playground/e2e/startup-chunks.baseline.json` 的 `compilerPathBudget` 是 458,980 B（#704 由 458,000 重取）。基线 `bfd63c4c` 实测 458,294 B（余 686 B），#713 加 74 B，#721 实测 459,828 B，超出 848 B。每个新语法形式或诊断都让编译器 chunk 变大（#704 的五条诊断目录文字约 3,039 B gzip；每个 CLI 标志的 manifest 条目都进编译器路径）。
+现象：`playground/e2e/startup-chunks.baseline.json` 的 `compilerPathBudget` 是 458,980 B（#704 由 458,000 重取）。基线 `bfd63c4c` 实测 458,294 B（余 686 B），#713 加 74 B，#721 自己量得 459,828 B，是对 `bfd63c4c` 的 848 B；基于现在的 `main`（含 #713）约 **920 B**（458,294 + 74 + 1,534 = 459,902 对 458,980），要在变基后的 #721 上重新量。每个新语法形式或诊断都让编译器 chunk 变大（#704 的五条诊断目录文字约 3,039 B gzip；每个 CLI 标志的 manifest 条目都进编译器路径）。
 
 内容：先量：编译器 chunk 里诊断目录文字、CLI manifest、`explain` 文本各占多少（与 `playground/e2e/preview3d.spec.ts` 同一套走法：`chunks.mjs`）。再把诊断目录文字与 CLI manifest 移出编译器路径（惰性或按需加载，只让需要它们的界面加载），不削任何事实；然后一次性重取预算并留出余量（预算文字要同时满足增长门的上限）。
 
@@ -295,7 +295,7 @@ CR7 ② 已把"只改一个房间"放进 README（`README.md:32,75,82`）、`doc
 
 ### RM8.1e · 角接（L 形）的点落在边上的吸附（2026-11-12 加，出自 #711） — `todo` · 未估 · opus · 依赖无（线下）
 
-#711 之后，在其模糊测试里（1,471 个 L 形用例）仍有 29 个用例不闭合：它们都是 L 形，面在 `SNAP_MM` 之内而角在其外（距离 0.01525–0.0211 mm）。互操作器合并点，不把点吸到边上，所以这一步在 #711 的范围之外；CHANGELOG 已写明仍未解决。内容：设计"点吸到边上"的吸附（核心的 joinery），或记录为不可修的原因。证明：那 29 个用例的前后；语料上 SVG、`describe()`、`lint()`、Plan JSON、Mesh3D、GLB 逐字节不变。不许：把 `SNAP_MM` 放大来遮住；本地 bless 关键帧。
+#711 之后，在其模糊测试里，0.005–0.015 带内的 1,471 个平面中仍有 29 个不闭合（全是 L 形）：面在 `SNAP_MM` 之内而角在其外（距离 0.01525–0.0211 mm）。互操作器合并点，不把点吸到边上，所以这一步在 #711 的范围之外；CHANGELOG 已写明仍未解决。内容：设计"点吸到边上"的吸附（核心的 joinery），或记录为不可修的原因。证明：那 29 个用例的前后；语料上 SVG、`describe()`、`lint()`、Plan JSON、Mesh3D、GLB 逐字节不变。不许：把 `SNAP_MM` 放大来遮住；本地 bless 关键帧。
 
 
 ### RM8.1c · 墙线通道 `linesOf` 在长而窗多的墙上占挂载耗时（2026-11-11 加，出自 #706 执行者的报告） — `todo` · 未估 · sonnet · 依赖 #706 已合并（线下）
@@ -788,7 +788,7 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 ### RM8.9 · 新家族首批 — `todo` · 6 日（主会话估） · opus · 依赖 PS7.9、冻结期的 `visual-language.md`（家族一节） · `[语法：词表]`
 
-**依赖补充（2026-11-12）：** PS7.9 已满足；本卡再依赖 RM0.7（编译器路径预算）：词表字会让 `KEYWORDS` 与 spec 变大。**清单由十二个变十六个（RM-D29，`README.md` §6.6）：** 另加 `climber`（别名 `climbing_plant`）、`bamboo`、`potted_tree`（别名 `indoor_tree`）、`stepping_stones`，spec 15 单位，名字与占地按 `design/visual-language.md` §4.3；`climber` 是第七个 `wallMounted` 家族，`src/fixtures-catalog.ts` 的注释同 PR 改；下面的"十二个"与计数句相应改成十六个。
+**依赖补充（2026-11-12）：** PS7.9 已满足；本卡再依赖 RM0.7（编译器路径预算）：词表字会让 `KEYWORDS` 与 spec 变大。**清单由十二个变十六个（RM-D29，`README.md` §6.6）：** 另加 `climber`（别名 `climbing_plant`）、`bamboo`、`potted_tree`（别名 `indoor_tree`）、`stepping_stones`，spec 15 单位，名字与占地按 `design/visual-language.md` §4.3；`climber` 是第八个 `wallMounted` 家族（现有七个），`src/fixtures-catalog.ts` 的注释同 PR 改；下面的"十二个"与计数句相应改成十六个。
 
 十二个家族（名字按设计稿）：空调内机、空调外机、冷柜、酒柜、展示柜、屏风、贵妃榻或日床、泳池、院门、凉亭、温室、墙上挂画。每个家族的 2D 符号与 3D 生成器同卡交付（V-D6），按 `.claude/commands/new-fixture-family.md` 逐步：
 - 2D：`src/elements/glyphs-<group>.ts` 的画法（先画轮廓、尺寸取占地分数、墨不出占地、四分之一转，`.claude/rules/glyphs.md`）；`FIXTURE_FAMILIES` **末尾**追加（V-D7，中间插入会改写所有含家具的图的图例顺序）；`DRAW_BY_FAMILY`、`FIXTURE_FAMILY_MATERIALS`（`src/elements/fixtures-glyphs.ts`）；每个词一行 `CATALOG`（`src/fixtures-catalog.ts`）；`test/tables/glyph-dispatch.json` 的行；对称家族在 `test/handedness-grid-baseline.ts` 记 `"none"`，不新增手性（`test/glyph-chirality.test.ts`）。
@@ -811,9 +811,9 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 ### RM6.1 · 剖面所需的两个事实 — `doing`（第一半 #721，草稿，头 `864684d1`；剖切符号没有开始） · 5 日 · opus · 依赖 PS7.9、冻结期的 `slab-and-section.md` · `[语法]` ×3 · **批次 D 首位（#532 触发）**
 
-**状态（12:23Z）：`doing`，第一半是草稿 #721（头 `864684d1`，分支 `feat/rm6.1-slab-and-section`）：** `level` 的 `slab`、`clear` 与单层的 `height … clear`，`E_CLEAR_SCOPE`、`W_CLEAR_HEIGHT_MISMATCH`，`describe().heights` 的新字段，321 个字节恒等测试；527 行全语料零移动。**没做：** 剖切符号（需要一个只在 `section <id|int> (` 时成立的上下文闸，不能让 `section` 成为保留字，也不能破坏 `KEYWORDS.element` 与 `BUILTIN_DEFS` 的一致测试）、#532 的演示、3D 读 `slab`、drawing-set 卡里 DS11 对 DS5 的依赖作废一行、CHANGELOG。**阻塞：playground 编译器路径超预算 848 B**，见 RM0.7。
+**状态（12:23Z）：`doing`，第一半是草稿 #721（头 `864684d1`，分支 `feat/rm6.1-slab-and-section`）：** `level` 的 `slab`、`clear` 与单层的 `height … clear`，`E_CLEAR_SCOPE`、`W_CLEAR_HEIGHT_MISMATCH`，`describe().heights` 的新字段，321 个字节恒等测试；527 行全语料零移动。**没做：** 剖切符号（需要一个只在 `section <id|int> (` 时成立的上下文闸，不能让 `section` 成为保留字，也不能破坏 `KEYWORDS.element` 与 `BUILTIN_DEFS` 的一致测试）、#532 的演示、3D 读 `slab`、drawing-set 卡里 DS11 对 DS5 的依赖作废一行、CHANGELOG。**阻塞：playground 编译器路径超预算（自己量得 848 B，对 #713 之前的基线；基于现在的 `main` 约 920 B，变基后重量）**，见 RM0.7。
 
-**设计稿已写（2026-11-11）：** `design/slab-and-section.md`，设计稿一项的依赖满足；剩下的依赖是 PS7.9，不再等 2027-01-10（RM-D27）。它定下：`section A (x,y)->(x,y) look east`（DS11 的写法）；`sections` 进 `describe` 主体，只在写了时出现；画在最低层那一页；`section` 只能写在 plan 层，所以不必依赖 DS5；楼板 `slab <mm>`、净高 `clear <mm>`，都在 `level` 头部（单层平面的 `clear` 在 `height` 那行）。按 `handoff.md` §8 的承诺，要在 #544 贴设计稿链接。
+**设计稿已写（2026-11-11）：** `design/slab-and-section.md`，设计稿一项的依赖满足；剩下的依赖是 PS7.9，不再等 2027-01-10（RM-D27）。它定下：`section A (x,y)->(x,y) look east`（DS11 的写法）；`sections` 进 `describe` 主体，只在写了时出现；画在最低层那一页；`section` 只能写在 plan 层，所以不必依赖 DS5；楼板 `slab <mm>`、净高 `clear <mm>`，都在 `level` 头部（单层平面的 `clear` 在 `height` 那行）。设计稿链接已于 2026-11-11T12:36:10Z 贴在 #544（<https://github.com/ChanMeng666/archlang/issues/544#issuecomment-6795980962>）。
 
 MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本卡的 PR 里解决；MF-D11 已由 RM-D17 受托裁定（`README.md` §6.2，2026-11-11），本卡按它落地，不再等它。本卡不改 MF-D1。
 

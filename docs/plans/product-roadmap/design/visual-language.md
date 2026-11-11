@@ -9,7 +9,7 @@
 | 事实 | 出处 |
 |---|---|
 | 103 个家族、163 个词；67 个 canonical 家族有目录占地，`furniture` 行列出它们共 609 个 UTF-16 单位 | `src/elements/fixtures-glyphs.ts:159`（`FIXTURE_FAMILIES`）、`:321`（`CANONICAL_FIXTURES`）；`src/fixtures-catalog.ts:956`（`defaultFootprint`）；`scripts/gen-llm-spec.ts:115`（`SIZE_OPTIONAL_FIXTURES`） |
-| `spec.llm.md` 今天 29,856 UTF-16 单位，上限 `< 30_000`，余量 143 | `test/llm-spec-drift.test.ts:82`；2026-11-11 在 `bb912513` 上重算 |
+| `spec.llm.md` 当时 29,856 UTF-16 单位，上限 `< 30_000`，余量 143（PS7.9 / #714 之后是 28,605，余量 1,394） | `test/llm-spec-drift.test.ts:82`；2026-11-11 在 `bb912513` 上重算 |
 | 地面词 4 个：`tile`、`paving`、`deck`、`concrete`。`tile` 与 `concrete` 是墙材料（`KNOWN_MATERIALS`），用在地面时画成无底色的裸图案；`paving` 与 `deck` 是 `outdoor` 的地面图案（`GROUND_MATERIALS`），本来就不画底色 | `src/hatches.ts:36`（`KNOWN_MATERIALS`）、`:61`（`GROUND_MATERIALS`）、`:72`（`FLOOR_MATERIALS`）、`:104`（`floorHatch`：墙材料名加 `bare`） |
 | `outdoor` 9 种，各读三个主题底色之一 | `src/ast.ts:871`（`OUTDOOR_KINDS`）；`src/elements/outdoor.ts:133`（`GROUND` 的 `tint`：`lawn`、`paving`、`water`） |
 | 图案线色一律是主题的 `pocheHatch` | `src/backends/svg.ts:263`（`hatchCtx`） |
@@ -312,9 +312,9 @@
 | **已定的合计**（RM8.7 + RM8.9） | **109** |
 | 绿植（`climber` 8、`bamboo` 7；RM-D29 已批准，计入 RM8.9） | 15 |
 | **含绿植的合计（已批准）** | **124** |
-| 今天的余量 | 143 |
+| 余量（#714 之后，spec 28,605 单位对上限 30,000） | 1,394 |
 
-卡按"十二个都带占地、平均词长 9–10"估约 120，实际按占地只有 76；两张词表卡已定的部分合起来 109，算上提案 124，单看都放得进今天的 143（剩 34 或 19）。但 PS7.9 的目标本来就要先算进五个 `[语法]` 形式（RM6.1 两个、RM-D17 的净高子句一个、RM1.2b 两个，`../cards.md` PS7.9），它们排在同一份余量上。所以 **PS7.9 至少要腾出 `C₅ + 124 − 143 + 余量`**（按提案获准的 124 留，裁定为否时多出 15），`C₅` 是那五个形式各自 spec 行的长度（由各卡在设计时给出），余量建议 150，留给日后的修正句。词表卡仍然依赖 PS7.9：谁先合谁先占余量，后来的形式卡会无路可走。若要再省：`display_cabinet` 换成 `vitrine` 作 canonical（原名作别名）省 8；绿植提案只取 `bamboo` 省 8。
+卡按"十二个都带占地、平均词长 9–10"估约 120，实际按占地只有 76；两张词表卡已定的部分合起来 109，算上绿植 124，在 PS7.9 之前的余量（143）里单看放得进，**现在 PS7.9 已合并（#714，28,605 单位，余量 1,394）**，124 之外还剩 1,270，五个 `[语法]` 形式（约 1,030，估计值，见 #714 的目标算术）和约 150 的余量都放得下。词表卡不再被 PS7.9 挡住；谁先合谁先占余量这一条仍然成立，但 RM6.1 的第一半（#721）已经花掉 319 单位。若要再省：`display_cabinet` 换成 `vitrine` 作 canonical（原名作别名）省 8。
 
 **与卡不符之处**：`chaise` 已存在；卡对 RM8.9 成本的估算按"都带占地"，偏高。
 
