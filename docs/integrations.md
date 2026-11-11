@@ -117,6 +117,8 @@ opens the written ZIP again and checks the entry list and both rewritten files;
 2. In the PRIMARY checkout, on the release's commit, run `npm run build:openai-plugin`; upload
    `dist-openai/archlang-plugin-<version>.zip`. "Create draft from ZIP" has a file input, which an
    agent can fill through Claude in Chrome's `file_upload`, so this upload needs no native picker.
+   Use that dialog on the plugin's own page: the plugins LIST page's "Upload new or existing plugin"
+   dropzone creates a file input on the fly and opens the native picker, which an agent cannot fill.
 3. Choose **Upload new or existing plugin**, then the **With MCP** path (the hosted server is remote
    HTTPS), and upload the ZIP as a NEW plugin draft: OpenAI does not support adding an MCP server to
    an existing skills-only plugin (<https://developers.openai.com/plugins/deploy/submission>), so do
@@ -133,6 +135,10 @@ opens the written ZIP again and checks the entry list and both rewritten files;
    reviewer-accessible) and "Release notes". The video on file is the owner's unlisted narrated
    command-line demo; its URL stays out of this repository. Submit and attest to the policies:
    the draft locks ("In review", "Cancel review" replaces Submit, review information is read-only).
+   The attestations need the owner's word (on 2026-11-12 the owner gave it in chat before they were
+   ticked). After Submit the plugin's detail page may still read "Not submitted" for a while: check
+   the plugins list. An update of an already approved plugin goes straight to "Ready to publish"
+   with no human review wait, and "Publish Version" asks no further attestations.
 5. An update between core releases needs a new `version`, but its skills must still name a CLI
    that is on npm: `npm run build:openai-plugin -- --plugin-version=<version>` sets `plugin.json`
    and the ZIP's name and leaves the pin at the core's version. The next core release then takes a
