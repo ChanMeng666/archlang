@@ -3,7 +3,7 @@
  * Staleness gate for the MCP shim's BAKED resources.
  *
  * `packages/mcp` ships the agent-context artifacts (spec, llms-full, both JSON
- * schemas, the GBNF grammar) as flat files inside `dist/`, copied at build time by
+ * schemas, the GBNF grammar, the capabilities summary) as flat files inside `dist/`, copied at build time by
  * `copy-resources.mjs`. That copy is the shim's one silent failure mode: nothing a
  * host does can reveal that `dist/plan.schema.json` is three releases behind the
  * repo's, because a stale-but-well-formed resource looks exactly like a fresh one.

@@ -1,7 +1,10 @@
 {
-  "//": "For tsx only (gen-capabilities.ts): resolve the core by its package name to its source entry, as vitest.config.ts aliases it, so the generator needs no build.",
+  "//": "For tsx only (gen-capabilities.ts): resolve the core by its package name, and its ./share subpath that the hosted Worker's limits import, to its source, as vitest.config.ts aliases them, so the generator needs no build.",
   "extends": "../tsconfig.json",
   "compilerOptions": {
-    "paths": { "@chanmeng666/archlang": ["../../../src/index.ts"] }
+    "paths": {
+      "@chanmeng666/archlang/share": ["../../../src/share.ts"],
+      "@chanmeng666/archlang": ["../../../src/index.ts"]
+    }
   }
 }

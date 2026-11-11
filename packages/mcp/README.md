@@ -117,7 +117,7 @@ the [language reference](https://archlang.uk/reference#keyboard-and-screen-reade
 | `archlang://schema` | JSON Schema (2020-12) for the Plan-JSON compile input. |
 | `archlang://grammar` | GBNF constrained-decoding grammar for guaranteed-parseable generation. |
 | `archlang://intent-schema` | JSON Schema (2020-12) for a brief's Intent — the shape `validate`'s `intent` and `score`'s `brief` take. |
-| `archlang://capabilities` | Every tool and CLI command, the export formats, what ArchLang does not do, and the authoring loop, generated from the tool list and the CLI manifest. |
+| `archlang://capabilities` | Every tool (and the hosted server's extra `read_me`) and CLI command, the export formats, the limits, what ArchLang does not do, and the authoring loop, generated from the tool lists and the CLI manifest. |
 
 ## Install
 

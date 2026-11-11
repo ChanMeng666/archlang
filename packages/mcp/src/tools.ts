@@ -150,6 +150,11 @@ const hashingSource =
     return typeof a.source === "string" ? withHashFields(result, a.source) : result;
   };
 
+/** The longest refused name echoed back in an error: a stray paste stays a short message. */
+export const ECHO_NAME_MAX = 200;
+/** A caller's unknown name as an error quotes it, cut at {@link ECHO_NAME_MAX} characters. */
+const echoName = (name: string): string => (name.length > ECHO_NAME_MAX ? `${name.slice(0, ECHO_NAME_MAX)}…` : name);
+
 const errorCount = (ds: Diagnostic[]): number => ds.filter((d) => d.severity === "error").length;
 const toJson = (source: string, ds: Diagnostic[]) => ds.map((d) => diagnosticToJson(source, d));
 
@@ -339,7 +344,7 @@ export const RESOURCE_DEFS = [
     "capabilities",
     "archlang://capabilities",
     "What ArchLang can and cannot do",
-    "Every tool on this server and every CLI command, the export formats, what it does not do, and the authoring loop, generated from the tool list and the CLI manifest.",
+    "Every tool both servers serve and the ones only the hosted server adds, every CLI command, the export formats, the limits, what it does not do, and the authoring loop, generated from the tool lists and the CLI manifest.",
     "text/markdown",
   ],
 ] as const;
@@ -568,7 +573,7 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       title: "Validate (parse + resolve + lint)",
       annotations: TOOL_ANNOTATIONS,
       description:
-        "Check a plan in one pass without returning a drawing (parse, resolve and lint): the gate a plan passes before it ships. `strict:true` makes advisory warnings fail too. Optional `graph` checks the plan's interior-door adjacency against an intended room graph (`{ room: [neighbours] }`); a mismatch fails. Optional `intent` (a brief's expectations, shaped as the `archlang://intent-schema` resource describes) is checked against the plan: a missed gating assertion (room count, existence, area, total area, windows) fails, while adjacency and reachability are advisory and only score. `profile` lints under a named ruleset as well, and its warnings are the ones reported; `taste` scores the plan under a taste profile, which never fails it. `next` is the one item to fix first, chosen in a fixed order (an error, a compile warning, a validity warning, a drafting warning, the brief and the graph, a profile-only warning, then the lowest taste score), or null when nothing is left. A malformed intent returns `{ ok:false, intentErrors }` and an unknown profile `{ ok:false, error }` as data, never an exception. Returns { ok, diagnostics, graph?, intent?, next }.",
+        "Check a plan in one pass without returning a drawing (parse, resolve and lint): the gate a plan passes before it ships. `strict:true` makes advisory warnings fail too. Optional `graph` checks the plan's interior-door adjacency against an intended room graph (`{ room: [neighbours] }`); a mismatch fails. Optional `intent` (a brief's expectations, shaped as the `archlang://intent-schema` resource describes) is checked against the plan: a missed gating assertion (room count, existence, area, total area, windows) fails, while adjacency and reachability are advisory and only score. `profile` lints under a named ruleset as well, and its warnings are the ones reported; `taste` scores the plan under a taste profile, which never fails it. `next` is the one item to fix first, chosen in a fixed order (an error, a compile warning, a validity warning, a drafting warning, the brief and the graph, a profile-only warning, then the lowest taste score), or null when nothing is left; a broken `soft` keep is not weighed here yet, so where the CLI's `validate` names it this may be null. A malformed intent returns `{ ok:false, intentErrors }` and an unknown profile `{ ok:false, error }` as data, never an exception. Returns { ok, diagnostics, graph?, intent?, next }.",
       inputSchema: {
         source: z.string().describe("ArchLang source."),
         strict: z.boolean().optional().describe("Advisory warnings fail too."),
@@ -597,12 +602,12 @@ export function registerTools(server: McpServer, opts: ToolOptions): void {
       if (profile !== undefined && !LINT_PROFILE_NAMES.includes(profile))
         return json({
           ok: false,
-          error: `unknown lint profile "${profile}" (available: ${LINT_PROFILE_NAMES.join(", ")})`,
+          error: `unknown lint profile "${echoName(profile)}" (available: ${LINT_PROFILE_NAMES.join(", ")})`,
         });
       if (tasteProfile !== undefined && !TASTE_PROFILE_NAMES.includes(tasteProfile))
         return json({
           ok: false,
-          error: `unknown taste profile "${tasteProfile}" (available: ${TASTE_PROFILE_NAMES.join(", ")})`,
+          error: `unknown taste profile "${echoName(tasteProfile)}" (available: ${TASTE_PROFILE_NAMES.join(", ")})`,
         });
       const { diagnostics } = compile(source, { noCache: true });
       const lintDiags = lint(source);
