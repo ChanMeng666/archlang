@@ -360,6 +360,12 @@ owns that name, so the shell runs the wrong program.
    door is the main entrance or that the choice is a tie: check those against the brief. If no one
    reviews for you, run both once after the loop is clean and report the score and its `A_*`
    advice; do not iterate on it.
+   **Editing a plan that already exists** starts differently, before the steps above:
+   `archlang validate plan.arch --json` to record the starting state, then choose the ids the request does not name and lock
+   them. `archlang impact plan.arch --set NAME=value --lock <ids>` is the pre-edit check (it writes
+   nothing); `archlang impact new.arch --against plan.arch --lock <ids>` is the post-edit check on
+   an edited copy. Exit `2` (`E_LOCKED_ELEMENT_CHANGED`) means the edit moves something it should
+   not: change the edit, not the lock. Then make the edit and run steps 3 to 7 on the result.
 8. **Check the plan against the brief.** Write the user's brief as an `intent.json` — its checkable
    expectations as data (room count, per-room concepts with area/window bands, total area, optional
    adjacency/reachability). A stated size binds: "about 70 m²" → `grossInternalAreaM2` (inside the
@@ -844,7 +850,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 
 **`archlang context`** — print the full bundled agent context (spec + workflow + CLI + errors)
   - input: none → output: the full agent context (llms-full.txt), one --section of it, or the one-screen --level starter
-  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 173 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 173 KB of it (spec = the language, 30 KB; workflow = the agent loop, 33 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 71 KB) · `--json` structured result on stdout, messages on stderr
+  - flags: `--level <starter|full>` starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 173 KB bundle (default, unchanged) · `--section <spec|workflow|cli|errors>` print only one section of the bundle instead of all 173 KB of it (spec = the language, 30 KB; workflow = the agent loop, 34 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 71 KB) · `--json` structured result on stdout, messages on stderr
   - example: `archlang context` — the cold-start bundle: spec + workflow + CLI reference + every diagnostic
 
 **`archlang new`** (aliases: `init`) — scaffold a starter .arch

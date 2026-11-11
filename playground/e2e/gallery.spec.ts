@@ -1,6 +1,6 @@
 import { expect, type Page, test } from "@playwright/test";
 import { readFileSync } from "node:fs";
-import { CHECKS_SAMPLE, SAMPLE_GROUP } from "../src/samples.js";
+import { CHECKS_SAMPLE, SAMPLE_GROUP, SAMPLES } from "../src/samples.js";
 import { THUMB_MAX_BYTES } from "../scripts/lean-thumb.mjs";
 import { splitLabel } from "../src/plan-label.js";
 import {
@@ -208,7 +208,7 @@ test.describe("plan gallery", () => {
     await page.keyboard.press("ArrowUp");
     expect((await at()).y).toBeLessThan(b.y);
     await page.keyboard.press("End");
-    await expect(planCard(page, CHECKS_SAMPLE)).toBeFocused();
+    await expect(planCard(page, SAMPLES.at(-1)!.label)).toBeFocused();
     await page.keyboard.press("Home");
     await expect(planCard(page, ROWS[0]!.label)).toBeFocused();
     await page.keyboard.press("ArrowRight");
@@ -260,7 +260,7 @@ test.describe("plan gallery", () => {
     await expect(filter).toHaveValue("");
     await expect(empty).toHaveCount(1);
     await expect(empty).toHaveText("");
-    await expect(page.locator("#gallery .gal-card:visible")).toHaveCount(ROWS.length + 1);
+    await expect(page.locator("#gallery .gal-card:visible")).toHaveCount(ROWS.length + SAMPLES.length);
   });
 
   for (const [width, height] of [

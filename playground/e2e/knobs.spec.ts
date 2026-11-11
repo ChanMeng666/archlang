@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
+import { EDIT_ONE_ROOM_SAMPLE, sampleSource } from "../src/samples.js";
 import { srcFromHash } from "../src/share.js";
 import {
   AUTOSAVE_KEY,
   countCompiles,
   expectPlanNamed,
   gotoEdit,
+  pickPlan,
   setEditorSource,
   shareHash,
   waitForPlan,
@@ -64,6 +66,20 @@ test.describe("knobs", () => {
     const want = src.replace("let LIVING = 4500", "let LIVING = 6000");
     await expect.poll(() => hashSource(page)).toBe(want);
     await expect.poll(() => page.evaluate((k) => localStorage.getItem(k), AUTOSAVE_KEY)).toBe(want);
+  });
+
+  test("the edit-one-room sample opens from the gallery clean, with the split knob", async ({ page }) => {
+    await page.goto("/");
+    await waitForPlan(page);
+    await pickPlan(page, EDIT_ONE_ROOM_SAMPLE);
+    await expectPlanNamed(page, EDIT_ONE_ROOM_SAMPLE);
+    // No diagnostics: the status chip is neither an error nor a warning count.
+    await expect(page.locator("#status")).not.toHaveClass(/err/);
+    await expect(page.locator("#statusText")).toHaveText("ready");
+    const src = sampleSource(EDIT_ONE_ROOM_SAMPLE)!;
+    await expect(knob(page, "split")).toHaveValue("3000");
+    await knob(page, "split").fill("3200");
+    await expect.poll(() => hashSource(page)).toBe(src.replace("let split = 3000", "let split = 3200"));
   });
 
   test("a moved knob makes the plan an edited one in the gallery, and a reload agrees", async ({ page }) => {

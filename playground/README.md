@@ -22,7 +22,7 @@ consumes the built core (`../dist/index.js`). Deployed at
 - **Plan gallery (ruling PG-D2):** the header's one way to choose a plan. Its trigger names the
   plan on screen (`▦ Furnished Flat ▾`); it opens a grid of thumbnail cards under the example
   groups, each card a plan's clean name with any trailing parenthetical as a small grey tag
-  (`plan-label.js`), then the playground-only "Try Checks" sample. Every example card is a real
+  (`plan-label.js`), then the playground-only samples ("Try Checks": a plan with one finding, and a plan to edit one room). Every example card is a real
   link to its static page, written into `index.html` at build time, so it works with no script
   and crawlers follow it; with script a plain click opens the plan here (a modified click keeps
   the link's meaning). The arrow keys, Home and End move through the grid, typing filters it by
