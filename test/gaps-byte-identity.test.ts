@@ -136,14 +136,14 @@ const BASELINE: [string, string][] = [
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
   ["edc62a570b76ff9877ab4515a7a83826cc91bf70328a315fe62f42ff17f3a843", "test/walls-from-rooms/relational.arch"],
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "test/walls-from-rooms/studio.arch"],
-  ["73d42f0e9fe792a1428c0ed3f7c617e6787123c15cdaacf44df98252c5894b3e", "test/walls-from-rooms/two-bed.arch"],
+  ["cd33c0b417750000635a33a16ddda770a3c7623673ce9af52d3aea1a8f7e64e6", "test/walls-from-rooms/two-bed.arch"], // RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED) (was 73d42f0e)
   [
     "ef6b4cf52454c07cdd3c22449f6545da111fb35e7f1085d1ec15cd8c94903e4b",
     "test/walls-from-rooms/widen-after-authored.arch",
   ],
   ["218c72e6d0d121539ce5514c3cd77c9c27e13f0cbaf3a6d9b49ca20c8d502e62", "test/walls-from-rooms/widen.arch"],
   ["beff13e3b3255103bc80d0698d9bf7b9052f66bf78bf8d0626033bfeeb02adc5", "plans:studio-twin"],
-  ["73d42f0e9fe792a1428c0ed3f7c617e6787123c15cdaacf44df98252c5894b3e", "plans:two-bed-twin"],
+  ["cd33c0b417750000635a33a16ddda770a3c7623673ce9af52d3aea1a8f7e64e6", "plans:two-bed-twin"], // RM1.4: snapping is now reported (this test plan's 850x2000 sofa and 450x600 basin under grid 100 raise W_GRID_SNAPPED) (was 73d42f0e)
   ["218c72e6d0d121539ce5514c3cd77c9c27e13f0cbaf3a6d9b49ca20c8d502e62", "plans:widen-4000"],
   ["f472897ea01f13b118a0efeb189ffce7083a9629f880d9a6b9b267ad7becb10e", "plans:widen-4500"],
   ["ebc0bb540123325ca7eb8fe4fe12a3e5aa76c78cd6d451cb6a235118c92bba7a", "plans:courtyard"],

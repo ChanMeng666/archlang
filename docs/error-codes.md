@@ -2900,9 +2900,9 @@ room at (0,0) size 4000x3000 label "ห้องครัว"   # -f pdf / -f pn
 
 *warning* — `grid` moved a written size or door position.
 
-**Cause.** `grid <g>` rounds what the plan writes to multiples of `g`, and until now it did so without a word: under `grid 100` a room written `size 2750x7000` is drawn 2800 deep, `walls from rooms exterior 250` draws a 300 mm ring, a 450 mm chair becomes 500, and a door written `at (20550, 0)` stands at 20600. This warning names the value as written and as drawn whenever the two differ, for a rectangle room's `size`, a furniture `size`, a wall `thickness`, the `exterior`/`partition` thickness of `walls from rooms`, and a door's `at (x,y)`. A value already on the grid is never reported. The snapping itself is unchanged: the drawing, `describe()` and `lint()` all use the snapped value, as they always did. Positions the plan derives (a door `on <wall> at …`, `centered`, a datum) are not reported here.
+**Cause.** `grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged.
 
-**Fix.** Write a multiple of the grid, or set a finer `grid` (or none), so the value is drawn as written.
+**Fix.** Write a multiple of the grid, or set a finer `grid`.
 
 ```arch static
 grid 100
@@ -3035,9 +3035,9 @@ door at (4000,0) width 2400 wall w   # lint: one 2400 mm leaf; `door double … 
 
 *warning* — A length reads as metres where millimetres are the unit.
 
-**Cause.** Every length in ArchLang is in millimetres, and this one is so small for what it measures that it was almost certainly written in metres: a rectangle room whose `size` has both sides under 100 mm (`size 4x3` is a room 4 mm by 3 mm), or a wall thickness under 10 mm (`thickness 0.2`, `walls from rooms exterior 0.25`). The plan still compiles and draws the value as written; the message names the millimetre value it was read as, and the hint writes the clause in millimetres. Only lint reached this mistake before, as a room of 0 m² or a wall 0.2 mm thick.
+**Cause.** Lengths are millimetres. A rectangle room whose `size` has both sides under 100 mm (`size 4x3`), or a wall thickness under 10 mm (`thickness 0.2`), was almost certainly written in metres. The plan draws the value as written.
 
-**Fix.** Write the length in millimetres (`size 4000x3000`, `thickness 200`); the hint gives the clause multiplied by 1000. A value this small that is meant (a model at another scale) can stay: the warning changes nothing that is drawn.
+**Fix.** Write the length in millimetres; the hint gives the clause times 1000.
 
 ```arch static
 room at (0,0) size 4x3   # warning: read as 4 mm x 3 mm; write `size 4000x3000`
@@ -3375,9 +3375,9 @@ furniture chair at (175,850) size 450x450   # lint: south of the table, facing s
 
 *warning* — A bare word in `set <kind>(…)` was taken as text and does nothing.
 
-**Cause.** In a `set` rule a bare word before `,` or `)` is read as text, the way `set door(swing: out)` reads the word `out`; it is never read as the value of a name. So `set door(width: W)` sets `width` to the text "W", not to the value of `W`, and `set door(swing: inward)` sets a word `swing` does not read. Neither has any effect, and before this warning neither said so. A `set` rule reads a word only for the keys its element applies (`set door(…)`: `hinge` left or right, `swing` in or out); the message names the word taken as text. This is a warning in 1.x; the 2.0 release makes it an error.
+**Cause.** A bare word in a `set` rule is read as text, never as the value of a name, so `set door(width: W)` sets the text "W" and does nothing; so does a word the key does not read (`set door(swing: inward)`). `set door(…)` reads a word only for `hinge` and `swing`. An error at 2.0.
 
-**Fix.** Write the value on each element instead (a door's `width` is its own clause), or use a word the key reads (`set door(swing: out)`).
+**Fix.** Write the value on the element, or a word the key reads.
 
 ```arch static
 let W = 900
@@ -3523,9 +3523,9 @@ title {
 
 *warning* — A furniture word is not a catalogued kind but is close to one.
 
-**Cause.** Furniture is open on purpose: a word the catalogue does not know (`furniture hammock …`) is legal and draws a plain rectangle, with its `label` in it when it has one. So a misspelt kind (`grand_pianno`, `WC`) used to compile, pass `validate --strict` and draw an empty box without a word. This warning fires for an UNLABELLED piece whose word is no catalogued kind or alias but is within two edits (insert, delete or substitute a character) of one, or is one in another case, and names that kind. A piece with a `label` is a custom piece by intent and is never reported, and a word near no kind stays silent.
+**Cause.** An unknown furniture word is legal and draws a blank rectangle, so a misspelt kind (`grand_pianno`, `WC`) passed silently. Reported for an unlabelled piece whose word is within two edits of a catalogued kind, or is one in another case; a `label` marks a piece of your own.
 
-**Fix.** Write the catalogued word the message names, or add a `label` to say the piece is your own.
+**Fix.** Write the kind the message names, or add a `label`.
 
 ```arch static
 furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean "grand_piano"?
@@ -3559,9 +3559,9 @@ style room { nope: "#000" }   # warning
 
 *warning* — Unknown theme name; the plan is drawn in the default theme.
 
-**Cause.** `theme <name>` names no built-in theme and no theme the compile registers (`compile(src, { themes })`), so it selects nothing: the plan is drawn in the default theme, as it always was. A built-in name in another case is not that theme (`theme Rendered` is not `rendered`; theme names match exactly, as `--theme` does). The hint lists the known names and the message names the nearest one. Only `compile()` raises it, because only the compile knows which themes the call registers.
+**Cause.** `theme <name>` names no built-in theme and none the compile registers, so it selects nothing; names match exactly (`theme Rendered` is not `rendered`). Raised by `compile()` and the CLI's `validate` and `lint`, not by the library's `describe()`/`lint()`.
 
-**Fix.** Write a known theme name (the message names the nearest: the same word in another case first), or register the theme through the compile options.
+**Fix.** Write a known theme name, or register the theme in the compile options.
 
 ```arch static
 theme Rendered   # warning: did you mean "rendered"?

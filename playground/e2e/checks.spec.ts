@@ -32,11 +32,11 @@ const CHECKS_PLAN = `plan "Checks" {
   door at (2000,4000) width 600 wall exterior hinge left swing in
   window at (0,2000) width 1500 wall exterior
 }`;
-/** Its fixed twin: the door widened, and a door into the store. */
-const CHECKS_FIXED = CHECKS_PLAN.replace("width 600", "width 900").replace(
-  "  window at",
-  "  door at (4000,2000) width 900 wall interior hinge left swing in\n  window at",
-);
+/** Its fixed twin: the door widened, a door into the store, and (RM1.4: snapping is now reported,
+ *  `W_GRID_SNAPPED`) the exterior wall written 200, the thickness `grid 100` draws its 150 at. */
+const CHECKS_FIXED = CHECKS_PLAN.replace("width 600", "width 900")
+  .replace("exterior thickness 150", "exterior thickness 200")
+  .replace("  window at", "  door at (4000,2000) width 900 wall interior hinge left swing in\n  window at");
 
 /** The built core, loaded when a case runs, never at collection: the nightly `@prod` job builds nothing
  *  and Playwright loads every spec file before it applies `--grep`. */

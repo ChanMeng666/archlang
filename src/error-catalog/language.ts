@@ -160,20 +160,20 @@ export const LANGUAGE_ENTRIES = defineEntries({
   ),
   W_LENGTH_IN_METRES: w(
     "A length reads as metres where millimetres are the unit.",
-    "Every length in ArchLang is in millimetres, and this one is so small for what it measures that it was almost certainly written in metres: a rectangle room whose `size` has both sides under 100 mm (`size 4x3` is a room 4 mm by 3 mm), or a wall thickness under 10 mm (`thickness 0.2`, `walls from rooms exterior 0.25`). The plan still compiles and draws the value as written; the message names the millimetre value it was read as, and the hint writes the clause in millimetres. Only lint reached this mistake before, as a room of 0 m² or a wall 0.2 mm thick.",
-    "Write the length in millimetres (`size 4000x3000`, `thickness 200`); the hint gives the clause multiplied by 1000. A value this small that is meant (a model at another scale) can stay: the warning changes nothing that is drawn.",
+    "Lengths are millimetres. A rectangle room whose `size` has both sides under 100 mm (`size 4x3`), or a wall thickness under 10 mm (`thickness 0.2`), was almost certainly written in metres. The plan draws the value as written.",
+    "Write the length in millimetres; the hint gives the clause times 1000.",
     "room at (0,0) size 4x3   # warning: read as 4 mm x 3 mm; write `size 4000x3000`",
   ),
   W_GRID_SNAPPED: w(
     "`grid` moved a written size or door position.",
-    "`grid <g>` rounds what the plan writes to multiples of `g`, and until now it did so without a word: under `grid 100` a room written `size 2750x7000` is drawn 2800 deep, `walls from rooms exterior 250` draws a 300 mm ring, a 450 mm chair becomes 500, and a door written `at (20550, 0)` stands at 20600. This warning names the value as written and as drawn whenever the two differ, for a rectangle room's `size`, a furniture `size`, a wall `thickness`, the `exterior`/`partition` thickness of `walls from rooms`, and a door's `at (x,y)`. A value already on the grid is never reported. The snapping itself is unchanged: the drawing, `describe()` and `lint()` all use the snapped value, as they always did. Positions the plan derives (a door `on <wall> at …`, `centered`, a datum) are not reported here.",
-    "Write a multiple of the grid, or set a finer `grid` (or none), so the value is drawn as written.",
+    "`grid <g>` rounds a written value to a multiple of `g` (under `grid 100`, `size 2750x7000` is drawn 2800 deep). Reported for a rectangle room or furniture `size`, a wall thickness (`walls from rooms` too) and a door's `at (x,y)`, with the value as written and as drawn. The snapping is unchanged.",
+    "Write a multiple of the grid, or set a finer `grid`.",
     "grid 100\nroom at (0,0) size 2750x3000   # warning: size 2750 x 3000 was snapped to 2800 x 3000",
   ),
   W_SET_VALUE_WORD: w(
     "A bare word in `set <kind>(…)` was taken as text and does nothing.",
-    'In a `set` rule a bare word before `,` or `)` is read as text, the way `set door(swing: out)` reads the word `out`; it is never read as the value of a name. So `set door(width: W)` sets `width` to the text "W", not to the value of `W`, and `set door(swing: inward)` sets a word `swing` does not read. Neither has any effect, and before this warning neither said so. A `set` rule reads a word only for the keys its element applies (`set door(…)`: `hinge` left or right, `swing` in or out); the message names the word taken as text. This is a warning in 1.x; the 2.0 release makes it an error.',
-    "Write the value on each element instead (a door's `width` is its own clause), or use a word the key reads (`set door(swing: out)`).",
+    'A bare word in a `set` rule is read as text, never as the value of a name, so `set door(width: W)` sets the text "W" and does nothing; so does a word the key does not read (`set door(swing: inward)`). `set door(…)` reads a word only for `hinge` and `swing`. An error at 2.0.',
+    "Write the value on the element, or a word the key reads.",
     'let W = 900\nset door(width: W)   # warning: takes `W` as the text "W"; the rule does nothing',
   ),
 });

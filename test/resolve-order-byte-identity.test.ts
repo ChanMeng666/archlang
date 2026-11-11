@@ -95,7 +95,7 @@ const BASELINE: [string, string, string[]][] = [
   ],
   [
     "rooms-and-walls-diagnose.arch",
-    "07d6157f1908cd362374cf03ca283622699987cba56bb2e873cb78a8e07b4bd1",
+    "e5f50b016273ec257cff04f97056c5ee3d69e468dc6d9e1f79479f93119dcc7a", // RM1.4: snapping is now reported (door_1 at (99999, 99999) under grid 50 raises W_GRID_SNAPPED) (was 07d6157f)
     [
       "E_WALL_THICKNESS@363",
       "W_UNKNOWN_MATERIAL@474",
@@ -103,6 +103,7 @@ const BASELINE: [string, string, string[]][] = [
       "E_UNKNOWN_REF@441",
       "E_ROOM_SIZE@411",
       "W_ROOM_LABEL_OUTSIDE@607",
+      "W_GRID_SNAPPED@706", // RM1.4: snapping is now reported, at the door, before its off-wall warning
       "W_DOOR_OFF_WALL@706",
       "E_FURN_SIZE@740",
       "E_FURN_AGAINST@740",
