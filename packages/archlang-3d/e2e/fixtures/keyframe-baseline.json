@@ -33,6 +33,10 @@
       "storey:2": "f2fab19802a65733341ecf758586ede602fe3895819373c7aa6a1440152f7bd7",
       "stop:2": "9ec0b8151b3fcf734d72caf2d1fe0ccf2756cd3cde070d77184fc8e609a225f5",
       "end": "5485e3d0f740485060d3b4467ff70cdf459ce13f967c316bdd3b1bfd3d4c7fc0"
+    },
+    "courtyard-house.arch": {
+      "tilted": "7aa10eed3f008ae61476cc498f6880d3782723a37d7fffa35000ac503a6a16fe",
+      "end": "d17207c4fa1e67523ab6669a6fd36dd52f507964da26619cf5bc3d07f813e8fb"
     }
   }
 }

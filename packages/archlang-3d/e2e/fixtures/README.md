@@ -13,6 +13,17 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Extended by RM8.3's review round 1 (2026-11-11, PR #701, S6): a site plan joins the set,
+`courtyard-house` at two frames only (`ONLY` in `../keyframes.e2e.ts`): `tilted` (`7aa10eed…`, the
+walls still rising) and `end` (`d17207c4…`). Its patio lies over the slab, where a top in the slab's
+plane once fought it in depth (review B1); it now stands a step above it. The two hashes are the ones
+CI's `check-3d` job printed for the PR's head `ecc5a5e8` (GitHub Actions run
+https://github.com/ChanMeng666/archlang/actions/runs/42965016062, job 130340145125, ubuntu x64),
+where the two missing frames were the only failure; they were not rendered locally. The same run
+rendered all 17 hashes of laneway-house and two-storey unchanged: the ground now fades in with the
+drawing (drawn as a translucent face until opaque), and from `PHASE.svgOut` on, which every pinned
+mid-rise and end frame is past, it draws the very pixels it drew before.
+
 Re-pinned by product-roadmap card RM8.3 (2026-11-11, PR #701, the site and the ground plane): the
 replay now stands the building on a ground plane the viewer draws round it (`GROUND_PLANE`,
 `src/materials.ts`; in no Mesh3D node and not in the GLB), its top at the lowest storey's floor
