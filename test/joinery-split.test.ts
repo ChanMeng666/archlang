@@ -45,7 +45,7 @@ import {
   wallBand,
 } from "../src/geometry/band.js";
 import type { JoineryCut, JoineryResult, JoineryWall } from "../src/geometry/joinery.js";
-import { bandBBox, joinWalls } from "../src/geometry/joinery.js";
+import { bandBBox, joinWalls, spanCell } from "../src/geometry/joinery.js";
 import { hatchesUsed, hatchKey, hatchOf } from "../src/hatches.js";
 import { compile } from "../src/index.js";
 import type { SceneWall } from "../src/scene.js";
@@ -376,6 +376,18 @@ ${windows ? "  window id=wa on a at center width 800 sill 900 head 2100\n  windo
     expect(Number("0.0151")).toBeGreaterThan(SNAP_MM);
   });
 
+  it("the cell-boundary case sits on a cell line: 800 mm cells, a's face and b's either side of y = 800", () => {
+    // The universe `joinWalls` indexes: every band edge and every cut edge, as `joineryInputs` builds them.
+    const walls = compile(plan(3000, "0.001", true, 699.9995), { noCache: true }).scene!.walls!;
+    const inputs = joineryInputs(walls, () => "");
+    const edges = [...inputs.walls.flatMap((w) => w.loops), ...inputs.cuts.map((c) => c.loop)].flat();
+    const cell = spanCell(edges.map((e) => loopBBox([e])));
+    expect(cell).toBe(800);
+    // a's lower face (centreline 699.9995 + 100) and b's (0.001 mm further) round to different rows.
+    expect(Math.floor((699.9995 + 100) / cell)).toBe(0);
+    expect(Math.floor((699.9995 + 0.001 + 100) / cell)).toBe(1);
+  });
+
   for (const [label, bx, windows, y] of [
     ["b from 3000 with a window", 3000, true, 0],
     ["b from 2000 without openings", 2000, false, 0],
@@ -405,5 +417,108 @@ ${windows ? "  window id=wa on a at center width 800 sill 900 head 2100\n  windo
         expect(b).toBeCloseTo(bArea(bx, Number(dy), windows), 2);
       });
     }
+  }
+
+  // Off the whole-number lattice the interner's key cells no longer line up with the geometry: two
+  // points up to SNAP_MM apart can round two 0.01 mm cells apart, and a 3 x 3 lookup never fused
+  // them (review round 1). Each plan below is a junction a sub-snap distance short of meeting, at
+  // offsets in 0.005-0.015 mm placed so the two points round two cells apart (a coordinate ending
+  // .0049 rounds down, one 0.0149 further rounds up twice), and every wall must keep its whole
+  // share: its band less what an earlier wall of the same thickness owns, to within SNAP_MM x 4 m
+  // (the fused faces lean by at most that).
+  const wall = (id: string, pts: Array<[number, number]>) =>
+    `  wall id=${id} exterior thickness 200 { ${pts.map(([x, y]) => `(${x},${y})`).join(" ")} }\n`;
+  for (const [label, body, shares] of [
+    [
+      "in line, non-integer coordinates (0.01115 mm)",
+      wall("b", [
+        [6970.9425, 2737.53482],
+        [9970.9425, 2737.53482],
+      ]) +
+        wall("a", [
+          [3970.9425, 2737.54597],
+          [6970.9425, 2737.54597],
+        ]),
+      [640000, 600000],
+    ],
+    [
+      // The stem's cap ends at y = 900.0049, the bar's face is at 900.0198.
+      "a T: the stem stops 0.0149 mm short of the bar's face",
+      wall("bar", [
+        [0, 1000.0198],
+        [4000, 1000.0198],
+      ]) +
+        wall("stem", [
+          [2000, 0],
+          [2000, 800.0049],
+        ]),
+      [4200 * 200, 1000 * 200],
+    ],
+    [
+      // a's end cap at x = 3100.0049, b's outer face at 3100.0154, b's start cap 0.0105 mm above
+      // a's face: the corners are 0.01485 mm apart, inside SNAP_MM.
+      "an L: the second leg 0.0105 mm off the first's end in x and in y",
+      wall("a", [
+        [0.0049, 0],
+        [3000.0049, 0],
+      ]) +
+        wall("b", [
+          [3000.0154, 0.0105],
+          [3000.0154, 3000],
+        ]),
+      [640000, 600000],
+    ],
+    [
+      // a's face at y = 100.0049, b's at 100.0198.
+      "parallel faces 0.0149 mm apart",
+      wall("a", [
+        [0, 0.0049],
+        [3000, 0.0049],
+      ]) +
+        wall("b", [
+          [1000, 200.0198],
+          [4000, 200.0198],
+        ]),
+      [640000, 640000],
+    ],
+    [
+      "three in a chain, each 0.0149 mm off the last",
+      wall("a", [
+        [0, 0],
+        [3000, 0],
+      ]) +
+        wall("b", [
+          [3000, 0.0149],
+          [6000, 0.0149],
+        ]) +
+        wall("c", [
+          [6000, 0.0298],
+          [9000, 0.0298],
+        ]),
+      [640000, 600000, 600000],
+    ],
+  ] as const) {
+    it(`${label}: closed chains, no SVG dust, every wall keeps its share`, () => {
+      const r = compile(`plan "N" {\n  units mm\n  height 3000\n${body}}\n`, { noCache: true });
+      expect(r.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+      expect(r.svg).not.toMatch(/M -?[\d.]+,-?[\d.]+ Z/);
+      const walls = r.scene!.walls!;
+      expect(walls.length).toBe(shares.length);
+      const faces = walls.map((_, i) => String(i));
+      const faceOf = new Map(walls.map((w, i) => [w, String(i)] as const));
+      const { outline, fills, split } = joinWallSet(walls, hatchesUsed(walls).map(hatchKey), {
+        faceOf: (w) => faceOf.get(w) ?? "",
+        faces,
+      })!.result;
+      for (const l of outline) expect(isClosed(l), "an outline chain").toBe(true);
+      for (const f of fills) for (const l of f.loops) expect(isClosed(l), "a fill chain").toBe(true);
+      for (const f of split!.fills) for (const l of f.loops) expect(isClosed(l), `wall ${f.face}'s chain`).toBe(true);
+      faces.forEach((face, i) => {
+        const got = split!.fills.filter((f) => f.face === face).reduce((s, f) => s + netArea(f.loops), 0);
+        expect(Math.abs(got - shares[i]!), `wall ${i}'s share ${got} against ${shares[i]}`).toBeLessThan(
+          SNAP_MM * 4000,
+        );
+      });
+    });
   }
 });

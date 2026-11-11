@@ -173,6 +173,15 @@ const KEY_SCALE = 1e2;
  */
 export const SNAP_MM = 1.5 / KEY_SCALE;
 
+/**
+ * How many key cells either side of a point's own the interner scans: enough that EVERY point
+ * within {@link SNAP_MM} is seen. Two coordinates `d` apart round to cells at most
+ * `floor(d · KEY_SCALE) + 1` apart, so at `SNAP_MM = 0.015` and `0.01` mm cells that is 2. A ring
+ * of 1 (the 3 x 3 block) missed a pair 0.005-0.015 mm apart whose roundings fell two cells apart,
+ * which then never fused (RM8.1d).
+ */
+const SNAP_RING = Math.floor(SNAP_MM * KEY_SCALE) + 1;
+
 /** Positional key of a point, at {@link SNAP_MM}, with `−0` normalised to `0`. */
 export function pointKey(p: Point): string {
   const x = Math.round(p.x * KEY_SCALE);
@@ -201,22 +210,24 @@ export class PointInterner {
   /**
    * The canonical object for this position, registering it if it is new.
    *
-   * The lookup scans the point's own cell **and its eight neighbours**, not just its own.
-   * That is the difference between "rounds to the same cell" and "is within `SNAP_MM`",
-   * and it is not a refinement — a cell-only lookup leaves two points 0.0099 mm apart
-   * distinct whenever they straddle a cell boundary, which measured out as a 0.01 mm
-   * sliver edge between two adjacent keys and a chain that could not close. Among the
-   * candidates within `SNAP_MM` the EARLIEST-registered wins, so the answer depends on
-   * the caller's registration order and not on which neighbour the scan reached first.
+   * The lookup scans the point's own cell **and every cell within {@link SNAP_RING}** of it
+   * (a 5 x 5 block), not just its own. That is the difference between "rounds to the same
+   * cell" and "is within `SNAP_MM`", and it is not a refinement — a cell-only lookup leaves
+   * two points 0.0099 mm apart distinct whenever they straddle a cell boundary, which
+   * measured out as a 0.01 mm sliver edge between two adjacent keys and a chain that could
+   * not close; a 3 x 3 block left two points 0.005-0.015 mm apart distinct whenever their
+   * roundings fell two cells apart. Among the candidates within `SNAP_MM` the
+   * EARLIEST-registered wins, so the answer depends on the caller's registration order and
+   * not on which neighbour the scan reached first.
    */
   get(p: Point): Point {
     const cx = Math.round(p.x * KEY_SCALE);
     const cy = Math.round(p.y * KEY_SCALE);
     let best: { p: Point; ord: number } | null = null;
-    for (let dx = -1; dx <= 1; dx++) {
+    for (let dx = -SNAP_RING; dx <= SNAP_RING; dx++) {
       const col = this.cells.get(cx + dx);
       if (!col) continue;
-      for (let dy = -1; dy <= 1; dy++) {
+      for (let dy = -SNAP_RING; dy <= SNAP_RING; dy++) {
         const list = col.get(cy + dy);
         if (!list) continue;
         for (const c of list) {

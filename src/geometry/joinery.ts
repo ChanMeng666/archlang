@@ -1164,8 +1164,11 @@ function faceRuns(
  * the same edge appear in more buckets — measured on `bench/`'s opening-heavy set, the
  * finer {@link pointCell} rule cost 40% MORE here. A POINT query is the opposite case,
  * which is why the two indices size their cells differently.
+ *
+ * Exported for `test/joinery-split.test.ts` only, which asserts the cell size its cell-boundary
+ * case relies on.
  */
-function spanCell(boxes: readonly GridBox[]): number {
+export function spanCell(boxes: readonly GridBox[]): number {
   if (boxes.length === 0) return 1;
   const ext = boxes.map((b) => Math.max(b.maxX - b.minX, b.maxY - b.minY)).sort((a, b) => a - b);
   const m = ext[Math.floor(ext.length / 2)]!;
