@@ -385,7 +385,7 @@ Totals: 387 modules in 34 directories.
 | `rooms.ts` | 56 | 1 | The `rooms` list of a `describe()` summary: {@link roomSummaries}, one {@link RoomSummary} per room (area, net area, bbox, floor polygon, adjacency), in element order. Moved out of `summarize`. | none |
 | `shared.ts` | 16 | 3 | The two leaf helpers the per-kind summary builders share: {@link r2} (round to 2 decimals) and {@link instanceOf} (the spreadable instance stamp). Moved verbatim from `src/describe.ts`. | none |
 | `types.ts` | 899 | 5 | The shapes `describe()` returns: {@link SceneSummary}, the one storey's {@link LevelSummary}, and every row and fact block they are built from (moved verbatim from `src/describe.ts`, which re-exports each one, so the public types are… | none |
-| `verticals.ts` | 109 | 1 | The vertical facts of `describe()`: what only a block stair reports (its flights, landings and turn) and the building-level vertical report of a multi-storey plan (moved verbatim from `src/describe.ts`). | none |
+| `verticals.ts` | 112 | 1 | The vertical facts of `describe()`: what only a block stair reports (its flights, landings and turn) and the building-level vertical report of a multi-storey plan (moved verbatim from `src/describe.ts`). | none |
 
 ## `src/elements/`
 
@@ -542,7 +542,7 @@ Totals: 387 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `circulation.ts` | 100 | 1 | The opt-in circulation render overlay (ADR 0008): draws, on the `annotations` layer, the entrance→room walk for each reachable room, a marker + clear-width label at each room's bottleneck pinch, and the key functional routes in a muted… | none |
+| `circulation.ts` | 103 | 1 | The opt-in circulation render overlay (ADR 0008): draws, on the `annotations` layer, the entrance→room walk for each reachable room, a marker + clear-width label at each room's bottleneck pinch, and the key functional routes in a muted… | none |
 
 ## `src/plan-json/`
 
