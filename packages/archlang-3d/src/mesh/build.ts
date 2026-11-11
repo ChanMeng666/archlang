@@ -38,14 +38,27 @@
  *   (built there, once), else it is built from the storey below. The void above stays as the plan
  *   puts it. A stair on the top storey climbs that storey's height; a `dir down` stair on the lowest
  *   storey has nothing to climb from and is not built; both are ledgered;
- * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3).
- * Outdoor surfaces and fences are not built yet (M4 and later); the ledger says so.
+ * - roof: a 150 mm flat slab on the storey's ring at the top of its tallest wall, hidden (Q7, D3);
+ * - outdoor surface (card RM8.3): a thin slab [e - 50 mm, e], its top the floor level; fence: its
+ *   style's posts, rails and pickets on the floor level (`outdoor.ts`, every default ledgered).
+ * The ground round the building is the viewer's, never a node (`GROUND_PLANE`, `materials.ts`).
  */
-import { floorFinish, STAIR_MATERIAL } from "../materials.js";
+import { floorFinish, GROUND_PLANE, STAIR_MATERIAL } from "../materials.js";
+import { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, overlapArea } from "../scene3d/overlap.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { coveredBy, type Rect, rectMinus, slabRegion } from "./slab.js";
 import { stairSolid } from "./stair.js";
+import {
+  FENCE_HEIGHT_MM,
+  FENCE_PROFILES,
+  type FenceProfile,
+  fenceColour,
+  fencePieces,
+  OUTDOOR_MM,
+  outdoorColour,
+  tintOf,
+} from "./outdoor.js";
 import { isHung, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Shells } from "./t0.js";
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
@@ -105,6 +118,10 @@ const STAGE: Record<NodeKind, Stage> = {
   opening: "openings",
   furniture: "fixtures",
   stair: "walls",
+  // The site (card RM8.3): its surfaces are laid out with the slab, before the rooms; a fence rises
+  // with the storey's walls.
+  outdoor: "brief",
+  fence: "walls",
 };
 
 const byText = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
@@ -783,6 +800,110 @@ function levelNodes(
       { form: "flat" },
     );
   }
+
+  // The site (card RM8.3, `outdoor.ts`): each surface a thin slab whose top is the floor level, a
+  // surface overlapping an earlier one lifted a step above it; each fence its style's profile.
+  const steps = new Map<string, number>();
+  lv.outdoor.forEach((o, i) => {
+    const below = lv.outdoor
+      .slice(0, i)
+      .filter((p) => overlapArea(p.polygon, o.polygon) > FLOOR_OVERLAP_MIN_UM2)
+      .map((p) => steps.get(p.id) ?? 0);
+    const step = below.length > 0 ? 1 + Math.max(...below) : 0;
+    steps.set(o.id, step);
+    const lift = step * FLOOR_LIFT_UM;
+    if (lift > 0) {
+      ledger.push({
+        kind: "outdoor",
+        id: o.id,
+        field: "lift_mm",
+        value: lift / MM,
+        provenance: "derived",
+        rule: "outdoor-overlap-lift",
+      });
+    }
+    if (!defaulted.has("outdoor:thickness")) {
+      defaulted.add("outdoor:thickness");
+      ledger.push({
+        kind: "outdoor",
+        field: "thickness_mm",
+        value: OUTDOOR_MM,
+        provenance: "default",
+        rule: "outdoor-thickness-default",
+      });
+    }
+    const colour = outdoorColour(o.surface);
+    if (!defaulted.has(`outdoor:${o.surface}`)) {
+      defaulted.add(`outdoor:${o.surface}`);
+      ledger.push({
+        kind: "outdoor",
+        field: `colour(${o.surface})`,
+        value: colour.srgb,
+        provenance: "default",
+        rule: tintOf(o.surface) ? colour.rule : "outdoor-surface-unknown",
+      });
+    }
+    if (o.rail?.length) {
+      ledger.push({
+        kind: "outdoor",
+        id: o.id,
+        field: "rail",
+        value: "omitted",
+        provenance: "default",
+        rule: "outdoor-rail-omitted",
+      });
+    }
+    node("outdoor", o.id, i, [prism(o.polygon, e - OUTDOOR_MM * MM + lift, e + lift)], {
+      surface: o.surface,
+      colour: colour.srgb,
+      thickness_mm: OUTDOOR_MM,
+      ...(lift > 0 ? { lift_mm: lift / MM } : {}),
+    });
+  });
+  lv.fences.forEach((f, i) => {
+    const known = f.style in FENCE_PROFILES;
+    const style = known ? f.style : "picket";
+    const profile = FENCE_PROFILES[style] as FenceProfile;
+    const height = FENCE_HEIGHT_MM[style] as number;
+    if (!defaulted.has(`fence:${f.style}`)) {
+      defaulted.add(`fence:${f.style}`);
+      ledger.push(
+        {
+          kind: "fence",
+          field: `height_mm(${f.style})`,
+          value: height,
+          provenance: "default",
+          rule: known ? "fence-height-default" : "fence-style-unknown",
+        },
+        {
+          kind: "fence",
+          field: `profile(${f.style})`,
+          value: {
+            post_mm: profile.post,
+            post_pitch_mm: profile.postPitch,
+            rails_mm: profile.rails.map((r) => [...r]),
+            ...(profile.pickets ? { pickets_mm: [...profile.pickets] } : {}),
+          },
+          provenance: "default",
+          rule: "fence-profile-default",
+        },
+        {
+          kind: "fence",
+          field: `colour(${f.style})`,
+          value: fenceColour(f.style),
+          provenance: "default",
+          rule: "fence-colour-default",
+        },
+      );
+    }
+    node(
+      "fence",
+      f.id,
+      i,
+      fencePieces(f, profile, height).map((p) => prism(p.poly, e + p.z[0] * MM, e + p.z[1] * MM)),
+      { style: f.style, colour: fenceColour(f.style), height_mm: height, closed: f.closed },
+    );
+  });
   return out;
 }
 
@@ -815,16 +936,16 @@ export function buildMesh(scene: Scene3D, opts: MeshOptions = {}): Mesh3D {
     },
     { kind: "door", field: "leaf_mm", value: LEAF_MM, provenance: "default", rule: "door-leaf-40" },
     { kind: "roof", field: "thickness_mm", value: ROOF_MM, provenance: "default", rule: "roof-flat-150" },
-    // Narrowed by card X3 (was `m1-omits-stairs-outdoor-fences`, kind `stair`): stairs are built.
-    ...(["outdoor", "fence"] as const).map(
-      (kind): Assumption => ({
-        kind,
-        field: "geometry",
-        value: "omitted",
-        provenance: "default",
-        rule: "m1-omits-outdoor-fences",
-      }),
-    ),
+    // Card RM8.3 builds outdoor surfaces and fences (it replaced the two `m1-omits-outdoor-fences`
+    // rows here; their defaults are ledgered per kind and style where they are built). The ground
+    // plane the viewer draws round the building is in no node, so it is said here, in every Mesh3D.
+    {
+      kind: "ground",
+      field: "plane",
+      value: { drawn: "viewer only", margin_mm: GROUND_PLANE.marginMm, colour: GROUND_PLANE.light },
+      provenance: "default",
+      rule: "ground-plane-viewer-only",
+    },
   ];
   const defaulted = new Set<string>();
   const top = scene.levels.length - 1;

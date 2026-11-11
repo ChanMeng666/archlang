@@ -29,6 +29,11 @@ export interface ReplayNode {
   groups?: Array<{ slot: MaterialSlot; count: number }>;
   /** A floor's finish (visual-assets V9, `extras.finish`), drawn in its colour; absent on every other node. */
   finish?: FloorFinish;
+  /**
+   * An outdoor surface's or a fence's colour (card RM8.3, `extras.colour`, sRGB `#rrggbb`), the one
+   * the GLB writes too; absent on every other node.
+   */
+  colour?: string;
 }
 
 export interface ReplayPayload {
@@ -46,6 +51,11 @@ export interface ReplayPayload {
   facts?: ReplayFacts;
   nodes: ReplayNode[];
   events: ReplayEvent[];
+  /**
+   * The ground plane's height (card RM8.3, `GROUND_PLANE`): the top of the lowest storey's slab, its
+   * floor level, in micrometres. Absent when that storey has no slab: then no ground is drawn.
+   */
+  ground?: { y: number };
   /**
    * For offline generation only (`renderReplay`'s `supersample`, product-roadmap card RM8.2): each
    * frame is the mean of k × k renders, a whole number from 1 to 4. Absent (1) everywhere else:
@@ -142,6 +152,7 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
         }
         const lift = lifts.get(n.level) ?? 0;
         const finish = FLOOR_FINISHES.find((f) => f === n.extras.finish);
+        const colour = typeof n.extras.colour === "string" ? n.extras.colour : undefined;
         return {
           key: n.key,
           kind: n.kind,
@@ -151,8 +162,20 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
           indices,
           ...(slotted ? { groups: runs } : {}),
           ...(n.kind === "floor" && finish ? { finish } : {}),
+          ...((n.kind === "outdoor" || n.kind === "fence") && colour ? { colour } : {}),
         };
       }),
     events: timeline(mesh),
+    ...groundOf(mesh),
   };
+}
+
+/** The ground plane's height: the top of the lowest storey's slab (`ReplayPayload.ground`). */
+function groundOf(mesh: Mesh3D): { ground?: { y: number } } {
+  const lowest = storeysOf(mesh)[0];
+  const slab = mesh.nodes.find((n) => n.level === lowest && n.kind === "slab" && !n.hidden);
+  if (!slab) return {};
+  let y = -Infinity;
+  for (const s of slab.shells) for (let i = 1; i < s.positions.length; i += 3) y = Math.max(y, s.positions[i] as number);
+  return Number.isFinite(y) ? { ground: { y } } : {};
 }

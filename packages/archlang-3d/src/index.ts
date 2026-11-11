@@ -36,21 +36,39 @@ export {
 } from "./mesh/t0.js";
 export type { Part, SectionShape } from "./mesh/t0.js";
 export {
+  FENCE_PALETTE,
   FINISH_PALETTE,
   FLOOR_FINISH_RULES,
   FLOOR_FINISHES,
   finishColour,
   floorFinish,
+  GROUND_PLANE,
+  GROUND_ROUGHNESS,
+  GROUND_SPLITS,
+  GROUND_TINT,
+  GROUND_WASH,
   KIND_PALETTE,
   linearRgb,
   MATERIAL_SLOTS,
   PALETTE,
+  siteColour,
   slotColour,
   slotGroups,
   STAIR_MATERIAL,
   WALL_CAP_SRGB,
 } from "./materials.js";
-export type { FloorFinish, KindMaterial, MaterialSlot, SlotMaterial } from "./materials.js";
+export type { FloorFinish, GroundTint, KindMaterial, MaterialSlot, SlotMaterial } from "./materials.js";
+export {
+  FENCE_HEIGHT_MM,
+  FENCE_PROFILES,
+  fenceColour,
+  fencePieces,
+  groundColour,
+  MAX_FENCE_REPEAT,
+  OUTDOOR_MM,
+  outdoorColour,
+} from "./mesh/outdoor.js";
+export type { FenceProfile } from "./mesh/outdoor.js";
 export { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, floorLifts, floorOverlaps, overlapArea } from "./scene3d/overlap.js";
 export type { FloorOverlap } from "./scene3d/overlap.js";
 export type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./mesh/types.js";

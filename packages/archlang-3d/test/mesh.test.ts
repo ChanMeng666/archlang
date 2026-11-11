@@ -272,6 +272,15 @@ describe("Mesh3D on the shipped corpus", () => {
       "furniture-height-greybox",
       "furniture-mount-default",
       "furniture-material-default",
+      // The site (card RM8.3): garden-house has every outdoor kind and two fence styles.
+      "outdoor-thickness-default",
+      "outdoor-colour-theme",
+      "outdoor-colour-3d",
+      "outdoor-rail-omitted",
+      "fence-height-default",
+      "fence-profile-default",
+      "fence-colour-default",
+      "ground-plane-viewer-only",
     ]) {
       expect(rules.has(r), r).toBe(true);
     }
@@ -387,5 +396,13 @@ describe("Mesh3D determinism and budget", () => {
  * and `fence`, rule `m1-omits-outdoor-fences`. Laneway has no stair: no node moved, and with that
  * one row put back in place of the two, the Mesh3D hashes to 602c89c6… exactly. Its GLB (which
  * carries no ledger) is unchanged (`LANEWAY_GLB_SHA256`, `test/pins.ts`).
+ *
+ * Moved by product-roadmap card RM8.3 (was 334b7949…) with the ledger alone: outdoor surfaces and
+ * fences are built now, so the two `m1-omits-outdoor-fences` rows go, and in their place one row
+ * says the viewer draws a ground plane no node holds (`ground-plane-viewer-only`, `GROUND_PLANE`).
+ * A site's own defaults are ledgered only where a plan has a surface or a fence; laneway has
+ * neither, so no node moved: with that one row replaced by the two old ones, the Mesh3D hashes to
+ * 334b7949… exactly (as every one of the 45 corpus plans without a site does to its old hash). Its
+ * GLB (no ledger) and its event table are unchanged.
  */
-const LANEWAY_MESH_SHA256 = "334b7949465ba0271bf5b7ec27f8334e129956342c2ad5d9ce858e1422f8293f";
+const LANEWAY_MESH_SHA256 = "20d3bc3e422eafccf98f88943fe793e5b7d27b92334cb7c726046ea631a5f36d";
