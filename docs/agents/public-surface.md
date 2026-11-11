@@ -1040,8 +1040,8 @@ Totals: 632 exports (222 values, 410 types), 401 flagged (74 values).
 | --- | --- | --- |
 | `DEFAULT_THEME` | value | none |
 | `StyleMap` | type | none |
-| `THEMES` | value | `playground` |
-| `Theme` | type | `packages/web-component` |
+| `THEMES` | value | `playground`, `src/cli`, `test` |
+| `Theme` | type | `packages/web-component`, `src/cli` |
 | `derivePoche` | value | `test` |
 | `hexToHsl` | value | `test` |
 | `hslToHex` | value | `test` |

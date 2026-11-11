@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-492 test files in `test/`, 275 `src` modules, 105 modules no test imports.
+493 test files in `test/`, 275 `src` modules, 105 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -16,12 +16,12 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/algebra/d4.ts` (5) — `d4`, `describe-depends`, `equivariance-corpus`, `keep`, `symmetry`
 - `src/algebra/paths.ts` (1) — `path-algebra`
 - `src/algebra/semiring.ts` (2) — `path-algebra`, `semiring`
-- `src/analyze.ts` (90) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders` (+82)
+- `src/analyze.ts` (89) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders` (+81)
 - `src/analyze/circulation-overlay.ts` (42) — `circulation-concave`, `nav-grid-residual`, `block-stair-frames`, `block-stair-landing`, `block-stair-lint`, `circulation-entrances`, `corner-window`, `describe-centreline-at` (+34)
 - `src/analyze/circulation.ts` (53) — `carve-inward-walk`, `circulation-room-bottlenecks`, `circulation-translation`, `equivariance-corpus`, `far-seed-pinch`, `lint-attribution-budget`, `lint-fix-texts`, `lint-space-enclosure` (+45)
 - `src/analyze/contacts.ts` (1) — `impact-contacts`
 - `src/analyze/dwelling.ts` (2) — `lint-dwelling-reading`, `vocabulary-fallback`
-- `src/analyze/entrance.ts` (2) — `main-entrance`, `reachability-blind-spots`
+- `src/analyze/entrance.ts` (1) — `main-entrance`
 - `src/analyze/grid.ts` (1) — `path-algebra`
 - `src/analyze/gross-area.ts` (2) — `brief-bound-caption`, `brief-bound`
 - `src/analyze/net-area.ts` (4) — `describe-quantities`, `net-area-once`, `net-area-oracle-corpus`, `net-area`
@@ -43,10 +43,10 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (71) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+63)
+- `src/cli/io.ts` (72) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+64)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (43) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+35)
+- `src/cli/run.ts` (44) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+36)
 - `src/cli/serialize.ts` (7) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -113,11 +113,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (29) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+21)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (368) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+360)
+- `src/index.ts` (369) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+361)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
-- `src/ir.ts` (164) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+156)
+- `src/ir.ts` (163) — `access-policy`, `arc-radius-exact`, `attach`, `axes`, `between-face-probes`, `block-stair-byte-identity`, `block-stair-frames`, `block-stair-winders` (+155)
 - `src/label-fit.ts` (1) — `label-fit`
 - `src/label-placement.ts` (3) — `label-placement-oracle`, `label-placement`, `label-wrap`
 - `src/lexer.ts` (8) — `diagnostics-volume`, `diagnostics`, `expr`, `imperial-input`, `model-range`, `parser-recovery-metric`, `stage-cache`, `unit-suffix`
@@ -267,6 +267,7 @@ The first sentence of each file's header comment.
 - `test/cli-preview.test.ts` — CLI — preview (PNG you can look at).
 - `test/cli-storey-names.test.ts` — The two small CLI items of issue #405: `{level}` in `-o` and `--flag=value`.
 - `test/cli-structured.test.ts` — arch ast; arch compile --from-json; arch validate --graph; arch complete.
+- `test/cli-theme.test.ts` — **`--theme <name>` on the CLI** (RM8.4, backlog VA.4): the `rendered` theme (and every other named theme) reachable without writing `theme <name>` into the source.
 - `test/cli-validate-next.test.ts` — validate --json · next is purely additive; validate · next tiers through the CLI.
 - `test/cli.test.ts` — CLI — agent contract; CLI — compile file-writing side effects.
 - `test/closed-vocabularies.test.ts` — Every CLOSED value set in the language must be highlightable.
@@ -311,6 +312,7 @@ The first sentence of each file's header comment.
 - `test/docs-home-copy.test.ts` — The docs home page's copy contract (public-surfaces PS-D1, card D2).
 - `test/docs-level-svgs.test.ts` — The docs gallery's PER-STOREY file names must be the CLI's file names.
 - `test/docs-page-meta.test.ts` — The docs site's PER-PAGE METADATA gate.
+- `test/docs-says-no.test.ts` — `docs/says-no.md` shows the compiler's real answers to small wrong plans.
 - `test/docs-site-links.test.ts` — The site copies of the canonical docs (PAGES + docs/adr/*.md) must not carry repo-relative links: `../CHANGELOG.md` or `README.md` resolve on GitHub and 404 on archlang.uk (GSC "Not found", 2026-11-09).
 - `test/docs-sync-list.test.ts` — Docs-site sync gate — the two things about `docs-site/sync-docs.mjs` that no build step checks: what it deliberately leaves OUT, and what it writes that git must never hold.
 - `test/docs-table-pipes.test.ts` — The bare-`|`-inside-inline-code gate — the one Markdown fault that has actually taken the docs deploy down.
@@ -553,7 +555,6 @@ The first sentence of each file's header comment.
 - `test/print-roundtrip.test.ts` — The central law motivating this task: **a printer is a section of the parser**.
 - `test/public-surface.test.ts` — the public type surface is closed; resolvePlan from the package root keeps linked content.
 - `test/rank-fixes.test.ts` — rankFixes; cmdFix pick-one reduction (rankFixes + applyFixes).
-- `test/reachability-blind-spots.test.ts` — RM1.3a — where a person ARRIVES on a storey: a stair-reached upper storey's rooms are reachable (PS0.3), an upper storey's balcony door is no way in (PS0.3), and a balcony door is no arrival for a room a door from the...
 - `test/readme-3d.test.ts` — The 3D preview on the READMEs (public-surfaces card X7): the PS-D12 line and the limits line are carried verbatim, the page they point at is linked, every poster image is a shipped asset the manifest lists, each 3D li...
 - `test/readme-permalink.test.ts` — Drift guard for the playground permalinks in the hand-written docs.
 - `test/rect-label-anchor.test.ts` — A RECTANGULAR room's `label "…" at (x,y)` — the explicit label/area anchor.

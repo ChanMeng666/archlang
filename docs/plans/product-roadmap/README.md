@@ -1,6 +1,6 @@
 # 产品开发规划 v2：会说不、说得出出处、事实读得出来、改一处不动全局（2026-11-10 修订）
 
-**状态：** v2 已规划，未开工。基线 `main@69fa5864`（core 1.57.0 已发布；`v1.57.0..main` 有 529 个提交未发布）。v1 的波次 0 一张卡都没开工：11-07 到 11-10 用在了 engineering-health（86 个 PR，已关闭）和 math-foundations 规划上。v1 的裁定 RM-D1…D8 保留，其中 RM-D4 的主裁定已由 RM-D10 推翻。本次新提的 RM-D9…D16 由所有者 2026-11-11 全部批准；同日另有四项受托裁定 RM-D17…D20（§6.2）。初稿经一轮独立红队（2 个 blocker、12 个 should-fix、20 个 minor）修订。**2026-11-11 增补第 8 轨"视觉质感"**（RM-D21，所有者的方向）：卡 RM8.1…RM8.9 已规划、未开工；车道安排 RM-D22 与接触阴影 RM-D23 已由所有者 2026-11-11 批准（§6.3）。卡片在 `cards.md`，证据对照在 `evidence.md`（v2 的部分在 §G），恢复点在 `handoff.md`。
+**状态（2026-11-11 01:46Z 按 `git` 与 `gh` 读）：** v2 在执行中。阶段 A 大半完成：1.58.0 已发布（RM0.3，#689，tag `v1.58.0` 在 `e68fd576`），记录修正 RM0.1 已合并（#692），欠外部的跟进 RM0.4 已做完；RM0.5 剩 #604、#676、patch-1 与分支清理。阶段 B 已开工：RM0.2 的页面已合并（#693），`studio.arch` 的头注释拆成 RM0.2b；RM1.3a 做了一半（分支，没有 PR，没绿）。视觉车道：RM8.1 与 RM8.2 已合并（#691，`6d1680e5`）；RM8.4 的 CLI 一半由 #695 合并（`6683c788`），比排期（阶段 D）早，后半是 RM8.4b。逐卡状态在 `cards.md`，恢复点在 `handoff.md` §1。写本计划时的基线是 `main@69fa5864`（core 1.57.0 已发布；`v1.57.0..main` 有 529 个提交当时未发布）。v1 的波次 0 一张卡都没开工：11-07 到 11-10 用在了 engineering-health（86 个 PR，已关闭）和 math-foundations 规划上。v1 的裁定 RM-D1…D8 保留，其中 RM-D4 的主裁定已由 RM-D10 推翻。本次新提的 RM-D9…D16 由所有者 2026-11-11 全部批准；同日另有四项受托裁定 RM-D17…D20（§6.2）。初稿经一轮独立红队（2 个 blocker、12 个 should-fix、20 个 minor）修订。**2026-11-11 增补第 8 轨"视觉质感"**（RM-D21，所有者的方向）：卡 RM8.1…RM8.9 已规划（RM8.1、RM8.2 已于 2026-11-11 合并，RM8.4 的前半由 #695 合并）；车道安排 RM-D22 与接触阴影 RM-D23 已由所有者 2026-11-11 批准（§6.3）。卡片在 `cards.md`，证据对照在 `evidence.md`（v2 的部分在 §G），恢复点在 `handoff.md`。
 
 **一句话：** v1 的判断"先可信，再可达"不变。v2 加一条：已经有人把 ArchLang 接进自己的工具，11-10 的调研也指出专业度的缺口"更多在可追溯与数据，而不在新规则"。所以把排期从"多补规则"挪向"出处、读得出来的事实、契约、按时发布"，并把四份互相过期的 handoff 并成一个队列。
 
@@ -29,6 +29,8 @@
 | 7 | 两次读数（01-09、01-31） | 读数照读，后果按 RM-D2 与 agent-reach 决策 6 执行，不改；读数时附三项自检；在约束之内，卡按"有没有具名消费者"排序 | 11-09 那一周的 Worker 调用已过门槛，但只是一周、未复核、来源未拆分；自检防止读数"继续"却什么也没学到（C §C、F §B2） |
 | 8 | "不做"清单 | 追加九行 | 11-10 专业化包里与铁律或既有裁定冲突的建议（A §D） |
 | 9 | 七条轨 | **2026-11-11 增补第 8 轨"视觉质感"**（RM8.1…RM8.9，§3 各阶段；§1.1d 证据；原则 13、14；§4 第 1 行改写；§5 四条信号；§6.3 的 RM-D21…D23） | 所有者 2026-11-11 要求视觉优化（原话见 §6.3）；三份只读调查（3D 竖线根因、元素清单、视觉需求），出处见 `evidence.md` §H |
+
+**执行到哪里（2026-11-11 01:46Z）：** 做完的卡是 RM0.3、RM0.1、RM0.2、RM0.4、RM8.1、RM8.2；做了一部分的是 RM0.5、RM8.4（CLI 一项已合并，剩 RM8.4b）、RM1.3a；其余都没开工。同日从评审与执行中新增七张卡（RM0.2b、RM1.3c、RM1.4b、RM7.4、RM8.1b、RM8.4b、RM8.10），排期表本身没有改，各阶段的进度写在 §3 每个阶段末尾的"进度"一段。
 
 ---
 
@@ -68,10 +70,10 @@
 
 所有者 2026-11-11 指出 3D 预览里门窗两侧和 T 形墙交接处有占满墙高的竖线，并要求视觉优化与更多元素（原话见 §6.3）。三份只读调查（3D 竖线根因、元素清单、视觉需求）的结论如下，出处在 `evidence.md` §H。
 
-1. **两处竖线是同一个查看器缺陷，不在几何里。** 查看器对每个 Mesh3D 节点单独描边（`packages/archlang-3d/src/replay/mount.ts` 的 `EdgesGeometry(geo, 30)`），而每个墙块、窗台块、过梁块都是独立的闭合棱柱（`src/mesh/build.ts` 用 `prism` 逐块建），所以共面的块之间的接缝也出线；压顶被单独拆出画，块与块之间还多一条横缝。GLB 只有三角形，没有线。门窗每个 4 条；调查用草稿脚本在 39 个示例里数出墙与墙之间可见的假缝 81 处（脚本未入仓库）。
+1. **两处竖线是同一个查看器缺陷，不在几何里。** 查看器对每个 Mesh3D 节点单独描边（`packages/archlang-3d/src/replay/mount.ts` 的 `EdgesGeometry(geo, 30)`），而每个墙块、窗台块、过梁块都是独立的闭合棱柱（`src/mesh/build.ts` 用 `prism` 逐块建），所以共面的块之间的接缝也出线；压顶被单独拆出画，块与块之间还多一条横缝。GLB 只有三角形，没有线。门窗每个 4 条；调查用草稿脚本在 39 个示例里数出墙与墙之间可见的假缝 81 处（脚本未入仓库）。（2026-11-11 已由 RM8.1 修复，#691。）
 2. **词表已经很全，但看不见。** 103 个家族、163 个词；2D 每个家族都有专门画的符号（`DRAW_BY_FAMILY`）；3D 有 101 个专属生成器（`T0_FAMILIES`），`double_bed`、`dining_table` 共用 `bed`、`table` 的生成器，目录内没有灰盒。其中 42 个家族从未以 `furniture <词>` 出现在 `examples/**` 里（其中 20 个是 2026-11-04 那一批，字节恒等律禁止已发布平面用它们）；`docs/furniture.md` 的符号目录只有文字，没有图；评审用的符号样张工具从未提交（backlog D.8）。
 3. **3D 没画出平面里已经写了的东西。** 9 种 `outdoor` 地面 3D 都不建（backlog VA.2），围栏也不建（账本 `m1-omits-outdoor-fences`），花园是裸地；房间的 `floor` 子句 3D 不读（Plan JSON 把它列为 `dropped`），3D 的地面颜色按 `uses` 猜（`FLOOR_FINISH_RULES`）；场景里没有地面平面。
-4. **3D 的观感短板在查看器。** 有三盏灯和平面着色，但没有阴影（阴影图在 SwiftShader 上多约 55% 帧时间，backlog VA.5）、没有环境遮蔽、关闭了抗锯齿（`antialias: false`，海报上斜线呈阶梯状）；门没有门框，窗没有窗台板，楼梯是实心体块（账本 `stair-solid-default`）。
+4. **3D 的观感短板在查看器。** 有三盏灯和平面着色，但没有阴影（阴影图在 SwiftShader 上多约 55% 帧时间，backlog VA.5）、没有环境遮蔽、关闭了抗锯齿（`antialias: false`，海报上斜线呈阶梯状；海报与视频 2026-11-11 起由 RM8.2 超采样生成，实时查看器不变）；门没有门框，窗没有窗台板，楼梯是实心体块（账本 `stair-solid-default`）。
 5. **2D 的色彩主题藏着一半。** `rendered` 主题已有；CLI 没有 `--theme`（backlog VA.4）。playground 已有主题下拉框（`playground/index.html` 的 `#theme`，含 Rendered），但已发布的示例图与 gallery 没有一张是 `rendered`。
 6. **真正缺的词不多。** 室内地面只有 `tile`、`paving`、`deck`、`concrete`（`FLOOR_MATERIALS`），没有木地板、地毯、石材；家电缺空调内外机、冷柜、酒柜；庭院缺泳池、院门、凉亭、温室；装饰只有 `rug`、`floor_lamp` 两个家族（`mirror` 按源文件归卫浴）。
 7. **growth 的证据支持"视觉是入口"，也给出两条告诫。** 这个领域传播最广的内容几乎都是平面图升成 3D（一条 197 万次曝光，另有 37 万、18.5 万、79.5 万）。告诫一：ArchLang 自己的 3D 帖子只有 15–38 次曝光，账号 7 个粉丝，所以好看不会自动带来关注。告诫二："好看但画错"会被嘲讽，而且嘲讽传得更远（一条指出门放错的回复 3.4 万次曝光）。对比竞品：ArchLang 的 2D 在同一张测试图上高于多数竞品，3D 是最弱的一环（调查者看图的判断）。
@@ -123,7 +125,7 @@
 8. **不做的事写明。** §4 的"不做"清单与"做"清单同等重要，这是"克制"的定义。
 9. **每个事实要有具名消费者。** 新的 `describe` 事实、导出字段、数据子句，卡里写出谁在读它（一个仓库、一个工具、一条规则）；只有推断的读者时照实写"可能的读者"，并排在有具名消费者的卡之后（backlog M.16 的既有规则，提升为排序依据）。
 10. **出处先于规则。** 出处的数据结构（RM1.6a）落地之前，不新增由 profile 数字驱动的规则。出处的核实等级取五值之一：`V`（读过官方原文）、`S-full`（读过全文第三方副本）、`S-secondary`（转述、摘要、讲义）、`M`（杂志）、`convention`（无文献的约定）。进新规则或公开夹具的只有 `V` 和 `S-full`（drawing-set D13）。
-11. **合并不等于交付。** 外部贡献或安全修复在 `main` 上停留超过七天，就提请所有者发布。建议节奏（tag 归所有者）：1.58.0 立刻、1.59.0 约 11-21、1.60.0 约 12-21（避开 Product Hunt 那一周）、1.61.0 约 2027-01-05。
+11. **合并不等于交付。** 外部贡献或安全修复在 `main` 上停留超过七天，就提请所有者发布。建议节奏（发布与否由所有者决定；tag 在内的发布链由代理跑，见 `docs/agents/iron-laws.md` § Owner policies）：1.58.0 立刻、1.59.0 约 11-21、1.60.0 约 12-21（避开 Product Hunt 那一周）、1.61.0 约 2027-01-05。
 12. **一个队列（RM-D15）。** 排期和恢复点只在本计划；其他计划的 README 留作设计和裁定的出处。
 13. **好看建在画得对之上，而且同源。** 每个 3D 画面和每张图都由编译器从 `.arch` 源文件产出，不用 AI 图像（PS-D11 的"compiler output only"）；3D 只画平面里写了的东西，每个默认值进 `assumptions[]` 账本（ADR 0030 决定 5，V-D4）。视觉卡不得让 `describe()`、`lint()` 在语料上移动（铁律；绘图层 lint 规则的例外按 ADR 0032 逐图列出）。
 14. **先修、再显、后加。** 顺序是：修可见缺陷（RM8.1、RM8.2）→ 让 3D 画出已有的词和已有构件的细部（RM8.3、RM8.6、RM8.7 的 3D 一半）→ 把已有的丰富度展示出来（RM8.4、RM8.5）→ 才加新词（RM8.7 的新地面词、RM8.9）。RM8.8 的接触阴影不是新词，排在展示之后（RM-D23 已批准）。新词每个都要有 2D 符号和 3D 生成器同卡交付（visual-assets V-D6）。
@@ -155,10 +157,12 @@
 
 | 序 | 卡 | 内容 | 轨 | 估 |
 |---|---|---|---|---|
-| 1 | RM0.3（新） | **发布 1.58.0**（tag 由所有者打，RM-D9）。nightly 前置已满足：run 42801157907（`main@69fa5864`）里 `Deep fuzz (FC_SCALE=10)` 与四个 `Test …` job 全部 success，#497 已于 2026-11-10 关闭；发布前按 release-check 第 5 项再读一次最新的 nightly。步骤按 `.claude/commands/release-check.md` 走全：bump `packages/mcp`（`server.json` 两处同步）与 `archlang-3d`（`prove:pack`、`check:3d`）；`winders` 是新关键字，重打 `.vsix` 并上传、派发 `publish-openvsx.yml`；OpenAI 插件 ZIP、ClawHub、Docker Catalog；`docs/whats-new.md` 补到 1.58；CHANGELOG 把 `arch impact` 的退出码变更放在显眼处 | 7 | 1 |
+| 1 | RM0.3（新） | **发布 1.58.0**（发布与否由所有者决定，RM-D9；tag 在内的发布链由代理跑，见 `docs/agents/iron-laws.md` § Owner policies）。nightly 前置已满足：run 42801157907（`main@69fa5864`）里 `Deep fuzz (FC_SCALE=10)` 与四个 `Test …` job 全部 success，#497 已于 2026-11-10 关闭；发布前按 release-check 第 5 项再读一次最新的 nightly。步骤按 `.claude/commands/release-check.md` 走全：bump `packages/mcp`（`server.json` 两处同步）与 `archlang-3d`（`prove:pack`、`check:3d`）；`winders` 是新关键字，重打 `.vsix` 并上传、派发 `publish-openvsx.yml`；OpenAI 插件 ZIP、ClawHub、Docker Catalog；`docs/whats-new.md` 补到 1.58；CHANGELOG 把 `arch impact` 的退出码变更放在显眼处 | 7 | 1 |
 | 2 | RM0.1（扩大） | v1 的记录修正，加上：DS0、DS1、DS2、D1、PS0.2 改 `done`；PS0.16、PS0.20、PS0.21、U.4、U.7 标为已裁（RM-D6）；backlog O.10（它的 #119、#121 与后继的 #206–#208 都已关闭：核对是否还有待裁的主版本升级，没有就关闭）、5.2、H.1 的过时状态；`archlang-3d/amendment-v0.7.md` 的 "Proposed" 改 superseded；plan-soundness handoff 的 spec 余量数字；2.0 桶（V.5、V.6、6.7、PS0.16 升 E、`feat/remove-view`）在 backlog 里写明"不在任何排期，2.0 时一起做"；**单一队列的落地**（RM-D15）：`docs/plans/README.md` 状态列、各计划 handoff 顶部一行指向本计划 | 7 | 1 |
 | 3 | RM0.4（新） | **欠外部的跟进**（英文、具体、不承诺 IFC 与剖面进核心；按 RM-D18 受托裁定，主会话起草并发出，在 RM0.3 发布 1.58.0 之后）：docs 加"建在 ArchLang 上的工具"一行，只列作者已同意的 `archlang-section`；在 #544 回复 gerontec 一次（`winders` 已发布；两个事实在批次 D 首位，2027-01-10 起，设计稿在冻结期写；欢迎 ST.2 的 PR；`archlang-section` 已列进 docs）；在 bobsch-io 自己的 #362 下留一条事实说明（非直跑楼梯以 `winders` 在 1.58.0 发布），不含任何问题（growth `AGENTS.md` 第 44 行的 Daniel 规则）；#405 补记 L 形洞口栏杆已在 1.55.0 交付 | 7 | 0.5 |
 | 4 | RM0.5（新） | 依赖与悬空状态：合 #675、#677、#678；修 #604（biome 的 lint 差异）；#676（three 0.187）单独评估帧哈希与 GLB 字节；#603 主版本在 Show HN 之前不合并、PR 保持打开，12-02 之后成为 RM5.4（RM-D19）；清掉 13 个已合并 PR 的远程分支与过期本地分支；`origin/ChanMeng666-patch-1`（commit `6c86203a`）落地：先确认新的影片资源 URL 能打开，再 cherry-pick 到从 `main` 新建的分支，经 PR 合并（RM-D20） | 7 | 0.5 |
+
+**进度（截至 2026-11-11 01:46Z）：** RM0.3 `done`（#689；1.58.0 在 npm、GitHub Release、MCP registry、两个扩展市场、ClawHub；Docker 目录的 PR 等对方合并；OpenAI 插件按所有者的报告已发布，见 `docs/seo.md` § 8）。RM0.1 `done`（#692；CRF13 未关，O.10、H.1 的 lab 归档块未追加）。RM0.4 `done`（#544、#362、#405 三条回复与 #693 的 docs 一行）。RM0.5：#675、#677、#678 已合并；#604、#676 开着未处理，patch-1 未落地，分支未清。阶段 A 原定 11-12 结束，余下的是小件，插在阶段 B 的卡之间做（`handoff.md` §2）。细节在 `cards.md` 与 `handoff.md` §1。
 
 ### 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：不加语法
 
@@ -167,8 +171,8 @@
 | 1 | RM1.3a | 可达性盲点第一批（v1 不变） | 1 | 3 |
 | 2 | RM5.1 | MCP 能力摘要 + PS5.3a（v1 不变）；能力资源里另加指向 `docs/from-an-image.md` 与"改一个房间"的两行。一次 `packages/mcp` bump，搭 1.59.0 | 5 | 2 |
 | 3 | RM1.4 | 静默接受改出声，只加 W（v1 不变） | 1 | 2 |
-| 4 | RM0.2（加三项；纯文档，由第二个执行者并行，不计入线的合计） | "编译器说不、并说为什么"页（v1 不变）；**加**：`examples/studio.arch` 头注释改正（#683）：去掉无条件的 "Architecturally sound"，改正"每个房间都开向门厅"，写明"默认 profile 下 lint 无报；`uk-residential-advisory` 下报一条 `W_ROOM_TOO_SMALL`"；一张"过默认检查不等于过任何辖区"的对照表，只列仓库 profile 里已有的数；一段 `validate --strict`：它把警告也当失败（退出码 2），适合放进 CI | 1 | (1.5) |
-| 5 | 发布 1.59.0 | 约 11-21 切（tag 归所有者），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）合并后另需一次 `packages/archlang-3d` 的版本 bump | 7 | 1 |
+| 4 | RM0.2（加三项，其中 `studio.arch` 头注释一项已拆成 RM0.2b；纯文档，由第二个执行者并行，不计入线的合计） | "编译器说不、并说为什么"页（v1 不变）；**加**：`examples/studio.arch` 头注释改正（#683）：去掉无条件的 "Architecturally sound"，改正"每个房间都开向门厅"，写明"默认 profile 下 lint 无报；`uk-residential-advisory` 下报一条 `W_ROOM_TOO_SMALL`"；一张"过默认检查不等于过任何辖区"的对照表，只列仓库 profile 里已有的数；一段 `validate --strict`：它把警告也当失败（退出码 2），适合放进 CI | 1 | (1.5) |
+| 5 | 发布 1.59.0 | 约 11-21 切（发布由所有者决定，发布链由代理跑），含 RM5.1 的 `packages/mcp` bump；RM8.1（与 RM8.2，若已合并）合并后另需一次 `packages/archlang-3d` 的版本 bump | 7 | 1 |
 | ── | ── 线（8 日 = RM1.3a 3 + RM5.1 2 + RM1.4 2 + 发布 1，9 个日历日；RM0.2 在线上但由文档执行者做，不计入；视觉车道另计，见下）── | | | |
 | 6 | RM2.1 | 编辑模型的剩余可见性（v1 不变） | 2 | 1 |
 | 7 | RM1.6a（新，#680 前半） | **出处成为数据**：一张按 `profile + key` 索引的平行表，记每个规则数字的 document、clause、edition、核实等级（原则 10 的五值）；默认规则集的数也在内；`LINT_PROFILES`、`DEFAULT_RULESET` 这两个公开导出的形状不变。`lint --rules [--profile X] --json` 导出生效规则集，schema 标为 `$id` 未定的草案（等 CR11a）。不改 `lint()` 的返回值。目录勘误另记在 growth 仓库 `research/cross-report-corrections.md` | 1 | 2.5 |
@@ -185,6 +189,8 @@
 两条车道（RM-D22，所有者 2026-11-11 批准）。若当时没有批准，RM8.1 会把 RM1.4 挤到线下首位、线成 9 日没有余量；这条路已不走。
 
 - **车道**：核心车道的线不变（RM1.3a 3 + RM5.1 2 + RM1.4 2 + 发布 1 = 8 日，9 个日历日）；视觉车道 RM8.1 3 → RM8.2 1 → RM8.3 4 = 8 日，同在 9 个日历日里；RM8.3 赶不上切点就顺延到 12-02 之后。两条车道合起来一次一个重命令，重的门禁交给 CI。
+
+**进度（截至 2026-11-11 01:46Z）：** 核心车道：RM1.3a 做了一半（PS0.3、U.1 在分支 `fix/rm1.3a-reachability-blind-spots` 上，约 100 个 digest 钉值待带理由重量，没有 PR；6.11 拆成 RM1.3c，先要设计裁定）；RM5.1、RM1.4 未开工。文档车道：RM0.2 `done`（#693）；头注释一项成为 RM0.2b（分支 `docs/rm0.2-studio-comment` 已有改好的注释）。视觉车道：RM8.1、RM8.2 `done`（#691），后续小件成为 RM8.1b；RM8.3 未开工。**实际偏离排期的一处：** RM8.4（排在阶段 D）的 CLI `--theme` 已在阶段 B 由 #695 合并（2026-11-11T01:44Z，`6683c788`），后半成为 RM8.4b；`handoff.md` §2 把 RM8.4b 排在视觉车道的 RM8.3 之后。线下新增的小卡 RM1.4b、RM7.4 出自评审。1.59.0 约 11-21 切，要所有者对那一次发布的决定，并要 `packages/archlang-3d` 的 bump（RM8.1、RM8.2 已在 `main`）。
 
 ### 阶段 C · 冻结期（11-24 → 12-01）：只修 bug，加测量与文档
 
@@ -203,6 +209,8 @@
 - **第五份设计稿 `visual-language.md`**（第 8 轨，纯文档，放同一个 `design/`）：RM8.8 的接触阴影方案与帧时间预算、RM8.6 的门窗与楼梯细部尺寸、RM8.7 的地面词与图案、RM8.9 的新家族清单与取名（避开 `test/helpers/new-families-law.ts` 的 `NEAR_WORDS`），以及 RM8.5 的展示示例怎样合法进入 `test/new-families-byte-identity.test.ts` 扫描的语料。只写文档。
 - 收集 Show HN 评论，作为 §5 的信号。
 
+**进度（截至 2026-11-11）：** 未开始（冻结 11-24 起）。RM8.1 已于 11-11 合并，冻结期不再有它；`design/` 目录还没有建。growth 仓库的 Show HN 物料（X9 的另一半）已由 growth PR #68 刷新（2026-11-11T01:06Z 合并）。
+
 ### 阶段 D · 批次 C′（12-02 → 12-16；1.60.0 约 12-21 切）：契约、出处、公开检查集、无损
 
 | 序 | 卡 | 内容 | 轨 | 估 |
@@ -212,7 +220,7 @@
 | 3 | RM1.6b（新，#680 后半） | 诊断的 JSON 输出带结构化 `rule`（profile、key、value、units、document、clause、edition、核实等级），只加在由规则数字驱动的诊断上。**载体**：规则推入诊断时附一个不进 `JSON.stringify` 的引用（Symbol 键或 WeakMap），`diagnosticToJson` 追加一个可选参数读它；`lint(src)` 的序列化一字不变（字节恒等律对它取 digest）；同步改 `test/lint-summary.test.ts` 的断言。已有的 hint 文本不删，结构化字段只增不替。反向测试：由 `minDoubleBedroomAreaM2` 触发的 `W_ROOM_TOO_SMALL`，`rule.key` 必须是这个键。这类引用过不了 `structuredClone`，所以在跑 `lint()` 的一侧解析成 JSON（playground 在编译 worker 里）。打开新参数的只有 CLI `lint --json`、`validate --json`，MCP 的 `lint`、`validate` 工具，与 CR10 的 `POST /check`；`dataset/generate.ts`、`eval/l2.ts` 不打开，playground 默认不打开 | 1 | 2 |
 | 4 | CR10（加一项） | 公开检查集 + 托管 `POST /check`（既定），附 RM1.1a 的数字、"lint 跳过了什么"、最小 GitHub Action 示例。**加**：一列跨辖区夹具，只用 `V` 与 `S-full` 的规则，profile 限定，不进默认规则；US profile 现有的数是讲义转述，重读原文之前不进这一列 | 1 | 5 |
 | 5 | RM3.1 前半 | Plan JSON 无损的范围表、往返律、`outdoor` 与 `fence`（按冻结期设计稿；RM-D10） | 3 | 3 |
-| 6 | 发布 1.60.0 | 约 12-21 切（tag 归所有者），避开 Product Hunt 那一周 | 7 | 1 |
+| 6 | 发布 1.60.0 | 约 12-21 切（发布由所有者决定，发布链由代理跑），避开 Product Hunt 那一周 | 7 | 1 |
 | ── | ── 线（12–14.5 日 = 11–13.5 + 发布 1）── | | | |
 | 7 | RM3.1 后半 | `place` 往返及其余；加一页"把识别结果写成 Plan JSON"，说明识别器输出 Plan JSON、再 `arch lint` 的路径 | 3 | 3 |
 | 8 | PS7.9 | 若阶段 B 没做完 | 5 | (1.5) |
@@ -231,6 +239,8 @@
 
 阶段合计：核心车道的线不变（12–14.5 日），视觉车道 RM8.4 1.5 + RM8.5 3 + RM8.6 4 = 8.5 日（RM8.3 顺延过来时再加 4 日，共 12.5 日），排 12-02 → 12-16 的 15 个日历日；两条车道的日数分开记，不相加。
 
+**进度（截至 2026-11-11）：** 未开始；例外是 RM8.4 的 CLI 一半已提前由 #695 合并（见阶段 B 的进度）。RM8.4 剩下的是 RM8.4b。新卡 RM8.10（两种墙高的 T 形缺口）放在本阶段视觉车道末尾，先要设计裁定，未估。
+
 ### 阶段 E · 波次 2′（12-17 → 2027-01-09；1.61.0 约 01-05 切）：深度
 
 先按 Show HN 评论重排（§5）。RM1.1b 量的工作必须在 1.61.0 里，所以要进 1.61.0 的工作的有效窗口是 12-17 → 约 01-05，19 个日历日，跨圣诞与新年；线上按 9.5 日配。RM1.1b 在 01-06 → 01-08 量 1.61.0，数字附在 01-09 的读数里。
@@ -240,7 +250,7 @@
 | 1 | RM3.1 后半 | 若批次 C′ 没做完 | 3 | (3) |
 | 2 | PS7.9 | 若还没做；批次 D 首位的 RM6.1 等它 | 5 | (1.5) |
 | 3 | RM1.2a | 行家规则，不加语法的三条（v1 不变） | 1 | 3 |
-| 4 | 发布 1.61.0 | 约 01-05 切（tag 归所有者） | 7 | 1 |
+| 4 | 发布 1.61.0 | 约 01-05 切（发布由所有者决定，发布链由代理跑） | 7 | 1 |
 | 5 | RM1.1b | 第二次首次接触复测，01-06 → 01-08 量 1.61.0，数字附在 01-09 的读数里。RM1.2b 没合就只量 RM1.2a 与 RM1.3a 的效果，并照实写明 | 1 | 1 |
 | 6 | RM7.3（新） | 读数的三项自检（§5），在 01-09 与 01-31 读数时写；不计入线的合计 | 7 | 未估 |
 | ── | ── 线（9.5 日 = RM3.1 后半 3〔仅当没做完〕+ PS7.9 1.5〔仅当没做完〕+ RM1.2a 3 + 发布 1 + RM1.1b 1）── | | | |
@@ -260,6 +270,8 @@
 
 阶段合计：核心车道的线不变（9.5 日），视觉车道 RM8.7 4 + RM8.8 3 + RM8.9 6 = 13 日，排进 1.61.0 的有效窗口（12-17 → 约 01-05，19 个日历日）；两条车道的日数分开记，不相加。两张 `[语法：词表]` 卡都等 PS7.9，PS7.9 的目标要把它们的词算进去。
 
+**进度（截至 2026-11-11）：** 未开始。RM1.3b 多了一条（楼梯梯段是瓶颈时 `W_PATH_TOO_NARROW` 的 hint，出自 RM1.3a）。
+
 ### 阶段 F · 批次 D（2027-01-10 起）：按证据重排
 
 **首位不变：RM6.1** `[语法]`（剖切符号 + 楼板 datum + 净高子句，三个形式，按设计稿）。前提：PS7.9 已合并；`slab-and-section.md` 已写。MF-D1 要求在 RM6.1 的 PR 里解决的 MF-D11，已由 RM-D17 受托裁定（§6.2）：顶层与单层有作者写的净高就用，没有就不报并给出 coverage 原因。
@@ -267,6 +279,8 @@
 其余候选，不排序：波次 2′ 线下的卡；剖面本体（DS12 → DS13，在 `archlang-3d`）与 MF17–MF19；挂墙物、挂顶物、窗帘（MF12、MF14、MF15，等 MF-D3(b)）；NZ/AU advisory profile（带 RM1.6 的出处）；`lint --brief`；FLOORA 导入；Cron 巡检；Workers AI 读图探针设计；#344 与 RM3.3；DS3–DS9；RM7.1；IFC 下游包（**只在触发后**：三个外部用户先要它）；MCP 工具分组（工具数到二十个以上再议，今天 11 个）。
 
 第 8 轨的候选（不排序）：3D 坡屋顶（backlog 3D.4，先写设计）；窗帘与吊灯、吊扇等挂顶物（MF14、MF15，等 MF-D3(b)）；新家族第二批；家具转到斜墙（backlog 5.6）；预览图的 CJK 字体（CRF9，今天 parked，ADR 0034 的已知缺口，候选不改它的状态）；实时查看器的抗锯齿（MP7 之后）。
+
+**进度（截至 2026-11-11）：** 未开始（2027-01-10 起）。RM6.1 的时间不变；#544 的回复已告诉 gerontec 这一点（RM0.4）。
 
 ---
 
@@ -335,7 +349,7 @@
 
 ## 6. 需要所有者裁定的事
 
-已在 backlog 顶部的：M.8、M.9、M.14、D.7、3.1(b)、CI 吞吐 E/F，仍等所有者。O.10 列的 #119、#121 与后继的 #206–#208 都已关闭：RM0.1 核对是否还有待裁的主版本升级，没有就关闭 O.10。
+已在 backlog 顶部的：M.8、M.9、M.14、D.7、3.1(b)、CI 吞吐 E/F，仍等所有者。O.10 列的 #119、#121 与后继的 #206–#208 都已关闭；RM0.1 核对过，唯一还开着的主版本升级是 #603（RM-D19 已裁），所以 O.10 已关闭。
 
 本计划提出的 Q1–Q7，所有者 2026-11-06 说"请你帮我做出最佳决策"，以下为**受托裁定（RM-D1…D8）**；所有者同日复核后说"我全部同意"，自此为所有者裁定。它们不改任何铁律；涉及 growth 仓库的记录在 growth PR #56。
 
@@ -399,6 +413,22 @@
 **设计上的默认**（主会话定，所有者 2026-11-11 同日确认保留）：T 形交接处保留真实的阴角线，只去掉平面上的假缝。若所有者要连阴角线也不画，那是另一种线稿风格（只画外轮廓和凸折角），另开卡，不在 RM8.1 里。
 
 **RM8.1 必然移动关键帧像素基线。** `.claude/rules/archlang-3d.md` 对此有既定做法（Traps 第 1 条）："A change that moves frames leaves `e2e/fixtures/keyframe-baseline.json` alone, `check-3d` prints the new hashes, and a follow-up commit on the same PR pins them with the run link (`e2e/fixtures/README.md`). `check-3d` is not a required check, so never merge with it red." 同一规则文件的正文还写着默认路径（关着的门、组合视图）的改动"must leave them"；RM8.1 改的正是默认路径的画面，所以这是带理由的重钉（修的正是画错的线），不是为了让测试变绿：理由写进提交与 `packages/archlang-3d/e2e/fixtures/README.md`，先例是同一文件里 public-surfaces X4 的楼层接缝重钉。Mesh3D、GLB 与事件表的三个钉子不动。
+
+### 6.4 夜间受托裁定（2026-11-11）
+
+所有者在 2026-11-11 离线前说：
+
+> "请你按照你的开发计划继续实施，遇到需要我决策和同意的地方，由你帮我做出最佳决策"
+
+以下三项是那一夜做出的受托裁定：只是对那一夜的委托，不是长期委托。所有者一句话可推翻任何一条。它们不改任何铁律。
+
+| # | 问题 | 裁定（2026-11-11，受托） | 理由 |
+|---|---|---|---|
+| RM-D24 | 发布 1.58.0 的 `v1.58.0` tag 由谁在什么条件下推 | **代理推了 `v1.58.0` tag**（在 `e68fd576`），条件是全部满足之后：发布评审没有 blocker；发布 PR #689 的所有检查全绿，含不是必需检查的 `check:3d`；`prove:pack --core 1.57.0` 通过；最新的 nightly 绿 | 所有者已经决定发布（RM-D9）；`docs/agents/iron-laws.md` § Owner policies写道："The release chain (version-bump PR, tag, `release.yml`, proofs, hand publishes, listings) runs end to end by the agent. The owner pauses it only for OTP/2FA, logins, account/token/secret creation, acceptance of terms and attestations, and native file pickers."，所以决定之后的发布链归代理。所有者已在 2026-11-11 定了措辞：发布的决定归所有者，决定之后发布链含 tag 由代理执行（`docs/agents/iron-laws.md` § Owner policies 已改） |
+| RM-D25 | 发布评审发现的第二个破坏性变更（CLI 拒绝落在 import root 与方案自身目录之外的 `import`、不是 `.arch` 的模块、超过 1 MiB 的模块）放进 1.58.0 这个 minor，还是退回 | **放进 1.58.0 的 minor**，与 `arch impact` 的退出码（RM-D9）一样；CHANGELOG 的 Breaking 一节两条都写明 | 它是安全修复：以前 `import` 写出的任何路径都会被读；`--import-root <dir>` 可以把根放宽，仍要读那个目录的脚本有一条路 |
+| RM-D26 | `@chanmeng666/arch-plan` 随本次发布升到 0.1.2，虽然卡没有要求 | **升到 0.1.2** | 元素现在先把 SVG 过一遍净化器再放上页面（0.1.1 直接设 `innerHTML`）；npm 用户只有升版本才拿得到这个改动 |
+
+三项的出处是 CHANGELOG 的 1.58.0 一节与发布 PR #689。
 
 ---
 

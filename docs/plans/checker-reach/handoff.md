@@ -1,5 +1,7 @@
 # checker-reach：交接
 
+> **单一队列（RM-D15，2026-11-11）：** 排期与全部开发的恢复点只在 `../product-roadmap/handoff.md`。本文件只留本计划自己的历史与裁定；它的卡按 `../product-roadmap/README.md` §7 的阶段取用，CR-D2 不动。
+
 新会话的恢复点，每张卡合并后更新。计划与决定见 `README.md`。
 
 ## 1. 当前位置

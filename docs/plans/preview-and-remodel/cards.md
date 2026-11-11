@@ -87,7 +87,7 @@ checked by `impact --against` through the same path as B1.
 
 ## D · Professional output
 
-### D1 · DXF `BLOCK`/`INSERT` and `DIMENSION` (backlog U.13) — `todo` · wave 4 · 3 days · model: opus
+### D1 · DXF `BLOCK`/`INSERT` and `DIMENSION` (backlog U.13) — `done` · PR #446 · merge `18254724` · commit `34bc9388` (`e2e/dxf_check.py` reads the DXF back with `ezdxf`)
 
 Doors, windows and catalogued furniture as block definitions with one `INSERT` each; dimensions as
 `DIMENSION` entities; AIA layer names kept; a DXF round-trip test through an independent reader

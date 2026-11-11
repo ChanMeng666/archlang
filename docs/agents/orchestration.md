@@ -20,6 +20,13 @@ merge procedure and the CI job map in `commands.md`.
   one heavy process at a time on this machine (it froze under three parallel test runs); never edit
   `docs/plans/*/cards.md` (adjacent card headings conflict on every merge; the coordinator records
   status in a records PR); no push or tag unless the card says so.
+- **An executor that may wait long writes a state file first** (in its scratchpad: what is done, what
+  remains) before it waits on an asset build or an idle machine; two executors lost their card that way on
+  2026-11-11 and reported having none. When one says so, take over from raw `git`, not its judgement.
+  Name the file after the card (`state-rm1.3a.md`, never `state.md`): one session's agents share the
+  scratchpad, and two overwrote each other's `state.md` the same day.
+- **When the machine is busy, a small edit is committed and reported "gate not run"** rather than held in a
+  long wait loop; the coordinator runs the gate later or leaves it to CI.
 - **How a day's work continues**: take the first `todo` card of the lowest open wave, honour
   `depends`, dispatch one executor into a worktree from `main` with the card text plus the finding's
   section from the audit report, at most two executors at once (EH-D1). Merge by tier

@@ -25,13 +25,13 @@
 
 ## 波次 0 · 地基
 
-### DS0 · 把计划接入仓库记录 — `todo` · 0.2 日 · sonnet
+### DS0 · 把计划接入仓库记录 — `done` · PR #451 · merge `c05dfc0f`
 
 在 `docs/plans/README.md`、`docs/backlog.md` 的程序表登记（本轮已做，只需确认）。D9、D10 已批准，无待办。
 
 不许：写进 `AGENTS.md`，它只剩 421 字节余量。
 
-### DS1 · 给 `spec.llm.md` 腾 ≥650 字符 — `todo` · 1 日 · opus · 依赖无
+### DS1 · 给 `spec.llm.md` 腾 ≥650 字符 — `done` · 作为 checker-reach CR1 · PR #480 · merge `c157c96a`（腾出 668 个 UTF-16 单位）
 
 现状 29,754 UTF-16 单位，上限 `< 30_000`（`test/llm-spec-drift.test.ts:82`），只余 245。A–E 估算要约 630。`wc -c` 的 30,049 是字节，量错了会以为已超。
 
@@ -41,9 +41,11 @@
 
 不许：调阈值；删除只有一处的事实；手改 `spec.llm.md`。
 
-### DS2 · 修 backlog N.1：`finish` 漏算表行 — `todo` · 1 日 · sonnet · 依赖无
+### DS2 · 修 backlog N.1：`finish` 漏算表行 — `done` · 作为 checker-reach CR2b · PR #483 · merge `495e60c2`
 
 `src/finish.ts` 的 `tableRows` 漏算 NOTES 和 DOOR & WINDOW SCHEDULE（`docs/backlog.md:749`）。再加一种表只会放大它。修完从 backlog 删除该条。
+
+记录（RM0.1）：该条已于 commit `8909802c` 修复并删除。现在 `docs/backlog.md` 里的 N.1 是另一条（站点导航条），与本卡无关。
 
 证明：先写失败测试。语料 `finish` 选纸有变化时逐例说明。
 

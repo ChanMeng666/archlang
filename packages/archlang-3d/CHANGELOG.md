@@ -2,6 +2,29 @@
 
 ## [Unreleased]
 
+### Added
+
+- `renderReplay({ supersample: k })` (from `@chanmeng666/archlang-3d/node`; `VideoOptions.supersample`)
+  draws each frame as the rounded mean of k × k renders shifted by fractions of a pixel, a whole
+  number from 1 to 4, so edges are anti-aliased; 1, the default, draws as before. The replay page
+  reads it from `ReplayPayload.supersample`, which `replayPayload` never sets: it is for offline
+  generation, and a live page that sets it draws every frame k × k times. The posters and replay
+  videos on archlang.uk are generated with 3 × 3 and 2 × 2.
+
+### Fixed
+
+- `mountReplay` no longer draws a line on a flat wall surface where two wall pieces meet: beside a
+  door or a window only the reveal between sill and head is outlined; the flat back of a T
+  junction, the outer face of an L corner made of two walls and the joint of two walls in line
+  carry no line, and no line cuts across a wall top there. The inside corners of a T or an X
+  junction keep their lines. The walls' and columns' outlines are worked out across each storey
+  (`src/replay/wall-lines.ts`) in place of three.js's `EdgesGeometry` per node, which every other
+  node keeps. The faces two pieces share are not drawn either (they showed through a flat wall at
+  a grazing angle): inside one wall always, and between two nodes once every node meeting them is
+  up, so while the replay raises the walls each is drawn whole and no frame shows a gap. The
+  playground's 3D tab, the replay HTML and the generated posters and videos all draw this way;
+  Mesh3D, the GLB and Scene3D are unchanged.
+
 ## [0.5.0] - 2026-11-11
 
 The core peer range stays `^1.57.0`. The rooted `import` below works with any core in it; with

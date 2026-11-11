@@ -46,6 +46,13 @@ export interface ReplayPayload {
   facts?: ReplayFacts;
   nodes: ReplayNode[];
   events: ReplayEvent[];
+  /**
+   * For offline generation only (`renderReplay`'s `supersample`, product-roadmap card RM8.2): each
+   * frame is the mean of k × k renders, a whole number from 1 to 4. Absent (1) everywhere else:
+   * `replayPayload` never sets it, and a live 3D preview takes one sample a frame. A host that sets
+   * it in a live page draws every frame k × k times, outside the viewer's frame-time budget.
+   */
+  supersample?: number;
 }
 
 /**
