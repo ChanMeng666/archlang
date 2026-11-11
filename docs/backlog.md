@@ -430,10 +430,17 @@ consume and stop painting an empty ring. None of these throws; each draws or rep
 
 **All four are won't-fix**: the view is deprecated and removed at 2.0 ([ADR 0021](adr/0021-plan-first-view-deprecated.md)), which closes them.
 
+**The 2.0 bucket (in no schedule).** V.5 and V.6 below, 6.7, the escalation of PS0.16's warning and of the
+no-host door and opening warnings to errors (`docs/plans/product-roadmap/README.md` RM-D6, RM-D16), and the
+branch `origin/feat/remove-view` belong to one major release and are done together when 2.0 is decided. No
+card schedules any of them before then; do not pick one up on its own.
+
 - V.1 · Mixed-height joints interpenetrate and draw in the wrong order — won't fix → archived (lab)
 - V.4 · The joinery emits an UNCLOSED chain for a door consuming an arc wall under `grid` — won't fix → archived (lab)
 
 ### V.5 · 2.0 removal of the axonometric view (phase B) — `todo`
+
+_In the 2.0 bucket: in no schedule, done with V.6, 6.7 and PS0.16's escalation at 2.0._
 
 Phase A (deprecation) is done ([ADR 0021](adr/0021-plan-first-view-deprecated.md)). At 2.0, together
 with the removal of `while`/reassignment (its own checklist: 6.7), delete:
@@ -458,6 +465,8 @@ example-flag guard). At 2.0: rebase it onto `main`, re-run its sweep, and move i
 `Removed — BREAKING` block into the 2.0.0 section. Rebase it, do not redo it.
 
 ### V.6 · 2.0 raises the Node floor to 22 — `todo`
+
+_In the 2.0 bucket: in no schedule, done with V.5, 6.7 and PS0.16's escalation at 2.0._
 
 Node 18 and 20 are end-of-life and get no security releases, yet `engines` stays `>=18` (root,
 `packages/mcp`, `packages/font-cjk`) and CI/nightly still test them. Raising the floor is breaking,
@@ -563,6 +572,8 @@ the candidate modelling range in M.1.
 - 6.6 · A trig/hypot cross-engine audit — measured: no divergence; replacement not motivated → archived (lab)
 
 ### 6.7 · `while` and reassignment removal at 2.0 (owner decision: remove at the next MAJOR, no code before then) — `decision`
+
+_In the 2.0 bucket: in no schedule, done with V.5, V.6 and PS0.16's escalation at 2.0._
 
 `W_WHILE_DEPRECATED`/`W_REASSIGN_DEPRECATED` (`src/while-deprecation.ts`) soft-deprecate the two
 forms and `arch fix` offers a proven `while`→`for` rewrite (`src/while-fix.ts`); nothing is removed
@@ -949,10 +960,15 @@ learn arcs.
 a drawn eaves line at `R ± overhang` on the curved run, and the exact-coordinate assertions on the
 straight runs must not move.
 
-### 5.2 · A polygonal `void` — `todo`
+### 5.2 · A non-right-angle polygonal `void` — `todo`
 
-`void … size WxH` is rectangle-only in v1. A ring form needs the machinery `room polygon` already
-has, and **every consumer here is written on a rectangle**: the nav-grid obstacle, the poly-aware
+**Shipped for right angles** (CR8, PR #493, merge `b3c72976`, 1.55.0): `void polygon …` takes a ring whose
+every edge is horizontal or vertical (an L, a U, a notch), and a slanted, crossing or degenerate ring is
+`E_VOID_POLY`. **What remains is a ring with a non-right-angle edge**, which needs the cell
+machinery to change.
+
+The original entry: `void … size WxH` was rectangle-only in v1. A ring form needs the machinery `room polygon` already
+has, and **every consumer here was written on a rectangle**: the nav-grid obstacle, the poly-aware
 room attribution, and `frame.ts`'s `transformElement`. Cheap to add to the grammar, not cheap to
 add to those three.
 
@@ -1233,7 +1249,9 @@ with a `label`. Decide that line before coding.
 **Gate:** `furniture grand_pianno` raises a catalogued warning with a nearest-category `fix`
 under `arch validate --strict --json`; no example gains a diagnostic. **Size:** S.
 
-### U.4 · A furniture `label` on a drawn symbol vanishes without a word (needs a decision) — `decision`
+### U.4 · A furniture `label` on a drawn symbol vanishes without a word — `todo`
+
+**Decided 2026-11-06 (RM-D6, owner-approved): no diagnostic.** A `label` is data, not a drawing: confirm that `describe().furniture[].label` carries it (add it if missing) and write one sentence in `docs/furniture.md` that a drawn symbol does not draw its `label` and that the label goes into `describe` and the schedule. Carded as part of RM1.4 (`docs/plans/product-roadmap/cards.md`); `schedule fixtures` is RM4.2. The text below is the original question.
 
 **Observed (audit finding 11).** A `label` on a furniture item disappears from the drawing with
 no diagnostic.
@@ -1278,7 +1296,9 @@ lists the valid uses and gives no hint toward `outdoor balcony`.
 **Gate:** `uses balcony` yields a message that contains `outdoor balcony`, pinned by test;
 `arch compile --json` over the examples unchanged. **Size:** S.
 
-### U.7 · Two bedrooms are both typed `MasterRoom` in Plan JSON (needs a decision) — `decision`
+### U.7 · Two bedrooms are both typed `MasterRoom` in Plan JSON — `todo`
+
+**Decided 2026-11-06 (RM-D6, owner-approved):** a deterministic rename with a numeric suffix (`MasterRoom`, `MasterRoom_2`) and one warning that lists the renames, in the family of `W_IMPORT_DROPPED`. Carded in RM3.1 (`docs/plans/product-roadmap/cards.md`). The text below is the original question.
 
 **Observed (audit finding 16).** Both bedrooms of the audit plan come out of the Plan JSON
 export typed `MasterRoom`.
@@ -1399,8 +1419,9 @@ compiles clean. **Size:** S.
 
 ### U.17 · No report says how many diagnostics carry a machine fix — `todo`
 
-**Observed (engineering gap audit, row 24).** All 153 codes (101 errors, 52 warnings) carry a
-catalogue `fix` text; only about 30 produce a span edit (a grep estimate, not a measurement).
+**Observed (engineering gap audit, row 24).** Every code in `ERROR_CATALOG` (`src/error-catalog.ts`) carries a
+catalogue `fix` text; only a minority produce a span edit (a grep estimate, not a measurement). The catalogue
+is the source of the code count, so no number is written here.
 No test prints the coverage, so the gap is not a number.
 
 **Hypothesis.** A test or script that walks the catalogue and the fix producers can print the
@@ -1474,24 +1495,7 @@ ArchCanvas adopted net area and the issued-sheet statements and showed two gaps 
 consumer sees. Each has an issue holding its measurements; the numbers below are the issue's own
 and were not re-run when filing.
 
-### H.1 · Lint messages still quote element ids (issue #187) — `todo`
-
-**Observed.** A consumer shows a diagnostic's `message` verbatim to people who never see the
-source, so an id in it (`"d_main"`, `"w_mid"`, `"r_bath"`, an auto-generated `"door_1"`) is
-noise to them. PR #186 fixed `W_PATH_TOO_NARROW` and `W_FURNITURE_WALL_COLLISION`. These
-still quote ids: `W_CIRCUITOUS_PATH` (the entrance door), `W_POCKET_RUN` (the host wall),
-`W_OPENING_NOT_DIMENSIONED` from the `dims auto all` chain rule (the opening and the wall),
-`W_FIXTURE_WRONG_ROOM` (the room id where its label is what a person knows), and every room rule
-for an unlabelled room, because `labelOf` (`src/lint/context.ts`) falls back to `r.id`.
-
-**Hypothesis.** The shape #186 used carries over: a door by the rooms it joins, a wall by its kind
-and the line it runs on, a room by its label, with the id kept or moved into the hint. The unlabelled-room fallback needs a decision first: a derived name (the room's use plus its
-position) or the id marked as one.
-
-**Gate:** extend `CODES` in the "messages name things as a reader would" law in
-`test/lint-fix-texts.test.ts` to these codes, with a minimal plan per rule (the shipped corpus
-raises none of them); re-measure the byte-identity rows as #186 did, by hashing the new compile
-and describe with the old `lint()` and checking the old row reproduces. **Size:** M.
+- H.1 · Lint messages still quote element ids (issue #187) — closed by PS2.22 and PS2.29 (PR #269); test/lint-messages-id-free.test.ts holds it; RM0.1, 2026-11-11 → archived (lab)
 
 ### H.2 · `finish()` cannot accept a code its caller treats as advisory (issue #189) — `todo`
 
@@ -1547,10 +1551,7 @@ https://archlang.uk/terms. The OpenAI submission's state is O.7 and `docs/seo.md
 row of https://developers.openai.com/plugins/deploy/submission-errors as read on 2026-10-15. When
 `test/agent-manifests.test.ts` or the portal disagrees with it, re-check it against that page.
 
-### O.10 · Two Dependabot major bumps wait for a decision (decision needed) — `decision`
-
-`@types/node` 22 → 26 (#121; the runtime stays Node 18-22, so the types would run ahead of it) and
-`vitest` 2 → 5 (#119, CI red on the branch). Patch/minor bumps were merged on 2026-10-15 under the merge policy.
+- O.10 · Two Dependabot major bumps wait for a decision — closed by RM0.1, 2026-11-11: #119, #121, #206-#208 are closed, vitest majors are ignored in the Dependabot config (EH0.10), and the one open major bump, #603, is ruled by RM-D19 → archived (lab)
 
 ### O.11 · The OpenAI listing shows the `compile` tool's old title (BLOCKED on a third party) — `todo`
 
@@ -1606,6 +1607,12 @@ commit. **Gate:** after a release that moves the MCP package, a follow-up PR the
 users on ClawHub, then the entry is filed.
 
 ## Visual-assets residue (from `docs/plans/visual-assets/handoff.md`, 2026-11-04)
+
+### O.19 · `release.yml`'s `publish-arch-plan` publishes without testing what it packs — `todo`
+
+**Observed.** The job builds the core, decides whether the version is on npm, and runs `npm publish -w packages/web-component` (whose `prepack` builds the package). It runs no test of the web component (`packages/web-component/test/`) and does not look at what the tarball will hold. Whatever CI proved on the release commit is the only evidence; a broken element or a file missing from the tarball would reach npm, and a published version cannot be taken back.
+
+**Proposed gate.** Before the publish step, in the same job: run the web component's tests, and check the packed file list (`npm pack --dry-run --json -w packages/web-component`) against the files the package is meant to ship (`dist/`, the README, the LICENSE), failing the job on either. **Tier: high**, because it edits a workflow (`scripts/risk-tier.mjs`), so it needs the fresh-context review that tier asks for. **Size:** S.
 
 ### VA.1 · The bean bag reads stepped in 3D — `todo`
 
@@ -1800,6 +1807,8 @@ serve the MP4s from a host that answers 206, or keep the fallback as the design.
 broken at any width today — `docs-site/e2e/page-chrome.spec.ts` ("the nav bar fits the viewport")
 asserts zero page overflow AND zero last-item overhang on `/` and `/guide` across 768 → 1152. Do not
 treat N.1 as a red.
+
+(This is the nav entry. The plans' older "backlog N.1" meant a different entry that reused the number, `finish` missing the NOTES and schedule rows; commit `8909802c` fixed and removed it.)
 
 What shipped, and why 1152. VitePress reveals the desktop nav row at `min-width: 768px`; our
 eight-destination bar does not fit until 1152, so the reveal was moved there. The fault had two faces
