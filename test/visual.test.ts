@@ -111,6 +111,9 @@ const EXAMPLES = [
   "remodel.arch",
   // The turning stair (S2): the block form's walking line, landing and one break line.
   "turning-stair.arch",
+  // RM8.5's vocabulary plan: it opts into `schedule` + `legend` (so it needs a golden that pins its
+  // tables), and it is the one golden that draws the nineteen families no other example uses.
+  "courtyard-family.arch",
 ];
 
 async function hasResvg(): Promise<boolean> {
@@ -189,6 +192,15 @@ describe("visual regression — golden PNG pixel-diff", () => {
     const { scene, errors } = compile(example("museum-wings.arch"), { world, noCache: true });
     expect(errors).toEqual([]);
     await diffAgainstGolden("museum-wings.arch", scene!);
+  });
+
+  // RM8.5's showcase plan lives in `examples/showcase/`, so it cannot ride the loop above (its key
+  // would be a path). It opts into `schedule` + `legend`, and it is the one golden that draws all
+  // twenty visual-assets families. Keyed by its basename, as `schedule.test.ts` looks it up.
+  it("showcase/garden-courtyard.arch matches its golden", async () => {
+    const { scene, errors } = compile(example("showcase/garden-courtyard.arch"), { noCache: true });
+    expect(errors).toEqual([]);
+    await diffAgainstGolden("garden-courtyard.arch", scene!);
   });
 
   // Multi-storey: one golden per PAGE. A single golden of `scene` would pin only the

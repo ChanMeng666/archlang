@@ -174,6 +174,11 @@
  * B3b added three rows, `examples/remodel.arch` (the wall-status drawing example) under each of the
  * three profiles, measured with `tasteDigest` when the example was added. No existing row moved.
  *
+ * RM8.5 added three rows, `examples/courtyard-family.arch` (the vocabulary showcase) under each of the
+ * three profiles, measured with `tasteDigest` when the example was added. No existing row moved. Its
+ * review changed the example's source before it merged (a deeper garage, a gym with no `uses`), and
+ * the three rows were re-measured with `tasteDigest`, which first reproduced the old three exactly.
+ *
  * B6 (`W_GARAGE_OPENING_UNDERSIZED`, a garage's vehicle door under 2400/4200 mm) added six rows, the
  * new `clearances/garage-door-undersized` pair under each of the three profiles, measured with
  * `tasteDigest`: the case lists the code under `validity` (`pass` false), its twin none; no criterion
@@ -215,6 +220,7 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
   ["0c646158e6eded1eb264481288b34fdc8301748670547510a8a193ff5a3b62d8", "generic", "examples/classroom-block.arch"],
   ["0cab25e38f53e2e89953fbfb9944c5e65efa724a6bbd47556bb8a07c4920c761", "generic", "examples/clinic.arch"],
   ["9f9b7a7b64439ac86dc260add0a0e8cbf923fbbbfbb974b022d8be38082d9770", "generic", "examples/corner-cafe.arch"],
+  ["dc105cd726c87052a08fd2c6c29719d8bbc771e63402e515db3bb39edda43150", "generic", "examples/courtyard-family.arch"],
   ["4cf1aa6c240e46bae91d0ab67f2ae079dd973692f98188fb7a21100d03d24272", "generic", "examples/courtyard-house.arch"],
   ["0a8ff5f1e786b540ce05dafb5931361dd34daa199a05d9911b0f22eb2f98b7b9", "generic", "examples/furnished-flat.arch"],
   ["e4e6da6e17b1b36ca69410044e80e851deb624c2d0ff79c773f6f5c2aa003a51", "generic", "examples/gallery-l.arch"],
@@ -1289,6 +1295,11 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "47d2ba068c600dc9a3594e55dc4f19eab72135c27470abd134da2495d8cd03f9",
     "cn-residential-advisory",
     "examples/corner-cafe.arch",
+  ],
+  [
+    "10d94da390bc0799ae95c952e1d7088fcea15a298d231bde573ee64e87152e77",
+    "cn-residential-advisory",
+    "examples/courtyard-family.arch",
   ],
   [
     "25fa3a024c9abcb802919ee742449e23cf368a3b6f59c6398285c11774ab3696",
@@ -2484,6 +2495,11 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "555e05f29c5df8981f179db15180fd9b033cfad79d5a6daaf131b84f01164776",
     "us-residential-advisory",
     "examples/corner-cafe.arch",
+  ],
+  [
+    "004d62af563f1a72ef7d32c02e3e88ce7558b443b7be244fd6d945af5c601314",
+    "us-residential-advisory",
+    "examples/courtyard-family.arch",
   ],
   [
     "1b20cc2ce4d7847dbe3b9ef2c60f88948e9c3bf746d0491d20c26a95947d0ff3",

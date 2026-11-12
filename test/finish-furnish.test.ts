@@ -492,6 +492,9 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
       ["r_treat", "office: `desk`"],
       ["r_staff", "office: `desk`"],
     ],
+    // RM8.5, added with the example: its games room says `uses living` and holds a pool table, not
+    // the sofa that use defines. (Its gym names no use, so nothing defines what it should hold.)
+    "courtyard-family": [["games", "living: `sofa`"]],
     // 2026-10-18 (PS2.9): corner-cafe's servery no longer says `uses kitchen` (it has no sink
     // or hob; no use describes a bar servery), terrace-row's front room no longer says `dining`
     // (its header calls it living + kitchen), and practice-office's break room and
@@ -609,6 +612,7 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["f12245a9fa1c1f60c7327ff1bcd2717db121f42e38bd333d8a6dec47f3389abe", "classroom-block"], // first measurement, added with the example; PS2.11e source edit, see above
         ["2c5940b85eddc82a6f510f90350995bf05471b246982d7cf2f36e70fff0f28ef", "clinic"],
         ["35c8741f367876f8ad1f7c2111485959f1151cb54da5c015d8bcdc9aea130682", "corner-cafe"], // first measurement with the example; PS2.9 source edit; PS2.17 source edit (a worktop), see above
+        ["e252c466e80152c2faf976772a14154a2dec1b9436293def07ae61ff84e9c0a0", "courtyard-family"], // first measurement, added with the example (RM8.5); re-measured after its review's source edit (a deeper garage, a gym with no `uses`)
         ["18fff217420fb03b50b94cbc85bcc6f5d386c74ec21318a98095a080fe04dfc4", "courtyard-house"], // PS2.4 source edit, see above; PS2.11e source edit, see above
         ["45ee887cf4b527976f42af04bbc8deafaa17070747b37acd6bf1d02efef0e79f", "furnished-flat"], // PS2.11e source edit, see above
         ["f66376fd7e87d89a5a3b26746fdd8f48c9e606918fcf5872cc41494e74ac3b1d", "gallery-l"], // PS2.10, PS2.11e source edits; the fit-out comment corrected, same length: the old comment gives 4fbdbd13, the row before it; RM1.4 source edit (snapped values written as drawn), `finish` echoes the source: the old source still gives the old digest (was 62ef4254)

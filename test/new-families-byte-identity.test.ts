@@ -18,7 +18,11 @@
  *
  * - `examples/*.arch` — the shipped corpus; none of it names a new word (the first case below
  *   holds that premise, over every `.arch` and Markdown file the repository ships, so the law
- *   cannot pass because a plan stopped being in its corpus).
+ *   cannot pass because a plan stopped being in its corpus). The one exception is the closed list
+ *   `SHOWCASE_PLANS` (`test/helpers/showcase-plans.ts`, card RM8.5): plans under
+ *   `examples/showcase/` that show the new families on purpose. They are never rows (the rows are
+ *   the top-level examples), so the law's statement, rows and baseline are unchanged; only the
+ *   premise's coverage narrows, by exactly that list.
  * - `inline:families-before-legend` — every family that existed before the tranche on one sheet,
  *   with its legend: the legend lists fixture rows in `FIXTURE_FAMILIES` order, so a family slotted
  *   in rather than appended would move this row.
@@ -50,6 +54,7 @@ import {
   NEAR_WORDS,
   perThemeDigests,
 } from "./helpers/new-families-law.js";
+import { SHOWCASE_PLANS } from "./helpers/showcase-plans.js";
 
 const API: FamiliesLawApi = { compile, describe, lint, rendered: THEMES.rendered! };
 const ROWS = familiesLawRows(ROOT, CANONICAL_FIXTURES);
@@ -69,6 +74,7 @@ const BASELINE: [string, string][] = [
   ["e0f56d5e7226168c38b1c7ee28d4b6fe43b5550d2d6dcbf9478317ef92134db2", "examples/classroom-block.arch"],
   ["4cb08a0d3671499549a71d5404e7edf421ed8bf633d159c815d22859deed87a9", "examples/clinic.arch"],
   ["7e7cd0c04d41dc603dd9100f49c45e72c5c6739a0df335638e1ceda79d794c50", "examples/corner-cafe.arch"],
+  ["fbd2bd10d650feaaad65cc9aed910165f2b7b7a96cdc0b4dab8314b46a8710b5", "examples/courtyard-family.arch"], // new example (RM8.5, the courtyard-family showcase)
   ["b763e113515203306d321fb2021b87dcf75432fdc98c3712808288227a6db91b", "examples/courtyard-house.arch"],
   ["4cc9df18d329f19f7291bb1942317741494f08df82d7357623effb66f4012cf9", "examples/furnished-flat.arch"],
   ["94ed5dea82a84d559a97e2b179f81509ce710cccb82ea1c2a54d87e6cac4669b", "examples/gallery-l.arch"],
@@ -136,6 +142,19 @@ suite("visual-assets families — byte-identity law", () => {
     const words = new RegExp(`\\bfurniture\\s+(?:id=(?:"[^"]*"|\\S+)\\s+)?(${NEW_WORDS.join("|")})\\b`);
     expect(words.test("furniture id=lamp1 floor_lamp at (0,0)"), "the guard sees the id= form").toBe(true);
     expect(words.test("furniture palm at (0,0)"), "the guard sees the bare form").toBe(true);
+    // The showcase plans (RM8.5) name new words on purpose and are the only files skipped: a closed,
+    // sorted list, each under `examples/showcase/` (so never one of the law's rows, which are the
+    // top-level examples), each present and each naming a new word, or the exemption is not needed.
+    expect([...SHOWCASE_PLANS].sort()).toEqual(SHOWCASE_PLANS);
+    expect(new Set(SHOWCASE_PLANS).size).toBe(SHOWCASE_PLANS.length);
+    for (const p of SHOWCASE_PLANS) {
+      expect(p, "a showcase plan lives under examples/showcase/").toMatch(/^examples\/showcase\/[^/]+\.arch$/);
+      expect(
+        ROWS.map((r) => r.name),
+        "a showcase plan is never a row of the law",
+      ).not.toContain(p);
+      expect(words.test(readFileSync(join(ROOT, p), "utf8")), `${p} names a new word`).toBe(true);
+    }
     const users: string[] = [];
     const dirs = [
       "examples",
@@ -156,6 +175,7 @@ suite("visual-assets families — byte-identity law", () => {
         // The plans under `docs/plans/` describe work; they are not compiled. A package's tests
         // build their own scenes and are not shipped plans.
         if (rel.startsWith("docs/plans/") || /^packages\/[^/]+\/test\//.test(rel)) continue;
+        if (SHOWCASE_PLANS.includes(rel)) continue;
         if (words.test(readFileSync(f, "utf8"))) users.push(rel);
       }
     }

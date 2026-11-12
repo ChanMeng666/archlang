@@ -8,7 +8,7 @@ import { type Diagnostic, describe as describePlan, lint, planToJson } from "../
 import { type Args, makeNodeWorld, sourceFromJson } from "../src/cli/io.js";
 import { renderArtifact } from "../src/cli/serialize.js";
 import { runArch, spawnArch } from "./helpers/cli.js";
-import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
+import { CANNOT_ROUND_TRIP, UNRESOLVED_WAY_BACK } from "./tables/plan-json-gaps.js";
 
 /**
  * `archlang compile -f json` writes the Plan JSON that `archlang compile --from-json` reads.
@@ -61,12 +61,14 @@ const lintCodes = (ds: Diagnostic[]): string[] => ds.map((d) => d.code ?? "").so
 
 /**
  * One storey's outcome: the same plan back (SVG bytes, describe() facts and lint() codes all
- * equal), a different one (naming what differs), or JSON the way back refuses.
+ * equal), a different one (naming what differs), JSON the way back refuses, or a source the way
+ * back writes that does not compile (its error codes; `UNRESOLVED_WAY_BACK`).
  */
 type Outcome = { level?: number } & (
   | { kind: "same" }
   | { kind: "differs"; what: string[] }
   | { kind: "refused"; codes: string[] }
+  | { kind: "no-compile"; codes: string[] }
 );
 
 /** Run one example through `-f json`, then `--from-json`, page by page, against the direct plan. */
@@ -90,6 +92,11 @@ async function roundTrip(name: string): Promise<Outcome[]> {
       continue;
     }
     const back = await renderArtifact(conv.source, "svg", ARGS, process.cwd(), "first");
+    if (back.bytes === undefined && back.diagnostics.some((d) => d.severity === "error")) {
+      const codes = [...new Set(back.diagnostics.filter((d) => d.severity === "error").map((d) => d.code ?? ""))];
+      out.push({ level: p.level, kind: "no-compile", codes: codes.sort() });
+      continue;
+    }
     const what: string[] = [];
     if (back.bytes !== want) what.push("svg");
     if (!isDeepStrictEqual(facts(describePlan(conv.source)), facts(wantFacts))) what.push("describe");
@@ -107,6 +114,21 @@ describe("compile -f json → compile --from-json (the whole corpus)", () => {
       if (outcomes.some((o) => o.kind !== "same")) gaps.push(name);
     }
     expect(gaps).toEqual(EXPECTED_GAPS);
+  }, 120_000);
+
+  it("the way back does not compile for exactly UNRESOLVED_WAY_BACK, for the lost courtyard cover", async () => {
+    const noCompile: string[] = [];
+    for (const name of EXPECTED_GAPS) {
+      const outcomes = await roundTrip(name);
+      if (!outcomes.some((o) => o.kind === "no-compile")) continue;
+      noCompile.push(name);
+      // Not counted as `differs: svg`: every page is this outcome, and the refusal is the hole.
+      for (const o of outcomes) {
+        expect(o.kind, name).toBe("no-compile");
+        if (o.kind === "no-compile") expect(o.codes, name).toContain("E_ROOMS_NOT_TILING");
+      }
+    }
+    expect(noCompile).toEqual([...UNRESOLVED_WAY_BACK]);
   }, 120_000);
 
   it("a gap is refused with an E_JSON_* code or draws different bytes; it is never a crash", async () => {
