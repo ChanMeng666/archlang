@@ -83,18 +83,22 @@ RM-D17：一个 `level` 可以写一个净高值，作者写了就用；中间�
 
 **字节恒等的闸门**（MF-D1 第 2 条，按 RM-D17 推广到净高子句）：全图一个 `slab` 也没写、一个 `clear` 也没写时，SVG、`describe()`、`lint()`、`compile().diagnostics` 都逐字节不变，不加任何跳过说明。
 
-写了其中任何一个时，`slab` 与 `clear` 也算"作者写了竖向子句"，`plansAuthorHeights` 返回真（`src/datum.ts:335-360` 加两种情况），`heights` 块出现。每层的 `heights` 加：
+~~写了其中任何一个时，`slab` 与 `clear` 也算"作者写了竖向子句"，`plansAuthorHeights` 返回真（`src/datum.ts:335-360` 加两种情况），`heights` 块出现。~~
+
+**2026-11-12 评审裁定（RM6.1 PR #721 第 1 轮 S2，第 2 轮 S-1）：** `slab` 与 `clear` **不**使 `plansAuthorHeights` 为真。lint、Plan JSON 与工程量读的仍是"作者没写层高"，不拿默认值去判（卡的"不许"）。写了其中任何一个时，只有 `describe()` 的 `heights` 块出现；门、窗、洞口的 `head`/`sill` 也照旧只看 `plansAuthorHeights`。每层的 `heights` 加：
 
 | 字段 | 何时出现 | 值 |
 |---|---|---|
 | `slab` | 该层写了 `slab` | mm，原样 |
 | `clear_height` | 能给出时 | mm |
 | `clear_height_source` | 与 `clear_height` 同时 | `authored`（作者写了 `clear`）或 `derived`（本层层高 − 上一层的 `slab`） |
-| `clear_height_omitted` | 给不出时 | 原因词：`no-slab-above`（上一层没写 `slab`）、`top-storey`（顶层，没有作者值）、`single-storey`（单层，没有作者值）、`default-storey-height`（本层层高是默认的 3000，不是作者写的） |
+| `clear_height_omitted` | 给不出时 | 原因词：`no-slab-above`（上一层没写 `slab`）、`top-storey`（顶层，没有作者值）、~~`single-storey`（单层，没有作者值）~~、`default-storey-height`（本层层高是默认的 3000，不是作者写的）、`slab-above-too-thick`（实施时加：上一层楼板不比本层层高薄） |
+
+**2026-11-12 评审裁定（RM6.1 PR #721 第 1 轮）：** 去掉 `single-storey`。单层平面不能写 `slab`，没写 `clear` 时它一个子句也没写，按 MF-D1 第 2 条不加任何说明；写了 `clear` 就是 `authored`。所以这个原因词永远不会出现。另（第 2 轮 S-2）：这些值的精度统一为 0.001 mm（语言打印数字的精度，`fmt3`）：写下的值原样报告，推算的净高取两个操作数在这一精度上的差，`W_CLEAR_HEIGHT_MISMATCH` 也在这一精度上比较，消息里引用的三个数相加正好对上。
 
 最后一个原因词是本稿加的：`storey_height` 在没人写层高时取 3000（`src/describe/types.ts:233-235`），拿它减楼板得出的"净高"是猜的，违反 MF-D1"不猜"。
 
-**不一致的诊断：** 作者写了 `clear`，又能由层高减上一层的 `slab` 推出一个值，两者按 `describe()` 打印的整毫米比较不相等时，`compile()` 出一条警告（新码 `W_CLEAR_HEIGHT_MISMATCH`，span 在 `clear` 子句上，消息写出两个数和它们的来源）。报的仍是作者的值（RM-D17"作者写了就用"）。用打印出来的整毫米比较，免得表达式求值的浮点尾数造成假报。这条诊断只在用了新子句的图上出现，所以 `compile().diagnostics` 的字节恒等律照样成立。
+**不一致的诊断：** 作者写了 `clear`，又能由层高减上一层的 `slab` 推出一个值，两者按 `describe()` 打印的整毫米比较不相等时，`compile()` 出一条警告（新码 `W_CLEAR_HEIGHT_MISMATCH`，span 在 `clear` 子句上，消息写出两个数和它们的来源）。报的仍是作者的值（RM-D17"作者写了就用"）。用打印出来的整毫米比较，免得表达式求值的浮点尾数造成假报。（**2026-11-12 评审裁定，RM6.1 第 2 轮 S-2：** 改为在 0.001 mm 上比较，见上表后的说明；同样没有浮点尾数，而且不把写下的值取整。）这条诊断只在用了新子句的图上出现，所以 `compile().diagnostics` 的字节恒等律照样成立。
 
 **3D 包：** 按 MF-D1 第 5 条，写了 `slab` 的层，`archlang-3d` 读作者的值代替账本里的 `slab-default-200`；没写的照旧，laneway 的 Mesh3D 与 GLB 钉子不动。3D 经 `resolvePlan` 读解析后的层（ADR 0031），所以核心要把 `slab`、`clear` 放进一个公开类型的非下划线字段（这是一个加性的公开面变化，带它自己的字节恒等证明，`.claude/rules/archlang-3d.md`）。这一半可以在 RM6.1 之后另开小卡。
 

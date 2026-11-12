@@ -2545,7 +2545,7 @@ room at (0,0) size 4000x3000 label "厨房"   # -f pdf / -f png warns when the C
 
 *warning* — A storey's written clear height disagrees with the one its heights give.
 
-**Cause.** A `level … clear <mm>` is reported as written. The same storey's `height` less the `slab` the storey above writes gives a second value, and the two differ in whole millimetres, so one of the three numbers is likely wrong.
+**Cause.** A `level … clear <mm>` is reported as written. The same storey's `height` less the `slab` the storey above writes gives a second value, and the two differ by 0.001 mm or more (the precision the language prints a number in), so one of the three numbers is likely wrong.
 
 **Fix.** Correct the `clear`, the storey's `height` or the upper storey's `slab`, or drop the `clear` and let `describe()` derive it.
 

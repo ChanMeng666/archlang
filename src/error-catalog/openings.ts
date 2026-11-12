@@ -46,7 +46,7 @@ export const OPENINGS_ENTRIES = defineEntries({
   ),
   W_CLEAR_HEIGHT_MISMATCH: w(
     "A storey's written clear height disagrees with the one its heights give.",
-    "A `level … clear <mm>` is reported as written. The same storey's `height` less the `slab` the storey above writes gives a second value, and the two differ in whole millimetres, so one of the three numbers is likely wrong.",
+    "A `level … clear <mm>` is reported as written. The same storey's `height` less the `slab` the storey above writes gives a second value, and the two differ by 0.001 mm or more (the precision the language prints a number in), so one of the three numbers is likely wrong.",
     "Correct the `clear`, the storey's `height` or the upper storey's `slab`, or drop the `clear` and let `describe()` derive it.",
     "level 1 height 3000 clear 2400 { }\n  level 2 slab 300 { }   # warning: 3000 - 300 = 2700",
   ),

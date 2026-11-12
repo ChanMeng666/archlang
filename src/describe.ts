@@ -38,7 +38,7 @@ import type {
   OpeningPlacement,
 } from "./ir.js";
 import type { PlanNode, Point } from "./ast.js";
-import { type CeilingFacts, clearHeightMm } from "./datum.js";
+import type { CeilingFacts } from "./datum.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { voidPieces } from "./elements/void.js";
 import { storeyNetAreaBands } from "./analyze/net-area-memo.js";
@@ -250,8 +250,8 @@ function ceilingRows(
 ): Pick<HeightFacts, "slab" | "clear_height" | "clear_height_source" | "clear_height_omitted"> {
   return {
     ...(c.slab !== undefined ? { slab: c.slab } : {}),
-    // Whole millimetres, as `W_CLEAR_HEIGHT_MISMATCH` compares them (`clearHeightMm`).
-    ...(c.clearHeight !== undefined ? { clear_height: clearHeightMm(c.clearHeight) } : {}),
+    // As resolved: an authored value as written, a derived one already taken at 0.001 mm (`atMicron`).
+    ...(c.clearHeight !== undefined ? { clear_height: c.clearHeight } : {}),
     ...(c.source !== undefined ? { clear_height_source: c.source } : {}),
     ...(c.omitted !== undefined ? { clear_height_omitted: c.omitted } : {}),
   };
@@ -508,10 +508,12 @@ function summarize(
   // so there is no second rule to disagree with the first. It is whole-PLAN (see
   // `ResolvedPlan._heightsAuthored`), which is why a building whose upper floor alone
   // declares a height reports heights on every page.
-  // The storey's `slab` and clear height (MF-D1, RM-D17) open the block too, and only here: lint,
-  // Plan JSON and the quantities keep reading `_heightsAuthored` alone (RM6.1 ruling).
+  const heights = ir._heightsAuthored;
+  // The storey's `slab` and clear height (MF-D1, RM-D17) open the `heights` block too, and nothing
+  // else: the openings' `head`/`sill`, lint, Plan JSON and the quantities keep reading
+  // `_heightsAuthored` alone (RM6.1 review rulings).
   const ceiling = ceilingOf(ir);
-  const heights = ir._heightsAuthored || ceiling !== undefined;
+  const heightsBlock = heights || ceiling !== undefined;
   // The walls' remodel status (B3a): a per-storey block, absent unless a wall here writes one.
   const wallStatus = wallStatusFacts(ir);
 
@@ -805,7 +807,7 @@ function summarize(
     // unlike the lists above: an empty `voids` means "this storey has no holes in it", but
     // an empty `walls` here would be indistinguishable from "heights are not reported",
     // and the block's presence is already the answer to that question.
-    ...(heights
+    ...(heightsBlock
       ? {
           heights: {
             storey_height: ir.storeyHeight,

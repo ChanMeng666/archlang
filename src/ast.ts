@@ -1607,7 +1607,7 @@ export interface PlanNode {
   /** Set on a synthetic per-level plan (`levelPlanFor`) of a plan that writes a `slab` or a `clear`:
    *  the storey resolves its own clauses, and its clear height is completed once every storey has
    *  resolved (`deriveCeilings`, `src/datum.ts`). Never parsed. */
-  _storey?: true;
+  _storey?: { ownHeight: boolean };
   north: NorthDir;
   /** The sheet marks the plan hides (`north … hidden`, `scale … hidden`, `title hidden`). Absent unless written. */
   hide?: ChromeHide;

@@ -497,7 +497,8 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
  *  neither, so its rows read as they always did. */
 function ceilingText(c: ResolvedPlan["_ceiling"]): string {
   if (!c) return "";
-  const height = c.height !== undefined ? ` height ${num(c.height)}` : "";
+  // Only a height the storey's own header wrote: a plan-level `height` is no clause of the row.
+  const height = c.ownHeight ? ` height ${num(c.height!)}` : "";
   const slab = c.slab !== undefined ? ` slab ${num(c.slab)}` : "";
   const clear = c.source === "authored" ? ` clear ${num(c.clearHeight!)}` : "";
   return height + slab + clear;

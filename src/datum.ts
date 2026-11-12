@@ -52,7 +52,7 @@ import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import type { WallSegment } from "./geometry.js";
 import type { RWall } from "./ir.js";
-import { fmt0 } from "./num-format.js";
+import { fmt3 } from "./num-format.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 
 /** Floor-to-floor height of a storey, in mm, when the plan declares none. */
@@ -337,8 +337,12 @@ export type ClearHeightOmitted = "top-storey" | "no-slab-above" | "default-store
 export interface CeilingFacts {
   /** The storey's own `slab`, as written. */
   slab?: number;
-  /** The storey's own `height`, when written and accepted: what its Plan JSON `level` row quotes. */
+  /** The storey's `height`, when written and accepted (its `level` header's, else the plan's): the
+   *  height a derived clear height is taken from. */
   height?: number;
+  /** The storey's own `level` header wrote that `height`: only then does its Plan JSON `level` row
+   *  quote it. */
+  ownHeight?: true;
   /** The clear height, floor to ceiling; with {@link source}. */
   clearHeight?: number;
   /** `authored` (the storey's `clear`) or `derived` (its `height` less the `slab` above). */
@@ -348,11 +352,13 @@ export interface CeilingFacts {
 }
 
 /**
- * A clear height as `describe()` prints it and as {@link deriveCeilings} compares it: whole
- * millimetres, through `fmt0`, so a float tail of `height − slab` neither shows nor raises
- * `W_CLEAR_HEIGHT_MISMATCH`.
+ * The precision of the clear-height facts: 0.001 mm, the precision the language prints a number in
+ * (`fmt3`). Every clause is reported as resolved (`storey_height`, `slab`, an authored `clear`), and
+ * a derived clear height is the difference of its two operands taken at this precision, so it holds
+ * no float tail, its operands quoted at this precision add up to it, and `W_CLEAR_HEIGHT_MISMATCH`
+ * compares at this precision.
  */
-export const clearHeightMm = (v: number): number => Number(fmt0(v));
+export const atMicron = (v: number): number => Number(fmt3(v));
 
 /** Does the plan write a `slab` or a `clear` anywhere? The gate of the clear-height facts: without
  *  one, nothing about them is evaluated or reported. A synthetic storey plan carries the answer.
@@ -376,6 +382,7 @@ export function resolveCeiling(
   storey: { height: number; written: boolean },
   ev: { eval(e: Expr, span: Span | undefined): number; diag(d: Diagnostic): void },
 ): CeilingFacts {
+  // Only a storey of a multi-storey plan knows whether its own `level` header wrote the height.
   const own = (clause: "slab" | "clear", e: Expr | undefined, span: Span | undefined): number | undefined => {
     if (e === undefined) return undefined;
     const v = ev.eval(e, span);
@@ -388,6 +395,7 @@ export function resolveCeiling(
   return {
     ...(slab !== undefined ? { slab } : {}),
     ...(storey.written ? { height: storey.height } : {}),
+    ...(storey.written && plan._storey?.ownHeight ? { ownHeight: true as const } : {}),
     ...(clear !== undefined ? { clearHeight: clear, source: "authored" as const } : {}),
   };
 }
@@ -402,9 +410,11 @@ export interface StoreyCeiling {
 /**
  * The clear heights of a multi-storey plan's storeys (RM-D17), lowest first, from each storey's own
  * facts: the author's `clear` when written, else the storey's written `height` less the `slab` the
- * storey above wrote, else nothing and the reason. An authored value that differs from the derived
- * one as `describe()` prints them ({@link clearHeightMm}) is `W_CLEAR_HEIGHT_MISMATCH`, and the
- * author's value stands. Pure arithmetic on resolved numbers: it evaluates nothing.
+ * storey above wrote, each taken at 0.001 mm ({@link atMicron}), else nothing and the reason: a
+ * difference that is not positive at that precision is `slab-above-too-thick`. An authored value
+ * that differs from the derived one at that precision is `W_CLEAR_HEIGHT_MISMATCH`, quoting the
+ * three numbers it compared, and the author's value stands. Pure arithmetic on resolved numbers: it
+ * evaluates nothing.
  */
 export function deriveCeilings(storeys: readonly StoreyCeiling[]): { facts: CeilingFacts[]; diags: Diagnostic[][] } {
   const facts: CeilingFacts[] = [];
@@ -412,17 +422,18 @@ export function deriveCeilings(storeys: readonly StoreyCeiling[]): { facts: Ceil
   storeys.forEach(({ own, subject, clearSpan }, i) => {
     const top = i === storeys.length - 1;
     const above = top ? undefined : storeys[i + 1]!.own.slab;
-    const derived = above !== undefined && own.height !== undefined ? own.height - above : undefined;
+    const derived =
+      above !== undefined && own.height !== undefined ? atMicron(atMicron(own.height) - atMicron(above)) : undefined;
     const mine: Diagnostic[] = [];
     if (own.source === "authored") {
       const clear = own.clearHeight!;
-      if (derived !== undefined && derived > 0 && clearHeightMm(derived) !== clearHeightMm(clear)) {
+      if (derived !== undefined && derived > 0 && derived !== atMicron(clear)) {
         mine.push({
           severity: "warning",
           code: "W_CLEAR_HEIGHT_MISMATCH",
           message:
-            `${subject} writes \`clear ${fmt0(clear)}\`, but its \`height ${fmt0(own.height!)}\` less the ` +
-            `\`slab ${fmt0(above!)}\` of the storey above is ${fmt0(derived)} mm; the written value is reported`,
+            `${subject} writes \`clear ${fmt3(clear)}\`, but its \`height ${fmt3(own.height!)}\` less the ` +
+            `\`slab ${fmt3(above!)}\` of the storey above is ${fmt3(derived)} mm; the written value is reported`,
           ...(clearSpan ? { span: clearSpan } : {}),
         });
       }

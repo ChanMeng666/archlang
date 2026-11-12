@@ -212,7 +212,8 @@ suite("plan-level-only elements: derived from the def, not from the word `sectio
     kind: "marker",
     keyword: "marker",
     setWords: {},
-    planLevelOnly: { code: "E_SECTION_SCOPE" },
+    // A code of its own, so the test tells the def's code from the section's.
+    planLevelOnly: { code: "E_MARKER_SCOPE" },
     parse(ctx) {
       const kw = ctx.eatKeyword("marker");
       return { kind: "marker", id: "", at: ctx.parsePoint(), line: kw.line } as unknown as AstElement;
@@ -251,7 +252,7 @@ suite("plan-level-only elements: derived from the def, not from the word `sectio
 
   it("inside a block it is the def's code", () => {
     const codes = compile(plan("  zone z { marker (100,100) }"), opts).diagnostics.map((d) => d.code);
-    expect(codes).toEqual(["E_SECTION_SCOPE"]);
+    expect(codes).toEqual(["E_MARKER_SCOPE"]);
   });
 
   it("a whole-file import leaves it out, as it leaves out a level", () => {

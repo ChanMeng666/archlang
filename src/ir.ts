@@ -374,7 +374,7 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean, regis
           slabSpan: block.slabSpan,
           clear: block.clear,
           clearSpan: block.clearSpan,
-          _storey: true as const,
+          _storey: { ownHeight: block.height !== undefined },
         }
       : {}),
     body: [...shared, ...block.body],
