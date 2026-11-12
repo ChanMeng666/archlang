@@ -30,6 +30,8 @@
 | #718 | playground：gallery 选样例后的过期渲染不再重置旋钮的编辑 | 11:12 | `4e4ab643` |
 | #713 | RM1.6a：规则出处成数据（`src/lint/provenance.ts`）与 `lint --rules`；编译器路径 +74 B（协调者接受） | 11:22 | `9a3be392` |
 | #724 | 1.59.0 之后的上架列表（`docs/seo.md` § 8）与 `release-check.md`（版本号提交的 CI 绿了才打 tag） | 13:49 | `5561ebde` |
+| #719 | RM8.5（`done`）：样张工具、目录图、示例 `courtyard-family` 与 `garden-courtyard`；品味等变律重述（罗盘读者是 R12，主入口由街道选定时另有 R3 与分区；协调者裁定 2026-11-12，所有者可推翻） | 2026-11-12（`gh pr view`） | `0c7ff4a6` |
+| #727 | RM0.7（`done`）：编译器路径 458,385 → 390,605 B gzip，`compilerPathBudget` 401,000，`embedPathBudget` 387,000；fix 列由 `gen:errors` 生成，面板读 `dist/error-catalog.js` | 2026-11-12（`gh pr view`） | `21d3e0f4` |
 
 **`main` 红过一次，已修：** #703、#701、#706 的 `main` 提交在 Node 18 job 上红（`gen:mcp-capabilities` 报 `E.toReversed is not a function`），自动开了 issue #705，#708 修复（07:16Z 关闭）。**08:07Z 之后 `main` 的状态（12:23Z 读）：** `9a3be392` 上 CI、CodeQL、Plugin validate 都 success（CI run 43011402472）；`Main red alarm` 三次 success。**一项失败，已查明：** `Deploy (Cloudflare)` 在 `9a3be392` 上 11:49:49Z 的 run 43015163598 失败（`Deploy mcp (scripted Worker)` 的 smoke 报固定版本的 `/svg/` 副本 `not immutable`），协调者的判断是版本传播的竞态（固定版本的 URL 在部署后一秒落到旧 isolate），不是配置缺口，见卡 RM0.8；之后的 Deploy run 43025136172 在 `e354ddc7` 上全部 success。issue #717 "Nightly checks need attention"（10:39Z 开，`secrets` job failure）已分诊：是误报（gitleaks 把 `test/silent-accepts.test.ts` 第 232 行一条 `accessible` 示例的 SHA-256 摘要读成 `generic-api-key`），由开着的 #723 放行（`.gitleaksignore` 加一条指纹，`test/opaque-literal-guard.test.ts` 加一条规则；`Refs #717`），合并后关 #717。
 
@@ -85,6 +87,8 @@
 ## 2. 下一步（按车道）
 
 排期以 `README.md` §3 为准；下面是从实际位置出发的顺序，每条车道从第 1 项做起，前一项合并后再开下一项。**按 RM-D27，顺序就是全部的门：** 一项的真实依赖满足了就开工，不等阶段日期或冻结期。1.59.0 已发布（§1.2），按 §5 的队列合并。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。
+
+**2026-11-12 更新：** 预算卡 RM0.7 已由 #727 做完（`21d3e0f4`），不再挡 #721、RM8.7、RM8.9；#719（RM8.5）已合并（`0c7ff4a6`）。RM6.1（#721）由执行者做中（合并 `main` 并加剖切符号）；RM8.6 做中。新卡（均 `todo`）：RM0.7b、RM0.7c、RM0.7d、RM8.5b–RM8.5e，见 `cards.md`。下面 §1.1b 的 #719 行与本节第 1 项是合并前的读数。
 
 **核心车道（阶段 B 已完成，1.59.0 在途）：**
 1. **预算卡（新，高优先）：playground 编译器路径预算已用尽。** 基线 `bfd63c4c` 为 458,294 B（余 686 B），#721 实测 459,828 B，超 `compilerPathBudget`（458,980 B）848 B（对 `bfd63c4c` 量的，在 #713 的 +74 B 之前；基于现在的 `main` 约 920 B，要在变基后的 #721 上重新量）；每个新语法形式或诊断都让编译器 chunk 变大。结构性做法：把诊断目录的文字与 CLI manifest 移出编译器路径（惰性或按需加载），先量（每块占多少），再一次性重取预算并留出余量；不抬上限而不先削掉可证明的重复（`.claude/rules/sites.md`）。**它挡住 RM6.1（#721 的 e2e）与词表卡 RM8.7、RM8.9。**
