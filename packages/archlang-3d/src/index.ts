@@ -18,8 +18,8 @@ export type { DoorPose, MeshOptions } from "./mesh/build.js";
 export { clipToConvex, cutSector, insideCut, prism, sectorBand, slab2d } from "./mesh/extrude.js";
 export type { CutSector } from "./mesh/extrude.js";
 export { rectsOf, slabRegion } from "./mesh/slab.js";
-export { doorTrim, FLAT_MM, insideOf, OPENING_DETAIL, TrimSite, windowTrim } from "./mesh/openings.js";
-export type { ObstacleClass, TrimContext, TrimPart } from "./mesh/openings.js";
+export { FLAT_MM, insideOf, OPENING_DETAIL, storeyTrim } from "./mesh/openings.js";
+export type { ObstacleClass, Prism, TrimInput, TrimPart, TrimResult } from "./mesh/openings.js";
 export { STAIR_DETAIL, stairDetail, stairRisers, stairSolid } from "./mesh/stair.js";
 export type { StairDetail, StairSide, StairSolid } from "./mesh/stair.js";
 export {

@@ -12,9 +12,9 @@
  *   its panel hangs on (the core's `swing`), a garage door none at all, a door on a curved host no
  *   trim (its closed leaf is the chord between its jambs; a cased opening there keeps its lining,
  *   along the arc), and a leg that would stand in a wall or a column (a doorway at a corner), in
- *   standing furniture (not a rug: `FLAT_MM`), in another doorway or in trim already built (two
- *   doorways side by side, `TrimSite`) is left out, never shortened, its head piece then stopping
- *   at that jamb;
+ *   standing furniture (not a rug: `FLAT_MM`), in another doorway or in another doorway's casing
+ *   (two doorways side by side: both legs) is left out, never shortened, its head piece then
+ *   stopping at that jamb;
  * - a window: on the interior half of the cut, a reveal lining 0.075 t in [10, 20] on the jambs and
  *   the head, in the frame's colour; on its sill, an exterior sill 0.15 t in [20, 40] thick, proud
  *   of the outside face by 0.2 t and past each jamb by 0.2 t (the core's `SILL_PROJECTION` and
@@ -24,9 +24,14 @@
  *   room or void of the storey there. Inside on both sides (an interior window): a reveal on both
  *   halves, no sill; on neither (a free-standing wall): nothing. A window with no sill (`sill 0`)
  *   has neither sill nor board. At a mitred end (a window run to a corner) a sill or a board stops
- *   on the mitre, past no jamb, and an end that would stand in a neighbour's doorway or trim stops
- *   at its jamb (`window-sill-horn-omitted`); on a curved host the reveals follow the arc and the
- *   sill and the board stay inside the cut.
+ *   on the mitre, past no jamb, and an end that would stand in a neighbour's doorway, casing, sill
+ *   or board stops at its jamb (`window-sill-horn-omitted`); on a curved host the reveals follow the
+ *   arc and the sill and the board stay inside the cut.
+ *
+ * A storey's trim is decided all at once (`storeyTrim`), never in the order the plan writes its
+ * openings: every casing before any sill or board (a casing beats a horn), and two pieces of the
+ * same rank that meet are both cut back or left out, so a plan's trim is the same whatever order
+ * its openings are written in, and a mirror-symmetric plan gets mirror-symmetric trim (RM8.6b).
  *
  * Every part is square to its wall, built in its jamb frame and rounded to whole micrometres; every
  * shell closed (`prism`). Each default is ledgered per opening (ADR 0030 decision 5).
@@ -63,23 +68,6 @@ export const OPENING_DETAIL = {
 export interface TrimPart {
   part: "lining" | "casing" | "sill" | "board" | "reveal";
   shells: Array<Shell | null>;
-}
-
-/** What the trim is built against: the opening's storey and its host. */
-export interface TrimContext {
-  /** The storey's floor level (µm). */
-  e: number;
-  /** The host's thickness (µm). */
-  t: number;
-  /** The head as built (µm over `e`; the opening's head capped at the host's built top). */
-  head: number;
-  /** The host's built top (µm over `e`). */
-  top: number;
-  level: Level;
-  /** The storey's obstacles, and the trim built so far (`TrimSite`). */
-  site: TrimSite;
-  /** The extruder `build.ts` counts degenerate holes with. */
-  prism: (poly: Polygon, z0: number, z1: number) => Shell | null;
 }
 
 /**
@@ -184,96 +172,98 @@ function boxOf(poly: Polygon): [number, number, number, number] {
 }
 
 /** What a trim piece can stand in: one class per kind of obstacle a piece is tested against. */
-export type ObstacleClass = "wall" | "column" | "furniture" | "opening" | "trim";
+/**
+ * `opening`: a doorway between its sill and its head (what a casing is tested against); `jamb`: the
+ * same doorway at every height and a millimetre wider each way along its wall (what a sill's or a
+ * board's horn is tested against: a horn ending flush with a neighbour's jamb face would share it).
+ */
+export type ObstacleClass = "wall" | "column" | "furniture" | "opening" | "jamb" | "trim";
 
-/** One obstacle of a storey: its plan polygon (and box, to reject fast) and its heights over `e`. */
-interface Obstacle {
-  cls: ObstacleClass;
-  /** What the ledger names it: `wall`, `column`, `furniture <id>`, `opening <id>`, `trim <id>`. */
-  name: string;
-  /** The opening it belongs to (its own doorway and trim never block it). */
-  owner?: string;
+/** A trim piece in plan, over heights `z0..z1` (µm over the storey's floor level `e`). */
+interface Piece {
   poly: Polygon;
-  box: [number, number, number, number];
   z0: number;
   z1: number;
 }
 
-/**
- * Everything a storey's trim is tested against, built once per storey (review of PR #729, m7): its
- * wall bodies and columns, its furniture that stands up from the floor (a piece no taller than
- * `FLAT_MM`, a rug or a mat, is passed through, not built round), each opening's doorway (its cut
- * and a casing's depth off each face), and, as they are built, the trim pieces themselves (review
- * M2: two doorways or windows close together, whose casings, sills or boards would overlap). Each
- * test rejects by bounding box before it measures the overlap.
- */
-export class TrimSite {
-  private readonly obstacles: Obstacle[] = [];
+/** One obstacle: its plan polygon (and box, to reject fast) and its heights over `e`. */
+interface Obstacle extends Piece {
+  cls: ObstacleClass;
+  /** What the ledger names it: `wall`, `column`, `furniture <id>`, `opening <id>`, `casing <id>` … */
+  name: string;
+  /** The opening it belongs to (its own doorway and trim never block it). */
+  owner?: string;
+  box: [number, number, number, number];
+}
 
-  constructor(
-    level: Level,
-    /** Each piece of furniture's heights over the floor (µm), as the mesh builds it. */
-    furnitureZ: (f: Level["furniture"][number]) => [number, number],
-  ) {
-    const add = (o: Omit<Obstacle, "box">): void => {
-      this.obstacles.push({ ...o, box: boxOf(o.poly) });
-    };
-    const UP = Number.POSITIVE_INFINITY;
-    for (const w of level.walls) for (const b of w.body) add({ cls: "wall", name: "wall", poly: b, z0: 0, z1: UP });
-    for (const c of level.columns)
-      add({
-        cls: "column",
-        name: "column",
-        poly: boxPoly(c.at[0], c.at[1], c.at[0] + c.size.w, c.at[1] + c.size.h),
-        z0: 0,
-        z1: UP,
-      });
-    for (const f of level.furniture) {
-      const [z0, z1] = furnitureZ(f);
-      if (z1 - z0 <= FLAT_MM * MM) continue;
-      add({
-        cls: "furniture",
-        name: `furniture ${f.id}`,
-        poly: boxPoly(
-          f.centre[0] - f.size.w / 2,
-          f.centre[1] - f.size.d / 2,
-          f.centre[0] + f.size.w / 2,
-          f.centre[1] + f.size.d / 2,
-        ),
-        z0,
-        z1,
-      });
-    }
-    const thick = new Map(level.walls.map((w) => [w.id, w.thickness] as const));
-    const reach = OPENING_DETAIL.casingProud(Number.POSITIVE_INFINITY) * MM;
-    for (const b of level.openings) {
-      const fb = jambFrame(b);
-      const hb = (thick.get(b.host) ?? 0) / 2 + reach;
-      if (fb)
-        add({ cls: "opening", name: `opening ${b.id}`, owner: b.id, poly: fb.quad(0, fb.w, -hb, hb), z0: 0, z1: UP });
-    }
+/** A set of obstacles a piece is tested against, each test rejected by bounding box first. */
+class Obstacles {
+  readonly list: Obstacle[] = [];
+
+  add(cls: ObstacleClass, name: string, piece: Piece, owner?: string): void {
+    this.list.push({ ...piece, cls, name, ...(owner !== undefined ? { owner } : {}), box: boxOf(piece.poly) });
   }
 
-  /** What, of `classes`, a piece of `owner`'s trim at `poly` over heights `z0..z1` would stand in. */
-  clash(owner: string, poly: Polygon, z0: number, z1: number, classes: readonly ObstacleClass[]): string | null {
-    const [x0, y0, x1, y1] = boxOf(poly);
-    for (const o of this.obstacles) {
+  /** The first obstacle, of `classes`, that a piece of `owner`'s trim would stand in, or `null`. */
+  clash(owner: string, piece: Piece, classes: readonly ObstacleClass[]): string | null {
+    const [x0, y0, x1, y1] = boxOf(piece.poly);
+    for (const o of this.list) {
       if (o.owner === owner || !classes.includes(o.cls)) continue;
-      if (o.z1 <= z0 || o.z0 >= z1) continue;
+      if (o.z1 <= piece.z0 || o.z0 >= piece.z1) continue;
       if (o.box[2] <= x0 || o.box[0] >= x1 || o.box[3] <= y0 || o.box[1] >= y1) continue;
-      if (overlapArea(o.poly, poly) > CLASH_UM2) return o.name;
+      if (overlapArea(o.poly, piece.poly) > CLASH_UM2) return o.name;
     }
     return null;
   }
-
-  /** A trim piece built: later pieces are tested against it. */
-  built(owner: string, poly: Polygon, z0: number, z1: number): void {
-    this.obstacles.push({ cls: "trim", name: `trim ${owner}`, owner, poly, box: boxOf(poly), z0, z1 });
-  }
 }
 
-/** Furniture no taller than this (mm) lies flat on the floor (a rug, a mat): trim passes through it. */
+/** Furniture lower than this (mm) lies flat on the floor (a rug, a mat): trim passes through it. */
 export const FLAT_MM = 50;
+
+const STATIC: readonly ObstacleClass[] = ["wall", "column", "furniture", "opening"];
+const TRIM: readonly ObstacleClass[] = ["trim"];
+
+/**
+ * A storey's fixed obstacles (review of PR #729, M2, m4, m7; RM8.6b n2, n3): its wall bodies and
+ * columns, its furniture at the heights it is built to (a piece lower than `FLAT_MM`, a rug or a
+ * mat, is passed through), and each opening's doorway, its cut and a casing's depth off each face,
+ * from its sill to its head.
+ */
+function fixedObstacles(level: Level, furnitureZ: (f: Level["furniture"][number]) => [number, number]): Obstacles {
+  const site = new Obstacles();
+  const UP = Number.POSITIVE_INFINITY;
+  for (const w of level.walls) for (const b of w.body) site.add("wall", "wall", { poly: b, z0: 0, z1: UP });
+  for (const c of level.columns)
+    site.add("column", "column", {
+      poly: boxPoly(c.at[0], c.at[1], c.at[0] + c.size.w, c.at[1] + c.size.h),
+      z0: 0,
+      z1: UP,
+    });
+  for (const f of level.furniture) {
+    const [z0, z1] = furnitureZ(f);
+    if (z1 - z0 < FLAT_MM * MM) continue;
+    site.add("furniture", `furniture ${f.id}`, {
+      poly: boxPoly(
+        f.centre[0] - f.size.w / 2,
+        f.centre[1] - f.size.d / 2,
+        f.centre[0] + f.size.w / 2,
+        f.centre[1] + f.size.d / 2,
+      ),
+      z0,
+      z1,
+    });
+  }
+  const thick = new Map(level.walls.map((w) => [w.id, w.thickness] as const));
+  const reach = OPENING_DETAIL.casingProud(Number.POSITIVE_INFINITY) * MM;
+  for (const b of level.openings) {
+    const fb = jambFrame(b);
+    const hb = (thick.get(b.host) ?? 0) / 2 + reach;
+    if (!fb) continue;
+    site.add("opening", `opening ${b.id}`, { poly: fb.quad(0, fb.w, -hb, hb), z0: b.sill, z1: b.head }, b.id);
+    site.add("jamb", `opening ${b.id}`, { poly: fb.quad(-MM, fb.w + MM, -hb, hb), z0: 0, z1: UP }, b.id);
+  }
+  return site;
+}
 
 /**
  * The other opening of the storey whose cut overlaps this one's (two walls drawn over each other,
@@ -294,7 +284,7 @@ function curvedLining(
   z0: number,
   head: number,
   withHead: boolean,
-  prism: TrimContext["prism"],
+  prism: Prism,
 ): Array<Shell | null> {
   const f = Math.min(0.5, l / (sector.r * Math.abs(sector.sweep)));
   return bands.flatMap(([v0, v1]) => [
@@ -304,23 +294,227 @@ function curvedLining(
   ]);
 }
 
+/** The extruder `build.ts` counts degenerate holes with. */
+export type Prism = (poly: Polygon, z0: number, z1: number) => Shell | null;
+
+/** One opening the storey's trim is built for. */
+export interface TrimInput {
+  o: Opening;
+  /** The host's thickness (µm). */
+  t: number;
+  /** The head as built (µm over `e`; the opening's head capped at the host's built top). */
+  head: number;
+  /** The host's built top (µm over `e`). */
+  top: number;
+}
+
+/** An opening's trim: its parts (each a part of its node) and the ledger rows that say what was assumed. */
+export interface TrimResult {
+  parts: TrimPart[];
+  ledger: Assumption[];
+}
+
+const END = ["start", "end"] as const;
+
+/** A casing's face, as planned: its legs and head piece before anything is decided. */
+interface Face {
+  s: 1 | -1;
+  name: "+face" | "-face";
+  v0: number;
+  v1: number;
+  /** Each leg's candidate piece, then whether it stands (`null` = left out) and why not. */
+  legs: [Piece, Piece];
+  keep: [boolean, boolean];
+  /** The head piece's two ends past the jambs and its span between them, when it has one. */
+  ends: [Piece, Piece] | null;
+  mid: Piece | null;
+  endKeep: [boolean, boolean];
+  midKeep: boolean;
+}
+
+interface DoorPlan {
+  kind: "door";
+  input: TrimInput;
+  f: JambFrame;
+  result: TrimResult;
+  faces: Face[];
+  omitted: string[];
+  c: number;
+  p: number;
+  barTop: number;
+}
+
+/** A window's sill or board, as planned: its span between the jambs, and its horn past each. */
+interface Slab {
+  part: "sill" | "board";
+  core: Piece;
+  horns: [Piece | null, Piece | null];
+  hornKeep: [boolean, boolean];
+  hornWhy: [string, string];
+  coreKeep: boolean;
+  coreWhy: string;
+  /** The built polygon, once decided. */
+  built: Polygon | null;
+  thickness: number;
+}
+
+interface WindowPlan {
+  kind: "window";
+  input: TrimInput;
+  f: JambFrame;
+  result: TrimResult;
+  slabs: Slab[];
+  /** Builds the window's trim as decided (the reveal's foot is the board's top, if it stands). */
+  finish: () => void;
+}
+
 /**
- * A doorway's lining and casing (a door of any kind, or a cased `opening`), and the ledger rows that
- * say what was assumed. Nothing for an opening with no width.
+ * The trim of every opening of a storey (product-roadmap RM8.6, RM8.6b), decided all at once so it
+ * never depends on the order the plan writes its openings in (review of PR #729, S1):
+ *
+ * 1. Each doorway's casing legs are tested against the storey's fixed obstacles (`fixedObstacles`)
+ *    and every OTHER doorway's casing legs as planned. A leg that meets one is left out, never
+ *    shortened; two legs that meet each other are both left out (two doorways closer than two
+ *    casings), so neither doorway wins by coming first and a symmetric plan stays symmetric.
+ * 2. Each head piece's two ends past the jambs, one at a time (S3): an end is cut back to its jamb
+ *    when its leg was left out, or when it meets a fixed obstacle, another doorway's standing leg or
+ *    another head piece's end (both cut); its span between the jambs is left out when it meets a
+ *    fixed obstacle, a standing leg or another head piece's span (both left out).
+ * 3. Only then each window's sill and board, a casing beating a horn: each horn past a jamb is cut
+ *    back when it meets a fixed obstacle, any built casing, or another window's sill or board as
+ *    planned (both cut); a sill or board whose span still meets one of them, or another window's span,
+ *    is left out. The reveal stands on the board, or on the sill block when the board is left out.
+ *
+ * Every omission is ledgered with what it met, end by end.
  */
-export function doorTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; ledger: Assumption[] } {
-  const ledger: Assumption[] = [];
-  const parts: TrimPart[] = [];
+export function storeyTrim(
+  level: Level,
+  inputs: readonly TrimInput[],
+  e: number,
+  prism: Prism,
+  furnitureZ: (f: Level["furniture"][number]) => [number, number],
+): Map<string, TrimResult> {
+  const site = fixedObstacles(level, furnitureZ);
+  const out = new Map<string, TrimResult>();
+  const doors: DoorPlan[] = [];
+  const windows: WindowPlan[] = [];
+  for (const input of inputs) {
+    const plan = input.o.kind === "window" ? planWindow(input, level, e, prism) : planDoor(input, level, e, prism);
+    out.set(input.o.id, plan.result);
+    if (plan.kind === "door") doors.push(plan);
+    else if (plan.kind === "window") windows.push(plan);
+  }
+  // 1. Legs: against the fixed obstacles and every other doorway's legs as planned.
+  const plannedLegs = new Obstacles();
+  for (const d of doors)
+    for (const face of d.faces)
+      for (const leg of face.legs) plannedLegs.add("trim", `casing ${d.input.o.id}`, leg, d.input.o.id);
+  for (const d of doors) {
+    const id = d.input.o.id;
+    for (const face of d.faces)
+      face.legs.forEach((leg, k) => {
+        const what = site.clash(id, leg, STATIC) ?? plannedLegs.clash(id, leg, TRIM);
+        if (what) {
+          face.keep[k] = false;
+          d.omitted.push(`${face.name}:${END[k]}:${what}`);
+        }
+      });
+  }
+  // 2. Head pieces: their ends one at a time, then their spans.
+  const standingLegs = new Obstacles();
+  const plannedEnds = new Obstacles();
+  const plannedMids = new Obstacles();
+  for (const d of doors)
+    for (const face of d.faces) {
+      face.legs.forEach((leg, k) => {
+        if (face.keep[k]) standingLegs.add("trim", `casing ${d.input.o.id}`, leg, d.input.o.id);
+      });
+      if (face.ends)
+        face.ends.forEach((end, k) => {
+          if (face.keep[k]) plannedEnds.add("trim", `casing ${d.input.o.id}`, end, d.input.o.id);
+        });
+      if (face.mid) plannedMids.add("trim", `casing ${d.input.o.id}`, face.mid, d.input.o.id);
+    }
+  for (const d of doors) {
+    const id = d.input.o.id;
+    for (const face of d.faces) {
+      if (!face.ends || !face.mid) continue;
+      face.ends.forEach((end, k) => {
+        if (!face.keep[k]) {
+          face.endKeep[k] = false;
+          return;
+        }
+        const what =
+          site.clash(id, end, STATIC) ?? standingLegs.clash(id, end, TRIM) ?? plannedEnds.clash(id, end, TRIM);
+        if (what) {
+          face.endKeep[k] = false;
+          d.omitted.push(`${face.name}:head-${END[k]}:${what}`);
+        }
+      });
+      const what =
+        site.clash(id, face.mid, STATIC) ??
+        standingLegs.clash(id, face.mid, TRIM) ??
+        plannedMids.clash(id, face.mid, TRIM);
+      if (what) {
+        face.midKeep = false;
+        d.omitted.push(`${face.name}:head:${what}`);
+      }
+    }
+  }
+  const casings = new Obstacles();
+  for (const d of doors) finishDoor(d, casings, e, prism);
+  // 3. Sills and boards: a casing beats a horn; two windows' horns or spans that meet are both cut.
+  const plannedSlabs = new Obstacles();
+  const plannedCores = new Obstacles();
+  for (const w of windows)
+    for (const sl of w.slabs) {
+      plannedCores.add("trim", `${sl.part} ${w.input.o.id}`, sl.core, w.input.o.id);
+      plannedSlabs.add("trim", `${sl.part} ${w.input.o.id}`, sl.core, w.input.o.id);
+      for (const h of sl.horns) if (h) plannedSlabs.add("trim", `${sl.part} ${w.input.o.id}`, h, w.input.o.id);
+    }
+  const NEAR: readonly ObstacleClass[] = ["jamb"];
+  for (const w of windows) {
+    const id = w.input.o.id;
+    for (const sl of w.slabs) {
+      sl.horns.forEach((h, k) => {
+        if (!h) return;
+        const what = site.clash(id, h, NEAR) ?? casings.clash(id, h, TRIM) ?? plannedSlabs.clash(id, h, TRIM);
+        if (what) {
+          sl.hornKeep[k] = false;
+          sl.hornWhy[k] = what;
+        }
+      });
+      const what =
+        site.clash(id, sl.core, NEAR) ?? casings.clash(id, sl.core, TRIM) ?? plannedCores.clash(id, sl.core, TRIM);
+      if (what) {
+        sl.coreKeep = false;
+        sl.coreWhy = what;
+      }
+    }
+  }
+  for (const w of windows) w.finish();
+  return out;
+}
+
+/** Plans a doorway's lining (built at once: it stands in its own cut) and its casing's candidates. */
+function planDoor(
+  input: TrimInput,
+  level: Level,
+  e: number,
+  prism: Prism,
+): DoorPlan | { kind: "none"; result: TrimResult } {
+  const { o, t, head, top } = input;
+  const result: TrimResult = { parts: [], ledger: [] };
+  const { parts, ledger } = result;
   const f = jambFrame(o);
-  if (!f) return { parts, ledger };
-  const { e, t, head, top, prism, site } = ctx;
+  if (!f) return { kind: "none", result };
   const tm = t / MM;
   const kind = o.kind;
   const door = kind === "door";
   const sector = cutSector(o.cut, o.jambs, o.centre);
   // No trim where it cannot stand: a cut another opening's overlaps, or a door on a curved host,
   // whose closed leaf is the chord between its jambs (inside the arc's lining).
-  const blocked = cutOverlap(o, ctx.level);
+  const blocked = cutOverlap(o, level);
   if (blocked || (door && sector)) {
     ledger.push({
       kind,
@@ -330,7 +524,7 @@ export function doorTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; led
       provenance: "default",
       rule: "door-trim-omitted",
     });
-    return { parts, ledger };
+    return { kind: "none", result };
   }
   const l = OPENING_DETAIL.lining(tm) * MM;
   const slot = (OPENING_DETAIL.slot * MM) / 2;
@@ -369,87 +563,104 @@ export function doorTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; led
   const why = o.doorKind === "garage" ? "garage" : sector ? "curved" : null;
   if (why) {
     ledger.push({ kind, id: o.id, field: "casing", value: why, provenance: "default", rule: "door-casing-omitted" });
-    return { parts, ledger };
+    return { kind: "none", result };
   }
   const c = OPENING_DETAIL.casingWidth(tm) * MM;
   const p = OPENING_DETAIL.casingProud(tm) * MM;
   // A barn door's panel hangs on its `swing` face (the core's `door-panels.ts`): `in` is `+v`.
   const panel = o.doorKind === "barn" ? (o.swing === "out" ? -1 : 1) : 0;
-  const casing: Array<Shell | null> = [];
   const omitted: string[] = [];
   const barTop = Math.min(head + c, top);
+  const faces: Face[] = [];
   for (const s of [1, -1] as const) {
+    const name: Face["name"] = s > 0 ? "+face" : "-face";
     if (s === panel) {
-      omitted.push(`${s > 0 ? "+" : "-"}face:barn`);
+      omitted.push(`${name}:barn`);
       continue;
     }
     const [v0, v1] = s > 0 ? [half, half + p] : [-half - p, -half];
-    let [u0, u1] = [-c, f.w + c];
-    const face = s > 0 ? "+face" : "-face";
-    const ALL: readonly ObstacleClass[] = ["wall", "column", "furniture", "opening", "trim"];
-    for (const end of [0, 1] as const) {
-      const leg = end === 0 ? f.quad(-c, 0, v0, v1) : f.quad(f.w, f.w + c, v0, v1);
-      const what = site.clash(o.id, leg, 0, head, ALL);
-      if (what) {
-        // Left out, never shortened (design §2.1); the head piece then stops at that jamb.
-        omitted.push(`${face}:${end === 0 ? "start" : "end"}:${what}`);
-        if (end === 0) u0 = 0;
-        else u1 = f.w;
-        continue;
-      }
-      casing.push(prism(leg, e, zh));
-      site.built(o.id, leg, 0, head);
-    }
-    if (barTop > head) {
-      // The head piece over the full width; where a neighbour's casing stands past a jamb, it stops
-      // at the jamb (review M2), and where it still meets something, it is left out.
-      let bar = f.quad(u0, u1, v0, v1);
-      let what = site.clash(o.id, bar, head, barTop, ALL);
-      if (what && (u0 < 0 || u1 > f.w)) {
-        omitted.push(`${face}:head-ends:${what}`);
-        [u0, u1] = [0, f.w];
-        bar = f.quad(u0, u1, v0, v1);
-        what = site.clash(o.id, bar, head, barTop, ALL);
-      }
-      if (what) omitted.push(`${face}:head:${what}`);
-      else {
-        casing.push(prism(bar, zh, e + barTop));
-        site.built(o.id, bar, head, barTop);
-      }
+    const bar = barTop > head;
+    faces.push({
+      s,
+      name,
+      v0,
+      v1,
+      legs: [
+        { poly: f.quad(-c, 0, v0, v1), z0: 0, z1: head },
+        { poly: f.quad(f.w, f.w + c, v0, v1), z0: 0, z1: head },
+      ],
+      keep: [true, true],
+      ends: bar
+        ? [
+            { poly: f.quad(-c, 0, v0, v1), z0: head, z1: barTop },
+            { poly: f.quad(f.w, f.w + c, v0, v1), z0: head, z1: barTop },
+          ]
+        : null,
+      mid: bar ? { poly: f.quad(0, f.w, v0, v1), z0: head, z1: barTop } : null,
+      endKeep: [true, true],
+      midKeep: true,
+    });
+  }
+  return { kind: "door", input, f, result, faces, omitted, c, p, barTop };
+}
+
+/** Builds a doorway's casing as decided, registers what stands in `casings`, and ledgers it. */
+function finishDoor(d: DoorPlan, casings: Obstacles, e: number, prism: Prism): void {
+  const { o, head } = d.input;
+  const { f, c, p, barTop } = d;
+  const shells: Array<Shell | null> = [];
+  const id = o.id;
+  for (const face of d.faces) {
+    face.legs.forEach((leg, k) => {
+      if (!face.keep[k]) return;
+      shells.push(prism(leg.poly, e, e + head));
+      casings.add("trim", `casing ${id}`, leg, id);
+    });
+    if (face.ends && face.midKeep) {
+      const u0 = face.endKeep[0] ? -c : 0;
+      const u1 = face.endKeep[1] ? f.w + c : f.w;
+      const bar = { poly: f.quad(u0, u1, face.v0, face.v1), z0: head, z1: barTop };
+      shells.push(prism(bar.poly, e + head, e + barTop));
+      casings.add("trim", `casing ${id}`, bar, id);
     }
   }
-  if (casing.length) parts.push({ part: "casing", shells: casing });
+  const { parts, ledger } = d.result;
+  if (shells.length) parts.push({ part: "casing", shells });
   ledger.push({
-    kind,
-    id: o.id,
+    kind: o.kind,
+    id,
     field: "casing_mm",
     value: { width: c / MM, proud: p / MM, head: barTop > head },
     provenance: "default",
     rule: "door-casing-default",
   });
-  if (omitted.length)
+  if (d.omitted.length)
     ledger.push({
-      kind,
-      id: o.id,
+      kind: o.kind,
+      id,
       field: "casing",
-      value: omitted,
+      value: d.omitted,
       provenance: "default",
       rule: "door-casing-omitted",
     });
-  return { parts, ledger };
 }
 
-/** A window's reveal linings, exterior sill and interior board, and their ledger rows. */
-export function windowTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; ledger: Assumption[] } {
-  const ledger: Assumption[] = [];
-  const parts: TrimPart[] = [];
+/** Plans a window's reveal, sill and board: the curved and the unsilled cases are built at once. */
+function planWindow(
+  input: TrimInput,
+  level: Level,
+  e: number,
+  prism: Prism,
+): WindowPlan | { kind: "none"; result: TrimResult } {
+  const { o, t, head, top } = input;
+  const result: TrimResult = { parts: [], ledger: [] };
+  const { parts, ledger } = result;
   const f = jambFrame(o);
-  if (!f) return { parts, ledger };
-  const { e, t, head, top, prism, site } = ctx;
+  if (!f) return { kind: "none", result };
   const tm = t / MM;
   const half = t / 2;
   const ff = Math.min(OPENING_DETAIL.frameHalfDepth * MM, half);
-  const inside = insideOf(o, t, ctx.level);
+  const inside = insideOf(o, t, level);
   ledger.push({
     kind: "window",
     id: o.id,
@@ -458,8 +669,8 @@ export function windowTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; l
     provenance: "derived",
     rule: "window-inside-probe",
   });
-  if (inside === null) return { parts, ledger };
-  const blocked = cutOverlap(o, ctx.level);
+  if (inside === null) return { kind: "none", result };
+  const blocked = cutOverlap(o, level);
   if (blocked) {
     ledger.push({
       kind: "window",
@@ -469,7 +680,7 @@ export function windowTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; l
       provenance: "default",
       rule: "window-trim-omitted",
     });
-    return { parts, ledger };
+    return { kind: "none", result };
   }
   const sector = cutSector(o.cut, o.jambs, o.centre);
   const ends = sector ? null : cutEnds(o, f.w);
@@ -479,51 +690,56 @@ export function windowTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; l
   const withHead = head < top;
   const bt = OPENING_DETAIL.boardThickness(tm) * MM;
   const st = OPENING_DETAIL.sillThickness(tm) * MM;
-  // The reveal: the interior half (both halves of an interior window), from the board (or the sill)
-  // to the head; none at a mitred end, where the window turns the corner and has no jamb.
   const rl = OPENING_DETAIL.reveal(tm) * MM;
   const sides: Array<1 | -1> = inside === "both" ? [1, -1] : [inside];
-  const reveal: Array<Shell | null> = [];
-  if (half - ff >= MM) {
-    for (const s of sides) {
-      const [v0, v1] = s > 0 ? [ff, half] : [-half, -ff];
-      const base = hasSill && inside !== "both" ? zs + bt : zs;
-      if (sector) {
-        // A millimetre off the frame: the arc's chords differ between the two bands, and the reveal
-        // would otherwise overlap the frame by a sliver in the plane of its head.
-        const k = sectorSign(o, sector);
-        const [a, b] = s > 0 ? [ff + MM, half] : [-half, -ff - MM];
-        reveal.push(
-          ...curvedLining(
-            sector,
-            rl,
-            [[a * k, b * k].sort((x, y) => x - y) as [number, number]],
-            base,
-            zh,
-            withHead,
-            prism,
-          ),
-        );
-        continue;
+  // The reveal: the interior half (both halves of an interior window), from the board, if it stands
+  // (RM8.6b n5), or the sill block, to the head; none at a mitred end, where the window turns the
+  // corner and has no jamb.
+  const reveal = (boardBuilt: boolean): void => {
+    const shells: Array<Shell | null> = [];
+    if (half - ff >= MM) {
+      for (const s of sides) {
+        const [v0, v1] = s > 0 ? [ff, half] : [-half, -ff];
+        const base = boardBuilt ? zs + bt : zs;
+        if (sector) {
+          // A millimetre off the frame: the arc's chords differ between the two bands, and the reveal
+          // would otherwise overlap the frame by a sliver in the plane of its head.
+          const k = sectorSign(o, sector);
+          const [a, b] = s > 0 ? [ff + MM, half] : [-half, -ff - MM];
+          shells.push(
+            ...curvedLining(
+              sector,
+              rl,
+              [[a * k, b * k].sort((x, y) => x - y) as [number, number]],
+              base,
+              zh,
+              withHead,
+              prism,
+            ),
+          );
+          continue;
+        }
+        const m0 = ends?.mitred[0] ?? false;
+        const m1 = ends?.mitred[1] ?? false;
+        if (!m0) shells.push(prism(f.quad(0, rl, v0, v1), base, zh));
+        if (!m1) shells.push(prism(f.quad(f.w - rl, f.w, v0, v1), base, zh));
+        const [a, b] = [m0 ? 0 : rl, m1 ? f.w : f.w - rl];
+        if (withHead && b > a) shells.push(prism(f.quad(a, b, v0, v1), zh - rl, zh));
       }
-      const m0 = ends?.mitred[0] ?? false;
-      const m1 = ends?.mitred[1] ?? false;
-      if (!m0) reveal.push(prism(f.quad(0, rl, v0, v1), base, zh));
-      if (!m1) reveal.push(prism(f.quad(f.w - rl, f.w, v0, v1), base, zh));
-      const [a, b] = [m0 ? 0 : rl, m1 ? f.w : f.w - rl];
-      if (withHead && b > a) reveal.push(prism(f.quad(a, b, v0, v1), zh - rl, zh));
     }
-  }
-  if (reveal.length) parts.push({ part: "reveal", shells: reveal });
-  ledger.push({
-    kind: "window",
-    id: o.id,
-    field: "reveal_mm",
-    value: reveal.length ? { thickness: rl / MM, head: withHead } : "omitted",
-    provenance: "default",
-    rule: "window-reveal-lining",
-  });
+    // The reveal comes first among the window's parts and rows.
+    if (shells.length) parts.unshift({ part: "reveal", shells });
+    ledger.splice(1, 0, {
+      kind: "window",
+      id: o.id,
+      field: "reveal_mm",
+      value: shells.length ? { thickness: rl / MM, head: withHead } : "omitted",
+      provenance: "default",
+      rule: "window-reveal-lining",
+    });
+  };
   if (inside === "both" || !hasSill) {
+    reveal(false);
     ledger.push({
       kind: "window",
       id: o.id,
@@ -532,69 +748,17 @@ export function windowTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; l
       provenance: "derived",
       rule: "window-sill-omitted",
     });
-    return { parts, ledger };
+    return { kind: "none", result };
   }
   const sIn = inside;
   const sOut = -inside as 1 | -1;
-  const proj = OPENING_DETAIL.sillProjection(tm) * MM;
-  const horn = OPENING_DETAIL.sillHorn(tm) * MM;
-  const over = OPENING_DETAIL.boardOverhang(tm) * MM;
-  /** A slab on side `s` from the frame's face to `reach` past the wall's, `past0`/`past1` beyond each jamb. */
-  const slab = (s: 1 | -1, reach: number, past0: number, past1: number): Polygon => {
-    const [va, vb] = s > 0 ? [ff, half + reach] : [-half - reach, -ff];
-    if (!ends) return f.quad(-past0, f.w + past1, va, vb);
-    const ua = (v: number): number => (ends.mitred[0] ? ends.u(0, v) : -past0);
-    const ub = (v: number): number => (ends.mitred[1] ? ends.u(1, v) : f.w + past1);
-    return { outer: [f.at(ua(va), va), f.at(ub(va), va), f.at(ub(vb), vb), f.at(ua(vb), vb)] };
-  };
-  /**
-   * A sill or a board past each jamb by `past`, unless that end would stand in a neighbour's doorway
-   * or trim (review M2: two windows close together, a window beside a door's casing): then that end
-   * stops at its jamb; and if the slab still meets one, it is left out. Each is ledgered.
-   */
-  const NEAR: readonly ObstacleClass[] = ["opening", "trim"];
-  const fitSlab = (part: string, s: 1 | -1, reach: number, past: number, z1: number): Polygon | null => {
-    const tries: Array<[number, number, string[]]> = [
-      [past, past, []],
-      [0, past, ["start"]],
-      [past, 0, ["end"]],
-      [0, 0, ["start", "end"]],
-    ];
-    let last = "";
-    for (const [p0, p1, cut] of tries) {
-      const poly = slab(s, reach, p0, p1);
-      const what = site.clash(o.id, poly, o.sill, z1, NEAR);
-      if (!what) {
-        if (cut.length)
-          ledger.push({
-            kind: "window",
-            id: o.id,
-            field: `${part}_horn`,
-            value: cut.map((x) => `${x}:${last}`),
-            provenance: "derived",
-            rule: "window-sill-horn-omitted",
-          });
-        site.built(o.id, poly, o.sill, z1);
-        return poly;
-      }
-      last = what;
-    }
-    ledger.push({
-      kind: "window",
-      id: o.id,
-      field: part,
-      value: `clash ${last}`,
-      provenance: "derived",
-      rule: "window-sill-omitted",
-    });
-    return null;
-  };
   if (sector) {
     const k = sectorSign(o, sector);
     const band = (s: 1 | -1): [number, number] =>
       (s > 0 ? [ff * k, half * k] : [-half * k, -ff * k]).sort((a, b) => a - b) as [number, number];
     const [o0, o1] = band(sOut);
     const [i0, i1] = band(sIn);
+    reveal(true);
     parts.push({ part: "sill", shells: [prism(sectorBand(sector, o0, o1), zs, zs + st)] });
     parts.push({ part: "board", shells: [prism(sectorBand(sector, i0, i1), zs, zs + bt)] });
     ledger.push({
@@ -605,31 +769,126 @@ export function windowTrim(o: Opening, ctx: TrimContext): { parts: TrimPart[]; l
       provenance: "default",
       rule: "window-sill-curved-inside-cut",
     });
-    return { parts, ledger };
+    return { kind: "none", result };
   }
-  const sillPoly = fitSlab("sill", sOut, proj, horn, o.sill + st);
-  const boardPoly = fitSlab("board", sIn, over, over, o.sill + bt);
-  if (sillPoly) parts.push({ part: "sill", shells: [prism(sillPoly, zs, zs + st)] });
-  if (boardPoly) parts.push({ part: "board", shells: [prism(boardPoly, zs, zs + bt)] });
-  ledger.push(
-    {
-      kind: "window",
-      id: o.id,
-      field: "sill_mm",
-      value: { thickness: st / MM, projection: proj / MM, horn: horn / MM, mitred: ends?.mitred ?? [false, false] },
-      provenance: "default",
-      rule: "window-sill-exterior",
+  const proj = OPENING_DETAIL.sillProjection(tm) * MM;
+  const horn = OPENING_DETAIL.sillHorn(tm) * MM;
+  const over = OPENING_DETAIL.boardOverhang(tm) * MM;
+  /** A slab on side `s` from the frame's face to `reach` past the wall's, its ends at `u0`/`u1`. */
+  const quadAt = (s: 1 | -1, reach: number, u0: (v: number) => number, u1: (v: number) => number): Polygon => {
+    const [va, vb] = s > 0 ? [ff, half + reach] : [-half - reach, -ff];
+    return { outer: [f.at(u0(va), va), f.at(u1(va), va), f.at(u1(vb), vb), f.at(u0(vb), vb)] };
+  };
+  const jamb0 = (v: number): number => (ends?.mitred[0] ? ends.u(0, v) : 0);
+  const jamb1 = (v: number): number => (ends?.mitred[1] ? ends.u(1, v) : f.w);
+  const slabOf = (part: "sill" | "board", s: 1 | -1, reach: number, past: number, thickness: number): Slab => {
+    const z = { z0: o.sill, z1: o.sill + thickness };
+    return {
+      part,
+      core: { poly: quadAt(s, reach, jamb0, jamb1), ...z },
+      // No horn at a mitred end (a window run to a corner stops on the mitre).
+      horns: [
+        ends?.mitred[0]
+          ? null
+          : {
+              poly: quadAt(
+                s,
+                reach,
+                () => -past,
+                () => 0,
+              ),
+              ...z,
+            },
+        ends?.mitred[1]
+          ? null
+          : {
+              poly: quadAt(
+                s,
+                reach,
+                () => f.w,
+                () => f.w + past,
+              ),
+              ...z,
+            },
+      ],
+      hornKeep: [true, true],
+      hornWhy: ["", ""],
+      coreKeep: true,
+      coreWhy: "",
+      built: null,
+      thickness,
+    };
+  };
+  const slabs = [slabOf("sill", sOut, proj, horn, st), slabOf("board", sIn, over, over, bt)];
+  const finish = (boardBuilt: boolean): void => {
+    reveal(boardBuilt);
+    for (const sl of slabs) {
+      if (!sl.built) continue;
+      parts.push({ part: sl.part, shells: [prism(sl.built, zs, zs + sl.thickness)] });
+    }
+    const [sill, board] = slabs as [Slab, Slab];
+    if (sill.built)
+      ledger.push({
+        kind: "window",
+        id: o.id,
+        field: "sill_mm",
+        value: { thickness: st / MM, projection: proj / MM, horn: horn / MM, mitred: ends?.mitred ?? [false, false] },
+        provenance: "default",
+        rule: "window-sill-exterior",
+      });
+    if (board.built)
+      ledger.push({
+        kind: "window",
+        id: o.id,
+        field: "board_mm",
+        value: { thickness: bt / MM, overhang: over / MM },
+        provenance: "default",
+        rule: "window-board-interior",
+      });
+  };
+  return {
+    kind: "window",
+    input,
+    f,
+    result,
+    slabs,
+    finish: () => {
+      // Each slab as decided: its span, with each horn that stands; or left out, ledgered.
+      for (const sl of slabs) {
+        if (!sl.coreKeep) {
+          ledger.push({
+            kind: "window",
+            id: o.id,
+            field: sl.part,
+            value: `clash ${sl.coreWhy}`,
+            provenance: "derived",
+            rule: sl.part === "sill" ? "window-sill-omitted" : "window-board-omitted",
+          });
+          continue;
+        }
+        const cut = END.flatMap((name, k) => (sl.horns[k] && !sl.hornKeep[k] ? [`${name}:${sl.hornWhy[k]}`] : []));
+        if (cut.length)
+          ledger.push({
+            kind: "window",
+            id: o.id,
+            field: `${sl.part}_horn`,
+            value: cut,
+            provenance: "derived",
+            rule: "window-sill-horn-omitted",
+          });
+        const s = sl.part === "sill" ? sOut : sIn;
+        const reach = sl.part === "sill" ? proj : over;
+        const past = sl.part === "sill" ? horn : over;
+        sl.built = quadAt(
+          s,
+          reach,
+          sl.horns[0] && sl.hornKeep[0] ? () => -past : jamb0,
+          sl.horns[1] && sl.hornKeep[1] ? () => f.w + past : jamb1,
+        );
+      }
+      finish((slabs[1] as Slab).built !== null);
     },
-    {
-      kind: "window",
-      id: o.id,
-      field: "board_mm",
-      value: { thickness: bt / MM, overhang: over / MM },
-      provenance: "default",
-      rule: "window-board-interior",
-    },
-  );
-  return { parts, ledger };
+  };
 }
 
 /**

@@ -64,7 +64,7 @@ import { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, overlapArea } from "../scene3d/ov
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { coveredBy, type Rect, rectMinus, slabRegion } from "./slab.js";
-import { doorTrim, type TrimContext, TrimSite, windowTrim } from "./openings.js";
+import { storeyTrim, type TrimInput } from "./openings.js";
 import { stairDetail } from "./stair.js";
 import {
   CORE_POST_PITCH_MM,
@@ -658,14 +658,42 @@ function levelNodes(
   });
 
   const hostOf = new Map(lv.walls.map((w) => [w.id, w] as const));
-  // What the storey's trim is built round (card RM8.6, review M2/m4/m7): its walls, columns,
-  // doorways and standing furniture, each piece of furniture at the heights it is built to here.
-  const site = new TrimSite(lv, (f) => {
-    const family = f.asset.startsWith("t0:") ? f.asset.slice(3) : undefined;
-    const h = family ? (T0_HEIGHT_MM[family] ?? 0) : (FURNITURE_HEIGHT_MM[f.category] ?? FURNITURE_DEFAULT_MM);
-    const mount = family ? (T0_MOUNT_MM[family] ?? 0) : 0;
-    return [(FLOOR_FINISH_MM + mount) * MM, (FLOOR_FINISH_MM + h) * MM];
+  // A part's node is named `<kind>:<id>:<part>` (V-GLTF-02), so an id holding a `:`, a `/` or a
+  // space cannot name one: such an opening (a passage the core names after its two rooms,
+  // `opening between a and b`, `a|b:open`) keeps no trim, and the ledger says so.
+  const nameless = (o: (typeof lv.openings)[number]): boolean => /[:/\s]/.test(o.id);
+  // The trim (card RM8.6, `openings.ts`): every opening's at once, so it never depends on the order
+  // the plan writes them in (RM8.6b), round the storey's walls, columns, doorways and furniture,
+  // each piece of furniture at the heights it is built to below (RM8.6b n3).
+  const trimInputs: TrimInput[] = lv.openings.flatMap((o) => {
+    const host = hostOf.get(o.host);
+    if (!host || nameless(o)) return [];
+    const head = Math.min(o.head, hostHeight.get(o.host) ?? o.head);
+    return [{ o, t: host.thickness, head, top: hostHeight.get(o.host) ?? host.height }];
   });
+  const trims = storeyTrim(
+    lv,
+    trimInputs,
+    e,
+    (poly, a, b) => prism(poly, a, b),
+    (f) => {
+      const floor = FLOOR_FINISH_MM * MM;
+      const family = f.asset.startsWith("t0:") ? f.asset.slice(3) : undefined;
+      const turn = (((-f.yawDeg % 360) + 360) % 360) % 90 === 0;
+      // A T0 piece at a turn that is not a quarter turn is built as a grey box (below), at its
+      // category's grey-box height.
+      if (!family || !turn) return [floor, floor + (FURNITURE_HEIGHT_MM[f.category] ?? FURNITURE_DEFAULT_MM) * MM];
+      const h = (T0_HEIGHT_MM[family] ?? 0) * MM;
+      if (T0_HUNG_FROM_TOP.has(family)) {
+        // Hung by its top: its underside is its own size's (a television's 16:9 panel).
+        const ys = (t0Shells(f, floor)?.shells ?? []).flatMap((sh) =>
+          sh ? sh.positions.filter((_, k) => k % 3 === 1) : [],
+        );
+        return [ys.length ? Math.min(...ys) : floor, floor + h];
+      }
+      return [floor + (T0_MOUNT_MM[family] ?? 0) * MM, floor + h];
+    },
+  );
   lv.openings.forEach((o, i) => {
     const [j0, j1] = o.jambs;
     // A leaf or frame never stands above its wall: the head is capped at the host's top.
@@ -673,11 +701,8 @@ function levelNodes(
     const extras = { host: o.host, width_mm: o.width / MM, sill_mm: o.sill / MM, head_mm: o.head / MM };
     // The trim (card RM8.6, `openings.ts`): a doorway's lining and casing, a window's reveal, sill
     // and board, each a part of the opening's node, every size a share of the host's thickness.
-    const host = hostOf.get(o.host);
-    // A part's node is named `<kind>:<id>:<part>` (V-GLTF-02), so an id holding a `:`, a `/` or a
-    // space cannot name one: such an opening (a passage the core names after its two rooms,
-    // `opening between a and b`, `a|b:open`) keeps no trim, and the ledger says so.
-    if (host && /[:/\s]/.test(o.id)) {
+    const trim = trims.get(o.id);
+    if (hostOf.has(o.host) && nameless(o)) {
       ledger.push({
         kind: o.kind,
         id: o.id,
@@ -686,17 +711,7 @@ function levelNodes(
         provenance: "default",
         rule: "opening-trim-omitted",
       });
-    } else if (host) {
-      const ctx: TrimContext = {
-        e,
-        t: host.thickness,
-        head,
-        top: hostHeight.get(o.host) ?? host.height,
-        level: lv,
-        site,
-        prism: (poly, a, b) => prism(poly, a, b),
-      };
-      const trim = o.kind === "window" ? windowTrim(o, ctx) : doorTrim(o, ctx);
+    } else if (trim) {
       ledger.push(...trim.ledger);
       for (const t of trim.parts) {
         // The colour each part is built in, once per Mesh3D (card RM8.6, review m1): a drafting

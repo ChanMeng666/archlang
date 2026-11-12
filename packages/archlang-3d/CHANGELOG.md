@@ -12,7 +12,10 @@
   none, a door on a curved wall no trim; a casing leg that would stand in another wall, a column,
   standing furniture (a rug is passed through), another doorway or a neighbour's trim is left out,
   never shortened, and a sill or board end that would meet a neighbour's stops at its jamb (every
-  omission ledgered). Every window gets a reveal
+  omission ledgered). A storey's trim is decided all at once, never in the order the plan writes its
+  openings: every casing before any sill or board (a casing beats a horn), and two pieces of the same
+  rank that meet are both cut back or left out, so swapping two openings' lines changes nothing and
+  a mirror-symmetric plan gets mirror-symmetric trim. Every window gets a reveal
   lining on its inside half (`reveal`, in the frame's colour), an exterior sill proud of the outside
   face and past each jamb by 0.2 t, as the core draws it (`sill`, pale stone), and an interior board
   (`board`, oak); the outside is the core's own rule (`insideOf`, one wall thickness off each face).
@@ -21,7 +24,7 @@
   handrail 900 mm over the nosing line, a baluster a tread, a newel at each end; a level rail
   1000 mm over the stretches of a landing edge that no flight arrives on and no wall closes). Every size is a clamped share of the wall's thickness or the
   stair's own riser, going and width (`OPENING_DETAIL`, `STAIR_DETAIL`) and ledgered per opening
-  and per stair; `stair-solid-default` is gone. New exports: `doorTrim`, `windowTrim`, `insideOf`,
+  and per stair; `stair-solid-default` is gone. New exports: `storeyTrim`, `insideOf`,
   `OPENING_DETAIL`, `stairDetail`, `STAIR_DETAIL`, `STAIR_RAIL_MATERIAL`.
 
 ### Changed

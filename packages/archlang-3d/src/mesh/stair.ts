@@ -167,7 +167,8 @@ export interface StairSide {
   /** `flight <k>` or `landing <k>`, 1-based in climbing order. */
   of: string;
   side: Side;
-  against: "wall" | "open" | "flight";
+  /** `newel`: a landing edge open past it, but wholly held by the flights' newels standing on it. */
+  against: "wall" | "open" | "flight" | "newel";
 }
 
 /** A stair built in its parts (RM8.6): treads and landings, stringers, the balustrade. */
@@ -284,6 +285,9 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
       alongY(f.foot),
     );
   const flightBoxes: Box2[] = flights.map((f) => [f.at[0], f.at[1], f.at[0] + f.size.w, f.at[1] + f.size.h]);
+  const landingBoxes: Box2[] = (stair.landings ?? [])
+    .slice(0, flights.length - 1)
+    .map((l) => [l.at[0], l.at[1], l.at[0] + l.size.w, l.at[1] + l.size.h]);
   const newels: Box2[] = [];
   const landings: Array<{ box: Box2; top: number; going: number; k: number }> = [];
   let climbed = 0;
@@ -322,60 +326,81 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
     );
     keep(out.stringers, band ? section(f, band.outer, c0, c0 + sw) : null);
     keep(out.stringers, band ? section(f, band.outer, c1 - sw, c1) : null);
-    const edges: Array<{ side: Side; past: number; cc: number }> = [
-      { side: yRun ? "left" : "top", past: c0 - D.probe * MM, cc: c0 + sw / 2 },
-      { side: yRun ? "right" : "bottom", past: c1 + D.probe * MM, cc: c1 - sw / 2 },
+    const edges: Array<{ side: Side; strip: [number, number]; past: number; cc: number }> = [
+      { side: yRun ? "left" : "top", strip: [c0 - D.probe * MM, c0], past: c0 - D.probe * MM, cc: c0 + sw / 2 },
+      { side: yRun ? "right" : "bottom", strip: [c1, c1 + D.probe * MM], past: c1 + D.probe * MM, cc: c1 - sw / 2 },
     ];
-    for (const { side, past, cc } of edges) {
-      // Past it: a wall, the stair's other flight (a dog-leg's two flights side by side, with no
-      // well between them: neither gets a rail there), or nothing.
-      const q = planAt(f, Math.round(run / 2), past);
-      const besideFlight = flightBoxes.some(
-        ([a, b, c, d], j) => j !== i && q[0] > a && q[0] < c && q[1] > b && q[1] < d,
-      );
-      const against = besideFlight ? "flight" : solidAt(q) ? "wall" : "open";
+    // Along the run, `d` from the foot: the plan's run coordinate the other way round.
+    const r0 = runCoordinate(f, 0);
+    const dir = runCoordinate(f, 1) - r0;
+    const dOf = (r: number): number => dir * (r - r0);
+    for (const { side, strip, past, cc } of edges) {
+      // The stretches of this edge that the stair's other flights or its landings lie past (a
+      // dog-leg's two flights side by side, a flight beside a landing: RM8.6b n1) are taken out; each
+      // stretch left is probed at its own middle, a wall closing it or nothing past it.
+      const covered = [...flightBoxes.filter((_, j) => j !== i), ...landingBoxes]
+        .filter(([a, b, c, d]) => {
+          const [x0, x1] = yRun ? [a, c] : [b, d];
+          const [y0, y1] = yRun ? [b, d] : [a, c];
+          return (
+            x0 < strip[1] && x1 > strip[0] && y1 > Math.min(r0, r0 + dir * run) && y0 < Math.max(r0, r0 + dir * run)
+          );
+        })
+        .map(([a, b, c, d]): [number, number] => {
+          const [y0, y1] = yRun ? [b, d] : [a, c];
+          const [da, db] = [dOf(y0), dOf(y1)].sort((x, y) => x - y) as [number, number];
+          return [Math.max(0, da), Math.min(run, db)];
+        });
+      const free = freeRuns(0, run, covered);
+      const open = free.filter(([da, db]) => !solidAt(planAt(f, Math.round((da + db) / 2), past)));
+      const against = free.length === 0 ? "flight" : open.length === 0 ? "wall" : "open";
       out.sides.push({ of: `flight ${i + 1}`, side, against });
-      if (against !== "open") continue;
       const ra = Math.round(cc - railW / 2);
-      keep(
-        out.rails,
-        section(
-          f,
-          [
-            [0, Math.round(h(0) + railH - railW)],
-            [run, Math.round(h(run) + railH - railW)],
-            [run, Math.round(h(run) + railH)],
-            [0, Math.round(h(0) + railH)],
-          ],
-          ra,
-          ra + railW,
-        ),
-      );
-      // A baluster under the middle of each tread: its foot inside the stringer's sloping top, its
-      // head inside the rail's sloping underside (`lean` covers the slope across its width).
       const lean = Math.ceil((slope * bb) / 2) + MM;
       const ba = Math.round(cc - bb / 2);
-      for (let t = 0; t < n; t++) {
-        const dm = Math.round((line(t) + line(t + 1)) / 2);
+      const na = Math.round(cc - np / 2);
+      for (const [da, db] of open) {
         keep(
           out.rails,
-          solid(
-            planBox(f, dm - bb / 2, dm + bb / 2, ba, ba + bb),
-            Math.round(h(dm) + above) - lean,
-            Math.round(h(dm) + railH - railW) + lean,
+          section(
+            f,
+            [
+              [da, Math.round(h(da) + railH - railW)],
+              [db, Math.round(h(db) + railH - railW)],
+              [db, Math.round(h(db) + railH)],
+              [da, Math.round(h(da) + railH)],
+            ],
+            ra,
+            ra + railW,
           ),
         );
-      }
-      // A newel centred on each end: from the floor (or landing) the flight starts on, and from its
-      // last tread at the head, to `newelAbove` over the handrail there.
-      const na = Math.round(cc - np / 2);
-      for (const [d, za] of [
-        [0, base],
-        [run, riserTop(climbed + n)],
-      ] as const) {
-        const b = planBox(f, d - np / 2, d + np / 2, na, na + np);
-        keep(out.rails, solid(b, za, Math.round(h(d) + railH + D.newelAbove * MM)));
-        newels.push(b);
+        // A baluster under the middle of each tread along the stretch: its foot inside the
+        // stringer's sloping top, its head inside the rail's sloping underside (`lean` covers the
+        // slope across its width).
+        for (let t = 0; t < n; t++) {
+          const dm = Math.round((line(t) + line(t + 1)) / 2);
+          if (dm - bb / 2 < da || dm + bb / 2 > db) continue;
+          keep(
+            out.rails,
+            solid(
+              planBox(f, dm - bb / 2, dm + bb / 2, ba, ba + bb),
+              Math.round(h(dm) + above) - lean,
+              Math.round(h(dm) + railH - railW) + lean,
+            ),
+          );
+        }
+        // A newel centred on each end of the flight the stretch reaches: from the floor (or landing)
+        // the flight starts on, and from its last tread at the head, to `newelAbove` over the
+        // handrail there.
+        for (const [d, za] of [
+          [0, base],
+          [run, riserTop(climbed + n)],
+        ] as const) {
+          if (d !== da && d !== db) continue;
+          const nb = planBox(f, d - np / 2, d + np / 2, na, na + np);
+          keep(out.rails, solid(nb, za, Math.round(h(d) + railH + D.newelAbove * MM)));
+          newels.push(nb);
+        }
       }
     }
     climbed += n + 1;
@@ -418,8 +443,13 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
         const m = Math.round((r0 + r1) / 2);
         return !solidAt(horizontal ? [m, at + dir * p] : [at + dir * p, m]);
       });
-      const against = free.length === 0 ? "flight" : open.length === 0 ? "wall" : "open";
-      out.sides.push({ of: `landing ${k}`, side, against });
+      const sideAt = out.sides.length;
+      out.sides.push({
+        of: `landing ${k}`,
+        side,
+        against: free.length === 0 ? "flight" : open.length === 0 ? "wall" : "open",
+      });
+      let railed = false;
       const across: [number, number] =
         side === "top"
           ? [y0, y0 + railW]
@@ -437,6 +467,7 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
           const b: Box2 = horizontal ? [q0, across[0], q1, across[1]] : [across[0], q0, across[1], q1];
           keep(out.rails, solid(b, railTop - railW, railTop));
           taken.push(b);
+          railed = true;
           const len = q1 - q0;
           const count = Math.max(1, Math.min(64, Math.floor(len / going)));
           const mid = Math.round((across[0] + across[1] - bb) / 2);
@@ -447,6 +478,8 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
           }
         }
       }
+      // Open, but every open stretch already held by a flight's newels (RM8.6b n4): nothing built.
+      if (open.length > 0 && !railed) (out.sides[sideAt] as StairSide).against = "newel";
     }
   }
   return {
