@@ -26,14 +26,22 @@
  *   leaf (or a pre-A7 Scene3D leaf without its open tip) keeps its closed panel, ledgered. The 3D
  *   leaf is a fixed 40 mm (at most half the leaf) where the core draws max(40 mm, 2 pens) capped at
  *   6 % of the width, so the two slabs can differ by a few mm in thickness; both share the hinge
- *   edge on the open radius and lie inside the one sector (not a misalignment);
+ *   edge on the open radius and lie inside the one sector (not a misalignment). Its trim (card
+ *   RM8.6, `openings.ts`): a lining on the jambs and head in two halves either side of the leaf's
+ *   slot (`door:<id>:lining`) and a casing on each face (`door:<id>:casing`); a cased `opening` gets
+ *   the same, its lining whole;
  * - window: a 16 mm glass pane across the jambs and a 40 × 60 mm frame (§4.3), every part kept
- *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`);
+ *   inside its cut; on a curved host both follow the arc from jamb face to jamb face (`cutSector`).
+ *   Its trim (card RM8.6, `openings.ts`): a reveal lining on the inside half (`window:<id>:reveal`),
+ *   an exterior sill proud of the outside face and past the jambs (`sill`) and an interior board
+ *   (`board`), the outside found as the core finds it for its sill;
  * - furniture: a T0 parametric piece (`t0.ts`) fitted to its footprint for the families it covers
  *   (on the floor finish, or hung at its family's mount), each part's shell carrying its material
  *   slot (`materials.ts`), else a grey box on the floor finish, its height a per-family default;
- * - stair (card X3): stepped solids on the floor finish of the storey it climbs from, up to the next
- *   storey's floor finish (`stair.ts`): a `dir up` stair climbs from its own storey; a `dir down`
+ * - stair (card X3; in its parts since card RM8.6, `stairDetail`): tread boards with open risers and
+ *   solid landings (`stair:<id>`), two stringers a flight (`stair:<id>:stringer`) and a balustrade
+ *   on each edge with no wall past it (`stair:<id>:rail`), on the floor finish of the storey it
+ *   climbs from, up to the next storey's floor finish (`stair.ts`): a `dir up` stair climbs from its own storey; a `dir down`
  *   one is the same stair seen from above when the storey below holds a `dir up` stair of its id
  *   (built there, once), else it is built from the storey below. The void above stays as the plan
  *   puts it. A stair on the top storey climbs that storey's height; a `dir down` stair on the lowest
@@ -44,12 +52,20 @@
  *   ticks), rails and pickets on the floor level (`outdoor.ts`, every default ledgered).
  * The ground round the building is the viewer's, never a node (`GROUND_PLANE`, `materials.ts`).
  */
-import { floorFinish, GROUND_PLANE, GROUND_WASH, STAIR_MATERIAL } from "../materials.js";
+import {
+  floorFinish,
+  GROUND_PLANE,
+  GROUND_WASH,
+  STAIR_MATERIAL,
+  STAIR_RAIL_MATERIAL,
+  TRIM_MATERIAL,
+} from "../materials.js";
 import { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, overlapArea } from "../scene3d/overlap.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { coveredBy, type Rect, rectMinus, slabRegion } from "./slab.js";
-import { stairSolid } from "./stair.js";
+import { doorTrim, type TrimContext, TrimSite, windowTrim } from "./openings.js";
+import { stairDetail } from "./stair.js";
 import {
   CORE_POST_PITCH_MM,
   FENCE_HEIGHT_MM,
@@ -445,8 +461,13 @@ function levelNodes(
       climbs.push({ s, order: lv.stairs.length + i, rise: above.elevation - e, from: "above" });
   });
   const stairFloor = e + FLOOR_FINISH_MM * MM;
+  // The probe a stair's balustrade asks (card RM8.6): is this plan point inside a wall's body (not
+  // in one of its openings) or a column of the storey?
+  const solidAt = (p: Pt): boolean =>
+    lv.walls.some((w) => w.body.some((b) => inRing(p, b.outer) && !(b.holes ?? []).some((r) => inRing(p, r)))) ||
+    lv.columns.some((c) => p[0] > c.at[0] && p[0] < c.at[0] + c.size.w && p[1] > c.at[1] && p[1] < c.at[1] + c.size.h);
   for (const { s, order, rise, from } of climbs) {
-    const solid = stairSolid(s, stairFloor, rise);
+    const solid = stairDetail(s, stairFloor, rise, solidAt);
     if (!solid) {
       ledger.push({
         kind: "stair",
@@ -468,7 +489,14 @@ function levelNodes(
           provenance: "default",
           rule: "stair-material-default",
         },
-        { kind: "stair", field: "form", value: "solid", provenance: "default", rule: "stair-solid-default" },
+        // Card RM8.6: the handrails, balusters and newels in the walnut of the palette.
+        {
+          kind: "stair",
+          field: "material(rail)",
+          value: STAIR_RAIL_MATERIAL,
+          provenance: "default",
+          rule: "stair-rail-material-default",
+        },
       );
     }
     // One riser per tread the plan draws, and one at each flight's head: derived, never assumed.
@@ -480,7 +508,70 @@ function levelNodes(
       provenance: "derived",
       rule: "stair-risers-from-treads",
     });
-    node("stair", s.id, order, [...solid.shells, ...Array.from({ length: solid.dropped }, () => null)], {
+    // Its parts' sizes, each a share of its own riser, going and width (card RM8.6, design
+    // `visual-language.md` §2.3), and what each probed edge met: the stair's own facts, per stair.
+    const d = solid.dims;
+    ledger.push(
+      {
+        kind: "stair",
+        id: s.id,
+        field: "tread_mm",
+        value: { thickness: d.tread, nosing: d.nosing },
+        provenance: "default",
+        rule: "stair-tread-default",
+      },
+      { kind: "stair", id: s.id, field: "risers_form", value: "open", provenance: "default", rule: "stair-open-riser" },
+      {
+        kind: "stair",
+        id: s.id,
+        field: "stringer_mm",
+        value: d.stringer,
+        provenance: "default",
+        rule: "stair-stringer-default",
+      },
+      ...(s.landings?.length
+        ? [
+            {
+              kind: "stair",
+              id: s.id,
+              field: "landing",
+              value: "solid",
+              provenance: "default" as const,
+              rule: "stair-landing-solid",
+            },
+          ]
+        : []),
+      {
+        kind: "stair",
+        id: s.id,
+        field: "balustrade_mm",
+        value: d.balustrade,
+        provenance: "default",
+        rule: "stair-balustrade-default",
+      },
+      ...solid.sides.map((x) => ({
+        kind: "stair",
+        id: s.id,
+        field: `side(${x.of}, ${x.side})`,
+        value: x.against,
+        provenance: "derived" as const,
+        rule: "stair-balustrade-side",
+      })),
+      // The guard round the void of the storey above is not built.
+      ...(above
+        ? [
+            {
+              kind: "stair",
+              id: s.id,
+              field: "void_guard",
+              value: "omitted",
+              provenance: "default" as const,
+              rule: "stair-void-guard-omitted",
+            },
+          ]
+        : []),
+    );
+    node("stair", s.id, order, [...solid.treads, ...Array.from({ length: solid.dropped }, () => null)], {
       dir: s.dir,
       width_mm: s.width / MM,
       flights: s.flights?.length ?? 0,
@@ -488,6 +579,8 @@ function levelNodes(
       rise_mm: rise / MM,
       ...(from === "above" ? { from_storey_above: true } : {}),
     });
+    node("stair", s.id, order, solid.stringers, {}, "stringer");
+    if (solid.rails.length) node("stair", s.id, order, solid.rails, {}, "rail");
   }
 
   const openings = new Map(lv.openings.map((o) => [o.id, o] as const));
@@ -564,11 +657,64 @@ function levelNodes(
     );
   });
 
+  const hostOf = new Map(lv.walls.map((w) => [w.id, w] as const));
+  // What the storey's trim is built round (card RM8.6, review M2/m4/m7): its walls, columns,
+  // doorways and standing furniture, each piece of furniture at the heights it is built to here.
+  const site = new TrimSite(lv, (f) => {
+    const family = f.asset.startsWith("t0:") ? f.asset.slice(3) : undefined;
+    const h = family ? (T0_HEIGHT_MM[family] ?? 0) : (FURNITURE_HEIGHT_MM[f.category] ?? FURNITURE_DEFAULT_MM);
+    const mount = family ? (T0_MOUNT_MM[family] ?? 0) : 0;
+    return [(FLOOR_FINISH_MM + mount) * MM, (FLOOR_FINISH_MM + h) * MM];
+  });
   lv.openings.forEach((o, i) => {
     const [j0, j1] = o.jambs;
     // A leaf or frame never stands above its wall: the head is capped at the host's top.
     const head = Math.min(o.head, hostHeight.get(o.host) ?? o.head);
     const extras = { host: o.host, width_mm: o.width / MM, sill_mm: o.sill / MM, head_mm: o.head / MM };
+    // The trim (card RM8.6, `openings.ts`): a doorway's lining and casing, a window's reveal, sill
+    // and board, each a part of the opening's node, every size a share of the host's thickness.
+    const host = hostOf.get(o.host);
+    // A part's node is named `<kind>:<id>:<part>` (V-GLTF-02), so an id holding a `:`, a `/` or a
+    // space cannot name one: such an opening (a passage the core names after its two rooms,
+    // `opening between a and b`, `a|b:open`) keeps no trim, and the ledger says so.
+    if (host && /[:/\s]/.test(o.id)) {
+      ledger.push({
+        kind: o.kind,
+        id: o.id,
+        field: "trim",
+        value: "the id names no part node",
+        provenance: "default",
+        rule: "opening-trim-omitted",
+      });
+    } else if (host) {
+      const ctx: TrimContext = {
+        e,
+        t: host.thickness,
+        head,
+        top: hostHeight.get(o.host) ?? host.height,
+        level: lv,
+        site,
+        prism: (poly, a, b) => prism(poly, a, b),
+      };
+      const trim = o.kind === "window" ? windowTrim(o, ctx) : doorTrim(o, ctx);
+      ledger.push(...trim.ledger);
+      for (const t of trim.parts) {
+        // The colour each part is built in, once per Mesh3D (card RM8.6, review m1): a drafting
+        // default like every other, ledgered.
+        const slot = `${o.kind}:${t.part}`;
+        if (!defaulted.has(`trim:${slot}`)) {
+          defaulted.add(`trim:${slot}`);
+          ledger.push({
+            kind: o.kind,
+            field: `material(${t.part})`,
+            value: TRIM_MATERIAL[slot as keyof typeof TRIM_MATERIAL] ?? o.kind,
+            provenance: "default",
+            rule: "trim-material-default",
+          });
+        }
+        node(o.kind, o.id, i, t.shells, { host: o.host }, t.part);
+      }
+    }
     if (o.kind === "door") {
       const z0 = e + o.sill;
       const swung = o.leaves?.every((l) => l.length === 3) ? (o.leaves as Array<[Pt, Pt, Pt]>) : undefined;
@@ -666,7 +812,7 @@ function levelNodes(
         "frame",
       );
     }
-    // A cased opening (`kind: "opening"`) is the hole itself: nothing to build.
+    // A cased opening (`kind: "opening"`) is the hole itself and its trim: nothing more to build.
   });
 
   const floorTop = e + FLOOR_FINISH_MM * MM;

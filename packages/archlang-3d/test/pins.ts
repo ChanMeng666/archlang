@@ -35,5 +35,12 @@ export const PIN_GENERATOR = "archlang-3d 0.0.0";
  * instead of one `window`. The binary chunk (every vertex and index) is byte-identical; only the
  * JSON's materials, the primitives' material indices and the three floor nodes' extras moved.
  * 111 908 → 112 436 bytes.
+ *
+ * Moved by product-roadmap card RM8.6 (was fe9df0cb…) with the Mesh3D: the 20 trim nodes of its
+ * doors and windows (`lining`, `casing`; `reveal`, `sill`, `board`), and the three materials they
+ * add (`window:reveal`, `window:sill`, `window:board`; a door's trim is written in its `door` oak).
+ * The writer names a part's own material only where the shared palette has one
+ * (`bodyMaterialName`); with the 20 nodes taken out of the Mesh3D the GLB hashes to fe9df0cb…
+ * exactly. 112 436 → 137 844 bytes.
  */
-export const LANEWAY_GLB_SHA256 = "fe9df0cb0589599c359f4b3c9c8625cd1baf34a35b1ffa40388475c7f56e0eb5";
+export const LANEWAY_GLB_SHA256 = "73182a460fce3840ba05a9d74e62f504311354d443617b309e7461f13999917f";

@@ -291,7 +291,7 @@ export function timeline(mesh: Mesh3D): ReplayEvent[] {
     if (isGhost(n)) rise = [a, w];
     else if (wallRise.has(n.key)) rise = wallRise.get(n.key) as [number, number];
     else if (thingRise.has(n.key)) rise = thingRise.get(n.key) as [number, number];
-    else if (n.kind === "door" || n.kind === "window")
+    else if (n.kind === "door" || n.kind === "window" || n.kind === "opening")
       rise = hostRise.get(`${n.level}/${String(n.extras.host)}`) ?? [a, w];
     else if (isFlat(n)) {
       const at = appearOf.get(n.key) ?? a;

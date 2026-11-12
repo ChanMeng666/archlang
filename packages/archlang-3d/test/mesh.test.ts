@@ -406,5 +406,17 @@ describe("Mesh3D determinism and budget", () => {
  * neither, so no node moved: with that one row replaced by the two old ones, the Mesh3D hashes to
  * 334b7949… exactly (as every one of the 45 corpus plans without a site does to its old hash). Its
  * GLB (no ledger) and its event table are unchanged.
+ *
+ * Moved by product-roadmap card RM8.6 (was 944930c9…): the doors and windows gain their trim
+ * (`src/mesh/openings.ts`; design `visual-language.md` §2.1–§2.2): 20 nodes, each door's `lining`
+ * and `casing` (4 doors) and each window's `reveal`, `sill` and `board` (4 windows), and 24 ledger
+ * rows (`door-lining-default` and `door-casing-default` per door; `window-inside-probe`,
+ * `window-reveal-lining`, `window-sill-exterior` and `window-board-interior` per window). With those
+ * 20 nodes and 24 rows taken out, the Mesh3D hashes to 944930c9… exactly: no leaf, frame, pane,
+ * wall or other node moved. Laneway has no stair and no tree (the card's loft moves nothing here).
+ * Review m1 (ac7c5b22… → 25483efd…) adds the trim's colours to the ledger, once per Mesh3D: five
+ * `trim-material-default` rows (a door's lining and casing, a window's reveal, sill and board). With
+ * the 20 nodes and those 29 rows taken out, the Mesh3D still hashes to 944930c9… exactly; its GLB
+ * (no ledger) and its event table did not move with the review.
  */
-const LANEWAY_MESH_SHA256 = "944930c974a057638c8f690fcd4c825ffcc6a99f59b6ea4ac3726db5048529a1";
+const LANEWAY_MESH_SHA256 = "25483efd23b9503460c5314ac8b896e390907307761522cfe0dc13caa3986d74";

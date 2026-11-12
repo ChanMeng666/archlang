@@ -477,9 +477,12 @@ export function sectionRing(u0: number, u1: number, v0: number, v1: number, shap
  */
 export function partShell(p: Part, dropped?: { holes: number }): Shell | null {
   if (p.axis && p.holes?.length) throw new Error("a sideways T0 part takes no holes");
+  if (p.loft && (p.axis || p.holes?.length || p.profile)) throw new Error("a lofted T0 part is vertical and plain");
   if (!(um(p.x0) < um(p.x1) && um(p.y0) < um(p.y1) && um(p.z0) < um(p.z1))) return null;
   let s: Shell | null;
-  if (!p.axis) {
+  if (p.loft) {
+    s = loftShell(p, p.loft);
+  } else if (!p.axis) {
     const outer = sectionRing(p.x0, p.x1, p.z0, p.z1, p);
     const holes = (p.holes ?? []).map((h) => sectionRing(h.x0, h.x1, h.z0, h.z1, h));
     const poly = { outer, ...(holes.length ? { holes } : {}) };
@@ -514,6 +517,73 @@ export function partShell(p: Part, dropped?: { holes: number }): Shell | null {
   }
   if (s && p.mat && p.mat !== "body") s.slot = p.mat;
   return s;
+}
+
+/**
+ * A lofted part's shell (`Part.loft`, RM8.6): its section's ring at the bottom (the table's first
+ * scale) and at each of the table's heights, every ring the section of the box scaled about its
+ * centre (`sectionRing`, so a round one is the exact 16-gon and a ring's mirror is a ring), joined
+ * ring to ring by quads (two triangles each) and capped by a fan at the bottom and the top. `null`
+ * when a ring rounds to fewer points than another (too small to loft) or the table is empty.
+ * Wound like `prism`: each face's normal turned to point away from the part's axis (the caps down
+ * and up), decided numerically per face.
+ */
+function loftShell(p: Part, table: NonNullable<Part["loft"]>): Shell | null {
+  if (table.length === 0) return null;
+  const [cx, cz, rx, rz] = [(p.x0 + p.x1) / 2, (p.z0 + p.z1) / 2, (p.x1 - p.x0) / 2, (p.z1 - p.z0) / 2];
+  const shape: SectionShape = { ...(p.round ? { round: true } : {}), ...(p.radius ? { radius: p.radius } : {}) };
+  const levels: Array<[number, number]> = [
+    [um(p.y0), (table[0] as readonly [number, number])[1]],
+    ...table.map(([t, f], k): [number, number] => [
+      k === table.length - 1 ? um(p.y1) : um(p.y0 + (p.y1 - p.y0) * t),
+      f,
+    ]),
+  ];
+  const rings = levels.map(([, f]) => sectionRing(cx - rx * f, cx + rx * f, cz - rz * f, cz + rz * f, shape));
+  const n = rings[0]?.length ?? 0;
+  if (n < 3 || rings.some((r) => r.length !== n)) return null;
+  for (let k = 1; k < levels.length; k++)
+    if (!((levels[k] as [number, number])[0] > (levels[k - 1] as [number, number])[0])) return null;
+  const positions: number[] = [];
+  rings.forEach((r, k) => {
+    for (const [x, z] of r) positions.push(x, (levels[k] as [number, number])[0], z);
+  });
+  const [ax, az] = [um(cx), um(cz)];
+  const indices: number[] = [];
+  const at = (i: number): [number, number, number] => [
+    positions[3 * i] as number,
+    positions[3 * i + 1] as number,
+    positions[3 * i + 2] as number,
+  ];
+  /** Triangle (a, b, c), flipped unless its normal points along `want`. */
+  const face = (a: number, b: number, c: number, want: [number, number, number]): void => {
+    const [A, B, C] = [at(a), at(b), at(c)];
+    const u = [B[0] - A[0], B[1] - A[1], B[2] - A[2]] as const;
+    const w = [C[0] - A[0], C[1] - A[1], C[2] - A[2]] as const;
+    const nx = u[1] * w[2] - u[2] * w[1];
+    const ny = u[2] * w[0] - u[0] * w[2];
+    const nz = u[0] * w[1] - u[1] * w[0];
+    if (nx * want[0] + ny * want[1] + nz * want[2] >= 0) indices.push(a, b, c);
+    else indices.push(a, c, b);
+  };
+  const last = rings.length - 1;
+  for (let i = 1; i < n - 1; i++) {
+    face(0, i, i + 1, [0, -1, 0]);
+    face(last * n, last * n + i, last * n + i + 1, [0, 1, 0]);
+  }
+  for (let k = 0; k < last; k++) {
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      const [a, b, c, d] = [k * n + i, k * n + j, (k + 1) * n + j, (k + 1) * n + i];
+      // Outward: away from the part's vertical axis, through the quad's middle.
+      const m = [a, b, c, d].map(at);
+      const mx = m.reduce((s, q) => s + q[0], 0) / 4 - ax;
+      const mz = m.reduce((s, q) => s + q[2], 0) / 4 - az;
+      face(a, b, c, [mx, 0, mz]);
+      face(a, c, d, [mx, 0, mz]);
+    }
+  }
+  return { positions, indices };
 }
 
 /** A part thinner than this (mm) on any axis is left out: a detail the footprint has no room for. */

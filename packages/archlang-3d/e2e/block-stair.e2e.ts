@@ -3,7 +3,8 @@
  * corpus does not hold, so a green corpus run says nothing about it.
  *
  * Since card X3 the package builds stairs: a block stair is one `stair` node on the storey it climbs
- * from, its two flights as stepped solids and its landing as a box, read from the core's pieces
+ * from (since RM8.6 with its stringers and balustrade as parts), its two flights' treads and its
+ * landing as a box, read from the core's pieces
  * (`flights`, `landings`), never from the Scene3D `box`, which is its bounding box and holds floor
  * that is no stair. The `dir down` stop above is the same stair and builds nothing. The upper
  * storey's void stays where the plan puts it. Pinned here: the same S1–S4 checks the corpus takes,
@@ -58,12 +59,17 @@ describe("a block stair through the package", () => {
   it("is built once, on the storey it climbs from: two flights and a landing, never its box", async () => {
     const { mesh } = await built();
     const stairs = mesh.nodes.filter((n) => n.kind === "stair");
-    expect(stairs.map((n) => [n.key, n.shells.length])).toEqual([["L1/stair:s", 3]]);
+    // Card RM8.6: the stair in its parts. Its own node holds the treads (4 + 5, the risers open) and
+    // the landing; its stringers (two a flight) and its balustrade (on the open edges) are parts.
+    expect(stairs.map((n) => n.key)).toEqual(["L1/stair:s", "L1/stair:s:rail", "L1/stair:s:stringer"]);
+    expect(stairs[0]?.shells.length).toBe(4 + 5 + 1);
+    expect(stairs[2]?.shells.length).toBe(4);
     // Its plan extent is the pieces' (the flights are 1000 wide, as wide as the stair), and the
-    // notch the box holds at (1100…2500, 2100…3100) is no stair: no vertex stands inside it.
+    // notch the box holds at (1100…2500, 2100…3100) is no stair: no vertex of a tread, the landing
+    // or a stringer stands inside it (a newel on an open edge stands 5 mm past it, as a post does).
     const xs: number[] = [];
     const zs: number[] = [];
-    for (const s of stairs[0]?.shells ?? [])
+    for (const s of stairs.filter((n) => n.part !== "rail").flatMap((n) => n.shells))
       for (let i = 0; i < s.positions.length; i += 3) {
         xs.push(s.positions[i] as number);
         zs.push(s.positions[i + 2] as number);
