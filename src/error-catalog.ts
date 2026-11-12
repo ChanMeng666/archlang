@@ -6,14 +6,14 @@
  * documents them.
  *
  * The entries live by family in `src/error-catalog/<family>.ts` (one `defineEntries({...})`
- * each, the code written once as its key); this file spreads the families into one frozen
+ * each, the code written once as its key); this file merges the families into one frozen
  * object. Key order reaches no output: `ERROR_CODES` is sorted, and every reader indexes by code.
  *
  * Where a NEW code goes: a lint rule's code goes in the family file whose header names its
  * `LintRule.family` (`test/error-catalog-families.test.ts` enforces it). Any other code goes in
  * the family whose prefix or subject it shares (`E_IMPORT_*` → `import.ts`, `E_*_LIMIT` →
  * `limits.ts`, storey/`level` codes → `vertical.ts`, parse/grammar → `language.ts`); when unsure,
- * the file an agent would open first. A new family file is imported and spread below.
+ * the file an agent would open first. A new family file is imported and passed to `mergeFamilies` below.
  */
 
 import { CIRCULATION_ENTRIES } from "./error-catalog/circulation.js";
@@ -45,27 +45,42 @@ export interface CatalogEntry {
   example: string;
 }
 
+/** Every key of every family in a union of family types (`keyof (A | B)` would keep only the shared ones). */
+type FamilyKeys<F> = F extends unknown ? keyof F : never;
+
+/**
+ * The families merged into one frozen object, in argument order (a later family's entry would win,
+ * as a spread's does). A function marked `@__NO_SIDE_EFFECTS__`, not a spread written here: a
+ * bundler treats spreading an object as a possible getter call and keeps the merge, and with it
+ * every family's text, in a bundle that never reads the catalogue (card RM0.7: the playground's
+ * compiler chunk needs only `src/error-catalog-fixes.ts`). An arrow, because esbuild re-emits the
+ * mark on a function declaration as a line comment, which that bundler does not read.
+ */
+const mergeFamilies = /* @__NO_SIDE_EFFECTS__ */ <F extends readonly Readonly<Record<string, CatalogEntry>>[]>(
+  ...families: F
+): { readonly [K in FamilyKeys<F[number]>]: CatalogEntry } => Object.freeze(Object.assign({}, ...families));
+
 /**
  * Every family, merged. A code two families both define would be silently overwritten by the
- * spread, so `test/error-catalog-families.test.ts` pins the families disjoint.
+ * merge, so `test/error-catalog-families.test.ts` pins the families disjoint.
  */
-const CATALOG = Object.freeze({
-  ...LANGUAGE_ENTRIES,
-  ...WALLS_ENTRIES,
-  ...LIMITS_ENTRIES,
-  ...OPENINGS_ENTRIES,
-  ...FURNITURE_ENTRIES,
-  ...LAYOUT_ENTRIES,
-  ...INTERCHANGE_ENTRIES,
-  ...DRAFTING_ENTRIES,
-  ...ROOMS_ENTRIES,
-  ...SITE_ENTRIES,
-  ...VERTICAL_ENTRIES,
-  ...IMPORT_ENTRIES,
-  ...INTENT_ENTRIES,
-  ...CIRCULATION_ENTRIES,
-  ...FURNITURE_CHECKS_ENTRIES,
-});
+const CATALOG = mergeFamilies(
+  LANGUAGE_ENTRIES,
+  WALLS_ENTRIES,
+  LIMITS_ENTRIES,
+  OPENINGS_ENTRIES,
+  FURNITURE_ENTRIES,
+  LAYOUT_ENTRIES,
+  INTERCHANGE_ENTRIES,
+  DRAFTING_ENTRIES,
+  ROOMS_ENTRIES,
+  SITE_ENTRIES,
+  VERTICAL_ENTRIES,
+  IMPORT_ENTRIES,
+  INTENT_ENTRIES,
+  CIRCULATION_ENTRIES,
+  FURNITURE_CHECKS_ENTRIES,
+);
 
 /** A code the catalogue defines: the key type of the merged families, for new `diag()` call sites. */
 export type CatalogCode = keyof typeof CATALOG;
@@ -74,8 +89,10 @@ export type CatalogCode = keyof typeof CATALOG;
 export const ERROR_CATALOG: Readonly<Record<string, CatalogEntry>> = CATALOG;
 
 /** All catalog codes, sorted (errors then warnings, by UTF-16 code unit within — never
- *  `localeCompare`, whose ICU collation is host data and puts `_` before letters). */
-export const ERROR_CODES: readonly string[] = Object.keys(ERROR_CATALOG).sort((a, b) => {
+ *  `localeCompare`, whose ICU collation is host data and puts `_` before letters).
+ *  `@__PURE__`: the sort has no effect outside this value, and a bundler that cannot tell keeps the
+ *  whole catalogue for it in a bundle that never reads a code (card RM0.7). */
+export const ERROR_CODES: readonly string[] = /* @__PURE__ */ Object.keys(ERROR_CATALOG).sort((a, b) => {
   const sev = (c: string): number => (ERROR_CATALOG[c]!.severity === "error" ? 0 : 1);
   return sev(a) - sev(b) || (a < b ? -1 : a > b ? 1 : 0);
 });

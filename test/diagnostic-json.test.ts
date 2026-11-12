@@ -58,6 +58,16 @@ describe("diagnosticToJson", () => {
     expect(json.col).toBe(1);
   });
 
+  it("omits fix for a code that is only an inherited property name", () => {
+    // The fix comes from the generated fix column (card RM0.7), looked up by own key, as the
+    // catalogue lookup `ERROR_CATALOG[code]?.fix` behaved: `constructor` there was a function
+    // with no `fix`, and must not become one here.
+    for (const code of ["constructor", "toString", "__proto__", "hasOwnProperty"]) {
+      const json = diagnosticToJson("plan", { severity: "error", message: "m", code });
+      expect(json.fix, code).toBeUndefined();
+    }
+  });
+
   it("includes hints only when present", () => {
     const withHints: Diagnostic = {
       severity: "warning",

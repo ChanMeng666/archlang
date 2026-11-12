@@ -14,10 +14,10 @@ import { fixtureSpec } from "../fixtures-catalog.js";
  * DERIVED from the catalogue, so a cause that names the families a rule reads cannot go stale
  * when a family gains or loses the flag.
  */
-function familiesWith(flag: "tall" | "fixedAspect" | "wallMounted"): string {
+const familiesWith = /* @__NO_SIDE_EFFECTS__ */ (flag: "tall" | "fixedAspect" | "wallMounted"): string => {
   const words = CANONICAL_FIXTURES.filter((c) => fixtureSpec(c)?.[flag] === true).map((c) => `\`${c}\``);
   return words.length < 2 ? words.join("") : `${words.slice(0, -1).join(", ")} and ${words.at(-1)}`;
-}
+};
 
 export const FURNITURE_CHECKS_ENTRIES = defineEntries({
   W_FURNITURE_OVERLAP: w(

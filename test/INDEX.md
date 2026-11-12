@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-496 test files in `test/`, 277 `src` modules, 106 modules no test imports.
+496 test files in `test/`, 278 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -80,6 +80,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/void.ts` (3) — `v129-cross`, `void-rail`, `void`
 - `src/elements/wall.ts` (1) — `room-datums`
 - `src/elements/window.ts` (1) — `corner-window`
+- `src/error-catalog-fixes.ts` (1) — `explain`
 - `src/error-catalog.ts` (18) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `garage`, `lint-rule-order`, `lint-summary`, `llms-full-drift` (+10)
 - `src/export/dxf.ts` (10) — `curves`, `export-dxf`, `furniture-curves-backends`, `label-fit`, `label-wrap`, `opening`, `room-floor`, `scene-path-prim` (+2)
 - `src/export/pdf.ts` (8) — `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `label-wrap`, `roof`, `scene-path-prim`, `sheet`, `v129-cross`

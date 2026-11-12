@@ -1243,5 +1243,11 @@ export function buildManifest(version: string): Manifest {
   };
 }
 
-/** The verb names the manifest documents (incl. aliases) — used by the drift test. */
-export const MANIFEST_COMMAND_NAMES: readonly string[] = COMMANDS.flatMap((c) => [c.name, ...(c.aliases ?? [])]);
+/** The verb names the manifest documents (incl. aliases) — used by the drift test. `@__PURE__`:
+ *  the flatMap is this value alone, and a bundler that cannot tell keeps every command's help text
+ *  for it in a bundle that never reads the manifest (card RM0.7: about 10 KB gzip of the
+ *  playground's compiler chunk). */
+export const MANIFEST_COMMAND_NAMES: readonly string[] = /* @__PURE__ */ COMMANDS.flatMap((c) => [
+  c.name,
+  ...(c.aliases ?? []),
+]);

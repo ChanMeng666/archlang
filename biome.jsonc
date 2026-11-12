@@ -13,6 +13,7 @@
       "!docs-site/.vitepress/theme/arch-highlight.js",
       "!spec.llm.md",
       "!src/context-size.ts",
+      "!src/error-catalog-fixes.ts",
       "!docs/error-codes.md",
       "!plugins/archlang/.claude-plugin/plugin.json",
       "!plugins/archlang/plugin.json",

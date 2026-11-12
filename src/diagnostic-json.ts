@@ -4,13 +4,15 @@
  * `diagnosticToJson` is the **canonical** shape emitted by the CLI's `--json`
  * output for every diagnostic: it resolves the byte `span` to 1-based
  * `line`/`col` (via {@link offsetToLineCol}) and attaches the catalogued `fix`
- * (from {@link ERROR_CATALOG}) so a self-correcting agent needs no docs lookup.
- * Pure and isomorphic — it only maps data, no I/O.
+ * (from {@link CATALOG_FIXES}, the catalogue's fix column generated from `ERROR_CATALOG`) so a
+ * self-correcting agent needs no docs lookup. It reads that column, never the catalogue itself, so a
+ * bundle that compiles (the `--error-svg` card draws these fixes) need not carry every message,
+ * cause and example (card RM0.7). Pure and isomorphic — it only maps data, no I/O.
  */
 
 import type { Applicability, Diagnostic, Severity } from "./diagnostics.js";
 import { offsetToLineCol } from "./diagnostics.js";
-import { ERROR_CATALOG } from "./error-catalog.js";
+import { CATALOG_FIXES } from "./error-catalog-fixes.js";
 
 /** A {@link import("./diagnostics.js").FixSuggestion} projected to JSON — edit
  *  spans become `[start, end]` tuples (like the diagnostic's own `span`). */
@@ -81,7 +83,8 @@ export function diagnosticToJson(source: string, d: Diagnostic): DiagnosticJson 
     out.span = [d.span.start, d.span.end];
   }
   if (d.file !== undefined) out.file = d.file;
-  const fix = d.code ? ERROR_CATALOG[d.code]?.fix : undefined;
+  // An own key only, as `ERROR_CATALOG[code]?.fix` was: an inherited name (`constructor`) has no fix.
+  const fix = d.code && Object.hasOwn(CATALOG_FIXES, d.code) ? CATALOG_FIXES[d.code] : undefined;
   if (fix) out.fix = fix;
   if (d.hints?.length) out.hints = d.hints;
   if (d.fixes?.length)
