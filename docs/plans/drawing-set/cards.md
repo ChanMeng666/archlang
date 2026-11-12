@@ -159,6 +159,8 @@ opt-in 事实，走 `DESCRIBE_FACTS`（`src/describe.ts:200`）。默认 `descri
 
 `section A (x,y)->(x,y) look north|south|east|west` 是平面图元素，核心画剖切符号，3D 包读同一声明。这是平面符号，不触碰“Heights draw nothing”，但 PR 要显式论证。用 `drawCost`、`bounds()`；默认不进 `describe` 主体，放 opt-in 事实。
 
+**2026-11-12（RM6.1，PR #721）：对 DS5 的依赖作废。** 剖切符号由 RM6.1 提前落地，按 `../product-roadmap/design/slab-and-section.md` §2：`section` 只能写在 plan 层，任何 `level` 体内（含 DS5 日后的区间层）都报 `E_SECTION_SCOPE`，区间展开碰不到它，编号由 `E_SECTION_DUP` 全图查重。DS5 落地时只需在它的测试里加一例"区间层体内的 `section` 照样报 `E_SECTION_SCOPE`"。另：`sections` 进了 `describe` 主体（只在写了时出现），不是 opt-in 事实（设计稿 §2.2）。本卡余下的只有 3D 包读同一声明。
+
 ### DS12 · Scene3D 补缺 — `todo` · 3 日 · opus
 
 经 additive 导出（ADR 0031）：`axes`（`RAxis`，只画声明过的，不猜）、`meta.groundZ` 默认 0 入台账、`flights/landings`。修 `slab-below-floor`，或明确放弃并改 `V-GEO-08`。必须先判断它是否动 laneway 的 Mesh3D/GLB 固定哈希，动了要写原因。

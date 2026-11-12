@@ -2835,6 +2835,53 @@ enclosure round the pool — which is the drawing saying what the model does not
 obstructs nothing, water included — and a `picket` street frontage that stops either side of
 the path and the drive.
 
+### Section mark — where a section cuts the plan
+
+```
+section <name|int> (x,y)->(x,y) look north|south|east|west
+```
+
+Marks where a section cuts the building and which way it looks, as GB/T 50001 and ISO 128 mark
+it on a plan: at each end of the cut line a heavy cut stroke along the line, a heavy stroke at
+right angles pointing the way the section looks, and the mark's name beside it, upright whatever
+the plan's `north`. The two points use the `dim` notation. The core draws only the mark, never
+the section itself.
+
+```arch static
+section A (3000,-1200)->(3000,7200) look east
+section 1 (-1200,2500)->(8200,2500) look north
+```
+
+- **The name** is an identifier or a positive whole number. It is the mark's own: unique among
+  the plan's sections ([`E_SECTION_DUP`](error-codes.md#e_section_dup)) and in no namespace an
+  element id shares, so a room may be called `A` too.
+- **The cut line** runs horizontally or vertically. A slanted line, or one of no length, is
+  [`E_SECTION_AXIS`](error-codes.md#e_section_axis).
+- **`look`** takes a compass word, which the plan's `north` turns into a page direction. That
+  direction has to cross the cut line. A vertical cut under `north up` looks `east` or `west`,
+  and anything else is [`E_SECTION_LOOK`](error-codes.md#e_section_look), whose message names
+  the two words this plan's north allows.
+- **Plan level only.** A section cuts the whole building, so the mark is written once, outside
+  every block. In a multi-storey plan it stands beside the `level` blocks (no `E_LEVEL_MIX`) and
+  is drawn on the lowest storey's page, `compile().svg`. Inside a `level`, `zone`, `component` or
+  control-flow block it is [`E_SECTION_SCOPE`](error-codes.md#e_section_scope).
+- **`section` and `look` are not reserved.** `section` starts a mark only when a name and then
+  `(` follow it, and `look` is read only after the second point, so `room id=section`,
+  `let look = 1` and a component named `section` keep their meaning.
+
+`describe --json` gains a top-level `sections[]` when the plan writes one. The key belongs to
+the whole plan, so it is on no `levels[]` entry and `--level N` keeps it:
+
+```json
+"sections": [
+  { "id": "A", "from": { "x": 3000, "y": -1200 }, "to": { "x": 3000, "y": 7200 }, "look": "east", "toward": { "x": 1, "y": 0 } }
+]
+```
+
+`toward` is the page direction as a unit vector (+x right, +y down), so a reader does not have
+to turn `look` by the north itself. The two ends join the page bounds. Plan JSON has no field for
+a mark, and an export lists it under `dropped` as `section`.
+
 ### Title block
 
 ```
