@@ -305,9 +305,18 @@ describe("release compatibility: the comparisons are not vacuous", () => {
         "export type Mixed = { a: number } | { b: string };",
         'export type Dup = { kind: "a"; x: number } | { kind: "a"; y: string };',
         'export interface Holder { node: { tag: "p"; n: number } | { tag: "q" } | undefined }',
+        'export type Choice = { kind: "a" } | { kind: "b" };',
+        "export declare function choose(c: Choice): void;",
+        'export type MaybeShape = { type: "sq" } | { type: "circ" };',
+        'export type Split = { kind: "a"; x: number } | { kind: "b"; y: string };',
         'export declare const STAGES: Readonly<Record<"a" | "b", "x" | "y">>;',
         'export declare const GONE_KEYS: Readonly<Record<"a" | "b", "x">>;',
+        'export declare const LIT: Readonly<Record<"r", "v">>;',
         'export declare const AXIS: Readonly<{ r: "v" }>;',
+        'export declare const ALIGNS: Readonly<{ readonly v: readonly ["top", "middle", "bottom"] }>;',
+        'export declare const ALIGNS_LONGER: Readonly<{ readonly v: readonly ["top", "middle", "bottom"] }>;',
+        "export interface Cfg { a: number }",
+        "export declare const CFG: Readonly<Cfg>;",
       ]);
       const newDts = write("tagged-new", [
         ...common,
@@ -331,22 +340,43 @@ describe("release compatibility: the comparisons are not vacuous", () => {
         'export type Dup = { kind: "a"; x: number } | { kind: "a"; y: string } | { kind: "b" };',
         // A spelled-out tagged union in a member: a variant added passes, `undefined` kept.
         'export interface Holder { node: { tag: "p"; n: number } | { tag: "q" } | { tag: "r" } | undefined }',
+        // An input union losing a variant fails too (`b`; gaining `c` passes).
+        'export type Choice = { kind: "a" } | { kind: "c" };',
+        "export declare function choose(c: Choice): void;",
+        // An output tagged union gaining `| undefined` is a widening, compared strictly.
+        'export type MaybeShape = { type: "sq" } | { type: "circ" } | undefined;',
+        // A new discriminant with more values (`tag`) splits `kind: "b"`: each new variant still
+        // reads as its old one, so nothing is reported removed.
+        'export type Split = { kind: "a"; x: number; tag: "1" } | { kind: "b"; y: string; tag: "2" } | { kind: "b"; y: string; tag: "3" };',
         // A constant keyed by a set gains a key: passes; loses one: fails.
         'export declare const STAGES: Readonly<Record<"a" | "b" | "c", "x" | "y">>;',
         'export declare const GONE_KEYS: Readonly<Record<"a", "x">>;',
-        // A declared literal member type is still compared (unlike an inferred `as const` value).
+        // A keyed constant's declared literal member type is still compared (unlike an inferred `as const` value).
+        'export declare const LIT: Readonly<Record<"r", "h">>;',
+        // `Object.freeze({…} as const)` (`Readonly<{ … }>`) is not keyed by a set: compared as printed,
+        // so a changed literal, a reordered tuple and a longer tuple all fail.
         'export declare const AXIS: Readonly<{ r: "h" }>;',
+        'export declare const ALIGNS: Readonly<{ readonly v: readonly ["middle", "top", "bottom"] }>;',
+        'export declare const ALIGNS_LONGER: Readonly<{ readonly v: readonly ["top", "middle", "bottom", "base"] }>;',
+        // `Readonly<SomeInterface>` is not keyed by a set either: unchanged, no finding.
+        "export interface Cfg { a: number }",
+        "export declare const CFG: Readonly<Cfg>;",
       ]);
       const oldS = compat.typeSurface(oldDts);
       const types = compat.compareTypeSurfaces(oldS, compat.typeSurface(newDts));
       const said = types.map(compat.formatFinding).join("\n");
       expect(types.map((f) => `${f.kind} ${f.name}${f.path ? ` ${f.path}` : ""} (${f.role})`).sort(), said).toEqual([
-        "enum member removed AXIS .r (output)",
+        "enum member removed LIT .r (output)",
         "narrowed input type Cmd type (input)",
         "removed member GONE_KEYS .b (output)",
+        "variant removed Choice type (input)",
         "variant removed Gone type (output)",
         "variant removed Lost type (output)",
+        "widened output type ALIGNS type (output)",
+        "widened output type ALIGNS_LONGER type (output)",
+        "widened output type AXIS type (output)",
         "widened output type Dup type (output)",
+        "widened output type MaybeShape type (output)",
         "widened output type Mixed type (output)",
         "widened output type Shape type (output)",
       ]);
@@ -362,6 +392,9 @@ describe("release compatibility: the comparisons are not vacuous", () => {
       expect(Object.keys(oldS.Holder ?? {})).toContain("@variants.node");
       expect(Object.keys(oldS.Mixed ?? {})).not.toContain("@variantstype");
       expect(Object.keys(oldS.STAGES ?? {}).filter((k) => k.startsWith("."))).toEqual([".a", ".b"]);
+      expect(Object.keys(oldS.STAGES ?? {})).toContain("@record");
+      for (const frozen of ["AXIS", "ALIGNS", "CFG"]) expect(Object.keys(oldS[frozen] ?? {})).not.toContain("@record");
+      expect(Object.keys(oldS.Split ?? {})).toContain("@variantstype");
       // Removing a variant from a member, or a key from a keyed constant, is caught there too.
       const back = compat.compareTypeSurfaces(compat.typeSurface(newDts), oldS);
       expect(back.map((f) => `${f.kind} ${f.name} ${f.path}`)).toEqual(

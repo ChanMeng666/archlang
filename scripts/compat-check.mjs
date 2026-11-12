@@ -17,9 +17,14 @@
  * prints the classification it used. Enum-like sets are append-only in both roles: a union of
  * literals, an `as const` list, and a tagged union (object variants told apart by a literal
  * discriminant such as `kind`), whose variant may be added (a new element kind is a minor) but not
- * removed, while a variant on both sides keeps the strict variance of its role. A constant keyed by
- * a set (`Readonly<Record<K, V>>`) is read one member per key, like an `as const` object: a key may
- * be added, not removed. Schemas and code sets are additive-only. A failure is
+ * removed, while a variant on both sides keeps the strict variance of its role. A union is read as
+ * tagged where it is a type alias or an object member's type and spelled out member by member; one
+ * in a function's parameter or return, or one naming another union (`Expr | undefined`), is compared
+ * as printed. A constant typed by a mapped type whose keys come from a literal union
+ * (`Record<K, V>`, also under `Readonly<…>`/`Partial<…>`) is read one member per key, like an
+ * `as const` object: a key may be added, not removed, and its declared literal member types are
+ * compared. `Readonly<{ … }>` (`Object.freeze`) and `Readonly<SomeInterface>` are not keyed by a
+ * set and are compared as printed. Schemas and code sets are additive-only. A failure is
  * accepted only by a line under `CHANGELOG.md`'s `## [Unreleased]` of the form
  * `BREAKING: <surface>: item, item` (the items it names) or `BREAKING: <surface> (all)`; what was
  * accepted is printed. `public-surface.test.ts` pins nameability and `plan-schema-drift` pins
@@ -349,9 +354,11 @@ export function unionMembers(s) {
  * Keys: `kind`; `.a.b` for (nested, anonymous) object members, `?` prefix on optional ones;
  * `[]` for a tuple (the sorted set of its element types); `sigN.required` / `sigN.pJ` /
  * `sigN.returns` for call signatures; `newN.*` for construct signatures; `type` for any other
- * alias or value (unions sorted). Beside a key whose type is a spelled-out tagged union,
- * `@variants<key>` records its variants; a constant typed by a mapped type over a literal key set
- * is expanded like an `as const` object and marked `@record`. (`@` keys are not compared as members.)
+ * alias or value (unions sorted). Beside a `type` alias key or an object member key whose type is a
+ * spelled-out tagged union, `@variants<key>` records its variants (signature keys get none); a
+ * constant keyed by a set (a mapped type whose keys come from a literal union, see
+ * `isKeyedRecord`) is expanded like an `as const` object and marked `@record`. (`@` keys are not
+ * compared as members.)
  */
 export function typeSurface(entryFile) {
   const program = ts.createProgram([entryFile], COMPILER_OPTIONS);
@@ -422,11 +429,23 @@ export function typeSurface(entryFile) {
     t.getCallSignatures().length === 0 &&
     t.getConstructSignatures().length === 0 &&
     t.getProperties().length > 0;
-  // A constant typed by a mapped type over a literal key set (`Readonly<Record<ElementKind, …>>`)
-  // has the same members as an `as const` object, so it is read the same way: one member per key.
+  // A constant KEYED BY A SET: typed by a mapped type whose keys come from a literal union
+  // (`Record<ElementKind, …>`, `{ [K in Kind]: … }`), directly or under homomorphic wrappers
+  // (`Readonly<…>`, `Partial<…>`, whose keys are `keyof` their argument), with no index signature.
+  // It has the same members as an `as const` object, so it is read the same way: one member per
+  // key. A homomorphic wrapper of anything else (`Readonly<{ … }>` from `Object.freeze`,
+  // `Readonly<SomeInterface>`) is not keyed by a set and keeps its printed comparison.
+  const keyedBySet = (t, depth) => {
+    if (depth > 4 || !(t.flags & ts.TypeFlags.Object) || !(t.objectFlags & ts.ObjectFlags.Mapped)) return false;
+    const decl = t.declaration;
+    if (!decl) return false;
+    const c = decl.typeParameter?.constraint;
+    if (!(c && ts.isTypeOperatorNode(c) && c.operator === ts.SyntaxKind.KeyOfKeyword)) return true;
+    const source = t.aliasTypeArguments?.[0];
+    return !!source && keyedBySet(source, depth + 1);
+  };
   const isKeyedRecord = (t) =>
-    !!(t.flags & ts.TypeFlags.Object) &&
-    !!(t.objectFlags & ts.ObjectFlags.Mapped) &&
+    keyedBySet(t, 0) &&
     checker.getIndexInfosOfType(t).length === 0 &&
     t.getCallSignatures().length === 0 &&
     t.getConstructSignatures().length === 0 &&
@@ -487,7 +506,7 @@ export function typeSurface(entryFile) {
     const tagged = discriminate(objs, 0);
     if (!tagged) return null;
     const list = tagged.map(([pairs, u]) => {
-      const lits = {};
+      const lits = Object.create(null);
       for (const name of propNames(u)) {
         const v = literalProp(u, name);
         if (v !== null) lits[name] = v;
@@ -754,21 +773,35 @@ function enumDiff(o, n, role) {
  * is its own export's comparison); so is the `undefined`/`null` part. `null` when either side is
  * not tagged, which leaves the pair to the ordinary comparison.
  *
- * An old variant's twin is the new variant whose discriminant pairs it carries as literals and
- * which carries its pairs (so a tag that grew a level, `kind="k"` → `kind="k",form="x"` once a
- * second `kind: "k"` variant arrives, still matches); discrimination makes the twin unique.
+ * An old variant's twins are the new variants that carry its discriminant pairs as literals and
+ * whose own pairs contradict none of its literals (none: it was removed). When several do, the one
+ * whose own pairs the old variant carries is preferred
+ * (a tag that grew a level, `kind="k"` → `kind="k",form="x"` once a `kind: "k", form: "w"` variant
+ * arrives, names the same variant); when none of them is, the old variant was split by a new
+ * discriminant, and it is compared with the union of its twins. A new discriminant with more
+ * values than the old one therefore reshapes no variant by itself.
  */
 function variantDiff(oRec, nRec, role) {
   if (!oRec || !nRec) return null;
   const o = JSON.parse(oRec);
   const n = JSON.parse(nRec);
-  const carries = (v, pairs) => pairs.every(([k, val]) => v.lits[k] === val);
+  const lit = (v, k) => (Object.hasOwn(v.lits, k) ? v.lits[k] : undefined);
+  const carries = (v, pairs) => pairs.every(([k, val]) => lit(v, k) === val);
   const removed = [];
   const changed = [];
   for (const ov of o.variants) {
-    const nv = n.variants.find((x) => carries(x, ov.pairs) && carries(ov, x.pairs));
-    if (!nv) removed.push({ tag: ov.tag, old: ov.type });
-    else if (!compatible(ov.type, nv.type, role)) changed.push({ tag: ov.tag, old: ov.type, new: nv.type });
+    // (A new variant whose tag gives a literal the old variant has a different value for is not it.)
+    const twins = n.variants.filter(
+      (x) => carries(x, ov.pairs) && x.pairs.every(([k, val]) => lit(ov, k) === undefined || lit(ov, k) === val),
+    );
+    const exact = twins.filter((x) => carries(ov, x.pairs));
+    const match = exact.length ? exact : twins;
+    if (!match.length) {
+      removed.push({ tag: ov.tag, old: ov.type });
+      continue;
+    }
+    const nt = match.map((x) => x.type).join(" | ");
+    if (!compatible(ov.type, nt, role)) changed.push({ tag: ov.tag, old: ov.type, new: nt });
   }
   return { removed, changed, restOk: compatible(o.rest, n.rest, role) };
 }
@@ -790,8 +823,9 @@ const bare = (s) => s.replace(/^(\?|\.\.\.)/, "");
  * union of literals, an `as const` list (`[]` keys) and a tagged union's variants (`@variants…`
  * keys) are enum-like sets, additive-only, in both roles ({@link enumDiff}, {@link variantDiff}); a
  * constant keyed by a set has one member per key (`@record`), so a key may be added, not removed.
- * A constant's inferred literal value (not a keyed constant's declared one), generic constraints
- * and `readonly` are not compared.
+ * Not compared: a single literal on both sides of a constant that is not keyed by a set (its own
+ * value, `VERSION: "1.2"`, or an inferred `as const` object's member, `{ a: "x" }`); a keyed
+ * constant's literal member types are compared. Nor are generic constraints and `readonly`.
  */
 export function compareTypeSurfaces(oldS, newS) {
   const findings = [];
