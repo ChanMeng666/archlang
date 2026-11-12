@@ -12,6 +12,9 @@ export default defineConfig({
     alias: {
       // The browser-safe share-link subpath, BEFORE the bare name (an alias also matches `name/…`).
       "archlang/share": resolve(__dirname, "src/share.ts"),
+      // The diagnostic catalogue the edit-mode diagnostics panel reads (dist/error-catalog.js in
+      // the playground's build), likewise before the bare name.
+      "archlang/error-catalog": resolve(__dirname, "src/error-catalog.ts"),
       archlang: resolve(__dirname, "src/index.ts"),
       // The Node-only subpath, listed BEFORE the bare name: an alias also matches `name/…`, so
       // the bare entry would otherwise rewrite this one to `src/index.ts/link`.

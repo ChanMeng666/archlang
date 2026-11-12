@@ -2,7 +2,7 @@
  * Error catalogue: the rooms family. Room geometry, and the lint families that judge a room
  * (`rooms`, `classification`, `contents`, `orientation`, `daylight`).
  *
- * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
+ * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
 import { defineEntries, e, w } from "./entry.js";

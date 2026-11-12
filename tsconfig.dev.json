@@ -13,9 +13,13 @@
     "noEmit": true,
     "tsBuildInfoFile": "node_modules/.cache/tsc/dev.tsbuildinfo",
     "declaration": false,
-    // Tests import playground modules that read the core's share subpath by name, as
-    // vitest.config.ts aliases it: to its source, so this check needs no build.
-    "paths": { "archlang/share": ["./src/share.ts"] }
+    // Tests import playground modules that read the core's share subpath (and the diagnostic
+    // catalogue's built file, card RM0.7) by name, as vitest.config.ts aliases them: to their
+    // source, so this check needs no build.
+    "paths": {
+      "archlang/share": ["./src/share.ts"],
+      "archlang/error-catalog": ["./src/error-catalog.ts"]
+    }
   },
   "include": ["src", "test", "eval", "dataset", "scripts", "bench"],
   "exclude": ["node_modules", "dist", "playground", "docs-site", "packages", "editors"]

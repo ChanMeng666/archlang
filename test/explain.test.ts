@@ -9,7 +9,8 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { compile, explain, ERROR_CATALOG, ERROR_CODES, formatDiagnostic } from "../src/index.js";
-import { renderErrorCodes } from "../scripts/gen-error-codes.js";
+import { CATALOG_FIXES_PATH, renderCatalogFixes, renderErrorCodes } from "../scripts/gen-error-codes.js";
+import { CATALOG_FIXES } from "../src/error-catalog-fixes.js";
 
 /**
  * Read every `code: "E_…"/"W_…"` literal, and every `diag("E_…", …)` call (the typed helper new
@@ -157,6 +158,16 @@ describe("T5.5 — generated docs/error-codes.md has no drift", () => {
   it("matches the catalog", () => {
     const committed = readFileSync("docs/error-codes.md", "utf8").replace(/\r\n/g, "\n");
     expect(renderErrorCodes()).toBe(committed);
+  });
+
+  // Card RM0.7: diagnosticToJson reads the fix column from its own generated module, so a bundle
+  // that compiles need not carry the whole catalogue. The column must be the catalogue's, code for
+  // code and byte for byte, or a diagnostic's `fix` would quietly differ from `arch explain`.
+  it("src/error-catalog-fixes.ts matches the catalog (run npm run gen:errors)", () => {
+    const committed = readFileSync(CATALOG_FIXES_PATH, "utf8").replace(/\r\n/g, "\n");
+    expect(renderCatalogFixes()).toBe(committed);
+    expect(Object.keys(CATALOG_FIXES)).toEqual([...ERROR_CODES]);
+    for (const c of ERROR_CODES) expect(CATALOG_FIXES[c], c).toBe(ERROR_CATALOG[c]!.fix);
   });
 });
 
