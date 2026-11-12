@@ -97,7 +97,9 @@ function statementDoc(s: Statement, comments: Comment[], source: string): Doc {
       // floors into one drawing).
       return concat([
         `level ${numStr(s.level)}${s.name !== undefined ? ` ${JSON.stringify(s.name)}` : ""}` +
-          `${s.height !== undefined ? ` height ${exprStr(s.height)}` : ""} `,
+          `${s.height !== undefined ? ` height ${exprStr(s.height)}` : ""}` +
+          `${s.slab !== undefined ? ` slab ${exprStr(s.slab)}` : ""}` +
+          `${s.clear !== undefined ? ` clear ${exprStr(s.clear)}` : ""} `,
         blockDoc(s.body, s.span!, comments, source),
       ]);
     case "zone":
@@ -302,7 +304,8 @@ export function formatPlan(plan: PlanNode, source: string): string {
   // `ast.height` against `globalScope.flatten()`, exactly as it already does for the `axes`
   // block and the `site` lot line. A plan-level `let` is therefore in scope regardless of
   // source order, before and after formatting alike.
-  if (plan.height !== undefined) settings.push(`height ${exprStr(plan.height)}`);
+  if (plan.height !== undefined)
+    settings.push(`height ${exprStr(plan.height)}${plan.clear !== undefined ? ` clear ${exprStr(plan.clear)}` : ""}`);
   settings.push(`north ${northStr(plan.north)}${hidden("north")}`);
   // `site` reads as a rider on the north declaration — it is the other half of "which way
   // does this building point" — so it sits immediately after it. `hemisphere` is always

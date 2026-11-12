@@ -99,6 +99,7 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
       schedule rooms
       component unit() { room id=main at (0,0) size 3000x3000 }
       place unit() as west at (12000,0)
+      section A (4000,-1000)->(4000,7000) look east
       zone core "Core" {
         wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
         room id=r1 at (0,0) size 8000x6000 label "Hall" uses hall
@@ -144,6 +145,8 @@ suite("DESCRIBE_KEYS — no drift vs the real describe() result", () => {
       // `walls from rooms` above: its ring lies under `shell`, which takes it over, and the
       // drop is reported, so `derived_walls` is emitted (ADR 0028 §6).
       "derived_walls",
+      // The `section A` line above (RM6.1).
+      "sections",
       "symmetry",
       "syntax",
     ]) {

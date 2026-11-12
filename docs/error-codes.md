@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**161 errors** · **100 warnings**
+**166 errors** · **101 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -17,6 +17,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ATTACH_POS_RANGE`](#e_attach_pos_range) | error | Opening attachment position is out of range. |
 | [`E_ATTACH_WALL_REF`](#e_attach_wall_ref) | error | Opening attached to an unknown or ambiguous wall. |
 | [`E_CALL_DEPTH`](#e_call_depth) | error | Value-function call stack too deep. |
+| [`E_CLEAR_SCOPE`](#e_clear_scope) | error | A multi-storey plan writes `clear` on the plan's `height` line. |
 | [`E_COLUMN_SIZE`](#e_column_size) | error | Column must have a positive size. |
 | [`E_DATUM_BEFORE_ROOMS`](#e_datum_before_rooms) | error | A room-edge datum is read before any room is placed. |
 | [`E_DATUM_COMPASS`](#e_datum_compass) | error | A compass word is used as a room-edge datum where it would mean two things. |
@@ -135,6 +136,10 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
 | [`E_RULESET_VALUE`](#e_ruleset_value) | error | A lint ruleset value is not a finite number within the modelling range. |
 | [`E_RUN_TOO_LONG`](#e_run_too_long) | error | A stair or escalator run is longer than any run the plan draws. |
+| [`E_SECTION_AXIS`](#e_section_axis) | error | A section mark's cut line is slanted or has no length. |
+| [`E_SECTION_DUP`](#e_section_dup) | error | Two section marks share a name. |
+| [`E_SECTION_LOOK`](#e_section_look) | error | A section mark looks along its own cut line. |
+| [`E_SECTION_SCOPE`](#e_section_scope) | error | A section mark sits inside a `level`, `zone`, `component` or block. |
 | [`E_SEGMENT_SELECT`](#e_segment_select) | error | A segment selector (`segment north`, `segment containing <room>.<edge>`) does not name exactly one segment. |
 | [`E_SET_OVERRIDE`](#e_set_override) | error | `archlang impact --set NAME=value` cannot override that name with that value. |
 | [`E_SILL_ABOVE_HEAD`](#e_sill_above_head) | error | A window's sill sits at or above its head. |
@@ -181,6 +186,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_BOUNDARY_NO_WALL`](#w_boundary_no_wall) | warning | Two rooms meet with no wall between them. |
 | [`W_CIRCUITOUS_PATH`](#w_circuitous_path) | warning | A room is reached by a very roundabout path. |
 | [`W_CJK_FONT_MISSING`](#w_cjk_font_missing) | warning | PDF/PNG text has CJK characters, but the optional CJK font package is not installed. |
+| [`W_CLEAR_HEIGHT_MISMATCH`](#w_clear_height_mismatch) | warning | A storey's written clear height disagrees with the one its heights give. |
 | [`W_CONNECTOR_AMBIGUOUS`](#w_connector_ambiguous) | warning | A door or cased opening does not join two rooms cleanly. |
 | [`W_DIAGNOSTIC_LIMIT`](#w_diagnostic_limit) | warning | More than 500 diagnostics, all warnings; further diagnostics were not collected. |
 | [`W_DIM_INSIDE`](#w_dim_inside) | warning | A hand-written dimension line lands inside the building. |
@@ -366,6 +372,19 @@ door on w1 at 40% width 900   # error if no wall id=w1 (or several match)
 
 ```arch static
 let f(n) = f(n + 1)   # error: never terminates
+```
+
+## E_CLEAR_SCOPE
+
+*error* — A multi-storey plan writes `clear` on the plan's `height` line.
+
+**Cause.** `height <mm> clear <mm>` states a single-storey plan's clear height. In a plan of `level` blocks the plan-level `height` is only every storey's default, and a default clear height is nothing the author said about any one storey, so each storey writes its own in its header.
+
+**Fix.** Move the clause into each `level` header, after the storey's `height` and `slab`.
+
+```arch static
+height 3000 clear 2400   # error: the plan has levels
+  level 1 "Ground" { }
 ```
 
 ## E_COLUMN_SIZE
@@ -771,9 +790,9 @@ furniture bed at (0,0) size 0x2000   # error
 
 *error* — A height is outside the range a storey can be built at.
 
-**Cause.** A `height`, `sill` or `head` clause evaluated to a number no building has: zero or negative, not finite, or above 100 m. A wall or a head at zero is not a low one, it is a missing one. A window `sill` of exactly 0 is the one exception and is legal — it means a floor-length window. **The range guards the ENDS, not the units:** heights are millimetres like every other number in the language, so `height 3` is three millimetres, is inside the range, and is accepted — the compiler will not guess that three metres was meant, because that would put a number in the datum the author never wrote.
+**Cause.** A `height`, `slab`, `clear`, `sill` or `head` clause evaluated to a number no building has: zero or negative, not finite, or above 100 m. A wall or a head at zero is not a low one, it is a missing one. A window `sill` of exactly 0 is the one exception and is legal — it means a floor-length window. **The range guards the ENDS, not the units:** heights are millimetres like every other number in the language, so `height 3` is three millimetres, is inside the range, and is accepted — the compiler will not guess that three metres was meant, because that would put a number in the datum the author never wrote.
 
-**Fix.** Write the height in millimetres, or drop the clause and inherit the default (the fix does exactly that) — 3000 for a storey, 2100 for a door or window head, 900 for a window sill.
+**Fix.** Write the height in millimetres, or drop the clause (the fix does exactly that): a `height`, `sill` or `head` then inherits its default — 3000 for a storey, 2100 for a door or window head, 900 for a window sill — and a storey without its `slab` or `clear` simply states none.
 
 ```arch static
 wall id=w1 exterior thickness 200 height 0 { (0,0) (4000,0) close }   # error: a wall with no height
@@ -1872,6 +1891,57 @@ lint(source, { ruleset: { doorwayLandingMm: Number.NaN } })   # error: `doorwayL
 escalator id=e at (0,0) size 400000x1200 dir up   # error: a 400 m run
 ```
 
+## E_SECTION_AXIS
+
+*error* — A section mark's cut line is slanted or has no length.
+
+**Cause.** `section <name> (x,y)->(x,y) look <compass>` marks where a section cuts the plan. The cut line runs horizontally or vertically: its two ends share a `y` or an `x`. A slanted line, or one whose two ends are the same point, is refused rather than straightened, because which end the author meant to move is not something the compiler can know.
+
+**Fix.** Give the two ends the same `x` (a vertical cut) or the same `y` (a horizontal one), at the length the cut should run.
+
+```arch static
+section A (0,0)->(6000,4000) look east   # error: a slanted cut line
+```
+
+## E_SECTION_DUP
+
+*error* — Two section marks share a name.
+
+**Cause.** A section mark's name (`section A …`, `section 1 …`) names the section a drawing set refers to, so a plan marks each section once. The names are the sections' own, like axis labels: a room or a wall may share one.
+
+**Fix.** Rename one of the two marks, or delete the repeated line.
+
+```arch static
+section A (3000,-1000)->(3000,7000) look east
+  section A (0,2000)->(8000,2000) look north   # error: A is marked twice
+```
+
+## E_SECTION_LOOK
+
+*error* — A section mark looks along its own cut line.
+
+**Cause.** `look <compass>` says which way the section is seen from the cut, so it points across the cut line. The plan's `north` turns the compass word into a page direction, and that direction runs along the line: a vertical cut can look only the two compass ways that point left and right on the page, a horizontal one only the two that point up and down. The message names the two words this plan's north allows.
+
+**Fix.** Write one of the two compass words the message names, or turn the cut line.
+
+```arch static
+section A (3000,-1000)->(3000,7000) look north   # error under north up: a vertical cut looks east or west
+```
+
+## E_SECTION_SCOPE
+
+*error* — A section mark sits inside a `level`, `zone`, `component` or block.
+
+**Cause.** A section cuts the whole building, so its mark is a plan-level statement, written once, outside every block. It is drawn on the lowest storey's page. Inside a `component` it would be drawn once per placed copy, and inside a `level` block it would belong to one storey only.
+
+**Fix.** Move the line out to the plan level, beside the `level` blocks.
+
+```arch static
+level 1 "Ground" {
+    section A (3000,-1000)->(3000,7000) look east   # error: inside a level
+  }
+```
+
 ## E_SEGMENT_SELECT
 
 *error* — A segment selector (`segment north`, `segment containing <room>.<edge>`) does not name exactly one segment.
@@ -2469,6 +2539,19 @@ room id=bed at (0,0) size 3000x3000 label "Bed"   # only door is on the far side
 
 ```arch static
 room at (0,0) size 4000x3000 label "厨房"   # -f pdf / -f png warns when the CJK font package is absent
+```
+
+## W_CLEAR_HEIGHT_MISMATCH
+
+*warning* — A storey's written clear height disagrees with the one its heights give.
+
+**Cause.** A `level … clear <mm>` is reported as written. The same storey's `height` less the `slab` the storey above writes gives a second value, and the two differ by 0.001 mm or more (the precision the language prints a number in), so one of the three numbers is likely wrong.
+
+**Fix.** Correct the `clear`, the storey's `height` or the upper storey's `slab`, or drop the `clear` and let `describe()` derive it.
+
+```arch static
+level 1 height 3000 clear 2400 { }
+  level 2 slab 300 { }   # warning: 3000 - 300 = 2700
 ```
 
 ## W_CONNECTOR_AMBIGUOUS

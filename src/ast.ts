@@ -73,7 +73,8 @@ export type ElementKind =
   | "void"
   | "outdoor"
   | "fence"
-  | "walls";
+  | "walls"
+  | "section";
 
 /** Fields every element AST node carries. */
 export interface NodeBase {
@@ -1059,6 +1060,18 @@ export interface LevelNode extends NodeBase {
   height?: Expr;
   /** Byte span of the `height` clause, for `E_HEIGHT_RANGE`. */
   heightSpan?: Span;
+  /**
+   * `slab <expr>` — the total depth of the floor construction UNDER this storey's floor, finish
+   * included, in mm (MF-D1). It sits after `height` in the header. It draws nothing: it is what
+   * the storey BELOW reads to derive its clear height.
+   */
+  slab?: Expr;
+  /** Byte span of the `slab` clause. */
+  slabSpan?: Span;
+  /** `clear <expr>` — this storey's clear height, floor to ceiling, in mm, after `slab` (RM-D17). */
+  clear?: Expr;
+  /** Byte span of the `clear` clause. */
+  clearSpan?: Span;
   body: Statement[];
 }
 
@@ -1108,7 +1121,32 @@ export type AstElement =
   | VoidNode
   | OutdoorNode
   | FenceNode
-  | WallsFromRoomsNode;
+  | WallsFromRoomsNode
+  | SectionNode;
+
+/**
+ * `section <id|int> (x,y)->(x,y) look <compass>` — a plan's section mark (RM6.1; design
+ * `docs/plans/product-roadmap/design/slab-and-section.md` §2): where a section cuts the building and
+ * which way it looks. A plan-level statement only, parsed into the lowest storey and drawn on that
+ * page. `section` is no reserved word: the parser reads it only at a statement start, followed by a
+ * name or a whole number and then `(`. The name is the mark's own (`describe().sections[].id`), in
+ * a namespace of its own like an axis label, so the node's {@link NodeBase.id} stays empty and the
+ * element takes an auto-id.
+ */
+export interface SectionNode extends NodeBase {
+  kind: "section";
+  /** The mark's name as written: an identifier, or a positive whole number printed by `fmt0`. */
+  name: string;
+  /** Byte span of the name, for `E_SECTION_DUP`. */
+  nameSpan: Span;
+  /** The cut line's two ends, as written. */
+  from: ExprPoint;
+  to: ExprPoint;
+  /** `look <compass>`: the compass direction the section looks in. */
+  look: CompassWord;
+  /** Byte span of the `look` clause, for `E_SECTION_LOOK`. */
+  lookSpan: Span;
+}
 
 /**
  * `walls from rooms exterior <t_ext> partition <t_int> [{ except <room> … }]` — one statement
@@ -1554,6 +1592,22 @@ export interface PlanNode {
   height?: Expr;
   /** Byte span of the `height` statement, for `E_HEIGHT_RANGE`. */
   heightSpan?: Span;
+  /**
+   * `height <expr> clear <expr>` — a single-storey plan's clear height, floor to ceiling, in mm
+   * (RM-D17). Absent unless written. In a multi-storey plan it is `E_CLEAR_SCOPE`: each `level`
+   * writes its own in its header. Like every height, it draws nothing.
+   */
+  clear?: Expr;
+  /** Byte span of the `clear` clause. */
+  clearSpan?: Span;
+  /** A synthetic per-level plan's `level … slab <expr>` (`levelPlanFor`, `src/ir.ts`); never parsed. */
+  slab?: Expr;
+  /** Byte span of that `slab` clause. */
+  slabSpan?: Span;
+  /** Set on a synthetic per-level plan (`levelPlanFor`) of a plan that writes a `slab` or a `clear`:
+   *  the storey resolves its own clauses, and its clear height is completed once every storey has
+   *  resolved (`deriveCeilings`, `src/datum.ts`). Never parsed. */
+  _storey?: { ownHeight: boolean };
   north: NorthDir;
   /** The sheet marks the plan hides (`north … hidden`, `scale … hidden`, `title hidden`). Absent unless written. */
   hide?: ChromeHide;

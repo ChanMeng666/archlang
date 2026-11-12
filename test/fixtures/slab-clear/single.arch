@@ -1,0 +1,11 @@
+# The clear-height clause on a single-storey plan (RM-D17): written on the `height` line, reported
+# as written (`clear_height 2340`, `clear_height_source` authored). Without it the plan writes neither
+# clause, so it reports no clear-height key at all (MF-D1 item 2), never a guess.
+plan "Single storey clear" {
+  units mm
+  height 2600 clear 2340
+
+  wall id=s exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+  room id=a at (0,0) size 6000x4000 label "Studio" uses living
+  door id=d at (3000,4000) width 900 wall s
+}

@@ -196,8 +196,19 @@ export type Letter = "N" | "E" | "S" | "W";
 /** The four letters in CLOCKWISE order from the top — the index space `toCompass` turns in. */
 export const LETTERS_CW: readonly Letter[] = Object.freeze(["N", "E", "S", "W"] as const);
 
-const LETTER_SIDE: Readonly<Record<Letter, Side>> = Object.freeze({ N: "top", E: "right", S: "bottom", W: "left" });
-const SIDE_LETTER: Readonly<Record<Side, Letter>> = Object.freeze({ top: "N", right: "E", bottom: "S", left: "W" });
+/** The side each page letter names (`N` is the top), and back. */
+export const LETTER_SIDE: Readonly<Record<Letter, Side>> = Object.freeze({
+  N: "top",
+  E: "right",
+  S: "bottom",
+  W: "left",
+});
+export const SIDE_LETTER: Readonly<Record<Side, Letter>> = Object.freeze({
+  top: "N",
+  right: "E",
+  bottom: "S",
+  left: "W",
+});
 
 /** The page letter `l` becomes under `g`. */
 export function actOnLetter(g: D4, l: Letter): Letter {

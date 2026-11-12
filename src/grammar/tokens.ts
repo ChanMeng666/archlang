@@ -76,6 +76,10 @@ export const KEYWORDS = {
     // `walls from rooms` (ADR 0028 §3). The word was an `enum` value (`dims auto walls`)
     // and moved here: no word sits in two categories.
     "walls",
+    // `section <id|int> (x,y)->(x,y) look <compass>` (RM6.1). Here for highlighting: it is
+    // contextual (`ElementDef.contextual`), read only when a name and `(` follow it, so it is never
+    // a statement start and `room id=section` keeps parsing.
+    "section",
   ],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
   attribute: [
@@ -197,6 +201,13 @@ export const KEYWORDS = {
     // `sheet text { … }`: read only when `text {` follows it, so never a `STATEMENT_STARTS` word and
     // not a `control` one: `room id=sheet` keeps parsing. `text` is already here.
     "sheet",
+    // `level <n> … slab <mm>` (MF-D1): read only in a `level` header, so contextual, never a
+    // `STATEMENT_STARTS` word: `room id=slab` and `let slab = 200` keep parsing. Its partner
+    // `clear` (RM-D17) is already here.
+    "slab",
+    // `section … look <compass>` (RM6.1): read only after a section mark's second point, so
+    // contextual like `slab`: `let look = 1` keeps parsing.
+    "look",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [
@@ -560,6 +571,15 @@ export const RULES = {
   dimension: `${NUM_LITERAL}x${NUM_LITERAL}`,
   number: NUM_LITERAL,
 } as const;
+
+/**
+ * The keywords RM6.1 added, every one contextual: `section` (read only before a name and `(`),
+ * `slab` (only in a `level` header) and `look` (only after a section mark's second point). An id
+ * or a binding may spell any of them, so a tool that renames ids away from the keywords (the
+ * OpenPlan3D importer) leaves these three be, and its output stays what it was before them.
+ * `test/section.test.ts` holds each to `KEYWORDS`.
+ */
+export const UNRESERVED_KEYWORDS: readonly string[] = ["section", "slab", "look"];
 
 /**
  * Keywords that begin a plan-body statement (settings + declarations + control

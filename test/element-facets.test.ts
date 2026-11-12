@@ -87,6 +87,8 @@ describe("element facets (src/elements/facets.ts)", () => {
       "void",
       "outdoor",
       "fence",
+      // RM6.1: Plan JSON has no field for a section mark; an export lists it under `dropped`.
+      "section",
     ]);
     expect(kindsWith("opening"), `src/plan-json/from-json.ts OPENING_KINDS: ${CHANGED}`).toEqual([
       "door",

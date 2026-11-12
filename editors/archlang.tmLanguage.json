@@ -101,11 +101,11 @@
           "name": "keyword.control.arch"
         },
         {
-          "match": "\\b(wall|room|door|window|opening|furniture|dim|column|stair|elevator|escalator|roof|void|outdoor|fence|walls)\\b",
+          "match": "\\b(wall|room|door|window|opening|furniture|dim|column|stair|elevator|escalator|roof|void|outdoor|fence|walls|section)\\b",
           "name": "storage.type.element.arch"
         },
         {
-          "match": "\\b(units|grid|paper|scale|north|dims|accTitle|accDescr|material|angle|at|size|polygon|circle|arc|radius|width|thickness|label|hinge|swing|slide|open|offset|text|close|id|flight|landing|winders|project|drawn_by|date|number|revision|from|as|right-of|left-of|below|above|align|gap|uses|floor|rotate|against|segment|side|on|into|near|anchor|inset|flush|mirror|height|faces|clear|dir|street|hemisphere|overhang|rail|boundary|sill|head|except|between|and|axis|around|facing|containing|equal|depth|stacked|levels|fixed|status|sheet)\\b",
+          "match": "\\b(units|grid|paper|scale|north|dims|accTitle|accDescr|material|angle|at|size|polygon|circle|arc|radius|width|thickness|label|hinge|swing|slide|open|offset|text|close|id|flight|landing|winders|project|drawn_by|date|number|revision|from|as|right-of|left-of|below|above|align|gap|uses|floor|rotate|against|segment|side|on|into|near|anchor|inset|flush|mirror|height|faces|clear|dir|street|hemisphere|overhang|rail|boundary|sill|head|except|between|and|axis|around|facing|containing|equal|depth|stacked|levels|fixed|status|sheet|slab|look)\\b",
           "name": "keyword.other.arch"
         }
       ]

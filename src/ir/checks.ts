@@ -77,8 +77,10 @@ export function checkNumberDomain(
     const pts = def ? def.bounds(el) : [];
     const values = def?.measures ? def.measures(el) : [];
     let what: string | undefined;
-    if (pts.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))) what = `The extent of ${el.kind} "${el.id}"`;
-    else if (values.some((v) => !Number.isFinite(v))) what = `A dimension of ${el.kind} "${el.id}"`;
+    // How the author names it: its id, or a kind's own name (`ElementDef.nameOf`, a `section` mark).
+    const name = def?.nameOf?.(el) ?? el.id;
+    if (pts.some((p) => !Number.isFinite(p.x) || !Number.isFinite(p.y))) what = `The extent of ${el.kind} "${name}"`;
+    else if (values.some((v) => !Number.isFinite(v))) what = `A dimension of ${el.kind} "${name}"`;
     let area = 0;
     if (what === undefined && el.kind === "room") {
       const r = el as RRoom;
@@ -99,7 +101,7 @@ export function checkNumberDomain(
     }
     const far = farthest([...pts.flatMap((p) => [p.x, p.y]), ...values]);
     if (far !== undefined) {
-      diagnostics.push(outOfRange(`The geometry of ${el.kind} "${el.id}"`, far, span, el._file));
+      diagnostics.push(outOfRange(`The geometry of ${el.kind} "${name}"`, far, span, el._file));
       outside.add(el);
       continue;
     }

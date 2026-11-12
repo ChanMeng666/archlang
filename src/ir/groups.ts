@@ -305,6 +305,7 @@ export function markPlacement(r: ResolvedElement, node: AstElement, fromStrip: b
     case "outdoor":
     case "fence":
     case "walls":
+    case "section":
       return;
     default: {
       // A new element kind with no case fails the typecheck here.

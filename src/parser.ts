@@ -171,7 +171,9 @@ class Parser {
      *  leading whitespace of a line (a token's `col` cannot tell a tab from a space). */
     private readonly src = "",
   ) {
-    this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...registry.byKeyword.keys()]);
+    // A contextual element keyword (`section`) is no statement start: `room id=section` keeps parsing.
+    const reserved = [...registry.byKeyword.values()].filter((d) => !d.contextual).map((d) => d.keyword);
+    this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...reserved]);
     this.ctx = {
       peek: (o) => this.peek(o),
       next: () => this.next(),
@@ -668,8 +670,22 @@ class Parser {
       }
     }
 
+    // A plan-level `height` is every storey's default; a default clear height is nothing the
+    // author said about any one storey (RM-D17).
+    if (plan.clearSpan) {
+      this.report({
+        severity: "error",
+        code: "E_CLEAR_SCOPE",
+        message: "A multi-storey plan writes `clear` in each `level` header, not on the plan's `height` line",
+        span: plan.clearSpan,
+        hints: ['write it after the storey\'s own height: `level 2 "First" height 2750 clear 2400 { … }`'],
+      });
+    }
+
     for (const s of plan.body) {
-      if (LEVEL_SHARED_KINDS.includes(s.kind)) continue;
+      // A plan-level-only element (`ElementDef.planLevelOnly`, the `section` mark) belongs beside the
+      // levels: `levelPlanFor` gives it to the lowest storey.
+      if (LEVEL_SHARED_KINDS.includes(s.kind) || this.registry.byKind.get(s.kind)?.planLevelOnly) continue;
       this.report({
         severity: "error",
         code: "E_LEVEL_MIX",
@@ -710,6 +726,10 @@ class Parser {
       height = parseExprPratt(this.ctx);
       heightSpan = { start: hk.start, end: this.peek(-1).end };
     }
+    // `slab <expr>` then `clear <expr>` (MF-D1, RM-D17), in that order after `height`. Both are
+    // read only here, in the header before its `{`, so `slab` is no reserved word.
+    const slab = this.headerClause("slab");
+    const clear = this.headerClause("clear");
     const body = this.parseBlockBody(components, undefined);
     return {
       kind: "level",
@@ -718,6 +738,8 @@ class Parser {
       ...(name !== undefined ? { name } : {}),
       ...(height !== undefined ? { height } : {}),
       ...(heightSpan !== undefined ? { heightSpan } : {}),
+      ...(slab ? { slab: slab.expr, slabSpan: slab.span } : {}),
+      ...(clear ? { clear: clear.expr, clearSpan: clear.span } : {}),
       body,
       line: kw.line,
     };
@@ -773,6 +795,22 @@ class Parser {
     this.next();
     plan.height = parseExprPratt(this.ctx);
     plan.heightSpan = this.spanFrom(t.start);
+    // `height <expr> clear <expr>`: a single-storey plan's clear height (RM-D17). On the same line
+    // and never the first word of an assignment or a macro call, so a `clear` binding keeps its
+    // meaning.
+    const clear = this.isTrailingWord("clear") ? this.headerClause("clear") : undefined;
+    if (clear) {
+      plan.clear = clear.expr;
+      plan.clearSpan = clear.span;
+    }
+  }
+
+  /** `<word> <expr>` when the next token is `word`: the expression and the clause's span. */
+  private headerClause(word: string): { expr: Expr; span: Span } | undefined {
+    if (!this.isKeyword(word)) return undefined;
+    const k = this.next();
+    const expr = parseExprPratt(this.ctx);
+    return { expr, span: { start: k.start, end: this.peek(-1).end } };
   }
 
   /**
@@ -1604,7 +1642,25 @@ class Parser {
       return { kind: "error", id: "", line: t.line, message: msg };
     } else if (t.value === "keep") node = this.parseKeep();
     else {
-      const def = this.registry.byKeyword.get(t.value);
+      const found = this.registry.byKeyword.get(t.value);
+      // A contextual keyword starts its element only where the element says (`section A (`).
+      const def = found && (!found.contextual || found.contextual(this.ctx)) ? found : undefined;
+      if (def?.planLevelOnly !== undefined && this.blockDepth > 0) {
+        // Inside a `level`, `zone`, `component` or block: consumed, then refused, as `roof` is. The
+        // gate already read the statement as this element, so a malformed one is refused for where it
+        // stands too (its shape is moot there), consumed to where the next statement starts.
+        try {
+          def.parse(this.ctx);
+        } catch (e) {
+          if (!(e instanceof ParseError)) throw e;
+          this.synchronize(start);
+        }
+        const msg =
+          `"${def.keyword}" is a plan-level statement: write it outside any \`level\`, \`zone\`, ` +
+          `\`component\` or block, once for the whole plan`;
+        this.report({ severity: "error", message: msg, code: def.planLevelOnly.code, span: this.spanFrom(start) });
+        return { kind: "error", id: "", line: t.line, message: msg };
+      }
       if (def) {
         this.lastIdSpan = undefined;
         node = def.parse(this.ctx);

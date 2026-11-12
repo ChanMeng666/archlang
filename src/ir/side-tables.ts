@@ -9,6 +9,7 @@
  * resolution's meter counted, and {@link evaluationSteps} reads it back.
  */
 
+import type { CeilingFacts } from "../datum.js";
 import type { DatumTable } from "../room-datums.js";
 import type { KeepRecord, KeepResult } from "../keep.js";
 import type { ResolvedElement, ResolvedPlan, ResolvedLevel, PlanResolution } from "./types.js";
@@ -82,6 +83,19 @@ export const keepStateOfIr = new WeakMap<ResolvedPlan, KeepState>();
 export const stackedResultsOfIr = new WeakMap<ResolvedPlan, KeepResult[]>();
 /** Where the `stacked` pass left the step counter, keyed the same way (read by `evaluationSteps`). */
 export const stackedStepsOfIr = new WeakMap<ResolvedPlan, number>();
+
+/**
+ * A multi-storey plan's storey clear heights (RM-D17), completed once every storey has resolved
+ * (`deriveCeilings`, `src/datum.ts`): each storey's own facts are on its IR (`_ceiling`), and what
+ * it derives from the storey above is here. Set only on a plan that writes a `slab` or a `clear`.
+ */
+export const ceilingOfIr = new WeakMap<ResolvedPlan, CeilingFacts>();
+
+/** One storey's clear-height facts as `describe()` reports them: completed when the plan has
+ *  storeys, else the storey's own; `undefined` on a plan that writes no `slab` or `clear`. */
+export function ceilingOf(ir: ResolvedPlan): CeilingFacts | undefined {
+  return ceilingOfIr.get(ir) ?? ir._ceiling;
+}
 
 /**
  * Every accepted keep of a resolved plan, measured, in source order: each storey's keeps by level,

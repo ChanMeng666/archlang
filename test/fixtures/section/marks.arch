@@ -1,0 +1,20 @@
+# Two section marks on a two-storey plan (RM6.1): written at plan level, beside the `level` blocks,
+# drawn on the lowest storey's page only, and reported once, under the top-level `describe().sections`.
+plan "Section marks" {
+  units mm
+  section A (3000,-1200)->(3000,7200) look east
+  section 1 (-1200,2500)->(8200,2500) look north
+  level 1 "Ground" height 2750 {
+    wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
+    wall id=mid partition thickness 100 { (4000,0) (4000,6000) }
+    room id=living at (0,0) size 4000x6000 label "Living" uses living
+    room id=kitchen at (4000,0) size 3000x6000 label "Kitchen" uses kitchen
+    door id=front at (2000,6000) width 900 wall shell
+    door id=inner at (4000,3000) width 800 wall mid
+  }
+  level 2 "Upper" height 2750 {
+    wall id=shell exterior thickness 200 { (0,0) (7000,0) (7000,6000) (0,6000) close }
+    room id=loft at (0,0) size 7000x6000 label "Loft" uses bedroom
+    window id=w1 at (3500,0) width 1200 wall shell
+  }
+}

@@ -151,6 +151,7 @@ export type {
   VoidSummary,
   OutdoorSummary,
   FenceSummary,
+  SectionSummary,
   RoomSummary,
   DoorSummary,
   DoorKind,
@@ -312,6 +313,7 @@ export type {
   IntentUnmeasuredReason,
 } from "./intent.js";
 export type { GrossAreaReason } from "./analyze/gross-area.js";
+export type { ClearHeightOmitted } from "./datum.js";
 export {
   roomsMatchingConcept,
   isKnownConcept,
@@ -529,6 +531,7 @@ export type {
   RVoid,
   ROutdoor,
   RFence,
+  RSection,
 } from "./ir.js";
 // Scene IR (the backend-neutral drawing target) + its builder. Backends consume
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read

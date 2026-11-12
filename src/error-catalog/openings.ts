@@ -34,9 +34,21 @@ export const OPENINGS_ENTRIES = defineEntries({
   ),
   E_HEIGHT_RANGE: e(
     "A height is outside the range a storey can be built at.",
-    "A `height`, `sill` or `head` clause evaluated to a number no building has: zero or negative, not finite, or above 100 m. A wall or a head at zero is not a low one, it is a missing one. A window `sill` of exactly 0 is the one exception and is legal — it means a floor-length window. **The range guards the ENDS, not the units:** heights are millimetres like every other number in the language, so `height 3` is three millimetres, is inside the range, and is accepted — the compiler will not guess that three metres was meant, because that would put a number in the datum the author never wrote.",
-    "Write the height in millimetres, or drop the clause and inherit the default (the fix does exactly that) — 3000 for a storey, 2100 for a door or window head, 900 for a window sill.",
+    "A `height`, `slab`, `clear`, `sill` or `head` clause evaluated to a number no building has: zero or negative, not finite, or above 100 m. A wall or a head at zero is not a low one, it is a missing one. A window `sill` of exactly 0 is the one exception and is legal — it means a floor-length window. **The range guards the ENDS, not the units:** heights are millimetres like every other number in the language, so `height 3` is three millimetres, is inside the range, and is accepted — the compiler will not guess that three metres was meant, because that would put a number in the datum the author never wrote.",
+    "Write the height in millimetres, or drop the clause (the fix does exactly that): a `height`, `sill` or `head` then inherits its default — 3000 for a storey, 2100 for a door or window head, 900 for a window sill — and a storey without its `slab` or `clear` simply states none.",
     "wall id=w1 exterior thickness 200 height 0 { (0,0) (4000,0) close }   # error: a wall with no height",
+  ),
+  E_CLEAR_SCOPE: e(
+    "A multi-storey plan writes `clear` on the plan's `height` line.",
+    "`height <mm> clear <mm>` states a single-storey plan's clear height. In a plan of `level` blocks the plan-level `height` is only every storey's default, and a default clear height is nothing the author said about any one storey, so each storey writes its own in its header.",
+    "Move the clause into each `level` header, after the storey's `height` and `slab`.",
+    'height 3000 clear 2400   # error: the plan has levels\n  level 1 "Ground" { }',
+  ),
+  W_CLEAR_HEIGHT_MISMATCH: w(
+    "A storey's written clear height disagrees with the one its heights give.",
+    "A `level … clear <mm>` is reported as written. The same storey's `height` less the `slab` the storey above writes gives a second value, and the two differ by 0.001 mm or more (the precision the language prints a number in), so one of the three numbers is likely wrong.",
+    "Correct the `clear`, the storey's `height` or the upper storey's `slab`, or drop the `clear` and let `describe()` derive it.",
+    "level 1 height 3000 clear 2400 { }\n  level 2 slab 300 { }   # warning: 3000 - 300 = 2700",
   ),
   E_SILL_ABOVE_HEAD: e(
     "A window's sill sits at or above its head.",

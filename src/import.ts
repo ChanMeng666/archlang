@@ -113,6 +113,13 @@ function bindingsOf(body: Statement[]): Statement[] {
   return out;
 }
 
+/** Does a module's top-level statement join its whole-file component? Not a `level`, and not a
+ *  plan-level-only element (`ElementDef.planLevelOnly`, the `section` mark). */
+const inWholeFile =
+  (registry: Registry) =>
+  (s: Statement): boolean =>
+    s.kind !== "level" && registry.byKind.get(s.kind)?.planLevelOnly === undefined;
+
 /** One loaded module: the components it exports, plus the whole-file body it *is*. */
 interface Module {
   comps: CompMap;
@@ -130,17 +137,25 @@ interface Module {
  *    `dims`/`title`/`axes`/`schedule`/`legend`) are IGNORED — they are not body statements, so
  *    they simply never reach here; the root plan's settings govern;
  *  - a module's `level` blocks are DROPPED (a storey is a page, and a component is a
- *    piece of one page, so a multi-storey file cannot be a component). Everything else —
+ *    piece of one page, so a multi-storey file cannot be a component), and so are its
+ *    plan-level-only elements (`ElementDef.planLevelOnly`, the `section` mark, RM6.1): a mark cuts the whole building and is the root plan's, as the
+ *    settings are, and in a component it would be drawn once per copy. Everything else —
  *    elements, `let`/`set`, control flow, `strip`, nested `place` — comes through.
  *
  * `scope` is the module's OWN component map, so a file that calls its private helpers
  * still expands when the importer knows only the file's name.
  */
-function wholeFileComponent(name: string, path: string, body: Statement[], comps: CompMap): ComponentDef {
+function wholeFileComponent(
+  name: string,
+  path: string,
+  body: Statement[],
+  comps: CompMap,
+  registry: Registry,
+): ComponentDef {
   return {
     name,
     params: [],
-    body: body.filter((s) => s.kind !== "level"),
+    body: body.filter(inWholeFile(registry)),
     line: 1,
     file: path,
     scope: comps,
@@ -273,7 +288,7 @@ function mergeImport(
       });
       return;
     }
-    if (mod.body.filter((s) => s.kind !== "level").length === 0) {
+    if (mod.body.filter(inWholeFile(registry)).length === 0) {
       diagnostics.push({
         severity: "warning",
         code: "W_IMPORT_EMPTY_FILE",
@@ -282,7 +297,7 @@ function mergeImport(
         hints: [`draw in the module's plan body, or import a named \`component\` with \`import "…": <name>\``],
       });
     }
-    target.set(imp.wholeAs, wholeFileComponent(imp.wholeAs, r.path, mod.body, mod.comps));
+    target.set(imp.wholeAs, wholeFileComponent(imp.wholeAs, r.path, mod.body, mod.comps, registry));
     return;
   }
 
