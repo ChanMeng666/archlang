@@ -494,7 +494,12 @@ export function typeSurface(entryFile) {
       }
       return { tag: pairs.map(([k, v]) => `${k}=${v}`).join(","), pairs, lits, type: print(u) };
     });
-    const rest = t.types.filter((u) => u.flags & NULLISH).map(print).sort().join(" | ") || "never";
+    const rest =
+      t.types
+        .filter((u) => u.flags & NULLISH)
+        .map(print)
+        .sort()
+        .join(" | ") || "never";
     return JSON.stringify({ variants: list, rest });
   };
   /**
@@ -589,8 +594,7 @@ export function typeSurface(entryFile) {
           // Its member types are declared, not inferred values: a literal one is still compared.
           out["@record"] = "declared member types";
           members(out, "", vt, 0, new Set());
-        }
-        else out.type = print(vt);
+        } else out.type = print(vt);
       }
     }
     if (f & (ts.SymbolFlags.Interface | ts.SymbolFlags.Class)) {
