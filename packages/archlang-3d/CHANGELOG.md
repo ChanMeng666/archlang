@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-11-12
+
+The core peer range stays `^1.57.0`: nothing below needs an export newer than core 1.57.0.
+
 ### Added
 
 - Doorways, windows and stairs are built in their parts (product-roadmap card RM8.6). Every door
