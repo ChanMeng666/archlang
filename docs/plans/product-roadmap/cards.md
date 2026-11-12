@@ -124,7 +124,7 @@
 
 run 43015163598（`9a3be392`，11:49:49Z）的 `Deploy mcp (scripted Worker)` smoke 报 `/svg/<studio.arch payload>: the pinned copy is not immutable: public, max-age=300, stale-while-revalidate=86400`。协调者的判断：版本传播的竞态，部署后一秒固定版本的 URL 落到了旧的 isolate，不是配置缺口；之后的 Deploy run 43025136172 全部 success。内容：让 `scripts/smoke.mjs` 在固定版本的取副本上遇到 302 或非 immutable 的头时重试几秒（有上限、有最后一次的真实错误），其余检查不放宽。证明：一个测试用假服务器先返回旧头再返回 immutable 头；真正的缺陷（一直不 immutable）仍然失败。不许：放宽 immutable 的断言；无上限地重试。
 
-### RM0.9 · 兼容检查器把带 `kind` 的联合当作枚举集合（2026-11-12 加，出自 RM-D33 的协调者裁定） — `doing` · 未估 · opus · 依赖无 · **挡 RM6.1（#721）的合并**
+### RM0.9 · 兼容检查器把带 `kind` 的联合当作枚举集合（2026-11-12 加，出自 RM-D33 的协调者裁定） — `done` · #731（`01652d52`） · opus · 依赖无 · 已不再挡 RM6.1
 
 现象：新增一种元素（`kind` 带标签的公开联合的新变体，或以它为键的常量的新键）会让 `scripts/compat-check.mjs` 报破坏性变更，只能用 BREAKING 豁免放行；RM6.1 的 `section` 就会撞上。协调者 2026-11-12 的裁定（可推翻）：这是 minor。内容：扩展 `scripts/compat-check.mjs`，把带 `kind` 的联合当作类似枚举的集合：加变体、以它为键的常量加键 = 加法（minor）；删变体、改名、改已有变体的字段仍是 BREAKING。证明：测试覆盖加变体（通过）、删变体与改字段（仍失败）、以 `kind` 为键的常量加键；对 `main` 与 #721 的头各跑一次，#721 不再需要豁免。不许：放宽已有的枚举与字段规则；用豁免清单代替规则；顺手改别的检查。
 
@@ -568,7 +568,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 不许：手画或手修任何图；用 AI 图像；放宽字节恒等律，或在设计稿没写理由时改 `FAMILIES_BEFORE`、`NEAR_WORDS`；在 `docs/` 的 Markdown 围栏里写 2026-11-04 那一批的家族词（`.claude/rules/docs-prose.md`，用文字说明）；把样张工具放进 `check:drift`；让 3D 小图离开它的 2D 符号单独出现。
 
-### RM8.6 · 门窗与楼梯的 3D 细部 — `todo` · 4 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（细部尺寸一节）；backlog VA.1
+### RM8.6 · 门窗与楼梯的 3D 细部 — `done` · #729（`0144ea61`；3D 门窗套、楼梯部件、放样树冠；后续 RM8.6b、RM8.6c） · 4 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（细部尺寸一节）；backlog VA.1
 
 今天：门是放在墙厚中央的一块 40 mm 门扇，洞口侧面是光秃的墙体；窗是 40 × 60 mm 的框和 16 mm 的玻璃（`GLASS_MM`），都在切口中线上，没有窗台板（`src/mesh/build.ts` 头注释）；楼梯是实心阶梯体（账本 `stair-solid-default`）；`bean_bag` 由堆叠的圆角层构成，轮廓呈阶梯（VA.1），树冠同类。
 - 门框与门套；窗台板与洞口侧面；楼梯做出踏步与栏杆（不再是实心体块）；树冠与 `bean_bag` 用 `profile` 平滑截面（`src/mesh/t0.ts`）。
@@ -580,6 +580,20 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 证明：每类细部一个最小夹具；`packages/archlang-3d/test/t0.test.ts` 绿；GLB 过 glTF-Validator（CI）；核心的 SVG、`describe()`、`lint()` 零差；每个移动的钉子在 PR 里列出旧值、新值与理由。
 
 不许：碰核心（`src/`）或 2D 符号；不带理由移动钉子，或在本地 bless 关键帧；做任意角度旋转；用 PBR、位图纹理或 UV；让一个对称家族在 3D 里变成有手性（手性只从核心的 `mirror` 来）；漏记任何默认值。
+
+### RM8.6b · 3D 门窗套的顺序无关与分段栏杆（2026-11-12 加，出自 RM8.6 评审） — `done` · #732（`213e7393`） · opus · 依赖无
+
+做了：门窗套与撞名不再依赖洞口顺序；栏杆按段处理，不留桩；相接的洞口保留各自的窗台。
+
+### RM8.6c · RM8.6 的余项（2026-11-12 加，出自 #729、#732） — `todo` · 未估 · opus · 依赖无（线下）
+
+1. 梯段边没有在墙的端点处分开。复现：`wall id=p interior thickness 100 { (2000,0) (2000,2500) }` 加 `stair id=s at (2050,500) size 1000x3000 dir up width 1000`，左侧读作墙，1000 mm 的敞边没有栏杆；`main` 上本来就有。
+2. 栏杆终点落在梯段内时没有柱头。
+3. 中等墩（c < 墩 < 2c）两条腿都省了；考虑改为一条居中的共用腿。
+4. 自动命名的洞口 id 含 `:` 时没有门窗套；需要对 GLB 安全的节点名。
+5. 3D 的窗台侧规则对语料外的核心边界情形（多边形洞口接缝、圆房间的细分）未验证。
+6. 推拉门（barn）的门扇面跟随墙的绘制方向，镜像不对称。
+证明：每件各一条测试，复现用例先红后绿。不许：改 `main` 上已有的 3D 默认尺寸而不进账本。
 
 ### RM8.10 · 在回放 HTML 与 playground 的 3D 页签里显示 `W3D_MIXED_HEIGHT_JOINT` — `todo` · 未估 · sonnet · 依赖无（2026-11-11 加，出自 #691 期间的报告；2026-11-12 按 RM-D32 改写，不再等设计裁定）
 
@@ -844,7 +858,9 @@ RM-D23 已获所有者批准（2026-11-11）。backlog VA.5："Revisit only with
 
 （RM-D27 之后 2027-01-10 是参考日期：本阶段的卡依赖满足就开工，不等这一天。）
 
-### RM6.1 · 剖面所需的两个事实 — `doing`（第一半 #721，草稿，头 `864684d1`；剖切符号没有开始） · 5 日 · opus · 依赖 PS7.9、冻结期的 `slab-and-section.md` · `[语法]` ×3 · **批次 D 首位（#532 触发）**
+### RM6.1 · 剖面所需的两个事实 — `done`（#721，合并 `8b77d5c4`；后续 RM6.1b、RM6.1d） · 5 日 · opus · 依赖 PS7.9、冻结期的 `slab-and-section.md` · `[语法]` ×3 · **批次 D 首位（#532 触发）**
+
+**完成（2026-11-12）：** #721 合并（`8b77d5c4`）：`level` 的 `slab`/`clear` 与剖切符号 `section A (x,y)->(x,y) look east`；`section`、`slab`、`look` 是上下文词，不是保留字；`describe().sections`；编译器路径 393,692 B（上限 401,000 B）；#532 已留言。下面 12:23Z 的状态是合并前的读数。余项见 RM6.1b、RM6.1d。
 
 **状态（12:23Z）：`doing`，第一半是草稿 #721（头 `864684d1`，分支 `feat/rm6.1-slab-and-section`）：** `level` 的 `slab`、`clear` 与单层的 `height … clear`，`E_CLEAR_SCOPE`、`W_CLEAR_HEIGHT_MISMATCH`，`describe().heights` 的新字段，321 个字节恒等测试；527 行全语料零移动。**没做：** 剖切符号（需要一个只在 `section <id|int> (` 时成立的上下文闸，不能让 `section` 成为保留字，也不能破坏 `KEYWORDS.element` 与 `BUILTIN_DEFS` 的一致测试）、#532 的演示、3D 读 `slab`、drawing-set 卡里 DS11 对 DS5 的依赖作废一行、CHANGELOG。**阻塞：playground 编译器路径超预算（自己量得 848 B，对 #713 之前的基线；基于现在的 `main` 约 920 B，变基后重量）**，见 RM0.7。
 
@@ -865,6 +881,21 @@ MF-D1（`../math-foundations/README.md` §6.1 第 3 条）要求 MF-D11 在本�
 ### RM6.1c · `skills/archlang/SKILL.md:323` 仍写 "sliding-family-only"（2026-11-12 加，出自 #714） — `todo` · 未估 · sonnet · 依赖无（线下）
 
 #714 把 spec 的门行改成按种类的派生表（`DOOR_KIND_CLAUSES`）；`skills/archlang/SKILL.md` 第 323 行仍写 "`slide`/`open` are sliding-family-only"，而 barn 与 bifold 也接受它们。内容：照 `DOOR_KIND_CLAUSES` 改这句（用 `gen:*` 的真源，不手抄），生成的副本由生成器重生成。不许：手改生成副本。
+
+### RM6.1b · 3D 读 `slab` — `todo` · 未估 · opus · 依赖无（线下）
+
+现象：RM6.1 的 `slab` 只进 `describe().heights`，`archlang-3d` 的楼板仍按旧厚度。内容：`packages/archlang-3d` 读 `level` 的 `slab`，楼板厚度取作者值，没写时不变。证明：用了 `slab` 的图 3D 楼板厚度随之变；没写的图 Mesh3D 与 GLB 逐字节不变。不许：让核心依赖 3D；给没写的图猜板厚。
+
+### RM6.1d · RM6.1 的评审余项（2026-11-12 加，出自 #721） — `todo` · 未估 · opus · 依赖无（线下）
+
+六件小事，可拆：
+1. `clear` 大于层高、`slab` 不小于层高，现在都不报诊断。内容：设计一条 W，并量编译器路径字节（#721 后为 393,692 B / 401,000 B）。不许：不量字节就加。
+2. `import … as` 会静默丢掉模块里的 `section`。内容：报一条警告。
+3. 编辑器高亮器把 section、slab、look 在 id 位置上着了关键字色（`sheet` 已处理过）。内容：照 `sheet` 的做法修。
+4. OpenPlan3D 的 `UNRESERVED_KEYWORDS` 过滤没有测试。内容：补测试。
+5. `levelPlanFor` 的缓存键不含注册表（只因每注册表一份解析备忘才安全）。内容：键里加上注册表，或在注释与测试里钉住这一前提。
+6. `droppedFromStorey` 用 `BUILTIN_REGISTRY` 做 `nameOf`，没用平面自己的注册表或 `KIND_FACETS`。内容：改用后者。
+证明：每件各一条测试；字节恒等律不变。不许：顺手改别的。
 
 
 ### RM3.3 · mask 导入 — `todo` · 3 日 · opus · **触发：第二个独立来源带样本**
