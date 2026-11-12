@@ -233,32 +233,38 @@ describe("trim beside its neighbours", () => {
       ),
     );
 
-  it("two doors 100 mm apart: the later one's legs between them are left out, its head piece stops at the jamb", () => {
-    // Door a spans x 1600–2400, b 2500–3300; a casing is 70 mm wide.
-    const m = mesh(
-      plan(
-        `${SHELL} ${ROOM} door id=a at (2000,4000) width 800 wall shell swing in door id=b at (2900,4000) width 800 wall shell swing in`,
-      ),
-    );
-    expect(rows(m, "b").at(-1)).toEqual(["door-casing-omitted", ["+face:end:trim a", "-face:end:trim a"]]);
-    expect(rows(m, "a").map(([r]) => r)).not.toContain("door-casing-omitted");
+  // RM8.6b S1: the trim never depends on the order the plan writes its openings in. Two pieces of the
+  // same rank that meet are both cut back or left out; a casing beats a sill's or a board's horn.
+  const TWO_DOORS = (first: string, second: string) => plan(`${SHELL} ${ROOM} ${first} ${second}`);
+  const DOOR_A = "door id=a at (2000,4000) width 800 wall shell swing in";
+  const DOOR_B = "door id=b at (2900,4000) width 800 wall shell swing in";
+  const ROW = `wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close } room id=r at (0,0) size 8000x4000 label "R" uses living`;
+  const W1 = "window id=w1 at (1500,0) width 1000 wall shell";
+  const W2 = "window id=w2 at (2560,0) width 1000 wall shell";
+  const D = "door id=d at (5000,0) width 900 wall shell swing in";
+  const W3 = "window id=w3 at (6045,0) width 1000 wall shell";
+
+  it("two doors 100 mm apart: both legs between them are left out, each head piece stops at its jamb", () => {
+    // Door a spans x 1600–2400, b 2500–3300; a casing is 70 mm wide, so the two legs between meet.
+    const m = mesh(TWO_DOORS(DOOR_A, DOOR_B));
+    expect(rows(m, "a").at(-1)).toEqual(["door-casing-omitted", ["+face:start:casing b", "-face:start:casing b"]]);
+    expect(rows(m, "b").at(-1)).toEqual(["door-casing-omitted", ["+face:end:casing a", "-face:end:casing a"]]);
     expect(clear(boxes(node(m, "L1/door:a:casing")), boxes(node(m, "L1/door:b:casing")))).toBe(true);
-    // b's head piece runs from its own jamb (x 2500), not past it.
+    // Each head piece runs from its own jamb on that side (a's ends at x 2400, b's starts at 2500).
+    expect(Math.max(...boxes(node(m, "L1/door:a:casing")).map((p) => p.x[1]))).toBe(2_400_000);
     expect(Math.min(...boxes(node(m, "L1/door:b:casing")).map((p) => p.x[0]))).toBe(2_500_000);
   });
 
-  it("two windows 60 mm apart, and a window 95 mm from a door: the later sill's horn stops at its jamb", () => {
-    const m = mesh(
-      plan(
-        `wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close } room id=r at (0,0) size 8000x4000 label "R" uses living window id=w1 at (1500,0) width 1000 wall shell window id=w2 at (2560,0) width 1000 wall shell door id=d at (5000,0) width 900 wall shell swing in window id=w3 at (6045,0) width 1000 wall shell`,
-      ),
-    );
-    // One horn row each, the sill's: the boards' 20 mm horns fit in the 60 mm between w1 and w2, and
-    // the inside face has no casing in w3's way (the door's is 70 mm wide, w3's board starts 75 mm on).
+  it("two windows 60 mm apart, and a window 95 mm from a door: the horns between stop at their jambs", () => {
+    const m = mesh(plan(`${ROW} ${W1} ${W2} ${D} ${W3}`));
+    // The sills' 40 mm horns meet in the 60 mm between w1 and w2: both stop. The boards' 20 mm fit.
+    // The door's casing beats w3's sill horn; on the inside its 70 mm casing ends 75 mm short of w3's
+    // jamb, short of w3's 20 mm board horn.
     const horns = (id: string) => rows(m, id).filter(([r]) => r === "window-sill-horn-omitted");
-    expect(horns("w2")).toEqual([["window-sill-horn-omitted", ["start:trim w1"]]]);
-    expect(horns("w3")).toEqual([["window-sill-horn-omitted", ["start:trim d"]]]);
-    expect(horns("w1")).toEqual([]);
+    expect(horns("w1")).toEqual([["window-sill-horn-omitted", ["end:sill w2"]]]);
+    expect(horns("w2")).toEqual([["window-sill-horn-omitted", ["start:sill w1"]]]);
+    expect(horns("w3")).toEqual([["window-sill-horn-omitted", ["start:casing d"]]]);
+    expect(rows(m, "d").map(([r]) => r)).not.toContain("door-casing-omitted");
     for (const [a, b] of [
       ["L1/window:w1:sill", "L1/window:w2:sill"],
       ["L1/window:w1:board", "L1/window:w2:board"],
@@ -266,6 +272,123 @@ describe("trim beside its neighbours", () => {
       ["L1/door:d:casing", "L1/window:w3:board"],
     ] as const)
       expect(clear(boxes(node(m, a)), boxes(node(m, b))), `${a} ~ ${b}`).toBe(true);
+  });
+
+  it("builds the same trim whatever order the plan writes its openings in", () => {
+    /** Each opening's trim nodes (their shells) and its ledger rows, by id. */
+    const trimOf = (m: Mesh3D) => ({
+      nodes: Object.fromEntries(
+        m.nodes.filter((n) => n.part && n.part !== "frame" && n.part !== "glass").map((n) => [n.key, n.shells]),
+      ),
+      rows: Object.fromEntries(
+        [...new Set(m.assumptions.flatMap((x) => (x.id ? [x.id] : [])))].sort().map((id) => [id, rows(m, id)]),
+      ),
+    });
+    for (const [a, b] of [
+      [TWO_DOORS(DOOR_A, DOOR_B), TWO_DOORS(DOOR_B, DOOR_A)],
+      [plan(`${ROW} ${W1} ${W2} ${D} ${W3}`), plan(`${ROW} ${W3} ${D} ${W2} ${W1}`)],
+      [plan(`${ROW} ${D} ${W3}`), plan(`${ROW} ${W3} ${D}`)],
+    ] as const)
+      expect(trimOf(mesh(b))).toEqual(trimOf(mesh(a)));
+    // Review of PR #732, B1: three doorways side by side (each touching the next) in all six orders,
+    // the names a clash reports among them too.
+    const three = [
+      "door id=o0 at (3560,4000) width 800 wall shell swing in",
+      "door id=o1 at (4410,4000) width 900 wall shell swing in",
+      "door id=o2 at (5260,4000) width 800 wall shell swing in",
+    ];
+    const orders = [
+      [0, 1, 2],
+      [0, 2, 1],
+      [1, 0, 2],
+      [1, 2, 0],
+      [2, 0, 1],
+      [2, 1, 0],
+    ];
+    const first = trimOf(mesh(plan(`${ROW} ${orders[0]?.map((k) => three[k]).join(" ")}`)));
+    expect(first.rows.o1).toContainEqual([
+      "door-casing-omitted",
+      ["+face:start:opening o2", "+face:end:opening o0", "-face:start:opening o2", "-face:end:opening o0"],
+    ]);
+    for (const order of orders.slice(1))
+      expect(trimOf(mesh(plan(`${ROW} ${order.map((k) => three[k]).join(" ")}`))), order.join("")).toEqual(first);
+  });
+
+  it("keeps the sill and board of windows that touch a neighbour, cutting only the horns between", () => {
+    // Two windows jamb to jamb (x 1000–2000, 2000–3000), and a sidelight against a door (door x
+    // 3550–4450, window 4450–5450). Review of PR #732, B1: the widened jamb tests horns only.
+    const m = mesh(
+      plan(
+        `${ROW} ${W1} window id=w2 at (2500,0) width 1000 wall shell door id=d at (4000,0) width 900 wall shell swing in window id=w at (4950,0) width 1000 wall shell`,
+      ),
+    );
+    for (const id of ["w1", "w2", "w"]) {
+      expect(node(m, `L1/window:${id}:sill`), id).toBeDefined();
+      expect(node(m, `L1/window:${id}:board`), id).toBeDefined();
+      expect(
+        rows(m, id).map(([r]) => r),
+        id,
+      ).not.toContain("window-sill-omitted");
+    }
+    expect(rows(m, "w1")).toContainEqual(["window-sill-horn-omitted", ["end:opening w2"]]);
+    expect(rows(m, "w2")).toContainEqual(["window-sill-horn-omitted", ["start:opening w1"]]);
+    expect(rows(m, "w")).toContainEqual(["window-sill-horn-omitted", ["start:opening d"]]);
+  });
+
+  it("gives a mirror-symmetric two-door plan mirror-symmetric trim", () => {
+    // Doors at x 2550 and 3450 (800 wide, 100 mm apart), symmetric about x = 3000.
+    const m = mesh(
+      TWO_DOORS(
+        "door id=a at (2550,4000) width 800 wall shell swing in",
+        "door id=b at (3450,4000) width 800 wall shell swing in",
+      ),
+    );
+    const points = (key: string, flip: boolean): string[] =>
+      [
+        ...new Set(
+          (node(m, key)?.shells ?? []).flatMap((s) =>
+            Array.from({ length: s.positions.length / 3 }, (_, k) => {
+              const x = s.positions[3 * k] as number;
+              return `${flip ? 6_000_000 - x : x},${s.positions[3 * k + 1]},${s.positions[3 * k + 2]}`;
+            }),
+          ),
+        ),
+      ].sort();
+    for (const part of ["casing", "lining"])
+      expect(points(`L1/door:b:${part}`, true), part).toEqual(points(`L1/door:a:${part}`, false));
+  });
+
+  it("cuts a head piece back one end at a time (RM8.6b S3)", () => {
+    // A high window (sill 2100, head 2600) beside a door whose head is at 2100, on a 3000 mm wall.
+    const at = (x: number) =>
+      mesh(
+        plan(
+          `wall id=shell exterior thickness 200 height 3000 { (0,0) (8000,0) (8000,4000) (0,4000) close } room id=r at (0,0) size 8000x4000 label "R" uses living door id=d at (5000,0) width 900 wall shell swing in head 2100 window id=w at (${x},0) width 1000 wall shell sill 2100 head 2600`,
+        ),
+      );
+    // 95 mm apart: the door's casing stands whole (its legs end below the window's sill, its head
+    // piece 70 mm past the jamb, short of the window); the window's sill horn yields to it.
+    const far = at(6045);
+    expect(rows(far, "d").map(([r]) => r)).not.toContain("door-casing-omitted");
+    expect(rows(far, "w")).toContainEqual(["window-sill-horn-omitted", ["start:casing d"]]);
+    // 40 mm apart: the head piece's end toward the window would stand in the window's doorway, so
+    // that end alone is cut back, on each face; the other end stays.
+    const near = at(5990);
+    expect(rows(near, "d").at(-1)).toEqual([
+      "door-casing-omitted",
+      ["+face:head-end:opening w", "-face:head-end:opening w"],
+    ]);
+    const pieces = boxes(node(near, "L1/door:d:casing"));
+    const xs = pieces.flatMap((p) => p.x);
+    expect([Math.min(...xs), Math.max(...xs)]).toEqual([4_480_000, 5_520_000]);
+    // The head piece: from 70 mm past the far jamb to the near jamb (x 5450), 2100–2170 up.
+    const bars = pieces.filter((p) => p.y[0] === 2_100_000);
+    expect(bars.length).toBe(2);
+    for (const b of bars)
+      expect([b.x, b.y]).toEqual([
+        [4_480_000, 5_450_000],
+        [2_100_000, 2_170_000],
+      ]);
   });
 
   it("passes a casing leg through a rug by the doorway, and leaves it out beside a wardrobe", () => {

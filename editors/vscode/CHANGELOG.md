@@ -14,6 +14,15 @@ are documented here. The format is based on
 
 ## [Unreleased]
 
+## [0.48.0] - 2026-11-12
+
+### Changed
+
+- **Rebundled the core at `@chanmeng666/archlang@1.60.0`**: the new `slab` and `clear` clauses on
+  a `level` and the `section` mark highlight and check in the editor, with their diagnostics
+  (`E_CLEAR_SCOPE`, `E_SECTION_AXIS`, `E_SECTION_DUP`, `E_SECTION_LOOK`, `E_SECTION_SCOPE`,
+  `W_CLEAR_HEIGHT_MISMATCH`).
+
 ## [0.47.0] - 2026-11-12
 
 ### Changed
