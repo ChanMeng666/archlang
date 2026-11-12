@@ -54,6 +54,8 @@
   },
   "files": [
     "dist",
+    "!dist/error-catalog.js",
+    "!dist/error-catalog.js.map",
     "examples",
     "spec.llm.md",
     "llms-full.txt",

@@ -1,6 +1,14 @@
 import { copyFileSync, mkdirSync } from "node:fs";
 import { build, defineConfig } from "tsup";
 
+/** The JS target of both builds below. */
+const TARGET = "es2022";
+/**
+ * Optional export-backend deps are lazy-imported; never bundle them so the core build stays
+ * self-contained and they remain truly optional. Both builds below leave them out.
+ */
+const EXTERNAL = ["pdfkit", "clipper2-wasm", "@resvg/resvg-js", "@chanmeng666/archlang-font-cjk"];
+
 export default defineConfig({
   // `src/cli/link.ts` is the Node-only `@chanmeng666/archlang/link` subpath (it uses zlib), so
   // the MCP shim mints the same share links as `archlang link`; the main entry stays browser-safe.
@@ -19,10 +27,8 @@ export default defineConfig({
   dts: { entry: ["src/index.ts", "src/cli.ts", "src/cli/link.ts", "src/share.ts"] },
   clean: true,
   sourcemap: true,
-  target: "es2022",
-  // Optional export-backend deps are lazy-imported; never bundle them so the
-  // core build stays self-contained and they remain truly optional.
-  external: ["pdfkit", "clipper2-wasm", "@resvg/resvg-js", "@chanmeng666/archlang-font-cjk"],
+  target: TARGET,
+  external: EXTERNAL,
   // CLI needs a shebang; library entry stays clean.
   banner: ({ format }) => (format === "esm" ? {} : {}),
   // Ship the PNG backend's bundled font next to the emitted chunks so
@@ -34,10 +40,12 @@ export default defineConfig({
     // `dist/error-catalog.js`: the diagnostic catalogue (`src/error-catalog.ts`) in one file of its
     // own, for the playground's edit-mode diagnostics panel (card RM0.7), so its messages, causes and
     // examples load there and not with the compiler chunk. A second build, after the first, with no
-    // splitting: as a fourth entry of the build above it would split the shared chunk `dist/index.js`
+    // splitting: as a sixth entry of the build above it would split the shared chunk `dist/index.js`
     // imports in two (the catalogue and what it reads, ~460 KB, against everything else), and the
     // playground's `compiler` group, which captures what `index.js` imports, would take it back. Not a
-    // package export (no `exports` entry, no declaration file), like `dist/cli/review.js`.
+    // package export (no `exports` entry, no declaration file), like `dist/cli/review.js`, and not in
+    // the npm tarball either (`files` in package.json): only the repository's playground reads it.
+    // No `silent`: tsup's flag is module-global, and would mute the main build's log in watch mode.
     await build({
       config: false,
       entry: { "error-catalog": "src/error-catalog.ts" },
@@ -46,9 +54,9 @@ export default defineConfig({
       clean: false,
       dts: false,
       sourcemap: true,
-      target: "es2022",
+      target: TARGET,
+      external: EXTERNAL,
       outDir: "dist",
-      silent: true,
     });
   },
 });
