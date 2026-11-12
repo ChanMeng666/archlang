@@ -217,8 +217,8 @@ const PAGE_META = [
   ],
   [
     "/whats-new",
-    "What is new in 1.44 to 1.58",
-    "The features added in ArchLang 1.44 to 1.58, each with an example: quantities and takeoff, locked elements, stacked storeys, L-shaped rooms, winders and the import root.",
+    "What is new in 1.44 to 1.59",
+    "The features added in ArchLang 1.44 to 1.59, each with an example: quantities and takeoff, locked elements, stacked storeys, L-shaped rooms, winders and rule sources.",
   ],
   [
     "/spec",

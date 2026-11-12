@@ -993,6 +993,74 @@
       "room_type": "Storage"
     }
   ],
+  "examples/courtyard-family.arch": [
+    {
+      "id": "garage",
+      "label": "Garage",
+      "uses": ["garage"],
+      "room_type": "Storage"
+    },
+    {
+      "id": "entry",
+      "label": "Entry",
+      "uses": ["entry"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "living",
+      "label": "Living",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "kitchen",
+      "label": "Kitchen",
+      "uses": ["kitchen"],
+      "room_type": "Kitchen"
+    },
+    {
+      "id": "bath",
+      "label": "Bath",
+      "uses": ["bath"],
+      "room_type": "Bathroom"
+    },
+    {
+      "id": "gym",
+      "label": "Gym",
+      "uses": [],
+      "room_type": "Room"
+    },
+    {
+      "id": "hall",
+      "label": "Hall",
+      "uses": ["hall", "circulation"],
+      "room_type": "Entrance"
+    },
+    {
+      "id": "kids",
+      "label": "Kids",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "nursery",
+      "label": "Nursery",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    },
+    {
+      "id": "games",
+      "label": "Games",
+      "uses": ["living"],
+      "room_type": "LivingRoom"
+    },
+    {
+      "id": "bedroom",
+      "label": "Bedroom",
+      "uses": ["bedroom"],
+      "room_type": "MasterRoom"
+    }
+  ],
   "examples/courtyard-house.arch": [
     {
       "id": "r_living",

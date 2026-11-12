@@ -1,0 +1,162 @@
+# A 20 x 16 m single-storey family house wrapped round an open courtyard, with a
+# garden to the south. It furnishes a whole family: bunk beds and a crib, a games
+# room and a gym, a fireplace, a garage with a motorcycle, a hot tub in the
+# courtyard and a swing, a sandpit and a fire pit in the garden.
+#
+# THE COURTYARD IS NOT A ROOM. Every room here is a rectangle except the hall, one
+# polygon that rings the courtyard on three sides, and `walls from rooms` derives
+# every wall. Rooms round a hole do not tile one floor, so the hole is covered
+# exactly by an `outdoor patio`: that tells the compiler it is open ground, and the
+# courtyard ring becomes a second exterior wall. Its openings are hosted on that
+# ring with `at (x,y) wall exterior`, or by `on living.bottom`, the living room
+# edge whose exterior run faces the courtyard.
+#
+# The street is north, so the equator side is south. Every bedroom and the games
+# room take the garden facade; the living room, in the street band, takes its south
+# light from the courtyard instead.
+plan "Courtyard Family House" {
+  units mm
+  grid 50
+  paper A2 portrait
+  scale 1:100
+  north up
+  dims auto overall
+  schedule rooms
+  legend
+
+  # `site` draws nothing. It names `d_front` the main entrance (the one hinged door
+  # on the street side), so circulation and privacy are walked from it.
+  site { street north hemisphere north }
+
+  # ---- rooms ----------------------------------------------------------------
+  room id=garage  at (0,0)      size 5500x6200 label "Garage"  uses garage
+  room id=entry   at (5500,0)   size 3500x5500 label "Entry"   uses entry
+  room id=living  at (9000,0)   size 5500x5500 label "Living"  uses living
+  room id=kitchen at (14500,0)  size 5500x5500 label "Kitchen" uses kitchen
+  room id=bath    at (0,6200)   size 5500x3300 label "Bath"    uses bath
+  room id=gym     at (14500,5500) size 5500x4000 label "Gym"
+  # A U round the courtyard; its centroid is in the open air, so the label is placed.
+  room id=hall polygon
+    (5500,5500) (7000,5500) (7000,9500) (13000,9500) (13000,5500) (14500,5500)
+    (14500,9500) (20000,9500) (20000,11000) (0,11000) (0,9500) (5500,9500)
+    label "Hall" at (10000,10250) uses hall circulation
+  room id=kids    at (0,11000)     size 5000x5000 label "Kids"    uses bedroom
+  room id=nursery at (5000,11000)  size 3500x5000 label "Nursery" uses bedroom
+  room id=games   at (8500,11000)  size 5000x5000 label "Games"   uses living
+  room id=bedroom at (13500,11000) size 6500x5000 label "Bedroom" uses bedroom
+
+  outdoor id=court patio at (7000,5500) size 6000x4000 label "Courtyard"
+
+  walls from rooms exterior 300 partition 100
+
+  # ---- doors ----------------------------------------------------------------
+  door id=d_front on entry.top at center width 1000 swing into entry
+  door id=d_garage garage on garage.top at 2000 from start width 3000
+  door id=d_gar_in between garage and entry at 4000 from start width 900 swing into entry
+  door id=d_living between entry and living at 3500 from start width 900 swing into living
+  opening id=o_entry between entry and hall at 750 from start width 1000
+  opening id=o_living between living and hall at 750 from start width 1000
+  opening id=o_kitchen between living and kitchen at 1900 from start width 1800
+  # Bath and gym each meet the hall on two runs; the named edge picks one.
+  door id=d_bath between bath and hall at 2500 from bath.top width 800 swing into bath
+  door id=d_gym between gym and hall at 3500 from gym.right width 900 swing into gym
+  door id=d_kids between hall and kids at 4000 from start width 900 swing into kids
+  door id=d_nursery between hall and nursery at 1000 from start width 800 swing into nursery
+  door id=d_games between hall and games at 1000 from start width 900 swing into games
+  door id=d_bed between hall and bedroom at 1000 from start width 900 swing into bedroom
+  door id=d_back on hall.right at center width 900 swing into hall
+
+  # Onto the courtyard and the garden: sliders, so no leaf sweeps the ground.
+  door id=d_l_court sliding on living.bottom at 1100 from start width 1200 slide right
+  door id=d_h_court sliding at (9600,9500) width 2400 wall exterior slide right
+  door id=d_garden sliding on bedroom.bottom at 2000 from start width 1800 slide right
+
+  # ---- windows --------------------------------------------------------------
+  window on garage.left width 1200
+  window on living.top at 4300 from start width 1400
+  window at (12100,5500) width 1000 wall exterior
+  window on kitchen.top at 3100 from start width 1200
+  window on kitchen.right width 1200
+  window on bath.left width 800
+  window on gym.right at 1300 from start width 1200
+  window at (7000,7500) width 1600 wall exterior
+  window at (13000,7500) width 1600 wall exterior
+  window on kids.left width 1400
+  window on kids.bottom width 1600
+  window on nursery.bottom width 1400
+  window on games.bottom width 2000
+  window on bedroom.bottom at 4800 from start width 1200
+  window on bedroom.right width 1400
+
+  # ---- furniture: the street band ---------------------------------------------
+  furniture car        at (1050,600)  size 1900x4300 in garage
+  furniture motorcycle at (3900,1500) size 800x2100  in garage
+
+  furniture coat_rack    in entry anchor top-left flush size 400x400
+  furniture shoe_cabinet against entry.left offset 2000
+
+  # Fire on the north wall, the TV on the west: each seat faces one of them.
+  furniture id=fire fireplace against living.top offset 2500
+  furniture id=tv tv          against living.left offset 1300
+  furniture chaise    at (10000,600) size 800x1600 facing tv in living
+  furniture loveseat  at (11000,2500) size 1500x850 facing fire in living
+  furniture sideboard against living.right offset 4000
+
+  furniture fridge       against kitchen.top offset 500
+  furniture oven         against kitchen.top offset 1100 size 600x600
+  furniture stove        against kitchen.top offset 1700
+  furniture counter      against kitchen.top offset 2250 size 500x600
+  furniture kitchen_sink against kitchen.top offset 3100 size 1200x600
+  furniture counter      against kitchen.top offset 4250 size 1100x600
+  furniture dining_table in kitchen centered size 1800x1400
+
+  # ---- furniture: the middle and the garden band --------------------------------
+  furniture bathtub against bath.top offset 1100
+  furniture basin   against bath.top offset 2600
+  furniture wc      against bath.top offset 3400
+  furniture shower  against bath.top offset 4800
+
+  furniture treadmill against gym.right offset 2900
+
+  furniture bunk_bed against kids.left offset 4200
+  furniture wardrobe against kids.top offset 1500 size 1600x600
+  furniture desk     against kids.right offset 2500 size 1200x600
+
+  furniture crib    against nursery.left offset 2500
+  furniture dresser against nursery.right offset 2500
+
+  furniture pool_table in games centered size 2500x1400
+
+  furniture bed      against bedroom.right offset 2500 size 1600x2000
+  furniture wardrobe against bedroom.top offset 3500 size 1600x600
+
+  # ---- the courtyard ----------------------------------------------------------
+  furniture id=tub hot_tub at (11050,5700) size 1800x1800
+  furniture tree          at (11100,7700) size 1600x1600
+  furniture outdoor_chair at (8200,6000) size 600x600 facing tub
+  furniture outdoor_chair at (8200,6900) size 600x600 facing tub
+
+  # ---- the garden -------------------------------------------------------------
+  outdoor id=g_patio patio at (13500,16300) size 6500x3500 label "Patio"
+  outdoor id=g_lawn lawn polygon
+    (0,16300) (13500,16300) (13500,19800) (20000,19800) (20000,22800) (0,22800)
+    label "Garden"
+
+  furniture pergola         at (13700,16500) size 3000x3000
+  furniture id=pit fire_pit at (17800,17300) size 1000x1000
+  furniture outdoor_chair   at (16800,17500) size 600x600 facing pit
+  furniture outdoor_chair   at (19100,17500) size 600x600 facing pit
+  furniture outdoor_chair   at (18000,18600) size 600x600 facing pit
+
+  furniture swing   at (1000,17200) size 3500x1600
+  furniture sandpit at (5500,17000) size 2000x2000
+  furniture tree    at (9500,19500) size 2400x2400
+  furniture shrub   at (600,20500)  size 1200x1200
+  furniture shrub   at (15500,20800) size 1200x1200
+
+  title {
+    project "Courtyard Family House"
+    drawn_by "ArchLang"
+    date "2026-11-12"
+  }
+}

@@ -74,6 +74,16 @@ describe("npm tarball (npm pack --dry-run)", () => {
     expect(paths.filter((p) => p.startsWith("skills/")).length).toBeGreaterThan(1);
   });
 
+  it("keeps dist/error-catalog.js and its map out of the tarball", () => {
+    // Built for the repository's playground alone (card RM0.7, tsup.config.ts): no `exports` entry
+    // names it, so nothing in the package can load it. The exclusion is pinned in `files`, which
+    // this suite can read without a build, and in npm's own list, which names dist/ only after one.
+    const pkg = JSON.parse(readFileSync(resolve("package.json"), "utf8")) as { files: string[] };
+    expect(pkg.files).toContain("!dist/error-catalog.js");
+    expect(pkg.files).toContain("!dist/error-catalog.js.map");
+    expect(paths.filter((p) => p.startsWith("dist/error-catalog"))).toEqual([]);
+  });
+
   it("ships the whole CHANGELOG.md, byte for byte", () => {
     // Not a trimmed copy: a bump that skips several minors needs every entry between.
     const entry = files.find((f) => f.path === "CHANGELOG.md");

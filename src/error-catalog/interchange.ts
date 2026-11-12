@@ -2,7 +2,7 @@
  * Error catalogue: the interchange family. Plan JSON and the source-rewriting tools around it:
  * `impact --set`/`--lock` and `--expected-hash`.
  *
- * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
+ * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
 import { defineEntries, e } from "./entry.js";

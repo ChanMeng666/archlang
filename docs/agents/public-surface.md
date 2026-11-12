@@ -267,7 +267,7 @@ Totals: 633 exports (222 values, 411 types), 401 flagged (73 values).
 | `PngOptions` | type | none |
 | `isOptionalDepError` | value | `src/cli` |
 | `renderPng` | value | `packages/archlang-3d`, `packages/mcp`, `src/cli`, `test` |
-| `renderPngFromSvg` | value | `src/cli` |
+| `renderPngFromSvg` | value | `scripts`, `src/cli` |
 
 ## `src/datum.ts`
 
@@ -381,7 +381,7 @@ Totals: 633 exports (222 values, 411 types), 401 flagged (73 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `CatalogEntry` | type | none |
-| `ERROR_CATALOG` | value | `packages/mcp`, `packages/mcp-worker`, `playground`, `src/cli`, `test` |
+| `ERROR_CATALOG` | value | `packages/mcp`, `packages/mcp-worker`, `src/cli`, `test` |
 | `ERROR_CODES` | value | `src/cli`, `test` |
 | `explain` | value | `src/cli`, `test` |
 

@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 389 modules in 34 directories.
+Totals: 391 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -83,14 +83,14 @@ Totals: 389 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `camera.ts` | 394 | 6 | The replay's end camera as plain maths (card A3, look notes round 1): the viewer and the tests read the same functions, so "the end frame fills the canvas" is a property a test can check without a browser. Millimetres, the exporters' axes… | none |
 | `facts.ts` | 57 | 3 | The metrics strip's numbers (card G4), read from the core's public `describe()` and `lint()` for the same source the replay was built from: nothing is measured here and nothing is guessed. The strip itself (`strip.ts`) is browser-safe and… | none |
-| `html.ts` | 113 | 3 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
+| `html.ts` | 113 | 4 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
 | `mount.ts` | 962 | 5 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
-| `payload.ts` | 192 | 7 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
+| `payload.ts` | 192 | 8 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
 | `strip-dom.ts` | 20 | 2 | The strip's DOM half, apart from `strip.ts` so that the types of `.` and `./node` need no DOM lib. | none |
 | `strip.ts` | 73 | 8 | The replay's metrics strip (card G4): a line of plain facts under the picture, each shown when the replay reaches the stage that draws it. Browser-safe and free of the core: the facts come in as numbers (`facts.ts` reads them from the… | none |
 | `swiftshader.ts` | 7 | 4 | The flags that make Chromium render WebGL in software, the same on every machine (plan §6.5). | none |
-| `timeline.ts` | 451 | 9 | The replay as a pure function of time (card A3; archlang-3d plan §6.5; decision D3). The plan draws itself in its authoring order, then rises: | none |
-| `video.ts` | 320 | 6 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
+| `timeline.ts` | 451 | 10 | The replay as a pure function of time (card A3; archlang-3d plan §6.5; decision D3). The plan draws itself in its authoring order, then rises: | none |
+| `video.ts` | 320 | 7 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
 | `view-dom.ts` | 168 | 4 | The free camera's buttons (card CR4), browser-only DOM shared by both hosts of the replay: the single-file replay HTML (`viewer.ts`) and the playground's 3D preview tab. The presets and Reset (`ViewControl`), the storeys shown, and a line… | none |
 | `viewer-bundle.ts` | 21 | 3 | The viewer and the parts of three.js it uses as one minified browser script. Run by `tsup.config.ts` for `dist/viewer.iife.js`, and from the source tree by `html.ts` (this repository's tests and `npm run archlang3d`); never by an… | none |
 | `viewer.ts` | 77 | 2 | The replay viewer's browser code (card A3), bundled with three.js into the single HTML file `replay.ts` writes. It reads the payload the file carries and mounts it (`mountReplay`): `window.__seek(t)` renders the frame at `t` synchronously… | none |
@@ -154,14 +154,14 @@ Totals: 389 modules in 34 directories.
 | `compile-worker.ts` | 322 | 2 | The playground's compile job, and the Web Worker it runs in (card MP6, ruling MP-D6: typing never freezes the page). A playground file, not core: `compile()`, `describe()` and `lint()` are the core's, called exactly as the page called… | none |
 | `compiler.ts` | 8 | 2 | The compiler functions the view path calls (main.ts, and the compile job it runs in a worker, compile-worker.ts), behind the one dynamic import that keeps the core out of the startup chunk. Named, not `import("archlang")`: a dynamic… | none |
 | `describe-panel.ts` | 69 | 1 | Describe, the Facts tab's first section: a compact access-graph diagram from `describe().access` with the raw describe JSON tucked into a <details>. Zero-dep — pure DOM/CSS strings, no graph library. | none |
-| `diagnostics-panel.ts` | 70 | 1 | Render the compiler diagnostics into the `#errors` panel as clickable rows: the catalogued remedy (`fix`) shows inline under each row so the fix is visible without a click; clicking a row jumps the editor caret to the diagnostic's source… | none |
+| `diagnostics-panel.ts` | 73 | 1 | Render the compiler diagnostics into the `#errors` panel as clickable rows: the catalogued remedy (`fix`) shows inline under each row so the fix is visible without a click; clicking a row jumps the editor caret to the diagnostic's source… | none |
 | `edit-mode.ts` | 293 | 1 | Edit mode: the CodeMirror editor and the panels that read the source — diagnostics, Describe, Lint (with Repair and Suggest), Intent. Loaded on the first entry into edit mode (the Source button, `&edit` in the hash, or a More (⋯) item… | none |
 | `editor-setup.ts` | 124 | 1 | CodeMirror 6 editor construction for the playground: the ArchLang language support, compiler-backed autocompletion and linting, history, and the doc-change listener that drives the live recompile. Pure builder — no app state. | none |
 | `embed-params.ts` | 72 | 2 | The chrome-less embed page's pure decisions, split out of `embed.ts` so they can be unit-tested in Node. | none |
 | `embed-snippets.ts` | 46 | 3 | The snippets the Embed dialog offers, built from the playground's base URL and a `#z=` share hash. Pure so it can be unit-tested; the dialog lives in actions.ts. | none |
 | `embed.ts` | 109 | 0 | Chrome-less embed page. Renders an ArchLang plan from the URL hash — the same `#z=` share codec the main playground writes — so a floor plan can be dropped into any blog / Confluence / GitHub-Pages via a single <iframe>. Client-side only… | none |
 | `escape.ts` | 7 | 10 | Minimal HTML-escaping for the innerHTML the playground panels build by hand. | none |
-| `examples.ts` | 385 | 4 | Playground example plans. | none |
+| `examples.ts` | 393 | 4 | Playground example plans. | none |
 | `facts-strip.ts` | 27 | 1 | The facts line under the drawing: one plain sentence of how much source drew how much plan, "57 lines of ArchLang → 3 rooms · 45.05 m² (net)", computed from the source and describe()'s totals of the storey on screen (room-facts.ts… | none |
 | `gallery.ts` | 288 | 1 | The plan gallery (ruling PG-D2): the header's one way to choose a plan. A disclosure (`<details id="gallery">`) whose summary names the plan on screen (`▦ Furnished Flat ▾`) and whose panel is a grid of thumbnail cards, grouped as… | none |
 | `glb-export.ts` | 35 | 3 | Share → Export → GLB (public-surfaces card X5; in the Share menu since card PG4): its own chunk, loaded on the first click (actions.ts imports it dynamically, beside plan3d.ts), so glTF-Transform never reaches the startup chunks or the 3D… | none |
@@ -174,7 +174,7 @@ Totals: 389 modules in 34 directories.
 | `levels.ts` | 80 | 6 | The storey-switcher arithmetic — which page of a multi-storey plan the preview is showing, what its button says, and what a download of it is called. | none |
 | `lint-panel.ts` | 70 | 1 | The Lint section of the Checks tab — architectural soundness warnings (habitability rules) for the current plan, under the chosen advisory profile. The repair-button visibility (keyed off the same diagnostics) is wired in actions.ts. | none |
 | `llm-prompt.ts` | 144 | 3 | Assemble a single paste-ready prompt for an AI assistant from the current plan: an intro line, the source in an ```arch fence, the compact `describe()` facts (rooms/areas/adjacency + an access summary), the diagnostics with line/col/fix… | none |
-| `main.ts` | 1402 | 0 | The playground's startup module: the view path. It shows the drawing (the one built into the page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and plans (the plan gallery in the header) and runs… | none |
+| `main.ts` | 1406 | 0 | The playground's startup module: the view path. It shows the drawing (the one built into the page first, then the compiled one), pans and zooms it, reports its facts, switches storeys and plans (the plan gallery in the header) and runs… | none |
 | `make-own.ts` | 299 | 2 | The Make-your-own sheet: every way to get a plan of your own, at equal weight, in the order `site-shared/doors.json` gives the playground (`order.playground`). Every URL, command and the agent prompt are read from that file, the one… | none |
 | `mobile-views.ts` | 67 | 2 | The phone-width view switcher of edit mode (Code · Plan · 3D · Facts · Checks). Below the 900px breakpoint the workspace shows one view at a time, and this switcher is its ONE control: the output tab row is hidden there, so each function… | none |
 | `nudge.ts` | 80 | 2 | The one quiet pointer at Make your own: a small toast, after a visitor has shown interest (the third plan switch, or the first knob let go), never a modal and never focused. It is shown at most once: the first showing is remembered in… | none |
@@ -212,7 +212,7 @@ Totals: 389 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `analyze.ts` | 935 | 123 | Shared semantic-analysis layer for the agent-facing tools. | none |
-| `ast.ts` | 1679 | 214 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
+| `ast.ts` | 1641 | 214 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 447 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
@@ -222,15 +222,16 @@ Totals: 389 modules in 34 directories.
 | `compile-work.ts` | 38 | 5 | Work counters for one `compile()` drawing: how many geometric tests the costliest drawing loops made, as COUNTS (engineering-health EH2.14). The compile-side sibling of `LintWork` (`src/lint/work.ts`): an out-parameter handed down the one… | none |
 | `context-levels.ts` | 10 | 2 | The `archlang context --level` words and the starter's size cap. A leaf module (no imports) so the manifest can state the cap without importing the CLI; `src/cli/context-starter.ts` re-exports both. | none |
 | `context-size.ts` | 9 | 3 | GENERATED by scripts/gen-llms-full.ts — do not edit by hand. Run `npm run gen:llms`. | none |
-| `cursor.ts` | 419 | 8 | Read-only navigation over the parsed AST (a `LinkedNode`-style cursor). | none |
-| `datum.ts` | 481 | 17 | The **vertical datum layer** — the heights a floor plan implies but has never written down. | none |
-| `describe.ts` | 1065 | 24 | `describe(source)` — a pure, semantic summary of a floor plan. | none |
-| `diagnostic-json.ts` | 100 | 3 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
+| `cursor.ts` | 416 | 8 | Read-only navigation over the parsed AST (a `LinkedNode`-style cursor). | none |
+| `datum.ts` | 389 | 14 | The **vertical datum layer** — the heights a floor plan implies but has never written down. | none |
+| `describe.ts` | 1049 | 24 | `describe(source)` — a pure, semantic summary of a floor plan. | none |
+| `diagnostic-json.ts` | 103 | 3 | Agent-facing JSON projection of a {@link Diagnostic}. | none |
 | `diagnostics.ts` | 407 | 108 | Diagnostics for the ArchLang compiler. | none |
 | `diff.ts` | 736 | 5 | `diffPlans(sourceA, sourceB)` — a pure, structural semantic diff of two plans. | none |
 | `doc.ts` | 143 | 6 | A tiny Wadler/Prettier "Doc" intermediate representation and printer. | none |
 | `draw-budget.ts` | 202 | 7 | The drawing budget: before `toScene()` runs, the primitives a plan will draw are estimated over EVERY storey (a multi-storey compile holds all its pages at once), and a plan past {@link MAX_DRAW_UNITS} is one `E_DRAWING_LIMIT` instead of… | none |
-| `error-catalog.ts` | 100 | 27 | The ArchLang diagnostic catalog: every `E_*` / `W_*` code with its cause, fix, and a tiny example. One source for `arch explain <CODE>` and the generated `docs/error-codes.md` (see `scripts/gen-error-codes.ts`). The codes themselves are… | none |
+| `error-catalog-fixes.ts` | 273 | 2 | GENERATED by scripts/gen-error-codes.ts from src/error-catalog.ts — do not edit by hand. Run `npm run gen:errors`. | none |
+| `error-catalog.ts` | 117 | 26 | The ArchLang diagnostic catalog: every `E_*` / `W_*` code with its cause, fix, and a tiny example. One source for `arch explain <CODE>` and the generated `docs/error-codes.md` (see `scripts/gen-error-codes.ts`). The codes themselves are… | none |
 | `expr-source.ts` | 89 | 7 | `exprToSource(e)` — render an {@link Expr} back to canonical ArchLang source text (single-line, precedence-correct parenthesisation). | none |
 | `expr.ts` | 1173 | 63 | Arithmetic expressions: a small Pratt parser + a pure evaluator. | charges the step meter |
 | `facade.ts` | 496 | 3 | The facade model behind `dims auto`: which wall line each of the four sides reads, the per-axis outline a witness line terminates on, and — the one question both the renderer and `lint()` ask — which openings a side's openings chain… | none |
@@ -238,8 +239,8 @@ Totals: 389 modules in 34 directories.
 | `fix-apply.ts` | 251 | 5 | Deterministic, pure application of {@link FixSuggestion}s to source text. | none |
 | `fix-producers.ts` | 583 | 10 | Fix producers — the functions that attach {@link FixSuggestion}s to specific diagnostics at their raise site (T2c). | none |
 | `fixture-orientation.ts` | 341 | 12 | Which way does a fixture face, and which of a rectangle's edges have a wall behind them. | none |
-| `fixtures-catalog.ts` | 958 | 46 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
-| `format.ts` | 381 | 21 | `arch fmt` — a deterministic, comment-preserving source formatter. | none |
+| `fixtures-catalog.ts` | 958 | 48 | Frozen fixture catalog — tacit architectural knowledge about furniture/fixtures as pure, deterministic data. Today it records which fixtures conventionally sit **against a wall** (plumbing fixtures and kitchen runs need a wall behind them… | none |
+| `format.ts` | 378 | 21 | `arch fmt` — a deterministic, comment-preserving source formatter. | none |
 | `frame.ts` | 405 | 14 | Instance frames — the rigid transform behind `place` (component v2). | none |
 | `furnish-table.ts` | 143 | 3 | The furnish table and the family reading of a held piece, shared by `src/furnish.ts` (the `finish` stage that writes the pieces) and the `W_ROOM_MISSING_DEFINING` lint rule (`src/lint/rules/room-contents.ts`, which reads the piece that… | none |
 | `furnish.ts` | 1677 | 9 | The `furnish` stage of `finish()` — furniture by room use, in rooms that hold none (`docs/adr/0025-furnish-as-explicit-transform.md`). | none |
@@ -250,12 +251,12 @@ Totals: 389 modules in 34 directories.
 | `id-spans.ts` | 23 | 2 | The byte span of an element statement's `id=<name>` name, kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
-| `import.ts` | 335 | 31 | Module linking — the `import` system. | none |
-| `index.ts` | 754 | 409 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `import.ts` | 335 | 30 | Module linking — the `import` system. | none |
+| `index.ts` | 754 | 410 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1588 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
-| `ir.ts` | 1780 | 247 | Intermediate representation + `resolve(ast)`. | charges the step meter |
+| `ir.ts` | 1723 | 246 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1833 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 750 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
@@ -264,18 +265,18 @@ Totals: 389 modules in 34 directories.
 | `lint.ts` | 327 | 29 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 684 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
-| `manifest.ts` | 1239 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
+| `manifest.ts` | 1253 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
 | `markdown.ts` | 106 | 8 | Markdown embedding helpers — extract ` ```arch ` fenced blocks from a Markdown document and rewrite each to an image reference, mirroring mermaid-cli's markdown mode. | none |
 | `naming.ts` | 336 | 20 | How a lint, taste or resolver MESSAGE names a room that has no label (plan-soundness PS2.22, PS2.29), and where a thing stands on the storey. | none |
 | `next.ts` | 266 | 5 | `nextDiagnostic(input)` — the ONE thing to fix first (plan-soundness PS5.3), chosen by a fixed precedence over everything `arch validate` knows about a plan: | none |
-| `num-format.ts` | 243 | 83 | The one deterministic number → string formatter (round to N decimals, strip the `-0`). Previously copy-pasted in scene-build, the SVG/DXF backends, the expression evaluator and the source formatter — same shape, three precisions. Output… | none |
+| `num-format.ts` | 243 | 82 | The one deterministic number → string formatter (round to N decimals, strip the `-0`). Previously copy-pasted in scene-build, the SVG/DXF backends, the expression evaluator and the source formatter — same shape, three precisions. Output… | none |
 | `opening-junctions.ts` | 204 | 6 | Where other walls meet a host wall's run: the measure `W_OPENING_AT_JUNCTION` reports with (`src/lint/rules/openings.ts`) and a relational opening is refused by (`E_OPENING_NIB`, ADR 0028 §5), so the warning and the refusal can never… | none |
 | `opening-relation.ts` | 1425 | 11 | Openings by relation (ADR 0028 §5): where a `door\|window\|opening` stands when its position is written against the rooms rather than against a wall. | charges the step meter |
 | `opening-schedule.ts` | 610 | 6 | **`schedule openings`** — the door and window TAGS drawn beside each opening, and the rows of the DOOR & WINDOW SCHEDULE table the sheet carries (`sheet-tables.ts` lays the table out and lowers it; this module derives what it says and… | none |
-| `parser.ts` | 2019 | 129 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
+| `parser.ts` | 1985 | 129 | Recursive-descent parser: tokens -> PlanNode. Registry-driven element dispatch. | none |
 | `pipeline.ts` | 198 | 7 | The one `compile()` pipeline: parse → link → resolve → render. | none |
-| `plan-json.ts` | 73 | 15 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
-| `registry.ts` | 510 | 83 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
+| `plan-json.ts` | 73 | 14 | Structured JSON I/O for ArchLang plans — the machine-native channel an LLM uses to author and read a floor plan without touching `.arch` syntax. | none |
+| `registry.ts` | 510 | 82 | Element registry: the single extension point. Each element type is one module exporting an {@link ElementDef}; parse/resolve/render iterate the registry rather than a hard-coded switch. Adding an element = one new module + one `register`… | none |
 | `repair.ts` | 1912 | 5 | `repair(source)` — an explicit, opt-in source-to-source corrector. | none |
 | `reroll.ts` | 714 | 5 | `reroll(source)` — detect a run of ≥3 CONSECUTIVE statements in arithmetic progression and offer a proven-equivalent `for` loop (Szalinski, PLDI 2020, `uwplse/szalinski` `src/solve.rs`, minus the e-graph — fit an AP over sorted… | none |
 | `room-datums.ts` | 418 | 20 | The datum table (ADR 0028 §1): what one resolution group's rooms and grid axes expose as lines, frozen after every room is placed and before any wall resolves. | charges the step meter |
@@ -296,7 +297,7 @@ Totals: 389 modules in 34 directories.
 | `text-layout.ts` | 170 | 12 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 18 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
-| `theme.ts` | 486 | 49 | Theme: colours, line-weight, and font for the rendered drawing. | none |
+| `theme.ts` | 486 | 50 | Theme: colours, line-weight, and font for the rendered drawing. | none |
 | `types.ts` | 203 | 12 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
 | `vertical.ts` | 843 | 42 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
@@ -306,7 +307,7 @@ Totals: 389 modules in 34 directories.
 | `wall-relation.ts` | 166 | 1 | The pairwise wall forms (ADR 0028 §4, plan decision D1): an authored wall whose geometry is written against the rooms rather than as points. | charges the step meter |
 | `while-deprecation.ts` | 97 | 1 | W7 — soft-deprecation of `while` and reassignment (`NAME = expr`): the advisory warnings only. The machine-applicable fix lives one layer up, in `src/while-fix.ts` + `src/index.ts` — see that module's header for why (a fix here could only… | none |
 | `while-fix.ts` | 449 | 2 | W7's machine-applicable fix: `let I = A; while I < B { …; I = I + 1 }` rewritten to `for I in A..B { … }`. | none |
-| `world.ts` | 56 | 72 | The `World` seam — the compiler's single window onto its environment. | none |
+| `world.ts` | 56 | 71 | The `World` seam — the compiler's single window onto its environment. | none |
 
 ## `src/algebra/`
 
@@ -357,7 +358,7 @@ Totals: 389 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `commands-analyze.ts` | 1311 | 10 | The analysis commands — `describe`, `validate` (incl. `--graph`/`--intent`), `lint`, and `score`. Render-free: they resolve/lint the plan and report facts or gate on an intent contract. Split out of the former monolithic `src/cli.ts`… | none |
+| `commands-analyze.ts` | 1356 | 10 | The analysis commands — `describe`, `validate` (incl. `--graph`/`--intent`), `lint`, and `score`. Render-free: they resolve/lint the plan and report facts or gate on an intent contract. Split out of the former monolithic `src/cli.ts`… | none |
 | `commands-author.ts` | 586 | 3 | The authoring/transform commands — `ast`, `complete`, `fmt`, `repair`, `fix`, `finish`, `suggest`. They parse/format/correct source (the syntactic `fix` and the geometric `repair` are a hard boundary; see ADR 0006/0011). Split out of the… | none |
 | `commands-import.ts` | 113 | 1 | `import` — a plan in another tool's format, as `.arch` source. One format today: `--from openplan3d` (an OpenPlan3D web project or prepared RoomPlan interchange JSON), converted by the core's pure `openPlan3dToArch()`. This file only… | none |
 | `commands-meta.ts` | 229 | 5 | The metadata / info commands — `manifest`, `spec`, `context`, `new`, `explain`. They print the CLI's own surface (manifest), the shipped language docs (spec / context), scaffold a starter plan (new), or look up an error code (explain).… | none |
@@ -365,11 +366,11 @@ Totals: 389 modules in 34 directories.
 | `commands-share.ts` | 35 | 1 | `link` — print a URL that opens the plan in the hosted playground, so an agent can hand a person a rendered plan with nothing to install. The plan travels in the URL fragment; the minting and the `--json` shape are `linkResult`… | none |
 | `context-starter.ts` | 204 | 2 | `archlang context --level starter` — the one-screen starter for a weak model: the same truth as the full context (`llms-full.txt`), less of it (PS7.2). | none |
 | `help.ts` | 146 | 3 | `archlang --help` / `archlang <cmd> --help`, rendered from the capability manifest. | none |
-| `io.ts` | 916 | 59 | Shared CLI infrastructure — argument parsing, the {@link World}/IO seam, exit codes, and the small emit/format helpers every command module reuses. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). Node… | none |
+| `io.ts` | 919 | 58 | Shared CLI infrastructure — argument parsing, the {@link World}/IO seam, exit codes, and the small emit/format helpers every command module reuses. Split out of the former monolithic `src/cli.ts` (mechanical; behavior unchanged). Node… | none |
 | `link.ts` | 50 | 3 | Share links for a plan: the playground URL that opens it in the editor, and the chrome-less embed URL that only draws it. Published as `@chanmeng666/archlang/link` (Node only: it compresses with `zlib`) so the MCP shim mints the same… | none |
 | `review.ts` | 731 | 5 | `arch preview --review` (plan-soundness PS5.4): the review sheet. One picture a reviewer (or an agent's vision) reads in a single look: the plan as `preview` draws it, the access graph laid over it, every element a warning names ringed… | none |
 | `run.ts` | 172 | 4 | The CLI as a function: argument parse + dispatch over a {@link CliIo}, returning the exit code (or {@link RESIDENT}) instead of ending the process. `src/cli.ts` runs it on the real process and exits through `exitFlushed`… | none |
-| `serialize.ts` | 508 | 8 | The render/serialize core shared by the file-producing commands (compile/preview/batch/md): compile a source to bytes, the format seam that turns a built {@link Scene} into the requested output, and the optional-dependency auto-install… | none |
+| `serialize.ts` | 507 | 8 | The render/serialize core shared by the file-producing commands (compile/preview/batch/md): compile a source to bytes, the format seam that turns a built {@link Scene} into the requested output, and the optional-dependency auto-install… | none |
 | `share-codec.mjs` | 45 | 12 | The Node side of the playground's `#z=` share link: `#z=<base64url(deflate-raw(utf8))>`, the scheme `playground/src/share.ts` reads (the browser copy, which has `CompressionStream` and no `zlib`). | none |
 | `share-codec.web.mjs` | 130 | 4 | The Web-standard decoder of the playground's `#z=` share payload, beside the Node one in `share-codec.mjs`: `#z=<base64url(deflate-raw(utf8))>`, read with `DecompressionStream` and `atob` instead of `zlib` and `Buffer`, so a runtime with… | none |
 | `source-hash.ts` | 182 | 3 | The write-back revision guard, `--expected-hash <sha256>` (card CR5). | none |
@@ -385,7 +386,7 @@ Totals: 389 modules in 34 directories.
 | `openings.ts` | 105 | 1 | The `doors`, `windows` and `openings` lists of a `describe()` summary: {@link doorSummaries}, {@link windowSummaries}, {@link openingSummaries}. Moved out of `summarize`; each keeps element order. | none |
 | `rooms.ts` | 56 | 1 | The `rooms` list of a `describe()` summary: {@link roomSummaries}, one {@link RoomSummary} per room (area, net area, bbox, floor polygon, adjacency), in element order. Moved out of `summarize`. | none |
 | `shared.ts` | 16 | 3 | The two leaf helpers the per-kind summary builders share: {@link r2} (round to 2 decimals) and {@link instanceOf} (the spreadable instance stamp). Moved verbatim from `src/describe.ts`. | none |
-| `types.ts` | 911 | 5 | The shapes `describe()` returns: {@link SceneSummary}, the one storey's {@link LevelSummary}, and every row and fact block they are built from (moved verbatim from `src/describe.ts`, which re-exports each one, so the public types are… | none |
+| `types.ts` | 899 | 5 | The shapes `describe()` returns: {@link SceneSummary}, the one storey's {@link LevelSummary}, and every row and fact block they are built from (moved verbatim from `src/describe.ts`, which re-exports each one, so the public types are… | none |
 | `verticals.ts` | 148 | 1 | The vertical facts of `describe()`: what only a block stair reports (its flights, landings and turn) and the building-level vertical report of a multi-storey plan (moved verbatim from `src/describe.ts`). | none |
 
 ## `src/elements/`
@@ -401,7 +402,7 @@ Totals: 389 modules in 34 directories.
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 86 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
 | `fence.ts` | 311 | 1 | `fence [id=] [picket\|panel\|post] { (x,y) (x,y) … [close] }` — a boundary line on the ground. | none |
-| `fixtures-glyphs.ts` | 683 | 35 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
+| `fixtures-glyphs.ts` | 683 | 37 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
 | `furniture.ts` | 1374 | 11 | `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label. | charges the step meter |
 | `glyph-chirality.ts` | 224 | 13 | The handedness of a drawn fixture symbol, and what a mirrored `place` does to it. | none |
 | `glyph-lib.ts` | 917 | 31 | The drawing vocabulary every fixture glyph is built from. | none |
@@ -429,7 +430,7 @@ Totals: 389 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `circulation.ts` | 113 | 1 | Error catalogue: the circulation family. Moving through the plan: the `doors`, `reachability`, `circulation` and `privacy` lint families. | none |
 | `drafting.ts` | 132 | 1 | Error catalogue: the drafting family. The drawing and its sheet: dimensions, the title block, scale, and the render config (themes, styles, materials, fonts, PNG), and the `annotation` lint family. | none |
-| `entry.ts` | 42 | 15 | The helpers every error-catalogue family module writes its entries with. A family is one `defineEntries({ E_X: e(message, cause, fix, example), … })`: the code is written once, as the key, and `defineEntries` copies it into the entry.… | none |
+| `entry.ts` | 58 | 15 | The helpers every error-catalogue family module writes its entries with. A family is one `defineEntries({ E_X: e(message, cause, fix, example), … })`: the code is written once, as the key, and `defineEntries` copies it into the entry.… | none |
 | `furniture-checks.ts` | 137 | 1 | Error catalogue: the furniture-checks family. The `furniture` lint family: overlaps, clearances, fixtures against walls, windows, stairs and voids. | none |
 | `furniture.ts` | 95 | 1 | Error catalogue: the furniture family. Furniture and fixture statements: sizes, rooms, `against`/`flush`/`clear` and `facing`. | none |
 | `import.ts` | 95 | 1 | Error catalogue: the import family. `import` of other `.arch` files: specs, resolution, the root, cycles, depth and size caps. | none |
@@ -438,7 +439,7 @@ Totals: 389 modules in 34 directories.
 | `language.ts` | 179 | 1 | Error catalogue: the language family. The language itself: lexing, parsing, names, components, the evaluator and plan-level metadata. | none |
 | `layout.ts` | 107 | 1 | Error catalogue: the layout family. Placement and relations: `place`, datums, layout references, alignment, attachment, strips and segment selectors. | none |
 | `limits.ts` | 78 | 1 | Error catalogue: the limits family. Budgets and caps: the step, element, drawing, range, input and diagnostic limits, the hosted rate limit, and the range a lint ruleset's numbers are held to (the import and keep caps live with their… | none |
-| `openings.ts` | 167 | 1 | Error catalogue: the openings family. Doors and windows: sizes, kinds, hosts, heights and swings, and the `openings` lint family. | none |
+| `openings.ts` | 155 | 1 | Error catalogue: the openings family. Doors and windows: sizes, kinds, hosts, heights and swings, and the `openings` lint family. | none |
 | `rooms.ts` | 137 | 1 | Error catalogue: the rooms family. Room geometry, and the lint families that judge a room (`rooms`, `classification`, `contents`, `orientation`, `daylight`). | none |
 | `site.ts` | 77 | 1 | Error catalogue: the site family. The site and outdoor elements: boundaries, streets, terraces, balconies, fences, and the `outdoor` lint family. | none |
 | `vertical.ts` | 119 | 1 | Error catalogue: the vertical family. Storeys (`level` blocks), stairs, voids and shafts, and the `stairs` and `vertical` (storey-matching) lint families. | none |
@@ -472,7 +473,7 @@ Totals: 389 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `tokens.ts` | 644 | 51 | The single source of truth for ArchLang's lexical grammar. | none |
+| `tokens.ts` | 640 | 51 | The single source of truth for ArchLang's lexical grammar. | none |
 
 ## `src/import/`
 
@@ -494,7 +495,7 @@ Totals: 389 modules in 34 directories.
 | `sheet.ts` | 248 | 2 | The sheet, decided in `resolve()`: the two extents a fit is measured on, the storey as drawn ({@link drawnView}), the `paper` + scale resolved into a {@link ResolvedSheet}, and its reports (`W_SCALE_OVERFLOW`, `W_DRAWING_OVERFLOW`, and… | none |
 | `side-tables.ts` | 126 | 1 | What one resolution keeps beside its {@link ResolvedPlan}, never on it: the frozen datum tables, the `place`d instances' bodies, the evaluation steps spent and the keep state. Each is a `WeakMap` keyed by the IR object, so no… | none |
 | `silent-accepts.ts` | 113 | 5 | Warnings for what the resolver used to accept without a word (product-roadmap RM1.4): a length that reads as metres (`W_LENGTH_IN_METRES`) and a written size or door position that `grid` moved (`W_GRID_SNAPPED`). Both are warnings only… | none |
-| `types.ts` | 1069 | 6 | The resolved IR's types: every `R*` element interface, {@link ResolvedElement}, {@link ResolvedPlan}, and what a resolution returns ({@link ResolvedLevel}, {@link PlanResolution}). | none |
+| `types.ts` | 1063 | 6 | The resolved IR's types: every `R*` element interface, {@link ResolvedElement}, {@link ResolvedPlan}, and what a resolution returns ({@link ResolvedLevel}, {@link PlanResolution}). | none |
 
 ## `src/lint/`
 
@@ -508,7 +509,8 @@ Totals: 389 modules in 34 directories.
 | `element-phrases.ts` | 96 | 6 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
 | `fixture-paste.ts` | 254 | 5 | A pasteable fixture statement for an empty wet room or kitchen (`W_ROOM_NO_FIXTURE`'s hint), placed from the room's own shape and CHECKED before it is quoted. | none |
 | `measure.ts` | 95 | 19 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
-| `ruleset.ts` | 863 | 20 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
+| `provenance.ts` | 460 | 2 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
+| `ruleset.ts` | 865 | 22 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 118 | 8 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
 | `work.ts` | 33 | 2 | Work counters for one `lint()` run: how many geometric tests the costliest rules made, as COUNTS (engineering-health EH2.10). They are an out-parameter on the per-run {@link import("./context.js").LintContext}, never module state, so… | none |
 
@@ -557,7 +559,7 @@ Totals: 389 modules in 34 directories.
 | `room-types.ts` | 133 | 7 | Room-type mapping (uses ⇄ RPLAN-style `room_type`) — ONE source of truth for Plan JSON and `describe()`'s `room_type` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `schema.ts` | 564 | 1 | The Plan JSON Schema (2020-12), {@link PLAN_JSON_SCHEMA} — ONE source of truth; `scripts/gen-plan-schema.ts` only writes it to `schemas/plan.schema.json` (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `source-tokens.ts` | 26 | 2 | The two source-token formatters Plan JSON's projector and emitter share: a leaf module (no parser, no validator), so `to-json.ts` can print a token without loading `from-json.ts`. | none |
-| `to-json.ts` | 694 | 3 | `planToJson` — parse + resolve a plan, then project it OUT to the wire shape with the output-only enrichments (areas, `edges`, `input_graph`, `dropped`) (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
+| `to-json.ts` | 680 | 3 | `planToJson` — parse + resolve a plan, then project it OUT to the wire shape with the output-only enrichments (areas, `edges`, `input_graph`, `dropped`) (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 | `types.ts` | 400 | 4 | The Plan JSON wire shape (`version: 1`): every row interface and {@link PlanJson} itself. All coordinates are millimetres; areas m² (moved verbatim from `src/plan-json.ts`, which re-exports every name it exported). | none |
 
 ## `src/taste/`

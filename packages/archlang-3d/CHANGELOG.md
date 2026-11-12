@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-11-12
+
+The core peer range stays `^1.57.0`. The wall-joint fix below is the core's, so it takes core 1.59.0;
+with an older core in the range those walls build as before.
+
 ### Added
 
 - `renderReplay({ supersample: k })` (from `@chanmeng666/archlang-3d/node`; `VideoOptions.supersample`)
@@ -59,6 +64,10 @@
   seam at a grazing angle; the finished storey has none. The
   playground's 3D tab, the replay HTML and the generated posters and videos all draw this way;
   Mesh3D, the GLB and Scene3D are unchanged.
+- With core 1.59.0, walls that come within 0.015 mm of meeting no longer build a triangular piece
+  next to the joint, or keep a slanted edge a few µm long: the core's wall joinery now closes those
+  outlines (core `CHANGELOG.md`, 1.59.0, Fixed). No shipped plan hits it: every Mesh3D and GLB over
+  the corpus is byte-identical.
 
 ## [0.5.0] - 2026-11-11
 

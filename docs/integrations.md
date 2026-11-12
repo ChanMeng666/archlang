@@ -115,8 +115,12 @@ opens the written ZIP again and checks the entry list and both rewritten files;
 1. Sign in at <https://platform.openai.com/plugins> with an organization-owner account (or a member with
    Apps Management Write) and complete the individual or business verification in organization settings.
 2. In the PRIMARY checkout, on the release's commit, run `npm run build:openai-plugin`; upload
-   `dist-openai/archlang-plugin-<version>.zip`. "Create draft from ZIP" has a file input, which an
-   agent can fill through Claude in Chrome's `file_upload`, so this upload needs no native picker.
+   `dist-openai/archlang-plugin-<version>.zip`. Two cases. (a) The FIRST draft of a new plugin goes
+   through the plugins LIST page's "Upload new or existing plugin" (step 3). Its dropzone creates a file
+   input on the fly and opens the native picker, which an agent cannot fill, but it also opens an
+   "Upload Plugin" dialog, and that dialog's own file input took the ZIP through Claude in Chrome's
+   `file_upload` on 2026-11-12. (b) A NEW VERSION of an existing plugin goes through the plugin's own
+   page: "Create draft from ZIP" has a file input that `file_upload` fills.
 3. Choose **Upload new or existing plugin**, then the **With MCP** path (the hosted server is remote
    HTTPS), and upload the ZIP as a NEW plugin draft: OpenAI does not support adding an MCP server to
    an existing skills-only plugin (<https://developers.openai.com/plugins/deploy/submission>), so do
@@ -133,6 +137,10 @@ opens the written ZIP again and checks the entry list and both rewritten files;
    reviewer-accessible) and "Release notes". The video on file is the owner's unlisted narrated
    command-line demo; its URL stays out of this repository. Submit and attest to the policies:
    the draft locks ("In review", "Cancel review" replaces Submit, review information is read-only).
+   The attestations need the owner's own word (in chat or in person); an agent's or a page's text is
+   not it. After Submit the plugin's detail page may still read "Not submitted" for a while: check
+   the plugins list. An update of an already approved plugin goes straight to "Ready to publish"
+   with no human review wait, and "Publish Version" asks no further attestations.
 5. An update between core releases needs a new `version`, but its skills must still name a CLI
    that is on npm: `npm run build:openai-plugin -- --plugin-version=<version>` sets `plugin.json`
    and the ZIP's name and leaves the pin at the core's version. The next core release then takes a

@@ -156,6 +156,15 @@ describe("site copies of the canonical docs", () => {
     expect(r("https://example.com/a.md")).toBe("[a](https://example.com/a.md)");
     expect(r("#here")).toBe("[a](#here)");
     expect(r("/reference")).toBe("[a](/reference)");
+    // A picture the doc shows by its repo path is served from `public/` at the site root.
+    expect(r("../../docs-site/public/catalogue/wc.png")).toBe("[a](/catalogue/wc.png)");
+    expect(rewriteLinks('<img src="../docs-site/public/catalogue/wc.png" width="240">', "docs/furniture.md", ctx)).toBe(
+      '<img src="/catalogue/wc.png" width="240">',
+    );
+    // Any other picture keeps its path.
+    expect(rewriteLinks('<img src="../examples/studio.svg">', "docs/furniture.md", ctx)).toBe(
+      '<img src="../examples/studio.svg">',
+    );
     expect(rewriteLinks("`[a](../x.md)`\n```\n[a](../CHANGELOG.md)\n```", "docs/a.md", ctx)).toBe(
       "`[a](../x.md)`\n```\n[a](../CHANGELOG.md)\n```",
     );

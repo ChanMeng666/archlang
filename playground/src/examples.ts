@@ -21,6 +21,7 @@ import twoBed from "../../examples/two-bed.arch?raw";
 import attached from "../../examples/attached.arch?raw";
 import bungalow from "../../examples/bungalow.arch?raw";
 import courtyardHouse from "../../examples/courtyard-house.arch?raw";
+import courtyardFamily from "../../examples/courtyard-family.arch?raw";
 import townhouse from "../../examples/townhouse.arch?raw";
 import twoStorey from "../../examples/two-storey.arch?raw";
 import furnishedFlat from "../../examples/furnished-flat.arch?raw";
@@ -131,6 +132,12 @@ const EXAMPLE_ROWS = [
     "Courtyard House",
     "Homes",
     "A 16.3 x 11.8 m house whose rooms ring an open courtyard — which is a hole in the building, not a room.",
+  ],
+  [
+    "courtyard-family",
+    "Courtyard Family House",
+    "Homes",
+    "A family house round an open courtyard, furnished with pieces no other example draws: bunk beds and a crib, a hot tub and a fire pit.",
   ],
   [
     "townhouse",
@@ -295,6 +302,7 @@ const SOURCES: Record<string, string> = {
   attached,
   bungalow,
   "courtyard-house": courtyardHouse,
+  "courtyard-family": courtyardFamily,
   townhouse,
   "two-storey": twoStorey,
   "furnished-flat": furnishedFlat,

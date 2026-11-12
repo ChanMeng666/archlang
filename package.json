@@ -1,6 +1,6 @@
 {
   "name": "@chanmeng666/archlang",
-  "version": "1.58.0",
+  "version": "1.59.0",
   "description": "Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dimensioned plan and tells it what's wrong.",
   "keywords": [
     "architecture",
@@ -54,6 +54,8 @@
   },
   "files": [
     "dist",
+    "!dist/error-catalog.js",
+    "!dist/error-catalog.js.map",
     "examples",
     "spec.llm.md",
     "llms-full.txt",

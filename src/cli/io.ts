@@ -107,6 +107,8 @@ export interface Args {
   force?: boolean;
   profile?: string;
   strict?: boolean;
+  /** `--rules`: (lint) print the effective ruleset with each number's provenance, lint nothing. */
+  rules?: boolean;
   /** `-j/--jobs`: max concurrent renders for `batch`. */
   jobs?: number;
   /** `-s/--scale`: raster scale for PNG (`preview` defaults to 2). */
@@ -276,6 +278,7 @@ export const FLAG_KEYS: Record<string, FlagSpec> = {
   "--acc-id-prefix": { key: "accIdPrefix", kind: "string" },
   "--strict": { key: "strict", kind: "boolean" },
   "--fail-on-warning": { key: "strict", kind: "boolean" },
+  "--rules": { key: "rules", kind: "boolean" },
 };
 
 /** `--help`/`-h` is accepted by every command and handled inside {@link parseArgs}. */

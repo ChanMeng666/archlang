@@ -291,8 +291,10 @@ suite("probe agreement (PS3.0 part A, PR #222)", () => {
     expect(disagree).toEqual([]);
     expect(groups).toBeGreaterThan(279);
     // 15 until PS2.12 added four defect-corpus pavilions (radius-over-label, radius-over-piece
-    // and their twins): one `circle` room each, which the form refuses as not a rectangle.
-    expect(refused.length).toBe(19);
+    // and their twins): one `circle` room each, which the form refuses as not a rectangle. 20 since
+    // RM8.5's `courtyard-family`: its hall is one rectilinear polygon, which the probe refuses as not
+    // a rectangle (the same figure `test/rooms-tiling-probe.test.ts` pins, `total` refused).
+    expect(refused.length).toBe(20);
   });
 
   // The probe's own planted cases (test/rooms-tiling-probe.test.ts), written with the form:

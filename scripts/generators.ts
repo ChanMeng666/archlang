@@ -10,6 +10,7 @@ import { PLUGIN_MANIFEST, pluginSkillFiles } from "./gen-plugin.js";
 import { allOutputs } from "./gen-agent-manifests.js";
 import { SURFACES as DOORS_SURFACES } from "./gen-doors.js";
 import { README_SVGS, VIEW_SVGS, svgPath } from "./gen-example-svgs.js";
+import { CATALOG_FIXES_PATH } from "./gen-error-codes.js";
 
 /** Where `npm run gen:generated-artifacts` writes this table for `.claude/hooks/local-gate.mjs`. */
 export const GENERATED_ARTIFACTS_JSON = ".claude/hooks/generated-artifacts.json";
@@ -27,7 +28,7 @@ export const GENERATORS: readonly { script: string; artifacts: readonly string[]
       "docs-site/.vitepress/theme/arch-highlight.js",
     ],
   },
-  { script: "gen:errors", artifacts: ["docs/error-codes.md"] },
+  { script: "gen:errors", artifacts: ["docs/error-codes.md", CATALOG_FIXES_PATH] },
   { script: "gen:spec", artifacts: ["spec.llm.md"] },
   // `gen:llms` also measures the bundle into `src/context-size.ts`, which the manifest's
   // `context` help states, so `gen:cli` (rendered from that manifest) runs after it.

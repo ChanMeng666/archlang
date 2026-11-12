@@ -2,7 +2,7 @@
  * Error catalogue: the import family. `import` of other `.arch` files: specs, resolution, the
  * root, cycles, depth and size caps.
  *
- * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
+ * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
 import { MAX_IMPORT_LEVELS } from "../import/limits.js";

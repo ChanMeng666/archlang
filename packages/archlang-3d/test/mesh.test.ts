@@ -57,7 +57,7 @@ const ghostProbe = (() => {
 
 describe("Mesh3D on the shipped corpus", () => {
   it("builds every example (37)", () => {
-    expect(corpus.length).toBe(37); // 36 since S2 added examples/turning-stair.arch; 37 since P4 added examples/knob-flat.arch
+    expect(corpus.length).toBe(38); // 36 since S2 added examples/turning-stair.arch; 37 since P4 added examples/knob-flat.arch; 38 since RM8.5 added examples/courtyard-family.arch
     expect(corpus.every((c) => c.mesh.nodes.length > 0)).toBe(true);
   });
 

@@ -1,6 +1,6 @@
-# What's new in 1.44 to 1.58
+# What's new in 1.44 to 1.59
 
-The features that arrived in 1.44.0 to 1.58.0, one section each, with an example you can run,
+The features that arrived in 1.44.0 to 1.59.0, one section each, with an example you can run,
 plus the circulation overlay, which is older and since 1.45.0 reads the plan after a demolition.
 Every command and code name below is the one `archlang <command> --help` and the
 [error catalog](error-codes.md) print. The full list of changes, version by version, is in
@@ -42,6 +42,11 @@ Every command and code name below is the one `archlang <command> --help` and the
 | An `import` read only from under a root | 1.58.0 | [The import root](#the-import-root) |
 | At most 500 diagnostics per plan | 1.58.0 | [The diagnostic limit](#the-diagnostic-limit) |
 | `archlang impact` exits 2 on a plan that does not parse | 1.58.0 | [Impact on a broken plan](#impact-on-a-broken-plan) |
+| Where every lint threshold comes from | 1.59.0 | [Lint rules and their sources](#lint-rules-and-their-sources) |
+| A colour theme chosen on the command line | 1.59.0 | [The theme flag](#the-theme-flag) |
+| Five warnings for what used to pass without a word | 1.59.0 | [Five new warnings](#five-new-warnings) |
+| What the MCP servers can do, and the first thing to fix | 1.59.0 | [MCP capabilities and next](#mcp-capabilities-and-next) |
+| Outdoor surfaces and fences in the 3D preview | 1.59.0 | [Outdoor in 3D](#outdoor-in-3d) |
 
 ## Quantities and takeoff
 
@@ -678,3 +683,41 @@ The playground, the MCP servers and the `<arch-plan>` element read no files, so 
 ```bash
 archlang impact plan.arch --set W=4500 --json   # exit 2 when plan.arch does not parse
 ```
+
+## Lint rules and their sources
+
+`arch lint --rules [--profile <name>] [--json]` prints the ruleset `lint` runs: every threshold with its value, its units and where it comes from (the document, clause, edition and how the text was read), graded `V`, `S-full`, `S-secondary`, `M` or `convention`. It lints nothing and takes no plan, and `lint()`, `LINT_PROFILES` and `DEFAULT_RULESET` are as before. The JSON shape is a draft and may still change. It is advisory, never a compliance claim.
+
+```bash
+archlang lint --rules --profile uk-residential-advisory --json
+```
+
+## The theme flag
+
+`--theme <blueprint|mono|dark|presentation|rendered>` on `compile`, `watch`, `batch`, `md` and `preview` draws with a named colour theme without writing `theme <name>` into the source. It wins over the source's `theme` statement, `theme from`, `style` blocks and a single `furniture` colour for every key the named theme sets. An unknown name exits 3 with the list, and so do `-f json`, `-f txt`, `-f dxf`, `preview --ascii` and `preview --review`, which carry no theme colours. Without the flag every output is byte-identical to before; `describe` and `lint` do not take it.
+
+```bash
+archlang compile plan.arch --theme rendered -o plan.svg
+```
+
+## Five new warnings
+
+Each is a warning only: the plan compiles and draws as before, and `validate --strict` fails on it.
+
+| Code | Raised when |
+|---|---|
+| `W_LENGTH_IN_METRES` | a rectangle room's `size` has both sides under 100 mm, or a wall thickness is under 10 mm: `size 4x3` is a room 4 mm by 3 mm |
+| `W_GRID_SNAPPED` | `grid` moved a written value; the message gives it as written and as drawn |
+| `W_SET_VALUE_WORD` | a bare word in `set <kind>(...)` that the kind does not read is taken as text and does nothing; it becomes an error at 2.0 |
+| `W_UNKNOWN_FURNITURE` | an unlabelled furniture word is no catalogued kind but is close to one, and names it |
+| `W_UNKNOWN_THEME` | `theme <name>` names no built-in or registered theme; the plan is drawn in the default theme |
+
+`arch lint` now also lists `W_UNKNOWN_FURNITURE` and `W_UNKNOWN_THEME`, and `arch lint --strict` fails on either.
+
+## MCP capabilities and next
+
+A sixth resource, `archlang://capabilities`, lists every tool the two servers serve, the authoring loop, the export formats, what ArchLang does not do and the limits. The MCP `validate` tool returns `next`, the one item to fix first, as `validate --json` does, and takes `profile` and `taste`; both are optional, so a call without them returns what it did plus `next`. `NEXT_TIERS` gains an eighth and last tier, `"info"`, which holds `W_GRID_SNAPPED`.
+
+## Outdoor in 3D
+
+The 3D preview builds a plan's `outdoor` surfaces and `fence`s: each surface a thin slab at its storey's floor level in a colour from the core's theme, each fence style its own posts, rails and pickets, on a ground plane that is a backdrop and not part of the building. A balcony's railing is not built yet; the limits line under every 3D preview says so. The core's drawings, `describe()` and `lint()` are unchanged.

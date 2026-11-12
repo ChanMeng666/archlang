@@ -431,6 +431,7 @@ architectural soundness warnings
 | --- | --- |
 | `--profile <residential-basic\|accessibility-advisory\|cn-residential-advisory\|uk-residential-advisory\|us-residential-advisory>` | advisory ruleset |
 | `--strict, --fail-on-warning` | warnings fail (exit 2) |
+| `--rules` | print the ruleset in force and each number's source; takes no plan |
 | `--code <CODE[,CODE…]>` | show only diagnostics with these codes — a DISPLAY filter: the exit code and `ok` still come from the unfiltered set |
 | `--severity <error\|warning>` | show only diagnostics of this severity — a DISPLAY filter, like --code (never changes the exit code) |
 | `--import-root <dir>` | read `import`ed modules from under this directory (default: the working directory); a module outside it, a non-.arch file or one over 1 MiB is refused with a diagnostic, never read |
@@ -448,6 +449,9 @@ $ archlang lint plan.arch --profile accessibility-advisory --strict
 
 # read only the reachability warnings; the exit code still reflects every diagnostic
 $ archlang lint plan.arch --code W_ROOM_UNREACHABLE,W_NO_ENTRANCE --json
+
+# that ruleset's numbers with their sources (advisory)
+$ archlang lint --rules --profile uk-residential-advisory --json
 ```
 
 ### `archlang ast`

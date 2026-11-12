@@ -39,6 +39,7 @@
  * `examples/remodel.arch` (preview-and-remodel B3b, `test/wall-status-drawing.test.ts`) likewise.
  * `examples/turning-stair.arch` (issue #362, S2) likewise.
  * `examples/knob-flat.arch` likewise (public-surfaces P4: the playground's knobs example).
+ * `examples/courtyard-family.arch` likewise (product-roadmap RM8.5: the vocabulary showcase).
  *
  * A digest here moving is a finding to explain before it is a diff to re-measure.
  */
@@ -69,6 +70,7 @@ const BASELINE: [string, string][] = [
   ["examples/attached.arch", "07995653257dff5785f4fe210e3c4f6f9d6fc35165be2e5ae34df364079029dc"],
   ["examples/clinic.arch", "af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5"],
   ["examples/corner-cafe.arch", "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f"], // #367, see test/byte-identity-baseline.ts
+  ["examples/courtyard-family.arch", "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67"], // new example (RM8.5, the courtyard-family showcase)
   ["examples/hexagon-pavilion.arch", "3078765cf03974518e0f2b3ea13585cca69ffbb86438f0899218c8a1c24a09a8"],
   ["examples/imports.arch", "a0341285f4e3699b738aa1916bba278eed61e347df4d3a2de139b9f0185d9678"],
   ["examples/knob-flat.arch", "f4f0ed59cff4dd7b970fe069579044226fcb0e4f68f24a85845e648875ed17e5"], // new example (P4, the knobs example), see header

@@ -11,7 +11,8 @@
  * `inline:door-` rows are card L2's, measured the same way at `1e29c3af` (`main` before doors). The
  * rows are every plan of `examples/`, `test/fixtures/` and `test/walls-from-rooms/`, the digest-table plans of
  * `test/tables/walls-from-rooms-plans.ts`, and {@link INLINE_ROWS}: a rectilinear polygon that is
- * excepted, or that stands beside typed walls, is on the law's side of the line.
+ * excepted, or that stands beside typed walls, is on the law's side of the line. A plan written
+ * after the form that uses it is left out by name ({@link AFTER_THE_FORM}), and must reach it.
  *
  * In this table the digest comes first: a row keyed by a path holding `access` is the shape the
  * secret scanner reads as a credential, and this order is not that shape.
@@ -88,7 +89,17 @@ function reachesTheForm(src: string, world: World | undefined): boolean {
   );
 }
 
-const ROWS = lawRows(ROOT);
+/**
+ * Plans written after the form that use it: no tree before the form can measure them, so the law
+ * cannot pin them. Each must reach the form (the list cannot hide a plan the law should pin), and
+ * the table pins every other row.
+ */
+const AFTER_THE_FORM: readonly string[] = [
+  // RM8.5: its hall is one U polygon round the courtyard, in `walls from rooms`.
+  "examples/courtyard-family.arch",
+];
+const ALL_ROWS = lawRows(ROOT);
+const ROWS = ALL_ROWS.filter((r) => !AFTER_THE_FORM.includes(r.name));
 const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeWorld(dir) : undefined);
 
 /** Measured at `58c1fc81`, the `H10` rows with those charges applied (see the header): `[digest, row]`. */
@@ -182,6 +193,14 @@ suite("rectilinear rooms: the byte-identity law", () => {
   it("the table pins every row, and no row reaches the form", () => {
     expect(BASELINE.map((b) => b[1])).toEqual(ROWS.map((r) => r.name));
     expect(ROWS.filter((r) => reachesTheForm(r.src, worldOf(r.dir))).map((r) => r.name)).toEqual([]);
+  });
+
+  it("every plan left out for postdating the form exists and reaches it", () => {
+    for (const name of AFTER_THE_FORM) {
+      const row = ALL_ROWS.find((r) => r.name === name);
+      expect(row, name).toBeDefined();
+      expect(reachesTheForm(row!.src, worldOf(row!.dir)), name).toBe(true);
+    }
   });
 
   it("the premise can fail: the same check sees a plan that does reach the form", () => {
