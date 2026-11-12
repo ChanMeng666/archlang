@@ -212,7 +212,7 @@ Totals: 393 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `analyze.ts` | 935 | 124 | Shared semantic-analysis layer for the agent-facing tools. | none |
+| `analyze.ts` | 935 | 125 | Shared semantic-analysis layer for the agent-facing tools. | none |
 | `ast.ts` | 1695 | 216 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 447 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
@@ -253,17 +253,17 @@ Totals: 393 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 350 | 31 | Module linking — the `import` system. | none |
-| `index.ts` | 757 | 413 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 757 | 414 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1588 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
-| `ir.ts` | 1804 | 249 | Intermediate representation + `resolve(ast)`. | charges the step meter |
+| `ir.ts` | 1804 | 250 | Intermediate representation + `resolve(ast)`. | charges the step meter |
 | `keep.ts` | 1833 | 11 | `keep`: declared invariants, checked by `compile()` and never solved (ADR 0033; plan-soundness PS4.3, design `archlang-lab/plans/plan-soundness/research/2026-10-26-ps43-keep-design.md`). | charges the step meter |
 | `label-fit.ts` | 626 | 3 | A room's label that does not fit shrinks: a **post-pass over the lowered Scene**, after `wrapLabels` and `relocateLabels` (`src/label-placement.ts`) have done what they can at the drawing's label size (#367). | none |
 | `label-placement.ts` | 750 | 7 | Obstacle-aware relocation of room labels — a **post-pass over the lowered Scene**. | none |
 | `layout.ts` | 249 | 1 | Relational placement (T6.2) — the optional layout seam. | none |
 | `lexer.ts` | 611 | 23 | Hand-written lexer for ArchLang. Zero dependencies; tracks line/col. | none |
-| `lint.ts` | 327 | 29 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
+| `lint.ts` | 327 | 30 | `lint(source)` — architectural soundness rules, as diagnostics. | none |
 | `lock.ts` | 197 | 2 | The lock check (preview-and-remodel card B1, decision D6): `impact(before, after, { lock })` and `arch impact --against old.arch --lock <id,…>`. A lock names elements that must not change between two versions of a plan; it is checked… | none |
 | `lsp.ts` | 684 | 3 | Pure language-services core for the ArchLang LSP (T5.3). | none |
 | `manifest.ts` | 1253 | 19 | CLI capability manifest — the whole `archlang` API surface as one structured document, so an AI agent can discover commands, flags, formats, elements, lint profiles, error codes, and fixture categories in a single `archlang manifest… | none |
@@ -511,8 +511,8 @@ Totals: 393 modules in 34 directories.
 | `element-phrases.ts` | 96 | 6 | How a lint MESSAGE names a wall or a door, window or opening (PS2.29: a message never quotes an id). A wall is named by its kind and the line it runs on ("the exterior wall at y 0"), a connector by the rooms it joins ("the door between… | none |
 | `fixture-paste.ts` | 254 | 5 | A pasteable fixture statement for an empty wet room or kitchen (`W_ROOM_NO_FIXTURE`'s hint), placed from the room's own shape and CHECKED before it is quoted. | none |
 | `measure.ts` | 95 | 19 | The measured half of an advisory placement warning: **required, available, shortfall**. | none |
-| `provenance.ts` | 461 | 2 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
-| `ruleset.ts` | 879 | 22 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
+| `provenance.ts` | 461 | 3 | Where each lint ruleset number comes from, as data: a table parallel to {@link DEFAULT_RULESET} and {@link LINT_PROFILES}, keyed by profile and ruleset key, with the document, clause, edition and verification grade of every number.… | none |
+| `ruleset.ts` | 879 | 23 | The lint ruleset: tunable thresholds, named advisory profiles, and the options type. Split from `lint.ts` so individual rule modules (`./rules/*.ts`) can import the types without a cycle through the `lint()` entry point; `lint.ts`… | none |
 | `storeys.ts` | 118 | 8 | The storeys `lint()` reads and the building fact each is read with: the per-storey {@link BuildingContext} of a multi-storey plan ({@link buildingContexts}) and the plan's dwelling reading (PS2.18). Stated once here so every reader of a… | none |
 | `work.ts` | 33 | 2 | Work counters for one `lint()` run: how many geometric tests the costliest rules made, as COUNTS (engineering-health EH2.10). They are an out-parameter on the per-run {@link import("./context.js").LintContext}, never module state, so… | none |
 
@@ -541,7 +541,7 @@ Totals: 393 modules in 34 directories.
 | `reachability.ts` | 107 | 1 | Room-graph reachability: builds the room-connectivity graph from doors/openings (rooms + the literal "exterior") once, then — per room, in source order — emits W_BATH_VIA_BEDROOM and W_ROOM_UNREACHABLE, preserving the historical… | none |
 | `room-contents.ts` | 279 | 1 | Room-contents advisories (plan-soundness PS2.8, PS2.9): a habitable room with no window, and a furnished room missing the piece that defines it. Both read a room's use from {@link roomUses} (its `uses`, else its label through… | none |
 | `site.ts` | 115 | 1 | `W_ROOM_NOT_EQUATOR_FACING` — the site layer's one advisory rule. | none |
-| `stairs.ts` | 1439 | 6 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
+| `stairs.ts` | 1439 | 7 | Stair safety (plan-soundness PS2.11e, the stair bullets, and PS2.34): a door swinging over a flight or its landing, a flight with no landing at its foot or head, a doorway onto a flight's side, a void where a flight arrives, a flight too… | none |
 | `vertical.ts` | 207 | 2 | `W_STAIR_UNMATCHED` — a run of vertical circulation that connects nothing. | none |
 
 ## `src/overlays/`
