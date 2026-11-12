@@ -42,8 +42,9 @@
 #   description). NOTE: the MCP registry is in public preview and may reset data / change
 #   behaviour; this step is kept strict (fails loudly) so a regression surfaces here.
 #   The registry JWT from that login is short-lived, so the login runs inside the publish retry
-#   loop, before every attempt, and never before the npm-visibility wait (v1.60.0: a token
-#   minted before a ~28 min npm publish had expired, and all six attempts got 401).
+#   loop, before every attempt, and never before the npm-visibility wait (v1.60.0: the login was
+#   minted before that wait, which took 6m27s and allows up to 10 min, and outlived the registry
+#   JWT (< ~6.5 min); all six attempts got 401).
 #
 # House style mirrors ci.yml / deploy.yml (actions/checkout@v7.0.1, actions/setup-node@v7.0.0).
 
@@ -246,9 +247,9 @@ jobs:
           test -x ./mcp-publisher && echo "mcp-publisher installed"
 
       # NO login step here on purpose: the registry JWT that `mcp-publisher login github-oidc`
-      # mints is short-lived, and the npm wait and the publish retries below can run for a
-      # long time (v1.60.0: a ~28 min npm publish, then six 401 "token is expired" attempts on a
-      # token minted before the wait). The login runs inside the publish loop, once per attempt.
+      # mints is short-lived (< ~6.5 min), and the npm wait below allows up to 10 min (v1.60.0:
+      # login minted before a 6m27s wait, then six 401 "token is expired" attempts). The login
+      # runs inside the publish loop, once per attempt.
 
       # Wait for npm to SHOW the shim version before asking the registry to validate it. The
       # registry looks the version up on npm, and npm makes a just-published version visible only
@@ -284,8 +285,8 @@ jobs:
       # manifest. Six attempts, 20 s apart, is ~2 minutes; since v1.43.1 they are the SECOND line,
       # after the npm wait above, for a registry that still lags npm. A genuinely bad manifest
       # still fails, two minutes later, and the last attempt's output is what the log shows.
-      # Every attempt logs in afresh (GitHub OIDC, no secret): the registry JWT is short-lived,
-      # so one minted before the npm wait or an earlier attempt would be expired (v1.60.0).
+      # Every attempt logs in afresh (GitHub OIDC, no secret): the token is minted fresh, so its
+      # age never depends on the npm wait or on earlier attempts.
       - name: Publish server to MCP Registry
         if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
         working-directory: packages/mcp
@@ -301,7 +302,7 @@ jobs:
               sleep 20
             fi
           done
-          echo "::error::MCP registry publish failed after 6 attempts."
+          echo "::error::MCP registry $stage failed after 6 attempts."
           exit 1
 
       # The Claude Desktop extension bundle (`archlang-mcp-<mcp version>.mcpb`),
