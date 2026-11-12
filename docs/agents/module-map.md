@@ -252,7 +252,7 @@ Totals: 392 modules in 34 directories.
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
 | `import.ts` | 340 | 31 | Module linking — the `import` system. | none |
-| `index.ts` | 756 | 413 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
+| `index.ts` | 757 | 413 | ArchLang — compile declarative floor-plan source to a professional SVG. | none |
 | `input-limit.ts` | 77 | 5 | A host's refusals, as catalogued diagnostics. | none |
 | `intent-concepts.ts` | 238 | 5 | The intent channel's concept vocabulary — production name resolution for the NL→ArchLang intent contract. | none |
 | `intent.ts` | 1588 | 7 | The intent channel — author-time checking of a brief's INTENT against a plan. | none |
@@ -291,7 +291,7 @@ Totals: 392 modules in 34 directories.
 | `sheet-text.ts` | 165 | 14 | **`sheet text { … }`** — the words a sheet draws, and the decimal mark of its numbers, as the plan writes them (issue #403). The design and what was rejected: `archlang-lab/plans/preview-and-remodel/research/2026-11-02-sheet-text.md`. | none |
 | `sheet.ts` | 396 | 28 | **Paper size + operative drawing scale** — the sheet layer. | none |
 | `site.ts` | 282 | 12 | The orientation layer: the `site` block's derived direction NAMES, and the one page→compass conversion every consumer of a facing reads. | none |
-| `stages.ts` | 355 | 6 | The authoring stages (plan-soundness PS7.1): the order in which a plan's decisions are taken, lowest frequency first, and which findings mean anything at each. | none |
+| `stages.ts` | 358 | 6 | The authoring stages (plan-soundness PS7.1): the order in which a plan's decisions are taken, lowest frequency first, and which findings mean anything at each. | none |
 | `statement-print.ts` | 408 | 11 | Text printers for the LEAF (non-block) statement kinds — the element statements and the `set …` settings line. This is the one place `format.ts`'s pretty-printer, an element's own `resolve()` (a lint fix's replacement text) and Plan… | none |
 | `suggest.ts` | 518 | 2 | `suggestTopology(source)` — topology repair suggestions as DATA, never applied. | none |
 | `text-layout.ts` | 170 | 12 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |

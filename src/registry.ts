@@ -265,9 +265,9 @@ export interface ElementDef {
   contextual?(ctx: ParseCtx): boolean;
   /**
    * A plan-level statement only: written in a `level`, `zone`, `component` or control-flow body it
-   * is consumed and refused with this catalogued code. Absent: legal wherever a statement is.
+   * is consumed and refused with this catalogued `code`. Absent: legal wherever a statement is.
    */
-  planLevelOnly?: string;
+  planLevelOnly?: { code: string };
   parse(ctx: ParseCtx): AstElement;
   /** Auto-id prefix (e.g. "room", or a wall/furniture's category). */
   idPrefix(node: AstElement): string;

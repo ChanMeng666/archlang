@@ -619,7 +619,7 @@ The first sentence of each file's header comment.
 - `test/site-lockstep.test.ts` — Site lockstep gate — the "change one, change the other" laws for the two sites.
 - `test/site-markdown.test.ts` — The raw-markdown copies of the hand-written docs pages (`/<route>.md`) are produced by `docs-site/site-markdown.mjs`.
 - `test/site.test.ts` — The site & orientation layer — `site { street … [hemisphere …] }`, its five derived direction NAMES, the one lint rule that reads them, and the intent channel's symbolic `windows.facing`.
-- `test/slab-clear-byte-identity.test.ts` — `level … slab <mm>`, `level … clear <mm>` and `height <mm> clear <mm>` (RM6.1: MF-D1, RM-D17): the byte-identity law, one for each form.
+- `test/slab-clear-byte-identity.test.ts` — `level … slab <mm>`, `level … clear <mm>`, `height <mm> clear <mm>` (RM6.1: MF-D1, RM-D17) and the `section <name> (x,y)->(x,y) look <compass>` mark (RM6.1, design `slab-and-section.md` §2): the byte-identity law, one...
 - `test/slab-clear.test.ts` — `level … slab <mm>`, `level … clear <mm>` and `height <mm> clear <mm>` (RM6.1: MF-D1, RM-D17): what each storey's `describe().heights` reports, the refusals and the warning, the words as names, the printer, and Plan J...
 - `test/snapshot.test.ts` — golden SVG snapshots.
 - `test/spec-forms.test.ts` — The EXECUTABLE-SPEC gate — every form `spec.llm.md` teaches must actually compile, and every illegality it names must actually be refused.

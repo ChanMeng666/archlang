@@ -1649,7 +1649,7 @@ class Parser {
         const msg =
           `"${def.keyword}" is a plan-level statement: write it outside any \`level\`, \`zone\`, ` +
           `\`component\` or block, once for the whole plan`;
-        this.report({ severity: "error", message: msg, code: def.planLevelOnly, span: this.spanFrom(start) });
+        this.report({ severity: "error", message: msg, code: def.planLevelOnly.code, span: this.spanFrom(start) });
         return { kind: "error", id: "", line: t.line, message: msg };
       }
       if (def) {

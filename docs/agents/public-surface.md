@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 636 exports (222 values, 414 types), 404 flagged (73 values).
+Totals: 637 exports (222 values, 415 types), 405 flagged (73 values).
 
 ## `src/algebra/d4.ts`
 
@@ -275,6 +275,7 @@ Totals: 636 exports (222 values, 414 types), 404 flagged (73 values).
 | Export | Kind | In-repo consumers |
 | --- | --- | --- |
 | `CASED_OPENING_HEAD` | value | `test` |
+| `ClearHeightOmitted` | type | none |
 | `DOOR_HEAD` | value | `test` |
 | `MAX_HEIGHT` | value | `test` |
 | `STOREY_HEIGHT` | value | `test` |

@@ -80,7 +80,7 @@ export const section: ElementDef = {
     return (name.type === "ident" || name.type === "number") && ctx.peek(2).type === "lparen";
   },
 
-  planLevelOnly: "E_SECTION_SCOPE",
+  planLevelOnly: { code: "E_SECTION_SCOPE" },
 
   parse(ctx: ParseCtx): SectionNode {
     const kw = ctx.eatKeyword("section");
