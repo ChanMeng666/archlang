@@ -208,8 +208,8 @@ suite("docs-site/examples.md quotes figures the compiler agrees with", () => {
     // was added or removed and the figure sweep below has to have followed it.
     // 28 since the Issued Sheet section (`sheet-notes`) was added; 31 with the office, cafe and classroom;
     // 32 with the Apartment Remodel (B3b); 33 with the Turning Stair (S2); 34 with the Resizable
-    // Flat (P4, the knobs example).
-    expect(secs.length).toBe(34);
+    // Flat (P4, the knobs example); 35 with the Courtyard Family House (RM8.5).
+    expect(secs.length).toBe(35);
     expect(new Set(secs.map((s) => s.example)).size).toBe(secs.length);
   });
 

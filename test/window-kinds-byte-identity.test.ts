@@ -85,6 +85,7 @@ const BASELINE: [string, string][] = [
   ["843f1de2ff7da325a3211c0c95d6c4211d47108cc15be61b8364fbc3f2955886", "examples/classroom-block.arch"],
   ["add2574d8abfc894d4d3880bbc97a485bee142c9ef90c16df3e5a491747a4858", "examples/clinic.arch"],
   ["0c5f2a884df8dd9e94a4304efc09c531fc6199a24284a43f4ef2c1e9481eef9a", "examples/corner-cafe.arch"],
+  ["64e5593cdf241b655c52cc44fcbe94e18ea2de76d2cced6fac8155567564b512", "examples/courtyard-family.arch"], // new example (RM8.5, the courtyard-family showcase)
   ["411fd77e07ded87ca0555dae3f1abb713057a7b63b5e86e712e3a05e2d4fb02a", "examples/courtyard-house.arch"],
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["4090de73163a56b3319477311f2a1d38126aa4861359e38193f897b364e58ef5", "examples/gallery-l.arch"],

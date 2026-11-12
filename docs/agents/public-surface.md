@@ -266,7 +266,7 @@ Totals: 632 exports (222 values, 410 types), 400 flagged (73 values).
 | `PngOptions` | type | none |
 | `isOptionalDepError` | value | `src/cli` |
 | `renderPng` | value | `packages/archlang-3d`, `packages/mcp`, `src/cli`, `test` |
-| `renderPngFromSvg` | value | `src/cli` |
+| `renderPngFromSvg` | value | `scripts`, `src/cli` |
 
 ## `src/datum.ts`
 

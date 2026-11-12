@@ -34,6 +34,12 @@
  * so a label-only room now agrees with an authored one. No other row, field or order moved. The
  * three rows were edited by hand to the values the corpus sweep measured, nothing else.
  *
+ * ## One example added on 2026-11-12 (product-roadmap RM8.5): `examples/courtyard-family.arch`
+ *
+ * A new file, not a classifier change: its eleven rows were taken from `describe()` when it was
+ * added. No other row moved. Its review then dropped the gym's `uses office` (a gym is no study),
+ * so that one row is `[]`/`Room`, as `describe()` gives it; its source changed, not the classifier.
+ *
  * ## One example added on 2026-11-06 (public-surfaces P4): `examples/knob-flat.arch`
  *
  * A new file, not a classifier change: its four rows were taken from `describe()` when it was

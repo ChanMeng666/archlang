@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM1.4 review round 1 (PR #704): each W_GRID_SNAPPED span now points at the written value and the code ranks in validate's last next tier (info), so the 30 rows that raise it move again (digest only); the step charge of the near-kind furniture search moves 2026-10-27-rerun-arm1/6-clinic's steps (unlabelled shelving, +37 = 1 + 8 + 28; digest unchanged); every other row unchanged
+ * Taken: RM8.5 review: examples/courtyard-family.arch source changed (deeper garage, unclassified gym), on 14458fac
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -50,6 +50,11 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "examples/corner-cafe.arch",
     "9f0194d257959d7e4693002086192fd5730e8c1f5a530cf0a58f54527fbcc9b5",
     1394,
+  ],
+  [
+    "examples/courtyard-family.arch",
+    "b4e2a3e9cfc8eaf5f2fbe15ea87d5efda96e8ff5443cb90ca5763fd50f9457d8",
+    9357,
   ],
   [
     "examples/courtyard-house.arch",

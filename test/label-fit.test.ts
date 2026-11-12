@@ -380,6 +380,8 @@ const MOVED = [
   "eval/goldens/l-shaped-flat.arch",
   "eval/goldens/reception-suite.arch",
   "examples/corner-cafe.arch",
+  // RM8.5's showcase plan (a subdirectory, so the walk reaches it and the example samplers do not).
+  "examples/showcase/garden-courtyard.arch",
   "test/fixtures/chain30.arch",
   "test/fixtures/star30.arch",
 ];

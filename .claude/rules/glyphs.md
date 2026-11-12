@@ -31,6 +31,8 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
   the checklist is `.claude/commands/new-fixture-family.md`. Furniture is T0 in the 3D package
   (`src/mesh/t0*.ts`): every catalogued family has a generator (`test/t0.test.ts` fails on a grey
   box for a catalogued word), fitted exactly to the footprint, quarter turns only, integer µm.
+- A redrawn symbol (2D or its 3D generator) re-takes the catalogue pictures: `npx tsx scripts/specimen.ts
+  catalogue` rewrites `docs-site/public/catalogue/<family>.png`, shown in `docs/furniture.md`.
 - All ink stays inside the footprint at every aspect and quarter-turn (the containment checks in
   `test/glyphs-*.test.ts`, path extents via `test/helpers/glyph-extent.ts`).
 - Curves are `g.path` loops from `roundedRectPath`/`ovalPath`/`bulgeArc`/`scallopPath`, every arc
@@ -57,7 +59,8 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
 
 - **A docs example may not name a new fixture family.** `test/new-families-byte-identity.test.ts` scans
   every shipped plan, Markdown fences in `docs/` included, for `furniture <new word>`: the byte-identity
-  law's corpus must not change. Show new families in prose, and examples with existing families.
+  law's corpus must not change. Show new families in prose, and examples with existing families,
+  except the showcase plans in `SHOWCASE_PLANS` (`test/helpers/showcase-plans.ts`, `examples/showcase/`).
   `check:quick` cannot see this guard (it scans directories, never names the file); CI does.
 - **A drawing-only change moves `describe --facts symmetry`.** A piece's `hand` is read off its
   drawn symbol. Unless it is an allow-listed loss of handedness, fix the glyph, never the fact
