@@ -8,7 +8,10 @@
  * click wiring lives in main.ts (it needs the editor's jump-to-source).
  */
 import { escapeHtml } from "./escape.js";
-import { ERROR_CATALOG, offsetToLineCol, rankFixes, type Diagnostic } from "archlang";
+import { offsetToLineCol, rankFixes, type Diagnostic } from "archlang";
+// The catalogue from its own built file, not from `archlang`: so it loads with this panel (edit
+// mode), not with every first compile (card RM0.7; vite.config.js says why).
+import { ERROR_CATALOG } from "archlang/error-catalog";
 
 /**
  * Render the panel and return the rows in display order — `data-i` on each row indexes

@@ -1,8 +1,8 @@
 /**
  * The error catalogue is written by family (`src/error-catalog/<family>.ts`, one
- * `defineEntries({...})` each) and merged by `src/error-catalog.ts` with object spreads. A spread
+ * `defineEntries({...})` each) and merged by `mergeFamilies` in `src/error-catalog.ts`. A merge
  * cannot see a code two families both define (the later silently wins, where one object literal
- * was a `tsc` error), nor a family file nobody spreads. This file pins what the split relies on,
+ * was a `tsc` error), nor a family file nobody passes to it. This file pins what the split relies on,
  * deriving every list from the source: the family files from the directory, the lint families
  * from `FAMILY_NOUN`, the rules' codes from `LINT_RULES`.
  */
@@ -10,7 +10,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
-import type { CatalogEntry } from "../src/error-catalog.js";
+import type { CatalogCode, CatalogEntry } from "../src/error-catalog.js";
 import { ERROR_CATALOG } from "../src/error-catalog.js";
 import { diag } from "../src/diagnostics.js";
 import { FAMILY_NOUN } from "../src/lint/coverage.js";
@@ -110,5 +110,16 @@ describe("diag()", () => {
   it("refuses an uncatalogued code at compile time", () => {
     // @ts-expect-error — not a catalogue code (typecheck:all fails if this ever compiles)
     expect(diag("E_NOT_A_CODE", "m").code).toBe("E_NOT_A_CODE");
+  });
+
+  it("keep CatalogCode a union of the literal codes through mergeFamilies (card RM0.7)", () => {
+    // Type-level pins, read by tsc (check:quick, typecheck:all): a merge typed as `any` or a widened
+    // key type would make both refusals below compile, and each unused @ts-expect-error then fails.
+    const ok: CatalogCode = "E_ROOM_SIZE";
+    // @ts-expect-error — not a catalogue code
+    const notACode: CatalogCode = "E_NOT_A_CODE";
+    // @ts-expect-error — a number is no code (keyof any would admit it)
+    const aNumber: CatalogCode = 1;
+    expect([ok, notACode, aNumber]).toEqual(["E_ROOM_SIZE", "E_NOT_A_CODE", 1]);
   });
 });

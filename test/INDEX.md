@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-497 test files in `test/`, 277 `src` modules, 106 modules no test imports.
+497 test files in `test/`, 278 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -80,6 +80,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/void.ts` (3) — `v129-cross`, `void-rail`, `void`
 - `src/elements/wall.ts` (1) — `room-datums`
 - `src/elements/window.ts` (1) — `corner-window`
+- `src/error-catalog-fixes.ts` (1) — `explain`
 - `src/error-catalog.ts` (18) — `cli-context`, `context-starter`, `element-cap`, `error-catalog-families`, `garage`, `lint-rule-order`, `lint-summary`, `llms-full-drift` (+10)
 - `src/export/dxf.ts` (10) — `curves`, `export-dxf`, `furniture-curves-backends`, `label-fit`, `label-wrap`, `opening`, `room-floor`, `scene-path-prim` (+2)
 - `src/export/pdf.ts` (8) — `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `label-wrap`, `roof`, `scene-path-prim`, `sheet`, `v129-cross`
@@ -339,7 +340,7 @@ The first sentence of each file's header comment.
 - `test/equivariance-storeys-scene.test.ts` — Tier T3 of the D4 ⋉ Z² equivariance oracle for MULTI-STOREY plans: each storey's DRAWN SCENE under the group (backlog M.5), and T0 for the drawing.
 - `test/equivariance-storeys.test.ts` — The D4 ⋉ Z² equivariance oracle for MULTI-STOREY plans — tiers T0, T1 and T2, storey by storey (backlog M.5).
 - `test/error-catalog-examples.test.ts` — The EXECUTABLE half of the error catalog — every `example` that claims to raise a code is run, and must raise it.
-- `test/error-catalog-families.test.ts` — The error catalogue is written by family (`src/error-catalog/<family>.ts`, one `defineEntries({...})` each) and merged by `src/error-catalog.ts` with object spreads.
+- `test/error-catalog-families.test.ts` — The error catalogue is written by family (`src/error-catalog/<family>.ts`, one `defineEntries({...})` each) and merged by `mergeFamilies` in `src/error-catalog.ts`.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
 - `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.

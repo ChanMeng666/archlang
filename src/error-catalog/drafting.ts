@@ -3,7 +3,7 @@
  * scale, and the render config (themes, styles, materials, fonts, PNG), and the `annotation`
  * lint family.
  *
- * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
+ * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
 import { defineEntries, e, w } from "./entry.js";
