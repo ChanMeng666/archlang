@@ -2,7 +2,7 @@
  * Error catalogue: the layout family. Placement and relations: `place`, datums, layout references,
  * alignment, attachment, strips and segment selectors.
  *
- * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
+ * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
 import { defineEntries, e } from "./entry.js";

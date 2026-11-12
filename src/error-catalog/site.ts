@@ -2,7 +2,7 @@
  * Error catalogue: the site family. The site and outdoor elements: boundaries, streets, terraces,
  * balconies, fences, and the `outdoor` lint family.
  *
- * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
+ * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
 import { defineEntries, e, w } from "./entry.js";

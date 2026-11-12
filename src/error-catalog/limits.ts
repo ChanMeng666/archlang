@@ -3,7 +3,7 @@
  * and diagnostic limits, the hosted rate limit, and the range a lint ruleset's numbers are held to
  * (the import and keep caps live with their families).
  *
- * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
+ * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
 import { defineEntries, e, w } from "./entry.js";

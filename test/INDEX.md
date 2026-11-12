@@ -339,7 +339,7 @@ The first sentence of each file's header comment.
 - `test/equivariance-storeys-scene.test.ts` — Tier T3 of the D4 ⋉ Z² equivariance oracle for MULTI-STOREY plans: each storey's DRAWN SCENE under the group (backlog M.5), and T0 for the drawing.
 - `test/equivariance-storeys.test.ts` — The D4 ⋉ Z² equivariance oracle for MULTI-STOREY plans — tiers T0, T1 and T2, storey by storey (backlog M.5).
 - `test/error-catalog-examples.test.ts` — The EXECUTABLE half of the error catalog — every `example` that claims to raise a code is run, and must raise it.
-- `test/error-catalog-families.test.ts` — The error catalogue is written by family (`src/error-catalog/<family>.ts`, one `defineEntries({...})` each) and merged by `src/error-catalog.ts` with object spreads.
+- `test/error-catalog-families.test.ts` — The error catalogue is written by family (`src/error-catalog/<family>.ts`, one `defineEntries({...})` each) and merged by `mergeFamilies` in `src/error-catalog.ts`.
 - `test/error-catalog-order.test.ts` — `ERROR_CODES` order is a law of the source, not of the host: errors first, then warnings, and within each group by UTF-16 code unit.
 - `test/error-svg.test.ts` — onError: 'svg' (opt-in error card).
 - `test/escape-fuzz.test.ts` — escaping fuzz — SVG; escaping fuzz — error-card SVG; escaping fuzz — ASCII plan; escaping fuzz — DXF export; escaping fuzz — shrunk regressions.

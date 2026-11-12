@@ -2,7 +2,7 @@
  * Error catalogue: the furniture-checks family. The `furniture` lint family: overlaps, clearances,
  * fixtures against walls, windows, stairs and voids.
  *
- * Spread into `ERROR_CATALOG` by `src/error-catalog.ts`; each code is written once, as its key.
+ * Merged into `ERROR_CATALOG` by `mergeFamilies` in `src/error-catalog.ts`; each code is written once, as its key.
  */
 
 import { CANONICAL_FIXTURES } from "../elements/fixtures-glyphs.js";
