@@ -38,7 +38,7 @@ import type {
   OpeningPlacement,
 } from "./ir.js";
 import type { PlanNode, Point } from "./ast.js";
-import type { CeilingFacts } from "./datum.js";
+import { type CeilingFacts, clearHeightMm } from "./datum.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { voidPieces } from "./elements/void.js";
 import { storeyNetAreaBands } from "./analyze/net-area-memo.js";
@@ -80,7 +80,7 @@ import {
 } from "./vertical.js";
 import { fmt2 } from "./num-format.js";
 import { keepSummary } from "./keep.js";
-import { drawnView, keepResultsOf } from "./ir.js";
+import { ceilingOf, drawnView, keepResultsOf } from "./ir.js";
 import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
 import { clearanceFacts } from "./lint/clearance-facts.js";
 import { openRunsOf } from "./analyze.js";
@@ -250,7 +250,8 @@ function ceilingRows(
 ): Pick<HeightFacts, "slab" | "clear_height" | "clear_height_source" | "clear_height_omitted"> {
   return {
     ...(c.slab !== undefined ? { slab: c.slab } : {}),
-    ...(c.clearHeight !== undefined ? { clear_height: c.clearHeight } : {}),
+    // Whole millimetres, as `W_CLEAR_HEIGHT_MISMATCH` compares them (`clearHeightMm`).
+    ...(c.clearHeight !== undefined ? { clear_height: clearHeightMm(c.clearHeight) } : {}),
     ...(c.source !== undefined ? { clear_height_source: c.source } : {}),
     ...(c.omitted !== undefined ? { clear_height_omitted: c.omitted } : {}),
   };
@@ -507,7 +508,10 @@ function summarize(
   // so there is no second rule to disagree with the first. It is whole-PLAN (see
   // `ResolvedPlan._heightsAuthored`), which is why a building whose upper floor alone
   // declares a height reports heights on every page.
-  const heights = ir._heightsAuthored;
+  // The storey's `slab` and clear height (MF-D1, RM-D17) open the block too, and only here: lint,
+  // Plan JSON and the quantities keep reading `_heightsAuthored` alone (RM6.1 ruling).
+  const ceiling = ceilingOf(ir);
+  const heights = ir._heightsAuthored || ceiling !== undefined;
   // The walls' remodel status (B3a): a per-storey block, absent unless a wall here writes one.
   const wallStatus = wallStatusFacts(ir);
 
@@ -807,7 +811,7 @@ function summarize(
             storey_height: ir.storeyHeight,
             elevation: ir.elevation,
             // Only when the plan writes a `slab` or a `clear` (MF-D1, RM-D17).
-            ...(ir._ceiling ? ceilingRows(ir._ceiling) : {}),
+            ...(ceiling ? ceilingRows(ceiling) : {}),
             // Every wall as drawn: a demolished wall (B3a) still has a height.
             walls: drawnView(ir).walls.map((w) => ({ id: w.id, height: w.height })),
           },

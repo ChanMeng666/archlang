@@ -8,10 +8,14 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
-import { compile, describe, describeLevel, format } from "../src/index.js";
+import { compile, describe, describeLevel, format, makeVirtualWorld } from "../src/index.js";
+import type { AstElement, ExprPoint, Point } from "../src/ast.js";
+import type { Span } from "../src/diagnostics.js";
+import type { ResolvedElement } from "../src/ir.js";
 import { resolvePlan } from "../src/analyze.js";
+import { KEYWORDS, UNRESERVED_KEYWORDS } from "../src/grammar/tokens.js";
 import { parse } from "../src/parser.js";
-import { BUILTIN_REGISTRY } from "../src/registry.js";
+import { BUILTIN_REGISTRY, type ElementDef } from "../src/registry.js";
 import { planToJson } from "../src/plan-json.js";
 import { section } from "../src/elements/section.js";
 import { ROOT } from "./helpers/rectilinear-rooms-law.js";
@@ -137,6 +141,15 @@ suite("section marks: the refusals", () => {
     expect(errorsOf(plan(`  zone z { ${mark} }`))).toEqual(["E_SECTION_SCOPE"]);
     expect(errorsOf(plan(`  component c() { ${mark} }`))).toEqual(["E_SECTION_SCOPE"]);
     expect(errorsOf(plan(`  for i in 0..1 { ${mark} }`))).toEqual(["E_SECTION_SCOPE"]);
+    // A malformed mark inside a block is refused for where it stands too, not as a parse error.
+    const broken = `plan "L" {\n  units mm\n  level 1 {\n${shell}\n    section A (3000,-1000)->(3000,5000) look\n  }\n}\n`;
+    expect(errorsOf(broken)).toEqual(["E_SECTION_SCOPE"]);
+  });
+
+  it("a mark out of range is named by its own name, as Plan JSON names it", () => {
+    const far = compile(plan("  section A (3000,-1000)->(3000,50000000) look east"), { noCache: true }).diagnostics;
+    expect(far.map((d) => d.code)).toEqual(["E_OUT_OF_RANGE"]);
+    expect(far[0]!.message).toContain('section "A"');
   });
 
   it("the parse refusals: a number that is no positive whole number, a missing or unknown `look`", () => {
@@ -172,13 +185,83 @@ ${SHELL}
     expect(describe(src).sections).toBeUndefined();
   });
 
-  it("is no statement start: a clause list runs on past `section`", () => {
-    // `room id=section` ends the room only where a statement start would; `section` is none.
+  it("is no statement start: an expression may continue onto a line that begins with it", () => {
+    // A statement-start word that begins a line ends the expression before it (the parser's
+    // recovery guard, `src/expr.ts`): were `section`, `slab` or `look` one, each of these would be
+    // `E_PARSE`. `height` is one, and is the control.
+    const continued = (word: string): string => plan(`  let ${word} = 2\n  let w = 1000 +\n    ${word}`);
+    for (const word of ["section", "slab", "look"]) expect(errorsOf(continued(word)), word).toEqual([]);
+    expect(errorsOf(plan("  let h = 2\n  let w = 1000 +\n    height 2"))).toContain("E_PARSE");
     const kinds = parse(
       plan(`  room id=section at (6000,0) size 1000x1000\n  section A (3000,-1000)->(3000,5000) look east`),
       BUILTIN_REGISTRY,
     ).plan!.body.map((s) => s.kind);
     expect(kinds.slice(-2)).toEqual(["room", "section"]);
+  });
+
+  it("the unreserved keywords are keywords, for highlighting only", () => {
+    const all = Object.values(KEYWORDS).flat() as string[];
+    for (const w of UNRESERVED_KEYWORDS) expect(all, w).toContain(w);
+    expect(BUILTIN_REGISTRY.byKeyword.get("section")?.contextual).toBeDefined();
+  });
+});
+
+suite("plan-level-only elements: derived from the def, not from the word `section`", () => {
+  // A plugin kind that declares `planLevelOnly` gets every rule the mark has, with no edit naming it.
+  const marker: ElementDef = {
+    kind: "marker",
+    keyword: "marker",
+    setWords: {},
+    planLevelOnly: { code: "E_SECTION_SCOPE" },
+    parse(ctx) {
+      const kw = ctx.eatKeyword("marker");
+      return { kind: "marker", id: "", at: ctx.parsePoint(), line: kw.line } as unknown as AstElement;
+    },
+    idPrefix: () => "marker",
+    resolve(node, ctx) {
+      const n = node as unknown as { at: ExprPoint; span?: Span };
+      return { kind: "marker", id: ctx.id, at: ctx.evalPt(n.at), span: n.span } as unknown as ResolvedElement;
+    },
+    bounds: (r) => [(r as unknown as { at: Point }).at],
+    drawCost: () => 1,
+    render: (r, ctx) => [
+      {
+        layer: "annotations",
+        prim: {
+          t: "text",
+          at: (r as unknown as { at: Point }).at,
+          value: "MARKER",
+          size: ctx.sizes.dimFont,
+          anchor: "middle",
+          baseline: "central",
+        },
+        paint: { fill: "#000000" },
+      },
+    ],
+  };
+  const opts = { noCache: true, plugins: [marker] };
+  const shell = SHELL.replace(/^ {2}/gm, "    ");
+
+  it("beside the levels it is no E_LEVEL_MIX, and only the lowest page draws it", () => {
+    const src = `plan "M" {\n  units mm\n  marker (100,100)\n  level 1 {\n${shell}\n  }\n  level 2 {\n${shell}\n  }\n}\n`;
+    const out = compile(src, opts);
+    expect(out.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(out.pages!.map((p) => p.svg.includes(">MARKER<"))).toEqual([true, false]);
+  });
+
+  it("inside a block it is the def's code", () => {
+    const codes = compile(plan("  zone z { marker (100,100) }"), opts).diagnostics.map((d) => d.code);
+    expect(codes).toEqual(["E_SECTION_SCOPE"]);
+  });
+
+  it("a whole-file import leaves it out, as it leaves out a level", () => {
+    const world = makeVirtualWorld({
+      "m.arch": `plan "Mod" {\n  units mm\n  marker (100,100)\n  room id=r at (0,0) size 1000x1000\n}\n`,
+    });
+    const src = plan(`  import "m.arch" as m\n  place m() as one at (7000,0)`);
+    const out = compile(src, { ...opts, world });
+    expect(out.diagnostics.filter((d) => d.severity === "error")).toEqual([]);
+    expect(out.svg).not.toContain(">MARKER<");
   });
 });
 
@@ -192,7 +275,7 @@ suite("section marks: the printer and Plan JSON", () => {
 
   it("Plan JSON drops it, as `section`, on the lowest storey's page", () => {
     const dropped = planToJson(FIXTURE).dropped?.filter((d) => d.clause === "section");
-    expect(dropped?.map((d) => d.count)).toEqual([2]);
+    expect(dropped?.map((d) => [d.count, d.ids])).toEqual([[2, ["A", "1"]]]);
     // Nothing for a plan that marks none.
     expect(planToJson(plan("")).dropped?.some((d) => d.clause === "section") ?? false).toBe(false);
   });

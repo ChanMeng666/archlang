@@ -573,6 +573,15 @@ export const RULES = {
 } as const;
 
 /**
+ * The keywords RM6.1 added, every one contextual: `section` (read only before a name and `(`),
+ * `slab` (only in a `level` header) and `look` (only after a section mark's second point). An id
+ * or a binding may spell any of them, so a tool that renames ids away from the keywords (the
+ * OpenPlan3D importer) leaves these three be, and its output stays what it was before them.
+ * `test/section.test.ts` holds each to `KEYWORDS`.
+ */
+export const UNRESERVED_KEYWORDS: readonly string[] = ["section", "slab", "look"];
+
+/**
  * Keywords that begin a plan-body statement (settings + declarations + control
  * flow). Registry element keywords are added per-parse, so they are not listed
  * here. Consumed by `src/parser.ts` for statement dispatch and error recovery.

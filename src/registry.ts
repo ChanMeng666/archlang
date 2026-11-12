@@ -268,6 +268,11 @@ export interface ElementDef {
    * is consumed and refused with this catalogued `code`. Absent: legal wherever a statement is.
    */
   planLevelOnly?: { code: string };
+  /**
+   * What a message or a report calls a resolved element of this kind, when that is not its element
+   * id: a `section` mark's own name (`A`), where its id is an auto-id. Absent: its id.
+   */
+  nameOf?(resolved: ResolvedElement): string;
   parse(ctx: ParseCtx): AstElement;
   /** Auto-id prefix (e.g. "room", or a wall/furniture's category). */
   idPrefix(node: AstElement): string;

@@ -7,7 +7,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe as suite, expect, it } from "vitest";
-import { compile, describe, format } from "../src/index.js";
+import { compile, describe, format, lint } from "../src/index.js";
 import { planToJson } from "../src/plan-json.js";
 import { ROOT } from "./helpers/rectilinear-rooms-law.js";
 
@@ -137,9 +137,77 @@ suite("slab and clear: Plan JSON says what it leaves out", () => {
       planToJson(src)
         .dropped?.filter((r) => r.clause === "level")
         .map((r) => r.text),
-    ).toEqual(['level 1 "G" clear 2400', "level 2 slab 300"]);
+    ).toEqual(['level 1 "G" height 3000 clear 2400', "level 2 slab 300"]);
+    // The whole header, as design §3.4 writes it, only on a plan that writes a `slab` or a `clear`.
+    const plain = plan([level('1 "G" height 3000'), level("2")].join("\n"));
+    expect(
+      planToJson(plain)
+        .dropped?.filter((r) => r.clause === "level")
+        .map((r) => r.text),
+    ).toEqual(['level 1 "G"', "level 2"]);
     const single = planToJson(plan(`  height 2600 clear 2340\n${SHELL}`)).dropped;
     expect(single).toEqual([{ clause: "clear height", count: 1, text: "clear 2340" }]);
     expect(planToJson(plan(`  height 2600\n${SHELL}`)).dropped).toBeUndefined();
+  });
+});
+
+suite("slab and clear: each storey reads its own scope, and only describe() learns them", () => {
+  it("the slab above is the number that storey resolved in its own scope (review S1)", () => {
+    // Each storey binds its own `t`: the upper storey's `slab t` is 300 there, never the lower's 100.
+    const src = plan(
+      [
+        `  level 1 height 2800 clear 2500 {\n    let t = 100\n${SHELL}\n  }`,
+        `  level 2 height 3000 slab t {\n    let t = 300\n${SHELL}\n  }`,
+      ].join("\n"),
+    );
+    expect(codesOf(src)).toEqual([]);
+    const [lower, upper] = heightsOf(src);
+    expect(upper).toMatchObject({ slab: 300 });
+    expect(lower).toMatchObject({ clear_height: 2500, clear_height_source: "authored" });
+    // Without the authored clear, the derived value is 2800 - 300, not 2800 - 100.
+    expect(heightsOf(src.replace("height 2800 clear 2500", "height 2800"))[0]).toMatchObject({
+      clear_height: 2500,
+      clear_height_source: "derived",
+    });
+    // A written clear that disagrees with 2800 - 300 warns, quoting the upper storey's number.
+    const off = compile(src.replace("clear 2500", "clear 2700"), { noCache: true }).diagnostics;
+    expect(off.map((d) => d.code)).toEqual(["W_CLEAR_HEIGHT_MISMATCH"]);
+    expect(off[0]!.message).toContain("`slab 300`");
+  });
+
+  it("a slab or a clear moves neither lint nor the Plan JSON document (review S2)", () => {
+    // No `height` anywhere and a stair that is steep only against the 3000 default: the clauses must
+    // not open the storey-height gate that lint, Plan JSON and the quantities read.
+    const stair = "    stair id=st at (500,500) size 900x1500 dir up";
+    const two = (head1: string, head2: string): string =>
+      plan(`  level 1${head1} {\n${SHELL}\n${stair}\n  }\n  level 2${head2} {\n${SHELL}\n${stair}\n  }`);
+    const base = two("", "");
+    const doc = (src: string): string => {
+      const j = planToJson(src);
+      return JSON.stringify([j.json, j.pages]);
+    };
+    // The clause moves every later byte offset, so a finding is compared without its spans.
+    const findings = (src: string): string => JSON.stringify(lint(src), (k, v) => (k === "span" ? undefined : v));
+    expect(findings(base)).toContain("W_STAIR");
+    for (const [h1, h2] of [
+      ["", " slab 200"],
+      [" clear 2400", ""],
+    ] as const) {
+      const src = two(h1, h2);
+      expect(findings(src), `lint with "${h1}${h2}"`).toBe(findings(base));
+      expect(doc(src), `Plan JSON with "${h1}${h2}"`).toBe(doc(base));
+      // …and describe() does report them.
+      expect(JSON.stringify(describe(src))).not.toBe(JSON.stringify(describe(base)));
+    }
+  });
+
+  it("a clear height is printed and compared in whole millimetres", () => {
+    expect(heightsOf(plan([level("1 height 3000.4"), level("2 slab 300")].join("\n")))[0]).toMatchObject({
+      clear_height: 2700,
+      clear_height_source: "derived",
+    });
+    const authored = plan([level("1 height 3000 clear 2700.4"), level("2 slab 300")].join("\n"));
+    expect(codesOf(authored)).toEqual([]);
+    expect(heightsOf(authored)[0]).toMatchObject({ clear_height: 2700 });
   });
 });

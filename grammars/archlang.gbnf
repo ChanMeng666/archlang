@@ -157,7 +157,7 @@ outdoor-rail ::= "rail" rws rail-edge ( ( ws "," ws | rws ) rail-edge )*
 rail-edge ::= "top" | "bottom" | "left" | "right" | "all" | "none"
 fence-stmt ::= "fence" rws id-opt ( fence-style rws )? "{" ws point ws ( point ws )+ ( "close" ws )? "}"
 fence-style ::= "picket" | "panel" | "post"
-section-stmt ::= "section" rws ( ident | number ) ws point ws "->" ws point ws "look" rws compass-dir
+section-stmt ::= "section" rws ( ident | [1-9] [0-9]* ) ws point ws "->" ws point ws "look" rws compass-dir
 walls-stmt ::= "walls" rws "from" rws "rooms" rws "exterior" rws expr rws "partition" rws expr ( ws wall-status )? ( ws "{" ws ( walls-clause ws )* "}" )?
 walls-clause ::= "except" rws ident ( rws ident )* | "open" rws id-opt "between" rws ident rws "and" rws ident ( rws "width" rws expr )? | "between" rws ident rws "and" rws ident rws "thickness" rws expr
 id-opt ::= ( "id" ws "=" ws ident rws )?

@@ -699,7 +699,9 @@ function rules(): [string, string][] {
     ["fence-style", litAlt(FENCE_STYLES)],
     // `section <name|int> (x,y)->(x,y) look <compass>` (RM6.1): a PLAN statement, never a block one
     // (`E_SECTION_SCOPE` inside any block), so it is no `element` alternative.
-    ["section-stmt", `"section" rws ( ident | number ) ws point ws "->" ws point ws "look" rws compass-dir`],
+    // The name is an identifier or a positive whole number, as the parser takes it (no sign, no
+    // fraction, no unit).
+    ["section-stmt", `"section" rws ( ident | [1-9] [0-9]* ) ws point ws "->" ws point ws "look" rws compass-dir`],
     // `walls from rooms` (ADR 0028 §3). The body holds `except`, `open between` and
     // `between … thickness` clauses, the closed list the parser accepts.
     [

@@ -3629,14 +3629,17 @@ level 2 "Upper" height 2750 slab 320 clear 2340 { … }
 Once any storey writes a `slab` or a `clear`, each storey's `heights` block gains `slab` (when
 it writes one) and either `clear_height` with `clear_height_source` or a
 `clear_height_omitted` reason. The value is the storey's own `clear` (`authored`); else its
-`height` less the `slab` of the storey above (`derived`). Nothing is guessed: the top storey
-and a single-storey plan without a `clear` report `top-storey` or `single-storey`, and a
-storey whose upper neighbour writes no `slab`, or whose `height` is the 3000 default, reports
-`no-slab-above` or `default-storey-height`, and a `slab` above as deep as the storey reports
+`height` less the `slab` the storey above wrote (`derived`), in whole millimetres. Nothing is
+guessed: the top storey without a `clear` reports `top-storey`, a storey whose upper neighbour
+writes no `slab`, or whose `height` is the 3000 default, reports `no-slab-above` or
+`default-storey-height`, and a `slab` above as deep as the storey reports
 `slab-above-too-thick`. In the example the basement derives 2190 and the
 ground floor 2430. A `clear` that disagrees with the derived value in whole millimetres is
 [`W_CLEAR_HEIGHT_MISMATCH`](error-codes.md#w_clear_height_mismatch), and the written value is
-reported. A plan that writes neither clause describes exactly as before.
+reported. A single-storey plan can write no `slab`, so it reports a clear height only when it
+writes `clear`, and otherwise nothing. A plan that writes neither clause describes exactly as
+before. The clauses open `describe()`'s `heights` block and nothing else: lint, Plan JSON and the
+quantities read the storey heights as if neither were written.
 
 ### The three refusals
 

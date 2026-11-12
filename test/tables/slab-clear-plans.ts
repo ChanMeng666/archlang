@@ -38,14 +38,17 @@ ${SHELL}
   },
   {
     // `section` and `look` as the names they have always been, where the mark's gate could misread
-    // them: a binding, a reassignment, a component with a parameter and its call, a call whose
-    // argument is a name, and a storey plan whose plan level binds them beside the `level` blocks.
+    // them: a binding, a reassignment, an expression continued onto a line that begins with
+    // `section` (a statement start would end it there), a component with a parameter and its call, a
+    // call whose argument is a name, and a storey plan whose plan level binds them beside the levels.
     name: "inline:section-words-as-names",
     src: `plan "N" {
   units mm
   let section = 2
   let look = 1
   section = section + look
+  let wide = 1000 +
+    section
   component section(n) {
     room id=look at (7000 + n * 0,0) size 1000x1000
   }

@@ -82,6 +82,8 @@ export const section: ElementDef = {
 
   planLevelOnly: { code: "E_SECTION_SCOPE" },
 
+  nameOf: (resolved) => (resolved as RSection).name,
+
   parse(ctx: ParseCtx): SectionNode {
     const kw = ctx.eatKeyword("section");
     const nameTok = ctx.peek();

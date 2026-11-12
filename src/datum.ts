@@ -151,7 +151,11 @@ export function heightRangeDiagnostic(subject: string, clause: string, value: nu
       ? {
           fixes: [
             {
-              title: `drop the \`${clause}\` clause and inherit the default`,
+              // A `slab` or a `clear` has no default to inherit: dropped, the storey states none.
+              title:
+                clause === "slab" || clause === "clear"
+                  ? `drop the \`${clause}\` clause: the storey then states none`
+                  : `drop the \`${clause}\` clause and inherit the default`,
               applicability: "machine-applicable" as const,
               edits: [{ span, newText: "" }],
             },
@@ -321,21 +325,20 @@ export function resolveOpeningHeights(
 }
 
 /**
- * Why a storey reports no clear height (`describe().heights[].clear_height_omitted`). Never a
- * guess (MF-D1): without the author's `clear`, a storey's clear height is its own `height` less
- * the `slab` the storey above writes, and each word names the missing half.
+ * Why a storey of a multi-storey plan reports no clear height
+ * (`describe().heights[].clear_height_omitted`). Never a guess (MF-D1): without the author's
+ * `clear`, a storey's clear height is its own `height` less the `slab` the storey above writes,
+ * and each word names the missing half. A single-storey plan has no reason word: it can write
+ * no `slab`, so without a `clear` it writes neither clause and reports nothing (MF-D1 item 2).
  */
-export type ClearHeightOmitted =
-  | "single-storey"
-  | "top-storey"
-  | "no-slab-above"
-  | "default-storey-height"
-  | "slab-above-too-thick";
+export type ClearHeightOmitted = "top-storey" | "no-slab-above" | "default-storey-height" | "slab-above-too-thick";
 
 /** One storey's `slab` and clear height, on a plan that writes a `slab` or a `clear` anywhere. */
 export interface CeilingFacts {
   /** The storey's own `slab`, as written. */
   slab?: number;
+  /** The storey's own `height`, when written and accepted: what its Plan JSON `level` row quotes. */
+  height?: number;
   /** The clear height, floor to ceiling; with {@link source}. */
   clearHeight?: number;
   /** `authored` (the storey's `clear`) or `derived` (its `height` less the `slab` above). */
@@ -344,71 +347,101 @@ export interface CeilingFacts {
   omitted?: ClearHeightOmitted;
 }
 
+/**
+ * A clear height as `describe()` prints it and as {@link deriveCeilings} compares it: whole
+ * millimetres, through `fmt0`, so a float tail of `height − slab` neither shows nor raises
+ * `W_CLEAR_HEIGHT_MISMATCH`.
+ */
+export const clearHeightMm = (v: number): number => Number(fmt0(v));
+
 /** Does the plan write a `slab` or a `clear` anywhere? The gate of the clear-height facts: without
- *  one, nothing about them is evaluated or reported. A synthetic storey plan carries the answer. */
+ *  one, nothing about them is evaluated or reported. A synthetic storey plan carries the answer.
+ *  It opens `describe()`'s `heights` block and nothing else: it is no part of
+ *  {@link plansAuthorHeights}, which lint, Plan JSON and the quantities read. */
 export function plansAuthorCeiling(plan: PlanNode): boolean {
   if (plan.clear !== undefined || plan._storey !== undefined) return true;
   return plan.body.some((s) => s.kind === "level" && (s.slab !== undefined || s.clear !== undefined));
 }
 
-/** How {@link resolveCeiling} evaluates: `loud` charges the step meter and reports, `quiet`
- *  charges and reports nothing (the `slab` above is reported by its own storey). */
-export interface CeilingEval {
-  loud(e: Expr, span: Span | undefined): number;
-  quiet(e: Expr): number;
-  diag(d: Diagnostic): void;
-}
-
 /**
- * One storey's {@link CeilingFacts} (RM-D17): the author's `clear` when written, else the storey's
- * `height` less the `slab` the storey above writes, else nothing and the reason. An authored value
- * that disagrees with the derived one, in whole millimetres as `describe()` would print them, is
- * `W_CLEAR_HEIGHT_MISMATCH`, and the author's value stands.
+ * One storey's OWN {@link CeilingFacts} (MF-D1, RM-D17), each clause evaluated in the storey's own
+ * scope (`ev`, which charges the step meter and reports): its `slab`, its written `height`, and its
+ * `clear` as `authored`. Nothing here reads another storey. A single-storey plan's facts are then
+ * final; a multi-storey plan's are completed by {@link deriveCeilings} once every storey has
+ * resolved, from the `slab` NUMBER the storey above resolved in its own scope.
  */
 export function resolveCeiling(
   plan: PlanNode,
   subject: string,
   storey: { height: number; written: boolean },
-  ev: CeilingEval,
+  ev: { eval(e: Expr, span: Span | undefined): number; diag(d: Diagnostic): void },
 ): CeilingFacts {
   const own = (clause: "slab" | "clear", e: Expr | undefined, span: Span | undefined): number | undefined => {
     if (e === undefined) return undefined;
-    const v = ev.loud(e, span);
+    const v = ev.eval(e, span);
     if (isDrawableHeight(v)) return v;
     ev.diag(heightRangeDiagnostic(subject, clause, v, span));
     return undefined;
   };
   const slab = own("slab", plan.slab, plan.slabSpan);
   const clear = own("clear", plan.clear, plan.clearSpan);
-  const ctx = plan._storey;
-  const above = ctx?.slabAbove !== undefined && !ctx.top ? ev.quiet(ctx.slabAbove) : Number.NaN;
-  const hasAbove = isDrawableHeight(above);
-  const derived = hasAbove && storey.written ? storey.height - above : undefined;
-  const out: CeilingFacts = slab !== undefined ? { slab } : {};
-  if (clear !== undefined) {
-    if (derived !== undefined && derived > 0 && fmt0(derived) !== fmt0(clear)) {
-      ev.diag({
-        severity: "warning",
-        code: "W_CLEAR_HEIGHT_MISMATCH",
-        message:
-          `${subject} writes \`clear ${fmt0(clear)}\`, but its \`height ${fmt0(storey.height)}\` less the ` +
-          `\`slab ${fmt0(above)}\` of the storey above is ${fmt0(derived)} mm; the written value is reported`,
-        ...(plan.clearSpan ? { span: plan.clearSpan } : {}),
-      });
+  return {
+    ...(slab !== undefined ? { slab } : {}),
+    ...(storey.written ? { height: storey.height } : {}),
+    ...(clear !== undefined ? { clearHeight: clear, source: "authored" as const } : {}),
+  };
+}
+
+/** One storey as {@link deriveCeilings} reads it: its own facts, and how its warning is worded and spanned. */
+export interface StoreyCeiling {
+  own: CeilingFacts;
+  subject: string;
+  clearSpan?: Span;
+}
+
+/**
+ * The clear heights of a multi-storey plan's storeys (RM-D17), lowest first, from each storey's own
+ * facts: the author's `clear` when written, else the storey's written `height` less the `slab` the
+ * storey above wrote, else nothing and the reason. An authored value that differs from the derived
+ * one as `describe()` prints them ({@link clearHeightMm}) is `W_CLEAR_HEIGHT_MISMATCH`, and the
+ * author's value stands. Pure arithmetic on resolved numbers: it evaluates nothing.
+ */
+export function deriveCeilings(storeys: readonly StoreyCeiling[]): { facts: CeilingFacts[]; diags: Diagnostic[][] } {
+  const facts: CeilingFacts[] = [];
+  const diags: Diagnostic[][] = [];
+  storeys.forEach(({ own, subject, clearSpan }, i) => {
+    const top = i === storeys.length - 1;
+    const above = top ? undefined : storeys[i + 1]!.own.slab;
+    const derived = above !== undefined && own.height !== undefined ? own.height - above : undefined;
+    const mine: Diagnostic[] = [];
+    if (own.source === "authored") {
+      const clear = own.clearHeight!;
+      if (derived !== undefined && derived > 0 && clearHeightMm(derived) !== clearHeightMm(clear)) {
+        mine.push({
+          severity: "warning",
+          code: "W_CLEAR_HEIGHT_MISMATCH",
+          message:
+            `${subject} writes \`clear ${fmt0(clear)}\`, but its \`height ${fmt0(own.height!)}\` less the ` +
+            `\`slab ${fmt0(above!)}\` of the storey above is ${fmt0(derived)} mm; the written value is reported`,
+          ...(clearSpan ? { span: clearSpan } : {}),
+        });
+      }
+      facts.push(own);
+    } else if (derived !== undefined && derived > 0) {
+      facts.push({ ...own, clearHeight: derived, source: "derived" });
+    } else {
+      const omitted: ClearHeightOmitted = top
+        ? "top-storey"
+        : above === undefined
+          ? "no-slab-above"
+          : own.height === undefined
+            ? "default-storey-height"
+            : "slab-above-too-thick";
+      facts.push({ ...own, omitted });
     }
-    return { ...out, clearHeight: clear, source: "authored" };
-  }
-  if (derived !== undefined && derived > 0) return { ...out, clearHeight: derived, source: "derived" };
-  const omitted: ClearHeightOmitted = !ctx
-    ? "single-storey"
-    : ctx.top
-      ? "top-storey"
-      : !hasAbove
-        ? "no-slab-above"
-        : !storey.written
-          ? "default-storey-height"
-          : "slab-above-too-thick";
-  return { ...out, omitted };
+    diags.push(mine);
+  });
+  return { facts, diags };
 }
 
 /**
@@ -425,7 +458,9 @@ export function resolveCeiling(
  * all, which is precisely the byte-identity failure this predicate exists to prevent.
  */
 export function plansAuthorHeights(plan: PlanNode): boolean {
-  if (plan.height !== undefined || plansAuthorCeiling(plan)) return true;
+  // A `slab` or a `clear` is not counted (RM6.1 ruling): the storeys' heights stay the defaults
+  // lint, Plan JSON and the quantities judge against, and only `describe()` reports the clauses.
+  if (plan.height !== undefined) return true;
   for (const def of plan.components.values()) if (bodyAuthorsHeights(def.body)) return true;
   return bodyAuthorsHeights(plan.body);
 }
@@ -451,7 +486,7 @@ function statementAuthorsHeights(s: Statement): boolean {
       return (s as OpeningNode).head !== undefined;
     case "level": {
       const l = s as LevelNode;
-      return l.height !== undefined || l.slab !== undefined || l.clear !== undefined || bodyAuthorsHeights(l.body);
+      return l.height !== undefined || bodyAuthorsHeights(l.body);
     }
     case "zone":
       return bodyAuthorsHeights(s.body);

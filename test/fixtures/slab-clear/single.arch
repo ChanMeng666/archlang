@@ -1,6 +1,6 @@
 # The clear-height clause on a single-storey plan (RM-D17): written on the `height` line, reported
-# as written (`clear_height 2340`, `clear_height_source` authored). Without it the storey would report
-# `clear_height_omitted: single-storey`, never a guess.
+# as written (`clear_height 2340`, `clear_height_source` authored). Without it the plan writes neither
+# clause, so it reports no clear-height key at all (MF-D1 item 2), never a guess.
 plan "Single storey clear" {
   units mm
   height 2600 clear 2340

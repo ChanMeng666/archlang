@@ -683,7 +683,9 @@ class Parser {
     }
 
     for (const s of plan.body) {
-      if (LEVEL_SHARED_KINDS.includes(s.kind)) continue;
+      // A plan-level-only element (`ElementDef.planLevelOnly`, the `section` mark) belongs beside the
+      // levels: `levelPlanFor` gives it to the lowest storey.
+      if (LEVEL_SHARED_KINDS.includes(s.kind) || this.registry.byKind.get(s.kind)?.planLevelOnly) continue;
       this.report({
         severity: "error",
         code: "E_LEVEL_MIX",
@@ -1644,8 +1646,15 @@ class Parser {
       // A contextual keyword starts its element only where the element says (`section A (`).
       const def = found && (!found.contextual || found.contextual(this.ctx)) ? found : undefined;
       if (def?.planLevelOnly !== undefined && this.blockDepth > 0) {
-        // Inside a `level`, `zone`, `component` or block: consumed, then refused, as `roof` is.
-        def.parse(this.ctx);
+        // Inside a `level`, `zone`, `component` or block: consumed, then refused, as `roof` is. The
+        // gate already read the statement as this element, so a malformed one is refused for where it
+        // stands too (its shape is moot there), consumed to where the next statement starts.
+        try {
+          def.parse(this.ctx);
+        } catch (e) {
+          if (!(e instanceof ParseError)) throw e;
+          this.synchronize(start);
+        }
         const msg =
           `"${def.keyword}" is a plan-level statement: write it outside any \`level\`, \`zone\`, ` +
           `\`component\` or block, once for the whole plan`;

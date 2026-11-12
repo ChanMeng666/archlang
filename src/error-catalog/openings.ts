@@ -35,7 +35,7 @@ export const OPENINGS_ENTRIES = defineEntries({
   E_HEIGHT_RANGE: e(
     "A height is outside the range a storey can be built at.",
     "A `height`, `slab`, `clear`, `sill` or `head` clause evaluated to a number no building has: zero or negative, not finite, or above 100 m. A wall or a head at zero is not a low one, it is a missing one. A window `sill` of exactly 0 is the one exception and is legal — it means a floor-length window. **The range guards the ENDS, not the units:** heights are millimetres like every other number in the language, so `height 3` is three millimetres, is inside the range, and is accepted — the compiler will not guess that three metres was meant, because that would put a number in the datum the author never wrote.",
-    "Write the height in millimetres, or drop the clause and inherit the default (the fix does exactly that) — 3000 for a storey, 2100 for a door or window head, 900 for a window sill.",
+    "Write the height in millimetres, or drop the clause (the fix does exactly that): a `height`, `sill` or `head` then inherits its default — 3000 for a storey, 2100 for a door or window head, 900 for a window sill — and a storey without its `slab` or `clear` simply states none.",
     "wall id=w1 exterior thickness 200 height 0 { (0,0) (4000,0) close }   # error: a wall with no height",
   ),
   E_CLEAR_SCOPE: e(

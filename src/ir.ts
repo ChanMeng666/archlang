@@ -61,6 +61,7 @@ import type { ResolvedSheet, SheetFitInput } from "./sheet.js";
 import { resolveSheetSpec, usablePlanMm } from "./sheet.js";
 import {
   type CeilingFacts,
+  deriveCeilings,
   elevationOf,
   heightRangeDiagnostic,
   isDrawableHeight,
@@ -92,6 +93,7 @@ import type { Entry, ElementBudget } from "./ir/expand.js";
 import { MAX_ELEMENTS, rootZoneFrame, Scope, expandScope, keepValueOf, stampProvenance } from "./ir/expand.js";
 import type { InstanceBody, KeepState } from "./ir/side-tables.js";
 import {
+  ceilingOfIr,
   datumTablesOfIr,
   instanceBodiesOfIr,
   stepsSpent,
@@ -174,7 +176,7 @@ export type {
 } from "./ir/types.js";
 export { MAX_ELEMENTS, whileSpanKey } from "./ir/expand.js";
 export type { InstanceBody } from "./ir/side-tables.js";
-export { datumTablesOf, instanceBodiesOf, keepResultsOf, evaluationSteps } from "./ir/side-tables.js";
+export { ceilingOf, datumTablesOf, instanceBodiesOf, keepResultsOf, evaluationSteps } from "./ir/side-tables.js";
 export { sheetExtents, drawnView } from "./ir/sheet.js";
 export { lineWeightOutOfRange, MAX_OVERLAP_PAIRS_LISTED, checkRoomOverlaps } from "./ir/checks.js";
 export { DERIVED_ELEMENTS_PER_ROOM } from "./ir/groups.js";
@@ -338,19 +340,23 @@ export function levelBlocks(ast: PlanNode): LevelNode[] {
  * the sheet affects annotation SIZES, never geometry, so measuring extents without it is
  * exact.
  */
-function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): PlanNode {
+function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean, registry: Registry): PlanNode {
   const key = `${idToken(ast)}:${block.level}:${dropPaper ? 1 : 0}`;
   const hit = levelPlanCache.get(key);
   if (hit) return hit;
   // A root `keep` is the plan's, never copied into every storey (R12): `resolveLevelsImpl` reads it.
-  // A plan-level `section` mark is the lowest storey's alone (RM6.1): that is the page it draws on.
+  // A plan-level-only statement (`ElementDef.planLevelOnly`, the `section` mark) is the lowest
+  // storey's alone: that is the page it draws on.
   let lowest: boolean | undefined;
   const isLowest = (): boolean => {
     if (lowest === undefined) lowest = levelBlocks(ast)[0] === block;
     return lowest;
   };
   const shared = ast.body.filter(
-    (s) => s.kind !== "level" && s.kind !== "keep" && (s.kind !== "section" || isLowest()),
+    (s) =>
+      s.kind !== "level" &&
+      s.kind !== "keep" &&
+      (registry.byKind.get(s.kind)?.planLevelOnly === undefined || isLowest()),
   );
   const plan: PlanNode = {
     ...ast,
@@ -359,28 +365,23 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): Plan
     // resolver reads ONE field and the fallback chain wall → level → plan → constant has
     // exactly one implementation. A storey that declares none keeps the plan's.
     ...(block.height !== undefined ? { height: block.height, heightSpan: block.heightSpan } : {}),
-    // The clear-height facts (MF-D1, RM-D17), only on a plan that writes a `slab` or a `clear`:
-    // this storey's own clauses (a plan-level `clear` is `E_CLEAR_SCOPE` here and folds into no
-    // storey), and the `slab` of the storey above, from which its clear height is derived.
-    ...(plansAuthorCeiling(ast) ? storeyCeilingOf(ast, block) : {}),
+    // The clear-height clauses (MF-D1, RM-D17), only on a plan that writes a `slab` or a `clear`:
+    // this storey's own (a plan-level `clear` is `E_CLEAR_SCOPE` here and folds into no storey).
+    // The storey above is read after every storey resolves (`deriveCeilings`), never here.
+    ...(plansAuthorCeiling(ast)
+      ? {
+          slab: block.slab,
+          slabSpan: block.slabSpan,
+          clear: block.clear,
+          clearSpan: block.clearSpan,
+          _storey: true as const,
+        }
+      : {}),
     body: [...shared, ...block.body],
   };
   if (levelPlanCache.size >= RESOLVE_CACHE_MAX * 4) levelPlanCache.clear();
   levelPlanCache.set(key, plan);
   return plan;
-}
-
-/** The {@link levelPlanFor} fields one storey's clear height reads, on a plan that writes one. */
-function storeyCeilingOf(ast: PlanNode, block: LevelNode): Partial<PlanNode> {
-  const blocks = levelBlocks(ast);
-  const above = blocks[blocks.indexOf(block) + 1];
-  return {
-    slab: block.slab,
-    slabSpan: block.slabSpan,
-    clear: block.clear,
-    clearSpan: block.clearSpan,
-    _storey: { top: above === undefined, ...(above?.slab ? { slabAbove: above.slab } : {}) },
-  };
 }
 
 /** The margin-table row count one resolved storey will draw — the second thing (after the
@@ -446,7 +447,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
     // which needs every storey, is never derived), rather than evaluated again.
     const probes: { b: LevelNode; ir: ResolvedPlan; diagnostics: Diagnostic[] }[] = [];
     for (const b of blocks) {
-      const probe = resolveCached(levelPlanFor(ast, b, true), registry, world, {
+      const probe = resolveCached(levelPlanFor(ast, b, true, registry), registry, world, {
         level: stampOf(b),
         storeyCount: blocks.length,
         stepsBefore: probeSteps,
@@ -456,7 +457,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       probeKeeps = keepStateOfIr.get(probe.ir) ?? probeKeeps;
       probes.push({ b, ...probe });
       const spent = stepsOf(probe.ir);
-      if (spent.exhausted) return stoppedLevels(ast, blocks, probes, stampOf);
+      if (spent.exhausted) return stoppedLevels(ast, blocks, probes, stampOf, registry);
       probeSteps = spent.used;
       const e = outerExtent(probe.ir, registry);
       w = Math.max(w, e.building.w);
@@ -504,7 +505,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
   const inRootKeep = (d: Diagnostic): boolean =>
     d.span !== undefined && rootKeepSpans.some((sp) => d.span!.start >= sp.start && d.span!.end <= sp.end);
   const levels: ResolvedLevel[] = blocks.map((b, i) => {
-    if (stopped) return unresolvedLevel(ast, b, stampOf(b));
+    if (stopped) return unresolvedLevel(ast, b, stampOf(b), registry);
     const extras: ResolveExtras = {
       level: stampOf(b),
       storeyCount: blocks.length,
@@ -516,7 +517,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       ...(rootStacked.length > 0 ? { keepAuthored: true } : {}),
       ...(rootStacked.length > 0 && i === blocks.length - 1 ? { rootKeeps: rootStacked } : {}),
     };
-    const { ir, diagnostics } = resolveCached(levelPlanFor(ast, b, false), registry, world, extras);
+    const { ir, diagnostics } = resolveCached(levelPlanFor(ast, b, false, registry), registry, world, extras);
     const spent = stepsOf(ir);
     steps = spent.used;
     stopped = spent.exhausted;
@@ -530,6 +531,24 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       diagnostics: diagnostics.map((d) => (inRootKeep(d) ? { ...d } : { ...d, level: b.level })),
     };
   });
+
+  // The storeys' clear heights (MF-D1, RM-D17), completed now that every storey has resolved its
+  // own clauses in its own scope: a storey's derived value reads the `slab` NUMBER the storey above
+  // resolved, never its expression. Arithmetic only, so nothing is charged; a plan that writes no
+  // `slab` or `clear` has no `_ceiling` and skips this.
+  if (!stopped && levels.every((l) => l.ir._ceiling !== undefined)) {
+    const { facts, diags } = deriveCeilings(
+      levels.map((l, i) => ({
+        own: l.ir._ceiling!,
+        subject: `Level ${fmt0(l.level)}`,
+        ...(blocks[i]!.clearSpan ? { clearSpan: blocks[i]!.clearSpan } : {}),
+      })),
+    );
+    levels.forEach((l, i) => {
+      ceilingOfIr.set(l.ir, facts[i]!);
+      for (const d of diags[i]!) l.diagnostics.push({ ...d, level: l.level });
+    });
+  }
 
   // The plan's `stacked` keeps, after the last storey (R12), on the same step counter: a crossing
   // here is `E_STEP_LIMIT` and leaves the plan unresolved, as any crossing does (R13).
@@ -555,7 +574,7 @@ function resolveLevelsImpl(ast: PlanNode, blocks: LevelNode[], registry: Registr
       planKeeps.push(stepLimitDiagnostic(run.signal));
       stopped = true;
       for (let i = 0; i < levels.length; i++) {
-        const ir = unresolvedPlan(levelPlanFor(ast, blocks[i]!, false), { level: stampOf(blocks[i]!) });
+        const ir = unresolvedPlan(levelPlanFor(ast, blocks[i]!, false, registry), { level: stampOf(blocks[i]!) });
         stepsSpent.set(ir, { used: run.used, exhausted: true });
         levels[i] = { ...levels[i]!, ir };
       }
@@ -667,11 +686,11 @@ function rootKeepsOf(ast: PlanNode, storeys: number, out: Diagnostic[]): { stack
 }
 
 /** A storey left unevaluated because a storey below it crossed the step budget. */
-function unresolvedLevel(ast: PlanNode, b: LevelNode, stamp: LevelStamp): ResolvedLevel {
+function unresolvedLevel(ast: PlanNode, b: LevelNode, stamp: LevelStamp, registry: Registry): ResolvedLevel {
   return {
     level: b.level,
     ...(b.name !== undefined ? { name: b.name } : {}),
-    ir: unresolvedPlan(levelPlanFor(ast, b, false), { level: stamp }),
+    ir: unresolvedPlan(levelPlanFor(ast, b, false, registry), { level: stamp }),
     diagnostics: [],
   };
 }
@@ -686,10 +705,11 @@ function stoppedLevels(
   blocks: readonly LevelNode[],
   probes: readonly { b: LevelNode; ir: ResolvedPlan; diagnostics: Diagnostic[] }[],
   stampOf: (b: LevelNode) => LevelStamp,
+  registry: Registry,
 ): PlanResolution {
   const levels: ResolvedLevel[] = blocks.map((b, i) => {
     const p = probes[i];
-    if (!p) return unresolvedLevel(ast, b, stampOf(b));
+    if (!p) return unresolvedLevel(ast, b, stampOf(b), registry);
     return {
       level: b.level,
       ...(b.name !== undefined ? { name: b.name } : {}),
@@ -1015,16 +1035,10 @@ function resolveBody(
       extras.level ? `Level ${fmt0(extras.level.level)}` : "The plan",
       { height: storeyHeight, written: heightWritten },
       {
-        loud: (e, span) => {
+        eval: (e, span) => {
           stepSite(span);
           return evalNum(e);
         },
-        quiet: (e) =>
-          asNum(
-            evalExpr(e, activeEnv, () => {}),
-            () => {},
-            exprSpan(e),
-          ),
         diag: (d) => diagnostics.push(d),
       },
     );

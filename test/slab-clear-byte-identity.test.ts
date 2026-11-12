@@ -13,13 +13,17 @@
  * names they have always been, and storeys that author heights without either clause. The table was
  * first measured against `bfd63c4c`; re-measured against `21d3e0f4`, the 106 rows it had kept every
  * digest, and the two new ones (`examples/courtyard-family.arch`, which `main` added, and
- * `inline:section-words-as-names`) joined. The rows the two laws share measured the digests
+ * `inline:section-words-as-names`) joined; the review added a line to that row (an expression continued
+ * onto a line that begins with `section`), and it was measured again against `21d3e0f4`, the 107
+ * other rows unchanged. The rows the two laws share measured the digests
  * `test/sheet-text-byte-identity.test.ts` pins.
  *
  * Why the rows hold: every new step sits behind `plansAuthorCeiling` (`src/datum.ts`), which is false
  * unless a `slab` or a `clear` is written. Then `levelPlanFor` adds no field, the resolver evaluates
- * and charges nothing more, the IR gains no `_ceiling`, `describe().heights` no key and the Plan JSON
- * `level` row no text. The parser reads `slab` and `clear` only in a `level` header after `height`,
+ * and charges nothing more, the IR gains no `_ceiling`, `deriveCeilings` never runs, and
+ * `describe().heights` gains no key and the Plan JSON `level` row no text. Neither clause counts
+ * toward `plansAuthorHeights` (the review's ruling), so lint, Plan JSON and the quantities never read
+ * them, even on a plan that writes them. The parser reads `slab` and `clear` only in a `level` header after `height`,
  * and `clear` after a plan's `height` only on its line and never before `=` or `(`, so no row's parse
  * moves; neither word is a statement start. `section` starts a statement only before a name and `(`
  * (`ElementDef.contextual`), a source that was a parse error before, and is no statement start for
@@ -258,7 +262,7 @@ const BASELINE: [string, string][] = [
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6", "inline:slab-clear-words-as-names"],
-  ["a7afb44b4a351dadcbd203f5a35cf83eaf93a2b00c8a13c1f7eb9ad75f029152", "inline:section-words-as-names"],
+  ["8b4e76d9ff5c26abb83e540daa47fff35c81cb11d302349a365f3eb9d23361ab", "inline:section-words-as-names"],
   ["a99e77bd8df64e89959fb92f93aff9fa2428527390ffa9a07c12291da1ddbff5", "inline:slab-clear-macro-after-height"],
   ["f156c5c8ef062f59a41dc96071ae85f9a42bf670c5508e40f3536563bd511c93", "inline:slab-clear-storeys-without"],
 ];
@@ -291,7 +295,7 @@ suite("slab, clear and section: the byte-identity law", () => {
     expect(stairLawDigest(API, single, undefined)).not.toBe(stairLawDigest(API, without, undefined));
     // A section mark moves it too: the fixture with its two marks, and without them.
     const marks = readFileSync(join(ROOT, FIXTURES[2]), "utf8");
-    const unmarked = marks.replace(/^ {2}section .*\n/gm, "");
+    const unmarked = marks.replace(/^ {2}section .*\r?\n/gm, "");
     expect(unmarked).not.toBe(marks);
     expect(writes(unmarked, "section")).toBe(false);
     expect(stairLawDigest(API, marks, undefined)).not.toBe(stairLawDigest(API, unmarked, undefined));

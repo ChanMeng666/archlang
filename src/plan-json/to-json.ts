@@ -23,6 +23,7 @@ import type {
   ResolvedElement,
 } from "../ir.js";
 import { drawnView, instanceBodiesOf, keepResultsOf } from "../ir.js";
+import { BUILTIN_REGISTRY } from "../registry.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { DOOR_KIND_CLAUSES, TITLE_FIELDS } from "../grammar/tokens.js";
 import {
@@ -480,7 +481,9 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
   const early = elements.filter((e, i) => e.kind === "column" && i < lastPiece).map((e) => e.id);
   add("column order", early.length, early);
   for (const kind of UNPROJECTED_KINDS) {
-    const ids = elements.filter((e) => e.kind === kind).map((e) => e.id);
+    // Named as the author names them: the id, or a kind's own name (a `section` mark's `A`).
+    const nameOf = BUILTIN_REGISTRY.byKind.get(kind)?.nameOf;
+    const ids = elements.filter((e) => e.kind === kind).map((e) => nameOf?.(e) ?? e.id);
     add(kind, ids.length, ids);
   }
   const zones = (storey.zones ?? []).filter((z) => !z.instance).map((z) => z.path);
@@ -488,13 +491,16 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
   return rows;
 }
 
-/** A storey's written `slab` and `clear`, as its dropped `level` row says them (RM-D17): the
- *  document has no field for either yet (RM3.1). Empty on a plan that writes neither. */
+/** A storey's written header clauses after its name, as its dropped `level` row says them on a plan
+ *  that writes a `slab` or a `clear` (design §3.4): `height`, `slab`, `clear`, in the grammar's
+ *  order. The document has no field for the last two yet (RM3.1). Empty on a plan that writes
+ *  neither, so its rows read as they always did. */
 function ceilingText(c: ResolvedPlan["_ceiling"]): string {
   if (!c) return "";
+  const height = c.height !== undefined ? ` height ${num(c.height)}` : "";
   const slab = c.slab !== undefined ? ` slab ${num(c.slab)}` : "";
   const clear = c.source === "authored" ? ` clear ${num(c.clearHeight!)}` : "";
-  return slab + clear;
+  return height + slab + clear;
 }
 
 /** The plan-wide clauses, which every storey's document leaves out alike. */

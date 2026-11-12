@@ -1076,18 +1076,6 @@ export interface LevelNode extends NodeBase {
 }
 
 /**
- * What a storey needs to know beyond itself for its clear height: whether a storey stands above
- * it, and that storey's `slab`. Present only on a plan where some `level` writes a `slab` or a
- * `clear`, which is what turns the clear-height facts on.
- */
-export interface StoreyCeilingContext {
-  /** This is the highest storey. */
-  top: boolean;
-  /** The `slab` the storey above writes, if any. */
-  slabAbove?: Expr;
-}
-
-/**
  * `zone <id> ["Label"] { … }` — a **wing / department / departmental grouping**: a purely
  * LEXICAL container that labels the statements written inside it.
  *
@@ -1380,17 +1368,7 @@ export type Statement =
  * `import`s are not body statements at all — they are plan fields — so they are always
  * shared.)
  */
-export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = [
-  "let",
-  "set",
-  "assign",
-  "error",
-  "level",
-  "keep",
-  // A section mark cuts the whole building and is drawn on the lowest storey's page only
-  // (`levelPlanFor` keeps it out of every other storey): a plan-level statement (RM6.1).
-  "section",
-];
+export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = ["let", "set", "assign", "error", "level", "keep"];
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {
@@ -1626,8 +1604,10 @@ export interface PlanNode {
   slab?: Expr;
   /** Byte span of that `slab` clause. */
   slabSpan?: Span;
-  /** The storey a synthetic per-level plan stands for (`levelPlanFor`); never parsed. */
-  _storey?: StoreyCeilingContext;
+  /** Set on a synthetic per-level plan (`levelPlanFor`) of a plan that writes a `slab` or a `clear`:
+   *  the storey resolves its own clauses, and its clear height is completed once every storey has
+   *  resolved (`deriveCeilings`, `src/datum.ts`). Never parsed. */
+  _storey?: true;
   north: NorthDir;
   /** The sheet marks the plan hides (`north … hidden`, `scale … hidden`, `title hidden`). Absent unless written. */
   hide?: ChromeHide;
