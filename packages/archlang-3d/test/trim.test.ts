@@ -120,6 +120,14 @@ describe("a doorway's lining and casing (§2.1)", () => {
     }
   });
 
+  it("trims no opening whose id cannot name a part node (a passage named after its rooms)", () => {
+    const knob = mesh(EXAMPLES_LIST.find(([n]) => n === "knob-flat.arch")?.[1] ?? "");
+    expect(knob.assumptions.filter((a) => a.rule === "opening-trim-omitted").map((a) => a.id)).toEqual([
+      "r_live|r_hall:open",
+    ]);
+    expect(knob.nodes.some((n) => n.id === "r_live|r_hall:open")).toBe(false);
+  });
+
   it("cases a cased opening too, its lining whole across the wall (no leaf, no slot)", () => {
     const m = mesh(plan(`${SHELL} ${ROOM} opening id=o at (3000,4000) width 900 wall shell`));
     const lining = node(m, "L1/opening:o:lining") as MeshNode;
@@ -190,13 +198,17 @@ describe("a window's reveal, sill and board (§2.2)", () => {
   });
 
   it("keeps a curved host's sill and board inside the cut, and follows the arc with its reveal", () => {
-    const hv = mesh(EXAMPLES_LIST.find(([n]) => n === "hillside-villa.arch")?.[1] ?? "");
-    expect(rows(hv, "window_10").map(([r]) => r)).toEqual([
-      "window-inside-probe",
-      "window-reveal-lining",
-      "window-sill-curved-inside-cut",
+    // aquarium's two windows in its curved wall (hillside-villa's has no room on either side: the
+    // core draws it no sill, and it gets no trim, `window-inside-probe` "neither").
+    const aq = mesh(EXAMPLES_LIST.find(([n]) => n === "aquarium.arch")?.[1] ?? "");
+    expect(rows(aq, "w_arc1")).toEqual([
+      ["window-inside-probe", "+normal"],
+      ["window-reveal-lining", { thickness: 20, head: true }],
+      ["window-sill-curved-inside-cut", { thickness: 40, board: 30 }],
     ]);
-    expect(node(hv, "L1/window:window_10:reveal")?.shells.length).toBe(3);
+    expect(node(aq, "L1/window:w_arc1:reveal")?.shells.length).toBe(3);
+    expect(node(aq, "L1/window:w_arc1:sill")?.shells.length).toBe(1);
+    expect(node(aq, "L1/window:w_arc1:board")?.shells.length).toBe(1);
   });
 });
 
@@ -209,6 +221,8 @@ describe("the trim over the corpus and the stress plans", () => {
     for (const [n, src] of plans) {
       for (const nd of mesh(src).nodes.filter((x) => x.part !== undefined && TRIM.has(x.part))) {
         expect(nd.extras.host, `${n} ${nd.key}`).toBeDefined();
+        // V-GLTF-02 names a node `<kind>:<id>:<part>`: an id that cannot be named gets no trim.
+        expect(nd.key, n).toMatch(/^L\d+\/[a-z]+:[^:/\s]+:[a-z]+$/);
         for (const s of nd.shells) {
           shells++;
           expect(openEdges(s), `${n} ${nd.key}`).toBe(0);

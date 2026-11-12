@@ -157,8 +157,22 @@ describe("GLB from Mesh3D", () => {
       }>;
     };
     const building = json.materials.filter((m) => !m.name.startsWith("fixture:"));
+    // Card RM8.6: a window's reveal, sill and board in their own materials; a door's lining and
+    // casing are written in the door's.
     expect(building.map((m) => m.name).sort()).toEqual(
-      ["door", "floor:tile", "floor:timber", "roof", "slab", "wall", "window:frame", "window:glass"].sort(),
+      [
+        "door",
+        "floor:tile",
+        "floor:timber",
+        "roof",
+        "slab",
+        "wall",
+        "window:board",
+        "window:frame",
+        "window:glass",
+        "window:reveal",
+        "window:sill",
+      ].sort(),
     );
     for (const m of building) {
       const p = m.name.startsWith("floor:")

@@ -659,7 +659,19 @@ function levelNodes(
     // The trim (card RM8.6, `openings.ts`): a doorway's lining and casing, a window's reveal, sill
     // and board, each a part of the opening's node, every size a share of the host's thickness.
     const host = hostOf.get(o.host);
-    if (host) {
+    // A part's node is named `<kind>:<id>:<part>` (V-GLTF-02), so an id holding a `:`, a `/` or a
+    // space cannot name one: such an opening (a passage the core names after its two rooms,
+    // `opening between a and b`, `a|b:open`) keeps no trim, and the ledger says so.
+    if (host && /[:/\s]/.test(o.id)) {
+      ledger.push({
+        kind: o.kind,
+        id: o.id,
+        field: "trim",
+        value: "the id names no part node",
+        provenance: "default",
+        rule: "opening-trim-omitted",
+      });
+    } else if (host) {
       const ctx: TrimContext = {
         e,
         t: host.thickness,
