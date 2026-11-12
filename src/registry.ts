@@ -6,7 +6,7 @@
  */
 
 import type { Token } from "./lexer.js";
-import type { AstElement, ElementKind, ExprPoint, Point } from "./ast.js";
+import type { AstElement, ElementKind, ExprPoint, NorthDir, Point } from "./ast.js";
 import type { Expr, ParseExprOpts, Value } from "./expr.js";
 import type { Diagnostic, Span } from "./diagnostics.js";
 import type { ResolvedElement, RWall, RRoom } from "./ir.js";
@@ -125,6 +125,11 @@ export interface ResolveCtx {
    * (append-only).
    */
   unplacedWall?(ref: string): boolean;
+  /**
+   * The plan's `north`, for an element that turns a compass word into a page direction (a
+   * `section`'s `look`). Optional (append-only); absent means `up`.
+   */
+  north?: NorthDir;
 }
 
 /**
@@ -251,6 +256,23 @@ export interface ElementDef {
    *  string kind (dispatch is by string equality, so any unique value works). */
   kind: ElementKind | (string & {});
   keyword: string;
+  /**
+   * A CONTEXTUAL keyword: the statement starts here only when this answers true, with the keyword
+   * as the current token. Otherwise the word is read as it always was (a binding, an assignment, a
+   * macro call), and it is never a statement start for parse recovery, so `room id=<keyword>` keeps
+   * parsing. Absent: the keyword is reserved, and every statement it begins is this element's.
+   */
+  contextual?(ctx: ParseCtx): boolean;
+  /**
+   * A plan-level statement only: written in a `level`, `zone`, `component` or control-flow body it
+   * is consumed and refused with this catalogued `code`. Absent: legal wherever a statement is.
+   */
+  planLevelOnly?: { code: string };
+  /**
+   * What a message or a report calls a resolved element of this kind, when that is not its element
+   * id: a `section` mark's own name (`A`), where its id is an auto-id. Absent: its id.
+   */
+  nameOf?(resolved: ResolvedElement): string;
   parse(ctx: ParseCtx): AstElement;
   /** Auto-id prefix (e.g. "room", or a wall/furniture's category). */
   idPrefix(node: AstElement): string;

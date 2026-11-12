@@ -14,7 +14,7 @@
 # Deterministic bytes (no version / date).
 
 root ::= ws "plan" rws string ws "{" ws ( plan-stmt ws )* "}" ws
-plan-stmt ::= setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | block-stmt
+plan-stmt ::= setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | section-stmt | block-stmt
 block-stmt ::= element | let-stmt | for-stmt | if-stmt | while-stmt | set-stmt | keep-stmt | zone-stmt | place-stmt | instance-stmt | assign-stmt
 element ::= wall-stmt | room-stmt | door-stmt | window-stmt | opening-stmt | furniture-stmt | dim-stmt | column-stmt | stair-stmt | elevator-stmt | escalator-stmt | roof-stmt | void-stmt | outdoor-stmt | fence-stmt | walls-stmt
 setting ::= units-stmt | grid-stmt | paper-stmt | scale-stmt | height-stmt | north-stmt | site-stmt | dims-stmt | schedule-stmt | legend-stmt | notes-stmt | sheet-text-stmt
@@ -24,7 +24,7 @@ paper-stmt ::= "paper" rws paper-size ( rws paper-orientation )?
 paper-size ::= "A4" | "a4" | "A3" | "a3" | "A2" | "a2" | "A1" | "a1" | "A0" | "a0"
 paper-orientation ::= "landscape" | "portrait"
 scale-stmt ::= "scale" rws ( number ws ":" ws number ( rws "hidden" )? | "hidden" )
-height-stmt ::= "height" rws expr
+height-stmt ::= "height" rws expr ( rws "clear" rws expr )?
 north-stmt ::= "north" rws ( north-dir ( rws "hidden" )? | "hidden" )
 north-dir ::= "up" | "down" | "left" | "right" | number
 site-stmt ::= "site" ws "{" ws ( site-field ws )* "}"
@@ -59,7 +59,7 @@ for-stmt ::= "for" rws ident rws "in" ws expr ws block
 if-stmt ::= "if" ws expr ws block ( ws "else" ws block )?
 while-stmt ::= "while" ws expr ws block
 set-stmt ::= "set" rws element-kw ws "(" ws set-entries? ws ")"
-element-kw ::= "wall" | "room" | "door" | "window" | "opening" | "furniture" | "dim" | "column" | "stair" | "elevator" | "escalator" | "roof" | "void" | "outdoor" | "fence" | "walls"
+element-kw ::= "wall" | "room" | "door" | "window" | "opening" | "furniture" | "dim" | "column" | "stair" | "elevator" | "escalator" | "roof" | "void" | "outdoor" | "fence" | "walls" | "section"
 set-entries ::= set-entry ( ws "," ws set-entry )*
 set-entry ::= ident ws ":" ws expr
 instance-stmt ::= ident ws "(" ws ( expr ( ws "," ws expr )* )? ws ")"
@@ -84,7 +84,7 @@ strip-v ::= ( "down" | "up" ) rws "at" ws point rws "gap" ws expr ( rws "width" 
 strip-room ::= "room" rws id-opt "size" ws strip-size ( ws strip-label )? ( ws room-uses )?
 strip-label ::= "label" ws string
 strip-size ::= expr ( ws "x" ws expr )?
-level-stmt ::= "level" rws ( "-" ws )? number ( rws string )? ( rws "height" ws expr )? ws block
+level-stmt ::= "level" rws ( "-" ws )? number ( rws string )? ( rws "height" ws expr )? ( rws "slab" ws expr )? ( rws "clear" ws expr )? ws block
 zone-stmt ::= "zone" rws ident ( rws string )? ws block
 wall-stmt ::= "wall" rws id-opt ident rws "thickness" ws expr ( ws wall-material )? ( ws "height" ws expr )? ( ws wall-status )? ws ( wall-body | wall-relation )
 wall-status ::= "status" rws ( "existing" | "demolish" | "new" )
@@ -157,6 +157,7 @@ outdoor-rail ::= "rail" rws rail-edge ( ( ws "," ws | rws ) rail-edge )*
 rail-edge ::= "top" | "bottom" | "left" | "right" | "all" | "none"
 fence-stmt ::= "fence" rws id-opt ( fence-style rws )? "{" ws point ws ( point ws )+ ( "close" ws )? "}"
 fence-style ::= "picket" | "panel" | "post"
+section-stmt ::= "section" rws ( ident | [1-9] [0-9]* ) ws point ws "->" ws point ws "look" rws compass-dir
 walls-stmt ::= "walls" rws "from" rws "rooms" rws "exterior" rws expr rws "partition" rws expr ( ws wall-status )? ( ws "{" ws ( walls-clause ws )* "}" )?
 walls-clause ::= "except" rws ident ( rws ident )* | "open" rws id-opt "between" rws ident rws "and" rws ident ( rws "width" rws expr )? | "between" rws ident rws "and" rws ident rws "thickness" rws expr
 id-opt ::= ( "id" ws "=" ws ident rws )?

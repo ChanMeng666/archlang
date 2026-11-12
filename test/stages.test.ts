@@ -113,6 +113,8 @@ describe("the stage ladder and the per-rule table", () => {
       // RM1.4: what the plan writes and the language reads otherwise; a size the `grid` moved, from rooms.
       W_LENGTH_IN_METRES: "brief",
       W_SET_VALUE_WORD: "brief",
+      // RM6.1: the storey heights, slabs and clear heights are the brief's.
+      W_CLEAR_HEIGHT_MISMATCH: "brief",
       W_GRID_SNAPPED: "rooms",
       // EH-D8's cap: about the whole report, a budget like `E_STEP_LIMIT` (brief), so every stage shows it.
       W_DIAGNOSTIC_LIMIT: "brief",
@@ -154,6 +156,8 @@ describe("the stage ladder and the per-rule table", () => {
     expect(codeStage("E_OPENING_NIB")).toBe("openings");
     expect(codeStage("E_FURN_SIZE")).toBe("fixtures");
     expect(codeStage("E_DIM_CURVE_REF")).toBe("drafting");
+    // RM6.1: the section mark is a drafting element (`ELEMENT_KIND_STAGES`), and so are its errors.
+    expect(codeStage("E_SECTION_LOOK")).toBe("drafting");
     expect(codeStage(undefined)).toBe("brief");
     expect(codeStage("E_NOT_A_CODE")).toBe("brief");
     for (const c of Object.keys(ERROR_CATALOG)) expect(AUTHORING_STAGES, c).toContain(codeStage(c));

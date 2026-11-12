@@ -32,11 +32,13 @@ import type {
   ROutdoor,
   RFence,
   RWallsFromRooms,
+  RSection,
   DerivedWallRow,
   RWall as RWallFact,
   OpeningPlacement,
 } from "./ir.js";
 import type { PlanNode, Point } from "./ast.js";
+import type { CeilingFacts } from "./datum.js";
 import { polygonArea, polygonBounds } from "./geometry/polygon.js";
 import { voidPieces } from "./elements/void.js";
 import { storeyNetAreaBands } from "./analyze/net-area-memo.js";
@@ -78,7 +80,7 @@ import {
 } from "./vertical.js";
 import { fmt2 } from "./num-format.js";
 import { keepSummary } from "./keep.js";
-import { drawnView, keepResultsOf } from "./ir.js";
+import { ceilingOf, drawnView, keepResultsOf } from "./ir.js";
 import { type D4, fromSpelling, northQuarterTurns } from "./algebra/d4.js";
 import { clearanceFacts } from "./lint/clearance-facts.js";
 import { openRunsOf } from "./analyze.js";
@@ -89,11 +91,13 @@ import type {
   WindowSummary,
   OpeningSummary,
   WallStatusFacts,
+  HeightFacts,
   FurnitureSummary,
   VerticalSummary,
   VoidSummary,
   OutdoorSummary,
   FenceSummary,
+  SectionSummary,
   InstanceSummary,
   FreedomElement,
   FreedomReport,
@@ -189,6 +193,7 @@ export type {
   VoidSummary,
   OutdoorSummary,
   FenceSummary,
+  SectionSummary,
   VerticalReport,
   InstanceSummary,
   FreedomElement,
@@ -238,6 +243,19 @@ export const DESCRIBE_FACTS = ["symmetry", "syntax", "depends", "clearances", "q
 
 /** One opt-in fact of {@link DESCRIBE_FACTS}. */
 export type DescribeFact = (typeof DESCRIBE_FACTS)[number];
+
+/** {@link HeightFacts}' `slab` and clear-height keys, from one storey's resolved facts. */
+function ceilingRows(
+  c: CeilingFacts,
+): Pick<HeightFacts, "slab" | "clear_height" | "clear_height_source" | "clear_height_omitted"> {
+  return {
+    ...(c.slab !== undefined ? { slab: c.slab } : {}),
+    // As resolved: an authored value as written, a derived one already taken at 0.001 mm (`atMicron`).
+    ...(c.clearHeight !== undefined ? { clear_height: c.clearHeight } : {}),
+    ...(c.source !== undefined ? { clear_height_source: c.source } : {}),
+    ...(c.omitted !== undefined ? { clear_height_omitted: c.omitted } : {}),
+  };
+}
 
 /** {@link DescribeSummary.wall_status}: absent unless a wall on the storey writes `status`. */
 function wallStatusFacts(ir: ResolvedPlan): WallStatusFacts | undefined {
@@ -491,6 +509,11 @@ function summarize(
   // `ResolvedPlan._heightsAuthored`), which is why a building whose upper floor alone
   // declares a height reports heights on every page.
   const heights = ir._heightsAuthored;
+  // The storey's `slab` and clear height (MF-D1, RM-D17) open the `heights` block too, and nothing
+  // else: the openings' `head`/`sill`, lint, Plan JSON and the quantities keep reading
+  // `_heightsAuthored` alone (RM6.1 review rulings).
+  const ceiling = ceilingOf(ir);
+  const heightsBlock = heights || ceiling !== undefined;
   // The walls' remodel status (B3a): a per-storey block, absent unless a wall here writes one.
   const wallStatus = wallStatusFacts(ir);
 
@@ -589,6 +612,18 @@ function summarize(
       len += Math.hypot(b.x - a.x, b.y - a.y);
     }
     return { id: f.id, style: f.style, length_mm: r2(len), closed: f.closed };
+  });
+
+  // The section marks (RM6.1), as written: a resolved plan holds only marks that resolved clean,
+  // since a refused one (`E_SECTION_AXIS`, `E_SECTION_LOOK`) stops the summary.
+  const sections: SectionSummary[] = ir.elements.flatMap((e): SectionSummary[] => {
+    if (e.kind !== "section") return [];
+    const s = e as RSection;
+    if (!s.toward) return [];
+    const { from, to, toward } = s;
+    return [
+      { id: s.name, from: { x: from.x, y: from.y }, to: { x: to.x, y: to.y }, look: s.look, toward: { ...toward } },
+    ];
   });
 
   // The main entrance (PS0.10) rides on the access graph, appended, only on a storey with more
@@ -765,15 +800,20 @@ function summarize(
     ...(fences.length > 0 ? { fences } : {}),
     // Append-only: present only on a storey that `walls from rooms` derived walls for.
     ...(derivedRows.length > 0 ? { derived_walls: derivedRows } : {}),
+    // Append-only: present only on a plan that marks a section. Whole-plan: `summarizeResolved`
+    // keeps it off the `levels[]` entries.
+    ...(sections.length > 0 ? { sections } : {}),
     // The vertical datum, under the one gate. `walls` is present even when empty,
     // unlike the lists above: an empty `voids` means "this storey has no holes in it", but
     // an empty `walls` here would be indistinguishable from "heights are not reported",
     // and the block's presence is already the answer to that question.
-    ...(heights
+    ...(heightsBlock
       ? {
           heights: {
             storey_height: ir.storeyHeight,
             elevation: ir.elevation,
+            // Only when the plan writes a `slab` or a `clear` (MF-D1, RM-D17).
+            ...(ceiling ? ceilingRows(ceiling) : {}),
             // Every wall as drawn: a demolished wall (B3a) still has a height.
             walls: drawnView(ir).walls.map((w) => ({ id: w.id, height: w.height })),
           },
@@ -896,10 +936,9 @@ function summarizeResolved(
   // level, so a storey's facts can never be computed a second, different way.
   const perLevel: LevelSummary[] | undefined =
     levels.length > 0
-      ? levels.map((l) => ({
-          level: l.level,
-          ...(l.name !== undefined ? { name: l.name } : {}),
-          ...summarize(
+      ? levels.map((l) => {
+          // The section marks are the plan's (RM6.1): the top-level summary carries them, no storey.
+          const { sections: _plans, ...facts } = summarize(
             l.ir,
             tol,
             opts.facts,
@@ -908,8 +947,9 @@ function summarizeResolved(
             statements,
             true,
             arrivalRoomsOn(l.level),
-          ),
-        }))
+          );
+          return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), ...facts };
+        })
       : undefined;
 
   // The lowest storey's arrivals, so the top level still repeats `levels[0]` exactly.

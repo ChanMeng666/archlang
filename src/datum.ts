@@ -52,6 +52,7 @@ import type { Diagnostic, Span } from "./diagnostics.js";
 import type { Expr } from "./expr.js";
 import type { WallSegment } from "./geometry.js";
 import type { RWall } from "./ir.js";
+import { fmt3 } from "./num-format.js";
 import type { ParseCtx, ResolveCtx } from "./registry.js";
 
 /** Floor-to-floor height of a storey, in mm, when the plan declares none. */
@@ -150,7 +151,11 @@ export function heightRangeDiagnostic(subject: string, clause: string, value: nu
       ? {
           fixes: [
             {
-              title: `drop the \`${clause}\` clause and inherit the default`,
+              // A `slab` or a `clear` has no default to inherit: dropped, the storey states none.
+              title:
+                clause === "slab" || clause === "clear"
+                  ? `drop the \`${clause}\` clause: the storey then states none`
+                  : `drop the \`${clause}\` clause and inherit the default`,
               applicability: "machine-applicable" as const,
               edits: [{ span, newText: "" }],
             },
@@ -320,6 +325,137 @@ export function resolveOpeningHeights(
 }
 
 /**
+ * Why a storey of a multi-storey plan reports no clear height
+ * (`describe().heights[].clear_height_omitted`). Never a guess (MF-D1): without the author's
+ * `clear`, a storey's clear height is its own `height` less the `slab` the storey above writes,
+ * and each word names the missing half. A single-storey plan has no reason word: it can write
+ * no `slab`, so without a `clear` it writes neither clause and reports nothing (MF-D1 item 2).
+ */
+export type ClearHeightOmitted = "top-storey" | "no-slab-above" | "default-storey-height" | "slab-above-too-thick";
+
+/** One storey's `slab` and clear height, on a plan that writes a `slab` or a `clear` anywhere. */
+export interface CeilingFacts {
+  /** The storey's own `slab`, as written. */
+  slab?: number;
+  /** The storey's `height`, when written and accepted (its `level` header's, else the plan's): the
+   *  height a derived clear height is taken from. */
+  height?: number;
+  /** The storey's own `level` header wrote that `height`: only then does its Plan JSON `level` row
+   *  quote it. */
+  ownHeight?: true;
+  /** The clear height, floor to ceiling; with {@link source}. */
+  clearHeight?: number;
+  /** `authored` (the storey's `clear`) or `derived` (its `height` less the `slab` above). */
+  source?: "authored" | "derived";
+  /** Why there is no {@link clearHeight}. */
+  omitted?: ClearHeightOmitted;
+}
+
+/**
+ * The precision of the clear-height facts: 0.001 mm, the precision the language prints a number in
+ * (`fmt3`). Every clause is reported as resolved (`storey_height`, `slab`, an authored `clear`), and
+ * a derived clear height is the difference of its two operands taken at this precision, so it holds
+ * no float tail, its operands quoted at this precision add up to it, and `W_CLEAR_HEIGHT_MISMATCH`
+ * compares at this precision.
+ */
+export const atMicron = (v: number): number => Number(fmt3(v));
+
+/** Does the plan write a `slab` or a `clear` anywhere? The gate of the clear-height facts: without
+ *  one, nothing about them is evaluated or reported. A synthetic storey plan carries the answer.
+ *  It opens `describe()`'s `heights` block and nothing else: it is no part of
+ *  {@link plansAuthorHeights}, which lint, Plan JSON and the quantities read. */
+export function plansAuthorCeiling(plan: PlanNode): boolean {
+  if (plan.clear !== undefined || plan._storey !== undefined) return true;
+  return plan.body.some((s) => s.kind === "level" && (s.slab !== undefined || s.clear !== undefined));
+}
+
+/**
+ * One storey's OWN {@link CeilingFacts} (MF-D1, RM-D17), each clause evaluated in the storey's own
+ * scope (`ev`, which charges the step meter and reports): its `slab`, its written `height`, and its
+ * `clear` as `authored`. Nothing here reads another storey. A single-storey plan's facts are then
+ * final; a multi-storey plan's are completed by {@link deriveCeilings} once every storey has
+ * resolved, from the `slab` NUMBER the storey above resolved in its own scope.
+ */
+export function resolveCeiling(
+  plan: PlanNode,
+  subject: string,
+  storey: { height: number; written: boolean },
+  ev: { eval(e: Expr, span: Span | undefined): number; diag(d: Diagnostic): void },
+): CeilingFacts {
+  // Only a storey of a multi-storey plan knows whether its own `level` header wrote the height.
+  const own = (clause: "slab" | "clear", e: Expr | undefined, span: Span | undefined): number | undefined => {
+    if (e === undefined) return undefined;
+    const v = ev.eval(e, span);
+    if (isDrawableHeight(v)) return v;
+    ev.diag(heightRangeDiagnostic(subject, clause, v, span));
+    return undefined;
+  };
+  const slab = own("slab", plan.slab, plan.slabSpan);
+  const clear = own("clear", plan.clear, plan.clearSpan);
+  return {
+    ...(slab !== undefined ? { slab } : {}),
+    ...(storey.written ? { height: storey.height } : {}),
+    ...(storey.written && plan._storey?.ownHeight ? { ownHeight: true as const } : {}),
+    ...(clear !== undefined ? { clearHeight: clear, source: "authored" as const } : {}),
+  };
+}
+
+/** One storey as {@link deriveCeilings} reads it: its own facts, and how its warning is worded and spanned. */
+export interface StoreyCeiling {
+  own: CeilingFacts;
+  subject: string;
+  clearSpan?: Span;
+}
+
+/**
+ * The clear heights of a multi-storey plan's storeys (RM-D17), lowest first, from each storey's own
+ * facts: the author's `clear` when written, else the storey's written `height` less the `slab` the
+ * storey above wrote, each taken at 0.001 mm ({@link atMicron}), else nothing and the reason: a
+ * difference that is not positive at that precision is `slab-above-too-thick`. An authored value
+ * that differs from the derived one at that precision is `W_CLEAR_HEIGHT_MISMATCH`, quoting the
+ * three numbers it compared, and the author's value stands. Pure arithmetic on resolved numbers: it
+ * evaluates nothing.
+ */
+export function deriveCeilings(storeys: readonly StoreyCeiling[]): { facts: CeilingFacts[]; diags: Diagnostic[][] } {
+  const facts: CeilingFacts[] = [];
+  const diags: Diagnostic[][] = [];
+  storeys.forEach(({ own, subject, clearSpan }, i) => {
+    const top = i === storeys.length - 1;
+    const above = top ? undefined : storeys[i + 1]!.own.slab;
+    const derived =
+      above !== undefined && own.height !== undefined ? atMicron(atMicron(own.height) - atMicron(above)) : undefined;
+    const mine: Diagnostic[] = [];
+    if (own.source === "authored") {
+      const clear = own.clearHeight!;
+      if (derived !== undefined && derived > 0 && derived !== atMicron(clear)) {
+        mine.push({
+          severity: "warning",
+          code: "W_CLEAR_HEIGHT_MISMATCH",
+          message:
+            `${subject} writes \`clear ${fmt3(clear)}\`, but its \`height ${fmt3(own.height!)}\` less the ` +
+            `\`slab ${fmt3(above!)}\` of the storey above is ${fmt3(derived)} mm; the written value is reported`,
+          ...(clearSpan ? { span: clearSpan } : {}),
+        });
+      }
+      facts.push(own);
+    } else if (derived !== undefined && derived > 0) {
+      facts.push({ ...own, clearHeight: derived, source: "derived" });
+    } else {
+      const omitted: ClearHeightOmitted = top
+        ? "top-storey"
+        : above === undefined
+          ? "no-slab-above"
+          : own.height === undefined
+            ? "default-storey-height"
+            : "slab-above-too-thick";
+      facts.push({ ...own, omitted });
+    }
+    diags.push(mine);
+  });
+  return { facts, diags };
+}
+
+/**
  * Did this plan author a height anywhere?
  *
  * The predicate behind the `describe()` gating rule. It walks the WHOLE tree — every
@@ -333,6 +469,8 @@ export function resolveOpeningHeights(
  * all, which is precisely the byte-identity failure this predicate exists to prevent.
  */
 export function plansAuthorHeights(plan: PlanNode): boolean {
+  // A `slab` or a `clear` is not counted (RM6.1 ruling): the storeys' heights stay the defaults
+  // lint, Plan JSON and the quantities judge against, and only `describe()` reports the clauses.
   if (plan.height !== undefined) return true;
   for (const def of plan.components.values()) if (bodyAuthorsHeights(def.body)) return true;
   return bodyAuthorsHeights(plan.body);
@@ -381,6 +519,7 @@ function statementAuthorsHeights(s: Statement): boolean {
     case "outdoor":
     case "fence":
     case "walls":
+    case "section":
       return false;
     default:
       nonElementKind(s.kind);

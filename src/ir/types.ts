@@ -10,6 +10,7 @@
  */
 
 import type {
+  CompassWord,
   ElementKind,
   FenceStyle,
   FurnitureAnchor,
@@ -566,6 +567,23 @@ export interface RFurniture extends RBase {
    *  `place` frame as the piece's own id is. Read only by `describe --facts depends`. Internal. */
   _againstWall?: string;
 }
+/** A resolved `section` mark (RM6.1): its cut line, measured verbatim like a `dim`'s ends. */
+export interface RSection extends RBase {
+  kind: "section";
+  /** The mark's own name (`A`, `1`); its element {@link RBase.id} is an auto-id. */
+  name: string;
+  from: Point;
+  to: Point;
+  /** The compass word written after `look`. */
+  look: CompassWord;
+  /** The PAGE direction the section looks in, a unit axis vector (`{x: 1, y: 0}` is page-right):
+   *  the `look` word turned by the plan's `north`. `null` when it does not cross the cut line
+   *  (`E_SECTION_LOOK`) or the line is no axis-aligned run (`E_SECTION_AXIS`). */
+  toward: Point | null;
+  /** The plan's `north` as clockwise quarter-turns, read by `transform` to name a turned
+   *  direction. Internal. */
+  _northTurns?: 0 | 1 | 2 | 3;
+}
 export interface RDim extends RBase {
   kind: "dim";
   from: Point;
@@ -807,7 +825,8 @@ export type ResolvedElement =
   | RVoid
   | ROutdoor
   | RFence
-  | RWallsFromRooms;
+  | RWallsFromRooms
+  | RSection;
 
 /** One `describe().derived_walls[]` row: a derived wall before coexistence (ADR 0028 §6). */
 export interface DerivedWallRow {
@@ -992,6 +1011,12 @@ export interface ResolvedPlan {
    * Internal: never serialized into the Scene/SVG/exports.
    */
   _heightsAuthored: boolean;
+  /**
+   * This storey's `slab` and clear height (MF-D1, RM-D17), present only when the plan writes a
+   * `slab` or a `clear` somewhere: what `describe().heights` reports beside the storey height.
+   * Internal: it draws nothing and is never serialized into the Scene/SVG/exports.
+   */
+  _ceiling?: import("../datum.js").CeilingFacts;
   /**
    * How many storeys the plan has, when it has more than one: what a per-plan count is divided
    * by, since each storey is drawn on its own (`fitWork`, `src/label-fit.ts`). Internal: never

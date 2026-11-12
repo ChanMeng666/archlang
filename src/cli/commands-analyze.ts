@@ -154,6 +154,8 @@ export const DESCRIBE_KEYS: readonly string[] = [
   "voids",
   // `walls from rooms` (ADR 0028 §6): present only on a storey that derived a wall.
   "derived_walls",
+  // The plan's section marks (RM6.1): present only on a plan that marks one.
+  "sections",
   // The vertical datum. Conditional like `voids` — present only when the plan
   // authored a height clause — and therefore exactly the shape that let `voids` ship
   // UNSELECTABLE with the drift test green, so the set-equality fixture below now writes a

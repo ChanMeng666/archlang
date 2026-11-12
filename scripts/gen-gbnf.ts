@@ -320,7 +320,7 @@ function rules(): [string, string][] {
     ["root", `ws "plan" rws string ws "{" ws ( plan-stmt ws )* "}" ws`],
     [
       "plan-stmt",
-      `setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | block-stmt`,
+      `setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | section-stmt | block-stmt`,
     ],
     [
       "block-stmt",
@@ -348,7 +348,8 @@ function rules(): [string, string][] {
     // because the parser reads one — a plan writes `let h = 3200` once and `height h`
     // everywhere, and a grammar that offered only a literal would forbid the form the
     // language accepts.
-    ["height-stmt", `"height" rws expr`],
+    // `height <expr> clear <expr>`: a single-storey plan's clear height (RM-D17).
+    ["height-stmt", `"height" rws expr ( rws "clear" rws expr )?`],
     ["north-stmt", `"north" rws ( north-dir ( rws "hidden" )? | "hidden" )`],
     ["north-dir", `"up" | "down" | "left" | "right" | number`],
     // `site { street … [hemisphere …] }` — both value sets INJECTED from the closed
@@ -455,8 +456,12 @@ function rules(): [string, string][] {
     // ---- level (one storey; a plan-level block, body = ordinary statements) ----
     // The optional `height <expr>` sits in the HEADER, after the name and before the
     // block — the body is an ordinary statement list and a plan setting inside it is
-    // `E_LEVEL_MIX`, so there is nowhere else it could go.
-    ["level-stmt", `"level" rws ( "-" ws )? number ( rws string )? ( rws "height" ws expr )? ws block`],
+    // `E_LEVEL_MIX`, so there is nowhere else it could go. `slab` then `clear` follow it, in
+    // that order, as the parser reads them (MF-D1, RM-D17).
+    [
+      "level-stmt",
+      `"level" rws ( "-" ws )? number ( rws string )? ( rws "height" ws expr )? ( rws "slab" ws expr )? ( rws "clear" ws expr )? ws block`,
+    ],
 
     // ---- zone (a wing/department grouping; legal wherever a statement is) ----
     ["zone-stmt", `"zone" rws ident ( rws string )? ws block`],
@@ -692,6 +697,11 @@ function rules(): [string, string][] {
     // whole file exists to prevent.
     ["fence-stmt", `"fence" rws id-opt ( fence-style rws )? "{" ws point ws ( point ws )+ ( "close" ws )? "}"`],
     ["fence-style", litAlt(FENCE_STYLES)],
+    // `section <name|int> (x,y)->(x,y) look <compass>` (RM6.1): a PLAN statement, never a block one
+    // (`E_SECTION_SCOPE` inside any block), so it is no `element` alternative.
+    // The name is an identifier or a positive whole number, as the parser takes it (no sign, no
+    // fraction, no unit).
+    ["section-stmt", `"section" rws ( ident | [1-9] [0-9]* ) ws point ws "->" ws point ws "look" rws compass-dir`],
     // `walls from rooms` (ADR 0028 §3). The body holds `except`, `open between` and
     // `between … thickness` clauses, the closed list the parser accepts.
     [

@@ -1,5 +1,5 @@
 /**
- * Error catalogue: the drafting family. The drawing and its sheet: dimensions, the title block,
+ * Error catalogue: the drafting family. The drawing and its sheet: dimensions, section marks, the title block,
  * scale, and the render config (themes, styles, materials, fonts, PNG), and the `annotation`
  * lint family.
  *
@@ -20,6 +20,30 @@ export const DRAFTING_ENTRIES = defineEntries({
     "Rendering to PNG needs `@resvg/resvg-js` (PDF needs `pdfkit`); the optional binary is absent in this environment (it is not bundled, to keep the core zero-dependency).",
     "Install the optional dependency (`npm install @resvg/resvg-js`), or re-run with `--install` to fetch it automatically, or render to SVG/DXF (zero-dependency).",
     "archlang preview plan.arch --install   # fetches @resvg/resvg-js, then renders the PNG",
+  ),
+  E_SECTION_AXIS: e(
+    "A section mark's cut line is slanted or has no length.",
+    "`section <name> (x,y)->(x,y) look <compass>` marks where a section cuts the plan. The cut line runs horizontally or vertically: its two ends share a `y` or an `x`. A slanted line, or one whose two ends are the same point, is refused rather than straightened, because which end the author meant to move is not something the compiler can know.",
+    "Give the two ends the same `x` (a vertical cut) or the same `y` (a horizontal one), at the length the cut should run.",
+    "section A (0,0)->(6000,4000) look east   # error: a slanted cut line",
+  ),
+  E_SECTION_DUP: e(
+    "Two section marks share a name.",
+    "A section mark's name (`section A …`, `section 1 …`) names the section a drawing set refers to, so a plan marks each section once. The names are the sections' own, like axis labels: a room or a wall may share one.",
+    "Rename one of the two marks, or delete the repeated line.",
+    "section A (3000,-1000)->(3000,7000) look east\n  section A (0,2000)->(8000,2000) look north   # error: A is marked twice",
+  ),
+  E_SECTION_LOOK: e(
+    "A section mark looks along its own cut line.",
+    "`look <compass>` says which way the section is seen from the cut, so it points across the cut line. The plan's `north` turns the compass word into a page direction, and that direction runs along the line: a vertical cut can look only the two compass ways that point left and right on the page, a horizontal one only the two that point up and down. The message names the two words this plan's north allows.",
+    "Write one of the two compass words the message names, or turn the cut line.",
+    "section A (3000,-1000)->(3000,7000) look north   # error under north up: a vertical cut looks east or west",
+  ),
+  E_SECTION_SCOPE: e(
+    "A section mark sits inside a `level`, `zone`, `component` or block.",
+    "A section cuts the whole building, so its mark is a plan-level statement, written once, outside every block. It is drawn on the lowest storey's page. Inside a `component` it would be drawn once per placed copy, and inside a `level` block it would belong to one storey only.",
+    "Move the line out to the plan level, beside the `level` blocks.",
+    'level 1 "Ground" {\n    section A (3000,-1000)->(3000,7000) look east   # error: inside a level\n  }',
   ),
   W_CJK_FONT_MISSING: w(
     "PDF/PNG text has CJK characters, but the optional CJK font package is not installed.",

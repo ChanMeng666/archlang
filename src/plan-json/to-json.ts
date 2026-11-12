@@ -23,6 +23,7 @@ import type {
   ResolvedElement,
 } from "../ir.js";
 import { drawnView, instanceBodiesOf, keepResultsOf } from "../ir.js";
+import { BUILTIN_REGISTRY } from "../registry.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { DOOR_KIND_CLAUSES, TITLE_FIELDS } from "../grammar/tokens.js";
 import {
@@ -429,6 +430,7 @@ export type PlanJsonDroppedClause =
   | "hidden"
   | "notes"
   | "sheet text"
+  | "clear height"
   | "decimal mark"
   | "theme"
   | "style"
@@ -479,12 +481,27 @@ function droppedFromStorey(storey: ResolvedPlan, level: number | undefined): Pla
   const early = elements.filter((e, i) => e.kind === "column" && i < lastPiece).map((e) => e.id);
   add("column order", early.length, early);
   for (const kind of UNPROJECTED_KINDS) {
-    const ids = elements.filter((e) => e.kind === kind).map((e) => e.id);
+    // Named as the author names them: the id, or a kind's own name (a `section` mark's `A`).
+    const nameOf = BUILTIN_REGISTRY.byKind.get(kind)?.nameOf;
+    const ids = elements.filter((e) => e.kind === kind).map((e) => nameOf?.(e) ?? e.id);
     add(kind, ids.length, ids);
   }
   const zones = (storey.zones ?? []).filter((z) => !z.instance).map((z) => z.path);
   add("zone", zones.length, zones);
   return rows;
+}
+
+/** A storey's written header clauses after its name, as its dropped `level` row says them on a plan
+ *  that writes a `slab` or a `clear` (design §3.4): `height`, `slab`, `clear`, in the grammar's
+ *  order. The document has no field for the last two yet (RM3.1). Empty on a plan that writes
+ *  neither, so its rows read as they always did. */
+function ceilingText(c: ResolvedPlan["_ceiling"]): string {
+  if (!c) return "";
+  // Only a height the storey's own header wrote: a plan-level `height` is no clause of the row.
+  const height = c.ownHeight ? ` height ${num(c.height!)}` : "";
+  const slab = c.slab !== undefined ? ` slab ${num(c.slab)}` : "";
+  const clear = c.source === "authored" ? ` clear ${num(c.clearHeight!)}` : "";
+  return height + slab + clear;
 }
 
 /** The plan-wide clauses, which every storey's document leaves out alike. */
@@ -567,12 +584,16 @@ export function planToJson(
           {
             clause: "level" as const,
             count: 1,
-            text: `level ${num(l.level)}${l.name !== undefined ? ` ${q(l.name)}` : ""}`,
+            text: `level ${num(l.level)}${l.name !== undefined ? ` ${q(l.name)}` : ""}${ceilingText(l.ir._ceiling)}`,
             level: l.level,
           },
           ...droppedFromStorey(l.ir, l.level),
         ])
       : droppedFromStorey(ir, undefined)),
+    // A single-storey plan's `height … clear <mm>` (RM-D17): no field carries it yet (RM3.1).
+    ...(levels.length === 0 && ir._ceiling?.source === "authored"
+      ? [{ clause: "clear height" as const, count: 1, text: `clear ${num(ir._ceiling.clearHeight!)}` }]
+      : []),
     ...droppedFromPlan(ir),
   ];
   const dropped = { ...(keeps ? { droppedKeeps: keeps.length } : {}), ...(rows.length > 0 ? { dropped: rows } : {}) };

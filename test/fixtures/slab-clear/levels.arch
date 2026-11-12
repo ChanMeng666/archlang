@@ -1,0 +1,23 @@
+# The slab and clear-height clauses on three storeys (RM6.1: MF-D1, RM-D17), after the house of
+# issue #532: floor-to-floor 2510 / 2750 / 2750, a 320 mm slab including the finish, and the upper
+# storey's clear height of 2340 written by its author. Expected `describe().heights`:
+#   level 0: clear_height 2190, derived (2510 - the 320 slab above)
+#   level 1: slab 320, clear_height 2430, derived (2750 - 320)
+#   level 2: slab 320, clear_height 2340, authored (the top storey: no slab above it)
+plan "Slab and clear" {
+  units mm
+
+  level 0 "Basement" height 2510 {
+    wall id=s exterior thickness 300 { (0,0) (9000,0) (9000,7000) (0,7000) close }
+    room id=cellar at (0,0) size 9000x7000 label "Cellar" uses storage
+  }
+  level 1 "Ground" height 2750 slab 320 {
+    wall id=s exterior thickness 300 { (0,0) (9000,0) (9000,7000) (0,7000) close }
+    room id=living at (0,0) size 9000x7000 label "Living" uses living
+    door id=d at (4500,7000) width 1000 wall s
+  }
+  level 2 "Upper" height 2750 slab 320 clear 2340 {
+    wall id=s exterior thickness 300 { (0,0) (9000,0) (9000,7000) (0,7000) close }
+    room id=bed at (0,0) size 9000x7000 label "Bedroom" uses bedroom
+  }
+}

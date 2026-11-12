@@ -33,7 +33,7 @@
 import type { Diagnostic } from "../diagnostics.js";
 import { chargeSteps, withStepMeter } from "../expr.js";
 import { format } from "../format.js";
-import { KEYWORDS } from "../grammar/tokens.js";
+import { KEYWORDS, UNRESERVED_KEYWORDS } from "../grammar/tokens.js";
 import { MODEL_RANGE_MM, fmtSource } from "../num-format.js";
 import { OPENPLAN3D_CATALOG_SIZES, OPENPLAN3D_TO_FAMILY } from "./openplan3d-catalog.js";
 import {
@@ -169,7 +169,10 @@ function str(s: string): string {
 /** Text safe on one comment line. */
 const commentText = (s: string): string => s.replace(/[\r\n]+/g, " ");
 
-const RESERVED = new Set<string>(Object.values(KEYWORDS).flat() as string[]);
+// The contextual keywords RM6.1 added are no reserved words, so an id may keep them.
+const RESERVED = new Set<string>(
+  (Object.values(KEYWORDS).flat() as string[]).filter((w) => !UNRESERVED_KEYWORDS.includes(w)),
+);
 const MAX_ID = 64;
 
 /** Gives each element an ArchLang id derived from its OpenPlan3D id, unique within a storey. */
