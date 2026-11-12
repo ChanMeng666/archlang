@@ -126,7 +126,7 @@ suite("W_STAIR_RISER_TOO_HIGH", () => {
     const src = readFileSync("examples/turning-stair.arch", "utf8").replaceAll("1000x1540", "1000x1530");
     const [d] = of(src, { world: EXAMPLES_WORLD });
     expect(d!.message).toBe(
-      'The stair in "Hall" on level 1 draws 5 + 5 treads on its flights\' 3060 mm run, so it climbs the 2750 mm storey on 12 risers (one per tread and one at each flight\'s head) of about 229 mm, above 220 mm.',
+      "The stair in \"Hall\" on level 1 draws 5 + 5 treads on its flights' 3060 mm run, so it climbs the 2750 mm storey on 12 risers (one per tread and one at each flight's head) of about 229 mm, above 220 mm.",
     );
     expect(d!.hints![0]).toMatch(/^Lengthen flight 1 of `s` from 1530 mm to 1540 mm on every storey/);
     expect(d!.hints![0]).toContain("so they draw 11 treads and climb on 13 risers of about 212 mm");
@@ -145,7 +145,12 @@ suite("the riser each shipped stair example's drawing implies (backlog ST.1's ga
     return plans.flatMap((ir) =>
       ir.elements
         .filter((e): e is RStair => e.kind === "stair" && e.dir === "up")
-        .map((s) => ({ storey: ir.storeyHeight, treads: drawnTreads(s), risers: drawnRisers(s), authored: ir._heightsAuthored })),
+        .map((s) => ({
+          storey: ir.storeyHeight,
+          treads: drawnTreads(s),
+          risers: drawnRisers(s),
+          authored: ir._heightsAuthored,
+        })),
     );
   };
 
@@ -173,7 +178,8 @@ suite("the limit it reads", () => {
   it("is a V or S-full figure, and no profile sets another", () => {
     const row = RULE_PROVENANCE.defaults.stairDrawnMaxRiseMm!;
     expect(["V", "S-full"]).toContain(row.verification);
-    for (const [name, p] of Object.entries(RULE_PROVENANCE.profiles)) expect(p.stairDrawnMaxRiseMm, name).toBeUndefined();
+    for (const [name, p] of Object.entries(RULE_PROVENANCE.profiles))
+      expect(p.stairDrawnMaxRiseMm, name).toBeUndefined();
     for (const name of Object.keys(LINT_PROFILES)) {
       expect(resolveRuleset(LINT_PROFILES[name]).stairDrawnMaxRiseMm, name).toBe(DEFAULT_RULESET.stairDrawnMaxRiseMm);
     }
