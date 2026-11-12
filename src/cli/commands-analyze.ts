@@ -65,6 +65,7 @@ import {
 // Internal (not part of the public surface): parse → link → resolve without
 // rendering — validate/lint need only the diagnostics, never the SVG.
 import { resolvePlan } from "../analyze.js";
+import type { PlanNode } from "../ast.js";
 // The one human line of the lint coverage report (internal: only `lint` prints it).
 import { coverageLine } from "../lint/coverage.js";
 // Where each ruleset number comes from (internal: only `lint --rules` reads it, never the compile path).
@@ -753,6 +754,29 @@ function stageLine(at: NonNullable<Staged["at"]>): string {
     : `  (stage ${at.stage} is clean: advance to --stage ${after}${held})`;
 }
 
+/**
+ * The drafting stage's north hint (product roadmap RM1.2a): `next` at `--stage drafting`, when no
+ * tier has anything left, for a plan that writes no `north` statement. A plan with none still draws
+ * a north arrow, pointing up the page, so the hint says what the sheet assumes; it is an `info`
+ * item with no code, never a diagnostic: it changes neither `ok`, the exit code nor the summary, and
+ * like any `next` item it leaves the stage not clean until it is answered. A plan that writes any
+ * `north` (`north … hidden` too) gets nothing. `plan` is the resolved plan's parse, present only
+ * when the plan resolves.
+ */
+function draftingNext(
+  next: NextItem | null,
+  stage: AuthoringStage | undefined,
+  plan: PlanNode | undefined,
+): NextItem | null {
+  if (next !== null || stage !== "drafting" || plan === undefined || plan.northSpan !== undefined) return next;
+  return {
+    tier: "info",
+    code: null,
+    message: "The plan writes no `north`, so the sheet's north arrow assumes the top of the page is north.",
+    hint: "Write `north up` (or `down`, `left`, `right`, or a bearing in degrees) to say which way north is, or `north hidden` to draw no arrow.",
+  };
+}
+
 /** A stage is clean when no tier of `next` but taste has an item left (taste never gates). */
 function isClean(input: NextInput): boolean {
   const { taste: _taste, ...rest } = input;
@@ -836,13 +860,21 @@ export function cmdValidate(args: Args, io: CliIo): number {
     const kindOf = kindsOf(levels.length > 0 ? levels.map((l) => l.ir) : ir ? [ir] : []);
     const stageOf = (d: Diagnostic): AuthoringStage => diagnosticStage(d, keeps, kindOf);
     if (args.graph !== undefined || args.intent !== undefined)
-      return reportWithChecks(io, source, diags, args, world, filter, nextInput, keeps, { stage, stageOf, kindOf });
+      return reportWithChecks(io, source, diags, args, world, filter, nextInput, keeps, {
+        stage,
+        stageOf,
+        kindOf,
+        plan: resolved.plan,
+      });
     if (stage === undefined)
       return report(io, source, diags, args, filter, undefined, nextDiagnostic(nextInput), keeps, { stageOf });
     // `--stage`: the report, `next` and `ok` read the stage's view; errors always stay.
     const view = atStage(stage, diags, nextInput, kindOf);
-    const at = { stage, held: view.held, clean: isClean(view.input) };
-    return report(io, source, view.diagnostics, args, filter, undefined, nextDiagnostic(view.input), keeps, {
+    const found = nextDiagnostic(view.input);
+    const next = draftingNext(found, stage, resolved.plan);
+    // The north hint is a `next` item like any other: a stage with one left is not clean.
+    const at = { stage, held: view.held, clean: isClean(view.input) && next === found };
+    return report(io, source, view.diagnostics, args, filter, undefined, next, keeps, {
       stageOf,
       at,
     });
@@ -961,7 +993,12 @@ function reportWithChecks(
   filter: DiagFilter,
   nextInput: NextInput,
   keeps: readonly KeepResult[] | undefined,
-  stages: { stage?: AuthoringStage; stageOf: (d: Diagnostic) => AuthoringStage; kindOf: KindOf },
+  stages: {
+    stage?: AuthoringStage;
+    stageOf: (d: Diagnostic) => AuthoringStage;
+    kindOf: KindOf;
+    plan?: PlanNode;
+  },
 ): number {
   const loaded = args.graph !== undefined ? loadGraphCheck(io, source, args.graph, args, world) : undefined;
   if (isCheckError(loaded)) return loaded.exit;
@@ -1007,11 +1044,14 @@ function reportWithChecks(
   const active = filterActive(filter);
   const shown = active ? applyDiagFilter(diags, filter) : diags;
   // Weighs everything, like `ok`: a display filter never changes what comes next.
-  const next = nextDiagnostic({
+  const found = nextDiagnostic({
     ...nextInput,
     ...(intentResult ? { intent: intentResult } : {}),
     ...(graph ? { graph } : {}),
   });
+  const next = draftingNext(found, stages.stage, stages.plan);
+  // As in `cmdValidate`: a stage with the north hint left is not clean.
+  if (at && next !== found) at = { ...at, clean: false };
 
   const summary = stagedSummary(validateSummary(diags, ok), { stageOf: stages.stageOf, at });
 

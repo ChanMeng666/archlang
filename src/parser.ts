@@ -464,9 +464,11 @@ class Parser {
             break;
           case "north":
             this.next();
-            if (this.eatHidden(plan, "north")) break;
-            plan.north = this.parseNorth();
-            this.eatHidden(plan, "north");
+            if (!this.eatHidden(plan, "north")) {
+              plan.north = this.parseNorth();
+              this.eatHidden(plan, "north");
+            }
+            plan.northSpan = this.spanFrom(start);
             break;
           case "site":
             this.parseSiteSetting(plan, t);
