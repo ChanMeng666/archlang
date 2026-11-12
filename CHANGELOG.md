@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A bundle that compiles but never explains a code or prints the CLI manifest no longer carries the diagnostic catalogue's messages, causes and examples, nor the manifest's command help: `diagnosticToJson` reads the catalogue's `fix` column from its own generated module (`src/error-catalog-fixes.ts`, `npm run gen:errors`), and the two top-level values that kept the rest alive (`ERROR_CODES`, `MANIFEST_COMMAND_NAMES`) are marked pure. The playground's compiler chunk loses about 68 KB gzip (458,385 to 390,608 B on its first-compile path); its diagnostics panel reads the full catalogue in edit mode only. Every output is byte-identical: `compile()`, its diagnostics and `--error-svg` card, `describe()`, `lint()`, `arch explain` and the manifest.
+- Tooling: the release-compatibility check (`node scripts/compat-check.mjs`, `test/release-compat.test.ts`) reads a tagged union, object variants told apart by a literal discriminant such as `AstElement`'s and `Statement`'s `kind`, as an enum-like set: a new variant (a new element kind) passes, a removed one fails and is named, and a variant on both sides is still held to the variance of its role. A constant keyed by a set (`ELEMENT_KIND_STAGES`, a `Readonly<Record<K, V>>`) is read one member per key, as an `as const` object is: a key may be added, not removed.
 
 ## [1.59.0] - 2026-11-12
 
