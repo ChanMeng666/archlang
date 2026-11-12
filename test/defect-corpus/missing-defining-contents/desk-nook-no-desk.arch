@@ -1,0 +1,20 @@
+# class: missing-defining-contents
+# origin: product-roadmap evidence.md section 1 (a label with no object: the "desk nook" of the Opus first-contact test; reduced)
+# expect: W_ROOM_MISSING_DEFINING
+# status: todo
+# fact: r_nook is labelled "Desk Nook" and holds a bookshelf and no desk. The label reads no use
+#   (describe: uses []; lint coverage skips the room as no-uses), and `uses office` would not
+#   report it either (DEFINING.office is `none`: a study can be a reading room with no desk)
+plan "Desk nook without a desk" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6500,0) (6500,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (4000,0) (4000,4000) }
+  room id=r_living at (0,0) size 4000x4000 label "Living Room" uses living
+  room id=r_nook at (4000,0) size 2500x4000 label "Desk Nook"
+  door id=d_entry at (2000,4000) width 900 wall shell
+  door id=d_nook at (4000,2000) width 800 wall w_mid swing into r_nook
+  window at (2000,0) width 1500 wall shell
+  window at (5250,0) width 1200 wall shell
+  furniture bookshelf against wall shell segment 2 offset 1250 in r_nook
+}

@@ -203,6 +203,11 @@
  * the new `space-not-enclosed/exterior-ring-open` pair under each of the three profiles, measured with
  * `tasteDigest`. No existing row moved: of every source here the rule fires only on that case
  * (`test/fixtures/wall-closure/open-ring.arch`, its one other hit, is no taste source).
+ *
+ * RM1.2a added six rows, the new `missing-defining-contents/desk-nook-no-desk` pair (a `todo` case)
+ * under each of the three profiles, measured with `tasteDigest`. The case and its twin share a digest
+ * under each profile: the twin differs only in a desk in a room that reads no use, which no criterion
+ * and no lint rule reads. No existing row moved.
  */
 
 import { describe, expect, it } from "vitest";
@@ -770,6 +775,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "4d527aa0de924169fc5fe20a6bae5c946a341760bfede1d485a06d5238622382",
     "generic",
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.clean.arch",
+  ],
+  [
+    "1f8f4a76be51cf8323494a70c09aafd5ff362897f4ed7db5c40bb51c7e1d8ec7",
+    "generic",
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
+  ],
+  [
+    "1f8f4a76be51cf8323494a70c09aafd5ff362897f4ed7db5c40bb51c7e1d8ec7",
+    "generic",
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.clean.arch",
   ],
   [
     "170bd49ec3151d4ac9bbffef1a3df1123402e5dab86d764289b160455f2af9c9",
@@ -1972,6 +1987,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.clean.arch",
   ],
   [
+    "294e66a4e17606fda9463bc006fc4a6e5df6b88d3b0877937254636a015cc84b",
+    "cn-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
+  ],
+  [
+    "294e66a4e17606fda9463bc006fc4a6e5df6b88d3b0877937254636a015cc84b",
+    "cn-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.clean.arch",
+  ],
+  [
     "4618ee423e41dd113e13d0fff9ef529d9f1b8b16ba1b33015c8cf9681797f075",
     "cn-residential-advisory",
     "test/defect-corpus/missing-defining-contents/dining-no-table.arch",
@@ -3170,6 +3195,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "253e82499e232deaa5c035577c27e1acb79f41e3676c3b56e5f19745ba436354",
     "us-residential-advisory",
     "test/defect-corpus/missing-defining-contents/bedroom-no-bed.clean.arch",
+  ],
+  [
+    "04d600663b415309e7806e7813bce45f6078d4cbe8c00ab62bff46a2d4a6cfd0",
+    "us-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
+  ],
+  [
+    "04d600663b415309e7806e7813bce45f6078d4cbe8c00ab62bff46a2d4a6cfd0",
+    "us-residential-advisory",
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.clean.arch",
   ],
   [
     "612c0c739350ac2418dde3ad5974fba9484fe9aa47e2d2fbfd5bdbff7d91f680",
