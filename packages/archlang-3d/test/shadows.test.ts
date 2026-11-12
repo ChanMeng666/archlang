@@ -101,7 +101,7 @@ describe("contact shadows (card RM8.8)", () => {
         x < 4_100_000 &&
         z > -100_000 &&
         z < 3_100_000 &&
-        !(x > 100_000 && x < 3_900_000 && z > 100_000 && z < 2_900_000);
+        !(x >= 100_000 && x <= 3_900_000 && z >= 100_000 && z <= 2_900_000);
       if (w === 0) {
         expect(inWall, `outer vertex ${x},${z}`).toBe(false);
         xs.push(x);

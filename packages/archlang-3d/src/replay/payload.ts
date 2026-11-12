@@ -11,7 +11,6 @@ import {
   type MaterialSlot,
   slotGroups,
 } from "../materials.js";
-import { FENCE_PROFILES } from "../mesh/outdoor.js";
 import { isHung } from "../mesh/t0.js";
 import type { Mesh3D, MeshNode } from "../mesh/types.js";
 import { endElevation } from "./camera.js";
@@ -183,7 +182,7 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
           ...(slotted ? { groups: runs } : {}),
           ...(n.kind === "floor" && finish ? { finish } : {}),
           ...((n.kind === "outdoor" || n.kind === "fence") && colour ? { colour } : {}),
-          ...bandOf(n, positions),
+          ...bandOf(n, positions, mesh),
         };
       }),
     events: timeline(mesh),
@@ -195,10 +194,12 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
  * The contact band a node casts (`ReplayNode.band`, card RM8.8), by `CONTACT_SHADOW`'s rules: a
  * standing wall from its thickness, a column from its smaller side, a standing piece of furniture
  * from the smaller side of its footprint (a T0 piece and a grey box are fitted exactly to it,
- * `test/t0.test.ts`, so its plan extent is the footprint), a fence from its style's post, a stair's
- * stringers as a wall `CONTACT_SHADOW.stairThicknessMm` thick. A hung piece casts none.
+ * `test/t0.test.ts`, so its plan extent is the footprint), a fence from its style's post (the
+ * Mesh3D's own `fence-profile-default` row: this module stays clear of the mesh stage's site code,
+ * which reads the core), a stair's stringers as a wall `CONTACT_SHADOW.stairThicknessMm` thick. A
+ * hung piece casts none.
  */
-function bandOf(n: MeshNode, positions: readonly number[]): { band?: number } {
+function bandOf(n: MeshNode, positions: readonly number[], mesh: Mesh3D): { band?: number } {
   if (positions.length === 0) return {};
   const side = (): number => {
     let x0 = Infinity;
@@ -226,8 +227,11 @@ function bandOf(n: MeshNode, positions: readonly number[]): { band?: number } {
     return { band: contactBandMm(CONTACT_SHADOW.furniture, side()) };
   }
   if (n.kind === "fence") {
-    const profile = FENCE_PROFILES[String(n.extras.style)] ?? FENCE_PROFILES.picket;
-    return { band: contactBandMm(CONTACT_SHADOW.fence, profile?.post ?? 0) };
+    const row = mesh.assumptions.find(
+      (a) => a.rule === "fence-profile-default" && a.field === `profile(${String(n.extras.style)})`,
+    )?.value as { post_mm?: unknown } | undefined;
+    const post = typeof row?.post_mm === "number" ? row.post_mm : side();
+    return { band: contactBandMm(CONTACT_SHADOW.fence, post) };
   }
   if (n.kind === "stair" && n.part === "stringer")
     return { band: contactBandMm(CONTACT_SHADOW.wall, CONTACT_SHADOW.stairThicknessMm) };

@@ -19,7 +19,7 @@ module's remaining facts are in its own header.
 invariants; this file holds every module. The exports of `src/index.ts` are in the sibling
 [`public-surface.md`](public-surface.md).
 
-Totals: 393 modules in 34 directories.
+Totals: 395 modules in 34 directories.
 
 ## `packages/archlang-3d/src/`
 
@@ -27,9 +27,9 @@ Totals: 393 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `browser.ts` | 32 | 0 | The browser entry for a host page that shows the replay (card A5, the playground's 3D preview tab): build the payload in the page (`replayPayload`) and mount it on a canvas (`mountReplay`). It bundles three.js, so it is a separate entry… | none |
 | `curves.ts` | 45 | 2 | Arc discretisation to a chord tolerance (archlang-3d plan §4.1, `--curve-tol`). The core keeps every arc exact (`Edge` `{ t: "arc", arc }`) and tessellates at a fixed 7.5° step for the drawing; a raised wall is seen up close, so the 3D… | none |
-| `index.ts` | 132 | 27 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
-| `materials.ts` | 333 | 11 | Material slots (visual-assets card V1): the ONE palette both the GLB writer (`glb/write.ts`) and the replay viewer (`replay/mount.ts`) read, so a piece's oak or ceramic is the same colour in both. A T0 part names its slot (`Part.mat`… | none |
-| `node.ts` | 46 | 25 | The Node-only entry: a `World` over the file system. Kept out of `src/index.ts` so the browser bundle (adapter + Scene3D) never pulls a `node:*` module (`test/browser-safety.test.ts`). | none |
+| `index.ts` | 136 | 29 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
+| `materials.ts` | 363 | 12 | Material slots (visual-assets card V1): the ONE palette both the GLB writer (`glb/write.ts`) and the replay viewer (`replay/mount.ts`) read, so a piece's oak or ceramic is the same colour in both. A T0 part names its slot (`Part.mat`… | none |
+| `node.ts` | 46 | 27 | The Node-only entry: a `World` over the file system. Kept out of `src/index.ts` so the browser bundle (adapter + Scene3D) never pulls a `node:*` module (`test/browser-safety.test.ts`). | none |
 | `units.ts` | 16 | 2 | Scene3D lengths are integer micrometres (plan §3.4): a plan coordinate in millimetres is multiplied by 1000 and rounded ONCE, at the adapter's edge, so every later stage works on integers and a last-ulp difference between engines is… | none |
 | `world.ts` | 124 | 3 | The Node `World` the CLI compiles through: an `import` is read only from under a root, only a `.arch` file, only up to {@link MODULE_CAP_BYTES}. Node-only (it reads `node:fs`): reached from `node.ts` and the CLI, never from `index.ts`… | none |
 
@@ -64,10 +64,11 @@ Totals: 393 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 1163 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
+| `build.ts` | 1190 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
+| `c16.ts` | 25 | 2 | The 16-gon's exact table, shared by the T0 generators (`t0.ts`: round sections) and the contact shadows' corner fans (`replay/shadows.ts`, card RM8.8). Pure, browser-safe, no import. | none |
 | `extrude.ts` | 364 | 7 | Prisms: a plan polygon (with holes) between two heights → one closed triangle shell, in the exporters' axes (X = plan x, Y = up, Z = plan y), integer micrometres. Caps are triangulated with earcut (ISC), which adds no vertex, so the caps… | none |
 | `openings.ts` | 917 | 2 | The trim of a doorway and a window (product-roadmap card RM8.6; design `docs/plans/product-roadmap/design/visual-language.md` §2.1, §2.2), as parts of the opening's node, every size a clamped share of the host wall's thickness `t`… | none |
-| `outdoor.ts` | 182 | 2 | The site in 3D (product-roadmap card RM8.3, backlog VA.2): each `outdoor` surface a thin slab and each `fence` a low-poly solid per style, built from the Scene3D's `outdoor` and `fences` (the core's `ROutdoor` and `RFence`, read as they… | none |
+| `outdoor.ts` | 182 | 3 | The site in 3D (product-roadmap card RM8.3, backlog VA.2): each `outdoor` surface a thin slab and each `fence` a low-poly solid per style, built from the Scene3D's `outdoor` and `fences` (the core's `ROutdoor` and `RFence`, read as they… | none |
 | `slab.ts` | 195 | 2 | The storey slab's plan region (archlang-3d plan §4.2; card A2b): the rooms ∪ the wall outline, before the voids are cut. The wall outline (its outer rings, holes dropped) already covers every room the walls enclose; what a room adds is… | none |
 | `stair.ts` | 528 | 2 | A stair as stepped solids (card X3, `stairSolid`) and in its parts (card RM8.6, `stairDetail`: what the mesh builds), from the Scene3D's flights and landings, which are the core's own (`scene3d/build.ts`): nothing here re-derives a stair… | none |
 | `t0-kit.ts` | 338 | 5 | The T0 kit (visual-assets V2, V5, V6): the part type every generator returns and the few helpers the generators share, kept apart from `t0.ts` so the batch modules (`t0-living.ts`, `t0-utility.ts`) and `t0.ts` itself read them without an… | none |
@@ -75,7 +76,7 @@ Totals: 393 modules in 34 directories.
 | `t0-office.ts` | 429 | 1 | T0 batch V7 (visual-assets), office and commercial: the meeting table, the reception desk, the filing cabinet, the locker, the pool table and the treadmill. Declared like V5 (`t0-living.ts`); local frame, units and the clip: `t0.ts`. Back… | none |
 | `t0-outdoor.ts` | 1296 | 1 | T0 batch V7 (visual-assets), the site: planting, garden furniture, the things parked on a driveway, the terrace and lawn pieces and the small standing objects a survey records. Declared like V5 (`t0-living.ts`); local frame, units and the… | none |
 | `t0-utility.ts` | 420 | 1 | T0 batch V6 (visual-assets): kitchen, bath and utility. Declared like V5 (`t0-living.ts`); local frame, units and the clip: `t0.ts`. Back is −z (the wall a service stands against), front +z. | none |
-| `t0.ts` | 678 | 4 | T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3, V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's footprint. The twelve families laneway-house uses are here… | none |
+| `t0.ts` | 658 | 5 | T0 parametric furniture (archlang-3d plan §4.4, §5.1–5.3; card A2b; visual-assets V1–V3, V5–V7): pure generators that build a piece from a few parts, fitted EXACTLY to the plan's footprint. The twelve families laneway-house uses are here… | none |
 | `types.ts` | 64 | 14 | Mesh3D v0: the ONE triangulation the viewer and the GLB both read (archlang-3d amendment v0.7; principle 1 of the preview-and-remodel programme). Built from a Scene3D alone, deterministically: same Scene3D, same bytes. | none |
 
 ## `packages/archlang-3d/src/replay/`
@@ -85,17 +86,18 @@ Totals: 393 modules in 34 directories.
 | `camera.ts` | 394 | 6 | The replay's end camera as plain maths (card A3, look notes round 1): the viewer and the tests read the same functions, so "the end frame fills the canvas" is a property a test can check without a browser. Millimetres, the exporters' axes… | none |
 | `facts.ts` | 57 | 3 | The metrics strip's numbers (card G4), read from the core's public `describe()` and `lint()` for the same source the replay was built from: nothing is measured here and nothing is guessed. The strip itself (`strip.ts`) is browser-safe and… | none |
 | `html.ts` | 113 | 4 | The single-file replay HTML (card A3): the viewer and the pinned three.js as one inline script (`viewer-bundle.ts`; browser target, nothing loaded from a network), the mesh, the event table and the core's own SVG as an inline JSON… | none |
-| `mount.ts` | 973 | 5 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
-| `payload.ts` | 192 | 8 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
+| `mount.ts` | 1082 | 6 | The replay's renderer (card A3), browser-only: `mountReplay(canvas, payload)` draws the frame at replay time `t` into `canvas`, synchronously, and hashes the composed frame (plan §6.5). Two hosts use it: the single-file replay HTML… | none |
+| `payload.ts` | 256 | 11 | The replay's data (card A3), browser-safe: `replayPayload(mesh, opts)` is what a replay carries for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D preview tab builds it in the browser (card A5)… | none |
+| `shadows.ts` | 467 | 3 | The replay's soft contact shadows (product-roadmap card RM8.8; design `docs/plans/product-roadmap/design/visual-language.md` §1), browser-safe and pure: flat bands of translucent black, baked once from the replay's nodes when the replay… | none |
 | `strip-dom.ts` | 20 | 2 | The strip's DOM half, apart from `strip.ts` so that the types of `.` and `./node` need no DOM lib. | none |
 | `strip.ts` | 73 | 8 | The replay's metrics strip (card G4): a line of plain facts under the picture, each shown when the replay reaches the stage that draws it. Browser-safe and free of the core: the facts come in as numbers (`facts.ts` reads them from the… | none |
-| `swiftshader.ts` | 7 | 4 | The flags that make Chromium render WebGL in software, the same on every machine (plan §6.5). | none |
+| `swiftshader.ts` | 7 | 5 | The flags that make Chromium render WebGL in software, the same on every machine (plan §6.5). | none |
 | `timeline.ts` | 451 | 10 | The replay as a pure function of time (card A3; archlang-3d plan §6.5; decision D3). The plan draws itself in its authoring order, then rises: | none |
 | `video.ts` | 320 | 7 | The replay as a video (card A3; plan §6.5, pulled forward from M3): headless Chromium through Playwright on SwiftShader (software GL, no GPU), one `__seek(t)` and one screenshot per frame, piped to ffmpeg as H.264. The MP4's bytes are not… | none |
 | `view-dom.ts` | 168 | 4 | The free camera's buttons (card CR4), browser-only DOM shared by both hosts of the replay: the single-file replay HTML (`viewer.ts`) and the playground's 3D preview tab. The presets and Reset (`ViewControl`), the storeys shown, and a line… | none |
-| `viewer-bundle.ts` | 21 | 3 | The viewer and the parts of three.js it uses as one minified browser script. Run by `tsup.config.ts` for `dist/viewer.iife.js`, and from the source tree by `html.ts` (this repository's tests and `npm run archlang3d`); never by an… | none |
+| `viewer-bundle.ts` | 21 | 4 | The viewer and the parts of three.js it uses as one minified browser script. Run by `tsup.config.ts` for `dist/viewer.iife.js`, and from the source tree by `html.ts` (this repository's tests and `npm run archlang3d`); never by an… | none |
 | `viewer.ts` | 77 | 2 | The replay viewer's browser code (card A3), bundled with three.js into the single HTML file `replay.ts` writes. It reads the payload the file carries and mounts it (`mountReplay`): `window.__seek(t)` renders the frame at `t` synchronously… | none |
-| `wall-lines.ts` | 755 | 2 | The walls' outlines in the 3D preview (product-roadmap card RM8.1), browser-safe and pure: a line is drawn only where the visible surface of a storey's walls really turns. | none |
+| `wall-lines.ts` | 755 | 3 | The walls' outlines in the 3D preview (product-roadmap card RM8.1), browser-safe and pure: a line is drawn only where the visible surface of a storey's walls really turns. | none |
 
 ## `packages/archlang-3d/src/scene3d/`
 
