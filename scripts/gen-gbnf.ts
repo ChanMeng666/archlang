@@ -320,7 +320,7 @@ function rules(): [string, string][] {
     ["root", `ws "plan" rws string ws "{" ws ( plan-stmt ws )* "}" ws`],
     [
       "plan-stmt",
-      `setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | block-stmt`,
+      `setting | title-stmt | axes-stmt | acc-stmt | theme-stmt | style-stmt | component-stmt | import-stmt | strip-stmt | level-stmt | section-stmt | block-stmt`,
     ],
     [
       "block-stmt",
@@ -697,6 +697,9 @@ function rules(): [string, string][] {
     // whole file exists to prevent.
     ["fence-stmt", `"fence" rws id-opt ( fence-style rws )? "{" ws point ws ( point ws )+ ( "close" ws )? "}"`],
     ["fence-style", litAlt(FENCE_STYLES)],
+    // `section <name|int> (x,y)->(x,y) look <compass>` (RM6.1): a PLAN statement, never a block one
+    // (`E_SECTION_SCOPE` inside any block), so it is no `element` alternative.
+    ["section-stmt", `"section" rws ( ident | number ) ws point ws "->" ws point ws "look" rws compass-dir`],
     // `walls from rooms` (ADR 0028 §3). The body holds `except`, `open between` and
     // `between … thickness` clauses, the closed list the parser accepts.
     [

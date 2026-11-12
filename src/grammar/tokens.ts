@@ -76,6 +76,10 @@ export const KEYWORDS = {
     // `walls from rooms` (ADR 0028 §3). The word was an `enum` value (`dims auto walls`)
     // and moved here: no word sits in two categories.
     "walls",
+    // `section <id|int> (x,y)->(x,y) look <compass>` (RM6.1). Here for highlighting: it is
+    // contextual (`ElementDef.contextual`), read only when a name and `(` follow it, so it is never
+    // a statement start and `room id=section` keeps parsing.
+    "section",
   ],
   /** Setting / attribute keywords → `keyword.other`, CM `propertyName`. */
   attribute: [
@@ -201,6 +205,9 @@ export const KEYWORDS = {
     // `STATEMENT_STARTS` word: `room id=slab` and `let slab = 200` keep parsing. Its partner
     // `clear` (RM-D17) is already here.
     "slab",
+    // `section … look <compass>` (RM6.1): read only after a section mark's second point, so
+    // contextual like `slab`: `let look = 1` keeps parsing.
+    "look",
   ],
   /** Enum value keywords → `constant.language`, CM `atom`. */
   enum: [

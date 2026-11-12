@@ -153,6 +153,7 @@ export const DROPPED_WORDS: Record<Exclude<PlanJsonDroppedClause, "keep">, [stri
   void: ["voids", "void", "voids"],
   outdoor: ["outdoor surfaces", "outdoor surface", "outdoor surfaces"],
   fence: ["fences", "fence", "fences"],
+  section: ["section marks", "section mark", "section marks"],
   zone: ["zones", "zone", "zones"],
   level: ["level numbers or names", "level", "levels"],
   axes: ["axes", "axis", "axes"],

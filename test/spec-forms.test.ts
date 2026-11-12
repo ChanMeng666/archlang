@@ -653,6 +653,21 @@ const POSITIVE: Snippet[] = [
         `  walls from rooms exterior 200 partition 100 status new { open between a and b }`,
     ),
   },
+  // --- section mark (RM6.1) ------------------------------------------------------
+  {
+    keyword: "section",
+    note: "a name or a whole number, a vertical and a horizontal cut, `look` across each",
+    src: plan(
+      `  room id=a at (0,0) size 6000x4000\n  section A (3000,-1000)->(3000,5000) look east\n  section 1 (-1000,2000)->(7000,2000) look north`,
+    ),
+  },
+  {
+    keyword: "section",
+    note: "the other two compass words",
+    src: plan(
+      `  room id=a at (0,0) size 6000x4000\n  section B (2000,-1000)->(2000,5000) look west\n  section 2 (-1000,1000)->(7000,1000) look south`,
+    ),
+  },
   // --- site boundary ---------------------------------------------------------
   {
     keyword: "site",

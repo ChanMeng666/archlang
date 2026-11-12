@@ -166,6 +166,7 @@ export type {
   ResolvedElement,
   DerivedWallRow,
   RWallsFromRooms,
+  RSection,
   RAxis,
   ResolvedPlan,
   ResolvedLevel,
@@ -342,7 +343,15 @@ function levelPlanFor(ast: PlanNode, block: LevelNode, dropPaper: boolean): Plan
   const hit = levelPlanCache.get(key);
   if (hit) return hit;
   // A root `keep` is the plan's, never copied into every storey (R12): `resolveLevelsImpl` reads it.
-  const shared = ast.body.filter((s) => s.kind !== "level" && s.kind !== "keep");
+  // A plan-level `section` mark is the lowest storey's alone (RM6.1): that is the page it draws on.
+  let lowest: boolean | undefined;
+  const isLowest = (): boolean => {
+    if (lowest === undefined) lowest = levelBlocks(ast)[0] === block;
+    return lowest;
+  };
+  const shared = ast.body.filter(
+    (s) => s.kind !== "level" && s.kind !== "keep" && (s.kind !== "section" || isLowest()),
+  );
   const plan: PlanNode = {
     ...ast,
     ...(dropPaper ? { paper: undefined } : {}),
@@ -1046,6 +1055,7 @@ function resolveBody(
     isOnWall: (at, ref) => hostInfo(at, ref).onWall,
     ...(world.now ? { now: () => world.now!() } : {}),
     diag: pushDiag,
+    north: ast.north,
   };
   function hostInfo(at: Point, ref?: string): { host: WallSegment | null; onWall: boolean } {
     const key = `${at.x},${at.y},${ref ?? ""}`;

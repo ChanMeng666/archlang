@@ -20,7 +20,7 @@ Every module, not only the entry, is in the sibling [`module-map.md`](module-map
 The total counts every name the checker sees as exported, including those pulled in by
 `export type * from "./ast.js"`; a count of the names written in `index.ts`' export statements is lower.
 
-Totals: 633 exports (222 values, 411 types), 401 flagged (73 values).
+Totals: 636 exports (222 values, 414 types), 404 flagged (73 values).
 
 ## `src/algebra/d4.ts`
 
@@ -202,6 +202,7 @@ Totals: 633 exports (222 values, 411 types), 401 flagged (73 values).
 | `SCHEDULE_SUBJECTS` | value | none |
 | `STRIP_DIRS` | value | none |
 | `ScheduleSubject` | type | none |
+| `SectionNode` | type | none |
 | `SegmentSelect` | type | none |
 | `SetNode` | type | none |
 | `SetOverride` | type | none |
@@ -316,6 +317,7 @@ Totals: 633 exports (222 values, 411 types), 401 flagged (73 values).
 | `OutdoorSummary` | type | none |
 | `RoomSummary` | type | `eval`, `playground`, `test` |
 | `SceneSummary` | type | `eval`, `playground`, `src/cli`, `test` |
+| `SectionSummary` | type | none |
 | `SheetSummary` | type | none |
 | `StairFlightSummary` | type | none |
 | `StairLandingSummary` | type | none |
@@ -637,6 +639,7 @@ Totals: 633 exports (222 values, 411 types), 401 flagged (73 values).
 | `ROutdoor` | type | `packages/archlang-3d` |
 | `RRoof` | type | `packages/archlang-3d` |
 | `RRoom` | type | `packages/archlang-3d`, `test` |
+| `RSection` | type | none |
 | `RStair` | type | `packages/archlang-3d` |
 | `RVoid` | type | `packages/archlang-3d` |
 | `RWall` | type | `packages/archlang-3d` |

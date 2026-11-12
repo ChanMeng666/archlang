@@ -32,6 +32,7 @@ import type {
   ROutdoor,
   RFence,
   RWallsFromRooms,
+  RSection,
   DerivedWallRow,
   RWall as RWallFact,
   OpeningPlacement,
@@ -96,6 +97,7 @@ import type {
   VoidSummary,
   OutdoorSummary,
   FenceSummary,
+  SectionSummary,
   InstanceSummary,
   FreedomElement,
   FreedomReport,
@@ -191,6 +193,7 @@ export type {
   VoidSummary,
   OutdoorSummary,
   FenceSummary,
+  SectionSummary,
   VerticalReport,
   InstanceSummary,
   FreedomElement,
@@ -605,6 +608,18 @@ function summarize(
     return { id: f.id, style: f.style, length_mm: r2(len), closed: f.closed };
   });
 
+  // The section marks (RM6.1), as written: a resolved plan holds only marks that resolved clean,
+  // since a refused one (`E_SECTION_AXIS`, `E_SECTION_LOOK`) stops the summary.
+  const sections: SectionSummary[] = ir.elements.flatMap((e): SectionSummary[] => {
+    if (e.kind !== "section") return [];
+    const s = e as RSection;
+    if (!s.toward) return [];
+    const { from, to, toward } = s;
+    return [
+      { id: s.name, from: { x: from.x, y: from.y }, to: { x: to.x, y: to.y }, look: s.look, toward: { ...toward } },
+    ];
+  });
+
   // The main entrance (PS0.10) rides on the access graph, appended, only on a storey with more
   // than one entrance. Circulation keeps measuring each room from its nearest entrance.
   //
@@ -779,6 +794,9 @@ function summarize(
     ...(fences.length > 0 ? { fences } : {}),
     // Append-only: present only on a storey that `walls from rooms` derived walls for.
     ...(derivedRows.length > 0 ? { derived_walls: derivedRows } : {}),
+    // Append-only: present only on a plan that marks a section. Whole-plan: `summarizeResolved`
+    // keeps it off the `levels[]` entries.
+    ...(sections.length > 0 ? { sections } : {}),
     // The vertical datum, under the one gate. `walls` is present even when empty,
     // unlike the lists above: an empty `voids` means "this storey has no holes in it", but
     // an empty `walls` here would be indistinguishable from "heights are not reported",
@@ -912,10 +930,9 @@ function summarizeResolved(
   // level, so a storey's facts can never be computed a second, different way.
   const perLevel: LevelSummary[] | undefined =
     levels.length > 0
-      ? levels.map((l) => ({
-          level: l.level,
-          ...(l.name !== undefined ? { name: l.name } : {}),
-          ...summarize(
+      ? levels.map((l) => {
+          // The section marks are the plan's (RM6.1): the top-level summary carries them, no storey.
+          const { sections: _plans, ...facts } = summarize(
             l.ir,
             tol,
             opts.facts,
@@ -924,8 +941,9 @@ function summarizeResolved(
             statements,
             true,
             arrivalRoomsOn(l.level),
-          ),
-        }))
+          );
+          return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), ...facts };
+        })
       : undefined;
 
   // The lowest storey's arrivals, so the top level still repeats `levels[0]` exactly.

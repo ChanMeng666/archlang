@@ -473,6 +473,7 @@ function statementAuthorsHeights(s: Statement): boolean {
     case "outdoor":
     case "fence":
     case "walls":
+    case "section":
       return false;
     default:
       nonElementKind(s.kind);

@@ -237,6 +237,7 @@ function readsOf(s: Statement): Reads {
     case "outdoor":
     case "fence":
     case "walls":
+    case "section":
       break;
     default:
       nonElementKind(s.kind);

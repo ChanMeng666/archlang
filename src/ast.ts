@@ -73,7 +73,8 @@ export type ElementKind =
   | "void"
   | "outdoor"
   | "fence"
-  | "walls";
+  | "walls"
+  | "section";
 
 /** Fields every element AST node carries. */
 export interface NodeBase {
@@ -1132,7 +1133,32 @@ export type AstElement =
   | VoidNode
   | OutdoorNode
   | FenceNode
-  | WallsFromRoomsNode;
+  | WallsFromRoomsNode
+  | SectionNode;
+
+/**
+ * `section <id|int> (x,y)->(x,y) look <compass>` — a plan's section mark (RM6.1; design
+ * `docs/plans/product-roadmap/design/slab-and-section.md` §2): where a section cuts the building and
+ * which way it looks. A plan-level statement only, parsed into the lowest storey and drawn on that
+ * page. `section` is no reserved word: the parser reads it only at a statement start, followed by a
+ * name or a whole number and then `(`. The name is the mark's own (`describe().sections[].id`), in
+ * a namespace of its own like an axis label, so the node's {@link NodeBase.id} stays empty and the
+ * element takes an auto-id.
+ */
+export interface SectionNode extends NodeBase {
+  kind: "section";
+  /** The mark's name as written: an identifier, or a positive whole number printed by `fmt0`. */
+  name: string;
+  /** Byte span of the name, for `E_SECTION_DUP`. */
+  nameSpan: Span;
+  /** The cut line's two ends, as written. */
+  from: ExprPoint;
+  to: ExprPoint;
+  /** `look <compass>`: the compass direction the section looks in. */
+  look: CompassWord;
+  /** Byte span of the `look` clause, for `E_SECTION_LOOK`. */
+  lookSpan: Span;
+}
 
 /**
  * `walls from rooms exterior <t_ext> partition <t_int> [{ except <room> … }]` — one statement
@@ -1354,7 +1380,17 @@ export type Statement =
  * `import`s are not body statements at all — they are plan fields — so they are always
  * shared.)
  */
-export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = ["let", "set", "assign", "error", "level", "keep"];
+export const LEVEL_SHARED_KINDS: readonly Statement["kind"][] = [
+  "let",
+  "set",
+  "assign",
+  "error",
+  "level",
+  "keep",
+  // A section mark cuts the whole building and is drawn on the lowest storey's page only
+  // (`levelPlanFor` keeps it out of every other storey): a plan-level statement (RM6.1).
+  "section",
+];
 
 /** `component NAME(params) { body }` — a reusable parameterised sub-plan. */
 export interface ComponentDef {

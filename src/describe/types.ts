@@ -8,7 +8,7 @@
  */
 
 import type { DerivedWallRow, RoomPlacement, OpeningPlacement, FurniturePlacement } from "../ir.js";
-import type { FenceStyle, OutdoorKind, Point, RailSide, VerticalDir } from "../ast.js";
+import type { CompassWord, FenceStyle, OutdoorKind, Point, RailSide, VerticalDir } from "../ast.js";
 import type { GrossAreaReason } from "../analyze/gross-area.js";
 import type { DoorKind, WallStatus, WindowKind } from "../grammar/tokens.js";
 import type { Diagnostic } from "../diagnostics.js";
@@ -413,6 +413,22 @@ export interface FenceSummary {
 }
 
 /**
+ * One `section` mark (RM6.1): the cut line as written and the way it looks. Plan-wide, as the mark
+ * is: present on the top-level summary only, whichever storey `describeLevel` narrows to.
+ */
+export interface SectionSummary {
+  /** The mark's own name (`A`, `1`): unique among the plan's sections, not an element id. */
+  id: string;
+  from: { x: number; y: number };
+  to: { x: number; y: number };
+  /** The compass word after `look`. */
+  look: CompassWord;
+  /** The page direction it looks in, a unit axis vector (+x right, +y down): `look` turned by
+   *  the plan's `north`, so a reader need not turn it. */
+  toward: { x: number; y: number };
+}
+
+/**
  * The building's **vertical connections**: every `stair`/`elevator`/`escalator`
  * id drawn on two or more storeys. Identity is the whole rule — same id, same shaft —
  * so nothing is inferred from geometry (ADR 0005). Present only on a multi-storey plan
@@ -705,6 +721,12 @@ export interface SceneSummary {
    * every span an authored wall took over. Absent unless the storey derived a wall.
    */
   derived_walls?: DerivedWallRow[];
+  /**
+   * The plan's `section` marks (RM6.1), in source order. Absent unless the plan writes one. A
+   * whole-plan key: on a multi-storey plan it stands on the top-level summary, never on a
+   * `levels[]` entry, and `describeLevel` keeps it.
+   */
+  sections?: SectionSummary[];
   /**
    * The storey's vertical datum — storey height, elevation, and every wall's
    * height. **Absent unless the plan authored a height, sill or head somewhere**, which

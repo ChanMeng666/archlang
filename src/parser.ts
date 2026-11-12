@@ -171,7 +171,9 @@ class Parser {
      *  leading whitespace of a line (a token's `col` cannot tell a tab from a space). */
     private readonly src = "",
   ) {
-    this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...registry.byKeyword.keys()]);
+    // A contextual element keyword (`section`) is no statement start: `room id=section` keeps parsing.
+    const reserved = [...registry.byKeyword.values()].filter((d) => !d.contextual).map((d) => d.keyword);
+    this.statementStarts = new Set<string>([...FIXED_STATEMENT_STARTS, ...reserved]);
     this.ctx = {
       peek: (o) => this.peek(o),
       next: () => this.next(),
@@ -1638,7 +1640,18 @@ class Parser {
       return { kind: "error", id: "", line: t.line, message: msg };
     } else if (t.value === "keep") node = this.parseKeep();
     else {
-      const def = this.registry.byKeyword.get(t.value);
+      const found = this.registry.byKeyword.get(t.value);
+      // A contextual keyword starts its element only where the element says (`section A (`).
+      const def = found && (!found.contextual || found.contextual(this.ctx)) ? found : undefined;
+      if (def?.planLevelOnly !== undefined && this.blockDepth > 0) {
+        // Inside a `level`, `zone`, `component` or block: consumed, then refused, as `roof` is.
+        def.parse(this.ctx);
+        const msg =
+          `"${def.keyword}" is a plan-level statement: write it outside any \`level\`, \`zone\`, ` +
+          `\`component\` or block, once for the whole plan`;
+        this.report({ severity: "error", message: msg, code: def.planLevelOnly, span: this.spanFrom(start) });
+        return { kind: "error", id: "", line: t.line, message: msg };
+      }
       if (def) {
         this.lastIdSpan = undefined;
         node = def.parse(this.ctx);

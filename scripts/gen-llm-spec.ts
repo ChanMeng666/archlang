@@ -165,6 +165,7 @@ export const ELEMENT_GRAMMAR: Record<string, string> = {
   outdoor: `outdoor [id=…] ${OUTDOOR_KINDS.join("|")} (at (x,y) size <W>x<H> | polygon (x,y) (x,y) (x,y) …) [label "…"] [rail ${RAIL_EDGES.join("|")} …]   # GROUND outside the building. NOT a room — absent from \`rooms[]\`, \`totals.floor_area_m2\`, \`schedule rooms\`, the access graph and Plan JSON — and it obstructs NOTHING (water included). Its facts are \`describe --json\`'s \`outdoor[]\` + \`totals.outdoor_area_m2\`, area by exact shoelace on the ring form. \`label\` draws the name AND the m²; unlabelled ground draws neither. \`rail\` is \`balcony\`-only (E_OUTDOOR_RAIL) and rectangle-only (E_OUTDOOR_POLY_DEGENERATE); omitted, it is DERIVED — every edge with no wall one thickness behind it. W_OUTDOOR_OVERLAPS_ROOM covers a surface over a room's floor, W_BALCONY_NO_DOOR a balcony with no opening within a wall thickness. It grows the page, so a site plan wants \`paper\` (E_OUTDOOR_SIZE, E_OUTDOOR_POLY_SELF_INTERSECT)`,
   fence: `fence [id=…] [${FENCE_STYLES.join("|")}] { (x,y) (x,y) … [close] }   # a posted boundary line; the style word defaults to the first. NOT a thin wall: no thickness, no poché, hosts NO opening, absent from \`describe().walls\` and the access graph (a gate is deferred by name). It measures (\`fences[]\`: \`length_mm\` + \`closed\`) and grows the page. An \`arc\` edge is E_FENCE_CURVED — write short straight runs`,
   walls: `walls from rooms exterior <mm> partition <mm> [status <s>] [{ except <room>… | open [id=] between <A> and <B> [width <mm>] | between … thickness <mm> }]   # a ring + a partition per shared edge (\`open\`: an opening across it, centred; else \`opening between\`); rooms: rectangles or rectilinear polygons tiling one floor. Openings: never \`on <wall>\``,
+  section: `section <name|int> (x,y)->(x,y) look ${COMPASS_DIRECTIONS.join("|")}   # plan level only, drawn on the lowest storey: a horizontal or vertical cut, looking across it. \`describe\` adds \`sections[]\` (\`toward\`: the page direction)`,
 };
 
 /**
@@ -360,6 +361,8 @@ export const CLAUSE_ATTRIBUTES: readonly string[] = [
   "status",
   // `level … slab <mm>` (MF-D1), taught by `STATEMENT_GRAMMAR.level`.
   "slab",
+  // `section … look <compass>` (RM6.1), taught by `ELEMENT_GRAMMAR.section`.
+  "look",
 ];
 
 /**

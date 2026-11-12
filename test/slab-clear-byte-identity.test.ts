@@ -1,27 +1,35 @@
 /**
- * `level … slab <mm>`, `level … clear <mm>` and `height <mm> clear <mm>` (RM6.1: MF-D1, RM-D17): the
+ * `level … slab <mm>`, `level … clear <mm>`, `height <mm> clear <mm>` (RM6.1: MF-D1, RM-D17) and the
+ * `section <name> (x,y)->(x,y) look <compass>` mark (RM6.1, design `slab-and-section.md` §2): the
  * byte-identity law, one for each form.
  *
- * A plan that writes none of the three clauses resolves, draws, describes and lints exactly as before,
+ * A plan that writes none of the four forms resolves, draws, describes and lints exactly as before,
  * down to its Scene, its `compile().diagnostics` and the steps its resolution spends, in the
  * accessibility profile and on the circulation overlay too. Each digest is {@link stairLawDigest}, the
  * widest law body the repository has (`test/helpers/block-stair-law.ts`), **measured against `src/` at
- * `bfd63c4c`** (`main` before the forms), that tree extracted by `git archive`, the body and the rows
+ * `21d3e0f4`** (`main` without the forms), that tree extracted by `git archive`, the body and the rows
  * imported from this branch and handed that tree's compiler. The rows are every plan the block-stair
- * law pins, then {@link SLAB_CLEAR_INLINE_ROWS}: the words `slab`, `clear` and `look` as the names they
- * have always been, and storeys that author heights without either clause. The 103 rows the two laws
- * share measured the digests `test/sheet-text-byte-identity.test.ts` pins.
+ * law pins, then {@link SLAB_CLEAR_INLINE_ROWS}: the words `slab`, `clear`, `section` and `look` as the
+ * names they have always been, and storeys that author heights without either clause. The table was
+ * first measured against `bfd63c4c`; re-measured against `21d3e0f4`, the 106 rows it had kept every
+ * digest, and the two new ones (`examples/courtyard-family.arch`, which `main` added, and
+ * `inline:section-words-as-names`) joined. The rows the two laws share measured the digests
+ * `test/sheet-text-byte-identity.test.ts` pins.
  *
  * Why the rows hold: every new step sits behind `plansAuthorCeiling` (`src/datum.ts`), which is false
  * unless a `slab` or a `clear` is written. Then `levelPlanFor` adds no field, the resolver evaluates
  * and charges nothing more, the IR gains no `_ceiling`, `describe().heights` no key and the Plan JSON
  * `level` row no text. The parser reads `slab` and `clear` only in a `level` header after `height`,
  * and `clear` after a plan's `height` only on its line and never before `=` or `(`, so no row's parse
- * moves; neither word is a statement start.
+ * moves; neither word is a statement start. `section` starts a statement only before a name and `(`
+ * (`ElementDef.contextual`), a source that was a parse error before, and is no statement start for
+ * recovery either; with no mark written no element of the kind exists, so nothing resolves, draws,
+ * describes or is dropped from Plan JSON for it, and `levelPlanFor`'s filter keeps every other
+ * statement as it was.
  *
- * `test/fixtures/slab-clear/` writes the forms. It stands in a folder of its own because the corpus
- * tables read `test/fixtures` flat and each pins a plan that does not use them, and the premise test
- * below holds it to the forms.
+ * `test/fixtures/slab-clear/` and `test/fixtures/section/` write the forms. They stand in folders of
+ * their own because the corpus tables read `test/fixtures` flat and each pins a plan that does not use
+ * them, and the premise test below holds them to the forms.
  *
  * A digest moving is a finding to explain before it is a diff to re-measure.
  */
@@ -60,21 +68,27 @@ const API: StairLawApi = {
   },
 };
 
-const FIXTURES = ["test/fixtures/slab-clear/levels.arch", "test/fixtures/slab-clear/single.arch"] as const;
+const FIXTURES = [
+  "test/fixtures/slab-clear/levels.arch",
+  "test/fixtures/slab-clear/single.arch",
+  "test/fixtures/section/marks.arch",
+] as const;
 const ROWS = [...stairLawRows(ROOT), ...SLAB_CLEAR_INLINE_ROWS];
 const worldOf = (dir: string | undefined): World | undefined => (dir ? makeNodeWorld(dir) : undefined);
 
-/** The three forms, each read off the parse. */
-const FORMS = ["level slab", "level clear", "plan clear"] as const;
+/** The four forms, each read off the parse. A `section` is a plan-level statement only, so the
+ *  plan's own body is where one is written (anywhere else it is an `error` node, `E_SECTION_SCOPE`). */
+const FORMS = ["level slab", "level clear", "plan clear", "section"] as const;
 type Form = (typeof FORMS)[number];
 const writes = (src: string, form: Form): boolean => {
   const plan = parse(src, BUILTIN_REGISTRY).plan;
   if (!plan) return false;
   if (form === "plan clear") return plan.clear !== undefined;
+  if (form === "section") return plan.body.some((s) => s.kind === "section");
   return plan.body.some((s) => s.kind === "level" && (form === "level slab" ? s.slab : s.clear) !== undefined);
 };
 
-/** Measured at `bfd63c4c` (see the header): `[digest, row]`. */
+/** Measured at `21d3e0f4` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
   ["e33e9923337208c91bf7093a0fa63040f132db455f3e3e85d584740a18a8f611", "examples/accessible.arch"],
   ["164d5d3f4955ae6a2ea4b3c117bc7b9d6f024ca0f68d52b9f708f77a3ee982b4", "examples/aquarium.arch"],
@@ -83,6 +97,7 @@ const BASELINE: [string, string][] = [
   ["843f1de2ff7da325a3211c0c95d6c4211d47108cc15be61b8364fbc3f2955886", "examples/classroom-block.arch"],
   ["add2574d8abfc894d4d3880bbc97a485bee142c9ef90c16df3e5a491747a4858", "examples/clinic.arch"],
   ["0c5f2a884df8dd9e94a4304efc09c531fc6199a24284a43f4ef2c1e9481eef9a", "examples/corner-cafe.arch"],
+  ["64e5593cdf241b655c52cc44fcbe94e18ea2de76d2cced6fac8155567564b512", "examples/courtyard-family.arch"],
   ["411fd77e07ded87ca0555dae3f1abb713057a7b63b5e86e712e3a05e2d4fb02a", "examples/courtyard-house.arch"],
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["4090de73163a56b3319477311f2a1d38126aa4861359e38193f897b364e58ef5", "examples/gallery-l.arch"],
@@ -243,23 +258,25 @@ const BASELINE: [string, string][] = [
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6", "inline:slab-clear-words-as-names"],
+  ["a7afb44b4a351dadcbd203f5a35cf83eaf93a2b00c8a13c1f7eb9ad75f029152", "inline:section-words-as-names"],
   ["a99e77bd8df64e89959fb92f93aff9fa2428527390ffa9a07c12291da1ddbff5", "inline:slab-clear-macro-after-height"],
   ["f156c5c8ef062f59a41dc96071ae85f9a42bf670c5508e40f3536563bd511c93", "inline:slab-clear-storeys-without"],
 ];
 
 const pinned = new Map(BASELINE.map(([digest, name]) => [name, digest]));
 
-suite("slab and clear: the byte-identity law", () => {
+suite("slab, clear and section: the byte-identity law", () => {
   it("the table pins every row, and no row writes any of the forms", () => {
     expect(BASELINE.map((b) => b[1])).toEqual(ROWS.map((r) => r.name));
     for (const form of FORMS) expect(ROWS.filter((r) => writes(r.src, form)).map((r) => r.name)).toEqual([]);
   });
 
   it("the premise can fail: the same check sees each form written", () => {
-    const [levels, single] = FIXTURES.map((f) => readFileSync(join(ROOT, f), "utf8"));
+    const [levels, single, marks] = FIXTURES.map((f) => readFileSync(join(ROOT, f), "utf8"));
     expect(writes(levels!, "level slab")).toBe(true);
     expect(writes(levels!, "level clear")).toBe(true);
     expect(writes(single!, "plan clear")).toBe(true);
+    expect(writes(marks!, "section")).toBe(true);
     expect(writes(storeys(" slab 200"), "level slab")).toBe(true);
     expect(writes(storeys(" clear 2400"), "level clear")).toBe(true);
   });
@@ -272,9 +289,15 @@ suite("slab and clear: the byte-identity law", () => {
     const without = single.replace("height 2600 clear 2340", "height 2600");
     expect(without).not.toBe(single);
     expect(stairLawDigest(API, single, undefined)).not.toBe(stairLawDigest(API, without, undefined));
+    // A section mark moves it too: the fixture with its two marks, and without them.
+    const marks = readFileSync(join(ROOT, FIXTURES[2]), "utf8");
+    const unmarked = marks.replace(/^ {2}section .*\n/gm, "");
+    expect(unmarked).not.toBe(marks);
+    expect(writes(unmarked, "section")).toBe(false);
+    expect(stairLawDigest(API, marks, undefined)).not.toBe(stairLawDigest(API, unmarked, undefined));
   });
 
-  // One law per form: every row that does not write the form is byte-identical to `bfd63c4c`.
+  // One law per form: every row that does not write the form is byte-identical to `21d3e0f4`.
   for (const form of FORMS) {
     const rows = ROWS.filter((r) => !writes(r.src, form)).map((r) => [pinned.get(r.name)!, r.name] as const);
     it.each(rows)(`no ${form}: %s %s`, (digest, name) => {

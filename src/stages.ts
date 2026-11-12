@@ -211,6 +211,7 @@ export const ELEMENT_KIND_STAGES: Readonly<Record<ResolvedElement["kind"], Autho
   opening: "openings",
   furniture: "fixtures",
   dim: "drafting",
+  section: "drafting",
 });
 
 /** What {@link keepStage} needs: the kind of the element an id names, if any. */

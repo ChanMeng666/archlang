@@ -341,6 +341,8 @@ export function statementText(s: LeafStatement): Doc {
           s.status !== undefined ? ` status ${s.status}` : ""
         }${body.length > 0 ? ` { ${body.join(" ")} }` : ""}`;
       }
+    case "section":
+      return `section ${s.name} ${ptStr(s.from)}->${ptStr(s.to)} look ${s.look}`;
     case "let":
       return s.value.t === "fnlit"
         ? `let ${s.name}(${s.value.params.join(", ")}) = ${exprStr(s.value.body)}`

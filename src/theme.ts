@@ -305,6 +305,8 @@ export const STYLE_KEYS: Readonly<Record<string, Readonly<Record<string, keyof T
   // granularity a single `style outdoor { … }` block can offer.
   outdoor: { fill: "paving", stroke: "outdoorStroke", label: "outdoorStroke" },
   fence: { stroke: "outdoorStroke" },
+  // The section mark (RM6.1): its strokes and its name take the annotation ink.
+  section: { stroke: "annotation", label: "annotation" },
 };
 
 /** Every element kind `style <kind> { … }` accepts, derived from {@link STYLE_KEYS} so

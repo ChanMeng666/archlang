@@ -151,6 +151,7 @@ export type {
   VoidSummary,
   OutdoorSummary,
   FenceSummary,
+  SectionSummary,
   RoomSummary,
   DoorSummary,
   DoorKind,
@@ -529,6 +530,7 @@ export type {
   RVoid,
   ROutdoor,
   RFence,
+  RSection,
 } from "./ir.js";
 // Scene IR (the backend-neutral drawing target) + its builder. Backends consume
 // a Scene: `toDxf(scene)` / `toPdf(scene)`; build one with `toScene(ir)` or read

@@ -113,6 +113,9 @@ function bindingsOf(body: Statement[]): Statement[] {
   return out;
 }
 
+/** Does a module's top-level statement join its whole-file component? Not a `level` or a `section`. */
+const inWholeFile = (s: Statement): boolean => s.kind !== "level" && s.kind !== "section";
+
 /** One loaded module: the components it exports, plus the whole-file body it *is*. */
 interface Module {
   comps: CompMap;
@@ -130,7 +133,9 @@ interface Module {
  *    `dims`/`title`/`axes`/`schedule`/`legend`) are IGNORED — they are not body statements, so
  *    they simply never reach here; the root plan's settings govern;
  *  - a module's `level` blocks are DROPPED (a storey is a page, and a component is a
- *    piece of one page, so a multi-storey file cannot be a component). Everything else —
+ *    piece of one page, so a multi-storey file cannot be a component), and so are its
+ *    `section` marks (RM6.1): a mark cuts the whole building and is the root plan's, as the
+ *    settings are, and in a component it would be drawn once per copy. Everything else —
  *    elements, `let`/`set`, control flow, `strip`, nested `place` — comes through.
  *
  * `scope` is the module's OWN component map, so a file that calls its private helpers
@@ -140,7 +145,7 @@ function wholeFileComponent(name: string, path: string, body: Statement[], comps
   return {
     name,
     params: [],
-    body: body.filter((s) => s.kind !== "level"),
+    body: body.filter(inWholeFile),
     line: 1,
     file: path,
     scope: comps,
@@ -273,7 +278,7 @@ function mergeImport(
       });
       return;
     }
-    if (mod.body.filter((s) => s.kind !== "level").length === 0) {
+    if (mod.body.filter(inWholeFile).length === 0) {
       diagnostics.push({
         severity: "warning",
         code: "W_IMPORT_EMPTY_FILE",

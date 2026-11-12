@@ -1,9 +1,10 @@
 /**
- * The plans of the `slab` / `clear` tests (RM6.1: MF-D1, RM-D17), importable without vitest, so the
- * baseline of the byte law was measured against an older `src/` by this very list.
+ * The plans of the RM6.1 tests (`slab`, `clear`: MF-D1, RM-D17; the `section` mark), importable
+ * without vitest, so the baseline of the byte law was measured against an older `src/` by this very
+ * list.
  *
- * {@link SLAB_CLEAR_INLINE_ROWS} write no `slab` and no `clear` clause, on the edges the two forms
- * fork from: the words `slab`, `clear` and `look` as the names they have always been (a binding, a
+ * {@link SLAB_CLEAR_INLINE_ROWS} write no `slab`, `clear` or `section` clause, on the edges the forms
+ * fork from: the words `slab`, `clear`, `section` and `look` as the names they have always been (a binding, a
  * reassignment and a macro call on the line after a plan's `height`, room ids, a `level` header whose
  * `height` reads a binding named `slab`), and storeys that author heights without either clause, so
  * the `heights` block they already report is the one the law holds.
@@ -32,6 +33,31 @@ ${SHELL}
   room id=slab at (6000,0) size 2000x2000 label "Store" uses storage
   room id=section at (6000,2000) size 2000x2000 label "Bed" uses bedroom
   section()
+}
+`,
+  },
+  {
+    // `section` and `look` as the names they have always been, where the mark's gate could misread
+    // them: a binding, a reassignment, a component with a parameter and its call, a call whose
+    // argument is a name, and a storey plan whose plan level binds them beside the `level` blocks.
+    name: "inline:section-words-as-names",
+    src: `plan "N" {
+  units mm
+  let section = 2
+  let look = 1
+  section = section + look
+  component section(n) {
+    room id=look at (7000 + n * 0,0) size 1000x1000
+  }
+  level 1 "Ground" {
+${SHELL}
+    section(look)
+    room id=section at (6000,0) size 2000x2000 label "Store" uses storage
+  }
+  level 2 "Upper" {
+${SHELL}
+    section(section)
+  }
 }
 `,
   },

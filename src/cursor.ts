@@ -192,6 +192,10 @@ const STATEMENT_EXPRS: { [K in Statement["kind"]]: (s: Extract<Statement, { kind
       } else out.push(p.thickness);
     }
   },
+  section: (s, out) => {
+    pt(out, s.from);
+    pt(out, s.to);
+  },
   strip: (s, out) => {
     pt(out, s.at);
     out.push(s.gap);
@@ -289,6 +293,7 @@ export function statementBodies(s: Statement): Statement[][] {
     case "outdoor":
     case "fence":
     case "walls":
+    case "section":
       return [];
     default:
       nonElementKind(s.kind);

@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**162 errors** · **101 warnings**
+**166 errors** · **101 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -136,6 +136,10 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`E_ROOM_SIZE`](#e_room_size) | error | Room must have a positive size. |
 | [`E_RULESET_VALUE`](#e_ruleset_value) | error | A lint ruleset value is not a finite number within the modelling range. |
 | [`E_RUN_TOO_LONG`](#e_run_too_long) | error | A stair or escalator run is longer than any run the plan draws. |
+| [`E_SECTION_AXIS`](#e_section_axis) | error | A section mark's cut line is slanted or has no length. |
+| [`E_SECTION_DUP`](#e_section_dup) | error | Two section marks share a name. |
+| [`E_SECTION_LOOK`](#e_section_look) | error | A section mark looks along its own cut line. |
+| [`E_SECTION_SCOPE`](#e_section_scope) | error | A section mark sits inside a `level`, `zone`, `component` or block. |
 | [`E_SEGMENT_SELECT`](#e_segment_select) | error | A segment selector (`segment north`, `segment containing <room>.<edge>`) does not name exactly one segment. |
 | [`E_SET_OVERRIDE`](#e_set_override) | error | `archlang impact --set NAME=value` cannot override that name with that value. |
 | [`E_SILL_ABOVE_HEAD`](#e_sill_above_head) | error | A window's sill sits at or above its head. |
@@ -1885,6 +1889,57 @@ lint(source, { ruleset: { doorwayLandingMm: Number.NaN } })   # error: `doorwayL
 
 ```arch static
 escalator id=e at (0,0) size 400000x1200 dir up   # error: a 400 m run
+```
+
+## E_SECTION_AXIS
+
+*error* — A section mark's cut line is slanted or has no length.
+
+**Cause.** `section <name> (x,y)->(x,y) look <compass>` marks where a section cuts the plan. The cut line runs horizontally or vertically: its two ends share a `y` or an `x`. A slanted line, or one whose two ends are the same point, is refused rather than straightened, because which end the author meant to move is not something the compiler can know.
+
+**Fix.** Give the two ends the same `x` (a vertical cut) or the same `y` (a horizontal one), at the length the cut should run.
+
+```arch static
+section A (0,0)->(6000,4000) look east   # error: a slanted cut line
+```
+
+## E_SECTION_DUP
+
+*error* — Two section marks share a name.
+
+**Cause.** A section mark's name (`section A …`, `section 1 …`) names the section a drawing set refers to, so a plan marks each section once. The names are the sections' own, like axis labels: a room or a wall may share one.
+
+**Fix.** Rename one of the two marks, or delete the repeated line.
+
+```arch static
+section A (3000,-1000)->(3000,7000) look east
+  section A (0,2000)->(8000,2000) look north   # error: A is marked twice
+```
+
+## E_SECTION_LOOK
+
+*error* — A section mark looks along its own cut line.
+
+**Cause.** `look <compass>` says which way the section is seen from the cut, so it points across the cut line. The plan's `north` turns the compass word into a page direction, and that direction runs along the line: a vertical cut can look only the two compass ways that point left and right on the page, a horizontal one only the two that point up and down. The message names the two words this plan's north allows.
+
+**Fix.** Write one of the two compass words the message names, or turn the cut line.
+
+```arch static
+section A (3000,-1000)->(3000,7000) look north   # error under north up: a vertical cut looks east or west
+```
+
+## E_SECTION_SCOPE
+
+*error* — A section mark sits inside a `level`, `zone`, `component` or block.
+
+**Cause.** A section cuts the whole building, so its mark is a plan-level statement, written once, outside every block. It is drawn on the lowest storey's page. Inside a `component` it would be drawn once per placed copy, and inside a `level` block it would belong to one storey only.
+
+**Fix.** Move the line out to the plan level, beside the `level` blocks.
+
+```arch static
+level 1 "Ground" {
+    section A (3000,-1000)->(3000,7000) look east   # error: inside a level
+  }
 ```
 
 ## E_SEGMENT_SELECT

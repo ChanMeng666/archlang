@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-499 test files in `test/`, 278 `src` modules, 106 modules no test imports.
+500 test files in `test/`, 279 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -16,7 +16,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/algebra/d4.ts` (5) — `d4`, `describe-depends`, `equivariance-corpus`, `keep`, `symmetry`
 - `src/algebra/paths.ts` (1) — `path-algebra`
 - `src/algebra/semiring.ts` (2) — `path-algebra`, `semiring`
-- `src/analyze.ts` (90) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders` (+82)
+- `src/analyze.ts` (91) — `access-policy`, `annotation-collisions`, `annotation-small-rooms`, `between-face-probes`, `block-stair-landing`, `block-stair-lint`, `block-stair-shaft`, `block-stair-winders` (+83)
 - `src/analyze/circulation-overlay.ts` (42) — `circulation-concave`, `nav-grid-residual`, `block-stair-frames`, `block-stair-landing`, `block-stair-lint`, `circulation-entrances`, `corner-window`, `describe-centreline-at` (+34)
 - `src/analyze/circulation.ts` (53) — `carve-inward-walk`, `circulation-room-bottlenecks`, `circulation-translation`, `equivariance-corpus`, `far-seed-pinch`, `lint-attribution-budget`, `lint-fix-texts`, `lint-space-enclosure` (+45)
 - `src/analyze/contacts.ts` (1) — `impact-contacts`
@@ -76,6 +76,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/outdoor.ts` (2) — `label-placement-oracle`, `label-placement`
 - `src/elements/roof.ts` (3) — `label-placement-oracle`, `roof`, `v129-cross`
 - `src/elements/room.ts` (4) — `label-placement`, `net-area-stamp`, `rect-label-anchor`, `room-floor`
+- `src/elements/section.ts` (1) — `section`
 - `src/elements/vertical-glyphs.ts` (5) — `diagnostics-volume`, `drawing-budget`, `export-dxf-blocks`, `model-range`, `vertical`
 - `src/elements/void.ts` (3) — `v129-cross`, `void-rail`, `void`
 - `src/elements/wall.ts` (1) — `room-datums`
@@ -114,7 +115,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (30) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+22)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (375) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+367)
+- `src/index.ts` (376) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+368)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -149,11 +150,11 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/num-format.ts` (14) — `annotation-collisions`, `dim-thickness-callout`, `emit-opening-oracle`, `imperial-input`, `keep`, `lint-ruleset-values`, `model-range`, `net-area-stamp` (+6)
 - `src/opening-relation.ts` (3) — `openings-between`, `rectilinear-doors`, `rectilinear-sides`
 - `src/opening-schedule.ts` (2) — `sheet-annotations`, `window-kinds`
-- `src/parser.ts` (144) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+136)
+- `src/parser.ts` (145) — `arc-radius-exact`, `attach`, `axes`, `block-stair-byte-identity`, `block-stair`, `chrome-hidden`, `circle-enclosure`, `circulation-concave` (+137)
 - `src/pipeline.ts` (1) — `work-counts`
-- `src/plan-json.ts` (10) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `sheet-annotations`, `site` (+2)
+- `src/plan-json.ts` (11) — `element-facets`, `format`, `garage`, `plan-json-dropped`, `plan-json-instances`, `polygon-rooms`, `section`, `sheet-annotations` (+3)
 - `src/plan-json/to-json.ts` (1) — `rect-ring`
-- `src/registry.ts` (42) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations` (+34)
+- `src/registry.ts` (43) — `annotation-collisions`, `block-stair-byte-identity`, `block-stair`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations` (+35)
 - `src/repair.ts` (2) — `finish-furnish`, `finish`
 - `src/reroll.ts` (3) — `keep`, `reroll-findrun-oracle`, `reroll`
 - `src/room-datums.ts` (5) — `openings-between`, `room-datums`, `segment-select`, `shared-grid-byte-identity`, `keep`
@@ -184,7 +185,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/wall-lowering.ts` (2) — `joinery-split`, `open-crossing`
 - `src/wall-ref.ts` (2) — `rectilinear-rooms`, `walls-from-rooms`
 - `src/while-fix.ts` (1) — `while-fix`
-- `src/world.ts` (106) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+98)
+- `src/world.ts` (107) — `block-stair-byte-identity`, `circulation-unmeasured`, `corner-window-byte-identity`, `corner-window`, `dim-thickness-callout`, `drawing-budget`, `drawing-overflow`, `equivariance-corpus` (+99)
 
 ## Test files
 
@@ -596,6 +597,7 @@ The first sentence of each file's header comment.
 - `test/scene-path-prim.test.ts` — The `path` Scene primitive reaches every backend.
 - `test/scene.test.ts` — Scene IR.
 - `test/schedule.test.ts` — sheet tables — a plan that opts out is byte-identical; schedule — derived rows (numbering, names, areas); legend — derived closed-form from what the drawing pai…
+- `test/section.test.ts` — `section <id|int> (x,y)->(x,y) look <compass>` (RM6.1, design `slab-and-section.md` §2): what `describe().sections` reports and where the mark draws, the four refusals, the words as names, the printer, and Plan JSON's...
 - `test/security.test.ts` — SVG output is XSS-safe.
 - `test/segment-select-digests.test.ts` — The segment-selector digest table (plan card PS3.5): SHA-256 over SVG, `describe()`, `lint()` and `compile().diagnostics` of every storey of each plan in `test/tables/segment-select-plans.ts`, pinned in its own commit...
 - `test/segment-select.test.ts` — Segment selectors (plan card PS3.5): `segment north|south|east|west` and `segment containing <room>.<edge>` alias `segment <n>`.
