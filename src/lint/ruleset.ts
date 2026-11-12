@@ -363,6 +363,18 @@ export interface LintRuleset {
    */
   stairMaxPitchRatio: number | null;
   /**
+   * The highest riser (mm) a stair's drawn treads may imply (`W_STAIR_RISER_TOO_HIGH`, product
+   * roadmap RM1.2a, backlog ST.1): the storey height over the risers the drawing gives it, one per
+   * tread each flight draws plus one at each flight's head (the treads the plan draws and the 3D
+   * preview builds). Judged only where the plan authors a height. `null` turns the rule off.
+   *
+   * **Default 220, set by no profile:** Approved Document K (2013) Table 1.1, a private stair's
+   * rise at most 220 mm [V]. Only a `V` or `S-full` figure may judge it, and the residential-advisory
+   * profiles' own riser figures are second-hand (GB 50096-2011 5.7.4's 0.20 m and IRC R311.7.5.1's
+   * 7¾ in, both [S]) or this same 220 (`uk-residential-advisory`).
+   */
+  stairDrawnMaxRiseMm: number | null;
+  /**
    * The least gap (mm) between a cooking surface's side and a fridge or other tall unit beside it
    * (`W_HOB_FRIDGE_GAP`, plan-soundness PS2.11e): the worktop a cook lands a pan on. Measured from
    * the hob's side face, over its depth, to the tall unit's drawn footprint. `null` turns the rule
@@ -512,6 +524,7 @@ export const DEFAULT_RULESET: LintRuleset = {
   stairMaxRiseMm: 220,
   stairMinGoingMm: 220,
   stairMaxPitchRatio: null,
+  stairDrawnMaxRiseMm: 220,
   hobLandingMm: 305,
   maxHingedLeafMm: 1219,
   garageDepthMm: 5000,
@@ -757,6 +770,7 @@ const NULLABLE: { readonly [K in NullableKey]: true } = {
   wcSideClearanceMm: true,
   wcAccessibleSideWallMaxMm: true,
   stairMaxPitchRatio: true,
+  stairDrawnMaxRiseMm: true,
   hobLandingMm: true,
   maxHingedLeafMm: true,
   garageDepthMm: true,

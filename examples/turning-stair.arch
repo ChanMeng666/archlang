@@ -12,8 +12,10 @@
 # 12 goings, 2640 mm. A flight ends on its landing as the top flight ends on the floor above, so this
 # one owes 11 goings and a landing, 2420 mm of flights, and each flight must hold its goings whole.
 # These two hold 6 goings each, because the lint profiles ask for more: 12 goings of 254 mm in
-# `us-residential-advisory` is 3048 mm, and 1530 + 1530 is 3060. Cut both flights to 1210 and they
+# `us-residential-advisory` is 3048 mm, and 1540 + 1530 is 3070. Cut both flights to 1210 and they
 # still sum to 2420 mm, but hold 5 goings each, so `W_STAIR_TOO_STEEP` reports the whole stair, once.
+# The first flight is 1540, not 1530, for the treads it draws (one per 280 mm, rounded): 6 + 5 are
+# 13 risers of about 212 mm, where 5 + 5 were 12 of about 229 (`W_STAIR_RISER_TOO_HIGH`).
 # `arch describe --json --facts clearances` prints the two figures, and `describe` reports the
 # flights, the landing and the turn. These are arithmetic on the plan's own numbers, and no statement
 # that it complies.
@@ -35,7 +37,7 @@ plan "Turning stair" {
     window on hall.left width 900
 
     stair id=s dir up width 1000 {
-      flight at (2630,1100) size 1000x1530
+      flight at (2630,1100) size 1000x1540
       landing at (2630,100) size 1000x1000
       flight at (1100,100) size 1530x1000
     }
@@ -51,7 +53,7 @@ plan "Turning stair" {
     window on gallery.left width 900
 
     stair id=s dir down width 1000 {
-      flight at (2630,1100) size 1000x1530
+      flight at (2630,1100) size 1000x1540
       landing at (2630,100) size 1000x1000
       flight at (1100,100) size 1530x1000
     }

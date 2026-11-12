@@ -871,7 +871,7 @@ from a file or stdin (`-`). This CLI is the primary agent interface; an optional
 ## 4. Diagnostic catalog
 
 Every diagnostic carries a stable code and a `fix`. Look one up with `archlang explain <CODE>`.
-**166 errors** (abort rendering) · **101 warnings** (advisory; `validate --strict` fails on them too).
+**166 errors** (abort rendering) · **102 warnings** (advisory; `validate --strict` fails on them too).
 
 ### Errors
 
@@ -1128,6 +1128,7 @@ Every diagnostic carries a stable code and a `fix`. Look one up with `archlang e
 - `W_SHAFT_FOOTPRINT_MISMATCH` — A shaft's runs on two neighbouring storeys do not stand over each other. **Fix:** Draw the run with the same `at` and `size` on both storeys (the hint quotes both), or give two unrelated runs different ids. There is no machine-applicable fix: which storey is right is the author's call.
 - `W_STAIR_HEAD_VOID` — A void opens on the landing at the head of a flight. **Fix:** Move the void beside the flight or past its foot end, or shrink it, so the landing beyond the head is floor. There is no machine-applicable fix.
 - `W_STAIR_NO_LANDING` — A flight has no landing at its foot or head, or a landing between two flights is too short. **Fix:** Move the stair, shorten it, or move the wall until the quoted depth stands clear beyond the end. There is no machine-applicable fix: moving a stair moves the rooms around it.
+- `W_STAIR_RISER_TOO_HIGH` — A stair's drawn treads climb its storey on risers that are too high. **Fix:** Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run: every 280 mm of a flight's run draws one more tread, so one more riser. Or correct the storey `height` if it is wrong. There is no machine-applicable fix: a longer flight moves the rooms around it.
 - `W_STAIR_SIDE_ENTRY` — A doorway opens onto the side of a flight. **Fix:** Move the doorway along its wall past the foot or head of the flight, or move the stair so at least the quoted width stands between them. There is no machine-applicable fix.
 - `W_STAIR_TOO_STEEP` — A stair is too short to climb its storey. **Fix:** Lengthen the flight (its `size` along the run, on every storey the shaft is drawn) to the quoted run, correct the storey `height` if it is wrong, or draw one block stair, `stair dir up width 1000 { flight … landing … flight … }`, where a landing replaces one going. A winder landing counts only the whole goings of `stairMinGoingMm` that fit on the quarter arc of radius `width / 2` round its inner corner, never more than it has winders, so adding winders past that does not clear the warning. Splitting the climb into separate stairs does not clear the warning: each is still judged against the whole storey. There is no machine-applicable fix: a longer flight moves the rooms around it.
 - `W_STAIR_UNMATCHED` — A run of vertical circulation appears on only one storey. **Fix:** Draw the same run with the SAME `id` on the neighbouring storey (each storey declares its own `dir` — `up` on the lower floor, `down` on the upper one), or fix the id.

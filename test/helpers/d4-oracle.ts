@@ -466,6 +466,9 @@ export const RULE_CLASS: Readonly<Record<string, RuleClass>> = {
   // CR2 group D: a piece's footprint against a void, a lift shaft or an escalator, all turned or
   // mirrored together.
   "furniture-on-void": "invariant",
+  // RM1.2a: each flight's run along its own axis (`_tail` through `place`) and the storey height, a
+  // scalar; no compass, no sheet.
+  "stair-riser-too-high": "invariant",
 };
 
 /**
