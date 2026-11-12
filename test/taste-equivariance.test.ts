@@ -146,5 +146,5 @@ describe("with north fixed, every criterion but the compass readers (R12; R3 whe
       );
     });
     expect(movers.length, "no street-chosen plan moves R3 any more: the exemption guards nothing").toBeGreaterThan(0);
-  }, 300_000);
+  }, 120_000);
 });
