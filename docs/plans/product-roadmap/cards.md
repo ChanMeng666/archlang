@@ -124,6 +124,10 @@
 
 run 43015163598（`9a3be392`，11:49:49Z）的 `Deploy mcp (scripted Worker)` smoke 报 `/svg/<studio.arch payload>: the pinned copy is not immutable: public, max-age=300, stale-while-revalidate=86400`。协调者的判断：版本传播的竞态，部署后一秒固定版本的 URL 落到了旧的 isolate，不是配置缺口；之后的 Deploy run 43025136172 全部 success。内容：让 `scripts/smoke.mjs` 在固定版本的取副本上遇到 302 或非 immutable 的头时重试几秒（有上限、有最后一次的真实错误），其余检查不放宽。证明：一个测试用假服务器先返回旧头再返回 immutable 头；真正的缺陷（一直不 immutable）仍然失败。不许：放宽 immutable 的断言；无上限地重试。
 
+### RM0.9 · 兼容检查器把带 `kind` 的联合当作枚举集合（2026-11-12 加，出自 RM-D33 的协调者裁定） — `doing` · 未估 · opus · 依赖无 · **挡 RM6.1（#721）的合并**
+
+现象：新增一种元素（`kind` 带标签的公开联合的新变体，或以它为键的常量的新键）会让 `scripts/compat-check.mjs` 报破坏性变更，只能用 BREAKING 豁免放行；RM6.1 的 `section` 就会撞上。协调者 2026-11-12 的裁定（可推翻）：这是 minor。内容：扩展 `scripts/compat-check.mjs`，把带 `kind` 的联合当作类似枚举的集合：加变体、以它为键的常量加键 = 加法（minor）；删变体、改名、改已有变体的字段仍是 BREAKING。证明：测试覆盖加变体（通过）、删变体与改字段（仍失败）、以 `kind` 为键的常量加键；对 `main` 与 #721 的头各跑一次，#721 不再需要豁免。不许：放宽已有的枚举与字段规则；用豁免清单代替规则；顺手改别的检查。
+
 ## 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：~~不加语法~~（RM-D27 作废，`README.md` §6.5：`[语法]` 卡在 PS7.9 合并后就开工，不等阶段）
 
 执行顺序以 `README.md` §3 的表为准：RM1.3a → RM5.1 → RM1.4 → 发布 1.59.0，线（8 日 = 3 + 2 + 2 + 发布 1，9 个日历日）以下 RM2.1 → RM1.6a → PS7.9。RM0.2 是纯文档卡，也在线上，但由第二个（只做文档的）执行者并行，不计入 8 日。~~切点前合不完的进阶段 D，不挤进冻结期。~~ RM-D27 之后：切点前合不完的卡接着做、绿了就合并，进下一次所有者决定的发布；没有冻结期要躲。
@@ -509,6 +513,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 - 证明托管的 app 仍能渲染（ChatGPT app 的 UI 层）。
 - 与 RM1.6b 共用一次 `packages/mcp` 版本 bump（`packages/mcp/server.json` 两处同步）。
 - 风险层是 high：评审 + 协调者判断后合并（`docs/agents/commands.md` § Merging a PR）。
+- **2026-12-01 之后开工（RM-D34，`README.md` §6.7，受托）：** CI 红在 `Workspace builds`（`packages/mcp-worker`）；现在不合并，因为推送 `main` 会部署 ChatGPT/OpenAI 用的托管 MCP Worker。要做：把 Worker 适配到 2.x、在 ChatGPT 里测托管工具、对抗评审。#603 保持打开作提醒；针对 1.7.x 的安全公告会让本卡提前。
 
 证明：CI 的 "Workspace builds" 绿；托管 app 的资源在部署后能取到并渲染（记录请求与截图在 PR 说明，不进测试）；MCP 工具的输出除 bump 外不变。
 
