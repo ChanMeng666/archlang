@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.60.0] - 2026-11-12
+
+Nothing is breaking. **New grammar:** `slab <mm>` and `clear <mm>` on a `level`, `clear <mm>` after a single-storey plan's `height`, and the plan-level `section` mark. **New codes:** the errors `E_CLEAR_SCOPE`, `E_SECTION_AXIS`, `E_SECTION_DUP`, `E_SECTION_LOOK` and `E_SECTION_SCOPE`, and the warning `W_CLEAR_HEIGHT_MISMATCH`. A plan that writes none of the new clauses compiles, describes and lints byte for byte as before; `section`, `slab` and `look` stay usable as names. **A new drawn statement:** a `section` mark draws in the annotation layers (`A-ANNO`, `A-ANNO-TEXT`), beside the dimensions, so a consumer that strips or restyles those layers strips or restyles it too. Also new: `/furniture`, a picture of every furniture family in plan and in 3D, and doorway, window and stair detail in the 3D preview.
+
 ### Added
 
 - The two facts a section needs (RM6.1, issue #532). A floor build-up and a clear height: `level <n> ["Name"] [height <mm>] [slab <mm>] [clear <mm>] { … }`, and `height <mm> clear <mm>` on a single-storey plan. Neither draws anything. Once any storey writes one, each storey's `describe().heights` adds `slab`, and either `clear_height` with `clear_height_source` (`authored`, or `derived` from the storey's height less the `slab` above) or `clear_height_omitted` with a reason. A value is never guessed. New: `E_CLEAR_SCOPE` (a `clear` on a multi-storey plan's `height` line) and the warning `W_CLEAR_HEIGHT_MISMATCH` (a written `clear` that disagrees with the derived one to 0.001 mm). And a section mark: `section <name|int> (x,y)->(x,y) look north|south|east|west`, a plan-level statement drawn at both ends of the cut line on the lowest storey's page, reported under a new top-level `describe().sections` (`id`, `from`, `to`, `look`, and `toward`, the page direction). New errors: `E_SECTION_AXIS` (a slanted or zero-length cut), `E_SECTION_DUP`, `E_SECTION_LOOK` (a look along the cut line; the message names the two words the plan's north allows) and `E_SECTION_SCOPE` (inside a `level`, `zone`, `component` or block). `section`, `slab` and `look` are not reserved words: a plan that names something `section`, `slab` or `look` parses as before, and a plan that writes none of the new clauses compiles, describes and lints byte for byte as before. Plan JSON carries none of them yet and lists them under `dropped`.
@@ -17,6 +21,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - A bundle that compiles but never explains a code or prints the CLI manifest no longer carries the diagnostic catalogue's messages, causes and examples, nor the manifest's command help: `diagnosticToJson` reads the catalogue's `fix` column from its own generated module (`src/error-catalog-fixes.ts`, `npm run gen:errors`), and the two top-level values that kept the rest alive (`ERROR_CODES`, `MANIFEST_COMMAND_NAMES`) are marked pure. The playground's compiler chunk loses about 68 KB gzip (458,385 to 390,608 B on its first-compile path); its diagnostics panel reads the full catalogue in edit mode only. Every output is byte-identical: `compile()`, its diagnostics and `--error-svg` card, `describe()`, `lint()`, `arch explain` and the manifest.
 - Tooling: the release-compatibility check (`node scripts/compat-check.mjs`, `test/release-compat.test.ts`) reads a tagged union, object variants told apart by a literal discriminant such as `AstElement`'s and `Statement`'s `kind`, as an enum-like set: a new variant (a new element kind) passes, a removed one fails and is named, and a variant on both sides is still held to the variance of its role. A constant keyed by a set (`ELEMENT_KIND_STAGES`, a `Readonly<Record<K, V>>`) is read one member per key, as an `as const` object is: a key may be added, not removed.
+
+### Shipped alongside
+
+- **`@chanmeng666/archlang-mcp` 0.2.43**, re-pinned to `^1.60.0`: no tool changes; its baked `spec.llm.md`, `llms-full.txt` and GBNF are this release's, so they carry `slab`, `clear` and `section`.
+- **`@chanmeng666/archlang-3d` 0.7.0** (its own `CHANGELOG.md`): doors and cased openings get linings and casings, windows a reveal, an exterior sill and an interior board, and a stair is built as treads, stringers and balustrades, with every size a share of the wall's or the stair's own dimensions and a storey's trim decided independently of the order the plan writes its openings; tree, plant and shrub crowns and the bean bag are one lofted shell. The posters, replay videos and GLB files on archlang.uk are regenerated with them. Its core peer range stays `^1.57.0`.
+- **VS Code extension 0.48.0** (`editors/vscode/CHANGELOG.md`): rebundles this core.
+- `@chanmeng666/arch-plan` is unchanged at 0.1.2; the `<arch-plan>` element served from archlang.uk loads this core.
 
 ## [1.59.0] - 2026-11-12
 
