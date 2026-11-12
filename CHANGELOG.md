@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- A bundle that compiles but never explains a code or prints the CLI manifest no longer carries the diagnostic catalogue's messages, causes and examples, nor the manifest's command help: `diagnosticToJson` reads the catalogue's `fix` column from its own generated module (`src/error-catalog-fixes.ts`, `npm run gen:errors`), and the two top-level values that kept the rest alive (`ERROR_CODES`, `MANIFEST_COMMAND_NAMES`) are marked pure. The playground's compiler chunk loses about 68 KB gzip (458,385 to 390,608 B on its first-compile path); its diagnostics panel reads the full catalogue in edit mode only. Every output is byte-identical: `compile()`, its diagnostics and `--error-svg` card, `describe()`, `lint()`, `arch explain` and the manifest.
+
 ## [1.59.0] - 2026-11-12
 
 Nothing is breaking. **Five new warnings** (`W_LENGTH_IN_METRES`, `W_GRID_SNAPPED`, `W_SET_VALUE_WORD`, `W_UNKNOWN_FURNITURE`, `W_UNKNOWN_THEME`) name what the compiler used to accept without a word; each is a warning only, so every plan compiles and draws as before, but `validate --strict` fails on them (and `arch lint --strict` on the two it lists, `W_UNKNOWN_FURNITURE` and `W_UNKNOWN_THEME`). Also new: `arch lint --rules` (where every threshold comes from), `--theme` on the drawing commands, the MCP `archlang://capabilities` resource and `next` from the MCP `validate`, and outdoor surfaces and fences in the 3D preview.

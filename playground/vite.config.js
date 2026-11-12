@@ -102,6 +102,14 @@ export default defineConfig({
       "archlang/review": resolve(__dirname, "../dist/cli/review.js"),
       // The share-link decoder (`@chanmeng666/archlang/share`), likewise before the bare name.
       "archlang/share": resolve(__dirname, "../dist/share.js"),
+      // The diagnostic catalogue's messages, causes and examples, for the edit-mode diagnostics
+      // panel only (card RM0.7). Read from the source, likewise before the bare name: the built
+      // core is one module, so `ERROR_CATALOG` imported from it would land in the `compiler`
+      // chunk (the group below captures every core statement any chunk uses), ~57 KB gzip on the
+      // path every first compile loads. From here it lands in the lazy chunk that needs it, and
+      // the compiler chunk keeps only the fix column `diagnosticToJson` reads
+      // (`src/error-catalog-fixes.ts`). e2e/startup-chunks.baseline.json measures both paths.
+      "archlang/error-catalog": resolve(__dirname, "../src/error-catalog.ts"),
       archlang: resolve(__dirname, "../dist/index.js"),
       // archlang-3d is read from its source, as it always was: its published `exports` name a
       // dist/ this build has no reason to need. The longer key goes first (prefix match).
