@@ -173,6 +173,43 @@ describe("V2 shape primitives", () => {
     expect(partShell({ ...box, mat: "body" })).not.toHaveProperty("slot");
     expect(partShell(box)).not.toHaveProperty("slot");
   });
+
+  // Product-roadmap RM8.6 (backlog VA.1): a dome is one lofted shell, its rings joined by sloping
+  // quads, where it was a stack of round tiers whose silhouette stepped.
+  const LOFT = [
+    [0.3, 0.8],
+    [0.6, 1],
+    [1, 0.4],
+  ] as const;
+  it("lofts a part: one closed shell through its rings, flat only at its bottom and its top", () => {
+    for (const shape of [{ round: true }, { radius: 60 }, {}]) {
+      const p: Part = { ...box, ...shape, loft: LOFT };
+      const s = partShell(p);
+      expectSound(s, p, `loft ${JSON.stringify(shape)}`);
+      const ys = [...new Set(s.positions.filter((_, i) => i % 3 === 1))].sort((a, b) => a - b);
+      expect(ys).toEqual([100_000, 190_000, 280_000, 400_000]);
+      // No horizontal face but the two caps: the silhouette slopes ring to ring, never steps.
+      for (let t = 0; t < s.indices.length; t += 3) {
+        const y = [0, 1, 2].map((k) => s.positions[3 * (s.indices[t + k] as number) + 1]);
+        if (y[0] === y[1] && y[1] === y[2]) expect([100_000, 400_000], `flat at ${y[0]}`).toContain(y[0]);
+      }
+    }
+    expect(() => partShell({ ...box, axis: "x", loft: LOFT })).toThrow(/lofted/);
+  });
+
+  it("builds every dome of the crowns, mounds and bean bag as one lofted part (backlog VA.1)", () => {
+    for (const family of ["tree", "plant", "shrub", "bean_bag"]) {
+      const parts = t0LocalParts(family, 900, 900) ?? [];
+      const foliage = parts.filter((p) => p.mat === "foliage" || p.mat === "fabric");
+      expect(foliage.length, family).toBeGreaterThan(0);
+      expect(
+        foliage.every((p) => p.loft !== undefined),
+        family,
+      ).toBe(true);
+    }
+    // The conifer keeps its sixteen narrowing tiers: whorls of branches, a look of its own (RM8.6).
+    expect((t0LocalParts("conifer", 900, 900) ?? []).filter((p) => p.mat === "foliage").length).toBe(16);
+  });
 });
 
 describe("V3 generators", () => {

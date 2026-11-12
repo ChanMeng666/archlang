@@ -18,25 +18,25 @@
       "stage:rooms": "884694b7e28f28ee7048fe302b42ba7ff402230ca5339a4a30fe45b4bb467658",
       "stage:walls": "fc9b26f9e629dc92cf56c062803b54415902f71f9ec431141abc4bbb7ea49688",
       "stage:openings": "a7ecb1876fbfd4250812195e9fadfc531742d881270bc9b9bb1a4faf9172edd2",
-      "stage:fixtures": "11b9a693d586f55634a70bf75cf3d3bf19a56fe358bd980acf3bdefc32ebf29c",
-      "tilted": "7eb827787b1c405c1270dc85deebfde8fab1bbc5ce7bfab9ecd6fda5a75946c8",
-      "end": "e2a98a0edc52e945dbca806c838bc17796cd8a44564a442767dd63e06a15eac8"
+      "stage:fixtures": "067872cb1324e7d9b57cb5752f0a8f85a34adaad3dd1258c4d7a46ce74643748",
+      "tilted": "7879c0aefc1681f109178aa4fc326b03c302dc6d22cdac78aac9207d4a926174",
+      "end": "903bbd440615b7e5ddcae865fc6224aed0aedbd150d99bb3838af89084d9b59c"
     },
     "two-storey.arch": {
       "stage:brief": "81f9acfd0706792f84121b5261bece104e63aa7d319a70295bbb12a2f74043eb",
       "stage:rooms": "6f88461365f13026acbddb5a4630e3c1aa06f61a4d720e26e839fff0f6cf6d17",
       "stage:walls": "6322f00b3696d983543a37e523908347ed3c3012c1d6385e077a8035f64efb48",
-      "stage:openings": "2ac49bb58e9fe6b73861cd6f882aa2806038c6b00abb04b6656d974b00010026",
-      "stage:fixtures": "aed4a38ab8a270fd11eab1c293df07cce53ecf83f415a768cb32c36fbbf35b18",
-      "stop:1": "697d588709c667e7da67fe999fbb17ce20da9066e83802d979f2e90ab57bf29e",
-      "tilted": "e64d4d9b6ab9e48f896988b3153a5ed15655d2bf797097c95acbb2f50463c6d4",
-      "storey:2": "f2fab19802a65733341ecf758586ede602fe3895819373c7aa6a1440152f7bd7",
-      "stop:2": "9ec0b8151b3fcf734d72caf2d1fe0ccf2756cd3cde070d77184fc8e609a225f5",
-      "end": "5485e3d0f740485060d3b4467ff70cdf459ce13f967c316bdd3b1bfd3d4c7fc0"
+      "stage:openings": "2c73acf67eca9a00b1967c26320a17e5785759e7c761cc826b3c710fbb71a19d",
+      "stage:fixtures": "639a0302f65e7c3632057e2654c5fcd245dd9a88de2d5f8694ebb0e036e6943b",
+      "stop:1": "adac293c1d0d3c31341180ee69c867df219e6426970d2d3ae63e0da5ca5a5463",
+      "tilted": "7520866280d903c410a9fee9bd8cf5e0b6bc8f112e5ba5cd32b1ea6df767f6a2",
+      "storey:2": "ccfdee738c473824de751918235470df7182241a898bd408d87595b6ef8e6466",
+      "stop:2": "ad1b0d95c5128bf1607193e1329a364153a19be28b4affc9a80a04911aa14e0e",
+      "end": "3c80a946d972fddf8b1f8b041f8f6a119e5ea5a276e3290c3b75ebed469ed9bb"
     },
     "courtyard-house.arch": {
-      "tilted": "7aa10eed3f008ae61476cc498f6880d3782723a37d7fffa35000ac503a6a16fe",
-      "end": "d17207c4fa1e67523ab6669a6fd36dd52f507964da26619cf5bc3d07f813e8fb"
+      "tilted": "af052e3ffbf856ef5c65e845144dbfda98463454a03afff89523ddd210ba1761",
+      "end": "4259e01a35ff905618c1d19a8b076930ed447bd067797a11d2ff8011cf59ad3e"
     }
   }
 }

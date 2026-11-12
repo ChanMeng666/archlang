@@ -38,6 +38,15 @@ export interface Part extends SectionShape {
   axis?: "x" | "z";
   /** Holes through a vertical part's plan section (a worktop around its sink); a sideways part with holes throws. */
   holes?: Array<SectionShape & { x0: number; x1: number; z0: number; z1: number }>;
+  /**
+   * A lofted part (product-roadmap RM8.6, backlog VA.1): its section (`round`, `radius` or a box)
+   * placed as one ring at the bottom and one at each height of this table, each `[height as a
+   * fraction of y0..y1, scale as a fraction of the box's half-extents]` about the box's centre,
+   * neighbouring rings joined by quads and the bottom and top rings capped: one closed shell whose
+   * silhouette slopes from ring to ring instead of stepping. Vertical parts only, no holes, no
+   * `profile`; its widest ring should scale 1, so the shell spans its box.
+   */
+  loft?: DomeTable;
 }
 
 /**
@@ -248,11 +257,11 @@ export function tableSeats(
 }
 
 /**
- * A dome as round tiers, each `[top of the tier as a fraction of the height, its radius as a
- * fraction of the half-extents]`. The tables (`t0-outdoor.ts`) slice an ellipsoid at equal steps of latitude
- * (15°), so the tiers thin out toward the top and the dome rounds over instead of stepping like a
- * cake; the radii are cos(mid-latitude), the widest scaled to 1, written out (no engine's
- * `Math.cos` reaches a coordinate).
+ * A dome's profile, each row `[a height as a fraction of the dome's, its radius there as a fraction
+ * of the half-extents]` (once the top of a stacked tier; since RM8.6 a lofted ring, `Part.loft`).
+ * The tables (`t0-outdoor.ts`) slice an ellipsoid at equal steps of latitude (15°), so the rings
+ * crowd toward the top and the dome rounds over; the radii are cos(mid-latitude), the widest scaled
+ * to 1, written out (no engine's `Math.cos` reaches a coordinate).
  */
 export type DomeTable = ReadonlyArray<readonly [number, number]>;
 
@@ -278,7 +287,13 @@ export const HEMI: DomeTable = [
   [1, 0.132],
 ];
 
-/** The dome `table` from `y0` to `y1` over the half-extents `rx`, `rz`, centred on (`cx`, `cz`). */
+/**
+ * The dome `table` from `y0` to `y1` over the half-extents `rx`, `rz`, centred on (`cx`, `cz`): one
+ * lofted round part (`Part.loft`, product-roadmap RM8.6), its rings at the table's heights and
+ * radii, so the crown, the mound and the bean bag read smooth rather than stacked (backlog VA.1).
+ * Every ring is the exact 16-gon about the centre, so a dome on the centre line is its own mirror
+ * image and no dome gains a hand.
+ */
 export function dome(
   mat: MaterialSlot,
   cx: number,
@@ -289,13 +304,7 @@ export function dome(
   y1: number,
   table: DomeTable,
 ): Part[] {
-  let lo = y0;
-  return table.map(([t, f], k) => {
-    const hi = k === table.length - 1 ? y1 : y0 + (y1 - y0) * t;
-    const p = P(mat, cx - rx * f, cx + rx * f, cz - rz * f, cz + rz * f, lo, hi, { round: true });
-    lo = hi;
-    return p;
-  });
+  return [P(mat, cx - rx, cx + rx, cz - rz, cz + rz, y0, y1, { round: true, loft: table })];
 }
 
 /**

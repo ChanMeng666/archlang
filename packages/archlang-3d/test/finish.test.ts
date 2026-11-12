@@ -291,7 +291,12 @@ describe("window parts inside their cut (a curved host)", () => {
     for (const { n, scene, mesh } of corpus) {
       for (const lv of scene.levels) {
         for (const o of lv.openings.filter((x) => x.kind === "window")) {
-          for (const nd of mesh.nodes.filter((x) => x.level === lv.level && x.kind === "window" && x.id === o.id)) {
+          // The frame and the glass; the trim (card RM8.6) is held by `test/trim.test.ts`, a sill and
+          // a board running past the jambs and out of the wall by design.
+          const own = (x: MeshNode) => x.part === "frame" || x.part === "glass";
+          for (const nd of mesh.nodes.filter(
+            (x) => x.level === lv.level && x.kind === "window" && x.id === o.id && own(x),
+          )) {
             parts += nd.shells.length;
             if (verts(nd).some(([x, , z]) => !inOrOn([x as number, z as number], o.cut))) bad.push(`${n} ${nd.key}`);
           }

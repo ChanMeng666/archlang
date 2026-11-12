@@ -56,7 +56,11 @@ export const GLB_GENERATOR = `archlang-3d ${ARCHLANG_3D_VERSION}`;
 export function bodyMaterialName(n: MeshNode): string {
   if (n.kind === "floor") return `floor:${FLOOR_FINISHES.find((f) => f === n.extras.finish) ?? "neutral"}`;
   if (n.kind === "wall" && n.part === "demolish") return "wall:demolish";
-  if (n.kind === "window" && (n.part === "glass" || n.part === "frame")) return `window:${n.part}`;
+  if (n.kind === "window" && n.part && `window:${n.part}` in KIND_PALETTE) return `window:${n.part}`;
+  // The trim and the balustrade (card RM8.6): a part with its own colour; any other part (a door's
+  // lining and casing, a stair's stringers) is its kind's.
+  if ((n.kind === "opening" || n.kind === "stair") && n.part && `${n.kind}:${n.part}` in KIND_PALETTE)
+    return `${n.kind}:${n.part}`;
   // The site (card RM8.3): a surface per kind, a fence per style, in the colour the node carries.
   if (n.kind === "outdoor") return `outdoor:${String(n.extras.surface)}`;
   if (n.kind === "fence") return `fence:${String(n.extras.style)}`;

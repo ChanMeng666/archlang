@@ -178,6 +178,14 @@ const THEMES = {
       door: "#7aa6c9",
       "window:frame": "#5d86a8",
       "window:glass": "#86c5ee",
+      // The trim and the balustrade (card RM8.6): a reveal as its frame, a sill and a board as a
+      // door, a cased opening's trim as a door, a handrail as a window frame.
+      "window:reveal": "#5d86a8",
+      "window:sill": "#7aa6c9",
+      "window:board": "#7aa6c9",
+      "opening:lining": "#7aa6c9",
+      "opening:casing": "#7aa6c9",
+      "stair:rail": "#3b5b78",
       "wall:demolish": "#e07a5f",
       furniture: "#3f6a8f",
       stair: "#5d86a8",
@@ -295,6 +303,9 @@ export function mountReplay(
       pos[i + 1] = y - base;
       pos[i + 2] = z;
     }
+    // A part's own colour where the theme has one (a window's frame, glass, reveal, sill and board, a
+    // ghost wall, a cased opening's trim, a stair's rail), else its kind's (a door's lining and
+    // casing are its oak, a stair's stringers its treads' wood: card RM8.6).
     const key = n.part ? `${n.kind}:${n.part}` : n.kind;
     const g = new Group();
     g.position.y = base + (n.lift ?? 0);
@@ -356,7 +367,7 @@ export function mountReplay(
       for (const { slot, count } of n.groups) {
         const run = n.indices.slice(at, at + count);
         at += count;
-        if (slot === "body") add(attr, run, theme.colors[key] ?? furniture, false, 1, false);
+        if (slot === "body") add(attr, run, theme.colors[key] ?? theme.colors[n.kind] ?? furniture, false, 1, false);
         else {
           const { alpha } = PALETTE[slot];
           add(attr, run, slotColour(slot, p.theme, furniture), alpha < 1, alpha, false);
@@ -399,7 +410,7 @@ export function mountReplay(
       add(
         attr,
         n.indices,
-        theme.colors[key] ?? furniture,
+        theme.colors[key] ?? theme.colors[n.kind] ?? furniture,
         glass,
         glass ? KIND_PALETTE["window:glass"].alpha : 1,
         true,
@@ -409,7 +420,7 @@ export function mountReplay(
     if (fix && fix.group >= 0) {
       // A wall's or a column's faces where it meets another node (vertical, so never its cap),
       // edgeless like its body; `draw` shows one of the two.
-      const colour = theme.colors[key] ?? furniture;
+      const colour = theme.colors[key] ?? theme.colors[n.kind] ?? furniture;
       patched.push({
         key: n.key,
         ...(parts.alone.length > 0 ? { alone: add(attr, parts.alone, colour, false, 1, true, false) } : {}),
