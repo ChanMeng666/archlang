@@ -327,9 +327,15 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
       { side: yRun ? "right" : "bottom", past: c1 + D.probe * MM, cc: c1 - sw / 2 },
     ];
     for (const { side, past, cc } of edges) {
-      const against = solidAt(planAt(f, Math.round(run / 2), past)) ? "wall" : "open";
+      // Past it: a wall, the stair's other flight (a dog-leg's two flights side by side, with no
+      // well between them: neither gets a rail there), or nothing.
+      const q = planAt(f, Math.round(run / 2), past);
+      const besideFlight = flightBoxes.some(
+        ([a, b, c, d], j) => j !== i && q[0] > a && q[0] < c && q[1] > b && q[1] < d,
+      );
+      const against = besideFlight ? "flight" : solidAt(q) ? "wall" : "open";
       out.sides.push({ of: `flight ${i + 1}`, side, against });
-      if (against === "wall") continue;
+      if (against !== "open") continue;
       const ra = Math.round(cc - railW / 2);
       keep(
         out.rails,
@@ -382,26 +388,38 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
       landings.push({ box, top, going: Math.round(g * MM), k: i + 1 });
     }
   });
-  // A landing's edges, once every newel stands: an open one takes a level rail inside it.
+  // A landing's edges, once every newel stands. Along each edge, the stretches a flight arrives on or
+  // leaves from (any flight whose rectangle touches the edge from outside: a dog-leg's two, side by
+  // side) are taken out first (review M1 on PR #729: a single probe at the edge's middle missed
+  // them); each stretch left is probed at its own middle, and an open one takes a level rail inside
+  // the edge, stopping where a newel or an earlier rail already stands.
   const taken: Box2[] = [...newels];
   for (const { box, top, going, k } of landings) {
     const [x0, y0, x1, y1] = box;
     const p = D.probe * MM;
-    const [mx, my] = [Math.round((x0 + x1) / 2), Math.round((y0 + y1) / 2)];
-    const inFlight = (q: Pt): boolean =>
-      flightBoxes.some(([a, b, c, d]) => q[0] > a && q[0] < c && q[1] > b && q[1] < d);
-    const edges: Array<{ side: Side; probe: Pt }> = [
-      { side: "top", probe: [mx, y0 - p] },
-      { side: "right", probe: [x1 + p, my] },
-      { side: "bottom", probe: [mx, y1 + p] },
-      { side: "left", probe: [x0 - p, my] },
+    const edges: Array<{ side: Side; horizontal: boolean; at: number; out: 1 | -1 }> = [
+      { side: "top", horizontal: true, at: y0, out: -1 },
+      { side: "right", horizontal: false, at: x1, out: 1 },
+      { side: "bottom", horizontal: true, at: y1, out: 1 },
+      { side: "left", horizontal: false, at: x0, out: -1 },
     ];
     const railTop = top + D.landingRailHeight * MM;
-    for (const { side, probe } of edges) {
-      const against = inFlight(probe) ? "flight" : solidAt(probe) ? "wall" : "open";
+    for (const { side, horizontal, at, out: dir } of edges) {
+      const [a0, a1] = horizontal ? [x0, x1] : [y0, y1];
+      // The strip `p` deep outside the edge, and the flights that overlap it.
+      const [s0, s1] = dir > 0 ? [at, at + p] : [at - p, at];
+      const flightRuns = flightBoxes
+        .filter(([fa, fb, fc, fd]) =>
+          horizontal ? fb < s1 && fd > s0 && fa < a1 && fc > a0 : fa < s1 && fc > s0 && fb < a1 && fd > a0,
+        )
+        .map(([fa, fb, fc, fd]): [number, number] => (horizontal ? [fa, fc] : [fb, fd]));
+      const free = freeRuns(a0, a1, flightRuns);
+      const open = free.filter(([r0, r1]) => {
+        const m = Math.round((r0 + r1) / 2);
+        return !solidAt(horizontal ? [m, at + dir * p] : [at + dir * p, m]);
+      });
+      const against = free.length === 0 ? "flight" : open.length === 0 ? "wall" : "open";
       out.sides.push({ of: `landing ${k}`, side, against });
-      if (against !== "open") continue;
-      const horizontal = side === "top" || side === "bottom";
       const across: [number, number] =
         side === "top"
           ? [y0, y0 + railW]
@@ -410,21 +428,23 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
             : side === "left"
               ? [x0, x0 + railW]
               : [x1 - railW, x1];
-      // What a newel or an earlier rail already holds along this edge's rail band.
-      const held = taken
-        .filter((b) => (horizontal ? b[1] < across[1] && b[3] > across[0] : b[0] < across[1] && b[2] > across[0]))
-        .map((b): [number, number] => (horizontal ? [b[0], b[2]] : [b[1], b[3]]));
-      for (const [s0, s1] of freeRuns(horizontal ? x0 : y0, horizontal ? x1 : y1, held)) {
-        const b: Box2 = horizontal ? [s0, across[0], s1, across[1]] : [across[0], s0, across[1], s1];
-        keep(out.rails, solid(b, railTop - railW, railTop));
-        taken.push(b);
-        const len = s1 - s0;
-        const count = Math.max(1, Math.min(64, Math.floor(len / going)));
-        const mid = Math.round((across[0] + across[1] - bb) / 2);
-        for (let j = 0; j < count; j++) {
-          const c = Math.round(s0 + (len * (2 * j + 1)) / (2 * count) - bb / 2);
-          const bal: Box2 = horizontal ? [c, mid, c + bb, mid + bb] : [mid, c, mid + bb, c + bb];
-          keep(out.rails, solid(bal, top, railTop - railW + MM));
+      for (const [r0, r1] of open) {
+        // What a newel or an earlier rail already holds along this edge's rail band.
+        const held = taken
+          .filter((b) => (horizontal ? b[1] < across[1] && b[3] > across[0] : b[0] < across[1] && b[2] > across[0]))
+          .map((b): [number, number] => (horizontal ? [b[0], b[2]] : [b[1], b[3]]));
+        for (const [q0, q1] of freeRuns(r0, r1, held)) {
+          const b: Box2 = horizontal ? [q0, across[0], q1, across[1]] : [across[0], q0, across[1], q1];
+          keep(out.rails, solid(b, railTop - railW, railTop));
+          taken.push(b);
+          const len = q1 - q0;
+          const count = Math.max(1, Math.min(64, Math.floor(len / going)));
+          const mid = Math.round((across[0] + across[1] - bb) / 2);
+          for (let j = 0; j < count; j++) {
+            const c = Math.round(q0 + (len * (2 * j + 1)) / (2 * count) - bb / 2);
+            const bal: Box2 = horizontal ? [c, mid, c + bb, mid + bb] : [mid, c, mid + bb, c + bb];
+            keep(out.rails, solid(bal, top, railTop - railW + MM));
+          }
         }
       }
     }

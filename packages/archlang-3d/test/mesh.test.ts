@@ -414,5 +414,9 @@ describe("Mesh3D determinism and budget", () => {
  * `window-reveal-lining`, `window-sill-exterior` and `window-board-interior` per window). With those
  * 20 nodes and 24 rows taken out, the Mesh3D hashes to 944930c9… exactly: no leaf, frame, pane,
  * wall or other node moved. Laneway has no stair and no tree (the card's loft moves nothing here).
+ * Review m1 (ac7c5b22… → 25483efd…) adds the trim's colours to the ledger, once per Mesh3D: five
+ * `trim-material-default` rows (a door's lining and casing, a window's reveal, sill and board). With
+ * the 20 nodes and those 29 rows taken out, the Mesh3D still hashes to 944930c9… exactly; its GLB
+ * (no ledger) and its event table did not move with the review.
  */
-const LANEWAY_MESH_SHA256 = "ac7c5b227f9367394904315f08fb4a5c9309760d81bd1ab011bb4835eb2a998b";
+const LANEWAY_MESH_SHA256 = "25483efd23b9503460c5314ac8b896e390907307761522cfe0dc13caa3986d74";

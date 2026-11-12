@@ -10,14 +10,16 @@
   casing on each wall face (0.35 t wide, 50–90 mm, 0.1 t proud, 10–20 mm), as parts `lining` and
   `casing` of its node. A barn door has no casing on the face its panel hangs on, a garage door
   none, a door on a curved wall no trim; a casing leg that would stand in another wall, a column,
-  a piece of furniture or another doorway is left out, never shortened. Every window gets a reveal
+  standing furniture (a rug is passed through), another doorway or a neighbour's trim is left out,
+  never shortened, and a sill or board end that would meet a neighbour's stops at its jamb (every
+  omission ledgered). Every window gets a reveal
   lining on its inside half (`reveal`, in the frame's colour), an exterior sill proud of the outside
   face and past each jamb by 0.2 t, as the core draws it (`sill`, pale stone), and an interior board
   (`board`, oak); the outside is the core's own rule (`insideOf`, one wall thickness off each face).
   A stair is tread boards with open risers and solid landings (its own node), two stringers a flight
   (`stringer`) and a balustrade on each edge the probe finds open (`rail`, walnut: a sloping
   handrail 900 mm over the nosing line, a baluster a tread, a newel at each end; a level rail
-  1000 mm over an open landing edge). Every size is a clamped share of the wall's thickness or the
+  1000 mm over the stretches of a landing edge that no flight arrives on and no wall closes). Every size is a clamped share of the wall's thickness or the
   stair's own riser, going and width (`OPENING_DETAIL`, `STAIR_DETAIL`) and ledgered per opening
   and per stair; `stair-solid-default` is gone. New exports: `doorTrim`, `windowTrim`, `insideOf`,
   `OPENING_DETAIL`, `stairDetail`, `STAIR_DETAIL`, `STAIR_RAIL_MATERIAL`.

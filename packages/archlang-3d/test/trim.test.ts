@@ -212,6 +212,88 @@ describe("a window's reveal, sill and board (§2.2)", () => {
   });
 });
 
+// Review M2 and m4 on PR #729: openings close together, and furniture against the wall by one.
+describe("trim beside its neighbours", () => {
+  /** Each piece's plan box (x0, z0, x1, z1) and heights (y0, y1). */
+  const boxes = (n: MeshNode | undefined) =>
+    (n?.shells ?? []).map((s) => {
+      const [x, y, z] = extent([s]);
+      return { x, y, z };
+    });
+  const clear = (a: ReturnType<typeof boxes>, b: ReturnType<typeof boxes>): boolean =>
+    a.every((p) =>
+      b.every(
+        (q) =>
+          p.x[1] <= q.x[0] ||
+          q.x[1] <= p.x[0] ||
+          p.z[1] <= q.z[0] ||
+          q.z[1] <= p.z[0] ||
+          p.y[1] <= q.y[0] ||
+          q.y[1] <= p.y[0],
+      ),
+    );
+
+  it("two doors 100 mm apart: the later one's legs between them are left out, its head piece stops at the jamb", () => {
+    // Door a spans x 1600–2400, b 2500–3300; a casing is 70 mm wide.
+    const m = mesh(
+      plan(
+        `${SHELL} ${ROOM} door id=a at (2000,4000) width 800 wall shell swing in door id=b at (2900,4000) width 800 wall shell swing in`,
+      ),
+    );
+    expect(rows(m, "b").at(-1)).toEqual(["door-casing-omitted", ["+face:end:trim a", "-face:end:trim a"]]);
+    expect(rows(m, "a").map(([r]) => r)).not.toContain("door-casing-omitted");
+    expect(clear(boxes(node(m, "L1/door:a:casing")), boxes(node(m, "L1/door:b:casing")))).toBe(true);
+    // b's head piece runs from its own jamb (x 2500), not past it.
+    expect(Math.min(...boxes(node(m, "L1/door:b:casing")).map((p) => p.x[0]))).toBe(2_500_000);
+  });
+
+  it("two windows 60 mm apart, and a window 95 mm from a door: the later sill's horn stops at its jamb", () => {
+    const m = mesh(
+      plan(
+        `wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,4000) (0,4000) close } room id=r at (0,0) size 8000x4000 label "R" uses living window id=w1 at (1500,0) width 1000 wall shell window id=w2 at (2560,0) width 1000 wall shell door id=d at (5000,0) width 900 wall shell swing in window id=w3 at (6045,0) width 1000 wall shell`,
+      ),
+    );
+    // One horn row each, the sill's: the boards' 20 mm horns fit in the 60 mm between w1 and w2, and
+    // the inside face has no casing in w3's way (the door's is 70 mm wide, w3's board starts 75 mm on).
+    const horns = (id: string) => rows(m, id).filter(([r]) => r === "window-sill-horn-omitted");
+    expect(horns("w2")).toEqual([["window-sill-horn-omitted", ["start:trim w1"]]]);
+    expect(horns("w3")).toEqual([["window-sill-horn-omitted", ["start:trim d"]]]);
+    expect(horns("w1")).toEqual([]);
+    for (const [a, b] of [
+      ["L1/window:w1:sill", "L1/window:w2:sill"],
+      ["L1/window:w1:board", "L1/window:w2:board"],
+      ["L1/door:d:casing", "L1/window:w3:sill"],
+      ["L1/door:d:casing", "L1/window:w3:board"],
+    ] as const)
+      expect(clear(boxes(node(m, a)), boxes(node(m, b))), `${a} ~ ${b}`).toBe(true);
+  });
+
+  it("passes a casing leg through a rug by the doorway, and leaves it out beside a wardrobe", () => {
+    const by = (piece: string) =>
+      mesh(
+        plan(
+          `${SHELL} ${ROOM} door id=d at (3000,4000) width 900 wall shell swing in furniture ${piece} at (3480,3300) size 400x590`,
+        ),
+      );
+    const rug = by("rug");
+    expect(rows(rug, "d").map(([r]) => r)).not.toContain("door-casing-omitted");
+    const wardrobe = by("wardrobe");
+    expect(rows(wardrobe, "d").at(-1)?.[0]).toBe("door-casing-omitted");
+    expect(String(rows(wardrobe, "d").at(-1)?.[1])).toMatch(/\+face:start:furniture /);
+  });
+
+  it("ledgers the colour of each trim part once (`trim-material-default`)", () => {
+    const m = mesh(EXAMPLES_LIST.find(([n]) => n === "laneway-house.arch")?.[1] ?? "");
+    expect(m.assumptions.filter((a) => a.rule === "trim-material-default").map((a) => `${a.kind}:${a.field}`)).toEqual([
+      "door:material(lining)",
+      "door:material(casing)",
+      "window:material(reveal)",
+      "window:material(sill)",
+      "window:material(board)",
+    ]);
+  });
+});
+
 describe("the trim over the corpus and the stress plans", () => {
   const plans = [...EXAMPLES_LIST, ...Object.entries(STRESS_PLANS)];
   const TRIM = new Set(["lining", "casing", "sill", "board", "reveal"]);

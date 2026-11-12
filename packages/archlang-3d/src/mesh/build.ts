@@ -52,12 +52,19 @@
  *   ticks), rails and pickets on the floor level (`outdoor.ts`, every default ledgered).
  * The ground round the building is the viewer's, never a node (`GROUND_PLANE`, `materials.ts`).
  */
-import { floorFinish, GROUND_PLANE, GROUND_WASH, STAIR_MATERIAL, STAIR_RAIL_MATERIAL } from "../materials.js";
+import {
+  floorFinish,
+  GROUND_PLANE,
+  GROUND_WASH,
+  STAIR_MATERIAL,
+  STAIR_RAIL_MATERIAL,
+  TRIM_MATERIAL,
+} from "../materials.js";
 import { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, overlapArea } from "../scene3d/overlap.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
 import { cutSector, degenerateHoles, insideCut, prism as extrude, rect, sectorBand, slab2d } from "./extrude.js";
 import { coveredBy, type Rect, rectMinus, slabRegion } from "./slab.js";
-import { doorTrim, type TrimContext, windowTrim } from "./openings.js";
+import { doorTrim, type TrimContext, TrimSite, windowTrim } from "./openings.js";
 import { stairDetail } from "./stair.js";
 import {
   CORE_POST_PITCH_MM,
@@ -651,6 +658,14 @@ function levelNodes(
   });
 
   const hostOf = new Map(lv.walls.map((w) => [w.id, w] as const));
+  // What the storey's trim is built round (card RM8.6, review M2/m4/m7): its walls, columns,
+  // doorways and standing furniture, each piece of furniture at the heights it is built to here.
+  const site = new TrimSite(lv, (f) => {
+    const family = f.asset.startsWith("t0:") ? f.asset.slice(3) : undefined;
+    const h = family ? (T0_HEIGHT_MM[family] ?? 0) : (FURNITURE_HEIGHT_MM[f.category] ?? FURNITURE_DEFAULT_MM);
+    const mount = family ? (T0_MOUNT_MM[family] ?? 0) : 0;
+    return [(FLOOR_FINISH_MM + mount) * MM, (FLOOR_FINISH_MM + h) * MM];
+  });
   lv.openings.forEach((o, i) => {
     const [j0, j1] = o.jambs;
     // A leaf or frame never stands above its wall: the head is capped at the host's top.
@@ -678,11 +693,27 @@ function levelNodes(
         head,
         top: hostHeight.get(o.host) ?? host.height,
         level: lv,
+        site,
         prism: (poly, a, b) => prism(poly, a, b),
       };
       const trim = o.kind === "window" ? windowTrim(o, ctx) : doorTrim(o, ctx);
       ledger.push(...trim.ledger);
-      for (const t of trim.parts) node(o.kind, o.id, i, t.shells, { host: o.host }, t.part);
+      for (const t of trim.parts) {
+        // The colour each part is built in, once per Mesh3D (card RM8.6, review m1): a drafting
+        // default like every other, ledgered.
+        const slot = `${o.kind}:${t.part}`;
+        if (!defaulted.has(`trim:${slot}`)) {
+          defaulted.add(`trim:${slot}`);
+          ledger.push({
+            kind: o.kind,
+            field: `material(${t.part})`,
+            value: TRIM_MATERIAL[slot as keyof typeof TRIM_MATERIAL] ?? o.kind,
+            provenance: "default",
+            rule: "trim-material-default",
+          });
+        }
+        node(o.kind, o.id, i, t.shells, { host: o.host }, t.part);
+      }
     }
     if (o.kind === "door") {
       const z0 = e + o.sill;

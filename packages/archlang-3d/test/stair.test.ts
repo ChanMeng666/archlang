@@ -421,6 +421,87 @@ describe("the balustrade (card RM8.6)", () => {
       expect(points(b, true), key).toEqual(points(a, false));
     }
   });
+
+  // Review M1 on PR #729: a landing's level rail ran across the flights arriving on it, the edge
+  // probed once at its middle. A dog-leg (two flights side by side, no well) and a half-turn (a
+  // 200 mm well between them), as two storeys so the stair climbs to a floor.
+  const turn = (x2: number, w: number) => {
+    const s = (dir: string) => `stair id=s dir ${dir} width ${w} {
+      flight at (500,1500) size ${w}x2000
+      landing at (500,500) size ${x2 + w - 500}x1000
+      flight at (${x2},1500) size ${w}x2000
+    }`;
+    return `plan "turn" { units mm
+      level 1 "G" { room id=h at (0,0) size 4000x5000 label "Hall" uses hall walls from rooms exterior 200 partition 100 ${s("up")} }
+      level 2 "F" { room id=g at (0,0) size 4000x5000 label "Landing" uses hall walls from rooms exterior 200 partition 100 ${s("down")} }
+    }`;
+  };
+  const levelRailsOverFlights = (scene: Scene3D, m: typeof plain): number => {
+    const st = m.nodes.find((n) => n.key === "L1/stair:s:rail") as MeshNode;
+    const flights = scene.levels[0]?.stairs[0]?.flights ?? [];
+    expect(flights.length).toBe(2);
+    let n = 0;
+    for (const sh of st.shells) {
+      const [x0, y0, z0, x1, y1, z1] = extent([sh]);
+      // A level rail: flat top and bottom, 50 mm apart (a sloping rail or a post is neither).
+      const level = new Set(sh.positions.filter((_, k) => k % 3 === 1)).size === 2 && y1 - y0 === 50_000;
+      if (!level) continue;
+      for (const f of flights)
+        if (x0 < f.at[0] + f.size.w && x1 > f.at[0] && z0 < f.at[1] + f.size.h && z1 > f.at[1]) n++;
+    }
+    return n;
+  };
+
+  it("a dog-leg's landing has no rail across its flights, and no rail between the two flights", () => {
+    const scene = adapted(turn(1500, 1000)).scene;
+    const m = buildMesh(scene);
+    expect(sides(m)).toEqual([
+      "side(flight 1, left)=open",
+      "side(flight 1, right)=flight",
+      "side(flight 2, left)=flight",
+      "side(flight 2, right)=open",
+      "side(landing 1, top)=open",
+      "side(landing 1, right)=open",
+      "side(landing 1, bottom)=flight",
+      "side(landing 1, left)=open",
+    ]);
+    expect(levelRailsOverFlights(scene, m)).toBe(0);
+  });
+
+  it("a half-turn's landing rails only the well between its flights, and each flight its well side", () => {
+    const scene = adapted(turn(1600, 900)).scene;
+    const m = buildMesh(scene);
+    expect(sides(m)).toEqual([
+      "side(flight 1, left)=open",
+      "side(flight 1, right)=open",
+      "side(flight 2, left)=open",
+      "side(flight 2, right)=open",
+      "side(landing 1, top)=open",
+      "side(landing 1, right)=open",
+      "side(landing 1, bottom)=open",
+      "side(landing 1, left)=open",
+    ]);
+    expect(levelRailsOverFlights(scene, m)).toBe(0);
+    // The bottom edge's rail is the well's 200 mm alone, less the two newels standing in it.
+    const rails = (m.nodes.find((n) => n.key === "L1/stair:s:rail") as MeshNode).shells.map((sh) => extent([sh]));
+    const wellRail = rails.filter(
+      ([x0, , z0, x1, , z1]) => z0 >= 1_450_000 && z1 <= 1_500_000 && x0 >= 1_400_000 && x1 <= 1_600_000,
+    );
+    expect(wellRail.length).toBeGreaterThan(0);
+  });
+
+  // Review m5: a `dir down` stair with no `dir up` partner below is built on the storey below, from
+  // its floor, and its edges are probed against that storey's walls, the ones it stands beside.
+  it("probes a stair built from the storey above against the walls of the storey it stands in", () => {
+    const m = buildMesh(
+      adapted(`plan "p" { units mm
+        level 1 "G" { ${SHELL} ${room("a")} wall id=side partition thickness 200 { (900,0) (900,6000) } }
+        level 2 "U" { ${SHELL} ${room("b")} void id=well at (1000,1000) size 1000x3000 ${STRAIGHT("down")} }
+      }`).scene,
+    );
+    expect(stairNodes(m).map((x) => [x.key, x.extras.from_storey_above])).toEqual([["L1/stair:st", true]]);
+    expect(sides(m)).toEqual(["side(flight 1, left)=wall", "side(flight 1, right)=open"]);
+  });
 });
 
 describe("determinism", () => {

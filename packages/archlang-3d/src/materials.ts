@@ -108,7 +108,8 @@ export const KIND_PALETTE = {
   "window:glass": m("#bcd6e0", 0.05, 0, 0.4),
   // The trim (card RM8.6): a window's reveal in its frame's bronze, its exterior sill in the pale
   // stone and its interior board in the oak of the palette; a cased opening's lining and casing in
-  // the doors' oak (a door's own lining and casing are `door`). Drafting defaults, ledgered.
+  // the doors' oak (a door's own lining and casing are `door`). Drafting defaults, ledgered once per
+  // Mesh3D as `trim-material-default` from `TRIM_MATERIAL`.
   "window:reveal": FRAME_BRONZE,
   "window:sill": PALETTE.stone,
   "window:board": PALETTE.wood,
@@ -125,6 +126,21 @@ export const KIND_PALETTE = {
 } as const satisfies Readonly<Record<string, SlotMaterial>>;
 
 export type KindMaterial = keyof typeof KIND_PALETTE;
+
+/**
+ * What each trim part (card RM8.6) is built in, as the ledger records it (`trim-material-default`,
+ * review m1 on PR #729): the material its node is written in (`KIND_PALETTE` entry) and that
+ * entry's colour. A door's lining and casing are its leaf's oak.
+ */
+export const TRIM_MATERIAL = {
+  "door:lining": { material: "door", srgb: KIND_PALETTE.door.srgb },
+  "door:casing": { material: "door", srgb: KIND_PALETTE.door.srgb },
+  "opening:lining": { material: "opening:lining", srgb: KIND_PALETTE["opening:lining"].srgb },
+  "opening:casing": { material: "opening:casing", srgb: KIND_PALETTE["opening:casing"].srgb },
+  "window:reveal": { material: "window:reveal", srgb: KIND_PALETTE["window:reveal"].srgb },
+  "window:sill": { material: "window:sill", srgb: KIND_PALETTE["window:sill"].srgb },
+  "window:board": { material: "window:board", srgb: KIND_PALETTE["window:board"].srgb },
+} as const;
 
 /**
  * The replay's colour for a wall's cut top (its cap, the faces at its full height): the poché of a
