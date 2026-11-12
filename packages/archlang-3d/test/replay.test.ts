@@ -468,4 +468,12 @@ describe("replay HTML", () => {
   });
 });
 
-const LANEWAY_EVENTS_SHA256 = "38384e98f53d3d7091f8a4a6e8312d6a0d3bc40e44891bbfe3f634bc2256921e";
+/**
+ * laneway-house's event table, SHA-256 of its JSON.
+ *
+ * Moved by product-roadmap card RM8.6 (was 38384e98…): its doors and windows gain their trim, 20
+ * nodes (each door's `lining` and `casing`, each window's `reveal`, `sill` and `board`), each with an
+ * event that rises with its host wall, as the opening does; the ranks after them shift. With those
+ * 20 nodes taken out of the Mesh3D, the table hashes to 38384e98… exactly: no other event moved.
+ */
+const LANEWAY_EVENTS_SHA256 = "d3e3b2ac6e488f519651a1635f985bdd21306c610481bf1095717a82fa113b83";

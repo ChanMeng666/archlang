@@ -73,7 +73,9 @@
 
 ---
 
-### RM0.7 · playground 编译器路径预算用尽，结构性腾出余量（2026-11-12 加，出自 #721 与 #704、#713） — `todo` · 未估（先量） · opus · 依赖无 · **高优先：挡住 RM6.1（#721 的 e2e）与 RM8.7、RM8.9**
+### RM0.7 · playground 编译器路径预算用尽，结构性腾出余量（2026-11-12 加，出自 #721 与 #704、#713） — `done` · #727（`21d3e0f4`） · opus · 依赖无 · **已不再挡 RM6.1（#721 的 e2e）与 RM8.7、RM8.9**
+
+**状态（#727 合并后）：`done`。** 编译器路径 458,385 → 390,605 B gzip；`compilerPathBudget` 458,980 → 401,000（余量约 10.4 KB）；`embedPathBudget` 447,000 → 387,000。目录的 fix 列由 `gen:errors` 生成到 `src/error-catalog-fixes.ts`；playground 面板读 `dist/error-catalog.js`（第二次 tsup 构建，不进 npm tarball）；语料字节恒等。余项见 RM0.7b、RM0.7c、RM0.7d。**下面是合并前的卡文（历史）。**
 
 现象：`playground/e2e/startup-chunks.baseline.json` 的 `compilerPathBudget` 是 458,980 B（#704 由 458,000 重取）。基线 `bfd63c4c` 实测 458,294 B（余 686 B），#713 加 74 B，#721 自己量得 459,828 B，是对 `bfd63c4c` 的 848 B；基于现在的 `main`（含 #713）约 **920 B**（458,294 + 74 + 1,534 = 459,902 对 458,980），要在变基后的 #721 上重新量。每个新语法形式或诊断都让编译器 chunk 变大（#704 的五条诊断目录文字约 3,039 B gzip；每个 CLI 标志的 manifest 条目都进编译器路径）。
 
@@ -90,9 +92,41 @@
 #713 的出处表把 IBC 1219 mm 门扇的版本记为 "2018 and earlier"（iDigHardware 转引，2021 版删了这句；growth 的勘误 (1)），但 `W_LEAF_TOO_WIDE` 的 `arch explain` 文字仍沿用旧说法。内容：让文字与出处表一致（先读表，不重抄）。证明：`arch explain W_LEAF_TOO_WIDE` 与表一致的测试。不许：在 `message` 里引条文号；把 `S-secondary` 写成 `S-full`。
 
 
+### RM0.7b · 增长门重取基线（2026-11-12 加，出自 #727） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+现象：增长门（基线 438,980 + 20,000 = 458,980）现在比 `compilerPathBudget` 401,000 还松，永远不会先触发。内容：按实测大小重取增长门基线。证明：门的上限低于预算，且在人为加重的构建上先红。不许：抬 `compilerPathBudget`。
+
+### RM0.7c · `explain("constructor")` 在库里抛 TypeError（2026-11-12 加，出自 #727） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+现象：库的 `explain("constructor")` 抛 `TypeError`（CLI 先拒绝了这个名字，所以只有库露出）。内容：对自有键做守卫。证明：`explain` 对 `constructor`、`__proto__`、`toString` 返回未知码的结果而不抛。不许：改已知码的输出文字。
+
+### RM0.7d · 其他被打包器因不纯而保留的顶层值（2026-11-12 加，出自 #727） — `todo` · 未估 · opus · 依赖无（线下）
+
+现象：除已处理的以外，还有顶层值（例如 `STAIR_SAFETY_CODES`）因打包器认为有副作用而留在只编译的包里。内容：逐个量；在只编译的包里是死代码的，标纯。证明：前后路径大小贴进 PR，`compile()` 输出语料逐字节不变。不许：不先量就标纯；给有副作用的值标纯。
+
+### RM8.5b · Plan JSON 丢掉用作洞盖的 `outdoor`（2026-11-12 加，出自 #719） — `todo` · 未估 · opus · 依赖无（线下）
+
+现象：`outdoor` 用作洞盖时 Plan JSON 把它丢了，`examples/courtyard-family.arch` 经 JSON 回来后无法编译（`E_ROOMS_NOT_TILING`）。内容：让 JSON 带上它，或由 `planToJson` 明说该文档不能还原；修好后删掉 `UNRESOLVED_WAY_BACK` 里的那一条。证明：该示例的 JSON 往返测试。不许：只删名单不修。
+
+### RM8.5c · `test/visual.test.ts` 以 basename 为 garden-courtyard 金图取键（2026-11-12 加，出自 #719） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+现象：金图按 basename 取键，将来同名的顶层示例会撞。内容：改成按相对路径取键。证明：同名两个示例不撞的测试，现有金图不动。不许：重蓝金图。
+
+### RM8.5d · `scripts/specimen.ts` 比较模式遇到 `--before` 检出不认识的家族就抛（2026-11-12 加，出自 #719） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+现象：新增家族后无法跨增加做前后对照。内容：不认识的家族在 before 侧显示为缺失而不抛。证明：对一个缺家族的检出跑比较的测试。不许：改非比较模式的输出。
+
+### RM8.5e · 余项：3D 目录小图与 garden-courtyard 的文档提及（2026-11-12 加，出自 #719） — `todo` · 未估 · sonnet · 依赖无（线下）
+
+内容：在主检出干净的 `npm run build` 之后重现 3D 目录小图并核对；为 garden-courtyard 在 docs 里加一处提及（用文字，不在围栏里写新家族词，见 `.claude/rules/docs-prose.md`）。证明：重生成的图与已提交的一致；`docs:build` 绿。不许：手修图。
+
 ### RM0.8 · Deploy mcp 的 smoke：对固定版本的副本，在一次 302 或非 immutable 的响应上重试几秒（2026-11-12 加，出自 run 43015163598） — `todo` · 未估 · sonnet · 依赖无（线下）
 
 run 43015163598（`9a3be392`，11:49:49Z）的 `Deploy mcp (scripted Worker)` smoke 报 `/svg/<studio.arch payload>: the pinned copy is not immutable: public, max-age=300, stale-while-revalidate=86400`。协调者的判断：版本传播的竞态，部署后一秒固定版本的 URL 落到了旧的 isolate，不是配置缺口；之后的 Deploy run 43025136172 全部 success。内容：让 `scripts/smoke.mjs` 在固定版本的取副本上遇到 302 或非 immutable 的头时重试几秒（有上限、有最后一次的真实错误），其余检查不放宽。证明：一个测试用假服务器先返回旧头再返回 immutable 头；真正的缺陷（一直不 immutable）仍然失败。不许：放宽 immutable 的断言；无上限地重试。
+
+### RM0.9 · 兼容检查器把带 `kind` 的联合当作枚举集合（2026-11-12 加，出自 RM-D33 的协调者裁定） — `doing` · 未估 · opus · 依赖无 · **挡 RM6.1（#721）的合并**
+
+现象：新增一种元素（`kind` 带标签的公开联合的新变体，或以它为键的常量的新键）会让 `scripts/compat-check.mjs` 报破坏性变更，只能用 BREAKING 豁免放行；RM6.1 的 `section` 就会撞上。协调者 2026-11-12 的裁定（可推翻）：这是 minor。内容：扩展 `scripts/compat-check.mjs`，把带 `kind` 的联合当作类似枚举的集合：加变体、以它为键的常量加键 = 加法（minor）；删变体、改名、改已有变体的字段仍是 BREAKING。证明：测试覆盖加变体（通过）、删变体与改字段（仍失败）、以 `kind` 为键的常量加键；对 `main` 与 #721 的头各跑一次，#721 不再需要豁免。不许：放宽已有的枚举与字段规则；用豁免清单代替规则；顺手改别的检查。
 
 ## 阶段 B · 冻结前（11-13 → 约 11-21 切 1.59.0）：~~不加语法~~（RM-D27 作废，`README.md` §6.5：`[语法]` 卡在 PS7.9 合并后就开工，不等阶段）
 
@@ -479,6 +513,7 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 - 证明托管的 app 仍能渲染（ChatGPT app 的 UI 层）。
 - 与 RM1.6b 共用一次 `packages/mcp` 版本 bump（`packages/mcp/server.json` 两处同步）。
 - 风险层是 high：评审 + 协调者判断后合并（`docs/agents/commands.md` § Merging a PR）。
+- **2026-12-01 之后开工（RM-D34，`README.md` §6.7，受托）：** CI 红在 `Workspace builds`（`packages/mcp-worker`）；现在不合并，因为推送 `main` 会部署 ChatGPT/OpenAI 用的托管 MCP Worker。要做：把 Worker 适配到 2.x、在 ChatGPT 里测托管工具、对抗评审。#603 保持打开作提醒；针对 1.7.x 的安全公告会让本卡提前。
 
 证明：CI 的 "Workspace builds" 绿；托管 app 的资源在部署后能取到并渲染（记录请求与截图在 PR 说明，不进测试）；MCP 工具的输出除 bump 外不变。
 
@@ -519,9 +554,9 @@ RM-D19 的受托裁定：Dependabot #603（1.7.5 → 2.0.4，主版本，CI 在 
 
 不许：手做或手修任何图；改任何主题的值；让站点出现深色页面或 `.dark` 规则；把 `rendered` 图放进核心以外的渲染路径。
 
-### RM8.5 · 把词表亮出来 — `doing` · #719（草稿，头 `915bb1f3`） · 3 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（展示示例一节）；backlog D.8
+### RM8.5 · 把词表亮出来 — `done` · #719（`0c7ff4a6`） · 3 日（主会话估） · opus · 依赖冻结期的 `visual-language.md`（展示示例一节）；backlog D.8
 
-**状态（12:23Z）：`doing`，草稿 #719（头 `915bb1f3`，分支 `feat/rm8.5-vocabulary-showcase`）。** 样张工具 `scripts/specimen.ts`、103 张目录图、`examples/courtyard-family.arch` 与 `examples/showcase/garden-courtyard.arch`；本地 `check:quick`、`docs:build` exit 0，等 CI。**评审要细看：** `test/rectilinear-rooms-byte-identity.test.ts` 新增的 `AFTER_THE_FORM` 排除名单（示例 A 的前厅是一个 U 形多边形，走到了新形式，没有更早的树能量它，所以在名单里按名字排除，并新增一个用例断言名单里每个名字都存在且走到该形式）与 `test/finish-furnish.test.ts` 的 `CORPUS_PARTLY` 行；协调者已批准排除名单这条路线（测试前提的改动）。
+**状态（#719 合并后）：`done`，合并提交 `0c7ff4a6`。** 样张工具、目录图、示例 `courtyard-family` 与 `garden-courtyard` 已进。品味等变律重述（协调者裁定 2026-11-12，所有者可推翻）：读罗盘的是 R12；主入口由街道选定时，还有 R3 与分区。余项见 RM8.5b–RM8.5e。**下面是合并前（12:23Z）的状态（历史）：** 草稿 #719（头 `915bb1f3`，分支 `feat/rm8.5-vocabulary-showcase`）。 样张工具 `scripts/specimen.ts`、103 张目录图、`examples/courtyard-family.arch` 与 `examples/showcase/garden-courtyard.arch`；本地 `check:quick`、`docs:build` exit 0，等 CI。**评审要细看：** `test/rectilinear-rooms-byte-identity.test.ts` 新增的 `AFTER_THE_FORM` 排除名单（示例 A 的前厅是一个 U 形多边形，走到了新形式，没有更早的树能量它，所以在名单里按名字排除，并新增一个用例断言名单里每个名字都存在且走到该形式）与 `test/finish-furnish.test.ts` 的 `CORPUS_PARTLY` 行；协调者已批准排除名单这条路线（测试前提的改动）。
 
 `docs/furniture.md` 的符号目录（"The symbol catalogue" 一节）只有文字，没有一张图；评审用的前后对照样张工具从未提交（backlog D.8："`scripts/` has no equivalent"）；103 个家族里 42 个从未以 `furniture <词>` 出现在 `examples/**`（`README.md` §1.1d 第 2 条）。
 - 提交样张工具（D.8）：从 `CANONICAL_FIXTURES`（`FIXTURE_FAMILIES` 的派生，`src/elements/fixtures-glyphs.ts`）与 `CATALOG`（`src/fixtures-catalog.ts` 的占地）生成每个家族的 2D 符号图，在 `scale 1:50` 与 `1:100`、各主题（默认、`blueprint`、`mono`、`dark`、`presentation`、`rendered`）下；D.8 的前后对照模式（两份检出，一张 PNG）一并做。按 D.8，它不进 `check:drift`。

@@ -13,6 +13,23 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-pinned by product-roadmap card RM8.6 (2026-11-12, PR #729, the trim of doors and windows and
+the stair in its parts): every door gains its lining and casing, every window its reveal, sill and
+board, and two-storey's stair is tread boards, stringers and a balustrade instead of a stepped
+solid; courtyard-house's trees and shrubs are lofted crowns (the card's first commit). Each moves
+the frames that show it. Exactly 12 frames moved: laneway-house `stage:fixtures` (`11b9a693…` →
+`067872cb…`), `tilted` (`7eb82778…` → `7879c0ae…`) and `end` (`e2a98a0e…` → `903bbd44…`);
+two-storey `stage:openings` (`2ac49bb5…` → `2c73acf6…`), `stage:fixtures` (`aed4a38a…` →
+`639a0302…`), `stop:1` (`697d5887…` → `adac293c…`), `tilted` (`e64d4d9b…` → `75208662…`),
+`storey:2` (`f2fab198…` → `ccfdee73…`), `stop:2` (`9ec0b815…` → `ad1b0d95…`) and `end`
+(`5485e3d0…` → `3c80a946…`); courtyard-house `tilted` (`7aa10eed…` → `af052e3f…`) and `end`
+(`d17207c4…` → `4259e01a…`). Every other hash, the brief, rooms and walls stages of both plans
+among them, and both `taken` entries are unchanged. The 12 new hashes are the ones CI's `check-3d`
+job printed for the PR's head `3bf4cf26` (GitHub Actions run
+https://github.com/ChanMeng666/archlang/actions/runs/43140265883, job 130925323784, ubuntu x64),
+where the key-frame comparison failed on exactly these; they were not rendered locally. The fix in
+the next commit (a cased opening whose id holds a `:` keeps no trim) moves no plan of the set.
+
 Extended by RM8.3's review round 1 (2026-11-11, PR #701, S6): a site plan joins the set,
 `courtyard-house` at two frames only (`ONLY` in `../keyframes.e2e.ts`): `tilted` (`7aa10eed…`, the
 walls still rising) and `end` (`d17207c4…`). Its patio lies over the slab, where a top in the slab's

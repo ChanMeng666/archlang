@@ -16,7 +16,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "266b40c55418ccbdb24c4e0fb73087f46700976cc327e1c1ab2893d6c6d9145f",
+          "frameSha256": "bb0ec1b9676de0bf95ea60310dee2e883bed722b2869bd352a00d5ba317fe1a0",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -34,8 +34,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "f45643288baddb578d5b7c06dc0f01744b7f9dae1dcdcebbe70907bf21dc432f",
-        "contentSha256": "6e5ebc0fad41efbaf23a062381f4ef466804cf1b6b92466e640c10c2829a9007",
+        "sha256": "d2817dff7dedca4c39cff4c218aa4e72ffe1f8b75f92522a4dd7cdf054496dab",
+        "contentSha256": "31a3f8ac77c3387660a8cd4daa00047768ccdcc534c777d8b2d1083d305834d8",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -52,27 +52,27 @@
       "files": [
         {
           "path": "studio.poster.webp",
-          "bytes": 33852,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 34970,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "studio.poster.png",
-          "bytes": 130909,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 136379,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "studio.replay.mp4",
-          "bytes": 448705,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 450484,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "studio.glb",
-          "bytes": 95596,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 117344,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "studio.plan.png",
@@ -97,7 +97,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "f9bd762e9a951d79edaa5d7850ffc5f696e679a6d293f0f0d764ac41ec244216",
+          "frameSha256": "6c4a01ccd3da007bf2b5dc5202cd1fd5e87de42cd4402418365cc53c4b92d7f9",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -115,8 +115,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "24145c77368b8c7cf3ded03c8678f0ddd0f22205fdb942fe43986625a09e0b56",
-        "contentSha256": "d36050fb578442ce81ee40b2569820b48811120d4a1b4ec29e2e347d5dd55503",
+        "sha256": "1bab6dd908180271582cd8320ef438a1c0f54ff60a425169ea2c53421471edfe",
+        "contentSha256": "c9b1f8b363c3081710f19193c36676a248edf5582a1937a07913c3c50bee1d4f",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -133,27 +133,27 @@
       "files": [
         {
           "path": "furnished-flat.poster.webp",
-          "bytes": 50942,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 51516,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "furnished-flat.poster.png",
-          "bytes": 196848,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 199723,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "furnished-flat.replay.mp4",
-          "bytes": 543904,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 538961,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "furnished-flat.glb",
-          "bytes": 376860,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 414180,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "furnished-flat.plan.png",
@@ -178,7 +178,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "ddab15390e6d193789836ce216498979158973dc27026ce9347b32ce50540072",
+          "frameSha256": "953af2ad030efef84fa0649d055adeaff42bc7d11c4b1e68d68ca6d53bb81cd8",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -196,8 +196,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "31fc9bf9dc81e3286f77158452ad4283ac6ffa091d6dc73ec34aa8f026cde92a",
-        "contentSha256": "819d505d112fc22386c3737cb69b981110d7f9b6849d29f710459d693b8c3d51",
+        "sha256": "b0f76fbd9ec50a06838693ccb5ea39d45b1da9a13fa663038094d16960f2309b",
+        "contentSha256": "515ae7327ab4368907278ee2688640156d2b0a654a51cfbe4823d3440f3d11e2",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -214,27 +214,27 @@
       "files": [
         {
           "path": "laneway-house.poster.webp",
-          "bytes": 38400,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 39508,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "laneway-house.poster.png",
-          "bytes": 144558,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 151107,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "laneway-house.replay.mp4",
-          "bytes": 528713,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 529965,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "laneway-house.glb",
-          "bytes": 112436,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 137844,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "laneway-house.plan.png",
@@ -259,7 +259,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "eeb5c2e273dce00913fa6a67e1579386da243b68f027435317a06fb9e98bab5f",
+          "frameSha256": "0196e8e571c2b2a9dc79f563039fdd5688d2acdc3a50c4e6aea45f3989f3f719",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -277,8 +277,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "3fdf51f00dedb00ba08049e9c9211f9ecfa045806e1fb3690bbc3df2bd9f05c4",
-        "contentSha256": "c8ee31d8f29d49278eeff97296c392fad7c12522e513f243e8122b882d9b8678",
+        "sha256": "b8abf3e7bc8ce83bf93825d02f2147d99931c78aa6242a2e0fa52fbe80df6f60",
+        "contentSha256": "32399e6ac46c74996de9bf0da3522f7b2a955845ae8b170b1b33b6a84ef97e28",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -295,27 +295,27 @@
       "files": [
         {
           "path": "knob-flat.poster.webp",
-          "bytes": 33830,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 34628,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "knob-flat.poster.png",
-          "bytes": 137359,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 140948,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "knob-flat.replay.mp4",
-          "bytes": 432135,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 434673,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "knob-flat.glb",
-          "bytes": 87608,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 106820,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "knob-flat.plan.png",
@@ -340,7 +340,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "e5f20e59267b4f8efec51926b01863080931f3704d5e4b41d54c1e7a6e3baac2",
+          "frameSha256": "24c5571def2740bcac9d294d6a03c47f412da8173b49b76c6f7cba8b246deead",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -356,7 +356,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "5d78bfd0de4c5a74d7f7decfec0f7ea2184a2179a1cc77688294114092852b38",
+          "frameSha256": "9bf8ec9251af306d024708723721478214f57e163f30a4a692fcaedaf1289814",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -374,8 +374,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "82517f1c17adba935f08170ba434af7a7494932173c535ef3544d9941ef7420a",
-        "contentSha256": "14fb5493b61fb437745f22d98f8a08af08a84e814c1c74673ab0e4fea300fed4",
+        "sha256": "e29c3b62ee8d9eaa2a082d3fe3fa25230bd830bf63f89f5554c934fa21d3ebac",
+        "contentSha256": "9cbc638f825fb5daee7e6e3f4d090928cf1e77dbf0c27377fc36edcd59cfd0db",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -393,39 +393,39 @@
       "files": [
         {
           "path": "two-storey.poster.webp",
-          "bytes": 42850,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 42864,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "two-storey.poster.png",
-          "bytes": 160925,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 169336,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "two-storey.poster-full.webp",
-          "bytes": 35358,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 36128,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "two-storey.poster-full.png",
-          "bytes": 131562,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 134484,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "two-storey.replay.mp4",
-          "bytes": 423532,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 421457,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "two-storey.glb",
-          "bytes": 122892,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 162612,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "two-storey.plan.png",
@@ -450,7 +450,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "a0cbd5f2c8e1454f456371744fb1aac82d16b785d221c13c3109eaa31b0a01f4",
+          "frameSha256": "fd8a2802c98ceacfb73ef52607889a75c5448dddce6c7ca4cc397ba75569d5c1",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -466,7 +466,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "72b00ac51798d54404b3a8ead2685a9fe79bf302d8db77b42ca95a92413349ae",
+          "frameSha256": "743d8828ed835edf0612cb4cead01c4878996e319359d2ff4d47c95f5984f86c",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -484,8 +484,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "22110e01d24322acb1941add1d733db4112e04bfab6757b34e63255860148893",
-        "contentSha256": "33d2ae985a1848aecbffbb5885a4fe610d4edf56eec3b0bfd1c4b41f87c56c7e",
+        "sha256": "c40b62cee1621af0e467e2674f4ce6ab5e601b9f38f83c64eb10b8d562843481",
+        "contentSha256": "95882cbb1e8bea176b8563c7372f0477c3d40444bdf063d28929b46c9a8c51fc",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -503,39 +503,39 @@
       "files": [
         {
           "path": "turning-stair.poster.webp",
-          "bytes": 36424,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 36264,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "turning-stair.poster.png",
-          "bytes": 125132,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 141513,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "turning-stair.poster-full.webp",
-          "bytes": 29900,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 31886,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "turning-stair.poster-full.png",
-          "bytes": 114850,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 120673,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "turning-stair.replay.mp4",
-          "bytes": 329819,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 331216,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "turning-stair.glb",
-          "bytes": 28584,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 56336,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "turning-stair.plan.png",
@@ -560,7 +560,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "a8351b1362ba40010a8031dc15f399e9c60903fd3f709f38d93eb74b0788583f",
+          "frameSha256": "973211546984b58c9fc0675dc057e187f5faa4963c80875afcba8dd873d7b683",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -570,8 +570,8 @@
         }
       ],
       "glb": {
-        "sha256": "612c3e402daca0bdad230fbcd5f7f2a9c51e783e61c79712674c9850f6859a45",
-        "contentSha256": "d769ca1e51d4a4e5df4f5ee51a7204a49a396702e30f95c8d18f599c68074846",
+        "sha256": "462fd32ba0f035bed3fdd592bcb7d83aa2998c7daa5f4c1772d68ea1a243f552",
+        "contentSha256": "0f6777bdf0e57cbd29ee53269bf58ee4ede1f29f020ec17b11471e89b2b0f802",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -588,21 +588,21 @@
       "files": [
         {
           "path": "bungalow.poster.webp",
-          "bytes": 46364,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 48482,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "bungalow.poster.png",
-          "bytes": 171429,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 181023,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "bungalow.glb",
-          "bytes": 138536,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 188812,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "bungalow.plan.png",
@@ -627,7 +627,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "afbb68bb34ab158bf5285e76bf7edbf06a989011eb2314e2bce50f0bb377b762",
+          "frameSha256": "4eb6e9b68e2614494213be7be34c1ce4189de23ea4d41a1d29d16195b9515731",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -637,8 +637,8 @@
         }
       ],
       "glb": {
-        "sha256": "8aff2637a70ea391aeeda125835c029550be1ad91b1ded258ec300b67da35de2",
-        "contentSha256": "31f449af8a9fdfac7b29b88e77456bc313e708a30660c788efada240b98917a4",
+        "sha256": "9e76eb1a871829118ebc0e6e0566c041cf87f6109592a0cb6d3da9f8c981650b",
+        "contentSha256": "ea4f70c2056985617f154d742af8513c016f7f51ee871757a739d2e0cf8eb181",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -655,21 +655,21 @@
       "files": [
         {
           "path": "courtyard-house.poster.webp",
-          "bytes": 58262,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 59214,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "courtyard-house.poster.png",
-          "bytes": 204747,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 211290,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "courtyard-house.glb",
-          "bytes": 235864,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 320056,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "courtyard-house.plan.png",
@@ -694,7 +694,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "56e3cfe7a48499c109fb1a37074def27c4b45bfea6a21373ac38580987821075",
+          "frameSha256": "a9b170cd55963cdf3744b0398df2a23c678cd2664eaefe2c5ea383d471d2fe4c",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -710,7 +710,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "892be84f6c5ca0a644bee4330141dd334b8633ff6b9b702b72375f87d30ecd73",
+          "frameSha256": "ff6729791b68b751d7d7483663c2d15cd7a643d2191e47b578de462f701cafe7",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -720,8 +720,8 @@
         }
       ],
       "glb": {
-        "sha256": "956cb6b865d365985d904b6c97d78310f8bddbbd24abccab17ef7d557e19b0fd",
-        "contentSha256": "a3d5c24ed10be9766f9fc94dafb5d859ce43109fa69082b1dff386848c94672d",
+        "sha256": "b091328c2f20941260c0e61d1cd0334b03d7163d691227651d5b149a848b9d7a",
+        "contentSha256": "72ae9f1b3286aa48e5def8d90ef5173f914698daaf19b61a46dc2f0be463ab82",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -739,33 +739,33 @@
       "files": [
         {
           "path": "hillside-villa.poster.webp",
-          "bytes": 58784,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 57242,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "hillside-villa.poster.png",
-          "bytes": 209534,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 214908,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "hillside-villa.poster-full.webp",
-          "bytes": 53346,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 55036,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "hillside-villa.poster-full.png",
-          "bytes": 199373,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 207699,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "hillside-villa.glb",
-          "bytes": 564632,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 695120,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "hillside-villa.plan.png",
@@ -790,7 +790,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "70267a9704b4668f5ab18496e1bdd6289dd62dc82e3549b97f7aad9e0ac4cfc3",
+          "frameSha256": "4ba878283954b05a7618a6f69101fd015c35a8c3aeca44a8043cdf9a6161bc46",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -800,8 +800,8 @@
         }
       ],
       "glb": {
-        "sha256": "31e72361d15be2879c63210d2976fddd5614e64934c7517828f7c96a4dd1724a",
-        "contentSha256": "c26c27afe519da49ee577fbb970d5111f72a913cce3c59f189fb10b652a9d36a",
+        "sha256": "bda3a1d6a077b92485024fca82766e369fe5da36831e72feb1818aac5a07020c",
+        "contentSha256": "755c1588c174a2dea3a64c81e5b99cffe5ac485fa73672a6a603c3f68f4aecbe",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -818,21 +818,21 @@
       "files": [
         {
           "path": "corner-cafe.poster.webp",
-          "bytes": 56902,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 58038,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "corner-cafe.poster.png",
-          "bytes": 211896,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 214905,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "corner-cafe.glb",
-          "bytes": 338316,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 384764,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "corner-cafe.plan.png",
@@ -857,7 +857,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "b27a53f7951db09670b354efd09fab549693d18cf8997ae21df4c1c4e26af722",
+          "frameSha256": "3ed6b1da4096c41c59910dfd2f75b37ef59f94bdf257988242790e3c874d5976",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -867,8 +867,8 @@
         }
       ],
       "glb": {
-        "sha256": "6eb6ac222e364db242003acdde8864fcf66e13d096b22e2aa0ce700257b17844",
-        "contentSha256": "d9974d853c6b142326d27931a53358772e89b5ca21d13878585c46889d52f511",
+        "sha256": "18712619627796788a2ded03da4188a9a0b09533e10e52cad93f3686d47ce4bb",
+        "contentSha256": "b1291fa38a1ac7d4b1f44580dfc165663278e22462e2119cb859d5bd2c2022e0",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -885,21 +885,21 @@
       "files": [
         {
           "path": "library.poster.webp",
-          "bytes": 99648,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 98398,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "library.poster.png",
-          "bytes": 300623,
-          "archlang": "1.58.0",
-          "archlang3d": "0.5.0"
+          "bytes": 300727,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "library.glb",
-          "bytes": 533604,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 634088,
+          "archlang": "1.59.0",
+          "archlang3d": "0.6.0"
         },
         {
           "path": "library.plan.png",
