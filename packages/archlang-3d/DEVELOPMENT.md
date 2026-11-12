@@ -60,7 +60,12 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   out across each storey so a seam between two flat pieces draws no line, and their faces without
   the ones two pieces share: inside one node always, between nodes once the nodes meeting there are
   all up, so every frame of the rise is closed; pure, browser-safe; every other node keeps
-  three.js's `EdgesGeometry`), `camera.ts` (the end camera and the stops, and the free
+  three.js's `EdgesGeometry`), `shadows.ts` (the soft contact shadows, card RM8.8: bands along
+  the union outline of each storey's wall and column feet with a 16-gon fan at each outside
+  corner, up each inside corner, round each standing piece of furniture, beside each fence run
+  and round each stair's stringers; baked once at mount from the nodes, pure, integer µm, at most
+  three buffers a storey; the viewer's only, ledgered `contact-shadows-viewer-only`; its frame
+  cost is measured by `e2e/frame-budget.e2e.ts`), `camera.ts` (the end camera and the stops, and the free
   camera's presets and limits, `presetCamera`, all pure), `view-dom.ts` (the presets', Reset's and
   the storeys' buttons, `viewToolbar`), `viewer.ts` (the HTML's host:
   `__seek`/`__frameHash`), `viewer-bundle.ts` (`viewer.ts` plus three.js as one script), `html.ts`

@@ -38,6 +38,8 @@ export {
 } from "./mesh/t0.js";
 export type { Part, SectionShape } from "./mesh/t0.js";
 export {
+  CONTACT_SHADOW,
+  contactBandMm,
   FENCE_PALETTE,
   FINISH_PALETTE,
   FLOOR_FINISH_RULES,
@@ -97,6 +99,8 @@ export {
   viewLabel,
   viewMesh,
 } from "./replay/timeline.js";
+export { contactShadows } from "./replay/shadows.js";
+export type { ContactShadows, ShadowClass, ShadowLayer } from "./replay/shadows.js";
 export { replayFacts } from "./replay/facts.js";
 export type { FactsOptions } from "./replay/facts.js";
 export { stripAt } from "./replay/strip.js";

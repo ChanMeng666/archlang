@@ -35,6 +35,7 @@
  */
 import type { MaterialSlot } from "../materials.js";
 import type { Furniture, Pt } from "../scene3d/types.js";
+import { C16, S16 } from "./c16.js";
 import { degenerateHoles, prism } from "./extrude.js";
 import {
   cabinet,
@@ -378,27 +379,6 @@ const GENERATORS: Readonly<Record<string, (W: number, D: number) => Part[]>> = {
     ];
   },
 };
-
-/** cos/sin at k × 22.5°, written out so no engine's last ulp reaches a coordinate. */
-const C16 = [
-  1,
-  0.9238795325112867,
-  Math.SQRT1_2,
-  0.3826834323650898,
-  0,
-  -0.3826834323650898,
-  -Math.SQRT1_2,
-  -0.9238795325112867,
-  -1,
-  -0.9238795325112867,
-  -Math.SQRT1_2,
-  -0.3826834323650898,
-  0,
-  0.3826834323650898,
-  Math.SQRT1_2,
-  0.9238795325112867,
-];
-const S16 = C16.map((_, k) => C16[(k + 12) % 16] as number);
 
 /**
  * Millimetres → whole micrometres, rounded symmetrically about 0 (so a mirrored part rounds to its

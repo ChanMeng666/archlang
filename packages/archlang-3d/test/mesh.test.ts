@@ -281,6 +281,8 @@ describe("Mesh3D on the shipped corpus", () => {
       "fence-profile-default",
       "fence-colour-default",
       "ground-plane-viewer-only",
+      // Card RM8.8: the viewer's contact shadows, in no node.
+      "contact-shadows-viewer-only",
     ]) {
       expect(rules.has(r), r).toBe(true);
     }
@@ -418,5 +420,11 @@ describe("Mesh3D determinism and budget", () => {
  * `trim-material-default` rows (a door's lining and casing, a window's reveal, sill and board). With
  * the 20 nodes and those 29 rows taken out, the Mesh3D still hashes to 944930c9… exactly; its GLB
  * (no ledger) and its event table did not move with the review.
+ *
+ * Moved by product-roadmap card RM8.8 (was 25483efd…) with the ledger alone: one row says the viewer
+ * draws soft contact shadows no node holds (`contact-shadows-viewer-only`, `CONTACT_SHADOW`: each
+ * band's width rule, the stair's thickness, the light and dark alphas; design `visual-language.md`
+ * §1.2). No node moved: with that row taken out, the Mesh3D hashes to 25483efd… exactly. Its GLB
+ * (no ledger) is unchanged (`LANEWAY_GLB_SHA256` 73182a46…, `test/pins.ts`) and so is its event table.
  */
-const LANEWAY_MESH_SHA256 = "25483efd23b9503460c5314ac8b896e390907307761522cfe0dc13caa3986d74";
+const LANEWAY_MESH_SHA256 = "0c2d1825840610183d2fd64f371b3e6a61b82234381454c472c327e63fbf3f9a";

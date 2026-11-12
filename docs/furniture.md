@@ -133,7 +133,7 @@ Four columns need a word of explanation:
   (`npx tsx scripts/specimen.ts catalogue`), never drawn by hand; the same tool draws every family
   at 1:50 and 1:100 under each theme, and compares two checkouts side by side.
   Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan: every 3D element comes from the plan's elements, and every solid is closed.
-  3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in flat colours; the ground is a backdrop the viewer draws, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM.
+  3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in plain colours; the ground and the soft contact shadows are the viewer's, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM.
   More on what it shows: [the 3D preview](https://archlang.uk/3d).
 - **Footprint** is the catalogued `along × depth` in millimetres — the size
   `against wall` uses when you omit `size`. A dash means the kind has none, so `size` is

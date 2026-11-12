@@ -3,8 +3,17 @@
  * for `mesh`, whether the single-file HTML inlines it (`html.ts`, Node) or the playground's 3D
  * preview tab builds it in the browser (card A5) and mounts it with `mountReplay`.
  */
-import { type FloorFinish, FLOOR_FINISHES, type MaterialSlot, slotGroups } from "../materials.js";
-import type { Mesh3D } from "../mesh/types.js";
+import {
+  CONTACT_SHADOW,
+  contactBandMm,
+  type FloorFinish,
+  FLOOR_FINISHES,
+  type MaterialSlot,
+  slotGroups,
+} from "../materials.js";
+import { FENCE_PROFILES } from "../mesh/outdoor.js";
+import { isHung } from "../mesh/t0.js";
+import type { Mesh3D, MeshNode } from "../mesh/types.js";
 import { endElevation } from "./camera.js";
 import type { ReplayFacts } from "./strip.js";
 import { explodeLifts, type ReplayEvent, storeysOf, timeline } from "./timeline.js";
@@ -34,6 +43,12 @@ export interface ReplayNode {
    * the GLB writes too; absent on every other node.
    */
   colour?: string;
+  /**
+   * The width (mm) of the contact shadow the node casts (card RM8.8, `CONTACT_SHADOW`,
+   * `shadows.ts`): on a standing wall and a column, a standing piece of furniture, a fence and a
+   * stair's stringers. Absent on every node that casts none (a hung piece, a door, a floor …).
+   */
+  band?: number;
 }
 
 export interface ReplayPayload {
@@ -63,6 +78,11 @@ export interface ReplayPayload {
    * it in a live page draws every frame k × k times, outside the viewer's frame-time budget.
    */
   supersample?: number;
+  /**
+   * `false` draws no contact shadows (card RM8.8): only the frame-time measurement sets it
+   * (`e2e/frame-budget.e2e.ts`), to time frames with and without them. Absent: drawn.
+   */
+  shadows?: false;
 }
 
 /**
@@ -86,7 +106,7 @@ export const PREVIEW_LABEL =
  * (`3d.md` §3): change it when the package changes.
  */
 export const PREVIEW_LIMITS =
-  "3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in flat colours; the ground is a backdrop the viewer draws, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM.";
+  "3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in plain colours; the ground and the soft contact shadows are the viewer's, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM.";
 /** The page that says what the 3D preview shows and does not (the docs site's `/3d`). */
 export const PREVIEW_ABOUT_URL = "https://archlang.uk/3d";
 
@@ -163,11 +183,55 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
           ...(slotted ? { groups: runs } : {}),
           ...(n.kind === "floor" && finish ? { finish } : {}),
           ...((n.kind === "outdoor" || n.kind === "fence") && colour ? { colour } : {}),
+          ...bandOf(n, positions),
         };
       }),
     events: timeline(mesh),
     ...groundOf(mesh),
   };
+}
+
+/**
+ * The contact band a node casts (`ReplayNode.band`, card RM8.8), by `CONTACT_SHADOW`'s rules: a
+ * standing wall from its thickness, a column from its smaller side, a standing piece of furniture
+ * from the smaller side of its footprint (a T0 piece and a grey box are fitted exactly to it,
+ * `test/t0.test.ts`, so its plan extent is the footprint), a fence from its style's post, a stair's
+ * stringers as a wall `CONTACT_SHADOW.stairThicknessMm` thick. A hung piece casts none.
+ */
+function bandOf(n: MeshNode, positions: readonly number[]): { band?: number } {
+  if (positions.length === 0) return {};
+  const side = (): number => {
+    let x0 = Infinity;
+    let x1 = -Infinity;
+    let z0 = Infinity;
+    let z1 = -Infinity;
+    for (let i = 0; i < positions.length; i += 3) {
+      const x = positions[i] as number;
+      const z = positions[i + 2] as number;
+      if (x < x0) x0 = x;
+      if (x > x1) x1 = x;
+      if (z < z0) z0 = z;
+      if (z > z1) z1 = z;
+    }
+    return Math.min(x1 - x0, z1 - z0) / 1000;
+  };
+  if (n.kind === "wall" && n.part === undefined) {
+    const t = typeof n.extras.thickness_mm === "number" ? n.extras.thickness_mm : side();
+    return { band: contactBandMm(CONTACT_SHADOW.wall, t) };
+  }
+  if (n.kind === "column") return { band: contactBandMm(CONTACT_SHADOW.wall, side()) };
+  if (n.kind === "furniture") {
+    const asset = String(n.extras.asset ?? "");
+    if (asset.startsWith("t0:") && isHung(asset.slice(3))) return {};
+    return { band: contactBandMm(CONTACT_SHADOW.furniture, side()) };
+  }
+  if (n.kind === "fence") {
+    const profile = FENCE_PROFILES[String(n.extras.style)] ?? FENCE_PROFILES.picket;
+    return { band: contactBandMm(CONTACT_SHADOW.fence, profile?.post ?? 0) };
+  }
+  if (n.kind === "stair" && n.part === "stringer")
+    return { band: contactBandMm(CONTACT_SHADOW.wall, CONTACT_SHADOW.stairThicknessMm) };
+  return {};
 }
 
 /**

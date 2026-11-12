@@ -11,12 +11,14 @@ import {
   BufferGeometry,
   Color,
   DirectionalLight,
+  DoubleSide,
   EdgesGeometry,
   Group,
   HemisphereLight,
   LineBasicMaterial,
   LineSegments,
   Mesh,
+  MeshBasicMaterial,
   MeshLambertMaterial,
   NeutralToneMapping,
   OrthographicCamera,
@@ -49,6 +51,7 @@ import {
   type ViewScene,
 } from "./camera.js";
 import {
+  CONTACT_SHADOW,
   finishColour,
   GROUND_PLANE,
   KIND_PALETTE,
@@ -58,10 +61,11 @@ import {
   WALL_CAP_SRGB,
 } from "../materials.js";
 import type { ReplayPayload } from "./payload.js";
+import { contactShadows } from "./shadows.js";
 import { stripAt } from "./strip.js";
 import { paintStrip } from "./strip-dom.js";
 
-import { stateAt } from "./timeline.js";
+import { ease, stateAt } from "./timeline.js";
 import { faceParts, joinedGroups, wallOutline } from "./wall-lines.js";
 
 export type { ReplayNode, ReplayPayload } from "./payload.js";
@@ -198,7 +202,8 @@ const THEMES = {
  * toward the light; the end camera looks from azimuth −32° (`END_AZIMUTH`), so the key, from the
  * west and a little south, lights one of the two wall faces it sees and leaves the other in the
  * sky's half-light. No shadow maps: on SwiftShader a 2048² PCF map for the key cost ~55% more per
- * frame (1600 × 900, measured for V9), over the card's ~30% budget.
+ * frame (1600 × 900, measured for V9), over the card's ~30% budget. The soft contact shadows (card
+ * RM8.8, `shadows.ts`) are baked bands instead, held to the same budget (`e2e/frame-budget.e2e.ts`).
  */
 const LIGHT = {
   sky: 0xf8fbff,
@@ -496,6 +501,88 @@ export function mountReplay(
     ground.visible = false;
     scene.add(ground);
   }
+
+  // The soft contact shadows (card RM8.8, `shadows.ts`, `CONTACT_SHADOW`): baked here once from the
+  // nodes, at most three buffers a storey; each frame only their vertices' alpha moves, as each
+  // caster finishes rising (`fadeOf`). Translucent black writing no depth, so their overlaps blend in
+  // any order to the same pixels; drawn after the ground (`renderOrder`), before the other
+  // translucent faces, and pulled a little toward the camera so the floor under them never wins.
+  const shadowAlpha = p.theme === "light" ? CONTACT_SHADOW.alpha : CONTACT_SHADOW.alphaDark;
+  const shadowLayers: Array<{
+    mesh: Mesh;
+    group: Group;
+    alpha: BufferAttribute;
+    weight: readonly number[];
+    caster: readonly number[];
+    scale: number;
+    /** A node of the storey, for its storey index (`storeyOf`) and its lift. */
+    key: string;
+    lift: number;
+  }> = [];
+  const eventOf = new Map(p.events.map((e) => [e.key, e] as const));
+  /** For each caster, the event of the last of its nodes to finish rising. */
+  let castEvents: Array<(typeof p.events)[number] | undefined> = [];
+  if (p.shadows !== false) {
+    const baked = contactShadows(p.nodes, p.ground);
+    castEvents = baked.casters.map((keys) => {
+      let last: (typeof p.events)[number] | undefined;
+      for (const k of keys) {
+        const ev = eventOf.get(k);
+        if (ev && (!last || ev.riseTo > last.riseTo)) last = ev;
+      }
+      return last;
+    });
+    const liftOf = new Map(p.nodes.map((n) => [n.key, n.lift ?? 0] as const));
+    for (const l of baked.layers) {
+      const pos = new Float32Array(l.positions.length);
+      for (let i = 0; i < l.positions.length; i++) pos[i] = (l.positions[i] as number) / 1000;
+      const alpha = new BufferAttribute(new Float32Array(l.weight.length * 4), 4);
+      const geo = new BufferGeometry();
+      geo.setAttribute("position", new BufferAttribute(pos, 3));
+      geo.setAttribute("color", alpha);
+      geo.setIndex(l.indices);
+      const mat = new MeshBasicMaterial({
+        color: 0xffffff,
+        vertexColors: true,
+        transparent: true,
+        depthWrite: false,
+        side: DoubleSide,
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -4,
+      });
+      owned.push(geo, mat);
+      const mesh = new Mesh(geo, mat);
+      mesh.renderOrder = -0.5;
+      mesh.visible = false;
+      const group = new Group();
+      group.add(mesh);
+      scene.add(group);
+      const key = baked.casters[l.caster[0] as number]?.[0] ?? "";
+      shadowLayers.push({
+        mesh,
+        group,
+        alpha,
+        weight: l.weight,
+        caster: l.caster,
+        scale: l.cls === "corner" ? shadowAlpha.corner : l.cls === "halo" ? shadowAlpha.furniture : shadowAlpha.floor,
+        key,
+        lift: liftOf.get(key) ?? 0,
+      });
+    }
+  }
+  /**
+   * A caster's bands' opacity at `u`: 0 until the last 25% of its rise, then up to 1 by `ease`, a
+   * pure function of `t` (design §1.1). A flat footprint (the top-down phase) casts nothing.
+   */
+  const fadeOf = (ev: (typeof p.events)[number] | undefined, u: number): number => {
+    if (!ev || ev.hidden) return 0;
+    const span = ev.riseTo - ev.riseFrom;
+    if (span <= 0) return u >= ev.riseTo ? 1 : 0;
+    const q = span / 4;
+    return ease((u - (ev.riseTo - q)) / q);
+  };
+
   const ortho = new OrthographicCamera(-ow / 2, ow / 2, oh / 2, -oh / 2, 1, top + 100000);
   ortho.up.set(0, 0, -1);
   ortho.position.set(cx, top + 50000, cz);
@@ -656,6 +743,28 @@ export function mountReplay(
       const t = together.has(group);
       if (alone) alone.visible = !t;
       if (joined) joined.visible = t;
+    }
+    // The contact shadows: each vertex's alpha is its weight times its class's alpha times its
+    // caster's fade; a storey's bands come down with it as the storeys settle.
+    if (shadowLayers.length > 0) {
+      const u = Math.min(1, Math.max(0, t));
+      const fades = castEvents.map((ev) => fadeOf(ev, u));
+      for (const sl of shadowLayers) {
+        const a = sl.alpha.array as Float32Array;
+        let changed = false;
+        let any = false;
+        for (let i = 0; i < sl.weight.length; i++) {
+          const v = Math.fround((sl.weight[i] as number) * sl.scale * (fades[sl.caster[i] as number] as number));
+          if (a[i * 4 + 3] !== v) {
+            a[i * 4 + 3] = v;
+            changed = true;
+          }
+          if (v > 0) any = true;
+        }
+        if (changed) sl.alpha.needsUpdate = true;
+        sl.mesh.visible = any && (storeyOf.get(sl.key) ?? 0) < shown;
+        sl.group.position.y = settledLift(sl.lift, s.settle);
+      }
     }
     let cam: OrthographicCamera | PerspectiveCamera = ortho;
     if (holder === "free" && controls) {
