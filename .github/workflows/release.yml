@@ -41,6 +41,9 @@
 #   npm package (mcpName ↔ name, case-sensitive io.github.ChanMeng666/… owner, ≤100-char
 #   description). NOTE: the MCP registry is in public preview and may reset data / change
 #   behaviour; this step is kept strict (fails loudly) so a regression surfaces here.
+#   The registry JWT from that login is short-lived, so the login runs inside the publish retry
+#   loop, before every attempt, and never before the npm-visibility wait (v1.60.0: a token
+#   minted before a ~28 min npm publish had expired, and all six attempts got 401).
 #
 # House style mirrors ci.yml / deploy.yml (actions/checkout@v7.0.1, actions/setup-node@v7.0.0).
 
@@ -242,10 +245,10 @@ jobs:
           tar xz -f mcp-publisher.tar.gz mcp-publisher
           test -x ./mcp-publisher && echo "mcp-publisher installed"
 
-      - name: Authenticate to MCP Registry (GitHub OIDC)
-        if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
-        working-directory: packages/mcp
-        run: ./mcp-publisher login github-oidc
+      # NO login step here on purpose: the registry JWT that `mcp-publisher login github-oidc`
+      # mints is short-lived, and the npm wait and the publish retries below can run for a
+      # long time (v1.60.0: a ~28 min npm publish, then six 401 "token is expired" attempts on a
+      # token minted before the wait). The login runs inside the publish loop, once per attempt.
 
       # Wait for npm to SHOW the shim version before asking the registry to validate it. The
       # registry looks the version up on npm, and npm makes a just-published version visible only
@@ -281,17 +284,20 @@ jobs:
       # manifest. Six attempts, 20 s apart, is ~2 minutes; since v1.43.1 they are the SECOND line,
       # after the npm wait above, for a registry that still lags npm. A genuinely bad manifest
       # still fails, two minutes later, and the last attempt's output is what the log shows.
+      # Every attempt logs in afresh (GitHub OIDC, no secret): the registry JWT is short-lived,
+      # so one minted before the npm wait or an earlier attempt would be expired (v1.60.0).
       - name: Publish server to MCP Registry
         if: ${{ success() && steps.check.outputs.registry_synced != 'true' }}
         working-directory: packages/mcp
         run: |
           for attempt in 1 2 3 4 5 6; do
-            if ./mcp-publisher publish; then
+            stage=login
+            if ./mcp-publisher login github-oidc && stage=publish && ./mcp-publisher publish; then
               echo "::notice::MCP registry publish succeeded on attempt $attempt."
               exit 0
             fi
             if [ "$attempt" -lt 6 ]; then
-              echo "::warning::MCP registry publish failed (attempt $attempt/6) — retrying in 20s."
+              echo "::warning::MCP registry $stage failed (attempt $attempt/6) — retrying in 20s."
               sleep 20
             fi
           done
