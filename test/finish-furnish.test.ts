@@ -643,9 +643,9 @@ suite("furnish law — fill only: a partly furnished room is reported, never top
         ["d9d4e8820a66dd416c690161cb107ed6ce9148fd26d160150ef20d72227a3542", "tiny-house"], // PS2.17 source edit (a worktop); PS2.50 comment edit, see above; PS2.11e source edit, see above
         ["f65d780ba8d63321f1a00dfac34b070e2cf6f6ec912c14eda5a4396549966362", "townhouse"], // PS2.17 source edit (a worktop), see above; PS2.11e source edit, see above
         ["d444146fdb6b48864dd0523c1013599e72ff7108a16d1e154ecc79dd0e0137e1", "transit-hall"], // PS2.11e source edit, see above
-        ["04ad638fbbf260c847bdfae5738006e076f8d4b79f70e4a36357db7ac640ed17", "turning-stair"], // first measurement, added with the example (S2); furnished storey by storey (#364), see above
+        ["25ad7208d20c1e0e597c0e1e82f10f56963fd7a9c8579dcc3c968857611460e0", "turning-stair"], // first measurement, added with the example (S2); furnished storey by storey (#364), see above; RM1.2a, see ./byte-identity-baseline.ts
         ["707f5a253046585e84422053e5ab8ea4f1deefef42bf322e7eb1141db8f074ae", "two-bed"], // PS2.17 source edit (a worktop), see above; PS3.6 source rewrite, see ./byte-identity-baseline.ts; PS2.11e source edit, see above; RM1.4 source edit (snapped values written as drawn), `finish` echoes the source: the old source still gives the old digest (was 16b598f4)
-        ["508fcd552120d23495ad6ed995f93dfa83a94e6a6e90782d36b87ff2b4926e26", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above
+        ["e7fd3c28e5ff9870f1e6ac923916ea759422947495801a9b2a4f915cbc28e85e", "two-storey"], // PS2.1–PS2.3 and PS2.9 source edits; PS2.17 source edit (a worktop), see above; RM1.2a, see ./byte-identity-baseline.ts
       ] as const
     ).map(([digest, example]) => [example, digest]),
   );

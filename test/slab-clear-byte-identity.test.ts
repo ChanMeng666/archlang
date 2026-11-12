@@ -130,7 +130,7 @@ const BASELINE: [string, string][] = [
   ["2357bb50624d8aecb9ce28dfa643030e55b29392d45f92a0406b17e2e6ddcab8", "examples/townhouse.arch"],
   ["12a2c3da84bc3fb045fc784bcad3851edaaf6ae0ec539727b52a5d39e58dca2b", "examples/transit-hall.arch"],
   ["f220acec3a66201d974fd3475459a35d52efe4689fc4f76784ccfae1ddc1b92d", "examples/two-bed.arch"],
-  ["85d38d986b32b805b815b7cc7520e88e3acad146b7ae91993db6e83b328f063f", "examples/two-storey.arch"],
+  ["654826455338d90bafeb6d342aa4b1d0e2aab5c964b5838507ac2162fa6edf71", "examples/two-storey.arch"], // RM1.2a, see ./byte-identity-baseline.ts
   ["2fe38a4ad849ebb8a3192c7cea724d729f659fed022b9a1740b8b96a0e1db1f9", "test/fixtures/axes-grid.arch"],
   ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"],
   ["c08051d0ac804cb6ddbc6d6a073934ce248aab2951f1b3bcbb05e242ec1f4c22", "test/fixtures/dense-bays.arch"],
@@ -144,7 +144,7 @@ const BASELINE: [string, string][] = [
   ["d340196f446839ceda4c324efb5c2c29abab79551b673a72b95abeabc64d3fe2", "test/fixtures/off-path-bypass.arch"],
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
-  ["09bb2176c0de1c86892883a1f90aad767353ec78208445724c7a5a38618c12fd", "test/fixtures/storeys-eaves-overflow.arch"],
+  ["a26de8cae6a1e5020c0f34daafe7d79c4ac9eaeff204d7e98930bfaadb672254", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.2a, see ./byte-identity-baseline.ts
   ["f003e58744492a4b562ef28436484454401495ad76df042d14c468d3c0533243", "test/fixtures/zones-levels.arch"],
   ["ee9f057b82b717e4b7c0753daef62a2baa9b3df5c5d8aa617079c3dedce0081e", "test/fixtures/zones-wings.arch"],
   ["edc62a570b76ff9877ab4515a7a83826cc91bf70328a315fe62f42ff17f3a843", "test/walls-from-rooms/relational.arch"],
@@ -216,6 +216,14 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
+    "8d6376b58cae8b06b36d10391b2369f7a60bbbd022c69c94e482999922b13490", // RM1.2a, see ./byte-identity-baseline.ts
+    "test/defect-corpus/stair-safety/riser-too-high.arch",
+  ],
+  [
+    "f09d66b97645ac11e71c9449884a203e2a1ed7401be1fc7d17ed42e180918737", // RM1.2a, see ./byte-identity-baseline.ts
+    "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
+  ],
+  [
     "62561237624e63dc6963d928aba528b086ab20190498b45c03f0a3efdf5195b0",
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
   ],
@@ -258,7 +266,7 @@ const BASELINE: [string, string][] = [
   ["803382568b44d2abe330873b5b788636b5dae38beea8416ea9da39a9fb3a12ab", "inline:stair-words-as-names"],
   ["f1497554533ffa39becdfaf8494d14a9d2aa84d8eee0455a4eaf4feffa213aba", "inline:stair-square-and-narrow"],
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
-  ["ba2f3d4e7bafb03f39e2d0226ac9233e969d2b5cd3f7b9e19d1e110ba5cb41a3", "inline:stair-arrival"],
+  ["d8c0fae7732a89fda469c39189c557361eafeb7df14e29b484ce29a9ee72cc9a", "inline:stair-arrival"], // RM1.2a, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["7fa38724de8f8f22ec5dde6df8e9d8e2f027ccf18c2068f69ef2d4761b81c5e6", "inline:slab-clear-words-as-names"],

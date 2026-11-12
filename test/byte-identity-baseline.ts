@@ -1753,6 +1753,49 @@
  * `block-stair-winders-byte-identity` 1; `new-families-byte-identity` 5; `rendered-theme` 5; and
  * `keep-byte-identity-baseline.ts` re-taken by its generator (30 rows, every step count
  * unchanged). Each re-pinned row carries `RM1.3a` beside it.
+ *
+ * ## RM1.2a: `W_STAIR_RISER_TOO_HIGH`, and two examples redrawn to clear it
+ *
+ * Two causes, both deliberate (product roadmap RM1.2a, backlog ST.1):
+ *
+ *   1. **A new lint rule** (case 1, `lint()` only). It reports a stair whose drawn treads (one per
+ *      280 mm of a flight's run) climb an authored storey height on risers above 220 mm. The `src/`
+ *      diff touches only the lint rules, the ruleset (a new key, `stairDrawnMaxRiseMm`), the rule
+ *      provenance table and the catalogue's fix column, so on an unedited source only `lint()` can
+ *      move. Swept per payload against `origin/main` 213e7393's compiler over 425 corpus files
+ *      (every storey's SVG, `compile().diagnostics`, `describe()`, `lint()` under the default ruleset
+ *      and every profile): `lint()` moved on `test/fixtures/storeys-eaves-overflow.arch`,
+ *      `test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/5-townhouse.arch` and
+ *      the new `test/defect-corpus/stair-safety/riser-too-high.arch`, and nothing else moved
+ *      anywhere. The inline law rows that author a height and draw a flight too short in treads
+ *      move the same way: `inline:stair-arrival` (2750 mm on a 3000 mm flight, 11 treads, 12 risers
+ *      of about 229 mm) and the two winders-law rows at `height 2750`.
+ *   2. **Two example sources edited** (case 1 for every payload of those two files). Each was
+ *      redrawn by pasting the new warning's hint: `examples/two-storey.arch`'s stair (both storeys)
+ *      and the `gallery` void over it, 900x2900 to 900x3250 (plus one comment line), and
+ *      `examples/turning-stair.arch`'s first flight, 1000x1530 to 1000x1540 (plus two header lines).
+ *      Their SVG, `describe()` and accessibility-profile `lint()` moved with the geometry;
+ *      `compile().diagnostics` did not, and the default `lint()` is empty before and after.
+ *
+ * Re-pinned with values from the compiler itself. The eight tables whose rows are
+ * `stairLawDigest` (`block-stair-`, `corner-window-`, `gaps-`, `shared-grid-`, `sheet-text-`,
+ * `slab-clear-`, `void-rail-`, `window-kinds-byte-identity`) were re-measured by a script importing
+ * `test/helpers/block-stair-law.ts`, which first reproduced the 101 unmoved rows of each. 3 rows moved
+ * in each (`two-storey`, `storeys-eaves-overflow`, `inline:stair-arrival`) and the new pair was added
+ * (2 rows each). Every one of those values equals the one CI's own run of the test received. The other
+ * tables took the received values of CI's run on this tree (run 43160858400):
+ *   - `BASELINE` and `SEMANTIC_BASELINE` here, 2 each (the height-free derivations of `turning-stair`
+ *     and `two-storey`);
+ *   - `while-byte-identity-baseline.ts`, `import-module-lets`, `open-crossing`: 3 each;
+ *   - `double-door-byte-identity`: 3;
+ *   - `wall-status-byte-identity`, `silent-accepts`: 2 each;
+ *   - `block-stair-winders-byte-identity`: 3 (`turning-stair` and the two inline rows);
+ *   - `rectilinear-rooms-byte-identity`: 3;
+ *   - `new-families-byte-identity`, `rendered-theme`, `finish-furnish`: 2 each.
+ *
+ * `keep-byte-identity-baseline.ts` was re-taken by its generator: the two examples and
+ * `5-townhouse` moved, the pair was added, and every step count is unchanged. Each re-pinned row carries
+ * `RM1.2a` beside it.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */
@@ -1792,9 +1835,9 @@ export const BASELINE: [string, string][] = [
   ["tiny-house", "8236b2c882cc2ff9f21a7b0d5a715f773d300b7432e5746987f2e3809e430ce9"], // PS2.11e, see header
   ["townhouse", "8768888167f1af9f23512b2e42f94b36bb4d6fc6135a2fc8252d461f756171c0"], // re-measured, see header; PS2.11e, see header; RM1.3a, see header
   ["transit-hall", "084cfa94f152b75ecee1786602569b6f008c3b3d3071d655d2d6711306ccea97"], // PS2.11e, see header
-  ["turning-stair", "f37558ce60ac89d02c93e59c0cf0233a63c356725c5b9b4dcecf6aab63869247"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header
+  ["turning-stair", "142fe5f9dc6b71a31e892124f6b8be42cc6dd2381e5d1b98721ab7762b288a30"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header
   ["two-bed", "21101fea33b149201d58eddfc32d024b4a939a682cf7e4f37c859d717a8e8eca"], // PS3.6 source rewrite, see header; PS2.11e, see header; `centreline_at`, see header
-  ["two-storey", "6ee8ed38477f2e7cc6915b75cecda97f24ea75cce4054a9c41aad568511b2aa1"], // re-measured, see header; RM1.3a, see header
+  ["two-storey", "ccd32e901664b095dafd3128a5c25bba23a08866da4dac0414d21c04db4f5168"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header
 ];
 
 /**
@@ -1844,9 +1887,9 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["tiny-house", "3513ef53a1064ff6b4435f4a8f05db2578aa258a1bb6c55c90df0517a638190b"], // PS2.11e, see header
   ["townhouse", "91ef4082802dc106577ebf4e4a24aa46a115cb0e3fb539d475cb8d207a6e588f"], // re-measured, see header; RM1.3a, see header
   ["transit-hall", "4092fd0a7d88401cc49781d8021f0863300e8cbe65804d5735a9271a0c6c3eff"], // PS2.11e, see header
-  ["turning-stair", "0446ae43be57df9772213db26611c18caa2f13f7a1f604ed4c878d620ddc334a"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header
+  ["turning-stair", "ee7d1fcdf23e11b268ee97799ee73b9a27413d88bbbf76a3e469d33ea3a0c160"], // added with the example, see header; `centreline_at`, see header; RM1.3a, see header; RM1.2a, see header
   ["two-bed", "436fadbabbba67d12d667cfca3dc435a7be1e5d131d27f5a523caf9584b26454"], // PS3.6 source rewrite, see header; `centreline_at`, see header
-  ["two-storey", "0b68b8bd79d3bde0fa503bf64fb3bf1b6c16a51925d1f0394a8d3b38022c7450"], // re-measured, see header; RM1.3a, see header
+  ["two-storey", "512f40709a2ef1e9929fe501b89b3703eec6cd015fbec1edfb36eee3267491ae"], // re-measured, see header; RM1.3a, see header; RM1.2a, see header
 ];
 
 /**

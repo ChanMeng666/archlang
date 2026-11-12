@@ -35,7 +35,7 @@ const API: CompilerApi = { compile, describe: describePlan, lint };
 
 /** Measured at `5593484d` (see the header): `[digest, row]`. */
 const BASELINE: [string, string][] = [
-  ["7a197ff651fd6ee9e785088ecefd9147d15e29cfd098013624ffbd8698c4dd56", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["a60a7362582085a80c577e970a5139fc01d12ec4600af7ad8f4ed8a4ede897aa", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
   ["575e7d3daa85f52c3902fb0f3f8dbdd4abeabda0c57da5db85c1ca06046616ed", "quarter-turn dir up, no height"],
   ["3d7526e08580089cc2cb823fd203cd73020e29fa5445eb2c912ba540ee5b96ac", "quarter-turn dir up, height 2750"],
   ["2955a883162ea99165881ad2f4e433af2cf994297015db70eaccdfb81ac463b3", "quarter-turn dir down, no height"],
@@ -45,11 +45,11 @@ const BASELINE: [string, string][] = [
   ["3b55d301b22b19651b95ebce2c855cf35e7a3200e58db48ec2fcc187b2282a5f", "half-turn dir down, no height"],
   ["38671a099294919ce718d5cd050159599c09acae00e3a42d683c7cac14f3ce87", "half-turn dir down, height 2750"],
   ["1d3110b5c50f507c51662a4b1eda8de38a87508b43f6ed23c6c392a45ec28a23", "in-line dir up, no height"],
-  ["5112c193ebb03f7afd31eb093024bcbe65636b43e947646f2232678a9746d9ec", "in-line dir up, height 2750"],
+  ["a0a0112fa735a2320a7f5bfb4a2ed873d629724a10bfb1e0e27538588322f599", "in-line dir up, height 2750"], // RM1.2a, see ./byte-identity-baseline.ts
   ["5b375dcd92516d655d3c3885a11ae256da04491151980b07a9eecba88b707957", "in-line dir down, no height"],
   ["412ca32d2d4877e321551b53c39a8413c9c99c7e0dbcde757f135525951730c8", "in-line dir down, height 2750"],
   ["713c5c9e95f73cd76fe1264d2f2323082bd55e9b7b8b87ea62a276bc1ff16ec8", "short-axis dir up, no height"],
-  ["e2e7da373ac91cc7e2ab23f8cc5e406c294d976feae23e0ab3071ff4116bfbfd", "short-axis dir up, height 2750"],
+  ["e7ac5e3d543332e35c3b47d420c7a1f5b0caab08f558e699c7c811d04f79a9f8", "short-axis dir up, height 2750"], // RM1.2a, see ./byte-identity-baseline.ts
   ["37b618a77aa7348ede34d496dc73996bbc4b60856ea275d5f9d4033682d94c18", "short-axis dir down, no height"],
   ["5c125fe8baec6313e8c5d6c6619a86232e18fcdb331f97413378d5e4843a51d3", "short-axis dir down, height 2750"],
   ["c92beffa14b96ac76824d3f3a3829ed42e736647e8f63dfeaf59afb3b6e27a48", "three flights dir up, no height"],

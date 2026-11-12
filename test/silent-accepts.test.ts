@@ -482,9 +482,9 @@ const BASELINE: [string, string][] = [
   ["examples/tiny-house.arch", "7dec52e5621d9af9dbdcf7cb73e58791705e6d976bbecf5ae59419c1c9a9ea17"],
   ["examples/townhouse.arch", "4ebf99f3ba158cc7652424c413c94f9f837f6afd24546d8bbac0f080bb281652"],
   ["examples/transit-hall.arch", "a9145858f1fb7a7f1a0f0aa86d53e115bfda51e68c2101b822913d7bdc97eed5"],
-  ["examples/turning-stair.arch", "7a197ff651fd6ee9e785088ecefd9147d15e29cfd098013624ffbd8698c4dd56"],
+  ["examples/turning-stair.arch", "a60a7362582085a80c577e970a5139fc01d12ec4600af7ad8f4ed8a4ede897aa"], // RM1.2a, see ./byte-identity-baseline.ts
   ["examples/two-bed.arch", "fe871cbb3d60c1594495e38b1ad0dc30ce3f71904c27b85fa60f276d3aa182bd"], // RM1.4: sofa and basin on the grid
-  ["examples/two-storey.arch", "03f9dd06253ad4bda8937efbc428093b671524340dbdc3254061061d20f67c24"],
+  ["examples/two-storey.arch", "9bad4f64cdc450219b6adac2c6de7a4790d0b48917ef88358b9c54c78b57a90f"], // RM1.2a, see ./byte-identity-baseline.ts
   ["examples/lib/doors.arch", "f57eaea084d2e6e62b85b8450ef96675e9f1466bea9aff24e2869f2d6f0c9804"],
   ["examples/lib/fixtures.arch", "57d6c78e2eea8451a9b32a5828f3babb24b0251cc5c3b72675b431be22b3f310"],
   ["examples/lib/furniture.arch", "adf16d60e17d76d76f092f95fb24dab4b7ba5ebaa977ed32bcc3a8eaddc7e05b"],

@@ -91,9 +91,9 @@ const BASELINE: [string, string][] = [
   ["9691a3cc4ffbf7602ba945647cd2453376e39715c55dbd7f7a9934ef15186fc8", "examples/tiny-house.arch"],
   ["35011d7844c25d84a7f483dbc476a1659e10818e81d9387f3254566522dfe6b5", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["8b08d4eab25f660f4941774f779f8a8729d832e9e04594cc0b041617ee981dad", "examples/transit-hall.arch"],
-  ["068f58b436f3e6826049b4018102df60e8fb5cec84d883feb3efb69d46fa31d6", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["e771ff6fd5ed22cfd4e07de3ef76afda8a733202b411034d23ed09faae72406e", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
   ["caf049e313e65045103b6010eebb5244380ddcb5c484b09f522ed1a6128a0331", "examples/two-bed.arch"],
-  ["101de4f634184fffe58f1cdf0db8a69461e11eeb05031cbdf80451df75201d5b", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["f3e491857d3c1799f2491703081a1f87ce69aa51e74a1e2bd0d4d4eca88dd579", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
   ["9bf244567364f85ea64f1aa4bc8ee19e63c1edc34ed5fe340ed116a54a8c0c84", "inline:every-family-1:50"],
   ["120aa7ba79080410ded56455aeedc2c16945f0704f0603d74742de93e48e8766", "inline:every-family-unscaled"],
   ["f710bc7958bde0aa45a0543fc9759e169a0a42e2fc122da01cb3fcc8e5f0ad27", "inline:style-furniture"],
