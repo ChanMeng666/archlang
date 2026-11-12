@@ -14,7 +14,12 @@
  *
  * Types are compared by variance: what a caller BUILDS (a parameter, an input type's member) may
  * only widen, what it READS (a return, an output type's member) may only narrow; each finding
- * prints the classification it used. Schemas and code sets are additive-only. A failure is
+ * prints the classification it used. Enum-like sets are append-only in both roles: a union of
+ * literals, an `as const` list, and a tagged union (object variants told apart by a literal
+ * discriminant such as `kind`), whose variant may be added (a new element kind is a minor) but not
+ * removed, while a variant on both sides keeps the strict variance of its role. A constant keyed by
+ * a set (`Readonly<Record<K, V>>`) is read one member per key, like an `as const` object: a key may
+ * be added, not removed. Schemas and code sets are additive-only. A failure is
  * accepted only by a line under `CHANGELOG.md`'s `## [Unreleased]` of the form
  * `BREAKING: <surface>: item, item` (the items it names) or `BREAKING: <surface> (all)`; what was
  * accepted is printed. `public-surface.test.ts` pins nameability and `plan-schema-drift` pins
@@ -344,7 +349,9 @@ export function unionMembers(s) {
  * Keys: `kind`; `.a.b` for (nested, anonymous) object members, `?` prefix on optional ones;
  * `[]` for a tuple (the sorted set of its element types); `sigN.required` / `sigN.pJ` /
  * `sigN.returns` for call signatures; `newN.*` for construct signatures; `type` for any other
- * alias or value (unions sorted).
+ * alias or value (unions sorted). Beside a key whose type is a spelled-out tagged union,
+ * `@variants<key>` records its variants; a constant typed by a mapped type over a literal key set
+ * is expanded like an `as const` object and marked `@record`. (`@` keys are not compared as members.)
  */
 export function typeSurface(entryFile) {
   const program = ts.createProgram([entryFile], COMPILER_OPTIONS);
@@ -415,6 +422,98 @@ export function typeSurface(entryFile) {
     t.getCallSignatures().length === 0 &&
     t.getConstructSignatures().length === 0 &&
     t.getProperties().length > 0;
+  // A constant typed by a mapped type over a literal key set (`Readonly<Record<ElementKind, …>>`)
+  // has the same members as an `as const` object, so it is read the same way: one member per key.
+  const isKeyedRecord = (t) =>
+    !!(t.flags & ts.TypeFlags.Object) &&
+    !!(t.objectFlags & ts.ObjectFlags.Mapped) &&
+    checker.getIndexInfosOfType(t).length === 0 &&
+    t.getCallSignatures().length === 0 &&
+    t.getConstructSignatures().length === 0 &&
+    t.getProperties().length > 0;
+
+  // A TAGGED UNION: every member (give or take `undefined` / `null`) an object type, told apart by
+  // a discriminant, a non-optional property present in every member with a single literal type
+  // (the one with the most distinct values; ties by name). Members that share its value are told
+  // apart by a further discriminant among themselves (`KeepNode`'s `kind: "keep"` variants by
+  // `form`). Each variant is recorded with its tag (`kind="wall"`, `kind="keep",form="align"`), the
+  // discriminant pairs the tag spells, every single-literal property it has (`lits`, which match it
+  // to its twin on the other side, {@link variantDiff}) and its printed type; `null` when the union
+  // is not cleanly discriminated.
+  const SINGLE_LITERAL =
+    ts.TypeFlags.StringLiteral |
+    ts.TypeFlags.NumberLiteral |
+    ts.TypeFlags.BigIntLiteral |
+    ts.TypeFlags.BooleanLiteral |
+    ts.TypeFlags.EnumLiteral;
+  const literalProp = (u, name) => {
+    const p = checker.getPropertyOfType(u, name);
+    if (!p || p.flags & ts.SymbolFlags.Optional) return null;
+    const pt = checker.getTypeOfSymbol(p);
+    return pt.flags & SINGLE_LITERAL && !pt.isUnion() ? raw(pt) : null;
+  };
+  const propNames = (u) =>
+    checker
+      .getPropertiesOfType(u)
+      .map((p) => p.getName())
+      .sort();
+  const discriminate = (group, depth) => {
+    if (group.length === 1) return [[[], group[0]]];
+    if (depth > 4) return null;
+    let best = null;
+    for (const name of propNames(group[0])) {
+      const vals = group.map((u) => literalProp(u, name));
+      if (vals.some((v) => v === null)) continue;
+      const distinct = new Set(vals).size;
+      if (distinct > 1 && (!best || distinct > best.distinct)) best = { name, vals, distinct };
+    }
+    if (!best) return null;
+    const out = [];
+    for (const v of [...new Set(best.vals)].sort()) {
+      const sub = discriminate(
+        group.filter((_, i) => best.vals[i] === v),
+        depth + 1,
+      );
+      if (!sub) return null;
+      for (const [pairs, u] of sub) out.push([[[best.name, v], ...pairs], u]);
+    }
+    return out;
+  };
+  const variants = (t) => {
+    if (!t.isUnion()) return null;
+    const NULLISH = ts.TypeFlags.Undefined | ts.TypeFlags.Null;
+    const objs = t.types.filter((u) => !(u.flags & NULLISH));
+    if (objs.length < 2 || !objs.every((u) => u.flags & (ts.TypeFlags.Object | ts.TypeFlags.Intersection))) return null;
+    const tagged = discriminate(objs, 0);
+    if (!tagged) return null;
+    const list = tagged.map(([pairs, u]) => {
+      const lits = {};
+      for (const name of propNames(u)) {
+        const v = literalProp(u, name);
+        if (v !== null) lits[name] = v;
+      }
+      return { tag: pairs.map(([k, v]) => `${k}=${v}`).join(","), pairs, lits, type: print(u) };
+    });
+    const rest = t.types.filter((u) => u.flags & NULLISH).map(print).sort().join(" | ") || "never";
+    return JSON.stringify({ variants: list, rest });
+  };
+  /**
+   * `out[key]` printed, plus `out["@variants" + key]` when it is a tagged union ({@link variantDiff})
+   * printed as its members: a union that prints a named union among its members (`Expr |
+   * undefined`) keeps its name's comparison.
+   */
+  const record = (out, key, t, printed) => {
+    out[key] = printed;
+    const v = variants(t);
+    if (!v) return;
+    const spelled = unionMembers(printed)
+      .filter((m) => m !== "undefined" && m !== "null")
+      .sort();
+    const tagged = JSON.parse(v)
+      .variants.map((x) => x.type)
+      .sort();
+    if (spelled.length === tagged.length && spelled.every((m, i) => m === tagged[i])) out[`@variants${key}`] = v;
+  };
 
   function sigs(out, prefix, list) {
     list.forEach((s, i) => {
@@ -459,7 +558,9 @@ export function typeSurface(entryFile) {
 
   function leaf(out, key, t, depth, seen) {
     if (isAnonObject(t) || (checker.isTupleType(t) && !t.aliasSymbol)) members(out, key, t, depth, seen);
-    else out[key] = print(t);
+    // (A named union prints as its name and stays a name: only a spelled-out union is tagged.)
+    else if (t.aliasSymbol) out[key] = print(t);
+    else record(out, key, t, print(t));
   }
 
   const surface = {};
@@ -484,6 +585,11 @@ export function typeSurface(entryFile) {
       if (ctors.length) sigs(out, "new", ctors);
       if (!calls.length && !ctors.length) {
         if (isAnonObject(vt) || checker.isTupleType(vt)) members(out, "", vt, 0, new Set());
+        else if (f & ts.SymbolFlags.Variable && isKeyedRecord(vt)) {
+          // Its member types are declared, not inferred values: a literal one is still compared.
+          out["@record"] = "declared member types";
+          members(out, "", vt, 0, new Set());
+        }
         else out.type = print(vt);
       }
     }
@@ -491,7 +597,7 @@ export function typeSurface(entryFile) {
       members(out, "", checker.getDeclaredTypeOfSymbol(sym), 0, new Set());
     } else if (f & ts.SymbolFlags.TypeAlias) {
       const t = checker.getDeclaredTypeOfSymbol(sym);
-      if (t.isUnion()) out.type = t.types.map(print).sort().join(" | ");
+      if (t.isUnion()) record(out, "type", t, t.types.map(print).sort().join(" | "));
       else if (t.getProperties().length && !(t.flags & ts.TypeFlags.Primitive) && t.getCallSignatures().length === 0) {
         members(out, "", t, 0, new Set());
       } else out.type = printAlias(t);
@@ -635,6 +741,34 @@ function enumDiff(o, n, role) {
   return { removed: ol.filter((m) => !kept.has(m)), restOk: compatible(rest(om), rest(nm), role) };
 }
 
+/**
+ * A TAGGED-UNION pair: both sides a union of object types told apart by a discriminant (the
+ * `@variants…` record {@link typeSurface} writes beside the printed type). Its variants are an
+ * enum-like set, like a union of literals (a new element kind is a minor release): a variant added
+ * passes, a variant removed fails (one finding naming it), in both roles. A variant on both sides
+ * is compared with the strict variance of `role` (a named variant prints as its name, whose shape
+ * is its own export's comparison); so is the `undefined`/`null` part. `null` when either side is
+ * not tagged, which leaves the pair to the ordinary comparison.
+ *
+ * An old variant's twin is the new variant whose discriminant pairs it carries as literals and
+ * which carries its pairs (so a tag that grew a level, `kind="k"` → `kind="k",form="x"` once a
+ * second `kind: "k"` variant arrives, still matches); discrimination makes the twin unique.
+ */
+function variantDiff(oRec, nRec, role) {
+  if (!oRec || !nRec) return null;
+  const o = JSON.parse(oRec);
+  const n = JSON.parse(nRec);
+  const carries = (v, pairs) => pairs.every(([k, val]) => v.lits[k] === val);
+  const removed = [];
+  const changed = [];
+  for (const ov of o.variants) {
+    const nv = n.variants.find((x) => carries(x, ov.pairs) && carries(ov, x.pairs));
+    if (!nv) removed.push({ tag: ov.tag, old: ov.type });
+    else if (!compatible(ov.type, nv.type, role)) changed.push({ tag: ov.tag, old: ov.type, new: nv.type });
+  }
+  return { removed, changed, restOk: compatible(o.rest, n.rest, role) };
+}
+
 /** The element type of a printed array (`readonly (A | B)[]`, `A[]`), or `null` for any other type. */
 function arrayElements(s) {
   if (typeof s !== "string") return null;
@@ -649,9 +783,11 @@ const bare = (s) => s.replace(/^(\?|\.\.\.)/, "");
 /**
  * Variance-aware diff of two {@link typeSurface} results (see the `@role` notes there). Every
  * finding carries `role` (`input` / `output`) and `why` (how its export was classified). A
- * union of literals and an `as const` list (`[]` keys) are enum-like sets, additive-only, in both
- * roles ({@link enumDiff}); a constant's literal value, generic constraints and `readonly` are
- * not compared.
+ * union of literals, an `as const` list (`[]` keys) and a tagged union's variants (`@variants…`
+ * keys) are enum-like sets, additive-only, in both roles ({@link enumDiff}, {@link variantDiff}); a
+ * constant keyed by a set has one member per key (`@record`), so a key may be added, not removed.
+ * A constant's inferred literal value (not a keyed constant's declared one), generic constraints
+ * and `readonly` are not compared.
  */
 export function compareTypeSurfaces(oldS, newS) {
   const findings = [];
@@ -716,9 +852,24 @@ export function compareTypeSurfaces(oldS, newS) {
         if (en ? en.removed.length > 0 : !subsumes(ol, nl, false)) {
           push(k, { kind: en ? "enum member removed" : "removed list entry", path: k, old: o[k], new: n[nk] });
         }
-      } else if (o.kind === "const" && n.kind === "const" && isLiteral(o[k]) && isLiteral(n[nk])) {
+      } else if (
+        o.kind === "const" &&
+        n.kind === "const" &&
+        !o["@record"] &&
+        !n["@record"] &&
+        isLiteral(o[k]) &&
+        isLiteral(n[nk])
+      ) {
         // A constant's VALUE changed (a schema description, a version string): not a type
         // contract. The Plan schema's own `const`s are checked as JSON by `plan-schema`.
+      } else if (variantDiff(o[`@variants${k}`], n[`@variants${nk}`], role)) {
+        const vd = variantDiff(o[`@variants${k}`], n[`@variants${nk}`], role);
+        const changedKind = role === "input" ? "narrowed input type" : "widened output type";
+        for (const v of vd.removed) push(k, { kind: "variant removed", path: k, old: `${v.tag}: ${v.old}` });
+        for (const v of vd.changed) {
+          push(k, { kind: changedKind, path: k, old: `${v.tag}: ${v.old}`, new: `${v.tag}: ${v.new}` });
+        }
+        if (!vd.restOk) push(k, { kind: changedKind, path: k, old: o[k], new: n[nk] });
       } else if (enumDiff(bare(o[k]), bare(n[nk]), role)) {
         const en = enumDiff(bare(o[k]), bare(n[nk]), role);
         if (en.removed.length) push(k, { kind: "enum member removed", path: k, old: o[k], new: n[nk] });
