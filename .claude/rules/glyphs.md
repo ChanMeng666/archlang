@@ -31,6 +31,8 @@ The drawing language and why: `docs/adr/0023-plan-symbol-drawing-language.md`.
   the checklist is `.claude/commands/new-fixture-family.md`. Furniture is T0 in the 3D package
   (`src/mesh/t0*.ts`): every catalogued family has a generator (`test/t0.test.ts` fails on a grey
   box for a catalogued word), fitted exactly to the footprint, quarter turns only, integer µm.
+- A redrawn symbol (2D or its 3D generator) re-takes the catalogue pictures: `npx tsx scripts/specimen.ts
+  catalogue` rewrites `docs-site/public/catalogue/<family>.png`, shown in `docs/furniture.md`.
 - All ink stays inside the footprint at every aspect and quarter-turn (the containment checks in
   `test/glyphs-*.test.ts`, path extents via `test/helpers/glyph-extent.ts`).
 - Curves are `g.path` loops from `roundedRectPath`/`ovalPath`/`bulgeArc`/`scallopPath`, every arc

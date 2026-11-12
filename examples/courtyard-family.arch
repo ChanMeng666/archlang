@@ -29,12 +29,12 @@ plan "Courtyard Family House" {
   site { street north hemisphere north }
 
   # ---- rooms ----------------------------------------------------------------
-  room id=garage  at (0,0)      size 5500x5500 label "Garage"  uses garage
+  room id=garage  at (0,0)      size 5500x6200 label "Garage"  uses garage
   room id=entry   at (5500,0)   size 3500x5500 label "Entry"   uses entry
   room id=living  at (9000,0)   size 5500x5500 label "Living"  uses living
   room id=kitchen at (14500,0)  size 5500x5500 label "Kitchen" uses kitchen
-  room id=bath    at (0,5500)   size 5500x4000 label "Bath"    uses bath
-  room id=gym     at (14500,5500) size 5500x4000 label "Gym"   uses office
+  room id=bath    at (0,6200)   size 5500x3300 label "Bath"    uses bath
+  room id=gym     at (14500,5500) size 5500x4000 label "Gym"
   # A U round the courtyard; its centroid is in the open air, so the label is placed.
   room id=hall polygon
     (5500,5500) (7000,5500) (7000,9500) (13000,9500) (13000,5500) (14500,5500)
@@ -58,7 +58,7 @@ plan "Courtyard Family House" {
   opening id=o_living between living and hall at 750 from start width 1000
   opening id=o_kitchen between living and kitchen at 1900 from start width 1800
   # Bath and gym each meet the hall on two runs; the named edge picks one.
-  door id=d_bath between bath and hall at 3200 from bath.top width 800 swing into bath
+  door id=d_bath between bath and hall at 2500 from bath.top width 800 swing into bath
   door id=d_gym between gym and hall at 3500 from gym.right width 900 swing into gym
   door id=d_kids between hall and kids at 4000 from start width 900 swing into kids
   door id=d_nursery between hall and nursery at 1000 from start width 800 swing into nursery

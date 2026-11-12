@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM8.5: examples/courtyard-family.arch added (one new row), on fcc6ef5c
+ * Taken: RM8.5 review: examples/courtyard-family.arch source changed (deeper garage, unclassified gym), on 14458fac
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -53,8 +53,8 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/courtyard-family.arch",
-    "1002362f1f92bbdfa9cb643d20ea33be365aee765a03021fd3f7f99e83a16fde",
-    9172,
+    "b4e2a3e9cfc8eaf5f2fbe15ea87d5efda96e8ff5443cb90ca5763fd50f9457d8",
+    9357,
   ],
   [
     "examples/courtyard-house.arch",

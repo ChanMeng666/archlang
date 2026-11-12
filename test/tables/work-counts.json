@@ -1,5 +1,5 @@
 {
-  "_reason": "RM8.5: examples/courtyard-family.arch added (one new row; every other row unchanged), on fcc6ef5c",
+  "_reason": "RM8.5 review: examples/courtyard-family.arch source changed (deeper garage, unclassified gym), on 14458fac",
   "_tolerance": 0.1,
   "_totalTolerance": 0.03,
   "_floor": 8,
@@ -75,13 +75,13 @@
       "labelRelocations": 88
     },
     "examples/courtyard-family.arch": {
-      "steps": 9172,
-      "drawUnits": 4348,
+      "steps": 9357,
+      "drawUnits": 4366,
       "elements": 90,
       "leafDoorPairs": 0,
-      "boundaryRunTests": 120,
+      "boundaryRunTests": 123,
       "navCells": 32000,
-      "joinerySplitTests": 921,
+      "joinerySplitTests": 987,
       "labelRelocations": 244
     },
     "examples/courtyard-house.arch": {

@@ -824,7 +824,9 @@
  * `examples/courtyard-family.arch` arrived with the vocabulary showcase (product-roadmap card
  * RM8.5): a single-storey family house round a courtyard that draws nineteen families no other
  * example drew. Its two rows were measured with this file's own digest bodies on the branch that
- * added it; no other row moved.
+ * added it; no other row moved. Its review then changed its source (a garage deep enough for a car,
+ * a gym with no `uses`) before it merged, and both rows were re-measured the same way; the bodies
+ * first reproduced the two rows of the old source exactly.
  *
  * ## `knob-flat`: a row ADDED with a new example, nothing re-measured
  *
@@ -1762,7 +1764,7 @@ export const BASELINE: [string, string][] = [
   ["classroom-block", "3444d2acee4491e79da70ddfad114c6554b8de16978eb62f1e6eee28e50b3ba4"], // added with the example, re-measured for net area, see header; PS2.11e, see header
   ["clinic", "001315cc32a148ebaa69504d7e1b94f7dd36ddec87f767da3038e0aba89f8daa"],
   ["corner-cafe", "9ce42561a8976b3a60da3266aadc1a9f7fb6035f2dffc6346bcd497b85f579d7"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
-  ["courtyard-family", "79643e34120edf0b639bd63b9e0470c5c6e7b1b9585105d1e54e020735cb4f32"], // added with the example (RM8.5), see header
+  ["courtyard-family", "d51fc40b1eb060f74f8c1eb95c4c859b39e70effc96607e8b42e6ac138bb680e"], // added with the example (RM8.5), see header
   ["courtyard-house", "3984a002996a4d4aba0c1bdd462474f710a87ecc50848093435573f4bd4d6c2e"], // re-measured for PS2.4, see header; PS2.11e, see header
   ["furnished-flat", "52b8bee1afff224fca393b2fd77bf7a4720009b91d0a625da434648220a5eb87"], // PS2.11e, see header
   ["gallery-l", "9c21788039e6844add835cfa386e822c5f093475d8d5b4ff7cccc40551f8233f"], // PS2.10 dim fixed, see header; PS2.11e, see header
@@ -1814,7 +1816,7 @@ export const SEMANTIC_BASELINE: [string, string][] = [
   ["classroom-block", "b86879c36a9484c05cae6176ef53b20f04886103aa33d4da854d2858aa5c5959"], // added with the example, re-measured for net area, see header; PS2.11e, see header
   ["clinic", "c01524dcae509c38f6eae88980c9ba715efe947991247b5494bbd51cc57e6381"],
   ["corner-cafe", "602c1cc665f97d90fadec0223e4017dab908408a1e5bf5f4c241beae1a3c30c2"], // added with the example, re-measured for net area, see header
-  ["courtyard-family", "43abe8fede2f6c62e1eba1fdc860cc78161fe294755e4e0e2132787430f67641"], // added with the example (RM8.5), see header
+  ["courtyard-family", "9ef08f2e6590c8ec3bc17a933076b446fe9eac6704936cba1a86148f01668b4d"], // added with the example (RM8.5), see header
   ["courtyard-house", "cbbeb130a02d8dd2a3065e2f95fcf7bd83b3ec5e2f972bef17d201deab16ebd9"], // re-measured for PS2.4, see header
   ["furnished-flat", "d4f5194c4a9f26337646b7bf28a05645fc083fe1e1ec7eb4b6e3cd93b0f32641"],
   ["gallery-l", "5dec4904ac00c1d5a20747336ec0acaa4b6682f40b02008aad554ccfa87f0025"], // PS2.11e, see header

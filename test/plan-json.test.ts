@@ -21,7 +21,8 @@ import {
 // The parser's own accept-list, imported rather than retyped — the same law the
 // projection itself follows, so a fifth `dims auto` mode cannot pass this suite unnoticed.
 import { AUTO_DIMS_MODES } from "../src/ast.js";
-import { CANNOT_ROUND_TRIP } from "./tables/plan-json-gaps.js";
+import { CANNOT_ROUND_TRIP, UNRESOLVED_WAY_BACK } from "./tables/plan-json-gaps.js";
+import { parse } from "../src/parser.js";
 import { WALLS_FROM_ROOMS_PLANS } from "./tables/walls-from-rooms-plans.js";
 
 /**
@@ -346,18 +347,12 @@ describe("plan-json — derived furniture positions", () => {
     if (!json || diagnostics.some((d) => d.severity === "error")) return;
     const { source, diagnostics: back } = planFromJson(json);
     if (!source || back.some((d) => d.severity === "error")) return;
-    // One by-design loss leaves no plan to measure: a courtyard's `outdoor` cover does not travel,
-    // so `walls from rooms` round the hole refuses on the way back. Only that loss is let through,
-    // only on a listed gap, and only when the projection's own `dropped` names `outdoor`.
-    const again = planToJson(source);
-    if (!again.json || again.diagnostics.some((d) => d.severity === "error")) {
-      expect(CANNOT_ROUND_TRIP, `${name} comes back unresolvable but is not a listed gap`).toHaveProperty([name]);
-      expect(planToJson(src).dropped?.map((d) => d.clause) ?? [], name).toContain("outdoor");
-      expect(
-        again.diagnostics.filter((d) => d.severity === "error").map((d) => d.code),
-        `${name}: the way back refuses for a reason other than the lost courtyard cover`,
-      ).toContain("E_ROOMS_NOT_TILING");
-      return;
+    // A plan whose way back does not resolve (Plan JSON drops its courtyard's `outdoor` cover) gets
+    // that cover back, its own statements verbatim, and is then measured like every other plan.
+    let wayBack = source;
+    if (UNRESOLVED_WAY_BACK.includes(name)) {
+      expect(resolves(source), `${name}'s way back resolves now: drop it from UNRESOLVED_WAY_BACK`).toBe(false);
+      wayBack = withOutdoorOf(src, source);
     }
     const pos = (s: string): Record<string, string> => {
       const out: Record<string, string> = {};
@@ -365,9 +360,43 @@ describe("plan-json — derived furniture positions", () => {
         out[f.id ?? ""] = `${f.x},${f.y} ${f.width}x${f.height} r${f.rotate ?? 0}`;
       return out;
     };
-    expect(pos(source)).toEqual(pos(src));
+    expect(pos(wayBack)).toEqual(pos(src));
+  });
+
+  it("the examples whose JSON way back does not resolve are exactly UNRESOLVED_WAY_BACK", () => {
+    const unresolved = exampleNames()
+      .sort()
+      .filter((name) => {
+        const { json, diagnostics } = planToJson(readFileSync(`examples/${name}`, "utf8"));
+        if (!json || diagnostics.some((d) => d.severity === "error")) return false;
+        const { source, diagnostics: back } = planFromJson(json);
+        return source !== undefined && !back.some((d) => d.severity === "error") && !resolves(source);
+      });
+    expect(unresolved).toEqual([...UNRESOLVED_WAY_BACK]);
+    for (const name of UNRESOLVED_WAY_BACK) {
+      expect(CANNOT_ROUND_TRIP, `${name} must be a listed gap`).toHaveProperty([name]);
+      const src = readFileSync(`examples/${name}`, "utf8");
+      expect(planToJson(src).dropped?.map((d) => d.clause) ?? [], name).toContain("outdoor");
+    }
   });
 });
+
+/** Does `src` resolve to a plan the projection can read (no error)? */
+function resolves(src: string): boolean {
+  const r = planToJson(src);
+  return r.json !== undefined && !r.diagnostics.some((d) => d.severity === "error");
+}
+
+/** `source` with every `outdoor` statement of `original` put back, verbatim, before its closing brace. */
+function withOutdoorOf(original: string, source: string): string {
+  const bytes = Buffer.from(original, "utf8");
+  const statements = (parse(original).plan?.body ?? []).flatMap((n) =>
+    n.kind === "outdoor" && n.span ? [bytes.subarray(n.span.start, n.span.end).toString("utf8")] : [],
+  );
+  expect(statements.length, "the plan has `outdoor` statements to put back").toBeGreaterThan(0);
+  const close = source.lastIndexOf("}");
+  return `${source.slice(0, close)}${statements.map((s) => `  ${s}\n`).join("")}${source.slice(close)}`;
+}
 
 describe("plan-json — planToJson projection & enrichments", () => {
   const { json } = planToJson(FIXTURE_A);

@@ -36,14 +36,14 @@ describe("the symbol catalogue's pictures", () => {
 
   it("docs/furniture.md shows each family's image exactly once", () => {
     for (const f of CANONICAL_FIXTURES) {
-      expect(doc.split(`src="/catalogue/${f}.png"`).length - 1, f).toBe(1);
+      expect(doc.split(`src="../docs-site/public/catalogue/${f}.png"`).length - 1, f).toBe(1);
     }
-    const shown = [...doc.matchAll(/src="\/catalogue\/([a-z_]+)\.png"/g)].map((m) => m[1]);
+    const shown = [...doc.matchAll(/src="\.\.\/docs-site\/public\/catalogue\/([a-z_]+)\.png"/g)].map((m) => m[1]);
     expect(shown.length).toBe(CANONICAL_FIXTURES.length);
   });
 
   it("the 3D preview is introduced by its two lines, before the first picture (PS-D12)", () => {
-    const first = doc.indexOf('src="/catalogue/');
+    const first = doc.indexOf('src="../docs-site/public/catalogue/');
     for (const line of [PREVIEW_LABEL, PREVIEW_LIMITS]) {
       const at = doc.indexOf(line);
       expect(at, line.slice(0, 40)).toBeGreaterThan(0);

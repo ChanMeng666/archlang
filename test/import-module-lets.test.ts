@@ -530,7 +530,7 @@ const BASELINE: [string, string][] = [
   ["examples/classroom-block.arch", "809f674a9d48b528c5e9850768c92afe5d826c22783f1a18df610d8a88adb4f6"], // added with the example, re-measured for net area, see header; PS2.11e, see header
   ["examples/clinic.arch", "af780d4296064bdd7a1d81dfc776fa586520a26bfaed8295f3298ff91373ead5"],
   ["examples/corner-cafe.arch", "a6d2075bd43f6d46984d64a2ae8edd6e6c96f25ea4fae91f2984ad7bdd4a5b1f"], // added with the example, re-measured for net area, see header; #367, see test/byte-identity-baseline.ts
-  ["examples/courtyard-family.arch", "43ab5ab6b3c45a86bb162d76cac2c3b665d21f45f39fcb8b8b8503d7188a1998"], // new example (RM8.5, the courtyard-family showcase)
+  ["examples/courtyard-family.arch", "50c9cc316efda2bf16183e877d4be16443df160c9c13fc2a0210d62945c4bd67"], // new example (RM8.5, the courtyard-family showcase)
   ["examples/courtyard-house.arch", "e5a170e01d15451ed5a322d6eb9f8267a356f208fea829dfce19cd6d3e1a43ce"], // re-measured for PS2.4, see header; PS2.11e, see header
   // Re-measured 2026-10-20 (PS2.19), `describe()` only: "Utility" reads `utility` (`byte-identity-baseline.ts`).
   ["examples/furnished-flat.arch", "cdb42b5c1bee8dd931d9b99b1e338dd895e4cb5d2de1915de8a85f04a3fd444a"], // PS2.11e, see header

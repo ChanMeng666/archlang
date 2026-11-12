@@ -17,11 +17,12 @@
  *       `packages/archlang-3d/scripts/family-thumbs.ts` (PS-D11: 3D always paired with its plan).
  *       Both halves come from one `.arch` source.
  *
- * Every image is generated: no pixel is drawn or fixed by hand. The output is a pure function of
- * the checkout (resvg is pinned and draws with the bundled font only; the 3D frame is the replay's
- * pure function of `t`, its pixels re-encoded by `pngjs`), so two runs on one checkout write the
- * same bytes. The tool is deliberately NOT in `check:drift` (D.8): the catalogue needs Chromium,
- * and the drift gate must not.
+ * Every image is generated: no pixel is drawn or fixed by hand. The 2D half is a pure function of
+ * the checkout (resvg is pinned and draws with the bundled font only). The 3D half is not: it is a
+ * frame Chromium rasterises (the replay at `t = 1`, its pixels re-encoded by `pngjs`), so it also
+ * depends on the Chromium build and its GPU path. Two runs on one machine have written the same
+ * bytes; another machine may not. That is one reason the tool is NOT in `check:drift` (D.8): the
+ * catalogue needs Chromium, and the drift gate must not.
  */
 import { spawnSync } from "node:child_process";
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";

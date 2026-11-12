@@ -7,6 +7,7 @@
 import { posix } from "node:path";
 
 const GITHUB = "https://github.com/ChanMeng666/archlang";
+const PUBLIC = "docs-site/public/";
 
 // VitePress's heading-id rule, copied from vitepress 1.6.4 (`slugify` in dist/node, the one it hands
 // markdown-it-anchor; this repo's config sets no custom one). GitHub keeps `_` in an anchor and
@@ -163,7 +164,10 @@ export function rewriteLinks(markdown, srcPath, ctx) {
     if (path.startsWith("..") || path === ".") return target;
     const bare = path.replace(/\/$/, "");
     let out;
-    if (pageRoute.has(bare)) out = pageRoute.get(bare) + query + siteFrag(frag, ctx.sourceOf?.(bare));
+    // A file VitePress publishes verbatim (`docs-site/public/x` is served at `/x`): a picture a
+    // canonical doc shows by its repo path, so the same file renders on GitHub and on the site.
+    if (bare.startsWith(PUBLIC)) out = `/${bare.slice(PUBLIC.length)}${query}${frag}`;
+    else if (pageRoute.has(bare)) out = pageRoute.get(bare) + query + siteFrag(frag, ctx.sourceOf?.(bare));
     else if (/^docs\/adr\/index\.md$/.test(bare) || bare === "docs/adr") out = `/adr${query}${siteFrag(frag, null)}`;
     else if (/^docs\/adr\/[^/]+\.md$/.test(bare))
       out = `/adr/${posix.basename(bare, ".md")}${query}${siteFrag(frag, ctx.sourceOf?.(bare))}`;
@@ -175,6 +179,12 @@ export function rewriteLinks(markdown, srcPath, ctx) {
       out = `${GITHUB}/${kind === "dir" ? "tree" : "blob"}/main/${bare}${query}${frag}`;
     }
     return (angled ? `<${out}>` : out) + (m[2] ?? "");
+  };
+
+  /** A relative picture path under `docs-site/public/`, as its site path; `null` for any other. */
+  const publicPicture = (url) => {
+    if (url.startsWith("/") || url.startsWith("#") || /^[a-z][a-z0-9+.-]*:/i.test(url)) return null;
+    return posix.normalize(posix.join(dir, url.split(/[?#]/)[0])).startsWith(PUBLIC) ? map(url) : null;
   };
 
   // Fenced code is literal text; inline code spans are skipped per line.
@@ -193,6 +203,12 @@ export function rewriteLinks(markdown, srcPath, ctx) {
             ? seg
             : seg
                 .replace(/\]\(([^()\s][^()]*(?:\([^()]*\)[^()]*)*)\)/g, (_, t) => `](${map(t)})`)
+                // An inline `<img src="…">` (a sized picture in a table cell) is mapped too, but only
+                // when it names a file `public/` serves; any other picture is left as it is.
+                .replace(/<img src="([^"\s]+)"/g, (whole, t) => {
+                  const out = publicPicture(t);
+                  return out === null ? whole : `<img src="${out}"`;
+                })
                 .replace(/^(\s{0,3}\[[^\]]+\]:\s*)(\S+)/, (_, a, t) => a + map(t)),
         )
         .join("");

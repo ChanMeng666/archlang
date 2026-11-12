@@ -51,7 +51,8 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
   "courtyard-house.arch": { because: "`roof`; and the sheet layer + `zone`", proof: /^\s*roof\b/m },
   // `walls from rooms` and its polygon hall DO travel; the `outdoor patio` that covers the
   // courtyard hole does not, so the plan that comes back has an uncovered hole and refuses
-  // (`E_ROOMS_NOT_TILING`, then every opening `E_OPENING_NO_SHARED_WALL`). `dropped` names it.
+  // (`E_ROOMS_NOT_TILING`, then every opening `E_OPENING_NO_SHARED_WALL`). `dropped` names it,
+  // and it is the one entry of {@link UNRESOLVED_WAY_BACK}.
   "courtyard-family.arch": {
     because: "`outdoor` (the courtyard cover `walls from rooms` needs); and the sheet layer, a room's `label … at`",
     proof: /^\s*outdoor\b/m,
@@ -106,3 +107,12 @@ export const CANNOT_ROUND_TRIP: Record<string, { because: string; proof: RegExp 
     proof: /^\s*acc(Title|Descr)\b/m,
   },
 };
+
+/**
+ * The shipped examples whose JSON way back does not even resolve: the source `planFromJson` writes
+ * fails to compile, because Plan JSON drops the `outdoor` cover `walls from rooms` needs round a
+ * courtyard hole. Pinned exactly (`plan-json.test.ts` derives the set and compares; the CLI suite
+ * gives these their own outcome, "the way back does not compile"). Every name here is also a
+ * {@link CANNOT_ROUND_TRIP} gap. Carrying `outdoor` in Plan JSON would empty this list.
+ */
+export const UNRESOLVED_WAY_BACK: readonly string[] = ["courtyard-family.arch"];

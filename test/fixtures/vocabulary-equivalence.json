@@ -1027,8 +1027,8 @@
     {
       "id": "gym",
       "label": "Gym",
-      "uses": ["office"],
-      "room_type": "StudyRoom"
+      "uses": [],
+      "room_type": "Room"
     },
     {
       "id": "hall",
