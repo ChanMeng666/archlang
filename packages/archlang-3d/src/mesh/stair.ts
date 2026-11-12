@@ -167,8 +167,11 @@ export interface StairSide {
   /** `flight <k>` or `landing <k>`, 1-based in climbing order. */
   of: string;
   side: Side;
-  /** `newel`: a landing edge open past it, but wholly held by the flights' newels standing on it. */
-  against: "wall" | "open" | "flight" | "newel";
+  /**
+   * `flight` / `landing`: the stair's other flights (and landings) lie past the whole edge; `newel`: a
+   * landing edge open past it, but wholly held by the flights' newels standing on it.
+   */
+  against: "wall" | "open" | "flight" | "landing" | "newel";
 }
 
 /** A stair built in its parts (RM8.6): treads and landings, stringers, the balustrade. */
@@ -202,8 +205,17 @@ export interface StairDetail {
 /** `[x0, y0, x1, y1]`, µm, plan axes. */
 type Box2 = [number, number, number, number];
 
-/** The parts of `[s0, s1]` no interval of `taken` covers. */
-function freeRuns(s0: number, s1: number, taken: ReadonlyArray<readonly [number, number]>): Array<[number, number]> {
+/**
+ * The parts of `[s0, s1]` no interval of `taken` covers, at least `min` long: a shorter one counts as
+ * covered (review of PR #732, S1: a dog-leg whose flights differ by a millimetre left a 1 mm stub of
+ * rail and a newel on it).
+ */
+function freeRuns(
+  s0: number,
+  s1: number,
+  taken: ReadonlyArray<readonly [number, number]>,
+  min = 0,
+): Array<[number, number]> {
   let runs: Array<[number, number]> = [[s0, s1]];
   for (const [a, b] of taken)
     runs = runs.flatMap(
@@ -217,7 +229,7 @@ function freeRuns(s0: number, s1: number, taken: ReadonlyArray<readonly [number,
               ] as Array<[number, number]>
             ).filter(([u, v]) => v > u),
     );
-  return runs;
+  return runs.filter(([u, v]) => v - u >= min);
 }
 
 /**
@@ -338,6 +350,15 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
       // The stretches of this edge that the stair's other flights or its landings lie past (a
       // dog-leg's two flights side by side, a flight beside a landing: RM8.6b n1) are taken out; each
       // stretch left is probed at its own middle, a wall closing it or nothing past it.
+      const touching = (boxes: readonly Box2[]) =>
+        boxes.filter(([a, b, c, d]) => {
+          const [x0, x1] = yRun ? [a, c] : [b, d];
+          const [y0, y1] = yRun ? [b, d] : [a, c];
+          return (
+            x0 < strip[1] && x1 > strip[0] && y1 > Math.min(r0, r0 + dir * run) && y0 < Math.max(r0, r0 + dir * run)
+          );
+        });
+      const byFlight = touching(flightBoxes.filter((_, j) => j !== i)).length > 0;
       const covered = [...flightBoxes.filter((_, j) => j !== i), ...landingBoxes]
         .filter(([a, b, c, d]) => {
           const [x0, x1] = yRun ? [a, c] : [b, d];
@@ -351,9 +372,10 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
           const [da, db] = [dOf(y0), dOf(y1)].sort((x, y) => x - y) as [number, number];
           return [Math.max(0, da), Math.min(run, db)];
         });
-      const free = freeRuns(0, run, covered);
+      // A stretch shorter than the newel that would end its rail counts as covered (S1).
+      const free = freeRuns(0, run, covered, np);
       const open = free.filter(([da, db]) => !solidAt(planAt(f, Math.round((da + db) / 2), past)));
-      const against = free.length === 0 ? "flight" : open.length === 0 ? "wall" : "open";
+      const against = free.length === 0 ? (byFlight ? "flight" : "landing") : open.length === 0 ? "wall" : "open";
       out.sides.push({ of: `flight ${i + 1}`, side, against });
       const ra = Math.round(cc - railW / 2);
       const lean = Math.ceil((slope * bb) / 2) + MM;
@@ -438,7 +460,7 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
           horizontal ? fb < s1 && fd > s0 && fa < a1 && fc > a0 : fa < s1 && fc > s0 && fb < a1 && fd > a0,
         )
         .map(([fa, fb, fc, fd]): [number, number] => (horizontal ? [fa, fc] : [fb, fd]));
-      const free = freeRuns(a0, a1, flightRuns);
+      const free = freeRuns(a0, a1, flightRuns, np);
       const open = free.filter(([r0, r1]) => {
         const m = Math.round((r0 + r1) / 2);
         return !solidAt(horizontal ? [m, at + dir * p] : [at + dir * p, m]);
@@ -463,7 +485,7 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
         const held = taken
           .filter((b) => (horizontal ? b[1] < across[1] && b[3] > across[0] : b[0] < across[1] && b[2] > across[0]))
           .map((b): [number, number] => (horizontal ? [b[0], b[2]] : [b[1], b[3]]));
-        for (const [q0, q1] of freeRuns(r0, r1, held)) {
+        for (const [q0, q1] of freeRuns(r0, r1, held, np)) {
           const b: Box2 = horizontal ? [q0, across[0], q1, across[1]] : [across[0], q0, across[1], q1];
           keep(out.rails, solid(b, railTop - railW, railTop));
           taken.push(b);

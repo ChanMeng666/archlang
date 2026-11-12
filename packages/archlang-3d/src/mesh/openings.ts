@@ -29,8 +29,8 @@
  *   arc and the sill and the board stay inside the cut.
  *
  * A storey's trim is decided all at once (`storeyTrim`), never in the order the plan writes its
- * openings: every casing before any sill or board (a casing beats a horn), and two pieces of the
- * same rank that meet are both cut back or left out, so a plan's trim is the same whatever order
+ * openings: every casing before any sill or board (a casing beats a horn), and two casing legs, or
+ * two windows' horns or spans, that meet are both left out or cut back, so a plan's trim is the same whatever order
  * its openings are written in, and a mirror-symmetric plan gets mirror-symmetric trim (RM8.6b).
  *
  * Every part is square to its wall, built in its jamb frame and rounded to whole micrometres; every
@@ -171,13 +171,18 @@ function boxOf(poly: Polygon): [number, number, number, number] {
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
 }
 
-/** What a trim piece can stand in: one class per kind of obstacle a piece is tested against. */
 /**
- * `opening`: a doorway between its sill and its head (what a casing is tested against); `jamb`: the
- * same doorway at every height and a millimetre wider each way along its wall (what a sill's or a
- * board's horn is tested against: a horn ending flush with a neighbour's jamb face would share it).
+ * What a trim piece can stand in: one class per kind of obstacle a piece is tested against. A
+ * neighbour's doorway (its cut and a casing's depth off each face) is three of them:
+ * - `opening`: between its sill and its head, what a casing is tested against (above a door's head
+ *   is its lintel, which a neighbour's casing may well pass in front of);
+ * - `doorway`: at every height, what a sill's or a board's span is tested against;
+ * - `jamb`: at every height and a millimetre wider each way along its wall, what a sill's or a
+ *   board's horn is tested against. Its pier's jamb face runs from the floor to the wall's top
+ *   whatever the doorway's own height, so a horn ending flush with it (a horn exactly as long as the
+ *   pier is wide) would share that face at any height (RM8.6b n2; the coplanar check found it).
  */
-export type ObstacleClass = "wall" | "column" | "furniture" | "opening" | "jamb" | "trim";
+export type ObstacleClass = "wall" | "column" | "furniture" | "opening" | "doorway" | "jamb" | "trim";
 
 /** A trim piece in plan, over heights `z0..z1` (µm over the storey's floor level `e`). */
 interface Piece {
@@ -204,16 +209,22 @@ class Obstacles {
     this.list.push({ ...piece, cls, name, ...(owner !== undefined ? { owner } : {}), box: boxOf(piece.poly) });
   }
 
-  /** The first obstacle, of `classes`, that a piece of `owner`'s trim would stand in, or `null`. */
+  /**
+   * What, of `classes`, a piece of `owner`'s trim would stand in, or `null`: of all it meets, the
+   * name that sorts first, so the answer never depends on the order the plan writes its openings in
+   * (review of PR #732, B1).
+   */
   clash(owner: string, piece: Piece, classes: readonly ObstacleClass[]): string | null {
     const [x0, y0, x1, y1] = boxOf(piece.poly);
+    let first: string | null = null;
     for (const o of this.list) {
       if (o.owner === owner || !classes.includes(o.cls)) continue;
       if (o.z1 <= piece.z0 || o.z0 >= piece.z1) continue;
       if (o.box[2] <= x0 || o.box[0] >= x1 || o.box[3] <= y0 || o.box[1] >= y1) continue;
-      if (overlapArea(o.poly, piece.poly) > CLASH_UM2) return o.name;
+      if (first !== null && o.name >= first) continue;
+      if (overlapArea(o.poly, piece.poly) > CLASH_UM2) first = o.name;
     }
-    return null;
+    return first;
   }
 }
 
@@ -259,7 +270,9 @@ function fixedObstacles(level: Level, furnitureZ: (f: Level["furniture"][number]
     const fb = jambFrame(b);
     const hb = (thick.get(b.host) ?? 0) / 2 + reach;
     if (!fb) continue;
-    site.add("opening", `opening ${b.id}`, { poly: fb.quad(0, fb.w, -hb, hb), z0: b.sill, z1: b.head }, b.id);
+    const band = fb.quad(0, fb.w, -hb, hb);
+    site.add("opening", `opening ${b.id}`, { poly: band, z0: b.sill, z1: b.head }, b.id);
+    site.add("doorway", `opening ${b.id}`, { poly: band, z0: 0, z1: UP }, b.id);
     site.add("jamb", `opening ${b.id}`, { poly: fb.quad(-MM, fb.w + MM, -hb, hb), z0: 0, z1: UP }, b.id);
   }
   return site;
@@ -272,8 +285,12 @@ function fixedObstacles(level: Level, furnitureZ: (f: Level["furniture"][number]
  */
 function cutOverlap(o: Opening, level: Level): string | null {
   const own = { outer: o.cut };
-  for (const b of level.openings) if (b.id !== o.id && overlapArea({ outer: b.cut }, own) > CLASH_UM2) return b.id;
-  return null;
+  // Of all it overlaps, the id that sorts first: never the order the plan writes them in.
+  const hits = level.openings
+    .filter((b) => b.id !== o.id && overlapArea({ outer: b.cut }, own) > CLASH_UM2)
+    .map((b) => b.id)
+    .sort();
+  return hits[0] ?? null;
 }
 
 /** A lining of thickness `l` on a curved host: the two jambs and the head, across `[v0, v1]`. */
@@ -377,13 +394,16 @@ interface WindowPlan {
  *    shortened; two legs that meet each other are both left out (two doorways closer than two
  *    casings), so neither doorway wins by coming first and a symmetric plan stays symmetric.
  * 2. Each head piece's two ends past the jambs, one at a time (S3): an end is cut back to its jamb
- *    when its leg was left out, or when it meets a fixed obstacle, another doorway's standing leg or
- *    another head piece's end (both cut); its span between the jambs is left out when it meets a
- *    fixed obstacle, a standing leg or another head piece's span (both left out).
+ *    when its leg was left out, or when it meets a fixed obstacle (a neighbour's doorway above this
+ *    one's head, a wall, a column, tall furniture); its span between the jambs is left out when it
+ *    meets a fixed obstacle. Another doorway's casing cannot reach either: an end stands over its own
+ *    leg, which met that casing first, and the span over its own doorway, which that casing's leg met
+ *    first.
  * 3. Only then each window's sill and board, a casing beating a horn: each horn past a jamb is cut
- *    back when it meets a fixed obstacle, any built casing, or another window's sill or board as
- *    planned (both cut); a sill or board whose span still meets one of them, or another window's span,
- *    is left out. The reveal stands on the board, or on the sill block when the board is left out.
+ *    back when it meets a neighbour's jamb (`jamb`), any built casing, or another window's sill or
+ *    board as planned (both cut); a sill or board whose span meets a neighbour's doorway
+ *    (`doorway`), a built casing or another window's span is left out. The reveal stands on the
+ *    board, or on the sill block when the board is left out.
  *
  * Every omission is ledgered with what it met, end by end.
  */
@@ -420,45 +440,29 @@ export function storeyTrim(
         }
       });
   }
-  // 2. Head pieces: their ends one at a time, then their spans.
-  const standingLegs = new Obstacles();
-  const plannedEnds = new Obstacles();
-  const plannedMids = new Obstacles();
-  for (const d of doors)
-    for (const face of d.faces) {
-      face.legs.forEach((leg, k) => {
-        if (face.keep[k]) standingLegs.add("trim", `casing ${d.input.o.id}`, leg, d.input.o.id);
-      });
-      if (face.ends)
-        face.ends.forEach((end, k) => {
-          if (face.keep[k]) plannedEnds.add("trim", `casing ${d.input.o.id}`, end, d.input.o.id);
-        });
-      if (face.mid) plannedMids.add("trim", `casing ${d.input.o.id}`, face.mid, d.input.o.id);
-    }
+  // 2. Head pieces: their ends one at a time, then their spans, against the fixed obstacles.
   for (const d of doors) {
     const id = d.input.o.id;
     for (const face of d.faces) {
       if (!face.ends || !face.mid) continue;
+      const heads: string[] = [];
       face.ends.forEach((end, k) => {
         if (!face.keep[k]) {
           face.endKeep[k] = false;
           return;
         }
-        const what =
-          site.clash(id, end, STATIC) ?? standingLegs.clash(id, end, TRIM) ?? plannedEnds.clash(id, end, TRIM);
+        const what = site.clash(id, end, STATIC);
         if (what) {
           face.endKeep[k] = false;
-          d.omitted.push(`${face.name}:head-${END[k]}:${what}`);
+          heads.push(`${face.name}:head-${END[k]}:${what}`);
         }
       });
-      const what =
-        site.clash(id, face.mid, STATIC) ??
-        standingLegs.clash(id, face.mid, TRIM) ??
-        plannedMids.clash(id, face.mid, TRIM);
+      const what = site.clash(id, face.mid, STATIC);
       if (what) {
+        // Its span left out: the whole head piece goes, so its ends' rows would say nothing more.
         face.midKeep = false;
         d.omitted.push(`${face.name}:head:${what}`);
-      }
+      } else d.omitted.push(...heads);
     }
   }
   const casings = new Obstacles();
@@ -485,7 +489,9 @@ export function storeyTrim(
         }
       });
       const what =
-        site.clash(id, sl.core, NEAR) ?? casings.clash(id, sl.core, TRIM) ?? plannedCores.clash(id, sl.core, TRIM);
+        site.clash(id, sl.core, ["doorway"]) ??
+        casings.clash(id, sl.core, TRIM) ??
+        plannedCores.clash(id, sl.core, TRIM);
       if (what) {
         sl.coreKeep = false;
         sl.coreWhy = what;
@@ -625,15 +631,17 @@ function finishDoor(d: DoorPlan, casings: Obstacles, e: number, prism: Prism): v
     }
   }
   const { parts, ledger } = d.result;
-  if (shells.length) parts.push({ part: "casing", shells });
-  ledger.push({
-    kind: o.kind,
-    id,
-    field: "casing_mm",
-    value: { width: c / MM, proud: p / MM, head: barTop > head },
-    provenance: "default",
-    rule: "door-casing-default",
-  });
+  if (shells.length) {
+    parts.push({ part: "casing", shells });
+    ledger.push({
+      kind: o.kind,
+      id,
+      field: "casing_mm",
+      value: { width: c / MM, proud: p / MM, head: barTop > head },
+      provenance: "default",
+      rule: "door-casing-default",
+    });
+  }
   if (d.omitted.length)
     ledger.push({
       kind: o.kind,
@@ -841,7 +849,12 @@ function planWindow(
         kind: "window",
         id: o.id,
         field: "board_mm",
-        value: { thickness: bt / MM, overhang: over / MM },
+        value: {
+          thickness: bt / MM,
+          overhang: over / MM,
+          // A mitred end (a window run to a corner) stops on the mitre, the board's as the sill's.
+          ...(ends?.mitred.some(Boolean) ? { mitred: ends.mitred } : {}),
+        },
         provenance: "default",
         rule: "window-board-interior",
       });

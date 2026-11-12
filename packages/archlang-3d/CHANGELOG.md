@@ -13,8 +13,8 @@
   standing furniture (a rug is passed through), another doorway or a neighbour's trim is left out,
   never shortened, and a sill or board end that would meet a neighbour's stops at its jamb (every
   omission ledgered). A storey's trim is decided all at once, never in the order the plan writes its
-  openings: every casing before any sill or board (a casing beats a horn), and two pieces of the same
-  rank that meet are both cut back or left out, so swapping two openings' lines changes nothing and
+  openings: every casing before any sill or board (a casing beats a horn), and two casing legs, or two
+  windows' horns or spans, that meet are both left out or cut back, so swapping two openings' lines changes nothing and
   a mirror-symmetric plan gets mirror-symmetric trim. Every window gets a reveal
   lining on its inside half (`reveal`, in the frame's colour), an exterior sill proud of the outside
   face and past each jamb by 0.2 t, as the core draws it (`sill`, pale stone), and an interior board

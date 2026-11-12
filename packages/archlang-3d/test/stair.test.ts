@@ -514,6 +514,21 @@ describe("the balustrade (card RM8.6)", () => {
     const between = rails.filter(([x0, , , x1, , z1]) => x0 >= 1_400_000 && x1 <= 1_600_000 && z1 > 1_500_000);
     expect(between.length).toBeGreaterThan(0);
     for (const [, , z0] of between) expect(z0).toBeGreaterThanOrEqual(2_500_000 - 50_000);
+    // Review of PR #732, S1: second flights 1 mm shorter, 10 mm shorter and 1 mm longer than the
+    // first leave a stretch shorter than a newel, which counts as covered: no stub of rail, no newel.
+    for (const len2 of [1999, 1990, 2001]) {
+      const m = buildMesh(adapted(dogleg(len2)).scene);
+      expect(sides(m).slice(0, 4), String(len2)).toEqual([
+        "side(flight 1, left)=open",
+        "side(flight 1, right)=flight",
+        "side(flight 2, left)=flight",
+        "side(flight 2, right)=open",
+      ]);
+      const stubs = (m.nodes.find((n) => n.key === "L1/stair:s:rail") as MeshNode).shells
+        .map((sh) => extent([sh]))
+        .filter(([x0, , , x1, , z1]) => x0 >= 1_400_000 && x1 <= 1_600_000 && z1 > 1_500_000);
+      expect(stubs, String(len2)).toEqual([]);
+    }
     const long = buildMesh(adapted(dogleg(2400)).scene);
     expect(sides(long).slice(0, 4)).toEqual([
       "side(flight 1, left)=open",
