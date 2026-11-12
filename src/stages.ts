@@ -81,6 +81,9 @@ export const COMPILE_WARNING_STAGES: Readonly<Record<string, AuthoringStage>> = 
   // a `set` rule takes as text. The plan's units and its rules are the brief's.
   W_LENGTH_IN_METRES: "brief",
   W_SET_VALUE_WORD: "brief",
+  // A storey's written clear height against its height less the slab above (RM6.1): the storey
+  // heights are the brief's, as the plan's `height` is.
+  W_CLEAR_HEIGHT_MISMATCH: "brief",
   // A written size or door position the brief's `grid` moved: reported from the first element it
   // can move, a room's `size` (a door's position can only appear later, at `openings`).
   W_GRID_SNAPPED: "rooms",
@@ -147,7 +150,7 @@ const ERROR_FAMILIES: ReadonlyArray<readonly [RegExp, AuthoringStage]> = [
   [/^E_(WALLS?|PARTITION|ARC|COLUMN|ROOF|FENCE|HEIGHT)_/, "walls"],
   [/^E_(DOOR|WINDOW|OPENING|ATTACH|SWING|SILL)_/, "openings"],
   [/^E_(FURN|FACING)_/, "fixtures"],
-  [/^E_(DIM|ACC|PNG|DRAWING)_/, "drafting"],
+  [/^E_(DIM|ACC|PNG|DRAWING|SECTION)_/, "drafting"],
 ];
 
 /**

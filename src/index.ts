@@ -313,6 +313,7 @@ export type {
   IntentUnmeasuredReason,
 } from "./intent.js";
 export type { GrossAreaReason } from "./analyze/gross-area.js";
+export type { ClearHeightOmitted } from "./datum.js";
 export {
   roomsMatchingConcept,
   isKnownConcept,

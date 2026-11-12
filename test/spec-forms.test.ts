@@ -486,6 +486,15 @@ const POSITIVE: Snippet[] = [
     ),
   },
   {
+    keyword: "level",
+    // RM6.1 (MF-D1, RM-D17): the header's fixed order `height`, `slab`, `clear`.
+    note: "`slab` under a storey's floor, `clear` its clear height, after `height`",
+    src: plan(
+      `  level 1 "Ground" height 2750 { room id=r1 at (0,0) size 6000x4000 }\n` +
+        `  level 2 "Upper" height 2750 slab 320 clear 2340 { room id=r2 at (0,0) size 6000x4000 }`,
+    ),
+  },
+  {
     keyword: "strip",
     note: "a right-running row with the shared cross `height`, one child overriding it",
     src: plan(
@@ -715,6 +724,21 @@ interface Negative {
 }
 
 const NEGATIVE: Negative[] = [
+  {
+    code: "E_CLEAR_SCOPE",
+    channel: "compile",
+    note: "a `clear` on a multi-storey plan's `height` line (RM-D17): each storey writes its own",
+    src: plan(`  height 3000 clear 2400\n  level 1 { room id=r1 at (0,0) size 4000x3000 }`),
+  },
+  {
+    code: "W_CLEAR_HEIGHT_MISMATCH",
+    channel: "compile",
+    note: "a written `clear` against the storey's height less the slab above (3000 - 300 = 2700)",
+    src: plan(
+      `  level 1 height 3000 clear 2400 { room id=r1 at (0,0) size 4000x3000 }\n` +
+        `  level 2 slab 300 { room id=r2 at (0,0) size 4000x3000 }`,
+    ),
+  },
   {
     code: "W_KEEP_VIOLATED",
     channel: "compile",
