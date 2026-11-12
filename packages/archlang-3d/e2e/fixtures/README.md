@@ -13,6 +13,23 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-pinned by product-roadmap card RM8.8 (2026-11-12, PR #737, the soft contact shadows): bands
+along the walls' feet, up their inside corners and round the standing furniture fade in over the
+last quarter of each caster's rise, so a frame moves only once a storey's last wall or a piece of
+furniture is nearly up. Exactly 7 frames moved: laneway-house `end` (`903bbd44…` → `00da9331…`);
+two-storey `stop:1` (`adac293c…` → `19ae655b…`), `tilted` (`75208662…` → `cb958a5c…`; storey 1 is
+up by then in the combined view), `storey:2` (`ccfdee73…` → `8dfc1009…`), `stop:2` (`ad1b0d95…` →
+`41c5d43c…`) and `end` (`3c80a946…` → `2e3e8476…`); courtyard-house `end` (`4259e01a…` →
+`cbc6464d…`). Every other hash is unchanged: every `stage:*` frame of both plans, laneway-house's and
+courtyard-house's `tilted` (their walls are still rising, so no band shows yet), and both `taken`
+entries. The 7 new hashes are the ones CI's `check-3d` job printed for the PR's head `25aa2b7a`
+(GitHub Actions run https://github.com/ChanMeng666/archlang/actions/runs/43164173487, job
+131002091803, ubuntu x64), where the key-frame comparison failed on exactly these. The same calls
+as the test (`replayHtml` and `renderReplay` at 480 × 270, run from a script, not the test) on
+Windows 11 x64 with the same Chromium build rendered all 19 pinned hashes identically, so the
+`win32` entry stays. With `shadows: false` in the payload the viewer draws main's frames
+byte for byte (24 frames of the three plans at 1600 × 900 compared locally, PR body).
+
 Re-pinned by product-roadmap card RM8.6 (2026-11-12, PR #729, the trim of doors and windows and
 the stair in its parts): every door gains its lining and casing, every window its reveal, sill and
 board, and two-storey's stair is tread boards, stringers and a balustrade instead of a stepped
