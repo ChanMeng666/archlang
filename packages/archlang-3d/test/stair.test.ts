@@ -446,8 +446,10 @@ describe("the balustrade (card RM8.6)", () => {
       // A level rail: flat top and bottom, 50 mm apart (a sloping rail or a post is neither).
       const level = new Set(sh.positions.filter((_, k) => k % 3 === 1)).size === 2 && y1 - y0 === 50_000;
       if (!level) continue;
+      // Inclusive across the edge (RM8.6b S2): a landing rail lies inside its landing, its outer face
+      // ON the line a flight starts from, so a strict test there never counted one.
       for (const f of flights)
-        if (x0 < f.at[0] + f.size.w && x1 > f.at[0] && z0 < f.at[1] + f.size.h && z1 > f.at[1]) n++;
+        if (x0 < f.at[0] + f.size.w && x1 > f.at[0] && z0 <= f.at[1] + f.size.h && z1 >= f.at[1]) n++;
     }
     return n;
   };
@@ -488,6 +490,52 @@ describe("the balustrade (card RM8.6)", () => {
       ([x0, , z0, x1, , z1]) => z0 >= 1_450_000 && z1 <= 1_500_000 && x0 >= 1_400_000 && x1 <= 1_600_000,
     );
     expect(wellRail.length).toBeGreaterThan(0);
+    // RM8.6b S2: every level rail on the bottom edge (y 1450–1500) is within the 200 mm well.
+    const bottom = rails.filter(([, y0, z0, , y1, z1]) => z0 === 1_450_000 && z1 === 1_500_000 && y1 - y0 === 50_000);
+    expect(bottom.length).toBeGreaterThan(0);
+    expect(Math.max(...bottom.map(([x0, , , x1]) => x1 - x0))).toBeLessThanOrEqual(200_000);
+  });
+
+  // RM8.6b n1: a flight's long edge is taken stretch by stretch, as a landing's: the stretch past
+  // the stair's other flight (or a landing) gets no rail, the rest is probed on its own.
+  const dogleg = (len2: number) =>
+    turn(1500, 1000).replace(/flight at \(1500,1500\) size 1000x2000/g, `flight at (1500,1500) size 1000x${len2}`);
+  it("rails a flight's edge only where no other flight lies past it (a dog-leg's flights of two lengths)", () => {
+    const short = buildMesh(adapted(dogleg(1000)).scene);
+    expect(sides(short).slice(0, 4)).toEqual([
+      "side(flight 1, left)=open",
+      "side(flight 1, right)=open",
+      "side(flight 2, left)=flight",
+      "side(flight 2, right)=open",
+    ]);
+    // Flight 1's right-hand rail runs only past the shorter flight's end (y 2500–3500).
+    const rails = (short.nodes.find((n) => n.key === "L1/stair:s:rail") as MeshNode).shells.map((sh) => extent([sh]));
+    // Between the two flights (x 1400–1600) and down past the landing (y > 1500): the flights' pieces.
+    const between = rails.filter(([x0, , , x1, , z1]) => x0 >= 1_400_000 && x1 <= 1_600_000 && z1 > 1_500_000);
+    expect(between.length).toBeGreaterThan(0);
+    for (const [, , z0] of between) expect(z0).toBeGreaterThanOrEqual(2_500_000 - 50_000);
+    // Review of PR #732, S1: second flights 1 mm shorter, 10 mm shorter and 1 mm longer than the
+    // first leave a stretch shorter than a newel, which counts as covered: no stub of rail, no newel.
+    for (const len2 of [1999, 1990, 2001]) {
+      const m = buildMesh(adapted(dogleg(len2)).scene);
+      expect(sides(m).slice(0, 4), String(len2)).toEqual([
+        "side(flight 1, left)=open",
+        "side(flight 1, right)=flight",
+        "side(flight 2, left)=flight",
+        "side(flight 2, right)=open",
+      ]);
+      const stubs = (m.nodes.find((n) => n.key === "L1/stair:s:rail") as MeshNode).shells
+        .map((sh) => extent([sh]))
+        .filter(([x0, , , x1, , z1]) => x0 >= 1_400_000 && x1 <= 1_600_000 && z1 > 1_500_000);
+      expect(stubs, String(len2)).toEqual([]);
+    }
+    const long = buildMesh(adapted(dogleg(2400)).scene);
+    expect(sides(long).slice(0, 4)).toEqual([
+      "side(flight 1, left)=open",
+      "side(flight 1, right)=flight",
+      "side(flight 2, left)=open",
+      "side(flight 2, right)=open",
+    ]);
   });
 
   // Review m5: a `dir down` stair with no `dir up` partner below is built on the storey below, from
