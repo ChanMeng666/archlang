@@ -9,8 +9,8 @@
  */
 import { escapeHtml } from "./escape.js";
 import { offsetToLineCol, rankFixes, type Diagnostic } from "archlang";
-// The catalogue from the source, not the built core: so it loads with this panel (edit mode), not
-// with every first compile (card RM0.7; vite.config.js says why).
+// The catalogue from its own built file, not from `archlang`: so it loads with this panel (edit
+// mode), not with every first compile (card RM0.7; vite.config.js says why).
 import { ERROR_CATALOG } from "archlang/error-catalog";
 
 /**

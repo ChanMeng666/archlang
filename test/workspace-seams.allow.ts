@@ -43,6 +43,11 @@ export const ALLOW: readonly Seam[] = [
   },
   {
     file: "playground/tsconfig.json",
+    specifier: "paths archlang/error-catalog",
+    why: "types for the diagnostic catalogue come from src/: the build emits no declaration for dist/error-catalog.js",
+  },
+  {
+    file: "playground/tsconfig.json",
     specifier: "paths @chanmeng666/archlang-3d",
     why: "mirrors the Vite alias: archlang-3d is read from source, its published exports name a dist/ that may not be built",
   },
@@ -65,6 +70,11 @@ export const ALLOW: readonly Seam[] = [
     file: "playground/vite.config.js",
     specifier: "alias archlang/share",
     why: "the share-link decoder, the core's ./share export, built (dist/share.js); listed before the bare name (prefix match)",
+  },
+  {
+    file: "playground/vite.config.js",
+    specifier: "alias archlang/error-catalog",
+    why: "the edit-mode diagnostics panel reads the catalogue from its own built file with no export (dist/error-catalog.js), so it stays out of the compiler chunk; listed before the bare name (prefix match)",
   },
   {
     file: "playground/vite.config.js",
@@ -262,6 +272,11 @@ export const ALLOW: readonly Seam[] = [
     file: "vitest.config.ts",
     specifier: "alias archlang/share",
     why: "the playground modules import the share subpath by name; to src/share.ts, listed before the bare name (prefix match)",
+  },
+  {
+    file: "vitest.config.ts",
+    specifier: "alias archlang/error-catalog",
+    why: "the playground's diagnostics panel imports the catalogue by name; to src/error-catalog.ts, listed before the bare name (prefix match)",
   },
   {
     file: "vitest.config.ts",

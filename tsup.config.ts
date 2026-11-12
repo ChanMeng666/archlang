@@ -1,5 +1,5 @@
 import { copyFileSync, mkdirSync } from "node:fs";
-import { defineConfig } from "tsup";
+import { build, defineConfig } from "tsup";
 
 export default defineConfig({
   // `src/cli/link.ts` is the Node-only `@chanmeng666/archlang/link` subpath (it uses zlib), so
@@ -31,5 +31,24 @@ export default defineConfig({
   onSuccess: async () => {
     mkdirSync("dist/assets", { recursive: true });
     copyFileSync("assets/fonts/Roboto-Regular.ttf", "dist/assets/Roboto-Regular.ttf");
+    // `dist/error-catalog.js`: the diagnostic catalogue (`src/error-catalog.ts`) in one file of its
+    // own, for the playground's edit-mode diagnostics panel (card RM0.7), so its messages, causes and
+    // examples load there and not with the compiler chunk. A second build, after the first, with no
+    // splitting: as a fourth entry of the build above it would split the shared chunk `dist/index.js`
+    // imports in two (the catalogue and what it reads, ~460 KB, against everything else), and the
+    // playground's `compiler` group, which captures what `index.js` imports, would take it back. Not a
+    // package export (no `exports` entry, no declaration file), like `dist/cli/review.js`.
+    await build({
+      config: false,
+      entry: { "error-catalog": "src/error-catalog.ts" },
+      format: ["esm"],
+      splitting: false,
+      clean: false,
+      dts: false,
+      sourcemap: true,
+      target: "es2022",
+      outDir: "dist",
+      silent: true,
+    });
   },
 });

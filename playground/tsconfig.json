@@ -28,7 +28,8 @@
       // The share-link subpath, read from the source: Playwright resolves these `paths` at RUN
       // time for the specs that import share.ts in Node, and a .d.ts there would load as nothing.
       "archlang/share": ["../src/share.ts"],
-      // The diagnostic catalogue, read from the source as vite.config.js aliases it (card RM0.7).
+      // The diagnostic catalogue (vite.config.js aliases it to `dist/error-catalog.js`, which the
+      // build gives no declaration file, card RM0.7): its types are read from the source.
       "archlang/error-catalog": ["../src/error-catalog.ts"],
       "@chanmeng666/archlang-3d": ["../packages/archlang-3d/src/index.ts"],
       "@chanmeng666/archlang-3d/browser": ["../packages/archlang-3d/src/browser.ts"]

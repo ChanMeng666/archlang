@@ -89,8 +89,9 @@ function canonicalLine() {
 }
 
 // The playground consumes the *built* core (run `npm run build` in the repo
-// root first). Aliasing to dist/ keeps the published core import path honest
-// and avoids re-resolving the source's `.js` ESM specifiers.
+// root first): `dist/index.js` and the built files beside it (`cli/review.js`, `share.js`,
+// `error-catalog.js`), never `src/`. Aliasing to dist/ keeps the published core import path
+// honest and avoids re-resolving the source's `.js` ESM specifiers.
 export default defineConfig({
   root: __dirname,
   base: "./",
@@ -102,14 +103,15 @@ export default defineConfig({
       "archlang/review": resolve(__dirname, "../dist/cli/review.js"),
       // The share-link decoder (`@chanmeng666/archlang/share`), likewise before the bare name.
       "archlang/share": resolve(__dirname, "../dist/share.js"),
-      // The diagnostic catalogue's messages, causes and examples, for the edit-mode diagnostics
-      // panel only (card RM0.7). Read from the source, likewise before the bare name: the built
-      // core is one module, so `ERROR_CATALOG` imported from it would land in the `compiler`
-      // chunk (the group below captures every core statement any chunk uses), ~57 KB gzip on the
-      // path every first compile loads. From here it lands in the lazy chunk that needs it, and
-      // the compiler chunk keeps only the fix column `diagnosticToJson` reads
+      // The diagnostic catalogue (messages, causes, examples), for the edit-mode diagnostics panel
+      // only (card RM0.7): its own built file, `dist/error-catalog.js` (tsup.config.ts builds it
+      // with no shared chunk), likewise before the bare name. `ERROR_CATALOG` imported from
+      // `archlang` would land in the `compiler` chunk (the group below captures every statement of
+      // the core's shared chunk any chunk uses), ~57 KB gzip on the path every first compile loads.
+      // This file is no core file (scripts/core-files.mjs), so it lands in the lazy chunk that
+      // needs it, and the compiler chunk keeps only the fix column `diagnosticToJson` reads
       // (`src/error-catalog-fixes.ts`). e2e/startup-chunks.baseline.json measures both paths.
-      "archlang/error-catalog": resolve(__dirname, "../src/error-catalog.ts"),
+      "archlang/error-catalog": resolve(__dirname, "../dist/error-catalog.js"),
       archlang: resolve(__dirname, "../dist/index.js"),
       // archlang-3d is read from its source, as it always was: its published `exports` name a
       // dist/ this build has no reason to need. The longer key goes first (prefix match).
