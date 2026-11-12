@@ -27,13 +27,16 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
 - `src/mesh/`: Mesh3D — slab (rooms ∪ wall outline less voids, `slab.ts`), floors, columns, walls
   (body + sill + lintel per opening, meeting vertex to vertex), demolished walls as translucent
   ghosts (`wall:<id>:demolish`), closed door leaves, window frame and glass kept inside the cut,
+  the openings' trim (`openings.ts`: a doorway's lining and casing, a window's reveal, exterior
+  sill and interior board, each a part of the opening's node, sized off the host's thickness),
   T0 parametric furniture (`t0.ts`: parts over a box, ellipse, rounded or profiled section,
-  extruded up or sideways, each in a material slot; the twelve laneway families there, the
+  extruded up or sideways, or lofted through a dome's rings, each in a material slot; the twelve laneway families there, the
   living/bedroom/office batch in `t0-living.ts`, kitchen/bath/utility in `t0-utility.ts`, the
   site (planting, garden, vehicles, terrace, small standing objects) in `t0-outdoor.ts`, office
   and commercial in `t0-office.ts`, the shared part kit in `t0-kit.ts`: every catalogued family)
-  and a grey box for a word outside the catalogue, stairs (`stair.ts`: each flight one stepped
-  prism, each landing a box, from the Scene3D's `flights` and `landings`, which carry the core's
+  and a grey box for a word outside the catalogue, stairs (`stair.ts`, `stairDetail`: tread boards
+  with open risers, two stringers a flight, each landing a box, a balustrade on each edge with no
+  wall past it, from the Scene3D's `flights` and `landings`, which carry the core's
   `treadCount`; built once per climb, on the storey it climbs from), a hidden flat roof, and the site (`outdoor.ts`:
   each `outdoor` surface a 50 mm slab at its storey's floor level, coloured from the core's theme;
   each `fence` its style's posts, rails and pickets; every default ledgered); `earcut`

@@ -182,8 +182,9 @@ describe("--doors plan on the corpus", () => {
     for (const { n, scene, closed } of corpus) {
       expect(JSON.stringify(buildMesh(scene, { doors: "closed" })), n).toBe(JSON.stringify(closed));
       expect(closed.assumptions.some((a) => a.rule === "door-pose-closed")).toBe(true);
+      // The leaf is the door's own node; its lining and casing (card RM8.6) are parts with no pose.
       expect(
-        closed.nodes.filter((x) => x.kind === "door").every((x) => x.extras.pose === "closed"),
+        closed.nodes.filter((x) => x.kind === "door" && x.part === undefined).every((x) => x.extras.pose === "closed"),
         n,
       ).toBe(true);
     }

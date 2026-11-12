@@ -406,5 +406,13 @@ describe("Mesh3D determinism and budget", () => {
  * neither, so no node moved: with that one row replaced by the two old ones, the Mesh3D hashes to
  * 334b7949… exactly (as every one of the 45 corpus plans without a site does to its old hash). Its
  * GLB (no ledger) and its event table are unchanged.
+ *
+ * Moved by product-roadmap card RM8.6 (was 944930c9…): the doors and windows gain their trim
+ * (`src/mesh/openings.ts`; design `visual-language.md` §2.1–§2.2): 20 nodes, each door's `lining`
+ * and `casing` (4 doors) and each window's `reveal`, `sill` and `board` (4 windows), and 24 ledger
+ * rows (`door-lining-default` and `door-casing-default` per door; `window-inside-probe`,
+ * `window-reveal-lining`, `window-sill-exterior` and `window-board-interior` per window). With those
+ * 20 nodes and 24 rows taken out, the Mesh3D hashes to 944930c9… exactly: no leaf, frame, pane,
+ * wall or other node moved. Laneway has no stair and no tree (the card's loft moves nothing here).
  */
-const LANEWAY_MESH_SHA256 = "944930c974a057638c8f690fcd4c825ffcc6a99f59b6ea4ac3726db5048529a1";
+const LANEWAY_MESH_SHA256 = "ac7c5b227f9367394904315f08fb4a5c9309760d81bd1ab011bb4835eb2a998b";

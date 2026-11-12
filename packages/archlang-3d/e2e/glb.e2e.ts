@@ -206,7 +206,10 @@ describe("archlang3d build / check (§9.2 criteria 2, 4 and 5)", () => {
     expect(rep.doors).toBe("plan");
     expect(rep.verify).toMatchObject({ passed: 4, failed: 0 });
     expect(rep.assumptions.some((a: { rule: string }) => a.rule === "door-pose-plan")).toBe(true);
-    const doors = (await readGlbNodes(readFileSync(out))).nodes.filter((n) => n.extras.kind === "door");
+    // The doors' own nodes (the leaves); their lining and casing are parts (card RM8.6) with no pose.
+    const doors = (await readGlbNodes(readFileSync(out))).nodes.filter(
+      (n) => n.extras.kind === "door" && n.extras.part === undefined,
+    );
     expect(doors.length).toBe(4);
     // Two hinged doors swing; the sliding and the pocket door sweep no leaf and stay closed.
     expect(Object.fromEntries(doors.map((n) => [n.name, [n.extras.door_kind, n.extras.pose]]))).toEqual({

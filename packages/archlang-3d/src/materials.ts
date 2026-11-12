@@ -83,6 +83,15 @@ export const PALETTE: Readonly<Record<Exclude<MaterialSlot, "body">, SlotMateria
  *  this is a drafting default, ledgered (`stair-material-default`). */
 export const STAIR_MATERIAL = "wood" satisfies Exclude<MaterialSlot, "body">;
 
+/** The slot a stair's handrails, balusters and newels are built in (card RM8.6): walnut, so the
+ *  balustrade reads against the oak treads. A drafting default, ledgered (`stair-rail-material-default`). */
+export const STAIR_RAIL_MATERIAL = "wood_dark" satisfies Exclude<MaterialSlot, "body">;
+
+/** A door's oak: its leaf, and the lining and casing of every doorway (card RM8.6). */
+const DOOR_OAK = m("#c2a27e", 0.7);
+/** A window frame's dark bronze: its frame, and the reveal lining that continues it (card RM8.6). */
+const FRAME_BRONZE = m("#55534f", 0.5);
+
 /**
  * The building's own materials (visual-assets V9), by Mesh3D kind, and `<kind>:<part>` where a
  * part differs (a window's frame and glass, a demolished wall's ghost): the light replay's colours
@@ -94,9 +103,17 @@ export const KIND_PALETTE = {
   slab: m("#bdb6ab", 0.9),
   column: m("#e6e1d8", 0.85),
   wall: m("#f2f0eb", 0.9),
-  door: m("#c2a27e", 0.7),
-  "window:frame": m("#55534f", 0.5),
+  door: DOOR_OAK,
+  "window:frame": FRAME_BRONZE,
   "window:glass": m("#bcd6e0", 0.05, 0, 0.4),
+  // The trim (card RM8.6): a window's reveal in its frame's bronze, its exterior sill in the pale
+  // stone and its interior board in the oak of the palette; a cased opening's lining and casing in
+  // the doors' oak (a door's own lining and casing are `door`). Drafting defaults, ledgered.
+  "window:reveal": FRAME_BRONZE,
+  "window:sill": PALETTE.stone,
+  "window:board": PALETTE.wood,
+  "opening:lining": DOOR_OAK,
+  "opening:casing": DOOR_OAK,
   opening: m("#e6e1d8", 0.85),
   furniture: m("#d6cec1", 0.9),
   roof: m("#9c958a", 0.9),
@@ -104,6 +121,7 @@ export const KIND_PALETTE = {
   // A stair (card X3): the core gives it no material, so the ledgered default (`STAIR_MATERIAL`,
   // `stair-material-default`): that slot's own entry, never a second copy of its colour.
   stair: PALETTE[STAIR_MATERIAL],
+  "stair:rail": PALETTE[STAIR_RAIL_MATERIAL],
 } as const satisfies Readonly<Record<string, SlotMaterial>>;
 
 export type KindMaterial = keyof typeof KIND_PALETTE;

@@ -148,7 +148,7 @@ describe("the storey joint", () => {
     // m1: the shell is wholly under slab although its window's head (2600) is past the underside
     // (2500): the wall stops there all the same, and the window with it, ledgered.
     expect(top("shell")).toBe(2_500_000);
-    const win = mesh.nodes.find((n) => n.kind === "window" && n.id === "tall");
+    const win = mesh.nodes.find((n) => n.kind === "window" && n.id === "tall" && n.part === "frame");
     expect(win && topOf(win)).toBe(2_500_000);
     expect(
       mesh.assumptions.filter((a) => a.rule === "head-at-slab-above").map((a) => `${a.kind}:${a.id}=${a.value}`),
