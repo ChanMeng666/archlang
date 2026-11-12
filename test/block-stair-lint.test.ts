@@ -395,7 +395,8 @@ describe("flights that cannot hold the goings whole", () => {
 
   it("the example's header is true: cut both flights to 1210 and it warns, cut one and it does not", () => {
     const src = readFileSync("examples/turning-stair.arch", "utf8");
-    const first = (s: string): string => s.replaceAll("size 1000x1530", "size 1000x1210");
+    // The first flight is 1540 since RM1.2a (it draws 6 treads; `W_STAIR_RISER_TOO_HIGH`).
+    const first = (s: string): string => s.replaceAll("size 1000x1540", "size 1000x1210");
     // The last flight's near end stays on the landing, so its far end moves in.
     const last = (s: string): string =>
       s.replaceAll("flight at (1100,100) size 1530x1000", "flight at (1420,100) size 1210x1000");
