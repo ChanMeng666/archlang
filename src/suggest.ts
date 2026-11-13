@@ -30,6 +30,7 @@ import { wallPhraseOf } from "./wall-ref.js";
 import {
   accessDigraph,
   buildDoorAccessGraph,
+  outdoorsOf,
   DEFAULT_TOL,
   EXTERIOR_NODE,
   isBedroom,
@@ -363,7 +364,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   // Wall count per category — a bare `on <category>` stable ref is valid iff unique.
   const categoryCount = new Map<string, number>();
   for (const w of walls) categoryCount.set(w.category, (categoryCount.get(w.category) ?? 0) + 1);
-  const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol));
+  const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol), outdoorsOf(ir));
   const reachable = new Set(access.rooms.filter((r) => r.reachable).map((r) => r.id));
   // What a new door gives access THROUGH (PS0.6): a neighbour reached only by passing a bedroom
   // (or a wet room) is as private as one, whatever it is itself.
@@ -423,7 +424,10 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
     if (raw.length > 0) {
       const sorted = sortRaw(raw);
       suggestions.push({
-        problem: "The building has no entrance — no exterior door or opening lets anyone in.",
+        // Doors that open onto water exist and lead nowhere (backlog 4.5): say so rather than deny them.
+        problem: access.edges.some((e) => e.onto !== undefined)
+          ? "The building has no entrance — its only doors to the outside open onto water."
+          : "The building has no entrance — no exterior door or opening lets anyone in.",
         code: "W_NO_ENTRANCE",
         roomId: sorted[0]!.roomId,
         candidates: toCandidates(sorted),

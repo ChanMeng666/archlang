@@ -11,7 +11,7 @@
 
 import { type D4, D4_IDENTITY, fromSpelling } from "../algebra/d4.js";
 import type { AccessConnector, AccessGraph, MainEntranceFact, RoomBox } from "../analyze.js";
-import { buildDoorAccessGraph, openRunsOf, roomBox, roomUses } from "../analyze.js";
+import { buildDoorAccessGraph, openRunsOf, outdoorsOf, roomBox, roomUses } from "../analyze.js";
 import { arrivalWays, entranceInputs, mainEntranceOf, walkAccessGraph, walkWays } from "../analyze/entrance.js";
 import type { Diagnostic } from "../diagnostics.js";
 import { segmentsOfWall, type WallSegment } from "../geometry.js";
@@ -335,7 +335,7 @@ export function buildLintContext(
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
   const openRuns = openRunsOf(ir, rules.tolMm);
   const access = (): AccessGraph =>
-    (accessMemo ??= buildDoorAccessGraph(rooms, doors, rules.tolMm, undefined, openings, openRuns));
+    (accessMemo ??= buildDoorAccessGraph(rooms, doors, rules.tolMm, undefined, openings, openRuns, outdoorsOf(ir)));
   const mainOf = (): MainEntranceFact | null => {
     if (waysMemo === null) {
       const inp = entranceInputs(ir, roomRects, building.enteredFromBelow === true);
