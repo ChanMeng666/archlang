@@ -312,7 +312,7 @@ export const STYLE_KEYS: Readonly<Record<string, Readonly<Record<string, keyof T
 /** Every element kind `style <kind> { … }` accepts, derived from {@link STYLE_KEYS} so
  *  the list cannot be retyped anywhere. It is `KEYWORDS.element` minus `opening` (which
  *  has no ink of its own — it is a hole). Read by `scripts/gen-llm-spec.ts`. */
-export const STYLE_KINDS: readonly string[] = Object.keys(STYLE_KEYS);
+export const STYLE_KINDS: readonly string[] = /* @__PURE__ */ Object.keys(STYLE_KEYS);
 
 /** Resolve a `style <kind> { <key> … }` attribute to a Theme key, or null.
  *  Own-property checks keep prototype keys from resolving. */

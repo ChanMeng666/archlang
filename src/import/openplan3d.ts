@@ -53,6 +53,7 @@ import {
   sectionName,
 } from "./openplan3d-model.js";
 import { detectFloorRooms, matchRecords, matchSections, wallSpans } from "./openplan3d-rooms.js";
+import { pure } from "../pure.js";
 
 export type { OpenPlan3dFormat } from "./openplan3d-model.js";
 export type { DroppedEntity as OpenPlan3dDropped, DroppedField as OpenPlan3dDroppedField } from "./openplan3d-model.js";
@@ -171,8 +172,8 @@ const commentText = (s: string): string => s.replace(/[\r\n]+/g, " ");
 
 // The contextual keywords RM6.1 added and the two ground kinds RM8.7 added are no reserved words
 // (`UNRESERVED_KEYWORDS`), so an id may keep them.
-const RESERVED = new Set<string>(
-  (Object.values(KEYWORDS).flat() as string[]).filter((w) => !UNRESERVED_KEYWORDS.includes(w)),
+const RESERVED = pure(
+  () => new Set<string>((Object.values(KEYWORDS).flat() as string[]).filter((w) => !UNRESERVED_KEYWORDS.includes(w))),
 );
 const MAX_ID = 64;
 

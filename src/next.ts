@@ -55,6 +55,7 @@ import type { GraphCheck } from "./plan-json.js";
 import type { TasteReport } from "./taste/report.js";
 import type { KeepResult } from "./keep.js";
 import { AUTHORING_STAGES } from "./stages.js";
+import { pure } from "./pure.js";
 
 /** The tiers, in precedence order. */
 export const NEXT_TIERS = ["error", "warning", "validity", "drafting", "intent", "profile", "taste", "info"] as const;
@@ -89,8 +90,8 @@ export const INFO_CODES: ReadonlySet<string> = new Set(["W_GRID_SNAPPED"]);
 export const SWING_SHORTFALL_CODES: ReadonlySet<string> = new Set(["W_SWING_OBSTRUCTED"]);
 
 /** The stair-safety codes: every code a `stairs`-family lint rule declares, read off the rules. */
-export const STAIR_SAFETY_CODES: ReadonlySet<string> = new Set(
-  LINT_RULES.filter((r) => r.family === "stairs").flatMap((r) => r.codes),
+export const STAIR_SAFETY_CODES: ReadonlySet<string> = pure(
+  () => new Set(LINT_RULES.filter((r) => r.family === "stairs").flatMap((r) => r.codes)),
 );
 
 /** A lint code's stage rank, or `undefined` for a code no rule gives a stage. */
