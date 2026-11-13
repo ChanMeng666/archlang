@@ -318,7 +318,7 @@ export const FIXTURE_CATEGORIES: readonly string[] = FIXTURE_FAMILIES.flatMap((f
  * inside a generator is invisible to `check:drift`, which reproduces its own output, right
  * or wrong.
  */
-export const CANONICAL_FIXTURES: readonly string[] = FIXTURE_FAMILIES.map((f) => f[0]);
+export const CANONICAL_FIXTURES: readonly string[] = /* @__PURE__ */ FIXTURE_FAMILIES.map((f) => f[0]);
 
 /**
  * Every catalogued word mapped to the canonical name of the family it belongs to (a canonical

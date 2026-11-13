@@ -28,6 +28,7 @@ import { polygonLabelPoint } from "./geometry/polygon.js";
 import { isCirculationRoom, roomsMatchingConcept } from "./intent-concepts.js";
 import { makeNaming, type NameableRoom, sizeWords } from "./naming.js";
 import { fmt2 } from "./num-format.js";
+import { pure } from "./pure.js";
 import { type CompassLetter, type SiteFacts, SYMBOLIC_FACINGS, type SymbolicFacing } from "./site.js";
 
 /** Bump when predicate kinds or their *corpus judgments* change (pinned by a test).
@@ -1395,7 +1396,7 @@ export function intentFromJson(value: unknown): { intent: Intent | null; errors:
  * the area BAND CONVENTIONS and the room-count DISCIPLINE. `additionalProperties: false`
  * throughout, mirroring `intentFromJson`.
  */
-export const INTENT_JSON_SCHEMA = {
+export const INTENT_JSON_SCHEMA = pure(() => ({
   $schema: "https://json-schema.org/draft/2020-12/schema",
   $id: "https://archlang.uk/intent.schema.json",
   title: "ArchLang Intent",
@@ -1585,4 +1586,4 @@ export const INTENT_JSON_SCHEMA = {
       },
     },
   },
-} as const;
+}));
