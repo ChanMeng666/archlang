@@ -115,8 +115,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "1bab6dd908180271582cd8320ef438a1c0f54ff60a425169ea2c53421471edfe",
-        "contentSha256": "c9b1f8b363c3081710f19193c36676a248edf5582a1937a07913c3c50bee1d4f",
+        "sha256": "98e049c7eea1cb5155c5350a2b97708ce2e1b64b5709d8fb8c632d0a87154108",
+        "contentSha256": "5ed9c52bb4d6c5f6469f0ffb0f6dc9e0cf3f06f7bcbe414dba5769c849149133",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -151,9 +151,9 @@
         },
         {
           "path": "furnished-flat.glb",
-          "bytes": 414180,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 414216,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "furnished-flat.plan.png",
@@ -720,8 +720,8 @@
         }
       ],
       "glb": {
-        "sha256": "b091328c2f20941260c0e61d1cd0334b03d7163d691227651d5b149a848b9d7a",
-        "contentSha256": "72ae9f1b3286aa48e5def8d90ef5173f914698daaf19b61a46dc2f0be463ab82",
+        "sha256": "9882f906510548210cd48e2faa8444d84d63925b566b2bdb174cdafb9cf44f0f",
+        "contentSha256": "ae0650e80deb67b6ae1d655b935692606d42337aed0fdf8958b37312c1e1dbfa",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -763,9 +763,9 @@
         },
         {
           "path": "hillside-villa.glb",
-          "bytes": 695120,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 695132,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "hillside-villa.plan.png",
@@ -800,8 +800,8 @@
         }
       ],
       "glb": {
-        "sha256": "bda3a1d6a077b92485024fca82766e369fe5da36831e72feb1818aac5a07020c",
-        "contentSha256": "755c1588c174a2dea3a64c81e5b99cffe5ac485fa73672a6a603c3f68f4aecbe",
+        "sha256": "b2376f9d5aed8d8e9543dd3db9e5eb993f177fd5b5a10cb087973c61238e8068",
+        "contentSha256": "3a156509ee29f8c3b84c5b8c13222b9cb770fb46a367d755a6b735052f2585f5",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -830,9 +830,9 @@
         },
         {
           "path": "corner-cafe.glb",
-          "bytes": 384764,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 384776,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "corner-cafe.plan.png",
