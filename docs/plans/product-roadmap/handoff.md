@@ -1,6 +1,6 @@
 # 恢复点
 
-本文件是本计划的恢复点，按 RM-D15 也是全部开发排期的恢复点：其他计划的 handoff 顶部只留一行指向这里（RM0.1 已落地这些指针）。新会话从本节开始读，再按 `README.md` 的"如何使用本文"走。§1.1、§1.1b 是 2026-11-11 12:23Z 用 `git`、`gh` 读出的（本机的 `date -u` 读数）；§1.2 是 1.60.0 发布之后读的（npm、GitHub Release、registry、Open VSX、ClawHub、Docker PR 都在 2026-11-13 重读；VS Code Marketplace 与 OpenAI 目录是协调者的记录）；动手前重新读一次，状态可能已经变了。
+本文件是本计划的恢复点，按 RM-D15 也是全部开发排期的恢复点：其他计划的 handoff 顶部只留一行指向这里（RM0.1 已落地这些指针）。新会话从本节开始读，再按 `README.md` 的"如何使用本文"走。§1.1 的第三张表与 §1.1b 是 2026-11-13 约 22:45Z（UTC）读的，`main` 头 `7b2ec476`（用 `git`、`gh` 读）；§1.1 的前两张表是 2026-11-11 12:23Z 读出的；§1.2 是 1.60.0 发布之后读的（npm、GitHub Release、registry、Open VSX、ClawHub、Docker PR 都在 2026-11-13 重读；VS Code Marketplace 与 OpenAI 目录是协调者的记录）；动手前重新读一次，状态可能已经变了。
 
 ## 1. 位置（读数时间见各小节）
 
@@ -33,23 +33,26 @@
 | #719 | RM8.5（`done`）：样张工具、目录图、示例 `courtyard-family` 与 `garden-courtyard`；品味等变律重述（罗盘读者是 R12，主入口由街道选定时另有 R3 与分区；协调者裁定 2026-11-12，所有者可推翻） | 2026-11-12（`gh pr view`） | `0c7ff4a6` |
 | #727 | RM0.7（`done`）：编译器路径 458,385 → 390,605 B gzip，`compilerPathBudget` 401,000，`embedPathBudget` 387,000；fix 列由 `gen:errors` 生成，面板读 `dist/error-catalog.js` | 2026-11-12（`gh pr view`） | `21d3e0f4` |
 
+**2026-11-12/13 之后合并的（#741 `911f209b` 之后；合并时间与提交是协调者在 2026-11-13 约 22:45Z 用 `git`、`gh` 读的）：** 更早的 #727、#719、#721、#729、#731、#732、#735、#739、#733/#738/#736（RM1.2a）、#740、#741 见上表、§1.2 与 `git log`。
+
+| PR | 内容 | 合并时间（UTC，11-13） | 合并提交 |
+|---|---|---|---|
+| #737 | RM8.8（`done`）：由几何烘焙的软接触阴影（`archlang-3d` 的 `src/replay/shadows.ts`：网格索引、30° 斜接、`extras.hung`） | 11:47 | `35ed277f` |
+| #744 | RM8.7（`done`）：地面 `timber`、`carpeting`、`stone`，室外 `sand`、`soil`；`rendered` 浅色进 `roomFloorFill`；图案线对比 2.063 / 2.135 / 2.111（对 `#b9a98f`，RM-D28 的 2.0:1） | 13:14 | `c81b0eca` |
+| #747 | RM0.7d（`done`）：编译器路径余量，`src/pure.ts` 的 `pure(() => value)`（`@__NO_SIDE_EFFECTS__` 箭头函数），19 个文件用；rolldown 认，esbuild 只在同模块 const 上认 | 14:31 | `3f585759` |
+| #742 | RM1.3b（U.22、PS0.15）：净内部面积按每次调用的总量计；跳过原因 `net-area-budget` / `net-area-cap` | 15:19 | `9e687946` |
+| #746 | RM1.3b（4.5）：最上层绘制的地面决定可走性；通向水面的门不算入口（`onto:"water"`） | 15:35 | `886e42ad` |
+| #743 | RM1.3b（PS0.6、`W_PATH_TOO_NARROW`）：`suggest` 按经过的房间（`throughTier`）排序重连，逐段取宿主墙；只有 `readingsWithRunsWidened` 通过才点名楼梯；`runWidth` 读 `width` | 15:50 | `c6d41d9e` |
+| #745 | RM1.3b（M.4，`done`）：竖井到达层：叠加从梯段走起，每个阳台一个并查集节点（`separateBalconies`，`narrowArrivals` 也用），扶梯方向取停靠点的 `dir`（`escalatorTravels`），去掉远种子收窄跳过；16 行叠加 × 9 张 `stairLawDigest` 表重钉，带双向换回证明 | 22:38 | `7b2ec476` |
+
 **`main` 红过一次，已修：** #703、#701、#706 的 `main` 提交在 Node 18 job 上红（`gen:mcp-capabilities` 报 `E.toReversed is not a function`），自动开了 issue #705，#708 修复（07:16Z 关闭）。**08:07Z 之后 `main` 的状态（12:23Z 读）：** `9a3be392` 上 CI、CodeQL、Plugin validate 都 success（CI run 43011402472）；`Main red alarm` 三次 success。**一项失败，已查明：** `Deploy (Cloudflare)` 在 `9a3be392` 上 11:49:49Z 的 run 43015163598 失败（`Deploy mcp (scripted Worker)` 的 smoke 报固定版本的 `/svg/` 副本 `not immutable`），协调者的判断是版本传播的竞态（固定版本的 URL 在部署后一秒落到旧 isolate），不是配置缺口，见卡 RM0.8；之后的 Deploy run 43025136172 在 `e354ddc7` 上全部 success。issue #717 "Nightly checks need attention"（10:39Z 开，`secrets` job failure）已分诊：是误报（gitleaks 把 `test/silent-accepts.test.ts` 第 232 行一条 `accessible` 示例的 SHA-256 摘要读成 `generic-api-key`），由开着的 #723 放行（`.gitleaksignore` 加一条指纹，`test/opaque-literal-guard.test.ts` 加一条规则；`Refs #717`），合并后关 #717。
 
-### 1.1b 开着的 PR、分支与 worktree（22:0xZ 重读 `gh pr list`；worktree 与分支列是 12:23Z 读的）
+### 1.1b 开着的 PR、分支与 worktree（2026-11-13 约 22:45Z，`main` 在 `7b2ec476`，`gh pr list`、`git worktree list` 读）
 
-| PR / 分支 | 头 | 内容 | 合并前还要什么 | worktree |
-|---|---|---|---|---|
-| #720 `release/1.59.0` | 已合并 | 1.59.0 的版本号 PR：`e354ddc7`（12:31:39Z）；发布结果见 §1.2 | 无 | `.claude/worktrees/agent-aa4124c51aa4d1c6d`（锁定，待清理） |
-| #719 `feat/rm8.5-vocabulary-showcase` | `915bb1f3` | RM8.5：样张工具、103 张目录图、两个展示示例（草稿）。PR 标题写着 "gate not run"，正文写本地 `check:quick`、`docs:build` exit 0（合并 `main` `9a3be392` 之后），等 CI（标题与正文不一致，以正文的 Handoff 一节为准） | 新一轮评审必须细看 `test/rectilinear-rooms-byte-identity.test.ts` 新增的 `AFTER_THE_FORM` 排除名单与 `test/finish-furnish.test.ts` 的 `CORPUS_PARTLY` 行（测试前提的改动，协调者已同意）；CI-only 套件见正文 | `.claude/worktrees/agent-acb5baa0bf7b0a2ab`（锁定） |
-| #721 `feat/rm6.1-slab-and-section` | `864684d1` | RM6.1 第一半：`level` 的 `slab`、`clear` 与 `height … clear`（草稿）；剖切符号没有开始 | **playground 编译器路径超预算**：#721 自己量得 459,828 B，是对 `bfd63c4c`（在 #713 的 +74 B 之前）量的 848 B；基于现在的 `main` 约 **920 B**（458,294 + 74 + 1,534 = 459,902 对 458,980），要在变基后的 #721 上重新量；e2e 会红；先做 §2 的预算卡；正文 Handoff 一节有剖切符号的两个问题 | `.claude/worktrees/agent-a2e77c66e3d14d3fe` |
-| #723 `chore(security)` | `5c4dc119` | 放行 gitleaks 对一条字节恒等摘要的误报（`Refs #717`；`.gitleaksignore` 一条指纹，`test/opaque-literal-guard.test.ts` 一条规则） | CI 绿即可合并；合并后关 #717 | — |
-| #603 Dependabot `ext-apps` 2.0.4 | `4fc6ab74` | 主版本 | RM-D27 取消了 12-02 的日期，但主版本升级仍等所有者（RM5.4） | — |
-| 本记录 `docs/session-record-2026-11-12`（#722） | 见 `gh pr list` | 本文、`cards.md`、`README.md` §6.6、`gotchas.md`、`orchestration.md` | 发布结果已记入（§1.2），可以合并；growth #69 同 | `.claude/worktrees/agent-a4233610ba116d927`（锁定） |
-| 远程分支 `origin/feat/remove-view` | — | 2.0 才做的移除 `view` | 保留，不在任何排期 | — |
-
-`git branch -r`（12:23Z）：`origin/main`、`origin/feat/remove-view`、上表各 PR 的分支（含 `origin/dependabot/npm_and_yarn/modelcontextprotocol/ext-apps-2.0.4`）。`origin/ChanMeng666-patch-1` 已由所有者同意删除（内容早已由 #568 落地）。开着的 issue：#344、#405、#544、#680、#681、#682、#684、#717。
-
-**worktree**（`git worktree list`，12:23Z）：主检出 `D:/github_repository/archlang`（`main` 在 `9a3be392`）与上表的几个。**移除任何 worktree 之前**，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`（`docs/agents/gotchas.md` § Tooling & process）；被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。
+- **开着的 PR 只有 #603**（Dependabot `ext-apps` 2.0.4，主版本）：RM-D34，等 RM5.4，2026-12-01 Show HN 之后；保持打开作提醒。
+- **worktree 只有主检出。** 已合并的本地分支已删。远程分支 `origin/feat/remove-view`（2.0 才做的移除 `view`）保留，不在任何排期。
+- **开着的 issue：** #544、#680、#681、#682、#684。#544（剖切线与楼板基准）：RM6.1 在 #721 里交付了，说明已贴在 #532；关 #544 留给所有者或下一场（那是所有者在 #532 里的线程，代理也可以关）。
+- 移除任何 worktree 之前，先用 `[System.IO.Directory]::Delete(<junction>)` 解开其中的 `node_modules` junction（不递归），再 `git worktree remove`（`docs/agents/gotchas.md` § Tooling & process）；被正在运行的会话锁定的 worktree 拒绝 `git worktree remove`（`docs/agents/orchestration.md`）。
 
 ### 1.2 已发布（1.60.0，2026-11-12/13；渠道在 2026-11-13 逐项重读，VS Code Marketplace 与 OpenAI 目录除外，那两项是协调者的记录）
 
@@ -87,26 +90,15 @@
 
 ## 2. 下一步（按车道）
 
-排期以 `README.md` §3 为准；下面是从实际位置出发的顺序，每条车道从第 1 项做起，前一项合并后再开下一项。**按 RM-D27，顺序就是全部的门：** 一项的真实依赖满足了就开工，不等阶段日期或冻结期。1.59.0 已发布（§1.2），按 §5 的队列合并。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。
+排期以 `README.md` §3 为准；下面是 2026-11-13 约 22:45Z 从实际位置出发的顺序，每条车道从第 1 项做起，前一项合并后再开下一项。**按 RM-D27，顺序就是全部的门：** 一项的真实依赖满足了就开工，不等阶段日期或冻结期。一次一个重命令对整台机器生效，本地只跑 `check:quick`（文档加 `docs:build`），重的门禁交给 CI。已做完、不再列出的：预算卡 RM0.7（#727）及 RM0.7d（#747）、#721（RM6.1）、#723、RM1.2a、RM1.3b、RM8.5–RM8.8；1.60.0 已发布（§1.2）。
 
-**2026-11-12 更新：** 预算卡 RM0.7 已由 #727 做完（`21d3e0f4`），不再挡 #721、RM8.7、RM8.9；#719（RM8.5）已合并（`0c7ff4a6`）。RM6.1（#721）由执行者做中（合并 `main` 并加剖切符号）；RM8.6 做中。新卡（均 `todo`）：RM0.7b、RM0.7c、RM0.7d、RM8.5b–RM8.5e，见 `cards.md`。下面 §1.1b 的 #719 行与本节第 1 项是合并前的读数。
+**编译器路径预算（先量再动）：** `compilerPathBudget` 401,000 B gzip，`embedPathBudget` 387,000。#747 之后 `main` 约 393.1 KB；RM1.3b 增加约 2.9 KB，估约 396 KB，余量约 5 KB（**估算，没有在 `7b2ec476` 上重量**）。RM8.9 估 2.3–4 KB：**它必须先量。** 余量吃紧时，RM0.7f（拆出约 65 KB 只被惰性路径用到的代码）先于任何新词表卡。
 
-**2026-11-12 晚更新：** 已合并 #729（RM8.6，`0144ea61`）、#731（RM0.9，`01652d52`）、#721（RM6.1，`8b77d5c4`）、#732（RM8.6b，`213e7393`），此前还有 #719、#727、#728、#730。RM-D33 的切点条件已满足，1.60.0 的版本号 PR 在准备中（版本号 PR 的 CI 绿且夜间构建绿后才打 tag）。RM1.2a 做中（三个 PR）。视觉车道下一项 RM8.8。新卡：RM6.1b、RM6.1d、RM8.6c；RM6.1、RM0.9、RM8.6 在 `cards.md` 里已标 `done`。上面各段里关于它们"做中"的话是合并前的读数。
+**视觉车道：** RM8.9（十六个家族，含 RM-D29 的四个绿植；先量预算）→ RM8.10（RM-D32 选了 (a)，显示警告、不改几何）。小件，空档里做：RM8.1c、RM8.3b、RM8.1e、RM8.7b、RM8.8b。
 
-**2026-11-14 更新：** RM1.2a 做完（三个 PR：#733、#738、#736）；1.60.0 已在所有渠道发布（#740 记录）；RM8.8 的 #737 在做最后一处修复；RM1.3b 已开工；视觉车道下一项是 #737 之后的 RM8.7。新卡（均 `todo`）：RM1.2c–RM1.2h、RM8.8b，另有 CHANGELOG A-ANNO 措辞更正，见 `cards.md`。
+**核心车道：** CR11a（`GOVERNANCE.md`，RM-D30）→ RM1.6b → CR10 → RM3.1。随时可做的小卡：RM1.2c（RM-D35：新 W 规则，量字节）、RM1.2g（RM-D36：`archlang-3d` 建 winder 台阶）、RM1.1a（首次接触复测，量 1.60.0，`§6` 的表）。线下，有余量才做：RM0.7b、RM0.7c、RM0.7e、RM0.7f、RM1.2d–RM1.2f、RM1.2h、RM1.3d、RM1.4c、RM8.1e、RM5.1b、RM0.6、RM7.4、RM1.6c、RM6.1b–RM6.1d、RM8.6c，以及 CHANGELOG 1.60.0 的 `A-ANNO` 措辞更正（见 `cards.md`）。
 
-**核心车道（阶段 B 已完成，1.59.0 在途）：**
-1. **预算卡（新，高优先）：playground 编译器路径预算已用尽。** 基线 `bfd63c4c` 为 458,294 B（余 686 B），#721 实测 459,828 B，超 `compilerPathBudget`（458,980 B）848 B（对 `bfd63c4c` 量的，在 #713 的 +74 B 之前；基于现在的 `main` 约 920 B，要在变基后的 #721 上重新量）；每个新语法形式或诊断都让编译器 chunk 变大。结构性做法：把诊断目录的文字与 CLI manifest 移出编译器路径（惰性或按需加载），先量（每块占多少），再一次性重取预算并留出余量；不抬上限而不先削掉可证明的重复（`.claude/rules/sites.md`）。**它挡住 RM6.1（#721 的 e2e）与词表卡 RM8.7、RM8.9。**
-2. RM6.1 第一半（#721）评审并合并；第二半（剖切符号，需要一个"上下文解析"闸，不能让 `section` 成为保留字；见 #721 正文）。
-3. RM1.2a → RM1.3b（含 RM1.3c 之外的余项）→ CR11a（RM-D30 已采纳政策与命名空间，PR 写 `GOVERNANCE.md`）→ RM1.6b → CR10 → RM3.1。
-4. 线下，有余量才做：RM1.4c、RM8.1e、RM5.1b、RM0.6、RM7.4，以及 #713 与 #714 留下的两处文字（见 `cards.md` 的 RM1.6c、RM6.1c）。
-5. 合并 #723（#717 已分诊为误报，#723 放行那条摘要）；`Deploy mcp` smoke 的失败已查明是竞态，修法见新卡 RM0.8。
-
-**视觉车道：** RM8.1d 已由 #711 合并。
-1. RM8.5（#719）评审并合并 → RM8.6 → RM8.8 → RM8.7 与 RM8.9（两张 `[语法：词表]` 卡等预算卡；`rendered` 地面浅色与绿植四个已由 RM-D28、RM-D29 批准，见 §4；RM8.10 已按 RM-D32 改写，可直接做）。
-2. 小件，空档里做：RM8.1c、RM8.3b、RM8.1e。
-
-**测量：** RM1.1a 现在可以开工（1.59.0 已发布，量 1.59.0，`§6` 的表）；X9 的 Show HN 回答稿只写 1.59.0 里已发布的事实。**1.60.0：协调者提议在所有者 2026-12-01 发 Show HN 之前切；所有者还没有决定。** `README.md` §3 的约 12-21 是旧的参考日期（RM-D27：日期不再挡任何事）。没有所有者对那一次的决定就不切。
+**发布：** 1.61.0 要所有者对那一次的决定（没有决定就不切；`README.md` §3 的约 01-05 只是参考）。2026-12-01 所有者亲自发 Show HN，那之前 `main` 保持绿。RM5.4（#603）在 Show HN 之后。
 
 **给执行者的简报加两行：** 状态文件按卡命名（`state-rm1.3a.md`，不叫 `state.md`）；scratchpad 里的其他文件（PR 正文等）也用唯一文件名（`pr-body.md` 在同一会话被两个代理互相覆盖过）。
 
@@ -131,7 +123,10 @@
 - 2026-12-01 亲自发 Show HN。
 - **OpenAI 插件目录的提交**（1.60.0 已于 2026-11-13 由所有者本人提交并发布，见 §1.2；以后每次提交仍要所有者的话，代理准备到 Submit 之前）以及需要接受条款或声明的提交，以及 Cloudflare 控制台的改动（`docs/seo.md` § 8）。
 - **2026-11-12 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.6）：** RM-D28 `rendered` 地面浅色，批准，条件是图案线对比不低于 2.0:1（草案色值只有 1.66–1.87:1，要另调更浅的一组；ADR 0023 已加修订）；RM-D29 绿植四个全批准（并入 RM8.9，十六个）；RM-D30 CR11a 的 schema 政策与命名空间照 `design/schema-policy.md` §3 采纳（现有两个 `$id` 不改）；RM-D31 PS0.18 关闭（`78e0b7f9`）；RM-D32 RM8.10 选 (a)（显示警告，不改几何），卡已改写、不再等裁定。**仍然不能代裁、仍是所有者的：** OpenAI 插件目录的每次提交（要接受条款；代理准备到最后一步）、`README.md` §6 的较早一批（RM5.4 的主版本升级 #603、MF-D3(b)、backlog D.7、M.9、M.8、M.14、3.1(b)、CI throughput 的 E 与 F、仓库根 `.mcp.json`、VA.3），以及 RM1.3c（6.11，双开门）先要一次设计裁定。
-- 任何一条受托裁定（RM-D17…D20、RM-D24…D26 与下一条），所有者都可以一句话推翻。
+- **2026-11-14 的受托裁定（所有者说"请你帮我做出最佳决策"，只对那一次；一句话可推翻；`README.md` §6.8）：** RM-D35（RM1.2c）新 W 规则"标签点名了房间没有的家具"，不加词表行，`DEFINING.office` 不动；RM-D36（RM1.2g）`archlang-3d` 把 winder 建成 n 级渐缩台阶，2D 的 `W_STAIR_RISER_TOO_HIGH` 不封顶。#603：RM-D34 不变。
+- **协调者本场的裁定（2026-11-12…14，可推翻）：** 最上层绘制的地面决定可走性（#746）；预算内被省略的平面有自己的覆盖/跳过原因（#742）；扶梯方向取停靠点的 `dir`，`planting` 算可走（#745）。更早且已记录的：品味等变律重述（罗盘读者是 R12，主入口由街道选定时另有 R3 与分区）、指北针提示排在 taste 之前、winder 多出 n−1 级。
+- **仍是所有者的（2026-11-13 约 22:45Z）：** 1.61.0 的发布决定；2026-12-01 Show HN；OpenAI 插件目录的每次提交（要接受条款；代理准备到 Submit 之前）；Docker 的 docker/mcp-registry#6704 等 Docker 合并（`source.commit` 为 `6d18d137`）；#603 的主版本升级在 Show HN 之后；关 #544（代理也可以关，那是所有者在 #532 的线程）。
+- 任何一条受托裁定（RM-D17…D20、RM-D24…D26、RM-D28…D32、RM-D33、RM-D34、RM-D35、RM-D36），所有者都可以一句话推翻。
 - **第二场的受托裁定（协调者的记录，我无从核对；可一句话推翻）：** 3D 地面是查看器的背景，不是建筑元素，不进 GLB；MCP 能力页保持派生的 `repair` 标题；MCP shim 的版本在发布时经 `release:pin` bump；RM1.4 带出的已发布示例改写成吸附后的值（图字节恒等）；`W_GRID_SNAPPED` 在 `next` 里排最后（新增 `info` 一档）；`W_UNKNOWN_THEME` 也由 CLI 报出；每个内置元素都声明 `setWords`；playground `compilerPathBudget` 458,000 → 458,980（RM1.4）；biome 只关 2.6 里真正新增的三条规则（backlog 3.3）；RM8.1d 的工作计数表重取；RM8.5 的 `AFTER_THE_FORM` 排除名单是测试前提的改动，已同意；RM1.6a 的 +74 B 接受；CRF13 以"不可复现"关闭。
 - **所有者本场的话：** 发布 1.59.0（"我同意发布"），时机委托协调者；RM-D27（原话在 `README.md` §6.5）；删除 `origin/ChanMeng666-patch-1`（已做）。
 
@@ -213,3 +208,13 @@ RM1.1a 的兜底：1.59.0 到 2026-11-23 还没打 tag，就量当时 `main` 的
 - **(k) OpenAI 门户的流程（2026-11-12）：** 插件列表页的 "Upload new or existing plugin" 拖放区会临时造文件输入并打开原生选择器，代理填不了，要用插件页的 "Create draft from ZIP" 对话框（`file_upload` 可填）；Submit 之后详情页可能仍显示 "Not submitted"，去看插件列表；已批准插件的更新直接到 "Ready to publish"，"Publish Version" 不再问声明；声明仍要所有者的话（这次是在聊天里给的）。见 `docs/integrations.md`。
 - **(l) registry 的 JWT 是短命的：** 在每次发布尝试之前才签发，不要放在等 npm 可见性（上限 10 分钟）之前。1.60.0 的第一次发布尝试因此在 MCP registry 一步 401 "token is expired"，`gh run rerun --failed` 通过；#739（`3ec23741`）改成每次尝试之前登录。
 - **(m) Claude in Chrome 要按域名授予站点权限：** `marketplace.visualstudio.com` 由所有者于 2026-11-13 授予；OpenAI 门户的 Submit 被权限守卫当作连接应用里的提交挡住，所有者亲自提交。
+
+### 2026-11-12…14 一场（协调者转述的记录，我没有独立核对）
+
+- **(n) registry 的 JWT 过期（即 (l)）先被协调者误归给 npm 发布慢，评审纠正了：** 登录发生在 6 分 27 秒的 npm 可见性等待之前。告诉所有者原因之前，先核对时间线。#739 改成每次尝试之前登录。
+- **(o) 执行者在长 CI 等待里两次丢了上下文**（#739 的执行者、RM1.3b 的执行者）：查原始 `git`，`TaskStop`，用状态文件派接手的代理；两次都成功。
+- **(p) worktree 里 junction 的 `node_modules` 把 `@chanmeng666/*` 解析到主检出较旧的 `dist`：** 在 worktree 里 `npm ci`，或把工作区包链接到该 worktree。
+- **(q) 四个互相依赖、改同一批 digest 表的 PR（RM1.3b）：** 先定合并顺序（#742 → #746 → #743 → #745），后落地的 PR 重新量，并带双向换回证明（把旧输出放回去能复现 `main` 的 digest）。
+- **(r) 新增一种元素在兼容检查里像破坏性变更**，除非带标签的联合被当作类似枚举的集合（RM0.9）；改检查器好过加 BREAKING 豁免。
+- **(s) Chrome：** 应用市场类操作要所有者授予该站点；截图会超时，`javascript_tool` 可用；OpenAI 的 "Submit for review" 被权限分类器挡住，由所有者提交。
+- **(t) 第二个 tsup 构建若排除在 npm `files` 之外，可让 playground 不碰核心源码（#727）；检查 tarball 里有没有够不着的文件。**
