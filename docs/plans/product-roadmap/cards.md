@@ -471,9 +471,11 @@ v1 的 RM3.1 拆成两半（RM-D10，所有者 2026-11-11 批准）。前半：
 
 不许：给 Plan JSON 加任何 3D 字段或只出不进的字段；自己定 `$id` 版本；为了绿而把形式移出范围表却不标 `dropped`。
 
-### 发布 1.60.0 · 约 12-21 · 1 日
+### 发布 1.60.0 — `done` · #735 · `6d18d137`（tag `v1.60.0`，2026-11-12） · 1 日
 
 线上合并项切一个 minor（发布由所有者决定，发布链含 tag 由代理跑），步骤同 RM0.3；避开 Product Hunt 那一周。
+
+**状态（2026-11-13，发布后重读）：`done`。** RM-D33（`README.md` §6.7）。版本号 PR #735（`6d18d137`）；tag `v1.60.0`；`release.yml` run 43168116906 第 1 次尝试在 MCP registry 一步 401 "token is expired"（JWT 在等 npm 可见性之前签发），`gh run rerun --failed` 通过，#739（`3ec23741`）已修；npm：核心 1.60.0、`archlang-mcp` 0.2.43、`archlang-3d` 0.7.0（`arch-plan` 0.1.2、`font-cjk` 1.0.0 没有变）；GitHub Release 带 `archlang-mcp-0.2.43.mcpb`。各渠道见 `handoff.md` §1.2；VS Code Marketplace 与 Open VSX 0.48.0、ClawHub 1.60.0 在线，OpenAI 目录 1.60.0 由所有者本人提交并发布，Docker #6704 的 `source.commit` 已移到 `6d18d137`（仍等 Docker）。
 
 ### ── 线（12–14.5 日）──
 
