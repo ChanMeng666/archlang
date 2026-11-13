@@ -138,7 +138,7 @@ suite("W_STAIR_RISER_TOO_HIGH", () => {
     expect(more).toEqual([]);
     expect(steep!.code).toBe("W_STAIR_TOO_STEEP");
     expect(steep!.hints![0]).toMatch(
-      /^Redraw `st` from `size 2200x900` to `size 3500x900` on every storey it is drawn on, so it draws 13 treads and climbs on 14 risers of about 214 mm: that meets the going limit and the riser the drawing implies too \(the drawing draws one tread for every 280 mm of a flight's run/,
+      /^Redraw `st` from `size 2200x900` to `size 3500x900` on every storey it is drawn on, so it draws 13 treads and climbs on 14 risers of about 214 mm: long enough for the going limit and for the riser the drawing implies \(the drawing draws one tread for every 280 mm of a flight's run/,
     );
     // Pasted, neither rule asks again.
     expect(stairWarnings(pasteHint(src, steep!.hints![0]!))).toEqual([]);
@@ -255,7 +255,7 @@ suite("PR #736's review", () => {
         ds.map((d) => d.code),
         `${f1} ${f2} ${h}`,
       ).toEqual(["W_STAIR_TOO_STEEP"]);
-      expect(ds[0]!.hints![0]).toContain("that meets the going limit and the riser the drawing implies too");
+      expect(ds[0]!.hints![0]).toContain("long enough for the going limit and for the riser the drawing implies");
       const fixed = pasteHint(src, ds[0]!.hints![0]!);
       expect(errors(fixed)).toEqual([]);
       expect(stairWarnings(fixed), `${f1} ${f2} ${h}`).toEqual([]);

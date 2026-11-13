@@ -46,7 +46,12 @@ import {
 
 const HEIGHT = "  height 2750\n";
 const of = (src: string, code: string): Diagnostic[] => lint(src).filter((d) => d.code === code);
-const steep = (src: string): Diagnostic[] => of(src, "W_STAIR_TOO_STEEP");
+/** `W_STAIR_TOO_STEEP` in its own words: the riser rule off (`stairDrawnMaxRiseMm: null`), because
+ *  where it binds too, the hint opens with one redrawing that answers both (RM1.2a, PR #736's S4;
+ *  its own test below). Whether and how it reports is the same either way; only that hint moves. */
+const RISER_OFF = { stairDrawnMaxRiseMm: null };
+const steep = (src: string): Diagnostic[] =>
+  lint(src, { ruleset: RISER_OFF }).filter((d) => d.code === "W_STAIR_TOO_STEEP");
 
 /** #362's quarter-turn, with the flights it needs: 1100 + 1320 = 2420 mm, 5 goings and 6 of 220. */
 const ENOUGH: BlockStair = {
@@ -125,6 +130,20 @@ describe("minimumRun takes the landings", () => {
 describe("W_STAIR_TOO_STEEP on a block stair", () => {
   it("#362's stair with a sufficient run reports nothing", () => {
     expect(steep(planOf(ENOUGH, "up", HEIGHT))).toEqual([]);
+  });
+
+  it("with the riser rule on, the one warning's hint opens with a redrawing that answers both", () => {
+    // L_STAIR's 1000 + 1400 mm draw 4 + 5 treads, 11 risers of 250 mm up 2750 mm, so the drawn riser
+    // binds too. The message is the same; the hint quotes every statement to redraw, then its own tail.
+    const src = planOf(L_STAIR, "up", HEIGHT);
+    const on = lint(src).filter((d) => d.code === "W_STAIR_TOO_STEEP" || d.code === "W_STAIR_RISER_TOO_HIGH");
+    expect(on.map((d) => d.code)).toEqual(["W_STAIR_TOO_STEEP"]);
+    expect(on[0]!.message).toBe(steep(src)[0]!.message);
+    expect(on[0]!.hints![0]).toMatch(/^Redraw flight \d of `s` from `flight at /);
+    expect(on[0]!.hints![0]).toContain("long enough for the going limit and for the riser the drawing implies");
+    expect(on[0]!.hints![0]).toMatch(
+      /, or correct the storey `height` if it is wrong; the riser and going limits come from the lint profile \(`--profile`\)\.$/,
+    );
   });
 
   it("the issue's own 2400 mm reports once, for the whole stair, with a true figure", () => {
@@ -237,7 +256,7 @@ describe("flights that cannot hold the goings whole", () => {
   const UK = "uk-residential-advisory";
   const stair = (first: number, second: number, head = HEIGHT): string => planOf(twoFlights(first, second), "up", head);
   const steepUnder = (src: string, profile: string): Diagnostic[] =>
-    lint(src, { profile }).filter((d) => d.code === "W_STAIR_TOO_STEEP");
+    lint(src, { profile, ruleset: RISER_OFF }).filter((d) => d.code === "W_STAIR_TOO_STEEP");
 
   it("1210 + 1210 passes as a sum, and takes 12 risers of 229 mm", () => {
     const ds = steep(stair(1210, 1210));

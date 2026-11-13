@@ -221,7 +221,7 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "c549b8167ec8bd8dec7f7ca39f64f645fed56f521b995e78fb36cb1087440cc7", // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
+    "a5712c574f3be15f891f474b7a2e3b7a91d608ccc68ac436abd41cf69b40c532", // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
