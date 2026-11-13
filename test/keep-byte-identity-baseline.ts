@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM1.2a item 2 on origin/main 8b77d5c4: two new defect-corpus files (missing-defining-contents/desk-nook-no-desk pair); no existing row moved
+ * Taken: RM1.2a (W_STAIR_RISER_TOO_HIGH) review round on e61f66e3, after merging origin/main c265c167 (the desk-nook pair): the riser rule's message and hint, and W_STAIR_TOO_STEEP's hint where both bind; the riser-too-high pair
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -193,7 +193,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/turning-stair.arch",
-    "e348c2b37a5c3a6af21be7e13034cab04cbfb67c9039de3ef21caaa8ca9ac8cf",
+    "4d5aa4fd2a5a03c78d4cfdb3971ca1fdca8003f973165ca9c10453dfddcc4b57",
     1186,
   ],
   [
@@ -203,7 +203,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/two-storey.arch",
-    "b074f576e6a4202f2780d62b683be5458ddaac6ee00bec424d95e65780b9e637",
+    "7e13d226cc4845465c0dcf253f0c2796c4bfb4e20de345643712e40946c93afe",
     1822,
   ],
   [
@@ -1192,6 +1192,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     199,
   ],
   [
+    "test/defect-corpus/stair-safety/riser-too-high.arch",
+    "483ab87ad74ff470cd55bbc4d08c166b1cd76cb1ce9f965c6428f7848f4ce3c0",
+    217,
+  ],
+  [
+    "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
+    "b59b1747535c6334fc439e820a8ae6cdb982d2805a0278f2340d5b947b7ca929",
+    217,
+  ],
+  [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
     "efe0906483d4122046efca9b5846431c3af93ee14e823dd615d835312f54ec9c",
     199,
@@ -1203,7 +1213,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
-    "fe3aa53fe54f33dc87b911f075593fd7ea22bc46b410e9802e868eb610866fd6",
+    "88062102c379c2a69dc3e5ac736ebd6357825d920bbb3546ed40e4ed93f63c70",
     217,
   ],
   [
@@ -1383,7 +1393,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-24-rerun/5-townhouse.arch",
-    "c037ec1d511e037f0906035a5309144848068571a64b2d1d8c8f9d10c584866c",
+    "f28b8ea547380427af484073752a5a85f3383cde4a3909adf7b47a9280719d06",
     5274,
   ],
   [
@@ -1413,7 +1423,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-25-rerun/5-townhouse.arch",
-    "47d8d64fc56953d37154cba694d81c46e68a4fcc9a82c4393ddcce67cd6bdc25",
+    "2a75567fee432c872e363ff825d9d8e806120339a2aa66bdb63cb4c5e89da608",
     5716,
   ],
   [
@@ -1443,7 +1453,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-armA/5-townhouse.arch",
-    "4577daace43ec0ec40df53f470b43f3604a3f89b64e99f72772d15676b165908",
+    "f8774564af21b6c63d2d8259720c131714114fef304fb60119c46fd615adb5f0",
     3706,
   ],
   [
@@ -1503,7 +1513,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/5-townhouse.arch",
-    "4eb93129d731950c2c42dce5f5fd8b4bde739aebb1fb83599e2331f4ccf66eeb",
+    "8352a4b300e7c0d9ec3b6b3d659d26062f41a1dd2b81dddbccd9000cd3282756",
     5000,
   ],
   [
@@ -1533,7 +1543,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/5-townhouse.arch",
-    "a5d7742c460d3dd5dfa8e90c3c6e2c631da9d5868a4f181d89597a5f9d4437c1",
+    "2f49efbdda9f6ff1f45ce97f1f3660b61cfa227345c0eb61eea5596467137b9d",
     1702,
   ],
   [
@@ -1563,7 +1573,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/5-townhouse.arch",
-    "a3812fcb088f60182fa3000d77aa6761a6dfc35d866f006a1ba082ad4714de20",
+    "8d2e593ebfdad470fdd3dcee41e48c2c56d6780843921142d3ee1cab93b97314",
     4982,
   ],
   [

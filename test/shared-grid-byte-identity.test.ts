@@ -131,7 +131,7 @@ const BASELINE: [string, string][] = [
   ["d340196f446839ceda4c324efb5c2c29abab79551b673a72b95abeabc64d3fe2", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was ff686ab3)
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
-  ["a26de8cae6a1e5020c0f34daafe7d79c4ac9eaeff204d7e98930bfaadb672254", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["6e48c810b2a663d3bed9872c72baf36b60f0c66b9ee4d45d8ada5bb6ff855a40", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
   // was 3d10dfea. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["f003e58744492a4b562ef28436484454401495ad76df042d14c468d3c0533243", "test/fixtures/zones-levels.arch"],
@@ -205,7 +205,7 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
-    "8d6376b58cae8b06b36d10391b2369f7a60bbbd022c69c94e482999922b13490", // RM1.2a, see ./byte-identity-baseline.ts
+    "b62b21fb25e4251c18c2f2920b95545186c51990fbac7f93abed99234ba73dcd", // RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/riser-too-high.arch",
   ],
   [
@@ -221,7 +221,7 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "ba1f1cb629de57b4c6b18136428a79f5881f67a3290c7609677fb29d277e1d3c", // RM1.3a, see ./byte-identity-baseline.ts
+    "c549b8167ec8bd8dec7f7ca39f64f645fed56f521b995e78fb36cb1087440cc7", // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
@@ -255,7 +255,7 @@ const BASELINE: [string, string][] = [
   ["803382568b44d2abe330873b5b788636b5dae38beea8416ea9da39a9fb3a12ab", "inline:stair-words-as-names"],
   ["f1497554533ffa39becdfaf8494d14a9d2aa84d8eee0455a4eaf4feffa213aba", "inline:stair-square-and-narrow"],
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
-  ["d8c0fae7732a89fda469c39189c557361eafeb7df14e29b484ce29a9ee72cc9a", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["4167a1570bdd1c88c93532347194b825f6146a42193aaecd515e3bd6b1853cf6", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["b4c47f57cdf33588918674570fffc49ecf4ca3766c45aa492aa88f5fdb941982", "inline:grid-the-word-as-a-name"],
