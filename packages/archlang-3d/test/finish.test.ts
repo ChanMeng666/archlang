@@ -631,7 +631,7 @@ describe("floor finish by the author's `floor` word (card RM8.7)", () => {
   it("lays a `floor timber` room in timber, and the same plan without it back in its uses' default", () => {
     // `bath` would tile the room by `uses`; `floor timber` is what the author wrote, so it wins.
     const bath = (floor: string) =>
-      `plan "F" {\n  units mm\n  room id=a at (0,0) size 3000x3000 uses bath${floor}\n  walls from rooms exterior 200\n}\n`;
+      `plan "F" {\n  units mm\n  room id=a at (0,0) size 3000x3000 uses bath${floor}\n  walls from rooms exterior 200 partition 100\n}\n`;
     const authored = built(bath(" floor timber"));
     const plain = built(bath(""));
     expect(authored.scene.levels[0]!.floors[0]!.pattern).toBe("timber");
