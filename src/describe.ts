@@ -451,7 +451,16 @@ function inst(instance: string | undefined): { instance?: string } {
 }
 
 /** Build the summary from a fully resolved plan. */
-function summarize(
+/**
+ * {@link summarizeStorey} under the storey's own net-area total (U.22, `net-area-memo.ts`): fresh
+ * per storey summarised, as each storey `compile()` draws is, so a storey's figures, its drawn
+ * schedule and the top level repeating the lowest storey are all decided alike.
+ */
+function summarize(...args: Parameters<typeof summarizeStorey>): ReturnType<typeof summarizeStorey> {
+  return withNetAreaBudget(() => summarizeStorey(...args));
+}
+
+function summarizeStorey(
   ir: ResolvedPlan,
   tol: number,
   facts: readonly DescribeFact[] = [],
@@ -828,9 +837,11 @@ function summarize(
       ...buildFreedom(roomEls, doorEls, windowEls, openingEls, furnEls),
       ...(derivedRows.length > 0 ? { walls: wallFreedom(ir.walls) } : {}),
     },
-    // The drawn schedule, from the same pure derivation the renderer uses — so the table
-    // in the SVG and this JSON can never disagree. Opt-in only. `ir.zones` is passed for
-    // exactly the same reason: the rows here must be the rows drawn, grouping included.
+    // The drawn schedule, from the same pure derivation the renderer uses, measured under the
+    // same per-storey net-area total in the same room order (U.22) — so the table in the SVG
+    // and this JSON never disagree, a figure omitted past the total included. Opt-in only.
+    // `ir.zones` is passed for exactly the same reason: the rows here must be the rows drawn,
+    // grouping included.
     ...(ir.schedule === "rooms" ? { schedule: roomSchedule(roomEls, ir.zones, ir.walls).rows } : {}),
     ...(zones ? { zones } : {}),
     // Opt-in derived facts: computed and present ONLY when requested, so the default
@@ -883,8 +894,8 @@ export function describeWithAutoIds(
     for (const e of ir.elements) if (e.kind === "room" && (e as RRoom)._idAuthored !== true) autoRoomIds.add(e.id);
   const statements = plan && opts.facts?.includes("depends") ? indexStatements(plan) : undefined;
   return {
-    // One net-area total for the whole summary, opened after the resolution (U.22).
-    summary: withNetAreaBudget(() => summarizeResolved(ir, diagnostics, levels, opts, statements, plan)),
+    // Each storey summarised under its own net-area total (U.22, `summarize`).
+    summary: summarizeResolved(ir, diagnostics, levels, opts, statements, plan),
     autoRoomIds,
     fabric: diffFabricOf(ir),
   };

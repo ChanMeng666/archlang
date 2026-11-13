@@ -35,7 +35,7 @@ import type { GridBox } from "../geometry/grid-index.js";
 import { segmentsOfWall } from "../geometry.js";
 import type { RDoor, ResolvedPlan, RRoom, RWall, RWindow } from "../ir.js";
 import { fmt0 } from "../num-format.js";
-import { memoRoomNetAreaMm2, meteredRoomFigure, storeyNetAreaBands } from "./net-area-memo.js";
+import { memoRoomNetAreaMm2, meteredRoomFigure, storeyNetAreaBands, withNetAreaBudget } from "./net-area-memo.js";
 import {
   boxesMeet,
   type Curve,
@@ -263,12 +263,21 @@ export function quantityFacts(ir: ResolvedPlan, wastePct?: number): QuantityFact
       ...(faces.ok && heights ? { face_area_before_openings_m2: r2(c.area / 1_000_000) } : {}),
     }));
 
-  // Rooms: the same rooms, bands and rounding `describe().rooms[]` reads.
+  // Rooms: the same rooms, bands and rounding `describe().rooms[]` reads, under the storey's own
+  // net-area total (U.22): every room's area first, in element order, as `rooms[]` is decided,
+  // so the two omit the same rooms; the net perimeters take what is left.
   const bands = storeyNetAreaBands(ir.walls);
   const roomEls = ir.elements.filter((e): e is RRoom => e.kind === "room");
-  const rooms: RoomQuantity[] = roomEls.map((r) => {
-    const net = memoRoomNetAreaMm2(r, bands);
-    const per = meteredRoomFigure(r, bands, "perimeter", (admit) => roomNetPerimeter(r, bands, admit));
+  const [nets, pers] = withNetAreaBudget(() => {
+    const a = roomEls.map((r) => memoRoomNetAreaMm2(r, bands));
+    const p = roomEls.map((r) =>
+      meteredRoomFigure(r, bands, "perimeter", (admit) => roomNetPerimeter(r, bands, admit)),
+    );
+    return [a, p] as const;
+  });
+  const rooms: RoomQuantity[] = roomEls.map((r, i) => {
+    const net = nets[i];
+    const per = pers[i];
     return {
       id: r.id,
       perimeter_centreline_mm: mm(curvesLength(roomRegion(r).curves)),

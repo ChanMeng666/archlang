@@ -162,7 +162,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/room-tiling.ts` (7) — `rectilinear-doors`, `rectilinear-rooms-byte-identity`, `rectilinear-rooms`, `rectilinear-sides`, `wall-between-around`, `walls-from-rooms-clauses`, `walls-from-rooms`
 - `src/scene-build.ts` (23) — `annotation-collisions`, `annotation-small-rooms`, `export-dxf`, `export-font-cjk`, `export-pdf`, `furniture-curves-backends`, `furniture-rotate`, `glyph-chirality` (+15)
 - `src/scene-memo.ts` (1) — `scene-memo`
-- `src/scene.ts` (57) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair`, `corner-window`, `dim-stagger`, `dim-thickness-callout` (+49)
+- `src/scene.ts` (58) — `arc-radius-exact`, `axes`, `band`, `bbox-derived-position`, `block-stair`, `corner-window`, `dim-stagger`, `dim-thickness-callout` (+50)
 - `src/segment-select.ts` (1) — `segment-select`
 - `src/share.ts` (1) — `share-codec`
 - `src/sheet-tables.ts` (3) — `sheet-annotations`, `sheet`, `wall-status-drawing`
@@ -507,7 +507,7 @@ The first sentence of each file's header comment.
 - `test/mutants-sampler.test.ts` — The nightly mutant sampler (`scripts/mutants.mjs`, nightly.yml `mutants`, report-only): each operator rewrites a synthetic source the way its header says, the PRNG and the sample are fixed by the seed, the allow-list...
 - `test/nav-grid-residual.test.ts` — G.11 — the nav grid's walls agree with the drawn walls; C.1 — a wall thinner than a cell still blocks (the centreline cover).
 - `test/nav-grid-scale.test.ts` — nav-grid resolution scales with plan area; a large plan can tell a narrow route from a wide one; a fixture across part of a wide threshold narrows it, never sea…
-- `test/net-area-budget.test.ts` — U.22 / PS0.15: net internal area is held to a per-call total (`MAX_NET_PLAN_WORK`, `src/analyze/net-area-memo.ts`), not only to a per-room cap.
+- `test/net-area-budget.test.ts` — U.22 / PS0.15: net internal area is held to a total per storey read (`MAX_NET_PLAN_WORK`, `src/analyze/net-area-memo.ts`), not only to a per-room cap.
 - `test/net-area-once.test.ts` — net internal area — once per room per compile on a `schedule rooms` plan.
 - `test/net-area-oracle-corpus.test.ts` — NET internal area over the whole corpus (examples, fixtures, recovery plans, eval goldens, fidelity plans and faults; the docs gallery is left out, `agent-gallery.test.ts` owns it): the closed-form figure agrees with...
 - `test/net-area-stamp.test.ts` — `schedule rooms net`: the room stamp prints the schedule's NET AREA figure, named.
