@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- A bundle that imports the core and never reads its CLI manifest, its JSON schemas, its keyword table or its stage tables no longer keeps them (card RM0.7d): the top-level values a bundler could not prove side-effect-free are marked so (`src/pure.ts`). The playground's compiler path is about 3.2 KB gzip smaller. Every value is built as before, and the published types are unchanged.
+- The playground's bundler (rolldown) no longer keeps the core's CLI manifest, JSON schemas, keyword table or stage tables in a bundle that never reads them (card RM0.7d): the top-level values it could not prove side-effect-free are marked so (`src/pure.ts`). The playground's compiler path is about 3.2 KB gzip smaller. Every value is built as before, and the published types are unchanged.
 
 ## [1.60.0] - 2026-11-12
 
