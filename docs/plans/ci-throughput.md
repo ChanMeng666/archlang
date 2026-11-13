@@ -1,7 +1,7 @@
 # CI throughput: options for the owner
 
 Status: A, B, C, D live 2026-10-27 (B/C/D by PR #290); G approved by the owner 2026-10-31 (PR #385).
-Follow-up research, 2026-11-12: `ci-throughput-research.md` (measured cost of the strict up-to-date rule and the conflict hot spots; it argues that E and F are now the bottleneck).
+Follow-up research, 2026-11-12: `ci-throughput-research.md` (measured cost of the strict up-to-date rule and the conflict hot spots). Its § 10 (RM-D37, 2026-11-14) declines E and F: CI on the merged tree stays strict's job, and CT1's `sync:main` resolves the CHANGELOG conflicts F was for.
 Every option changes a workflow or a repository setting, and the owner decides which to take. Job map and per-job minutes: `docs/agents/commands.md` § CI.
 
 ## 1. What is measured

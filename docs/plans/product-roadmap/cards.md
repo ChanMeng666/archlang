@@ -982,6 +982,30 @@ A.6/A.7（CLI `--accessible --annotate` 与 MCP 对应参数）、A.1（`dims au
 
 波次 2′ 线下没做完的卡；剖面本体（DS12 → DS13，在 `archlang-3d`）与 MF17–MF19；MF12、MF14、MF15（等 MF-D3(b)）；NZ/AU advisory profile（带 RM1.6 的出处）；`lint --brief`；FLOORA 导入；Cron 巡检；Workers AI 读图探针设计；#344；DS3–DS9；CRF4、CRF6、CRF8；IFC 下游包（只在触发后）；MCP 工具分组（工具数到二十个以上再议，今天 11 个）。
 
+### 第 9 轨 · CI 吞吐（RM-D37，2026-11-14 加；出处与重开条件见 `../ci-throughput-research.md` §10）
+
+随时可做，不挡也不被任何产品卡挡；工具车道，一次一张。CT1、CT2 是 high 层级（脚本与工作流），评审后由协调者判断合并。
+
+### CT1 · `npm run sync:main`：同步 `main` 时机械地解掉记录与生成物冲突 — `doing`（2026-11-14 派出） · 1 日 · opus · 依赖无
+
+`scripts/sync-main.mjs`：合并 `origin/main`；生成物（`.claude/hooks/generated-artifacts.json` 的列表）取 `main` 一侧再 `gen:all`；`CHANGELOG.md` 三方 union 合并，再跑 `scripts/check-changelog-unreleased.mjs`；其余冲突停下交给代理（`--continue` 续跑）。最后打印复审分诊：PR 自己改过、main 也改过的文件（生成物与 `CHANGELOG.md` 除外）为空，且没有手解，就是 `review carries: yes`。`docs/agents/commands.md` § Merging a PR 改为用它，并加"多个 PR 同时 BEHIND 时只同步下一个要合的"。证明：纯函数的单测 + 一次手工同步的输出贴在 PR 里。不许：`git add -A`；把生成物列表抄进脚本。
+
+### CT2 · Playground E2E 拆三个 job；Node 18、Node 20、Windows 在 `main` 上各分三片 — `todo` · 1 日 · opus · 依赖无（与 CT1 不同文件，CT1 合并后再派，一次一个执行者）
+
+Playground：Chromium `--shard=1/2`、`2/2` 两个 job，Firefox 与 WebKit 的 `@engines` 一个 job，聚合 job 保留必需检查名 `Playground E2E (Playwright)`（照 `Node 22` 聚合 job 的写法：`always()`，按 needs 的结果判，记录类 PR 照常绿）；每个 job 各自的 flaky 报告与失败时的产物名。主线三条腿：测试分三片（`vitest --shard`，`test/sequencer.ts` 按时长分），typecheck、lint、drift、eval 只在第 1 片跑；聚合 job 保留 `Node 18`、`Node 20`、`Windows (tests + drift)` 三个名字；在 PR 上分片 job 在 job 级跳过（不起 runner），聚合 job 照旧报绿；`merge_group` 与 push 跑全部。`docs/agents/commands.md` § CI 的作业表、`ci.yml` 顶部注释同步改。证明：本 PR 的一次代码运行（各 job 时长）与合并后第一次 push 运行的墙钟；预期 PR 约 9 → 6.5 分钟，push 约 28 → 11 分钟（估算）。不许：改必需检查的名字或分支保护；让分片在 PR 上跑。
+
+### CT3 · E2E flaky 记账 — `todo` · 0.5 日 · sonnet · 依赖 CT2（线下）
+
+`scripts/playwright-flaky.mjs` 的结果在每次 E2E 运行上传为产物；夜间汇总近 14 天，一个用例在 14 天里重试才过 ≥3 次就开 issue（标签 `flaky`），附运行链接。证明：用一个重试才过的 JSON 夹具测汇总逻辑。不许：用重试或调大超时把它压掉。
+
+### CT4 · `main` 红时自动开回滚 PR — `todo`（暂缓） · 1 日 · opus · 依赖所有者建一个 GitHub App 或细粒度令牌（`GITHUB_TOKEN` 开的 PR 不触发 CI）（线下）
+
+触发（`../ci-throughput-research.md` §10）：`main` 一周红两次以上，或一次红超过 2 小时。触发前不做。
+
+### CT5 · 复测 — `todo` · 0.5 日 · sonnet · 依赖 CT1、CT2 合并后又过了 7 天的合并
+
+照 `../ci-throughput-research.md` §9 的命令重取 §7 的表（每个 PR 的 CI 次数、同步次数、手解次数、PR 与 `main` 的墙钟、`main` 红率、回滚率），写在 §10.2 下面；对照 §10.1 各行的重开条件，触发了就记进本节新的一张卡。
+
 第 8 轨的候选（不排序）：3D 坡屋顶（backlog 3D.4，先写设计）；窗帘与吊灯、吊扇等挂顶物（MF14、MF15，等 MF-D3(b)）；新家族第二批；家具转到斜墙（backlog 5.6）；预览图的 CJK 字体（CRF9，仍 parked，见下表）；实时查看器的抗锯齿（MP7 之后）。
 
 ---

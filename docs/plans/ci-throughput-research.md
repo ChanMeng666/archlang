@@ -1,9 +1,9 @@
 # CI throughput research: what slows the PR cycle now, and what to do about it
 
 Research follow-up to `ci-throughput.md`. Written 2026-11-12 (Pacific/Auckland, NZDT), from data read-only
-against `main` at `213e7393` (2026-11-12 17:44 NZDT, PR #732). Nothing here is decided: every roadmap item
-changes a workflow, a repository setting or an owner rule, so each one is an owner decision or a card taken
-in the order `product-roadmap/` gives (RM-D15).
+against `main` at `213e7393` (2026-11-12 17:44 NZDT, PR #732). § 1–9 are the research as written.
+**Decided 2026-11-14 (§ 10, RM-D37):** the owner delegated every item to the coordinator; § 10 records each
+verdict, its reason and the trigger that would reopen it. The cards are CT1–CT5 in `product-roadmap/cards.md`.
 
 ## 0. For the agent picking this up
 
@@ -401,7 +401,48 @@ git log origin/main --since=2026-10-29 --first-parent --merges --format='%H %s' 
 node -e 'const d=require("./test/.durations.json");Object.entries(d).sort((a,b)=>b[1]-a[1]).slice(0,10).forEach(([f,s])=>console.log(s.toFixed(1),f))'
 ```
 
-## 10. Sources
+## 10. Decisions (2026-11-14, RM-D37)
+
+The owner, 2026-11-14: "里面每一项都要你来定，或者排进路线图" (decide every item, or schedule it). These are
+the coordinator's verdicts under that delegation, for this research only; the owner can reverse any one in a
+sentence. No iron law and no AGENTS.md hard rule changes. Re-measured before deciding, on `main` at `70e5b207`:
+
+- Since the strict rule (2026-11-10 04:00 NZDT): 81 PR merges came with 111 sync merges into branches,
+  **1.37 syncs per merged PR** (0.90 over the two weeks of § 4.4). The cost the research found is growing.
+- PR CI since 2026-11-12: median 9.1 min over 48 successful runs; `main` push 28.1 min over 22.
+- Job queue time, 25 runs since 2026-11-12: at most 10 s. **Runners are not scarce** (public repo, free
+  minutes), so the lever is wall clock and coordinator turns, not compute.
+- Six recent code-PR runs: Playground E2E 7.1–10.8 min (Chromium specs 5–6 min, then Firefox and WebKit
+  2.5–3.5 min in the same job, in series); Docs E2E 4.6–7.9; `check:3d` 4.6–6.3; the slowest Node 22
+  shard 5.1–6.3. Setup (checkout, `npm ci`, builds, cached browsers) is about 1 min a job.
+
+### 10.1 Verdicts
+
+| Item | Verdict | Why | Reopen when |
+|---|---|---|---|
+| P0-1 sync-main script | **Take: CT1.** Node, not bash (the coordinator runs on Windows); also prints the review triage of P1-4 | Removes about half the hand resolutions; `gh pr update-branch` stales generated artifacts (gotchas § PRs & CI) | |
+| P0-2 turn strict off | **Decline: strict stays.** | It went on 2026-11-10 because two pairs of green PRs merged blind and broke `main` (EH3.7, `engineering-health/README.md`); `main` must stay green until Show HN. Its cost is extra CI runs, which are free here, and coordinator turns, which CT1 and the one-sync-at-a-time rule cut | after CT1 and CT2, syncs per merged PR stay above 1.0, or P90 open → merge above 4 h, over 7 days of merges (CT5) |
+| P0-3 E2E shards, split `finish.test.ts` | **Take the Playground half: CT2.** Chromium in two shards and Firefox/WebKit in a job of their own, behind an aggregator that keeps the required name. **Decline the `finish.test.ts` split and the Docs E2E shard for now** | Playground is the only job above 7 min; after the split the next poles (Docs E2E, `check:3d`, a Node 22 shard) are all 5–6.5 min, so cutting one of them alone moves nothing | a Node 22 shard or Docs E2E is the pole by more than 1 min after CT2 |
+| P0-4 fold records-only PRs | **Take as a working rule** (`product-roadmap/handoff.md` § 5): a `docs(plans)` record rides in the code PR it records, or one records PR at a session's end | Each extra PR is one more branch that goes BEHIND | |
+| P1-1 organization + merge queue (option E) | **Decline.** Also declined: a third-party queue (Mergify and the like) | Moving the repo breaks what is bound to the owner `ChanMeng666`: the MCP registry name `io.github.chanmeng666/…` published by GitHub OIDC (`release.yml`), npm trusted publishing and `repository.url` "byte-for-byte" (`.claude/rules/release-and-packages.md`; npmjs is owner-only), and every listing in `docs/seo.md` § 8. A third-party app would hold write access to a repo whose `main` deploys both sites. At about 25 merges a day a scripted, one-at-a-time sync gives the queue's guarantee (CI on the merged tree) | GitHub offers merge queues to user-owned repos, or CT5's trigger fires and CT1–CT3 cannot fix it |
+| P1-2 changelog fragments (option F) | **Decline.** | CT1's union merge plus `scripts/check-changelog-unreleased.mjs` resolves the 98 CHANGELOG conflicts without amending the AGENTS.md rule "release narrative lives only in `CHANGELOG.md`" | `check-changelog-unreleased` refuses a union-merged entry more than twice in a month |
+| P1-3 shard the main-only legs | **Take: CT2.** Node 18, Node 20 and Windows three ways each; on a PR the shards skip at job level, so no runner starts for them | `main` 28 → about 11 min (estimate: 22–26 min of tests / 3 + about 1.5 min setup, Windows the slowest). With strict on, a red `main` blocks every PR's sync, so it must show sooner; deploys come sooner too | |
+| P1-4 automate "does this sync need a re-review" | **Take, inside CT1.** Law 3 of `ci-throughput.md` § 2 narrows: the merged head is red-teamed again only when the sync brought in a file the PR also changed (generated artifacts and `CHANGELOG.md` aside) or a conflict an agent resolved by hand; otherwise the coordinator posts `reviewed <new sha> (sync carried …)` and re-pins | CI still runs on the merged head (strict), which is what catches semantic interaction; the reviewer's reading of the PR's own lines is unchanged when no file overlaps | a carried review lets a defect through that the overlap check should have flagged |
+| P2-1 affected tests on PRs | **Decline now.** | It narrows law 2 to save compute, and compute is free and unqueued here; the PR wall clock is set by E2E and `check:3d`, not the suite | median job queue time above 1 min, or the suite becomes the PR pole after CT2 |
+| P2-2 auto-revert | **Defer: CT4** (off the line) | With strict, `main` goes red only on the main-only legs; a revert PR opened with `GITHUB_TOKEN` starts no CI, so it needs an App or a token the owner creates | `main` red more than twice a week, or red for more than 2 h once |
+| P2-3 flaky accounting | **Take: CT3** (small, off the line) | Playwright retries hide E2E flakes; the hidden rate is not measured | |
+| P2-4 Vitest `isolate: false` | **Decline.** | The suite leans on per-file isolation (memoised parse stage, module state); verifying 544 files one by one costs more than the ~17% Linear saw, and the suite is not the pole | the suite becomes the pole and `isolate` is the cheapest lever left |
+| Bazel / Nx / Turborepo caching, custom VCS, paid runners | **Decline**, as § 5 recommends | | |
+
+### 10.2 Expected effect and how it is checked (estimates)
+
+PR CI 9.1 → about 6.5 min (the pole moves to Docs E2E, `check:3d` and the Node 22 shards); `main` push
+28 → about 11 min; about half the hand resolutions scripted; most re-red-team rounds after a sync skipped;
+fewer wasted CI runs, because only the next PR to merge is synced. CT5 re-reads § 7's table with § 9's
+commands after 7 days of merges on CT1 and CT2 and writes the numbers under this section; the guardrails are
+§ 7's `main` red rate and revert rate, and a rise in either means the time was moved, not saved.
+
+## 11. Sources
 
 - Anthropic: [test impact analysis](https://claude.com/resources/articles/agentic-coding-is-straining-ci-heres-how-we-scaled-test-impact-analysis-at-anthropic) · [Redesigning source control](https://www.anthropic.com/research/redesigning-source-control) · [Claude Code code review](https://claude.dev/blog/solving-code-review-at-anthropic/)
 - GitHub: [merge queue at GitHub](https://github.blog/engineering/engineering-principles/how-github-uses-merge-queue-to-ship-hundreds-of-changes-every-day/) · [merge queue availability (organization-owned public repos)](https://github.com/github/docs/blob/main/data/reusables/gated-features/merge-queue.md) · [Managing a merge queue](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue) · [Actions limits](https://docs.github.com/en/actions/reference/limits)
