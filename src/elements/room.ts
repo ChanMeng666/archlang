@@ -37,10 +37,58 @@ import {
 } from "../geometry/polygon.js";
 import { fmtTenthsOf2dp } from "../num-format.js";
 import { noteMetres, noteSnap, roomSizeLooksMetric } from "../ir/silent-accepts.js";
-import { FLOOR_MATERIALS, floorHatch, hatchId, isFloorMaterial } from "../hatches.js";
+import { FLOOR_MATERIALS, type FloorMaterial, floorHatch, hatchId, isFloorMaterial } from "../hatches.js";
 import { LABEL_AREA_DROP, LABEL_NAME_RISE } from "../text-layout.js";
+import type { Theme } from "../theme.js";
+import type { FixtureMaterial } from "./fixtures-glyphs.js";
+import { parseHexColor } from "./glyph-lib.js";
 
 const REL_DIRS: ReadonlySet<string> = new Set<RelDir>(REL_DIR_LIST);
+
+/**
+ * The material whose tint a room's floor is washed in when its author wrote one of these floor
+ * words (card RM8.7, ruling RM-D28, ADR 0023's 2026-11-12 amendment): a theme with `materialTints`
+ * (only `rendered` ships one) paints the floor polygon in that material's tint moved
+ * {@link FLOOR_TINT_MIX} of the way from `roomFill`. The four older words take no wash, so no plan
+ * written before them changes under any theme; a theme without tints draws `roomFill` as before.
+ * The words name the materials `rendered` already colours furniture in: one material, one hue.
+ */
+export const FLOOR_TINT_MATERIAL: Readonly<Partial<Record<FloorMaterial, FixtureMaterial>>> = {
+  timber: "wood",
+  carpeting: "wool",
+  stone: "stone",
+};
+
+/**
+ * How far a floor's wash moves from `roomFill` toward its material's tint, as an exact fraction
+ * `[p, q]`. RM-D28's hard condition is that the floor pattern's ink (`pocheHatch`) keeps at least
+ * 2.0:1 against the wash; the full tints give 1.66 to 1.87:1 under `rendered`, a third of the way
+ * gives 2.06 (`wood`) to 2.13:1 (`wool`), and `test/room-floor.test.ts` measures it. An odd
+ * denominator, as `SYMBOL_INK_MIX`'s, so the per-channel rounding has no tie to break.
+ */
+export const FLOOR_TINT_MIX: readonly [number, number] = [1, 3];
+
+/**
+ * A room's floor colour: `roomFill`, or under a theme with tints the wash of its `floor` word's
+ * material ({@link FLOOR_TINT_MATERIAL}). Either colour unparseable (an author's room colour by
+ * name, a tint that is no hex) keeps `roomFill`: nothing to mix, and no guess.
+ */
+export function roomFloorFill(theme: Theme, floor: FloorMaterial | undefined): string {
+  const material = floor === undefined ? undefined : FLOOR_TINT_MATERIAL[floor];
+  const raw: unknown = theme.materialTints;
+  if (material === undefined || typeof raw !== "object" || raw === null || !Object.hasOwn(raw, material))
+    return theme.roomFill;
+  const tint = (raw as Record<string, unknown>)[material];
+  const t = typeof tint === "string" ? parseHexColor(tint) : null;
+  const f = parseHexColor(theme.roomFill);
+  if (!t || !f) return theme.roomFill;
+  const [p, q] = FLOOR_TINT_MIX;
+  const hex = (i: 0 | 1 | 2): string =>
+    Math.round((f[i] * (q - p) + t[i] * p) / q)
+      .toString(16)
+      .padStart(2, "0");
+  return `#${hex(0)}${hex(1)}${hex(2)}`;
+}
 const REL_ALIGN_SET: ReadonlySet<string> = new Set<RelAlign>(REL_ALIGNS);
 const USE_SET: ReadonlySet<string> = new Set<UseKind>(USE_KINDS);
 
@@ -485,6 +533,8 @@ export const room: ElementDef = {
     const r = resolved as RRoom;
     const { theme, sizes } = ctx;
     const nodes: SceneNode[] = [];
+    // `roomFill`, or under `rendered` the wash of a newer floor word's material (`roomFloorFill`).
+    const fill = roomFloorFill(theme, r.floor);
     // A circular floor is drawn as a TRUE `circle` primitive (an SVG `<circle>`, a DXF
     // `CIRCLE`), so its edge is never faceted — the tessellated `poly` it also carries
     // exists for the grid/adjacency layer, not for the drawing.
@@ -492,11 +542,11 @@ export const room: ElementDef = {
       nodes.push({
         layer: "floor",
         prim: { t: "circle", center: r.circle.c, r: r.circle.r },
-        paint: { fill: theme.roomFill },
+        paint: { fill },
       });
     } else {
       const c = r.poly ?? rectCorners(r.at.x, r.at.y, r.size.w, r.size.h);
-      nodes.push({ layer: "floor", prim: { t: "polygon", pts: c }, paint: { fill: theme.roomFill } });
+      nodes.push({ layer: "floor", prim: { t: "polygon", pts: c }, paint: { fill } });
     }
     // `floor <pattern>`: over the tint, from the room's own ring (a circle's 48-gon, which its
     // walls cover). A drawing fact: no measure reads it. The paint carries the pattern reference,

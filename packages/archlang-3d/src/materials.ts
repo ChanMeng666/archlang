@@ -8,7 +8,7 @@
  * `body` is the untagged part: it carries no slot and keeps its kind's own colour, so a piece that
  * names no slot is drawn exactly as before. Browser-safe and pure: no clock, no random source.
  */
-import type { RFence, ROutdoor } from "@chanmeng666/archlang";
+import type { RFence, ROutdoor, RRoom } from "@chanmeng666/archlang";
 import type { Shell } from "./mesh/types.js";
 
 /** The closed set of slots, in the order a node's primitives (GLB) and meshes (viewer) are written. */
@@ -149,16 +149,67 @@ export const TRIM_MATERIAL = {
  */
 export const WALL_CAP_SRGB = "#8f877d";
 
-/** The floor finishes a room's floor is laid in (visual-assets V9): colour only, no texture. */
-export const FLOOR_FINISHES = ["timber", "tile", "neutral"] as const;
+/**
+ * The floor finishes a room's floor is laid in (visual-assets V9): colour only, no texture. The first
+ * three are the ones {@link FLOOR_FINISH_RULES} chooses from; the rest are laid only where the plan's
+ * author wrote the word (`room … floor <word>`, card RM8.7, {@link FLOOR_WORD_FINISH}). Appended, so a
+ * GLB's `floor:<finish>` materials keep their names and order.
+ */
+export const FLOOR_FINISHES = [
+  "timber",
+  "tile",
+  "neutral",
+  "carpeting",
+  "stone",
+  "deck",
+  "paving",
+  "concrete",
+] as const;
 export type FloorFinish = (typeof FLOOR_FINISHES)[number];
 
-/** Light oak boards, pale stone tile, and the neutral finish a room whose use is unknown keeps. */
+/**
+ * Light oak boards, pale stone tile, and the neutral finish a room whose use is unknown keeps; then
+ * the authored words (card RM8.7, design `docs/plans/product-roadmap/design/visual-language.md` §3.4):
+ * fitted carpet in the palette's wool and a stone floor in its stone (the materials the `rendered`
+ * drawing washes those floors in, V-D2), a timber deck in its oak (as an `outdoor deck`'s), paving in
+ * the colour an `outdoor paving` is built in (the default theme's `paving` tint laid on
+ * `GROUND_WASH` times; written out here so this module, which the viewer bundles, keeps reading no
+ * core value, and `test/finish.test.ts` holds it to `groundColour("paving")`), and a polished
+ * concrete grey of its own.
+ */
 export const FINISH_PALETTE: Readonly<Record<FloorFinish, SlotMaterial>> = {
   timber: m("#cdb596", 0.6),
   tile: m("#e3e1db", 0.35),
   neutral: m("#e8e2d7", 0.9),
+  carpeting: PALETTE.wool,
+  stone: PALETTE.stone,
+  deck: PALETTE.wood,
+  paving: m("#ab9f87", 0.85),
+  concrete: m("#c9c5be", 0.6),
 };
+
+/**
+ * The finish an authored `floor` word lays (card RM8.7): the plan says what the floor is, so the
+ * default by `uses` ({@link floorFinish}) is not consulted and nothing is ledgered for it. Keyed by
+ * the core's own `RRoom["floor"]`, so a word the core adds fails the typecheck here. The words are
+ * read off the public `RRoom` (ADR 0031's seam, `scene3d/build.ts`), never from a label.
+ */
+export const FLOOR_WORD_FINISH: Readonly<Record<NonNullable<RRoom["floor"]>, FloorFinish>> = {
+  tile: "tile",
+  paving: "paving",
+  deck: "deck",
+  concrete: "concrete",
+  timber: "timber",
+  carpeting: "carpeting",
+  stone: "stone",
+};
+
+/** The finish an authored `floor` word lays, or `undefined` for a word this package does not know. */
+export function wordFinish(word: string | undefined): FloorFinish | undefined {
+  return word !== undefined && Object.hasOwn(FLOOR_WORD_FINISH, word)
+    ? FLOOR_WORD_FINISH[word as keyof typeof FLOOR_WORD_FINISH]
+    : undefined;
+}
 
 /**
  * A room's floor finish from its declared `uses` (the core's use kinds, read off the plan by
@@ -198,6 +249,8 @@ export const GROUND_TINT: Readonly<Record<ROutdoor["surface"], GroundTint>> = {
   driveway: "paving",
   patio: "paving",
   balcony: "paving",
+  sand: "paving",
+  soil: "paving",
 };
 
 /**
@@ -210,27 +263,32 @@ export const GROUND_TINT: Readonly<Record<ROutdoor["surface"], GroundTint>> = {
 export const GROUND_WASH = 6;
 
 /**
- * The site's own materials, which no fixture is made of: a light gravel and a tarmac drive. Apart
- * from `PALETTE` on purpose: `PALETTE`'s keys are the material slots, which equal the core's
- * `FIXTURE_MATERIALS` (`test/material-vocabulary.test.ts`), and a ground is no fixture's material.
+ * The site's own materials, which no fixture is made of: a light gravel, a tarmac drive and a pale
+ * sand (card RM8.7). Apart from `PALETTE` on purpose: `PALETTE`'s keys are the material slots, which
+ * equal the core's `FIXTURE_MATERIALS` (`test/material-vocabulary.test.ts`), and a ground is no
+ * fixture's material.
  */
 export const SITE_PALETTE = {
   gravel: m("#cbc3b4", 0.95),
   tarmac: m("#8c8984", 0.85),
+  sand: m("#dcc9a3", 0.95),
 } as const satisfies Readonly<Record<string, SlotMaterial>>;
 
 /**
  * The kinds the 3D preview tells apart where the drawing does it by hatch alone (one `paving` tint
- * covers six kinds, one `lawn` tint two; with no hatch they would be one colour): a planted bed in the
- * palette's foliage, a timber deck in its oak, gravel and a tarmac drive in their own greys. Every
- * other kind keeps its theme colour; a patio is paving in the core's own words and a balcony a plain
- * slab. Ledgered per kind (`outdoor-colour-3d`).
+ * covers eight kinds, one `lawn` tint two; with no hatch they would be one colour): a planted bed in
+ * the palette's foliage, a timber deck in its oak, gravel and a tarmac drive in their own greys, sand
+ * in its own pale buff and bare soil in the palette's soil (the earth of a sandpit or a planter, card
+ * RM8.7). Every other kind keeps its theme colour; a patio is paving in the core's own words and a
+ * balcony a plain slab. Ledgered per kind (`outdoor-colour-3d`).
  */
 export const GROUND_SPLITS: Readonly<Partial<Record<ROutdoor["surface"], SlotMaterial>>> = {
   planting: PALETTE.foliage,
   deck: PALETTE.wood,
   gravel: SITE_PALETTE.gravel,
   driveway: SITE_PALETTE.tarmac,
+  sand: SITE_PALETTE.sand,
+  soil: PALETTE.soil,
 };
 
 /** The GLB roughness of a ground surface in its theme colour, by tint (the viewer reads none). */

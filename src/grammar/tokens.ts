@@ -317,6 +317,8 @@ export const KEYWORDS = {
     "driveway",
     "patio",
     "balcony",
+    "sand",
+    "soil",
     "picket",
     "panel",
     "post",

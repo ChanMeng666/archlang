@@ -27,8 +27,8 @@ Totals: 395 modules in 34 directories.
 | --- | ---: | ---: | --- | --- |
 | `browser.ts` | 32 | 0 | The browser entry for a host page that shows the replay (card A5, the playground's 3D preview tab): build the payload in the page (`replayPayload`) and mount it on a canvas (`mountReplay`). It bundles three.js, so it is a separate entry… | none |
 | `curves.ts` | 45 | 2 | Arc discretisation to a chord tolerance (archlang-3d plan §4.1, `--curve-tol`). The core keeps every arc exact (`Edge` `{ t: "arc", arc }`) and tessellates at a fixed 7.5° step for the drawing; a raised wall is seen up close, so the 3D… | none |
-| `index.ts` | 136 | 29 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
-| `materials.ts` | 363 | 12 | Material slots (visual-assets card V1): the ONE palette both the GLB writer (`glb/write.ts`) and the replay viewer (`replay/mount.ts`) read, so a piece's oak or ceramic is the same colour in both. A T0 part names its slot (`Part.mat`… | none |
+| `index.ts` | 138 | 29 | @chanmeng666/archlang-3d — reads a resolved ArchLang plan into a plan-aligned Scene3D. ArchLang itself draws plans; this package is a separate downstream consumer (ADR 0030) of the core's public seam (ADR 0031). Browser-safe: the Node… | none |
+| `materials.ts` | 412 | 12 | Material slots (visual-assets card V1): the ONE palette both the GLB writer (`glb/write.ts`) and the replay viewer (`replay/mount.ts`) read, so a piece's oak or ceramic is the same colour in both. A T0 part names its slot (`Part.mat`… | none |
 | `node.ts` | 46 | 27 | The Node-only entry: a `World` over the file system. Kept out of `src/index.ts` so the browser bundle (adapter + Scene3D) never pulls a `node:*` module (`test/browser-safety.test.ts`). | none |
 | `units.ts` | 16 | 2 | Scene3D lengths are integer micrometres (plan §3.4): a plan coordinate in millimetres is multiplied by 1000 and rounded ONCE, at the adapter's edge, so every later stage works on integers and a last-ulp difference between engines is… | none |
 | `world.ts` | 124 | 3 | The Node `World` the CLI compiles through: an `import` is read only from under a root, only a `.arch` file, only up to {@link MODULE_CAP_BYTES}. Node-only (it reads `node:fs`): reached from `node.ts` and the CLI, never from `index.ts`… | none |
@@ -64,7 +64,7 @@ Totals: 395 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 1194 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
+| `build.ts` | 1200 | 4 | Scene3D → Mesh3D (archlang-3d M1a, card A2). Every solid is a closed prism over a Scene3D polygon (`extrude.ts`); no boolean is computed here, because the core's joinery already gave each wall its owned pieces with the openings removed… | none |
 | `c16.ts` | 25 | 2 | The 16-gon's exact table, shared by the T0 generators (`t0.ts`: round sections) and the contact shadows' corner fans (`replay/shadows.ts`, card RM8.8). Pure, browser-safe, no import. | none |
 | `extrude.ts` | 364 | 7 | Prisms: a plan polygon (with holes) between two heights → one closed triangle shell, in the exporters' axes (X = plan x, Y = up, Z = plan y), integer micrometres. Caps are triangulated with earcut (ISC), which adds no vertex, so the caps… | none |
 | `openings.ts` | 917 | 2 | The trim of a doorway and a window (product-roadmap card RM8.6; design `docs/plans/product-roadmap/design/visual-language.md` §2.1, §2.2), as parts of the opening's node, every size a clamped share of the host wall's thickness `t`… | none |
@@ -103,9 +103,9 @@ Totals: 395 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `build.ts` | 442 | 7 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
+| `build.ts` | 449 | 7 | Resolved storeys → Scene3D v0. A mapping of the core's resolved facts into micrometres and plan-aligned records: no geometry is built here beyond the core's own (wall ownership through `joinWallSet`; arcs tessellated to a chord tolerance… | none |
 | `overlap.ts` | 132 | 5 | V-GEO-05 (archlang-3d plan §4.2, §8.1; card A2b): rooms whose floors overlap by more than 1 cm² would draw two coplanar floor finishes that fight in depth. Each such pair is reported (`W3D_FLOOR_OVERLAP`; the core warns `W_ROOM_OVERLAP`… | none |
-| `types.ts` | 234 | 15 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
+| `types.ts` | 237 | 15 | Scene3D v0: a renderer-independent, plan-aligned 2.5D scene read off a resolved plan (archlang-3d plan §3.5, appendix A). Plan axes: x right, y DOWN; z up. Every length is an integer number of micrometres ({@link Um}); handedness is… | none |
 | `validate.ts` | 226 | 2 | The Scene3D v0 validator: zero dependencies, so it runs in the browser bundle. It checks what `scene3d.schema.json` states (shapes, integer micrometres, enums, no unknown keys) and what a JSON Schema cannot (ids unique per collection and… | none |
 
 ## `packages/archlang-3d/src/walls/`
@@ -215,7 +215,7 @@ Totals: 395 modules in 34 directories.
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
 | `analyze.ts` | 935 | 125 | Shared semantic-analysis layer for the agent-facing tools. | none |
-| `ast.ts` | 1699 | 217 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
+| `ast.ts` | 1701 | 217 | Abstract syntax tree for an ArchLang `plan`. All distances are in millimetres. | none |
 | `attach.ts` | 447 | 6 | Opening attachment (`door\|window\|opening … on <wall> at <pos>`). | charges the step meter |
 | `axes.ts` | 161 | 4 | **Positioning axes** (定位轴线) — GB/T 50001's structural datum grid. | none |
 | `builtins.ts` | 129 | 3 | Built-in functions: a frozen, pure map injected into the global scope as `builtin` Values. Each is total — bad arity / types emit a diagnostic and return a safe default, never throw — and deterministic (no I/O, no clock). | none |
@@ -250,7 +250,7 @@ Totals: 395 modules in 34 directories.
 | `furniture-relation.ts` | 372 | 8 | Furniture relations (ADR 0029): the closed-form geometry behind `facing <id>`, `against <room>.<edge>` and `clear front\|sides <mm>`. | none |
 | `geometry.ts` | 952 | 108 | Pure geometry helpers. All coordinates in millimetres. Deterministic. | none |
 | `hash.ts` | 14 | 3 | FNV-1a — a tiny, fast, deterministic non-cryptographic string hash, used to key the per-stage memo caches (lex → tokens, parse → ast). The length is appended to make accidental collisions vanishingly unlikely; callers that need certainty… | none |
-| `hatches.ts` | 665 | 26 | Material hatch patterns — a small named hatch *library*. Each material maps to an SVG `<pattern>` builder (for the SVG backend), a natural rotation, and a predefined DXF HATCH pattern name (so the hatch survives to CAD as a real `HATCH`… | none |
+| `hatches.ts` | 883 | 26 | Material hatch patterns — a small named hatch *library*. Each material maps to an SVG `<pattern>` builder (for the SVG backend), a natural rotation, and a predefined DXF HATCH pattern name (so the hatch survives to CAD as a real `HATCH`… | none |
 | `id-spans.ts` | 23 | 2 | The byte span of an element statement's `id=<name>` name, kept beside the AST. A leaf: the parser records spans here and the resolver reads them, so reading one never loads the parser. | none |
 | `identity.ts` | 33 | 3 | Process-local stable identity tokens for cache keying. | none |
 | `impact.ts` | 1405 | 3 | `impact(before, after)` (plan-soundness card PS4.2): change one number, see what follows, what stays put, and what breaks. The executable answer to "what changes, what must not". | none |
@@ -291,7 +291,7 @@ Totals: 395 modules in 34 directories.
 | `segment-select.ts` | 217 | 7 | Segment selectors (plan card PS3.5): `segment north\|south\|east\|west` and `segment containing <room>.<edge>`, written wherever `segment <n>` is. A selector is an ALIAS: it resolves to the one segment index the number would name, and from… | charges the step meter |
 | `share.ts` | 76 | 1 | `@chanmeng666/archlang/share`: the browser-safe half of the playground's `#z=` share link, `#z=<base64url(deflate-raw(utf8))>`, for every consumer with no `zlib` (the playground page and its short-link Worker, the hosted MCP Worker, the… | none |
 | `sheet-tables.ts` | 1305 | 12 | **Sheet tables** — the ROOM SCHEDULE and the derived LEGEND, and beside them the DOOR & WINDOW SCHEDULE (`schedule openings`, rows from `opening-schedule.ts`) and the authored NOTES (`notes "…"`), each drawn only when the plan writes it. | none |
-| `sheet-text.ts` | 165 | 14 | **`sheet text { … }`** — the words a sheet draws, and the decimal mark of its numbers, as the plan writes them (issue #403). The design and what was rejected: `archlang-lab/plans/preview-and-remodel/research/2026-11-02-sheet-text.md`. | none |
+| `sheet-text.ts` | 166 | 14 | **`sheet text { … }`** — the words a sheet draws, and the decimal mark of its numbers, as the plan writes them (issue #403). The design and what was rejected: `archlang-lab/plans/preview-and-remodel/research/2026-11-02-sheet-text.md`. | none |
 | `sheet.ts` | 396 | 28 | **Paper size + operative drawing scale** — the sheet layer. | none |
 | `site.ts` | 282 | 12 | The orientation layer: the `site` block's derived direction NAMES, and the one page→compass conversion every consumer of a facing reads. | none |
 | `stages.ts` | 358 | 6 | The authoring stages (plan-soundness PS7.1): the order in which a plan's decisions are taken, lowest frequency first, and which findings mean anything at each. | none |
@@ -300,7 +300,7 @@ Totals: 395 modules in 34 directories.
 | `text-layout.ts` | 170 | 12 | Line breaking for a drawn name, and where each line of a multi-line text is drawn. | none |
 | `text-metrics.ts` | 151 | 18 | The closed-form text widths in the tree: {@link textWidth}, the one shared estimate, and {@link inkWidth}, from the advances of the two faces a label is drawn in, for a test a label stands right up against. | none |
 | `text-safe.ts` | 63 | 7 | Output-text safety — the single place a string that came from user source is made safe to embed in a **container format**. | none |
-| `theme.ts` | 488 | 50 | Theme: colours, line-weight, and font for the rendered drawing. | none |
+| `theme.ts` | 488 | 52 | Theme: colours, line-weight, and font for the rendered drawing. | none |
 | `types.ts` | 203 | 12 | Public types for the ArchLang compiler. | none |
 | `unified-diff.ts` | 120 | 1 | A tiny, zero-dependency line-based unified diff (LCS backtrack + hunk grouping). | none |
 | `vertical.ts` | 843 | 42 | **Vertical circulation** as facts: the one place the shared semantics of `stair`, `elevator` and `escalator` live, so the three element modules, the nav grid, `lint` and `describe()` can never disagree about them. | none |
@@ -405,10 +405,10 @@ Totals: 395 modules in 34 directories.
 | `escalator.ts` | 85 | 1 | `escalator [id=] at (x,y) size WxH dir up\|down` — a moving stair, drawn as parallel chevrons along the run plus the UP/DN direction arrow. | none |
 | `facets.ts` | 87 | 10 | Which hand-written kind sets each built-in element kind belongs to, one row per kind. | none |
 | `fence.ts` | 311 | 1 | `fence [id=] [picket\|panel\|post] { (x,y) (x,y) … [close] }` — a boundary line on the ground. | none |
-| `fixtures-glyphs.ts` | 683 | 37 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
+| `fixtures-glyphs.ts` | 683 | 38 | The fixture vocabulary and the dispatch to each category's drawn plan symbol. | none |
 | `furniture.ts` | 1374 | 11 | `furniture <category> [id=] at (x,y) size WxH [label "…"]` — outlined fill + label. | charges the step meter |
 | `glyph-chirality.ts` | 224 | 13 | The handedness of a drawn fixture symbol, and what a mirrored `place` does to it. | none |
-| `glyph-lib.ts` | 917 | 31 | The drawing vocabulary every fixture glyph is built from. | none |
+| `glyph-lib.ts` | 917 | 33 | The drawing vocabulary every fixture glyph is built from. | none |
 | `glyphs-bath.ts` | 370 | 2 | Bathroom plan symbols: the WC, the basin, the shower tray, the tub, the bidet, the urinal and the mirror. | none |
 | `glyphs-bedroom.ts` | 459 | 2 | Bedroom plan symbols — the bed and what stands beside it. | none |
 | `glyphs-kitchen.ts` | 793 | 2 | Kitchen and utility plan symbols: the sink run, the worktop, the hob, the fridge, the built-in appliances and the overhead cabinet. | none |
@@ -417,9 +417,9 @@ Totals: 395 modules in 34 directories.
 | `glyphs-outdoor.ts` | 1252 | 2 | The OUTDOOR plan symbols: what a site plan draws once the drawing leaves the building — planting, garden furniture, the things parked on a driveway, and the small standing objects (a bin, a mailbox, a charge point) a survey records. | none |
 | `index.ts` | 17 | 1 | Built-in element registry — back-compatible views over the default {@link Registry}. The canonical built-in list now lives in `defs.ts`; the per-call registry machinery (and the public `register*` extension points) live in `registry.ts`.… | none |
 | `opening.ts` | 160 | 2 | `opening [id=] at (x,y) width N [wall ref]` — a leaf-less cased opening: a gap in the host wall (no door leaf, no glazing) that still connects the two spaces. | none |
-| `outdoor.ts` | 644 | 11 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony. | none |
+| `outdoor.ts` | 649 | 11 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony. | none |
 | `roof.ts` | 383 | 6 | `roof overhang <mm> [wall <id>]` — or `roof polygon (x,y) (x,y) (x,y) …` — the eaves projection line. | none |
-| `room.ts` | 693 | 9 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | none |
+| `room.ts` | 743 | 9 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | none |
 | `section.ts` | 256 | 2 | `section <id\|int> (x,y)->(x,y) look <compass>` — a section mark on the plan (RM6.1, design `docs/plans/product-roadmap/design/slab-and-section.md` §2): where a section cuts the building and which way it looks, drawn as GB/T 50001 and ISO… | none |
 | `stair.ts` | 471 | 2 | `stair [id=] at (x,y) size WxH dir up\|down [width <mm>]` — a straight flight of stairs drawn as the conventional plan symbol. Or the block form (issue #362), `stair [id=] dir up\|down width <mm> { flight … landing … flight … }`: one stair… | charges the step meter |
 | `vertical-glyphs.ts` | 463 | 10 | Plan symbols for the vertical-circulation elements (`stair`, `elevator`, `escalator`). | none |
@@ -477,7 +477,7 @@ Totals: 395 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `tokens.ts` | 660 | 52 | The single source of truth for ArchLang's lexical grammar. | none |
+| `tokens.ts` | 662 | 52 | The single source of truth for ArchLang's lexical grammar. | none |
 
 ## `src/import/`
 

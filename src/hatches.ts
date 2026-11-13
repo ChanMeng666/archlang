@@ -47,7 +47,7 @@ export const DEFAULT_MATERIAL: Material = "poche";
  *  - **`wall … material grass` stays a `W_UNKNOWN_MATERIAL`.** {@link isKnownMaterial} is
  *    still the wall's accept-set and still reads `KNOWN_MATERIALS` alone, so the wall
  *    grammar line in `spec.llm.md` — which INTERPOLATES that array — does not silently
- *    grow seven words a wall has no use for. A ground pattern is chosen by the `outdoor`
+ *    grow nine words a wall has no use for. A ground pattern is chosen by the `outdoor`
  *    kind, never spelled by the author, so it needs no accept-set of its own.
  *  - **Both lists share ONE {@link META} table**, because everything downstream of the
  *    choice is identical: {@link hatchPattern} builds the SVG pattern, {@link
@@ -59,17 +59,38 @@ export const DEFAULT_MATERIAL: Material = "poche";
  * `paving` wall would reuse one pattern element rather than collide — which is the right
  * outcome, since the pattern IS the same pattern.
  */
-export const GROUND_MATERIALS = ["grass", "planting", "paving", "deck", "gravel", "water", "tarmac"] as const;
+export const GROUND_MATERIALS = [
+  "grass",
+  "planting",
+  "paving",
+  "deck",
+  "gravel",
+  "water",
+  "tarmac",
+  "sand",
+  "soil",
+] as const;
 /** One ground-surface hatch material. */
 export type GroundMaterial = (typeof GROUND_MATERIALS)[number];
 
 /**
- * The patterns `room … floor` takes, from both lists above. A pattern and not a colour: it is
+ * The floor-only patterns (card RM8.7): a room's `floor` takes them, and nothing else does. Not
+ * in {@link KNOWN_MATERIALS}, so `wall … material stone` stays refused and the wall's spec line
+ * keeps its length; not in {@link GROUND_MATERIALS}, which is "the fill of some `outdoor` kind"
+ * and is counted as such. They share the one {@link META} table, and like a ground pattern they
+ * paint no base.
+ */
+export const FLOOR_PATTERNS = ["timber", "carpeting", "stone"] as const;
+/** One floor-only pattern. */
+export type FloorPattern = (typeof FLOOR_PATTERNS)[number];
+
+/**
+ * The patterns `room … floor` takes, from the three lists above. A pattern and not a colour: it is
  * monochrome and theme-driven, reaches DXF as a `HATCH` and has a legend row. The words of
  * {@link KNOWN_MATERIALS} here are drawn with no base ({@link HatchSpec.bare}), so a tiled room
- * does not take the tint of a wall; a ground pattern paints no base anyway.
+ * does not take the tint of a wall; a ground or floor-only pattern paints no base anyway.
  */
-export const FLOOR_MATERIALS = ["tile", "paving", "deck", "concrete"] as const;
+export const FLOOR_MATERIALS = ["tile", "paving", "deck", "concrete", ...FLOOR_PATTERNS] as const;
 /** One `room … floor` pattern. */
 export type FloorMaterial = (typeof FLOOR_MATERIALS)[number];
 
@@ -245,6 +266,65 @@ const TARMAC_SPECKS: readonly (readonly [number, number])[] = [
   [0.3, 0.32],
 ];
 
+/** `sand`: `[x, y, coarse]` — a grain each, fine (0) or coarse (1); fourteen to a 2-module tile. */
+const SAND_GRAINS: readonly (readonly [number, number, 0 | 1])[] = [
+  [0.08, 0.12, 0],
+  [0.35, 0.06, 1],
+  [0.62, 0.15, 0],
+  [0.88, 0.09, 1],
+  [0.2, 0.36, 1],
+  [0.5, 0.32, 0],
+  [0.78, 0.4, 0],
+  [0.06, 0.6, 0],
+  [0.38, 0.58, 1],
+  [0.66, 0.66, 1],
+  [0.92, 0.56, 0],
+  [0.24, 0.86, 0],
+  [0.54, 0.9, 1],
+  [0.82, 0.84, 0],
+];
+
+/**
+ * `stone`: the three courses of a coursed rubble floor, bottom to top — each its height in modules
+ * and its vertical joints as fractions of the tile's width. The heights differ, and no joint lines
+ * up with one in the course above or below (the top course's sit apart from the bottom one's too,
+ * across the tile seam), which is what tells it from `paving`'s grid and a wall's `brick` bond.
+ */
+const STONE_COURSES: readonly (readonly [number, readonly number[]])[] = [
+  [0.9, [0.12, 0.47, 0.8]],
+  [1.25, [0.3, 0.66]],
+  [0.85, [0.04, 0.38, 0.72]],
+];
+
+/**
+ * `timber`: one herringbone repeat, as the blocks that meet its tile — `[x, y, w, h]` in units of a
+ * block's short side `a` (a block is `a × 4a`, half a module by two). A herringbone is a lattice of
+ * one horizontal and one vertical block (`H = [0,4]×[0,1]`, `V = [0,1]×[1,5]`), stepped by `(1, 1)`
+ * along the stair and by `(4, −4)` across it; `4·(1,1) ± (4,−4)` are `(8, 0)` and `(0, 8)`, so the
+ * pattern repeats on an 8a square, the tile. Every block that touches the closed tile is listed: the
+ * `<pattern>` clips each to the tile and the neighbouring tile draws the rest, so a block edge on a
+ * seam is drawn by both and reads as one line. Built once on first use, from integers alone.
+ */
+let herringbone: readonly (readonly [number, number, number, number])[] | undefined;
+function herringboneBlocks(): readonly (readonly [number, number, number, number])[] {
+  if (herringbone) return herringbone;
+  const out: [number, number, number, number][] = [];
+  for (let j = -2; j <= 2; j++) {
+    for (let i = -14; i <= 18; i++) {
+      const x = i + 4 * j;
+      const y = i - 4 * j;
+      for (const b of [
+        [x, y, 4, 1],
+        [x, y + 1, 1, 4],
+      ] as [number, number, number, number][]) {
+        if (b[0] <= 8 && b[0] + b[2] >= 0 && b[1] <= 8 && b[1] + b[3] >= 0) out.push(b);
+      }
+    }
+  }
+  herringbone = out;
+  return out;
+}
+
 /**
  * The ground patterns' pen: the drawing's FINEST, the `extraThin` width `weightWidth` gives
  * (`thin × EXTRA_THIN_RATIO`, 0.13 mm on a sheet — the ISO 128 floor), by the same arithmetic,
@@ -375,7 +455,7 @@ const META: Record<string, HatchMeta> = {
   },
 
   // ---- ground materials ----------------------------------------------
-  // None of the seven paints a background rectangle: each is drawn over the flat tint
+  // None of the nine paints a background rectangle: each is drawn over the flat tint
   // the `outdoor` element emits beneath it. See the META doc comment above. Every stroke is
   // the {@link hairline}, so the ground is the finest layer of the drawing; the patterns
   // differ by what they draw, never by a heavier pen.
@@ -550,11 +630,134 @@ const META: Record<string, HatchMeta> = {
       );
     },
   },
+
+  // Sand: a dense, fine stipple of two grain sizes ({@link SAND_GRAINS}) — denser and finer than
+  // `tarmac`'s one-size speckle, and with no ring, which is `gravel`'s.
+  sand: {
+    natural: 0,
+    dxfPattern: "AR-SAND",
+    build: (id, c) => {
+      const w = c.gap * 2 * c.scale;
+      const hl = hairline(c);
+      const r = [c.fmt(hl * 0.5), c.fmt(hl * 0.9)];
+      return (
+        `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${c.fmt(w)}" height="${c.fmt(w)}"${xform(0, c)}>` +
+        SAND_GRAINS.map(
+          ([fx, fy, k]) => `<circle cx="${c.fmt(w * fx)}" cy="${c.fmt(w * fy)}" r="${r[k]}" fill="${c.line}"/>`,
+        ).join("") +
+        `</pattern>`
+      );
+    },
+  },
+
+  // Bare soil: three short parallel strokes to a cell, the cells laid in a basket weave (a
+  // horizontal group beside a vertical one, chequered) — the drafting convention for earth. Strokes
+  // stop short of their cell, so no stroke meets a seam.
+  soil: {
+    natural: 0,
+    dxfPattern: "EARTH",
+    build: (id, c) => {
+      const s = c.gap * 1.2 * c.scale;
+      const seg = (x1: number, y1: number, x2: number, y2: number): string =>
+        ` M${c.fmt(x1)},${c.fmt(y1)} L${c.fmt(x2)},${c.fmt(y2)}`;
+      let d = "";
+      for (const [cx, cy] of [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+      ] as const) {
+        const across = (cx + cy) % 2 === 0;
+        for (const f of [0.25, 0.5, 0.75]) {
+          const u = s * (cx + f);
+          const v = s * (cy + f);
+          d += across ? seg(s * (cx + 0.15), v, s * (cx + 0.85), v) : seg(u, s * (cy + 0.15), u, s * (cy + 0.85));
+        }
+      }
+      return (
+        `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${c.fmt(s * 2)}" height="${c.fmt(s * 2)}"${xform(0, c)}>` +
+        `<path d="${d.slice(1)}" stroke="${c.line}" stroke-width="${c.fmt(hairline(c))}" fill="none"/>` +
+        `</pattern>`
+      );
+    },
+  },
+
+  // ---- floor-only patterns (`FLOOR_PATTERNS`) --------------------------
+  // A room's `floor` alone takes these. Like the ground's, none paints a base: the room's own
+  // floor polygon carries the colour under it (`roomFill`, or under `rendered` a pale wash of the
+  // material, `src/elements/room.ts`), and every stroke is the hairline.
+
+  // Herringbone parquet: blocks half a module by two ({@link herringboneBlocks}), each square to
+  // its neighbour, turned 45° so the rows read as the familiar chevrons. `deck` is straight boards.
+  timber: {
+    natural: 45,
+    dxfPattern: "AR-HBONE",
+    build: (id, c) => {
+      const a = c.gap * 0.5 * c.scale;
+      const d = herringboneBlocks()
+        .map(([x, y, w, h]) => `M${c.fmt(a * x)},${c.fmt(a * y)} h${c.fmt(a * w)} v${c.fmt(a * h)} h${c.fmt(-a * w)} Z`)
+        .join(" ");
+      return (
+        `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${c.fmt(a * 8)}" height="${c.fmt(a * 8)}"${xform(45, c)}>` +
+        `<path d="${d}" stroke="${c.line}" stroke-width="${c.fmt(hairline(c))}" fill="none"/>` +
+        `</pattern>`
+      );
+    },
+  },
+
+  // Fitted carpet: a fine dot on a regular grid, 0.8 of a module apart — the tufting. Regular, so it
+  // reads apart from `tarmac`'s scatter; a dot alone, so it reads apart from `planting`'s chips.
+  carpeting: {
+    natural: 0,
+    dxfPattern: "CROSS",
+    build: (id, c) => {
+      const w = c.gap * 0.8 * c.scale;
+      return (
+        `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${c.fmt(w)}" height="${c.fmt(w)}"${xform(0, c)}>` +
+        `<circle cx="${c.fmt(w / 2)}" cy="${c.fmt(w / 2)}" r="${c.fmt(hairline(c) * 0.6)}" fill="${c.line}"/>` +
+        `</pattern>`
+      );
+    },
+  },
+
+  // Coursed rubble: three courses of unequal height, each with its own staggered vertical joints
+  // ({@link STONE_COURSES}). The bed joint on the tile's edge is drawn on both edges, so each half
+  // the seam clips meets the other half from the next tile.
+  stone: {
+    natural: 0,
+    dxfPattern: "AR-RSHKE",
+    build: (id, c) => {
+      const m = c.gap * c.scale;
+      const w = m * 5;
+      const seg = (x1: number, y1: number, x2: number, y2: number): string =>
+        ` M${c.fmt(x1)},${c.fmt(y1)} L${c.fmt(x2)},${c.fmt(y2)}`;
+      let d = seg(0, 0, w, 0);
+      let rise = 0;
+      for (const [k, joints] of STONE_COURSES) {
+        const y0 = m * rise;
+        rise += k;
+        const y1 = m * rise;
+        d += seg(0, y1, w, y1);
+        for (const f of joints) d += seg(w * f, y0, w * f, y1);
+      }
+      const h = m * rise;
+      return (
+        `<pattern id="${id}" patternUnits="userSpaceOnUse" width="${c.fmt(w)}" height="${c.fmt(h)}"${xform(0, c)}>` +
+        `<path d="${d.slice(1)}" stroke="${c.line}" stroke-width="${c.fmt(hairline(c))}" fill="none"/>` +
+        `</pattern>`
+      );
+    },
+  },
 };
 
 /** Is `name` one of the patterns a room's `floor` takes? */
 export function isFloorMaterial(name: string): name is FloorMaterial {
   return (FLOOR_MATERIALS as readonly string[]).includes(name);
+}
+
+/** Is `name` one of the floor-only patterns? */
+export function isFloorPattern(name: string): name is FloorPattern {
+  return (FLOOR_PATTERNS as readonly string[]).includes(name);
 }
 
 /** Is `name` one of the ground materials an `outdoor` surface fills with? */
@@ -633,9 +836,14 @@ export function hatchTileSize(spec: HatchSpec, gap: number): { w: number; h: num
  *   - `grass`   n = 4,  t = 6,   N = 6 → 0.321 (the fewest that read as turf: a tuft is three
  *     strokes, and at N = 8 they close up into a tick)
  *
- * `test/outdoor.test.ts` counts the marks each swatch holds, on a sheet and off one.
+ * `test/outdoor.test.ts` counts the marks each swatch holds, on a sheet and off one. The two
+ * newer ground scatters and the floor-only patterns (card RM8.7) show their marks at full size —
+ * a swatch holds about nineteen `sand` grains, nine `carpeting` dots, four `soil` cells, a run of
+ * `timber` blocks — except `stone`, whose 5 × 3-module tile is shrunk to show its three courses.
  */
-const GROUND_SWATCH_FRAME: Readonly<Record<GroundMaterial, { zoom: number; focus: readonly [number, number] }>> = {
+const GROUND_SWATCH_FRAME: Readonly<
+  Record<GroundMaterial | FloorPattern, { zoom: number; focus: readonly [number, number] }>
+> = {
   grass: { zoom: 0.32, focus: [0.5, 0.5] },
   planting: { zoom: 1, focus: [0.5, 0.5] },
   paving: { zoom: 1, focus: [0.5, 0.5] },
@@ -643,19 +851,24 @@ const GROUND_SWATCH_FRAME: Readonly<Record<GroundMaterial, { zoom: number; focus
   gravel: { zoom: 0.67, focus: [0.5, 0.5] },
   water: { zoom: 0.55, focus: [0.5, 0.5] },
   tarmac: { zoom: 0.72, focus: [0.5, 0.5] },
+  sand: { zoom: 1, focus: [0.5, 0.5] },
+  soil: { zoom: 1, focus: [0.5, 0.5] },
+  timber: { zoom: 1, focus: [0.5, 0.5] },
+  carpeting: { zoom: 1, focus: [0.5, 0.5] },
+  stone: { zoom: 0.6, focus: [0.5, 0.5] },
 };
 
 /**
- * The pattern `origin` and `zoom` a legend swatch centred at `centre` fills a ground material
- * with (see {@link GROUND_SWATCH_FRAME}) — or `null` for a wall material, whose swatch keeps the
- * drawing's own anchoring.
+ * The pattern `origin` and `zoom` a legend swatch centred at `centre` fills a ground material or a
+ * floor-only pattern with (see {@link GROUND_SWATCH_FRAME}) — or `null` for a wall material, whose
+ * swatch keeps the drawing's own anchoring.
  */
 export function groundSwatchFrame(
   spec: HatchSpec,
   gap: number,
   centre: { x: number; y: number },
 ): { origin: { x: number; y: number }; zoom: number } | null {
-  if (!isGroundMaterial(spec.material)) return null;
+  if (!isGroundMaterial(spec.material) && !isFloorPattern(spec.material)) return null;
   const f = GROUND_SWATCH_FRAME[spec.material];
   const t = hatchTileSize(spec, gap);
   return {

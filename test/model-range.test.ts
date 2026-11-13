@@ -18,7 +18,7 @@ import { compile, describe, ERROR_CATALOG, format, lint, resolve } from "../src/
 import { fmtSource, MAX_ANGLE_DEG, MODEL_RANGE_MM, maxScaleDenominator } from "../src/num-format.js";
 import { lex } from "../src/lexer.js";
 import { scaleDenominator } from "../src/sheet.js";
-import { GROUND_MATERIALS, hatchTileMm, KNOWN_MATERIALS } from "../src/hatches.js";
+import { FLOOR_PATTERNS, GROUND_MATERIALS, hatchTileMm, KNOWN_MATERIALS } from "../src/hatches.js";
 import { MAX_RUN_TREADS, TREAD_GOING_MM } from "../src/elements/vertical-glyphs.js";
 import { readFileSync } from "node:fs";
 import { floorAt, runs } from "./setup/fast-check.js";
@@ -322,7 +322,7 @@ suite("the settings that scale a drawn length are held too", () => {
   });
 
   it("the tile is read from the pattern markup every material draws", () => {
-    for (const material of [...KNOWN_MATERIALS, ...GROUND_MATERIALS]) {
+    for (const material of [...KNOWN_MATERIALS, ...GROUND_MATERIALS, ...FLOOR_PATTERNS]) {
       const t = hatchTileMm({ material, scale: 1, angle: 0 }, 100);
       expect(Number.isFinite(t) && t > 0).toBe(true);
       expect(hatchTileMm({ material, scale: 2, angle: 0 }, 100)).toBeCloseTo(2 * t, 9);

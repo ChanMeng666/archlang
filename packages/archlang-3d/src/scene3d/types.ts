@@ -52,6 +52,9 @@ export interface Floor {
   source: Source;
   polygon: Polygon;
   uses?: string[];
+  /** The room's authored `room … floor <word>` (the core's `RRoom.floor`, card RM8.7), absent when
+   *  the plan wrote none: the finish the floor is laid in, before any default by `uses`. */
+  pattern?: string;
   /** How far (µm) the floor finish is lifted because it overlaps an earlier room's (V-GEO-05,
    *  `W3D_FLOOR_OVERLAP`): 0.5 mm per step, absent when it overlaps none. */
   lift?: Um;

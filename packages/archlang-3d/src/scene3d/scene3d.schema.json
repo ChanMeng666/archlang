@@ -291,6 +291,10 @@
             "type": "string"
           }
         },
+        "pattern": {
+          "type": "string",
+          "description": "The room's authored floor word (room ... floor <word>); absent when the plan wrote none."
+        },
         "lift": {
           "$ref": "#/$defs/um",
           "description": "Lift of the floor finish over an earlier overlapping room's (V-GEO-05): 500 um per step; absent when none."

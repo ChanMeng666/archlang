@@ -65,7 +65,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/elements/fixtures-glyphs.ts` (21) — `catalogue-images`, `cli-manifest`, `drawing-budget`, `equivariance-scene`, `finish-furnish`, `fixture-classifier-drift`, `furniture-mirror`, `glyph-chirality` (+13)
 - `src/elements/furniture.ts` (10) — `furniture-relations`, `furniture-rotate`, `glyph-chirality`, `glyph-lib`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc`, `glyphs-new-families` (+2)
 - `src/elements/glyph-chirality.ts` (11) — `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-bath`, `glyphs-bedroom`, `glyphs-kitchen`, `glyphs-living`, `glyphs-misc` (+3)
-- `src/elements/glyph-lib.ts` (16) — `doors`, `equivariance-scene`, `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-batch2`, `glyphs-bath`, `glyphs-bedroom` (+8)
+- `src/elements/glyph-lib.ts` (17) — `doors`, `equivariance-scene`, `furniture-mirror`, `glyph-chirality`, `glyph-lib`, `glyphs-batch2`, `glyphs-bath`, `glyphs-bedroom` (+9)
 - `src/elements/glyphs-bath.ts` (1) — `glyphs-bath`
 - `src/elements/glyphs-bedroom.ts` (1) — `glyphs-bedroom`
 - `src/elements/glyphs-kitchen.ts` (1) — `glyphs-kitchen`
@@ -175,7 +175,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/taste/index.ts` (2) — `taste-budget`, `taste`
 - `src/text-layout.ts` (5) — `escape-fuzz`, `label-placement-oracle`, `label-wrap`, `text-layout`, `text-metrics`
 - `src/text-metrics.ts` (6) — `dim-stagger`, `dim-thickness-callout`, `label-placement`, `sheet-text`, `text-layout`, `text-metrics`
-- `src/theme.ts` (16) — `element-facets`, `equivariance-scene`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib`, `glyphs-batch2` (+8)
+- `src/theme.ts` (17) — `element-facets`, `equivariance-scene`, `format`, `furniture-mirror`, `glyph-chirality`, `glyph-dispatch-table`, `glyph-lib`, `glyphs-batch2` (+9)
 - `src/types.ts` (9) — `datum`, `doors`, `element-cap`, `fixture-orientation`, `furniture-flush`, `furniture-lint`, `garage`, `keep` (+1)
 - `src/vertical.ts` (51) — `block-stair-frames`, `block-stair-shaft`, `block-stair-winders`, `block-stair`, `circulation-concave`, `circulation-translation`, `element-facets`, `equivariance-corpus` (+43)
 - `src/view/camera.ts` (5) — `iso-camera`, `iso-mixed-heights`, `iso-painter-order`, `iso-projection`, `iso-sort`

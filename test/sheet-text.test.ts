@@ -21,7 +21,7 @@ import {
 } from "../src/index.js";
 import { FIXTURE_CATEGORIES } from "../src/elements/fixtures-glyphs.js";
 import { DOOR_KINDS, WINDOW_KINDS } from "../src/grammar/tokens.js";
-import { GROUND_MATERIALS, KNOWN_MATERIALS } from "../src/hatches.js";
+import { FLOOR_PATTERNS, GROUND_MATERIALS, KNOWN_MATERIALS } from "../src/hatches.js";
 import { fmt2, drawnDecimal, plainDecimal } from "../src/num-format.js";
 import { MAX_SHEET_WORD, PLAIN_SHEET_TEXT, SHEET_WORDS, sheetText, sheetTextKeys } from "../src/sheet-text.js";
 import { inkWidth } from "../src/text-metrics.js";
@@ -101,7 +101,14 @@ suite("sheet text: the keys", () => {
 
   it("each kind, material and fixture category is its own key", () => {
     const keys = new Set(sheetTextKeys());
-    for (const k of [...DOOR_KINDS, ...WINDOW_KINDS, ...KNOWN_MATERIALS, ...GROUND_MATERIALS, ...FIXTURE_CATEGORIES])
+    for (const k of [
+      ...DOOR_KINDS,
+      ...WINDOW_KINDS,
+      ...KNOWN_MATERIALS,
+      ...GROUND_MATERIALS,
+      ...FLOOR_PATTERNS,
+      ...FIXTURE_CATEGORIES,
+    ])
       expect(keys.has(k), k).toBe(true);
   });
 
@@ -111,6 +118,7 @@ suite("sheet text: the keys", () => {
       ...WINDOW_KINDS,
       ...KNOWN_MATERIALS,
       ...GROUND_MATERIALS,
+      ...FLOOR_PATTERNS,
       ...FIXTURE_CATEGORIES,
     ]);
     expect(Object.keys(SHEET_WORDS).filter((k) => vocabulary.has(k))).toEqual([]);

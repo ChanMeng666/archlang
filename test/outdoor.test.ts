@@ -20,8 +20,9 @@ import { compile, describe as describePlan, lint, planToJson, toDxf } from "../s
 import { renderAscii } from "../src/backends/ascii.js";
 import { OUTDOOR_KINDS } from "../src/ast.js";
 import { pointInPolygon } from "../src/geometry/polygon.js";
-import { GROUND_MATERIALS, hatchPattern, hatchTileMm } from "../src/hatches.js";
+import { FLOOR_PATTERNS, GROUND_MATERIALS, hatchPattern, hatchTileMm } from "../src/hatches.js";
 import { EXTRA_THIN_RATIO } from "../src/scene.js";
+import { DEFAULT_THEME } from "../src/theme.js";
 
 const plan = (body: string): string => `plan "Ground" {\n  units mm\n${body}\n}\n`;
 
@@ -337,7 +338,8 @@ describe("outdoor — the ground hatches are the drawing's finest, palest layer"
   it("strokes every ground pattern at the extraThin hairline, and paints no background", () => {
     // The hairline is DERIVED from the pen ramp, never a literal: move the ramp and the ground
     // follows. A background rectangle would cover the tint the surface draws under its hatch.
-    for (const m of GROUND_MATERIALS) {
+    // The floor-only patterns (card RM8.7) are held to the same: they lie over the room's floor.
+    for (const m of [...GROUND_MATERIALS, ...FLOOR_PATTERNS]) {
       const svg = pattern(m);
       expect(svg, `${m} paints no background`).not.toContain("<rect");
       const widths = [...svg.matchAll(/stroke-width="([^"]+)"/g)].map((x) => Number(x[1]));
@@ -349,9 +351,10 @@ describe("outdoor — the ground hatches are the drawing's finest, palest layer"
   });
 
   it("keeps every mark inside its own tile, so a tile seam cuts nothing", () => {
-    // Water is the one exception by construction: its waves run edge to edge, ending exactly
-    // where the next tile's begin, which is what makes them continuous.
-    for (const m of GROUND_MATERIALS.filter((g) => g !== "water")) {
+    // Water is an exception by construction: its waves run edge to edge, ending exactly where
+    // the next tile's begin, which is what makes them continuous. So is `timber`: a herringbone
+    // block crosses the seam, and each tile draws the part the clip leaves it (`hatches.ts`).
+    for (const m of [...GROUND_MATERIALS, ...FLOOR_PATTERNS].filter((g) => g !== "water" && g !== "timber")) {
       const svg = pattern(m);
       const tile = /^<pattern [^>]*?width="([^"]*)" height="([^"]*)"/.exec(svg)!;
       const [w, h] = [Number(tile[1]), Number(tile[2])];
@@ -417,7 +420,7 @@ describe("outdoor — the legend gains a row per ground material used", () => {
     // swatch now carries an `origin` (and, where its tile is shrunk, a `zoom`) that puts a chosen
     // point of the tile at the swatch centre; a wall swatch and every surface on the plan carry
     // neither, so their bytes are what they were.
-    const kinds = ["lawn", "planting", "paving", "deck", "gravel", "water", "driveway"];
+    const kinds = ["lawn", "planting", "paving", "deck", "gravel", "water", "driveway", "sand", "soil"];
     const body = kinds.map((k, i) => `  outdoor ${k} at (${i * 5000},9000) size 4000x3000`).join("\n");
     const src = `plan "L" {\n  units mm\n  paper A1 landscape\n  scale 1:100\n  legend\n${BOX}\n${ROOM}\n${body}\n}\n`;
     const { scene, svg } = compile(src, { noCache: true });
@@ -448,7 +451,7 @@ describe("outdoor — the legend gains a row per ground material used", () => {
         expect(p.origin!.y + (p.zoom ?? 1) * (tile / 2)).toBeCloseTo(cy, 6);
       }
     }
-    // The SVG re-frames exactly the seven ground swatches, by a transform on their own path.
+    // The SVG re-frames exactly the ground swatches, one per material, by a transform on their own path.
     expect((svg.match(/<path d="[^"]*" transform="translate\(/g) ?? []).length).toBe(GROUND_MATERIALS.length);
   });
 
@@ -542,6 +545,32 @@ describe("outdoor — refuses rather than approximating", () => {
   it("an unknown kind is a parse error naming the closed set", () => {
     const d = compile(plan(`  outdoor meadow at (0,0) size 4000x3000`), { noCache: true }).diagnostics;
     expect(d.some((x) => /Unknown outdoor kind "meadow"/.test(x.message))).toBe(true);
+    // The list grew by two words (card RM8.7), so a mistyped kind's text moved, and nothing else did:
+    // pinned whole, with the hint a near word earns.
+    const sandy = compile(plan(`  outdoor sandy at (0,0) size 4000x3000`), { noCache: true }).diagnostics;
+    expect(sandy.map((x) => x.message)).toContain(
+      'Unknown outdoor kind "sandy" — did you mean "sand"? (available: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony, sand, soil)',
+    );
+  });
+
+  it("sand and soil (card RM8.7): their own hatch over the paving tint, on their own CAD layers", () => {
+    const src = (k: string) => plan(`  outdoor id=g ${k} at (0,0) size 4000x3000`);
+    for (const [kind, layer, dxf] of [
+      ["sand", "L-SITE", "AR-SAND"],
+      ["soil", "L-PLNT", "EARTH"],
+    ] as const) {
+      const out = compile(src(kind), { noCache: true });
+      expect(out.errors, kind).toEqual([]);
+      expect(out.svg, kind).toContain(`<pattern id="hatch-${kind}"`);
+      expect(out.svg, kind).toContain(`url(#hatch-${kind})`);
+      const tint = out.scene!.nodes.find(
+        (n) => n.layer !== "annotations" && n.prim.t === "polygon" && n.paint?.fill === DEFAULT_THEME.paving,
+      );
+      expect(tint, `${kind} sits on the paving tint`).toBeDefined();
+      const dxfText = toDxf(out.scene!);
+      expect(dxfText, kind).toContain(dxf);
+      expect(dxfText, kind).toContain(layer);
+    }
   });
 });
 

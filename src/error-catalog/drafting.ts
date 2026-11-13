@@ -72,7 +72,7 @@ export const DRAFTING_ENTRIES = defineEntries({
   W_UNKNOWN_MATERIAL: w(
     "Unknown wall material or room floor; the wall takes the default hatch, the room none.",
     "A wall `material` name, or a room `floor` word, is not one of the known hatches.",
-    "Use a known word (for a wall e.g. brick, concrete, insulation, tile; for a floor tile, paving, deck, concrete) or omit it.",
+    "Use a known word (for a wall e.g. brick, concrete, insulation, tile; for a floor tile, paving, deck, concrete, timber, carpeting, stone) or omit it.",
     "wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning",
   ),
   W_UNKNOWN_STYLE_KEY: w(
