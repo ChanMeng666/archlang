@@ -3634,7 +3634,7 @@ furniture grand_pianno at (0,0) size 1500x1500   # warning: did you mean "grand_
 
 **Cause.** A wall `material` name, or a room `floor` word, is not one of the known hatches.
 
-**Fix.** Use a known word (for a wall e.g. brick, concrete, insulation, tile; for a floor tile, paving, deck, concrete) or omit it.
+**Fix.** Use a known word (for a wall e.g. brick, concrete, insulation, tile; for a floor tile, paving, deck, concrete, timber, carpeting, stone) or omit it.
 
 ```arch static
 wall exterior thickness 200 material marble { (0,0) (1,0) }   # warning

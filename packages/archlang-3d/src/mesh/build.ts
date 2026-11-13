@@ -7,8 +7,9 @@
  * Per storey, at its elevation `e` (µm):
  * - slab: the rooms ∪ the storey's wall outline, less its voids, [e − 200 mm, e] (Q6, `slab.ts`);
  * - floor: each room, a 5 mm finish [e, e + 5 mm], a void inside it as a hole; a room overlapping
- *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`); laid in the finish its
- *   `uses` give it (`floorFinish`, `extras.finish`, ledgered `floor-finish-default`);
+ *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`); laid in the finish its author
+ *   wrote (`room … floor <word>`, `Floor.pattern`, `wordFinish`, card RM8.7), else the one its `uses`
+ *   give it (`floorFinish`, ledgered `floor-finish-default`); either way in `extras.finish`;
  * - column: its box, [e, e + storey height];
  * - wall: its body pieces [e, e + h]; a wall or column whose whole plan lies under the slab of the
  *   storey above stops at that slab's underside, so the two never overlap or share a face (ledgered
@@ -61,6 +62,7 @@ import {
   STAIR_MATERIAL,
   STAIR_RAIL_MATERIAL,
   TRIM_MATERIAL,
+  wordFinish,
 } from "../materials.js";
 import { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, overlapArea } from "../scene3d/overlap.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
@@ -376,16 +378,20 @@ function levelNodes(
       ? [f.polygon]
       : lessVoids(f.polygon.outer, lv.voids, `floor:${f.id}`, ledger);
     const z0 = e + (f.lift ?? 0);
-    // Its finish from its declared uses (visual-assets V9): a drafting default, ledgered per floor.
-    const finish = floorFinish(f.uses);
-    ledger.push({
-      kind: "floor",
-      id: f.id,
-      field: "finish",
-      value: finish,
-      provenance: "default",
-      rule: "floor-finish-default",
-    });
+    // Its finish: the author's `floor` word when the plan wrote one (card RM8.7), a stated fact and
+    // so not ledgered; else from its declared uses (visual-assets V9), a drafting default, ledgered
+    // per floor. A word this package does not know (a hand-made Scene3D) falls back to the default.
+    const authored = wordFinish(f.pattern);
+    const finish = authored ?? floorFinish(f.uses);
+    if (authored === undefined)
+      ledger.push({
+        kind: "floor",
+        id: f.id,
+        field: "finish",
+        value: finish,
+        provenance: "default",
+        rule: "floor-finish-default",
+      });
     node(
       "floor",
       f.id,

@@ -49,8 +49,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   (`Furniture.mirror`, read by `adaptPlan` through `planToJson`).
 - `src/materials.ts`: the material slots and the ONE palette the GLB writer and the viewer both
   read (a T0 piece stays one node; one primitive or mesh per slot), the building's kind colours
-  (`KIND_PALETTE`) and the floor finishes (`FINISH_PALETTE`; a room's from its `uses`,
-  `floorFinish`, ledgered `floor-finish-default`), the site's (`GROUND_TINT`, `GROUND_SPLITS`,
+  (`KIND_PALETTE`) and the floor finishes (`FINISH_PALETTE`; a room's from its authored `floor`
+  word, `FLOOR_WORD_FINISH`, else from its `uses`, `floorFinish`, ledgered `floor-finish-default`), the site's (`GROUND_TINT`, `GROUND_SPLITS`,
   `FENCE_PALETTE`) and the viewer's ground plane (`GROUND_PLANE`: drawn by `mount.ts` only, never a node).
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure; several
   storeys rise exploded and settle to their real heights by the end),

@@ -104,7 +104,7 @@ const wall = object(
 );
 
 const LEVEL_COLLECTIONS: Record<string, Check> = {
-  floors: array(object({ id, source, polygon }, { uses: array(string), lift: integer })),
+  floors: array(object({ id, source, polygon }, { uses: array(string), pattern: string, lift: integer })),
   walls: array(wall),
   openings: array(
     object(
