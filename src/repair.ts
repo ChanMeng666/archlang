@@ -1622,7 +1622,7 @@ function repairStorey(
       openingEls,
       [...staticFurniture, ...dyn],
       // The storey's own arrivals, given only where no door from the ground is (PS0.3).
-      walkedFromShafts(access, arrivals, roomEls),
+      walkedFromShafts(access, arrivals, roomEls, ir),
       DEFAULT_TOL,
       undefined,
       verticalsOf(ir),

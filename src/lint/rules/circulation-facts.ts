@@ -43,6 +43,7 @@ import {
   EXTERIOR_NODE,
   leavesOf,
   roomBox,
+  separateBalconies,
 } from "../../analyze.js";
 import { entranceInputs, entranceWays, walkAccessGraph } from "../../analyze/entrance.js";
 import { landedOn, runWidth } from "../../analyze/nav-grid.js";
@@ -132,7 +133,7 @@ function circulationOf(ctx: LintContext, from: "walk" | "nearest" = "walk"): Cir
     ctx.openings,
     ctx.furniture,
     // The storey's own arrivals, given only where no door from the ground is (PS0.3).
-    walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms),
+    walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms, ctx.ir),
     ctx.rules.tolMm,
     undefined,
     ctx.verticals,
@@ -314,10 +315,12 @@ function narrowArrivals(
   if (widest >= min) return null;
   // Each room's door-only capacity from the rooms the runs land in (the walk view's doors, a
   // balcony walked through): widening the run alone clears a room only where every door on its
-  // widest way in already clears the minimum.
+  // widest way in already clears the minimum. Walked through and not from, each balcony is its
+  // own node (`separateBalconies`), as the walk itself is: a door onto one balcony is no way to a
+  // room opening only onto another.
   const g = accessDigraph(
     ctx.rooms.map((r) => r.id),
-    ctx.walkAccess().edges,
+    separateBalconies(ctx.walkAccess().edges, ctx.ir),
   );
   const doorCap = bestPaths(g, {
     s: MAX_MIN,
@@ -371,7 +374,7 @@ function readingsWithRunsWidened(
     ctx.doors,
     ctx.openings,
     ctx.furniture,
-    walkedFromShafts(view.access, arrivals, ctx.rooms),
+    walkedFromShafts(view.access, arrivals, ctx.rooms, ctx.ir),
     ctx.rules.tolMm,
     ctx.verticals.map(widen),
     ctx.voids,
@@ -623,7 +626,7 @@ function attributeBottlenecks(
       doors,
       openings,
       ctx.furniture,
-      walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms),
+      walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms, ctx.ir),
       ctx.rules.tolMm,
       ctx.verticals,
       ctx.voids,

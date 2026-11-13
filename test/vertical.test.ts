@@ -640,6 +640,28 @@ suite("vertical circulation — a balcony door is not an arrival point", () => {
  * (verbatim body, renamed). It is the oracle for the law that the two-argument call is
  * unchanged, and that the room-aware fixpoint with every room live reproduces it.
  */
+/**
+ * Per pair of adjacent stops of shaft `c`, which way it carries, restated from the escalator's
+ * definition (RM1.3b, M.4): an escalator whose two stops both write `dir up` carries up only, both
+ * `dir down` down only; anything else (a stair, a lift, the stair-style `up` below and `down`
+ * above) both ways. `null` when every pair carries both ways.
+ */
+function oneWayPairs(levels: readonly VerticalLevelInput[], c: { id: string; stops: readonly { level: number }[] }) {
+  const dirOn = (level: number): string | undefined => {
+    const e = levels
+      .find((l) => l.level === level)
+      ?.ir.elements.find(
+        (x) => (x as { id?: string }).id === c.id && ["stair", "elevator", "escalator"].includes(x.kind),
+      );
+    return e?.kind === "escalator" ? (e as unknown as { dir: string }).dir : undefined;
+  };
+  const out = c.stops.slice(0, -1).map((s, i) => {
+    const lo = dirOn(s.level);
+    return lo !== undefined && lo === dirOn(c.stops[i + 1]!.level) ? lo : "both";
+  });
+  return out.every((t) => t === "both") ? null : out;
+}
+
 function oracleVerticalReach(
   levels: readonly VerticalLevelInput[],
   grounded: (level: number) => boolean,
@@ -652,6 +674,26 @@ function oracleVerticalReach(
   for (let pass = 0; pass < levels.length + 1; pass++) {
     let grew = false;
     for (const c of connections) {
+      const oneWay = oneWayPairs(levels, c);
+      if (oneWay) {
+        const arrive = (stop: (typeof c.stops)[number]): void => {
+          if (!reachable.has(stop.level)) {
+            reachable.add(stop.level);
+            grew = true;
+          }
+          if (grounded(stop.level) || stop.room === null) return;
+          const list = arrivalRooms.get(stop.level) ?? [];
+          if (!list.includes(stop.room)) {
+            list.push(stop.room);
+            arrivalRooms.set(stop.level, list);
+          }
+        };
+        for (let i = 0; i + 1 < c.stops.length; i++) {
+          if (oneWay[i] !== "down" && reachable.has(c.stops[i]!.level)) arrive(c.stops[i + 1]!);
+          if (oneWay[i] !== "up" && reachable.has(c.stops[i + 1]!.level)) arrive(c.stops[i]!);
+        }
+        continue;
+      }
       const anyReachable = c.levels.some((n) => reachable.has(n));
       if (!anyReachable) continue;
       for (const stop of c.stops) {
@@ -686,7 +728,7 @@ const allRoomsLive =
 interface Spec {
   grounded: boolean;
   rooms: boolean[];
-  runs: { id: string; kind: string; cell: number }[];
+  runs: { id: string; kind: string; cell: number; dir: string }[];
   /** Which rooms the exterior reaches, and per room which rooms it reaches — a monotone reach. */
   fromExterior: boolean[];
   fromRoom: boolean[][];
@@ -707,6 +749,8 @@ const arbBuilding: fc.Arbitrary<[Spec[], number]> = fc.tuple(
           id: fc.constantFrom("a", "b", "c", "d"),
           kind: fc.constantFrom("stair", "elevator", "escalator"),
           cell: fc.integer({ min: 0, max: 3 }),
+          // An escalator's `dir` at each stop says which way it carries (M.4); a stair's is drawing.
+          dir: fc.constantFrom("up", "down"),
         }),
         { maxLength: 4 },
       ),
@@ -729,7 +773,7 @@ function synth(specs: Spec[], base: number) {
         id: r.id,
         at: { x: r.cell * 1000 + 300, y: 300 },
         size: { w: 400, h: 400 },
-        ...(r.kind === "elevator" ? {} : { dir: "up" }),
+        ...(r.kind === "elevator" ? {} : { dir: r.kind === "escalator" ? r.dir : "up" }),
       })),
     ];
     return { level: base + i, ir: { elements } as unknown as ResolvedPlan };
@@ -767,7 +811,27 @@ function naiveRoomAware(levels: readonly VerticalLevelInput[], grounded: (n: num
       levels.map((l) => [l.level, rr(l.level, { exterior: grounded(l.level), rooms: [...seeds.get(l.level)!] })]),
     );
     for (const c of connections) {
-      const fires = c.stops.some((s) => reach.has(s.level) && (s.room === null || live.get(s.level)!.has(s.room)));
+      const activeStop = (s: (typeof c.stops)[number]) =>
+        reach.has(s.level) && (s.room === null || live.get(s.level)!.has(s.room));
+      const land = (s: (typeof c.stops)[number]): void => {
+        if (!reach.has(s.level)) {
+          reach.add(s.level);
+          changed = true;
+        }
+        if (s.room !== null && !seeds.get(s.level)!.has(s.room)) {
+          seeds.get(s.level)!.add(s.room);
+          changed = true;
+        }
+      };
+      const oneWay = oneWayPairs(levels, c);
+      if (oneWay) {
+        for (let i = 0; i + 1 < c.stops.length; i++) {
+          if (oneWay[i] !== "down" && activeStop(c.stops[i]!)) land(c.stops[i + 1]!);
+          if (oneWay[i] !== "up" && activeStop(c.stops[i + 1]!)) land(c.stops[i]!);
+        }
+        continue;
+      }
+      const fires = c.stops.some(activeStop);
       if (!fires) continue;
       for (const s of c.stops) {
         if (!reach.has(s.level)) {

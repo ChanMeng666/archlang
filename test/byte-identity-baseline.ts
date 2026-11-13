@@ -1851,6 +1851,42 @@
  * since): `garden-house` `2d22f198…`, `hillside-villa` `36793d8a…`, measured after merging
  * `origin/main` c81b0eca, the other 104 reproducing `main`; with the OLD accessibility `lint()`
  * put back both give `main`'s `df81256b…` and `b188c6d5…`.
+ *
+ * ## RM1.3b: the circulation overlay walks a shaft-reached storey from its runs — overlay only
+ *
+ * Case (1), the compiler changed, deliberately (backlog M.4): `--overlay circulation` used to be
+ * handed no shaft arrivals, so on a storey a stair reaches and no door from the ground does it drew
+ * the walks from a balcony door (`garden-house`) or nothing at all (`hillside-villa`, `two-storey`,
+ * `townhouse`). `compile()` now reads the building's arriving runs when that overlay is asked for,
+ * and the overlay is walked from them, as `describe().circulation` is. The same change gives each
+ * balcony its own node in every graph walked through the outside (one exterior node joined two
+ * separate balconies) and reads an escalator's direction from its two stops' `dir`; neither moves
+ * any corpus plan. Swept per payload against `origin/main` 35ed277f over 473 corpus files: only
+ * upper-storey overlay SVGs moved (29 files, 30 pages), and every SVG without the overlay,
+ * `describe()` with and without `quantities`, `lint()` under the default ruleset and every profile
+ * and `compile().diagnostics` is byte-identical. The eight `stairLawDigest` tables, re-measured by
+ * a script importing `test/helpers/block-stair-law.ts` that first reproduced their 90 unmoved rows,
+ * move 16 rows each (the multi-storey examples and fixtures, the stair-safety pairs and
+ * `inline:stair-arrival`), and `gaps-`, `sheet-text-` and `void-rail-byte-identity` a 17th, their
+ * own `inline:every-table` (a two-storey plan); with the OLD overlay SVGs put back into the new
+ * payload all 17 reproduce their old digests. `floor-materials-byte-identity` (a ninth
+ * `stairLawDigest` table, added on `main` since) moves the same 16 rows, re-pinned after merging
+ * c81b0eca, and its one row of its own, `examples/turning-stair.arch` (`8d7f8873…` to `bd06382f…`;
+ * one of the 29 files whose overlay the sweep saw move, and with `main` 3f585759's overlay put back
+ * it reproduces `8d7f8873…`). No other table hashes the overlay. Each re-pinned row carries `RM1.3b overlay` beside it.
+ *
+ * Merged onto `main` after #743 (7a085430): the accessibility `lint()` above and this overlay both
+ * move `garden-house` and `hillside-villa`, so their two rows are re-measured together in all nine
+ * tables by a script importing `test/helpers/block-stair-law.ts` that first reproduced both
+ * parents' pinned values on their own trees: `garden-house` `dd673d71…`, `hillside-villa`
+ * `6a0a3529…`. Two-way swap-back: with `main`'s overlay SVGs put back they give `main`'s
+ * `2d22f198…`/`36793d8a…`, with #745's accessibility `lint()` put back they give #745's
+ * `b7c960f5…`/`0b683efa…`, and with both put back they give `df81256b…`/`b188c6d5…`. The merge
+ * also walks #743's run re-measure and its doors' capacity from the runs with one node per balcony
+ * (`separateBalconies`); swept per payload over 407 corpus files against both parents, the merged
+ * tree differs from `main` in overlay SVGs only (28 files, 29 pages) and from #745 in
+ * `lint()` under `accessibility-advisory` only, on exactly #743's three plans. Each such row carries
+ * `RM1.3b` and `RM1.3b overlay` beside it.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

@@ -26,7 +26,13 @@
 import type { AccessEdge } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { capFirst } from "../../naming.js";
-import { type RVertical, roomToward, type VerticalConnection, type VerticalStop } from "../../vertical.js";
+import {
+  escalatorTravel,
+  type RVertical,
+  roomToward,
+  type VerticalConnection,
+  type VerticalStop,
+} from "../../vertical.js";
 import type { LintContext, LintRule } from "../context.js";
 
 /** What the warning says: the storey's fact, and in the hint the ids to act on. */
@@ -98,6 +104,22 @@ function storeyGap(ctx: LintContext, level: number): Gap {
             ? several
             : `${own}, and the ${word} that stops here joins it only to storeys with no way in either.`,
         hint: `${capFirst(word)} \`${dead.id}\` stops on levels ${dead.levels.join(", ")}: join one of them to a storey with a way in. Or: ${ADD_DOOR}`,
+      };
+    }
+    // An escalator that carries one way, away from this storey (M.4): no room to mend, only its way.
+    const runHere = verticals.find((v) => v.id === dead.id);
+    const near = building.shaftNeighbours?.get(dead.id);
+    const from = other.level < level ? near?.below?.run : near?.above?.run;
+    const travel =
+      runHere && from
+        ? other.level < level
+          ? escalatorTravel(runHere, from, runHere)
+          : escalatorTravel(runHere, runHere, from)
+        : "both";
+    if (here.length === 1 && dead.kind === "escalator" && travel === (other.level < level ? "down" : "up")) {
+      return {
+        message: `${own}, and the escalator that stops here only carries people away from it: both its stops write \`dir ${travel}\`.`,
+        hint: `Escalator \`${dead.id}\` travels ${travel} at both its stops: write the stop on level ${other.level} as \`dir ${travel === "down" ? "up" : "down"}\` if it is the one that carries people here, or draw a second escalator that travels this way. Or: ${ADD_DOOR}`,
       };
     }
     const room = roomToward(other, other.level < level ? "above" : "below");

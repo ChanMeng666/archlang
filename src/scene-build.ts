@@ -43,7 +43,7 @@ import { siteBoundaryNodes } from "./site.js";
 import { groundMaterialsUsed, outdoorLabelAnchor, outdoorRing } from "./elements/outdoor.js";
 import { roomLabelAnchor } from "./elements/room.js";
 import { isUnderlay } from "./fixtures-catalog.js";
-import { isVertical } from "./vertical.js";
+import { type ArrivingRun, isVertical } from "./vertical.js";
 import { rectRing } from "./geometry/polygon.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
@@ -773,6 +773,10 @@ export function planTheme(ir: ResolvedPlan, opts: CompileOptions, runtime: Runti
  * range. This function applies neither: a caller who draws a resolved IR directly
  * (`toScene(resolve(ast).ir)`) takes that budget on, and 500 escalators at the tread cap
  * drawn this way make 1.1 million nodes and about 240 MB. Use `compile().scene`.
+ *
+ * One storey of a building, drawn alone, cannot know which stairs or lifts arrive on it, so its
+ * `--overlay circulation` is walked as a storey no shaft reaches; `compile().pages` passes each
+ * page the building's arriving runs (M.4), and is the page `describe()` measures.
  */
 export function toScene(plan: ResolvedPlan, opts: CompileOptions = {}, runtime: Runtime = BUILTIN_RUNTIME): Scene {
   return drawScene(plan, opts, runtime, undefined);
@@ -790,15 +794,24 @@ export function drawScene(
   opts: CompileOptions,
   runtime: Runtime,
   work: CompileWork | undefined,
+  /** The runs this storey is reached by, for the circulation overlay alone (`compile()` reads
+   *  them off the whole building when that overlay is asked for; M.4). Nothing else reads them. */
+  arrivals: readonly ArrivingRun[] = [],
 ): Scene {
   // One net-area total per storey drawn (U.22, `src/analyze/net-area-memo.ts`), fresh whoever
   // draws it: a Scene is a function of its storey alone, so the Scene memo `lint()` reads can
   // never hold a schedule other than the one a fresh drawing would.
-  return withNetAreaBudget(() => drawStorey(plan, opts, runtime, work));
+  return withNetAreaBudget(() => drawStorey(plan, opts, runtime, work, arrivals));
 }
 
 /** {@link drawScene} under its net-area total. */
-function drawStorey(plan: ResolvedPlan, opts: CompileOptions, runtime: Runtime, work: CompileWork | undefined): Scene {
+function drawStorey(
+  plan: ResolvedPlan,
+  opts: CompileOptions,
+  runtime: Runtime,
+  work: CompileWork | undefined,
+  arrivals: readonly ArrivingRun[],
+): Scene {
   // The storey as drawn (B3a): every wall, a `status demolish` one included, which is lowered in
   // a call of its own and drawn dashed (B3b). What the sheet MEASURES (the room schedule's net
   // area, the circulation overlay) reads `plan`, the plan after the demolition, as describe() does.
@@ -1162,7 +1175,7 @@ function drawStorey(plan: ResolvedPlan, opts: CompileOptions, runtime: Runtime, 
   // shifts the page or chrome. Off by default — never on the shipped-SVG path.
   if (opts.overlays?.includes("circulation")) {
     // The walks describe() measures: the plan after the demolition (B3b).
-    for (const pushed of circulationOverlayNodes(plan, theme, sizes)) nodes.push(pushed);
+    for (const pushed of circulationOverlayNodes(plan, theme, sizes, arrivals)) nodes.push(pushed);
   }
 
   const scene: Scene = {

@@ -23,6 +23,7 @@ import {
   pointOnRoomEdge,
   reachFrom,
   roomUses,
+  separateBalconies,
   wetRoomsOnlyViaBedroom,
 } from "../../analyze.js";
 import type { Diagnostic } from "../../diagnostics.js";
@@ -46,6 +47,7 @@ export const reachability: LintRule = {
     building,
     access,
     skip,
+    ir,
   }: LintContext): Diagnostic[] {
     const out: Diagnostic[] = [];
     // W_BATH_VIA_BEDROOM asks which rooms are bedrooms and which are wet rooms; a room with no
@@ -65,9 +67,17 @@ export const reachability: LintRule = {
       // Where a shaft arrives, the storey has no door from the ground (`arrivalRooms` is empty on
       // every other storey): its exterior doors open onto balconies, which are ways THROUGH (out
       // of one room and in at another), not ways in from the street (PS0.3).
+      // Walked through, each balcony is its own node: a room opening only onto one balcony is not
+      // reached from a room opening onto another (RM1.3b, `separateBalconies`).
       const exterior = arrivals.length === 0;
-      const reachAll = reachFrom(g, { extraSources: arrivals, exterior });
-      const reachNoBed = reachFrom(g, { extraSources: arrivals, avoid: isBedroomId, exterior });
+      const walk = exterior
+        ? g
+        : accessDigraph(
+            rooms.map((r) => r.id),
+            separateBalconies(access().edges, ir),
+          );
+      const reachAll = reachFrom(walk, { extraSources: arrivals, exterior });
+      const reachNoBed = reachFrom(walk, { extraSources: arrivals, avoid: isBedroomId, exterior });
       // Per storey, as every rule here runs: a wet room on another floor excuses nothing.
       const viaBedroom = wetRoomsOnlyViaBedroom(rooms, reachAll, reachNoBed);
       for (const r of rooms) {

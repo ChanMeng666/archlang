@@ -22,7 +22,15 @@ import type { Point } from "./ast.js";
 import type { CompileOptions } from "./types.js";
 import { segmentsOfWall, wallFaceProbes, type WallLike, type WallSegment } from "./geometry.js";
 import { mergedLength, overlap1d, type BBox } from "./geometry/rect.js";
-import { collinearOverlapLength, pointInPolygon, polygonEdges, VERTEX_EPS } from "./geometry/polygon.js";
+import {
+  collinearOverlapLength,
+  pointInPolygon,
+  polygonEdges,
+  polygonsOverlap,
+  rectRing,
+  ringsAdjacent,
+  VERTEX_EPS,
+} from "./geometry/polygon.js";
 import { arcAngleOffset, fullCircleArc } from "./geometry/arc.js";
 import { bestPaths, type Digraph } from "./algebra/paths.js";
 import { BOOLEAN, MAX_MIN, MIN_PLUS } from "./algebra/semiring.js";
@@ -410,13 +418,12 @@ export function accessDigraph(roomIds: readonly string[], edges: readonly Access
  * source is not a source; the exterior is one unless `exterior: false` (a storey with no
  * way in of its own — the exterior node stays walkable THROUGH, it is only not a start).
  *
- * Caveat of walking through it: {@link EXTERIOR_NODE} is ONE node for every exterior
- * connector on the storey. On an ungrounded storey those are the doors
- * {@link levelIsGrounded} discounted (they open onto an `outdoor balcony`), so two SEPARATE
- * balconies are one node here: a room whose only way out is a door onto balcony B is
- * reached from any room with a door onto balcony A. That is the storey's own
- * `describe().access` graph answering exactly as it does for that storey's facts, and is
- * kept on purpose; separating balconies needs one node per outdoor surface.
+ * Walking through it: {@link EXTERIOR_NODE} is ONE node for every exterior connector of
+ * `g`. On an ungrounded storey those are the doors {@link levelIsGrounded} discounted (they
+ * open onto an `outdoor balcony`), so a caller walking such a storey hands this a graph built
+ * on {@link separateBalconies}' edges, one node per balcony (RM1.3b): every caller in the core
+ * does, so a room whose only way out is a door onto balcony B is not reached from a room with
+ * a door onto balcony A.
  */
 export function reachFrom(
   g: Digraph<string, unknown>,
@@ -636,14 +643,77 @@ export function doorFacesBalcony(
   rooms: readonly RRoom[],
   balconies: readonly ROutdoor[],
 ): boolean {
-  if (!d.host || balconies.length === 0) return false;
+  return balconyOfDoor(d, rooms, balconies) !== undefined;
+}
+
+/**
+ * The `outdoor balcony` door `d` opens onto — the first of `balconies` whose shape holds the
+ * {@link doorFacesBalcony} probe — or `undefined` when it opens onto none (or the probe cannot
+ * tell which side is outward). The one probe behind that predicate, so the two never disagree.
+ */
+export function balconyOfDoor(
+  d: Pick<RDoor, "host" | "at">,
+  rooms: readonly RRoom[],
+  balconies: readonly ROutdoor[],
+): ROutdoor | undefined {
+  if (!d.host || balconies.length === 0) return undefined;
   const { plus, minus } = wallFaceProbes(d.host, d.at, Math.max(d.host.thickness, 1));
   const onPlus = rooms.some((r) => pointInRoomBox(plus, roomBox(r)));
   const onMinus = rooms.some((r) => pointInRoomBox(minus, roomBox(r)));
-  if (onPlus === onMinus) return false;
+  if (onPlus === onMinus) return undefined;
   const outward = onPlus ? minus : plus;
-  return balconies.some((b) => pointInPolygon(outward.x, outward.y, outdoorRing(b)));
+  return balconies.find((b) => pointInPolygon(outward.x, outward.y, outdoorRing(b)));
 }
+
+/** The node one `outdoor balcony` stands for in a graph that walks THROUGH the outside
+ *  ({@link separateBalconies}). `#` is no identifier character, so it never names a room. */
+export const balconyNode = (balconyId: string): string => `${EXTERIOR_NODE}#${balconyId}`;
+
+/**
+ * `edges` with each door onto an `outdoor balcony` joined to THAT balcony's own node
+ * ({@link balconyNode}) instead of the one {@link EXTERIOR_NODE}: for a graph walked through the
+ * outside but not from it, a storey a shaft reaches and no door from the ground does (RM1.3b,
+ * backlog M.4). There, every exterior door opens onto a balcony, and one node for all of them
+ * joined two separate balconies: a room opening only onto balcony B was reached from a room
+ * opening onto balcony A. Two doors onto ONE balcony still join (it is walked across). Only the
+ * graph is rewired: the edges a summary reports are never these. The same array when the storey
+ * has no balcony door.
+ */
+export function separateBalconies(edges: readonly AccessEdge[], ir: ResolvedPlan): readonly AccessEdge[] {
+  const balconies = ir.elements.filter((e): e is ROutdoor => e.kind === "outdoor" && e.surface === "balcony");
+  if (balconies.length === 0) return edges;
+  const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
+  const doors = new Map(ir.elements.filter((e): e is RDoor => e.kind === "door").map((d) => [d.id, d]));
+  // Balconies whose shapes overlap or share a run of edge are one slab to walk across (a balcony
+  // wrapping a corner drawn as two): union-find over the pairs, each group named by its first.
+  const parent = balconies.map((_, i) => i);
+  const find = (i: number): number => {
+    while (parent[i] !== i) i = parent[i]!;
+    return i;
+  };
+  const rings = balconies.map((b) => rectRing({ x: b.at.x, y: b.at.y, w: b.size.w, h: b.size.h }));
+  for (let i = 0; i < balconies.length; i++)
+    for (let j = i + 1; j < balconies.length; j++)
+      if (ringsAdjacent(rings[i]!, rings[j]!, BALCONY_TOUCH_MM) || polygonsOverlap(rings[i]!, rings[j]!)) {
+        const a = find(i);
+        const b = find(j);
+        if (a !== b) parent[Math.max(a, b)] = Math.min(a, b);
+      }
+  const groupOf = new Map(balconies.map((b, i) => [b.id, balconies[find(i)]!.id]));
+  let out: AccessEdge[] | null = null;
+  edges.forEach((e, i) => {
+    const d = e.exterior ? doors.get(e.doorId) : undefined;
+    const b = d ? balconyOfDoor(d, rooms, balconies) : undefined;
+    if (!b) return;
+    const node = balconyNode(groupOf.get(b.id)!);
+    out ??= [...edges];
+    out[i] = { ...e, between: e.between.map((n) => (n === EXTERIOR_NODE ? node : n)) as [string, string] };
+  });
+  return out ?? edges;
+}
+
+/** How near two balconies' edges must lie (mm) to be one slab ({@link separateBalconies}). */
+const BALCONY_TOUCH_MM = 1;
 
 /**
  * Is a storey GROUNDED for {@link import("./vertical.js").verticalReach} purposes — does
@@ -712,22 +782,37 @@ export function storeyGrounded(ir: ResolvedPlan, tol: number): boolean {
  * The rooms of one resolved storey walkable from a set of seeds — the exterior and/or the
  * rooms a shaft lands in — on the `"probe"` access graph that `describe().access` and lint
  * reachability read. The graph is built once; each call is one {@link reachFrom}. With
- * `exterior: false` the exterior node is not a start but stays walkable through, exactly
- * as {@link reachFrom} states — including its caveat: on an ungrounded storey every
- * exterior connector is a balcony door and all balconies share the one exterior node, so
- * two separate balconies are conflated (a stair in a room reachable only from balcony B
- * counts as reachable from a landing whose bedroom opens onto balcony A).
+ * `exterior: false` the outside is not a start but stays walkable through, one node per
+ * balcony ({@link separateBalconies}, RM1.3b): a stair in a room reachable only from
+ * balcony B is no longer counted reachable from a landing whose bedroom opens onto balcony A.
  */
 export function storeyRoomReach(ir: ResolvedPlan, tol: number): (seeds: StoreySeeds) => ReadonlySet<string> {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
   const roomRects = new Map<string, RoomBox>(rooms.map((r) => [r.id, roomBox(r)]));
+  const edges = connectorEdges(
+    roomRects,
+    [...doors, ...openings],
+    tol,
+    DEFAULT_CLEAR_ALLOWANCE_MM,
+    "probe",
+    outdoorsOf(ir),
+  );
   const g = accessDigraph(
     rooms.map((r) => r.id),
-    connectorEdges(roomRects, [...doors, ...openings], tol, DEFAULT_CLEAR_ALLOWANCE_MM, "probe", outdoorsOf(ir)),
+    edges,
   );
-  return (seeds) => reachFrom(g, { exterior: seeds.exterior, extraSources: seeds.rooms });
+  // Walked through but not from, the outside is one node per balcony (`separateBalconies`).
+  let through: Digraph<string, AccessEdge> | undefined;
+  return (seeds) => {
+    if (seeds.exterior !== false) return reachFrom(g, { exterior: seeds.exterior, extraSources: seeds.rooms });
+    through ??= accessDigraph(
+      rooms.map((r) => r.id),
+      separateBalconies(edges, ir),
+    );
+    return reachFrom(through, { exterior: false, extraSources: seeds.rooms });
+  };
 }
 
 /**
