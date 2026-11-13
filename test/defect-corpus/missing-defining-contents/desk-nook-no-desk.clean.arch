@@ -1,0 +1,19 @@
+# class: missing-defining-contents
+# twin-of: desk-nook-no-desk
+# origin: the desk nook with the desk its label names added
+# expect: none
+# fact: r_nook holds a bookshelf and a desk
+plan "Desk nook with a desk" {
+  units mm
+  grid 50
+  wall id=shell exterior thickness 200 { (0,0) (6500,0) (6500,4000) (0,4000) close }
+  wall id=w_mid partition thickness 100 { (4000,0) (4000,4000) }
+  room id=r_living at (0,0) size 4000x4000 label "Living Room" uses living
+  room id=r_nook at (4000,0) size 2500x4000 label "Desk Nook"
+  door id=d_entry at (2000,4000) width 900 wall shell
+  door id=d_nook at (4000,2000) width 800 wall w_mid swing into r_nook
+  window at (2000,0) width 1500 wall shell
+  window at (5250,0) width 1200 wall shell
+  furniture bookshelf against wall shell segment 2 offset 1250 in r_nook
+  furniture desk against wall shell segment 1 offset 2800 size 1200x600 in r_nook
+}

@@ -169,6 +169,12 @@ label, whether the text is a room label or a `dims auto` number.
   and the door into the hall does not outrank it; declaring the street names the front door and both
   rooms are reported. Each `fact` gives the warning lint raised before only when that door was made a
   window.
+- `missing-defining-contents/desk-nook-no-desk` (product-roadmap RM1.2a, a label with no object) is
+  `todo` and has no code of its own: no rule reports it. "Desk Nook" reads no use (no row of
+  `src/vocabulary.ts` holds "desk" or "nook"), so lint's coverage names the room as skipped
+  (`no-uses`); and a room that wrote `uses office` would still be silent, because `DEFINING.office`
+  (`src/lint/defining.ts`) is `none` on purpose. Reporting it needs a ruling on one of those two,
+  not a new rule.
 
 ## Adding a case
 

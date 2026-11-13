@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM1.2a item 2 (W_STAIR_RISER_TOO_HIGH) on origin/main 213e7393: the new rule, examples two-storey and turning-stair redrawn, the stair-safety riser-too-high pair added
+ * Taken: RM1.2a item 2 on origin/main 8b77d5c4: two new defect-corpus files (missing-defining-contents/desk-nook-no-desk pair); no existing row moved
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -193,7 +193,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/turning-stair.arch",
-    "4d5aa4fd2a5a03c78d4cfdb3971ca1fdca8003f973165ca9c10453dfddcc4b57",
+    "e348c2b37a5c3a6af21be7e13034cab04cbfb67c9039de3ef21caaa8ca9ac8cf",
     1186,
   ],
   [
@@ -203,7 +203,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "examples/two-storey.arch",
-    "7e13d226cc4845465c0dcf253f0c2796c4bfb4e20de345643712e40946c93afe",
+    "b074f576e6a4202f2780d62b683be5458ddaac6ee00bec424d95e65780b9e637",
     1822,
   ],
   [
@@ -852,6 +852,16 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     166,
   ],
   [
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.arch",
+    "4895e9e05ebdec2dcb6368789a18d218d4bfd26c251684cd080c54b7c56b7d04",
+    152,
+  ],
+  [
+    "test/defect-corpus/missing-defining-contents/desk-nook-no-desk.clean.arch",
+    "df89ebf6227d81a4faa8170f7e7533a49c87ba4bc1c13695a9f99cc87bb631d4",
+    168,
+  ],
+  [
     "test/defect-corpus/missing-defining-contents/dining-no-table.arch",
     "f2b79aaba36eb62795ef1e4ea8aada0971170053d62c3204c429518eb55c81fa",
     92,
@@ -1180,16 +1190,6 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
     "f316c8e39d386d7b159254839cd1d12c7c3ec225b676600b8c8d2d5c4a1c8ed4",
     199,
-  ],
-  [
-    "test/defect-corpus/stair-safety/riser-too-high.arch",
-    "4d0114318d68dde1ea1b4033094d912c8a2c7755a6b0dc0b55f81fe5c5014f42",
-    217,
-  ],
-  [
-    "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
-    "b59b1747535c6334fc439e820a8ae6cdb982d2805a0278f2340d5b947b7ca929",
-    217,
   ],
   [
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
@@ -1533,7 +1533,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/5-townhouse.arch",
-    "3fedcc9a5fed76594127ec8a379abcefca63aa87a570626bb615b6dc77e2527a",
+    "a5d7742c460d3dd5dfa8e90c3c6e2c631da9d5868a4f181d89597a5f9d4437c1",
     1702,
   ],
   [
