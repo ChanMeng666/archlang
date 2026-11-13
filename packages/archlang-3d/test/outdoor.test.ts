@@ -67,8 +67,11 @@ const EXPECTED_COLOUR: Readonly<Record<string, string>> = {
   driveway: "#8c8984",
   patio: "#ab9f87",
   balcony: "#ab9f87",
+  // Card RM8.7: sand in the site's own buff, bare soil in the palette's soil.
+  sand: "#dcc9a3",
+  soil: "#5f4b3b",
 };
-const SPLIT = new Set(["planting", "deck", "gravel", "driveway"]);
+const SPLIT = new Set(["planting", "deck", "gravel", "driveway", "sand", "soil"]);
 
 /** Each horizontal triangle of a node at height `y` (µm), as plan (x, z) corners. */
 function flatTris(n: MeshNode, y: number): Array<[number, number][]> {
@@ -124,7 +127,7 @@ function coplanarHits(mesh: Mesh3D): string[] {
 }
 
 describe("one fixture per outdoor kind and per fence style", () => {
-  it("covers exactly the core's nine kinds and three styles", () => {
+  it("covers exactly the core's eleven kinds and three styles", () => {
     expect(FIXTURES.map(([n]) => n).filter((n) => n.startsWith("ground-") || n.startsWith("fence-"))).toEqual(
       [
         ...Object.keys(GROUND_TINT).map((k) => `ground-${k}`),

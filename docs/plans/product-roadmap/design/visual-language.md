@@ -225,9 +225,9 @@
 
 新 `outdoor` 种类：`GROUND_TINT` 各加一行（都是 `paving`），`GROUND_SPLITS` 加 `sand` → `SITE_PALETTE` 新增的 `sand` 色，`soil` → `PALETTE.soil`（已有槽位，与沙坑、种植池的土同色）。每项按 `outdoor-colour-3d` 进账本。没写 `floor` 的房间照旧按 `FLOOR_FINISH_RULES`；规则本身不改（会动每张有房间的图的 Mesh3D 与 GLB）。GLB 的 `floor:<finish>` 材质随 `FLOOR_FINISHES` 增加（`glb/write.ts:57`）。
 
-### 3.5 字节恒等律要写明的一处
+### 3.5 字节恒等律要写明的几处
 
-"不用新词的图诊断逐字节不变"有一处例外要写进律的说明：未知地面词的警告把已知词逐个列出（`room.ts:194`），提示也按最近的词给；`outdoor` 不认识的种类同理（`src/elements/outdoor.ts:268` 的 "available: …"）。所以一张写了**错**的 `floor` 或 `outdoor` 词的图，即使没写任何新词，它的诊断文字也会变。律的语料里没有这样的图（`examples/**` 没有 `floor` 子句）；PR 用 grep 证明语料里没有，再加一个单测把新的警告文字钉住。`KEYWORDS.enum` 多两个词，`arch manifest` 的输出与三套编辑器语法随 `gen:*` 变，这是加性的。
+"不用新词的图诊断逐字节不变"有两处例外要写进律的说明（RM8.7 的评审补上第二处）。第一处：未知地面词的警告把已知词逐个列出（`room.ts:194`），提示也按最近的词给；`outdoor` 不认识的种类同理（`src/elements/outdoor.ts:268` 的 "available: …"）。所以一张写了**错**的 `floor` 或 `outdoor` 词的图，即使没写任何新词，它的诊断文字也会变。律的语料里没有这样的图（`examples/**` 没有 `floor` 子句）；PR 用 grep 证明语料里没有，再加一个单测把新的警告文字钉住。第二处：五个新词同时成为 `sheet text` 的键（`src/sheet-text.ts` 的 `vocabularyKeys` 含 `GROUND_MATERIALS` 与仅地面图案表），所以写错的键（`sandd`）的"did you mean"可能给出新词，而 `sheet text { timber "Holz" }` 以前是 `E_PARSE`、现在能编译；后者算写了新词（律的第三种形式），前者与写错的地面词同样处理：律的语料里没有，单测钉住新文字。`KEYWORDS.enum` 多两个词（`sand`、`soil`），它们进 `UNRESERVED_KEYWORDS`，OpenPlan3D 导入器照旧保留拼成这两个词的 id；`arch manifest` 的输出与三套编辑器语法随 `gen:*` 变，这是加性的。
 
 **与卡不符之处**：卡没提 `soil` 也是材质名；`stepping` 做不成与 2D 一致的 3D；卡的 39 单位按 `carpet` 原名算。
 

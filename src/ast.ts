@@ -879,6 +879,8 @@ export const OUTDOOR_KINDS = [
   "driveway",
   "patio",
   "balcony",
+  "sand",
+  "soil",
 ] as const;
 /** One `outdoor <kind>` ground surface. */
 export type OutdoorKind = (typeof OUTDOOR_KINDS)[number];

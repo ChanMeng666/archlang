@@ -20,7 +20,7 @@
       "stage:openings": "a7ecb1876fbfd4250812195e9fadfc531742d881270bc9b9bb1a4faf9172edd2",
       "stage:fixtures": "067872cb1324e7d9b57cb5752f0a8f85a34adaad3dd1258c4d7a46ce74643748",
       "tilted": "7879c0aefc1681f109178aa4fc326b03c302dc6d22cdac78aac9207d4a926174",
-      "end": "903bbd440615b7e5ddcae865fc6224aed0aedbd150d99bb3838af89084d9b59c"
+      "end": "d29a85308d7f8ca3146e99512c9ba918b186ca3b6eb36ee659ff1cc1c27f0602"
     },
     "two-storey.arch": {
       "stage:brief": "81f9acfd0706792f84121b5261bece104e63aa7d319a70295bbb12a2f74043eb",
@@ -28,15 +28,15 @@
       "stage:walls": "6322f00b3696d983543a37e523908347ed3c3012c1d6385e077a8035f64efb48",
       "stage:openings": "e1ec6fd7caaa8a8bfae1adcf533b61f78d35c3dfa98df231c7e4938eaf8c0a04",
       "stage:fixtures": "be6085e58cf4f7a6f5d6377c8f7ef86b5a90dcb976467146331142ebe7b0c8ea",
-      "stop:1": "b4062a02e17f0b2d4be89718f75a7e3ad63b8652bedb9d1bcf36346cc7595232",
-      "tilted": "79ef8133378ee6583e3b56bf9195d3a7c5b7f11b8f8307a113a5dfe66ddf3d96",
-      "storey:2": "4e51a1319e8a9371c5e5caec0091eb2afb22398a4a80068c486ede224759a67e",
-      "stop:2": "928e1d8a5f1d00b76cfe3b9b9a518f53bcd686c5c5d385c2c28f9842e61a716f",
-      "end": "c6f25abe8fe22c384e6dd5ba02d96e7d8e2f18b1061399e173d70fbbaeff86d5"
+      "stop:1": "e6c20d3f45d9bc55622f9e8684f61b453f25d1a49026f3d3fb9a9028b963fa02",
+      "tilted": "4498dcdbd290549e1284890fe3db829e74931e2ca33a20852f83d796af9d0251",
+      "storey:2": "dda962aab51860496437810c992c728bb068d6f54f978371647816fa6d929dbd",
+      "stop:2": "f6a514c2712118df1d79e53ead07abdcc5d3b58688e1f4f4af3723856066874b",
+      "end": "6b6542bdf5e2b9b8b0d20ba06a2040e630a16ecfa63e259d70d604193bb4d469"
     },
     "courtyard-house.arch": {
       "tilted": "af052e3ffbf856ef5c65e845144dbfda98463454a03afff89523ddd210ba1761",
-      "end": "4259e01a35ff905618c1d19a8b076930ed447bd067797a11d2ff8011cf59ad3e"
+      "end": "c1a32ed2f4feb07a751aaa088295bc26f5346e21761c15a43b8838682c179695"
     }
   }
 }

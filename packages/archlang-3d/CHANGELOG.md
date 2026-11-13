@@ -2,6 +2,33 @@
 
 ## [Unreleased]
 
+### Added
+
+- A room's floor is laid in the finish its plan's author wrote (`room … floor <word>`, product-roadmap
+  card RM8.7), read off the core's public `RRoom.floor` into Scene3D's new optional `Floor.pattern`;
+  only a room with no `floor` word takes the default by its `uses` (`floorFinish`), ledgered as
+  before (`floor-finish-default`). Five finishes join `FLOOR_FINISHES`, after the first three so a
+  GLB's material names keep their order: `carpeting` (the palette's wool), `stone` (its stone),
+  `deck` (its oak), `paving` (the colour an `outdoor paving` is built in) and `concrete`. The
+  `outdoor` kinds `sand` (a pale buff, `SITE_PALETTE.sand`) and `soil` (the palette's soil) are
+  built in their own colours, ledgered per kind (`outdoor-colour-3d`). New exports:
+  `FLOOR_WORD_FINISH`, `wordFinish`. A plan that writes no `floor` word builds the same Mesh3D and
+  GLB as before.
+- The replay draws soft contact shadows (product-roadmap card RM8.8): translucent black bands
+  baked once from the geometry when the replay is mounted, never a shadow map. Along the foot of
+  each storey's walls and columns (their outline, a fan of the 16-gon at each outside corner, the
+  bands mitred where a curved wall's chords meet), up both faces of each inside corner sharper than
+  30° (stopping at a jamb), round each standing piece of furniture (a hung one casts none, and a rug,
+  lower than its band, casts none and receives), along both sides of each fence run and round each
+  stair's stringers; floors, outdoor surfaces, slabs, rugs and the ground only receive, each band on
+  the highest of them under it. Each band fades in over the last quarter of its caster's rise. They
+  are the viewer's, not the file's: the GLB is unchanged, and every Mesh3D ledgers them
+  (`contact-shadows-viewer-only`, the widths and alphas of `CONTACT_SHADOW`). At most three draws a
+  storey; `ReplayNode.band` carries each caster's width, `ReplayNode.flat` marks a rug, and
+  `ReplayPayload.shadows: false` turns them off (the frame-time measurement only). The limits line
+  (`PREVIEW_LIMITS`) says so. New exports: `contactShadows`, `contactFade`, `CONTACT_SHADOW`,
+  `contactBandMm`.
+
 ## [0.7.0] - 2026-11-12
 
 The core peer range stays `^1.57.0`: nothing below needs an export newer than core 1.57.0.

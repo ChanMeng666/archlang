@@ -8,13 +8,14 @@
 
 import { describe as suite, expect, it } from "vitest";
 import { compile, describe, format, lint, planToJson } from "../src/index.js";
-import { room } from "../src/elements/room.js";
+import { FLOOR_TINT_MATERIAL, FLOOR_TINT_MIX, room, roomFloorFill } from "../src/elements/room.js";
 import { toDxf } from "../src/export/dxf.js";
 import { renderAscii } from "../src/backends/ascii.js";
-import { FLOOR_MATERIALS, floorHatch, hatchId, KNOWN_MATERIALS } from "../src/hatches.js";
+import { FLOOR_MATERIALS, FLOOR_PATTERNS, floorHatch, hatchId, hatchPattern, KNOWN_MATERIALS } from "../src/hatches.js";
 import type { RRoom } from "../src/ir.js";
 import type { RenderSizes, SceneNode } from "../src/scene.js";
-import { DEFAULT_THEME } from "../src/theme.js";
+import { DEFAULT_THEME, mergeTheme, THEMES, type Theme } from "../src/theme.js";
+import { parseHexColor } from "../src/elements/glyph-lib.js";
 
 const plan = (body: string): string => `plan "F" {\n  units mm\n  ${body}\n}\n`;
 
@@ -222,6 +223,16 @@ suite("the clause in the grammar", () => {
     expect(out.svg).toBe(compile(plan(`room id=a at (0,0) size 4000x3000`)).svg);
   });
 
+  it("lists every known word, the three of card RM8.7 last, so a mistyped floor's text is the one that moved", () => {
+    const d = compile(plan(`room id=a at (0,0) size 4000x3000 floor timbre`)).diagnostics.find(
+      (x) => x.code === "W_UNKNOWN_MATERIAL",
+    );
+    expect(d?.message).toBe(
+      'Unknown floor "timbre" (known: tile, paving, deck, concrete, timber, carpeting, stone); drawing no pattern',
+    );
+    expect(d?.hints).toEqual(['Did you mean "timber"?']);
+  });
+
   it("points the warning at the word", () => {
     const src = plan(`room id=a at (0,0) size 4000x3000 floor marble`);
     const span = compile(src).diagnostics.find((x) => x.code === "W_UNKNOWN_MATERIAL")?.span;
@@ -250,5 +261,158 @@ suite("the clause in the grammar", () => {
       count: 1,
       ids: ["a"],
     });
+  });
+});
+
+/** WCAG 2 relative luminance and contrast ratio, from the spec's formula. */
+const lum = (hex: string): number => {
+  const [r, g, b] = parseHexColor(hex)!;
+  const lin = (c: number): number => {
+    const v = c / 255;
+    return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
+};
+const contrast = (a: string, b: string): number => {
+  const [hi, lo] = [lum(a), lum(b)].sort((p, q) => q - p) as [number, number];
+  return (hi + 0.05) / (lo + 0.05);
+};
+
+/** The fill of a plan's first room floor (its polygon or its circle). */
+const floorFill = (src: string): string | undefined =>
+  compile(src).scene!.nodes.find((n) => n.layer === "floor" && n.prim.t !== "hatch")?.paint?.fill;
+
+suite("under `rendered`, a floor-only word washes its room (card RM8.7, RM-D28)", () => {
+  const rendered = mergeTheme(THEMES.rendered);
+  const room3 = (theme: string, floor: string) =>
+    plan(`${theme}room id=a at (0,0) size 4000x3000 label "A" uses living${floor}`);
+
+  it("keeps the floor pattern's ink at 2.0:1 or more on every wash (the ruling's hard floor)", () => {
+    // ADR 0023's 2026-11-12 amendment: the floor-hatch ink (`pocheHatch`) against the wash, by WCAG
+    // relative luminance. The full material tints give 1.66 to 1.87:1; `roomFill` itself gives 2.28:1.
+    expect(Object.keys(FLOOR_TINT_MATERIAL).sort()).toEqual([...FLOOR_PATTERNS].sort());
+    const tints = rendered.materialTints!;
+    for (const word of FLOOR_PATTERNS) {
+      const fill = floorFill(room3("theme rendered\n  ", ` floor ${word}`))!;
+      expect(fill, word).toBe(roomFloorFill(rendered, word));
+      expect(fill, `${word} is a wash, not the plain floor`).not.toBe(rendered.roomFill);
+      expect(contrast(rendered.pocheHatch, fill), `${rendered.pocheHatch} on ${word} ${fill}`).toBeGreaterThanOrEqual(
+        2,
+      );
+      // The control: the full tint of the same material does not clear the floor, so the check can fail.
+      const full = tints[FLOOR_TINT_MATERIAL[word]!]!;
+      expect(contrast(rendered.pocheHatch, full), `${word} full tint ${full}`).toBeLessThan(2);
+    }
+    expect(contrast(rendered.pocheHatch, rendered.roomFill)).toBeGreaterThan(2.2);
+    // The values the PR and `FLOOR_TINT_MIX`'s comment quote, held here so the prose cannot drift.
+    expect(FLOOR_PATTERNS.map((w) => roomFloorFill(rendered, w))).toEqual(["#f8f2e7", "#faf6f0", "#f7f5f1"]);
+  });
+
+  it("holds every shipped theme that has tints to the same floor, not `rendered` alone", () => {
+    // The wash follows `materialTints`, not a theme's name: a theme given tints later is washed too, so
+    // the 2.0:1 floor is asserted for every theme that has them. Today that is `rendered` alone.
+    const tinted = Object.entries(THEMES).filter(([, layer]) => mergeTheme(layer).materialTints !== undefined);
+    expect(tinted.map(([name]) => name)).toContain("rendered");
+    for (const [name, layer] of tinted) {
+      const t = mergeTheme(layer);
+      for (const word of FLOOR_PATTERNS) {
+        const fill = floorFill(room3(`theme ${name}\n  `, ` floor ${word}`))!;
+        expect(fill, `${word} under ${name}`).toBe(roomFloorFill(t, word));
+        expect(contrast(t.pocheHatch, fill), `${word} under ${name}`).toBeGreaterThanOrEqual(2);
+      }
+    }
+  });
+
+  it("is the material's tint moved a third of the way from `roomFill`, channel by channel", () => {
+    expect(FLOOR_TINT_MIX).toEqual([1, 3]);
+    const [p, q] = FLOOR_TINT_MIX;
+    for (const word of FLOOR_PATTERNS) {
+      const t = parseHexColor(rendered.materialTints![FLOOR_TINT_MATERIAL[word]!]!)!;
+      const f = parseHexColor(rendered.roomFill)!;
+      const want = `#${[0, 1, 2]
+        .map((i) =>
+          Math.round((f[i]! * (q - p) + t[i]! * p) / q)
+            .toString(16)
+            .padStart(2, "0"),
+        )
+        .join("")}`;
+      expect(roomFloorFill(rendered, word), word).toBe(want);
+    }
+  });
+
+  it("washes nothing under any other theme, nor an older word under `rendered`", () => {
+    const others: [string, string, Theme][] = [
+      ["default", "", mergeTheme()],
+      ...Object.entries(THEMES)
+        .filter(([t]) => t !== "rendered")
+        .map(([t, layer]): [string, string, Theme] => [t, `theme ${t}\n  `, mergeTheme(layer)]),
+    ];
+    expect(others.length).toBeGreaterThan(4);
+    for (const [name, theme, t] of others) {
+      expect(t.materialTints, name).toBeUndefined();
+      for (const word of FLOOR_PATTERNS)
+        expect(floorFill(room3(theme, ` floor ${word}`)), `${word} under ${name}`).toBe(t.roomFill);
+    }
+    for (const word of FLOOR_MATERIALS.filter((w) => !(FLOOR_PATTERNS as readonly string[]).includes(w)))
+      expect(floorFill(room3("theme rendered\n  ", ` floor ${word}`)), word).toBe(rendered.roomFill);
+    // A circle's floor is a `circle` primitive: it takes the wash the same way.
+    const circle = plan(`theme rendered\n  room id=a circle at (2000,2000) radius 2000 floor stone`);
+    expect(floorFill(circle)).toBe(roomFloorFill(rendered, "stone"));
+  });
+
+  it("an author's one furniture colour drops the tints, and the wash with them", () => {
+    // `theme rendered { furniture … }` replaces the material tints (`mergeTheme`), so there is no
+    // material tint left to wash a floor in: the room keeps `roomFill`.
+    const src = room3('theme rendered { furniture: "#eeeeee" }\n  ', " floor timber");
+    expect(floorFill(src)).toBe(rendered.roomFill);
+    // A tint table that is not an object, or a room colour that is no hex, keeps `roomFill`.
+    expect(roomFloorFill({ ...rendered, materialTints: null as never }, "timber")).toBe(rendered.roomFill);
+    expect(roomFloorFill({ ...rendered, roomFill: "white" }, "timber")).toBe("white");
+    expect(roomFloorFill(rendered, undefined)).toBe(rendered.roomFill);
+  });
+
+  it("is a drawing fact: `describe()` and `lint()` under `rendered` read as the plan without it", () => {
+    for (const word of FLOOR_PATTERNS) {
+      const floored = room3("theme rendered\n  ", ` floor ${word}`);
+      const plain = room3("theme rendered\n  ", "");
+      expect(describe(floored), word).toEqual(describe(plain));
+      expect(noSpans(lint(floored)), word).toEqual(noSpans(lint(plain)));
+    }
+  });
+});
+
+suite("the floor-only patterns (card RM8.7)", () => {
+  it("reach DXF as their named HATCH and paint no base", () => {
+    for (const [word, dxf] of [
+      ["timber", "AR-HBONE"],
+      ["carpeting", "CROSS"],
+      ["stone", "AR-RSHKE"],
+    ] as const) {
+      const out = compile(plan(`room id=a at (0,0) size 4000x3000 floor ${word}`));
+      expect(toDxf(out.scene!), word).toContain(dxf);
+      const pattern = patternOf(out.svg, `hatch-${word}`);
+      expect(pattern, word).not.toBe("");
+      expect(pattern, word).not.toContain("<rect");
+    }
+  });
+
+  it("a herringbone tile is covered exactly once: every block of the repeat, no gap and no overlap", () => {
+    // Read the blocks back off the markup at a round gap, unit a = 1 (gap 2), and sample the tile at
+    // every cell centre: each must fall in exactly one block.
+    const svg = compile(plan(`room id=a at (0,0) size 4000x3000 floor timber`)).svg;
+    expect(patternOf(svg, "hatch-timber")).toContain('patternTransform="rotate(45)"');
+    const markup = hatchPattern(
+      { material: "timber", scale: 1, angle: 0 },
+      { fmt: String, gap: 2, thin: 1, base: "", line: "" },
+    );
+    const blocks = [...markup.matchAll(/M(-?[\d.]+),(-?[\d.]+) h(-?[\d.]+) v(-?[\d.]+)/g)].map((m) =>
+      m.slice(1, 5).map(Number),
+    );
+    expect(blocks.length).toBeGreaterThan(8);
+    for (let x = 0.5; x < 8; x++)
+      for (let y = 0.5; y < 8; y++) {
+        const n = blocks.filter(([bx, by, w, h]) => x > bx! && x < bx! + w! && y > by! && y < by! + h!).length;
+        expect(n, `cell (${x}, ${y})`).toBe(1);
+      }
   });
 });

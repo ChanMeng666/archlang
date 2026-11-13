@@ -49,8 +49,8 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   (`Furniture.mirror`, read by `adaptPlan` through `planToJson`).
 - `src/materials.ts`: the material slots and the ONE palette the GLB writer and the viewer both
   read (a T0 piece stays one node; one primitive or mesh per slot), the building's kind colours
-  (`KIND_PALETTE`) and the floor finishes (`FINISH_PALETTE`; a room's from its `uses`,
-  `floorFinish`, ledgered `floor-finish-default`), the site's (`GROUND_TINT`, `GROUND_SPLITS`,
+  (`KIND_PALETTE`) and the floor finishes (`FINISH_PALETTE`; a room's from its authored `floor`
+  word, `FLOOR_WORD_FINISH`, else from its `uses`, `floorFinish`, ledgered `floor-finish-default`), the site's (`GROUND_TINT`, `GROUND_SPLITS`,
   `FENCE_PALETTE`) and the viewer's ground plane (`GROUND_PLANE`: drawn by `mount.ts` only, never a node).
 - `src/replay/`: the replay (M1a) — `timeline.ts` (the event table and `stateAt(t)`, pure; several
   storeys rise exploded and settle to their real heights by the end),
@@ -60,7 +60,14 @@ const mesh = r.ok ? buildMesh(r.scene) : null; // closed, outward-wound shells; 
   out across each storey so a seam between two flat pieces draws no line, and their faces without
   the ones two pieces share: inside one node always, between nodes once the nodes meeting there are
   all up, so every frame of the rise is closed; pure, browser-safe; every other node keeps
-  three.js's `EdgesGeometry`), `camera.ts` (the end camera and the stops, and the free
+  three.js's `EdgesGeometry`), `shadows.ts` (the soft contact shadows, card RM8.8: bands along
+  the outline of each storey's wall and column feet with a 16-gon fan at each outside corner and a
+  mitre at each joint flatter than 30° (a curved wall), up each sharper inside corner, round each
+  standing piece of furniture (a rug only receives), beside each fence run and round each stair's
+  stringers; each on the highest receiving face under it, looked up through a grid; baked once at
+  mount from the nodes, pure, integer µm, at most three buffers a storey; the viewer's only,
+  ledgered `contact-shadows-viewer-only`; its frame cost is measured, alone, by
+  `e2e/frame-budget.e2e.ts`), `camera.ts` (the end camera and the stops, and the free
   camera's presets and limits, `presetCamera`, all pure), `view-dom.ts` (the presets', Reset's and
   the storeys' buttons, `viewToolbar`), `viewer.ts` (the HTML's host:
   `__seek`/`__frameHash`), `viewer-bundle.ts` (`viewer.ts` plus three.js as one script), `html.ts`

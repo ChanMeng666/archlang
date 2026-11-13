@@ -7,8 +7,9 @@
  * Per storey, at its elevation `e` (µm):
  * - slab: the rooms ∪ the storey's wall outline, less its voids, [e − 200 mm, e] (Q6, `slab.ts`);
  * - floor: each room, a 5 mm finish [e, e + 5 mm], a void inside it as a hole; a room overlapping
- *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`); laid in the finish its
- *   `uses` give it (`floorFinish`, `extras.finish`, ledgered `floor-finish-default`);
+ *   an earlier one is lifted 0.5 mm per step (V-GEO-05, `Floor.lift`); laid in the finish its author
+ *   wrote (`room … floor <word>`, `Floor.pattern`, `wordFinish`, card RM8.7), else the one its `uses`
+ *   give it (`floorFinish`, ledgered `floor-finish-default`); either way in `extras.finish`;
  * - column: its box, [e, e + storey height];
  * - wall: its body pieces [e, e + h]; a wall or column whose whole plan lies under the slab of the
  *   storey above stops at that slab's underside, so the two never overlap or share a face (ledgered
@@ -50,15 +51,18 @@
  * - outdoor surface (card RM8.3): a thin slab [e - 50 mm, e], its top the floor level, lifted a step
  *   where it overlaps the slab, a floor or an earlier surface; fence: its style's posts (on the core's
  *   ticks), rails and pickets on the floor level (`outdoor.ts`, every default ledgered).
- * The ground round the building is the viewer's, never a node (`GROUND_PLANE`, `materials.ts`).
+ * The ground round the building is the viewer's, never a node (`GROUND_PLANE`, `materials.ts`), and
+ * so are the soft contact shadows (`CONTACT_SHADOW`, card RM8.8); the ledger says both.
  */
 import {
+  CONTACT_SHADOW,
   floorFinish,
   GROUND_PLANE,
   GROUND_WASH,
   STAIR_MATERIAL,
   STAIR_RAIL_MATERIAL,
   TRIM_MATERIAL,
+  wordFinish,
 } from "../materials.js";
 import { FLOOR_LIFT_UM, FLOOR_OVERLAP_MIN_UM2, overlapArea } from "../scene3d/overlap.js";
 import type { Assumption, Level, Polygon, Pt, Scene3D, Stair } from "../scene3d/types.js";
@@ -81,6 +85,14 @@ import { isHung, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Sh
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
 const MM = 1000;
+
+/** A `CONTACT_SHADOW` width rule as the ledger states it: `clamp(round(of × <size>), min, max)` mm. */
+const shadowRule = (r: { of: number; minMm: number; maxMm: number }, size: string) => ({
+  of: r.of,
+  size,
+  min: r.minMm,
+  max: r.maxMm,
+});
 export const SLAB_MM = 200;
 export const FLOOR_FINISH_MM = 5;
 export const ROOF_MM = 150;
@@ -366,16 +378,20 @@ function levelNodes(
       ? [f.polygon]
       : lessVoids(f.polygon.outer, lv.voids, `floor:${f.id}`, ledger);
     const z0 = e + (f.lift ?? 0);
-    // Its finish from its declared uses (visual-assets V9): a drafting default, ledgered per floor.
-    const finish = floorFinish(f.uses);
-    ledger.push({
-      kind: "floor",
-      id: f.id,
-      field: "finish",
-      value: finish,
-      provenance: "default",
-      rule: "floor-finish-default",
-    });
+    // Its finish: the author's `floor` word when the plan wrote one (card RM8.7), a stated fact and
+    // so not ledgered; else from its declared uses (visual-assets V9), a drafting default, ledgered
+    // per floor. A word this package does not know (a hand-made Scene3D) falls back to the default.
+    const authored = wordFinish(f.pattern);
+    const finish = authored ?? floorFinish(f.uses);
+    if (authored === undefined)
+      ledger.push({
+        kind: "floor",
+        id: f.id,
+        field: "finish",
+        value: finish,
+        provenance: "default",
+        rule: "floor-finish-default",
+      });
     node(
       "floor",
       f.id,
@@ -938,6 +954,10 @@ function levelNodes(
       asset,
       ...(f.room ? { room: f.room } : {}),
       ...(parts && f.mirror ? { mirror: true } : {}),
+      // Hung on the wall, not standing (`isHung`): a fact of the piece as built, so a reader (the
+      // replay's contact shadows, card RM8.8) needs neither the T0 tables nor the ledger, whose
+      // per-piece rows name no storey. Absent on a standing piece.
+      ...(parts && family && isHung(family) ? { hung: true } : {}),
     });
   });
 
@@ -1149,6 +1169,23 @@ export function buildMesh(scene: Scene3D, opts: MeshOptions = {}): Mesh3D {
       },
       provenance: "default",
       rule: "ground-plane-viewer-only",
+    },
+    // Card RM8.8: the soft contact shadows the viewer draws are in no node and not in the GLB, so,
+    // as the ground plane, they are said here, in every Mesh3D: each band's width rule and alphas.
+    {
+      kind: "shadow",
+      field: "contact",
+      value: {
+        drawn: "viewer only",
+        wall_band_mm: shadowRule(CONTACT_SHADOW.wall, "thickness"),
+        furniture_band_mm: shadowRule(CONTACT_SHADOW.furniture, "smaller footprint side"),
+        fence_band_mm: shadowRule(CONTACT_SHADOW.fence, "post"),
+        stair_thickness_mm: CONTACT_SHADOW.stairThicknessMm,
+        alpha: { ...CONTACT_SHADOW.alpha },
+        alpha_dark: { ...CONTACT_SHADOW.alphaDark },
+      },
+      provenance: "default",
+      rule: "contact-shadows-viewer-only",
     },
   ];
   const defaulted = new Set<string>();
