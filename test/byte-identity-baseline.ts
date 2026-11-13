@@ -1823,8 +1823,8 @@
  * even the widest arriving run is narrower than `minPathClearWidthMm`, no door widening can clear
  * any walk there, so the rule (rightly) names no door; its hint used to say "widen the tightest
  * door/opening" all the same. Now a room whose reading IS the run's width (every door on its way
- * clearing the minimum, and its walk re-measured with the run widened clearing it) says the bottleneck is
- * the stair, and its hint quotes the clause that clears it; a room
+ * clearing the minimum) says the bottleneck is
+ * the stair, and its hint quotes the `size` that clears it; a room
  * behind a narrower door as well keeps the door hint and adds the stair's. Only the accessibility
  * profile (900 mm) meets such a storey in the corpus. Swept per payload against `origin/main`
  * 911f209b over 473 corpus files (every storey's SVG and overlay SVG, `compile().diagnostics`,
@@ -1841,6 +1841,16 @@
  * `keep-byte-identity-baseline.ts` was re-taken by its generator: 16 of its 329 rows moved, each
  * only in `diagnostics[].fix` (diffed field by field), every step count unchanged; `suggest`'s
  * PS0.6 ranking moved none of them.
+ *
+ * Review round 1: the stair is named only once a re-measure with it widened clears the walk, and
+ * that re-measure comes from the run's count (`MAX_ATTRIBUTION_MEASURES`, after the door
+ * attributions). In `garden-house` and `hillside-villa` the ground floor's doors spend it, so the
+ * landing's message names nothing and its hints are the stair's, then the furniture's; and a
+ * stair's written `width` is the width arrived at. The two rows moved again in all nine
+ * `stairLawDigest` tables (the eight above and `floor-materials-byte-identity`, added on `main`
+ * since): `garden-house` `2d22f198…`, `hillside-villa` `36793d8a…`, measured after merging
+ * `origin/main` c81b0eca, the other 104 reproducing `main`; with the OLD accessibility `lint()`
+ * put back both give `main`'s `df81256b…` and `b188c6d5…`.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

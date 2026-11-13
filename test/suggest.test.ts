@@ -435,8 +435,8 @@ describe("suggestTopology — the room a reconnection passes through (PS0.6)", (
     const { ir } = resolvePlan(SHARED_EDGE.replace("  door id=entry", `  ${viaHall.insertText}\n  door id=entry`));
     const added = ir!.elements.find((e) => e.kind === "door" && e.id !== "entry" && e.id !== "d_bed")!;
     expect((added as { at: { x: number } }).at.x).toBeLessThan(3000);
-    // A non-private room keeps the geometric order among the good ways in; the bedroom comes last.
-    expect(u.candidates[0]!.insertText.startsWith("door on ext ")).toBe(true);
+    // A door into circulation comes first for every room (RM1.3b review); the bedroom comes last.
+    expect(u.candidates[0]!).toBe(viaHall);
     expect(u.candidates.some((c) => c.rationale.includes('to "bed"'))).toBe(false);
   });
 });
@@ -496,7 +496,8 @@ describe("suggestTopology — the wall a door is put on, and what it opens throu
       for (const file of walkFiles(dir)) {
         const src = readFileSync(file, "utf8");
         for (const s of suggestTopology(src)) {
-          const fault = (c: string | undefined) => c === s.code || (s.code === "W_ROOM_UNREACHABLE" && c === "W_ROOM_DISCONNECTED");
+          const fault = (c: string | undefined) =>
+            c === s.code || (s.code === "W_ROOM_UNREACHABLE" && c === "W_ROOM_DISCONNECTED");
           const before = lint(src).filter((d) => fault(d.code)).length;
           const i = src.lastIndexOf("}");
           const after = lint(`${src.slice(0, i)}  ${s.candidates[0]!.insertText}\n${src.slice(i)}`).filter((d) =>

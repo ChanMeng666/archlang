@@ -331,11 +331,18 @@ function narrowArrivals(
  * Each room's walk reading with every narrow arriving run widened to clear `min` across the edge a
  * person steps off at (the change {@link narrowRunHint} quotes), re-measured on the walk's own grid
  * as a door attribution is: the run is only named as THE bottleneck where this reading clears, so
- * furniture pinching the landing at the run's width is never blamed on the run. A count, not a
- * time: one grid per storey, and only on a storey whose every arriving run is under the minimum
- * (not drawn from `MAX_ATTRIBUTION_MEASURES`, which the door attributions spend first).
+ * furniture pinching the landing at the run's width is never blamed on the run. One re-measure,
+ * drawn from the run's shared count (`MAX_ATTRIBUTION_MEASURES`, after the door attributions);
+ * `null` when none is left, and then the run is not named.
  */
-function readingsWithRunsWidened(ctx: LintContext, min: number, view: View): ReadonlyMap<string, number> {
+function readingsWithRunsWidened(
+  ctx: LintContext,
+  min: number,
+  view: View,
+  measures: { left: number; storeys: number },
+): ReadonlyMap<string, number> | null {
+  if (measures.left <= 0) return null;
+  measures.left--;
   const grid = ctx.ir.grid;
   const need = grid > 0 ? Math.ceil(min / grid) * grid : Math.ceil(min);
   const narrow = new Set(
@@ -884,11 +891,11 @@ export const pathTooNarrow: LintRule = {
     // their own door alone take what is left in the full view, and a room neither can afford gets
     // the unattributed hints.
     const measures = ctx.building.attributionMeasures ?? { left: MAX_ATTRIBUTION_MEASURES, storeys: 0 };
-    // Re-measured once per storey, on first need.
-    let widened: ReadonlyMap<string, number> | undefined;
+    // Re-measured once per storey, on first need, from what the door attributions left.
+    let widened: ReadonlyMap<string, number> | null | undefined;
     const clearsWithRunWidened = (roomId: string): boolean => {
-      if (widened === undefined) widened = readingsWithRunsWidened(ctx, min, walk);
-      return (widened.get(roomId) ?? 0) >= min;
+      if (widened === undefined) widened = readingsWithRunsWidened(ctx, min, walk, measures);
+      return (widened?.get(roomId) ?? 0) >= min;
     };
     const namedWalk = attributeBottlenecks(
       ctx,
@@ -977,11 +984,12 @@ export const pathTooNarrow: LintRule = {
       // the walk, i.e. the room reads the run's width and every door on its widest way in already
       // clears the minimum. Otherwise the door hint stays and the run's is added to it.
       const viaRun = doors === null && flights !== null && Math.round(w) <= Math.round(flights.widest) ? flights : null;
-      const atRun =
+      // Every door on the way already clears: the run, or furniture tying with it, is the pinch.
+      const runOrFurniture =
         viaRun !== null &&
         Math.round(w) === Math.round(viaRun.widest) &&
-        (viaRun.doorCap.get(r.id) ?? Number.POSITIVE_INFINITY) >= min &&
-        clearsWithRunWidened(r.id);
+        (viaRun.doorCap.get(r.id) ?? Number.POSITIVE_INFINITY) >= min;
+      const atRun = runOrFurniture && clearsWithRunWidened(r.id);
       const kinds = new Set(viaRun?.runs.map((x) => x.kind) ?? []);
       const runWord = viaRun?.runs.length === 1 ? `${[...kinds][0]} it is reached by` : "widest run it is reached by";
       out.push({
@@ -998,12 +1006,19 @@ export const pathTooNarrow: LintRule = {
                   `Or reach this storey by another stair, elevator or escalator at least ${mm(min)} mm wide.`,
                   ...mainEntranceHint(ctx, viewOf(r.id), unreached),
                 ]
-              : [
-                  narrowRemedies(min, null, ctx)[0]!,
-                  narrowRunHint("And widen", min, viaRun.runs),
-                  ...narrowRemedies(min, null, ctx).slice(1),
-                  ...mainEntranceHint(ctx, viewOf(r.id), unreached),
-                ],
+              : runOrFurniture
+                ? [
+                    // No door to widen: the run and (unproved) the furniture by it are what is left.
+                    narrowRunHint("Widen", min, viaRun.runs),
+                    narrowRemedies(min, null, ctx)[1]!,
+                    ...mainEntranceHint(ctx, viewOf(r.id), unreached),
+                  ]
+                : [
+                    narrowRemedies(min, null, ctx)[0]!,
+                    narrowRunHint("And widen", min, viaRun.runs),
+                    ...narrowRemedies(min, null, ctx).slice(1),
+                    ...mainEntranceHint(ctx, viewOf(r.id), unreached),
+                  ],
       });
     }
     for (const rt of circ.routes) {

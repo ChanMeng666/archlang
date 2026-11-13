@@ -651,11 +651,15 @@ describe("W_PATH_TOO_NARROW on a storey reached only by runs narrower than the m
   const upstairs = (s: string) =>
     lint(s, { profile: "accessibility-advisory" }).filter((d) => d.code === "W_PATH_TOO_NARROW" && d.level === 2);
 
-  it("the landing's bottleneck is the stair, and the hint quotes the size that clears it", () => {
+  it("the landing's hint is the stair's, quoting the size that clears it, and no door's", () => {
     const landing = upstairs(src).find((d) => d.message.startsWith('The walk from the entrance to "Landing"'))!;
+    // The stair is named THE bottleneck only once a re-measure with it widened clears the walk, and
+    // the run's count of re-measures (MAX_ATTRIBUTION_MEASURES) is spent on the ground floor's doors
+    // here: unproved, the message names nothing, and the furniture is the other thing it can be.
     expect(landing.message).toBe(
-      'The walk from the entrance to "Landing" squeezes to 800 mm (100 mm below the 900 mm minimum) — the bottleneck is the stair it is reached by, 800 mm wide.',
+      'The walk from the entrance to "Landing" squeezes to 800 mm (100 mm below the 900 mm minimum).',
     );
+    expect(landing.hints![1]).toBe("Or move the furniture pinching the route so 900 mm of clear width survives.");
     expect(landing.hints![0]).toBe(
       "Widen stair `st` (now 800 mm; `size 900x3200` on every storey it stands on) to at least 900 mm across the edge a person steps off at: no door on the way can clear the walk while the way onto this storey is narrower than the minimum.",
     );
@@ -715,6 +719,8 @@ describe("a stair's written `width` is the width the walk arrives at, and the cl
       expect(up.circulation?.rooms[0]?.bottleneckClearWidthMm).toBe(reads);
       expect(up.access.rooms[0]?.bottleneckClearWidth).toBe(reads);
       const [d] = upstairs(src);
+      // Re-measured with the stair widened, the walk clears: the stair is named as the bottleneck.
+      expect(d!.message).toMatch(/ — the bottleneck is the stair it is reached by, \d+ mm wide\.$/);
       expect(d!.hints![0]).toContain(`(now ${reads} mm; \`${quote}\` on every storey it stands on)`);
       // Pasting the quoted clause on both storeys clears the walk.
       const [, size, width] = /^(?:size (\d+x\d+) )?width (\d+)$/.exec(quote)!;
