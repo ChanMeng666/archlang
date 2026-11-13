@@ -9,11 +9,13 @@
 
 import type { RRoom, RDoor, ROpening, RFurniture, RVoid, RWall } from "../ir.js";
 import type { Point } from "../ast.js";
-import type { RVertical } from "../vertical.js";
-import { isBedroom, isKitchen, isWetRoom, type AccessGraph } from "../analyze.js";
+import type { ArrivingRun, RVertical } from "../vertical.js";
+import { accessDigraph, isBedroom, isKitchen, isWetRoom, reachFrom, type AccessGraph } from "../analyze.js";
 import type { NavGrid } from "./nav-grid.js";
 import {
   DEFAULT_BODY_RADIUS_MM,
+  landedOn,
+  shaftsInFrame,
   isLivingOrDining,
   centreOf,
   bfsNearest,
@@ -122,12 +124,17 @@ export function computeCirculationOverlay(
   verticals: RVertical[] = [],
   /** Floor voids on this storey — see {@link computeCirculation}. */
   voids: RVoid[] = [],
+  /** The runs this storey is reached by — see {@link computeCirculation}: read only when `access`
+   *  has no entrance, so a storey a shaft reaches is drawn walked from its landings, as its
+   *  facts are measured (M.4). Append-only: omitting it changes nothing. */
+  arrivals: readonly ArrivingRun[] = [],
 ): CirculationOverlay | null {
   // Measured in the nav extent's own frame, exactly as the facts are; every point drawn
   // is moved back by the same origin (`o + (i + ½)·cell` is the old absolute centre).
-  if (rooms.length === 0 || !access.hasEntrance) return null; // buildNav's "none", before any copy
+  const landed = access.hasEntrance ? [] : landedOn(arrivals, rooms);
+  if (rooms.length === 0 || (!access.hasEntrance && landed.length === 0)) return null; // buildNav's "none", before any copy
   const o = extentOrigin(rooms);
-  const entranceAt = [...doors, ...openings].find((d) => d.id === access.entrances[0])?.at;
+  const doorAt = access.hasEntrance ? [...doors, ...openings].find((d) => d.id === access.entrances[0])?.at : null;
   ({ rooms, walls, doors, openings, furniture, verticals, voids } = toExtentFrame(o, {
     rooms,
     walls,
@@ -138,8 +145,12 @@ export function computeCirculationOverlay(
     voids,
   }));
   const back = (p: Point): Point => ({ x: o.x + p.x, y: o.y + p.y });
-  const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm);
-  if (nav.kind !== "ok" || entranceAt === undefined) return null;
+  const shafts = shaftsInFrame(o, landed);
+  const nav = buildNav(rooms, walls, doors, openings, furniture, verticals, voids, access, tol, bodyRadiusMm, shafts);
+  if (nav.kind !== "ok") return null;
+  // A storey walked from its shafts is anchored at the first run's arrival edge, as its facts are.
+  const entranceAt = doorAt === null ? back(nav.entrancePoint) : doorAt;
+  if (entranceAt === undefined) return null;
   const { g, seed, sources, sourceIds, sourceClear } = nav;
 
   // The same multi-source walk the facts measure: each room's path starts at its own
@@ -154,8 +165,19 @@ export function computeCirculationOverlay(
   const rep = new Int32Array(rooms.length);
   const repTies: number[][] = [];
   const repSeed: Point[] = [];
-  // The same door-route gate as the facts: a room `access` cannot reach draws no walk.
-  const doorReachable = new Set(access.rooms.filter((n) => n.reachable).map((n) => n.id));
+  // The same door-route gate as the facts: a room `access` cannot reach draws no walk. On a
+  // storey walked from its shafts, the doors are walked from the rooms the runs land in.
+  const doorReachable = access.hasEntrance
+    ? new Set(access.rooms.filter((n) => n.reachable).map((n) => n.id))
+    : new Set(
+        reachFrom(
+          accessDigraph(
+            rooms.map((r) => r.id),
+            access.edges,
+          ),
+          { exterior: false, extraSources: shafts.map((a) => a.roomId) },
+        ),
+      );
   for (let ri = 0; ri < rooms.length; ri++) {
     const r = roomRep(
       g,

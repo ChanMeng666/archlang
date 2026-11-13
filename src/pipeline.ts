@@ -18,6 +18,8 @@ import { parse } from "./parser.js";
 import { drawnView, lineWeightOutOfRange, resolveAll } from "./ir.js";
 import type { PlanResolution } from "./ir.js";
 import { drawScene, planTheme } from "./scene-build.js";
+import { buildingArrivals } from "./describe/verticals.js";
+import { DEFAULT_TOL } from "./analyze/rooms.js";
 import { type CompileWork, newCompileWork } from "./compile-work.js";
 import { offerScene } from "./scene-memo.js";
 import { drawBudgetDiagnostic } from "./draw-budget.js";
@@ -173,8 +175,11 @@ export function compileUncached(source: string, opts: CompileOptions, work?: Com
       );
       svg = renderSvg(scene, opts);
     } else if (resolved.levels.length > 0) {
+      // The circulation overlay walks a storey a shaft reaches from the runs that arrive on it, as
+      // `describe()` does (M.4): a building fact, read only when that overlay is asked for.
+      const arrivals = opts.overlays?.includes("circulation") ? buildingArrivals(resolved.levels, DEFAULT_TOL) : null;
       pages = resolved.levels.map((l) => {
-        const s = drawScene(l.ir, opts, runtime, work);
+        const s = drawScene(l.ir, opts, runtime, work, arrivals?.get(l.level) ?? []);
         offerScene(l.ir, opts, runtime, s);
         return { level: l.level, ...(l.name !== undefined ? { name: l.name } : {}), svg: renderSvg(s, opts), scene: s };
       });

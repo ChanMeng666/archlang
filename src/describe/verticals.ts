@@ -43,6 +43,25 @@ export function blockStairFacts(v: RBlockStair): Pick<VerticalSummary, "flights"
 }
 
 /**
+ * Per storey a shaft reaches and no door from the ground does, the runs a person arrives by
+ * ({@link arrivalRuns}, on the same `storeyGrounded` and `buildingRoomReach` predicates
+ * {@link buildVerticalReport} hands it): what `compile()` gives the circulation overlay of each
+ * page, so the drawing walks a storey from where `describe().circulation` measures it (M.4).
+ */
+export function buildingArrivals(
+  levels: readonly ResolvedLevel[],
+  tol: number,
+): ReadonlyMap<number, readonly ArrivingRun[]> {
+  const inputs = levels.map((l) => ({ level: l.level, ir: l.ir }));
+  if (verticalConnections(inputs).length === 0) return new Map();
+  const grounded = (n: number): boolean => {
+    const l = levels.find((x) => x.level === n);
+    return l ? storeyGrounded(l.ir, tol) : false;
+  };
+  return arrivalRuns(inputs, grounded, buildingRoomReach(inputs, tol));
+}
+
+/**
  * The building-level vertical report for a multi-storey plan, or `undefined` when no run
  * spans two storeys. A storey is *grounded* when it has its own exterior entrance that is
  * a real arrival point — {@link storeyGrounded}, the same predicate `lint` builds its

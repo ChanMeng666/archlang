@@ -54,6 +54,7 @@ import {
   accessGraphOf,
   buildDoorAccessGraph,
   DEFAULT_TOL,
+  separateBalconies,
   type AnalyzeOptions,
   type RoomBox,
 } from "./analyze.js";
@@ -643,7 +644,8 @@ function summarize(
     seeds.length > 0
       ? accessGraphOf(
           roomEls.map((r) => r.id),
-          arrivalGraph.edges,
+          // Walked through, not from: one node per balcony (RM1.3b, `separateBalconies`).
+          [...separateBalconies(arrivalGraph.edges, ir)],
           seeds,
         ).rooms
       : arrivalGraph.rooms;
@@ -655,7 +657,7 @@ function summarize(
     openingEls,
     furnEls,
     // `arrivals` are this storey's own: given only where no door from the ground is (PS0.3).
-    walkedFromShafts(arrivalGraph, arrivals, roomEls),
+    walkedFromShafts(arrivalGraph, arrivals, roomEls, ir),
     tol,
     undefined,
     verticalEls,

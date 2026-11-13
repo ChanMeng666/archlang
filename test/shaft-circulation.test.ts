@@ -26,7 +26,7 @@ import { join, resolve as resolvePath } from "node:path";
 import { describe, expect, it } from "vitest";
 import { buildDoorAccessGraph, buildingRoomReach, DEFAULT_TOL, resolvePlan, storeyGrounded } from "../src/analyze.js";
 import { type CirculationModel, computeCirculation, walkedFromShafts } from "../src/analyze/circulation.js";
-import { describe as describePlan, lint, repair } from "../src/index.js";
+import { compile, describe as describePlan, lint, repair } from "../src/index.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, ResolvedPlan } from "../src/ir.js";
 import { type ArrivingRun, arrivalRuns, entryEdges, verticalsOf } from "../src/vertical.js";
 import type { World } from "../src/world.js";
@@ -637,5 +637,136 @@ describe("repair guards the walks of a storey reached only by a stair", () => {
     const note = r.unresolved.find((u) => u.id === "wardrobe#1");
     expect(note?.level).toBe(2);
     expect(note?.reason).toMatch(/pinch the walk to "Bedroom" below 700 mm/);
+  });
+});
+
+// ---- RM1.3b: balconies apart, the overlay walked from the stair, escalators one way ----
+
+/**
+ * Upstairs (reached only by stair `st`, and with `s2` by a second stair): a landing, bedroom A
+ * off it with a door onto balcony A (north), and a study with no door to either, whose only door
+ * opens onto a balcony. `onto` says which: its own balcony B (south), or one balcony along the
+ * whole south front that the landing opens onto too.
+ */
+const balconies = (onto: "own" | "shared", s2: boolean): string => {
+  const second = (dir: string) => (s2 ? `\n    stair id=s2 at (6800,3500) size 1000x2400 dir ${dir}` : "");
+  return `plan "Balconies" {
+  units mm
+  level 1 "Ground" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=hw partition thickness 100 { (3000,0) (3000,6000) }
+    room id=hall at (0,0) size 3000x6000 label "Hall" uses hall
+    room id=living at (3000,0) size 5000x6000 label "Living" uses living
+    door id=front on shell at 23000 width 1000 swing into hall
+    door id=dl on hw at 3000 width 900 swing into living
+    stair id=st at (200,1000) size 1000x3000 dir up${second("up")}
+  }
+  level 2 "Upper" {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=hw partition thickness 100 { (3000,0) (3000,6000) }
+    wall id=hm partition thickness 100 { (3000,3000) (8000,3000) }
+    room id=landing at (0,0) size 3000x6000 label "Landing" uses hall circulation
+    room id=beda at (3000,0) size 5000x3000 label "Bedroom A" uses bedroom
+    room id=y at (3000,3000) size 5000x3000 label "Study" uses office
+    door id=da on hw at 1500 width 900 swing into beda
+    outdoor id=balA balcony at (3000,-1500) size 5000x1500
+    door id=dba on shell at 5500 width 900 swing into beda
+    ${
+      onto === "own"
+        ? "outdoor id=balB balcony at (3000,6000) size 5000x1500"
+        : "outdoor id=balB balcony at (0,6000) size 8000x1500\n    door id=dlb on shell at 20500 width 900 swing into landing"
+    }
+    door id=dy on shell at 16500 width 900 swing into y
+    stair id=st at (200,1000) size 1000x3000 dir down${second("down")}
+  }
+}`;
+};
+
+describe("a storey reached by stair: each balcony is its own way through (RM1.3b)", () => {
+  const rooms = (src: string) =>
+    Object.fromEntries(level(src, 2).access.rooms.map((r) => [r.id, [r.reachable, r.depthFromEntrance]]));
+
+  it("a room opening only onto its own balcony is not reached through another balcony", () => {
+    const src = balconies("own", false);
+    // Before RM1.3b one exterior node joined balcony A and balcony B: the study read
+    // reachable at depth 4 (landing, bedroom A, "exterior", study) and lint said nothing.
+    expect(rooms(src)).toEqual({ landing: [true, 1], beda: [true, 2], y: [false, null] });
+    const l2 = lint(src).filter((d) => d.level === 2 && d.code === "W_ROOM_UNREACHABLE");
+    expect(l2.map((d) => d.message)).toEqual(['Room "Study" can\'t be reached from the entrance.']);
+  });
+
+  it("two doors onto one balcony still join: it is walked across", () => {
+    expect(rooms(balconies("shared", false))).toEqual({ landing: [true, 1], beda: [true, 2], y: [true, 3] });
+  });
+
+  it("depth with two stairs and two balconies: each arrival room is depth 1", () => {
+    const src = balconies("own", true);
+    expect(rooms(src)).toEqual({ landing: [true, 1], beda: [true, 2], y: [true, 1] });
+    const bottleneck = Object.fromEntries(level(src, 2).access.rooms.map((r) => [r.id, r.bottleneckClearWidth]));
+    expect(bottleneck).toEqual({ landing: 1000, beda: 840, y: 1000 });
+    expect(lint(src).filter((d) => d.level === 2 && d.code === "W_ROOM_UNREACHABLE")).toEqual([]);
+    // Both stairs are arrivals upstairs, and the walk starts at each.
+    expect(level(src, 2).circulation?.rooms.map((r) => [r.roomId, r.entranceId])).toEqual([
+      ["landing", "st"],
+      ["beda", "st"],
+      ["y", "s2"],
+    ]);
+  });
+});
+
+describe("the circulation overlay walks a shaft-reached storey from its runs, as describe() does (M.4)", () => {
+  // Every corpus storey walked from a shaft: the overlay's drawn pinch labels are the facts'
+  // bottlenecks, room for room. Before, `garden-house` L2 drew the walks from its balcony door and
+  // `hillside-villa` L2 (no exterior door) drew nothing.
+  for (const name of ["garden-house", "hillside-villa", "townhouse", "two-storey"]) {
+    it(`examples/${name}.arch: every storey's overlay labels equal its circulation facts`, () => {
+      const src = readFileSync(resolvePath(`examples/${name}.arch`), "utf8");
+      const withOverlay = compile(src, { noCache: true, overlays: ["circulation"] });
+      const plain = compile(src, { noCache: true });
+      const s = describePlan(src);
+      s.levels!.forEach((lv, i) => {
+        const before = plain.pages![i]!.scene.nodes.length;
+        const drawn = withOverlay.pages![i]!.scene.nodes.slice(before).filter((n) => n.layer === "annotations");
+        const labels = drawn.flatMap((n) => (n.prim.t === "text" ? [Number(n.prim.value)] : []));
+        const facts = (lv.circulation?.rooms ?? []).map((r) => r.bottleneckClearWidthMm);
+        expect(
+          [...labels].sort((a, b) => a - b),
+          `${name} L${lv.level}`,
+        ).toEqual([...facts].sort((a, b) => a - b));
+        expect(labels.length, `${name} L${lv.level}`).toBeGreaterThan(0);
+      });
+    });
+  }
+});
+
+describe("an escalator carries one way when both its stops say so (M.4)", () => {
+  const storey = (ground: boolean, upDir: string, dnDir: string) => `
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,8000) (0,8000) close }
+    room id=hall at (0,0) size 8000x8000 label "Hall" uses hall circulation
+    ${ground ? "door id=front on shell at 4000 width 1000 swing into hall" : ""}
+    escalator id=e_up at (1500,2000) size 1000x4000 dir ${upDir}
+    escalator id=e_dn at (5500,2000) size 1000x4000 dir ${dnDir}`;
+  const pair = (l1: [string, string], l2: [string, string]) => `plan "Escalator pair" {
+  units mm
+  level 1 "Ground" {${storey(true, ...l1)}
+  }
+  level 2 "Upper" {${storey(false, ...l2)}
+  }
+}`;
+  const arriving = (src: string) => (arrivalsOf(src).runs.get(2) ?? []).map((a) => [a.run.id, a.edges]);
+
+  it("drawn as escalators (UP at both ends of the up car, DN at both of the down): only the up car arrives", () => {
+    // Before M.4's fix both cars seeded the upper storey: e_dn at its bottom end.
+    const src = pair(["up", "down"], ["up", "down"]);
+    expect(arriving(src)).toEqual([["e_up", ["top"]]]);
+    expect(level(src, 2).circulation?.entranceId).toBe("e_up");
+    expect(level(src, 2).circulation?.rooms[0]).not.toHaveProperty("entranceId");
+  });
+
+  it("drawn as stairs are (up below, down above) the direction is not said, and both cars arrive as before", () => {
+    expect(arriving(pair(["up", "up"], ["down", "down"]))).toEqual([
+      ["e_up", ["top"]],
+      ["e_dn", ["top"]],
+    ]);
   });
 });

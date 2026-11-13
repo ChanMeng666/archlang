@@ -275,16 +275,20 @@ describe("corpus invariant: a walk's or route's bottleneck never exceeds the doo
    * entrance's width, so it passes those cells. A key route is seeded at +Infinity on its
    * from-room's FLOOR, never on a cell a carve opened (`test/route-source-floor.test.ts`), so
    * it passes them too. The one way round is open floor: two rooms that meet with no wall
-   * between them touch outside any connector ({@link OPEN_FLOOR}). Limits: it bounds by the BEST door
-   * path, not the one the walk took, so it cannot see a walk capped by the wrong door of two
-   * parallel ones; a storey walked from a shaft (no door from the ground) and `blocked[]`'s
-   * widest way in (a smaller-body re-run, not a door width) are not checked.
+   * between them touch outside any connector ({@link OPEN_FLOOR}). A storey walked from a shaft
+   * (no door from the ground, PS0.3) is checked the same way from its arrivals (RM1.3b): each is a
+   * room the access graph counts at depth 1, seeded at its own reading there (the run's width,
+   * `describe().access`), and the bound is the widest path from any of them over the internal
+   * edges (the grid has no balcony cells). Limits: it bounds by the BEST door path, not the one
+   * the walk took, so it cannot see a walk capped by the wrong door of two parallel ones; and
+   * `blocked[]`'s widest way in (a smaller-body re-run, not a door width) is not checked.
    */
   it("holds on every storey of the whole corpus", () => {
     const violations: string[] = [];
     const openFloor = new Set<string>();
     let rooms = 0;
     let routes = 0;
+    let shaftRooms = 0;
     const root = resolvePath(".");
     for (const dir of CORPUS_DIRS) {
       for (const file of walk(resolvePath(dir))) {
@@ -294,14 +298,25 @@ describe("corpus invariant: a walk's or route's bottleneck never exceeds the doo
         storeys.forEach((lv, i) => {
           const c = lv.circulation;
           const acc = lv.access;
-          // A storey walked from a shaft is not checked: one with no exterior door, or one whose
-          // only exterior doors open onto balconies (its walk names the run, not a door: PS0.3).
-          if (!c || !acc?.hasEntrance || !acc.entrances.includes(c.entranceId)) return;
+          if (!c || !acc) return;
+          // A storey walked from a shaft: one with no exterior door, or one whose only exterior
+          // doors open onto balconies (its walk names the run, not a door: PS0.3).
+          const viaShaft = !acc.hasEntrance || !acc.entrances.includes(c.entranceId);
           const entrances = new Set(acc.entrances);
-          const fromOutside = widest(acc.edges, entrances, "exterior");
+          let fromWayIn: Map<string, number>;
+          if (viaShaft) {
+            fromWayIn = new Map();
+            for (const a of acc.rooms.filter((n) => n.depthFromEntrance === 1)) {
+              const seed = a.bottleneckClearWidth;
+              if (seed === null) continue;
+              for (const [id, w] of widest(acc.edges, new Set(), a.id))
+                fromWayIn.set(id, Math.max(fromWayIn.get(id) ?? -Infinity, Math.min(seed, w)));
+            }
+          } else fromWayIn = widest(acc.edges, entrances, "exterior");
           for (const r of c.rooms) {
             rooms++;
-            const bound = fromOutside.get(r.roomId) ?? -Infinity;
+            if (viaShaft) shaftRooms++;
+            const bound = fromWayIn.get(r.roomId) ?? -Infinity;
             if (r.bottleneckClearWidthMm > Math.round(bound))
               violations.push(`${name} L${i} room ${r.roomId}: ${r.bottleneckClearWidthMm} > ${bound}`);
           }
@@ -319,6 +334,8 @@ describe("corpus invariant: a walk's or route's bottleneck never exceeds the doo
     // Not vacuous: the corpus measures hundreds of walks and dozens of routes.
     expect(rooms).toBeGreaterThan(200);
     expect(routes).toBeGreaterThan(20);
+    // And the storeys walked from a shaft are among them (seven upper storeys of the corpus).
+    expect(shaftRooms).toBeGreaterThan(20);
     expect(violations.filter((v) => !(v.split(" ")[0]! in OPEN_FLOOR))).toEqual([]);
     for (const v of violations) openFloor.add(v.split(" ")[0]!);
     expect([...openFloor].sort()).toEqual(Object.keys(OPEN_FLOOR).sort());

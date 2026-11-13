@@ -736,14 +736,40 @@ export function arrivalRuns(
         grounded,
         roomReach,
       );
-      const below = at > 0 && without.active(c.stops[at - 1]!, "above");
-      const above = at < c.stops.length - 1 && without.active(c.stops[at + 1]!, "below");
+      // An escalator carries one way when both its stops say so (M.4, {@link escalatorTravel}).
+      const below =
+        at > 0 &&
+        escalatorTravel(run, runOn(c.levels[at - 1]!, run.id), run) !== "down" &&
+        without.active(c.stops[at - 1]!, "above");
+      const above =
+        at < c.stops.length - 1 &&
+        escalatorTravel(run, run, runOn(c.levels[at + 1]!, run.id)) !== "up" &&
+        without.active(c.stops[at + 1]!, "below");
       if (!below && !above) continue; // nobody arrives by it: it is boarded here
       runs.push({ run, ...arrivalOn(run, below, above, runOn(c.levels[below ? at - 1 : at + 1]!, run.id)) });
     }
     if (runs.length > 0) out.set(l.level, runs);
   }
   return out;
+}
+
+/**
+ * Which way an escalator carries people between two adjacent stops, `lower` and `upper` (the
+ * same id on the storeys below and above), read off the `dir` each stop writes: "which way this
+ * run travels from THIS storey" (the element's own definition). `up` when both stops write
+ * `dir up` (an up escalator, UP at both ends), `down` when both write `dir down`, and `both`
+ * otherwise: the stair convention (`up` below, `down` above) does not say which way the cars
+ * move, so such a pair is still read as a stair is, either way, as before (M.4). `both` too for
+ * a run that is no escalator, or a stop not drawn as one.
+ */
+function escalatorTravel(
+  run: RVertical,
+  lower: RVertical | undefined,
+  upper: RVertical | undefined,
+): "up" | "down" | "both" {
+  if (run.kind !== "escalator" || lower?.kind !== "escalator" || upper?.kind !== "escalator") return "both";
+  if (lower.dir === upper.dir) return lower.dir === "down" ? "down" : "up";
+  return "both";
 }
 
 /** Every shaft that stops on `level`, cut there: its stops below and its stops above become

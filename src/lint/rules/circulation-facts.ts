@@ -126,7 +126,7 @@ function circulationOf(ctx: LintContext, from: "walk" | "nearest" = "walk"): Cir
     ctx.openings,
     ctx.furniture,
     // The storey's own arrivals, given only where no door from the ground is (PS0.3).
-    walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms),
+    walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms, ctx.ir),
     ctx.rules.tolMm,
     undefined,
     ctx.verticals,
@@ -487,7 +487,7 @@ function attributeBottlenecks(
       doors,
       openings,
       ctx.furniture,
-      walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms),
+      walkedFromShafts(access, ctx.building.arrivalShafts, ctx.rooms, ctx.ir),
       ctx.rules.tolMm,
       ctx.verticals,
       ctx.voids,

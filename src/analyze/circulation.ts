@@ -46,9 +46,17 @@
  * here charges the step meter.
  */
 
-import type { RRoom, RDoor, ROpening, RFurniture, RVoid, RWall } from "../ir.js";
+import type { RRoom, RDoor, ROpening, RFurniture, RVoid, RWall, ResolvedPlan } from "../ir.js";
 import type { ArrivingRun, RVertical } from "../vertical.js";
-import { accessDigraph, reachFrom, isBedroom, isKitchen, isWetRoom, type AccessGraph } from "../analyze.js";
+import {
+  accessDigraph,
+  reachFrom,
+  isBedroom,
+  isKitchen,
+  isWetRoom,
+  separateBalconies,
+  type AccessGraph,
+} from "../analyze.js";
 import type { NavCache, Nav, NavStats } from "./nav-grid.js";
 import {
   DEFAULT_BODY_RADIUS_MM,
@@ -231,16 +239,22 @@ export interface BlockedRoom {
  * otherwise, so a storey no shaft lands on is walked exactly as before.
  *
  * The callers that hand a storey its own arrivals apply this (`describe()`, the circulation
- * rules, `repair`); {@link computeCirculation} itself still walks a storey with an entrance
- * from its entrances, whatever runs it is given.
+ * rules, `repair`, the circulation overlay); {@link computeCirculation} itself still walks a
+ * storey with an entrance from its entrances, whatever runs it is given.
+ *
+ * Walked through and not from, each balcony is its own node (`separateBalconies`, RM1.3b): with
+ * the storey `ir`, a door onto balcony A no longer joins a door onto balcony B. The edges are the
+ * walk's own and are never reported.
  */
 export function walkedFromShafts(
   access: AccessGraph,
   arrivals: readonly ArrivingRun[],
   rooms: readonly RRoom[],
+  ir?: ResolvedPlan,
 ): AccessGraph {
   if (!access.hasEntrance || landedOn(arrivals, rooms).length === 0) return access;
-  return { ...access, entrances: [], hasEntrance: false };
+  const edges = ir ? [...separateBalconies(access.edges, ir)] : access.edges;
+  return { ...access, edges, entrances: [], hasEntrance: false };
 }
 
 /**

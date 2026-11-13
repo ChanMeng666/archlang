@@ -14,14 +14,22 @@
 import { buildDoorAccessGraph, DEFAULT_TOL, openRunsOf, roomBox } from "../analyze.js";
 import { arrivalAccess, entranceInputs } from "../analyze/entrance.js";
 import { computeCirculationOverlay } from "../analyze/circulation-overlay.js";
-import { verticalsOf } from "../vertical.js";
+import { walkedFromShafts } from "../analyze/circulation.js";
+import { type ArrivingRun, verticalsOf } from "../vertical.js";
 import type { Point } from "../ast.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RVoid, ResolvedPlan } from "../ir.js";
 import type { Paint, RenderSizes, SceneNode } from "../scene.js";
 import type { Theme } from "../theme.js";
 import { voidPieces } from "../elements/void.js";
 
-export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: RenderSizes): SceneNode[] {
+export function circulationOverlayNodes(
+  ir: ResolvedPlan,
+  theme: Theme,
+  sizes: RenderSizes,
+  /** The runs this storey is reached by (`arrivalRuns`, `src/vertical.ts`): non-empty only on a
+   *  storey a shaft reaches and no door from the ground does. Append-only. */
+  arrivals: readonly ArrivingRun[] = [],
+): SceneNode[] {
   const rooms = ir.elements.filter((e): e is RRoom => e.kind === "room");
   const doors = ir.elements.filter((e): e is RDoor => e.kind === "door");
   const openings = ir.elements.filter((e): e is ROpening => e.kind === "opening");
@@ -33,12 +41,18 @@ export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: R
   // so the walk crosses them as describe()'s does. Empty without one, so the graph is unchanged.
   // Walked from the doors a person arrives by (U.1: a balcony door is none for a room a door from
   // the ground reaches), as `describe().circulation` is on a storey with a door from the ground;
-  // the graph itself on every other plan. It is handed no shaft arrivals, so on a storey a stair
-  // reaches that has a balcony door (`garden-house`'s upper floor) it still walks from that door,
-  // where `describe().circulation` walks from the stair (PS0.3): a known gap, not yet closed.
-  const access = arrivalAccess(
-    buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL)),
-    entranceInputs(ir, new Map(rooms.map((r) => [r.id, roomBox(r)]))),
+  // the graph itself on every other plan. On a storey a shaft reaches and no door from the ground
+  // does, it is walked from the runs that arrive, exactly as `describe().circulation` is: its
+  // balcony doors are no entrance (`walkedFromShafts`, PS0.3), so `garden-house`'s upper floor
+  // is drawn from its stair, and a storey with no exterior door at all is drawn rather than empty.
+  const access = walkedFromShafts(
+    arrivalAccess(
+      buildDoorAccessGraph(rooms, doors, DEFAULT_TOL, undefined, openings, openRunsOf(ir, DEFAULT_TOL)),
+      entranceInputs(ir, new Map(rooms.map((r) => [r.id, roomBox(r)]))),
+    ),
+    arrivals,
+    rooms,
+    ir,
   );
   const overlay = computeCirculationOverlay(
     rooms,
@@ -51,6 +65,7 @@ export function circulationOverlayNodes(ir: ResolvedPlan, theme: Theme, sizes: R
     undefined,
     verticalsOf(ir),
     voids,
+    arrivals,
   );
   if (!overlay) return [];
 

@@ -43,7 +43,7 @@ import { siteBoundaryNodes } from "./site.js";
 import { groundMaterialsUsed, outdoorLabelAnchor, outdoorRing } from "./elements/outdoor.js";
 import { roomLabelAnchor } from "./elements/room.js";
 import { isUnderlay } from "./fixtures-catalog.js";
-import { isVertical } from "./vertical.js";
+import { type ArrivingRun, isVertical } from "./vertical.js";
 import { rectRing } from "./geometry/polygon.js";
 import { CHAIN_BASE, CHAIN_STEP, DIM_TEXT_GAP, drawingBounds, renderSizes } from "./sheet.js";
 import { textWidth } from "./text-metrics.js";
@@ -789,6 +789,9 @@ export function drawScene(
   opts: CompileOptions,
   runtime: Runtime,
   work: CompileWork | undefined,
+  /** The runs this storey is reached by, for the circulation overlay alone (`compile()` reads
+   *  them off the whole building when that overlay is asked for; M.4). Nothing else reads them. */
+  arrivals: readonly ArrivingRun[] = [],
 ): Scene {
   // The storey as drawn (B3a): every wall, a `status demolish` one included, which is lowered in
   // a call of its own and drawn dashed (B3b). What the sheet MEASURES (the room schedule's net
@@ -1153,7 +1156,7 @@ export function drawScene(
   // shifts the page or chrome. Off by default — never on the shipped-SVG path.
   if (opts.overlays?.includes("circulation")) {
     // The walks describe() measures: the plan after the demolition (B3b).
-    for (const pushed of circulationOverlayNodes(plan, theme, sizes)) nodes.push(pushed);
+    for (const pushed of circulationOverlayNodes(plan, theme, sizes, arrivals)) nodes.push(pushed);
   }
 
   const scene: Scene = {

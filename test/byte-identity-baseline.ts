@@ -1816,6 +1816,26 @@
  * K1 by its generator; the rest from CI run 43406736360's received values: `double-door`,
  * `wall-status`, `open-crossing`, `while-byte-identity-baseline.ts` and `rectilinear-rooms` 1 each,
  * `import-module-lets` 2. Each carries `RM1.2a review` beside it.
+ *
+ * ## RM1.3b: the circulation overlay walks a shaft-reached storey from its runs — overlay only
+ *
+ * Case (1), the compiler changed, deliberately (backlog M.4): `--overlay circulation` used to be
+ * handed no shaft arrivals, so on a storey a stair reaches and no door from the ground does it drew
+ * the walks from a balcony door (`garden-house`) or nothing at all (`hillside-villa`, `two-storey`,
+ * `townhouse`). `compile()` now reads the building's arriving runs when that overlay is asked for,
+ * and the overlay is walked from them, as `describe().circulation` is. The same change gives each
+ * balcony its own node in every graph walked through the outside (one exterior node joined two
+ * separate balconies) and reads an escalator's direction from its two stops' `dir`; neither moves
+ * any corpus plan. Swept per payload against `origin/main` 35ed277f over 473 corpus files: only
+ * upper-storey overlay SVGs moved (29 files, 30 pages), and every SVG without the overlay,
+ * `describe()` with and without `quantities`, `lint()` under the default ruleset and every profile
+ * and `compile().diagnostics` is byte-identical. The eight `stairLawDigest` tables, re-measured by
+ * a script importing `test/helpers/block-stair-law.ts` that first reproduced their 90 unmoved rows,
+ * move 16 rows each (the multi-storey examples and fixtures, the stair-safety pairs and
+ * `inline:stair-arrival`), and `gaps-`, `sheet-text-` and `void-rail-byte-identity` a 17th, their
+ * own `inline:every-table` (a two-storey plan); with the OLD overlay SVGs put back into the new
+ * payload all 17 reproduce their old digests. No other table hashes the overlay. Each re-pinned row carries
+ * `RM1.3b overlay` beside it.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

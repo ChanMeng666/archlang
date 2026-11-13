@@ -42,6 +42,7 @@ import {
   roomRing,
   roomsAdjacent,
   roomUses,
+  separateBalconies,
   wetRoomsOnlyViaBedroom,
 } from "../../analyze.js";
 import { entranceInputs, entranceWays } from "../../analyze/entrance.js";
@@ -477,10 +478,19 @@ export const roomViaPrivate: LintRule = {
     if (ctx.mainEntrance()?.door === null) ctx.skip("no-main-entrance");
     const doms = privateDominators(ctx, f);
     if (doms.size === 0) return out;
-    // W_BATH_VIA_BEDROOM's own question, asked exactly as `reachability.ts` asks it.
-    const reachAll = reachFrom(f.g, { extraSources: f.arrivals });
-    const reachNoBed = reachFrom(f.g, {
+    // W_BATH_VIA_BEDROOM's own question, asked exactly as `reachability.ts` asks it: where a shaft
+    // arrives, the outside is walked through (one node per balcony), never started from.
+    const exterior = f.arrivals.length === 0;
+    const walk = exterior
+      ? f.g
+      : accessDigraph(
+          ctx.rooms.map((r) => r.id),
+          separateBalconies(ctx.access().edges, ctx.ir),
+        );
+    const reachAll = reachFrom(walk, { extraSources: f.arrivals, exterior });
+    const reachNoBed = reachFrom(walk, {
       extraSources: f.arrivals,
+      exterior,
       avoid: (id) => {
         const r = f.byId.get(id);
         return r ? isBedroom(r) : false;

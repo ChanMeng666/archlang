@@ -92,10 +92,10 @@ const BASELINE: [string, string][] = [
   ["411fd77e07ded87ca0555dae3f1abb713057a7b63b5e86e712e3a05e2d4fb02a", "examples/courtyard-house.arch"],
   ["fcb5a98c9bf892177daef2174831cb56be4314d6c9ac66526b1046cd6618438b", "examples/furnished-flat.arch"],
   ["4090de73163a56b3319477311f2a1d38126aa4861359e38193f897b364e58ef5", "examples/gallery-l.arch"],
-  ["df81256b7655199970c53e69a1bfcbb409d59dd368604e2cc83b7482552f830f", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["b7c960f520ac96d773e04122a60c0356bdf24dfca4e812f3c2bb662c4d493deb", "examples/garden-house.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
   ["cc9a04a46e7d09a69aa3f45e3aa9625b66cb8bbc7814658c9aa1f3a5591b891a", "examples/garden-loft.arch"],
   ["6544b4c8a8dd7e8a419f1beb6ab9e3daed19bc6a972a2bb493e361dc29f05b02", "examples/hexagon-pavilion.arch"],
-  ["b188c6d560ee0dc48cac47acdd479c66f31a0c3fd57a55d6c7e32a4fb04e9cb6", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["0b683efa013f7814307162d97cb706adb9a9630f90b9c9aa61faf9681b85879e", "examples/hillside-villa.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
   ["943cb8dbb7c0438d4f7d62160dafba83a6861b912a5c8cbf70db47e11ec80be7", "examples/imports.arch"],
   ["eba7e921a8695d44326f95ebdb9e22c7b4a9fa5cb311b81055e6359e0cdeafd5", "examples/knob-flat.arch"], // new example (P4, the knobs example), as in ./block-stair-byte-identity.test.ts
   ["312c51d435f0c106b693ccd6c13a1cebb5c41b3217647e4202eef05101f058a1", "examples/laneway-house.arch"],
@@ -114,10 +114,10 @@ const BASELINE: [string, string][] = [
   ["bd6056a84ec5d55dee071e9101fea8d157ce72e0830211a1f66b11291f0e0ef7", "examples/terrace-row.arch"],
   ["503b89ecf0ca78f6c1100f1fd059c0b63080a9bdb3b9401c675c74971816cd21", "examples/themed.arch"],
   ["1a78c5532e6c4bb783da712f6f27c83f5c771765278ec8552940d4f73e32beaa", "examples/tiny-house.arch"],
-  ["2357bb50624d8aecb9ce28dfa643030e55b29392d45f92a0406b17e2e6ddcab8", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["83f8c5da9e87eaf2dd665a71e5adb380877b338063781741da3013daa6a25ba2", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
   ["12a2c3da84bc3fb045fc784bcad3851edaaf6ae0ec539727b52a5d39e58dca2b", "examples/transit-hall.arch"],
   ["f220acec3a66201d974fd3475459a35d52efe4689fc4f76784ccfae1ddc1b92d", "examples/two-bed.arch"],
-  ["654826455338d90bafeb6d342aa4b1d0e2aab5c964b5838507ac2162fa6edf71", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
+  ["bb77233f8020074a4efa169ba67a73a14dadaaa0e87a84244446454ccbb4dc38", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
   ["2fe38a4ad849ebb8a3192c7cea724d729f659fed022b9a1740b8b96a0e1db1f9", "test/fixtures/axes-grid.arch"],
   ["8b201a108d4f8cf901579b200c92b809000d77b9550cda3e092994c09fbba1d5", "test/fixtures/chain30.arch"],
   ["c08051d0ac804cb6ddbc6d6a073934ce248aab2951f1b3bcbb05e242ec1f4c22", "test/fixtures/dense-bays.arch"],
@@ -131,7 +131,7 @@ const BASELINE: [string, string][] = [
   ["d340196f446839ceda4c324efb5c2c29abab79551b673a72b95abeabc64d3fe2", "test/fixtures/off-path-bypass.arch"], // RM1.4: the unknown-furniture search is charged to the step meter (+29 steps: `cabinet`, 234 -> 263) (was ff686ab3)
   ["b1d58662ed6a557fd27aa948f640a3a70d38552402506413bd13f774a15fa47b", "test/fixtures/schedule-sheet.arch"],
   ["ac6b7954d2cefaa2461c5e8111d1004603b931ef133597f0971e07db78c6dd42", "test/fixtures/star30.arch"],
-  ["6e48c810b2a663d3bed9872c72baf36b60f0c66b9ee4d45d8ada5bb6ff855a40", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
+  ["0bac7a848709c20ef8bea5cedaae34877820e539f73acfb17770ae983d9cce45", "test/fixtures/storeys-eaves-overflow.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
   // was 3d10dfea. D27: this plan's stair stands in no wall, so `bounds()` reaching its break line widens the
   // drawing 156 mm. Only the SVG, the Scene and the overlay moved: with the old ones put back the old digest returns.
   ["f003e58744492a4b562ef28436484454401495ad76df042d14c468d3c0533243", "test/fixtures/zones-levels.arch"],
@@ -197,35 +197,35 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/furniture-on-landing.clean.arch",
   ],
   [
-    "c6383deacde2c6dcc29324161286900e379b3a5455d55d666f4eedfe7a34ae0c", // RM1.3a, see ./byte-identity-baseline.ts
+    "d1ca7746729b4b4d1b88ec53d016f6730ac7b1097c572f676463a46d224e1631", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/head-against-wall.arch",
   ],
   [
-    "8006f82586d77cdcbc25604e629d40fbc2bded96324e9215acb81a7fa5080701", // RM1.3a, see ./byte-identity-baseline.ts
+    "927ccd2bd0475fbae82847a9b67635972df243dca54f83466faabe0d688e45dc", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
-    "b62b21fb25e4251c18c2f2920b95545186c51990fbac7f93abed99234ba73dcd", // RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
+    "fba29ee39c00e9f210c4ad9f7cb571bb5800c6152693b11f35fd57ab077bbd8a", // RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/riser-too-high.arch",
   ],
   [
-    "f09d66b97645ac11e71c9449884a203e2a1ed7401be1fc7d17ed42e180918737", // RM1.2a, see ./byte-identity-baseline.ts
+    "6679999d5fcf2dacca2e6502ba1f8ece2bf3e62b5ac2372f89a60c962f7fb922", // RM1.2a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
   ],
   [
-    "62561237624e63dc6963d928aba528b086ab20190498b45c03f0a3efdf5195b0", // RM1.3a, see ./byte-identity-baseline.ts
+    "33406ff02bc85e805e748eb29c2b562a79e220707b70fd933b480e6a4a258b61", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
   ],
   [
-    "9d602f21ac870ab1ff52a11a872cb62969675bbb268856596f77418c32820e58", // RM1.3a, see ./byte-identity-baseline.ts
+    "7dae31b4a7e4f713ec17de3f4769443b20b5010358303fd73c1bc41110dc3e49", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.clean.arch",
   ],
   [
-    "a5712c574f3be15f891f474b7a2e3b7a91d608ccc68ac436abd41cf69b40c532", // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
+    "5e014880e0f323896420c3af7c7ff8f3b910f67cac13b1b5f18c5434d0c07108", // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/stair-too-steep.arch",
   ],
   [
-    "7048d5cf94fbf7484f9b3cbb8bbff523c970657ffc20d6c8606a7971a13f05e7", // RM1.3a, see ./byte-identity-baseline.ts
+    "bb6b4c1a93aa83f3c448c293c74d9f4054bf5304b5719db3b897f16804cb6b2c", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/stair-too-steep.clean.arch",
   ],
   [
@@ -245,17 +245,17 @@ const BASELINE: [string, string][] = [
     "test/defect-corpus/stair-safety/swing-over-stair.clean.arch",
   ],
   [
-    "9973266c0262637c62af5e92452aaf6efc7830da88cf81da82d2cecd56da9495", // RM1.3a, see ./byte-identity-baseline.ts
+    "8fa9eef1807b3d794f651cddaa2b9e871378ceb19e9178ff4e1d286083ada041", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/void-at-stair-head.arch",
   ],
   [
-    "43e1e7b81a86c292b022efcb446fef4f26fb29040082cb96693088bc8f35d3ea", // RM1.3a, see ./byte-identity-baseline.ts
+    "c30762fd223af6b94f5ef0dc029ea7838da4f79aa348d8f780edb15f51cb104e", // RM1.3a, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
     "test/defect-corpus/stair-safety/void-at-stair-head.clean.arch",
   ],
   ["803382568b44d2abe330873b5b788636b5dae38beea8416ea9da39a9fb3a12ab", "inline:stair-words-as-names"],
   ["f1497554533ffa39becdfaf8494d14a9d2aa84d8eee0455a4eaf4feffa213aba", "inline:stair-square-and-narrow"],
   ["0ba9460627a738d65c7d5235e533ad8410bf7a548bfedc69dca44f987793ee91", "inline:stair-placed"],
-  ["4167a1570bdd1c88c93532347194b825f6146a42193aaecd515e3bd6b1853cf6", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts
+  ["08e21d460b8bb892a2c38b503081e8e51b3dc3c161075b30e12cbec3694950a6", "inline:stair-arrival"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts; RM1.2a review, see ./byte-identity-baseline.ts; RM1.3b overlay, see ./byte-identity-baseline.ts
   ["e6eed958e1d4cea68f7981fce9964af4b5a26fa3d09ad3eafebb0992ce5cb727", "inline:stair-refusals"],
   ["57879436768cab2c738430d6586f0e88de6cb79c178799a011c9d09f73e553df", "inline:stair-parse-refusals"],
   ["b4c47f57cdf33588918674570fffc49ecf4ca3766c45aa492aa88f5fdb941982", "inline:grid-the-word-as-a-name"],
