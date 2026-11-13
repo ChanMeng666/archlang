@@ -686,3 +686,43 @@ describe("W_PATH_TOO_NARROW on a storey reached only by runs narrower than the m
     );
   });
 });
+
+describe("a stair's written `width` is the width the walk arrives at, and the clause its hint quotes (RM1.3b)", () => {
+  const plan = (clauses: (dir: string) => string) => `plan "Written width" {
+  units mm
+  level 1 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=hall at (0,0) size 8000x6000 label "Hall" uses hall entry
+    door id=front on shell at 3000 width 1200
+    stair id=st at (200,1000) ${clauses("up")}
+  }
+  level 2 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=landing at (0,0) size 8000x6000 label "Landing" uses hall circulation
+    stair id=st at (200,1000) ${clauses("down")}
+  }
+}`;
+  const upstairs = (src: string) =>
+    lint(src, { profile: "accessibility-advisory" }).filter((d) => d.code === "W_PATH_TOO_NARROW" && d.level === 2);
+  const cases = [
+    { written: "size 800x3000 dir %s width 700", reads: 700, quote: "size 900x3000 width 900" },
+    { written: "size 1000x3000 dir %s width 800", reads: 800, quote: "width 900" },
+  ];
+  for (const { written, reads, quote } of cases) {
+    it(`\`${written.replace("%s", "up")}\`: the landing reads ${reads} and the hint quotes \`${quote}\``, () => {
+      const src = plan((dir) => written.replace("%s", dir));
+      const up = describePlan(src).levels!.find((l) => l.level === 2)!;
+      expect(up.circulation?.rooms[0]?.bottleneckClearWidthMm).toBe(reads);
+      expect(up.access.rooms[0]?.bottleneckClearWidth).toBe(reads);
+      const [d] = upstairs(src);
+      expect(d!.hints![0]).toContain(`(now ${reads} mm; \`${quote}\` on every storey it stands on)`);
+      // Pasting the quoted clause on both storeys clears the walk.
+      const [, size, width] = /^(?:size (\d+x\d+) )?width (\d+)$/.exec(quote)!;
+      const pasted = plan((dir) => {
+        const w = written.replace("%s", dir).replace(/width \d+/, `width ${width}`);
+        return size ? w.replace(/size \d+x\d+/, `size ${size}`) : w;
+      });
+      expect(upstairs(pasted)).toEqual([]);
+    });
+  }
+});

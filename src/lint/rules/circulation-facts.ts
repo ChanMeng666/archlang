@@ -46,6 +46,7 @@ import {
 import { entranceInputs, entranceWays, walkAccessGraph } from "../../analyze/entrance.js";
 import { landedOn, runWidth } from "../../analyze/nav-grid.js";
 import { fmt2 } from "../../num-format.js";
+import type { RVertical } from "../../vertical.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { openingName } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -264,8 +265,9 @@ interface NarrowRun {
   kind: string;
   /** Its width across the edge a person steps off at (the walk's seed there). */
   width: number;
-  /** The `size` that clears the minimum, quoted as the statement writes it, or null for a run
-   *  whose flight is a block stair's (its width is not one `size` of its own). */
+  /** The clause that clears the minimum, quoted as the statement writes it (`size`, or a stair's
+   *  written `width`, with its `size` when the footprint is too narrow for it), or null for a run
+   *  whose flight is a block stair's (its width is not one clause of its own). */
   size: string | null;
 }
 
@@ -293,12 +295,19 @@ function narrowArrivals(
     const { w: sw, h: sh } = a.run.size;
     // Every edge stepped off at runs along the same dimension, or no one `size` names it.
     const along = new Set(across.map((x) => (x.e === "top" || x.e === "bottom" ? "w" : "h")));
-    const size =
-      a.flight === a.run && along.size === 1
-        ? along.has("w")
-          ? `size ${fmt2(need)}x${fmt2(sh)}`
-          : `size ${fmt2(sw)}x${fmt2(need)}`
-        : null;
+    let size: string | null = null;
+    if (a.flight === a.run && along.size === 1) {
+      const footprint = along.has("w") ? `size ${fmt2(need)}x${fmt2(sh)}` : `size ${fmt2(sw)}x${fmt2(need)}`;
+      // A stair that writes its flight `width` is widened by that clause (and its `size` too when
+      // the footprint is narrower than the width it needs); `runWidth` reads the same `width`.
+      const cross = along.has("w") ? sw : sh;
+      size =
+        a.run.kind === "stair" && a.run._widthAuthored
+          ? need <= cross
+            ? `width ${fmt2(need)}`
+            : `${footprint} width ${fmt2(need)}`
+          : footprint;
+    }
     runs.push({ id: a.run.id, kind: a.run.kind, width: w, size });
   }
   if (widest >= min) return null;
@@ -316,6 +325,52 @@ function narrowArrivals(
     rank: () => 0,
   }).value;
   return { widest, runs, doorCap };
+}
+
+/**
+ * Each room's walk reading with every narrow arriving run widened to clear `min` across the edge a
+ * person steps off at (the change {@link narrowRunHint} quotes), re-measured on the walk's own grid
+ * as a door attribution is: the run is only named as THE bottleneck where this reading clears, so
+ * furniture pinching the landing at the run's width is never blamed on the run. A count, not a
+ * time: one grid per storey, and only on a storey whose every arriving run is under the minimum
+ * (not drawn from `MAX_ATTRIBUTION_MEASURES`, which the door attributions spend first).
+ */
+function readingsWithRunsWidened(ctx: LintContext, min: number, view: View): ReadonlyMap<string, number> {
+  const grid = ctx.ir.grid;
+  const need = grid > 0 ? Math.ceil(min / grid) * grid : Math.ceil(min);
+  const narrow = new Set(
+    landedOn(ctx.building.arrivalShafts, ctx.rooms)
+      .filter((a) => a.flight === a.run && Math.max(...a.edges.map((e) => runWidth(a.flight, e))) < min)
+      .map((a) => a.run.id),
+  );
+  const alongOf = new Map(
+    ctx.building.arrivalShafts.map((a) => [a.run.id, a.edges.every((e) => e === "top" || e === "bottom") ? "w" : "h"]),
+  );
+  const widen = <V extends RVertical>(v: V): V => {
+    if (!narrow.has(v.id)) return v;
+    const w = alongOf.get(v.id) === "w";
+    const size = w ? { w: Math.max(v.size.w, need), h: v.size.h } : { w: v.size.w, h: Math.max(v.size.h, need) };
+    return v.kind === "stair" ? { ...v, size, width: Math.max(v.width, need) } : { ...v, size };
+  };
+  // A run that is its own flight stays so (one object), as `shaftsInFrame` reads it.
+  const arrivals = ctx.building.arrivalShafts.map((a) => {
+    const run = widen(a.run);
+    return { ...a, run, flight: a.flight === a.run ? run : a.flight };
+  });
+  return roomBottlenecks(
+    ctx.rooms,
+    ctx.ir.walls,
+    ctx.doors,
+    ctx.openings,
+    ctx.furniture,
+    walkedFromShafts(view.access, arrivals, ctx.rooms),
+    ctx.rules.tolMm,
+    ctx.verticals.map(widen),
+    ctx.voids,
+    arrivals,
+    undefined,
+    ctx.work,
+  );
 }
 
 /** The hint naming the narrow runs ({@link narrowArrivals}): `lead` opens it. */
@@ -829,6 +884,12 @@ export const pathTooNarrow: LintRule = {
     // their own door alone take what is left in the full view, and a room neither can afford gets
     // the unattributed hints.
     const measures = ctx.building.attributionMeasures ?? { left: MAX_ATTRIBUTION_MEASURES, storeys: 0 };
+    // Re-measured once per storey, on first need.
+    let widened: ReadonlyMap<string, number> | undefined;
+    const clearsWithRunWidened = (roomId: string): boolean => {
+      if (widened === undefined) widened = readingsWithRunsWidened(ctx, min, walk);
+      return (widened.get(roomId) ?? 0) >= min;
+    };
     const namedWalk = attributeBottlenecks(
       ctx,
       widths(circ),
@@ -919,7 +980,8 @@ export const pathTooNarrow: LintRule = {
       const atRun =
         viaRun !== null &&
         Math.round(w) === Math.round(viaRun.widest) &&
-        (viaRun.doorCap.get(r.id) ?? Number.POSITIVE_INFINITY) >= min;
+        (viaRun.doorCap.get(r.id) ?? Number.POSITIVE_INFINITY) >= min &&
+        clearsWithRunWidened(r.id);
       const kinds = new Set(viaRun?.runs.map((x) => x.kind) ?? []);
       const runWord = viaRun?.runs.length === 1 ? `${[...kinds][0]} it is reached by` : "widest run it is reached by";
       out.push({

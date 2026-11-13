@@ -1,6 +1,8 @@
 /** suggestTopology; suggestTopology — W_NO_ENTRANCE; suggestTopology — W_BATH_VIA_BEDROOM; suggestTopology — W_BATH_VIA_BEDROOM spares an en-suite beside a bathroo… */
 
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { walkFiles } from "./helpers/corpus.js";
 import { suggestTopology } from "../src/suggest.js";
 import { lint, compile } from "../src/index.js";
 import { rectOf, resolvePlan } from "../src/analyze.js";
@@ -361,16 +363,21 @@ describe("suggestTopology — stable wall references", () => {
     expect(codes).not.toContain("W_ROOM_UNREACHABLE");
   });
 
-  it("keeps the pure geometric order for a NON-private unreachable room", () => {
-    const s = suggestTopology(NON_PRIVATE);
-    const unreach = s.find((x) => x.code === "W_ROOM_UNREACHABLE" && x.roomId === "store")!;
-    // Geometric (longest-run) order: the exterior top wall outranks the shorter
+  it("keeps the pure geometric order for a NON-private unreachable room off a room that is not circulation", () => {
+    // The neighbour a lounge, not a hall: the exterior top wall's longer run outranks the shorter
     // interior partition — the private-room interior-first rule does NOT apply here.
+    const s = suggestTopology(NON_PRIVATE.replace('label "Hall"', 'label "Lounge"'));
+    const unreach = s.find((x) => x.code === "W_ROOM_UNREACHABLE" && x.roomId === "store")!;
     expect(unreach.candidates[0]!.insertText.startsWith("door on ext ")).toBe(true);
     expect(unreach.candidates.map((c) => c.insertText)).toContain("door on part at 50% width 900");
     const idxExterior = unreach.candidates.findIndex((c) => c.insertText.includes(" ext "));
     const idxInterior = unreach.candidates.findIndex((c) => c.insertText.includes(" part "));
     expect(idxExterior).toBeLessThan(idxInterior);
+  });
+
+  it("a door into circulation comes first for every room, a non-private one too (RM1.3b review)", () => {
+    const unreach = suggestTopology(NON_PRIVATE).find((x) => x.code === "W_ROOM_UNREACHABLE" && x.roomId === "store")!;
+    expect(unreach.candidates[0]!.insertText).toBe("door on part at 50% width 900");
   });
 });
 
@@ -432,4 +439,74 @@ describe("suggestTopology — the room a reconnection passes through (PS0.6)", (
     expect(u.candidates[0]!.insertText.startsWith("door on ext ")).toBe(true);
     expect(u.candidates.some((c) => c.rationale.includes('to "bed"'))).toBe(false);
   });
+});
+
+describe("suggestTopology — the wall a door is put on, and what it opens through (RM1.3b review)", () => {
+  // One room edge, two walls: `ph1` behind the hall's stretch, `ph2` behind the bedroom's.
+  const TWO_WALLS = `plan "Two walls on one edge" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (9000,0) (9000,6000) (0,6000) close }
+  wall id=pv partition thickness 100 { (3000,0) (3000,4000) }
+  wall id=ph1 partition thickness 100 { (0,4000) (3000,4000) }
+  wall id=ph2 partition thickness 100 { (3000,4000) (9000,4000) }
+  room id=hall at (0,0) size 3000x4000 label "Hall" uses hall
+  room id=bed at (3000,0) size 6000x4000 label "Bedroom" uses bedroom
+  room id=store at (0,4000) size 9000x2000 label "Store" uses storage
+  door id=entry at (1500,0) width 900 wall exterior
+  door id=d_bed at (3000,2000) width 900
+}`;
+  // The dressing room is reached only through the bedroom: a door into it is a door through it.
+  const BEHIND_BEDROOM = `plan "Behind the bedroom" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (10000,0) (10000,7000) (0,7000) close }
+  wall id=a partition thickness 100 { (2000,0) (2000,4000) }
+  wall id=b partition thickness 100 { (6000,0) (6000,4000) }
+  wall id=c partition thickness 100 { (0,4000) (10000,4000) }
+  room id=hall at (0,0) size 2000x4000 label "Hall" uses hall
+  room id=bed at (2000,0) size 4000x4000 label "Bedroom" uses bedroom
+  room id=dress at (6000,0) size 4000x4000 label "Dressing" uses storage
+  room id=study at (0,4000) size 10000x3000 label "Study" uses office
+  door id=entry at (1000,0) width 900 wall exterior
+  door id=d_bed at (2000,2000) width 900
+  door id=d_dr at (6000,2000) width 900
+}`;
+  const paste = (src: string, text: string) => src.replace("  door id=entry", `  ${text}\n  door id=entry`);
+
+  it("sites the door on the wall that stands on the stretch it opens through", () => {
+    const u = suggestTopology(TWO_WALLS).find((x) => x.code === "W_ROOM_UNREACHABLE")!;
+    expect(u.candidates[0]!.insertText).toBe("door on ph1 at 50% width 900");
+    expect(lint(paste(TWO_WALLS, u.candidates[0]!.insertText)).map((d) => d.code)).not.toContain("W_ROOM_DISCONNECTED");
+  });
+
+  it("a room reached only through a bedroom ranks as one: the hall door comes first", () => {
+    const u = suggestTopology(BEHIND_BEDROOM).find((x) => x.code === "W_ROOM_UNREACHABLE")!;
+    expect(u.candidates[0]!.rationale).toContain('to "hall"');
+    const codes = lint(paste(BEHIND_BEDROOM, u.candidates[0]!.insertText)).map((d) => d.code);
+    expect(codes).not.toContain("W_ROOM_DISCONNECTED");
+    expect(codes).not.toContain("W_ROOM_UNREACHABLE");
+    expect(codes).not.toContain("W_ROOM_VIA_PRIVATE");
+  });
+
+  it("over the corpus, pasting each suggestion's first candidate clears the fault it names", () => {
+    const misses: string[] = [];
+    let pasted = 0;
+    for (const dir of ["examples", "test/fixtures", "test/review-sheet", "test/defect-corpus"])
+      for (const file of walkFiles(dir)) {
+        const src = readFileSync(file, "utf8");
+        for (const s of suggestTopology(src)) {
+          const fault = (c: string) => c === s.code || (s.code === "W_ROOM_UNREACHABLE" && c === "W_ROOM_DISCONNECTED");
+          const before = lint(src).filter((d) => fault(d.code)).length;
+          const i = src.lastIndexOf("}");
+          const after = lint(`${src.slice(0, i)}  ${s.candidates[0]!.insertText}\n${src.slice(i)}`).filter((d) =>
+            fault(d.code),
+          ).length;
+          pasted++;
+          if (after >= before) misses.push(`${file} ${s.code} ${s.roomId}: ${s.candidates[0]!.insertText}`);
+        }
+      }
+    expect(pasted).toBeGreaterThan(50);
+    expect(misses).toEqual([]);
+  }, 120_000);
 });

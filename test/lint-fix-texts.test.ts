@@ -81,6 +81,37 @@ const corpus = (dirs: readonly string[]) =>
       .map((f) => ({ name: `${dir}/${f}`, src: readFileSync(join(abs, f), "utf8"), world: worldFor(abs) }));
   });
 
+/**
+ * Plans the corpus cannot supply, held to the attribution law too (RM1.3b review): a 700 mm
+ * stair whose landing two cabinets also pinch to its width, so a warning names the stair only
+ * where widening the stair alone, re-measured, clears the walk.
+ */
+const LAW_PLANS = [
+  {
+    name: "inline:cx1-stair-tie",
+    world: worldFor(resolvePath(".")),
+    src: `plan "Narrow stair" {
+  units mm
+  level 1 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=hall at (0,0) size 8000x6000 label "Hall" uses hall entry
+    door id=front on shell at 3000 width 1200
+    stair id=st at (200,1000) size 700x3000 dir up
+  }
+  level 2 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    wall id=hw partition thickness 100 { (3000,0) (3000,6000) }
+    room id=landing at (0,0) size 3000x6000 label "Landing" uses hall circulation
+    room id=box at (3000,0) size 5000x6000 label "Box room" uses storage
+    door id=db on hw at 2500 width 1200 swing into box
+    stair id=st at (200,1000) size 700x3000 dir down
+    furniture cabinet at (2200,100) size 300x1900
+    furniture cabinet at (2200,2800) size 300x3100
+  }
+}`,
+  },
+];
+
 describe("W_ROOM_NO_FIXTURE — the hint's statement compiles, clears it, and raises nothing new", () => {
   const BATH = `plan "Empty bath" {
   units mm
@@ -424,20 +455,27 @@ describe("W_FURNITURE_WALL_COLLISION — names the wall; `offset` is the CENTRE;
   });
 });
 
-/** Apply every `Widen door "x" to \`width N\`` hint to the door `x`'s own statement, and every
- *  `Widen stair \`s\` (now N mm; \`size WxH\` on every storey it stands on)` hint (RM1.3b) to
- *  each storey's statement of that run. Returns null when a named door or run is not written with
- *  that id at the top level (a component's). */
+/** Apply every `Widen door "x" to \`width N\`` hint to the door `x`'s own statement, and every run
+ *  a `Widen …`/`And widen …` hint names (RM1.3b: `stair \`s\` (now N mm; \`<clause>\` on every
+ *  storey it stands on)`, one run or `one of` several; the clause a `size WxH`, a `width N`, or
+ *  both) to each storey's statement of that run. Returns null when a named door or run is not
+ *  written with that id at the top level (a component's). */
 function widenAll(src: string, hints: readonly string[], level?: number): string | null {
   for (const h of hints) {
-    const run = /^Widen (stair|elevator|escalator) `([^`]+)` \(now \d+ mm; `size (\d+x\d+)` on every storey/.exec(h);
-    if (!run) continue;
-    const re = new RegExp(
-      `(${run[1]} id=${run[2]!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b[^\\n]*?size )\\d+x\\d+`,
-      "g",
-    );
-    if (!re.test(src)) return null;
-    src = src.replace(re, `$1${run[3]}`);
+    if (!/^(?:And w|W)iden (?:one of )?(?:stair|elevator|escalator) `/.test(h)) continue;
+    for (const run of h.matchAll(/(stair|elevator|escalator) `([^`]+)` \(now \d+ mm; `([^`]+)` on every storey/g)) {
+      const head = `(${run[1]} id=${run[2]!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b[^\\n]*?)`;
+      const size = /size (\d+x\d+)/.exec(run[3]!)?.[1];
+      const width = /width (\d+)/.exec(run[3]!)?.[1];
+      if (!new RegExp(head).test(src)) return null;
+      if (size) src = src.replace(new RegExp(`${head}size \\d+x\\d+`, "g"), `$1size ${size}`);
+      if (width) {
+        const written = new RegExp(`${head}width \\d+`, "g");
+        src = written.test(src)
+          ? src.replace(written, `$1width ${width}`)
+          : src.replace(new RegExp(`(${run[1]} id=${run[2]}\\b[^\\n]*)`, "g"), `$1 width ${width}`);
+      }
+    }
   }
   // Ids are unique only within a storey: on a multi-storey plan, edit inside its `level` block.
   let lo = 0;
@@ -713,7 +751,7 @@ describe("W_PATH_TOO_NARROW — names only doors whose widening clears the room,
     it(`${p ?? "default"} · corpus: widening every door a warning names lifts that room past the minimum`, () => {
       const min = minOf(p);
       let applied = 0;
-      for (const { name, src, world } of corpus(["examples", "test/fixtures"])) {
+      for (const { name, src, world } of [...corpus(["examples", "test/fixtures"]), ...LAW_PLANS]) {
         for (const d of lint(src, { world, ...opts(p) }).filter((x) => x.code === "W_PATH_TOO_NARROW")) {
           const walk = /^The walk from the entrance to "(.+?)" .* — the bottlenecks? (?:is|are) /.exec(d.message);
           if (!walk) continue;

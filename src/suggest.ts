@@ -37,7 +37,9 @@ import {
   isKitchen,
   isWetRoom,
   reachFrom,
+  pointInRoomBox,
   rectOf,
+  roomBox,
   resolvePlan,
   wetRoomsOnlyViaBedroom,
   type AnalyzeOptions,
@@ -172,6 +174,8 @@ function neighbourRunsOnEdge(
   rooms: RRoom[],
   selfId: string,
   tol: number,
+  /** Which way is ACROSS the edge, away from the room: `-1` for a top or left edge, `+1` else. */
+  outward: 1 | -1,
 ): Array<{ id: string; lo: number; hi: number }> {
   const ids = new Set(neighboursOnEdge(e, rooms, selfId, tol));
   const out: Array<{ id: string; lo: number; hi: number }> = [];
@@ -185,10 +189,17 @@ function neighbourRunsOnEdge(
           .filter(([a, b]) => collinearOverlapLength(ea, eb, a, b, tol) > 0)
           .map(([a, b]) => [Math.min(along(a), along(b)), Math.max(along(a), along(b))])
       : [e.axis === "h" ? [rectOf(r).x, rectOf(r).x + rectOf(r).w] : [rectOf(r).y, rectOf(r).y + rectOf(r).h]];
+    const box = roomBox(r);
     for (const [lo, hi] of spans) {
       const a = Math.max(lo, e.lo);
       const b = Math.min(hi, e.hi);
-      if (b > a) out.push({ id: r.id, lo: a, hi: b });
+      if (!(b > a)) continue;
+      // Across the wall, not beside it: a room that overlaps this one along the same side (its
+      // edge on the same line, its floor on this side) is no neighbour a door here opens into.
+      const mid = (a + b) / 2;
+      const off = e.fixed + outward * tol;
+      if (pointInRoomBox(e.axis === "h" ? { x: mid, y: off } : { x: off, y: mid }, box))
+        out.push({ id: r.id, lo: a, hi: b });
     }
   }
   return out;
@@ -354,6 +365,19 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
   for (const w of walls) categoryCount.set(w.category, (categoryCount.get(w.category) ?? 0) + 1);
   const access = buildDoorAccessGraph(rooms, doors, tol, undefined, openings, openRunsOf(ir, tol));
   const reachable = new Set(access.rooms.filter((r) => r.reachable).map((r) => r.id));
+  // What a new door gives access THROUGH (PS0.6): a neighbour reached only by passing a bedroom
+  // (or a wet room) is as private as one, whatever it is itself.
+  const graph = accessDigraph(
+    rooms.map((r) => r.id),
+    access.edges,
+  );
+  const byId = new Map(rooms.map((r) => [r.id, r]));
+  const avoiding = (test: (r: RRoom) => boolean) =>
+    reachFrom(graph, { avoid: (id) => (byId.has(id) ? test(byId.get(id)!) : false) });
+  const noBedroom = avoiding(isBedroom);
+  const noWetRoom = avoiding(isWetRoom);
+  const throughTier = (n: RRoom): number =>
+    !noBedroom.has(n.id) ? 4 : !noWetRoom.has(n.id) ? Math.max(3, wayInTier(n)) : wayInTier(n);
   // Every connector (door/opening) that can block a new opening's site.
   const connectors = [...doors, ...openings, ...windows].map((c) => ({ at: c.at, width: c.width }));
 
@@ -431,23 +455,25 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
       for (const e of edgesOf(rect)) {
         const host = hostWallForEdge(e, walls, tol);
         if (!host) continue;
-        const neighbours = neighboursOnEdge(e, rooms, room.id, tol);
-        const isExteriorEdge = neighbours.length === 0 && host.wall.category === "exterior";
+        const outward = e.fixed === (e.axis === "h" ? rect.y : rect.x) ? -1 : 1;
+        const across = neighbourRunsOnEdge(e, rooms, room.id, tol, outward);
+        const isExteriorEdge = across.length === 0 && host.wall.category === "exterior";
         const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
         const runs: Array<{ to: string | null; lo: number; hi: number }> = isExteriorEdge
           ? [{ to: null, lo: e.lo, hi: e.hi }]
-          : neighbourRunsOnEdge(e, rooms, room.id, tol)
-              .filter((n) => reachable.has(n.id))
-              .map((n) => ({ to: n.id, lo: n.lo, hi: n.hi }));
-        // One candidate per neighbour on this edge: the longest free run across any of its runs.
-        const best = new Map<string | null, { mid: number; len: number }>();
+          : across.filter((n) => reachable.has(n.id)).map((n) => ({ to: n.id, lo: n.lo, hi: n.hi }));
+        // One candidate per neighbour on this edge: the longest free run across any of its runs,
+        // on the wall that stands on THAT stretch (two walls can share one room edge).
+        const best = new Map<string | null, { mid: number; len: number; host: { wall: RWall } }>();
         for (const run of runs) {
           const free = longestFreeRun(run.lo, run.hi, blocked);
           if (!free || free.len < DOOR_WIDTH) continue;
+          const at = run.to === null ? host : hostWallForEdge({ ...e, lo: run.lo, hi: run.hi }, walls, tol);
+          if (!at) continue;
           const had = best.get(run.to);
-          if (!had || free.len > had.len) best.set(run.to, free);
+          if (!had || free.len > had.len) best.set(run.to, { ...free, host: at });
         }
-        for (const [to, free] of best) {
+        for (const [to, { host, ...free }] of best) {
           const point = edgePoint(e, free.mid);
           const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
           const via = to
@@ -461,7 +487,7 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
             pct,
           };
           const neighbour = to ? rooms.find((r) => r.id === to) : undefined;
-          if (neighbour) interior.push({ ...c, tier: wayInTier(neighbour) });
+          if (neighbour) interior.push({ ...c, tier: throughTier(neighbour) });
           else exterior.push(c);
         }
       }
@@ -470,12 +496,14 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
         return tiers.flatMap((t) => sortRaw(xs.filter((x) => x.tier === t)));
       };
       const isPrivate = isBedroom(room) || isWetRoom(room);
-      // Through a bedroom or a wet room is the last resort for any room (tiers 3 and 4).
-      const good = interior.filter((c) => c.tier < 3);
+      // A door into circulation comes first for every room; through a bedroom or a wet room (or a
+      // room reached only through one) is the last resort (tiers 3 and 4).
+      const hall = interior.filter((c) => c.tier === 0);
+      const good = interior.filter((c) => c.tier > 0 && c.tier < 3);
       const poor = interior.filter((c) => c.tier >= 3);
       const candidates = isPrivate
-        ? toCandidates([...byTier(good), ...sortRaw(exterior), ...byTier(poor)])
-        : toCandidates([...sortRaw([...good, ...exterior]), ...byTier(poor)]);
+        ? toCandidates([...sortRaw(hall), ...byTier(good), ...sortRaw(exterior), ...byTier(poor)])
+        : toCandidates([...sortRaw(hall), ...sortRaw([...good, ...exterior]), ...byTier(poor)]);
       if (interior.length + exterior.length > 0) {
         suggestions.push({
           problem: `Room "${label}" can't be reached from the entrance.`,

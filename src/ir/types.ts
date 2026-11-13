@@ -698,6 +698,9 @@ export interface RStair extends RBase {
   dir: VerticalDir;
   /** Flight width across the run (mm). */
   width: number;
+  /** The straight stair's statement writes `width` (absent when it is the footprint's default):
+   *  read by a hint that quotes the clause to edit (`W_PATH_TOO_NARROW`, RM1.3b). Internal. */
+  _widthAuthored?: true;
   /**
    * The footprint edge the run is entered across, in PLAN coordinates, once a `place` frame
    * has carried it: the local tail (`tailEdge`) acted on by the frame. Absent at the root,
