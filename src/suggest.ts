@@ -33,6 +33,8 @@ import {
   DEFAULT_TOL,
   EXTERIOR_NODE,
   isBedroom,
+  isCirculation,
+  isKitchen,
   isWetRoom,
   reachFrom,
   rectOf,
@@ -48,6 +50,7 @@ import { fmt3 as numStr } from "./num-format.js";
 import type { Point } from "./ast.js";
 import type { RDoor, RFurniture, ROpening, RRoom, RWall, RWindow } from "./ir.js";
 import { openRunsOf } from "./analyze.js";
+import { isLivingOrDining } from "./analyze/nav-grid.js";
 
 /** One concrete statement that would resolve a suggested fault, with a reason. */
 export interface SuggestionCandidate {
@@ -156,6 +159,52 @@ function neighboursOnEdge(e: Edge, rooms: RRoom[], selfId: string, tol: number):
     if (Math.min(hi, e.hi) - Math.max(lo, e.lo) > 0) out.push(r.id);
   }
   return out;
+}
+
+/**
+ * Where along edge `e` each neighbouring room lies across it ({@link neighboursOnEdge}'s rooms,
+ * in its order): the run of `e` that room's own edge shares, clipped to `e`, so a door placed in
+ * it opens into THAT room and no other (PS0.6). A polygon neighbour gives one run per edge of its
+ * ring lying on `e`'s line.
+ */
+function neighbourRunsOnEdge(
+  e: Edge,
+  rooms: RRoom[],
+  selfId: string,
+  tol: number,
+): Array<{ id: string; lo: number; hi: number }> {
+  const ids = new Set(neighboursOnEdge(e, rooms, selfId, tol));
+  const out: Array<{ id: string; lo: number; hi: number }> = [];
+  const ea: Point = e.axis === "h" ? { x: e.lo, y: e.fixed } : { x: e.fixed, y: e.lo };
+  const eb: Point = e.axis === "h" ? { x: e.hi, y: e.fixed } : { x: e.fixed, y: e.hi };
+  const along = (p: Point): number => (e.axis === "h" ? p.x : p.y);
+  for (const r of rooms) {
+    if (!ids.has(r.id)) continue;
+    const spans: Array<[number, number]> = r.poly
+      ? polygonEdges(r.poly)
+          .filter(([a, b]) => collinearOverlapLength(ea, eb, a, b, tol) > 0)
+          .map(([a, b]) => [Math.min(along(a), along(b)), Math.max(along(a), along(b))])
+      : [e.axis === "h" ? [rectOf(r).x, rectOf(r).x + rectOf(r).w] : [rectOf(r).y, rectOf(r).y + rectOf(r).h]];
+    for (const [lo, hi] of spans) {
+      const a = Math.max(lo, e.lo);
+      const b = Math.min(hi, e.hi);
+      if (b > a) out.push({ id: r.id, lo: a, hi: b });
+    }
+  }
+  return out;
+}
+
+/**
+ * How well a room serves as the way into another (PS0.6, `skills/archlang/SKILL.md`: never route
+ * a room through a bedroom): circulation first, then a living, dining or kitchen space, then any
+ * other room that is neither private, then a wet room, then a bedroom last. Lower is better.
+ */
+function wayInTier(r: RRoom): number {
+  if (isCirculation(r)) return 0;
+  if (isBedroom(r)) return 4;
+  if (isWetRoom(r)) return 3;
+  if (isLivingOrDining(r) || isKitchen(r)) return 1;
+  return 2;
 }
 
 /** The longest sub-interval of `[lo, hi]` not covered by any `blocked` interval:
@@ -372,37 +421,61 @@ export function suggestTopology(source: string, opts: SuggestOptions = {}): Sugg
       // exterior candidates cut a brand-new outside door. For a PRIVATE room
       // (bedroom/wet room) the interior reconnection is architecturally preferred,
       // so those rank above exterior ones regardless of run length; a non-private
-      // room keeps the pure geometric (longest-run-first) order across both.
-      const interior: RawCandidate[] = [];
+      // room keeps the pure geometric (longest-run-first) order across both. Either
+      // way a connection THROUGH a bedroom or a wet room ranks last (PS0.6).
+      // Each interior candidate is sited on the run of the edge its neighbour lies across, so the
+      // door opens into the room the rationale names, and is ranked by what that room is
+      // (PS0.6, {@link wayInTier}): through a hall or a living space before a bedroom or bath.
+      const interior: Array<RawCandidate & { tier: number }> = [];
       const exterior: RawCandidate[] = [];
       for (const e of edgesOf(rect)) {
         const host = hostWallForEdge(e, walls, tol);
         if (!host) continue;
         const neighbours = neighboursOnEdge(e, rooms, room.id, tol);
-        const reachableNeighbour = neighbours.find((id) => reachable.has(id));
         const isExteriorEdge = neighbours.length === 0 && host.wall.category === "exterior";
-        if (!reachableNeighbour && !isExteriorEdge) continue;
-
         const blocked = [...blockedRuns(e, connectors, tol), ...furnitureBlockedRuns(e, rect, furniture)];
-        const free = longestFreeRun(e.lo, e.hi, blocked);
-        if (!free || free.len < DOOR_WIDTH) continue;
-        const point = edgePoint(e, free.mid);
-        const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
-        const via = reachableNeighbour
-          ? `connects "${label}" to "${reachableNeighbour}" (which reaches the entrance)`
-          : `opens "${label}" directly to the exterior (a new entrance)`;
-        (reachableNeighbour ? interior : exterior).push({
-          insertText: composeOpening("door", host.wall, pct, point, DOOR_WIDTH, categoryCount),
-          rationale: `A door on ${named(host.wall, false)} ${via}.`,
-          len: free.len,
-          wallId: host.wall.id,
-          pct,
-        });
+        const runs: Array<{ to: string | null; lo: number; hi: number }> = isExteriorEdge
+          ? [{ to: null, lo: e.lo, hi: e.hi }]
+          : neighbourRunsOnEdge(e, rooms, room.id, tol)
+              .filter((n) => reachable.has(n.id))
+              .map((n) => ({ to: n.id, lo: n.lo, hi: n.hi }));
+        // One candidate per neighbour on this edge: the longest free run across any of its runs.
+        const best = new Map<string | null, { mid: number; len: number }>();
+        for (const run of runs) {
+          const free = longestFreeRun(run.lo, run.hi, blocked);
+          if (!free || free.len < DOOR_WIDTH) continue;
+          const had = best.get(run.to);
+          if (!had || free.len > had.len) best.set(run.to, free);
+        }
+        for (const [to, free] of best) {
+          const point = edgePoint(e, free.mid);
+          const { pct } = projectPointOntoWall(host.wall as AttachableWall, point);
+          const via = to
+            ? `connects "${label}" to "${to}" (which reaches the entrance)`
+            : `opens "${label}" directly to the exterior (a new entrance)`;
+          const c: RawCandidate = {
+            insertText: composeOpening("door", host.wall, pct, point, DOOR_WIDTH, categoryCount),
+            rationale: `A door on ${named(host.wall, false)} ${via}.`,
+            len: free.len,
+            wallId: host.wall.id,
+            pct,
+          };
+          const neighbour = to ? rooms.find((r) => r.id === to) : undefined;
+          if (neighbour) interior.push({ ...c, tier: wayInTier(neighbour) });
+          else exterior.push(c);
+        }
       }
+      const byTier = (xs: Array<RawCandidate & { tier: number }>) => {
+        const tiers = [...new Set(xs.map((x) => x.tier))].sort((a, b) => a - b);
+        return tiers.flatMap((t) => sortRaw(xs.filter((x) => x.tier === t)));
+      };
       const isPrivate = isBedroom(room) || isWetRoom(room);
+      // Through a bedroom or a wet room is the last resort for any room (tiers 3 and 4).
+      const good = interior.filter((c) => c.tier < 3);
+      const poor = interior.filter((c) => c.tier >= 3);
       const candidates = isPrivate
-        ? toCandidates([...sortRaw(interior), ...sortRaw(exterior)])
-        : orderCandidates([...interior, ...exterior]);
+        ? toCandidates([...byTier(good), ...sortRaw(exterior), ...byTier(poor)])
+        : toCandidates([...sortRaw([...good, ...exterior]), ...byTier(poor)]);
       if (interior.length + exterior.length > 0) {
         suggestions.push({
           problem: `Room "${label}" can't be reached from the entrance.`,

@@ -373,3 +373,63 @@ describe("suggestTopology — stable wall references", () => {
     expect(idxExterior).toBeLessThan(idxInterior);
   });
 });
+
+// PS0.6: a reconnection is ranked by what the room it goes THROUGH is (circulation, then a
+// living space, then any other non-private room, then a wet room, then a bedroom), and each one
+// is sited on the run of the wall that room lies across, so the door opens where the rationale says.
+const THROUGH_BEDROOM = `plan "Sides" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (9000,0) (9000,6000) (0,6000) close }
+  wall id=pv partition thickness 100 { (3000,0) (3000,6000) }
+  wall id=ph partition thickness 100 { (3000,3000) (9000,3000) }
+  room id=hall at (0,0) size 3000x6000 label "Hall"
+  room id=bed at (3000,0) size 6000x3000 label "Bedroom"
+  room id=bath at (3000,3000) size 6000x3000 label "Bathroom"
+  door id=entry at (1500,0) width 900 wall exterior
+  door id=d_bed at (3000,1500) width 900
+}`;
+
+// One wall shared with two reachable rooms: the hall on its first 3 m, the bedroom on the rest.
+const SHARED_EDGE = `plan "Shared" {
+  units mm
+  grid 50
+  wall id=ext exterior thickness 200 { (0,0) (9000,0) (9000,6000) (0,6000) close }
+  wall id=pv partition thickness 100 { (3000,0) (3000,4000) }
+  wall id=ph partition thickness 100 { (0,4000) (9000,4000) }
+  room id=hall at (0,0) size 3000x4000 label "Hall"
+  room id=bed at (3000,0) size 6000x4000 label "Bedroom"
+  room id=store at (0,4000) size 9000x2000 label "Store"
+  door id=entry at (1500,0) width 900 wall exterior
+  door id=d_bed at (3000,2000) width 900
+}`;
+
+describe("suggestTopology — the room a reconnection passes through (PS0.6)", () => {
+  it("a bathroom is joined to the hall, not through the bedroom, though the bedroom's wall is longer", () => {
+    const u = suggestTopology(THROUGH_BEDROOM).find((x) => x.code === "W_ROOM_UNREACHABLE" && x.roomId === "bath")!;
+    // Before PS0.6 the first candidate was `door on ph at 50% width 900`, into the bedroom.
+    expect(u.candidates[0]!).toEqual({
+      insertText: "door on pv at 75% width 900",
+      rationale: 'A door on wall "pv" connects "Bathroom" to "hall" (which reaches the entrance).',
+    });
+    expect(u.candidates.some((c) => c.rationale.includes('to "bed"'))).toBe(false);
+    const fixed = THROUGH_BEDROOM.replace("  door id=entry", `  ${u.candidates[0]!.insertText}\n  door id=entry`);
+    const codes = lint(fixed).map((d) => d.code);
+    expect(codes).not.toContain("W_ROOM_UNREACHABLE");
+    expect(codes).not.toContain("W_ROOM_DISCONNECTED");
+    expect(codes).not.toContain("W_BATH_VIA_BEDROOM");
+  });
+
+  it("on a wall two rooms share, the door is sited on the run of the room it names", () => {
+    const u = suggestTopology(SHARED_EDGE).find((x) => x.code === "W_ROOM_UNREACHABLE" && x.roomId === "store")!;
+    // Before PS0.6: `door on ph at 50% width 900` (x = 4500, against the bedroom) said "to hall".
+    const viaHall = u.candidates.find((c) => c.rationale.includes('to "hall"'))!;
+    expect(viaHall.insertText).toBe("door on ph at 16.667% width 900");
+    const { ir } = resolvePlan(SHARED_EDGE.replace("  door id=entry", `  ${viaHall.insertText}\n  door id=entry`));
+    const added = ir!.elements.find((e) => e.kind === "door" && e.id !== "entry" && e.id !== "d_bed")!;
+    expect((added as { at: { x: number } }).at.x).toBeLessThan(3000);
+    // A non-private room keeps the geometric order among the good ways in; the bedroom comes last.
+    expect(u.candidates[0]!.insertText.startsWith("door on ext ")).toBe(true);
+    expect(u.candidates.some((c) => c.rationale.includes('to "bed"'))).toBe(false);
+  });
+});
