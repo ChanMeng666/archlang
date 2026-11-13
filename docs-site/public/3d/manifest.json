@@ -329,7 +329,7 @@
       "name": "two-storey",
       "source": {
         "path": "examples/two-storey.arch",
-        "sha256": "73eab3ce98901747a4170bf56eef4263ec3dd2d85f13b65f50e6e89d04571c0e"
+        "sha256": "62564a4ef74da8177373d7bfe0a85d0e13bacfae3db98a33caafdcd9761b4d05"
       },
       "posters": [
         {
@@ -340,7 +340,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "24c5571def2740bcac9d294d6a03c47f412da8173b49b76c6f7cba8b246deead",
+          "frameSha256": "aded868dfd28d9f8d30e7a291c9c8580f44563d9ddbee389fff0883d7a039e9a",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -356,7 +356,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "9bf8ec9251af306d024708723721478214f57e163f30a4a692fcaedaf1289814",
+          "frameSha256": "daf39d23d827bd6eadf19504bf2b8b661bc8ad20a4450d99f584efdc664efa24",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -374,8 +374,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "e29c3b62ee8d9eaa2a082d3fe3fa25230bd830bf63f89f5554c934fa21d3ebac",
-        "contentSha256": "9cbc638f825fb5daee7e6e3f4d090928cf1e77dbf0c27377fc36edcd59cfd0db",
+        "sha256": "8fab03efa13315e1304ebd775601c71553f6d7583e7fa1a8ca4b327ac50b1d97",
+        "contentSha256": "6344073477eb9a718f3fe2fea4120190a7ac0ac6a9cbf0038e61bdc88b05022d",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -387,51 +387,51 @@
         "height": 1131,
         "level": 1,
         "sheet": true,
-        "sha256": "5d4219167f8f2af0cb0ecf101350d232e879a021e2c656fbb3160c2cae2bcc56",
-        "pixelsSha256": "27e7df0a632f9b8c9ed2b84daa086060fddae700ee2b6e08f85d78ccee1f8dfe"
+        "sha256": "9279025dad0687ed138ab1a3ca18eb30102014d453a1bbaf52b3102392c2a836",
+        "pixelsSha256": "11a82d5c23ac0735ec6f28f5aa1dc3a8cfc38dc2c171104536309ef568510a31"
       },
       "files": [
         {
           "path": "two-storey.poster.webp",
-          "bytes": 42864,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 43654,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "two-storey.poster.png",
-          "bytes": 169336,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 171168,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "two-storey.poster-full.webp",
-          "bytes": 36128,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 36156,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "two-storey.poster-full.png",
-          "bytes": 134484,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 134469,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "two-storey.replay.mp4",
-          "bytes": 421457,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 426269,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "two-storey.glb",
-          "bytes": 162612,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 163256,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "two-storey.plan.png",
-          "bytes": 144471,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 144863,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         }
       ]
     },
@@ -439,7 +439,7 @@
       "name": "turning-stair",
       "source": {
         "path": "examples/turning-stair.arch",
-        "sha256": "a27caa5aa61a84b32e0280dcff7f127559fbbcb6f50e77ab1ce8963ed9181769"
+        "sha256": "bc98b4d2ad3c17d06051ec99c7106317c7989b0788f48eafd29c2a25f747d9af"
       },
       "posters": [
         {
@@ -450,7 +450,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "fd8a2802c98ceacfb73ef52607889a75c5448dddce6c7ca4cc397ba75569d5c1",
+          "frameSha256": "9c37d973df768b829ce160b95609bb09b99a22d8f8a5bd7b47c322c2136c60c4",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -466,7 +466,7 @@
           "t": 1,
           "theme": "light",
           "supersample": 3,
-          "frameSha256": "743d8828ed835edf0612cb4cead01c4878996e319359d2ff4d47c95f5984f86c",
+          "frameSha256": "2f15bf0295b63792b16ed855e45a3db549a873aff13fbec0890d78f72dceefae",
           "webpQuality": 0.9,
           "environment": {
             "platform": "win32",
@@ -484,8 +484,8 @@
         "supersample": 2
       },
       "glb": {
-        "sha256": "c40b62cee1621af0e467e2674f4ce6ab5e601b9f38f83c64eb10b8d562843481",
-        "contentSha256": "95882cbb1e8bea176b8563c7372f0477c3d40444bdf063d28929b46c9a8c51fc",
+        "sha256": "8e1f45dfc28bd326af532775cfe42bcb44b5eb8fd56498df7dbfa0eac67f060a",
+        "contentSha256": "24e6728074b2558fc5f789385dda28b0218da4901e5eccc033cfb3a977956eb8",
         "doors": "closed",
         "validator": {
           "errors": 0,
@@ -497,51 +497,51 @@
         "height": 1131,
         "level": 1,
         "sheet": true,
-        "sha256": "d33ac93ecb99221c45f024fcf065fccf7073053288b8e5d651e995ed26619ae6",
-        "pixelsSha256": "232c2f9b5327c9e96a2bbcd8788ed0458c3bc5dc520a294dfd91d8d9c2d0e183"
+        "sha256": "633eedf68187b0421beb9cddbdf275dcdddc616a9852ea8d2f2f17cb5ee4ef80",
+        "pixelsSha256": "a21de78a1ce6e250104a594cccdd91fd70b2f2c0d7212352f9ba6f1a45178620"
       },
       "files": [
         {
           "path": "turning-stair.poster.webp",
-          "bytes": 36264,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 36432,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "turning-stair.poster.png",
-          "bytes": 141513,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 142918,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "turning-stair.poster-full.webp",
-          "bytes": 31886,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 31912,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "turning-stair.poster-full.png",
-          "bytes": 120673,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 120686,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "turning-stair.replay.mp4",
-          "bytes": 331216,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 332508,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "turning-stair.glb",
-          "bytes": 56336,
-          "archlang": "1.59.0",
-          "archlang3d": "0.6.0"
+          "bytes": 56672,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         },
         {
           "path": "turning-stair.plan.png",
-          "bytes": 92645,
-          "archlang": "1.56.0",
-          "archlang3d": "0.4.0"
+          "bytes": 92586,
+          "archlang": "1.60.0",
+          "archlang3d": "0.7.0"
         }
       ]
     },
