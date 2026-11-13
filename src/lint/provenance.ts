@@ -196,6 +196,7 @@ const DEFAULTS: Readonly<Record<string, RuleProvenance>> = {
   stairMaxRiseMm: adk("Table 1.1, private stair"),
   stairMinGoingMm: adk("Table 1.1, private stair"),
   stairMaxPitchRatio: conv("no pitch cap by default; a profile sets one"),
+  stairDrawnMaxRiseMm: adk("Table 1.1, private stair"),
   hobLandingMm: {
     document: "NKBA Kitchen Planning Guidelines with Access Standards",
     clause: "guideline 17",

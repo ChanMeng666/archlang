@@ -102,9 +102,9 @@ const BASELINE: [string, string][] = [
   ["1183ede6f8a3a1ebf83e9b2c3614d88155e37613c4d5fc3f6acd3f80defa7f6c", "examples/tiny-house.arch"],
   ["5bbc2cc26f425dc7d5d7c37c425b837b476b8fb0f68c7626ebcb49c17304f0b8", "examples/townhouse.arch"], // RM1.3a, see ./byte-identity-baseline.ts
   ["d4389ceea35c71a0a73b9e3a7e47c770531d15c038ac69ac0bda89bc8099ced0", "examples/transit-hall.arch"],
-  ["4def128a0892c793958a3516b3dc806fa113a7652bdcd0a179857cc397e61bcd", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["97b2cbeb7be94176916a59e6bc99f12d5573e424e953b29d17b155b8a52f23d4", "examples/turning-stair.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
   ["1e2e65d06cd1b4c7a2c89b94365dcc51980b85044242fb45dd7da177aa2fe93f", "examples/two-bed.arch"],
-  ["74584abfc9ea46493bd079e04b5b339cda183b8da677ffffdfd1fabeadb6fe08", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts
+  ["2e311efeb95e9a6a200474ac116b1d2ae704f419dd5fb40fd08008c0b0bc6e00", "examples/two-storey.arch"], // RM1.3a, see ./byte-identity-baseline.ts; RM1.2a, see ./byte-identity-baseline.ts
   ["20f6d2fdea1167d15fb58cdf5100eba2b5ef8f608c4d4af0ff2a5ddf6211620c", "inline:families-before-legend"],
   ["79b5ba0efe233640ad18646b6ee13070309315ef6240feb73d46b4ad55299e72", "inline:near-words"],
 ];

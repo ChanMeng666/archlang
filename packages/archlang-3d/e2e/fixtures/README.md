@@ -13,6 +13,20 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-pinned by product-roadmap card RM1.2a (2026-11-12, PR #736, `W_STAIR_RISER_TOO_HIGH`): the
+source of `examples/two-storey.arch` changed. Its stair (both storeys) and the gallery void over it
+run 3250 mm, not 2900, so the flight draws 12 treads (13 risers) instead of 10 (11), and the void
+cut in the upper slab is longer. No viewer, Mesh3D code or Chromium changed. Exactly 7 frames moved,
+every two-storey frame from `stage:openings` on, in which the stair or the void shows: `stage:openings`
+(`2c73acf6…` → `e1ec6fd7…`), `stage:fixtures` (`639a0302…` → `be6085e5…`), `stop:1` (`adac293c…` →
+`b4062a02…`), `tilted` (`75208662…` → `79ef8133…`), `storey:2` (`ccfdee73…` → `4e51a131…`),
+`stop:2` (`ad1b0d95…` → `928e1d8a…`) and `end` (`3c80a946…` → `c6f25abe…`). Every laneway-house
+and courtyard-house hash, two-storey's `stage:brief`, `stage:rooms` and `stage:walls`, and both
+`taken` entries are unchanged. The 7 new hashes are the ones CI's `check-3d` job printed for the
+PR's head `1d945289` (GitHub Actions run
+https://github.com/ChanMeng666/archlang/actions/runs/43160858400, job 130991599239, ubuntu x64),
+where the key-frame comparison failed on exactly these. They were not rendered locally.
+
 Re-pinned by product-roadmap card RM8.6 (2026-11-12, PR #729, the trim of doors and windows and
 the stair in its parts): every door gains its lining and casing, every window its reveal, sill and
 board, and two-storey's stair is tread boards, stringers and a balustrade instead of a stepped

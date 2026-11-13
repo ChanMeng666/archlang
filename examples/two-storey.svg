@@ -43,19 +43,21 @@
 <line x1="5704" y1="4254.5" x2="5896" y2="4254.5" stroke="#6c6864" stroke-width="9"/>
 </g>
 <g id="A-FLOR-STRS" inkscape:groupmode="layer" inkscape:label="A-FLOR-STRS">
-<polygon points="100,1000 1000,1000 1000,3900 100,3900" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
-<line x1="46" y1="2820" x2="1054" y2="2370" stroke="#a8a29a" stroke-width="9"/>
-<line x1="46" y1="2530" x2="1054" y2="2080" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3610" x2="1000" y2="3610" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3320" x2="1000" y2="3320" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="3030" x2="1000" y2="3030" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="1870" x2="1000" y2="1870" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="1580" x2="1000" y2="1580" stroke="#a8a29a" stroke-width="9"/>
-<line x1="100" y1="1290" x2="1000" y2="1290" stroke="#a8a29a" stroke-width="9"/>
-<line x1="550" y1="3552" x2="550" y2="1116" stroke="#6c6864" stroke-width="9"/>
-<line x1="550" y1="1116" x2="701.2" y2="1368" stroke="#6c6864" stroke-width="9"/>
-<line x1="550" y1="1116" x2="398.8" y2="1368" stroke="#6c6864" stroke-width="9"/>
-<text x="550" y="3755" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
+<polygon points="100,1000 1000,1000 1000,4250 100,4250" fill="#f4f2ee" stroke="#6c6864" stroke-width="9"/>
+<line x1="46" y1="2985.42" x2="1054" y2="2535.42" stroke="#a8a29a" stroke-width="9"/>
+<line x1="46" y1="2714.58" x2="1054" y2="2264.58" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3979.17" x2="1000" y2="3979.17" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3708.33" x2="1000" y2="3708.33" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3437.5" x2="1000" y2="3437.5" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="3166.67" x2="1000" y2="3166.67" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="2083.33" x2="1000" y2="2083.33" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1812.5" x2="1000" y2="1812.5" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1541.67" x2="1000" y2="1541.67" stroke="#a8a29a" stroke-width="9"/>
+<line x1="100" y1="1270.83" x2="1000" y2="1270.83" stroke="#a8a29a" stroke-width="9"/>
+<line x1="550" y1="3925" x2="550" y2="1108.33" stroke="#6c6864" stroke-width="9"/>
+<line x1="550" y1="1108.33" x2="701.2" y2="1360.33" stroke="#6c6864" stroke-width="9"/>
+<line x1="550" y1="1108.33" x2="398.8" y2="1360.33" stroke="#6c6864" stroke-width="9"/>
+<text x="550" y="4114.58" font-size="100" fill="#333333" text-anchor="middle" dominant-baseline="central">UP</text>
 </g>
 <g id="A-WALL" inkscape:groupmode="layer" inkscape:label="A-WALL">
 <path d="M -100,-100 L 4100,-100 L 4100,100 L 2250,100 L 2250,1350 L 2150,1350 L 2150,100 L 100,100 L 100,6900 L 600,6900 L 600,7100 L -100,7100 Z M 1600,6900 L 2150,6900 L 2150,5750 L 2250,5750 L 2250,6900 L 7900,6900 L 7900,5900 L 8100,5900 L 8100,7100 L 1600,7100 Z M 2150,2250 L 2250,2250 L 2250,3550 L 7900,3550 L 7900,100 L 5900,100 L 5900,-100 L 8100,-100 L 8100,4700 L 7900,4700 L 7900,3650 L 2250,3650 L 2250,4850 L 2150,4850 Z" fill="url(#poche)" fill-rule="nonzero"/>

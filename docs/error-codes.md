@@ -5,7 +5,7 @@
 Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 (e.g. `arch explain E_ROOM_SIZE`). Errors abort rendering; warnings do not.
 
-**166 errors** · **101 warnings**
+**166 errors** · **102 warnings**
 
 | Code | Severity | Summary |
 | --- | --- | --- |
@@ -259,6 +259,7 @@ Every diagnostic carries a stable code. Look one up with `arch explain <CODE>`
 | [`W_SHAFT_FOOTPRINT_MISMATCH`](#w_shaft_footprint_mismatch) | warning | A shaft's runs on two neighbouring storeys do not stand over each other. |
 | [`W_STAIR_HEAD_VOID`](#w_stair_head_void) | warning | A void opens on the landing at the head of a flight. |
 | [`W_STAIR_NO_LANDING`](#w_stair_no_landing) | warning | A flight has no landing at its foot or head, or a landing between two flights is too short. |
+| [`W_STAIR_RISER_TOO_HIGH`](#w_stair_riser_too_high) | warning | A stair's drawn treads climb its storey on risers that are too high. |
 | [`W_STAIR_SIDE_ENTRY`](#w_stair_side_entry) | warning | A doorway opens onto the side of a flight. |
 | [`W_STAIR_TOO_STEEP`](#w_stair_too_steep) | warning | A stair is too short to climb its storey. |
 | [`W_STAIR_UNMATCHED`](#w_stair_unmatched) | warning | A run of vertical circulation appears on only one storey. |
@@ -3506,6 +3507,19 @@ level 2 "First" {
 ```arch static
 wall id=p partition thickness 100 { (0,3000) (4000,3000) }
 stair id=s at (500,200) size 900x2350 dir up   # lint: the partition stands 400 mm past the bottom step, where 900 mm is needed
+```
+
+## W_STAIR_RISER_TOO_HIGH
+
+*warning* — A stair's drawn treads climb its storey on risers that are too high.
+
+**Cause.** The plan draws each flight with one tread per 280 mm of its run (rounded, at least two), whatever the storey height, and the 3D preview climbs the storey on those treads: one riser per tread, one at the head of each flight, and one per line drawn across a winder landing (`winders n` draws n − 1, splitting it into n steps; the 3D preview builds a winder landing as one level, so it climbs such a stair on fewer risers than the drawing). So the drawing states a riser, the storey's floor-to-floor `height` over those risers, and here it is higher than `stairDrawnMaxRiseMm` (default 220 mm, Approved Document K (2013) Table 1.1, a private stair; no profile sets another, because the profiles' own riser figures were read second-hand). `W_STAIR_TOO_STEEP` judges the run against the shortest run that climbs the storey and never counts the treads drawn, so a flight it passes can still draw too few: a 2900 mm flight draws 10 treads, 11 risers of about 245 mm up a 2700 mm storey. A stair `W_STAIR_TOO_STEEP` reports is not reported again here: its hint then quotes one redrawing that answers both, so pasting it never raises this one. Judged only where the plan authors a height (`describe().heights`); otherwise the coverage report says the stair checks skipped it. Judged on the storey the flight climbs from.
+
+**Fix.** Paste the hint: it quotes each flight statement to redraw, as it is and as it becomes, on every storey the shaft is drawn (a straight stair's `size`; a block stair's flight lengthened away from its landing, its `at` moved where it grows toward its foot). Every 280 mm of a flight's run draws one more tread, so one more riser. Or correct the storey `height` if it is wrong. There is no machine-applicable fix: a longer flight moves the rooms around it.
+
+```arch static
+height 2700
+stair id=s at (200,200) size 900x2900 dir up   # lint: 10 treads, so 11 risers of about 245 mm
 ```
 
 ## W_STAIR_SIDE_ENTRY
