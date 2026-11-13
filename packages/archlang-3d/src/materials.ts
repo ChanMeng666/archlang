@@ -258,6 +258,36 @@ export const FENCE_PALETTE: Readonly<Record<RFence["style"], SlotMaterial>> = {
 export const GROUND_PLANE = { light: "#e2ddd3", dark: "#16293d", marginMm: 6000 } as const;
 
 /**
+ * The soft contact shadows the replay draws (product-roadmap card RM8.8, design
+ * `docs/plans/product-roadmap/design/visual-language.md` §1): flat translucent black bands, baked
+ * once from the geometry (`replay/shadows.ts`), never a shadow map. In the viewer only, never in
+ * the Mesh3D's nodes or the GLB (a file's reader lights it their own way); ledgered in every Mesh3D
+ * (`contact-shadows-viewer-only`) as the ground plane is.
+ *
+ * Band widths, mm, each `clamp(round(of × size), min, max)`: along the foot of the walls and columns
+ * (`size` the wall's thickness; a column's smaller side), the same width up each inside corner,
+ * round each standing piece of furniture (`size` the smaller side of its footprint), along each
+ * fence run (`size` its style's post) and round each stair's stringers (`stairThicknessMm` taken as
+ * the thickness). `alpha` is each band's opacity at its inner edge (0 at its outer edge) under the
+ * light theme, `alphaDark` under the dark one (half as much again: the same black reads fainter on a
+ * dark ground). Bands lie `liftMm` above the surface they fall on.
+ */
+export const CONTACT_SHADOW = {
+  wall: { of: 0.75, minMm: 80, maxMm: 200 },
+  furniture: { of: 0.12, minMm: 30, maxMm: 120 },
+  fence: { of: 1.5, minMm: 40, maxMm: 120 },
+  stairThicknessMm: 100,
+  alpha: { floor: 0.2, corner: 0.12, furniture: 0.18 },
+  alphaDark: { floor: 0.3, corner: 0.18, furniture: 0.27 },
+  liftMm: 1,
+} as const;
+
+/** A contact band's width (mm) for a caster of `size` mm: `CONTACT_SHADOW`'s rule for its class. */
+export function contactBandMm(rule: { of: number; minMm: number; maxMm: number }, size: number): number {
+  return Math.min(rule.maxMm, Math.max(rule.minMm, Math.round(rule.of * size)));
+}
+
+/**
  * An `outdoor` or `fence` colour under a replay theme: its own on the light theme; on the dark one,
  * 60% of the way to `toward` (the theme's floor colour), the arithmetic of `slotColour`.
  */

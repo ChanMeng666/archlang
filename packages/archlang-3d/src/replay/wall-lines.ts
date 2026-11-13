@@ -58,7 +58,7 @@ export function takesWallLines(n: { kind: string; part?: string }): boolean {
 const EXACT = 2 ** 26;
 
 /** `a·d − b·c`, exactly in sign (and in value when it fits a double). */
-function det(a: number, b: number, c: number, d: number): number {
+export function det(a: number, b: number, c: number, d: number): number {
   if (Math.abs(a) < EXACT && Math.abs(b) < EXACT && Math.abs(c) < EXACT && Math.abs(d) < EXACT) return a * d - b * c;
   const r = BigInt(a) * BigInt(d) - BigInt(b) * BigInt(c);
   return r > 0n ? 1 : r < 0n ? -1 : 0;
@@ -103,12 +103,12 @@ export function nearlyFlat(
  * integers pointing +x (or +z when it runs along z), and a key exact for the line itself. A point's
  * place along it is `t` (its x, or its z when the line runs along z), which grows along the direction.
  */
-interface PlanLine {
+export interface PlanLine {
   dx: number;
   dz: number;
   key: string;
 }
-function planLine(x0: number, z0: number, x1: number, z1: number): PlanLine {
+export function planLine(x0: number, z0: number, x1: number, z1: number): PlanLine {
   let dx = x1 - x0;
   let dz = z1 - z0;
   const g = gcd(dx, dz);
@@ -257,7 +257,7 @@ function linesOf(nodes: readonly LineSource[], rank: readonly number[] | undefin
  * the items over each, by one sweep along the line: `visit(t0, t1, on)` for every stretch some item
  * covers, in order (`on` in the order the items start, then their order in `items`).
  */
-function sweep<T extends { t0: number; t1: number }>(
+export function sweep<T extends { t0: number; t1: number }>(
   items: readonly T[],
   visit: (t0: number, t1: number, on: readonly T[]) => void,
 ): void {

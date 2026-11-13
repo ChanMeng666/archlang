@@ -13,6 +13,35 @@ e2e/keyframes.e2e.ts` in `packages/archlang-3d`, which writes the file with the 
 in. Never rewrite it to turn a red run green: a changed hash needs the reason (a Mesh3D, viewer or
 Chromium change) in the commit that re-pins it.
 
+Re-pinned by product-roadmap card RM8.8 (2026-11-12, PR #737, the soft contact shadows): bands
+along the walls' feet, up their inside corners and round the standing furniture fade in over the
+last quarter of each caster's rise (a storey's walls by its last wall; a fence, a stair or a piece
+of furniture by its own), so a frame moves only once one of them is nearly up. Exactly 7 frames
+moved: laneway-house `end` (`903bbd44…` → `d29a8530…`); two-storey `stop:1` (`adac293c…` →
+`8fb94af8…`), `tilted` (`75208662…` → `15b71527…`; storey 1 is up by then in the combined view),
+`storey:2` (`ccfdee73…` → `a48a65a4…`), `stop:2` (`ad1b0d95…` → `afcecb48…`) and `end`
+(`3c80a946…` → `cce15eef…`); courtyard-house `end` (`4259e01a…` → `c1a32ed2…`). Every other hash is
+unchanged: every `stage:*` frame of both plans, laneway-house's and courtyard-house's `tilted`
+(their walls are still rising, so no band shows yet), and both `taken` entries. The 7 hashes are
+the ones CI's `check-3d` job printed for the PR's review-round head `0b817160` (GitHub Actions run
+https://github.com/ChanMeng666/archlang/actions/runs/43401422470, job 131804967807, ubuntu x64),
+where the key-frame comparison failed on exactly these; they replace the first round's pins
+(`00da9331…`, `19ae655b…`, `cb958a5c…`, `8dfc1009…`, `41c5d43c…`, `2e3e8476…`, `cbc6464d…`, run
+43164173487), which moved with the review's fixes (a rug receives instead of casting, each band on
+the highest face under it, a fixed depth offset, mitred joints). The test's own calls
+(`replayHtml`, `renderReplay`, 480 × 270, run from a script) on Windows 11 x64 with the same
+Chromium build rendered those 19 pinned hashes identically, so the `win32` entry stays.
+Merging `main` after RM1.2a (PR #736, below: two-storey's longer stair) moved two-storey's five
+shadowed frames once more, from both changes together: `stop:1` → `e6c20d3f…`, `tilted` →
+`4498dcdb…`, `storey:2` → `dda962aa…`, `stop:2` → `f6a514c2…`, `end` → `6b6542bd…`, the hashes CI's
+`check-3d` job printed for the merged head `298074b3` (run
+https://github.com/ChanMeng666/archlang/actions/runs/43416896227, job 131857149421, ubuntu x64),
+where the comparison failed on exactly these five. Two-storey's `stage:openings` and
+`stage:fixtures` keep RM1.2a's hashes (no band shows there), and laneway-house's and
+courtyard-house's keep this card's; the five were not rendered locally. With `shadows: false` in the
+payload the viewer draws main's frames byte for byte (24 frames of three plans at 1600 × 900 compared locally; the frame-budget
+test asserts the same frame with and without the shadows where no band shows).
+
 Re-pinned by product-roadmap card RM1.2a (2026-11-12, PR #736, `W_STAIR_RISER_TOO_HIGH`): the
 source of `examples/two-storey.arch` changed. Its stair (both storeys) and the gallery void over it
 run 3250 mm, not 2900, so the flight draws 12 treads (13 risers) instead of 10 (11), and the void

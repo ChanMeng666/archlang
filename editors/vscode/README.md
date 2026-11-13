@@ -18,13 +18,13 @@ Floor plans as code. Your AI writes ArchLang; the compiler draws a precise, dime
 <table>
 <tr>
 <td align="center" width="50%"><a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/3d/laneway-house.plan.png" width="100%" alt="The laneway house plan: a living kitchen, a bedroom and a bath, dimensioned." /></a><br><sub>Plan</sub></td>
-<td align="center" width="50%"><a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/3d/laneway-house.poster.png" width="100%" alt="The same plan extruded to a 3D preview in flat colours: walls, openings, floors and furniture." /></a><br><sub>3D preview</sub></td>
+<td align="center" width="50%"><a href="https://archlang.uk/3d"><img src="https://raw.githubusercontent.com/ChanMeng666/archlang/main/docs-site/public/3d/laneway-house.poster.png" width="100%" alt="The same plan extruded to a 3D preview in plain colours with soft contact shadows: walls, openings, floors and furniture." /></a><br><sub>3D preview</sub></td>
 </tr>
 </table>
 
 Same source, plan and 3D preview. The 3D preview is extruded from the same .arch file by the separate archlang-3d package, and checked against the plan: every 3D element comes from the plan's elements, and every solid is closed. [What the 3D preview shows →](https://archlang.uk/3d)
 
-3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in flat colours; the ground is a backdrop the viewer draws, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM.
+3D preview: walls, openings, floors, stairs, furniture, outdoor surfaces and fences in plain colours; the ground and the soft contact shadows are the viewer's, not part of the building and not in the file; no pitched roofs or balcony railings yet, and no sections, elevations or BIM.
 
 ## Features
 

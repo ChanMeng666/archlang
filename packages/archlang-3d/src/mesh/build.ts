@@ -50,9 +50,11 @@
  * - outdoor surface (card RM8.3): a thin slab [e - 50 mm, e], its top the floor level, lifted a step
  *   where it overlaps the slab, a floor or an earlier surface; fence: its style's posts (on the core's
  *   ticks), rails and pickets on the floor level (`outdoor.ts`, every default ledgered).
- * The ground round the building is the viewer's, never a node (`GROUND_PLANE`, `materials.ts`).
+ * The ground round the building is the viewer's, never a node (`GROUND_PLANE`, `materials.ts`), and
+ * so are the soft contact shadows (`CONTACT_SHADOW`, card RM8.8); the ledger says both.
  */
 import {
+  CONTACT_SHADOW,
   floorFinish,
   GROUND_PLANE,
   GROUND_WASH,
@@ -81,6 +83,14 @@ import { isHung, T0_HEIGHT_MM, T0_HUNG_FROM_TOP, T0_MATERIALS, T0_MOUNT_MM, t0Sh
 import type { Mesh3D, MeshNode, NodeKind, Shell, Stage } from "./types.js";
 
 const MM = 1000;
+
+/** A `CONTACT_SHADOW` width rule as the ledger states it: `clamp(round(of × <size>), min, max)` mm. */
+const shadowRule = (r: { of: number; minMm: number; maxMm: number }, size: string) => ({
+  of: r.of,
+  size,
+  min: r.minMm,
+  max: r.maxMm,
+});
 export const SLAB_MM = 200;
 export const FLOOR_FINISH_MM = 5;
 export const ROOF_MM = 150;
@@ -938,6 +948,10 @@ function levelNodes(
       asset,
       ...(f.room ? { room: f.room } : {}),
       ...(parts && f.mirror ? { mirror: true } : {}),
+      // Hung on the wall, not standing (`isHung`): a fact of the piece as built, so a reader (the
+      // replay's contact shadows, card RM8.8) needs neither the T0 tables nor the ledger, whose
+      // per-piece rows name no storey. Absent on a standing piece.
+      ...(parts && family && isHung(family) ? { hung: true } : {}),
     });
   });
 
@@ -1149,6 +1163,23 @@ export function buildMesh(scene: Scene3D, opts: MeshOptions = {}): Mesh3D {
       },
       provenance: "default",
       rule: "ground-plane-viewer-only",
+    },
+    // Card RM8.8: the soft contact shadows the viewer draws are in no node and not in the GLB, so,
+    // as the ground plane, they are said here, in every Mesh3D: each band's width rule and alphas.
+    {
+      kind: "shadow",
+      field: "contact",
+      value: {
+        drawn: "viewer only",
+        wall_band_mm: shadowRule(CONTACT_SHADOW.wall, "thickness"),
+        furniture_band_mm: shadowRule(CONTACT_SHADOW.furniture, "smaller footprint side"),
+        fence_band_mm: shadowRule(CONTACT_SHADOW.fence, "post"),
+        stair_thickness_mm: CONTACT_SHADOW.stairThicknessMm,
+        alpha: { ...CONTACT_SHADOW.alpha },
+        alpha_dark: { ...CONTACT_SHADOW.alphaDark },
+      },
+      provenance: "default",
+      rule: "contact-shadows-viewer-only",
     },
   ];
   const defaulted = new Set<string>();

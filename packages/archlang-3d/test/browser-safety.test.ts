@@ -86,8 +86,17 @@ describe("browser safety", () => {
       logLevel: "silent",
       minifyWhitespace: true,
       legalComments: "none",
+      metafile: true,
     });
     expect(out.errors).toEqual([]);
+    // The replay's host needs no mesh stage: not the T0 generators (or their earcut), not the
+    // builder, not the site code that reads the core. The contact shadows read the Mesh3D's ledger
+    // instead (`payload.ts`, review S5 of PR #737).
+    const inputs = Object.keys(out.metafile?.inputs ?? {});
+    expect(inputs.length).toBeGreaterThan(10);
+    expect(
+      inputs.filter((f) => /src[\\/]mesh[\\/](t0|build|outdoor|extrude|stair|openings|slab)|earcut/.test(f)),
+    ).toEqual([]);
     const code = out.outputFiles?.[0]?.text ?? "";
     expect(code).toContain("WebGLRenderer"); // three.js is inside
     // three.js itself calls Math.random (object UUIDs, never a pixel), so only Node and the clock
