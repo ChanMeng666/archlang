@@ -36,6 +36,7 @@ import {
   type AccessEdge,
   type AccessGraph,
   buildDoorAccessGraph,
+  outdoorsOf,
   EXTERIOR_NODE,
   leavesOf,
   roomBox,
@@ -472,7 +473,7 @@ function attributeBottlenecks(
     // when the view keeps fewer than every entrance without naming a main entrance): widening a
     // door moves no door off its wall, so the ways kept are the same.
     const access = walkAccessGraph(
-      buildDoorAccessGraph(ctx.rooms, doors, ctx.rules.tolMm, undefined, openings, ctx.openRuns),
+      buildDoorAccessGraph(ctx.rooms, doors, ctx.rules.tolMm, undefined, openings, ctx.openRuns, outdoorsOf(ctx.ir)),
       view.ways ?? (view.access === ctx.access() ? null : new Set(view.access.entrances)),
     );
     const request = new Map<string, Set<string>>();

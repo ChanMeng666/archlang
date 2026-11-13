@@ -53,6 +53,7 @@ import {
   roomBox,
   accessGraphOf,
   buildDoorAccessGraph,
+  outdoorsOf,
   DEFAULT_TOL,
   type AnalyzeOptions,
   type RoomBox,
@@ -645,7 +646,15 @@ function summarizeStorey(
   // in are where a person arrives (PS0.3: `reachable` is then the answer `W_ROOM_UNREACHABLE`
   // reads). A plan with neither has the graph it always had, byte for byte.
   const inputs = entranceInputs(ir, roomRects, upperStorey);
-  const doorGraph = buildDoorAccessGraph(roomEls, doorEls, tol, undefined, openingEls, openRunsOf(ir, tol));
+  const doorGraph = buildDoorAccessGraph(
+    roomEls,
+    doorEls,
+    tol,
+    undefined,
+    openingEls,
+    openRunsOf(ir, tol),
+    outdoorsOf(ir),
+  );
   const arrivalGraph = arrivalAccess(doorGraph, inputs);
   const seeds = shaftArrivalSeeds(arrivalRooms, arrivals, roomEls);
   const counted =

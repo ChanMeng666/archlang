@@ -40,6 +40,7 @@ import { isDerivedWall, openingClauseOf, wallRef } from "../../wall-ref.js";
 import {
   type AccessGraph,
   buildDoorAccessGraph,
+  outdoorsOf,
   connectorConnection,
   connectorFaces,
   EXTERIOR_NODE,
@@ -880,6 +881,7 @@ export const connectorAmbiguous: LintRule = {
             undefined,
             move(ctx.openings),
             ctx.openRuns,
+            outdoorsOf(ctx.ir),
           ),
         );
         if (![...reachedNow].every((id) => after.has(id))) return null;
