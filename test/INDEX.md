@@ -5,7 +5,7 @@
 Where the tests of a `src` module are, and what each test file is for. Generated; `npm run check:drift`
 fails when it is stale. How to add a test: `docs/testing.md` § 4.
 
-501 test files in `test/`, 279 `src` modules, 106 modules no test imports.
+502 test files in `test/`, 279 `src` modules, 106 modules no test imports.
 
 ## `src` module → tests that import it
 
@@ -37,16 +37,16 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/backends/png.ts` (1) — `export-font-cjk`
 - `src/backends/svg.ts` (5) — `furniture-curves-backends`, `glyph-lib`, `scene-path-prim`, `scene`, `style`
 - `src/chrome-layout.ts` (4) — `bbox-derived-position`, `chrome-hidden`, `export-pdf`, `sheet`
-- `src/cli/commands-analyze.ts` (11) — `cli-narrow`, `describe-clearances`, `keep-impact-depends`, `lint-summary`, `schedule`, `sheet`, `stages`, `cli-validate-next` (+3)
+- `src/cli/commands-analyze.ts` (12) — `cli-narrow`, `describe-clearances`, `keep-impact-depends`, `lint-summary`, `schedule`, `sheet`, `stages`, `cli-validate-next` (+4)
 - `src/cli/commands-author.ts` (2) — `cli-expected-hash`, `keep`
 - `src/cli/commands-meta.ts` (3) — `cli-context`, `context-size`, `context-starter`
 - `src/cli/commands-render.ts` (3) — `keep-impact-depends`, `plan-json-dropped`, `watch-arming`
 - `src/cli/context-starter.ts` (1) — `context-starter`
 - `src/cli/help.ts` (1) — `cli-help`
-- `src/cli/io.ts` (75) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+67)
+- `src/cli/io.ts` (76) — `block-stair-byte-identity`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-flag-matrix`, `cli-help`, `cli-output-format`, `cli-plan-json-roundtrip` (+68)
 - `src/cli/link.ts` (1) — `cli-link`
 - `src/cli/review.ts` (1) — `cli-preview-review`
-- `src/cli/run.ts` (46) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+38)
+- `src/cli/run.ts` (47) — `axes`, `cli-batch`, `cli-commands`, `cli-context`, `cli-contract`, `cli-exit-parse`, `cli-expected-hash`, `cli-finish` (+39)
 - `src/cli/serialize.ts` (7) — `cli-batch`, `cli-plan-json-roundtrip`, `element-facets`, `plan-json-arcs-paper`, `plan-json-dropped`, `plan-json-instances`, `walls-from-rooms`
 - `src/cli/source-hash.ts` (1) — `cli-expected-hash`
 - `src/cli/summary.ts` (1) — `lint-summary`
@@ -115,7 +115,7 @@ Nearest first, then by name; `(+n)` is the rest. Test names are `test/<name>.tes
 - `src/impact.ts` (2) — `rectilinear-doors`, `rectilinear-rooms`
 - `src/import.ts` (30) — `block-stair-byte-identity`, `corner-window-byte-identity`, `dim-thickness-callout`, `drawing-budget`, `furniture-relations`, `gaps-byte-identity`, `keep`, `opening-host-on-edge` (+22)
 - `src/import/limits.ts` (1) — `openplan3d-malformed`
-- `src/index.ts` (377) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+369)
+- `src/index.ts` (378) — `acc-metadata`, `access-graph`, `access-policy`, `accessible-svg`, `agent-gallery`, `alias-match`, `anchors`, `annotate` (+370)
 - `src/input-limit.ts` (2) — `import-rooted`, `workspace-seams`
 - `src/intent-concepts.ts` (2) — `vocabulary-living-dining`, `vocabulary-matcher-oracle`
 - `src/intent.ts` (1) — `site`
@@ -658,6 +658,7 @@ The first sentence of each file's header comment.
 - `test/unit-suffix.test.ts` — Optional metric unit suffixes on numeric literals (Tranche 6 Track B): `3m`→3000, `3.5m`→3500, `3cm`→30, `3mm`→3 (a no-op), folded at lex time into millimetres by exact decimal-point shifting (never float multiply).
 - `test/v129-cross.test.ts` — The roof/void CROSS-FEATURE gate — the two tracks that shipped together, exercised TOGETHER rather than each against its own fixtures.
 - `test/v131-cross.test.ts` — The outdoor/garage CROSS-FEATURE gate — the cases neither track could produce on its own.
+- `test/validate-north-hint.test.ts` — Product roadmap RM1.2a item 1, as ruled on 2026-11-12: under `validate --stage drafting` only, a plan that writes no `north` statement gets one `info` item in `next` saying the sheet's arrow assumes page-up is north.
 - `test/vertical-frames.test.ts` — `stair`, `escalator` and `elevator` under the whole group D4: a placed run is entered from the IMAGE of its authored entry edge, and its symbol is the image of its drawing.
 - `test/vertical-room-shape.test.ts` — **A stair, lift or escalator belongs to the room whose FLOOR holds its footprint centre.** `roomOfVertical` (what `describe().verticals[].room` and the shaft graph's per-storey `stops[].room` report) used to test the...
 - `test/vertical.test.ts` — Vertical circulation: `stair`, `elevator`, `escalator`.

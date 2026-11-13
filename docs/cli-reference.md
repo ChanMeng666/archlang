@@ -285,7 +285,7 @@ $ archlang watch plan.arch -o plan.svg
 
 parse + resolve + lint, no render (is it valid & sound?)
 
-**Input:** `<file.arch|->` · **Output:** diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste, info). Each diagnostic and intent violation carries its authoring `stage`; with --stage, an `at_stage` { stage, held_back, clean } block precedes `keeps`
+**Input:** `<file.arch|->` · **Output:** diagnostics (plus a graph{} report with --graph and an intent{ ok, satisfied, total, subscores, violations, measures? } block with --intent; `measures` lists each brief-bound size with its measured value and signed residual), then `keeps` when the plan declares one (each { keep, grade, level?, holds, residual_mm, at?, measured_mm?, span }), then `next`: the one item to fix first { tier, code, message, span?, hint? } or null (tiers: error, warning, validity, drafting, intent, profile, taste, info; at --stage drafting, a plan that writes no `north` gets an info item with code null, ranked above taste and info). Each diagnostic and intent violation carries its authoring `stage`; with --stage, an `at_stage` { stage, held_back, clean } block precedes `keeps`
 
 | Flag | Does |
 | --- | --- |
@@ -724,8 +724,8 @@ print the full bundled agent context (spec + workflow + CLI + errors)
 
 | Flag | Does |
 | --- | --- |
-| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 174 KB bundle (default, unchanged) |
-| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 174 KB of it (spec = the language, 29 KB; workflow = the agent loop, 34 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 72 KB) |
+| `--level <starter\|full>` | starter = one screen (at most 4000 characters) for a small model: the lead example, the statements a plan needs, the loop and the five commonest errors; full = the whole 175 KB bundle (default, unchanged) |
+| `--section <spec\|workflow\|cli\|errors>` | print only one section of the bundle instead of all 175 KB of it (spec = the language, 29 KB; workflow = the agent loop, 34 KB; cli = every command, 38 KB; errors = the diagnostic catalog, 72 KB) |
 | `--json` | structured result on stdout, messages on stderr |
 
 **Examples**
@@ -737,7 +737,7 @@ $ archlang context
 # one screen for a small model: the lead example, the statements a plan needs, the loop and the five errors cold authors hit first
 $ archlang context --level starter
 
-# just the diagnostic catalog (72 KB) — read one section instead of paying for the whole 174 KB bundle
+# just the diagnostic catalog (72 KB) — read one section instead of paying for the whole 175 KB bundle
 $ archlang context --section errors
 ```
 
