@@ -303,8 +303,8 @@ function narrowArrivals(
   }
   if (widest >= min) return null;
   // Each room's door-only capacity from the rooms the runs land in (the walk view's doors, a
-  // balcony walked through): the run alone sets a room's reading only where every door on its
-  // widest way in is wider than the run.
+  // balcony walked through): widening the run alone clears a room only where every door on its
+  // widest way in already clears the minimum.
   const g = accessDigraph(
     ctx.rooms.map((r) => r.id),
     ctx.walkAccess().edges,
@@ -911,13 +911,15 @@ export const pathTooNarrow: LintRule = {
       for (const e of doors ?? []) reported.add(e.doorId);
       const w = rc.bottleneckClearWidthMm;
       // On a storey reached only by runs all narrower than the minimum, no door can clear the
-      // walk (so none is named), and the hint says the run is what must widen (RM1.3b). A room
-      // whose reading IS the run's width has the run as its bottleneck, and the message says so.
+      // walk (so none is named), and the hint says the run is what must widen (RM1.3b). The message
+      // names the run as THE bottleneck only as it names a door: where widening it alone clears
+      // the walk, i.e. the room reads the run's width and every door on its widest way in already
+      // clears the minimum. Otherwise the door hint stays and the run's is added to it.
       const viaRun = doors === null && flights !== null && Math.round(w) <= Math.round(flights.widest) ? flights : null;
       const atRun =
         viaRun !== null &&
         Math.round(w) === Math.round(viaRun.widest) &&
-        (viaRun.doorCap.get(r.id) ?? Number.POSITIVE_INFINITY) > viaRun.widest;
+        (viaRun.doorCap.get(r.id) ?? Number.POSITIVE_INFINITY) >= min;
       const kinds = new Set(viaRun?.runs.map((x) => x.kind) ?? []);
       const runWord = viaRun?.runs.length === 1 ? `${[...kinds][0]} it is reached by` : "widest run it is reached by";
       out.push({

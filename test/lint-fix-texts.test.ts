@@ -424,9 +424,21 @@ describe("W_FURNITURE_WALL_COLLISION — names the wall; `offset` is the CENTRE;
   });
 });
 
-/** Apply every `Widen door "x" to \`width N\`` hint to the door `x`'s own statement. Returns
- *  null when a named door is not written with that id at the top level (a component's). */
+/** Apply every `Widen door "x" to \`width N\`` hint to the door `x`'s own statement, and every
+ *  `Widen stair \`s\` (now N mm; \`size WxH\` on every storey it stands on)` hint (RM1.3b) to
+ *  each storey's statement of that run. Returns null when a named door or run is not written with
+ *  that id at the top level (a component's). */
 function widenAll(src: string, hints: readonly string[], level?: number): string | null {
+  for (const h of hints) {
+    const run = /^Widen (stair|elevator|escalator) `([^`]+)` \(now \d+ mm; `size (\d+x\d+)` on every storey/.exec(h);
+    if (!run) continue;
+    const re = new RegExp(
+      `(${run[1]} id=${run[2]!.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b[^\\n]*?size )\\d+x\\d+`,
+      "g",
+    );
+    if (!re.test(src)) return null;
+    src = src.replace(re, `$1${run[3]}`);
+  }
   // Ids are unique only within a storey: on a multi-storey plan, edit inside its `level` block.
   let lo = 0;
   let hi = src.length;

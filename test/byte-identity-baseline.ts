@@ -1823,7 +1823,7 @@
  * even the widest arriving run is narrower than `minPathClearWidthMm`, no door widening can clear
  * any walk there, so the rule (rightly) names no door; its hint used to say "widen the tightest
  * door/opening" all the same. Now a room whose reading IS the run's width (every door on its way
- * wider) says the bottleneck is the stair, and its hint quotes the `size` that clears it; a room
+ * clearing the minimum) says the bottleneck is the stair, and its hint quotes the `size` that clears it; a room
  * behind a narrower door as well keeps the door hint and adds the stair's. Only the accessibility
  * profile (900 mm) meets such a storey in the corpus. Swept per payload against `origin/main`
  * 911f209b over 473 corpus files (every storey's SVG and overlay SVG, `compile().diagnostics`,
@@ -1835,7 +1835,11 @@
  * `test/helpers/block-stair-law.ts`, which first reproduced their 104 unmoved rows: `garden-house`
  * and `hillside-villa` moved in each, and with the OLD accessibility `lint()` put back into the new
  * payload each reproduces its old digest (`df81256b…`, `b188c6d5…`). No other table hashes that
- * profile. Each re-pinned row carries `RM1.3b` beside it.
+ * profile. Each re-pinned row carries `RM1.3b` beside it. The catalogue's `W_PATH_TOO_NARROW` fix
+ * text gained a sentence, which `validate --json` carries on every diagnostic of that code, so
+ * `keep-byte-identity-baseline.ts` was re-taken by its generator: 16 of its 329 rows moved, each
+ * only in `diagnostics[].fix` (diffed field by field), every step count unchanged; `suggest`'s
+ * PS0.6 ranking moved none of them.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

@@ -10,7 +10,7 @@
  * PR legitimately moves a hashed output (never keep code), the table is re-taken by the generator, the
  * reason recorded below and the moved files listed in that commit's message.
  *
- * Taken: RM1.2a (W_STAIR_RISER_TOO_HIGH) review round on e61f66e3 and its rewording, after merging origin/main c265c167 (the desk-nook pair): the riser rule's message and hint, and W_STAIR_TOO_STEEP's hint where both bind; the riser-too-high pair
+ * Taken: RM1.3b on feat/rm1.3b-suggest-and-hint (base 35ed277f): W_PATH_TOO_NARROW under accessibility-advisory names the narrow stair a storey is reached by, which validate --json's next reads; only the upper storeys of plans reached by an 800 mm flight move, and every step count is unchanged
  */
 
 /** `[path from the repository root, SHA-256 of the payload, evaluation steps]`, sorted by root. */
@@ -238,7 +238,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "eval/goldens/compact-studio.arch",
-    "652c63cb10c5d9e03a8eb769801162414be0bc46e4872cd96917818449291d5f",
+    "88bec8469a8155b91384ecf44d92e507b3b245f971933afe5783fe812e7479de",
     312,
   ],
   [
@@ -403,12 +403,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-door-off-kitchen.arch",
-    "0c28c96b0b8ce32e05039c581f3ff73a2d517ac93bde1e8dbe2bffacbdc4a1fb",
+    "b7562208a48a5224980d5940452b0a9b1ba789e94676f42d43e840b3742ff7cb",
     170,
   ],
   [
     "test/defect-corpus/circulation-privacy/bath-door-off-kitchen.clean.arch",
-    "b87955a83f1bbef5220740a90f0c00dc2a85f236d1cfb893f52dc82f4ee90356",
+    "4920c33c07a0e2c89e67a0a939fdb63a2be16c09e5c3aa5ebf6cd40f92cd522e",
     170,
   ],
   [
@@ -533,7 +533,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/bed-before-door-face.arch",
-    "9795bb3f6855983c2c78c3b486da885db7e2a03ed0d658570d04e6374351487f",
+    "1d123a0de44c620c817a8657eea81e61762577f4396c58e9bd6247c305f20c1e",
     149,
   ],
   [
@@ -543,7 +543,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/bed-blocks-alcove.arch",
-    "a71eebe289a879e709a2dd5683e2b5aac9daf186dd66e03b116c454a4240db48",
+    "f0d5484d2a7a922811fbc9416d0cf6e616a8734cb37f5e42695cbb5c62c8dff8",
     151,
   ],
   [
@@ -563,7 +563,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/bench-across-opening.arch",
-    "21d8e14fbf6f421eabecf06636cf251bc0756fd6c497ae5de2306d3f3801a8cd",
+    "ede0e4b5b4add8bb15061596676568d11cc1459b15084b52d67ee9d2d883221d",
     129,
   ],
   [
@@ -683,7 +683,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/masked-route-balcony-door.arch",
-    "d1a6aef03e51427cc2f41078beb7b6523fbf6ffc0324e1a4bda3d9ffc57de178",
+    "c1e15de6590ac302c57bf6b82fc022eefb83b001655e8a7c75b72d4c4418c958",
     239,
   ],
   [
@@ -773,12 +773,12 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/clearances/wc-side-clearance.arch",
-    "fe724e4d875bf7ce16d87d95ac3ae59f17330a244377296649e648013d533793",
+    "a731bc57ff0a31b1cc2f3f2c189e0c71c8c3d75f408ae06df043ff69e7011e17",
     152,
   ],
   [
     "test/defect-corpus/clearances/wc-side-clearance.clean.arch",
-    "71941ffb848e987e26b5407198f379ce3135da63308b8111836daddcd6b31e12",
+    "20f60786804a4439441b8d25c31dff2561b71aac5dc1ff8efc4deac459106c15",
     152,
   ],
   [
@@ -978,7 +978,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/openings-ignore-walls/fa-door-across-tee.clean.arch",
-    "20945561e6fc15ff16a0acca2b249bb2d73c63d61e83dca6e09d718dc38b2000",
+    "6434c361a4f8fbe6a4df0e3642a6353075b8583c2183775e995616fdbcd9aa8d",
     159,
   ],
   [
@@ -1058,7 +1058,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/space-not-enclosed/bath-open-side.clean.arch",
-    "d89aeb7fe43daa3b058b8c1a948f21479bb8482a22360c1b1a3a21683d55574a",
+    "c8064b80a4f547fa19b78f9bc04ad48f5870370d6f8c42d1ab021f67a58e47d2",
     191,
   ],
   [
@@ -1233,7 +1233,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/defect-corpus/stair-safety/swing-over-stair.arch",
-    "70e4af29aefc144c6790c6c71e8779544b3244b88e539090ece9fa7de7609035",
+    "e6c204b3658e4d2a866ace7ef81317739c4dbf7c44b5ec28d01c7a121393b977",
     186,
   ],
   [
@@ -1363,7 +1363,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/1-apartment.arch",
-    "dfb5a805d3e647f2993d1caa30576823f80bb7cc62ef276a2b9dc410247b00f0",
+    "f89f26f22003186c85ecd8cccc51f5d122a63649714b764abcc98a3096f081b6",
     849,
   ],
   [
@@ -1498,7 +1498,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-rerun-row6/2-house.arch",
-    "3a59a306b128cab8f7e72fa761928ac70d6f4a1ba41cfe9a178c1209a3f6e455",
+    "4e1444bb0e01af8f12ed9b5a9442be43898d2bcdb65ef5382584376b0e73b782",
     3857,
   ],
   [
@@ -1558,7 +1558,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/audits/first-contact-plans/2026-10-27-rerun-arm1/2-house.arch",
-    "9d5b9d6aab85c96e28d3cbf90dbdf9dfc7e083153382c1161f63d1f96b2a7526",
+    "28976cec159db2b536c301eb8f973d1f0150c439988a3308c5dba05348db08fd",
     4773,
   ],
   [
@@ -1648,7 +1648,7 @@ export const KEEP_WEAK_BASELINE: readonly (readonly [string, string, number])[] 
   ],
   [
     "test/plans/plan-soundness/repro/gallery-bench-pinch.arch",
-    "bedde52e06861fa727955de8c542feef19369ead3769450587fcd44cd8b0ecb8",
+    "9b8c95f85e2f8a0efa85f01ed82c4215f0e2154bd77a5db0cbb82749dc576101",
     2039,
   ],
   [
