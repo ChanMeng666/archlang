@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `validate --stage drafting` now says when a plan writes no `north`. A plan without `north` still draws a north arrow, pointing up the page, so `next` is an `info` item with no code: the sheet's arrow assumes the top of the page is north; write `north <dir>` to say which way it is, or `north hidden` to draw no arrow. It ranks after every tier that gates and above taste, so `next` names it until it is answered, and the drafting stage is not clean until then. It is no diagnostic: `compile()`, `lint()`, plain `validate`, `ok`, the exit code and the summary are unchanged. A plan that writes any `north` (`north … hidden` included) gets nothing, and `arch fmt` always writes `north up`, which answers it. The parse records where `north` is written (`PlanNode.northSpan`); nothing draws, describes or lints from it.
+
 ## [1.60.0] - 2026-11-12
 
 Nothing is breaking. **New grammar:** `slab <mm>` and `clear <mm>` on a `level`, `clear <mm>` after a single-storey plan's `height`, and the plan-level `section` mark. **New codes:** the errors `E_CLEAR_SCOPE`, `E_SECTION_AXIS`, `E_SECTION_DUP`, `E_SECTION_LOOK` and `E_SECTION_SCOPE`, and the warning `W_CLEAR_HEIGHT_MISMATCH`. A plan that writes none of the new clauses compiles, describes and lints byte for byte as before; `section`, `slab` and `look` stay usable as names. **A new drawn statement:** a `section` mark draws in the annotation layers (`A-ANNO`, `A-ANNO-TEXT`), beside the dimensions, so a consumer that strips or restyles those layers strips or restyles it too. Also new: `/furniture`, a picture of every furniture family in plan and in 3D, and doorway, window and stair detail in the 3D preview.

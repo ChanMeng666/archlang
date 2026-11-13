@@ -64,8 +64,9 @@ export type NextTier = (typeof NEXT_TIERS)[number];
 export interface NextItem {
   tier: NextTier;
   /** The diagnostic's `E_*`/`W_*` code, the intent violation's `E_INTENT_*` code, or the taste
-   *  criterion's `A_*` advice code. `null` only for a diagnostic without a code and for a
-   *  `--graph` mismatch, which has none. */
+   *  criterion's `A_*` advice code. `null` only for a diagnostic without a code, for a
+   *  `--graph` mismatch, which has none, and for `validate --stage drafting`'s north hint (an
+   *  `info` item the CLI adds when no tier has anything left; RM1.2a). */
   code: string | null;
   message: string;
   /** `[start, end)` byte range, as in a JSON diagnostic; present only when the item has one. */
