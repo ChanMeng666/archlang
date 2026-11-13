@@ -304,6 +304,23 @@ suite("under `rendered`, a floor-only word washes its room (card RM8.7, RM-D28)"
       expect(contrast(rendered.pocheHatch, full), `${word} full tint ${full}`).toBeLessThan(2);
     }
     expect(contrast(rendered.pocheHatch, rendered.roomFill)).toBeGreaterThan(2.2);
+    // The values the PR and `FLOOR_TINT_MIX`'s comment quote, held here so the prose cannot drift.
+    expect(FLOOR_PATTERNS.map((w) => roomFloorFill(rendered, w))).toEqual(["#f8f2e7", "#faf6f0", "#f7f5f1"]);
+  });
+
+  it("holds every shipped theme that has tints to the same floor, not `rendered` alone", () => {
+    // The wash follows `materialTints`, not a theme's name: a theme given tints later is washed too, so
+    // the 2.0:1 floor is asserted for every theme that has them. Today that is `rendered` alone.
+    const tinted = Object.entries(THEMES).filter(([, layer]) => mergeTheme(layer).materialTints !== undefined);
+    expect(tinted.map(([name]) => name)).toContain("rendered");
+    for (const [name, layer] of tinted) {
+      const t = mergeTheme(layer);
+      for (const word of FLOOR_PATTERNS) {
+        const fill = floorFill(room3(`theme ${name}\n  `, ` floor ${word}`))!;
+        expect(fill, `${word} under ${name}`).toBe(roomFloorFill(t, word));
+        expect(contrast(t.pocheHatch, fill), `${word} under ${name}`).toBeGreaterThanOrEqual(2);
+      }
+    }
   });
 
   it("is the material's tint moved a third of the way from `roomFill`, channel by channel", () => {

@@ -112,6 +112,24 @@ suite("sheet text: the keys", () => {
       expect(keys.has(k), k).toBe(true);
   });
 
+  it("the words of card RM8.7 are keys: a floor-only pattern and a new ground rename their legend rows", () => {
+    // Before the card `timber` was no key (`E_PARSE`); a mistyped key's did-you-mean may now name a new
+    // word. Both are what the byte-identity law's third form and its `mistyped` guard stand for.
+    const body = (sheet: string) =>
+      inPlan(
+        `  legend\n${sheet}  room id=a at (0,0) size 3000x3000 floor timber\n  outdoor sand at (4000,0) size 2000x2000`,
+      );
+    expect(parseErrors(body(`${block('timber "Holz"', 'sand "Sand"')}\n`))).toEqual([]);
+    const rows = compile(
+      body(`${block('timber "Holz"', 'sand "Strand"')}\n`),
+    ).scene!.chrome!.tables?.legend?.entries.map((e) => e.name);
+    expect(rows).toContain("Holz");
+    expect(rows).toContain("Strand");
+    expect(parseErrors(inPlan(block('sandd "x"')))[0]!.message).toMatch(
+      /Unknown sheet text key "sandd" — did you mean "sand"\?/,
+    );
+  });
+
   it("no caption key shares a word with the vocabularies: one word, one meaning", () => {
     const vocabulary = new Set<string>([
       ...DOOR_KINDS,

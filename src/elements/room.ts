@@ -63,8 +63,10 @@ export const FLOOR_TINT_MATERIAL: Readonly<Partial<Record<FloorMaterial, Fixture
  * How far a floor's wash moves from `roomFill` toward its material's tint, as an exact fraction
  * `[p, q]`. RM-D28's hard condition is that the floor pattern's ink (`pocheHatch`) keeps at least
  * 2.0:1 against the wash; the full tints give 1.66 to 1.87:1 under `rendered`, a third of the way
- * gives 2.06 (`wood`) to 2.13:1 (`wool`), and `test/room-floor.test.ts` measures it. An odd
- * denominator, as `SYMBOL_INK_MIX`'s, so the per-channel rounding has no tie to break.
+ * gives `timber` #f8f2e7 at 2.063:1, `stone` #f7f5f1 at 2.111:1 and `carpeting` #faf6f0 at 2.135:1.
+ * `test/room-floor.test.ts` measures it for every shipped theme that has tints, so a theme given
+ * `materialTints` later is held to the same floor. An odd denominator, as `SYMBOL_INK_MIX`'s, so
+ * the per-channel rounding has no tie to break.
  */
 export const FLOOR_TINT_MIX: readonly [number, number] = [1, 3];
 

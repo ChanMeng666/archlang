@@ -417,9 +417,9 @@ Totals: 395 modules in 34 directories.
 | `glyphs-outdoor.ts` | 1252 | 2 | The OUTDOOR plan symbols: what a site plan draws once the drawing leaves the building — planting, garden furniture, the things parked on a driveway, and the small standing objects (a bin, a mailbox, a charge point) a survey records. | none |
 | `index.ts` | 17 | 1 | Built-in element registry — back-compatible views over the default {@link Registry}. The canonical built-in list now lives in `defs.ts`; the per-call registry machinery (and the public `register*` extension points) live in `registry.ts`.… | none |
 | `opening.ts` | 160 | 2 | `opening [id=] at (x,y) width N [wall ref]` — a leaf-less cased opening: a gap in the host wall (no door leaf, no glazing) that still connects the two spaces. | none |
-| `outdoor.ts` | 649 | 11 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony. | none |
+| `outdoor.ts` | 649 | 11 | `outdoor [id=] <kind> (at (x,y) size WxH \| polygon (x,y) …) [label "…"] [rail <edges>]` — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water, driveway, patio, balcony, sand, soil. | none |
 | `roof.ts` | 383 | 6 | `roof overhang <mm> [wall <id>]` — or `roof polygon (x,y) (x,y) (x,y) …` — the eaves projection line. | none |
-| `room.ts` | 743 | 9 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | none |
+| `room.ts` | 745 | 9 | `room [id=] (at (x,y) \| DIR ref [align E] [gap n]) size WxH [label "…"]` or `room [id=] polygon (x,y) (x,y) (x,y) … [label "…" [at (x,y)]]` or `room [id=] circle at (cx,cy) radius R [label "…"]` — floor fill + label + computed area. The… | none |
 | `section.ts` | 256 | 2 | `section <id\|int> (x,y)->(x,y) look <compass>` — a section mark on the plan (RM6.1, design `docs/plans/product-roadmap/design/slab-and-section.md` §2): where a section cuts the building and which way it looks, drawn as GB/T 50001 and ISO… | none |
 | `stair.ts` | 471 | 2 | `stair [id=] at (x,y) size WxH dir up\|down [width <mm>]` — a straight flight of stairs drawn as the conventional plan symbol. Or the block form (issue #362), `stair [id=] dir up\|down width <mm> { flight … landing … flight … }`: one stair… | charges the step meter |
 | `vertical-glyphs.ts` | 463 | 10 | Plan symbols for the vertical-circulation elements (`stair`, `elevator`, `escalator`). | none |
@@ -477,7 +477,7 @@ Totals: 395 modules in 34 directories.
 
 | Module | Lines | Importers | Summary | Budget |
 | --- | ---: | ---: | --- | --- |
-| `tokens.ts` | 662 | 52 | The single source of truth for ArchLang's lexical grammar. | none |
+| `tokens.ts` | 667 | 52 | The single source of truth for ArchLang's lexical grammar. | none |
 
 ## `src/import/`
 
@@ -487,7 +487,7 @@ Totals: 395 modules in 34 directories.
 | `openplan3d-catalog.ts` | 345 | 2 | OpenPlan3D's furniture catalogue, as far as `arch import --from openplan3d` reads it: each catalogue id's default footprint (width × depth, centimetres) and, where one ArchLang fixture family is the same object, that family. | none |
 | `openplan3d-model.ts` | 1342 | 2 | OpenPlan3D's two file formats read into one model, in OpenPlan3D's own units (centimetres, plan x right, y down), with every default OpenPlan3D applies filled in and every value the importer does not carry over written into a {@link… | charges the step meter |
 | `openplan3d-rooms.ts` | 537 | 1 | OpenPlan3D's rooms, found the way OpenPlan3D finds them: it never stores a room's outline, it detects every closed loop of wall centrelines on each render and attaches saved metadata to a loop by the set of walls that bound it. | charges the step meter |
-| `openplan3d.ts` | 874 | 1 | `openPlan3dToArch`: an OpenPlan3D plan (github.com/laanlabs/openPlan3D, MIT) as ArchLang source, so `fmt`, `lint`, `validate` and `compile` apply to it, plus a report of everything that was not carried over. The CLI's `arch import --from… | charges the step meter |
+| `openplan3d.ts` | 875 | 1 | `openPlan3dToArch`: an OpenPlan3D plan (github.com/laanlabs/openPlan3D, MIT) as ArchLang source, so `fmt`, `lint`, `validate` and `compile` apply to it, plus a report of everything that was not carried over. The CLI's `arch import --from… | charges the step meter |
 
 ## `src/ir/`
 

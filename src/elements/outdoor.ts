@@ -1,7 +1,7 @@
 /**
  * `outdoor [id=] <kind> (at (x,y) size WxH | polygon (x,y) …) [label "…"] [rail <edges>]`
  * — a ground surface OUTSIDE the building: lawn, planting, paving, deck, gravel, water,
- * driveway, patio, balcony.
+ * driveway, patio, balcony, sand, soil.
  *
  * ## What it is, and what it deliberately is NOT
  *

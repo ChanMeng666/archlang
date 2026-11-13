@@ -669,10 +669,17 @@ describe("floor finish by the author's `floor` word (card RM8.7)", () => {
     expect(wordFinish("marble")).toBeUndefined();
     expect(wordFinish("toString")).toBeUndefined();
     expect(wordFinish(undefined)).toBeUndefined();
-    const { scene } = built(plan(""));
+    // A `storage` room's default is `neutral`, a finish no word lays, so the fallback reads apart
+    // from an authored finish. The control: a known word on the same room lays its own finish.
+    const store = `plan "F" {\n  units mm\n  room id=a at (0,0) size 3000x3000 uses storage\n  walls from rooms exterior 200 partition 100\n}\n`;
+    const { scene } = built(store);
     scene.levels[0]!.floors[0]!.pattern = "marble";
     const m = buildMesh(scene);
-    expect(floorOf(m, "a").extras.finish).toBe("timber");
-    expect(ledgered(m, "a")).toHaveLength(1);
+    expect(floorOf(m, "a").extras.finish).toBe("neutral");
+    expect(ledgered(m, "a")).toEqual([expect.objectContaining({ value: "neutral", provenance: "default" })]);
+    scene.levels[0]!.floors[0]!.pattern = "stone";
+    const known = buildMesh(scene);
+    expect(floorOf(known, "a").extras.finish).toBe("stone");
+    expect(ledgered(known, "a")).toEqual([]);
   });
 });

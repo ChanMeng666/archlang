@@ -18,9 +18,13 @@
  * `OUTDOOR_KINDS`, `KEYWORDS.enum`) and add five `<pattern>` builders a plan reaches only by writing
  * one; a room's floor fill changes only under a theme with `materialTints` and only for the three
  * floor-only words (`roomFloorFill`, `src/elements/room.ts`). An enum word is no reserved word, so the
- * names row parses as it did. The one text that can move without a new word is the warning on a
- * MISTYPED floor or ground word, which lists the known words: no row writes one (asserted below), and
- * the new texts are pinned by `test/room-floor.test.ts` and `test/outdoor.test.ts`.
+ * names row parses as it did. The words also became `sheet text` keys (`src/sheet-text.ts`), the
+ * law's third form: a block that writes one was `E_PARSE` before and now renames the word on the
+ * sheet. Two texts can move without any of the three forms, because each names the known words: the
+ * warning on a MISTYPED floor or ground word, and the parse error on a mistyped `sheet text` key,
+ * whose "did you mean" now may name a new word (`sandd` → `sand`). No row has either (asserted
+ * below), and the new texts are pinned by `test/room-floor.test.ts`, `test/outdoor.test.ts` and
+ * `test/sheet-text.test.ts`.
  *
  * A digest moving is a finding to explain before it is a diff to re-measure.
  */
@@ -81,11 +85,15 @@ function* nodes(x: unknown): Generator<Record<string, unknown>> {
   }
 }
 
-const FORMS = ["floor word", "outdoor kind"] as const;
+/** The five words RM8.7 added, each now a `sheet text` key as well. */
+const NEW_WORDS: readonly string[] = [...FLOOR_PATTERNS, ...NEW_KINDS];
+
+const FORMS = ["floor word", "outdoor kind", "sheet text key"] as const;
 type Form = (typeof FORMS)[number];
 const writes = (src: string, form: Form): boolean => {
   const plan = parse(src, BUILTIN_REGISTRY).plan;
   if (!plan) return false;
+  if (form === "sheet text key") return (plan.sheetText?.entries ?? []).some((e) => NEW_WORDS.includes(e.key));
   for (const n of nodes(plan.body)) {
     if (form === "floor word" && n.kind === "room") {
       const word = (n.floor as { word?: string } | undefined)?.word;
@@ -95,7 +103,10 @@ const writes = (src: string, form: Form): boolean => {
   }
   return false;
 };
-/** A floor or ground word that is no word at all: its warning lists the known words, which grew. */
+/**
+ * A floor, ground or `sheet text` word that is no word at all: its message lists or suggests the known
+ * words, which grew.
+ */
 const mistyped = (src: string): boolean => {
   const plan = parse(src, BUILTIN_REGISTRY).plan;
   if (!plan) return false;
@@ -103,7 +114,9 @@ const mistyped = (src: string): boolean => {
     const word = n.kind === "room" ? (n.floor as { word?: string } | undefined)?.word : undefined;
     if (word !== undefined && !(FLOOR_MATERIALS as readonly string[]).includes(word)) return true;
   }
-  return compile(src, { noCache: true }).diagnostics.some((d) => d.message.includes("Unknown outdoor kind"));
+  return compile(src, { noCache: true }).diagnostics.some(
+    (d) => d.message.includes("Unknown outdoor kind") || d.message.includes("Unknown sheet text key"),
+  );
 };
 
 /** Measured at `35ed277f` (see the header): `[digest, row]`. */
@@ -310,6 +323,11 @@ suite("floor words and ground kinds: the byte-identity law", () => {
     expect(writes(ground("lawn"), "outdoor kind")).toBe(false);
     expect(mistyped(room(" floor marble"))).toBe(true);
     expect(mistyped(ground("sandy"))).toBe(true);
+    const sheet = (block: string) => `plan "P" {\n  units mm\n  ${block}\n  room id=a at (0,0) size 3000x3000\n}\n`;
+    for (const w of NEW_WORDS) expect(writes(sheet(`sheet text { ${w} "x" }`), "sheet text key"), w).toBe(true);
+    expect(writes(sheet('sheet text { tile "Fliese" }'), "sheet text key")).toBe(false);
+    expect(mistyped(sheet('sheet text { sandd "x" }'))).toBe(true);
+    expect(mistyped(sheet('sheet text { tile "Fliese" }'))).toBe(false);
   });
 
   it("the digest can fail: each word moves it, under the default theme and under `rendered`", () => {
@@ -323,6 +341,12 @@ suite("floor words and ground kinds: the byte-identity law", () => {
     const ground = (k: string) => `plan "P" {\n  units mm\n  outdoor ${k} at (0,0) size 3000x3000\n}\n`;
     for (const k of NEW_KINDS)
       expect(stairLawDigest(API, ground(k), undefined), k).not.toBe(stairLawDigest(API, ground("paving"), undefined));
+    // A `sheet text` key that names a new word renames its legend row.
+    const legend = (block: string) =>
+      `plan "P" {\n  units mm\n  legend\n  ${block}\n  room id=a at (0,0) size 3000x3000 floor timber\n}\n`;
+    expect(stairLawDigest(API, legend('sheet text { timber "Holz" }'), undefined)).not.toBe(
+      stairLawDigest(API, legend('sheet text { tile "Fliese" }'), undefined),
+    );
   });
 
   // One law per form: every row that does not write the form is byte-identical to `35ed277f`.
