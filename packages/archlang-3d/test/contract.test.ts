@@ -28,6 +28,10 @@ const REQUIRED_VALUES = [
   // (`scene3d/build.ts`): on a core without it no stair is built, ledgered `stair-no-flights`.
   "entryEdges",
   "treadCount",
+  // A winder landing's tapered treads (card RM1.2g): cut on the lines the core's own drawing draws
+  // across it, read off `toScene(ir, { annotate: true })` (already public), never re-derived.
+  // Feature-detected too: on a core without it such a landing is built level.
+  "toScene",
 ];
 
 const walk = (d: string): string[] =>

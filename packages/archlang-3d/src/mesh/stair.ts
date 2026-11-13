@@ -11,16 +11,37 @@
  *   (the stair's `width`, centred across the flight, as the drawing centres it), each tread
  *   `run / treads` deep, on the drawing's tread lines. It is solid down to the stair's floor `z0`.
  * - A landing: a closed box over its rectangle, from `z0` up to the riser its flight ends on.
+ * - A `winders <n>` landing (card RM1.2g): its `n` tapered treads (`StairLanding.winders`, cut by
+ *   the lines the core draws across it), each a closed prism from `z0`, the first at the riser its
+ *   flight ends on and each next one riser higher. So it climbs `n - 1` risers more than a level
+ *   landing, one per line the plan draws across it, the risers `W_STAIR_RISER_TOO_HIGH` counts.
  *
  * Every shell is closed and wound outward (`prism`), in integer micrometres and glTF axes.
  */
-import type { Pt, Side, Stair, StairFlight } from "../scene3d/types.js";
+import type { Pt, Side, Stair, StairFlight, StairLanding } from "../scene3d/types.js";
 import { clipToConvex, prism, rect } from "./extrude.js";
 import type { Shell } from "./types.js";
 
-/** How many risers a stair of these flights climbs: each flight's treads plus its head riser. */
-export function stairRisers(flights: readonly Pick<StairFlight, "treads">[]): number {
-  return flights.reduce((n, f) => n + f.treads + 1, 0);
+/**
+ * How many risers a stair of these flights climbs: each flight's treads plus its head riser, and
+ * on each `winders <n>` landing between two of them (card RM1.2g) `n - 1` more, one per line the
+ * plan draws across it.
+ */
+export function stairRisers(
+  flights: readonly Pick<StairFlight, "treads">[],
+  landings: readonly Pick<StairLanding, "winders">[] = [],
+): number {
+  return (
+    flights.reduce((n, f) => n + f.treads + 1, 0) +
+    landings
+      .slice(0, Math.max(0, flights.length - 1))
+      .reduce((n, l) => n + Math.max(0, (l.winders?.length ?? 1) - 1), 0)
+  );
+}
+
+/** The plan rings a landing is built over, in climbing order: its tapered treads, or its rectangle. */
+function landingSteps(l: StairLanding): Pt[][] {
+  return l.winders ?? [rect(l.at[0], l.at[1], l.at[0] + l.size.w, l.at[1] + l.size.h).outer];
 }
 
 /** A stair's solids, how many risers it climbs, and the height each landing stands at. */
@@ -85,7 +106,7 @@ function sideways(section: Pt[], c0: number, c1: number, runAlongY: boolean): Sh
 export function stairSolid(stair: Stair, z0: number, rise: number): (StairSolid & { dropped: number }) | null {
   const flights = stair.flights;
   if (!flights?.length || !(rise > 0)) return null;
-  const R = stairRisers(flights);
+  const R = stairRisers(flights, stair.landings);
   const riserTop = (k: number): number => z0 + Math.round((rise * k) / R);
   const shells: Shell[] = [];
   const landingTops: number[] = [];
@@ -114,15 +135,15 @@ export function stairSolid(stair: Stair, z0: number, rise: number): (StairSolid 
     climbed += n + 1;
     const landing = stair.landings?.[i];
     if (landing && i < flights.length - 1) {
-      const top = riserTop(climbed);
-      landingTops.push(top);
-      const box = prism(
-        rect(landing.at[0], landing.at[1], landing.at[0] + landing.size.w, landing.at[1] + landing.size.h),
-        z0,
-        top,
-      );
-      if (box) shells.push(box);
-      else dropped++;
+      landingTops.push(riserTop(climbed));
+      // A level landing is one step; a winder landing's treads climb one riser each.
+      const steps = landingSteps(landing);
+      steps.forEach((ring, k) => {
+        const box = prism({ outer: ring }, z0, riserTop(climbed + k));
+        if (box) shells.push(box);
+        else dropped++;
+      });
+      climbed += steps.length - 1;
     }
   });
   return { shells, risers: R, landingTops, top: riserTop(R - 1), dropped };
@@ -260,7 +281,7 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
   if (!flights?.length || !(rise > 0)) return null;
   const MM = 1000;
   const D = STAIR_DETAIL;
-  const R = stairRisers(flights);
+  const R = stairRisers(flights, stair.landings);
   const riserTop = (k: number): number => z0 + Math.round((rise * k) / R);
   const r = rise / R / MM;
   const W = stair.width / MM;
@@ -301,7 +322,14 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
     .slice(0, flights.length - 1)
     .map((l) => [l.at[0], l.at[1], l.at[0] + l.size.w, l.at[1] + l.size.h]);
   const newels: Box2[] = [];
-  const landings: Array<{ box: Box2; top: number; going: number; k: number }> = [];
+  const landings: Array<{
+    box: Box2;
+    top: number;
+    going: number;
+    k: number;
+    /** A winder landing's tapered treads (RM1.2g), each its ring and its top; absent on a level one. */
+    steps?: Array<{ ring: Pt[]; top: number }>;
+  }> = [];
   let climbed = 0;
   let base = z0;
   flights.forEach((f, i) => {
@@ -431,8 +459,18 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
       const top = riserTop(climbed);
       base = top;
       const box: Box2 = [landing.at[0], landing.at[1], landing.at[0] + landing.size.w, landing.at[1] + landing.size.h];
-      keep(out.treads, solid(box, z0, top));
-      landings.push({ box, top, going: Math.round(g * MM), k: i + 1 });
+      if (landing.winders) {
+        // Card RM1.2g: each tapered tread a solid from the floor, as a level landing is, one riser
+        // above the last; the next flight starts from the last of them.
+        const steps = landing.winders.map((ring, j) => ({ ring, top: riserTop(climbed + j) }));
+        for (const st of steps) keep(out.treads, prism({ outer: st.ring }, z0, st.top));
+        climbed += steps.length - 1;
+        base = riserTop(climbed);
+        landings.push({ box, top, going: Math.round(g * MM), k: i + 1, steps });
+      } else {
+        keep(out.treads, solid(box, z0, top));
+        landings.push({ box, top, going: Math.round(g * MM), k: i + 1 });
+      }
     }
   });
   // A landing's edges, once every newel stands. Along each edge, the stretches a flight arrives on or
@@ -441,7 +479,7 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
   // them); each stretch left is probed at its own middle, and an open one takes a level rail inside
   // the edge, stopping where a newel or an earlier rail already stands.
   const taken: Box2[] = [...newels];
-  for (const { box, top, going, k } of landings) {
+  for (const { box, top, going, k, steps } of landings) {
     const [x0, y0, x1, y1] = box;
     const p = D.probe * MM;
     const edges: Array<{ side: Side; horizontal: boolean; at: number; out: 1 | -1 }> = [
@@ -450,8 +488,26 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
       { side: "bottom", horizontal: true, at: y1, out: 1 },
       { side: "left", horizontal: false, at: x0, out: -1 },
     ];
-    const railTop = top + D.landingRailHeight * MM;
     for (const { side, horizontal, at, out: dir } of edges) {
+      /**
+       * The pieces of `[q0, q1]` along this edge, each with the top it stands over: the whole of it
+       * over a level landing; over a winder landing (RM1.2g) the stretch of each tapered tread that
+       * meets the edge, so its rail steps up with the treads.
+       */
+      const piecesAlong = (q0: number, q1: number): Array<[number, number, number]> => {
+        if (!steps) return [[q0, q1, top]];
+        const pieces: Array<[number, number, number]> = [];
+        for (const st of steps) {
+          // The tread's vertices on the edge's line (within a micrometre of the landing's own edge).
+          const on = st.ring
+            .filter((p) => Math.abs((horizontal ? p[1] : p[0]) - at) <= 1)
+            .map((p) => (horizontal ? p[0] : p[1]));
+          if (on.length < 2) continue;
+          const [p0, p1] = [Math.max(q0, Math.min(...on)), Math.min(q1, Math.max(...on))];
+          if (p1 > p0) pieces.push([p0, p1, st.top]);
+        }
+        return pieces.sort((a, b) => a[0] - b[0]);
+      };
       const [a0, a1] = horizontal ? [x0, x1] : [y0, y1];
       // The strip `p` deep outside the edge, and the flights that overlap it.
       const [s0, s1] = dir > 0 ? [at, at + p] : [at - p, at];
@@ -485,20 +541,22 @@ export function stairDetail(stair: Stair, z0: number, rise: number, solidAt: (p:
         const held = taken
           .filter((b) => (horizontal ? b[1] < across[1] && b[3] > across[0] : b[0] < across[1] && b[2] > across[0]))
           .map((b): [number, number] => (horizontal ? [b[0], b[2]] : [b[1], b[3]]));
-        for (const [q0, q1] of freeRuns(r0, r1, held, np)) {
-          const b: Box2 = horizontal ? [q0, across[0], q1, across[1]] : [across[0], q0, across[1], q1];
-          keep(out.rails, solid(b, railTop - railW, railTop));
-          taken.push(b);
-          railed = true;
-          const len = q1 - q0;
-          const count = Math.max(1, Math.min(64, Math.floor(len / going)));
-          const mid = Math.round((across[0] + across[1] - bb) / 2);
-          for (let j = 0; j < count; j++) {
-            const c = Math.round(q0 + (len * (2 * j + 1)) / (2 * count) - bb / 2);
-            const bal: Box2 = horizontal ? [c, mid, c + bb, mid + bb] : [mid, c, mid + bb, c + bb];
-            keep(out.rails, solid(bal, top, railTop - railW + MM));
+        for (const [f0, f1] of freeRuns(r0, r1, held, np))
+          for (const [q0, q1, under] of piecesAlong(f0, f1)) {
+            const railTop = under + D.landingRailHeight * MM;
+            const b: Box2 = horizontal ? [q0, across[0], q1, across[1]] : [across[0], q0, across[1], q1];
+            keep(out.rails, solid(b, railTop - railW, railTop));
+            taken.push(b);
+            railed = true;
+            const len = q1 - q0;
+            const count = Math.max(1, Math.min(64, Math.floor(len / going)));
+            const mid = Math.round((across[0] + across[1] - bb) / 2);
+            for (let j = 0; j < count; j++) {
+              const c = Math.round(q0 + (len * (2 * j + 1)) / (2 * count) - bb / 2);
+              const bal: Box2 = horizontal ? [c, mid, c + bb, mid + bb] : [mid, c, mid + bb, c + bb];
+              keep(out.rails, solid(bal, under, railTop - railW + MM));
+            }
           }
-        }
       }
       // Open, but every open stretch already held by a flight's newels (RM8.6b n4): nothing built.
       if (open.length > 0 && !railed) (out.sides[sideAt] as StairSide).against = "newel";

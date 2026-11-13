@@ -88,6 +88,39 @@ describe("Scene3D v0: the schema and the validator agree", () => {
     }
   });
 
+  // Card RM1.2g: no shipped example has a `winders` landing, so the corpus never shows the field.
+  it("accepts a winder landing's tapered treads, and rejects one tread or a millimetre float", () => {
+    const r = adaptPlan(
+      `plan "L" { units mm height 2750
+        wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,6000) (0,6000) close }
+        room id=hall at (0,0) size 6000x6000 label "Hall" uses hall
+        door at (3000,6000) width 900 wall shell
+        stair id=s dir up width 1000 {
+          flight at (1500,1100) size 1000x1100
+          landing at (1500,100) size 1000x1000 winders 3
+          flight at (620,100) size 880x1000
+        } }`,
+      { world: WORLD },
+    );
+    if (!r.ok) throw new Error(r.refusal.code);
+    const sc = JSON.parse(JSON.stringify(r.scene));
+    const winders = (s: any) => s.levels[0].stairs[0].landings[0].winders;
+    expect(winders(sc)).toHaveLength(3);
+    expect(validateScene3D(sc)).toEqual([]);
+    expect(schemaValid(sc) ? [] : schemaValid.errors).toEqual([]);
+    const one = structuredClone(sc);
+    winders(one).splice(1);
+    const float = structuredClone(sc);
+    winders(float)[0][0].splice(0, 1, 0.25);
+    for (const [name, bad] of [
+      ["one tread", one],
+      ["a float", float],
+    ] as const) {
+      expect(validateScene3D(bad).length, name).toBeGreaterThan(0);
+      expect(schemaValid(bad), name).toBe(false);
+    }
+  });
+
   for (const [name, mutate, schemaSees] of PLANTS) {
     it(`rejects ${name}`, () => {
       const sc = structuredClone(scenes.find(([n]) => n === "laneway-house.arch")?.[1]);
