@@ -15,8 +15,8 @@ Chromium change) in the commit that re-pins it.
 
 Re-pinned by product-roadmap card RM8.8 (2026-11-12, PR #737, the soft contact shadows): bands
 along the walls' feet, up their inside corners and round the standing furniture fade in over the
-last quarter of each caster's rise, so a frame moves only once a storey's last wall or a piece of
-furniture is nearly up. Exactly 7 frames moved: laneway-house `end` (`903bbd44…` → `00da9331…`);
+last quarter of each caster's rise (a storey's walls by its last wall, a fence, a stair or a piece of furniture by its
+own), so a frame moves only once one of them is nearly up. Exactly 7 frames moved: laneway-house `end` (`903bbd44…` → `00da9331…`);
 two-storey `stop:1` (`adac293c…` → `19ae655b…`), `tilted` (`75208662…` → `cb958a5c…`; storey 1 is
 up by then in the combined view), `storey:2` (`ccfdee73…` → `8dfc1009…`), `stop:2` (`ad1b0d95…` →
 `41c5d43c…`) and `end` (`3c80a946…` → `2e3e8476…`); courtyard-house `end` (`4259e01a…` →

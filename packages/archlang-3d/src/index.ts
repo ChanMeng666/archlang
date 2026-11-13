@@ -99,7 +99,7 @@ export {
   viewLabel,
   viewMesh,
 } from "./replay/timeline.js";
-export { contactShadows } from "./replay/shadows.js";
+export { contactFade, contactShadows } from "./replay/shadows.js";
 export type { ContactShadows, ShadowClass, ShadowLayer } from "./replay/shadows.js";
 export { replayFacts } from "./replay/facts.js";
 export type { FactsOptions } from "./replay/facts.js";

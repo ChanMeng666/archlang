@@ -11,6 +11,8 @@ declare global {
     __mountTimed: (p: ReplayPayload) => Promise<number>;
     /** Draw `t` and read the frame back (`frameHash`, so the GPU has finished); how long, ms. */
     __frameTimed: (t: number) => Promise<number>;
+    /** Draw `t` and hash the frame (`frameHash`). */
+    __frameHashAt: (t: number) => Promise<string>;
     __benchHandle?: ReplayHandle;
   }
 }
@@ -26,6 +28,13 @@ window.__mountTimed = async (p) => {
   const ms = performance.now() - t0;
   window.__benchHandle = h;
   return ms;
+};
+
+window.__frameHashAt = async (t) => {
+  const h = window.__benchHandle;
+  if (!h) throw new Error("nothing mounted");
+  h.seek(t);
+  return h.frameHash();
 };
 
 window.__frameTimed = async (t) => {

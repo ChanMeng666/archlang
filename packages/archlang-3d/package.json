@@ -58,7 +58,7 @@
   "scripts": {
     "build": "tsup",
     "typecheck": "tsc --noEmit",
-    "e2e": "vitest run --config vitest.e2e.config.ts",
+    "e2e": "vitest run --config vitest.e2e.config.ts --exclude e2e/frame-budget.e2e.ts && vitest run --config vitest.e2e.config.ts e2e/frame-budget.e2e.ts",
     "archlang3d": "tsx src/cli/main.ts",
     "notices": "tsx scripts/licence-gate.ts --write",
     "prove:pack": "tsx scripts/prove-pack.ts",

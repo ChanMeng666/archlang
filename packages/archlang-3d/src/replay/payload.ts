@@ -11,7 +11,6 @@ import {
   type MaterialSlot,
   slotGroups,
 } from "../materials.js";
-import { isHung } from "../mesh/t0.js";
 import type { Mesh3D, MeshNode } from "../mesh/types.js";
 import { endElevation } from "./camera.js";
 import type { ReplayFacts } from "./strip.js";
@@ -45,9 +44,14 @@ export interface ReplayNode {
   /**
    * The width (mm) of the contact shadow the node casts (card RM8.8, `CONTACT_SHADOW`,
    * `shadows.ts`): on a standing wall and a column, a standing piece of furniture, a fence and a
-   * stair's stringers. Absent on every node that casts none (a hung piece, a door, a floor …).
+   * stair's stringers. Absent on every node that casts none (a hung piece, a flat one, a door …).
    */
   band?: number;
+  /**
+   * A standing piece of furniture lower than its band would be (a rug): it casts no contact shadow
+   * and its top receives the others' (card RM8.8). Absent on every other node.
+   */
+  flat?: true;
 }
 
 export interface ReplayPayload {
@@ -141,6 +145,7 @@ export function viewBoxOf(svg: string): [number, number, number, number] {
  */
 export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload {
   const lifts = explodeLifts(mesh);
+  const facts = castFacts(mesh);
   return {
     title: opts.title,
     theme: opts.theme ?? "light",
@@ -182,7 +187,7 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
           ...(slotted ? { groups: runs } : {}),
           ...(n.kind === "floor" && finish ? { finish } : {}),
           ...((n.kind === "outdoor" || n.kind === "fence") && colour ? { colour } : {}),
-          ...bandOf(n, positions, mesh),
+          ...bandOf(n, positions, facts),
         };
       }),
     events: timeline(mesh),
@@ -194,12 +199,15 @@ export function replayPayload(mesh: Mesh3D, opts: ReplayOptions): ReplayPayload 
  * The contact band a node casts (`ReplayNode.band`, card RM8.8), by `CONTACT_SHADOW`'s rules: a
  * standing wall from its thickness, a column from its smaller side, a standing piece of furniture
  * from the smaller side of its footprint (a T0 piece and a grey box are fitted exactly to it,
- * `test/t0.test.ts`, so its plan extent is the footprint), a fence from its style's post (the
- * Mesh3D's own `fence-profile-default` row: this module stays clear of the mesh stage's site code,
- * which reads the core), a stair's stringers as a wall `CONTACT_SHADOW.stairThicknessMm` thick. A
- * hung piece casts none.
+ * `test/t0.test.ts`, so its plan extent is the footprint), a fence from its style's post, a stair's
+ * stringers as a wall `CONTACT_SHADOW.stairThicknessMm` thick. A hung piece casts none; a standing
+ * one lower than its band (a rug) casts none either and is `flat`, so its top receives the others'.
+ *
+ * What a piece hangs from and a fence's post come from the Mesh3D's own ledger (`castFacts`), never
+ * from the mesh stage's tables: so the `./browser` entry carries neither the T0 generators nor the
+ * site code that reads the core (`test/browser-safety.test.ts`).
  */
-function bandOf(n: MeshNode, positions: readonly number[], mesh: Mesh3D): { band?: number } {
+function bandOf(n: MeshNode, positions: readonly number[], facts: CastFacts): { band?: number; flat?: true } {
   if (positions.length === 0) return {};
   const side = (): number => {
     let x0 = Infinity;
@@ -222,20 +230,52 @@ function bandOf(n: MeshNode, positions: readonly number[], mesh: Mesh3D): { band
   }
   if (n.kind === "column") return { band: contactBandMm(CONTACT_SHADOW.wall, side()) };
   if (n.kind === "furniture") {
-    const asset = String(n.extras.asset ?? "");
-    if (asset.startsWith("t0:") && isHung(asset.slice(3))) return {};
-    return { band: contactBandMm(CONTACT_SHADOW.furniture, side()) };
+    const t0 = String(n.extras.asset ?? "").startsWith("t0:");
+    if ((t0 && facts.hungCategories.has(String(n.extras.category))) || facts.hungIds.has(n.id)) return {};
+    const band = contactBandMm(CONTACT_SHADOW.furniture, side());
+    let lo = Infinity;
+    let hi = -Infinity;
+    for (let i = 1; i < positions.length; i += 3) {
+      const y = positions[i] as number;
+      if (y < lo) lo = y;
+      if (y > hi) hi = y;
+    }
+    return hi - lo < band * 1000 ? { flat: true } : { band };
   }
   if (n.kind === "fence") {
-    const row = mesh.assumptions.find(
-      (a) => a.rule === "fence-profile-default" && a.field === `profile(${String(n.extras.style)})`,
-    )?.value as { post_mm?: unknown } | undefined;
-    const post = typeof row?.post_mm === "number" ? row.post_mm : side();
+    const post = facts.fencePosts.get(String(n.extras.style)) ?? side();
     return { band: contactBandMm(CONTACT_SHADOW.fence, post) };
   }
   if (n.kind === "stair" && n.part === "stringer")
     return { band: contactBandMm(CONTACT_SHADOW.wall, CONTACT_SHADOW.stairThicknessMm) };
   return {};
+}
+
+/** What `bandOf` reads from a Mesh3D's ledger. */
+interface CastFacts {
+  /** Categories hung by their underside (`furniture-mount-default`, written for a T0 family). */
+  hungCategories: Set<string>;
+  /** Pieces hung by their top (`furniture-mount-from-top`, one row a piece). */
+  hungIds: Set<string>;
+  /** Each fence style's post, mm (`fence-profile-default`). */
+  fencePosts: Map<string, number>;
+}
+
+function castFacts(mesh: Mesh3D): CastFacts {
+  const facts: CastFacts = { hungCategories: new Set(), hungIds: new Set(), fencePosts: new Map() };
+  const inParens = (field: string): string | undefined => /^[a-z_]+\((.+)\)$/.exec(field)?.[1];
+  for (const a of mesh.assumptions) {
+    if (a.rule === "furniture-mount-default") {
+      const category = inParens(a.field);
+      if (category !== undefined) facts.hungCategories.add(category);
+    } else if (a.rule === "furniture-mount-from-top" && a.id !== undefined) facts.hungIds.add(a.id);
+    else if (a.rule === "fence-profile-default") {
+      const style = inParens(a.field);
+      const post = (a.value as { post_mm?: unknown } | undefined)?.post_mm;
+      if (style !== undefined && typeof post === "number") facts.fencePosts.set(style, post);
+    }
+  }
+  return facts;
 }
 
 /**

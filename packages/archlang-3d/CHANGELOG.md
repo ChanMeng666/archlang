@@ -6,15 +6,18 @@
 
 - The replay draws soft contact shadows (product-roadmap card RM8.8): translucent black bands
   baked once from the geometry when the replay is mounted, never a shadow map. Along the foot of
-  each storey's walls and columns (the outline of their union, a fan of the 16-gon at each outside
-  corner), up both faces of each inside corner, round each standing piece of furniture (a hung one
-  casts none), along both sides of each fence run and round each stair's stringers; floors, outdoor
-  surfaces, slabs and the ground only receive. Each band fades in over the last quarter of its
-  caster's rise. They are the viewer's, not the file's: the GLB is unchanged, and every Mesh3D
-  ledgers them (`contact-shadows-viewer-only`, the widths and alphas of `CONTACT_SHADOW`). At most
-  three draws a storey; `ReplayNode.band` carries each caster's width and `ReplayPayload.shadows:
-  false` turns them off (the frame-time measurement only). The limits line (`PREVIEW_LIMITS`) says
-  so. New exports: `contactShadows`, `CONTACT_SHADOW`, `contactBandMm`.
+  each storey's walls and columns (their outline, a fan of the 16-gon at each outside corner, the
+  bands mitred where a curved wall's chords meet), up both faces of each inside corner sharper than
+  30° (stopping at a jamb), round each standing piece of furniture (a hung one casts none, and a rug,
+  lower than its band, casts none and receives), along both sides of each fence run and round each
+  stair's stringers; floors, outdoor surfaces, slabs, rugs and the ground only receive, each band on
+  the highest of them under it. Each band fades in over the last quarter of its caster's rise. They
+  are the viewer's, not the file's: the GLB is unchanged, and every Mesh3D ledgers them
+  (`contact-shadows-viewer-only`, the widths and alphas of `CONTACT_SHADOW`). At most three draws a
+  storey; `ReplayNode.band` carries each caster's width, `ReplayNode.flat` marks a rug, and
+  `ReplayPayload.shadows: false` turns them off (the frame-time measurement only). The limits line
+  (`PREVIEW_LIMITS`) says so. New exports: `contactShadows`, `contactFade`, `CONTACT_SHADOW`,
+  `contactBandMm`.
 
 ## [0.7.0] - 2026-11-12
 
