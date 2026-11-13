@@ -46,10 +46,13 @@ identity is its `$id`, a public URL; under ADR 0019 such a URL does not move.
 1. **Additive only within a major version.** Under one `$id` a schema only gains optional fields
    and looser enums and bounds. It never renames, retypes, removes or tightens. The release
    compatibility gate (`scripts/compat-check.mjs`) enforces this for Plan JSON, the MCP tool
-   schemas, the public types and the error codes, and it also fails when a schema's root `$id`
-   changes.
+   schemas, the public types and the error codes. For a gated schema that carries an `$id` (today
+   Plan JSON) it also fails when the root `$id` changes. The intent schema is guarded by its drift
+   test and pinned `$id`; the Scene3D schema is not gated yet. The MCP tool schemas carry no `$id`
+   and are kept additive by the gate alone.
 2. **A breaking change is a new major version and a new `$id`.** The same change writes a
-   `BREAKING:` line under `[Unreleased]` in `CHANGELOG.md`, and the core releases a major. The
+   `BREAKING:` line under `[Unreleased]` in `CHANGELOG.md`, and the package that publishes the
+   schema releases a major (the core for Plan JSON and Intent). The
    schema file of an older major stays at its old URL and is never deleted.
 3. **Deprecate before removing.** A schema field is first marked `deprecated: true` with a
    "Deprecated: ..." description and stays for at least one minor release; it goes only in the next
