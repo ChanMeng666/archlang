@@ -484,7 +484,9 @@ function landingProbe(
  *  doorway's clear width is the opening they come in through. `describe().access` seeds an
  *  arrival room at the same width (PS0.3), so the two cannot disagree about it. */
 export function runWidth(f: RVertical, e: RectEdge): number {
-  return e === "top" || e === "bottom" ? f.size.w : f.size.h;
+  const across = e === "top" || e === "bottom" ? f.size.w : f.size.h;
+  // A stair's flight `width`, when written narrower than its footprint, is what a person passes.
+  return f.kind === "stair" && f.width > 0 && f.width < across ? f.width : across;
 }
 
 /** The midpoint of a flight's arrival edge — the model header's point for a storey walked

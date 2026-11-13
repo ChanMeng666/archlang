@@ -32,9 +32,12 @@ import {
   roomBottlenecks,
   walkedFromShafts,
 } from "../../analyze/circulation.js";
+import { bestPaths } from "../../algebra/paths.js";
+import { MAX_MIN } from "../../algebra/semiring.js";
 import {
   type AccessEdge,
   type AccessGraph,
+  accessDigraph,
   buildDoorAccessGraph,
   outdoorsOf,
   EXTERIOR_NODE,
@@ -42,7 +45,9 @@ import {
   roomBox,
 } from "../../analyze.js";
 import { entranceInputs, entranceWays, walkAccessGraph } from "../../analyze/entrance.js";
-import { landedOn } from "../../analyze/nav-grid.js";
+import { landedOn, runWidth } from "../../analyze/nav-grid.js";
+import { fmt2 } from "../../num-format.js";
+import type { RVertical } from "../../vertical.js";
 import type { Diagnostic } from "../../diagnostics.js";
 import { openingName } from "../element-phrases.js";
 import type { LintContext, LintRule } from "../context.js";
@@ -254,6 +259,136 @@ const narrowRemedies = (min: number, doors: readonly AccessEdge[] | null, ctx: L
         ...(doors.length > 1 ? [`With these widened together the walk clears the ${mm(min)} mm minimum.`] : []),
         "Or add a second way in (another door or a leafless `opening`) so the pinch is avoidable.",
       ];
+
+/** One run a storey walked from its shafts is reached by, narrower than the minimum. */
+interface NarrowRun {
+  id: string;
+  kind: string;
+  /** Its width across the edge a person steps off at (the walk's seed there). */
+  width: number;
+  /** The clause that clears the minimum, quoted as the statement writes it (`size`, or a stair's
+   *  written `width`, with its `size` when the footprint is too narrow for it), or null for a run
+   *  whose flight is a block stair's (its width is not one clause of its own). */
+  size: string | null;
+}
+
+/**
+ * The runs a storey is walked from (PS0.3: it has no door from the ground), when even the widest
+ * is narrower than `min`: then the walk onto the storey is no wider than that run, and no door on
+ * any way in can clear it (RM1.3b; `garden-house`'s 800 mm flight against the 900 mm advisory
+ * minimum). `null` on every other storey, so their warnings read as they did.
+ */
+function narrowArrivals(
+  ctx: LintContext,
+  min: number,
+): { widest: number; runs: NarrowRun[]; doorCap: ReadonlyMap<string, number> } | null {
+  const landed = landedOn(ctx.building.arrivalShafts, ctx.rooms);
+  if (landed.length === 0) return null;
+  let widest = 0;
+  const runs: NarrowRun[] = [];
+  const grid = ctx.ir.grid;
+  const need = grid > 0 ? Math.ceil(min / grid) * grid : Math.ceil(min);
+  for (const a of landed) {
+    const across = a.edges.map((e) => ({ e, w: runWidth(a.flight, e) }));
+    const w = Math.max(...across.map((x) => x.w));
+    widest = Math.max(widest, w);
+    if (runs.some((r) => r.id === a.run.id)) continue;
+    const { w: sw, h: sh } = a.run.size;
+    // Every edge stepped off at runs along the same dimension, or no one `size` names it.
+    const along = new Set(across.map((x) => (x.e === "top" || x.e === "bottom" ? "w" : "h")));
+    let size: string | null = null;
+    if (a.flight === a.run && along.size === 1) {
+      const footprint = along.has("w") ? `size ${fmt2(need)}x${fmt2(sh)}` : `size ${fmt2(sw)}x${fmt2(need)}`;
+      // A stair that writes its flight `width` is widened by that clause (and its `size` too when
+      // the footprint is narrower than the width it needs); `runWidth` reads the same `width`.
+      const cross = along.has("w") ? sw : sh;
+      size =
+        a.run.kind === "stair" && a.run._widthAuthored
+          ? need <= cross
+            ? `width ${fmt2(need)}`
+            : `${footprint} width ${fmt2(need)}`
+          : footprint;
+    }
+    runs.push({ id: a.run.id, kind: a.run.kind, width: w, size });
+  }
+  if (widest >= min) return null;
+  // Each room's door-only capacity from the rooms the runs land in (the walk view's doors, a
+  // balcony walked through): widening the run alone clears a room only where every door on its
+  // widest way in already clears the minimum.
+  const g = accessDigraph(
+    ctx.rooms.map((r) => r.id),
+    ctx.walkAccess().edges,
+  );
+  const doorCap = bestPaths(g, {
+    s: MAX_MIN,
+    weight: (e) => e.estimatedClearWidth,
+    sources: [...new Set(landed.map((a) => a.roomId))].map((id) => [id, Number.POSITIVE_INFINITY] as const),
+    rank: () => 0,
+  }).value;
+  return { widest, runs, doorCap };
+}
+
+/**
+ * Each room's walk reading with every narrow arriving run widened to clear `min` across the edge a
+ * person steps off at (the change {@link narrowRunHint} quotes), re-measured on the walk's own grid
+ * as a door attribution is: the run is only named as THE bottleneck where this reading clears, so
+ * furniture pinching the landing at the run's width is never blamed on the run. One re-measure,
+ * drawn from the run's shared count (`MAX_ATTRIBUTION_MEASURES`, after the door attributions);
+ * `null` when none is left, and then the run is not named.
+ */
+function readingsWithRunsWidened(
+  ctx: LintContext,
+  min: number,
+  view: View,
+  measures: { left: number; storeys: number },
+): ReadonlyMap<string, number> | null {
+  if (measures.left <= 0) return null;
+  measures.left--;
+  const grid = ctx.ir.grid;
+  const need = grid > 0 ? Math.ceil(min / grid) * grid : Math.ceil(min);
+  const narrow = new Set(
+    landedOn(ctx.building.arrivalShafts, ctx.rooms)
+      .filter((a) => a.flight === a.run && Math.max(...a.edges.map((e) => runWidth(a.flight, e))) < min)
+      .map((a) => a.run.id),
+  );
+  const alongOf = new Map(
+    ctx.building.arrivalShafts.map((a) => [a.run.id, a.edges.every((e) => e === "top" || e === "bottom") ? "w" : "h"]),
+  );
+  const widen = <V extends RVertical>(v: V): V => {
+    if (!narrow.has(v.id)) return v;
+    const w = alongOf.get(v.id) === "w";
+    const size = w ? { w: Math.max(v.size.w, need), h: v.size.h } : { w: v.size.w, h: Math.max(v.size.h, need) };
+    return v.kind === "stair" ? { ...v, size, width: Math.max(v.width, need) } : { ...v, size };
+  };
+  // A run that is its own flight stays so (one object), as `shaftsInFrame` reads it.
+  const arrivals = ctx.building.arrivalShafts.map((a) => {
+    const run = widen(a.run);
+    return { ...a, run, flight: a.flight === a.run ? run : a.flight };
+  });
+  return roomBottlenecks(
+    ctx.rooms,
+    ctx.ir.walls,
+    ctx.doors,
+    ctx.openings,
+    ctx.furniture,
+    walkedFromShafts(view.access, arrivals, ctx.rooms),
+    ctx.rules.tolMm,
+    ctx.verticals.map(widen),
+    ctx.voids,
+    arrivals,
+    undefined,
+    ctx.work,
+  );
+}
+
+/** The hint naming the narrow runs ({@link narrowArrivals}): `lead` opens it. */
+function narrowRunHint(lead: string, min: number, runs: readonly NarrowRun[]): string {
+  const each = runs.map(
+    (r) =>
+      `${r.kind} \`${r.id}\` (now ${mm(r.width)} mm${r.size ? `; \`${r.size}\` on every storey it stands on` : ""})`,
+  );
+  return `${lead} ${runs.length === 1 ? each[0] : `one of ${each.join(", ")}`} to at least ${mm(min)} mm across the edge a person steps off at: no door on the way can clear the walk while the way onto this storey is narrower than the minimum.`;
+}
 
 /**
  * The narrowest width, on the plan's `grid` module, at which this connector stops being a
@@ -725,6 +860,7 @@ export const pathTooNarrow: LintRule = {
     const viewOf = (id: string): View => (own.has(id) ? full : walk);
     const { rooms, nameOf, at } = ctx;
     const min = ctx.rules.minPathClearWidthMm;
+    const flights = narrowArrivals(ctx, min);
     const roomById = new Map(rooms.map((r) => [r.id, r]));
     const out: Diagnostic[] = [];
     // One warning per room: entrance-walk pinches first, then a key route's pinch on a
@@ -756,6 +892,12 @@ export const pathTooNarrow: LintRule = {
     // their own door alone take what is left in the full view, and a room neither can afford gets
     // the unattributed hints.
     const measures = ctx.building.attributionMeasures ?? { left: MAX_ATTRIBUTION_MEASURES, storeys: 0 };
+    // Re-measured once per storey, on first need, from what the door attributions left.
+    let widened: ReadonlyMap<string, number> | null | undefined;
+    const clearsWithRunWidened = (roomId: string): boolean => {
+      if (widened === undefined) widened = readingsWithRunsWidened(ctx, min, walk, measures);
+      return (widened?.get(roomId) ?? 0) >= min;
+    };
     const namedWalk = attributeBottlenecks(
       ctx,
       widths(circ),
@@ -836,12 +978,48 @@ export const pathTooNarrow: LintRule = {
       const doors = named.get(r.id) ?? null;
       if (already(doors)) continue;
       for (const e of doors ?? []) reported.add(e.doorId);
+      const w = rc.bottleneckClearWidthMm;
+      // On a storey reached only by runs all narrower than the minimum, no door can clear the
+      // walk (so none is named), and the hint says the run is what must widen (RM1.3b). The message
+      // names the run as THE bottleneck only as it names a door: where widening it alone clears
+      // the walk, i.e. the room reads the run's width and every door on its widest way in already
+      // clears the minimum. Otherwise the door hint stays and the run's is added to it.
+      const viaRun = doors === null && flights !== null && Math.round(w) <= Math.round(flights.widest) ? flights : null;
+      // Every door on the way already clears: the run, or furniture tying with it, is the pinch.
+      const runOrFurniture =
+        viaRun !== null &&
+        Math.round(w) === Math.round(viaRun.widest) &&
+        (viaRun.doorCap.get(r.id) ?? Number.POSITIVE_INFINITY) >= min;
+      const atRun = runOrFurniture && clearsWithRunWidened(r.id);
+      const kinds = new Set(viaRun?.runs.map((x) => x.kind) ?? []);
+      const runWord = viaRun?.runs.length === 1 ? `${[...kinds][0]} it is reached by` : "widest run it is reached by";
       out.push({
         severity: "warning",
         code: "W_PATH_TOO_NARROW",
         ...at(r),
-        message: `The walk from the entrance to ${nameOf(r)} squeezes to ${mm(rc.bottleneckClearWidthMm)} mm (${mm(shortfall(min, rc.bottleneckClearWidthMm))} mm below the ${mm(min)} mm minimum)${namedClause(doors, rc.bottleneckClearWidthMm, ctx, viewOf(r.id))}.`,
-        hints: narrowHints(min, doors, ctx, viewOf(r.id), unreached),
+        message: `The walk from the entrance to ${nameOf(r)} squeezes to ${mm(w)} mm (${mm(shortfall(min, w))} mm below the ${mm(min)} mm minimum)${atRun ? ` — the bottleneck is the ${runWord}, ${mm(viaRun.widest)} mm wide` : namedClause(doors, w, ctx, viewOf(r.id))}.`,
+        hints:
+          viaRun === null
+            ? narrowHints(min, doors, ctx, viewOf(r.id), unreached)
+            : atRun
+              ? [
+                  narrowRunHint("Widen", min, viaRun.runs),
+                  `Or reach this storey by another stair, elevator or escalator at least ${mm(min)} mm wide.`,
+                  ...mainEntranceHint(ctx, viewOf(r.id), unreached),
+                ]
+              : runOrFurniture
+                ? [
+                    // No door to widen: the run and (unproved) the furniture by it are what is left.
+                    narrowRunHint("Widen", min, viaRun.runs),
+                    narrowRemedies(min, null, ctx)[1]!,
+                    ...mainEntranceHint(ctx, viewOf(r.id), unreached),
+                  ]
+                : [
+                    narrowRemedies(min, null, ctx)[0]!,
+                    narrowRunHint("And widen", min, viaRun.runs),
+                    ...narrowRemedies(min, null, ctx).slice(1),
+                    ...mainEntranceHint(ctx, viewOf(r.id), unreached),
+                  ],
       });
     }
     for (const rt of circ.routes) {

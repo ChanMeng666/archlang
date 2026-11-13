@@ -1816,6 +1816,41 @@
  * K1 by its generator; the rest from CI run 43406736360's received values: `double-door`,
  * `wall-status`, `open-crossing`, `while-byte-identity-baseline.ts` and `rectilinear-rooms` 1 each,
  * `import-module-lets` 2. Each carries `RM1.2a review` beside it.
+ *
+ * ## RM1.3b: `W_PATH_TOO_NARROW` names the stair a storey is reached by — `lint()` text only
+ *
+ * Case (3), deliberate. On a storey walked from its shafts (no door from the ground, PS0.3) where
+ * even the widest arriving run is narrower than `minPathClearWidthMm`, no door widening can clear
+ * any walk there, so the rule (rightly) names no door; its hint used to say "widen the tightest
+ * door/opening" all the same. Now a room whose reading IS the run's width (every door on its way
+ * clearing the minimum) says the bottleneck is
+ * the stair, and its hint quotes the `size` that clears it; a room
+ * behind a narrower door as well keeps the door hint and adds the stair's. Only the accessibility
+ * profile (900 mm) meets such a storey in the corpus. Swept per payload against `origin/main`
+ * 911f209b over 473 corpus files (every storey's SVG and overlay SVG, `compile().diagnostics`,
+ * `describe()` with and without `quantities`, `lint()` under the default ruleset and every
+ * profile): `lint()` under `accessibility-advisory` moved on `garden-house`, `hillside-villa` and
+ * `test/plans/plan-soundness/audits/first-contact-plans/2026-10-26-walls-first/5-townhouse.arch`
+ * (each one's upper-storey `W_PATH_TOO_NARROW` text, nothing else), and nothing else moved
+ * anywhere. The eight `stairLawDigest` tables re-measured by a script importing
+ * `test/helpers/block-stair-law.ts`, which first reproduced their 104 unmoved rows: `garden-house`
+ * and `hillside-villa` moved in each, and with the OLD accessibility `lint()` put back into the new
+ * payload each reproduces its old digest (`df81256b…`, `b188c6d5…`). No other table hashes that
+ * profile. Each re-pinned row carries `RM1.3b` beside it. The catalogue's `W_PATH_TOO_NARROW` fix
+ * text gained a sentence, which `validate --json` carries on every diagnostic of that code, so
+ * `keep-byte-identity-baseline.ts` was re-taken by its generator: 16 of its 329 rows moved, each
+ * only in `diagnostics[].fix` (diffed field by field), every step count unchanged; `suggest`'s
+ * PS0.6 ranking moved none of them.
+ *
+ * Review round 1: the stair is named only once a re-measure with it widened clears the walk, and
+ * that re-measure comes from the run's count (`MAX_ATTRIBUTION_MEASURES`, after the door
+ * attributions). In `garden-house` and `hillside-villa` the ground floor's doors spend it, so the
+ * landing's message names nothing and its hints are the stair's, then the furniture's; and a
+ * stair's written `width` is the width arrived at. The two rows moved again in all nine
+ * `stairLawDigest` tables (the eight above and `floor-materials-byte-identity`, added on `main`
+ * since): `garden-house` `2d22f198…`, `hillside-villa` `36793d8a…`, measured after merging
+ * `origin/main` c81b0eca, the other 104 reproducing `main`; with the OLD accessibility `lint()`
+ * put back both give `main`'s `df81256b…` and `b188c6d5…`.
  */
 
 /** SHA-256 over every storey's SVG + `describe()` + `lint()`, measured on `f4548db`. */

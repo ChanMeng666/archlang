@@ -416,7 +416,17 @@ export const stair: ElementDef = {
     }
     const long = runTooLong(`Stair "${id}"`, size, n.span);
     if (long) ctx.diag(long);
-    return { kind: "stair", id, at, size, dir: n.dir, width, span: n.span };
+    // A written `width` is flagged so a hint can quote the clause to edit (RM1.3b); absent otherwise.
+    return {
+      kind: "stair",
+      id,
+      at,
+      size,
+      dir: n.dir,
+      width,
+      ...(n.width !== undefined ? { _widthAuthored: true } : {}),
+      span: n.span,
+    };
   },
 
   /** Every piece's corners, and where the break line ends, which is past its flight's edges. */

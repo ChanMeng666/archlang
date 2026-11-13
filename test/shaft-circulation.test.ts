@@ -639,3 +639,96 @@ describe("repair guards the walks of a storey reached only by a stair", () => {
     expect(note?.reason).toMatch(/pinch the walk to "Bedroom" below 700 mm/);
   });
 });
+
+// ---- a walk whose way onto the storey is the narrow part ------------------------------
+
+describe("W_PATH_TOO_NARROW on a storey reached only by runs narrower than the minimum (RM1.3b)", () => {
+  // `garden-house`'s 800 mm flight against the accessibility profile's 900 mm. Which reading holds
+  // (the card's two): the rule rightly names NO door, since with the flight at 800 mm no door
+  // widening clears any room upstairs (at 1100 mm the doors ARE named, below); and the old hint,
+  // "widen the tightest door", was wrong for the landing, which has no door on its way at all.
+  const src = readFileSync(resolvePath("examples/garden-house.arch"), "utf8");
+  const upstairs = (s: string) =>
+    lint(s, { profile: "accessibility-advisory" }).filter((d) => d.code === "W_PATH_TOO_NARROW" && d.level === 2);
+
+  it("the landing's hint is the stair's, quoting the size that clears it, and no door's", () => {
+    const landing = upstairs(src).find((d) => d.message.startsWith('The walk from the entrance to "Landing"'))!;
+    // The stair is named THE bottleneck only once a re-measure with it widened clears the walk, and
+    // the run's count of re-measures (MAX_ATTRIBUTION_MEASURES) is spent on the ground floor's doors
+    // here: unproved, the message names nothing, and the furniture is the other thing it can be.
+    expect(landing.message).toBe(
+      'The walk from the entrance to "Landing" squeezes to 800 mm (100 mm below the 900 mm minimum).',
+    );
+    expect(landing.hints![1]).toBe("Or move the furniture pinching the route so 900 mm of clear width survives.");
+    expect(landing.hints![0]).toBe(
+      "Widen stair `st` (now 800 mm; `size 900x3200` on every storey it stands on) to at least 900 mm across the edge a person steps off at: no door on the way can clear the walk while the way onto this storey is narrower than the minimum.",
+    );
+    expect(landing.hints!.join(" ")).not.toMatch(/tightest door/);
+  });
+
+  it("a room behind a door as well says both must widen", () => {
+    const study = upstairs(src).find((d) => d.message.startsWith('The walk from the entrance to "Study"'))!;
+    expect(study.message).not.toMatch(/stair/);
+    expect(study.hints![0]).toBe("Widen the tightest door/opening on the way to at least 900 mm.");
+    expect(study.hints![1]).toMatch(/^And widen stair `st` \(now 800 mm; `size 900x3200`/);
+  });
+
+  it("pasting the size clears the landing, and the doors are then named", () => {
+    const wider = src.replaceAll("size 800x3200", "size 900x3200");
+    const ds = upstairs(wider);
+    expect(ds.some((d) => d.message.startsWith('The walk from the entrance to "Landing"'))).toBe(false);
+    expect(ds.find((d) => d.message.startsWith('The walk from the entrance to "Study"'))!.hints![0]).toMatch(
+      /^Widen door "d_study2" to `width \d+`/,
+    );
+    expect(ds.every((d) => !d.hints!.some((h) => h.includes("stair `st`")))).toBe(true);
+  });
+
+  it("a flight already wide enough leaves every warning as it was: the doors are named", () => {
+    const wide = upstairs(src.replaceAll("size 800x3200", "size 1100x3200"));
+    expect(wide.find((d) => d.message.startsWith('The walk from the entrance to "Study"'))!.message).toMatch(
+      /the bottleneck is the door between "Landing" and "Study", 740 mm clear\.$/,
+    );
+  });
+});
+
+describe("a stair's written `width` is the width the walk arrives at, and the clause its hint quotes (RM1.3b)", () => {
+  const plan = (clauses: (dir: string) => string) => `plan "Written width" {
+  units mm
+  level 1 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=hall at (0,0) size 8000x6000 label "Hall" uses hall entry
+    door id=front on shell at 3000 width 1200
+    stair id=st at (200,1000) ${clauses("up")}
+  }
+  level 2 {
+    wall id=shell exterior thickness 200 { (0,0) (8000,0) (8000,6000) (0,6000) close }
+    room id=landing at (0,0) size 8000x6000 label "Landing" uses hall circulation
+    stair id=st at (200,1000) ${clauses("down")}
+  }
+}`;
+  const upstairs = (src: string) =>
+    lint(src, { profile: "accessibility-advisory" }).filter((d) => d.code === "W_PATH_TOO_NARROW" && d.level === 2);
+  const cases = [
+    { written: "size 800x3000 dir %s width 700", reads: 700, quote: "size 900x3000 width 900" },
+    { written: "size 1000x3000 dir %s width 800", reads: 800, quote: "width 900" },
+  ];
+  for (const { written, reads, quote } of cases) {
+    it(`\`${written.replace("%s", "up")}\`: the landing reads ${reads} and the hint quotes \`${quote}\``, () => {
+      const src = plan((dir) => written.replace("%s", dir));
+      const up = describePlan(src).levels!.find((l) => l.level === 2)!;
+      expect(up.circulation?.rooms[0]?.bottleneckClearWidthMm).toBe(reads);
+      expect(up.access.rooms[0]?.bottleneckClearWidth).toBe(reads);
+      const [d] = upstairs(src);
+      // Re-measured with the stair widened, the walk clears: the stair is named as the bottleneck.
+      expect(d!.message).toMatch(/ — the bottleneck is the stair it is reached by, \d+ mm wide\.$/);
+      expect(d!.hints![0]).toContain(`(now ${reads} mm; \`${quote}\` on every storey it stands on)`);
+      // Pasting the quoted clause on both storeys clears the walk.
+      const [, size, width] = /^(?:size (\d+x\d+) )?width (\d+)$/.exec(quote)!;
+      const pasted = plan((dir) => {
+        const w = written.replace("%s", dir).replace(/width \d+/, `width ${width}`);
+        return size ? w.replace(/size \d+x\d+/, `size ${size}`) : w;
+      });
+      expect(upstairs(pasted)).toEqual([]);
+    });
+  }
+});
