@@ -80,6 +80,7 @@ const EXPECTED_ORDER = [
   "furniture-on-stair",
   "exterior-ring-open",
   "furniture-on-void",
+  "stair-riser-too-high",
 ];
 
 const decidedCodes = new Set(Object.values(DECIDED).flat());

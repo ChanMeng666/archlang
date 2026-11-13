@@ -26,13 +26,13 @@
       "stage:brief": "81f9acfd0706792f84121b5261bece104e63aa7d319a70295bbb12a2f74043eb",
       "stage:rooms": "6f88461365f13026acbddb5a4630e3c1aa06f61a4d720e26e839fff0f6cf6d17",
       "stage:walls": "6322f00b3696d983543a37e523908347ed3c3012c1d6385e077a8035f64efb48",
-      "stage:openings": "2c73acf67eca9a00b1967c26320a17e5785759e7c761cc826b3c710fbb71a19d",
-      "stage:fixtures": "639a0302f65e7c3632057e2654c5fcd245dd9a88de2d5f8694ebb0e036e6943b",
-      "stop:1": "8fb94af87f716129589cdfec06061d463b51f557edea3f0098b7f3bcf113ac5e",
-      "tilted": "15b7152763dec82809022c56ba69831650b95cc14c8d4697781fc0e8267121e4",
-      "storey:2": "a48a65a443b7c221fafc8bfedb244ad1e85a83c7856178a412ec3972d11de431",
-      "stop:2": "afcecb48d3add2618a48ead5853cc57aef0d8d6e14d6fdde8588fa5501106251",
-      "end": "cce15eefd2ad8e1c99e9409275d7708d4a4adaf92c8952e135c0087e6877116a"
+      "stage:openings": "e1ec6fd7caaa8a8bfae1adcf533b61f78d35c3dfa98df231c7e4938eaf8c0a04",
+      "stage:fixtures": "be6085e58cf4f7a6f5d6377c8f7ef86b5a90dcb976467146331142ebe7b0c8ea",
+      "stop:1": "b4062a02e17f0b2d4be89718f75a7e3ad63b8652bedb9d1bcf36346cc7595232",
+      "tilted": "79ef8133378ee6583e3b56bf9195d3a7c5b7f11b8f8307a113a5dfe66ddf3d96",
+      "storey:2": "4e51a1319e8a9371c5e5caec0091eb2afb22398a4a80068c486ede224759a67e",
+      "stop:2": "928e1d8a5f1d00b76cfe3b9b9a518f53bcd686c5c5d385c2c28f9842e61a716f",
+      "end": "c6f25abe8fe22c384e6dd5ba02d96e7d8e2f18b1061399e173d70fbbaeff86d5"
     },
     "courtyard-house.arch": {
       "tilted": "af052e3ffbf856ef5c65e845144dbfda98463454a03afff89523ddd210ba1761",

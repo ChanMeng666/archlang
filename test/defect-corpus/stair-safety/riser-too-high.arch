@@ -1,0 +1,28 @@
+# class: stair-safety
+# origin: backlog ST.1 (examples/two-storey.arch before RM1.2a: a 2900 mm flight for a 2700 mm storey; reduced)
+# expect: W_STAIR_RISER_TOO_HIGH
+# status: done
+# fact: the flight's 2900 mm run draws 10 treads (one per 280 mm, rounded), so the drawing climbs the 2700 mm
+#   storey on 11 risers of about 245 mm, over 220 mm; W_STAIR_TOO_STEEP passes it (13 risers and 12 goings
+#   of 220 mm need 2640 mm)
+plan "Stair whose drawn treads are too few for its storey" {
+  units mm
+  grid 50
+  height 2700
+  level 1 "Ground floor" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    room id=hall at (0,0) size 6000x4000 label "Hall" uses hall
+    door id=front at (3000,4000) width 1000 wall shell
+    window at (3000,0) width 1500 wall shell
+    stair id=stair at (1000,500) size 2900x900 dir up
+  }
+  level 2 "First floor" {
+    wall id=shell exterior thickness 200 { (0,0) (6000,0) (6000,4000) (0,4000) close }
+    wall id=w_s partition thickness 100 { (5000,0) (5000,4000) }
+    room id=landing at (0,0) size 5000x4000 label "Landing" uses circulation
+    room id=store at (5000,0) size 1000x4000 label "Store" uses storage
+    door id=d_store at (5000,650) width 800 wall w_s swing into store
+    window at (3000,0) width 1500 wall shell
+    stair id=stair at (1000,500) size 2900x900 dir down
+  }
+}

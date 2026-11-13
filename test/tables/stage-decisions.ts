@@ -13,6 +13,7 @@ export const DECIDED: Record<AuthoringStage, string[]> = {
     "W_ROOM_TOO_SMALL",
     "W_SHAFT_FOOTPRINT_MISMATCH",
     "W_STAIR_HEAD_VOID",
+    "W_STAIR_RISER_TOO_HIGH",
     "W_STAIR_TOO_STEEP",
     "W_STAIR_UNMATCHED",
   ],

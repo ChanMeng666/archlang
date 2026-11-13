@@ -409,7 +409,7 @@ const EXAMPLE_ADDITIONS: Record<string, string[]> = {
     'examples/two-bed.arch W_ROOM_TOO_SMALL Room "Bedroom 2" is only 9.52 m² of net floor (under 11.5 m², the floor for a double bedroom).',
   ],
   [US]: [
-    'examples/two-storey.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its 2900 mm run must climb the 2700 mm storey, and at 197 mm (7¾ in) a riser at most that is 14 risers and 13 goings of at least 254 mm, a 3302 mm run (402 mm short).',
+    'examples/two-storey.arch W_STAIR_TOO_STEEP The stair in "Hall" on level 1 is too steep: its 3250 mm run must climb the 2700 mm storey, and at 197 mm (7¾ in) a riser at most that is 14 risers and 13 goings of at least 254 mm, a 3302 mm run (52 mm short).',
   ],
 };
 

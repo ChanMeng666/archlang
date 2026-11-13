@@ -88,6 +88,7 @@ Two classes from `evidence.md` §3 have no cases, because no core lint rule can 
 | `W_STAIR_SIDE_ENTRY` | PS2.34 |
 | `W_STAIR_HEAD_VOID` | PS2.11e |
 | `W_STAIR_TOO_STEEP` | PS2.11e |
+| `W_STAIR_RISER_TOO_HIGH` | product-roadmap RM1.2a (backlog ST.1) |
 | `W_SHAFT_FOOTPRINT_MISMATCH` | PS2.15 |
 | `W_HOB_FRIDGE_GAP` | PS2.11e |
 | `W_LEAF_TOO_WIDE` | PS2.11e |

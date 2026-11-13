@@ -208,6 +208,11 @@
  * under each of the three profiles, measured with `tasteDigest`. The case and its twin share a digest
  * under each profile: the twin differs only in a desk in a room that reads no use, which no criterion
  * and no lint rule reads. No existing row moved.
+ *
+ * RM1.2a (`W_STAIR_RISER_TOO_HIGH`, the riser a stair's drawn treads imply) added six rows, the new
+ * `stair-safety/riser-too-high` pair under each of the three profiles, measured with `tasteDigest`.
+ * No existing row moved: `examples/two-storey` and `examples/turning-stair` drew longer flights in the
+ * same PR, which no criterion reads, and on `origin/main` neither raised the new code (it did not exist).
  */
 
 import { describe, expect, it } from "vitest";
@@ -1115,6 +1120,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "64f5a3d4b94c5ede39c9f9b80a73e8092cd64db441eafb007d0c4291dc2e7070",
     "generic",
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
+  ],
+  [
+    "9759383bb8852bd2f8e65c5d323cad7bb32eefb8e3e1d3a0440bb2e8817d37e9",
+    "generic",
+    "test/defect-corpus/stair-safety/riser-too-high.arch",
+  ],
+  [
+    "48b136e1e08f46e60be9c2dd1bbee43ab94df9f8da7dfd64bb42eec87455c6ca",
+    "generic",
+    "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
   ],
   [
     "81d41f0ed00cba3433613fb96d112284646e2f8ae93b533eac69f8e6117402df",
@@ -2327,6 +2342,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
   ],
   [
+    "a5c1fa17b4b2432eda2e6e874eb319336c0163d4f380f31974cfdd87ce411826",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/riser-too-high.arch",
+  ],
+  [
+    "8a48f181b2c51463f647815a94bdd230fea3330e9d1ba3071e2f0c1ea293482f",
+    "cn-residential-advisory",
+    "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
+  ],
+  [
     "51e6b7df0613b1677e37aaa2b26558201eb9e00018ac326d39df5178dcd940aa",
     "cn-residential-advisory",
     "test/defect-corpus/stair-safety/shaft-footprint-mismatch.arch",
@@ -3535,6 +3560,16 @@ const TABLE: ReadonlyArray<[string, string, string]> = [
     "16c2358ac9a6036453cffacc5958375cff9eda6573cb63ca221e3b40c8700d37",
     "us-residential-advisory",
     "test/defect-corpus/stair-safety/head-against-wall.clean.arch",
+  ],
+  [
+    "76cb5cec021a83c0d56483821a3e0a28f4cff9de3df12365097370427fd4e624",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/riser-too-high.arch",
+  ],
+  [
+    "c4c031a08062706ee26c38a9fc31e051b3336191fea5fc2e9db484ce1b2bb2ce",
+    "us-residential-advisory",
+    "test/defect-corpus/stair-safety/riser-too-high.clean.arch",
   ],
   [
     "3b2b1ffd5d4b8a3a0011c378a791164ba08b356f7c40b90f70102865d01eb72f",

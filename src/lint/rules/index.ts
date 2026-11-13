@@ -52,6 +52,7 @@ import {
   furnitureOnStair,
   stairHeadVoid,
   stairNoLanding,
+  stairRiserTooHigh,
   stairSideEntry,
   stairTooSteep,
   swingOverStair,
@@ -201,6 +202,9 @@ export const LINT_RULES: readonly LintRule[] = [
   // Furniture on a void, a lift shaft or an escalator (checker-reach CR2 group D). Appended LAST, so
   // no existing diagnostic moves within the array.
   furnitureOnVoid,
+  // The riser a stair's drawn treads climb on, against its storey (product roadmap RM1.2a, backlog
+  // ST.1). Appended LAST, so no existing diagnostic moves within the array.
+  stairRiserTooHigh,
 ];
 
 export type { LintContext, LintRule } from "../context.js";

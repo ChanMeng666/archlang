@@ -265,19 +265,21 @@ describe("the turning stair (examples/turning-stair.arch)", () => {
   const c = corpus.find((x) => x.n === "turning-stair.arch") as (typeof corpus)[number];
   const node = stairNodes(c.mesh)[0] as MeshNode;
 
-  it("climbs 2750 mm on 12 risers: 5 treads and a head riser per flight, the landing at the 6th", () => {
-    // Hand-derived: each 1530 mm flight is drawn with round(1530 / 280) = 5 treads; 2 × (5 + 1) =
-    // 12 risers of 2750 / 12 mm; the landing is the 6th riser, 1375 mm over the 5 mm finish.
-    expect(node.extras).toMatchObject({ dir: "up", flights: 2, risers: 12, rise_mm: 2750 });
-    // Flight 1's five treads, then the landing, then flight 2's five.
-    const landing = node.shells[5] as MeshNode["shells"][number];
+  it("climbs 2750 mm on 13 risers: 6 + 5 treads and a head riser per flight, the landing at the 7th", () => {
+    // Hand-derived (RM1.2a redrew the first flight, 1530 to 1540 mm): the 1540 mm flight is drawn
+    // with round(1540 / 280) = 6 treads, the 1530 mm one with round(1530 / 280) = 5; (6 + 1) + (5 + 1)
+    // = 13 risers of 2750 / 13 mm; the landing is the 7th riser, 2750 × 7 / 13 mm over the 5 mm finish.
+    expect(node.extras).toMatchObject({ dir: "up", flights: 2, risers: 13, rise_mm: 2750 });
+    // Flight 1's six treads, then the landing, then flight 2's five.
+    const landing = node.shells[6] as MeshNode["shells"][number];
     const [, , , , top] = extent([landing]);
-    expect(top).toBe(1_380_000);
-    expect(extent([landing])).toEqual([2_630_000, 5_000, 100_000, 3_630_000, 1_380_000, 1_100_000]);
-    // The second flight starts on it: its first tread is the 7th riser, 2750 × 7 / 12 mm up.
-    const second = node.shells.slice(6).map((sh) => extent([sh])[4]);
-    expect(second[0]).toBe(5_000 + Math.round((2_750_000 * 7) / 12));
-    expect(second.at(-1)).toBe(5_000 + Math.round((2_750_000 * 11) / 12));
+    expect(top).toBe(5_000 + Math.round((2_750_000 * 7) / 13));
+    expect(extent([landing])).toEqual([2_630_000, 5_000, 100_000, 3_630_000, top, 1_100_000]);
+    // The second flight starts on it: its first tread is the 8th riser, 2750 × 8 / 13 mm up.
+    const second = node.shells.slice(7).map((sh) => extent([sh])[4]);
+    expect(second).toHaveLength(5);
+    expect(second[0]).toBe(5_000 + Math.round((2_750_000 * 8) / 13));
+    expect(second.at(-1)).toBe(5_000 + Math.round((2_750_000 * 12) / 13));
   });
 
   it("ledgers what it derived and what it assumed: risers, materials and every part; the old rules gone", () => {
