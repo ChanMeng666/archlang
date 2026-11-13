@@ -3,7 +3,7 @@
  * §4.4), V-GEO-05 `W3D_FLOOR_OVERLAP` with its 0.5 mm lift, window parts kept inside their cut on a
  * curved host, wall bodies meeting their sills and lintels vertex to vertex, the slab as rooms ∪
  * wall outline less voids, and a demolished wall (B3a) drawn from `ir.drawn` as a ghost; and each
- * floor's finish by its room's `uses` (visual-assets V9).
+ * floor's finish by its room's `uses` (visual-assets V9), or by its author's `floor` word (card RM8.7).
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -12,7 +12,11 @@ import {
   FINISH_PALETTE,
   FLOOR_FINISH_RULES,
   FLOOR_FINISHES,
+  FLOOR_WORD_FINISH,
   floorFinish,
+  groundColour,
+  PALETTE,
+  wordFinish,
   type Mesh3D,
   type MeshNode,
   type Pt,
@@ -583,6 +587,8 @@ describe("floor finish by room use (visual-assets V9)", () => {
       const entries = mesh.assumptions.filter((a) => a.rule === "floor-finish-default");
       for (const lv of scene.levels) {
         for (const f of lv.floors) {
+          // The corpus writes no `floor` clause, so every floor here is laid by its uses (card RM8.7).
+          expect(f.pattern, `${n} ${f.id}`).toBeUndefined();
           const want = floorFinish(f.uses);
           const nodes = mesh.nodes.filter((x) => x.kind === "floor" && x.id === f.id && x.level === lv.level);
           for (const nd of nodes) expect(nd.extras.finish, `${n} ${nd.key}`).toBe(want);
@@ -611,5 +617,69 @@ describe("floor finish by room use (visual-assets V9)", () => {
       r_bed2: "timber",
       r_bath: "tile",
     });
+  });
+});
+
+describe("floor finish by the author's `floor` word (card RM8.7)", () => {
+  /** One room, living and bathroom both named, and the `floor` clause or none. */
+  const plan = (floor: string): string =>
+    `plan "F" {\n  units mm\n  room id=a at (0,0) size 4000x3000 uses living${floor}\n  room id=b at (4000,0) size 2000x3000 uses bath\n  walls from rooms exterior 200 partition 100\n}\n`;
+  const floorOf = (m: Mesh3D, id: string) => m.nodes.find((x) => x.kind === "floor" && x.id === id)!;
+  const ledgered = (m: Mesh3D, id: string) =>
+    m.assumptions.filter((a) => a.rule === "floor-finish-default" && a.id === id);
+
+  it("lays a `floor timber` room in timber, and the same plan without it back in its uses' default", () => {
+    // `bath` would tile the room by `uses`; `floor timber` is what the author wrote, so it wins.
+    const bath = (floor: string) =>
+      `plan "F" {\n  units mm\n  room id=a at (0,0) size 3000x3000 uses bath${floor}\n  walls from rooms exterior 200 partition 100\n}\n`;
+    const authored = built(bath(" floor timber"));
+    const plain = built(bath(""));
+    expect(authored.scene.levels[0]!.floors[0]!.pattern).toBe("timber");
+    expect(floorOf(authored.mesh, "a").extras.finish).toBe("timber");
+    expect(ledgered(authored.mesh, "a")).toEqual([]);
+    expect("pattern" in plain.scene.levels[0]!.floors[0]!).toBe(false);
+    expect(floorOf(plain.mesh, "a").extras.finish).toBe("tile");
+    expect(ledgered(plain.mesh, "a")).toHaveLength(1);
+  });
+
+  it("lays every word the core accepts in its own finish, and leaves an unwritten room to the default", () => {
+    for (const [word, finish] of Object.entries(FLOOR_WORD_FINISH)) {
+      const m = built(plan(` floor ${word}`)).mesh;
+      expect(floorOf(m, "a").extras.finish, word).toBe(finish);
+      expect(ledgered(m, "a"), word).toEqual([]);
+      // The room beside it wrote no `floor`: its finish is still its uses', and still ledgered.
+      expect(floorOf(m, "b").extras.finish, word).toBe("tile");
+      expect(ledgered(m, "b"), word).toHaveLength(1);
+    }
+  });
+
+  it("gives each authored finish the colour the design names, every one apart from the others", () => {
+    expect(Object.values(FLOOR_WORD_FINISH).every((f) => (FLOOR_FINISHES as readonly string[]).includes(f))).toBe(true);
+    expect(FINISH_PALETTE.carpeting).toBe(PALETTE.wool);
+    expect(FINISH_PALETTE.stone).toBe(PALETTE.stone);
+    expect(FINISH_PALETTE.deck).toBe(PALETTE.wood);
+    // Paving is the colour an `outdoor paving` is built in, written out so the viewer's bundle reads no
+    // core value: held here to the arithmetic that builds the outdoor surface.
+    expect(FINISH_PALETTE.paving.srgb).toBe(groundColour("paving"));
+    // The first three finishes keep their place, so a GLB's `floor:<finish>` materials keep theirs.
+    expect(FLOOR_FINISHES.slice(0, 3)).toEqual(["timber", "tile", "neutral"]);
+  });
+
+  it("a word this package does not know (a hand-made Scene3D) falls back to the default", () => {
+    expect(wordFinish("marble")).toBeUndefined();
+    expect(wordFinish("toString")).toBeUndefined();
+    expect(wordFinish(undefined)).toBeUndefined();
+    // A `storage` room's default is `neutral`, a finish no word lays, so the fallback reads apart
+    // from an authored finish. The control: a known word on the same room lays its own finish.
+    const store = `plan "F" {\n  units mm\n  room id=a at (0,0) size 3000x3000 uses storage\n  walls from rooms exterior 200 partition 100\n}\n`;
+    const { scene } = built(store);
+    scene.levels[0]!.floors[0]!.pattern = "marble";
+    const m = buildMesh(scene);
+    expect(floorOf(m, "a").extras.finish).toBe("neutral");
+    expect(ledgered(m, "a")).toEqual([expect.objectContaining({ value: "neutral", provenance: "default" })]);
+    scene.levels[0]!.floors[0]!.pattern = "stone";
+    const known = buildMesh(scene);
+    expect(floorOf(known, "a").extras.finish).toBe("stone");
+    expect(ledgered(known, "a")).toEqual([]);
   });
 });

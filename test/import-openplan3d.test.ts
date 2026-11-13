@@ -439,6 +439,25 @@ describe("rooms, walls and metadata", () => {
     expect(r.report!.ids).toContainEqual({ kind: "walls", from: "0-top wall", to: "w_0_top_wall" });
   });
 
+  it("keeps an id spelled as a word RM8.7 added: `sand`, `soil` (enum values), `timber`, `carpeting`, `stone`", () => {
+    // `sand` and `soil` joined `KEYWORDS.enum` as `outdoor` kinds; they are `UNRESERVED_KEYWORDS`, so
+    // the importer keeps them as ids, as it did before them. The floor words are no keywords at all.
+    // `lawn`, an enum value from before, is the control: it is renamed, so the check can fail.
+    for (const id of ["sand", "soil", "timber", "carpeting", "stone"]) {
+      const r = openPlan3dToArch(web({ walls: BOX.map((w, i) => (i === 1 ? { ...w, id } : w)) }));
+      const src = sourceOf(r);
+      expect(src, id).toContain(`wall id=${id} `);
+      expect(
+        r.report!.ids.filter((c) => c.from === id),
+        id,
+      ).toEqual([]);
+      expect(errorsOf(src), id).toEqual([]);
+    }
+    const lawn = openPlan3dToArch(web({ walls: BOX.map((w, i) => (i === 1 ? { ...w, id: "lawn" } : w)) }));
+    expect(sourceOf(lawn)).not.toContain("wall id=lawn ");
+    expect(lawn.report!.ids.some((c) => c.from === "lawn")).toBe(true);
+  });
+
   it("keeps a label's braces and quotes literal", () => {
     const src = sourceOf(
       openPlan3dToArch(

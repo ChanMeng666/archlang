@@ -29,9 +29,9 @@ export interface Theme {
   column: string;
   /**
    * The ground tints — the flat colour an `outdoor` surface is filled with,
-   * UNDER its hatch. Three, not nine: the nine `OUTDOOR_KINDS` map onto them
+   * UNDER its hatch. Three, not eleven: the eleven `OUTDOOR_KINDS` map onto them
    * (`src/elements/outdoor.ts`'s `GROUND` table) because a palette entry per kind would
-   * be nine numbers to keep consistent across four themes for a distinction the eye
+   * be eleven numbers to keep consistent across four themes for a distinction the eye
    * reads from the hatch anyway. `lawn` covers the planted surfaces, `water` open water,
    * `paving` every hard and timber surface (and a balcony, which takes no hatch).
    */

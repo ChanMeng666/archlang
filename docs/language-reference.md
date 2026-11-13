@@ -1323,8 +1323,8 @@ A rectangle — or [any simple polygon](#polygonal-rooms-v1-23), or a
 [circle](#circular-rooms-v1-24). The compiler prints the `label` and the **computed area**
 (m²). Rooms describe space; walls are drawn separately.
 
-**`floor` draws a finish.** `floor tile`, `floor paving`, `floor deck` or `floor concrete` lays a
-hatch over the room, on its own ring, under everything else in it:
+**`floor` draws a finish.** `floor tile`, `floor paving`, `floor deck`, `floor concrete`, `floor timber`,
+`floor carpeting` or `floor stone` lays a hatch over the room, on its own ring, under everything else in it:
 
 ```arch
 plan "Finishes" {
@@ -1344,6 +1344,9 @@ plan "Finishes" {
 | `paving` | A large square grid, the same slabs an `outdoor paving` draws |
 | `deck` | Boards with staggered joints |
 | `concrete` | A fine speckle |
+| `timber` | Herringbone parquet, the blocks square to each other and turned 45° |
+| `carpeting` | Fitted carpet: a fine dot on a regular grid |
+| `stone` | Coursed stone: three courses of unequal height, their joints staggered |
 
 It is a pattern and not a colour: it follows the `theme`, stays legible under `mono`, reaches DXF as
 a real `HATCH` and earns one [`legend`](#sheet-tables--room-schedule--legend) row per word, which
@@ -1352,8 +1355,15 @@ a real `HATCH` and earns one [`legend`](#sheet-tables--room-schedule--legend) ro
 does not take a wall's tint, and their legend row reads `tile floor`, apart from a wall's `tile`. In a PDF, which has no pattern fills, a floor is a flat tint, as an
 `outdoor` surface is.
 
+Under `theme rendered` a `timber`, `carpeting` or `stone` room is also washed in a pale tint of its
+material (wood, wool, stone: a third of the way from the room colour to the tint its furniture takes),
+pale enough that the pattern still reads against it at 2:1 or more; the four older words take no wash,
+and no other theme draws one. The 3D preview lays a room in the finish its `floor` word names, and
+falls back to one chosen by its `uses` only when it has none. (`carpet` is the `rug` family, a piece
+of furniture; the fitted floor is `carpeting`.)
+
 A floor is a drawing fact: `describe()` and `lint()` read the plan as if it were not there, and Plan
-JSON lists it in `dropped`. A word that is not one of the four draws no pattern and raises
+JSON lists it in `dropped`. A word that is not one of the seven draws no pattern and raises
 `W_UNKNOWN_MATERIAL`, a compile warning that `describe --json` and `validate` report and `lint()` does not.
 
 **Where the name goes.** By default at the room's own centre — the rectangle's, the
@@ -2630,7 +2640,7 @@ outdoor [id=<id>] <kind> polygon (x,y) (x,y) (x,y) … [label "…"]
 ```
 
 The ground a building sits on: a lawn, a planting bed, paving, a deck, gravel, water, a
-driveway, a patio, or a balcony. Nine kinds, each drawn as a **scale-aware material hatch
+driveway, a patio, a balcony, sand or bare soil. Eleven kinds, each drawn as a **scale-aware material hatch
 over a flat tint** (a `balcony`: tint and railing, no hatch).
 
 | Kind | Hatch | CAD layer |
@@ -2643,6 +2653,8 @@ over a flat tint** (a `balcony`: tint and railing, no hatch).
 | `gravel` | scattered stones as small rings, with grit | `L-SITE` |
 | `water` | gentle waves, alternate lines out of phase | `L-SITE` |
 | `driveway` | a fine, sparse bitumen speckle | `L-SITE` |
+| `sand` | a dense stipple of fine and coarse grains | `L-SITE` |
+| `soil` | bare earth: short strokes in threes, laid in a basket weave | `L-PLNT` |
 | `balcony` | no hatch — a plain tint and a railing | `A-FLOR-BALC` |
 
 Three CAD layers, not one, because a CAD user freezes by trade: planting is the landscape
@@ -2654,7 +2666,7 @@ dimension, so a pattern is the same size *on the sheet* at 1:50 and at 1:200 —
 what a drafting hatch is for. (Fixed pixel sizes, the obvious shortcut, dissolve or clot
 as the scale changes.) Every ground stroke is the drawing's finest pen — the `extraThin` width
 the symbols' detail uses — so the ground is the palest layer of the plan. The irregular
-patterns (`lawn`, `planting`, `gravel`, `driveway`) come from frozen tables, never a random
+patterns (`lawn`, `planting`, `gravel`, `driveway`, `sand`, and a `stone` floor's courses) come from frozen tables, never a random
 number: `compile()` is deterministic.
 
 #### It is not a room, and it obstructs nothing
@@ -3795,7 +3807,7 @@ on every tint. A rug and the pieces drawn dashed overhead (an upper cabinet, a r
 pergola) stay unfilled, so nothing beneath them is hidden. Planting takes the `foliage` tint, so
 under `rendered` the `lawn` key colours the lawn surfaces but not a tree, shrub, hedge or plant.
 Overriding the furniture fill (`theme rendered { furniture: "#eeeeee" }` or
-`style furniture { fill: … }`) replaces the tints with that one colour. A theme draws only:
+`style furniture { fill: … }`) replaces the tints with that one colour, and drops the pale wash a `timber`, `carpeting` or `stone` floor takes under `rendered` ([Room](#room)). A theme draws only:
 `describe()` and `lint()` are the same under every theme.
 
 ```arch static
